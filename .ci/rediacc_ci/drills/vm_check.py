@@ -1012,9 +1012,12 @@ def envelope_errors(out: str) -> str:
         return ""
     if not isinstance(doc, dict):
         return ""
+    errors = doc.get("errors")
+    if not isinstance(errors, list):
+        return ""
     msgs = [
         " ".join(str(e.get("message") or e.get("code") or e).split())
-        for e in (doc.get("errors") or [])
+        for e in errors
         if isinstance(e, dict)
     ]
     return " | ".join(msgs[:3])
@@ -1442,10 +1445,10 @@ class VmCheck:
         return self.rdc("term", "connect", fork, "-c", command, extra_env=extra_env)
 
     def remote_evidence(self, res: Result) -> str:
-        """A failed remote command's evidence, stderr first: `term connect` puts the remote stderr on stderr and a JSON envelope on stdout, and the envelope alone filled the 200-byte evidence (2026-10-15)."""
+        """A failed remote command's evidence: a CLI refusal first, else stderr first. `term connect` puts the remote stderr on stderr and a JSON envelope on stdout, the envelope's tail filled the 200-byte evidence (2026-10-15), and the CLI's startup lines on stderr filled it ahead of a refusal (2026-11-04)."""
         refusal = envelope_errors(res.out)
         if refusal:
-            return "rc=%d %s" % (res.rc, refusal)
+            return "rc=%d %s | stderr: %s" % (res.rc, refusal, last_lines(res.err) or "<empty>")
         return "rc=%d stderr: %s | stdout: %s" % (
             res.rc,
             last_lines(res.err) or "<empty>",

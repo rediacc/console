@@ -370,3 +370,4 @@ def test_remote_evidence_of_a_cli_refusal_names_the_refusal_not_the_metrics_tail
     assert vm_check.envelope_errors(envelope) == "Repository x is not deployed"
     assert vm_check.envelope_errors("plain text\n") == ""
     assert vm_check.envelope_errors('{"errors": []}') == ""
+    assert vm_check.envelope_errors('{"errors": 7}') == ""

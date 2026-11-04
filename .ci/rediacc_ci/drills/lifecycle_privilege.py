@@ -24,6 +24,7 @@ from rediacc_ci.drills import gpu_grants, vm_ssh
 from rediacc_ci.well_known import DATASTORE_PATH, ETC_DIR
 
 STEP_ID = "L1"
+REBOOT_GRAND_SIZE = "1G"
 
 # Written to the probe files; the value is never printed, only whether it was visible.
 CREDENTIAL_VAR = "LIFECYCLE_PROBE_CRED"
@@ -354,6 +355,7 @@ class _LiveL1:
         self.ref = ctx.ref(self.tag)
         self.nid = 0
         self.guid = ""
+        self.reboot_grand = ""
         self.root_granted = False
         self.fake_written = False
         self.device_granted = False
@@ -375,11 +377,19 @@ class _LiveL1:
         )
         return self.ctx.host_run(argv, env=self.ctx.environ, timeout=timeout)
 
-    def shell(self, command: str) -> Any:
-        return self.ctx.rdc("term", "connect", self.ref, "-c", command, refuse=False)
+    def shell(self, command: str, ref: str = "") -> Any:
+        return self.ctx.rdc("term", "connect", ref or self.ref, "-c", command, refuse=False)
 
-    def read_probe(self, name: str) -> dict[str, str]:
-        return parse_probe(self.shell(read_command(name)).out)
+    def read_probe(self, name: str, ref: str = "") -> dict[str, str]:
+        return parse_probe(self.shell(read_command(name), ref).out)
+
+    def upload_probe(self, ref: str) -> Any:
+        """The probe files, through `repo sync upload`: `term connect` refuses a redirect."""
+        up = self.ctx.work / "lifecycle-probe"
+        up.mkdir(parents=True, exist_ok=True)
+        for name, body in probe_files().items():
+            (up / name).write_text(body)
+        return self.ctx.rdc("repo", "sync", "upload", ref, "--local", str(up) + "/", refuse=False)
 
     def up(self, extra_env: dict[str, str] | None = None) -> Any:
         return self.ctx.rdc("repo", "up", self.ref, timeout=900, refuse=False, extra_env=extra_env)
@@ -432,13 +442,7 @@ class _LiveL1:
         )
 
     def install(self) -> bool:
-        up = self.ctx.work / "lifecycle-probe"
-        up.mkdir(parents=True, exist_ok=True)
-        for name, body in probe_files().items():
-            (up / name).write_text(body)
-        sent = self.ctx.rdc(
-            "repo", "sync", "upload", self.ref, "--local", str(up) + "/", refuse=False
-        )
+        sent = self.upload_probe(self.ref)
         if not self.check(
             "L1.0 the probe files are uploaded into %s" % self.ref,
             sent.rc == 0,
@@ -544,20 +548,46 @@ class _LiveL1:
             self.shell(down_marker_command(False))
 
     def l1_12_reboot_path(self) -> None:
-        """Reboot-shaped: autostart on, the repository taken down and unmounted, then one reconcile tick brings it back, running up() dropped."""
-        up = self.up()
-        if not self.check("L1.12 repo up %s before the reboot shape" % self.ref, up.rc == 0, up):
+        """Reboot-shaped: autostart on, the repository taken down and unmounted, then one reconcile tick brings it back, running up() dropped. A grand of its own, because autostart is refused on a fork."""
+        name = "l1-%s" % self.tag
+        made = self.ctx.rdc(
+            "repo",
+            "create",
+            name,
+            "-m",
+            self.ctx.machine,
+            "--size",
+            REBOOT_GRAND_SIZE,
+            timeout=900,
+            refuse=False,
+        )
+        self.reboot_grand = name if made.rc == 0 else ""
+        if not self.check(
+            "L1.12 the grand %s is created for the reboot shape" % name, made.rc == 0, made
+        ):
             return
-        enabled = self.ctx.rdc("repo", "admin", "autostart", "enable", self.ref, refuse=False)
+        sent = self.upload_probe(name)
+        if not self.check(
+            "L1.12 the probe files are uploaded into %s" % name,
+            sent.rc == 0,
+            sent,
+            self.ctx.remote_evidence(sent) if sent.rc != 0 else "",
+        ):
+            return
+        self.shell(clear_probe_state_command(), name)
+        up = self.ctx.rdc("repo", "up", name, timeout=900, refuse=False)
+        if not self.check("L1.12 repo up %s before the reboot shape" % name, up.rc == 0, up):
+            return
+        enabled = self.ctx.rdc("repo", "admin", "autostart", "enable", name, refuse=False)
         self.autostart_enabled = enabled.rc == 0 or self.autostart_enabled
-        if not self.check("L1.12 autostart is enabled for %s" % self.ref, enabled.rc == 0, enabled):
+        if not self.check("L1.12 autostart is enabled for %s" % name, enabled.rc == 0, enabled):
             return
-        self.shell(remove_probe_output_command(UP_FILE))
-        down = self.ctx.rdc("repo", "down", self.ref, "--unmount", timeout=900, refuse=False)
-        if not self.check("L1.12 repo down --unmount takes %s away" % self.ref, down.rc == 0, down):
+        self.shell(remove_probe_output_command(UP_FILE), name)
+        down = self.ctx.rdc("repo", "down", name, "--unmount", timeout=900, refuse=False)
+        if not self.check("L1.12 repo down --unmount takes %s away" % name, down.rc == 0, down):
             return
         tick = self.root(reconcile_script(DATASTORE_PATH), timeout=900)
-        ok, why = reboot_verdict(self.read_probe(UP_FILE), tick.rc)
+        ok, why = reboot_verdict(self.read_probe(UP_FILE, name), tick.rc)
         self.check(
             "L1.12 one reconcile tick ends with the repository running, up() dropped",
             ok,
@@ -646,9 +676,23 @@ class _LiveL1:
             if res.rc != 0:
                 left.append("L1 stopped Docker daemon of net-%d (start rc=%d)" % (self.nid, res.rc))
         if self.autostart_enabled:
-            res = self.ctx.rdc("repo", "admin", "autostart", "disable", self.ref, refuse=False)
+            res = self.ctx.rdc(
+                "repo", "admin", "autostart", "disable", self.reboot_grand, refuse=False
+            )
             if res.rc != 0:
-                left.append("L1 autostart of %s (disable rc=%d)" % (self.ref, res.rc))
+                left.append("L1 autostart of %s (disable rc=%d)" % (self.reboot_grand, res.rc))
+        if self.reboot_grand:
+            res = self.ctx.rdc(
+                "repo",
+                "delete",
+                self.reboot_grand,
+                "--archive-config",
+                "-y",
+                timeout=900,
+                refuse=False,
+            )
+            if res.rc != 0:
+                left.append("L1 grand %s (delete rc=%d)" % (self.reboot_grand, res.rc))
         if self.device_granted:
             res = self.ctx.rdc(
                 "repo", "gpu", "revoke", self.ref, "--device", gpu_grants.CDI_NAME, refuse=False
