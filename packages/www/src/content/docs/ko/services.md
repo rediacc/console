@@ -9,7 +9,7 @@ tags:
 subcategory: workloads
 order: 5
 language: ko
-sourceHash: "d42e64fd2a65736e"
+sourceHash: "514acd70833da4cb"
 sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
 ---
 
@@ -57,7 +57,7 @@ Rediaccfile 함수가 실행될 때 다음 환경 변수를 사용할 수 있습
 
 `{SERVICE}_IP` 변수는 `.rediacc.json`의 슬롯 매핑에서 자동 생성되고 Rediaccfile 함수가 실행되기 전에 내보내집니다. 명명 규칙은 서비스 이름을 대문자로 변환하고 하이픈을 밑줄로 교체한 후 `_IP`를 추가합니다. 예를 들어, 슬롯 `0`의 `listmonk-app`이라는 서비스는 `LISTMONK_APP_IP=127.0.11.2`가 됩니다.
 
-> **경고: Rediaccfile에서 `sudo docker`를 사용하지 마십시오.** `sudo` 명령은 환경 변수를 초기화하므로 `DOCKER_HOST`가 손실되고 Docker 명령이 저장소의 격리된 데몬 대신 시스템 데몬을 대상으로 합니다. 이는 컨테이너 격리를 깨고 포트 충돌을 일으킬 수 있습니다. Rediacc는 `-E` 없이 `sudo docker`를 감지하면 실행을 차단합니다.
+> **경고: Rediaccfile에서 `sudo docker`를 사용하지 마십시오.** `sudo` 명령은 환경 변수를 초기화하므로 `DOCKER_HOST`가 손실되고 Docker 명령이 저장소의 격리된 데몬 대신 시스템 데몬을 대상으로 합니다. 이는 컨테이너 격리를 깨고 포트 충돌을 일으킬 수 있습니다. Rediacc는 `sudo docker`를 감지하면 실행을 차단합니다.
 >
 > Rediaccfile에서 `renet compose`를 사용하십시오. 이는 `DOCKER_HOST`를 자동으로 처리하고, 경로 검색을 위한 네트워킹 레이블을 주입하며, 서비스 네트워킹을 구성합니다. 서비스가 리버스 프록시를 통해 노출되는 방법은 [네트워킹](/en/docs/networking)을 참조하십시오. Docker를 직접 호출하는 경우 `sudo` 없이 `docker`를 사용하십시오. Rediaccfile 함수는 root가 아닌 유니버설 사용자로 저장소의 Docker 데몬에 접근합니다([권한](/ko/docs/services#privileges) 참조).
 >
@@ -72,7 +72,7 @@ Rediaccfile 함수가 실행될 때 다음 환경 변수를 사용할 수 있습
 | Rediaccfile의 동작 | 보이는 결과 | 해결 |
 |---|---|---|
 | `sudo x` | `sudo: The "no new privileges" flag is set` | `sudo`를 뺍니다. 해당 단계는 root가 필요 없거나 권한 부여가 필요합니다 |
-| `chown 5050 ...` 또는 컨테이너가 소유한 디렉터리의 `rm -rf` | `Operation not permitted` 또는 `Permission denied` | 단발성 컨테이너에서 단계를 실행합니다: `renet compose -- run --rm --no-deps --user 0 --entrypoint chown <service> -R 5050:5050 /data` |
+| `chown 5050 ...` 또는 컨테이너가 소유한 디렉터리의 `rm -rf` | `Operation not permitted` 또는 `Permission denied` | 단발성 컨테이너에서 단계를 실행합니다(root는 컨테이너 안에서만이며 머신에서는 아닙니다): `renet compose -- run --rm --no-deps --user 0 --entrypoint chown <service> -R 5050:5050 /data` |
 | 마운트 안에 `.env` 등의 파일 쓰기 | 동작함. 파일은 유니버설 사용자 소유가 됨 | 필요 없음 |
 | `/etc/rediacc/*`, `/proc/kcore` 또는 블록 장치 읽기 | `Permission denied` | 경로 권한을 요청합니다 |
 | 파일 시크릿을 직접 읽기 | `Permission denied` | compose의 `secrets:` 또는 env 모드 시크릿을 사용합니다 |

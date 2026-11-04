@@ -10,7 +10,7 @@ tags:
 subcategory: workloads
 order: 5
 language: pt
-sourceHash: "d42e64fd2a65736e"
+sourceHash: "514acd70833da4cb"
 sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
 ---
 
@@ -58,7 +58,7 @@ Quando uma função Rediaccfile é executada, as seguintes variáveis de ambient
 
 As variáveis `{SERVICE}_IP` são geradas automaticamente a partir dos mapeamentos de slots em `.rediacc.json` e exportadas antes de suas funções Rediaccfile serem executadas. A convenção de nomenclatura converte o nome do serviço para maiúsculas com hífens substituídos por sublinhados e depois acrescenta `_IP`. Por exemplo, um serviço chamado `listmonk-app` com slot `0` torna-se `LISTMONK_APP_IP=127.0.11.2`.
 
-> **Aviso: Não use `sudo docker` nos Rediaccfiles.** O comando `sudo` reinicia as variáveis de ambiente, o que significa que `DOCKER_HOST` é perdido e os comandos Docker passarão a ter como alvo o daemon do sistema em vez do daemon isolado do repositório. Isto quebra o isolamento de contêineres e pode causar conflitos de portas. O Rediacc bloqueará a execução se detectar `sudo docker` sem `-E`.
+> **Aviso: Não use `sudo docker` nos Rediaccfiles.** O comando `sudo` reinicia as variáveis de ambiente, o que significa que `DOCKER_HOST` é perdido e os comandos Docker passarão a ter como alvo o daemon do sistema em vez do daemon isolado do repositório. Isto quebra o isolamento de contêineres e pode causar conflitos de portas. O Rediacc bloqueará a execução se detectar `sudo docker`.
 >
 > Use `renet compose` em seus Rediaccfiles; trata automaticamente de `DOCKER_HOST`, injeta labels de networking para descoberta de rotas e configura o networking de serviços. Consulte [Networking](/pt/docs/networking) para detalhes sobre como os serviços são expostos via proxy reverso. Se chamar Docker diretamente, use `docker` sem `sudo`; as funções Rediaccfile chegam ao daemon Docker do repositório como o usuário universal, sem root (veja [Privilégios](#privileges)).
 >
@@ -73,7 +73,7 @@ Uma linha que precisa de mais que o padrão falha com o erro que o sandbox lhe d
 | O Rediaccfile faz | O que vê | Correção |
 |---|---|---|
 | `sudo x` | `sudo: The "no new privileges" flag is set` | Remova o `sudo`. O passo ou não precisa de root ou precisa de uma concessão |
-| `chown 5050 ...` ou `rm -rf` de um diretório que pertence a um contêiner | `Operation not permitted` ou `Permission denied` | Execute o passo em um contêiner descartável: `renet compose -- run --rm --no-deps --user 0 --entrypoint chown <service> -R 5050:5050 /data` |
+| `chown 5050 ...` ou `rm -rf` de um diretório que pertence a um contêiner | `Operation not permitted` ou `Permission denied` | Execute o passo em um contêiner descartável (root apenas dentro do contêiner, não na máquina): `renet compose -- run --rm --no-deps --user 0 --entrypoint chown <service> -R 5050:5050 /data` |
 | Escreve `.env` ou outros arquivos no mount | Funciona; os arquivos pertencem ao usuário universal | Nenhuma |
 | Lê `/etc/rediacc/*`, `/proc/kcore` ou um dispositivo de bloco | `Permission denied` | Peça uma concessão de caminho |
 | Lê diretamente um segredo em arquivo | `Permission denied` | Use `secrets:` do compose ou um segredo em modo env |

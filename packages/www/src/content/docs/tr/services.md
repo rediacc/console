@@ -10,7 +10,7 @@ tags:
 subcategory: workloads
 order: 5
 language: tr
-sourceHash: "d42e64fd2a65736e"
+sourceHash: "514acd70833da4cb"
 sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
 ---
 
@@ -58,7 +58,7 @@ Bir Rediaccfile fonksiyonu çalıştığında, aşağıdaki ortam değişkenleri
 
 `{SERVICE}_IP` değişkenleri `.rediacc.json` dosyasından otomatik olarak oluşturulur ve Rediaccfile işlevleriniz çalışmadan önce dışa aktarılır. Adlandırma kuralı, servis adını büyük harfe çevirir, tireleri alt çizgi ile değiştirir ve sonuna `_IP` ekler. Örneğin, slot `0` ile `listmonk-app` servisi `LISTMONK_APP_IP=127.0.11.2` olur.
 
-> **Uyarı: Rediaccfile'larda `sudo docker` kullanmayın.** `sudo` komutu ortam değişkenlerini sıfırlar, bu da `DOCKER_HOST` değişkeninin kaybolmasına ve Docker komutlarının deponun izole daemon'u yerine sistem daemon'unu hedeflemesine neden olur. Bu, konteyner izolasyonunu bozar ve port çakışmalarına yol açabilir. Rediacc, `-E` olmadan `sudo docker` algılarsa çalıştırmayı engeller.
+> **Uyarı: Rediaccfile'larda `sudo docker` kullanmayın.** `sudo` komutu ortam değişkenlerini sıfırlar, bu da `DOCKER_HOST` değişkeninin kaybolmasına ve Docker komutlarının deponun izole daemon'u yerine sistem daemon'unu hedeflemesine neden olur. Bu, konteyner izolasyonunu bozar ve port çakışmalarına yol açabilir. Rediacc, `sudo docker` algılarsa çalıştırmayı engeller.
 >
 > Rediaccfile'larınızda `renet compose` kullanın -- bu, `DOCKER_HOST` değişkenini otomatik olarak yönetir, yönlendirme keşfi için ağ etiketlerini enjekte eder ve servis ağını yapılandırır. Servislerin ters proxy aracılığıyla nasıl sunulduğuna dair ayrıntılar için [Ağ](/tr/docs/networking) sayfasına bakın. Docker'ı doğrudan çağırıyorsanız, `sudo` olmadan `docker` kullanın -- Rediaccfile fonksiyonları deponun Docker daemon'una root olmadan, evrensel kullanıcı olarak erişir (bkz. [Ayrıcalıklar](#privileges)).
 >
@@ -73,7 +73,7 @@ Varsayılandan fazlasına ihtiyaç duyan bir satır, sandbox'ın verdiği hatayl
 | Rediaccfile ne yapıyor | Ne görüyor | Çözüm |
 |---|---|---|
 | `sudo x` | `sudo: The "no new privileges" flag is set` | `sudo`yu bırakın. Adım ya root gerektirmez ya da bir izin gerektirir |
-| `chown 5050 ...` veya bir konteynerin sahip olduğu dizinde `rm -rf` | `Operation not permitted` veya `Permission denied` | Adımı tek kullanımlık bir konteynerde çalıştırın: `renet compose -- run --rm --no-deps --user 0 --entrypoint chown <service> -R 5050:5050 /data` |
+| `chown 5050 ...` veya bir konteynerin sahip olduğu dizinde `rm -rf` | `Operation not permitted` veya `Permission denied` | Adımı tek kullanımlık bir konteynerde çalıştırın (root yalnızca konteyner içinde, makinede değil): `renet compose -- run --rm --no-deps --user 0 --entrypoint chown <service> -R 5050:5050 /data` |
 | Mount içine `.env` veya başka dosyalar yazar | Çalışır; dosyalar evrensel kullanıcıya aittir | Gerek yok |
 | `/etc/rediacc/*`, `/proc/kcore` veya bir blok aygıtını okur | `Permission denied` | Yol izni isteyin |
 | Bir dosya sırrını doğrudan okur | `Permission denied` | Compose `secrets:` veya env kipinde bir sır kullanın |

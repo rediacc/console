@@ -9,7 +9,7 @@ tags:
 subcategory: workloads
 order: 5
 language: ar
-sourceHash: "d42e64fd2a65736e"
+sourceHash: "514acd70833da4cb"
 sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
 ---
 
@@ -57,7 +57,7 @@ sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
 
 يتم إنشاء متغيرات `{SERVICE}_IP}` تلقائياً من خلال تعيينات الفتحات في `.rediacc.json` وتُصدّر قبل تنفيذ دوال Rediaccfile. تحوّل قاعدة التسمية اسم الخدمة إلى أحرف كبيرة مع استبدال الشرطات بشرطات سفلية، ثم تضيف `_IP`. على سبيل المثال، الخدمة باسم `listmonk-app` مع فتحة `0` تصبح `LISTMONK_APP_IP=127.0.11.2`.
 
-> **تحذير: لا تستخدم `sudo docker` في ملفات Rediaccfile.** أمر `sudo` يعيد تعيين متغيرات البيئة، مما يعني فقدان `DOCKER_HOST` واستهداف أوامر Docker لعملية النظام بدلاً من العملية المعزولة للمستودع. هذا يكسر عزل الحاويات وقد يسبب تعارضات في المنافذ. سيمنع Rediacc التنفيذ إذا اكتشف `sudo docker` بدون `-E`.
+> **تحذير: لا تستخدم `sudo docker` في ملفات Rediaccfile.** أمر `sudo` يعيد تعيين متغيرات البيئة، مما يعني فقدان `DOCKER_HOST` واستهداف أوامر Docker لعملية النظام بدلاً من العملية المعزولة للمستودع. هذا يكسر عزل الحاويات وقد يسبب تعارضات في المنافذ. سيمنع Rediacc التنفيذ إذا اكتشف `sudo docker`.
 >
 > استخدم `renet compose` في ملفات Rediaccfile، فهو يتعامل تلقائياً مع `DOCKER_HOST` ويحقن تسميات الشبكة لاكتشاف المسارات ويهيئ شبكات الخدمات. راجع [الشبكات](/ar/docs/networking) لتفاصيل كيفية كشف الخدمات عبر الوكيل العكسي. إذا استدعيت Docker مباشرة، استخدم `docker` بدون `sudo`: تصل دوال Rediaccfile إلى عملية Docker الخاصة بالمستودع بصفة المستخدم العام، دون root (انظر [الامتيازات](#privileges)).
 >
@@ -72,7 +72,7 @@ sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
 | ما يفعله Rediaccfile | ما يظهر له | الحل |
 |--------------------|--------------------|--------------------|
 | `sudo x` | `sudo: The "no new privileges" flag is set` | احذف `sudo`. الخطوة إما لا تحتاج إلى root أو تحتاج إلى إذن |
-| `chown 5050 ...` أو `rm -rf` لمجلد تملكه حاوية | `Operation not permitted` / `Permission denied` | شغّل الخطوة في حاوية لمرة واحدة: `renet compose -- run --rm --no-deps --user 0 --entrypoint chown <service> -R 5050:5050 /data` |
+| `chown 5050 ...` أو `rm -rf` لمجلد تملكه حاوية | `Operation not permitted` / `Permission denied` | شغّل الخطوة في حاوية لمرة واحدة (جذر داخل الحاوية فقط، وليس على الجهاز): `renet compose -- run --rm --no-deps --user 0 --entrypoint chown <service> -R 5050:5050 /data` |
 | يكتب `.env` أو ملفات أخرى في نقطة التحميل | يعمل؛ الملفات تعود للمستخدم العام | لا شيء |
 | يقرأ `/etc/rediacc/*` أو `/proc/kcore` أو جهاز كتل | `Permission denied` | اطلب إذن مسار |
 | يقرأ سرّ ملف مباشرة | `Permission denied` | استخدم `secrets:` في compose أو سرّاً بنمط env |

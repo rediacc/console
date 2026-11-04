@@ -10,7 +10,7 @@ tags:
 subcategory: workloads
 order: 5
 language: et
-sourceHash: "d42e64fd2a65736e"
+sourceHash: "514acd70833da4cb"
 sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
 ---
 
@@ -58,7 +58,7 @@ Kui Rediaccfile'i funktsioon käivitub, on saadaval järgmised keskkonna muutuja
 
 `{SERVICE}_IP`-muutujad genereeritakse automaatselt `.rediacc.json`-i pesa kaardistustest ja eksporditakse enne teie Rediaccfile'i funktsioonide käivitamist. Nimetamiskonventsioon teisendab teenuse nime suurtähtedeks, asendab sidekriipsud alljoontega ja lisab siis `_IP`. Näiteks teenus nimega `listmonk-app` pesaga `0` saab `LISTMONK_APP_IP=127.0.11.2`.
 
-> **Hoiatus: Ärge kasutage `sudo docker`-it Rediaccfile'ides.** Käsk `sudo` lähtestab keskkonna muutujad, mis tähendab, et `DOCKER_HOST` kaob ja Dockeri käsud suunatakse süsteemi deemonile repositooriumi isoleeritud deemoni asemel. See katkestab konteineri isoleerimise ja võib põhjustada pordinäitude. Rediacc blokeerib täitmise, kui tuvastab `sudo docker` ilma `-E`-ta.
+> **Hoiatus: Ärge kasutage `sudo docker`-it Rediaccfile'ides.** Käsk `sudo` lähtestab keskkonna muutujad, mis tähendab, et `DOCKER_HOST` kaob ja Dockeri käsud suunatakse süsteemi deemonile repositooriumi isoleeritud deemoni asemel. See katkestab konteineri isoleerimise ja võib põhjustada pordinäitude. Rediacc blokeerib täitmise, kui tuvastab `sudo docker`-i.
 >
 > Kasutage oma Rediaccfile'ides `renet compose`-it, see käsitseb automaatselt `DOCKER_HOST`-i, süstib võrgunduse sildid teeserveri avastamiseks ja konfigureerib teenuse võrgunduse. Vaadake [Võrgundus](/en/docs/networking) üksikasjade saamiseks, kuidas teenused puhverserveri kaudu avastuvad. Kui kutsute Dockerit otse, kasutage `docker`-it ilma `sudo`-ta: Rediaccfile'i funktsioonid jõuavad hoidla Dockeri deemonini universaalse kasutajana, ilma root-õigusteta (vt [Õigused](#privileges)).
 >
@@ -73,7 +73,7 @@ Rida, mis vajab enamat kui vaikimisi õigused, ebaõnnestub liivakasti antud vea
 | Rediaccfile teeb | See näeb | Parandus |
 |--------------------|--------------------|--------------------|
 | `sudo x` | `sudo: The "no new privileges" flag is set` | Jätke `sudo` ära. Samm kas ei vaja root-õigusi või vajab luba |
-| `chown 5050 ...` või `rm -rf` kataloogil, mis kuulub konteinerile | `Operation not permitted` / `Permission denied` | Käivitage samm ühekordses konteineris: `renet compose -- run --rm --no-deps --user 0 --entrypoint chown <service> -R 5050:5050 /data` |
+| `chown 5050 ...` või `rm -rf` kataloogil, mis kuulub konteinerile | `Operation not permitted` / `Permission denied` | Käivitage samm ühekordses konteineris (juurkasutaja ainult konteineri sees, mitte masinas): `renet compose -- run --rm --no-deps --user 0 --entrypoint chown <service> -R 5050:5050 /data` |
 | Kirjutab `.env` või muid faile haakepunkti | Töötab; failid kuuluvad universaalsele kasutajale | Pole vaja |
 | Loeb `/etc/rediacc/*`, `/proc/kcore` või plokkseadet | `Permission denied` | Taotlege rajaluba |
 | Loeb failisaladust otse | `Permission denied` | Kasutage composei `secrets:` või env-režiimi saladust |

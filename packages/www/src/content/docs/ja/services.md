@@ -9,7 +9,7 @@ tags:
 subcategory: workloads
 order: 5
 language: ja
-sourceHash: "d42e64fd2a65736e"
+sourceHash: "514acd70833da4cb"
 sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
 ---
 
@@ -57,7 +57,7 @@ Rediaccfile関数の実行時、以下の環境変数が利用可能です：
 
 `{SERVICE}_IP`変数は`.rediacc.json`のスロットマッピングから自動生成され、Rediaccfile関数が実行される前にエクスポートされます。命名規則では、サービス名を大文字に変換し、ハイフンをアンダースコアに置き換え、`_IP`を付加します。例えば、スロット`0`の`listmonk-app`というサービスは`LISTMONK_APP_IP=127.0.11.2`になります。
 
-> **警告：Rediaccfile内で`sudo docker`を使用しないでください。** `sudo`コマンドは環境変数をリセットするため、`DOCKER_HOST`が失われ、Dockerコマンドがリポジトリの隔離デーモンではなくシステムデーモンを対象にします。これによりコンテナの隔離が壊れ、ポート競合が発生する可能性があります。Rediaccは`-E`なしの`sudo docker`を検出すると実行をブロックします。
+> **警告：Rediaccfile内で`sudo docker`を使用しないでください。** `sudo`コマンドは環境変数をリセットするため、`DOCKER_HOST`が失われ、Dockerコマンドがリポジトリの隔離デーモンではなくシステムデーモンを対象にします。これによりコンテナの隔離が壊れ、ポート競合が発生する可能性があります。Rediaccは`sudo docker`を検出すると実行をブロックします。
 >
 > Rediaccfile内では`renet compose`を使用してください。`DOCKER_HOST`を自動的に処理し、ルート検出用のネットワーキングラベルを注入し、サービスネットワーキングを設定します。リバースプロキシ経由でサービスを公開する方法の詳細については、[ネットワーキング](/ja/docs/networking)を参照してください。Dockerを直接呼び出す場合は、`sudo`なしで`docker`を使用してください。Rediaccfile関数は、rootではなくユニバーサルユーザーとしてリポジトリのDockerデーモンに接続します（[権限](/ja/docs/services#privileges)を参照）。
 >
@@ -72,7 +72,7 @@ Rediaccfile関数の実行時、以下の環境変数が利用可能です：
 | Rediaccfileの処理 | 見えるもの | 対処 |
 |---|---|---|
 | `sudo x` | `sudo: The "no new privileges" flag is set` | `sudo`を外す。そのステップはrootが不要か、グラントが必要 |
-| `chown 5050 ...`、またはコンテナが所有するディレクトリへの`rm -rf` | `Operation not permitted`または`Permission denied` | ステップを使い捨てコンテナで実行する：`renet compose -- run --rm --no-deps --user 0 --entrypoint chown <service> -R 5050:5050 /data` |
+| `chown 5050 ...`、またはコンテナが所有するディレクトリへの`rm -rf` | `Operation not permitted`または`Permission denied` | ステップを使い捨てコンテナで実行する（rootになるのはコンテナ内のみで、マシン上ではありません）：`renet compose -- run --rm --no-deps --user 0 --entrypoint chown <service> -R 5050:5050 /data` |
 | マウント内の`.env`などのファイルへの書き込み | 動作する。ファイルの所有者はユニバーサルユーザー | 不要 |
 | `/etc/rediacc/*`、`/proc/kcore`、ブロックデバイスの読み取り | `Permission denied` | パスのグラントを依頼する |
 | ファイルシークレットを直接読み取る | `Permission denied` | composeの`secrets:`、またはenvモードのシークレットを使う |

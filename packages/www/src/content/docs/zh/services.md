@@ -9,7 +9,7 @@ tags:
 subcategory: workloads
 order: 5
 language: zh
-sourceHash: "d42e64fd2a65736e"
+sourceHash: "514acd70833da4cb"
 sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
 ---
 
@@ -57,7 +57,7 @@ Rediaccfile 在两个位置被发现：
 
 `{SERVICE}_IP` 变量从 `.rediacc.json` 中的槽位映射自动生成，在 Rediaccfile 函数运行前导出。命名规则是将服务名称转换为大写，连字符替换为下划线，然后追加 `_IP`。例如，`listmonk-app` 变为 `LISTMONK_APP_IP=127.0.11.2`。
 
-> **警告：请勿在 Rediaccfile 中使用 `sudo docker`。** `sudo` 命令会重置环境变量，导致 `DOCKER_HOST` 丢失，Docker 命令将指向系统守护进程而非仓库的隔离守护进程。这会破坏容器隔离并可能导致端口冲突。如果 Rediacc 检测到未带 `-E` 的 `sudo docker`，将阻止执行。
+> **警告：请勿在 Rediaccfile 中使用 `sudo docker`。** `sudo` 命令会重置环境变量，导致 `DOCKER_HOST` 丢失，Docker 命令将指向系统守护进程而非仓库的隔离守护进程。这会破坏容器隔离并可能导致端口冲突。如果 Rediacc 检测到 `sudo docker`，将阻止执行。
 >
 > 在 Rediaccfile 中请使用 `renet compose`，它会自动处理 `DOCKER_HOST`，注入路由发现所需的网络标签，并配置服务网络。有关服务如何通过反向代理暴露的详细信息，请参阅[网络](/zh/docs/networking)。如果直接调用 Docker，请使用不带 `sudo` 的 `docker`，Rediaccfile 函数以通用用户身份（而非 root）访问仓库的 Docker 守护进程（参阅[权限](/zh/docs/services#privileges)）。
 >
@@ -72,7 +72,7 @@ Rediaccfile 在两个位置被发现：
 | Rediaccfile 的操作 | 看到的结果 | 处理方式 |
 |---|---|---|
 | `sudo x` | `sudo: The "no new privileges" flag is set` | 去掉 `sudo`。该步骤要么不需要 root，要么需要授权 |
-| `chown 5050 ...`，或对容器所属目录执行 `rm -rf` | `Operation not permitted` 或 `Permission denied` | 在一次性容器中运行该步骤：`renet compose -- run --rm --no-deps --user 0 --entrypoint chown <service> -R 5050:5050 /data` |
+| `chown 5050 ...`，或对容器所属目录执行 `rm -rf` | `Operation not permitted` 或 `Permission denied` | 在一次性容器中运行该步骤（仅在容器内是 root，在机器上不是）：`renet compose -- run --rm --no-deps --user 0 --entrypoint chown <service> -R 5050:5050 /data` |
 | 在挂载目录中写入 `.env` 或其他文件 | 正常；文件属于通用用户 | 无需处理 |
 | 读取 `/etc/rediacc/*`、`/proc/kcore` 或块设备 | `Permission denied` | 申请路径授权 |
 | 直接读取文件型密钥 | `Permission denied` | 使用 compose 的 `secrets:` 或 env 模式密钥 |

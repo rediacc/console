@@ -56,7 +56,7 @@ When a Rediaccfile function executes, the following environment variables are av
 
 The `{SERVICE}_IP` variables are auto-generated from the slot mappings in `.rediacc.json` and exported before your Rediaccfile functions run. The naming convention converts the service name to uppercase with hyphens replaced by underscores, then appends `_IP`. For example, a service named `listmonk-app` with slot `0` becomes `LISTMONK_APP_IP=127.0.11.2`.
 
-> **Warning: Do not use `sudo docker` in Rediaccfiles.** The `sudo` command resets environment variables, which means `DOCKER_HOST` is lost and Docker commands will target the system daemon instead of the repository's isolated daemon. This breaks container isolation and can cause port conflicts. Rediacc will block execution if it detects `sudo docker` without `-E`.
+> **Warning: Do not use `sudo docker` in Rediaccfiles.** The `sudo` command resets environment variables, which means `DOCKER_HOST` is lost and Docker commands will target the system daemon instead of the repository's isolated daemon. This breaks container isolation and can cause port conflicts. Rediacc will block execution if it detects `sudo docker`.
 >
 > Use `renet compose` in your Rediaccfiles, it automatically handles `DOCKER_HOST`, injects networking labels for route discovery, and configures service networking. See [Networking](/en/docs/networking) for details on how services are exposed via the reverse proxy. If calling Docker directly, use `docker` without `sudo`: Rediaccfile functions reach the repository's Docker daemon as the universal user, without root (see [Privileges](#privileges)).
 >
@@ -71,7 +71,7 @@ A line that needs more than the default fails with the error the sandbox gives i
 | A Rediaccfile does | It sees | Fix |
 |--------------------|---------|-----|
 | `sudo x` | `sudo: The "no new privileges" flag is set` | Drop `sudo`. The step either needs no root or needs a grant |
-| `chown 5050 ...` or `rm -rf` of a directory a container owns | `Operation not permitted` or `Permission denied` | Run the step in a one-shot container: `renet compose -- run --rm --no-deps --user 0 --entrypoint chown <service> -R 5050:5050 /data` |
+| `chown 5050 ...` or `rm -rf` of a directory a container owns | `Operation not permitted` or `Permission denied` | Run the step in a one-shot container (root inside the container only, not on the machine): `renet compose -- run --rm --no-deps --user 0 --entrypoint chown <service> -R 5050:5050 /data` |
 | Writes `.env` or other files in the mount | Works; the files belong to the universal user | None |
 | Reads `/etc/rediacc/*`, `/proc/kcore` or a block device | `Permission denied` | Ask for a path grant |
 | Reads a file secret directly | `Permission denied` | Use compose `secrets:` or an env-mode secret |
