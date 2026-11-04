@@ -59,7 +59,11 @@ export interface RenetEvent {
  * precondition.go). It replaces the client-side `repository_list` probe a
  * mutating verb used to run first.
  */
-export type RepoExpectation = 'repo_present' | 'repo_absent' | 'repo_unmounted';
+export type RepoExpectation =
+  | 'repo_present'
+  | 'repo_absent'
+  | 'repo_unmounted'
+  | 'ceph_datastores_exist';
 
 /** A machine referenced by an operation besides the primary target (backup peers). */
 export interface ExtraMachine {

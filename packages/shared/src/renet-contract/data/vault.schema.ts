@@ -86,7 +86,7 @@ export const RenetVaultSchema = z.object({
     .record(z.string(), RepositoryInfoSchema)
     .optional()
     .describe('Repository info by name'),
-  expect: z.enum(['repo_present', 'repo_absent', 'repo_unmounted']).optional().describe('Start precondition renet job start checks against the machine'),
+  expect: z.enum(['repo_present', 'repo_absent', 'repo_unmounted', 'ceph_datastores_exist']).optional().describe('Start precondition renet job start checks against the machine'),
   context: ContextSectionSchema.optional(),
   preferences: PreferencesSectionSchema.optional(),
 });

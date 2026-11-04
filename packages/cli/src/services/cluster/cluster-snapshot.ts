@@ -75,13 +75,6 @@ export async function createClusterSnapshot(
     clusterName,
     options.debug
   );
-  if (inInstant.length === 0) {
-    throw new Error(
-      `Cluster "${clusterName}" has no ceph-backed datastores, so there is no group instant to ` +
-        `take. Snapshot its datastores individually: rdc datastore snapshot create <name>.`
-    );
-  }
-
   // The closing job; the report (it needs the datastores listed above) is its step, so a ticket handed back early claims nothing.
   const closing = await runClusterPhase(
     'datastore_snapshot_create',
@@ -90,6 +83,8 @@ export async function createClusterSnapshot(
     {
       debug: options.debug,
       verb: 'cluster snapshot create',
+      // renet refuses the start when the cluster has no ceph-backed datastore here (no group instant to take).
+      expect: 'ceph_datastores_exist',
       steps: [
         planStep('reportClusterSnapshot', {
           cluster: clusterName,

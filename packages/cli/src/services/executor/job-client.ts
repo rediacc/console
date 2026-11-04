@@ -541,7 +541,7 @@ const OverlapRefusalSchema = z.object({
  */
 const PreconditionRefusalSchema = z.object({
   refused: z.literal('precondition'),
-  expect: z.enum(['repo_present', 'repo_absent', 'repo_unmounted']),
+  expect: z.enum(['repo_present', 'repo_absent', 'repo_unmounted', 'ceph_datastores_exist']),
   state: z.string(),
   repository: z.string(),
   repo_guid: z.string(),

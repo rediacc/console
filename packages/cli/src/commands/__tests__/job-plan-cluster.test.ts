@@ -570,6 +570,9 @@ describe('cluster verbs (one job per phase, one ticket per phase)', () => {
       'datastore_snapshot_create',
     ]);
     expect(executed[1].params).toMatchObject({ group: 'c1', snapshot: 's1' });
+    // The no-ceph-datastore refusal is renet's precondition now, carried on the group job only.
+    expect(executed[1].expect).toBe('ceph_datastores_exist');
+    expect(executed[0].expect).toBeUndefined();
     expect(executed[1].jobSteps?.map((x) => x.name)).toEqual(['reportClusterSnapshot']);
     expect(m.success).toHaveBeenCalledOnce();
   });

@@ -12,7 +12,7 @@
 
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { DEFAULTS } from '@rediacc/shared/config';
-import type { ExecuteResult } from '../executor/types.js';
+import type { ExecuteResult, RepoExpectation } from '../executor/types.js';
 import { runCommandJob } from '../jobs/command-job.js';
 import { outstandingSteps } from '../jobs/run-job.js';
 import type { PlannedStep } from '../jobs/steps.js';
@@ -48,6 +48,8 @@ export interface ClusterPhaseOptions {
   capture?: boolean;
   /** Client-side steps this phase's ticket carries; they run once the job succeeded, wherever it is observed. */
   steps?: PlannedStep[];
+  /** A start precondition renet checks before any unit exists (private/renet/pkg/jobs/precondition.go). */
+  expect?: RepoExpectation;
   /** The verb label; defaults to the enclosing {@link withClusterVerb}. */
   verb?: string;
   /** Prefix of the failure message, e.g. `Cluster step`. */
@@ -82,6 +84,7 @@ export async function runClusterPhase(
       params,
       debug: options.debug,
       captureOutput: options.capture,
+      ...(options.expect ? { expect: options.expect } : {}),
     },
     options.steps ?? []
   );
