@@ -37,7 +37,7 @@ export interface JobGroupSteps {
   failure?: PlannedStep[];
 }
 
-/** The failure prefix of a step that names none. */
+/** The failure prefix when a caller names none. */
 export const DEFAULT_STEP_LABEL = 'Cluster step';
 
 export interface JobGroupOptions {
