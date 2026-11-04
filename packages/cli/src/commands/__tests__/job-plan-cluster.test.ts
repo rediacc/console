@@ -113,6 +113,7 @@ type Executed = {
   params: Record<string, unknown>;
   jobSteps?: { name: string; on: string; params: Record<string, unknown> }[];
   captureOutput?: boolean;
+  expect?: unknown;
 };
 
 const BACKGROUND = {
