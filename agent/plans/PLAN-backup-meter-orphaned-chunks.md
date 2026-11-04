@@ -240,7 +240,8 @@ Most of this exists already, and A1 pins it with tests:
   Owns: agent/plans/PLAN-backup-meter-orphaned-chunks.md (receipts only).
   Accept: `./rdc.sh --config eu-bench backup reconcile <repo> --check` rc 0, and the recorded usage and listing counts are equal.
 
-- [x] L2 [live, hostinger, after A1 reaches stable eu] Repair, then check.
+- [ ] L2 [live, hostinger, after A1 reaches stable eu] Repair, then check.
+    (reopened 2026-11-04) Unmet: the box did not record the figures the ruling required. Recorded now: dry run drift 0 on 11 lineages, so step 2 did not run; backup reconcile --check rc=0; usage and an independent R2 listing equal at 83320 chunks and 349469409280 bytes, equal per lineage; nextcloud 31822184448 stored = 31625052160 referenced + 197132288 unreferenced (47 chunks in grace), accepted ASKED:2026-11-04T08:44Z. The tick's 08:4x was not a real timestamp. LP-hostinger of this plan is still open. Closes on the next tick with these figures read fresh.
   (note) This box stays on `eu-remote` under PLAN-tested-on-bench ruling 1 as extended on 2026-11-04: it repairs the stable store's own meter, which bench cannot reach. The operator approved the apply at ASKED:2026-11-04T07:38Z.
   1. `./rdc.sh --config eu-remote backup reconcile --dry-run -o json` records the before figures.
   2. With the operator's go, `./rdc.sh --config eu-remote backup reconcile -o json` applies.

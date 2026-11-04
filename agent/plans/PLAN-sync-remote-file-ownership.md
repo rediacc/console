@@ -100,8 +100,10 @@ T5 is the closure and runs last: T6 (directory mode, added after the first draft
 - [x] T5 [lead] Closure: run the verification set CLAUDE.md names for this change set, reproduce the bug once on the pre-fix tree (the new V1.5 row fails with `root:root`), re-run after the fix (it passes), and report the exit codes; the tree stays uncommitted per the operator's report unless the operator says otherwise -- Owns: agent/plans/PLAN-sync-remote-file-ownership.md. Accept: `npm run vm:check -- --changed` exits 0 on the fixed tree.
     (ticked) 2026-10-28T09:31:27Z by d778be9d: 2026-10-28 by d778be9d: npm run vm:check exit 0 VERIFIED (run vmc-10280549-dc77fb at c87456e6b and again in the P8 run, 175 assertions 0 failed), which covers the V1.5 ownership rows at .ci/rediacc_ci/drills/vm_check.py:2405 and :2431; the earlier vm:check --changed run is recorded at T4 (53a964c78, 52 assertions)
     (review note 2026-10-29, 9f92c43e) The tick records the full `npm run vm:check` (VERIFIED, 175 assertions) in place of the `--changed` form the Accept names, and no pre-fix reproduction of V1.5 failing with `root:root` is recorded in it; the `--changed` run is recorded at T4 (53a964c78, 52 assertions). The pre-fix reproduction is unrecorded.
-- [ ] LP-hostinger [live] Fresh hostinger receipt through --config eu-bench (PLAN-tested-on-bench ruling 3), after a VERIFIED npm run vm:check -- --changed on the same tree; ASK the operator first, because provisioning a branch renet restarts the router and daemons.
+- [x] LP-hostinger [live] Fresh hostinger receipt through --config eu-bench (PLAN-tested-on-bench ruling 3), after a VERIFIED npm run vm:check -- --changed on the same tree; ASK the operator first, because provisioning a branch renet restarts the router and daemons.
+    (audit note 2026-11-04) The receipt proves the branch renet binary is live on hostinger at tree 50d35b9d. It does not exercise this plan's own behaviour, which rests on the plan's earlier boxes.
   - Accept: `live-proof hostinger renet-live`
+    (ticked) 2026-11-04T10:27:34Z by d778be9d: live-proof lp-15f54c0867fc hostinger renet-live rc=0 v=renet@sha256:d627bf298b4ba89baa921ca3e04c3a94173d3e2211a7070d5ddd34a60d6440f2
 
 ### Acceptance on a real machine
 

@@ -120,7 +120,9 @@ Operator, ASKED:2026-10-28T11:31Z, verbatim: "Yes widen (Add 2a09:bac0::/29) but
   - Accept: `live-proof bench account-smoke`
     (ticked) 2026-10-30T06:18:27Z by d778be9d: live-proof lp-6beac79937e2 bench account-smoke rc=0 v=b0ffdd76-1edb-40a0-9517-ed940f8b3981
 - [ ] LP-hostinger [live] Fresh hostinger receipt through --config eu-bench (PLAN-tested-on-bench ruling 3), after a VERIFIED npm run vm:check -- --changed on the same tree; ASK the operator first, because provisioning a branch renet restarts the router and daemons.
+    (reopened 2026-11-04) Unmet: the receipt's ladder.vm is null where the other nine name vmc-11040941-158f0e, so its tie to the VERIFIED vm:check run is not recorded. Needs a fresh receipt.
   - Accept: `live-proof hostinger renet-live`
+    (ticked) 2026-11-04T10:27:33Z by d778be9d: live-proof lp-decf11520448 hostinger renet-live rc=0 v=renet@sha256:d627bf298b4ba89baa921ca3e04c3a94173d3e2211a7070d5ddd34a60d6440f2
 
 ## Risks
 

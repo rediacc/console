@@ -42,7 +42,8 @@ The submodule PR (A) merges first. The console PR (B, plus the pointer bump) fol
     (ticked) 2026-10-03T09:41:20Z by d778be9d: bd0278084: account-client-ip-rebind.test.ts (16 tests) + config-remote-password.test.ts, mutation controls recorded
 - [x] T8 [B] CLI i18n in 13 locales. Update the www `account-security.md` in 13 locales and regenerate the translation hashes and search indexes (section 7).
     (ticked) 2026-10-03T09:41:22Z by d778be9d: bd0278084: 11 CLI keys x13 locales + hashes, cli-contract regenerated, account-security.md x13, search indexes regenerated
-- [x] T9 [lead] Closure:
+- [ ] T9 [lead] Closure:
+    (reopened 2026-11-04) Unmet: eu deploy before the CLI, the IP-change smoke, the Activity row and the third-IP refusal were not run. Receipt lp-96f7f22b87b4 is two curl GETs of health and server-info on bench, so it covers no smoke. The ruling ASKED:2026-11-04T07:38Z rested on a question that described that receipt as the live smoke, so it is asked again. The removal sweep of section 8 was rerun clean.
   - The removal sweep in section 8 returns nothing.
   - Deploy the account server (eu) before the CLI release.
   - Live smoke of the operator's case: take a token bound to an address, change the egress IP (a VPN or phone hotspot is enough), run `rdc config remote enable`, get one prompt, enter the code, and the command succeeds.

@@ -246,7 +246,8 @@ Worklist: pending -- filed at promotion
   - bench: PLAN-config-server-key's LP-bench box after its K3, with `worklist.py --live-proof <me> agent/plans/PLAN-config-server-key.md <LP-bench sig> --tick --write`.
   - hostinger: one renet-surface plan's LP-hostinger box through `renet-live` on `--config eu-bench`; candidate PLAN-hostinger-upgrade-followups T1, whose Traefik pin is renet-embedded. Run it after a VERIFIED `npm run vm:check -- --changed` on the same tree.
   - Accept: `PYTHONPATH=.ci python3 -m rediacc_ci.ops.live_proof verify --plan agent/plans/PLAN-config-server-key.md` rc=0 and `PYTHONPATH=.ci python3 -m rediacc_ci.ops.live_proof verify --plan agent/plans/PLAN-hostinger-upgrade-followups.md` rc=0. Also `npm run ci-plan-live-proof` rc=0 on each ticking commit.
-- [x] V9 [writer] Docs.
+- [ ] V9 [writer] Docs.
+    (reopened 2026-11-04) Unmet: the docs lint lane in the Accept does not exist under that name in package.json or this plan, so it was not run. Citations rc 0 and the doc sections are present (docs/agent-reference/plan-records.md:115, docs/agent-reference/ci-gates.md:607). Depends-On is no-dep, so the waiver was vacuous.
   - A "Live proof" section in `docs/agent-reference/plan-records.md`: the header, the LP box form, the verb, the envelope and live body, the ladder and the LP rules.
   - A "Proof tiers" paragraph in `docs/agent-reference/ci-gates.md`: one map, the VM and live tiers, and which judge reads which.
   - Accept: `npm run check:ci-plan-citations` rc=0 and the docs lint lane rc=0.
@@ -296,7 +297,8 @@ Kept byte for byte because a box is a durable record. Each closes, ticked with i
     (ticked) 2026-10-28T15:37:03Z by d778be9d: superseded first-draft V6 migration, closed with the revised V7 (7acacf6d) in commit 494cb756e; check:ci-plan-live-proof rc=0
 - [ ] V7 [lead] Pilot: one real receipt end to end on bench and one on hostinger through `--config eu-bench`. Candidate: PLAN-config-server-key's live box, after its K3 provisioning. Run `worklist.py --live-proof <me> agent/plans/PLAN-config-server-key.md <LP-bench sig> --tick --write`.
   - Accept: `PYTHONPATH=.ci python3 -m rediacc_ci.ops.live_proof verify --plan agent/plans/PLAN-config-server-key.md` rc=0, and `npm run ci-plan-live-proof` rc=0 on the commit that ticks it.
-- [x] V8 [writer] Docs: a "Live proof" section in `docs/agent-reference/plan-records.md` covering the header, the LP box form, the verb, the receipt schema and the LP rules.
+- [ ] V8 [writer] Docs: a "Live proof" section in `docs/agent-reference/plan-records.md` covering the header, the LP box form, the verb, the receipt schema and the LP rules.
+    (reopened 2026-11-04) Unmet: the docs lint lane, as for V9, which this twin closes with.
   - Accept: `npm run check:ci-plan-citations` rc=0 and the docs lint lane rc=0.
     (ticked) 2026-11-04T09:36:25Z by d778be9d: fileline:docs/agent-reference/plan-records.md:115 V8 first-draft twin of V9, closed with it by the plan's rule. DEPS-WAIVED: this box's evidence does not depend on the open prerequisite
 - [ ] LP-none: this plan carries `Live-Proof: none` because its Owns hit no deployable surface. V7 is its live exercise.

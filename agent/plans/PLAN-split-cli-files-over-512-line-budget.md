@@ -31,4 +31,6 @@ Split each file by responsibility into sibling modules: no behaviour change, no 
   Accept: live-proof bench cli-bench
 
 - [ ] LP-hostinger [live] Fresh hostinger receipt through worklist.py --live-proof, after this plan's hostinger-deployable boxes land.
+    (reopened 2026-11-04) Unmet: the plan's LP-bench box is still open, and this CLI-only refactor never ran on hostinger, so the box's condition holds only vacuously. Receipt lp-effbd6da42f6 stays in the ledger.
   Accept: live-proof hostinger renet-live machine=hostinger
+    (ticked) 2026-11-04T10:27:32Z by d778be9d: live-proof lp-effbd6da42f6 hostinger renet-live rc=0 v=renet@sha256:d627bf298b4ba89baa921ca3e04c3a94173d3e2211a7070d5ddd34a60d6440f2

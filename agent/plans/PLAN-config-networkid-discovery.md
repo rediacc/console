@@ -51,8 +51,10 @@ Writers: **R** renet (`private/renet/**`), **B** the CLI and shared packages, **
     (ticked) 2026-10-25T11:06:44Z by d778be9d: commit:c6e5863aa1a03e: T6 per the networkid writer; CLI vitest src 3369 passed, cli tsc rc=0, check:ci-i18n-cli-key-usage rc=0 (lead reruns)
 - [x] T7 [lead] Closure: run the mutation controls in section 4.4 by hand, each must turn its test red; confirm the account integration lane lists `config-sync/network-id.test.ts` and the renet unit lane runs the new guard cases; flip N1-N6 from `it.fails` to `it` (T3, T4 and T5 flip their own) and delete their guards; record the outcome in the hardening plan's F20 entry.
     (ticked) 2026-10-28T04:24:49Z by d778be9d: commit:3ae849065 the nine section 4.4 mutations run by hand, each red (renet M8 go test -tags nolicense ./cmd/renet/ -run NetworkID|Guard rc=0, 14 pass), N1-N6 plain it, the lane picks network-id.test.ts by the tests/integration glob, outcome recorded under F20 in PLAN-config-sync-hardening.md. DEPS-WAIVED: PLAN-config-sync-hardening's one open box is the T15 live smoke; the push and harness this needs landed
-- [ ] LP-hostinger [live] Fresh hostinger receipt through --config eu-bench (PLAN-tested-on-bench ruling 3), after a VERIFIED npm run vm:check -- --changed on the same tree; ASK the operator first, because provisioning a branch renet restarts the router and daemons.
+- [x] LP-hostinger [live] Fresh hostinger receipt through --config eu-bench (PLAN-tested-on-bench ruling 3), after a VERIFIED npm run vm:check -- --changed on the same tree; ASK the operator first, because provisioning a branch renet restarts the router and daemons.
+    (audit note 2026-11-04) The receipt proves the branch renet binary is live on hostinger at tree 50d35b9d. It does not exercise this plan's own behaviour, which rests on the plan's earlier boxes.
   - Accept: `live-proof hostinger renet-live`
+    (ticked) 2026-11-04T10:27:26Z by d778be9d: live-proof lp-e5391284d387 hostinger renet-live rc=0 v=renet@sha256:d627bf298b4ba89baa921ca3e04c3a94173d3e2211a7070d5ddd34a60d6440f2
 
 ## 1. What happened before state sync, and what the fallback still covers
 

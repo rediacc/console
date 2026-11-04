@@ -49,6 +49,7 @@ Concurrency: parallel -- S1 and S2 own new files except one script line each in 
     (ticked) 2026-10-30T22:41:05Z by d778be9d: commit:24bb682a scripts/settings/settings.ts:22; set no longer passes -p no:cacheprovider; planted flag turns 4 controls red; a real set on a clone rc 0. DEPS-WAIVED: the box's code and its acceptance commands do not depend on the open prerequisite plans
 
 - [x] S3 [writer] One source for the ceilings. Changes: every `DEFAULT_CEILINGS` key moves into `report` of .ci/config/cf-spend-guard.json; `DEFAULT_CEILINGS` is deleted from .ci/rediacc_ci/ops/cf_usage_report.py and `load_ceilings` raises on a missing key; `test_default_ceilings_agree_with_the_ruled_report_object` is replaced by a test that a missing key raises.
+    (audit note 2026-11-04) Landed before T6 closed and without the lease the Depends-On names, so the precondition was breached with no conflict: no spend-guard writer was live, the first launched at 07:15:18Z. scripts/lib/settings/copies.ts:13 still names the deleted dict.
   Owns: .ci/config/cf-spend-guard.json, .ci/rediacc_ci/ops/cf_usage_report.py, .ci/rediacc_ci/tests/test_ops_cf_usage_report.py. Accept: `PYTHONPATH=.ci python3 -m pytest .ci/rediacc_ci/tests/test_ops_cf_usage_report.py .ci/rediacc_ci/tests/test_ops_cf_notifications.py` rc 0, and `grep -n DEFAULT_CEILINGS .ci/rediacc_ci/ops/cf_usage_report.py` prints nothing.
     (ticked) 2026-11-04T07:15:59Z by d778be9d: commit:64367e944 settings selftest rc=0, registry rc=0, pytest 44 passed
 
