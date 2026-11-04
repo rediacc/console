@@ -83,31 +83,16 @@ function placement(
   return b ? 'converted' : 'neither';
 }
 
-/**
- * Detachable verbs whose conversion another writer holds (the replicate forms, PLAN-detached-jobs J16 half D). Each is
- * in neither state today; the entry must go in the change that converts it, which the stale check below enforces.
- */
-const PENDING_CONVERSION = ['repo replicate', 'repo replicate refresh', 'repo replicate remove'];
-
 describe('every detachable verb is in exactly one of BACKGROUND_UNSAFE or CONVERTED', () => {
   const refused = new Set(Object.keys(BACKGROUND_UNSAFE));
   const detachable = CLI_CONTRACT.commands.filter((c) => c.detachable).map((c) => c.pathKey);
 
-  it('holds for the whole contract, apart from the listed pending conversions', () => {
-    const offenders = detachable
-      .filter((verb) => !PENDING_CONVERSION.includes(verb))
-      .filter((verb) => {
-        const where = placement(verb, refused, CONVERTED);
-        return where !== 'unsafe' && where !== 'converted';
-      });
+  it('holds for the whole contract', () => {
+    const offenders = detachable.filter((verb) => {
+      const where = placement(verb, refused, CONVERTED);
+      return where !== 'unsafe' && where !== 'converted';
+    });
     expect(offenders).toEqual([]);
-  });
-
-  it('a pending entry is still in neither state, so a conversion removes it from the list', () => {
-    const stale = PENDING_CONVERSION.filter(
-      (verb) => !detachable.includes(verb) || placement(verb, refused, CONVERTED) !== 'neither'
-    );
-    expect(stale).toEqual([]);
   });
 
   it('control: a verb planted in both sets, and one planted in neither, are both caught', () => {
