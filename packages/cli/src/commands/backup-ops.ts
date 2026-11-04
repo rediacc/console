@@ -4,10 +4,12 @@ import type { SFTPClient } from '../remote/sftp/index.js';
 import { hasAccountToken, pushStrategyRetention } from '../services/backup/backup-retention.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
-import { writeStderr, writeStdout } from '../services/core/request-context.js';
+import { setExitCode, writeStderr, writeStdout } from '../services/core/request-context.js';
+import { pendingExitCode, runCommandJob } from '../services/jobs/command-job.js';
 import { machineConnections } from '../services/machine/machine-connection.js';
 import { acquireRemoteRenet, readSSHKey } from '../services/renet/renet-execution.js';
 import { handleError } from '../utils/errors.js';
+import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 
 /** Resolve which strategy names to trigger. */
 function resolveStrategyNames(
@@ -18,28 +20,6 @@ function resolveStrategyNames(
   if (strategyFilter) return [strategyFilter];
   if (boundNames.length > 0) return boundNames;
   return allStrategyNames;
-}
-
-/** Trigger a deployed systemd backup service. */
-async function triggerDeployedUnit(
-  sftp: SFTPClient,
-  serviceName: string,
-  debug?: boolean
-): Promise<void> {
-  outputService.info(`Triggering ${serviceName}...`);
-  const exitCode = await sftp.execStreaming(`sudo systemctl start ${serviceName}`, {
-    onStdout: (data) => {
-      if (debug) writeStdout(data);
-    },
-    onStderr: (data) => {
-      writeStderr(data);
-    },
-  });
-  if (exitCode === 0) {
-    outputService.success(`Triggered ${serviceName}`);
-  } else {
-    outputService.warn(`Failed to trigger ${serviceName} (exit ${exitCode})`);
-  }
 }
 
 /**
@@ -72,15 +52,20 @@ async function isUnitDeployed(sftp: SFTPClient, unit: string): Promise<boolean> 
   return checkOutput.length > 0;
 }
 
-/** Run an ad-hoc backup via systemd-run when no deployed unit exists. */
-async function triggerAdhocBackup(
+const SYSTEMD_DIR = '/etc/systemd/system';
+
+/**
+ * Stage the ad-hoc service of a strategy with no deployed unit, so the backup-unit job can start it by name
+ * (PLAN-detached-jobs section 21). Returns the unit name, or undefined when the strategy covers no repository here.
+ */
+async function stageAdhocUnit(
   sftp: SFTPClient,
   machineName: string,
   name: string,
   config: import('../types/index.js').BackupStrategyConfig,
   remoteRenetPath: string,
   debug?: boolean
-): Promise<void> {
+): Promise<string | undefined> {
   outputService.info(`No deployed unit for "${name}", running ad-hoc...`);
   const { buildStrategyCommandsForMachine, sanitizeBackupOutput } = await import(
     '../services/backup/backup-schedule.js'
@@ -93,43 +78,43 @@ async function triggerAdhocBackup(
   );
   if (commands.length === 0) {
     outputService.warn(`Backup strategy "${name}" covers no repository on ${machineName}`);
-    return;
+    return undefined;
   }
 
   const adhocUnit = `rediacc-backup-${name}-adhoc`;
   await clearFinishedAdhocUnit(sftp, adhocUnit, name);
-  const { buildAdhocSystemdRun } = await import(
-    '../services/backup/backup-schedule-unit-generator.js'
+  const [{ generateAdhocServiceUnit }, { resolveMachineCpuCount }] = await Promise.all([
+    import('../services/backup/backup-schedule-unit-generator.js'),
+    import('../services/backup/backup-schedule-reconcile.js'),
+  ]);
+  const content = generateAdhocServiceUnit(
+    name,
+    commands,
+    await resolveMachineCpuCount(sftp),
+    config.cpuLimit
   );
-  const systemdRunCmd = buildAdhocSystemdRun(adhocUnit, commands, config.cpuLimit);
 
   if (debug) {
-    outputService.info(`Running: ${sanitizeBackupOutput(systemdRunCmd)}`);
+    outputService.info(`Writing ${adhocUnit}.service:\n${sanitizeBackupOutput(content)}`);
   }
 
-  const exitCode = await sftp.execStreaming(systemdRunCmd, {
-    onStdout: (data) => {
-      if (debug) writeStdout(data);
-    },
-    onStderr: (data) => {
-      writeStderr(data);
-    },
-  });
-
-  if (exitCode === 0) {
-    outputService.success(`Ad-hoc backup started: ${adhocUnit}.service`);
-  } else {
-    throw new Error(`Failed to start ad-hoc backup for "${name}" (exit ${exitCode})`);
+  const exitCode = await sftp.execStreaming(
+    `sudo tee ${SYSTEMD_DIR}/${adhocUnit}.service > /dev/null && sudo systemctl daemon-reload`,
+    { stdin: content, onStdout: () => {}, onStderr: (data) => writeStderr(data) }
+  );
+  if (exitCode !== 0) {
+    throw new Error(`Failed to stage the ad-hoc backup unit for "${name}" (exit ${exitCode})`);
   }
+  return adhocUnit;
 }
 
 /** SubStates of a unit that has finished (or was never loaded): only these are safe to stop and clear. */
 const FINISHED_SUBSTATES = new Set(['', 'dead', 'exited', 'failed']);
 
 /**
- * An ad-hoc unit lingers after it exits (`--remain-after-exit`), and systemd-run refuses a name that is
- * still loaded. Refuse unless it has finished (any transitional state such as auto-restart or reload counts
- * as running); otherwise stop it and clear its failed state so the next run can reuse the name.
+ * Rewriting an ad-hoc unit under a running backup would orphan it, and a transient unit of an earlier release
+ * (`--remain-after-exit`) shadows the file written here. Refuse unless it has finished (any transitional state such
+ * as auto-restart or reload counts as running); otherwise stop it and clear its failed state so the name is free.
  */
 async function clearFinishedAdhocUnit(sftp: SFTPClient, unit: string, name: string): Promise<void> {
   let subState = '';
@@ -230,24 +215,58 @@ async function runBackupNow(
 
   const lease = await machineConnections.acquireFor(machine, sshPrivateKey);
   const sftp = lease.sftp;
+  const units: string[] = [];
 
   try {
     for (const { name, config } of strategies) {
       const deployed: string[] = [];
       for (const unit of await strategyUnitNames(machineName, name)) {
-        if (await isUnitDeployed(sftp, unit)) deployed.push(unit);
+        if (await isUnitDeployed(sftp, unit)) deployed.push(`rediacc-backup-${unit}`);
       }
-      if (deployed.length === 0) {
-        await triggerAdhocBackup(sftp, machineName, name, config, remoteRenetPath, debug);
+      if (deployed.length > 0) {
+        units.push(...deployed);
         continue;
       }
-      for (const unit of deployed) {
-        await triggerDeployedUnit(sftp, `rediacc-backup-${unit}.service`, debug);
-      }
+      const adhoc = await stageAdhocUnit(sftp, machineName, name, config, remoteRenetPath, debug);
+      if (adhoc) units.push(adhoc);
     }
   } finally {
     lease.release();
   }
+
+  if (units.length > 0) await startBackupUnits(machineName, units, debug);
+}
+
+/**
+ * Start every unit as ONE `backup-unit` job: renet runs `systemctl start` inside the job, so the backup outlives this
+ * client, the spool holds its start and exit code, and a run past the attach window returns its ticket.
+ */
+async function startBackupUnits(
+  machineName: string,
+  units: string[],
+  debug?: boolean
+): Promise<void> {
+  outputService.info(`Starting ${units.map((u) => `${u}.service`).join(', ')}...`);
+  const outcome = await runCommandJob(
+    'backup run',
+    {
+      functionName: 'backup-unit',
+      machineName,
+      commandKind: { name: 'backup-unit', args: { units } },
+      debug,
+    },
+    []
+  );
+  if (outcome.kind === 'pending') {
+    const code = pendingExitCode(outcome);
+    if (code !== undefined) setExitCode(code);
+    return;
+  }
+  if (outcome.result.success) {
+    outputService.success(`Backup finished: ${units.join(', ')}`);
+    return;
+  }
+  renderLocalExecutionFailure(outcome.result, `Backup failed on ${machineName}`);
 }
 
 /** Try to cancel a single systemd unit if active. Returns true if cancelled. */

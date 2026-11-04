@@ -125,6 +125,37 @@ describe('buildJobStartCommand', () => {
     );
   });
 
+  it('a command kind adds --command and its --args JSON as quoted words', () => {
+    const { command } = buildJobStartCommand({
+      remoteRenetPath: RENET,
+      env: buildRenetEnv({ isDevelopment: false, telemetryDisabled: false }),
+      command: { name: 'backup-unit', args: JSON.stringify({ units: ['rediacc-backup-a'] }) },
+    });
+
+    expect(command).toContain(`--command 'backup-unit' --args '{"units":["rediacc-backup-a"]}'`);
+  });
+
+  it('a hostile --args value stays inside one shell word', () => {
+    const { command } = buildJobStartCommand({
+      remoteRenetPath: RENET,
+      env: buildRenetEnv({ isDevelopment: false, telemetryDisabled: false }),
+      command: { name: 'setup', args: JSON.stringify({ datastore: "/x'; touch /pwned; '" }) },
+    });
+
+    expect(command).toContain(`--args '{"datastore":"/x'\\''; touch /pwned; '\\''"}'`);
+  });
+
+  it('a command kind without arguments names no --args', () => {
+    const { command } = buildJobStartCommand({
+      remoteRenetPath: RENET,
+      env: buildRenetEnv({ isDevelopment: false, telemetryDisabled: false }),
+      command: { name: 'list-all' },
+    });
+
+    expect(command).toContain("--command 'list-all'");
+    expect(command).not.toContain('--args');
+  });
+
   /**
    * The vault carries the repo credential and every file-mode secret. It goes
    * over stdin, exactly as `renet execute` takes it. If it ever appeared in the

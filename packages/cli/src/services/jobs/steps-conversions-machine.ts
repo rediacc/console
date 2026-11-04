@@ -21,20 +21,25 @@ type DatastoreStateRecord = NonNullable<
 
 export const MACHINE_CONVERSION_STEPS: StepDefinition[] = [
   // J18: machine verbs.
-  {
-    // `machine setup`: re-deploy repo keys, re-apply access keys, push infra (each non-fatal, as today).
-    name: 'postSetupMachineTasks',
-    on: 'success',
-    params: ['machine', 'debug'],
-    load: async () => {
-      const { postSetupMachineTasks } = await import('../../commands/machine/register.js');
-      return (ctx) =>
-        postSetupMachineTasks(
-          optStr(ctx.params, 'machine') ?? ctx.machine,
-          ctx.params.debug === true
-        );
-    },
-  },
+  // `machine setup`: the success tail (repo keys, access keys, infra push), the converge pass as the recorded successor, and the failure tail (the router refresh the upload owed).
+  privateStep(
+    'postSetupMachineTasks',
+    'success',
+    ['machine', 'debug'],
+    () => import('../../commands/machine/register.js')
+  ),
+  privateStep(
+    'convergeAfterSetup',
+    'success',
+    ['machine', 'converge', 'debug', 'datastore', 'routerRefreshDue'],
+    () => import('../../commands/machine/register.js')
+  ),
+  privateStep(
+    'settleSetupFailed',
+    'failure',
+    ['machine', 'datastore', 'routerRefreshDue'],
+    () => import('../../commands/machine/register.js')
+  ),
   {
     // `machine provision`: record the infra source once the setup job has run.
     name: 'setMachineInfra',
@@ -70,14 +75,14 @@ export const MACHINE_CONVERSION_STEPS: StepDefinition[] = [
   privateStep(
     'settleConverge',
     'success',
-    [],
+    ['json'],
     () => import('../../commands/machine/converge.js'),
     true
   ),
   privateStep(
     'settleConvergeFailed',
     'failure',
-    [],
+    ['json'],
     () => import('../../commands/machine/converge.js'),
     true
   ),
@@ -111,7 +116,7 @@ export const MACHINE_CONVERSION_STEPS: StepDefinition[] = [
   privateStep(
     'renderRestartServices',
     'success',
-    [],
+    ['json'],
     () => import('../../commands/machine/restart-services.js'),
     true
   ),

@@ -23,8 +23,8 @@ import {
 import { describe, expect, it } from 'vitest';
 import type { BackupStrategyConfig, BackupStrategyDestination } from '../../types/index.js';
 import {
-  buildAdhocSystemdRun,
   buildBackupCommands,
+  generateAdhocServiceUnit,
   generateServiceUnit,
 } from '../backup/backup-schedule-unit-generator.js';
 
@@ -157,11 +157,10 @@ describe('scheduled backups to the chunk store', () => {
       DATASTORE,
       RENET
     );
-    const adhoc = buildAdhocSystemdRun('rediacc-backup-s-adhoc', commands);
-    expect(adhoc).toMatch(/^sudo systemd-run --unit=rediacc-backup-s-adhoc --remain-after-exit /);
-    expect(adhoc).toContain(
-      '-p Nice=10 -p IOSchedulingClass=best-effort -p IOSchedulingPriority=7'
-    );
+    const adhoc = generateAdhocServiceUnit('s', commands, 8);
+    expect(adhoc).toContain('Type=oneshot');
+    expect(adhoc).toContain('\nNice=10\nIOSchedulingClass=best-effort\nIOSchedulingPriority=7\n');
+    expect(adhoc).toContain('\nTimeoutStartSec=infinity\n');
     expect(adhoc).toContain('--bwlimit 12500000 --parallelism 2');
   });
 
@@ -172,9 +171,7 @@ describe('scheduled backups to the chunk store', () => {
       '--parallelism 2 --expected-interval 3600s --read-bwlimit 50000000'
     );
     const { commands } = buildBackupCommands(s, [hosted()], DATASTORE, RENET);
-    expect(buildAdhocSystemdRun('rediacc-backup-s-adhoc', commands)).toContain(
-      '--read-bwlimit 50000000'
-    );
+    expect(generateAdhocServiceUnit('s', commands, 8)).toContain('--read-bwlimit 50000000');
   });
 
   it('keeps a read cap of 0 as --read-bwlimit 0 (unlimited), never dropping it to the verb default', () => {
@@ -318,12 +315,19 @@ describe('the CPU ceiling reaches the scheduled unit and the ad-hoc run', () => 
     expect(() => unit(101, 8)).toThrow();
   });
 
-  it('puts the quota on the ad-hoc systemd-run, resolved by the machine shell', () => {
-    const adhoc = buildAdhocSystemdRun('u', ['renet backup snapshot']);
-    expect(adhoc).toContain('-p CPUQuota=$(( $(nproc) * 50 ))%');
-    expect(buildAdhocSystemdRun('u', ['x'], 20)).toContain('-p CPUQuota=$(( $(nproc) * 20 ))%');
-    expect(buildAdhocSystemdRun('u', ['x'], 100)).not.toContain('CPUQuota');
-    expect(() => buildAdhocSystemdRun('u', ['x'], 0)).toThrow();
+  it('puts the quota on the ad-hoc unit, from the machine core count', () => {
+    expect(generateAdhocServiceUnit('u', ['renet backup snapshot'], 8)).toContain(
+      '\nCPUQuota=400%\n'
+    );
+    expect(generateAdhocServiceUnit('u', ['x'], 8, 20)).toContain('\nCPUQuota=160%\n');
+    expect(generateAdhocServiceUnit('u', ['x'], 8, 100)).not.toContain('CPUQuota');
+    expect(() => generateAdhocServiceUnit('u', ['x'], 8, 0)).toThrow();
+  });
+
+  it('renders one ExecStart per command, in order', () => {
+    const unitText = generateAdhocServiceUnit('u', ['renet a', 'renet b'], 4);
+    expect(unitText).toContain('ExecStart=renet a\nExecStart=renet b\n');
+    expect(unitText).not.toContain('[Install]');
   });
 });
 

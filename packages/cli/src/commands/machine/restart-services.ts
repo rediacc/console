@@ -11,11 +11,12 @@ import type { Command } from 'commander';
 import { t } from '../../i18n/index.js';
 import { outputService } from '../../services/core/output.js';
 import { setExitCode } from '../../services/core/request-context.js';
-import { machineConnections } from '../../services/machine/machine-connection.js';
-import { reportDaemonUpgrade, restartDaemons } from '../../services/renet/renet-daemons.js';
-import { REMOTE_RENET_PATH } from '../../services/renet/renet-provisioner.js';
+import { pendingExitCode, runCommandJob } from '../../services/jobs/command-job.js';
+import { bindStepHandler, planStep } from '../../services/jobs/steps.js';
+import { parseDaemonUpgradeJson, reportDaemonUpgrade } from '../../services/renet/renet-daemons.js';
 import type { OutputFormat } from '../../types/index.js';
 import { getOutputFormat, handleError } from '../../utils/errors.js';
+import { renderLocalExecutionFailure } from '../../utils/local-execution-failures.js';
 import { assertMachineExists } from '../_validate.js';
 
 interface RestartServicesOptions {
@@ -23,31 +24,15 @@ interface RestartServicesOptions {
   json?: boolean;
 }
 
-async function runRestartServices(
+/** Print the report of the `daemons-restart` job, as tables or as data, and settle the exit code. */
+function renderRestartReport(
   machineName: string,
-  options: RestartServicesOptions
-): Promise<void> {
-  await assertMachineExists(machineName);
-  const format: OutputFormat = options.json ? 'json' : getOutputFormat();
+  report: ReturnType<typeof parseDaemonUpgradeJson>,
+  format: OutputFormat
+): void {
   const table = format === 'table';
-  if (table)
-    outputService.info(t('commands.machine.restartServices.starting', { machine: machineName }));
-
-  const lease = await machineConnections.acquire(machineName);
-  let report: Awaited<ReturnType<typeof restartDaemons>>;
-  try {
-    report = await restartDaemons(
-      lease.sftp,
-      machineName,
-      REMOTE_RENET_PATH,
-      options.includeDocker === true
-    );
-  } finally {
-    lease.release();
-  }
-
   if (table) {
-    reportDaemonUpgrade(report);
+    reportDaemonUpgrade({ ran: true, ...report });
     if (report.restarted.length === 0 && report.failed.length === 0 && report.stale.length === 0) {
       outputService.info(
         t('commands.machine.restartServices.nothingStale', { machine: machineName })
@@ -63,6 +48,58 @@ async function runRestartServices(
     outputService.success(
       t('commands.machine.restartServices.completed', { machine: machineName })
     );
+  }
+}
+
+bindStepHandler('renderRestartServices', ({ machine, output, params }) => {
+  const format: OutputFormat = params.json === true ? 'json' : getOutputFormat();
+  renderRestartReport(machine, parseDaemonUpgradeJson(output ?? ''), format);
+  return Promise.resolve();
+});
+
+async function runRestartServices(
+  machineName: string,
+  options: RestartServicesOptions
+): Promise<void> {
+  await assertMachineExists(machineName);
+  const format: OutputFormat = options.json ? 'json' : getOutputFormat();
+  if (format === 'table') {
+    outputService.info(t('commands.machine.restartServices.starting', { machine: machineName }));
+  }
+
+  // One job; renet rolls the units inside it and the report is its step, so a ticket handed back early prints nothing half-done.
+  const outcome = await runCommandJob(
+    'machine restart-services',
+    {
+      functionName: 'daemons-restart',
+      machineName,
+      commandKind: {
+        name: 'daemons-restart',
+        args: options.includeDocker ? { 'include-docker': true } : {},
+      },
+      captureOutput: true,
+    },
+    [planStep('renderRestartServices', { json: options.json === true })]
+  );
+  if (outcome.kind === 'pending') {
+    const code = pendingExitCode(outcome);
+    if (code !== undefined) setExitCode(code);
+    return;
+  }
+  if (!outcome.result.success) renderRestartFailure(machineName, outcome.result, format);
+}
+
+/** A failed job still prints the report it left on stdout (the failed units), then exits non-zero. */
+function renderRestartFailure(
+  machineName: string,
+  result: Parameters<typeof renderLocalExecutionFailure>[0],
+  format: OutputFormat
+): void {
+  try {
+    renderRestartReport(machineName, parseDaemonUpgradeJson(result.stdout ?? ''), format);
+    setExitCode(result.exitCode && result.exitCode > 0 ? result.exitCode : 1);
+  } catch {
+    renderLocalExecutionFailure(result, `Restarting the renet daemons on '${machineName}' failed`);
   }
 }
 

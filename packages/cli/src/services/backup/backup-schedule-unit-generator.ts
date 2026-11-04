@@ -321,19 +321,31 @@ function cpuQuotaDirective(strategy: BackupStrategyConfig, cpuCount: number | un
 }
 
 /**
- * The `systemd-run` line `backup run` uses when a strategy has no deployed unit: the strategy's commands (which carry its cap and parallelism) inside a transient unit at the same low priority a scheduled unit gets.
+ * The transient service `backup run` starts for a strategy with no deployed unit (PLAN-detached-jobs section 21): the
+ * strategy's commands (which carry its cap and parallelism) as sequential `ExecStart=` lines of a oneshot unit at the
+ * same low priority a scheduled unit gets. It is written to the machine first so the backup-unit job can start it by
+ * name, which a `systemd-run` line could not be. The core count comes from the machine (`resolveMachineCpuCount`),
+ * as for a scheduled unit; 100 asks for no ceiling and writes no directive.
  */
-export function buildAdhocSystemdRun(
-  unit: string,
+export function generateAdhocServiceUnit(
+  strategyName: string,
   commands: string[],
+  cpuCount: number,
   cpuLimit: number = DEFAULT_CPU_LIMIT_PERCENT
 ): string {
-  // The core count is resolved by the machine's own shell when the line runs (`$(nproc)`), so the quota is right for whichever machine executes it, with no extra round trip. 100 asks for no ceiling and writes no property.
-  const limit = parseCpuLimitPercent(cpuLimit);
-  const cpuProp = limit >= 100 ? '' : ` -p CPUQuota=$(( $(nproc) * ${limit} ))%`;
-  const props = LOW_PRIORITY_PROPERTIES.map((p) => `-p ${p}`).join(' ') + cpuProp;
-  const fullCmd = commands.join(' && ');
-  return `sudo systemd-run --unit=${unit} --remain-after-exit ${props} /bin/bash -c '${fullCmd.replaceAll("'", "'\\''")}'`;
+  const quota = cpuQuotaValue(parseCpuLimitPercent(cpuLimit), cpuCount);
+  const quotaLine = quota === undefined ? '' : `CPUQuota=${quota}\n`;
+  return `[Unit]
+Description=Rediacc Ad-hoc Backup (${strategyName})
+After=network-online.target
+
+[Service]
+Type=oneshot
+${LOW_PRIORITY_DIRECTIVES}
+${quotaLine}TimeoutStartSec=infinity
+TimeoutStopSec=90
+${commands.map((cmd) => `ExecStart=${cmd}`).join('\n')}
+`;
 }
 
 interface ServiceUnitBuild {

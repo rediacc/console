@@ -67,6 +67,7 @@ import {
 } from './job-remote.js';
 import {
   buildRenetEnv,
+  COMMAND_KIND_TIMEOUT_MS,
   detectEnvironment,
   resolveEnvSecrets,
   resolveRenetTimeoutMs,
@@ -490,7 +491,7 @@ async function buildLaunch(
       envSecrets,
       kubeconfig,
     }),
-    timeoutMs: resolveRenetTimeoutMs(options.functionName, options.timeout),
+    timeoutMs: launchTimeoutMs(options),
     debug: options.debug,
     requestId,
     ...(window === 0 ? {} : { attach: attachFlagValue(window) }),
@@ -500,7 +501,23 @@ async function buildLaunch(
       config: { name: safeConfigName() },
     }),
     ...(steps.length > 0 ? { steps: JSON.stringify(steps) } : {}),
+    ...(options.commandKind
+      ? {
+          command: {
+            name: options.commandKind.name,
+            ...(options.commandKind.args ? { args: JSON.stringify(options.commandKind.args) } : {}),
+          },
+        }
+      : {}),
   });
+}
+
+/** The job ceiling: the command kind's class (renet-command.ts), else the function's. */
+function launchTimeoutMs(options: ExecuteOptions): number | undefined {
+  if (options.timeout) return options.timeout;
+  return options.commandKind
+    ? COMMAND_KIND_TIMEOUT_MS[options.commandKind.name]
+    : resolveRenetTimeoutMs(options.functionName, options.timeout);
 }
 
 function safeConfigName(): string | undefined {

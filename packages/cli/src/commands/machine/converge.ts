@@ -13,7 +13,9 @@ import { t } from '../../i18n/index.js';
 import type { SFTPClient } from '../../remote/sftp/index.js';
 import { outputService } from '../../services/core/output.js';
 import { setExitCode } from '../../services/core/request-context.js';
-import { type ExecuteResult, getExecutor } from '../../services/executor/executor-factory.js';
+import { getExecutor } from '../../services/executor/executor-factory.js';
+import { pendingExitCode, runCommandJob } from '../../services/jobs/command-job.js';
+import { bindStepHandler, planStep } from '../../services/jobs/steps.js';
 import { renetProvisioner } from '../../services/renet/renet-provisioner.js';
 import {
   buildConvergeParams,
@@ -43,8 +45,19 @@ function startingKey(dryRun: boolean | undefined): string {
   return dryRun ? 'commands.machine.converge.startingDryRun' : 'commands.machine.converge.starting';
 }
 
+/** The slice of a finished pass the settle reads: the job's exit and the report it printed. */
+interface ConvergeOutcome {
+  success: boolean;
+  exitCode: number;
+  stdout?: string;
+}
+
 /** Print the report and settle the exit code; true when the pass succeeded. */
-function settleConverge(machineName: string, result: ExecuteResult, format: OutputFormat): boolean {
+function settleConvergeOutcome(
+  machineName: string,
+  result: ConvergeOutcome,
+  format: OutputFormat
+): boolean {
   const report = parseConvergeReport(result.stdout);
   if (report && format === 'table') renderConvergeReport(report, machineName);
   else if (report) outputService.print(report, format);
@@ -59,22 +72,52 @@ function settleConverge(machineName: string, result: ExecuteResult, format: Outp
   return false;
 }
 
+/** The format a step prints in: `--json` rode the plan as a param, else the observer's own `-o`. */
+function stepFormat(params: Record<string, unknown>): OutputFormat {
+  return params.json === true ? 'json' : getOutputFormat();
+}
+
+bindStepHandler('settleConverge', ({ machine, output, params }) => {
+  const format = stepFormat(params);
+  const ok = settleConvergeOutcome(machine, { success: true, exitCode: 0, stdout: output }, format);
+  if (ok && format === 'table') {
+    outputService.success(t('commands.machine.converge.completed', { machine }));
+  }
+  return Promise.resolve();
+});
+
+bindStepHandler('settleConvergeFailed', ({ machine, output, exitCode, params }) => {
+  settleConvergeOutcome(
+    machine,
+    { success: false, exitCode: exitCode ?? 1, stdout: output },
+    stepFormat(params)
+  );
+  return Promise.resolve();
+});
+
 async function runConverge(machineName: string, options: ConvergeCommandOptions): Promise<void> {
   await assertMachineExists(machineName);
   const format: OutputFormat = options.json ? 'json' : getOutputFormat();
-  const table = format === 'table';
-  if (table) outputService.info(t(startingKey(options.dryRun), { machine: machineName }));
+  if (format === 'table') {
+    outputService.info(t(startingKey(options.dryRun), { machine: machineName }));
+  }
 
-  const result = await getExecutor().execute({
-    functionName: CONVERGE_FUNCTION,
-    machineName,
-    params: buildConvergeParams(options),
-    debug: options.debug,
-    captureOutput: true,
-  });
-
-  if (settleConverge(machineName, result, format) && table) {
-    outputService.success(t('commands.machine.converge.completed', { machine: machineName }));
+  // One job; the report and the exit code are its steps, so a ticket handed back early settles nothing half-done.
+  const json = options.json === true;
+  const outcome = await runCommandJob(
+    'machine converge',
+    {
+      functionName: CONVERGE_FUNCTION,
+      machineName,
+      params: buildConvergeParams(options),
+      debug: options.debug,
+      captureOutput: true,
+    },
+    [planStep('settleConverge', { json }), planStep('settleConvergeFailed', { json })]
+  );
+  if (outcome.kind === 'pending') {
+    const code = pendingExitCode(outcome);
+    if (code !== undefined) setExitCode(code);
   }
 }
 

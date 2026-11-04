@@ -97,4 +97,11 @@ export const CONVERTED: ReadonlySet<string> = new Set<string>([
   'repo pull',
   'repo push',
   'repo up',
+  // J17: backup run is one backup-unit job; its ad-hoc form stages a oneshot unit first.
+  'backup run',
+  // J18: one job each; the report, the converge pass and the failure tails are steps.
+  'machine converge',
+  'machine gpu list',
+  'machine restart-services',
+  'machine setup',
 ]);

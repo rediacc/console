@@ -4,18 +4,19 @@ import { type Command, Option } from 'commander';
 import { t } from '../../i18n/index.js';
 import { configService } from '../../services/config/config-resources.js';
 import { outputService } from '../../services/core/output.js';
-import { setExitCode, writeStdout } from '../../services/core/request-context.js';
-import { createQuietStderrPump } from '../../services/executor/output-lines.js';
+import { setExitCode } from '../../services/core/request-context.js';
+import { pendingExitCode, runCommandJob } from '../../services/jobs/command-job.js';
+import { bindStepHandler, planStep } from '../../services/jobs/steps.js';
 import { machineConnections } from '../../services/machine/machine-connection.js';
 import { guardMachineRemoval } from '../../services/machine/machine-remove-guard.js';
 import { pushInfraConfig } from '../../services/provision/infra-provision.js';
 import { acquireRemoteRenet, readSSHKey } from '../../services/renet/renet-execution.js';
+import { REMOTE_RENET_PATH } from '../../services/renet/renet-provisioner.js';
 import { deployAllRepoKeys } from '../../services/repo/repo-key-deployment.js';
 import type { MachineConfig, OutputFormat } from '../../types/index.js';
 import { assertResourceName, MachineConfigSchema, parseConfig } from '../../utils/config-schema.js';
 import { handleError } from '../../utils/errors.js';
 import { classifyKeyChange, scanHostKeys, shortFingerprint } from '../../utils/host-keys.js';
-import { shellQuote } from '../../utils/shell-quote.js';
 import { convergeAfterSetup } from './converge.js';
 
 /** Exported for tests: re-deploy repo keys, re-apply access keys, and push infra after a successful setup. */
@@ -282,6 +283,60 @@ function registerScanKeys(machine: Command): void {
     });
 }
 
+/** The converge session of a setup that ran as a job: its own lease, since the bootstrap one is long gone. */
+async function withSetupSession(
+  machine: string,
+  params: { datastore?: string; routerRefreshDue: boolean },
+  run: (session: Parameters<typeof convergeAfterSetup>[1]) => Promise<void>
+): Promise<void> {
+  const lease = await machineConnections.acquire(machine);
+  try {
+    await run({
+      sftp: lease.sftp,
+      remoteRenetPath: REMOTE_RENET_PATH,
+      datastore: params.datastore,
+      routerRefreshDue: params.routerRefreshDue,
+    });
+  } finally {
+    lease.release();
+  }
+}
+
+function setupSessionParams(params: Record<string, unknown>): {
+  datastore?: string;
+  routerRefreshDue: boolean;
+} {
+  return {
+    datastore: typeof params.datastore === 'string' ? params.datastore : undefined,
+    routerRefreshDue: params.routerRefreshDue === true,
+  };
+}
+
+bindStepHandler('postSetupMachineTasks', ({ machine, params }) => {
+  outputService.success(t('commands.machine.setup.completed', { machine }));
+  return postSetupMachineTasks(machine, params.debug === true);
+});
+
+bindStepHandler('convergeAfterSetup', ({ machine, params }) =>
+  withSetupSession(machine, setupSessionParams(params), (session) =>
+    convergeAfterSetup(machine, session, {
+      converge: params.converge !== false,
+      debug: params.debug === true,
+    })
+  )
+);
+
+bindStepHandler('settleSetupFailed', async ({ machine, params, exitCode }) => {
+  // No converge on a failed setup, but the router still follows the installed binary.
+  await withSetupSession(machine, setupSessionParams(params), (session) =>
+    convergeAfterSetup(machine, session, { converge: false })
+  );
+  outputService.error(
+    t('commands.machine.setup.failed', { machine, error: `exit code ${exitCode ?? 1}` })
+  );
+  setExitCode(exitCode !== undefined && exitCode > 0 ? exitCode : 1);
+});
+
 /** `machine setup <name>`, install renet and prepare the machine. */
 function registerSetup(machine: Command): void {
   machine
@@ -306,8 +361,9 @@ function registerSetup(machine: Command): void {
 
         outputService.info(t('commands.machine.setup.starting', { machine: name }));
 
-        // The router refresh waits for the converge pass after setup (convergeAfterSetup).
-        const { remotePath: remoteRenetPath, routerRefreshDue } = await acquireRemoteRenet(
+        // The bootstrap upload stays outside the job (PLAN-detached-jobs section 14): the job is renet's own `setup`, so
+        // renet must already be on the machine. The router refresh waits for the converge pass (convergeAfterSetup).
+        const { routerRefreshDue } = await acquireRemoteRenet(
           'provision',
           localConfig,
           machineObj,
@@ -315,50 +371,42 @@ function registerSetup(machine: Command): void {
           { debug: options.debug, deferRouterRefresh: true }
         );
 
-        const lease = await machineConnections.acquireFor(machineObj, sshPrivateKey);
+        const datastoreSize =
+          options.datastoreSize === NETWORK_DEFAULTS.DATASTORE_SIZE
+            ? (localConfig.datastoreSize ?? NETWORK_DEFAULTS.DATASTORE_SIZE)
+            : options.datastoreSize;
+        const session = {
+          machine: name,
+          datastore: options.datastorePath,
+          routerRefreshDue: routerRefreshDue === true,
+        };
 
-        try {
-          const datastoreSize =
-            options.datastoreSize === NETWORK_DEFAULTS.DATASTORE_SIZE
-              ? (localConfig.datastoreSize ?? NETWORK_DEFAULTS.DATASTORE_SIZE)
-              : options.datastoreSize;
-          const cmd = `sudo ${shellQuote(remoteRenetPath)} setup --auto --datastore ${shellQuote(options.datastorePath)} --datastore-size ${shellQuote(datastoreSize)}`;
-
-          if (options.debug) {
-            outputService.info(`[setup] Running: ${cmd}`);
-          }
-
-          // Same treatment as machine-bootstrap: renet narrates setup at info level in 121+ column lines. Withhold, replay only on failure.
-          const stderrPump = createQuietStderrPump({ echoAll: options.debug });
-          const exitCode = await lease.sftp.execStreaming(cmd, {
-            onStdout: (data) => writeStdout(data),
-            onStderr: (data) => stderrPump.write(String(data)),
-          });
-          stderrPump.flush(exitCode !== 0);
-
-          const session = {
-            sftp: lease.sftp,
-            remoteRenetPath,
-            datastore: options.datastorePath,
-            routerRefreshDue: routerRefreshDue === true,
-          };
-          if (exitCode === 0) {
-            outputService.success(t('commands.machine.setup.completed', { machine: name }));
-            await postSetupMachineTasks(name, options.debug);
-            await convergeAfterSetup(name, session, {
-              converge: options.converge,
-              debug: options.debug,
-            });
-          } else {
-            // No converge on a failed setup, but the router still follows the installed binary.
-            await convergeAfterSetup(name, session, { converge: false });
-            outputService.error(
-              t('commands.machine.setup.failed', { machine: name, error: `exit code ${exitCode}` })
-            );
-            setExitCode(exitCode);
-          }
-        } finally {
-          lease.release();
+        // One `setup` job. Its tails are ticket steps: the post-setup tasks and the converge pass on success, the router
+        // refresh on failure, so a ticket handed back before setup ended never runs them early.
+        const outcome = await runCommandJob(
+          'machine setup',
+          {
+            functionName: 'setup',
+            machineName: name,
+            commandKind: {
+              name: 'setup',
+              args: { datastore: options.datastorePath, 'datastore-size': datastoreSize },
+            },
+            debug: options.debug,
+          },
+          [
+            planStep('postSetupMachineTasks', { machine: name, debug: options.debug === true }),
+            planStep('convergeAfterSetup', {
+              ...session,
+              converge: options.converge !== false,
+              debug: options.debug === true,
+            }),
+            planStep('settleSetupFailed', session),
+          ]
+        );
+        if (outcome.kind === 'pending') {
+          const code = pendingExitCode(outcome);
+          if (code !== undefined) setExitCode(code);
         }
       } catch (error) {
         handleError(error);

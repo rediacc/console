@@ -133,8 +133,8 @@ export const MACHINE_JOB_PLANS: Readonly<Record<string, JobPlan>> = {
     lock: 'machine-exclusive',
     timeout: '24h',
     box: 'J18',
-    steps: ['postSetupMachineTasks'],
-    note: 'the bootstrap upload runs before the job; the converge pass is a recorded successor',
+    steps: ['postSetupMachineTasks', 'convergeAfterSetup', 'settleSetupFailed'],
+    note: 'the bootstrap upload runs before the job; the converge pass is a recorded successor step, and a failed setup still owes the router refresh',
   },
   'machine status': {
     form: 'command-kind',

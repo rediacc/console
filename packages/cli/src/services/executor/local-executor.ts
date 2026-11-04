@@ -41,6 +41,7 @@ import {
 } from '../renet/runtime-converge.js';
 import { fetchOtlpCredentials } from '../telemetry/otlp-credentials.js';
 import { isTelemetryDisabled } from '../telemetry/telemetry.js';
+import { runCommandKindSession } from './command-kind-session.js';
 import { runJobExecution, runsOutsideJob } from './detached-execution.js';
 import { resolveExtraMachines } from './extra-machines.js';
 import { createJobOutputCollector } from './job-client.js';
@@ -440,11 +441,14 @@ class LocalExecutorService {
       repositoryCredentials,
       repositoryConfigs,
     };
-    const vault = applyVaultDirectives(
-      buildLocalVault({ ...vaultInputs, functionName: options.functionName, params }),
-      options,
-      repositoryConfigs
-    );
+    // A command kind carries no vault (section 14): renet builds its argv from `--args`.
+    const vault = options.commandKind
+      ? ''
+      : applyVaultDirectives(
+          buildLocalVault({ ...vaultInputs, functionName: options.functionName, params }),
+          options,
+          repositoryConfigs
+        );
     cliSteps.push({ name: 'config', duration_ms: Date.now() - startTime, startedAtMs: startTime });
     return { config, machine, sshPrivateKey, vault, vaultInputs };
   }
@@ -460,6 +464,9 @@ class LocalExecutorService {
     quiet: boolean,
     startTime: number
   ): Promise<ExecuteResult> {
+    if (options.commandKind) {
+      return runCommandKindSession(sftp, config, machine, sshPrivateKey, options, startTime);
+    }
     const { remoteRenetPath, renetUploaded, routerRefreshDue } = await this.provisionAndVerify(
       config,
       machine,

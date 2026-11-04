@@ -481,17 +481,23 @@ export function buildJobStartCommand(params: {
   origin?: string;
   /** The `--steps` JSON array (section 18): the client-side step plan renet keeps in the spool. */
   steps?: string;
+  /** A command kind (section 14) to run instead of a vault function, with its `--args` JSON object. */
+  command?: { name: string; args?: string };
 }): RenetLaunch {
-  const { remoteRenetPath, env, timeoutMs, debug, requestId, attach, origin, steps } = params;
+  const { remoteRenetPath, env, timeoutMs, debug, requestId, attach, origin, steps, command } =
+    params;
   const timeoutFlag = timeoutMs ? ` --timeout ${timeoutMs}ms` : '';
   const debugFlag = debug ? ' --debug' : '';
   const requestFlag = requestId ? ` --request-id ${shellQuote(requestId)}` : '';
   const attachFlag = attach ? ` --attach ${shellQuote(attach)}` : '';
   const originFlag = origin ? ` --origin ${shellQuote(origin)}` : '';
   const stepsFlag = steps ? ` --steps ${shellQuote(steps)}` : '';
+  const commandFlag = command
+    ? ` --command ${shellQuote(command.name)}${command.args ? ` --args ${shellQuote(command.args)}` : ''}`
+    : '';
   return sudoRenet(
     env,
-    `${shellQuote(remoteRenetPath)} job start --executor local --json${timeoutFlag}${debugFlag}${requestFlag}${attachFlag}${originFlag}${stepsFlag}`
+    `${shellQuote(remoteRenetPath)} job start --executor local --json${timeoutFlag}${debugFlag}${requestFlag}${attachFlag}${originFlag}${stepsFlag}${commandFlag}`
   );
 }
 

@@ -4,7 +4,7 @@
  */
 
 import { Command } from 'commander';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { calls, mockExecute, mockAcquireRemoteRenet, state } = vi.hoisted(() => ({
   calls: [] as string[],
@@ -26,6 +26,10 @@ vi.mock('../../services/core/output.js', () => ({
 vi.mock('../../services/core/request-context.js', () => ({
   setExitCode: vi.fn(),
   writeStdout: vi.fn(),
+  writeStderr: vi.fn(),
+  currentRequestContext: () => undefined,
+  DispatchExit: class extends Error {},
+  exitProcess: vi.fn(),
 }));
 vi.mock('../../services/machine/machine-remove-guard.js', () => ({ guardMachineRemoval: vi.fn() }));
 vi.mock('../../services/provision/infra-provision.js', () => ({ pushInfraConfig: vi.fn() }));
@@ -44,9 +48,9 @@ vi.mock('../../services/renet/renet-execution.js', () => ({
   acquireRemoteRenet: mockAcquireRemoteRenet,
   readSSHKey: vi.fn(),
 }));
-vi.mock('../../services/machine/machine-connection.js', () => ({
-  machineConnections: {
-    acquireFor: vi.fn().mockResolvedValue({
+vi.mock('../../services/machine/machine-connection.js', () => {
+  const lease = () =>
+    Promise.resolve({
       release: vi.fn(),
       sftp: {
         exec: vi.fn((cmd: string) => {
@@ -60,18 +64,18 @@ vi.mock('../../services/machine/machine-connection.js', () => ({
           }
           return Promise.resolve('');
         }),
-        execStreaming: vi.fn(() => {
-          calls.push('setup');
-          return Promise.resolve(0);
-        }),
+        execStreaming: vi.fn(() => Promise.resolve(0)),
       },
-    }),
-  },
-  withSharedOrPooledSftp: vi.fn(),
-}));
+    });
+  return {
+    machineConnections: { acquireFor: vi.fn(lease), acquire: vi.fn(lease) },
+    withSharedOrPooledSftp: vi.fn(),
+  };
+});
 
 import { registerConvergeCommand } from '../machine/converge.js';
 import { registerMachineRegistrationCommands } from '../machine/register.js';
+import { installJobDeps } from './job-deps.js';
 
 function program(): Command {
   const p = new Command();
@@ -109,6 +113,12 @@ function convergeStdout(summary: Record<string, number>): string {
   });
 }
 
+let restoreJobDeps: () => void;
+
+afterEach(() => {
+  restoreJobDeps();
+});
+
 beforeEach(() => {
   vi.clearAllMocks();
   calls.length = 0;
@@ -121,15 +131,18 @@ beforeEach(() => {
     drift: null,
     routerRefreshDue: true,
   });
-  mockExecute.mockImplementation(() => {
-    calls.push('converge');
+  mockExecute.mockImplementation((options: { functionName: string }) => {
+    // `machine setup` runs as a `setup` job; the converge pass is a later function call.
+    calls.push(options.functionName === 'setup' ? 'setup' : 'converge');
     return Promise.resolve({
       success: true,
       exitCode: 0,
       durationMs: 1,
-      stdout: convergeStdout({}),
+      state: 'succeeded',
+      stdout: options.functionName === 'setup' ? '' : convergeStdout({}),
     });
   });
+  restoreJobDeps = installJobDeps((options) => mockExecute(options));
 });
 
 describe('machine converge', () => {
@@ -180,13 +193,14 @@ describe('machine setup converge pass', () => {
   });
 
   it('leaves the router refresh to the executor when the pass moved a repo', async () => {
-    mockExecute.mockImplementation(() => {
-      calls.push('converge');
+    mockExecute.mockImplementation((options: { functionName: string }) => {
+      calls.push(options.functionName === 'setup' ? 'setup' : 'converge');
       return Promise.resolve({
         success: true,
         exitCode: 0,
         durationMs: 1,
-        stdout: convergeStdout({ converged: 1 }),
+        state: 'succeeded',
+        stdout: options.functionName === 'setup' ? '' : convergeStdout({ converged: 1 }),
       });
     });
 
@@ -199,7 +213,7 @@ describe('machine setup converge pass', () => {
     await program().parseAsync(['machine', 'setup', 'm1', '--no-converge'], { from: 'user' });
 
     expect(calls).toEqual(['setup', 'router']);
-    expect(mockExecute).not.toHaveBeenCalled();
+    expect(mockExecute).toHaveBeenCalledTimes(1);
   });
 
   it('REDIACC_SKIP_RUNTIME_CONVERGE=1 skips the pass the same way', async () => {
@@ -212,7 +226,11 @@ describe('machine setup converge pass', () => {
 
   it('a pass that throws still warns with the resume command and refreshes the router', async () => {
     const { outputService } = await import('../../services/core/output.js');
-    mockExecute.mockImplementation(() => {
+    mockExecute.mockImplementation((options: { functionName: string }) => {
+      if (options.functionName === 'setup') {
+        calls.push('setup');
+        return Promise.resolve({ success: true, exitCode: 0, durationMs: 1, state: 'succeeded' });
+      }
       calls.push('converge');
       return Promise.reject(new Error('ssh dropped'));
     });
