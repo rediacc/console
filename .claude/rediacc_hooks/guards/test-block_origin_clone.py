@@ -36,6 +36,7 @@ def _load(name, path):
 
 runtmp = _load("runtmp", REPO_ROOT / ".ci" / "rediacc_ci" / "runtmp.py")
 wellknown = _load("wellknown_for_origin_clone", HOOKS / "wellknown.py")
+githooks = _load("githooks_for_origin_clone", HOOKS / "git" / "githooks.py")
 
 
 def _wk(command):
@@ -49,7 +50,7 @@ def _wk(command):
         ("<ACCOUNT>", wellknown.ACCOUNT_REPO),
         ("<ELITE>", wellknown.ELITE_REPO),
         ("<TAP>", wellknown.HOMEBREW_TAP_REPO),
-        ("<MIRROR>", wellknown.GITLAB_MIRROR_HOST),
+        ("<MIRROR>", githooks.MIRROR_HOST),
     ):
         command = command.replace(token, value)
     return command

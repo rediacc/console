@@ -171,15 +171,7 @@ _git(TWIN, "push", "-q", "origin", "0914-1:refs/heads/0914-2")
 _git(TWIN, "fetch", "-q", "origin")
 TWIN_SHA = _tip(TWIN, "origin/0914-1")
 
-_WK = importlib.util.spec_from_file_location(
-    "wellknown_for_push_guard", pathlib.Path(__file__).resolve().parents[1] / "wellknown.py"
-)
-if _WK is None or _WK.loader is None:
-    raise SystemExit("%s: .claude/rediacc_hooks/wellknown.py is missing" % __file__)
-wellknown = importlib.util.module_from_spec(_WK)
-_WK.loader.exec_module(wellknown)
-
-MIRROR_HOST = wellknown.GITLAB_MIRROR_HOST
+MIRROR_HOST = "gitlab.rediacc.io"
 MIRROR_URL = "https://%s/rediacc-org/github/console.git" % MIRROR_HOST
 
 

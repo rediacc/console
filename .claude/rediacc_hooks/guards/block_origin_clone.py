@@ -19,6 +19,7 @@ A diagnosis that needs a pristine clone is the operator's `!`, which never reach
 
 import ast
 import glob
+import importlib.util
 import os
 import posixpath
 import re
@@ -32,13 +33,23 @@ CHAIN = "pre-bash"
 OWN_SUITE = True
 ORDER = 67
 
+# The mirror host is `githooks.MIRROR_HOST`, the one place it is typed; loaded BY FILE like `block_push_to_protected_branch` does.
+_GITHOOKS_SPEC = importlib.util.spec_from_file_location(
+    "rediacc_hooks._githooks_origin_clone",
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, "git", "githooks.py"),
+)
+if _GITHOOKS_SPEC is None or _GITHOOKS_SPEC.loader is None:
+    raise ImportError("block_origin_clone: git/githooks.py is missing")
+githooks = importlib.util.module_from_spec(_GITHOOKS_SPEC)
+_GITHOOKS_SPEC.loader.exec_module(githooks)
+
 # The verdict itself. With it gone every spelling of a clone goes through.
 DEFECT = ("if reason:", "if False:")
 
 REPOS = ("console", "renet", "account", "elite", "homebrew-tap")
 STATIC_ORIGINS = frozenset(
     {("github.com", "rediacc/%s" % name) for name in REPOS}
-    | {(wellknown.GITLAB_MIRROR_HOST, "rediacc-org/github/%s" % name) for name in REPOS}
+    | {(githooks.MIRROR_HOST, "rediacc-org/github/%s" % name) for name in REPOS}
 )
 HOST_ALIASES = {"ssh.github.com": "github.com", "www.github.com": "github.com"}
 LOOPBACK = frozenset(("localhost", "127.0.0.1", "::1"))
@@ -649,7 +660,7 @@ def _walk_text(cmd, world, depth):
 _GHO = wellknown.GH_ORIGIN
 _CONSOLE = wellknown.GH_REPO
 _RENET = wellknown.RENET_REPO
-_MIRROR = wellknown.GITLAB_MIRROR_HOST
+_MIRROR = githooks.MIRROR_HOST
 EDGE_CASES = [
     ("the origin", f"git clone {_GHO}/{_CONSOLE}.git /tmp/x"),
     ("a submodule", f"git clone git@github.com:{_RENET}.git /tmp/x"),

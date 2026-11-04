@@ -237,11 +237,9 @@ def _main_push_refusal(
 
 # THE GITLAB MIRROR PUSH (operator ruling 2026-10-03, worklist #1cad85a1: "Allow the agent to push it"). Step 6b of .claude/commands/pr-merge.md copies GitHub's `main` to the self-hosted mirror after each merge with `git push gitlab refs/heads/main:refs/heads/main --follow-tags`. It moves no history GitHub does not already hold, so it is admitted here and in `block_push_to_protected_branch`, which loads these helpers from this file rather than keeping a second copy.
 #
-# THE HOST IS THE REGISTRY'S (`WK_GITLAB_MIRROR_HOST` in .ci/config/well-known.env, which `check:ci-literal-sources` required once more than three files typed it) and the path is pinned here: the remote itself lives only in local `.git/config` (pr-merge.md says so), so the one thing that can say "this remote is the console mirror" is the host and path both layers compare against. Only the https spelling is admitted; an `insteadOf` rewrite that sends the push elsewhere fails the comparison, because git hands this hook the rewritten location.
+# THE URL IS PINNED HERE, not read from .ci/config/well-known.env: this file runs as a git hook in trees that may carry no `.ci`, so it reads nothing outside `.claude`, and the guard and the harnesses take the host from `MIRROR_HOST` below rather than typing it. The remote itself lives only in local `.git/config` (pr-merge.md says so), so the one thing that can say "this remote is the console mirror" is a literal both layers compare against. Only the https spelling is admitted; an `insteadOf` rewrite that sends the push elsewhere fails the comparison, because git hands this hook the rewritten location.
 MIRROR_REMOTE = "gitlab"
-MIRROR_HOST = _load(
-    "githook_well_known", CONSOLE_ROOT / ".ci" / "rediacc_ci" / "well_known.py"
-).GITLAB_MIRROR_HOST
+MIRROR_HOST = "gitlab.rediacc.io"
 MIRROR_PATH = "/rediacc-org/github/console.git"
 
 

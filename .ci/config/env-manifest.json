@@ -888,7 +888,6 @@
       "WK_GH_API_BASE",
       "WK_GH_ORIGIN",
       "WK_GH_REPO",
-      "WK_GITLAB_MIRROR_HOST",
       "WK_GO_DL_BASE",
       "WK_HOMEBREW_TAP",
       "WK_HOMEBREW_TAP_REPO",

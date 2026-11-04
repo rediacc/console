@@ -27,7 +27,6 @@ export const WK_ACCOUNT_REPO = 'rediacc/account';
 export const WK_ELITE_REPO = 'rediacc/elite';
 export const WK_HOMEBREW_TAP_REPO = 'rediacc/homebrew-tap';
 export const WK_HOMEBREW_TAP = 'rediacc/tap';
-export const WK_GITLAB_MIRROR_HOST = 'gitlab.rediacc.io';
 export const WK_IMAGE_REGISTRY = 'ghcr.io/rediacc';
 export const WK_WEB_IMAGE_REPO = 'rediacc/web';
 export const WK_DEVBOX_UID_IMAGE_REPO = 'rediacc/devbox';
