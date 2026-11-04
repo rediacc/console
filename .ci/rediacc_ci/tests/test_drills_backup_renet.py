@@ -5,8 +5,13 @@ The VM keeps a repository image per guid as a digest, mutates it on the planted 
 
 from __future__ import annotations
 
+import base64
 import json
+import os
+import pathlib
 import re
+import subprocess
+import tempfile
 import types
 import typing
 
@@ -15,9 +20,6 @@ import pytest
 from rediacc_ci.drills import backup, backup_renet, lib
 from rediacc_ci.drills import backup_roundtrip as rt
 from rediacc_ci.well_known import ACCOUNT_DEV_PORT
-
-if typing.TYPE_CHECKING:
-    import pathlib
 
 CELL = backup.CELL_BYTES
 
@@ -254,3 +256,162 @@ def test_setup_renet_wires_the_legs_when_the_worker_answers(
     monkeypatch.setattr(host.renet_legs, "leg_b", lambda: called.append("b"))
     host.leg_b_seed_upload()
     assert called == ["b"]
+
+
+# --------------------------------------------------------------------------- legs v, w and x (box T4 of PLAN-backup-critical-tier): the CLI-free builders; the live legs need --renet --vm <worker>
+
+
+def _run_functions(text: str, calls: str, docker_log: str) -> subprocess.CompletedProcess[str]:
+    """Source the Rediaccfile with `docker` stubbed to append its arguments to `docker_log`, then run `calls`."""
+    with tempfile.TemporaryDirectory() as work:
+        runner = (
+            "source /dev/stdin <<'EOF'\n%sEOF\ndocker() { echo \"$*\" >> %s; }\n"
+            'sleep() { echo "sleep $*" >> %s; }\n%s\n' % (text, docker_log, docker_log, calls)
+        )
+        env = {**os.environ, "REDIACC_WORKING_DIR": work}
+        return subprocess.run(
+            ["bash", "-c", runner], env=env, capture_output=True, text=True, check=False
+        )
+
+
+def test_hook_rediaccfile_is_valid_bash_and_orders_the_hooks() -> None:
+    for hang in (False, True):
+        proc = subprocess.run(
+            ["bash", "-n"],
+            input=backup_renet.hook_rediaccfile(hang),
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        assert proc.returncode == 0, proc.stderr
+    with tempfile.TemporaryDirectory() as work:
+        log = work + "/docker.log"
+        proc = _run_functions(
+            backup_renet.hook_rediaccfile(False), "backup_prepare; backup_finish", log
+        )
+        assert proc.returncode == 0, proc.stderr
+        lines = pathlib.Path(log).read_text().splitlines()
+    assert lines == [
+        "exec db touch /data/frozen",
+        "exec db rm -f /data/frozen",
+    ]
+
+
+def test_hang_variant_sleeps_inside_prepare_only() -> None:
+    with tempfile.TemporaryDirectory() as work:
+        log = work + "/docker.log"
+        _run_functions(backup_renet.hook_rediaccfile(True), "backup_prepare", log)
+        prepare = pathlib.Path(log).read_text().splitlines()
+        log2 = work + "/docker2.log"
+        _run_functions(backup_renet.hook_rediaccfile(True), "backup_finish", log2)
+        finish = pathlib.Path(log2).read_text().splitlines()
+    assert "sleep %d" % backup_renet.HOOK_HANG_SECONDS in prepare
+    assert not any(line.startswith("sleep") for line in finish)
+    plain = backup_renet.hook_rediaccfile(False)
+    assert "sleep" not in plain
+
+
+def test_hookless_variant_has_no_hook_functions() -> None:
+    text = backup_renet.hook_rediaccfile(False, hooks=False)
+    assert "backup_prepare" not in text
+    assert "backup_finish" not in text
+    assert "up()" in text
+    assert "down()" in text
+
+
+def test_compose_stops_writing_under_the_frozen_file() -> None:
+    text = backup_renet.hook_compose()
+    assert "container_name: %s" % backup_renet.HOOK_CONTAINER in text
+    assert "[ -f /data/frozen ] ||" in text
+
+
+def test_install_command_writes_both_files_and_a_writable_log() -> None:
+    cmd = backup_renet.install_hook_files_command(
+        "/mnt/rediacc", "g1", backup_renet.hook_rediaccfile(False), backup_renet.hook_compose()
+    )
+    blobs = re.findall(r"printf %s ([A-Za-z0-9+/=]+) \| base64 -d", cmd)
+    assert [base64.b64decode(b).decode() for b in blobs] == [
+        backup_renet.hook_rediaccfile(False),
+        backup_renet.hook_compose(),
+    ]
+    assert "/mnt/rediacc/mounts/g1/Rediaccfile" in cmd
+    assert "chmod 666 /mnt/rediacc/mounts/g1/%s" % backup_renet.HOOK_LOG in cmd
+
+
+def test_hook_log_events_and_count_of() -> None:
+    assert backup_renet.hook_log_events("prepare 1\nfinish 2\n") == ["prepare", "finish"]
+    assert backup_renet.hook_log_events("") == []
+    assert backup_renet.hook_log_events("finish 2\nprepare 1\n") != ["prepare", "finish"]
+    assert backup_renet.count_of("  42 /data/rows\n") == 42
+    assert backup_renet.count_of("") == -1
+    assert backup_renet.count_of("wc: no such file") == -1
+
+
+def test_deadman_bound_follows_the_documented_formula() -> None:
+    assert backup_renet.HOOK_DEADMAN_SECONDS == 2 * backup_renet.HOOK_TIMEOUT_SECONDS + 30
+    assert backup_renet.HOOK_WAIT_SECONDS > backup_renet.HOOK_DEADMAN_SECONDS
+
+
+def test_marker_wait_and_kill_commands() -> None:
+    present = backup_renet.wait_marker_command("g1", True, 60)
+    gone = backup_renet.wait_marker_command("g1", False, 60)
+    assert "[ -e /run/rediacc/backup-hook/g1 ]" in present
+    assert "[ ! -e /run/rediacc/backup-hook/g1 ]" in gone
+    assert "kill -9" in backup_renet.kill_pid_command()
+    start = backup_renet.killed_hook_command("/mnt/rediacc", "g1", "65536")
+    assert "--hook-timeout %ds" % backup_renet.HOOK_TIMEOUT_SECONDS in start
+    assert "nohup renet backup snapshot" in start
+
+
+def test_cleanup_pattern_cannot_match_its_own_shell() -> None:
+    cmd = backup_renet.hook_cleanup_command("/mnt/rediacc", "g1")
+    assert '"[s]leep %d"' % backup_renet.HOOK_HANG_SECONDS in cmd
+    assert 'pkill -f "sleep %d"' % backup_renet.HOOK_HANG_SECONDS not in cmd
+
+
+def test_docker_exec_uses_the_repository_socket() -> None:
+    cmd = backup_renet.docker_exec_command("2881", "exec db true")
+    assert "DOCKER_HOST=unix://" in cmd
+    assert "net-2881/docker-2881.sock" in cmd
+
+
+def test_sample_found_missing_control_and_failures() -> None:
+    assert backup_renet.sample_found_missing({"chunksSampleMissing": 1})
+    assert not backup_renet.sample_found_missing({"chunksSampleMissing": 0})
+    assert not backup_renet.sample_found_missing({})
+    assert not backup_renet.sample_found_missing({"chunksSampleMissing": True})
+    assert not backup_renet.sample_found_missing({"chunksSampleMissing": "1"})
+
+
+def test_target_run_names_the_tier_cadence() -> None:
+    cmd = backup_renet.snapshot_target_command("/mnt/rediacc", "g1", "65536")
+    assert "--target %s" % backup_renet.HEAL_TARGET in cmd
+
+
+def test_reflink_commands_copy_cheaply_and_name_each_run() -> None:
+    cmd = backup_renet.reflink_command("/mnt/rediacc", "g1", 2)
+    assert (
+        "cp --reflink=always /mnt/rediacc/repositories/g1 /mnt/rediacc/repositories/g1%s2"
+        % backup_renet.REFLINK_SUFFIX
+        in cmd
+    )
+    assert backup_renet.reflink_digest_command("/mnt/rediacc", "g1", 3).endswith(
+        "g1%s3" % backup_renet.REFLINK_SUFFIX
+    )
+    assert "rm -f" in backup_renet.reflink_remove_command("/mnt/rediacc", "g1")
+
+
+def test_chosen_run_is_inside_the_chain_and_not_the_last() -> None:
+    assert 1 <= backup_renet.RUN_RESTORED < backup_renet.RUN_CHAIN
+
+
+def test_legs_are_known_opt_in_and_dispatched() -> None:
+    for leg in ("v", "w", "x"):
+        assert leg in backup.KNOWN_LEGS
+        assert leg not in backup.DEFAULT_LEGS.split(",")
+    assert backup.KNOWN_LEGS[-3:] == ["v", "w", "x"]
+    assert "t,u,v,w,x]" in backup.USAGE
+    for name in ("leg_v_hook_order", "leg_w_sample_heals", "leg_x_restore_at_run"):
+        assert hasattr(backup.Backup, name)
+    for name in ("leg_v", "leg_w", "leg_x"):
+        assert hasattr(backup_renet.RenetLegs, name)

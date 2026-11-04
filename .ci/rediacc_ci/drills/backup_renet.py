@@ -17,11 +17,14 @@ NOT PROVEN HERE, said plainly: the worker must already hold a renet built from t
 
 from __future__ import annotations
 
+import base64
+import hashlib
 import json
 import uuid
 from typing import TYPE_CHECKING, Any
 
 from rediacc_ci.drills import backup_roundtrip as rt
+from rediacc_ci.well_known import RUNTIME_DIR
 
 if TYPE_CHECKING:
     import pathlib
@@ -110,6 +113,162 @@ def uploaded(doc: dict[str, Any]) -> int:
         return int(value)
     except ValueError:
         return 0
+
+
+# Leg v: the hook drill's repository (own network id, beside leg b's source), its container, and the bounds. The deadman fires 2 x timeout + 30 s after the hook arms.
+HOOK_NET_ID = "2881"
+HOOK_TIMEOUT_SECONDS = 5
+HOOK_DEADMAN_SECONDS = 2 * HOOK_TIMEOUT_SECONDS + 30
+HOOK_WAIT_SECONDS = HOOK_DEADMAN_SECONDS + 60
+HOOK_MARKER_DIR = "/run/rediacc/backup-hook"
+HOOK_LOG = "hook-log"
+HOOK_CONTAINER = "db"
+# A prepare that holds the application and then hangs past any timeout; the sleep's odd length names it for the cleanup.
+HOOK_HANG_SECONDS = 97
+# Leg w: the tier cadence, and how many runs the rolling sample may take to reach the deleted chunk (16 chunks per run).
+HEAL_TARGET = "5m"
+HEAL_MAX_RUNS = 80
+# Leg x: how many runs the chain holds, and the run restored (1-based).
+RUN_CHAIN = 3
+RUN_RESTORED = 2
+REFLINK_SUFFIX = ".drill-run"
+
+
+def hook_compose() -> str:
+    """The drill's database stand-in: a container that appends a row every 200 ms unless `/data/frozen` exists, so a held application is visible as a row count that stops."""
+    return (
+        "services:\n"
+        "  db:\n"
+        "    image: busybox:1.36\n"
+        "    container_name: %s\n"
+        "    command:\n"
+        '      - sh\n      - -c\n      - "mkdir -p /data; i=0; while true; do [ -f /data/frozen ] || echo $$i >> /data/rows; i=$$((i+1)); sleep 0.2; done"\n'
+        % HOOK_CONTAINER
+    )
+
+
+def hook_rediaccfile(hang: bool, hooks: bool = True) -> str:
+    """The drill's Rediaccfile. `hooks` False leaves `backup_prepare` and `backup_finish` out (the control: a run without them is crash-consistent). `hang` makes `backup_prepare` hold the application and then sleep past its timeout, the state a SIGKILLed renet leaves behind."""
+    text = "#!/bin/bash\nup() { renet compose -- up -d; }\ndown() { renet compose -- down; }\n"
+    if not hooks:
+        return text
+    hang_line = "  sleep %d\n" % HOOK_HANG_SECONDS if hang else ""
+    return (
+        text
+        + "backup_prepare() {\n"
+        + '  echo "prepare $(date +%%s%%N)" >> "$REDIACC_WORKING_DIR/%s"\n' % HOOK_LOG
+        + "  docker exec %s touch /data/frozen\n" % HOOK_CONTAINER
+        + hang_line
+        + "}\n"
+        + "backup_finish() {\n"
+        + "  docker exec %s rm -f /data/frozen\n" % HOOK_CONTAINER
+        + '  echo "finish $(date +%%s%%N)" >> "$REDIACC_WORKING_DIR/%s"\n' % HOOK_LOG
+        + "}\n"
+    )
+
+
+def install_hook_files_command(datastore: str, guid: str, rediaccfile: str, compose: str) -> str:
+    """Root on the worker: the Rediaccfile and compose file written into the repository's mount through base64, and a world-writable hook log (the hook runs as the repository's own user, not root)."""
+    rf = base64.b64encode(rediaccfile.encode()).decode()
+    dc = base64.b64encode(compose.encode()).decode()
+    mount = "%s/mounts/%s" % (datastore, guid)
+    return (
+        "sudo -n sh -c 'printf %%s %(rf)s | base64 -d > %(m)s/Rediaccfile && "
+        "printf %%s %(dc)s | base64 -d > %(m)s/docker-compose.yml && chmod 644 %(m)s/Rediaccfile %(m)s/docker-compose.yml && "
+        ": > %(m)s/%(log)s && chmod 666 %(m)s/%(log)s'"
+        % {"rf": rf, "dc": dc, "m": mount, "log": HOOK_LOG}
+    )
+
+
+def docker_exec_command(network_id: str, args: str) -> str:
+    """Root on the worker: `docker <args>` against the repository's own daemon socket."""
+    sock = "%s/net-%s/docker-%s.sock" % (RUNTIME_DIR, network_id, network_id)
+    return "sudo -n env DOCKER_HOST=unix://%s docker %s" % (sock, args)
+
+
+def hook_log_command(datastore: str, guid: str) -> str:
+    return "sudo -n cat %s/mounts/%s/%s" % (datastore, guid, HOOK_LOG)
+
+
+def hook_log_events(text: str) -> list[str]:
+    """The event words of the hook log (`prepare`, `finish`), in the order written."""
+    return [line.split()[0] for line in text.splitlines() if line.split()]
+
+
+def killed_hook_command(datastore: str, guid: str, cell_bytes: str) -> str:
+    """Root on the worker: a hot snapshot started in the background with a short hook timeout; its pid is left in a file so the drill can SIGKILL it once the hold marker stands."""
+    return (
+        "sudo -n sh -c 'nohup renet backup snapshot --datastore %s --repo %s --cell-bytes %s "
+        "--hook-timeout %ds > /tmp/hook-kill.out 2>&1 & echo $! > /tmp/hook-kill.pid'"
+        % (datastore, guid, cell_bytes, HOOK_TIMEOUT_SECONDS)
+    )
+
+
+def wait_marker_command(guid: str, present: bool, seconds: int) -> str:
+    """Root on the worker: poll up to `seconds` for the hold marker to appear (`present`) or to be gone, exit 0 when it does."""
+    test = "-e" if present else "! -e"
+    return (
+        "sudo -n sh -c 'i=0; while [ $i -lt %d ]; do if [ %s %s/%s ]; then exit 0; fi; i=$((i+1)); sleep 1; done; exit 1'"
+        % (seconds, test, HOOK_MARKER_DIR, guid)
+    )
+
+
+def kill_pid_command() -> str:
+    return "sudo -n sh -c 'kill -9 $(cat /tmp/hook-kill.pid)'"
+
+
+def hook_cleanup_command(datastore: str, guid: str) -> str:
+    """Root on the worker: stop the repository, end any leftover hanging prepare, and remove the drill's temp files. Every step tolerates absence."""
+    return (
+        'sudo -n sh -c \'renet repository down --name %s --datastore %s; pkill -f "[s]leep %d"; '
+        "rm -f /tmp/hook-kill.pid /tmp/hook-kill.out; true'" % (guid, datastore, HOOK_HANG_SECONDS)
+    )
+
+
+def rows_command(network_id: str) -> str:
+    return docker_exec_command(network_id, "exec %s wc -l /data/rows" % HOOK_CONTAINER)
+
+
+def count_of(text: str) -> int:
+    """The leading integer of a `wc -l` line, -1 when there is none."""
+    words = text.split()
+    return int(words[0]) if words and words[0].isdigit() else -1
+
+
+def snapshot_target_command(datastore: str, guid: str, cell_bytes: str) -> str:
+    """A tier-cadence run: `--target` makes an unchanged image commit nothing and sample the store instead."""
+    return "sudo -n renet backup snapshot --datastore %s --repo %s --cell-bytes %s --target %s" % (
+        datastore,
+        guid,
+        cell_bytes,
+        HEAL_TARGET,
+    )
+
+
+def sample_found_missing(doc: dict[str, Any]) -> bool:
+    """True when a run's rolling sample found the lost chunk: the record counts a missing sampled chunk."""
+    value = doc.get("chunksSampleMissing")
+    return isinstance(value, int) and not isinstance(value, bool) and value > 0
+
+
+def reflink_command(datastore: str, guid: str, run: int) -> str:
+    """Root on the worker: a reflink copy of the (unmounted) image, the reference one run's restore is compared with."""
+    image = "%s/repositories/%s" % (datastore, guid)
+    return "sudo -n sh -c 'sync; cp --reflink=always %s %s%s%d'" % (
+        image,
+        image,
+        REFLINK_SUFFIX,
+        run,
+    )
+
+
+def reflink_digest_command(datastore: str, guid: str, run: int) -> str:
+    image = "%s/repositories/%s" % (datastore, guid)
+    return "sudo -n sha256sum %s%s%d" % (image, REFLINK_SUFFIX, run)
+
+
+def reflink_remove_command(datastore: str, guid: str) -> str:
+    return "sudo -n sh -c 'rm -f %s/repositories/%s%s*'" % (datastore, guid, REFLINK_SUFFIX)
 
 
 class RenetLegs:
@@ -458,6 +617,215 @@ class RenetLegs:
             or row.get("observedChunks") != row.get("ledgerChunksBefore")
         ]
         d.assert_equal("[]", str(drifted), "no judged lineage drifted: --check would exit 0")
+
+    # ------------------------------------------------------------------ leg v
+
+    def leg_v(self) -> None:
+        """Hook order on a real repository with a running container, and a killed renet thawed by the deadman."""
+        d, r = self.d, self.rt
+        d.step("Leg v (renet): backup_prepare and backup_finish around the freeze, and the deadman")
+        guid = str(uuid.uuid4())
+        r.created.append(guid)
+        saved_net = r.net_src
+        r.net_src = HOOK_NET_ID
+        try:
+            r.issue_license(guid, guid, "grand")
+            r.create_source(guid)
+        finally:
+            r.net_src = saved_net
+        ds, nid = r.datastore, HOOK_NET_ID
+        try:
+            r.run_vm(install_hook_files_command(ds, guid, hook_rediaccfile(False), hook_compose()))
+            r.run_vm(
+                "sudo -n renet repository up --name %s --network-id %s --datastore %s"
+                % (guid, nid, ds)
+            )
+            d.last_cmd = "docker exec db (the container runs)"
+            before = count_of(r.run_vm(rows_command(nid), must=False).stdout)
+            d.assert_not_equal("-1", str(before), "the database container is running and writing")
+
+            # Order: one prepare, then one finish, and the copy says app-quiesced.
+            doc = self.hook_snapshot(guid)
+            d.assert_equal("stored", str(doc.get("status", "")), "the hooked snapshot stores")
+            hook = doc.get("hook") if isinstance(doc.get("hook"), dict) else {}
+            d.assert_equal("ok", str(hook.get("prepare", "")), "backup_prepare ran and succeeded")
+            d.assert_equal("ok", str(hook.get("finish", "")), "backup_finish ran and succeeded")
+            d.assert_equal(
+                "app-quiesced", str(doc.get("consistency", "")), "and the copy claims app-quiesced"
+            )
+            d.last_cmd = "the hook log of the mount"
+            log = hook_log_events(r.run_vm(hook_log_command(ds, guid)).stdout)
+            d.assert_equal(
+                "prepare,finish", ",".join(log), "the hooks ran once each, prepare first"
+            )
+
+            # CONTROL: without the two functions the same repository is crash-consistent, so the claim above was the hook.
+            r.run_vm(
+                install_hook_files_command(
+                    ds, guid, hook_rediaccfile(False, hooks=False), hook_compose()
+                )
+            )
+            control = self.hook_snapshot(guid)
+            self.b.av(
+                control.get("consistency") != "app-quiesced",
+                True,
+                "CONTROL: a repository with no hook is not claimed app-quiesced",
+            )
+
+            # The deadman: prepare holds the application, renet is SIGKILLed, and the timer thaws it.
+            r.run_vm(install_hook_files_command(ds, guid, hook_rediaccfile(True), hook_compose()))
+            r.run_vm(killed_hook_command(ds, guid, r.cell_bytes))
+            armed = r.run_vm(wait_marker_command(guid, True, 60), must=False)
+            d.last_cmd = "the hold marker under %s" % HOOK_MARKER_DIR
+            d.assert_equal(
+                "0", str(armed.returncode), "the run held the application (marker stands)"
+            )
+            r.run_vm(kill_pid_command())
+            held = r.run_vm(
+                docker_exec_command(nid, "exec %s test -f /data/frozen" % HOOK_CONTAINER),
+                must=False,
+            )
+            d.last_cmd = "docker exec db test -f /data/frozen"
+            d.assert_equal(
+                "0",
+                str(held.returncode),
+                "CONTROL: right after the kill the application is still held",
+            )
+            frozen_rows = count_of(r.run_vm(rows_command(nid), must=False).stdout)
+            thawed = r.run_vm(wait_marker_command(guid, False, HOOK_WAIT_SECONDS), must=False)
+            d.last_cmd = "the hold marker after the deadman delay (%d s)" % HOOK_DEADMAN_SECONDS
+            d.assert_equal(
+                "0", str(thawed.returncode), "the deadman ended the hold within its bound"
+            )
+            free = r.run_vm(
+                docker_exec_command(nid, "exec %s test ! -f /data/frozen" % HOOK_CONTAINER),
+                must=False,
+            )
+            d.assert_equal("0", str(free.returncode), "and the application is thawed")
+            after = count_of(r.run_vm(rows_command(nid), must=False).stdout)
+            self.b.av(after > frozen_rows >= 0, True, "and its writes resumed")
+            log = hook_log_events(r.run_vm(hook_log_command(ds, guid)).stdout)
+            d.assert_equal(
+                "finish", log[-1] if log else "", "backup_finish ran last, from the timer"
+            )
+        finally:
+            r.run_vm(hook_cleanup_command(ds, guid), must=False)
+
+    def hook_snapshot(self, guid: str) -> dict[str, Any]:
+        r = self.rt
+        return r._json_result(
+            r.run_vm(
+                "sudo -n renet backup snapshot --datastore %s --repo %s --cell-bytes %s --hook-timeout %ds"
+                % (r.datastore, guid, r.cell_bytes, HOOK_TIMEOUT_SECONDS),
+                must=False,
+            )
+        )
+
+    # ------------------------------------------------------------------ leg w
+
+    def leg_w(self) -> None:
+        """Tier-cadence runs over an idle repository: a chunk deleted from the store is found by the rolling sample and put back."""
+        d, r = self.d, self.rt
+        d.step("Leg w (renet): a chunk lost from the store is healed by the rolling sample")
+        self.b.release_probe_leases()
+        token = self.b.mint_restore_session() and self.b.restore_session_token
+        digest = self.b.a_seed_digest(token) if token else ""
+        d.last_cmd = "read a chunk hash of the seed manifest"
+        d.assert_not_equal("", digest, "the seed snapshot names a chunk")
+        url = self.b.chunk_url(self.src, digest)
+        # An image no cell of which changed since the last commit, so a target run is idle.
+        first = r._json_result(
+            r.run_vm(snapshot_target_command(r.datastore, self.src, r.cell_bytes), must=False)
+        )
+        d.last_cmd = "renet backup snapshot --target (idle)"
+        d.assert_equal("unchanged", str(first.get("status", "")), "an idle run commits nothing")
+        self.b.av(int(first.get("chunksSampled") or 0) > 0, True, "and samples chunks of the store")
+
+        code, _ = self.b.s3_get(url)
+        d.assert_equal("200", str(code), "the chunk is in the store before the loss")
+        d.assert_equal("204", self.b.s3_delete(url), "the chunk is deleted from the store")
+        gone, _ = self.b.s3_get(url)
+        d.assert_equal("404", str(gone), "and the store no longer holds it")
+
+        found: dict[str, Any] = {}
+        idle_runs = 0
+        for _ in range(HEAL_MAX_RUNS):
+            doc = r._json_result(
+                r.run_vm(snapshot_target_command(r.datastore, self.src, r.cell_bytes), must=False)
+            )
+            if sample_found_missing(doc):
+                found = doc
+                break
+            # CONTROL, each run before the find: nothing uploaded, nothing committed.
+            self.b.av(
+                [str(doc.get("status", "")), uploaded(doc)],
+                ["unchanged", 0],
+                "run %d before the find is idle and uploads nothing" % (idle_runs + 1),
+            )
+            idle_runs += 1
+        d.last_cmd = "renet backup snapshot --target x%d" % (idle_runs + 1)
+        self.b.av(
+            bool(found),
+            True,
+            "the rolling sample reached the lost chunk within %d runs" % HEAL_MAX_RUNS,
+        )
+        d.assert_equal(
+            "stored", str(found.get("status", "")), "the finding run stores a full snapshot"
+        )
+        self.b.av(uploaded(found) >= int(r.cell_bytes), True, "and uploads the missing chunk")
+        healed, body = self.b.s3_get(url)
+        d.assert_equal("200", str(healed), "the chunk is back in the store")
+        d.assert_equal(
+            hashlib.sha256(body).hexdigest(),
+            digest,
+            "and its bytes hash to the name it was lost under",
+        )
+
+    # ------------------------------------------------------------------ leg x
+
+    def leg_x(self) -> None:
+        """A restore at a chosen run of a chain equals that run's reflink, whole image."""
+        d, r = self.d, self.rt
+        d.step("Leg x (renet): a restore at a chosen run equals that run's reflink, byte for byte")
+        ds, src = r.datastore, self.src
+        snaps: list[str] = []
+        try:
+            for run in range(1, RUN_CHAIN + 1):
+                r.run_vm(mutation_command(ds, src, int(r.cell_bytes)))
+                doc = r.snapshot(src)
+                d.last_cmd = "renet backup snapshot (run %d)" % run
+                d.assert_equal("stored", str(doc.get("status", "")), "run %d stores" % run)
+                snaps.append(str(doc.get("snapshotId", "")))
+                # The reflink is cut right after the run, before the next rewrite, so it is that run's image.
+                r.run_vm(reflink_command(ds, src, run))
+            digests = [
+                r.run_vm(reflink_digest_command(ds, src, run)).stdout.split()[0]
+                for run in range(1, RUN_CHAIN + 1)
+            ]
+            d.assert_equal(
+                str(RUN_CHAIN),
+                str(len(set(digests))),
+                "CONTROL: every run's image differs from the others",
+            )
+            live = r.image_digest(src, quiesce=True)
+            d.assert_not_equal(
+                digests[RUN_RESTORED - 1],
+                live,
+                "CONTROL: the chosen run is not the live image, so a restore of the latest cannot pass",
+            )
+            target = str(uuid.uuid4())
+            r.created.append(target)
+            r.issue_license(target, src, "fork")
+            doc = r.restore(target, src, snaps[RUN_RESTORED - 1])
+            d.last_cmd = "renet backup restore (run %d)" % RUN_RESTORED
+            d.assert_equal("restored", str(doc.get("status", "")), "the chosen run restores")
+            d.assert_equal(
+                digests[RUN_RESTORED - 1],
+                r.image_digest(target),
+                "and the restored image equals that run's reflink",
+            )
+        finally:
+            r.run_vm(reflink_remove_command(ds, src), must=False)
 
     def teardown(self) -> None:
         self.rt.teardown()

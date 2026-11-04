@@ -78,8 +78,11 @@ KNOWN_LEGS = [
     "s",
     "t",
     "u",
+    "v",
+    "w",
+    "x",
 ]
-# t and u are opt-in and not in DEFAULT_LEGS: they need --renet, a worker, and the gateway's session-TTL seam.
+# t to x are opt-in and not in DEFAULT_LEGS: they need --renet and a worker, and t also needs the gateway's session-TTL seam.
 DEFAULT_LEGS = "a,b,c,d,e,f,g,h,j,k,l,m,n,o,p,q,r,s"
 CELL_BYTES = 65536
 CELLS = 8
@@ -112,7 +115,7 @@ CELLS_ROOT_VECTORS = (
 VERIFY_MAX_PAGES = 10
 HTTP_OK = "200"
 USAGE = (
-    "Usage: ./run.sh drill backup [--legs a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u] [--selftest] [--renet] "
+    "Usage: ./run.sh drill backup [--legs a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x] [--selftest] [--renet] "
     "[--no-restart] [--keep-work] [--vm <ip>] [--ssh-user <u>] [--ssh-key <p>]"
 )
 DRILL_PASSWORD = "DrillBackup123!"
@@ -3193,6 +3196,21 @@ class Backup:
             raise LegStoppedError("leg u needs real renet: add --renet and --vm")
         self.renet_legs.leg_u()
 
+    def leg_v_hook_order(self) -> None:
+        if self.renet_legs is None:
+            raise LegStoppedError("leg v needs real renet: add --renet and --vm")
+        self.renet_legs.leg_v()
+
+    def leg_w_sample_heals(self) -> None:
+        if self.renet_legs is None:
+            raise LegStoppedError("leg w needs real renet: add --renet and --vm")
+        self.renet_legs.leg_w()
+
+    def leg_x_restore_at_run(self) -> None:
+        if self.renet_legs is None:
+            raise LegStoppedError("leg x needs real renet: add --renet and --vm")
+        self.renet_legs.leg_x()
+
     def leg_s_store_conformance(self) -> None:
         d = self.d
         store = "%s/%s" % (self.store_url(), self.bucket)
@@ -3409,6 +3427,9 @@ class Backup:
             ("s", self.leg_s_store_conformance),
             ("t", self.leg_t_session_expiry),
             ("u", self.leg_u_killed_run_reconciles),
+            ("v", self.leg_v_hook_order),
+            ("w", self.leg_w_sample_heals),
+            ("x", self.leg_x_restore_at_run),
             ("k", self.leg_k_lapsed_restore),
         ):
             if o.enabled(leg):

@@ -149,7 +149,7 @@ def _norm(text: str) -> str:
     # `--seed-repo` is a port-only flag (Rule T 7), so the usage line the bash twin prints lacks it.
     text = text.replace(" [--seed-repo]", "")
     # Legs n to u are port-only: the bash twin retired into a golden before they existed, so every leg list it prints ends at m. The port's list is the bash's plus `n` to `s` as whole tokens at the END of a list (`DEFAULT_LEGS`), and `n` to `u` in the lists that name every leg (`KNOWN_LEGS`, usage); `t` and `u` are opt-in and never in the default list. Anchored to that, so a list that loses n or o, or a longer token that merely starts with `n`, still differs. When the bash list changes, the golden is re-recorded and this line goes with the port-only legs (review dfc10e27.1-.3).
-    text = re.sub(r"(?<=\bm)(,|, )n\1o\1p\1q\1r\1s(?:\1t\1u)?(?![\w,])", "", text)
+    text = re.sub(r"(?<=\bm)(,|, )n\1o\1p\1q\1r\1s(?:\1t\1u(?:\1v\1w\1x)?)?(?![\w,])", "", text)
     return re.sub(r"   python [^\n]*\n", "   <TOOLS>\n", text)
 
 
@@ -1546,6 +1546,9 @@ def test_the_port_only_legs_strip_is_anchored() -> None:
     assert _norm("legs a,b,m,n,o,p,q,r,s\n") == "legs a,b,m\n"
     assert _norm("Known legs: a, m, n, o, p, q, r, s\n") == "Known legs: a, m\n"
     assert _norm("legs a,m,n,o,p,q,r,s,t,u\n") == "legs a,m\n"
+    assert _norm("legs a,m,n,o,p,q,r,s,t,u,v,w,x\n") == "legs a,m\n"
+    assert _norm("Known legs: a, m, n, o, p, q, r, s, t, u, v, w, x\n") == "Known legs: a, m\n"
+    assert _norm("a,m,n,o,p,q,r,s,t,u,v\n") == "a,m,n,o,p,q,r,s,t,u,v\n"
     assert _norm("Known legs: a, m, n, o, p, q, r, s, t, u\n") == "Known legs: a, m\n"
     assert _norm("a,m,n,o,p,q,r,s,t\n") == "a,m,n,o,p,q,r,s,t\n"
     assert _norm("a,m,n,option\n") == "a,m,n,option\n"
@@ -1556,9 +1559,22 @@ def test_the_port_only_legs_strip_is_anchored() -> None:
 def test_the_port_still_lists_legs_n_and_o() -> None:
     """Review dfc10e27.1: the differential strips n and o from the port's lists, so this pins that the port really prints them, and that the opt-in legs t and u stay out of the default."""
     assert backup.DEFAULT_LEGS.endswith(",m,n,o,p,q,r,s")
-    assert backup.KNOWN_LEGS[-9:] == ["m", "n", "o", "p", "q", "r", "s", "t", "u"]
-    assert "t" not in backup.DEFAULT_LEGS.split(",")
-    assert "u" not in backup.DEFAULT_LEGS.split(",")
+    assert backup.KNOWN_LEGS[-12:] == [
+        "m",
+        "n",
+        "o",
+        "p",
+        "q",
+        "r",
+        "s",
+        "t",
+        "u",
+        "v",
+        "w",
+        "x",
+    ]
+    for opt_in in ("t", "u", "v", "w", "x"):
+        assert opt_in not in backup.DEFAULT_LEGS.split(",")
 
 
 def test_the_local_bucket_default_is_marked_disposable() -> None:
