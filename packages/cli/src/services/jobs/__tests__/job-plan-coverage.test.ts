@@ -94,7 +94,6 @@ const machinePlane = CLI_CONTRACT.commands
  * oracle here, so the audited class is pinned: a changed lock must change this table in the same diff.
  */
 const GAP_LOCKS: Readonly<Record<string, string>> = {
-  'repo canary remove': 'repo-exclusive',
   'backup schedule': 'machine-exclusive',
   'subscription refresh': 'machine-exclusive',
   'subscription status': 'read',
@@ -211,7 +210,7 @@ describe('JOB_PLANS coverage', () => {
 
   it('a plan with no fn is checked against overlap.go through lockFrom or a named lockGap', () => {
     const fnless = Object.entries(JOB_PLANS).filter(([, plan]) => !plan.fn);
-    expect(fnless.map(([cmd]) => cmd)).toContain('repo canary remove');
+    expect(fnless.map(([cmd]) => cmd)).toContain('subscription refresh');
     expect(fnless.flatMap(([cmd, plan]) => classMismatches(cmd, plan))).toEqual([]);
   });
 
@@ -229,7 +228,7 @@ describe('JOB_PLANS coverage', () => {
       lock: 'repo-exclusive',
       timeout: '10m',
       box: 'J16',
-      lockGap: { runs: 'kube_delete', overlap: 'machine-exclusive' },
+      lockGap: { runs: 'kube_delete', overlap: 'read' },
     };
     expect(classMismatches('x', staleGap)).toHaveLength(1);
     const bare: JobPlan = { form: 'single', lock: 'read', timeout: '10m', box: 'J16' };
@@ -237,16 +236,12 @@ describe('JOB_PLANS coverage', () => {
   });
 
   it('a wrong lock on a lockGap plan is caught against its audited class', () => {
-    const canaryRemove = JOB_PLANS['repo canary remove'];
-    expect(canaryRemove.lockGap).toBeDefined();
-    expect(
-      classMismatches('repo canary remove', { ...canaryRemove, lock: 'repo-shared' })
-    ).toHaveLength(1);
     // infra-push is a named kind with its own class, so a wrong lock on its plan is caught through fn.
     const infraPush = JOB_PLANS['machine infra push'];
     expect(infraPush.fn).toBe('infra-push');
     expect(classMismatches('machine infra push', { ...infraPush, lock: 'read' })).toHaveLength(1);
     const refresh = JOB_PLANS['subscription refresh'];
+    expect(refresh.lockGap).toBeDefined();
     expect(
       classMismatches('subscription refresh', { ...refresh, lock: 'repo-shared' })
     ).toHaveLength(1);
@@ -262,7 +257,7 @@ describe('JOB_PLANS coverage', () => {
       'backup schedule: overlap.go lists backup-unit as machine-shared like its lock, so it is a lockFrom',
     ]);
     // A new gap has no audited class yet.
-    expect(classMismatches('new gap', { ...canaryRemove })).toEqual([
+    expect(classMismatches('new gap', { ...refresh })).toEqual([
       'new gap: a new lockGap needs its audited lock in GAP_LOCKS',
     ]);
   });
