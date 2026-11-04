@@ -98,7 +98,8 @@ describe('ensureTargetRepoLicense', () => {
 
     expect(h.acquiredFor).toEqual(['machine-12']);
     expect(refreshRepoLicenseIdentity).toHaveBeenCalledTimes(1);
-    const [onMachine, , params] = vi.mocked(refreshRepoLicenseIdentity).mock.calls[0];
+    const [onName, onMachine, , params] = vi.mocked(refreshRepoLicenseIdentity).mock.calls[0];
+    expect(onName).toBe('machine-12');
     expect(onMachine).toBe(machine);
     expect(params).toMatchObject({ repositoryGuid: GUID, grandGuid: GUID, kind: 'grand' });
     expect(h.released).toBe(1);
@@ -122,14 +123,14 @@ describe('ensureTargetRepoLicense', () => {
     h.authority = 'free';
     await ensureTargetRepoLicense('app', 'machine-12');
     expect(refreshRepoLicenseIdentity).not.toHaveBeenCalled();
-    const [, , params] = vi.mocked(issueFreeRepoLicense).mock.calls[0];
+    const [, , , params] = vi.mocked(issueFreeRepoLicense).mock.calls[0];
     expect(params).toMatchObject({ repositoryGuid: GUID, kind: 'grand', requestedSizeGb: 2 });
   });
 
   it('carries the lineage of a fork', async () => {
     h.repo = { repositoryGuid: GUID, grandGuid: GRAND };
     await ensureTargetRepoLicense('app', 'machine-12');
-    const [, , params] = vi.mocked(refreshRepoLicenseIdentity).mock.calls[0];
+    const [, , , params] = vi.mocked(refreshRepoLicenseIdentity).mock.calls[0];
     expect(params).toMatchObject({ repositoryGuid: GUID, grandGuid: GRAND, kind: 'fork' });
   });
 
@@ -147,7 +148,7 @@ describe('ensureTargetRepoLicense', () => {
       'Command exited with code 1: Error: unknown command "license-scan" for "renet repository"'
     );
     await ensureTargetRepoLicense('app', 'machine-12');
-    const [, , params] = vi.mocked(issueFreeRepoLicense).mock.calls[0];
+    const [, , , params] = vi.mocked(issueFreeRepoLicense).mock.calls[0];
     expect(params).toMatchObject({ repositoryGuid: GUID, requestedSizeGb: undefined });
     const [ctx] = vi.mocked(restoreLicenseAlreadyInstalled).mock.calls[0];
     expect(ctx.datastoreMount).toBe(WK_DATASTORE_PATH);

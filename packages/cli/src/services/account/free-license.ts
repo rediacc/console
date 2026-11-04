@@ -121,6 +121,7 @@ export interface FreeLicenseParams {
  * 3 GB) propagates with its own message, which names the signup link.
  */
 export function issueFreeRepoLicense(
+  machineName: string,
   machine: MachineConfig,
   sshPrivateKey: string,
   params: FreeLicenseParams,
@@ -153,7 +154,7 @@ export function issueFreeRepoLicense(
         },
       });
       if (signupUrl) serverSignupUrl = signupUrl;
-      await writeRepoLicense(sftp, params.repositoryGuid, license, params.datastoreId);
+      await writeRepoLicense(machineName, params.repositoryGuid, license, params.datastoreId);
       outputService.info(t('errors.freeLicense.issued', { maxGb: FREE_LICENSE_MAX_SIZE_GB }));
     }
   );

@@ -53,7 +53,7 @@ function resolveKnownRemoteRepos(
 }
 
 async function applyBatchRefreshResults(
-  sftp: SFTPClient,
+  machineName: string,
   results: {
     repositoryGuid: string;
     status: 'issued' | 'refreshed' | 'unchanged' | 'failed';
@@ -70,7 +70,7 @@ async function applyBatchRefreshResults(
 
   for (const result of results) {
     const counts = await applySingleBatchRefreshResult(
-      sftp,
+      machineName,
       result,
       failures,
       datastoreIdByGuid.get(result.repositoryGuid)
@@ -85,7 +85,7 @@ async function applyBatchRefreshResults(
 }
 
 async function applySingleBatchRefreshResult(
-  sftp: SFTPClient,
+  machineName: string,
   result: {
     repositoryGuid: string;
     status: 'issued' | 'refreshed' | 'unchanged' | 'failed';
@@ -96,7 +96,7 @@ async function applySingleBatchRefreshResult(
   datastoreId: string | undefined
 ): Promise<{ issued: number; refreshed: number; unchanged: number; failed: number }> {
   if ((result.status === 'issued' || result.status === 'refreshed') && result.license) {
-    await writeRepoLicense(sftp, result.repositoryGuid, result.license, datastoreId);
+    await writeRepoLicense(machineName, result.repositoryGuid, result.license, datastoreId);
   }
   if (result.status === 'issued') {
     return { issued: 1, refreshed: 0, unchanged: 0, failed: 0 };
@@ -150,6 +150,7 @@ function requiredRepoErrorSample(
 }
 
 export function refreshRepoLicensesBatch(
+  machineName: string,
   machine: MachineConfig,
   sshPrivateKey: string,
   remoteRenetPath?: string,
@@ -173,7 +174,7 @@ export function refreshRepoLicensesBatch(
   }
 
   return withSharedOrPooledSftp(sharedSftp, sftpConfigForMachine(machine, sshPrivateKey), (sftp) =>
-    runRepoLicenseBatch(sftp, machine, remoteRenetPath, requiredGuid)
+    runRepoLicenseBatch(sftp, machineName, machine, remoteRenetPath, requiredGuid)
   );
 }
 
@@ -184,6 +185,7 @@ export function refreshRepoLicensesBatch(
  */
 async function runRepoLicenseBatch(
   sftp: SFTPClient,
+  machineName: string,
   machine: MachineConfig,
   remoteRenetPath?: string,
   requiredGuid?: string
@@ -192,12 +194,12 @@ async function runRepoLicenseBatch(
   const [machineId, clientMachineId, remoteRepos, localRepos, licenseStatuses] = await Promise.all([
     readRemoteMachineId(sftp, remoteRenetPath),
     readLocalMachineId(),
-    scanRemoteRepoLicenses(sftp, datastore, remoteRenetPath),
+    scanRemoteRepoLicenses(machineName, datastore),
     configService.listRepositories().catch((err: unknown) => {
       telemetryService.trackError(err, { operation: 'license.list_repositories' });
       return [];
     }),
-    scanRemoteLicenseStatuses(sftp, datastore, remoteRenetPath).catch(() => []),
+    scanRemoteLicenseStatuses(machineName, datastore).catch(() => []),
   ]);
 
   // `identity_mismatch` joins it: after `backup snapshot --accept-identity-change` the image's UUID is new, an unexpired licence answers `unchanged` to a plain refresh, and the repository stays unmountable until the refresh window opens. Only a forced GUID is reissued.
@@ -272,7 +274,7 @@ async function runRepoLicenseBatch(
   const failures: { repositoryGuid: string; error: string }[] = [...unknownRepoFailures];
   const serverFailuresBefore = failures.length;
   const { issued, refreshed, unchanged, failed } = await applyBatchRefreshResults(
-    sftp,
+    machineName,
     body.results,
     failures,
     datastoreIdByGuid

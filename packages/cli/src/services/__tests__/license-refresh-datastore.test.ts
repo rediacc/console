@@ -5,7 +5,7 @@
  * WHAT WAS ACTUALLY BROKEN, and what was not. The function derives ONE path,
  * `machine.datastore ?? /mnt/rediacc`, and feeds it to two consumers:
  *
- *   - the licence SCAN, NOT a bug. `licenseScanCommand` passes
+ *   - the licence SCAN, NOT a bug. The `license-scan` job runs renet with
  *     `--all-datastores`, and renet's `licenseScanTargets`
  *     (cmd/renet/license_scope.go) then walks every ATTACHED named datastore on
  *     top of that path, tagging each entry with its own datastoreId and
@@ -29,12 +29,19 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SFTPClient } from '../../remote/sftp/index.js';
 import type { MachineConfig } from '../../types/index.js';
 
+const MACHINE_NAME = 'test-machine';
 const MACHINE_ID = '3a62c0cf8d150bed7ca40e9d6de237eb26b96dee26d7a20eb866e09bd1aca09b';
 const REPO_GUID = '550e8400-e29b-41d4-a716-446655440000';
 const DATASTORE_ID = '0f1e2d3c-4b5a-6978-8796-a5b4c3d2e1f0';
 const NAMED_MOUNT = '/mnt/rediacc-ds/tier1';
 const DEFAULT_MOUNT = WK_DATASTORE_PATH;
 const SEVEN_GIB = 7 * 1024 * 1024 * 1024;
+
+const { mockExecute } = vi.hoisted(() => ({ mockExecute: vi.fn() }));
+
+vi.mock('../executor/executor-factory.js', () => ({
+  getExecutor: () => ({ execute: mockExecute }),
+}));
 
 vi.mock('node:fs/promises', () => ({
   readFile: vi.fn().mockResolvedValue('client-machine-001\n'),
@@ -76,22 +83,28 @@ function scanEntry(extra: Record<string, unknown>) {
 }
 
 /**
- * A fake machine. `scan` is what `repository license-scan` returns; `images`
- * maps a datastore mount to the byte size found there, any mount not listed
- * answers the probe's unknown sentinel, which is what makes a probe of the
- * WRONG mount observably different from a probe of the right one.
+ * A fake machine. `scan` is what the `license-scan` job returns (through the
+ * executor); `images` maps a datastore mount to the byte size found there for
+ * the SFTP size probe, any mount not listed answers the probe's unknown
+ * sentinel, which is what makes a probe of the WRONG mount observably different
+ * from a probe of the right one.
  */
 function createSftp(scan: unknown[], images: Record<string, number> = {}) {
   const exec = vi.fn((command: string) => {
     if (command.includes('machine-id')) return Promise.resolve(`${MACHINE_ID}\n`);
-    if (command.includes('license-scan')) return Promise.resolve(JSON.stringify(scan));
-    if (command.includes('license-status')) return Promise.resolve('[]');
     if (command.includes('stat -c %s')) {
       const mount = Object.keys(images).find((m) => command.includes(`"${m}/repositories/`));
       return Promise.resolve(mount === undefined ? 'rediacc-size-unknown\n' : `${images[mount]}\n`);
     }
     return Promise.resolve('');
   });
+  mockExecute.mockImplementation((opts: { commandKind: { name: string } }) =>
+    Promise.resolve({
+      success: true,
+      exitCode: 0,
+      stdout: opts.commandKind.name === 'license-scan' ? JSON.stringify(scan) : '[]',
+    })
+  );
   const sftp = {
     exec,
     execStreaming: vi.fn().mockResolvedValue(0),
@@ -142,6 +155,7 @@ describe('refreshRepoLicenseIdentity: which datastore the size probe measures', 
     const { sftp, exec } = createSftp([scanEntry({ requestedSizeGb: 4 })]);
 
     await refreshRepoLicenseIdentity(
+      MACHINE_NAME,
       machine,
       'dummy-key',
       { repositoryGuid: REPO_GUID, kind: 'grand' },
@@ -149,16 +163,21 @@ describe('refreshRepoLicenseIdentity: which datastore the size probe measures', 
       sftp
     );
 
-    const scan = exec.mock.calls.map((c) => String(c[0])).find((c) => c.includes('license-scan'));
-    expect(scan).toBe(
-      `sudo '/usr/bin/renet' repository license-scan --datastore '${DEFAULT_MOUNT}' --all-datastores --output json`
-    );
+    // renet adds --all-datastores to the scan job itself; the CLI names the machine default and the machine.
+    const scans = mockExecute.mock.calls
+      .map((c) => c[0] as { machineName: string; commandKind: { name: string; args: unknown } })
+      .filter((o) => o.commandKind.name === 'license-scan');
+    expect(scans).toHaveLength(1);
+    expect(scans[0].machineName).toBe(MACHINE_NAME);
+    expect(scans[0].commandKind.args).toEqual({ datastore: DEFAULT_MOUNT });
+    expect(exec.mock.calls.some((c) => String(c[0]).includes('license-scan'))).toBe(false);
   });
 
   it('does not probe at all when the scan already priced the repo', async () => {
     const { sftp, exec } = createSftp([scanEntry({ requestedSizeGb: 4 })]);
 
     await refreshRepoLicenseIdentity(
+      MACHINE_NAME,
       machine,
       'dummy-key',
       { repositoryGuid: REPO_GUID, kind: 'grand' },
@@ -178,6 +197,7 @@ describe('refreshRepoLicenseIdentity: which datastore the size probe measures', 
     );
 
     await refreshRepoLicenseIdentity(
+      MACHINE_NAME,
       machine,
       'dummy-key',
       { repositoryGuid: REPO_GUID, kind: 'grand' },
@@ -196,6 +216,7 @@ describe('refreshRepoLicenseIdentity: which datastore the size probe measures', 
     const { sftp, exec } = createSftp([scanEntry({})], { [NAMED_MOUNT]: SEVEN_GIB });
 
     await refreshRepoLicenseIdentity(
+      MACHINE_NAME,
       machine,
       'dummy-key',
       { repositoryGuid: REPO_GUID, kind: 'grand', datastoreMount: NAMED_MOUNT },
@@ -212,6 +233,7 @@ describe('refreshRepoLicenseIdentity: which datastore the size probe measures', 
     const { sftp, exec } = createSftp([scanEntry({})], { [DEFAULT_MOUNT]: SEVEN_GIB });
 
     await refreshRepoLicenseIdentity(
+      MACHINE_NAME,
       machine,
       'dummy-key',
       { repositoryGuid: REPO_GUID, kind: 'grand' },
@@ -228,6 +250,7 @@ describe('refreshRepoLicenseIdentity: which datastore the size probe measures', 
     const { sftp, exec } = createSftp([scanEntry({})], { '/srv/pool': SEVEN_GIB });
 
     await refreshRepoLicenseIdentity(
+      MACHINE_NAME,
       { ...machine, datastore: '/srv/pool' },
       'dummy-key',
       { repositoryGuid: REPO_GUID, kind: 'grand' },
@@ -246,6 +269,7 @@ describe('refreshRepoLicenseIdentity: which datastore the size probe measures', 
     );
 
     await refreshRepoLicenseIdentity(
+      MACHINE_NAME,
       machine,
       'dummy-key',
       { repositoryGuid: REPO_GUID, kind: 'grand', datastoreMount: '/mnt/rediacc-ds/stale' },
@@ -264,6 +288,7 @@ describe('refreshRepoLicenseIdentity: which datastore the size probe measures', 
     });
 
     await refreshRepoLicenseIdentity(
+      MACHINE_NAME,
       machine,
       'dummy-key',
       { repositoryGuid: REPO_GUID, kind: 'grand' },
@@ -279,6 +304,7 @@ describe('refreshRepoLicenseIdentity: which datastore the size probe measures', 
     const { sftp } = createSftp([scanEntry({})], { [NAMED_MOUNT]: SEVEN_GIB });
 
     await refreshRepoLicenseIdentity(
+      MACHINE_NAME,
       machine,
       'dummy-key',
       { repositoryGuid: REPO_GUID, kind: 'grand', datastoreMount: NAMED_MOUNT },
@@ -310,6 +336,7 @@ describe('refreshRepoLicenseIdentity: a failed probe is not a measurement', () =
     const { sftp } = createSftp([scanEntry({})]);
 
     await refreshRepoLicenseIdentity(
+      MACHINE_NAME,
       machine,
       'dummy-key',
       { repositoryGuid: REPO_GUID, kind: 'grand', datastoreMount: NAMED_MOUNT },
@@ -329,6 +356,7 @@ describe('refreshRepoLicenseIdentity: a failed probe is not a measurement', () =
     const { sftp } = createSftp([scanEntry({})], { [NAMED_MOUNT]: 0 });
 
     await refreshRepoLicenseIdentity(
+      MACHINE_NAME,
       machine,
       'dummy-key',
       { repositoryGuid: REPO_GUID, kind: 'grand', datastoreMount: NAMED_MOUNT },
@@ -344,6 +372,7 @@ describe('refreshRepoLicenseIdentity: a failed probe is not a measurement', () =
     const { sftp } = createSftp([scanEntry({})], { [NAMED_MOUNT]: 3 * 1024 * 1024 * 1024 + 1 });
 
     await refreshRepoLicenseIdentity(
+      MACHINE_NAME,
       machine,
       'dummy-key',
       { repositoryGuid: REPO_GUID, kind: 'grand', datastoreMount: NAMED_MOUNT },

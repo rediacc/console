@@ -173,6 +173,7 @@ describe('issueFreeRepoLicense', () => {
     m.fetch.mockResolvedValue({ license: BLOB, signupUrl: 'https://acct.example/account/signup' });
     const sftp = { exec: vi.fn() } as never;
     await issueFreeRepoLicense(
+      'm1',
       MACHINE,
       'key',
       { repositoryGuid: GUID, kind: 'grand', requestedSizeGb: 2, datastoreId: 'ds-1' },
@@ -196,7 +197,7 @@ describe('issueFreeRepoLicense', () => {
         datastoreId: 'ds-1',
       },
     });
-    expect(m.writeRepoLicense).toHaveBeenCalledWith(sftp, GUID, BLOB, 'ds-1');
+    expect(m.writeRepoLicense).toHaveBeenCalledWith('m1', GUID, BLOB, 'ds-1');
     // The server's signup link replaces the fallback in every later message.
     expect(freeLicenseNoBackupMessage()).toContain('https://acct.example/account/signup');
   });
@@ -204,9 +205,14 @@ describe('issueFreeRepoLicense', () => {
   it("propagates the server's refusal and installs nothing", async () => {
     m.fetch.mockRejectedValue(new Error('8 free licenses from this address in 72 hours'));
     await expect(
-      issueFreeRepoLicense(MACHINE, 'key', { repositoryGuid: GUID, kind: 'grand' }, undefined, {
-        exec: vi.fn(),
-      } as never)
+      issueFreeRepoLicense(
+        'm1',
+        MACHINE,
+        'key',
+        { repositoryGuid: GUID, kind: 'grand' },
+        undefined,
+        { exec: vi.fn() } as never
+      )
     ).rejects.toThrow(/8 free licenses/);
     expect(m.writeRepoLicense).not.toHaveBeenCalled();
   });

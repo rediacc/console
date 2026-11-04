@@ -409,9 +409,8 @@ describe('subscription command helpers', () => {
     );
 
     expect(mockReadRuntimeRepoLicenseStatuses).toHaveBeenCalledWith(
-      expect.objectContaining({ machineName: 'hostinger' }),
-      'PRIVATE_KEY',
-      '/usr/bin/renet'
+      'hostinger',
+      expect.objectContaining({ machineName: 'hostinger' })
     );
     expect(mockOutputInfo).toHaveBeenCalledWith(
       'commands.subscription.repo.status.header:hostinger'
@@ -583,6 +582,7 @@ describe('subscription command helpers', () => {
     expect(mockGetLocalMachine).toHaveBeenCalledWith('hostinger');
     expect(mockGetRepository).toHaveBeenCalledWith('shop:test');
     expect(mockRefreshRepoLicenseIdentity).toHaveBeenCalledWith(
+      'hostinger',
       expect.objectContaining({ machineName: 'hostinger' }),
       'PRIVATE_KEY',
       { repositoryGuid: 'repo-guid', grandGuid: 'grand-guid', kind: 'fork' }
@@ -606,6 +606,7 @@ describe('subscription command helpers', () => {
     await executeRepoLicenseRefresh('shop:test');
 
     expect(mockRefreshRepoLicenseIdentity).toHaveBeenCalledWith(
+      'hostinger',
       expect.objectContaining({ machineName: 'hostinger' }),
       'PRIVATE_KEY',
       {
@@ -617,6 +618,7 @@ describe('subscription command helpers', () => {
     );
     // The control: rewriting the expected mount must not match.
     expect(mockRefreshRepoLicenseIdentity).not.toHaveBeenCalledWith(
+      expect.anything(),
       expect.anything(),
       'PRIVATE_KEY',
       expect.objectContaining({ datastoreMount: '/mnt/rediacc-ds/tier1-mutated' })
@@ -631,7 +633,7 @@ describe('subscription command helpers', () => {
 
     await executeRepoLicenseRefresh('shop:test');
 
-    const params = mockRefreshRepoLicenseIdentity.mock.calls[0][2] as Record<string, unknown>;
+    const params = mockRefreshRepoLicenseIdentity.mock.calls[0][3] as Record<string, unknown>;
     expect(params).not.toHaveProperty('datastoreMount');
   });
 

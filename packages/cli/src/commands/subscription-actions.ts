@@ -282,11 +282,7 @@ async function renderRepoLicenseTable(
   machineName: string,
   context: SubscriptionCommandContext
 ): Promise<void> {
-  const entries = await readRuntimeRepoLicenseStatuses(
-    context.machine,
-    context.sshPrivateKey,
-    context.remoteRenetPath
-  );
+  const entries = await readRuntimeRepoLicenseStatuses(machineName, context.machine);
 
   outputService.info(t('commands.subscription.repo.status.header', { machineName }));
   if (entries.length === 0) {
@@ -428,10 +424,19 @@ export async function executeMachineStatus(machineName: string): Promise<void> {
   await renderRepoLicenseTable(machineName, context);
 }
 
-function runRepoBatchRefresh(context: SubscriptionCommandContext): Promise<RepoBatchRefreshResult> {
+function runRepoBatchRefresh(
+  machineName: string,
+  context: SubscriptionCommandContext
+): Promise<RepoBatchRefreshResult> {
   return withSpinner(
     t('commands.subscription.refresh.repos.refreshing'),
-    () => refreshRepoLicensesBatch(context.machine, context.sshPrivateKey, context.remoteRenetPath),
+    () =>
+      refreshRepoLicensesBatch(
+        machineName,
+        context.machine,
+        context.sshPrivateKey,
+        context.remoteRenetPath
+      ),
     t('commands.subscription.refresh.repos.refreshed')
   );
 }
@@ -458,7 +463,7 @@ export async function executeAccountRefresh(): Promise<void> {
 /** `subscription refresh -m <machine>`: reissue every repo license on the machine. */
 export async function executeMachineRefresh(machineName: string): Promise<void> {
   const context = await resolveSubscriptionCommandContext(machineName);
-  const batchSummary = await runRepoBatchRefresh(context);
+  const batchSummary = await runRepoBatchRefresh(machineName, context);
   outputService.success(t('commands.subscription.refresh.success'));
   renderRepoBatchRefreshSummary(batchSummary);
 }
@@ -489,7 +494,7 @@ export async function executeRepoLicenseRefresh(ref: string): Promise<void> {
       // correctly leaves the machine's own default in place.
       const datastoreMount = await recordedDatastoreMount(repoKey);
 
-      const refreshed = await refreshRepoLicenseIdentity(machine, sshPrivateKey, {
+      const refreshed = await refreshRepoLicenseIdentity(machineName, machine, sshPrivateKey, {
         repositoryGuid: repoConfig.repositoryGuid,
         grandGuid: repoConfig.grandGuid,
         kind:

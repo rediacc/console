@@ -116,22 +116,14 @@ export function readMachineActivationStatus(
 }
 
 export function readRuntimeRepoLicenseStatuses(
-  machine: MachineConfig,
-  sshPrivateKey: string,
-  remoteRenetPath?: string,
-  sharedSftp?: SFTPClient
+  machineName: string,
+  machine: MachineConfig
 ): Promise<RuntimeRepoLicenseStatus[]> {
-  return withSharedOrPooledSftp(
-    sharedSftp,
-    sftpConfigForMachine(machine, sshPrivateKey),
-    async (sftp) => {
-      const datastore = machine.datastore ?? DEFAULT_DATASTORE;
-      return await scanRemoteLicenseStatuses(sftp, datastore, remoteRenetPath);
-    }
-  );
+  return scanRemoteLicenseStatuses(machineName, machine.datastore ?? DEFAULT_DATASTORE);
 }
 
 export function issueRepoLicense(
+  machineName: string,
   machine: MachineConfig,
   sshPrivateKey: string,
   params: {
@@ -179,7 +171,7 @@ export function issueRepoLicense(
       );
       // The blob must land in the population renet reads for THIS datastore,
       // which is the same identity that was just stamped into the payload.
-      await writeRepoLicense(sftp, params.repositoryGuid, license, params.datastoreId);
+      await writeRepoLicense(machineName, params.repositoryGuid, license, params.datastoreId);
       return true;
     }
   );
@@ -204,10 +196,9 @@ export function issueRepoLicense(
  * datastore's identity both in the payload and in the store path.
  */
 async function readRepoLicenseInputs(
-  sftp: SFTPClient,
+  machineName: string,
   datastore: string,
-  repositoryGuid: string,
-  remoteRenetPath?: string
+  repositoryGuid: string
 ): Promise<{
   luksUuid?: string;
   storageFingerprint?: string;
@@ -217,7 +208,7 @@ async function readRepoLicenseInputs(
 }> {
   let scanned: Awaited<ReturnType<typeof scanRemoteRepoLicenses>>;
   try {
-    scanned = await scanRemoteRepoLicenses(sftp, datastore, remoteRenetPath);
+    scanned = await scanRemoteRepoLicenses(machineName, datastore);
   } catch (error) {
     // A scan that throws proves no identity either: issuing from here would bind the licence to nothing, so it refuses on the same path as a scan with no entry.
     throw new RepoIdentityUnreadableError(
@@ -255,6 +246,7 @@ class RepoIdentityUnreadableError extends Error {
 }
 
 export function refreshRepoLicenseIdentity(
+  machineName: string,
   machine: MachineConfig,
   sshPrivateKey: string,
   params: {
@@ -300,12 +292,7 @@ export function refreshRepoLicenseIdentity(
       const datastore = machine.datastore ?? DEFAULT_DATASTORE;
       let scanned: Awaited<ReturnType<typeof readRepoLicenseInputs>>;
       try {
-        scanned = await readRepoLicenseInputs(
-          sftp,
-          datastore,
-          params.repositoryGuid,
-          remoteRenetPath
-        );
+        scanned = await readRepoLicenseInputs(machineName, datastore, params.repositoryGuid);
       } catch (error) {
         if (!(error instanceof RepoIdentityUnreadableError)) throw error;
         outputService.warn(error.message);
@@ -322,6 +309,7 @@ export function refreshRepoLicenseIdentity(
           datastore,
         ]));
       return issueRepoLicense(
+        machineName,
         machine,
         sshPrivateKey,
         {

@@ -481,10 +481,25 @@ async function ensureRestorePullLicense(args: {
       })
     );
     if (authority === 'free') {
-      await issueFreeRepoLicense(lease.machine, lease.sshPrivateKey, params, renet, lease.sftp);
+      await issueFreeRepoLicense(
+        args.targetMachine,
+        lease.machine,
+        lease.sshPrivateKey,
+        params,
+        renet,
+        lease.sftp
+      );
       return;
     }
-    if (!(await issueRepoLicense(lease.machine, lease.sshPrivateKey, params, renet, lease.sftp))) {
+    const issued = await issueRepoLicense(
+      args.targetMachine,
+      lease.machine,
+      lease.sshPrivateKey,
+      params,
+      renet,
+      lease.sftp
+    );
+    if (!issued) {
       throw new Error(t('errors.subscription.activationFailed'));
     }
   } finally {

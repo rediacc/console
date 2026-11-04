@@ -235,7 +235,7 @@ describe('provisionReplicaDatastores (datastore plane: snapshot + N fork-attach)
       replicas: 1,
       nodes: [{ machine: 'cp1', ip: '10.0.0.1' }],
     });
-    expect(licence.free.mock.calls[0][2]).toMatchObject({
+    expect(licence.free.mock.calls[0][3]).toMatchObject({
       repositoryGuid: 'guid-sqldb',
       grandGuid: 'grand-sqldb',
       kind: 'fork',
@@ -292,7 +292,7 @@ describe('provisionReplicaDatastores (datastore plane: snapshot + N fork-attach)
       orderedExec(order);
       await run();
       expect(licence.free).not.toHaveBeenCalled();
-      expect(licence.token.mock.calls[0][2]).toMatchObject({
+      expect(licence.token.mock.calls[0][3]).toMatchObject({
         repositoryGuid: 'guid-sqldb',
         grandGuid: 'grand-sqldb',
         kind: 'fork',
@@ -324,7 +324,7 @@ describe('provisionReplicaDatastores (datastore plane: snapshot + N fork-attach)
       } as never);
       orderedExec([]);
       await run();
-      expect(licence.free.mock.calls[0][2]).toMatchObject({
+      expect(licence.free.mock.calls[0][3]).toMatchObject({
         repositoryGuid: 'guid-sqldb',
         grandGuid: 'guid-sqldb',
       });

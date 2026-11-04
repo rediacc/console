@@ -10,6 +10,8 @@ import type { SubscriptionTokenState } from '../account/subscription-auth.js';
 // A well-formed signing-key fingerprint (16-char lowercase hex). writeRepoLicense now names the license file after this and rejects anything else.
 const VALID_KEY_ID = 'fc6a12b178711e65';
 const REPO_GUID = '550e8400-e29b-41d4-a716-446655440000';
+const MACHINE_NAME = 'test-machine';
+const MACHINE_ID = '3a62c0cf8d150bed7ca40e9d6de237eb26b96dee26d7a20eb866e09bd1aca09b';
 
 const { mockGetSubscriptionTokenState } = vi.hoisted(() => ({
   mockGetSubscriptionTokenState: vi.fn(
@@ -21,15 +23,19 @@ const { mockGetSubscriptionTokenState } = vi.hoisted(() => ({
   ),
 }));
 
-const { mockExec, mockExecStreaming, mockConnect, mockClose, mockListRepositories } = vi.hoisted(
-  () => ({
+const { mockExec, mockExecStreaming, mockConnect, mockClose, mockListRepositories, mockExecute } =
+  vi.hoisted(() => ({
     mockExec: vi.fn(),
     mockExecStreaming: vi.fn(),
     mockConnect: vi.fn(),
     mockClose: vi.fn(),
     mockListRepositories: vi.fn(),
-  })
-);
+    mockExecute: vi.fn(),
+  }));
+
+vi.mock('../executor/executor-factory.js', () => ({
+  getExecutor: () => ({ execute: mockExecute }),
+}));
 
 vi.mock('../../remote/sftp/index.js', () => ({
   SFTPClient: class MockSFTPClient {
@@ -67,6 +73,31 @@ describe('refreshRepoLicensesBatch', () => {
     datastore: WK_DATASTORE_PATH,
   };
 
+  /** What each renet command-kind job answers; an Error status models a failing job. */
+  const jobs: { scan: unknown[]; status: unknown[] | Error } = { scan: [], status: [] };
+
+  /** Every job the CLI sent, by command kind. */
+  function sentJobs(name: string): { args: Record<string, unknown>; payload?: string }[] {
+    return mockExecute.mock.calls
+      .map(
+        (c) =>
+          c[0] as {
+            commandKind: { name: string; args: Record<string, unknown>; payload?: string };
+          }
+      )
+      .filter((o) => o.commandKind.name === name)
+      .map((o) => o.commandKind);
+  }
+
+  /** The parsed license-write payloads. */
+  function writes(): {
+    repositoryGuid: string;
+    datastoreId?: string;
+    license: { publicKeyId: string };
+  }[] {
+    return sentJobs('license-write').map((j) => JSON.parse(j.payload ?? '{}'));
+  }
+
   beforeEach(() => {
     vi.clearAllMocks();
     mockGetSubscriptionTokenState.mockReturnValue({
@@ -82,26 +113,33 @@ describe('refreshRepoLicensesBatch', () => {
         },
       },
     ]);
-    mockExec
-      .mockResolvedValueOnce('3a62c0cf8d150bed7ca40e9d6de237eb26b96dee26d7a20eb866e09bd1aca09b\n')
-      .mockResolvedValueOnce(
-        JSON.stringify([
-          {
-            repositoryGuid: '550e8400-e29b-41d4-a716-446655440000',
-            requestedSizeGb: 4,
-            luksUuid: '550e8400-e29b-41d4-a716-446655440001',
-          },
-          {
-            repositoryGuid: '550e8400-e29b-41d4-a716-446655440002',
-            requestedSizeGb: 2,
-            storageFingerprint: 'file:1:2:3',
-            currentRefreshRecommendedAt: '2099-01-01T00:00:00.000Z',
-            currentHardExpiresAt: '2099-02-01T00:00:00.000Z',
-          },
-        ])
-      )
-      .mockResolvedValueOnce(JSON.stringify([])); // license-status (no invalid signatures)
-    mockExecStreaming.mockResolvedValue(0);
+    mockExec.mockResolvedValue(`${MACHINE_ID}\n`);
+    jobs.scan = [
+      {
+        repositoryGuid: '550e8400-e29b-41d4-a716-446655440000',
+        requestedSizeGb: 4,
+        luksUuid: '550e8400-e29b-41d4-a716-446655440001',
+      },
+      {
+        repositoryGuid: '550e8400-e29b-41d4-a716-446655440002',
+        requestedSizeGb: 2,
+        storageFingerprint: 'file:1:2:3',
+        currentRefreshRecommendedAt: '2099-01-01T00:00:00.000Z',
+        currentHardExpiresAt: '2099-02-01T00:00:00.000Z',
+      },
+    ];
+    jobs.status = []; // license-status (no invalid signatures)
+    mockExecute.mockImplementation((opts: { commandKind: { name: string } }) => {
+      const { name } = opts.commandKind;
+      if (name === 'license-write') {
+        return Promise.resolve({ success: true, exitCode: 0, stdout: '' });
+      }
+      if (name === 'license-scan') {
+        return Promise.resolve({ success: true, exitCode: 0, stdout: JSON.stringify(jobs.scan) });
+      }
+      if (jobs.status instanceof Error) return Promise.reject(jobs.status);
+      return Promise.resolve({ success: true, exitCode: 0, stdout: JSON.stringify(jobs.status) });
+    });
   });
 
   it('writes only issued/refreshed licenses and reports mixed batch result', async () => {
@@ -120,7 +158,12 @@ describe('refreshRepoLicensesBatch', () => {
       ],
     });
 
-    const result = await refreshRepoLicensesBatch(machine, 'dummy-key', '/usr/bin/renet');
+    const result = await refreshRepoLicensesBatch(
+      MACHINE_NAME,
+      machine,
+      'dummy-key',
+      '/usr/bin/renet'
+    );
 
     expect(result).toMatchObject({
       scanned: 2,
@@ -143,13 +186,18 @@ describe('refreshRepoLicensesBatch', () => {
       ],
     });
     expect(mockAccountServerFetch).toHaveBeenCalledTimes(1);
-    expect(mockExecStreaming).toHaveBeenCalledTimes(1);
+    expect(sentJobs('license-write')).toHaveLength(1);
   });
 
   it('fails unknown repos locally without issuing any batch request when nothing is tracked', async () => {
     mockListRepositories.mockResolvedValueOnce([]);
 
-    const result = await refreshRepoLicensesBatch(machine, 'dummy-key', '/usr/bin/renet');
+    const result = await refreshRepoLicensesBatch(
+      MACHINE_NAME,
+      machine,
+      'dummy-key',
+      '/usr/bin/renet'
+    );
 
     expect(result).toMatchObject({
       scanned: 2,
@@ -172,7 +220,7 @@ describe('refreshRepoLicensesBatch', () => {
       ],
     });
     expect(mockAccountServerFetch).not.toHaveBeenCalled();
-    expect(mockExecStreaming).not.toHaveBeenCalled();
+    expect(sentJobs('license-write')).toHaveLength(0);
   });
 
   it('does not write unchanged entries returned by the server', async () => {
@@ -185,10 +233,15 @@ describe('refreshRepoLicensesBatch', () => {
       ],
     });
 
-    const result = await refreshRepoLicensesBatch(machine, 'dummy-key', '/usr/bin/renet');
+    const result = await refreshRepoLicensesBatch(
+      MACHINE_NAME,
+      machine,
+      'dummy-key',
+      '/usr/bin/renet'
+    );
 
     expect(result.unchanged).toBe(1);
-    expect(mockExecStreaming).not.toHaveBeenCalled();
+    expect(sentJobs('license-write')).toHaveLength(0);
   });
 
   it('surfaces parsed batch request failures from the account server', async () => {
@@ -197,38 +250,31 @@ describe('refreshRepoLicensesBatch', () => {
     });
     mockAccountServerFetch.mockRejectedValueOnce(error);
 
-    await expect(refreshRepoLicensesBatch(machine, 'dummy-key', '/usr/bin/renet')).rejects.toThrow(
-      'Monthly repo license issuance limit reached'
-    );
+    await expect(
+      refreshRepoLicensesBatch(MACHINE_NAME, machine, 'dummy-key', '/usr/bin/renet')
+    ).rejects.toThrow('Monthly repo license issuance limit reached');
   });
 
-  /** Seed the three read-mocks with one tracked repo carrying dates + a status. */
+  /** Seed the scan and status jobs with one tracked repo carrying dates + a status. */
   function seedSingleRepoWithStatus(status: string): void {
-    mockExec.mockReset();
-    mockExec
-      .mockResolvedValueOnce('3a62c0cf8d150bed7ca40e9d6de237eb26b96dee26d7a20eb866e09bd1aca09b\n')
-      .mockResolvedValueOnce(
-        JSON.stringify([
-          {
-            repositoryGuid: REPO_GUID,
-            requestedSizeGb: 4,
-            luksUuid: '550e8400-e29b-41d4-a716-446655440001',
-            currentRefreshRecommendedAt: '2099-01-01T00:00:00.000Z',
-            currentHardExpiresAt: '2099-02-01T00:00:00.000Z',
-          },
-        ])
-      )
-      .mockResolvedValueOnce(
-        JSON.stringify([
-          {
-            repositoryGuid: REPO_GUID,
-            status,
-            message: `status ${status}`,
-            runtimeValid: false,
-            installed: true,
-          },
-        ])
-      );
+    jobs.scan = [
+      {
+        repositoryGuid: REPO_GUID,
+        requestedSizeGb: 4,
+        luksUuid: '550e8400-e29b-41d4-a716-446655440001',
+        currentRefreshRecommendedAt: '2099-01-01T00:00:00.000Z',
+        currentHardExpiresAt: '2099-02-01T00:00:00.000Z',
+      },
+    ];
+    jobs.status = [
+      {
+        repositoryGuid: REPO_GUID,
+        status,
+        message: `status ${status}`,
+        runtimeValid: false,
+        installed: true,
+      },
+    ];
   }
 
   it('does NOT force re-issuance for invalid_signature (dates preserved, no reissue loop)', async () => {
@@ -239,7 +285,12 @@ describe('refreshRepoLicensesBatch', () => {
       results: [{ repositoryGuid: REPO_GUID, status: 'unchanged' }],
     });
 
-    const result = await refreshRepoLicensesBatch(machine, 'dummy-key', '/usr/bin/renet');
+    const result = await refreshRepoLicensesBatch(
+      MACHINE_NAME,
+      machine,
+      'dummy-key',
+      '/usr/bin/renet'
+    );
 
     expect(result.invalidSignatureDetected).toBe(0);
 
@@ -262,7 +313,12 @@ describe('refreshRepoLicensesBatch', () => {
       ],
     });
 
-    const result = await refreshRepoLicensesBatch(machine, 'dummy-key', '/usr/bin/renet');
+    const result = await refreshRepoLicensesBatch(
+      MACHINE_NAME,
+      machine,
+      'dummy-key',
+      '/usr/bin/renet'
+    );
 
     expect(result.invalidSignatureDetected).toBe(1);
     expect(result.refreshed).toBe(1);
@@ -288,7 +344,12 @@ describe('refreshRepoLicensesBatch', () => {
       ],
     });
 
-    const result = await refreshRepoLicensesBatch(machine, 'dummy-key', '/usr/bin/renet');
+    const result = await refreshRepoLicensesBatch(
+      MACHINE_NAME,
+      machine,
+      'dummy-key',
+      '/usr/bin/renet'
+    );
 
     expect(result.invalidSignatureDetected).toBe(1);
     expect(result.refreshed).toBe(1);
@@ -299,19 +360,14 @@ describe('refreshRepoLicensesBatch', () => {
 
   it('gracefully degrades when license-status command fails', async () => {
     // Override: license-status throws (e.g., old renet binary)
-    mockExec.mockReset();
-    mockExec
-      .mockResolvedValueOnce('3a62c0cf8d150bed7ca40e9d6de237eb26b96dee26d7a20eb866e09bd1aca09b\n')
-      .mockResolvedValueOnce(
-        JSON.stringify([
-          {
-            repositoryGuid: '550e8400-e29b-41d4-a716-446655440000',
-            requestedSizeGb: 4,
-            luksUuid: '550e8400-e29b-41d4-a716-446655440001',
-          },
-        ])
-      )
-      .mockRejectedValueOnce(new Error('unknown command "repository license-status"'));
+    jobs.scan = [
+      {
+        repositoryGuid: '550e8400-e29b-41d4-a716-446655440000',
+        requestedSizeGb: 4,
+        luksUuid: '550e8400-e29b-41d4-a716-446655440001',
+      },
+    ];
+    jobs.status = new Error('unknown command "repository license-status"');
 
     mockAccountServerFetch.mockResolvedValueOnce({
       results: [
@@ -323,7 +379,12 @@ describe('refreshRepoLicensesBatch', () => {
       ],
     });
 
-    const result = await refreshRepoLicensesBatch(machine, 'dummy-key', '/usr/bin/renet');
+    const result = await refreshRepoLicensesBatch(
+      MACHINE_NAME,
+      machine,
+      'dummy-key',
+      '/usr/bin/renet'
+    );
 
     // Should still work, dates are sent normally when license-status fails
     expect(result.invalidSignatureDetected).toBe(0);
@@ -333,7 +394,12 @@ describe('refreshRepoLicensesBatch', () => {
   it('returns recoveryFailureMode=token_not_ready when subscription token is not ready', async () => {
     mockGetSubscriptionTokenState.mockReturnValue({ kind: 'missing' });
 
-    const result = await refreshRepoLicensesBatch(machine, 'dummy-key', '/usr/bin/renet');
+    const result = await refreshRepoLicensesBatch(
+      MACHINE_NAME,
+      machine,
+      'dummy-key',
+      '/usr/bin/renet'
+    );
 
     expect(result.recoveryFailureMode).toBe('token_not_ready');
     expect(result.valid).toBe(0);
@@ -343,7 +409,12 @@ describe('refreshRepoLicensesBatch', () => {
   it('returns recoveryFailureMode=no_known_repos when remote scan finds repos not in local config', async () => {
     mockListRepositories.mockResolvedValueOnce([]);
 
-    const result = await refreshRepoLicensesBatch(machine, 'dummy-key', '/usr/bin/renet');
+    const result = await refreshRepoLicensesBatch(
+      MACHINE_NAME,
+      machine,
+      'dummy-key',
+      '/usr/bin/renet'
+    );
 
     expect(result.recoveryFailureMode).toBe('no_known_repos');
     expect(result.valid).toBe(0);
@@ -361,7 +432,12 @@ describe('refreshRepoLicensesBatch', () => {
       ],
     });
 
-    const result = await refreshRepoLicensesBatch(machine, 'dummy-key', '/usr/bin/renet');
+    const result = await refreshRepoLicensesBatch(
+      MACHINE_NAME,
+      machine,
+      'dummy-key',
+      '/usr/bin/renet'
+    );
 
     expect(result.recoveryFailureMode).toBe('server_rejected_all');
     expect(result.valid).toBe(0);
@@ -379,16 +455,20 @@ describe('refreshRepoLicensesBatch', () => {
       ],
     });
 
-    const result = await refreshRepoLicensesBatch(machine, 'dummy-key', '/usr/bin/renet');
+    const result = await refreshRepoLicensesBatch(
+      MACHINE_NAME,
+      machine,
+      'dummy-key',
+      '/usr/bin/renet'
+    );
 
     expect(result.recoveryFailureMode).toBeNull();
     expect(result.valid).toBeGreaterThan(0);
   });
 
   describe('per-signer write path', () => {
-    const REPO_DIR = `/var/lib/rediacc/license/repos/${REPO_GUID}`;
-
-    it('writes to <guid>/<keyId>.json, chmods it, and GCs the legacy flat file', async () => {
+    // renet places the file (<guid>/<keyId>.json, chmod, legacy GC) when it installs the blob, so the CLI's part is the license-write payload: the guid, the blob (whose publicKeyId names the file) and no datastore identity.
+    it('sends the blob under its guid as a license-write payload, unscoped for a default-datastore repo', async () => {
       mockAccountServerFetch.mockResolvedValueOnce({
         results: [
           {
@@ -399,24 +479,23 @@ describe('refreshRepoLicensesBatch', () => {
         ],
       });
 
-      await refreshRepoLicensesBatch(machine, 'dummy-key', '/usr/bin/renet');
+      await refreshRepoLicensesBatch(MACHINE_NAME, machine, 'dummy-key', '/usr/bin/renet');
 
-      const execCommands = mockExec.mock.calls.map((c) => c[0] as string);
-      const teeCommands = mockExecStreaming.mock.calls.map((c) => c[0] as string);
-      const perKeyFile = `${REPO_DIR}/${VALID_KEY_ID}.json`;
-
-      expect(execCommands).toContain(`sudo mkdir -p "${REPO_DIR}"`);
-      expect(teeCommands).toContain(`sudo tee "${perKeyFile}" > /dev/null`);
-      expect(execCommands).toContain(`sudo chmod 640 "${perKeyFile}"`);
-      // Legacy flat file is the ONLY rm ever issued.
-      expect(execCommands).toContain(
-        `sudo rm -f "/var/lib/rediacc/license/repos/${REPO_GUID}.json"`
-      );
-      const rmCommands = execCommands.filter((c) => c.includes('rm -f'));
-      expect(rmCommands).toEqual([`sudo rm -f "/var/lib/rediacc/license/repos/${REPO_GUID}.json"`]);
+      const sent = sentJobs('license-write');
+      expect(sent).toHaveLength(1);
+      expect(sent[0].args).toEqual({});
+      expect(writes()).toEqual([
+        {
+          repositoryGuid: REPO_GUID,
+          license: { payload: 'a', signature: 'b', publicKeyId: VALID_KEY_ID },
+        },
+      ]);
+      // No shell placement from the CLI any more: only the machine-id probe goes over SFTP.
+      expect(mockExec.mock.calls.every((c) => String(c[0]).includes('machine-id'))).toBe(true);
+      expect(mockExecStreaming).not.toHaveBeenCalled();
     });
 
-    it('never names another signer’s file (no-clobber)', async () => {
+    it('never names another signer’s key id (no-clobber)', async () => {
       const FOREIGN_KEY_ID = 'aaaaaaaaaaaaaaaa';
       mockAccountServerFetch.mockResolvedValueOnce({
         results: [
@@ -428,16 +507,14 @@ describe('refreshRepoLicensesBatch', () => {
         ],
       });
 
-      await refreshRepoLicensesBatch(machine, 'dummy-key', '/usr/bin/renet');
+      await refreshRepoLicensesBatch(MACHINE_NAME, machine, 'dummy-key', '/usr/bin/renet');
 
-      const allCommands = [
-        ...mockExec.mock.calls.map((c) => c[0] as string),
-        ...mockExecStreaming.mock.calls.map((c) => c[0] as string),
-      ];
-      expect(allCommands.some((c) => c.includes(`${FOREIGN_KEY_ID}.json`))).toBe(false);
+      expect(writes().map((w) => w.license.publicKeyId)).toEqual([VALID_KEY_ID]);
+      const everything = JSON.stringify(mockExecute.mock.calls);
+      expect(everything.includes(FOREIGN_KEY_ID)).toBe(false);
     });
 
-    it('fails loudly on a malformed publicKeyId and never runs tee', async () => {
+    it('fails loudly on a malformed publicKeyId and never sends license-write', async () => {
       mockAccountServerFetch.mockResolvedValueOnce({
         results: [
           {
@@ -449,13 +526,11 @@ describe('refreshRepoLicensesBatch', () => {
       });
 
       await expect(
-        refreshRepoLicensesBatch(machine, 'dummy-key', '/usr/bin/renet')
+        refreshRepoLicensesBatch(MACHINE_NAME, machine, 'dummy-key', '/usr/bin/renet')
       ).rejects.toThrow(/invalid.*publicKeyId|16-char hex/);
 
-      // Validation happens before any write, so tee/mkdir for the file never ran.
-      expect(mockExecStreaming).not.toHaveBeenCalled();
-      const execCommands = mockExec.mock.calls.map((c) => c[0] as string);
-      expect(execCommands.some((c) => c.includes(REPO_DIR))).toBe(false);
+      // Validation happens before any write, so no license-write job was sent.
+      expect(sentJobs('license-write')).toHaveLength(0);
     });
   });
 
@@ -465,22 +540,15 @@ describe('refreshRepoLicensesBatch', () => {
 
     /** Seed the scan so the tracked repo lives in a NAMED datastore. */
     function seedDatastoreResidentRepo(): void {
-      mockExec.mockReset();
-      mockExec
-        .mockResolvedValueOnce('3a62c0cf8d150bed7ca40e9d6de237eb26b96dee26d7a20eb866e09bd1aca09b\n')
-        .mockResolvedValueOnce(
-          JSON.stringify([
-            {
-              repositoryGuid: NAMED_REPO,
-              requestedSizeGb: 4,
-              luksUuid: '550e8400-e29b-41d4-a716-446655440001',
-              datastoreId: DS_ID,
-              datastorePath: '/mnt/rediacc-ds/fast',
-            },
-          ])
-        )
-        .mockResolvedValueOnce(JSON.stringify([]))
-        .mockResolvedValue('');
+      jobs.scan = [
+        {
+          repositoryGuid: NAMED_REPO,
+          requestedSizeGb: 4,
+          luksUuid: '550e8400-e29b-41d4-a716-446655440001',
+          datastoreId: DS_ID,
+          datastorePath: '/mnt/rediacc-ds/fast',
+        },
+      ];
       mockAccountServerFetch.mockResolvedValueOnce({
         results: [
           {
@@ -495,19 +563,20 @@ describe('refreshRepoLicensesBatch', () => {
     it('scans every datastore, not just the machine primary', async () => {
       mockAccountServerFetch.mockResolvedValueOnce({ results: [] });
 
-      await refreshRepoLicensesBatch(machine, 'dummy-key', '/usr/bin/renet');
+      await refreshRepoLicensesBatch(MACHINE_NAME, machine, 'dummy-key', '/usr/bin/renet');
 
-      const scan = mockExec.mock.calls
-        .map((c) => c[0] as string)
-        .find((c) => c.includes('license-scan'));
-      // Without this flag a repo in a named datastore is invisible to refresh: it still expires and still blocks backups, it is just never looked at.
-      expect(scan).toContain('--all-datastores');
+      // renet adds --all-datastores to the scan itself; the CLI names the machine's primary datastore and the scan job runs on the right machine.
+      const scans = sentJobs('license-scan');
+      expect(scans).toHaveLength(1);
+      expect(scans[0].args).toEqual({ datastore: WK_DATASTORE_PATH });
+      expect(sentJobs('license-status')[0].args).toEqual({ datastore: WK_DATASTORE_PATH });
+      expect(mockExecute.mock.calls.every((c) => c[0].machineName === MACHINE_NAME)).toBe(true);
     });
 
     it('sends the datastore identity so the signed payload is bound to it', async () => {
       seedDatastoreResidentRepo();
 
-      await refreshRepoLicensesBatch(machine, 'dummy-key', '/usr/bin/renet');
+      await refreshRepoLicensesBatch(MACHINE_NAME, machine, 'dummy-key', '/usr/bin/renet');
 
       const body = mockAccountServerFetch.mock.calls[0][1] as {
         body: { repos: { datastoreId?: string }[] };
@@ -518,17 +587,16 @@ describe('refreshRepoLicensesBatch', () => {
     it('installs a datastore-resident licence into that datastore’s population', async () => {
       seedDatastoreResidentRepo();
 
-      await refreshRepoLicensesBatch(machine, 'dummy-key', '/usr/bin/renet');
+      await refreshRepoLicensesBatch(MACHINE_NAME, machine, 'dummy-key', '/usr/bin/renet');
 
-      // renet reads ONE population per repo and treats the other as absent, so an unscoped write here would read back as `missing`, trigger a reissue, and loop forever burning the monthly issuance quota.
-      const scopedDir = `/var/lib/rediacc/license/datastores/${DS_ID}/repos/${NAMED_REPO}`;
-      const execCommands = mockExec.mock.calls.map((c) => c[0] as string);
-      const teeCommands = mockExecStreaming.mock.calls.map((c) => c[0] as string);
-      expect(execCommands).toContain(`sudo mkdir -p "${scopedDir}"`);
-      expect(teeCommands).toContain(`sudo tee "${scopedDir}/${VALID_KEY_ID}.json" > /dev/null`);
-      expect(
-        execCommands.some((c) => c.includes(`/var/lib/rediacc/license/repos/${NAMED_REPO}/`))
-      ).toBe(false);
+      // renet reads ONE population per repo and treats the other as absent, so an unscoped write here would read back as `missing`, trigger a reissue, and loop forever burning the monthly issuance quota. renet picks the population from the datastoreId in the payload.
+      expect(writes()).toEqual([
+        {
+          repositoryGuid: NAMED_REPO,
+          datastoreId: DS_ID,
+          license: { payload: 'a', signature: 'b', publicKeyId: VALID_KEY_ID },
+        },
+      ]);
     });
 
     it('keeps the legacy unscoped path for a repo with no datastore identity', async () => {
@@ -542,21 +610,19 @@ describe('refreshRepoLicensesBatch', () => {
         ],
       });
 
-      await refreshRepoLicensesBatch(machine, 'dummy-key', '/usr/bin/renet');
+      await refreshRepoLicensesBatch(MACHINE_NAME, machine, 'dummy-key', '/usr/bin/renet');
 
-      // The plain default datastore carries no descriptor, so renet keeps reading repos/<guid>/ for it. Scoping those would orphan every existing licence on every existing machine.
-      const execCommands = mockExec.mock.calls.map((c) => c[0] as string);
-      expect(execCommands).toContain(
-        `sudo mkdir -p "/var/lib/rediacc/license/repos/${NAMED_REPO}"`
-      );
-      expect(execCommands.some((c) => c.includes('/license/datastores/'))).toBe(false);
+      // The plain default datastore carries no descriptor, so renet keeps reading repos/<guid>/ for it. Scoping those would orphan every existing licence on every existing machine: the payload carries no datastoreId.
+      const [written] = writes();
+      expect(written.repositoryGuid).toBe(NAMED_REPO);
+      expect(written).not.toHaveProperty('datastoreId');
     });
 
     it('sends the cluster the machine belongs to, and omits it when it belongs to none', async () => {
       const clustered: MachineConfig = { ...machine, cluster: { cluster: 'prod', pool: 'k8s' } };
       mockAccountServerFetch.mockResolvedValueOnce({ results: [] });
 
-      await refreshRepoLicensesBatch(clustered, 'dummy-key', '/usr/bin/renet');
+      await refreshRepoLicensesBatch(MACHINE_NAME, clustered, 'dummy-key', '/usr/bin/renet');
 
       const body = mockAccountServerFetch.mock.calls[0][1] as {
         body: { clusterId?: string; repos: { clusterId?: string }[] };
@@ -565,15 +631,10 @@ describe('refreshRepoLicensesBatch', () => {
       expect(body.body.repos[0].clusterId).toBe('prod');
 
       mockAccountServerFetch.mockClear();
-      mockExec.mockClear();
-      mockExec
-        .mockResolvedValueOnce('3a62c0cf8d150bed7ca40e9d6de237eb26b96dee26d7a20eb866e09bd1aca09b\n')
-        .mockResolvedValueOnce(JSON.stringify([{ repositoryGuid: NAMED_REPO, requestedSizeGb: 4 }]))
-        .mockResolvedValueOnce(JSON.stringify([]))
-        .mockResolvedValue('');
+      jobs.scan = [{ repositoryGuid: NAMED_REPO, requestedSizeGb: 4 }];
       mockAccountServerFetch.mockResolvedValueOnce({ results: [] });
 
-      await refreshRepoLicensesBatch(machine, 'dummy-key', '/usr/bin/renet');
+      await refreshRepoLicensesBatch(MACHINE_NAME, machine, 'dummy-key', '/usr/bin/renet');
 
       const plain = mockAccountServerFetch.mock.calls[0][1] as { body: { clusterId?: string } };
       expect(plain.body.clusterId).toBeUndefined();
@@ -600,6 +661,7 @@ describe('refreshRepoLicensesBatch', () => {
         ],
       });
       const result = await refreshRepoLicensesBatch(
+        MACHINE_NAME,
         machine,
         'dummy-key',
         '/usr/bin/renet',
@@ -619,6 +681,7 @@ describe('refreshRepoLicensesBatch', () => {
         ],
       });
       const result = await refreshRepoLicensesBatch(
+        MACHINE_NAME,
         machine,
         'dummy-key',
         '/usr/bin/renet',
@@ -633,6 +696,7 @@ describe('refreshRepoLicensesBatch', () => {
         results: [{ repositoryGuid: X, status: 'pending' }],
       });
       const result = await refreshRepoLicensesBatch(
+        MACHINE_NAME,
         machine,
         'dummy-key',
         '/usr/bin/renet',
@@ -647,6 +711,7 @@ describe('refreshRepoLicensesBatch', () => {
         results: [{ repositoryGuid: X.toUpperCase(), status: 'unchanged' }],
       });
       const result = await refreshRepoLicensesBatch(
+        MACHINE_NAME,
         machine,
         'dummy-key',
         '/usr/bin/renet',
@@ -661,6 +726,7 @@ describe('refreshRepoLicensesBatch', () => {
         results: [{ repositoryGuid: Y, status: 'refreshed', license }],
       });
       const result = await refreshRepoLicensesBatch(
+        MACHINE_NAME,
         machine,
         'dummy-key',
         '/usr/bin/renet',

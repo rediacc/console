@@ -12,11 +12,9 @@ import type { SFTPClient } from '../../remote/sftp/index.js';
 import type { MachineConfig } from '../../types/index.js';
 import { shellQuote } from '../../utils/shell-quote.js';
 import { outputService } from '../core/output.js';
+import { getExecutor } from '../executor/executor-factory.js';
 import type { RemoteRepoLicenseScanEntry, RuntimeRepoLicenseStatus } from './license-types.js';
 
-const LICENSE_DIR = '/var/lib/rediacc/license';
-const REPO_LICENSE_DIR = `${LICENSE_DIR}/repos`;
-const DATASTORE_LICENSE_DIR = `${LICENSE_DIR}/datastores`;
 const CLIENT_MACHINE_ID_PATH = '/etc/machine-id';
 export const DEFAULT_DATASTORE = WK_DATASTORE_PATH;
 
@@ -174,29 +172,41 @@ export async function measureRepoSizeGb(
 }
 
 /**
- * `--all-datastores` on every scan, and it is a correctness fix rather than a
- * convenience: without it a scan sees only the machine's primary datastore, so
- * every repo living in a NAMED datastore was invisible to `subscription
- * refresh` and to the license table. Those repos still expire, still block
- * backups, and still need renewal; they were simply never looked at. renet
- * folds the primary and every attached named datastore into one array, tagging
- * each entry with the datastore it came from.
+ * One licence command-kind job (`license-status`, `license-scan`, `license-write`), awaited here: the caller
+ * needs the answer before it goes on, so `probe` keeps `--background` from handing back a ticket in its place.
+ *
+ * renet passes `--all-datastores` on both reads, and that is a correctness fix rather than a convenience:
+ * without it a scan sees only the machine's primary datastore, so every repo living in a NAMED datastore was
+ * invisible to `subscription refresh` and to the license table. Those repos still expire, still block backups,
+ * and still need renewal; they were simply never looked at. renet folds the primary and every attached named
+ * datastore into one array, tagging each entry with the datastore it came from.
  */
-function licenseScanCommand(
-  verb: 'license-scan' | 'license-status',
-  renetPath: string,
-  datastore: string
-): string {
-  return `sudo ${shellQuote(renetPath)} repository ${verb} --datastore ${shellQuote(datastore)} --all-datastores --output json`;
+async function runLicenseJob(
+  machineName: string,
+  name: 'license-scan' | 'license-status' | 'license-write',
+  args: Record<string, unknown>,
+  payload?: string
+): Promise<string> {
+  const result = await getExecutor().execute({
+    functionName: name,
+    machineName,
+    commandKind: { name, args, ...(payload === undefined ? {} : { payload }) },
+    captureOutput: true,
+    probe: true,
+  });
+  if (!result.success) {
+    throw new Error(
+      `renet ${name} failed on ${machineName} (exit ${result.exitCode}): ${result.stderr ?? result.error ?? ''}`.trim()
+    );
+  }
+  return result.stdout ?? '';
 }
 
 export async function scanRemoteLicenseStatuses(
-  sftp: SFTPClient,
-  datastore: string,
-  remoteRenetPath?: string
+  machineName: string,
+  datastore: string
 ): Promise<RuntimeRepoLicenseStatus[]> {
-  const renetPath = remoteRenetPath ?? DEFAULTS.CONTEXT.RENET_BINARY;
-  const output = await sftp.exec(licenseScanCommand('license-status', renetPath, datastore));
+  const output = await runLicenseJob(machineName, 'license-status', { datastore });
   const parsed = JSON.parse(output) as unknown;
   return Array.isArray(parsed) ? (parsed as RuntimeRepoLicenseStatus[]) : [];
 }
@@ -216,30 +226,8 @@ export function clusterIdFor(machine: MachineConfig): string | undefined {
   return machine.cluster?.cluster;
 }
 
-/**
- * Where a repo's license files live on the machine, mirroring THE SCOPE RULE in
- * renet's `RepoLicenseBaseDir` (pkg/license/store.go):
- *
- *   - no datastore identity (the plain default datastore, which carries no
- *     descriptor) → the legacy unscoped `repos/<guid>/` population;
- *   - an identity → ONLY `datastores/<id>/repos/<guid>/`.
- *
- * Getting this wrong is silent and expensive rather than loud: renet reads one
- * population and one only, so a license written to the other path reads as
- * `missing`, the CLI auto-reissues, and the pair spins reissuing forever while
- * burning the monthly issuance quota. A malformed identity degrades to unscoped
- * exactly as renet's does, so both sides agree on where a corrupt descriptor
- * puts the file.
- */
-function repoLicenseDirFor(repositoryGuid: string, datastoreId?: string): string {
-  if (!isDatastoreScopedId(datastoreId)) {
-    return `${REPO_LICENSE_DIR}/${repositoryGuid}`;
-  }
-  return `${DATASTORE_LICENSE_DIR}/${datastoreId}/repos/${repositoryGuid}`;
-}
-
 export async function writeRepoLicense(
-  sftp: SFTPClient,
+  machineName: string,
   repositoryGuid: string,
   license: unknown,
   datastoreId?: string
@@ -260,29 +248,24 @@ export async function writeRepoLicense(
     );
   }
 
-  const repoDir = repoLicenseDirFor(repositoryGuid, datastoreId);
-  const repoLicenseFile = `${repoDir}/${publicKeyId}.json`;
-  await sftp.exec(`sudo mkdir -p "${repoDir}"`);
-  await sftp.execStreaming(`sudo tee "${repoLicenseFile}" > /dev/null`, {
-    stdin: JSON.stringify(license, null, 2),
-  });
-  await sftp.exec(`sudo chmod 640 "${repoLicenseFile}"`);
-  // GC the legacy flat file only. Files for other keyIds are never touched ,
-  // that no-clobber property is what lets universes coexist. The flat file
-  // predates both the per-key layout and datastore scoping, so it is removed
-  // from the unscoped root regardless of which population we just wrote to:
-  // renet reads it in neither case, and leaving it behind only confuses the
-  // next person to look in that directory.
-  await sftp.exec(`sudo rm -f "${REPO_LICENSE_DIR}/${repositoryGuid}.json"`);
+  // renet installs the blob into the population the datastore identity selects (the scope rule is `license.InstallRepoLicense`, pkg/license/store.go): a missing or malformed identity means the legacy unscoped layout, other signers' files stay, and the legacy flat file goes. A wrong scope reads as `missing` and spins reissue forever, which is why the identity is sent only when it is usable. The blob rides as the job's payload, never an argument.
+  await runLicenseJob(
+    machineName,
+    'license-write',
+    {},
+    JSON.stringify({
+      repositoryGuid,
+      ...(isDatastoreScopedId(datastoreId) ? { datastoreId } : {}),
+      license,
+    })
+  );
 }
 
 export async function scanRemoteRepoLicenses(
-  sftp: SFTPClient,
-  datastore: string,
-  remoteRenetPath?: string
+  machineName: string,
+  datastore: string
 ): Promise<RemoteRepoLicenseScanEntry[]> {
-  const renetPath = remoteRenetPath ?? DEFAULTS.CONTEXT.RENET_BINARY;
-  const output = await sftp.exec(licenseScanCommand('license-scan', renetPath, datastore));
+  const output = await runLicenseJob(machineName, 'license-scan', { datastore });
   const parsed = JSON.parse(output) as RemoteRepoLicenseScanEntry[];
   return Array.isArray(parsed) ? parsed : [];
 }

@@ -133,6 +133,7 @@ interface LocalMachine {
  * is purely read-only against the remote.
  */
 async function preDeployProvisioning(
+  machineName: string,
   localConfig: Awaited<ReturnType<typeof configService.getLocalConfig>>,
   machine: LocalMachine,
   sshPrivateKey: string,
@@ -152,7 +153,12 @@ async function preDeployProvisioning(
     sshPrivateKey,
     { debug: options.debug }
   );
-  const repoRefresh = await refreshRepoLicensesBatch(machine, sshPrivateKey, remotePath);
+  const repoRefresh = await refreshRepoLicensesBatch(
+    machineName,
+    machine,
+    sshPrivateKey,
+    remotePath
+  );
   if (repoRefresh.scanned > 0 && repoRefresh.valid === 0) {
     throw new Error(
       'Backup deployment aborted: no valid repo licenses are available on target machine'
@@ -435,7 +441,13 @@ export async function pushBackupSchedule(
   const sshPrivateKey =
     localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
 
-  const remoteRenetPath = await preDeployProvisioning(localConfig, machine, sshPrivateKey, options);
+  const remoteRenetPath = await preDeployProvisioning(
+    machineName,
+    localConfig,
+    machine,
+    sshPrivateKey,
+    options
+  );
 
   const lease = await machineConnections.acquireFor(machine, sshPrivateKey);
   const sftp = lease.sftp;

@@ -56,12 +56,12 @@ function isScanUnsupported(error: unknown): boolean {
  * `repository_up` instead.
  */
 async function scanLandedImage(
-  sftp: Parameters<typeof scanRemoteRepoLicenses>[0],
+  machineName: string,
   datastore: string,
   repositoryGuid: string
 ): Promise<RemoteRepoLicenseScanEntry | undefined> {
   try {
-    const scanned = await scanRemoteRepoLicenses(sftp, datastore);
+    const scanned = await scanRemoteRepoLicenses(machineName, datastore);
     return scanned.find((entry) => entry.repositoryGuid === repositoryGuid);
   } catch (error) {
     if (isScanUnsupported(error)) return undefined;
@@ -82,6 +82,7 @@ interface TargetLicenseScope {
 /** Issue through the account (`token`, with renet's identity proofs) or take the FREE licence (`free`). */
 async function issueTargetLicense(
   authority: LicenseAuthority,
+  machineName: string,
   lease: MachineConnectionLease,
   scope: TargetLicenseScope
 ): Promise<void> {
@@ -89,6 +90,7 @@ async function issueTargetLicense(
   const { repositoryGuid, grandGuid, kind, datastoreId, requestedSizeGb } = scope;
   if (authority === 'free') {
     await issueFreeRepoLicense(
+      machineName,
       machine,
       sshPrivateKey,
       { repositoryGuid, grandGuid, kind, requestedSizeGb, datastoreId },
@@ -99,6 +101,7 @@ async function issueTargetLicense(
   }
   // The image exists on the target, so this is a reissue for an existing repo: refreshRepoLicenseIdentity reads size, identity proofs and datastore identity from renet's own scan and issues through `/licenses/activate-repo`.
   const issued = await refreshRepoLicenseIdentity(
+    machineName,
     machine,
     sshPrivateKey,
     { repositoryGuid, grandGuid, kind, datastoreId, datastoreMount: scope.datastoreMount },
@@ -124,7 +127,7 @@ export async function ensureTargetRepoLicense(repoKey: string, to: string): Prom
   const lease = await machineConnections.acquire(to);
   try {
     const datastore = lease.machine.datastore ?? DEFAULT_DATASTORE;
-    const landed = await scanLandedImage(lease.sftp, datastore, repositoryGuid);
+    const landed = await scanLandedImage(to, datastore, repositoryGuid);
     const scope: TargetLicenseScope = {
       repositoryGuid,
       grandGuid,
@@ -144,7 +147,7 @@ export async function ensureTargetRepoLicense(repoKey: string, to: string): Prom
     ) {
       return;
     }
-    await issueTargetLicense(await resolveLicenseAuthority(loginViaDeviceCode), lease, scope);
+    await issueTargetLicense(await resolveLicenseAuthority(loginViaDeviceCode), to, lease, scope);
   } finally {
     lease.release();
   }

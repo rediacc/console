@@ -180,6 +180,7 @@ async function maybeIssueLicense(
   // For all other licensed operations, batch refresh existing repo licenses. A success needs the REFUSED repo licensed, not just any repo on the machine, or the retry meets the same refusal.
   const requiredGuid = await refusedRepoGuid(options);
   const batchResult = await refreshRepoLicensesBatch(
+    options.machineName,
     machine,
     sshPrivateKey,
     remoteRenetPath,
@@ -290,7 +291,13 @@ export async function maybeRefreshRepoLicenses(
       return;
     }
 
-    const result = await refreshRepoLicensesBatch(machine, sshPrivateKey, remoteRenetPath, sftp);
+    const result = await refreshRepoLicensesBatch(
+      machineName,
+      machine,
+      sshPrivateKey,
+      remoteRenetPath,
+      sftp
+    );
     if (result.invalidSignatureDetected > 0) {
       const refreshed = result.issued + result.refreshed;
       if (refreshed > 0) {
@@ -364,6 +371,7 @@ export async function ensureRepoLicenseForProvisioning(
 
   const issued = await issueFor(
     authority,
+    options.machineName,
     machine,
     sshPrivateKey,
     repoLicenseCtx,
@@ -431,6 +439,7 @@ export async function ensureRepoLicenseForRestore(
 
   const issued = await issueFor(
     authority,
+    options.machineName,
     machine,
     sshPrivateKey,
     {
@@ -456,6 +465,7 @@ async function loginViaDeviceCode(): Promise<void> {
 /** Issue through the account (`token`) or take a FREE licence (`free`) for the same repo context. */
 async function issueFor(
   authority: LicenseAuthority,
+  machineName: string,
   machine: Awaited<ReturnType<typeof configService.getLocalMachine>>,
   sshPrivateKey: string,
   repoLicenseCtx: RepoLicenseContext,
@@ -463,9 +473,17 @@ async function issueFor(
   sftp?: SFTPClient
 ): Promise<boolean> {
   if (authority === 'token') {
-    return issueOrExplainSlotLimit(machine, sshPrivateKey, repoLicenseCtx, remoteRenetPath, sftp);
+    return issueOrExplainSlotLimit(
+      machineName,
+      machine,
+      sshPrivateKey,
+      repoLicenseCtx,
+      remoteRenetPath,
+      sftp
+    );
   }
   await issueFreeRepoLicense(
+    machineName,
     machine,
     sshPrivateKey,
     {
@@ -492,6 +510,7 @@ async function issueFor(
  * float, which is often the whole remedy.
  */
 async function issueOrExplainSlotLimit(
+  machineName: string,
   machine: Awaited<ReturnType<typeof configService.getLocalMachine>>,
   sshPrivateKey: string,
   repoLicenseCtx: RepoLicenseContext,
@@ -500,6 +519,7 @@ async function issueOrExplainSlotLimit(
 ): Promise<boolean> {
   try {
     return await issueRepoLicense(
+      machineName,
       machine,
       sshPrivateKey,
       {
@@ -543,7 +563,14 @@ export async function maybeRefreshRepoIdentity(
     { remoteRenetPath, required: false }
   );
   if (repoLicense) {
-    await refreshRepoLicenseIdentity(machine, sshPrivateKey, repoLicense, remoteRenetPath, sftp);
+    await refreshRepoLicenseIdentity(
+      options.machineName,
+      machine,
+      sshPrivateKey,
+      repoLicense,
+      remoteRenetPath,
+      sftp
+    );
   }
 }
 
@@ -569,6 +596,7 @@ export async function refreshRepoIdentityFor(
     );
     if (repoLicense) {
       await refreshRepoLicenseIdentity(
+        machineName,
         lease.machine,
         lease.sshPrivateKey,
         repoLicense,
