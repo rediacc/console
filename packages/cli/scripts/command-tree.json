@@ -3087,6 +3087,12 @@
                   "descriptionKey": "commands.repo.machineOption",
                   "mandatory": true,
                   "defaultValue": null
+                },
+                {
+                  "flags": "--debug",
+                  "descriptionKey": "options.debug",
+                  "mandatory": false,
+                  "defaultValue": null
                 }
               ],
               "arguments": [],

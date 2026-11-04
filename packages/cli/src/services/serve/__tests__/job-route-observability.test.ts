@@ -19,6 +19,8 @@ import { withRouteSpan } from '../route-span.js';
 const principal = {
   userId: 'u1',
   orgId: 'o1',
+  teamId: null,
+  orgRole: 'member' as const,
   userEmail: 'a@b.test',
   tokenId: '11111111-1111-4111-8111-111111111111',
 };
