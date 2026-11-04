@@ -16,6 +16,7 @@ import { setOutputFormat } from '../../../utils/errors.js';
 import { getEffectiveConfigName } from '../../config/config-name.js';
 import { resetInvocationMinter } from '../../jobs/attach.js';
 import { TicketStore } from '../../jobs/ticket-store.js';
+import { telemetryService } from '../../telemetry/telemetry.js';
 import { setJobExecutionTiming } from '../detached-execution.js';
 import type { RenetEvent } from '../types.js';
 
@@ -450,5 +451,50 @@ describe('--background', () => {
 
     expect(stdoutWrites.join('')).toBe('');
     expect(stderrWrites.join('')).toContain(`rdc job wait ${JOB_ID}`);
+  });
+});
+
+describe('the command span carries the job (Design 13)', () => {
+  const annotated = () =>
+    vi.spyOn(telemetryService, 'annotateCommand').mockImplementation(() => undefined);
+
+  it('records the id, function, follow kind and outcome of a job that ended inside the attach', async () => {
+    const spy = annotated();
+    script(answer(handleLine() + event({ type: 'log', msg: 'up' }) + trailer('succeeded', 0)));
+
+    await run({ attachWindowMs: 20_000 });
+
+    expect(spy).toHaveBeenCalledTimes(1);
+    const attrs = spy.mock.calls[0]?.[0];
+    expect(attrs).toMatchObject({
+      'rediacc.job.id': JOB_ID,
+      'rediacc.job.function': 'repository_up',
+      'rediacc.job.follow': 'attached-finished',
+      'rediacc.job.outcome': 'succeeded',
+    });
+    expect(typeof attrs?.['rediacc.job.start_latency_ms']).toBe('number');
+  });
+
+  it('names the follow kind background and the outcome running when the ticket is handed back', async () => {
+    const spy = annotated();
+    script(answer(JSON.stringify({ job_id: JOB_ID, unit: 'u', log_path: 'p' })));
+
+    await run({ attachWindowMs: 0 });
+
+    expect(spy.mock.calls[0]?.[0]).toMatchObject({
+      'rediacc.job.follow': 'background',
+      'rediacc.job.outcome': 'running',
+    });
+    expect(spy.mock.calls[0]?.[0]).not.toHaveProperty('rediacc.job.start_latency_ms');
+  });
+
+  it('control: a call refused before any job exists annotates nothing', async () => {
+    const spy = annotated();
+    script(answer('unknown command "job" for "renet"', 1));
+
+    const result = await run();
+
+    expect(result.success).toBe(false);
+    expect(spy).not.toHaveBeenCalled();
   });
 });

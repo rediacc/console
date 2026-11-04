@@ -65,6 +65,7 @@ import {
   readJobStatus,
   renderJobEvent,
 } from './job-remote.js';
+import { annotateJobSpan, followKindOf } from './job-span.js';
 import {
   buildRenetEnv,
   COMMAND_KIND_TIMEOUT_MS,
@@ -218,7 +219,9 @@ export async function runJobExecution(
   try {
     const launch = await buildLaunch(remoteRenetPath, options, run.requestId);
     const outcome = await run.start(lease, launch, vault);
-    return await run.settle(outcome, lease, remoteRenetPath);
+    const result = await run.settle(outcome, lease, remoteRenetPath);
+    run.annotateSpan(outcome, result);
+    return result;
   } finally {
     lease.release();
   }
@@ -255,7 +258,11 @@ class JobRun {
     );
   }
 
+  /** When the first event of the job arrived, for `rediacc.job.start_latency_ms`. */
+  private firstEventAt: number | undefined;
+
   onEvent(event: RenetEvent, line: number): void {
+    this.firstEventAt ??= Date.now();
     this.collector.consume(event);
     this.render?.(event, line);
   }
@@ -290,6 +297,19 @@ class JobRun {
       if (timing.now() - firstDrop >= timing.budgetMs) return outcome;
       await timing.sleep(logReconnectDelayMs(attempt));
     }
+  }
+
+  /** Write the job's attributes onto the command span (Design 13). */
+  annotateSpan(outcome: StartOutcome, result: ExecuteResult): void {
+    annotateJobSpan({
+      ...(result.jobId ? { jobId: result.jobId } : {}),
+      function: this.options.functionName,
+      follow: followKindOf(outcome.kind, result.attached === true, this.window !== undefined),
+      outcome: result.state ?? (result.success ? 'succeeded' : 'failed'),
+      ...(this.firstEventAt === undefined
+        ? {}
+        : { startLatencyMs: this.firstEventAt - this.startedAt }),
+    });
   }
 
   /** Turn the start's outcome into the call's result. */

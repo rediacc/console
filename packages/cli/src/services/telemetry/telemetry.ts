@@ -75,6 +75,8 @@ class CliTelemetryService {
   private readonly sessionId: string;
   private userContext: Partial<UserContext> = {};
   private readonly activeSpans: Map<string, Span> = new Map();
+  /** Key of the command span this process opened without a request key (the CLI's one command). */
+  private processSpanKey: string | undefined;
   private pendingShutdown: Promise<void> | null = null;
   /**
    * OTLP basic-auth token (base64-encoded `user:pass`), set by
@@ -285,12 +287,34 @@ class CliTelemetryService {
       });
 
       this.activeSpans.set(options?.spanKey ?? commandName, span);
+      if (options?.spanKey === undefined) this.processSpanKey = commandName;
 
       // Log command start
       this.emitLog(SeverityNumber.INFO, `Command started: ${commandName}`, {
         'cli.command': commandName,
         'cli.version': CLI_VERSION,
       });
+    } catch {
+      // Fail silently
+    }
+  }
+
+  /**
+   * Add attributes to the command span now open: the request's own span inside a
+   * served dispatch, else the process's one command span. Nothing happens when no
+   * span is open or telemetry is off, so a caller never checks first.
+   */
+  annotateCommand(attributes: Record<string, string | number | boolean>): void {
+    if (!this.isEnabled) {
+      return;
+    }
+
+    try {
+      const key = currentRequestTelemetry()?.open?.spanKey ?? this.processSpanKey;
+      if (key === undefined) {
+        return;
+      }
+      this.activeSpans.get(key)?.setAttributes(attributes);
     } catch {
       // Fail silently
     }
