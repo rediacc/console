@@ -170,13 +170,18 @@ const SLOT_LIMIT_FRAGMENTS = [
 ] as const;
 
 /** Verbatim fragments of `errors.license.partialPlacement` (en/cli.json:2072). */
-const PARTIAL_PLACEMENT_FRAGMENTS = [
-  'The placement stopped part-way',
-  'machine(s) completed',
-  'were never started',
-  'Nothing was rolled back, so the completed machines keep their repositories and their slots',
-  'Free a slot or raise the ceiling, then re-run',
+/** The renet functions `repo replicate`, `refresh` and `remove` run as jobs. */
+const REPLICA_COMPOUNDS = [
+  'replica_fork',
+  'replica_attach',
+  'replica_publish',
+  'replica_discard',
 ] as const;
+
+/** The job id a `--background` start hands back, from its JSON envelope or its hint. TRANSCRIPT-CONFIRM. */
+function backgroundJobId(text: string): string | undefined {
+  return /"jobId":\s*"([^"]+)"/.exec(text)?.[1] ?? /rdc job wait (\S+)/.exec(text)?.[1];
+}
 
 /**
  * Everything the CLI said, both channels — refusals arrive on stderr. Prose is hard-wrapped to the
@@ -571,10 +576,7 @@ test.describe
         expect(await issuanceCount(), 'migrate consumed an issuance').toBe(issuedBefore);
       });
 
-      test('5. a placement that stops part-way says what exists and what to re-run', async () => {
-        // A replica set is placed one node at a time and is deliberately NOT rolled back, so any mid-loop failure must report the partial state. TRANSCRIPT-CONFIRM: the second run collides on the replica fork tag
-        // (`<set>-r1`), which is the cheapest deterministic mid-loop failure; a
-        // genuine slot-wall trigger needs a server-side maxActivations setter, which does not exist today (reported as a finding).
+      test('5. a second replicate on a placed set refuses and names the way out', async () => {
         const first = await cli.run([
           'repo',
           'replicate',
@@ -588,6 +590,7 @@ test.describe
         ]);
         expect(first.code, `first replicate: ${bothChannels(first).slice(-800)}`).toBe(0);
 
+        // A failed placement stays `placing` and resumes on a rerun, so only a finished set refuses. The partial-placement guidance needs a mid-chain failure, which vitest covers (repo-replicate-ops.test.ts): a genuine slot-wall trigger needs a server-side maxActivations setter, which does not exist today.
         const second = await cli.run([
           'repo',
           'replicate',
@@ -599,13 +602,60 @@ test.describe
           '--port',
           '80',
         ]);
-        expect(second.code, 'a colliding replicate should not succeed').not.toBe(0);
+        expect(second.code, 'a second replicate should not succeed').not.toBe(0);
         const text = bothChannels(second);
-        for (const fragment of PARTIAL_PLACEMENT_FRAGMENTS) {
-          expect(text, `partial-placement guidance is missing: ${fragment}`).toContain(fragment);
-        }
-        // The guidance must hand back a runnable command, not just a diagnosis.
-        expect(text).toContain(`rdc repo replicate ${CLUSTER_REPO} --replicas 2`);
+        expect(text).toContain('already has a replica set');
+        expect(text).toContain(`rdc repo replicate remove ${CLUSTER_REPO}`);
+      });
+
+      test('5b. a background replicate licenses each fork once, and refresh and remove price as they should', async () => {
+        const cleared = await cli.run(['repo', 'replicate', 'remove', CLUSTER_REPO]);
+        expect(cleared.code, `remove: ${bothChannels(cleared).slice(-800)}`).toBe(0);
+        const issuedBefore = await issuanceCount();
+
+        const started = await cli.run([
+          'repo',
+          'replicate',
+          CLUSTER_REPO,
+          '--replicas',
+          '2',
+          '--image',
+          'nginx:alpine',
+          '--port',
+          '80',
+          '--background',
+          '-o',
+          'json',
+        ]);
+        expect(started.code, `replicate -b: ${bothChannels(started).slice(-800)}`).toBe(0);
+        const jobId = backgroundJobId(bothChannels(started));
+        expect(jobId, 'the background start named no job').toBeTruthy();
+        // A licence needs the id the fork mints, so the start has spent nothing.
+        expect(await issuanceCount(), 'the start issued a licence').toBe(issuedBefore);
+
+        const waited = await cli.run(['job', 'wait', String(jobId)]);
+        expect(waited.code, `job wait: ${bothChannels(waited).slice(-800)}`).toBe(0);
+        expect(await issuanceCount(), 'one issuance per replica').toBe(issuedBefore + 2);
+
+        const again = await cli.run(['job', 'wait', String(jobId)]);
+        expect(again.code, `second job wait: ${bothChannels(again).slice(-800)}`).toBe(0);
+        expect(await issuanceCount(), 'a second wait spent a slot').toBe(issuedBefore + 2);
+
+        // A refresh re-forks, and a re-fork mints a new id.
+        const refreshed = await cli.run(['repo', 'replicate', 'refresh', CLUSTER_REPO]);
+        expect(refreshed.code, `refresh: ${bothChannels(refreshed).slice(-800)}`).toBe(0);
+        expect(await issuanceCount(), 'one issuance per re-fork').toBe(issuedBefore + 4);
+
+        const removed = await cli.run(['repo', 'replicate', 'remove', CLUSTER_REPO]);
+        expect(removed.code, `remove: ${bothChannels(removed).slice(-800)}`).toBe(0);
+        expect(await issuanceCount(), 'a remove spent a slot').toBe(issuedBefore + 4);
+
+        // The chain really ran as those jobs, on the machines it names.
+        const listings = await Promise.all(
+          [M1, M2].map((m) => cli.run(['job', 'list', '-m', m, '-o', 'json']))
+        );
+        const jobs = listings.map((listed) => listed.stdout).join('\n');
+        expect(REPLICA_COMPOUNDS.filter((name) => !jobs.includes(name))).toEqual([]);
       });
 
       test('6. the bridge agrees the fork exists (the CLI claims are not self-referential)', async () => {
