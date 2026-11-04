@@ -8,7 +8,7 @@ tags:
 subcategory: workloads
 order: 7
 language: es
-sourceHash: "1eeb1e646bd914d2"
+sourceHash: "9643e80c0e977946"
 sourceCommit: "80854ab96b06bee39cceae6b259e9efbc342f93a"
 ---
 
@@ -73,6 +73,12 @@ docker run --rm --device nvidia.com/gpu=all ubuntu:24.04 nvidia-smi -L
 ```
 
 El mismo contenedor se rechaza en un repo sin la concesión, y el mensaje nombra la concesión que falta.
+
+## Herramientas del host en un Rediaccfile
+
+La mayor parte del trabajo con GPU pasa por Docker, y la concesión de dispositivo anterior es todo lo que necesita: `renet compose` con `devices:` y `docker run --device` llegan al dispositivo a través del daemon de Docker del repo, y los hooks CDI se ejecutan bajo él. Un Rediaccfile que llama a una herramienta del host como `nvidia-smi` desde `up()` o `down()` toca el propio nodo del dispositivo. Esas funciones se ejecutan como el usuario universal sin privilegios en un sandbox, así que la misma concesión de dispositivo les abre también los nodos de dispositivo de la especificación CDI, y añade el grupo del nodo (`video` o `render`) solo cuando el modo del nodo lo exige. Los nodos NVIDIA bajo `/dev/nvidia*` suelen ser accesibles para todos, y `/dev/dri/renderD*` y `/dev/kfd` suelen pertenecer al grupo `render`.
+
+Sin la concesión de dispositivo, `nvidia-smi` en `up()` falla porque falta el dispositivo, y el journal nombra el comando de concesión. Una herramienta del host que necesita más que los nodos de dispositivo necesita una concesión de ruta, véase [Privilegios](/es/docs/services#privilegios).
 
 ## Concesiones exclusivas
 

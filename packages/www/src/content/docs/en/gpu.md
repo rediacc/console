@@ -72,6 +72,12 @@ docker run --rm --device nvidia.com/gpu=all ubuntu:24.04 nvidia-smi -L
 
 The same container in a repo without the grant is refused, and the message names the missing grant.
 
+## Host-side tools in a Rediaccfile
+
+Most GPU work goes through Docker, and the device grant above is all it needs: `renet compose` with `devices:` and `docker run --device` reach the device through the repo's Docker daemon, and the CDI hooks run under it. A Rediaccfile that calls a host tool such as `nvidia-smi` from `up()` or `down()` touches the device node itself. Those functions run as the unprivileged universal user in a sandbox, so the same device grant also opens the CDI spec's device nodes to them, and adds the node's group (`video` or `render`) only when the node's mode needs one. NVIDIA nodes under `/dev/nvidia*` are normally world-accessible, and `/dev/dri/renderD*` and `/dev/kfd` normally belong to the `render` group.
+
+Without the device grant, `nvidia-smi` in `up()` fails with the device missing, and the journal names the grant command. A host tool that needs more than the device nodes needs a path grant, see [Privileges](/en/docs/services#privileges).
+
 ## Exclusive grants
 
 ```bash

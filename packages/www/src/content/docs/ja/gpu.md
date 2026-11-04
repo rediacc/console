@@ -8,7 +8,7 @@ tags:
 subcategory: workloads
 order: 7
 language: ja
-sourceHash: "1eeb1e646bd914d2"
+sourceHash: "9643e80c0e977946"
 sourceCommit: "80854ab96b06bee39cceae6b259e9efbc342f93a"
 ---
 
@@ -73,6 +73,12 @@ docker run --rm --device nvidia.com/gpu=all ubuntu:24.04 nvidia-smi -L
 ```
 
 グラントのないリポジトリでは同じコンテナが拒否され、メッセージに不足しているグラントが示されます。
+
+## Rediaccfileのホスト側ツール
+
+GPUの作業の大半はDockerを通るため、上記のデバイスグラントだけで足ります。`devices:`付きの`renet compose`や`docker run --device`は、リポジトリのDockerデーモン経由でデバイスに届き、CDIフックもその下で動きます。`up()`や`down()`から`nvidia-smi`などのホストツールを呼ぶRediaccfileは、デバイスノードそのものに触れます。これらの関数はサンドボックス内で権限のないユニバーサルユーザーとして実行されるため、同じデバイスグラントがCDIスペックのデバイスノードも関数に開き、ノードのモードが必要とする場合に限り、ノードのグループ（`video`または`render`）を追加します。`/dev/nvidia*`のNVIDIAノードは通常、誰でもアクセスでき、`/dev/dri/renderD*`と`/dev/kfd`は通常`render`グループに属します。
+
+デバイスのグラントがないと、`up()`内の`nvidia-smi`はデバイスが見つからず失敗し、ジャーナルにグラントのコマンドが表示されます。デバイスノード以上のものが必要なホストツールには、パスのグラントが必要です。[権限](/ja/docs/services#権限)を参照してください。
 
 ## 専有グラント
 

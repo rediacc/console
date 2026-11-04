@@ -10,7 +10,7 @@ tags:
 subcategory: workloads
 order: 5
 language: fr
-sourceHash: "4769afb97c2b885d"
+sourceHash: "d42e64fd2a65736e"
 sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
 ---
 
@@ -60,9 +60,48 @@ Les variables `{SERVICE}_IP` sont auto-générées à partir des mappages de slo
 
 > **Attention : N'utilisez pas `sudo docker` dans les Rediaccfiles.** La commande `sudo` réinitialise les variables d'environnement, ce qui signifie que `DOCKER_HOST` est perdu et les commandes Docker cibleront le démon système au lieu du démon isolé du dépôt. Cela casse l'isolation des conteneurs et peut causer des conflits de ports. Rediacc bloquera l'exécution s'il détecte `sudo docker` sans `-E`.
 >
-> Utilisez `renet compose` dans vos Rediaccfiles, il gère automatiquement `DOCKER_HOST`, injecte les labels réseau pour la découverte des routes et configure le réseau des services. Consultez [Réseau](/fr/docs/networking) pour les détails sur l'exposition des services via le proxy inverse. Si vous appelez Docker directement, utilisez `docker` sans `sudo`, les fonctions du Rediaccfile s'exécutent déjà avec les privilèges suffisants. Si vous devez utiliser sudo, utilisez `sudo -E docker` pour préserver les variables d'environnement.
+> Utilisez `renet compose` dans vos Rediaccfiles, il gère automatiquement `DOCKER_HOST`, injecte les labels réseau pour la découverte des routes et configure le réseau des services. Consultez [Réseau](/fr/docs/networking) pour les détails sur l'exposition des services via le proxy inverse. Si vous appelez Docker directement, utilisez `docker` sans `sudo` : les fonctions du Rediaccfile atteignent le démon Docker du dépôt en tant qu'utilisateur universel, sans root (voir [Privilèges](#privilèges)).
 >
 > `renet` est l'outil distant de bas niveau. Pour les workflows normaux des utilisateurs depuis votre workstation, préférez les commandes `rdc` telles que `rdc repo up` et `rdc repo down`. Consultez [rdc vs renet](/fr/docs/rdc-vs-renet).
+
+### Privilèges
+
+`up()` et `down()` s'exécutent en tant qu'utilisateur universel (`rediacc`), et non en root, dans un sandbox qui limite les endroits où elles peuvent lire et écrire. L'environnement est construit pour la fonction plutôt qu'hérité : il contient donc les variables ci-dessus, les valeurs `REDIACC_SECRET_*` du dépôt et un `PATH` minimal. `sudo` n'est disponible à aucun niveau : le sandbox active `no_new_privs`, de sorte qu'une ligne de Rediaccfile qui utilise `sudo` échoue et doit s'en passer. Une machine sans Landlock refuse `up()` et `down()` au lieu de les exécuter sans confinement.
+
+Une ligne qui a besoin de plus que le niveau par défaut échoue avec l'erreur que lui donne le sandbox, et le journal et la CLI affichent la ligne correspondante du Rediaccfile avec la commande d'autorisation.
+
+| Un Rediaccfile fait | Il voit | Correction |
+|--------------------|--------------------|--------------------|
+| `sudo x` | `sudo: The "no new privileges" flag is set` | Retirer `sudo`. L'étape n'a pas besoin de root ou nécessite une autorisation |
+| `chown 5050 ...` ou `rm -rf` sur un répertoire appartenant à un conteneur | `Operation not permitted` / `Permission denied` | Exécuter l'étape dans un conteneur à usage unique : `renet compose -- run --rm --no-deps --user 0 --entrypoint chown <service> -R 5050:5050 /data` |
+| Écrit `.env` ou d'autres fichiers dans le montage | Fonctionne ; les fichiers appartiennent à l'utilisateur universel | Aucune |
+| Lit `/etc/rediacc/*`, `/proc/kcore` ou un périphérique bloc | `Permission denied` | Demander une autorisation de chemin |
+| Lit directement un secret de type fichier | `Permission denied` | Utiliser `secrets:` de compose ou un secret en mode env |
+| `nvidia-smi` sans autorisation de périphérique | Le périphérique est absent | Accorder le périphérique, voir [GPU](/fr/docs/gpu) |
+| `sysctl -w` | `Permission denied` | Le définir une fois sur la machine, en tant qu'administrateur |
+
+#### Demander une autorisation
+
+Une autorisation étend ce que `up()` et `down()` peuvent atteindre. Seul un opérateur l'accorde, depuis l'extérieur du dépôt :
+
+```bash
+rdc repo permission grant <repo-ref> --path /srv/data:rw
+rdc repo permission grant <repo-ref> --root
+rdc repo permission show <repo-ref>
+rdc repo permission revoke <repo-ref> --path /srv/data
+```
+
+`--path` ajoute une règle Landlock, en lecture seule sauf si `:rw` est indiqué, et la machine refuse un chemin qui atteint un autre dépôt, le datastore ou `/etc/rediacc`. `--root` exécute les fonctions en root sans abandon de privilèges, et une sauvegarde à froid refuse un tel dépôt. Les agents ne peuvent pas accorder `--root`, sauf si l'opérateur a défini `REDIACC_ALLOW_GRAND_REPO` avant le démarrage de l'agent. Un fork a un nouvel identifiant réseau et démarre sans autorisation, et une autorisation trouvée sous un identifiant réseau réutilisé est écartée.
+
+Un Rediaccfile peut déclarer ce dont il a besoin par une ligne de commentaire, à titre de simple demande :
+
+```bash
+# rediacc:needs root
+# rediacc:needs path=/srv/data
+# rediacc:needs device=nvidia.com/gpu=all
+```
+
+`up()` compare la déclaration à l'autorisation. Quand l'autorisation manque, `up()` est refusé avant l'exécution de toute ligne, et le message affiche la commande d'autorisation exacte. `down()` ne vérifie jamais la déclaration, afin qu'un commentaire modifié dans le dépôt ne puisse pas empêcher le `repo down` d'un opérateur ; un `down()` qui a réellement besoin de l'autorisation échoue dans sa propre étape. `machine converge` ignore un tel dépôt avec le statut `needs_lifecycle_grant` au lieu de le redémarrer vers le refus.
 
 ### Exemple
 

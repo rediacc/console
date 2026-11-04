@@ -9,7 +9,7 @@ tags:
 subcategory: workloads
 order: 5
 language: zh
-sourceHash: "4769afb97c2b885d"
+sourceHash: "d42e64fd2a65736e"
 sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
 ---
 
@@ -59,9 +59,48 @@ Rediaccfile 在两个位置被发现：
 
 > **警告：请勿在 Rediaccfile 中使用 `sudo docker`。** `sudo` 命令会重置环境变量，导致 `DOCKER_HOST` 丢失，Docker 命令将指向系统守护进程而非仓库的隔离守护进程。这会破坏容器隔离并可能导致端口冲突。如果 Rediacc 检测到未带 `-E` 的 `sudo docker`，将阻止执行。
 >
-> 在 Rediaccfile 中请使用 `renet compose`，它会自动处理 `DOCKER_HOST`，注入路由发现所需的网络标签，并配置服务网络。有关服务如何通过反向代理暴露的详细信息，请参阅[网络](/zh/docs/networking)。如果直接调用 Docker，请使用不带 `sudo` 的 `docker`，Rediaccfile 函数已拥有充分权限。如果必须使用 sudo，请使用 `sudo -E docker` 来保留环境变量。
+> 在 Rediaccfile 中请使用 `renet compose`，它会自动处理 `DOCKER_HOST`，注入路由发现所需的网络标签，并配置服务网络。有关服务如何通过反向代理暴露的详细信息，请参阅[网络](/zh/docs/networking)。如果直接调用 Docker，请使用不带 `sudo` 的 `docker`，Rediaccfile 函数以通用用户身份（而非 root）访问仓库的 Docker 守护进程（参阅[权限](/zh/docs/services#权限)）。
 >
 > `renet` 是远程低级别工具。对于从工作站执行的正常用户工作流，请优先使用 `rdc` 命令，如 `rdc repo up` 和 `rdc repo down`。参阅 [rdc vs renet](/zh/docs/rdc-vs-renet)。
+
+### 权限
+
+`up()` 和 `down()` 以通用用户（`rediacc`）而非 root 的身份运行，处于一个限制其读写位置的沙箱中。环境是为函数单独构建的，而不是继承而来，因此只包含上文的变量、仓库的 `REDIACC_SECRET_*` 值和一个最小的 `PATH`。任何层级下都不能使用 `sudo`：沙箱设置了 `no_new_privs`，所以使用 `sudo` 的 Rediaccfile 行会失败，必须去掉 `sudo`。没有 Landlock 的机器会拒绝 `up()` 和 `down()`，而不是在无约束的情况下运行它们。
+
+需要超出默认权限的行会以沙箱给出的错误失败，日志和 CLI 会打印对应的 Rediaccfile 行以及授权命令。
+
+| Rediaccfile 的操作 | 看到的结果 | 处理方式 |
+|---|---|---|
+| `sudo x` | `sudo: The "no new privileges" flag is set` | 去掉 `sudo`。该步骤要么不需要 root，要么需要授权 |
+| `chown 5050 ...`，或对容器所属目录执行 `rm -rf` | `Operation not permitted` 或 `Permission denied` | 在一次性容器中运行该步骤：`renet compose -- run --rm --no-deps --user 0 --entrypoint chown <service> -R 5050:5050 /data` |
+| 在挂载目录中写入 `.env` 或其他文件 | 正常；文件属于通用用户 | 无需处理 |
+| 读取 `/etc/rediacc/*`、`/proc/kcore` 或块设备 | `Permission denied` | 申请路径授权 |
+| 直接读取文件型密钥 | `Permission denied` | 使用 compose 的 `secrets:` 或 env 模式密钥 |
+| 没有设备授权就运行 `nvidia-smi` | 设备不存在 | 授予设备，参阅 [GPU](/zh/docs/gpu) |
+| `sysctl -w` | `Permission denied` | 由管理员在机器上设置一次 |
+
+#### 申请授权
+
+授权会扩大 `up()` 和 `down()` 可以访问的范围。只有运维人员能够授权，并且要在仓库之外操作：
+
+```bash
+rdc repo permission grant <repo-ref> --path /srv/data:rw
+rdc repo permission grant <repo-ref> --root
+rdc repo permission show <repo-ref>
+rdc repo permission revoke <repo-ref> --path /srv/data
+```
+
+`--path` 添加一条 Landlock 规则，除非带有 `:rw`，否则为只读；机器会拒绝触及其他仓库、数据存储或 `/etc/rediacc` 的路径。`--root` 以 root 身份运行函数且不降权，冷备份会拒绝这样的仓库。除非运维人员在代理启动之前设置了 `REDIACC_ALLOW_GRAND_REPO`，否则代理不能授予 `--root`。分叉有新的网络 ID，启动时没有授权，在被复用的网络 ID 下找到的授权会被丢弃。
+
+Rediaccfile 可以用注释行声明自己的需求，这只是一个请求：
+
+```bash
+# rediacc:needs root
+# rediacc:needs path=/srv/data
+# rediacc:needs device=nvidia.com/gpu=all
+```
+
+`up()` 会把声明与授权进行比对。授权缺失时，`up()` 在任何一行运行之前就会被拒绝，消息中会打印确切的授权命令。`down()` 从不检查声明，因此在仓库内修改注释无法阻止运维人员的 `repo down`；真正需要授权的 `down()` 会在自己的步骤中失败。`machine converge` 会把这样的仓库作为 `needs_lifecycle_grant` 跳过，而不是把它重启进拒绝状态。
 
 ### 示例
 

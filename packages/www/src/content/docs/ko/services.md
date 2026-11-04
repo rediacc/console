@@ -9,7 +9,7 @@ tags:
 subcategory: workloads
 order: 5
 language: ko
-sourceHash: "4769afb97c2b885d"
+sourceHash: "d42e64fd2a65736e"
 sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
 ---
 
@@ -59,9 +59,48 @@ Rediaccfile 함수가 실행될 때 다음 환경 변수를 사용할 수 있습
 
 > **경고: Rediaccfile에서 `sudo docker`를 사용하지 마십시오.** `sudo` 명령은 환경 변수를 초기화하므로 `DOCKER_HOST`가 손실되고 Docker 명령이 저장소의 격리된 데몬 대신 시스템 데몬을 대상으로 합니다. 이는 컨테이너 격리를 깨고 포트 충돌을 일으킬 수 있습니다. Rediacc는 `-E` 없이 `sudo docker`를 감지하면 실행을 차단합니다.
 >
-> Rediaccfile에서 `renet compose`를 사용하십시오. 이는 `DOCKER_HOST`를 자동으로 처리하고, 경로 검색을 위한 네트워킹 레이블을 주입하며, 서비스 네트워킹을 구성합니다. 서비스가 리버스 프록시를 통해 노출되는 방법은 [네트워킹](/en/docs/networking)을 참조하십시오. Docker를 직접 호출하는 경우 `sudo` 없이 `docker`를 사용하십시오. Rediaccfile 함수는 이미 충분한 권한으로 실행됩니다. sudo를 사용해야 한다면 `sudo -E docker`를 사용하여 환경 변수를 보존하십시오.
+> Rediaccfile에서 `renet compose`를 사용하십시오. 이는 `DOCKER_HOST`를 자동으로 처리하고, 경로 검색을 위한 네트워킹 레이블을 주입하며, 서비스 네트워킹을 구성합니다. 서비스가 리버스 프록시를 통해 노출되는 방법은 [네트워킹](/en/docs/networking)을 참조하십시오. Docker를 직접 호출하는 경우 `sudo` 없이 `docker`를 사용하십시오. Rediaccfile 함수는 root가 아닌 유니버설 사용자로 저장소의 Docker 데몬에 접근합니다([권한](/ko/docs/services#권한) 참조).
 >
 > `renet`은 원격 저수준 도구입니다. 워크스테이션에서의 일반 사용자 워크플로에는 `rdc repo up` 및 `rdc repo down` 같은 `rdc` 명령을 선호하십시오. [rdc vs renet](/en/docs/rdc-vs-renet)을 참조하십시오.
+
+### 권한
+
+`up()`과 `down()`은 읽고 쓸 수 있는 위치를 제한하는 샌드박스 안에서 root가 아닌 유니버설 사용자(`rediacc`)로 실행됩니다. 환경은 상속되지 않고 함수마다 새로 구성되므로 위에 나온 변수, 저장소의 `REDIACC_SECRET_*` 값, 최소한의 `PATH`만 담깁니다. `sudo`는 어떤 티어에서도 사용할 수 없습니다. 샌드박스가 `no_new_privs`를 설정하므로 `sudo`를 쓰는 Rediaccfile 줄은 실패하며 `sudo`를 빼야 합니다. Landlock이 없는 머신은 `up()`과 `down()`을 제한 없이 실행하는 대신 거부합니다.
+
+기본 권한보다 더 필요한 줄은 샌드박스가 돌려주는 오류와 함께 실패하며, 저널과 CLI는 해당하는 Rediaccfile 줄을 권한 부여 명령과 함께 출력합니다.
+
+| Rediaccfile의 동작 | 보이는 결과 | 해결 |
+|---|---|---|
+| `sudo x` | `sudo: The "no new privileges" flag is set` | `sudo`를 뺍니다. 해당 단계는 root가 필요 없거나 권한 부여가 필요합니다 |
+| `chown 5050 ...` 또는 컨테이너가 소유한 디렉터리의 `rm -rf` | `Operation not permitted` 또는 `Permission denied` | 단발성 컨테이너에서 단계를 실행합니다: `renet compose -- run --rm --no-deps --user 0 --entrypoint chown <service> -R 5050:5050 /data` |
+| 마운트 안에 `.env` 등의 파일 쓰기 | 동작함. 파일은 유니버설 사용자 소유가 됨 | 필요 없음 |
+| `/etc/rediacc/*`, `/proc/kcore` 또는 블록 장치 읽기 | `Permission denied` | 경로 권한을 요청합니다 |
+| 파일 시크릿을 직접 읽기 | `Permission denied` | compose의 `secrets:` 또는 env 모드 시크릿을 사용합니다 |
+| 장치 권한 없이 `nvidia-smi` | 장치가 없음 | 장치 권한을 부여합니다. [GPU](/ko/docs/gpu) 참조 |
+| `sysctl -w` | `Permission denied` | 관리자로서 머신에 한 번 설정합니다 |
+
+#### 권한 요청하기
+
+권한 부여는 `up()`과 `down()`이 접근할 수 있는 범위를 넓힙니다. 권한은 운영자만 부여할 수 있으며, 저장소 바깥에서 부여합니다.
+
+```bash
+rdc repo permission grant <repo-ref> --path /srv/data:rw
+rdc repo permission grant <repo-ref> --root
+rdc repo permission show <repo-ref>
+rdc repo permission revoke <repo-ref> --path /srv/data
+```
+
+`--path`는 Landlock 규칙을 하나 추가하며, `:rw`를 붙이지 않으면 읽기 전용입니다. 머신은 다른 저장소, 데이터스토어, `/etc/rediacc`에 닿는 경로를 거부합니다. `--root`는 권한을 낮추지 않고 함수를 root로 실행하며, 콜드 백업은 이런 저장소를 거부합니다. 에이전트가 시작되기 전에 운영자가 `REDIACC_ALLOW_GRAND_REPO`를 설정하지 않았다면 에이전트는 `--root`를 부여할 수 없습니다. 포크는 새 네트워크 ID를 가지며 권한 없이 시작하고, 재사용된 네트워크 ID에서 발견된 권한은 폐기됩니다.
+
+Rediaccfile은 필요한 것을 주석 줄로 선언할 수 있으며, 이는 요청일 뿐입니다.
+
+```bash
+# rediacc:needs root
+# rediacc:needs path=/srv/data
+# rediacc:needs device=nvidia.com/gpu=all
+```
+
+`up()`은 선언을 부여된 권한과 비교합니다. 권한이 없으면 `up()`은 어느 줄도 실행되기 전에 거부되고, 메시지에 정확한 권한 부여 명령이 출력됩니다. `down()`은 선언을 확인하지 않으므로, 저장소 안에서 수정한 주석으로 운영자의 `repo down`을 막을 수 없습니다. 권한이 정말 필요한 `down()`은 해당 단계에서 직접 실패합니다. `machine converge`는 이런 저장소를 거부될 상태로 다시 시작하는 대신 `needs_lifecycle_grant`로 건너뜁니다.
 
 ### 예시
 

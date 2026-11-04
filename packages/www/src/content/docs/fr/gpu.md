@@ -8,7 +8,7 @@ tags:
 subcategory: workloads
 order: 7
 language: fr
-sourceHash: "1eeb1e646bd914d2"
+sourceHash: "9643e80c0e977946"
 sourceCommit: "80854ab96b06bee39cceae6b259e9efbc342f93a"
 ---
 
@@ -73,6 +73,12 @@ docker run --rm --device nvidia.com/gpu=all ubuntu:24.04 nvidia-smi -L
 ```
 
 Le même conteneur est refusé dans un dépôt sans l'autorisation, et le message nomme l'autorisation manquante.
+
+## Outils côté hôte dans un Rediaccfile
+
+L'essentiel du travail sur GPU passe par Docker, et l'autorisation de périphérique ci-dessus suffit : `renet compose` avec `devices:` et `docker run --device` atteignent le périphérique via le démon Docker du dépôt, et les hooks CDI s'exécutent sous celui-ci. Un Rediaccfile qui appelle un outil de l'hôte comme `nvidia-smi` depuis `up()` ou `down()` touche le nœud de périphérique lui-même. Ces fonctions s'exécutent en tant qu'utilisateur universel sans privilèges dans un sandbox ; la même autorisation de périphérique leur ouvre donc aussi les nœuds de périphérique de la spécification CDI, et ajoute le groupe du nœud (`video` ou `render`) uniquement quand le mode du nœud en exige un. Les nœuds NVIDIA sous `/dev/nvidia*` sont normalement accessibles à tous, et `/dev/dri/renderD*` et `/dev/kfd` appartiennent normalement au groupe `render`.
+
+Sans l'autorisation de périphérique, `nvidia-smi` dans `up()` échoue faute de périphérique, et le journal nomme la commande d'autorisation. Un outil de l'hôte qui a besoin de plus que les nœuds de périphérique nécessite une autorisation de chemin, voir [Privilèges](/fr/docs/services#privilèges).
 
 ## Autorisations exclusives
 

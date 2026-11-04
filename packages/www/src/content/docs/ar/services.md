@@ -9,7 +9,7 @@ tags:
 subcategory: workloads
 order: 5
 language: ar
-sourceHash: "4769afb97c2b885d"
+sourceHash: "d42e64fd2a65736e"
 sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
 ---
 
@@ -59,9 +59,48 @@ sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
 
 > **تحذير: لا تستخدم `sudo docker` في ملفات Rediaccfile.** أمر `sudo` يعيد تعيين متغيرات البيئة، مما يعني فقدان `DOCKER_HOST` واستهداف أوامر Docker لعملية النظام بدلاً من العملية المعزولة للمستودع. هذا يكسر عزل الحاويات وقد يسبب تعارضات في المنافذ. سيمنع Rediacc التنفيذ إذا اكتشف `sudo docker` بدون `-E`.
 >
-> استخدم `renet compose` في ملفات Rediaccfile، فهو يتعامل تلقائياً مع `DOCKER_HOST` ويحقن تسميات الشبكة لاكتشاف المسارات ويهيئ شبكات الخدمات. راجع [الشبكات](/ar/docs/networking) لتفاصيل كيفية كشف الخدمات عبر الوكيل العكسي. إذا استدعيت Docker مباشرة، استخدم `docker` بدون `sudo`، دوال Rediaccfile تعمل بالفعل بصلاحيات كافية. إذا كان يجب عليك استخدام sudo، استخدم `sudo -E docker` للحفاظ على متغيرات البيئة.
+> استخدم `renet compose` في ملفات Rediaccfile، فهو يتعامل تلقائياً مع `DOCKER_HOST` ويحقن تسميات الشبكة لاكتشاف المسارات ويهيئ شبكات الخدمات. راجع [الشبكات](/ar/docs/networking) لتفاصيل كيفية كشف الخدمات عبر الوكيل العكسي. إذا استدعيت Docker مباشرة، استخدم `docker` بدون `sudo`: تصل دوال Rediaccfile إلى عملية Docker الخاصة بالمستودع بصفة المستخدم العام، دون root (انظر [الامتيازات](#الامتيازات)).
 >
 > `renet` هي أداة منخفضة المستوى بعيدة. لسير العمل الطبيعي للمستخدم من محطة العمل، فضّل أوامر `rdc` مثل `rdc repo up` و `rdc repo down`. راجع [rdc vs renet](/ar/docs/rdc-vs-renet).
+
+### الامتيازات
+
+تعمل `up()` و`down()` بصفة المستخدم العام (`rediacc`)، لا root، داخل بيئة معزولة (sandbox) تقيّد المواضع التي يمكنها القراءة منها والكتابة إليها. تُبنى البيئة للدالة بدلاً من وراثتها، فتحمل المتغيرات المذكورة أعلاه وقيم `REDIACC_SECRET_*` الخاصة بالمستودع و`PATH` أدنى. لا يتوفر `sudo` في أي مستوى: تضبط البيئة المعزولة `no_new_privs`، فيفشل سطر في Rediaccfile يستخدم `sudo` ويجب حذفه. ترفض الآلة التي لا تدعم Landlock تشغيل `up()` و`down()` بدلاً من تشغيلهما دون قيود.
+
+السطر الذي يحتاج إلى أكثر من الإعداد الافتراضي يفشل بالخطأ الذي تعطيه البيئة المعزولة، ويطبع السجل (journal) وواجهة CLI السطر المطابق من Rediaccfile مع أمر الإذن.
+
+| ما يفعله Rediaccfile | ما يظهر له | الحل |
+|--------------------|--------------------|--------------------|
+| `sudo x` | `sudo: The "no new privileges" flag is set` | احذف `sudo`. الخطوة إما لا تحتاج إلى root أو تحتاج إلى إذن |
+| `chown 5050 ...` أو `rm -rf` لمجلد تملكه حاوية | `Operation not permitted` / `Permission denied` | شغّل الخطوة في حاوية لمرة واحدة: `renet compose -- run --rm --no-deps --user 0 --entrypoint chown <service> -R 5050:5050 /data` |
+| يكتب `.env` أو ملفات أخرى في نقطة التحميل | يعمل؛ الملفات تعود للمستخدم العام | لا شيء |
+| يقرأ `/etc/rediacc/*` أو `/proc/kcore` أو جهاز كتل | `Permission denied` | اطلب إذن مسار |
+| يقرأ سرّ ملف مباشرة | `Permission denied` | استخدم `secrets:` في compose أو سرّاً بنمط env |
+| `nvidia-smi` دون إذن جهاز | الجهاز مفقود | امنح إذن الجهاز، انظر [وحدات GPU](/ar/docs/gpu) |
+| `sysctl -w` | `Permission denied` | اضبطه مرة واحدة على الآلة بصفة مسؤول |
+
+#### طلب إذن
+
+يوسّع الإذن ما يمكن أن تصل إليه `up()` و`down()`. لا يمنحه إلا المشغّل، من خارج المستودع:
+
+```bash
+rdc repo permission grant <repo-ref> --path /srv/data:rw
+rdc repo permission grant <repo-ref> --root
+rdc repo permission show <repo-ref>
+rdc repo permission revoke <repo-ref> --path /srv/data
+```
+
+يضيف `--path` قاعدة Landlock واحدة، للقراءة فقط ما لم يُحدَّد `:rw`، وترفض الآلة أي مسار يصل إلى مستودع آخر أو مخزن البيانات (datastore) أو `/etc/rediacc`. يشغّل `--root` الدوال بصفة root دون إسقاط الامتيازات، ويرفض النسخ الاحتياطي البارد مستودعاً كهذا. لا يستطيع الوكلاء (agents) منح `--root` إلا إذا ضبط المشغّل `REDIACC_ALLOW_GRAND_REPO` قبل بدء الوكيل. للفرع (fork) معرّف شبكة جديد ويبدأ بلا إذن، ويُهمَل أي إذن يوجد تحت معرّف شبكة أُعيد استخدامه.
+
+يمكن لـ Rediaccfile أن يعلن ما يحتاجه بسطر تعليق، بوصفه طلباً فقط:
+
+```bash
+# rediacc:needs root
+# rediacc:needs path=/srv/data
+# rediacc:needs device=nvidia.com/gpu=all
+```
+
+تقارن `up()` الإعلان بالإذن. عندما يغيب الإذن تُرفض `up()` قبل تشغيل أي سطر، وتطبع الرسالة أمر الإذن بالضبط. لا تفحص `down()` الإعلان أبداً، حتى لا يستطيع تعليق معدَّل داخل المستودع منع `repo down` الخاص بالمشغّل؛ أما `down()` التي تحتاج الإذن فعلاً فتفشل في خطوتها. يتخطى `machine converge` مستودعاً كهذا بالحالة `needs_lifecycle_grant` بدلاً من إعادة تشغيله نحو الرفض.
 
 ### مثال
 

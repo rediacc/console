@@ -8,7 +8,7 @@ tags:
 subcategory: workloads
 order: 7
 language: ar
-sourceHash: "1eeb1e646bd914d2"
+sourceHash: "9643e80c0e977946"
 sourceCommit: "80854ab96b06bee39cceae6b259e9efbc342f93a"
 ---
 
@@ -73,6 +73,12 @@ docker run --rm --device nvidia.com/gpu=all ubuntu:24.04 nvidia-smi -L
 ```
 
 تُرفض الحاوية نفسها في مستودع بلا إذن، وتسمّي الرسالة الإذن الناقص.
+
+## أدوات المضيف في Rediaccfile
+
+معظم عمل GPU يمر عبر Docker، وإذن الجهاز أعلاه هو كل ما يحتاجه: يصل `renet compose` مع `devices:` و`docker run --device` إلى الجهاز عبر عملية Docker الخاصة بالمستودع، وتعمل خطافات CDI تحتها. أما Rediaccfile الذي يستدعي أداة مضيف مثل `nvidia-smi` من `up()` أو `down()` فيلمس عقدة الجهاز نفسها. تعمل هذه الدوال بصفة المستخدم العام غير المميّز داخل بيئة معزولة، لذلك يفتح إذن الجهاز نفسه لها أيضاً عقد أجهزة مواصفة CDI، ويضيف مجموعة العقدة (`video` أو `render`) فقط عندما يتطلب نمط العقدة ذلك. عقد NVIDIA تحت `/dev/nvidia*` متاحة عادةً للجميع، وتنتمي `/dev/dri/renderD*` و`/dev/kfd` عادةً إلى المجموعة `render`.
+
+دون إذن الجهاز يفشل `nvidia-smi` في `up()` لأن الجهاز مفقود، ويذكر السجل (journal) أمر الإذن. الأداة التي تحتاج إلى أكثر من عقد الأجهزة تحتاج إلى إذن مسار، انظر [الامتيازات](/ar/docs/services#الامتيازات).
 
 ## الأذونات الحصرية
 

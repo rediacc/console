@@ -10,7 +10,7 @@ tags:
 subcategory: workloads
 order: 5
 language: tr
-sourceHash: "4769afb97c2b885d"
+sourceHash: "d42e64fd2a65736e"
 sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
 ---
 
@@ -60,9 +60,48 @@ Bir Rediaccfile fonksiyonu çalıştığında, aşağıdaki ortam değişkenleri
 
 > **Uyarı: Rediaccfile'larda `sudo docker` kullanmayın.** `sudo` komutu ortam değişkenlerini sıfırlar, bu da `DOCKER_HOST` değişkeninin kaybolmasına ve Docker komutlarının deponun izole daemon'u yerine sistem daemon'unu hedeflemesine neden olur. Bu, konteyner izolasyonunu bozar ve port çakışmalarına yol açabilir. Rediacc, `-E` olmadan `sudo docker` algılarsa çalıştırmayı engeller.
 >
-> Rediaccfile'larınızda `renet compose` kullanın -- bu, `DOCKER_HOST` değişkenini otomatik olarak yönetir, yönlendirme keşfi için ağ etiketlerini enjekte eder ve servis ağını yapılandırır. Servislerin ters proxy aracılığıyla nasıl sunulduğuna dair ayrıntılar için [Ağ](/tr/docs/networking) sayfasına bakın. Docker'ı doğrudan çağırıyorsanız, `sudo` olmadan `docker` kullanın -- Rediaccfile fonksiyonları zaten yeterli yetkiyle çalışır. sudo kullanmanız gerekiyorsa, ortam değişkenlerini korumak için `sudo -E docker` kullanın.
+> Rediaccfile'larınızda `renet compose` kullanın -- bu, `DOCKER_HOST` değişkenini otomatik olarak yönetir, yönlendirme keşfi için ağ etiketlerini enjekte eder ve servis ağını yapılandırır. Servislerin ters proxy aracılığıyla nasıl sunulduğuna dair ayrıntılar için [Ağ](/tr/docs/networking) sayfasına bakın. Docker'ı doğrudan çağırıyorsanız, `sudo` olmadan `docker` kullanın -- Rediaccfile fonksiyonları deponun Docker daemon'una root olmadan, evrensel kullanıcı olarak erişir (bkz. [Ayrıcalıklar](/tr/docs/services#ayrıcalıklar)).
 >
 > `renet` uzak düşük seviye araçtır. İş istasyonunuzdan normal kullanıcı iş akışları için `rdc repo up` ve `rdc repo down` gibi `rdc` komutlarını tercih edin. Bkz. [rdc vs renet](/tr/docs/rdc-vs-renet).
+
+### Ayrıcalıklar
+
+`up()` ve `down()`, nerede okuyup yazabileceklerini sınırlayan bir sandbox içinde root olarak değil, evrensel kullanıcı (`rediacc`) olarak çalışır. Ortam miras alınmaz, fonksiyon için baştan kurulur; bu yüzden yukarıdaki değişkenleri, deponun `REDIACC_SECRET_*` değerlerini ve asgari bir `PATH` içerir. `sudo` hiçbir katmanda kullanılamaz: sandbox `no_new_privs` ayarlar, dolayısıyla `sudo` kullanan bir Rediaccfile satırı başarısız olur ve `sudo`dan vazgeçmesi gerekir. Landlock olmayan bir makine, `up()` ve `down()` fonksiyonlarını sınırsız çalıştırmak yerine reddeder.
+
+Varsayılandan fazlasına ihtiyaç duyan bir satır, sandbox'ın verdiği hatayla başarısız olur; günlük ve CLI, Rediaccfile'ın ilgili satırını izin verme komutuyla birlikte yazdırır.
+
+| Rediaccfile ne yapıyor | Ne görüyor | Çözüm |
+|---|---|---|
+| `sudo x` | `sudo: The "no new privileges" flag is set` | `sudo`yu bırakın. Adım ya root gerektirmez ya da bir izin gerektirir |
+| `chown 5050 ...` veya bir konteynerin sahip olduğu dizinde `rm -rf` | `Operation not permitted` veya `Permission denied` | Adımı tek kullanımlık bir konteynerde çalıştırın: `renet compose -- run --rm --no-deps --user 0 --entrypoint chown <service> -R 5050:5050 /data` |
+| Mount içine `.env` veya başka dosyalar yazar | Çalışır; dosyalar evrensel kullanıcıya aittir | Gerek yok |
+| `/etc/rediacc/*`, `/proc/kcore` veya bir blok aygıtını okur | `Permission denied` | Yol izni isteyin |
+| Bir dosya sırrını doğrudan okur | `Permission denied` | Compose `secrets:` veya env kipinde bir sır kullanın |
+| Aygıt izni olmadan `nvidia-smi` | Aygıt yok | Aygıt izni verin, bkz. [GPU'lar](/tr/docs/gpu) |
+| `sysctl -w` | `Permission denied` | Makinede bir yönetici olarak bir kez ayarlayın |
+
+#### İzin isteme
+
+Bir izin, `up()` ve `down()` fonksiyonlarının ulaşabileceği alanı genişletir. İzni yalnızca bir operatör verir, repo dışından:
+
+```bash
+rdc repo permission grant <repo-ref> --path /srv/data:rw
+rdc repo permission grant <repo-ref> --root
+rdc repo permission show <repo-ref>
+rdc repo permission revoke <repo-ref> --path /srv/data
+```
+
+`--path` bir Landlock kuralı ekler; `:rw` verilmedikçe salt okunurdur ve makine başka bir repoya, veri deposuna veya `/etc/rediacc`'e ulaşan yolu reddeder. `--root` fonksiyonları ayrıcalık düşürmeden root olarak çalıştırır ve soğuk yedek böyle bir repoyu reddeder. Operatör, ajan başlamadan önce `REDIACC_ALLOW_GRAND_REPO` ayarını yapmadıysa ajanlar `--root` veremez. Bir fork yeni bir ağ kimliğine sahiptir ve izinsiz başlar; yeniden kullanılan bir ağ kimliği altında bulunan izin ise atılır.
+
+Bir Rediaccfile, ihtiyacını bir yorum satırıyla bildirebilir; bu yalnızca bir istektir:
+
+```bash
+# rediacc:needs root
+# rediacc:needs path=/srv/data
+# rediacc:needs device=nvidia.com/gpu=all
+```
+
+`up()` bildirimi izinle karşılaştırır. İzin eksikse `up()` hiçbir satır çalışmadan reddedilir ve mesajda tam izin komutu yazdırılır. `down()` bildirimi hiç denetlemez; böylece repo içinde düzenlenen bir yorum, operatörün `repo down` komutunu durduramaz. İzne gerçekten ihtiyaç duyan bir `down()` kendi adımında başarısız olur. `machine converge`, böyle bir repoyu reddedilecek duruma yeniden başlatmak yerine `needs_lifecycle_grant` olarak atlar.
 
 ### Örnek
 

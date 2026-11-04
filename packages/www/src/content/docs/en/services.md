@@ -58,9 +58,48 @@ The `{SERVICE}_IP` variables are auto-generated from the slot mappings in `.redi
 
 > **Warning: Do not use `sudo docker` in Rediaccfiles.** The `sudo` command resets environment variables, which means `DOCKER_HOST` is lost and Docker commands will target the system daemon instead of the repository's isolated daemon. This breaks container isolation and can cause port conflicts. Rediacc will block execution if it detects `sudo docker` without `-E`.
 >
-> Use `renet compose` in your Rediaccfiles, it automatically handles `DOCKER_HOST`, injects networking labels for route discovery, and configures service networking. See [Networking](/en/docs/networking) for details on how services are exposed via the reverse proxy. If calling Docker directly, use `docker` without `sudo`, Rediaccfile functions already run with sufficient privileges. If you must use sudo, use `sudo -E docker` to preserve environment variables.
+> Use `renet compose` in your Rediaccfiles, it automatically handles `DOCKER_HOST`, injects networking labels for route discovery, and configures service networking. See [Networking](/en/docs/networking) for details on how services are exposed via the reverse proxy. If calling Docker directly, use `docker` without `sudo`: Rediaccfile functions reach the repository's Docker daemon as the universal user, without root (see [Privileges](#privileges)).
 >
 > `renet` is the remote low-level tool. For normal user workflows from your workstation, prefer `rdc` commands such as `rdc repo up` and `rdc repo down`. See [rdc vs renet](/en/docs/rdc-vs-renet).
+
+### Privileges
+
+`up()` and `down()` run as the universal user (`rediacc`), not as root, inside a sandbox that limits where they can read and write. The environment is built for the function rather than inherited, so it carries the variables above, the repository's `REDIACC_SECRET_*` values and a minimal `PATH`. `sudo` is not available under any tier: the sandbox sets `no_new_privs`, so a Rediaccfile line that uses `sudo` fails and has to drop it. A machine without Landlock refuses `up()` and `down()` instead of running them unconfined.
+
+A line that needs more than the default fails with the error the sandbox gives it, and the journal and the CLI print the matching line of the Rediaccfile with the grant command.
+
+| A Rediaccfile does | It sees | Fix |
+|--------------------|---------|-----|
+| `sudo x` | `sudo: The "no new privileges" flag is set` | Drop `sudo`. The step either needs no root or needs a grant |
+| `chown 5050 ...` or `rm -rf` of a directory a container owns | `Operation not permitted` or `Permission denied` | Run the step in a one-shot container: `renet compose -- run --rm --no-deps --user 0 --entrypoint chown <service> -R 5050:5050 /data` |
+| Writes `.env` or other files in the mount | Works; the files belong to the universal user | None |
+| Reads `/etc/rediacc/*`, `/proc/kcore` or a block device | `Permission denied` | Ask for a path grant |
+| Reads a file secret directly | `Permission denied` | Use compose `secrets:` or an env-mode secret |
+| `nvidia-smi` with no device grant | The device is missing | Grant the device, see [GPUs](/en/docs/gpu) |
+| `sysctl -w` | `Permission denied` | Set it once on the machine as an administrator |
+
+#### Asking for a grant
+
+A grant widens what `up()` and `down()` may reach. Only an operator gives one, from outside the repository:
+
+```bash
+rdc repo permission grant <repo-ref> --path /srv/data:rw
+rdc repo permission grant <repo-ref> --root
+rdc repo permission show <repo-ref>
+rdc repo permission revoke <repo-ref> --path /srv/data
+```
+
+`--path` adds one Landlock rule, read-only unless `:rw` is given, and the machine refuses a path that reaches another repository, the datastore or `/etc/rediacc`. `--root` runs the functions as root with no privilege drop, and a cold backup refuses such a repository. Agents cannot give `--root` unless the operator set `REDIACC_ALLOW_GRAND_REPO` before the agent started. A fork has a new network id and starts with no grant, and a grant found under a reused network id is discarded.
+
+A Rediaccfile can declare what it needs with a comment line, as a request only:
+
+```bash
+# rediacc:needs root
+# rediacc:needs path=/srv/data
+# rediacc:needs device=nvidia.com/gpu=all
+```
+
+`up()` compares the declaration with the grant. When the grant is missing, `up()` is refused before any line runs, and the message prints the exact grant command. `down()` never checks the declaration, so a comment edited inside the repository cannot stop an operator's `repo down`; a `down()` that really needs the grant fails in its own step. `machine converge` skips such a repository as `needs_lifecycle_grant` instead of restarting it into the refusal.
 
 ### Example
 

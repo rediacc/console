@@ -9,7 +9,7 @@ tags:
 subcategory: workloads
 order: 5
 language: ja
-sourceHash: "4769afb97c2b885d"
+sourceHash: "d42e64fd2a65736e"
 sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
 ---
 
@@ -59,9 +59,48 @@ Rediaccfile関数の実行時、以下の環境変数が利用可能です：
 
 > **警告：Rediaccfile内で`sudo docker`を使用しないでください。** `sudo`コマンドは環境変数をリセットするため、`DOCKER_HOST`が失われ、Dockerコマンドがリポジトリの隔離デーモンではなくシステムデーモンを対象にします。これによりコンテナの隔離が壊れ、ポート競合が発生する可能性があります。Rediaccは`-E`なしの`sudo docker`を検出すると実行をブロックします。
 >
-> Rediaccfile内では`renet compose`を使用してください。`DOCKER_HOST`を自動的に処理し、ルート検出用のネットワーキングラベルを注入し、サービスネットワーキングを設定します。リバースプロキシ経由でサービスを公開する方法の詳細については、[ネットワーキング](/ja/docs/networking)を参照してください。Dockerを直接呼び出す場合は、`sudo`なしで`docker`を使用してください。Rediaccfile関数は既に十分な権限で実行されます。sudoを使用する必要がある場合は、環境変数を保持するために`sudo -E docker`を使用してください。
+> Rediaccfile内では`renet compose`を使用してください。`DOCKER_HOST`を自動的に処理し、ルート検出用のネットワーキングラベルを注入し、サービスネットワーキングを設定します。リバースプロキシ経由でサービスを公開する方法の詳細については、[ネットワーキング](/ja/docs/networking)を参照してください。Dockerを直接呼び出す場合は、`sudo`なしで`docker`を使用してください。Rediaccfile関数は、rootではなくユニバーサルユーザーとしてリポジトリのDockerデーモンに接続します（[権限](/ja/docs/services#権限)を参照）。
 >
 > `renet`はリモートロー・レベルツールです。ワークステーションから通常のユーザー作業フローを行う場合は、`rdc repo up`や`rdc repo down`などの`rdc`コマンドを優先してください。[rdc vs renet](/ja/docs/rdc-vs-renet)を参照してください。
+
+### 権限
+
+`up()`と`down()`は、読み書きできる場所を制限するサンドボックスの中で、rootではなくユニバーサルユーザー（`rediacc`）として実行されます。環境は継承ではなく関数ごとに組み立てられるため、上記の変数、リポジトリの`REDIACC_SECRET_*`の値、最小限の`PATH`だけを持ちます。`sudo`はどのティアでも使えません。サンドボックスが`no_new_privs`を設定するので、`sudo`を使うRediaccfileの行は失敗し、`sudo`を外す必要があります。Landlockのないマシンは、`up()`と`down()`を制限なしで実行せず、実行を拒否します。
+
+デフォルトを超える権限が必要な行は、サンドボックスが返すエラーで失敗します。ジャーナルとCLIは、該当するRediaccfileの行をグラントのコマンドとともに表示します。
+
+| Rediaccfileの処理 | 見えるもの | 対処 |
+|---|---|---|
+| `sudo x` | `sudo: The "no new privileges" flag is set` | `sudo`を外す。そのステップはrootが不要か、グラントが必要 |
+| `chown 5050 ...`、またはコンテナが所有するディレクトリへの`rm -rf` | `Operation not permitted`または`Permission denied` | ステップを使い捨てコンテナで実行する：`renet compose -- run --rm --no-deps --user 0 --entrypoint chown <service> -R 5050:5050 /data` |
+| マウント内の`.env`などのファイルへの書き込み | 動作する。ファイルの所有者はユニバーサルユーザー | 不要 |
+| `/etc/rediacc/*`、`/proc/kcore`、ブロックデバイスの読み取り | `Permission denied` | パスのグラントを依頼する |
+| ファイルシークレットを直接読み取る | `Permission denied` | composeの`secrets:`、またはenvモードのシークレットを使う |
+| デバイスのグラントなしで`nvidia-smi` | デバイスが見つからない | デバイスをグラントする。[GPU](/ja/docs/gpu)を参照 |
+| `sysctl -w` | `Permission denied` | 管理者としてマシンに一度だけ設定する |
+
+#### グラントを依頼する
+
+グラントは、`up()`と`down()`が到達できる範囲を広げます。グラントを与えられるのはオペレーターだけで、リポジトリの外から行います。
+
+```bash
+rdc repo permission grant <repo-ref> --path /srv/data:rw
+rdc repo permission grant <repo-ref> --root
+rdc repo permission show <repo-ref>
+rdc repo permission revoke <repo-ref> --path /srv/data
+```
+
+`--path`はLandlockのルールを1つ追加します。`:rw`を付けない限り読み取り専用です。マシンは、別のリポジトリ、データストア、`/etc/rediacc`に届くパスを拒否します。`--root`は権限を落とさず、関数をrootとして実行し、コールドバックアップはそのようなリポジトリを拒否します。エージェントが起動する前にオペレーターが`REDIACC_ALLOW_GRAND_REPO`を設定していない限り、エージェントは`--root`を与えられません。フォークは新しいネットワークIDを持ち、グラントなしで始まります。再利用されたネットワークIDで見つかったグラントは破棄されます。
+
+Rediaccfileは、必要なものをコメント行で宣言できます。これはあくまで依頼です。
+
+```bash
+# rediacc:needs root
+# rediacc:needs path=/srv/data
+# rediacc:needs device=nvidia.com/gpu=all
+```
+
+`up()`は宣言をグラントと照合します。グラントがない場合、`up()`はどの行も実行される前に拒否され、メッセージに正確なグラントのコマンドが表示されます。`down()`は宣言を確認しないため、リポジトリ内で編集したコメントによってオペレーターの`repo down`が止められることはありません。グラントが本当に必要な`down()`は、そのステップ自身で失敗します。`machine converge`は、拒否される状態に再起動する代わりに、そのようなリポジトリを`needs_lifecycle_grant`としてスキップします。
 
 ### 例
 

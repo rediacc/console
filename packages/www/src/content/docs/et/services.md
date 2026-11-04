@@ -10,7 +10,7 @@ tags:
 subcategory: workloads
 order: 5
 language: et
-sourceHash: "4769afb97c2b885d"
+sourceHash: "d42e64fd2a65736e"
 sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
 ---
 
@@ -60,9 +60,48 @@ Kui Rediaccfile'i funktsioon käivitub, on saadaval järgmised keskkonna muutuja
 
 > **Hoiatus: Ärge kasutage `sudo docker`-it Rediaccfile'ides.** Käsk `sudo` lähtestab keskkonna muutujad, mis tähendab, et `DOCKER_HOST` kaob ja Dockeri käsud suunatakse süsteemi deemonile repositooriumi isoleeritud deemoni asemel. See katkestab konteineri isoleerimise ja võib põhjustada pordinäitude. Rediacc blokeerib täitmise, kui tuvastab `sudo docker` ilma `-E`-ta.
 >
-> Kasutage oma Rediaccfile'ides `renet compose`-it, see käsitseb automaatselt `DOCKER_HOST`-i, süstib võrgunduse sildid teeserveri avastamiseks ja konfigureerib teenuse võrgunduse. Vaadake [Võrgundus](/en/docs/networking) üksikasjade saamiseks, kuidas teenused puhverserveri kaudu avastuvad. Dockeri otsene kutsumine ilma sudo-ta, Rediaccfile'i funktsioonid juba töötavad piisavate õigustega. Kui peate sudo-d kasutama, kasutage `sudo -E docker` keskkonna muutujate säilitamiseks.
+> Kasutage oma Rediaccfile'ides `renet compose`-it, see käsitseb automaatselt `DOCKER_HOST`-i, süstib võrgunduse sildid teeserveri avastamiseks ja konfigureerib teenuse võrgunduse. Vaadake [Võrgundus](/en/docs/networking) üksikasjade saamiseks, kuidas teenused puhverserveri kaudu avastuvad. Kui kutsute Dockerit otse, kasutage `docker`-it ilma `sudo`-ta: Rediaccfile'i funktsioonid jõuavad hoidla Dockeri deemonini universaalse kasutajana, ilma root-õigusteta (vt [Õigused](#õigused)).
 >
 > `renet` on kaugjuhtimise madala taseme tööriist. Tavaliste kasutaja töövoode jaoks oma tööjaamast eelistage `rdc` käske nagu `rdc repo up` ja `rdc repo down`. Vaadake [rdc vs renet](/en/docs/rdc-vs-renet).
+
+### Õigused
+
+`up()` ja `down()` töötavad universaalse kasutajana (`rediacc`), mitte root-ina, liivakastis, mis piirab, kuhu nad lugeda ja kirjutada tohivad. Keskkond ehitatakse funktsiooni jaoks, mitte ei päritä, mistõttu see sisaldab ülaltoodud muutujaid, hoidla `REDIACC_SECRET_*` väärtusi ja minimaalset `PATH`-i. `sudo` ei ole saadaval üheski tasemes: liivakast seab `no_new_privs`, nii et Rediaccfile'i rida, mis kasutab `sudo`-t, ebaõnnestub ja peab sellest loobuma. Masin ilma Landlockita keeldub `up()` ja `down()` käivitamisest, selle asemel et neid piiranguteta käivitada.
+
+Rida, mis vajab enamat kui vaikimisi õigused, ebaõnnestub liivakasti antud veaga ning žurnaal ja CLI trükivad vastava Rediaccfile'i rea koos loa andmise käsuga.
+
+| Rediaccfile teeb | See näeb | Parandus |
+|--------------------|--------------------|--------------------|
+| `sudo x` | `sudo: The "no new privileges" flag is set` | Jätke `sudo` ära. Samm kas ei vaja root-õigusi või vajab luba |
+| `chown 5050 ...` või `rm -rf` kataloogil, mis kuulub konteinerile | `Operation not permitted` / `Permission denied` | Käivitage samm ühekordses konteineris: `renet compose -- run --rm --no-deps --user 0 --entrypoint chown <service> -R 5050:5050 /data` |
+| Kirjutab `.env` või muid faile haakepunkti | Töötab; failid kuuluvad universaalsele kasutajale | Pole vaja |
+| Loeb `/etc/rediacc/*`, `/proc/kcore` või plokkseadet | `Permission denied` | Taotlege rajaluba |
+| Loeb failisaladust otse | `Permission denied` | Kasutage composei `secrets:` või env-režiimi saladust |
+| `nvidia-smi` ilma seadmeloata | Seade puudub | Andke seadmele luba, vt [GPU-d](/et/docs/gpu) |
+| `sysctl -w` | `Permission denied` | Määrake see masinas üks kord administraatorina |
+
+#### Loa taotlemine
+
+Luba laiendab seda, mida `up()` ja `down()` tohivad kasutada. Selle annab ainult operaator, hoidlast väljastpoolt:
+
+```bash
+rdc repo permission grant <repo-ref> --path /srv/data:rw
+rdc repo permission grant <repo-ref> --root
+rdc repo permission show <repo-ref>
+rdc repo permission revoke <repo-ref> --path /srv/data
+```
+
+`--path` lisab ühe Landlocki reegli, mis on kirjutuskaitstud, kui pole antud `:rw`, ja masin keeldub rajast, mis ulatub teise hoidlani, andmehoidlani (datastore) või kataloogini `/etc/rediacc`. `--root` käivitab funktsioonid root-ina ilma õiguste loobumiseta ning külmvarundus keeldub sellisest hoidlast. Agendid ei saa `--root` anda, kui operaator pole enne agendi käivitamist seadnud `REDIACC_ALLOW_GRAND_REPO`. Hargnemisel on uus võrgu-ID ja see algab ilma loata ning korduskasutatud võrgu-ID alt leitud luba visatakse ära.
+
+Rediaccfile võib kommentaarireaga deklareerida, mida ta vajab, ainult taotlusena:
+
+```bash
+# rediacc:needs root
+# rediacc:needs path=/srv/data
+# rediacc:needs device=nvidia.com/gpu=all
+```
+
+`up()` võrdleb deklaratsiooni loaga. Kui luba puudub, lükatakse `up()` tagasi enne ühegi rea käivitamist ja teade trükib täpse loa andmise käsu. `down()` ei kontrolli deklaratsiooni kunagi, et hoidlas muudetud kommentaar ei saaks takistada operaatori `repo down`-i; `down()`, mis tõesti vajab luba, ebaõnnestub oma sammus. `machine converge` jätab sellise hoidla vahele olekuga `needs_lifecycle_grant`, selle asemel et seda keeldumisse taaskäivitada.
 
 ### Näide
 
