@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 2391,
-    "sourceCommit": "68e6092ca09e590cbdff353bc082cc0f36294157"
+    "keyCount": 2394,
+    "sourceCommit": "694160a400ef3b2f695e57c4aa737efed03eea3d"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -941,6 +941,7 @@
     "commands.job.status.examples.basic": "f1860a58",
     "commands.job.steps.pending": "54935b83",
     "commands.job.steps.pendingForConfig": "1f112a30",
+    "commands.job.stepsUnfinished": "4364f5f2",
     "commands.job.summary": "2ec333e2",
     "commands.job.ticketMachineOption": "ffc35071",
     "commands.job.wait.description": "91c81996",
@@ -1384,6 +1385,7 @@
     "commands.repo.create.sizeRequiredDocker": "0d2ce943",
     "commands.repo.create.starting": "bc07321a",
     "commands.repo.create.startingDatastore": "3be3af16",
+    "commands.repo.create.stepsUnfinished": "e13ca74e",
     "commands.repo.delete.archived": "756a85b5",
     "commands.repo.delete.archiveHint": "700820fa",
     "commands.repo.delete.archiveOption": "6bd8b32b",
@@ -1480,6 +1482,7 @@
     "commands.repo.gc.dryRunHeader": "e037a193",
     "commands.repo.gc.dryRunHint": "925b6e53",
     "commands.repo.gc.nothing": "a4facf3d",
+    "commands.repo.gc.started": "c7344e43",
     "commands.repo.gpu.description": "6c86e5a0",
     "commands.repo.gpu.descriptionShort": "edddf82f",
     "commands.repo.gpu.deviceOption": "792fba9d",

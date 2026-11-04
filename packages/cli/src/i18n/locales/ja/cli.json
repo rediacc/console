@@ -1228,6 +1228,7 @@
           "basic": "1つのジョブのステータスを表示する"
         }
       },
+      "stepsUnfinished": "{{verb}}: ジョブは終了しましたが、ステップ {{steps}} は完了していません。rdc job wait で完了させられます。",
       "summary": "マシン上のデタッチジョブを管理",
       "machineRequired": "この設定にはジョブ {{jobId}} のチケットがありません。実行場所を -m <machine> で指定してください。",
       "ticketMachineOption": "対象マシン名(この設定にジョブのチケットがあれば省略可)",
@@ -1833,7 +1834,8 @@
         "sizeOption": "リポジトリサイズ（例: 10G、100G、1T）",
         "sizeRequiredDocker": "Docker リポジトリには --size が必須です（--machine、または Docker 用の --datastore）",
         "starting": "\"{{machine}}\" でリポジトリ \"{{repository}}\"（{{size}}）を作成中...",
-        "startingDatastore": "データストア \"{{datastore}}\"（{{machine}}）上にリポジトリ \"{{repository}}\" を作成中..."
+        "startingDatastore": "データストア \"{{datastore}}\"（{{machine}}）上にリポジトリ \"{{repository}}\" を作成中...",
+        "stepsUnfinished": "repo create: {{name}} は作成されましたが、ステップ {{steps}} は完了していません。rdc job wait で完了させられます。"
       },
       "delete": {
         "archived": "\"{{repository}}\" の資格情報をアーカイブしました",
@@ -1944,6 +1946,7 @@
       },
       "gc": {
         "applied": "ガベージコレクション完了: {{deleted}}/{{total}} 件のコミットを削除しました",
+        "started": "{{total}} 件の削除のうち {{started}} 件がジョブとして実行中です。rdc job list で確認できます。",
         "applyOption": "到達不能なコミットを実際に削除する（既定はドライランのプレビュー）",
         "deleted": "コミット {{commit}} を削除しました",
         "deleteFailed": "コミット {{commit}} の削除に失敗しました",

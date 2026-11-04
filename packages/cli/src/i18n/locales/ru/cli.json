@@ -1228,6 +1228,7 @@
           "basic": "Показать статус одной задачи."
         }
       },
+      "stepsUnfinished": "{{verb}}: задание завершилось, но шаги {{steps}} не выполнены. Завершить их поможет rdc job wait.",
       "summary": "Управление отсоединёнными задачами на машине",
       "machineRequired": "В этой конфигурации нет тикета для задачи {{jobId}}. Укажите через -m <machine>, где она выполняется.",
       "ticketMachineOption": "Имя целевой машины (необязательно, если в этой конфигурации есть тикет задачи)",
@@ -1833,7 +1834,8 @@
         "sizeOption": "Размер репозитория (напр. 10G, 100G, 1T)",
         "sizeRequiredDocker": "Для docker-репозитория (--machine или --datastore из мира docker) требуется --size.",
         "starting": "Создание репозитория \"{{repository}}\" ({{size}}) на \"{{machine}}\"...",
-        "startingDatastore": "Создание репозитория \"{{repository}}\" в хранилище данных \"{{datastore}}\" ({{machine}})..."
+        "startingDatastore": "Создание репозитория \"{{repository}}\" в хранилище данных \"{{datastore}}\" ({{machine}})...",
+        "stepsUnfinished": "repo create: {{name}} создан, но шаги {{steps}} не завершились. Завершить их поможет rdc job wait."
       },
       "delete": {
         "archived": "Учётные данные \"{{repository}}\" архивированы",
@@ -1944,6 +1946,7 @@
       },
       "gc": {
         "applied": "Сборка мусора завершена: удалено коммитов {{deleted}}/{{total}}",
+        "started": "Удалений в работе как задач: {{started}} из {{total}}; список покажет rdc job list.",
         "applyOption": "Действительно удалить недостижимые коммиты (по умолчанию используется пробный просмотр)",
         "deleted": "Коммит {{commit}} удалён",
         "deleteFailed": "Не удалось удалить коммит {{commit}}",

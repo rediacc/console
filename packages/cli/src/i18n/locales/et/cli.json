@@ -1228,6 +1228,7 @@
           "basic": "Kuva ühe töö olek."
         }
       },
+      "stepsUnfinished": "{{verb}}: töö lõppes, kuid sammud {{steps}} jäid pooleli. rdc job wait viib need lõpuni.",
       "summary": "Halda masina eraldiseisvaid töid",
       "machineRequired": "Selles konfiguratsioonis pole tööle {{jobId}} piletit. Anna valikuga -m <machine> teada, kus see töötab.",
       "ticketMachineOption": "Sihtmasina nimi (valikuline, kui konfiguratsioonis on töö pilet olemas)",
@@ -1833,7 +1834,8 @@
         "sizeOption": "Hoidla suurus (nt 10G, 100G, 1T)",
         "sizeRequiredDocker": "--size on Dockeri hoidla jaoks kohustuslik (--machine, või Dockeri-maailma --datastore).",
         "starting": "Hoidla \"{{repository}}\" ({{size}}) loomine masinal \"{{machine}}\"...",
-        "startingDatastore": "Hoidla \"{{repository}}\" loomine andmehoidlas \"{{datastore}}\" ({{machine}})..."
+        "startingDatastore": "Hoidla \"{{repository}}\" loomine andmehoidlas \"{{datastore}}\" ({{machine}})...",
+        "stepsUnfinished": "repo create: {{name}} loodi, kuid sammud {{steps}} jäid pooleli. rdc job wait viib need lõpuni."
       },
       "delete": {
         "archived": "Hoidla \"{{repository}}\" mandaat arhiveeritud",
@@ -1944,6 +1946,7 @@
       },
       "gc": {
         "applied": "Prügikoristus lõpetatud: {{deleted}}/{{total}} commit'i kustutatud",
+        "started": "{{started}} kustutamisest {{total}}-st töötab tööna; rdc job list näitab neid.",
         "applyOption": "Kustuta ligipääsmatud commit'id päriselt (vaikimisi on kuiv eelvaade)",
         "deleted": "Commit {{commit}} kustutatud",
         "deleteFailed": "Commit'i {{commit}} kustutamine ebaõnnestus",

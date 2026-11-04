@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 import { outputService } from '../services/core/output.js';
 import { setExitCode } from '../services/core/request-context.js';
 import { type CommandJobOutcome, pendingExitCode } from '../services/jobs/command-job.js';
@@ -27,9 +28,7 @@ export function settleRepoJob(
   }
   const unfinished = outstandingSteps(outcome.steps);
   if (unfinished.length > 0) {
-    outputService.warn(
-      `${verb}: the job finished, but the step(s) ${unfinished.join(', ')} did not; rdc job wait settles them.`
-    );
+    outputService.warn(t('commands.job.stepsUnfinished', { verb, steps: unfinished.join(', ') }));
     setExitCode(1);
     return false;
   }

@@ -1228,6 +1228,7 @@
           "basic": "Den Status eines Jobs anzeigen."
         }
       },
+      "stepsUnfinished": "{{verb}}: Der Job ist beendet, aber die Schritte {{steps}} sind es nicht. rdc job wait schließt sie ab.",
       "summary": "Entkoppelte Jobs auf einem Rechner verwalten",
       "machineRequired": "Für Job {{jobId}} gibt es in dieser Konfiguration kein Ticket. Mit -m <machine> angeben, wo er läuft.",
       "ticketMachineOption": "Name der Zielmaschine (optional, wenn diese Konfiguration ein Ticket für den Job hält)",
@@ -1833,7 +1834,8 @@
         "sizeOption": "Repository-Größe (z.B. 10G, 100G, 1T)",
         "sizeRequiredDocker": "--size ist für ein Docker-Repository erforderlich (--machine oder ein Docker-Welt-Datenspeicher --datastore).",
         "starting": "Repository \"{{repository}}\" ({{size}}) wird auf \"{{machine}}\" erstellt...",
-        "startingDatastore": "Repository \"{{repository}}\" wird auf Datenspeicher \"{{datastore}}\" ({{machine}}) erstellt..."
+        "startingDatastore": "Repository \"{{repository}}\" wird auf Datenspeicher \"{{datastore}}\" ({{machine}}) erstellt...",
+        "stepsUnfinished": "repo create: {{name}} wurde erstellt, aber die Schritte {{steps}} sind nicht fertig geworden. rdc job wait schließt sie ab."
       },
       "delete": {
         "archived": "Zugangsdaten für \"{{repository}}\" archiviert",
@@ -1944,6 +1946,7 @@
       },
       "gc": {
         "applied": "Garbage Collection abgeschlossen: {{deleted}}/{{total}} Commit(s) gelöscht",
+        "started": "{{started}} von {{total}} Löschvorgängen laufen als Jobs; rdc job list zeigt sie an.",
         "applyOption": "Die unerreichbaren Commits tatsächlich löschen (Standard ist eine Probelauf-Vorschau)",
         "deleted": "Commit {{commit}} gelöscht",
         "deleteFailed": "Commit {{commit}} konnte nicht gelöscht werden",

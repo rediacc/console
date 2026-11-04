@@ -1228,6 +1228,7 @@
           "basic": "Afficher le statut d'un job."
         }
       },
+      "stepsUnfinished": "{{verb}} : le job est terminé, mais les étapes {{steps}} ne le sont pas. rdc job wait les termine.",
       "summary": "Gérer les jobs détachés sur une machine",
       "machineRequired": "Aucun ticket pour le job {{jobId}} dans cette configuration. Indiquez avec -m <machine> où il s'exécute.",
       "ticketMachineOption": "Nom de la machine cible (facultatif quand cette configuration détient un ticket pour le job)",
@@ -1833,7 +1834,8 @@
         "sizeOption": "Taille du dépôt (ex. 10G, 100G, 1T)",
         "sizeRequiredDocker": "--size est requis pour un dépôt docker (--machine, ou un --datastore du monde docker).",
         "starting": "Création du dépôt \"{{repository}}\" ({{size}}) sur \"{{machine}}\"...",
-        "startingDatastore": "Création du dépôt \"{{repository}}\" sur le datastore \"{{datastore}}\" ({{machine}})..."
+        "startingDatastore": "Création du dépôt \"{{repository}}\" sur le datastore \"{{datastore}}\" ({{machine}})...",
+        "stepsUnfinished": "repo create : {{name}} a été créé, mais les étapes {{steps}} ne se sont pas terminées. rdc job wait les termine."
       },
       "delete": {
         "archived": "Identifiant de \"{{repository}}\" archivé",
@@ -1944,6 +1946,7 @@
       },
       "gc": {
         "applied": "Nettoyage terminé : {{deleted}}/{{total}} commit(s) supprimé(s)",
+        "started": "{{started}} suppression(s) sur {{total}} s’exécutent comme des jobs ; rdc job list les affiche.",
         "applyOption": "Supprimer réellement les commits inaccessibles (aperçu à blanc par défaut)",
         "deleted": "Commit {{commit}} supprimé",
         "deleteFailed": "Échec de la suppression du commit {{commit}}",

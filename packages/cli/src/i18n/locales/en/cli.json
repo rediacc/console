@@ -1233,6 +1233,7 @@
         "starting": "Creating repository \"{{repository}}\" ({{size}}) on \"{{machine}}\"...",
         "registered": "Registered \"{{repository}}\" ({{guid}}, network {{networkId}})",
         "completed": "Repository created",
+        "stepsUnfinished": "repo create: {{name}} was created, but the step(s) {{steps}} did not finish; rdc job wait settles them.",
         "failed": "Repository creation failed",
         "rollback": "Rolled back config for \"{{repository}}\"",
         "alreadyExists": "Repository \"{{name}}\" already exists in config",
@@ -2575,6 +2576,7 @@
       "summary": "Manage detached jobs on a machine",
       "machineOption": "Target machine name",
       "idOption": "Job ID",
+      "stepsUnfinished": "{{verb}}: the job finished, but the step(s) {{steps}} did not; rdc job wait settles them.",
       "list": {
         "description": "List detached jobs on a machine, newest first",
         "empty": "No jobs on {{machine}}.",

@@ -1228,6 +1228,7 @@
           "basic": "Muestra el estado de un trabajo."
         }
       },
+      "stepsUnfinished": "{{verb}}: el trabajo terminó, pero los pasos {{steps}} no. rdc job wait los completa.",
       "summary": "Administra trabajos independientes en una máquina",
       "machineRequired": "No hay ningún ticket del trabajo {{jobId}} en esta configuración. Indica con -m <machine> dónde se ejecuta.",
       "ticketMachineOption": "Nombre de la máquina de destino (opcional si esta configuración guarda un ticket del trabajo)",
@@ -1833,7 +1834,8 @@
         "sizeOption": "Tamaño del repositorio (ej. 10G, 100G, 1T)",
         "sizeRequiredDocker": "--size es obligatorio para un repositorio docker (--machine, o un --datastore del mundo docker).",
         "starting": "Creando repositorio \"{{repository}}\" ({{size}}) en \"{{machine}}\"...",
-        "startingDatastore": "Creando repositorio \"{{repository}}\" en el almacén de datos \"{{datastore}}\" ({{machine}})..."
+        "startingDatastore": "Creando repositorio \"{{repository}}\" en el almacén de datos \"{{datastore}}\" ({{machine}})...",
+        "stepsUnfinished": "repo create: {{name}} se creó, pero los pasos {{steps}} no terminaron. rdc job wait los completa."
       },
       "delete": {
         "archived": "Credencial de \"{{repository}}\" archivada",
@@ -1944,6 +1946,7 @@
       },
       "gc": {
         "applied": "Recolección de basura completada: {{deleted}}/{{total}} commit(s) eliminado(s)",
+        "started": "{{started}} de {{total}} borrados se están ejecutando como trabajos; rdc job list los muestra.",
         "applyOption": "Eliminar realmente los commits inaccesibles (por defecto es una vista previa en modo simulación)",
         "deleted": "Commit {{commit}} eliminado",
         "deleteFailed": "No se pudo eliminar el commit {{commit}}",

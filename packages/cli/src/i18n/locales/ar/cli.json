@@ -1228,6 +1228,7 @@
           "basic": "عرض حالة مهمة واحدة."
         }
       },
+      "stepsUnfinished": "{{verb}}: انتهت المهمة، لكن الخطوات {{steps}} لم تكتمل. يتولى الأمر rdc job wait إنهاءها.",
       "summary": "إدارة المهام المنفصلة على جهاز",
       "machineRequired": "لا توجد تذكرة للمهمة {{jobId}} في هذه الإعدادات. حدّد مكان تشغيلها عبر -m <machine>.",
       "ticketMachineOption": "اسم الجهاز المستهدف (اختياري عندما تحتفظ هذه الإعدادات بتذكرة للمهمة)",
@@ -1833,7 +1834,8 @@
         "sizeOption": "حجم المستودع (مثلاً 10G، 100G، 1T)",
         "sizeRequiredDocker": "--size مطلوب لمستودع Docker (--machine، أو --datastore من عالم Docker).",
         "starting": "جارٍ إنشاء المستودع \"{{repository}}\" ({{size}}) على \"{{machine}}\"...",
-        "startingDatastore": "جارٍ إنشاء المستودع \"{{repository}}\" على مخزن البيانات \"{{datastore}}\" ({{machine}})..."
+        "startingDatastore": "جارٍ إنشاء المستودع \"{{repository}}\" على مخزن البيانات \"{{datastore}}\" ({{machine}})...",
+        "stepsUnfinished": "repo create: تم إنشاء {{name}}، لكن الخطوات {{steps}} لم تكتمل. يتولى الأمر rdc job wait إنهاءها."
       },
       "delete": {
         "archived": "تم أرشفة بيانات اعتماد \"{{repository}}\"",
@@ -1944,6 +1946,7 @@
       },
       "gc": {
         "applied": "اكتمل جمع المهملات: تم حذف {{deleted}}/{{total}} إيداع",
+        "started": "{{started}} من أصل {{total}} عمليات حذف تعمل كمهام؛ يعرضها rdc job list.",
         "applyOption": "حذف الإيداعات غير القابلة للوصول فعليًا (الافتراضي معاينة تجريبية)",
         "deleted": "تم حذف الإيداع {{commit}}",
         "deleteFailed": "فشل حذف الإيداع {{commit}}",

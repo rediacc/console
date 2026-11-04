@@ -1228,6 +1228,7 @@
           "basic": "Tek bir görevin durumunu göster."
         }
       },
+      "stepsUnfinished": "{{verb}}: iş bitti, ancak {{steps}} adımları tamamlanmadı. Bunları rdc job wait tamamlar.",
       "summary": "Bir makinedeki bağımsız görevleri yönetin",
       "machineRequired": "Bu yapılandırmada {{jobId}} görevi için bilet yok. Nerede çalıştığını -m <machine> ile belirtin.",
       "ticketMachineOption": "Hedef makine adı (bu yapılandırmada görevin bileti varsa isteğe bağlı)",
@@ -1833,7 +1834,8 @@
         "sizeOption": "Depo boyutu (ör. 10G, 100G, 1T)",
         "sizeRequiredDocker": "Bir docker deposu için --size zorunludur (--machine veya docker dünyasına ait bir --datastore).",
         "starting": "\"{{machine}}\" üzerinde \"{{repository}}\" ({{size}}) deposu oluşturuluyor...",
-        "startingDatastore": "\"{{repository}}\" deposu \"{{datastore}}\" veri deposunda oluşturuluyor ({{machine}})..."
+        "startingDatastore": "\"{{repository}}\" deposu \"{{datastore}}\" veri deposunda oluşturuluyor ({{machine}})...",
+        "stepsUnfinished": "repo create: {{name}} oluşturuldu, ancak {{steps}} adımları tamamlanmadı. Bunları rdc job wait tamamlar."
       },
       "delete": {
         "archived": "\"{{repository}}\" kimlik bilgisi arşivlendi",
@@ -1944,6 +1946,7 @@
       },
       "gc": {
         "applied": "Çöp toplama tamamlandı: {{deleted}}/{{total}} commit silindi",
+        "started": "{{total}} silme işleminden {{started}} tanesi iş olarak çalışıyor; rdc job list bunları gösterir.",
         "applyOption": "Erişilemez commit'leri gerçekten sil (varsayılan, deneme çalıştırması önizlemesidir)",
         "deleted": "{{commit}} commit'i silindi",
         "deleteFailed": "{{commit}} commit'i silinemedi",

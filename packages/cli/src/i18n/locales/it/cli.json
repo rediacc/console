@@ -1228,6 +1228,7 @@
           "basic": "Mostra lo stato di un job."
         }
       },
+      "stepsUnfinished": "{{verb}}: il job è terminato, ma i passaggi {{steps}} no. rdc job wait li porta a termine.",
       "summary": "Gestisce i job in background su una macchina",
       "machineRequired": "Nessun ticket per il job {{jobId}} in questa configurazione. Indica con -m <machine> dove viene eseguito.",
       "ticketMachineOption": "Nome della macchina di destinazione (facoltativo se questa configurazione conserva un ticket per il job)",
@@ -1833,7 +1834,8 @@
         "sizeOption": "Dimensione del repository (es. 10G, 100G, 1T)",
         "sizeRequiredDocker": "--size è obbligatorio per un repository docker (--machine, oppure un --datastore del mondo docker).",
         "starting": "Creazione del repository \"{{repository}}\" ({{size}}) su \"{{machine}}\"...",
-        "startingDatastore": "Creazione del repository \"{{repository}}\" sul datastore \"{{datastore}}\" ({{machine}}) in corso..."
+        "startingDatastore": "Creazione del repository \"{{repository}}\" sul datastore \"{{datastore}}\" ({{machine}}) in corso...",
+        "stepsUnfinished": "repo create: {{name}} è stato creato, ma i passaggi {{steps}} non sono terminati. rdc job wait li porta a termine."
       },
       "delete": {
         "archived": "Credenziale per \"{{repository}}\" archiviata",
@@ -1944,6 +1946,7 @@
       },
       "gc": {
         "applied": "Garbage collection completato: {{deleted}}/{{total}} commit eliminati",
+        "started": "{{started}} eliminazioni su {{total}} sono in esecuzione come job; rdc job list le mostra.",
         "applyOption": "Elimina effettivamente i commit non raggiungibili (per impostazione predefinita è un'anteprima dry-run)",
         "deleted": "Commit {{commit}} eliminato",
         "deleteFailed": "Impossibile eliminare il commit {{commit}}",

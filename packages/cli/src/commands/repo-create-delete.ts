@@ -142,7 +142,7 @@ function settleCreateOutcome(name: string, outcome: CommandJobOutcome): void {
   const unfinished = outstandingSteps(outcome.steps);
   if (unfinished.length > 0) {
     outputService.warn(
-      `repo create: ${name} was created, but the step(s) ${unfinished.join(', ')} did not finish; rdc job wait settles them.`
+      t('commands.repo.create.stepsUnfinished', { name, steps: unfinished.join(', ') })
     );
   }
 }

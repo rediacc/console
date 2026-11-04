@@ -104,7 +104,7 @@ function settledPending(outcome: CommandJobOutcome): boolean {
     const unfinished = outstandingSteps(outcome.steps);
     if (unfinished.length === 0) return false;
     outputService.warn(
-      `The job finished, but the step(s) ${unfinished.join(', ')} did not; rdc job wait settles them.`
+      t('commands.job.stepsUnfinished', { verb: 'datastore', steps: unfinished.join(', ') })
     );
     setExitCode(1);
     return true;

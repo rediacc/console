@@ -1228,6 +1228,7 @@
           "basic": "显示单个任务的状态。"
         }
       },
+      "stepsUnfinished": "{{verb}}：作业已结束，但步骤 {{steps}} 未完成。可用 rdc job wait 完成这些步骤。",
       "summary": "管理机器上的分离任务",
       "machineRequired": "此配置中没有任务 {{jobId}} 的凭据。请用 -m <machine> 指明它运行在哪台机器上。",
       "ticketMachineOption": "目标机器名称(此配置持有该任务的凭据时可省略)",
@@ -1833,7 +1834,8 @@
         "sizeOption": "仓库大小（例如 10G、100G、1T）",
         "sizeRequiredDocker": "docker 仓库必须提供 --size（--machine，或 docker 世界的 --datastore）。",
         "starting": "正在 \"{{machine}}\" 上创建仓库 \"{{repository}}\"（{{size}}）...",
-        "startingDatastore": "正在数据存储 \"{{datastore}}\"（{{machine}}）上创建仓库 \"{{repository}}\"..."
+        "startingDatastore": "正在数据存储 \"{{datastore}}\"（{{machine}}）上创建仓库 \"{{repository}}\"...",
+        "stepsUnfinished": "repo create：{{name}} 已创建，但步骤 {{steps}} 未完成。可用 rdc job wait 完成这些步骤。"
       },
       "delete": {
         "archived": "\"{{repository}}\" 的凭据已归档",
@@ -1944,6 +1946,7 @@
       },
       "gc": {
         "applied": "垃圾回收完成：已删除 {{deleted}}/{{total}} 个提交",
+        "started": "{{total}} 个删除操作中有 {{started}} 个正在作为作业运行；rdc job list 可查看。",
         "applyOption": "实际删除不可达的提交（默认仅为试运行预览）",
         "deleted": "已删除提交 {{commit}}",
         "deleteFailed": "删除提交 {{commit}} 失败",

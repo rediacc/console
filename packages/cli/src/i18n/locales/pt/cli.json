@@ -1228,6 +1228,7 @@
           "basic": "Mostra o estado de um job."
         }
       },
+      "stepsUnfinished": "{{verb}}: o job terminou, mas as etapas {{steps}} não. O rdc job wait conclui essas etapas.",
       "summary": "Gerencia jobs desanexados em uma máquina",
       "machineRequired": "Não há ticket do job {{jobId}} nesta configuração. Indique com -m <machine> onde ele é executado.",
       "ticketMachineOption": "Nome da máquina de destino (opcional quando esta configuração guarda um ticket do job)",
@@ -1833,7 +1834,8 @@
         "sizeOption": "Tamanho do repositório (por ex., 10G, 100G, 1T)",
         "sizeRequiredDocker": "--size é obrigatório para um repositório docker (--machine, ou um --datastore do mundo docker).",
         "starting": "A criar o repositório \"{{repository}}\" ({{size}}) em \"{{machine}}\"...",
-        "startingDatastore": "A criar o repositório \"{{repository}}\" no datastore \"{{datastore}}\" ({{machine}})..."
+        "startingDatastore": "A criar o repositório \"{{repository}}\" no datastore \"{{datastore}}\" ({{machine}})...",
+        "stepsUnfinished": "repo create: {{name}} foi criado, mas as etapas {{steps}} não terminaram. O rdc job wait conclui essas etapas."
       },
       "delete": {
         "archived": "Credencial de \"{{repository}}\" arquivada",
@@ -1944,6 +1946,7 @@
       },
       "gc": {
         "applied": "Coleta de lixo concluída: {{deleted}}/{{total}} commit(s) excluído(s)",
+        "started": "{{started}} de {{total}} exclusões estão em execução como jobs; rdc job list as mostra.",
         "applyOption": "Excluir de fato os commits inalcançáveis (o padrão é uma previsão dry-run)",
         "deleted": "Commit {{commit}} excluído",
         "deleteFailed": "Falha ao excluir o commit {{commit}}",

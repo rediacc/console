@@ -1228,6 +1228,7 @@
           "basic": "단일 작업의 상태를 표시합니다."
         }
       },
+      "stepsUnfinished": "{{verb}}: 작업은 끝났지만 {{steps}} 단계는 끝나지 않았습니다. rdc job wait로 마무리할 수 있습니다.",
       "summary": "머신의 분리된 작업 관리",
       "machineRequired": "이 설정에는 작업 {{jobId}}의 티켓이 없습니다. 실행 중인 위치를 -m <machine>으로 지정하세요.",
       "ticketMachineOption": "대상 머신 이름(이 설정에 작업 티켓이 있으면 생략 가능)",
@@ -1833,7 +1834,8 @@
         "sizeOption": "저장소 크기 (예: 10G, 100G, 1T)",
         "sizeRequiredDocker": "Docker 저장소에는 --size가 필수입니다 (--machine, 또는 Docker 세계의 --datastore)",
         "starting": "\"{{machine}}\"에서 저장소 \"{{repository}}\" ({{size}})를 생성하는 중...",
-        "startingDatastore": "데이터스토어 \"{{datastore}}\" ({{machine}})에 저장소 \"{{repository}}\"를 생성하는 중..."
+        "startingDatastore": "데이터스토어 \"{{datastore}}\" ({{machine}})에 저장소 \"{{repository}}\"를 생성하는 중...",
+        "stepsUnfinished": "repo create: {{name}}을(를) 만들었지만 {{steps}} 단계는 끝나지 않았습니다. rdc job wait로 마무리할 수 있습니다."
       },
       "delete": {
         "archived": "\"{{repository}}\"의 자격증명이 보관되었습니다",
@@ -1944,6 +1946,7 @@
       },
       "gc": {
         "applied": "가비지 컬렉션 완료: commit {{deleted}}/{{total}}개 삭제됨",
+        "started": "삭제 {{total}}건 중 {{started}}건이 작업으로 실행 중입니다. rdc job list로 확인할 수 있습니다.",
         "applyOption": "도달 불가능한 commit을 실제로 삭제합니다(기본값은 미리보기 dry-run)",
         "deleted": "commit {{commit}} 삭제됨",
         "deleteFailed": "commit {{commit}} 삭제 실패",
