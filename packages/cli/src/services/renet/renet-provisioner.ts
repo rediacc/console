@@ -335,7 +335,7 @@ class RenetProvisionerService {
     options?: ProvisionOptions
   ): Promise<GuardedProvisionResult> {
     const context = await this.buildProvisionContext(sftp, config, options?.localBinaryPath);
-    // A probe that cannot run throws for the slot and for `current` alike: reading it as "no renet" would upload past the replacement guard.
+    // A probe that cannot run throws for the slot and for `current` alike: reading it as "no renet" would upload past the replacement guard. An absent binary is not a failed exec, since the probe command ends in `|| true`, so strict mode throws only when the exec itself fails.
     const remote = await getRemoteHashAndVersion(sftp, context.remoteInstallPath, {
       strict: true,
     });
