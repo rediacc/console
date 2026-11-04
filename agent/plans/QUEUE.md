@@ -39,7 +39,7 @@ The overrides (each level's bundle value in brackets for `high`):
 A ` -- solo` note on a Promoted entry keeps that plan alone in its PR under turbo.
 
 ```stop-hook
-effort: quiet
+effort: smart
 turbo: on
 batch_size: 3 -- operator 2026-10-04: go in parallel as much as possible
 plan_concurrency: 5 -- operator 2026-10-04: plan limit 5
@@ -54,7 +54,7 @@ backup_push_h: 4 -- operator 2026-10-08: backup push valve, no PR
 What the loop is working on now, rendered between the markers by `.claude/hooks/stop/wl_planqueue.py` (`refresh_inflight`) on every stop and on every `worklist.py --queue-set` or `--phase`. It is runtime state: rewritten only when it changes, never compared by `npm run check:ci-plan-record`, and a committed copy is a snapshot from its commit.
 
 <!-- queue:inflight:begin -->
-- Mode: effort quiet; turbo on; turbo_push batch-end; batch_size 3; plan_concurrency 5; writer_cap 25; commit_remind_min 15; backup_push_h 4; judge off; cadence on; agent_hint off; agent_pushback off.
+- Mode: effort smart; turbo on; turbo_push batch-end; batch_size 3; plan_concurrency 5; writer_cap 25; commit_remind_min 15; backup_push_h 4; judge core; cadence on; agent_hint on; agent_pushback on.
 - Phase: merge on PR #602 (branch 1023-1, session 45048a90, since 2026-11-03T09:46:12Z).
 - Branch: 1104-1, no PR yet.
 - Plans on the PR (5):
@@ -63,9 +63,10 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-sync-remote-file-ownership.md -- 6 of 7 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-stop-hook-one-plan-scope.md -- 14 of 15 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-renet-run-docker-sock-isolation.md -- 3 of 4 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
-- Work outside the PR's plans: none.
-- Writers: 0 live of writer_cap 25 (session d778be9d).
-- Leased items: 4: #831b7e48 (worker:b9i9e8ziw, d778be9d), #a150016d (worker:queue, d778be9d), #ac5e2989 (worker:222629, d778be9d), #fa3383d6 (worker:2567959, d778be9d).
+- Work outside the PR's plans (1 epic(s)):
+  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 1 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
+- Writers: 1 live of writer_cap 25 (session d778be9d): worker:a9a322a6a07c0d9fe.
+- Leased items: 5: #510a97e9 (worker:a9a322a6a07c0d9fe, d778be9d), #831b7e48 (worker:b9i9e8ziw, d778be9d), #a150016d (worker:queue, d778be9d), #ac5e2989 (worker:222629, d778be9d), #fa3383d6 (worker:2567959, d778be9d).
 - Next plan: agent/plans/PLAN-telemetry-export.md, Promoted entry 4; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
