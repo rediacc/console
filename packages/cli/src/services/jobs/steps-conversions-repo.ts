@@ -106,6 +106,22 @@ export const REPO_CONVERSION_STEPS: StepDefinition[] = [
       return (ctx) => forgetReplicaSet(str(ctx.params, 'set'));
     },
   },
+  // The tails of `repo replicate`, `refresh` and `remove` (services/cluster/repo-replicate-ops.ts).
+  privateStep(
+    'replicateTail',
+    'success',
+    ['plan'],
+    () => import('../cluster/repo-replicate-ops.js'),
+    true
+  ),
+  privateStep('refreshTail', 'success', ['plan'], () => import('../cluster/repo-replicate-ops.js')),
+  privateStep(
+    'removeTail',
+    'success',
+    ['plan'],
+    () => import('../cluster/repo-replicate-ops.js'),
+    true
+  ),
   privateStep(
     'renderAutostartList',
     'success',

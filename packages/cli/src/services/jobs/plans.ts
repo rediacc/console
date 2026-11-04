@@ -111,6 +111,10 @@ export const CONVERTED: ReadonlySet<string> = new Set<string>([
   'repo list',
   'repo policy get',
   'repo policy set',
+  // One first job each, then a tail step that starts the further jobs, because a fork's licence needs the id the fork mints.
+  'repo replicate',
+  'repo replicate refresh',
+  'repo replicate remove',
   // J16 (repo verbs outside J4, half A): one job each; delete and promote settle the config in a step, prune, trim and autostart list render in one. gc runs one job per deletion (no compound renet function yet).
   'repo admin autostart disable',
   'repo admin autostart enable',

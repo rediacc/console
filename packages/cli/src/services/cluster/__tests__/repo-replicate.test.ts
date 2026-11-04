@@ -2,16 +2,16 @@ import { WK_INFRA_DOMAIN } from '@rediacc/shared/config/well-known.generated';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { RdcConfig } from '../../../types/index.js';
 import { configService } from '../../config/config-resources.js';
-import { outputService } from '../../core/output.js';
-import { localExecutorService } from '../../executor/local-executor.js';
 import {
+  ensureForkLicense,
   forgetReplicaSet,
   getReplicaSet,
   listReplicaSets,
-  provisionReplicaDatastores,
+  planReplicas,
   type ReplicaRenderInput,
   recordReplicaSet,
   renderReplicaSet,
+  replicaPlacement,
 } from '../repo-replicate.js';
 
 // The machine-slot pre-flight reaches the account server. Stub it: a unit test must not depend on whether the box running it happens to hold a live subscription token. Its own behaviour is covered in services/__tests__/license-preflight.test.ts.
@@ -25,13 +25,17 @@ const licence = vi.hoisted(() => ({
   free: vi.fn().mockResolvedValue(undefined),
   token: vi.fn().mockResolvedValue(true),
   authority: vi.fn().mockResolvedValue('free'),
+  statuses: vi.fn().mockResolvedValue([]),
   release: vi.fn(),
 }));
 vi.mock('../../account/free-license.js', () => ({
   issueFreeRepoLicense: licence.free,
   resolveLicenseAuthority: licence.authority,
 }));
-vi.mock('../../account/license.js', () => ({ refreshRepoLicenseIdentity: licence.token }));
+vi.mock('../../account/license.js', () => ({
+  refreshRepoLicenseIdentity: licence.token,
+  readRuntimeRepoLicenseStatuses: licence.statuses,
+}));
 vi.mock('../../account/subscription-device-auth.js', () => ({
   authorizeSubscriptionViaDeviceCode: vi.fn(),
 }));
@@ -53,6 +57,8 @@ afterEach(() => {
   licence.free.mockClear().mockResolvedValue(undefined);
   licence.token.mockClear().mockResolvedValue(true);
   licence.authority.mockClear().mockResolvedValue('free');
+  licence.statuses.mockClear().mockResolvedValue([]);
+  licence.release.mockClear();
 });
 
 const renderInput: ReplicaRenderInput = {
@@ -114,315 +120,116 @@ describe('renderReplicaSet (spec 05 §1 manifest plumbing)', () => {
   });
 });
 
-function execMock() {
-  // datastore_fork is captured (--json) so provisionOneReplica can ferry the record to an off-control node via datastore_adopt (finding #36); datastore_list reports each forked name with id `id-<name>` for the licence step; every other step just needs success.
-  const forked: string[] = [];
-  return vi.spyOn(localExecutorService, 'execute').mockImplementation((opts) => {
-    if (opts.functionName === 'datastore_fork') {
-      forked.push(`${opts.params?.parent}:${opts.params?.tag}`);
-      return Promise.resolve({
-        success: true,
-        stdout: '{"fork":{"cloneImage":"clone"}}',
-      } as never);
-    }
-    if (opts.functionName === 'datastore_list') {
-      return Promise.resolve({
-        success: true,
-        stdout: JSON.stringify(forked.map((name) => ({ name, datastoreId: `id-${name}` }))),
-      } as never);
-    }
-    return Promise.resolve({ success: true } as never);
-  });
-}
+describe('planReplicas and replicaPlacement', () => {
+  const nodes = [
+    { machine: 'n1', ip: '10.0.0.1' },
+    { machine: 'n2', ip: '10.0.0.2' },
+  ];
 
-describe('provisionReplicaDatastores (datastore plane: snapshot + N fork-attach)', () => {
-  const base = {
-    repo: 'sqldb',
-    repoGuid: 'guid-sqldb',
-    setName: 'set1',
-    datastore: 'ds-data',
-    snapshot: 'replicate-set1',
-    controlMachine: 'cp1',
-    controlMount: '/mnt/rediacc-ds/ds-control-prod',
-  };
-
-  it('takes ONE snapshot then forks+attaches+labels N replicas spread round-robin', async () => {
-    vi.spyOn(outputService, 'warn').mockReturnValue(undefined);
-    const exec = execMock();
-
-    const { placements, forks } = await provisionReplicaDatastores({
-      ...base,
-      replicas: 3,
-      nodes: [
-        { machine: 'n1', ip: '10.0.0.1' },
-        { machine: 'n2', ip: '10.0.0.2' },
-      ],
-    });
-
-    const calls = exec.mock.calls.map((c) => c[0]);
-    const names = calls.map((c) => c.functionName);
-    // ONE snapshot, then fork+attach+node-label per replica.
-    expect(names.filter((n) => n === 'datastore_snapshot_create').length).toBe(1);
-    expect(names.filter((n) => n === 'datastore_fork').length).toBe(3);
-    expect(names.filter((n) => n === 'datastore_attach').length).toBe(3);
-    expect(names.filter((n) => n === 'kube_node_label').length).toBe(3);
-    // Snapshot + forks run on the control machine; all forks clone the ONE snapshot.
-    const snap = calls.find((c) => c.functionName === 'datastore_snapshot_create');
-    expect(snap).toMatchObject({
-      machineName: 'cp1',
-      params: { name: 'ds-data', snapshot: 'replicate-set1' },
-    });
-    const forkCalls = calls.filter((c) => c.functionName === 'datastore_fork');
-    expect(forkCalls.every((c) => c.params?.snapshot === 'replicate-set1')).toBe(true);
-    // Attaches are --writes local, spread round-robin across the 2 nodes (n1,n2,n1).
-    const attaches = calls.filter((c) => c.functionName === 'datastore_attach');
-    expect(attaches.every((c) => c.params?.writes === 'local')).toBe(true);
-    expect(attaches.map((c) => c.machineName)).toEqual(['n1', 'n2', 'n1']);
-    // Each hosting node gets the FORK's own datastore label (PV pin key, F3), stamped through the control plane by InternalIP.
-    const labels = calls.filter((c) => c.functionName === 'kube_node_label');
-    expect(labels.every((c) => c.machineName === 'cp1')).toBe(true);
-    expect(labels.map((c) => c.params?.node_ip)).toEqual(['10.0.0.1', '10.0.0.2', '10.0.0.1']);
-    expect(labels.map((c) => c.params?.datastore)).toEqual([
-      'ds-data-set1-r1',
-      'ds-data-set1-r2',
-      'ds-data-set1-r3',
-    ]);
-    // Placements pin each PV to the fork's label + mount; forks record key + node.
-    expect(placements.map((p) => p.mountPath)).toEqual([
-      '/mnt/rediacc-ds/ds-data-set1-r1',
-      '/mnt/rediacc-ds/ds-data-set1-r2',
-      '/mnt/rediacc-ds/ds-data-set1-r3',
-    ]);
-    expect(placements.map((p) => p.datastoreLabel)).toEqual([
-      `${WK_INFRA_DOMAIN}/ds-ds-data-set1-r1`,
-      `${WK_INFRA_DOMAIN}/ds-ds-data-set1-r2`,
-      `${WK_INFRA_DOMAIN}/ds-ds-data-set1-r3`,
-    ]);
-    expect(forks).toEqual([
+  it('spreads replicas round-robin, each under its derived fork key', () => {
+    expect(planReplicas({ setName: 'set1', datastore: 'ds-data', replicas: 3, nodes })).toEqual([
       { index: 1, fork: 'ds-data:set1-r1', node: 'n1' },
       { index: 2, fork: 'ds-data:set1-r2', node: 'n2' },
       { index: 3, fork: 'ds-data:set1-r3', node: 'n1' },
     ]);
   });
 
-  it('licenses the fork datastore id before datastore_volumes_open, and a failed issuance stops before it', async () => {
-    vi.spyOn(outputService, 'warn').mockReturnValue(undefined);
+  it('pins each PV to the fork label and its mount', () => {
+    expect(replicaPlacement('ds-data', { index: 2, fork: 'ds-data:set1-r2', node: 'n2' })).toEqual({
+      index: 2,
+      datastoreLabel: `${WK_INFRA_DOMAIN}/ds-ds-data-set1-r2`,
+      mountPath: '/mnt/rediacc-ds/ds-data-set1-r2',
+    });
+  });
+});
+
+describe('ensureForkLicense', () => {
+  const FORK = 'ds-data:set1-r1';
+  const run = () =>
+    ensureForkLicense({ repo: 'sqldb', repoGuid: 'guid-sqldb' }, FORK, 'n1', 'id-fork-1');
+
+  function givenRepo(grandGuid?: string): void {
     vi.spyOn(configService, 'getRepository').mockResolvedValue({
       repositoryGuid: 'guid-sqldb',
-      grandGuid: 'grand-sqldb',
+      ...(grandGuid ? { grandGuid } : {}),
     } as never);
-    const exec = execMock();
-    const order: string[] = [];
-    exec.mockImplementation(((opts: { functionName: string; params?: Record<string, unknown> }) => {
-      order.push(opts.functionName);
-      if (opts.functionName === 'datastore_fork') {
-        return Promise.resolve({ success: true, stdout: '{"fork":{}}' });
-      }
-      if (opts.functionName === 'datastore_list') {
-        return Promise.resolve({
-          success: true,
-          stdout: JSON.stringify([{ name: 'ds-data:set1-r1', datastoreId: 'id-fork-1' }]),
-        });
-      }
-      return Promise.resolve({ success: true });
-    }) as never);
-    licence.free.mockImplementation(() => {
-      order.push('issue');
-      return Promise.resolve();
-    });
-    await provisionReplicaDatastores({
-      ...base,
-      replicas: 1,
-      nodes: [{ machine: 'cp1', ip: '10.0.0.1' }],
-    });
+  }
+
+  it('issues for the fork datastore id through the FREE licence, and releases the lease', async () => {
+    givenRepo('grand-sqldb');
+    await run();
     expect(licence.free.mock.calls[0][3]).toMatchObject({
       repositoryGuid: 'guid-sqldb',
       grandGuid: 'grand-sqldb',
       kind: 'fork',
       datastoreId: 'id-fork-1',
     });
-    expect(order.indexOf('issue')).toBeGreaterThan(-1);
-    expect(order.indexOf('issue')).toBeLessThan(order.indexOf('datastore_volumes_open'));
-
-    // A failed issuance stops before the dispatch.
-    order.length = 0;
-    licence.free.mockRejectedValue(new Error('slot limit'));
-    await expect(
-      provisionReplicaDatastores({
-        ...base,
-        replicas: 1,
-        nodes: [{ machine: 'cp1', ip: '10.0.0.1' }],
-      })
-    ).rejects.toThrow(/slot limit/);
-    expect(order).not.toContain('datastore_volumes_open');
     expect(licence.release).toHaveBeenCalled();
   });
 
-  describe('fork licence authority', () => {
-    function orderedExec(order: string[]) {
-      execMock().mockImplementation(((opts: { functionName: string }) => {
-        order.push(opts.functionName);
-        if (opts.functionName === 'datastore_fork') {
-          return Promise.resolve({ success: true, stdout: '{"fork":{}}' });
-        }
-        if (opts.functionName === 'datastore_list') {
-          return Promise.resolve({
-            success: true,
-            stdout: JSON.stringify([{ name: 'ds-data:set1-r1', datastoreId: 'id-fork-1' }]),
-          });
-        }
-        return Promise.resolve({ success: true });
-      }) as never);
-    }
-    const run = () =>
-      provisionReplicaDatastores({
-        ...base,
-        replicas: 1,
-        nodes: [{ machine: 'cp1', ip: '10.0.0.1' }],
-      });
+  it('a grand repo without a grandGuid is its own grand', async () => {
+    givenRepo();
+    await run();
+    expect(licence.free.mock.calls[0][3]).toMatchObject({ grandGuid: 'guid-sqldb' });
+  });
 
-    it('the subscription token path issues with the fork mount, then dispatch proceeds', async () => {
-      vi.spyOn(outputService, 'warn').mockReturnValue(undefined);
-      vi.spyOn(configService, 'getRepository').mockResolvedValue({
-        repositoryGuid: 'guid-sqldb',
-        grandGuid: 'grand-sqldb',
-      } as never);
-      licence.authority.mockResolvedValue('token');
-      const order: string[] = [];
-      orderedExec(order);
-      await run();
-      expect(licence.free).not.toHaveBeenCalled();
-      expect(licence.token.mock.calls[0][3]).toMatchObject({
-        repositoryGuid: 'guid-sqldb',
-        grandGuid: 'grand-sqldb',
-        kind: 'fork',
-        datastoreId: 'id-fork-1',
-        datastoreMount: '/mnt/rediacc-ds/ds-data-set1-r1',
-      });
-      expect(order).toContain('datastore_volumes_open');
-      expect(licence.release).toHaveBeenCalled();
-    });
-
-    it('the token path throws before datastore_volumes_open when the account issues nothing', async () => {
-      vi.spyOn(outputService, 'warn').mockReturnValue(undefined);
-      vi.spyOn(configService, 'getRepository').mockResolvedValue({
-        repositoryGuid: 'guid-sqldb',
-      } as never);
-      licence.authority.mockResolvedValue('token');
-      licence.token.mockResolvedValue(false);
-      const order: string[] = [];
-      orderedExec(order);
-      await expect(run()).rejects.toThrow(/did not issue a licence/);
-      expect(order).not.toContain('datastore_volumes_open');
-      expect(licence.release).toHaveBeenCalled();
-    });
-
-    it('a grand repo without a grandGuid is its own grand', async () => {
-      vi.spyOn(outputService, 'warn').mockReturnValue(undefined);
-      vi.spyOn(configService, 'getRepository').mockResolvedValue({
-        repositoryGuid: 'guid-sqldb',
-      } as never);
-      orderedExec([]);
-      await run();
-      expect(licence.free.mock.calls[0][3]).toMatchObject({
-        repositoryGuid: 'guid-sqldb',
-        grandGuid: 'guid-sqldb',
-      });
+  it('the subscription token path issues with the fork mount', async () => {
+    givenRepo();
+    licence.authority.mockResolvedValue('token');
+    await run();
+    expect(licence.free).not.toHaveBeenCalled();
+    expect(licence.token.mock.calls[0][3]).toMatchObject({
+      kind: 'fork',
+      datastoreId: 'id-fork-1',
+      datastoreMount: '/mnt/rediacc-ds/ds-data-set1-r1',
     });
   });
 
-  it('ferries the fork record via datastore_adopt off-control, and skips adopt on the control node (finding #36)', async () => {
-    vi.spyOn(outputService, 'warn').mockReturnValue(undefined);
-    const exec = execMock();
-    // nodes = [control cp1, worker w1], mirrors the live b1src layout where
-    // replica 1 lands on the control node and replica 2 on an agent node.
-    await provisionReplicaDatastores({
-      ...base,
-      replicas: 2,
-      nodes: [
-        { machine: 'cp1', ip: '10.0.0.1' }, // == controlMachine: record already local
-        { machine: 'w1', ip: '10.0.0.2' }, // off-control: needs the adopt ferry
-      ],
-    });
-    const calls = exec.mock.calls.map((c) => c[0]);
-    // datastore_fork always runs on the control machine, captured for the ferry.
-    expect(
-      calls.filter((c) => c.functionName === 'datastore_fork').every((c) => c.machineName === 'cp1')
-    ).toBe(true);
-    // Only the OFF-control replica adopts; the on-control one skips it.
-    const adopts = calls.filter((c) => c.functionName === 'datastore_adopt');
-    expect(adopts.map((c) => c.machineName)).toEqual(['w1']);
-    expect(adopts[0].params?.name).toBe('ds-data:set1-r2');
-    expect(typeof adopts[0].params?.record_b64).toBe('string');
-    // The adopt must PRECEDE the attach on that node (attach fails otherwise, "not registered on this machine", the live bug this fixes).
-    const w1Seq = calls
-      .filter(
-        (c) =>
-          c.machineName === 'w1' &&
-          (c.functionName === 'datastore_adopt' || c.functionName === 'datastore_attach')
-      )
-      .map((c) => c.functionName);
-    expect(w1Seq).toEqual(['datastore_adopt', 'datastore_attach']);
-    // #40: after the off-control attach, the control's vestigial fork record is forgotten (registry-only) so a later re-fork of the same tag (refresh) does not collide. ONLY the off-control replica; on-control skips it.
-    const forgets = calls.filter((c) => c.functionName === 'datastore_forget');
-    expect(forgets.map((c) => c.machineName)).toEqual(['cp1']);
-    expect(forgets[0].params?.name).toBe('ds-data:set1-r2');
-    // Order: forget runs AFTER the off-control attach (fork→adopt→attach→forget).
-    const attachIdx = calls.findIndex(
-      (c) => c.functionName === 'datastore_attach' && c.machineName === 'w1'
-    );
-    const forgetIdx = calls.findIndex((c) => c.functionName === 'datastore_forget');
-    expect(forgetIdx).toBeGreaterThan(attachIdx);
+  it('the token path throws when the account issues nothing', async () => {
+    givenRepo();
+    licence.authority.mockResolvedValue('token');
+    licence.token.mockResolvedValue(false);
+    await expect(run()).rejects.toThrow(/did not issue a licence/);
   });
 
-  it('refuses when the cluster has no nodes', async () => {
-    execMock();
-    await expect(provisionReplicaDatastores({ ...base, replicas: 2, nodes: [] })).rejects.toThrow(
-      /no nodes/
-    );
+  it('a valid licence already installed for this id spends nothing', async () => {
+    givenRepo();
+    licence.statuses.mockResolvedValue([
+      { repositoryGuid: 'guid-sqldb', datastoreId: 'id-fork-1', status: 'valid' },
+    ]);
+    await run();
+    expect(licence.free).not.toHaveBeenCalled();
+    expect(licence.token).not.toHaveBeenCalled();
+    expect(licence.authority).not.toHaveBeenCalled();
+    expect(licence.release).toHaveBeenCalled();
   });
 
-  // ── bug #49: the per-volume LUKS images, and the trap ─────────────────────
+  it.each([
+    [
+      'another datastore id',
+      { repositoryGuid: 'guid-sqldb', datastoreId: 'id-parent', status: 'valid' },
+    ],
+    [
+      'another repository',
+      { repositoryGuid: 'guid-other', datastoreId: 'id-fork-1', status: 'valid' },
+    ],
+    [
+      'an expired licence',
+      { repositoryGuid: 'guid-sqldb', datastoreId: 'id-fork-1', status: 'expired' },
+    ],
+  ])('%s does not count as installed', async (_name, status) => {
+    givenRepo();
+    licence.statuses.mockResolvedValue([status]);
+    await run();
+    expect(licence.free).toHaveBeenCalledOnce();
+  });
 
-  // A datastore fork is a BLOCK-layer clone: it carries the ciphertext repos/<repo>/volumes/<pvc>.img AND the empty directory that image was mounted over. The replica's PV points at that directory. If nothing re-opens the image, the replica mounts the empty dir and comes up healthy, Ready, and EMPTY, the failure has NO symptom except missing data, which is why it must be pinned
-  // here rather than left to a live suite.
-  it('opens the repo volumes on each fork, AFTER attach and BEFORE the node label', async () => {
-    vi.spyOn(outputService, 'warn').mockReturnValue(undefined);
-    const exec = execMock();
-
-    await provisionReplicaDatastores({
-      ...base,
-      replicas: 2,
-      nodes: [
-        { machine: 'n1', ip: '10.0.0.1' },
-        { machine: 'n2', ip: '10.0.0.2' },
-      ],
-    });
-
-    const calls = exec.mock.calls.map((c) => c[0]);
-    const opens = calls.filter((c) => c.functionName === 'datastore_volumes_open');
-    expect(opens.length).toBe(2);
-    // Scoped to the fork AND the repo: the images live in one repo's folder, and an unscoped open would silently open nothing.
-    expect(opens.map((c) => c.params?.name)).toEqual(['ds-data:set1-r1', 'ds-data:set1-r2']);
-    // ★ #93 MUTATION CONTROL (found live by B1): the folder on the fork is repos/<GUID> (#83), so the open must speak the GUID, a NAME-based dispatch stats repos/<name>, which does not exist, and aborts every replicate of a real kube repo. Both assertions must hold: reverting to the name turns this red.
-    expect(opens.every((c) => c.params?.repo === 'guid-sqldb')).toBe(true);
-    expect(opens.some((c) => c.params?.repo === 'sqldb')).toBe(false);
-    // Each open runs on the node that HOLDS the fork, not on the control plane.
-    expect(opens.map((c) => c.machineName)).toEqual(['n1', 'n2']);
-
-    // The ordering is the safety property. The node label is the PV's nodeAffinity key and therefore the scheduling gate: opening BEFORE the label means a pod can never be scheduled onto a volume that is not yet mounted. Attaching before the open is likewise required, there is no mount to open the image on until the datastore is attached.
-    const names = calls.map((c) => c.functionName);
-    for (const [i, fork] of ['ds-data:set1-r1', 'ds-data:set1-r2'].entries()) {
-      const attachAt = calls.findIndex(
-        (c) => c.functionName === 'datastore_attach' && c.params?.name === fork
-      );
-      const openAt = calls.findIndex(
-        (c) => c.functionName === 'datastore_volumes_open' && c.params?.name === fork
-      );
-      const labelAt = names.indexOf('kube_node_label', attachAt);
-      expect(attachAt, `replica ${i + 1}: attach must precede open`).toBeLessThan(openAt);
-      expect(openAt, `replica ${i + 1}: open must precede the node label`).toBeLessThan(labelAt);
-    }
+  it('a machine that cannot say what is installed stops the issuance', async () => {
+    givenRepo();
+    licence.statuses.mockRejectedValue(new Error('scan failed'));
+    await expect(run()).rejects.toThrow(/scan failed/);
+    expect(licence.free).not.toHaveBeenCalled();
+    expect(licence.release).toHaveBeenCalled();
   });
 });
 

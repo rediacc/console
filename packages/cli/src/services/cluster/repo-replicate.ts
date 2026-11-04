@@ -30,15 +30,10 @@ import { DEFAULTS } from '@rediacc/shared/config';
 import { WK_INFRA_DOMAIN } from '@rediacc/shared/config/well-known.generated';
 import type { ReplicaSet } from '@rediacc/shared/config-schema';
 import { issueFreeRepoLicense, resolveLicenseAuthority } from '../account/free-license.js';
-import { refreshRepoLicenseIdentity } from '../account/license.js';
-import {
-  assertMachineSlotsAvailable,
-  partialPlacementGuidance,
-} from '../account/license-preflight.js';
+import { readRuntimeRepoLicenseStatuses, refreshRepoLicenseIdentity } from '../account/license.js';
 import { authorizeSubscriptionViaDeviceCode } from '../account/subscription-device-auth.js';
 import { configService } from '../config/config-resources.js';
 import { getExecutor } from '../executor/executor-factory.js';
-import { parseCapturedJson } from '../executor/local-executor.js';
 import { machineConnections } from '../machine/machine-connection.js';
 
 /** Labels every replicate-generated object carries, for enumerate + teardown. */
@@ -54,29 +49,6 @@ export interface ReplicaNode {
   machine: string;
   /** Private IP, kube_node_label resolves the k8s node by InternalIP. */
   ip: string;
-}
-
-/** Inputs the orchestrator resolves before composing the datastore plane. */
-export interface ProvisionReplicasInput {
-  repo: string;
-  /**
-   * The repo's GUID, its STORAGE identity (#93: storage speaks GUID, k8s
-   * objects speak name). The repo folder on the datastore is `repos/<guid>`
-   * (#83: `repo create` dispatches `repository create --name <guid>`), so the
-   * fork, a byte-clone of the parent, carries `repos/<guid>` too, and every
-   * storage-facing verb must address it by GUID; `repo` is only for k8s names.
-   */
-  repoGuid: string;
-  setName: string;
-  datastore: string;
-  snapshot: string;
-  replicas: number;
-  /** Cluster nodes to spread replicas across (round-robin). */
-  nodes: ReplicaNode[];
-  /** Control-plane machine + its CP data-dir mount (kube_node_label target). */
-  controlMachine: string;
-  controlMount: string;
-  debug?: boolean;
 }
 
 /** The snapshot a replica set's forks clone from (refresh cycles the suffix). */
@@ -109,147 +81,34 @@ export function getReplicaSetForRepo(repoKey: string): Promise<ReplicaSet | unde
 }
 
 /**
- * Provision the datastore plane for a replica set (spec 05 §1 steps 1-2): ONE
- * snapshot of the repo's datastore, then N fork-attaches with --writes local
- * (dm-COW overlay) spread round-robin across the cluster's nodes, each hosting
- * node stamped with the fork's own `rediacc.io/ds-<parent>-<tag>` label so the
- * replica PV pins to wherever the fork datastore lives (follows it on
- * failover, F3). Returns each replica's placement (fork mount + node label)
- * for the manifest render. Composes only landed bridge verbs; the parent is
- * never stopped.
+ * Where each replica of a set goes: round-robin across the cluster's nodes. The
+ * plan is recorded before the first job, so a rerun and a remove of a set that
+ * stopped part-way both know every fork it may have made.
  */
-export async function provisionReplicaDatastores(
-  input: ProvisionReplicasInput
-): Promise<{ placements: ReplicaPlacement[]; forks: ReplicaSet['replicas'] }> {
-  if (input.nodes.length === 0) {
-    throw new Error(`Cannot replicate "${input.repo}": the cluster has no nodes to host replicas.`);
-  }
-
-  // Replicas land round-robin, so the machines this touches are the distinct nodes the rotation reaches, fewer than `replicas` when replicas outnumber nodes. Asked before the snapshot, because everything after it is placement.
-  const targetMachines = [
-    ...new Set(
-      Array.from({ length: input.replicas }, (_, i) => input.nodes[i % input.nodes.length].machine)
-    ),
-  ];
-  await assertMachineSlotsAvailable({ machineCount: targetMachines.length });
-
-  // 1. One instant snapshot of the repo's datastore.
-  await dispatch(
-    'datastore_snapshot_create',
-    input.controlMachine,
-    { name: input.datastore, snapshot: input.snapshot },
-    input.debug
-  );
-
-  const placements: ReplicaPlacement[] = [];
-  const forks: ReplicaSet['replicas'] = [];
-  const placed: string[] = [];
-  for (let i = 1; i <= input.replicas; i++) {
-    const node = input.nodes[(i - 1) % input.nodes.length];
-    try {
-      await provisionOneReplica(input, i, node);
-    } catch (error) {
-      // A replica set is placed one node at a time, so any failure part-way leaves a real, working partial deployment behind. Say what exists and what to re-run rather than letting a bare bridge error imply that nothing happened, or that everything did.
-      throw new Error(
-        `${error instanceof Error ? error.message : String(error)}\n\n${partialPlacementGuidance({
-          placed,
-          remaining: targetMachines.filter((m) => !placed.includes(m)),
-          command: `rdc repo replicate ${input.repo} --replicas ${input.replicas}`,
-        })}`,
-        { cause: error }
-      );
-    }
-    if (!placed.includes(node.machine)) placed.push(node.machine);
-    const tag = replicaTag(input.setName, i);
-    placements.push({
-      index: i,
-      datastoreLabel: `${DS_NODE_LABEL_PREFIX}${input.datastore}-${tag}`,
-      mountPath: replicaForkMount(input.datastore, tag),
-    });
-    forks.push({ index: i, fork: `${input.datastore}:${tag}`, node: node.machine });
-  }
-  return { placements, forks };
+export function planReplicas(input: {
+  setName: string;
+  datastore: string;
+  replicas: number;
+  nodes: ReplicaNode[];
+}): ReplicaSet['replicas'] {
+  return Array.from({ length: input.replicas }, (_, i) => ({
+    index: i + 1,
+    fork: `${input.datastore}:${replicaTag(input.setName, i + 1)}`,
+    node: input.nodes[i % input.nodes.length].machine,
+  }));
 }
 
-/** Fork + attach + node-label one replica's datastore (create and refresh). */
-export async function provisionOneReplica(
-  input: Pick<
-    ProvisionReplicasInput,
-    | 'repo'
-    | 'repoGuid'
-    | 'setName'
-    | 'datastore'
-    | 'snapshot'
-    | 'controlMachine'
-    | 'controlMount'
-    | 'debug'
-  >,
-  index: number,
-  node: ReplicaNode
-): Promise<void> {
-  const tag = replicaTag(input.setName, index);
-  const forkName = `${input.datastore}:${tag}`;
-  // Clone the datastore from the snapshot (constant-time, DB-size-independent). datastore_fork registers the fork record ONLY in the control machine's registry; when the replica lands on a DIFFERENT node, its registry has no such record, so we ferry the record (the `datastore fork --json` output) there via datastore_adopt before attaching (finding #36; mirrors the cluster-fork
-  // cross-machine path, cluster-fork.ts:203-218 / finding #14).
-  const forkRes = await getExecutor().execute({
-    functionName: 'datastore_fork',
-    machineName: input.controlMachine,
-    params: { parent: input.datastore, tag, snapshot: input.snapshot },
-    debug: input.debug,
-    captureOutput: true,
-  });
-  if (!forkRes.success) {
-    throw new Error(
-      `Replica step "datastore_fork" failed on ${input.controlMachine}: ${forkRes.error ?? DEFAULTS.CLOUD.UNKNOWN_ERROR}`
-    );
-  }
-  if (node.machine !== input.controlMachine) {
-    const record = parseCapturedJson<unknown>(forkRes.stdout);
-    const recordB64 = Buffer.from(JSON.stringify(record)).toString('base64');
-    await dispatch(
-      'datastore_adopt',
-      node.machine,
-      { name: forkName, record_b64: recordB64 },
-      input.debug
-    );
-  }
-  // Attach --writes local on the target node (ephemeral dm-COW overlay).
-  await dispatch(
-    'datastore_attach',
-    node.machine,
-    { name: forkName, writes: 'local' },
-    input.debug
-  );
-  if (node.machine !== input.controlMachine) {
-    // The fork record now lives on the replica node and is attached there; the control's copy (from datastore_fork) is vestigial. Forget it on control (registry-only; the fork is DETACHED there and the clone is owned by the node's record) so a later re-fork of the SAME tag, `repo replicate refresh`, which discards on the node then re-forks on control, does not collide with a
-    // stale control record (finding #40).
-    await dispatch('datastore_forget', input.controlMachine, { name: forkName }, input.debug);
-  }
-  // Open the repo's per-volume LUKS images on the fork (bug #49). The fork is a BLOCK-layer clone, so it carries the ciphertext `<fork>/repos/<GUID>/volumes/ <pvc>.img` AND the empty directory that image was mounted over. The replica's PV points at that directory. Without this step the image is never opened, the pod bind-mounts the empty dir, and the replica comes up healthy,
-  // Ready, and EMPTY, no FailedMount, no event, no symptom except missing data.
-  //
-  // By GUID, never by name (#93, found live by B1): the repo folder on the datastore, and therefore on its byte-clone fork, is `repos/<guid>`, so a name-based `repo:` param stats `repos/<name>` and aborts every replicate.
-  //
-  // It MUST precede kube_node_label: the label is the scheduling gate (the PV's nodeAffinity key), so opening first means a pod can never be scheduled onto a volume that is not yet mounted.
-  // renet licence-checks datastore_volumes_open against the fork datastore `name` targets, and a fork gets a fresh datastore id (datastore/fork.go), so a licence for THAT id must be installed first.
-  await issueForkLicense(input, forkName, node.machine);
-  await dispatch(
-    'datastore_volumes_open',
-    node.machine,
-    { name: forkName, repo: input.repoGuid },
-    input.debug
-  );
-  // Stamp the fork's datastore label on the hosting node (PV nodeAffinity key).
-  await dispatch(
-    'kube_node_label',
-    input.controlMachine,
-    {
-      mount_path: input.controlMount,
-      node_ip: node.ip,
-      datastore: `${input.datastore}-${tag}`,
-    },
-    input.debug
-  );
+/** One replica's fork mount and the node label its PV pins to, for the manifest render. */
+export function replicaPlacement(
+  datastore: string,
+  replica: ReplicaSet['replicas'][number]
+): ReplicaPlacement {
+  const tag = replica.fork.slice(replica.fork.indexOf(':') + 1);
+  return {
+    index: replica.index,
+    datastoreLabel: `${DS_NODE_LABEL_PREFIX}${datastore}-${tag}`,
+    mountPath: replicaForkMount(datastore, tag),
+  };
 }
 
 /** The device-code login the licence paths run when a terminal operator picks "log in". */
@@ -260,48 +119,38 @@ async function loginViaDeviceCode(): Promise<void> {
   });
 }
 
-/** The fork's own datastore id, read from `datastore_list --json` on the node that hosts it. */
-async function readForkDatastoreId(
+/**
+ * Install the repo licence for the fork's datastore id on its node, through the
+ * account or the FREE licence. A fork gets a fresh datastore id (datastore/fork.go)
+ * and renet licence-checks datastore_volumes_open against it. Each issuance claims
+ * a monthly slot with no dedupe by id, so an installed valid licence for this id
+ * ends a retry here, and a machine that cannot answer stops it rather than spending.
+ * The licence travels over SFTP: never in a vault, a ticket or a step plan.
+ */
+export async function ensureForkLicense(
+  input: { repo: string; repoGuid: string },
   forkName: string,
   machine: string,
-  debug?: boolean
-): Promise<string> {
-  const res = await getExecutor().execute({
-    functionName: 'datastore_list',
-    machineName: machine,
-    params: {},
-    debug,
-    captureOutput: true,
-  });
-  if (!res.success) {
-    throw new Error(
-      `Replica step "datastore_list" failed on ${machine}: ${res.error ?? DEFAULTS.CLOUD.UNKNOWN_ERROR}`
-    );
-  }
-  const rows = parseCapturedJson<{ name?: string; datastoreId?: unknown }[]>(res.stdout);
-  const id = rows.find((r) => r.name === forkName)?.datastoreId;
-  if (typeof id !== 'string' || id === '') {
-    throw new Error(
-      `Cannot license replica fork "${forkName}" on ${machine}: its datastore registry reports no datastore id for it.`
-    );
-  }
-  return id;
-}
-
-/** Install the repo licence for the fork's datastore id on its node, through the account or the FREE licence. */
-async function issueForkLicense(
-  input: Pick<ProvisionReplicasInput, 'repo' | 'repoGuid' | 'debug'>,
-  forkName: string,
-  machine: string
+  datastoreId: string
 ): Promise<void> {
-  const datastoreId = await readForkDatastoreId(forkName, machine, input.debug);
   const repo = await configService.getRepository(input.repo);
   // A grand repo carries no grandGuid (unset or self-referential, see config/resource-state.ts), so it is its own grand and the repo guid is the right value.
   const grandGuid = repo?.grandGuid ?? input.repoGuid;
-  const authority = await resolveLicenseAuthority(loginViaDeviceCode);
   const lease = await machineConnections.acquire(machine);
   try {
     const { machine: machineConfig, sshPrivateKey, sftp } = lease;
+    const installed = await readRuntimeRepoLicenseStatuses(machine, machineConfig);
+    if (
+      installed.some(
+        (s) =>
+          s.repositoryGuid === input.repoGuid &&
+          s.datastoreId === datastoreId &&
+          s.status === 'valid'
+      )
+    ) {
+      return;
+    }
+    const authority = await resolveLicenseAuthority(loginViaDeviceCode);
     if (authority === 'free') {
       // No datastoreMount: the FREE route takes a fixed 3 GB cap and never sizes the image (FreeLicenseParams has no mount field), unlike the token path's size probe.
       await issueFreeRepoLicense(

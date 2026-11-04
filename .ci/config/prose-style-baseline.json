@@ -15,8 +15,8 @@
   "that shrank by 29 can still hide one brand-new violation. Comparing sizes is not",
   "the same claim as diffing the sets."
  ],
- "count": 2748,
- "files": 674,
+ "count": 2746,
+ "files": 672,
  "by_rule": {
   "R1": 1499,
   "R11": 142,
@@ -24,7 +24,7 @@
   "R18": 12,
   "R19": 55,
   "R2": 602,
-  "R7": 437
+  "R7": 435
  },
  "findings": {
   ".ci/breakpoint/README.md": {
@@ -4130,11 +4130,6 @@
     "4b26b74817b94f77"
    ]
   },
-  "packages/cli/src/services/cluster/__tests__/repo-replicate.test.ts": {
-   "R7": [
-    "49d4605bbf7ddbe9"
-   ]
-  },
   "packages/cli/src/services/cluster/cluster-fork.ts": {
    "R1": [
     "4a3b3169dad46d62"
@@ -4146,11 +4141,6 @@
   "packages/cli/src/services/cluster/kvm-topology.ts": {
    "R7": [
     "beed67c023ced492"
-   ]
-  },
-  "packages/cli/src/services/cluster/repo-replicate.ts": {
-   "R7": [
-    "e0246429054cd3f9"
    ]
   },
   "packages/cli/src/services/config/config-datastores.ts": {
