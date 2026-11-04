@@ -6,8 +6,8 @@ Priority: P2 -- refusal wording that cost calls, no wrong block
 Concurrency: parallel -- touches only the stop hook's refusal text
 Owns: .claude/hooks/stop/worklist.py, .claude/hooks/stop/worklist_messages.py, .claude/hooks/stop/wl_store.py, .claude/hooks/stop/wl_checks.py, .claude/hooks/stop/wl_report.py, .claude/rediacc_hooks/tests/test_wl_tick_commit_ref.py, .claude/rediacc_hooks/tests/test_wl_state_document.py, .claude/rediacc_hooks/tests/test_wl_report_inbox.py
 First-Seen: 2026-11-01
-Owner: 45048a90 (adopted from retro retro-late 20261101)
-Updated: 2026-11-01
+Owner: d778be9d (adopted from 45048a90 2026-11-04)
+Updated: 2026-11-04
 
 **Scope.** This retro covers lead transcript bytes 0 to 10523302. That runs to 2026-11-01T19:45:02Z, the last record in the range, at line 4380 and offset 10521114. The early band (#b4940dfa) has the same session and date and a range contained in this one, so this single retro answers both. No `PLAN-stop-hook-retro-20261101.md` exists yet, so the task numbering starts at R20261101.1. The boxes in `PLAN-stop-hook-retro-20260924.md` and `-20260925.md` were not re-proposed. Of those, R20260924.21 (the ready-to-paste `ASKED:` hint) and R20260924.8 (the extra accepted evidence shapes) held, and are cited below.
 

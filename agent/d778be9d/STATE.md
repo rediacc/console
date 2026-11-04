@@ -1,28 +1,28 @@
-## SESSION d778be9d 2026-11-01T08:06:35Z
-
-Branch 1023-1 pushed at f53c5b9bb (local HEAD ahead with the run-41280912249 fixes); PR rediacc/console#602 (draft) with renet#119, account#100, elite#17 open on 1023-1. Babysit phase set for PR 602. Operator answers: "Open the PR and babysit" (ASKED:2026-10-31T08:2xZ); deploys "now and watch their redeployment after the merge" (ASKED:2026-10-31T16:12Z: release:local needs merged main, bench already deployed e5d169f3); devbox --mount done (d75745be5).
-
-## Standing rules
-- Never a Claude-Session trailer, "Generated with" line or claude.ai link in commits, tags, PR bodies or comments (console is public); messages end at PR-TASK.
-- Commit by literal pathspec; write the message file in one call and commit in another; above 20 files add the Sampled/Proof lines.
-- No commit while ci:quick runs (a moved HEAD voids the receipt). The push needs: ci:quick receipt, then `npx tsx scripts/ci-runner/run.ts --only` for check:ci-guard-mutations, check:ci-security-audit, check:ci-proxy-image-smoke, check:ci-proxy-wrangler-dev-e2e; vm:check --changed --base 24dade4bd when renet/account inputs move.
-- Submodule pushes use `git push origin 1023-1:refs/heads/1023-1` (a plain push printed up-to-date while behind).
-- PR body: edit only via gh pr view > file, change prose, gh api PATCH -F body=@file; resync with PYTHONPATH=.ci python3 -m rediacc_ci.pr.sync_epic_block 602 1023-1 after every push.
-- pytest: .ci/cache/toolchain/uv-tools/bin/pytest -q <ids>; never vitest from the root.
-
-## Delegated
-- none live.
-
-## CI history on PR 602 (all fixed and pushed in a9cb574e5)
-Submodule PR links, bootstrap base PyYAML, epic ledger, settings selftest stub, keyring mock, command span exit status, plan-investigation pointers, renet go build-packages, mirror-config-store wrangler stub, plan-citations partial-clone skip.
+## SESSION d778be9d 2026-11-04T06:46:47Z
 
 ## Big pieces
-- PLAN-backup-program, PLAN-detached-jobs, PLAN-free-license, PLAN-production-key-only: open boxes close after merge, on hostinger, or on bench.
+- PLAN-backup-integrity: open S2 scan, D3, D4 CLI legs, P1, P3, P4; D1 awaits green CI; post-merge B, H, LP.
+- PLAN-backup-critical-tier: open Q3 portal, M9, T1-T4, X2, X3, Y; post-merge Z, J.
+
+
+## Standing rules
+- Never a Claude-Session trailer, Generated-with line, Co-Authored-By or claude.ai link in commits, tags, PR bodies or comments (console is public); messages end at PR-TASK: 9f92c43e.
+- Message file in one call, commit in another; git add in its own call; literal paths; no chain in the same batch as a commit. Over 20 files needs Sampled and Proof lines. Prose unwrapped, no first or second person.
+- Chain: /home/developer/.claude/jobs/45048a90/tmp/chain4.sh (reviews, budget freshness, format, lint, ci:quick in the kept clone, drills, gateway, vm:check). Read .ci/cache/prepush-receipt.json and .ci/cache/vm-check/receipt.json. Set its --base to the last pushed console commit.
+- Push each repo alone: git push origin 1023-1:refs/heads/1023-1 with TURBO_PUSH_REASON='red-fix: why'; then PYTHONPATH=.ci python3 -m rediacc_ci.pr.sync_epic_block 602 1023-1. Watch: ci-trace.py --wait --until-final --ref 1023-1. Rerun with gh run rerun <id> --failed.
+- Wake timer by absolute path, own background call, timeout 2400000. Hostinger: never delete, prune, replace or down an original repo.
+
+## State
+/pr-merge in progress, operator invoked 2026-11-03. Phase merge. PR 602 is ready; review answered with wl_prreview (F1, F2 fixed ae40c840a, F3 not-a-bug). renet#119 and account#100 MERGED by the operator's fast-forward (main at 310f084, 95ab73c, the pointers at HEAD); elite#17 merged, pointer e7bf6da in b512f4ac8. HEAD aa4289871 is on top of origin 480c09178, unpushed, holding only review fixes, records, a budget refresh and the elite pointer.
+HELD BACK, NOT IN THE PR, goes to the next branch: soft-reset chain 1e6bdb6ad, b1e950b63, f86e52571 sits staged or dirty in the tree (agent/plans/PLAN-rediaccfile-unprivileged.md, QUEUE.md, INDEX.md, plan-boxes.json, plan-investigation.jsonl); renet local 778834a past main plus the renet writer's uncommitted edits (a835ca92604e8de8a, #84f2ff81), renet checkout is at 778834a so the console gitlink shows dirty; console CLI, template, docs and contract work (#75293fa3); D1 tick in PLAN-backup-integrity.md. NEVER commit those paths on this line. Regenerate contracts on the new branch. #e8bac704: a plan regeneration dropped Expired plans from the tree's INDEX.md; HEAD has 31 tombstones; restore on the next branch.
+
+## Takeover
+Operator 2026-11-03: 45048a90 was this same work ("all yours"), /exit-ed 13:06Z; agent/45048a90/STATE.md has its merge notes. Label no-auto-cancel stays until removed.
 
 ## Next action
-1. Read /tmp/legs.out (task bxvpbir92 ran the backup drills, ./rdc.sh ops up two-workers, e2e 11-multi-machine and vm:check --changed --base 24dade4bd); fix any red; rerun ci:quick plus the four --only gates, push renet (git push origin 1023-1:refs/heads/1023-1) and ONLY THEN the console (never in the same batch: #ff44a3a8), resync the PR body, watch CI.
-   Unpushed: renet 497ce40 742b676 ab24ab2; console 7b2ddb088 87e6fcc0a 24f811a4a 8e9dee204 9186200c3.
-2. When CI Complete is green: flip #602 ready, wait for Review Complete (wl_prreview.py --wait), answer it, then /pr-merge (submodules first, pointer bump, console).
-3. After the merge: release:local edge x3 then stable x3 (RELEASE_ASKED=ASKED:2026-10-30T09:56Z), record version ids, smoke rc, rollback and D1 bookmarks; meter reconcile (dry run, apply, usage equals a fresh R2 listing); watch CD's redeploy.
-4. Open findings: #1a64a6a1 (receipt ignores uncommitted ledger events), #4960f2e8 (gen-docs counts review records as suppressions).
+Branch 1104-1 from main 1afbc7a24, v3.0.1 on edge. E1 rc 0 on eu, us; asia org A EGRESS_UNREACHABLE (path issue; IPv6 unset, Turnstile blocks a headless login, #a98ab330). ASKED:2026-11-03T20:30Z allows all.
+1. Read /tmp/citrace-stable.out: Release to Production run 41787766351 (force), first durable deploy on stable. An image preparation timeout: one gh run rerun --failed. A rollback closes the executor. Read deploy records; verify_stable_endpoints; no live-console-stable profile exists, so say E1 did not run on stable.
+2. Meter reconcile (#707f08ca): dry run, apply, usage equals a fresh R2 listing.
+3. Restore held-back: git -C private/renet switch 1023-1 (45b8b36); git apply ~/.cache/rediacc/heldback-1103-1/heldback.patch plus untracked/ (#fc5d5319). 
+4. Adopt 4 plans (--migrate d778be9d --plan), commit worklist, fixes #35cf46c4 #05ad9451 #44c44aaa #331db7d9 #6de0eb17 #1bb0b883 #08bbfbf7 #2042b9ad #5e8790e6 #aa8234c0 #cdd349bc, gitlab mirror #7d369f98, red scheduled main runs, then /writers-now on QUEUE Promoted (operator ruling).
 Operator-only: revoke the two leaked claude.ai sessions.

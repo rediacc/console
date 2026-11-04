@@ -72,7 +72,7 @@
     },
     "agent/plans/PLAN-backup-critical-tier.md": {
       "status": "approved",
-      "owner": "45048a90",
+      "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
       "open": 21,
@@ -158,7 +158,7 @@
     },
     "agent/plans/PLAN-backup-integrity.md": {
       "status": "approved",
-      "owner": "45048a90",
+      "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
       "open": 19,
@@ -1728,7 +1728,7 @@
     },
     "agent/plans/PLAN-rediaccfile-unprivileged.md": {
       "status": "executing",
-      "owner": "45048a90",
+      "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
       "open": 23,
@@ -2374,7 +2374,7 @@
     },
     "agent/plans/PLAN-stop-hook-retro-20261101.md": {
       "status": "ready",
-      "owner": "45048a90",
+      "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
       "open": 4,

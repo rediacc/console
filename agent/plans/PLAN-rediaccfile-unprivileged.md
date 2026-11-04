@@ -2,8 +2,8 @@
 
 Status: executing -- operator rulings 2026-11-03, below
 Depends-On: no-dep -- the hook fix (renet 41554f4) has landed; this plan narrows the sandbox the hook shares
-Owner: 45048a90
-Updated: 2026-11-03
+Owner: d778be9d (adopted from 45048a90 2026-11-04)
+Updated: 2026-11-04
 First-Seen: 2026-11-02
 Priority: P0 -- tenant code runs as root on a shared machine. Confirmed for hooks; P0 proves it for up() and down()
 Concurrency: exclusive -- U1 to U5 edit one call path (sandbox, executor, grant), serially
