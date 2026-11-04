@@ -1873,7 +1873,7 @@
       },
       "freeLicense": {
         "cta": "Installer Rediacc",
-        "description": "N'importe quelle machine peut obtenir une licence gratuite pour un dépôt, sans inscription : jusqu'à 3 Go, valable 48 heures et renouvelable gratuitement autant de fois que nécessaire. À son expiration, les dépôts en cours continuent de fonctionner ; les nouveaux dépôts et les sauvegardes hébergées nécessitent une offre payante.",
+        "description": "N'importe quelle machine peut obtenir une licence gratuite pour un dépôt, sans inscription : jusqu'à 3 Go, valable 48 heures et renouvelable gratuitement autant de fois que nécessaire. À son expiration, les dépôts en cours continuent de fonctionner. Elle n'inclut aucune sauvegarde hébergée. Un compte gratuit ouvre l'accès à Community : dépôts jusqu'à 10 Go, 100 émissions de licence par mois et 10 Go de sauvegarde hébergée. Les offres payantes vont plus loin.",
         "heading": "Essayez sans compte"
       },
       "hero": {

@@ -424,9 +424,11 @@
       },
       "tocKey": {
         "description": "Schlüssel für das Durchsuchen-Listing eines Repositorys verwalten",
-        "optionDryRun": "Zeigt, was getan würde; berührt nichts",
-        "optionReplace": "Einen abweichenden Schlüssel auf der Maschine ersetzen (sendet zum Nachweis die Passphrase)",
-        "syncDescription": "Den Listing-Schlüssel des Repositorys auf seiner Maschine installieren oder einen abweichenden ersetzen"
+        "sync": {
+          "description": "Den Listing-Schlüssel des Repositorys auf seiner Maschine installieren oder einen abweichenden ersetzen",
+          "optionDryRun": "Zeigt, was getan würde; berührt nichts",
+          "optionReplace": "Einen abweichenden Schlüssel auf der Maschine ersetzen (sendet zum Nachweis die Passphrase)"
+        }
       },
       "churn": {
         "description": "Misst, wie viel vom Abbild eines Repositorys sich zwischen Läufen ändert, projiziert den Upload je Zellgröße und empfiehlt eine. Eine Reflink-Basis liegt während der Messung auf der Maschine und wird immer wieder entfernt.",
@@ -2823,9 +2825,9 @@
       "offerPrompt": "Für diesen Befehl wird eine Lizenz benötigt, aber es ist keine Anmeldung vorhanden. Anmelden oder mit einer kostenlosen Lizenz fortfahren?",
       "offerLogin": "Bei einem Konto anmelden",
       "offerFree": "Mit einer kostenlosen Lizenz fortfahren (bis zu {{maxGb}} GB)",
-      "autoTaken": "Keine Anmeldung gefunden, daher wird eine kostenlose Lizenz verwendet (bis zu {{maxGb}} GB, ohne gehostete Backups). Mehr gibt es mit einem Konto: {{url}}",
+      "autoTaken": "Keine Anmeldung gefunden, daher wird eine kostenlose Lizenz verwendet (bis zu {{maxGb}} GB, ohne gehostete Backups). Mit einem kostenlosen Konto gelten die Community-Limits samt gehostetem Backup: {{url}}",
       "issued": "Kostenlose Lizenz für dieses Repository installiert (bis zu {{maxGb}} GB).",
-      "noHostedBackup": "Eine kostenlose Lizenz enthält keine gehosteten Backups. Legen Sie ein Konto an und wählen Sie einen kostenpflichtigen Plan, um dieses Repository zu sichern: {{url}}"
+      "noHostedBackup": "Eine kostenlose Lizenz enthält keine gehosteten Backups. Registrieren Sie ein kostenloses Konto, um das gehostete Backup von Community zu nutzen, oder wählen Sie einen kostenpflichtigen Plan für mehr: {{url}}"
     },
     "machineNotFound": "Machine \"{{name}}\" nicht gefunden",
     "machineRequired": "Machine-Name erforderlich. Verwenden Sie --machine <name>",

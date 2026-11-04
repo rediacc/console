@@ -7,7 +7,7 @@ order: 2
 language: it
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/it/cli.json
-sourceHash: "76a6fd60eea85fdb"
+sourceHash: "4adc1e01cb49b8f3"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -2893,9 +2893,20 @@ rdc backup repair <repo-ref> [options]
 
 {{t:cli.commands.backup.tocKey.description}}
 
+<a id="cli-local-backup-toc-key-sync"></a>
+#### sync
+
+{{t:cli.commands.backup.tocKey.sync.description}}
+
 ```bash
-rdc backup toc-key
+rdc backup toc-key sync <repo-ref> [options]
 ```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--replace` | {{t:cli.commands.backup.tocKey.sync.optionReplace}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--dry-run` | {{t:cli.commands.backup.tocKey.sync.optionDryRun}} | {{t:cli.docs.optionLabels.no}} | - |
+
 
 <a id="cli-local-backup-churn"></a>
 ### 8.22 churn

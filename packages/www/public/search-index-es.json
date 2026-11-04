@@ -5394,8 +5394,8 @@
   {
     "id": "search-6159",
     "content": "8.21 toc-key",
-    "body": "Gestionar la clave del listado de exploración de un repositorio rdc backup toc-key <a id=\"cli-local-backup-churn\"></a>",
-    "excerpt": "Gestionar la clave del listado de exploración de un repositorio rdc backup toc-key <a id=\"cli-local-backup-churn\"></a>",
+    "body": "Gestionar la clave del listado de exploración de un repositorio <a id=\"cli-local-backup-toc-key-sync\"></a> #### sync Instalar la clave de listado del repositorio en su máquina, o reemplazar una distinta rdc backup toc-key sync <repo-ref> [options] | Opción | Descripción | Obligatorio | Predeterminado | |------|-------------|----------|---------| | --replace | Reemplazar una clave distinta que ya está en la máquina (envía la frase de contraseña como prueba) | No | - | | --dry-run | Indica qué se haría; no toca nada | No | - | <a id=\"cli-local-backup-churn\"></a>",
+    "excerpt": "Gestionar la clave del listado de exploración de un repositorio <a id=\"cli-local-backup-toc-key-sync\"></a> #### sync Instalar la clave de listado del...",
     "category": "Documentation",
     "page": "/es/docs/cli-application",
     "fragment": "821-toc-key",

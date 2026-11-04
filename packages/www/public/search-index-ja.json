@@ -5394,8 +5394,8 @@
   {
     "id": "search-12095",
     "content": "8.21 toc-key",
-    "body": "リポジトリの参照一覧キーを管理します rdc backup toc-key <a id=\"cli-local-backup-churn\"></a>",
-    "excerpt": "リポジトリの参照一覧キーを管理します rdc backup toc-key <a id=\"cli-local-backup-churn\"></a>",
+    "body": "リポジトリの参照一覧キーを管理します <a id=\"cli-local-backup-toc-key-sync\"></a> #### sync リポジトリの一覧キーをそのマシンにインストールするか、別のキーを置き換えます rdc backup toc-key sync <repo-ref> [options] | フラグ | 説明 | 必須 | デフォルト | |------|-------------|----------|---------| | --replace | マシンにすでにある別のキーを置き換えます(証明のためパスフレーズを送信します) | いいえ | - | | --dry-run | 実行される内容を表示し、何にも触れません | いいえ | - | <a id=\"cli-local-backup-churn\"></a>",
+    "excerpt": "リポジトリの参照一覧キーを管理します <a id=\"cli-local-backup-toc-key-sync\"></a> #### sync リポジトリの一覧キーをそのマシンにインストールするか、別のキーを置き換えます rdc backup toc-key sync <repo-ref> [opt...",
     "category": "Documentation",
     "page": "/ja/docs/cli-application",
     "fragment": "821-toc-key",

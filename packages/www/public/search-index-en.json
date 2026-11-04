@@ -5549,8 +5549,8 @@
   {
     "id": "search-4662",
     "content": "8.21 toc-key",
-    "body": "Manage the browse-listing key of a repository rdc backup toc-key <a id=\"cli-local-backup-churn\"></a>",
-    "excerpt": "Manage the browse-listing key of a repository rdc backup toc-key <a id=\"cli-local-backup-churn\"></a>",
+    "body": "Manage the browse-listing key of a repository <a id=\"cli-local-backup-toc-key-sync\"></a> #### sync Install the repository's listing key on its machine, or replace a different one rdc backup toc-key sync <repo-ref> [options] | Flag | Description | Required | Default | |------|-------------|----------|---------| | --replace | Replace a different key already on the machine (sends the passphrase to prove it) | No | - | | --dry-run | Report what would be done; touch nothing | No | - | <a id=\"cli-local-backup-churn\"></a>",
+    "excerpt": "Manage the browse-listing key of a repository <a id=\"cli-local-backup-toc-key-sync\"></a> #### sync Install the repository's listing key on its machine...",
     "category": "Documentation",
     "page": "/en/docs/cli-application",
     "fragment": "821-toc-key",

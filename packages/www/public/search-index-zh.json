@@ -5394,8 +5394,8 @@
   {
     "id": "search-19515",
     "content": "8.21 toc-key",
-    "body": "管理仓库的浏览列表密钥 rdc backup toc-key <a id=\"cli-local-backup-churn\"></a>",
-    "excerpt": "管理仓库的浏览列表密钥 rdc backup toc-key <a id=\"cli-local-backup-churn\"></a>",
+    "body": "管理仓库的浏览列表密钥 <a id=\"cli-local-backup-toc-key-sync\"></a> #### sync 在仓库所在机器上安装其列表密钥,或替换不同的密钥 rdc backup toc-key sync <repo-ref> [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|----------|---------| | --replace | 替换机器上已有的不同密钥(会发送口令作为证明) | 否 | - | | --dry-run | 报告将要执行的操作;不触碰任何内容 | 否 | - | <a id=\"cli-local-backup-churn\"></a>",
+    "excerpt": "管理仓库的浏览列表密钥 <a id=\"cli-local-backup-toc-key-sync\"></a> #### sync 在仓库所在机器上安装其列表密钥,或替换不同的密钥 rdc backup toc-key sync <repo-ref> [options] | 标志 | 描述 | 必填...",
     "category": "Documentation",
     "page": "/zh/docs/cli-application",
     "fragment": "821-toc-key",

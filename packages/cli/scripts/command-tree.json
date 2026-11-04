@@ -1988,17 +1988,17 @@
           "subcommands": [
             {
               "name": "sync",
-              "descriptionKey": "commands.backup.tocKey.syncDescription",
+              "descriptionKey": "commands.backup.tocKey.sync.description",
               "options": [
                 {
                   "flags": "--replace",
-                  "descriptionKey": "commands.backup.tocKey.optionReplace",
+                  "descriptionKey": "commands.backup.tocKey.sync.optionReplace",
                   "mandatory": false,
                   "defaultValue": null
                 },
                 {
                   "flags": "--dry-run",
-                  "descriptionKey": "commands.backup.tocKey.optionDryRun",
+                  "descriptionKey": "commands.backup.tocKey.sync.optionDryRun",
                   "mandatory": false,
                   "defaultValue": null
                 }

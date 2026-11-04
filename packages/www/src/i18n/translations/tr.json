@@ -1866,7 +1866,7 @@
       },
       "freeLicense": {
         "cta": "Rediacc'ı kurun",
-        "description": "Her makine kayıt olmadan tek bir depo için ücretsiz lisans alabilir: 3 GB'a kadar, 48 saat geçerli ve gerektiği kadar ücretsiz yenilenebilir. Süresi dolduğunda çalışan depolar çalışmaya devam eder; yeni depolar ve barındırılan yedekler için ücretli bir plan gerekir.",
+        "description": "Her makine kayıt olmadan tek bir depo için ücretsiz lisans alabilir: 3 GB'a kadar, 48 saat geçerli ve gerektiği kadar ücretsiz yenilenebilir. Süresi dolduğunda çalışan depolar çalışmaya devam eder. Barındırılan yedek içermez. Ücretsiz bir hesapla Community'ye geçilir: depo başına 10 GB, ayda 100 lisans tahsisi ve 10 GB barındırılan yedek. Ücretli planlar daha da ileri gider.",
         "heading": "Hesap açmadan deneyin"
       },
       "hero": {

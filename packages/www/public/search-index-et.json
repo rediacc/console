@@ -5394,8 +5394,8 @@
   {
     "id": "search-7643",
     "content": "8.21 toc-key",
-    "body": "Halda hoidla sirvimisloendi võtit rdc backup toc-key <a id=\"cli-local-backup-churn\"></a>",
-    "excerpt": "Halda hoidla sirvimisloendi võtit rdc backup toc-key <a id=\"cli-local-backup-churn\"></a>",
+    "body": "Halda hoidla sirvimisloendi võtit <a id=\"cli-local-backup-toc-key-sync\"></a> #### sync Paigalda hoidla loendivõti selle masinasse või asenda erinev võti rdc backup toc-key sync <repo-ref> [options] | Lipuke | Kirjeldus | Kohustuslik | Vaikimisi | |------|-------------|----------|---------| | --replace | Asenda masinas juba olev erinev võti (saadab tõendiks parooli) | Ei | - | | --dry-run | Teatab, mida tehtaks; ei puutu midagi | Ei | - | <a id=\"cli-local-backup-churn\"></a>",
+    "excerpt": "Halda hoidla sirvimisloendi võtit <a id=\"cli-local-backup-toc-key-sync\"></a> #### sync Paigalda hoidla loendivõti selle masinasse või asenda erinev võ...",
     "category": "Documentation",
     "page": "/et/docs/cli-application",
     "fragment": "821-toc-key",

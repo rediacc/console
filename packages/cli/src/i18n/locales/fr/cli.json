@@ -424,9 +424,11 @@
       },
       "tocKey": {
         "description": "Gérer la clé de listing de navigation d'un dépôt",
-        "optionDryRun": "Indique ce qui serait fait ; ne touche à rien",
-        "optionReplace": "Remplacer une clé différente déjà présente sur la machine (envoie la phrase secrète comme preuve)",
-        "syncDescription": "Installer la clé de listing du dépôt sur sa machine, ou en remplacer une différente"
+        "sync": {
+          "description": "Installer la clé de listing du dépôt sur sa machine, ou en remplacer une différente",
+          "optionDryRun": "Indique ce qui serait fait ; ne touche à rien",
+          "optionReplace": "Remplacer une clé différente déjà présente sur la machine (envoie la phrase secrète comme preuve)"
+        }
       },
       "churn": {
         "description": "Mesure la part de l'image d'un dépôt qui change entre deux exécutions, projette l'envoi par taille de cellule et en recommande une. Une base reflink reste sur la machine pendant l'opération et est toujours supprimée.",
@@ -2823,9 +2825,9 @@
       "offerPrompt": "Cette commande nécessite une licence, et aucune connexion n'a été trouvée. Se connecter, ou continuer avec une licence gratuite ?",
       "offerLogin": "Se connecter à un compte",
       "offerFree": "Continuer avec une licence gratuite (jusqu'à {{maxGb}} Go)",
-      "autoTaken": "Aucune connexion trouvée : une licence gratuite est utilisée (jusqu'à {{maxGb}} Go, sans sauvegardes hébergées). Créez un compte pour aller plus loin : {{url}}",
+      "autoTaken": "Aucune connexion trouvée : une licence gratuite est utilisée (jusqu'à {{maxGb}} Go, sans sauvegardes hébergées). Un compte gratuit donne accès aux limites de Community et à la sauvegarde hébergée : {{url}}",
       "issued": "Licence gratuite installée pour ce dépôt (jusqu'à {{maxGb}} Go).",
-      "noHostedBackup": "Une licence gratuite n'inclut pas de sauvegardes hébergées. Créez un compte et choisissez une offre payante pour sauvegarder ce dépôt : {{url}}"
+      "noHostedBackup": "Une licence gratuite n'inclut pas de sauvegardes hébergées. Créez un compte gratuit pour profiter de la sauvegarde hébergée de Community, ou choisissez une offre payante pour aller plus loin : {{url}}"
     },
     "machineNotFound": "Machine \"{{name}}\" non trouvée",
     "machineRequired": "Le nom de la machine est requis. Utilisez --machine <name>",

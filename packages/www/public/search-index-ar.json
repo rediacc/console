@@ -5394,8 +5394,8 @@
   {
     "id": "search-1694",
     "content": "8.21 toc-key",
-    "body": "إدارة مفتاح قائمة التصفح الخاص بمستودع rdc backup toc-key <a id=\"cli-local-backup-churn\"></a>",
-    "excerpt": "إدارة مفتاح قائمة التصفح الخاص بمستودع rdc backup toc-key <a id=\"cli-local-backup-churn\"></a>",
+    "body": "إدارة مفتاح قائمة التصفح الخاص بمستودع <a id=\"cli-local-backup-toc-key-sync\"></a> #### sync تثبيت مفتاح قائمة المستودع على جهازه، أو استبدال مفتاح مختلف rdc backup toc-key sync <repo-ref> [options] | العلامة | الوصف | مطلوب | افتراضي | |------|-------------|----------|---------| | --replace | استبدال مفتاح مختلف موجود على الجهاز (يرسل عبارة المرور كإثبات) | لا | - | | --dry-run | يعرض ما سيُنفَّذ دون لمس أي شيء | لا | - | <a id=\"cli-local-backup-churn\"></a>",
+    "excerpt": "إدارة مفتاح قائمة التصفح الخاص بمستودع <a id=\"cli-local-backup-toc-key-sync\"></a> #### sync تثبيت مفتاح قائمة المستودع على جهازه، أو استبدال مفتاح مخت...",
     "category": "Documentation",
     "page": "/ar/docs/cli-application",
     "fragment": "821-toc-key",

@@ -589,7 +589,7 @@
       },
       "freeLicense": {
         "cta": "Install Rediacc",
-        "description": "Any machine can take a Free License for one repository, with no sign-up: up to 3 GB, valid for 48 hours and renewable at no cost, as often as needed. When it lapses, running repositories keep working; new repositories and hosted backups need a paid plan.",
+        "description": "Any machine can take a Free License for one repository, with no sign-up: up to 3 GB, valid for 48 hours and renewable at no cost, as often as needed. When it lapses, running repositories keep working. It has no hosted backup. Register a free account to step up to Community: 10 GB repositories, 100 license issuances a month and 10 GB of hosted backup. Paid plans go further.",
         "heading": "Try it without an account"
       },
       "hero": {

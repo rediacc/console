@@ -424,9 +424,11 @@
       },
       "tocKey": {
         "description": "Halda hoidla sirvimisloendi võtit",
-        "optionDryRun": "Teatab, mida tehtaks; ei puutu midagi",
-        "optionReplace": "Asenda masinas juba olev erinev võti (saadab tõendiks parooli)",
-        "syncDescription": "Paigalda hoidla loendivõti selle masinasse või asenda erinev võti"
+        "sync": {
+          "description": "Paigalda hoidla loendivõti selle masinasse või asenda erinev võti",
+          "optionDryRun": "Teatab, mida tehtaks; ei puutu midagi",
+          "optionReplace": "Asenda masinas juba olev erinev võti (saadab tõendiks parooli)"
+        }
       },
       "churn": {
         "description": "Mõõdab, kui palju hoidla kujutis jooksutuste vahel muutub, prognoosib üleslaadimise mahu iga lahtrisuuruse kohta ja soovitab ühte. Töö ajal hoitakse masinas reflink-baasi, mis eemaldatakse alati.",
@@ -2823,9 +2825,9 @@
       "offerPrompt": "See käsk vajab litsentsi, kuid sisselogimist ei leitud. Kas logida sisse või jätkata tasuta litsentsiga?",
       "offerLogin": "Logi kontole sisse",
       "offerFree": "Jätka tasuta litsentsiga (kuni {{maxGb}} GB)",
-      "autoTaken": "Sisselogimist ei leitud, seega kasutatakse tasuta litsentsi (kuni {{maxGb}} GB, ilma majutatud varukoopiateta). Rohkema saamiseks loo konto: {{url}}",
+      "autoTaken": "Sisselogimist ei leitud, seega kasutatakse tasuta litsentsi (kuni {{maxGb}} GB, ilma majutatud varukoopiateta). Tasuta konto annab Community piirangud ja majutatud varukoopiad: {{url}}",
       "issued": "Selle hoidla tasuta litsents on paigaldatud (kuni {{maxGb}} GB).",
-      "noHostedBackup": "Tasuta litsentsiga ei kaasne majutatud varukoopiaid. Selle hoidla varundamiseks loo konto ja vali tasuline pakett: {{url}}"
+      "noHostedBackup": "Tasuta litsentsiga ei kaasne majutatud varukoopiaid. Loo tasuta konto, et kasutada Community majutatud varukoopiaid, või vali rohkema jaoks tasuline pakett: {{url}}"
     },
     "machineNotFound": "Masina \"{{name}}\" ei leitud",
     "machineRequired": "Masina nimi on nõutud. Kasuta --machine <name>",

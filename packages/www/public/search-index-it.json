@@ -5394,8 +5394,8 @@
   {
     "id": "search-10611",
     "content": "8.21 toc-key",
-    "body": "Gestisce la chiave del listing di navigazione di un repository rdc backup toc-key <a id=\"cli-local-backup-churn\"></a>",
-    "excerpt": "Gestisce la chiave del listing di navigazione di un repository rdc backup toc-key <a id=\"cli-local-backup-churn\"></a>",
+    "body": "Gestisce la chiave del listing di navigazione di un repository <a id=\"cli-local-backup-toc-key-sync\"></a> #### sync Installa la chiave di listing del repository sulla sua macchina, o ne sostituisce una diversa rdc backup toc-key sync <repo-ref> [options] | Flag | Descrizione | Obbligatorio | Predefinito | |------|-------------|----------|---------| | --replace | Sostituisce una chiave diversa già presente sulla macchina (invia la passphrase come prova) | No | - | | --dry-run | Mostra cosa verrebbe fatto; non tocca nulla | No | - | <a id=\"cli-local-backup-churn\"></a>",
+    "excerpt": "Gestisce la chiave del listing di navigazione di un repository <a id=\"cli-local-backup-toc-key-sync\"></a> #### sync Installa la chiave di listing del...",
     "category": "Documentation",
     "page": "/it/docs/cli-application",
     "fragment": "821-toc-key",

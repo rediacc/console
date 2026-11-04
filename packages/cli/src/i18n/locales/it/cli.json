@@ -424,9 +424,11 @@
       },
       "tocKey": {
         "description": "Gestisce la chiave del listing di navigazione di un repository",
-        "optionDryRun": "Mostra cosa verrebbe fatto; non tocca nulla",
-        "optionReplace": "Sostituisce una chiave diversa già presente sulla macchina (invia la passphrase come prova)",
-        "syncDescription": "Installa la chiave di listing del repository sulla sua macchina, o ne sostituisce una diversa"
+        "sync": {
+          "description": "Installa la chiave di listing del repository sulla sua macchina, o ne sostituisce una diversa",
+          "optionDryRun": "Mostra cosa verrebbe fatto; non tocca nulla",
+          "optionReplace": "Sostituisce una chiave diversa già presente sulla macchina (invia la passphrase come prova)"
+        }
       },
       "churn": {
         "description": "Misura quanto cambia l'immagine di un repository tra le esecuzioni, proietta il caricamento per dimensione di cella e ne consiglia una. Durante l'operazione sulla macchina resta una base reflink, che viene sempre rimossa.",
@@ -2823,9 +2825,9 @@
       "offerPrompt": "Questo comando richiede una licenza e non risulta alcun accesso. Accedere o continuare con una licenza gratuita?",
       "offerLogin": "Accedi a un account",
       "offerFree": "Continua con una licenza gratuita (fino a {{maxGb}} GB)",
-      "autoTaken": "Nessun accesso trovato, quindi viene usata una licenza gratuita (fino a {{maxGb}} GB, senza backup ospitati). Crea un account per avere di più: {{url}}",
+      "autoTaken": "Nessun accesso trovato, quindi viene usata una licenza gratuita (fino a {{maxGb}} GB, senza backup ospitati). Con un account gratuito si ottengono i limiti di Community e il backup ospitato: {{url}}",
       "issued": "Licenza gratuita installata per questo repository (fino a {{maxGb}} GB).",
-      "noHostedBackup": "Una licenza gratuita non include backup ospitati. Crea un account e scegli un piano a pagamento per eseguire il backup di questo repository: {{url}}"
+      "noHostedBackup": "Una licenza gratuita non include backup ospitati. Crea un account gratuito per usare il backup ospitato di Community, oppure scegli un piano a pagamento per avere di più: {{url}}"
     },
     "machineNotFound": "Macchina \"{{name}}\" non trovata",
     "machineRequired": "Nome macchina obbligatorio. Usa --machine <name>",

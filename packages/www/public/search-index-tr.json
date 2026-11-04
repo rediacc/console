@@ -5394,8 +5394,8 @@
   {
     "id": "search-18031",
     "content": "8.21 toc-key",
-    "body": "Bir deponun gözatma listesi anahtarını yönetir rdc backup toc-key <a id=\"cli-local-backup-churn\"></a>",
-    "excerpt": "Bir deponun gözatma listesi anahtarını yönetir rdc backup toc-key <a id=\"cli-local-backup-churn\"></a>",
+    "body": "Bir deponun gözatma listesi anahtarını yönetir <a id=\"cli-local-backup-toc-key-sync\"></a> #### sync Deponun liste anahtarını makinesine kurar veya farklı olanı değiştirir rdc backup toc-key sync <repo-ref> [options] | Bayrak | Açıklama | Gerekli | Varsayılan | |------|-------------|----------|---------| | --replace | Makinede zaten bulunan farklı bir anahtarı değiştir (kanıt olarak parolayı gönderir) | Hayır | - | | --dry-run | Neyin yapılacağını bildirir; hiçbir şeye dokunmaz | Hayır | - | <a id=\"cli-local-backup-churn\"></a>",
+    "excerpt": "Bir deponun gözatma listesi anahtarını yönetir <a id=\"cli-local-backup-toc-key-sync\"></a> #### sync Deponun liste anahtarını makinesine kurar veya far...",
     "category": "Documentation",
     "page": "/tr/docs/cli-application",
     "fragment": "821-toc-key",

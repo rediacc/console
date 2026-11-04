@@ -5394,8 +5394,8 @@
   {
     "id": "search-16547",
     "content": "8.21 toc-key",
-    "body": "Управление ключом списка просмотра репозитория rdc backup toc-key <a id=\"cli-local-backup-churn\"></a>",
-    "excerpt": "Управление ключом списка просмотра репозитория rdc backup toc-key <a id=\"cli-local-backup-churn\"></a>",
+    "body": "Управление ключом списка просмотра репозитория <a id=\"cli-local-backup-toc-key-sync\"></a> #### sync Установить ключ списка репозитория на его машине или заменить другой rdc backup toc-key sync <repo-ref> [options] | Флаг | Описание | Обязательно | По умолчанию | |------|-------------|----------|---------| | --replace | Заменить другой ключ, уже лежащий на машине (парольная фраза отправляется как доказательство) | Нет | - | | --dry-run | Показать, что было бы сделано; ничего не трогать | Нет | - | <a id=\"cli-local-backup-churn\"></a>",
+    "excerpt": "Управление ключом списка просмотра репозитория <a id=\"cli-local-backup-toc-key-sync\"></a> #### sync Установить ключ списка репозитория на его машине и...",
     "category": "Documentation",
     "page": "/ru/docs/cli-application",
     "fragment": "821-toc-key",

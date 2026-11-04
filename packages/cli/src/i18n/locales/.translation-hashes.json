@@ -3,7 +3,7 @@
     "algorithm": "crc32",
     "sourceLanguage": "en",
     "keyCount": 2391,
-    "sourceCommit": "29c70f4c7806f8cbbe681e7ebdfdc2923ddd465f"
+    "sourceCommit": "68e6092ca09e590cbdff353bc082cc0f36294157"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -345,9 +345,9 @@
     "commands.backup.strategy.unbind.notBound": "6f5fcb13",
     "commands.backup.strategy.unbind.unbound": "1fda3d7d",
     "commands.backup.tocKey.description": "4863cdb3",
-    "commands.backup.tocKey.optionDryRun": "8ba4f956",
-    "commands.backup.tocKey.optionReplace": "9902c109",
-    "commands.backup.tocKey.syncDescription": "e3e27258",
+    "commands.backup.tocKey.sync.description": "e3e27258",
+    "commands.backup.tocKey.sync.optionDryRun": "8ba4f956",
+    "commands.backup.tocKey.sync.optionReplace": "9902c109",
     "commands.backup.undelete.description": "66bf8cfc",
     "commands.backup.undelete.notWaiting": "6c4f76a3",
     "commands.backup.undelete.success": "a61514fd",
@@ -2155,9 +2155,9 @@
     "errors.editor.nonzeroExit": "22291935",
     "errors.editor.notFound": "40d10a72",
     "errors.editor.spawnFailed": "4982c53f",
-    "errors.freeLicense.autoTaken": "55293932",
+    "errors.freeLicense.autoTaken": "8f9ea028",
     "errors.freeLicense.issued": "8e45eb9d",
-    "errors.freeLicense.noHostedBackup": "ca781aac",
+    "errors.freeLicense.noHostedBackup": "1fa66962",
     "errors.freeLicense.offerFree": "73cc2913",
     "errors.freeLicense.offerLogin": "7ae2e813",
     "errors.freeLicense.offerPrompt": "fe15d97f",

@@ -1879,7 +1879,7 @@
       },
       "freeLicense": {
         "cta": "Instalar o Rediacc",
-        "description": "Qualquer máquina pode obter uma licença gratuita para um repositório sem se registar: até 3 GB, válida por 48 horas e renovável gratuitamente sempre que for preciso. Quando expira, os repositórios em execução continuam a funcionar; novos repositórios e backups alojados exigem um plano pago.",
+        "description": "Qualquer máquina pode obter uma licença gratuita para um repositório sem se registar: até 3 GB, válida por 48 horas e renovável gratuitamente sempre que for preciso. Quando expira, os repositórios em execução continuam a funcionar. Não inclui backups alojados. Com uma conta gratuita passa-se para o Community: repositórios até 10 GB, 100 emissões de licença por mês e 10 GB de backup alojado. Os planos pagos vão mais longe.",
         "heading": "Experimente sem conta"
       },
       "hero": {

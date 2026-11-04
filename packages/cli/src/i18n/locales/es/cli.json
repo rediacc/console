@@ -424,9 +424,11 @@
       },
       "tocKey": {
         "description": "Gestionar la clave del listado de exploración de un repositorio",
-        "optionDryRun": "Indica qué se haría; no toca nada",
-        "optionReplace": "Reemplazar una clave distinta que ya está en la máquina (envía la frase de contraseña como prueba)",
-        "syncDescription": "Instalar la clave de listado del repositorio en su máquina, o reemplazar una distinta"
+        "sync": {
+          "description": "Instalar la clave de listado del repositorio en su máquina, o reemplazar una distinta",
+          "optionDryRun": "Indica qué se haría; no toca nada",
+          "optionReplace": "Reemplazar una clave distinta que ya está en la máquina (envía la frase de contraseña como prueba)"
+        }
       },
       "churn": {
         "description": "Mide cuánto cambia la imagen de un repositorio entre ejecuciones, proyecta la subida por tamaño de celda y recomienda uno. Mientras corre se mantiene una base reflink en la máquina, y siempre se elimina.",
@@ -2823,9 +2825,9 @@
       "offerPrompt": "Este comando necesita una licencia y no hay ninguna sesión iniciada. ¿Iniciar sesión o seguir con una licencia gratuita?",
       "offerLogin": "Iniciar sesión en una cuenta",
       "offerFree": "Seguir con una licencia gratuita (hasta {{maxGb}} GB)",
-      "autoTaken": "No hay sesión iniciada, así que se usa una licencia gratuita (hasta {{maxGb}} GB, sin copias de seguridad alojadas). Crea una cuenta para obtener más: {{url}}",
+      "autoTaken": "No hay sesión iniciada, así que se usa una licencia gratuita (hasta {{maxGb}} GB, sin copias de seguridad alojadas). Con una cuenta gratuita se aplican los límites de Community y las copias alojadas: {{url}}",
       "issued": "Licencia gratuita instalada para este repositorio (hasta {{maxGb}} GB).",
-      "noHostedBackup": "Una licencia gratuita no incluye copias de seguridad alojadas. Crea una cuenta y elige un plan de pago para respaldar este repositorio: {{url}}"
+      "noHostedBackup": "Una licencia gratuita no incluye copias de seguridad alojadas. Crea una cuenta gratuita para usar las copias de seguridad alojadas de Community, o elige un plan de pago si necesitas más: {{url}}"
     },
     "machineNotFound": "Máquina \"{{name}}\" no encontrada",
     "machineRequired": "Nombre de máquina requerido. Use --machine <name>",

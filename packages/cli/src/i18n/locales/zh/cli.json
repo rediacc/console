@@ -424,9 +424,11 @@
       },
       "tocKey": {
         "description": "管理仓库的浏览列表密钥",
-        "optionDryRun": "报告将要执行的操作;不触碰任何内容",
-        "optionReplace": "替换机器上已有的不同密钥(会发送口令作为证明)",
-        "syncDescription": "在仓库所在机器上安装其列表密钥,或替换不同的密钥"
+        "sync": {
+          "description": "在仓库所在机器上安装其列表密钥,或替换不同的密钥",
+          "optionDryRun": "报告将要执行的操作;不触碰任何内容",
+          "optionReplace": "替换机器上已有的不同密钥(会发送口令作为证明)"
+        }
       },
       "churn": {
         "description": "测量仓库镜像在两次运行之间变化了多少,按单元大小预测上传量并给出推荐。运行期间机器上会保留一个 reflink 基线,结束时一定会删除。",
@@ -2823,9 +2825,9 @@
       "offerPrompt": "此命令需要许可证，但尚未登录。要登录，还是使用免费许可证继续？",
       "offerLogin": "登录账户",
       "offerFree": "使用免费许可证继续（最多 {{maxGb}} GB）",
-      "autoTaken": "未登录，因此使用免费许可证（最多 {{maxGb}} GB，不含托管备份）。创建账户可获得更多：{{url}}",
+      "autoTaken": "未登录，因此使用免费许可证（最多 {{maxGb}} GB，不含托管备份）。注册免费账户即可获得 Community 的限额和托管备份：{{url}}",
       "issued": "已为此仓库安装免费许可证（最多 {{maxGb}} GB）。",
-      "noHostedBackup": "免费许可证不含托管备份。要备份此仓库，请创建账户并选择付费套餐：{{url}}"
+      "noHostedBackup": "免费许可证不含托管备份。注册免费账户即可使用 Community 的托管备份，需要更多请选择付费套餐：{{url}}"
     },
     "machineNotFound": "机器 \"{{name}}\" 未找到",
     "machineRequired": "需要机器名称。使用 --machine <name>",

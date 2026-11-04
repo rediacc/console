@@ -2210,9 +2210,11 @@
       },
       "tocKey": {
         "description": "Manage the browse-listing key of a repository",
-        "optionDryRun": "Report what would be done; touch nothing",
-        "optionReplace": "Replace a different key already on the machine (sends the passphrase to prove it)",
-        "syncDescription": "Install the repository's listing key on its machine, or replace a different one"
+        "sync": {
+          "description": "Install the repository's listing key on its machine, or replace a different one",
+          "optionDryRun": "Report what would be done; touch nothing",
+          "optionReplace": "Replace a different key already on the machine (sends the passphrase to prove it)"
+        }
       },
       "churn": {
         "description": "Measure how much of a repository image changes between runs, project the upload per cell size and recommend one. A reflink base is kept on the machine while it runs and is always removed.",
@@ -2803,9 +2805,9 @@
       "offerPrompt": "This command needs a license, and no login was found. Log in, or continue with a free license?",
       "offerLogin": "Log in to an account",
       "offerFree": "Continue with a free license (up to {{maxGb}} GB)",
-      "autoTaken": "No login found, so a free license is used (up to {{maxGb}} GB, no hosted backups). Create an account for more: {{url}}",
+      "autoTaken": "No login found, so a free license is used (up to {{maxGb}} GB, no hosted backups). Register a free account for Community limits and hosted backup: {{url}}",
       "issued": "Free license installed for this repository (up to {{maxGb}} GB).",
-      "noHostedBackup": "A free license has no hosted backups. Create an account and choose a paid plan to back up this repository: {{url}}"
+      "noHostedBackup": "A free license has no hosted backups. Register a free account to get Community's hosted backup, or choose a paid plan for more: {{url}}"
     },
     "machineNotFound": "Machine \"{{name}}\" not found",
     "machineRequired": "Machine name required. Use --machine <name>",

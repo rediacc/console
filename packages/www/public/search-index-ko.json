@@ -5394,8 +5394,8 @@
   {
     "id": "search-13579",
     "content": "8.21 toc-key",
-    "body": "저장소의 탐색 목록 키를 관리합니다 rdc backup toc-key <a id=\"cli-local-backup-churn\"></a>",
-    "excerpt": "저장소의 탐색 목록 키를 관리합니다 rdc backup toc-key <a id=\"cli-local-backup-churn\"></a>",
+    "body": "저장소의 탐색 목록 키를 관리합니다 <a id=\"cli-local-backup-toc-key-sync\"></a> #### sync 저장소의 목록 키를 해당 머신에 설치하거나 다른 키를 교체합니다 rdc backup toc-key sync <repo-ref> [options] | 플래그 | 설명 | 필수 | 기본값 | |------|-------------|----------|---------| | --replace | 머신에 이미 있는 다른 키를 교체합니다(증명을 위해 암호를 전송합니다) | 아니오 | - | | --dry-run | 수행될 작업을 보고하며 아무것도 건드리지 않습니다 | 아니오 | - | <a id=\"cli-local-backup-churn\"></a>",
+    "excerpt": "저장소의 탐색 목록 키를 관리합니다 <a id=\"cli-local-backup-toc-key-sync\"></a> #### sync 저장소의 목록 키를 해당 머신에 설치하거나 다른 키를 교체합니다 rdc backup toc-key sync <repo-ref> [optio...",
     "category": "Documentation",
     "page": "/ko/docs/cli-application",
     "fragment": "821-toc-key",

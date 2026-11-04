@@ -2265,7 +2265,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "backup",
       "group": "INFRASTRUCTURE",
       "plane": "machine",
-      "descriptionKey": "commands.backup.tocKey.syncDescription",
+      "descriptionKey": "commands.backup.tocKey.sync.description",
       "label": "Install the repository's listing key on its machine, or replace a different one",
       "options": [
         {
@@ -2276,7 +2276,7 @@ export const CLI_CONTRACT: CliContract = {
           "mandatory": false,
           "defaultValue": null,
           "tier": "advanced",
-          "descriptionKey": "commands.backup.tocKey.optionReplace",
+          "descriptionKey": "commands.backup.tocKey.sync.optionReplace",
           "label": "Replace a different key already on the machine (sends the passphrase to prove it)"
         },
         {
@@ -2287,7 +2287,7 @@ export const CLI_CONTRACT: CliContract = {
           "mandatory": false,
           "defaultValue": null,
           "tier": "advanced",
-          "descriptionKey": "commands.backup.tocKey.optionDryRun",
+          "descriptionKey": "commands.backup.tocKey.sync.optionDryRun",
           "label": "Report what would be done; touch nothing"
         }
       ],

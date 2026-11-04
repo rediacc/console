@@ -1875,7 +1875,7 @@
       },
       "freeLicense": {
         "cta": "Installa Rediacc",
-        "description": "Qualsiasi macchina può ottenere una licenza gratuita per un repository senza registrarsi: fino a 3 GB, valida 48 ore e rinnovabile gratuitamente tutte le volte che serve. Alla scadenza i repository in esecuzione continuano a funzionare; nuovi repository e backup ospitati richiedono un piano a pagamento.",
+        "description": "Qualsiasi macchina può ottenere una licenza gratuita per un repository senza registrarsi: fino a 3 GB, valida 48 ore e rinnovabile gratuitamente tutte le volte che serve. Alla scadenza i repository in esecuzione continuano a funzionare. Non include backup ospitati. Con la registrazione di un account gratuito si passa a Community: repository fino a 10 GB, 100 emissioni di licenza al mese e 10 GB di backup ospitato. I piani a pagamento vanno oltre.",
         "heading": "Provalo senza account"
       },
       "hero": {

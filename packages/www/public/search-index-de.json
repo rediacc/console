@@ -5394,8 +5394,8 @@
   {
     "id": "search-3178",
     "content": "8.21 toc-key",
-    "body": "Schlüssel für das Durchsuchen-Listing eines Repositorys verwalten rdc backup toc-key <a id=\"cli-local-backup-churn\"></a>",
-    "excerpt": "Schlüssel für das Durchsuchen-Listing eines Repositorys verwalten rdc backup toc-key <a id=\"cli-local-backup-churn\"></a>",
+    "body": "Schlüssel für das Durchsuchen-Listing eines Repositorys verwalten <a id=\"cli-local-backup-toc-key-sync\"></a> #### sync Den Listing-Schlüssel des Repositorys auf seiner Maschine installieren oder einen abweichenden ersetzen rdc backup toc-key sync <repo-ref> [options] | Option | Beschreibung | Erforderlich | Standard | |------|-------------|----------|---------| | --replace | Einen abweichenden Schlüssel auf der Maschine ersetzen (sendet zum Nachweis die Passphrase) | Nein | - | | --dry-run | Zeigt, was getan würde; berührt nichts | Nein | - | <a id=\"cli-local-backup-churn\"></a>",
+    "excerpt": "Schlüssel für das Durchsuchen-Listing eines Repositorys verwalten <a id=\"cli-local-backup-toc-key-sync\"></a> #### sync Den Listing-Schlüssel des Repos...",
     "category": "Documentation",
     "page": "/de/docs/cli-application",
     "fragment": "821-toc-key",

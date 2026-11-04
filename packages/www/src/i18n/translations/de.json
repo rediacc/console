@@ -1871,7 +1871,7 @@
       },
       "freeLicense": {
         "cta": "Rediacc installieren",
-        "description": "Jede Maschine kann ohne Registrierung eine kostenlose Lizenz für ein Repository erhalten: bis zu 3 GB, 48 Stunden gültig und beliebig oft kostenlos verlängerbar. Läuft sie ab, arbeiten laufende Repositories weiter; neue Repositories und gehostete Backups erfordern einen kostenpflichtigen Plan.",
+        "description": "Jede Maschine kann ohne Registrierung eine kostenlose Lizenz für ein Repository erhalten: bis zu 3 GB, 48 Stunden gültig und beliebig oft kostenlos verlängerbar. Läuft sie ab, arbeiten laufende Repositories weiter. Ein gehostetes Backup ist nicht enthalten. Mit einem kostenlosen Konto steigen Sie auf Community um: Repositories bis 10 GB, 100 Lizenzausstellungen pro Monat und 10 GB gehostetes Backup. Kostenpflichtige Pläne gehen darüber hinaus.",
         "heading": "Ohne Konto ausprobieren"
       },
       "hero": {

@@ -424,9 +424,11 @@
       },
       "tocKey": {
         "description": "Bir deponun gözatma listesi anahtarını yönetir",
-        "optionDryRun": "Neyin yapılacağını bildirir; hiçbir şeye dokunmaz",
-        "optionReplace": "Makinede zaten bulunan farklı bir anahtarı değiştir (kanıt olarak parolayı gönderir)",
-        "syncDescription": "Deponun liste anahtarını makinesine kurar veya farklı olanı değiştirir"
+        "sync": {
+          "description": "Deponun liste anahtarını makinesine kurar veya farklı olanı değiştirir",
+          "optionDryRun": "Neyin yapılacağını bildirir; hiçbir şeye dokunmaz",
+          "optionReplace": "Makinede zaten bulunan farklı bir anahtarı değiştir (kanıt olarak parolayı gönderir)"
+        }
       },
       "churn": {
         "description": "Bir deponun imajının çalıştırmalar arasında ne kadar değiştiğini ölçer, hücre boyutu başına yüklemeyi öngörür ve birini önerir. Çalışırken makinede bir reflink tabanı tutulur ve her zaman kaldırılır.",
@@ -2823,9 +2825,9 @@
       "offerPrompt": "Bu komut bir lisans gerektiriyor ve oturum açılmamış. Oturum açmak mı, yoksa ücretsiz bir lisansla devam etmek mi?",
       "offerLogin": "Bir hesapla oturum aç",
       "offerFree": "Ücretsiz lisansla devam et ({{maxGb}} GB'a kadar)",
-      "autoTaken": "Oturum açılmadığı için ücretsiz lisans kullanılıyor ({{maxGb}} GB'a kadar, barındırılan yedekleme yok). Daha fazlası için hesap oluşturun: {{url}}",
+      "autoTaken": "Oturum açılmadığı için ücretsiz lisans kullanılıyor ({{maxGb}} GB'a kadar, barındırılan yedekleme yok). Ücretsiz bir hesap Community limitlerini ve barındırılan yedeklemeyi sağlar: {{url}}",
       "issued": "Bu depo için ücretsiz lisans kuruldu (en fazla {{maxGb}} GB).",
-      "noHostedBackup": "Ücretsiz lisansta barındırılan yedekleme yoktur. Bu depoyu yedeklemek için bir hesap oluşturup ücretli bir plan seçin: {{url}}"
+      "noHostedBackup": "Ücretsiz lisansta barındırılan yedekleme yoktur. Community'nin barındırılan yedeklemesi için ücretsiz bir hesap oluşturun; daha fazlası için ücretli bir plan seçin: {{url}}"
     },
     "machineNotFound": "\"{{name}}\" makinesi bulunamadı",
     "machineRequired": "Makine adı gerekli. --machine <name> kullanın",
