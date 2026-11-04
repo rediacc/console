@@ -4,9 +4,9 @@ import { t } from '../i18n/index.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
 import { setExitCode } from '../services/core/request-context.js';
-import { type ExecuteResult, getExecutor } from '../services/executor/executor-factory.js';
+import type { ExecuteResult } from '../services/executor/executor-factory.js';
 import { pendingExitCode, runCommandJob } from '../services/jobs/command-job.js';
-import { planStep } from '../services/jobs/steps.js';
+import { bindStepHandler, planStep } from '../services/jobs/steps.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { compositeKey, parseRepoRef } from '../utils/config-schema.js';
 import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
@@ -199,6 +199,19 @@ async function handleCheckout(
   }
 }
 
+/** The success step of `repo log`: the entries the job printed, as JSON under `-o json` and as rows otherwise. */
+bindStepHandler('renderRepoLog', ({ output }) => {
+  const parsed = parseRenetJson<{ entries: Record<string, unknown>[] }>(output ?? '');
+  // Structured output rides the global `-o json` format now; the dedicated
+  // `--json` flag is gone (spec/03 §5.4).
+  if (getOutputFormat() === 'json') {
+    outputService.print(parsed ?? { entries: [] }, 'json');
+    return Promise.resolve();
+  }
+  for (const e of parsed?.entries ?? []) renderLogEntry(e);
+  return Promise.resolve();
+});
+
 /** repo log <ref> */
 async function handleLog(ref: string, options: { debug?: boolean }): Promise<void> {
   try {
@@ -213,28 +226,29 @@ async function handleLog(ref: string, options: { debug?: boolean }): Promise<voi
       throw new ValidationError(`"${name}" has no commits yet`);
     }
 
-    const result: ExecuteResult = await getExecutor().execute({
-      functionName: 'repository_log',
-      machineName,
-      ...(kubeCluster !== undefined && { kubeCluster }),
-      // #74: `tip` is a commit GUID inside this repo's family, so the family's recorded placement is where renet must look for it.
-      datastore: await recordedDatastoreMount(repoKey),
-      params: { repository: tip },
-      debug: options.debug,
-    });
-    if (!result.success) {
-      renderLocalExecutionFailure(result, t('commands.repo.log.failed'));
+    // One read job; the listing is its `renderRepoLog` step, so a ticket handed back early prints nothing half-done.
+    const outcome = await runCommandJob(
+      'repo log',
+      {
+        functionName: 'repository_log',
+        machineName,
+        ...(kubeCluster !== undefined && { kubeCluster }),
+        // #74: `tip` is a commit GUID inside this repo's family, so the family's recorded placement is where renet must look for it.
+        datastore: await recordedDatastoreMount(repoKey),
+        params: { repository: tip },
+        debug: options.debug,
+        captureOutput: true,
+      },
+      [planStep('renderRepoLog')]
+    );
+    if (outcome.kind === 'pending') {
+      const code = pendingExitCode(outcome);
+      if (code !== undefined) setExitCode(code);
       return;
     }
-
-    const parsed = parseRenetJson<{ entries: Record<string, unknown>[] }>(result.stdout ?? '');
-    // Structured output rides the global `-o json` format now; the dedicated
-    // `--json` flag is gone (spec/03 §5.4).
-    if (getOutputFormat() === 'json') {
-      outputService.print(parsed ?? { entries: [] }, 'json');
-      return;
+    if (!outcome.result.success) {
+      renderLocalExecutionFailure(outcome.result, t('commands.repo.log.failed'));
     }
-    for (const e of parsed?.entries ?? []) renderLogEntry(e);
   } catch (error) {
     handleError(error);
   }
@@ -291,31 +305,35 @@ async function handleMerge(
       ? (options.base ?? deriveMergeBase(options.resolve, options.from, sourceCfg, targetCfg))
       : undefined;
 
-    const result: ExecuteResult = await getExecutor().execute({
-      functionName: 'repository_merge',
-      machineName,
-      ...(kubeCluster !== undefined && { kubeCluster }),
-      // #74: merge reads BOTH sides from one datastore, `--from` names a GUID in the same family, which is why the target's placement covers it.
-      datastore: await recordedDatastoreMount(repoKey),
-      params: {
-        repository: repoKey,
-        from: sourceCfg.repositoryGuid,
-        ...(options.force ? { force: true } : {}),
-        ...(options.resolve ? { resolve: options.resolve, base: base as string } : {}),
-        network_id: targetCfg.networkId,
+    // One job. The merged target now carries the source's commit: tracking its tip is the job's success step, so a ticket handed back early never records a merge that has not happened.
+    const outcome = await runCommandJob(
+      'repo merge',
+      {
+        functionName: 'repository_merge',
+        machineName,
+        ...(kubeCluster !== undefined && { kubeCluster }),
+        // #74: merge reads BOTH sides from one datastore, `--from` names a GUID in the same family, which is why the target's placement covers it.
+        datastore: await recordedDatastoreMount(repoKey),
+        params: {
+          repository: repoKey,
+          from: sourceCfg.repositoryGuid,
+          ...(options.force ? { force: true } : {}),
+          ...(options.resolve ? { resolve: options.resolve, base: base as string } : {}),
+          network_id: targetCfg.networkId,
+        },
+        debug: options.debug,
       },
-      debug: options.debug,
-    });
-    if (!result.success) {
-      renderLocalExecutionFailure(result, t('commands.repo.merge.failed'));
+      [planStep('advanceHeadCommit', { repo: repoKey, commit: sourceCfg.repositoryGuid })]
+    );
+    if (outcome.kind === 'pending') {
+      const code = pendingExitCode(outcome);
+      if (code !== undefined) setExitCode(code);
       return;
     }
-    // The merged target now carries the source's commit; track its tip.
-    const targetKey = (await configService.getRepositoryKey(repoKey)) ?? repoKey;
-    await configService.addRepository(targetKey, {
-      ...targetCfg,
-      headCommit: sourceCfg.repositoryGuid,
-    });
+    if (!outcome.result.success) {
+      renderLocalExecutionFailure(outcome.result, t('commands.repo.merge.failed'));
+      return;
+    }
     outputService.success(
       t('commands.repo.merge.completed', { source: options.from, target: name })
     );

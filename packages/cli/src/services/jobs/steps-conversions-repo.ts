@@ -212,7 +212,7 @@ export const REPO_CONVERSION_STEPS: StepDefinition[] = [
     () => import('../../commands/repo-prune.js'),
     true
   ),
-  privateStep('printRepoStatus', 'success', [], () => import('../../commands/repo.js'), true),
+  privateStep('printRepoStatus', 'success', ['name'], () => import('../../commands/repo.js'), true),
   privateStep(
     'settlePromote',
     'success',

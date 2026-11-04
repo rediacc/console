@@ -5,7 +5,7 @@ import { listReplicaSets } from '../services/cluster/repo-replicate.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
 import { parseCapturedJson } from '../services/executor/renet-output.js';
-import { planStep } from '../services/jobs/steps.js';
+import { bindStepHandler, planStep } from '../services/jobs/steps.js';
 import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
 import { isAgentEnvironment } from '../utils/agent-guard.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
@@ -146,6 +146,12 @@ export function printRepoStatusRecord(stdout: string | undefined, repoName: stri
     for (const row of rows) outputService.info(row);
   }
 }
+
+/** The success step of `repo status`: print the record the job captured. */
+bindStepHandler('printRepoStatus', ({ output, params }) => {
+  printRepoStatusRecord(output, typeof params.name === 'string' ? params.name : '');
+  return Promise.resolve();
+});
 
 export function registerRepoCommands(program: Command): void {
   const repo = program
@@ -331,7 +337,13 @@ export function registerRepoCommands(program: Command): void {
             machineName,
             {},
             // captureOutput: the repo record IS the answer. The step detector drops it, so a local `repo status` printed nothing even with `-o json` while the proxied one (which streams renet's output) printed the record.
-            { ...options, kubeCluster, captureOutput: true },
+            {
+              ...options,
+              kubeCluster,
+              captureOutput: true,
+              // One read job; the record is the `printRepoStatus` step, so a ticket handed back early prints nothing half-done.
+              job: { verb: 'repo status', steps: [planStep('printRepoStatus', { name })] },
+            },
             {
               starting: t('commands.repo.status.starting', {
                 repository: ref,
@@ -341,8 +353,7 @@ export function registerRepoCommands(program: Command): void {
               failed: t('commands.repo.status.failed'),
             }
           );
-          if (!result.success) return;
-          printRepoStatusRecord(result.stdout, name);
+          if (!result.success || result.state === 'running') return;
           // Managed replica sets are CRUD-from-birth state (R2-F17): surface any set built on this repo alongside its status.
           const replicaSets = Object.entries(await listReplicaSets()).filter(
             ([, set]) => set.repo === name

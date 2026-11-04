@@ -18,6 +18,7 @@ vi.mock('../../i18n/index.js', () => ({
 }));
 
 const mockSetGpuDevices = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
+const mockAddRepository = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
 const mockSetStateBucket = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
 const mockGetCurrent = vi.hoisted(() => vi.fn());
 vi.mock('../../services/config/config-resources.js', () => ({
@@ -35,6 +36,7 @@ vi.mock('../../services/config/config-resources.js', () => ({
     getRepositoryKey: (ref: string) => Promise.resolve(ref),
     setRepositoryGpuDevices: mockSetGpuDevices,
     setStateBucket: mockSetStateBucket,
+    addRepository: mockAddRepository,
     listRepositories: vi.fn().mockResolvedValue([]),
   },
 }));
@@ -122,9 +124,12 @@ vi.mock('../../utils/errors.js', async (orig) => ({
   },
 }));
 
+const { configService } = await import('../../services/config/config-resources.js');
 const { setCommandJobDeps } = await import('../../services/jobs/command-job.js');
 const { TicketStore } = await import('../../services/jobs/ticket-store.js');
 const { registerRepoCatCommand } = await import('../repo-cat.js');
+const { registerRepoBranchingCommands } = await import('../repo-branching.js');
+const { registerRepoCommands } = await import('../repo.js');
 const { registerRepoDiffCommand } = await import('../repo-diff.js');
 const { registerRepoGpuCommands } = await import('../repo-gpu.js');
 const { registerRepoPolicyCommand } = await import('../repo-policy.js');
@@ -483,5 +488,97 @@ describe('repo canary create, weight and remove', () => {
     await run(registerRepoCanaryCommands, 'canary', 'remove', 'web');
 
     expect(mockSetStateBucket).not.toHaveBeenCalled();
+  });
+});
+
+describe('repo log, repo merge and repo status', () => {
+  const entries = JSON.stringify({ entries: [{ commit: 'c1', message: 'first' }] });
+
+  beforeEach(() => {
+    vi.mocked(configService.getRepository).mockImplementation((name: string) =>
+      Promise.resolve({
+        repositoryGuid: `guid-${name}`,
+        networkId: 2816,
+        credential: 'c',
+        headCommit: `head-${name}`,
+      } as never)
+    );
+    mockGetCurrent.mockResolvedValue({ state: {}, resources: { repositories: {} } });
+  });
+
+  it('log: one repository_log job on the tip; the listing is the step', async () => {
+    answer = finished(entries);
+    await run(registerRepoBranchingCommands, 'log', 'shop');
+
+    expect(jobStarts().map((o) => [o.functionName, o.machineName, o.params])).toEqual([
+      ['repository_log', 'm1', { repository: 'head-shop' }],
+    ]);
+    expect(stepNames()).toEqual([['renderRepoLog', 'success']]);
+    expect(jobStarts()[0].jobSteps?.[0].needs_output).toBe(true);
+  });
+
+  it('log control: under --background nothing is rendered', async () => {
+    answer = BACKGROUND;
+    await run(registerRepoBranchingCommands, 'log', 'shop');
+
+    expect(jobStarts()).toHaveLength(1);
+    expect(mockPrint).not.toHaveBeenCalled();
+  });
+
+  it('merge: one repository_merge job; advancing the tip is the step, and nothing else touches the config', async () => {
+    answer = finished();
+    await run(registerRepoBranchingCommands, 'merge', 'shop', '--from', 'other');
+
+    expect(jobStarts().map((o) => [o.functionName, o.machineName])).toEqual([
+      ['repository_merge', 'm1'],
+    ]);
+    expect(jobStarts()[0].params).toMatchObject({ repository: 'shop', from: 'guid-other' });
+    expect(jobStarts()[0].jobSteps?.map((st) => [st.name, st.on, st.params])).toEqual([
+      ['advanceHeadCommit', 'success', { repo: 'shop', commit: 'guid-other' }],
+    ]);
+    expect(mockAddRepository).toHaveBeenCalledExactlyOnceWith(
+      'shop',
+      expect.objectContaining({ headCommit: 'guid-other' })
+    );
+  });
+
+  it('merge control: under --background the tip is not advanced', async () => {
+    answer = BACKGROUND;
+    await run(registerRepoBranchingCommands, 'merge', 'shop', '--from', 'other');
+
+    expect(jobStarts()).toHaveLength(1);
+    expect(mockAddRepository).not.toHaveBeenCalled();
+  });
+
+  it('merge control: a failed job leaves the tip alone', async () => {
+    answer = { ...finished(), success: false, exitCode: 1, state: 'failed' };
+    await run(registerRepoBranchingCommands, 'merge', 'shop', '--from', 'other');
+
+    expect(mockAddRepository).not.toHaveBeenCalled();
+  });
+
+  it('status: one repository_status job; printing the record is the step', async () => {
+    answer = finished(JSON.stringify({ repository: 'shop', mounted: true }));
+    const program = new Command().exitOverride();
+    registerRepoCommands(program);
+    await program.parseAsync(['repo', 'status', 'shop'], { from: 'user' });
+
+    expect(jobStarts().map((o) => [o.functionName, o.machineName])).toEqual([
+      ['repository_status', 'm1'],
+    ]);
+    expect(jobStarts()[0].jobSteps?.map((st) => [st.name, st.on, st.params])).toEqual([
+      ['printRepoStatus', 'success', { name: 'shop' }],
+    ]);
+    expect(mockPrint).toHaveBeenCalledWith({ repository: 'shop', mounted: true }, 'json');
+  });
+
+  it('status control: under --background the record is not printed', async () => {
+    answer = BACKGROUND;
+    const program = new Command().exitOverride();
+    registerRepoCommands(program);
+    await program.parseAsync(['repo', 'status', 'shop'], { from: 'user' });
+
+    expect(jobStarts()).toHaveLength(1);
+    expect(mockPrint).not.toHaveBeenCalled();
   });
 });

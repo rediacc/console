@@ -22,8 +22,6 @@ import {
 
 /** Steps whose module has not bound its handler yet, each with the module that must bind it. */
 const AWAITING_BIND: Record<string, string> = {
-  renderRepoLog: 'commands/repo-branching.ts',
-  printRepoStatus: 'commands/repo.ts',
   renderSubscriptionRefresh: 'commands/subscription-actions.ts',
   renderSubscriptionStatus: 'commands/subscription-actions.ts',
 };

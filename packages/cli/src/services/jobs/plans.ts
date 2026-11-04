@@ -116,6 +116,11 @@ export const CONVERTED: ReadonlySet<string> = new Set<string>([
   'repo replicate refresh',
   'repo replicate remove',
   // J16 (repo verbs outside J4, half A): one job each; delete and promote settle the config in a step, prune, trim and autostart list render in one. gc runs one job per deletion (no compound renet function yet).
+  // J16 (outside J4, half C): log and status are one read job each with the print as a step; merge is one job whose success step advances the working fork's tip; admin fsck is one repository_fsck job with its report as a step.
+  'repo admin fsck',
+  'repo log',
+  'repo merge',
+  'repo status',
   'repo admin autostart disable',
   'repo admin autostart enable',
   'repo admin autostart list',
