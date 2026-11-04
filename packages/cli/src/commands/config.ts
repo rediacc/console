@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { DEFAULTS } from '@rediacc/shared/config';
 import { Command } from 'commander';
 import { t } from '../i18n/index.js';
@@ -9,8 +10,10 @@ import type { ReconcileDeps } from '../services/config/config-reconcile.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
 import { setExitCode } from '../services/core/request-context.js';
+import type { ScratchRecord } from '../services/jobs/scratch-store.js';
+import { bindStepHandler, planStep } from '../services/jobs/steps.js';
 import type { OutputFormat, RdcConfig } from '../types/index.js';
-import { handleError, ValidationError } from '../utils/errors.js';
+import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
 import { registerAuditCommands } from './config/audit.js';
 import { registerCurrentCommand } from './config/current.js';
 import { registerEditCommands } from './config/edit.js';
@@ -275,35 +278,48 @@ interface ReconcileCliOptions {
  * unambiguous machine-arm placement drift (spec/04 §4.3) through the
  * version-bumping resources writer, distinct from the state writer.
  */
-async function runReconcile(program: Command, options: ReconcileCliOptions): Promise<void> {
+async function runReconcile(options: ReconcileCliOptions): Promise<void> {
   try {
-    await runReconcileInner(program, options);
+    await runReconcileInner(options);
   } catch (error) {
     handleError(error);
   }
 }
 
-/** Build the reconcile DI deps: a config loader filtered to `--machine`, and the
- * two writers (state-half and version-bumping resources), both no-ops under --dry-run. */
+/** The machines a reconcile covers: the current config's, narrowed by `--machine`. */
+function reconcileFilter(config: RdcConfig | null | undefined, filter: string[] | undefined) {
+  if (!config || !filter?.length) return config;
+  const machines = Object.fromEntries(
+    Object.entries(config.resources?.machines ?? {}).filter(([n]) => filter.includes(n))
+  );
+  return { ...config, resources: { ...(config.resources ?? {}), machines } };
+}
+
+/**
+ * Build the reconcile DI deps: a config loader filtered to `--machine`, the listings the group's machine jobs recorded
+ * (a machine with no record is unreachable, with the error its job recorded when it recorded one), and the two writers
+ * (state-half and version-bumping resources), both no-ops under --dry-run.
+ */
 async function buildReconcileDeps(
   cfgName: string,
   filter: string[] | undefined,
-  dryRun: boolean | undefined
+  dryRun: boolean | undefined,
+  listings: Map<string, ScratchRecord>
 ): Promise<ReconcileDeps> {
-  const { fetchMachineStatus } = await import('../services/machine/machine-status.js');
+  const { parseMachineStatus } = await import('../services/machine/machine-status.js');
   const { configFileStorage } = await import('../adapters/config-file-storage.js');
   const { updateSyncedConfig } = await import('../services/config/synced-write.js');
   const noop = async () => {};
   return {
-    loadConfig: async () => {
-      const cfg = await configService.getCurrent();
-      if (!cfg || !filter?.length) return cfg;
-      const machines = Object.fromEntries(
-        Object.entries(cfg.resources?.machines ?? {}).filter(([n]) => filter.includes(n))
-      );
-      return { ...cfg, resources: { ...(cfg.resources ?? {}), machines } };
+    loadConfig: async () => reconcileFilter(await configService.getCurrent(), filter) ?? null,
+    fetchStatus: (m) => {
+      const record = listings.get(m);
+      if (!record) {
+        return Promise.reject(new Error(t('commands.config.reconcile.noListing', { machine: m })));
+      }
+      if (!record.ok) return Promise.reject(new Error(record.error));
+      return Promise.resolve(parseMachineStatus(record.value));
     },
-    fetchStatus: (m) => fetchMachineStatus(m),
     writeState: dryRun
       ? noop
       : async (updater) => {
@@ -317,24 +333,71 @@ async function buildReconcileDeps(
   };
 }
 
-async function runReconcileInner(program: Command, options: ReconcileCliOptions): Promise<void> {
+/** What the group's final step needs, as step params (all scalars). */
+interface ReconcileGroup {
+  group: string;
+  acceptObserved: boolean;
+  dryRun: boolean;
+  /** The `--machine` filter as a comma list; empty covers every machine. */
+  machines: string;
+}
+
+function groupOf(params: Record<string, string | number | boolean>): ReconcileGroup {
+  return {
+    group: String(params.group),
+    acceptObserved: params.acceptObserved === true,
+    dryRun: params.dryRun === true,
+    machines: String(params.machines),
+  };
+}
+
+/** The group's one reconcile: read every recorded listing, reconcile, print the report, drop the scratch records. */
+async function settleReconcileGroup(params: ReconcileGroup): Promise<void> {
   const { reconcileState } = await import('../services/config/config-reconcile.js');
+  const { ScratchStore } = await import('../services/jobs/scratch-store.js');
   const cfgName = configService.getEffectiveConfigName();
-  const filter = options.machine;
+  const scratch = new ScratchStore(cfgName);
+  const listings = scratch.read(params.group);
+  const filter = params.machines ? params.machines.split(',') : undefined;
+  const deps = await buildReconcileDeps(cfgName, filter, params.dryRun, listings);
+  const report = await reconcileState(deps, { acceptObserved: params.acceptObserved });
+  scratch.drop(params.group);
+  printReconcileReport(report, params.dryRun, getOutputFormat());
+}
 
-  // --accept-observed rewrites a declaration from "observed on exactly one machine", which is meaningless when --machine scanned only a subset: rewriting from partial evidence is a guess. Refuse the combination
-  // (spec/04 §4.3); run it unfiltered instead.
-  if (options.acceptObserved && filter?.length) {
-    throw new ValidationError(t('commands.config.reconcile.acceptObservedUnfiltered'));
-  }
+// Per machine: keep the listing the job captured (a job whose output was not seen records nothing, so the machine reads as unreachable).
+bindStepHandler('recordMachineListing', async ({ machine, output, params }) => {
+  const { ScratchStore } = await import('../services/jobs/scratch-store.js');
+  const group = String(params.group);
+  if (!group || output === undefined) return;
+  new ScratchStore(configService.getEffectiveConfigName()).write(group, machine, {
+    ok: true,
+    value: output,
+  });
+});
 
-  const deps = await buildReconcileDeps(cfgName, filter, options.dryRun);
-  const report = await reconcileState(deps, { acceptObserved: options.acceptObserved });
+// The group's last ticket: its own step ran first, so every machine that answered has a record.
+bindStepHandler('reconcileConfigState', ({ params }) => settleReconcileGroup(groupOf(params)));
+bindStepHandler('reconcileConfigStateFailed', async ({ machine, params, exitCode }) => {
+  const group = groupOf(params);
+  const { ScratchStore } = await import('../services/jobs/scratch-store.js');
+  new ScratchStore(configService.getEffectiveConfigName()).write(group.group, machine, {
+    ok: false,
+    error: t('commands.config.reconcile.listFailed', { exitCode: String(exitCode ?? 1) }),
+  });
+  await settleReconcileGroup(group);
+});
 
-  const format = program.opts().output as OutputFormat;
+function printReconcileReport(
+  report: Awaited<
+    ReturnType<typeof import('../services/config/config-reconcile.js').reconcileState>
+  >,
+  dryRun: boolean,
+  format: OutputFormat
+): void {
   outputService.print(
     {
-      dryRun: !!options.dryRun,
+      dryRun,
       reconciledAt: report.reconciledAt,
       machinesSeen: report.machinesSeen,
       unreachable: report.machinesUnreachable,
@@ -361,6 +424,66 @@ async function runReconcileInner(program: Command, options: ReconcileCliOptions)
   if (report.machinesSeen.length === 0 && report.machinesUnreachable.length > 0) {
     setExitCode(6);
   }
+}
+
+async function runReconcileInner(options: ReconcileCliOptions): Promise<void> {
+  const cfgName = configService.getEffectiveConfigName();
+  const filter = options.machine;
+
+  // --accept-observed rewrites a declaration from "observed on exactly one machine", which is meaningless when --machine scanned only a subset: rewriting from partial evidence is a guess. Refuse the combination
+  // (spec/04 §4.3); run it unfiltered instead.
+  if (options.acceptObserved && filter?.length) {
+    throw new ValidationError(t('commands.config.reconcile.acceptObservedUnfiltered'));
+  }
+
+  const { runCommandJob, pendingExitCode } = await import('../services/jobs/command-job.js');
+  const { machineStatusJob } = await import('../services/machine/machine-status.js');
+  const { ScratchStore } = await import('../services/jobs/scratch-store.js');
+  const machines = Object.keys(
+    reconcileFilter(await configService.getCurrent(), filter)?.resources?.machines ?? {}
+  );
+  const group: ReconcileGroup = {
+    group: randomUUID(),
+    acceptObserved: options.acceptObserved === true,
+    dryRun: options.dryRun === true,
+    machines: filter?.join(',') ?? '',
+  };
+  const scratch = new ScratchStore(cfgName);
+
+  // One list-all job per machine under one group. The last machine's ticket carries the one reconcile; a machine whose
+  // job could not start leaves its error as its record, and a last machine that could not start leaves no ticket for the
+  // step, so the command settles the group itself.
+  let finalOnTicket = false;
+  for (const [index, machine] of machines.entries()) {
+    const last = index === machines.length - 1;
+    const steps = [
+      planStep('recordMachineListing', { group: group.group }),
+      ...(last
+        ? [
+            planStep('reconcileConfigState', { ...group }),
+            planStep('reconcileConfigStateFailed', { ...group }),
+          ]
+        : []),
+    ];
+    try {
+      const outcome = await runCommandJob(
+        'config reconcile',
+        await machineStatusJob(machine),
+        steps
+      );
+      finalOnTicket = last;
+      if (outcome.kind === 'pending') {
+        const code = pendingExitCode(outcome);
+        if (code !== undefined) setExitCode(code);
+      }
+    } catch (error) {
+      scratch.write(group.group, machine, {
+        ok: false,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+  if (!finalOnTicket) await settleReconcileGroup(group);
 }
 
 export function registerConfigCommands(program: Command): void {
@@ -612,7 +735,7 @@ ${t('help.examples')}
     .option('--machine <m...>', t('commands.config.reconcile.optionMachine'))
     .option('--dry-run', t('options.dryRun'))
     .option('--accept-observed', t('commands.config.reconcile.optionAcceptObserved'))
-    .action((options: ReconcileCliOptions) => runReconcile(program, options));
+    .action((options: ReconcileCliOptions) => runReconcile(options));
 
   // config rotate-cek, destructive, org-wide (Q3): registered here, not under `config remote`, because it rotates the ORGANIZATION's key, not this device's link. The impl still lives in config-remote.ts alongside the store internals.
   config

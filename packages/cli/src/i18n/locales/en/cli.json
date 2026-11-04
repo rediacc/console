@@ -533,6 +533,8 @@
         "description": "Rebuild runtime state from machine truth. Fixes stale attach and routing data.",
         "optionMachine": "Limit the reconcile to these machines",
         "optionAcceptObserved": "Rewrite a declared placement to match where the image actually is, but only when that is unambiguous (observed on exactly one machine). Duplicates stay conflicts.",
+        "noListing": "No listing was recorded for {{machine}}.",
+        "listFailed": "renet list all failed (exit {{exitCode}}).",
         "acceptObservedUnfiltered": "--accept-observed cannot be combined with --machine: a partial scan cannot prove a placement is unambiguous, so the rewrite would be a guess. Run 'rdc config reconcile --accept-observed' unfiltered."
       },
       "certCache": {

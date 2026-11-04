@@ -24,7 +24,6 @@ import {
 const AWAITING_BIND: Record<string, string> = {
   renderRepoLog: 'commands/repo-branching.ts',
   printRepoStatus: 'commands/repo.ts',
-  reconcileConfigState: 'commands/config.ts',
   ensureMachineDns: 'services/provision/infra-provision.ts',
   cleanupSshArtifacts: 'commands/machine/prune.ts',
   renderPruneOutcome: 'commands/machine/prune.ts',

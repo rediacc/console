@@ -592,6 +592,8 @@
   "commands.config.prune.tooManyOnlyFlags": "Pass at most one of --certs-only / --archives-only / --refs-only.",
   "commands.config.reconcile.acceptObservedUnfiltered": "--accept-observed cannot be combined with --machine: a partial scan cannot prove a placement is unambiguous, so the rewrite would be a guess. Run 'rdc config reconcile --accept-observed' unfiltered.",
   "commands.config.reconcile.description": "Rebuild runtime state from machine truth. Fixes stale attach and routing data.",
+  "commands.config.reconcile.listFailed": "renet list all failed (exit {{exitCode}}).",
+  "commands.config.reconcile.noListing": "No listing was recorded for {{machine}}.",
   "commands.config.reconcile.optionAcceptObserved": "Rewrite a declared placement to match where the image actually is, but only when that is unambiguous (observed on exactly one machine). Duplicates stay conflicts.",
   "commands.config.reconcile.optionMachine": "Limit the reconcile to these machines",
   "commands.config.recover.confirm": "Restore config \"{{name}}\" from backup?",

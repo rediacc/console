@@ -65,12 +65,27 @@ export const MACHINE_CONVERSION_STEPS: StepDefinition[] = [
       };
     },
   },
+  // `config reconcile`: each machine's job stores its listing in the group's scratch records; the group's last ticket
+  // carries the one step that reads them all and reconciles (success, or failure when the last machine's job failed).
+  privateStep(
+    'recordMachineListing',
+    'success',
+    ['group'],
+    () => import('../../commands/config.js'),
+    true
+  ),
   privateStep(
     'reconcileConfigState',
     'success',
-    ['acceptObserved'],
+    ['group', 'acceptObserved', 'dryRun', 'machines'],
     () => import('../../commands/config.js'),
     true
+  ),
+  privateStep(
+    'reconcileConfigStateFailed',
+    'failure',
+    ['group', 'acceptObserved', 'dryRun', 'machines'],
+    () => import('../../commands/config.js')
   ),
   privateStep(
     'settleConverge',

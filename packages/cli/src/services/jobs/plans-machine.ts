@@ -62,7 +62,7 @@ export const MACHINE_JOB_PLANS: Readonly<Record<string, JobPlan>> = {
     lock: 'read',
     timeout: '10m',
     box: 'J18',
-    steps: ['reconcileConfigState'],
+    steps: ['recordMachineListing', 'reconcileConfigState', 'reconcileConfigStateFailed'],
     note: 'one list-all job per machine under one group; the command stays exempt from the proxy',
   },
   'machine converge': {
