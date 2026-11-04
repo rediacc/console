@@ -24,7 +24,7 @@ THE PROOF NEEDS THE VM, so it is run by an operator; the port's logic (ordering,
 
 DELIBERATE DELTAS FROM THE BASH (Rule T), each with a test that fails on the bash behaviour:
 
-  * THE SOURCE LICENCE IS INSTALLED BEFORE `repository create`. The bash created the repo first (`local-roundtrip.sh:126` before `:133`), which only a nolicense renet accepts; an enforcing renet refuses a create with no installed licence for the guid.
+  * THE SOURCE LICENCE IS INSTALLED BEFORE `repository create`. The bash created the repo first (`local-roundtrip.sh:126` before `:133`), which a licence-enforcing renet refuses: a create with no installed licence for the guid fails.
   * SSH GOES AS THE PROVISIONED USER WITH THE STAGED KEY. The bash ssh'd to a hardcoded account with no identity file; the fleet provisions `$USER` and authorizes only `~/.renet/staging/.ssh/id_rsa` (`vm_ssh`).
   * AN SSH FAILURE IS NOT "renet missing". The bash's preflight read any non-zero exit, an auth refusal (255) included, as a missing binary.
 
