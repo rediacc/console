@@ -106,7 +106,7 @@ LEASE_ROUTING = (
 # A worklist item's lease is not a tree: review fbe4c449.1 measured a question about extending a worklist lease, and one about using the lease on an item, both refused. The two control rows in EDGE_CASES hold the spellings.
 LEASE_ON_AN_ITEM = (
     r"(?<![a-z])(worklist|renew|renews|renewing|extend|extends|extending|release|releasing)"
-    r"( [a-z-]+){0,3} lease(?![a-z])"
+    r"( (the|this|that|its|their|a|an|item|item's|worklist))* lease(?![a-z])"
     r"|(?<![a-z])lease (on|for) (this|the|that|an|each) (item|box|task)(?![a-z])"
 )
 
@@ -336,6 +336,7 @@ EDGE_CASES = [
         "a lease with the word extend elsewhere",
         "Should a writer get a lease to extend the worklist?",
     ),
+    ("a lease a few words after extend", "Should the writer extend the worklist and get a lease?"),
     ("control: extending a worklist lease", "Should the agent extend the worklist lease?"),
     ("control: using an item's lease", "Should I use the lease on this item?"),
     ("can I push", "Can I push?"),

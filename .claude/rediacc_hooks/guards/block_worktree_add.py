@@ -1215,7 +1215,7 @@ def _script_verdict(cmd, depth, cwd):
     if not (shellscan.PROGRAM_PREFILTER.search(cmd) or SHELL_SCRIPT_PREFILTER.search(cmd)):
         return None
     for run_ in shellscan.every_run(cmd):
-        # A SCRIPT PATH THE SHELL WILL EXPAND FAILED OPEN (measured 2026-11-04: `python3 $G/test-...` of a dirty file ran, where the literal path was refused), since the unexpanded path "does not exist". shellscan keeps the operand raw, so a value this command assigns is put back and this one run judged again with the literal path. A variable whose value is not known stays out of reach when the command's text does not spell the words, as with any file named only at run time.
+        # A SCRIPT PATH THE SHELL WILL EXPAND FAILED OPEN (measured 2026-11-04: `python3 $G/test-...` of a dirty file ran, where the literal path was refused), since the unexpanded path "does not exist". shellscan keeps the operand raw, so with no such words in the command's text, a value it assigns is put back and this one run judged again with the literal path, and a variable whose value is not known stays out of reach, as with any file named only at run time. A command whose text spells the words is unjudgeable whatever the value; the literal path is the way past that.
         operand = _script_operand(run_, cmd, cwd) or ""
         if "$" in operand:
             # Text spelling the words decides first: the rebuilt run below carries no earlier write of this command, so a script this command writes is only caught here (review 3a4cc6d0.1).
