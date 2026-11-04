@@ -832,6 +832,25 @@ export interface RepositoryOwnershipParams {
   force?: string;
 }
 
+/** Widen what the repository's Rediaccfile up() and down() may reach: a path, or root */
+export interface RepositoryPermissionGrantParams {
+  /** Run up() and down() as root, with no privilege drop */
+  root?: boolean;
+  /** Absolute path up() and down() may reach, PATH[:ro|:rw] (default :ro) */
+  path?: string;
+}
+
+/** Withdraw a lifecycle path grant, or the root grant, from the repository */
+export interface RepositoryPermissionRevokeParams {
+  /** Withdraw the root grant */
+  root?: boolean;
+  /** Absolute path to withdraw */
+  path?: string;
+}
+
+/** Show the repository's grant as JSON */
+export interface RepositoryPermissionShowParams {}
+
 /** Show automatic size policy (machine default, repo override, effective) */
 export interface RepositoryPolicyGetParams {
   /** Repository GUID (empty = machine-wide default only) */
@@ -1044,6 +1063,9 @@ export const RENET_FUNCTIONS = [
   'repository_merge',
   'repository_mount',
   'repository_ownership',
+  'repository_permission_grant',
+  'repository_permission_revoke',
+  'repository_permission_show',
   'repository_policy_get',
   'repository_policy_set',
   'repository_promote',
@@ -1228,6 +1250,9 @@ export const RENET_BRIDGE_FUNCTIONS = [
   'repository_migrate',
   'repository_mount',
   'repository_ownership',
+  'repository_permission_grant',
+  'repository_permission_revoke',
+  'repository_permission_show',
   'repository_policy_get',
   'repository_policy_set',
   'repository_promote',
@@ -1330,6 +1355,9 @@ export type FunctionParamsMap = {
   repository_merge: RepositoryMergeParams;
   repository_mount: RepositoryMountParams;
   repository_ownership: RepositoryOwnershipParams;
+  repository_permission_grant: RepositoryPermissionGrantParams;
+  repository_permission_revoke: RepositoryPermissionRevokeParams;
+  repository_permission_show: RepositoryPermissionShowParams;
   repository_policy_get: RepositoryPolicyGetParams;
   repository_policy_set: RepositoryPolicySetParams;
   repository_promote: RepositoryPromoteParams;
@@ -1596,6 +1624,15 @@ export const FUNCTION_REQUIREMENTS: Record<RenetFunctionName, { requirements: Pa
     requirements: { machine: true, team: true, repository: true },
   },
   'repository_ownership': {
+    requirements: { machine: true, team: true, repository: true },
+  },
+  'repository_permission_grant': {
+    requirements: { machine: true, team: true, repository: true },
+  },
+  'repository_permission_revoke': {
+    requirements: { machine: true, team: true, repository: true },
+  },
+  'repository_permission_show': {
     requirements: { machine: true, team: true, repository: true },
   },
   'repository_policy_get': {
@@ -3619,6 +3656,48 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
       },
     },
   },
+  'repository_permission_grant': {
+    name: 'repository_permission_grant',
+    category: 'repository',
+    showInMenu: false,
+    requirements: { machine: true, team: true, repository: true },
+    params: {
+      root: {
+        type: 'bool',
+        help: 'Run up() and down() as root, with no privilege drop',
+      },
+      path: {
+        type: 'string',
+        help: 'Absolute path up() and down() may reach, PATH[:ro|:rw] (default :ro)',
+        placeholder: '/srv/data:rw',
+      },
+    },
+  },
+  'repository_permission_revoke': {
+    name: 'repository_permission_revoke',
+    category: 'repository',
+    showInMenu: false,
+    requirements: { machine: true, team: true, repository: true },
+    params: {
+      root: {
+        type: 'bool',
+        help: 'Withdraw the root grant',
+      },
+      path: {
+        type: 'string',
+        help: 'Absolute path to withdraw',
+        placeholder: '/srv/data',
+      },
+    },
+  },
+  'repository_permission_show': {
+    name: 'repository_permission_show',
+    category: 'repository',
+    showInMenu: false,
+    requirements: { machine: true, team: true, repository: true },
+    params: {
+    },
+  },
   'repository_policy_get': {
     name: 'repository_policy_get',
     category: 'repository',
@@ -4025,6 +4104,9 @@ export const queueFunctions: QueueFunctionsType = {
   repository_merge: (params) => ({ functionName: 'repository_merge', params }),
   repository_mount: (params) => ({ functionName: 'repository_mount', params }),
   repository_ownership: (params) => ({ functionName: 'repository_ownership', params }),
+  repository_permission_grant: (params) => ({ functionName: 'repository_permission_grant', params }),
+  repository_permission_revoke: (params) => ({ functionName: 'repository_permission_revoke', params }),
+  repository_permission_show: (params) => ({ functionName: 'repository_permission_show', params }),
   repository_policy_get: (params) => ({ functionName: 'repository_policy_get', params }),
   repository_policy_set: (params) => ({ functionName: 'repository_policy_set', params }),
   repository_promote: (params) => ({ functionName: 'repository_promote', params }),

@@ -171,6 +171,21 @@ export function withGpuDevices(rec: RepositoryConfig, devices: string[]): Reposi
   return devices.length > 0 ? { ...rest, gpuDevices: devices } : rest;
 }
 
+/** The record with its mirrored lifecycle grant set, or cleared when the grant is the default tier. */
+export function withLifecycleGrant(
+  rec: RepositoryConfig,
+  grant: { root: boolean; paths: string[] }
+): RepositoryConfig {
+  const { lifecycleRoot: previousRoot, lifecyclePaths: previousPaths, ...rest } = rec;
+  void previousRoot;
+  void previousPaths;
+  return {
+    ...rest,
+    ...(grant.root ? { lifecycleRoot: true } : {}),
+    ...(grant.paths.length > 0 ? { lifecyclePaths: grant.paths } : {}),
+  };
+}
+
 /**
  * Refuse a second LIVE record that reuses another record's `repositoryGuid`
  * under a DIFFERENT credential.

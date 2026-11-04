@@ -4565,6 +4565,101 @@
               "subcommands": []
             }
           ]
+        },
+        {
+          "name": "permission",
+          "descriptionKey": "commands.repo.permission.description",
+          "options": [],
+          "arguments": [],
+          "subcommands": [
+            {
+              "name": "grant",
+              "descriptionKey": "commands.repo.permission.grant.description",
+              "options": [
+                {
+                  "flags": "--root",
+                  "descriptionKey": "commands.repo.permission.grant.rootOption",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--path <path>",
+                  "descriptionKey": "commands.repo.permission.grant.pathOption",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--debug",
+                  "descriptionKey": "options.debug",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [
+                {
+                  "name": "ref",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
+            },
+            {
+              "name": "revoke",
+              "descriptionKey": "commands.repo.permission.revoke.description",
+              "options": [
+                {
+                  "flags": "--root",
+                  "descriptionKey": "commands.repo.permission.revoke.rootOption",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--path <path>",
+                  "descriptionKey": "commands.repo.permission.revoke.pathOption",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--debug",
+                  "descriptionKey": "options.debug",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [
+                {
+                  "name": "ref",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
+            },
+            {
+              "name": "show",
+              "descriptionKey": "commands.repo.permission.show.description",
+              "options": [
+                {
+                  "flags": "--debug",
+                  "descriptionKey": "options.debug",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [
+                {
+                  "name": "ref",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
+            }
+          ]
         }
       ]
     },

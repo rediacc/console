@@ -1948,7 +1948,7 @@
       },
       "gc": {
         "applied": "Recolección de basura completada: {{deleted}}/{{total}} commit(s) eliminado(s)",
-        "started": "{{started}} de {{total}} borrados se están ejecutando como trabajos; se siguen con rdc job list.",
+        "started": "{{started}} de {{total}} eliminaciones se ejecutan como trabajos; rdc job list los muestra.",
         "applyOption": "Eliminar realmente los commits inaccesibles (por defecto es una vista previa en modo simulación)",
         "deleted": "Commit {{commit}} eliminado",
         "deleteFailed": "No se pudo eliminar el commit {{commit}}",
@@ -1956,8 +1956,7 @@
         "descriptionShort": "Recolecta commits inmutables inaccesibles en una máquina",
         "dryRunHeader": "Se eliminarían {{count}} commit(s) inaccesible(s):",
         "dryRunHint": "Vuelve a ejecutar con --apply para eliminarlos.",
-        "nothing": "Nada que recolectar en {{machine}}: todos los commits son accesibles",
-        "started": "{{started}} de {{total}} eliminaciones se están ejecutando como trabajos; sigue su avance con rdc job list."
+        "nothing": "Nada que recolectar en {{machine}}: todos los commits son accesibles"
       },
       "list": {
         "completed": "Listado completado",
@@ -2325,6 +2324,37 @@
           "starting": "Revocando {{device}} a \"{{repository}}\" en \"{{machine}}\"...",
           "completed": "{{device}} revocado a \"{{repository}}\"",
           "failed": "Falló la revocación del dispositivo"
+        }
+      },
+      "permission": {
+        "descriptionShort": "Conceder o revocar lo que puede alcanzar el Rediaccfile de un repositorio",
+        "description": "Amplía lo que up() y down() del Rediaccfile de un repositorio pueden alcanzar. Se ejecutan como el usuario universal sin privilegios; una concesión añade una ruta (--path) o root sin descenso de privilegios (--root). La máquina hace cumplir la concesión, un Rediaccfile solo puede pedirla con una línea '# rediacc:needs', y un fork empieza sin ninguna.",
+        "nothingToChange": "permission {{verb}} requiere --root o --path",
+        "grant": {
+          "descriptionShort": "Dar más alcance a up() y down() de un repositorio",
+          "description": "Permite que up() y down() del Rediaccfile del repositorio alcancen una ruta o se ejecuten como root. --root se rechaza a un agente salvo que el usuario haya establecido REDIACC_ALLOW_GRAND_REPO antes de iniciar el agente.",
+          "rootOption": "Ejecutar up() y down() como root, sin descenso de privilegios",
+          "pathOption": "Ruta absoluta que up() y down() pueden alcanzar, PATH[:ro|:rw] (solo lectura por defecto)",
+          "starting": "Concediendo permisos a \"{{repository}}\" en \"{{machine}}\"...",
+          "completed": "Permisos concedidos a \"{{repository}}\"",
+          "failed": "Error al conceder el permiso"
+        },
+        "revoke": {
+          "descriptionShort": "Retirar una concesión de ruta o de root a un repositorio",
+          "description": "Retira del repositorio una concesión de ruta del ciclo de vida, o la concesión de root. Los siguientes up() y down() se ejecutan con lo que quede.",
+          "rootOption": "Retirar la concesión de root",
+          "pathOption": "Ruta absoluta que se retira",
+          "starting": "Revocando permisos a \"{{repository}}\" en \"{{machine}}\"...",
+          "completed": "Permisos revocados a \"{{repository}}\"",
+          "failed": "Error al revocar el permiso"
+        },
+        "show": {
+          "descriptionShort": "Mostrar la concesión del ciclo de vida de un repositorio",
+          "description": "Muestra si up() y down() del repositorio se ejecutan como root y qué rutas pueden alcanzar.",
+          "starting": "Leyendo la concesión de \"{{repository}}\" en \"{{machine}}\"...",
+          "completed": "Concesión de \"{{repository}}\" leída",
+          "failed": "No se pudo leer la concesión",
+          "unreadable": "No se pudo leer la salida de concesiones de la máquina"
         }
       }
     },
@@ -2775,7 +2805,9 @@
       "rotateNotSensitive": "El puntero \"{{pointer}}\" no es un campo sensible; usa 'config field set' en su lugar.",
       "rotateRequiresTty": "config field rotate requiere confirmación en un TTY interactivo; rechazado en contexto no interactivo (define REDIACC_ALLOW_CONFIG_EDIT para anular).",
       "showReveal": "--reveal está bloqueado en entornos de agente. Usa `rdc config show` (redactado) o `rdc config field get --pointer <pointer> --digest` para una huella segura.",
-      "showRevealRequiresTty": "--reveal requiere un TTY interactivo; no se enviará texto en claro a un destino sin TTY."
+      "showRevealRequiresTty": "--reveal requiere un TTY interactivo; no se enviará texto en claro a un destino sin TTY.",
+      "rootGrantBlocked": "Los agentes no pueden dar a \"{{name}}\" una concesión de root: su Rediaccfile se ejecutaría sin descenso de privilegios.\n\nUsuario: para permitirlo, establezca REDIACC_ALLOW_GRAND_REPO={{name}} (o * para todos los repos) en su terminal antes de iniciar la sesión del agente.",
+      "rootGrantOverride": "No se aceptan anulaciones iniciadas por el agente para la concesión de root de \"{{name}}\".\n\nNo intente establecer REDIACC_ALLOW_GRAND_REPO. Solo el usuario puede autorizarlo antes de que el agente se inicie."
     },
     "authRequired": "Se requiere autenticación. Ejecute: rdc subscription login",
     "cluster": {

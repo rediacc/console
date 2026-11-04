@@ -611,6 +611,21 @@ export const RepositoryOwnershipParamsSchema = z.object({
   force: z.string().optional().describe('Skip Docker volume detection (true/false)'),
 });
 
+/** Widen what the repository's Rediaccfile up() and down() may reach: a path, or root */
+export const RepositoryPermissionGrantParamsSchema = z.object({
+  root: z.boolean().optional().describe('Run up() and down() as root, with no privilege drop'),
+  path: z.string().optional().describe('Absolute path up() and down() may reach, PATH[:ro|:rw] (default :ro)'),
+});
+
+/** Withdraw a lifecycle path grant, or the root grant, from the repository */
+export const RepositoryPermissionRevokeParamsSchema = z.object({
+  root: z.boolean().optional().describe('Withdraw the root grant'),
+  path: z.string().optional().describe('Absolute path to withdraw'),
+});
+
+/** Show the repository's grant as JSON */
+export const RepositoryPermissionShowParamsSchema = z.object({});
+
 /** Show automatic size policy (machine default, repo override, effective) */
 export const RepositoryPolicyGetParamsSchema = z.object({
   name: z.string().optional().describe('Repository GUID (empty = machine-wide default only)'),
@@ -810,6 +825,9 @@ export const FUNCTION_SCHEMAS = {
   repository_merge: RepositoryMergeParamsSchema,
   repository_mount: RepositoryMountParamsSchema,
   repository_ownership: RepositoryOwnershipParamsSchema,
+  repository_permission_grant: RepositoryPermissionGrantParamsSchema,
+  repository_permission_revoke: RepositoryPermissionRevokeParamsSchema,
+  repository_permission_show: RepositoryPermissionShowParamsSchema,
   repository_policy_get: RepositoryPolicyGetParamsSchema,
   repository_policy_set: RepositoryPolicySetParamsSchema,
   repository_promote: RepositoryPromoteParamsSchema,

@@ -51,6 +51,7 @@ import {
   resolveRepoKey,
   restoreArchivedRecord,
   withGpuDevices,
+  withLifecycleGrant,
 } from './config-resources-resolve.js';
 import type { ResourceState } from './resource-state.js';
 import { updateSyncedConfig } from './synced-write.js';
@@ -665,6 +666,16 @@ class ConfigService extends ConfigAccessService {
   async setRepositoryGpuDevices(repoRef: string, devices: string[]): Promise<void> {
     const { key, state, repos } = await this.loadRepositoryForWrite(repoRef);
     repos[key] = withGpuDevices(repos[key], devices);
+    await state.setRepositories(repos);
+  }
+
+  /** Mirror a repository's lifecycle grant (root, paths) into `state.repos`; the default tier clears the mirror. */
+  async setRepositoryLifecycle(
+    repoRef: string,
+    grant: { root: boolean; paths: string[] }
+  ): Promise<void> {
+    const { key, state, repos } = await this.loadRepositoryForWrite(repoRef);
+    repos[key] = withLifecycleGrant(repos[key], grant);
     await state.setRepositories(repos);
   }
 }

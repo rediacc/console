@@ -150,6 +150,20 @@ export const REPO_CONVERSION_STEPS: StepDefinition[] = [
     true
   ),
   privateStep(
+    'mirrorLifecycleGrants',
+    'success',
+    ['repo'],
+    () => import('../../commands/repo-permission.js'),
+    true
+  ),
+  privateStep(
+    'renderPermissionShow',
+    'success',
+    ['repo'],
+    () => import('../../commands/repo-permission.js'),
+    true
+  ),
+  privateStep(
     'renderRepoList',
     'success',
     ['machine'],

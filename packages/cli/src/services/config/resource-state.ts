@@ -55,6 +55,8 @@ const REPO_RUNTIME_KEYS = [
   'networkId',
   'registryPort',
   'gpuDevices',
+  'lifecycleRoot',
+  'lifecyclePaths',
   'pushState',
   'headCommit',
   'commitMessage',

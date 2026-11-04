@@ -2326,6 +2326,37 @@
           "completed": "已从“{{repository}}”撤销 {{device}}",
           "failed": "设备撤销失败"
         }
+      },
+      "permission": {
+        "descriptionShort": "授予或撤销仓库的 Rediaccfile 可访问的范围",
+        "description": "扩大仓库 Rediaccfile 中 up() 和 down() 可访问的范围。它们以无特权的通用用户身份运行；授权会增加一个路径（--path），或不降权的 root（--root）。授权由机器强制执行，Rediaccfile 只能通过 '# rediacc:needs' 行申请，fork 启动时没有任何授权。",
+        "nothingToChange": "permission {{verb}} 需要 --root 或 --path",
+        "grant": {
+          "descriptionShort": "为仓库的 up() 和 down() 授予更多访问范围",
+          "description": "允许仓库 Rediaccfile 中的 up() 和 down() 访问某个路径，或以 root 身份运行。除非用户在启动代理之前设置了 REDIACC_ALLOW_GRAND_REPO，否则代理的 --root 会被拒绝。",
+          "rootOption": "以 root 身份运行 up() 和 down()，不降权",
+          "pathOption": "up() 和 down() 可访问的绝对路径，格式为 PATH[:ro|:rw]（默认只读）",
+          "starting": "正在为“{{machine}}”上的“{{repository}}”授权...",
+          "completed": "已为“{{repository}}”授权",
+          "failed": "授权失败"
+        },
+        "revoke": {
+          "descriptionShort": "撤销仓库的路径或 root 授权",
+          "description": "撤销仓库的生命周期路径授权或 root 授权。之后的 up() 和 down() 将按剩余的授权运行。",
+          "rootOption": "撤销 root 授权",
+          "pathOption": "要撤销的绝对路径",
+          "starting": "正在撤销“{{machine}}”上“{{repository}}”的授权...",
+          "completed": "已撤销“{{repository}}”的授权",
+          "failed": "撤销授权失败"
+        },
+        "show": {
+          "descriptionShort": "显示仓库的生命周期授权",
+          "description": "显示仓库的 up() 和 down() 是否以 root 身份运行，以及可访问哪些路径。",
+          "starting": "正在读取“{{machine}}”上“{{repository}}”的授权...",
+          "completed": "已读取“{{repository}}”的授权",
+          "failed": "无法读取授权",
+          "unreadable": "无法读取机器的授权输出"
+        }
       }
     },
     "serve": {
@@ -2773,6 +2804,8 @@
       "mcpGrandGuardOverrideNonLinux": "\"{{name}}\" 是一个 grand（生产）仓库。REDIACC_ALLOW_GRAND_REPO 覆盖无法在 {{platform}} 上验证（祖先验证辅助程序不可用或失败），因此不接受。\n\n使用 repo_fork 创建安全、隔离的沙箱副本，然后在 fork 上操作。",
       "revealRequiresTty": "--reveal 需要交互式 TTY;拒绝将敏感值打印到管道。",
       "rotateNotSensitive": "指针“{{pointer}}”不是敏感字段;请改用 'config field set'。",
+      "rootGrantBlocked": "代理不能给“{{name}}”授予 root 权限：其 Rediaccfile 将在不降权的情况下运行。\n\n用户提示：要允许此操作，请在启动代理会话之前在终端中设置 REDIACC_ALLOW_GRAND_REPO={{name}}（或 * 表示所有仓库）。",
+      "rootGrantOverride": "“{{name}}”的 root 授权不接受代理发起的覆盖。\n\n不要尝试设置 REDIACC_ALLOW_GRAND_REPO。只有用户可以在代理启动前授权此操作。",
       "rotateRequiresTty": "config field rotate 需要交互式 TTY 确认;在非交互式上下文中被拒绝(如需覆盖请设置 REDIACC_ALLOW_CONFIG_EDIT)。",
       "showReveal": "在代理环境中禁止使用 --reveal。请使用 `rdc config show`（脱敏）或 `rdc config field get --pointer <pointer> --digest` 获取安全指纹。",
       "showRevealRequiresTty": "--reveal 需要交互式 TTY;拒绝将明文重定向到非 TTY 目标。"

@@ -274,6 +274,8 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   '/state/repos/*/*/networkId': { kind: 'public' },
   '/state/repos/*/*/registryPort': { kind: 'public' },
   '/state/repos/*/*/gpuDevices': { kind: 'public' },
+  '/state/repos/*/*/lifecycleRoot': { kind: 'public' },
+  '/state/repos/*/*/lifecyclePaths': { kind: 'public' },
   '/state/repos/*/*/pushState/*/verifiedBase': { kind: 'public' },
   '/state/repos/*/*/pushState/*/lastPushAt': { kind: 'public' },
   '/state/repos/*/*/pushState/*/method': { kind: 'public' },

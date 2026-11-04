@@ -1948,7 +1948,7 @@
       },
       "gc": {
         "applied": "اكتمل جمع المهملات: تم حذف {{deleted}}/{{total}} إيداع",
-        "started": "{{started}} من أصل {{total}} عمليات حذف تعمل كمهام؛ يعرضها rdc job list.",
+        "started": "يجري تنفيذ {{started}} من أصل {{total}} عملية حذف كمهام؛ يعرضها الأمر rdc job list.",
         "applyOption": "حذف الإيداعات غير القابلة للوصول فعليًا (الافتراضي معاينة تجريبية)",
         "deleted": "تم حذف الإيداع {{commit}}",
         "deleteFailed": "فشل حذف الإيداع {{commit}}",
@@ -1956,8 +1956,7 @@
         "descriptionShort": "جمع الإيداعات الثابتة غير القابلة للوصول على جهاز",
         "dryRunHeader": "سيتم حذف {{count}} إيداع غير قابل للوصول:",
         "dryRunHint": "أعد التشغيل مع ‎--apply‎ لحذفها.",
-        "nothing": "لا شيء لجمعه على {{machine}}: كل إيداع قابل للوصول",
-        "started": "{{started}} من أصل {{total}} عملية حذف قيد التشغيل كمهام؛ تابعها باستخدام rdc job list."
+        "nothing": "لا شيء لجمعه على {{machine}}: كل إيداع قابل للوصول"
       },
       "list": {
         "completed": "اكتمل العرض",
@@ -2325,6 +2324,37 @@
           "starting": "جارٍ سحب {{device}} من المستودع \"{{repository}}\" على \"{{machine}}\"...",
           "completed": "تم سحب {{device}} من المستودع \"{{repository}}\"",
           "failed": "فشل سحب الجهاز"
+        }
+      },
+      "permission": {
+        "descriptionShort": "منح أو سحب ما يمكن لملف Rediaccfile الخاص بمستودع الوصول إليه",
+        "description": "يوسّع ما يمكن لـ up() و down() في ملف Rediaccfile الخاص بالمستودع الوصول إليه. يعملان بصفة المستخدم العام غير المميّز؛ ويضيف المنح مسارًا (--path) أو صلاحية root دون خفض الامتيازات (--root). تفرض الآلة المنح، ولا يستطيع ملف Rediaccfile طلبه إلا عبر سطر '# rediacc:needs'، ويبدأ الفرع (fork) دون أي منح.",
+        "nothingToChange": "الأمر permission {{verb}} يتطلب --root أو --path",
+        "grant": {
+          "descriptionShort": "منح up() و down() في المستودع وصولًا أوسع",
+          "description": "السماح لـ up() و down() في ملف Rediaccfile الخاص بالمستودع بالوصول إلى مسار أو بالعمل بصفة root. يُرفض --root للوكيل ما لم يعيّن المستخدم REDIACC_ALLOW_GRAND_REPO قبل بدء الوكيل.",
+          "rootOption": "تشغيل up() و down() بصفة root دون خفض الامتيازات",
+          "pathOption": "مسار مطلق يمكن لـ up() و down() الوصول إليه، بالصيغة PATH[:ro|:rw] (للقراءة فقط افتراضيًا)",
+          "starting": "جارٍ منح \"{{repository}}\" على \"{{machine}}\"...",
+          "completed": "تم المنح للمستودع \"{{repository}}\"",
+          "failed": "فشل منح الإذن"
+        },
+        "revoke": {
+          "descriptionShort": "سحب منح مسار أو root من مستودع",
+          "description": "يسحب منح مسار دورة الحياة، أو منح root، من المستودع. ستعمل up() و down() التاليتان بما تبقى.",
+          "rootOption": "سحب منح root",
+          "pathOption": "المسار المطلق المراد سحبه",
+          "starting": "جارٍ سحب المنح من \"{{repository}}\" على \"{{machine}}\"...",
+          "completed": "تم سحب المنح من المستودع \"{{repository}}\"",
+          "failed": "فشل سحب الإذن"
+        },
+        "show": {
+          "descriptionShort": "عرض منح دورة الحياة لمستودع",
+          "description": "يعرض ما إذا كانت up() و down() في المستودع تعملان بصفة root، وما المسارات التي يمكنهما الوصول إليها.",
+          "starting": "جارٍ قراءة منح \"{{repository}}\" على \"{{machine}}\"...",
+          "completed": "تمت قراءة منح المستودع \"{{repository}}\"",
+          "failed": "تعذّرت قراءة المنح",
+          "unreadable": "تعذّرت قراءة مخرجات المنح من الآلة"
         }
       }
     },
@@ -2775,7 +2805,9 @@
       "rotateNotSensitive": "المؤشر \"{{pointer}}\" ليس حقلاً حساساً؛ استخدم 'config field set' بدلاً من ذلك.",
       "rotateRequiresTty": "‏config field rotate يتطلب تأكيدًا في طرفية تفاعلية؛ يُرفض في السياق غير التفاعلي (حدد REDIACC_ALLOW_CONFIG_EDIT للتجاوز).",
       "showReveal": "‏--reveal محظور في بيئات العملاء. استخدم `rdc config show` (مُخفى) أو `rdc config field get --pointer <pointer> --digest` للحصول على بصمة آمنة.",
-      "showRevealRequiresTty": "‏--reveal يتطلب طرفية تفاعلية؛ يُرفض تمرير النص الصريح إلى وجهة غير تفاعلية."
+      "showRevealRequiresTty": "‏--reveal يتطلب طرفية تفاعلية؛ يُرفض تمرير النص الصريح إلى وجهة غير تفاعلية.",
+      "rootGrantBlocked": "لا يمكن للوكلاء منح \"{{name}}\" صلاحية root: سيعمل ملف Rediaccfile الخاص به دون خفض الامتيازات.\n\nللمستخدم: للسماح بذلك، عيّن REDIACC_ALLOW_GRAND_REPO={{name}} (أو * لجميع المستودعات) في الطرفية قبل بدء جلسة الوكيل.",
+      "rootGrantOverride": "لا تُقبل التجاوزات التي يبدأها الوكيل لمنح root للمستودع \"{{name}}\".\n\nلا تحاول تعيين REDIACC_ALLOW_GRAND_REPO. فقط المستخدم يمكنه التصريح بذلك قبل بدء الوكيل."
     },
     "authRequired": "المصادقة مطلوبة. قم بتشغيل: rdc subscription login",
     "cluster": {

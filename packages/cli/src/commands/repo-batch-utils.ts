@@ -353,13 +353,21 @@ export async function printRepoListTable(resolved: Record<string, unknown>[]): P
   });
   const configLookup = new Map<
     string,
-    { grandGuid?: string; tag?: string; gpuDevices?: string[] }
+    {
+      grandGuid?: string;
+      tag?: string;
+      gpuDevices?: string[];
+      lifecycleRoot?: boolean;
+      lifecyclePaths?: string[];
+    }
   >();
   for (const rc of repoConfigs) {
     configLookup.set(rc.config.repositoryGuid, {
       grandGuid: rc.config.grandGuid,
       tag: rc.config.tag,
       gpuDevices: rc.config.gpuDevices,
+      lifecycleRoot: rc.config.lifecycleRoot,
+      lifecyclePaths: rc.config.lifecyclePaths,
     });
   }
   const compact = resolved.map((r) => {
@@ -378,6 +386,7 @@ export async function printRepoListTable(resolved: Record<string, unknown>[]): P
       services: r.service_count,
       modified: r.modified_human,
       gpu: cfg?.gpuDevices?.join(', ') || '-',
+      lifecycle: cfg?.lifecycleRoot ? 'root' : cfg?.lifecyclePaths?.join(', ') || '-',
     };
   });
   outputService.print(compact, 'table');

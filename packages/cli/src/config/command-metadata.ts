@@ -845,6 +845,10 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   'repo gpu': {
     mcpExcludeReason: 'Device grants widen host access for a repository. Use CLI directly',
   },
+  // A lifecycle grant widens what a repository's Rediaccfile may reach on the host (a path, or root with no privilege drop), so it is the operator's call, CLI-only; `--root` is further refused to an agent unless the operator set REDIACC_ALLOW_GRAND_REPO before the agent started.
+  'repo permission': {
+    mcpExcludeReason: 'Lifecycle grants widen host access for a repository. Use CLI directly',
+  },
   // Gate B on the REPO arm of each connect leaf (the place arm is a machine shell,
   // class A). These were keyed 'term repo' / 'vscode repo', paths that never
   // existed in the command tree, so the policy layer and the tree disagreed on the string. Keyed to the real leaves now.

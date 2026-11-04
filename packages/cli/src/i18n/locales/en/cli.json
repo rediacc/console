@@ -1789,6 +1789,37 @@
           "completed": "Revoked {{device}} from \"{{repository}}\"",
           "failed": "Device revoke failed"
         }
+      },
+      "permission": {
+        "descriptionShort": "Grant or revoke what a repository's Rediaccfile may reach",
+        "description": "Widen what a repository's Rediaccfile up() and down() may reach. They run as the unprivileged universal user; a grant adds a path (--path) or root with no privilege drop (--root). The machine enforces the grant, a Rediaccfile can only ask for one with a '# rediacc:needs' line, and a fork starts with none.",
+        "nothingToChange": "permission {{verb}} needs --root or --path",
+        "grant": {
+          "descriptionShort": "Give a repository's up() and down() more reach",
+          "description": "Let the repository's Rediaccfile up() and down() reach a path, or run as root. --root is refused to an agent unless the operator set REDIACC_ALLOW_GRAND_REPO before the agent started.",
+          "rootOption": "Run up() and down() as root, with no privilege drop",
+          "pathOption": "Absolute path up() and down() may reach, PATH[:ro|:rw] (read-only by default)",
+          "starting": "Granting \"{{repository}}\" on \"{{machine}}\"...",
+          "completed": "Granted \"{{repository}}\"",
+          "failed": "Permission grant failed"
+        },
+        "revoke": {
+          "descriptionShort": "Withdraw a path or root grant from a repository",
+          "description": "Withdraw a lifecycle path grant, or the root grant, from the repository. The next up() and down() run with what remains.",
+          "rootOption": "Withdraw the root grant",
+          "pathOption": "Absolute path to withdraw",
+          "starting": "Revoking \"{{repository}}\" on \"{{machine}}\"...",
+          "completed": "Revoked \"{{repository}}\"",
+          "failed": "Permission revoke failed"
+        },
+        "show": {
+          "descriptionShort": "Show a repository's lifecycle grant",
+          "description": "Show whether the repository's up() and down() run as root, and which paths they may reach.",
+          "starting": "Reading the grant of \"{{repository}}\" on \"{{machine}}\"...",
+          "completed": "Read the grant of \"{{repository}}\"",
+          "failed": "Could not read the grant",
+          "unreadable": "The machine's grant output could not be read"
+        }
       }
     },
     "backup": {
@@ -2753,7 +2784,9 @@
       "revealRequiresTty": "--reveal requires an interactive TTY; refusing to print sensitive value to a pipe.",
       "showRevealRequiresTty": "--reveal requires an interactive TTY; refusing to pipe plaintext to a non-TTY sink.",
       "rotateRequiresTty": "config field rotate requires interactive TTY confirmation; refusing in non-interactive context (set REDIACC_ALLOW_CONFIG_EDIT to override).",
-      "rotateNotSensitive": "Pointer \"{{pointer}}\" is not a sensitive field; use 'config field set' instead."
+      "rotateNotSensitive": "Pointer \"{{pointer}}\" is not a sensitive field; use 'config field set' instead.",
+      "rootGrantBlocked": "Agents cannot give \"{{name}}\" a root grant: its Rediaccfile would run without the privilege drop.\n\nUser: to allow it, set REDIACC_ALLOW_GRAND_REPO={{name}} (or * for all repos) in your terminal before starting the agent session.",
+      "rootGrantOverride": "Agent-initiated overrides are not accepted for the root grant of \"{{name}}\".\n\nDo not attempt to set REDIACC_ALLOW_GRAND_REPO. Only the user can authorize this before the agent starts."
     },
     "authRequired": "Authentication required. Run: rdc subscription login",
     "cluster": {

@@ -1948,7 +1948,7 @@
       },
       "gc": {
         "applied": "Garbage collection completato: {{deleted}}/{{total}} commit eliminati",
-        "started": "{{started}} eliminazioni su {{total}} sono in esecuzione come job; seguile con rdc job list.",
+        "started": "{{started}} eliminazioni su {{total}} sono in esecuzione come job; rdc job list le mostra.",
         "applyOption": "Elimina effettivamente i commit non raggiungibili (per impostazione predefinita è un'anteprima dry-run)",
         "deleted": "Commit {{commit}} eliminato",
         "deleteFailed": "Impossibile eliminare il commit {{commit}}",
@@ -1956,8 +1956,7 @@
         "descriptionShort": "Esegue il garbage collection dei commit immutabili non raggiungibili su una macchina",
         "dryRunHeader": "{{count}} commit non raggiungibili verrebbero eliminati:",
         "dryRunHint": "Riesegui con --apply per eliminarli.",
-        "nothing": "Niente da raccogliere su {{machine}}: ogni commit e raggiungibile",
-        "started": "{{started}} eliminazioni su {{total}} sono in esecuzione come job; seguile con rdc job list."
+        "nothing": "Niente da raccogliere su {{machine}}: ogni commit e raggiungibile"
       },
       "list": {
         "completed": "Elenco completato",
@@ -2325,6 +2324,37 @@
           "starting": "Revoca di {{device}} a \"{{repository}}\" su \"{{machine}}\"...",
           "completed": "{{device}} revocato a \"{{repository}}\"",
           "failed": "Revoca del dispositivo non riuscita"
+        }
+      },
+      "permission": {
+        "descriptionShort": "Concedi o revoca ciò che il Rediaccfile di un repository può raggiungere",
+        "description": "Amplia ciò che up() e down() del Rediaccfile di un repository possono raggiungere. Vengono eseguiti come utente universale senza privilegi; una concessione aggiunge un percorso (--path) o root senza abbandono dei privilegi (--root). La macchina applica la concessione, un Rediaccfile può richiederla solo con una riga '# rediacc:needs', e un fork parte senza alcuna concessione.",
+        "nothingToChange": "permission {{verb}} richiede --root o --path",
+        "grant": {
+          "descriptionShort": "Dai a up() e down() di un repository più accesso",
+          "description": "Consente a up() e down() del Rediaccfile del repository di raggiungere un percorso o di essere eseguiti come root. --root viene rifiutato a un agente, a meno che l'utente non abbia impostato REDIACC_ALLOW_GRAND_REPO prima di avviare l'agente.",
+          "rootOption": "Esegui up() e down() come root, senza abbandono dei privilegi",
+          "pathOption": "Percorso assoluto che up() e down() possono raggiungere, PATH[:ro|:rw] (sola lettura per impostazione predefinita)",
+          "starting": "Concessione dei permessi a \"{{repository}}\" su \"{{machine}}\"...",
+          "completed": "Permessi concessi a \"{{repository}}\"",
+          "failed": "Concessione del permesso non riuscita"
+        },
+        "revoke": {
+          "descriptionShort": "Ritira da un repository una concessione di percorso o di root",
+          "description": "Ritira dal repository una concessione di percorso del ciclo di vita, o la concessione root. I prossimi up() e down() vengono eseguiti con ciò che resta.",
+          "rootOption": "Ritira la concessione root",
+          "pathOption": "Percorso assoluto da ritirare",
+          "starting": "Revoca dei permessi a \"{{repository}}\" su \"{{machine}}\"...",
+          "completed": "Permessi revocati a \"{{repository}}\"",
+          "failed": "Revoca del permesso non riuscita"
+        },
+        "show": {
+          "descriptionShort": "Mostra la concessione del ciclo di vita di un repository",
+          "description": "Mostra se up() e down() del repository vengono eseguiti come root e quali percorsi possono raggiungere.",
+          "starting": "Lettura della concessione di \"{{repository}}\" su \"{{machine}}\"...",
+          "completed": "Concessione di \"{{repository}}\" letta",
+          "failed": "Impossibile leggere la concessione",
+          "unreadable": "L'output delle concessioni della macchina non è leggibile"
         }
       }
     },
@@ -2775,7 +2805,9 @@
       "rotateNotSensitive": "Il puntatore \"{{pointer}}\" non è un campo sensibile; usa 'config field set'.",
       "rotateRequiresTty": "config field rotate richiede conferma su TTY interattivo; rifiuto in contesto non interattivo (imposta REDIACC_ALLOW_CONFIG_EDIT per ignorare il blocco).",
       "showReveal": "--reveal è bloccato negli ambienti agente. Usa `rdc config show` (con redazione) o `rdc config field get --pointer <pointer> --digest` per un'impronta sicura.",
-      "showRevealRequiresTty": "--reveal richiede un TTY interattivo; rifiuto di inviare testo in chiaro a un sink non-TTY."
+      "showRevealRequiresTty": "--reveal richiede un TTY interattivo; rifiuto di inviare testo in chiaro a un sink non-TTY.",
+      "rootGrantBlocked": "Gli agenti non possono dare a \"{{name}}\" una concessione root: il suo Rediaccfile verrebbe eseguito senza abbandono dei privilegi.\n\nUtente: per consentirlo, imposta REDIACC_ALLOW_GRAND_REPO={{name}} (o * per tutti i repo) nel terminale prima di avviare la sessione dell'agente.",
+      "rootGrantOverride": "Le sostituzioni avviate dall'agente non sono accettate per la concessione root di \"{{name}}\".\n\nNon tentare di impostare REDIACC_ALLOW_GRAND_REPO: solo l'utente può autorizzarlo prima che l'agente venga avviato."
     },
     "authRequired": "Autenticazione richiesta. Esegui: rdc subscription login",
     "cluster": {

@@ -35,6 +35,7 @@ const EXPECTED_READ_ONLY = [
   'repository_list',
   'repository_log',
   'repository_logs',
+  'repository_permission_show',
   'repository_policy_get',
   'repository_status',
   'repository_validate',

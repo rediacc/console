@@ -1948,7 +1948,7 @@
       },
       "gc": {
         "applied": "Çöp toplama tamamlandı: {{deleted}}/{{total}} commit silindi",
-        "started": "{{total}} silme işleminden {{started}} tanesi iş olarak çalışıyor; bunları takip etmek için: rdc job list.",
+        "started": "{{total}} silme işleminden {{started}} tanesi iş olarak çalışıyor; rdc job list bunları gösterir.",
         "applyOption": "Erişilemez commit'leri gerçekten sil (varsayılan, deneme çalıştırması önizlemesidir)",
         "deleted": "{{commit}} commit'i silindi",
         "deleteFailed": "{{commit}} commit'i silinemedi",
@@ -1956,8 +1956,7 @@
         "descriptionShort": "Bir makinedeki erişilemez değişmez commit'leri temizle",
         "dryRunHeader": "{{count}} erişilemez commit silinecek:",
         "dryRunHint": "Bunları silmek için --apply ile yeniden çalıştırın.",
-        "nothing": "{{machine}} üzerinde temizlenecek bir şey yok: her commit'e erişilebilir",
-        "started": "{{total}} silme işleminden {{started}} tanesi iş olarak çalışıyor; takip için rdc job list çalıştırın."
+        "nothing": "{{machine}} üzerinde temizlenecek bir şey yok: her commit'e erişilebilir"
       },
       "list": {
         "completed": "Listeleme tamamlandı",
@@ -2325,6 +2324,37 @@
           "starting": "{{device}}, \"{{machine}}\" üzerinde \"{{repository}}\" deposundan geri alınıyor...",
           "completed": "{{device}}, \"{{repository}}\" deposundan geri alındı",
           "failed": "Cihaz izni geri alınamadı"
+        }
+      },
+      "permission": {
+        "descriptionShort": "Bir deponun Rediaccfile'ının erişebileceklerini ver veya geri al",
+        "description": "Bir deponun Rediaccfile'ındaki up() ve down() işlevlerinin erişebileceklerini genişletir. Bunlar ayrıcalıksız evrensel kullanıcı olarak çalışır; bir yetki bir yol (--path) veya ayrıcalık düşürmeden root (--root) ekler. Yetkiyi makine uygular, Rediaccfile yalnızca '# rediacc:needs' satırıyla yetki isteyebilir ve fork yetkisiz başlar.",
+        "nothingToChange": "permission {{verb}} için --root veya --path gerekir",
+        "grant": {
+          "descriptionShort": "Bir deponun up() ve down() işlevlerine daha geniş erişim ver",
+          "description": "Deponun Rediaccfile'ındaki up() ve down() işlevlerinin bir yola erişmesine veya root olarak çalışmasına izin verir. Kullanıcı ajanı başlatmadan önce REDIACC_ALLOW_GRAND_REPO ayarlamadıysa --root bir ajana reddedilir.",
+          "rootOption": "up() ve down() işlevlerini ayrıcalık düşürmeden root olarak çalıştır",
+          "pathOption": "up() ve down() işlevlerinin erişebileceği mutlak yol, PATH[:ro|:rw] (varsayılan salt okunur)",
+          "starting": "\"{{repository}}\" deposuna \"{{machine}}\" üzerinde yetki veriliyor...",
+          "completed": "\"{{repository}}\" deposuna yetki verildi",
+          "failed": "Yetki verilemedi"
+        },
+        "revoke": {
+          "descriptionShort": "Bir depodan yol veya root yetkisini geri al",
+          "description": "Depodan yaşam döngüsü yol yetkisini veya root yetkisini geri alır. Sonraki up() ve down() çalıştırmaları kalan yetkilerle yapılır.",
+          "rootOption": "Root yetkisini geri al",
+          "pathOption": "Geri alınacak mutlak yol",
+          "starting": "\"{{repository}}\" deposunun \"{{machine}}\" üzerindeki yetkisi geri alınıyor...",
+          "completed": "\"{{repository}}\" deposunun yetkisi geri alındı",
+          "failed": "Yetki geri alınamadı"
+        },
+        "show": {
+          "descriptionShort": "Bir deponun yaşam döngüsü yetkisini göster",
+          "description": "Deponun up() ve down() işlevlerinin root olarak çalışıp çalışmadığını ve hangi yollara erişebildiğini gösterir.",
+          "starting": "\"{{repository}}\" deposunun \"{{machine}}\" üzerindeki yetkisi okunuyor...",
+          "completed": "\"{{repository}}\" deposunun yetkisi okundu",
+          "failed": "Yetki okunamadı",
+          "unreadable": "Makinenin yetki çıktısı okunamadı"
         }
       }
     },
@@ -2775,7 +2805,9 @@
       "rotateNotSensitive": "Pointer \"{{pointer}}\" hassas bir alan değil; bunun yerine 'config field set' kullanın.",
       "rotateRequiresTty": "config field rotate, etkileşimli TTY onayı gerektirir; etkileşimli olmayan bağlamda reddedilir (geçersiz kılmak için REDIACC_ALLOW_CONFIG_EDIT tanımlayın).",
       "showReveal": "--reveal, ajan ortamlarında engellenir. Güvenli parmak izi için `rdc config show` (redakte) veya `rdc config field get --pointer <pointer> --digest` kullanın.",
-      "showRevealRequiresTty": "--reveal etkileşimli TTY gerektirir; açık metin TTY olmayan bir hedefe aktarılmayacak."
+      "showRevealRequiresTty": "--reveal etkileşimli TTY gerektirir; açık metin TTY olmayan bir hedefe aktarılmayacak.",
+      "rootGrantBlocked": "Ajanlar \"{{name}}\" deposuna root yetkisi veremez: Rediaccfile'ı ayrıcalık düşürülmeden çalışırdı.\n\nKullanıcı: buna izin vermek için ajan oturumunu başlatmadan önce terminalinizde REDIACC_ALLOW_GRAND_REPO={{name}} (veya tüm depolar için *) ayarlayın.",
+      "rootGrantOverride": "\"{{name}}\" deposunun root yetkisi için ajanın başlattığı geçersiz kılmalar kabul edilmez.\n\nREDIACC_ALLOW_GRAND_REPO ayarlamaya çalışmayın. Bunu yalnızca kullanıcı ajan başlamadan önce yetkilendirebilir."
     },
     "authRequired": "Kimlik doğrulama gerekli. Çalıştırın: rdc subscription login",
     "cluster": {

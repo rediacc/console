@@ -1948,7 +1948,7 @@
       },
       "gc": {
         "applied": "Garbage Collection abgeschlossen: {{deleted}}/{{total}} Commit(s) gelöscht",
-        "started": "{{started}} von {{total}} Löschvorgängen laufen als Jobs; verfolgen lassen sie sich mit rdc job list.",
+        "started": "{{started}} von {{total}} Löschvorgängen laufen als Jobs; rdc job list zeigt sie an.",
         "applyOption": "Die unerreichbaren Commits tatsächlich löschen (Standard ist eine Probelauf-Vorschau)",
         "deleted": "Commit {{commit}} gelöscht",
         "deleteFailed": "Commit {{commit}} konnte nicht gelöscht werden",
@@ -1956,8 +1956,7 @@
         "descriptionShort": "Unerreichbare unveränderliche Commits auf einer Maschine per Garbage Collection entfernen",
         "dryRunHeader": "{{count}} unerreichbare(r) Commit(s) würden gelöscht:",
         "dryRunHint": "Mit --apply erneut ausführen, um sie zu löschen.",
-        "nothing": "Nichts zu bereinigen auf {{machine}}: jeder Commit ist erreichbar",
-        "started": "{{started}} von {{total}} Löschvorgängen laufen als Jobs; verfolgen lassen sie sich mit rdc job list."
+        "nothing": "Nichts zu bereinigen auf {{machine}}: jeder Commit ist erreichbar"
       },
       "list": {
         "completed": "Auflistung abgeschlossen",
@@ -2325,6 +2324,37 @@
           "starting": "{{device}} wird \"{{repository}}\" auf \"{{machine}}\" entzogen...",
           "completed": "{{device}} für \"{{repository}}\" entzogen",
           "failed": "Entzug des Geräts fehlgeschlagen"
+        }
+      },
+      "permission": {
+        "descriptionShort": "Zugriff der Rediaccfile eines Repositorys erweitern oder entziehen",
+        "description": "Erweitert, worauf up() und down() der Rediaccfile eines Repositorys zugreifen dürfen. Beide laufen als unprivilegierter universeller Benutzer; eine Freigabe fügt einen Pfad (--path) oder root ohne Rechteverzicht (--root) hinzu. Die Maschine erzwingt die Freigabe, eine Rediaccfile kann sie nur über eine '# rediacc:needs'-Zeile anfordern, und ein Fork startet ohne Freigabe.",
+        "nothingToChange": "permission {{verb}} benötigt --root oder --path",
+        "grant": {
+          "descriptionShort": "up() und down() eines Repositorys mehr Zugriff geben",
+          "description": "Erlaubt up() und down() der Rediaccfile des Repositorys, auf einen Pfad zuzugreifen oder als root zu laufen. --root wird einem Agenten verweigert, außer der Benutzer hat REDIACC_ALLOW_GRAND_REPO vor dem Start des Agenten gesetzt.",
+          "rootOption": "up() und down() als root ausführen, ohne Rechteverzicht",
+          "pathOption": "Absoluter Pfad, auf den up() und down() zugreifen dürfen, PATH[:ro|:rw] (standardmäßig schreibgeschützt)",
+          "starting": "\"{{repository}}\" wird auf \"{{machine}}\" freigegeben...",
+          "completed": "\"{{repository}}\" freigegeben",
+          "failed": "Freigabe fehlgeschlagen"
+        },
+        "revoke": {
+          "descriptionShort": "Pfad- oder Root-Freigabe eines Repositorys entziehen",
+          "description": "Entzieht dem Repository eine Pfadfreigabe für den Lebenszyklus oder die Root-Freigabe. up() und down() laufen danach mit dem, was übrig bleibt.",
+          "rootOption": "Root-Freigabe entziehen",
+          "pathOption": "Absoluter Pfad, dessen Freigabe entzogen wird",
+          "starting": "Freigabe für \"{{repository}}\" auf \"{{machine}}\" wird entzogen...",
+          "completed": "Freigabe für \"{{repository}}\" entzogen",
+          "failed": "Entziehen der Freigabe fehlgeschlagen"
+        },
+        "show": {
+          "descriptionShort": "Lebenszyklus-Freigabe eines Repositorys anzeigen",
+          "description": "Zeigt, ob up() und down() des Repositorys als root laufen und auf welche Pfade sie zugreifen dürfen.",
+          "starting": "Freigabe von \"{{repository}}\" auf \"{{machine}}\" wird gelesen...",
+          "completed": "Freigabe von \"{{repository}}\" gelesen",
+          "failed": "Freigabe konnte nicht gelesen werden",
+          "unreadable": "Die Freigabe-Ausgabe der Maschine konnte nicht gelesen werden"
         }
       }
     },
@@ -2775,7 +2805,9 @@
       "rotateNotSensitive": "Pointer „{{pointer}}\" ist kein sensibles Feld; verwenden Sie 'config field set'.",
       "rotateRequiresTty": "config field rotate erfordert eine interaktive TTY-Bestätigung; wird in nicht-interaktivem Kontext abgelehnt (setzen Sie REDIACC_ALLOW_CONFIG_EDIT zur Umgehung).",
       "showReveal": "--reveal ist in Agenten-Umgebungen blockiert. Verwenden Sie `rdc config show` (zensiert) oder `rdc config field get --pointer <pointer> --digest` für einen sicheren Fingerabdruck.",
-      "showRevealRequiresTty": "--reveal erfordert ein interaktives TTY; Klartext wird nicht in eine Nicht-TTY-Senke geleitet."
+      "showRevealRequiresTty": "--reveal erfordert ein interaktives TTY; Klartext wird nicht in eine Nicht-TTY-Senke geleitet.",
+      "rootGrantBlocked": "Agenten können \"{{name}}\" keine Root-Freigabe erteilen: Die Rediaccfile würde ohne Rechteverzicht laufen.\n\nBenutzer: Um das zu erlauben, setzen Sie REDIACC_ALLOW_GRAND_REPO={{name}} (oder * für alle Repos) in Ihrem Terminal, bevor Sie die Agenten-Sitzung starten.",
+      "rootGrantOverride": "Vom Agenten ausgelöste Überschreibungen werden für die Root-Freigabe von \"{{name}}\" nicht akzeptiert.\n\nVersuchen Sie nicht, REDIACC_ALLOW_GRAND_REPO zu setzen. Nur der Benutzer kann dies vor dem Start des Agenten autorisieren."
     },
     "authRequired": "Authentifizierung erforderlich. Ausführen: rdc subscription login",
     "cluster": {

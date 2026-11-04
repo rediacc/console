@@ -1948,7 +1948,7 @@
       },
       "gc": {
         "applied": "Prügikoristus lõpetatud: {{deleted}}/{{total}} commit'i kustutatud",
-        "started": "{{started}} kustutamisest {{total}}-st töötab tööna; jälgi neid käsuga rdc job list.",
+        "started": "{{started}} kustutust {{total}}-st töötab jobidena; rdc job list näitab neid.",
         "applyOption": "Kustuta ligipääsmatud commit'id päriselt (vaikimisi on kuiv eelvaade)",
         "deleted": "Commit {{commit}} kustutatud",
         "deleteFailed": "Commit'i {{commit}} kustutamine ebaõnnestus",
@@ -1956,8 +1956,7 @@
         "descriptionShort": "Korja kokku masina ligipääsmatud muutumatud commit'id",
         "dryRunHeader": "{{count}} ligipääsmatut commit'i kustutataks:",
         "dryRunHint": "Nende kustutamiseks käivita uuesti võtmega --apply.",
-        "nothing": "Masinal {{machine}} pole midagi koristada: kõik commit'id on ligipääsetavad",
-        "started": "{{started}} eemaldamisest {{total}}-st töötab töödena; jälgi neid käsuga rdc job list."
+        "nothing": "Masinal {{machine}} pole midagi koristada: kõik commit'id on ligipääsetavad"
       },
       "list": {
         "completed": "Loetlemine lõpetatud",
@@ -2325,6 +2324,37 @@
           "starting": "Võtan seadme {{device}} hoidlalt \"{{repository}}\" masinas \"{{machine}}\" tagasi...",
           "completed": "Seade {{device}} võeti hoidlalt \"{{repository}}\" tagasi",
           "failed": "Seadme tagasivõtmine ebaõnnestus"
+        }
+      },
+      "permission": {
+        "descriptionShort": "Anna hoidla Rediaccfile'ile juurdepääs või võta see tagasi",
+        "description": "Laiendab, millele hoidla Rediaccfile'i up() ja down() ligi pääsevad. Need töötavad eelistusteta universaalkasutajana; luba lisab tee (--path) või root-õiguse ilma õiguste loobumiseta (--root). Masin jõustab loa, Rediaccfile saab seda küsida vaid '# rediacc:needs' reaga ning fork algab ilma loata.",
+        "nothingToChange": "permission {{verb}} vajab valikut --root või --path",
+        "grant": {
+          "descriptionShort": "Anna hoidla up() ja down() funktsioonidele laiem juurdepääs",
+          "description": "Lubab hoidla Rediaccfile'i up() ja down() funktsioonidel pääseda ligi teele või töötada root-õigustes. --root lükatakse agendi puhul tagasi, kui kasutaja pole enne agendi käivitamist seadistanud muutujat REDIACC_ALLOW_GRAND_REPO.",
+          "rootOption": "Käivita up() ja down() root-õigustes, ilma õiguste loobumiseta",
+          "pathOption": "Absoluutne tee, millele up() ja down() ligi pääsevad, PATH[:ro|:rw] (vaikimisi kirjutuskaitstud)",
+          "starting": "Annan luba hoidlale \"{{repository}}\" masinas \"{{machine}}\"...",
+          "completed": "Luba antud hoidlale \"{{repository}}\"",
+          "failed": "Loa andmine ebaõnnestus"
+        },
+        "revoke": {
+          "descriptionShort": "Võta hoidlalt tee või root-loa õigus tagasi",
+          "description": "Võtab hoidlalt tagasi elutsükli tee loa või root-loa. Järgmised up() ja down() töötavad alles jäänud õigustega.",
+          "rootOption": "Võta root-luba tagasi",
+          "pathOption": "Absoluutne tee, mille luba tagasi võetakse",
+          "starting": "Võtan hoidla \"{{repository}}\" luba tagasi masinas \"{{machine}}\"...",
+          "completed": "Hoidla \"{{repository}}\" luba võeti tagasi",
+          "failed": "Loa tagasivõtmine ebaõnnestus"
+        },
+        "show": {
+          "descriptionShort": "Näita hoidla elutsükli luba",
+          "description": "Näitab, kas hoidla up() ja down() töötavad root-õigustes ning millistele teedele nad ligi pääsevad.",
+          "starting": "Loen hoidla \"{{repository}}\" luba masinas \"{{machine}}\"...",
+          "completed": "Hoidla \"{{repository}}\" luba loetud",
+          "failed": "Luba ei õnnestunud lugeda",
+          "unreadable": "Masina loa väljundit ei õnnestunud lugeda"
         }
       }
     },
@@ -2775,7 +2805,9 @@
       "rotateNotSensitive": "Osuti \"{{pointer}}\" ei ole tundlik väli; kasuta selle asemel 'config field set'.",
       "rotateRequiresTty": "config field rotate nõuab interaktiivset TTY kinnitust; keeldun mitteinteraktiivses kontekstis (ülekirja jaoks seadista REDIACC_ALLOW_CONFIG_EDIT).",
       "showReveal": "--reveal on agendikeskkondades blokeeritud. Kasuta `rdc config show` (varjatud) või `rdc config field get --pointer <pointer> --digest` turvalise sõrmejälje saamiseks.",
-      "showRevealRequiresTty": "--reveal nõuab interaktiivset TTY-d; keeldun edastamast lihtteksti mitte-TTY sihtpunkti."
+      "showRevealRequiresTty": "--reveal nõuab interaktiivset TTY-d; keeldun edastamast lihtteksti mitte-TTY sihtpunkti.",
+      "rootGrantBlocked": "Agendid ei saa hoidlale \"{{name}}\" anda root-luba: selle Rediaccfile töötaks ilma õiguste loobumiseta.\n\nKasutaja: selle lubamiseks seadista REDIACC_ALLOW_GRAND_REPO={{name}} (või * kõigi repositooriumide jaoks) oma terminalis enne agendi seansi käivitamist.",
+      "rootGrantOverride": "Agendi algatatud ülekirjutusi hoidla \"{{name}}\" root-loa puhul vastu ei võeta.\n\nÄra proovi seadistada REDIACC_ALLOW_GRAND_REPO - ainult kasutaja saab selle enne agendi käivitamist autoriseerida."
     },
     "authRequired": "Autentimine on nõutud. Käivita: rdc subscription login",
     "cluster": {

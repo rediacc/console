@@ -27,6 +27,7 @@ import { registerRepoForkCommand } from './repo-fork.js';
 import { registerRepoGpuCommands } from './repo-gpu.js';
 import { registerRepoMaintenanceCommands } from './repo-maintenance.js';
 import { registerRepoMigrateCommand } from './repo-migrate.js';
+import { registerRepoPermissionCommands } from './repo-permission.js';
 import { registerRepoReplicateCommands } from './repo-replicate.js';
 import { registerRepoSecretCommands } from './repo-secret.js';
 import { registerRepoSyncCommands } from './repo-sync.js';
@@ -396,4 +397,5 @@ export function registerRepoCommands(program: Command): void {
   registerRepoTunnelCommand(repo);
   registerRepoSecretCommands(repo);
   registerRepoGpuCommands(repo);
+  registerRepoPermissionCommands(repo);
 }

@@ -180,6 +180,9 @@ export const StateSchema = z.object({
           registryPort: z.number().int().min(21000).max(28999).optional(),
           // CDI device names granted to this repository (`rdc repo gpu grant`); a mirror of the machine's grant store, which stays the enforcement point.
           gpuDevices: z.array(z.string()).optional(),
+          // The lifecycle grant of this repository (`rdc repo permission grant`): root, and the paths its Rediaccfile's up() and down() may reach. A mirror of the machine's grant store, which stays the enforcement point.
+          lifecycleRoot: z.boolean().optional(),
+          lifecyclePaths: z.array(z.string()).optional(),
           pushState: PushStateSchema.optional(),
           headCommit: z.string().optional(),
           commitMessage: z.string().optional(),

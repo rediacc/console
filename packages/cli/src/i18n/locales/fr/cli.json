@@ -1948,7 +1948,7 @@
       },
       "gc": {
         "applied": "Nettoyage terminé : {{deleted}}/{{total}} commit(s) supprimé(s)",
-        "started": "{{started}} suppression(s) sur {{total}} s’exécutent comme des jobs ; suivez-les avec rdc job list.",
+        "started": "{{started}} suppression(s) sur {{total}} s'exécutent comme jobs ; rdc job list les affiche.",
         "applyOption": "Supprimer réellement les commits inaccessibles (aperçu à blanc par défaut)",
         "deleted": "Commit {{commit}} supprimé",
         "deleteFailed": "Échec de la suppression du commit {{commit}}",
@@ -1956,8 +1956,7 @@
         "descriptionShort": "Collecter les commits immuables inaccessibles sur une machine",
         "dryRunHeader": "{{count}} commit(s) inaccessible(s) seraient supprimé(s) :",
         "dryRunHint": "Relancez avec --apply pour les supprimer.",
-        "nothing": "Rien à collecter sur {{machine}} : chaque commit est accessible",
-        "started": "{{started}} suppression(s) sur {{total}} s'exécutent comme des jobs ; suivez-les avec rdc job list."
+        "nothing": "Rien à collecter sur {{machine}} : chaque commit est accessible"
       },
       "list": {
         "completed": "Listage terminé",
@@ -2325,6 +2324,37 @@
           "starting": "Retrait de {{device}} à « {{repository}} » sur « {{machine}} »...",
           "completed": "{{device}} retiré à « {{repository}} »",
           "failed": "Échec du retrait du périphérique"
+        }
+      },
+      "permission": {
+        "descriptionShort": "Accorder ou retirer l'accès du Rediaccfile d'un dépôt",
+        "description": "Élargit ce que up() et down() du Rediaccfile d'un dépôt peuvent atteindre. Ils s'exécutent avec l'utilisateur universel sans privilèges ; une autorisation ajoute un chemin (--path) ou root sans abandon de privilèges (--root). La machine applique l'autorisation, un Rediaccfile ne peut la demander que par une ligne '# rediacc:needs', et un fork démarre sans aucune.",
+        "nothingToChange": "permission {{verb}} requiert --root ou --path",
+        "grant": {
+          "descriptionShort": "Donner plus d'accès à up() et down() d'un dépôt",
+          "description": "Permet à up() et down() du Rediaccfile du dépôt d'atteindre un chemin ou de s'exécuter en root. --root est refusé à un agent, sauf si l'utilisateur a défini REDIACC_ALLOW_GRAND_REPO avant le démarrage de l'agent.",
+          "rootOption": "Exécuter up() et down() en root, sans abandon de privilèges",
+          "pathOption": "Chemin absolu que up() et down() peuvent atteindre, PATH[:ro|:rw] (lecture seule par défaut)",
+          "starting": "Attribution des droits à « {{repository}} » sur « {{machine}} »...",
+          "completed": "Droits attribués à « {{repository}} »",
+          "failed": "Échec de l'attribution des droits"
+        },
+        "revoke": {
+          "descriptionShort": "Retirer à un dépôt une autorisation de chemin ou de root",
+          "description": "Retire du dépôt une autorisation de chemin du cycle de vie, ou l'autorisation root. Les prochains up() et down() s'exécutent avec ce qui reste.",
+          "rootOption": "Retirer l'autorisation root",
+          "pathOption": "Chemin absolu à retirer",
+          "starting": "Retrait des droits de « {{repository}} » sur « {{machine}} »...",
+          "completed": "Droits retirés à « {{repository}} »",
+          "failed": "Échec du retrait des droits"
+        },
+        "show": {
+          "descriptionShort": "Afficher l'autorisation du cycle de vie d'un dépôt",
+          "description": "Indique si up() et down() du dépôt s'exécutent en root, et quels chemins ils peuvent atteindre.",
+          "starting": "Lecture des droits de « {{repository}} » sur « {{machine}} »...",
+          "completed": "Droits de « {{repository}} » lus",
+          "failed": "Impossible de lire les droits",
+          "unreadable": "La sortie des droits de la machine n'a pas pu être lue"
         }
       }
     },
@@ -2775,7 +2805,9 @@
       "rotateNotSensitive": "Le pointeur « {{pointer}} » n'est pas un champ sensible ; utilisez 'config field set' à la place.",
       "rotateRequiresTty": "config field rotate exige une confirmation interactive sur un TTY ; refusé en contexte non interactif (définissez REDIACC_ALLOW_CONFIG_EDIT pour passer outre).",
       "showReveal": "--reveal est bloqué dans les environnements d'agent. Utilisez `rdc config show` (caviardé) ou `rdc config field get --pointer <pointer> --digest` pour une empreinte sûre.",
-      "showRevealRequiresTty": "--reveal nécessite un TTY interactif ; pas de texte en clair vers une cible non-TTY."
+      "showRevealRequiresTty": "--reveal nécessite un TTY interactif ; pas de texte en clair vers une cible non-TTY.",
+      "rootGrantBlocked": "Les agents ne peuvent pas donner à « {{name}} » une autorisation root : son Rediaccfile s'exécuterait sans abandon de privilèges.\n\nUtilisateur : pour l'autoriser, définissez REDIACC_ALLOW_GRAND_REPO={{name}} (ou * pour tous les dépôts) dans votre terminal avant de démarrer la session de l'agent.",
+      "rootGrantOverride": "Les remplacements initiés par l'agent ne sont pas acceptés pour l'autorisation root de « {{name}} ».\n\nN'essayez pas de définir REDIACC_ALLOW_GRAND_REPO. Seul l'utilisateur peut l'autoriser avant le démarrage de l'agent."
     },
     "authRequired": "L'authentification est requise. Exécutez : rdc subscription login",
     "cluster": {

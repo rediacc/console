@@ -1948,7 +1948,7 @@
       },
       "gc": {
         "applied": "ガベージコレクション完了: {{deleted}}/{{total}} 件のコミットを削除しました",
-        "started": "{{total}} 件の削除のうち {{started}} 件がジョブとして実行中です。rdc job list で確認できます。",
+        "started": "{{total}} 件中 {{started}} 件の削除がジョブとして実行中です。rdc job list で確認できます。",
         "applyOption": "到達不能なコミットを実際に削除する（既定はドライランのプレビュー）",
         "deleted": "コミット {{commit}} を削除しました",
         "deleteFailed": "コミット {{commit}} の削除に失敗しました",
@@ -1956,8 +1956,7 @@
         "descriptionShort": "マシン上の到達不能な不変コミットをガベージコレクトする",
         "dryRunHeader": "到達不能なコミット {{count}} 件が削除されます:",
         "dryRunHint": "削除するには --apply を付けて再実行してください。",
-        "nothing": "{{machine}} に回収対象はありません: すべてのコミットが到達可能です",
-        "started": "{{total}} 件の削除のうち {{started}} 件がジョブとして実行中です。進行状況は rdc job list で確認できます。"
+        "nothing": "{{machine}} に回収対象はありません: すべてのコミットが到達可能です"
       },
       "list": {
         "completed": "リスト表示が完了しました",
@@ -2325,6 +2324,37 @@
           "starting": "{{device}} を「{{machine}}」上の「{{repository}}」から取り消しています...",
           "completed": "{{device}} を「{{repository}}」から取り消しました",
           "failed": "デバイスの取り消しに失敗しました"
+        }
+      },
+      "permission": {
+        "descriptionShort": "リポジトリの Rediaccfile が到達できる範囲を付与または取り消す",
+        "description": "リポジトリの Rediaccfile の up() と down() が到達できる範囲を広げます。これらは権限のない汎用ユーザーとして実行されます。付与ではパス（--path）か、権限降格なしの root（--root）を追加します。付与はマシンが強制し、Rediaccfile が要求できるのは '# rediacc:needs' 行だけで、fork は付与なしで始まります。",
+        "nothingToChange": "permission {{verb}} には --root または --path が必要です",
+        "grant": {
+          "descriptionShort": "リポジトリの up() と down() の到達範囲を広げる",
+          "description": "リポジトリの Rediaccfile の up() と down() に、パスへの到達または root での実行を許可します。--root は、エージェント開始前にユーザーが REDIACC_ALLOW_GRAND_REPO を設定していない限り、エージェントには拒否されます。",
+          "rootOption": "権限降格なしで up() と down() を root として実行する",
+          "pathOption": "up() と down() が到達できる絶対パス。PATH[:ro|:rw] の形式（既定は読み取り専用）",
+          "starting": "「{{machine}}」 上の 「{{repository}}」 に付与しています...",
+          "completed": "「{{repository}}」 に付与しました",
+          "failed": "権限の付与に失敗しました"
+        },
+        "revoke": {
+          "descriptionShort": "リポジトリからパスまたは root の付与を取り消す",
+          "description": "ライフサイクルのパス付与、または root 付与をリポジトリから取り消します。次回の up() と down() は残った権限で実行されます。",
+          "rootOption": "root の付与を取り消す",
+          "pathOption": "取り消す絶対パス",
+          "starting": "「{{machine}}」 上の 「{{repository}}」 から取り消しています...",
+          "completed": "「{{repository}}」 から取り消しました",
+          "failed": "権限の取り消しに失敗しました"
+        },
+        "show": {
+          "descriptionShort": "リポジトリのライフサイクル付与を表示する",
+          "description": "リポジトリの up() と down() が root で実行されるか、どのパスに到達できるかを表示します。",
+          "starting": "「{{machine}}」 上の 「{{repository}}」 の付与を読み取っています...",
+          "completed": "「{{repository}}」 の付与を読み取りました",
+          "failed": "付与を読み取れませんでした",
+          "unreadable": "マシンの付与出力を読み取れませんでした"
         }
       }
     },
@@ -2775,7 +2805,9 @@
       "rotateNotSensitive": "ポインタ「{{pointer}}」は機密フィールドではありません。代わりに 'config field set' を使用してください。",
       "rotateRequiresTty": "config field rotate には対話型 TTY による確認が必要です。非対話型では拒否されます(上書きには REDIACC_ALLOW_CONFIG_EDIT を設定)。",
       "showReveal": "--reveal はエージェント環境ではブロックされます。秘匿された `rdc config show` または `rdc config field get --pointer <pointer> --digest` を使用してください。",
-      "showRevealRequiresTty": "--reveal には対話型 TTY が必要です。平文を非 TTY 先へ流すことは拒否します。"
+      "showRevealRequiresTty": "--reveal には対話型 TTY が必要です。平文を非 TTY 先へ流すことは拒否します。",
+      "rootGrantBlocked": "エージェントは 「{{name}}」 に root 付与を与えることはできません。Rediaccfile が権限降格なしで実行されてしまいます。\n\nユーザーへ: 許可するには、エージェントセッション開始前にターミナルで REDIACC_ALLOW_GRAND_REPO={{name}}（またはすべてのリポジトリに対して *）を設定してください。",
+      "rootGrantOverride": "「{{name}}」 の root 付与について、エージェントが行った上書きは受け付けられません。\n\nREDIACC_ALLOW_GRAND_REPO を設定しようとしないでください。エージェント開始前にユーザーのみがこれを承認できます。"
     },
     "authRequired": "認証が必要です。実行してください: rdc subscription login",
     "cluster": {
