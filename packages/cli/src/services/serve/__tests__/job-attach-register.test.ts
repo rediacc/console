@@ -201,8 +201,9 @@ describe('a retried POST of a verb that registers before its job', () => {
   }
 
   function expectDuplicate(line: StreamLine): void {
-    expect(line).toMatchObject({ result: { success: false } });
-    expect(JSON.stringify(line)).toMatch(/already exists/i);
+    if (line.kind !== 'result') throw new Error(`no result line: ${JSON.stringify(line)}`);
+    expect(line.result.success).toBe(false);
+    expect(`${line.stdout ?? ''}${line.stderr ?? ''}`).toMatch(/already exists/i);
   }
 
   const verbs = {
