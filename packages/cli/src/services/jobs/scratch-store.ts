@@ -13,6 +13,7 @@
 
 import {
   chmodSync,
+  existsSync,
   mkdirSync,
   readdirSync,
   readFileSync,
@@ -26,6 +27,7 @@ import { getConfigDir } from '@rediacc/shared/paths';
 
 const STALE_GROUP_MS = 24 * 60 * 60 * 1000;
 const NAME = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
+const CLAIM_DIR = 'settled.claim';
 
 /** One machine's record: its captured listing, or why none was recorded. */
 export type ScratchRecord = { ok: true; value: string } | { ok: false; error: string };
@@ -99,6 +101,38 @@ export class ScratchStore {
       if (record) out.set(record.key, record.record);
     }
     return out;
+  }
+
+  /** Mark `key` as done with the group: its job ended or never started, so no more records are coming from it. */
+  finish(group: string, key: string): void {
+    const dir = this.groupDir(group);
+    mkdirSync(dir, { recursive: true, mode: 0o700 });
+    writeFileSync(join(dir, ScratchStore.fileFor(key).replace(/\.json$/, '.done')), '', {
+      mode: 0o600,
+    });
+  }
+
+  /** Has every one of `keys` finished? An empty list has nothing to wait for. */
+  allFinished(group: string, keys: string[]): boolean {
+    const dir = this.groupDir(group);
+    return keys.every((key) =>
+      existsSync(join(dir, ScratchStore.fileFor(key).replace(/\.json$/, '.done')))
+    );
+  }
+
+  /**
+   * Take the group's one settlement. Creating a directory is atomic, so of two observers that see the group complete
+   * at once exactly one gets true.
+   */
+  claim(group: string): boolean {
+    const dir = this.groupDir(group);
+    mkdirSync(dir, { recursive: true, mode: 0o700 });
+    try {
+      mkdirSync(join(dir, CLAIM_DIR));
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   drop(group: string): void {

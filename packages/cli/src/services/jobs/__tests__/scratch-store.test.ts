@@ -62,4 +62,16 @@ describe('ScratchStore', () => {
     expect(store.read('old').size).toBe(0);
     expect(store.read('fresh').size).toBe(1);
   });
+
+  it('reports the group complete only when every key finished, and claims it once', () => {
+    const store = new ScratchStore('cfg', dir);
+    expect(store.allFinished('g1', [])).toBe(true);
+    store.finish('g1', 'm1');
+    expect(store.allFinished('g1', ['m1', 'm2'])).toBe(false);
+    store.finish('g1', 'm2');
+    expect(store.allFinished('g1', ['m1', 'm2'])).toBe(true);
+    expect(store.claim('g1')).toBe(true);
+    expect(store.claim('g1')).toBe(false);
+    expect(store.read('g1').size).toBe(0);
+  });
 });

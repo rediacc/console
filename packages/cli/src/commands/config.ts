@@ -340,6 +340,8 @@ interface ReconcileGroup {
   dryRun: boolean;
   /** The `--machine` filter as a comma list; empty covers every machine. */
   machines: string;
+  /** Every machine with a job in the group, as a comma list; the reconcile waits for all of them. */
+  expected: string;
 }
 
 function groupOf(params: Record<string, string | number | boolean>): ReconcileGroup {
@@ -348,6 +350,7 @@ function groupOf(params: Record<string, string | number | boolean>): ReconcileGr
     acceptObserved: params.acceptObserved === true,
     dryRun: params.dryRun === true,
     machines: String(params.machines),
+    expected: String(params.expected),
   };
 }
 
@@ -376,16 +379,36 @@ bindStepHandler('recordMachineListing', async ({ machine, output, params }) => {
   });
 });
 
-// The group's last ticket: its own step ran first, so every machine that answered has a record.
-bindStepHandler('reconcileConfigState', ({ params }) => settleReconcileGroup(groupOf(params)));
+/**
+ * Reconcile once every machine of the group has finished, whichever order the jobs end in: a machine still running
+ * would otherwise read as unreachable, and its record would land in a dropped group. The claim keeps two observers
+ * that finish together from reconciling twice.
+ */
+async function settleWhenComplete(group: ReconcileGroup): Promise<void> {
+  const { ScratchStore } = await import('../services/jobs/scratch-store.js');
+  const scratch = new ScratchStore(configService.getEffectiveConfigName());
+  const expected = group.expected ? group.expected.split(',') : [];
+  if (!scratch.allFinished(group.group, expected)) return;
+  if (scratch.claim(group.group)) await settleReconcileGroup(group);
+}
+
+// Each ticket: its own record step ran first, so this machine is finished, and the last one to finish reconciles.
+bindStepHandler('reconcileConfigState', async ({ machine, params }) => {
+  const group = groupOf(params);
+  const { ScratchStore } = await import('../services/jobs/scratch-store.js');
+  new ScratchStore(configService.getEffectiveConfigName()).finish(group.group, machine);
+  await settleWhenComplete(group);
+});
 bindStepHandler('reconcileConfigStateFailed', async ({ machine, params, exitCode }) => {
   const group = groupOf(params);
   const { ScratchStore } = await import('../services/jobs/scratch-store.js');
-  new ScratchStore(configService.getEffectiveConfigName()).write(group.group, machine, {
+  const scratch = new ScratchStore(configService.getEffectiveConfigName());
+  scratch.write(group.group, machine, {
     ok: false,
     error: t('commands.config.reconcile.listFailed', { exitCode: String(exitCode ?? 1) }),
   });
-  await settleReconcileGroup(group);
+  scratch.finish(group.group, machine);
+  await settleWhenComplete(group);
 });
 
 function printReconcileReport(
@@ -447,31 +470,25 @@ async function runReconcileInner(options: ReconcileCliOptions): Promise<void> {
     acceptObserved: options.acceptObserved === true,
     dryRun: options.dryRun === true,
     machines: filter?.join(',') ?? '',
+    expected: machines.join(','),
   };
   const scratch = new ScratchStore(cfgName);
 
-  // One list-all job per machine under one group. The last machine's ticket carries the one reconcile; a machine whose
-  // job could not start leaves its error as its record, and a last machine that could not start leaves no ticket for the
-  // step, so the command settles the group itself.
-  let finalOnTicket = false;
-  for (const [index, machine] of machines.entries()) {
-    const last = index === machines.length - 1;
-    const steps = [
-      planStep('recordMachineListing', { group: group.group }),
-      ...(last
-        ? [
-            planStep('reconcileConfigState', { ...group }),
-            planStep('reconcileConfigStateFailed', { ...group }),
-          ]
-        : []),
-    ];
+  // One list-all job per machine under one group. Every ticket carries the reconcile step, which runs only once all the
+  // machines have finished. A machine whose job could not start leaves its error as its record and counts as finished,
+  // so the command checks once more after the loop for the case where no ticket is left to do it.
+  const steps = [
+    planStep('recordMachineListing', { group: group.group }),
+    planStep('reconcileConfigState', { ...group }),
+    planStep('reconcileConfigStateFailed', { ...group }),
+  ];
+  for (const machine of machines) {
     try {
       const outcome = await runCommandJob(
         'config reconcile',
         await machineStatusJob(machine),
         steps
       );
-      finalOnTicket = last;
       if (outcome.kind === 'pending') {
         const code = pendingExitCode(outcome);
         if (code !== undefined) setExitCode(code);
@@ -481,9 +498,10 @@ async function runReconcileInner(options: ReconcileCliOptions): Promise<void> {
         ok: false,
         error: error instanceof Error ? error.message : String(error),
       });
+      scratch.finish(group.group, machine);
     }
   }
-  if (!finalOnTicket) await settleReconcileGroup(group);
+  await settleWhenComplete(group);
 }
 
 export function registerConfigCommands(program: Command): void {

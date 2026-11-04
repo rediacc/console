@@ -135,15 +135,16 @@ async function reconcile(...argv: string[]) {
 const stepNames = (e: Executed) => e.jobSteps?.map((s) => s.name);
 
 describe('config reconcile as one job per machine under one group', () => {
-  it('records each listing and reconciles once, on the last ticket', async () => {
+  it('records each listing and reconciles once, after the last machine finished', async () => {
     await reconcile();
     expect(executed.map((e) => e.machineName)).toEqual(['m1', 'm2']);
-    expect(stepNames(executed[0])).toEqual(['recordMachineListing']);
-    expect(stepNames(executed[1])).toEqual([
-      'recordMachineListing',
-      'reconcileConfigState',
-      'reconcileConfigStateFailed',
-    ]);
+    for (const e of executed) {
+      expect(stepNames(e)).toEqual([
+        'recordMachineListing',
+        'reconcileConfigState',
+        'reconcileConfigStateFailed',
+      ]);
+    }
     const groups = new Set(executed.flatMap((e) => e.jobSteps?.map((s) => s.params.group) ?? []));
     expect(groups.size).toBe(1);
     expect(mocks.reconciled).toEqual([{ seen: ['m1', 'm2'], unreachable: [] }]);
@@ -182,6 +183,17 @@ describe('config reconcile as one job per machine under one group', () => {
     expect(mocks.reconciled).toHaveLength(1);
     expect(mocks.reconciled[0].seen).toEqual(['m1']);
     expect(mocks.reconciled[0].unreachable[0].machine).toBe('m2');
+  });
+
+  it('waits for a machine still running: nothing reconciles and no record is dropped', async () => {
+    answer = async (machine) =>
+      machine === 'm1'
+        ? { success: true, exitCode: 0, durationMs: 1, state: 'running', jobId: 'j-m1' }
+        : listing(machine);
+    await reconcile();
+    expect(mocks.reconciled).toEqual([]);
+    expect(mocks.print).not.toHaveBeenCalled();
+    expect(readdirSync(join(configDir, 'rediacc', 'jobs', 'test.scratch'))).toHaveLength(1);
   });
 
   it('--machine narrows both the jobs and the reconcile', async () => {
