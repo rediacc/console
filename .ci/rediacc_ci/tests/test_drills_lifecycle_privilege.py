@@ -10,6 +10,7 @@ import tempfile
 
 from rediacc_ci.drills import lifecycle_privilege as lp
 from rediacc_ci.drills import vm_check
+from rediacc_ci.well_known import DATASTORE_PATH
 
 GOOD_UP = """uid=7111
 capeff=0000000000000000
@@ -348,11 +349,12 @@ def test_reboot_verdict_control_and_failures() -> None:
 
 
 def test_barrier_daemon_and_reconcile_scripts() -> None:
-    script = lp.cold_barrier_script("/mnt/rediacc", "abc-123")
+    script = lp.cold_barrier_script(DATASTORE_PATH, "abc-123")
     assert script.startswith("env %s=" % lp.CREDENTIAL_VAR)
-    assert "renet backup snapshot --datastore /mnt/rediacc --repo abc-123 --cold" in script
+    assert f"renet backup snapshot --datastore {DATASTORE_PATH} --repo abc-123 --cold" in script
     assert lp.daemon_stop_script(2816, True) == "systemctl stop rediacc-docker-2816"
     assert lp.daemon_stop_script(2816, False) == "systemctl start rediacc-docker-2816"
     assert (
-        lp.reconcile_script("/mnt/rediacc") == "renet repository reconcile --datastore /mnt/rediacc"
+        lp.reconcile_script(DATASTORE_PATH)
+        == f"renet repository reconcile --datastore {DATASTORE_PATH}"
     )

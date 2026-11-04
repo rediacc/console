@@ -122,6 +122,7 @@ const explicitEventTypes = ['cli.sync.upload', 'cli.sync.download', 'cli.term.se
 const clusterEventTypes = [
   'cli.ceph_client_config_export',
   'cli.ceph_health',
+  'cli.ceph_install_prerequisites',
   'cli.cluster_create',
   'cli.cluster_destroy',
   'cli.cluster_evict',

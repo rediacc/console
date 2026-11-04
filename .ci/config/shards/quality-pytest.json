@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 5,
-  "generatedAt": "2026-11-04T15:32:01.804Z",
+  "generatedAt": "2026-11-04T21:10:56.602Z",
   "legs": [
     {
       "index": 1,
@@ -395,6 +395,7 @@
         "pytest:.ci/rediacc_ci/tests/test_deploy_executor_artifacts.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_resolve_account_deploy_config.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_upload_to_r2.py",
+        "pytest:.ci/rediacc_ci/tests/test_dev_pick_resolve.py",
         "pytest:.ci/rediacc_ci/tests/test_dev_worktree_lease_walkers.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_backup_leg_l.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_backup_leg_o.py",
@@ -561,6 +562,7 @@
         "pytest:.ci/rediacc_ci/tests/test_deploy_test_d1_migrations.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_write_once_guard.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_write_once_guard_check.py",
+        "pytest:.ci/rediacc_ci/tests/test_dev_lease_pytest.py",
         "pytest:.ci/rediacc_ci/tests/test_dev_worktree_lease_gates.py",
         "pytest:.ci/rediacc_ci/tests/test_diagnostics_collect_drill_diagnostics.py",
         "pytest:.ci/rediacc_ci/tests/test_docker_create_manifest.py",
@@ -809,6 +811,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_wl_promote.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_regression_gate.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_report_inbox.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_review_mark_follow.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_scratch.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_tick_commit_ref.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_turbo_ci_red.py"

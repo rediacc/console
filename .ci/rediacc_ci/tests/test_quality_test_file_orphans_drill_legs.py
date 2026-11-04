@@ -80,5 +80,5 @@ def test_the_real_gate_passes_on_the_live_tree():
     )
     assert done.returncode == 0, done.stdout + done.stderr
     assert "drill leg(s) of" in done.stdout
-    # The backup drill's default legs are reached by the CI drill job; i, t and u need a machine and are the only backup exemptions.
-    assert set(ORPHANS.DRILL_LEG_EXEMPT["backup"]) == {"i", "t", "u"}
+    # The backup drill's default legs are reached by the CI drill job; i and t to x need a machine and are the only backup exemptions.
+    assert set(ORPHANS.DRILL_LEG_EXEMPT["backup"]) == {"i", "t", "u", "v", "w", "x"}

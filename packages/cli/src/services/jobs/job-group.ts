@@ -37,6 +37,9 @@ export interface JobGroupSteps {
   failure?: PlannedStep[];
 }
 
+/** The failure prefix of a step that names none. */
+export const DEFAULT_STEP_LABEL = 'Cluster step';
+
 export interface JobGroupOptions {
   debug?: boolean;
   /** Prefix of the failure message. */
@@ -176,7 +179,7 @@ export async function runJobGroup(
 
   const errors = settled.flatMap((m) => (m.error === undefined ? [] : [m.error]));
   if (errors.length > 0) {
-    throw new Error(`${options.label ?? 'Cluster step'} failed on ${errors.join('; ')}`);
+    throw new Error(`${options.label ?? DEFAULT_STEP_LABEL} failed on ${errors.join('; ')}`);
   }
   return { group, pending: settled.some((m) => m.pending) };
 }

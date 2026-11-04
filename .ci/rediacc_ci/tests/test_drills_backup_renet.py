@@ -19,7 +19,7 @@ import pytest
 
 from rediacc_ci.drills import backup, backup_renet, lib
 from rediacc_ci.drills import backup_roundtrip as rt
-from rediacc_ci.well_known import ACCOUNT_DEV_PORT
+from rediacc_ci.well_known import ACCOUNT_DEV_PORT, DATASTORE_PATH
 
 CELL = backup.CELL_BYTES
 
@@ -327,15 +327,15 @@ def test_compose_stops_writing_under_the_frozen_file() -> None:
 
 def test_install_command_writes_both_files_and_a_writable_log() -> None:
     cmd = backup_renet.install_hook_files_command(
-        "/mnt/rediacc", "g1", backup_renet.hook_rediaccfile(False), backup_renet.hook_compose()
+        DATASTORE_PATH, "g1", backup_renet.hook_rediaccfile(False), backup_renet.hook_compose()
     )
     blobs = re.findall(r"printf %s ([A-Za-z0-9+/=]+) \| base64 -d", cmd)
     assert [base64.b64decode(b).decode() for b in blobs] == [
         backup_renet.hook_rediaccfile(False),
         backup_renet.hook_compose(),
     ]
-    assert "/mnt/rediacc/mounts/g1/Rediaccfile" in cmd
-    assert "chmod 666 /mnt/rediacc/mounts/g1/%s" % backup_renet.HOOK_LOG in cmd
+    assert f"{DATASTORE_PATH}/mounts/g1/Rediaccfile" in cmd
+    assert f"chmod 666 {DATASTORE_PATH}/mounts/g1/%s" % backup_renet.HOOK_LOG in cmd
 
 
 def test_hook_log_events_and_count_of() -> None:
@@ -358,13 +358,13 @@ def test_marker_wait_and_kill_commands() -> None:
     assert "[ -e /run/rediacc/backup-hook/g1 ]" in present
     assert "[ ! -e /run/rediacc/backup-hook/g1 ]" in gone
     assert "kill -9" in backup_renet.kill_pid_command()
-    start = backup_renet.killed_hook_command("/mnt/rediacc", "g1", "65536")
+    start = backup_renet.killed_hook_command(DATASTORE_PATH, "g1", "65536")
     assert "--hook-timeout %ds" % backup_renet.HOOK_TIMEOUT_SECONDS in start
     assert "nohup renet backup snapshot" in start
 
 
 def test_cleanup_pattern_cannot_match_its_own_shell() -> None:
-    cmd = backup_renet.hook_cleanup_command("/mnt/rediacc", "g1")
+    cmd = backup_renet.hook_cleanup_command(DATASTORE_PATH, "g1")
     assert '"[s]leep %d"' % backup_renet.HOOK_HANG_SECONDS in cmd
     assert 'pkill -f "sleep %d"' % backup_renet.HOOK_HANG_SECONDS not in cmd
 
@@ -384,21 +384,21 @@ def test_sample_found_missing_control_and_failures() -> None:
 
 
 def test_target_run_names_the_tier_cadence() -> None:
-    cmd = backup_renet.snapshot_target_command("/mnt/rediacc", "g1", "65536")
+    cmd = backup_renet.snapshot_target_command(DATASTORE_PATH, "g1", "65536")
     assert "--target %s" % backup_renet.HEAL_TARGET in cmd
 
 
 def test_reflink_commands_copy_cheaply_and_name_each_run() -> None:
-    cmd = backup_renet.reflink_command("/mnt/rediacc", "g1", 2)
+    cmd = backup_renet.reflink_command(DATASTORE_PATH, "g1", 2)
     assert (
-        "cp --reflink=always /mnt/rediacc/repositories/g1 /mnt/rediacc/repositories/g1%s2"
+        f"cp --reflink=always {DATASTORE_PATH}/repositories/g1 {DATASTORE_PATH}/repositories/g1%s2"
         % backup_renet.REFLINK_SUFFIX
         in cmd
     )
-    assert backup_renet.reflink_digest_command("/mnt/rediacc", "g1", 3).endswith(
+    assert backup_renet.reflink_digest_command(DATASTORE_PATH, "g1", 3).endswith(
         "g1%s3" % backup_renet.REFLINK_SUFFIX
     )
-    assert "rm -f" in backup_renet.reflink_remove_command("/mnt/rediacc", "g1")
+    assert "rm -f" in backup_renet.reflink_remove_command(DATASTORE_PATH, "g1")
 
 
 def test_chosen_run_is_inside_the_chain_and_not_the_last() -> None:

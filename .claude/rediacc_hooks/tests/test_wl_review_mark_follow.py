@@ -274,7 +274,7 @@ def test_control_a_sha_in_no_project_checkout_still_refuses(tmp_path):
     review_sha = _git(sup, "rev-parse", "HEAD")
     fid = _record(sup, review_sha, "packages/cli/t.ts", "claim")
     with pytest.raises(ValueError, match="must cite a path:line"):
-        R.mark(sup, BRANCH, fid, "not-a-bug", [_evidence("the gitlink holds it, sha 5d9ea49d")], ME)
+        R.mark(sup, BRANCH, fid, "not-a-bug", [_evidence("the gitlink holds it, sha 5dead49d")], ME)
 
 
 def test_control_a_sha_of_a_commit_off_the_submodule_branch_refuses(tmp_path):

@@ -647,7 +647,8 @@ class RenetLegs:
             # Order: one prepare, then one finish, and the copy says app-quiesced.
             doc = self.hook_snapshot(guid)
             d.assert_equal("stored", str(doc.get("status", "")), "the hooked snapshot stores")
-            hook = doc.get("hook") if isinstance(doc.get("hook"), dict) else {}
+            raw_hook = doc.get("hook")
+            hook = raw_hook if isinstance(raw_hook, dict) else {}
             d.assert_equal("ok", str(hook.get("prepare", "")), "backup_prepare ran and succeeded")
             d.assert_equal("ok", str(hook.get("finish", "")), "backup_finish ran and succeeded")
             d.assert_equal(

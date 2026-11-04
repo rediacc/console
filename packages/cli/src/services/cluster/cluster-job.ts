@@ -14,11 +14,11 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 import { DEFAULTS } from '@rediacc/shared/config';
 import type { ExecuteResult, RepoExpectation } from '../executor/types.js';
 import { runCommandJob } from '../jobs/command-job.js';
+import { DEFAULT_STEP_LABEL } from '../jobs/job-group.js';
 import { outstandingSteps } from '../jobs/run-job.js';
 import type { PlannedStep } from '../jobs/steps.js';
 
 const DEFAULT_VERB = 'cluster';
-const DEFAULT_STEP_LABEL = 'Cluster step';
 const verbs = new AsyncLocalStorage<string>();
 
 /** Run `fn` with `verb` as the label of every cluster phase it starts. */

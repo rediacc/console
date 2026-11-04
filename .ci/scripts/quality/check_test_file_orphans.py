@@ -274,6 +274,18 @@ DRILL_LEG_EXEMPT = {
             "BLOCKER: leg u kills a real renet run and checks the reconcile (`--renet --vm`); "
             "the CI drill job has no ops VM, so the leg is opt-in (`--legs u`) and runs by hand"
         ),
+        "v": (
+            "BLOCKER: leg v runs a real database container through the backup hooks (`--renet --vm`); "
+            "the CI drill job has no ops VM, so the leg is opt-in (`--legs v`) and runs by hand"
+        ),
+        "w": (
+            "BLOCKER: leg w runs the tier-cadence verify against a real repository (`--renet --vm`); "
+            "the CI drill job has no ops VM, so the leg is opt-in (`--legs w`) and runs by hand"
+        ),
+        "x": (
+            "BLOCKER: leg x restores through real renet (`--renet --vm`); "
+            "the CI drill job has no ops VM, so the leg is opt-in (`--legs x`) and runs by hand"
+        ),
     },
     "license": dict.fromkeys(("a", "b", "c", "d", "e", "f"), _LICENSE_DRILL_BLOCKER),
 }

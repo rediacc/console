@@ -294,6 +294,7 @@
     // BLOCKER: ssh-agent tooling spawned for key management in the CLI ssh stack; provided by the host OpenSSH installation
     "ssh-add",
     "ssh-agent",
+    "ssh-keygen",
     "ssh-keyscan",
 
     // BLOCKER: external tools invoked by www build/tutorial scripts (ffmpeg muxing and its ffprobe stream probe, pdftotext content checks, agent-browser session capture); installed on dev/CI hosts, not npm deps
