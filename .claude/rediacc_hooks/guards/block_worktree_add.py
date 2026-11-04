@@ -1200,13 +1200,37 @@ def _program_verdict(cmd, depth, cwd=None):
 SHELL_SCRIPT_PREFILTER = re.compile(r"\b(?:sh|bash|dash|zsh|ash|ksh|source)\b|(?:^|[\s;&|(`])\.\s")
 
 
+def _with_assigned_values(run_, word):
+    """`word` with each `$NAME` or `${NAME}` the walk knows a literal value for at this run put back. A value holding shellscan's NUL-marked sentinel is unknown, so its `$` stays."""
+
+    def value(match):
+        held = (run_.vars or {}).get(match.group(1))
+        text = held[0] if isinstance(held, tuple) else None
+        return text if isinstance(text, str) and "\0" not in text else match.group(0)
+
+    return re.sub(r"\$\{?([A-Za-z_][A-Za-z0-9_]*)\}?", value, word)
+
+
 def _script_verdict(cmd, depth, cwd):
     if not (shellscan.PROGRAM_PREFILTER.search(cmd) or SHELL_SCRIPT_PREFILTER.search(cmd)):
         return None
     for run_ in shellscan.every_run(cmd):
-        # A SCRIPT PATH THE SHELL WILL EXPAND FAILED OPEN (measured 2026-11-04: `python3 $G/test-...` of a dirty file ran, where the literal path was refused), since the unexpanded path "does not exist". Nothing here can read what it will name, so it is unjudgeable once the command's own text spells the words. A path in a variable with no such text stays out of reach, as with any file named only at run time.
-        if "$" in (_script_operand(run_, cmd, cwd) or "") and _could_spell(cmd):
-            return "unjudgeable"
+        # A SCRIPT PATH THE SHELL WILL EXPAND FAILED OPEN (measured 2026-11-04: `python3 $G/test-...` of a dirty file ran, where the literal path was refused), since the unexpanded path "does not exist". shellscan keeps the operand raw, so a value this command assigns is put back and the run judged again as if typed. A variable with no known value is unjudgeable once the command's own text spells the words; with no such text it stays out of reach, as with any file named only at run time.
+        operand = _script_operand(run_, cmd, cwd) or ""
+        if "$" in operand:
+            known = _with_assigned_values(run_, operand)
+            if "$" in known:
+                if _could_spell(cmd):
+                    return "unjudgeable"
+            else:
+                words = [known if w == operand else w for w in (run_.name, *run_.argv)]
+                typed = shlex.join(words)
+                if run_.cwd:
+                    typed = "cd %s && %s" % (shlex.quote(run_.cwd), typed)
+                verdict = _script_verdict(typed, depth, cwd)
+                if verdict:
+                    return verdict
+            continue
         if _unread_reason(run_, cmd, cwd):
             return "unread"
         if _reads_stdin_operand(run_):
@@ -1360,6 +1384,7 @@ EDGE_CASES = [
     ("removing a worktree is allowed", "git worktree remove /tmp/wt"),
     ("a variable script path naming the words", "python3 $G/test-block_worktree_add.py"),
     ("control: a variable script path, no words", "python3 $G/unrelated.py"),
+    ("control: an assigned script path, no such file", "G=/no/such; python3 $G/unrelated.py"),
     ("control: a bare name in another checkout", "git -C /other/repo worktree remove w2-proof"),
     ("run.sh doing something else", "./run.sh setup --check"),
     # A lease tree leaves only through GC (Design 6): the verbs on its path are refused, the lease tool and the same verbs on any other path are not.
