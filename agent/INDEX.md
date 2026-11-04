@@ -492,7 +492,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-ciquick-reds-1023-1.md` | executing | 45 | 3 | 9 | 10578 |
 | `agent/plans/PLAN-citation-fragility.md` | compacted | 49 | 0 | 6 | 5254 |
 | `agent/plans/PLAN-cli-em-dash-lint-gate.md` | compacted | 57 | 0 | 0 | 4340 |
-| `agent/plans/PLAN-cli-tofu-toolchain.md` | approved | 53 | 1 | 9 | 10869 |
+| `agent/plans/PLAN-cli-tofu-toolchain.md` | approved | 54 | 0 | 10 | 11011 |
 | `agent/plans/PLAN-cloudflare-proxy.md` | approved | 407 | 3 | 27 | 60756 |
 | `agent/plans/PLAN-cloudflare-spend-guard.md` | approved | 115 | 0 | 10 | 41138 |
 | `agent/plans/PLAN-cold-path.md` | compacted | 52 | 0 | 0 | 4022 |

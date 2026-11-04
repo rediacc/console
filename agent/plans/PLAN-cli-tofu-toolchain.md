@@ -49,5 +49,6 @@ Worklist: #9a7c3258, PR-TASK 9f92c43e
     (tick note 2026-10-30, 9f92c43e) The L1 tick below reads as a clean teardown, but the live record above reports one warning: deprovision printed "Could not release the account activation slot for dr-mail" (a plain-text 404 from the eu account, which has no such route; bench answers 401) and the slot expires on its own after 5 hours. The defect was tracked as worklist item #db647660 and fixed in commit 37f3d635e (the parse now reports the status, and a code-less 404 warns), vitest src 4453 rc 0.
     (ticked) 2026-10-30T09:13:14Z by d778be9d: live 2026-10-30 (operator approved): rdc tools install tofu rc=0; machine provision dr-mail --provider my-linode --type g6-standard-2 --no-infra rc=0 (Linode 112916836, de-fra-2); machine deprovision dr-mail --force rc=0, Linode API returns 404; the R2 restore proof is PLAN-backup-program (2026-10-29)
 
-- [ ] LP-bench [live] Fresh bench receipt through worklist.py --live-proof, after this plan's bench-deployable boxes land.
+- [x] LP-bench [live] Fresh bench receipt through worklist.py --live-proof, after this plan's bench-deployable boxes land.
   Accept: live-proof bench cli-bench
+    (ticked) 2026-11-04T16:59:14Z by d778be9d: live-proof lp-6e5db4c87cf3 bench cli-bench rc=0 v=cli:f5138b837a218ac7362c52306c7c2c5dd7903981

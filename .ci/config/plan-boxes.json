@@ -705,13 +705,12 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 1,
-      "done": 9,
-      "open_sigs": [
-        "11388dba"
-      ],
+      "open": 0,
+      "done": 10,
+      "open_sigs": [],
       "done_sigs": [
         "0d186555",
+        "11388dba",
         "1bb21003",
         "2e1fa6e5",
         "7993037e",
