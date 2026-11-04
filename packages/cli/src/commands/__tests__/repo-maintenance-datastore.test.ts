@@ -112,16 +112,16 @@ describe('repo gc / fsck enumerate every recorded datastore (#74)', () => {
   it('finds a gc candidate that lives only in the named datastore', async () => {
     await run(['gc', '-m', 'm1', '--apply']);
 
-    const del = mockExecute.mock.calls.find((c) => c[0].functionName === 'repository_delete');
-    expect(del, 'the orphan in the named datastore was never collected').toBeDefined();
-    expect(del?.[0].params.repository).toBe(ORPHAN_GUID);
+    const gc = mockExecute.mock.calls.find((c) => c[0].functionName === 'repository_gc');
+    expect(gc, 'the orphan in the named datastore was never collected').toBeDefined();
+    expect(gc?.[0].params.candidates).toContain(ORPHAN_GUID);
   });
 
   it('deletes the candidate from the datastore it was found in, not the default', async () => {
     await run(['gc', '-m', 'm1', '--apply']);
 
-    const del = mockExecute.mock.calls.find((c) => c[0].functionName === 'repository_delete');
-    expect(del?.[0].datastore).toBe(NAMED_MOUNT);
+    const gc = mockExecute.mock.calls.find((c) => c[0].functionName === 'repository_gc');
+    expect(gc?.[0].params.candidates).toBe(`${ORPHAN_GUID}@${NAMED_MOUNT}`);
   });
 
   it('enumerates only the default when nothing is placed on a named datastore', async () => {

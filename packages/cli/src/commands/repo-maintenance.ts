@@ -6,7 +6,9 @@ import { outputService } from '../services/core/output.js';
 import { setExitCode } from '../services/core/request-context.js';
 import { getExecutor } from '../services/executor/executor-factory.js';
 import { pendingExitCode, runCommandJob } from '../services/jobs/command-job.js';
+import { bindStepHandler, planStep } from '../services/jobs/steps.js';
 import { handleError, ValidationError } from '../utils/errors.js';
+import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { recordedDatastoreMount } from '../utils/repo-executor.js';
 import { parseRepositoryListOutput } from './repo-list-parser.js';
 
@@ -15,8 +17,8 @@ import { parseRepositoryListOutput } from './repo-list-parser.js';
  *  - repo gc:   reachability garbage-collection of unreachable immutable commits
  *  - repo fsck: validate config refs (branches/head) against machine objects
  *
- * Both reuse existing renet functions (repository_list, repository_delete), so
- * they add no new bridge surface. The machine is the object store; the CLI
+ * Both read the machine with repository_list; gc --apply deletes through one
+ * repository_gc job. The machine is the object store; the CLI
  * config is the ref store (branches/head/headCommit + commitParent lineage).
  */
 
@@ -112,6 +114,52 @@ async function machineObjects(
   return objects;
 }
 
+/** One line of the `repository_gc` job's stdout: `{"gc_result": {...}}` per candidate, then `{"gc_summary": {...}}`. */
+interface GcResultLine {
+  gc_result?: { guid: string; datastore: string; status: string; reason?: string };
+  gc_summary?: { total: number; deleted: number; skipped: number; failed: number };
+}
+
+/** The job's stdout as result lines; a line that is not one (a log line) is not a result. */
+function parseGcLines(output: string | undefined): GcResultLine[] {
+  const lines: GcResultLine[] = [];
+  for (const raw of (output ?? '').split('\n')) {
+    try {
+      const parsed = JSON.parse(raw) as GcResultLine;
+      if (parsed.gc_result || parsed.gc_summary) lines.push(parsed);
+    } catch {
+      // Not a result line.
+    }
+  }
+  return lines;
+}
+
+/** Print what the gc job did to each candidate, then the totals. A candidate renet skipped on re-check names the reason it gave. */
+function reportGcResults(output: string | undefined): void {
+  let summary: GcResultLine['gc_summary'];
+  for (const line of parseGcLines(output)) {
+    const r = line.gc_result;
+    if (r?.status === 'deleted') {
+      outputService.success(t('commands.repo.gc.deleted', { commit: r.guid.slice(0, 12) }));
+    } else if (r?.status === 'failed') {
+      outputService.error(t('commands.repo.gc.deleteFailed', { commit: r.guid.slice(0, 12) }));
+    } else if (r) {
+      outputService.info(`  ${r.guid.slice(0, 12)}  ${r.status}: ${r.reason ?? ''}`);
+    }
+    if (line.gc_summary) summary = line.gc_summary;
+  }
+  if (summary && summary.failed === 0) {
+    outputService.success(
+      t('commands.repo.gc.applied', { deleted: summary.deleted, total: summary.total })
+    );
+  }
+}
+
+bindStepHandler('reportRepoGc', ({ output }) => {
+  reportGcResults(output);
+  return Promise.resolve();
+});
+
 /** repo gc -m <machine> [--apply], delete unreachable immutable commits. */
 async function handleGc(options: {
   machine: string;
@@ -142,40 +190,37 @@ async function handleGc(options: {
       return;
     }
 
-    // The set is computed on the client from the config, so there is no single compound job yet (J0b): each deletion is one `repository_delete` job of the verb, and a deletion handed back as a ticket is counted as started, not deleted.
-    let deleted = 0;
-    let started = 0;
+    // One `repository_gc` job for the whole set: the client computed the candidates from its config, and renet re-checks each one (present, immutable, unmounted) before it deletes it, so a ref set that moved since is never trusted. Each candidate carries its OWN recorded datastore (#74), not the machine default, because gc found it by enumerating those same mounts above.
+    const pairs: string[] = [];
     for (const c of candidates) {
-      const guid = c.config.repositoryGuid;
-      const outcome = await runCommandJob(
-        'repo gc',
-        {
-          functionName: 'repository_delete',
-          machineName: options.machine,
-          // #74: the candidate's OWN recorded datastore, not the machine default, gc deletes objects it found by enumerating those same mounts above.
-          datastore: await recordedDatastoreMount(c.name),
-          params: { repository: guid },
-          debug: options.debug,
-        },
-        []
+      const datastore = await recordedDatastoreMount(c.name);
+      pairs.push(datastore ? `${c.config.repositoryGuid}@${datastore}` : c.config.repositoryGuid);
+    }
+    const outcome = await runCommandJob(
+      'repo gc',
+      {
+        functionName: 'repository_gc',
+        machineName: options.machine,
+        params: { candidates: pairs.join(',') },
+        debug: options.debug,
+        captureOutput: true,
+      },
+      [planStep('reportRepoGc', { machine: options.machine })]
+    );
+    if (outcome.kind === 'pending') {
+      outputService.info(
+        t('commands.repo.gc.started', { started: candidates.length, total: candidates.length })
       );
-      if (outcome.kind === 'pending') {
-        started++;
-        const code = pendingExitCode(outcome);
-        if (code !== undefined) setExitCode(code);
-      } else if (outcome.result.success) {
-        deleted++;
-        outputService.success(t('commands.repo.gc.deleted', { commit: guid.slice(0, 12) }));
-      } else {
-        outputService.error(t('commands.repo.gc.deleteFailed', { commit: guid.slice(0, 12) }));
-      }
+      const code = pendingExitCode(outcome);
+      if (code !== undefined) setExitCode(code);
+      return;
     }
-    if (started > 0) {
-      outputService.info(t('commands.repo.gc.started', { started, total: candidates.length }));
-    }
-    if (started < candidates.length) {
-      outputService.success(
-        t('commands.repo.gc.applied', { deleted, total: candidates.length - started })
+    if (!outcome.result.success) {
+      // The step runs on success only; a failed delete still owes its per-candidate lines.
+      reportGcResults(outcome.result.stdout);
+      renderLocalExecutionFailure(
+        outcome.result,
+        t('commands.repo.gc.deleteFailed', { commit: `${candidates.length} commit(s)` })
       );
     }
   } catch (error) {

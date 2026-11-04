@@ -565,22 +565,27 @@ describe('repo verbs outside J4: one job per machine, the follow-up as steps', (
       plain.answer = { ...plain.answer, stdout: '[{"name":"g-c1","mounted":false}]' };
     });
 
-    it('gc reads the machine as an attached probe, then runs one job per deletion', async () => {
+    it('gc reads the machine as an attached probe, then runs one repository_gc job for the set', async () => {
+      answer = {
+        ...FINISHED,
+        stdout:
+          '{"gc_result":{"guid":"g-c1","datastore":"/d","status":"deleted"}}\n{"gc_summary":{"total":1,"deleted":1,"skipped":0,"failed":0}}\n',
+      };
       await runVerb(maintenance, 'gc', '-m', 'm1', '--apply');
 
       expect(plain.calls.map((c) => [c.functionName, c.probe])).toEqual([
         ['repository_list', true],
       ]);
       expect(executed.map((o) => [o.functionName, o.params])).toEqual([
-        ['repository_delete', { repository: 'g-c1' }],
+        ['repository_gc', { candidates: 'g-c1' }],
       ]);
-      expect(stepNames(executed[0])).toEqual([]);
+      expect(stepNames(executed[0])).toEqual(['reportRepoGc']);
       expect(vi.mocked(outputService.success)).toHaveBeenCalledWith(
         expect.stringContaining('gc.deleted')
       );
     });
 
-    it('control: a deletion handed back as a ticket is counted as started, never as deleted', async () => {
+    it('control: a gc job handed back as a ticket is counted as started, never as deleted', async () => {
       answer = BACKGROUND;
       await runVerb(maintenance, 'gc', '-m', 'm1', '--apply');
 
