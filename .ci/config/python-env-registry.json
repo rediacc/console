@@ -359,6 +359,7 @@
       "CLOUDFLARE_API_TOKEN"
     ],
     ".ci/rediacc_ci/deploy/executor_artifacts.py": [
+      "ACCOUNT_ED25519_PUBLIC_KEY",
       "CLOUDFLARE_R2_ENDPOINT"
     ],
     ".ci/rediacc_ci/deploy/promote_r2_to_stable.py": [
@@ -491,6 +492,9 @@
     ],
     ".ci/rediacc_ci/dev/worktree.py": [
       "WORKTREE_TODAY"
+    ],
+    ".ci/rediacc_ci/dev/worktree_lease.py": [
+      "CLAUDE_PROJECT_DIR"
     ],
     ".ci/rediacc_ci/diagnostics/collect_drill_diagnostics.py": [
       "RUNNER_TEMP",
@@ -2129,6 +2133,9 @@
       "HOME",
       "PATH"
     ],
+    ".claude/hooks/stop/test-wl_worktrees.py": [
+      "WL_WORKTREES_TEST_CLAUDE"
+    ],
     ".claude/hooks/stop/wl_agents.py": [
       "WORKLIST_AGENTS_DIR",
       "WORKLIST_AGENT_HINT_MAX_PER_SESSION",
@@ -2365,7 +2372,8 @@
       "*rr.ENV",
       "BACKUP_CHECK_PUSH_REASON",
       "COMMIT_POLICY_OK",
-      "GEN_DOCS_PRECOMMIT_VERBOSE"
+      "GEN_DOCS_PRECOMMIT_VERBOSE",
+      "PYTHONPATH"
     ],
     ".claude/rediacc_hooks/git/release_run.py": [
       "PYTHONNOUSERSITE",
