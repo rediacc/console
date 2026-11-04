@@ -1182,22 +1182,22 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 9,
-      "done": 4,
+      "open": 7,
+      "done": 6,
       "open_sigs": [
         "006aeadd",
         "186fb47a",
-        "42582499",
         "568df0b3",
         "a002e3c9",
         "a543ecc2",
         "b3d026b3",
-        "b5bca533",
-        "c5188447"
+        "b5bca533"
       ],
       "done_sigs": [
         "102e71bf",
+        "42582499",
         "438dd5c0",
+        "c5188447",
         "c6bd4994",
         "ea847388"
       ]
@@ -2146,15 +2146,14 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 1,
-      "done": 3,
-      "open_sigs": [
-        "a81690de"
-      ],
+      "open": 0,
+      "done": 4,
+      "open_sigs": [],
       "done_sigs": [
         "078f1ed4",
         "5537ebd2",
-        "9c1373a2"
+        "9c1373a2",
+        "a81690de"
       ]
     },
     "agent/plans/PLAN-shell-command-gate-regex-fix.md": {

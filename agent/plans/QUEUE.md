@@ -73,7 +73,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 0 of 39 plans done, 593 of 819 boxes done (72%).
+Promoted: 1 of 39 plans done, 596 of 819 boxes done (72%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -111,8 +111,8 @@ Promoted: 0 of 39 plans done, 593 of 819 boxes done (72%).
 | 32 | PLAN-jobs-backup-real-machine-tests.md | 3/11 | 8 open |
 | 33 | PLAN-cli-tofu-toolchain.md | 9/10 | 1 open |
 | 34 | PLAN-backup-download-from-store.md | 5/9 | 4 open |
-| 35 | PLAN-settings-set-verb.md | 3/4 | 1 open |
-| 36 | PLAN-free-license.md | 4/13 | 9 open |
+| 35 | PLAN-settings-set-verb.md | 4/4 | done |
+| 36 | PLAN-free-license.md | 6/13 | 7 open |
 | 37 | PLAN-backup-integrity.md | 38/57 | 19 open |
 | 38 | PLAN-backup-critical-tier.md | 32/53 | 21 open |
 | 39 | PLAN-rediaccfile-unprivileged.md | 0/23 | 23 open |
