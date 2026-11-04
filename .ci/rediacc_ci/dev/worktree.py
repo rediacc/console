@@ -109,6 +109,7 @@ SUBCOMMAND_HELP = {
     "switch": SWITCH_HELP,
     "prune": PRUNE_HELP,
     "lease": worktree_lease.LEASE_HELP,
+    "pin": worktree_lease.PIN_HELP,
 }
 
 MAIN_HELP = """\
@@ -121,6 +122,7 @@ Commands:
   switch <branch>   Switch current repo to branch and sync submodules
   prune             Cleanup of worktrees with merged PRs
   lease [options]   Make one detached tree for a writer under .claude/worktrees
+  pin               Move this lease tree's pin to its HEAD (the post-commit hook runs it)
 
 Every command accepts --help.
 
@@ -885,6 +887,7 @@ COMMANDS = {
     "switch": cmd_switch,
     "prune": cmd_prune,
     "lease": worktree_lease.cmd_lease,
+    "pin": worktree_lease.cmd_pin,
 }
 
 

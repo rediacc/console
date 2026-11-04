@@ -176,6 +176,7 @@ def hermetic_git(tmp_path_factory):
     }
     for key, value in identity.items():
         patch.setenv(key, value)
+    patch.delenv("COMMIT_POLICY_OK", raising=False)
     yield
     patch.undo()
 
@@ -450,3 +451,226 @@ def test_lease_missing_gitlink_commit_is_refused_and_leaves_nothing(tmp_path):
     assert result.stdout == ""
     leaves_nothing(repo, "t")
     assert shared_state(repo) == before
+
+
+# --------------------------------------------------------------------------- pins (W4) ---------------------------------------------------------------------------
+#
+# These run the repository's real hook directory, as `core.hooksPath` does on a real checkout, so a pin that moves came through the real `post-commit` shim and every other real hook admitted the commit.
+
+HOOKS = paths.CI_DIR.parent / ".claude" / "rediacc_hooks" / "git"
+PIN_ID = "p"
+PIN_REF = spike.PIN_SPACE + PIN_ID
+
+
+class Pinned(NamedTuple):
+    repo: spike.Repo
+    tree: pathlib.Path
+
+
+def real_hooks(repo):
+    for checkout in (repo.root, repo.root / SUB):
+        spike.must(checkout, "config", "core.hooksPath", str(HOOKS))
+
+
+def make_tree(repo, name):
+    result = run_lease(repo.root, "--name", name)
+    assert result.returncode == 0, result.stderr
+    return pathlib.Path(result.stdout.strip())
+
+
+def commit_file(tree, name, *, env=None):
+    """Commit one new file in `tree`. Returns the finished `git commit`, with its hooks' stderr."""
+    spike.write(tree / name, "%s\n" % name)
+    spike.must(tree, "add", "--", name)
+    return spike.git(
+        tree,
+        *("commit", "--no-gpg-sign", "-m", "feat: %s\n\nPR-TASK: 1f877343\n" % name),
+        env=env,
+    )
+
+
+def committed(tree, name):
+    done = commit_file(tree, name)
+    assert done.returncode == 0, done.stderr
+    assert "pin not moved" not in done.stderr, done.stderr
+    return spike.must(tree, "rev-parse", "HEAD")
+
+
+def pin_at(cwd, ref=PIN_REF):
+    return spike.out(cwd, "rev-parse", "--verify", "-q", ref)
+
+
+def run_pin_verb(cwd, *args):
+    return subprocess.run(
+        [sys.executable, "-m", "rediacc_ci.dev.worktree_lease", "pin", *args],
+        cwd=str(cwd),
+        env={**os.environ, "PYTHONPATH": str(paths.CI_DIR)},
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+
+@pytest.fixture
+def pinned(tmp_path):
+    repo = make_repo(tmp_path.resolve())
+    real_hooks(repo)
+    return Pinned(repo, make_tree(repo, PIN_ID))
+
+
+def test_pin_shim_is_an_executable_copy_of_its_siblings():
+    shim = HOOKS / "post-commit"
+    assert os.access(shim, os.X_OK)
+    assert shim.read_bytes() == (HOOKS / "pre-push").read_bytes()
+
+
+def test_pin_commit_moves_it_and_main_and_another_lease_see_it(pinned):
+    repo, tree = pinned
+    other = make_tree(repo, "other")
+    assert pin_at(repo.root) == "", "fixture control: making a lease pins nothing"
+    first = committed(tree, "one.txt")
+    assert pin_at(repo.root) == first
+    assert pin_at(other) == first
+    second = committed(tree, "two.txt")
+    assert second != first
+    assert pin_at(repo.root) == second
+    assert pin_at(other) == second
+
+
+def test_pin_control_a_commit_with_no_post_commit_hook_moves_nothing(tmp_path):
+    """The fixture's own hook directory holds only `pre-commit`, so the moves above are the shim's work."""
+    repo = make_repo(tmp_path.resolve())
+    tree = make_tree(repo, PIN_ID)
+    committed(tree, "one.txt")
+    assert pin_at(repo.root) == ""
+
+
+def test_pin_singular_spelling_is_invisible_from_main_the_reason_for_the_plural(pinned):
+    repo, tree = pinned
+    other = make_tree(repo, "other")
+    singular = "refs/worktree/%s" % PIN_ID
+    sha = spike.must(tree, "rev-parse", "HEAD")
+    spike.must(tree, "update-ref", singular, sha)
+    assert pin_at(tree, singular) == sha
+    assert pin_at(repo.root, singular) == ""
+    assert pin_at(other, singular) == ""
+
+
+def test_pin_keeps_the_commit_through_tree_removal_and_gc(pinned):
+    repo, tree = pinned
+    sha = committed(tree, "kept.txt")
+    blob = spike.must(tree, "rev-parse", "HEAD:kept.txt")
+    unpinned = spike.must(repo.root, "commit-tree", "HEAD^{tree}", "-m", "control")
+    spike.must(repo.root, "worktree", "unlock", str(tree))
+    spike.must(repo.root, "worktree", "remove", "--force", str(tree))
+    assert not tree.exists()
+    assert str(tree) not in spike.listed_trees(repo.root / ".git")
+    spike.must(repo.root, "gc", "--prune=now", "--quiet")
+    assert pin_at(repo.root) == sha
+    for held in (sha, blob):
+        assert spike.git(repo.root, "cat-file", "-e", held).returncode == 0, held
+    assert spike.git(repo.root, "cat-file", "-e", unpinned).returncode != 0, (
+        "control: gc must collect an unreferenced commit, or this test proves nothing"
+    )
+
+
+def test_pin_reference_transaction_admits_it_with_the_hook_live(pinned):
+    repo, tree = pinned
+    sha = spike.must(tree, "rev-parse", "HEAD")
+    moved = spike.git(tree, "update-ref", PIN_REF, sha)
+    assert moved.returncode == 0, moved.stderr
+    assert pin_at(repo.root) == sha
+    refused = spike.git(tree, "branch", "second")
+    assert refused.returncode != 0, "control: the hook is live, and it refuses a second branch"
+    assert "commit-policy" in refused.stderr
+    assert spike.out(repo.root, "rev-parse", "--verify", "-q", "refs/heads/second") == ""
+
+
+def test_pin_commit_in_the_main_checkout_moves_nothing(pinned):
+    repo, tree = pinned
+    held = committed(tree, "lease.txt")
+    live_sub = repo.root / SUB
+    refs_of = "--format=%(refname) %(objectname)"
+    console = spike.must(repo.root, "for-each-ref", refs_of, spike.PIN_SPACE)
+    assert console == "%s %s" % (PIN_REF, held)
+    committed(repo.root, "main.txt")
+    spike.must(live_sub, "switch", "-q", "-c", BRANCH)
+    committed(live_sub, "main-sub.txt")
+    assert spike.must(repo.root, "for-each-ref", refs_of, spike.PIN_SPACE) == console
+    assert spike.must(live_sub, "for-each-ref", refs_of, spike.PIN_SPACE) == ""
+
+
+def test_pin_stays_when_head_does_not_descend_from_it(pinned):
+    repo, tree = pinned
+    base = spike.must(tree, "rev-parse", "HEAD")
+    held = committed(tree, "held.txt")
+    spike.must(tree, "reset", "-q", "--hard", base)
+    done = commit_file(tree, "other.txt")
+    assert done.returncode == 0, done.stderr
+    head = spike.must(tree, "rev-parse", "HEAD")
+    assert head != held
+    assert spike.git(tree, "merge-base", "--is-ancestor", held, head).returncode != 0
+    assert pin_at(repo.root) == held
+    assert "stays at %s" % held in done.stderr
+    assert "pin not moved" not in done.stderr
+
+
+def test_pin_only_blob_is_in_log_all_and_not_reachable_in_a_clone(pinned, tmp_path):
+    """The limit Design 3 writes down: a `git log --all` reader finds a blob cited only from an unlanded commit, and a clone does not, because no `refs/worktrees/*` crosses.
+
+    `--local` hard-links the whole object directory, so the blob's bytes do arrive there, unreachable: `cat-file` answers and `log --all` does not. A transport clone, the shape of CI's checkout, lacks the bytes as well.
+    """
+    repo, tree = pinned
+    sha = committed(tree, "only-here.txt")
+    blob = spike.must(tree, "rev-parse", "HEAD:only-here.txt")
+    finder = ("log", "--all", "--format=%H", "--find-object=%s" % blob)
+    assert spike.must(repo.root, *finder) == sha
+    local, transport = tmp_path / "local", tmp_path / "transport"
+    spike.must(tmp_path, "clone", "-q", "--local", str(repo.root), str(local))
+    spike.must(tmp_path, "clone", "-q", "--no-local", str(repo.root), str(transport))
+    for clone in (local, transport):
+        assert spike.must(clone, *finder) == "", clone
+        assert spike.must(clone, "for-each-ref", spike.PIN_SPACE) == "", clone
+        assert spike.git(clone, "rev-parse", "--verify", "-q", PIN_REF).returncode != 0, clone
+    assert spike.git(local, "cat-file", "-e", blob).returncode == 0
+    assert spike.git(transport, "cat-file", "-e", blob).returncode != 0
+
+
+def test_pin_of_a_submodule_tree_lands_in_its_module_store(pinned):
+    repo, tree = pinned
+    sha = committed(tree / SUB, "sub.txt")
+    assert pin_at(repo.store(SUB)) == sha
+    assert pin_at(repo.root / SUB) == sha
+    assert pin_at(repo.root) == "", "the console's own pin is the console tree's"
+    console = committed(tree, "console.txt")
+    assert pin_at(repo.root) == console
+    assert pin_at(repo.store(SUB)) == sha
+
+
+def test_pin_moves_under_the_operators_override(pinned):
+    repo, tree = pinned
+    done = commit_file(tree, "over.txt", env={"COMMIT_POLICY_OK": "1"})
+    assert done.returncode == 0, done.stderr
+    assert pin_at(repo.root) == spike.must(tree, "rev-parse", "HEAD")
+
+
+def test_pin_verb_from_a_subdirectory_moves_it_and_a_repeat_changes_nothing(pinned):
+    repo, tree = pinned
+    head = spike.must(tree, "rev-parse", "HEAD")
+    deeper = tree / "packages" / "shared"
+    for _ in range(2):
+        result = run_pin_verb(deeper)
+        assert result.returncode == 0, result.stderr
+        assert result.stdout == ""
+        assert result.stderr == ""
+        assert pin_at(repo.root) == head
+
+
+@pytest.mark.parametrize("args", [(), ("surplus",)])
+def test_pin_verb_refuses_outside_a_lease_or_with_an_argument(pinned, args):
+    repo, tree = pinned
+    where = repo.root if not args else tree
+    result = run_pin_verb(where, *args)
+    assert result.returncode == 1
+    assert result.stdout == ""
+    assert pin_at(repo.root) == ""

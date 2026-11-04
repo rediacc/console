@@ -328,3 +328,59 @@ def cmd_lease(args):
     sys.stdout.write(path + "\n")
     sys.stdout.flush()
     return 0
+
+
+PIN_HELP = """\
+Usage: ./run.sh worktree pin
+
+Move this lease tree's pin, refs/worktrees/<id>, forward to its HEAD. The
+post-commit hook runs this after every commit in a lease; a HEAD the pin is not
+an ancestor of leaves the pin in place.
+"""
+
+
+def move_pin(directory):
+    """Move the pin of the lease tree `directory` sits in to that tree's HEAD, and return the ref's value afterwards.
+
+    The ref lands in the store of the repository `directory` belongs to: the console's refs for the console tree, the module store for a submodule tree, since each is a linked tree of that store (W0's `Decision: A`).
+
+    FORWARD ONLY. A HEAD the pin is not an ancestor of leaves the pin in place, so the commits it holds stay reachable, and the HEAD is a second tip for GC to judge. The old value is passed to `update-ref`, so a concurrent move fails instead of being overwritten.
+    """
+    lease_tree = spike.load_commit_policy().lease_root(str(directory))
+    if not lease_tree:
+        message = "%s is in no lease tree, so it holds no pin" % directory
+        raise LeaseRefusedError(message)
+    ref = spike.PIN_SPACE + os.path.basename(lease_tree)
+    head = spike.must(directory, "rev-parse", "--verify", "HEAD^{commit}")
+    old = spike.out(directory, "rev-parse", "--verify", "-q", "%s^{commit}" % ref)
+    if old == head:
+        return head
+    if old and spike.git(directory, "merge-base", "--is-ancestor", old, head).returncode != 0:
+        log.warn("%s stays at %s: HEAD %s does not descend from it" % (ref, old, head))
+        return old
+    spike.must(directory, "update-ref", ref, head, old)
+    return head
+
+
+def cmd_pin(args):
+    if args:
+        log.error("Unknown option: %s" % args[0])
+        return 1
+    try:
+        move_pin(os.getcwd())
+    except (OSError, RuntimeError, subprocess.SubprocessError) as exc:
+        log.error("refused: %s" % exc)
+        return 1
+    return 0
+
+
+def main(argv):
+    """The hook's way in, since a hook loaded by file has no package to import this from."""
+    if argv[:1] == ["pin"]:
+        return cmd_pin(argv[1:])
+    log.error("Unknown command: %s" % " ".join(argv))
+    return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

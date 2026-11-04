@@ -9,6 +9,8 @@ WHAT EACH HOOK REFUSES (the rules are `commit_policy`'s, shared with the pre-bas
   pre-commit              a commit from a lease tree (`commit_policy.lease_root`) that stages a gitlink or a path under `agent/`; a commit that stages a gen-docs provider input and leaves a generated doc region drifted in the COMMITTED tree (the section above `gen_docs_pre_commit` says how it stays fast), and a commit that stages an input of a generated artifact enrolled in `.ci/config/generated-artifacts.json` and leaves that artifact stale in the committed tree (`artifacts.py` beside this file).
   pre-push                a push sending or naming a pin under `refs/worktrees/`, from every repository; any push from a lease tree; a push to `main` other than the fast-forward fallback (one ref, a real commit, the live branch's pushed tip, the remote `main` its ancestor; box M2 of PLAN-plan-per-pr-loop, operator ruling 2026-10-02) or the GitLab mirror push (below), a delete of `main` included; a push creating a remote branch that is not the current one; a push of the backup paths that no VERIFIED backup receipt covers (box J10 of PLAN-backup-program, `backup_receipt_refusal` below). A line a live release run lists is admitted instead (box W1-D of PLAN-local-release, `_release_admitted` below).
 
+`post-commit` REFUSES NOTHING. In a lease tree it runs the `pin` verb of `.ci/rediacc_ci/dev/worktree_lease.py`, which moves `refs/worktrees/<id>` forward to HEAD, so a commit outlives its tree until it lands (agent/plans/PLAN-worktree-lease.md, Design 3). It runs under the override too.
+
 THE PRE-BASH LAYER STAYS AUTHORITATIVE FOR AGENTS; this is the backstop. It reads no `gh`, so it cannot compute today's next name or know a PR merged; it checks shape and local liveness only.
 
 `git branch -m` IS INVISIBLE HERE, and that is measured rather than assumed (T0(b), git 2.53, 2026-09-25): a rename reaches `reference-transaction` only as an aborted empty transaction and a DELETE of the old name; the new name is never shown as a creation. So a rename is always allowed at this layer, which is the rule anyway (the count stays at one).
@@ -881,7 +883,29 @@ def artifacts_pre_commit() -> int:
     return 0
 
 
+def post_commit() -> int:
+    """Move the lease pin for the tree the commit landed in. Git runs this hook from the top of that tree. Outside a holder path `lease_root` starts no subprocess, so a commit in the main checkout pays only the shim's load. The commit already exists, so a failure here is a warning and the exit stays 0."""
+    tree = os.getcwd()
+    if not cp.lease_root(tree):
+        return 0
+    inherited = os.environ.get("PYTHONPATH", "")
+    code = str(CONSOLE_ROOT / ".ci")
+    env = {**os.environ, "PYTHONPATH": "%s:%s" % (code, inherited) if inherited else code}
+    try:
+        done = _run([sys.executable, "-m", "rediacc_ci.dev.worktree_lease", "pin"], tree, env)
+    except (OSError, subprocess.SubprocessError) as exc:
+        sys.stderr.write("commit-policy: pin not moved in %s: %s\n" % (tree, exc))
+        return 0
+    sys.stderr.write(done.stderr)
+    if done.returncode != 0:
+        sys.stderr.write("commit-policy: pin not moved in %s: exit %d\n" % (tree, done.returncode))
+    return 0
+
+
 def main(hook: str, argv: list[str]) -> int:
+    # Before the override: a pin refuses nothing, and a commit made under the override is as much in need of one.
+    if hook == "post-commit":
+        return post_commit()
     if os.environ.get("COMMIT_POLICY_OK", "") == "1":
         return 0
     if hook == "commit-msg":
