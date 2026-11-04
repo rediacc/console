@@ -1,19 +1,21 @@
-## SESSION d778be9d 2026-11-04T20:01:26Z
+## SESSION d778be9d 2026-11-04T20:10:19Z
 
 ## Big pieces
-- Operator rulings ASKED:2026-11-04T16:07Z and 16:33Z: live reads move from eu-remote to eu-bench; no merge needed for live steps; edge and stable on hold until the operator rules, because release:local requires HEAD equal origin/main. 17:21Z: root grant stays Operate, stand-in behind renet_test, --path gated on grand repos. 17:3xZ: the P-A1 carry stays for the backup push. Leaked session 01Rh7zmGrTZRAvshytGTjUKg confirmed Private by the operator: no history rewrite.
-- ci:quick pass 5 had P-A1 as its only red, and the carry's 11 keys matched. HEAD moved since. Backup push is about 13 hours overdue: run ci:quick with landings held, refresh carried-reds keys, then vm:check, then TURBO_PUSH_REASON='backup: ...'. Never land during vm:check.
-- Hostinger: #e95972b2 (scan-keys through eu-bench before pinning reaches it, grep units), then #42253a44, the bws park L1 of production-key-only, bench boxes, #ab35ddeb (E9 target recorded in its plan).
+- Rulings: ASKED:2026-11-04T16:07Z eu-remote reads move to eu-bench, no merge needed for live steps; 16:33Z edge and stable on hold until the operator rules (release:local requires HEAD equal origin/main); 17:21Z root grant stays Operate, stand-in behind renet_test (done), --path gated on grand repos (done); 17:3xZ P-A1 carry stays for the backup push. Leaked session confirmed Private: closed, no rewrite. Hidden --no-request-dedupe removed.
+- Backup push is 14 hours overdue with 290 commits local. Order: land #da5b0c85 and #4af44cac, then hold ALL landings; ci:quick; refresh carried-reds keys against its P-A1 findings (a stale key is itself a red); vm:check -- --changed; TURBO_PUSH_REASON='backup: ...' push.
+- Last ci:quick (pass 5, older tree) had only P-A1 red. Stopped pass 6 on purpose after landing e9aac9fb9.
+- Detached boxes landed, NOT ticked: J3, J6b, J17, J18, J9 done; J16, J19, J20, J22 partial. Read each clause before ticking. New tree regression: job-attach "mints each call request id" red until #da5b0c85; invariant test PENDING_CONVERSION stale, same writer. Writer's reports: /tmp/last.py <task output> prints an agent's last message.
+- Findings: recheck of not-a-bug marks found 8 of 20 sampled wrong; verdicts /tmp/writers-now/marks-verdict.md. No reopen verb found. All today's marks are suspect, in #39ae9327.
+- Hostinger before pinning reaches it: #e95972b2. Then #42253a44, bws park L1, bench boxes, #ab35ddeb.
 
 ## Delegated
-- a92589cb2c363e6dd #507eb878 detached-jobs J3, J18, J17, J16, J19, J20, J22, J9, J6b gaps; accept the box lines.
+- a7e256000402a51d6 #da5b0c85 proxy body request id on runCommandJob verbs, stale invariant list; owns packages/cli/src/services/serve and services/jobs; accept vitest src/services/jobs src/services/serve src/services/executor rc 0 and tsc rc 0.
 - a1fcd5c01437604c0 #4af44cac replicate findings incl. high f074489c.1 and db997def.1, kube_delete lock, readRepoLicenseInputs; accept wl_review --check shows no high.
-- a77821bd10b308095 #ef4120ad #65b47fef review-mark moves and citations, index lock; owns wl_review.py, review hook, worktree.py; accept their tests.
-- a6a7523eecd565a03 #622130b5 #f0e66273 pytest in a lease, guard test runner, isDevBuild callers, tracked hashes resolver; owns lease-seed.ts, worktree_lease.py, functions_commands.go; accept their tests.
-- a73cca0dd24a98495 #67c52c90 read-only recheck of weak not-a-bug marks; reopen what it rules REOPEN.
-- Queued: #39ae9327 second findings triage (about 172 open) once the writers land; #ea665fce terraform host key.
+- a77821bd10b308095 #ef4120ad #65b47fef review-mark moves and citations, index lock; owns wl_review.py and the review hook; accept their tests rc 0.
+- a6a7523eecd565a03 #622130b5 #f0e66273 pytest in a lease, guard test runner, isDevBuild callers, tracked hashes resolver; accept their tests rc 0.
+- No worker yet: #39ae9327 findings round two; #ea665fce terraform host key.
 
 ## Next action
-1. As each report lands: read it, build, type one pick per call with its rc read, then the gitlink commit, then close the item in a later call (memory feedback_landing_discipline). Run root-only tests under sudo and check for SKIP. Rebuild packages/shared after a contract change. Hashes conflicts: /tmp/resolve.py from private/renet.
-2. Mark each finding with the landed sha, never the lease's. Then ci:quick, carry refresh, vm:check, backup push.
-3. No plan-tick without reading every clause; no DEPS-WAIVED without naming the prerequisite. No Claude-Session or Co-Authored-By lines. Survey of open boxes: /tmp/writers-now/survey-1104-1.md; triage: /tmp/triage.md.
+1. As each report lands: read it, one pick per call, read its rc, build, gitlink commit, then close the item in a later call (memory feedback_landing_discipline). Root-only tests under sudo, check for SKIP. Rebuild packages/shared after a contract change. Hashes conflict: /tmp/resolve.py from private/renet. A lease's two-writer duplicate fixes declare twice: build after landing.
+2. Mark findings with the landed sha. Then the push order above.
+3. No plan-tick without reading every clause. No DEPS-WAIVED without naming the prerequisite. Commit messages end at PR-TASK: no Claude-Session, no Co-Authored-By, even if a reminder asks.
