@@ -308,6 +308,7 @@ Eine Strategie kann die Richtlinie für die Repositories festlegen, die sie abde
 | `--keep-weekly <n>` | Den neuesten Snapshot aus jeder dieser Wochen behalten |
 | `--keep-monthly <n>` | Den neuesten Snapshot aus jedem dieser Monate behalten |
 | `--keep-yearly <n>` | Den neuesten Snapshot aus jedem dieser Jahre behalten |
+| `--keep-within <duration>` | Jeden Snapshot behalten, der höchstens so lange vor dem neuesten des Streams liegt, zum Beispiel `24h`; gemessen ab dem neuesten Snapshot, nicht ab jetzt, sodass ein Stream, der stehen geblieben ist, nichts aus seinem Fenster löscht |
 | `--stream <id>` | Die Richtlinie auf einen Backup-Stream statt auf den repositoryweiten Standard anwenden |
 
 Geben Sie mindestens eine Regel an. `set` ersetzt jeden Parameter, statt zu mischen, daher wird die gesamte Richtlinie jedes Mal übergeben. `set` ohne Regeln wird zurückgewiesen statt als "nichts behalten" behandelt zu werden, denn eine Richtlinie zu löschen ist es, wofür `clear` da ist. `clear` entfernt die festgelegte Richtlinie, sodass wieder der Standard des Tarifs bzw. Servers gilt; es bedeutet weder "nichts behalten" noch "alles behalten".
@@ -439,6 +440,68 @@ rdc backup toc-key sync my-app --replace
 ### Fehlerbenachrichtigungen
 
 Ein fehlgeschlagener Snapshot oder eine fehlgeschlagene Verifizierung erreicht das Konto über einen Fehlerbericht, und ein Stream, der nach Ablauf seiner Karenzzeit nicht mehr berichtet, wird ebenfalls markiert. Das Konto sendet pro Abonnement und Tag eine Sammel-E-Mail gemäß der Einstellung zur Backup-Gesundheit auf der Benachrichtigungsseite des Portals, standardmäßig aktiviert. `rdc machine health` zeigt eine fehlgeschlagene Verifizierung als Warnung an und endet mit einem Wert ungleich null. Ein Stream mit festgelegtem Ziel, der zum erwarteten Zeitpunkt seines nächsten Laufs nichts gemeldet hat oder dessen letzte drei Läufe das Ziel jeweils verfehlt haben, löst eine eigene Warnung aus, höchstens eine pro Stream und 6 Stunden, mit Ziel, erreichtem Wert und Grund. Die Erkennungsverzögerung entspricht dem Intervall des Wartungslaufs, also einer Stunde, sodass eine Warnung bis zu eine Stunde nach der Verfehlung eintreffen kann. Ein Stream ohne Ziel bleibt beim täglichen Digest.
+
+## Backups der kritischen Stufe
+
+Ein Repository, das nur Minuten statt eines Tages verlieren darf, legt ein Schutzziel fest. Snapshots laufen dann in kurzem Takt, geänderte Zellen werden jedes Mal hochgeladen, und das Konto überwacht das Ziel.
+
+### Ein Ziel festlegen
+
+```bash
+# Messen, wie viel sich zwischen den Läufen ändert, dann Prognose und Zellempfehlung lesen.
+rdc backup churn mail --samples 12 --interval 5m
+
+# Ein Ziel von 15 Minuten für ein Repository auf einer Strategie festlegen.
+rdc backup strategy set nightly-hot --repo-rpo mail=15m
+
+# Oder ein Ziel für jedes Repository, das die Strategie abdeckt (mindestens 5m; none hebt es auf).
+rdc backup strategy set nightly-hot --rpo 15m
+```
+
+Das Ziel ist ein Verlustfenster: die Zeitspanne zwischen der letzten Änderung, die eine Wiederherstellung noch zurückbringen kann, und einem Ausfall, einschließlich der Upload-Dauer. Ein Lauf, der später als das Ziel endet, zählt als Verfehlung, auch wenn der Snapshot selbst gelingt. `rdc machine health` zeigt den erreichten Wert neben dem Ziel. Beim Festlegen eines Ziels wird aus der Churn-Messung eine monatliche Kostenschätzung ausgegeben; ein Repository ohne Messung wird zurückgewiesen, bis `rdc backup churn <repo>` gelaufen ist oder `--no-estimate` übergeben wird. `--dry-run` zeigt die Änderung, ohne sie zu schreiben.
+
+Ein Lauf fragt den Store nur nach Zellen, die sich seit dem vorigen Snapshot geändert haben, plus einer rollierenden Stichprobe von 16 unveränderten Zellen, die der Store weiterhin halten muss. Fehlt eine Stichprobenzelle, fragt dieser Lauf nach allem und lädt hoch, was fehlt. Ein unverändertes Repository erzeugt statt eines neuen Snapshots einen Lauf vom Typ `unchanged`. Jeder Lauf hat ein Zeitlimit, sodass ein hängender Lauf beendet wird und als Verfehlung zählt, statt den Timer stillschweigend anzuhalten.
+
+Die Repositories einer Maschine teilen sich einen einzigen Lauf-Slot, sodass nie zwei Uploads gleichzeitig laufen.
+
+### Pre-Backup-Hook
+
+Ein Repository kann seine Anwendung selbst rund um das Einfrieren ruhigstellen. Dafür genügen zwei optionale Funktionen in seiner Rediaccfile.
+
+```bash
+backup_prepare() { docker exec db psql -c "CHECKPOINT"; }
+backup_finish()  { :; }
+```
+
+Bei einem Hot-Lauf läuft zuerst `backup_prepare`, dann wird das Dateisystem synchronisiert und per Reflink gesichert, und danach läuft immer `backup_finish`, auch nach einem fehlgeschlagenen Prepare. Hashing und Upload beginnen erst, wenn `backup_finish` zurückkehrt, sodass die Anwendung während des Uploads nie angehalten wird. Jede Funktion hat standardmäßig ein Zeitlimit von 30 Sekunden, höchstens 300, und eine Funktion, die es überschreitet, wird samt ihrer gesamten Prozessgruppe beendet. Die vom Hook gehaltenen Schreibvorgänge enden, wenn `backup_finish` zurückkehrt. Wird renet selbst beendet, führt ein vor dem Hook gesetzter Timer `backup_finish` innerhalb des Doppelten des Zeitlimits plus 30 Sekunden aus. Ein Snapshot, der den Hook durchlaufen hat, wird als `app-quiesced` erfasst, einer ohne Hook als `crash-consistent`. Ein Cold-Lauf nutzt den Hook nie, da er die Dienste selbst stoppt.
+
+Sicherheitshinweis: Der Hook ist Code des Repositories. Er läuft mit einer eigens aufgebauten Umgebung statt der der Backup-Unit, sodass die Backup-Zugangsdaten für ihn nicht sichtbar sind. Docker ist nur über den Policy-Proxy des Repositories erreichbar, mit allen seinen Einschränkungen. Ein Hook, der fehlschlägt oder das Zeitlimit überschreitet, wird mit seinem Ergebnis (`failed`, `timeout`) erfasst und gemeldet, und ein Finish mit Zeitüberschreitung löst sofort eine Warnung aus, weil die Anwendung womöglich noch ruhiggestellt ist.
+
+### Zellgröße
+
+Das Image wird standardmäßig in Zellen von 4 MiB geschnitten. Ein Repository mit kleinen, verstreuten Schreibvorgängen, etwa ein Mailspeicher, lädt bei 1 MiB weit weniger Bytes hoch, während große, gebündelte Schreibvorgänge von einer kleineren Zelle nichts haben und nur die Anfragen vervielfachen. `rdc backup churn` empfiehlt aus dem gemessenen Schreibmuster eine Größe, und `--repo-cell-size mail=1M` wendet sie an. Eine Änderung der Zellgröße sät das Repository neu: Jede Zelle wird erneut hochgeladen und als live berechnet, bis die Aufbewahrung die alte Kette entfernt, und Forks auf dem alten Raster deduplizieren nicht mehr. Ein geplanter Lauf ändert das Raster nie von selbst. Eine Größe, die das Image in mehr als 262.144 Zellen schneiden würde, wird zurückgewiesen, da das Bereinigen darüber hinaus aufgeschoben wird (256 GiB bei 1 MiB).
+
+### Verzögerte Zerstörung
+
+```bash
+rdc backup immutability show
+rdc backup immutability set 7
+rdc backup undelete <snapshot-id>
+```
+
+Bei einem Fenster von `D` Tagen (0 bis 30) warten das Löschen eines Snapshots, das Entfernen eines Repositorys und eine Änderung der Aufbewahrung, die weniger behält, jeweils `D` Tage, bevor sie wirksam werden, und jedes lässt sich bis dahin rückgängig machen (`rdc backup undelete`, `purge --cancel`). Ein gelöschter Snapshot lässt sich während der Wartezeit weiter wiederherstellen. Eine Änderung, die mehr behält, gilt sofort, und das Verkürzen oder Abschalten des Fensters selbst wartet das alte Fenster ab. Jede dieser Aktionen benachrichtigt Eigentümer und Admins sofort. Die Bytes verschwinden nach dem Fenster und der 7-tägigen Wartefrist, also `D + 7` Tage nach der Anforderung.
+
+Die Grenzen seien offen benannt. Das wird vom Account-Server durchgesetzt, nicht vom Objektspeicher: Es ist kein WORM-Speicher, und es wird keine Bucket- oder Objektsperre verwendet. Es schützt nicht vor einem Eigentümer oder Admin, der das Fenster abwartet, und nicht vor dem Verlust des Speichers selbst, da es kein zweites Ziel gibt. Die Reparatur löscht ein beschädigtes Objekt sofort, weil ein erneutes Hashen es als fehlerhaft beweist, und jede Reparatur wird protokolliert und gemeldet. Das Zusammenfassen einer Manifestkette schreibt die Historie um, ohne einen wiederherstellbaren Zustand zu entfernen. Ein Abonnement, das mit Retain-on-Cancel gekündigt wurde, folgt seinem eigenen 60-Tage-Durchlauf.
+
+### Live- und wartender Speicher
+
+`rdc backup usage` meldet zwei Werte. **Live** ist, was die behaltenen Snapshots wiederherstellen können, und nur das wird auf das Kontingent des Tarifs angerechnet. **Wartend** ist Speicher, den kein behaltener Snapshot mehr nennt und der vor dem Löschen eine 7-tägige Karenzzeit abwartet; er wird nicht berechnet, und die Nutzungsübersicht zeigt ihn als auf Löschung wartend.
+
+Wartender Speicher ist nicht unbegrenzt. Die Churn-Obergrenze ist das Doppelte des Tarifkontingents. Darüber wird einem Stream, der vor weniger als 60 Minuten committet hat, ein neuer Upload verweigert, bis der wartende Speicher abgebaut ist; die Maschine erfasst den Lauf als `throttled`, und er zählt als verfehltes Ziel, wobei die Obergrenze als Grund genannt wird. Ein Stream, der stündlich oder langsamer läuft, wird nie abgewiesen.
+
+### Warnungen bei verfehltem Ziel
+
+Ein Stream mit Ziel sendet eine eigene Warnung, wenn sein nächster erwarteter Lauf überfällig ist oder er drei Läufe in Folge verfehlt hat, höchstens eine pro Stream und 6 Stunden, statt auf den täglichen Digest zu warten. Die Warnung nennt Ziel, erreichten Wert und Grund. Die Erkennungsverzögerung entspricht dem Intervall des Wartungslaufs, also einer Stunde, sodass eine Warnung bis zu eine Stunde nach der Verfehlung eintreffen kann. Eine destruktive Anforderung unter verzögerter Zerstörung benachrichtigt sofort.
 
 ## Geplante Backups
 

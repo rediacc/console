@@ -308,6 +308,7 @@ Strateegia saab deklareerida poliitika repositooriumidele, mida ta katab: `rdc b
 | `--keep-weekly <n>` | Säilita kõige uuem hetktõmmis igast neist nädalatest |
 | `--keep-monthly <n>` | Säilita kõige uuem hetktõmmis igast neist kuudest |
 | `--keep-yearly <n>` | Säilita kõige uuem hetktõmmis igast neist aastatest |
+| `--keep-within <duration>` | Säilita iga hetktõmmis, mis jääb voo kõige uuemast hetktõmmisest selle aja piiresse, näiteks `24h`; mõõdetakse kõige uuemast hetktõmmisest, mitte praegusest hetkest, nii et seiskunud voog ei kustuta oma aknast midagi |
 | `--stream <id>` | Rakenda poliitika ühele varundusvoole kogu repositooriumi vaikeväärtuse asemel |
 
 Anna vähemalt üks reegel. `set` asendab iga parameetri, mitte ei ühenda, seega antakse kogu poliitika iga kord uuesti. Reegliteta `set` lükatakse tagasi, selle asemel et käsitleda seda kui "ära säilita midagi", sest poliitika tühjendamiseks on olemas `clear`. `clear` eemaldab määratud poliitika, mistõttu hakkab uuesti kehtima paketi või serveri vaikeväärtus; see ei tähenda kunagi "ära säilita midagi" ega "säilita kõike".
@@ -439,6 +440,68 @@ rdc backup toc-key sync my-app --replace
 ### Rikketeavitused
 
 Ebaõnnestunud hetktõmmis või kontroll jõuab kontole rikkearuande kaudu ja voogu, mis lakkab pärast armuaega aru andmast, märgitakse samuti. Konto saadab tellimuse kohta päevas ühe kokkuvõtliku e-kirja portaali Teavituste lehe varundamise tervise eelistuse järgi, mis on vaikimisi sisse lülitatud. `rdc machine health` näitab ebaõnnestunud kontrolli hoiatusena ja lõpeb nullist erineva koodiga. Voog, millel on deklareeritud siht ja mis ei ole oma järgmise käivituse oodatud ajaks teatanud või mille kolm viimast käivitust igaüks sihi mööda lasid, saadab oma hoiatuse, voo kohta kuni üks 6 tunni jooksul, nimetades sihi, saavutatud näitaja ja põhjuse. Tuvastusviivitus võrdub hooldusringi intervalliga ehk ühe tunniga, seega võib hoiatus tulla kuni tund pärast möödalaskmist. Sihita voog jääb päevaülevaatesse.
+
+## Kriitilise taseme varukoopiad
+
+Repositoorium, mis tohib kaotada minuteid, mitte päeva, deklareerib kaitsesihi. Hetktõmmised käivad siis lühikese intervalliga, muutunud lahtrid laaditakse üles igal korral ja konto jälgib sihti.
+
+### Sihi deklareerimine
+
+```bash
+# Mõõda, kui palju käivituste vahel muutub, seejärel loe prognoosi ja lahtri soovitust.
+rdc backup churn mail --samples 12 --interval 5m
+
+# Deklareeri 15-minutiline siht ühele repositooriumile strateegias.
+rdc backup strategy set nightly-hot --repo-rpo mail=15m
+
+# Või üks siht igale repositooriumile, mida strateegia katab (vähemalt 5m; none eemaldab selle).
+rdc backup strategy set nightly-hot --rpo 15m
+```
+
+Siht on kaotusaken: aeg viimase muudatuse, mille taastamine veel tagasi tuua suudab, ja rikke vahel, kaasa arvatud üleslaadimiseks kuluv aeg. Käivitus, mis lõpeb sihist hiljem, loetakse möödalaskmiseks ka siis, kui hetktõmmis ise õnnestub. `rdc machine health` näitab saavutatud näitajat sihi kõrval. Sihi seadmisel prinditakse churn-mõõtmise põhjal igakuine kuluhinnang; mõõtmiseta repositooriumi lükatakse tagasi, kuni on käivitatud `rdc backup churn <repo>` või antud `--no-estimate`. `--dry-run` näitab muudatust seda kirjutamata.
+
+Käivitus pärib hoidlalt ainult neid lahtreid, mis on eelmisest hetktõmmisest muutunud, ning lisaks 16 muutumatu lahtri veerevat valimit, mida hoidla peab ikka veel hoidma. Kui valimi lahter puudub, pärib see käivitus kõike ja laadib üles selle, mis on kadunud. Muutumatu repositoorium salvestab uue hetktõmmise asemel käivituse `unchanged`. Iga käivitus on piiratud tähtajaga, nii et rippuv käivitus tapetakse ja loetakse möödalaskmiseks, selle asemel et taimer vaikselt seisma jääks.
+
+Ühe masina repositooriumid jagavad ühte käivituskohta, seega ei jookse kaks sihti kunagi kahte üleslaadimist korraga.
+
+### Varundamiseelne konks
+
+Repositoorium saab oma rakenduse külmutamise ümber ise vaikseks panna. Selleks on kaks valikulist funktsiooni tema Rediaccfile'is.
+
+```bash
+backup_prepare() { docker exec db psql -c "CHECKPOINT"; }
+backup_finish()  { :; }
+```
+
+Kuuma käivituse korral jookseb `backup_prepare`, failisüsteem sünkroonitakse ja tehakse reflink ning `backup_finish` jookseb alati pärast seda, ka ebaõnnestunud prepare'i järel. Räsimine ja üleslaadimine algavad alles siis, kui `backup_finish` on naasnud, seega ei hoita rakendust üleslaadimise ajal kinni. Igal funktsioonil on vaikimisi ajalimiit 30 sekundit ja kõige rohkem 300, ning limiidi ületanud funktsioon tapetakse koos kogu oma protsessirühmaga. Konksu hoitud kirjutused lõpevad, kui `backup_finish` naaseb. Kui renet ise tapetakse, käivitab enne konksu seatud taimer `backup_finish` kahekordse ajalimiidi pluss 30 sekundi jooksul. Konksust läbi käinud hetktõmmis salvestatakse kui `app-quiesced`, ilma konksuta hetktõmmis kui `crash-consistent`. Külm käivitus ei kasuta konksu kunagi, kuna peatab teenused ise.
+
+Turvamärkus: konks on repositooriumi kood. See jookseb eraldi ehitatud keskkonnaga, mitte varundusüksuse omaga, seega ei ole varunduse mandaadid talle nähtavad. Dockerile pääseb ligi ainult repositooriumi poliitikaproksi kaudu, kõigi selle piirangutega. Konks, mis ebaõnnestub või ületab ajalimiidi, salvestatakse oma tulemusega (`failed`, `timeout`) ja sellest teavitatakse, ning ajalimiidi ületanud finish annab kohe hoiatuse, sest rakendus võib veel olla vaikseks pandud.
+
+### Lahtri suurus
+
+Kujutis lõigatakse vaikimisi 4 MiB lahtriteks. Väikeste hajusate kirjutustega repositoorium, näiteks meilihoidla, laadib 1 MiB puhul üles palju vähem baite, samas kui suured koondunud kirjutused väiksemast lahtrist midagi ei võida ja korrutavad vaid päringuid. `rdc backup churn` soovitab mõõdetud kirjutusmustri põhjal suuruse ning `--repo-cell-size mail=1M` rakendab selle. Lahtri suuruse muutmine külvab repositooriumi uuesti: iga lahter laaditakse uuesti üles ja arvestatakse elusana, kuni säilitamine vana ahela loobub, ning vanal ruudustikul olevad forkid lõpetavad deduplitseerimise. Ajastatud käivitus ei muuda ruudustikku kunagi ise. Suurust, mis lõikaks kujutise rohkem kui 262 144 lahtriks, ei võeta vastu, sest puhastamine lükatakse sealt edasi (256 GiB 1 MiB puhul).
+
+### Viivitatud hävitamine
+
+```bash
+rdc backup immutability show
+rdc backup immutability set 7
+rdc backup undelete <snapshot-id>
+```
+
+`D` päeva (0 kuni 30) pikkuse aknaga ootavad hetktõmmise kustutamine, repositooriumi eemaldamine ja vähem säilitav säilitusmuudatus kõik `D` päeva enne jõustumist ning iga neist saab selle ajani tagasi võtta (`rdc backup undelete`, `purge --cancel`). Kustutatud hetktõmmis taastub ootamise ajal edasi. Rohkem säilitav muudatus jõustub kohe ning akna enda lühendamine või väljalülitamine ootab vana akna ära. Iga selline toiming teavitab kohe omanikku ja administraatoreid. Baidid kaovad pärast akent ja 7-päevast ooteperioodi, ehk `D + 7` päeva pärast taotlust.
+
+Piirangud on öeldud otse. Seda jõustab konto server, mitte objektihoidla: see ei ole WORM-salvestus ning ühtegi ämbri- ega objektilukku ei kasutata. See ei kaitse omaniku või administraatori eest, kes akna ära ootab, ega salvestuse enda kadumise eest, kuna teist sihtkohta ei ole. Parandus kustutab riknenud objekti kohe, sest uuesti räsimine tõestab selle vigaseks, ning iga parandus logitakse ja sellest hoiatatakse. Manifestiahela kokkuvõtmine kirjutab ajaloo ümber, eemaldamata ühtegi taastatavat olekut. Tellimus, mis tühistati säilitamisega (retain-on-cancel), järgib oma 60-päevast läbivaatust.
+
+### Elav ja ootel salvestus
+
+`rdc backup usage` teatab kaks näitajat. **Elav** on see, mida säilitatud hetktõmmised taastada suudavad, ja ainult see arvestatakse paketi kvoodi vastu. **Ootel** on salvestus, mida ükski säilitatud hetktõmmis enam ei nimeta ja mis ootab enne kustutamist ära 7-päevase armuaja; seda ei arvestata ja kasutuse kokkuvõte näitab seda kustutamist ootavana.
+
+Ootel salvestus ei ole piiramatu. Voolavuse lagi on kahekordne paketi kvoot. Selle ületamisel lükatakse voo, mis kinnitas vähem kui 60 minutit tagasi, uus üleslaadimine tagasi, kuni ootel salvestus tühjeneb, masin salvestab käivituse kui `throttled` ja see loetakse sihi möödalaskmiseks, põhjuseks nimetatud lagi. Voogu, mis jookseb tunni või aeglasemalt, ei lükata kunagi tagasi.
+
+### Möödalastud sihi hoiatused
+
+Sihiga voog saadab oma hoiatuse, kui tema järgmine oodatud käivitus on hilinenud või ta on kolm käivitust järjest mööda lasknud, voo kohta kuni üks 6 tunni jooksul, selle asemel et päevast ülevaadet oodata. Hoiatus nimetab sihi, saavutatud näitaja ja põhjuse. Tuvastusviivitus võrdub hooldusringi intervalliga ehk ühe tunniga, seega võib hoiatus tulla kuni tund pärast möödalaskmist. Hävitav taotlus viivitatud hävitamise korral teavitab kohe.
 
 ## Ajastatud varundamine
 

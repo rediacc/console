@@ -308,6 +308,7 @@ Une stratégie peut déclarer la politique des dépôts qu'elle couvre : `rdc ba
 | `--keep-weekly <n>` | Conserver l'instantané le plus récent de chacune de ces semaines |
 | `--keep-monthly <n>` | Conserver l'instantané le plus récent de chacun de ces mois |
 | `--keep-yearly <n>` | Conserver l'instantané le plus récent de chacune de ces années |
+| `--keep-within <duration>` | Conserver tous les instantanés dont l'âge, par rapport au plus récent du flux, ne dépasse pas cette durée, par exemple `24h` ; la durée se mesure depuis l'instantané le plus récent et non depuis maintenant, si bien qu'un flux à l'arrêt ne supprime rien de sa fenêtre |
 | `--stream <id>` | Appliquer la politique à un seul flux de sauvegarde plutôt qu'à la valeur par défaut du dépôt entier |
 
 Donnez au moins une règle. `set` remplace chaque paramètre au lieu de fusionner, donc la politique complète est transmise à chaque appel. `set` sans règles est refusé plutôt que traité comme « ne rien conserver », car supprimer une politique, c'est précisément à cela que sert `clear`. `clear` retire la politique déclarée, si bien que la valeur par défaut du forfait ou du serveur s'applique de nouveau ; cela ne signifie jamais « ne rien conserver » ni « tout conserver ».
@@ -439,6 +440,68 @@ rdc backup toc-key sync my-app --replace
 ### Alertes d'échec
 
 Un instantané ou une vérification en échec parvient au compte par un rapport d'échec, et un flux qui cesse de rapporter au-delà de son délai de grâce est signalé lui aussi. Le compte envoie un e-mail récapitulatif par abonnement et par jour, selon la préférence de santé des sauvegardes de la page Notifications du portail, activée par défaut. `rdc machine health` affiche une vérification en échec comme un avertissement et se termine avec un code non nul. Un flux avec une cible déclarée qui n'a rien signalé à l'heure prévue de son prochain passage, ou dont les trois derniers passages ont chacun manqué la cible, envoie sa propre alerte, au plus une par flux et par période de 6 heures, indiquant la cible, la valeur atteinte et la raison. Le délai de détection est celui du balayage de maintenance, soit une heure, de sorte qu'une alerte peut arriver jusqu'à une heure après le manquement. Un flux sans cible reste dans le résumé quotidien.
+
+## Sauvegardes de niveau critique
+
+Un dépôt qui doit perdre des minutes plutôt qu'une journée déclare une cible de protection. Les instantanés s'exécutent alors à courte cadence, les cellules modifiées sont envoyées à chaque passage, et le compte surveille la cible.
+
+### Déclarer une cible
+
+```bash
+# Measure how much changes between runs, then read the projection and the cell recommendation.
+rdc backup churn mail --samples 12 --interval 5m
+
+# Declare a 15 minute target for one repository on a strategy.
+rdc backup strategy set nightly-hot --repo-rpo mail=15m
+
+# Or one target for every repository the strategy covers (at least 5m; none clears it).
+rdc backup strategy set nightly-hot --rpo 15m
+```
+
+La cible est une fenêtre de perte : le temps écoulé entre la dernière modification qu'une restauration peut récupérer et une panne, durée de l'envoi comprise. Un passage qui se termine après la cible compte comme manqué, même si l'instantané lui-même a réussi. `rdc machine health` affiche la valeur atteinte à côté de la cible. La définition d'une cible affiche une estimation du coût mensuel d'après la mesure du churn ; un dépôt sans mesure est refusé tant que `rdc backup churn <repo>` n'a pas été exécuté, ou que `--no-estimate` n'est pas passé. `--dry-run` montre le changement sans l'écrire.
+
+Un passage ne demande au stockage que les cellules modifiées depuis l'instantané précédent, plus un échantillon tournant de 16 cellules inchangées que le stockage doit toujours détenir. Une cellule échantillonnée manquante oblige ce passage à tout demander et à renvoyer ce qui a disparu. Un dépôt inchangé enregistre un passage `unchanged` au lieu d'un nouvel instantané. Chaque passage est borné par une échéance : un passage bloqué est tué et compte comme manqué, au lieu d'arrêter silencieusement le minuteur.
+
+Les dépôts d'une même machine partagent un seul créneau d'exécution, si bien que deux cibles ne lancent jamais deux envois en même temps.
+
+### Hook de pré-sauvegarde
+
+Un dépôt peut mettre son application au repos autour du gel. Deux fonctions facultatives de son Rediaccfile s'en chargent.
+
+```bash
+backup_prepare() { docker exec db psql -c "CHECKPOINT"; }
+backup_finish()  { :; }
+```
+
+Lors d'un passage à chaud, `backup_prepare` s'exécute, le système de fichiers est synchronisé et cloné par reflink, puis `backup_finish` s'exécute toujours ensuite, même après l'échec de prepare. Le hachage et l'envoi ne démarrent qu'après le retour de `backup_finish`, de sorte que l'application n'est jamais retenue pendant l'envoi. Chaque fonction a un délai de 30 secondes par défaut et de 300 au maximum, et une fonction qui dépasse son délai est tuée avec tout son groupe de processus. Les écritures qu'un hook retient prennent fin au retour de `backup_finish`. Si renet lui-même est tué, un minuteur armé avant le hook exécute `backup_finish` dans un délai de deux fois le délai imparti plus 30 secondes. Un instantané passé par le hook est enregistré comme `app-quiesced` ; sans hook, il est `crash-consistent`. Un passage à froid n'utilise jamais le hook, puisqu'il arrête lui-même les services.
+
+Remarque de sécurité : le hook est du code du dépôt. Il s'exécute avec un environnement construit, et non celui de l'unité de sauvegarde, de sorte que les identifiants de sauvegarde lui restent invisibles. Docker n'est accessible que par le proxy de politique du dépôt, avec ses restrictions en vigueur. Un hook qui échoue ou dépasse son délai est enregistré avec son résultat (`failed`, `timeout`) et signalé, et un finish arrivé à expiration déclenche une alerte immédiate, car l'application peut encore être au repos.
+
+### Taille des cellules
+
+L'image est découpée par défaut en cellules de 4 MiB. Un dépôt d'écritures petites et dispersées, comme une boîte de messagerie, envoie bien moins d'octets avec 1 MiB, alors que de grosses écritures groupées ne gagnent rien à une cellule plus petite et ne font que multiplier les requêtes. `rdc backup churn` recommande une taille d'après le profil d'écriture mesuré, et `--repo-cell-size mail=1M` l'applique. Changer la taille des cellules réamorce le dépôt : chaque cellule est renvoyée et facturée comme active jusqu'à ce que la rétention supprime l'ancienne chaîne, et les forks restés sur l'ancienne grille cessent de dédupliquer. Un passage planifié ne modifie jamais la grille de lui-même. Une taille qui découperait l'image en plus de 262 144 cellules est refusée, car l'élagage est différé au-delà (256 GiB à 1 MiB).
+
+### Destruction différée
+
+```bash
+rdc backup immutability show
+rdc backup immutability set 7
+rdc backup undelete <snapshot-id>
+```
+
+Avec une fenêtre de `D` jours (0 à 30), la suppression d'un instantané, la purge d'un dépôt et un changement de rétention qui conserve moins attendent tous `D` jours avant de prendre effet, et chacun peut être annulé d'ici là (`rdc backup undelete`, `purge --cancel`). Un instantané supprimé reste restaurable pendant son attente. Un changement qui conserve davantage s'applique immédiatement, et le raccourcissement ou la désactivation de la fenêtre elle-même attend l'écoulement de l'ancienne fenêtre. Chacune de ces actions notifie immédiatement le propriétaire et les administrateurs. Les octets disparaissent après la fenêtre et le délai d'attente de 7 jours, soit `D + 7` jours après la demande.
+
+Les limites sont énoncées sans détour. Ce mécanisme est appliqué par le serveur du compte, et non par le stockage d'objets : ce n'est pas un stockage WORM et aucun verrou de bucket ou d'objet n'est utilisé. Il ne protège pas contre un propriétaire ou un administrateur qui laisse passer la fenêtre, ni contre la perte du stockage lui-même, puisqu'il n'existe pas de seconde destination. La réparation supprime immédiatement un objet corrompu, car un nouveau hachage prouve qu'il est défectueux, et chaque réparation est journalisée et signalée. La fusion d'une chaîne de manifestes réécrit l'historique sans retirer aucun état restaurable. Un abonnement résilié avec conservation à la résiliation suit son propre balayage de 60 jours.
+
+### Stockage actif et en attente
+
+`rdc backup usage` rapporte deux valeurs. **Actif** correspond à ce que les instantanés conservés peuvent restaurer, et lui seul est imputé sur le quota de l'offre. **En attente** désigne le stockage qu'aucun instantané conservé ne référence plus et qui attend un délai de grâce de 7 jours avant suppression ; il n'est pas facturé, et le résumé d'utilisation l'affiche comme en attente de suppression.
+
+Le stockage en attente n'est pas illimité. Le plafond de churn est le double du quota de l'offre. Au-delà, un flux qui a validé il y a moins de 60 minutes se voit refuser un nouvel envoi tant que le stockage en attente n'a pas diminué, la machine enregistre le passage comme `throttled`, et il compte comme une cible manquée avec le plafond pour raison. Un flux qui s'exécute toutes les heures ou plus lentement n'est jamais refusé.
+
+### Alertes de cible manquée
+
+Un flux avec une cible envoie sa propre alerte lorsqu'il dépasse son prochain passage attendu ou qu'il a manqué trois passages de suite, au plus une par flux et par période de 6 heures, sans attendre le résumé quotidien. L'alerte indique la cible, la valeur atteinte et la raison. Le délai de détection est celui du balayage de maintenance, soit une heure, de sorte qu'une alerte peut arriver jusqu'à une heure après le manquement. Une demande destructive soumise à la destruction différée notifie immédiatement.
 
 ## Sauvegardes planifiées
 

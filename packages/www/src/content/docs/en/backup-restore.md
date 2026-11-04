@@ -369,6 +369,7 @@ A strategy can declare the policy for the repositories it covers: `rdc backup st
 | `--keep-weekly <n>` | Keep the newest snapshot from each of this many weeks |
 | `--keep-monthly <n>` | Keep the newest snapshot from each of this many months |
 | `--keep-yearly <n>` | Keep the newest snapshot from each of this many years |
+| `--keep-within <duration>` | Keep every snapshot within this long of the stream's newest one, for example `24h`; measured from the newest snapshot, not from now, so a stream that stopped deletes nothing from its window |
 | `--stream <id>` | Apply the policy to one backup stream instead of the repository-wide default |
 
 Give at least one rule. `set` replaces every knob rather than merging, so the whole policy is passed each time. `set` with no rules is refused rather than treated as "keep nothing", because clearing a policy is what `clear` is for. `clear` removes the declared policy, so the plan or server default applies again; it never means "keep nothing" and never means "keep everything".
@@ -516,6 +517,68 @@ rdc backup toc-key sync my-app --replace
 ### Failure alerts
 
 A failed snapshot or verify reaches the account through a failure report, and a stream that stops reporting past its grace period is flagged too. The account sends one digest email per subscription per day under the backup health preference on the portal Notifications page, on by default. `rdc machine health` shows a failed verify as a warning and exits non-zero. A stream with a declared target that has not reported by the time its next run was due, or whose last three runs each missed the target, sends its own alert, at most one per stream per 6 hours, naming the target, the achieved figure and the reason. Detection latency equals the maintenance sweep interval, which is hourly, so an alert can arrive up to an hour after the miss. A stream with no target stays on the daily digest.
+
+## Critical-Tier Backups
+
+A repository that must lose minutes rather than a day declares a protection target. Snapshots then run on a short cadence, changed cells upload each time, and the account watches the target.
+
+### Declare a target
+
+```bash
+# Measure how much changes between runs, then read the projection and the cell recommendation.
+rdc backup churn mail --samples 12 --interval 5m
+
+# Declare a 15 minute target for one repository on a strategy.
+rdc backup strategy set nightly-hot --repo-rpo mail=15m
+
+# Or one target for every repository the strategy covers (at least 5m; none clears it).
+rdc backup strategy set nightly-hot --rpo 15m
+```
+
+The target is a loss window: the time between the last change a restore can bring back and a failure, which includes the time the upload takes. A run that finishes later than the target counts as a miss even when the snapshot itself succeeds. `rdc machine health` shows the achieved figure beside the target. Setting a target prints a monthly cost estimate from the churn measurement; a repository with no measurement is refused until `rdc backup churn <repo>` has run, or `--no-estimate` is passed. `--dry-run` shows the change without writing it.
+
+A run asks the store only about cells that changed since the previous snapshot, plus a rolling sample of 16 unchanged ones that the store must still hold. A missing sampled cell makes that run ask about everything and upload what is gone. An unchanged repository records an `unchanged` run instead of a new snapshot. Every run is bounded by a deadline, so a hung run is killed and counts as a miss instead of silently stopping the timer.
+
+Repositories of one machine share a single run slot, so two targets never run two uploads at once.
+
+### Pre-backup hook
+
+A repository can quiesce its own application around the freeze. Two optional functions in its Rediaccfile do it.
+
+```bash
+backup_prepare() { docker exec db psql -c "CHECKPOINT"; }
+backup_finish()  { :; }
+```
+
+On a hot run, `backup_prepare` runs, the filesystem is synced and reflinked, and `backup_finish` always runs afterwards, even after a failed prepare. Hashing and upload start only after `backup_finish` returns, so the application is never held during the upload. Each function has a timeout of 30 seconds by default and 300 at most, and a function over its timeout is killed with its whole process group. The writes a hook holds end when `backup_finish` returns. If renet itself is killed, a timer armed before the hook runs `backup_finish` within twice the timeout plus 30 seconds. A snapshot that went through the hook is recorded as `app-quiesced`; one without is `crash-consistent`. A cold run never uses the hook, since it stops the services itself.
+
+Security note: the hook is repository code. It runs with a built environment and not the backup unit's own, so the backup credentials are not visible to it. Docker is reachable through the repository's policy proxy only, with its restrictions in force. A hook that fails or times out is recorded with its result (`failed`, `timeout`) and reported, and a finish that timed out alerts at once because the application may still be quiesced.
+
+### Cell size
+
+The image is cut into 4 MiB cells by default. A repository of small scattered writes, such as a mail store, uploads far fewer bytes at 1 MiB, while large clustered writes gain nothing from a smaller cell and only multiply requests. `rdc backup churn` recommends a size from the measured write pattern, and `--repo-cell-size mail=1M` applies it. Changing the cell size re-seeds the repository: every cell uploads again and is charged as live until retention drops the old chain, and forks on the old grid stop deduplicating. A scheduled run never changes the grid by itself. A size that would cut the image into more than 262,144 cells is refused, since pruning is deferred beyond that (256 GiB at 1 MiB).
+
+### Delayed destruction
+
+```bash
+rdc backup immutability show
+rdc backup immutability set 7
+rdc backup undelete <snapshot-id>
+```
+
+With a window of `D` days (0 to 30), a snapshot delete, a repository purge and a retention change that keeps less all wait `D` days before they take effect, and each can be undone until then (`rdc backup undelete`, `purge --cancel`). A deleted snapshot keeps restoring while it waits. A change that keeps more applies at once, and shortening or switching off the window itself waits out the old window. Each of these notifies the owner and admins immediately. The bytes go after the window and the 7-day waiting period, so `D + 7` days after the request.
+
+The limits are stated plainly. This is enforced by the account server, not by the object store: it is not WORM storage and no bucket or object lock is used. It does not protect against an owner or admin who waits out the window, and it does not protect against the loss of the storage itself, since there is no second destination. Repair deletes a corrupt object at once, because the object is proven bad by a re-hash, and each repair is logged and alerted. Collapsing a manifest chain rewrites history without removing any restorable state. A subscription cancelled with retain-on-cancel follows its own 60-day sweep.
+
+### Live and waiting storage
+
+`rdc backup usage` reports two figures. **Live** is what the kept snapshots can restore, and only it is charged against the plan quota. **Waiting** is storage that no kept snapshot names any more and that waits out a 7-day grace before deletion; it is not charged, and the usage summary shows it as waiting for deletion.
+
+Waiting storage is not unlimited. The churn cap is twice the plan quota. Above it, a stream that committed less than 60 minutes ago is refused a new upload until the waiting storage drains, the machine records the run as `throttled`, and it counts as a missed target with the cap named as the reason. A stream that runs hourly or slower is never refused.
+
+### Missed-target alerts
+
+A stream with a target sends its own alert when it is past its next expected run or has missed three runs in a row, at most one per stream per 6 hours, instead of waiting for the daily digest. The alert names the target, the achieved figure and the reason. Detection latency equals the maintenance sweep interval, which is hourly, so an alert can arrive up to an hour after the miss. A destructive request under delayed destruction notifies immediately.
 
 ## Scheduled Backups
 

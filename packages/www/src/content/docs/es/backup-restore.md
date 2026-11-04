@@ -308,6 +308,7 @@ Una estrategia puede declarar la política de los repositorios que cubre: `rdc b
 | `--keep-weekly <n>` | Conservar el snapshot más nuevo de cada una de estas semanas |
 | `--keep-monthly <n>` | Conservar el snapshot más nuevo de cada uno de estos meses |
 | `--keep-yearly <n>` | Conservar el snapshot más nuevo de cada uno de estos años |
+| `--keep-within <duration>` | Conservar todos los snapshots dentro de este lapso respecto al más reciente del flujo, por ejemplo `24h`; se mide desde el snapshot más reciente, no desde ahora, así que un flujo que se detuvo no borra nada de su ventana |
 | `--stream <id>` | Aplicar la política a un solo flujo de backup en lugar de al valor por defecto de todo el repositorio |
 
 Da al menos una regla. `set` reemplaza todos los parámetros en lugar de combinarlos, así que la política completa se pasa cada vez. `set` sin reglas se rechaza en lugar de tratarse como "no conservar nada", porque para eso está `clear`. `clear` elimina la política declarada, de modo que vuelve a aplicarse el valor predeterminado del plan o del servidor; nunca significa "no conservar nada" ni "conservarlo todo".
@@ -439,6 +440,68 @@ rdc backup toc-key sync my-app --replace
 ### Alertas de fallo
 
 Un snapshot o una verificación fallidos llegan a la cuenta mediante un informe de fallo, y también se señala un flujo que deja de informar pasado su plazo de gracia. La cuenta envía un correo resumen por suscripción al día, según la preferencia de salud de los respaldos en la página de Notificaciones del portal, activada por defecto. `rdc machine health` muestra una verificación fallida como advertencia y termina con un código distinto de cero. Un flujo con un objetivo declarado que no ha informado a la hora prevista de su siguiente ejecución, o cuyas tres últimas ejecuciones incumplieron el objetivo, envía su propia alerta, como máximo una por flujo cada 6 horas, con el objetivo, la cifra lograda y el motivo. La latencia de detección es la del barrido de mantenimiento, que es de una hora, así que una alerta puede llegar hasta una hora después del fallo. Un flujo sin objetivo sigue en el resumen diario.
+
+## Respaldos de Nivel Crítico
+
+Un repositorio que debe perder minutos y no un día declara un objetivo de protección. Los snapshots pasan entonces a una cadencia corta, las celdas modificadas se suben en cada ejecución y la cuenta vigila el objetivo.
+
+### Declarar un objetivo
+
+```bash
+# Medir cuánto cambia entre ejecuciones y leer la proyección y la recomendación de celda.
+rdc backup churn mail --samples 12 --interval 5m
+
+# Declarar un objetivo de 15 minutos para un repositorio en una estrategia.
+rdc backup strategy set nightly-hot --repo-rpo mail=15m
+
+# O un solo objetivo para todos los repositorios que cubre la estrategia (mínimo 5m; none lo quita).
+rdc backup strategy set nightly-hot --rpo 15m
+```
+
+El objetivo es una ventana de pérdida: el tiempo entre el último cambio que una restauración puede recuperar y un fallo, e incluye lo que tarda la subida. Una ejecución que termina después del objetivo cuenta como incumplimiento aunque el snapshot en sí tenga éxito. `rdc machine health` muestra la cifra lograda junto al objetivo. Al fijar un objetivo se imprime una estimación de costo mensual a partir de la medición de cambios; un repositorio sin medición se rechaza hasta que se ejecute `rdc backup churn <repo>` o se pase `--no-estimate`. `--dry-run` muestra el cambio sin escribirlo.
+
+Cada ejecución consulta al almacén solo por las celdas que cambiaron desde el snapshot anterior, más una muestra rotativa de 16 celdas sin cambios que el almacén debe seguir conservando. Si falta una celda de la muestra, esa ejecución consulta por todo y sube lo que ya no está. Un repositorio sin cambios registra una ejecución `unchanged` en lugar de un snapshot nuevo. Toda ejecución tiene un plazo límite, de modo que una ejecución colgada se mata y cuenta como incumplimiento en vez de detener el temporizador en silencio.
+
+Los repositorios de una máquina comparten un único turno de ejecución, así que dos objetivos nunca lanzan dos subidas a la vez.
+
+### Hook previo al respaldo
+
+Un repositorio puede dejar su propia aplicación en reposo alrededor de la congelación. Lo logran dos funciones opcionales de su Rediaccfile.
+
+```bash
+backup_prepare() { docker exec db psql -c "CHECKPOINT"; }
+backup_finish()  { :; }
+```
+
+En una ejecución hot, corre `backup_prepare`, se sincroniza el sistema de archivos y se hace el reflink, y `backup_finish` corre siempre después, incluso tras un prepare fallido. El hasheo y la subida empiezan solo cuando `backup_finish` retorna, así que la aplicación nunca queda retenida durante la subida. Cada función tiene un tiempo límite de 30 segundos por defecto y 300 como máximo, y una función que lo supera se mata junto con todo su grupo de procesos. Las escrituras que retiene un hook terminan cuando `backup_finish` retorna. Si el propio renet es terminado, un temporizador armado antes del hook ejecuta `backup_finish` en un plazo de dos veces el tiempo límite más 30 segundos. Un snapshot que pasó por el hook se registra como `app-quiesced`; uno sin hook, como `crash-consistent`. Una ejecución cold nunca usa el hook, porque ella misma detiene los servicios.
+
+Nota de seguridad: el hook es código del repositorio. Se ejecuta con un entorno construido aparte y no con el de la unidad de respaldo, así que las credenciales de respaldo no le son visibles. Docker solo es accesible a través del proxy de políticas del repositorio, con sus restricciones vigentes. Un hook que falla o agota su tiempo se registra con su resultado (`failed`, `timeout`) y se notifica, y un finish que agotó su tiempo alerta de inmediato porque la aplicación aún podría estar en reposo.
+
+### Tamaño de celda
+
+La imagen se corta por defecto en celdas de 4 MiB. Un repositorio de escrituras pequeñas y dispersas, como un almacén de correo, sube muchos menos bytes con 1 MiB, mientras que las escrituras grandes y agrupadas no ganan nada con una celda menor y solo multiplican las solicitudes. `rdc backup churn` recomienda un tamaño según el patrón de escritura medido, y `--repo-cell-size mail=1M` lo aplica. Cambiar el tamaño de celda vuelve a sembrar el repositorio: todas las celdas se suben de nuevo y se cobran como vivas hasta que la retención descarta la cadena anterior, y los forks sobre la cuadrícula antigua dejan de deduplicar. Una ejecución programada nunca cambia la cuadrícula por sí sola. Se rechaza un tamaño que cortaría la imagen en más de 262.144 celdas, ya que la poda se aplaza más allá de ese punto (256 GiB con 1 MiB).
+
+### Destrucción diferida
+
+```bash
+rdc backup immutability show
+rdc backup immutability set 7
+rdc backup undelete <snapshot-id>
+```
+
+Con una ventana de `D` días (de 0 a 30), borrar un snapshot, purgar un repositorio y un cambio de retención que conserva menos esperan `D` días antes de surtir efecto, y cada uno puede deshacerse hasta entonces (`rdc backup undelete`, `purge --cancel`). Un snapshot borrado sigue restaurándose mientras espera. Un cambio que conserva más se aplica de inmediato, y acortar o desactivar la propia ventana espera a que termine la ventana anterior. Cada una de estas acciones avisa de inmediato al propietario y a los administradores. Los bytes desaparecen tras la ventana y el período de espera de 7 días, es decir, `D + 7` días después de la solicitud.
+
+Los límites se exponen con claridad. Esto lo aplica el servidor de la cuenta, no el almacén de objetos: no es almacenamiento WORM y no se usa ningún bloqueo de bucket ni de objeto. No protege frente a un propietario o administrador que espere a que pase la ventana, ni frente a la pérdida del propio almacenamiento, ya que no hay un segundo destino. La reparación borra de inmediato un objeto corrupto, porque un nuevo hasheo demuestra que está dañado, y cada reparación se registra y se alerta. Colapsar una cadena de manifiestos reescribe el historial sin eliminar ningún estado restaurable. Una suscripción cancelada con retain-on-cancel sigue su propio barrido de 60 días.
+
+### Almacenamiento vivo y en espera
+
+`rdc backup usage` informa dos cifras. **Vivo** es lo que los snapshots conservados pueden restaurar, y solo eso se descuenta de la cuota del plan. **En espera** es el almacenamiento que ya ningún snapshot conservado nombra y que aguarda un plazo de gracia de 7 días antes de borrarse; no se cobra, y el resumen de uso lo muestra como en espera de borrado.
+
+El almacenamiento en espera no es ilimitado. El tope de rotación es el doble de la cuota del plan. Por encima de él, a un flujo que confirmó hace menos de 60 minutos se le rechaza una subida nueva hasta que el almacenamiento en espera se vacíe, la máquina registra la ejecución como `throttled` y cuenta como objetivo incumplido, con el tope como motivo. Un flujo que corre cada hora o más despacio nunca es rechazado.
+
+### Alertas de objetivo incumplido
+
+Un flujo con objetivo envía su propia alerta cuando se pasa de su siguiente ejecución prevista o ha incumplido tres ejecuciones seguidas, como máximo una por flujo cada 6 horas, en lugar de esperar al resumen diario. La alerta indica el objetivo, la cifra lograda y el motivo. La latencia de detección es la del barrido de mantenimiento, que es de una hora, así que una alerta puede llegar hasta una hora después del incumplimiento. Una solicitud destructiva bajo destrucción diferida avisa de inmediato.
 
 ## Respaldos Programados
 

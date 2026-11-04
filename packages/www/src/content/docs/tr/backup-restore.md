@@ -309,6 +309,7 @@ Bir strateji, kapsadığı depoların politikasını bildirebilir: `rdc backup s
 | `--keep-weekly <n>` | Bu kadar haftanın her birinden en yeni anlık görüntüyü tut |
 | `--keep-monthly <n>` | Bu kadar ayın her birinden en yeni anlık görüntüyü tut |
 | `--keep-yearly <n>` | Bu kadar yılın her birinden en yeni anlık görüntüyü tut |
+| `--keep-within <duration>` | Akışın en yeni anlık görüntüsüne bu süre kadar yakın olan tüm anlık görüntüleri tut, örneğin `24h`; süre şimdiden değil en yeni anlık görüntüden ölçülür, bu yüzden durmuş bir akış penceresinden hiçbir şey silmez |
 | `--stream <id>` | Politikayı depo geneli varsayılan yerine tek bir yedek akışına uygula |
 
 En az bir kural verin. `set`, birleştirmek yerine her ayarı değiştirir; bu yüzden politikanın tamamı her seferinde verilir. Kuralsız `set`, "hiçbir şeyi tutma" olarak değil, reddedilerek işlenir; çünkü bir politikayı temizlemek `clear`'ın işidir. `clear` tanımlı politikayı kaldırır, böylece planın ya da sunucunun varsayılanı yeniden geçerli olur; hiçbir zaman ne "hiçbir şeyi tutma" ne de "her şeyi tut" anlamına gelir.
@@ -440,6 +441,68 @@ rdc backup toc-key sync my-app --replace
 ### Hata uyarıları
 
 Başarısız bir anlık görüntü veya doğrulama, bir hata raporu aracılığıyla hesaba ulaşır; ayrıca tolerans süresini aşıp rapor vermeyi bırakan bir akış da işaretlenir. Hesap, portalın Bildirimler sayfasındaki yedek sağlığı tercihine göre abonelik başına günde bir özet e-postası gönderir; bu tercih varsayılan olarak açıktır. `rdc machine health`, başarısız bir doğrulamayı uyarı olarak gösterir ve sıfırdan farklı bir kodla çıkar. Hedef bildirmiş bir akış, bir sonraki çalışması için beklenen zamana kadar rapor vermezse ya da son üç çalışmasının her biri hedefi kaçırırsa kendi uyarısını gönderir; akış başına 6 saatte en fazla bir uyarı olur ve hedef, ulaşılan değer ile neden belirtilir. Algılama gecikmesi bakım taramasının aralığına, yani bir saate eşittir; bu yüzden uyarı, kaçırmadan en fazla bir saat sonra gelebilir. Hedefi olmayan akış günlük özette kalır.
+
+## Kritik Seviye Yedekler
+
+Bir günü değil, yalnızca dakikaları kaybetmeyi göze alabilen bir depo, bir koruma hedefi bildirir. Anlık görüntüler bunun üzerine kısa aralıklarla alınır, değişen hücreler her seferinde yüklenir ve hesap hedefi izler.
+
+### Hedef bildirme
+
+```bash
+# Measure how much changes between runs, then read the projection and the cell recommendation.
+rdc backup churn mail --samples 12 --interval 5m
+
+# Declare a 15 minute target for one repository on a strategy.
+rdc backup strategy set nightly-hot --repo-rpo mail=15m
+
+# Or one target for every repository the strategy covers (at least 5m; none clears it).
+rdc backup strategy set nightly-hot --rpo 15m
+```
+
+Hedef bir kayıp penceresidir: bir geri yüklemenin geri getirebildiği son değişiklik ile bir arıza arasındaki süre. Yüklemenin süresi de buna dahildir. Hedeften geç biten bir çalıştırma, anlık görüntünün kendisi başarılı olsa bile ıskalama sayılır. `rdc machine health`, ulaşılan değeri hedefin yanında gösterir. Hedef ayarlandığında değişim ölçümünden hesaplanan aylık bir maliyet tahmini yazdırılır; ölçümü olmayan bir depo, `rdc backup churn <repo>` çalıştırılana ya da `--no-estimate` verilene kadar reddedilir. `--dry-run` değişikliği yazmadan gösterir.
+
+Bir çalıştırma depolamaya yalnızca önceki anlık görüntüden bu yana değişen hücreleri sorar; buna ek olarak, depolamanın hâlâ elinde bulundurması gereken 16 değişmemiş hücreden oluşan dönüşümlü bir örnek de sorulur. Örnekteki bir hücre eksikse o çalıştırma her şeyi sorar ve kaybolanı yükler. Değişmemiş bir depo, yeni bir anlık görüntü yerine `unchanged` bir çalıştırma kaydeder. Her çalıştırmanın bir süre sınırı vardır; takılan bir çalıştırma sonlandırılır ve zamanlayıcıyı sessizce durdurmak yerine ıskalama sayılır.
+
+Bir makinenin depoları tek bir çalıştırma yuvasını paylaşır, dolayısıyla iki hedef hiçbir zaman iki yüklemeyi aynı anda çalıştırmaz.
+
+### Yedek öncesi kanca
+
+Bir depo, dondurma işleminin çevresinde kendi uygulamasını sessize alabilir. Bunu Rediaccfile içindeki iki isteğe bağlı fonksiyon yapar.
+
+```bash
+backup_prepare() { docker exec db psql -c "CHECKPOINT"; }
+backup_finish()  { :; }
+```
+
+Sıcak bir çalıştırmada `backup_prepare` çalışır, dosya sistemi eşitlenip reflink ile kopyalanır ve `backup_finish` her zaman, başarısız bir prepare'den sonra bile, ardından çalışır. Hash'leme ve yükleme ancak `backup_finish` döndükten sonra başlar, bu yüzden uygulama yükleme sırasında hiçbir zaman bekletilmez. Her fonksiyonun varsayılan zaman aşımı 30 saniye, en fazla 300 saniyedir; zaman aşımını aşan bir fonksiyon, tüm süreç grubuyla birlikte sonlandırılır. Bir kancanın tuttuğu yazmalar `backup_finish` döndüğünde sona erer. renet'in kendisi sonlandırılırsa kancadan önce kurulmuş bir zamanlayıcı, zaman aşımının iki katı artı 30 saniye içinde `backup_finish`'i çalıştırır. Kancadan geçen bir anlık görüntü `app-quiesced`, geçmeyen `crash-consistent` olarak kaydedilir. Soğuk bir çalıştırma servisleri kendisi durdurduğu için kancayı hiç kullanmaz.
+
+Güvenlik notu: kanca depo kodudur. Yedekleme biriminin kendi ortamıyla değil, sıfırdan kurulmuş bir ortamla çalışır; bu yüzden yedek kimlik bilgileri ona görünmez. Docker'a yalnızca deponun ilke vekili üzerinden, kısıtlamaları yürürlükteyken erişilir. Başarısız olan veya zaman aşımına uğrayan bir kanca sonucuyla (`failed`, `timeout`) kaydedilir ve bildirilir; zaman aşımına uğrayan bir finish ise uygulama hâlâ sessizde olabileceği için hemen uyarı üretir.
+
+### Hücre boyutu
+
+İmaj varsayılan olarak 4 MiB'lık hücrelere kesilir. Posta deposu gibi küçük, dağınık yazmalardan oluşan bir depo 1 MiB'da çok daha az bayt yükler; büyük ve kümelenmiş yazmalar ise daha küçük hücreden hiçbir şey kazanmaz, yalnızca istek sayısını artırır. `rdc backup churn`, ölçülen yazma örüntüsüne göre bir boyut önerir ve `--repo-cell-size mail=1M` bunu uygular. Hücre boyutunu değiştirmek depoyu yeniden tohumlar: tüm hücreler yeniden yüklenir ve saklama eski zinciri düşürene kadar canlı olarak ücretlendirilir, eski ızgaradaki fork'lar ise tekilleştirmeyi bırakır. Zamanlanmış bir çalıştırma ızgarayı hiçbir zaman kendiliğinden değiştirmez. İmajı 262.144'ten fazla hücreye bölecek bir boyut reddedilir, çünkü bunun ötesinde budama ertelenir (1 MiB'da 256 GiB).
+
+### Gecikmeli yok etme
+
+```bash
+rdc backup immutability show
+rdc backup immutability set 7
+rdc backup undelete <snapshot-id>
+```
+
+`D` günlük bir pencerede (0 ile 30 arası) bir anlık görüntünün silinmesi, bir deponun temizlenmesi ve daha azını tutan bir saklama değişikliği, yürürlüğe girmeden önce `D` gün bekler ve her biri o zamana kadar geri alınabilir (`rdc backup undelete`, `purge --cancel`). Silinen bir anlık görüntü beklerken geri yüklenmeye devam eder. Daha fazlasını tutan bir değişiklik hemen uygulanır; pencerenin kendisini kısaltmak veya kapatmak ise eski pencerenin dolmasını bekler. Bunların her biri sahibi ve yöneticileri hemen bilgilendirir. Baytlar, pencereden ve 7 günlük bekleme süresinden sonra, yani istekten `D + 7` gün sonra gider.
+
+Sınırlar açıkça belirtilir. Bu, nesne depolaması tarafından değil, hesap sunucusu tarafından uygulanır: WORM depolama değildir ve hiçbir kova ya da nesne kilidi kullanılmaz. Pencerenin dolmasını bekleyen bir sahibe ya da yöneticiye karşı koruma sağlamaz; ikinci bir hedef olmadığı için depolamanın kendisinin kaybına karşı da korumaz. Onarım, nesnenin yeniden hash'lenerek bozuk olduğu kanıtlandığı için bozuk bir nesneyi hemen siler ve her onarım kaydedilip uyarıya dönüştürülür. Bir manifest zincirini birleştirmek, geri yüklenebilir hiçbir durumu kaldırmadan geçmişi yeniden yazar. retain-on-cancel ile iptal edilen bir abonelik kendi 60 günlük taramasını izler.
+
+### Canlı ve bekleyen depolama
+
+`rdc backup usage` iki rakam bildirir. **Live**, saklanan anlık görüntülerin geri yükleyebildiği miktardır ve plan kotasına yalnızca o sayılır. **Waiting**, artık hiçbir saklanan anlık görüntünün adlandırmadığı ve silinmeden önce 7 günlük bir yumuşatma süresi bekleyen depolamadır; ücretlendirilmez ve kullanım özeti onu silinmeyi bekleyen olarak gösterir.
+
+Bekleyen depolama sınırsız değildir. Değişim sınırı plan kotasının iki katıdır. Bunun üzerinde, 60 dakikadan kısa süre önce commit eden bir akışın yeni yüklemesi, bekleyen depolama boşalana kadar reddedilir, makine çalıştırmayı `throttled` olarak kaydeder ve bu, sınırın neden olarak belirtildiği bir hedef ıskalaması sayılır. Saatlik veya daha yavaş çalışan bir akış hiçbir zaman reddedilmez.
+
+### Iskalanan hedef uyarıları
+
+Hedefi olan bir akış, bir sonraki beklenen çalıştırmasını geçtiğinde ya da art arda üç çalıştırmayı ıskaladığında, günlük özeti beklemek yerine kendi uyarısını gönderir; akış başına 6 saatte en fazla bir. Uyarı hedefi, ulaşılan değeri ve nedeni belirtir. Tespit gecikmesi bakım taraması aralığına, yani bir saate eşittir; bu yüzden uyarı ıskalamadan bir saate kadar sonra gelebilir. Gecikmeli yok etme altındaki yıkıcı bir istek hemen bildirim gönderir.
 
 ## Zamanlanmış Yedeklemeler
 
