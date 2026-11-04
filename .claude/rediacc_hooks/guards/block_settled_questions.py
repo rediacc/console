@@ -103,6 +103,11 @@ LEASE_ROUTING = (
     r"|(?<![a-z])lease or (the )?(main|current)(?![a-z])"
     r"|(?<![a-z])(main|current) (tree|checkout) or (a )?(new )?lease(?![a-z])"
 )
+# A worklist item's lease is not a tree: review fbe4c449.1 measured a question about extending a worklist lease, and one about using the lease on an item, both refused. The two control rows in EDGE_CASES hold the spellings.
+LEASE_ON_AN_ITEM = (
+    r"(?<![a-z])(worklist|renew|renews|renewing|extend|extends|extending|release|releasing)(?![a-z])"
+    r"|(?<![a-z])lease (on|for) (this|the|that|an|each) (item|box|task)(?![a-z])"
+)
 
 # ---- A HEADER CARRIES THE OBJECT only when it IS the object ---- The bash original joined headers into the same string so a question whose header named the action ("Commit" over a bare go-ahead question) still refused. That join is also what let one question's object meet another question's permission. A header now counts only when it is essentially just the git action (an
 # optional verb and article, then the object), so a topic chip like "Push strategy" or "Renet budget" never supplies an object.
@@ -326,6 +331,8 @@ EDGE_CASES = [
     ("control: leasing a machine", "Can I lease a VM for the drill?"),
     ("control: a sentence about a lease", "Should the writer explain why a lease exists?"),
     ("control: a fact about a lease", "Did the writer get a lease?"),
+    ("control: extending a worklist lease", "Should the agent extend the worklist lease?"),
+    ("control: using an item's lease", "Should I use the lease on this item?"),
     ("can I push", "Can I push?"),
     ("should I open the pr", "Should I open the PR?"),
     ("push to main is still an action", "Should I push to main now?"),
@@ -577,7 +584,11 @@ def _bench_login(text):
 def _judge(sentence, header_object):
     """(permission, object) when this sentence asks leave for a settled action, else None."""
     lease = re.search(LEASE_ROUTING, sentence)
-    if lease and not re.search(CLAUSE, lease.group("between") or ""):
+    if (
+        lease
+        and not re.search(CLAUSE, lease.group("between") or "")
+        and not re.search(LEASE_ON_AN_ITEM, sentence)
+    ):
         return lease.group(0), "lease"
     perm = re.search(PERMISSION, sentence)
     if perm is None:

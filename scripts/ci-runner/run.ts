@@ -2010,21 +2010,33 @@ async function selftest(): Promise<number> {
     const rel = path.relative(REPO_ROOT, RECEIPT_PATH);
     const live = path.join(dir, 'live');
     const lease = path.join(dir, 'lease');
-    fs.mkdirSync(lease);
-    seedReceipt(lease, live);
-    require_(
-      !fs.existsSync(path.join(lease, rel)),
-      'CONTROL: a main checkout with no receipt seeds none into the lease'
-    );
-    fs.mkdirSync(path.dirname(path.join(live, rel)), { recursive: true });
-    fs.writeFileSync(path.join(live, rel), '{"failed":[]}');
-    seedReceipt(lease, live);
-    require_(
-      fs.readFileSync(path.join(lease, rel), 'utf8') === '{"failed":[]}',
-      "the seed must copy the main checkout's receipt to the path --narrow reads in the lease"
-    );
-    fs.rmSync(dir, { recursive: true, force: true });
+    try {
+      fs.mkdirSync(lease);
+      seedReceipt(lease, live);
+      require_(
+        !fs.existsSync(path.join(lease, rel)),
+        'CONTROL: a main checkout with no receipt seeds none into the lease'
+      );
+      fs.mkdirSync(path.dirname(path.join(live, rel)), { recursive: true });
+      fs.writeFileSync(path.join(live, rel), '{"failed":[]}');
+      seedReceipt(lease, live);
+      require_(
+        fs.readFileSync(path.join(lease, rel), 'utf8') === '{"failed":[]}',
+        "the seed must copy the main checkout's receipt to the path --narrow reads in the lease"
+      );
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
   }
+  require_(
+    wholeLane('/main') === '`npm run ci:quick` in /main' && narrowScript('/main') === 'ci',
+    'in a lease the narrow messages must name the main checkout and the script a lease can run'
+  );
+  require_(
+    leaseMainOf(REPO_ROOT) !== undefined ||
+      (wholeLane() === '`npm run ci:quick`' && narrowScript() === 'ci:quick'),
+    'CONTROL: outside a lease the narrow messages name ci:quick and no other checkout'
+  );
   let relRefused = false;
   try {
     parseArgs(['--receipt-out', 'relative/receipt.json']);
@@ -4546,9 +4558,13 @@ function defaultEventsFile(opts: Options, runId: string): string {
 }
 
 /** The whole lane, named where it can run: `ci:quick` is refused in a lease, whose main checkout is where the receipt comes from. */
-function wholeLane(): string {
-  const main = leaseMainOf(REPO_ROOT);
+function wholeLane(main: string | undefined = leaseMainOf(REPO_ROOT)): string {
   return main === undefined ? '`npm run ci:quick`' : `\`npm run ci:quick\` in ${main}`;
+}
+
+/** The script a narrow set runs under here: `ci:quick` routes to a refusal in a lease, and `ci` does not. */
+function narrowScript(main: string | undefined = leaseMainOf(REPO_ROOT)): string {
+  return main === undefined ? 'ci:quick' : 'ci';
 }
 
 /**
@@ -4656,7 +4672,7 @@ function narrowPlan(
       error: `ci-runner: --narrow found nothing to run: no non-carried fail, no touched gate, no cluster or association. Run the whole lane: ${wholeLane()}`,
     };
   lines.push(
-    `  run it: npm run ${leaseMainOf(REPO_ROOT) === undefined ? 'ci:quick' : 'ci'} -- --narrow   (the same set: npx tsx scripts/ci-runner/run.ts --only ${[...ids].join(',')})\n`
+    `  run it: npm run ${narrowScript()} -- --narrow  (the same set: npx tsx scripts/ci-runner/run.ts --only ${[...ids].join(',')})\n`
   );
   return { ids, lines };
 }

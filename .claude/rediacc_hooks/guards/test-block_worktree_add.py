@@ -7,13 +7,16 @@ This file names the phrase the guard refuses in a script, so the guard refuses t
 """
 
 import ast
+import atexit
 import importlib
 import importlib.util
 import json
 import os
 import pathlib
+import shutil
 import subprocess
 import sys
+import tempfile
 
 HERE = pathlib.Path(__file__).resolve().parent
 HOOKS = HERE.parent
@@ -84,7 +87,21 @@ REFUSED = [
     ("the port's create", "python3 -m rediacc_ci.dev.worktree create x"),
 ]
 
+# A script path the shell expands, with the words in the command's text. The second row is the hole itself: the fixture names the phrase and is untracked, so the literal path is refused and the variable must be too.
+FIXTURE_DIR = tempfile.mkdtemp(prefix="guard-lease-variable-")
+atexit.register(shutil.rmtree, FIXTURE_DIR, ignore_errors=True)
+pathlib.Path(FIXTURE_DIR, "fixture.py").write_text("# git worktree add /tmp/x\n", encoding="utf-8")
+REFUSED += [
+    ("a variable script path naming the words", "python3 $G/test-block_worktree_add.py"),
+    ("the fixture, literal", "python3 %s/fixture.py" % FIXTURE_DIR),
+    ("the fixture, through an assignment", "G=%s; python3 $G/fixture.py" % FIXTURE_DIR),
+]
+
 ALLOWED = [
+    # A variable script path with none of the words is out of reach, and must stay allowed: every session runs these.
+    ("a variable script path, no words", "python3 $G/unrelated.py"),
+    # A bare name aimed at another checkout says nothing about this checkout's trees.
+    ("a bare name in another checkout", "git -C /other/repo worktree remove w2-proof"),
     # The lease tool is the sanctioned road.
     ("the lease tool", "./run.sh worktree lease"),
     ("the lease tool, named", "./run.sh worktree lease --name w6 --owner abcd1234"),

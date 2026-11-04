@@ -143,7 +143,7 @@ def runs_port_create(cmd):
 #
 # THREE WAYS TO NAME ONE. A path holding the two segments, as typed or once joined to the directory the run executes in (`cd .claude/worktrees && git worktree remove x`, `git -C .claude worktree remove worktrees/x`). A directory under the lease root as the run's own directory (`git -C .claude/worktrees/x worktree remove .`). And a bare suffix, because git resolves a unique path suffix to a tree: measured on git 2.53.0 in this checkout, `git worktree lock w2-proof` answered `'w2-proof' is already locked` while `no-such-tree-xyz` answered `is not a working tree`. Text alone cannot see that spelling, so the suffix is compared with the trees on disk, and only a relative word can be one.
 #
-# OUT OF REACH, stated so a green is not read as more: a path held in a variable (`git worktree remove "$X"`), a glob that hides the segments, a git alias. The lock is the second wall for those, since `remove` refuses a locked tree without `-f -f`.
+# OUT OF REACH, stated so a green is not read as more: a path held in a variable (`git worktree remove "$X"`), a glob that hides the segments, a program that joins the segments at run time (`os.path.join('.claude', 'worktrees', 'x')`), a git alias. The lock is the second wall for those, since `remove` refuses a locked tree without `-f -f`. The program-text arm reads no run structure, so it refuses a program holding both the verb's argv and the root anywhere in its text, the same over-refusal every text arm here accepts.
 LEASE_DIR = ".claude/worktrees"
 LEASE_VERBS = frozenset(("remove", "move", "prune", "lock", "unlock"))
 LEASE_PATH = re.compile(r"(?:^|/)\.claude/worktrees(?:/|$)")
@@ -170,6 +170,14 @@ def names_lease(word, here, names):
     return any(("/%s/%s" % (LEASE_DIR, name)).endswith("/" + tail) for name in names)
 
 
+def _in_this_checkout(here):
+    """Is the run's directory `here` this checkout? A relative one is, since it joins the directory the hook runs in."""
+    if not os.path.isabs(here):
+        return True
+    root = str(hookio.repo_root())
+    return os.path.normpath(here) == root or os.path.normpath(here).startswith(root + os.sep)
+
+
 def runs_lease_verb(cmd):
     """Does `cmd` run a `git worktree` verb in LEASE_VERBS that names a lease tree? Judged by run, so an `echo` or a commit message naming the command is an argument and stays allowed."""
     names = None
@@ -188,7 +196,9 @@ def runs_lease_verb(cmd):
             return True
         if names is None:
             names = _lease_names()
-        if any(names_lease(w, here, names) for w in args[1:] if not w.startswith("-")):
+        # A run aimed at another checkout resolves a bare suffix against that checkout's trees, so this checkout's names say nothing about it.
+        known = names if _in_this_checkout(here) else []
+        if any(names_lease(w, here, known) for w in args[1:] if not w.startswith("-")):
             return True
     return False
 
@@ -1194,6 +1204,9 @@ def _script_verdict(cmd, depth, cwd):
     if not (shellscan.PROGRAM_PREFILTER.search(cmd) or SHELL_SCRIPT_PREFILTER.search(cmd)):
         return None
     for run_ in shellscan.every_run(cmd):
+        # A SCRIPT PATH THE SHELL WILL EXPAND FAILED OPEN (measured 2026-11-04: `python3 $G/test-...` of a dirty file ran, where the literal path was refused), since the unexpanded path "does not exist". Nothing here can read what it will name, so it is unjudgeable once the command's own text spells the words. A path in a variable with no such text stays out of reach, as with any file named only at run time.
+        if "$" in (_script_operand(run_, cmd, cwd) or "") and _could_spell(cmd):
+            return "unjudgeable"
         if _unread_reason(run_, cmd, cwd):
             return "unread"
         if _reads_stdin_operand(run_):
@@ -1345,6 +1358,9 @@ EDGE_CASES = [
     # Reads are none of this hook's business.
     ("listing worktrees is allowed", "git worktree list"),
     ("removing a worktree is allowed", "git worktree remove /tmp/wt"),
+    ("a variable script path naming the words", "python3 $G/test-block_worktree_add.py"),
+    ("control: a variable script path, no words", "python3 $G/unrelated.py"),
+    ("control: a bare name in another checkout", "git -C /other/repo worktree remove w2-proof"),
     ("run.sh doing something else", "./run.sh setup --check"),
     # A lease tree leaves only through GC (Design 6): the verbs on its path are refused, the lease tool and the same verbs on any other path are not.
     ("the lease tool is allowed", "./run.sh worktree lease"),
