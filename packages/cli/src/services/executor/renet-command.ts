@@ -136,6 +136,9 @@ export const LONG_TIMEOUT_FUNCTIONS: ReadonlySet<string> = new Set([
   'datastore_attach',
   'datastore_detach',
   'datastore_adopt',
+  'replica_fork',
+  'replica_attach',
+  'replica_discard',
   // The cluster lifecycle (ceph and kube install, join, upgrade, data copies).
   'ceph_bootstrap_cluster',
   'ceph_cluster_create',
@@ -159,6 +162,7 @@ export const LONG_TIMEOUT_FUNCTIONS: ReadonlySet<string> = new Set([
 
 /** Every other function: renet's 10-minute default. */
 export const DEFAULT_TIMEOUT_FUNCTIONS: ReadonlySet<string> = new Set([
+  'replica_publish',
   'backup_browse',
   'backup_browse_at',
   'backup_delete',
