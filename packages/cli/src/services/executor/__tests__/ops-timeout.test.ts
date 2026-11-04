@@ -277,11 +277,13 @@ setInterval(() => {}, 1e9);`,
     });
     for (let i = 0; i < 500; i++) {
       try {
-        readFileSync(grandchildFile, 'utf8');
-        return { leader, grandchildFile };
+        // writeFileSync creates the file before the pid lands in it: an empty read is "not written yet", not a pid.
+        const pid = Number.parseInt(readFileSync(grandchildFile, 'utf8').trim(), 10);
+        if (Number.isInteger(pid) && pid > 1) return { leader, grandchildFile };
       } catch {
-        await new Promise((resolve) => realSetTimeout(resolve, 10));
+        // not created yet
       }
+      await new Promise((resolve) => realSetTimeout(resolve, 10));
     }
     throw new Error('the test tree never started');
   };
