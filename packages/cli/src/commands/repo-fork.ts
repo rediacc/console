@@ -27,9 +27,9 @@ import {
 import { outputService } from '../services/core/output.js';
 import { setExitCode } from '../services/core/request-context.js';
 import { type ExecuteResult, getExecutor } from '../services/executor/executor-factory.js';
-import { servedRecordGuid } from '../services/jobs/attach.js';
 import { localExecutorService } from '../services/executor/local-executor.js';
 import type { ExecuteOptions } from '../services/executor/types.js';
+import { servedRecordGuid } from '../services/jobs/attach.js';
 import {
   type CommandJobOutcome,
   pendingExitCode,
@@ -147,12 +147,17 @@ async function registerFork(
   immutable = false
 ): Promise<{ repositoryGuid: string; networkId: number; reattached?: true }> {
   const existing = await configService.getRepository(forkKey);
-  // A POST retried with the same body id finds the row its first attempt registered (the guid derives from the id): attach to it, so the fork job dedupes on the request id instead of the retry failing as a duplicate.
-  const servedGuid = servedRecordGuid(`fork:${forkKey}`);
-  if (existing && servedGuid !== undefined && existing.repositoryGuid === servedGuid) {
+  // A POST retried with the same body id and machine finds the row its first attempt registered (the guid derives from both): attach to it, so the fork job dedupes on the request id instead of the retry failing as a duplicate. The same id asking for another machine is a different request, and a row with no network ID cannot run a fork, so both meet the duplicate error.
+  const servedGuid = servedRecordGuid(`fork:${forkKey}@${machineName}`);
+  const existingNetworkId = existing?.networkId ?? 0;
+  if (
+    existing?.repositoryGuid === servedGuid &&
+    servedGuid !== undefined &&
+    existingNetworkId > 0
+  ) {
     return {
       repositoryGuid: servedGuid,
-      networkId: existing.networkId ?? 0,
+      networkId: existingNetworkId,
       reattached: true,
     };
   }

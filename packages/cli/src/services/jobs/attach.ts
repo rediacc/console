@@ -144,7 +144,9 @@ export function invocationMinter(): RequestIdMinter {
 /**
  * A guid for a record this invocation registers, or `undefined` outside a served request that brought a body id.
  * It derives from the body id and `scope`, so a retried POST computes the guid its first attempt registered and can
- * tell its own record from a stranger's of the same name; a fresh command, or a different id, never matches.
+ * tell that record from one of the same name a fresh command or a different id wrote. The body id is the request's
+ * identity and nothing more: a caller reusing an id with the same `scope` is the retry, so `scope` names every field
+ * that makes it a different request.
  */
 export function servedRecordGuid(scope: string): string | undefined {
   const served = servedMinter.getStore();

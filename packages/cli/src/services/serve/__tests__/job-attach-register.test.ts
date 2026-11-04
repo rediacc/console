@@ -20,7 +20,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 type Row = { repositoryGuid: string; networkId?: number; [key: string]: unknown };
 
-const { rows } = vi.hoisted(() => ({ rows: new Map<string, Row>() }));
+const { rows, parentMachine } = vi.hoisted(() => ({
+  rows: new Map<string, Row>(),
+  parentMachine: { value: 'hostinger' },
+}));
 
 vi.mock('../../config/network-id-discovery.js', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../config/network-id-discovery.js')>()),
@@ -30,7 +33,11 @@ vi.mock('../../config/network-id-discovery.js', async (importOriginal) => ({
 vi.mock('../../config/config-resources.js', () => ({
   configService: {
     resetResourceView: vi.fn(),
-    getRepository: vi.fn((name: string) => Promise.resolve(rows.get(name) ?? (name.includes(':') ? undefined : rows.get(`${name}:latest`)))),
+    getRepository: vi.fn((name: string) =>
+      Promise.resolve(
+        rows.get(name) ?? (name.includes(':') ? undefined : rows.get(`${name}:latest`))
+      )
+    ),
     addRepository: vi.fn((name: string, row: Row) => {
       rows.set(name, row);
       return Promise.resolve();
@@ -51,12 +58,12 @@ vi.mock('../../config/config-resources.js', () => ({
       Promise.resolve({
         state: {},
         resources: {
-          machines: { hostinger: {} },
+          machines: { hostinger: {}, elsewhere: {} },
           repositories: {
             shop: {
               grand: 'base',
               tags: { base: {} },
-              placement: { machine: 'hostinger' },
+              placement: { machine: parentMachine.value },
             },
           },
         },
@@ -115,7 +122,10 @@ describe('a retried POST of a verb that registers before its job', () => {
 
   function bootMachine() {
     const execute = (options: ExecuteOptions): Promise<ExecuteResult> => {
-      if (options.functionName !== 'repository_create' && options.functionName !== 'repository_fork') {
+      if (
+        options.functionName !== 'repository_create' &&
+        options.functionName !== 'repository_fork'
+      ) {
         return Promise.resolve({ success: true, exitCode: 0, durationMs: 1 });
       }
       // renet's request index: a known id answers with the job it started, and starts nothing.
@@ -199,6 +209,7 @@ describe('a retried POST of a verb that registers before its job', () => {
 
   beforeEach(() => {
     rows.clear();
+    parentMachine.value = 'hostinger';
     // The parent of the fork, as the config holds it.
     rows.set('shop', { repositoryGuid: 'guid-shop', credential: 'set', networkId: 7 });
     dir = mkdtempSync(join(tmpdir(), 'job-attach-register-'));
@@ -258,4 +269,37 @@ describe('a retried POST of a verb that registers before its job', () => {
       });
     });
   }
+
+  it('repo create: the same body id asking for another machine is refused, not reported as the first placement', async () => {
+    const [pathKey, params, positionals] = verbs['repo create']();
+    await run(pathKey, params, positionals, { requestId: REQUEST_ID });
+    const moved = await run(pathKey, { ...params, machine: 'elsewhere' }, positionals, {
+      requestId: REQUEST_ID,
+    });
+
+    expect(moved).toMatchObject({ result: { success: false } });
+    expect([...jobs.keys()]).toHaveLength(1);
+  });
+
+  it('repo fork: a retry after the parent moved machines is refused, not reported as the first placement', async () => {
+    await run(...verbs['repo fork'](), { requestId: REQUEST_ID });
+    parentMachine.value = 'elsewhere';
+
+    const moved = await run(...verbs['repo fork'](), { requestId: REQUEST_ID });
+
+    expect(moved).toMatchObject({ result: { success: false } });
+    expect([...jobs.keys()]).toHaveLength(1);
+  });
+
+  it('repo fork: a retry finding its row without a network ID is refused, never passed on as ID 0', async () => {
+    await run(...verbs['repo fork'](), { requestId: REQUEST_ID });
+    const row = rows.get('shop:trial');
+    if (!row) throw new Error('the first attempt registered no row');
+    delete row.networkId;
+
+    const retried = await run(...verbs['repo fork'](), { requestId: REQUEST_ID });
+
+    expect(retried).toMatchObject({ result: { success: false } });
+    expect([...jobs.keys()]).toHaveLength(1);
+  });
 });

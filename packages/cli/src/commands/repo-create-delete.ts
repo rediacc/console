@@ -17,13 +17,13 @@ import { outputService } from '../services/core/output.js';
 import { setExitCode } from '../services/core/request-context.js';
 import { requestNetworkIdAuto } from '../services/executor/executor-factory.js';
 import type { ExecuteOptions } from '../services/executor/types.js';
+import { servedRecordGuid } from '../services/jobs/attach.js';
 import {
   type CommandJobOutcome,
   JobDispatchedError,
   pendingExitCode,
   runCommandJob,
 } from '../services/jobs/command-job.js';
-import { servedRecordGuid } from '../services/jobs/attach.js';
 import { outstandingSteps } from '../services/jobs/run-job.js';
 import { bindStepHandler, type PlannedStep, planStep } from '../services/jobs/steps.js';
 import { assertAgentRepoCreate } from '../utils/agent-guard.js';
@@ -211,8 +211,8 @@ export async function registerNewRepo(
   const { assertResourceName, compositeKey } = await import('../utils/config-schema.js');
   assertResourceName(name);
   const existing = await configService.getRepository(name);
-  // A POST retried with the same body id finds the record its first attempt registered (the guid derives from the id): attach to it, so the create job dedupes on the request id instead of the retry failing as a duplicate.
-  const servedGuid = servedRecordGuid(`create:${name}`);
+  // A POST retried with the same body id and placement finds the record its first attempt registered (the guid derives from both): attach to it, so the create job dedupes on the request id instead of the retry failing as a duplicate. The same id asking for another placement is a different request and meets the duplicate error.
+  const servedGuid = servedRecordGuid(`create:${name}:${JSON.stringify(placement)}`);
   if (existing && servedGuid !== undefined && existing.repositoryGuid === servedGuid) {
     return {
       repositoryGuid: servedGuid,
