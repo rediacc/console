@@ -550,6 +550,8 @@ class _LiveL1:
     def l1_12_reboot_path(self) -> None:
         """Reboot-shaped: autostart on, the repository taken down and unmounted, then one reconcile tick brings it back, running up() dropped. A grand of its own, because autostart is refused on a fork."""
         name = "l1-%s" % self.tag
+        # Named before the create: one that fails part way may still leave the grand, and teardown removes it either way.
+        self.reboot_grand = name
         made = self.ctx.rdc(
             "repo",
             "create",
@@ -561,7 +563,6 @@ class _LiveL1:
             timeout=900,
             refuse=False,
         )
-        self.reboot_grand = name if made.rc == 0 else ""
         if not self.check(
             "L1.12 the grand %s is created for the reboot shape" % name, made.rc == 0, made
         ):
@@ -574,7 +575,14 @@ class _LiveL1:
             self.ctx.remote_evidence(sent) if sent.rc != 0 else "",
         ):
             return
-        self.shell(clear_probe_state_command(), name)
+        cleared = self.shell(clear_probe_state_command(), name)
+        if not self.check(
+            "L1.12 the probe Rediaccfile is installed in %s" % name,
+            cleared.rc == 0,
+            cleared,
+            self.ctx.remote_evidence(cleared) if cleared.rc != 0 else "",
+        ):
+            return
         up = self.ctx.rdc("repo", "up", name, timeout=900, refuse=False)
         if not self.check("L1.12 repo up %s before the reboot shape" % name, up.rc == 0, up):
             return
