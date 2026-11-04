@@ -470,9 +470,9 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-agent-hints-in-stop-hook.md` | compacted | 51 | 0 | 0 | 3640 |
 | `agent/plans/PLAN-agent-tree-lifecycle.md` | mostly-done | 74 | 1 | 6 | 12129 |
 | `agent/plans/PLAN-ask-flow-preemptive-settled-check.md` | compacted | 38 | 0 | 0 | 2358 |
-| `agent/plans/PLAN-backup-critical-tier.md` | approved | 762 | 21 | 32 | 102508 |
+| `agent/plans/PLAN-backup-critical-tier.md` | approved | 764 | 19 | 34 | 102839 |
 | `agent/plans/PLAN-backup-download-from-store.md` | approved | 47 | 4 | 5 | 8795 |
-| `agent/plans/PLAN-backup-integrity.md` | approved | 481 | 17 | 40 | 72575 |
+| `agent/plans/PLAN-backup-integrity.md` | approved | 481 | 17 | 40 | 72576 |
 | `agent/plans/PLAN-backup-list-executor-fix.md` | compacted | 55 | 0 | 0 | 5498 |
 | `agent/plans/PLAN-backup-local-image.md` | approved | 455 | 5 | 9 | 57445 |
 | `agent/plans/PLAN-backup-meter-orphaned-chunks.md` | approved | 263 | 4 | 4 | 33285 |
@@ -590,7 +590,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-sync-remote-file-ownership.md` | approved | 133 | 1 | 6 | 21029 |
 | `agent/plans/PLAN-telemetry-export.md` | approved | 206 | 2 | 18 | 51160 |
 | `agent/plans/PLAN-test-advisor.md` | compacted | 39 | 0 | 0 | 2731 |
-| `agent/plans/PLAN-tested-on-bench.md` | approved | 324 | 6 | 14 | 46276 |
+| `agent/plans/PLAN-tested-on-bench.md` | approved | 324 | 6 | 14 | 46300 |
 | `agent/plans/PLAN-testing-surface-audit.md` | compacted | 38 | 0 | 0 | 3684 |
 | `agent/plans/PLAN-token-ip-rebind.md` | draft | 421 | 0 | 11 | 39472 |
 | `agent/plans/PLAN-unify-trap-corpus.md` | compacted | 39 | 0 | 0 | 2772 |

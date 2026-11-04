@@ -407,7 +407,7 @@ Every H box uses the released `rdc` and its released renet. Mutating steps run o
 - [ ] H2: Read first: for each of the 10 mounted repositories, the CLI-computed key equals the machine's key where one exists. A mismatch stops the box and is reported, with no overwrite.
   - Accept: `rdc --config eu-bench backup toc-key sync <repo> --dry-run -o json` rc 0 for each, results recorded.
 - [ ] H3: Re-deploy the schedule; public keys are installed, and units show verify and `OnFailure=`.
-  - Accept: `rdc --config eu-bench backup schedule -m hostinger` rc 0, and `backup status -m hostinger` rc 0.
+  - Accept: `rdc --config eu-remote backup schedule -m hostinger` rc 0, and `backup status -m hostinger` rc 0.
 - [ ] H4: The next nightly: 10 repositories have `hasIndex` true and `indexStatus` sealed. demo-heartbeat is reported plainly: it has neither keyfile nor mount, so it gets no listing, and the warning is in its unit journal. Spot ran after the snapshot, and reports reached the account after the stable deploy.
   - Accept: `rdc --config eu-bench backup manifests <repo> -o json` rc 0 per repo, recorded here.
 - [ ] H5: N4b single-file restore to a scratch directory on a repository with a listing, then tick box N4b in agent/plans/PLAN-backup-program.md.

@@ -365,7 +365,7 @@ Worked at `C = 4 MiB`, `W = 1 day`, GiB treated as GB. It excludes the base imag
 
 - **Today's exists cost for contrast:** 1,024 hashes x 8,640 runs = 8.85 million Class B a month, $3.19, on a 4 GiB repo, plus about 22 MB a day of pin JSON. The plan's asks replace that at $0.09 to $0.16.
 - **The cap is real.** On COMMUNITY (10 GiB quota, 20 GiB cap), 5 minutes at N=10 exceeds the cap in under two days, and the stream is throttled to hourly. PROFESSIONAL (200 GiB cap) holds N=10 at 5 minutes and not N=30. The estimate says this before enabling.
-- **D1** costs extra, about `(10 + 2N) x r x 30` rows written a month: 259,200 at N=10 and 604,800 at N=30 at 5 minutes. D1's price is not in the brief, and X3 records the counted figure.
+- **D1** costs extra, about `(9 + N) x r x 30` rows written a month, counted by X3: 164,160 at N=10 and 336,960 at N=30 at 5 minutes. D1's price is not in the brief.
 
 ## Boxes
 
@@ -377,12 +377,14 @@ Control rule: every new test fails without its fix. Each tick note records the t
   - Owns: private/account/tests/integration/backup-critical-wedge.test.ts, private/account/tests/integration/helpers/backup-metered-store.ts
   - Accept: `cd private/account && npx vitest run tests/integration/backup-critical-wedge.test.ts` rc 1 on the unfixed tree with the figures recorded here, and rc 0 after M1 to M3.
     (ticked) 2026-11-01T22:50:56Z by 45048a90: commit:private/account fcf1fda. Wedge test rc=0 with the markers; X1_BARE=1 rc 1, 288 of 288 rows kept, retention 0 deleted on every visit. DEPS-WAIVED: this plan's sequencing table says X1 follows no sibling box and runs first.
-- [ ] X2: The week (F14): 288 runs a day for 7 simulated days, with no real waits, across two streams of a fork family, including a stream with a permanently live lease and a cell rewritten to earlier bytes during the wait. It asserts: calls per visit stay at or under budget; `stored`, `live` and `waiting` equal a brute-force recomputation from objects and manifests after each day; quota reads `live`; `--at` resolves any kept minute; retention matches the policy; a restore at a chosen minute materializes the expected cell map; every phase ran within 24 hours of simulated time.
+- [x] X2: The week (F14): 288 runs a day for 7 simulated days, with no real waits, across two streams of a fork family, including a stream with a permanently live lease and a cell rewritten to earlier bytes during the wait. It asserts: calls per visit stay at or under budget; `stored`, `live` and `waiting` equal a brute-force recomputation from objects and manifests after each day; quota reads `live`; `--at` resolves any kept minute; retention matches the policy; a restore at a chosen minute materializes the expected cell map; every phase ran within 24 hours of simulated time.
   - Owns: private/account/tests/integration/backup-critical-week.test.ts
   - Accept: `cd private/account && npx vitest run tests/integration/backup-critical-week.test.ts` rc 0.
-- [ ] X3: The cost formula against counted operations: the test counts Class A, Class B and D1 row writes per the simulated run and holds them within 10% of `rpo-cost.ts`.
+    (ticked) 2026-11-04T08:05:19Z by d778be9d: private/account 8dc6ee6; 9ebd3cf5f X2 week 7 passed. DEPS-WAIVED: this test uses nothing the plan's prerequisites still owe
+- [x] X3: The cost formula against counted operations: the test counts Class A, Class B and D1 row writes per the simulated run and holds them within 10% of `rpo-cost.ts`.
   - Owns: private/account/tests/integration/backup-critical-cost.test.ts
   - Accept: `cd private/account && npx vitest run tests/integration/backup-critical-cost.test.ts` rc 0.
+    (ticked) 2026-11-04T08:05:22Z by d778be9d: private/account 8dc6ee6; 9ebd3cf5f X3 cost test, rerun rc=0. DEPS-WAIVED: this test uses nothing the plan's prerequisites still owe
 
 ### M: account maintenance (writer M)
 
@@ -607,7 +609,7 @@ Every J box uses the released `rdc` and its released renet. No original repo is 
 - [ ] J1: Churn measurement on `mail` before enabling, with the reflink base disclosed (F8): samples at 5-minute spacing through a busy hour, then the base removed.
   - Accept: `rdc --config eu-bench backup churn mail --samples 12 --interval 5m -o json` rc 0, with N, projected bytes per cell size and the recommendation recorded here, and a read showing no `.churn-probe` base remaining for `mail`.
 - [ ] J2: Enable at 30 minutes with the estimate recorded; a day later: no missed target, `indexMs` and load peaks recorded, `nightly-hot` ran for the other repos.
-  - Accept: `rdc --config eu-bench backup strategy set nightly-hot --repo-rpo mail=30m` then `rdc --config eu-bench backup schedule -m hostinger` rc 0; a day later `rdc --config eu-bench machine health -m hostinger` rc 0, and `backup manifests mail -o json` rc 0, recorded here.
+  - Accept: `rdc --config eu-remote backup strategy set nightly-hot --repo-rpo mail=30m` then `rdc --config eu-remote backup schedule -m hostinger` rc 0; a day later `rdc --config eu-remote machine health -m hostinger` rc 0, and `backup manifests mail -o json` rc 0, recorded here.
 - [ ] J3: The same at 15 minutes, with a day's check.
   - Accept: as J2 with `mail=15m`, figures recorded here.
 - [ ] J4: The same at 5 minutes, with a day's check; the btrfs fragmentation and syncfs cost read-only under the sampler; actual Class A and B against the estimate.
