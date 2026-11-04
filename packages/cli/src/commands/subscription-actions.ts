@@ -13,10 +13,11 @@ import {
   type RepoBatchRefreshResult,
   type RuntimeRepoLicenseStatus,
   readMachineActivationStatus,
-  readRuntimeRepoLicenseStatuses,
   refreshRepoLicenseIdentity,
   refreshRepoLicensesBatch,
 } from '../services/account/license.js';
+import { DEFAULT_DATASTORE } from '../services/account/license-machine.js';
+import type { RemoteRepoLicenseScanEntry } from '../services/account/license-types.js';
 import {
   getSubscriptionScopeMismatch,
   getSubscriptionServerUrl,
@@ -25,6 +26,9 @@ import {
 } from '../services/account/subscription-auth.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
+import { setExitCode } from '../services/core/request-context.js';
+import { pendingExitCode, runCommandJob } from '../services/jobs/command-job.js';
+import { bindStepHandler, planStep } from '../services/jobs/steps.js';
 import {
   acquireRemoteRenet,
   type RenetAccess,
@@ -277,13 +281,8 @@ function outputRemoteStatus(
   }
 }
 
-/** The per-repo license table read out of renet's runtime state on the machine. */
-async function renderRepoLicenseTable(
-  machineName: string,
-  context: SubscriptionCommandContext
-): Promise<void> {
-  const entries = await readRuntimeRepoLicenseStatuses(machineName, context.machine);
-
+/** The per-repo license table, from the `license-status` job's output (renet's runtime state on the machine). */
+function renderRepoLicenseTable(machineName: string, entries: RuntimeRepoLicenseStatus[]): void {
   outputService.info(t('commands.subscription.repo.status.header', { machineName }));
   if (entries.length === 0) {
     outputService.info(t('commands.subscription.repo.status.empty'));
@@ -414,19 +413,63 @@ async function renderActivationSection(
   }
 }
 
+/** A `license-status` / `license-scan` answer: a JSON array, or nothing usable. */
+function parseJsonArray<T>(output: string | undefined): T[] {
+  const parsed: unknown = JSON.parse(output ?? '[]');
+  return Array.isArray(parsed) ? (parsed as T[]) : [];
+}
+
+/** The failure of a licence job the command ran: the same text the awaited probe form threw. */
+function licenseJobFailure(
+  name: string,
+  machineName: string,
+  result: { exitCode: number; stderr?: string; error?: string }
+): Error {
+  return new Error(
+    `renet ${name} failed on ${machineName} (exit ${result.exitCode}): ${result.stderr ?? result.error ?? ''}`.trim()
+  );
+}
+
 /**
- * `subscription status -m <machine>`: activation state plus the per-repo license
- * table. One renet provisioning serves both sections.
+ * `subscription status -m <machine>`: one `license-status` job on the machine. The activation section and the
+ * per-repo license table are its `renderSubscriptionStatus` step, so a ticket handed back early prints nothing
+ * half-done. The step is best-effort for the activation part, as the section always was.
  */
 export async function executeMachineStatus(machineName: string): Promise<void> {
-  const context = await resolveMachineContext(machineName, 'read-only');
-  await renderActivationSection(machineName, context);
-  await renderRepoLicenseTable(machineName, context);
+  const machine = await configService.getLocalMachine(machineName);
+  const outcome = await runCommandJob(
+    'subscription status',
+    {
+      functionName: 'license-status',
+      machineName,
+      commandKind: {
+        name: 'license-status',
+        args: { datastore: machine.datastore ?? DEFAULT_DATASTORE },
+      },
+      captureOutput: true,
+    },
+    [planStep('renderSubscriptionStatus', { machine: machineName })]
+  );
+  if (outcome.kind === 'pending') {
+    const code = pendingExitCode(outcome);
+    if (code !== undefined) setExitCode(code);
+    return;
+  }
+  if (!outcome.result.success)
+    throw licenseJobFailure('license-status', machineName, outcome.result);
 }
+
+bindStepHandler('renderSubscriptionStatus', async ({ machine, output }) => {
+  const entries = parseJsonArray<RuntimeRepoLicenseStatus>(output);
+  const context = await resolveMachineContext(machine, 'read-only');
+  await renderActivationSection(machine, context);
+  renderRepoLicenseTable(machine, entries);
+});
 
 function runRepoBatchRefresh(
   machineName: string,
-  context: SubscriptionCommandContext
+  context: SubscriptionCommandContext,
+  scanned: RemoteRepoLicenseScanEntry[]
 ): Promise<RepoBatchRefreshResult> {
   return withSpinner(
     t('commands.subscription.refresh.repos.refreshing'),
@@ -435,7 +478,10 @@ function runRepoBatchRefresh(
         machineName,
         context.machine,
         context.sshPrivateKey,
-        context.remoteRenetPath
+        context.remoteRenetPath,
+        undefined,
+        undefined,
+        scanned
       ),
     t('commands.subscription.refresh.repos.refreshed')
   );
@@ -460,13 +506,44 @@ export async function executeAccountRefresh(): Promise<void> {
   outputRemoteStatus(status);
 }
 
-/** `subscription refresh -m <machine>`: reissue every repo license on the machine. */
+/**
+ * `subscription refresh -m <machine>`: reissue every repo license on the machine. The token gate and the renet upload
+ * come first, outside the job. The machine read is one `license-scan` job; the account call and the license writes are
+ * its `renderSubscriptionRefresh` step, so a ticket handed back early issues nothing.
+ */
 export async function executeMachineRefresh(machineName: string): Promise<void> {
   const context = await resolveSubscriptionCommandContext(machineName);
-  const batchSummary = await runRepoBatchRefresh(machineName, context);
+  const outcome = await runCommandJob(
+    'subscription refresh',
+    {
+      functionName: 'license-scan',
+      machineName,
+      commandKind: {
+        name: 'license-scan',
+        args: { datastore: context.machine.datastore ?? DEFAULT_DATASTORE },
+      },
+      captureOutput: true,
+    },
+    [planStep('renderSubscriptionRefresh', { machine: machineName })]
+  );
+  if (outcome.kind === 'pending') {
+    const code = pendingExitCode(outcome);
+    if (code !== undefined) setExitCode(code);
+    return;
+  }
+  if (!outcome.result.success) throw licenseJobFailure('license-scan', machineName, outcome.result);
+}
+
+bindStepHandler('renderSubscriptionRefresh', async ({ machine, output }) => {
+  const context = await resolveSubscriptionCommandContext(machine);
+  const batchSummary = await runRepoBatchRefresh(
+    machine,
+    context,
+    parseJsonArray<RemoteRepoLicenseScanEntry>(output)
+  );
   outputService.success(t('commands.subscription.refresh.success'));
   renderRepoBatchRefreshSummary(batchSummary);
-}
+});
 
 /**
  * `subscription refresh --repo <ref>`: reissue one repo's license. The machine

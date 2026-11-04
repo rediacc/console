@@ -2,7 +2,8 @@ import {
   WK_ACCOUNT_DEFAULT_ORIGIN,
   WK_ACCOUNT_DEV_PORT,
 } from '@rediacc/shared/config/well-known.generated';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { installJobDeps } from './job-deps.js';
 
 const {
   mockGetSubscriptionTokenState,
@@ -163,8 +164,26 @@ const { Command } = await import('commander');
 const { renderRepoBatchRefreshSummary } = await import('../subscription-output.js');
 
 describe('subscription command helpers', () => {
+  let restoreJobDeps: () => void;
+  const jobs: Record<string, unknown>[] = [];
+
   beforeEach(() => {
     vi.clearAllMocks();
+    // `status -m` and `refresh -m` each run one licence job; its answer is what the test configured for the machine read.
+    jobs.length = 0;
+    restoreJobDeps = installJobDeps(async (options) => {
+      jobs.push(options as unknown as Record<string, unknown>);
+      return {
+        success: true,
+        exitCode: 0,
+        durationMs: 1,
+        state: 'succeeded',
+        stdout:
+          options.functionName === 'license-status'
+            ? JSON.stringify((await mockReadRuntimeRepoLicenseStatuses()) ?? [])
+            : '[]',
+      };
+    });
     mockWithSpinner.mockImplementation(async (_label: string, fn: () => Promise<unknown>) => fn());
     mockGetLocalConfig.mockResolvedValue({
       sshPrivateKey: 'PRIVATE_KEY',
@@ -317,6 +336,10 @@ describe('subscription command helpers', () => {
     expect(mockFetchLicenseReportOrThrow).not.toHaveBeenCalled();
   });
 
+  afterEach(() => {
+    restoreJobDeps();
+  });
+
   it('status -m prints the missing-token diagnostic and still renders the repo table', async () => {
     mockGetSubscriptionTokenState.mockReturnValue({ kind: 'missing' });
 
@@ -408,10 +431,9 @@ describe('subscription command helpers', () => {
       'commands.subscription.activation.status.active:2026-03-12T00:00:00Z'
     );
 
-    expect(mockReadRuntimeRepoLicenseStatuses).toHaveBeenCalledWith(
-      'hostinger',
-      expect.objectContaining({ machineName: 'hostinger' })
-    );
+    // The table is the job's answer: one license-status job on the machine.
+    expect(jobs).toHaveLength(1);
+    expect(jobs[0]).toMatchObject({ functionName: 'license-status', machineName: 'hostinger' });
     expect(mockOutputInfo).toHaveBeenCalledWith(
       'commands.subscription.repo.status.header:hostinger'
     );

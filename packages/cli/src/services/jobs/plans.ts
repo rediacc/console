@@ -156,6 +156,9 @@ export const CONVERTED: ReadonlySet<string> = new Set<string>([
   'machine restart-services',
   'machine setup',
   'machine status',
+  // J20: subscription status -m is one license-status job and subscription refresh -m one license-scan job; the activation section, the license table and the account call with the license writes are their steps.
+  'subscription refresh',
+  'subscription status',
   // J19: datastore verbs are one job each (attach relocation, fork --attach-to and delete on an attached datastore chain
   // their later phases as steps); each cluster verb is one job per phase, one ticket per phase; a phase that touches every member (the ceph prerequisites of cluster create) starts one job per member under one ticket group (job-group.ts).
   'cluster create',

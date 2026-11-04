@@ -155,7 +155,8 @@ export function refreshRepoLicensesBatch(
   sshPrivateKey: string,
   remoteRenetPath?: string,
   sharedSftp?: SFTPClient,
-  requiredGuid?: string
+  requiredGuid?: string,
+  scanned?: RemoteRepoLicenseScanEntry[]
 ): Promise<RepoBatchRefreshResult> {
   const tokenState = getSubscriptionTokenState();
   if (tokenState.kind !== 'ready') {
@@ -174,7 +175,7 @@ export function refreshRepoLicensesBatch(
   }
 
   return withSharedOrPooledSftp(sharedSftp, sftpConfigForMachine(machine, sshPrivateKey), (sftp) =>
-    runRepoLicenseBatch(sftp, machineName, machine, remoteRenetPath, requiredGuid)
+    runRepoLicenseBatch(sftp, machineName, machine, remoteRenetPath, requiredGuid, scanned)
   );
 }
 
@@ -182,19 +183,31 @@ export function refreshRepoLicensesBatch(
  * Scan, batch-refresh and install repo licenses over an established connection.
  * With `requiredGuid` (the repo renet refused) the batch only counts as a
  * recovery when THAT repo came back licensed; without it any licensed repo does.
+ * `scanned` is a `license-scan` answer the caller already holds (the `subscription refresh` job's output), which
+ * spares a second scan job.
  */
+/** The caller's `license-scan` answer when it holds one, else a scan job of its own. */
+function remoteScan(
+  machineName: string,
+  datastore: string,
+  scanned?: RemoteRepoLicenseScanEntry[]
+): Promise<RemoteRepoLicenseScanEntry[]> {
+  return scanned ? Promise.resolve(scanned) : scanRemoteRepoLicenses(machineName, datastore);
+}
+
 async function runRepoLicenseBatch(
   sftp: SFTPClient,
   machineName: string,
   machine: MachineConfig,
   remoteRenetPath?: string,
-  requiredGuid?: string
+  requiredGuid?: string,
+  scanned?: RemoteRepoLicenseScanEntry[]
 ): Promise<RepoBatchRefreshResult> {
   const datastore = machine.datastore ?? DEFAULT_DATASTORE;
   const [machineId, clientMachineId, remoteRepos, localRepos, licenseStatuses] = await Promise.all([
     readRemoteMachineId(sftp, remoteRenetPath),
     readLocalMachineId(),
-    scanRemoteRepoLicenses(machineName, datastore),
+    remoteScan(machineName, datastore, scanned),
     configService.listRepositories().catch((err: unknown) => {
       telemetryService.trackError(err, { operation: 'license.list_repositories' });
       return [];

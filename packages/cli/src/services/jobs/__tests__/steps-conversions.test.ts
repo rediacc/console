@@ -21,10 +21,7 @@ import {
 } from '../steps.js';
 
 /** Steps whose module has not bound its handler yet, each with the module that must bind it. */
-const AWAITING_BIND: Record<string, string> = {
-  renderSubscriptionRefresh: 'commands/subscription-actions.ts',
-  renderSubscriptionStatus: 'commands/subscription-actions.ts',
-};
+const AWAITING_BIND: Record<string, string> = {};
 
 const planned = [
   ...new Set(Object.values(JOB_PLANS).flatMap((plan) => [...(plan.steps ?? [])])),
