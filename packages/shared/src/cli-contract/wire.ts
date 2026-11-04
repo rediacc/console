@@ -268,11 +268,8 @@ export const StreamLineSchema = z.discriminatedUnion('kind', [
   z.object({
     kind: z.literal('job'),
     jobId: z.string(),
-    /**
-     * The machine the job runs on, so a client polls it without re-deriving
-     * the target. Optional only until the serve route emits it (J6b).
-     */
-    machine: z.string().min(1).optional(),
+    /** The machine the job runs on, so a client polls it without re-deriving the target. */
+    machine: z.string().min(1),
     /** Line offset to resume from when re-attaching to a detached job. */
     sinceLine: z.number().int().nonnegative().default(0),
     /** The overlapping jobs the start met (section 19). */
@@ -298,7 +295,8 @@ export type { StreamLine };
  * Design 4). `more: true` tells the client to poll again at once.
  */
 export const JobPollResponseSchema = z.object({
-  events: z.array(z.object({ line: z.number().int().positive(), event: WireEventSchema })),
+  /** `line` is the event's 0-based index in the job's spool, so a first poll from `sinceLine` 0 may carry line 0. */
+  events: z.array(z.object({ line: z.number().int().nonnegative(), event: WireEventSchema })),
   nextLine: z.number().int().nonnegative(),
   more: z.boolean(),
   status: z.object({
@@ -348,14 +346,6 @@ export const PROXY_ROUTES = {
   sessionCek: (sessionId: string) => `/v1/session/${sessionId}/cek`,
   /** The same route as a server-side pattern, so the two cannot drift apart. */
   sessionCekPattern: '/v1/session/:id/cek',
-  /**
-   * Re-attach to a detached job's held event stream: `?machine=<m>&sinceLine=<n>`.
-   * Replaced by `jobPoll`; J6b deletes it together with the serve route and the
-   * client's re-attach loop.
-   */
-  jobEvents: (jobId: string) => `/v1/jobs/${jobId}/events`,
-  /** The same route as a server-side pattern, so client and server cannot drift. */
-  jobEventsPattern: '/v1/jobs/:id/events',
   /** One short poll: `?machine=<m>&sinceLine=<n>&maxLines=<k>`, answered by JobPollResponseSchema. */
   jobPoll: (jobId: string) => `/v1/jobs/${jobId}/poll`,
   jobPollPattern: '/v1/jobs/:id/poll',

@@ -186,22 +186,12 @@ export interface ExecuteOptions {
    */
   externalTicket?: boolean;
   /**
-   * @deprecated Ignored. Every renet call is a job (section 14). The serve
-   * dispatch (services/serve/command-dispatch.ts) still writes it; J6b removes
-   * that writer and this field with it.
+   * Called once with the job id the instant a job starts, before any event is
+   * streamed. The serve route uses it to emit its `kind:'job'` line so a client
+   * can follow even if the request drops before the first event. The machine
+   * and the overlaps the start met ride along for that line.
    */
-  detached?: boolean;
-  /**
-   * @deprecated Ignored. `attachWindowMs` decides how long a call follows its
-   * job. The serve dispatch still writes it; J6b removes both.
-   */
-  follow?: boolean;
-  /**
-   * Called once with the job id the instant a detached run starts, before any
-   * event is streamed. The serve route uses it to emit its `kind:'job'` line so a
-   * client can re-attach even if the connection drops before the first event.
-   */
-  onJobStarted?: (jobId: string) => void;
+  onJobStarted?: (jobId: string, machine?: string, overlaps?: JobOverlap[]) => void;
   /**
    * The vault's root `expect` (section 14): renet refuses the start, with no
    * unit spawned, when the task repository's state on the machine fails it.

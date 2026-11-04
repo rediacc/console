@@ -38,18 +38,13 @@ import {
   createRequestConfigScope,
   runInRequestContext,
 } from '../core/request-context.js';
-import {
-  assertJobId,
-  InvalidJobIdError,
-  JobLogCursor,
-  jobStatusToExecuteResult,
-} from '../executor/job-client.js';
-import { connectForJobs, followJobLogs, readJobStatus } from '../executor/job-remote.js';
+import { InvalidJobIdError } from '../executor/job-client.js';
 import { AuthError, type AuthVerifier } from './auth.js';
 import { CommandRejected, dispatchCommand, prepareCommand } from './command-dispatch.js';
 import type { ServeDeps } from './deps.js';
 import { createEgressReporter, EGRESS_UNREACHABLE_CODE, egressGuidance } from './egress-report.js';
 import { CekHandoffBlobSchema } from './handoff-schema.js';
+import { registerJobRoutes } from './job-routes.js';
 import { isReadOnlyCommand, PolicyDenied, resolveGrandRepoMutation } from './policy.js';
 import { SessionError } from './sessions.js';
 
@@ -82,6 +77,17 @@ function statusFor(error: unknown): {
     status: 500,
     message: error instanceof Error ? error.message : 'The executor failed to run this command.',
   };
+}
+
+/** Seconds between heartbeat lines on a quiet attach window. */
+const HEARTBEAT_INTERVAL_MS = 10_000;
+
+/** The heartbeat period, with the test override REDIACC_PROXY_HEARTBEAT_MS (a positive integer). */
+function heartbeatIntervalMs(): number {
+  const raw = process.env.REDIACC_PROXY_HEARTBEAT_MS;
+  return raw !== undefined && /^[1-9]\d*$/.test(raw)
+    ? Number.parseInt(raw, 10)
+    : HEARTBEAT_INTERVAL_MS;
 }
 
 let sharedEgressReporter: ReturnType<typeof createEgressReporter> | undefined;
@@ -243,6 +249,15 @@ export function createServeApp(deps: ServeDeps): Hono {
         await stream.write(`${JSON.stringify(streamLine)}\n`);
       };
 
+      // A client that left (a mobile link dropping) must not fail the dispatch: the job runs on, and the write is dropped.
+      const safeWrite = (streamLine: StreamLine) => {
+        write(streamLine).catch(() => undefined);
+      };
+      // A quiet attach window still carries a heartbeat every 10 s, so NAT mappings and idle timers stay alive.
+      const heartbeat = setInterval(() => {
+        safeWrite({ kind: 'heartbeat', ts: new Date().toISOString() });
+      }, heartbeatIntervalMs());
+
       const started = Date.now();
       // Only the dispatch sits in the try: the success audit and the result write come after it, so a throw while writing the result (a closed stream) can never reach the failure audit and ship a second event for the same command.
       let dispatched: Awaited<ReturnType<typeof dispatchCommand>>;
@@ -256,17 +271,24 @@ export function createServeApp(deps: ServeDeps): Hono {
             orgId: principal.orgId,
             userEmail: principal.userEmail,
           },
-          // The executor detaches a proxied command by default (its connection cannot be assumed to outlive the work), overridable via deps.detach.
-          detached: deps.detach ? deps.detach(entry) : entry.detachable,
-          // Announce the job the instant it starts, before any event, so a dropped connection can be re-attached via GET /v1/jobs/:id/events.
-          onJobStarted: (jobId) => {
-            void write({ kind: 'job', jobId, sinceLine: 0 });
+          // The executor seam gives every call of a served dispatch the attach window (executor-factory attachDecorator), so a job that outlives it returns its ticket and the client follows with polls.
+          ...(request.requestId ? { requestId: request.requestId } : {}),
+          // Announce the job the instant it starts, before any event, so a dropped request can be followed by polling it.
+          onJobStarted: (jobId, machine, overlaps) => {
+            safeWrite({
+              kind: 'job',
+              jobId,
+              machine,
+              sinceLine: 0,
+              ...(overlaps && overlaps.length > 0 ? { overlaps } : {}),
+            });
           },
           onEvent: (event, line) => {
-            void write({ kind: 'event', event, ...(line == null ? {} : { line }) });
+            safeWrite({ kind: 'event', event, ...(line == null ? {} : { line }) });
           },
         });
       } catch (error) {
+        clearInterval(heartbeat);
         const message =
           error instanceof Error ? error.message : 'The executor failed to run this command.';
         // A dispatch that threw still ran, or tried to run, on the caller's behalf: one event per command holds on this path too. The function it may have reached is unknown here, so it records by path.
@@ -296,6 +318,7 @@ export function createServeApp(deps: ServeDeps): Hono {
         });
         return;
       }
+      clearInterval(heartbeat);
       const { functionName, machineName, stdout, stderr } = dispatched;
       let { result } = dispatched;
 
@@ -356,103 +379,15 @@ export function createServeApp(deps: ServeDeps): Hono {
     });
   });
 
-  /**
-   * Re-attach to a detached job's event stream after a dropped connection.
-   *
-   * The client learned the job id from the `kind:'job'` line the command route
-   * emitted, and comes back here with the machine and the line offset it reached.
-   * The stream resumes from that offset and dedupes on the per-event ordinal, so
-   * a boundary line re-sent by renet renders exactly once.
-   *
-   * `assertJobId` runs FIRST, before anything else: the id arrives from an
-   * untrusted HTTP client and is interpolated into a remote shell command by
-   * buildJobLogsCommand, so it must be proven to be a shape renet could have
-   * minted before it goes near a machine. Policy is anchored on the real
-   * `job logs` contract command, scoped to the machine. Enabling proxy
-   * execution effectively implies allowing `job logs`.
-   */
-  app.get(PROXY_ROUTES.jobEventsPattern, async (c) => {
-    let principal: Awaited<ReturnType<AuthVerifier['verify']>>;
-    let jobId: string;
-    try {
-      principal = await authenticate(c.req.header('authorization'), deps);
-      jobId = assertJobId(c.req.param('id'));
-    } catch (error) {
-      const { status, message, code } = statusFor(error);
-      return c.json({ error: message, ...(code ? { code } : {}) }, status);
-    }
-
-    const machine = c.req.query('machine');
-    if (!machine) {
-      return c.json(
-        { error: 'The "machine" query parameter is required to re-attach to a job.' },
-        400
-      );
-    }
-    const sinceLine = parseSinceLineParam(c.req.query('sinceLine'));
-
-    let requestConfig: RdcConfig | undefined;
-    try {
-      const config = await deps.loadConfig(principal);
-      requestConfig = requestScopedConfig(deps, config);
-      deps.authorize({ principal, commandPath: 'job logs', config, machineName: machine });
-    } catch (error) {
-      const { status, message, code } = statusFor(error);
-      return c.json({ error: message, ...(code ? { code } : {}) }, status);
-    }
-
-    return streamText(c, async (stream) => {
-      const write = async (streamLine: StreamLine) => {
-        await stream.write(`${JSON.stringify(streamLine)}\n`);
-      };
-
-      const started = Date.now();
-      const cursor = new JobLogCursor(sinceLine);
-      try {
-        // The machine lookup inside connectForJobs reads the config, so it runs under the same request-scoped config a dispatch would.
-        await withRequestConfig(requestConfig, async () => {
-          const conn = await connectForJobs(machine, 'read-only');
-          try {
-            const interrupted = await followJobLogs(
-              conn.lease,
-              conn.remoteRenetPath,
-              jobId,
-              {
-                onEvent: (event, line) => {
-                  void write({ kind: 'event', event, ...(line == null ? {} : { line }) });
-                },
-                // Client disconnect = detach, not cancel: the request's signal
-                // aborts the follow with one listener, and the job keeps running.
-                signal: c.req.raw.signal,
-              },
-              cursor
-            );
-
-            // A follow ended by the client dropping does not get a result line: there is no one left to read it, and the job is still running.
-            if (!interrupted) {
-              const status = await readJobStatus(
-                await conn.lease.ensure(),
-                conn.remoteRenetPath,
-                jobId
-              );
-              await write({
-                kind: 'result',
-                result: jobStatusToExecuteResult(status, Date.now() - started),
-              });
-            }
-          } finally {
-            conn.lease.release();
-          }
-        });
-      } catch (error) {
-        const message =
-          error instanceof Error ? error.message : 'The executor failed to re-attach to the job.';
-        await write({
-          kind: 'result',
-          result: { success: false, exitCode: 1, error: message, durationMs: Date.now() - started },
-        });
-      }
-    });
+  registerJobRoutes(app, deps, {
+    authenticate: (header) => authenticate(header, deps),
+    statusFor,
+    requestScopedConfig: (config) => requestScopedConfig(deps, config),
+    withRequestConfig,
+    configSession: (header) => {
+      const trimmed = header?.trim();
+      return trimmed === '' ? undefined : trimmed;
+    },
   });
 
   return app;
@@ -515,13 +450,6 @@ function withRequestConfig<T>(config: RdcConfig | undefined, fn: () => Promise<T
 /** Append the executor's own notices to what the command wrote to stderr. */
 function withNotices(stderr: string, notices: (string | undefined)[]): string {
   return [stderr, ...notices].filter((line): line is string => !!line).join('\n');
-}
-
-/** Parse the `sinceLine` query param, defaulting to 0 and refusing anything else. */
-function parseSinceLineParam(raw: string | undefined): number {
-  if (!raw) return 0;
-  const parsed = Number.parseInt(raw, 10);
-  return Number.isNaN(parsed) || parsed < 0 ? 0 : parsed;
 }
 
 /**

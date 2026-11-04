@@ -211,30 +211,36 @@ describe('ProxyClient', () => {
     );
   });
 
-  it('re-attaches to a detached job when the command stream drops, deduping on ordinal', async () => {
-    const client = clientWith((url) => {
-      const u = String(url);
-      if (u.includes(PROXY_ROUTES.command)) {
-        // Announces the job, streams two ordinal-tagged events, then the connection drops before the result line ever arrives.
+  it('follows a job by polls when the command stream drops after the job line', async () => {
+    const client = new ProxyClient({
+      baseUrl: 'https://executor.test',
+      getToken: () => Promise.resolve('rdt_token'),
+      contractVersion: 'contract-v1',
+      ticketStore: null,
+      sleep: () => Promise.resolve(),
+      fetchImpl: ((url: string | URL) => {
+        const u = String(url);
+        if (u.includes(PROXY_ROUTES.command)) {
+          // Announces the job and one event, then the connection ends before any result line.
+          return Promise.resolve(
+            ndjson([
+              { kind: 'job', jobId: 'j1-deadbeef', machine: 'prod-1', sinceLine: 0 },
+              { kind: 'event', event: { type: 'output', msg: 'a\n' }, line: 1 },
+            ])
+          );
+        }
+        expect(u).toContain('/v1/jobs/j1-deadbeef/poll');
+        // The machine comes from the job line, not from the caller's guess.
+        expect(u).toContain('machine=prod-1');
         return Promise.resolve(
-          ndjson([
-            { kind: 'job', jobId: 'j1-deadbeef', sinceLine: 0 },
-            { kind: 'event', event: { type: 'output', msg: 'a\n' }, line: 1 },
-            { kind: 'event', event: { type: 'output', msg: 'b\n' }, line: 2 },
-          ])
+          Response.json({
+            events: [{ line: 0, event: { type: 'output', msg: 'b\n' } }],
+            nextLine: 1,
+            more: false,
+            status: { state: 'succeeded', exitCode: 0, function: 'repository_up' },
+          })
         );
-      }
-      // The re-attach resumes from the last complete line and renet re-sends the boundary line (ordinal 2) it may have only half-delivered, then finishes.
-      expect(u).toContain('/v1/jobs/j1-deadbeef/events');
-      expect(u).toContain('machine=hostinger');
-      expect(u).toContain('sinceLine=2');
-      return Promise.resolve(
-        ndjson([
-          { kind: 'event', event: { type: 'output', msg: 'b\n' }, line: 2 },
-          { kind: 'event', event: { type: 'output', msg: 'c\n' }, line: 3 },
-          { kind: 'result', result: { success: true, exitCode: 0, durationMs: 3 }, stdout: 'done' },
-        ])
-      );
+      }) as typeof fetch,
     });
 
     const rendered: string[] = [];
@@ -249,8 +255,7 @@ describe('ProxyClient', () => {
     );
 
     expect(outcome.success).toBe(true);
-    // The re-sent boundary line (ordinal 2) is rendered exactly once: a, b, c.
-    expect(rendered).toEqual(['a\n', 'b\n', 'c\n']);
+    expect(rendered).toEqual(['a\n', 'b\n']);
   });
 
   it('sends the command path and its params, and nothing else', async () => {
@@ -271,6 +276,7 @@ describe('ProxyClient', () => {
       pathKey: 'repo status',
       params: {},
       positionals: { ref: 'demo' },
+      requestId: expect.stringMatching(/^[0-9a-f-]{36}$/),
     });
     // No function name, no machine address, no key, no config: the executor derives everything else from the command itself.
     expect(JSON.stringify(sent)).not.toContain('functionName');

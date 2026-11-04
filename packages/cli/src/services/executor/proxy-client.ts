@@ -20,11 +20,14 @@
  * the output that the work happened somewhere else.
  */
 
+import { randomUUID } from 'node:crypto';
 import { readNdjson } from '@rediacc/shared/cli-contract/ndjson';
 import {
   CLI_VERSION_HEADER,
   CONTRACT_VERSION_HEADER,
   type CommandRequest,
+  type JobPollResponse,
+  JobPollResponseSchema,
   PROXY_ROUTES,
   type ServerInfo,
   type StreamLine,
@@ -36,7 +39,27 @@ import { t } from '../../i18n/index.js';
 import { ERROR_CODES } from '../../types/errors.js';
 import { CliExitError } from '../../utils/cli-exit-error.js';
 import { VERSION } from '../../version.js';
+import { getEffectiveConfigName } from '../config/config-name.js';
+import { REATTACH_BUDGET_MS } from '../jobs/attach.js';
+import { TicketStore } from '../jobs/ticket-store.js';
+import {
+  foldJobLine,
+  foldResultLine,
+  isTerminalState,
+  jittered,
+  lostOutcome,
+  MAX_START_RETRIES,
+  nextPollDelayMs,
+  POLL_FIRST_DELAY_MS,
+  POLL_MAX_LINES,
+  type ProxyCommandOutcome,
+  recoverBrokenStream,
+  type StreamState,
+  terminalOutcome,
+} from './proxy-follow.js';
 import type { RenetEvent } from './types.js';
+
+export { nextPollDelayMs, type ProxyCommandOutcome };
 
 /** Raised when the executor rejects the client's contract version. */
 export class ProxyVersionMismatchError extends Error {
@@ -81,6 +104,12 @@ export interface ProxyClientOptions {
    * one granted per session. A daemon derives its own and is never sent one.
    */
   getCek?: () => Promise<CryptoKey>;
+  /** Test seams: the poll pacing and the ticket store (`null` writes no ticket). */
+  sleep?: (ms: number) => Promise<void>;
+  random?: () => number;
+  /** How long consecutive failed polls are retried before the follow is given up with the ticket kept. */
+  lostBudgetMs?: number;
+  ticketStore?: TicketStore | null;
 }
 
 /**
@@ -98,18 +127,6 @@ export function resetProxySessions(): void {
 /** An ArrayBuffer view Web Crypto accepts, from a Uint8Array that may be a slice. */
 function toArrayBuffer(data: Uint8Array): ArrayBuffer {
   return data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength) as ArrayBuffer;
-}
-
-/** What the executor reported: how it ended, and what the command printed. */
-export interface ProxyCommandOutcome {
-  success: boolean;
-  exitCode: number;
-  error?: string;
-  /** What the command rendered: its envelope, its table. Printed verbatim. */
-  stdout: string;
-  /** Raw bytes the command wrote instead (`repo cat` of a binary file). Written verbatim. */
-  stdoutBytes?: Uint8Array;
-  stderr: string;
 }
 
 /** Where to re-attach a dropped stream: the machine the command ran on. */
@@ -153,34 +170,6 @@ function describeFetchFailure(error: unknown): string {
   return source.message && source.message !== code ? `${code} (${source.message})` : code;
 }
 
-/** How many times a dropped proxy stream is re-attached before giving up. */
-const MAX_REATTACHES = 5;
-
-/** Build the outcome from a result line. */
-function toOutcome(line: Extract<StreamLine, { kind: 'result' }>): ProxyCommandOutcome {
-  return {
-    success: line.result.success,
-    exitCode: line.result.exitCode,
-    error: line.result.error,
-    stdout: line.stdout ?? '',
-    ...(line.stdoutBase64 === undefined
-      ? {}
-      : { stdoutBytes: new Uint8Array(Buffer.from(line.stdoutBase64, 'base64')) }),
-    stderr: line.stderr ?? '',
-  };
-}
-
-/** What a stream read so far, carried across a re-attach so a resume dedupes correctly. */
-interface StreamState {
-  eventsSeen: number;
-  /** The detached job the executor handed the work to, once it announced one. */
-  jobId?: string;
-  /** The highest spool-line ordinal delivered, so a resume skips what it already has. */
-  highestLine: number;
-  /** The terminal result, once it lands. */
-  outcome?: ProxyCommandOutcome;
-}
-
 export class ProxyClient {
   private readonly baseUrl: string;
   private readonly getToken: () => Promise<string>;
@@ -188,6 +177,10 @@ export class ProxyClient {
   private readonly fetchImpl: typeof fetch;
   private readonly timeoutMs: number;
   private readonly getCek: (() => Promise<CryptoKey>) | undefined;
+  private readonly sleep: (ms: number) => Promise<void>;
+  private readonly random: () => number;
+  private readonly lostBudgetMs: number;
+  private readonly ticketStore: TicketStore | null | undefined;
 
   constructor(options: ProxyClientOptions) {
     this.baseUrl = options.baseUrl.replace(/\/+$/, '');
@@ -196,6 +189,10 @@ export class ProxyClient {
     this.fetchImpl = options.fetchImpl ?? globalThis.fetch;
     this.timeoutMs = options.timeoutMs ?? proxyRequestTimeoutMs();
     this.getCek = options.getCek;
+    this.sleep = options.sleep ?? ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
+    this.random = options.random ?? Math.random;
+    this.lostBudgetMs = options.lostBudgetMs ?? REATTACH_BUDGET_MS;
+    this.ticketStore = options.ticketStore;
   }
 
   /**
@@ -267,35 +264,73 @@ export class ProxyClient {
   ): Promise<ProxyCommandOutcome> {
     await this.ensureSession();
 
+    // One id for the invocation: a POST that dropped before the job line is retried with it, so the executor attaches to the job the first one started instead of starting a second.
+    const requestId = randomUUID();
     const request: CommandRequest = {
       contractVersion: this.contractVersion,
       pathKey,
       params,
       positionals,
+      requestId,
     };
 
-    const response = await this.post(PROXY_ROUTES.command, request);
-
-    if (response.status === 409) {
-      await this.throwVersionMismatch(response);
-    }
-    if (!response.ok) {
-      throw new Error(await this.describeFailure(response));
-    }
-    if (!response.body) {
-      throw new ProxyStreamTruncatedError(0);
-    }
-
     const state: StreamState = { eventsSeen: 0, highestLine: 0 };
-    try {
-      await this.pumpStream(response.body, onEvent, state);
-    } catch (error) {
-      // A transport error mid-stream is exactly what re-attach exists to recover. Fall through when the executor announced a job and we know the
-      // machine; otherwise the failure is genuine and propagates.
-      if (!(state.jobId && reattach)) throw error;
-    }
+    await this.startCommand(request, onEvent, state, reattach?.machine);
+    return this.finishOrPoll(pathKey, requestId, onEvent, state, reattach);
+  }
 
-    return this.finishOrReattach(onEvent, state, reattach);
+  /**
+   * POST the command and read its stream into `state`. A POST that dropped, or a stream that
+   * broke before the job line, is retried with the same request id (the executor attaches to
+   * the job the first one started); after the job line the polls recover the job.
+   */
+  private async startCommand(
+    request: CommandRequest,
+    onEvent: (event: RenetEvent) => void,
+    state: StreamState,
+    fallbackMachine: string | undefined
+  ): Promise<void> {
+    for (let attempt = 0; ; attempt++) {
+      const step = await this.tryStart(
+        request,
+        onEvent,
+        state,
+        fallbackMachine,
+        attempt < MAX_START_RETRIES
+      );
+      if (step === 'done') return;
+    }
+  }
+
+  private async tryStart(
+    request: CommandRequest,
+    onEvent: (event: RenetEvent) => void,
+    state: StreamState,
+    fallbackMachine: string | undefined,
+    retriable: boolean
+  ): Promise<'done' | 'retry'> {
+    let response: Response;
+    try {
+      response = await this.post(PROXY_ROUTES.command, request);
+    } catch (error) {
+      if (retriable) return 'retry';
+      throw error;
+    }
+    const body = await this.commandBody(response);
+    try {
+      await this.pumpStream(body, onEvent, state);
+      return 'done';
+    } catch (error) {
+      return recoverBrokenStream(error, state, fallbackMachine, retriable);
+    }
+  }
+
+  /** The command response's body, or the refusal it carried. */
+  private async commandBody(response: Response): Promise<ReadableStream<Uint8Array>> {
+    if (response.status === 409) await this.throwVersionMismatch(response);
+    if (!response.ok) throw new Error(await this.describeFailure(response));
+    if (!response.body) throw new ProxyStreamTruncatedError(0);
+    return response.body;
   }
 
   /** Probe the executor. Used by `--proxy` startup checks and the loopback harness. */
@@ -310,32 +345,70 @@ export class ProxyClient {
   }
 
   /**
-   * Return the outcome, or re-attach to the detached job and resume.
+   * Return the outcome, or follow the job by polls.
    *
-   * A stream that ended with a result line is done. One that ended WITHOUT a
-   * result but that announced a job (`kind:'job'`) means the connection dropped
-   * before the work finished; if we know the machine, we re-attach to the job's
-   * spool and resume from the last complete line rather than reporting a failure
-   * for work that is still running. Only when there is nothing to resume to is
-   * the truncation surfaced, exactly as before.
+   * A result line that says the job finished is done. A `running` result, or a
+   * stream that ended with a job line but no result (the request dropped), means
+   * the job outlived the attach window: the client writes the ticket (`via:
+   * proxy`) and follows with short polls until a terminal state. A stream with
+   * neither a result nor a job is a truncation, surfaced as before.
    */
-  private async finishOrReattach(
+  private async finishOrPoll(
+    pathKey: string,
+    requestId: string,
     onEvent: (event: RenetEvent) => void,
     state: StreamState,
     reattach: ReattachTarget | undefined
   ): Promise<ProxyCommandOutcome> {
-    if (state.outcome) {
+    const machine = state.machine ?? reattach?.machine;
+    if (state.outcome && !state.running) {
       return state.outcome;
     }
-
-    if (state.jobId && reattach) {
-      const resumed = await this.reattachToJob(reattach.machine, state.jobId, onEvent, state);
-      if (resumed) {
-        return resumed;
-      }
+    if (!(state.jobId && machine)) {
+      if (state.outcome) return state.outcome;
+      throw new ProxyStreamTruncatedError(state.eventsSeen);
     }
 
-    throw new ProxyStreamTruncatedError(state.eventsSeen);
+    const ticket = this.openTicket();
+    this.record(ticket, 'started', requestId, {
+      jobId: state.jobId,
+      machine,
+      verb: pathKey,
+      state: 'running',
+      via: { kind: 'proxy', url: this.baseUrl },
+    });
+    const outcome = await this.followByPolls(
+      machine,
+      state.jobId,
+      onEvent,
+      state,
+      requestId,
+      ticket
+    );
+    return outcome;
+  }
+
+  private openTicket(): TicketStore | undefined {
+    if (this.ticketStore !== undefined) return this.ticketStore ?? undefined;
+    try {
+      return new TicketStore(getEffectiveConfigName());
+    } catch {
+      return undefined;
+    }
+  }
+
+  /** A ticket that cannot be written never fails the command: the job runs on regardless. */
+  private record(
+    ticket: TicketStore | undefined,
+    kind: Parameters<TicketStore['append']>[0],
+    requestId: string,
+    input: Parameters<TicketStore['append']>[2]
+  ): void {
+    try {
+      ticket?.append(kind, requestId, input);
+    } catch {
+      // Left as is.
+    }
   }
 
   /**
@@ -367,12 +440,11 @@ export class ProxyClient {
     state: StreamState
   ): void {
     if (line.kind === 'job') {
-      state.jobId = line.jobId;
-      if (line.sinceLine > state.highestLine) state.highestLine = line.sinceLine;
+      foldJobLine(line, state);
       return;
     }
     if (line.kind === 'result') {
-      state.outcome = toOutcome(line);
+      foldResultLine(line, state);
       return;
     }
     // A heartbeat only keeps a quiet attach window's connection alive.
@@ -386,40 +458,106 @@ export class ProxyClient {
   }
 
   /**
-   * Re-attach to a detached job and resume its stream from the last line seen.
-   *
-   * Reconnecting is cheap and safe: the job runs on the machine regardless, so a
-   * resume only changes what we can SEE of it. Each attempt resumes from the
-   * current high-water line, so a stream that drops again simply reconnects
-   * without losing or repeating a line. Returns undefined when every attempt is
-   * exhausted, leaving the caller to surface the truncation.
+   * Follow a job by short polls (Design 4 and 5): each poll returns the lines past
+   * `sinceLine` and the job's status. A page with `more` is followed at once;
+   * an empty page waits 2 s, then 3, 4.5 ... up to 30 s (jitter +-10 %); a page
+   * with lines resets the pacing. A transport failure or a 5xx is retried on the
+   * same offset for up to the lost budget, then the follow is given up with the
+   * ticket kept: FOLLOW_LOST. A 4xx (policy, unknown job) is final.
    */
-  private async reattachToJob(
+  private async followByPolls(
     machine: string,
     jobId: string,
     onEvent: (event: RenetEvent) => void,
-    state: StreamState
-  ): Promise<ProxyCommandOutcome | undefined> {
-    for (let attempt = 0; attempt < MAX_REATTACHES; attempt++) {
-      const query = `machine=${encodeURIComponent(machine)}&sinceLine=${state.highestLine}`;
-      const url = `${this.baseUrl}${PROXY_ROUTES.jobEvents(jobId)}?${query}`;
-
-      let response: Response;
-      try {
-        response = await this.request(url, { headers: await this.headers() });
-      } catch {
-        continue; // network blip; resume from the same offset
+    state: StreamState,
+    requestId: string,
+    ticket: TicketStore | undefined
+  ): Promise<ProxyCommandOutcome> {
+    const first = state.outcome;
+    const pace = { delay: POLL_FIRST_DELAY_MS };
+    let nextLine = 0;
+    let failingSince: number | undefined;
+    for (;;) {
+      const poll = await this.fetchPoll(machine, jobId, nextLine);
+      if (!poll) {
+        failingSince ??= Date.now();
+        if (Date.now() - failingSince >= this.lostBudgetMs) {
+          return lostOutcome(jobId, machine, first);
+        }
+        await this.sleep(jittered(pace.delay, this.random));
+        pace.delay = nextPollDelayMs(pace.delay);
+        continue;
       }
-      if (!response.ok || !response.body) continue;
-
-      try {
-        await this.pumpStream(response.body, onEvent, state);
-      } catch {
-        continue; // stream dropped again; the loop resumes from highestLine
+      failingSince = undefined;
+      this.deliver(poll, onEvent, state, ticket, requestId);
+      nextLine = poll.nextLine;
+      if (isTerminalState(poll.status.state) && !poll.more) {
+        this.recordFinished(ticket, requestId, poll.status);
+        return terminalOutcome(poll.status, jobId, first);
       }
-      if (state.outcome) return state.outcome;
+      await this.pausePoll(pace, poll);
     }
-    return undefined;
+  }
+
+  /** Hand a page's events to the renderer and note the offset on the ticket. */
+  private deliver(
+    poll: JobPollResponse,
+    onEvent: (event: RenetEvent) => void,
+    state: StreamState,
+    ticket: TicketStore | undefined,
+    requestId: string
+  ): void {
+    for (const entry of poll.events) {
+      state.eventsSeen += 1;
+      onEvent(entry.event);
+    }
+    this.record(ticket, 'seen', requestId, { lastSeenLine: poll.nextLine });
+  }
+
+  /** One poll: the page, or undefined for a failure worth retrying (transport, 5xx, a body that is not a poll). A 4xx is final. */
+  private async fetchPoll(
+    machine: string,
+    jobId: string,
+    sinceLine: number
+  ): Promise<JobPollResponse | undefined> {
+    const query = `machine=${encodeURIComponent(machine)}&sinceLine=${sinceLine}&maxLines=${POLL_MAX_LINES}`;
+    let response: Response;
+    try {
+      response = await this.request(`${this.baseUrl}${PROXY_ROUTES.jobPoll(jobId)}?${query}`, {
+        headers: await this.headers(),
+      });
+    } catch {
+      return undefined;
+    }
+    if (!response.ok) {
+      if (response.status < 500) throw new Error(await this.describeFailure(response));
+      return undefined;
+    }
+    const parsed = JobPollResponseSchema.safeParse(await response.json().catch(() => undefined));
+    return parsed.success ? parsed.data : undefined;
+  }
+
+  /** Wait before the next poll: none after a page that says more, the first delay after a page with lines, and a growing one after an empty page. */
+  private async pausePoll(pace: { delay: number }, poll: JobPollResponse): Promise<void> {
+    if (poll.more) {
+      pace.delay = POLL_FIRST_DELAY_MS;
+      return;
+    }
+    if (poll.events.length > 0) pace.delay = POLL_FIRST_DELAY_MS;
+    await this.sleep(jittered(pace.delay, this.random));
+    if (poll.events.length === 0) pace.delay = nextPollDelayMs(pace.delay);
+  }
+
+  private recordFinished(
+    ticket: TicketStore | undefined,
+    requestId: string,
+    status: JobPollResponse['status']
+  ): void {
+    this.record(ticket, 'finished', requestId, {
+      state: status.state,
+      ...(status.exitCode === undefined ? {} : { exitCode: status.exitCode }),
+      ...(status.finishedAt ? { finishedAt: status.finishedAt } : {}),
+    });
   }
 
   /**

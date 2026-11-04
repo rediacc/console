@@ -33,6 +33,7 @@
 
 import type { ContractCommand, ContractOption } from '@rediacc/shared/cli-contract';
 import { getCommand } from '@rediacc/shared/cli-contract';
+import type { JobOverlap } from '@rediacc/shared/cli-contract/wire';
 import type { RdcConfig } from '@rediacc/shared/config-schema';
 import type { Command } from 'commander';
 import { CommanderError } from 'commander';
@@ -49,6 +50,7 @@ import {
   runInRequestContext,
 } from '../core/request-context.js';
 import type { ExecuteResult, Executor, RenetEvent } from '../executor/types.js';
+import { invocationMinter, RequestIdMinter } from '../jobs/attach.js';
 import {
   currentRequestTelemetry,
   runWithRequestTelemetry,
@@ -90,19 +92,14 @@ export interface DispatchArgs {
    * route can forward it for exactly-once re-attach dedup.
    */
   onEvent: (event: RenetEvent, line?: number) => void;
+  /** The client's idempotency key for this invocation (CommandRequest.requestId). */
+  requestId?: string;
   /**
-   * Whether the command's machine work runs as a DETACHED job. Defaults to the
-   * contract's `detachable`; the serve route computes it (its `deps.detach` can
-   * override) and passes it here, so a proxied long command survives a dropped
-   * connection.
+   * Called once per job with its id, machine and the overlaps the start met,
+   * the instant it starts and before any event. The route emits its
+   * `kind:'job'` line from it so a client can follow even if the request drops.
    */
-  detached?: boolean;
-  /**
-   * Called once with the job id the instant a detached run starts, before any
-   * event. The route uses it to emit its `kind:'job'` line so a client can
-   * re-attach even if the connection drops before the first event.
-   */
-  onJobStarted?: (jobId: string) => void;
+  onJobStarted?: (jobId: string, machine: string, overlaps?: JobOverlap[]) => void;
   /**
    * The config the command runs against, in place of the config on disk. The
    * container tier passes the one it decrypted for the session (its disk holds
@@ -373,8 +370,17 @@ export function prepareCommand(
   return { entry, argv: buildArgv(entry, params, positionals) };
 }
 
+/**
+ * Whether a request id is one the executor seam minted from this process's own invocation (or none at all), as
+ * opposed to one the command chose (`runCommandJob` mints its own). Only the seam's is replaced by the client's id,
+ * so a command's explicit id is never overwritten.
+ */
+function isSeamMinted(requestId: string | undefined): boolean {
+  return requestId === undefined || requestId.startsWith(`${invocationMinter().invocationId}:`);
+}
+
 export async function dispatchCommand(args: DispatchArgs): Promise<DispatchOutcome> {
-  const { argv, entry } = args.prepared;
+  const { argv } = args.prepared;
   const started = Date.now();
 
   // Per-dispatch config freshness: configService memoizes a ResourceState view per process, which in a long-lived serve process freezes the repository/machine world at first use while clients may rewrite the config between dispatches, the same staleness class the executor daemon hit (it built vaults from a boot snapshot). Reset both layers up front.
@@ -386,9 +392,8 @@ export async function dispatchCommand(args: DispatchArgs): Promise<DispatchOutco
   let functionName: string | undefined;
   let machineName: string | undefined;
 
-  // Every machine call a served command makes runs detached and is FOLLOWED to completion: the executor cannot assume the client's connection outlives the work, so it starts a job that survives a drop and streams its spool back. `onJobStarted` fires once per job so the route can announce a re-attach point. The detach decision defaults to the contract's `detachable` and is
-  // overridden by the route when it must (deps.detach).
-  const detached = args.detached ?? entry.detachable;
+  // Every machine call a served command makes is one job, attached for the window the executor seam sets and handed back as a ticket when it outlives it: the executor cannot assume the client's connection outlives the work. `onJobStarted` fires once per job so the route can announce the job line. A client-supplied request id is the invocation id: each call of the command mints `<id>:<machine>:<seq>` from it, so a retried POST attaches to the jobs the first one started and a second call of the same command is its own job.
+  const minter = args.requestId ? new RequestIdMinter(args.requestId) : undefined;
   // Renet's own stdout is the command's answer only for a verb that asked for it live (`passthroughOutput`: repo exec, repo logs) or under --debug. For every other verb a local run drops it (the step detector keeps step lines only, and a captureOutput verb prints what it chose from `result.stdout` itself), so a proxied run must not carry it either: the proxy client prints `output` events, which put renet's full repository-list JSON (the machine probe's answer) on the stdout of `repo up` and `repo down`. Events are therefore dropped here for such a verb; the raw `result.stdout` still travels on the wire for clients that want it.
   let forwardRenetOutput = false;
   const recordingExecutor: Executor = {
@@ -398,9 +403,15 @@ export async function dispatchCommand(args: DispatchArgs): Promise<DispatchOutco
       machineName = options.machineName;
       const result = await args.executor.execute({
         ...options,
-        detached,
-        follow: true,
-        ...(args.onJobStarted ? { onJobStarted: args.onJobStarted } : {}),
+        ...(minter && isSeamMinted(options.requestId)
+          ? { requestId: minter.next(options.machineName) }
+          : {}),
+        ...(args.onJobStarted
+          ? {
+              onJobStarted: (jobId: string, machine?: string, overlaps?: JobOverlap[]) =>
+                args.onJobStarted?.(jobId, machine ?? options.machineName, overlaps),
+            }
+          : {}),
       });
       lastResult = result;
       return result;

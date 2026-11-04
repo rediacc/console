@@ -267,7 +267,7 @@ class JobRun {
     if (this.state.jobId) return;
     this.state.jobId = jobId;
     this.ticket.append('started', { jobId, state: 'running' });
-    this.options.onJobStarted?.(jobId);
+    this.options.onJobStarted?.(jobId, this.options.machineName, overlaps);
     for (const overlap of overlaps) {
       for (const line of overlapWarningLines(overlap)) writeStderr(`${line}\n`);
     }

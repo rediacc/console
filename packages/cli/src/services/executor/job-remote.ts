@@ -548,7 +548,11 @@ function outputLine(event: RenetEvent): EventLine | null {
 // --- plumbing ----------------------------------------------------------------
 
 /** Run a one-shot `renet job` subcommand and return its stdout. */
-async function runJobCommand(conn: JobConnection, command: string, what: string): Promise<string> {
+export async function runJobCommand(
+  conn: JobConnection,
+  command: string,
+  what: string
+): Promise<string> {
   const sftp = await conn.lease.ensure();
   const { exitCode, stdout, stderr } = await execCapture(sftp, command);
 
