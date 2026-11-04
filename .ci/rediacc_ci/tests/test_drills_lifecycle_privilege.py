@@ -87,7 +87,12 @@ def test_probe_runs_for_real_and_reports_this_process() -> None:
             "source /dev/stdin <<'EOF'\n%sEOF\nsudo() { echo 'stub: no new privileges' >&2; return 1; }\nup\n"
             % script
         )
-        env = {**os.environ, "REDIACC_WORKING_DIR": work, lp.CREDENTIAL_VAR: lp.CREDENTIAL_VALUE}
+        env = {
+            **os.environ,
+            "REDIACC_WORKING_DIR": work,
+            "LC_ALL": "C",
+            lp.CREDENTIAL_VAR: lp.CREDENTIAL_VALUE,
+        }
         proc = subprocess.run(
             ["bash", "-c", runner], env=env, capture_output=True, text=True, check=False
         )
@@ -154,6 +159,16 @@ def test_denied_verdict_control_and_each_open_key() -> None:
     assert not lp.denied_verdict({})[0]
 
 
+def test_denied_verdict_refuses_a_probe_that_had_nothing_to_probe() -> None:
+    """`none` is what the probe prints for a missing block device or grants directory: nothing was denied, so the row is not a pass."""
+    for key in ("block", "grants"):
+        ok, why = lp.denied_verdict(
+            lp.parse_probe(GOOD_UP.replace("%s=denied" % key, "%s=none" % key))
+        )
+        assert not ok
+        assert key in why
+
+
 def test_sudo_verdict_needs_a_failure_that_names_no_new_privs() -> None:
     assert lp.sudo_verdict(lp.parse_probe(GOOD_UP))[0]
     worked = GOOD_UP.replace("sudo_rc=1", "sudo_rc=0")
@@ -176,8 +191,32 @@ def test_root_verdict_is_the_positive_control() -> None:
 
 
 def test_up_failed_verdict() -> None:
-    assert lp.up_failed_verdict(1, "compose: pull access denied")[0]
+    failure = "Error response from daemon: pull access denied for %s/%s" % (
+        lp.BAD_IMAGE_HOST,
+        lp.BAD_IMAGE_NAME,
+    )
+    assert lp.up_failed_verdict(1, failure)[0]
+    assert not lp.up_failed_verdict(0, failure)[0]
     assert not lp.up_failed_verdict(0, "")[0]
+    # An unrelated failure (a broken install) exits nonzero without naming the compose file's image.
+    assert not lp.up_failed_verdict(1, "renet: command not found")[0]
+
+
+def test_probe_prints_none_for_a_missing_block_device_and_grants_directory() -> None:
+    """Run the probe's `_report` with no `/sys/block` entry and no grants directory: both keys say `none`, never `denied`."""
+    with tempfile.TemporaryDirectory() as work:
+        script = lp.probe_rediaccfile().replace(lp.ETC_DIR + "/grants", work + "/no-grants")
+        script = script.replace("ls /sys/block", "ls " + work + "/no-block")
+        runner = "source /dev/stdin <<'EOF'\n%sEOF\nsudo() { return 1; }\nup\n" % script
+        env = {**os.environ, "REDIACC_WORKING_DIR": work, "LC_ALL": "C"}
+        proc = subprocess.run(
+            ["bash", "-c", runner], env=env, capture_output=True, text=True, check=False
+        )
+        assert proc.returncode == 0, proc.stderr
+        with open(os.path.join(work, lp.UP_FILE)) as handle:
+            probe = lp.parse_probe(handle.read())
+    assert probe["block"] == "none"
+    assert probe["grants"] == "none"
 
 
 # --------------------------------------------------------------------------- grants
@@ -236,7 +275,7 @@ def test_probe_cdi_open_reports_what_an_open_of_the_node_says() -> None:
     with tempfile.TemporaryDirectory() as work:
         script = lp.probe_rediaccfile().replace(lp.CDI_NODE, work + "/absent-node")
         runner = "source /dev/stdin <<'EOF'\n%sEOF\nsudo() { return 1; }\nup\n" % script
-        env = {**os.environ, "REDIACC_WORKING_DIR": work}
+        env = {**os.environ, "REDIACC_WORKING_DIR": work, "LC_ALL": "C"}
         proc = subprocess.run(
             ["bash", "-c", runner], env=env, capture_output=True, text=True, check=False
         )

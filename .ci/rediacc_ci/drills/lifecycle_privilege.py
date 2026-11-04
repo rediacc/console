@@ -2,7 +2,7 @@
 
 `vm_check.py` registers this module once, through `EXTRA_RENET_STEPS`, as the `L1` step of the renet phase; `--only L1` drags in P5, so the run's parent grand exists. `ctx` is the running `VmCheck`: every VM action goes through its `./rdc.sh` helpers (`rdc`, `shell`), its raw ssh probe recipe (`vm_ssh.ssh_argv` through `host_run`) and its ledger (`check`).
 
-THE PROBE. A fork of the parent grand gets a probe `Rediaccfile` written through `term connect` (the repository's own sandbox shell, which may write its mount). Its `up()` and `down()` write `key=value` lines to `lifecycle-probe.<function>` in the mount, reporting verdicts only, never the content of what they tried to read: the uid, CapEff, `/proc/kcore`, `/etc/shadow`, the first block device, `/etc/rediacc/grants`, whether a fake credential reached the function's environment or its parent's `/proc/<pid>/environ`, `sudo -n`, and the owner of a file `up()` creates. The drill reads the lines back through `term connect` and judges them with the pure functions below.
+THE PROBE. A fork of the parent grand gets a probe `Rediaccfile` written through `term connect` (the repository's own sandbox shell, which may write its mount). Its `up()` and `down()` write `key=value` lines to `lifecycle-probe.<function>` in the mount, reporting verdicts only, never the content of what they tried to read: the uid, CapEff, `/proc/kcore`, `/etc/shadow`, the first block device, `/etc/rediacc/grants`, `none` for a block device or grants directory the worker does not have (nothing was probed, which L1.2 fails instead of reading as denied), whether a fake credential reached the function's environment or its parent's `/proc/<pid>/environ`, `sudo -n`, the owner of a file `up()` creates (`created_owner`) and of the `.env` it appends to (`env_owner`), and what an open of the fake CDI node answers (`cdi_open`, in the C locale the probe sets). The drill reads the lines back through `term connect` and judges them with the pure functions below.
 
 THE ROWS. L1.0 the probe is installed in the fork; L1.1 `repo up` runs the probe as a uid other than 0 with an empty CapEff; L1.2 every denied probe is denied and the fake credential in `rdc`'s own environment never reached `up()`; L1.3 `sudo` fails on `no_new_privs`; L1.4 a file `up()` creates belongs to the function's uid; L1.5 a failing `renet compose` inside `up()` fails the `repo up`; L1.6 `repo down` runs the probe's `down()` as the same uid; L1.7 the fork's grant holds no lifecycle root or path; L1.8 the root grant is the positive control (the same probe reports uid 0 under `--lifecycle-root=true`) and its removal restores the drop; L1.9 a FAKE CDI node (gpu_grants' `/dev/rediacc-fake`) is out of reach for `up()` without the repository's device grant and reachable with it. L1.4 also judges the owner of the `.env` file `up()` appends to.
 
@@ -39,14 +39,18 @@ NNP_TEXT = "no new privileges"
 CDI_NODE = gpu_grants.NODE_PATH
 CDI_REACHED = gpu_grants.ENXIO
 # Probe keys the denied-read verdicts judge.
+# The one service of `bad_compose()`; a failing `renet compose` names its image.
+BAD_IMAGE_HOST = "rediacc.invalid"
+BAD_IMAGE_NAME = "lifecycle-probe-missing"
 DENIED_KEYS = ("kcore", "shadow", "block", "grants")
 
 
 def probe_rediaccfile() -> str:
-    """The probe Rediaccfile. `up()` and `down()` each write one `key=value` line per probe into the mount; a denied read prints `denied`, a successful one `readable`."""
+    """The probe Rediaccfile. `up()` and `down()` each write one `key=value` line per probe into the mount; a denied read prints `denied`, a successful one `readable`, and a target the worker does not have `none`."""
     return (
         "#!/bin/bash\n"
         "_report() {\n"
+        "  export LC_ALL=C\n"
         '  out="$REDIACC_WORKING_DIR/$1"\n'
         '  : > "$out"\n'
         '  echo "uid=$(id -u)" >> "$out"\n'
@@ -54,8 +58,8 @@ def probe_rediaccfile() -> str:
         '  if head -c1 /proc/kcore >/dev/null 2>&1; then echo kcore=readable >> "$out"; else echo kcore=denied >> "$out"; fi\n'
         '  if head -c1 /etc/shadow >/dev/null 2>&1; then echo shadow=readable >> "$out"; else echo shadow=denied >> "$out"; fi\n'
         "  blk=$(ls /sys/block 2>/dev/null | grep -v '^loop\\|^ram\\|^zram' | head -n1)\n"
-        '  if [ -n "$blk" ] && head -c1 "/dev/$blk" >/dev/null 2>&1; then echo block=readable >> "$out"; else echo block=denied >> "$out"; fi\n'
-        '  if ls %(etc)s/grants >/dev/null 2>&1; then echo grants=readable >> "$out"; else echo grants=denied >> "$out"; fi\n'
+        '  if [ -z "$blk" ]; then echo block=none >> "$out"; elif head -c1 "/dev/$blk" >/dev/null 2>&1; then echo block=readable >> "$out"; else echo block=denied >> "$out"; fi\n'
+        '  if [ ! -e %(etc)s/grants ]; then echo grants=none >> "$out"; elif ls %(etc)s/grants >/dev/null 2>&1; then echo grants=readable >> "$out"; else echo grants=denied >> "$out"; fi\n'
         '  if [ -n "${%(cred)s:-}" ]; then echo cred_env=present >> "$out"; else echo cred_env=absent >> "$out"; fi\n'
         "  if tr '\\0' '\\n' < /proc/$PPID/environ 2>/dev/null | grep -q '^%(cred)s='; then echo cred_parent=readable >> \"$out\"; else echo cred_parent=denied >> \"$out\"; fi\n"
         '  so=$(sudo -n true 2>&1); echo "sudo_rc=$?" >> "$out"; echo "sudo_msg=$(echo "$so" | head -n1)" >> "$out"\n'
@@ -86,7 +90,10 @@ def probe_rediaccfile() -> str:
 
 def bad_compose() -> str:
     """A compose file whose only service cannot start: the image does not exist, so `renet compose up` must fail."""
-    return "services:\n  probe:\n    image: rediacc.invalid/lifecycle-probe-missing:0\n"
+    return "services:\n  probe:\n    image: %s/%s:0\n" % (
+        BAD_IMAGE_HOST,
+        BAD_IMAGE_NAME,
+    )
 
 
 def install_command() -> str:
@@ -133,7 +140,7 @@ def dropped_verdict(probe: dict[str, str]) -> tuple[bool, str]:
 
 
 def denied_verdict(probe: dict[str, str]) -> tuple[bool, str]:
-    """(ok, evidence) of L1.2: every probed read is denied, and the fake credential reached neither the function's environment nor its parent's environ."""
+    """(ok, evidence) of L1.2: every probed read is denied (a `none` probed nothing and is not a denial), and the fake credential reached neither the function's environment nor its parent's environ."""
     bad = [k for k in DENIED_KEYS if probe.get(k) != "denied"]
     if probe.get("cred_env") != "absent":
         bad.append("cred_env")
@@ -186,8 +193,13 @@ def root_verdict(probe: dict[str, str]) -> tuple[bool, str]:
 
 
 def up_failed_verdict(rc: int, text: str) -> tuple[bool, str]:
-    """(ok, evidence) of L1.5: the `repo up` of a fork whose up() ran a failing `renet compose` did not report success."""
-    return rc != 0, "repo up rc=%d %s" % (rc, " ".join(text.split())[-200:])
+    """(ok, evidence) of L1.5: the `repo up` of a fork whose up() ran a failing `renet compose` failed, and its output names the compose file's missing image, so an unrelated failure (a broken install) does not pass."""
+    named = BAD_IMAGE_HOST in text or BAD_IMAGE_NAME in text
+    return rc != 0 and named, "repo up rc=%d compose failure named=%s %s" % (
+        rc,
+        named,
+        " ".join(text.split())[-200:],
+    )
 
 
 def grant_show_script(network_id: int | str) -> str:
