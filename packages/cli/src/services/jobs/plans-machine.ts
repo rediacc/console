@@ -105,7 +105,7 @@ export const MACHINE_JOB_PLANS: Readonly<Record<string, JobPlan>> = {
     lock: 'machine-exclusive',
     timeout: '24h',
     box: 'J18',
-    steps: ['setMachineInfra'],
+    steps: ['setMachineInfra', 'pushProvisionedInfra'],
     exception: 'the tofu legs stay local (section 24)',
     note: 'infra push is the successor and carries no secret (J0b finding 2); addMachine and knownHosts precede the job, which needs the machine record to connect',
   },

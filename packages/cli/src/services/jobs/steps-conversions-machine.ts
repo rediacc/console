@@ -54,6 +54,12 @@ export const MACHINE_CONVERSION_STEPS: StepDefinition[] = [
         );
     },
   },
+  privateStep(
+    'pushProvisionedInfra',
+    'success',
+    ['machine', 'debug'],
+    () => import('../provision/infra-provision.js')
+  ),
   {
     name: 'purgeExpiredArchives',
     on: 'success',

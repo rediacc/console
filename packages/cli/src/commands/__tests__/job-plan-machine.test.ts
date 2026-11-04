@@ -49,10 +49,38 @@ vi.mock('../../services/core/request-context.js', async (orig) => ({
 }));
 vi.mock('../../services/config/config-resources.js', () => ({
   configService: {
-    getLocalConfig: async () => ({ sshPrivateKey: 'key', ssh: {}, machines: {} }),
+    getLocalConfig: async () => ({
+      sshPrivateKey: 'key',
+      sshPublicKey: 'ssh-ed25519 AAAA',
+      ssh: {},
+      machines: {},
+    }),
     getLocalMachine: async () => ({ ip: '10.0.0.1' }),
     listRepositories: async () => [],
+    getCurrent: async () => ({
+      resources: { cloudProviders: { hetzner: { provider: 'hetzner' } } },
+    }),
+    addMachine: vi.fn(async () => undefined),
+    updateMachine: vi.fn(async () => undefined),
   },
+}));
+// The tofu leg runs locally and stays out of the job; these stand in for the binary, the plan and the SSH wait.
+vi.mock('../../services/tofu/executor.js', () => ({
+  TofuExecutor: class {
+    static resolveBinary = vi.fn(async () => undefined);
+    writeConfig = async () => undefined;
+    init = async () => undefined;
+    apply = async () => undefined;
+    getOutputs = async () => ({ ipv4: { value: '203.0.113.7' } });
+  },
+}));
+vi.mock('../../services/tofu/provider-resolver.js', () => ({
+  resolveProviderMapping: () => ({ defaults: {}, regionAttr: 'region' }),
+}));
+vi.mock('../../services/tofu/tf-generator.js', () => ({ generateTfJson: () => ({}) }));
+vi.mock('../../services/renet/machine-bootstrap.js', () => ({
+  scanHostKeys: () => '',
+  waitForSSH: async () => undefined,
 }));
 vi.mock('../../services/renet/renet-execution.js', () => ({
   acquireRemoteRenet: mocks.acquireRemoteRenet,
@@ -65,7 +93,10 @@ vi.mock('../../utils/local-execution-failures.js', () => ({
   renderLocalExecutionFailure: vi.fn(),
 }));
 vi.mock('../../services/machine/machine-remove-guard.js', () => ({ guardMachineRemoval: vi.fn() }));
-vi.mock('../../services/provision/infra-provision.js', () => ({ pushInfraConfig: vi.fn() }));
+vi.mock('../../services/provision/infra-provision.js', () => ({
+  pushInfraConfig: vi.fn(),
+  removeMachineDnsRecords: vi.fn(),
+}));
 vi.mock('../../services/repo/repo-key-deployment.js', () => ({ deployAllRepoKeys: vi.fn() }));
 
 const { registerGpuCommands } = await import('../machine/gpu.js');
@@ -73,6 +104,7 @@ const { registerConvergeCommand } = await import('../machine/converge.js');
 const { registerRestartServicesCommand } = await import('../machine/restart-services.js');
 const { registerMachineRegistrationCommands } = await import('../machine/register.js');
 const { registerPruneCommand } = await import('../machine/prune.js');
+const { registerCloudCommands } = await import('../machine/provision.js');
 
 type Executed = {
   functionName: string;
@@ -280,6 +312,54 @@ describe('machine prune', () => {
     await run(registerPruneCommand, 'prune', 'm1');
 
     expect(mocks.print).not.toHaveBeenCalled();
+    expect(mocks.success).not.toHaveBeenCalled();
+  });
+});
+
+describe('machine provision', () => {
+  const provision = (...extra: string[]) =>
+    run(registerCloudCommands, 'provision', 'edge1', '--provider', 'hetzner', ...extra);
+
+  it('makes no job for its tofu leg and exactly one setup job for its setup leg, after the bootstrap upload', async () => {
+    await provision('--no-infra');
+
+    expect(mocks.order).toEqual(['bootstrap', 'job']);
+    expect(executed).toHaveLength(1);
+    expect(executed[0]).toMatchObject({
+      functionName: 'setup',
+      machineName: 'edge1',
+      verb: 'machine provision',
+      commandKind: { name: 'setup' },
+    });
+    expect(stepNames(executed[0])).toEqual([]);
+    expect(mocks.success).toHaveBeenCalledTimes(1);
+  });
+
+  it('records the infra source and pushes it as steps of the setup job, not as calls after it', async () => {
+    await provision('--base-domain', 'example.com');
+
+    expect(executed).toHaveLength(1);
+    expect(stepNames(executed[0])).toEqual(['setMachineInfra', 'pushProvisionedInfra']);
+    const infra = JSON.parse(String(executed[0].jobSteps?.[0].params.infra));
+    expect(infra).toMatchObject({ baseDomain: 'example.com', publicIPv4: '203.0.113.7' });
+  });
+
+  it('returns the ticket past the attach window without announcing completion', async () => {
+    answer = RUNNING;
+
+    await provision('--no-infra');
+
+    expect(executed).toHaveLength(1);
+    expect(mocks.success).not.toHaveBeenCalled();
+  });
+
+  it('a failed setup warns, sets the exit code and announces no completion', async () => {
+    answer = { ...OK, success: false, exitCode: 3, state: 'failed' as const };
+
+    await provision('--no-infra');
+
+    expect(mocks.warn).toHaveBeenCalledWith('Machine setup exited with code 3');
+    expect(mocks.setExitCode).toHaveBeenCalledWith(3);
     expect(mocks.success).not.toHaveBeenCalled();
   });
 });

@@ -136,13 +136,17 @@ export const CONVERTED: ReadonlySet<string> = new Set<string>([
   // J17: browse is one backup_browse(_at) job with its listing print as a step; status is one backup-status job with its table as a step.
   'backup browse',
   'backup status',
-  // J18: one job each; the report, the converge pass and the failure tails are steps.
+  // J18: one job each; the report, the converge pass and the failure tails are steps. status and health read one list-all job and render in a step; config reconcile runs one list-all job per machine and reconciles in the group's last step; provision runs one setup job after the tofu leg, with the infra record and push as steps.
+  'config reconcile',
   'machine converge',
   'machine gpu list',
+  'machine health',
   'machine infra push',
+  'machine provision',
   'machine prune',
   'machine restart-services',
   'machine setup',
+  'machine status',
   // J19: datastore verbs are one job each (attach relocation, fork --attach-to and delete on an attached datastore chain
   // their later phases as steps); each cluster verb is one job per phase, one ticket per phase (no group id exists).
   'cluster create',

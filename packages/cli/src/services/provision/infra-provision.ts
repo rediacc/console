@@ -310,6 +310,17 @@ async function ensureMachineDns(machineName: string): Promise<void> {
 
 bindStepHandler('ensureMachineDns', ({ machine }) => ensureMachineDns(machine));
 
+/** The success step of a provision's setup job: push the infra config the previous step recorded. A failed push is non-fatal, as it was inline. */
+bindStepHandler('pushProvisionedInfra', async ({ machine, params }) => {
+  try {
+    await pushInfraConfig(machine, { debug: params.debug === true });
+  } catch (error) {
+    outputService.warn(
+      `Infra push to ${machine} failed: ${error instanceof Error ? error.message : String(error)}`
+    );
+  }
+});
+
 /**
  * Push infrastructure configuration to a remote machine.
  *
