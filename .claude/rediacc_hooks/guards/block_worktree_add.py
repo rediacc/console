@@ -1215,14 +1215,14 @@ def _script_verdict(cmd, depth, cwd):
     if not (shellscan.PROGRAM_PREFILTER.search(cmd) or SHELL_SCRIPT_PREFILTER.search(cmd)):
         return None
     for run_ in shellscan.every_run(cmd):
-        # A SCRIPT PATH THE SHELL WILL EXPAND FAILED OPEN (measured 2026-11-04: `python3 $G/test-...` of a dirty file ran, where the literal path was refused), since the unexpanded path "does not exist". shellscan keeps the operand raw, so a value this command assigns is put back and the run judged again as if typed. A variable with no known value is unjudgeable once the command's own text spells the words; with no such text it stays out of reach, as with any file named only at run time.
+        # A SCRIPT PATH THE SHELL WILL EXPAND FAILED OPEN (measured 2026-11-04: `python3 $G/test-...` of a dirty file ran, where the literal path was refused), since the unexpanded path "does not exist". shellscan keeps the operand raw, so a value this command assigns is put back and this one run judged again with the literal path. A variable whose value is not known stays out of reach when the command's text does not spell the words, as with any file named only at run time.
         operand = _script_operand(run_, cmd, cwd) or ""
         if "$" in operand:
+            # Text spelling the words decides first: the rebuilt run below carries no earlier write of this command, so a script this command writes is only caught here (review 3a4cc6d0.1).
+            if _could_spell(cmd):
+                return "unjudgeable"
             known = _with_assigned_values(run_, operand)
-            if "$" in known:
-                if _could_spell(cmd):
-                    return "unjudgeable"
-            else:
+            if "$" not in known:
                 words = [known if w == operand else w for w in (run_.name, *run_.argv)]
                 typed = shlex.join(words)
                 if run_.cwd:
@@ -1385,6 +1385,10 @@ EDGE_CASES = [
     ("a variable script path naming the words", "python3 $G/test-block_worktree_add.py"),
     ("control: a variable script path, no words", "python3 $G/unrelated.py"),
     ("control: an assigned script path, no such file", "G=/no/such; python3 $G/unrelated.py"),
+    (
+        "a script this command writes through a variable",
+        "G=/d; printf 'git worktree add x' > $G/x.py; python3 $G/x.py",
+    ),
     ("control: a bare name in another checkout", "git -C /other/repo worktree remove w2-proof"),
     ("run.sh doing something else", "./run.sh setup --check"),
     # A lease tree leaves only through GC (Design 6): the verbs on its path are refused, the lease tool and the same verbs on any other path are not.

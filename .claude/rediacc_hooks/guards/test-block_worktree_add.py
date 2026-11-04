@@ -95,6 +95,10 @@ REFUSED += [
     ("a variable script path naming the words", "python3 $G/test-block_worktree_add.py"),
     ("the fixture, literal", "python3 %s/fixture.py" % FIXTURE_DIR),
     ("the fixture, through an assignment", "G=%s; python3 $G/fixture.py" % FIXTURE_DIR),
+    (
+        "written and run through a variable",
+        "G=%s; printf 'git worktree add x' > $G/w.py; python3 $G/w.py" % FIXTURE_DIR,
+    ),
 ]
 
 ALLOWED = [
