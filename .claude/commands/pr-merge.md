@@ -76,10 +76,12 @@ git -C <worktree-path> status --short
 git -C <worktree-path> diff --stat  # and per-submodule, if any submodule shows dirty too
 ```
 
-A worktree with nothing dirty and nothing unpushed is debris, so remove it:
+A lease tree (under `.claude/worktrees/`) is never removed by hand: `git worktree remove|prune|lock` on it is hook-refused. List them with `./run.sh worktree leases`, then `./run.sh worktree gc` shows which are safe, and `./run.sh worktree gc --write` removes only those that hold nothing dirty and no unlanded commit.
+
+Any other worktree with nothing dirty and nothing unpushed is debris, so remove it:
 
 ```bash
-git worktree remove <worktree-path> --force
+git worktree remove <worktree-path>
 git worktree prune
 ```
 
@@ -92,7 +94,7 @@ silently. Report what it is and ask, the same as an unclear dirty file in the ma
 Observed live 2026-08-01: six stray worktrees had accumulated in one checkout. Two held real, substantial uncommitted work from other sessions (a ~270-line CLI+Go feature, six locale files' worth of in-progress translation). Both turned out to be fully superseded by `main` (verified byte-identical / a strict subset before deleting), but that was established by checking, not assumed
 from how old or untouched the worktree looked.
 
-**Creating a new worktree from inside `/pr-merge` (or any assistant session) is hook-blocked.** `.claude/hooks/pre-bash/block-worktree-add.sh` refuses `git worktree add` from the assistant's own Bash tool unconditionally. If this flow genuinely needs one (it normally does not; steps 4-6 operate on the existing checkout), ask the operator to run the command themselves via the `!`
+**Creating a new worktree from inside `/pr-merge` (or any assistant session) is hook-blocked.** `.claude/rediacc_hooks/guards/block_worktree_add.py` refuses `git worktree add` from the assistant's own Bash tool unconditionally; a writer's tree is a lease, from `./run.sh worktree lease`. If this flow genuinely needs one (it normally does not; steps 4-6 operate on the existing checkout), ask the operator to run the command themselves via the `!`
 prefix. This does not affect step 7's `git checkout -b <MMDD-N>` guidance, which creates a branch in the current checkout, not a new worktree, and is unaffected by the hook.
 
 - Current branch is **not** `main`, and it matches the branch shown above (or the `$ARGUMENTS` override).

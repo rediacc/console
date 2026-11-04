@@ -31,7 +31,11 @@ The roster comes from the progress table and the plan files, not from a survey. 
 - **Order of starting**: first one writer per plan in table order (the first third for a split plan), then the second and third thirds in table order. Whatever does not fit in the free slots is queued (step 5), in that same order.
 - **Filling the cap**: when every planned writer fits and slots remain, the largest remaining share above five boxes splits into thirds again, repeated until the slots run out or no share is above five.
 
-Writers of the same plan share the plan's `Owns:` boundary (the concurrency guard judges plans, so siblings are not refused against each other), so the guard cannot keep two siblings out of one file. Writers run in the main checkout, NOT with `isolation: "worktree"`: a harness worktree is cut from `origin/main` with every submodule uninitialised (measured 2026-10-30: base 403f47b97, 1398 commits behind the live branch, `private/account`, `private/renet` and `private/elite` empty), so a writer there reads stale code and cannot run the submodule tests. Siblings are kept apart by their box ranges instead, and the clash that leaves is caught at commit time: the lead intersects the file lists the siblings of one plan report, and a file named by two is re-read whole and its hunks matched to each report before either is committed. Each sibling's brief still names the other siblings' box ranges, so such a file is rare: a file one sibling's boxes plainly need belongs to that sibling, and a writer that finds it must edit a sibling's file stops and puts the exact change in its report for the lead.
+Writers of the same plan share the plan's `Owns:` boundary (the concurrency guard judges plans, so siblings are not refused against each other). A writer whose plan or box needs its own tree runs in a lease: a detached tree under `.claude/worktrees/<id>` at the live branch's tip, submodules at their gitlinks, dependencies seeded (`./run.sh worktree lease`, `.ci/rediacc_ci/dev/worktree_lease.py`). Uncommitted work in the main checkout is not in it, so a writer that depends on a sibling's or the lead's unlanded edit stays in the main checkout.
+
+The route is `isolation: "worktree"` on the Agent call, which reaches the lease through the harness's create hook (PLAN-worktree-lease W5; until that box lands the harness cuts a tree from `origin/main` with empty submodules, so the lead runs `./run.sh worktree lease --name <slug>` itself and puts the printed path in the brief, and the writer uses absolute paths under it).
+
+Siblings in separate leases cannot corrupt each other: `block_plan_concurrency` turns an `Owns` overlap into a note for an isolated spawn (PLAN-worktree-lease W10), and a clash surfaces as a cherry-pick conflict at landing, where the lead re-reads the file whole and matches its hunks to each report. A writer that finds a file a sibling's boxes plainly need stops and puts the exact change in its report. A writer without a lease runs in the main checkout, where the lead intersects the siblings' file lists before committing, a file named by two is re-read whole, and each sibling's brief names the other siblings' box ranges.
 
 ### 3. The survey, optional and on disk
 
@@ -39,7 +43,7 @@ A survey helps only when it does not hold the writers back. When one is wanted, 
 
 ### 4. Start the writers, all at once
 
-Every writer that fits is started in ONE message with parallel Agent calls, in the main checkout (step 2 says why not a worktree). Model: `sonnet` when the plan's open boxes implement against an existing oracle (ports, tests, sweeps, translations); `opus` when they create the oracle (a new gate, guard, schema or design). Never `haiku` for writes. A plan's `Concurrency: exclusive` is no reason to hold its writer back: it is started anyway, and `block_plan_concurrency` decides.
+Every writer that fits is started in ONE message with parallel Agent calls, each in a lease when step 2 says it needs one and in the main checkout otherwise. Which writer gets a lease is not asked (`block_settled_questions`). Model: `sonnet` when the plan's open boxes implement against an existing oracle (ports, tests, sweeps, translations); `opus` when they create the oracle (a new gate, guard, schema or design). Never `haiku` for writes. A plan's `Concurrency: exclusive` is no reason to hold its writer back: it is started anyway, and `block_plan_concurrency` decides.
 
 Each brief stands alone, because the writer sees nothing else. Its first two lines are load-bearing for the guards and are copied from the plan header:
 
@@ -73,9 +77,14 @@ Handle each box by its class, which this writer determines itself from the tree:
   as one question with the recommended option first.
 A box whose code landed but whose live accept is open is classified by its open half.
 
-Rules: never commit; no git checkout, restore, stash, clean, reset or add; no regenerate or sync
+Rules: no git checkout, restore, stash, clean, reset or add; no regenerate or sync
 script (name it for the lead instead); never vitest from the repo root; no edits outside the
-boundary.
+boundary. In the main checkout, never commit. In a lease (the brief names its path):
+  - commit on the detached HEAD with `git commit -F <msg> -- <paths>` and a `PR-TASK:` trailer;
+    never push, never touch `agent/**` or a gitlink, never switch or create a branch;
+  - run `npm run ci -- --narrow` or named tests; ci:quick, vm:check and live_proof record refuse a lease;
+  - report the commit shas; the lead lands them. A result worth keeping goes in a commit or the
+    report, because GC deletes the tree's ignored output with the tree.
 
 Report, one block per box signature:
   <sig> <class> <done|partial|untouched|blocked-on-dep>
@@ -92,7 +101,7 @@ A spawn refused by `block_agent_cap` (cap full) gets its item leased to `worker:
 
 ### 6. As each writer reports
 
-Spot-check against the artifact (rule 4), rerun its acceptance commands, run any regenerate it named, commit by path (submodules first, then the pointer), and `--plan-tick` each box it finished with the commit and the proof. An ALREADY-DONE box is closed with `--plan-investigate <me> <plan> <sig> present <kind>:<token> -- <evidence> --write` and then `--plan-tick`, after the cited evidence is checked (an agent's "already done" is a hypothesis). Settle the per-commit review findings, then start the next queued writer.
+Spot-check against the artifact (rule 4), rerun its acceptance commands, run any regenerate it named. A writer's work in the main checkout is committed by path (submodules first, then the pointer). A writer's work in a lease is landed: `./run.sh worktree land <id>` checks each commit for its `PR-TASK:` trailer and prints the `git cherry-pick -x` lines and the gitlink commits, submodules first, and the lead runs them; `./run.sh worktree gc --write --id <id>` then collects the tree. A box ticks with the landed sha, never the lease's own. Then `--plan-tick` each box it finished with the commit and the proof. An ALREADY-DONE box is closed with `--plan-investigate <me> <plan> <sig> present <kind>:<token> -- <evidence> --write` and then `--plan-tick`, after the cited evidence is checked (an agent's "already done" is a hypothesis). Settle the per-commit review findings, then start the next queued writer.
 
 ### 7. Live and parked boxes
 

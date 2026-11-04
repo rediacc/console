@@ -1767,6 +1767,19 @@ A SECOND, sharper version of the same gap: a completed `isolation: "worktree"` a
 lost except its own working directory having changed underneath it. Seen live 2026-09-15: a docker-cutover writer's first pass made no changes (blocked on a stale base, see above), and resuming it to retry landed it directly in the shared tree, mid-push by an unrelated live session. It noticed only because it re-ran `pwd` and `git worktree list` before acting, per its own task
 instructions to re-verify state before a consequential step -- an agent that trusted its original briefing's "you are isolated" premise instead would have edited the shared tree believing itself alone in it. Re-verify the working directory and `git worktree list` after ANY resume of a worktree-isolated agent, not only after its first dispatch.
 
+CLOSED BY THE LEASE ROUTE, once the harness create hook is wired (PLAN-worktree-lease W5): the hook hands every `isolation: "worktree"` spawn a lease from `./run.sh worktree lease`, cut at the live branch's tip with submodules at their gitlinks, so the stale `origin/main` base and the empty submodules no longer arise. Until that hook is in `.claude/settings.json`, the three checks above stay the test. The resume hazard in the paragraph above is unchanged: a reclaimed tree still drops a resumed agent into the primary checkout.
+
+---
+
+## A linked submodule tree shares the live module's config, so a config write in a lease lands in the live checkout
+Trap-Id: lease-shared-submodule-config
+Enforced-By: JUDGMENT-ONLY
+Residue: nothing checks a `git config` write made from inside a lease's submodule tree; `block_lease_boundary` refuses push, branch and landing verbs, not a config edit, and only the lead's reading of the lease's report catches one.
+
+A lease's submodules are linked worktrees of the live `.git/modules/private/<name>` stores (PLAN-worktree-lease W0, candidate A), not clones. A linked worktree has its own HEAD and index but reads the module's single `config`: `remote.*`, `core.hooksPath`, `user.*`, `core.worktree`, `branch.*` and `extensions` are the live checkout's too. A writer in a lease that runs `git config <key> <value>` in a submodule, or `git remote set-url`, `git remote add` or `git branch --set-upstream-to`, changes the live submodule at the same moment, and nothing about the lease's isolation says so. The same holds for a hand-set `core.hooksPath`: the live module already carries the one that points at `.claude/rediacc_hooks/git`, so a lease needs none, and a different value breaks the live tree's hooks as well.
+
+The tree that looked isolated is therefore not isolated for config, refs under `refs/heads` and `refs/tags`, and the object store. A fetch from a remote or a `git gc` run in a lease acts on the live store. Leave config alone from a lease; a change that is genuinely needed goes in the writer's report for the lead to apply in the main checkout. Reading config is safe.
+
 ---
 
 ## A control proves the mutant is detectable, not that the check will ever see the mutant's shape
