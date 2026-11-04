@@ -2,11 +2,12 @@ import { randomUUID } from 'node:crypto';
 import { expect, test } from '@playwright/test';
 import { WK_RUNTIME_DIR } from '@rediacc/shared/config/well-known.generated';
 import { DEFAULT_DATASTORE_PATH } from '../src/constants';
+import { e2eRepoGuid } from '../src/utils/licence';
 import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 
 // Suite 32: detached jobs on a real worker, through the bridge. Every assertion reads machine state (the job spool, `systemctl list-units 'rediacc-job-*'`, `renet job list`, `renet repository status`), never the stdout of the command under test alone. The unit tests of renet drive the same code against a temp dir and a fake systemd; the races here (two processes, one spool) only exist on a real machine.
 //
-// Not covered here, by design of the harness: the repo-exclusive refusal (exit 15 naming the running job) needs a job that stays live long enough to race, and no vault function sleeps; PLAN-jobs-backup-real-machine-tests E1 keeps that case open until a holder job exists. The repository-status case (the running job listed under `jobs`) needs a provisioned repository with a live job, so it waits with the holder job. The "planted red" half (dedupe disabled through a renet test seam) needs a renet change outside this suite.
+// The holder job of cases 5 to 7: no vault function sleeps, so a job is started for a real repository and its unit is frozen with SIGSTOP in the same shell command (the job is still non-terminal and its unit still loaded while frozen). The freeze races the job's own end, so case 5 first checks the holder is live and names a lost race in its message. Planted reds: case 1b runs the dedupe case with renet's hidden `--no-request-dedupe` seam and needs two jobs; case 2b claims two different steps and needs both claimed; case 5b starts a job for another repository beside the holder and needs it admitted.
 
 const DS = DEFAULT_DATASTORE_PATH;
 const GUID = randomUUID();
@@ -18,7 +19,7 @@ interface Handle {
   network_id?: number;
 }
 
-const vaultFor = (networkId: number | 'auto', guid = GUID): string =>
+const vaultFor = (networkId: number | 'auto', guid: string = GUID): string =>
   JSON.stringify({
     $schema: 'queue-vault-v2',
     version: '2.0',
@@ -140,5 +141,118 @@ test.describe
         u.replace(/^rediacc-job-/, '').replace(/\.service$/, '')
       );
       expect(new Set(unitIds), 'a unit stays loaded for a job gc removed').toEqual(liveIds);
+    });
+
+    // Planted red of case 1: the same two starts with the dedupe seam on must make two jobs, so the one-job assertion of case 1 can fail.
+    test('1b. planted red: with the dedupe seam on, two starts with one request id make two jobs', async () => {
+      const vault = await stageVault('dedupe-red', vaultFor(2894));
+      const requestId = `e2e-dedupe-red-${Date.now()}`;
+      const start = `sudo renet job start --executor local --json --no-request-dedupe --request-id ${requestId} --vault @${vault}`;
+      const [a, b] = await Promise.all([w.executeViaBridge(start), w.executeViaBridge(start)]);
+      expect(a.code, a.stderr.slice(-400)).toBe(0);
+      expect(b.code, b.stderr.slice(-400)).toBe(0);
+      const ha = parseHandle(a.stdout);
+      const hb = parseHandle(b.stdout);
+      expect(ha.job_id, 'the seam did not disable dedupe').not.toBe(hb.job_id);
+      const list = await w.executeViaBridge(`sudo renet job list --request-id ${requestId} --json`);
+      const ids = new Set(list.stdout.match(/j[0-9a-f]+-[0-9a-f]{8}/g) ?? []);
+      expect(ids.size, 'the spool should hold both jobs of the planted red').toBeGreaterThanOrEqual(
+        2
+      );
+    });
+
+    // Control of case 2: two claims of two different steps are both won, so "exactly one claimant" is not a count that is always one.
+    test('2b. control: claims of two different steps are both won', async () => {
+      const vault = await stageVault('claim-ctl', vaultFor(2895));
+      const start = await w.executeViaBridge(
+        `sudo renet job start --executor local --json --vault @${vault}`
+      );
+      const { job_id: id } = parseHandle(start.stdout);
+      const [a, b] = await Promise.all(
+        ['s1', 's2'].map((step) =>
+          w.executeViaBridge(`sudo renet job claim --id ${id} --steps ${step} --json`)
+        )
+      );
+      for (const r of [a, b]) {
+        expect(
+          /"result"\s*:\s*"claimed"/.test(r.stdout),
+          `claim output: ${r.stdout.slice(-200)}`
+        ).toBe(true);
+      }
+    });
+
+    // Cases 5 to 7 share one holder: a job for a real repository, frozen while still non-terminal.
+    const REPO = e2eRepoGuid();
+    const OTHER = e2eRepoGuid();
+    let holder: Handle | undefined;
+
+    test('5. a repo-exclusive start while a job holds the repository exits 15 naming the holder', async () => {
+      const created = await w.repositoryNew(REPO, '64M', 'e2e-jobs-pw', DS);
+      expect(created.code, `repository_create: ${w.getCombinedOutput(created).slice(-400)}`).toBe(
+        0
+      );
+      const vault = await stageVault('holder', vaultFor(2892, REPO));
+      const frozen = await w.executeViaBridge(
+        `out=$(sudo renet job start --executor local --json --vault @${vault}) && ` +
+          `unit=$(printf '%s' "$out" | sed -n 's/.*"unit":"\\([^"]*\\)".*/\\1/p' | head -n1) && ` +
+          `sudo systemctl kill -s STOP "$unit" && printf '%s\\n' "$out"`
+      );
+      expect(frozen.code, `holder start or freeze: ${frozen.stderr.slice(-400)}`).toBe(0);
+      holder = parseHandle(frozen.stdout);
+      const live = await w.executeViaBridge(`sudo renet job list --active --json`);
+      expect(
+        live.stdout,
+        `the holder ${holder.job_id} ended before it could be frozen (lost race)`
+      ).toContain(holder.job_id);
+
+      const second = await stageVault('second', vaultFor(2893, REPO));
+      const refused = await w.executeViaBridge(
+        `sudo renet job start --executor local --json --vault @${second}`
+      );
+      expect(refused.code, `stdout: ${refused.stdout.slice(-400)}`).toBe(15);
+      expect(refused.stdout).toContain('"overlap"');
+      expect(refused.stdout, 'the refusal does not name the running job').toContain(holder.job_id);
+    });
+
+    // Control of case 5: a repository other than the held one is admitted, so exit 15 is the overlap and not a refusal of every start.
+    test('5b. control: a start for another repository is admitted beside the holder', async () => {
+      const vault = await stageVault('other', vaultFor(2896, OTHER));
+      const r = await w.executeViaBridge(
+        `sudo renet job start --executor local --json --vault @${vault}`
+      );
+      expect(r.code, `an unrelated repository was refused: ${r.stdout.slice(-300)}`).toBe(0);
+      parseHandle(r.stdout);
+    });
+
+    test('6. repository status --json lists the running job under jobs', async () => {
+      expect(holder, 'case 5 started no holder').toBeTruthy();
+      const status = await w.executeViaBridge(
+        `sudo renet repository status --name ${REPO} --datastore ${DS} --json`
+      );
+      expect(status.code, status.stderr.slice(-400)).toBe(0);
+      const jsonStart = status.stdout.indexOf('{');
+      const doc = JSON.parse(status.stdout.slice(jsonStart)) as {
+        jobs?: { job_id?: string; JobID?: string }[];
+      };
+      expect(Array.isArray(doc.jobs), `no jobs array in: ${status.stdout.slice(-400)}`).toBe(true);
+      const ids = (doc.jobs ?? []).map((j) => j.job_id ?? j.JobID);
+      expect(ids, 'the holder is missing from the status jobs').toContain(holder?.job_id);
+    });
+
+    test('7. cancelling the holder releases the repository', async () => {
+      expect(holder, 'case 5 started no holder').toBeTruthy();
+      const id = holder?.job_id as string;
+      // SIGCONT first so the stopped job process can take the SIGTERM the cancel sends.
+      await w.executeViaBridge(`sudo systemctl kill -s CONT ${holder?.unit}`);
+      const cancel = await w.executeViaBridge(`sudo renet job cancel --id ${id} --json`);
+      expect(cancel.code, cancel.stderr.slice(-400)).toBe(0);
+      const vault = await stageVault('third', vaultFor(2897, REPO));
+      const again = await w.executeViaBridge(
+        `sudo renet job start --executor local --json --vault @${vault}`
+      );
+      expect(again.code, `repository still held: ${again.stdout.slice(-300)}`).toBe(0);
+      parseHandle(again.stdout);
+      await w.repositoryRm(REPO, DS).catch(() => undefined);
+      await w.repositoryRm(OTHER, DS).catch(() => undefined);
     });
   });
