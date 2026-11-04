@@ -169,7 +169,7 @@ def read_world(root):
 
 
 def live_work(roster, cwd, session_id):
-    """{"ids", "trees"} of this session's live agents, or None when the roster cannot say."""
+    """{"ids", "trees", "cwd"}: this session's live agents and the session's own directory, or None when the roster cannot say."""
     if not roster or roster.get("blind"):
         return None
     ids = set(roster.get("rows") or ())
@@ -179,7 +179,7 @@ def live_work(roster, cwd, session_id):
         for aid in ids
         if (metas.get(aid) or {}).get("worktree")
     }
-    return {"ids": ids, "trees": trees}
+    return {"ids": ids, "trees": trees, "cwd": os.path.realpath(cwd) if cwd else ""}
 
 
 def _holder(lease_id, record, live, leases, cwds):
@@ -188,6 +188,10 @@ def _holder(lease_id, record, live, leases, cwds):
     agent = str(record.get("agent") or "")
     if (agent and agent in live["ids"]) or path in live["trees"]:
         return "a live writer"
+    # A session working inside its own lease has no roster row, and its shell does not live between tool calls.
+    here = live.get("cwd") or ""
+    if here == path or here.startswith(path + os.sep):
+        return "this session"
     item = wl_scratch.lease_holder(lease_id, path, leases)
     if item:
         return "live item #%s" % item

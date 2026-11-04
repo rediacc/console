@@ -512,7 +512,7 @@ def counting(argv, *a, **k):
 subprocess.run = counting
 live = json.loads(live)
 if live is not None:
-    live = {"ids": set(live["ids"]), "trees": set(live["trees"])}
+    live = {"ids": set(live["ids"]), "trees": set(live["trees"]), "cwd": live.get("cwd", "")}
 cache = {}
 if cache_path:
     try:
@@ -637,6 +637,11 @@ def control_live(tmp):
     check("another agent holds nothing", ids(got["unlanded"]), ["w1"])
     got = read(tmp, main, live={"ids": [], "trees": [str(lease)]})
     check("a live writer by recorded tree holds the lease", got["held"], ["w1"])
+    got = read(tmp, main, live={"ids": [], "trees": [], "cwd": str(lease / "deep")})
+    check("the session working inside its lease holds it", got["held"], ["w1"])
+    check("that session is not blocked by its own lease", got["unlanded"], [])
+    got = read(tmp, main, live={"ids": [], "trees": [], "cwd": str(main)})
+    check("a session in the main checkout holds nothing", got["held"], [])
     item = {"id": "abcd1234", "state": ">", "worker": "x", "text": "writing in w1"}
     got = read(tmp, main, items=[item])
     check("a worklist lease naming it holds the lease", got["held"], ["w1"])
@@ -851,7 +856,7 @@ def hook_world(fix, wlfix, ci_status):
     ci_status.ci_rollup(fix, "SUCCESS", "[%s]" % job)
 
 
-def hook_stop(fix, extra):
+def hook_stop(fix, extra, event=None):
     """A Stop with the gh shim on PATH, in context band 0."""
     band = fix.base / "ctxband"
     band.mkdir(exist_ok=True)
@@ -861,7 +866,7 @@ def hook_stop(fix, extra):
     env = {"CTX_BAND_STATE_DIR": str(band), **extra}
     env["PATH"] = "%s:%s" % (fix.base / "binonly", fix.env.get("PATH", ""))
     fix.say(SAID)
-    return fix.run(env)
+    return fix.run(env, event)
 
 
 def hook_state(fix):
@@ -905,6 +910,10 @@ def control_real_hook(tmp):
     got = hook_stop(fix, env)
     check("a live writer lifts the block", needle in got.out, False)
     fix.bg = "[]"
+
+    inside = {**json.loads(fix.event()), "cwd": str(lease)}
+    got = hook_stop(fix, env, json.dumps(inside))
+    check("a stop from inside the lease is not this block", needle in got.out, False)
 
     phase = ("--phase", wlfix.ME, "babysit", "--branch", "pub", "--pr", "543")
     check("the phase is declared", fix.cli(*phase).rc, 0)
