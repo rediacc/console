@@ -238,8 +238,11 @@ def run(event):
         )
         return hookio.ALLOW
 
+    judged_against: list[dict] = []
+
     def judge(claims):
         pending = X.unconsumed(claims, metas, session_id)
+        judged_against[:] = pending
         # Blind with no claim either: nothing to judge against, as the failing-open line below says.
         if cheap or (live is None and not pending):
             verdict = X.Verdict(True, "unjudged")
@@ -276,7 +279,13 @@ def run(event):
             "checked against live plans (add `Plan: PLAN-x.md` or `Owns: <globs>` to the prompt).\n"
             % kind
         )
-    if live is None:
+    if live is None and judged_against:
+        event.warn_raw(
+            "plan-concurrency: no live writer could be counted for session %r, so this %r spawn was judged against the %d unexpired sibling claim(s) only. The Stop hook's roster\n"
+            "recounts plan concurrency from the authoritative event on the next stop.\n"
+            % (session_id, kind, len(judged_against))
+        )
+    elif live is None:
         event.warn_raw(
             UNEXAMINED
             % (

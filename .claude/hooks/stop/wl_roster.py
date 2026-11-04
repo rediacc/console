@@ -1410,7 +1410,7 @@ def edit_paths(jsonl, root):
 
 
 class WriterPaths(set):
-    """The paths the judge's tick-based fix-set subtracts, plus `by_tick`: {tick id: the paths of that ticked item's own lease workers}. A plain set to every caller that only subtracts; `wl_reggate.fixset_files` reads `by_tick` to answer a tick with its own writers' files (R20260925.2)."""
+    """The paths the judge's tick-based fix-set subtracts, plus `by_tick`: {tick id: the paths of that ticked item's own leased agents}, with the paths each agent edited inside a worktree lease tree left out (`in_lease_tree`: they are not dirt in the main tree). A plain set to every caller that only subtracts; `wl_reggate.fixset_files` reads `by_tick` to answer a tick with its own writers' files (R20260925.2)."""
 
     by_tick: dict
 

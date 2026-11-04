@@ -255,8 +255,12 @@ class Battery:
             # Never leave an enforcing renet anywhere reachable.
             if self.sudo:
                 # Privileged renet runs leave root-owned files under the scratch tree.
-                _exec([*self.sudo, "rm", "-rf", self.work])
+                removed = _exec([*self.sudo, "rm", "-rf", self.work]).returncode
+                if removed != 0:
+                    log.warn("could not remove %s as root (exit %d)" % (self.work, removed))
             shutil.rmtree(self.work, ignore_errors=True)
+            if os.path.exists(self.work):
+                log.warn("%s is still present, so an enforcing renet may be reachable" % self.work)
 
     # ------------------------------------------------------------------ preflight and build
 

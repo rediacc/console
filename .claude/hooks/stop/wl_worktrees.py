@@ -184,10 +184,14 @@ def live_work(roster, cwd, session_id):
 
 def _holder(lease_id, record, live, leases, cwds):
     """What keeps this lease in use, or ""."""
-    path = os.path.realpath(str(record.get("path") or ""))
+    raw = str(record.get("path") or "")
+    # realpath("") is the hook's own cwd, so a record with no path would read as the session standing inside it.
+    path = os.path.realpath(raw) if raw else ""
     agent = str(record.get("agent") or "")
-    if (agent and agent in live["ids"]) or path in live["trees"]:
+    if (agent and agent in live["ids"]) or (path and path in live["trees"]):
         return "a live writer"
+    if not path:
+        return ""
     # A session working inside its own lease has no roster row, and its shell does not live between tool calls.
     here = live.get("cwd") or ""
     if here == path or here.startswith(path + os.sep):
@@ -321,6 +325,7 @@ def survey(root, session_id, items, live_fn, cache):
                 continue
             entry["sig"] = sig
         out["cache"][lease_id] = entry
+        # Dirty paths alone block too: a finished lease with edits and no commit still holds work that only `worktree land` carries into the main tree.
         if entry["dirty"] or entry["commits"]:
             out["unlanded"].append(
                 {

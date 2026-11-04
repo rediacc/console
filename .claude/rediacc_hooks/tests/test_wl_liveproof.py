@@ -329,6 +329,26 @@ def test_evidence_reads_the_check_rc_from_the_row():
         assert LP.evidence(row) == "live-proof lp-1 bench account-smoke rc=unknown v=v9"
 
 
+@pytest.mark.parametrize(
+    ("version", "shown"),
+    [
+        ("renet:abc1234@sha256:ff", "renet@sha256:ff"),
+        ("renet:ABC1234DEF@sha256:ff", "renet@sha256:ff"),
+        ("renet:" + "a" * 64 + "@x", "renet@x"),
+        ("renet:abc12@x", "renet:abc12@x"),
+        ("v9", "v9"),
+    ],
+)
+def test_evidence_strips_the_renet_commit_from_the_version(version, shown):
+    row = {
+        "id": "lp-1",
+        "target": "bench",
+        "check": {"id": "c", "rc": 0},
+        "deploy": {"version_id": version},
+    }
+    assert LP.evidence(row) == "live-proof lp-1 bench c rc=0 v=%s" % shown
+
+
 @pytest.mark.parametrize("bad_rc", [None, 0.0, "0", True])
 def test_null_check_rc_is_never_a_pass_and_tick_refuses(root, capsys, bad_rc):
     class NullRc(FakeRecorder):

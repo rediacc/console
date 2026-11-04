@@ -896,17 +896,18 @@ def claim_gate(path, judge, row, wait, now=None) -> Verdict:
 
 
 def unconsumed(claims, metas, session_id) -> list[dict]:
-    """The claims with no agent yet: a meta of this session with the claim's description, written at or after the claim, is that spawn, now the roster's to count or to call finished. Each meta answers for one claim. A peer's claim can only expire, since `metas` are this session's."""
+    """The claims with no agent yet: a meta of this session with the claim's description, written at or after the claim, is that spawn, now the roster's to count or to call finished. Each meta answers for one claim. A spawn with no description is claimed with an empty one and matches a meta with none, so it stops counting once its agent exists like any other. A peer's claim can only expire, since `metas` are this session's."""
     spare = sorted(
-        ((m.get("desc"), m.get("spawned") or 0) for m in (metas or {}).values() if m.get("desc")),
+        ((m.get("desc") or "", m.get("spawned") or 0) for m in (metas or {}).values()),
         key=lambda d: d[1],
     )
     out = []
     for claim in claims:
         hit = None
-        if claim.get("session") == session_id and claim.get("desc"):
+        if claim.get("session") == session_id:
+            want = str(claim.get("desc") or "")
             hit = next(
-                (d for d in spare if d[0] == claim["desc"] and d[1] >= float(claim.get("at") or 0)),
+                (d for d in spare if d[0] == want and d[1] >= float(claim.get("at") or 0)),
                 None,
             )
         if hit is None:

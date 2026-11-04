@@ -642,6 +642,16 @@ def control_live(tmp):
     check("that session is not blocked by its own lease", got["unlanded"], [])
     got = read(tmp, main, live={"ids": [], "trees": [], "cwd": str(main)})
     check("a session in the main checkout holds nothing", got["held"], [])
+    nopath = new_lease(tmp, main, "w2")
+    commit_in(tmp, nopath, "b.txt", "b\n")
+    record = main / ".git/rediacc-worktrees/w2.json"
+    record.write_text(json.dumps({**json.loads(record.read_text()), "path": ""}), encoding="utf-8")
+    got = read(tmp, main, live={"ids": [], "trees": [], "cwd": str(main)})
+    check(
+        "a record with no path is held by nobody, not by the session's cwd",
+        "w2" in got["held"],
+        False,
+    )
     item = {"id": "abcd1234", "state": ">", "worker": "x", "text": "writing in w1"}
     got = read(tmp, main, items=[item])
     check("a worklist lease naming it holds the lease", got["held"], ["w1"])

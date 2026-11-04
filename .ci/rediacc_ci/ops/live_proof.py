@@ -696,7 +696,7 @@ def _parser() -> argparse.ArgumentParser:
 
 
 def lease_refusal(root, argv):
-    """Why a run may not start from `root`, or None. `verify` runs no step and writes nothing; `record` runs live checks and appends to the ledger. Judged before the arguments, so an arg error in a main checkout proves the refusal let it through."""
+    """Why a run may not start from `root`, or None. `verify` runs no step and writes nothing; `record` runs live checks and appends to the ledger only with `--write`. Judged before the arguments, so an arg error in a main checkout proves the refusal let it through."""
     if argv[:1] == ["verify"] or {"-h", "--help"}.intersection(argv):
         return None
     main_tree = wl_core.lease_main(root)

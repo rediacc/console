@@ -484,6 +484,15 @@ SEQUENCES: list[tuple[str, dict[str, typing.Any], list[str], list[tuple[dict, in
         ],
     ),
     (
+        "w5c a plain spawn after an isolated sibling is still refused on the overlap",
+        {"plans": TWO},
+        GUARD_ARGV,
+        [
+            (payload("Plan: PLAN-p.md", isolation=ISOLATED), 0, []),
+            (payload("Plan: PLAN-q.md"), 2, ["both claim `a/b.py`"]),
+        ],
+    ),
+    (
         "w6 a declared Owns narrows the claim",
         {"plans": TWO},
         GUARD_ARGV,
@@ -524,6 +533,19 @@ SEQUENCES: list[tuple[str, dict[str, typing.Any], list[str], list[tuple[dict, in
         [
             (payload("Plan: PLAN-p.md", session="zz-no-such-session"), 0, ["ALLOWED unchecked"]),
             (payload("Plan: PLAN-q.md", session="zz-no-such-session"), 2, ["both claim `a/b.py`"]),
+        ],
+    ),
+    (
+        "w10b a blind estimate that judged a claim says so, not unchecked",
+        {"plans": {"p": PAR_A, "q": PAR_C}},
+        GUARD_ARGV,
+        [
+            (payload("Plan: PLAN-p.md", session="zz-no-such-session"), 0, ["ALLOWED unchecked"]),
+            (
+                payload("Plan: PLAN-q.md", session="zz-no-such-session"),
+                0,
+                ["judged against the 1 unexpired sibling claim(s) only"],
+            ),
         ],
     ),
     (
@@ -624,13 +646,13 @@ def c_expired():
     return rc1 == 0 and rc2 == 0 and len(rows) == 1 and len(claim_rows()) == 1, (rc1, rc2, err)
 
 
-def c_started():
-    """A sibling whose meta now exists is the roster's to count: its claim stops holding, and a finished one frees the slot."""
+def c_started(sibling="the sibling"):
+    """A sibling whose meta now exists is the roster's to count: its claim stops holding, and a finished one frees the slot. A sibling spawned with no description is claimed with an empty one and stops holding the same way."""
     proj = world(plans={"p": PAR_A, "q": PAR_AB}, cap=1)
-    rc1, _ = run_case(proj, payload("Plan: PLAN-p.md", desc="the sibling"), CHAIN_ARGV)
+    rc1, _ = run_case(proj, payload("Plan: PLAN-p.md", desc=sibling), CHAIN_ARGV)
     sub = BASE / "claude" / "projects" / munged(proj.resolve()) / SID / "subagents"
     (sub / "agent-a0000000000000099.meta.json").write_text(
-        json.dumps({"agentType": "general-purpose", "description": "the sibling", "spawnDepth": 1}),
+        json.dumps({"agentType": "general-purpose", "description": sibling, "spawnDepth": 1}),
         encoding="utf-8",
     )
     done = {
@@ -850,6 +872,7 @@ def main():
     for name, control in (
         ("e1 an expired claim counts for nothing", c_expired),
         ("e2 a started sibling's claim stops holding", c_started),
+        ("e2b a started sibling with no description stops holding", lambda: c_started("")),
         ("e3 a torn claim line is skipped", c_torn),
         ("e4 an unreadable claim file fails open loudly", c_unreadable),
         ("r1 two processes racing on one mutex leave exactly one admitted", c_race),

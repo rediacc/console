@@ -76,9 +76,6 @@ from rediacc_ci.proof import surfaces as trigger
 from rediacc_ci.proof import vm_tier as receipt_mod
 from rediacc_ci.well_known import DATASTORE_PATH
 
-paths.on_sys_path(paths.hooks_stop_dir(paths.CI_DIR.parent))
-wl_core = importlib.import_module("wl_core")
-
 if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Mapping, Sequence
 
@@ -3603,7 +3600,8 @@ def lease_refusal(root: pathlib.Path, argv: Sequence[str]) -> str | None:
     """Why a run may not start from `root`, or None. Judged before the arguments, so an arg error in a main checkout proves the refusal let it through."""
     if LEASE_SAFE_FLAGS.intersection(argv):
         return None
-    main_tree = wl_core.lease_main(root)
+    paths.on_sys_path(paths.hooks_stop_dir(paths.CI_DIR.parent))
+    main_tree = importlib.import_module("wl_core").lease_main(root)
     if main_tree is None:
         return None
     return (

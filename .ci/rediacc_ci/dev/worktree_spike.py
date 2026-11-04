@@ -17,10 +17,12 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import fcntl
 import importlib.util
 import json
 import os
 import pathlib
+import re
 import shutil
 import signal
 import subprocess
@@ -115,7 +117,13 @@ class Repo:
         return self.root / HOLDER
 
     def store(self, sub):
-        return self.root / ".git" / "modules" / sub
+        """The module store git names after the submodule NAME, which differs from its path in a renamed or moved submodule."""
+        found = (
+            out(self.root / sub, "rev-parse", "--absolute-git-dir")
+            if (self.root / sub).is_dir()
+            else ""
+        )
+        return pathlib.Path(found) if found else self.root / ".git" / "modules" / sub
 
 
 @dataclass
@@ -171,7 +179,7 @@ def remove_dir(path, holder):
     if holder not in path.parents:
         message = "refusing to delete %s outside %s" % (path, holder)
         raise RuntimeError(message)
-    if path.is_symlink():
+    if path.is_symlink() or path.is_file():
         path.unlink()
         return
     if not path.exists():
@@ -204,6 +212,9 @@ def drop_pins(store, pattern):
 def remove_lease(repo, lease):
     """Remove one lease whatever state it reached: seeds, submodule trees, console tree, pins. Returns what survived."""
     holder = repo.holder
+    if lease.is_symlink() or not lease.is_dir():
+        remove_dir(lease, holder)
+        return [str(lease)] if lease.is_symlink() or lease.exists() else []
     for rel in seed_targets(repo.root):
         remove_dir(lease / rel, holder)
     pattern = PIN_SPACE + lease.name
@@ -293,7 +304,9 @@ def pin_linked(_repo, tree, ref):
 
 
 def pin_shared_clone(repo, tree, ref):
-    return git(repo.store(tree.sub), "fetch", str(tree.path), "+HEAD:%s" % ref)
+    return git(
+        repo.store(tree.sub), "fetch", "--no-write-fetch-head", str(tree.path), "+HEAD:%s" % ref
+    )
 
 
 CANDIDATES = {"A": (make_linked, pin_linked), "B": (make_shared_clone, pin_shared_clone)}
@@ -336,7 +349,8 @@ def probe_hooks(tree, expected, result):
     wanted = "%s/pre-commit" % expected.rstrip("/")
     said = [line for line in done.stderr.splitlines() if " trace: " not in line]
     detail = "commit rc %d %s" % (done.returncode, " ".join(said)[:200])
-    ran = any("run_command:" in line and wanted in line for line in done.stderr.splitlines())
+    exact = re.compile(re.escape(wanted) + r"(\s|$)")
+    ran = any("run_command:" in line and exact.search(line) for line in done.stderr.splitlines())
     result.answer(tree.sub, "hook_fires", bool(expected) and ran, detail)
 
 
@@ -485,6 +499,17 @@ def run_spike(repo):
     if not (repo.root / ".git").is_dir():
         print("refused: %s is not a main checkout" % repo.root, file=sys.stderr)
         return 1
+    repo.holder.mkdir(parents=True, exist_ok=True)
+    with open(repo.holder / ".spike.lock", "w", encoding="utf-8") as lock:
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError:
+            print("refused: another spike run holds %s" % lock.name, file=sys.stderr)
+            return 1
+        return run_locked(repo)
+
+
+def run_locked(repo):
     stale = sweep_stale(repo)
     tip = must(repo.root, "rev-parse", "HEAD")
     before = snapshot(repo)

@@ -209,8 +209,12 @@ def evidence(row: dict[str, Any]) -> str:
     check = (row.get("check") or {}).get("id")
     rc = check_rc_text(row)
     version = (row.get("deploy") or {}).get("version_id")
-    # A renet version names a submodule commit, which the plan-citation gate cannot resolve from the console and a rebase merge rewrites; the sha256 and the row hold the identity.
-    version = re.sub(r"^renet:[0-9a-f]{7,40}@", "renet@", version) if isinstance(version, str) else version
+    # A renet version names a submodule commit, which the plan-citation gate cannot resolve from the console and a rebase merge rewrites; the ledger row this line names by id holds the sha256 and the full version.
+    version = (
+        re.sub(r"^renet:[0-9a-fA-F]{7,64}@", "renet@", version)
+        if isinstance(version, str)
+        else version
+    )
     return "live-proof %s %s %s rc=%s v=%s" % (row.get("id"), row.get("target"), check, rc, version)
 
 
