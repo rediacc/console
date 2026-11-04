@@ -21,6 +21,7 @@
  */
 
 import { randomUUID } from 'node:crypto';
+import { getCommand } from '@rediacc/shared/cli-contract';
 import { readNdjson } from '@rediacc/shared/cli-contract/ndjson';
 import {
   CLI_VERSION_HEADER,
@@ -343,9 +344,9 @@ export class ProxyClient {
     try {
       await this.pumpStream(body, onEvent, state);
       // A clean close with neither a job line, a result nor any output (heartbeats only) dropped before the start was announced: retried like a broken stream. One that printed may have run a command the request id does not dedupe, so it is not re-sent.
-      return !state.jobId && !state.outcome && state.eventsSeen === 0 && retriable
-        ? 'retry'
-        : 'done';
+      const silentStart = !state.jobId && !state.outcome && state.eventsSeen === 0;
+      // The request id dedupes machine job starts only, so another command that ran silently is never sent twice.
+      return silentStart && retriable && getCommand(request.pathKey)?.detachable ? 'retry' : 'done';
     } catch (error) {
       return recoverBrokenStream(error, state, fallbackMachine, retriable);
     }

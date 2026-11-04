@@ -123,7 +123,7 @@ test.describe
       // Machine state: each job's spool dir holds the id its start reported.
       for (const h of [ha, hb]) {
         const rec = await w.executeViaBridge(
-          `sudo find / -path '*${h.job_id}/network_id' -exec cat {} \\; 2>/dev/null`
+          `sudo find /var/lib/rediacc /var/run/rediacc /run/rediacc -path '*${h.job_id}/network_id' -exec cat {} + 2>/dev/null`
         );
         expect(rec.stdout.trim(), `spool network_id of ${h.job_id}`).toBe(String(h.network_id));
       }

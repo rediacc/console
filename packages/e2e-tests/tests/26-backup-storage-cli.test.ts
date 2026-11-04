@@ -1514,7 +1514,10 @@ test.describe
         await w1.executeViaBridge(`sudo pkill -9 -f '[r]enet backup export'`);
         child.kill('SIGKILL');
         await exit;
-        const alive = await w1.executeViaBridge(`pgrep -f '[r]enet backup export' || true`);
+        // A SIGKILLed process can take a moment to leave the table.
+        const alive = await w1.executeViaBridge(
+          `for _ in 1 2 3 4 5; do pgrep -f '[r]enet backup export' >/dev/null || exit 0; sleep 1; done; pgrep -f '[r]enet backup export'`
+        );
         expect(alive.stdout.trim(), 'renet backup export survived the kill -9').toBe('');
         expect(
           (await snapshotDirs()).length,
@@ -1527,22 +1530,25 @@ test.describe
           `sudo bash -c 'touch "${lockPath}"; nohup flock -x "${lockPath}" sleep 120 >/dev/null 2>&1 &'`
         );
         expect(holder.code, 'holding the lock').toBe(0);
-        const dry = await cli.run(['machine', 'prune', M1, '--dry-run']);
-        expect(bothChannels(dry), 'prune --dry-run does not list the stale snapshot').toContain(
-          '.snapshot-'
-        );
-        const pruned = await cli.run(['machine', 'prune', M1]);
-        expect(pruned.code, `machine prune: ${bothChannels(pruned).slice(-600)}`).toBe(0);
-        expect(await snapshotDirs(), 'prune left the stale snapshot').toEqual([]);
-        const lock = await w1.executeViaBridge(
-          `sudo test -e "${lockPath}" && echo kept || echo gone`
-        );
-        await w1.executeViaBridge(
-          `sudo pkill -f '[f]lock -x ${lockPath}'; sudo rm -f "${lockPath}"`
-        );
-        expect(lock.stdout.trim(), 'prune deleted a .lock file that a process still held').toBe(
-          'kept'
-        );
+        try {
+          const dry = await cli.run(['machine', 'prune', M1, '--dry-run']);
+          expect(bothChannels(dry), 'prune --dry-run does not list the stale snapshot').toContain(
+            '.snapshot-'
+          );
+          const pruned = await cli.run(['machine', 'prune', M1]);
+          expect(pruned.code, `machine prune: ${bothChannels(pruned).slice(-600)}`).toBe(0);
+          expect(await snapshotDirs(), 'prune left the stale snapshot').toEqual([]);
+          const lock = await w1.executeViaBridge(
+            `sudo test -e "${lockPath}" && echo kept || echo gone`
+          );
+          expect(lock.stdout.trim(), 'prune deleted a .lock file that a process still held').toBe(
+            'kept'
+          );
+        } finally {
+          await w1.executeViaBridge(
+            `sudo pkill -f '[f]lock -x ${lockPath}'; sudo rm -f "${lockPath}"`
+          );
+        }
       });
     }
   });

@@ -146,6 +146,14 @@ describe('ProxyClient over the attach window', () => {
     expect(ids).toHaveLength(2);
   });
 
+  it('does not re-send a silent clean close of a command the request id cannot dedupe', async () => {
+    const { client, ids } = setup(() => new Response('{"kind":"heartbeat"}\n', { status: 200 }));
+    await expect(client.run('config current', {}, {}, () => {})).rejects.toThrow(
+      /without reporting/
+    );
+    expect(ids).toHaveLength(1);
+  });
+
   it('a retried stream does not render again what the broken one already printed', async () => {
     const event = (msg: string) => ({ kind: 'event', event: { type: 'output', msg } });
     const { client, ids } = setup((call) => {
