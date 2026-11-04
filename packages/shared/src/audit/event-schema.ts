@@ -27,6 +27,7 @@ const machineEventTypes = [
   'cli.machine.match',
   'cli.machine.mismatch',
   'cli.machine.ping',
+  'cli.machine.prune',
   'cli.machine.provision',
   'cli.machine.query',
   'cli.machine.repos',
