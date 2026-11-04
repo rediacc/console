@@ -2324,11 +2324,50 @@ export const generatedArtifactsProvider: Provider = {
   inputs: filesInput(GENERATED_ARTIFACTS),
 };
 
+const AGENT_REFERENCE_PAGE_RE = /^docs\/agent-reference\/[^/]+\.md$/;
+
+/** The first level-one heading outside a code fence, or an empty string when the page has none. */
+const firstHeading = (text: string): string => {
+  let fenced = false;
+  for (const line of text.split('\n')) {
+    if (/^\s*(```|~~~)/.test(line)) fenced = !fenced;
+    else if (!fenced && line.startsWith('# ')) return line.slice(2).trim();
+  }
+  return '';
+};
+
+/**
+ * Every tracked page under `docs/agent-reference/`, one row each with its first heading.
+ *
+ * THE LISTING IS THE POINT. A page in that folder is lookup material that CLAUDE.md and the gate docs point readers to, and a new one used to be reachable only from whichever page happened to link it (`cloudflare-spend.md` was linked from one sentence of `ci-gates.md`). Deriving the rows from the index makes a new page appear here the moment it is tracked, and a heading edit moves its row.
+ */
+export const agentReferenceProvider: Provider = {
+  id: 'agent-reference',
+  scans: 'the tracked docs/agent-reference/*.md pages, one row per page',
+  columns: ['Page', 'Title'],
+  rows: (root) => {
+    const { present } = presentFiles(root, lsFiles(root, 'docs/agent-reference'));
+    return present
+      .filter((f) => AGENT_REFERENCE_PAGE_RE.test(f))
+      .map((f) => ({
+        key: f,
+        cells: [`\`${f}\``, firstHeading(fs.readFileSync(path.join(root, f), 'utf-8'))],
+      }));
+  },
+  missing: (root) =>
+    presentFiles(
+      root,
+      lsFiles(root, 'docs/agent-reference').filter((f) => AGENT_REFERENCE_PAGE_RE.test(f))
+    ).missing,
+  inputs: { scope: (rel) => AGENT_REFERENCE_PAGE_RE.test(rel) },
+};
+
 export const PROVIDERS: readonly Provider[] = [
   gatesProvider,
   gatesSummaryProvider,
   proseStyleProvider,
   generatedArtifactsProvider,
+  agentReferenceProvider,
   hookGuardsProvider,
   hookSummaryProvider,
   suppressionsProvider,

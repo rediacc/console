@@ -1,6 +1,6 @@
 # Cloudflare spend guards
 
-Lookup material for the guards from `agent/plans/PLAN-cloudflare-spend-guard.md`. `.ci/config/cf-spend-guard.json` is the one source of thresholds: the notification limits, the weekly report ceilings and the sampling ceiling each read it. Raising a threshold means editing that file, then running the command named under the guard.
+Lookup material for the guards from `agent/plans/PLAN-cloudflare-spend-guard.md`. `.ci/config/cf-spend-guard.json` is the one source of thresholds: the notification limits, the weekly report ceilings and the sampling ceiling each read it. The registered thresholds (the notification limits and the report ceilings) change through `npm run settings -- set <id> <value> --reason '<why>'`, never by a hand edit, and `npm run settings -- list` shows each id with every copy. The sampling ceiling is not registered and is edited in the JSON. A changed notification limit is then applied with the `cf_notifications` command below.
 
 | Guard | Where | Reads | Fails on |
 |---|---|---|---|
@@ -25,11 +25,11 @@ Limits (per billing cycle, in the product's base unit):
 |---|---|
 | `worker_requests`, `worker_standard_request` | 20,000,000 requests each (both are set because the billed line item is undocumented) |
 | `worker_standard_cpu_ms` | 60,000,000 CPU ms |
-| `r2_storage` | 200,000,000,000 bytes (operator ruling 2026-10-23: keep 20 release folders, alert at 200 GB) |
+| `r2_storage` | 5,000,000,000,000 bytes (operator `/ask` 2026-10-30, "let's make it 5TB"; the earlier 200 GB alert sat below the hostinger backups) |
 | `r2_class_a_operations` | 2,000,000 |
 | `r2_class_b_operations` | 20,000,000 |
 
-To raise one, change its `limit` and run the command above without `--dry-run`. The API accepts only the product names it lists (`products_accepted_by_the_api` in the JSON). A name it refuses answers `17106 Invalid product selection.`, prints `UNAVAILABLE <product>` and fails the run.
+To raise one, run `npm run settings -- set cf.<id> <value> --reason '<why>'` (ids from `npm run settings -- list`, for example `cf.workers_requests_month`), then run the command above without `--dry-run`. The API accepts only the product names it lists (`products_accepted_by_the_api` in the JSON). A name it refuses answers `17106 Invalid product selection.`, prints `UNAVAILABLE <product>` and fails the run.
 
 Two products have no alert: Workers Observability (ingestion and storage) and Containers. Every candidate name was refused on 2026-10-23, and the evidence sits under `notifications.unavailable`. They print `UNAVAILABLE <name> (recorded ...)` on each run without failing it. Their fallbacks:
 
@@ -87,7 +87,7 @@ Each line is `OK` or `OVER` with the value and its ceiling. Ceilings come only f
 
 The report also counts the account Worker's `Nightly maintenance is NOT running` line over seven days in Loki (`OBS_GRAFANA_READ_TOKEN`), falling back to the Workers Observability telemetry query, and prints `ALERT maintenance ...` when it was logged.
 
-Exit 0 when nothing is over, 1 on any `OVER` or `ALERT`, 2 when a read came back empty or failed, because a guard that cannot look has not passed. To raise a ceiling, set its key under `report` in the JSON (record the reason in `report_reason`).
+Exit 0 when nothing is over, 1 on any `OVER` or `ALERT`, 2 when a read came back empty or failed, because a guard that cannot look has not passed. To raise a ceiling, run `npm run settings -- set cf.<id> <value> --reason '<why>'`; the ids are the `report` keys above.
 
 ## Sampling gate
 
