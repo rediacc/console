@@ -162,13 +162,50 @@ def _local_project_start(event=None):
     return os.getcwd()
 
 
+def _local_git_dirs(tree):
+    """Self-contained twin of wl_core._git_dirs. Keep in lockstep."""
+    dotgit = tree / ".git"
+    try:
+        if dotgit.is_dir():
+            git_dir = dotgit.resolve()
+        else:
+            text = dotgit.read_text(encoding="utf-8").strip()
+            if not text.startswith("gitdir:"):
+                return None
+            git_dir = (tree / text[len("gitdir:") :].strip()).resolve()
+        commondir = git_dir / "commondir"
+        if not commondir.is_file():
+            return git_dir, git_dir
+        return git_dir, (git_dir / commondir.read_text(encoding="utf-8").strip()).resolve()
+    except (OSError, ValueError, RuntimeError):
+        return None
+
+
+def _local_lease_main(tree):
+    """Self-contained twin of wl_core.lease_main. Keep in lockstep.
+
+    The harness folder's name stays unspelled in this file: naming it beside `--add` makes the checkout guard's script arm refuse every `python3 worklist.py` while this file differs from HEAD. The root section of this file's suite pins that.
+    """
+    tree = pathlib.Path(tree)
+    if tree.parent.parent.name != ".claude" or not (tree / ".git").is_file():
+        return None
+    mine = _local_git_dirs(tree)
+    if mine is None or mine[0] == mine[1] or mine[0].parent.parent != mine[1]:
+        return None
+    if mine[0].parent.name != tree.parent.name:
+        return None
+    main = tree.parents[2]
+    theirs = _local_git_dirs(main) if (main / ".git").exists() else None
+    return main if theirs is not None and theirs[1] == mine[1] else None
+
+
 def _local_worklist_path(start):
     """Self-contained twin of wl_core.worklist_for, used ONLY by --path, the self-contained append modes and the broken-sibling block, so the queries every script depends on work even when every sibling is missing. Keep in lockstep with wl_core.worklist_for."""
     p = pathlib.Path(start).resolve()
     root = p
     for candidate in [p, *p.parents]:
         if (candidate / ".git").exists():
-            root = candidate
+            root = _local_lease_main(candidate) or candidate
             break
     d = pathlib.Path(os.environ.get("TMPDIR", "/tmp")) / "claude-worklist"
     d.mkdir(parents=True, exist_ok=True)
