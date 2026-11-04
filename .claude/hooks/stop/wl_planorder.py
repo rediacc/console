@@ -197,15 +197,17 @@ def xinfo_for(root):
     return xinfo
 
 
-def hold(rec: dict, live, xinfo) -> X.Verdict | None:
+def hold(rec: dict, live, xinfo, isolated: bool = False) -> X.Verdict | None:
     """The refusal a writer spawn for this item would get, when it is a HOLD; None when it could start (or when `live` is unknown).
+
+    `isolated` is a spawn that will get its own tree, for which an overlap is only a note; the callers pass False until the queue can know how a writer will be spawned.
 
     The item's own plan is what the spawn serves, which is the plan auto-lease later records. A planless item is judged as a planless spawn with no `Owns:` line: only a live exclusive plan holds it.
     """
     if live is None:
         return None
     plan = X.item_plan(rec)
-    got = X.spawn_verdict({plan} if plan else set(), live, xinfo, None)
+    got = X.spawn_verdict({plan} if plan else set(), live, xinfo, None, isolated=isolated)
     return got if not got.allow and got.kind in HOLD_KINDS else None
 
 
@@ -233,15 +235,18 @@ def reason(verdict: X.Verdict) -> str:
 
 
 def conflicts(
-    serving: dict[str, set[str]], live, xinfo, declared=None
+    serving: dict[str, set[str]], live, xinfo, declared=None, isolated=None
 ) -> list[tuple[str, X.Verdict]]:
     """[(agent_id, verdict)] for each live writer of THIS session whose plans already break the mutex or overlap ANOTHER live writer of this session's plans.
 
     Judged against this session's writers only: they are what the harness's own event proves live. A clash with a peer's lease is the spawn guard's and the queue's question, and a stale peer lease must never make this session stop a writer.
 
     `declared` is {agent_id: the `Owns:` globs its prompt declares, or None}. Each writer is judged on its own declared Owns and the other writers' plans on theirs, exactly as the spawn guard judged them (#f412fdb8): without it this backstop compared whole-plan Owns and accused writers the guard had rightly admitted on disjoint declared subsets.
+
+    `isolated` is the set of agent ids that run in their own tree: such a writer's overlap is a note, as at the spawn guard, and only a mutex still holds it.
     """
     declared = declared or {}
+    isolated = isolated or set()
     out: list[tuple[str, X.Verdict]] = []
     for aid in sorted(serving):
         mine = serving[aid]
@@ -258,7 +263,7 @@ def conflicts(
             owns = [declared.get(h.split()[1]) for h in keep]
             if all(owns):
                 others.owns[plan] = tuple(dict.fromkeys(g for o in owns for g in o))
-        got = X.spawn_verdict(mine, others, xinfo, declared.get(aid))
+        got = X.spawn_verdict(mine, others, xinfo, declared.get(aid), isolated=aid in isolated)
         if not got.allow and got.kind in HOLD_KINDS:
             out.append((aid, got))
     return out

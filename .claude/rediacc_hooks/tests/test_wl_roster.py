@@ -1923,3 +1923,138 @@ def test_a_python_heredoc_writes_only_the_targets_of_write_calls(tmp_path, cmd, 
     )
     assert proc.returncode == 0, proc.stderr[-600:]
     assert json.loads(proc.stdout) == sorted(want), cmd
+
+
+# ---- W12: a lease tree's paths count as the main tree's, and isolation reaches the backstop -----
+
+LEASE_PATHS_SNIPPET = r"""
+import json, pathlib, sys
+sys.path.insert(0, sys.argv[1])
+import wl_roster as R
+print(json.dumps(sorted(R.edit_paths(pathlib.Path(sys.argv[2]), pathlib.Path(sys.argv[3])))))
+"""
+
+
+def _lease_transcript(tmp_path, root, calls):
+    recs = []
+    for n, (name, tool_input, cwd) in enumerate(calls):
+        block = {"type": "tool_use", "id": "toolu_%d" % n, "name": name, "input": tool_input}
+        recs.append(
+            json.dumps(
+                {
+                    "type": "assistant",
+                    "cwd": cwd,
+                    "message": {"role": "assistant", "stop_reason": "tool_use", "content": [block]},
+                }
+            )
+        )
+    jsonl = tmp_path / "agent-x.jsonl"
+    jsonl.write_text("\n".join(recs) + "\n", encoding="utf-8")
+    return jsonl
+
+
+def _edit_paths(tmp_path, calls):
+    root = tmp_path / "repo"
+    root.mkdir(exist_ok=True)
+    jsonl = _lease_transcript(tmp_path, root, calls(root))
+    proc = subprocess.run(
+        [sys.executable, "-c", LEASE_PATHS_SNIPPET, str(wlfix.STOP_DIR), str(jsonl), str(root)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert proc.returncode == 0, proc.stderr[-600:]
+    return json.loads(proc.stdout)
+
+
+def test_w12_a_lease_edit_counts_as_the_main_tree_path(tmp_path):
+    got = _edit_paths(
+        tmp_path,
+        lambda root: [("Edit", {"file_path": "%s/.claude/worktrees/x/src/a.ts" % root}, str(root))],
+    )
+    assert got == ["src/a.ts"]
+
+
+def test_w12_a_bash_write_from_a_lease_cwd_counts_as_the_main_tree_path(tmp_path):
+    got = _edit_paths(
+        tmp_path,
+        lambda root: [
+            ("Bash", {"command": "touch src/b.ts"}, "%s/.claude/worktrees/x" % root),
+        ],
+    )
+    assert got == ["src/b.ts"]
+
+
+def test_w12_control_a_main_tree_edit_and_a_path_outside_the_repo_are_unchanged(tmp_path):
+    got = _edit_paths(
+        tmp_path,
+        lambda root: [
+            ("Edit", {"file_path": "%s/src/c.ts" % root}, str(root)),
+            ("Edit", {"file_path": "/elsewhere/.claude/worktrees/x/src/d.ts"}, str(root)),
+            ("Edit", {"file_path": "%s/.claude/worktrees/x" % root}, str(root)),
+        ],
+    )
+    assert got == [".claude/worktrees/x", "/elsewhere/.claude/worktrees/x/src/d.ts", "src/c.ts"]
+
+
+def test_w12_load_metas_reads_the_recorded_worktree_path(tmp_path):
+    sub = tmp_path / "subagents"
+    sub.mkdir()
+    (sub / "agent-iso.meta.json").write_text(
+        json.dumps({"agentType": "general-purpose", "worktreePath": "/r/.claude/worktrees/agent-iso"}),
+        encoding="utf-8",
+    )
+    (sub / "agent-plain.meta.json").write_text(
+        json.dumps({"agentType": "general-purpose"}), encoding="utf-8"
+    )
+    R = wlfix.import_wl("wl_roster")
+    metas = R.load_metas(sub)
+    assert metas["iso"]["worktree"] == "/r/.claude/worktrees/agent-iso"
+    assert metas["plain"]["worktree"] == ""
+
+
+def _conc_world():
+    X = wlfix.import_wl("wl_planconc")
+    xi = {
+        "PLAN-a.md": X.PlanX("PLAN-a.md", owns=("src/**",)),
+        "PLAN-b.md": X.PlanX("PLAN-b.md", owns=("src/**",)),
+    }
+    serving = {"wa": {"PLAN-a.md"}, "wb": {"PLAN-b.md"}}
+    live = {
+        "PLAN-a.md": ["writer wa (general-purpose)"],
+        "PLAN-b.md": ["writer wb (general-purpose)"],
+    }
+    return xi, serving, live
+
+
+def test_w12_two_isolated_writers_on_one_file_are_not_a_conflict():
+    PO = wlfix.import_wl("wl_planorder")
+    xi, serving, live = _conc_world()
+    assert PO.conflicts(serving, live, xi.__getitem__, None, isolated={"wa", "wb"}) == []
+
+
+def test_w12_control_one_plain_writer_and_the_overlap_still_trips():
+    PO = wlfix.import_wl("wl_planorder")
+    xi, serving, live = _conc_world()
+    assert PO.conflicts(serving, live, xi.__getitem__, None) != []
+    got = PO.conflicts(serving, live, xi.__getitem__, None, isolated={"wa"})
+    assert [aid for aid, _v in got] == ["wb"]
+
+
+def test_w12_control_an_isolated_writer_still_trips_an_exclusive_plan():
+    PO = wlfix.import_wl("wl_planorder")
+    X = wlfix.import_wl("wl_planconc")
+    xi, serving, live = _conc_world()
+    xi["PLAN-b.md"] = X.PlanX("PLAN-b.md", owns=("src/**",), exclusive=True)
+    got = PO.conflicts(serving, live, xi.__getitem__, None, isolated={"wa", "wb"})
+    assert got != []
+
+
+def test_w12_hold_of_a_queue_item_reads_isolation_when_told():
+    PO = wlfix.import_wl("wl_planorder")
+    xi, _serving, live = _conc_world()
+    rec = {"id": "q1", "text": "queued item PLAN-a.md [deadbeef]"}
+    live_b = {"PLAN-b.md": live["PLAN-b.md"]}
+    assert PO.X.item_plan(rec) == "PLAN-a.md"
+    assert PO.hold(rec, live_b, xi.__getitem__) is not None
+    assert PO.hold(rec, live_b, xi.__getitem__, isolated=True) is None

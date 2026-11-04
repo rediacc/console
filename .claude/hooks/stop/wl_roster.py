@@ -260,6 +260,8 @@ def load_metas(sub_dir):
             "name": str(info.get("name") or ""),
             "jsonl": meta.with_name("agent-%s.jsonl" % aid),
             "spawned": spawned,
+            # The harness records the writer's own tree here when it spawned one; "" is a main-tree writer.
+            "worktree": str(info.get("worktreePath") or ""),
         }
     return out
 
@@ -716,6 +718,7 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
     plan_holders: dict[str, list[str]] | None = None
     plan_serving: dict[str, set[str]] = {}
     plan_declared: dict[str, tuple[str, ...] | None] = {}
+    plan_isolated: set[str] = set()
     plan_error = ""
     xinfo = None
     order_key = queue_order
@@ -738,6 +741,8 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
                 served.update(p for p in (X.item_plan(r) for r in leases.get(w, ())) if p)
             plan_serving[aid] = served
             plan_declared[aid] = X.declared_owns(text)
+            if (metas.get(aid) or {}).get("worktree"):
+                plan_isolated.add(aid)
     except Exception as exc:
         plan_holders = None
         plan_error = "%s: %s" % (type(exc).__name__, str(exc)[:160])
@@ -746,7 +751,9 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
     if plan_holders is not None:
         plan_conflicts = [
             (aid, sorted(plan_serving[aid]), list(v.lines))
-            for aid, v in PO.conflicts(plan_serving, plan_holders, xinfo, plan_declared)
+            for aid, v in PO.conflicts(
+                plan_serving, plan_holders, xinfo, plan_declared, isolated=plan_isolated
+            )
         ]
 
     covered: list[Any] = []
@@ -942,12 +949,12 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
 
 # The commands whose PATH OPERANDS a Bash call writes, deletes or moves (agent/plans/PLAN-stop-hook-retro-20260925.md R20260925.1). A3 made 330 Bash calls against 78 Edits on 2026-09-24, and every edit the judge then asked the lead to sweep went through Bash: `sed -i` over the guards, two Python rewrites of baseline files, `git rm -r --cached` plus `rm -rf` of a directory.
 # NO `sed` HERE: an in-place editor (sed, gsed, `perl -i`) is read by `shellscan.in_place_edit` first in `_run_operands` (#6378e10e), and a sed that edits nothing in place writes nothing, so the generic arm must never see one.
-BASH_WRITE_VERBS = frozenset({"rm", "mv", "cp", "tee", "truncate", "install"})
+BASH_WRITE_VERBS = frozenset({"rm", "mv", "cp", "tee", "truncate", "install", "touch"})
 # `git <sub>` spellings whose operands are written.
 GIT_WRITE_SUBS = frozenset({"rm", "mv"})
 # A cheap prefilter: a command with none of these cannot write a file by any route read below, so the lexer never sees it.
 _BASH_MAYBE_WRITES = re.compile(
-    r">|\b(?:rm|mv|cp|sed|gsed|perl|tee|truncate|install|python3?|git)\b"
+    r">|\b(?:rm|mv|cp|sed|gsed|perl|tee|truncate|install|touch|python3?|git)\b"
 )
 # A Python body that writes, deletes or moves a file. Its presence makes every repo-path literal in the body count as written, which errs toward subtracting (Decision 2): a missed subtraction costs the lead a blocked turn, an extra one only defers the question to the writer's own tick.
 _PY_WRITES = re.compile(
@@ -1009,6 +1016,8 @@ def _run_operands(run, shellscan):
         return []
     if name == "truncate":
         return _operands(argv, takes_value=("-s", "-r"))
+    if name == "touch":
+        return _operands(argv, takes_value=("-d", "-t", "-r", "--date", "--reference"))
     if name in ("cp", "install"):
         target = _target_dir(argv)
         if target:
@@ -1362,8 +1371,17 @@ def _shellscan():
     return shellscan
 
 
+_LEASE_TREE = re.compile(r"^\.claude/worktrees/[^/]+/(.+)$")
+
+
+def lease_rel(path):
+    """`.claude/worktrees/<name>/src/a.ts` as `src/a.ts`: a writer's edit in its own tree is the same file in the main tree. A path outside the repo, or the tree directory itself, is returned as it came."""
+    m = _LEASE_TREE.match(path)
+    return m.group(1) if m else path
+
+
 def edit_paths(jsonl, root):
-    """Every repo-relative path one transcript's tool calls changed: the `file_path` (or `notebook_path`) of every edit tool call, and since R20260925.1 every path a Bash call wrote, deleted or moved (`bash_write_paths`, joined to the record's own `cwd`). Paths outside `root` are kept absolute, which never matches a `git status` line and so subtracts nothing."""
+    """Every repo-relative path one transcript's tool calls changed: the `file_path` (or `notebook_path`) of every edit tool call, and since R20260925.1 every path a Bash call wrote, deleted or moved (`bash_write_paths`, joined to the record's own `cwd`). A path inside a lease tree (`.claude/worktrees/<name>/`) is read as the same path in the main tree (`lease_rel`). Paths outside `root` are kept absolute, which never matches a `git status` line and so subtracts nothing."""
     try:
         data = jsonl.read_bytes()
     except (OSError, AttributeError):
@@ -1389,7 +1407,7 @@ def edit_paths(jsonl, root):
             path = str(inp.get("file_path") or inp.get("notebook_path") or "")
             if path:
                 out.add(path.removeprefix(base))
-    return out
+    return {lease_rel(p) for p in out}
 
 
 class WriterPaths(set):

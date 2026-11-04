@@ -51,6 +51,7 @@ SEEDED = (
     "src/live.ts",
     "src/done.ts",
     "src/other.ts",
+    "src/lease.ts",
     "lib/child.py",
     "lib/grand.py",
     "docs/a.md",
@@ -109,6 +110,14 @@ guard.write_session(
             "",
         ),
         (DONE, "suite finished writer", [str(REPO / "src/done.ts")], False, ""),
+        # A lease writer edits inside its own tree; the commit names the same file in the main tree.
+        (
+            "asuiteleasewriter0006",
+            "suite lease writer",
+            [str(REPO / ".claude/worktrees/x/src/lease.ts")],
+            True,
+            "",
+        ),
         (
             "asuitenestwriter00005",
             "suite nested-submodule writer",
@@ -176,6 +185,22 @@ CASES = [
         SESSION,
     ),
     ("a directory pathspec covers it", "git commit -F m -- src/", None, True, LIVE, SESSION),
+    (
+        "a lease writer's file named in the main tree",
+        "git commit -F m -- src/lease.ts",
+        None,
+        True,
+        "asuiteleasewriter0006",
+        SESSION,
+    ),
+    (
+        "CONTROL: the lease writer does not claim a sibling file",
+        "git commit -F m -- src/other.ts",
+        None,
+        False,
+        "",
+        SESSION,
+    ),
     # ---- a gitlink pathspec commits the submodule pointer, never the submodule's files (#e59c13a0)
     (
         "a submodule root pathspec does not cover its files",
