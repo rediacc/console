@@ -16,6 +16,7 @@ THE CHILD RUNS NO HOOKS OF THIS REPO. `claude -p` fires the project's hooks when
 
 from __future__ import annotations
 
+import collections
 import contextlib
 import dataclasses
 import datetime
@@ -246,10 +247,12 @@ def ledger_path(root, branch):
 
 
 def git(repo, *args, stdin=None, timeout=30):
-    """(rc, stdout) of one git call; rc 127 when git could not run."""
+    """(rc, stdout) of one git call; rc 127 when git could not run.
+
+    `--no-optional-locks` is load-bearing: every call here is a read, and a plain `git status` (branch_state asks one on every Stop hook, push guard and `--status`) opportunistically rewrites `.git/index` when its stat data is stale, which takes `.git/index.lock`. A `git cherry-pick a b` or a `git commit` of the lead running at that moment dies with `Unable to create '.git/index.lock': File exists` (worklist #65b47fef). The reviewer and the post-bash trigger issue no index-taking call, so this closes the one that is left."""
     try:
         done = subprocess.run(
-            ["git", "-C", str(repo), *args],
+            ["git", "--no-optional-locks", "-C", str(repo), *args],
             input=stdin,
             capture_output=True,
             text=True,
@@ -1198,6 +1201,8 @@ def spawn_detached(root, repo, sha, branch, python=None):
                 stderr=subprocess.STDOUT,
                 start_new_session=True,
                 close_fds=True,
+                # Nothing the reviewer or the CLI it starts runs may refresh the index under the lead's own call.
+                env={**os.environ, "GIT_OPTIONAL_LOCKS": "0"},
             )
     except OSError:
         release_lock(sha)
@@ -2102,6 +2107,7 @@ def claude_reviewer(prompt, cfg, log=print):
     env = dict(os.environ)
     env["STOPHOOK_CHILD"] = "1"
     env["COMMIT_REVIEW_CHILD"] = "1"
+    env["GIT_OPTIONAL_LOCKS"] = "0"
     argv = [
         resolve_claude(),
         "-p",
@@ -2939,7 +2945,31 @@ def _cites_line(root, cited, number):
     return False
 
 
-def _citation_ok(repo, evidence):
+def _project_checkouts(project):
+    """The console checkout and each `.gitmodules` checkout that exists on disk, as paths."""
+    root = pathlib.Path(project)
+    out = [str(root)]
+    rc, text = git(root, "config", "-f", ".gitmodules", "--get-regexp", r"^submodule\..*\.path$")
+    for line in text.splitlines() if rc == 0 else []:
+        parts = line.split(None, 1)
+        if len(parts) == 2 and (root / parts[1].strip() / ".git").exists():
+            out.append(str(root / parts[1].strip()))
+    return out
+
+
+def _sha_on_branch(repo, evidence):
+    for m in CITE_SHA.finditer(evidence):
+        full = git_out(repo, "rev-parse", "-q", "--verify", "%s^{commit}" % m.group(1))
+        if full and git(repo, "merge-base", "--is-ancestor", full, "HEAD")[0] == 0:
+            return True
+    return False
+
+
+def _citation_ok(repo, evidence, project=None):
+    """Whether `evidence` cites a line that exists or a commit on the branch.
+
+    A finding of a submodule commit is read in the submodule (`repo`), but its evidence is written from the console and often cites a console file (`agent/plans/X.md:188`, `packages/cli/...:71`) or a commit of ANOTHER project repository (a renet sha in a console finding). `project`, the console root, widens both to the whole project: a path also resolves inside the console checkout, and a sha counts on any project checkout's HEAD. Each is still a file holding that line, or a commit that is an ancestor of a checked-out HEAD, so a made-up citation fails as before.
+    """
     root = os.path.abspath(repo)
     cited_paths = list(_cited_paths(evidence))
     if any(_cites_line(root, cited, number) for cited, number in cited_paths):
@@ -2952,11 +2982,18 @@ def _citation_ok(repo, evidence):
         if cited.startswith(prefix)
     ):
         return True
-    for m in CITE_SHA.finditer(evidence):
-        full = git_out(repo, "rev-parse", "-q", "--verify", "%s^{commit}" % m.group(1))
-        if full and git(repo, "merge-base", "--is-ancestor", full, "HEAD")[0] == 0:
-            return True
-    return False
+    if _sha_on_branch(repo, evidence):
+        return True
+    if project is None:
+        return False
+    console = os.path.abspath(project)
+    if console != root and any(_cites_line(console, c, n) for c, n in cited_paths):
+        return True
+    return any(
+        _sha_on_branch(other, evidence)
+        for other in _project_checkouts(project)
+        if os.path.abspath(other) != root
+    )
 
 
 REBASED_COPY_DEPTH = 400
@@ -3058,6 +3095,110 @@ def related_test(test_path, anchored):
     )
 
 
+MOVE_MAX_COMMITS = 60
+MOVE_MAX_ROUNDS = 3
+MOVE_MIN_LINES = 3
+# A moved line is code, not scaffolding: a bare brace or a very short line is in every file.
+MOVE_MIN_LINE_LEN = 6
+
+
+def _meaningful(line):
+    text = line.strip()
+    return text if len(text) >= MOVE_MIN_LINE_LEN and any(c.isalnum() for c in text) else ""
+
+
+def _diff_lines(text):
+    """({path: removed lines}, {path: added lines}) of a `git show -U0` text, lines stripped and the trivial ones dropped."""
+    removed: dict[str, list[str]] = {}
+    added: dict[str, list[str]] = {}
+    old = new = ""
+    for line in text.splitlines():
+        if line.startswith("--- "):
+            old = "" if line == "--- /dev/null" else line[4:].removeprefix("a/")
+        elif line.startswith("+++ "):
+            new = "" if line == "+++ /dev/null" else line[4:].removeprefix("b/")
+        elif line[:1] in ("-", "+"):
+            side, path = (removed, old) if line[0] == "-" else (added, new)
+            kept = _meaningful(line[1:]) if path else ""
+            if kept:
+                side.setdefault(path, []).append(kept)
+    return removed, added
+
+
+def moved_successors(repo, anchored, base, fix):
+    """The files that received code the anchored file lost in `base..fix`: a file is a successor when at least MOVE_MIN_LINES of its added lines, and at least half of them, are lines the same commit removed from the anchored file (or from an earlier successor).
+
+    `git log --follow` sees a whole-file rename only, and `-C` a copy of at least half a file: neither sees a function extracted into a neighbour (0477d0c75 moved 246 lines of config.ts into config-reconcile.ts, which git reads as a 32% copy). The anchored file is never its own successor.
+    """
+    sources = {anchored}
+    found: set[str] = set()
+    for _ in range(MOVE_MAX_ROUNDS):
+        rc, out = git(
+            repo,
+            "log",
+            "--format=%H",
+            "--no-merges",
+            "-n",
+            str(MOVE_MAX_COMMITS),
+            "%s..%s" % (base, fix),
+        )
+        grew = False
+        for sha in out.split() if rc == 0 else []:
+            rc2, text = git(repo, "show", "--format=", "-U0", "--no-color", "--no-ext-diff", sha)
+            if rc2 != 0:
+                continue
+            removed, added = _diff_lines(text)
+            lost = collections.Counter(line for src in sources for line in removed.get(src, ()))
+            if not lost:
+                continue
+            for path, lines in added.items():
+                if path in sources or path in found:
+                    continue
+                pool = lost.copy()
+                hits = 0
+                for line in lines:
+                    if pool[line] > 0:
+                        pool[line] -= 1
+                        hits += 1
+                if hits >= MOVE_MIN_LINES and hits * 2 >= len(lines):
+                    found.add(path)
+                    grew = True
+        if not grew:
+            break
+        sources = {anchored, *found}
+    return found
+
+
+CLAIM_IDENT_RE = re.compile(
+    r"\b(?:[A-Za-z0-9_.-]+\.(?:tsx?|jsx?|py|go|sh|json|md)|[A-Za-z_][A-Za-z0-9_]*(?:[a-z0-9][A-Z]|_)[A-Za-z0-9_]*)\b"
+)
+
+
+def claim_identifiers(claim):
+    """The names a claim is about: identifiers carrying a case change or an underscore (`followByPolls`, `PROXY_LOST_BUDGET_MS`) and file names, at least 6 characters. A plain word names nothing."""
+    return {m.group(0) for m in CLAIM_IDENT_RE.finditer(claim or "") if len(m.group(0)) >= 6}
+
+
+def claim_exercised_by_test(repo, fix, test_path, claim):
+    """Whether the lines the fix ADDED to `test_path` name something the claim is about, by whole token: the test is related by what it tests, not by its file name. A commit whose test mentions none of the claim's names answers nothing."""
+    names = claim_identifiers(claim)
+    if not names:
+        return False
+    rc, text = git(
+        repo, "show", "--format=", "-U0", "--no-color", "--no-ext-diff", fix, "--", test_path
+    )
+    if rc != 0:
+        return False
+    body = "\n".join(
+        line[1:]
+        for line in text.splitlines()
+        if line.startswith("+") and not line.startswith("+++")
+    )
+    return any(
+        re.search(r"(?<![A-Za-z0-9_])%s(?![A-Za-z0-9_])" % re.escape(n), body) for n in names
+    )
+
+
 def mark(root, branch, finding_id, kind, args, me, items=None, now=None, asked_ok=None):
     """Close one finding. Returns the path written; raises ValueError naming the failed check.
 
@@ -3117,19 +3258,38 @@ def mark(root, branch, finding_id, kind, args, me, items=None, now=None, asked_o
             raise ValueError("%s does not touch the named test %s" % (fix[:12], test_path))
         if test_path and not is_test_path(test_path):
             raise ValueError("%s is not a test path" % test_path)
-        if (
-            finding.file not in touched
-            and not set(renamed.splitlines()) & set(touched)
-            and not (moved and moved in touched)
+        test_claim = bool(TEST_CLAIM_RE.search(finding.claim))
+        followed = (
+            finding.file in touched
+            or bool(set(renamed.splitlines()) & set(touched))
+            or bool(moved and moved in touched)
             # A "no test for this change" finding is closed by a test elsewhere: the fix may touch a test file instead of the anchored one, named by --test or found among the paths the fix touches.
-            and not (test_path and related_test(test_path, finding.file))
-            and not (
-                TEST_CLAIM_RE.search(finding.claim)
+            or bool(test_path and related_test(test_path, finding.file))
+            or (
+                test_claim
                 and any(is_test_path(t) and related_test(t, finding.file) for t in touched)
             )
-        ):
+            # A test named by --test is related by what it tests when the lines the fix added to it name something the claim is about.
+            or bool(
+                test_path
+                and test_claim
+                and claim_exercised_by_test(repo, fix, test_path, finding.claim)
+            )
+        )
+        if not followed:
+            # The anchored code may have moved between the reviewed commit and the fix: a fix of the file that received it, or of that file's test, is a fix of the anchor.
+            moved_to = moved_successors(repo, finding.file, review.sha, fix)
+            followed = bool(moved_to & set(touched)) or (
+                (bool(test_path) or test_claim)
+                and any(
+                    related_test(t, m)
+                    for m in moved_to
+                    for t in ([test_path] if test_path else [x for x in touched if is_test_path(x)])
+                )
+            )
+        if not followed:
             raise ValueError(
-                "%s does not touch %s, nor a test whose name carries `%s`"
+                "%s does not touch %s, nor a file its code moved to, nor a test whose name carries `%s`"
                 % (fix[:12], finding.file, _norm_stem(finding.file))
             )
         resolution = "fixed %s | %s" % (fix, stamp)
@@ -3137,7 +3297,7 @@ def mark(root, branch, finding_id, kind, args, me, items=None, now=None, asked_o
         evidence = normalise_claim(" ".join(args), 400).replace("|", "/")
         if len(evidence) < 20:
             raise ValueError("not-a-bug needs at least 20 characters of evidence")
-        if not _citation_ok(repo, evidence):
+        if not _citation_ok(repo, evidence, root):
             raise ValueError(
                 "not-a-bug evidence must cite a path:line that exists or a sha on this branch"
             )
