@@ -31,8 +31,15 @@ import {
 } from '../services/config/config-datastores.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
+import { setExitCode } from '../services/core/request-context.js';
 import { getExecutor } from '../services/executor/executor-factory.js';
 import { parseCapturedJson } from '../services/executor/local-executor.js';
+import {
+  type CommandJobOutcome,
+  pendingExitCode,
+  runCommandJob,
+} from '../services/jobs/command-job.js';
+import { type PlannedStep, planStep } from '../services/jobs/steps.js';
 import { stateMismatch } from '../utils/cli-exit-error.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
@@ -61,6 +68,36 @@ async function dispatch(
     throw new Error(`Datastore step "${functionName}" failed on ${machineName}: ${res.error}`);
   }
   return res.stdout ?? '';
+}
+
+/**
+ * Run a datastore verb as one machine job with its client-side steps on the ticket (PLAN-detached-jobs J19). A job
+ * that finished and failed throws like `dispatch`; a job still running past the attach window returns `pending`, and
+ * its steps (the config record) run when `rdc job wait` or the finished notice sees it succeed.
+ */
+async function dispatchAsJob(
+  verb: string,
+  functionName: string,
+  machineName: string,
+  params: Record<string, unknown>,
+  steps: PlannedStep[],
+  debug?: boolean
+): Promise<CommandJobOutcome> {
+  const outcome = await runCommandJob(verb, { functionName, machineName, params, debug }, steps);
+  if (outcome.kind === 'finished' && !outcome.result.success) {
+    throw new Error(
+      `Datastore step "${functionName}" failed on ${machineName}: ${outcome.result.error}`
+    );
+  }
+  return outcome;
+}
+
+/** A pending job owes its exit code (a lost tail) and prints nothing more: the ticket notice names how to wait. */
+function settledPending(outcome: CommandJobOutcome): boolean {
+  if (outcome.kind !== 'pending') return false;
+  const code = pendingExitCode(outcome);
+  if (code !== undefined) setExitCode(code);
+  return true;
 }
 
 /**
@@ -188,7 +225,8 @@ function registerCreate(datastore: Command): void {
           }
 
           const rbd = options.backend === 'rbd';
-          await dispatch(
+          const outcome = await dispatchAsJob(
+            'datastore create',
             'datastore_create',
             options.machine,
             {
@@ -201,20 +239,25 @@ function registerCreate(datastore: Command): void {
               }),
               ...(options.cluster && { cluster: options.cluster }),
             },
-            { debug: options.debug }
+            [
+              planStep('recordDatastore', {
+                datastore: name,
+                record: JSON.stringify({
+                  backend: rbd
+                    ? {
+                        kind: 'rbd',
+                        pool: options.pool ?? DEFAULTS.DATASTORE.RBD_POOL,
+                        image: options.image ?? name,
+                      }
+                    : { kind: 'local', machine: options.machine, path: `/mnt/rediacc-ds/${name}` },
+                  ...(options.cluster && { cluster: options.cluster }),
+                  size: options.size,
+                }),
+              }),
+            ],
+            options.debug
           );
-
-          await recordDatastore(name, {
-            backend: rbd
-              ? {
-                  kind: 'rbd',
-                  pool: options.pool ?? DEFAULTS.DATASTORE.RBD_POOL,
-                  image: options.image ?? name,
-                }
-              : { kind: 'local', machine: options.machine, path: `/mnt/rediacc-ds/${name}` },
-            ...(options.cluster && { cluster: options.cluster }),
-            size: options.size,
-          });
+          if (settledPending(outcome)) return;
           outputService.success(
             t('commands.datastore.create.created', { name, machine: options.machine })
           );
@@ -607,13 +650,20 @@ function registerMutators(datastore: Command): void {
         const record = await getDatastore(ref);
         await assertCommandPolicy(CMD.DATASTORE_RESIZE, undefined, ref);
         const host = await requireDatastoreHost(ref);
-        await dispatch(
+        const outcome = await dispatchAsJob(
+          'datastore resize',
           'datastore_resize',
           host,
           { name: ref, size: options.size },
-          { debug: options.debug }
+          [
+            planStep('recordDatastore', {
+              datastore: ref,
+              record: JSON.stringify({ ...record, size: options.size }),
+            }),
+          ],
+          options.debug
         );
-        await recordDatastore(ref, { ...record, size: options.size });
+        if (settledPending(outcome)) return;
         outputService.success(t('commands.datastore.resize.resized', { ref, size: options.size }));
       } catch (error) {
         handleError(error);
