@@ -939,3 +939,716 @@ def test_land_unknown_lease_and_bad_arguments_exit_1(landing):
         result = run_land(repo.root, *args)
         assert result.returncode == 1
         assert result.stdout == ""
+
+
+# --------------------------------------------------------------------------- gc (W10) ---------------------------------------------------------------------------
+#
+# One real tree per keep rule, with a clean control deleted in the same run, so a rule that stopped reading anything cannot pass. The hook modules read the fixture's own worklist and transcripts, which `gc_env` points them at.
+
+GC_SESSION = "feedface99"
+CAP_40 = "## Settings\n\n```stop-hook\nwriter_cap: 40 -- fixture\n```\n"
+WORKLIST = paths.CI_DIR.parent / ".claude" / "hooks" / "stop" / "worklist.py"
+IN_FLIGHT = {
+    "type": "assistant",
+    "message": {"content": [{"type": "tool_use", "id": "t1", "name": "Bash", "input": {}}]},
+}
+DAY_S = 86400
+
+
+def gc_env(root):
+    base = root.parent
+    (base / "gc-tmp").mkdir(exist_ok=True)
+    return {
+        **os.environ,
+        "PYTHONPATH": str(paths.CI_DIR),
+        paths.ROOT_ENV: str(root),
+        "CLAUDE_PROJECT_DIR": str(root),
+        "CLAUDE_CONFIG_DIR": str(base / "claude-config"),
+        "TMPDIR": str(base / "gc-tmp"),
+    }
+
+
+def run_verb(root, verb, *args):
+    return subprocess.run(
+        [sys.executable, "-m", "rediacc_ci.dev.worktree", verb, *args],
+        cwd=str(paths.CI_DIR),
+        env=gc_env(root),
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+
+def run_gc(root, *args):
+    return run_verb(root, "gc", *args)
+
+
+def row_of(stdout, name):
+    """The listing row of `name`: its verdict and its reasons."""
+    for line in stdout.splitlines():
+        words = line.split()
+        if line.startswith("  ") and len(words) > 1 and words[1] == name:
+            return line
+    return ""
+
+
+def kept_by(stdout, name, rule):
+    row = row_of(stdout, name)
+    assert row.split()[:1] == ["KEEP"], row or stdout
+    assert "%s:" % rule in row, row
+
+
+def project_dir(root):
+    munged = "".join(c if c.isalnum() and c.isascii() else "-" for c in str(root))
+    return root.parent / "claude-config" / "projects" / munged
+
+
+def plant_session(root, session=GC_SESSION):
+    """The transcript a session with no agents has, which makes its owner known and its roster an honest zero."""
+    spike.write(project_dir(root) / ("%s.jsonl" % session), "{}\n")
+
+
+def plant_agent(root, agent, *, tree="", prompt="brief", session=GC_SESSION):
+    """One agent of `session` as the harness lays it out, working: its last record is a tool call in flight. Returns its transcript."""
+    subagents = project_dir(root) / session / "subagents"
+    meta = {"agentType": "general-purpose", "description": "d", "worktreePath": str(tree)}
+    spike.write(subagents / ("agent-%s.meta.json" % agent), json.dumps(meta))
+    first = {"type": "user", "message": {"content": prompt}}
+    jsonl = subagents / ("agent-%s.jsonl" % agent)
+    spike.write(jsonl, "%s\n%s\n" % (json.dumps(first), json.dumps(IN_FLIGHT)))
+    return jsonl
+
+
+def plant_leased_item(root, text):
+    """A live `[>]` item, through the store's real verbs."""
+
+    def verb(*args):
+        done = subprocess.run(
+            [sys.executable, str(WORKLIST), *args],
+            env={**gc_env(root), "WORKLIST_SESSION_ID": GC_SESSION},
+            cwd=str(root),
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert done.returncode == 0, done.stdout + done.stderr
+        return done.stdout
+
+    added = verb("--add", GC_SESSION[:8], text)
+    item = added.split("#", 1)[1].split()[0].strip(":,.)")
+    verb("--lease", GC_SESSION[:8], item, "+60", "worker:abc123")
+
+
+def gc_commit(tree, name):
+    """A commit in `tree`, pinned the way the post-commit shim does. The fixture's hook directory has no such shim."""
+    sha = committed(tree, name)
+    pinned = run_pin_verb(tree)
+    assert pinned.returncode == 0, pinned.stderr
+    return sha
+
+
+def land(repo, sha, key="."):
+    spike.must(repo.root if key == "." else repo.root / key, "cherry-pick", "-x", sha)
+
+
+def pin_of(cwd, name):
+    return pin_at(cwd, spike.PIN_SPACE + name)
+
+
+def snapshot(top):
+    """Every entry below `top`, the `.git` file included: mode, mtime, inode, and content or link target. Symlinks are read, never followed. The link count is out: a removed sibling tree lowers it on purpose."""
+    top = pathlib.Path(top)
+    found = {}
+    stack = [top]
+    while stack:
+        here = stack.pop()
+        st = os.lstat(here)
+        key = str(here.relative_to(top))
+        if here.is_symlink():
+            found[key] = (st.st_mode, os.readlink(here))
+        elif here.is_dir():
+            found[key] = (st.st_mode, st.st_mtime_ns)
+            stack.extend(here.iterdir())
+        else:
+            found[key] = (st.st_mode, st.st_mtime_ns, st.st_ino, here.read_bytes())
+    return found
+
+
+def add_detached(root, tree):
+    spike.must(root, "worktree", "add", "--detach", "--lock", str(tree), "HEAD")
+
+
+def remove_by_hand(repo, tree):
+    """A tree gone while its pin and record stay, as a removal by the harness leaves them."""
+    store = repo.store(SUB)
+    for where, target in ((store, tree / SUB), (repo.root, tree)):
+        spike.must(where, "worktree", "unlock", str(target))
+        spike.must(where, "worktree", "remove", "--force", str(target))
+    assert not tree.exists()
+
+
+def gone_everywhere(repo, name):
+    """Nothing of lease `name` is left: no directory, record, pin, or admin entry in either store."""
+    tree = repo.holder / name
+    assert not os.path.lexists(tree)
+    assert not (repo.root / ".git" / lease.RECORD_DIR / ("%s.json" % name)).exists()
+    assert pin_of(repo.root, name) == ""
+    store = repo.store(SUB)
+    assert pin_of(store, name) == ""
+    for where in (repo.root / ".git", store):
+        assert not [p for p in spike.listed_trees(where) if p.startswith(str(tree))]
+
+
+def admin_entries(store):
+    admin = store / "worktrees"
+    return sorted(p.name for p in admin.iterdir()) if admin.is_dir() else []
+
+
+class Kept(NamedTuple):
+    repo: spike.Repo
+    trees: dict
+    before: dict
+    listing: subprocess.CompletedProcess
+    written: subprocess.CompletedProcess
+
+
+# (the tree's row name, the rule that keeps it)
+KEPT_RULES = [
+    ("dirty", "rule 3"),
+    ("dirtysub", "rule 3"),
+    ("untracked", "rule 3"),
+    ("unlanded", "rule 4"),
+    ("unlandedsub", "rule 4"),
+    ("writer", "rule 2"),
+    ("item", "rule 2"),
+    ("cwd", "rule 2"),
+    ("outside", "rule 1"),
+    ("link", "rule 1"),
+    ("0101-2", "rule 1"),
+]
+
+
+@pytest.fixture(scope="module")
+def kept(tmp_path_factory):
+    repo = make_repo(tmp_path_factory.mktemp("kept").resolve())
+    root = repo.root
+    spike.write(root / "agent" / "plans" / "QUEUE.md", CAP_40)
+    plant_session(root)
+    names = ("clean", "dirty", "dirtysub", "untracked", "unlanded", "unlandedsub", "writer")
+    trees = {name: make_tree(repo, name) for name in (*names, "item", "cwd")}
+    spike.write(trees["dirty"] / "code.txt", "edited\n")
+    spike.write(trees["dirtysub"] / SUB / "code.txt", "edited\n")
+    spike.write(trees["untracked"] / "new.txt", "new\n")
+    gc_commit(trees["unlanded"], "only-here.txt")
+    gc_commit(trees["unlandedsub"] / SUB, "only-here.txt")
+    plant_agent(root, "aaaa1111", tree=trees["writer"])
+    plant_leased_item(root, "gc fixture holds the tree named item")
+
+    outside = root.parent / "elsewhere"
+    add_detached(root, outside)
+    lease._write_record(root, {"id": "outside", "path": str(outside), "owner": "feedface"})
+    trees["outside"] = outside
+    target = root.parent / "link-target"
+    spike.write(target / "held.txt", "held\n")
+    trees["link"] = repo.holder / "link"
+    trees["link"].symlink_to(target)
+    operator = root / ".worktrees" / "0101-2"
+    add_detached(root, operator)
+    trees["0101-2"] = operator
+
+    before = {name: snapshot(tree) for name, tree in trees.items()}
+    before["link-target"] = snapshot(target)
+    occupant = subprocess.Popen(["sleep", "300"], cwd=str(trees["cwd"]))
+    try:
+        listing = run_gc(root)
+        unmoved = {name: snapshot(tree) for name, tree in trees.items()}
+        assert {name: unmoved[name] for name in trees} == {name: before[name] for name in trees}
+        written = run_gc(root, "--write")
+    finally:
+        occupant.kill()
+        occupant.wait()
+    return Kept(repo, trees, before, listing, written)
+
+
+@pytest.mark.parametrize(("name", "rule"), KEPT_RULES)
+def test_gc_keeps_the_tree_by_its_rule_and_leaves_it_byte_identical(kept, name, rule):
+    assert kept.listing.returncode == 0, kept.listing.stderr
+    assert kept.written.returncode == 0, kept.written.stderr
+    kept_by(kept.listing.stdout, name, rule)
+    kept_by(kept.written.stdout, name, rule)
+    assert snapshot(kept.trees[name]) == kept.before[name]
+
+
+def test_gc_control_the_clean_tree_of_the_same_run_is_listed_and_then_deleted(kept):
+    assert row_of(kept.listing.stdout, "clean").split()[0] == "DELETE"
+    assert row_of(kept.written.stdout, "clean").split()[0] == "DELETE"
+    assert not kept.trees["clean"].exists()
+    assert "deleted 1" in kept.written.stdout.splitlines()[-1]
+
+
+def test_gc_symlink_target_outlives_the_run(kept):
+    target = kept.repo.root.parent / "link-target"
+    assert snapshot(target) == kept.before["link-target"]
+    assert kept.trees["link"].is_symlink()
+
+
+def test_gc_kept_trees_keep_lock_pin_and_record(kept):
+    root = kept.repo.root
+    tree = kept.trees["unlanded"]
+    assert locked_reason(root / ".git", tree) == "locked lease:unlanded"
+    assert pin_of(root, "unlanded") == spike.must(tree, "rev-parse", "HEAD")
+    assert (root / ".git" / lease.RECORD_DIR / "unlanded.json").is_file()
+    sub_tree = kept.trees["unlandedsub"] / SUB
+    assert pin_of(kept.repo.store(SUB), "unlandedsub") == spike.must(sub_tree, "rev-parse", "HEAD")
+
+
+@pytest.fixture
+def gc_repo(tmp_path):
+    repo = make_repo(tmp_path.resolve())
+    plant_session(repo.root)
+    return repo
+
+
+def test_gc_sc_gitlink_row_passes_and_only_write_deletes(gc_repo):
+    repo = gc_repo
+    tree = make_tree(repo, "sc")
+    sha = gc_commit(tree / SUB, "landed.txt")
+    land(repo, sha, SUB)
+    status = spike.must(tree, "status", "--porcelain=v2")
+    assert status.split()[:3] == ["1", ".M", "SC.."], "fixture control: %s" % status
+    store = repo.store(SUB)
+    before, admin = snapshot(tree), admin_entries(store)
+    assert len(admin) == 1
+
+    listing = run_gc(repo.root)
+    assert listing.returncode == 0, listing.stderr
+    assert row_of(listing.stdout, "sc").split()[0] == "DELETE", listing.stdout
+    assert "listing only" in listing.stdout.splitlines()[-1]
+    assert snapshot(tree) == before
+    assert pin_of(store, "sc") == sha
+    assert locked_reason(repo.root / ".git", tree) == "locked lease:sc"
+
+    written = run_gc(repo.root, "--write")
+    assert written.returncode == 0, written.stderr
+    gone_everywhere(repo, "sc")
+    assert admin_entries(store) == [], "the submodule's admin entry goes with its tree"
+    assert spike.git(repo.root / SUB, "fsck", "--connectivity-only").returncode == 0
+
+
+def test_gc_control_a_staged_gitlink_is_no_sc_row_and_keeps_the_tree(gc_repo):
+    repo = gc_repo
+    tree = make_tree(repo, "staged")
+    land(repo, gc_commit(tree / SUB, "landed.txt"), SUB)
+    spike.must(tree, "add", "--", SUB)
+    kept_by(run_gc(repo.root).stdout, "staged", "rule 3")
+
+
+def test_gc_control_a_staged_gitlink_moved_again_reads_sc_and_still_keeps_the_tree(gc_repo):
+    """The field alone would excuse this row: `MM SC..` carries a staged change the `SC..` says nothing about."""
+    repo = gc_repo
+    tree = make_tree(repo, "mm")
+    land(repo, gc_commit(tree / SUB, "first.txt"), SUB)
+    spike.must(tree, "add", "--", SUB)
+    land(repo, gc_commit(tree / SUB, "second.txt"), SUB)
+    status = spike.must(tree, "status", "--porcelain=v2")
+    assert status.split()[:3] == ["1", "MM", "SC.."], "fixture control: %s" % status
+    kept_by(run_gc(repo.root, "--write").stdout, "mm", "rule 3")
+    assert tree.is_dir()
+
+
+def test_gc_submodule_commit_only_its_reflog_holds_keeps_the_tree(gc_repo):
+    """Neither its pin nor HEAD reaches this commit, so only reading the submodule tree itself can see it."""
+    repo = gc_repo
+    tree = make_tree(repo, "sr")
+    sub = tree / SUB
+    base = spike.must(sub, "rev-parse", "HEAD")
+    hidden = committed(sub, "hidden.txt")
+    spike.must(sub, "reset", "-q", "--hard", base)
+    row = row_of(run_gc(repo.root, "--write").stdout, "sr")
+    assert row.split()[0] == "KEEP", row
+    assert hidden[:12] in row
+    assert tree.is_dir()
+
+
+def test_gc_ignored_file_does_not_keep_a_tree_and_the_summary_says_so(gc_repo):
+    repo = gc_repo
+    tree = make_tree(repo, "ign")
+    ignored = tree / "packages" / "shared" / "dist" / "own.log"
+    spike.write(ignored, "a writer's own output\n")
+    assert spike.out(tree, "status", "--porcelain") == "", "fixture control: the file is ignored"
+    listing = run_gc(repo.root)
+    assert row_of(listing.stdout, "ign").split()[0] == "DELETE", listing.stdout
+    assert "ignored files do not keep a tree" in listing.stdout.splitlines()[-1]
+    assert ignored.is_file()
+    assert run_gc(repo.root, "--write").returncode == 0
+    gone_everywhere(repo, "ign")
+
+
+def test_gc_pin_of_a_removed_tree_goes_when_landed_and_stays_when_unlanded(gc_repo):
+    repo = gc_repo
+    spike.write(repo.root / "agent" / "plans" / "QUEUE.md", CAP_40)
+    landed_tree, unlanded_tree = make_tree(repo, "pl"), make_tree(repo, "pu")
+    landed = gc_commit(landed_tree, "landed.txt")
+    land(repo, landed)
+    held = gc_commit(unlanded_tree, "held.txt")
+    remove_by_hand(repo, landed_tree)
+    remove_by_hand(repo, unlanded_tree)
+
+    listing = run_gc(repo.root)
+    assert row_of(listing.stdout, "pl").split()[0] == "DELETE", listing.stdout
+    kept_by(listing.stdout, "pu", "rule 4")
+    assert held[:12] in row_of(listing.stdout, "pu")
+    assert pin_of(repo.root, "pl") == landed, "a listing deletes nothing"
+
+    written = run_gc(repo.root, "--write")
+    assert written.returncode == 0, written.stderr
+    gone_everywhere(repo, "pl")
+    kept_by(written.stdout, "pu", "rule 4")
+    assert pin_of(repo.root, "pu") == held
+    assert spike.git(repo.root, "cat-file", "-e", held).returncode == 0
+    assert (repo.root / ".git" / lease.RECORD_DIR / "pu.json").is_file()
+
+
+def test_gc_pin_with_no_record_and_no_tree_is_judged_the_same(gc_repo):
+    repo = gc_repo
+    spike.write(repo.root / "agent" / "plans" / "QUEUE.md", CAP_40)
+    a_tree, b_tree = make_tree(repo, "pa"), make_tree(repo, "pb")
+    landed = gc_commit(a_tree, "landed.txt")
+    land(repo, landed)
+    sub_held = gc_commit(b_tree / SUB, "held.txt")
+    for name, tree in (("pa", a_tree), ("pb", b_tree)):
+        remove_by_hand(repo, tree)
+        (repo.root / ".git" / lease.RECORD_DIR / ("%s.json" % name)).unlink()
+    written = run_gc(repo.root, "--write")
+    assert written.returncode == 0, written.stderr
+    gone_everywhere(repo, "pa")
+    kept_by(written.stdout, "pb", "rule 4")
+    assert pin_of(repo.store(SUB), "pb") == sub_held
+
+
+def test_gc_hard_link_in_the_main_tree_keeps_content_and_count_through_removal(gc_repo):
+    repo = gc_repo
+    live = repo.root / "node_modules" / "dep" / "index.js"
+    content, inode, links = live.read_bytes(), live.stat().st_ino, live.stat().st_nlink
+    tree = make_tree(repo, "hl")
+    linked = tree / "node_modules" / "dep" / "index.js"
+    assert linked.stat().st_ino == inode, "fixture control: the seed hard-linked it"
+    assert live.stat().st_nlink == links + 1
+    assert run_gc(repo.root, "--write", "--id", "hl").returncode == 0
+    assert not tree.exists()
+    assert live.read_bytes() == content
+    assert live.stat().st_ino == inode
+    assert live.stat().st_nlink == links
+
+
+def diverged(repo, name):
+    """A tree rewritten once: its pin holds the first commit and HEAD the second, on separate tips."""
+    tree = make_tree(repo, name)
+    base = spike.must(tree, "rev-parse", "HEAD")
+    first = gc_commit(tree, "first.txt")
+    spike.must(tree, "reset", "-q", "--hard", base)
+    second = committed(tree, "second-attempt.txt")
+    assert pin_of(repo.root, name) == first
+    assert spike.git(tree, "merge-base", "--is-ancestor", first, second).returncode != 0
+    return tree, first, second
+
+
+def test_gc_diverged_head_and_pin_are_both_judged_while_either_is_unlanded(gc_repo):
+    repo = gc_repo
+    tree, first, second = diverged(repo, "dv")
+    before = snapshot(tree)
+    row = row_of(run_gc(repo.root, "--write").stdout, "dv")
+    assert row.split()[0] == "KEEP", row
+    assert first[:12] in row
+    assert second[:12] in row
+    assert "2 unlanded commit(s)" in row
+    assert "does not descend" in row
+
+    land(repo, second)
+    row = row_of(run_gc(repo.root, "--write").stdout, "dv")
+    assert row.split()[0] == "KEEP", "the pin's tip is unlanded: %s" % row
+    assert "1 unlanded commit(s): %s" % first[:12] in row
+    assert snapshot(tree) == before
+    assert pin_of(repo.root, "dv") == first
+
+    land(repo, first)
+    assert row_of(run_gc(repo.root).stdout, "dv").split()[0] == "DELETE"
+    assert run_gc(repo.root, "--write").returncode == 0
+    gone_everywhere(repo, "dv")
+
+
+def test_gc_diverged_with_only_the_pin_landed_keeps_heads_tip(gc_repo):
+    repo = gc_repo
+    _tree, first, second = diverged(repo, "dh")
+    land(repo, first)
+    row = row_of(run_gc(repo.root, "--write").stdout, "dh")
+    assert row.split()[0] == "KEEP", row
+    assert "1 unlanded commit(s): %s" % second[:12] in row
+
+
+def test_gc_commit_only_the_reflog_holds_keeps_the_tree(gc_repo):
+    repo = gc_repo
+    tree, first, second = diverged(repo, "rl")
+    base = spike.must(tree, "rev-parse", "HEAD~1")
+    spike.must(tree, "reset", "-q", "--hard", base)
+    third = committed(tree, "third-attempt.txt")
+    land(repo, first)
+    land(repo, third)
+    row = row_of(run_gc(repo.root, "--write").stdout, "rl")
+    assert row.split()[0] == "KEEP", row
+    assert second[:12] in row
+    land(repo, second)
+    assert row_of(run_gc(repo.root).stdout, "rl").split()[0] == "DELETE"
+
+
+def test_gc_merge_keeps_the_tree_though_its_parents_read_landed(gc_repo):
+    repo = gc_repo
+    tree = make_tree(repo, "mg")
+    base = spike.must(tree, "rev-parse", "HEAD")
+    one = committed(tree, "one.txt")
+    spike.must(tree, "checkout", "-q", "--detach", base)
+    other = committed(tree, "other.txt")
+    spike.must(tree, "merge", "--no-gpg-sign", "--no-ff", "-q", "-m", "m", one)
+    land(repo, one)
+    land(repo, other)
+    row = row_of(run_gc(repo.root, "--write").stdout, "mg")
+    assert row.split()[0] == "KEEP", row
+    assert "merge" in row
+
+
+def test_gc_gitlink_directory_with_files_and_no_git_keeps_the_tree(gc_repo):
+    repo = gc_repo
+    tree = make_tree(repo, "ng")
+    (tree / SUB / ".git").unlink()
+    spike.write(tree / SUB / "invisible.txt", "written by hand\n")
+    kept_by(run_gc(repo.root, "--write").stdout, "ng", "rule 3")
+    assert (tree / SUB / "invisible.txt").is_file()
+
+
+def test_gc_live_writer_named_only_by_its_first_prompt_holds_the_tree(gc_repo):
+    repo = gc_repo
+    tree = make_tree(repo, "pr")
+    plant_agent(repo.root, "bbbb2222", prompt="Your tree is %s, commit there." % tree)
+    row = row_of(run_gc(repo.root, "--write").stdout, "pr")
+    assert "the live writer bbbb2222" in row, row
+    assert tree.is_dir()
+
+
+def test_gc_control_a_finished_writer_holds_nothing(gc_repo):
+    repo = gc_repo
+    tree = make_tree(repo, "fw")
+    jsonl = plant_agent(repo.root, "cccc3333", tree=tree)
+    stale = jsonl.stat().st_mtime - DAY_S
+    os.utime(jsonl, (stale, stale))
+    assert row_of(run_gc(repo.root).stdout, "fw").split()[0] == "DELETE"
+
+
+def test_gc_owner_nothing_can_vouch_for_keeps_the_tree_and_a_cli_owner_does_not(gc_repo):
+    repo = gc_repo
+    spike.write(repo.root / "agent" / "plans" / "QUEUE.md", CAP_40)
+    assert run_lease(repo.root, "--name", "gh", "--owner", "ghost123").returncode == 0
+    assert run_lease(repo.root, "--name", "op", "--owner", lease.DEFAULT_OWNER).returncode == 0
+    listing = run_gc(repo.root).stdout
+    kept_by(listing, "gh", "rule 2")
+    assert "ghost123" in row_of(listing, "gh")
+    assert row_of(listing, "op").split()[0] == "DELETE", listing
+
+
+def test_gc_directory_with_no_record_may_be_a_lease_being_made(gc_repo):
+    repo = gc_repo
+    empty = repo.holder / "making"
+    empty.mkdir(parents=True)
+    written = run_gc(repo.root, "--write").stdout
+    kept_by(written, "making", "rule 2")
+    assert "no record" in row_of(written, "making")
+    assert empty.is_dir()
+
+
+def test_gc_unreadable_record_and_broken_git_file_keep_the_tree(gc_repo):
+    repo = gc_repo
+    spike.write(repo.root / "agent" / "plans" / "QUEUE.md", CAP_40)
+    bad_record, bad_git = make_tree(repo, "br"), make_tree(repo, "bg")
+    (repo.root / ".git" / lease.RECORD_DIR / "br.json").write_text("{not json", encoding="utf-8")
+    (bad_git / ".git").write_text("gitdir: /no/such/place\n", encoding="utf-8")
+    written = run_gc(repo.root, "--write").stdout
+    kept_by(written, "br", "rule 2")
+    kept_by(written, "bg", "rule 1")
+    assert bad_record.is_dir()
+    assert bad_git.is_dir()
+
+
+def test_gc_record_naming_another_path_is_never_followed(gc_repo):
+    repo = gc_repo
+    victim = repo.root.parent / "victim"
+    spike.write(victim / "kept.txt", "kept\n")
+    (repo.root / ".git" / lease.RECORD_DIR).mkdir(exist_ok=True)
+    lease._write_record(repo.root, {"id": "far", "path": str(victim), "owner": "feedface"})
+    kept_by(run_gc(repo.root, "--write").stdout, "far", "rule 1")
+    assert (victim / "kept.txt").is_file()
+
+
+def test_gc_id_narrows_the_run_and_exits_1_when_that_lease_was_kept(gc_repo):
+    repo = gc_repo
+    spike.write(repo.root / "agent" / "plans" / "QUEUE.md", CAP_40)
+    clean, dirty = make_tree(repo, "ca"), make_tree(repo, "db")
+    spike.write(dirty / "code.txt", "edited\n")
+
+    narrowed = run_gc(repo.root, "--id", "ca")
+    assert narrowed.returncode == 0
+    assert row_of(narrowed.stdout, "db") == ""
+
+    refused = run_gc(repo.root, "--id", "db", "--write")
+    assert refused.returncode == 1
+    kept_by(refused.stdout, "db", "rule 3")
+    assert clean.is_dir(), "`--id` names one lease"
+
+    assert run_gc(repo.root, "--write", "--id", "ca").returncode == 0
+    gone_everywhere(repo, "ca")
+    assert dirty.is_dir()
+
+
+@pytest.mark.parametrize(
+    "args", [("--bogus",), ("surplus",), ("--id",), ("--id", "../x"), ("--id", "missing")]
+)
+def test_gc_bad_argument_exits_1_and_lists_nothing(gc_repo, args):
+    tree = make_tree(gc_repo, "ba")
+    before = snapshot(tree)
+    result = run_gc(gc_repo.root, *args, "--write")
+    assert result.returncode == 1
+    assert result.stdout == ""
+    assert snapshot(tree) == before
+
+
+def test_gc_refuses_from_a_lease_and_with_a_symlinked_holder(gc_repo, tmp_path):
+    repo = gc_repo
+    tree = make_tree(repo, "ro")
+    from_lease = run_gc(tree)
+    assert from_lease.returncode == 1
+    assert "not a main checkout" in from_lease.stderr
+
+    other = tmp_path / "other-holder"
+    moved = repo.holder.rename(other)
+    repo.holder.symlink_to(moved)
+    refused = run_gc(repo.root, "--write")
+    assert refused.returncode == 1
+    assert "symlink" in refused.stderr
+    assert (other / "ro").is_dir()
+
+
+def test_gc_several_live_branches_refuse_the_whole_run(gc_repo):
+    repo = gc_repo
+    tree = make_tree(repo, "lb")
+    spike.must(repo.root, "switch", "-q", "main")
+    spike.must(repo.root, "branch", "0101-2", BRANCH)
+    result = run_gc(repo.root, "--write")
+    assert result.returncode == 1, result.stdout
+    assert "several live branches" in result.stderr
+    assert tree.is_dir()
+
+
+def test_gc_help_and_listing_of_nothing_touch_nothing(gc_repo):
+    repo = gc_repo
+    for flag in ("--help", "-h"):
+        shown = run_gc(repo.root, flag)
+        assert shown.returncode == 0
+        assert shown.stdout.startswith("Usage: ./run.sh worktree gc")
+    assert not repo.holder.exists() or list(repo.holder.iterdir()) == []
+    empty = run_gc(repo.root)
+    assert empty.returncode == 0
+    assert empty.stdout.startswith("0 row(s)")
+    for verb in ("land", "leases", "gc"):
+        assert verb in run_verb(repo.root, "help").stdout
+
+
+# --------------------------------------------------------------------------- leases ---------------------------------------------------------------------------
+
+
+def test_leases_json_names_owner_base_dirty_and_unlanded_per_repo(gc_repo):
+    repo = gc_repo
+    tree = make_tree(repo, "ls")
+    console = gc_commit(tree, "held.txt")
+    sub = gc_commit(tree / SUB, "held-sub.txt")
+    spike.write(tree / "code.txt", "edited\n")
+    spike.write(tree / SUB / "code.txt", "edited\n")
+    before = snapshot(tree)
+
+    result = run_verb(repo.root, "leases", "--json")
+    assert result.returncode == 0, result.stderr
+    rows = json.loads(result.stdout)
+    assert [row["id"] for row in rows] == ["ls"]
+    row = rows[0]
+    assert row["owner"] == "feedface"
+    assert row["path"] == str(tree)
+    assert row["exists"] is True
+    assert row["base"]["."] == spike.must(tree, "rev-parse", "HEAD~1")
+    assert row["unlanded"] == {".": [console], SUB: [sub]}
+    assert row["dirty"] == 3, "one console path, one submodule path, and the gitlink's own row"
+    assert snapshot(tree) == before
+
+
+def test_leases_text_has_one_line_per_lease_and_says_when_the_tree_is_gone(gc_repo):
+    repo = gc_repo
+    spike.write(repo.root / "agent" / "plans" / "QUEUE.md", CAP_40)
+    assert run_verb(repo.root, "leases").stdout == "no leases\n"
+    tree = make_tree(repo, "lt")
+    held = gc_commit(tree, "held.txt")
+    make_tree(repo, "lu")
+    remove_by_hand(repo, tree)
+    result = run_verb(repo.root, "leases")
+    assert result.returncode == 0
+    lines = result.stdout.splitlines()
+    assert len(lines) == 2
+    assert lines[0].split()[0] == "lt"
+    assert "owner feedface" in lines[0]
+    assert ". 1 (%s)" % held[:12] in lines[0]
+    assert "no tree on disk" in lines[0]
+    assert "unlanded: none" in lines[1]
+
+
+def test_leases_refuses_an_unknown_option(gc_repo):
+    result = run_verb(gc_repo.root, "leases", "--bogus")
+    assert result.returncode == 1
+    assert result.stdout == ""
+
+
+# --------------------------------------------------------------------------- review findings of `make_lease` ---------------------------------------------------------------------------
+
+
+def test_lease_submodule_with_no_module_store_is_refused_and_leaves_nothing(repo):
+    """Review d52243fa.2: the help promises each submodule at its gitlink, so an empty directory is a refusal."""
+    store = repo.store(SUB)
+    spike.must(repo.root, "submodule", "deinit", "-q", "-f", "--", SUB)
+    spike.remove_dir(store, repo.root / ".git")
+    assert (repo.root / SUB).is_dir()
+    assert list((repo.root / SUB).iterdir()) == [], "fixture control: an uninitialized submodule"
+    result = run_lease(repo.root, "--name", "t")
+    assert result.returncode == 1, result.stdout
+    assert "no module store for %s" % SUB in result.stderr
+    assert "git submodule update --init" in result.stderr
+    assert result.stdout == ""
+    assert holder_names(repo) == []
+    assert not (repo.root / ".git" / lease.RECORD_DIR / "t.json").exists()
+
+
+def test_lease_exclude_failure_leaves_no_directory_holding_a_slot(repo):
+    """Review d52243fa.4: the reservation's last step is the directory, so a failure before it reserves nothing."""
+    exclude = repo.root / ".git" / "info" / "exclude"
+    exclude.unlink()
+    exclude.mkdir()
+    result = run_lease(repo.root, "--name", "t")
+    assert result.returncode == 1, result.stdout
+    assert "refused" in result.stderr
+    assert holder_names(repo) == []
+
+
+@pytest.mark.parametrize("session", ["../evil1", "a/b/c/d/", ".hidden1", "spike-x1"])
+def test_lease_session_id_that_is_no_path_component_is_refused(repo, session):
+    """Review d52243fa.5: the default owner names a directory exactly as `--owner` does."""
+    result = run_lease(repo.root, WORKLIST_SESSION_ID=session)
+    assert result.returncode == 1, result.stdout
+    assert "--owner" in result.stderr
+    assert result.stdout == ""
+    assert holder_names(repo) == []
+    assert not (repo.root / ".claude" / "evil1-1").exists()
+    named = run_lease(repo.root, "--owner", "abcd1234", WORKLIST_SESSION_ID=session)
+    assert named.returncode == 0, named.stderr

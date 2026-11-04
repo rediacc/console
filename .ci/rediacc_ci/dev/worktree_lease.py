@@ -19,6 +19,7 @@ import pathlib
 import re
 import subprocess
 import sys
+from typing import NamedTuple
 
 from rediacc_ci import log, paths
 from rediacc_ci.dev import worktree_spike as spike
@@ -31,6 +32,7 @@ TSX = pathlib.PurePath("node_modules", ".bin", "tsx")
 EXCLUDE_LINES = ("/.ci/cache/toolchain", "/.ci/cache/bin", "/.venv")
 ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 GITLINK_MODE = "160000"
+CONSOLE = "."
 DEFAULT_OWNER = "cli"
 SHOWN_ESCAPES = 5
 
@@ -40,6 +42,8 @@ Usage: ./run.sh worktree lease [--name <slug>] [--owner <id8>]
 Make one detached tree under .claude/worktrees at the live branch's tip, with
 each submodule at its gitlink and dependencies seeded. Uncommitted work in the
 main checkout is not in it. The last stdout line is the tree's absolute path.
+A submodule with no module store is refused, since no tree can hold its gitlink:
+`git submodule update --init -- <path>` in the main checkout brings the store.
 
 Options:
   --name <slug>   Tree id; default <owner>-<n>
@@ -135,8 +139,9 @@ def _reserve(root, name, owner):
         if os.path.lexists(path) or (records / ("%s.json" % lease_id)).exists():
             message = "lease %s already exists" % lease_id
             raise LeaseRefusedError(message)
-        path.mkdir()
+        # The directory comes last: no `try` covers this function, and an empty one left behind holds a slot `trees_on_disk` counts.
         _add_exclude_lines(git_dir)
+        path.mkdir()
     return lease_id, path
 
 
@@ -244,8 +249,8 @@ def _rollback(repo, path):
     return survived
 
 
-def make_lease(root, *, name="", owner="", agent=""):
-    """Make one tree and return its normalized absolute path. Raises `LeaseRefusedError`, with nothing left behind, when it cannot."""
+def _main_checkout(root):
+    """`root` normalized, or a refusal when it is no main checkout or its holder is a symlink."""
     root = pathlib.Path(os.path.realpath(root))
     if not (root / ".git").is_dir():
         message = "%s is not a main checkout" % root
@@ -254,11 +259,28 @@ def make_lease(root, *, name="", owner="", agent=""):
         if link.is_symlink():
             message = "%s is a symlink, which the harness refuses" % link
             raise LeaseRefusedError(message)
+    return root
+
+
+def _store_of(root, sub):
+    """The module store of `sub`, or None. `Repo.store` asks git from inside the directory, and from an uninitialized submodule's empty one git walks up and answers the console's own store."""
+    store = pathlib.Path(os.path.realpath(spike.Repo(root, []).store(sub)))
+    return store if store.is_dir() and store != root / ".git" else None
+
+
+def make_lease(root, *, name="", owner="", agent=""):
+    """Make one tree and return its normalized absolute path. Raises `LeaseRefusedError`, with nothing left behind, when it cannot."""
+    root = _main_checkout(root)
     tip = live_tip(root)
-    links = gitlinks_at(root, tip)
-    held = [(sub, sha) for sub, sha in links if (root / ".git" / "modules" / sub).is_dir()]
-    for sub in sorted({sub for sub, _ in links} - {sub for sub, _ in held}):
-        log.warn("%s has no module store, so its directory stays empty in the lease" % sub)
+    held = gitlinks_at(root, tip)
+    # Design 2 step 4 names no exception, and an empty directory would pass `_verify` while the writer reads no code there.
+    absent = sorted(sub for sub, _ in held if _store_of(root, sub) is None)
+    if absent:
+        message = (
+            "no module store for %s, so no tree can hold the gitlink: git submodule update --init -- %s"
+            % (", ".join(absent), " ".join(absent))
+        )
+        raise LeaseRefusedError(message)
     repo = spike.Repo(root, [sub for sub, _ in held])
     lease_id, path = _reserve(root, name, owner)
     spike.arm_signals()
@@ -275,7 +297,7 @@ def make_lease(root, *, name="", owner="", agent=""):
                 "path": str(path),
                 "owner": owner,
                 "agent": agent,
-                "base": {".": tip, **dict(held)},
+                "base": {CONSOLE: tip, **dict(held)},
                 "created_at": datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
             },
         )
@@ -288,7 +310,12 @@ def make_lease(root, *, name="", owner="", agent=""):
 
 
 def _default_owner():
-    return _hook_module("wl_core").resolve_session_id()[:8] or DEFAULT_OWNER
+    """This session's id prefix. It becomes a path component through `_next_id`, so it passes the rule `--owner` passes."""
+    owner = _hook_module("wl_core").resolve_session_id()[:8]
+    if owner and (not ID_RE.match(owner) or owner.startswith(spike.PREFIX)):
+        message = "the session id prefix %r is no path component, so name one with --owner" % owner
+        raise LeaseRefusedError(message)
+    return owner or DEFAULT_OWNER
 
 
 def _parse(args):
@@ -510,6 +537,653 @@ def cmd_land(args):
     if not lines:
         log.info("nothing to land in %s" % args[0])
     sys.stdout.write("".join(line + "\n" for line in lines))
+    sys.stdout.flush()
+    return 0
+
+
+LEASES_HELP = """\
+Usage: ./run.sh worktree leases [--json]
+
+Read-only. List every lease with its owner, base, dirty count and unlanded
+commits per repo.
+"""
+GC_HELP = """\
+Usage: ./run.sh worktree gc [--write] [--id <id>]
+
+List every lease tree and pin as DELETE or KEEP with the rule that keeps it.
+Nothing changes without --write, which deletes what passes every rule:
+
+  1. the tree is a direct child of .claude/worktrees and a linked tree of this
+     checkout's store, its record names that path, and it is no symlink;
+  2. no live writer, live worklist item or process holds it;
+  3. the tree and each submodule have no uncommitted or untracked path, a moved
+     gitlink row (SC..) excepted, since the submodule is judged on its own;
+  4. every commit of HEAD and of the pin, in each repo, is landed on the live tip.
+
+Ignored files do not keep a tree and die with it, so a result worth keeping goes
+in a report or a commit. A pin of a removed tree goes with its record once its
+commits are landed. `--write --id <id>` exits 1 when that lease was kept.
+"""
+RULE_PLACE = "rule 1"
+RULE_LIVE = "rule 2"
+RULE_CLEAN = "rule 3"
+RULE_LANDED = "rule 4"
+PER_TREE_REFS = ("refs/worktree", "refs/bisect", "refs/rewritten")
+SHA_SHOWN = 12
+ROSTER_ERRORS = (OSError, ValueError, RuntimeError, AttributeError, TypeError, KeyError)
+IGNORED_NOTE = "ignored files do not keep a tree and are deleted with it"
+
+
+class World(NamedTuple):
+    """The one reading of git's lease facts a listing rests on."""
+
+    root: pathlib.Path
+    tip: str
+    stores: dict
+    pins: dict
+    listed: dict
+    records: dict
+    policy: object
+
+
+class Facts(NamedTuple):
+    """One lease read across its repos: `repos` is {key: {"dirty", "commits"}}, `problems` the phrases that keep it, `subs` the submodule trees it holds."""
+
+    repos: dict
+    problems: list
+    subs: list
+
+
+class GcRow(NamedTuple):
+    lease_id: str
+    path: str
+    why: list
+    subs: list
+    # "tree" on disk, "gone" for a pin or record whose tree is removed, "outside" for what this verb never touches.
+    kind: str
+
+
+@contextlib.contextmanager
+def _project_env(root):
+    """The hook modules find the worklist and the transcripts from this variable, so a listing of `root` reads the worklist of `root`."""
+    saved = os.environ.get("CLAUDE_PROJECT_DIR")
+    os.environ["CLAUDE_PROJECT_DIR"] = str(root)
+    try:
+        yield
+    finally:
+        if saved is None:
+            del os.environ["CLAUDE_PROJECT_DIR"]
+        else:
+            os.environ["CLAUDE_PROJECT_DIR"] = saved
+
+
+def _quiet(cwd, *args):
+    """stdout, or None when git failed. `--no-optional-locks` keeps a listing from rewriting a tree's index, which the Stop hook's signature reads."""
+    done = spike.git(cwd, "--no-optional-locks", *args)
+    return done.stdout if done.returncode == 0 else None
+
+
+def _under(path, parent):
+    return path == parent or path.startswith(parent + os.sep)
+
+
+def _read_records(root):
+    """{file stem: record}. An unreadable record stays as None, because it is still a claim on a tree."""
+    found = {}
+    for path in sorted((root / ".git" / RECORD_DIR).glob("*.json")):
+        try:
+            record = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            record = None
+        found[path.stem] = record if isinstance(record, dict) else None
+    return found
+
+
+def _read_world(root):
+    """Stores, pins, linked trees and records. A store git cannot read refuses the whole run, since a pin not seen is a pin not judged."""
+    watch = _hook_module("wl_worktrees")
+    stores = dict(watch.stores(root / ".git"))
+    pins: dict = {}
+    listed = {}
+    for key, store in stores.items():
+        refs = _quiet(store, "for-each-ref", "--format=%(objectname) %(refname)", spike.PIN_SPACE)
+        trees = _quiet(store, "worktree", "list", "--porcelain")
+        if refs is None or trees is None:
+            message = "git could not read the store %s" % store
+            raise LeaseRefusedError(message)
+        for line in refs.splitlines():
+            sha, _, ref = line.partition(" ")
+            pins.setdefault(ref[len(spike.PIN_SPACE) :], {})[key] = sha
+        listed[key] = watch.parse_list(trees)[1:]
+    return World(
+        root=root,
+        tip=live_tip(root),
+        stores=stores,
+        pins=pins,
+        listed=listed,
+        records=_read_records(root),
+        policy=spike.load_commit_policy(),
+    )
+
+
+def _is_moved_gitlink(row):
+    """A `--porcelain=v2` row of a gitlink whose commit moved and nothing else: unstaged, and `SC..` says the submodule holds no modified and no untracked path."""
+    fields = row.split(" ", 8)
+    return (
+        len(fields) == 9
+        and fields[:3] == ["1", ".M", _hook_module("wl_worktrees").GITLINK_MOVED]
+        and fields[3:6] == [GITLINK_MODE] * 3
+    )
+
+
+def _dirty_rows(tree):
+    """The status rows that keep `tree`, or None when git could not say. Both flags are spelled out, because `status.showUntrackedFiles` and a `.gitmodules` `ignore` line would otherwise hide rows."""
+    text = _quiet(
+        tree, "status", "--porcelain=v2", "--untracked-files=all", "--ignore-submodules=none"
+    )
+    if text is None:
+        return None
+    return [row for row in text.splitlines() if row and not _is_moved_gitlink(row)]
+
+
+def _hidden_tips(tree, known):
+    """Commits only this tree's reflog or per-worktree refs hold, which die with its admin directory: a second rewrite leaves its first attempt in neither HEAD nor the pin. None when git could not say."""
+    logged = _quiet(tree, "log", "-g", "--format=%H", "HEAD")
+    refs = _quiet(tree, "for-each-ref", "--format=%(objectname)", *PER_TREE_REFS)
+    if logged is None or refs is None:
+        return None
+    tips = list(dict.fromkeys((logged + refs).split()))
+    if not tips:
+        return []
+    alone = _quiet(tree, "rev-list", *tips, "--not", *known)
+    if alone is None:
+        return None
+    reached = set(alone.split())
+    return [sha for sha in tips if sha in reached]
+
+
+def _commit_problems(tree, key, tips, tip, base):
+    """(unlanded shas, problems) over every (head, pin) pair. `git cherry` omits a merge, so a merge not on the live tip is its own problem: the reader would call what it resolved landed."""
+    found = []
+    for head, pin in tips:
+        shas = unlanded(tree, head, pin, tip, base)
+        if shas is None:
+            return [], ["%s: %s: git could not say what is landed" % (RULE_LANDED, key)]
+        found += [sha for sha in shas if sha not in found]
+    problems = []
+    if found:
+        shown = " ".join(sha[:SHA_SHOWN] for sha in found)
+        problems.append(
+            "%s: %s holds %d unlanded commit(s): %s" % (RULE_LANDED, key, len(found), shown)
+        )
+    named = [ref for pair in tips for ref in pair if ref]
+    merges = _quiet(tree, "rev-list", "--merges", *named, "--not", tip)
+    if merges is None:
+        problems.append("%s: %s: git could not list its merges" % (RULE_LANDED, key))
+    elif merges.strip():
+        problems.append(
+            "%s: %s holds the merge %s" % (RULE_LANDED, key, merges.split()[0][:SHA_SHOWN])
+        )
+    return found, problems
+
+
+def _repo_facts(tree, key, tip, pin, base):
+    """(entry, problems) for one repo with a tree on disk. HEAD and the pin are both judged: after a rewrite HEAD no longer descends from the pin, and either can hold the only copy."""
+    if not tip:
+        return {"dirty": 0, "commits": []}, ["%s: %s has no live tip" % (RULE_LANDED, key)]
+    problems = []
+    rows = _dirty_rows(tree)
+    dirty = len(rows or ())
+    if rows is None:
+        problems.append("%s: git status failed in %s" % (RULE_CLEAN, key))
+    elif rows:
+        problems.append(
+            "%s: %s has %d uncommitted path(s), first %s"
+            % (RULE_CLEAN, key, dirty, rows[0].rsplit(" ", 1)[-1])
+        )
+    head = (_quiet(tree, "rev-parse", "--verify", "HEAD^{commit}") or "").strip()
+    if not head:
+        problems.append("%s: %s has no readable HEAD" % (RULE_LANDED, key))
+        return {"dirty": dirty, "commits": []}, problems
+    hidden = _hidden_tips(tree, [head, *([pin] if pin else []), tip])
+    if hidden is None:
+        problems.append("%s: git could not read the reflog of %s" % (RULE_LANDED, key))
+        hidden = []
+    commits, more = _commit_problems(
+        tree, key, [(head, pin), *((sha, "") for sha in hidden)], tip, base
+    )
+    problems += more
+    apart = pin and spike.git(tree, "merge-base", "--is-ancestor", pin, head).returncode != 0
+    if apart and commits:
+        problems.append(
+            "%s: %s HEAD %s does not descend from its pin %s, so both tips stay"
+            % (RULE_LANDED, key, head[:SHA_SHOWN], pin[:SHA_SHOWN])
+        )
+    return {"dirty": dirty, "commits": commits}, problems
+
+
+def _base_of(record):
+    base = (record or {}).get("base")
+    return base if isinstance(base, dict) else {}
+
+
+def _sub_keys(world, path, record):
+    """(submodule keys, problems): what the record, the tree's index and the stores' lists each say lives in this tree."""
+    keys = {key for key in _base_of(record) if key != CONSOLE}
+    problems = []
+    stage = _quiet(path, "ls-files", "--stage")
+    if stage is None:
+        problems.append("%s: git could not read the index of %s" % (RULE_CLEAN, path))
+    else:
+        keys |= {
+            row.split("\t", 1)[1]
+            for row in stage.splitlines()
+            if row.startswith(GITLINK_MODE + " ")
+        }
+    for key, rows in world.listed.items():
+        for row in rows:
+            tree = row.get("worktree", "")
+            if not tree.startswith(str(path) + os.sep):
+                continue
+            if key == CONSOLE:
+                problems.append("%s: %s nests the console tree %s" % (RULE_PLACE, path, tree))
+            else:
+                keys.add(os.path.relpath(tree, path))
+    for key in sorted(keys):
+        rel = pathlib.PurePath(key)
+        if rel.is_absolute() or ".." in rel.parts:
+            problems.append("%s: the submodule key %s leaves the tree" % (RULE_PLACE, key))
+            keys.discard(key)
+    return sorted(keys), problems
+
+
+def _is_linked_to_store(world, tree, key):
+    common = _quiet(tree, "rev-parse", "--path-format=absolute", "--git-common-dir")
+    own = _quiet(tree, "rev-parse", "--absolute-git-dir")
+    store = _store_of(world.root, key)
+    if not common or not own or store is None:
+        return False
+    return os.path.realpath(common.strip()) == str(store) and common.strip() != own.strip()
+
+
+def _sub_tree_problem(world, tree, key):
+    """Why the submodule directory `tree` holds no repo to judge, or "". Git reports nothing about files in a gitlink directory with no `.git`, so a phrase here is the only thing that sees them."""
+    if tree.is_symlink():
+        return "%s: %s is a symlink" % (RULE_CLEAN, key)
+    if not tree.is_dir():
+        return ""
+    if not os.path.lexists(tree / ".git"):
+        if any(tree.iterdir()):
+            return "%s: %s holds files in a gitlink directory with no .git" % (RULE_CLEAN, key)
+        return ""
+    if not _is_linked_to_store(world, tree, key):
+        return "%s: %s is no linked tree of its module store" % (RULE_CLEAN, key)
+    return ""
+
+
+def _store_facts(world, key, pin, head, base):
+    """(entry, problems) for a repo with no tree on disk: its pin and the HEAD git still lists, read in its store."""
+    store = world.stores[key]
+    tip = world.tip if key == CONSOLE else spike.out(store, "rev-parse", "HEAD")
+    if not tip:
+        return {"dirty": 0, "commits": []}, ["%s: %s has no live tip" % (RULE_LANDED, key)]
+    commits, problems = _commit_problems(store, key, [(head, pin)], tip, base)
+    return {"dirty": 0, "commits": commits}, problems
+
+
+def _lease_facts(world, lease_id, path, record):
+    """Every repo of one lease. A tree on disk is read in the tree, and whatever pin or listed HEAD no tree answered for is read in its store."""
+    pins = world.pins.get(lease_id, {})
+    base = _base_of(record)
+    repos, problems, subs = {}, [], []
+    if path.is_dir() and not path.is_symlink():
+        keys, problems = _sub_keys(world, path, record)
+        repos[CONSOLE], more = _repo_facts(
+            path, CONSOLE, world.tip, pins.get(CONSOLE, ""), base.get(CONSOLE, "")
+        )
+        problems += more
+        for key in keys:
+            tree = path / key
+            why = _sub_tree_problem(world, tree, key)
+            if why:
+                problems.append(why)
+            elif os.path.lexists(tree / ".git"):
+                subs.append(key)
+                tip = spike.out(world.root / key, "rev-parse", "HEAD")
+                repos[key], more = _repo_facts(tree, key, tip, pins.get(key, ""), base.get(key, ""))
+                problems += more
+    heads = {
+        key: row.get("HEAD", "")
+        for key, rows in world.listed.items()
+        for row in rows
+        if _under(row.get("worktree", ""), str(path))
+    }
+    for key in sorted(set(pins) | set(heads)):
+        if key not in repos:
+            repos[key], more = _store_facts(
+                world, key, pins.get(key, ""), heads.get(key, ""), base.get(key, "")
+            )
+            problems += more
+    return Facts(repos=repos, problems=problems, subs=subs)
+
+
+def _place_problem(world, lease_id, path, record):
+    """Why rule 1 keeps this id, or "". No git runs in a path this answers for, since it is no lease."""
+    if not ID_RE.match(lease_id):
+        return "%s: %s is no lease id" % (RULE_PLACE, lease_id)
+    if any(pin.startswith(lease_id + "/") for pin in world.pins):
+        return "%s: a pin sits below refs/worktrees/%s" % (RULE_PLACE, lease_id)
+    if record is not None:
+        if str(record.get("id") or lease_id) != lease_id:
+            return "%s: its record names the id %s" % (RULE_PLACE, record.get("id"))
+        named = os.path.realpath(str(record.get("path") or ""))
+        if named != str(path):
+            return "%s: its record names %s, outside %s" % (RULE_PLACE, named, spike.HOLDER)
+    if not os.path.lexists(path):
+        return ""
+    if path.is_symlink():
+        return "%s: a symlink in the holder" % RULE_PLACE
+    if not path.is_dir():
+        return "%s: not a directory" % RULE_PLACE
+    if os.path.realpath(path) != str(path):
+        return "%s: its realpath leaves %s" % (RULE_PLACE, spike.HOLDER)
+    if lease_id not in world.records:
+        return "%s: no record, so it may be a lease still being made" % RULE_LIVE
+    if record is None:
+        return "%s: its record cannot be read, and is still a claim on the tree" % RULE_LIVE
+    if world.policy.lease_root(str(path)) != str(path):
+        return "%s: no linked tree of this checkout's store" % RULE_PLACE
+    return ""
+
+
+def _spawned_nothing(root, owner):
+    """Whether `owner` is a session with a transcript and no agent directory: an honest zero, which an unknown or ambiguous prefix is not."""
+    report = _hook_module("wl_report")
+    project = report._projects_dir() / report._munged(root)
+    if any(p.is_dir() for p in project.glob(owner + "*")):
+        return False
+    return any(project.glob(owner + "*.jsonl"))
+
+
+def _roster_of(root, owner):
+    """[{"id", "tree", "prompt"}] of the session's live agents, or None when nothing can say, which keeps the tree."""
+    if owner == DEFAULT_OWNER:
+        return []
+    if not owner or not ID_RE.match(owner):
+        return None
+    roster = _hook_module("wl_roster")
+    try:
+        if roster.session_subagents_dir(str(root), owner) is None:
+            return [] if _spawned_nothing(root, owner) else None
+        rows, metas = roster.live_estimate(str(root), owner)
+    except ROSTER_ERRORS:
+        return None
+    if rows is None:
+        return None
+    first_prompt = _hook_module("wl_leasehelp").first_prompt
+    return [
+        {
+            "id": row["id"],
+            "tree": (metas.get(row["id"]) or {}).get("worktree") or "",
+            "prompt": first_prompt((metas.get(row["id"]) or {}).get("jsonl")),
+        }
+        for row in rows
+    ]
+
+
+def _read_live(root):
+    """What rule 2 reads once per run. A worklist that cannot be read is None, which keeps every tree."""
+    scratch = _hook_module("wl_scratch")
+    core = _hook_module("wl_core")
+    try:
+        worklist = core.worklist_for(core.project_start({"cwd": str(root)}))
+        leases = scratch.lease_texts(_hook_module("wl_store").load(worklist, sync=False).items)
+    except ROSTER_ERRORS:
+        leases = None
+    return {
+        "leases": leases,
+        "cwds": scratch.process_cwds(),
+        "me": core.resolve_session_id(),
+        "rosters": {},
+    }
+
+
+def _agent_holding(rows, lease_id, path, record):
+    """The live agent on this tree: by the record, by the harness's own meta, or by a first prompt naming it, the way a lead hands a lease to a writer."""
+    scratch = _hook_module("wl_scratch")
+    agent = str(record.get("agent") or "")
+    for row in rows:
+        on_tree = row["tree"] and os.path.realpath(row["tree"]) == path
+        named = scratch.lease_holder(lease_id, path, [(row["id"], row["prompt"])])
+        if row["id"] == agent or on_tree or named:
+            return row["id"]
+    return ""
+
+
+def _in_use(world, live, lease_id, path, record):
+    """Rule 2's phrases. A subagent's shell does not live between tool calls, so the roster and the worklist speak beside the process list."""
+    scratch = _hook_module("wl_scratch")
+    text = str(path)
+    found = []
+    if live["leases"] is None:
+        found.append("%s: the worklist cannot be read" % RULE_LIVE)
+    else:
+        item = scratch.lease_holder(lease_id, text, live["leases"])
+        if item:
+            found.append("%s: live worklist item #%s names it" % (RULE_LIVE, item))
+    inside = [cwd for cwd in live["cwds"] if _under(cwd, text)]
+    if inside:
+        found.append("%s: %d process(es) work inside it" % (RULE_LIVE, len(inside)))
+    owner = str(record.get("owner") or "")
+    me = live["me"]
+    for session in [owner, *([me] if me and not (owner and me.startswith(owner)) else [])]:
+        if session not in live["rosters"]:
+            live["rosters"][session] = _roster_of(world.root, session)
+        rows = live["rosters"][session]
+        if rows is None:
+            # An unknown owner is a doubt about this lease; an unknown running session says nothing about it.
+            if session == owner:
+                found.append(
+                    "%s: the roster of session %s cannot say" % (RULE_LIVE, owner or "(none)")
+                )
+            continue
+        holder = _agent_holding(rows, lease_id, text, record)
+        if holder:
+            found.append("%s: the live writer %s holds it" % (RULE_LIVE, holder))
+    return found
+
+
+def _judge(world, live, lease_id):
+    """One lease tree or leftover pin. An empty `why` passes every rule."""
+    path = world.root / spike.HOLDER / lease_id
+    record = world.records.get(lease_id)
+    place = _place_problem(world, lease_id, path, record)
+    if place:
+        return GcRow(lease_id, str(path), [place], [], "outside")
+    facts = _lease_facts(world, lease_id, path, record)
+    if not os.path.lexists(path):
+        return GcRow(lease_id, str(path), facts.problems, [], "gone")
+    why = _in_use(world, live, lease_id, path, record)
+    return GcRow(lease_id, str(path), [*why, *facts.problems], facts.subs, "tree")
+
+
+def _holder_entries(root):
+    holder = root / spike.HOLDER
+    return sorted(p.name for p in holder.iterdir()) if holder.is_dir() else []
+
+
+def _outside_rows(world):
+    """Console trees git lists elsewhere, such as an operator's `.worktrees/<MMDD-N>`, each kept by rule 1 and never read."""
+    holder = str(world.root / spike.HOLDER)
+    claimed = {
+        os.path.realpath(str(record.get("path") or ""))
+        for record in world.records.values()
+        if record
+    }
+    rows = []
+    for row in world.listed.get(CONSOLE, []):
+        tree = row.get("worktree", "")
+        if os.path.dirname(tree) != holder and tree not in claimed:
+            why = "%s: %s is no direct child of %s" % (RULE_PLACE, tree, spike.HOLDER)
+            rows.append(GcRow(os.path.basename(tree), tree, [why], [], "outside"))
+    return rows
+
+
+def _remove_row(world, row):
+    """Unlock, submodule trees, console tree, pins, then the record, only when nothing else survived. Returns what survived. The predicate is the only guard: `--force` is unavoidable, because git refuses any tree with a submodule without it."""
+    spike.hold_signals()
+    path = pathlib.Path(row.path)
+    holder = world.root / spike.HOLDER
+    if row.kind == "tree":
+        _rollback(spike.Repo(world.root, row.subs), path)
+    else:
+        for key, rows in world.listed.items():
+            for listed in rows:
+                tree = listed.get("worktree", "")
+                if _under(tree, row.path):
+                    spike.git(world.stores[key], "worktree", "unlock", tree)
+                    spike.unregister(world.stores[key], tree, holder)
+    ref = spike.PIN_SPACE + row.lease_id
+    survived = [row.path] if os.path.lexists(path) else []
+    for store in world.stores.values():
+        spike.drop_pins(store, ref)
+        survived += [tree for tree in spike.listed_trees(store) if _under(tree, row.path)]
+        survived += spike.out(store, "for-each-ref", "--format=%(refname)", ref).splitlines()
+    if not survived:
+        (world.root / ".git" / RECORD_DIR / ("%s.json" % row.lease_id)).unlink(missing_ok=True)
+    return survived
+
+
+def _gc_rows(world, live, only):
+    """Rows in id order, judged lazily so `--write` judges each tree immediately before removing it."""
+    rows = _outside_rows(world)
+    ids = {*world.records, *world.pins, *_holder_entries(world.root)}
+    if only and only not in ids and only not in {row.lease_id for row in rows}:
+        message = "no lease, tree or pin named %s" % only
+        raise LeaseRefusedError(message)
+    merged = [(row.lease_id, row) for row in rows] + [(lease_id, None) for lease_id in ids]
+    for lease_id, row in sorted(merged, key=lambda pair: pair[0]):
+        if not only or lease_id == only:
+            yield row or _judge(world, live, lease_id)
+
+
+def run_gc(root, *, write=False, only=""):
+    """(rc, lines): the listing, and with `write` the deletion."""
+    root = _main_checkout(root)
+    lines = []
+    deletable, kept, failed = 0, 0, 0
+    with _project_env(root):
+        world = _read_world(root)
+        live = _read_live(root)
+        for row in _gc_rows(world, live, only):
+            if row.why:
+                kept += 1
+                lines.append("  %-6s  %-24s %s" % ("KEEP", row.lease_id, "; ".join(row.why)))
+                continue
+            lines.append("  %-6s  %-24s every rule holds" % ("DELETE", row.lease_id))
+            survived = _remove_row(world, row) if write else []
+            if survived:
+                failed += 1
+                log.error("%s not fully removed: %s" % (row.lease_id, ", ".join(survived)))
+            else:
+                deletable += 1
+    tail = "deleted %d" % deletable if write else "listing only, rerun with --write to delete"
+    lines.append(
+        "%d row(s): %d deletable, %d kept; %s; %s"
+        % (deletable + kept + failed, deletable + failed, kept, IGNORED_NOTE, tail)
+    )
+    return (1 if failed or (write and only and kept) else 0), lines
+
+
+def _parse_gc(args):
+    """`(write, id)`, or None after an error line."""
+    write, only = False, ""
+    rest = list(args)
+    while rest:
+        arg = rest.pop(0)
+        if arg == "--write":
+            write = True
+        elif arg == "--id" and rest and ID_RE.match(rest[0]):
+            only = rest.pop(0)
+        else:
+            log.error("Unknown or incomplete option: %s" % arg)
+            return None
+    return write, only
+
+
+def cmd_gc(args):
+    parsed = _parse_gc(args)
+    if parsed is None:
+        return 1
+    try:
+        code, lines = run_gc(paths.repo_root(), write=parsed[0], only=parsed[1])
+    except (OSError, RuntimeError, ValueError, subprocess.SubprocessError) as exc:
+        log.error("refused: %s" % exc)
+        return 1
+    sys.stdout.write("".join(line + "\n" for line in lines))
+    sys.stdout.flush()
+    return code
+
+
+def lease_rows(root):
+    """One dict per lease: what `leases --json` prints."""
+    root = _main_checkout(root)
+    world = _read_world(root)
+    rows = []
+    for lease_id in sorted({*world.records, *_holder_entries(root)}):
+        record = world.records.get(lease_id) or {}
+        named = str(record.get("path") or root / spike.HOLDER / lease_id)
+        path = pathlib.Path(named)
+        facts = _lease_facts(world, lease_id, path, record)
+        rows.append(
+            {
+                "id": lease_id,
+                "path": named,
+                "exists": path.is_dir() and not path.is_symlink(),
+                "owner": str(record.get("owner") or ""),
+                "agent": str(record.get("agent") or ""),
+                "created_at": str(record.get("created_at") or ""),
+                "base": _base_of(record),
+                "dirty": sum(entry["dirty"] for entry in facts.repos.values()),
+                "unlanded": {
+                    key: entry["commits"] for key, entry in facts.repos.items() if entry["commits"]
+                },
+                "problems": facts.problems,
+            }
+        )
+    return rows
+
+
+def _lease_line(row):
+    commits = ", ".join(
+        "%s %d (%s)" % (key, len(shas), " ".join(sha[:SHA_SHOWN] for sha in shas))
+        for key, shas in sorted(row["unlanded"].items())
+    )
+    base = str(row["base"].get(CONSOLE) or "unknown")[:SHA_SHOWN]
+    tree = "" if row["exists"] else "  (no tree on disk)"
+    return "  %-24s owner %-10s base %-12s dirty %d  unlanded: %s%s" % (
+        row["id"],
+        row["owner"] or "unknown",
+        base,
+        row["dirty"],
+        commits or "none",
+        tree,
+    )
+
+
+def cmd_leases(args):
+    if args not in ([], ["--json"]):
+        log.error("Unknown option: %s" % " ".join(args))
+        return 1
+    try:
+        rows = lease_rows(paths.repo_root())
+    except (OSError, RuntimeError, ValueError, subprocess.SubprocessError) as exc:
+        log.error("refused: %s" % exc)
+        return 1
+    if args:
+        sys.stdout.write(json.dumps(rows, indent=2, sort_keys=True) + "\n")
+    else:
+        sys.stdout.write("".join(_lease_line(row) + "\n" for row in rows) or "no leases\n")
     sys.stdout.flush()
     return 0
 
