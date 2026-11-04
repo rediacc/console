@@ -1,0 +1,39 @@
+# Review 2d86c1fa: docs(plans): tick T8 of the spend guard plan
+
+Commit: 2d86c1fa88fedb7c5eaff4ecc44509ed513a98ed
+Repo: console
+Branch: 1104-1
+Parent: de2cd4c969537970051180a223b09940460b6c2c
+Patch-Id: 2c191b3bb68eebf8a282302be73e5a740b45c4a3
+Reviewed-At: 2026-11-04T12:28:07Z
+Model: claude-haiku-5-5
+Cost: $0.0063 USD, 1 call(s), 31.1s
+Diff: 29485 bytes, 5 files, truncated: no
+Unreviewed: (none)
+Verdict: findings
+Attempt: 1
+Labels: bump=none kind=docs why=Plan, ledger and queue bookkeeping only; no user-facing code change.
+Dropped: 0
+Body-Sig: a72ce1ed77b8abb4
+
+## Findings
+
+### 2d86c1fa.1 [low] agent/plans/PLAN-cloudflare-spend-guard.md:9
+Anchor: in-diff
+Claim: The Owns line gains scripts/lib/doc-providers.ts in the same commit that ticks T8, although the reopened note said the file was outside the box's Owns and that the substitution needed an operator ruling; no ruling is recorded in the diff.
+Resolution: open
+
+### 2d86c1fa.2 [low] agent/ledgers/plan-investigation.jsonl:2669
+Anchor: in-diff
+Claim: The T8 ledger record marks the box 'present' and points at scripts/lib/doc-providers.ts:1 and commit de2cd4c96, but neither file changes in this diff, so the 'doc-registry lists the page' clause cannot be checked from this commit.
+Resolution: open
+
+### 2d86c1fa.3 [low] agent/plans/QUEUE.md:71
+Anchor: in-diff
+Claim: The generated 'outside the set' counts rise by more than this one-commit change can add (dbb7de07 goes 15 to 18 commits, 1f877343 goes 15 to 33), so the queue block was regenerated over other branch state and that is not explained by this commit.
+Resolution: open
+
+### 2d86c1fa.4 [low] agent/plans/QUEUE.md:78
+Anchor: in-diff
+Claim: The rendered inflight block commits live runtime state (writer session IDs and lease holders) into a docs commit, so the file will change on every session and will not match the checked-in state after the session ends.
+Resolution: open
