@@ -18,7 +18,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CliExitError } from '../../../utils/cli-exit-error.js';
 
 const { state, stageMock, getFreshMock } = vi.hoisted(() => ({
-  state: { version: '0.0.0-dev', sea: false, embedded: Buffer.alloc(0) },
+  state: { version: '0.0.0-dev', sea: false, embedded: Buffer.alloc(0) as Buffer },
   stageMock: vi.fn(() => Promise.resolve()),
   getFreshMock: vi.fn((): Promise<unknown> => Promise.resolve(null)),
 }));
