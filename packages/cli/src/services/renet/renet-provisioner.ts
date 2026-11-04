@@ -23,6 +23,7 @@ import {
   type RenetArch,
 } from '../core/embedded-assets.js';
 import { outputService } from '../core/output.js';
+import { currentRequestContext } from '../core/request-context.js';
 import { withSharedOrPooledSftp } from '../machine/machine-connection.js';
 import { compareVersions } from '../update/updater.js';
 import {
@@ -101,6 +102,120 @@ export function buildRouterRefreshCommand(remoteRenetPath: string): string {
 }
 
 /**
+ * The named refusals of a provision. `RENET_DEV_ON_MACHINE`: a release binary would replace a dev build.
+ * `RENET_DOWNGRADE_REFUSED`: an older release would replace a newer one. `RENET_BUILD_UNVERIFIED`: nothing
+ * shows the binary is a build this CLI should deploy. `RENET_UPLOAD_REFUSED_IN_EXECUTOR`: a served request
+ * reached the provisioner.
+ */
+export type RenetRefusalCode =
+  | 'RENET_DEV_ON_MACHINE'
+  | 'RENET_DOWNGRADE_REFUSED'
+  | 'RENET_BUILD_UNVERIFIED'
+  | 'RENET_UPLOAD_REFUSED_IN_EXECUTOR';
+
+/** A provision's result; a refusal carries its code. */
+export type GuardedProvisionResult = ProvisionResult & { code?: RenetRefusalCode };
+
+/** x.y.z with its suffix, so a dev build stays visible as one. */
+const VERSION_WITH_SUFFIX = /\d+\.\d+\.\d+(?:-[0-9A-Za-z][0-9A-Za-z.-]*)?/;
+
+/** Where a Go binary's build info starts, for renet's own module: an embedded Go asset carries another. */
+const RENET_MODINFO_START = Buffer.from('path\tgithub.com/rediacc/renet/cmd/renet\n');
+/** The sentinel Go writes after the build info (cmd/go/internal/modload `infoEnd`). */
+const GO_MODINFO_END = Buffer.from('f932433186182072008242104116d8f2', 'hex');
+/** A bound on the build-info text, so a file with no end sentinel cannot make this read the rest. */
+const MODINFO_MAX_BYTES = 256 * 1024;
+
+/**
+ * The version and revision a renet binary was stamped with, read from its own bytes. It runs nothing and
+ * needs no Go toolchain, so it answers for a foreign-arch binary, on a machine with no `go` and inside the
+ * executor image. A null field means the stamp is absent: a plain `go build` has no version ldflag, and
+ * bytes that are not a renet build have neither.
+ */
+export function readRenetBuild(binary: Buffer): {
+  version: string | null;
+  revision: string | null;
+} {
+  const start = binary.indexOf(RENET_MODINFO_START);
+  if (start < 0) return { version: null, revision: null };
+  const window = binary.subarray(start, start + MODINFO_MAX_BYTES);
+  const end = window.indexOf(GO_MODINFO_END);
+  const info = (end < 0 ? window : window.subarray(0, end)).toString('latin1');
+  return {
+    version: /-X main\.Version=([^\s"]+)/.exec(info)?.[1] ?? null,
+    revision: /vcs\.revision=([0-9a-f]+)/.exec(info)?.[1] ?? null,
+  };
+}
+
+function bareVersion(version: string): string {
+  return version.replace(/^v/, '');
+}
+
+/** A dev build: `build.sh dev` appends `-dev`, and the placeholder's core is 0.0.0, so it sorts below every release. */
+function isDevVersion(version: string): boolean {
+  return version.endsWith('-dev') || bareVersion(version).split('-')[0] === '0.0.0';
+}
+
+interface RenetReplacement {
+  /** This CLI's VERSION. */
+  cli: string;
+  /** Whether the local binary is the one embedded in a SEA, built with the CLI as one unit. */
+  embedded: boolean;
+  /** The version stamped into the local binary; null when it carries none. */
+  local: string | null;
+  /** The version the machine's renet reports; null when it reports none. */
+  running: string | null;
+  /** The machine, for the message. */
+  host: string;
+}
+
+/**
+ * Whether the local binary may replace the renet a machine runs, or the named refusal.
+ *
+ * A dev build's version says nothing about its age, so a release can never be shown to be newer than one:
+ * only a dev CLI, deploying its own dev build, moves a machine onto or between dev builds. Otherwise the
+ * machine's version must not be newer, and a binary outside a SEA must carry the version of the CLI sending
+ * it, which is what shows it to be this CLI's build (the proxy image's 0.0.0-dev bundle held a 2.4.0 renet).
+ * A machine whose renet reports no version has nothing to compare, and stays repairable.
+ */
+export function decideRenetReplacement(
+  r: RenetReplacement
+): { code: RenetRefusalCode; message: string } | null {
+  if (r.running === null) return null;
+  const cliIsDev = isDevVersion(r.cli);
+  const override = 'set REDIACC_ALLOW_DOWNGRADE=1 to force it';
+  const unverified = (detail: string) => ({
+    code: 'RENET_BUILD_UNVERIFIED' as const,
+    message: `${detail}, so nothing shows it is a build this CLI should deploy to ${r.host}, which runs renet v${r.running}. Rebuild with ./rdc.sh or run \`rdc update\`, or ${override}.`,
+  });
+
+  if (r.local === null) {
+    if (cliIsDev && isDevVersion(r.running)) return null;
+    return unverified('The local renet binary carries no version stamp');
+  }
+  if (isDevVersion(r.local)) {
+    if (cliIsDev) return null;
+    return unverified(`This CLI (v${r.cli}) holds a dev renet (v${r.local})`);
+  }
+  if (isDevVersion(r.running)) {
+    return {
+      code: 'RENET_DEV_ON_MACHINE',
+      message: `${r.host} runs the dev build renet v${r.running}, and a release (v${r.local}) cannot be shown to be newer than it. Deploy a fresh dev build with ./rdc.sh, or, to move the machine back to the release, ${override}.`,
+    };
+  }
+  if (compareVersions(r.local, r.running) < 0) {
+    return {
+      code: 'RENET_DOWNGRADE_REFUSED',
+      message: `${r.host} runs renet v${r.running}, newer than the local binary v${r.local}. Run \`rdc update\` to upgrade this CLI, or ${override}.`,
+    };
+  }
+  if (!r.embedded && bareVersion(r.local) !== bareVersion(r.cli)) {
+    return unverified(`This CLI (v${r.cli}) holds a renet stamped v${r.local}`);
+  }
+  return null;
+}
+
+/**
  * Service for provisioning renet binaries to remote Linux machines.
  *
  * Works in both SEA and dev modes:
@@ -110,7 +225,7 @@ export function buildRouterRefreshCommand(remoteRenetPath: string): string {
  * Installation flow:
  * 1. Compute SHA256 of local binary
  * 2. Single SSH call: `renet hash` + `renet version` (sha256sum fallback)
- * 3. If hash mismatch + version guard passes: SFTP upload to staging, atomic mv to the versioned install path
+ * 3. If the replacement guard passes: SFTP upload to staging when the hash differs, atomic mv to the versioned install path, `current` repointed
  *
  * Maintains an in-memory cache to avoid redundant checks within TTL.
  */
@@ -118,7 +233,7 @@ class RenetProvisionerService {
   private readonly cache = new Map<string, CacheEntry>();
   /** Hosts trusted from the persisted entry whose remote slot no mutating call has probed yet. */
   private readonly unprobed = new Set<string>();
-  private readonly inflight = new Map<string, Promise<ProvisionResult>>();
+  private readonly inflight = new Map<string, Promise<GuardedProvisionResult>>();
   /** Per-host arch memo so partial cache misses skip the remote `uname -m` exec */
   private readonly archByHost = new Map<string, RenetArch>();
   /** Local binary hash memo keyed by source path, validated by (mtime, size) */
@@ -138,7 +253,17 @@ class RenetProvisionerService {
     config: SFTPClientConfig,
     options?: ProvisionOptions,
     sharedSftp?: SFTPClient
-  ): Promise<ProvisionResult> {
+  ): Promise<GuardedProvisionResult> {
+    // `acquireRemoteRenet` routes a served request away from here. This is the last line, ahead of the verified cache and any exec, so no other route inside a request can reach a machine's renet.
+    if (currentRequestContext() !== undefined) {
+      return {
+        success: false,
+        action: 'failed',
+        remotePath: REMOTE_INSTALL_PATH,
+        code: 'RENET_UPLOAD_REFUSED_IN_EXECUTOR',
+        error: `An executor never replaces a machine's renet: ${config.host} keeps the one it has. Run \`rdc machine setup\` without --proxy to update it.`,
+      };
+    }
     const cacheKey = this.buildCacheKey(config);
     const verified = await this.lookupVerified(cacheKey, options?.localBinaryPath);
     if (verified && (await this.remoteSlotStillCurrent(config, cacheKey, verified, sharedSftp))) {
@@ -170,14 +295,21 @@ class RenetProvisionerService {
    * exec reads the hash and version of the versioned slot and of `current`
    * (renet-inspect.ts). A proven match is recorded, a local write only, when
    * both hold the local bytes, which is exactly what `provision()` leaves.
+   *
+   * `fresh` looks at the machine even when a provision was proven recently, for a
+   * caller that runs what the machine has: a remembered match names the slot of a
+   * binary that may have been replaced since, and hides the drift.
    */
   async inspect(
     config: SFTPClientConfig,
-    options?: { localBinaryPath?: string },
+    options?: { localBinaryPath?: string; fresh?: boolean },
     sharedSftp?: SFTPClient
   ): Promise<RenetInspectResult> {
     const cacheKey = this.buildCacheKey(config);
-    const verified = await this.lookupVerified(cacheKey, options?.localBinaryPath);
+    const verified =
+      options?.fresh === true
+        ? null
+        : await this.lookupVerified(cacheKey, options?.localBinaryPath);
     if (verified) return matchedInspect(verified.arch, verified.hash, REMOTE_INSTALL_PATH);
 
     return withSharedOrPooledSftp(sharedSftp, config, async (sftp) => {
@@ -282,7 +414,7 @@ class RenetProvisionerService {
     config: SFTPClientConfig,
     options?: ProvisionOptions,
     sharedSftp?: SFTPClient
-  ): Promise<ProvisionResult> {
+  ): Promise<GuardedProvisionResult> {
     try {
       return await withSharedOrPooledSftp(sharedSftp, config, (sftp) =>
         this.doProvision(sftp, config, options)
@@ -305,10 +437,14 @@ class RenetProvisionerService {
     sftp: SFTPClient,
     config: SFTPClientConfig,
     options?: ProvisionOptions
-  ): Promise<ProvisionResult> {
+  ): Promise<GuardedProvisionResult> {
     const context = await this.buildProvisionContext(sftp, config, options?.localBinaryPath);
     const remote = await this.getRemoteHashAndVersion(sftp, context.remoteInstallPath);
-    const versionRejected = this.buildVersionRejectedResult(remote.version, context);
+    // `current` is what the machine runs, and the install below repoints it even when the slot already holds the local bytes. A probe that cannot run throws: reading it as "no renet" would upload past the guard.
+    const current = await this.getRemoteHashAndVersion(sftp, REMOTE_CURRENT_PATH, {
+      strict: true,
+    });
+    const versionRejected = this.buildVersionRejectedResult(config.host, remote, current, context);
     if (versionRejected) return versionRejected;
 
     const stagingPath = this.buildStagingPath();
@@ -431,21 +567,39 @@ class RenetProvisionerService {
     return { success: true, action: 'verified', arch, remotePath: remoteInstallPath };
   }
 
+  /**
+   * The refusal of the replacement this provision would make, or null. The renet being replaced is
+   * `current`, or the slot on a machine with no `current`. A machine already running the local bytes
+   * has nothing replaced.
+   */
   private buildVersionRejectedResult(
-    remoteVersion: string | null,
+    host: string,
+    slot: { hash: string | null; version: string | null },
+    current: { hash: string | null; version: string | null },
     context: ProvisionContext
-  ): ProvisionResult | null {
-    const isDowngrade = remoteVersion && compareVersions(VERSION, remoteVersion) < 0;
-    if (!isDowngrade || process.env.REDIACC_ALLOW_DOWNGRADE) {
-      return null;
-    }
+  ): GuardedProvisionResult | null {
+    if (process.env.REDIACC_ALLOW_DOWNGRADE) return null;
+    const running = current.hash ? current : slot;
+    if (!running.hash || running.hash === context.localHash) return null;
+
+    const embedded = isSEA();
+    const refusal = decideRenetReplacement({
+      cli: VERSION,
+      embedded,
+      // A SEA carries the renet built with it, which is the answer when its stamp cannot be read.
+      local: readRenetBuild(context.binary).version ?? (embedded ? VERSION : null),
+      running: running.version,
+      host,
+    });
+    if (!refusal) return null;
 
     return {
       success: false,
       action: 'version_rejected',
       arch: context.arch,
       remotePath: context.remoteInstallPath,
-      error: `Remote has renet v${remoteVersion} but this CLI bundles v${VERSION}. Run \`rdc update\` to upgrade your CLI, or set REDIACC_ALLOW_DOWNGRADE=1 to force.`,
+      code: refusal.code,
+      error: refusal.message,
     };
   }
 
@@ -532,10 +686,13 @@ class RenetProvisionerService {
    * Get the remote binary's hash and version in a single SSH call.
    * Returns hash (for content comparison) and version (for downgrade guard).
    * Uses `renet hash` + `renet version` combined, with sha256sum fallback.
+   * The version keeps its suffix, since `-dev` is what marks a dev build. With
+   * `strict`, a failed exec throws instead of reading as an absent binary.
    */
   private async getRemoteHashAndVersion(
     sftp: SFTPClient,
-    remoteInstallPath: string
+    remoteInstallPath: string,
+    options?: { strict?: boolean }
   ): Promise<{ hash: string | null; version: string | null }> {
     try {
       const escapedInstallPath = shellQuote(remoteInstallPath);
@@ -545,9 +702,10 @@ class RenetProvisionerService {
       );
       const lines = output.trim().split('\n');
       const hash = lines[0]?.trim().split(/\s+/)[0] ?? null;
-      const versionMatch = /\d+\.\d+\.\d+/.exec(lines.slice(1).join(' '));
+      const versionMatch = VERSION_WITH_SUFFIX.exec(lines.slice(1).join(' '));
       return { hash, version: versionMatch ? versionMatch[0] : null };
-    } catch {
+    } catch (error) {
+      if (options?.strict === true) throw error;
       // Binary doesn't exist or exec failed, needs install, no version to guard
       return { hash: null, version: null };
     }

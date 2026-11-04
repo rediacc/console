@@ -11,10 +11,12 @@ import { STATUS_DEFAULTS } from '@rediacc/shared/config/defaults';
 import type { RenetFunctionName } from '@rediacc/shared/renet-contract/data/functions.generated';
 import { FUNCTION_REQUIREMENTS } from '@rediacc/shared/renet-contract/data/functions.generated';
 import type { SFTPClient } from '../../remote/sftp/index.js';
-import type { MachineConfig } from '../../types/index.js';
+import { EXIT_CODES, type MachineConfig } from '../../types/index.js';
+import { CliExitError } from '../../utils/cli-exit-error.js';
 import { reportStateWriteRefused } from '../config/state-write-failure.js';
 import { isSEA } from '../core/embedded-assets.js';
 import { outputService } from '../core/output.js';
+import { currentRequestContext } from '../core/request-context.js';
 import { sftpConfigForMachine, withSharedOrPooledSftp } from '../machine/machine-connection.js';
 import { isSetupVerifiedFresh, recordSetupVerified } from './provision-state.js';
 import {
@@ -98,7 +100,8 @@ function resolveRenetPath(configuredPath: string): string {
  *   restart `rediacc-router` (unless opted out).
  *
  * Required at every call site: a default is how every read-only verb once came
- * to replace the production binary.
+ * to replace the production binary. An executor gets `'read-only'` whatever it
+ * asks for: {@link inExecutor}.
  */
 export type RenetAccess = 'read-only' | 'provision';
 
@@ -109,6 +112,17 @@ export interface RenetAcquireResult {
   drift: RenetDrift | null;
   /** A router refresh the caller deferred (`deferRouterRefresh`) and still owes. */
   routerRefreshDue?: boolean;
+}
+
+/**
+ * True inside a served request (`rdc serve`, either tier): the dispatch binds a request context,
+ * which a laptop's `rdc` and the local daemon never have. An executor never replaces a machine's
+ * renet. Its binary is whatever its image was built with, and the image outlives the machine's
+ * upgrades (2026-11-04: a six-day-old bench image replaced hostinger's renet during a proxied
+ * `repo up`). Only a CLI talking to the machine directly provisions one.
+ */
+function inExecutor(): boolean {
+  return currentRequestContext() !== undefined;
 }
 
 /** Hosts already warned about drift in this process (one line per host). */
@@ -340,12 +354,20 @@ async function acquireReadOnly(
   localBinaryPath: string | undefined,
   sftp?: SFTPClient
 ): Promise<RenetAcquireResult> {
+  const executor = inExecutor();
   const inspected = await renetProvisioner.inspect(
     sftpConfigForMachine(machine, sshPrivateKey),
-    { localBinaryPath },
+    { localBinaryPath, ...(executor && { fresh: true }) },
     sftp
   );
   if (inspected.drift === 'missing' || inspected.remotePath === null) {
+    if (executor) {
+      throw new CliExitError(
+        'RENET_NOT_ON_MACHINE',
+        `renet is not installed on ${machineName}, and an executor never installs it. Run 'rdc machine setup ${machineName}' without --proxy to provision it.`,
+        { exitCode: EXIT_CODES.STATE_MISMATCH }
+      );
+    }
     throw new Error(
       `renet is not installed on ${machineName}; run 'rdc machine setup ${machineName}' to provision it`
     );
@@ -357,7 +379,9 @@ async function acquireReadOnly(
       outputService.warn(
         `renet on ${machineName} differs from this CLI (remote v${inspected.remoteVersion ?? STATUS_DEFAULTS.UNKNOWN_PLACEHOLDER} ${shortHash(inspected.remoteHash)}, ` +
           `local v${inspected.localVersion} ${shortHash(inspected.localHash)}); running the remote binary as-is. ` +
-          `Run 'rdc machine setup ${machineName}' or any mutating command to update it.`
+          (executor
+            ? `An executor never replaces it: run 'rdc machine setup ${machineName}' without --proxy to update it.`
+            : `Run 'rdc machine setup ${machineName}' or any mutating command to update it.`)
       );
     }
   }
@@ -389,7 +413,7 @@ export async function acquireRemoteRenet(
   }
   const machineName = options.machineName ?? machine.ip;
 
-  if (access === 'read-only') {
+  if (access === 'read-only' || inExecutor()) {
     return acquireReadOnly(machine, machineName, sshPrivateKey, localBinaryPath, sftp);
   }
 
@@ -418,7 +442,11 @@ export async function acquireRemoteRenet(
   const elapsed = ((Date.now() - start) / 1000).toFixed(1);
 
   if (!result.success) {
-    throw new Error(result.error ?? PROCESS_DEFAULTS.RENET_PROVISION_ERROR);
+    const message = result.error ?? PROCESS_DEFAULTS.RENET_PROVISION_ERROR;
+    if (result.code) {
+      throw new CliExitError(result.code, message, { exitCode: EXIT_CODES.STATE_MISMATCH });
+    }
+    throw new Error(message);
   }
 
   if (result.action === 'uploaded') {
