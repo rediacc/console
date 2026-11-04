@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-import base64
 import json
 import os
-import re
 import subprocess
 import tempfile
 
@@ -111,13 +109,11 @@ def test_probe_runs_for_real_and_reports_this_process() -> None:
     assert probe["cdi_open"] != ""  # an absent node answers "No such file", never an empty line
 
 
-def test_install_command_writes_both_files_through_base64() -> None:
-    cmd = lp.install_command()
-    blobs = re.findall(r"printf %s ([A-Za-z0-9+/=]+) \| base64 -d", cmd)
-    assert len(blobs) == 2
-    assert base64.b64decode(blobs[0]).decode() == lp.probe_rediaccfile()
-    assert base64.b64decode(blobs[1]).decode() == lp.bad_compose()
-    assert lp.BAD_COMPOSE in cmd
+def test_probe_files_carry_the_rediaccfile_and_the_failing_compose() -> None:
+    files = lp.probe_files()
+    assert files["Rediaccfile"] == lp.probe_rediaccfile()
+    assert files[lp.BAD_COMPOSE] == lp.bad_compose()
+    assert ">" not in lp.clear_probe_state_command()
 
 
 def test_bad_compose_names_an_image_that_cannot_exist() -> None:
@@ -314,8 +310,8 @@ def test_down_asks_the_daemon_only_under_the_marker() -> None:
     assert _run_probe_down(docker_ok=False, marker=False).returncode == 0
 
 
-def test_install_command_clears_the_down_marker() -> None:
-    assert lp.DOWN_MARKER in lp.install_command()
+def test_clear_probe_state_clears_the_down_marker() -> None:
+    assert lp.DOWN_MARKER in lp.clear_probe_state_command()
 
 
 def test_down_marker_and_removal_commands() -> None:

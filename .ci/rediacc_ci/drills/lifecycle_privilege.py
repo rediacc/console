@@ -15,7 +15,6 @@ The CLI-free pieces (the probe text, the root scripts, and the parsers and verdi
 
 from __future__ import annotations
 
-import base64
 import json
 import re
 import shlex
@@ -104,14 +103,19 @@ def bad_compose() -> str:
     )
 
 
-def install_command() -> str:
-    """The repository shell's command that writes the probe Rediaccfile and the failing compose file into the mount (through base64, so no quoting meets the script)."""
-    rf = base64.b64encode(probe_rediaccfile().encode()).decode()
-    bc = base64.b64encode(bad_compose().encode()).decode()
-    return (
-        "printf %%s %s | base64 -d > Rediaccfile && printf %%s %s | base64 -d > %s && "
-        "rm -f %s %s %s %s %s && ls -l Rediaccfile"
-        % (rf, bc, BAD_COMPOSE, UP_FILE, DOWN_FILE, CREATED_FILE, FAIL_MARKER, DOWN_MARKER)
+def probe_files() -> dict[str, str]:
+    """The files `repo sync upload` puts in the mount: the probe Rediaccfile and the failing compose file. `term connect` refuses a redirect, so no shell writes them."""
+    return {"Rediaccfile": probe_rediaccfile(), BAD_COMPOSE: bad_compose()}
+
+
+def clear_probe_state_command() -> str:
+    """The repository shell's removal of everything an earlier probe left, then a listing that proves the Rediaccfile arrived."""
+    return "rm -f %s %s %s %s %s && ls -l Rediaccfile" % (
+        UP_FILE,
+        DOWN_FILE,
+        CREATED_FILE,
+        FAIL_MARKER,
+        DOWN_MARKER,
     )
 
 
@@ -428,7 +432,21 @@ class _LiveL1:
         )
 
     def install(self) -> bool:
-        res = self.shell(install_command())
+        up = self.ctx.work / "lifecycle-probe"
+        up.mkdir(parents=True, exist_ok=True)
+        for name, body in probe_files().items():
+            (up / name).write_text(body)
+        sent = self.ctx.rdc(
+            "repo", "sync", "upload", self.ref, "--local", str(up) + "/", refuse=False
+        )
+        if not self.check(
+            "L1.0 the probe files are uploaded into %s" % self.ref,
+            sent.rc == 0,
+            sent,
+            self.ctx.remote_evidence(sent) if sent.rc != 0 else "",
+        ):
+            return False
+        res = self.shell(clear_probe_state_command())
         return self.check(
             "L1.0 the probe Rediaccfile is installed in %s" % self.ref,
             res.rc == 0,
@@ -649,6 +667,7 @@ __all__ = [
     "STEP_ID",
     "bad_compose",
     "cdi_verdict",
+    "clear_probe_state_command",
     "cold_barrier_script",
     "cold_barrier_verdict",
     "daemon_stop_script",
@@ -660,11 +679,11 @@ __all__ = [
     "env_verdict",
     "fork_tag",
     "grant_show_script",
-    "install_command",
     "no_grant_verdict",
     "owner_verdict",
     "parse_lifecycle",
     "parse_probe",
+    "probe_files",
     "probe_rediaccfile",
     "reboot_verdict",
     "reconcile_script",

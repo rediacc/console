@@ -1443,10 +1443,13 @@ class VmCheck:
 
     def remote_evidence(self, res: Result) -> str:
         """A failed remote command's evidence, stderr first: `term connect` puts the remote stderr on stderr and a JSON envelope on stdout, and the envelope alone filled the 200-byte evidence (2026-10-15)."""
+        refusal = envelope_errors(res.out)
+        if refusal:
+            return "rc=%d %s" % (res.rc, refusal)
         return "rc=%d stderr: %s | stdout: %s" % (
             res.rc,
             last_lines(res.err) or "<empty>",
-            envelope_errors(res.out) or last_lines(res.out) or "<empty>",
+            last_lines(res.out) or "<empty>",
         )
 
     def probe(self, command: str) -> Result:
