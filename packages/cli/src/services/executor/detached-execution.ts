@@ -53,6 +53,7 @@ import {
   JobStartFailedError,
   type JobStatus,
   JobsUnsupportedError,
+  jobStartCommand,
   jobStatusToExecuteResult,
   overlapWarningLines,
   type PreconditionRefusal,
@@ -522,10 +523,7 @@ async function buildLaunch(
     ...(steps.length > 0 ? { steps: JSON.stringify(steps) } : {}),
     ...(options.commandKind
       ? {
-          command: {
-            name: options.commandKind.name,
-            ...(options.commandKind.args ? { args: JSON.stringify(options.commandKind.args) } : {}),
-          },
+          command: jobStartCommand(options.commandKind.name, options.commandKind.args),
         }
       : {}),
   });

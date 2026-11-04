@@ -26,6 +26,7 @@ import {
   buildJobStartCommand,
   buildJobStatusCommand,
   InvalidJobIdError,
+  jobStartCommand,
 } from '../executor/job-client.js';
 import { buildRenetEnv } from '../executor/local-executor.js';
 import { STDIN_ENV_READER } from '../executor/renet-launch.js';
@@ -143,6 +144,24 @@ describe('buildJobStartCommand', () => {
     });
 
     expect(command).toContain(`--args '{"datastore":"/x'\\''; touch /pwned; '\\''"}'`);
+  });
+
+  it('a payload kind called with empty arguments names no --args, which renet would refuse', () => {
+    const { command } = buildJobStartCommand({
+      remoteRenetPath: RENET,
+      env: buildRenetEnv({ isDevelopment: false, telemetryDisabled: false }),
+      command: jobStartCommand('license-write', {}),
+    });
+
+    expect(command).toContain("--command 'license-write'");
+    expect(command).not.toContain('--args');
+  });
+
+  it('control: a kind with arguments keeps them as its --args JSON', () => {
+    expect(jobStartCommand('license-status', { datastore: '/d' })).toEqual({
+      name: 'license-status',
+      args: '{"datastore":"/d"}',
+    });
   });
 
   it('a command kind without arguments names no --args', () => {

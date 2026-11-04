@@ -485,6 +485,17 @@ export function isTerminalState(state: JobStatus['state']): boolean {
  * as the launch's `stdinPrefix`, followed by the vault, exactly as
  * `renet execute` takes them.
  */
+/**
+ * The `command` of a job start. Empty arguments name no `--args`, because renet refuses any `--args` on a payload kind,
+ * `{}` included (validateCommandKind), and `license-write` passes `{}`.
+ */
+export function jobStartCommand(
+  name: string,
+  args?: Record<string, unknown>
+): { name: string; args?: string } {
+  return args && Object.keys(args).length > 0 ? { name, args: JSON.stringify(args) } : { name };
+}
+
 export function buildJobStartCommand(params: {
   remoteRenetPath: string;
   /** From buildRenetEnv. */
