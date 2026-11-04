@@ -1046,8 +1046,18 @@ def _outside_rows(world):
 
 
 def _remove_row(world, row):
-    """Unlock, submodule trees, console tree, pins, then the record, only when nothing else survived. Returns what survived. The predicate is the only guard: `--force` is unavoidable, because git refuses any tree with a submodule without it."""
+    """Unlock, submodule trees, console tree, pins, then the record, only when nothing else survived. Returns what survived. The predicate is the only guard: `--force` is unavoidable, because git refuses any tree with a submodule without it.
+
+    The signals are held for the removal and armed again after it. Left ignored, SIGTERM stayed ignored for the rest of the process and for every child it started afterwards, because an ignored disposition survives exec: a pytest worker that ran a gc test then spawned servers that no `terminate()` could stop.
+    """
     spike.hold_signals()
+    try:
+        return _remove_row_held(world, row)
+    finally:
+        spike.arm_signals()
+
+
+def _remove_row_held(world, row):
     path = pathlib.Path(row.path)
     holder = world.root / spike.HOLDER
     if row.kind == "tree":

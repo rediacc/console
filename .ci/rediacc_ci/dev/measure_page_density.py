@@ -289,6 +289,7 @@ def main(argv: list[str] | None = None, www: pathlib.Path | None = None) -> int:
             server.wait(timeout=5)
         if server.poll() is None:
             server.kill()
+            server.wait()
     print("wrote %s" % out)
     print(column_table(out.read_text(encoding="utf-8")))
     return 0
