@@ -32,6 +32,24 @@ CELL = 4 * 1024 * 1024
 PAGE = 7  # small pages so every listing exercises the continuation token
 
 
+def envelope(data: dict, success: bool = True) -> dict:
+    """The shape `rdc -o json` really prints: the figures sit under `data` (live run 2026-11-05)."""
+    return {"success": success, "command": "backup", "data": data, "errors": None, "warnings": []}
+
+
+def test_rdc_json_unwraps_the_envelope_and_refuses_a_failed_one():
+    calls = iter(
+        [
+            (0, json.dumps(envelope({"subscriptionId": SUB})), ""),
+            (0, json.dumps(envelope({"subscriptionId": SUB}, success=False)), ""),
+        ]
+    )
+    rdc = mod.Rdc("rdc", "eu-bench", mod.Deps(runner=lambda _argv, _timeout: next(calls)))
+    assert rdc.json("backup", "usage") == {"subscriptionId": SUB}
+    with pytest.raises(mod.NoVerdictError, match="no data object"):
+        rdc.json("backup", "usage")
+
+
 class World:
     """The store (key -> size) and what the account server answers about it."""
 
@@ -158,13 +176,13 @@ class World:
         else:
             json_out = False
         if args[:2] == ["backup", "usage"]:
-            return 0, "fetching\n" + json.dumps(self.usage(), indent=2), ""
+            return 0, "fetching\n" + json.dumps(envelope(self.usage()), indent=2), ""
         if args[:2] == ["backup", "reconcile"]:
             if "--check" in args:
                 if self.check_rc_override is not None:
                     return self.check_rc_override, "", ""
                 return (1 if self.drift() else 0), "", ""
-            return 0, json.dumps(self.reconcile("--dry-run" in args)), ""
+            return 0, json.dumps(envelope(self.reconcile("--dry-run" in args))), ""
         if args[:2] == ["backup", "snapshot"] and json_out:
             # the rerun: uploads what is missing (10 chunks), commits, and the meter moves
             before = self.chunks(LIN)

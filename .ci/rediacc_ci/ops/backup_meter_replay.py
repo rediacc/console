@@ -290,6 +290,15 @@ class Rdc:
                 "`rdc %s -o json` rc=%d: %s"
                 % (" ".join(args), rc, (stderr or stdout).strip()[-400:])
             )
+        # `rdc -o json` prints an envelope {"success", "command", "data", ...}; the figures live in `data`.
+        if "success" in doc:
+            data = doc.get("data")
+            if doc.get("success") is not True or not isinstance(data, dict):
+                raise NoVerdictError(
+                    "`rdc %s -o json` returned no data object: %s"
+                    % (" ".join(args), json.dumps(doc)[-400:])
+                )
+            return data
         return doc
 
     def usage(self) -> dict[str, Any]:
