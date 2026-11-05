@@ -36,10 +36,14 @@ def rdc_argv(*args: str) -> list[str]:
 
 
 def recipe(repo: str, local_dir: str = str(PROBE_DIR)) -> list[list[str]]:
-    """The rdc invocations of H2 steps 2 to 4, in order. The fork verb does not start the fork."""
+    """The rdc invocations of H2 steps 2 to 4, in order.
+
+    The fork verb does not start the fork, and `repo sync upload` refuses a repository that is not deployed (measured on hostinger 2026-11-05: VALIDATION_ERROR "not deployed ... Deploy it first"), so the fork is brought up once before the probe lands. That first up runs the app's own up() unprivileged, which is itself an H2 data point.
+    """
     ref = fork_ref(repo)
     return [
         rdc_argv("repo", "fork", "%s@%s" % (repo, MACHINE), "--tag", TAG),
+        rdc_argv("repo", "up", ref),
         rdc_argv("repo", "sync", "upload", ref, "--local", local_dir.rstrip("/") + "/"),
         rdc_argv("repo", "up", ref),
         rdc_argv("repo", "down", ref),
@@ -88,6 +92,8 @@ def run(repo: str, collect: bool = False) -> int:
             res = _run(argv)
             print("$ %s -> rc=%d" % (" ".join(argv), res.returncode))
             if res.returncode != 0:
+                # rdc prints its JSON error envelope on stdout and progress on stderr: both are needed to see why.
+                print(res.stdout[-2000:], file=sys.stderr)
                 print(res.stderr[-2000:], file=sys.stderr)
                 failed = True
                 break
@@ -116,7 +122,9 @@ def run(repo: str, collect: bool = False) -> int:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=(__doc__ or "").split("\n")[0])
     ap.add_argument("repo")
-    ap.add_argument("--collect", action="store_true", help="also print the H2 step 5 app-level reads")
+    ap.add_argument(
+        "--collect", action="store_true", help="also print the H2 step 5 app-level reads"
+    )
     ap.add_argument("--dry-run", action="store_true", help="print the recipe, run nothing")
     args = ap.parse_args(argv)
     if args.dry_run:

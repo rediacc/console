@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import subprocess
+
 from rediacc_ci.drills import lifecycle_privilege as lp
 from rediacc_ci.drills import privdrop_probe as pp
 from rediacc_ci.tests.test_drills_lifecycle_privilege import GOOD_UP, ROOT_UP
@@ -11,18 +13,33 @@ def test_probe_file_matches_l1_probe() -> None:
     assert (pp.PROBE_DIR / "Rediaccfile").read_text() == lp.probe_rediaccfile()
 
 
-def test_recipe_is_fork_upload_up_down_up_without_up_flag() -> None:
+def test_recipe_mounts_the_fork_before_the_upload() -> None:
+    # `repo sync upload` refuses a fork that is not deployed (hostinger, 2026-11-05), so an up precedes it.
     steps = pp.recipe("nextcloud")
     assert [s[3:5] for s in steps] == [
         ["repo", "fork"],
+        ["repo", "up"],
         ["repo", "sync"],
         ["repo", "up"],
         ["repo", "down"],
         ["repo", "up"],
     ]
-    assert "--up" not in steps[0] and steps[0][-2:] == ["--tag", "privdrop"]
+    assert "--up" not in steps[0]
+    assert steps[0][-2:] == ["--tag", "privdrop"]
     assert all(s[:3] == ["./rdc.sh", "--config", "eu-bench"] for s in steps)
-    assert steps[2][-1] == "nextcloud:privdrop@hostinger"
+    assert steps[1][-1] == "nextcloud:privdrop@hostinger"
+
+
+def test_a_failed_step_prints_rdc_stdout(capsys, monkeypatch) -> None:
+    # rdc puts its JSON error envelope on stdout; printing stderr alone showed no reason (hostinger, 2026-11-05).
+    def fake(argv, _timeout=1800):
+        return subprocess.CompletedProcess(argv, 2, '{"error":"not deployed"}', "progress line")
+
+    monkeypatch.setattr(pp, "_run", fake)
+    pp.run("gitlab")
+    err = capsys.readouterr().err
+    assert '{"error":"not deployed"}' in err
+    assert "progress line" in err
 
 
 def test_delete_names_only_the_fork() -> None:
@@ -38,7 +55,8 @@ def test_good_probe_passes() -> None:
 def test_root_uid_turns_red() -> None:
     rows = pp.verdicts(lp.parse_probe(ROOT_UP), lp.parse_probe(GOOD_UP))
     bad = {n for n, ok, _ in rows if not ok}
-    assert "up.dropped" in bad and "down.dropped" not in bad
+    assert "up.dropped" in bad
+    assert "down.dropped" not in bad
     assert "FAIL" in pp.table("x", rows)
 
 
