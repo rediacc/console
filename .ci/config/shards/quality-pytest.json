@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 5,
-  "generatedAt": "2026-11-05T11:15:06.472Z",
+  "generatedAt": "2026-11-05T20:58:31.483Z",
   "legs": [
     {
       "index": 1,
@@ -97,6 +97,7 @@
         "pytest:.ci/rediacc_ci/tests/test_ops_executor_orgs.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_login_bench.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_proxy_job_cost.py",
+        "pytest:.ci/rediacc_ci/tests/test_ops_remote_load_sampler.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_units.py",
         "pytest:.ci/rediacc_ci/tests/test_private_compose_healthcheck_smoke_test.py",
         "pytest:.ci/rediacc_ci/tests/test_private_concurrent_fork_isolation_test.py",
@@ -403,6 +404,7 @@
         "pytest:.ci/rediacc_ci/tests/test_drills_backup_leg_o.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_backup_renet.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_license_seed.py",
+        "pytest:.ci/rediacc_ci/tests/test_drills_privdrop_probe.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_universe_transfer.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_upgrade_converge.py",
         "pytest:.ci/rediacc_ci/tests/test_env_create_e2e_env.py",
@@ -568,6 +570,7 @@
         "pytest:.ci/rediacc_ci/tests/test_dev_worktree_lease_gates.py",
         "pytest:.ci/rediacc_ci/tests/test_diagnostics_collect_drill_diagnostics.py",
         "pytest:.ci/rediacc_ci/tests/test_docker_create_manifest.py",
+        "pytest:.ci/rediacc_ci/tests/test_drills_backup_elite_compose.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_backup_integrity.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_backup_leg_n.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_backup_legs.py",
@@ -739,6 +742,7 @@
         "pytest:.ci/rediacc_ci/tests/test_infra_ci_stop_elite.py",
         "pytest:.ci/rediacc_ci/tests/test_infra_docker_prepull.py",
         "pytest:.ci/rediacc_ci/tests/test_infra_renet_pkg_matrix.py",
+        "pytest:.ci/rediacc_ci/tests/test_ops_backup_meter_replay.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_build_server.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_cf_family.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_cf_notifications.py",
