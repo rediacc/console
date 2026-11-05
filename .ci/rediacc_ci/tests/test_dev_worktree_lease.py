@@ -944,8 +944,9 @@ Status: approved
 - [x] F2 the ticked box of the fixture plan
     (ticked) 2026-01-01 by x: commit:abc
 - [ ] F3 the mapped box of the fixture plan
+- [ ] F4 the uninvestigated box of the fixture plan
 """
-FX_OPEN, FX_DONE, FX_MAPPED = "fd66592c", "074be283", "c4b9e359"
+FX_OPEN, FX_DONE, FX_MAPPED, FX_BARE = "fd66592c", "074be283", "c4b9e359", "0c8b4793"
 
 
 def plant_plan(root):
@@ -957,7 +958,10 @@ def plant_plan(root):
         "by": "feedface",
         "plan": "agent/plans/" + FX_PLAN,
         "sig": FX_MAPPED,
-        "clauses": [{"id": "C1", "half": "code", "text": "the code half"}],
+        "clauses": [
+            {"id": "C1", "half": "code", "text": "the code half"},
+            {"id": "C2", "half": "live", "text": "the live half"},
+        ],
     }
     spike.write(root / "agent" / "ledgers" / "plan-box-progress.jsonl", json.dumps(row) + "\n")
 
@@ -1036,6 +1040,158 @@ def test_land_plan_box_ticked_box_undefined_clause_or_bad_grammar_is_refused(box
 
 def test_land_plan_box_help_names_the_rule():
     assert "Plan-Box: <PLAN-file>.md#<sig8>" in lease.LAND_HELP
+
+
+# --------------------------------------------------------------------------- land --ticks (PLAN-tick-tracking T4) ---------------------------------------------------------------------------
+
+
+class Ticked(NamedTuple):
+    repo: spike.Repo
+    lease: dict  # box sig -> lease sha
+    landed: dict  # box sig -> landed sha
+    before: str  # the live tip the investigation rows record
+
+
+@pytest.fixture
+def ticked(boxed, tmp_path):
+    """Three boxed lease commits, landed with the printed `-x` picks: FX_OPEN covered whole and investigated before the work, FX_MAPPED with C1 of C1,C2 and investigated, FX_BARE covered whole with no investigation row."""
+    repo, tree = boxed.repo, boxed.tree
+    shas = {
+        FX_OPEN: lease_commit(
+            tree, "open.txt", PR_TASK_ONLY + "Plan-Box: %s#%s clauses=all\n" % (FX_PLAN, FX_OPEN)
+        ),
+        FX_MAPPED: lease_commit(
+            tree, "mapped.txt", PR_TASK_ONLY + "Plan-Box: %s#%s clauses=C1\n" % (FX_PLAN, FX_MAPPED)
+        ),
+        FX_BARE: lease_commit(
+            tree, "bare.txt", PR_TASK_ONLY + "Plan-Box: %s#%s clauses=all\n" % (FX_PLAN, FX_BARE)
+        ),
+    }
+    before = spike.must(repo.root, "rev-parse", "HEAD")
+    rows = [
+        {
+            "plan": "agent/plans/" + FX_PLAN,
+            "sig": sig,
+            "verdict": "absent",
+            "head": before,
+            "at": "2026-01-01T00:00:00Z",
+        }
+        for sig in (FX_OPEN, FX_MAPPED)
+    ]
+    spike.write(
+        repo.root / "agent" / "ledgers" / "plan-investigation.jsonl",
+        "".join(json.dumps(r) + "\n" for r in rows),
+    )
+    result = run_land(repo.root, LAND_ID)
+    assert result.returncode == 0, result.stderr
+    for finished in run_printed(repo.root, result.stdout.splitlines(), tmp_path):
+        assert finished.returncode == 0, finished.stderr
+    mapping = lease._hook_module("wl_planbox").landed_map(repo.root, list(shas.values()))
+    landed = {sig: mapping[sha] for sig, sha in shas.items()}
+    assert not set(landed.values()) & set(shas.values()), "fixture control: a pick makes a new sha"
+    return Ticked(repo, shas, landed, before)
+
+
+def box_block(lines, sig):
+    """The lines `land --ticks` prints under one box, its BOX line first."""
+    start = next(i for i, x in enumerate(lines) if x.startswith("BOX %s#%s " % (FX_PLAN, sig)))
+    end = next((i for i in range(start + 1, len(lines)) if lines[i].startswith("BOX ")), len(lines))
+    return lines[start:end]
+
+
+def tick_lines_hold_no_lease_sha(lines, lease_shas):
+    """The Design 2 invariant: no printed tick line names a lease commit, full or short."""
+    ticks = [x for x in lines if "--plan-tick" in x]
+    return not any(sha[:12] in x for x in ticks for sha in lease_shas)
+
+
+def test_land_ticks_names_each_box_with_the_landed_sha(ticked):
+    result = run_land(ticked.repo.root, LAND_ID, "--ticks")
+    assert result.returncode == 0, result.stderr
+    lines = result.stdout.splitlines()
+    for sig, landed in ticked.landed.items():
+        assert box_block(lines, sig)[0].startswith(
+            "BOX %s#%s landed %s" % (FX_PLAN, sig, landed[:12])
+        )
+    assert tick_lines_hold_no_lease_sha(lines, ticked.lease.values())
+
+
+def test_land_ticks_covered_box_with_a_prior_row_gets_a_plan_tick_line(ticked):
+    lines = run_land(ticked.repo.root, LAND_ID, "--ticks").stdout.splitlines()
+    block = box_block(lines, FX_OPEN)
+    assert "  progress %s all landed %s" % (FX_OPEN, ticked.landed[FX_OPEN][:12]) in block
+    assert (
+        "  worklist.py --plan-tick feedface agent/plans/%s %s 'commit:%s landed from lease %s' --write"
+        % (FX_PLAN, FX_OPEN, ticked.landed[FX_OPEN][:12], LAND_ID)
+    ) in block
+
+
+def test_land_ticks_uncovered_clause_gets_only_the_progress_line(ticked):
+    block = box_block(run_land(ticked.repo.root, LAND_ID, "--ticks").stdout.splitlines(), FX_MAPPED)
+    assert "  progress %s C1 landed %s" % (FX_MAPPED, ticked.landed[FX_MAPPED][:12]) in block
+    assert not [x for x in block if "--plan-tick" in x or "--plan-investigate" in x]
+    assert any(x.startswith("  owed: C2") for x in block)
+
+
+def test_land_ticks_box_with_no_row_gets_the_post_landing_investigate_line(ticked):
+    block = box_block(run_land(ticked.repo.root, LAND_ID, "--ticks").stdout.splitlines(), FX_BARE)
+    invest = [x for x in block if "--plan-investigate" in x]
+    assert len(invest) == 1
+    assert "commit:%s" % ticked.landed[FX_BARE][:12] in invest[0]
+    assert "fileline:bare.txt:1" in invest[0]
+    assert "-- post-landing: " in invest[0]
+    assert not [x for x in block if "--plan-tick" in x]
+
+
+def test_land_ticks_run_writes_progress_runs_the_printed_tick_and_no_investigation_row(ticked):
+    root = ticked.repo.root
+    inv = root / "agent" / "ledgers" / "plan-investigation.jsonl"
+    before = inv.read_bytes()
+    calls = []
+
+    def tick(_root, me, rel, sig, evidence):
+        calls.append((me, rel, sig, evidence))
+        return 0
+
+    lines, rc = lease.land_ticks(root, LAND_ID, run=True, me="feedface", tick=tick)
+    assert rc == 0, lines
+    assert calls == [
+        (
+            "feedface",
+            "agent/plans/" + FX_PLAN,
+            FX_OPEN,
+            "commit:%s landed from lease %s" % (ticked.landed[FX_OPEN][:12], LAND_ID),
+        )
+    ]
+    assert inv.read_bytes() == before
+    rows = lease._hook_module("wl_planbox").read_progress(root)
+    got = {(r["sig"], r["clause"], r["state"], r["ref"]) for r in rows if r["kind"] == "progress"}
+    assert got == {
+        (FX_OPEN, "all", "landed", ticked.landed[FX_OPEN]),
+        (FX_MAPPED, "C1", "landed", ticked.landed[FX_MAPPED]),
+        (FX_BARE, "all", "landed", ticked.landed[FX_BARE]),
+    }
+    again, _ = lease.land_ticks(root, LAND_ID, run=True, me="feedface", tick=tick)
+    assert [x for x in again if x.startswith("wrote ")] == []
+    assert len(lease._hook_module("wl_planbox").read_progress(root)) == len(rows)
+
+
+def test_land_ticks_control_bypassing_the_map_puts_a_lease_sha_in_a_tick_line(ticked, monkeypatch):
+    """The planted bypass: a map that answers each lease sha with itself. The invariant the tests above assert must then fail."""
+    pb = lease._hook_module("wl_planbox")
+    monkeypatch.setattr(pb, "landed_map", lambda _root, shas, **_kw: {s: s for s in shas})
+    lines, _progress, _ticks = lease.tick_report(ticked.repo.root, LAND_ID, "feedface")
+    assert not tick_lines_hold_no_lease_sha(lines, ticked.lease.values())
+
+
+def test_land_ticks_before_the_picks_names_no_box_and_run_needs_ticks(boxed):
+    lease_commit(
+        boxed.tree, "open.txt", PR_TASK_ONLY + "Plan-Box: %s#%s clauses=all\n" % (FX_PLAN, FX_OPEN)
+    )
+    result = run_land(boxed.repo.root, LAND_ID, "--ticks")
+    assert result.returncode == 0, result.stderr
+    assert result.stdout == ""
+    assert run_land(boxed.repo.root, LAND_ID, "--run").returncode == 1
 
 
 def test_land_peer_staged_path_makes_the_pick_refuse_with_the_path_unmoved(landing):

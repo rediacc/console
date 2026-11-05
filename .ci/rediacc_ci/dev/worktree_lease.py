@@ -412,7 +412,7 @@ def cmd_pin(args):
 
 
 LAND_HELP = """\
-Usage: ./run.sh worktree land <id>
+Usage: ./run.sh worktree land <id> [--ticks [--run]]
 
 Read-only. Check that every unlanded commit of the lease carries a PR-TASK
 trailer and a valid Plan-Box trailer and touches no gitlink and no agent/**
@@ -427,6 +427,14 @@ A Plan-Box trailer names the plan box the commit serves, one per box:
 The plan must exist under agent/plans/, the sig must name an open box, and a
 named clause must exist in the box's clause map (agent/ledgers/
 plan-box-progress.jsonl). The boxes each admitted commit names go to stderr.
+
+--ticks, after the picks: map each lease commit to its landed commit by the
+-x line, read the landed commit's Plan-Box trailers, and print per box the
+clause-progress rows, a post-landing --plan-investigate line when the box has
+no investigation row, and a ready --plan-tick line when every clause is landed
+or proved and a row recorded before the work exists. --run writes the
+progress rows and runs only the printed --plan-tick lines; it never writes an
+investigation row. No tick line ever names a lease sha.
 """
 AGENT_PREFIX = "agent/"
 TRAILER_KEY = "PR-TASK"
@@ -566,10 +574,234 @@ def land_plan(root, lease_id, notes=None):
     return lines
 
 
-def cmd_land(args):
-    if len(args) != 1 or args[0].startswith("-"):
-        log.error("land takes one lease id")
+TICKS_NOTE = (
+    "post-landing: %s#%s landed in %s from lease %s, clauses %s; the box text was read "
+    "against that diff"
+)
+WORKLIST_REL = pathlib.PurePath(".claude", "hooks", "stop", "worklist.py")
+
+
+class BoxLanding(NamedTuple):
+    """One box `land --ticks` speaks for: the landed commits its trailers name, in lease order."""
+
+    plan: str
+    sig: str
+    picks: list  # [(key, lease sha, landed sha, clauses)]
+
+
+def _lease_commits(root, record, key):
+    """`(live repo, live tip, lease shas oldest first)` of one repo of a lease, landed or not: what HEAD and the pin hold past the lease's base. The tree may be gone; the pin outlives it."""
+    live = root if key == "." else root / key
+    if not live.is_dir():
+        return None
+    tree = pathlib.Path(record["path"]) if key == "." else pathlib.Path(record["path"]) / key
+    tips = []
+    if tree.is_dir():
+        head = spike.out(tree, "rev-parse", "HEAD")
+        tips += [head] if head else []
+    pin = spike.out(
+        live, "rev-parse", "--verify", "-q", "%s%s^{commit}" % (spike.PIN_SPACE, record["id"])
+    )
+    tips += [pin] if pin else []
+    base = record.get("base", {}).get(key, "")
+    tip = live_tip(root) if key == "." else spike.out(live, "rev-parse", "HEAD")
+    if not tips or not base:
+        return live, tip, []
+    listed = spike.out(
+        live, "rev-list", "--reverse", "--topo-order", "--no-merges", *tips, "--not", base
+    )
+    return live, tip, [s for s in listed.splitlines() if s]
+
+
+def landed_boxes(root, lease_id):
+    """[BoxLanding] for every box a LANDED commit of the lease names, mapped lease sha -> landed sha by the `-x` line. Commits not yet landed are left out; a lease sha never stands in for a landed one."""
+    root = _main_checkout(root)
+    path = root / ".git" / RECORD_DIR / ("%s.json" % lease_id)
+    if not ID_RE.match(lease_id) or not path.is_file():
+        message = "no lease record %s" % lease_id
+        raise LeaseRefusedError(message)
+    record = json.loads(path.read_text(encoding="utf-8"))
+    pb = _hook_module("wl_planbox")
+    keys = [*sorted(k for k in record.get("base", {}) if k != "."), "."]
+    boxes = {}
+    for key in keys:
+        found = _lease_commits(root, record, key)
+        if found is None or not found[2]:
+            continue
+        live, tip, shas = found
+        mapping = pb.landed_map(live, shas, rev=tip)
+        if mapping is None:
+            message = "git could not map the lease commits of %s to landed ones" % key
+            raise LeaseRefusedError(message)
+        for sha in shas:
+            landed = mapping.get(sha)
+            if not landed:
+                continue
+            message = spike.must(live, "show", "-s", "--format=%B", landed)
+            for box in pb.parse_plan_box(message).boxes:
+                entry = boxes.setdefault((box.plan, box.sig), BoxLanding(box.plan, box.sig, []))
+                entry.picks.append((key, sha, landed, box.clauses))
+    return list(boxes.values())
+
+
+def _first_path(root, key, landed):
+    """A `fileline:` token for the first file the landed commit adds or changes, or "" when it only deletes."""
+    live = root if key == "." else root / key
+    out = spike.out(
+        live, "diff-tree", "--no-commit-id", "--name-only", "--diff-filter=AM", "-r", landed
+    )
+    first = next((x for x in out.splitlines() if x), "")
+    if not first:
+        return ""
+    return "fileline:%s:1" % (first if key == "." else "%s/%s" % (key, first))
+
+
+def tick_report(root, lease_id, me):
+    """`(lines, progress rows, ticks)` for `land <id> --ticks` (PLAN-tick-tracking Design 2). Nothing is written. `ticks` is [(rel, sig, evidence)], printed only where every clause is covered and an investigation row recorded before the work exists."""
+    root = _main_checkout(root)
+    pb = _hook_module("wl_planbox")
+    rec = _hook_module("wl_planrec")
+    rows = pb.read_progress(root)
+    lines, progress, ticks = [], [], []
+    for box in landed_boxes(root, lease_id):
+        resolved = pb.resolve_plan(root, box.plan)
+        rel = resolved[0] if resolved else pb.plan_rel_of(box.plan)
+        cmap = pb.clause_map(root, box.plan, box.sig, rows)
+        ids = [c["id"] for c in cmap] if cmap else []
+        covered, every = set(), False
+        for *_pick, clauses in box.picks:
+            if clauses == "all":
+                every = True
+            else:
+                covered.update(clauses)
+        for r in rows:
+            if (
+                r.get("kind") == "progress"
+                and r.get("sig") == box.sig
+                and pb.same_plan(r.get("plan"), box.plan)
+                and r.get("state") in ("landed", "proved")
+            ):
+                covered.add(r.get("clause"))
+        done = every or "all" in covered or bool(ids and set(ids) <= covered)
+        last = box.picks[-1][2]
+        named = ",".join(
+            "all" if c == "all" else ",".join(c) for c in dict.fromkeys(p[3] for p in box.picks)
+        )
+        lines.append(
+            "BOX %s#%s landed %s clauses=%s"
+            % (box.plan, box.sig, " ".join(p[2][:12] for p in box.picks), named)
+        )
+        for _key, _sha, landed, clauses in box.picks:
+            for clause in ("all",) if clauses == "all" else clauses:
+                row = {
+                    "kind": "progress",
+                    "by": me,
+                    "plan": rel,
+                    "sig": box.sig,
+                    "clause": clause,
+                    "state": "landed",
+                    "ref": landed,
+                }
+                progress.append(row)
+                lines.append("  progress %s %s landed %s" % (box.sig, clause, landed[:12]))
+        inv = rec.investigation_for(root, rel, box.sig)
+        if inv is None:
+            pointers = " ".join(
+                x for x in ("commit:%s" % last[:12], _first_path(root, box.picks[-1][0], last)) if x
+            )
+            note = TICKS_NOTE % (box.plan, box.sig, last[:12], lease_id, named)
+            lines.append(
+                "  worklist.py --plan-investigate %s %s %s %s %s -- %s --write"
+                % (me, rel, box.sig, "present" if done else "partial", pointers, note)
+            )
+            continue
+        if not done:
+            owed = [i for i in ids if i not in covered]
+            lines.append(
+                "  owed: %s (no tick until every clause is landed or proved)" % ",".join(owed)
+            )
+            continue
+        evidence = "commit:%s landed from lease %s" % (last[:12], lease_id)
+        if inv.get("retro") or rec.clause1_ordering(root, inv, evidence):
+            lines.append(
+                "  no tick: the investigation row of %s is not recorded before %s; write a fresh "
+                "--plan-investigate first" % (box.sig, last[:12])
+            )
+            continue
+        ticks.append((rel, box.sig, evidence))
+        lines.append(
+            "  worklist.py --plan-tick %s %s %s '%s' --write" % (me, rel, box.sig, evidence)
+        )
+    return lines, progress, ticks
+
+
+def _run_tick(root, me, rel, sig, evidence):
+    """One `--plan-tick ... --write` as a process, the verb's own refusals intact. Returns its exit code."""
+    done = subprocess.run(
+        [
+            sys.executable,
+            str(root / WORKLIST_REL),
+            "--plan-tick",
+            me,
+            rel,
+            sig,
+            evidence,
+            "--write",
+        ],
+        cwd=str(root),
+        check=False,
+    )
+    return done.returncode
+
+
+def land_ticks(root, lease_id, *, run=False, me=None, tick=None):
+    """`(lines, exit code)` for `land <id> --ticks [--run]`. With `run`, the progress rows are appended and `--plan-tick` runs only where a tick line was printed; an investigation row is never written."""
+    root = _main_checkout(root)
+    me = me or _default_owner()
+    lines, progress, ticks = tick_report(root, lease_id, me)
+    if not run:
+        return lines, 0
+    pb = _hook_module("wl_planbox")
+    for row in progress:
+        _stored, written = pb.append_progress(root, row)
+        lines.append(
+            "%s progress %s %s %s"
+            % ("wrote" if written else "kept", row["sig"], row["clause"], row["ref"][:12])
+        )
+    tick = tick or _run_tick
+    rc = 0
+    for rel, sig, evidence in ticks:
+        code = tick(root, me, rel, sig, evidence)
+        lines.append("ticked %s %s rc=%d" % (rel, sig, code))
+        rc = rc or (1 if code else 0)
+    return lines, rc
+
+
+def _cmd_ticks(lease_id, flags):
+    try:
+        lines, rc = land_ticks(paths.repo_root(), lease_id, run="--run" in flags)
+    except (OSError, RuntimeError, ValueError, subprocess.SubprocessError) as exc:
+        log.error("refused: %s" % exc)
         return 1
+    if not lines:
+        log.info("no landed commit of %s names a plan box" % lease_id)
+    sys.stdout.write("".join(line + "\n" for line in lines))
+    sys.stdout.flush()
+    return rc
+
+
+def cmd_land(args):
+    ids = [a for a in args if not a.startswith("-")]
+    flags = [a for a in args if a.startswith("-")]
+    if len(ids) != 1 or any(f not in ("--ticks", "--run") for f in flags):
+        log.error("land takes one lease id, and --ticks [--run] after the picks")
+        return 1
+    if "--run" in flags and "--ticks" not in flags:
+        log.error("--run belongs to --ticks")
+        return 1
+    if "--ticks" in flags:
+        return _cmd_ticks(ids[0], flags)
+    args = ids
     notes = []
     try:
         lines = land_plan(paths.repo_root(), args[0], notes)

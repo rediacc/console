@@ -422,6 +422,48 @@ def read_progress(root):
     return out
 
 
+def _progress_lock(path):
+    """The flock sidecar in TMPDIR, not beside the tracked ledger (the investigation ledger's reason, `wl_planrec._investigation_lock`)."""
+    import hashlib
+    import os
+
+    base = os.path.join(os.environ.get("TMPDIR", "/tmp"), "claude-worklist", ".judge")
+    os.makedirs(base, exist_ok=True)
+    key = hashlib.sha1(str(path).encode("utf-8", "replace")).hexdigest()[:12]
+    return os.path.join(base, "plan-box-progress-%s.lock" % key)
+
+
+def _identity(rec):
+    """Every field of a ledger row except `at` and `by`: the same fact written twice is one fact."""
+    return json.dumps({k: v for k, v in rec.items() if k not in ("at", "by")}, sort_keys=True)
+
+
+def append_progress(root, row):
+    """Append ONE row to the progress ledger and return `(row as stored, written)`. A row whose identity (every field but `at` and `by`) equals the latest row of the same kind, box and clause is not appended again; that earlier row is returned with `written=False`. The read and the append sit under one flock. Never commits."""
+    import wl_core as C
+    import wl_store as S
+
+    path = progress_path(root)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    rec = dict(row)
+    rec.setdefault("at", C.stamp_now())
+    same = _identity(rec)
+    with open(_progress_lock(path) + ".dedupe", "a") as guard:
+        S._flock(guard, getattr(S.fcntl, "LOCK_EX", 2))
+        for prior in reversed(read_progress(root)):
+            if (
+                prior.get("kind") == rec.get("kind")
+                and prior.get("sig") == rec.get("sig")
+                and same_plan(prior.get("plan"), rec.get("plan"))
+                and prior.get("clause") == rec.get("clause")
+            ):
+                if _identity(prior) == same:
+                    return prior, False
+                break
+        S._append_lines(str(path), _progress_lock(path), [rec])
+    return rec, True
+
+
 def same_plan(a, b):
     """Two plan spellings (basename or repo-relative path) name the same plan file."""
     return str(a or "").rsplit("/", 1)[-1] == str(b or "").rsplit("/", 1)[-1]
