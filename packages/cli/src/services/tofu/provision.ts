@@ -129,6 +129,7 @@ async function runProvisionSetupJob(
     localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
   await acquireRemoteRenet('provision', localConfig, machine, sshPrivateKey, {
     debug: options.debug,
+    explicitSetup: true,
   });
   return runCommandJob(
     'machine provision',

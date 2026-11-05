@@ -17,6 +17,7 @@ import { reportStateWriteRefused } from '../config/state-write-failure.js';
 import { isSEA } from '../core/embedded-assets.js';
 import { outputService } from '../core/output.js';
 import { currentRequestContext } from '../core/request-context.js';
+import type { ExtraMachine } from '../executor/types.js';
 import { sftpConfigForMachine, withSharedOrPooledSftp } from '../machine/machine-connection.js';
 import { isSetupVerifiedFresh, recordSetupVerified } from './provision-state.js';
 import {
@@ -37,7 +38,6 @@ import {
 import type { RenetDrift } from './renet-inspect.js';
 import { renetProvisioner } from './renet-provisioner.js';
 import { buildRepositories, type RepoEntryConfig } from './renet-vault-sections.js';
-import type { ExtraMachine } from '../executor/types.js';
 
 // The SSH key helpers moved to services/machine/ssh-key.ts so the connection pool can read a team key without importing renet. Re-exported here: this module is where the rest of the CLI has always imported them from.
 export { readOptionalSSHKey, readSSHKey } from '../machine/ssh-key.js';
@@ -124,6 +124,17 @@ export interface RenetAcquireResult {
  */
 function inExecutor(): boolean {
   return currentRequestContext() !== undefined;
+}
+
+/**
+ * True when REDIACC_NO_PROVISION=1 holds the machine's renet: a mutating verb then runs the installed
+ * binary as-is, like an executor, and only an explicit `rdc machine setup` (`explicitSetup`) uploads.
+ * Without it, a mutating verb run from a branch checkout replaces the machine's renet with that
+ * branch's build (2026-11-05: a live runner found every mutating verb against hostinger would have
+ * installed a renet 82 commits ahead of the one production ran, with no way to refuse it).
+ */
+function provisionHeld(): boolean {
+  return process.env.REDIACC_NO_PROVISION === '1';
 }
 
 /** Hosts already warned about drift in this process (one line per host). */
@@ -348,12 +359,24 @@ function shortHash(hash: string | null): string {
   return hash ? hash.slice(0, 12) : STATUS_DEFAULTS.UNKNOWN_PLACEHOLDER;
 }
 
+/** The last sentence of the drift warning: who may replace the remote renet, and how. */
+function driftRemedy(machineName: string, executor: boolean, held: boolean): string {
+  if (executor) {
+    return `An executor never replaces it: run 'rdc machine setup ${machineName}' without --proxy to update it.`;
+  }
+  if (held) {
+    return `REDIACC_NO_PROVISION=1 holds it: run 'rdc machine setup ${machineName}' to update it.`;
+  }
+  return `Run 'rdc machine setup ${machineName}' or any mutating command to update it.`;
+}
+
 async function acquireReadOnly(
   machine: MachineConfig,
   machineName: string,
   sshPrivateKey: string,
   localBinaryPath: string | undefined,
-  sftp?: SFTPClient
+  sftp?: SFTPClient,
+  held = false
 ): Promise<RenetAcquireResult> {
   const executor = inExecutor();
   const inspected = await renetProvisioner.inspect(
@@ -380,9 +403,7 @@ async function acquireReadOnly(
       outputService.warn(
         `renet on ${machineName} differs from this CLI (remote v${inspected.remoteVersion ?? STATUS_DEFAULTS.UNKNOWN_PLACEHOLDER} ${shortHash(inspected.remoteHash)}, ` +
           `local v${inspected.localVersion} ${shortHash(inspected.localHash)}); running the remote binary as-is. ` +
-          (executor
-            ? `An executor never replaces it: run 'rdc machine setup ${machineName}' without --proxy to update it.`
-            : `Run 'rdc machine setup ${machineName}' or any mutating command to update it.`)
+          driftRemedy(machineName, executor, held)
       );
     }
   }
@@ -405,6 +426,8 @@ export async function acquireRemoteRenet(
     deferRouterRefresh?: boolean;
     /** Name used in operator-facing messages; defaults to the machine IP. */
     machineName?: string;
+    /** `rdc machine setup` itself: provisions even under REDIACC_NO_PROVISION=1 ({@link provisionHeld}). */
+    explicitSetup?: boolean;
   },
   sftp?: SFTPClient
 ): Promise<RenetAcquireResult> {
@@ -414,8 +437,9 @@ export async function acquireRemoteRenet(
   }
   const machineName = options.machineName ?? machine.ip;
 
-  if (access === 'read-only' || inExecutor()) {
-    return acquireReadOnly(machine, machineName, sshPrivateKey, localBinaryPath, sftp);
+  const held = provisionHeld() && options.explicitSetup !== true;
+  if (access === 'read-only' || inExecutor() || held) {
+    return acquireReadOnly(machine, machineName, sshPrivateKey, localBinaryPath, sftp, held);
   }
 
   // After a binary update an active rediacc-router is re-installed from the new binary (`renet proxy install`, which re-renders its unit) and restarted, so it runs the new code under the new unit text; see RenetProvisionerService.restartRunningServices. A machine whose router is not running is left alone. Opt out via skipRouterRestart=true or

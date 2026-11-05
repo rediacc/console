@@ -52,7 +52,7 @@ export async function bootstrapMachine(
     updatedConfig,
     machine,
     sshPrivateKey,
-    { debug: options.debug }
+    { debug: options.debug, explicitSetup: true }
   );
 
   const lease = await machineConnections.acquireFor(machine, sshPrivateKey);

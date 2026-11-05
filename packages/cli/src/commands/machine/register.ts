@@ -368,7 +368,7 @@ function registerSetup(machine: Command): void {
           localConfig,
           machineObj,
           sshPrivateKey,
-          { debug: options.debug, deferRouterRefresh: true }
+          { debug: options.debug, deferRouterRefresh: true, explicitSetup: true }
         );
 
         const datastoreSize =
