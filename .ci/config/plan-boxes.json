@@ -4158,18 +4158,6 @@
         "fe8a544f"
       ]
     },
-    "agent/plans/_done/PLAN-stop-hook-cap-saturated-wait.md": {
-      "status": "done",
-      "owner": "d778be9d",
-      "folder": "agent/plans/_done",
-      "moved_at": "2026-09-25",
-      "open": 0,
-      "done": 1,
-      "open_sigs": [],
-      "done_sigs": [
-        "7433b50f"
-      ]
-    },
     "agent/plans/_done/PLAN-stop-hook-continuity.md": {
       "status": "done",
       "owner": "d778be9d",
