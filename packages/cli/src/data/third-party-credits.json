@@ -37,22 +37,22 @@
       "kind": "embedded-binary",
       "asset": "k3s",
       "name": "k3s",
-      "version": "1.37.1+k3s1",
+      "version": "1.37.2+k3s1",
       "spdx": "Apache-2.0",
       "license": "Apache License 2.0 (Copyright The k3s Authors / SUSE); conveyed as an unmodified upstream binary (the single static k3s release binary, not the airgap images tarball), invoked as a subprocess. Apache-2.0 s4 attribution retained.",
-      "upstreamSourceUrl": "https://github.com/k3s-io/k3s/archive/v1.37.1+k3s1/k3s-1.37.1+k3s1.tar.gz",
-      "plannedMirrorUrl": "https://releases.rediacc.com/third-party-src/k3s-1.37.1+k3s1.tar.gz",
+      "upstreamSourceUrl": "https://github.com/k3s-io/k3s/archive/v1.37.2+k3s1/k3s-1.37.2+k3s1.tar.gz",
+      "plannedMirrorUrl": "https://releases.rediacc.com/third-party-src/k3s-1.37.2+k3s1.tar.gz",
       "notes": "k3s ships no top-level NOTICE file in its release archive as of this version; the Apache-2.0 LICENSE and this attribution satisfy s4. The binary vendors third-party components (containerd, runc, CoreDNS, etc.) under their own licenses, catalogued in the k3s source tree."
     },
     {
       "kind": "embedded-binary",
       "asset": "rsync",
       "name": "rsync",
-      "version": "3.5.1",
+      "version": "3.5.2",
       "spdx": "GPL-3.0-or-later",
       "license": "GNU General Public License, version 3 or later; conveyed as a binary, invoked via exec.",
-      "upstreamSourceUrl": "https://download.samba.org/pub/rsync/src/rsync-3.5.1.tar.gz",
-      "plannedMirrorUrl": "https://releases.rediacc.com/third-party-src/rsync-3.5.1.tar.gz",
+      "upstreamSourceUrl": "https://download.samba.org/pub/rsync/src/rsync-3.5.2.tar.gz",
+      "plannedMirrorUrl": "https://releases.rediacc.com/third-party-src/rsync-3.5.2.tar.gz",
       "notes": "Built from unmodified upstream source (statically). The 3.4.1-era LinuxFromScratch security_fix patch is no longer applied — 3.4.4 already carries those fixes upstream."
     },
     {
