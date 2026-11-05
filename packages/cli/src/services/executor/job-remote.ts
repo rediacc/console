@@ -19,7 +19,7 @@
 
 import { BACKUP_DEFAULTS } from '@rediacc/shared/config';
 import type { SFTPClient } from '../../remote/sftp/index.js';
-import { formatStepDuration, getActiveLabel, getDoneText } from '../../utils/timeline.js';
+import { formatStepDoneLine, getActiveLabel } from '../../utils/timeline.js';
 import { configService } from '../config/config-resources.js';
 import { outputService } from '../core/output.js';
 import { writeStderr, writeStdout } from '../core/request-context.js';
@@ -526,7 +526,7 @@ function stepDoneLine(event: RenetEvent): EventLine | null {
   if (!event.name || event.duration_ms == null) return null;
   return {
     stream: 'out',
-    text: `\r✔ ${getDoneText(event.name, event.detail)} (${formatStepDuration(event.duration_ms)})\n`,
+    text: formatStepDoneLine(event.name, event.duration_ms, event.detail),
   };
 }
 
