@@ -3,8 +3,8 @@
  * storage ledger. The server lists what the store really holds, works out which
  * of it a committed manifest references, and (unless a dry run) sets the ledger
  * to those observed figures. It never deletes a chunk. `--check` is a dry run
- * whose exit code says whether the ledger drifted, so a schedule or a CI leg can
- * gate on it.
+ * that exits 1 when the ledger drifted or a lineage was skipped unchecked, so a
+ * schedule or a CI leg can gate on it.
  */
 
 import type { Command } from 'commander';
@@ -49,19 +49,16 @@ interface ReconcileOptions {
 
 /**
  * True when a lineage the server could reconcile has observed figures that differ
- * from its ledger. A lineage the server skipped (`leased`: an upload is running;
- * `unreadable`) was deliberately left alone, so `--check` neither judges it nor
- * fails on it; it is listed in the output with its reason instead. The aggregate
- * `driftBytes` includes skipped lineages, so it counts only when none was skipped:
- * with a skip it cannot be told apart from the skipped lineage's own drift.
+ * from its ledger, or the aggregate `driftBytes` is non-zero. Skipped lineages are
+ * judged separately by `reportCheck`, which fails on them.
  */
 function hasDrift(res: ReconcileResponse): boolean {
-  const judged = res.lineages.filter((l) => !l.skipped);
-  const aggregateDrift = judged.length === res.lineages.length && res.driftBytes !== 0;
   return (
-    aggregateDrift ||
-    judged.some(
-      (l) => l.observedBytes !== l.ledgerBytesBefore || l.observedChunks !== l.ledgerChunksBefore
+    res.driftBytes !== 0 ||
+    res.lineages.some(
+      (l) =>
+        !l.skipped &&
+        (l.observedBytes !== l.ledgerBytesBefore || l.observedChunks !== l.ledgerChunksBefore)
     )
   );
 }
@@ -139,7 +136,8 @@ function reportResult(res: ReconcileResponse, dryRun: boolean): Promise<void> | 
 function reportCheck(res: ReconcileResponse): void {
   const table = getOutputFormat() === 'table';
   const skipped = res.lineages.filter((l) => l.skipped);
-  // The skip warning goes to stderr in every format: under -o json the lineages are in the printed response too, but a script reading only the exit code would otherwise see a clean 0 with nothing checked.
+  // A skipped lineage (`leased`: an upload holds it; `unreadable`) was never compared, so it is no verdict and the check fails on it; a green that compared nothing is the vacuous pass this gate exists to refuse (bench 2026-11-05: a dead run's lease kept a drifting lineage skipped while --check exited 0).
+  // The reason goes to stderr in every format, so a script reading only the exit code still has it in its log.
   if (skipped.length > 0) {
     outputService.warn(
       t('commands.backup.reconcile.checkSkipped', {
@@ -147,9 +145,9 @@ function reportCheck(res: ReconcileResponse): void {
       })
     );
   }
-  if (!hasDrift(res)) return;
-  if (table) outputService.warn(t('commands.backup.reconcile.driftFound'));
-  setExitCode(1);
+  const drift = hasDrift(res);
+  if (drift && table) outputService.warn(t('commands.backup.reconcile.driftFound'));
+  if (drift || skipped.length > 0) setExitCode(1);
 }
 
 async function runReconcile(repoRef: string | undefined, options: ReconcileOptions) {
