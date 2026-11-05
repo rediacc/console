@@ -57,12 +57,13 @@ def _git(root: pathlib.Path, *args: str, when: str = BEFORE, committed: str | No
 def _boxes(root: pathlib.Path) -> None:
     """Regenerate the fixture's plan-boxes.json from its plan files, through the same box parser the gate reads."""
     plans = {}
-    for path in sorted((root / "agent" / "plans").glob("PLAN-*.md")):
+    for path in sorted((root / "agent" / "plans").rglob("PLAN-*.md")):
         text = path.read_text(encoding="utf-8")
         boxes = D.plan_boxes(text)
-        plans["agent/plans/%s" % path.name] = {
+        folder = path.parent.relative_to(root).as_posix()
+        plans["%s/%s" % (folder, path.name)] = {
             "status": D.parse_header(text).status,
-            "folder": "agent/plans",
+            "folder": folder,
             "open_sigs": sorted(b.sig for b in boxes if not b.done),
             "done_sigs": sorted(b.sig for b in boxes if b.done),
         }
@@ -266,6 +267,23 @@ def test_a_rebased_tick_keeps_its_author_date(gate, tmp_path):
     gate.assert_exit(0, result, "authored on the baseline day, committed after it by a rebase")
     gate.assert_contains(result.out, "1 LP box(es) among them, 0 bound", "seen and exempt")
     gate.log_pass("a rebased tick is judged by its author date")
+
+
+def test_a_move_to_done_is_not_the_tick(gate, tmp_path):
+    """A box ticked on the baseline day and moved to `_done/` after it stays exempt: the tick is the commit that closed the box, whatever folder the plan sits in later. Keyed on the path, the move read as a post-baseline tick and fired LP4."""
+    root = _seed(tmp_path)
+    _tick_lp(root)
+    _commit(root, "tick the LP box", ON_DAY)
+    plan = root / "agent" / "plans" / "PLAN-acct.md"
+    text = plan.read_text(encoding="utf-8").replace("Status: in-progress", "Status: done")
+    plan.unlink()
+    _write(root, "agent/plans/_done/PLAN-acct.md", text)
+    _commit(root, "close the plan", AFTER)
+    result = _gate(root, _map(tmp_path))
+    gate.assert_contains(result.out, "1 LP box(es) among them, 0 bound", "the tick stays exempt")
+    gate.assert_eq("LP4" in result.err, False, "the move is not a tick: %r" % result)
+    gate.assert_contains(result.err, "LP6 agent/plans/_done/PLAN-acct.md", "the finish is judged")
+    gate.log_pass("a _done move keeps the box's own ticking commit")
 
 
 def test_no_merge_base_is_lp7_not_a_skip(gate, tmp_path):

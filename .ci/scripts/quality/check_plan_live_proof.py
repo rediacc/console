@@ -562,12 +562,14 @@ def ruling_waives(plan: Plan, resolve: Callable[[Plan], tuple[bool, str]]) -> bo
 def _has_receipt(
     plan: Plan, target: str, rows: list[dict[str, Any]], commit: str, oracles: Oracles
 ) -> bool:
+    """Whether a row proves `target`, judged at the commit that ticked its box: staleness is read only there, so surface code landing between the tick and the close-out does not unprove it. A box still open (a `Ruling:` finish) has no tick, and its row is judged at the finishing `commit`."""
     for t, box in lp_boxes(plan):
         accept = LT.accept_of(plan.text, box.line) if t == target else None
         if accept is None:
             continue
+        at = oracles.done_commit_of(plan.rel, box.sig) or commit
         for row in matching_rows(rows, plan.rel, box.sig, t, accept):
-            if not oracles.judge_row(row, commit):
+            if not oracles.judge_row(row, at):
                 return True
     return False
 
@@ -829,9 +831,14 @@ def _transition_oracles(ctx: Context, base: str, history: Callable[[], list]) ->
     successor_of = SUCC.lazy_successor_of(str(root), base, importlib.import_module("wl_planrec"))
 
     def done_commit_of(rel: str, sig: str) -> str:
+        # By identity, the way matching_rows and finished_on_branch read a plan: keyed on the path, a plan ticked and then moved to `_done/` on one branch named the move as its tick.
+        ident = identity(rel)
+
         def attests(doc: dict[str, Any]) -> bool:
-            row = (doc.get("plans") or {}).get(rel) or {}
-            return sig in (row.get("done_sigs") or [])
+            return any(
+                identity(r) == ident and isinstance(v, dict) and sig in (v.get("done_sigs") or [])
+                for r, v in (doc.get("plans") or {}).items()
+            )
 
         return first_of_latest_run(history(), attests)
 
@@ -1389,6 +1396,37 @@ class _Suite:
                 pair, {_FX_DONE: done}, [], _BASE, oracles("2026-10-20T00:00:00Z"), refused
             ),
             [],
+        )
+        tick_at = "1" * 40
+
+        def tick_only(_row: dict[str, Any], at: str) -> list[str]:
+            return [] if at == tick_at else ["surface code changed after the proof"]
+
+        c.check(
+            "finished after surface code moved past the tick: judged at the tick, silent",
+            finish_findings(
+                pair,
+                {_FX_DONE: done},
+                [{**row, "plan": _FX_DONE}],
+                _BASE,
+                Oracles(lambda _r, _s: tick_at, lambda _c: "2026-10-29T10:00:00Z", tick_only),
+                refused,
+            ),
+            [],
+        )
+        c.check(
+            "finished over an open box: no tick, so the finishing commit judges the row",
+            _codes(
+                finish_findings(
+                    pair,
+                    {_FX_DONE: done},
+                    [{**row, "plan": _FX_DONE}],
+                    _BASE,
+                    Oracles(lambda _r, _s: "", lambda _c: "2026-10-29T10:00:00Z", tick_only),
+                    refused,
+                )
+            ),
+            ["LP6"],
         )
         ruled = _fixture(
             rel=_FX_DONE, status="done", extra="Ruling: live-proof waived, operator #deadbeef\n"
