@@ -68,6 +68,7 @@ from rediacc_ci.drills import (
     gpu_grants,
     lib,
     lifecycle_privilege,
+    repo_resources,
     session_teardown,
     tenant_isolation,
     upgrade_converge,
@@ -122,7 +123,7 @@ STALE_CONFIG_ENTRY = "already exists in config"
 TAG_PREFIX = "vmc"
 STALE_FORK_S = 3600
 # Forks A and B of V1.1, I1's throwaway fork C (tenant_isolation.fork_c_tag), G1's forks D and E (gpu_grants.fork_tags), and L1's fork F (lifecycle_privilege.fork_tag).
-FORK_TAG = re.compile(r"^vmc-(\d{8})-([0-9a-f]{6})-[a-f]$")
+FORK_TAG = re.compile(r"^vmc-(\d{8})-([0-9a-f]{6})-[a-j]$")
 MOUNTS = DATASTORE_PATH + "/mounts"
 GUARDED_FILE = ".rediacc.json"
 READ_ONLY = "Read-only file system"
@@ -273,6 +274,8 @@ EXTRA_RENET_STEPS: tuple[tuple[str, tuple[str, ...], Callable[[Any], None]], ...
     gpu_grants.STEP,
     lifecycle_privilege.STEP,
     down_before_kill.STEP,
+    repo_resources.STEP_K2,
+    repo_resources.STEP_K3,
 )
 # Every step id of a phase; the phase ran only when each recorded a row and every such row is ok.
 PHASE_STEPS: dict[str, tuple[str, ...]] = {
