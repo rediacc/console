@@ -8,6 +8,7 @@ The negative cases matter more than usual here. This guard sits on `git checkout
 
 import importlib.util
 import json
+import os
 import pathlib
 import subprocess
 import sys
@@ -197,15 +198,115 @@ CWD_CASES = [
 ]
 
 
-def run(cmd: str, cwd: str | None = None) -> int:
+def drive(cmd: str, cwd: str | None = None, project: str | None = None) -> tuple[int, str]:
+    """(rc, stderr) of the live guard; `project` stands in for CLAUDE_PROJECT_DIR."""
     event: dict[str, object] = {"tool_input": {"command": cmd}}
     if cwd is not None:
         event["cwd"] = cwd
     payload = json.dumps(event)
+    # The lease admission reads the fixture's worklist, which keeps its scratch under TMPDIR; the run directory is removed at exit, so that scratch goes with it.
+    env = dict(os.environ, CLAUDE_PROJECT_DIR=project, TMPDIR=RUN_TMP) if project else None
     # check=False is explicit: this harness EXPECTS non-zero exits (a blocked
     # command is the hook working), so raising on them would invert the test.
-    proc = subprocess.run(GUARD_ARGV, input=payload, capture_output=True, text=True, check=False)
-    return proc.returncode
+    proc = subprocess.run(
+        GUARD_ARGV, input=payload, capture_output=True, text=True, check=False, env=env
+    )
+    return proc.returncode, proc.stderr
+
+
+def run(cmd: str, cwd: str | None = None) -> int:
+    return drive(cmd, cwd)[0]
+
+
+# THE LEASE ADMISSION (operator order 2026-11-05). The fixture is `block_lease_boundary`'s own lease world, the reviewed builder of a checkout with one lease tree `w` below its holder, so this harness makes no linked tree of its own. Three trees answer the cases: `w` itself, first HELD by a live process inside it (gc's rule 2, the one holder a fixture can make real) and then idle, so the liveness check is the only thing that differs between the two halves; `agent-plain`, a plain repository in the holder, which is no linked tree; and `nested`, a second checkout inside this one whose own lease belongs to ANOTHER store. Built rather than named, for the reason the foreign repository above is: an admission case against a tree that does not exist would pass for the wrong reason.
+_SYSPATH = importlib.util.spec_from_file_location(
+    "syspath", pathlib.Path(__file__).resolve().parents[1] / "syspath.py"
+)
+if _SYSPATH is None or _SYSPATH.loader is None:
+    raise SystemExit("%s: .claude/rediacc_hooks/syspath.py is missing" % __file__)
+syspath = importlib.util.module_from_spec(_SYSPATH)
+_SYSPATH.loader.exec_module(syspath)
+syspath.on_sys_path(syspath.CLAUDE_DIR)
+lease_boundary = importlib.import_module("rediacc_hooks.guards.block_lease_boundary")
+
+
+def _git(cwd: str, *argv: str) -> None:
+    subprocess.run(
+        ["git", "-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid", *argv],
+        cwd=cwd,
+        check=True,
+        capture_output=True,
+    )
+
+
+def _dirty(tree: str) -> None:
+    """An untracked `junk.txt` and a staged new `staged.txt`: the leftovers a finished writer leaves."""
+    pathlib.Path(tree, "junk.txt").write_text("leftover\n", encoding="utf-8")
+    pathlib.Path(tree, "staged.txt").write_text("leftover\n", encoding="utf-8")
+    _git(tree, "add", "staged.txt")
+
+
+def _lease_fixture() -> tuple[str, str, str, str]:
+    """(the fixture checkout, its lease `w`, a plain repository in its holder, a lease of a nested checkout's store)."""
+    main = os.path.join(os.path.realpath(RUN_TMP), "lease-main")
+    tree = str(lease_boundary._lease_world(pathlib.Path(main)))
+    pathlib.Path(main, "junk.txt").write_text("main's own\n", encoding="utf-8")
+    records = pathlib.Path(main, ".git", "rediacc-worktrees")
+    records.mkdir(parents=True)
+    record = {"id": "w", "path": tree, "owner": "cli", "created_at": "2026-01-01T00:00:00Z"}
+    (records / "w.json").write_text(json.dumps(record), encoding="utf-8")
+    plain = os.path.join(os.path.dirname(tree), "agent-plain")
+    os.makedirs(plain)
+    _git(plain, "init", "-q")
+    nested = str(lease_boundary._lease_world(pathlib.Path(main, "nested")))
+    for each in (tree, plain, nested):
+        _dirty(each)
+    return main, tree, plain, nested
+
+
+def lease_failures() -> tuple[list[str], int]:
+    """Both directions of the lease admission. The held half is the liveness control: with the liveness check removed it is admitted and turns red."""
+    main, tree, plain, nested = _lease_fixture()
+    # (command, expected rc, a substring stderr must hold, a substring it must not hold)
+    held_cases = [
+        ("git -C %s clean -f -- junk.txt" % tree, 2, "process(es) work inside it", "ADMITTED"),
+        ("git -C %s rm -f -q -- staged.txt" % tree, 2, "rule 2", "ADMITTED"),
+    ]
+    idle_cases = [
+        ("git -C %s clean -f -- junk.txt" % tree, 0, "ADMITTED IN A LEASE TREE", "BLOCKED"),
+        ("git -C %s clean -f -- junk.txt" % tree, 0, "?? junk.txt", ""),
+        ("git -C %s rm -f -q -- staged.txt" % tree, 0, "A  staged.txt", "BLOCKED"),
+        ("cd %s && git reset --hard" % tree, 0, tree, ""),
+        ("git -C %s clean -f -- junk.txt" % main, 2, "", "lease"),
+        ("git -C %s clean -f -- ../../../junk.txt" % tree, 2, "", "ADMITTED"),
+        ("git -C %s clean -f -- junk.txt" % plain, 2, "", "ADMITTED"),
+        ("git -C %s clean -f -- junk.txt" % nested, 2, "", "ADMITTED"),
+        ("git -C %s stash" % tree, 2, "", "ADMITTED"),
+        ("git -C %s clean -f && git -C %s clean -f" % (tree, main), 2, "", "ADMITTED"),
+        ("GIT_WORK_TREE=%s git -C %s checkout -- ." % (main, tree), 2, "", "ADMITTED"),
+    ]
+    failures = []
+
+    def judge(cases: list[tuple[str, int, str, str]], half: str) -> None:
+        for cmd, want, has, lacks in cases:
+            rc, err = drive(cmd, project=main)
+            if rc != want or (has and has not in err) or (lacks and lacks in err):
+                failures.append(
+                    "lease (%s): expected rc %d, got %d: %r\n      %s"
+                    % (half, want, rc, cmd, err[:400])
+                )
+
+    holder = subprocess.Popen(["sleep", "300"], cwd=tree)
+    try:
+        judge(held_cases, "held")
+    finally:
+        holder.kill()
+        holder.wait()
+    judge(idle_cases, "idle")
+    # The main checkout's refusal is byte for byte the one this very checkout gets today.
+    if drive("git -C %s clean -f -- junk.txt" % main, project=main)[1] != drive("git clean -fd")[1]:
+        failures.append("lease: the main checkout's refusal message changed")
+    return failures, len(held_cases) + len(idle_cases) + 1
 
 
 def main() -> int:
@@ -217,6 +318,8 @@ def main() -> int:
         for cwd, cmd, want in CWD_CASES
         if run(cmd, cwd) != want
     ]
+    lease_fail, lease_count = lease_failures()
+    failures += lease_fail
 
     if failures:
         print(f"✗ block-destructive-git-restore: {len(failures)} control failure(s)")
@@ -226,7 +329,8 @@ def main() -> int:
 
     print(
         f"✓ block-destructive-git-restore: {len(BLOCK)} blocked, {len(ALLOW)} allowed, "
-        f"{len(CWD_CASES)} judged from another cwd (both directions pinned)"
+        f"{len(CWD_CASES)} judged from another cwd, {lease_count} lease-admission cases "
+        f"(both directions pinned)"
     )
     return 0
 

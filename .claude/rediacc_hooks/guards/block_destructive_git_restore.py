@@ -23,6 +23,8 @@ DELIBERATELY NOT BLOCKED, because these do not discard anything:
   - `git rm --cached <one literal path>`: it stages one deletion and keeps the file on disk, and git refuses it when the staged content differs from both HEAD and the file.
 The escape for a genuine need is a human: ask the operator, who can run it themselves with the `!` prefix and knows what else is in the tree.
 
+THE LEASE ADMISSION (operator order 2026-11-05, PLAN-worktree-lease). An idle lease tree is the one place the shared-tree argument does not hold: `./run.sh worktree gc` keeps a dirty tree and offers no discard, so a finished writer's leftovers would otherwise wait on the operator. A refused command is admitted, with LEASE_WARNING on stderr listing what it discards, only when every walked git command resolves (after `-C`, `cd` and a submodule tree's own lease) into a lease tree directly below this checkout's `.claude/worktrees`, no operand climbs out of it, nothing redirects git elsewhere (`GIT_DIR`, `--work-tree` and their kin), no verb reaches state the tree shares with the main checkout (`stash`, `config`, `submodule`, an autostash), the text patterns see no git the walk did not place, and gc's own rules 1 and 2 (`_place_problem`, `_in_use` in `.ci/rediacc_ci/dev/worktree_lease.py`) find the tree a lease of this checkout's store with no live writer, worklist lease or process on it. Everything else is refused as before; a held lease gets the gc reasons appended.
+
 NO CROSS-TALK with block-protected-files.sh, which blocks restore/checkout/rm aimed at the hook files specifically. This guard is about the shared tree in general; that one is about protecting the guards themselves. Both may match a single command, which is fine: the first to fire wins and both messages are true.
 
 THE 2026-10-09 WIDENING (#18c7e53c, operator ruling 2026-10-09: /branch-rebase became AI-invocable, and where something is not covered, a guard covers it instead of the skill's prose). A read-only audit drove 100 spellings through the live pre-bash chain and found these discarding forms answering rc 0: `git checkout -f [<ref>]`, `git checkout <tree-ish> <path>` without a `--`, `git checkout --ours|--theirs <path>`, `git switch -f|--discard-changes`, `git reset --hard|--merge|--keep`, and the autostash family (`--autostash` on rebase, pull and merge, `-c rebase.autoStash=true`, `git config rebase.autoStash true`). Each walked `git` command is now read by `shellscan.git_args`, the way `_destructive_clean` reads a clean, rather than by a regex over the text. The text patterns stay beside the walk, and on a command both match, the text pattern's label still names it, so every refusal recorded before this widening reads as it did.
@@ -42,12 +44,15 @@ A LONE CHECKOUT OPERAND IS A PATH UNTIL IT RESOLVES AS A REF, and that is the fa
 PORT NOTE ON THE SIX SEQUENTIAL TESTS. The bash runs all six greps unconditionally and lets each one OVERWRITE `BLOCKED`, so the message names the LAST shape that matched and not the first. `git stash pop && git clean -f` is reported as `git clean`. That is behaviour, not an accident of layout, so the loop below assigns in the same order rather than returning early.
 """
 
+import importlib
 import os
 import pathlib
 import re
 import shlex
+import subprocess
+import sys
 
-from rediacc_hooks import commit_policy, hookio, shellscan
+from rediacc_hooks import commit_policy, hookio, shellscan, syspath
 
 CHAIN = "pre-bash"
 ORDER = 30
@@ -92,6 +97,48 @@ MESSAGE = (
     "prefix; they know what else is in the tree. Read-only forms are allowed: `git stash "
     "list`, `git stash show`, `git clean -n`, and branch switching (`git checkout <branch>`, "
     "`-b`) are not blocked."
+)
+
+# THE LEASE ADMISSION (operator order 2026-11-05: "let's relax with caution/warning for other AI sessions"). The refusal argues about the SHARED checkout; an idle lease tree under `.claude/worktrees/<id>` holds only its own writer's leftovers, and `./run.sh worktree gc` keeps any dirty tree and offers no discard. So a discard whose every git command resolves into idle lease trees of this checkout is admitted with LEASE_WARNING.
+LEASE_HOLDER = os.path.join(".claude", "worktrees")
+# Verbs whose effect reaches past the lease tree: a linked tree shares `refs/stash` and `.git/config` with the main checkout, and `submodule` writes the shared config or runs a payload this admission does not read.
+LEASE_SHARED_VERBS = frozenset(("stash", "config", "submodule", "submodule--helper"))
+# Labels the admission never reconsiders, for the same reason.
+LEASE_NEVER = frozenset(
+    (
+        "git stash",
+        "git rebase/merge/pull --autostash",
+        "git submodule --force",
+        "git submodule foreach",
+    )
+)
+# What points git at another repository or work tree than the directory it runs in.
+GIT_REDIRECT_ENV = frozenset(
+    ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_COMMON_DIR", "GIT_OBJECT_DIRECTORY")
+)
+GIT_REDIRECT_GLOBS = ("--git-dir", "--work-tree", "--bare", "--super-prefix")
+# What the liveness reader raises when it cannot say; each keeps the refusal.
+LIVENESS_ERRORS = (
+    ImportError,
+    subprocess.SubprocessError,
+    OSError,
+    ValueError,
+    RuntimeError,
+    AttributeError,
+    TypeError,
+    KeyError,
+)
+LEASE_WARNING = (
+    "⚠ ADMITTED IN A LEASE TREE: `%s` discards uncommitted work in %s. Every git command "
+    "here resolves into that idle lease tree of this checkout, and `./run.sh worktree gc` "
+    "finds no live writer, worklist lease or process on it. Other AI sessions may own OTHER "
+    "trees under .claude/worktrees; only the tree named here is touched, and the shared main "
+    "checkout and its submodules are never touched by this admission. What will be "
+    "discarded (`git status --short` of the named paths):\n%s"
+)
+LEASE_HELD = (
+    "This command acts only inside lease trees, which the guard admits when they are idle, "
+    "but these are not (the rules `./run.sh worktree gc` keeps a tree by):\n%s"
 )
 
 # The operator ruling every note below cites. The hook is the guarantee; the /branch-rebase prose only describes it.
@@ -501,6 +548,9 @@ EDGE_CASES = [
     ("B49 control: foreach -- is a usage error", "git submodule foreach -- git clean -fd"),
     ("B49 control: foreach a dry-run clean", "git submodule foreach git clean -n"),
     ("B49 control: a foreign foreach clean", "git -C /tmp submodule foreach git clean -fd"),
+    # The lease admission: a holder path that is no lease tree of this checkout stays refused. The admitted direction needs a real idle lease, which test-block_destructive_git_restore.py builds.
+    ("lease: a holder path that is no lease", "git -C .claude/worktrees/agent-x clean -fd"),
+    ("lease: a holder path, discarding by rm -f", "git -C .claude/worktrees/agent-x rm -f a"),
 ]
 
 
@@ -947,15 +997,125 @@ def _judge(cmd, root, base, depth=0):
     return walked
 
 
+def _operands(args):
+    """Every word of a walked git command's `args` that names a path or a ref: the words that do not start `-`, and every word after `--`. An option's value is read as an operand too, which only ever makes the escape test below stricter."""
+    found, after = [], False
+    for arg in args:
+        if after:
+            found.append(arg)
+        elif arg == "--":
+            after = True
+        elif not arg.startswith("-"):
+            found.append(arg)
+    return found
+
+
+def _escapes(here, op, tree):
+    """Whether operand `op`, resolved from `here` the way git resolves a pathspec, names something outside the lease `tree`. A magic pathspec (`:/`, `:(top)`) is relative to the repository it runs in, so only one that climbs with `..` is read as an escape."""
+    if op.startswith(":"):
+        return ".." in op
+    return not commit_policy.is_inside(os.path.realpath(os.path.join(here, op)), tree)
+
+
+def _lease_run(run, root, base, created, holder):
+    """`(tree, here, pathspecs)` when one walked git command acts only inside a lease tree of this checkout and in no way this admission refuses, else None."""
+    argv = run.xargv if run.xargv is not None else run.argv
+    if any(shellscan._UNRESOLVED in word for word in argv):
+        return None
+    globs, sub, args = commit_policy.git_split(argv)
+    if sub in LEASE_SHARED_VERBS or _autostash(sub, globs, args, run.env):
+        return None
+    if set(run.env) & GIT_REDIRECT_ENV or any(g.startswith(GIT_REDIRECT_GLOBS) for g in globs):
+        return None
+    if any(a.startswith("--pathspec-from-file") for a in args):
+        return None
+    repo = commit_policy.scoped_repo(run, base, root, created)
+    tree = commit_policy.lease_root(repo) if repo else ""
+    if not tree or os.path.dirname(os.path.realpath(tree)) != holder:
+        return None
+    here = commit_policy.effective_dir(run, base, created)
+    if not commit_policy.is_inside(here, tree):
+        return None
+    ops = _operands(args)
+    if any(_escapes(here, op, tree) for op in ops):
+        return None
+    return tree, here, (args[args.index("--") + 1 :] if "--" in args else [])
+
+
+def _lease_holders(root, tree):
+    """Why the lease `tree` is NOT idle, by the rules `./run.sh worktree gc` keeps a tree for: rule 1 (it is a lease of this checkout at all) and rule 2 (a live worklist item, a process inside it, a live writer of its owner or of this session, or a writer that may still be starting). Empty when the tree is idle. A reading that fails is itself a reason, so the guard keeps refusing."""
+    cipath = str(syspath.CLAUDE_DIR.parent / ".ci")
+    inserted = syspath.on_sys_path(cipath)
+    try:
+        lease = importlib.import_module("rediacc_ci.dev.worktree_lease")
+        main = pathlib.Path(os.path.realpath(root))
+        lease_id = os.path.basename(tree)
+        with lease._project_env(main):
+            world = lease._read_world(main)
+            live = lease._read_live(main)
+            path = main / lease.spike.HOLDER / lease_id
+            record = world.records.get(lease_id)
+            place = lease._place_problem(world, lease_id, path, record)
+            return [place] if place else list(lease._in_use(world, live, lease_id, path, record))
+    except LIVENESS_ERRORS as exc:
+        return ["the lease liveness reading failed (%s: %s)" % (type(exc).__name__, exc)]
+    finally:
+        if inserted and cipath in sys.path:
+            sys.path.remove(cipath)
+
+
+def _discards(scopes):
+    """`git status --short` of what the admitted command names, per repository it runs in."""
+    lines = []
+    for here, specs in scopes:
+        out = commit_policy.git(
+            ["--no-optional-locks", "status", "--short", "--untracked-files=all", "--", *specs],
+            cwd=here,
+        )
+        body = (out or "").rstrip("\n") or "  (nothing uncommitted matches)"
+        lines.append("  in %s%s:\n%s" % (here, (" -- " + " ".join(specs)) if specs else "", body))
+    return "\n".join(lines)
+
+
+def _lease_verdict(cmd, root, base, label):
+    """`("admit", trees, listing)` when every git command in `cmd` acts only inside idle lease trees of this checkout, `("held", trees, reasons)` when it does but a tree is not idle, else None (the refusal stands unchanged)."""
+    if label in LEASE_NEVER:
+        return None
+    runs = list(commit_policy.git_runs(cmd))
+    scan = shellscan._command_substitution(shellscan.scan_target(cmd))
+    # The text patterns see a `git` the walk did not place (a construct the walker cannot read): then what discards is not known to be in the lease.
+    if not runs or len(hookio.grep_o(GIT, scan)) > len(runs):
+        return None
+    created = commit_policy.created_dirs(cmd, base)
+    holder = os.path.join(os.path.realpath(root), LEASE_HOLDER)
+    placed = [_lease_run(r, root, base, created, holder) for r in runs]
+    if any(p is None for p in placed):
+        return None
+    trees = sorted({p[0] for p in placed if p is not None})
+    reasons = [
+        "%s: %s" % (os.path.basename(t), why) for t in trees for why in _lease_holders(root, t)
+    ]
+    if reasons:
+        return "held", trees, reasons
+    return "admit", trees, _discards([(p[1], p[2]) for p in placed if p is not None])
+
+
 def run(ev):
     cmd = ev.field("tool_input", "command")
     if cmd == "":
         return hookio.ALLOW
 
     root = shellscan.repo_root_env(ev)
-    hit = _judge(cmd, root, ev.field("cwd") or root)
+    base = ev.field("cwd") or root
+    hit = _judge(cmd, root, base)
     if hit is None:
         return hookio.ALLOW
     label, note, _wide = hit
+    verdict = _lease_verdict(cmd, root, base, label)
+    if verdict is not None and verdict[0] == "admit":
+        ev.warn(LEASE_WARNING % (label, ", ".join(verdict[1]), verdict[2]))
+        return hookio.ALLOW
     ev.warn(MESSAGE % label + ("\n\n" + note + "\n\n" + RULING if note else ""))
+    if verdict is not None:
+        ev.warn("\n" + LEASE_HELD % "\n".join("  - " + why for why in verdict[2]))
     return hookio.DENY
