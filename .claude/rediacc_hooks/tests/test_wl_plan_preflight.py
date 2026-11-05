@@ -574,6 +574,8 @@ def test_every_message_that_starts_a_plan_orders_the_preflight_first(name):
     """The hook's start-a-plan lines are what a session follows, and they named the first box alone: 76 of the 80 plans in `_done` finished with no `Revalidated:` (box PF9)."""
     text = getattr(import_wl("worklist_messages"), name)
     assert "--plan-preflight" in text, name
+    if "first box" in text:
+        assert text.index("--plan-preflight") < text.index("first box"), name
 
 
 def test_control_a_message_that_starts_no_plan_names_no_preflight():
