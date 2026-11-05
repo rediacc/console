@@ -12,7 +12,7 @@ THE API (later boxes import exactly these names):
   The TICK line grammar is `TICK_GRAMMAR`. A body with no TICK line falls back to the legacy prose reader (below), whose rows carry `legacy=True`.
 - `landed_map(root, lease_shas, rev="HEAD", since=None) -> dict | None`: {lease sha, lowercased and stripped: landed full sha}, read from the `(cherry picked from commit <sha>)` line that `git cherry-pick -x` writes. A lease sha with no landed commit is absent from the map; None means git could not answer.
 
-WHAT IS NOT CHECKED HERE. `parse_plan_box` is grammar only. Whether the plan exists under `agent/plans/` (following a `Moved-To:` stub), whether the sig names an OPEN box (`wl_planrec.open_boxes`), and whether each clause id exists in the box's clause map are the caller's checks (T2, T3), because they need the tree and this module needs nothing but text and git.
+GRAMMAR AND TREE ARE SEPARATE. `parse_plan_box` is grammar only and needs nothing but text. The tree checks are `message_problems(root, message)` and `box_problems`: the plan exists under `agent/plans/` (a `Moved-To:` stub followed), the sig names an OPEN box (`wl_planrec.open_boxes`), and each named clause exists in the box's clause map (the latest `define` row of `agent/ledgers/plan-box-progress.jsonl`; a box with no map takes only `clauses=all`). `land` (T2) and the lease commit-msg hook (T3, through `main`, run as a process) both call `message_problems`, so the two refusals cannot disagree. The tree modules are imported inside those functions, so the grammar readers stay import-light.
 
 THE TRAILER BLOCK ONLY. A `Plan-Box:` line counts only in the message's last paragraph, which is where git keeps trailers and where `cherry-pick -x` appends its line. A commit that DESCRIBES the trailer in its body (T2's own message will) is not read as naming a box. When the last paragraph holds only `-x` lines (git separates them by a blank line from a message that ends in prose), the paragraph before it is read too.
 
@@ -23,9 +23,12 @@ The row's state is the word after the sig (`7692f2db partial`, `afa91934 H2 part
 
 from __future__ import annotations
 
+import json
 import re
 import subprocess
+import sys
 from dataclasses import dataclass
+from pathlib import Path
 
 TRAILER_KEY = "Plan-Box"
 GRAMMAR = "Plan-Box: <PLAN-file>.md#<sig8> clauses=<C1,C2,...|all>  or  Plan-Box: none -- <reason, at least 12 characters>"
@@ -363,3 +366,134 @@ def landed_map(root, lease_shas, rev="HEAD", since=None):
                 if s not in out and m.group(1).startswith(s):
                     out[s] = landed.strip()
     return out
+
+
+# ---- the tree checks: plan, open box, clause map (T2, T3) -----------------------
+
+PLANS_REL = ("agent", "plans")
+PROGRESS_REL = ("agent", "ledgers", "plan-box-progress.jsonl")
+STUB_HOPS = 3
+
+
+def plan_rel_of(plan):
+    """`agent/plans/<plan>` for a trailer's basename, the key the investigation ledger uses."""
+    return "/".join((*PLANS_REL, plan))
+
+
+def resolve_plan(root, plan):
+    """`(rel, text)` of the plan a trailer basename names under `agent/plans/`, a `Moved-To:` stub followed, or None when no such plan exists."""
+    import wl_store as S
+
+    rel = plan_rel_of(plan)
+    for _hop in range(STUB_HOPS):
+        path = Path(root, rel)
+        try:
+            text = path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            return None
+        target = S.stub_target_of_text(text)
+        if not target:
+            return rel, text
+        rel = target.removeprefix("./")
+    return None
+
+
+def progress_path(root):
+    return Path(root, *PROGRESS_REL)
+
+
+def read_progress(root):
+    """[row] of `agent/ledgers/plan-box-progress.jsonl`, oldest first, [] when absent. A malformed line is skipped (the investigation ledger's rule)."""
+    out = []
+    try:
+        raw = progress_path(root).read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return out
+    for raw_line in raw.splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+        try:
+            rec = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(rec, dict):
+            out.append(rec)
+    return out
+
+
+def same_plan(a, b):
+    """Two plan spellings (basename or repo-relative path) name the same plan file."""
+    return str(a or "").rsplit("/", 1)[-1] == str(b or "").rsplit("/", 1)[-1]
+
+
+def clause_map(root, plan, sig, rows=None):
+    """The clauses of the LATEST `define` row of a box, as [{id, half, text}], or None when the box has no clause map."""
+    rows = read_progress(root) if rows is None else rows
+    found = None
+    for r in rows:
+        if r.get("kind") == "define" and r.get("sig") == sig and same_plan(r.get("plan"), plan):
+            found = r
+    if found is None:
+        return None
+    return [c for c in found.get("clauses") or [] if isinstance(c, dict) and c.get("id")]
+
+
+def open_sigs(text):
+    import wl_planrec as R
+
+    return {b[3] for b in R.open_boxes(text)}
+
+
+def box_problems(root, box, rows=None):
+    """Why one parsed `PlanBox` cannot be landed against the tree at `root`, one phrase each ([] when it can)."""
+    resolved = resolve_plan(root, box.plan)
+    if resolved is None:
+        return ["Plan-Box names %s, which is no plan under agent/plans/" % box.plan]
+    rel, text = resolved
+    if box.sig not in open_sigs(text):
+        return ["Plan-Box names %s#%s, which is no open box of %s" % (box.plan, box.sig, rel)]
+    if box.clauses == "all":
+        return []
+    cmap = clause_map(root, box.plan, box.sig, rows)
+    if cmap is None:
+        return [
+            "Plan-Box names clauses %s of %s#%s, which has no clause map (write clauses=all, or "
+            "define the clauses with worklist.py --box-clauses)"
+            % (",".join(box.clauses), box.plan, box.sig)
+        ]
+    known = {c["id"] for c in cmap}
+    unknown = [c for c in box.clauses if c not in known]
+    if unknown:
+        return [
+            "Plan-Box names undefined clause(s) %s of %s#%s (defined: %s)"
+            % (",".join(unknown), box.plan, box.sig, ",".join(sorted(known)) or "-")
+        ]
+    return []
+
+
+def message_problems(root, message):
+    """Every refusal of one commit message: the grammar first, then each box against the tree. [] admits it."""
+    parsed = parse_plan_box(message)
+    if not parsed.ok:
+        return list(parsed.errors)
+    rows = read_progress(root)
+    out = []
+    for box in parsed.boxes:
+        out += box_problems(root, box, rows)
+    return out
+
+
+def main(argv):
+    """`wl_planbox.py check --root <dir>`: the commit message on stdin, each refusal on stderr, exit 1 when refused. The lease commit-msg hook runs this as a process, so its sibling imports resolve without a `sys.path` entry in the hook."""
+    if len(argv) != 3 or argv[0] != "check" or argv[1] != "--root":
+        sys.stderr.write("usage: wl_planbox.py check --root <dir> < message\n")
+        return 2
+    problems = message_problems(argv[2], sys.stdin.read())
+    for p in problems:
+        sys.stderr.write(p + "\n")
+    return 1 if problems else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

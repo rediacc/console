@@ -31,6 +31,8 @@ EMPTY_LOCK = {
     "requires": True,
     "packages": {"": {"name": "fx", "version": "1.0.0"}},
 }
+# Every lease commit of a fixture carries both trailers `land` demands; this one serves no plan box (PLAN-tick-tracking T2).
+TRAILERS = "PR-TASK: 1f877343\nPlan-Box: none -- fixture commit that serves no plan box\n"
 BUILD_JS = (
     "const fs = require('fs');\n"
     "fs.mkdirSync('dist', { recursive: true });\n"
@@ -555,7 +557,7 @@ def commit_file(tree, name, *, env=None):
     spike.must(tree, "add", "--", name)
     return spike.git(
         tree,
-        *("commit", "--no-gpg-sign", "-m", "feat: %s\n\nPR-TASK: 1f877343\n" % name),
+        *("commit", "--no-gpg-sign", "-m", "feat: %s\n\n%s" % (name, TRAILERS)),
         env=env,
     )
 
@@ -784,7 +786,7 @@ def sub_commit(tree, name):
     sub = tree / SUB
     spike.write(sub / name, "%s\n" % name)
     spike.must(sub, "add", "--", name)
-    spike.must(sub, "commit", "--no-gpg-sign", "-m", "sub: %s\n\nPR-TASK: 1f877343\n" % name)
+    spike.must(sub, "commit", "--no-gpg-sign", "-m", "sub: %s\n\n%s" % (name, TRAILERS))
     return spike.must(sub, "rev-parse", "HEAD")
 
 
@@ -850,7 +852,7 @@ def conflicted(landing):
     repo, tree, _, _ = landing
     spike.write(tree / "second.txt", "lease version\n")
     spike.must(tree, "add", "--", "second.txt")
-    spike.must(tree, "commit", "--no-gpg-sign", "-m", "feat: edit\n\nPR-TASK: 1f877343\n")
+    spike.must(tree, "commit", "--no-gpg-sign", "-m", "feat: edit\n\n" + TRAILERS)
     source = spike.must(tree, "rev-parse", "HEAD")
     spike.write(repo.root / "second.txt", "live version\n")
     spike.commit_all(repo.root, "console: live edit")
@@ -929,6 +931,113 @@ def test_land_pr_task_trailer_stays_parseable_after_x(landing, tmp_path):
     assert "PR-TASK: 1f877343" in parsed.splitlines()
 
 
+# --------------------------------------------------------------------------- the Plan-Box trailer (PLAN-tick-tracking T2) ---------------------------------------------------------------------------
+
+FX_PLAN = "PLAN-fx.md"
+FX_PLAN_TEXT = """# PLAN: fx
+
+Status: approved
+
+## Tasks
+
+- [ ] F1 the open box of the fixture plan
+- [x] F2 the ticked box of the fixture plan
+    (ticked) 2026-01-01 by x: commit:abc
+- [ ] F3 the mapped box of the fixture plan
+"""
+FX_OPEN, FX_DONE, FX_MAPPED = "fd66592c", "074be283", "c4b9e359"
+
+
+def plant_plan(root):
+    """The fixture plan in the main checkout, with a clause map for its third box."""
+    spike.write(root / "agent" / "plans" / FX_PLAN, FX_PLAN_TEXT)
+    row = {
+        "kind": "define",
+        "at": "2026-01-01T00:00:00Z",
+        "by": "feedface",
+        "plan": "agent/plans/" + FX_PLAN,
+        "sig": FX_MAPPED,
+        "clauses": [{"id": "C1", "half": "code", "text": "the code half"}],
+    }
+    spike.write(root / "agent" / "ledgers" / "plan-box-progress.jsonl", json.dumps(row) + "\n")
+
+
+def lease_commit(tree, name, trailers):
+    spike.write(tree / name, "%s\n" % name)
+    spike.must(tree, "add", "--", name)
+    spike.must(tree, "commit", "--no-gpg-sign", "-m", "feat: %s\n\n%s" % (name, trailers))
+    return spike.must(tree, "rev-parse", "HEAD")
+
+
+PR_TASK_ONLY = "PR-TASK: 1f877343\n"
+
+
+@pytest.fixture
+def boxed(landing):
+    plant_plan(landing.repo.root)
+    return landing
+
+
+def test_land_plan_box_missing_exits_1_naming_the_sha_with_nothing_on_stdout(boxed):
+    bare = lease_commit(boxed.tree, "bare.txt", PR_TASK_ONLY)
+    result = run_land(boxed.repo.root, LAND_ID)
+    assert result.returncode == 1
+    assert result.stdout == ""
+    assert bare[:12] in result.stderr
+    assert "no Plan-Box trailer" in result.stderr
+
+
+def test_land_plan_box_control_without_the_call_the_same_commit_is_admitted(boxed, monkeypatch):
+    """The pairing the box names: the PR-TASK-only commit refused above passes `land_plan` once T2's call is removed."""
+    bare = lease_commit(boxed.tree, "bare.txt", PR_TASK_ONLY)
+    with pytest.raises(lease.LeaseRefusedError, match="no Plan-Box trailer"):
+        lease.land_plan(boxed.repo.root, LAND_ID)
+    monkeypatch.setattr(lease, "_plan_box_problems", lambda _root, _message: [])
+    lines = lease.land_plan(boxed.repo.root, LAND_ID)
+    assert any(bare in line for line in lines)
+
+
+def test_land_plan_box_none_and_an_open_box_are_admitted_and_listed(boxed):
+    sha = lease_commit(
+        boxed.tree, "boxed.txt", PR_TASK_ONLY + "Plan-Box: %s#%s clauses=all\n" % (FX_PLAN, FX_OPEN)
+    )
+    mapped = lease_commit(
+        boxed.tree,
+        "mapped.txt",
+        PR_TASK_ONLY + "Plan-Box: %s#%s clauses=C1\n" % (FX_PLAN, FX_MAPPED),
+    )
+    result = run_land(boxed.repo.root, LAND_ID)
+    assert result.returncode == 0, result.stderr
+    assert "git cherry-pick -x %s %s %s" % (boxed.console_sha, sha, mapped) in result.stdout
+    assert "%s serves %s#%s clauses=all" % (sha[:12], FX_PLAN, FX_OPEN) in result.stderr
+    assert "%s serves %s#%s clauses=C1" % (mapped[:12], FX_PLAN, FX_MAPPED) in result.stderr
+    assert "%s serves none -- fixture commit" % boxed.console_sha[:12] in result.stderr
+
+
+@pytest.mark.parametrize(
+    ("trailer", "why"),
+    [
+        ("Plan-Box: %s#%s clauses=all" % (FX_PLAN, FX_DONE), "no open box"),
+        ("Plan-Box: %s#%s clauses=C9" % (FX_PLAN, FX_MAPPED), "undefined clause(s) C9"),
+        ("Plan-Box: %s#%s clauses=C1" % (FX_PLAN, FX_OPEN), "has no clause map"),
+        ("Plan-Box: PLAN-nope.md#%s clauses=all" % FX_OPEN, "no plan under agent/plans/"),
+        ("Plan-Box: %s#%s clauses=all" % (FX_PLAN, FX_OPEN[:7]), "8 lowercase hex"),
+        ("Plan-Box: none -- short", "shorter than 12"),
+    ],
+)
+def test_land_plan_box_ticked_box_undefined_clause_or_bad_grammar_is_refused(boxed, trailer, why):
+    sha = lease_commit(boxed.tree, "bad.txt", PR_TASK_ONLY + trailer + "\n")
+    result = run_land(boxed.repo.root, LAND_ID)
+    assert result.returncode == 1
+    assert result.stdout == ""
+    assert sha[:12] in result.stderr
+    assert why in result.stderr
+
+
+def test_land_plan_box_help_names_the_rule():
+    assert "Plan-Box: <PLAN-file>.md#<sig8>" in lease.LAND_HELP
+
+
 def test_land_peer_staged_path_makes_the_pick_refuse_with_the_path_unmoved(landing):
     repo, _, _, console_sha = landing
     spike.write(repo.root / "peer.txt", "peer work\n")
@@ -961,9 +1070,7 @@ def test_land_refuses_a_merge_commit(landing):
     side = spike.must(tree, "rev-parse", "HEAD")
     spike.must(tree, "checkout", "-q", "--detach", base)
     committed(tree, "side.txt")
-    spike.must(
-        tree, "merge", "--no-gpg-sign", "--no-ff", "-q", "-m", "m\n\nPR-TASK: 1f877343\n", side
-    )
+    spike.must(tree, "merge", "--no-gpg-sign", "--no-ff", "-q", "-m", "m\n\n" + TRAILERS, side)
     result = run_land(repo.root, LAND_ID)
     assert result.returncode == 1
     assert result.stdout == ""
@@ -976,9 +1083,7 @@ def test_land_checks_merges_against_the_live_tip_not_the_checkout_head(landing):
     side = spike.must(tree, "rev-parse", "HEAD")
     spike.must(tree, "checkout", "-q", "--detach", base)
     committed(tree, "side.txt")
-    spike.must(
-        tree, "merge", "--no-gpg-sign", "--no-ff", "-q", "-m", "m\n\nPR-TASK: 1f877343\n", side
-    )
+    spike.must(tree, "merge", "--no-gpg-sign", "--no-ff", "-q", "-m", "m\n\n" + TRAILERS, side)
     merged = spike.must(tree, "rev-parse", "HEAD")
     # The live branch holds the merge, and the checkout sits on main: the merge is landed, so it is not refused.
     spike.must(repo.root, "reset", "-q", "--hard", merged)
@@ -1013,7 +1118,7 @@ def test_land_refuses_a_commit_touching_a_gitlink_or_agent_path(landing, kind):
         spike.write(tree / "agent" / "note.md", "note\n")
         spike.must(tree, "add", "--", "agent/note.md")
         needle = "agent/note.md"
-    spike.must(tree, "commit", "--no-gpg-sign", "-m", "feat: bad\n\nPR-TASK: 1f877343\n")
+    spike.must(tree, "commit", "--no-gpg-sign", "-m", "feat: bad\n\n" + TRAILERS)
     result = run_land(repo.root, LAND_ID)
     assert result.returncode == 1
     assert result.stdout == ""

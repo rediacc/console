@@ -415,10 +415,18 @@ LAND_HELP = """\
 Usage: ./run.sh worktree land <id>
 
 Read-only. Check that every unlanded commit of the lease carries a PR-TASK
-trailer and touches no gitlink and no agent/** path, then print the commands
-that land them, submodules first: the cherry-picks (-x, so the source sha is
-read as landed after a conflict), the gitlink commit, then the console's own
-cherry-picks. Nothing is run. A refusal prints nothing to stdout and exits 1.
+trailer and a valid Plan-Box trailer and touches no gitlink and no agent/**
+path, then print the commands that land them, submodules first: the
+cherry-picks (-x, so the source sha is read as landed after a conflict), the
+gitlink commit, then the console's own cherry-picks. Nothing is run. A
+refusal prints nothing to stdout and exits 1.
+
+A Plan-Box trailer names the plan box the commit serves, one per box:
+  Plan-Box: <PLAN-file>.md#<sig8> clauses=<C1,C2,...|all>
+  Plan-Box: none -- <reason, at least 12 characters>
+The plan must exist under agent/plans/, the sig must name an open box, and a
+named clause must exist in the box's clause map (agent/ledgers/
+plan-box-progress.jsonl). The boxes each admitted commit names go to stderr.
 """
 AGENT_PREFIX = "agent/"
 TRAILER_KEY = "PR-TASK"
@@ -437,8 +445,25 @@ def _ordered(tree, shas, tip):
     return [sha for sha in listed.splitlines() if sha in shas]
 
 
-def _problems(tree, sha):
-    """What makes `sha` refused for landing, one phrase each."""
+def _plan_box_problems(root, message):
+    """The Plan-Box refusals of one commit message against the main checkout `root` (PLAN-tick-tracking T2), by the one reader the lease commit-msg hook also runs."""
+    return _hook_module("wl_planbox").message_problems(root, message)
+
+
+def _boxes_named(message):
+    """The `Plan-Box:` values of an admitted commit, for the stderr listing."""
+    parsed = _hook_module("wl_planbox").parse_plan_box(message)
+    if parsed.none_reason is not None:
+        return ["none -- %s" % parsed.none_reason]
+    return [
+        "%s#%s clauses=%s"
+        % (b.plan, b.sig, b.clauses if b.clauses == "all" else ",".join(b.clauses))
+        for b in parsed.boxes
+    ]
+
+
+def _problems(tree, sha, root=None):
+    """What makes `sha` refused for landing, one phrase each. `root` is the main checkout whose plans the Plan-Box trailer is judged against."""
     found = []
     trailers = spike.must(tree, "show", "-s", "--format=%B", sha)
     parsed = subprocess.run(
@@ -450,6 +475,8 @@ def _problems(tree, sha):
     ).stdout
     if not any(line.startswith(TRAILER_KEY + ":") for line in parsed.splitlines()):
         found.append("no %s trailer" % TRAILER_KEY)
+    if root is not None:
+        found += _plan_box_problems(root, trailers)
     raw = spike.must(tree, "diff-tree", "-r", "--root", "-m", "--no-commit-id", "--raw", "-z", sha)
     fields = raw.split("\0")
     for meta, rel in zip(fields[0::2], fields[1::2], strict=False):
@@ -490,8 +517,8 @@ def _repo_plan(root, record, key):
     return tree, tip, _ordered(tree, shas, tip)
 
 
-def land_plan(root, lease_id):
-    """The lines to run, or raises `LeaseRefusedError` naming every refused commit. Nothing is written."""
+def land_plan(root, lease_id, notes=None):
+    """The lines to run, or raises `LeaseRefusedError` naming every refused commit. Nothing is written. `notes`, when a list, gains one line per admitted commit naming the boxes its Plan-Box trailers serve."""
     root = _main_checkout(root)
     path = root / ".git" / RECORD_DIR / ("%s.json" % lease_id)
     if not ID_RE.match(lease_id) or not path.is_file():
@@ -510,10 +537,15 @@ def land_plan(root, lease_id):
         refused += [
             "%s %s: %s" % (key, sha[:12], ", ".join(why))
             for sha in plan[2]
-            if (why := _problems(plan[0], sha))
+            if (why := _problems(plan[0], sha, root))
         ]
     if refused:
         raise LeaseRefusedError("; ".join(refused))
+    if notes is not None:
+        for key in keys:
+            for sha in plans.get(key, (None, None, []))[2]:
+                message = spike.must(plans[key][0], "show", "-s", "--format=%B", sha)
+                notes.append("%s %s serves %s" % (key, sha[:12], "; ".join(_boxes_named(message))))
     lines = []
     for key in keys:
         if key not in plans or not plans[key][2]:
@@ -538,13 +570,16 @@ def cmd_land(args):
     if len(args) != 1 or args[0].startswith("-"):
         log.error("land takes one lease id")
         return 1
+    notes = []
     try:
-        lines = land_plan(paths.repo_root(), args[0])
+        lines = land_plan(paths.repo_root(), args[0], notes)
     except (OSError, RuntimeError, ValueError, subprocess.SubprocessError) as exc:
         log.error("refused: %s" % exc)
         return 1
     if not lines:
         log.info("nothing to land in %s" % args[0])
+    for note in notes:
+        log.info(note)
     sys.stdout.write("".join(line + "\n" for line in lines))
     sys.stdout.flush()
     return 0
