@@ -309,6 +309,8 @@ FLEET_UP_TIMEOUT_S = 1800
 # The flags a fleet's `up` recipe may pass to `./rdc.sh ops up` (packages/cli/src/commands/ops/up.ts); `--os` takes a value.
 OPS_UP_FLAGS = frozenset(("--basic", "--parallel", "--lite", "--skip-orchestration", "--force"))
 OPS_UP_VALUE_FLAGS = frozenset(("--os", "--backend"))
+# How rdc.sh and the CLI mark their own progress lines on stderr (`→ Starting CLI`, `✓ Renet available`).
+CLI_STARTUP_MARKS = ("→ ", "✓ ")
 ENV_ASSIGNMENT = re.compile(r"^([A-Z][A-Z0-9_]*)=(.*)$", re.DOTALL)
 # One finished test as TextFileReporter logs it (`[<iso>] <title path> (<s>s, <status>)`); a retried test logs once per attempt and the last line wins.
 E2E_TEST_LINE = re.compile(
@@ -322,10 +324,32 @@ E2E_FAILED = "failed"
 E2E_NOT_VERIFIED = "not-verified"
 
 
+def fleet_up_plans(fleet: trigger.Fleet) -> list[tuple[dict[str, str], list[str]]] | None:
+    """The plan of each recipe a fleet declares, its own group first, or None when any recipe is not runnable."""
+    plans = [recipe_plan(recipe) for recipe in (fleet.up, *fleet.also_up)]
+    return None if any(p is None for p in plans) else [p for p in plans if p is not None]
+
+
 def fleet_up_plan(fleet: trigger.Fleet) -> tuple[dict[str, str], list[str]] | None:
+    """The plan of a fleet's own `up` recipe."""
+    return recipe_plan(fleet.up)
+
+
+def plan_ips(
+    fleet: trigger.Fleet, plans: Sequence[tuple[dict[str, str], list[str]]], index: int
+) -> list[str]:
+    """The fleet's ips one plan brings up: a recipe naming VM_NET_BASE owns that subnet, and the plan naming none owns the rest."""
+    base = plans[index][0].get("VM_NET_BASE", "")
+    if base:
+        return [ip for ip in fleet.ips if ip.startswith(base + ".")]
+    others = [p[0]["VM_NET_BASE"] for p in plans if p[0].get("VM_NET_BASE")]
+    return [ip for ip in fleet.ips if not any(ip.startswith(o + ".") for o in others)]
+
+
+def recipe_plan(recipe: str) -> tuple[dict[str, str], list[str]] | None:
     """(environment, `./rdc.sh` argv) of a fleet's `up` recipe, or None when the recipe is not the machine-runnable shape `[VAR=value ...] ./rdc.sh ops up [flags]` (the second-group fleet's two-step prose recipe is not)."""
     try:
-        words = shlex.split(fleet.up)
+        words = shlex.split(recipe)
     except ValueError:
         return None
     env: dict[str, str] = {}
@@ -1445,14 +1469,14 @@ class VmCheck:
         return self.rdc("term", "connect", fork, "-c", command, extra_env=extra_env)
 
     def remote_evidence(self, res: Result) -> str:
-        """A failed remote command's evidence: a CLI refusal first, else stderr first. `term connect` puts the remote stderr on stderr and a JSON envelope on stdout, the envelope's tail filled the 200-byte evidence (2026-10-15), and the CLI's startup lines on stderr filled it ahead of a refusal (2026-11-04)."""
-        refusal = envelope_errors(res.out)
-        if refusal:
-            return "rc=%d %s | stderr: %s" % (res.rc, refusal, last_lines(res.err) or "<empty>")
+        """A failed remote command's evidence, stderr first: `term connect` puts the remote stderr on stderr and a JSON envelope on stdout, and the envelope's tail filled the 200-byte evidence (2026-10-15). The CLI's own startup lines on stderr go, because they filled it ahead of a refusal (2026-11-04), and the envelope gives its error messages rather than its tail."""
+        remote = "\n".join(
+            ln for ln in res.err.splitlines() if not ln.lstrip().startswith(CLI_STARTUP_MARKS)
+        )
         return "rc=%d stderr: %s | stdout: %s" % (
             res.rc,
-            last_lines(res.err) or "<empty>",
-            last_lines(res.out) or "<empty>",
+            last_lines(remote) or "<empty>",
+            envelope_errors(res.out) or last_lines(res.out) or "<empty>",
         )
 
     def probe(self, command: str) -> Result:
@@ -1799,45 +1823,67 @@ class VmCheck:
 
     def _ensure_fleet(self, fleet: trigger.Fleet) -> tuple[str, str]:
         """("", how) when every ip of `fleet` runs, reusing it or bringing it up with its `up` recipe; (why, "") when it cannot be had. Ops VMs are development-only, so bringing a fleet up is never an operator's step; `ops up` without `--force` leaves a running VM alone (renet skipRunningVM), so a superset topology only adds VMs. A fleet this check brings up is left up for the next run, unless the base fleet was cold, whose `ops down` in T takes everything down."""
-        plan = fleet_up_plan(fleet)
-        env = plan[0] if plan is not None else {}
-        status = self.rdc("ops", "status", "-o", "json", extra_env=env)
-        if status.rc != 0:
-            return "ops status rc=%d: %s" % (status.rc, rdc_failure(status)), ""
-        running = lib.running_ips(status.out)
+        plans = fleet_up_plans(fleet)
+        running: list[str] = []
+        for env in [p[0] for p in plans] if plans is not None else [{}]:
+            status = self.rdc("ops", "status", "-o", "json", extra_env=env)
+            if status.rc != 0:
+                return "ops status rc=%d: %s" % (status.rc, rdc_failure(status)), ""
+            running += lib.running_ips(status.out)
         if set(fleet.ips) <= set(running):
-            self.ips = running
+            self.ips = list(running) if plans is None else self._own_group(plans, running)
             return "", "fleet %s reused (%s running)" % (fleet.name, " ".join(fleet.ips))
         missing = [ip for ip in fleet.ips if ip not in running]
-        if plan is None:
+        if plans is None:
             return (
                 "fleet %s needs %s, which do not run, and its up recipe is not the machine-runnable"
                 " shape `[VAR=value ...] ./rdc.sh ops up [flags]`, so vm:check cannot bring it up: %s"
                 % (fleet.name, " ".join(missing), fleet.up),
                 "",
             )
-        args = list(plan[1])
         image = self.opts.os_image or self.environ.get("VM_IMAGE") or ""
-        if image and "--os" not in args:
-            args += ["--os", image]
-        spelled = " ".join(
-            ["%s=%s" % (k, shlex.quote(v)) for k, v in env.items()] + ["./rdc.sh", *args]
-        )
-        self.say("        fleet %s: %s not running; %s" % (fleet.name, " ".join(missing), spelled))
-        res = self.rdc(*args, timeout=FLEET_UP_TIMEOUT_S, extra_env=env)
-        if res.rc != 0:
-            return "%s rc=%d after %d s: %s" % (
-                spelled,
-                res.rc,
-                res.ms // 1000,
-                rdc_failure(res),
-            ), ""
-        running = lib.running_ips(self.rdc("ops", "status", "-o", "json", extra_env=env).out)
+        spelled_all: list[str] = []
+        total_ms = 0
+        for index, (env, plan_args) in enumerate(plans):
+            if not [ip for ip in plan_ips(fleet, plans, index) if ip in missing]:
+                continue
+            args = list(plan_args)
+            if image and "--os" not in args:
+                args += ["--os", image]
+            spelled = " ".join(
+                ["%s=%s" % (k, shlex.quote(v)) for k, v in env.items()] + ["./rdc.sh", *args]
+            )
+            spelled_all.append(spelled)
+            self.say(
+                "        fleet %s: %s not running; %s" % (fleet.name, " ".join(missing), spelled)
+            )
+            res = self.rdc(*args, timeout=FLEET_UP_TIMEOUT_S, extra_env=env)
+            total_ms += res.ms
+            if res.rc != 0:
+                return "%s rc=%d after %d s: %s" % (
+                    spelled,
+                    res.rc,
+                    res.ms // 1000,
+                    rdc_failure(res),
+                ), ""
+        spelled = " && ".join(spelled_all)
+        running = []
+        for env, _args in plans:
+            running += lib.running_ips(self.rdc("ops", "status", "-o", "json", extra_env=env).out)
         still = [ip for ip in fleet.ips if ip not in running]
         if still:
             return "%s exited 0 but %s still do not run" % (spelled, " ".join(still)), ""
-        self.ips = running
-        return "", "fleet %s brought up with %s in %d s" % (fleet.name, spelled, res.ms // 1000)
+        self.ips = self._own_group(plans, running)
+        return "", "fleet %s brought up with %s in %d s" % (fleet.name, spelled, total_ms // 1000)
+
+    @staticmethod
+    def _own_group(
+        plans: Sequence[tuple[dict[str, str], list[str]]],
+        running: Sequence[str],
+    ) -> list[str]:
+        """The running VMs of the fleet's primary group: later steps of the run address that group, never a further one."""
+        others = [p[0]["VM_NET_BASE"] for p in plans[1:] if p[0].get("VM_NET_BASE")]
+        return [ip for ip in running if not any(ip.startswith(o + ".") for o in others)]
 
     def _run_external_leg(self, area: str, leg: trigger.Leg) -> bool:
         """One external leg: its fleet, then each of its commands in order through `bash -c` from the console root, under the suites' scrubbed environment (no minted token, no RDC_DEV: the e2e setup finds the dev gateway through .account-state itself). Every command before the last must exit 0; the last is the e2e run, judged by `classify_e2e`. Returns True when any command ran (the fleet may since have been reset)."""

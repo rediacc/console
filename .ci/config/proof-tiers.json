@@ -121,7 +121,10 @@
         },
         "second-group": {
           "ips": ["192.168.111.1", "192.168.111.11", "192.168.112.5", "192.168.112.51"],
-          "up": "./rdc.sh ops up --basic, then group B as ct-tests.yml 'Boot second KVM group (B)' does: VM_NET=renet12 VM_NET_BASE=192.168.112 VM_NET_OFFSET=0 VM_BRIDGE=5 VM_WORKERS=51 VM_CEPH_NODES='' PROVISION_CEPH_CLUSTER=false private/renet/bin/renet ops up --force --parallel"
+          "up": "./rdc.sh ops up --basic",
+          "also_up": [
+            "VM_NET=renet12 VM_NET_BASE=192.168.112 VM_NET_OFFSET=0 VM_BRIDGE=5 VM_WORKERS=51 VM_CEPH_NODES='' PROVISION_CEPH_CLUSTER=false ./rdc.sh ops up --force --parallel"
+          ]
         }
       },
       "areas": {
@@ -178,7 +181,7 @@
               "what": "suite 23, rdc-driven repo migrate routing across two workers",
               "cmd": [
                 "PYTHONPATH=.ci python3 -m rediacc_ci.env.create_e2e_env --renet-path \"$PWD/private/renet/bin/renet\" --output packages/e2e-tests/.env --vm-workers \"11 12\"",
-                "BRIDGE_TEST_SKIP_RESET=1 PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --test 23-cli-migrate-routing --fail-on-skip"
+                "CLI_SUITE=1 BRIDGE_TEST_SKIP_RESET=1 PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --test 23-cli-migrate-routing --fail-on-skip"
               ]
             },
             {
@@ -282,7 +285,7 @@
               "fleet": "worker",
               "what": "the e2e_k8s job: a k8s repo running k3s inside a datastore-backed image on one worker",
               "cmd": [
-                "PYTHONPATH=.ci python3 -m rediacc_ci.env.create_e2e_env --renet-path \"$PWD/private/renet/bin/renet\" --output packages/e2e-tests/.env --vm-workers \"11\" --vm-ram-worker 4096",
+                "PYTHONPATH=.ci python3 -m rediacc_ci.env.create_e2e_env --renet-path \"$PWD/private/renet/bin/renet\" --output packages/e2e-tests/.env --vm-workers \"11\" --vm-ram-worker 4096 --k8s",
                 "PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --config playwright.k8s.config.ts --fail-on-skip"
               ]
             },
@@ -292,7 +295,7 @@
               "fleet": "k3s-ceph",
               "what": "the e2e_k8s_ceph job: a datastore cluster on Ceph",
               "cmd": [
-                "PYTHONPATH=.ci python3 -m rediacc_ci.env.create_e2e_env --renet-path \"$PWD/private/renet/bin/renet\" --output packages/e2e-tests/.env --vm-workers \"11 12\" --vm-ceph-nodes \"21 22 23\" --vm-ram-worker 3072 --vm-ram-ceph 2560",
+                "PYTHONPATH=.ci python3 -m rediacc_ci.env.create_e2e_env --renet-path \"$PWD/private/renet/bin/renet\" --output packages/e2e-tests/.env --vm-workers \"11 12\" --vm-ceph-nodes \"21 22 23\" --vm-ram-worker 3072 --vm-ram-ceph 2560 --k8s",
                 "PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --config playwright.k8s-ceph.config.ts --fail-on-skip"
               ]
             },
@@ -302,8 +305,8 @@
               "fleet": "k3s-ceph",
               "what": "the e2e_k8s_multinode job: a multinode cluster, and suite 24's cluster licensing (CLUSTER_LICENSING_SUITE=1)",
               "cmd": [
-                "PYTHONPATH=.ci python3 -m rediacc_ci.env.create_e2e_env --renet-path \"$PWD/private/renet/bin/renet\" --output packages/e2e-tests/.env --vm-workers \"11 12\" --vm-ceph-nodes \"21 22 23\" --vm-ram-worker 3072 --vm-ram-ceph 2560",
-                "CLUSTER_LICENSING_SUITE=1 PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --config playwright.k8s-multinode.config.ts --fail-on-skip"
+                "PYTHONPATH=.ci python3 -m rediacc_ci.env.create_e2e_env --renet-path \"$PWD/private/renet/bin/renet\" --output packages/e2e-tests/.env --vm-workers \"11 12\" --vm-ceph-nodes \"21 22 23\" --vm-ram-worker 3072 --vm-ram-ceph 2560 --k8s",
+                "CLUSTER_LICENSING_SUITE=1 PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --config playwright.k8s-multinode.config.ts --grep-invert \"licensing on the fleet\" --fail-on-skip"
               ]
             }
           ],

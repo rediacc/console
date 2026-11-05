@@ -76,6 +76,8 @@ class Fleet:
     name: str
     ips: tuple[str, ...]
     up: str
+    # Recipes of further KVM groups the fleet spans, each naming its own VM_NET_BASE.
+    also_up: tuple[str, ...] = ()
 
 
 @dataclasses.dataclass(frozen=True)
@@ -181,8 +183,12 @@ def _parse_fleets(entries: object) -> dict[str, Fleet]:
     for name, entry in entries.items():
         if not isinstance(entry, dict) or not isinstance(entry.get("up"), str) or not entry["up"]:
             raise MapError(f"tiers.vm.fleets.{name} needs ips and an up command")
+        also = entry.get("also_up", [])
         fleets[name] = Fleet(
-            name, _strs(entry.get("ips"), f"tiers.vm.fleets.{name}.ips"), entry["up"]
+            name,
+            _strs(entry.get("ips"), f"tiers.vm.fleets.{name}.ips"),
+            entry["up"],
+            _strs(also, f"tiers.vm.fleets.{name}.also_up") if also else (),
         )
     return fleets
 

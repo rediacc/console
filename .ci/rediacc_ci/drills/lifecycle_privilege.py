@@ -577,7 +577,7 @@ class _LiveL1:
             return
         cleared = self.shell(clear_probe_state_command(), name)
         if not self.check(
-            "L1.12 the probe Rediaccfile is installed in %s" % name,
+            "L1.12 earlier probe state is cleared in %s" % name,
             cleared.rc == 0,
             cleared,
             self.ctx.remote_evidence(cleared) if cleared.rc != 0 else "",

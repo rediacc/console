@@ -3632,7 +3632,9 @@ def test_a_fleet_that_cannot_be_brought_up_is_a_real_not_verified(
 def test_a_fleet_whose_recipe_is_not_runnable_is_not_verified_and_the_other_leg_still_runs(
     tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """The migrate area: cli-migrate-23 runs on the two workers; dual-group-18's second-group recipe is prose, so it is NOT_VERIFIED, saying why, never skipped."""
+    """A prose recipe is NOT_VERIFIED, saying so, and the area's other leg still runs. No live fleet has one any more (see the next test), so the case is planted."""
+    prose = vm_check.trigger.Fleet("second-group", ("192.168.112.5",), "boot group B by hand")
+    monkeypatch.setitem(vm_check.trigger.MAP.fleets, "second-group", prose)
     world = make_world(tmp_path, running=TWO_WORKERS)
     rc, out, receipt = run_areas(tmp_path, monkeypatch, world, {"migrate"})
     assert rc == vm_check.EXIT_NOT_VERIFIED, out
@@ -3723,12 +3725,39 @@ def test_fleet_up_plan_admits_only_the_runnable_shape(up: str, want: Any) -> Non
     assert vm_check.fleet_up_plan(fleet) == want
 
 
-def test_every_mapped_fleet_but_second_group_is_runnable() -> None:
-    """The live map: the one fleet vm:check cannot bring up is named here, so a new prose recipe is noticed."""
+def test_every_mapped_fleet_is_runnable() -> None:
+    """The live map: a prose recipe leaves an area vm:check can never verify, which the push guard then refuses."""
     unrunnable = sorted(
-        name for name, f in vm_check.trigger.MAP.fleets.items() if vm_check.fleet_up_plan(f) is None
+        name
+        for name, f in vm_check.trigger.MAP.fleets.items()
+        if vm_check.fleet_up_plans(f) is None
     )
-    assert unrunnable == ["second-group"]
+    assert unrunnable == []
+
+
+def test_a_fleet_recipe_owns_its_subnet_and_the_plain_recipe_the_rest() -> None:
+    fleet = vm_check.trigger.MAP.fleets["second-group"]
+    plans = vm_check.fleet_up_plans(fleet)
+    assert plans is not None
+    assert vm_check.plan_ips(fleet, plans, 0) == ["192.168.111.1", "192.168.111.11"]
+    assert vm_check.plan_ips(fleet, plans, 1) == ["192.168.112.5", "192.168.112.51"]
+
+
+@pytest.mark.parametrize("leg_id", ["k8s-15", "k8s-ceph-16", "k8s-multinode-17-24"])
+def test_a_kube_leg_turns_k8s_mode_on_as_its_ci_job_does(leg_id: str) -> None:
+    """CI sets K8S_MODE=1 at job level; without it every kube test skips and the leg can never pass."""
+    legs = {leg.id: leg for leg in vm_check.trigger.MAP.areas["kube"].legs}
+    assert "--k8s" in legs[leg_id].cmd[0]
+
+
+def test_the_multinode_leg_excludes_the_licensing_tier_ci_excludes() -> None:
+    legs = {leg.id: leg for leg in vm_check.trigger.MAP.areas["kube"].legs}
+    assert '--grep-invert "licensing on the fleet"' in legs["k8s-multinode-17-24"].cmd[1]
+
+
+def test_the_suite_23_leg_turns_on_the_project_that_collects_it() -> None:
+    legs = {leg.id: leg for leg in vm_check.trigger.MAP.areas["migrate"].legs}
+    assert legs["cli-migrate-23"].cmd[1].startswith("CLI_SUITE=1 ")
 
 
 def test_classify_e2e_reads_the_last_attempt_and_refuses_an_empty_or_setup_failed_run() -> None:
