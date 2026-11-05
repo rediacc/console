@@ -46,6 +46,11 @@
         "P-A1:agent/plans/PLAN-worktree-lease.md"
       ],
       "reason": "P-A1 is a merge-time condition: every named plan still has open boxes, most of them live runs on bench, hostinger, edge or stable, or runs after a release. The operator put edge and stable on hold (ASKED:2026-11-04T16:33Z), so those boxes cannot close yet. This entry exists for the backup push the backup_push_h valve admits, which opens no PR; CI still judges every key, and the entry is removed before any merge."
+    },
+    {
+      "gate": "check:ci-docker-image-freshness",
+      "findings": "*",
+      "reason": "Docker Hub re-pushed node:26.13.0-slim on 2026-11-05T11:41:58Z, so workers/proxy/Dockerfile:20 disagrees with the tag, and the 24 h release-age window refuses `pins bump image:proxy-node` until the next UTC midnight after it ages. CI still judges it; the entry goes with the bump tracked on the worklist."
     }
   ]
 }
