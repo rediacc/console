@@ -89,6 +89,7 @@ Amended by sections 14 and 18: the probes fold into the job as start preconditio
 A covered verb that keeps working after its job (a second machine call or local bookkeeping) cannot simply return at the start. The rule:
 
 - Each covered verb marks exactly one job call as its terminal job (`ExecuteOptions.terminalJob: true`). Under `-b` and on the proxy, the command returns at that job's start.
+  (corrected 2026-11-05, approved plan default) No verb ever set `terminalJob`: ticket steps replaced the marker, so the field, the guard and its test were removed in 141682c39. The post-job rule below holds through ticket steps instead.
 - A job function called with `captureOutput` before the terminal job (a probe whose answer the command needs, such as `backup_verify` in `readSourceAnchor`, packages/cli/src/commands/backup-restore-chunk.ts:111-135) is followed to completion in the same process, because the command cannot continue without it.
 - A machine call AFTER the terminal job is a bug, and a test hook throws on it. J0 classifies every post-job tail, and J4 moves each one:
   - a second machine step joins the terminal job inside renet when renet already has a compound form (`repository_fork` with `up`, packages/cli/src/commands/repo-fork.ts:262-273), and the legacy client-side leg is removed when it exists only for a renet older than the job verbs;
@@ -453,13 +454,15 @@ Amended by section 15: an MCP tool waits up to the attach window and returns the
 
   Owns: packages/cli/scripts/generate-cli-contract.ts, packages/cli/scripts/lib/plane-rules.ts, packages/shared/src/cli-contract/types.ts, packages/shared/src/cli-contract/validation.ts, packages/shared/src/cli-contract/wire.ts, packages/shared/src/cli-contract/data/contract.generated.ts (regenerated only), packages/shared/src/cli-contract/__tests__/**. Accept: `cd packages/shared && npx vitest run src/cli-contract` rc 0, and `npx tsc --noEmit --project packages/shared/tsconfig.json` rc 0.
 
-- [ ] J3 [writer] CLI executor, direct path. After J0, J2 and J5. Changes:
+- [x] J3 [writer] CLI executor, direct path. After J0, J2 and J5. Changes:
+  (corrected 2026-11-05, approved plan default) `terminalJob`, the post-terminal-call guard, the terminal-only `follow: false` and the guard test are dropped: ticket steps replaced them (141682c39). The rest stands as amended by the third round below.
   - `JOB_FUNCTIONS` and the function-based detach decision; `ExecuteOptions.detached` removed; `terminalJob` and the post-terminal-call guard added (Design 1, 3);
   - `startJob` never returns null, `JobsUnsupportedError` replaces the warning and the foreground fallback (Design 11), and `startJob` passes `--request-id`;
   - the 2-minute reconnect budget and the detach-with-ticket exit on a lost tail, with the new `FOLLOW_LOST` exit code (Design 2);
   - `backgroundDecorator` sets `follow: false` on the terminal job only; `isBackgroundRequested` gains its reader in the terminal-job guard;
   - the `-b` JSON envelope under `-o json` (Design 2);
   - the span attributes of Design 13.
+    (ticked) 2026-11-05T11:18:01Z by d778be9d: commit:141682c39 every clause read against the tree, the marker clauses corrected as removed; vitest executor and job-tails rc=0 262 passed, tsc rc=0
 
   Tests: `repository_up` goes through `job start` and `repository_list` through `renet execute` (recording SFTP fake); renet answering `unknown command "job"` gives rc 1 with the upgrade text and no `execute` call; a tail dropping for longer than the budget exits `FOLLOW_LOST` with the ticket written; `-b -o json` prints one parseable envelope; a machine call after a terminal job throws in the test hook; control: an ordinary followed run returns the job's exit code.
 
@@ -487,6 +490,7 @@ Amended by section 15: an MCP tool waits up to the attach window and returns the
   Owns: packages/cli/src/services/executor/local-executor.ts, packages/cli/src/services/executor/detached-execution.ts, packages/cli/src/services/executor/job-client.ts, packages/cli/src/services/executor/job-remote.ts, packages/cli/src/services/executor/executor-factory.ts, packages/cli/src/services/executor/renet-command.ts, packages/cli/src/services/executor/types.ts, packages/cli/src/services/executor/__tests__/** (except proxy-client tests), packages/cli/src/utils/repo-target.ts, packages/cli/src/services/repo/repo-mount-check.ts, packages/cli/src/services/config/network-id-discovery.ts. Accept: `cd packages/cli && npx vitest run src/services/executor` rc 0, and `npx tsc --noEmit --project packages/cli/tsconfig.json` rc 0.
 
 - [ ] J4 [writer] Verb tails, per J0's table. After J0 and J3. Each covered verb marks its terminal job; compound renet forms replace client-side second legs where renet has them; successors and finalizers register on the ticket (Design 3).
+  (corrected 2026-11-05, approved plan default) "Marks its terminal job" is dropped, since no marker exists after 141682c39; tails are ticket steps. The Accept stands, including suite 23.
 
   Tests: one per verb class from J0's table (compound, successor, finalizer), each driving the verb against the recording executor under `-b` and asserting it returns at the terminal start with the successor or finalizer recorded on the ticket; control: the same verb followed runs the tail in-process exactly once.
 

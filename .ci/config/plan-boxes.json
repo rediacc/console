@@ -940,8 +940,8 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 19,
-      "done": 20,
+      "open": 18,
+      "done": 21,
       "open_sigs": [
         "10ee1dbe",
         "1d17b634",
@@ -959,7 +959,6 @@
         "a116dd8b",
         "d4cf00e3",
         "e25f1778",
-        "e32825a7",
         "f63db1ea",
         "fb84a4e4"
       ],
@@ -983,7 +982,8 @@
         "b00bc9df",
         "b29a4a04",
         "d02d75ce",
-        "e1e9d8df"
+        "e1e9d8df",
+        "e32825a7"
       ]
     },
     "agent/plans/PLAN-devbox-uid-derived-image.md": {
