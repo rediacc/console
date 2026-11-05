@@ -4,7 +4,7 @@
 
 THE PROBE. Repository A is a grand of its own (autostart is refused on a fork), with autostart on; repository B is a fork of A (`A:<tag>`), with autostart off. Both carry the probe Rediaccfile: `up()` appends `up <epoch>` to `downproof.log` in the mount, and `down()` appends `down <epoch>` and then sleeps `DOWN_SLEEP_S` seconds. The line is written at the START of `down()`, so a `down` line at least `DOWN_SLEEP_S` before the daemon's next `ExecMainStartTimestamp` proves the stop waited for the whole `down()` (a stop that killed it part way restarts sooner). Every epoch comes from the worker's own clock: the probe's `date +%s`, `systemctl show` and `uptime -s` read through `date -d`.
 
-THE ROWS. K1.0 A (autostart on) and B (autostart off) are up and each wrote an `up` line; K1.1 A's docker unit carries an `ExecStop` that runs `renet daemon stop-hook --network-id=<N>` and both `After=` lines (`rediacc-repo-shutdown.service` and the systemd-escaped mount unit); K1.2 a raw `systemctl restart` of A's unit writes a `down` line at least `DOWN_SLEEP_S` before the new start; K1.3 A's unit loses its first `Environment=` line, `daemon-reload`, then `rdc repo up`: a `down` line before the restart and an `up` line after it; K1.4 the stop side drifts (ExecStop and TimeoutStopSec removed), one `renet repository reconcile` tick restores it and MainPID is unchanged; K1.5 A's runtime stamp is removed and `rdc machine converge` restarts A with a `down` line before the restart; K1.6 the main-pointer renet is installed on the worker (`upgrade_converge.install_current_renet_script`), A is upped under it through a throwaway config, `rdc machine setup` installs the branch renet back, neither daemon restarts, and after one reconcile tick both units carry the new stop side; K1.8 `reboot.target`'s `JobTimeoutUSec` is 30 min or more; K1.7 `systemctl reboot`, then both A and B have a `down` line timestamped at least `DOWN_SLEEP_S` before `uptime -s`, and A is back up with an `up` line after the boot. K1.8 runs before K1.7 so a worker that does not come back still leaves its read.
+THE ROWS. K1.0 A (autostart on) and B (autostart off) are up and each wrote an `up` line; K1.1 A's docker unit carries an `ExecStop` that runs `renet daemon stop-hook --network-id=<N>` and both `After=` lines (`rediacc-repo-shutdown.service` and the systemd-escaped mount unit); K1.2 a raw `systemctl restart` of A's unit writes a `down` line at least `DOWN_SLEEP_S` before the new start; K1.3 A's unit loses its first `Environment=` line, `daemon-reload`, then `rdc repo up`: a `down` line before the restart and an `up` line after it; K1.4 the stop side drifts (ExecStop and TimeoutStopSec removed), one `renet repository reconcile` tick restores it and MainPID is unchanged; K1.5 A's runtime stamp is removed and `rdc machine converge` restarts A with a `down` line before the restart; K1.9 A's daemon is made SKEWED (its live socket renamed to the old-layout path, so it answers only there, as a daemon an older-layout renet started does), then `rdc machine converge` restarts it with a `down` line at least `DOWN_SLEEP_S` before the new start (down() through the old socket before the heal, renet b63746a), and the same again through `renet daemon restart` (the stop hook's old-socket fallback) with an `up` line after the restart; K1.6 the main-pointer renet is installed on the worker (`upgrade_converge.install_current_renet_script`), A is upped under it through a throwaway config, `rdc machine setup` installs the branch renet back, neither daemon restarts, and after one reconcile tick both units carry the new stop side; K1.8 `reboot.target`'s `JobTimeoutUSec` is 30 min or more; K1.7 `systemctl reboot`, then both A and B have a `down` line timestamped at least `DOWN_SLEEP_S` before `uptime -s`, and A is back up with an `up` line after the boot. K1.8 runs before K1.7 so a worker that does not come back still leaves its read.
 
 TEARDOWN. B then A are deleted (A's autostart disabled first), the throwaway config files are removed, and a run that installed the main-pointer renet reverts the worker with `rdc machine setup`; anything that stays rides `ctx.sweep_leftovers`.
 
@@ -25,7 +25,7 @@ from typing import Any
 
 from rediacc_ci.core import local_common
 from rediacc_ci.drills import lifecycle_privilege, upgrade_converge, vm_ssh
-from rediacc_ci.well_known import DATASTORE_PATH
+from rediacc_ci.well_known import DATASTORE_PATH, RUNTIME_DIR
 
 STEP_ID = "K1"
 
@@ -138,6 +138,33 @@ def drop_stop_side_script(network_id: int | str) -> str:
 def remove_stamp_script(network_id: int | str) -> str:
     """Root on the worker: remove the runtime stamp so the converge pass sees `no_stamp` for this network."""
     return "rm -f %s && echo REMOVED" % shlex.quote(upgrade_converge.runtime_stamp_path(network_id))
+
+
+def current_socket(network_id: int | str) -> str:
+    """The daemon's Docker socket of the current layout, `<runtime>/net-<N>/docker-<N>.sock` (runpaths.DockerSocket)."""
+    n = int(network_id)
+    return "%s/net-%d/docker-%d.sock" % (RUNTIME_DIR, n, n)
+
+
+def legacy_socket(network_id: int | str) -> str:
+    """The daemon's Docker socket of the layout before net-<N>/, `<runtime>/docker-<N>.sock` (daemon.LegacyDockerSocket)."""
+    return "%s/docker-%d.sock" % (RUNTIME_DIR, int(network_id))
+
+
+def plant_skew_script(network_id: int | str) -> str:
+    """Root on the worker: make the running daemon a SKEWED one, as an older-layout renet left it. The live socket is renamed to the old-layout path: a listening unix socket keeps serving under its new name, so the daemon answers only on `legacy_socket` and nothing is at `current_socket`, which daemon.SupervisorSkewed reads as an active unit with the old layout's socket on disk."""
+    return (
+        "set -e; cur=%(cur)s; old=%(old)s; "
+        'test -S "$cur"; mv "$cur" "$old"; test -S "$old"; test ! -e "$cur"; echo PLANTED=$old'
+    ) % {
+        "cur": shlex.quote(current_socket(network_id)),
+        "old": shlex.quote(legacy_socket(network_id)),
+    }
+
+
+def daemon_restart_script(network_id: int | str) -> str:
+    """Root on the worker: `renet daemon restart` of the network's daemon (its ExecStop hook runs down(), then up() runs after the restart)."""
+    return "renet daemon restart --network-id=%d" % int(network_id)
 
 
 def read_log_script(guid: str) -> str:
@@ -445,6 +472,7 @@ class _LiveK1:
             self.k1_3_unit_rewrite()
             self.k1_4_stop_side_drift()
             self.k1_5_converge()
+            self.k1_9_skewed_restart()
             self.k1_6_rollout()
             self.k1_8_job_timeout()
             self.k1_7_reboot()
@@ -581,6 +609,35 @@ class _LiveK1:
             "K1.5 machine converge runs down() before it restarts A",
             lambda: self.rdc("machine", "converge", self.ctx.machine, timeout=1800),
             want_up=False,
+        )
+
+    def _skewed_row(self, via: str, act: Any, *, want_up: bool) -> None:
+        """Plant a skewed daemon for A, then judge `act()`'s restart like `_restart_row`: down() through the old socket finished before the new start (renet b63746a for converge, the stop hook's old-socket fallback for a restart)."""
+        planted = self.root(plant_skew_script(self.nids[self.ref_a]))
+        if not self.check(
+            "K1.9 A's daemon is skewed (it answers only on the old-layout socket) before %s" % via,
+            planted.rc == 0 and "PLANTED=" in planted.out,
+            planted,
+        ):
+            return
+        self._restart_row(
+            "K1.9 %s of a skewed daemon runs down() to the end before the restart" % via,
+            act,
+            want_up=want_up,
+        )
+
+    def k1_9_skewed_restart(self) -> None:
+        self._skewed_row(
+            "machine converge",
+            lambda: self.rdc("machine", "converge", self.ctx.machine, timeout=1800),
+            want_up=False,
+        )
+        # Converge brings the daemon back on the current layout; the restart below starts from a running repository again.
+        self.rdc("repo", "up", self.ref_a)
+        self._skewed_row(
+            "renet daemon restart",
+            lambda: self.root(daemon_restart_script(self.nids[self.ref_a]), timeout=1200),
+            want_up=True,
         )
 
     # -- K1.6 ------------------------------------------------------------------
@@ -798,12 +855,15 @@ __all__ = [
     "boot_script",
     "build_main_renet_script",
     "config_name",
+    "current_socket",
+    "daemon_restart_script",
     "daemon_unit",
     "down_before_verdict",
     "drop_environment_script",
     "drop_stop_side_script",
     "job_timeout_script",
     "job_timeout_verdict",
+    "legacy_socket",
     "mount_path",
     "mount_unit",
     "parse_kv_ints",
@@ -812,6 +872,7 @@ __all__ = [
     "parse_timespan",
     "parse_unit",
     "pid_unchanged_verdict",
+    "plant_skew_script",
     "probe_rediaccfile",
     "read_log_script",
     "reboot_script",

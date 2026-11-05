@@ -6,6 +6,7 @@ import os
 import pathlib
 import re
 import shlex
+import socket
 import subprocess
 from typing import Any
 
@@ -109,6 +110,8 @@ def test_mount_unit_escapes_the_guid_dashes() -> None:
         k.drop_environment_script(NID_A),
         k.drop_stop_side_script(NID_A),
         k.remove_stamp_script(NID_A),
+        k.plant_skew_script(NID_A),
+        k.daemon_restart_script(NID_A),
         k.read_log_script(GUID_A),
         k.reconcile_script(),
         k.boot_script(),
@@ -385,6 +388,9 @@ class FakeWorker:
         self.repo_up_rc = 0
         self.delete_grand_rc = 0
         self.comes_back = True
+        # A skewed daemon's restart: down() through the old socket first (renet b63746a and the stop hook's fallback), or the heal restart first and down() after it (the order before b63746a).
+        self.skew_down_first = True
+        self.plant_rc = 0
         self.root_calls: list[str] = []
 
     def tick(self, secs: int = 1) -> None:
@@ -415,6 +421,17 @@ class FakeWorker:
         net["pid"] += 1
         net["start"] = self.now
         net["active"] = "active"
+
+    def restart_any(self, nid: int) -> None:
+        """A renet-driven restart of `nid`: a skewed daemon follows `skew_down_first`, any other one `hook`."""
+        net = self.nets[nid]
+        if not net.pop("skewed", False):
+            self.restart(nid, down_first=self.hook)
+        elif self.skew_down_first:
+            self.restart(nid, down_first=True)
+        else:
+            self.restart(nid, down_first=False)
+            self.down(nid)
 
     def stop_side_on(self, nid: int) -> bool:
         return "ExecStop=" in self.units[nid]
@@ -451,6 +468,19 @@ class FakeWorker:
             return _Res(out="BOOT=%d\n" % self.boot)
         if command == "systemctl reboot":
             return self._reboot()
+        if "PLANTED=" in command:
+            m = re.search(r"/docker-(\d+)\.sock", command)
+            assert m, command
+            if self.plant_rc:
+                return _Res(rc=self.plant_rc)
+            self.nets[int(m.group(1))]["skewed"] = True
+            return _Res(out="PLANTED=%s\n" % k.legacy_socket(m.group(1)))
+        if command.startswith("renet daemon restart"):
+            m = re.search(r"--network-id=(\d+)", command)
+            assert m, command
+            self.restart_any(int(m.group(1)))
+            self.up(int(m.group(1)))
+            return _Res()
         raise AssertionError("unexpected root command: %s" % command)
 
     def _edit(self, command: str) -> _Res:
@@ -499,7 +529,7 @@ class FakeWorker:
             self.up(nid)
             return _Res()
         if args[:2] == ("machine", "converge"):
-            self.restart(NID_A, down_first=self.hook)
+            self.restart_any(NID_A)
             self.up(NID_A)
             return _Res()
         if args[:2] == ("machine", "setup"):
@@ -676,6 +706,64 @@ def test_k1_5_converge(tmp_path: pathlib.Path, hook: bool) -> None:
     assert any("net-%d.json" % NID_A in c for c in worker.root_calls)
 
 
+@pytest.mark.parametrize("down_first", [True, False])
+def test_k1_9_skewed_restart(tmp_path: pathlib.Path, down_first: bool) -> None:
+    worker = FakeWorker()
+    worker.skew_down_first = down_first
+    live, ctx = _ready(tmp_path, worker)
+    live.k1_9_skewed_restart()
+    assert _oks(ctx, "K1.9 A's daemon is skewed") == [True, True], ctx.rows
+    # CONTROL (down_first off, the order before renet b63746a): the heal restarts the daemon first and down() runs after the new start, so both rows FAIL.
+    assert _oks(ctx, "K1.9 machine converge") == [down_first], ctx.rows
+    assert _oks(ctx, "K1.9 renet daemon restart") == [down_first], ctx.rows
+    if not down_first:
+        assert "did not finish first" in ctx.rows[1][2]
+    plants = [c for c in worker.root_calls if "PLANTED=" in c]
+    assert len(plants) == 2
+    assert k.current_socket(NID_A) in plants[0]
+    assert k.legacy_socket(NID_A) in plants[0]
+    assert "renet daemon restart --network-id=%d" % NID_A in worker.root_calls
+    assert ("rdc", "machine", "converge", "ops-worker") in ctx.calls
+
+
+def test_k1_9_skips_the_restart_when_the_plant_fails(tmp_path: pathlib.Path) -> None:
+    worker = FakeWorker()
+    worker.plant_rc = 1
+    live, ctx = _ready(tmp_path, worker)
+    live.k1_9_skewed_restart()
+    assert _oks(ctx, "K1.9 A's daemon is skewed") == [False, False]
+    assert not _oks(ctx, "K1.9 machine converge")
+    assert not any(c.startswith("renet daemon restart") for c in worker.root_calls)
+
+
+def test_skew_sockets_follow_the_runtime_layout() -> None:
+    assert k.current_socket(NID_A) == "%s/net-%d/docker-%d.sock" % (k.RUNTIME_DIR, NID_A, NID_A)
+    assert k.legacy_socket(NID_A) == "%s/docker-%d.sock" % (k.RUNTIME_DIR, NID_A)
+
+
+def test_plant_skew_script_moves_the_live_socket_to_the_old_path(tmp_path: pathlib.Path) -> None:
+    """The plant run against a real listening unix socket in a scratch runtime dir: it moves to the old-layout path, still answers there, and nothing is left at the current path."""
+    runtime = tmp_path / "run"
+    (runtime / ("net-%d" % NID_A)).mkdir(parents=True)
+    script = k.plant_skew_script(NID_A).replace(k.RUNTIME_DIR, str(runtime))
+    cur = runtime / ("net-%d" % NID_A) / ("docker-%d.sock" % NID_A)
+    srv = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    try:
+        srv.bind(str(cur))
+        srv.listen(1)
+        out = subprocess.run(
+            ["bash", "-c", script], check=True, capture_output=True, text=True, timeout=30
+        ).stdout
+        old = runtime / ("docker-%d.sock" % NID_A)
+        assert out.strip() == "PLANTED=%s" % old
+        assert not cur.exists()
+        cli = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        cli.connect(str(old))
+        cli.close()
+    finally:
+        srv.close()
+
+
 def _k1_6(
     tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch, worker: FakeWorker
 ) -> tuple[k._LiveK1, FakeCtx]:
@@ -823,6 +911,7 @@ def test_execute_runs_the_rows_in_order_and_always_cleans_up(
         "k1_3_unit_rewrite",
         "k1_4_stop_side_drift",
         "k1_5_converge",
+        "k1_9_skewed_restart",
         "k1_6_rollout",
         "k1_8_job_timeout",
         "k1_7_reboot",
