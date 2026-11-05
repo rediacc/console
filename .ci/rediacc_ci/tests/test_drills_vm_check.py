@@ -3789,3 +3789,11 @@ def test_classify_e2e_reads_the_last_attempt_and_refuses_an_empty_or_setup_faile
     # Colour escapes do not hide a result line.
     coloured = "\x1b[32m" + e2e_output() + "\x1b[0m"
     assert vm_check.classify_e2e(result(0, coloured))[0] == "ok"
+
+
+def test_only_accepts_an_external_leg_and_still_refuses_an_unknown_name(capsys):
+    assert "cli-migrate-23" in vm_check.only_leg_ids()
+    assert vm_check.parse_args(["--only", "cli-migrate-23"], {}).only == {"cli-migrate-23"}
+    with pytest.raises(SystemExit):
+        vm_check.parse_args(["--only", "no-such-leg"], {})
+    assert "names no step" in capsys.readouterr().err

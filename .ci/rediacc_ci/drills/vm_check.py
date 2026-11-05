@@ -1154,6 +1154,11 @@ def only_step_ids() -> frozenset[str]:
     return frozenset(VmCheck._ONLY_DEPS) | {"P5"}
 
 
+def only_leg_ids() -> frozenset[str]:
+    """The `external` leg ids `--only` accepts, so one e2e suite or fleet leg can be iterated without the whole battery."""
+    return frozenset(leg.id for _area, leg in external_legs(trigger.AREAS))
+
+
 def parse_args(argv: Sequence[str], environ: Mapping[str, str] | None = None) -> Options:
     env = os.environ if environ is None else environ
     selftest, keep_work, rest = lib.parse_common_args(list(argv))
@@ -1186,11 +1191,11 @@ def parse_args(argv: Sequence[str], environ: Mapping[str, str] | None = None) ->
     if ns.base is not None and not ns.changed:
         parser.error("--base only applies with --changed")
     only = frozenset(s.strip() for s in ns.only.split(",") if s.strip())
-    unknown = sorted(only - only_step_ids())
+    known = only_step_ids() | only_leg_ids()
+    unknown = sorted(only - known)
     if unknown:
         parser.error(
-            "--only names no step: %s (known: %s)"
-            % (", ".join(unknown), ", ".join(sorted(only_step_ids())))
+            "--only names no step: %s (known: %s)" % (", ".join(unknown), ", ".join(sorted(known)))
         )
     return Options(
         changed=ns.changed,
@@ -1768,9 +1773,11 @@ class VmCheck:
             % ", ".join(sorted(self.opts.only))
         )
         account_named = any(s.startswith("A") for s in self.opts.only) or self._only_wants("A0")
+        legs_named = self.opts.only & only_leg_ids()
         self.p0_lock()
         self.p1_renet()
-        if account_named or self._only_wants("A0"):
+        # A leg's e2e global setup licenses its repositories on the local dev gateway, as in `_battery`.
+        if account_named or legs_named or self._only_wants("A0"):
             self.a0_gateway()
         self.p4_account()
         self.p2_fleet()
@@ -1800,12 +1807,17 @@ class VmCheck:
         for step_id, _deps, _fn in EXTRA_RENET_STEPS:
             if self._only_wants(step_id):
                 self.extra_fns[step_id](self)
+        self._external_legs(legs_named)
 
     # ------------------------------------------------------------------ X: the external legs
 
-    def _external_legs(self) -> None:
+    def _external_legs(self, named: Collection[str] | None = None) -> None:
         """Run every `external` leg of the touched areas, after the base battery and under the same fleet lock: tear this run's forks down first (an e2e global setup may recreate the VMs), bring each leg's fleet up (or reuse it when every ip already runs), run the leg's commands from the console root, record one `X.<leg id>` row, then prove the parent grand is still on the worker and recreate it when it is not. A run whose battery already has a finding skips them: its verdict cannot become VERIFIED, and an e2e run costs minutes to an hour."""
-        legs = external_legs(self.areas)
+        legs = (
+            external_legs(self.areas)
+            if named is None
+            else [(area, leg) for area, leg in external_legs(trigger.AREAS) if leg.id in named]
+        )
         if not legs:
             return
         if self.failures:
