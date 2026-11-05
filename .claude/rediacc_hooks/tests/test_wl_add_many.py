@@ -104,7 +104,9 @@ def test_an_invalid_line_is_refused_before_anything_is_written(wl):
 def test_a_live_blocker_passes_and_a_closed_one_is_refused(wl):
     """`--add`'s BLOCKED_BY rule per line, against the one fold."""
     first = wl.cli("--add-many", wlfix.ME, stdin="the blocker\n")
-    rid = re.search(r"added #([0-9a-f]+)", first.out).group(1)
+    added = re.search(r"added #([0-9a-f]+)", first.out)
+    assert added is not None, first.out
+    rid = added.group(1)
     assert wl.cli("--add-many", wlfix.ME, stdin="waits BLOCKED_BY:#%s\n" % rid).rc == 0
     assert fold_count(wl) == 2
     assert wl.cli("--tick", wlfix.ME, rid, "https://ci.invalid/run/1 nocommit:research").rc == 0

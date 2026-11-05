@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 5,
-  "generatedAt": "2026-11-04T21:10:56.602Z",
+  "generatedAt": "2026-11-05T08:33:52.938Z",
   "legs": [
     {
       "index": 1,
@@ -148,6 +148,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_githook_release_run.py",
         "pytest:.claude/rediacc_hooks/tests/test_hooks_trapguard.py",
         "pytest:.claude/rediacc_hooks/tests/test_landing.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_add_many.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_ci_verdict_surface.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_cite_extensions.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_drift_loops_freshness.py",

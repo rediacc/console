@@ -51,6 +51,8 @@ const ALLOWED: Record<string, string> = {
   snapshot_events: 'THE shared builder: the one place a fold becomes events again',
   load: 'the markdown mirror: its `md` event describes the FILE on disk, diffed against the store, never a fold rebuild',
   add_item: 'the --add verb: a genuinely new item, with a fresh id',
+  add_items:
+    'add_item and the --add-many verb: genuinely new items with fresh ids, one append; no fold is rebuilt',
   set_state: 'the --tick/--defer verbs: one real state change to one named item',
   lease_item: 'the --lease verb: a real, newly created lease, not a re-emitted one',
   migrate_items:
