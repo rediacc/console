@@ -560,7 +560,7 @@ export class RenetFunctionsTestRunner {
     }
 
     // Always use user@host format for consistency
-    const sshCmd = `ssh ${sshOpts} ${user}@${host} "${command.replaceAll('"', '\\"')}"`;
+    const sshCmd = `ssh ${sshOpts} ${user}@${host} "${this.sshExecutor.escapeForSSH(command)}"`;
 
     // Log the command being executed
     log(`\n[SSH ${host}] ${command}`);

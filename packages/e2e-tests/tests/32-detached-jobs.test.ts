@@ -70,7 +70,7 @@ test.describe
       return handle;
     };
 
-    // The unit name is the first column, cut here rather than by awk on the worker: executeViaBridge wraps the command in double quotes for its two-hop ssh and escapes only backslash and double quote (packages/provisioning/src/ssh/SSHExecutor.ts escapeForNestedSSH), so a shell expands `$1` before the worker runs it. `awk '{print $1}'` reached the worker as `awk '{print }'` and every line kept its state columns; case 4b caught it, and case 4 could only pass with no job unit loaded.
+    // The unit name is the first column of each `systemctl list-units` line; the cut happens here, so the state columns never reach the comparison.
     const loadedJobUnits = async (): Promise<string[]> => {
       const r = await w.executeViaBridge(
         `systemctl list-units 'rediacc-job-*' --all --no-legend --plain --no-pager`
