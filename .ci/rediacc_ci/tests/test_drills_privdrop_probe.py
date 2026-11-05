@@ -42,6 +42,27 @@ def test_a_failed_step_prints_rdc_stdout(capsys, monkeypatch) -> None:
     assert "progress line" in err
 
 
+def test_a_failed_up_still_probes_and_retries_with_root(capsys, monkeypatch) -> None:
+    # nextcloud on hostinger, 2026-11-05: the fork's first up failed on a port its original holds, and the old
+    # run stopped there, so the probe never landed and step 6 never ran.
+    calls: list[list[str]] = []
+
+    def fake(argv, _timeout=1800):
+        calls.append(argv)
+        rc = 1 if argv[3:5] == ["repo", "up"] and "--root" not in " ".join(calls[-2]) else 0
+        return subprocess.CompletedProcess(argv, rc, "", "")
+
+    monkeypatch.setattr(pp, "_run", fake)
+    assert pp.run("nextcloud") == 1
+    verbs = [c[3:6] for c in calls]
+    assert ["repo", "sync", "upload"] in verbs
+    assert ["repo", "permission", "grant"] in verbs
+    grant = verbs.index(["repo", "permission", "grant"])
+    assert verbs[grant + 1][:2] == ["repo", "up"]
+    assert calls[grant][-2:] == ["nextcloud:privdrop@hostinger", "--root"]
+    assert "(step 6)" in capsys.readouterr().out
+
+
 def test_delete_names_only_the_fork() -> None:
     assert pp.delete_argv("gitlab", True)[-2:] == ["gitlab:privdrop@hostinger", "--dry-run"]
     assert pp.delete_argv("gitlab", False)[-2:] == ["gitlab:privdrop@hostinger", "-y"]

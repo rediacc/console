@@ -51,6 +51,15 @@ def recipe(repo: str, local_dir: str = str(PROBE_DIR)) -> list[list[str]]:
     ]
 
 
+def root_retry(repo: str) -> list[list[str]]:
+    """H2 step 6, run only when an up failed: the root tier on the fork alone, then up again."""
+    ref = fork_ref(repo)
+    return [
+        rdc_argv("repo", "permission", "grant", ref, "--root"),
+        rdc_argv("repo", "up", ref),
+    ]
+
+
 def read_argv(repo: str, name: str) -> list[str]:
     return rdc_argv("term", "connect", fork_ref(repo), "-c", lp.read_command(name))
 
@@ -87,6 +96,7 @@ def _run(argv: list[str], timeout: int = 1800) -> subprocess.CompletedProcess[st
 def run(repo: str, collect: bool = False) -> int:
     """Run the recipe for one repo; 0 only when every verdict holds and every rdc step exited 0."""
     failed = False
+    up_failed = False
     try:
         for argv in recipe(repo):
             res = _run(argv)
@@ -96,7 +106,19 @@ def run(repo: str, collect: bool = False) -> int:
                 print(res.stdout[-2000:], file=sys.stderr)
                 print(res.stderr[-2000:], file=sys.stderr)
                 failed = True
+                # A failing up is itself the H2 data point (a fork's container cannot bind a host port its running original holds, hostinger 2026-11-05); the fork stays mounted, so the probe can still land. A failing fork or upload leaves nothing to probe.
+                if argv[3:5] == ["repo", "up"]:
+                    up_failed = True
+                    continue
                 break
+        if up_failed:
+            # H2 step 6: the root tier on the FORK alone, then up again, to tell a privilege failure from one the root tier does not fix either.
+            for argv in root_retry(repo):
+                res = _run(argv)
+                print("$ %s -> rc=%d (step 6)" % (" ".join(argv), res.returncode))
+                if res.returncode != 0:
+                    print(res.stdout[-2000:], file=sys.stderr)
+                    print(res.stderr[-2000:], file=sys.stderr)
         probes: dict[str, dict[str, str]] = {}
         for name in (lp.UP_FILE, lp.DOWN_FILE):
             probes[name] = lp.parse_probe(_run(read_argv(repo, name)).stdout)
