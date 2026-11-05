@@ -363,9 +363,36 @@ def is_lead(to):
     return str(to or "").strip() in LEAD_RECIPIENTS
 
 
-def is_relay(lead_sends, out, final):
-    """True for an agent that sent only to other agents and ended on a line too short to be a report (see RELAY_FLOOR)."""
-    return lead_sends == 0 and out > 0 and len(str(final or "").strip()) < RELAY_FLOOR
+def judge(lead, outgoing, final):
+    """(relay, title) for one capture: `lead` the lead-bound messages, `outgoing` the (to, message) pairs sent to anyone else, `final` the final text.
+
+    THREE SHAPES, told apart by who the agent talked to:
+      lead-bound   any send to the lead is the report: not a relay, titled from the last one.
+      one peer     every send went to ONE recipient: a writer reporting to its coordinator. That is miss 1 of agent/plans/PLAN-tick-tracking.md (a coordinator's writers' reports never reaching the lead), so the longest outgoing message is the substance: a report when it reaches SILENT_FLOOR, titled from it.
+      fan-out      sends to TWO OR MORE recipients: a coordinator handing out orders. A relay unless the final text clears RELAY_FLOOR; the 19 measured coordinator turns (11 recipients each) are all relays.
+    """
+    final = str(final or "")
+    if lead:
+        return False, _first_line(lead[-1])
+    tos = {to for to, _msg in outgoing}
+    short_final = len(final.strip()) < RELAY_FLOOR
+    if len(tos) == 1:
+        longest = max((msg for _to, msg in outgoing), key=lambda m: len(m.strip()))
+        if len(longest.strip()) >= SILENT_FLOOR:
+            return False, _first_line(longest)
+        return short_final, _first_line(final) or _first_line(longest)
+    return len(tos) >= 2 and short_final, _first_line(final)
+
+
+def split_parts(parts):
+    """(lead messages, outgoing (to, message) pairs) from `body_parts` triples. An `## Outgoing` section is never lead-bound; a `## SendMessage` section is lead-bound only when its `to` is the lead, which is what re-reads a legacy body that filed every send under that heading."""
+    lead, outgoing = [], []
+    for kind, to, msg in parts:
+        if kind == LEAD_SECTION and is_lead(to):
+            lead.append(msg)
+        else:
+            outgoing.append((to, msg))
+    return lead, outgoing
 
 
 def body_parts(body):
@@ -383,12 +410,14 @@ def body_parts(body):
     return sends, final
 
 
-def final_of(body):
-    """The final text a capture judges: the `## Final message` section of an assembled body, "" for an assembled body with sends and no final, and the whole text of a raw body with no sections at all."""
+def judge_body(body):
+    """(lead messages, outgoing pairs, final) of a body. A raw body with no sections at all is all final text."""
     text = body or ""
     if _FINAL_HEAD in text or _SEND_HEAD.search(text):
-        return body_parts(text)[1]
-    return text
+        parts, final = body_parts(text)
+        lead, outgoing = split_parts(parts)
+        return lead, outgoing, final
+    return [], [], text
 
 
 def _first_line(text):
@@ -411,16 +440,13 @@ def rejudge(store, entry):
     except (OSError, ValueError):
         return entry
     body = raw.split("---\n\n", 1)[1] if raw.startswith("---\n") and "---\n\n" in raw else raw
-    sends, final = body_parts(body)
-    # Both header kinds: an `## Outgoing` section is never lead-bound, and a legacy `## SendMessage` section is lead-bound only when its `to` is the lead.
-    lead = [msg for kind, to, msg in sends if kind == LEAD_SECTION and is_lead(to)]
-    if not sends or len(lead) == len(sends):
+    lead, outgoing, final = judge_body(body)
+    if not outgoing:
         return entry
     out = dict(entry)
     out["sends"] = len(lead)
-    out["out"] = len(sends)
-    out["title"] = _first_line(lead[-1] if lead else final)
-    out["relay"] = is_relay(len(lead), len(sends), final)
+    out["out"] = len(lead) + len(outgoing)
+    out["relay"], out["title"] = judge(lead, outgoing, final)
     return out
 
 
@@ -632,10 +658,10 @@ def capture(
     # DERIVED HERE, NOT PASSED IN, so every capture path records it: the `SubagentStop` hook and `--scan`'s self-healing pass both land in this one
     # function, and a kwarg would have left the scanned half of the store blind.
     opens = open_boxes(body)
-    # `sends` counts the lead-bound sends the body holds, `out` every send the agent made. An agent that sent anything ran and spoke, so it is never `silent`; one that sent only to other agents and ended on a short line is a `relay` (see is_relay).
+    # `sends` counts the lead-bound sends the body holds, `out` every send the agent made. An agent that sent anything ran and spoke, so it is never `silent`; one that sent only to other agents and ended on a short line is a `relay` (see judge).
     out = max(int(out or 0), int(sends or 0))
     silent = out == 0 and len(body.strip()) < SILENT_FLOOR
-    relay = is_relay(sends, out, final_of(body))
+    relay = judge(*judge_body(body))[0] if out > sends else False
     front = (
         "---\n"
         "agent_id: %s\nagent_type: %s\nagent_name: %s\nsession: %s\nbranch: %s\n"
@@ -757,7 +783,7 @@ def handle_subagent_stop(event):
         body=body,
         transcript=transcript,
         source="hook",
-        title=_title_of(sends, final),
+        title=_title_of(sends, final, others),
         sends=len(sends),
         out=len(sends) + len(others),
         tx=tx,
@@ -993,16 +1019,15 @@ def assemble_body(sends, final, others=()):
     return "\n\n".join(parts)
 
 
-def _title_of(sends, final):
-    """The LAST SendMessage's opening line, else the final message's.
+def _title_of(sends, final, others=()):
+    """The LAST lead-bound SendMessage's opening line, else (for a writer reporting to one peer) its longest outgoing message's, else the final message's; see `judge`.
 
     Deliberately the last send and not the first: an agent that reports progress and then reports its conclusion should be indexed by the conclusion. Falling back to the final message keeps a plain `Task` sub-agent (which returns its report AS its final message and may never call SendMessage) titled properly.
     """
-    for source in ([sends[-1]["message"]] if sends else []) + [final or ""]:
-        line = _first_line(source)
-        if line:
-            return line
-    return ""
+    _relay, title = judge(
+        [s["message"] for s in sends], [(s["to"], s["message"]) for s in others], final
+    )
+    return title
 
 
 def scan(store, start, idle_min=None):
@@ -1063,7 +1088,7 @@ def scan(store, start, idle_min=None):
                     transcript=str(jsonl),
                     source="scan",
                     at=_iso_of(rec.get("timestamp")) or C.stamp_now(),
-                    title=_title_of(sends, final),
+                    title=_title_of(sends, final, others),
                     sends=len(sends),
                     out=len(sends) + len(others),
                     tx="ok",  # scan globbed this file, so it resolves by construction

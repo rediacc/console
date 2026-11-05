@@ -1145,16 +1145,43 @@ def test_31g_recipient_a_report_sent_to_the_coordinator_is_stored(sc):
         assert "WRITER REPORT FOR THE COORDINATOR" in body, body[:300]
         assert "## Outgoing 1 -> %s" % to in body, body[:300]
         assert "## SendMessage" not in body, "a send to the coordinator was filed as lead-bound"
-        # Lead-bound counts are unchanged: the send is kept, not counted.
+        # The send is not lead-bound, so `sends` stays 0; but it went to ONE peer, so it is the writer's report: titled from it and unread.
         assert entry["sends"] == 0, entry
         assert entry["out"] == 1, entry
-        assert entry["title"] == "Report sent.", entry["title"]
-        assert entry["relay"] is True, entry
-        # rejudge reads both header kinds: a body with an Outgoing section stays lead-free.
+        assert entry["title"] == "WRITER REPORT FOR THE COORDINATOR", entry["title"]
+        assert entry["relay"] is False, entry
+        assert entry["silent"] is False, entry
         report = wlfix.import_wl("wl_report")
         parts, final = report.body_parts(body)
         assert [(k, t) for k, t, _m in parts] == [("Outgoing", to)], parts
         assert final.strip() == "Report sent.", final
+        # CONTROL: the relay rule of 371592b85 and of 5e591cec2 marked this same row a relay, so it never reached the lead.
+        assert _relay_before(entry["sends"], entry["out"], final), (
+            "CONTROL: the old relay rule must mark the writer a relay"
+        )
+    unread = sc.report_py("--list", "--unread").out
+    for aid in ("awriterundercoord0000", "awriterundercoord0001"):
+        assert aid[-12:] in unread, unread
+    assert unread.count("WRITER REPORT FOR THE COORDINATOR") == 2, unread
+
+
+def _relay_before(lead_sends, out, final):
+    """THE RELAY RULE OF 371592b85 AND 5e591cec2, kept for the CONTROL only: no lead-bound send, any outgoing send, and a final text under the relay floor, whatever the outgoing sends held or how many recipients they had."""
+    report = wlfix.import_wl("wl_report")
+    return lead_sends == 0 and out > 0 and len(str(final or "").strip()) < report.RELAY_FLOOR
+
+
+def test_31h_recipient_one_peer_with_a_short_send_and_fan_out_stay_relays():
+    """The narrowed rule keeps the coordinator shape a relay: sends to two or more recipients with a short final. A one-peer send under the silent floor ("Sent the status request", measured on the legacy rows) is not a report either."""
+    report = wlfix.import_wl("wl_report")
+    fan = [("a%016d" % n, "Coordinator ruling: x " + "y" * 400) for n in range(11)]
+    assert report.judge([], fan, "Waiting for the remaining nine.")[0] is True
+    assert report.judge([], fan, "A real report. " * 50)[0] is False
+    assert report.judge([], [("coordinator", "status?")], "Sent; waiting.")[0] is True
+    relay, title = report.judge([], [("coordinator", "REPORT\n" + "z" * 300)], "Done.")
+    assert relay is False
+    assert title == "REPORT"
+    assert report.judge(["LEAD\nx"], fan, "")[0] is False
 
 
 def test_31b_recipient_hook_path_keeps_only_the_final_text(sc):
