@@ -51,7 +51,8 @@ vi.mock('../../services/backup/backup-schedule.js', () => ({
   pushBackupSchedule: schedule.pushBackupSchedule,
   sanitizeBackupOutput: (s: string) => s,
 }));
-vi.mock('../../services/backup/backup-schedule-reconcile.js', () => ({
+vi.mock('../../services/backup/backup-schedule-reconcile.js', async (orig) => ({
+  ...(await orig<Record<string, unknown>>()),
   resolveMachineCpuCount: () => Promise.resolve(8),
 }));
 vi.mock('../../services/backup/backup-retention.js', () => ({
@@ -102,7 +103,7 @@ vi.mock('../../utils/local-execution-failures.js', () => ({
   renderLocalExecutionFailure: mockRenderFailure,
 }));
 vi.mock('../../services/core/output.js', () => ({
-  outputService: { info: vi.fn(), success: vi.fn(), warn: vi.fn() },
+  outputService: { info: vi.fn(), success: vi.fn(), warn: vi.fn(), print: vi.fn() },
 }));
 vi.mock('../../utils/errors.js', async (orig) => ({
   ...(await orig<Record<string, unknown>>()),
@@ -128,6 +129,7 @@ const FINISHED = { success: true, exitCode: 0, durationMs: 5, state: 'succeeded'
 const RUNNING = { success: true, exitCode: 0, durationMs: 1, state: 'running' as const };
 
 let dir: string;
+let store: InstanceType<typeof TicketStore>;
 let executed: Executed[];
 let answer: Record<string, unknown>;
 
@@ -144,7 +146,7 @@ beforeEach(() => {
   executed = [];
   answer = FINISHED;
   dir = mkdtempSync(join(tmpdir(), 'job-plan-backup-'));
-  const store = new TicketStore('test', dir);
+  store = new TicketStore('test', dir);
   setCommandJobDeps({
     executor: () => ({
       execute: (options) => {
@@ -211,6 +213,23 @@ describe('backup run on deployed units', () => {
     expect(executed).toHaveLength(1);
     expect(mockRenderFailure).not.toHaveBeenCalled();
     expect(mockSetExitCode).not.toHaveBeenCalled();
+    // The ticket is handed back: one pending ticket for the job, on the machine and the verb that started it.
+    expect(store.tickets()).toHaveLength(1);
+    expect(store.tickets()[0]).toMatchObject({
+      machine: 'm1',
+      verb: 'backup run',
+      function: 'backup-unit',
+    });
+    expect(['starting', 'running']).toContain(store.tickets()[0].state);
+  });
+
+  it('control: a job that finished inside the window records a finished ticket, not a running one', async () => {
+    machine.deployed.add('nightly');
+
+    await rdcBackup('run', '-m', 'm1');
+
+    expect(executed).toHaveLength(1);
+    expect(store.tickets().map((ticket) => ticket.state)).toEqual(['succeeded']);
   });
 
   it('renders a failed job and sets no second job', async () => {
@@ -422,6 +441,113 @@ describe('backup status', () => {
       commandKind: { name: 'backup-journal', args: { strategy: 'nightly' } },
     });
     expect(machine.commands).toEqual([]);
+  });
+});
+
+describe('backup status with the real renderer', () => {
+  const EXPECTED = [
+    { unitName: 'nightly', strategyName: 'nightly', schedule: '0 3 * * *' },
+    { unitName: 'nightly.repo.gitlab', strategyName: 'nightly', schedule: '0 4 * * *' },
+  ];
+  // One loaded, active timer that never fired, and one unit with no timer on the machine.
+  const SHOW =
+    'Id=rediacc-backup-nightly.timer\nLoadState=loaded\nActiveState=active\n\n' +
+    'Id=rediacc-backup-nightly.service\nLoadState=loaded\nActiveState=inactive\n\n';
+
+  beforeEach(async () => {
+    const actual = await vi.importActual<typeof import('../../services/backup/backup-schedule.js')>(
+      '../../services/backup/backup-schedule.js'
+    );
+    schedule.expectedStatusUnits.mockResolvedValue(EXPECTED);
+    schedule.renderBackupScheduleStatus.mockImplementation(actual.renderBackupScheduleStatus);
+  });
+
+  it('prints the table the old command printed, from the job output, and sets exit 1 for the unscheduled unit', async () => {
+    answer = { ...FINISHED, stdout: SHOW };
+    const { outputService } = await import('../../services/core/output.js');
+
+    await rdcBackup('status', '-m', 'm1');
+
+    expect(outputService.print).toHaveBeenCalledTimes(1);
+    expect(outputService.print).toHaveBeenCalledWith(
+      [
+        {
+          strategy: 'nightly',
+          unit: 'nightly',
+          status: 'scheduled',
+          lastRun: '-',
+          result: '-',
+          nextRun: '-',
+          missed: '-',
+        },
+        {
+          strategy: 'nightly',
+          unit: 'nightly.repo.gitlab',
+          status: 'not scheduled',
+          lastRun: '-',
+          result: '-',
+          nextRun: '-',
+          missed: 'not scheduled: no timer on the machine (run: rdc backup schedule)',
+        },
+      ],
+      'table'
+    );
+    expect(mockSetExitCode).toHaveBeenCalledWith(1);
+  });
+
+  it('control: a table where every unit is scheduled sets no exit code', async () => {
+    schedule.expectedStatusUnits.mockResolvedValue(EXPECTED.slice(0, 1));
+    answer = { ...FINISHED, stdout: SHOW };
+
+    await rdcBackup('status', '-m', 'm1');
+
+    expect(mockSetExitCode).not.toHaveBeenCalled();
+  });
+});
+
+describe('backup schedule unit content', () => {
+  it('renders the service and timer units byte for byte', async () => {
+    const generator = await import('../../services/backup/backup-schedule-unit-generator.js');
+    const destinations = STRATEGY.destinations as never;
+
+    const built = generator.generateServiceUnit(
+      'nightly',
+      STRATEGY as never,
+      destinations,
+      '/mnt/rediacc',
+      '/r/renet',
+      { exclude: [] } as never,
+      8
+    );
+
+    expect(built.serviceContent).toBe(
+      [
+        '[Unit]',
+        'Description=Rediacc Scheduled Backup (nightly)',
+        'After=network-online.target',
+        'OnFailure=rediacc-backup-nightly.alert.service',
+        '',
+        '[Service]',
+        'Type=oneshot',
+        'Nice=10',
+        'IOSchedulingClass=best-effort',
+        'IOSchedulingPriority=7',
+        'CPUQuota=400%',
+        'TimeoutStartSec=infinity',
+        'TimeoutStopSec=90',
+        'ExecStartPre=-/r/renet license renew --jitter 45s',
+        'ExecStart=/r/renet backup snapshot --datastore /mnt/rediacc --parallelism 2 --expected-interval 86400s --cpu-limit 50 --cpu-quota 400%',
+        'ExecStart=/r/renet backup verify --datastore /mnt/rediacc --level spot',
+        '',
+        '[Install]',
+        'WantedBy=multi-user.target',
+        '',
+      ].join('\n')
+    );
+    expect(built.envVars).toEqual({});
+    expect(generator.generateTimerUnit('nightly', generator.cronToOnCalendar('0 3 * * *'))).toBe(
+      '[Unit]\nDescription=Rediacc Backup Timer (nightly)\n\n[Timer]\nOnCalendar=*-*-* 03:00:00\nPersistent=true\n\n[Install]\nWantedBy=timers.target\n'
+    );
   });
 });
 
