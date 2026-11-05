@@ -202,6 +202,11 @@ export async function postPushDeploy(
     params: { repository: repo, mount: true },
     debug: options.debug as boolean | undefined,
   });
+  // A job handed back (`--background`, a lost tail) is still running: nothing has deployed yet.
+  if (upResult.state === 'running') {
+    if (!upResult.success) setExitCode(upResult.exitCode);
+    return;
+  }
   if (upResult.success) {
     outputService.success(t('commands.repo.push.deployed', { repo, machine: targetName }));
   } else {
@@ -367,7 +372,7 @@ async function resolvePullSource(
 }
 
 /** Deploy repo on target machine after a backup pull. */
-async function postPullDeploy(
+export async function postPullDeploy(
   repo: string,
   targetMachine: string,
   options: Record<string, unknown>
@@ -388,6 +393,11 @@ async function postPullDeploy(
     params: { repository: repo, mount: true },
     debug: options.debug as boolean | undefined,
   });
+  // A job handed back (`--background`, a lost tail) is still running: nothing has deployed yet.
+  if (upResult.state === 'running') {
+    if (!upResult.success) setExitCode(upResult.exitCode);
+    return;
+  }
   if (upResult.success) {
     outputService.success(t('commands.repo.pull.deployed', { repo, machine: targetMachine }));
   } else {

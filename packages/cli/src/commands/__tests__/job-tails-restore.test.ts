@@ -365,6 +365,27 @@ describe('backup restore --path (a success step: reportRestorePath)', () => {
     expect(process.exitCode).toBe(18);
   });
 
+  it('a detached job step reads the reason from the stdout line renet now echoes beside stderr', async () => {
+    const { resolveStepHandler } = await import('../../services/jobs/steps.js');
+    await import('../backup-restore-path.js');
+    const handler = await resolveStepHandler('reportRestorePathFailure');
+    const refusal = JSON.stringify({ code: 'NO_LISTING', reason: 'absent', snapshotId: SNAPSHOT });
+    await handler({
+      jobId: 'j1',
+      machine: 'm1',
+      params: { repo: 'src', snapshot: SNAPSHOT },
+      state: 'failed',
+      // The job's output events fold to msg lines, exactly as run-job.ts builds `output`.
+      output: `${refusal}\n`,
+      exitCode: 18,
+    });
+
+    expect(mockWarn).toHaveBeenCalledWith(
+      expect.stringContaining('commands.backup.restore.pathNoListingAbsent')
+    );
+    expect(process.exitCode).toBe(18);
+  });
+
   it('control: any other failure warns nothing about a listing', async () => {
     answer = { ...FAILED, exitCode: 2 };
     await run(PATH_RESTORE);
