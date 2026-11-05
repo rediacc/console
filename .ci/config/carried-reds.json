@@ -49,7 +49,9 @@
     },
     {
       "gate": "check:ci-docker-image-freshness",
-      "findings": "*",
+      "findings": [
+        "docker-digest:workers/proxy/Dockerfile:20"
+      ],
       "reason": "Docker Hub re-pushed node:26.13.0-slim on 2026-11-05T11:41:58Z, so workers/proxy/Dockerfile:20 disagrees with the tag, and the 24 h release-age window refuses `pins bump image:proxy-node` until the next UTC midnight after it ages. CI still judges it; the entry goes with the bump tracked on the worklist."
     }
   ]

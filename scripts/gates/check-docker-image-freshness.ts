@@ -1,4 +1,5 @@
 #!/usr/bin/env tsx
+
 // ---- gate ----
 // step: Docker image freshness
 // env-DOCKERHUB_TOKEN: ${{ env.BWS_DOCKERHUB_TOKEN }}
@@ -62,8 +63,8 @@ import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
-
 import { WK_IMAGE_REGISTRY } from '../../packages/shared/src/config/well-known.generated.js';
+import { emitFinding } from '../ci-runner/findings.js';
 import { errorLines, GREEN, NC, RED, YELLOW } from '../lib/console.js';
 import { HUB_DEFAULT_BASE, hubRepo, hubTagUrl, parseTagDigest } from '../lib/docker-hub.js';
 import { loadRegistry, type PinEntry, siteRegex } from '../lib/pins/registry.js';
@@ -817,7 +818,11 @@ async function main(): Promise<void> {
     console.error(
       `\n${RED}✗${NC} ${digests.findings.length} digest-pinned line(s) do not agree with the tag they name:\n`
     );
-    for (const f of digests.findings) console.error(`    ${f}`);
+    for (const f of digests.findings) {
+      console.error(`    ${f}`);
+      // One key per pinned line, so a carry names this line and not the whole gate.
+      emitFinding(`docker-digest:${f.split('  ')[0]}`);
+    }
   }
 
   if (unknown.length > 0) {
