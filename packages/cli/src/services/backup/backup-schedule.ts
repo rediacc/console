@@ -368,7 +368,7 @@ export function renderBackupScheduleStatus(
   const unread = rows.filter((r) => r.unread);
   if (unread.length > 0) {
     outputService.error(
-      `Could not read the backup schedule status of ${unread.length} unit(s) on ${machineName}: ${unread[0].reason ?? 'unknown cause'}. This is not a verdict that no timer exists.`
+      `Could not read the backup schedule status of ${unread.length} unit(s) on ${machineName}${unread[0].reason ? `: ${unread[0].reason}` : ''}. This is not a verdict that no timer exists.`
     );
   }
   const code = scheduleStatusExitCode(rows);

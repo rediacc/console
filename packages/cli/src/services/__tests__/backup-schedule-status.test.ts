@@ -291,7 +291,7 @@ const REAL_SHOW = [
   'Result=success',
   'ExecMainExitTimestamp=Sun 2026-10-25 03:10:00 UTC',
   '',
-];
+] as const;
 const fold = (lines: string[]): string =>
   lines
     .filter((l) => l !== '')
@@ -300,7 +300,7 @@ const fold = (lines: string[]): string =>
 
 describe('status from a folded job output', () => {
   it('reads a scheduled row from systemctl show text with the blank separators folded away', () => {
-    const records = parseFoldedSystemctlShow(fold(REAL_SHOW));
+    const records = parseFoldedSystemctlShow(fold([...REAL_SHOW]));
     expect([...records.keys()]).toEqual([
       'rediacc-backup-daily.timer',
       'rediacc-backup-daily.service',
@@ -313,7 +313,7 @@ describe('status from a folded job output', () => {
 
   it('control: the same text with its blank lines intact parses identically', () => {
     expect(parseFoldedSystemctlShow(REAL_SHOW.join('\n'))).toEqual(
-      parseFoldedSystemctlShow(fold(REAL_SHOW))
+      parseFoldedSystemctlShow(fold([...REAL_SHOW]))
     );
   });
 
