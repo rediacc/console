@@ -7,10 +7,27 @@ import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunc
 
 // Suite 32: detached jobs on a real worker, through the bridge. Every assertion reads machine state (the job spool, `systemctl list-units 'rediacc-job-*'`, `renet job list`, `renet repository status`), never the stdout of the command under test alone. The unit tests of renet drive the same code against a temp dir and a fake systemd; the races here (two processes, one spool) only exist on a real machine.
 //
-// The holder job of cases 5 to 7: no vault function sleeps, so a job is started for a real repository and its unit is frozen with SIGSTOP in the same shell command (the job is still non-terminal and its unit still loaded while frozen). The freeze races the job's own end, so case 5 first checks the holder is live and names a lost race in its message. Planted reds: case 1b runs the dedupe case with renet's hidden `--no-request-dedupe` seam and needs two jobs; case 2b claims two different steps and needs both claimed; case 5b starts a job for another repository beside the holder and needs it admitted.
+// The holder job of cases 5 to 7: no vault function sleeps, so a job is started for a real repository and its unit is frozen with SIGSTOP in the same shell command (the job is still non-terminal and its unit still loaded while frozen). The freeze races the job's own end, so case 5 first checks the holder is live and names a lost race in its message.
+//
+// Planted reds: each case's predicate is run once on a state planted to break it, and the control needs the predicate to fail there. A production renet binary carries no test seam (jobDedupeOff in private/renet/cmd/renet/job_commands.go is set only by the Go unit tests), so every plant here is machine state. Case 1b deletes the request index entry, the record dedupe reads, and a second start with the same request id then needs two jobs. Case 2b claims two different steps and needs both claimed. Case 3b starts two network_id auto jobs one after the other, the first already ended, so no live reservation keeps them apart and they need the same id. Case 4b plants a loaded `rediacc-job-*` unit with no spool entry and needs the units and the live jobs to differ. Case 5b starts a job for another repository beside the holder and needs it admitted. Case 6b reads the status of another repository and needs the holder absent from its jobs.
 
 const DS = DEFAULT_DATASTORE_PATH;
 const GUID = randomUUID();
+const JOB_ID = /j[0-9a-f]+-[0-9a-f]{8}/g;
+/** The request index of the job spool (private/renet/pkg/jobs/jobs.go RequestsDir). */
+const REQUESTS_DIR = '/var/lib/rediacc/jobs/.requests';
+/** The suffix of the planted unit of case 4b; afterAll stops any unit that carries it. */
+const PLANT_SUFFIX = '0e2e0e2e';
+
+const uniqueIds = (stdout: string): string[] => [...new Set(stdout.match(JOB_ID) ?? [])];
+
+/** Case 3's predicate: both starts allocated an id and the ids differ. */
+const distinctNetworkIds = (a: Handle, b: Handle): boolean =>
+  (a.network_id ?? 0) > 0 && (b.network_id ?? 0) > 0 && a.network_id !== b.network_id;
+
+/** Case 4's predicate: the loaded job units are exactly the live jobs. */
+const sameIdSet = (units: string[], live: string[]): boolean =>
+  new Set(units).size === new Set(live).size && units.every((u) => live.includes(u));
 
 interface Handle {
   job_id: string;
@@ -60,21 +77,73 @@ test.describe
       return r.stdout.split('\n').filter((l) => l.startsWith('rediacc-job-'));
     };
 
+    const loadedUnitJobIds = async (): Promise<string[]> =>
+      (await loadedJobUnits()).map((u) => u.replace(/^rediacc-job-/, '').replace(/\.service$/, ''));
+
+    const liveJobIds = async (): Promise<string[]> => {
+      const live = await w.executeViaBridge(`sudo renet job list --active --json`);
+      expect(live.code, live.stderr.slice(-400)).toBe(0);
+      return uniqueIds(live.stdout);
+    };
+
+    /** Waits until none of ids is a live job; fails naming the ones still live. */
+    const waitEnded = async (ids: string[], timeoutMs = 120_000): Promise<void> => {
+      const deadline = Date.now() + timeoutMs;
+      let stillLive = ids;
+      while (Date.now() < deadline) {
+        const live = await liveJobIds();
+        stillLive = ids.filter((id) => live.includes(id));
+        if (stillLive.length === 0) return;
+        await new Promise((r) => setTimeout(r, 2_000));
+      }
+      expect(stillLive, `jobs still live after ${timeoutMs} ms`).toEqual([]);
+    };
+
+    /** The network ids with a footprint on the worker (`renet network used`). */
+    const usedNetworkIds = async (): Promise<number[]> => {
+      const r = await w.executeViaBridge(`sudo renet network used --json`);
+      expect(r.code, r.stderr.slice(-400)).toBe(0);
+      const line = r.stdout.split('\n').find((l) => l.trim().startsWith('['));
+      expect(line, `no claim list on stdout:\n${r.stdout.slice(-400)}`).toBeTruthy();
+      return (JSON.parse(line as string) as { network_id: number }[]).map((c) => c.network_id);
+    };
+
+    const startAuto = async (name: string): Promise<Handle> => {
+      const vault = await stageVault(name, vaultFor('auto', randomUUID()));
+      const r = await w.executeViaBridge(
+        `sudo renet job start --executor local --json --vault @${vault}`
+      );
+      expect(r.code, r.stderr.slice(-400)).toBe(0);
+      return parseHandle(r.stdout);
+    };
+
     test.beforeAll(async () => {
       w = RenetFunctionsTestRunner.forWorker(1);
       await w.ensureDatastoreReady(DS);
     });
 
     test.afterAll(async () => {
+      await w
+        .executeViaBridge(`sudo systemctl stop 'rediacc-job-*-${PLANT_SUFFIX}.service'`)
+        .catch(() => undefined);
       await w.executeViaBridge(`sudo renet job gc --older-than 0 --json`).catch(() => undefined);
       await w
         .executeViaBridge(`rm -f /tmp/e2e-jobs-*.json /tmp/e2e-jobs-*.sh`)
         .catch(() => undefined);
     });
 
+    const requestId = `e2e-dedupe-${Date.now()}`;
+    let dedupedJob: string | undefined;
+
+    /** Case 1's machine-state read: every job in the spool that carries requestId. */
+    const jobsForRequest = async (): Promise<string[]> => {
+      const list = await w.executeViaBridge(`sudo renet job list --request-id ${requestId} --json`);
+      expect(list.code, list.stderr.slice(-400)).toBe(0);
+      return uniqueIds(list.stdout);
+    };
+
     test('1. two concurrent starts with one request id give one job and one spool entry', async () => {
       const vault = await stageVault('dedupe', vaultFor(2890));
-      const requestId = `e2e-dedupe-${Date.now()}`;
       const start = `sudo renet job start --executor local --json --request-id ${requestId} --vault @${vault}`;
       const [a, b] = await Promise.all([w.executeViaBridge(start), w.executeViaBridge(start)]);
       expect(a.code, a.stderr.slice(-400)).toBe(0);
@@ -83,12 +152,31 @@ test.describe
       const hb = parseHandle(b.stdout);
       expect(ha.job_id, 'the two starts returned different jobs').toBe(hb.job_id);
       // Machine state: exactly one job in the spool carries the request id.
-      const list = await w.executeViaBridge(`sudo renet job list --request-id ${requestId} --json`);
-      expect(list.code, list.stderr.slice(-400)).toBe(0);
-      const ids = (list.stdout.match(/j[0-9a-f]+-[0-9a-f]{8}/g) ?? []).filter(
-        (id, i, all) => all.indexOf(id) === i
+      expect(
+        await jobsForRequest(),
+        'the spool holds more than one job for one request id'
+      ).toEqual([ha.job_id]);
+      dedupedJob = ha.job_id;
+    });
+
+    // Planted red of case 1: the request index entry is the record dedupe reads; with it deleted a second start of the same request id makes a second job, and case 1's read must see both.
+    test('1b. control: with the request index entry deleted, one request id gives two jobs', async () => {
+      expect(dedupedJob, 'case 1 started no job').toBeTruthy();
+      const rm = await w.executeViaBridge(`sudo rm -f ${REQUESTS_DIR}/${requestId}`);
+      expect(rm.code, `deleting the request index entry: ${rm.stderr.slice(-300)}`).toBe(0);
+      // Another repository, so the repo-exclusive lock of a case-1 job still running cannot refuse it.
+      const vault = await stageVault('dedupe-plant', vaultFor(2898, randomUUID()));
+      const r = await w.executeViaBridge(
+        `sudo renet job start --executor local --json --request-id ${requestId} --vault @${vault}`
       );
-      expect(ids, 'the spool holds more than one job for one request id').toEqual([ha.job_id]);
+      expect(r.code, r.stderr.slice(-400)).toBe(0);
+      const planted = parseHandle(r.stdout);
+      expect(planted.deduped, 'the start was deduped with the index entry gone').toBeFalsy();
+      const ids = await jobsForRequest();
+      expect(ids, 'case 1 would pass on a spool holding two jobs for one request id').toHaveLength(
+        2
+      );
+      expect(ids).toEqual(expect.arrayContaining([dedupedJob, planted.job_id]));
     });
 
     test('2. two concurrent claims of one step give it to exactly one claimant', async () => {
@@ -116,7 +204,7 @@ test.describe
       expect(files.stdout.trim().split('\n').filter(Boolean)).toHaveLength(1);
     });
 
-    test('3. two concurrent starts with network_id auto get distinct ids', async () => {
+    test('3. two concurrent starts with network_id auto get distinct ids, both released after', async () => {
       // Two repositories: a second start of the SAME repository is refused by its repo-exclusive lock (exit 15), which is case 5's subject, not this one's.
       const vaultA = await stageVault('auto-a', vaultFor('auto', randomUUID()));
       const vaultB = await stageVault('auto-b', vaultFor('auto', randomUUID()));
@@ -130,7 +218,10 @@ test.describe
       const hb = parseHandle(b.stdout);
       expect(ha.network_id, 'first start allocated no network id').toBeGreaterThan(0);
       expect(hb.network_id, 'second start allocated no network id').toBeGreaterThan(0);
-      expect(ha.network_id, 'both starts got the same network id').not.toBe(hb.network_id);
+      expect(
+        distinctNetworkIds(ha, hb),
+        `both starts got network id ${ha.network_id} and ${hb.network_id}`
+      ).toBe(true);
       // Machine state: each job's spool dir holds the id its start reported.
       for (const h of [ha, hb]) {
         const rec = await w.executeViaBridge(
@@ -138,18 +229,59 @@ test.describe
         );
         expect(rec.stdout.trim(), `spool network_id of ${h.job_id}`).toBe(String(h.network_id));
       }
+      // Released: a job holds its id only while it is live. The repositories do not exist, so both jobs fail; once they have ended, neither id has a footprint on the worker, and case 3b shows the allocator hands an ended job's id out again.
+      await waitEnded([ha.job_id, hb.job_id]);
+      const used = await usedNetworkIds();
+      expect(
+        used.filter((id) => id === ha.network_id || id === hb.network_id),
+        'an ended job left its network id in use'
+      ).toEqual([]);
+    });
+
+    // Planted red of case 3 and the release half of its subject: the second start runs only after the first job has ended, so no live reservation keeps the two apart; the allocator then hands out the released id again and case 3's predicate must fail on the pair.
+    test('3b. control: an auto start after the first job ended gets its released id', async () => {
+      const first = await startAuto('auto-seq-1');
+      await waitEnded([first.job_id]);
+      const second = await startAuto('auto-seq-2');
+      expect(second.network_id, `the id ${first.network_id} of an ended job was not released`).toBe(
+        first.network_id
+      );
+      expect(distinctNetworkIds(first, second), 'case 3 would pass on two equal ids').toBe(false);
+      await waitEnded([second.job_id]);
     });
 
     test('4. job gc --older-than 0 leaves loaded units equal to live jobs', async () => {
       const gc = await w.executeViaBridge(`sudo renet job gc --older-than 0 --json`);
       expect(gc.code, gc.stderr.slice(-400)).toBe(0);
-      const live = await w.executeViaBridge(`sudo renet job list --active --json`);
-      expect(live.code, live.stderr.slice(-400)).toBe(0);
-      const liveIds = new Set(live.stdout.match(/j[0-9a-f]+-[0-9a-f]{8}/g) ?? []);
-      const unitIds = (await loadedJobUnits()).map((u) =>
-        u.replace(/^rediacc-job-/, '').replace(/\.service$/, '')
+      const liveIds = await liveJobIds();
+      const unitIds = await loadedUnitJobIds();
+      expect(
+        sameIdSet(unitIds, liveIds),
+        `loaded units ${JSON.stringify(unitIds)} against live jobs ${JSON.stringify(liveIds)}`
+      ).toBe(true);
+    });
+
+    // Planted red of case 4: a loaded rediacc-job unit with no job in the spool is the leak case 4 exists to catch, and its predicate must fail while the unit is loaded.
+    test('4b. control: a loaded job unit with no spool entry breaks the unit and live-job match', async () => {
+      const fakeId = `j${Date.now().toString(16)}-${PLANT_SUFFIX}`;
+      const unit = `rediacc-job-${fakeId}`;
+      const planted = await w.executeViaBridge(
+        `sudo systemd-run --unit=${unit} --property=RemainAfterExit=yes /bin/true`
       );
-      expect(new Set(unitIds), 'a unit stays loaded for a job gc removed').toEqual(liveIds);
+      expect(planted.code, `planting ${unit}: ${planted.stderr.slice(-300)}`).toBe(0);
+      try {
+        const unitIds = await loadedUnitJobIds();
+        expect(unitIds, `the planted unit ${unit} is not loaded`).toContain(fakeId);
+        const liveIds = await liveJobIds();
+        expect(sameIdSet(unitIds, liveIds), 'case 4 would pass with a leaked unit loaded').toBe(
+          false
+        );
+      } finally {
+        await w.executeViaBridge(`sudo systemctl stop ${unit}.service`);
+      }
+      expect(await loadedUnitJobIds(), `the planted unit ${unit} stayed loaded`).not.toContain(
+        fakeId
+      );
     });
 
     // Control of case 2: two claims of two different steps are both won, so "exactly one claimant" is not a count that is always one.
@@ -224,10 +356,10 @@ test.describe
       parseHandle(r.stdout);
     });
 
-    test('6. repository status --json lists the running job under jobs', async () => {
-      expect(holder, 'case 5 started no holder').toBeTruthy();
+    /** The job ids `repository status --json` lists under jobs for one repository. */
+    const statusJobIds = async (guid: string): Promise<(string | undefined)[]> => {
       const status = await w.executeViaBridge(
-        `sudo renet repository status --name ${REPO} --datastore ${DS} --json`
+        `sudo renet repository status --name ${guid} --datastore ${DS} --json`
       );
       expect(status.code, status.stderr.slice(-400)).toBe(0);
       const jsonStart = status.stdout.indexOf('{');
@@ -235,8 +367,27 @@ test.describe
         jobs?: { job_id?: string; JobID?: string }[];
       };
       expect(Array.isArray(doc.jobs), `no jobs array in: ${status.stdout.slice(-400)}`).toBe(true);
-      const ids = (doc.jobs ?? []).map((j) => j.job_id ?? j.JobID);
-      expect(ids, 'the holder is missing from the status jobs').toContain(holder?.job_id);
+      return (doc.jobs ?? []).map((j) => j.job_id ?? j.JobID);
+    };
+
+    test('6. repository status --json lists the running job under jobs', async () => {
+      expect(holder, 'case 5 started no holder').toBeTruthy();
+      expect(await statusJobIds(REPO), 'the holder is missing from the status jobs').toContain(
+        holder?.job_id
+      );
+    });
+
+    // Planted red of case 6: another repository's status must not list the holder, so case 6's predicate is not met by a jobs array that lists every job on the machine.
+    test('6b. control: the status of another repository does not list the holder', async () => {
+      expect(holder, 'case 5 started no holder').toBeTruthy();
+      const created = await w.repositoryNew(OTHER, '64M', 'e2e-jobs-pw', DS);
+      expect(created.code, `repository_create: ${w.getCombinedOutput(created).slice(-400)}`).toBe(
+        0
+      );
+      expect(
+        await statusJobIds(OTHER),
+        'case 6 would pass for a repository the holder does not hold'
+      ).not.toContain(holder?.job_id);
     });
 
     test('7. cancelling the holder releases the repository', async () => {
