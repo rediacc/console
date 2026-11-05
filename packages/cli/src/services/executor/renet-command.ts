@@ -284,6 +284,8 @@ export const DEFAULT_TIMEOUT_FUNCTIONS: ReadonlySet<string> = new Set([
   'repository_gpu_revoke',
   'repository_health',
   'repository_info',
+  'repository_limits_set',
+  'repository_limits_show',
   'repository_list',
   'repository_log',
   'repository_logs',

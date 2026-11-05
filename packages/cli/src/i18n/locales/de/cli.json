@@ -1553,7 +1553,8 @@
         "verifyFailureWarning": "{{count}} Repository(s) haben ihre letzte Backup-Verifizierung nicht bestanden.",
         "missedTargetSection": "Repositorys, die ihr Backup-Ziel verfehlt haben",
         "missedTargetWarning": "{{count}} Repository(s) haben ihr Backup-Ziel im letzten Lauf verfehlt.",
-        "licenseDetailUnreadable": "Die Liste enthält keine lesbaren Lizenzdetails (renet ist älter als der Abschnitt licenses, oder ein Eintrag ist fehlerhaft). Der Status blockierter Backups und der Verlängerung ist daher unbekannt."
+        "licenseDetailUnreadable": "Die Liste enthält keine lesbaren Lizenzdetails (renet ist älter als der Abschnitt licenses, oder ein Eintrag ist fehlerhaft). Der Status blockierter Backups und der Verlängerung ist daher unbekannt.",
+        "noMemoryCap": "{{count}} Repositorys laufen ohne Speicherobergrenze, jedes davon kann also den Speicher des Hosts belegen: {{names}}. Eine Grenze setzt rdc repo policy set <ref> --memory-max <size>"
       },
       "gpu": {
         "descriptionShort": "GPUs und Geräte-Freigaben einer Maschine anzeigen",
@@ -2060,7 +2061,21 @@
           "growStepOption": "Wachstum pro Schritt: absolut (10G) oder Prozent des Kontingents (20%)",
           "growThresholdOption": "Belegungs-% des Dateisystems, das ein Wachstum auslöst (Standard 85)",
           "maxQuotaOption": "Obergrenze für Auto-Grow (z. B. 200G); für Auto-Grow erforderlich",
-          "trimIntervalOption": "Mindestabstand in Stunden zwischen automatischen Trims (Standard 24)"
+          "trimIntervalOption": "Mindestabstand in Stunden zwischen automatischen Trims (Standard 24)",
+          "memoryMaxOption": "Speicherobergrenze des Repositorys (z. B. 10G, oder max zum Entfernen); an der Grenze wird einer seiner Container per OOM beendet, nichts außerhalb",
+          "memoryHighOption": "Drosselpunkt für den Speicher des Repositorys (z. B. 8G, oder max zum Entfernen)",
+          "cpuMaxOption": "CPU-Obergrenze des Repositorys in Kernen (4, 2.5) oder N%, oder max zum Entfernen",
+          "ioMaxOption": "I/O-Obergrenze des Repository-Geräts: rbps=,wbps=,riops=,wiops= (beliebige Auswahl, z. B. rbps=200M,wbps=100M; KEY=max entfernt einen Wert) oder max",
+          "pidsMaxOption": "Prozessobergrenze des Repositorys (pids.max), oder max zum Entfernen",
+          "ramVolumeOption": "Größe des RAM-Volumes des Repositorys unter <mount>/.ram (z. B. 8G, oder max zum Entfernen); die Speicherobergrenze muss 1G darüber bleiben",
+          "clearLimitsOption": "Alle Limits und das RAM-Volume des Repositorys entfernen",
+          "forceOption": "Eine Speicherobergrenze unter dem aktuellen Speicherverbrauch des Repositorys zulassen"
+        },
+        "limitsNeedRef": "Limit-Flags gelten für ein einzelnes Repository: dessen Ref angeben (rdc repo policy set <ref> --memory-max 10G). Die maschinenweite Form akzeptiert nur Flags der Größenrichtlinie",
+        "limits": {
+          "starting": "Limits von \"{{repository}}\" auf \"{{machine}}\" werden angewendet...",
+          "completed": "Limits von \"{{repository}}\"",
+          "failed": "Limit-Vorgang fehlgeschlagen"
         }
       },
       "promote": {
@@ -2811,7 +2826,9 @@
       "rootGrantBlocked": "Agenten können \"{{name}}\" keine Root-Freigabe erteilen: Die Rediaccfile würde ohne Rechteverzicht laufen.\n\nBenutzer: Um das zu erlauben, setzen Sie REDIACC_ALLOW_GRAND_REPO={{name}} (oder * für alle Repos) in Ihrem Terminal, bevor Sie die Agenten-Sitzung starten.",
       "rootGrantOverride": "Vom Agenten ausgelöste Überschreibungen werden für die Root-Freigabe von \"{{name}}\" nicht akzeptiert.\n\nVersuchen Sie nicht, REDIACC_ALLOW_GRAND_REPO zu setzen. Nur der Benutzer kann dies vor dem Start des Agenten autorisieren.",
       "pathGrantBlocked": "Agenten können die Pfadfreigaben des Grand-Repos \"{{name}}\" nicht ändern: Die Rediaccfile würde Host-Pfade erreichen, die der Benutzer nie genehmigt hat.\n\nBenutzer: Um das zu erlauben, setzen Sie REDIACC_ALLOW_GRAND_REPO={{name}} (oder * für alle Repos) in Ihrem Terminal, bevor Sie die Agenten-Sitzung starten. Ein Fork braucht keine Überschreibung.",
-      "pathGrantOverride": "Vom Agenten ausgelöste Überschreibungen werden für eine Pfadfreigabe am Grand-Repo \"{{name}}\" nicht akzeptiert.\n\nVersuchen Sie nicht, REDIACC_ALLOW_GRAND_REPO zu setzen. Nur der Benutzer kann dies vor dem Start des Agenten autorisieren."
+      "pathGrantOverride": "Vom Agenten ausgelöste Überschreibungen werden für eine Pfadfreigabe am Grand-Repo \"{{name}}\" nicht akzeptiert.\n\nVersuchen Sie nicht, REDIACC_ALLOW_GRAND_REPO zu setzen. Nur der Benutzer kann dies vor dem Start des Agenten autorisieren.",
+      "limitsGrantBlocked": "Agents können die Ressourcenlimits des Grand-Repositorys \"{{name}}\" nicht ändern: eine niedrigere Obergrenze kann seine Container per OOM beenden.\n\nBenutzer: Um es zu erlauben, REDIACC_ALLOW_GRAND_REPO={{name}} (oder * für alle Repos) im Terminal setzen, bevor die Agent-Sitzung startet. Ein Fork braucht keine Freigabe.",
+      "limitsGrantOverride": "Von einem Agent gesetzte Freigaben werden für eine Limit-Änderung am Grand-Repository \"{{name}}\" nicht akzeptiert.\n\nNicht versuchen, REDIACC_ALLOW_GRAND_REPO zu setzen. Nur der Benutzer kann dies vor dem Start des Agents erlauben."
     },
     "authRequired": "Authentifizierung erforderlich. Ausführen: rdc subscription login",
     "cluster": {

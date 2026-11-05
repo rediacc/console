@@ -1553,7 +1553,8 @@
         "verifyFailureWarning": "{{count}} 個のリポジトリが直近のバックアップ検証に失敗しました。",
         "missedTargetSection": "バックアップ目標を達成できなかったリポジトリ",
         "missedTargetWarning": "{{count}} 件のリポジトリが直近の実行でバックアップ目標を達成できませんでした。",
-        "licenseDetailUnreadable": "一覧に読み取れるライセンス詳細がありません（renet が licenses セクションより古いか、エントリの形式が不正です）。そのため、バックアップのブロック状態と更新状態は不明です。"
+        "licenseDetailUnreadable": "一覧に読み取れるライセンス詳細がありません（renet が licenses セクションより古いか、エントリの形式が不正です）。そのため、バックアップのブロック状態と更新状態は不明です。",
+        "noMemoryCap": "{{count}} 個のリポジトリがメモリ上限なしで動作しており、どれもホストのメモリを使い切る可能性があります: {{names}}。rdc repo policy set <ref> --memory-max <size> で上限を設定してください"
       },
       "gpu": {
         "descriptionShort": "マシンの GPU とデバイス付与を確認する",
@@ -2060,7 +2061,21 @@
           "growStepOption": "1 ステップの拡大量: 絶対値（10G）またはクォータの割合（20%）",
           "growThresholdOption": "拡大を引き起こすファイルシステム使用率 %（デフォルト 85）",
           "maxQuotaOption": "自動拡大の上限（例: 200G）。自動拡大には必須",
-          "trimIntervalOption": "自動トリムの最小間隔（時間、デフォルト 24）"
+          "trimIntervalOption": "自動トリムの最小間隔（時間、デフォルト 24）",
+          "memoryMaxOption": "リポジトリのメモリ上限（例: 10G、解除は max）。上限に達するとそのコンテナの 1 つが OOM で終了し、外部には影響しません",
+          "memoryHighOption": "リポジトリのメモリ抑制ポイント（例: 8G、解除は max）",
+          "cpuMaxOption": "リポジトリの CPU 上限（コア数 4、2.5 または N%、解除は max）",
+          "ioMaxOption": "リポジトリのデバイスの I/O 上限: rbps=、wbps=、riops=、wiops= の任意の組み合わせ（例: rbps=200M,wbps=100M。KEY=max で個別に解除）、または max",
+          "pidsMaxOption": "リポジトリのプロセス数上限（pids.max、解除は max）",
+          "ramVolumeOption": "<mount>/.ram に置くリポジトリの RAM ボリュームのサイズ（例: 8G、削除は max）。メモリ上限はこれより 1G 以上大きくする必要があります",
+          "clearLimitsOption": "リポジトリのすべての制限と RAM ボリュームを削除します",
+          "forceOption": "リポジトリの現在のメモリ使用量を下回るメモリ上限を許可します"
+        },
+        "limitsNeedRef": "制限フラグは 1 つのリポジトリに適用されます。その ref を指定してください（rdc repo policy set <ref> --memory-max 10G）。マシン全体の形式で使えるのはサイズポリシーのフラグだけです",
+        "limits": {
+          "starting": "「{{machine}}」 上の 「{{repository}}」 の制限を適用しています...",
+          "completed": "「{{repository}}」 の制限",
+          "failed": "制限の操作に失敗しました"
         }
       },
       "promote": {
@@ -2811,7 +2826,9 @@
       "rootGrantBlocked": "エージェントは 「{{name}}」 に root 付与を与えることはできません。Rediaccfile が権限降格なしで実行されてしまいます。\n\nユーザーへ: 許可するには、エージェントセッション開始前にターミナルで REDIACC_ALLOW_GRAND_REPO={{name}}（またはすべてのリポジトリに対して *）を設定してください。",
       "rootGrantOverride": "「{{name}}」 の root 付与について、エージェントが行った上書きは受け付けられません。\n\nREDIACC_ALLOW_GRAND_REPO を設定しようとしないでください。エージェント開始前にユーザーのみがこれを承認できます。",
       "pathGrantBlocked": "エージェントは grand リポジトリ「{{name}}」のパス付与を変更できません。Rediaccfile が、ユーザーが承認していないホストのパスに届いてしまいます。\n\nユーザーへ: 許可するには、エージェントセッション開始前にターミナルで REDIACC_ALLOW_GRAND_REPO={{name}}（またはすべてのリポジトリに対して *）を設定してください。フォークには上書きは不要です。",
-      "pathGrantOverride": "grand リポジトリ「{{name}}」のパス付与について、エージェントが行った上書きは受け付けられません。\n\nREDIACC_ALLOW_GRAND_REPO を設定しようとしないでください。エージェント開始前にユーザーのみがこれを承認できます。"
+      "pathGrantOverride": "grand リポジトリ「{{name}}」のパス付与について、エージェントが行った上書きは受け付けられません。\n\nREDIACC_ALLOW_GRAND_REPO を設定しようとしないでください。エージェント開始前にユーザーのみがこれを承認できます。",
+      "limitsGrantBlocked": "エージェントはグランドリポジトリ「{{name}}」のリソース制限を変更できません。上限を下げるとそのコンテナが OOM で終了する可能性があります。\n\nユーザー: 許可するには、エージェントのセッションを開始する前にターミナルで REDIACC_ALLOW_GRAND_REPO={{name}}（すべてのリポジトリなら *）を設定してください。フォークには不要です。",
+      "limitsGrantOverride": "グランドリポジトリ「{{name}}」の制限変更では、エージェントが設定した上書きは受け付けません。\n\nREDIACC_ALLOW_GRAND_REPO を設定しようとしないでください。許可できるのは、エージェントの起動前のユーザーだけです。"
     },
     "authRequired": "認証が必要です。実行してください: rdc subscription login",
     "cluster": {

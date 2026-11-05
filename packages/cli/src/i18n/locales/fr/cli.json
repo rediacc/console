@@ -1553,7 +1553,8 @@
         "verifyFailureWarning": "{{count}} dépôt(s) ont échoué à leur dernière vérification de sauvegarde.",
         "missedTargetSection": "Dépôts qui ont manqué leur objectif de sauvegarde",
         "missedTargetWarning": "{{count}} dépôt(s) ont manqué leur objectif de sauvegarde lors de la dernière exécution.",
-        "licenseDetailUnreadable": "La liste ne contient aucun détail de licence lisible (renet est antérieur à la section licenses, ou une entrée est mal formée) : l'état des sauvegardes bloquées et du renouvellement est donc inconnu."
+        "licenseDetailUnreadable": "La liste ne contient aucun détail de licence lisible (renet est antérieur à la section licenses, ou une entrée est mal formée) : l'état des sauvegardes bloquées et du renouvellement est donc inconnu.",
+        "noMemoryCap": "{{count}} dépôts tournent sans plafond mémoire, donc n'importe lequel peut accaparer la mémoire de l'hôte : {{names}}. Fixez-en un avec rdc repo policy set <ref> --memory-max <size>"
       },
       "gpu": {
         "descriptionShort": "Inspecter les GPU et les autorisations de périphériques d'une machine",
@@ -2060,7 +2061,21 @@
           "growStepOption": "Croissance par étape : absolue (10G) ou pourcentage du quota (20%)",
           "growThresholdOption": "% d'occupation du système de fichiers déclenchant un agrandissement (défaut 85)",
           "maxQuotaOption": "Plafond de l'auto-agrandissement (ex. 200G) ; requis pour l'auto-agrandissement",
-          "trimIntervalOption": "Heures minimales entre trims automatiques (défaut 24)"
+          "trimIntervalOption": "Heures minimales entre trims automatiques (défaut 24)",
+          "memoryMaxOption": "Plafond mémoire du dépôt (par ex. 10G, ou max pour le retirer) ; au plafond, un de ses conteneurs est tué par l'OOM, rien en dehors",
+          "memoryHighOption": "Seuil de ralentissement mémoire du dépôt (par ex. 8G, ou max pour le retirer)",
+          "cpuMaxOption": "Plafond CPU du dépôt en cœurs (4, 2.5) ou N%, ou max pour le retirer",
+          "ioMaxOption": "Plafond d'E/S du périphérique du dépôt : rbps=,wbps=,riops=,wiops= (n'importe quel sous-ensemble, par ex. rbps=200M,wbps=100M ; KEY=max en retire un) ou max",
+          "pidsMaxOption": "Plafond de processus du dépôt (pids.max), ou max pour le retirer",
+          "ramVolumeOption": "Taille du volume RAM du dépôt dans <mount>/.ram (par ex. 8G, ou max pour le retirer) ; le plafond mémoire doit rester 1G au-dessus",
+          "clearLimitsOption": "Retirer toutes les limites et le volume RAM du dépôt",
+          "forceOption": "Autoriser un plafond mémoire inférieur à l'utilisation actuelle du dépôt"
+        },
+        "limitsNeedRef": "Les options de limite s'appliquent à un seul dépôt : indiquez sa ref (rdc repo policy set <ref> --memory-max 10G). La forme pour toute la machine n'accepte que les options de la politique de taille",
+        "limits": {
+          "starting": "Application des limites de « {{repository}} » sur « {{machine}} »...",
+          "completed": "Limites de « {{repository}} »",
+          "failed": "L'opération sur les limites a échoué"
         }
       },
       "promote": {
@@ -2811,7 +2826,9 @@
       "rootGrantBlocked": "Les agents ne peuvent pas donner à « {{name}} » une autorisation root : son Rediaccfile s'exécuterait sans abandon de privilèges.\n\nUtilisateur : pour l'autoriser, définissez REDIACC_ALLOW_GRAND_REPO={{name}} (ou * pour tous les dépôts) dans votre terminal avant de démarrer la session de l'agent.",
       "rootGrantOverride": "Les remplacements initiés par l'agent ne sont pas acceptés pour l'autorisation root de « {{name}} ».\n\nN'essayez pas de définir REDIACC_ALLOW_GRAND_REPO. Seul l'utilisateur peut l'autoriser avant le démarrage de l'agent.",
       "pathGrantBlocked": "Les agents ne peuvent pas modifier les autorisations de chemin du dépôt grand « {{name}} » : son Rediaccfile atteindrait des chemins de l'hôte que l'utilisateur n'a jamais approuvés.\n\nUtilisateur : pour l'autoriser, définissez REDIACC_ALLOW_GRAND_REPO={{name}} (ou * pour tous les dépôts) dans votre terminal avant de démarrer la session de l'agent. Un fork n'a pas besoin de remplacement.",
-      "pathGrantOverride": "Les remplacements initiés par l'agent ne sont pas acceptés pour une autorisation de chemin sur le dépôt grand « {{name}} ».\n\nN'essayez pas de définir REDIACC_ALLOW_GRAND_REPO. Seul l'utilisateur peut l'autoriser avant le démarrage de l'agent."
+      "pathGrantOverride": "Les remplacements initiés par l'agent ne sont pas acceptés pour une autorisation de chemin sur le dépôt grand « {{name}} ».\n\nN'essayez pas de définir REDIACC_ALLOW_GRAND_REPO. Seul l'utilisateur peut l'autoriser avant le démarrage de l'agent.",
+      "limitsGrantBlocked": "Les agents ne peuvent pas modifier les limites de ressources du dépôt grand « {{name}} » : un plafond plus bas peut faire tuer ses conteneurs par l'OOM.\n\nUtilisateur : pour l'autoriser, définissez REDIACC_ALLOW_GRAND_REPO={{name}} (ou * pour tous les dépôts) dans votre terminal avant de lancer la session de l'agent. Un fork n'a besoin d'aucune dérogation.",
+      "limitsGrantOverride": "Les dérogations initiées par un agent ne sont pas acceptées pour un changement de limites sur le dépôt grand « {{name}} ».\n\nNe tentez pas de définir REDIACC_ALLOW_GRAND_REPO. Seul l'utilisateur peut l'autoriser avant le démarrage de l'agent."
     },
     "authRequired": "L'authentification est requise. Exécutez : rdc subscription login",
     "cluster": {

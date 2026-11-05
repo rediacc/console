@@ -32,6 +32,7 @@ const EXPECTED_READ_ONLY = [
   'repository_diff',
   'repository_health',
   'repository_info',
+  'repository_limits_show',
   'repository_list',
   'repository_log',
   'repository_logs',

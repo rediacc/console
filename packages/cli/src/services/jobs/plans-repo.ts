@@ -326,7 +326,8 @@ export const REPO_JOB_PLANS: Readonly<Record<string, JobPlan>> = {
     lock: 'read',
     timeout: '10m',
     box: 'J16',
-    steps: ['renderPolicyResult'],
+    steps: ['renderPolicyResult', 'renderLimitsResult'],
+    note: 'a single-repo ref also runs repository_limits_show (read), whose limits table is the renderLimitsResult step',
   },
   'repo policy set': {
     form: 'precondition',
@@ -334,7 +335,8 @@ export const REPO_JOB_PLANS: Readonly<Record<string, JobPlan>> = {
     lock: 'repo-exclusive',
     timeout: '10m',
     box: 'J16',
-    steps: ['renderPolicyResult'],
+    steps: ['renderPolicyResult', 'renderLimitsResult'],
+    note: 'a limit flag runs repository_limits_set (repo-exclusive), whose limits table is the renderLimitsResult step',
   },
   'repo promote': {
     form: 'precondition',

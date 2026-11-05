@@ -12204,6 +12204,94 @@
           "label": "Minimum hours between automatic trims (default 24)"
         },
         {
+          "flags": "--memory-max <size>",
+          "long": "memory-max",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.repo.policy.set.memoryMaxOption",
+          "label": "Memory cap of the repository (e.g. 10G, or max to remove); at the cap one of its containers is OOM-killed, nothing outside it"
+        },
+        {
+          "flags": "--memory-high <size>",
+          "long": "memory-high",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.repo.policy.set.memoryHighOption",
+          "label": "Memory throttle point of the repository (e.g. 8G, or max to remove)"
+        },
+        {
+          "flags": "--cpu-max <cores>",
+          "long": "cpu-max",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.repo.policy.set.cpuMaxOption",
+          "label": "CPU cap of the repository in cores (4, 2.5) or N%, or max to remove"
+        },
+        {
+          "flags": "--io-max <limits>",
+          "long": "io-max",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.repo.policy.set.ioMaxOption",
+          "label": "I/O cap of the repository's device: rbps=,wbps=,riops=,wiops= (any subset, e.g. rbps=200M,wbps=100M; KEY=max removes one), or max"
+        },
+        {
+          "flags": "--pids-max <count>",
+          "long": "pids-max",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.repo.policy.set.pidsMaxOption",
+          "label": "Process cap of the repository (pids.max), or max to remove"
+        },
+        {
+          "flags": "--ram-volume <size>",
+          "long": "ram-volume",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.repo.policy.set.ramVolumeOption",
+          "label": "Size of the repository's RAM volume at <mount>/.ram (e.g. 8G, or max to remove); the memory cap must stay 1G above it"
+        },
+        {
+          "flags": "--clear-limits",
+          "long": "clear-limits",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.repo.policy.set.clearLimitsOption",
+          "label": "Remove every limit and the RAM volume of the repository"
+        },
+        {
+          "flags": "--force",
+          "long": "force",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.repo.policy.set.forceOption",
+          "label": "Allow a memory cap below the repository's current memory use"
+        },
+        {
           "flags": "-m, --machine <name>",
           "long": "machine",
           "short": "m",

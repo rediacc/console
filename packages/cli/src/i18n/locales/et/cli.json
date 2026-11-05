@@ -1553,7 +1553,8 @@
         "verifyFailureWarning": "{{count}} hoidlat ebaõnnestus viimases varunduskontrollis.",
         "missedTargetSection": "Hoidlad, mis jäid varundusest eesmärgist maha",
         "missedTargetWarning": "{{count}} hoidlat jäi viimasel jooksutusel varundusest eesmärgist maha.",
-        "licenseDetailUnreadable": "Loendis pole loetavaid litsentsi üksikasju (renet on vanem kui jaotis licenses või mõni kirje on vigane), seega pole blokeeritud varunduste ja uuendamise olek teada."
+        "licenseDetailUnreadable": "Loendis pole loetavaid litsentsi üksikasju (renet on vanem kui jaotis licenses või mõni kirje on vigane), seega pole blokeeritud varunduste ja uuendamise olek teada.",
+        "noMemoryCap": "{{count}} hoidlat töötab ilma mälupiirita, seega võib ükskõik milline neist võtta kogu hosti mälu: {{names}}. Sea piir käsuga rdc repo policy set <ref> --memory-max <size>"
       },
       "gpu": {
         "descriptionShort": "Vaata masina GPU-sid ja seadmeõigusi",
@@ -2060,7 +2061,21 @@
           "growStepOption": "Kasv sammu kohta: absoluutne (10G) või protsent kvoodist (20%)",
           "growThresholdOption": "Failisüsteemi täituvus %, mis käivitab kasvu (vaikimisi 85)",
           "maxQuotaOption": "Automaatkasvu lagi (nt 200G); automaatkasvuks kohustuslik",
-          "trimIntervalOption": "Vähim tundide arv automaatsete trimmide vahel (vaikimisi 24)"
+          "trimIntervalOption": "Vähim tundide arv automaatsete trimmide vahel (vaikimisi 24)",
+          "memoryMaxOption": "Hoidla mälupiir (nt 10G, eemaldamiseks max); piiri juures lõpetab OOM ühe selle konteineri ja mitte midagi väljaspool",
+          "memoryHighOption": "Hoidla mälu pidurduspunkt (nt 8G, eemaldamiseks max)",
+          "cpuMaxOption": "Hoidla protsessoripiir tuumades (4, 2.5) või N%, eemaldamiseks max",
+          "ioMaxOption": "Hoidla seadme I/O piir: rbps=,wbps=,riops=,wiops= (mis tahes valik, nt rbps=200M,wbps=100M; KEY=max eemaldab ühe) või max",
+          "pidsMaxOption": "Hoidla protsesside piir (pids.max), eemaldamiseks max",
+          "ramVolumeOption": "Hoidla RAM-köite suurus asukohas <mount>/.ram (nt 8G, eemaldamiseks max); mälupiir peab jääma sellest 1G kõrgemale",
+          "clearLimitsOption": "Eemalda hoidla kõik piirangud ja RAM-köide",
+          "forceOption": "Luba mälupiir, mis on hoidla praegusest mälukasutusest madalam"
+        },
+        "limitsNeedRef": "Piirangulipud kehtivad ühele hoidlale: anna selle ref (rdc repo policy set <ref> --memory-max 10G). Kogu masina vorm võtab ainult suurusepoliitika lippe",
+        "limits": {
+          "starting": "Rakendatakse hoidla \"{{repository}}\" piiranguid masinas \"{{machine}}\"...",
+          "completed": "Hoidla \"{{repository}}\" piirangud",
+          "failed": "Piirangutoiming nurjus"
         }
       },
       "promote": {
@@ -2811,7 +2826,9 @@
       "rootGrantBlocked": "Agendid ei saa hoidlale \"{{name}}\" anda root-luba: selle Rediaccfile töötaks ilma õiguste loobumiseta.\n\nKasutaja: selle lubamiseks seadista REDIACC_ALLOW_GRAND_REPO={{name}} (või * kõigi repositooriumide jaoks) oma terminalis enne agendi seansi käivitamist.",
       "rootGrantOverride": "Agendi algatatud ülekirjutusi hoidla \"{{name}}\" root-loa puhul vastu ei võeta.\n\nÄra proovi seadistada REDIACC_ALLOW_GRAND_REPO - ainult kasutaja saab selle enne agendi käivitamist autoriseerida.",
       "pathGrantBlocked": "Agendid ei saa muuta grand-hoidla \"{{name}}\" teeõigusi: selle Rediaccfile jõuaks hosti teedeni, mida kasutaja pole kunagi heaks kiitnud.\n\nKasutaja: selle lubamiseks seadista REDIACC_ALLOW_GRAND_REPO={{name}} (või * kõigi repositooriumide jaoks) oma terminalis enne agendi seansi käivitamist. Fork ei vaja ülekirjutust.",
-      "pathGrantOverride": "Agendi algatatud ülekirjutusi grand-hoidla \"{{name}}\" teeloa puhul vastu ei võeta.\n\nÄra proovi seadistada REDIACC_ALLOW_GRAND_REPO - ainult kasutaja saab selle enne agendi käivitamist autoriseerida."
+      "pathGrantOverride": "Agendi algatatud ülekirjutusi grand-hoidla \"{{name}}\" teeloa puhul vastu ei võeta.\n\nÄra proovi seadistada REDIACC_ALLOW_GRAND_REPO - ainult kasutaja saab selle enne agendi käivitamist autoriseerida.",
+      "limitsGrantBlocked": "Agendid ei saa muuta põhihoidla \"{{name}}\" ressursipiiranguid: madalam piir võib selle konteinerid OOM-iga lõpetada.\n\nKasutaja: lubamiseks sea enne agendi seansi alustamist terminalis REDIACC_ALLOW_GRAND_REPO={{name}} (või * kõigi hoidlate jaoks). Haru jaoks pole seda vaja.",
+      "limitsGrantOverride": "Põhihoidla \"{{name}}\" piirangumuudatuse jaoks ei aktsepteerita agendi algatatud erandeid.\n\nÄra proovi seada REDIACC_ALLOW_GRAND_REPO. Seda saab lubada ainult kasutaja enne agendi käivitamist."
     },
     "authRequired": "Autentimine on nõutud. Käivita: rdc subscription login",
     "cluster": {

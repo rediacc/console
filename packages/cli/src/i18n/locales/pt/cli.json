@@ -1553,7 +1553,8 @@
         "verifyFailureWarning": "{{count}} repositório(s) falharam a última verificação de cópia.",
         "missedTargetSection": "Repositórios que não cumpriram a meta de backup",
         "missedTargetWarning": "{{count}} repositório(s) não cumpriram a meta de backup na última execução.",
-        "licenseDetailUnreadable": "A listagem não traz detalhes de licença legíveis (o renet é anterior à seção licenses ou uma entrada está malformada), por isso o estado dos backups bloqueados e da renovação é desconhecido."
+        "licenseDetailUnreadable": "A listagem não traz detalhes de licença legíveis (o renet é anterior à seção licenses ou uma entrada está malformada), por isso o estado dos backups bloqueados e da renovação é desconhecido.",
+        "noMemoryCap": "{{count}} repositórios estão a correr sem teto de memória, por isso qualquer um pode ocupar a memória do anfitrião: {{names}}. Defina um com rdc repo policy set <ref> --memory-max <size>"
       },
       "gpu": {
         "descriptionShort": "Inspecionar as GPUs e as concessões de dispositivos de uma máquina",
@@ -2060,7 +2061,21 @@
           "growStepOption": "Crescimento por passo: absoluto (10G) ou percentual da cota (20%)",
           "growThresholdOption": "% de uso do sistema de arquivos que dispara um crescimento (padrão 85)",
           "maxQuotaOption": "Teto do auto-crescimento (ex. 200G); obrigatório para o auto-crescimento",
-          "trimIntervalOption": "Horas mínimas entre trims automáticos (padrão 24)"
+          "trimIntervalOption": "Horas mínimas entre trims automáticos (padrão 24)",
+          "memoryMaxOption": "Teto de memória do repositório (p. ex. 10G, ou max para remover); no teto, um dos seus contentores é terminado por OOM, nada fora dele",
+          "memoryHighOption": "Ponto de limitação de memória do repositório (p. ex. 8G, ou max para remover)",
+          "cpuMaxOption": "Teto de CPU do repositório em núcleos (4, 2.5) ou N%, ou max para remover",
+          "ioMaxOption": "Teto de E/S do dispositivo do repositório: rbps=,wbps=,riops=,wiops= (qualquer subconjunto, p. ex. rbps=200M,wbps=100M; KEY=max remove um) ou max",
+          "pidsMaxOption": "Teto de processos do repositório (pids.max), ou max para remover",
+          "ramVolumeOption": "Tamanho do volume RAM do repositório em <mount>/.ram (p. ex. 8G, ou max para remover); o teto de memória deve ficar 1G acima",
+          "clearLimitsOption": "Remover todos os limites e o volume RAM do repositório",
+          "forceOption": "Permitir um teto de memória abaixo do uso atual de memória do repositório"
+        },
+        "limitsNeedRef": "As opções de limite aplicam-se a um único repositório: indique a ref dele (rdc repo policy set <ref> --memory-max 10G). A forma para a máquina inteira aceita apenas opções da política de tamanho",
+        "limits": {
+          "starting": "A aplicar os limites de \"{{repository}}\" em \"{{machine}}\"...",
+          "completed": "Limites de \"{{repository}}\"",
+          "failed": "A operação de limites falhou"
         }
       },
       "promote": {
@@ -2811,7 +2826,9 @@
       "rootGrantBlocked": "Os agentes não podem dar a \"{{name}}\" uma concessão de root: o seu Rediaccfile executaria sem descida de privilégios.\n\nUtilizador: para o permitir, defina REDIACC_ALLOW_GRAND_REPO={{name}} (ou * para todos os repositórios) no terminal antes de iniciar a sessão do agente.",
       "rootGrantOverride": "Não são aceites substituições iniciadas pelo agente para a concessão de root de \"{{name}}\".\n\nNão tente definir REDIACC_ALLOW_GRAND_REPO. Apenas o utilizador pode autorizar isso antes de o agente ser iniciado.",
       "pathGrantBlocked": "Os agentes não podem alterar as concessões de caminho do repositório grand \"{{name}}\": o seu Rediaccfile alcançaria caminhos do anfitrião que o utilizador nunca aprovou.\n\nUtilizador: para o permitir, defina REDIACC_ALLOW_GRAND_REPO={{name}} (ou * para todos os repositórios) no terminal antes de iniciar a sessão do agente. Um fork não precisa de substituição.",
-      "pathGrantOverride": "Não são aceites substituições iniciadas pelo agente para uma concessão de caminho no repositório grand \"{{name}}\".\n\nNão tente definir REDIACC_ALLOW_GRAND_REPO. Apenas o utilizador pode autorizar isso antes de o agente ser iniciado."
+      "pathGrantOverride": "Não são aceites substituições iniciadas pelo agente para uma concessão de caminho no repositório grand \"{{name}}\".\n\nNão tente definir REDIACC_ALLOW_GRAND_REPO. Apenas o utilizador pode autorizar isso antes de o agente ser iniciado.",
+      "limitsGrantBlocked": "Os agentes não podem alterar os limites de recursos do repositório grand \"{{name}}\": um teto mais baixo pode terminar os seus contentores por OOM.\n\nUtilizador: para o permitir, defina REDIACC_ALLOW_GRAND_REPO={{name}} (ou * para todos os repositórios) no terminal antes de iniciar a sessão do agente. Um fork não precisa de exceção.",
+      "limitsGrantOverride": "Não são aceites exceções iniciadas por um agente para uma alteração de limites no repositório grand \"{{name}}\".\n\nNão tente definir REDIACC_ALLOW_GRAND_REPO. Só o utilizador pode autorizá-lo antes de o agente iniciar."
     },
     "authRequired": "Autenticação necessária. Execute: rdc subscription login",
     "cluster": {

@@ -1553,7 +1553,8 @@
         "verifyFailureWarning": "{{count}} 个仓库的上次备份验证失败。",
         "missedTargetSection": "未达到备份目标的仓库",
         "missedTargetWarning": "{{count}} 个仓库在最近一次运行中未达到备份目标。",
-        "licenseDetailUnreadable": "列表中没有可读取的许可证详情（renet 早于 licenses 部分，或某个条目格式错误），因此无法确定备份受阻和续期的状态。"
+        "licenseDetailUnreadable": "列表中没有可读取的许可证详情（renet 早于 licenses 部分，或某个条目格式错误），因此无法确定备份受阻和续期的状态。",
+        "noMemoryCap": "有 {{count}} 个仓库在没有内存上限的情况下运行，其中任何一个都可能占满主机内存：{{names}}。请用 rdc repo policy set <ref> --memory-max <size> 设置上限"
       },
       "gpu": {
         "descriptionShort": "查看机器的 GPU 和设备授权",
@@ -2060,7 +2061,21 @@
           "growStepOption": "每次扩容量：绝对值（10G）或配额百分比（20%）",
           "growThresholdOption": "触发扩容的文件系统使用率百分比（默认 85）",
           "maxQuotaOption": "自动扩容上限（例如 200G）；启用自动扩容时必填",
-          "trimIntervalOption": "自动修剪之间的最少小时数（默认 24）"
+          "trimIntervalOption": "自动修剪之间的最少小时数（默认 24）",
+          "memoryMaxOption": "仓库的内存上限（例如 10G，设为 max 则移除）；达到上限时只会因 OOM 终止其中一个容器，不影响仓库之外的任何进程",
+          "memoryHighOption": "仓库的内存节流点（例如 8G，设为 max 则移除）",
+          "cpuMaxOption": "仓库的 CPU 上限，以核数（4、2.5）或 N% 表示，设为 max 则移除",
+          "ioMaxOption": "仓库设备的 I/O 上限：rbps=、wbps=、riops=、wiops= 任意组合（例如 rbps=200M,wbps=100M；KEY=max 移除单项），或 max",
+          "pidsMaxOption": "仓库的进程数上限（pids.max），设为 max 则移除",
+          "ramVolumeOption": "仓库在 <mount>/.ram 的 RAM 卷大小（例如 8G，设为 max 则移除）；内存上限必须比它高出 1G",
+          "clearLimitsOption": "移除仓库的所有限制和 RAM 卷",
+          "forceOption": "允许内存上限低于仓库当前的内存用量"
+        },
+        "limitsNeedRef": "限制选项只作用于单个仓库：请指定其 ref（rdc repo policy set <ref> --memory-max 10G）。整机形式只接受大小策略选项",
+        "limits": {
+          "starting": "正在应用 “{{machine}}” 上 “{{repository}}” 的限制...",
+          "completed": "“{{repository}}” 的限制",
+          "failed": "限制操作失败"
         }
       },
       "promote": {
@@ -2811,7 +2826,9 @@
       "pathGrantOverride": "grand 仓库“{{name}}”的路径授权不接受代理发起的覆盖。\n\n不要尝试设置 REDIACC_ALLOW_GRAND_REPO。只有用户可以在代理启动前授权此操作。",
       "rotateRequiresTty": "config field rotate 需要交互式 TTY 确认;在非交互式上下文中被拒绝(如需覆盖请设置 REDIACC_ALLOW_CONFIG_EDIT)。",
       "showReveal": "在代理环境中禁止使用 --reveal。请使用 `rdc config show`（脱敏）或 `rdc config field get --pointer <pointer> --digest` 获取安全指纹。",
-      "showRevealRequiresTty": "--reveal 需要交互式 TTY;拒绝将明文重定向到非 TTY 目标。"
+      "showRevealRequiresTty": "--reveal 需要交互式 TTY;拒绝将明文重定向到非 TTY 目标。",
+      "limitsGrantBlocked": "代理无法更改主仓库 “{{name}}” 的资源限制：更低的上限可能导致其容器因 OOM 被终止。\n\n用户：如需允许，请在启动代理会话之前在终端中设置 REDIACC_ALLOW_GRAND_REPO={{name}}（或用 * 表示所有仓库）。分叉无需此设置。",
+      "limitsGrantOverride": "对于主仓库 “{{name}}” 的限制更改，不接受由代理发起的覆盖。\n\n请勿尝试设置 REDIACC_ALLOW_GRAND_REPO。只有用户可以在代理启动前授权。"
     },
     "authRequired": "需要身份验证。运行：rdc subscription login",
     "cluster": {

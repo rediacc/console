@@ -1553,7 +1553,8 @@
         "verifyFailureWarning": "저장소 {{count}}개가 마지막 백업 검증에 실패했습니다.",
         "missedTargetSection": "백업 목표를 달성하지 못한 저장소",
         "missedTargetWarning": "저장소 {{count}}개가 마지막 실행에서 백업 목표를 달성하지 못했습니다.",
-        "licenseDetailUnreadable": "목록에 읽을 수 있는 라이선스 정보가 없습니다(renet이 licenses 섹션보다 오래되었거나 항목 형식이 잘못되었습니다). 따라서 백업 차단 상태와 갱신 상태를 알 수 없습니다."
+        "licenseDetailUnreadable": "목록에 읽을 수 있는 라이선스 정보가 없습니다(renet이 licenses 섹션보다 오래되었거나 항목 형식이 잘못되었습니다). 따라서 백업 차단 상태와 갱신 상태를 알 수 없습니다.",
+        "noMemoryCap": "메모리 상한 없이 실행 중인 저장소가 {{count}}개 있어 어느 것이든 호스트 메모리를 차지할 수 있습니다: {{names}}. rdc repo policy set <ref> --memory-max <size>로 상한을 설정하세요"
       },
       "gpu": {
         "descriptionShort": "머신의 GPU와 장치 부여 현황 확인",
@@ -2060,7 +2061,21 @@
           "growStepOption": "단계당 확장량: 절대값(10G) 또는 쿼터의 백분율(20%)",
           "growThresholdOption": "확장을 트리거하는 파일 시스템 사용률 %(기본 85)",
           "maxQuotaOption": "자동 확장 상한(예: 200G); 자동 확장에 필수",
-          "trimIntervalOption": "자동 트림 사이의 최소 시간(기본 24)"
+          "trimIntervalOption": "자동 트림 사이의 최소 시간(기본 24)",
+          "memoryMaxOption": "저장소의 메모리 상한(예: 10G, 해제하려면 max). 상한에 도달하면 저장소 컨테이너 중 하나만 OOM으로 종료되고 외부에는 영향이 없습니다",
+          "memoryHighOption": "저장소의 메모리 스로틀 지점(예: 8G, 해제하려면 max)",
+          "cpuMaxOption": "저장소의 CPU 상한(코어 수 4, 2.5 또는 N%, 해제하려면 max)",
+          "ioMaxOption": "저장소 장치의 I/O 상한: rbps=, wbps=, riops=, wiops= 중 일부(예: rbps=200M,wbps=100M. KEY=max는 하나를 해제) 또는 max",
+          "pidsMaxOption": "저장소의 프로세스 수 상한(pids.max, 해제하려면 max)",
+          "ramVolumeOption": "<mount>/.ram에 있는 저장소 RAM 볼륨의 크기(예: 8G, 제거하려면 max). 메모리 상한은 이보다 1G 이상 커야 합니다",
+          "clearLimitsOption": "저장소의 모든 제한과 RAM 볼륨을 제거합니다",
+          "forceOption": "저장소의 현재 메모리 사용량보다 낮은 메모리 상한을 허용합니다"
+        },
+        "limitsNeedRef": "제한 플래그는 하나의 저장소에 적용됩니다. 해당 ref를 지정하세요(rdc repo policy set <ref> --memory-max 10G). 머신 전체 형식은 크기 정책 플래그만 받습니다",
+        "limits": {
+          "starting": "\"{{machine}}\"의 \"{{repository}}\" 제한을 적용하는 중...",
+          "completed": "\"{{repository}}\"의 제한",
+          "failed": "제한 작업이 실패했습니다"
         }
       },
       "promote": {
@@ -2811,7 +2826,9 @@
       "pathGrantOverride": "grand 리포지토리 \"{{name}}\"의 경로 부여에 대해 에이전트가 시작한 재정의는 허용되지 않습니다.\n\nREDIACC_ALLOW_GRAND_REPO 설정을 시도하지 마세요. 에이전트가 시작되기 전에 사용자만이 이를 승인할 수 있습니다.",
       "rotateRequiresTty": "config field rotate는 대화형 TTY 확인이 필요합니다. 비대화형 컨텍스트에서는 거부됩니다 (재정의하려면 REDIACC_ALLOW_CONFIG_EDIT를 설정하세요).",
       "showReveal": "--reveal은 에이전트 환경에서 차단됩니다. 안전한 지문 확인을 위해 `rdc config show`(검열됨) 또는 `rdc config field get --pointer <pointer> --digest`를 사용하세요.",
-      "showRevealRequiresTty": "--reveal은 대화형 TTY가 필요합니다. TTY가 아닌 싱크로 평문을 파이프하기를 거부합니다."
+      "showRevealRequiresTty": "--reveal은 대화형 TTY가 필요합니다. TTY가 아닌 싱크로 평문을 파이프하기를 거부합니다.",
+      "limitsGrantBlocked": "에이전트는 그랜드 저장소 \"{{name}}\"의 리소스 제한을 변경할 수 없습니다. 상한을 낮추면 컨테이너가 OOM으로 종료될 수 있습니다.\n\n사용자: 허용하려면 에이전트 세션을 시작하기 전에 터미널에서 REDIACC_ALLOW_GRAND_REPO={{name}}(모든 저장소는 *)를 설정하세요. 포크에는 필요하지 않습니다.",
+      "limitsGrantOverride": "그랜드 저장소 \"{{name}}\"의 제한 변경에는 에이전트가 설정한 재정의가 허용되지 않습니다.\n\nREDIACC_ALLOW_GRAND_REPO를 설정하려고 하지 마세요. 에이전트가 시작되기 전에 사용자만 허용할 수 있습니다."
     },
     "authRequired": "인증이 필요합니다. 실행: rdc subscription login",
     "cluster": {

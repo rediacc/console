@@ -928,7 +928,8 @@
         "verifyFailureWarning": "{{count}} repository(ies) failed their last backup verify.",
         "missedTargetSection": "Repositories that missed their backup target",
         "missedTargetWarning": "{{count}} repository(ies) missed their backup target on the latest run.",
-        "licenseDetailUnreadable": "The listing carries no readable licence detail (renet predates the licenses section, or an entry is malformed), so blocked-backup and renewal state are unknown."
+        "licenseDetailUnreadable": "The listing carries no readable licence detail (renet predates the licenses section, or an entry is malformed), so blocked-backup and renewal state are unknown.",
+        "noMemoryCap": "{{count}} repositories run with no memory cap, so any one of them can take the host's memory: {{names}}. Set one with rdc repo policy set <ref> --memory-max <size>"
       },
       "gpu": {
         "descriptionShort": "Inspect a machine's GPUs and device grants",
@@ -1475,11 +1476,25 @@
           "growThresholdOption": "Filesystem used % that triggers a grow (default 85)",
           "growStepOption": "Growth per step: absolute (10G) or percent of quota (20%)",
           "autoTrimOption": "Enable scheduled trim (true/false)",
-          "trimIntervalOption": "Minimum hours between automatic trims (default 24)"
+          "trimIntervalOption": "Minimum hours between automatic trims (default 24)",
+          "memoryMaxOption": "Memory cap of the repository (e.g. 10G, or max to remove); at the cap one of its containers is OOM-killed, nothing outside it",
+          "memoryHighOption": "Memory throttle point of the repository (e.g. 8G, or max to remove)",
+          "cpuMaxOption": "CPU cap of the repository in cores (4, 2.5) or N%, or max to remove",
+          "ioMaxOption": "I/O cap of the repository's device: rbps=,wbps=,riops=,wiops= (any subset, e.g. rbps=200M,wbps=100M; KEY=max removes one), or max",
+          "pidsMaxOption": "Process cap of the repository (pids.max), or max to remove",
+          "ramVolumeOption": "Size of the repository's RAM volume at <mount>/.ram (e.g. 8G, or max to remove); the memory cap must stay 1G above it",
+          "clearLimitsOption": "Remove every limit and the RAM volume of the repository",
+          "forceOption": "Allow a memory cap below the repository's current memory use"
         },
         "get": {
           "description": "Show the stored machine default, the repository override (with a ref), and the effective merged policy the maintainer acts on",
           "descriptionShort": "Show size policy (machine default, repo override, effective)"
+        },
+        "limitsNeedRef": "Limit flags apply to one repository: give its ref (rdc repo policy set <ref> --memory-max 10G). The machine-wide form takes size-policy flags only",
+        "limits": {
+          "starting": "Applying the limits of \"{{repository}}\" on \"{{machine}}\"...",
+          "completed": "Limits of \"{{repository}}\"",
+          "failed": "Limit operation failed"
         }
       },
       "push": {
@@ -2792,7 +2807,9 @@
       "rootGrantBlocked": "Agents cannot give \"{{name}}\" a root grant: its Rediaccfile would run without the privilege drop.\n\nUser: to allow it, set REDIACC_ALLOW_GRAND_REPO={{name}} (or * for all repos) in your terminal before starting the agent session.",
       "rootGrantOverride": "Agent-initiated overrides are not accepted for the root grant of \"{{name}}\".\n\nDo not attempt to set REDIACC_ALLOW_GRAND_REPO. Only the user can authorize this before the agent starts.",
       "pathGrantBlocked": "Agents cannot change the path grants of the grand repository \"{{name}}\": its Rediaccfile would reach host paths the user never approved.\n\nUser: to allow it, set REDIACC_ALLOW_GRAND_REPO={{name}} (or * for all repos) in your terminal before starting the agent session. A fork needs no override.",
-      "pathGrantOverride": "Agent-initiated overrides are not accepted for a path grant on the grand repository \"{{name}}\".\n\nDo not attempt to set REDIACC_ALLOW_GRAND_REPO. Only the user can authorize this before the agent starts."
+      "pathGrantOverride": "Agent-initiated overrides are not accepted for a path grant on the grand repository \"{{name}}\".\n\nDo not attempt to set REDIACC_ALLOW_GRAND_REPO. Only the user can authorize this before the agent starts.",
+      "limitsGrantBlocked": "Agents cannot change the resource limits of the grand repository \"{{name}}\": a lower cap can OOM-kill its containers.\n\nUser: to allow it, set REDIACC_ALLOW_GRAND_REPO={{name}} (or * for all repos) in your terminal before starting the agent session. A fork needs no override.",
+      "limitsGrantOverride": "Agent-initiated overrides are not accepted for a limit change on the grand repository \"{{name}}\".\n\nDo not attempt to set REDIACC_ALLOW_GRAND_REPO. Only the user can authorize this before the agent starts."
     },
     "authRequired": "Authentication required. Run: rdc subscription login",
     "cluster": {

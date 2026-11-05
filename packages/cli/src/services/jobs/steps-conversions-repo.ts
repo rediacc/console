@@ -206,6 +206,13 @@ export const REPO_CONVERSION_STEPS: StepDefinition[] = [
     true
   ),
   privateStep(
+    'renderLimitsResult',
+    'success',
+    [],
+    () => import('../../commands/repo-policy.js'),
+    true
+  ),
+  privateStep(
     'renderRepoPrune',
     'success',
     ['label'],

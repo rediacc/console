@@ -3,6 +3,7 @@ import type {
   JobInfo,
   JobOrigin,
   ListResult,
+  RepositoryResources,
   StorageHealthResult,
   SystemInfo,
 } from '@rediacc/shared/renet-contract/data/list-types.generated';
@@ -166,6 +167,35 @@ function formatBytesShort(bytes: number | undefined): string {
   return `${b} B`;
 }
 
+/** The marker of a repository whose cgroup has no memory.max (PLAN-repo-resource-limits Decision 5). */
+export const NO_MEMORY_CAP = 'no cap';
+
+/**
+ * The resource cells of a repository row: memory as "current / max", the OOM kills at the cap, and the RAM volume as
+ * "used / size". A repository with no memory.max shows NO_MEMORY_CAP for its max; one with no resources section
+ * (unmounted, or no cgroup) shows '-'.
+ */
+export function repoResourceCells(r: RepositoryResources | undefined): {
+  memory: string;
+  oomKills: number | string;
+  ram: string;
+} {
+  if (!r) return { memory: '-', oomKills: '-', ram: '-' };
+  const max = r.memory_max > 0 ? formatBytesShort(r.memory_max) : NO_MEMORY_CAP;
+  return {
+    memory: `${formatBytesShort(r.memory_current)} / ${max}`,
+    oomKills: r.oom_kills,
+    ram: r.ram_size > 0 ? `${formatBytesShort(r.ram_used)} / ${formatBytesShort(r.ram_size)}` : '-',
+  };
+}
+
+/** The display names of the repositories whose cgroup runs without a memory.max: any one of them can take the host's memory. */
+export function uncappedRepoNames(listResult: ListResult, repoName: RepoNameResolver): string[] {
+  return getRepositories(listResult)
+    .filter((repo) => repo.resources !== undefined && repo.resources.memory_max === 0)
+    .map((repo) => repoName(repo.name, repo.repo_name).name);
+}
+
 function getSections(
   resolve: (guid: string) => string,
   repoName: RepoNameResolver,
@@ -194,6 +224,7 @@ function getSections(
             autostart: repo.autostart ? 'Yes' : 'No',
             containers: repo.container_count,
             disk: repo.disk_space?.use_percent ?? '-',
+            ...repoResourceCells(repo.resources),
             modified: repo.modified_human,
           };
         }),
@@ -534,6 +565,16 @@ function renderTableMode(
     if (data.length === 0) continue;
     outputService.info(`\n${section.title}`);
     writeStdout(`${outputService.formatTable(data)}\n`);
+  }
+
+  const uncapped = uncappedRepoNames(listResult, repoName);
+  if (uncapped.length > 0) {
+    outputService.info(
+      t('commands.machine.status.noMemoryCap', {
+        count: uncapped.length,
+        names: uncapped.join(', '),
+      })
+    );
   }
 
   const repoServerSourced = getRepositories(listResult).some(

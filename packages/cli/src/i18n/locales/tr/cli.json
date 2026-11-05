@@ -1553,7 +1553,8 @@
         "verifyFailureWarning": "{{count}} depo son yedek doğrulamasında başarısız oldu.",
         "missedTargetSection": "Yedekleme hedefini kaçıran depolar",
         "missedTargetWarning": "{{count}} depo son çalıştırmada yedekleme hedefini kaçırdı.",
-        "licenseDetailUnreadable": "Listede okunabilir lisans ayrıntısı yok (renet, licenses bölümünden eski ya da bir kayıt bozuk); bu yüzden engellenen yedekleme ve yenileme durumu bilinmiyor."
+        "licenseDetailUnreadable": "Listede okunabilir lisans ayrıntısı yok (renet, licenses bölümünden eski ya da bir kayıt bozuk); bu yüzden engellenen yedekleme ve yenileme durumu bilinmiyor.",
+        "noMemoryCap": "{{count}} depo bellek üst sınırı olmadan çalışıyor, yani herhangi biri ana makinenin belleğini tüketebilir: {{names}}. rdc repo policy set <ref> --memory-max <size> ile bir sınır belirleyin"
       },
       "gpu": {
         "descriptionShort": "Bir makinenin GPU'larını ve cihaz izinlerini incele",
@@ -2060,7 +2061,21 @@
           "growStepOption": "Adım başına büyüme: mutlak (10G) veya kota yüzdesi (20%)",
           "growThresholdOption": "Büyümeyi tetikleyen dosya sistemi doluluk yüzdesi (varsayılan 85)",
           "maxQuotaOption": "Otomatik büyütme tavanı (örn. 200G); otomatik büyütme için zorunlu",
-          "trimIntervalOption": "Otomatik trimler arasındaki en az saat (varsayılan 24)"
+          "trimIntervalOption": "Otomatik trimler arasındaki en az saat (varsayılan 24)",
+          "memoryMaxOption": "Deponun bellek üst sınırı (örn. 10G, kaldırmak için max); sınırda kapsayıcılarından biri OOM ile sonlandırılır, dışındaki hiçbir şey etkilenmez",
+          "memoryHighOption": "Deponun bellek kısma noktası (örn. 8G, kaldırmak için max)",
+          "cpuMaxOption": "Deponun çekirdek cinsinden CPU üst sınırı (4, 2.5) veya N%, kaldırmak için max",
+          "ioMaxOption": "Depo aygıtının G/Ç üst sınırı: rbps=,wbps=,riops=,wiops= (herhangi bir alt küme, örn. rbps=200M,wbps=100M; KEY=max birini kaldırır) veya max",
+          "pidsMaxOption": "Deponun süreç üst sınırı (pids.max), kaldırmak için max",
+          "ramVolumeOption": "Deponun <mount>/.ram konumundaki RAM biriminin boyutu (örn. 8G, kaldırmak için max); bellek üst sınırı bunun en az 1G üzerinde kalmalıdır",
+          "clearLimitsOption": "Deponun tüm sınırlarını ve RAM birimini kaldır",
+          "forceOption": "Deponun mevcut bellek kullanımının altında bir bellek üst sınırına izin ver"
+        },
+        "limitsNeedRef": "Sınır bayrakları tek bir depoya uygulanır: deponun ref değerini verin (rdc repo policy set <ref> --memory-max 10G). Makine genelindeki biçim yalnızca boyut ilkesi bayraklarını alır",
+        "limits": {
+          "starting": "\"{{machine}}\" üzerindeki \"{{repository}}\" sınırları uygulanıyor...",
+          "completed": "\"{{repository}}\" sınırları",
+          "failed": "Sınır işlemi başarısız oldu"
         }
       },
       "promote": {
@@ -2811,7 +2826,9 @@
       "rootGrantBlocked": "Ajanlar \"{{name}}\" deposuna root yetkisi veremez: Rediaccfile'ı ayrıcalık düşürülmeden çalışırdı.\n\nKullanıcı: buna izin vermek için ajan oturumunu başlatmadan önce terminalinizde REDIACC_ALLOW_GRAND_REPO={{name}} (veya tüm depolar için *) ayarlayın.",
       "rootGrantOverride": "\"{{name}}\" deposunun root yetkisi için ajanın başlattığı geçersiz kılmalar kabul edilmez.\n\nREDIACC_ALLOW_GRAND_REPO ayarlamaya çalışmayın. Bunu yalnızca kullanıcı ajan başlamadan önce yetkilendirebilir.",
       "pathGrantBlocked": "Ajanlar \"{{name}}\" grand deposunun yol yetkilerini değiştiremez: Rediaccfile'ı, kullanıcının hiç onaylamadığı ana makine yollarına ulaşırdı.\n\nKullanıcı: buna izin vermek için ajan oturumunu başlatmadan önce terminalinizde REDIACC_ALLOW_GRAND_REPO={{name}} (veya tüm depolar için *) ayarlayın. Bir fork için geçersiz kılma gerekmez.",
-      "pathGrantOverride": "\"{{name}}\" grand deposundaki yol yetkisi için ajanın başlattığı geçersiz kılmalar kabul edilmez.\n\nREDIACC_ALLOW_GRAND_REPO ayarlamaya çalışmayın. Bunu yalnızca kullanıcı ajan başlamadan önce yetkilendirebilir."
+      "pathGrantOverride": "\"{{name}}\" grand deposundaki yol yetkisi için ajanın başlattığı geçersiz kılmalar kabul edilmez.\n\nREDIACC_ALLOW_GRAND_REPO ayarlamaya çalışmayın. Bunu yalnızca kullanıcı ajan başlamadan önce yetkilendirebilir.",
+      "limitsGrantBlocked": "Ajanlar ana depo \"{{name}}\" kaynak sınırlarını değiştiremez: daha düşük bir üst sınır kapsayıcılarının OOM ile sonlandırılmasına yol açabilir.\n\nKullanıcı: izin vermek için ajan oturumunu başlatmadan önce terminalinizde REDIACC_ALLOW_GRAND_REPO={{name}} (tüm depolar için *) ayarlayın. Bir çatal için gerekmez.",
+      "limitsGrantOverride": "Ana depo \"{{name}}\" üzerindeki bir sınır değişikliği için ajanın başlattığı istisnalar kabul edilmez.\n\nREDIACC_ALLOW_GRAND_REPO ayarlamaya çalışmayın. Buna yalnızca kullanıcı, ajan başlamadan önce izin verebilir."
     },
     "authRequired": "Kimlik doğrulama gerekli. Çalıştırın: rdc subscription login",
     "cluster": {

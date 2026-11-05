@@ -293,23 +293,38 @@ describe('repo gpu grant and revoke', () => {
 describe('repo policy get and set', () => {
   const policy = JSON.stringify({ effective: { auto_grow: true }, repo_override: null });
 
-  it.each([
-    ['get', 'repository_policy_get', []],
-    ['set', 'repository_policy_set', ['--auto-grow', 'true']],
-  ])('%s: one job start; the settings table is the step', async (verb, fn, flags) => {
+  it('set: one job start; the settings table is the step', async () => {
     answer = finished(policy);
-    await run(registerRepoPolicyCommand, 'policy', verb, 'shop', ...flags);
+    await run(registerRepoPolicyCommand, 'policy', 'set', 'shop', '--auto-grow', 'true');
 
-    expect(jobStarts().map((o) => [o.functionName, o.machineName])).toEqual([[fn, 'm1']]);
+    expect(jobStarts().map((o) => [o.functionName, o.machineName])).toEqual([
+      ['repository_policy_set', 'm1'],
+    ]);
     expect(stepNames()).toEqual([['renderPolicyResult', 'success']]);
     expect(mockPrint).toHaveBeenCalledOnce();
+  });
+
+  it('get <ref>: the size policy job, then the limits job; each table is its step', async () => {
+    // PLAN-repo-resource-limits Decision 2: a single-repo get adds the repository's limits table.
+    answer = finished(policy);
+    await run(registerRepoPolicyCommand, 'policy', 'get', 'shop');
+
+    expect(jobStarts().map((o) => [o.functionName, o.machineName])).toEqual([
+      ['repository_policy_get', 'm1'],
+      ['repository_limits_show', 'm1'],
+    ]);
+    expect(jobStarts().map((o) => o.jobSteps?.map((s) => [s.name, s.on]))).toEqual([
+      [['renderPolicyResult', 'success']],
+      [['renderLimitsResult', 'success']],
+    ]);
+    expect(mockPrint).toHaveBeenCalledTimes(2);
   });
 
   it('control: under --background no table is printed', async () => {
     answer = BACKGROUND;
     await run(registerRepoPolicyCommand, 'policy', 'get', 'shop');
 
-    expect(jobStarts()).toHaveLength(1);
+    expect(jobStarts()).toHaveLength(2);
     expect(mockPrint).not.toHaveBeenCalled();
   });
 });
