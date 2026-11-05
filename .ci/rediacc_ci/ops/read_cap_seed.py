@@ -254,7 +254,7 @@ def rule_fired(rule: str, figures: Sequence[Figures], baseload: float) -> bool:
 
 
 def json_objects(text: str) -> list[dict[str, Any]]:
-    """Every top-level JSON object in `text`. rdc pretty-prints across lines, and a log line may precede it."""
+    """Every top-level JSON object in `text`. The output of rdc spans several lines, and a log line may precede it."""
     decoder = json.JSONDecoder()
     found: list[dict[str, Any]] = []
     index = text.find("{")
@@ -541,7 +541,7 @@ def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="read_cap_seed", description=__doc__.split("\n")[0])
     parser.add_argument("repo", help="repository name, name:tag for a fork")
     parser.add_argument("--machine", required=True)
-    parser.add_argument("--config", required=True, help="rdc config name; there is no default")
+    parser.add_argument("--config", required=True, help="the config to run under; there is no default")
     parser.add_argument("--stop-on", choices=("load", "cpu"), default="load")
     parser.add_argument("--rdc", default="./rdc.sh")
     parser.add_argument("--summary", default=DEFAULT_SUMMARY, type=Path)

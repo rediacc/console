@@ -123,7 +123,9 @@ def test_only_a_transient_scope_counts_as_the_backup():
         holder.kill()
         holder.wait()
     assert proc.returncode == 0, proc.stderr
-    assert all("/run-" in path for path in rcs.parse_sample(proc.stdout).scopes)
+    parsed = rcs.parse_sample(proc.stdout)
+    assert parsed is not None
+    assert all("/run-" in path for path in parsed.scopes)
 
 
 def test_the_sample_command_writes_nothing():
@@ -140,6 +142,7 @@ def test_figures_are_deltas_and_busy_counts_iowait():
     prev = sample(100.0, 1000, 800, 10)
     cur = sample(110.0, 2000, 1500, 110, load=2.5)
     figure = rcs.interval_figures(prev, cur)
+    assert figure is not None
     assert figure.load == 2.5
     assert figure.busy == pytest.approx(30.0)
     assert figure.iowait == pytest.approx(10.0)
@@ -150,13 +153,17 @@ def test_backup_cpu_is_a_share_of_all_cores():
     prev = sample(100.0, 1000, 800, 0, scopes={"/s/a.scope": 1_000_000})
     # 40 core-seconds over 10 s on 8 cores: half of the machine.
     cur = sample(110.0, 2000, 1500, 0, scopes={"/s/a.scope": 41_000_000})
-    assert rcs.interval_figures(prev, cur).backup == pytest.approx(50.0)
+    figure = rcs.interval_figures(prev, cur)
+    assert figure is not None
+    assert figure.backup == pytest.approx(50.0)
 
 
 def test_a_scope_born_inside_the_interval_counts_from_zero():
     prev = sample(100.0, 1000, 800, 0)
     cur = sample(110.0, 2000, 1500, 0, scopes={"/s/a.scope": 8_000_000})
-    assert rcs.interval_figures(prev, cur).backup == pytest.approx(10.0)
+    figure = rcs.interval_figures(prev, cur)
+    assert figure is not None
+    assert figure.backup == pytest.approx(10.0)
 
 
 @pytest.mark.parametrize(
@@ -303,7 +310,9 @@ def test_the_record_is_read_from_the_pretty_printed_envelope():
     noise = (
         "connecting\n" + json.dumps({"success": True, "data": record()}, indent=2) + "\ntrailer {\n"
     )
-    assert rcs.parse_record(noise)["snapshotId"] == "20261105T000000Z-abc"
+    parsed = rcs.parse_record(noise)
+    assert parsed is not None
+    assert parsed["snapshotId"] == "20261105T000000Z-abc"
     assert rcs.parse_record("no json at all") is None
 
 
@@ -517,7 +526,7 @@ def test_a_failed_cancel_is_retried_and_named(tmp_path):
 def test_a_client_that_outlives_the_cancel_is_detached_not_left_hanging(tmp_path, monkeypatch):
     """The cancel landed but the follow never returns: SIGINT detaches it, and the run still ends non-zero."""
 
-    signals = []
+    signals: list[int] = []
 
     class Stuck(FakeProc):
         def wait(self, timeout=None):
@@ -608,7 +617,7 @@ def test_a_bad_name_starts_nothing(argv, tmp_path, capsys):
         runner=world.runner, spawner=world.spawner, clock=world.clock, sleep=world.sleep
     )
     try:
-        rc = rcs.main([*argv, "--summary", str(tmp_path / "s.log")], deps=deps, out=io.StringIO())
+        rc: object = rcs.main([*argv, "--summary", str(tmp_path / "s.log")], deps=deps, out=io.StringIO())
     except SystemExit as exc:
         rc = exc.code
     assert rc == rcs.EXIT_USAGE
