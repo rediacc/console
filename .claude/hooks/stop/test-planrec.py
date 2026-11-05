@@ -570,8 +570,8 @@ control(
     "T1",
 )
 truthy(
-    "...and attested_at reads the moved row by identity",
-    R.attested_at(_pre, _done_rel, R.box_sig(TASK_DONE)),
+    "...and attested_by_identity reads the moved row",
+    R.attested_by_identity(_pre, _done_rel, R.box_sig(TASK_DONE)),
 )
 control(
     "...the unmoved control: a plan that never moved is dated by its own path, as before",

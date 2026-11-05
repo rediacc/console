@@ -887,10 +887,17 @@ def plan_identity(rel):
 
 
 def attested_at(ledger, rel, sig):
-    """Does this ledger document attest `sig` as DONE for plan `rel`?
+    """Does this ledger document attest `sig` as DONE for plan `rel`, under that exact path? A proof under another path counts only through a stub (`check_plan_record.py` R4)."""
+    if not isinstance(ledger, dict):
+        return False
+    entry = (ledger.get("plans") or {}).get(rel)
+    if not isinstance(entry, dict):
+        return False
+    return sig in (entry.get("done_sigs") or [])
 
-    The plan is read by identity, not by path: `check:ci-plan-folders --move` relocates a finished plan into `_done/`, and a path-keyed read dates every box from that move instead of from its tick (the same defect 4b2b19bb3 fixed in the live-proof gate).
-    """
+
+def attested_by_identity(ledger, rel, sig):
+    """`attested_at` for the plan under any folder: `check:ci-plan-folders --move` relocates a finished plan into `_done/`, and the move must not read as the tick."""
     if not isinstance(ledger, dict):
         return False
     ident = plan_identity(rel)
@@ -907,7 +914,7 @@ def done_commit(history, rel, sig):
     """
     start = ""
     for commit, doc in history:
-        start = (start or commit) if attested_at(doc, rel, sig) else ""
+        start = (start or commit) if attested_by_identity(doc, rel, sig) else ""
     return start
 
 
