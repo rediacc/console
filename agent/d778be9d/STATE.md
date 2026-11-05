@@ -1,18 +1,24 @@
-## SESSION d778be9d 2026-11-05T17:38:54Z
+## SESSION d778be9d 2026-11-05T20:01:33Z
 
-# d778be9d STATE (2026-11-05, evening)
+# d778be9d STATE (2026-11-05 20:05Z)
 
 ## Where things are
-Branch 1104-1 is on origin at ad4cf434c in console; account 1c2899d and renet ef71419 are pushed. Local since then: e3163fe16 backup status fix, ae265d1c7 three proposed plans. No PR is open. vm:check VERIFIED on tree 3325f69eaf1a; ci:quick red only on carried keys: P-A1 (12 plans) and docker-digest:workers/proxy/Dockerfile:20. Remove the docker carry when `pins bump image:proxy-node` clears the window after 2026-11-07T00:00Z (#2f93f890). Edge and stable stay on hold until the new plan's bench boxes pass, per the talk; the older hold of 2026-11-04 still rules the backup work.
+Branch 1104-1, origin at ad4cf434c; about 20 local commits since (plans ae265d1c7, drill fixes 4e665bbc8, e2e fixes 91c61a32d, ticks, effort ultra 7ab7dee28). Push needs: the full drills (VERIFIED receipt for the tree), vm:check --changed, ci:quick. Carried reds: P-A1 (12 plans) and docker-digest:workers/proxy/Dockerfile:20 until `pins bump image:proxy-node` after 2026-11-07T00:00Z (#2f93f890). Effort is ultra at operator order.
 
-## Writers-now round
-Ticked with clauses read: U8, J3, J4, J16, J17, J19, J20, J6b, J9, T4, F6, M1. Open and owed: S5 and S12 (drill legs n and o ran green in the drill of tree 3325f69eaf1a: read their clauses, S5 also needs R2), Y2, J18 (older renet on a machine), F2 (ct-tests run on a PR), N5 and R2 (CI run). Survey /tmp/writers-now/1104-1-20261105T1200Z.md was wrong about code present for most audited boxes: audit each batch's clauses before ticking (/tmp/writers-now/clauses-20261105.md is the model). Live queue on bench and hostinger not started. 279 advisory review findings and the quick not-a-bug marks are to be settled before a merge; remove the P-A1 carry (#f515a333).
+## /writers-now round 2 (operator order 20:00Z)
+Survey agent a97d182a6c850108a writes /tmp/writers-now/1104-1-20261105T2005Z.md with clause-level evidence. When it reports: spawn G5 writers in leases, grouped by file, in one message; track with --add-many and lease to real ids; land, gate once, then the live queue fleet, bench, hostinger.
+
+## Running
+Writer a84fdb443e69efa30 (#c7479f45), main checkout: backup upload --up files no licence, suite 26 residue and rerun drift, start_backup_plane printing secrets off Actions. Then rerun suite 26 and tick E2, E3, V1 if rc 0.
+
+## Ticked today, clauses read
+U8, J3, J4, J16, J17, J19, J20, J6b, J9, T4, F6, M1, S12, Y2, E4, J11, T2, K2, K11. Open and owed: S5 (R2 half), E1 (planted-red seam), H8 (suites 19, 20), J18 (older renet), F2, N5, R2 (CI on a PR).
 
 ## Tiers talk
-Decisions in memory project_tiers_naming_design. Plans: PLAN-product-domain-rename, PLAN-website-routing-and-mail, PLAN-enterprise-isolation, Status proposed, in QUEUE.md and NOT in Promoted, by operator order. Zone rediacc.cloud is live on Cloudflare. Five writer calls were put to the operator, unanswered: renet ring order, narrowing Enterprise's dependency, merge with boxes open, the delegation plan flag, block_unasked_release on company releases.
+Decisions in memory project_tiers_naming_design. Three plans, Status proposed, in QUEUE.md outside Promoted. Zone rediacc.cloud live. Five writer calls await the operator: renet ring order, Enterprise dependency narrowing, merge with boxes open, delegation plan flag, block_unasked_release on company releases.
 
 ## Big pieces
 PLAN-backup-program, PLAN-detached-jobs, PLAN-backup-integrity, PLAN-backup-critical-tier, PLAN-rediaccfile-unprivileged, PLAN-first-release-checks (30 open, release-gated).
 
 ## Next action
-Land the empty-read sweep writer (#72dcaff6). Read S5, S12 and Y2 against the drills. Audit the next batch of live boxes, then run fleet, then bench, then hostinger, ticking clause by clause.
+Read the survey file's counts, spawn the G5 writers, land each report with a spot check, then gates, then live runs ticking clause by clause.
