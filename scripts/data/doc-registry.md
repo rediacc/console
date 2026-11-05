@@ -508,7 +508,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/hooks/stop/wl_loopspeed.py | (none) | via .claude/hooks/post-bash/loop_speed_note.py | py |
 | .claude/hooks/stop/wl_models.py | (none) | via .claude/hooks/stop/wl_judge.py | py |
 | .claude/hooks/stop/wl_outcomes.py | (none) | via .claude/hooks/stop/test-wl_worktrees.py | py |
-| .claude/hooks/stop/wl_planbox.py | (none) | via .claude/rediacc_hooks/tests/test_wl_planbox.py | py |
+| .claude/hooks/stop/wl_planbox.py | (none) | via .claude/hooks/stop/worklist.py | py |
 | .claude/hooks/stop/wl_planconc.py | (none) | via .claude/hooks/stop/test-plandeps.py | py |
 | .claude/hooks/stop/wl_plandeps.py | (none) | via .claude/hooks/stop/test-depgate.py | py |
 | .claude/hooks/stop/wl_planenforce.py | (none) | via .claude/hooks/stop/test-depgate.py | py |

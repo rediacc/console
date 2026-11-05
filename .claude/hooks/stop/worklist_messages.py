@@ -2281,6 +2281,15 @@ Live proof (agent/plans/PLAN-tested-on-bench.md):
                                 agent/ledgers/live-proof.jsonl, --tick then
                                 closes the box through the --plan-tick path
 
+Box progress (agent/plans/PLAN-tick-tracking.md):
+  --box-clauses <me> [<agent/plans/PLAN-x.md> <box> "C1 [code] <text>"... [--write]]
+                                read an open box as clauses with their half
+                                (code, live, operator); --write appends a
+                                `define` row to agent/ledgers/
+                                plan-box-progress.jsonl, no plan byte changes
+  --box-progress <me> [<plan> <box> <clause|all> <landed|proved|live-owed> <ref> [--write]]
+                                record one clause's progress for an open box
+
 Per-commit reviews (agent/reviews/<branch>/: clean.jsonl, plus <sha40>.md per other verdict):
   --review-mark <me> [<finding-id> fixed <sha> | not-a-bug <evidence...> |
                      waived #<item> ASKED:<YYYY-MM-DDTHH:MM>Z]
@@ -2700,6 +2709,33 @@ CLI_PLANTICK_WROTE = (
     "\n"
     "  git add %(rel)s %(ledger)s %(investigation)s %(index)s\n"
 )
+
+CLI_BOXCLAUSES_USAGE = (
+    "usage: worklist.py --box-clauses <me> [<agent/plans/PLAN-x.md> <box> <clause>... [--write]]\n"
+    "\n"
+    "Read one OPEN box as clauses, each with its half, and append a `define` row to\n"
+    "agent/ledgers/plan-box-progress.jsonl. No plan byte changes: the map is a\n"
+    "reading of the box, never a rewrite. A clause is one argument:\n"
+    '    "C1 [code] <text>"   "C2 [live] <text>"   "C3 [operator] <text>"\n'
+    "The same map again is not appended twice. Without --write it prints the row.\n"
+    "With only <me> it lists every box that has a clause map. Never commits.\n"
+)
+
+CLI_BOXPROGRESS_USAGE = (
+    "usage: worklist.py --box-progress <me> [<agent/plans/PLAN-x.md> <box> <clause|all>\n"
+    "                                   <landed|proved|live-owed> <ref> [--write]]\n"
+    "\n"
+    "Append one `progress` row for a clause of an OPEN box to\n"
+    "agent/ledgers/plan-box-progress.jsonl. <ref> is a landed sha, a live-proof row\n"
+    "id or a release note. `all` is the clause of a box with no clause map.\n"
+    "`land <id> --ticks --run` and the release path write these rows on their own.\n"
+    "Without --write it prints the row. With only <me> it lists the latest rows.\n"
+    "Never commits.\n"
+)
+
+CLI_BOXROW_DRY = "would append to %(ledger)s:\n  %(row)s\n(dry run: pass --write to append)\n"
+CLI_BOXROW_WROTE = "appended to %(ledger)s:\n  %(row)s\nCommit %(ledger)s; no plan file changed.\n"
+CLI_BOXROW_KEPT = "%(ledger)s already holds this row (appended %(at)s), so nothing was written.\n"
 
 CLI_PLANINV_USAGE = (
     "usage: worklist.py --plan-investigate <me> <agent/plans/PLAN-x.md> <box>\n"

@@ -526,6 +526,141 @@ def message_problems(root, message):
     return out
 
 
+# ---- the clause verbs (T8): `--box-clauses` and `--box-progress` ------------------
+
+PROGRESS_STATES = ("landed", "proved", "live-owed")
+_SPEC_RE = re.compile(
+    r"^\s*(?P<id>[A-Za-z0-9][A-Za-z0-9_.]*)\s+\[(?P<half>[a-z]+)\]\s+(?P<text>\S.*?)\s*$"
+)
+CLAUSE_SPEC = '"<id> [code|live|operator] <text>", e.g. "C1 [live] baseline read-only"'
+
+
+class PlanBoxError(ValueError):
+    """A clause verb refused; the message says why. The CLI exits 2 on it."""
+
+
+def open_box(root, plan, selector):
+    """`(rel, sig, body)` of the ONE open box `selector` names in `plan` (a basename or a repo-relative path), through `wl_planrec.open_boxes` and `select_box`. Raises PlanBoxError."""
+    import wl_planrec as R
+
+    base = str(plan or "").rsplit("/", 1)[-1]
+    resolved = resolve_plan(root, base) if _PLAN_RE.match(base) else None
+    if resolved is None:
+        raise PlanBoxError("%s is no plan under agent/plans/" % plan)
+    rel, text = resolved
+    try:
+        _i, _line, body, sig = R.select_box(R.open_boxes(text), selector)
+    except R.RecordError as exc:
+        raise PlanBoxError(str(exc)) from exc
+    return rel, sig, body
+
+
+def parse_clause_specs(specs):
+    """[{id, half, text}] from `C1 [code] <text>` strings. Raises PlanBoxError on a bad shape, an unknown half, the id `all` or a repeated id."""
+    out = []
+    for spec in specs:
+        m = _SPEC_RE.match(spec or "")
+        if not m:
+            raise PlanBoxError("a clause is %s, not %r" % (CLAUSE_SPEC, spec))
+        if m.group("half") not in HALVES:
+            raise PlanBoxError(
+                "clause %s names the half %r; a half is one of %s"
+                % (m.group("id"), m.group("half"), ", ".join(HALVES))
+            )
+        if m.group("id") == "all":
+            raise PlanBoxError("`all` is the trailer's word for every clause, never a clause id")
+        if any(c["id"] == m.group("id") for c in out):
+            raise PlanBoxError("clause %s is named twice" % m.group("id"))
+        out.append({"id": m.group("id"), "half": m.group("half"), "text": m.group("text")})
+    if not out:
+        raise PlanBoxError("name at least one clause: %s" % CLAUSE_SPEC)
+    return out
+
+
+def define_row(root, plan, selector, specs, me):
+    """The `define` row `--box-clauses` would append. Writes nothing; raises PlanBoxError."""
+    rel, sig, _body = open_box(root, plan, selector)
+    return {
+        "kind": "define",
+        "by": me,
+        "plan": rel,
+        "sig": sig,
+        "clauses": parse_clause_specs(specs),
+    }
+
+
+def progress_row(root, plan, selector, clause, state, ref, me):
+    """The `progress` row `--box-progress` would append. Writes nothing; raises PlanBoxError."""
+    rel, sig, _body = open_box(root, plan, selector)
+    if state not in PROGRESS_STATES:
+        raise PlanBoxError("state %r is not one of %s" % (state, ", ".join(PROGRESS_STATES)))
+    cmap = clause_map(root, rel, sig)
+    known = {c["id"] for c in cmap or []}
+    if clause != "all" and clause not in known:
+        raise PlanBoxError(
+            "clause %r is not defined for %s#%s (defined: %s)"
+            % (clause, rel, sig, ",".join(sorted(known)) or "none, so only `all`")
+        )
+    if not str(ref or "").strip():
+        raise PlanBoxError(
+            "a progress row needs a ref: a landed sha, a live-proof row id or a note"
+        )
+    return {
+        "kind": "progress",
+        "by": me,
+        "plan": rel,
+        "sig": sig,
+        "clause": clause,
+        "state": state,
+        "ref": str(ref).strip(),
+    }
+
+
+def box_state(root, plan, sig, rows=None):
+    """{clause: (state, ref)} of the latest progress row per clause of one box."""
+    rows = read_progress(root) if rows is None else rows
+    out = {}
+    for r in rows:
+        if r.get("kind") == "progress" and r.get("sig") == sig and same_plan(r.get("plan"), plan):
+            out[r.get("clause")] = (r.get("state"), r.get("ref"))
+    return out
+
+
+def listing(root, kind):
+    """The bare-`<me>` listing of `--box-clauses` (kind `define`) or `--box-progress` (kind `progress`)."""
+    rows = [r for r in read_progress(root) if r.get("kind") == kind]
+    if kind == "define":
+        latest = {}
+        for r in rows:
+            latest[(str(r.get("plan")).rsplit("/", 1)[-1], r.get("sig"))] = r
+        out = ["clause maps: %d box(es) in %s" % (len(latest), "/".join(PROGRESS_REL))]
+        for (plan, sig), r in sorted(latest.items()):
+            out.append(
+                "  %s#%s  %s"
+                % (
+                    plan,
+                    sig,
+                    " ".join(
+                        "%s[%s]" % (c.get("id"), c.get("half")) for c in r.get("clauses") or []
+                    ),
+                )
+            )
+        return "\n".join(out) + "\n"
+    out = ["box progress: %d row(s) in %s" % (len(rows), "/".join(PROGRESS_REL))]
+    for r in rows[-40:]:
+        out.append(
+            "  %s#%s %s %s %s"
+            % (
+                str(r.get("plan")).rsplit("/", 1)[-1],
+                r.get("sig"),
+                r.get("clause"),
+                r.get("state"),
+                str(r.get("ref"))[:40],
+            )
+        )
+    return "\n".join(out) + "\n"
+
+
 def main(argv):
     """`wl_planbox.py check --root <dir>`: the commit message on stdin, each refusal on stderr, exit 1 when refused. The lease commit-msg hook runs this as a process, so its sibling imports resolve without a `sys.path` entry in the hook."""
     if len(argv) != 3 or argv[0] != "check" or argv[1] != "--root":

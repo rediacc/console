@@ -280,3 +280,121 @@ def test_control_open_boxes_reads_zero_where_the_legacy_reader_links_five():
     bodies = _bodies()
     assert [wl_report.open_boxes(b) for b in bodies.values()] == [0] * 5
     assert sum(len(P.parse_tick(b)) for b in bodies.values()) == 5
+
+
+# ---- T8: the progress ledger and the clause verbs ------------------------------------
+
+PLAN_TEXT = """# PLAN: fx
+
+Status: approved
+
+## Tasks
+
+- [ ] F1 the open box of the fixture plan
+- [x] F2 the ticked box of the fixture plan
+    (ticked) 2026-01-01 by x: commit:abc
+"""
+OPEN_SIG, DONE_SIG = "fd66592c", "074be283"
+SPECS = ("C1 [code] the offline recipe", "C2 [live] baseline read-only on a machine")
+
+
+def _plant(root):
+    plan = root / "agent" / "plans" / "PLAN-fx.md"
+    plan.parent.mkdir(parents=True, exist_ok=True)
+    plan.write_text(PLAN_TEXT, encoding="utf-8")
+    return plan
+
+
+def test_progress_define_row_written_once_then_deduped(tmp_path, monkeypatch):
+    monkeypatch.setenv("TMPDIR", str(tmp_path / "tmp"))
+    plan = _plant(tmp_path)
+    before = plan.read_bytes()
+    row = P.define_row(tmp_path, "agent/plans/PLAN-fx.md", OPEN_SIG, SPECS, "deadbeef")
+    assert row["sig"] == OPEN_SIG
+    assert row["plan"] == "agent/plans/PLAN-fx.md"
+    assert [(c["id"], c["half"]) for c in row["clauses"]] == [("C1", "code"), ("C2", "live")]
+    stored, written = P.append_progress(tmp_path, row)
+    assert written
+    again, written2 = P.append_progress(
+        tmp_path, P.define_row(tmp_path, "PLAN-fx.md", OPEN_SIG, SPECS, "cafe1234")
+    )
+    assert not written2
+    assert again["at"] == stored["at"]
+    assert len(P.read_progress(tmp_path)) == 1
+    assert [c["id"] for c in P.clause_map(tmp_path, "PLAN-fx.md", OPEN_SIG)] == ["C1", "C2"]
+    assert plan.read_bytes() == before, "a clause map changes no plan byte"
+
+
+@pytest.mark.parametrize("sig", [DONE_SIG, "fd66592d", "0123abcd"])
+def test_progress_define_on_a_done_or_unknown_sig_is_refused(tmp_path, sig):
+    _plant(tmp_path)
+    with pytest.raises(P.PlanBoxError):
+        P.define_row(tmp_path, "PLAN-fx.md", sig, SPECS, "deadbeef")
+
+
+@pytest.mark.parametrize(
+    "specs",
+    [
+        ("C1 code the recipe",),
+        ("C1 [cloud] the recipe",),
+        ("all [code] x",),
+        ("C1 [code] a", "C1 [live] b"),
+        (),
+    ],
+)
+def test_progress_define_with_a_bad_clause_is_refused(tmp_path, specs):
+    _plant(tmp_path)
+    with pytest.raises(P.PlanBoxError):
+        P.define_row(tmp_path, "PLAN-fx.md", OPEN_SIG, specs, "deadbeef")
+
+
+def test_progress_row_needs_a_defined_clause_and_a_known_state(tmp_path, monkeypatch):
+    monkeypatch.setenv("TMPDIR", str(tmp_path / "tmp"))
+    _plant(tmp_path)
+    assert P.progress_row(tmp_path, "PLAN-fx.md", OPEN_SIG, "all", "landed", "abc1234", "x")
+    with pytest.raises(P.PlanBoxError, match="not defined"):
+        P.progress_row(tmp_path, "PLAN-fx.md", OPEN_SIG, "C1", "landed", "abc1234", "x")
+    P.append_progress(tmp_path, P.define_row(tmp_path, "PLAN-fx.md", OPEN_SIG, SPECS, "x"))
+    row = P.progress_row(tmp_path, "PLAN-fx.md", OPEN_SIG, "C2", "live-owed", "release", "x")
+    P.append_progress(tmp_path, row)
+    assert P.box_state(tmp_path, "PLAN-fx.md", OPEN_SIG) == {"C2": ("live-owed", "release")}
+    with pytest.raises(P.PlanBoxError, match="state"):
+        P.progress_row(tmp_path, "PLAN-fx.md", OPEN_SIG, "C1", "maybe", "abc1234", "x")
+
+
+def test_progress_cli_box_clauses_writes_then_keeps(wl):
+    _plant(wl.proj)
+    rel = "agent/plans/PLAN-fx.md"
+    got = wl.cli("--box-clauses", wlfix.ME, rel, OPEN_SIG, *SPECS)
+    assert got.rc == 0, got.err
+    assert "dry run" in got.out
+    ledger = wl.proj / "agent" / "ledgers" / "plan-box-progress.jsonl"
+    assert not ledger.exists()
+    got = wl.cli("--box-clauses", wlfix.ME, rel, OPEN_SIG, *SPECS, "--write")
+    assert got.rc == 0, got.err
+    assert "appended to agent/ledgers/plan-box-progress.jsonl" in got.out
+    got = wl.cli("--box-clauses", wlfix.ME, rel, OPEN_SIG, *SPECS, "--write")
+    assert got.rc == 0, got.err
+    assert "already holds this row" in got.out
+    assert len(ledger.read_text(encoding="utf-8").splitlines()) == 1
+    listed = wl.cli("--box-clauses", wlfix.ME)
+    assert "clause maps: 1 box(es)" in listed.out
+    assert "PLAN-fx.md#%s  C1[code] C2[live]" % OPEN_SIG in listed.out
+
+
+def test_progress_cli_control_a_typo_sig_exits_2_and_writes_nothing(wl):
+    """The box's CONTROL: one hex digit off (fd66592c -> fd66592d) names no open box."""
+    _plant(wl.proj)
+    rel = "agent/plans/PLAN-fx.md"
+    got = wl.cli("--box-clauses", wlfix.ME, rel, "fd66592d", *SPECS, "--write")
+    assert got.rc == 2
+    assert "no OPEN box matches" in got.err
+    assert not (wl.proj / "agent" / "ledgers" / "plan-box-progress.jsonl").exists()
+
+
+def test_progress_cli_box_progress_writes_a_row(wl):
+    _plant(wl.proj)
+    rel = "agent/plans/PLAN-fx.md"
+    got = wl.cli("--box-progress", wlfix.ME, rel, OPEN_SIG, "all", "proved", "lp-x1", "--write")
+    assert got.rc == 0, got.err
+    assert "box progress: 1 row(s)" in wl.cli("--box-progress", wlfix.ME).out

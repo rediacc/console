@@ -953,6 +953,60 @@ def _plantick_cli(argv):
     )
 
 
+def _boxrow_cli(argv):
+    """--box-clauses / --box-progress <me> [<plan> <box> ... [--write]] (agent/plans/PLAN-tick-tracking.md Design 3, box T8).
+
+    The logic is wl_planbox's: `define_row` and `progress_row` resolve the box through `wl_planrec.open_boxes` and `select_box`, so a done or unknown sig is refused with exit 2 and nothing is written. A bare `<me>` is the listing. NEVER COMMITS, and no plan byte changes.
+    """
+    verb = argv[0]
+    usage = M.CLI_BOXCLAUSES_USAGE if verb == "--box-clauses" else M.CLI_BOXPROGRESS_USAGE
+
+    def die(msg):
+        print(msg, file=sys.stderr)
+        sys.exit(2)
+
+    if len(argv) < 2:
+        die(usage)
+    me = argv[1]
+    if not C.PREFIX_RE.match(me):
+        die("bad prefix %r: pass YOUR session-id prefix first" % me)
+    _identity_or_die(me, die)
+
+    import wl_planbox as PB
+
+    root = C.project_root(C.project_start())
+    kind = "define" if verb == "--box-clauses" else "progress"
+    if len(argv) == 2:
+        sys.stdout.write(PB.listing(root, kind))
+        return
+    rest = [a for a in argv[2:] if a != "--write"]
+    write = "--write" in argv[2:]
+    for f in rest:
+        if f.startswith("--"):
+            die("unknown flag %r\n\n%s" % (f, usage))
+    try:
+        if kind == "define":
+            if len(rest) < 3:
+                die(usage)
+            row = PB.define_row(root, _plan_rel(root, rest[0]), rest[1], rest[2:], me[:8])
+        else:
+            if len(rest) != 5:
+                die(usage)
+            row = PB.progress_row(root, _plan_rel(root, rest[0]), *rest[1:], me[:8])
+    except PB.PlanBoxError as exc:
+        die(M.CLI_PLANREC_REFUSED % exc)
+        return
+    ledger = "/".join(PB.PROGRESS_REL)
+    if not write:
+        sys.stdout.write(M.CLI_BOXROW_DRY % {"ledger": ledger, "row": json.dumps(row)})
+        return
+    stored, written = PB.append_progress(root, row)
+    if not written:
+        sys.stdout.write(M.CLI_BOXROW_KEPT % {"ledger": ledger, "at": stored.get("at", "?")})
+        return
+    sys.stdout.write(M.CLI_BOXROW_WROTE % {"ledger": ledger, "row": json.dumps(stored)})
+
+
 def _liveproof_cli(argv):
     """--live-proof <me> [<plan> <LP-box-sig> [--write] [--tick]] (agent/plans/PLAN-tested-on-bench.md, "Agent verb").
 
@@ -3404,6 +3458,9 @@ def main():
         return
     if sys.argv[1:2] == ["--live-proof"]:
         _liveproof_cli(sys.argv[1:])
+        return
+    if sys.argv[1:2] and sys.argv[1] in ("--box-clauses", "--box-progress"):
+        _boxrow_cli(sys.argv[1:])
         return
     if sys.argv[1:2] == ["--plan-preflight"]:
         _planpreflight_cli(sys.argv[1:])
