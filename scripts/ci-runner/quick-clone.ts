@@ -326,6 +326,33 @@ export function lockDifference(lockText: string, hiddenText: string): string | u
   return undefined;
 }
 
+/**
+ * Does each package the hidden lockfile names sit on disk at the version the hidden lockfile records? Undefined means yes, or nothing to judge; a string names the first difference.
+ *
+ * The hidden lockfile alone cannot answer, because `npm install --package-lock-only` rewrites it without touching node_modules (measured under npm 11.21.0: after a wrangler bump the hidden lock read 4.157.0 while node_modules/wrangler/package.json stayed 4.156.2). `lockDifference` then reports a match, and the stale files get hard-linked into every clone. A package with no readable package.json is not judged here; `lockDifference` already covers what is absent from the lock.
+ */
+export function installedDifference(projectDir: string, hiddenText: string): string | undefined {
+  const hidden =
+    (JSON.parse(hiddenText) as { packages?: Record<string, HiddenPackage> }).packages ?? {};
+  for (const [key, entry] of Object.entries(hidden)) {
+    if (entry.link === true || entry.version === undefined || !key.startsWith('node_modules/'))
+      continue;
+    let onDisk: string | undefined;
+    try {
+      onDisk = (
+        JSON.parse(fs.readFileSync(path.join(projectDir, key, 'package.json'), 'utf8')) as {
+          version?: string;
+        }
+      ).version;
+    } catch {
+      continue;
+    }
+    if (onDisk !== undefined && onDisk !== entry.version)
+      return `${key} is on disk at ${onDisk}, its hidden lockfile says ${entry.version}`;
+  }
+  return undefined;
+}
+
 /** Every `<dir>/node_modules` the live tree holds for a tracked `<dir>/package.json` at `commit`, grouped under the lockfile directory that owns it. A workspace member without its own lockfile belongs to the nearest ancestor with one. */
 export function dependencyGroups(
   tracked: readonly string[],
@@ -406,7 +433,8 @@ export function syncDependencies(
     const lockText = fs.readFileSync(path.join(clone, dir, 'package-lock.json'), 'utf8');
     const hiddenPath = path.join(live, dir, 'node_modules', '.package-lock.json');
     const hiddenText = fs.existsSync(hiddenPath) ? fs.readFileSync(hiddenPath, 'utf8') : '{}';
-    const difference = lockDifference(lockText, hiddenText);
+    const difference =
+      lockDifference(lockText, hiddenText) ?? installedDifference(path.join(live, dir), hiddenText);
     const digest = createHash('sha256')
       .update(difference === undefined ? `link\n${hiddenText}` : `install\n${lockText}`)
       .digest('hex');
@@ -1231,6 +1259,26 @@ export async function quickCloneSelftest(
     check(
       installed.length === 1 && installed[0] === clone,
       `a lockfile the live install does not hold must install in the clone, got ${installed.join()}`
+    );
+
+    // A HIDDEN LOCKFILE THAT MOVED WITHOUT ITS PACKAGES (`npm install --package-lock-only` rewrites it and leaves node_modules): the lock and the hidden lock agree, the files do not, and the clone must install.
+    write(path.join(live, 'node_modules', 'dep', 'package.json'), '{"version":"1.0.0"}\n');
+    write(
+      path.join(live, 'node_modules', '.package-lock.json'),
+      JSON.stringify({ packages: { 'node_modules/dep': { version: '2.0.0' } } })
+    );
+    const stale: string[] = [];
+    prepareClone({ live, clone, seams: { install: (dir) => void stale.push(dir) } });
+    check(
+      stale.length === 1 && stale[0] === clone,
+      `a hidden lockfile ahead of the installed package must install in the clone, got ${stale.join()}`
+    );
+    write(path.join(live, 'node_modules', 'dep', 'package.json'), '{"version":"2.0.0"}\n');
+    const matching: string[] = [];
+    prepareClone({ live, clone, seams: { install: (dir) => void matching.push(dir) } });
+    check(
+      matching.length === 0,
+      `CONTROL: a package on disk at the hidden lockfile's version must be linked, got ${matching.join()}`
     );
 
     // A SEEDED BUILD: copied once, kept while the stamp holds, and never a shared name.
