@@ -24,7 +24,7 @@ from rediacc_ci.well_known import BENCH_ORIGIN
 
 if TYPE_CHECKING:
     import pathlib
-    from collections.abc import Callable, Sequence
+    from collections.abc import Callable, Iterable, Sequence
 
 UUID = "6b822ba9-1111-4222-8333-444455556666"
 MOVED = "0b4e20ac-1111-4222-8333-444455556666"
@@ -660,3 +660,66 @@ def test_the_command_line_takes_no_retro_flag() -> None:
     with pytest.raises(SystemExit):
         LP._parser().parse_args(["record", "--retro"])
     assert "--retro" not in LP._parser().format_help()
+
+
+# ------------------------------------------------------------------ the ladder of a renet-hash deploy on a CLI-only plan
+
+
+CLI_ONLY_OWNS = "Owns: packages/cli/src/services/machine/**"
+
+
+def _cli_only_plan(bed: Bed) -> None:
+    """Narrow the fixture plan's Owns to a CLI path with no VM phase, the shape of PLAN-ssh-key-source-ranges."""
+    text = PLAN.replace(
+        "Owns: packages/cli/src/**, private/account/src/**, private/renet/cmd/**", CLI_ONLY_OWNS
+    )
+    assert text != PLAN
+    _write(bed.root, PLAN_REL, text)
+    _commit(bed.root, "cli-only plan")
+
+
+class _Recorder:
+    """An admit that records the phases it was asked for, then answers like `_admits`."""
+
+    def __init__(self) -> None:
+        self.phases: list[frozenset[str]] = []
+
+    def __call__(self, root: object, tree: str, inputs: object, phases: Iterable[str]) -> R.Verdict:
+        self.phases.append(frozenset(phases))
+        return _admits(root, tree, inputs, phases)
+
+
+def test_a_renet_hash_run_on_a_cli_only_plan_records_the_renet_phase_vm_run(bed: Bed) -> None:
+    _cli_only_plan(bed)
+    admit = _Recorder()
+    out = bed.record(bed.request("renet-live", target="hostinger"), admit=admit, write=True)
+    assert out.status == R.VERIFIED, out.message
+    assert out.row is not None
+    assert out.row["surfaces"] == ["cli"], "the control: the plan touches the CLI alone"
+    assert S.phases_for(out.row["surfaces"]) == frozenset(), "the CLI surface has no VM phase"
+    assert admit.phases == [frozenset({"renet"})], "the renet-hash deploy asks for the renet phase"
+    assert out.row["ladder"] == {"vm": "vmc-fixture-1"}
+    code, lines = LP.verify(bed.root, PLAN_REL)
+    assert code == 0, lines
+
+
+def test_a_renet_hash_run_on_a_cli_only_plan_with_no_vm_receipt_refuses_the_ladder(
+    bed: Bed,
+) -> None:
+    _cli_only_plan(bed)
+    out = bed.record(bed.request("renet-live", target="hostinger"), admit=_refuses, write=True)
+    assert (out.status, out.code) == (R.NOT_VERIFIED, LP.CODE_LADDER)
+    assert "renet phase" in out.message
+    assert "npm run vm:check" in out.message
+    assert bed.fake.calls == [], "no branch renet reaches hostinger before the VMs pass it"
+    assert bed.ledger() == []
+
+
+def test_a_cli_check_on_a_cli_only_plan_asks_no_vm_run(bed: Bed) -> None:
+    _cli_only_plan(bed)
+    admit = _Recorder()
+    out = bed.record(bed.request("cli-bench"), admit=admit)
+    assert out.status == R.VERIFIED, out.message
+    assert out.row is not None
+    assert admit.phases == [], "a tree deploy provisions nothing, so no VM run is asked for"
+    assert out.row["ladder"] == {"vm": None}

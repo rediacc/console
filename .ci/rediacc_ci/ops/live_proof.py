@@ -9,7 +9,7 @@ What a request must name, all checked before anything runs: a live plan under `a
 
 Then, in order, each a refusal that stops the run:
   1. identity: `receipt.identity` of those surfaces (a renet-hash check rebuilds `bin/renet` once through its registry `rebuild` argv), judged by `receipt.identity_refusal` (dirty-tree, checkout-mismatch, modified-checkout, build-mismatch, modified-build);
-  2. the ladder: a row surface with a VM phase needs `vm_tier.admit` to admit the head tree (no live run before the ops VMs pass it); the row records the VM run id;
+  2. the ladder: a VM phase of `live_tier.ladder_phases` (a row surface's, or the renet phase of a renet-hash deploy, which provisions renet on a real machine even for a CLI-only plan) needs `vm_tier.admit` to admit the head tree (no live run before the ops VMs pass it); the row records the VM run id;
   3. the deploy record (bench-cache): `.ci/cache/live-deploys/bench.json` must exist, keep the identity rules itself, and be cut from the head;
   4. the steps, in registry order; a non-zero exit is FAILED. `stale-binary-empty` needs `stale_binary == []` in the JSON answer, `renet-hash` needs the remote hash to equal the local sha256 (else `not-live`);
   5. live confirmation: bench-cache asks wrangler for the version serving 100% and refuses `not-live` when it is not the recorded one; renet-hash is confirmed by step 4; an `unrecorded` check can confirm nothing and is NOT_VERIFIED;
@@ -492,18 +492,17 @@ def record(
     refused = R.identity_refusal(ident, LT.judge_surfaces(names, check))
     if refused is not None:
         return _refuse(run, root, world, R.NOT_VERIFIED, refused.code, refused.message)
-    phases = S.phases_for(names)
+    phases = LT.ladder_phases(names, check)
     if phases:
         verdict = world.admit(root, ident["tree"], S.inputs(root, ident["tree"]), phases)
         if not verdict.ok:
-            return _refuse(
-                run,
-                root,
-                world,
-                R.NOT_VERIFIED,
-                CODE_LADDER,
-                f"no VM receipt admits the head tree ({verdict.code}: {verdict.message})",
-            )
+            message = f"no VM receipt admits the head tree ({verdict.code}: {verdict.message})"
+            if phases - S.phases_for(names):
+                message += (
+                    f"; check {check.id} deploys renet to a real machine, so the receipt must run the "
+                    f"{', '.join(sorted(phases - S.phases_for(names)))} phase: a full `npm run vm:check` runs every phase"
+                )
+            return _refuse(run, root, world, R.NOT_VERIFIED, CODE_LADDER, message)
         run.ladder = {"vm": (verdict.receipt or {}).get("runId")}
     if check.deploy == LT.BENCH_CACHE:
         deploy["source"] = LT.BENCH_CACHE

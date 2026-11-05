@@ -4,9 +4,9 @@ THE REGISTRY. `tiers.live.checks` in `.ci/config/proof-tiers.json` maps a check 
 
 DEPLOY KINDS. `bench-cache`: the version `rediacc_ci.ops.deploy_bench` recorded in `.ci/cache/live-deploys/bench.json`, confirmed serving 100% through wrangler at check time (a uuid). `renet-hash`: the renet binary built from the head's renet pointer, confirmed byte for byte on each machine (`renet:<vcs.revision>@sha256:<64 hex>`). `tree`: a CLI run from the clean head tree itself (`cli:<head>`). `unrecorded`: nothing records which head the deployed version was cut from, so no run of that check can confirm a deploy and none is VERIFIED.
 
-THE ROW (schema 1). `receipt.envelope` with `tier` `live`, plus `id`, `at`, `by`, `plan`, `box`, `target`, `region`, `deploy` (`surface`, `worker`, `version_id`, `source`, `deployed_head`, `confirmed_live`), `check` (`id`, `args`, `argv` as one argv per step run, `rc`, `duration_s`, `log_sha256`, `tail`) and `ladder` (`vm`, the admitting VM run id, null when no row surface has a VM phase). `id` is `receipt.row_id`. The full log stays in the gitignored `.ci/cache/live-proof/<id>.log`; `check.log_sha256` is its digest, and `validate_row` re-reads the log when it is present and refuses a mismatch (box V10).
+THE ROW (schema 1). `receipt.envelope` with `tier` `live`, plus `id`, `at`, `by`, `plan`, `box`, `target`, `region`, `deploy` (`surface`, `worker`, `version_id`, `source`, `deployed_head`, `confirmed_live`), `check` (`id`, `args`, `argv` as one argv per step run, `rc`, `duration_s`, `log_sha256`, `tail`) and `ladder` (`vm`, the admitting VM run id, null only when `ladder_phases` is empty). `id` is `receipt.row_id`. The full log stays in the gitignored `.ci/cache/live-proof/<id>.log`; `check.log_sha256` is its digest, and `validate_row` re-reads the log when it is present and refuses a mismatch (box V10).
 
-JUDGE SURFACES. A row is judged by `receipt.identity_refusal` over its surfaces, plus `renet` for a `renet-hash` check: that deploy IS the renet binary, so its build and the renet checkout are judged even when the plan touched only the CLI.
+JUDGE SURFACES. A row is judged by `receipt.identity_refusal` over its surfaces, plus `renet` for a `renet-hash` check: that deploy IS the renet binary, so its build and the renet checkout are judged even when the plan touched only the CLI. The same set decides the ladder (`ladder_phases`): a `renet-hash` check provisions that binary on a real machine, so its row needs the VM run that admitted the renet phase, and a null `ladder.vm` is refused even for a CLI-only plan; a `tree` check that provisions nothing keeps the phases of its own surfaces.
 """
 
 from __future__ import annotations
@@ -319,6 +319,11 @@ def judge_surfaces(surfaces: Iterable[str], check: Check | None) -> frozenset[st
     return frozenset(out)
 
 
+def ladder_phases(surfaces: Iterable[str], check: Check | None) -> frozenset[str]:
+    """The VM phases whose run must admit a row's head before the live run: those of its judge surfaces, so a renet-hash deploy needs the renet phase even when the plan touched only the CLI."""
+    return S.phases_for(judge_surfaces(surfaces, check))
+
+
 def row_surfaces(touched: Iterable[str], check: Check, target: str) -> list[str]:
     """The surfaces a run proves: those the plan touched, the check covers, and `target` is admissible for."""
     return sorted(
@@ -461,8 +466,8 @@ def _surface_problems(row: dict[str, Any], check: Check | None) -> list[str]:
     ladder = row.get("ladder")
     if not isinstance(ladder, dict) or "vm" not in ladder:
         out.append("ladder is not an object with vm")
-    elif S.phases_for(names) and not (isinstance(ladder["vm"], str) and ladder["vm"]):
-        out.append("a surface with a VM phase needs ladder.vm, the admitting VM run id")
+    elif ladder_phases(names, check) and not (isinstance(ladder["vm"], str) and ladder["vm"]):
+        out.append("a surface or deploy with a VM phase needs ladder.vm, the admitting VM run id")
     return out
 
 

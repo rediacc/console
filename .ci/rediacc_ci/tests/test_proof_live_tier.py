@@ -405,11 +405,62 @@ def test_a_renet_hash_row_judges_the_renet_build_even_for_a_cli_only_plan() -> N
             "log_sha256": "c" * 64,
             "tail": ["f" * 64],
         },
-        ladder={"vm": None},
+        ladder={"vm": "vmc-11040941-158f0e"},
     )
     assert LT.validate_row(row) == []
     _plant("renet.modified", True)(row)
     assert any(p.startswith("modified-build") for p in LT.validate_row(row))
+
+
+def _renet_cli_only_row(vm: str | None) -> dict[str, Any]:
+    check = LT.registry()["renet-live"]
+    argv = [list(r.argv) for r in LT.expand(check, "hostinger")]
+    renet = {"built": PTR_R, "modified": False, "sha256": "f" * 64}
+    return LT.build_row(
+        _ident(["cli"], renet=renet),
+        R.VERIFIED,
+        at="2026-10-28T10:00:00Z",
+        by="d778be9d",
+        plan="agent/plans/PLAN-demo.md",
+        box="2f44fc06",
+        target="hostinger",
+        region=None,
+        deploy={
+            "surface": "renet",
+            "worker": None,
+            "version_id": f"renet:{PTR_R}@sha256:{'f' * 64}",
+            "source": "rdc:eu-bench",
+            "deployed_head": HEAD,
+            "confirmed_live": True,
+        },
+        check={
+            "id": "renet-live",
+            "args": [],
+            "argv": argv,
+            "rc": 0,
+            "duration_s": 9.0,
+            "log_sha256": "c" * 64,
+            "tail": ["f" * 64],
+        },
+        ladder={"vm": vm},
+    )
+
+
+def test_a_renet_hash_row_on_a_cli_only_plan_needs_its_ladder_run() -> None:
+    """A renet-hash check provisions renet on a real machine, so a null ladder.vm is refused even when the row's surfaces carry no VM phase (the reopened LP-hostinger receipt of PLAN-ssh-key-source-ranges)."""
+    row = _renet_cli_only_row("vmc-11040941-158f0e")
+    assert LT.validate_row(row) == [], "the control must pass before the plant"
+    assert S.phases_for(row["surfaces"]) == frozenset()
+    assert LT.ladder_phases(row["surfaces"], LT.registry()["renet-live"]) == frozenset({"renet"})
+    refused = _renet_cli_only_row(None)
+    assert any("ladder.vm" in p for p in LT.validate_row(refused))
+
+
+def test_a_tree_row_on_a_cli_only_plan_keeps_a_null_ladder() -> None:
+    row = _cli_row()
+    assert LT.ladder_phases(row["surfaces"], LT.registry()["cli-bench"]) == frozenset()
+    assert row["ladder"] == {"vm": None}
+    assert LT.validate_row(row) == []
 
 
 def test_an_unrecorded_deploy_never_validates() -> None:
