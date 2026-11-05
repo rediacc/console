@@ -120,3 +120,6 @@
 {"at":"2026-11-04T09:32:26Z","by":"d778be9d","id":"92df2f69","title":"free license ladder F6","covers":[],"order":null,"plan":"agent/plans/PLAN-free-license.md"}
 {"at":"2026-11-04T10:49:52Z","by":"d778be9d","id":"1f877343","title":"guided detached worktree leases","covers":[],"order":null,"plan":"agent/plans/PLAN-worktree-lease.md"}
 {"at":"2026-11-04T12:57:25Z","by":"d778be9d","id":"2e0e531f","title":"Rediaccfile lifecycle runs unprivileged","covers":[],"order":null,"plan":"agent/plans/PLAN-rediaccfile-unprivileged.md"}
+{"at":"2026-11-05T17:29:03Z","by":"d778be9d","id":"fbb27b45","title":"Product moves to rediacc.cloud and names drop their prefixes","covers":[],"order":null,"plan":"agent/plans/PLAN-product-domain-rename.md"}
+{"at":"2026-11-05T17:29:03Z","by":"d778be9d","id":"5eb69cff","title":"Website routing, company lookup and product mail on .cloud","covers":[],"order":null,"plan":"agent/plans/PLAN-website-routing-and-mail.md"}
+{"at":"2026-11-05T17:29:03Z","by":"d778be9d","id":"783185d2","title":"Enterprise per-company isolation, regional signers and release rings","covers":[],"order":null,"plan":"agent/plans/PLAN-enterprise-isolation.md"}
