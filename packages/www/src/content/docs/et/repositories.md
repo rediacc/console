@@ -8,7 +8,7 @@ tags:
 subcategory: workloads
 order: 4
 language: et
-sourceHash: "a7c0a70e8868d2c0"
+sourceHash: "8421082e9553c8f0"
 sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
@@ -136,6 +136,77 @@ Poliitika väljad:
 Kaitsemeetmed: automaatne kasv keeldub, kui basseini vabas ruumi on alla reservi (10 GB või 5% basseinist, kumb on suurem), ootab vähemalt 30 minutit sama repositooriumi kasvude vahel ja ei ületa kunagi `--max-quota`. Automaatset kahanemist pole: repositooriumi maksimaalse suuruse vähendamine jääb käsitsi, võrguühenduseta [`repo resize`](#resize) operatsiooniks.
 
 Repositooriumipõhised sätted alistavad masina üldise vaikimisi. Korduvad `policy set` kutsed muudavad ainult neid lippe, mida edastad.
+
+## Ressursipiirangud
+
+Vaikimisi pole hoidlal mälu-, protsessori- ega I/O-piirangut, nii et üks hõivatud hoidla võib võtta mälu hostilt ja kõigilt teistelt selle hoidlatelt. Piirangud kehtivad hoidlale tervikuna: selle konteineritele, selle Rediaccfile'i funktsioonidele `up()` ja `down()` ning selle RAM-köitele.
+
+```bash
+# Cap my-app at 10 GB of memory and 4 CPU cores
+rdc repo policy set my-app --memory-max 10G --cpu-max 4
+
+# Cap its disk reads and writes
+rdc repo policy set my-app --io-max rbps=200M,wbps=100M
+
+# Show the size policy and the limits
+rdc repo policy get my-app
+
+# Remove every limit and the RAM volume
+rdc repo policy set my-app --clear-limits
+```
+
+| Lipp | Tähendus |
+|---|---|
+| `--memory-max` | Mälupiir (`10G`). Piiri juures lõpetab OOM ühe hoidla konteineritest ja mitte midagi väljaspool hoidlat |
+| `--memory-high` | Pidurduspunkt allpool piiri: sellest kõrgemal võtab tuum hoidla mälu jõulisemalt tagasi |
+| `--cpu-max` | Protsessoripiir tuumades (`4`, `2.5`) või protsendina (`250%`) |
+| `--io-max` | Hoidla seadme kettapiir: mis tahes valik võtmetest `rbps=` ja `wbps=` (baiti sekundis) ning `riops=` ja `wiops=` (toimingut sekundis) |
+| `--pids-max` | Protsesside piir |
+| `--ram-volume` | Hoidla RAM-köite suurus (vt allpool) |
+| `--clear-limits` | Eemalda kõik piirangud ja RAM-köide |
+| `--force` | Luba mälupiir, mis on hoidla praegusest kasutusest madalam |
+
+Väärtus `max` eemaldab ühe piirangu (`--memory-max max`, `--io-max wbps=max`). Muudatus rakendub töötavale hoidlale ilma taaskäivituseta. Mälupiir, mis on hoidla praegusest kasutusest madalam, lükatakse tagasi, kui `--force` pole antud.
+
+Kui hoidla jõuab oma mälupiirini, lõpetab tuum konteineri, milles on suurim protsess, ja ainult selle konteineri. Ülejäänud konteinerid töötavad edasi, nagu ka kõik teised hoidlad. `rdc machine status` näitab iga hoidla mälukasutust võrrelduna piiriga, OOM-lõpetamisi ja RAM-köidet ning nimetab iga hoidla, mis töötab ilma mälupiirita.
+
+Masin hoiab piiranguid oma operaatoriloas kataloogis `/etc/rediacc/grants`, väljaspool hoidlat. Hoidla konteinerid, Rediaccfile ja terminaliseansid ei saa neid lugeda ega muuta. Tehisintellekti agent, kes muudab põhihoidla piiranguid, vajab `REDIACC_ALLOW_GRAND_REPO`, nagu teeloa puhul; kahvel ei vaja midagi. Kahvel pärib vanema piirangud ja RAM-köite, nii et piiratud hoidla kahvel ei tööta kunagi piiranguteta. Vaikimisi pole ühtegi piirangut seatud.
+
+### RAM-köide
+
+`--ram-volume 8G` annab hoidlale RAM-ketta (tmpfs) asukohas `.ram` selle ühenduspunkti sees. Konteinerid seovad selles oleva tee nagu mis tahes hoidla tee, näiteks `./.ram/data:/var/lib/data`. Selle lehed arvestatakse hoidla mälupiiri sisse, seega peab piir jääma köite suurusest vähemalt 1 GB kõrgemale: `--memory-max 10G --ram-volume 8G` võetakse vastu, `--memory-max 8G --ram-volume 8G` lükatakse tagasi.
+
+Köide säilib hoidla Dockeri deemoni taaskäivitamisel. See eemaldatakse hoidla lahtiühendamisel, pärast seda kui `down()` on töötanud.
+
+| Sündmus | Mis läheb kaotsi |
+|---|---|
+| Dockeri deemoni taaskäivitus | Mitte midagi |
+| Konteiner lõpetatakse OOM-iga | Mitte midagi |
+| `repo down --unmount`, `repo unmount`, plaanitud taaskäivitus | Kõik, mida `down()` ei salvesta |
+| `down()` ületab hosti sulgemisel ajapiirangu | Kõik, mida `down()` polnud veel salvestanud |
+| Krahh, voolukatkestus, plaanimata taaskäivitus | Kõik alates viimasest `down()` käivitusest |
+| Varukoopia, kahvel | Köide pole tõmmise osa; kahvli `up()` taastab vanema viimasest salvestusest |
+
+`up()` ja `down()` saavad `REDIACC_RAM_DIR`, kuni köide on ühendatud. Muster on taastada `up()` sees ainult siis, kui `$REDIACC_RAM_DIR/.restored` puudub, ja salvestada `down()` sees pärast teenuste peatamist:
+
+```bash
+up() {
+  if [ -n "$REDIACC_RAM_DIR" ] && [ ! -e "$REDIACC_RAM_DIR/.restored" ]; then
+    mkdir -p "$REDIACC_RAM_DIR/data"
+    if [ -d data-saved ]; then cp -a data-saved/. "$REDIACC_RAM_DIR/data/"; fi
+    touch "$REDIACC_RAM_DIR/.restored"
+  fi
+  renet compose -- up -d
+}
+
+down() {
+  renet compose -- down
+  if [ -n "$REDIACC_RAM_DIR" ]; then
+    rm -rf data-saved.new && cp -a "$REDIACC_RAM_DIR/data" data-saved.new
+    rm -rf data-saved && mv data-saved.new data-saved
+  fi
+}
+```
 
 ## Kahveldamine
 

@@ -8,7 +8,7 @@ tags:
 subcategory: workloads
 order: 4
 language: tr
-sourceHash: "a7c0a70e8868d2c0"
+sourceHash: "8421082e9553c8f0"
 sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
@@ -136,6 +136,77 @@ Politika alanları:
 Güvenceler: otomatik büyüme, havuzun boş alanı bir rezervin (havuzun 10 GB veya %5'i, hangisi daha büyükse) altına düştüğünde reddeder; aynı deponun ardışık büyümeleri arasında en az 30 dakika bekler ve `--max-quota` değerini asla aşmaz. Otomatik küçültme yoktur: deponun maksimum boyutunu azaltmak her zaman elle, çevrimdışı bir [`repo resize`](#resize) işlemidir.
 
 Depo başına ayarlar, makine genelindeki varsayılanı geçersiz kılar. Tekrarlanan `policy set` çağrıları yalnızca ilettiğiniz bayrakları değiştirir.
+
+## Kaynak sınırları
+
+Varsayılan olarak bir deponun bellek, CPU veya G/Ç sınırı yoktur; bu yüzden yoğun çalışan tek bir depo, ana makineden ve üzerindeki diğer tüm depolardan bellek alabilir. Sınırlar depoyu bir bütün olarak kısıtlar: kapsayıcılarını, Rediaccfile içindeki `up()` ve `down()` işlevlerini ve RAM birimini.
+
+```bash
+# Cap my-app at 10 GB of memory and 4 CPU cores
+rdc repo policy set my-app --memory-max 10G --cpu-max 4
+
+# Cap its disk reads and writes
+rdc repo policy set my-app --io-max rbps=200M,wbps=100M
+
+# Show the size policy and the limits
+rdc repo policy get my-app
+
+# Remove every limit and the RAM volume
+rdc repo policy set my-app --clear-limits
+```
+
+| Bayrak | Anlamı |
+|---|---|
+| `--memory-max` | Bellek üst sınırı (`10G`). Sınıra ulaşıldığında deponun kapsayıcılarından biri OOM ile sonlandırılır, deponun dışındaki hiçbir şey etkilenmez |
+| `--memory-high` | Üst sınırın altındaki kısma noktası: bunun üzerinde çekirdek deponun belleğini daha sıkı geri alır |
+| `--cpu-max` | Çekirdek sayısı (`4`, `2.5`) ya da yüzde (`250%`) olarak CPU üst sınırı |
+| `--io-max` | Deponun aygıtı için disk üst sınırı: `rbps=` ve `wbps=` (saniyede bayt) ile `riops=` ve `wiops=` (saniyede işlem) anahtarlarından herhangi bir alt küme |
+| `--pids-max` | Süreç üst sınırı |
+| `--ram-volume` | Deponun RAM biriminin boyutu (aşağıya bakın) |
+| `--clear-limits` | Tüm sınırları ve RAM birimini kaldır |
+| `--force` | Deponun mevcut kullanımının altında bir bellek üst sınırına izin ver |
+
+`max` değeri tek bir sınırı kaldırır (`--memory-max max`, `--io-max wbps=max`). Bir değişiklik, çalışan depoya yeniden başlatma olmadan uygulanır. Deponun mevcut kullanımının altındaki bir bellek üst sınırı, `--force` verilmedikçe reddedilir.
+
+Depo bellek üst sınırına ulaştığında çekirdek, en büyük süreci barındıran kapsayıcıyı ve yalnızca o kapsayıcıyı sonlandırır. Diğer kapsayıcılar çalışmaya devam eder, diğer tüm depolar da öyle. `rdc machine status` her depo için bellek kullanımını üst sınırla birlikte, OOM sonlandırmalarını ve RAM birimini gösterir; bellek üst sınırı olmadan çalışan her depoyu da adıyla belirtir.
+
+Makine sınırları, deponun dışında, `/etc/rediacc/grants` altındaki operatör izninde tutar. Deponun kapsayıcıları, Rediaccfile dosyası ve terminal oturumları bunları ne okuyabilir ne de değiştirebilir. Ana bir deponun sınırlarını değiştiren bir yapay zeka ajanı, yol izninde olduğu gibi `REDIACC_ALLOW_GRAND_REPO` gerektirir; bir çatal için hiçbir şey gerekmez. Bir çatal, üst deposunun sınırlarını ve RAM birimini devralır; böylece sınırlı bir deponun çatalı hiçbir zaman sınırsız çalışmaz. Varsayılan olarak hiçbir sınır ayarlı değildir.
+
+### RAM birimi
+
+`--ram-volume 8G`, depoya bağlama noktasının içinde `.ram` konumunda bir RAM diski (tmpfs) verir. Kapsayıcılar bunun içindeki bir yolu, deponun herhangi bir yolu gibi bağlar; örneğin `./.ram/data:/var/lib/data`. Sayfaları deponun bellek üst sınırına sayılır, bu nedenle üst sınır birim boyutunun en az 1 GB üzerinde kalmalıdır: `--memory-max 10G --ram-volume 8G` kabul edilir, `--memory-max 8G --ram-volume 8G` reddedilir.
+
+Birim, deponun Docker arka plan programının yeniden başlatılmasından etkilenmez. Depo ayrıldığında, `down()` çalıştıktan sonra kaldırılır.
+
+| Olay | Ne kaybolur |
+|---|---|
+| Docker arka plan programının yeniden başlatılması | Hiçbir şey |
+| Bir kapsayıcının OOM ile sonlandırılması | Hiçbir şey |
+| `repo down --unmount`, `repo unmount`, planlı yeniden başlatma | `down()` işlevinin kaydetmediği her şey |
+| `down()` ana makine kapanırken zaman aşımına uğrar | `down()` işlevinin henüz kaydetmediği her şey |
+| Çökme, elektrik kesintisi, plansız yeniden başlatma | Son `down()` çağrısından bu yana her şey |
+| Yedekleme, çatal | Birim imajın parçası değildir; bir çatalın `up()` işlevi üst deponun son kaydından geri yükler |
+
+`up()` ve `down()`, birim bağlı olduğu sürece `REDIACC_RAM_DIR` alır. Yöntem şudur: `up()` içinde yalnızca `$REDIACC_RAM_DIR/.restored` yoksa geri yükleyin, `down()` içinde ise hizmetler durduktan sonra kaydedin:
+
+```bash
+up() {
+  if [ -n "$REDIACC_RAM_DIR" ] && [ ! -e "$REDIACC_RAM_DIR/.restored" ]; then
+    mkdir -p "$REDIACC_RAM_DIR/data"
+    if [ -d data-saved ]; then cp -a data-saved/. "$REDIACC_RAM_DIR/data/"; fi
+    touch "$REDIACC_RAM_DIR/.restored"
+  fi
+  renet compose -- up -d
+}
+
+down() {
+  renet compose -- down
+  if [ -n "$REDIACC_RAM_DIR" ]; then
+    rm -rf data-saved.new && cp -a "$REDIACC_RAM_DIR/data" data-saved.new
+    rm -rf data-saved && mv data-saved.new data-saved
+  fi
+}
+```
 
 ## Fork
 

@@ -8,7 +8,7 @@ tags:
 subcategory: workloads
 order: 4
 language: zh
-sourceHash: "a7c0a70e8868d2c0"
+sourceHash: "8421082e9553c8f0"
 sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
@@ -136,6 +136,77 @@ rdc repo policy get my-app
 安全护栏：当存储池剩余空间低于保留量（10 GB 或存储池的 5%，取较大者）时，自动扩容拒绝执行；同一仓库两次扩容之间至少等待 30 分钟；扩容量永不超过 `--max-quota`。不支持自动缩减：减小仓库最大容量上限仍需手动执行离线的 [`repo resize`](#resize)。
 
 每仓库设置会覆盖机器全局默认值。多次调用 `policy set` 仅更改您传入的字段。
+
+## 资源限制
+
+默认情况下，仓库没有内存、CPU 或 I/O 限制，因此一个繁忙的仓库可能会从主机及其上的所有其他仓库夺走内存。限制作用于整个仓库：它的容器、Rediaccfile 中的 `up()` 和 `down()`，以及它的 RAM 卷。
+
+```bash
+# Cap my-app at 10 GB of memory and 4 CPU cores
+rdc repo policy set my-app --memory-max 10G --cpu-max 4
+
+# Cap its disk reads and writes
+rdc repo policy set my-app --io-max rbps=200M,wbps=100M
+
+# Show the size policy and the limits
+rdc repo policy get my-app
+
+# Remove every limit and the RAM volume
+rdc repo policy set my-app --clear-limits
+```
+
+| 选项 | 含义 |
+|---|---|
+| `--memory-max` | 内存上限（`10G`）。达到上限时，只会因 OOM 终止仓库中的一个容器，仓库之外不受影响 |
+| `--memory-high` | 低于上限的节流点：超过它后，内核会更积极地回收仓库的内存 |
+| `--cpu-max` | CPU 上限，以核数（`4`、`2.5`）或百分比（`250%`）表示 |
+| `--io-max` | 仓库设备的磁盘上限：`rbps=` 和 `wbps=`（每秒字节数）以及 `riops=` 和 `wiops=`（每秒操作数）的任意组合 |
+| `--pids-max` | 进程数上限 |
+| `--ram-volume` | 仓库 RAM 卷的大小（见下文） |
+| `--clear-limits` | 移除所有限制和 RAM 卷 |
+| `--force` | 允许内存上限低于仓库当前的用量 |
+
+值 `max` 只移除一项限制（`--memory-max max`、`--io-max wbps=max`）。更改无需重启即可作用于运行中的仓库。低于仓库当前用量的内存上限会被拒绝，除非指定了 `--force`。
+
+当仓库达到内存上限时，内核只终止包含最大进程的那个容器。其余容器继续运行，其他所有仓库也照常运行。`rdc machine status` 会为每个仓库显示内存用量与上限的对比、OOM 终止次数和 RAM 卷，并列出所有在没有内存上限的情况下运行的仓库。
+
+机器将限制保存在仓库之外 `/etc/rediacc/grants` 下的操作员授权中。仓库的容器、Rediaccfile 和终端会话都无法读取或更改它们。更改主仓库限制的 AI 代理需要 `REDIACC_ALLOW_GRAND_REPO`，与路径授权相同；分支则什么都不需要。分支会继承父仓库的限制和 RAM 卷，因此有上限的仓库的分支永远不会在无上限的情况下运行。默认不设置任何限制。
+
+### RAM 卷
+
+`--ram-volume 8G` 在仓库挂载点内的 `.ram` 处为仓库提供一个 RAM 磁盘（tmpfs）。容器可以像绑定仓库中任何路径一样绑定其中的路径，例如 `./.ram/data:/var/lib/data`。它的页面计入仓库的内存上限，因此上限必须比卷大小至少高出 1 GB：`--memory-max 10G --ram-volume 8G` 会被接受，`--memory-max 8G --ram-volume 8G` 会被拒绝。
+
+重启仓库的 Docker 守护进程时，该卷会保留下来。仓库卸载时，在 `down()` 运行之后将其移除。
+
+| 事件 | 丢失的内容 |
+|---|---|
+| Docker 守护进程重启 | 无 |
+| 某个容器因 OOM 被终止 | 无 |
+| `repo down --unmount`、`repo unmount`、计划内重启 | `down()` 未保存的所有内容 |
+| 主机关机期间 `down()` 超时 | `down()` 尚未保存的所有内容 |
+| 崩溃、断电、计划外重启 | 自上次 `down()` 以来的所有内容 |
+| 备份、分支 | 该卷不属于镜像；分支的 `up()` 从父仓库最后一次保存中恢复 |
+
+卷挂载期间，`up()` 和 `down()` 会获得 `REDIACC_RAM_DIR`。常用模式是：在 `up()` 中仅当 `$REDIACC_RAM_DIR/.restored` 不存在时才恢复，在 `down()` 中于服务停止后保存：
+
+```bash
+up() {
+  if [ -n "$REDIACC_RAM_DIR" ] && [ ! -e "$REDIACC_RAM_DIR/.restored" ]; then
+    mkdir -p "$REDIACC_RAM_DIR/data"
+    if [ -d data-saved ]; then cp -a data-saved/. "$REDIACC_RAM_DIR/data/"; fi
+    touch "$REDIACC_RAM_DIR/.restored"
+  fi
+  renet compose -- up -d
+}
+
+down() {
+  renet compose -- down
+  if [ -n "$REDIACC_RAM_DIR" ]; then
+    rm -rf data-saved.new && cp -a "$REDIACC_RAM_DIR/data" data-saved.new
+    rm -rf data-saved && mv data-saved.new data-saved
+  fi
+}
+```
 
 ## 分支
 

@@ -10,7 +10,7 @@ tags:
 subcategory: workloads
 order: 4
 language: de
-sourceHash: "a7c0a70e8868d2c0"
+sourceHash: "8421082e9553c8f0"
 sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
@@ -138,6 +138,77 @@ Richtlinienfelder:
 Schutzmaßnahmen: Auto-Grow verweigert die Ausführung, wenn der freie Pool-Speicher unter eine Reserve fällt (10 GB oder 5 % des Pools, je nachdem was größer ist), wartet mindestens 30 Minuten zwischen Grows desselben Repositories und überschreitet niemals `--max-quota`. Es gibt kein automatisches Verkleinern: Das manuelle, offline durchzuführende [`repo resize`](#resize) ist der einzige Weg, die maximale Größe eines Repositories zu reduzieren.
 
 Einstellungen pro Repository überschreiben den maschinenweiten Standard. Wiederholte `policy set`-Aufrufe ändern nur die übergebenen Flags.
+
+## Ressourcenlimits
+
+Standardmäßig hat ein Repository kein Speicher-, CPU- oder I/O-Limit, sodass ein ausgelastetes Repository dem Host und jedem anderen Repository darauf Speicher wegnehmen kann. Limits begrenzen das Repository als Ganzes: seine Container, die Funktionen `up()` und `down()` seines Rediaccfile und sein RAM-Volume.
+
+```bash
+# Cap my-app at 10 GB of memory and 4 CPU cores
+rdc repo policy set my-app --memory-max 10G --cpu-max 4
+
+# Cap its disk reads and writes
+rdc repo policy set my-app --io-max rbps=200M,wbps=100M
+
+# Show the size policy and the limits
+rdc repo policy get my-app
+
+# Remove every limit and the RAM volume
+rdc repo policy set my-app --clear-limits
+```
+
+| Flag | Bedeutung |
+|---|---|
+| `--memory-max` | Speicherobergrenze (`10G`). An der Grenze wird einer der Container des Repositorys per OOM beendet, nichts außerhalb des Repositorys |
+| `--memory-high` | Drosselpunkt unterhalb der Obergrenze: darüber holt sich der Kernel den Speicher des Repositorys energischer zurück |
+| `--cpu-max` | CPU-Obergrenze in Kernen (`4`, `2.5`) oder als Prozentwert (`250%`) |
+| `--io-max` | Festplatten-Obergrenze für das Gerät des Repositorys: eine beliebige Auswahl aus `rbps=` und `wbps=` (Bytes pro Sekunde) sowie `riops=` und `wiops=` (Operationen pro Sekunde) |
+| `--pids-max` | Prozessobergrenze |
+| `--ram-volume` | Größe des RAM-Volumes des Repositorys (siehe unten) |
+| `--clear-limits` | Alle Limits und das RAM-Volume entfernen |
+| `--force` | Eine Speicherobergrenze unter dem aktuellen Verbrauch des Repositorys zulassen |
+
+Der Wert `max` entfernt ein einzelnes Limit (`--memory-max max`, `--io-max wbps=max`). Eine Änderung wirkt sofort auf das laufende Repository, ohne Neustart. Eine Speicherobergrenze unter dem aktuellen Verbrauch des Repositorys wird abgelehnt, sofern nicht `--force` angegeben ist.
+
+Erreicht das Repository seine Speicherobergrenze, beendet der Kernel den Container mit dem größten Prozess, und nur diesen Container. Die übrigen Container laufen weiter, ebenso jedes andere Repository. `rdc machine status` zeigt für jedes Repository den Speicherverbrauch im Verhältnis zur Obergrenze, die OOM-Kills und das RAM-Volume und nennt jedes Repository, das ohne Speicherobergrenze läuft.
+
+Die Maschine hält die Limits in ihrer Betreiberfreigabe unter `/etc/rediacc/grants`, außerhalb des Repositorys. Die Container, das Rediaccfile und die Terminal-Sitzungen des Repositorys können sie weder lesen noch ändern. Ein KI-Agent, der die Limits eines Grand-Repositorys ändert, braucht `REDIACC_ALLOW_GRAND_REPO`, wie bei einer Pfadfreigabe; ein Fork braucht nichts. Ein Fork übernimmt die Limits und das RAM-Volume seines Elternteils, sodass ein Fork eines begrenzten Repositorys nie unbegrenzt läuft. Standardmäßig ist kein Limit gesetzt.
+
+### RAM-Volume
+
+`--ram-volume 8G` gibt dem Repository eine RAM-Disk (tmpfs) unter `.ram` in seinem Mount. Container binden einen Pfad darin wie jeden Pfad des Repositorys, zum Beispiel `./.ram/data:/var/lib/data`. Seine Seiten zählen zur Speicherobergrenze des Repositorys, daher muss die Obergrenze mindestens 1 GB über der Volume-Größe liegen: `--memory-max 10G --ram-volume 8G` wird angenommen, `--memory-max 8G --ram-volume 8G` abgelehnt.
+
+Das Volume übersteht einen Neustart des Docker-Daemons des Repositorys. Es wird entfernt, wenn das Repository ausgehängt wird, nachdem `down()` gelaufen ist.
+
+| Ereignis | Was verloren geht |
+|---|---|
+| Neustart des Docker-Daemons | Nichts |
+| Ein Container wird per OOM beendet | Nichts |
+| `repo down --unmount`, `repo unmount`, geplanter Neustart | Alles, was `down()` nicht sichert |
+| `down()` überschreitet beim Herunterfahren des Hosts das Zeitlimit | Alles, was `down()` noch nicht gesichert hatte |
+| Absturz, Stromausfall, ungeplanter Neustart | Alles seit dem letzten `down()` |
+| Backup, Fork | Das Volume gehört nicht zum Image; das `up()` eines Forks stellt aus der letzten Sicherung des Elternteils wieder her |
+
+`up()` und `down()` erhalten `REDIACC_RAM_DIR`, solange das Volume eingehängt ist. Das Muster: in `up()` nur wiederherstellen, wenn `$REDIACC_RAM_DIR/.restored` fehlt, und in `down()` sichern, nachdem die Dienste gestoppt sind:
+
+```bash
+up() {
+  if [ -n "$REDIACC_RAM_DIR" ] && [ ! -e "$REDIACC_RAM_DIR/.restored" ]; then
+    mkdir -p "$REDIACC_RAM_DIR/data"
+    if [ -d data-saved ]; then cp -a data-saved/. "$REDIACC_RAM_DIR/data/"; fi
+    touch "$REDIACC_RAM_DIR/.restored"
+  fi
+  renet compose -- up -d
+}
+
+down() {
+  renet compose -- down
+  if [ -n "$REDIACC_RAM_DIR" ]; then
+    rm -rf data-saved.new && cp -a "$REDIACC_RAM_DIR/data" data-saved.new
+    rm -rf data-saved && mv data-saved.new data-saved
+  fi
+}
+```
 
 ## Fork
 

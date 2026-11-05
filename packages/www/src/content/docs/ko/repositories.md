@@ -8,7 +8,7 @@ tags:
 subcategory: workloads
 order: 4
 language: ko
-sourceHash: "a7c0a70e8868d2c0"
+sourceHash: "8421082e9553c8f0"
 sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
@@ -136,6 +136,77 @@ rdc repo policy get my-app
 안전 장치: 자동 확장은 풀의 여유 공간이 예약량(10 GB 또는 풀의 5% 중 더 큰 값) 미만이면 거부하고, 동일한 리포지터리의 확장 간 최소 30분을 대기하며, `--max-quota`를 절대 초과하지 않습니다. 자동 축소는 없습니다. 리포지터리의 최대 크기를 줄이는 것은 수동으로, 오프라인에서 [`repo resize`](#resize)를 통해서만 가능합니다.
 
 리포지터리별 설정은 머신 전체 기본값을 재정의합니다. 반복적인 `policy set` 호출은 전달한 플래그만 변경합니다.
+
+## 리소스 제한
+
+기본적으로 저장소에는 메모리, CPU, I/O 제한이 없습니다. 그래서 바쁜 저장소 하나가 호스트와 그 위의 다른 모든 저장소에서 메모리를 가져갈 수 있습니다. 제한은 저장소 전체에 적용됩니다. 대상은 컨테이너, Rediaccfile의 `up()`과 `down()`, 그리고 RAM 볼륨입니다.
+
+```bash
+# Cap my-app at 10 GB of memory and 4 CPU cores
+rdc repo policy set my-app --memory-max 10G --cpu-max 4
+
+# Cap its disk reads and writes
+rdc repo policy set my-app --io-max rbps=200M,wbps=100M
+
+# Show the size policy and the limits
+rdc repo policy get my-app
+
+# Remove every limit and the RAM volume
+rdc repo policy set my-app --clear-limits
+```
+
+| 플래그 | 의미 |
+|---|---|
+| `--memory-max` | 메모리 상한(`10G`). 상한에 도달하면 저장소의 컨테이너 중 하나가 OOM으로 종료되고, 저장소 밖에는 영향이 없습니다 |
+| `--memory-high` | 상한보다 낮은 스로틀 지점. 이 값을 넘으면 커널이 저장소의 메모리를 더 강하게 회수합니다 |
+| `--cpu-max` | 코어 수(`4`, `2.5`) 또는 백분율(`250%`)로 지정하는 CPU 상한 |
+| `--io-max` | 저장소 장치의 디스크 상한. `rbps=`와 `wbps=`(초당 바이트), `riops=`와 `wiops=`(초당 작업) 중 원하는 조합 |
+| `--pids-max` | 프로세스 수 상한 |
+| `--ram-volume` | 저장소 RAM 볼륨의 크기(아래 참조) |
+| `--clear-limits` | 모든 제한과 RAM 볼륨을 제거합니다 |
+| `--force` | 저장소의 현재 사용량보다 낮은 메모리 상한을 허용합니다 |
+
+값 `max`는 제한 하나만 해제합니다(`--memory-max max`, `--io-max wbps=max`). 변경 사항은 실행 중인 저장소에 재시작 없이 적용됩니다. 저장소의 현재 사용량보다 낮은 메모리 상한은 `--force`를 지정하지 않으면 거부됩니다.
+
+저장소가 메모리 상한에 도달하면 커널은 가장 큰 프로세스가 있는 컨테이너만 종료합니다. 나머지 컨테이너는 계속 실행되며, 다른 모든 저장소도 마찬가지입니다. `rdc machine status`는 저장소마다 상한 대비 메모리 사용량, OOM 종료 횟수, RAM 볼륨을 보여 주고, 메모리 상한 없이 실행 중인 저장소를 모두 이름으로 표시합니다.
+
+머신은 제한을 저장소 밖의 `/etc/rediacc/grants` 아래 운영자 권한에 보관합니다. 저장소의 컨테이너, Rediaccfile, 터미널 세션은 이를 읽거나 변경할 수 없습니다. 그랜드 저장소의 제한을 변경하는 AI 에이전트에는 경로 권한과 마찬가지로 `REDIACC_ALLOW_GRAND_REPO`가 필요하며, 포크에는 아무것도 필요하지 않습니다. 포크는 부모의 제한과 RAM 볼륨을 물려받으므로, 상한이 있는 저장소의 포크가 상한 없이 실행되는 일은 없습니다. 기본적으로는 아무 제한도 설정되어 있지 않습니다.
+
+### RAM 볼륨
+
+`--ram-volume 8G`는 저장소 마운트 안의 `.ram`에 RAM 디스크(tmpfs)를 만들어 줍니다. 컨테이너는 그 안의 경로를 저장소의 다른 경로처럼 바인드합니다(예: `./.ram/data:/var/lib/data`). 볼륨의 페이지는 저장소의 메모리 상한에 포함되므로, 상한은 볼륨 크기보다 최소 1 GB 커야 합니다. `--memory-max 10G --ram-volume 8G`는 허용되고, `--memory-max 8G --ram-volume 8G`는 거부됩니다.
+
+볼륨은 저장소의 Docker 데몬을 재시작해도 유지됩니다. 저장소를 마운트 해제할 때, `down()`이 실행된 뒤에 제거됩니다.
+
+| 이벤트 | 잃는 것 |
+|---|---|
+| Docker 데몬 재시작 | 없음 |
+| 컨테이너가 OOM으로 종료됨 | 없음 |
+| `repo down --unmount`, `repo unmount`, 계획된 재부팅 | `down()`이 저장하지 않은 모든 것 |
+| 호스트 종료 중 `down()`이 시간 초과됨 | `down()`이 아직 저장하지 못한 모든 것 |
+| 크래시, 정전, 계획되지 않은 재부팅 | 마지막 `down()` 이후의 모든 것 |
+| 백업, 포크 | 볼륨은 이미지에 포함되지 않습니다. 포크의 `up()`은 부모의 마지막 저장본에서 복원합니다 |
+
+볼륨이 마운트되어 있는 동안 `up()`과 `down()`은 `REDIACC_RAM_DIR`을 받습니다. `up()`에서는 `$REDIACC_RAM_DIR/.restored`가 없을 때만 복원하고, `down()`에서는 서비스를 멈춘 뒤에 저장하는 것이 기본 패턴입니다.
+
+```bash
+up() {
+  if [ -n "$REDIACC_RAM_DIR" ] && [ ! -e "$REDIACC_RAM_DIR/.restored" ]; then
+    mkdir -p "$REDIACC_RAM_DIR/data"
+    if [ -d data-saved ]; then cp -a data-saved/. "$REDIACC_RAM_DIR/data/"; fi
+    touch "$REDIACC_RAM_DIR/.restored"
+  fi
+  renet compose -- up -d
+}
+
+down() {
+  renet compose -- down
+  if [ -n "$REDIACC_RAM_DIR" ]; then
+    rm -rf data-saved.new && cp -a "$REDIACC_RAM_DIR/data" data-saved.new
+    rm -rf data-saved && mv data-saved.new data-saved
+  fi
+}
+```
 
 ## 포크
 

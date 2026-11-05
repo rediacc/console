@@ -8,7 +8,7 @@ tags:
 subcategory: workloads
 order: 4
 language: fr
-sourceHash: "a7c0a70e8868d2c0"
+sourceHash: "8421082e9553c8f0"
 sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
@@ -136,6 +136,77 @@ Champs de la politique :
 Garde-fous : la croissance automatique est refusée quand l'espace libre du pool est inférieur à une réserve (10 Go ou 5 % du pool, selon le plus grand des deux), attend au moins 30 minutes entre deux croissances du même dépôt, et ne dépasse jamais `--max-quota`. Il n'existe pas de réduction automatique : diminuer la taille maximale d'un dépôt reste une opération manuelle, hors ligne via [`repo resize`](#resize).
 
 Les paramètres par dépôt remplacent la valeur par défaut à l'échelle de la machine. Les appels successifs à `policy set` ne modifient que les flags que vous passez.
+
+## Limites de ressources
+
+Par défaut, un dépôt n'a aucune limite de mémoire, de CPU ou d'E/S : un dépôt très sollicité peut donc prendre de la mémoire à l'hôte et à tous les autres dépôts qu'il héberge. Les limites encadrent le dépôt dans son ensemble : ses conteneurs, les fonctions `up()` et `down()` de son Rediaccfile et son volume RAM.
+
+```bash
+# Cap my-app at 10 GB of memory and 4 CPU cores
+rdc repo policy set my-app --memory-max 10G --cpu-max 4
+
+# Cap its disk reads and writes
+rdc repo policy set my-app --io-max rbps=200M,wbps=100M
+
+# Show the size policy and the limits
+rdc repo policy get my-app
+
+# Remove every limit and the RAM volume
+rdc repo policy set my-app --clear-limits
+```
+
+| Option | Signification |
+|---|---|
+| `--memory-max` | Plafond mémoire (`10G`). Au plafond, un des conteneurs du dépôt est tué par l'OOM, et rien en dehors du dépôt |
+| `--memory-high` | Seuil de ralentissement sous le plafond : au-delà, le noyau récupère plus énergiquement la mémoire du dépôt |
+| `--cpu-max` | Plafond CPU en cœurs (`4`, `2.5`) ou en pourcentage (`250%`) |
+| `--io-max` | Plafond disque du périphérique du dépôt : n'importe quelle combinaison de `rbps=` et `wbps=` (octets par seconde) et de `riops=` et `wiops=` (opérations par seconde) |
+| `--pids-max` | Plafond de processus |
+| `--ram-volume` | Taille du volume RAM du dépôt (voir ci-dessous) |
+| `--clear-limits` | Retirer toutes les limites et le volume RAM |
+| `--force` | Autoriser un plafond mémoire inférieur à l'utilisation actuelle du dépôt |
+
+La valeur `max` retire une seule limite (`--memory-max max`, `--io-max wbps=max`). Un changement s'applique au dépôt en cours d'exécution sans redémarrage. Un plafond mémoire inférieur à l'utilisation actuelle du dépôt est refusé, sauf avec `--force`.
+
+Quand le dépôt atteint son plafond mémoire, le noyau tue le conteneur qui contient le plus gros processus, et seulement ce conteneur. Les autres conteneurs continuent de tourner, tout comme les autres dépôts. `rdc machine status` affiche pour chaque dépôt l'utilisation mémoire face à son plafond, ses arrêts par OOM et son volume RAM, et nomme chaque dépôt qui tourne sans plafond mémoire.
+
+La machine conserve les limites dans son autorisation d'opérateur sous `/etc/rediacc/grants`, hors du dépôt. Les conteneurs, le Rediaccfile et les sessions de terminal du dépôt ne peuvent ni les lire ni les modifier. Un agent IA qui modifie les limites d'un dépôt grand a besoin de `REDIACC_ALLOW_GRAND_REPO`, comme pour une autorisation de chemin ; un fork n'a besoin de rien. Un fork hérite des limites et du volume RAM de son parent, si bien qu'un fork d'un dépôt plafonné ne tourne jamais sans plafond. Aucune limite n'est définie par défaut.
+
+### Volume RAM
+
+`--ram-volume 8G` donne au dépôt un disque RAM (tmpfs) dans `.ram`, à l'intérieur de son point de montage. Les conteneurs y montent un chemin comme n'importe quel chemin du dépôt, par exemple `./.ram/data:/var/lib/data`. Ses pages comptent dans le plafond mémoire du dépôt, le plafond doit donc rester au moins 1 GB au-dessus de la taille du volume : `--memory-max 10G --ram-volume 8G` est accepté, `--memory-max 8G --ram-volume 8G` est refusé.
+
+Le volume survit à un redémarrage du démon Docker du dépôt. Il est retiré quand le dépôt est démonté, après l'exécution de `down()`.
+
+| Événement | Ce qui est perdu |
+|---|---|
+| Redémarrage du démon Docker | Rien |
+| Un conteneur est tué par l'OOM | Rien |
+| `repo down --unmount`, `repo unmount`, redémarrage planifié | Ce que `down()` ne sauvegarde pas |
+| `down()` dépasse son délai pendant l'arrêt de l'hôte | Ce que `down()` n'avait pas encore sauvegardé |
+| Plantage, coupure de courant, redémarrage imprévu | Tout depuis le dernier `down()` |
+| Sauvegarde, fork | Le volume ne fait pas partie de l'image ; le `up()` d'un fork restaure depuis la dernière sauvegarde du parent |
+
+`up()` et `down()` reçoivent `REDIACC_RAM_DIR` tant que le volume est monté. Le principe : restaurer dans `up()` uniquement si `$REDIACC_RAM_DIR/.restored` est absent, et sauvegarder dans `down()` après l'arrêt des services :
+
+```bash
+up() {
+  if [ -n "$REDIACC_RAM_DIR" ] && [ ! -e "$REDIACC_RAM_DIR/.restored" ]; then
+    mkdir -p "$REDIACC_RAM_DIR/data"
+    if [ -d data-saved ]; then cp -a data-saved/. "$REDIACC_RAM_DIR/data/"; fi
+    touch "$REDIACC_RAM_DIR/.restored"
+  fi
+  renet compose -- up -d
+}
+
+down() {
+  renet compose -- down
+  if [ -n "$REDIACC_RAM_DIR" ]; then
+    rm -rf data-saved.new && cp -a "$REDIACC_RAM_DIR/data" data-saved.new
+    rm -rf data-saved && mv data-saved.new data-saved
+  fi
+}
+```
 
 ## Fork
 

@@ -8,7 +8,7 @@ tags:
 subcategory: workloads
 order: 4
 language: ja
-sourceHash: "a7c0a70e8868d2c0"
+sourceHash: "8421082e9553c8f0"
 sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
@@ -136,6 +136,77 @@ rdc repo policy get my-app
 ガードレール: プールの空き容量が予約容量（10 GB またはプールの5%のいずれか大きい方）を下回る場合、自動拡張は拒否されます。同じリポジトリの拡張間は少なくとも30分待機し、`--max-quota` を超えることはありません。自動縮小はありません。リポジトリの最大サイズの削減は手動かつオフラインの [`repo resize`](#resize) のままです。
 
 リポジトリごとの設定はマシン全体のデフォルトを上書きします。`policy set` の繰り返し呼び出しでは、渡したフラグのみが変更されます。
+
+## リソース制限
+
+デフォルトでは、リポジトリにはメモリ、CPU、I/O の制限がありません。そのため負荷の高いリポジトリ 1 つが、ホストや同じホスト上の他のすべてのリポジトリからメモリを奪うことがあります。制限はリポジトリ全体に適用されます。対象はコンテナ、Rediaccfile の `up()` と `down()`、そして RAM ボリュームです。
+
+```bash
+# Cap my-app at 10 GB of memory and 4 CPU cores
+rdc repo policy set my-app --memory-max 10G --cpu-max 4
+
+# Cap its disk reads and writes
+rdc repo policy set my-app --io-max rbps=200M,wbps=100M
+
+# Show the size policy and the limits
+rdc repo policy get my-app
+
+# Remove every limit and the RAM volume
+rdc repo policy set my-app --clear-limits
+```
+
+| フラグ | 意味 |
+|---|---|
+| `--memory-max` | メモリ上限（`10G`）。上限に達すると、リポジトリのコンテナの 1 つが OOM で終了し、リポジトリの外には影響しません |
+| `--memory-high` | 上限より低い抑制ポイント。これを超えると、カーネルがリポジトリのメモリをより強く回収します |
+| `--cpu-max` | CPU 上限。コア数（`4`、`2.5`）または割合（`250%`）で指定します |
+| `--io-max` | リポジトリのデバイスに対するディスク上限。`rbps=` と `wbps=`（バイト/秒）、`riops=` と `wiops=`（操作/秒）を任意に組み合わせます |
+| `--pids-max` | プロセス数の上限 |
+| `--ram-volume` | リポジトリの RAM ボリュームのサイズ（後述） |
+| `--clear-limits` | すべての制限と RAM ボリュームを削除します |
+| `--force` | リポジトリの現在の使用量を下回るメモリ上限を許可します |
+
+値 `max` は 1 つの制限だけを解除します（`--memory-max max`、`--io-max wbps=max`）。変更は実行中のリポジトリに再起動なしで反映されます。リポジトリの現在の使用量を下回るメモリ上限は、`--force` を指定しない限り拒否されます。
+
+リポジトリがメモリ上限に達すると、カーネルは最大のプロセスを含むコンテナだけを終了します。他のコンテナは動き続け、他のリポジトリもすべてそのまま動き続けます。`rdc machine status` は、各リポジトリについて上限に対するメモリ使用量、OOM による終了回数、RAM ボリュームを表示し、メモリ上限なしで動いているリポジトリをすべて名前で示します。
+
+マシンは制限を、リポジトリの外にある `/etc/rediacc/grants` 配下のオペレーター許可に保存します。リポジトリのコンテナ、Rediaccfile、ターミナルセッションは、これを読むことも変更することもできません。グランドリポジトリの制限を変更する AI エージェントには、パス許可と同じく `REDIACC_ALLOW_GRAND_REPO` が必要です。フォークには何も必要ありません。フォークは親の制限と RAM ボリュームを引き継ぐため、上限付きリポジトリのフォークが上限なしで動くことはありません。デフォルトでは制限は設定されていません。
+
+### RAM ボリューム
+
+`--ram-volume 8G` は、リポジトリのマウント内の `.ram` に RAM ディスク（tmpfs）を用意します。コンテナはその中のパスを、リポジトリの他のパスと同じようにバインドします（例: `./.ram/data:/var/lib/data`）。そのページはリポジトリのメモリ上限に算入されるため、上限はボリュームサイズより 1 GB 以上大きくする必要があります。`--memory-max 10G --ram-volume 8G` は受け付けられ、`--memory-max 8G --ram-volume 8G` は拒否されます。
+
+ボリュームは、リポジトリの Docker デーモンを再起動しても残ります。リポジトリをアンマウントするとき、`down()` の実行後に削除されます。
+
+| イベント | 失われるもの |
+|---|---|
+| Docker デーモンの再起動 | なし |
+| コンテナが OOM で終了する | なし |
+| `repo down --unmount`、`repo unmount`、計画的な再起動 | `down()` が保存しないもの |
+| ホストのシャットダウン中に `down()` がタイムアウトする | `down()` がまだ保存していなかったもの |
+| クラッシュ、停電、計画外の再起動 | 最後の `down()` 以降のすべて |
+| バックアップ、フォーク | ボリュームはイメージに含まれません。フォークの `up()` は親の最後の保存から復元します |
+
+ボリュームがマウントされている間、`up()` と `down()` は `REDIACC_RAM_DIR` を受け取ります。`up()` では `$REDIACC_RAM_DIR/.restored` がない場合だけ復元し、`down()` ではサービスを停止したあとに保存する、というのが基本の形です。
+
+```bash
+up() {
+  if [ -n "$REDIACC_RAM_DIR" ] && [ ! -e "$REDIACC_RAM_DIR/.restored" ]; then
+    mkdir -p "$REDIACC_RAM_DIR/data"
+    if [ -d data-saved ]; then cp -a data-saved/. "$REDIACC_RAM_DIR/data/"; fi
+    touch "$REDIACC_RAM_DIR/.restored"
+  fi
+  renet compose -- up -d
+}
+
+down() {
+  renet compose -- down
+  if [ -n "$REDIACC_RAM_DIR" ]; then
+    rm -rf data-saved.new && cp -a "$REDIACC_RAM_DIR/data" data-saved.new
+    rm -rf data-saved && mv data-saved.new data-saved
+  fi
+}
+```
 
 ## フォーク
 

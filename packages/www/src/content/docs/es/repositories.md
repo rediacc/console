@@ -8,7 +8,7 @@ tags:
 subcategory: workloads
 order: 4
 language: es
-sourceHash: "a7c0a70e8868d2c0"
+sourceHash: "8421082e9553c8f0"
 sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
@@ -136,6 +136,77 @@ Campos de la política:
 Salvaguardas: el crecimiento automático se rechaza cuando el espacio libre del pool está por debajo de una reserva (10 GB o el 5% del pool, lo que sea mayor), espera al menos 30 minutos entre crecimientos del mismo repositorio y nunca supera `--max-quota`. No hay reducción automática: reducir el tamaño máximo de un repositorio sigue siendo un [`repo resize`](#resize) manual y fuera de línea.
 
 Los parámetros por repositorio anulan el valor predeterminado de la máquina. Las llamadas repetidas a `policy set` cambian solo los parámetros que se pasan.
+
+## Límites de recursos
+
+Por defecto un repositorio no tiene límite de memoria, CPU ni E/S, así que un repositorio muy ocupado puede quitar memoria al host y a todos los demás repositorios que aloja. Los límites acotan el repositorio en su conjunto: sus contenedores, las funciones `up()` y `down()` de su Rediaccfile y su volumen RAM.
+
+```bash
+# Cap my-app at 10 GB of memory and 4 CPU cores
+rdc repo policy set my-app --memory-max 10G --cpu-max 4
+
+# Cap its disk reads and writes
+rdc repo policy set my-app --io-max rbps=200M,wbps=100M
+
+# Show the size policy and the limits
+rdc repo policy get my-app
+
+# Remove every limit and the RAM volume
+rdc repo policy set my-app --clear-limits
+```
+
+| Opción | Significado |
+|---|---|
+| `--memory-max` | Tope de memoria (`10G`). Al alcanzarlo, se termina por OOM uno de los contenedores del repositorio y nada fuera de él |
+| `--memory-high` | Umbral de limitación por debajo del tope: por encima, el kernel recupera con más fuerza la memoria del repositorio |
+| `--cpu-max` | Tope de CPU en núcleos (`4`, `2.5`) o en porcentaje (`250%`) |
+| `--io-max` | Tope de disco del dispositivo del repositorio: cualquier combinación de `rbps=` y `wbps=` (bytes por segundo) y `riops=` y `wiops=` (operaciones por segundo) |
+| `--pids-max` | Tope de procesos |
+| `--ram-volume` | Tamaño del volumen RAM del repositorio (ver más abajo) |
+| `--clear-limits` | Quitar todos los límites y el volumen RAM |
+| `--force` | Permitir un tope de memoria por debajo del uso actual del repositorio |
+
+El valor `max` quita un solo límite (`--memory-max max`, `--io-max wbps=max`). Un cambio se aplica al repositorio en marcha sin reiniciarlo. Un tope de memoria por debajo del uso actual del repositorio se rechaza salvo que se indique `--force`.
+
+Cuando el repositorio alcanza su tope de memoria, el kernel termina el contenedor que contiene el proceso más grande, y solo ese contenedor. Los demás contenedores siguen funcionando, igual que todos los demás repositorios. `rdc machine status` muestra para cada repositorio el uso de memoria frente a su tope, sus terminaciones por OOM y su volumen RAM, y nombra cada repositorio que funciona sin tope de memoria.
+
+La máquina guarda los límites en su concesión de operador en `/etc/rediacc/grants`, fuera del repositorio. Los contenedores, el Rediaccfile y las sesiones de terminal del repositorio no pueden leerlos ni cambiarlos. Un agente de IA que cambie los límites de un repositorio grand necesita `REDIACC_ALLOW_GRAND_REPO`, igual que para una concesión de ruta; un fork no necesita nada. Un fork hereda los límites y el volumen RAM de su padre, de modo que un fork de un repositorio acotado nunca funciona sin límites. Por defecto no hay ningún límite.
+
+### Volumen RAM
+
+`--ram-volume 8G` da al repositorio un disco RAM (tmpfs) en `.ram` dentro de su montaje. Los contenedores montan una ruta dentro de él como cualquier ruta del repositorio, por ejemplo `./.ram/data:/var/lib/data`. Sus páginas cuentan para el tope de memoria del repositorio, así que el tope debe quedar al menos 1 GB por encima del tamaño del volumen: `--memory-max 10G --ram-volume 8G` se acepta, `--memory-max 8G --ram-volume 8G` se rechaza.
+
+El volumen sobrevive a un reinicio del daemon de Docker del repositorio. Se elimina cuando se desmonta el repositorio, después de que se haya ejecutado `down()`.
+
+| Evento | Qué se pierde |
+|---|---|
+| Reinicio del daemon de Docker | Nada |
+| Un contenedor se termina por OOM | Nada |
+| `repo down --unmount`, `repo unmount`, reinicio planificado | Lo que `down()` no guarde |
+| `down()` agota su tiempo durante el apagado del host | Lo que `down()` aún no había guardado |
+| Fallo, corte de luz, reinicio no planificado | Todo desde el último `down()` |
+| Copia de seguridad, fork | El volumen no forma parte de la imagen; el `up()` de un fork restaura desde el último guardado del padre |
+
+`up()` y `down()` reciben `REDIACC_RAM_DIR` mientras el volumen está montado. El patrón es restaurar en `up()` solo cuando falta `$REDIACC_RAM_DIR/.restored`, y guardar en `down()` después de detener los servicios:
+
+```bash
+up() {
+  if [ -n "$REDIACC_RAM_DIR" ] && [ ! -e "$REDIACC_RAM_DIR/.restored" ]; then
+    mkdir -p "$REDIACC_RAM_DIR/data"
+    if [ -d data-saved ]; then cp -a data-saved/. "$REDIACC_RAM_DIR/data/"; fi
+    touch "$REDIACC_RAM_DIR/.restored"
+  fi
+  renet compose -- up -d
+}
+
+down() {
+  renet compose -- down
+  if [ -n "$REDIACC_RAM_DIR" ]; then
+    rm -rf data-saved.new && cp -a "$REDIACC_RAM_DIR/data" data-saved.new
+    rm -rf data-saved && mv data-saved.new data-saved
+  fi
+}
+```
 
 ## Fork
 

@@ -135,6 +135,77 @@ Guardrails: auto-grow refuses when the pool's free space is below a reserve (10 
 
 Per-repository settings override the machine-wide default. Repeated `policy set` calls change only the flags you pass.
 
+## Resource Limits
+
+By default a repository has no memory, CPU or I/O limit, so one busy repository can take memory from the host and from every other repository on it. Limits cap the repository as a whole: its containers, its Rediaccfile `up()` and `down()`, and its RAM volume.
+
+```bash
+# Cap my-app at 10 GB of memory and 4 CPU cores
+rdc repo policy set my-app --memory-max 10G --cpu-max 4
+
+# Cap its disk reads and writes
+rdc repo policy set my-app --io-max rbps=200M,wbps=100M
+
+# Show the size policy and the limits
+rdc repo policy get my-app
+
+# Remove every limit and the RAM volume
+rdc repo policy set my-app --clear-limits
+```
+
+| Flag | Meaning |
+|---|---|
+| `--memory-max` | Memory cap (`10G`). At the cap, one of the repository's containers is OOM-killed and nothing outside the repository is |
+| `--memory-high` | Throttle point below the cap: above it the kernel reclaims the repository's memory harder |
+| `--cpu-max` | CPU cap in cores (`4`, `2.5`) or as a percentage (`250%`) |
+| `--io-max` | Disk cap of the repository's device: any subset of `rbps=` and `wbps=` (bytes per second) and `riops=` and `wiops=` (operations per second) |
+| `--pids-max` | Process cap |
+| `--ram-volume` | Size of the repository's RAM volume (see below) |
+| `--clear-limits` | Remove every limit and the RAM volume |
+| `--force` | Allow a memory cap below the repository's current use |
+
+The value `max` removes a single limit (`--memory-max max`, `--io-max wbps=max`). A change applies to the running repository without a restart. A memory cap below the repository's current use is refused unless `--force` is given.
+
+When the repository reaches its memory cap, the kernel kills the container that holds the largest process, and only that container. The other containers keep running, and so does every other repository. `rdc machine status` shows each repository's memory use against its cap, its OOM kills and its RAM volume, and names every repository that runs without a memory cap.
+
+Limits are kept by the machine in its operator grant under `/etc/rediacc/grants`, outside the repository. The repository's containers, Rediaccfile and terminal sessions can neither read nor change them. An AI agent that changes the limits of a grand repository needs `REDIACC_ALLOW_GRAND_REPO`, as for a path grant; a fork needs nothing. A fork inherits its parent's limits and RAM volume, so a fork of a capped repository never runs uncapped. No limit is set by default.
+
+### RAM Volume
+
+`--ram-volume 8G` gives the repository a RAM disk (tmpfs) at `.ram` inside its mount. Containers bind a path inside it like any path of the repository, for example `./.ram/data:/var/lib/data`. Its pages count against the repository's memory cap, so the cap must stay at least 1 GB above the volume size: `--memory-max 10G --ram-volume 8G` is accepted, `--memory-max 8G --ram-volume 8G` is refused.
+
+The volume survives a restart of the repository's Docker daemon. It is removed when the repository is unmounted, after `down()` has run.
+
+| Event | What is lost |
+|---|---|
+| Docker daemon restart | Nothing |
+| A container is OOM-killed | Nothing |
+| `repo down --unmount`, `repo unmount`, planned reboot | Whatever `down()` does not save |
+| `down()` times out during a host shutdown | Whatever `down()` had not saved yet |
+| Crash, power loss, unplanned reboot | Everything since the last `down()` |
+| Backup, fork | The volume is not part of the image; a fork's `up()` restores from the parent's last save |
+
+`up()` and `down()` get `REDIACC_RAM_DIR` while the volume is mounted. The pattern is to restore in `up()` only when `$REDIACC_RAM_DIR/.restored` is missing, and to save in `down()` after the services stop:
+
+```bash
+up() {
+  if [ -n "$REDIACC_RAM_DIR" ] && [ ! -e "$REDIACC_RAM_DIR/.restored" ]; then
+    mkdir -p "$REDIACC_RAM_DIR/data"
+    if [ -d data-saved ]; then cp -a data-saved/. "$REDIACC_RAM_DIR/data/"; fi
+    touch "$REDIACC_RAM_DIR/.restored"
+  fi
+  renet compose -- up -d
+}
+
+down() {
+  renet compose -- down
+  if [ -n "$REDIACC_RAM_DIR" ]; then
+    rm -rf data-saved.new && cp -a "$REDIACC_RAM_DIR/data" data-saved.new
+    rm -rf data-saved && mv data-saved.new data-saved
+  fi
+}
+```
+
 ## Fork
 
 Create a copy of an existing repository at its current state:
