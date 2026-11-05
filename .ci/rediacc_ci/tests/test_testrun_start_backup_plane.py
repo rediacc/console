@@ -7,6 +7,7 @@ import hashlib
 import os
 import signal
 import subprocess
+import tempfile
 from typing import Any
 
 import pytest
@@ -142,7 +143,15 @@ def drive(
 
     monkeypatch.setattr(plane.start_account, "generate_keys", fake_keygen)
     monkeypatch.setattr(plane, "rebuild_renet", calls["builds"].append)
-    monkeypatch.setattr(plane, "staged_renets", lambda: ["/r/renet-linux-amd64"])
+    staged = tempfile.mkdtemp(prefix="staged-")
+    for name in ("renet", "renet-linux-amd64"):
+        with open(os.path.join(staged, name), "w", encoding="utf-8") as handle:
+            handle.write(name)
+    monkeypatch.setattr(
+        plane,
+        "staged_renets",
+        lambda: [os.path.join(staged, n) for n in ("renet", "renet-linux-amd64")],
+    )
     monkeypatch.setattr(plane, "baked_public_key", lambda _b, *_a: PUB if baked is None else baked)
 
     def fake_start(argv):
@@ -207,11 +216,30 @@ def test_stop_account_kills_the_recorded_listener(
     assert killed == [(4242, signal.SIGTERM)]
 
 
-def test_credentials_go_to_github_env_masked(tmp_path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_credentials_go_to_github_env_masked(
+    tmp_path, monkeypatch: pytest.MonkeyPatch, capsys
+) -> None:
     gh = tmp_path / "env"
     monkeypatch.setenv("GITHUB_ENV", str(gh))
+    monkeypatch.setenv("GITHUB_ACTIONS", "true")
     plane.export_credentials(K)
     assert gh.read_text() == "E2E_BACKUP_S3_KEY=kk\nE2E_BACKUP_S3_SECRET=ss\n"
+    assert capsys.readouterr().out.splitlines() == ["::add-mask::kk", "::add-mask::ss"]
+
+
+def test_credentials_are_not_masked_or_printed_off_actions(
+    tmp_path, monkeypatch: pytest.MonkeyPatch, capsys
+) -> None:
+    """The control for the test above: the same GITHUB_ENV file, but no Actions runner to consume a mask."""
+    gh = tmp_path / "env"
+    monkeypatch.setenv("GITHUB_ENV", str(gh))
+    monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
+    plane.export_credentials({**K, "RUSTFS_KEY": "KEYVAL", "RUSTFS_SECRET": "SECVAL"})
+    out = capsys.readouterr()
+    assert gh.read_text() == "E2E_BACKUP_S3_KEY=KEYVAL\nE2E_BACKUP_S3_SECRET=SECVAL\n"
+    assert "add-mask" not in out.out + out.err
+    assert "KEYVAL" not in out.out + out.err
+    assert "SECVAL" not in out.out + out.err
 
 
 def test_credential_values_are_not_printed_locally(monkeypatch: pytest.MonkeyPatch, capsys) -> None:
@@ -330,3 +358,81 @@ def test_verify_mode_checks_every_binary_and_nothing_else(
     monkeypatch.setattr(plane, "verify_renet", lambda binary, _key: seen.append(binary))
     assert plane.main(["--verify-renet", "/a", "--verify-renet", "/b"]) == 0
     assert seen == ["/a", "/b"]
+
+
+@pytest.fixture(autouse=True)
+def _private_tmp(tmp_path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Every directory `pin_renet` or a test makes lands under the test's own tmp_path."""
+    monkeypatch.setattr(tempfile, "tempdir", str(tmp_path))
+
+
+def test_pin_copies_the_three_names_and_verifies_the_copies(
+    tmp_path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    src = tmp_path / "bin"
+    src.mkdir()
+    names = ("renet", "renet-linux-amd64", "renet-linux-arm64")
+    for name in names:
+        (src / name).write_text(name)
+    checked: list[str] = []
+
+    def baked(binary, *_a):
+        checked.append(binary)
+        return PUB
+
+    monkeypatch.setattr(plane, "baked_public_key", baked)
+    host = plane.pin_renet([str(src / n) for n in names], PUB)
+    pinned = os.path.dirname(host)
+    assert os.path.basename(host) == "renet"
+    assert pinned != str(src)
+    assert sorted(os.listdir(pinned)) == sorted(names)
+    # The copies were verified, not the shared originals.
+    assert sorted(checked) == sorted(os.path.join(pinned, n) for n in names)
+
+
+def test_pin_refuses_a_renet_that_bakes_another_key(
+    tmp_path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The control: the same call with a mismatched key raises, naming both fingerprints."""
+    (tmp_path / "renet").write_text("r")
+    monkeypatch.setattr(plane, "baked_public_key", lambda _b, *_a: OTHER)
+    with pytest.raises(plane.PlaneError) as exc:
+        plane.pin_renet([str(tmp_path / "renet")], PUB)
+    assert fp(PUB) in str(exc.value)
+    assert fp(OTHER) in str(exc.value)
+
+
+def test_pin_needs_the_host_binary(tmp_path) -> None:
+    (tmp_path / "renet-linux-amd64").write_text("r")
+    with pytest.raises(plane.PlaneError, match="host `renet`"):
+        plane.pin_renet([str(tmp_path / "renet-linux-amd64")], PUB)
+
+
+def test_renet_path_goes_to_github_env_or_stdout(
+    tmp_path, monkeypatch: pytest.MonkeyPatch, capsys
+) -> None:
+    gh = tmp_path / "env"
+    monkeypatch.setenv("GITHUB_ENV", str(gh))
+    plane.export_renet_path("/p/renet")
+    assert gh.read_text() == "RENET_BINARY_PATH=/p/renet\n"
+    monkeypatch.delenv("GITHUB_ENV")
+    plane.export_renet_path("/p/renet")
+    assert "export RENET_BINARY_PATH=/p/renet" in capsys.readouterr().out
+
+
+def test_run_pins_and_exports_the_renet_path(monkeypatch: pytest.MonkeyPatch) -> None:
+    drive(monkeypatch, "192.168.111.254")
+    exported: list[str] = []
+    monkeypatch.setattr(plane, "export_renet_path", exported.append)
+    assert plane.run(OPTS) == 0
+    assert len(exported) == 1
+    assert os.path.basename(exported[0]) == "renet"
+    assert os.environ["RENET_BINARY_PATH"] == exported[0]
+
+
+def test_ci_mode_pins_nothing(monkeypatch: pytest.MonkeyPatch) -> None:
+    drive(monkeypatch, "192.168.111.254")
+    exported: list[str] = []
+    monkeypatch.setattr(plane, "export_renet_path", exported.append)
+    assert plane.run(plane.Options("4900", "11", rebuild_renet=False)) == 0
+    assert exported == []

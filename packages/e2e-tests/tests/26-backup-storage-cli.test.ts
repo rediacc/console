@@ -36,6 +36,7 @@ import {
   scheduleServiceUnit,
   seededRestoreViolations,
 } from '../src/utils/backup/chunkScenarios';
+import { teardownRepos } from '../src/utils/backup/repoTeardown';
 import {
   type BackupManifest,
   type BackupUsage,
@@ -300,7 +301,8 @@ test.describe
         const others = baseline.lineages.filter((l) => l.lineageGuid !== plantedLineage);
         const otherBytes = others.reduce((sum, l) => sum + l.storedBytes, 0);
         const otherChunks = others.reduce((sum, l) => sum + l.chunkCount, 0);
-        const over = quotaBytes + 4096;
+        // The quota compares USED bytes, which leave out the waiting bytes retention already released and carry the adjustment, so a stored figure of quota + 4096 is only over the limit on a server whose waiting bytes are zero. A rerun against one account server is not that server (test K3's retention sweep leaves waiting bytes behind), so the planted stored figure adds them back.
+        const over = quotaBytes + 4096 + baseline.waitingBytes - baseline.usageAdjustment;
         const plantedBytes = over - otherBytes;
         expect(plantedBytes, 'the account already exceeds its quota for real').toBeGreaterThan(0);
 
@@ -501,7 +503,7 @@ test.describe
       test.afterAll(async () => {
         // Test 4 leaves the subscription OVER LIMIT, which refuses every upload on the account — the restore tier's own seed included.
         await restoreLedger(cli, subscriptionId);
-        await cli.run(['repo', 'delete', REPO_NAME, '-y']).catch(() => undefined);
+        await teardownRepos({ cli, workers: [{ label: M1, runner: w1 }] });
       });
 
       test('0. the run verb is really registered ON THE MACHINE', async () => {
@@ -593,7 +595,12 @@ test.describe
         expect(subscriptionId).not.toBe('');
         const res = await seam('seed-backup-ledger', {
           subscriptionId,
-          storedBytes: (usage.json?.data?.quotaBytes ?? 0) + 1,
+          // Stored plus what used bytes leave out (waiting bytes) minus the adjustment they carry: one byte past the quota in USED terms on any server, not only a fresh one.
+          storedBytes:
+            (usage.json?.data?.quotaBytes ?? 0) +
+            1 +
+            (usage.json?.data?.waitingBytes ?? 0) -
+            (usage.json?.data?.usageAdjustment ?? 0),
           chunkCount: usage.json?.data?.chunkCount ?? 1,
           overLimit: true,
         });
@@ -730,8 +737,13 @@ test.describe
       });
 
       test.afterAll(async () => {
-        await cli.run(['repo', 'delete', RESTORED_NAME, '-y']).catch(() => undefined);
-        await cli.run(['repo', 'delete', REPO_NAME, '-y']).catch(() => undefined);
+        await teardownRepos({
+          cli,
+          workers: [
+            { label: M1, runner: w1 },
+            { label: M2, runner: w2 },
+          ],
+        });
       });
 
       test('1. the restore verb is really registered on the machine', async () => {
@@ -837,6 +849,8 @@ test.describe
       let forkSnapshotId = '';
       let forkBack: ProvisionedRepo | undefined;
       const cleanup: (() => Promise<unknown>)[] = [];
+      /** GUIDs created by raw verbs on a worker, which the CLI config never holds. */
+      const rawGuids: string[] = [];
 
       const imageSha = async (runner: RenetFunctionsTestRunner, guid: string): Promise<string> => {
         const r = await runner.executeViaBridge(
@@ -925,20 +939,29 @@ test.describe
       });
 
       test.afterAll(async () => {
-        for (const step of cleanup.reverse()) await step().catch(() => undefined);
-        await seam('backup/maintenance', {}).catch(() => undefined);
-        for (const name of [
-          CORRUPT_BACK,
-          CORRUPT_NAME,
-          COLD_BACK,
-          COLD_NAME,
-          FORK_BACK,
-          PRIME_BACK,
-          SAME_NAME,
-          REPO_NAME,
-        ]) {
-          await cli.run(['repo', 'delete', name, '-y']).catch(() => undefined);
+        const failures: string[] = [];
+        for (const step of cleanup.reverse()) {
+          await step().catch((error: unknown) => {
+            failures.push(
+              `cleanup step: ${error instanceof Error ? error.message : String(error)}`
+            );
+          });
         }
+        await seam('backup/maintenance', {}).catch((error: unknown) => {
+          failures.push(`backup/maintenance seam: ${String(error)}`);
+        });
+        // By GUID on both workers, mounted ones included; throws with everything it could not remove.
+        await teardownRepos({
+          cli,
+          workers: [
+            { label: M1, runner: w1 },
+            { label: M2, runner: w2 },
+          ],
+          extraGuids: rawGuids,
+        }).catch((error: unknown) => {
+          failures.push(error instanceof Error ? error.message : String(error));
+        });
+        expect(failures, 'suite teardown failed').toEqual([]);
       });
 
       test('K5. a same-machine restore leaves the source byte-identical', async () => {
@@ -967,6 +990,7 @@ test.describe
           `the CLI restore that licenses the lineage on the second machine: ${bothChannels(prime).slice(-1000)}`
         ).toBe(0);
         const target = randomUUID();
+        rawGuids.push(target);
         cleanup.push(async () => {
           await w2.executeViaBridge(
             `sudo rm -f "${DS}/repositories/${target}" "${DS}/repositories/.restore-${target}"`
@@ -1026,7 +1050,7 @@ test.describe
           M2,
           forkSnapshotId
         );
-        expect(restore.code, `fork restore: ${bothChannels(restore).slice(-1200)}`).toBe(0);
+        expect(restore.code, `fork restore: ${bothChannels(restore).slice(-4000)}`).toBe(0);
         forkBack = repoIdentity(cli, FORK_BACK);
         expect(await imageSha(w2, forkBack.guid), 'the restored fork is not byte-identical').toBe(
           forkSha
@@ -1195,6 +1219,7 @@ test.describe
         await churnOn(w1, repo, 'l5.bin');
         const latest = await snapshotOf(w1, repo.guid);
         const target = randomUUID();
+        rawGuids.push(target);
         cleanup.push(async () => {
           await w2.executeViaBridge(
             `sudo rm -f "${DS}/repositories/${target}" "${DS}/repositories/.restore-${target}"`

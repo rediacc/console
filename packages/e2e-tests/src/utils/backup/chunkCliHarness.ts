@@ -172,6 +172,20 @@ export const repoIdentity = (cli: CliRunner, name: string, tag?: string): Provis
   };
 };
 
+/** Every repository family in the CLI config, with each tag's GUID: what a teardown has to remove, read BEFORE the deletes drop it from the config. */
+export const configRepoFamilies = (
+  cli: CliRunner
+): { name: string; grand: string; tags: Record<string, string> }[] =>
+  Object.entries(readCliConfig(cli).resources?.repositories ?? {}).map(([name, family]) => ({
+    name,
+    grand: family.grand ?? 'latest',
+    tags: Object.fromEntries(
+      Object.entries(family.tags ?? {}).flatMap(([tag, entry]) =>
+        entry.repositoryGuid ? [[tag, entry.repositoryGuid]] : []
+      )
+    ),
+  }));
+
 /** Every repository GUID the CLI config holds, across all names and tags. */
 const allRepoGuids = (cli: CliRunner): string[] =>
   Object.values(readCliConfig(cli).resources?.repositories ?? {}).flatMap((family) =>

@@ -22,6 +22,8 @@
 export interface BackupUsage {
   subscriptionId: string;
   storedBytes: number;
+  /** Stored bytes only kept versions no longer restore from (retention and snapshot deletes make them); they leave `usedBytes` when the server counts. */
+  waitingBytes: number;
   chunkCount: number;
   usageAdjustment: number;
   leasedBytes: number;
@@ -68,10 +70,12 @@ export function usageViolations(usage: BackupUsage): string[] {
 /** The aggregate row: the sum, the flag, and the counters that back them. */
 function ledgerArithmeticViolations(usage: BackupUsage): string[] {
   const bad: string[] = [];
-  const expectedUsed = usage.storedBytes + usage.leasedBytes + usage.usageAdjustment;
+  // The server's quotaUsedBytes: live (stored minus waiting) plus the adjustment, floored at nothing, plus held leases. Stored bytes the retained versions cannot restore from are not billed, so a subscription that has ever pruned a snapshot has stored > used by exactly its waiting bytes.
+  const live = Math.max(0, usage.storedBytes - usage.waitingBytes);
+  const expectedUsed = Math.max(0, live + usage.usageAdjustment) + usage.leasedBytes;
   if (usage.usedBytes !== expectedUsed) {
     bad.push(
-      `usedBytes ${usage.usedBytes} is not storedBytes + leasedBytes + usageAdjustment (${expectedUsed})`
+      `usedBytes ${usage.usedBytes} is not max(0, (storedBytes - waitingBytes) + usageAdjustment) + leasedBytes (${expectedUsed})`
     );
   }
   if (usage.overLimit !== usage.usedBytes > usage.quotaBytes) {

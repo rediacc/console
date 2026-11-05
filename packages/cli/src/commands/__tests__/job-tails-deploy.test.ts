@@ -20,6 +20,10 @@ vi.mock('../../services/account/subscription-auth.js', () => ({
 vi.mock('../../services/repo/repo-key-deployment.js', () => ({
   deployRepoKeyIfNeeded: vi.fn().mockResolvedValue(undefined),
 }));
+const mockLicense = vi.hoisted(() => vi.fn());
+vi.mock('../../services/repo-migrate-license.js', () => ({
+  ensureTargetRepoLicense: mockLicense,
+}));
 vi.mock('../../utils/repo-executor.js', () => ({
   recordedDatastoreMount: vi.fn().mockResolvedValue(undefined),
 }));
@@ -66,6 +70,38 @@ const SITES = [
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockLicense.mockResolvedValue(undefined);
+});
+
+describe('postPushDeploy licence step', () => {
+  it('files the licence for the copy before repository_up starts it', async () => {
+    const order: string[] = [];
+    mockLicense.mockImplementation(() => {
+      order.push('license');
+      return Promise.resolve();
+    });
+    mockExecute.mockImplementation(() => {
+      order.push('up');
+      return Promise.resolve(FINISHED);
+    });
+    await postPushDeploy('copy', 'm1', {});
+
+    expect(mockLicense).toHaveBeenCalledWith('copy', 'm1');
+    expect(order).toEqual(['license', 'up']);
+  });
+
+  it('starts nothing when the licence cannot be issued, and surfaces why', async () => {
+    mockLicense.mockRejectedValue(new Error('slot limit'));
+    await expect(postPushDeploy('copy', 'm1', {})).rejects.toThrow('slot limit');
+    expect(mockExecute).not.toHaveBeenCalled();
+  });
+
+  it('control: a licensed copy still deploys and reports success', async () => {
+    mockExecute.mockResolvedValue(FINISHED);
+    await postPushDeploy('copy', 'm1', {});
+    expect(mockExecute).toHaveBeenCalledTimes(1);
+    expect(mockSuccess).toHaveBeenCalled();
+  });
 });
 
 describe.each(SITES)('$name under --background', ({ run, line }) => {

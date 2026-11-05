@@ -9,6 +9,7 @@ import { type ExecuteResult, getExecutor } from '../services/executor/executor-f
 import { pendingExitCode, runCommandJob } from '../services/jobs/command-job.js';
 import { bindStepHandler, type PlannedStep, planStep } from '../services/jobs/steps.js';
 import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
+import { ensureTargetRepoLicense } from '../services/repo-migrate-license.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
@@ -195,6 +196,8 @@ export async function postPushDeploy(
   }
   outputService.info(t('commands.repo.push.deploying', { repo, machine: targetName }));
   await deployRepoKeyIfNeeded(repo, targetName);
+  // A licence is bound to one machine and the transfer carries none, so a copy landing on a machine that never held this GUID has nothing for `repository_up` to validate (exit 10, `LICENSE_REQUIRED: missing: no license data`). The executor's own retry only counts as a recovery while ANY repo on the machine is licensed, which is why the same flags exited 0 on a machine that held another licensed repo. Issuing for THIS GUID here, as `repo migrate` does, does not depend on that.
+  await ensureTargetRepoLicense(repo, targetName);
   const upResult = await getExecutor().execute({
     functionName: 'repository_up',
     machineName: targetName,

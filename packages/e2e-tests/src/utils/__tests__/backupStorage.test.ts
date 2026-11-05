@@ -22,6 +22,7 @@ import {
 const healthyUsage = (over: Partial<BackupUsage> = {}): BackupUsage => ({
   subscriptionId: 'sub-1',
   storedBytes: 900,
+  waitingBytes: 0,
   chunkCount: 3,
   usageAdjustment: 0,
   leasedBytes: 100,
@@ -49,7 +50,18 @@ describe('usageViolations', () => {
 
   it('catches usedBytes that is not the sum of its parts', () => {
     const bad = usageViolations(healthyUsage({ usedBytes: 999 }));
-    expect(bad.join('\n')).toContain('is not storedBytes + leasedBytes + usageAdjustment');
+    expect(bad.join('\n')).toContain(
+      'is not max(0, (storedBytes - waitingBytes) + usageAdjustment) + leasedBytes'
+    );
+  });
+
+  it('does not bill waiting bytes, and still catches a used figure that ignores them', () => {
+    // 400 stored bytes retention has released: the server counts 900 - 400, plus the 100 leased.
+    expect(usageViolations(healthyUsage({ waitingBytes: 400, usedBytes: 600 }))).toEqual([]);
+    // The control: the same row with used as stored + leased (the old formula) is a ledger that lost its waiting bytes.
+    expect(usageViolations(healthyUsage({ waitingBytes: 400 })).join('\n')).toContain(
+      'is not max(0,'
+    );
   });
 
   it('honours a negative usage adjustment rather than assuming stored + leased', () => {
