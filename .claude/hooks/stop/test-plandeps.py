@@ -847,6 +847,45 @@ check(
     "overlap",
 )
 check("verdict n1: Owns none refuses a writer", sv({"PLAN-n.md"}, {}).kind, "owns-none")
+
+# The stop-side backstop (wl_planorder.conflicts): an overlap is a note when EITHER writer has its own tree, a mutex holds regardless.
+_po_spec = importlib.util.spec_from_file_location(
+    "wl_planorder", pathlib.Path(__file__).with_name("wl_planorder.py")
+)
+PO = importlib.util.module_from_spec(_po_spec)
+_po_spec.loader.exec_module(PO)
+_LIVE_FG = {
+    "PLAN-f.md": ["writer aaaa1111 (general-purpose)"],
+    "PLAN-g.md": ["writer bbbb2222 (general-purpose)"],
+}
+_SERV_FG = {"aaaa1111": {"PLAN-f.md"}, "bbbb2222": {"PLAN-g.md"}}
+check(
+    "backstop c1: two writers sharing a tree with overlapping Owns are both named",
+    sorted(a for a, _ in PO.conflicts(_SERV_FG, _LIVE_FG, xi)),
+    ["aaaa1111", "bbbb2222"],
+)
+check(
+    "backstop c2: a main-checkout writer overlapping an isolated one is not named",
+    PO.conflicts(_SERV_FG, _LIVE_FG, xi, isolated={"bbbb2222"}),
+    [],
+)
+check(
+    "backstop c3: a live exclusive still holds a writer even when it is isolated",
+    [
+        (a, v.kind)
+        for a, v in PO.conflicts(
+            {"aaaa1111": {"PLAN-o.md"}, "cccc3333": {"PLAN-e.md"}},
+            {
+                "PLAN-o.md": ["writer aaaa1111 (general-purpose)"],
+                "PLAN-e.md": ["writer cccc3333 (general-purpose)"],
+            },
+            xi,
+            isolated={"cccc3333"},
+        )
+        if a == "aaaa1111"
+    ],
+    [("aaaa1111", "mutex")],
+)
 check(
     "verdict D4: planless, nothing declared, no exclusive: allow with a note",
     (sv(set(), LIVE_F).allow, bool(sv(set(), LIVE_F).note)),
