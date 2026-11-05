@@ -1415,17 +1415,17 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 4,
-      "done": 7,
+      "open": 3,
+      "done": 8,
       "open_sigs": [
         "11388dba",
-        "932bf30c",
         "f64eeedf",
         "fe5245eb"
       ],
       "done_sigs": [
         "29c37ab0",
         "90ade765",
+        "932bf30c",
         "99de90cc",
         "9ea4a078",
         "afaa0431",
