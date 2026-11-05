@@ -6,6 +6,7 @@ The VM keeps a repository image per guid as a digest, mutates it on the planted 
 from __future__ import annotations
 
 import base64
+import hashlib
 import json
 import os
 import pathlib
@@ -415,3 +416,349 @@ def test_legs_are_known_opt_in_and_dispatched() -> None:
         assert hasattr(backup.Backup, name)
     for name in ("leg_v", "leg_w", "leg_x"):
         assert hasattr(backup_renet.RenetLegs, name)
+
+
+# ---------------------------------------------------------------------------
+# Legs v, w and x driven end to end against a scripted worker, each with the planted control that must fire.
+# The live run (`./run.sh drill backup --renet --vm <worker> --legs v,w,x`) is the lead's.
+# ---------------------------------------------------------------------------
+
+
+def _decoded_rediaccfile(command: str) -> str:
+    blob = re.search(r"printf %s (\S+) \| base64 -d > \S+/Rediaccfile", command)
+    assert blob
+    return base64.b64decode(blob.group(1)).decode()
+
+
+class HookWorker:
+    """A worker for leg v: an application that stops writing while held, a hook log, and a deadman that thaws a killed run. `bug` plants one defect."""
+
+    def __init__(self, bug: str = "") -> None:
+        self.bug = bug
+        self.hooks = False
+        self.hang = False
+        self.frozen = False
+        self.marker = False
+        self.rows = 10
+        self.log: list[str] = []
+        self.cleaned = False
+
+    def __call__(self, command: str, stdin_data: str | None = None) -> rt.VmResult:
+        del stdin_data
+        if "renet machine-id" in command:
+            return rt.VmResult(0, "mid-1\n")
+        if "base64 -d > " in command and "Rediaccfile" in command:
+            text = _decoded_rediaccfile(command)
+            self.hooks = "backup_prepare()" in text
+            self.hang = "sleep %d" % backup_renet.HOOK_HANG_SECONDS in text
+            return rt.VmResult(0)
+        if "wc -l /data/rows" in command:
+            self.rows += 0 if self.frozen else 7
+            return rt.VmResult(0, "%d /data/rows\n" % self.rows)
+        if "test -f /data/frozen" in command:
+            return rt.VmResult(0 if self.frozen else 1)
+        if "test ! -f /data/frozen" in command:
+            return rt.VmResult(1 if self.frozen else 0)
+        if "cat " in command and backup_renet.HOOK_LOG in command:
+            return rt.VmResult(0, "".join("%s 1\n" % e for e in self.log))
+        if "nohup renet backup snapshot" in command:
+            self.frozen = self.marker = self.hang and self.bug != "never-held"
+            if self.frozen:
+                self.log.append("prepare")
+            return rt.VmResult(0)
+        if "i=0; while [ $i -lt" in command:
+            if "[ -e " in command:
+                return rt.VmResult(0 if self.marker else 1)
+            if self.bug == "no-deadman":
+                return rt.VmResult(1)
+            self.frozen = self.marker = False
+            self.log.append("finish")
+            return rt.VmResult(0)
+        if "backup snapshot" in command and "--hook-timeout" in command:
+            claim = "app-quiesced" if self.hooks or self.bug == "claims-without-hook" else "crash"
+            if self.hooks:
+                order = (
+                    ["finish", "prepare"] if self.bug == "wrong-order" else ["prepare", "finish"]
+                )
+                self.log.extend(order)
+            doc = {
+                "status": "stored",
+                "snapshotId": "s",
+                "consistency": claim,
+                "hook": {"prepare": "ok", "finish": "ok"} if self.hooks else {},
+            }
+            return rt.VmResult(0, json.dumps(doc))
+        if "repository down" in command and "pkill" in command:
+            self.cleaned = True
+        return rt.VmResult(0)
+
+
+def _legs_for_v(
+    make: typing.Callable, worker: HookWorker
+) -> tuple[lib.Drill, backup_renet.RenetLegs]:
+    drill, legs = make(Worker())
+    legs.rt.vm = worker
+    legs.b.av = lambda value, expected, desc: drill.assert_equal(
+        str(bool(expected)), str(bool(value)), desc
+    )
+    return drill, legs
+
+
+def test_leg_v_passes_and_its_controls_run(make: typing.Callable) -> None:
+    worker = HookWorker()
+    drill, legs = _legs_for_v(make, worker)
+    try:
+        legs.leg_v()
+        assert drill.failures == 0
+        assert worker.cleaned
+        # The deadman, not the run, wrote the last event.
+        assert worker.log[-1] == "finish"
+        assert not worker.frozen
+    finally:
+        drill.teardown()
+
+
+@pytest.mark.parametrize(
+    ("bug", "desc"),
+    [
+        ("claims-without-hook", "CONTROL: a repository with no hook is not claimed app-quiesced"),
+        ("wrong-order", "the hooks ran once each, prepare first"),
+        ("never-held", "the run held the application (marker stands)"),
+        ("no-deadman", "the deadman ended the hold within its bound"),
+    ],
+)
+def test_leg_v_goes_red_on_the_defect_each_check_names(
+    make: typing.Callable, capsys: pytest.CaptureFixture[str], bug: str, desc: str
+) -> None:
+    drill, legs = _legs_for_v(make, HookWorker(bug))
+    try:
+        legs.leg_v()
+        assert drill.failures >= 1
+        out = capsys.readouterr()
+        assert desc in out.out + out.err
+    finally:
+        drill.teardown()
+
+
+def test_leg_v_cleans_up_even_when_a_step_raises(make: typing.Callable) -> None:
+    worker = HookWorker()
+    drill, legs = _legs_for_v(make, worker)
+
+    def broken(command: str, stdin_data: str | None = None) -> rt.VmResult:
+        if "nohup renet backup snapshot" in command:
+            raise rt.StepError("boom")
+        return worker(command, stdin_data)
+
+    legs.rt.vm = broken
+    try:
+        with pytest.raises(rt.StepError):
+            legs.leg_v()
+        assert worker.cleaned
+    finally:
+        drill.teardown()
+
+
+LOST_CELL = b"the cell the store lost"
+
+
+class HealWorker:
+    """A worker for leg w: an idle image whose target runs sample the store and reach the lost chunk on run `finds_on` (0: never)."""
+
+    def __init__(self, store: dict[str, bytes], digest: str, bug: str, finds_on: int) -> None:
+        self.store = store
+        self.digest = digest
+        self.bug = bug
+        self.finds_on = finds_on
+        self.runs = 0
+
+    def __call__(self, command: str, stdin_data: str | None = None) -> rt.VmResult:
+        del stdin_data
+        if "--target" not in command:
+            return rt.VmResult(0)
+        self.runs += 1
+        idle = {"status": "unchanged", "chunksSampled": 16, "bytesUploaded": 0}
+        doc = idle
+        if self.bug == "dirty-before-find" and self.runs == 2:
+            doc = {"status": "stored", "bytesUploaded": CELL, "chunksSampled": 16}
+        elif self.digest not in self.store and 0 < self.finds_on <= self.runs - 1:
+            if self.bug != "no-heal":
+                self.store[self.digest] = b"corrupt" if self.bug == "wrong-bytes" else LOST_CELL
+            doc = {
+                "status": "stored",
+                "bytesUploaded": CELL,
+                "chunksSampled": 16,
+                "chunksSampleMissing": 1,
+            }
+        return rt.VmResult(0, json.dumps(doc))
+
+
+def _legs_for_w(
+    make: typing.Callable, bug: str = "", finds_on: int = 3, digest_known: bool = True
+) -> tuple[lib.Drill, backup_renet.RenetLegs]:
+    digest = hashlib.sha256(LOST_CELL).hexdigest()
+    store = {digest: LOST_CELL}
+    drill, legs = make(Worker())
+    legs.src = "lineage-1"
+    legs.rt.vm = HealWorker(store, digest, bug, finds_on)
+    token = {"value": ""}
+
+    def mint() -> bool:
+        token["value"] = "tok"
+        return True
+
+    def s3_get(url: str) -> tuple[int, bytes]:
+        body = store.get(url.rsplit("/", 1)[1])
+        return (200, body) if body is not None else (404, b"")
+
+    def s3_delete(url: str) -> str:
+        return "204" if store.pop(url.rsplit("/", 1)[1], None) is not None else "404"
+
+    legs.b.restore_session_token = ""
+    legs.b.release_probe_leases = lambda: None
+    legs.b.mint_restore_session = mint
+    legs.b.a_seed_digest = lambda tok: digest if tok and digest_known else ""
+    legs.b.chunk_url = lambda lineage, name: "http://store/%s/%s" % (lineage, name)
+    legs.b.s3_get = s3_get
+    legs.b.s3_delete = s3_delete
+    legs.b.av = lambda value, expected, desc: drill.assert_equal(str(expected), str(value), desc)
+    legs.b.restore_session_token = "tok"
+    return drill, legs
+
+
+def test_leg_w_heals_a_deleted_chunk_after_idle_runs_that_upload_nothing(
+    make: typing.Callable,
+) -> None:
+    drill, legs = _legs_for_w(make)
+    try:
+        legs.leg_w()
+        assert drill.failures == 0
+        # The idle first run, two idle runs before the find, and the finding run.
+        assert typing.cast("HealWorker", legs.rt.vm).runs == 4
+    finally:
+        drill.teardown()
+
+
+@pytest.mark.parametrize(
+    ("bug", "kwargs", "desc"),
+    [
+        ("", {"finds_on": 0}, "the rolling sample reached the lost chunk within"),
+        ("no-heal", {}, "the chunk is back in the store"),
+        ("wrong-bytes", {}, "and its bytes hash to the name it was lost under"),
+        ("dirty-before-find", {}, "before the find is idle and uploads nothing"),
+        ("", {"digest_known": False}, "the seed snapshot names a chunk"),
+    ],
+)
+def test_leg_w_goes_red_on_the_defect_each_check_names(
+    make: typing.Callable,
+    capsys: pytest.CaptureFixture[str],
+    bug: str,
+    kwargs: dict,
+    desc: str,
+) -> None:
+    drill, legs = _legs_for_w(make, bug, **kwargs)
+    try:
+        legs.leg_w()
+        assert drill.failures >= 1
+        out = capsys.readouterr()
+        assert desc in out.out + out.err
+    finally:
+        drill.teardown()
+
+
+class ChainWorker:
+    """A worker for leg x: an image that changes per rewrite, a reflink per run, and a restore at a run. `bug` plants one defect."""
+
+    def __init__(self, bug: str = "") -> None:
+        self.bug = bug
+        self.images: dict[str, str] = {}
+        self.reflinks: dict[int, str] = {}
+        self.snap_digest: dict[str, str] = {}
+        self.gen = 0
+        self.removed = False
+
+    def __call__(self, command: str, stdin_data: str | None = None) -> rt.VmResult:
+        del stdin_data
+        suffix = re.escape(backup_renet.REFLINK_SUFFIX)
+        if "dd of=" in command:
+            guid = re.search(r"/repositories/(\S+) bs=1", command)
+            assert guid
+            self.gen += 1
+            if self.bug != "no-rewrite":
+                self.images[guid.group(1)] = "img-%d" % self.gen
+            return rt.VmResult(0)
+        if "backup snapshot" in command:
+            guid = re.search(r"--repo (\S+)", command)
+            assert guid
+            snap = "snap-%d" % len(self.snap_digest)
+            self.snap_digest[snap] = self.images.setdefault(guid.group(1), "img-0")
+            return rt.VmResult(0, json.dumps({"status": "stored", "snapshotId": snap}))
+        if "cp --reflink=always" in command:
+            guid = re.search(r"cp --reflink=always \S+/repositories/(\S+?) ", command)
+            run = re.search(r"%s(\d+)'" % suffix, command)
+            assert guid
+            assert run
+            self.reflinks[int(run.group(1))] = self.images[guid.group(1)]
+            return rt.VmResult(0)
+        if "sha256sum" in command:
+            run = re.search(r"%s(\d+)$" % suffix, command.strip())
+            if run:
+                return rt.VmResult(0, "%s  x\n" % self.reflinks[int(run.group(1))])
+            guid = re.search(r"/repositories/(\S+?)'?$", command.strip())
+            assert guid
+            return rt.VmResult(0, "%s  x\n" % self.images[guid.group(1)])
+        if "backup restore" in command:
+            target = re.search(r"--repo (\S+)", command)
+            at = re.search(r"--at (\S+)", command)
+            assert target
+            assert at
+            latest = "snap-%d" % (len(self.snap_digest) - 1)
+            chosen = latest if self.bug == "restores-latest" else at.group(1)
+            self.images[target.group(1)] = self.snap_digest[chosen]
+            return rt.VmResult(0, '{"status":"restored"}')
+        if "rm -f" in command and backup_renet.REFLINK_SUFFIX in command:
+            self.removed = True
+        return rt.VmResult(0)
+
+
+def _legs_for_x(
+    make: typing.Callable, bug: str = ""
+) -> tuple[lib.Drill, backup_renet.RenetLegs, ChainWorker]:
+    worker = ChainWorker(bug)
+    drill, legs = make(Worker())
+    legs.src = "src-1"
+    legs.rt.vm = worker
+    return drill, legs, worker
+
+
+def test_leg_x_passes_when_the_restore_equals_the_chosen_runs_reflink(
+    make: typing.Callable,
+) -> None:
+    drill, legs, worker = _legs_for_x(make)
+    try:
+        legs.leg_x()
+        assert drill.failures == 0
+        assert worker.removed
+        assert len(worker.reflinks) == backup_renet.RUN_CHAIN
+    finally:
+        drill.teardown()
+
+
+@pytest.mark.parametrize(
+    ("bug", "desc"),
+    [
+        ("restores-latest", "and the restored image equals that run's reflink"),
+        ("no-rewrite", "CONTROL: every run's image differs from the others"),
+    ],
+)
+def test_leg_x_goes_red_on_the_defect_each_check_names(
+    make: typing.Callable, capsys: pytest.CaptureFixture[str], bug: str, desc: str
+) -> None:
+    drill, legs, worker = _legs_for_x(make, bug)
+    try:
+        legs.leg_x()
+        assert drill.failures >= 1
+        out = capsys.readouterr()
+        assert desc in out.out + out.err
+        assert worker.removed
+    finally:
+        drill.teardown()

@@ -288,3 +288,112 @@ def test_capability_verdict_separates_a_real_answer_from_a_bare_one(
 def test_the_capability_queries_name_both_features_and_a_marker_each() -> None:
     assert [name for name, _query, _marker in onprem.CAPABILITIES] == ["object-lock", "versioning"]
     assert all(marker.startswith("<") for _name, _query, marker in onprem.CAPABILITIES)
+
+
+# ---------------------------------------------------------------------------
+# Leg u (`capability_row`) driven against a scripted store.
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def capability(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> typing.Callable[[dict[str, tuple[int, str]]], tuple[lib.Drill, list[str]]]:
+    root = tmp_path / "root"
+    root.mkdir()
+    monkeypatch.setenv("REDIACC_CI_ROOT", str(root))
+    monkeypatch.setenv("TMPDIR", str(tmp_path))
+
+    def go(answers: dict[str, tuple[int, str]]) -> tuple[lib.Drill, list[str]]:
+        drill = lib.Drill("backup-onprem", selftest=False, keep_work=False)
+        drill.init()
+        notes: list[str] = []
+        monkeypatch.setattr(drill, "note", notes.append)
+
+        def http_call(
+            method: str, url: str, _data: bytes, _headers: dict[str, str], **_k: typing.Any
+        ) -> tuple[int, str]:
+            assert method == "GET"
+            assert url.startswith("%s/%s?" % (ENDPOINT, BUCKET))
+            return answers[url.split("?", 1)[1]]
+
+        monkeypatch.setattr(onprem.wire, "http_call", http_call)
+        subject = onprem.OnPrem(drill)
+        subject.endpoint = ENDPOINT
+        subject.bucket = BUCKET
+        subject.capability_row()
+        return drill, notes
+
+    return go
+
+
+def _store(object_lock: tuple[int, str], versioning: tuple[int, str]) -> dict[str, tuple[int, str]]:
+    return {
+        onprem.CAPABILITIES[0][1]: object_lock,
+        onprem.CAPABILITIES[1][1]: versioning,
+    }
+
+
+def test_leg_u_records_a_store_that_offers_both_features(
+    capability: typing.Callable[..., tuple[lib.Drill, list[str]]],
+) -> None:
+    drill, notes = capability(
+        _store(
+            (200, onprem.CAPABILITIES[0][2]),
+            (200, onprem.CAPABILITIES[1][2]),
+        )
+    )
+    try:
+        assert drill.failures == 0
+        recorded = [n for n in notes if n.startswith("STORE-CAPABILITY")]
+        assert recorded == [
+            "STORE-CAPABILITY object-lock: supported (HTTP 200)",
+            "STORE-CAPABILITY versioning: supported (HTTP 200)",
+        ]
+    finally:
+        drill.teardown()
+
+
+@pytest.mark.parametrize(
+    ("object_lock", "versioning", "verdicts"),
+    [
+        ((501, "NotImplemented"), (200, ""), ["unsupported", "unsupported"]),
+        ((403, "<Code>AccessDenied</Code>"), (0, "refused"), ["denied", "unreachable"]),
+    ],
+)
+def test_leg_u_records_without_asserting_on_a_store_that_lacks_them(
+    capability: typing.Callable[..., tuple[lib.Drill, list[str]]],
+    object_lock: tuple[int, str],
+    versioning: tuple[int, str],
+    verdicts: list[str],
+) -> None:
+    drill, notes = capability(_store(object_lock, versioning))
+    try:
+        assert drill.failures == 0
+        recorded = [n for n in notes if n.startswith("STORE-CAPABILITY")]
+        assert [n.split(": ")[1].split(" ")[0] for n in recorded] == verdicts
+    finally:
+        drill.teardown()
+
+
+@pytest.mark.parametrize("broken", ["always-supported", "always-unsupported", "never-unreachable"])
+def test_leg_u_planted_controls_fire_when_the_verdict_function_is_broken(
+    capability: typing.Callable[..., tuple[lib.Drill, list[str]]],
+    monkeypatch: pytest.MonkeyPatch,
+    broken: str,
+) -> None:
+    real = onprem.capability_verdict
+
+    def verdict(status: int, body: str, marker: str) -> str:
+        if broken == "always-supported":
+            return "supported"
+        if broken == "always-unsupported":
+            return "unsupported"
+        return "unsupported" if status == 0 else real(status, body, marker)
+
+    monkeypatch.setattr(onprem, "capability_verdict", verdict)
+    drill, _notes = capability(_store((200, ""), (200, "")))
+    try:
+        assert drill.failures >= 1
+    finally:
+        drill.teardown()
