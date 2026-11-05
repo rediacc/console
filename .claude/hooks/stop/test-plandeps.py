@@ -887,6 +887,26 @@ check(
     [("aaaa1111", "mutex")],
 )
 check(
+    "backstop c4: a shared-tree overlap beside an isolated exclusive still reports the mutex",
+    [
+        (a, v.kind)
+        for a, v in PO.conflicts(
+            {"aaaa1111": {"PLAN-o.md"}, "bbbb2222": {"PLAN-o.md"}, "cccc3333": {"PLAN-e.md"}},
+            {
+                "PLAN-o.md": [
+                    "writer aaaa1111 (general-purpose)",
+                    "writer bbbb2222 (general-purpose)",
+                ],
+                "PLAN-e.md": ["writer cccc3333 (general-purpose)"],
+            },
+            xi,
+            isolated={"cccc3333"},
+        )
+        if a == "aaaa1111"
+    ],
+    [("aaaa1111", "mutex")],
+)
+check(
     "verdict D4: planless, nothing declared, no exclusive: allow with a note",
     (sv(set(), LIVE_F).allow, bool(sv(set(), LIVE_F).note)),
     (True, True),

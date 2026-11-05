@@ -272,7 +272,8 @@ def conflicts(
         if not mine:
             continue
         mine_owns = declared.get(aid)
-        # Every live writer, overlaps as notes: what remains is a mutex.
+        # Against every live writer, with isolated=True used only to turn overlaps into notes (spawn_verdict returns every
+        # mutex before it reads an overlap, wl_planconc.py), so what this pass can hold is a mutex; it says nothing about aid's tree.
         got = X.spawn_verdict(mine, others_of(aid, False), xinfo, mine_owns, isolated=True)
         if (got.allow or got.kind not in HOLD_KINDS) and aid not in isolated:
             # The writers sharing this one's tree, overlaps counted.
