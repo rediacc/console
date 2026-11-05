@@ -371,3 +371,17 @@ def test_remote_evidence_of_a_cli_refusal_names_the_refusal_not_the_metrics_tail
     assert vm_check.envelope_errors("plain text\n") == ""
     assert vm_check.envelope_errors('{"errors": []}') == ""
     assert vm_check.envelope_errors('{"errors": 7}') == ""
+
+
+def _evidence(err: str, out: str = "") -> str:
+    return vm_check.remote_evidence(vm_check.Result(1, out, err))
+
+
+def test_remote_evidence_drops_the_cli_startup_lines_ahead_of_the_remote_stderr() -> None:
+    evidence = _evidence("\u2192 Starting CLI\n\u2713 Renet available\nchmod: not permitted\n")
+    assert "chmod: not permitted" in evidence
+    assert "Starting CLI" not in evidence
+
+
+def test_remote_evidence_keeps_the_startup_lines_when_nothing_else_is_on_stderr() -> None:
+    assert "Starting CLI" in _evidence("\u2192 Starting CLI\n")

@@ -3750,6 +3750,12 @@ def test_a_kube_leg_turns_k8s_mode_on_as_its_ci_job_does(leg_id: str) -> None:
     assert "--k8s" in legs[leg_id].cmd[0]
 
 
+def test_the_multi_machine_leg_resets_so_no_earlier_leg_decides_its_mesh() -> None:
+    """dual-group-18 resets worker 11 with one worker in its topology, which drops 12 from the worker's SSH config; a leg skipping the reset then skips its transfer tests."""
+    legs = {leg.id: leg for leg in vm_check.trigger.MAP.areas["multi-vm"].legs}
+    assert "BRIDGE_TEST_SKIP_RESET" not in legs["multi-machine-11"].cmd[1]
+
+
 def test_the_multinode_leg_excludes_the_licensing_tier_ci_excludes() -> None:
     legs = {leg.id: leg for leg in vm_check.trigger.MAP.areas["kube"].legs}
     assert '--grep-invert "licensing on the fleet"' in legs["k8s-multinode-17-24"].cmd[1]

@@ -1047,6 +1047,18 @@ def envelope_errors(out: str) -> str:
     return " | ".join(msgs[:3])
 
 
+def remote_evidence(res: Result) -> str:
+    """A failed remote command's evidence, stderr first: `term connect` puts the remote stderr on stderr and a JSON envelope on stdout, and the envelope's tail filled the 200-byte evidence (2026-10-15). The CLI's own startup lines on stderr go unless nothing else is there, because they filled it ahead of a refusal (2026-11-04), and the envelope gives its error messages rather than its tail."""
+    remote = "\n".join(
+        ln for ln in res.err.splitlines() if not ln.lstrip().startswith(CLI_STARTUP_MARKS)
+    )
+    return "rc=%d stderr: %s | stdout: %s" % (
+        res.rc,
+        last_lines(remote) or last_lines(res.err) or "<empty>",
+        envelope_errors(res.out) or last_lines(res.out) or "<empty>",
+    )
+
+
 def rdc_failure(res: Result) -> str:
     """Why an `rdc` call failed. With `-o json` the CLI puts its errors in the JSON envelope on stdout and only progress lines on stderr, so a reason read from stderr alone named "Listing repositories..." and dropped `SSH connection error: connect EHOSTUNREACH` (2026-10-14T23:53Z)."""
     try:
@@ -1469,15 +1481,7 @@ class VmCheck:
         return self.rdc("term", "connect", fork, "-c", command, extra_env=extra_env)
 
     def remote_evidence(self, res: Result) -> str:
-        """A failed remote command's evidence, stderr first: `term connect` puts the remote stderr on stderr and a JSON envelope on stdout, and the envelope's tail filled the 200-byte evidence (2026-10-15). The CLI's own startup lines on stderr go, because they filled it ahead of a refusal (2026-11-04), and the envelope gives its error messages rather than its tail."""
-        remote = "\n".join(
-            ln for ln in res.err.splitlines() if not ln.lstrip().startswith(CLI_STARTUP_MARKS)
-        )
-        return "rc=%d stderr: %s | stdout: %s" % (
-            res.rc,
-            last_lines(remote) or last_lines(res.err) or "<empty>",
-            envelope_errors(res.out) or last_lines(res.out) or "<empty>",
-        )
+        return remote_evidence(res)
 
     def probe(self, command: str) -> Result:
         return self.host.run(

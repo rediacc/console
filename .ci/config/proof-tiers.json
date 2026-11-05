@@ -217,7 +217,7 @@
               "what": "suite 11, connectivity, setup, push/pull and parallel execution across workers .11 and .12",
               "cmd": [
                 "PYTHONPATH=.ci python3 -m rediacc_ci.env.create_e2e_env --renet-path \"$PWD/private/renet/bin/renet\" --output packages/e2e-tests/.env --vm-workers \"11 12\"",
-                "BRIDGE_TEST_SKIP_RESET=1 PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --test 11-multi-machine --fail-on-skip"
+                "PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --test 11-multi-machine --fail-on-skip"
               ]
             }
           ],
