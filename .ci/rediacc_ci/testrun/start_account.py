@@ -398,8 +398,10 @@ def publish(server_url: str, token: str, public_key: str) -> None:
     """The server URL, the token and the PUBLIC signing key (unmasked: it is public, and a renet build bakes it). The private half never reaches this function."""
     github_env = os.environ.get("GITHUB_ENV")
     if github_env:
-        # Not a `secrets.*` value, so Actions would not mask it on its own.
-        print(f"::add-mask::{token}")
+        # Not a `secrets.*` value, so Actions would not mask it on its own. Off Actions the line is a workflow command nobody consumes,
+        # only the token in plain text in a terminal or a captured log (the start_backup_plane.export_credentials rule).
+        if os.environ.get("GITHUB_ACTIONS") == "true":
+            print(f"::add-mask::{token}")
         with open(github_env, "a", encoding="utf-8") as handle:
             handle.write(
                 f"REDIACC_ACCOUNT_SERVER={server_url}\n"

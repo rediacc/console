@@ -68,6 +68,7 @@ def side(
         "RUNNER_TEMP": str(directory),
         "GITHUB_ENV": str(directory / "gh_env"),
         "GITHUB_OUTPUT": str(directory / "gh_output"),
+        "GITHUB_ACTIONS": "true",
         "STUB_LOG": str(directory / "stub.jsonl"),
         "STUB_MODE": mode,
         "ACCOUNT_API_PORT": str(port),
@@ -428,6 +429,21 @@ def test_env_signing_pair_is_reused_and_only_its_public_half_published(
     for text in (written, out.out, out.err):
         assert "ENV-PRIVATE-SENTINEL" not in text
         assert "ACCOUNT_ED25519_PRIVATE_KEY" not in text
+
+
+@pytest.mark.parametrize("actions", [True, False])
+def test_the_token_mask_line_prints_only_under_actions(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch, capsys, actions: bool
+) -> None:
+    if actions:
+        monkeypatch.setenv("GITHUB_ACTIONS", "true")
+    else:
+        monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
+    _seen, gh_env = drive_run(tmp_path, monkeypatch, github_env=True)
+    out = capsys.readouterr().out
+    assert ("::add-mask::rdt_unit" in out) is actions
+    # The $GITHUB_ENV write does not depend on it.
+    assert "E2E_ACCOUNT_API_TOKEN=rdt_unit\n" in gh_env.read_text()
 
 
 def test_a_mismatched_env_pair_is_refused(monkeypatch: pytest.MonkeyPatch) -> None:
