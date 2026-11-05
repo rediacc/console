@@ -2289,6 +2289,11 @@ Box progress (agent/plans/PLAN-tick-tracking.md):
                                 plan-box-progress.jsonl, no plan byte changes
   --box-progress <me> [<plan> <box> <clause|all> <landed|proved|live-owed> <ref> [--write]]
                                 record one clause's progress for an open box
+  --box-audit <me> [<plan>] [--sha <list>] [--live-owed] [--mixed-unsplit] [--all]
+                                one verdict per open box (tickable-now,
+                                stale-investigation, live-owed, linked,
+                                untouched) from trailers, report TICK lines,
+                                live-proof rows, investigation and progress
 
 Per-commit reviews (agent/reviews/<branch>/: clean.jsonl, plus <sha40>.md per other verdict):
   --review-mark <me> [<finding-id> fixed <sha> | not-a-bug <evidence...> |
@@ -2731,6 +2736,23 @@ CLI_BOXPROGRESS_USAGE = (
     "`land <id> --ticks --run` and the release path write these rows on their own.\n"
     "Without --write it prints the row. With only <me> it lists the latest rows.\n"
     "Never commits.\n"
+)
+
+CLI_BOXAUDIT_USAGE = (
+    "usage: worklist.py --box-audit <me> [<agent/plans/PLAN-x.md>] [--sha <sha,...>]\n"
+    "                                [--live-owed] [--mixed-unsplit] [--all]\n"
+    "\n"
+    "Read-only. One verdict per open plan box, first match wins: tickable-now (every\n"
+    "clause landed or proved and an investigation row exists; the --plan-tick line is\n"
+    "printed), stale-investigation, live-owed, linked, untouched. Five sources: the\n"
+    "Plan-Box trailers landed since the merge-base, the captured reports' TICK lines\n"
+    "(lease shas mapped by the -x line), agent/ledgers/live-proof.jsonl, the\n"
+    "investigation rows and agent/ledgers/plan-box-progress.jsonl.\n"
+    "\n"
+    "--sha <list>      name each landed sha against the box it serves\n"
+    "--live-owed       only the boxes whose live or operator half is owed\n"
+    "--mixed-unsplit   open boxes with landed work and no clause map; exit 1 when any\n"
+    "--all             untouched boxes too\n"
 )
 
 CLI_BOXROW_DRY = "would append to %(ledger)s:\n  %(row)s\n(dry run: pass --write to append)\n"

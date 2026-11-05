@@ -196,6 +196,23 @@ def find_row(root: pathlib.Path, row_id: str) -> dict[str, Any] | None:
     return None
 
 
+def verified_rows(root: pathlib.Path) -> list[dict[str, Any]]:
+    """Every VERIFIED row of the ledger, oldest first ([] when it is absent): the reader `wl_boxaudit` links a box's proved live half through (PLAN-tick-tracking Design 4, source 3). A malformed line is skipped."""
+    try:
+        text = (pathlib.Path(root) / LEDGER_REL).read_text(encoding="utf-8")
+    except OSError:
+        return []
+    out = []
+    for line in text.splitlines():
+        try:
+            row = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(row, dict) and row.get("status") == "VERIFIED" and row.get("box"):
+            out.append(row)
+    return out
+
+
 def check_rc_text(row: dict[str, Any]) -> int | str:
     """The row's check rc when it is an integer (a bool is not one), else `unknown`; a float 0.0 is not an integer rc."""
     rc = (row.get("check") or {}).get("rc")

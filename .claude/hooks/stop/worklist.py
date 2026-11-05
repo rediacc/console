@@ -1007,6 +1007,33 @@ def _boxrow_cli(argv):
     sys.stdout.write(M.CLI_BOXROW_WROTE % {"ledger": ledger, "row": json.dumps(stored)})
 
 
+def _boxaudit_cli(argv):
+    """--box-audit <me> [plan] [--sha <list>] [--live-owed] [--mixed-unsplit] [--all] (agent/plans/PLAN-tick-tracking.md Design 4, box T9).
+
+    Read-only: one verdict per open box from the landed trailers, the captured reports' TICK lines, the live-proof ledger, the investigation rows and the progress ledger, all in wl_boxaudit. Exit 0, or 1 when `--mixed-unsplit` lists a box, so the clause-map migration has a gate.
+    """
+
+    def die(msg):
+        print(msg, file=sys.stderr)
+        sys.exit(2)
+
+    if len(argv) < 2:
+        die(M.CLI_BOXAUDIT_USAGE)
+    me = argv[1]
+    if not C.PREFIX_RE.match(me):
+        die("bad prefix %r: pass YOUR session-id prefix first" % me)
+    _identity_or_die(me, die)
+
+    import wl_boxaudit as BA
+
+    root = C.project_root(C.project_start())
+    rest = [_plan_rel(root, a) if a.endswith(".md") else a for a in argv[2:]]
+    try:
+        sys.exit(BA.main(rest, me, root))
+    except ValueError as exc:
+        die("%s\n\n%s" % (exc, M.CLI_BOXAUDIT_USAGE))
+
+
 def _liveproof_cli(argv):
     """--live-proof <me> [<plan> <LP-box-sig> [--write] [--tick]] (agent/plans/PLAN-tested-on-bench.md, "Agent verb").
 
@@ -3461,6 +3488,9 @@ def main():
         return
     if sys.argv[1:2] and sys.argv[1] in ("--box-clauses", "--box-progress"):
         _boxrow_cli(sys.argv[1:])
+        return
+    if sys.argv[1:2] == ["--box-audit"]:
+        _boxaudit_cli(sys.argv[1:])
         return
     if sys.argv[1:2] == ["--plan-preflight"]:
         _planpreflight_cli(sys.argv[1:])

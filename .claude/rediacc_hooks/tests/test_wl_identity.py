@@ -502,6 +502,8 @@ def drive_l1(fix) -> L1Drive:
         # The clause verbs (agent/plans/PLAN-tick-tracking.md T8), each in its listing mode: a bare `<me>` lists the progress ledger after the same _identity_or_die its --write mode runs.
         ("--box-clauses", "--box-clauses @WHO@", "clause maps: 0 box(es)"),
         ("--box-progress", "--box-progress @WHO@", "box progress: 0 row(s)"),
+        # Read-only (T9): the fixture has no git repository and no plan, so the audit prints its header over zero boxes after the same _identity_or_die.
+        ("--box-audit", "--box-audit @WHO@", "BOX AUDIT @"),
         ("--hint-propose", "--hint-propose @WHO@ l1-table-hint", "proposed:"),
         # The effort tuner's verbs (agent/plans/PLAN-stop-hook-effort-tuning.md T2, T5), each driven in its listing mode: a bare `<me>` prints the proposal ledger's summary after the same _identity_or_die their write modes run.
         ("--effort-propose", "--effort-propose @WHO@", "effort proposals:"),
