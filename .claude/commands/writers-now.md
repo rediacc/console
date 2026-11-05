@@ -75,7 +75,10 @@ live run, a pipeline or a decision is not attempted: name the exact command or q
 
 Rules: no git checkout, restore, stash, clean, reset; no regenerate or sync script (name it for the
 lead instead); never vitest from the repo root; no inline suppression. This tree is a lease:
-  - commit on the detached HEAD with `git commit -F <msg> -- <paths>` and a `PR-TASK:` trailer;
+  - commit on the detached HEAD with `git commit -F <msg> -- <paths>`, a `PR-TASK:` trailer and one
+    Plan-Box trailer per box the commit serves (the lease commit-msg hook and `land` refuse without):
+      Plan-Box: <PLAN-file>.md#<sig8> clauses=<C1,C2,...|all>
+      Plan-Box: none -- <reason, at least 12 characters>
     never push, never touch `agent/**` or a gitlink, never switch or create a branch;
   - run `npm run ci -- --narrow` or named tests; ci:quick, vm:check and live_proof record refuse a lease;
   - Python tests run with `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest <files> -q` (neither
@@ -100,7 +103,7 @@ A spawn refused by `block_agent_cap` (cap full) gets its item leased to `worker:
 
 ### 6. Land in a batch, then gate once
 
-As each report lands, spot-check it against the artifact (rule 4), then collect its tree: `./run.sh worktree land <id>` prints the `git cherry-pick -x` lines and the lead runs them, submodules first, reading each pick's exit code; `./run.sh worktree gc --write --id <id>` frees the slot. A box ticks with the landed sha, never the lease's own. A `present` box closes with `--plan-investigate <me> <plan> <sig> present <kind>:<token> -- <evidence> --write` and then `--plan-tick`, after the cited evidence is checked.
+As each report lands, spot-check it against the artifact (rule 4), then collect its tree: `./run.sh worktree land <id>` prints the `git cherry-pick -x` lines and the lead runs them, submodules first, reading each pick's exit code; then `./run.sh worktree land <id> --ticks` maps each lease commit to its landed sha and prints, per box its Plan-Box trailers name, the progress rows, a post-landing `--plan-investigate` line where the box has no row, and a ready `--plan-tick` where every clause is covered; `--ticks --run` writes the progress rows and runs only those ticks. `./run.sh worktree gc --write --id <id>` frees the slot. A box ticks with the landed sha, never the lease's own. A `present` box closes with `--plan-investigate <me> <plan> <sig> present <kind>:<token> -- <evidence> --write` and then `--plan-tick`, after the cited evidence is checked.
 
 Once the batch is landed, the gates run once. Only the reviews, worklist, reggate and effort ledgers count as record-only (`.ci/policy/record-paths.json`): any other commit voids the `ci:quick` receipt, so a plan or STATE commit comes before the gate run, not after. Anything freshness-red is bumped before the batch, and `pins bump` takes `--task`.
 
@@ -108,7 +111,7 @@ Once the batch is landed, the gates run once. Only the reviews, worklist, reggat
 
 G1 boxes first get their recorded correction: the box line stays byte-identical so its signature holds, with a `(corrected ASKED:<minute>Z) <bench form>` line under it. A clause bench cannot prove is named in its own box, never dropped. They then run as G2.
 
-G2 boxes run in the main checkout, because leases refuse `vm:check` and `live_proof`. Three queues run side by side, each sequential within itself: fleet (local VMs), bench (`--config eu-bench`), and hostinger. Bench and hostinger start at once, whatever the fleet and the writers are doing (step 3); two runners never touch the same remote machine at the same time. Each box takes `--plan-investigate`, then `worklist.py --live-proof <me> <plan> <sig> --write --tick`, or the box's own command. The runner holds a real lease (`worker:<agent-id>`, or `worker:lead` beside a running background task), since `queue-slot` trips on `worker:queue` beside a free slot. A box ticks only after every clause is read, citing the landed commit and the run's exit code, and it states bench-only proof plainly.
+The live queue starts from `worklist.py --box-audit <me> --live-owed`: the boxes whose code landed and whose live or operator half is owed, a released item's half included. G2 boxes run in the main checkout, because leases refuse `vm:check` and `live_proof`. Three queues run side by side, each sequential within itself: fleet (local VMs), bench (`--config eu-bench`), and hostinger. Bench and hostinger start at once, whatever the fleet and the writers are doing (step 3); two runners never touch the same remote machine at the same time. Each box takes `--plan-investigate`, then `worklist.py --live-proof <me> <plan> <sig> --write --tick`, or the box's own command. The runner holds a real lease (`worker:<agent-id>`, or `worker:lead` beside a running background task), since `queue-slot` trips on `worker:queue` beside a free slot. A box ticks only after every clause is read, citing the landed commit and the run's exit code, and it states bench-only proof plainly.
 
 Hostinger runs without asking, and provisioning restarts its services. Production data is never wiped; a restore test's temporary `-rt` copy is the only deletion, and `repo list` and `backup usage` are compared before and after each step. `backup schedule` and `strategy bind` go through `eu-remote`, never `eu-bench`.
 

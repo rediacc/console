@@ -112,6 +112,17 @@ points at must be at least the blob ratio times the record's size. That second h
 - `docs/agent-reference/TRAPS.md` carries the two record traps: a derived title falling back to
 a slug, and a stale `Status:` header being a claim rather than evidence.
 
+## Box progress: clause maps, landed halves and the audit
+
+A box with a code half and a live half is split without touching its line (agent/plans/PLAN-tick-tracking.md Design 3). The split lives in `agent/ledgers/plan-box-progress.jsonl`, a sibling of the investigation ledger, never in it: a late row there becomes the latest row, and Clause 1 then refuses the honest tick that cites the code commit. No plan byte changes, so G-A0, G-A1 and check:ci-plan-record hold by construction.
+
+The ledger has two row kinds, both appended under a TMPDIR flock by `.claude/hooks/stop/wl_planbox.py` and deduped on every field but `at` and `by`:
+
+- `define` `{plan, sig, clauses: [{id, half: code|live|operator, text}]}`, written by `worklist.py --box-clauses <me> <plan> <sig> "C1 [code] <text>" "C2 [live] <text>" --write` for an open box only. The latest `define` row is the box's clause map; a `Plan-Box:` trailer may name only its clause ids, and a box with no map takes `clauses=all`.
+- `progress` `{plan, sig, clause, state: landed|proved|live-owed, ref}`, written by `./run.sh worktree land <id> --ticks --run` (landed), by `worklist.py --box-progress <me> ... --write`, and by `worklist.py --lease <me> <id> release` when the released item names a box whose code landed and whose live half is unproved (live-owed).
+
+`worklist.py --box-audit <me> [plan] [--sha <list>] [--live-owed] [--mixed-unsplit]` (`.claude/hooks/stop/wl_boxaudit.py`) gives each open box one verdict from five sources: landed `Plan-Box:` trailers since the merge-base, captured reports' TICK lines (lease shas mapped by the `-x` line), VERIFIED live-proof rows taken on the landed code, the latest investigation row, and this ledger. The verdicts, first match wins: `tickable-now` (with the ready `--plan-tick` line), `stale-investigation`, `live-owed`, `linked`, `untouched`. `--mixed-unsplit` exits 1 while a box has landed work and no clause map. The Stop hook's `plan-box-owed` check blocks when landed work on an open box has had no investigation row for 3 stops, and a STATE.md write must carry an `## Owed ticks` section while a plan the session owns has a tickable-now or live-owed box.
+
 ## Live proof: a plan that touches a deployable surface
 
 A plan whose `Owns:` globs hit a deployable surface closes only on a live receipt from bench or hostinger. The design is `agent/plans/PLAN-tested-on-bench.md`; the surface map is `.ci/config/proof-tiers.json`, read through `.ci/rediacc_ci/proof/surfaces.py`. Deploy tooling and proof tooling are not surfaces. A plan is a **required plan** when its `Owns:` globs hit at least one mapped surface; a plan owning only tooling is not required, so it owes no `Live-Proof:` line, and a `none` line it writes anyway still has to cite a ruling.
