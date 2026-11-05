@@ -785,6 +785,29 @@ export interface RepositoryHealthParams {}
 /** Get repository information */
 export interface RepositoryInfoParams {}
 
+/** Set the repository's memory, CPU, I/O and process limits and its RAM volume */
+export interface RepositoryLimitsSetParams {
+  /** Memory cap (memory.max), a size such as 10G, or max */
+  memoryMax?: string;
+  /** Memory throttle point (memory.high), a size, or max */
+  memoryHigh?: string;
+  /** CPU cap in cores (4, 2.5) or N%, or max */
+  cpuMax?: string;
+  /** I/O cap of the repository's device, rbps=,wbps=,riops=,wiops= (any subset), or max */
+  ioMax?: string;
+  /** Process cap (pids.max), a count, or max */
+  pidsMax?: string;
+  /** Size of the RAM volume at <mount>/.ram, or max to remove it */
+  ramVolume?: string;
+  /** Remove every limit and the RAM volume */
+  clearLimits?: boolean;
+  /** Allow a memory cap below the repository's current memory use */
+  force?: boolean;
+}
+
+/** Show the repository's grant, its limits and RAM volume included, as JSON */
+export interface RepositoryLimitsShowParams {}
+
 /** List repositories on machine */
 export interface RepositoryListParams {
   /** List type */
@@ -1057,6 +1080,8 @@ export const RENET_FUNCTIONS = [
   'repository_gpu_revoke',
   'repository_health',
   'repository_info',
+  'repository_limits_set',
+  'repository_limits_show',
   'repository_list',
   'repository_log',
   'repository_logs',
@@ -1250,6 +1275,8 @@ export const RENET_BRIDGE_FUNCTIONS = [
   'repository_gpu_revoke',
   'repository_health',
   'repository_info',
+  'repository_limits_set',
+  'repository_limits_show',
   'repository_list',
   'repository_log',
   'repository_logs',
@@ -1356,6 +1383,8 @@ export type FunctionParamsMap = {
   repository_gpu_revoke: RepositoryGpuRevokeParams;
   repository_health: RepositoryHealthParams;
   repository_info: RepositoryInfoParams;
+  repository_limits_set: RepositoryLimitsSetParams;
+  repository_limits_show: RepositoryLimitsShowParams;
   repository_list: RepositoryListParams;
   repository_log: RepositoryLogParams;
   repository_logs: RepositoryLogsParams;
@@ -1613,6 +1642,12 @@ export const FUNCTION_REQUIREMENTS: Record<RenetFunctionName, { requirements: Pa
     requirements: { machine: true, team: true, repository: true },
   },
   'repository_info': {
+    requirements: { machine: true, team: true, repository: true },
+  },
+  'repository_limits_set': {
+    requirements: { machine: true, team: true, repository: true },
+  },
+  'repository_limits_show': {
     requirements: { machine: true, team: true, repository: true },
   },
   'repository_list': {
@@ -3558,6 +3593,66 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
     params: {
     },
   },
+  'repository_limits_set': {
+    name: 'repository_limits_set',
+    category: 'repository',
+    showInMenu: false,
+    requirements: { machine: true, team: true, repository: true },
+    params: {
+      memoryMax: {
+        type: 'string',
+        help: 'Memory cap (memory.max), a size such as 10G, or max',
+        placeholder: '10G',
+        pattern: '^([0-9]+(\\.[0-9]+)?[KMGTkmgt]?([iI]?[bB])?|max)$',
+      },
+      memoryHigh: {
+        type: 'string',
+        help: 'Memory throttle point (memory.high), a size, or max',
+        placeholder: '8G',
+        pattern: '^([0-9]+(\\.[0-9]+)?[KMGTkmgt]?([iI]?[bB])?|max)$',
+      },
+      cpuMax: {
+        type: 'string',
+        help: 'CPU cap in cores (4, 2.5) or N%, or max',
+        placeholder: '4',
+        pattern: '^([0-9]+(\\.[0-9]+)?%?|max)$',
+      },
+      ioMax: {
+        type: 'string',
+        help: 'I/O cap of the repository\'s device, rbps=,wbps=,riops=,wiops= (any subset), or max',
+        placeholder: 'rbps=200M,wbps=100M',
+        pattern: '^(max|((rbps|wbps|riops|wiops)=[0-9A-Za-z.]+)(,(rbps|wbps|riops|wiops)=[0-9A-Za-z.]+)*)$',
+      },
+      pidsMax: {
+        type: 'string',
+        help: 'Process cap (pids.max), a count, or max',
+        placeholder: '4096',
+        pattern: '^([0-9]+|max)$',
+      },
+      ramVolume: {
+        type: 'string',
+        help: 'Size of the RAM volume at <mount>/.ram, or max to remove it',
+        placeholder: '8G',
+        pattern: '^([0-9]+(\\.[0-9]+)?[KMGTkmgt]?([iI]?[bB])?|max)$',
+      },
+      clearLimits: {
+        type: 'bool',
+        help: 'Remove every limit and the RAM volume',
+      },
+      force: {
+        type: 'bool',
+        help: 'Allow a memory cap below the repository\'s current memory use',
+      },
+    },
+  },
+  'repository_limits_show': {
+    name: 'repository_limits_show',
+    category: 'repository',
+    showInMenu: false,
+    requirements: { machine: true, team: true, repository: true },
+    params: {
+    },
+  },
   'repository_list': {
     name: 'repository_list',
     category: 'repository',
@@ -4105,6 +4200,8 @@ export const queueFunctions: QueueFunctionsType = {
   repository_gpu_revoke: (params) => ({ functionName: 'repository_gpu_revoke', params }),
   repository_health: (params) => ({ functionName: 'repository_health', params }),
   repository_info: (params) => ({ functionName: 'repository_info', params }),
+  repository_limits_set: (params) => ({ functionName: 'repository_limits_set', params }),
+  repository_limits_show: (params) => ({ functionName: 'repository_limits_show', params }),
   repository_list: (params) => ({ functionName: 'repository_list', params }),
   repository_log: (params) => ({ functionName: 'repository_log', params }),
   repository_logs: (params) => ({ functionName: 'repository_logs', params }),

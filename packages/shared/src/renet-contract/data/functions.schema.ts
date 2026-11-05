@@ -576,6 +576,21 @@ export const RepositoryHealthParamsSchema = z.object({});
 /** Get repository information */
 export const RepositoryInfoParamsSchema = z.object({});
 
+/** Set the repository's memory, CPU, I/O and process limits and its RAM volume */
+export const RepositoryLimitsSetParamsSchema = z.object({
+  memoryMax: z.string().regex(/^([0-9]+(\.[0-9]+)?[KMGTkmgt]?([iI]?[bB])?|max)$/).optional().describe('Memory cap (memory.max), a size such as 10G, or max'),
+  memoryHigh: z.string().regex(/^([0-9]+(\.[0-9]+)?[KMGTkmgt]?([iI]?[bB])?|max)$/).optional().describe('Memory throttle point (memory.high), a size, or max'),
+  cpuMax: z.string().regex(/^([0-9]+(\.[0-9]+)?%?|max)$/).optional().describe('CPU cap in cores (4, 2.5) or N%, or max'),
+  ioMax: z.string().regex(/^(max|((rbps|wbps|riops|wiops)=[0-9A-Za-z.]+)(,(rbps|wbps|riops|wiops)=[0-9A-Za-z.]+)*)$/).optional().describe('I/O cap of the repository\'s device, rbps=,wbps=,riops=,wiops= (any subset), or max'),
+  pidsMax: z.string().regex(/^([0-9]+|max)$/).optional().describe('Process cap (pids.max), a count, or max'),
+  ramVolume: z.string().regex(/^([0-9]+(\.[0-9]+)?[KMGTkmgt]?([iI]?[bB])?|max)$/).optional().describe('Size of the RAM volume at <mount>/.ram, or max to remove it'),
+  clearLimits: z.boolean().optional().describe('Remove every limit and the RAM volume'),
+  force: z.boolean().optional().describe('Allow a memory cap below the repository\'s current memory use'),
+});
+
+/** Show the repository's grant, its limits and RAM volume included, as JSON */
+export const RepositoryLimitsShowParamsSchema = z.object({});
+
 /** List repositories on machine */
 export const RepositoryListParamsSchema = z.object({
   kind: z.string().default('repo').optional().describe('List type'),
@@ -819,6 +834,8 @@ export const FUNCTION_SCHEMAS = {
   repository_gpu_revoke: RepositoryGpuRevokeParamsSchema,
   repository_health: RepositoryHealthParamsSchema,
   repository_info: RepositoryInfoParamsSchema,
+  repository_limits_set: RepositoryLimitsSetParamsSchema,
+  repository_limits_show: RepositoryLimitsShowParamsSchema,
   repository_list: RepositoryListParamsSchema,
   repository_log: RepositoryLogParamsSchema,
   repository_logs: RepositoryLogsParamsSchema,

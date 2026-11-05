@@ -151,6 +151,7 @@ export interface RepositoryInfo {
   name: string;
   network_id?: number;
   repo_name?: string;
+  resources?: RepositoryResources;
   service_count: number;
   size: number;
   size_human: string;
@@ -408,6 +409,21 @@ export interface BackupRepoStatus {
   target_met?: boolean;
   target_seconds?: number;
   ticks_missed?: number;
+}
+
+/** RepositoryResources (referenced type) */
+export interface RepositoryResources {
+  cpu_max: string;
+  cpu_usage_usec: number;
+  io_max: string;
+  memory_current: number;
+  memory_high: number;
+  memory_max: number;
+  oom_kills: number;
+  pids_current: number;
+  pids_max: number;
+  ram_size: number;
+  ram_used: number;
 }
 
 /** StaleProcessesSection (referenced type) */

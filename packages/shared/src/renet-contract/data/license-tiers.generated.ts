@@ -176,6 +176,8 @@ export const LICENSE_TIERS: Readonly<Record<string, LicenseTierEntry>> = {
   "repository_gpu_revoke": { tier: "none", pending: false },
   "repository_health": { tier: "none", pending: false },
   "repository_info": { tier: "none", pending: false },
+  "repository_limits_set": { tier: "operate", pending: false },
+  "repository_limits_show": { tier: "none", pending: false },
   "repository_list": { tier: "none", pending: false },
   "repository_log": { tier: "none", pending: false },
   "repository_logs": { tier: "none", pending: false },

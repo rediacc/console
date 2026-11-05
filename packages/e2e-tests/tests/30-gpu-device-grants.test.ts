@@ -201,4 +201,45 @@ test.describe
       expect(runner.isSuccess(shown), runner.getCombinedOutput(shown)).toBe(true);
       expect(verbText('repository_permission_show', shown)).not.toContain(PERM_PATH);
     });
+
+    test('repository_limits_set refuses a call that names no limit', async () => {
+      const result = await runner.executeOnWorker(once('repository_limits_set'));
+      expect(result.code, runner.getCombinedOutput(result)).not.toBe(0);
+      expect(runner.getCombinedOutput(result)).toContain(
+        'repository_limits_set needs a limit to change'
+      );
+    });
+
+    test('repository_limits_set records limits and repository_limits_show prints them', async () => {
+      // PLAN-repo-resource-limits R4: the limits live in the operator grant. The fake network has no
+      // cgroup, so this proves the record, not the cap (vm:check K2 proves the cap).
+      const set = await runner.executeOnWorker(
+        once('repository_limits_set', ' --memory-max 1536M --cpu-max 2.5 --ram-volume 256M')
+      );
+      expect(runner.isSuccess(set), runner.getCombinedOutput(set)).toBe(true);
+      const setText = verbText('repository_limits_set', set);
+      expect(setText, runner.getCombinedOutput(set)).toContain('"memory_max": 1610612736');
+      expect(setText).toContain('"cpu_max": "250000 100000"');
+
+      const shown = await runner.executeOnWorker(once('repository_limits_show'));
+      expect(runner.isSuccess(shown), runner.getCombinedOutput(shown)).toBe(true);
+      expect(verbText('repository_limits_show', shown)).toContain('"size": 268435456');
+
+      // The control: a memory cap that leaves less than 1G above the RAM volume is refused.
+      const refused = await runner.executeOnWorker(
+        once('repository_limits_set', ' --memory-max 1G')
+      );
+      expect(refused.code, runner.getCombinedOutput(refused)).not.toBe(0);
+      expect(runner.getCombinedOutput(refused)).toContain('leaves less than 1g above');
+    });
+
+    test('repository_limits_set --clear-limits removes the limits and the RAM volume', async () => {
+      const cleared = await runner.executeOnWorker(
+        once('repository_limits_set', ' --clear-limits')
+      );
+      expect(runner.isSuccess(cleared), runner.getCombinedOutput(cleared)).toBe(true);
+      const shown = await runner.executeOnWorker(once('repository_limits_show'));
+      expect(runner.isSuccess(shown), runner.getCombinedOutput(shown)).toBe(true);
+      expect(verbText('repository_limits_show', shown)).not.toContain('memory_max');
+    });
   });
