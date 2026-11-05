@@ -284,6 +284,22 @@ def lease_failures() -> tuple[list[str], int]:
         ("git -C %s stash" % tree, 2, "", "ADMITTED"),
         ("git -C %s clean -f && git -C %s clean -f" % (tree, main), 2, "", "ADMITTED"),
         ("GIT_WORK_TREE=%s git -C %s checkout -- ." % (main, tree), 2, "", "ADMITTED"),
+        ("git -C %s -c core.worktree=%s clean -fd" % (tree, main), 2, "", "ADMITTED"),
+        ("git -C %s clean -fd" % tree, 0, "ADMITTED IN A LEASE TREE", "BLOCKED"),
+        ("git -C %s --config-env=core.worktree=X clean -fd" % tree, 2, "", "ADMITTED"),
+        (
+            "GIT_CONFIG_PARAMETERS=\"'core.worktree=%s'\" git -C %s clean -fd" % (main, tree),
+            2,
+            "",
+            "ADMITTED",
+        ),
+        (
+            "GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.worktree GIT_CONFIG_VALUE_0=%s git -C %s clean -fd"
+            % (main, tree),
+            2,
+            "",
+            "ADMITTED",
+        ),
     ]
     failures = []
 

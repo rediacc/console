@@ -23,7 +23,7 @@ DELIBERATELY NOT BLOCKED, because these do not discard anything:
   - `git rm --cached <one literal path>`: it stages one deletion and keeps the file on disk, and git refuses it when the staged content differs from both HEAD and the file.
 The escape for a genuine need is a human: ask the operator, who can run it themselves with the `!` prefix and knows what else is in the tree.
 
-THE LEASE ADMISSION (operator order 2026-11-05, PLAN-worktree-lease). An idle lease tree is the one place the shared-tree argument does not hold: `./run.sh worktree gc` keeps a dirty tree and offers no discard, so a finished writer's leftovers would otherwise wait on the operator. A refused command is admitted, with LEASE_WARNING on stderr listing what it discards, only when every walked git command resolves (after `-C`, `cd` and a submodule tree's own lease) into a lease tree directly below this checkout's `.claude/worktrees`, no operand climbs out of it, nothing redirects git elsewhere (`GIT_DIR`, `--work-tree` and their kin), no verb reaches state the tree shares with the main checkout (`stash`, `config`, `submodule`, an autostash), the text patterns see no git the walk did not place, and gc's own rules 1 and 2 (`_place_problem`, `_in_use` in `.ci/rediacc_ci/dev/worktree_lease.py`) find the tree a lease of this checkout's store with no live writer, worklist lease or process on it. Everything else is refused as before; a held lease gets the gc reasons appended.
+THE LEASE ADMISSION (operator order 2026-11-05, PLAN-worktree-lease). An idle lease tree is the one place the shared-tree argument does not hold: `./run.sh worktree gc` keeps a dirty tree and offers no discard, so a finished writer's leftovers would otherwise wait on the operator. A refused command is admitted, with LEASE_WARNING on stderr listing what it discards, only when every walked git command resolves (after `-C`, `cd` and a submodule tree's own lease) into a lease tree directly below this checkout's `.claude/worktrees`, no operand climbs out of it, nothing redirects git elsewhere (`GIT_DIR`, `--work-tree` and their kin) and no configuration is injected (`-c`, `--config-env`, any `GIT_CONFIG*` variable), no verb reaches state the tree shares with the main checkout (`stash`, `config`, `submodule`, an autostash), the text patterns see no git the walk did not place, and gc's own rules 1 and 2 (`_place_problem`, `_in_use` in `.ci/rediacc_ci/dev/worktree_lease.py`) find the tree a lease of this checkout's store with no live writer, worklist lease or process on it. Everything else is refused as before; a held lease gets the gc reasons appended.
 
 NO CROSS-TALK with block-protected-files.sh, which blocks restore/checkout/rm aimed at the hook files specifically. This guard is about the shared tree in general; that one is about protecting the guards themselves. Both may match a single command, which is fine: the first to fire wins and both messages are true.
 
@@ -117,6 +117,18 @@ GIT_REDIRECT_ENV = frozenset(
     ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_COMMON_DIR", "GIT_OBJECT_DIRECTORY")
 )
 GIT_REDIRECT_GLOBS = ("--git-dir", "--work-tree", "--bare", "--super-prefix")
+# Any configuration handed to git on the command line or through the environment can redirect it (`-c core.worktree=<main>`, `GIT_CONFIG_COUNT`, an `include.path`, an alias), so the admission refuses the whole class rather than listing keys: every `-c`/`--config-env` option and every `GIT_CONFIG*` variable.
+GIT_CONFIG_GLOBS = ("-c", "--config-env")
+GIT_CONFIG_ENV_PREFIX = "GIT_CONFIG"
+
+
+def _config_injected(globs, env):
+    """Whether the git process is handed configuration by an option or by the environment."""
+    return any(g.startswith(GIT_CONFIG_GLOBS) for g in globs) or any(
+        name.startswith(GIT_CONFIG_ENV_PREFIX) for name in env
+    )
+
+
 # What the liveness reader raises when it cannot say; each keeps the refusal.
 LIVENESS_ERRORS = (
     ImportError,
@@ -1026,6 +1038,8 @@ def _lease_run(run, root, base, created, holder):
     if sub in LEASE_SHARED_VERBS or _autostash(sub, globs, args, run.env):
         return None
     if set(run.env) & GIT_REDIRECT_ENV or any(g.startswith(GIT_REDIRECT_GLOBS) for g in globs):
+        return None
+    if _config_injected(globs, run.env):
         return None
     if any(a.startswith("--pathspec-from-file") for a in args):
         return None
