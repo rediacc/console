@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 5,
-  "generatedAt": "2026-11-05T20:58:31.483Z",
+  "generatedAt": "2026-11-05T21:57:05.118Z",
   "legs": [
     {
       "index": 1,
@@ -244,6 +244,7 @@
         "pytest:.ci/rediacc_ci/tests/test_docker_run_in_image.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_argv_secrets.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_converge_preflight.py",
+        "pytest:.ci/rediacc_ci/tests/test_drills_down_before_kill.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_gpu_grants.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_lifecycle_privilege.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_session_teardown.py",
@@ -648,6 +649,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_wl_identity.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_interim_reports.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_message_catalogue.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_planbox.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_priority_ladder.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_prscope.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_queue_slots.py",
