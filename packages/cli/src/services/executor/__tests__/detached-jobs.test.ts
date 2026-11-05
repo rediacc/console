@@ -109,6 +109,10 @@ vi.mock('../../account/license-refresh-state.js', () => ({
   markRefreshAttempted: vi.fn().mockResolvedValue(undefined),
 }));
 
+// Mutable, so the forced-retry seam tests can play a release build; every other test runs as the dev build vitest is.
+const versionMock = vi.hoisted(() => ({ VERSION: '0.0.0-dev' }));
+vi.mock('../../../version.js', () => versionMock);
+
 vi.mock('../../renet/renet-execution.js', () => ({
   buildLocalVault: mockBuildLocalVault,
   acquireRemoteRenet: mockAcquireRemoteRenet,
@@ -121,6 +125,7 @@ vi.mock('../../renet/renet-execution.js', () => ({
 const { localExecutorService, parseCapturedJson, needsLicenseRecovery } = await import(
   '../local-executor.js'
 );
+const { forcedStartRetryArmed, setJobExecutionTiming } = await import('../detached-execution.js');
 
 const JOB_ID = 'j18c1994eaa33d30d-3d9813b2';
 
@@ -367,5 +372,105 @@ describe('job license recovery (bug #33)', () => {
     expect(result.success).toBe(true);
     expect(result.jobId).toBe(JOB_ID);
     expect(result.state).toBe('running');
+  });
+});
+
+describe('forced start retry seam (PLAN-detached-jobs L5 step 6)', () => {
+  const SEAM = 'REDIACC_TEST_DROP_FIRST_JOB_START';
+  const savedTelemetry = process.env.REDIACC_TELEMETRY_DISABLED;
+  const handle = JSON.stringify({ job_id: JOB_ID, unit: 'u', log_path: 'p' });
+
+  beforeEach(() => {
+    baseMocks();
+    setJobExecutionTiming({ sleep: () => Promise.resolve() });
+  });
+
+  afterEach(() => {
+    delete process.env[SEAM];
+    versionMock.VERSION = '0.0.0-dev';
+    setJobExecutionTiming();
+    if (savedTelemetry === undefined) delete process.env.REDIACC_TELEMETRY_DISABLED;
+    else process.env.REDIACC_TELEMETRY_DISABLED = savedTelemetry;
+  });
+
+  const requestIds = () =>
+    mockExecStreaming.mock.calls.map((c) => /--request-id '([^']+)'/.exec(String(c[0]))?.[1]);
+
+  it('on a dev build, discards the first start and retries with the same request id: one job', async () => {
+    process.env[SEAM] = '1';
+    mockExecStreaming
+      // The discarded start: a plain `job start` creates the job; its handle never reaches the call.
+      .mockImplementationOnce(stream(handle))
+      // The retry: renet dedupes onto the job the first start created.
+      .mockImplementationOnce(stream(attachStream('', 'succeeded', 0)));
+
+    const started: string[] = [];
+    const result = await localExecutorService.execute({
+      functionName: 'backup_push',
+      machineName: 'hostinger',
+      requestId: 'inv:hostinger:7',
+      onJobStarted: (id) => started.push(id),
+    });
+
+    expect(forcedStartRetryArmed()).toBe(true);
+    expect(mockExecStreaming).toHaveBeenCalledTimes(2);
+    expect(requestIds()).toEqual(['inv:hostinger:7', 'inv:hostinger:7']);
+    const [first, retry] = mockExecStreaming.mock.calls.map((c) => String(c[0]));
+    expect(first).toContain('job start --executor local --json');
+    expect(first).not.toContain('--attach');
+    expect(retry).toContain("--attach '0s'");
+    // The job is announced once, by the retry; the discarded handle told the call nothing.
+    expect(started).toEqual([JOB_ID]);
+    expect(result.success).toBe(true);
+    expect(result.jobId).toBe(JOB_ID);
+  });
+
+  it('a failure on the discarded start still surfaces, never retried', async () => {
+    process.env[SEAM] = '1';
+    mockExecStreaming.mockImplementationOnce(
+      (_cmd: string, handlers: { onStderr?: (d: Buffer) => void }) => {
+        handlers.onStderr?.(Buffer.from('boom'));
+        return Promise.resolve(1);
+      }
+    );
+
+    const result = await localExecutorService.execute({
+      functionName: 'backup_push',
+      machineName: 'hostinger',
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('boom');
+    expect(mockExecStreaming).toHaveBeenCalledTimes(1);
+  });
+
+  it('control: with the flag unset, one attached start and no retry', async () => {
+    mockExecStreaming.mockImplementationOnce(stream(attachStream('', 'succeeded', 0)));
+
+    const result = await localExecutorService.execute({
+      functionName: 'backup_push',
+      machineName: 'hostinger',
+    });
+
+    expect(forcedStartRetryArmed()).toBe(false);
+    expect(mockExecStreaming).toHaveBeenCalledTimes(1);
+    expect(String(mockExecStreaming.mock.calls[0]?.[0])).toContain("--attach '0s'");
+    expect(result.success).toBe(true);
+  });
+
+  it('a release build ignores the flag: one attached start and no retry', async () => {
+    process.env[SEAM] = '1';
+    versionMock.VERSION = '1.2.3';
+    mockExecStreaming.mockImplementationOnce(stream(attachStream('', 'succeeded', 0)));
+
+    const result = await localExecutorService.execute({
+      functionName: 'backup_push',
+      machineName: 'hostinger',
+    });
+
+    expect(forcedStartRetryArmed()).toBe(false);
+    expect(mockExecStreaming).toHaveBeenCalledTimes(1);
+    expect(String(mockExecStreaming.mock.calls[0]?.[0])).toContain("--attach '0s'");
+    expect(result.success).toBe(true);
   });
 });

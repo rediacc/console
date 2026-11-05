@@ -24,6 +24,7 @@ import { ERROR_CODES } from '../../types/errors.js';
 import { EXIT_CODES } from '../../types/index.js';
 import { CliExitError } from '../../utils/cli-exit-error.js';
 import { getOutputFormat } from '../../utils/errors.js';
+import { isDevBuild } from '../../utils/platform.js';
 import { VERSION } from '../../version.js';
 import { clusterKubeconfigRemotePath } from '../cluster/cluster-target.js';
 import { getEffectiveConfigName } from '../config/config-name.js';
@@ -41,7 +42,12 @@ import { type TicketInput, type TicketKind, TicketStore } from '../jobs/ticket-s
 import { machineConnections } from '../machine/machine-connection.js';
 import { fetchOtlpCredentials } from '../telemetry/otlp-credentials.js';
 import { isTelemetryDisabled } from '../telemetry/telemetry.js';
-import { type AttachState, type StartOutcome, startOnce } from './detached-attach.js';
+import {
+  type AttachRun,
+  type AttachState,
+  type StartOutcome,
+  startOnce,
+} from './detached-attach.js';
 import {
   backgroundEnvelope,
   backgroundStartedHint,
@@ -157,6 +163,28 @@ export function setJobExecutionTiming(next?: Partial<JobExecutionTiming>): void 
   timing = next ? { ...realTiming, ...next } : realTiming;
 }
 
+/**
+ * Dev-build test seam for the forced start retry (agent/plans/PLAN-detached-jobs.md
+ * L5 step 6). With `REDIACC_TEST_DROP_FIRST_JOB_START=1` on a dev build, the
+ * first start runs as a plain `job start` (the job is created on the machine)
+ * and its handle is thrown away, so the retry path runs with the same request
+ * id and renet must attach it to that first job. A release build ignores the
+ * flag: a released CLI never starts a job only to discard its answer.
+ */
+export function forcedStartRetryArmed(): boolean {
+  return process.env.REDIACC_TEST_DROP_FIRST_JOB_START === '1' && isDevBuild();
+}
+
+/** The sink of a discarded start: it sees the job's handle and tells the call nothing. */
+function blindAttachRun(): AttachRun {
+  return {
+    window: 0,
+    state: { lines: 0, overlaps: [], deduped: false },
+    announce: () => {},
+    onEvent: () => {},
+  };
+}
+
 function repoOf(options: ExecuteOptions): string | undefined {
   return typeof options.params?.repository === 'string' ? options.params.repository : undefined;
 }
@@ -217,8 +245,14 @@ export async function runJobExecution(
 
   const lease = await machineConnections.acquireFor(machine, sshPrivateKey);
   try {
-    const launch = await buildLaunch(remoteRenetPath, options, run.requestId);
-    const outcome = await run.start(lease, launch, vault);
+    const params = await launchParams(remoteRenetPath, options, run.requestId);
+    const window = options.attachWindowMs;
+    const launch = buildJobStartCommand({
+      ...params,
+      ...(window === 0 ? {} : { attach: attachFlagValue(window) }),
+    });
+    const discardFirst = forcedStartRetryArmed() ? buildJobStartCommand(params) : undefined;
+    const outcome = await run.start(lease, launch, vault, discardFirst);
     const result = await run.settle(outcome, lease, remoteRenetPath);
     run.annotateSpan(outcome, result);
     return result;
@@ -284,19 +318,46 @@ class JobRun {
   /**
    * Run the start exec, retrying with the same request id while no handle has
    * arrived and the transport keeps dropping, for up to the reattach budget.
+   * `discardFirst` (the dev-build seam, `forcedStartRetryArmed`) replaces the
+   * first attempt with a start whose handle is thrown away.
    */
-  async start(lease: Lease, launch: Launch, vault: string): Promise<StartOutcome> {
+  async start(
+    lease: Lease,
+    launch: Launch,
+    vault: string,
+    discardFirst?: Launch
+  ): Promise<StartOutcome> {
     let firstDrop: number | undefined;
     for (let attempt = 0; ; attempt++) {
       const sftp = await safeEnsure(lease);
-      const outcome = sftp
-        ? await startOnce(sftp, launch, vault, this)
-        : ({ kind: 'dropped', error: new Error('connection lost') } as const);
+      let outcome: StartOutcome;
+      if (!sftp) outcome = { kind: 'dropped', error: new Error('connection lost') };
+      else if (attempt === 0 && discardFirst) {
+        outcome = await this.discardedStart(sftp, discardFirst, vault);
+      } else outcome = await startOnce(sftp, launch, vault, this);
       if (outcome.kind !== 'dropped' || this.state.jobId) return outcome;
       firstDrop ??= timing.now();
       if (timing.now() - firstDrop >= timing.budgetMs) return outcome;
       await timing.sleep(logReconnectDelayMs(attempt));
     }
+  }
+
+  /**
+   * The seam's first attempt: a plain start whose handle never reaches the call,
+   * reported as a drop. A start that did not create a job (a refusal, an old
+   * renet, a failure) is returned as it is, so the seam never hides one.
+   */
+  private async discardedStart(
+    sftp: SFTPClient,
+    probe: Launch,
+    vault: string
+  ): Promise<StartOutcome> {
+    const outcome = await startOnce(sftp, probe, vault, blindAttachRun());
+    if (outcome.kind !== 'handle') return outcome;
+    writeStderr(
+      `[test seam] REDIACC_TEST_DROP_FIRST_JOB_START: discarded the first start's handle for request ${this.requestId}; retrying\n`
+    );
+    return { kind: 'dropped', error: new Error('first start handle discarded by the test seam') };
   }
 
   /** Write the job's attributes onto the command span (Design 13). */
@@ -489,20 +550,19 @@ function defaultRenderer(options: ExecuteOptions): ((event: RenetEvent) => void)
   };
 }
 
-/** Build the `job start` launch: env (secrets on stdin), ceiling, request id, window, origin and steps. */
-async function buildLaunch(
+/** The `job start` parameters, all but the window: env (secrets on stdin), ceiling, request id, origin and steps. */
+async function launchParams(
   remoteRenetPath: string,
   options: ExecuteOptions,
   requestId: string
-): Promise<Launch> {
+): Promise<Parameters<typeof buildJobStartCommand>[0]> {
   const otlpCreds = isTelemetryDisabled() ? null : await fetchOtlpCredentials();
   const envSecrets = await resolveEnvSecrets(repoOf(options));
   const kubeconfig = options.kubeCluster
     ? clusterKubeconfigRemotePath(options.kubeCluster)
     : undefined;
-  const window = options.attachWindowMs;
   const steps = options.jobSteps ?? [];
-  return buildJobStartCommand({
+  return {
     remoteRenetPath,
     env: buildRenetEnv({
       isDevelopment: detectEnvironment() === 'development',
@@ -514,7 +574,6 @@ async function buildLaunch(
     timeoutMs: launchTimeoutMs(options),
     debug: options.debug,
     requestId,
-    ...(window === 0 ? {} : { attach: attachFlagValue(window) }),
     origin: originJson({
       client: currentRequestContext() ? 'proxy' : clientKindFromEnv(),
       version: VERSION,
@@ -526,7 +585,7 @@ async function buildLaunch(
           command: jobStartCommand(options.commandKind.name, options.commandKind.args),
         }
       : {}),
-  });
+  };
 }
 
 /** The job ceiling: the command kind's class (renet-command.ts), else the function's. */
