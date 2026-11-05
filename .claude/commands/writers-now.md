@@ -76,6 +76,8 @@ lead instead); never vitest from the repo root; no inline suppression. This tree
   - commit on the detached HEAD with `git commit -F <msg> -- <paths>` and a `PR-TASK:` trailer;
     never push, never touch `agent/**` or a gitlink, never switch or create a branch;
   - run `npm run ci -- --narrow` or named tests; ci:quick, vm:check and live_proof record refuse a lease;
+  - Python tests run with `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest <files> -q` (neither
+    the system python3 nor .venv has pytest, and `-p no:cacheprovider` fails on the repo's cache_dir);
   - report the commit shas; the lead lands them. A result worth keeping goes in a commit or the
     report, because GC deletes the tree's ignored output with the tree.
 
