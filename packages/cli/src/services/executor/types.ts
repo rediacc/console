@@ -190,14 +190,6 @@ export interface ExecuteOptions {
    */
   probe?: boolean;
   /**
-   * Marks this call as its verb's terminal job (agent/plans/PLAN-detached-jobs.md
-   * section 3): the one job a detached run returns at. Once it has detached (the
-   * invocation is `--background` or the call handed back a running ticket), a
-   * later machine call from the same invocation throws, because nothing would
-   * wait for the terminal job before it ran.
-   */
-  terminalJob?: boolean;
-  /**
    * The job's idempotency key (section 17). Normally unset: the executor mints
    * `<invocation>:<machine>:<seq>` once per call, and a start retried after a
    * dropped answer carries the same id, so renet attaches it to the first job.

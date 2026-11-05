@@ -227,45 +227,6 @@ async function recordAllocatedNetworkId(
   await recordNetworkId(repo, result.networkId);
 }
 
-// --- terminal job guard (agent/plans/PLAN-detached-jobs.md section 3) --------
-
-/** The verb whose terminal job detached, per scope (one process, or one served request). */
-const processTerminal: { verb?: string } = {};
-const requestTerminal = new WeakMap<object, { verb?: string }>();
-
-function terminalScope(): { verb?: string } {
-  const context = currentRequestContext();
-  if (!context) return processTerminal;
-  let scope = requestTerminal.get(context);
-  if (!scope) {
-    scope = {};
-    requestTerminal.set(context, scope);
-  }
-  return scope;
-}
-
-/** Test seam: forget that a terminal job detached in this scope. */
-export function resetTerminalJobGuard(): void {
-  delete terminalScope().verb;
-}
-
-/** A machine call after a detached terminal job is a bug in the verb: J4 moves such a tail into the job or onto its ticket. */
-function assertNoCallAfterTerminal(options: ExecuteOptions): void {
-  const verb = terminalScope().verb;
-  if (verb === undefined) return;
-  throw new Error(
-    `${options.functionName} on ${options.machineName} was called after the terminal job of "${verb}" detached. ` +
-      'Fold the step into that job, or record it as a successor on the ticket.'
-  );
-}
-
-/** Arm the guard when the terminal call returned without waiting for its job. */
-function noteTerminal(options: ExecuteOptions, result: ExecuteResult, served: boolean): void {
-  if (options.terminalJob !== true) return;
-  const detached = result.state === 'running' || (isBackgroundRequested() && !served);
-  if (detached) terminalScope().verb = options.verb ?? options.functionName;
-}
-
 /**
  * Stamp every call with its entry point's attach window and its request id
  * (agent/plans/PLAN-detached-jobs.md sections 15 and 17). The window comes from
@@ -288,7 +249,6 @@ function noteTerminal(options: ExecuteOptions, result: ExecuteResult, served: bo
 export function attachDecorator(inner: Executor): Executor {
   return {
     async execute(options) {
-      assertNoCallAfterTerminal(options);
       const served = currentRequestContext() !== undefined;
       const window =
         options.attachWindowMs === undefined
@@ -306,7 +266,6 @@ export function attachDecorator(inner: Executor): Executor {
         requestId: options.requestId ?? invocationMinter().next(options.machineName),
       });
       await recordAllocatedNetworkId(options, directive, result);
-      noteTerminal(options, result, served);
       return result;
     },
   };

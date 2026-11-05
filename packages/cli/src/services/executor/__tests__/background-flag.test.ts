@@ -14,7 +14,6 @@ import { JOB_ATTACH_WINDOW_MS, JOB_CLIENT_ENV, resetInvocationMinter } from '../
 import {
   attachDecorator,
   isBackgroundRequested,
-  resetTerminalJobGuard,
   setBackgroundRequested,
 } from '../executor-factory.js';
 import type { ExecuteOptions, ExecuteResult, Executor } from '../types.js';
@@ -100,50 +99,5 @@ describe('attach decorator', () => {
     setBackgroundRequested(true);
     await attachDecorator(executor).execute({ ...call, attachWindowMs: 5, requestId: 'r-1' });
     expect(calls[0]).toMatchObject({ attachWindowMs: 5, requestId: 'r-1' });
-  });
-});
-
-describe('terminal job guard', () => {
-  beforeEach(() => resetTerminalJobGuard());
-  afterEach(() => resetTerminalJobGuard());
-
-  it('throws on a machine call after a terminal job detached under --background', async () => {
-    const { calls, executor } = recordingExecutor();
-    const decorated = attachDecorator(executor);
-    setBackgroundRequested(true);
-    await decorated.execute({ ...call, verb: 'repo up', terminalJob: true });
-    await expect(
-      decorated.execute({ functionName: 'repository_list', machineName: 'm' })
-    ).rejects.toThrow(/after the terminal job of "repo up" detached/);
-    expect(calls).toHaveLength(1);
-  });
-
-  it('throws after a terminal job that returned a running ticket', async () => {
-    const calls: ExecuteOptions[] = [];
-    const decorated = attachDecorator({
-      execute(options) {
-        calls.push(options);
-        return Promise.resolve({ success: true, exitCode: 0, durationMs: 1, state: 'running' });
-      },
-    });
-    await decorated.execute({ ...call, terminalJob: true });
-    await expect(decorated.execute(call)).rejects.toThrow(/terminal job/);
-  });
-
-  it('control: a followed terminal job lets the tail run in process', async () => {
-    const { calls, executor } = recordingExecutor();
-    const decorated = attachDecorator(executor);
-    await decorated.execute({ ...call, terminalJob: true });
-    await decorated.execute({ functionName: 'repository_list', machineName: 'm' });
-    expect(calls).toHaveLength(2);
-  });
-
-  it('control: a non-terminal call under --background arms nothing', async () => {
-    const { calls, executor } = recordingExecutor();
-    const decorated = attachDecorator(executor);
-    setBackgroundRequested(true);
-    await decorated.execute(call);
-    await decorated.execute(call);
-    expect(calls).toHaveLength(2);
   });
 });
