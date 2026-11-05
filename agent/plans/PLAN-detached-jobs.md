@@ -651,9 +651,10 @@ Amended by section 15: an MCP tool waits up to the attach window and returns the
     (ticked) 2026-10-29T12:08:29Z by d778be9d: commit:c6e0526e4
     (review note 2026-10-29, 9f92c43e) The tick reading cites workers/proxy/src/org-executor.ts:332 only. The condition on L1 (no poll holding the lease past its body) is not evidenced by this tick and stays owed to L1; until L1 runs, the no-change verdict is the code reading alone.
 
-- [ ] J11 [lead] The VM proof for the renet change: `npm run vm:check -- --changed` VERIFIED on the tree carrying J1 and J3, as the push guard requires for the renet trigger paths.
+- [x] J11 [lead] The VM proof for the renet change: `npm run vm:check -- --changed` VERIFIED on the tree carrying J1 and J3, as the push guard requires for the renet trigger paths.
   Owns: agent/plans/PLAN-detached-jobs.md. Accept: `npm run vm:check -- --changed` rc 0 with a VERIFIED receipt, and `PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --test 32-detached-jobs --fail-on-skip` rc 0 (PLAN-jobs-backup-real-machine-tests E1).
   Amended (third round): the tree carries J1b, J1c and J3b as well.
+    (ticked) 2026-11-05T19:57:19Z by d778be9d: commit:91c61a32d every clause read: vm:check --changed rc=0 VERIFIED on tree 3325f69eaf1a, suite 32 rc=0, 9 passed, 0 skipped
 
 - [x] J12 [writer] Cost measurement module: `.ci/rediacc_ci/ops/proxy_job_cost.py --script <name> --from <ISO> --to <ISO>` prints Durable Object requests and wall time (sum, p50, p99) and container active seconds for one script over a window, importing the GraphQL transport from cf_usage_report rather than copying it. The dataset and field names (`durableObjectsInvocationsAdaptiveGroups` with wall time, `containersMetricsAdaptiveGroups`) are hypotheses to confirm against the live API first (CLAUDE.md rule 3).
     (ticked) 2026-10-29T11:26:24Z by d778be9d: commit:1f84ba143

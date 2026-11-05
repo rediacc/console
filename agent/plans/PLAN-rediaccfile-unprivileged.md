@@ -218,8 +218,9 @@ Root test shape: `sudo -n env -i` is what local uid-1000 gates can't replace (th
 
 - [ ] T1 [drill] L1 complete: uid not 0, every denied probe, `sudo` fails on NNP, `.env` owned by the universal user, a failing compose fails up, down with a stopped daemon reports honestly, fork has no grant, root-grant positive control, fake CDI node with and without a device grant, reboot-shaped path through `repository autostart` and a `reconcile` tick that ends running.
   Accept: `npm run vm:check` VERIFIED with every L1 row ok (`--only L1` alone never reaches VERIFIED).
-- [ ] T2 [e2e] `packages/e2e-tests` 05, 07, 13, 28, 30 and 27 on the bridge suite, with 05 gaining "up() file is owned by the universal user" and "sudo in up() is refused".
+- [x] T2 [e2e] `packages/e2e-tests` 05, 07, 13, 28, 30 and 27 on the bridge suite, with 05 gaining "up() file is owned by the universal user" and "sudo in up() is refused".
   Accept: `cd packages/e2e-tests && npx playwright test tests/05-rediaccfiles-updown.test.ts tests/07-container-operations.test.ts tests/13-postgres-fork-isolation.test.ts tests/28-dockerd-privilege-gate.test.ts tests/30-gpu-device-grants.test.ts tests/27-backup-browse-at.test.ts` rc=0.
+    (ticked) 2026-11-05T19:57:20Z by d778be9d: commit:91c61a32d every clause read: 05, 07, 13, 28, 30 and 27 each rc=0 with 0 skipped through rediacc_ci.testrun.e2e, the harness the Accept's playwright command runs under; 05 carries both new cases
 - [ ] W1 [local GPU] On the WSL host with config `wsl-gpu-test` (PLAN-gpu-device-grants W1): repo with a `nvidia.com/gpu=all` grant whose up() runs `nvidia-smi -L` and `renet compose` with `devices:`; both print the RTX 3060. Without the grant both fail, naming the permission. Native NVIDIA and AMD stay fixture-only until such a machine exists.
   Accept: each command's rc and output in the tick.
 

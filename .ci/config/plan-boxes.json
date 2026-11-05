@@ -302,8 +302,8 @@
       "owner": "5cc33087",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 24,
-      "done": 168,
+      "open": 22,
+      "done": 170,
       "open_sigs": [
         "07955f58",
         "0a237b2e",
@@ -312,11 +312,9 @@
         "42258f2a",
         "42f309b5",
         "4cd2aa89",
-        "5330ae20",
         "575e0098",
         "5d379672",
         "695c3218",
-        "6d1a7936",
         "73358a56",
         "8c77d3e7",
         "8d89e640",
@@ -384,6 +382,7 @@
         "4faf74dd",
         "4fce7f98",
         "51172f19",
+        "5330ae20",
         "541aa438",
         "55c4236f",
         "55eacdf8",
@@ -400,6 +399,7 @@
         "6875743d",
         "68ed1765",
         "6b9c7670",
+        "6d1a7936",
         "6e50d2d8",
         "6fed40f5",
         "6ffee1f4",
@@ -940,8 +940,8 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 11,
-      "done": 28,
+      "open": 10,
+      "done": 29,
       "open_sigs": [
         "1d17b634",
         "27123f68",
@@ -952,7 +952,6 @@
         "8ab57406",
         "96717f6c",
         "a116dd8b",
-        "e25f1778",
         "f63db1ea"
       ],
       "done_sigs": [
@@ -982,6 +981,7 @@
         "d02d75ce",
         "d4cf00e3",
         "e1e9d8df",
+        "e25f1778",
         "e32825a7",
         "fb84a4e4"
       ]
@@ -1415,13 +1415,12 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 7,
-      "done": 4,
+      "open": 6,
+      "done": 5,
       "open_sigs": [
         "11388dba",
         "29c37ab0",
         "932bf30c",
-        "b54d76a6",
         "f64eeedf",
         "fd679fde",
         "fe5245eb"
@@ -1430,7 +1429,8 @@
         "90ade765",
         "99de90cc",
         "9ea4a078",
-        "afaa0431"
+        "afaa0431",
+        "b54d76a6"
       ]
     },
     "agent/plans/PLAN-judge-gate-worthiness-and-surface-scope.md": {
@@ -1826,8 +1826,8 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 10,
-      "done": 13,
+      "open": 9,
+      "done": 14,
       "open_sigs": [
         "1fc992df",
         "31a903ee",
@@ -1836,7 +1836,6 @@
         "8d218ccc",
         "afa91934",
         "b589c4ea",
-        "c1809be6",
         "c90ef1b1",
         "d5789763"
       ],
@@ -1851,6 +1850,7 @@
         "7428fa28",
         "8e7a76f5",
         "b77f4b89",
+        "c1809be6",
         "c92fa7a4",
         "d443ae4f",
         "d54ce9a0"

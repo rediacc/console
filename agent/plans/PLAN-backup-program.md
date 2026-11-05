@@ -367,7 +367,8 @@ Every live claim in this plan (bucket contents, worker bindings, token scopes, p
 - [x] K1: Kill and resume a real `renet backup snapshot` mid-upload; the journal drains and the manifest commits once (btrfs tier plus RustFS). Accept: Go integration test.
     (ticked) 2026-10-28T14:59:03Z by d778be9d: K1: TestBackupSnapshot_KilledMidUploadResumesAndCommitsOnce (renet eabae1b) go test -tags btrfs as root on btrfs rc=0 PASS; object store is an in-process fake, Accept is the Go integration test
     (review note 2026-10-29, 9f92c43e) The Accept is the Go integration test, which ran; the "(btrfs tier plus RustFS)" in the box text names the intended full tier, while the evidence ran the btrfs tier against an in-process fake object store. A kill and resume against RustFS is not part of this tick.
-- [ ] K2: Kill and resume a real restore. Accept: e2e in suite 26.
+- [x] K2: Kill and resume a real restore. Accept: e2e in suite 26.
+    (ticked) 2026-11-05T19:57:21Z by d778be9d: commit:91c61a32d every clause read: the suite 26 K2 case passed on the fleet; suite 26 overall rc=1 on E3's separate defect
 - [x] K3: Two machines and a fork commit into one lineage, then a retention sweep runs; every stream keeps its floor and every chain resolves. Accept: vitest plus a suite 26 case.
     (ticked) 2026-10-28T16:18:39Z by d778be9d: K3: suite 26 K3 case passed (4.0m) after commit 1f13c0327, ops VM rediacc23 aliased as both workers via create_e2e_env --vm-workers 23 23, testrun.e2e rc=0 for the case
 - [x] K4: Fork restore: fork, write, back up the fork, restore the fork's snapshot on a second VM, byte-compare. Accept: suite 26 case.
@@ -384,7 +385,8 @@ Every live claim in this plan (bucket contents, worker bindings, token scopes, p
 - [x] K9: Key rotation: a passphrase change keeps dedup (same master key); a reencrypt forces a full seed and still restores. Accept: btrfs/LUKS tier test.
     (ticked) 2026-10-28T14:59:01Z by d778be9d: K9: TestBtrfsLUKS_KeyRotationDedupAndReencryptFullSeed (renet d460d0f) PASS 24.67s as root on a loop-mounted btrfs with cryptsetup, rc=0
 - [ ] K10: Large-repo performance: a nightly VM job seeds 50 GB and runs an incremental against a time and byte budget, recording durationMs. Accept: the first nightly result recorded.
-- [ ] K11: Corruption injection at e2e level: flip a byte in a stored chunk; restore refuses and verify reports it. Accept: suite 26 case.
+- [x] K11: Corruption injection at e2e level: flip a byte in a stored chunk; restore refuses and verify reports it. Accept: suite 26 case.
+    (ticked) 2026-11-05T19:57:23Z by d778be9d: commit:91c61a32d every clause read: the suite 26 K11 case passed on the fleet; suite 26 overall rc=1 on E3's separate defect
 - [x] K11a: A reusable corruption-injection fixture (flip one byte of a stored chunk) for K11 and later suites; CHECKLIST w4 found no such helper. Accept: K11's suite 26 case uses it.
     (ticked) 2026-10-30T19:30:56Z by d778be9d: commit:ddfb12f26 chunkCorruption.ts fixture used by the K11 case in 26-backup-storage-cli.test.ts
 - [x] K12: A restore scenario in license-e2e. Accept: license-e2e rc=0.

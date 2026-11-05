@@ -477,7 +477,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-backup-local-image.md` | approved | 457 | 4 | 10 | 57906 |
 | `agent/plans/PLAN-backup-meter-orphaned-chunks.md` | approved | 266 | 4 | 4 | 34490 |
 | `agent/plans/PLAN-backup-plane-shared-bucket-hardening.md` | approved | 41 | 3 | 4 | 6848 |
-| `agent/plans/PLAN-backup-program.md` | approved | 581 | 24 | 168 | 151325 |
+| `agent/plans/PLAN-backup-program.md` | approved | 583 | 22 | 170 | 151668 |
 | `agent/plans/PLAN-backup-quota-delta-gc.md` | compacted | 58 | 0 | 0 | 5584 |
 | `agent/plans/PLAN-backup-restore-path.md` | executing | 202 | 3 | 7 | 35742 |
 | `agent/plans/PLAN-backup-restore-target-license.md` | compacted | 56 | 0 | 0 | 5560 |
@@ -502,7 +502,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-consolidation-pressure.md` | compacted | 60 | 0 | 10 | 5277 |
 | `agent/plans/PLAN-converge-preflight-and-repo-recovery.md` | executing | 94 | 0 | 19 | 34124 |
 | `agent/plans/PLAN-deletion-budget.md` | draft | 387 | 28 | 0 | 53262 |
-| `agent/plans/PLAN-detached-jobs.md` | approved | 1044 | 11 | 28 | 187032 |
+| `agent/plans/PLAN-detached-jobs.md` | approved | 1045 | 10 | 29 | 187205 |
 | `agent/plans/PLAN-devbox-uid-derived-image.md` | compacted | 36 | 0 | 0 | 2750 |
 | `agent/plans/PLAN-docker-image-freshness-soak-filter.md` | compacted | 39 | 0 | 0 | 2715 |
 | `agent/plans/PLAN-docker-pin-digest.md` | executing | 118 | 1 | 8 | 19848 |
@@ -527,7 +527,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-greenlight-verify-at-read.md` | compacted | 44 | 0 | 0 | 3606 |
 | `agent/plans/PLAN-haiku-model-routing.md` | executing | 249 | 9 | 11 | 30400 |
 | `agent/plans/PLAN-hostinger-upgrade-followups.md` | in-progress | 36 | 4 | 0 | 3965 |
-| `agent/plans/PLAN-jobs-backup-real-machine-tests.md` | approved | 46 | 7 | 4 | 9834 |
+| `agent/plans/PLAN-jobs-backup-real-machine-tests.md` | approved | 47 | 6 | 5 | 10027 |
 | `agent/plans/PLAN-judge-gate-worthiness-and-surface-scope.md` | compacted | 39 | 0 | 0 | 3232 |
 | `agent/plans/PLAN-judge-prompt-trap-conflation.md` | compacted | 54 | 0 | 8 | 3828 |
 | `agent/plans/PLAN-lessons-registry-followups.md` | draft | 18 | 2 | 0 | 1649 |
@@ -548,7 +548,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-proxy-cd-six-targets.md` | approved | 411 | 4 | 27 | 69330 |
 | `agent/plans/PLAN-pytest-parallelism.md` | compacted | 57 | 0 | 10 | 4644 |
 | `agent/plans/PLAN-rclone-decommission.md` | compacted | 39 | 0 | 0 | 3027 |
-| `agent/plans/PLAN-rediaccfile-unprivileged.md` | executing | 259 | 10 | 13 | 39687 |
+| `agent/plans/PLAN-rediaccfile-unprivileged.md` | executing | 260 | 9 | 14 | 39935 |
 | `agent/plans/PLAN-reggate-effort-cap.md` | compacted | 38 | 0 | 0 | 2586 |
 | `agent/plans/PLAN-remove-autopilot.md` | compacted | 97 | 0 | 30 | 9220 |
 | `agent/plans/PLAN-renet-bridge-leftovers.md` | approved | 121 | 0 | 16 | 30497 |
