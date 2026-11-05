@@ -588,7 +588,7 @@ Control rule: every new test fails without its fix. Each tick note records the t
   - Owns: packages/www/src/content/docs/*/backup-restore.md, packages/www/src/content/docs/*/cli-application.md, private/account/web/src/data/study-content/mt6-backup.ts, docs/backup-storage/07-execution-record.md
   - Accept: `npm run check:cli-docs && npm run validate:cli-docs -w @rediacc/www && npm run check:ci-i18n-docs-untranslated && npm run check:ci-docs-structure-parity` rc 0.
     (ticked) 2026-11-04T19:18:30Z by d778be9d: commit:abbcec18c check:cli-docs rc=0, validate:cli-docs rc=0, check:ci-i18n-docs-untranslated rc=0, check:ci-docs-structure-parity rc=0
-- [ ] T4: Drill legs, each with a planted control:
+- [x] T4: Drill legs, each with a planted control:
   - leg t: hook order against a real database container, including a killed renet thawed by the deadman;
   - leg u: `backup_onprem` records whether the store offers Object Lock and versioning, recorded and not asserted;
   - leg v: a sequence of tier-cadence runs with one chunk deleted from the store, healed by the sample;
@@ -597,6 +597,7 @@ Control rule: every new test fails without its fix. Each tick note records the t
   - Owns: .ci/rediacc_ci/drills/backup.py, .ci/rediacc_ci/drills/backup_renet.py, .ci/rediacc_ci/drills/backup_roundtrip.py, .ci/rediacc_ci/drills/backup_onprem.py, the drill tests under .ci
   - Accept: `./run.sh drill backup --selftest` rc 0, and the pytest for those drills rc 0.
     (corrected 2026-11-04) `./run.sh drill backup --selftest` exits 1 and prints `selftest fired as designed`, so that is what the Accept reads. Letters t and u in `backup.py` are already session expiry and killed-run reconcile, so the hook-order, heal and restore-at-run legs take new letters; leg u of this box is the `backup_onprem` capability row, landed in 5d71f5515.
+    (ticked) 2026-11-05T13:23:27Z by d778be9d: commit:d8b8f2026 every clause read; selftest rc=1 printing selftest fired as designed as the corrected Accept reads, pytest test_drills_backup rc=0 305 passed; fakes pin leg logic, real behaviour stays with box Y2
 
 ### Y: proof before the merge (lead)
 
