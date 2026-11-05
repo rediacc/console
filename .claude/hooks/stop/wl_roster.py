@@ -1407,7 +1407,10 @@ def edit_paths(jsonl, root):
                 continue
             path = str(inp.get("file_path") or inp.get("notebook_path") or "")
             if path:
-                out.add(path.removeprefix(base))
+                # NORMALIZED FIRST: `<root>/.claude/x/../../../.claude/worktrees/<id>/f` names a lease file, and unnormalized it kept its `.claude/x/..` head, dodged `in_lease_tree`, and made block_commit_of_live_writer_file refuse a lease writer's own commit (2026-11-05).
+                out.add(
+                    (os.path.normpath(path) if path.startswith("/") else path).removeprefix(base)
+                )
     return {p for p in out if not in_lease_tree(p)}
 
 

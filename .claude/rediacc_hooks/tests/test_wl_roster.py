@@ -1975,6 +1975,20 @@ def test_w12_a_lease_edit_is_dropped_not_the_main_tree_path(tmp_path):
     assert got == []
 
 
+def test_w12_a_lease_edit_spelled_with_dotdot_is_dropped(tmp_path):
+    got = _edit_paths(
+        tmp_path,
+        lambda root: [
+            (
+                "Write",
+                {"file_path": "%s/.claude/tests/../../.claude/worktrees/x/src/a.ts" % root},
+                str(root),
+            )
+        ],
+    )
+    assert got == []
+
+
 def test_w12_a_bash_write_from_a_lease_cwd_is_dropped(tmp_path):
     got = _edit_paths(
         tmp_path,
@@ -2040,12 +2054,18 @@ def test_w12_two_isolated_writers_on_one_file_are_not_a_conflict():
     assert planorder.conflicts(serving, live, xi.__getitem__, None, isolated={"wa", "wb"}) == []
 
 
-def test_w12_control_one_plain_writer_and_the_overlap_still_trips():
+def test_w12_control_two_plain_writers_and_the_overlap_still_trips():
+    """Since 4940ad9eb an overlap counts only between two writers that share a tree, so the control needs two plain writers beside the isolated one; one plain writer overlapping only the isolated one is not a conflict."""
     planorder = wlfix.import_wl("wl_planorder")
+    planconc = wlfix.import_wl("wl_planconc")
     xi, serving, live = _conc_world()
     assert planorder.conflicts(serving, live, xi.__getitem__, None) != []
+    assert planorder.conflicts(serving, live, xi.__getitem__, None, isolated={"wa"}) == []
+    xi["PLAN-c.md"] = planconc.PlanX("PLAN-c.md", owns=("src/**",))
+    serving["wc"] = {"PLAN-c.md"}
+    live["PLAN-c.md"] = ["writer wc (general-purpose)"]
     got = planorder.conflicts(serving, live, xi.__getitem__, None, isolated={"wa"})
-    assert [aid for aid, _v in got] == ["wb"]
+    assert [aid for aid, _v in got] == ["wb", "wc"]
 
 
 def test_w12_control_an_isolated_writer_still_trips_an_exclusive_plan():
