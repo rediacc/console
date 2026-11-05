@@ -2,6 +2,7 @@
 
 # A0 design: `test_bash_semantics.py`, the kept real-bash facts, and the live bugs they expose
 Status: executing -- its suite landed and is recorded in agent/plans/PLAN-retire-bash-oracles.md section 3 A0 (77 rows, 257 tests); open only until each box is ticked with that evidence
+Updated: 2026-11-05 -- reread by d778be9d: still queued, no box changed
 Depends-On: no-dep -- appendix of PLAN-retire-bash-oracles.md; carries no work of its own
 Priority: P3 -- seed: Status unknown, 0 open box(es)
 Concurrency: parallel -- the 2026-09-26 run-alone ruling (limited token budget) is lifted: operator 2026-10-04 asked for parallel turbo with writer_cap 10; Owns: decides overlaps

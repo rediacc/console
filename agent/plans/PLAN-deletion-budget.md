@@ -1,5 +1,6 @@
 # PLAN: a per-PR deletion budget (deletions >= 0.33 x additions over all tracked lines), per-PR coverage, and a mutation-judged prune of the pytest corpus, bash-twin parity tests and duplicate tests and gates
 Status: draft -- operator /ask 2026-10-04, three rounds plus the coverage addition, all binding; round two overrides round one wherever they conflict; postponed by the operator the same day
+Updated: 2026-11-05 -- reread by d778be9d: still queued, no box changed
 Owner: d778be9d
 First-Seen: 2026-10-04
 Depends-On: no-dep -- builds only on shipped modules (plan_gate, wl_prscope, wl_prsignals, review_table, shrink_only, check_pytest, differential.py, mutate-check.sh, the shape index). The file overlaps with live plans are listed under Concurrency and not as prerequisites, because a Depends-On edge would pull those plans into this PR's plan set (`plan_gate.pr_plan_set`, `.claude/rediacc_hooks/plan_gate.py:216`)

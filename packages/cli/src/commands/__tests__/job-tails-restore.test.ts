@@ -210,7 +210,7 @@ const RESTORE_STEPS = [
   'reportRestoreDamage',
   'rollbackRestoreRegistration',
   'reconcileBackupSchedules',
-];
+] as const;
 
 describe('backup restore --at (a successor and finalizers on the backup_restore job)', () => {
   it('under --background returns at the job start, with every tail on the ticket and none run', async () => {
@@ -246,7 +246,7 @@ describe('backup restore --at (a successor and finalizers on the backup_restore 
   it('control: without --up no restoreDeploy is planned', async () => {
     await run(SNAPSHOT_RESTORE);
 
-    expect(stepNames(jobCalls[0])).toEqual(RESTORE_STEPS);
+    expect(stepNames(jobCalls[0])).toEqual([...RESTORE_STEPS]);
     expect(deployCalls()).toEqual([]);
   });
 

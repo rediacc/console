@@ -1,6 +1,7 @@
 # PLAN: one-call plan verbs (`--plan-new`, `--plan-tick --investigate present`)
 
 Status: draft -- parked: operator /ask 2026-10-06 left Part D out of PLAN-ci-consolidation's build; its design and boxes moved here unchanged so the work stays recorded. Not queued until the operator queues it.
+Updated: 2026-11-05 -- reread by d778be9d: still queued, no box changed
 Owner: d778be9d
 First-Seen: 2026-10-06
 Depends-On: no-dep -- split out of agent/plans/PLAN-ci-consolidation.md (Part D, candidate 6 of agent/reports/consolidation-investigation-2026-10-04.md)

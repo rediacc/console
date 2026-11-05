@@ -1,6 +1,7 @@
 # PLAN-plan-compaction-bindings: a plan is never compacted, moved or swept while anything still binds to it
 
 Status: approved -- operator 2026-10-03: "The planning tools/system should not allow plan compaction if there is any binding to other plans until we complete all the pieces"
+Updated: 2026-11-05 -- reread by d778be9d: still queued, no box changed
 Depends-On: no-dep -- reuses wl_plandeps.Graph and the worklist store; no plan prerequisite
 Owner: d778be9d
 Priority: P1 -- seven plans already sit compacted in _done/ with open boxes, and their worklist items surfaced as unowned questions to the operator on 2026-10-03

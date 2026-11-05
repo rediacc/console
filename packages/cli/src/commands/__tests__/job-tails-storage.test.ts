@@ -143,8 +143,12 @@ function onlyTicket() {
   return tickets[0];
 }
 
-const SNAPSHOT_STEPS = ['recordBackupRun', 'recordBackupRunFailed'];
-const VERIFY_STEPS = ['reportVerifyVerdict', 'recordVerifyVerdict', 'recordVerifyVerdictFailed'];
+const SNAPSHOT_STEPS = ['recordBackupRun', 'recordBackupRunFailed'] as const;
+const VERIFY_STEPS = [
+  'reportVerifyVerdict',
+  'recordVerifyVerdict',
+  'recordVerifyVerdictFailed',
+] as const;
 
 describe('backup snapshot (a finalizer pair: recordBackupRun, recordBackupRunFailed)', () => {
   it('under --background returns at the job start, with nothing recorded', async () => {

@@ -7,6 +7,7 @@
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { Command } from 'commander';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -514,7 +515,7 @@ describe('backup schedule unit content', () => {
       'nightly',
       STRATEGY as never,
       destinations,
-      '/mnt/rediacc',
+      WK_DATASTORE_PATH,
       '/r/renet',
       { exclude: [] } as never,
       8
@@ -536,8 +537,8 @@ describe('backup schedule unit content', () => {
         'TimeoutStartSec=infinity',
         'TimeoutStopSec=90',
         'ExecStartPre=-/r/renet license renew --jitter 45s',
-        'ExecStart=/r/renet backup snapshot --datastore /mnt/rediacc --parallelism 2 --expected-interval 86400s --cpu-limit 50 --cpu-quota 400%',
-        'ExecStart=/r/renet backup verify --datastore /mnt/rediacc --level spot',
+        `ExecStart=/r/renet backup snapshot --datastore ${WK_DATASTORE_PATH} --parallelism 2 --expected-interval 86400s --cpu-limit 50 --cpu-quota 400%`,
+        `ExecStart=/r/renet backup verify --datastore ${WK_DATASTORE_PATH} --level spot`,
         '',
         '[Install]',
         'WantedBy=multi-user.target',

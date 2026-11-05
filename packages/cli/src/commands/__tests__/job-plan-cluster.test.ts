@@ -912,7 +912,9 @@ describe('cluster fork, migrate and rehearse (one job per phase, driven through 
         ]);
         expect(gate?.[0]).toMatchObject({ expected: 'c1-ceph-1,c1-ceph-2,c1-ceph-3' });
       }
-      expect(new Set(gates.map((gate) => gate?.[0].group)).size).toBe(1);
+      expect(
+        new Set(gates.map((gate) => (gate?.[0] as { group?: string } | undefined)?.group)).size
+      ).toBe(1);
       expect(provision.bootstrap).toHaveBeenCalledTimes(3);
       expect(cfg.audit).toHaveBeenCalledOnce();
     });

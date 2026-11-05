@@ -154,6 +154,10 @@ describe('backup restore --path', () => {
         name: 'reportRestorePath',
         params: { repo: 'r', snapshot: SNAPSHOT },
       }),
+      expect.objectContaining({
+        name: 'reportRestorePathFailure',
+        params: { repo: 'r', snapshot: SNAPSHOT },
+      }),
     ]);
     expect(mockSuccess).not.toHaveBeenCalled();
   });
@@ -249,14 +253,16 @@ describe('backup restore --path', () => {
     ['', 'pathNoListing'],
   ])('turns exit 18 (reason "%s") into exit code 18 and the %s message', async (reason, key) => {
     const payload = JSON.stringify({ code: 'NO_LISTING', ...(reason && { reason }) });
-    mockExecuteRepoFunction.mockResolvedValue({
-      success: false,
+    const { resolveStepHandler } = await import('../../services/jobs/steps.js');
+    const handler = await resolveStepHandler('reportRestorePathFailure');
+    await handler({
+      jobId: 'j1',
+      machine: 'm1',
+      params: { repo: 'r', snapshot: SNAPSHOT },
+      state: 'failed',
+      output: `${payload}\n`,
       exitCode: 18,
-      stdout: '',
-      stderr: payload,
     });
-
-    await run(['r@m1', '--at', SNAPSHOT, '--path', '/a']);
 
     expect(process.exitCode).toBe(18);
     expect(mockWarn).toHaveBeenCalledTimes(1);

@@ -175,7 +175,9 @@ describe('JOB_PLANS coverage', () => {
     expect(unplanned([...machinePlane, 'repo planted'], JOB_PLANS, JOB_EXCEPTIONS)).toEqual([
       'repo planted',
     ]);
-    const { 'repo up': _removed, ...withoutUp } = JOB_PLANS;
+    const withoutUp = Object.fromEntries(
+      Object.entries(JOB_PLANS).filter(([command]) => command !== 'repo up')
+    );
     expect(unplanned(machinePlane, withoutUp, JOB_EXCEPTIONS)).toEqual(['repo up']);
     // A listed exception, and a plan, each cover their command.
     expect(

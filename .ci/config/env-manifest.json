@@ -328,6 +328,7 @@
       "CI_TRACE_SIGNALS_POLL_S",
       "CI_TRACE_TIMEOUT_S",
       "CLAUDE_ARGS_SENT",
+      "CLI_ALSO",
       "CLI_VERSION",
       "COMMIT_AUTHOR",
       "COMMIT_SHA",

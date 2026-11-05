@@ -1,5 +1,6 @@
 # PLAN: CPU-aware scheduling for ci:quick
 Status: active -- operator-approved direction 2026-09-30 (worklist #4f56fcee); designed by a Plan agent, verified figures below
+Updated: 2026-11-05 -- reread by d778be9d: still queued, no box changed
 Depends-On: no-dep -- the runner, its duration cache and the lane-durations refresh pattern all exist today
 Owner: d778be9d
 First-Seen: 2026-09-30
