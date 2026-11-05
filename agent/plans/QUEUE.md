@@ -89,7 +89,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 14 of 42 plans done, 678 of 838 boxes done (80%).
+Promoted: 14 of 42 plans done, 679 of 838 boxes done (81%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -134,7 +134,7 @@ Promoted: 14 of 42 plans done, 678 of 838 boxes done (80%).
 | 39 | PLAN-rediaccfile-unprivileged.md | 14/23 | 9 open |
 | 40 | PLAN-worktree-lease.md | 15/16 | 1 open |
 | 41 | PLAN-tick-tracking.md | 2/15 | 13 open |
-| 42 | PLAN-renet-down-before-kill.md | 0/14 | 14 open |
+| 42 | PLAN-renet-down-before-kill.md | 1/14 | 13 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-backup-program.md -- operator 2026-10-20 ("move agent/plans/PLAN-backup-program.md to the promoted"): one backup program across renet, account, CLI and shared, ending in a live hostinger to eu R2 backup; P1; Depends-On PLAN-shell-sandbox-readonly-view.md and PLAN-account-vm-check.md (done 2026-10-20); released to writers by operator /ask ASKED:2026-10-20T15:14Z ("edit writers to go NOW")

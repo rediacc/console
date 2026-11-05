@@ -98,7 +98,7 @@ Hub daemons (private/renet/pkg/hub/gc.go:144; private/renet/pkg/hub/user_daemon.
 
 ### Drill
 
-- [ ] K0 [drill code] `.ci/rediacc_ci/drills/down_before_kill.py`, step K1 in `EXTRA_RENET_STEPS` (.ci/rediacc_ci/drills/vm_check.py:268-274), depends on P5. The probe Rediaccfile's `up()` appends `up <epoch>` and its `down()` runs `sleep 20` and appends `down <epoch>` to `downproof.log` in the mount. The pure parsers and verdicts are pinned by `.ci/rediacc_ci/tests/test_drills_down_before_kill.py`.
+- [x] K0 [drill code] `.ci/rediacc_ci/drills/down_before_kill.py`, step K1 in `EXTRA_RENET_STEPS` (.ci/rediacc_ci/drills/vm_check.py:268-274), depends on P5. The probe Rediaccfile's `up()` appends `up <epoch>` and its `down()` runs `sleep 20` and appends `down <epoch>` to `downproof.log` in the mount. The pure parsers and verdicts are pinned by `.ci/rediacc_ci/tests/test_drills_down_before_kill.py`.
   - Rows:
     - K1.0: fork A (autostart on) and fork B (autostart off) are up.
     - K1.1: A's unit has ExecStop and both `After=` lines.
@@ -111,6 +111,7 @@ Hub daemons (private/renet/pkg/hub/gc.go:144; private/renet/pkg/hub/user_daemon.
     - K1.8: reads `systemctl show reboot.target -p JobTimeoutUSec` at 30 min or more.
   - Accept: `PYTHONPATH=.ci python3 -m pytest .ci/rediacc_ci/tests/test_drills_down_before_kill.py -q` rc 0 (toolchain pytest).
   - CONTROL: the verdict test feeds a log with no `down` line before the restart and expects FAIL.
+    (ticked) 2026-11-05T21:58:48Z by d778be9d: commit:aeb5d7ace PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest .ci/rediacc_ci/tests/test_drills_down_before_kill.py rc=0 (90 passed; with test_drills_vm_check.py 377 passed on main); CONTROL test_down_before_verdict_control_no_down_line_fails; K1.2 K1.3 K1.5 K1.7 each FAIL without the stop hook in fakes
 - [ ] K1 [fleet] The K1 rows on the local KVM fleet.
   - Accept: `npm run vm:check -- --changed` VERIFIED with every K1 row ok.
   - CONTROL: `npm run vm:check -- --only K1` with the renet pointer at the main commit records FAIL on K1.1, K1.2, K1.3, K1.5 and K1.7. Quote those rows in the tick.

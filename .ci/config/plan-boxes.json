@@ -1966,8 +1966,8 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 14,
-      "done": 0,
+      "open": 13,
+      "done": 1,
       "open_sigs": [
         "1068de3a",
         "2361305e",
@@ -1981,10 +1981,11 @@
         "b7afe4ea",
         "c2bc67d8",
         "da3b6759",
-        "e013e755",
-        "e3556815"
+        "e013e755"
       ],
-      "done_sigs": []
+      "done_sigs": [
+        "e3556815"
+      ]
     },
     "agent/plans/PLAN-renet-executor-tiered-license-check.md": {
       "status": "executing",
