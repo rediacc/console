@@ -505,8 +505,9 @@ def drive_l1(fix) -> L1Drive:
         ("--effort-answer", "--effort-answer @WHO@", "effort proposals:"),
         # Bare form: prints the effective settings and writes nothing; the write form runs the identical argv parse and _identity_or_die.
         ("--queue-set", "--queue-set @WHO@", "effort: "),
-        # Read-only (PLAN-turbo-local-first D2): the fixture has no git branch, so the accepted run answers with the no-branch refusal after the same _identity_or_die a real run passes.
+        # The table's stdin holds a blank line, which --add-many refuses, so the accepted run answers with that refusal after the same _identity_or_die a real run passes.
         ("--add-many", "--add-many @WHO@", "REFUSED: line 2"),
+        # Read-only (PLAN-turbo-local-first D2): the fixture has no git branch, so the accepted run answers with the no-branch refusal after the same _identity_or_die a real run passes.
         ("--batch-body", "--batch-body @WHO@", "no live branch is checked out"),
         # Writes QUEUE.md (#dd9b7624): the fixture holds no such plan, so the accepted run answers with the does-not-exist refusal after the same _identity_or_die a real promote passes.
         ("--promote", "--promote @WHO@ PLAN-l1-absent.md l1-note", "does not exist"),
