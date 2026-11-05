@@ -64,6 +64,7 @@ from rediacc_ci import log, paths
 from rediacc_ci.drills import (
     backup_check_trigger,
     converge_preflight,
+    down_before_kill,
     gpu_grants,
     lib,
     lifecycle_privilege,
@@ -271,6 +272,7 @@ EXTRA_RENET_STEPS: tuple[tuple[str, tuple[str, ...], Callable[[Any], None]], ...
     converge_preflight.STEP,
     gpu_grants.STEP,
     lifecycle_privilege.STEP,
+    down_before_kill.STEP,
 )
 # Every step id of a phase; the phase ran only when each recorded a row and every such row is ok.
 PHASE_STEPS: dict[str, tuple[str, ...]] = {
