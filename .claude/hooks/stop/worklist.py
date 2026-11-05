@@ -1835,6 +1835,20 @@ def _item_cli(argv, worklist):
                 "released #%s back to open; it is ordinary open work again, "
                 "claimed by no worker" % _rid
             )
+            # THE LIVE-OWED STATE (agent/plans/PLAN-tick-tracking.md Design 7, box T11): an item naming a box whose code landed and whose live or operator half is unproved leaves a `live-owed` progress row per such clause, so writers-now step 7 schedules the half instead of forgetting it. Nothing is printed when nothing is owed, so the release message stays byte-identical.
+            with contextlib.suppress(Exception):
+                import wl_boxaudit as BA
+
+                for row in BA.release_live_owed(root, str(rec.get("text") or ""), me[:8], _rid):
+                    print(
+                        "  live-owed %s#%s clause %s -> %s"
+                        % (
+                            row["plan"].rsplit("/", 1)[-1],
+                            row["sig"],
+                            row["clause"],
+                            "/".join(BA.PB.PROGRESS_REL),
+                        )
+                    )
             return
         _dep_gate(root, fold, rec, rest, "--lease")
         until_arg = argv[3]

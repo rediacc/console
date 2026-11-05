@@ -350,6 +350,40 @@ def audit(root, me, plan=None, *, reports=True):
     return out, head, base
 
 
+# ---- the live-owed state on release (T11) -----------------------------------------------
+
+_SIG_TOKEN_RE = re.compile(r"(?<![0-9a-z])([0-9a-f]{8})(?![0-9a-z])")
+
+
+def release_live_owed(root, text, me, item_id):
+    """Append one `live-owed` progress row per unproved live or operator clause of each box `text` names, when the audit links landed code to that box (Design 7). Returns the rows appended; [] (and nothing written) when the item names no box, nothing landed, or nothing is owed."""
+    named = set(_SIG_TOKEN_RE.findall(text or ""))
+    if not named:
+        return []
+    boxes = [(rel, sig) for rel, sig, _b in open_plan_boxes(root) if sig in named]
+    written = []
+    for rel in sorted({rel for rel, _sig in boxes}):
+        rows, _head, _base = audit(root, me, rel)
+        for a in rows:
+            if a.sig not in named or not a.landed or not a.owed:
+                continue
+            clauses = [c for c, _h in a.owed] if a.cmap else ["all"]
+            for clause in dict.fromkeys(clauses):
+                row = {
+                    "kind": "progress",
+                    "by": me,
+                    "plan": a.plan,
+                    "sig": a.sig,
+                    "clause": clause,
+                    "state": "live-owed",
+                    "ref": "released #%s" % item_id,
+                }
+                stored, fresh = PB.append_progress(root, row)
+                if fresh:
+                    written.append(stored)
+    return written
+
+
 # ---- rendering -----------------------------------------------------------------------
 
 
