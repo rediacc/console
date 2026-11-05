@@ -1735,6 +1735,114 @@ const CASES: Record<string, Case> = {
       },
     ];
   },
+  async nonRootLockInstall(m) {
+    // `install --package-lock-only` rewrites node_modules/.package-lock.json and moves no package (measured 2026-11-05: workers/account's wrangler stayed 4.156.2 under a hidden lock reading 4.157.0). The runner plays npm that way, so only a real `ci` moves what is installed. node_modules stays unignored here, so an accounting that reached the install would name it.
+    const OLD = '4.156.2';
+    const NEW = '4.157.0';
+    const lockOf = (v: string): string => `{ "lockfileVersion": 3, "wrangler": "${v}" }\n`;
+    const world = (name: string, relocked: string[], gateRc: number) => {
+      const fx = fixtureTree();
+      for (const d of ['workers/app', 'workers/bare']) {
+        fs.mkdirSync(path.join(fx.root, d), { recursive: true });
+        fx.write(`${d}/package.json`, '{}\n');
+        fx.write(`${d}/package-lock.json`, lockOf(OLD));
+      }
+      sh(fx.root, 'add', '-A');
+      sh(
+        fx.root,
+        '-c',
+        'user.email=fx@example.invalid',
+        '-c',
+        'user.name=fx',
+        'commit',
+        '-qm',
+        'x'
+      );
+      const installed = path.join(fx.root, 'workers/app/node_modules/wrangler/version');
+      fs.mkdirSync(path.dirname(installed), { recursive: true });
+      fs.writeFileSync(installed, OLD);
+      const runner: Runner = (cmd, cwd) => {
+        const lock = path.join(cwd, 'package-lock.json');
+        const hidden = path.join(cwd, 'node_modules/.package-lock.json');
+        if (cmd === 'relock') for (const f of relocked) fx.write(f, lockOf(NEW));
+        else if (cmd.endsWith(' install --package-lock-only --ignore-scripts')) {
+          if (fs.existsSync(path.dirname(hidden))) fs.copyFileSync(lock, hidden);
+        } else if (/ ci( --ignore-scripts)?$/.test(cmd) && cwd !== fx.root) {
+          const version = /"wrangler": "([^"]+)"/.exec(fs.readFileSync(lock, 'utf8'))?.[1] ?? '';
+          fs.mkdirSync(path.dirname(installed), { recursive: true });
+          fs.writeFileSync(installed, version);
+          fs.copyFileSync(lock, hidden);
+        } else if (cmd.startsWith('npm run ci')) return { rc: gateRc, out: '' };
+        return { rc: 0, out: '' };
+      };
+      const plans = directPlans(fx, [
+        {
+          label: 'relock',
+          run: 'relock',
+          cwd: '.',
+          writes: relocked.map((file) => ({ repo: '.', file })),
+        },
+      ]);
+      if (gateRc !== 0) plans[0].entry.gates = ['check:fixture-tool'];
+      const res = runTransaction(plans, directTxn(fx, name, runner, m));
+      const ran = res.commands.map((c) => `${c.cwd}: ${c.cmd}`);
+      return {
+        res,
+        ran,
+        on: fs.readFileSync(installed, 'utf8'),
+        bareInstalled: fs.existsSync(path.join(fx.root, 'workers/bare/node_modules')),
+      };
+    };
+    const NPM = 'npx -y npm@11.20.0';
+    const CI = `workers/app: ${NPM} ci --ignore-scripts`;
+    const NATIVES = `.: ${NPM} run install:natives`;
+    const app = 'workers/app/package-lock.json';
+    const bare = 'workers/bare/package-lock.json';
+    const one = world('nonroot-green', [app, bare], 0);
+    const both = world('nonroot-root', [app, 'package-lock.json'], 0);
+    const red = world('nonroot-red', [app], 1);
+    return [
+      {
+        name: 'txn: a changed non-root lock runs npm ci --ignore-scripts in its installed directory, so the install matches the lock, and a directory with no node_modules is left uninstalled',
+        ok:
+          one.res.ok &&
+          one.on === NEW &&
+          one.ran.includes(CI) &&
+          !one.ran.some((c) => c.startsWith('workers/bare:') && / ci\b/.test(c)) &&
+          !one.bareInstalled,
+        detail: `ok=${one.res.ok} ${one.res.failure} installed=${one.on} ${one.ran.join(' | ')}`,
+      },
+      {
+        name: 'txn: the install a non-root lock takes stays out of the undeclared-writes accounting and of the run changes, even where git would show node_modules',
+        ok:
+          one.res.ok &&
+          one.res.leftAlone.length === 0 &&
+          !one.res.changes.some((c) => c.paths.some((p) => p.includes('node_modules'))),
+        detail: `left=${one.res.leftAlone} ${JSON.stringify(one.res.changes)}`,
+      },
+      {
+        name: 'txn: install:natives stays root only: a non-root lock alone never runs it, and a root lock beside one runs it once at the root',
+        ok:
+          !one.ran.includes(NATIVES) &&
+          both.ran.filter((c) => c.endsWith('install:natives')).length === 1 &&
+          both.ran.includes(NATIVES) &&
+          both.ran.includes(`.: ${NPM} ci`) &&
+          both.ran.includes(CI) &&
+          both.on === NEW,
+        detail: `one=${one.ran.join(' | ')} both=${both.ran.join(' | ')}`,
+      },
+      {
+        name: 'txn: a red run reinstalls a non-root directory from its restored lock with lifecycle scripts off, since the root .npmrc does not reach it',
+        ok:
+          !red.res.ok &&
+          red.on === OLD &&
+          red.ran.filter((c) => c === CI).length === 2 &&
+          !red.ran.includes(`workers/app: ${NPM} ci`) &&
+          red.res.resynced.includes('workers/app'),
+        detail: `${red.res.failure} installed=${red.on} resynced=${red.res.resynced} ${red.ran.join(' | ')}`,
+      },
+    ];
+  },
   async npmbump(m) {
     const fx = fixtureTree((f) => {
       f.steps = {

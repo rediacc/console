@@ -433,6 +433,9 @@ function pinnedNpmNow(root: string): string | null {
 const canonicalCmd = (v: string): string =>
   `npx -y npm@${v} install --package-lock-only --ignore-scripts`;
 
+/** The root `.npmrc` that sets ignore-scripts stops at the root: npm reads its project config from the nearest package.json, so a directory below it spells the flag itself. */
+const nonRootCi = (v: string): string => `npx -y npm@${v} ci --ignore-scripts`;
+
 export function runTransaction(plans: PinPlan[], o: TxnOptions): TxnResult {
   const dir = path.join(journalRoot(o.root), o.stamp);
   fs.mkdirSync(dir, { recursive: true });
@@ -620,11 +623,20 @@ export function runTransaction(plans: PinPlan[], o: TxnOptions): TxnResult {
         markWrote(k);
         if (rc !== 0) throw new Error(`the canonical lockfile pass failed for ${k} (rc=${rc})`);
       }
+      // Read before the root `npm ci`, which can empty a workspace's node_modules: what was installed is what follows its lock.
+      const installedDirs = changedLocks
+        .map(({ f }) => path.join(f.repo, path.dirname(f.file)))
+        .filter((d) => d !== '.' && fs.existsSync(path.join(o.root, d, 'node_modules')));
       if (changedLocks.some(({ f }) => f.repo === '.' && f.file === 'package-lock.json')) {
         if (run(`npx -y npm@${npmVersion} ci`, '.') !== 0)
           throw new Error('npm ci failed after the root lockfile changed');
         if (run(`npx -y npm@${npmVersion} run install:natives`, '.') !== 0)
           throw new Error('npm run install:natives failed after npm ci');
+      }
+      // The canonical pass rewrites node_modules/.package-lock.json and moves no package, so a non-root lock left the install behind a hidden lock that reads as current (2026-11-05: workers/account's wrangler stayed 4.156.2 under a hidden lock reading 4.157.0). This runs after the step loop, so node_modules never reaches its undeclared-writes accounting.
+      for (const d of installedDirs) {
+        if (run(nonRootCi(npmVersion), d) !== 0)
+          throw new Error(`npm ci failed in ${d} after its lockfile changed`);
       }
       saveJournal(dir, j);
     }
@@ -683,12 +695,15 @@ export function runTransaction(plans: PinPlan[], o: TxnOptions): TxnResult {
         ),
       ].filter((d) => d === '.' || fs.existsSync(path.join(o.root, d, 'node_modules')));
       for (const d of dirs) {
-        const rc = npmVersion === null ? 1 : run(`npx -y npm@${npmVersion} ci`, d);
+        const rc =
+          npmVersion === null
+            ? 1
+            : run(d === '.' ? `npx -y npm@${npmVersion} ci` : nonRootCi(npmVersion), d);
         const natives =
           rc === 0 && d === '.' ? run(`npx -y npm@${npmVersion} run install:natives`, d) : 0;
         if (rc === 0 && natives === 0) res.resynced.push(d);
         else
-          res.failure += `; the installed tree under ${d} still holds what this run installed (${npmVersion === null ? 'NPM_VERSION is missing from .devcontainer/toolchain.env' : `rc=${rc || natives}`}), so put it back before the next plan, which otherwise reads versions the lockfile no longer names: (cd ${d} && npx -y npm@<NPM_VERSION> ci${d === '.' ? ' && npm run install:natives' : ''})`;
+          res.failure += `; the installed tree under ${d} still holds what this run installed (${npmVersion === null ? 'NPM_VERSION is missing from .devcontainer/toolchain.env' : `rc=${rc || natives}`}), so put it back before the next plan, which otherwise reads versions the lockfile no longer names: (cd ${d} && ${d === '.' ? 'npx -y npm@<NPM_VERSION> ci && npm run install:natives' : nonRootCi('<NPM_VERSION>')})`;
       }
     }
     return res;
