@@ -1,21 +1,21 @@
-## SESSION d778be9d 2026-11-05T09:08:47Z
+## SESSION d778be9d 2026-11-05T10:37:36Z
 
-# d778be9d STATE, 2026-11-05 09:30Z, branch 1104-1
+# d778be9d STATE (2026-11-05, after the first backup push)
 
-Nothing pushed yet. Effort quiet. Approved plan: /home/developer/.claude/plans/indexed-toasting-goose.md. Edge and stable on hold.
+## Where things are
+Branch 1104-1 is on origin in console (185132b89), account (3149c7b) and renet (ae3b599). No PR is open: the push was a backup. vm:check bnxnoq0pt rc=0 VERIFIED on tree d148bdf58c0c; ci:quick rc=1 with only the 11 carried P-A1 keys red. Edge and stable stay on hold (ASKED:2026-11-04T16:33Z).
 
-## In flight
-`vm:check -- --changed`, task bnxnoq0pt, /tmp/vmc.out, on bedf7dc80, started 08:54Z, about 107 min. ci:quick is clean except 11 carried P-A1 keys. Do NOT commit a non-record path before the push: only reviews, worklist, reggate and effort ledgers advance the receipt; this STATE.md is uncommitted for that reason.
+## Plan in hand
+~/.claude/plans/indexed-toasting-goose.md drives /writers-now: survey, G5 writers in leases, land the batch, gate once, then the live queue in the order fleet, bench, hostinger. Schedule and bind go through eu-remote. A box ticks only after every clause is read, with a landed commit and an exit code.
+
+## Measured
+vm:check --dry-run --changed --paths (dry-run only) after the push: one renet file selects the required phases plus at most two areas. pkg/orchestration and pkg/ssh select multi-vm; pkg/infra/mesh selects migrate and multi-vm; pkg/license selects license; cmd, go.mod, a CLI remote file and an account route select no area. Trigger paths now diff against origin/1104-1, so per-leg reuse is not needed yet.
+
+## Design talk, no plan yet
+/tmp/rediacc-tiers-naming-discussion.md holds the tiers and naming discussion, including the before and after table. Open: rediacc.cloud as the dedicated domain, what runs on 72.61.137.225, enterprise as the internal tier name, CLI channels staying edge and stable, and the earlier open questions.
 
 ## Big pieces
 PLAN-backup-program, PLAN-detached-jobs, PLAN-backup-integrity, PLAN-backup-critical-tier, PLAN-rediaccfile-unprivileged, PLAN-first-release-checks (30 open, release-gated).
 
 ## Next action
-1. Read vm:check. VERIFIED: `worklist.py --review-commit d778be9d`, `npm run ci:quick` to advance the receipt, push with TURBO_PUSH_REASON='backup: ...'. Close #4b9e0893 (if the operator accepts the earlier evidence instead: stop the run, use VM_CHECK_PUSH_REASON naming the answer's minute).
-2. Commit STATE.md after the push. Dry-run the new /writers-now.
-3. Re-read this session's quick not-a-bug marks against the code (c400d5a5.1 was wrong).
-4. G5 writers in leases, batch land, gate once; then the live queue in order fleet, bench, hostinger. Writers, gates and fleet runs never share the machine. Signatures from the parser only; open_sigs is sorted, never parallel to labels.
-5. #5f776bb8 auth oracle and privacy findings.
-
-## Design talk with the operator (no plan yet, talk first)
-Keep 3x2 environments (corrected: do not drop edge). No real customers. Operator leans: www.rediacc.com is the fast tier (today's edge), enterprise.rediacc.com the dedicated slow tier. Open questions answered in the last message: domain alternatives, forwarding by account, geo popup. Facts: no vendor checked uses an `enterprise.` prefix on its main domain; isolated tiers use separate domains (ghe.com, ddog-gov.com, .us); Anthropic gov rejects ordinary accounts. Cloudflare: no documented rename for R2 or D1, Worker rename undocumented, test on bench; copy hostinger backups, media, releases, account-db-eu, never delete. R2 listing needs a token with R2 admin. Internal names `<component>-<region>`, `account-enterprise-eu`. GitHub naming last: all workflow files prefixed, one secret pattern, keep CI Complete and Review Complete.
+Read the survey when it reports, spawn the G5 writers, land them, run the gates once, and start the live queue. Before a merge: re-read this session's quick not-a-bug marks against the code (c400d5a5.1 was wrong), settle the 221 advisory review findings, remove the P-A1 carry (#f515a333).
