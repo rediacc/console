@@ -567,12 +567,13 @@ Amended by section 15: an MCP tool waits up to the attach window and returns the
   Owns: packages/cli/src/services/serve/server.ts, packages/cli/src/services/serve/command-dispatch.ts, packages/cli/src/services/serve/__tests__/job-poll.test.ts (new), packages/cli/src/services/serve/__tests__/command-dispatch.test.ts, packages/cli/src/services/executor/proxy-client.ts, packages/cli/src/services/executor/__tests__/proxy-client-poll.test.ts (new). Accept: `cd packages/cli && npx vitest run src/services/serve src/services/executor/__tests__/proxy-client-poll.test.ts` rc 0, and `npx tsc --noEmit --project packages/cli/tsconfig.json` rc 0.
   Amended (third round): J6b replaces "ends right after the job line" with the 20 s attach window. The control changes too: `repo list` is now a job that finishes inside the window, so it returns directly.
 
-- [ ] J6b [writer] Proxy attach window, start retry, steps and overlaps. After J2b, J3b, J6 and J15. Changes:
+- [x] J6b [writer] Proxy attach window, start retry, steps and overlaps. After J2b, J3b, J6 and J15. Changes:
   - `/v1/command` attaches for `JOB_ATTACH_WINDOW_MS`, with a heartbeat every 10 s; it returns the result when the job finishes within the window, otherwise the job line and a running result (section 15);
   - the dispatch keeps the attach when its client disconnects, and runs the steps when the job finishes inside the window (section 16);
   - `requestId` is taken from the body and forwarded; the client retries a POST that dropped before the job line with the same id, up to 3 times (section 17);
   - the poll that observes a terminal state runs the steps on the executor through J15;
   - `overlaps` on the job line and the result, and BUSY as a structured refusal.
+    (ticked) 2026-11-05T13:26:01Z by d778be9d: commit:88930c495 every clause read; vitest serve and proxy-client-attach rc=0 223 passed, tsc rc=0; the 40 s case uses the fake job the box names, real proxy run is L1
 
   Tests:
   - a fake job of 2 s returns its result in one request, with no job line and no poll;
@@ -627,7 +628,8 @@ Amended by section 15: an MCP tool waits up to the attach window and returns the
 
   Owns: packages/cli/src/services/executor/proxy-command.ts, packages/cli/src/services/executor/__tests__/proxy-command.test.ts, packages/cli/src/services/jobs/plans.ts. Accept: `cd packages/cli && npx vitest run src/services/executor/__tests__/proxy-command.test.ts src/services/jobs` rc 0.
 
-- [ ] J9 [writer] Docs and i18n in 13 locales. After J3, J5, J6 and J8. The new en keys are naturalized into the 12 derived locales (docs/i18n/CONVENTIONS.md); proxy-and-executor.md gains a section on jobs, tickets and polling in English and is re-translated as a delta; cli-application.md is regenerated with `npm run generate:cli-docs -w @rediacc/www` by the lead.
+- [x] J9 [writer] Docs and i18n in 13 locales. After J3, J5, J6 and J8. The new en keys are naturalized into the 12 derived locales (docs/i18n/CONVENTIONS.md); proxy-and-executor.md gains a section on jobs, tickets and polling in English and is re-translated as a delta; cli-application.md is regenerated with `npm run generate:cli-docs -w @rediacc/www` by the lead.
+    (ticked) 2026-11-05T13:26:02Z by d778be9d: commit:88930c495 every clause read; check:i18n rc=0, translation freshness rc=0, cli docs regenerated unchanged, search index regenerated
 
   Owns: packages/cli/src/i18n/locales/*/cli.json (non-en), packages/www/src/content/docs/*/proxy-and-executor.md, packages/www/src/content/docs/*/cli-application.md (regenerated only). Accept: `npm run check:i18n` rc 0.
   Amended (third round): follows every code box. The docs section also covers the attach window, the overlap warnings and refusals, the ticket steps and when they run while the client is away, the exceptions list, and spool retention.
