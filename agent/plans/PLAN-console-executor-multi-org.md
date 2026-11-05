@@ -316,12 +316,16 @@ The org is never taken from the client. It is derived once from the caller's own
 - [x] ML1 [live] edge-eu through the deploy skill's local path, which runs the CD modules. -- Owns: agent/plans/PLAN-console-executor-multi-org.md. Accept: the edge-eu row has smoke rc 0 and E1 against `https://edge-eu.rediacc.com` exits 0 with two org ids.
     (ticked) 2026-10-28T09:31:49Z by d778be9d: 2026-10-28 by d778be9d: edge-eu (commit 0b9fe39a1): proxy 6fb266a9 smoke rc 0; E1 27-90 and 27-91 rc 0 (2 passed) with org ids db4ab10b and 6a54bc85; D1 bookmark 00000a2b-00000000-00005112-508812007d05cb51c9caee6ab1c1053e; rollback console_executor --disable --target edge --region eu. DEPS-WAIVED: the open prerequisite is six-targets N1 (the nightly CI red), unrelated to this live edge run
 - [ ] ML2 [live] edge-us, as ML1. -- Owns: agent/plans/PLAN-console-executor-multi-org.md. Accept: as ML1 for edge-us.
+  (corrected ASKED:2026-11-05T07:06Z) Bench form, and the Accept reads as bench: smoke rc 0 on a bench deploy, and E1 against `https://bench.rediacc.com` exits 0 with two org ids. The edge-us placement clause moved to agent/plans/PLAN-first-release-checks.md (Multi-region placement).
 - [x] ML3 [live] edge-asia, as ML1. -- Owns: agent/plans/PLAN-console-executor-multi-org.md. Accept: as ML1 for edge-asia.
     (ticked) 2026-10-28T09:30:48Z by d778be9d: 2026-10-28 by d778be9d: edge-asia (2026-10-28, commit 0b9fe39a1): D1 bookmark 0000072c-00000000-00005112-9d1d21391b7e86781da11664b3f8f6ec; account 7b821c78 -> 26d76107; proxy e174f719 smoke rc 0; pre-enable 503 CONSOLE_EXECUTION_UNAVAILABLE for both orgs, enable rc 0 OPEN; rollback console_executor --disable --target edge --region asia, wrangler rollback 7b821c78; E1 rerun rc 0 (2 passed), org ids 23605a7f and d0c9dce0, cli.command rows 9fe97207 and 97d58ded
     (review note 2026-10-29, 9f92c43e) DEPS-WAIVED as ML1: the open prerequisite is six-targets N1 (the nightly CI red), unrelated to this live edge-asia run.
-- [ ] ML4 [live, post-merge] The first CD edge run after merge. Its three job records, plus E1 per edge region. -- Owns: agent/plans/PLAN-console-executor-multi-org.md. Accept: three deploy jobs succeed with smoke rc 0, and E1 exits 0 for each edge origin.
-- [ ] ML5 [live, post-merge] stable-eu, stable-us and stable-asia through promote-stable. -- Owns: agent/plans/PLAN-console-executor-multi-org.md. Accept: each stable row has smoke rc 0, and E1 against `https://eu.rediacc.com`, `https://us.rediacc.com` and `https://asia.rediacc.com` exits 0 with two org ids each.
-- [ ] ML6 [ops, post-merge] Capacity watch. A Grafana query of the per-target count of `rediacc.proxy.outcome=capacity` over 14 days goes to the Live records, and the decision on raising max_instances goes to the operator with that number. -- Owns: agent/plans/PLAN-console-executor-multi-org.md. Accept: the Live records carry the 14-day count for each of the six targets and the ASKED line or the "no capacity refusals" record.
+(moved ASKED:2026-11-05T07:06Z to agent/plans/PLAN-first-release-checks.md) ML4
+
+(moved ASKED:2026-11-05T07:06Z to agent/plans/PLAN-first-release-checks.md) ML5
+
+(moved ASKED:2026-11-05T07:06Z to agent/plans/PLAN-first-release-checks.md) ML6
+
 - [x] LP-bench [live] Fresh bench receipt (PLAN-tested-on-bench ruling 3): deploy this branch to bench with deploy_bench, then record and tick through worklist.py --live-proof.
   - Accept: `live-proof bench account-smoke`
     (ticked) 2026-10-30T06:22:15Z by d778be9d: live-proof lp-d46e211ee23d bench account-smoke rc=0; DEPS-WAIVED: the receipt proves the landed code on the bench deploy of this head; the unfinished prerequisite plans gate later boxes, not this receipt

@@ -390,6 +390,7 @@ V1 to V6 share `backup.go`, `backup_snapshot.go` and `backup_restore.go`, and on
   - Accept: both rc 0; the receipt `block_backup_unverified_push` reads is fresh for this tree.
     (ticked) 2026-11-02T08:01:50Z by 45048a90: commit:ebd89f860. ./run.sh drill backup rc=0 and ./run.sh drill backup-onprem rc=0; receipt VERIFIED with legs a to s and onprem true; each new leg has a planted control, in commit 075c90af3.
 - [ ] P3: R2 tier B (needs decision O1): `./run.sh drill backup --legs a,s` with `DRILL_STORE_*` on the probe bucket, proving a duplicate PUT answers 412 and a wrong checksum is refused. The result corrects the grants.go comment and 07-execution-record.md in the same commit. If R2 refuses a wrong checksum differently than documented, that is a finding, not a retune.
+  (corrected ASKED:2026-11-05T07:06Z) Decision O1 is settled: `DRILL_STORE_*` points at the existing `rediacc-backups-bench` bucket and its bench keys, not a separate probe bucket.
   - Accept: the command rc 0, the status codes recorded here.
 - [ ] P4: The D1 clone check covers migration 0073.
   - Accept: the CD or local `rediacc_ci.deploy.test_d1_migrations` run rc 0 for eu, recorded with its run id.
@@ -397,8 +398,10 @@ V1 to V6 share `backup.go`, `backup_snapshot.go` and `backup_restore.go`, and on
 ### B: bench, after the merge and edge deploy (lead)
 
 - [ ] B1: A replayed bad night and alert on `eu-bench`: a failed verify and a stopped nightly produce one digest email; a repeat that day produces none.
+  (corrected ASKED:2026-11-05T07:06Z) "After the merge and edge deploy" in the section heading no longer applies: bench runs the branch head through `deploy_bench`, and the Accept already reads as bench.
   - Accept: `./rdc.sh --config eu-bench backup manifests <repo> -o json` rc 0 shows the states, and the delivery is recorded here.
 - [ ] B2: Repair on bench with a chunk corrupted through the store's credentials.
+  (corrected ASKED:2026-11-05T07:06Z) "After the merge and edge deploy" in the section heading no longer applies: bench runs the branch head through `deploy_bench`, and the Accept already reads as bench.
   - Accept: `./rdc.sh --config eu-bench backup repair <repo>` rc 0, then `backup verify <repo> --store` rc 0.
 
 ### H: hostinger, after the release (lead)
@@ -411,9 +414,9 @@ Every H box uses the released `rdc` and its released renet. Mutating steps run o
 - [ ] H2: Read first: for each of the 10 mounted repositories, the CLI-computed key equals the machine's key where one exists. A mismatch stops the box and is reported, with no overwrite.
   - Accept: `rdc --config eu-bench backup toc-key sync <repo> --dry-run -o json` rc 0 for each, results recorded.
 - [ ] H3: Re-deploy the schedule; public keys are installed, and units show verify and `OnFailure=`.
+  (corrected ASKED:2026-11-05T07:06Z) `backup schedule` runs through `eu-remote`, which the operator rebound for this session, and never through `eu-bench`.
   - Accept: `rdc --config eu-remote backup schedule -m hostinger` rc 0, and `backup status -m hostinger` rc 0.
-- [ ] H4: The next nightly: 10 repositories have `hasIndex` true and `indexStatus` sealed. demo-heartbeat is reported plainly: it has neither keyfile nor mount, so it gets no listing, and the warning is in its unit journal. Spot ran after the snapshot, and reports reached the account after the stable deploy.
-  - Accept: `rdc --config eu-bench backup manifests <repo> -o json` rc 0 per repo, recorded here.
+(moved ASKED:2026-11-05T07:06Z to agent/plans/PLAN-first-release-checks.md) H4
 - [ ] H5: N4b single-file restore to a scratch directory on a repository with a listing, then tick box N4b in agent/plans/PLAN-backup-program.md.
   - Accept: `rdc --config eu-bench backup restore <repo> --at <snapshot> --path <file> --to <scratch>` rc 0, with the checksum equal to a read of the live file taken for comparison.
 - [ ] H6: A deep verify of one mid-size repo under the sampler: scope usage stays at one core (CPUQuota=100%), and machine-wide busy CPU is recorded before and during.
@@ -423,6 +426,7 @@ Every H box uses the released `rdc` and its released renet. Mutating steps run o
 - [ ] H8: `rdc backup check` on one listed repo marks a snapshot `proven`, and `backup verify demo-heartbeat --store` runs one real full pass on the smallest lineage.
   - Accept: both rc 0; `backup manifests` shows the states.
 - [ ] H9: The alert path through a harmless planted failure: `renet backup report --test` from the released binary, with no repository involved.
+  (corrected ASKED:2026-11-05T07:06Z) "The released binary" reads as the branch-built binary: `renet backup report --test` from the branch renet, still with no repository involved. The Accept stands.
   - Accept: the command rc 0, and the digest's receipt recorded here.
 
 - [ ] LP-bench [live] Fresh bench receipt through worklist.py --live-proof, after this plan's bench-deployable boxes land.

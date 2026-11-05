@@ -5,7 +5,7 @@ Priority: P1 -- Cloudflare stops updating the `Container` class after 2026-12-31
 First-Seen: 2026-10-26
 Owner: d778be9d
 Epic: executor-durable-object-policy
-Depends-On: PLAN-console-executor-multi-org.md#W1, PLAN-console-executor-multi-org.md#W2, PLAN-console-executor-multi-org.md#ML5 -- W1 and W2 wrote the per-org pin, egress and token cache that this plan rebuilds on the new class (both ticked). ML5 puts multi-org on the three stable targets, so no stable target takes both changes in one release. S1 runs on a scratch Worker and needs none of them, so its tick line carries DEPS-WAIVED with that reason. The live boxes L1 and later wait for ML5.
+Depends-On: PLAN-console-executor-multi-org.md#W1, PLAN-console-executor-multi-org.md#W2 -- W1 and W2 wrote the per-org pin, egress and token cache that this plan rebuilds on the new class (both ticked). S1 runs on a scratch Worker and needs none of them, so its tick line carries DEPS-WAIVED with that reason. The ML5 edge moved with the stable boxes (ASKED:2026-11-05T07:06Z): L1 to L3 now read as bench, where no stable target is involved, and the order that no stable target takes both changes in one release is held in agent/plans/PLAN-first-release-checks.md.
 Concurrency: exclusive -- the code boxes rewrite workers/proxy/src/index.ts and workers/proxy/src/egress.ts, which PLAN-console-executor-multi-org's W1 and W2 own. They also rewrite workers/proxy/wrangler*.toml, .ci/rediacc_ci/deploy/proxy_configs.py and .ci/scripts/quality/check_proxy_cost_guard.py, which worklist #9638ab6b holds uncommitted (Context item 9). No writer for this plan holds those files while a W box or #9638ab6b holds them.
 Owns: agent/plans/PLAN-executor-durable-object-policy.md, workers/proxy/src/**, workers/proxy/package.json, workers/proxy/package-lock.json, workers/proxy/wrangler*.toml, .ci/rediacc_ci/deploy/proxy_configs.py, .ci/rediacc_ci/deploy/deploy_proxy.py, .ci/rediacc_ci/tests/test_deploy_proxy_configs.py, .ci/rediacc_ci/tests/test_deploy_deploy_proxy.py, .ci/rediacc_ci/tests/goldens/twins/deploy.deploy-proxy.jsonl, .ci/scripts/quality/check_proxy_cost_guard.py, .ci/rediacc_ci/tests/test_check_proxy_cost_guard.py, .ci/rediacc_ci/quality/proxy_wrangler_dev_e2e.py, .ci/rediacc_ci/spikes/do_policy_spike.py (new), .ci/rediacc_ci/tests/test_spikes_do_policy_spike.py (new), private/account/src/services/executor-issuer.service.ts (route only), workers/account/src/index.ts (the route signature only), private/account/tests/integration/executor-issuer-route.test.ts, private/account/tests/integration/proxy-binding-wiring.test.ts, docs/observability/signals/proxy.md, .claude/skills/deploy/SKILL.md (the executor paragraph only), agent/plans/PLAN-console-executor-multi-org.md (relation lines only)
 Live-Proof: bench -- the executor issuer in private/account/src, workers/account/src/index.ts and the workers/proxy code and wrangler configs are the account, account-worker and proxy surfaces, whose only live target is bench.
@@ -399,38 +399,27 @@ Each box records:
   - BUSINESS size: read `executors.heavy` going from 0 to 1 in `/v1/ready` while the BUSINESS org is the only heavy holder. `rediacc.proxy.size` is an OTLP span attribute and never reaches `wrangler tail`; the span in the OTLP backend is the second witness.
   - The tail line `proxy: account egress refused: route-not-allowed POST /account/api/v1/tunnel` is expected and not a drill failure. It is the CLI's core audit flush through the E2E tunnel, refused by design (workers/proxy/src/egress.ts module comment).
 - [ ] L1 [live] edge-eu, Phase 1 then Phase 2, before merge, through the deploy skill's local path. -- Owns: agent/plans/PLAN-executor-durable-object-policy.md. Accept: both edge-eu rows have smoke rc 0, the Phase 1 row says forward-only, and E1 against `https://edge-eu.rediacc.com` exits 0 on `durable` with two org ids.
+  (corrected ASKED:2026-11-05T07:06Z) Bench form, and the Accept reads as bench: Phase 1 then Phase 2 through a bench proxy, both bench rows with smoke rc 0, the Phase 1 row forward-only, and E1 against `https://bench.rediacc.com` exits 0 on `durable` with two org ids. `durable` on real edge-eu is proven by L4, now in agent/plans/PLAN-first-release-checks.md.
 - [ ] L2 [live] edge-us, as L1. -- Owns: agent/plans/PLAN-executor-durable-object-policy.md. Accept: as L1 for edge-us.
+  (corrected ASKED:2026-11-05T07:06Z) Bench form: the same bench run as L1, and the Accept reads as bench. The edge-us placement clause moved to agent/plans/PLAN-first-release-checks.md (Multi-region placement).
 - [ ] L3 [live] edge-asia, as L1. -- Owns: agent/plans/PLAN-executor-durable-object-policy.md. Accept: as L1 for edge-asia.
-- [ ] L4 [live, post-merge] The first CD edge run after merge, with its three job records and E1 per edge region. -- Owns: agent/plans/PLAN-executor-durable-object-policy.md. Accept: three deploy jobs succeed with smoke rc 0 and backend `durable`, and E1 exits 0 for each edge origin.
-- [ ] L5 [live, post-merge] stable-eu, stable-us and stable-asia.
-  - Phase 1 rides the merged release through promote-stable.
-  - Phase 2 is the release that flips `BACKEND_BY_TARGET` for the three stable targets.
-
-  -- Owns: agent/plans/PLAN-executor-durable-object-policy.md. Accept: each stable target has a forward-only Phase 1 row and a Phase 2 row with smoke rc 0, and E1 against `https://eu.rediacc.com`, `https://us.rediacc.com` and `https://asia.rediacc.com` exits 0 on `durable` with two org ids each.
+  (corrected ASKED:2026-11-05T07:06Z) Bench form: the same bench run as L1, and the Accept reads as bench. The edge-asia placement clause moved to agent/plans/PLAN-first-release-checks.md (Multi-region placement).
+(moved ASKED:2026-11-05T07:06Z to agent/plans/PLAN-first-release-checks.md) L4
+(moved ASKED:2026-11-05T07:06Z to agent/plans/PLAN-first-release-checks.md) L5
 - [x] L6 [ops, post-merge] 14 days of observation on all six targets.
   - A Grafana query gives, per target, the counts of `rediacc.proxy.outcome` in {capacity, start-failed, oom-heavy}, the split of `rediacc.proxy.size`, and the cold-start median.
   - The container line of `cf_usage_report` gives the spend.
     (ticked) 2026-10-28T07:56:59Z by d778be9d: 2026-10-28 by d778be9d: superseded, not done: operator order 2026-10-28 (no customers yet) drops the 14-day observation; ruling recorded at agent/plans/PLAN-executor-durable-object-policy.md:447, stable approved ASKED:2026-10-28T07:56Z. DEPS-WAIVED: superseded box
 
   -- Owns: agent/plans/PLAN-executor-durable-object-policy.md. Accept: the Live records carry the 14-day numbers for all six targets, and any non-zero capacity count carries an ASKED line on the cap.
-- [ ] L7 [live, post-merge] Phase 3 per target, after C1.
-  - Deploy the C1 release (forward-only) to bench, the three edge targets and the three stable targets.
-  - Then run `npx wrangler containers delete <old application id>` per target, with the id read from `wrangler containers list` and recorded by its first 8 characters.
-
-  -- Owns: agent/plans/PLAN-executor-durable-object-policy.md. Accept: seven forward-only rows with smoke rc 0, and `npx wrangler containers list` per account names no `ExecutorContainer` application.
+(moved ASKED:2026-11-05T07:06Z to agent/plans/PLAN-first-release-checks.md) L7
 - [x] LP-bench [live] Fresh bench receipt (PLAN-tested-on-bench ruling 3): deploy this branch to bench with deploy_bench, then record and tick through worklist.py --live-proof.
   - Accept: `live-proof bench account-smoke`
     (ticked) 2026-10-30T06:22:08Z by d778be9d: live-proof lp-1f0b262ef9bd bench account-smoke rc=0; DEPS-WAIVED: the receipt proves the landed code on the bench deploy of this head; the unfinished prerequisite plans gate later boxes, not this receipt
 
 ### Deadline
 
-- [ ] DL1 [deadline] All seven targets route `durable` and run without the `Container` class by 2026-12-15, two weeks before the 2026-12-31 freeze.
-  - Checkpoints: S1 verdict by 2026-11-02; L0 to L3 by 2026-11-16; L5 by 2026-11-30; L7 by 2026-12-15.
-  - Escalation: a missed checkpoint, a STOP verdict, or a policy still marked public beta on 2026-12-01 writes an ASKED line with two options:
-    - (a) proceed on the beta;
-    - (b) stay on the frozen class past 2026-12-31, which keeps running per Context item 1, with a re-check date.
-
-  -- Owns: agent/plans/PLAN-executor-durable-object-policy.md. Accept: on or before 2026-12-15, L7 is ticked, or an ASKED line dated before 2026-12-31 records the operator's choice.
+(moved ASKED:2026-11-05T07:06Z to agent/plans/PLAN-first-release-checks.md) DL1
 
 ### Order and parallel writers
 

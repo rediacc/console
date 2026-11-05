@@ -92,6 +92,7 @@ Worklist: #6d2022b2, PR-TASK 9f92c43e
     (ticked) 2026-11-04T07:16:15Z by d778be9d: commit:960b4f213 apply_cf_waf_rules --dry-run rc=0, test_ops_apply_cf_waf_rules 15 passed. DEPS-WAIVED: only F2 builds on the N5 ordering of production-key-only, this box uses nothing from it
 
 - [ ] L1 [live] Deploy the account worker to bench and every edge region, then stable, with `FREE_LICENSE_HMAC_KEY` set; apply the WAF rule. Record version ids and rollback commands.
+  (corrected ASKED:2026-11-05T07:06Z) Bench form: deploy the account worker to bench only, with `FREE_LICENSE_HMAC_KEY` set, and record its version id and rollback command. The production WAF rule and the every-edge-region-then-stable clause moved to agent/plans/PLAN-first-release-checks.md (Production WAF and edge regions).
 - [ ] L2 [live] bench: a FREE licence from a clean config with no login, a renewal, the 9th issuance from one address refused, the 4th per machine refused.
 - [ ] L3 [live] hostinger: a FREE-licensed repository created; after a forced expiry, `repo up` of it succeeds and a new `repo create` under FREE is refused with the upgrade message.
 - [ ] LP-bench [live] Fresh bench receipt after L2.

@@ -329,18 +329,18 @@ Live-Proof: bench -- the console, proxy and api-token routes and migrations unde
 - [x] L1 [live] edge-eu, before merge, through the local path of the deploy skill running the same modules CD runs. This box records U1 and U2 as observed. -- Owns: agent/plans/PLAN-proxy-cd-six-targets.md. Accept: the edge-eu row records the account version before and after, the D1 bookmark, the proxy version, smoke rc 0, the enable step, the rollback command, and E1 against `https://edge-eu.rediacc.com` exiting 0.
     (ticked) 2026-10-28T09:31:23Z by d778be9d: 2026-10-28 by d778be9d: edge-eu (2026-10-28, commit 0b9fe39a1): D1 bookmark 00000a2b-00000000-00005112-508812007d05cb51c9caee6ab1c1053e; account d36c1640 -> a171b338; proxy 6fb266a9 smoke rc 0; pre-enable 503 CONSOLE_EXECUTION_UNAVAILABLE for both orgs, enable rc 0 OPEN; rollback console_executor --disable --target edge --region eu and wrangler rollback d36c1640; E1 27-90 and 27-91 rc 0 (2 passed), org ids db4ab10b and 6a54bc85
 - [ ] L2 [live] edge-us, as L1 (the first us proxy: closed until smoke passes). -- Owns: agent/plans/PLAN-proxy-cd-six-targets.md. Accept: as L1 for edge-us, plus a console command run before the enable step that answers the coded 503.
+  (corrected ASKED:2026-11-05T07:06Z) Bench form, and the Accept reads as bench: a bench proxy on `durable`, the bench record row with smoke rc 0, the enable step and the rollback command, E1 against `https://bench.rediacc.com` exiting 0, and a console command before the enable step answering the coded 503. Edge-us and its first-proxy clause moved to agent/plans/PLAN-first-release-checks.md (Multi-region placement).
 - [x] L3 [live] edge-asia, as L2. -- Owns: agent/plans/PLAN-proxy-cd-six-targets.md. Accept: as L2 for edge-asia.
     (ticked) 2026-10-28T09:30:45Z by d778be9d: 2026-10-28 by d778be9d: edge-asia (2026-10-28, commit 0b9fe39a1): D1 bookmark 0000072c-00000000-00005112-9d1d21391b7e86781da11664b3f8f6ec; account 7b821c78 -> 26d76107; proxy e174f719 smoke rc 0; pre-enable 503 CONSOLE_EXECUTION_UNAVAILABLE for both orgs, enable rc 0 OPEN; rollback console_executor --disable --target edge --region asia, wrangler rollback 7b821c78; E1 rerun rc 0 (2 passed), org ids 23605a7f and d0c9dce0, cli.command rows 9fe97207 and 97d58ded
 - [ ] L4 [live, post-merge] The first CD edge run after merge, which proves CD itself. Its three per-region records come from the job summary. Each record carries the manifest sha256s stored at `executor/v<V>/`. -- Owns: agent/plans/PLAN-proxy-cd-six-targets.md. Accept: the run's three deploy jobs succeed with smoke rc 0, and `executor_artifacts fetch --version <V>` verifies.
-- [ ] L5 [live, post-merge] stable-eu through promote-stable (soak or nightly waiver). Delete rediacc-proxy-eu's `EXECUTOR_TOKEN` secret and revoke its token. -- Owns: agent/plans/PLAN-proxy-cd-six-targets.md. Accept: the stable-eu record matches L4's manifest sha256s for the same version, smoke rc is 0, E1 against `https://eu.rediacc.com` exits 0 with the audit event naming the user (this also closes PLAN-cloudflare-proxy C2), and no unrevoked 'cloudflare' token remains in the eu D1.
-- [ ] L6 [live, post-merge] stable-us, as L5. -- Owns: agent/plans/PLAN-proxy-cd-six-targets.md. Accept: as L5 for us.
-- [ ] L7 [live, post-merge] stable-asia, as L5. -- Owns: agent/plans/PLAN-proxy-cd-six-targets.md. Accept: as L5 for asia.
-- [ ] L8 [ops, post-merge] Telemetry acceptance, which folds in PLAN-telemetry-export T15.
-  - Verify U6 and extend the Alloy transform on hostinger to the regex in W1, with `deployment.environment` and `rediacc.region` resource attributes so the proxy Loki streams carry those labels.
-  - Create one silent-sender rule per proxy target, `silent-proxy-<production|edge>-<r>` (six rules), keyed `service="rediacc-proxy"`, and unpause them. `silent-proxy-exec-prod-eu` stays paused (a DEFAULT).
-  - T1's list holds all seven proxy hosts.
-  
-  -- Owns: the observability repo's Alloy config and alerting provisioning, .ci/rediacc_ci/ops/telemetry_delivery.py (the list). Accept: `python3 -m rediacc_ci.ops.telemetry_delivery` exits 0 with 14 hosts and 0 silent; Tempo lists `rediacc-proxy` and `rediacc-proxy-executor`; `count by (deployment_environment, rediacc_region) (traces_spanmetrics_calls_total{service="rediacc-proxy"})` returns 7 series; `GET /api/v1/provisioning/alert-rules` shows the six proxy rules with `isPaused: false`.
+(moved ASKED:2026-11-05T07:06Z to agent/plans/PLAN-first-release-checks.md) L5
+
+(moved ASKED:2026-11-05T07:06Z to agent/plans/PLAN-first-release-checks.md) L6
+
+(moved ASKED:2026-11-05T07:06Z to agent/plans/PLAN-first-release-checks.md) L7
+
+(moved ASKED:2026-11-05T07:06Z to agent/plans/PLAN-first-release-checks.md) L8
+
 - [ ] L9 [account, post-merge] Retire the public 'cloudflare' path. Once all seven D1s report zero unrevoked 'cloudflare' tokens (L0, L5-L7), the public-path branch at private/account/src/middleware/api-token.ts:84-96 refuses every 'cloudflare' token, and the test asserts it. -- Owns: private/account/src/middleware/api-token.ts, private/account/tests/integration/api-token-service-binding.test.ts. Accept: `cd private/account && npx vitest run tests/integration/api-token-service-binding.test.ts` exits 0.
 - [x] X1 [plans] Relation lines.
   - PLAN-cloudflare-proxy.md: C2 is closed by L5. The "Operator: redeploy ... EXECUTOR_TOKEN" box is superseded by ASKED:2026-10-25T19:08Z. Teardown stays that plan's fallback.

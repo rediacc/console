@@ -254,28 +254,9 @@ There are two account keypairs today. Production is one keypair, the same for al
 
   Owns: private/account/CLAUDE.md, private/account (gitlink bump only), docs/agent-reference/local-env.md, private/renet/CLAUDE.md. Accept: `npm run check:ci-doc-region-parity` (the doc lint lane that covers these files) rc 0.
 
-- [ ] L1 [live] Park the six entries, after K1-K3 are on the branch and right before the merge. The window is short because main's `account dev` still needs `_DEV` until the merge.
-  1. `PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env park ACCOUNT_ED25519_PRIVATE_KEY_DEV ACCOUNT_ED25519_PUBLIC_KEY_DEV ACCOUNT_JWT_SECRET_DEV ACCOUNT_SERVER_API_KEY_DEV ACCOUNT_X25519_PRIVATE_KEY_DEV ACCOUNT_X25519_PUBLIC_KEY_DEV`. It must print six MATCH lines with names only.
-  2. Record the ids (unchanged, from .ci/config/bws-secret-map.json:61-93) and the verdicts. No value is ever printed.
+(moved ASKED:2026-11-05T07:06Z to agent/plans/PLAN-first-release-checks.md) L1
 
-- [ ] K6 [writer] After L1: map refresh and the no-DEV gate (G1). Changes:
-  - Run `scripts/ops/bws-map-refresh.py` so bws-secret-map.json loses the six `_DEV` entries and gains no `__` entries.
-  - Remove .ci/config/bws-unrequested.json:51-74 and .ci/config/env-manifest.json:107-117 rows. Regenerate doc-registry.md with `npx tsx scripts/gen/gen-docs.ts --write`.
-  - Add the no-dev-keys gate (.ci/scripts/quality/check_no_dev_keys.py plus .ci/rediacc_ci/quality/no_dev_keys.py). It refuses:
-    - (a) any store name ending `_DEV` in the map, bws-unrequested, env-manifest, or the store side of any secret-supply spec;
-    - (b) the regex `(?<![A-Z0-9_])ACCOUNT_[A-Z0-9_]+_DEV(?![A-Z0-9_])` in tracked files under .ci/ (except .ci/shadow and .ci/cache), scripts/, .github/, private/renet/build.sh, private/account/{src,scripts,CLAUDE.md}, docs/;
-    - (c) any `__`-prefixed store name bound by a profile;
-    - (d) `RENET_KEYLESS` outside .github/workflows and tests;
-    - (e) a `CACHE_STORE_NAMES` value that is not exactly its own name.
-  - Register it in package.json, gate-costs.json and lane-durations.json.
-  - Change .ci/rediacc_ci/tests/test_deploy_deploy_proxy.py:1158 to assemble the literal at run time (under PLAN-executor-durable-object-policy's lease).
-
-  Tests (gate test, controls):
-  - Each rule goes red on its planted fixture in a temp tree: a `_DEV` map row, an `ACCOUNT_JWT_SECRET_DEV` line in a .py, a `__X` profile binding, `RENET_KEYLESS=1` in rdc.sh, and a `_DEV` cache alias.
-  - `__ACCOUNT_X_DEV` text alone does not trip rule (b).
-  - The real tree is green.
-
-  Owns: .ci/config/bws-secret-map.json, .ci/config/bws-unrequested.json, .ci/config/env-manifest.json, scripts/data/doc-registry.md, .ci/scripts/quality/check_no_dev_keys.py (new), .ci/rediacc_ci/quality/no_dev_keys.py (new), .ci/rediacc_ci/tests/gates/test_gate_no_dev_keys.py (new), package.json (one script line), .ci/config/gate-costs.json, .ci/config/lane-durations.json, .ci/rediacc_ci/tests/test_deploy_deploy_proxy.py (line 1158 only). Accept: `npm run check:ci-bws-map`, `check:ci-bws-map-live` and `check:ci-secret-supply` rc 0, and the gate test rc 0.
+(moved ASKED:2026-11-05T07:06Z to agent/plans/PLAN-first-release-checks.md) K6
 
 - [x] N1 [writer] renet Go: delete the nolicense build. Changes:
   - Delete private/renet/pkg/license/runtime_nolicense.go. Drop `//go:build !nolicense` from runtime_licensed.go and the license tests (chain_interleave, crosslang_repo_license, renew, runtime_selection).
@@ -321,6 +302,7 @@ There are two account keypairs today. Production is one keypair, the same for al
   Owns: those docs. Accept: `npm run check:ci-prose-style` and `npm run check:ci-doc-region-parity` rc 0.
 
 - [ ] L2 [live] Bench redeploy with the production six, after the merge.
+  (corrected ASKED:2026-11-05T07:06Z) "After the merge" no longer applies: `deploy_bench` runs from the branch head, and steps 1 to 6 stand. The record is the version id, the smoke rc and the bench licence drill. L1 and K6 moved to agent/plans/PLAN-first-release-checks.md and are not prerequisites of this box.
   1. Run `bws_env exec --profile deploy-bench -- PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench`. Record the version id, smoke rc and rollback command.
   2. Run `prune_worker_secrets --region bench` to check for extras.
   3. Point eu-bench's `account.e2ePublicKey` at bench's new server-info key (`buildInitAccountUpdate`, packages/cli/src/commands/config.ts:127-146; the writer confirms the exact verb).

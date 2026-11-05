@@ -39,7 +39,7 @@ The overrides (each level's bundle value in brackets for `high`):
 A ` -- solo` note on a Promoted entry keeps that plan alone in its PR under turbo.
 
 ```stop-hook
-effort: smart
+effort: quiet
 turbo: on
 batch_size: 3 -- operator 2026-10-04: go in parallel as much as possible
 plan_concurrency: 5 -- operator 2026-10-04: plan limit 5
@@ -54,7 +54,7 @@ backup_push_h: 4 -- operator 2026-10-08: backup push valve, no PR
 What the loop is working on now, rendered between the markers by `.claude/hooks/stop/wl_planqueue.py` (`refresh_inflight`) on every stop and on every `worklist.py --queue-set` or `--phase`. It is runtime state: rewritten only when it changes, never compared by `npm run check:ci-plan-record`, and a committed copy is a snapshot from its commit.
 
 <!-- queue:inflight:begin -->
-- Mode: effort smart; turbo on; turbo_push batch-end; batch_size 3; plan_concurrency 5; writer_cap 25; commit_remind_min 15; backup_push_h 4; judge core; cadence on; agent_hint on; agent_pushback on.
+- Mode: effort quiet; turbo on; turbo_push batch-end; batch_size 3; plan_concurrency 5; writer_cap 25; commit_remind_min 15; backup_push_h 4; judge off; cadence on; agent_hint off; agent_pushback off.
 - Phase: merge on PR #602 (branch 1023-1, session 45048a90, since 2026-11-03T09:46:12Z, past its 24-hour limit).
 - Branch: 1104-1, no PR yet.
 - Plans on the PR (7):
@@ -69,33 +69,33 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 3 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic c6b82e88, plan agent/plans/PLAN-settings-set-verb.md, outside the set, 2 commit(s) on the branch, 0 open item(s): settings set verb: one source for the ceilings
   - epic dbb7de07, plan agent/plans/PLAN-cloudflare-spend-guard.md, outside the set, 47 commit(s) on the branch, 0 open item(s): cloudflare spend guard closure
-  - epic 09b8bdfa, plan agent/plans/PLAN-detached-jobs.md, outside the set, 190 commit(s) on the branch, 0 open item(s): detached jobs: proxied poll follow and job kinds
+  - epic 09b8bdfa, plan agent/plans/PLAN-detached-jobs.md, outside the set, 210 commit(s) on the branch, 0 open item(s): detached jobs: proxied poll follow and job kinds
   - epic ec9ba176, plan agent/plans/PLAN-backup-integrity.md, outside the set, 2 commit(s) on the branch, 0 open item(s): backup integrity docs and closure
   - epic d6bb9963, plan agent/plans/PLAN-backup-critical-tier.md, outside the set, 7 commit(s) on the branch, 0 open item(s): backup critical tier proofs
   - epic b21ab2e2, plan agent/plans/PLAN-jobs-backup-real-machine-tests.md, outside the set, 2 commit(s) on the branch, 0 open item(s): real machine tests for jobs and backup
   - epic 92df2f69, plan agent/plans/PLAN-free-license.md, outside the set, 5 commit(s) on the branch, 0 open item(s): free license ladder F6
-  - epic 1f877343, plan agent/plans/PLAN-worktree-lease.md, outside the set, 54 commit(s) on the branch, 0 open item(s): guided detached worktree leases
+  - epic 1f877343, plan agent/plans/PLAN-worktree-lease.md, outside the set, 55 commit(s) on the branch, 0 open item(s): guided detached worktree leases
   - epic 2e0e531f, plan agent/plans/PLAN-rediaccfile-unprivileged.md, outside the set, 15 commit(s) on the branch, 0 open item(s): Rediaccfile lifecycle runs unprivileged
-- Writers: 0 live of writer_cap 25 (session d778be9d).
-- Leased items: 1: #a150016d (worker:queue, d778be9d).
+- Writers: 2 live of writer_cap 25 (session d778be9d): worker:a308675d0eb0492e6, worker:aa40542c8034a35bb.
+- Leased items: 4: #953e4658 (worker:a308675d0eb0492e6, d778be9d), #9ca1f708 (worker:aa40542c8034a35bb, d778be9d), #a150016d (worker:queue, d778be9d), #ea0daec7 (worker:a308675d0eb0492e6, d778be9d).
 - Next plan: agent/plans/PLAN-token-ip-rebind.md, Promoted entry 6; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 10 of 40 plans done, 655 of 835 boxes done (78%).
+Promoted: 14 of 40 plans done, 655 of 809 boxes done (80%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
-| 1 | PLAN-backup-program.md | 167/196 | 29 open |
-| 2 | PLAN-cloudflare-proxy.md | 27/30 | 3 open |
+| 1 | PLAN-backup-program.md | 167/192 | 25 open |
+| 2 | PLAN-cloudflare-proxy.md | 27/29 | 2 open |
 | 3 | PLAN-sync-remote-file-ownership.md | 7/7 | done |
-| 4 | PLAN-telemetry-export.md | 19/20 | 1 open |
+| 4 | PLAN-telemetry-export.md | 19/19 | done |
 | 5 | PLAN-renet-bridge-leftovers.md | 16/16 | done |
 | 6 | PLAN-token-ip-rebind.md | 10/11 | 1 open |
-| 7 | PLAN-stop-hook-one-plan-scope.md | 14/15 | 1 open |
-| 8 | PLAN-plan-preflight.md | 8/9 | 1 open |
+| 7 | PLAN-stop-hook-one-plan-scope.md | 14/14 | done |
+| 8 | PLAN-plan-preflight.md | 8/8 | done |
 | 9 | PLAN-renet-run-docker-sock-isolation.md | 4/4 | done |
 | 10 | PLAN-config-networkid-discovery.md | 8/8 | done |
 | 11 | PLAN-renet-fetch-retries.md | 3/3 | done |
@@ -104,16 +104,16 @@ Promoted: 10 of 40 plans done, 655 of 835 boxes done (78%).
 | 14 | PLAN-sandbox-tenant-separation.md | 6/8 | 2 open |
 | 15 | PLAN-converge-preflight-and-repo-recovery.md | 19/19 | done |
 | 16 | PLAN-gpu-device-grants.md | 12/14 | 2 open |
-| 17 | PLAN-proxy-cd-six-targets.md | 27/35 | 8 open |
-| 18 | PLAN-console-executor-multi-org.md | 17/21 | 4 open |
-| 19 | PLAN-executor-durable-object-policy.md | 15/22 | 7 open |
-| 20 | PLAN-local-release.md | 14/16 | 2 open |
+| 17 | PLAN-proxy-cd-six-targets.md | 27/31 | 4 open |
+| 18 | PLAN-console-executor-multi-org.md | 17/18 | 1 open |
+| 19 | PLAN-executor-durable-object-policy.md | 15/18 | 3 open |
+| 20 | PLAN-local-release.md | 14/14 | done |
 | 21 | PLAN-tested-on-bench.md | 16/20 | 4 open |
 | 22 | PLAN-org-executor-connect-timeout-relocate.md | 9/12 | 3 open |
 | 23 | PLAN-backup-restore-path.md | 7/10 | 3 open |
 | 24 | PLAN-ssh-key-source-ranges.md | 10/11 | 1 open |
 | 25 | PLAN-repo-docker-storage-prune.md | 11/14 | 3 open |
-| 26 | PLAN-production-key-only.md | 10/19 | 9 open |
+| 26 | PLAN-production-key-only.md | 10/17 | 7 open |
 | 27 | PLAN-detached-jobs.md | 20/39 | 19 open |
 | 28 | PLAN-snapshot-read-io-cap.md | 12/16 | 4 open |
 | 29 | PLAN-backup-meter-orphaned-chunks.md | 4/8 | 4 open |
@@ -124,8 +124,8 @@ Promoted: 10 of 40 plans done, 655 of 835 boxes done (78%).
 | 34 | PLAN-backup-download-from-store.md | 5/9 | 4 open |
 | 35 | PLAN-settings-set-verb.md | 4/4 | done |
 | 36 | PLAN-free-license.md | 6/13 | 7 open |
-| 37 | PLAN-backup-integrity.md | 40/57 | 17 open |
-| 38 | PLAN-backup-critical-tier.md | 39/53 | 14 open |
+| 37 | PLAN-backup-integrity.md | 40/56 | 16 open |
+| 38 | PLAN-backup-critical-tier.md | 39/51 | 12 open |
 | 39 | PLAN-rediaccfile-unprivileged.md | 12/23 | 11 open |
 | 40 | PLAN-worktree-lease.md | 15/16 | 1 open |
 <!-- queue:progress:end -->
@@ -190,11 +190,12 @@ Promoted: 10 of 40 plans done, 655 of 835 boxes done (78%).
 14. agent/plans/PLAN-fix-upgrade-drills-flat-daemon-bringup.md -- P1, executing, not started
 15. agent/plans/PLAN-hostinger-upgrade-followups.md -- P1, in-progress, not started
 16. agent/plans/PLAN-plan-compaction-bindings.md -- P1, approved, not started
-17. agent/plans/PLAN-stop-hook-retro-20261101.md -- P2, ready, not started
-18. agent/plans/PLAN-lessons-registry-followups.md -- P3, draft, not started
-19. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
-20. agent/plans/PLAN-retire-bash-oracles.A0.md -- P3, executing, not started
-21. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
+17. agent/plans/PLAN-first-release-checks.md -- P2, approved, not started
+18. agent/plans/PLAN-stop-hook-retro-20261101.md -- P2, ready, not started
+19. agent/plans/PLAN-lessons-registry-followups.md -- P3, draft, not started
+20. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
+21. agent/plans/PLAN-retire-bash-oracles.A0.md -- P3, executing, not started
+22. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
 
 ### Not queued
 

@@ -32,6 +32,7 @@ Three residual risks:
 - [x] L1. Bench: deploy A1 and R1, run a snapshot and a restore on a bench machine, and show a size-less grant refused. Accept: the bench snapshot and restore exit 0 and the refusal answers 400.
     (ticked) 2026-10-29T22:24:21Z by d778be9d: bench worker version 3906a08b (account 318b696, branch renet with R1): backup snapshot hb1023-src rc=0 (19 chunks stored), backup restore --as hb1023-rst rc=0, three POST /backups/grants without chunkBytes or manifestBytes answered 400; repos deleted and the lineage purged after
 - [ ] L2. Hostinger: after the stable deploy, the next scheduled snapshot of one hostinger repo uploads and commits. Accept: `backup usage` shows the new snapshot.
+  (corrected ASKED:2026-11-05T07:06Z) Bench form: a manual `backup snapshot` on a bench repo, and the Accept reads as bench: `rdc --config eu-bench backup usage` shows the new snapshot. The hostinger scheduled-timer clause, after the stable deploy, moved to agent/plans/PLAN-first-release-checks.md (Hostinger scheduled timer).
 
 - [ ] LP-bench [live] Fresh bench receipt through worklist.py --live-proof, after this plan's bench-deployable boxes land.
   Accept: live-proof bench account-smoke

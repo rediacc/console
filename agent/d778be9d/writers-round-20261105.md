@@ -1,5 +1,7 @@
 # writers-now round, 2026-11-05
 
+The signatures in this file and in the round's briefs are unreliable: the brief script paired the sorted `open_sigs` with file-order labels, so labels are right and signatures are shuffled. Read each signature from `worklist.py --plan-tick` or the parser before using it. No tick used these.
+
 Sixteen first-wave writers returned with no commits: their boxes are live, post-merge, held by the edge and stable hold, or need an operator answer.
 
 ## Closing commands the lead owes
