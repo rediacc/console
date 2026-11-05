@@ -483,8 +483,9 @@ Two holes went to another session on 2026-10-15 for an immediate fix: cross-tena
     (ticked) 2026-10-24T16:39:02Z by d778be9d: commit:82968efc4 (elite 19ac922; account half c185e93/10f0fc6) forwarded headers trusted only from TRUSTED_PROXIES; elite generates RustFS/admin credentials on first start and refuses defaults in cloud mode; test-credentials.sh rc=0, ip-binding tests 65 passed
 - [x] S11: Small fixes: requireTwoFactor on DELETE /configs/:id (private/account/src/routes/configs.ts:1436), /rotate-cek/status limited to admins (:812), CI_MODE pinned false in the Workers entry (private/account/src/entry/cloudflare.ts:36). Accept: vitest per route.
     (ticked) 2026-10-24T16:02:44Z by d778be9d: commit:cdaa70209 (account 8e97b94) requireTwoFactor on DELETE /configs/:id, requireRotationAdmin on rotate-cek/status, CI_MODE pinned false in entry/cloudflare.ts; vitest 50 passed rc=0, refusals failed before the fix
-- [ ] S12: An isolation test suite that keeps these closed: two subscriptions, two orgs, two teams and two stores sharing ids, run in account vitest and in the RustFS drill (J4 receipt). Accept: the suite fails if any of S2-S8 is reverted.
+- [x] S12: An isolation test suite that keeps these closed: two subscriptions, two orgs, two teams and two stores sharing ids, run in account vitest and in the RustFS drill (J4 receipt). Accept: the suite fails if any of S2-S8 is reverted.
   (record 2026-11-05) account 3ea471b and 6fd73b1: 139 mutations, 136 red; one survivor gained a case and went red on rerun, and two are redundant layers whose stronger forms went red. Live and open: drill leg o and the J4 receipt.
+    (ticked) 2026-11-05T17:45:00Z by d778be9d: commit:18412e082 every clause read: two subscriptions, orgs, teams and stores in the suite; account vitest rc=0, drill leg o PASS, J4 receipt VERIFIED; mutation proof per the record line, run by the writer
 
 ### Phase P: local integration proof (dev VMs, account gateway, RustFS)
 
