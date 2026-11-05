@@ -83,11 +83,13 @@ lead instead); never vitest from the repo root; no inline suppression. This tree
   - report the commit shas; the lead lands them. A result worth keeping goes in a commit or the
     report, because GC deletes the tree's ignored output with the tree.
 
-Report, one block per box signature:
-  <sig> <done|present|partial|untouched|blocked-on-dep>
-  commits: <shas>
-  commands: <each command run, with its exit code>
-  remains: <the half still open and the exact command or decision that closes it, or "nothing">
+Report: per box the commands run with their exit codes, then one TICK line per box signature,
+the line the lead's tools read (`wl_planbox.parse_tick`):
+  TICK <PLAN-file>.md#<sig8> <done|present|partial|untouched|blocked> commits=<lease shas|-> landed=<C1,C2|all|-> owed=<C3:live,C4:operator|->
+    close: <the exact command or question that closes what is owed, or "nothing">
+For example:
+  TICK PLAN-rediaccfile-unprivileged.md#afa91934 partial commits=ec099603d landed=C1 owed=C2:live
+    close: worklist.py --live-proof <me> agent/plans/PLAN-rediaccfile-unprivileged.md afa91934 --write --tick
 ```
 
 **Track** the writers in one `--add-many <me>` call, one line per writer naming the plan and its box signatures, and lease each to the real agent id only after the Agent call returns it (`--lease <me> <id> +120 worker:<agent-id>`). `--plan-investigate` each box when its writer starts.

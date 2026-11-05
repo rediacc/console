@@ -160,6 +160,14 @@ def _fit(obj):
             < INDEX_LINE_MAX
         ):
             return obj
+    # `boxes` (PLAN-tick-tracking T6) shrinks next, last entry first: the body keeps every TICK line, so a capped list loses nothing a reader cannot re-derive.
+    while obj.get("boxes"):
+        obj["boxes"] = obj["boxes"][:-1]
+        if (
+            len(json.dumps(obj, separators=(",", ":"), ensure_ascii=False).encode("utf-8"))
+            < INDEX_LINE_MAX
+        ):
+            return obj
     for shrink in (200, 80, 0):
         obj["transcript"] = obj["transcript"][-shrink:] if shrink else ""
         if (
@@ -587,6 +595,28 @@ def open_boxes(body):
     return n
 
 
+BOXES_MAX = 6
+BOX_COMMITS_MAX = 4
+
+
+def boxes_of(body):
+    """The `boxes` index field (PLAN-tick-tracking Design 5, box T6): one dict per box the body's TICK lines name, through `wl_planbox.parse_tick` (the legacy prose reader included), bounded here and again by `_fit`."""
+    import wl_planbox
+
+    return [
+        {
+            "plan": row.plan,
+            "sig": row.sig,
+            "state": row.state,
+            "commits": list(row.commits[:BOX_COMMITS_MAX]),
+            "landed": row.landed if row.landed == "all" else list(row.landed),
+            "owed": [list(x) for x in row.owed],
+            **({"legacy": True} if row.legacy else {}),
+        }
+        for row in wl_planbox.parse_tick(body)[:BOXES_MAX]
+    ]
+
+
 def _body_key(body):
     """A short content key for one report body.
 
@@ -714,6 +744,8 @@ def capture(
             "opens": opens,
             # The content key this capture deduped against. Present from the moment bodies were keyed; ABSENT on every line written before, which is exactly how `capture` tells a legacy entry apart.
             "bkey": body_key,
+            # The boxes the report's TICK lines name (T6). Always written, [] included, so an absent key marks a capture taken before the field existed.
+            "boxes": boxes_of(body),
             # WHETHER THE TRANSCRIPT PATH ACTUALLY RESOLVED, checked at capture. A stored path that silently does not exist is worse than a null: every reader treats it as readable and quietly gets nothing, which is the vacuous-check class -- a lookup that cannot succeed and never says so. Found live: a stop fired with a well-formed path to a file that was never written, and the
             # SendMessage harvest read nothing from it without anybody being able to tell that from an agent that simply sent nothing.
             "tx": tx,
