@@ -4,7 +4,7 @@ WHY A SECOND LAYER (the commit-policy plan in agent/plans, section 5.3; operator
 
 WHAT EACH HOOK REFUSES (the rules are `commit_policy`'s, shared with the pre-bash guards):
 
-  commit-msg              a CI skip token; a commit on `main` that is not a well-formed `[hotfix]`; `[hotfix]` off `main`; `[no-review]` on a non-writing path or on a `[hotfix]`.
+  commit-msg              a CI skip token; a commit on `main` that is not a well-formed `[hotfix]`; `[hotfix]` off `main`; `[no-review]` on a non-writing path or on a `[hotfix]`; a commit from a lease tree without a valid `Plan-Box:` trailer (`lease_plan_box_refusal` below).
   reference-transaction   in the `prepared` state, a new `refs/heads/*` (old oid all zeros AND the name not yet resolving: a forced move of an existing branch also arrives with zeros, and is not a creation) that breaks the one-branch rule: outside a submodule, only from `main`, with no other live branch and an `MMDD-N` name; in a submodule, only the console's current branch name. LOCAL FACTS ONLY: no `gh`, so a branch counts as live until its upstream is gone.
   pre-commit              a commit from a lease tree (`commit_policy.lease_root`) that stages a gitlink or a path under `agent/`; a commit that stages a gen-docs provider input and leaves a generated doc region drifted in the COMMITTED tree (the section above `gen_docs_pre_commit` says how it stays fast), and a commit that stages an input of a generated artifact enrolled in `.ci/config/generated-artifacts.json` and leaves that artifact stale in the committed tree (`artifacts.py` beside this file).
   pre-push                a push sending or naming a pin under `refs/worktrees/`, from every repository; any push from a lease tree; a push to `main` other than the fast-forward fallback (one ref, a real commit, the live branch's pushed tip, the remote `main` its ancestor; box M2 of PLAN-plan-per-pr-loop, operator ruling 2026-10-02) or the GitLab mirror push (below), a delete of `main` included; a push creating a remote branch that is not the current one; a push of the backup paths that no VERIFIED backup receipt covers (box J10 of PLAN-backup-program, `backup_receipt_refusal` below). A line a live release run lists is admitted instead (box W1-D of PLAN-local-release, `_release_admitted` below).
@@ -150,7 +150,50 @@ def commit_msg(argv: list[str]) -> int:
                 "[no-review] is for writing only; these paths are not: %s."
                 % (", ".join(offenders[:8]) or "(no staged path)")
             )
-    return 0
+    return lease_plan_box_refusal(msg, repo)
+
+
+# A LEASE COMMIT NAMES THE PLAN BOX IT SERVES (agent/plans/PLAN-tick-tracking.md, box T3). `land` refuses a lease commit without a valid `Plan-Box:` trailer (T2); this hook refuses the same message at commit time, so the writer fixes it in its own lease before the lead reads it. The grammar is read in process from `wl_planbox.py`, loaded by file. The tree checks (the plan exists, the box is open, the clause is defined) import the worklist's plan modules, so they run as `python3 wl_planbox.py check --root <main checkout>`, a process whose own directory resolves those imports with no `sys.path` entry here. Only in a lease tree; the main checkout pays one `lease_root` call, which starts no subprocess outside the holder path.
+PLANBOX_PATH = CONSOLE_ROOT / ".claude" / "hooks" / "stop" / "wl_planbox.py"
+PLANBOX_TIMEOUT_S = 60
+
+
+def lease_plan_box_refusal(msg: str, repo: str) -> int:
+    lease = cp.lease_root(repo) if repo else ""
+    if not lease:
+        return 0
+    main = lease.partition(cp.LEASE_HOLDER)[0]
+    pb = _load("githook_planbox", PLANBOX_PATH)
+    parsed = pb.parse_plan_box(msg)
+    if not parsed.ok:
+        return _refuse(
+            "this commit from the lease tree %s carries no valid Plan-Box trailer:\n  %s\n"
+            "The grammar: %s\n%s" % (lease, "\n  ".join(parsed.errors), pb.GRAMMAR, cp.LEASE_ADVICE)
+        )
+    if parsed.none_reason is not None:
+        return 0
+    try:
+        done = subprocess.run(
+            [sys.executable, str(PLANBOX_PATH), "check", "--root", main],
+            input=msg,
+            capture_output=True,
+            text=True,
+            timeout=PLANBOX_TIMEOUT_S,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        return _refuse("UNCHECKED: the Plan-Box trailer could not be checked (%s)." % exc)
+    if done.returncode == 0:
+        return 0
+    if done.returncode == 1:
+        return _refuse(
+            "this commit from the lease tree %s names a plan box `land` would refuse:\n  %s\n"
+            "The grammar: %s" % (lease, "\n  ".join(done.stderr.strip().splitlines()), pb.GRAMMAR)
+        )
+    return _refuse(
+        "UNCHECKED: the Plan-Box check exited %d: %s"
+        % (done.returncode, done.stderr.strip()[-400:])
+    )
 
 
 # --------------------------------------------------------------------------- reference-transaction ---------------------------------------------------------------------------
