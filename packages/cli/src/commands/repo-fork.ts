@@ -447,6 +447,13 @@ async function orchestrateFork(plan: ForkPlan): Promise<void> {
   );
   if (outcome.kind === 'pending') {
     if (dnsPromise !== undefined) await Promise.allSettled([dnsPromise]);
+    // The network-ID retry (retryForkUpOnConflict) is a client second leg: it reads the refusal from the job's stderr and writes a new ID to the config, neither of which a ticket step can do while the client is away. It does not run here, so say where a refusal leaves the fork.
+    if (options.up) {
+      outputService.info(
+        `A network ID refusal at the up phase is not retried in the background: the fork "${forkKey}" stays registered once its image exists. ` +
+          `Retry with: rdc repo up ${forkKey} -m ${options.machine}`
+      );
+    }
     const code = pendingExitCode(outcome);
     if (code !== undefined) setExitCode(code);
     return;

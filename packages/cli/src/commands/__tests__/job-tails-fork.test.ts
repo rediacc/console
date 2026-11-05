@@ -111,6 +111,7 @@ vi.mock('../../utils/errors.js', async () => {
 const { setCommandJobDeps } = await import('../../services/jobs/command-job.js');
 const { TicketStore } = await import('../../services/jobs/ticket-store.js');
 const executorFactory = await import('../../services/executor/executor-factory.js');
+const outputModule = await import('../../services/core/output.js');
 const { registerRepoForkCommand } = await import('../repo-fork.js');
 const { registerRepoBranchingCommands } = await import('../repo-branching.js');
 
@@ -345,5 +346,35 @@ describe('repo checkout (one repository_fork job, with advanceHeadCommit as a st
     expect(tips).toHaveLength(1);
     expect(tips[0][0]).toBe('app:w');
     expect(onlyTicket().stepsDone).toContain('advanceHeadCommit');
+  });
+});
+
+describe('repo fork --up network-ID retry (a client second leg that does not run while the client is away)', () => {
+  const hints = () =>
+    vi
+      .mocked(outputModule.outputService.info)
+      .mock.calls.filter((c) => String(c[0]).includes('not retried'));
+
+  it('under --background names the exact retry command and starts no second up leg', async () => {
+    answer = BACKGROUND;
+    await runFork(['--tag', 'w', '--up']);
+
+    expect(hints()).toHaveLength(1);
+    expect(String(hints()[0][0])).toContain('rdc repo up app:w -m');
+    expect(upCalls).toEqual([]);
+    expect(mockRemoveRepository).not.toHaveBeenCalled();
+  });
+
+  it('control: a fork without --up has no up phase to refuse, so no hint', async () => {
+    answer = BACKGROUND;
+    await runFork(['--tag', 'w']);
+
+    expect(hints()).toEqual([]);
+  });
+
+  it('control: followed, the job finishes and no hint is printed', async () => {
+    await runFork(['--tag', 'w', '--up']);
+
+    expect(hints()).toEqual([]);
   });
 });
