@@ -8,8 +8,8 @@ tags:
 subcategory: architecture
 order: 4
 language: de
-sourceHash: "c7310ede42dd2da0"
-sourceCommit: "cce23c4daecfe425f572f17d98ad6dd1f4bce5d7"
+sourceHash: "ca9a0c894ff59160"
+sourceCommit: "e9aac9fb933462f72c9d2c3753c52a30f70b7f97"
 ---
 
 # Proxy & Executor
@@ -72,8 +72,9 @@ Jeder Befehl der Maschinenebene läuft auf der Maschine als Job: eine systemd-Un
 - **Tickets.** Jeder Aufruf schreibt außerdem ein Ticket in das Konfigurationsverzeichnis der CLI (`jobs/<config>.jsonl`). `rdc job wait <id>` wartet auf einen Job und endet mit dessen Exit-Code; `rdc job list`, `status`, `logs`, `cancel` und `gc` verwalten den Rest. Strg+C während des Mitverfolgens löst die Verbindung, ohne abzubrechen, und beendet mit 130. Ein Mitverfolgen, dessen Verbindung nicht wiederhergestellt werden konnte, endet mit 16 und behält das Ticket.
 - **Schritte.** Arbeit, die auf einen Job folgt, etwa ein Ergebnis in der Konfiguration zu vermerken oder eine Liste auszugeben, ist ein Schritt, der im Ticket und im Spool steht. Ein Schritt läuft einmal, dort, wo der Job zuerst als beendet erkannt wird: im Befehl selbst, in `rdc job wait`, im Hinweis des nächsten Befehls oder im Polling des Executors. Der Anspruch wird auf der Maschine erhoben, sodass zwei Beobachter nie denselben Schritt ausführen.
 - **Überschneidungen.** Ein Start, der sich mit einem laufenden Job auf demselben Repository oder derselben Maschine überschneidet, gibt eine Warnung mit dem Befehl aus, der sich an den laufenden Job anhängt. Lehnt die Überschneidungsrichtlinie den Start ab, endet der Befehl mit 15 (`BUSY`), und die Ablehnung nennt die überlappenden Jobs in `overlaps`.
-- **Ausnahmen.** Interaktive Befehle, clientseitige Übertragungen und die `job`-Befehle selbst laufen nicht als Jobs.
-- **Aufbewahrung.** Die Maschine behält einen beendeten reinen Lese-Job eine Stunde lang und jeden anderen beendeten Job sieben Tage lang, höchstens jedoch 2000 beendete Jobs.
+- **Schritte, solange der Client fort ist.** Ein Erfolgsschritt läuft nur, wenn der Job `succeeded` ist, ein Fehlschlagschritt wie ein Rollback nur, wenn er `failed` ist oder abgebrochen wurde. Endet ein Job innerhalb des Attach-Fensters, behält der Executor das Attach auch nach dem Trennen seines Clients bei und führt die Schritte aus; so schließt ein kurzer Befehl, dessen Client die Antwort verloren hat, seine Schritte trotzdem ab. Schritte laufen nur für einen Client, dessen Konfiguration der Konfiguration entspricht, die den Job gestartet hat; jede andere Konfiguration zeigt `N steps pending for config <name>`. Der Hinweis des nächsten Befehls führt offene Schritte bis zu 20 Sekunden nach dessen eigener Ausgabe aus, und nur in einem interaktiven Textlauf. Unter `-o json`, `-q` oder MCP führt er nichts aus und gibt `steps pending: rdc job wait <id>` auf stderr aus. Solange kein Beobachter das Ende des Jobs gesehen hat, läuft der Dienst weiter, die Schritte warten jedoch: DNS-Namen, Zertifikatsabgleich und URL-Liste nach `repo up`, die Backup-Zeitpläne nach Fork, Migration oder Restore sowie der Basiseintrag, der den nächsten Push zum Delta macht. `rdc job list` zeigt `steps pending`, bis sie gelaufen sind.
+- **Ausnahmen.** Interaktive Befehle (`term connect`, `repo tunnel`, `vscode connect`, `repo exec -i` und `repo logs -f`), clientseitige Übertragungen (`repo sync upload`, `download` und `status` sowie `backup upload` und `download`), die `job`-Befehle, `serve`, `vscode serve status` und `stop` sowie Befehle ohne renet-Aufruf wie `cluster kubeconfig` und `machine access push` laufen nicht als Jobs. Die lokalen OpenTofu-Abschnitte von `machine provision` und `deprovision` laufen wie bisher auf dem Client. Jeder andere Befehl der Maschinenebene ist ein Job.
+- **Aufbewahrung.** Ein beendeter reiner Lese-Job wird eine Stunde lang aufbewahrt, jeder andere beendete Job sieben Tage. Ein Job mit einem Schritt, den niemand beansprucht hat, bleibt unabhängig von seiner Klasse sieben Tage erhalten, und ein laufender Job wird nie entfernt. Der Spool hält höchstens 2000 beendete Jobs und 256 MiB, dabei gehen die ältesten beendeten Jobs zuerst. Die Bereinigung läuft beim Start eines Jobs, höchstens einmal pro Stunde. Die systemd-Unit des Jobs wird beim ersten Statusabruf oder Bereinigungslauf gestoppt, der den Job als beendet sieht.
 
 ## Verwandte Seiten
 

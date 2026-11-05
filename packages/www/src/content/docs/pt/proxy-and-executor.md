@@ -8,8 +8,8 @@ tags:
 subcategory: architecture
 order: 4
 language: pt
-sourceHash: "c7310ede42dd2da0"
-sourceCommit: "cce23c4daecfe425f572f17d98ad6dd1f4bce5d7"
+sourceHash: "ca9a0c894ff59160"
+sourceCommit: "e9aac9fb933462f72c9d2c3753c52a30f70b7f97"
 ---
 
 # Proxy e Executor
@@ -72,8 +72,9 @@ Cada comando do plano de máquina é executado na máquina como um job: uma unid
 - **Os tickets.** Cada invocação escreve também um ticket na pasta de configuração da CLI (`jobs/<config>.jsonl`). `rdc job wait <id>` espera por um job e termina com o seu código de saída; `rdc job list`, `status`, `logs`, `cancel` e `gc` gerem o resto. Ctrl-C durante um acompanhamento desliga-se sem cancelar e sai com 130. Um acompanhamento cuja ligação não pôde ser restabelecida sai com 16 e mantém o ticket.
 - **Os passos.** O trabalho que se segue a um job, como registar um resultado na configuração ou mostrar uma listagem, é um passo anotado no ticket e no spool. Um passo corre uma vez, no sítio que primeiro vê o job terminar: o próprio comando, `rdc job wait`, o aviso impresso pelo comando seguinte ou a consulta do executor. A reivindicação faz-se na máquina, pelo que dois observadores nunca executam o mesmo passo.
 - **As sobreposições.** Um arranque que se sobrepõe a um job ativo no mesmo repositório ou na mesma máquina imprime um aviso com o comando que se liga ao job ativo. Quando a política de sobreposição recusa o arranque, o comando sai com 15 (`BUSY`), e a recusa indica os jobs sobrepostos em `overlaps`.
-- **As exceções.** Os comandos interativos, as transferências do lado do cliente e os próprios comandos `job` não correm como jobs.
-- **A retenção.** A máquina guarda um job de leitura terminado durante uma hora e qualquer outro job terminado durante sete dias, com um máximo de 2000 jobs terminados.
+- **Os passos enquanto o cliente está ausente.** Um passo de sucesso só corre quando o job termina em `succeeded`, e um passo de falha, como uma reversão, só quando termina em `failed` ou é cancelado. Quando um job termina dentro da janela de ligação, o executor mantém a ligação mesmo que o cliente se desligue e executa os passos, pelo que um comando curto cujo cliente perdeu a resposta conclui na mesma os seus passos. Os passos só correm para um cliente cuja configuração coincide com a que iniciou o job; qualquer outra configuração mostra `N steps pending for config <name>`. O aviso impresso pelo comando seguinte executa os passos pendentes durante no máximo 20 segundos depois da saída desse comando, e só numa execução de texto interativa. Com `-o json`, `-q` ou MCP não executa nada e imprime `steps pending: rdc job wait <id>` no stderr. Enquanto nenhum observador viu o job terminar, o serviço continua a funcionar, mas os passos esperam: os nomes DNS, a sincronização de certificados e a listagem de URL depois de `repo up`, os agendamentos de cópias de um fork, de uma migração ou de uma restauração, e o registo de base que faz do próximo push um delta. `rdc job list` mostra `steps pending` até correrem.
+- **As exceções.** Os comandos interativos (`term connect`, `repo tunnel`, `vscode connect`, `repo exec -i` e `repo logs -f`), as transferências do lado do cliente (`repo sync upload`, `download` e `status`, e `backup upload` e `download`), os comandos `job`, `serve`, `vscode serve status` e `stop`, e os comandos que não fazem nenhuma chamada ao renet, como `cluster kubeconfig` e `machine access push`, não correm como jobs. Os troços locais de OpenTofu de `machine provision` e `deprovision` correm no cliente como antes. Qualquer outro comando do plano de máquina é um job.
+- **A retenção.** Um job de leitura terminado é guardado durante uma hora e qualquer outro job terminado durante sete dias. Um job com um passo que ninguém reclamou é guardado sete dias seja qual for a sua classe, e um job em execução nunca é removido. O spool guarda no máximo 2000 jobs terminados e 256 MiB, saindo primeiro os mais antigos. A limpeza corre ao iniciar um job, no máximo uma vez por hora. A unidade systemd do job é parada na primeira leitura de estado ou passagem de limpeza que o vê terminado.
 
 ## Relacionados
 

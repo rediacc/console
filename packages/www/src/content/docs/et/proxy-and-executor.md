@@ -8,8 +8,8 @@ tags:
 subcategory: architecture
 order: 4
 language: et
-sourceHash: "c7310ede42dd2da0"
-sourceCommit: "cce23c4daecfe425f572f17d98ad6dd1f4bce5d7"
+sourceHash: "ca9a0c894ff59160"
+sourceCommit: "e9aac9fb933462f72c9d2c3753c52a30f70b7f97"
 ---
 
 # Proxy ja käitaja
@@ -72,8 +72,9 @@ Iga masinatasandi käsk töötab masinas tööna: renet haldab systemd üksust, 
 - **Piletid.** Iga käivitus kirjutab lisaks pileti CLI seadistuskataloogi (`jobs/<config>.jsonl`). `rdc job wait <id>` ootab tööd ja lõpeb selle väljumiskoodiga; `rdc job list`, `status`, `logs`, `cancel` ja `gc` haldavad ülejäänut. Ctrl-C jälgimise ajal eraldub tühistamata ja väljub koodiga 130. Jälgimine, mille ühendust ei õnnestunud taastada, väljub koodiga 16 ja jätab pileti alles.
 - **Sammud.** Töö järel tehtav, näiteks tulemuse kirjutamine seadistusse või loendi kuvamine, on samm, mis on kirja pandud piletisse ja spoolis. Samm käivitub üks kord seal, kus töö lõppemist esimesena nähakse: käsk ise, `rdc job wait`, järgmise käsu trükitud teade või täitja päring. Nõue esitatakse masinas, mistõttu kaks jälgijat ei käivita kunagi sama sammu.
 - **Kattuvused.** Käivitus, mis kattub sama hoidla või sama masina käimasoleva tööga, trükib hoiatuse käsuga, mis haakub käimasoleva tööga. Kui kattumispoliitika keeldub käivitusest, lõpeb käsk koodiga 15 (`BUSY`) ja keeldumine nimetab kattuvad tööd väljas `overlaps`.
-- **Erandid.** Interaktiivsed käsud, kliendipoolsed ülekanded ja `job`-käsud ise ei tööta töödena.
-- **Säilitus.** Masin hoiab lõppenud kirjutuskaitstud tööd ühe tunni ja iga muud lõppenud tööd seitse päeva ning kuni 2000 lõppenud tööd.
+- **Sammud kliendi äraoleku ajal.** Edusamm käivitub ainult siis, kui töö on `succeeded`, ja tõrkesamm, näiteks tagasivõtmine, ainult siis, kui töö on `failed` või tühistatud. Kui töö lõpeb haakimisaknas, hoiab täitja haakimist alles ka pärast kliendi lahtiühendamist ja käivitab sammud, nii et lühike käsk, mille klient vastuse kaotas, lõpetab oma sammud ikkagi. Sammud käivituvad ainult kliendil, kelle seadistus vastab tööd käivitanud seadistusele; iga muu seadistus näitab `N steps pending for config <name>`. Järgmise käsu teade käivitab ootel sammud kuni 20 sekundit selle käsu enda väljundi järel ja ainult interaktiivses tekstikäivituses. Valikuga `-o json`, `-q` või MCP kaudu ei käivita see midagi ja trükib stderr-i `steps pending: rdc job wait <id>`. Kuni ükski jälgija pole töö lõppemist näinud, teenus töötab edasi, kuid sammud ootavad: DNS-nimed, sertifikaatide sünkroonimine ja URL-ide loend pärast `repo up`, forki, migreerimise või taastamise varundusgraafikud ning baaskirje, mis teeb järgmisest push'ist deltapush'i. `rdc job list` näitab `steps pending`, kuni need on käivitunud.
+- **Erandid.** Interaktiivsed käsud (`term connect`, `repo tunnel`, `vscode connect`, `repo exec -i` ja `repo logs -f`), kliendipoolsed ülekanded (`repo sync upload`, `download` ja `status` ning `backup upload` ja `download`), `job`-käsud, `serve`, `vscode serve status` ja `stop` ning käsud, mis ei tee ühtegi renet-kutset, näiteks `cluster kubeconfig` ja `machine access push`, ei tööta töödena. Käskude `machine provision` ja `deprovision` kohalikud OpenTofu etapid töötavad kliendil nagu varem. Iga muu masinatasandi käsk on töö.
+- **Säilitus.** Lõppenud kirjutuskaitstud tööd hoitakse ühe tunni ja iga muud lõppenud tööd seitse päeva. Tööd, mille sammu keegi pole nõudnud, hoitakse seitse päeva olenemata klassist, ja käimasolevat tööd ei eemaldata kunagi. Spool mahutab kuni 2000 lõppenud tööd ja 256 MiB, vanimad lõppenud tööd lähevad esimesena. Puhastus käib töö käivitamisel, kuni kord tunnis. Töö systemd-üksus peatatakse esimesel olekulugemisel või puhastuskäigul, mis näeb tööd lõppenuna.
 
 ## Seotud
 

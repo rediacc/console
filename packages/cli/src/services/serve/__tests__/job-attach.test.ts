@@ -387,7 +387,7 @@ describe('attach window over /v1/command', () => {
 
   it('is unchanged for a refused command: a 400 before any stream opens', async () => {
     boot(() => Promise.resolve({ success: true, exitCode: 0, durationMs: 1 }));
-    const res = await post({ pathKey: 'repo sync upload' });
+    const res = await post({ pathKey: 'repo sync status' });
     expect(res.status).toBe(400);
   });
   /** Let the real I/O of the in-process server run while the timers are faked. */

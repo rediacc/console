@@ -8,8 +8,8 @@ tags:
 subcategory: architecture
 order: 4
 language: zh
-sourceHash: "c7310ede42dd2da0"
-sourceCommit: "cce23c4daecfe425f572f17d98ad6dd1f4bce5d7"
+sourceHash: "ca9a0c894ff59160"
+sourceCommit: "e9aac9fb933462f72c9d2c3753c52a30f70b7f97"
 ---
 
 # 代理与执行器
@@ -72,8 +72,9 @@ sourceCommit: "cce23c4daecfe425f572f17d98ad6dd1f4bce5d7"
 - **凭据。** 每次调用还会在 CLI 的配置目录（`jobs/<config>.jsonl`）里写入一张凭据。`rdc job wait <id>` 等待作业，并以该作业的退出码结束；`rdc job list`、`status`、`logs`、`cancel` 和 `gc` 负责其余管理。跟随期间按 Ctrl-C 只会分离而不取消，并以 130 退出。无法重新建立连接的跟随会以 16 退出，并保留凭据。
 - **步骤。** 作业之后的工作，例如把结果记录进配置或显示列表，是记录在凭据和 spool 中的步骤。步骤在最先看到作业结束的地方运行一次：命令本身、`rdc job wait`、下一条命令打印的提示，或执行器的轮询。认领在机器上完成，所以两个观察者不会运行同一个步骤。
 - **重叠。** 与同一仓库或同一机器上正在运行的作业重叠的启动，会打印一条警告，并附上连接到该运行中作业的命令。重叠策略拒绝启动时，命令以 15（`BUSY`）退出，拒绝信息会在 `overlaps` 中列出重叠的作业。
-- **例外。** 交互式命令、客户端侧的传输以及 `job` 命令本身不作为作业运行。
-- **保留。** 机器把已结束的只读作业保留一小时，把其他已结束的作业保留七天，且最多保留 2000 个已结束的作业。
+- **客户端不在期间的步骤。** 成功步骤仅在作业为 `succeeded` 时运行，回滚这类失败步骤仅在作业为 `failed` 或被取消时运行。作业在附着窗口内结束时，即使客户端已断开，执行器也会保持附着并运行这些步骤，因此客户端没收到答复的短命令仍能完成它的步骤。步骤只对配置与启动该作业的配置一致的客户端运行，其他配置会显示 `N steps pending for config <name>`。下一条命令打印的提示会在该命令自身输出之后最多运行 20 秒的待处理步骤，且仅限交互式文本运行。在 `-o json`、`-q` 或 MCP 下，它不运行任何步骤，只在 stderr 打印 `steps pending: rdc job wait <id>`。在没有观察者看到作业结束之前，服务会继续运行，但步骤要等待：`repo up` 之后的 DNS 名称、证书同步和 URL 列表，分叉、迁移或恢复之后的备份计划，以及让下一次推送成为增量推送的基线记录。`rdc job list` 会显示 `steps pending`，直到这些步骤运行完毕。
+- **例外。** 交互式命令（`term connect`、`repo tunnel`、`vscode connect`、`repo exec -i` 和 `repo logs -f`）、客户端侧的传输（`repo sync upload`、`download` 和 `status`，以及 `backup upload` 和 `download`）、`job` 命令、`serve`、`vscode serve status` 和 `stop`，以及不调用 renet 的命令（如 `cluster kubeconfig` 和 `machine access push`），都不作为作业运行。`machine provision` 和 `deprovision` 的本地 OpenTofu 部分仍像以前一样在客户端运行。机器层的其他命令都是作业。
+- **保留。** 已结束的只读作业保留一小时，其他已结束的作业保留七天。带有无人认领步骤的作业，无论属于哪一类都保留七天，运行中的作业永远不会被清理。spool 最多保存 2000 个已结束的作业和 256 MiB，最旧的已结束作业先被清理。清理在作业启动时运行，每小时最多一次。作业的 systemd 单元会在第一次看到作业已结束的状态读取或清理过程中被停止。
 
 ## 相关
 
