@@ -916,7 +916,16 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
         row["age_min"] = None if not row["spawned"] else max(0.0, (now - row["spawned"]) / 60.0)
         row.pop("jsonl", None)
 
+    # THE REPORT EACH FINISHED WORKER LEFT (agent/plans/PLAN-tick-tracking.md Design 5, box T7): every dead row cites the worker's captured report id and the box sigs it names, and a coordinator's row lists each child (metas whose `parentAgentId` is that worker) the same way. A store that cannot be read cites nothing.
+    dead_cites = {}
+    if leased_dead:
+        try:
+            dead_cites = report_citations([(i, w) for i, w, _c in leased_dead], metas, start)
+        except (OSError, ValueError, ImportError, AttributeError, TypeError):
+            dead_cites = {}
+
     return {
+        "dead_cites": dead_cites,
         "state": state,
         "blind": blind,
         "rows": live,
@@ -1782,6 +1791,79 @@ def row_line(row):
     )
 
 
+def _report_boxes(store, entry):
+    """[(sig, state, owed halves)] of one report index entry: its `boxes` field (T6), else its body through `wl_planbox.parse_tick`."""
+    import wl_planbox
+
+    boxes = entry.get("boxes")
+    if not isinstance(boxes, list):
+        try:
+            body = (store / str(entry.get("body") or "")).read_text(
+                encoding="utf-8", errors="replace"
+            )
+        except OSError:
+            return []
+        boxes = [
+            {"sig": r.sig, "state": r.state, "owed": [list(x) for x in r.owed]}
+            for r in wl_planbox.parse_tick(body)
+        ]
+    out = []
+    for b in boxes:
+        if isinstance(b, dict) and b.get("sig"):
+            halves = sorted({str(x[1]) for x in b.get("owed") or [] if len(x) > 1})
+            out.append((str(b["sig"]), str(b.get("state") or "?"), halves))
+    return out
+
+
+def latest_report(entries, agent_id):
+    """The newest index entry captured for `agent_id` (its id is the agent's short id, or that id with a `-N` suffix), or None."""
+    import wl_report
+
+    rid = wl_report.short_id(agent_id)
+    hits = [e for e in entries if str(e["id"]) == rid or str(e["id"]).startswith(rid + "-")]
+    return hits[-1] if hits else None
+
+
+def _cite(store, entries, agent_id):
+    entry = latest_report(entries, agent_id)
+    if entry is None:
+        return "%s: no captured report" % agent_id, []
+    boxes = _report_boxes(store, entry)
+    sigs = " ".join(sig for sig, _st, _h in boxes) or "no box named"
+    return "%s: report %s, boxes %s" % (agent_id, entry["id"], sigs), boxes
+
+
+def report_citations(dead, metas, start, entries=None, store=None):
+    """{item id: [citation line]} for `[(item id, worker id)]`: the worker's report id and box sigs, then one line per child of a coordinator (a meta whose parent is the worker)."""
+    import wl_report
+
+    store = wl_report.store_root(start) if store is None else store
+    entries = wl_report.read_index(store) if entries is None else entries
+    kids = children_map(metas)
+    out = {}
+    for item, worker in dead:
+        lines = [_cite(store, entries, worker)[0]]
+        lines += ["child " + _cite(store, entries, k)[0] for k in sorted(kids.get(worker, []))]
+        out[item] = lines
+    return out
+
+
+def item_box_citations(text, entries, store):
+    """["report <rid> names box <sig> (<state>, owed <halves>)"] for each box sig `text` names that a captured report's TICK line names (the newest report per sig)."""
+    named = set(re.findall(r"(?<![0-9a-z])([0-9a-f]{8})(?![0-9a-z])", text or ""))
+    if not named:
+        return []
+    found = {}
+    for entry in entries:
+        for sig, state, halves in _report_boxes(store, entry):
+            if sig in named:
+                found[sig] = (entry["id"], state, halves)
+    return [
+        "report %s names box %s (%s, owed %s)" % (rid, sig, state, ",".join(halves) or "nothing")
+        for sig, (rid, state, halves) in sorted(found.items())
+    ]
+
+
 def defect_rows(verdict):
     """{"cap", "silent", "unleased", "dead"}: the rendered rows each roster block quotes. Never truncated: a defect list is short by nature, and a capped one would hide the id the remedy needs."""
     rows = verdict.get("rows") or {}
@@ -1797,8 +1879,10 @@ def defect_rows(verdict):
             "    %s: last status %s ago via %s%s"
             % (w, _mins(age), src, "" if coverer == w else "; its live descendant is %s" % coverer)
         )
+    cites = verdict.get("dead_cites") or {}
     dead = [
-        "    #%s leased to worker:%s, which is not live and has no live descendant" % (i, w)
+        "    #%s leased to worker:%s, which is not live and has no live descendant%s"
+        % (i, w, "".join("\n      " + c for c in cites.get(i) or []))
         for i, w, _c in verdict.get("leased_dead") or []
     ]
     # MERGED (operator ruling 2026-09-24, "Evidence counts as status"): a worker whose newest evidence is STATUS_PING_MIN old is the same fact as a silent one, so its status row rides the silent block rather than a second key.

@@ -4118,10 +4118,23 @@ def run_stop(event, event_ok, worklist, hook_file):
     if not event_ok:
         vadd("event-unparseable", True, M.V_EVENT_UNPARSEABLE % hook_file)
     if open_items:
+        # An item naming a box a captured report names gets that report cited beside it (agent/plans/PLAN-tick-tracking.md Design 5, box T7).
+        _oi_lines = ["    " + i for i in open_items]
+        with contextlib.suppress(Exception):
+            _oi_store = wl_report.store_root(root)
+            _oi_entries = wl_report.read_index(_oi_store)
+            _oi_lines = [
+                "    "
+                + i
+                + "".join(
+                    "\n      " + c for c in wl_roster.item_box_citations(i, _oi_entries, _oi_store)
+                )
+                for i in open_items
+            ]
         vadd(
             "open-items",
             False,
-            M.V_OPEN_ITEMS % (len(open_items), "\n".join("    " + i for i in open_items)),
+            M.V_OPEN_ITEMS % (len(open_items), "\n".join(_oi_lines)),
         )
     # FOCUS MODE: the PR's own fix work (items carrying the focus's `pr:<n>`) still blocks; `open-items` above is still produced and the FOCUS profile parks it, so the rest is counted and named on exit.
     if _focus:

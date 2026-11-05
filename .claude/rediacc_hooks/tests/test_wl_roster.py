@@ -2085,3 +2085,70 @@ def test_w12_hold_of_a_queue_item_reads_isolation_when_told():
     assert planorder.X.item_plan(rec) == "PLAN-a.md"
     assert planorder.hold(rec, live_b, xi.__getitem__) is not None
     assert planorder.hold(rec, live_b, xi.__getitem__, isolated=True) is None
+
+
+# ---- PLAN-tick-tracking T7: report ids and box sigs in LEASED TO A FINISHED WORKER --------------
+
+COORD = "a465aa7e2ca09a227"
+CHILD_BOXES = {
+    "live-proof-ladder": ("a1111aaaa1111aaa1", "7692f2db"),
+    "drills-upgrade": ("a2222bbbb2222bbb2", "1d17b634"),
+    "privdrop-probe": ("a3333cccc3333ccc3", "afa91934"),
+    "sampler": ("a4444dddd4444ddd4", "339bf791"),
+    "executor-seam": ("a5555eeee5555eee5", "3d256594"),
+}
+TICK_FIX = pathlib.Path(__file__).resolve().parent / "tick_tracking_fixtures" / "planbox"
+OLD_DEAD_ROW = "    #%s leased to worker:%s, which is not live and has no live descendant"
+
+
+def _report_world(tmp_path):
+    """Five finished child metas of the coordinator, each with its captured report (the round's real bodies, indexed without a `boxes` field, as a legacy row is)."""
+    report = wlfix.import_wl("wl_report")
+    store = tmp_path / "reports"
+    metas = {COORD: {"parent": ""}}
+    entries = []
+    for writer, (aid, _sig) in CHILD_BOXES.items():
+        metas[aid] = {"parent": COORD}
+        rel = "1104-1/%s.md" % writer
+        (store / "1104-1").mkdir(parents=True, exist_ok=True)
+        (store / rel).write_text(
+            (TICK_FIX / ("%s.report" % writer)).read_text(encoding="utf-8"), encoding="utf-8"
+        )
+        entries.append({"ev": "report", "id": report.short_id(aid), "body": rel})
+    return store, metas, entries
+
+
+def test_report_dead_row_cites_each_child_report_with_its_box(tmp_path):
+    roster = wlfix.import_wl("wl_roster")
+    report = wlfix.import_wl("wl_report")
+    store, metas, entries = _report_world(tmp_path)
+    cites = roster.report_citations([("i1", COORD)], metas, None, entries=entries, store=store)
+    lines = cites["i1"]
+    assert lines[0] == "%s: no captured report" % COORD
+    for aid, sig in CHILD_BOXES.values():
+        assert "child %s: report %s, boxes %s" % (aid, report.short_id(aid), sig) in lines
+    rows = roster.defect_rows({"leased_dead": [("i1", COORD, "")], "dead_cites": cites})["dead"]
+    assert rows.startswith(OLD_DEAD_ROW % ("i1", COORD))
+    for aid, sig in CHILD_BOXES.values():
+        assert report.short_id(aid) in rows
+        assert sig in rows
+
+
+def test_report_item_naming_a_box_renders_the_report_beside_it(tmp_path):
+    roster = wlfix.import_wl("wl_roster")
+    report = wlfix.import_wl("wl_report")
+    store, _metas, entries = _report_world(tmp_path)
+    got = roster.item_box_citations("- [ ] H2 live run of box afa91934 (d778be9d)", entries, store)
+    rid = report.short_id(CHILD_BOXES["privdrop-probe"][0])
+    assert got == ["report %s names box afa91934 (partial, owed live)" % rid]
+    assert roster.item_box_citations("- [ ] no box here", entries, store) == []
+
+
+def test_report_control_the_old_dead_row_holds_no_report_id():
+    roster = wlfix.import_wl("wl_roster")
+    report = wlfix.import_wl("wl_report")
+    old = OLD_DEAD_ROW % ("i1", COORD)
+    rows = roster.defect_rows({"leased_dead": [("i1", COORD, "")]})["dead"]
+    assert rows == old
+    for aid, _sig in CHILD_BOXES.values():
+        assert report.short_id(aid) not in old
