@@ -1322,6 +1322,9 @@ test.describe
       const CAP_NAME = `e2ebk-cap-${tag}`;
       const CAP_BYTES_PER_S = 8_000_000;
       const CAP_IMAGE_MIB = 256;
+      // E2c: the data written into the image, and the image that holds it with room for btrfs overhead.
+      const CAP_FILL_MIB = 300;
+      const CAP_FILL_IMAGE_MIB = 512;
       const CAP_FLOOR_S = 30;
 
       const workerCpus = async (): Promise<number> => {
@@ -1368,6 +1371,9 @@ test.describe
           await cli.run(['backup', 'strategy', 'remove', name]);
           await cli.run(['backup', 'schedule', '-m', M1]);
         });
+        // K7's strategy still holds the destination name `hosted` until the describe's teardown, and a destination name is unique across strategies, so it is released first.
+        await cli.run(['backup', 'strategy', 'unbind', STRATEGY, '-m', M1]);
+        await cli.run(['backup', 'strategy', 'remove', STRATEGY]);
         const set = await cli.run([
           'backup',
           'strategy',
@@ -1379,10 +1385,11 @@ test.describe
           '0 4 * * *',
           '--include',
           REPO_NAME,
-          '--cpu-limit',
-          '25',
         ]);
         expect(set.code, `strategy set: ${bothChannels(set).slice(-600)}`).toBe(0);
+        // --cpu-limit applies to the whole strategy, so the CLI refuses it beside --destination: a second set carries it.
+        const limit = await cli.run(['backup', 'strategy', 'set', name, '--cpu-limit', '25']);
+        expect(limit.code, `strategy set --cpu-limit: ${bothChannels(limit).slice(-600)}`).toBe(0);
         const bind = await cli.run(['backup', 'strategy', 'bind', name, '-m', M1]);
         expect(bind.code, `strategy bind: ${bothChannels(bind).slice(-600)}`).toBe(0);
         const schedule = await cli.run(['backup', 'schedule', '-m', M1]);
@@ -1402,14 +1409,30 @@ test.describe
         cleanup.push(async () => {
           await cli.run(['repo', 'delete', name, '-y']);
         });
-        await provisionRepo(cli, w1, name, M1, `${CAP_IMAGE_MIB}M`);
+        // The uploader reads only the cells that hold data (a fresh image is mostly zero: 15 of 64 cells were read, which is 62.9 MB and 8 s at 8 MB/s), so the floor needs the image to HOLD more than 30 s x 8 MB/s of data.
+        const repo = await provisionRepo(cli, w1, name, M1, `${CAP_FILL_IMAGE_MIB}M`);
+        const mounted = await w1.repositoryMount(repo.guid, repo.credential, DS, repo.networkId);
+        expect(
+          mounted.code,
+          `mounting ${repo.guid}: ${w1.getCombinedOutput(mounted).slice(-600)}`
+        ).toBe(0);
+        const write = await w1.executeViaBridge(
+          `sudo dd if=/dev/urandom of="${DS}/mounts/${repo.guid}/fill.bin" bs=1M count=${CAP_FILL_MIB} conv=notrunc status=none && sync`,
+          600_000
+        );
+        expect(write.code, `fill ${repo.guid}: ${w1.getCombinedOutput(write)}`).toBe(0);
+        const unmounted = await w1.repositoryUnmount(repo.guid, DS);
+        expect(
+          unmounted.code,
+          `unmounting ${repo.guid}: ${w1.getCombinedOutput(unmounted).slice(-600)}`
+        ).toBe(0);
         const started = Date.now();
         const run = await cli.run(['backup', 'snapshot', `${name}@${M1}`, '--read-bwlimit', '8M']);
         const seconds = (Date.now() - started) / 1000;
         expect(run.code, `capped snapshot: ${bothChannels(run).slice(-800)}`).toBe(0);
         expect(
           seconds,
-          `${CAP_IMAGE_MIB} MiB at ${CAP_BYTES_PER_S} B/s took ${seconds}s`
+          `${CAP_FILL_MIB} MiB of data at ${CAP_BYTES_PER_S} B/s took ${seconds}s; record: ${run.stdout.slice(-2500)}`
         ).toBeGreaterThanOrEqual(CAP_FLOOR_S);
       });
 
@@ -1487,13 +1510,21 @@ test.describe
         cleanup.push(async () => {
           await cli.run(['repo', 'delete', IMG_COPY, '-y']);
         });
-        const up = await cli.run(['backup', 'upload', file, '--to', M1, '--as', IMG_COPY, '--up']);
+        // No --up here: mounting rewrites the btrfs superblock inside the LUKS image, so a hash taken after the repo came up differs from the source whatever the upload did (measured: the sha after `--up` differed). The copy is hashed as uploaded, then brought up.
+        const up = await cli.run(['backup', 'upload', file, '--to', M1, '--as', IMG_COPY]);
         expect(up.code, `upload --as: ${bothChannels(up).slice(-800)}`).toBe(0);
         const copy = repoIdentity(cli, IMG_COPY);
         expect(copy.guid, 'upload --as kept the source GUID').not.toBe(guid);
         expect(await imageSha(w1, copy.guid), 'the uploaded copy differs from the source').toBe(
           machineSha
         );
+        // `repo up` cannot stand in for `--up`: the copy has no licence until the upload's own deploy step files one, so a second upload carries the "comes up" half.
+        const IMG_UP = `${IMG_COPY}-up`;
+        cleanup.push(async () => {
+          await cli.run(['repo', 'delete', IMG_UP, '-y']);
+        });
+        const upped = await cli.run(['backup', 'upload', file, '--to', M1, '--as', IMG_UP, '--up']);
+        expect(upped.code, `upload --as --up: ${bothChannels(upped).slice(-3000)}`).toBe(0);
       });
 
       test('E3c. a kill -9 of export leaves a stale transfer that prune removes, and prune spares a held .lock', async () => {

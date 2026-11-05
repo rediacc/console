@@ -67,7 +67,9 @@ test.describe
 
     test.afterAll(async () => {
       await w.executeViaBridge(`sudo renet job gc --older-than 0 --json`).catch(() => undefined);
-      await w.executeViaBridge(`rm -f /tmp/e2e-jobs-*.json`).catch(() => undefined);
+      await w
+        .executeViaBridge(`rm -f /tmp/e2e-jobs-*.json /tmp/e2e-jobs-*.sh`)
+        .catch(() => undefined);
     });
 
     test('1. two concurrent starts with one request id give one job and one spool entry', async () => {
@@ -91,11 +93,12 @@ test.describe
 
     test('2. two concurrent claims of one step give it to exactly one claimant', async () => {
       const vault = await stageVault('claim', vaultFor(2891));
+      // `job claim` only names steps the job's plan declares (steps.json, written by `job start --steps`).
       const start = await w.executeViaBridge(
-        `sudo renet job start --executor local --json --vault @${vault}`
+        `sudo renet job start --executor local --json --vault @${vault} --steps '[{"name":"s","on":"success"}]'`
       );
       const { job_id: id } = parseHandle(start.stdout);
-      const claim = `sudo renet job claim --id ${id} --steps s --json`;
+      const claim = `sudo renet job claim --id ${id} --steps s`;
       const [a, b] = await Promise.all([w.executeViaBridge(claim), w.executeViaBridge(claim)]);
       const results = [a, b].map((r) => {
         const m = /"result"\s*:\s*"([a-z-]+)"/.exec(r.stdout);
@@ -114,9 +117,15 @@ test.describe
     });
 
     test('3. two concurrent starts with network_id auto get distinct ids', async () => {
-      const vault = await stageVault('auto', vaultFor('auto'));
-      const start = `sudo renet job start --executor local --json --vault @${vault}`;
-      const [a, b] = await Promise.all([w.executeViaBridge(start), w.executeViaBridge(start)]);
+      // Two repositories: a second start of the SAME repository is refused by its repo-exclusive lock (exit 15), which is case 5's subject, not this one's.
+      const vaultA = await stageVault('auto-a', vaultFor('auto', randomUUID()));
+      const vaultB = await stageVault('auto-b', vaultFor('auto', randomUUID()));
+      const startOf = (vault: string) =>
+        `sudo renet job start --executor local --json --vault @${vault}`;
+      const [a, b] = await Promise.all([
+        w.executeViaBridge(startOf(vaultA)),
+        w.executeViaBridge(startOf(vaultB)),
+      ]);
       const ha = parseHandle(a.stdout);
       const hb = parseHandle(b.stdout);
       expect(ha.network_id, 'first start allocated no network id').toBeGreaterThan(0);
@@ -147,12 +156,12 @@ test.describe
     test('2b. control: claims of two different steps are both won', async () => {
       const vault = await stageVault('claim-ctl', vaultFor(2895));
       const start = await w.executeViaBridge(
-        `sudo renet job start --executor local --json --vault @${vault}`
+        `sudo renet job start --executor local --json --vault @${vault} --steps '[{"name":"s1","on":"success"},{"name":"s2","on":"success"}]'`
       );
       const { job_id: id } = parseHandle(start.stdout);
       const [a, b] = await Promise.all(
         ['s1', 's2'].map((step) =>
-          w.executeViaBridge(`sudo renet job claim --id ${id} --steps ${step} --json`)
+          w.executeViaBridge(`sudo renet job claim --id ${id} --steps ${step}`)
         )
       );
       for (const r of [a, b]) {
@@ -174,11 +183,20 @@ test.describe
         0
       );
       const vault = await stageVault('holder', vaultFor(2892, REPO));
-      const frozen = await w.executeViaBridge(
-        `out=$(sudo renet job start --executor local --json --vault @${vault}) && ` +
-          `unit=$(printf '%s' "$out" | sed -n 's/.*"unit":"\\([^"]*\\)".*/\\1/p' | head -n1) && ` +
-          `sudo systemctl kill -s STOP "$unit" && printf '%s\\n' "$out"`
-      );
+      // A script on the worker: the bridge's own shell would expand `$(...)`, `$out` and `$unit` in a one-line command before they reach the worker, running `renet job start` on the bridge and splicing its output into the command.
+      const script = '/tmp/e2e-jobs-freeze.sh';
+      const staged = await w.executeViaBridge(`umask 077 && cat > ${script}`, undefined, {
+        stdin: [
+          'set -e',
+          `out=$(sudo renet job start --executor local --json --vault @${vault})`,
+          `unit=$(printf '%s' "$out" | sed -n 's/.*"unit":"\\([^"]*\\)".*/\\1/p' | head -n1)`,
+          'sudo systemctl kill -s STOP "$unit"',
+          `printf '%s\\n' "$out"`,
+          '',
+        ].join('\n'),
+      });
+      expect(staged.code, `staging ${script}`).toBe(0);
+      const frozen = await w.executeViaBridge(`bash ${script}`);
       expect(frozen.code, `holder start or freeze: ${frozen.stderr.slice(-400)}`).toBe(0);
       holder = parseHandle(frozen.stdout);
       const live = await w.executeViaBridge(`sudo renet job list --active --json`);
