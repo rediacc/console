@@ -291,8 +291,12 @@ export default {
           { status: 503 }
         );
       }
+      // The issuer answers every bad bearer with the same refusal, so the hint covers the common one: a login token, which lacks proxy:exec.
       return Response.json(
-        { error: 'This request carried no usable token for the executor.' },
+        {
+          error:
+            'This request carried no usable token for the executor: it needs a token with the proxy:exec scope, which a login token does not carry. Mint one with `rdc subscription proxy-token` and pass it as REDIACC_TOKEN.',
+        },
         { status: 401 }
       );
     }
