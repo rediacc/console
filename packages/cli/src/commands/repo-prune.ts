@@ -5,6 +5,7 @@ import { outputService } from '../services/core/output.js';
 import { setExitCode } from '../services/core/request-context.js';
 import { getExecutor } from '../services/executor/executor-factory.js';
 import { runCommandJob } from '../services/jobs/command-job.js';
+import { requireStepOutput } from '../services/jobs/step-output.js';
 import { bindStepHandler, planStep } from '../services/jobs/steps.js';
 import { isAgentEnvironment } from '../utils/agent-guard.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
@@ -179,7 +180,9 @@ bindStepHandler('renderRepoPrune', ({ output, params }) => {
   if (typeof label !== 'string' || label === '') {
     return Promise.reject(new Error('step param "label" is missing'));
   }
-  renderRecords([{ label, record: parseDatastorePruneOutput(output ?? '') as PruneRecord }], false);
+  const text = requireStepOutput(output, 'repo prune');
+  if (text === undefined) return Promise.resolve();
+  renderRecords([{ label, record: parseDatastorePruneOutput(text) as PruneRecord }], false);
   return Promise.resolve();
 });
 

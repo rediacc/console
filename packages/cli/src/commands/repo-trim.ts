@@ -3,6 +3,7 @@ import { t } from '../i18n/index.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
 import { runCommandJob } from '../services/jobs/command-job.js';
+import { requireStepOutput } from '../services/jobs/step-output.js';
 import { bindStepHandler, planStep } from '../services/jobs/steps.js';
 import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
 import { recordedDatastoreMount } from '../utils/repo-executor.js';
@@ -121,7 +122,9 @@ async function handleTrimAction(ref: string | undefined, options: TrimOptions): 
 
 /** The `renderRepoTrim` step: print the result the trim job produced. */
 bindStepHandler('renderRepoTrim', ({ output }) => {
-  renderTrimResult(parseDatastorePruneOutput(output ?? '') as TrimResult);
+  const text = requireStepOutput(output, 'repo trim');
+  if (text === undefined) return Promise.resolve();
+  renderTrimResult(parseDatastorePruneOutput(text) as TrimResult);
   return Promise.resolve();
 });
 

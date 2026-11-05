@@ -6,6 +6,7 @@ import { outputService } from '../services/core/output.js';
 import { setExitCode } from '../services/core/request-context.js';
 import type { ExecuteResult } from '../services/executor/executor-factory.js';
 import { pendingExitCode, runCommandJob } from '../services/jobs/command-job.js';
+import { requireStepOutput } from '../services/jobs/step-output.js';
 import { bindStepHandler, planStep } from '../services/jobs/steps.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { compositeKey, parseRepoRef } from '../utils/config-schema.js';
@@ -201,7 +202,9 @@ async function handleCheckout(
 
 /** The success step of `repo log`: the entries the job printed, as JSON under `-o json` and as rows otherwise. */
 bindStepHandler('renderRepoLog', ({ output }) => {
-  const parsed = parseRenetJson<{ entries: Record<string, unknown>[] }>(output ?? '');
+  const text = requireStepOutput(output, 'repo log');
+  if (text === undefined) return Promise.resolve();
+  const parsed = parseRenetJson<{ entries: Record<string, unknown>[] }>(text);
   // Structured output rides the global `-o json` format now; the dedicated
   // `--json` flag is gone (spec/03 §5.4).
   if (getOutputFormat() === 'json') {

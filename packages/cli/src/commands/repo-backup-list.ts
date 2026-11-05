@@ -3,6 +3,7 @@ import { outputService } from '../services/core/output.js';
 import { setExitCode } from '../services/core/request-context.js';
 import type { ExecuteResult } from '../services/executor/executor-factory.js';
 import { pendingExitCode, runCommandJob } from '../services/jobs/command-job.js';
+import { requireStepOutput } from '../services/jobs/step-output.js';
 import { bindStepHandler, planStep } from '../services/jobs/steps.js';
 import { optStr } from '../services/jobs/steps-support.js';
 import { getOutputFormat, ValidationError } from '../utils/errors.js';
@@ -143,7 +144,9 @@ export async function listBackups(
 }
 
 bindStepHandler('renderBackupList', async ({ output, params }) => {
-  const entries = extractBackupListPayload(output ?? '')?.entries ?? [];
+  const text = requireStepOutput(output, 'backup list');
+  if (text === undefined) return;
+  const entries = extractBackupListPayload(text)?.entries ?? [];
   const refName = optStr(params, 'ref');
   const tagged: TaggedBackupEntry[] = entries.map((e) => ({ ...e, mode: e.path ?? '' }));
   await renderBackupList(

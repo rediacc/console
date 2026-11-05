@@ -4,6 +4,7 @@ import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
 import { setExitCode } from '../services/core/request-context.js';
 import { pendingExitCode, runCommandJob } from '../services/jobs/command-job.js';
+import { requireStepOutput } from '../services/jobs/step-output.js';
 import { bindStepHandler, planStep } from '../services/jobs/steps.js';
 import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
@@ -113,9 +114,11 @@ async function runPolicyFunction(
   }
 }
 
-bindStepHandler('renderPolicyResult', ({ output }) =>
-  renderPolicyResult(parseDatastorePruneOutput(output ?? ''))
-);
+bindStepHandler('renderPolicyResult', ({ output }) => {
+  const text = requireStepOutput(output, 'repo policy');
+  if (text === undefined) return Promise.resolve();
+  return renderPolicyResult(parseDatastorePruneOutput(text));
+});
 
 interface PolicyFields {
   auto_grow?: boolean | null;

@@ -10,6 +10,7 @@ import { outputService } from '../../services/core/output.js';
 import { setExitCode } from '../../services/core/request-context.js';
 import { getExecutor } from '../../services/executor/executor-factory.js';
 import { pendingExitCode, runCommandJob } from '../../services/jobs/command-job.js';
+import { requireStepOutput } from '../../services/jobs/step-output.js';
 import { bindStepHandler, planStep } from '../../services/jobs/steps.js';
 import type { PruneReport } from '../../services/repo/prune.js';
 import { getOutputFormat, handleError } from '../../utils/errors.js';
@@ -68,8 +69,13 @@ let renderedPhases: { datastore?: unknown; units?: unknown } = {};
 
 /** Render both phases of a finished `machine_prune` job: the datastore result (a preview table on dry-run) and the unit report. */
 function renderPrunePhases(output: string | undefined, dryRun: boolean): void {
-  const phases = splitPrunePhases(output);
   renderedPhases = {};
+  const text = requireStepOutput(output, 'machine prune');
+  if (text === undefined) return;
+  const phases = splitPrunePhases(text);
+  // renet prints the datastore phase as a JSON document even when nothing is prunable, so a blank phase is a lost read.
+  // The units phase is text and may legitimately print nothing, so it is not judged.
+  if (requireStepOutput(phases.datastore, 'machine prune datastore phase') === undefined) return;
   try {
     const parsed = parseDatastorePruneOutput(phases.datastore);
     renderedPhases.datastore = parsed;

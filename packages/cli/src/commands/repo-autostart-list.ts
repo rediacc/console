@@ -5,6 +5,7 @@
 import { t } from '../i18n/index.js';
 import { outputService } from '../services/core/output.js';
 import { runCommandJob } from '../services/jobs/command-job.js';
+import { requireStepOutput } from '../services/jobs/step-output.js';
 import { bindStepHandler, planStep } from '../services/jobs/steps.js';
 import { getOutputFormat } from '../utils/errors.js';
 import { createGuidResolver, loadGuidMap } from '../utils/guid-resolver.js';
@@ -55,7 +56,9 @@ export async function handleAutostartList(options: AutostartListOptions): Promis
 /** The `renderAutostartList` step: print the payload the `repository_autostart_list` job produced. */
 bindStepHandler('renderAutostartList', async ({ output, params }) => {
   // renet relays a single JSON object with `[repository_autostart_list]` line prefixes, same shape the prune parser extracts.
-  const payload = parseDatastorePruneOutput(output ?? '') as AutostartListPayload;
+  const text = requireStepOutput(output, 'repo admin autostart list');
+  if (text === undefined) return;
+  const payload = parseDatastorePruneOutput(text) as AutostartListPayload;
   const format = getOutputFormat();
   if (format !== 'table') {
     outputService.print(payload, format);
