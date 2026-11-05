@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 5,
-  "generatedAt": "2026-11-05T08:33:52.938Z",
+  "generatedAt": "2026-11-05T11:15:06.472Z",
   "legs": [
     {
       "index": 1,
@@ -257,6 +257,7 @@
         "pytest:.ci/rediacc_ci/tests/test_ops_live_proof.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_observability_volume.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_push_backup_credentials.py",
+        "pytest:.ci/rediacc_ci/tests/test_ops_read_cap_seed.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_scrub_sentinel.py",
         "pytest:.ci/rediacc_ci/tests/test_private_run_account.py",
         "pytest:.ci/rediacc_ci/tests/test_proof_live_tier.py",

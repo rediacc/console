@@ -213,8 +213,8 @@ First-Seen: 2026-10-29
 
 - [ ] L2. A real capped snapshot of a mid-size repo, under the existing sampler.
   - Owns: none in the tree.
-  - Run `bash /tmp/scr/seed.sh demo-heartbeat` (2.15 GB; it peaked at load 8.13 before), unchanged. The read cap comes from the verb default, and seed.sh already passes `--bwlimit 100Mbps --parallelism 2`.
-  - Accept: `bash /tmp/scr/seed.sh demo-heartbeat && tail -n 3 /tmp/seed/summary.log | awk '/^demo-heartbeat /{for(i=2;i<=NF;i++){split($i,a,"=");v[a[1]]=a[2]}} END{exit !(v["rc"]=="0" && v["peakload"]+0<=v["baseload"]+3.5 && v["peakwa"]+0<=15 && v["loadover8x3"]=="0")}'` rc 0.
+  - Run `PYTHONPATH=.ci python3 -m rediacc_ci.ops.read_cap_seed demo-heartbeat --machine hostinger --config eu-bench` (2.15 GB; it peaked at load 8.13 before). The read cap comes from the verb default, and the driver passes `--bwlimit 100Mbps --parallelism 2`. The driver replaces the untracked /tmp/scr/seed.sh, which no longer exists, and prints `weak=1` for a no-change run: such a run does not prove this box's "real" snapshot, so a weak line needs a repo with changed cells or no journal.
+  - Accept: `PYTHONPATH=.ci python3 -m rediacc_ci.ops.read_cap_seed demo-heartbeat --machine hostinger --config eu-bench && tail -n 3 /tmp/seed/summary.log | awk '/^demo-heartbeat /{for(i=2;i<=NF;i++){split($i,a,"=");v[a[1]]=a[2]}} END{exit !(v["rc"]=="0" && v["peakload"]+0<=v["baseload"]+3.5 && v["peakwa"]+0<=15 && v["loadover8x3"]=="0")}'` rc 0.
     (live record 2026-10-29, 9f92c43e) L2 run 11:18-11:20Z: `bash /tmp/scr/seed.sh demo-heartbeat` (script patched to stop at baseload + 3.5 for three samples) rc=0, Accept awk exit 0. Snapshot 20261029T111942Z-8e102de17f84873b, addedBytes 0 (the repo was already stored and its anchor and journal were intact, so nothing was re-read or uploaded: record imageBytes 2147483648, readCapBps 50000000, hashWorkers 1, durationMs 10500, CLI wall 29 s). baseload 1.19 (60 s pre-sample), peakload 1.40, peakwa 1, only 2 samples in the 29 s window. The Accept passes, but it exercised neither the read cap nor the upload (a no-change run), so it is a weak pass; the capped read of a repo with a changed or missing journal is exercised by the bulk seed (the next live records in PLAN-backup-program.md).
 
 ## Risks
@@ -249,7 +249,7 @@ Asked after erpnext peaked at load 12.89 at --parallelism 1, the operator answer
     (ticked) 2026-10-29T13:33:02Z by d778be9d: commit:03aeb5213 vitest 148 passed rc=0, tsc rc=0, check:ci-cli-contract rc=0
 - [ ] L3. hostinger: a capped snapshot of one remaining repo shows backup CPU at or below 50 % of all cores in every sample, with the record carrying cpuQuota=400%.
   - Owns: none in the tree.
-  - Accept: the seed driver run for that repo rc 0, with the per-sample CPU figures recorded under this box.
+  - Accept: `PYTHONPATH=.ci python3 -m rediacc_ci.ops.read_cap_seed <repo> --machine hostinger --config eu-bench --stop-on cpu && grep '^<repo> ' /tmp/seed/summary.log | tail -n 1 | awk '{for(i=2;i<=NF;i++){split($i,a,"=");v[a[1]]=a[2]}} END{exit !(v["rc"]=="0" && v["cpuQuota"]=="400%" && v["backupcpun"]+0>0 && v["backupcpun"]==v["samples"] && v["backupcpuover50"]=="0")}'` rc 0, with the line's `backupcpu=` and `busycpu=` figures recorded under this box.
 
 
 - [ ] LP-hostinger [live] Fresh hostinger receipt through worklist.py --live-proof, after this plan's hostinger-deployable boxes land.
