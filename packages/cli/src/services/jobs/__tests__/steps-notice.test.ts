@@ -118,6 +118,39 @@ describe('the notice under -o json', () => {
     expect(write).not.toHaveBeenCalled();
   });
 
+  it('drops a ticket whose repository left the config, instead of nagging on every command', async () => {
+    addFinished();
+    const write = vi.fn();
+    const repoExists = vi.fn(async () => false);
+    shouldRunNotice({
+      commandPath: 'repo list',
+      quiet: false,
+      format: 'json',
+      inExecutorRequest: false,
+    });
+    await finishNotice(() => ({ store, write, repoExists }));
+
+    expect(repoExists).toHaveBeenCalledWith('web');
+    expect(write).not.toHaveBeenCalled();
+    expect(store.pending()).toEqual([]);
+  });
+
+  it('keeps a ticket whose repository is still there, or could not be checked', async () => {
+    addFinished();
+    for (const answer of [true, undefined]) {
+      const write = vi.fn();
+      shouldRunNotice({
+        commandPath: 'repo list',
+        quiet: false,
+        format: 'json',
+        inExecutorRequest: false,
+      });
+      await finishNotice(() => ({ store, write, repoExists: async () => answer }));
+      expect(write).toHaveBeenCalledWith(`steps pending: rdc job wait ${JOB_ID}`);
+      expect(store.pending()).toHaveLength(1);
+    }
+  });
+
   it('a job command prints nothing', async () => {
     addFinished();
     const write = vi.fn();
@@ -176,6 +209,24 @@ describe('the notice in a text run', () => {
       `steps pending: rdc job wait ${JOB_ID}`,
     ]);
     expect(store.pending()).toHaveLength(1);
+  });
+
+  it('a text run drops a ticket whose repository left the config before announcing it', async () => {
+    addFinished();
+    const runner = spyRunner();
+    const write = vi.fn();
+    shouldRunNotice({
+      commandPath: 'repo list',
+      quiet: false,
+      format: 'table',
+      inExecutorRequest: false,
+    });
+    startNoticeCheck({ ...noticeDeps(runner.deps, true, write), repoExists: async () => false });
+    await finishNotice();
+
+    expect(runner.claim).not.toHaveBeenCalled();
+    expect(write).not.toHaveBeenCalled();
+    expect(store.pending()).toEqual([]);
   });
 
   it('announces a ticket that still owes a step once, then only the pending line', () => {

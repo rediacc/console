@@ -50,6 +50,8 @@ export interface NoticeDeps {
   steps?: StepRunnerDeps;
   /** Whether this is an interactive run (steps run only then). Defaults to stderr being a TTY. */
   interactive?: boolean;
+  /** Whether a ticket's repository is still in the config: false drops the ticket, undefined (could not tell) keeps it. Absent, nothing is dropped. */
+  repoExists?(repo: string): Promise<boolean | undefined>;
 }
 
 /**
@@ -162,6 +164,40 @@ export function printFinishedNotices(deps: Pick<NoticeDeps, 'store' | 'write' | 
   }
 }
 
+/**
+ * Acknowledge the finished tickets whose repository left the config. Their steps have nothing left to act on, since each one works on the repository's config entry (settleRepoDelete refuses outright without one), so the ticket used to print `steps pending: rdc job wait <id>` on every later command forever (a deleted fork on bench, 2026-11-05). Never rejects.
+ */
+export async function dropOrphanedTickets(
+  deps: Pick<NoticeDeps, 'store' | 'repoExists'>
+): Promise<void> {
+  const repoExists = deps.repoExists;
+  if (!repoExists) return;
+  try {
+    const owing = deps.store
+      .pending()
+      .filter(
+        (tk) => tk.repo && isTerminalTicketState(tk.state) && pendingStepNames(tk).length > 0
+      );
+    for (const ticket of owing) {
+      const exists = await repoExists(ticket.repo as string).catch(() => undefined);
+      if (exists === false) deps.store.append('acknowledged', ticket.requestId);
+    }
+  } catch {
+    // swallowed on purpose
+  }
+}
+
+/** The live repository check: a config that cannot be read answers undefined, so nothing is dropped on a guess. */
+export async function liveRepoExists(repo: string): Promise<boolean | undefined> {
+  try {
+    const { configService } = await import('../config/config-resources.js');
+    if (!(await configService.getCurrent())) return undefined;
+    return (await configService.getRepository(repo)) !== undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 /** The `pending-only` half: no machine call and no step, only the pending line on stderr. */
 function printPendingSteps(deps: Pick<NoticeDeps, 'store' | 'write'>): void {
   try {
@@ -232,10 +268,13 @@ export function startNoticeCheck(deps: NoticeDeps): void {
   active = { deps, check: checkPendingTickets(deps) };
 }
 
-function livePendingDeps(): Pick<NoticeDeps, 'store' | 'write'> {
+type PendingDeps = Pick<NoticeDeps, 'store' | 'write' | 'repoExists'>;
+
+function livePendingDeps(): PendingDeps {
   return {
     store: new TicketStore(getEffectiveConfigName()),
     write: (line) => writeStderr(`${line}\n`),
+    repoExists: liveRepoExists,
   };
 }
 
@@ -245,7 +284,7 @@ function livePendingDeps(): Pick<NoticeDeps, 'store' | 'write'> {
  * from the store alone; any other run does nothing.
  */
 export async function finishNotice(
-  pendingDeps: () => Pick<NoticeDeps, 'store' | 'write'> = livePendingDeps
+  pendingDeps: () => PendingDeps = livePendingDeps
 ): Promise<void> {
   const current = active;
   const mode = recordedMode;
@@ -254,13 +293,16 @@ export async function finishNotice(
   if (!current) {
     if (mode !== 'pending-only') return;
     try {
-      printPendingSteps(pendingDeps());
+      const deps = pendingDeps();
+      await dropOrphanedTickets(deps);
+      printPendingSteps(deps);
     } catch {
       // a config name the store rejects never breaks the command
     }
     return;
   }
   await current.check;
+  await dropOrphanedTickets(current.deps);
   if (current.deps.interactive ?? Boolean(process.stderr.isTTY)) {
     await runNoticeSteps(current.deps);
   }

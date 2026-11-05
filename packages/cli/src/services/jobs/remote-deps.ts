@@ -15,7 +15,7 @@ import {
   replayJobLogs,
 } from '../executor/job-remote.js';
 import type { RenetEvent } from '../executor/types.js';
-import type { NoticeDeps, TicketObservation } from './finished-notice.js';
+import { liveRepoExists, type NoticeDeps, type TicketObservation } from './finished-notice.js';
 import type { JobWaitDeps } from './job-wait.js';
 import { TicketStore } from './ticket-store.js';
 
@@ -68,6 +68,7 @@ export function liveNoticeDeps(): NoticeDeps {
   return {
     store: openTicketStore(),
     write: (line) => writeStderr(`${line}\n`),
+    repoExists: liveRepoExists,
     observe: (ticket): Promise<TicketObservation | undefined> => {
       if (ticket.via?.kind === 'proxy' || !ticket.machine || !ticket.jobId) {
         return Promise.resolve(undefined);
