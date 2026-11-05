@@ -52,6 +52,43 @@ interface CliConfigFile {
   };
 }
 
+// renet writes one JSON object per line on stdout ({"gc_result": {...}} per candidate, {"gc_summary": {...}} last; private/renet cmd/renet/repository_gc.go runGC). Logrus output rides stderr, so only stdout lines that parse as those objects count.
+interface GcResult {
+  guid: string;
+  status: string;
+  reason?: string;
+}
+interface GcSummary {
+  total: number;
+  deleted: number;
+  skipped: number;
+  failed: number;
+}
+interface GcRun {
+  code: number;
+  raw: string;
+  results: GcResult[];
+  summary?: GcSummary;
+}
+
+const parseGcLine = (line: string): { gc_result?: GcResult; gc_summary?: GcSummary } => {
+  if (!line.trim().startsWith('{')) return {};
+  try {
+    return JSON.parse(line) as { gc_result?: GcResult; gc_summary?: GcSummary };
+  } catch {
+    return {};
+  }
+};
+
+const parseGcOutput = (stdout: string, stderr: string): Omit<GcRun, 'code'> => {
+  const parsed = stdout.split('\n').map(parseGcLine);
+  return {
+    raw: `${stdout}\n${stderr}`.slice(-600),
+    results: parsed.flatMap((p) => (p.gc_result ? [p.gc_result] : [])),
+    summary: parsed.find((p) => p.gc_summary)?.gc_summary,
+  };
+};
+
 test.describe
   .serial('rdc migrate routing (CLI-driven) @cli @migrate', () => {
     test.skip(!canRun, 'Requires two worker VMs (machine-11 / machine-12)');
@@ -141,13 +178,39 @@ test.describe
       for (const extra of EXTRA_APPS) await deleteAppQuietly(extra);
     });
 
+    const workerPairs = (): (readonly [RenetFunctionsTestRunner, string])[] => [
+      [w1, M1],
+      [w2, M2],
+    ];
+
+    // Every repo name and every GUID the suite created, on both machines. A probe that throws counts as residue: an unreadable machine proves nothing.
+    const residueOn = async (
+      runner: RenetFunctionsTestRunner,
+      label: string
+    ): Promise<string[]> => {
+      const residue: string[] = [];
+      for (const name of [APP, APP2, ...EXTRA_APPS]) {
+        if (await repoPresentOnBridge(runner, name).catch(() => true)) {
+          residue.push(`${name} on ${label}`);
+        }
+      }
+      for (const guid of extraGuids) {
+        if (await imageExists(runner, guid).catch(() => true)) {
+          residue.push(`image ${guid} on ${label}`);
+        }
+      }
+      return residue;
+    };
+    const residueAfterTeardown = async (): Promise<string[]> => [
+      ...(await residueOn(w1, M1)),
+      ...(await residueOn(w2, M2)),
+    ];
+
     test.afterAll(async () => {
-      await deleteAppQuietly(APP);
-      await deleteAppQuietly(APP2);
-      for (const extra of EXTRA_APPS) await deleteAppQuietly(extra);
+      for (const name of [APP, APP2, ...EXTRA_APPS]) await deleteAppQuietly(name);
       // The M1 cases can leave a stray source copy or a mounted commit the CLI delete never sees: remove them by GUID on both machines.
       for (const guid of extraGuids) {
-        for (const runner of [w1, w2]) {
+        for (const [runner] of workerPairs()) {
           await runner
             .executeViaBridge(
               `sudo renet repository unmount --name ${guid} --datastore ${DS}; sudo renet repository delete --name ${guid} --force --stop-docker --datastore ${DS}`
@@ -155,10 +218,7 @@ test.describe
             .catch(() => undefined);
         }
       }
-      // Zero-residue: neither machine keeps a repo the suite created.
-      const onW1 = await repoPresentOnBridge(w1, APP).catch(() => false);
-      const onW2 = await repoPresentOnBridge(w2, APP).catch(() => false);
-      expect(onW1 || onW2, 'e2ecli-app residue survived teardown').toBe(false);
+      expect(await residueAfterTeardown(), 'residue survived teardown').toEqual([]);
     });
 
     test('1. preflight: both machines respond to `rdc machine status` (CliRunner + config wired)', async () => {
@@ -295,6 +355,9 @@ test.describe
       return BigInt(res.stdout.trim().split('\n').pop() ?? '0');
     };
     const upStamp = (guid: string): string => `/var/tmp/e2e-m1-up-${guid}`;
+    const stopFile = (guid: string): string => `/var/tmp/e2e-m1-stop-${guid}`;
+    // How long up() holds after its first stamp. The last stamp marks the END of the target's bring-up, so a source delete that overlaps the bring-up lands before it.
+    const UP_HOLD_S = 5;
 
     // Create a repo on machine-11, bring it up and install a Rediaccfile whose `up()` runs the body `upBody(guid)` returns, on whichever machine brings the repo up. The file lives in the repo image, so migrate carries it to the target.
     const seedRepo = async (name: string, upBody: (guid: string) => string): Promise<string> => {
@@ -320,34 +383,52 @@ test.describe
         'repository_migrate'
       );
 
-      // `up()` appends a nanosecond timestamp to a host file, so the target's bring-up is a timestamp read off the target itself.
-      const guid = await seedRepo(APP_ORDER, (g) => `    date +%s%N >> ${upStamp(g)}`);
+      // `up()` appends a nanosecond timestamp to a host file, holds, then appends another: the last stamp is the end of the target's bring-up, read off the target itself.
+      const guid = await seedRepo(
+        APP_ORDER,
+        (g) =>
+          `    date +%s%N >> ${upStamp(g)}\n    sleep ${UP_HOLD_S}\n    date +%s%N >> ${upStamp(g)}`
+      );
       await w1.executeViaBridge(`sudo rm -f ${upStamp(guid)}`);
       await w2.executeViaBridge(`sudo rm -f ${upStamp(guid)}`);
 
-      // Clock offset between the workers, so both timestamps compare on one scale. The error is about one SSH round trip, below the gap between the target coming up and the source delete (a further CLI dispatch).
+      // Clock offset between the workers, so both timestamps compare on one scale. Reading machine-12 between two machine-11 reads brackets it: the offset is b minus the midpoint, and the measured error is half the bracket (one SSH round trip), subtracted from the margin below.
       const a = await nowNs(w1);
       const b = await nowNs(w2);
-      const offsetNs = b - a;
+      const c = await nowNs(w1);
+      const offsetNs = b - (a + c) / 2n;
+      const errNs = (c - a) / 2n + 1n;
 
-      // Watch the SOURCE image from the machine while the migrate runs: the first moment it is gone.
+      // Watch the SOURCE image from the machine while the migrate runs: the first moment it is gone. The poll lag (about 0.1 s) only delays the reading, so it can hide a violation by that much; up() holds ${UP_HOLD_S} s, far above it. The loop ends at the stop file, which the finally below writes, so a failed assertion never leaves it running.
+      await w1.executeViaBridge(`sudo rm -f ${stopFile(guid)}`);
       const watcher = w1.executeViaBridge(
-        `for i in $(seq 1 3000); do sudo test -e ${imagePath(guid)} || { date +%s%N; exit 0; }; sleep 0.1; done; echo timeout`
+        `for i in $(seq 1 3000); do [ -e ${stopFile(guid)} ] && { echo stopped; exit 0; }; sudo test -e ${imagePath(guid)} || { date +%s%N; exit 0; }; sleep 0.1; done; echo timeout`
       );
-      const mig = await cli.run(['repo', 'migrate', `${APP_ORDER}@${M1}`, '--to', M2]);
-      expect(mig.code, `migrate: ${(mig.stdout + mig.stderr).slice(-800)}`).toBe(0);
-      const gone = (await watcher).stdout.trim().split('\n').pop() ?? '';
+      let gone = '';
+      try {
+        const mig = await cli.run(['repo', 'migrate', `${APP_ORDER}@${M1}`, '--to', M2]);
+        expect(mig.code, `migrate: ${(mig.stdout + mig.stderr).slice(-800)}`).toBe(0);
+      } finally {
+        await w1.executeViaBridge(`touch ${stopFile(guid)}`);
+        gone = (await watcher).stdout.trim().split('\n').pop() ?? '';
+        await w1.executeViaBridge(`rm -f ${stopFile(guid)}`);
+      }
       expect(gone, 'the source image never disappeared during the migrate').toMatch(/^\d+$/);
       const sourceGoneNs = BigInt(gone) + offsetNs;
 
       const stamps = await w2.executeViaBridge(`sudo cat ${upStamp(guid)}`);
       expect(stamps.code, 'the target never ran up() (no stamp on machine-12)').toBe(0);
-      const targetUpNs = BigInt(stamps.stdout.trim().split('\n')[0] ?? '0');
+      const stampLines = stamps.stdout.trim().split('\n');
+      const targetUpNs = BigInt(stampLines.at(-1) ?? '0');
+      expect(
+        stampLines.length,
+        'up() on machine-12 did not run to its end stamp'
+      ).toBeGreaterThanOrEqual(2);
       expect(targetUpNs > 0n).toBe(true);
 
       expect(
-        sourceGoneNs > targetUpNs,
-        `source deleted at ${sourceGoneNs} (machine-12 clock) before the target was up at ${targetUpNs}`
+        sourceGoneNs - errNs > targetUpNs,
+        `source deleted at ${sourceGoneNs} (machine-12 clock, error ${errNs} ns) before the target finished coming up at ${targetUpNs}`
       ).toBe(true);
       // End state: the target holds the repo, the source does not.
       expect(await imageExists(w2, guid)).toBe(true);
@@ -355,8 +436,13 @@ test.describe
     });
 
     test('11. a migrate whose target fails to come up keeps the source intact', async () => {
+      const w1Host = (await w1.executeViaBridge('hostname')).stdout.trim();
       const w2Host = (await w2.executeViaBridge('hostname')).stdout.trim();
       expect(w2Host, 'machine-12 reported no hostname').not.toBe('');
+      expect(
+        w2Host,
+        'machine-11 and machine-12 share a hostname, so the failure cannot be targeted'
+      ).not.toBe(w1Host);
       // `up()` fails on machine-12 only, so the source job and the source bring-up succeed and the target's repo up is the step that fails.
       const guid = await seedRepo(
         APP_FAIL,
@@ -384,14 +470,11 @@ test.describe
       const committed = await w1.repositoryCommit(fork, commit, 'e2e gc race', DS);
       expect(committed.code, `commit: ${w1.getCombinedOutput(committed).slice(-600)}`).toBe(0);
 
-      const gcRun = async (): Promise<{ lines: string; code: number }> => {
+      const gcRun = async (): Promise<GcRun> => {
         const res = await w1.executeViaBridge(
           `sudo renet repository gc --candidates ${commit}@${DS} --datastore ${DS}`
         );
-        const lines = res.stdout
-          .split('\n')
-          .filter((l) => l.includes('"gc_result"') || l.includes('"gc_summary"'));
-        return { code: res.code, lines: lines.join('\n') };
+        return { code: res.code, ...parseGcOutput(res.stdout, res.stderr) };
       };
 
       // The list step: the commit is present and unmapped, so a client building its candidate set now includes it.
@@ -406,18 +489,22 @@ test.describe
       expect(mounted.code, `mount commit: ${w1.getCombinedOutput(mounted).slice(-600)}`).toBe(0);
 
       const kept = await gcRun();
-      expect(kept.code, `gc failed instead of skipping: ${kept.lines}`).toBe(0);
-      expect(kept.lines).toContain('"status":"skipped"');
-      expect(kept.lines).toContain('"reason":"mounted"');
-      expect(kept.lines).toContain('"deleted":0');
+      expect(kept.code, `gc failed instead of skipping: ${kept.raw}`).toBe(0);
+      expect(kept.results, kept.raw).toEqual([
+        expect.objectContaining({ guid: commit, status: 'skipped', reason: 'mounted' }),
+      ]);
+      expect(kept.summary, kept.raw).toMatchObject({ total: 1, deleted: 0, skipped: 1, failed: 0 });
       expect(await imageExists(w1, commit), 'gc deleted a mounted commit').toBe(true);
 
       // Control: unmounted, the same call deletes it, so the skip above came from the mount and from nothing else.
       const unmounted = await w1.repositoryUnmount(commit, DS, id.networkId);
       expect(unmounted.code, `unmount: ${w1.getCombinedOutput(unmounted).slice(-600)}`).toBe(0);
       const deleted = await gcRun();
-      expect(deleted.code, deleted.lines).toBe(0);
-      expect(deleted.lines).toContain('"status":"deleted"');
+      expect(deleted.code, deleted.raw).toBe(0);
+      expect(deleted.results, deleted.raw).toEqual([
+        expect.objectContaining({ guid: commit, status: 'deleted' }),
+      ]);
+      expect(deleted.summary, deleted.raw).toMatchObject({ total: 1, deleted: 1, failed: 0 });
       expect(await imageExists(w1, commit)).toBe(false);
     });
   });
