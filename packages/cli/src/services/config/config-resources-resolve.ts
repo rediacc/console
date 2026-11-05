@@ -12,7 +12,7 @@ import { RESERVED_TAG } from '@rediacc/shared/ref';
 import type { ArchivedRepository, RepositoryConfig } from '../../types/index.js';
 import { parseRepoRef, RESERVED_GRAND_TAG } from '../../utils/config-schema.js';
 
-/** A repository whose base name matches an operator's `--name` query. */
+/** A repository whose base name matches an operator's bare ref. */
 export interface RepoCandidate {
   key: string;
   kind: 'grand' | 'fork';
@@ -20,7 +20,7 @@ export interface RepoCandidate {
 }
 
 /**
- * Thrown when a bare `--name` matches more than one config key (e.g. grand +
+ * Thrown when a bare ref matches more than one config key (e.g. grand +
  * fork share the base name). Destructive commands surface this to force the
  * operator to supply an explicit `<name>:<tag>`.
  */
@@ -31,7 +31,7 @@ export class AmbiguousRepoTargetError extends Error {
       .map((c) => `  - ${c.key}  (${c.kind}; guid=${c.guid.slice(0, 8)})`)
       .join('\n');
     super(
-      `"${ref}" is ambiguous, because multiple repositories share this base name:\n${lines}\nRe-run with an explicit --name <name>:<tag> to target one.`
+      `"${ref}" is ambiguous, because multiple repositories share this base name:\n${lines}\nRe-run with an explicit <name>:<tag> ref to target one.`
     );
     this.name = 'AmbiguousRepoTargetError';
     this.candidates = candidates;
@@ -257,15 +257,56 @@ export function resolveDestructiveTargetFromRepos(
   if (!resolvedKey) {
     if (isBare && candidates.length === 1) {
       throw new Error(
-        `Repository "${repoRef}" not found. Did you mean "${candidates[0].key}"? Re-run with --name ${candidates[0].key}.`
+        `Repository "${repoRef}" not found. Did you mean "${candidates[0].key}"? Re-run with the ref ${candidates[0].key}.`
       );
     }
     throw new Error(`Repository "${repoRef}" not found in context`);
   }
 
   const resolved = repos[resolvedKey];
-  if (isBare && isForkConfig(resolved)) {
-    throw new AmbiguousRepoTargetError(repoRef, candidates);
+  if (isBare && isForkConfig(resolved) && !isRestoredRecord(repos, baseName, resolvedKey)) {
+    throw new ForkUnderBareRefError(repoRef, resolvedKey, grandKeyOf(repos, resolved));
   }
   return { key: resolvedKey, config: resolved };
+}
+
+/**
+ * True for a restored repository: `backup restore` registers it under
+ * `<name>:latest` with a fresh GUID and the snapshot's lineage as grandGuid,
+ * so it looks like a fork whose grand is not in this config. It is the
+ * family's only member and no record here carries the lineage GUID, so a bare
+ * name has nothing else it could mean. renet-vault-sections.ts
+ * findGrandByBareName addresses it by the bare name under the same rule.
+ */
+function isRestoredRecord(
+  repos: Record<string, RepositoryConfig>,
+  baseName: string,
+  key: string
+): boolean {
+  if (key !== `${baseName}:${RESERVED_GRAND_TAG}`) return false;
+  if (collectCandidates(repos, baseName).length !== 1) return false;
+  return grandKeyOf(repos, repos[key]) === undefined;
+}
+
+/** The config key of the record whose GUID is this fork's grandGuid, when the config has one. */
+function grandKeyOf(
+  repos: Record<string, RepositoryConfig>,
+  fork: RepositoryConfig
+): string | undefined {
+  return Object.entries(repos).find(([, cfg]) => cfg.repositoryGuid === fork.grandGuid)?.[0];
+}
+
+/**
+ * Thrown when a bare ref resolves to a single record that is a fork of a
+ * grand registered elsewhere in the config: a bare name means the grand, so
+ * a destructive command refuses to guess the fork (#495) and names it.
+ */
+export class ForkUnderBareRefError extends Error {
+  constructor(ref: string, forkKey: string, grandKey: string | undefined) {
+    const grand = grandKey ? `the grand registered as "${grandKey}"` : 'a grand not in this config';
+    super(
+      `"${ref}" resolves to "${forkKey}", a fork of ${grand}; a bare name targets a grand. Re-run with the explicit ref ${forkKey} to target the fork.`
+    );
+    this.name = 'ForkUnderBareRefError';
+  }
 }

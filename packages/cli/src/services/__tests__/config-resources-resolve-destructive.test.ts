@@ -102,16 +102,30 @@ describe('configService.resolveDestructiveTarget (issue #495)', { timeout: 30000
     expect(r.key).toBe('app');
   });
 
-  it('refuses bare ref that resolves to a fork (the #495 core case)', async () => {
+  it('refuses bare ref that resolves to a fork of a grand in the config (the #495 core case)', async () => {
     mockRepos = {
-      'app:latest': { repositoryGuid: 'g-fork', tag: 'latest', grandGuid: 'g-grand-elsewhere' },
+      'app:latest': { repositoryGuid: 'g-fork', tag: 'latest', grandGuid: 'g-grand' },
+      'shop:latest': { repositoryGuid: 'g-grand', tag: 'latest' },
     };
-    const { configService, AmbiguousRepoTargetError } = await import(
-      '../config/config-resources.js'
-    );
-    await expect(configService.resolveDestructiveTarget('app')).rejects.toBeInstanceOf(
-      AmbiguousRepoTargetError
-    );
+    const { configService } = await import('../config/config-resources.js');
+    const err = await configService.resolveDestructiveTarget('app').catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(Error);
+    const msg = (err as Error).message;
+    // One candidate is not "multiple repositories": the refusal names the real reason.
+    expect(msg).not.toMatch(/multiple repositories/);
+    expect(msg).toContain('a fork of the grand registered as "shop:latest"');
+    expect(msg).toContain('app:latest');
+  });
+
+  // #62605df1: `backup restore` registers <name>:latest with a fresh GUID and the lineage as grandGuid, so the record looks like a fork whose grand is nowhere in the config. `repo delete <name>@<m> -y` refused it as "ambiguous ... multiple repositories" listing ONE candidate.
+  it('resolves a bare ref to a restored record, the only member of a grandless family', async () => {
+    mockRepos = {
+      'app:latest': { repositoryGuid: 'g-restored', tag: 'latest', grandGuid: 'g-lineage' },
+    };
+    const { configService } = await import('../config/config-resources.js');
+    const r = await configService.resolveDestructiveTarget('app');
+    expect(r.key).toBe('app:latest');
+    expect(r.config.repositoryGuid).toBe('g-restored');
   });
 
   it('unknown ref throws plain not-found', async () => {
