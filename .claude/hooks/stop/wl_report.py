@@ -50,6 +50,10 @@ import wl_core as C
 INDEX_LINE_MAX = 1024
 # Below this many characters, an agent's final message is an acknowledgement rather than a report. Calibrated against a measured capture: a real teammate's in-transcript final message runs 1.5-6 KB, so 200 separates "said nothing" from "said something terse" without mislabelling either.
 SILENT_FLOOR = int(os.environ.get("WORKLIST_REPORT_SILENT_FLOOR", "200"))
+# The SendMessage recipients that are the lead (agent/plans/PLAN-tick-tracking.md, Design 5). A send to anyone else is an order or a reply between sub-agents: it is counted as `out`, so the row still shows the agent ran, and it is never stored as the agent's report.
+LEAD_RECIPIENTS = frozenset({"main", "team-lead", "lead"})
+# A RELAY is an agent that talked only to other agents and handed the lead nothing but a short turn-end line. Calibrated on the 52 stored rows (2026-11-05) whose every send went to another agent: the 19 coordinator turns ended on 31-379 characters of status ("Waiting for the remaining nine."), and the 33 real reports on 854-8 580. 600 sits in that gap. Such a row is neither a report nor silent: the agent ran, and nothing in it is addressed to the lead.
+RELAY_FLOOR = int(os.environ.get("WORKLIST_REPORT_RELAY_FLOOR", "600"))
 TITLE_MAX = 120
 # Surfacing is a context cost paid on every session start and every compaction.
 SURFACE_MAX_LINES = int(os.environ.get("WORKLIST_REPORT_SURFACE_MAX", "25"))
@@ -285,12 +289,16 @@ def unread(store, branch=None, reader=None):
     marks = read_marks(store, reader)
     entries = read_index(store)
     out = []
-    for pos, ev in enumerate(entries):
-        if str(ev["id"]) in marks:
+    for pos, row in enumerate(entries):
+        if str(row["id"]) in marks:
             continue
-        if branch is not None and str(ev.get("branch", "")) != branch:
+        if branch is not None and str(row.get("branch", "")) != branch:
             continue
-        if _foreign_and_stale(ev, reader):
+        if _foreign_and_stale(row, reader):
+            continue
+        # A relay holds nothing addressed to the lead (rejudge), so it is not a report to read.
+        ev = rejudge(store, row)
+        if ev.get("relay"):
             continue
         if ev.get("interim"):
             base = str(ev["id"]).split("-", 1)[0]
@@ -337,6 +345,69 @@ def _still_waiting(entry):
     if not path:
         return False
     return bool(wl_roster.transcript_waiting(pathlib.Path(path), time.time()))
+
+
+# ---- lead-bound substance (agent/plans/PLAN-tick-tracking.md, Design 5) ------
+
+_SEND_HEAD = re.compile(r"^## SendMessage \d+ -> (\S+)[^\n]*\n(?:_[^\n]*_\n)?", re.MULTILINE)
+_FINAL_HEAD = "## Final message\n\n"
+
+
+def is_lead(to):
+    """Is this SendMessage recipient the lead?"""
+    return str(to or "").strip() in LEAD_RECIPIENTS
+
+
+def is_relay(lead_sends, out, final):
+    """True for an agent that sent only to other agents and ended on a line too short to be a report (see RELAY_FLOOR)."""
+    return lead_sends == 0 and out > 0 and len(str(final or "").strip()) < RELAY_FLOOR
+
+
+def body_parts(body):
+    """([(to, message)], final) read back from a body `assemble_body` wrote: one pair per `## SendMessage N -> <to>` section, then the `## Final message` text ("" when absent)."""
+    text = body or ""
+    cut = text.rfind(_FINAL_HEAD)
+    final = ""
+    if cut >= 0 and (cut == 0 or text[cut - 1] == "\n"):
+        final, text = text[cut + len(_FINAL_HEAD) :], text[:cut]
+    heads = list(_SEND_HEAD.finditer(text))
+    sends = []
+    for i, m in enumerate(heads):
+        end = heads[i + 1].start() if i + 1 < len(heads) else len(text)
+        sends.append((m.group(1), text[m.end() : end].strip()))
+    return sends, final
+
+
+def _first_line(text):
+    for line in str(text or "").splitlines():
+        if line.strip():
+            return line.strip()[:TITLE_MAX]
+    return ""
+
+
+def rejudge(store, entry):
+    """The entry as the lead-only capture would have written it.
+
+    A row captured since the lead-only rule carries `out` and was judged at capture; it is returned as it is. A LEGACY row (no `out`) with sends kept every SendMessage, whatever its `to`, and was titled from the last of them: one coordinator (a465aa7e2ca09a227) became fifteen unread rows titled from its orders to writers ("Coordinator ruling: ..."). Such a row is re-read from the `## SendMessage N -> <to>` headers of its body: a send to anyone but the lead adds no substance, the title comes from the last lead-bound send or else the final message, and `relay` marks a row that holds nothing for the lead (`unread` skips it).
+
+    Returns a COPY, never edits the index (it is append-only). A body that cannot be read leaves the row as it was: surfacing too much is recoverable, hiding a report is the defect this module exists to close."""
+    if "out" in entry or not int(entry.get("sends") or 0):
+        return entry
+    try:
+        raw = (store / str(entry.get("body") or "")).read_text(encoding="utf-8", errors="replace")
+    except (OSError, ValueError):
+        return entry
+    body = raw.split("---\n\n", 1)[1] if raw.startswith("---\n") and "---\n\n" in raw else raw
+    sends, final = body_parts(body)
+    lead = [msg for to, msg in sends if is_lead(to)]
+    if not sends or len(lead) == len(sends):
+        return entry
+    out = dict(entry)
+    out["sends"] = len(lead)
+    out["out"] = len(sends)
+    out["title"] = _first_line(lead[-1] if lead else final)
+    out["relay"] = is_relay(len(lead), len(sends), final)
+    return out
 
 
 # ---- delivery the lead already received (agent/plans/PLAN-stop-hook-continuity.md P1.5) --------
@@ -498,6 +569,7 @@ def capture(
     at=None,
     title=None,
     sends=0,
+    out=0,
     tx="ok",
     interim="",
 ):
@@ -546,10 +618,14 @@ def capture(
     # DERIVED HERE, NOT PASSED IN, so every capture path records it: the `SubagentStop` hook and `--scan`'s self-healing pass both land in this one
     # function, and a kwarg would have left the scanned half of the store blind.
     opens = open_boxes(body)
+    # `sends` counts the lead-bound sends the body holds, `out` every send the agent made. An agent that sent anything ran and spoke, so it is never `silent`; one that sent only to other agents and ended on a short line is a `relay` (see is_relay).
+    out = max(int(out or 0), int(sends or 0))
+    silent = out == 0 and len(body.strip()) < SILENT_FLOOR
+    relay = is_relay(sends, out, body_parts(body)[1] if _FINAL_HEAD in body else body)
     front = (
         "---\n"
         "agent_id: %s\nagent_type: %s\nagent_name: %s\nsession: %s\nbranch: %s\n"
-        "at: %s\nsource: %s\nsends: %d\nopen_boxes: %d\ntranscript: %s%s\nbytes: %d\n"
+        "at: %s\nsource: %s\nsends: %d\nout: %d\nopen_boxes: %d\ntranscript: %s%s\nbytes: %d\n"
         "---\n\n"
         % (
             agent_id,
@@ -560,6 +636,7 @@ def capture(
             stamp,
             source,
             sends,
+            out,
             opens,
             transcript or "(none)",
             "" if tx == "ok" else "   <- DID NOT EXIST AT CAPTURE TIME",
@@ -588,8 +665,11 @@ def capture(
             "bytes": len(body.encode("utf-8")),
             # THE WHOLE POINT OF (A) IS THIS FIELD. "Reported substantively" and "went idle saying nothing" stop being indistinguishable the moment one of them is recorded, at the moment it happens, from the harness's own account of what the agent said. A SendMessage payload is a report even when it is short, so any send at all rules out `silent`. Without this an agent that
             # delivered 8 KB by SendMessage and signed off with "Done." would be indexed as having said nothing -- inverting the exact distinction this field exists to draw.
-            "silent": sends == 0 and len(body.strip()) < SILENT_FLOOR,
+            "silent": silent,
             "sends": sends,
+            # Every send the agent made, lead-bound or not. Its presence is also what marks a row as judged by the lead-only rule, so `rejudge` leaves it alone.
+            "out": out,
+            "relay": relay,
             # THE SUB-AGENT'S OWN TURN DISCIPLINE, recorded because it cannot be enforced. See `open_boxes`. Zero is a real answer ("handed nothing back"), which is why this is always written rather than only when non-zero: an absent key would be indistinguishable from a capture taken before this field existed.
             "opens": opens,
             # The content key this capture deduped against. Present from the moment bodies were keyed; ABSENT on every line written before, which is exactly how `capture` tells a legacy entry apart.
@@ -598,11 +678,7 @@ def capture(
             # SendMessage harvest read nothing from it without anybody being able to tell that from an agent that simply sent nothing.
             "tx": tx,
             # The shell a SILENT capture's agent ended its turn to wait on (agent/plans/PLAN-stop-hook-retro-20260924.md R.7); `unread` holds such an entry while that wait lasts. Only a silent capture carries it: a report with substance is never held.
-            **(
-                {"interim": interim}
-                if interim and sends == 0 and len(body.strip()) < SILENT_FLOOR
-                else {}
-            ),
+            **({"interim": interim} if interim and silent else {}),
             "title": title,
             "transcript": str(transcript or ""),
             "src": source,
@@ -645,10 +721,10 @@ def handle_subagent_stop(event):
     # the transcript is read ONLY for the SendMessage payloads, which the event does not carry and which are usually the actual report. RESOLVE THE PATH BEFORE TRUSTING IT. Proven necessary by a live capture: `SubagentStop` fired for an agent id whose transcript was never written at all -- no `.jsonl`, no `.meta.json`, and no record of it anywhere in the parent session either. Not
     # a race (still absent 30 minutes later) and not an id-to-filename mismatch (the name matched the convention exactly); the agent simply produced no turn, so nothing was ever flushed. The harvest then read an absent file and reported `sends: 0`, which is indistinguishable
     # from an agent that genuinely sent nothing.
-    sends = []
+    sends, out = [], 0
     tx = "ok" if transcript and _resolves(transcript) else "absent"
     if tx == "ok":
-        sends, t_final, _rec = harvest_transcript(pathlib.Path(transcript))
+        sends, t_final, _rec, out = harvest_transcript(pathlib.Path(transcript))
         final = final or t_final
     body = assemble_body(sends, final)
     interim = ""
@@ -669,6 +745,7 @@ def handle_subagent_stop(event):
         source="hook",
         title=_title_of(sends, final),
         sends=len(sends),
+        out=out,
         tx=tx,
         interim=interim,
     )
@@ -834,14 +911,16 @@ def _bounded_lines(path, max_bytes=TRANSCRIPT_MAX_BYTES):
 
 
 def harvest_transcript(jsonl):
-    """(sends, final_text, last_record) from an agent's transcript.
+    """(sends, final_text, last_record, out) from an agent's transcript.
+
+    ONLY LEAD-BOUND SENDS ARE KEPT (agent/plans/PLAN-tick-tracking.md, Design 5). `sends` holds the SendMessage payloads addressed to the lead (LEAD_RECIPIENTS); `out` counts every SendMessage with a payload, whatever its `to`. Keeping them all made a coordinator's orders to its writers into its report: agent a465aa7e2ca09a227 sent 21 instructions to 11 writer ids, and each of its 15 stops became an unread row titled from its last order. The final text is always kept.
 
     WHY THIS READS SendMessage AND NOT JUST THE FINAL MESSAGE -- this is the whole defect, one layer deeper than it first appears. A teammate delivers its report by CALLING SendMessage and then signs off in prose. The harness's `last_assistant_message` therefore hands over the SIGN-OFF, not the report. Measured on a real teammate (`rm-deployments`): `last_assistant_message` was
     "Released. Task complete." -- 24 characters -- while the two SendMessage payloads it had just sent ran 8 646 and 6 331 characters. Capturing only the final message would have indexed that agent as having said essentially nothing, and would have marked several genuinely substantive agents `silent`.
 
     That is not a corner case: "the report arrives by SendMessage and nowhere the lead can look afterwards" is the literal statement of the problem this file exists to solve, so the SendMessage payload is the PRIMARY artifact and the final message is the postscript.
     """
-    sends, final, rec = [], "", {}
+    sends, final, rec, out = [], "", {}, 0
     for line in _bounded_lines(jsonl):
         try:
             r = json.loads(line)
@@ -868,22 +947,27 @@ def harvest_transcript(jsonl):
                 msg = inp.get("message")
                 if not isinstance(msg, str):
                     msg = json.dumps(msg, ensure_ascii=False)
-                if str(msg).strip():
-                    sends.append(
-                        {
-                            "to": str(inp.get("to") or "?"),
-                            "at": str(r.get("timestamp") or ""),
-                            "summary": str(inp.get("summary") or ""),
-                            "message": str(msg),
-                        }
-                    )
+                if not str(msg).strip():
+                    continue
+                out += 1
+                to = str(inp.get("to") or inp.get("recipient") or "?")
+                if not is_lead(to):
+                    continue
+                sends.append(
+                    {
+                        "to": to,
+                        "at": str(r.get("timestamp") or ""),
+                        "summary": str(inp.get("summary") or ""),
+                        "message": str(msg),
+                    }
+                )
         if texts:
             final = "\n".join(texts)
-    return sends, final, rec
+    return sends, final, rec, out
 
 
 def assemble_body(sends, final):
-    """The durable artifact: every SendMessage payload in order, then the sign-off. Whole and uncapped -- that is the point of storing bodies in their own files rather than in any of the existing capped carriers."""
+    """The durable artifact: every lead-bound SendMessage payload in order, then the sign-off. Whole and uncapped -- that is the point of storing bodies in their own files rather than in any of the existing capped carriers."""
     parts = []
     for i, s in enumerate(sends, 1):
         head = "## SendMessage %d -> %s" % (i, s["to"])
@@ -903,9 +987,9 @@ def _title_of(sends, final):
     Deliberately the last send and not the first: an agent that reports progress and then reports its conclusion should be indexed by the conclusion. Falling back to the final message keeps a plain `Task` sub-agent (which returns its report AS its final message and may never call SendMessage) titled properly.
     """
     for source in ([sends[-1]["message"]] if sends else []) + [final or ""]:
-        for line in str(source).splitlines():
-            if line.strip():
-                return line.strip()[:TITLE_MAX]
+        line = _first_line(source)
+        if line:
+            return line
     return ""
 
 
@@ -955,7 +1039,7 @@ def scan(store, start, idle_min=None):
             # permanently, silently, and worst of all invisibly, since a caller may wrap this in a blanket except of its own. Isolating per agent means a bad entry costs exactly itself.
             entry = None
             with contextlib.suppress(Exception):
-                sends, final, rec = harvest_transcript(jsonl)
+                sends, final, rec, out = harvest_transcript(jsonl)
                 entry = capture(
                     store,
                     str(rec.get("gitBranch") or "") or _branch_of(start) or NO_BRANCH,
@@ -969,6 +1053,7 @@ def scan(store, start, idle_min=None):
                     at=_iso_of(rec.get("timestamp")) or C.stamp_now(),
                     title=_title_of(sends, final),
                     sends=len(sends),
+                    out=out,
                     tx="ok",  # scan globbed this file, so it resolves by construction
                 )
             if entry:
@@ -1070,9 +1155,11 @@ def main(argv):
                 return 2
         who = reader_id(explicit)
         marks = read_marks(store, who)
+        # The same lead-only reading `unread` applies, so the listing and the Stop hook agree on what is a report. A relay is listed as history and never as unread.
+        entries = [rejudge(store, e) for e in entries]
         if "--unread" in rest:
             before = len(entries)
-            entries = [e for e in entries if str(e["id"]) not in marks]
+            entries = [e for e in entries if str(e["id"]) not in marks and not e.get("relay")]
         if not entries:
             # TWO DIFFERENT FACTS, and one sentence used to state both. "no reports indexed" was printed for an index holding 349 entries all of which this reader had read, which reads as "the capture mechanism is broken" when the truth is "you are up to date" -- exactly the wrong direction to be wrong in for a mechanism whose whole job is to prove an agent said something.
             if "--unread" in rest and before:
@@ -1083,7 +1170,7 @@ def main(argv):
         for e in entries:
             age = C.stamp_age_min(e.get("at"))
             print(
-                "%-12s %s (%s) %-18s %-10s %s%s%s%s"
+                "%-12s %s (%s) %-18s %-10s %s%s%s%s%s"
                 % (
                     e["id"],
                     e.get("at", "?"),
@@ -1091,6 +1178,7 @@ def main(argv):
                     str(e.get("agent"))[:18],
                     e.get("branch", "?"),
                     "[read] " if str(e["id"]) in marks else "",
+                    "[relay] " if e.get("relay") else "",
                     "[SILENT] " if e.get("silent") else "",
                     "[OPEN:%d] " % int(e["opens"]) if int(e.get("opens") or 0) else "",
                     e.get("title") or "",

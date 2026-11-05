@@ -942,3 +942,275 @@ def test_28_no_ambient_session_id_survives_the_scrub(sc):
     assert "identity mismatch" in got.out + got.err, (
         "CONTROL: with an ambient id present the same call must be refused"
     )
+
+
+# ---- lead-only capture (agent/plans/PLAN-tick-tracking.md, T5) ---------------
+
+FIXTURES = pathlib.Path(__file__).resolve().parent / "tick_tracking_fixtures" / "report"
+COORD = "a465aa7e2ca09a227"
+
+
+def _harvest_all(jsonl):
+    """THE PRE-CHANGE `harvest_transcript`, kept here for the CONTROL only: it kept every SendMessage, whatever its `to`."""
+    report = wlfix.import_wl("wl_report")
+    sends, final, rec = [], "", {}
+    for line in report._bounded_lines(jsonl):
+        try:
+            r = json.loads(line)
+        except ValueError:
+            continue
+        if not isinstance(r, dict) or r.get("type") != "assistant":
+            continue
+        rec = r
+        content = (r.get("message") or {}).get("content")
+        if isinstance(content, str):
+            if content.strip():
+                final = content
+            continue
+        if not isinstance(content, list):
+            continue
+        texts = []
+        for c in content:
+            if not isinstance(c, dict):
+                continue
+            if c.get("type") == "text" and str(c.get("text") or "").strip():
+                texts.append(str(c["text"]))
+            elif c.get("type") == "tool_use" and c.get("name") == "SendMessage":
+                inp = c.get("input") or {}
+                msg = inp.get("message")
+                if not isinstance(msg, str):
+                    msg = json.dumps(msg, ensure_ascii=False)
+                if str(msg).strip():
+                    sends.append(
+                        {
+                            "to": str(inp.get("to") or "?"),
+                            "at": str(r.get("timestamp") or ""),
+                            "summary": str(inp.get("summary") or ""),
+                            "message": str(msg),
+                        }
+                    )
+        if texts:
+            final = "\n".join(texts)
+    return sends, final, rec
+
+
+def coordinator_records(extra: list | None = None) -> list[dict]:
+    """The fixture transcript (21 sends to 11 agent ids, then a final text), restamped to the last ten minutes so neither scan's lookback nor body pruning sees an old agent."""
+    recs = [
+        json.loads(line)
+        for line in (FIXTURES / "coordinator.jsonl").read_text(encoding="utf-8").splitlines()
+    ]
+    recs[-1:-1] = list(extra or [])
+    start = datetime.datetime.now(datetime.UTC) - datetime.timedelta(minutes=10)
+    for n, r in enumerate(recs):
+        r["timestamp"] = (start + datetime.timedelta(seconds=n)).strftime("%Y-%m-%dT%H:%M:%S.000Z")
+    return recs
+
+
+def write_transcript(path: pathlib.Path, recs: list[dict]) -> pathlib.Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("".join(json.dumps(r) + "\n" for r in recs), encoding="utf-8")
+    return path
+
+
+def final_text(recs: list[dict]) -> str:
+    return recs[-1]["message"]["content"][0]["text"]
+
+
+def send_to_main() -> dict:
+    return {
+        "type": "assistant",
+        "agentId": COORD,
+        "sessionId": "sess1",
+        "gitBranch": "testbr",
+        "message": {
+            "content": [
+                {
+                    "type": "tool_use",
+                    "name": "SendMessage",
+                    "input": {
+                        "to": "main",
+                        "summary": "round report",
+                        "message": "ROUND REPORT FOR THE LEAD\n" + "detail. " * 40,
+                    },
+                }
+            ]
+        },
+    }
+
+
+def hook_capture(sc: Scratch, recs: list[dict]) -> dict:
+    tx = write_transcript(sc.subagents_dir() / ("agent-%s.jsonl" % COORD), recs)
+    sc.raw_stop(
+        {
+            "agent_id": COORD,
+            "agent_type": "general-purpose",
+            "session_id": READER,
+            "cwd": str(sc.repo),
+            "agent_transcript_path": str(tx),
+            "last_assistant_message": final_text(recs),
+        }
+    )
+    lines = sc.index_lines()
+    assert len(lines) == 1, lines
+    return json.loads(lines[0])
+
+
+def assert_no_orders(sc: Scratch, entry: dict, recs: list[dict]) -> None:
+    body = body_of(sc.store / entry["body"])
+    assert "## SendMessage" not in body, body[:300]
+    assert "Coordinator ruling" not in body, "an order to a writer was stored as the report"
+    assert final_text(recs) in body, "the final text was dropped"
+    assert entry["sends"] == 0, entry
+    assert entry["out"] == 21, entry
+    assert entry["silent"] is False, "an agent that sent 21 messages is not silent"
+    assert not entry["title"].startswith(("Coordinator ruling", "Brief addition")), entry["title"]
+    front = (sc.store / entry["body"]).read_text(encoding="utf-8").split("---\n\n", 1)[0]
+    assert "\nsends: 0\n" in front, front
+    assert "\nout: 21\n" in front, front
+
+
+def test_31_recipient_control_the_old_harvest_kept_every_send(sc):
+    """CONTROL: the pre-change harvest reads 21 sends off this fixture, so the zero below is the rule working and not a fixture with nothing in it."""
+    report = wlfix.import_wl("wl_report")
+    tx = write_transcript(sc.t / "coord.jsonl", coordinator_records())
+    old_sends, old_final, _ = _harvest_all(tx)
+    assert len(old_sends) == 21, len(old_sends)
+    assert len({s["to"] for s in old_sends}) == 11, "the fixture is not 21 sends to 11 ids"
+    assert report._title_of(old_sends, old_final).startswith("Coordinator ruling"), (
+        "the old reading is not the defect being fixed"
+    )
+    sends, final, _rec, out = report.harvest_transcript(tx)
+    assert sends == [], sends[:1]
+    assert out == 21, out
+    assert final == old_final, "the final text must be kept whole"
+
+
+def test_31b_recipient_hook_path_keeps_only_the_final_text(sc):
+    recs = coordinator_records()
+    entry = hook_capture(sc, recs)
+    assert_no_orders(sc, entry, recs)
+    # A coordinator's turn-end status, under the relay floor, is not a report for the lead.
+    assert entry["relay"] is True, entry
+    got = sc.report_py("--list", "--unread")
+    assert COORD[-12:] not in got.out, got.out
+    assert "no UNREAD reports" in got.out, got.out
+
+
+def test_31c_recipient_scan_path_keeps_only_the_final_text(sc):
+    recs = coordinator_records()
+    proj = sc.subagents_dir()
+    (proj / ("agent-%s.meta.json" % COORD)).write_text(
+        json.dumps({"agentType": "general-purpose"}), encoding="utf-8"
+    )
+    tx = write_transcript(proj / ("agent-%s.jsonl" % COORD), recs)
+    old = time.time() - 3600
+    os.utime(tx, (old, old))
+    got = sc.report_py("--scan")
+    assert "indexed %s" % COORD[-12:] in got.out, got.out + got.err
+    lines = sc.index_lines()
+    assert len(lines) == 1, lines
+    entry = json.loads(lines[0])
+    assert entry["src"] == "scan", entry
+    assert_no_orders(sc, entry, recs)
+
+
+def test_31d_recipient_a_send_to_main_is_kept(sc):
+    recs = coordinator_records([send_to_main()])
+    entry = hook_capture(sc, recs)
+    body = body_of(sc.store / entry["body"])
+    assert "## SendMessage 1 -> main" in body, body[:300]
+    assert "ROUND REPORT FOR THE LEAD" in body
+    assert "## SendMessage 2" not in body, "an order to a writer rode along with the lead's send"
+    assert entry["sends"] == 1, entry
+    assert entry["out"] == 22, entry
+    assert entry["relay"] is False, entry
+    assert entry["title"] == "ROUND REPORT FOR THE LEAD", entry["title"]
+    got = sc.report_py("--list", "--unread")
+    assert COORD[-12:] in got.out, "CONTROL: a row with a lead-bound send must stay unread"
+
+
+def plant_legacy(
+    sc: Scratch, rid: str, fixture: str, title: str, sends: int, body: str = ""
+) -> None:
+    """A row as the pre-change capture wrote it: no `out` key, `sends` counting every send, titled from the last order."""
+    text = body or (FIXTURES / fixture).read_text(encoding="utf-8")
+    rel = "testbr/%s.md" % rid
+    (sc.store / "testbr").mkdir(parents=True, exist_ok=True)
+    (sc.store / rel).write_text(text, encoding="utf-8")
+    row = {
+        "ev": "report",
+        "id": rid,
+        "at": datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "branch": "testbr",
+        "agent": "general-purpose",
+        "type": "general-purpose",
+        "session": READER[:8],
+        "body": rel,
+        "bytes": len(text.encode("utf-8")),
+        "silent": False,
+        "sends": sends,
+        "opens": 0,
+        "bkey": rid[:16],
+        "tx": "ok",
+        "title": title,
+        "transcript": "",
+        "src": "hook",
+    }
+    with sc.index.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(row, separators=(",", ":")) + "\n")
+
+
+def test_31e_recipient_legacy_coordinator_rows_are_not_unread(sc):
+    plant_legacy(
+        sc,
+        "a7e2ca09a227",
+        "coordinator-report-01.body",
+        "Brief addition (operator order): the report must end with a TICK block",
+        11,
+    )
+    plant_legacy(
+        sc,
+        "a7e2ca09a227-15",
+        "coordinator-report-15.body",
+        "Coordinator ruling: the boundary now also covers the matching test directory",
+        21,
+    )
+    report = wlfix.import_wl("wl_report")
+    assert report.unread(sc.store, "testbr", READER) == [], (
+        "a legacy coordinator row read as unread"
+    )
+    got = sc.report_py("--list", "--unread")
+    assert "no UNREAD reports" in got.out, got.out
+    assert "a7e2ca09a227" not in got.out, got.out
+    assert sc.surface("--session-start", "startup") == "", "a coordinator row surfaced"
+    # History still lists both, re-judged: marked relay and titled from the final message.
+    listing = sc.report_py("--list").out
+    assert listing.count("[relay]") == 2, listing
+    assert "Coordinator ruling" not in listing, listing
+    assert "Brief addition" not in listing, listing
+    for entry in report.read_index(sc.store):
+        judged = report.rejudge(sc.store, entry)
+        assert judged["sends"] == 0, judged
+        assert judged["out"] in (11, 21), judged
+        assert not judged["title"].startswith("Coordinator ruling"), judged["title"]
+
+
+def test_31f_recipient_control_legacy_rows_with_lead_substance_still_surface(sc):
+    """CONTROL: the re-judge drops orders, not reports. One copy differs only in one header naming `main`; the other only in a final message long enough to be a report."""
+    fifteen = (FIXTURES / "coordinator-report-15.body").read_text(encoding="utf-8")
+    to_main = re.sub(r"^(## SendMessage 21 -> )\S+", r"\1main", fifteen, flags=re.MULTILINE)
+    assert to_main != fifteen, "the fixture has no 21st send header to retarget"
+    plant_legacy(sc, "aaaa00000001", "", "Coordinator ruling: x", 21, body=to_main)
+    long_final = fifteen + "\n" + "A real report paragraph for the lead. " * 20
+    plant_legacy(sc, "aaaa00000002", "", "Coordinator ruling: y", 21, body=long_final)
+    report = wlfix.import_wl("wl_report")
+    got = {e["id"]: e for e in report.unread(sc.store, "testbr", READER)}
+    assert set(got) == {"aaaa00000001", "aaaa00000002"}, got
+    assert got["aaaa00000001"]["sends"] == 1, got["aaaa00000001"]
+    assert got["aaaa00000001"]["title"].startswith("Coordinator ruling: the boundary"), got
+    assert got["aaaa00000002"]["title"].startswith("Load is"), got["aaaa00000002"]["title"]
+    # And a legacy row with no sends at all is returned exactly as indexed.
+    plant_legacy(sc, "aaaa00000003", "", "plain final", 0, body="## Final message\n\n" + BIG)
+    row = next(e for e in report.read_index(sc.store) if e["id"] == "aaaa00000003")
+    assert report.rejudge(sc.store, row) is row
