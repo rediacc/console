@@ -87,7 +87,7 @@ Worklist: #6d2022b2, PR-TASK 9f92c43e
     (ticked) 2026-10-30T22:41:21Z by d778be9d: commit:960b4f21 packages/shared/src/subscription/index.ts:1; isCommunityUsable deleted; account edb65170 lifts the gate; free-license-community-gate.test.ts and the licence suites 145 passed. DEPS-WAIVED: the box's code and its acceptance commands do not depend on the open prerequisite plans
 
 - [x] F8 [writer] WAF rate rule. Changes: .ci/config/cf-waf-rules.json declares a rate rule on `/licenses/free` (per IP, 20 requests per 10 minutes, block 1 h) for every account zone, applied by the existing Cloudflare ops tooling with a dry-run mode.
-    (audit note 2026-11-04) Dry run only, and without credentials it compared nothing; the rule is not applied, which belongs to L1. Named prerequisite: PLAN-production-key-only, unfinished, not touched by this accept. Audit rerun: dry run rc 0, pytest 15 passed.
+    (audit note 2026-11-04) Dry run only, and without credentials it compared nothing; the rule is not applied, which belongs to L1, and since ASKED:2026-11-05T07:06Z to agent/plans/PLAN-first-release-checks.md. Named prerequisite: PLAN-production-key-only, unfinished, not touched by this accept. Audit rerun: dry run rc 0, pytest 15 passed.
   Owns: .ci/config/cf-waf-rules.json and the applying module the writer names. Accept: the module's dry run prints one rule per zone rc 0, and its pytest rc 0.
     (ticked) 2026-11-04T07:16:15Z by d778be9d: commit:960b4f213 apply_cf_waf_rules --dry-run rc=0, test_ops_apply_cf_waf_rules 15 passed. DEPS-WAIVED: only F2 builds on the N5 ordering of production-key-only, this box uses nothing from it
 

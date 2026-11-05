@@ -1460,7 +1460,9 @@ def _add_many_cli(argv, worklist, me):
             % (" (stdin stayed open and silent for %gs)" % STATE_STDIN_WAIT_SECONDS)
         )
         sys.exit(2)
-    texts = [line.strip() for line in body.splitlines()]
+    # One line per item on newlines alone: `splitlines` also breaks on form feeds and the like, which `--add` keeps.
+    lines = body.rstrip("\n")
+    texts = [line.strip() for line in lines.split("\n")] if lines else []
     if not texts:
         sys.stderr.write(M.CLI_ADD_MANY_NO_BODY % "")
         sys.exit(2)

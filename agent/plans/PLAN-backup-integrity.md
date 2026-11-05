@@ -406,7 +406,7 @@ V1 to V6 share `backup.go`, `backup_snapshot.go` and `backup_restore.go`, and on
 
 ### H: hostinger, after the release (lead)
 
-Every H box uses the released `rdc` and its released renet. Mutating steps run only under a released renet. No original repo is deleted, pruned, replaced or downed. Only copies named `*-rt` are deleted, by GUID.
+Every H box uses the released `rdc` and its released renet. Mutating steps run only under a released renet. (corrected ASKED:2026-11-05T07:06Z) Both read as the branch-built `rdc` and renet while edge and stable are on hold, and `backup schedule` goes through `eu-remote` as H3 says. No original repo is deleted, pruned, replaced or downed. Only copies named `*-rt` are deleted, by GUID.
 
 - [ ] H1: The released CLI reads `eu-remote` (F13), which also gives box R1 of PLAN-backup-program.md its live read.
   (note) Runs through `eu-bench`, not `eu-remote`: PLAN-tested-on-bench ruling 1 as extended on 2026-11-04. The text above keeps the old name because a box's first 120 characters are its identity.

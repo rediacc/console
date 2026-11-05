@@ -639,7 +639,7 @@ Every J box uses the released `rdc` and its released renet. No original repo is 
 - [ ] LP-hostinger [live] Fresh hostinger receipt through worklist.py --live-proof, after this plan's hostinger-deployable boxes land.
   Accept: live-proof hostinger renet-live machine=hostinger
 
-**Closes only after the merge:** Z1, Z2, J1 to J6, LP-bench, LP-hostinger. J6 takes about 10 days after J1. Everything else closes before the merge. The PR's merge rule therefore needs an `Operational-Reason:` naming these boxes or the operator's ruling on them, because the merge gate refuses open boxes on a plan on the PR's `Plan:` line.
+**Closes only after the merge (corrected ASKED:2026-11-05T07:06Z):** nothing here waits for it any more: Z1 and Z2 read as bench, J1 to J4 run on hostinger now, and J5 and J6 moved to agent/plans/PLAN-first-release-checks.md, where J6 takes about 10 days after J1. Everything else closes before the merge. The PR's merge rule therefore needs an `Operational-Reason:` naming these boxes or the operator's ruling on them, because the merge gate refuses open boxes on a plan on the PR's `Plan:` line.
 
 ## Rollout
 

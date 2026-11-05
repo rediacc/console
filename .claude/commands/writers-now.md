@@ -19,7 +19,7 @@ allowed-tools: Bash(.claude/hooks/stop/worklist.py --list --open:*), Bash(.claud
 
 ### 1. Classify before spawning
 
-The round is every Promoted plan whose row is not `done`, in table order, narrowed by the filter. One background `general-purpose` agent (model `sonnet`, read-only) sorts every open box of the round and writes `/tmp/writers-now/<branch>-<UTC stamp>.md`: signature, group and file:line evidence per box, plus the files each G5 box touches. It returns the path and the per-group counts. Writers start only once it has returned.
+The round is every Promoted plan whose row is not `done`, in table order, narrowed by the filter. One background `general-purpose` agent (model `sonnet`, read-only) sorts every open box of the round and writes `/tmp/writers-now/<branch>-<UTC stamp>.md`: signature, group and file:line evidence per box, plus the files each G5 box touches. It returns the path and the per-group counts. Writers start only once it has returned; a survey that fails or stalls is restarted once, and then the lead reads the boxes itself.
 
 | Group | Meaning | Who takes it |
 |---|---|---|
