@@ -22,6 +22,8 @@ const m = vi.hoisted(() => ({
   report: vi.fn(),
   readActivation: vi.fn(),
   refreshBatch: vi.fn(),
+  refreshIdentity: vi.fn(),
+  resolveRepoRef: vi.fn(),
   info: vi.fn(),
   setExitCode: vi.fn(),
   jobs: [] as Record<string, unknown>[],
@@ -40,11 +42,19 @@ vi.mock('../../services/account/license.js', () => ({
   fetchSubscriptionLicenseReportOrThrow: m.report,
   readMachineActivationStatus: m.readActivation,
   readRuntimeRepoLicenseStatuses: vi.fn().mockResolvedValue([]),
-  refreshRepoLicenseIdentity: vi.fn(),
+  refreshRepoLicenseIdentity: m.refreshIdentity,
   refreshRepoLicensesBatch: m.refreshBatch,
+}));
+vi.mock('../../utils/repo-target.js', () => ({ resolveRepoRef: m.resolveRepoRef }));
+vi.mock('../../utils/repo-executor.js', () => ({
+  recordedDatastoreMount: () => Promise.resolve(undefined),
+}));
+vi.mock('../../utils/spinner.js', () => ({
+  withSpinner: (_label: string, fn: () => Promise<unknown>) => fn(),
 }));
 vi.mock('../../services/config/config-resources.js', () => ({
   configService: {
+    getRepository: vi.fn().mockResolvedValue({ repositoryGuid: 'guid-1' }),
     getTeam: vi.fn().mockResolvedValue('team'),
     getLocalConfig: vi.fn().mockResolvedValue({ sshPrivateKey: 'key', ssh: {} }),
     getLocalMachine: vi.fn().mockResolvedValue({ ip: '10.0.0.1', user: 'root' }),
@@ -67,9 +77,12 @@ vi.mock('../../utils/errors.js', async (orig) => ({
   getOutputFormat: () => 'json',
 }));
 
-const { executeSubscriptionStatus, executeMachineStatus, executeMachineRefresh } = await import(
-  '../subscription-actions.js'
-);
+const {
+  executeSubscriptionStatus,
+  executeMachineStatus,
+  executeMachineRefresh,
+  executeRepoLicenseRefresh,
+} = await import('../subscription-actions.js');
 const { JOB_PLANS, CONVERTED, JOB_EXCEPTIONS } = await import('../../services/jobs/plans.js');
 
 let restoreJobDeps: () => void;
@@ -181,6 +194,32 @@ describe('subscription verbs (J20)', () => {
 
     expect(m.jobs).toHaveLength(1);
     expect(m.refreshBatch).not.toHaveBeenCalled();
+  });
+
+  it('refresh --repo reads and writes the machine only through executor jobs, never a client SSH command', async () => {
+    const machineLicense = await vi.importActual<
+      typeof import('../../services/account/license-machine.js')
+    >('../../services/account/license-machine.js');
+    m.resolveRepoRef.mockResolvedValue({ repoKey: 'shop:test', machineName: 'm1' });
+    m.execute.mockResolvedValue({ ...OK, stdout: '[{"repositoryGuid":"guid-1"}]' });
+    m.refreshIdentity.mockImplementation(async (machineName: string) => {
+      await machineLicense.scanRemoteRepoLicenses(machineName, 'rediacc');
+      await machineLicense.writeRepoLicense(machineName, 'guid-1', { publicKeyId: 'a'.repeat(16) });
+      return true;
+    });
+
+    await executeRepoLicenseRefresh('shop:test');
+
+    expect(m.resolveRepoRef).toHaveBeenCalledWith('shop:test', { readOnly: true });
+    expect(
+      m.execute.mock.calls.map(([options]) => [options.functionName, options.machineName])
+    ).toEqual([
+      ['license-scan', 'm1'],
+      ['license-write', 'm1'],
+    ]);
+    // Each is a probe whose answer the verb needs now, so no ticket is handed back in its place.
+    expect(m.execute.mock.calls.every(([options]) => options.probe === true)).toBe(true);
+    expect(m.jobs).toHaveLength(0);
   });
 
   it('the two machine verbs are converted, and the two vscode serve verbs stay exceptions with their reason', () => {
