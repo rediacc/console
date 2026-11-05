@@ -88,7 +88,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 14 of 42 plans done, 674 of 838 boxes done (80%).
+Promoted: 14 of 42 plans done, 675 of 838 boxes done (80%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -132,7 +132,7 @@ Promoted: 14 of 42 plans done, 674 of 838 boxes done (80%).
 | 38 | PLAN-backup-critical-tier.md | 41/51 | 10 open |
 | 39 | PLAN-rediaccfile-unprivileged.md | 14/23 | 9 open |
 | 40 | PLAN-worktree-lease.md | 15/16 | 1 open |
-| 41 | PLAN-tick-tracking.md | 0/15 | 15 open |
+| 41 | PLAN-tick-tracking.md | 1/15 | 14 open |
 | 42 | PLAN-renet-down-before-kill.md | 0/14 | 14 open |
 <!-- queue:progress:end -->
 

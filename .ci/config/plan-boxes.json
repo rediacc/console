@@ -2654,15 +2654,14 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 15,
-      "done": 0,
+      "open": 14,
+      "done": 1,
       "open_sigs": [
         "3b2fb3e3",
         "4de999b0",
         "55fd614e",
         "63f3f3e7",
         "77b1c40a",
-        "86ef9770",
         "95abb423",
         "9c800464",
         "9dd9fa99",
@@ -2673,7 +2672,9 @@
         "e135e1b5",
         "f3b5dbf9"
       ],
-      "done_sigs": []
+      "done_sigs": [
+        "86ef9770"
+      ]
     },
     "agent/plans/PLAN-token-ip-rebind.md": {
       "status": "draft",
