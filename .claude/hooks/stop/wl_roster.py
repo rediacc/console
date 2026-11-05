@@ -262,6 +262,8 @@ def load_metas(sub_dir):
             "spawned": spawned,
             # The harness records the writer's own tree here when it spawned one; "" is a main-tree writer.
             "worktree": str(info.get("worktreePath") or ""),
+            # The harness's own mark, written as an agent ends and gone from the meta it rewrites on a resume.
+            "finished": info.get("finished") is True,
         }
     return out
 

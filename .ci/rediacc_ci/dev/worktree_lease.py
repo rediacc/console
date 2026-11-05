@@ -19,6 +19,7 @@ import pathlib
 import re
 import subprocess
 import sys
+import time
 from typing import NamedTuple
 
 from rediacc_ci import log, paths
@@ -563,7 +564,10 @@ Nothing changes without --write, which deletes what passes every rule:
 
   1. the tree is a direct child of .claude/worktrees and a linked tree of this
      checkout's store, its record names that path, and it is no symlink;
-  2. no live writer, live worklist item or process holds it;
+  2. no live writer, live worklist item or process holds it, and a sweep of every
+     tree also keeps one made in the last 10 minutes with no finished writer, and
+     one whose unfinished writer's transcript moved in that window: naming a tree
+     with --id drops these two, since a writer starting leaves no other trace;
   3. the tree and each submodule have no uncommitted or untracked path, a moved
      gitlink row (SC..) excepted, since the submodule is judged on its own;
   4. every commit of HEAD and of the pin, in each repo, is landed on the live tip.
@@ -579,6 +583,8 @@ RULE_LANDED = "rule 4"
 PER_TREE_REFS = ("refs/worktree", "refs/bisect", "refs/rewritten")
 SHA_SHOWN = 12
 ROSTER_ERRORS = (OSError, ValueError, RuntimeError, AttributeError, TypeError, KeyError)
+# How long a sweep believes a writer may be on a tree with nothing else to show for it. The harness writes an agent's meta 1 to 3 seconds after the record (measured 2026-11-05), and a lead hands a `./run.sh worktree lease` tree to a writer it has yet to spawn.
+WRITER_DOUBT_S = 600
 IGNORED_NOTE = "ignored files do not keep a tree and are deleted with it"
 
 
@@ -946,8 +952,8 @@ def _roster_of(root, owner):
     ]
 
 
-def _read_live(root):
-    """What rule 2 reads once per run. A worklist that cannot be read is None, which keeps every tree."""
+def _read_live(root, *, named=False):
+    """What rule 2 reads once per run. A worklist that cannot be read is None, which keeps every tree. `named` is a run about one tree someone named, which `_unproven_idle` leaves alone."""
     scratch = _hook_module("wl_scratch")
     core = _hook_module("wl_core")
     try:
@@ -960,6 +966,8 @@ def _read_live(root):
         "cwds": scratch.process_cwds(),
         "me": core.resolve_session_id(),
         "rosters": {},
+        "named": named,
+        "metas": {},
     }
 
 
@@ -972,6 +980,63 @@ def _agent_holding(rows, lease_id, path, record):
         named = scratch.lease_holder(lease_id, path, [(row["id"], row["prompt"])])
         if row["id"] == agent or on_tree or named:
             return row["id"]
+    return ""
+
+
+def _metas_of(root, live, owner):
+    """{agent id: meta} from the harness's files, read once per owner. No readable owner is {}: the roster has already spoken about that doubt."""
+    if owner not in live["metas"]:
+        metas = {}
+        if owner and owner != DEFAULT_OWNER and ID_RE.match(owner):
+            roster = _hook_module("wl_roster")
+            try:
+                metas = roster.load_metas(roster.session_subagents_dir(str(root), owner))
+            except ROSTER_ERRORS:
+                metas = {}
+        live["metas"][owner] = metas
+    return live["metas"][owner]
+
+
+def _made_at(record):
+    """The record's `created_at` as an epoch, or None when it does not read as one."""
+    try:
+        made = datetime.datetime.strptime(str(record.get("created_at")), "%Y-%m-%dT%H:%M:%S%z")
+    except ValueError:
+        return None
+    return made.timestamp()
+
+
+def _unproven_idle(world, live, path, record):
+    """Rule 2's phrase for a tree nothing proves idle yet, or "". The roster only ESTIMATES who runs, and a clean tree with no agent on file passed every rule, so a sweep needs the harness's own `finished` mark or the time for a writer to have shown up."""
+    if live["named"] or record is None or not os.path.lexists(path):
+        return ""
+    now = time.time()
+    agent = str(record.get("agent") or "")
+    mine = [
+        (aid, meta)
+        for aid, meta in _metas_of(world.root, live, str(record.get("owner") or "")).items()
+        if aid == agent or (meta["worktree"] and os.path.realpath(meta["worktree"]) == str(path))
+    ]
+    for aid, meta in mine:
+        if meta["finished"]:
+            continue
+        try:
+            quiet = now - meta["jsonl"].stat().st_mtime
+        except OSError:
+            continue
+        if quiet < WRITER_DOUBT_S:
+            return "%s: the writer %s has no finished mark and its transcript moved %ds ago" % (
+                RULE_LIVE,
+                aid,
+                quiet,
+            )
+    if mine and all(meta["finished"] for _, meta in mine):
+        return ""
+    made = _made_at(record)
+    if made is None:
+        return "%s: its record names no time it was made" % RULE_LIVE
+    if now - made < WRITER_DOUBT_S:
+        return "%s: made %ds ago, so its writer may still be starting" % (RULE_LIVE, now - made)
     return ""
 
 
@@ -1005,6 +1070,9 @@ def _in_use(world, live, lease_id, path, record):
         holder = _agent_holding(rows, lease_id, text, record or {})
         if holder:
             found.append("%s: the live writer %s holds it" % (RULE_LIVE, holder))
+    unproven = _unproven_idle(world, live, path, record)
+    if unproven and not found:
+        found.append(unproven)
     return found
 
 
@@ -1104,7 +1172,7 @@ def run_gc(root, *, write=False, only=""):
     deletable, kept, failed = 0, 0, 0
     with _project_env(root):
         world = _read_world(root)
-        live = _read_live(root)
+        live = _read_live(root, named=bool(only))
         for row in _gc_rows(world, live, only):
             if row.why:
                 kept += 1

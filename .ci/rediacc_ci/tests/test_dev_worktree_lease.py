@@ -532,9 +532,20 @@ def test_gc_hook_refuses_a_path_outside_the_holder(repo):
     assert "no lease tree" in done.stderr
 
 
-def make_tree(repo, name):
+def age_record(root, name):
+    """Move the record's `created_at` past the window in which a sweep expects a writer to show up."""
+    path = root / ".git" / lease.RECORD_DIR / ("%s.json" % name)
+    record = json.loads(path.read_text(encoding="utf-8"))
+    record["created_at"] = "2020-01-01T00:00:00Z"
+    path.write_text(json.dumps(record), encoding="utf-8")
+
+
+def make_tree(repo, name, *, fresh=False):
+    """A lease tree, aged by default, since most tests ask about the other rules and a fresh tree is kept whatever they say."""
     result = run_lease(repo.root, "--name", name)
     assert result.returncode == 0, result.stderr
+    if not fresh:
+        age_record(repo.root, name)
     return pathlib.Path(result.stdout.strip())
 
 
@@ -1084,10 +1095,16 @@ def plant_session(root, session=GC_SESSION):
     spike.write(project_dir(root) / ("%s.jsonl" % session), "{}\n")
 
 
-def plant_agent(root, agent, *, tree="", prompt="brief", session=GC_SESSION):
+def plant_agent(root, agent, *, tree="", prompt="brief", session=GC_SESSION, finished=False):
     """One agent of `session` as the harness lays it out, working: its last record is a tool call in flight. Returns its transcript."""
     subagents = project_dir(root) / session / "subagents"
-    meta = {"agentType": "general-purpose", "description": "d", "worktreePath": str(tree)}
+    meta: dict[str, object] = {
+        "agentType": "general-purpose",
+        "description": "d",
+        "worktreePath": str(tree),
+    }
+    if finished:
+        meta["finished"] = True
     spike.write(subagents / ("agent-%s.meta.json" % agent), json.dumps(meta))
     first = {"type": "user", "message": {"content": prompt}}
     jsonl = subagents / ("agent-%s.jsonl" % agent)
@@ -1519,11 +1536,79 @@ def test_gc_control_a_finished_writer_holds_nothing(gc_repo):
     assert row_of(run_gc(repo.root).stdout, "fw").split()[0] == "DELETE"
 
 
+def end_the_turn(jsonl):
+    """The transcript of an agent that ended a turn seconds ago, which `wl_roster.proven_finished` reads as gone."""
+    idle = {"type": "assistant", "message": {"stop_reason": "end_turn", "content": []}}
+    jsonl.write_text(json.dumps(idle) + "\n", encoding="utf-8")
+    moved = jsonl.stat().st_mtime - 30
+    os.utime(jsonl, (moved, moved))
+
+
+def test_gc_sweep_keeps_a_tree_just_made_with_no_writer_on_file(gc_repo):
+    """A record lands 1 to 3 seconds before the agent's meta, and a lead's own lease minutes before its writer. Before the doubt clause this row read DELETE, and `--write` removed the tree."""
+    repo = gc_repo
+    tree = make_tree(repo, "new", fresh=True)
+    before = snapshot(tree)
+    row = row_of(run_gc(repo.root, "--write").stdout, "new")
+    assert row.split()[0] == "KEEP", row
+    assert "may still be starting" in row, row
+    assert snapshot(tree) == before
+
+
+def test_gc_control_the_same_tree_past_the_window_is_deleted(gc_repo):
+    repo = gc_repo
+    tree = make_tree(repo, "old", fresh=True)
+    age_record(repo.root, "old")
+    assert row_of(run_gc(repo.root, "--write").stdout, "old").split()[0] == "DELETE"
+    assert not tree.exists()
+
+
+def test_gc_naming_a_fresh_tree_deletes_it(gc_repo):
+    """The WorktreeRemove hook and a lead collecting a finished writer both name the tree, which is the claim the sweep has no one to make."""
+    repo = gc_repo
+    tree = make_tree(repo, "named", fresh=True)
+    assert run_gc(repo.root, "--write", "--id", "named").returncode == 0
+    assert not tree.exists()
+
+
+def test_gc_sweep_keeps_a_tree_whose_unfinished_writer_the_roster_lost(gc_repo):
+    """The roster reads an ended turn as gone within seconds, and the harness has not marked this writer finished."""
+    repo = gc_repo
+    tree = make_tree(repo, "lost")
+    end_the_turn(plant_agent(repo.root, "dddd4444", tree=tree))
+    row = row_of(run_gc(repo.root, "--write").stdout, "lost")
+    assert row.split()[0] == "KEEP", row
+    assert "dddd4444 has no finished mark" in row, row
+    assert tree.is_dir()
+
+
+def test_gc_control_the_harness_finished_mark_frees_a_fresh_tree_at_once(gc_repo):
+    repo = gc_repo
+    tree = make_tree(repo, "done", fresh=True)
+    end_the_turn(plant_agent(repo.root, "eeee5555", tree=tree, finished=True))
+    assert row_of(run_gc(repo.root, "--write").stdout, "done").split()[0] == "DELETE"
+    assert not tree.exists()
+
+
+def test_gc_a_record_with_no_readable_time_stays_in_a_sweep(gc_repo):
+    repo = gc_repo
+    tree = make_tree(repo, "undated")
+    path = repo.root / ".git" / lease.RECORD_DIR / "undated.json"
+    record = json.loads(path.read_text(encoding="utf-8"))
+    del record["created_at"]
+    path.write_text(json.dumps(record), encoding="utf-8")
+    row = row_of(run_gc(repo.root, "--write").stdout, "undated")
+    assert "names no time" in row, row
+    assert tree.is_dir()
+
+
 def test_gc_owner_nothing_can_vouch_for_keeps_the_tree_and_a_cli_owner_does_not(gc_repo):
     repo = gc_repo
     spike.write(repo.root / "agent" / "plans" / "QUEUE.md", CAP_40)
     assert run_lease(repo.root, "--name", "gh", "--owner", "ghost123").returncode == 0
     assert run_lease(repo.root, "--name", "op", "--owner", lease.DEFAULT_OWNER).returncode == 0
+    age_record(repo.root, "gh")
+    age_record(repo.root, "op")
     listing = run_gc(repo.root).stdout
     kept_by(listing, "gh", "rule 2")
     assert "ghost123" in row_of(listing, "gh")
