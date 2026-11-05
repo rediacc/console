@@ -649,7 +649,7 @@ export function runTransaction(plans: PinPlan[], o: TxnOptions): TxnResult {
       for (const d of installedDirs) {
         if (run(nonRootCi(npmVersion), d) !== 0)
           throw new Error(`npm ci failed in ${d} after its lockfile changed`);
-        // A project that blocks lifecycle scripts finishes its natives with its own script (private/account: esbuild, workerd), as the root does.
+        // A project declaring install:natives finishes its natives with it (private/account: esbuild, workerd), as the root does.
         if (
           declaresNatives(path.join(o.root, d)) &&
           run(`npx -y npm@${npmVersion} run install:natives`, d) !== 0
