@@ -1,0 +1,31 @@
+#!/bin/bash
+_report() {
+  export LC_ALL=C
+  out="$REDIACC_WORKING_DIR/$1"
+  : > "$out"
+  echo "uid=$(id -u)" >> "$out"
+  echo "capeff=$(awk '/^CapEff/{print $2}' /proc/self/status)" >> "$out"
+  if head -c1 /proc/kcore >/dev/null 2>&1; then echo kcore=readable >> "$out"; else echo kcore=denied >> "$out"; fi
+  if head -c1 /etc/shadow >/dev/null 2>&1; then echo shadow=readable >> "$out"; else echo shadow=denied >> "$out"; fi
+  blk=$(ls /sys/block 2>/dev/null | grep -v '^loop\|^ram\|^zram' | head -n1)
+  if [ -z "$blk" ]; then echo block=none >> "$out"; elif head -c1 "/dev/$blk" >/dev/null 2>&1; then echo block=readable >> "$out"; else echo block=denied >> "$out"; fi
+  if [ ! -e /etc/rediacc/grants ]; then echo grants=none >> "$out"; elif ls /etc/rediacc/grants >/dev/null 2>&1; then echo grants=readable >> "$out"; else echo grants=denied >> "$out"; fi
+  if [ -n "${LIFECYCLE_PROBE_CRED:-}" ]; then echo cred_env=present >> "$out"; else echo cred_env=absent >> "$out"; fi
+  if tr '\0' '\n' < /proc/$PPID/environ 2>/dev/null | grep -q '^LIFECYCLE_PROBE_CRED='; then echo cred_parent=readable >> "$out"; else echo cred_parent=denied >> "$out"; fi
+  so=$(sudo -n true 2>&1); echo "sudo_rc=$?" >> "$out"; echo "sudo_msg=$(echo "$so" | head -n1)" >> "$out"
+  : > "$REDIACC_WORKING_DIR/.lifecycle-probe-created"; echo "created_owner=$(stat -c %u "$REDIACC_WORKING_DIR/.lifecycle-probe-created")" >> "$out"
+  : >> "$REDIACC_WORKING_DIR/.env"; echo "env_owner=$(stat -c %u "$REDIACC_WORKING_DIR/.env")" >> "$out"
+  echo "cdi_open=$( (: < /dev/rediacc-fake) 2>&1 | head -n1 | sed 's/^.*: //')" >> "$out"
+}
+up() {
+  _report lifecycle-probe.up
+  if [ -f "$REDIACC_WORKING_DIR/lifecycle-probe-fail-compose" ]; then
+    renet compose -- -f "$REDIACC_WORKING_DIR/lifecycle-probe-bad.yml" up -d
+  fi
+}
+down() {
+  _report lifecycle-probe.down
+  if [ -f "$REDIACC_WORKING_DIR/lifecycle-probe-down-docker" ]; then
+    docker info >/dev/null 2>&1 || { echo lifecycle-probe-down-daemon-unreachable >&2; return 1; }
+  fi
+}
