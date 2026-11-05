@@ -53,6 +53,7 @@ import {
 import {
   buildScheduleStatusRows,
   type ExpectedScheduleUnit,
+  parseFoldedSystemctlShow,
   type ScheduleStatusRow,
   scheduleStatusExitCode,
 } from './backup-schedule-status.js';
@@ -338,7 +339,13 @@ export function renderBackupScheduleStatus(
   expected: ExpectedScheduleUnit[],
   showOutput: string
 ): ScheduleStatusRow[] {
-  const rows = buildScheduleStatusRows(expected, parseSystemctlShow(showOutput));
+  const unreadCause = showOutput.trim() === '' ? 'the read returned no output' : undefined;
+  const rows = buildScheduleStatusRows(
+    expected,
+    parseFoldedSystemctlShow(showOutput),
+    Date.now(),
+    unreadCause
+  );
   if (rows.length === 0) {
     outputService.warn(
       `No backup strategy is bound to ${machineName}, so nothing is scheduled. Bind one with: rdc backup strategy bind <name> -m ${machineName}`
@@ -350,7 +357,7 @@ export function renderBackupScheduleStatus(
     rows.map((r) => ({
       strategy: r.strategy,
       unit: r.unit,
-      status: r.scheduled ? 'scheduled' : 'not scheduled',
+      status: statusLabel(r),
       lastRun: r.lastRun,
       result: r.result,
       nextRun: r.nextRun,
@@ -358,9 +365,20 @@ export function renderBackupScheduleStatus(
     })),
     'table'
   );
+  const unread = rows.filter((r) => r.unread);
+  if (unread.length > 0) {
+    outputService.error(
+      `Could not read the backup schedule status of ${unread.length} unit(s) on ${machineName}: ${unread[0].reason ?? 'unknown cause'}. This is not a verdict that no timer exists.`
+    );
+  }
   const code = scheduleStatusExitCode(rows);
   if (code !== 0) setExitCode(code);
   return rows;
+}
+
+function statusLabel(r: ScheduleStatusRow): string {
+  if (r.unread) return 'unreadable';
+  return r.scheduled ? 'scheduled' : 'not scheduled';
 }
 
 function sftpTocKeyTransport(sftp: SFTPClient): TocKeyTransport {

@@ -11,7 +11,6 @@
 import { TELEMETRY_DEFAULTS } from '@rediacc/shared/config';
 import type { SFTPClient } from '../../remote/sftp/index.js';
 import { cronIntervalMs } from './backup-schedule-coverage.js';
-import { parseSystemctlShow } from './backup-schedule-reconcile.js';
 
 /** A unit the config expects on the machine. */
 export interface ExpectedScheduleUnit {
@@ -30,8 +29,42 @@ export interface ScheduleStatusRow {
   nextRun: string;
   /** True when the last run failed, or the last trigger is older than twice the interval. */
   missed: boolean;
+  /** True when the machine's answer for this unit was missing or unreadable: nothing is known about the timer. */
+  unread?: boolean;
   reason?: string;
 }
+
+/**
+ * Parse `systemctl show` records into a map keyed by `Id`. A record ends at a blank line OR where a key
+ * repeats, because a job folds output lines into events and an empty line carries no `msg`, so the blank
+ * separators between records do not survive the fold (hostinger, 2026-11-05: every record merged into one,
+ * the last `Id` won, and a healthy timer read as "no timer"). Every record carries `Id`, so the repeat is a
+ * reliable boundary whether or not the blank lines arrive.
+ */
+export function parseFoldedSystemctlShow(output: string): Map<string, Record<string, string>> {
+  const result = new Map<string, Record<string, string>>();
+  let props: Record<string, string> = {};
+  const flush = () => {
+    if (props.Id) result.set(props.Id, props);
+    props = {};
+  };
+  for (const line of output.split('\n')) {
+    if (line.trim() === '') {
+      flush();
+      continue;
+    }
+    const eq = line.indexOf('=');
+    if (eq <= 0) continue;
+    const key = line.slice(0, eq);
+    if (key in props) flush();
+    props[key] = line.slice(eq + 1).replace(/\r$/, '');
+  }
+  flush();
+  return result;
+}
+
+/** The scheduled timer's name for a unit, the key its record carries. */
+const timerId = (unitName: string): string => `rediacc-backup-${unitName}.timer`;
 
 const PROPERTIES = [
   'Id',
@@ -64,12 +97,28 @@ function iso(ms: number | undefined): string {
 export function buildScheduleStatusRows(
   expected: ExpectedScheduleUnit[],
   records: Map<string, Record<string, string>>,
-  nowMs: number = Date.now()
+  nowMs: number = Date.now(),
+  unreadCause?: string
 ): ScheduleStatusRow[] {
   return expected.map((unit) => {
-    const timer: SystemdProps = records.get(`rediacc-backup-${unit.unitName}.timer`) ?? {};
+    const found: SystemdProps | undefined = records.get(timerId(unit.unitName));
+    const timer: SystemdProps = found ?? {};
     const service: SystemdProps = records.get(`rediacc-backup-${unit.unitName}.service`) ?? {};
     const base = { strategy: unit.strategyName, unit: unit.unitName };
+    // "No timer" is only what the machine said (LoadState other than loaded). No record, or a record without
+    // LoadState, says nothing about the timer, so it is unknown and never reported as absent.
+    if (found?.LoadState === undefined) {
+      return {
+        ...base,
+        scheduled: false,
+        lastRun: '-',
+        result: '-',
+        nextRun: '-',
+        missed: true,
+        unread: true,
+        reason: `status could not be read: ${unreadCause ?? `the machine returned no record for ${timerId(unit.unitName)}`}`,
+      };
+    }
     if (timer.LoadState !== 'loaded') {
       return {
         ...base,
@@ -145,10 +194,11 @@ export async function readScheduleStatus(
     },
     onStderr: () => {},
   });
-  return buildScheduleStatusRows(expected, parseSystemctlShow(stdout), nowMs);
+  return buildScheduleStatusRows(expected, parseFoldedSystemctlShow(stdout), nowMs);
 }
 
-/** `backup status` exit code: 1 when any unit is unscheduled or missed a run, else 0. */
+/** `backup status` exit code: 2 when any unit could not be read, 1 when any is unscheduled or missed a run, else 0. */
 export function scheduleStatusExitCode(rows: ScheduleStatusRow[]): number {
+  if (rows.some((r) => r.unread)) return 2;
   return rows.some((r) => r.missed) ? 1 : 0;
 }

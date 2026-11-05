@@ -10,6 +10,7 @@ import {
 } from '../backup/backup-schedule-coverage.js';
 import {
   buildScheduleStatusRows,
+  parseFoldedSystemctlShow,
   parseSystemdTimestamp,
   readScheduleStatus,
   scheduleStatusExitCode,
@@ -269,5 +270,86 @@ describe('machineStaleBackups', () => {
         NOW
       )
     ).toEqual([]);
+  });
+});
+
+// What a `backup-status` job hands the step: one `output` event per stdout line, and an empty line has no
+// `msg`, so the blank record separators are gone (run-job.ts folds `${msg}\n` per event).
+const REAL_SHOW = [
+  'Id=rediacc-backup-daily.timer',
+  'LoadState=loaded',
+  'ActiveState=active',
+  'SubState=waiting',
+  'NextElapseUSecRealtime=Mon 2026-10-26 03:00:00 UTC',
+  'LastTriggerUSec=Sun 2026-10-25 03:00:00 UTC',
+  'Result=success',
+  '',
+  'Id=rediacc-backup-daily.service',
+  'LoadState=loaded',
+  'ActiveState=inactive',
+  'SubState=dead',
+  'Result=success',
+  'ExecMainExitTimestamp=Sun 2026-10-25 03:10:00 UTC',
+  '',
+];
+const fold = (lines: string[]): string =>
+  lines
+    .filter((l) => l !== '')
+    .map((l) => `${l}\n`)
+    .join('');
+
+describe('status from a folded job output', () => {
+  it('reads a scheduled row from systemctl show text with the blank separators folded away', () => {
+    const records = parseFoldedSystemctlShow(fold(REAL_SHOW));
+    expect([...records.keys()]).toEqual([
+      'rediacc-backup-daily.timer',
+      'rediacc-backup-daily.service',
+    ]);
+    const rows = buildScheduleStatusRows([daily], records, NOW);
+    expect(rows[0]).toMatchObject({ scheduled: true, missed: false, result: 'success' });
+    expect(rows[0].unread).toBeUndefined();
+    expect(scheduleStatusExitCode(rows)).toBe(0);
+  });
+
+  it('control: the same text with its blank lines intact parses identically', () => {
+    expect(parseFoldedSystemctlShow(REAL_SHOW.join('\n'))).toEqual(
+      parseFoldedSystemctlShow(fold(REAL_SHOW))
+    );
+  });
+
+  it('empty output is could-not-read, never "no timer", and exits 2', () => {
+    const rows = buildScheduleStatusRows([daily], parseFoldedSystemctlShow(''), NOW);
+    expect(rows[0]).toMatchObject({ unread: true, scheduled: false });
+    expect(rows[0].reason).toMatch(/could not be read/);
+    expect(rows[0].reason).not.toMatch(/no timer/);
+    expect(scheduleStatusExitCode(rows)).toBe(2);
+  });
+
+  it('unparseable output is could-not-read as well', () => {
+    const rows = buildScheduleStatusRows(
+      [daily],
+      parseFoldedSystemctlShow('Failed to connect to bus: No such file or directory\n'),
+      NOW
+    );
+    expect(rows[0].unread).toBe(true);
+    expect(rows[0].reason).not.toMatch(/no timer/);
+  });
+
+  it('a real LoadState=not-found record still says not scheduled, and exits 1', () => {
+    const text = fold([
+      'Id=rediacc-backup-daily.timer',
+      'LoadState=not-found',
+      'ActiveState=inactive',
+      'SubState=dead',
+      'Id=rediacc-backup-daily.service',
+      'LoadState=not-found',
+      'ActiveState=inactive',
+      'SubState=dead',
+    ]);
+    const rows = buildScheduleStatusRows([daily], parseFoldedSystemctlShow(text), NOW);
+    expect(rows[0]).toMatchObject({ scheduled: false, missed: true });
+    expect(rows[0].unread).toBeUndefined();
+    expect(rows[0].reason).toMatch(/not scheduled: no timer/);
+    expect(scheduleStatusExitCode(rows)).toBe(1);
   });
 });

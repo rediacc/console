@@ -104,7 +104,7 @@ vi.mock('../../utils/local-execution-failures.js', () => ({
   renderLocalExecutionFailure: mockRenderFailure,
 }));
 vi.mock('../../services/core/output.js', () => ({
-  outputService: { info: vi.fn(), success: vi.fn(), warn: vi.fn(), print: vi.fn() },
+  outputService: { info: vi.fn(), success: vi.fn(), warn: vi.fn(), print: vi.fn(), error: vi.fn() },
 }));
 vi.mock('../../utils/errors.js', async (orig) => ({
   ...(await orig<Record<string, unknown>>()),
@@ -451,9 +451,12 @@ describe('backup status with the real renderer', () => {
     { unitName: 'nightly.repo.gitlab', strategyName: 'nightly', schedule: '0 4 * * *' },
   ];
   // One loaded, active timer that never fired, and one unit with no timer on the machine.
+  // The job folds each stdout line into an event and drops the empty ones, so no blank separator survives.
   const SHOW =
-    'Id=rediacc-backup-nightly.timer\nLoadState=loaded\nActiveState=active\n\n' +
-    'Id=rediacc-backup-nightly.service\nLoadState=loaded\nActiveState=inactive\n\n';
+    'Id=rediacc-backup-nightly.timer\nLoadState=loaded\nActiveState=active\n' +
+    'Id=rediacc-backup-nightly.service\nLoadState=loaded\nActiveState=inactive\n' +
+    'Id=rediacc-backup-nightly.repo.gitlab.timer\nLoadState=not-found\nActiveState=inactive\n' +
+    'Id=rediacc-backup-nightly.repo.gitlab.service\nLoadState=not-found\nActiveState=inactive\n';
 
   beforeEach(async () => {
     const actual = await vi.importActual<typeof import('../../services/backup/backup-schedule.js')>(
@@ -494,6 +497,22 @@ describe('backup status with the real renderer', () => {
       'table'
     );
     expect(mockSetExitCode).toHaveBeenCalledWith(1);
+  });
+
+  it('empty job output prints could-not-read, not "no timer", and exits 2', async () => {
+    answer = { ...FINISHED, stdout: '' };
+    const { outputService } = await import('../../services/core/output.js');
+
+    await rdcBackup('status', '-m', 'm1');
+
+    const rows = vi.mocked(outputService.print).mock.calls[0][0] as {
+      status: string;
+      missed: string;
+    }[];
+    expect(rows.map((r) => r.status)).toEqual(['unreadable', 'unreadable']);
+    expect(rows[0].missed).toMatch(/could not be read/);
+    expect(JSON.stringify(rows)).not.toMatch(/no timer/);
+    expect(mockSetExitCode).toHaveBeenCalledWith(2);
   });
 
   it('control: a table where every unit is scheduled sets no exit code', async () => {
