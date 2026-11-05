@@ -31,6 +31,7 @@ import { setBackgroundRequested } from './services/executor/executor-factory.js'
 import {
   assertDetachable,
   assertProxyCapable,
+  proxyUrlFor,
   runCommandThroughProxy,
 } from './services/executor/proxy-command.js';
 import {
@@ -262,7 +263,11 @@ export function createCli(): Command {
       //
       // Interception is at the COMMAND, not deeper. A command's action body reads and writes local config on its way to the executor seam, and a proxy client holds no config, so intercepting at the seam meant dying with "Repository not found in context" before the wire was ever touched. This hook runs before every action, so exiting here means the local action never runs at all,
       // which is what makes the client genuinely thin.
-      const proxyUrl = (opts.proxy as string | undefined) ?? process.env.REDIACC_PROXY_URL;
+      const proxyUrl = proxyUrlFor(
+        commandPathOf(actionCommand),
+        opts.proxy as string | undefined,
+        process.env.REDIACC_PROXY_URL
+      );
       if (proxyUrl) {
         // Refuse a command the proxy cannot serve (interactive TTY, client-side file transfer, or an effect that only exists on this laptop) up front, so the operator gets a clear message instead of a confusing failure mid-request.
         const commandPath = commandPathOf(actionCommand);

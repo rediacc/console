@@ -21,6 +21,7 @@ import {
   assertProxyCapable,
   BACKGROUND_UNSAFE,
   paramsFromCommand,
+  proxyUrlFor,
 } from '../proxy-command.js';
 
 /**
@@ -116,6 +117,23 @@ describe('assertProxyCapable', () => {
 
   it('allows one the contract cleared', () => {
     expect(() => assertProxyCapable('repo status', true)).not.toThrow();
+  });
+});
+
+describe('proxyUrlFor', () => {
+  const URL = 'https://proxy.example.test';
+
+  it('never routes `subscription proxy-token` through the proxy, from the env or the flag', () => {
+    expect(proxyUrlFor('subscription proxy-token', undefined, URL)).toBeUndefined();
+    expect(proxyUrlFor('subscription proxy-token', URL, URL)).toBeUndefined();
+  });
+
+  it('routes every other command by the flag first, then the env', () => {
+    expect(proxyUrlFor('repo up', undefined, URL)).toBe(URL);
+    expect(proxyUrlFor('repo up', 'https://flag.example.test', URL)).toBe(
+      'https://flag.example.test'
+    );
+    expect(proxyUrlFor('repo up', undefined, undefined)).toBeUndefined();
   });
 });
 

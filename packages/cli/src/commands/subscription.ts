@@ -24,7 +24,7 @@ import { updateConfigAtPointer } from '../services/config/synced-write.js';
 import { outputService } from '../services/core/output.js';
 import { discoverRegions } from '../services/provision/region-discovery.js';
 import { telemetryService } from '../services/telemetry/telemetry.js';
-import { handleError, ValidationError } from '../utils/errors.js';
+import { handleError, setOutputFormat, ValidationError } from '../utils/errors.js';
 import { promptRegionSelection } from '../utils/region-prompt.js';
 import { withSpinner } from '../utils/spinner.js';
 import { readStdinValue } from '../utils/stdin.js';
@@ -383,6 +383,8 @@ export function registerSubscriptionCommands(program: Command): void {
     .description(t('commands.subscription.proxyToken.description'))
     .option('--json', t('commands.subscription.proxyToken.jsonOption'))
     .action(async (options: { json?: boolean }) => {
+      // Inside `$(...)` stdout is no TTY, so the root hook picks JSON output, and a JSON error envelope lands on stdout where the substitution captures it as a "token". The refusal goes to stderr as text instead, whatever the format.
+      setOutputFormat('table');
       try {
         await executeProxyToken(options);
       } catch (error) {

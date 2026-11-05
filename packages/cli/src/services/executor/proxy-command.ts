@@ -22,6 +22,25 @@ import { ProxyClient, type ProxyCommandOutcome } from './proxy-client.js';
 import type { RenetEvent } from './types.js';
 
 /**
+ * Commands that talk to the account server directly and never take the proxy branch, whatever
+ * `--proxy` or REDIACC_PROXY_URL say. `subscription proxy-token` mints the credential the proxy
+ * itself needs: with REDIACC_PROXY_URL exported, `REDIACC_TOKEN=$(rdc subscription proxy-token)`
+ * used to hit the proxy branch, print its refusal envelope on stdout, and hand that JSON to the next
+ * call as a token (bench, 2026-11-05).
+ */
+export const ACCOUNT_DIRECT_COMMANDS: ReadonlySet<string> = new Set(['subscription proxy-token']);
+
+/** The proxy URL a command runs through, or undefined when it runs here. */
+export function proxyUrlFor(
+  commandPath: string,
+  flag: string | undefined,
+  env: string | undefined
+): string | undefined {
+  if (ACCOUNT_DIRECT_COMMANDS.has(commandPath)) return undefined;
+  return flag ?? env;
+}
+
+/**
  * Refuse a command that cannot work through the proxy.
  *
  * Three kinds cannot, and the contract marks each one with a reason:
