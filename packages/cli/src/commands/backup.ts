@@ -32,12 +32,14 @@ import { registerBackupImageCommands } from './backup-image.js';
 import { registerBackupOpsCommands } from './backup-ops.js';
 import { registerBackupPurge } from './backup-purge.js';
 import {
+  resolveChunkSnapshot,
   resolveSnapshotAt,
   runChunkRestore,
   settleRestore,
   streamScopeFor,
 } from './backup-restore-chunk.js';
 import { assertRestorePathFlags, isPathRoute, runRestorePath } from './backup-restore-path.js';
+import { sourceImageOnMachine } from './backup-restore-route.js';
 import { type BackupManifestsResponse, registerBackupStorageCommands } from './backup-storage.js';
 import { registerBackupStrategyCommands } from './backup-strategy.js';
 import { listBackups } from './repo-backup-list.js';
@@ -175,19 +177,25 @@ function registerBackupRestore(backup: Command): void {
           await restorePathRoute(artifactRef, { ...options, path: options.path, at: options.at });
           return;
         }
-        const { ref, targetName, source } = await resolveRestoreTarget(artifactRef, options);
+        const { ref, targetName, source, sourceKey } = await resolveRestoreTarget(
+          artifactRef,
+          options
+        );
 
         const targetMachine = await resolveRestoreMachine(options);
         const resolved = await resolveRemoteName(ref.place);
         const from = resolved.type === 'cluster' ? ref.place : resolved.name;
         const sourceType = 'machine';
+        const lineage = source.grandGuid ?? source.repositoryGuid;
 
-        // No `--at`: a repo with a chunk-store lineage has no artifact on a machine to pull (the pull dies on a missing repositories/<guid>), so the restore means "the newest snapshot", exactly `--at <now>`. A repo with no manifests keeps the pull of its `repo push` artifact.
         const restoreAt =
           options.at ??
-          ((await lineageHasSnapshots(source.grandGuid ?? source.repositoryGuid, artifactRef))
-            ? new Date().toISOString()
-            : undefined);
+          (await defaultRestoreAt({
+            lineage,
+            name: artifactRef,
+            place: resolved.type === 'cluster' ? undefined : from,
+            source,
+          }));
         // Only a snapshot restore has seeds to skip; refuse before the target is registered rather than ignore the flag.
         if (options.seed === false && !restoreAt) {
           throw new ValidationError(t('commands.backup.restore.noSeedNeedsSnapshot'));
@@ -206,10 +214,21 @@ function registerBackupRestore(backup: Command): void {
 
         // Refuse a bad target name before allocateNetworkId persists anything.
         assertResourceName(targetName);
+        // The snapshot is chosen BEFORE the target is registered: the stream probe and the index lookup are where a chunk restore is refused, and a refusal after the registration left a config entry with no image behind it (live 2026-11-05).
+        const chunk = restoreAt
+          ? {
+              snapshotId: await resolveChunkSnapshot({
+                lineage,
+                at: restoreAt,
+                anyStream: options.anyStream ?? false,
+                source: { repoName: sourceKey, machine: from },
+                debug: options.debug,
+              }),
+            }
+          : undefined;
         const networkId = await configService.allocateNetworkId({
           floor: await targetFloor({ machine: targetMachine }),
         });
-        const lineage = source.grandGuid ?? source.repositoryGuid;
         await configService.addRepository(compositeKey(targetName, 'latest'), {
           ...restoredIdentity(lineage),
           tag: 'latest',
@@ -226,18 +245,16 @@ function registerBackupRestore(backup: Command): void {
         // two verbs that mean the same thing.
         // The run record, the stats report, the registration rollback, the unit re-render (G4) and the `--up` deploy ride the job's ticket (PLAN-detached-jobs J4), so a backgrounded restore records nothing until it finishes and deploys only a restore that succeeded.
         const after = restoreTailSteps(targetName, targetMachine, datastore, options);
-        if (restoreAt) {
+        if (chunk) {
           await runChunkRestore({
             targetName,
             targetMachine,
             datastore,
             lineage,
-            at: restoreAt,
-            anyStream: options.anyStream ?? false,
+            snapshotId: chunk.snapshotId,
             noSeed: options.seed === false,
             allowUnopenable: options.allowUnopenable,
             salvage: options.salvage,
-            source: { repoName: ref.name, machine: from },
             debug: options.debug,
             after,
           });
@@ -353,6 +370,8 @@ async function resolveRestoreTarget(
   ref: ReturnType<typeof parseRef> & { place: string };
   targetName: string;
   source: NonNullable<Awaited<ReturnType<typeof configService.getRepository>>>;
+  /** The source's config key with its tag: `name:tag` for a fork, the bare name for a grand. */
+  sourceKey: string;
 }> {
   const ref = parseRef(artifactRef);
   if (!ref.place) {
@@ -369,11 +388,13 @@ async function resolveRestoreTarget(
 
   // The artifact carries its source repo's identity; the pushed copy on <place>
   // is that repo under its GUID (06 §6.5). Look it up to learn the GUID we pull, then register the restored name as a fresh live record.
-  const source = await configService.getRepository(ref.name);
+  // The TAG is part of the source: a bare name resolves to the family's grand, so `observability:lab@m` pulled and probed the GRAND's GUID on a machine that only holds the lab fork's pushed image.
+  const sourceKey = ref.tag ? `${ref.name}:${ref.tag}` : ref.name;
+  const source = await configService.getRepository(sourceKey);
   if (!source) {
-    throw new ValidationError(t('commands.backup.restore.sourceUnknown', { name: ref.name }));
+    throw new ValidationError(t('commands.backup.restore.sourceUnknown', { name: sourceKey }));
   }
-  return { ref: { ...ref, place: ref.place }, targetName, source };
+  return { ref: { ...ref, place: ref.place }, targetName, source, sourceKey };
 }
 
 /**
@@ -571,6 +592,34 @@ function restoreTailSteps(
         ]
       : []),
   ];
+}
+
+/**
+ * The restore point when `--at` is absent: undefined takes the pull route, a time the chunk route.
+ *
+ * A machine place that holds the source's image (the artifact `repo push --to <machine>` leaves)
+ * is pulled, since that image is what the ref names. Only a place WITHOUT the image falls through
+ * to the snapshot index, where a lineage with snapshots restores the newest one (`--at <now>`);
+ * the pull would die there on a missing repositories/<guid>. A place that cannot be asked keeps
+ * the index decision, as before the probe existed.
+ */
+async function defaultRestoreAt(args: {
+  lineage: string;
+  name: string;
+  place: string | undefined;
+  source: NonNullable<Awaited<ReturnType<typeof configService.getRepository>>>;
+}): Promise<string | undefined> {
+  if (args.place) {
+    const held = await sourceImageOnMachine({
+      machine: args.place,
+      guid: args.source.repositoryGuid,
+      placement: args.source.placement,
+    });
+    if (held) return undefined;
+  }
+  return (await lineageHasSnapshots(args.lineage, args.name))
+    ? new Date().toISOString()
+    : undefined;
 }
 
 /**

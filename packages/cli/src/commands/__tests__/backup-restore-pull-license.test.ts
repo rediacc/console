@@ -192,7 +192,9 @@ describe('backup restore (pull route) licenses the minted GUID before backup_pul
       mockExecute.mock.invocationCallOrder[pullAt]
     );
     expect(fnCalls().filter((f) => f === 'backup_pull')).toHaveLength(1);
-    expect(mockRelease).toHaveBeenCalledTimes(2);
+    // Every lease is released: the route probe's, the licence context's and the size measure's.
+    expect(mockRelease).toHaveBeenCalledTimes(mockAcquire.mock.calls.length);
+    expect(mockAcquire).toHaveBeenCalledTimes(3);
   });
 
   it('skips issuance when the target already holds a valid licence for the GUID', async () => {

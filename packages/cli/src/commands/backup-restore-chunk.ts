@@ -1,6 +1,7 @@
 import { t } from '../i18n/index.js';
 import { accountServerFetch } from '../services/account/account-client.js';
 import { assertHostedBackupAccount } from '../services/account/free-license.js';
+import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
 import { setExitCode } from '../services/core/request-context.js';
 import { getExecutor } from '../services/executor/executor-factory.js';
@@ -11,6 +12,7 @@ import {
 } from '../services/jobs/command-job.js';
 import { bindStepHandler, type PlannedStep, planStep } from '../services/jobs/steps.js';
 import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
+import { compositeKey } from '../utils/config-schema.js';
 import { getOutputFormat, ValidationError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { executeRepoFunction } from '../utils/repo-executor.js';
@@ -178,7 +180,13 @@ export type StreamScope =
  * The snapshot the SOURCE machine's journal anchors for this repo, read through
  * `backup_verify` (the verb already reports it). Undefined when the machine has
  * no committed snapshot, its verify fails, or the verdict cannot be read;
- * the streamUnknown refusal names both causes.
+ * the caller's refusal names the causes.
+ *
+ * A failed probe is the CALLER's refusal to make, so it is not rendered as a
+ * command failure: that rendering exits the process in agent mode, before the
+ * caller could refuse in its own words or unwind anything, and it showed only
+ * renet's "see records above" line while the records sat in captured stdout.
+ * The record itself is printed here instead, on stderr.
  */
 export async function readSourceAnchor(
   source: { repoName: string; machine: string },
@@ -190,16 +198,25 @@ export async function readSourceAnchor(
     source.machine,
     { level: 'spot' },
     // A probe: the anchor decides which snapshot `--at` restores, so `--background` must not hand back a ticket here.
-    { debug, captureOutput: true, probe: true },
+    { debug, captureOutput: true, probe: true, failureIsAnswer: true },
     {
       starting: t('commands.backup.verify.starting', { name: source.repoName, level: 'spot' }),
       completed: t('commands.backup.verify.completed', { name: source.repoName }),
       failed: t('commands.backup.verify.failed', { name: source.repoName }),
     }
   );
-  if (!result.success) return undefined;
   const verdict = parseVerifyVerdict(result.stdout) as { snapshotId?: string } | undefined;
-  return verdict?.snapshotId;
+  if (result.success) return verdict?.snapshotId;
+  outputService.warn(t('commands.backup.verify.failed', { name: source.repoName }));
+  outputService.warn(verdict ? JSON.stringify(verdict) : probeFailureText(result));
+  return undefined;
+}
+
+/** What a probe that printed no record has to say: its error, else its stderr. */
+function probeFailureText(result: { error?: string; stderr?: string }): string {
+  if (result.error) return result.error;
+  const stderr = result.stderr?.trim();
+  return stderr ? stderr : '-';
 }
 
 /**
@@ -221,6 +238,22 @@ export async function streamScopeFor(args: {
 }
 
 /**
+ * The snapshot a whole-image chunk restore places: the stream scope (the source machine's anchor,
+ * unless `--any-stream` or an explicit snapshot id) and the index lookup. Run before the target is
+ * registered, so every refusal here leaves nothing to roll back.
+ */
+export async function resolveChunkSnapshot(args: {
+  lineage: string;
+  at: string;
+  anyStream: boolean;
+  source: { repoName: string; machine: string };
+  debug?: boolean;
+}): Promise<string> {
+  const scope = await streamScopeFor(args);
+  return resolveSnapshotAt(args.lineage, args.at, scope);
+}
+
+/**
  * Run `backup_restore` for a point-in-time restore from the chunk store, and
  * unwind the just-registered record on failure exactly as the pull path does,
  * so a retry is not blocked by target-exists.
@@ -230,26 +263,28 @@ export async function runChunkRestore(args: {
   targetMachine: string;
   datastore: string | undefined;
   lineage: string;
-  at: string;
-  anyStream: boolean;
+  /** Resolved by {@link resolveChunkSnapshot} before the target was registered. */
+  snapshotId: string;
   noSeed: boolean;
   /** Place an image the repository passphrase did not open (renet keeps the staged copy otherwise). */
   allowUnopenable?: boolean;
   /** Continue past lost or corrupt chunks, leaving their cells as holes; only into a new name. */
   salvage?: boolean;
-  source: { repoName: string; machine: string };
   debug?: boolean;
   after: PlannedStep[];
 }): Promise<void> {
-  const { targetName, targetMachine, datastore, lineage, at, anyStream, noSeed, source, debug } =
-    args;
-  const scope = await streamScopeFor({ at, anyStream, source, debug });
-  const snapshotId = await resolveSnapshotAt(lineage, at, scope);
+  const { targetName, targetMachine, datastore, lineage, snapshotId, noSeed, debug } = args;
 
   outputService.info(
     t('commands.backup.restore.restoringSnapshot', { name: targetName, snapshot: snapshotId })
   );
-  await deployRepoKeyIfNeeded(targetName, targetMachine);
+  try {
+    await deployRepoKeyIfNeeded(targetName, targetMachine);
+  } catch (error) {
+    // The job never started, so its rollback step never runs: drop the registration here, as the pull route does.
+    await configService.removeRepository(compositeKey(targetName, 'latest')).catch(() => undefined);
+    throw error;
+  }
   const outcome = await runCommandJob(
     'backup restore',
     {

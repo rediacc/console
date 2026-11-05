@@ -106,6 +106,12 @@ export async function executeRepoFunction(
     job?: { verb: string; steps: PlannedStep[] };
     /** A probe the command reads before going on: `--background` leaves it attached (ExecuteOptions.probe). */
     probe?: boolean;
+    /**
+     * A failure is an ANSWER the caller reads and refuses on in its own words, so it is not
+     * rendered here: the rendering exits the process in agent mode, before the caller could
+     * refuse or unwind what it registered (backup restore's stream probe, live 2026-11-05).
+     */
+    failureIsAnswer?: boolean;
   },
   messages: RepoFunctionMessages
 ): Promise<ExecuteResult> {
@@ -148,7 +154,7 @@ export async function executeRepoFunction(
 
   if (result.success) {
     renderSuccess(result, messages.completed);
-  } else {
+  } else if (!options.failureIsAnswer) {
     renderFailure(result, { functionName, repoName, machineName, failed: messages.failed });
   }
 
