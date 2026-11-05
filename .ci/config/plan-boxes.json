@@ -940,8 +940,8 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 13,
-      "done": 26,
+      "open": 11,
+      "done": 28,
       "open_sigs": [
         "1d17b634",
         "27123f68",
@@ -949,13 +949,11 @@
         "579abcb9",
         "7692f2db",
         "845dbf74",
-        "87e959e9",
         "8ab57406",
         "96717f6c",
         "a116dd8b",
         "e25f1778",
-        "f63db1ea",
-        "fb84a4e4"
+        "f63db1ea"
       ],
       "done_sigs": [
         "10ee1dbe",
@@ -971,6 +969,7 @@
         "561f92bc",
         "6b8d5026",
         "86690927",
+        "87e959e9",
         "8ac038c6",
         "96524032",
         "9be13bd8",
@@ -983,7 +982,8 @@
         "d02d75ce",
         "d4cf00e3",
         "e1e9d8df",
-        "e32825a7"
+        "e32825a7",
+        "fb84a4e4"
       ]
     },
     "agent/plans/PLAN-devbox-uid-derived-image.md": {
@@ -1370,12 +1370,11 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 8,
-      "done": 3,
+      "open": 7,
+      "done": 4,
       "open_sigs": [
         "11388dba",
         "29c37ab0",
-        "90ade765",
         "932bf30c",
         "b54d76a6",
         "f64eeedf",
@@ -1383,6 +1382,7 @@
         "fe5245eb"
       ],
       "done_sigs": [
+        "90ade765",
         "99de90cc",
         "9ea4a078",
         "afaa0431"
