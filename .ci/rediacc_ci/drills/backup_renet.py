@@ -5,8 +5,9 @@ WHAT CHANGES. The host-only legs build their own cells in Python and talk to the
   b  the seed snapshot is stored, the manifest index lists it, and the quota ledger moved by exactly the bytes renet reports uploading.
   c  one rewritten cell transfers exactly one cell (`bytesUploaded == CELL_BYTES`), the ledger grew by that one cell, and the delta lists the seed as its parent.
   d  both snapshots restore into a fresh repository, and each restored image's sha256 equals the digest of the source image taken when that snapshot was cut. Control: the two digests differ, so identical inputs cannot pass.
-  p  a swapped image is refused with nothing uploaded, by the journal and, with the journal gone, by the server's previous row; a wrong passphrase places nothing. Controls: the original image stores again, and the right passphrase restores it byte for byte.
-  r  a chunk overwritten in the store is deleted by the account's repair route and put back by `renet backup repair` from the anchor, the lease is released, and the store pass is clean. Control: a hash no anchor holds is named as unrepairable, and the verb exits non-zero.
+  p  a swapped image is refused with nothing uploaded, by the journal and, with the journal gone, by the server's previous row; a wrong passphrase places nothing. Controls: the original image stores again, and the right passphrase restores it byte for byte. Then, on a repository of its own, a wrong-password mount of the mounted repository leaves its TOC key as it was. Controls: with the key moved aside the wrong password installs nothing and the right one installs the same key.
+  r  a chunk overwritten in the store is deleted by the account's repair route and put back by `renet backup repair` from the anchor, the lease is released, and the store pass is clean. Control: a hash no anchor holds is named as unrepairable, and the verb exits non-zero. Then spot and deep verify, under the backup_verify function's prefix, run in a transient scope whose cpu.max is one core. Control: the same deep run without the prefix is in no transient scope.
+  w  (opt-in) tier-cadence runs heal a chunk lost from the store; then a run past its `--deadline` ends `deadline-exceeded` at that deadline with nothing committed and nothing left alive, two repositories take the machine's slot in turn with the wait recorded, and a systemd unit at a 1-minute target fires twice about a minute apart. Controls: a rerun with time to spare stores, a slot held from outside skips a run at its deadline, and the unit runs nothing before its timer.
 
 The transport, licence installation, repository creation, quiesce and byte comparison are `rediacc_ci.drills.backup_roundtrip`'s (`Roundtrip`), driven against THIS drill's gateway and subscription instead of a second account. Everything stays on the VM network: the gateway the drill started is addressed by the bridge host (the Host header names the universe, see that module), and the renet under test is the one already installed on the worker (never `./rdc.sh`, which rebuilds and redeploys it).
 
@@ -294,6 +295,294 @@ def reflink_remove_command(datastore: str, guid: str) -> str:
     return "sudo -n sh -c 'rm -f %s/repositories/%s%s*'" % (datastore, guid, REFLINK_SUFFIX)
 
 
+# Leg p's TOC half (integrity box P1): its own repository, so the source's key and passphrase stay as legs b-d left them.
+TOC_NET_ID = "3072"
+
+
+def toc_status_command(datastore: str, guid: str) -> str:
+    return "sudo -n renet backup toc-key status --datastore %s --repo %s" % (datastore, guid)
+
+
+def mount_password_command(datastore: str, guid: str) -> str:
+    """Mount with the password on stdin: on an already-mounted repository this proves no password, which is the case the TOC key must survive."""
+    return "sudo -n renet repository mount --name %s --datastore %s --password-stdin" % (
+        guid,
+        datastore,
+    )
+
+
+def toc_key_path(datastore: str, guid: str) -> str:
+    """renet's credentials.TOCPublicKeyPath."""
+    return "%s/.credentials/toc/%s.pub" % (datastore, guid)
+
+
+def toc_aside_command(datastore: str, guid: str) -> str:
+    path = toc_key_path(datastore, guid)
+    return "sudo -n mv %s %s%s" % (path, path, IMAGE_ASIDE)
+
+
+def toc_back_command(datastore: str, guid: str) -> str:
+    """Puts the moved key back unless a key stands under the name again. Tolerates absence."""
+    path = toc_key_path(datastore, guid)
+    return (
+        "sudo -n sh -c 'if [ -e %(p)s%(a)s ]; then if [ -e %(p)s ]; then rm -f %(p)s%(a)s; else mv %(p)s%(a)s %(p)s; fi; fi'"
+        % {
+            "p": path,
+            "a": IMAGE_ASIDE,
+        }
+    )
+
+
+# Leg r's scope half (integrity box P1): the prefix `backgroundReadPrefix` (private/renet/pkg/functions/commands/backup.go) puts in front of `renet backup verify` on a systemd machine: a snapshot's priority and one core.
+VERIFY_SCOPE_PREFIX = "nice -n 10 ionice -c 2 -n 7 systemd-run --scope --quiet -p CPUQuota=100%"
+# cgroup v2's cpu.max for CPUQuota=100% at systemd's default period: one core.
+ONE_CORE_CPU_MAX = "100000 100000"
+# The full level's read cap in the drill, so the deep run lives long enough to be looked at (bytes a second).
+DEEP_READ_BWLIMIT = 1048576
+
+
+def verify_probe_command(datastore: str, guid: str, level: str, scoped: bool) -> str:
+    """Root on the worker, one ssh call: start `renet backup verify` (inside the function's scope prefix when `scoped`), wait until the process is renet itself (the prefix execs in place), print its cgroup and that cgroup's cpu.max, then wait for it and print its exit code and its record. One call, so the process never outlives the session that started it."""
+    prefix = VERIFY_SCOPE_PREFIX + " " if scoped else ""
+    cap = " --read-bwlimit %d" % DEEP_READ_BWLIMIT if level == "full" else ""
+    return (
+        "sudo -n sh -c '%(prefix)srenet backup verify --datastore %(ds)s --repo %(g)s --level %(level)s%(cap)s "
+        "> /tmp/verify-probe.out 2>/tmp/verify-probe.err & p=$!; i=0; "
+        'while [ $i -lt 200 ]; do [ "$(cat /proc/$p/comm 2>/dev/null)" = renet ] && break; i=$((i+1)); sleep 0.05; done; '
+        "c=$(cut -d: -f3 /proc/$p/cgroup 2>/dev/null | tail -n1); "
+        'echo "cgroup $c"; echo "cpumax $(cat /sys/fs/cgroup$c/cpu.max 2>/dev/null)"; '
+        'wait $p; echo "rc $?"; cat /tmp/verify-probe.out; rm -f /tmp/verify-probe.out /tmp/verify-probe.err\''
+        % {"prefix": prefix, "ds": datastore, "g": guid, "level": level, "cap": cap}
+    )
+
+
+def probe_fields(text: str) -> dict[str, Any]:
+    """The probe's `cgroup`, `cpumax` and `rc` lines, and the verify record (the first JSON object line). Absent fields are empty, rc -1."""
+    out: dict[str, Any] = {"cgroup": "", "cpumax": "", "rc": -1, "record": {}}
+    for line in text.splitlines():
+        word, _, rest = line.partition(" ")
+        if word in ("cgroup", "cpumax") and not out[word]:
+            out[word] = rest.strip()
+        elif word == "rc" and rest.strip().lstrip("-").isdigit():
+            out["rc"] = int(rest.strip())
+        elif line.startswith("{") and not out["record"]:
+            try:
+                doc = json.loads(line)
+            except ValueError:
+                continue
+            if isinstance(doc, dict):
+                out["record"] = doc
+    return out
+
+
+def transient_scope(cgroup: str) -> bool:
+    """True for a systemd-run transient scope (`.../run-<id>.scope`), false for a login session's scope or anything else."""
+    leaf = cgroup.rstrip("/").rsplit("/", 1)[-1]
+    return leaf.startswith("run-") and leaf.endswith(".scope")
+
+
+# Leg w's target half (critical-tier box Y1). The CLI refuses an rpo under 5 minutes (packages/shared/src/backup/duration.ts RPO_MIN_SECONDS), so a 1-minute target exists only as the drill's own unit, rendered as the CLI's generator renders a target unit.
+TIER_TARGET = "1m"
+TIER_TARGET_SECONDS = 60
+TIER_SLOT = "/run/rediacc/backup-tier.lock"
+# A run past its deadline: one cell trickled over DEADLINE_TRICKLE_SECONDS against a DEADLINE_SECONDS deadline; it must end within the slack after it.
+DEADLINE_SECONDS = 8
+DEADLINE_TRICKLE_SECONDS = 40
+DEADLINE_SLACK_SECONDS = 30
+# Two repositories and one slot: run A trickles one cell for SLOT_HOLD_SECONDS while run B waits; the control holds the slot past B's short deadline.
+SLOT_NET_ID = "3008"
+SLOT_HOLD_SECONDS = 12
+SLOT_DEADLINE = "2m"
+SLOT_WAITED_MS = 1000
+SLOT_REFUSE_DEADLINE_SECONDS = 3
+SLOT_HOLDER_SECONDS = 31
+SLOT_WAIT_RUN_SECONDS = 150
+# The unit: the CLI's figures for a 60 s target (backup-schedule-unit-generator.ts): deadline clamp(3T, 10 min, 2 h), TimeoutStartSec 2 x deadline + 10 min, RandomizedDelaySec min(T/5, 60 s), OnCalendar from rpoCron(60) through cronToOnCalendar.
+UNIT_PREFIX = "rediacc-drill-tier-"
+UNIT_DEADLINE = "10m"
+UNIT_START_TIMEOUT_SECONDS = 1800
+UNIT_JITTER_SECONDS = 12
+UNIT_ON_CALENDAR = "*-*-* *:00/1:00"
+UNIT_RUNS = 2
+UNIT_WAIT_SECONDS = 200
+UNIT_GAP_SECONDS = (45, 75)
+
+
+def target_args(datastore: str, guid: str, cell_bytes: str, deadline: str, bwlimit: int = 0) -> str:
+    """`renet backup snapshot` on the drill's target (no sudo: callers run it as root)."""
+    limit = " --bwlimit %d" % bwlimit if bwlimit else ""
+    return (
+        "renet backup snapshot --datastore %s --repo %s --cell-bytes %s --target %s --deadline %s%s"
+        % (
+            datastore,
+            guid,
+            cell_bytes,
+            TIER_TARGET,
+            deadline,
+            limit,
+        )
+    )
+
+
+def timed_command(args: str) -> str:
+    """Root on the worker: `args` with its wall time in whole seconds on stderr (`elapsed N`), its stdout and exit code untouched."""
+    return (
+        "sudo -n sh -c 's=$(date +%%s); %s; rc=$?; echo \"elapsed $(( $(date +%%s) - s ))\" >&2; exit $rc'"
+        % args
+    )
+
+
+def elapsed_of(stderr: str) -> int:
+    for line in reversed(stderr.splitlines()):
+        words = line.split()
+        if len(words) == 2 and words[0] == "elapsed" and words[1].isdigit():
+            return int(words[1])
+    return -1
+
+
+def background_command(args: str, tag: str) -> str:
+    """Root on the worker: `args` in the background, its stdout and pid under /tmp/tier-<tag>.*."""
+    return (
+        "sudo -n sh -c 'nohup %s > /tmp/tier-%s.out 2>/tmp/tier-%s.err & echo $! > /tmp/tier-%s.pid'"
+        % (args, tag, tag, tag)
+    )
+
+
+def wait_pid_command(tag: str, seconds: int) -> str:
+    return (
+        "sudo -n sh -c 'i=0; while [ $i -lt %d ]; do kill -0 $(cat /tmp/tier-%s.pid) 2>/dev/null || exit 0; "
+        "i=$((i+1)); sleep 1; done; exit 1'" % (seconds, tag)
+    )
+
+
+def read_out_command(tag: str) -> str:
+    return "sudo -n cat /tmp/tier-%s.out" % tag
+
+
+def slot_busy_command(seconds: int) -> str:
+    """Root on the worker: poll up to `seconds` until someone holds the machine's slot (a non-blocking flock fails), exit 0 when it does."""
+    return (
+        "sudo -n sh -c 'i=0; while [ $i -lt %d ]; do flock -n %s true || exit 0; i=$((i+1)); sleep 0.2; done; exit 1'"
+        % (seconds * 5, TIER_SLOT)
+    )
+
+
+def hold_slot_command() -> str:
+    """Root on the worker: hold the machine's slot in the background for SLOT_HOLDER_SECONDS; -o keeps the lock out of the sleeping child, so ending flock frees it."""
+    return "sudo -n sh -c 'nohup flock -o %s sleep %d > /dev/null 2>&1 &'" % (
+        TIER_SLOT,
+        SLOT_HOLDER_SECONDS,
+    )
+
+
+def tier_cleanup_command() -> str:
+    """Root on the worker: end the slot holder and any drill run still alive, and remove the drill's temp files. Every step tolerates absence."""
+    return (
+        'sudo -n sh -c \'pkill -f "[f]lock -o %s"; pkill -f "[s]leep %d"; '
+        'for f in /tmp/tier-*.pid; do [ -e "$f" ] && kill -9 $(cat "$f") 2>/dev/null; done; rm -f /tmp/tier-*; true\''
+        % (TIER_SLOT, SLOT_HOLDER_SECONDS)
+    )
+
+
+def snapshot_alive_command(guid: str) -> str:
+    """Exit 0 when a `renet backup snapshot` of `guid` is still running on the worker."""
+    return 'sudo -n pgrep -f "[r]enet backup snapshot .*--repo %s"' % guid
+
+
+def tier_service_unit(datastore: str, guid: str, cell_bytes: str) -> str:
+    """The service of a 1-minute target unit, as the CLI's generateServiceUnit renders a target (licence renewal and the spot verify left out: neither is under test here)."""
+    return (
+        "[Unit]\nDescription=Rediacc drill tier unit (%(t)s)\nAfter=network-online.target\n\n"
+        "[Service]\nType=oneshot\nNice=10\nIOSchedulingClass=best-effort\nIOSchedulingPriority=7\n"
+        "TimeoutStartSec=%(timeout)d\nTimeoutStopSec=90\n"
+        "ExecStart=/usr/bin/env renet backup snapshot --datastore %(ds)s --repo %(g)s --cell-bytes %(cb)s --target %(t)s --deadline %(dl)s\n"
+        % {
+            "t": TIER_TARGET,
+            "timeout": UNIT_START_TIMEOUT_SECONDS,
+            "ds": datastore,
+            "g": guid,
+            "cb": cell_bytes,
+            "dl": UNIT_DEADLINE,
+        }
+    )
+
+
+def tier_timer_unit() -> str:
+    """The timer of a 1-minute target unit, as the CLI's generateTimerUnit renders a target."""
+    return (
+        "[Unit]\nDescription=Rediacc drill tier timer (%s)\n\n[Timer]\nOnCalendar=%s\n"
+        "RandomizedDelaySec=%ds\nFixedRandomDelay=true\nAccuracySec=1s\nPersistent=true\n"
+        % (TIER_TARGET, UNIT_ON_CALENDAR, UNIT_JITTER_SECONDS)
+    )
+
+
+def install_unit_command(name: str, service: str, timer: str) -> str:
+    """Root on the worker: both unit files written through base64, systemd reloaded, and the timer started."""
+    sv = base64.b64encode(service.encode()).decode()
+    tm = base64.b64encode(timer.encode()).decode()
+    unit = "/etc/systemd/system/%s" % name
+    return (
+        "sudo -n sh -c 'printf %%s %(sv)s | base64 -d > %(u)s.service && printf %%s %(tm)s | base64 -d > %(u)s.timer && "
+        "systemctl daemon-reload && systemctl start %(n)s.timer'"
+        % {"sv": sv, "tm": tm, "u": unit, "n": name}
+    )
+
+
+def unit_journal_command(name: str) -> str:
+    return "sudo -n journalctl -u %s.service -o json --no-pager" % name
+
+
+def wait_unit_runs_command(name: str, guid: str, runs: int, seconds: int) -> str:
+    """Root on the worker: poll up to `seconds` until the unit's journal holds `runs` records of `guid`, exit 0 when it does."""
+    return (
+        'sudo -n sh -c \'i=0; while [ $i -lt %d ]; do n=$(journalctl -u %s.service -o cat --no-pager | grep -c "\\"guid\\":\\"%s\\""); '
+        '[ "$n" -ge %d ] && exit 0; i=$((i+1)); sleep 1; done; exit 1\''
+        % (seconds, name, guid, runs)
+    )
+
+
+def unit_cleanup_command(name: str) -> str:
+    return (
+        "sudo -n sh -c 'systemctl stop %(n)s.timer %(n)s.service; rm -f /etc/systemd/system/%(n)s.service "
+        "/etc/systemd/system/%(n)s.timer; systemctl daemon-reload; systemctl reset-failed %(n)s.service %(n)s.timer; true'"
+        % {"n": name}
+    )
+
+
+def unit_records(text: str, guid: str) -> list[tuple[int, dict[str, Any]]]:
+    """(realtime in microseconds, record) for each snapshot record of `guid` in a `journalctl -o json` dump, in journal order."""
+    out: list[tuple[int, dict[str, Any]]] = []
+    for line in text.splitlines():
+        try:
+            entry = json.loads(line)
+        except ValueError:
+            continue
+        message = entry.get("MESSAGE") if isinstance(entry, dict) else None
+        if not isinstance(message, str) or not message.startswith("{"):
+            continue
+        try:
+            doc = json.loads(message)
+        except ValueError:
+            continue
+        stamp = str(entry.get("__REALTIME_TIMESTAMP", ""))
+        if (
+            isinstance(doc, dict)
+            and doc.get("guid") == guid
+            and "status" in doc
+            and stamp.isdigit()
+        ):
+            out.append((int(stamp), doc))
+    return out
+
+
+def number(doc: dict[str, Any], key: str) -> int:
+    """An integer field of a record, -1 when absent or not a number."""
+    value = doc.get(key)
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return -1
+    return int(value)
+
+
 class RenetLegs:
     """One run's real-renet legs. `backup` is the running `Backup`; `roundtrip` is the seam the tests replace."""
 
@@ -492,6 +781,82 @@ class RenetLegs:
         d.assert_equal("opened", str(doc.get("passphraseCheck", "")), "and says the image opened")
         d.last_cmd = "sha256sum of the image restored with the passphrase"
         d.assert_equal(self.src_sha, r.image_digest(target), "byte-identically")
+        self.toc_key_on_mount()
+
+    def own_repo(self, net_id: str) -> tuple[str, str]:
+        """A repository of the leg's own on `net_id`, created mounted with its licence. Returns (guid, passphrase); the source's passphrase file is left as it was."""
+        r = self.rt
+        guid = str(uuid.uuid4())
+        r.created.append(guid)
+        luks = r.work / "luks.txt"
+        saved = luks.read_text(encoding="utf-8") if luks.exists() else None
+        saved_net = r.net_src
+        r.net_src = net_id
+        try:
+            r.issue_license(guid, guid, "grand")
+            r.create_source(guid)
+            passphrase = r.passphrase()
+        finally:
+            r.net_src = saved_net
+            if saved is not None:
+                luks.write_text(saved, encoding="utf-8")
+        return guid, passphrase
+
+    def toc_status(self, guid: str) -> dict[str, Any]:
+        return self.rt._json_result(
+            self.rt.run_vm(toc_status_command(self.rt.datastore, guid), must=False)
+        )
+
+    def toc_key_on_mount(self) -> None:
+        """Integrity box P1: on real cryptsetup a mount with a wrong password, on a repository that is already mounted, leaves its TOC key as it was. Controls: with the key gone the wrong password installs nothing, and the right one installs the same key again."""
+        d, r = self.d, self.rt
+        d.step("Leg p (renet): a mounted repository keeps its TOC key through a wrong password")
+        guid, passphrase = self.own_repo(TOC_NET_ID)
+        ds = r.datastore
+        try:
+            first = self.toc_status(guid)
+            d.last_cmd = "renet backup toc-key status (after create)"
+            d.assert_equal(
+                "present",
+                str(first.get("outcome", "")),
+                "creating the repository installed its TOC key",
+            )
+            key = str(first.get("publicKey", ""))
+            d.assert_not_equal("", key, "and the status names the key")
+
+            wrong = r.run_vm(
+                mount_password_command(ds, guid), "not-" + passphrase + "\n", must=False
+            )
+            self.say(
+                "a wrong-password mount of the mounted repository exited %d (a mounted repository proves no password)"
+                % wrong.returncode
+            )
+            after = self.toc_status(guid)
+            d.last_cmd = "renet backup toc-key status (after a wrong-password mount)"
+            d.assert_equal("present", str(after.get("outcome", "")), "the key is still there")
+            d.assert_equal(key, str(after.get("publicKey", "")), "and it is the same key")
+
+            # CONTROL: the mount does act on the password. With no key stored, the wrong one writes nothing and the right one writes this very key.
+            r.run_vm(toc_aside_command(ds, guid))
+            r.run_vm(mount_password_command(ds, guid), "not-" + passphrase + "\n", must=False)
+            gone = self.toc_status(guid)
+            d.last_cmd = "renet backup toc-key status (key moved aside, wrong-password mount)"
+            d.assert_equal(
+                "absent",
+                str(gone.get("outcome", "")),
+                "CONTROL: with the key gone a wrong password installs nothing",
+            )
+            r.run_vm(mount_password_command(ds, guid), passphrase + "\n", must=False)
+            back = self.toc_status(guid)
+            d.last_cmd = "renet backup toc-key status (key moved aside, right-password mount)"
+            d.assert_equal(
+                "present",
+                str(back.get("outcome", "")),
+                "CONTROL: the right password installs a key",
+            )
+            d.assert_equal(key, str(back.get("publicKey", "")), "and it is the key it had")
+        finally:
+            r.run_vm(toc_back_command(ds, guid), must=False)
 
     # ------------------------------------------------------------------ leg r
 
@@ -544,6 +909,49 @@ class RenetLegs:
             [str(x.get("hash")) for x in (doc.get("unrepairable") or [])],
             [UNHELD_HASH],
             "and is named as unrepairable",
+        )
+        self.verify_in_scope()
+
+    def verify_in_scope(self) -> None:
+        """Integrity box P1: spot and deep verify, under the prefix the backup_verify function builds, run inside a transient scope held to one core, and verify the source. Control: the same deep run without the prefix is in no such scope."""
+        d, r = self.d, self.rt
+        d.step("Leg r (renet): spot and deep verify run inside a one-core scope")
+        checked: dict[str, int] = {}
+        for level, label in (("spot", "spot"), ("full", "deep")):
+            probe = probe_fields(
+                r.run_vm(
+                    verify_probe_command(r.datastore, self.src, level, True), must=False
+                ).stdout
+            )
+            rec = probe["record"]
+            d.last_cmd = "renet backup verify --level %s (scoped)" % level
+            self.say("cgroup %s, cpu.max %s" % (probe["cgroup"], probe["cpumax"]))
+            self.b.av(
+                transient_scope(probe["cgroup"]),
+                True,
+                "the %s verify ran inside a transient scope" % label,
+            )
+            d.assert_equal(ONE_CORE_CPU_MAX, probe["cpumax"], "held to one core")
+            d.assert_equal("0", str(probe["rc"]), "the %s verify exits 0" % label)
+            d.assert_equal("verified", str(rec.get("status", "")), "and verifies the source")
+            d.assert_equal(level, str(rec.get("level", "")), "at the %s level" % level)
+            checked[level] = number(rec, "checkedCells")
+        self.b.av(
+            checked["full"] > checked["spot"] > 0,
+            True,
+            "the deep pass checked more cells than the spot pass (%d vs %d)"
+            % (checked["full"], checked["spot"]),
+        )
+        control = probe_fields(
+            r.run_vm(verify_probe_command(r.datastore, self.src, "full", False), must=False).stdout
+        )
+        d.last_cmd = "renet backup verify --level full (no prefix)"
+        self.say("cgroup %s, cpu.max %s" % (control["cgroup"], control["cpumax"]))
+        d.assert_not_equal("", control["cgroup"], "CONTROL: the unprefixed run's cgroup was read")
+        self.b.av(
+            transient_scope(control["cgroup"]),
+            False,
+            "CONTROL: without the prefix the same run is in no transient scope",
         )
 
     # ------------------------------------------------------------------ leg t
@@ -827,6 +1235,191 @@ class RenetLegs:
             digest,
             "and its bytes hash to the name it was lost under",
         )
+        self.target_halves()
+
+    def target_halves(self) -> None:
+        """The rest of leg w (critical-tier box Y1): the deadline, the shared slot and the 1-minute unit, in that order, on the source the heal left trusted."""
+        try:
+            self.tier_deadline()
+            self.tier_slot()
+            self.tier_unit()
+        finally:
+            self.rt.run_vm(tier_cleanup_command(), must=False)
+
+    def target_run(
+        self, guid: str, deadline: str, bwlimit: int = 0
+    ) -> tuple[dict[str, Any], rt.VmResult]:
+        r = self.rt
+        result = r.run_vm(
+            timed_command(target_args(r.datastore, guid, r.cell_bytes, deadline, bwlimit)),
+            must=False,
+        )
+        return r._json_result(result), result
+
+    def tier_deadline(self) -> None:
+        """Critical-tier box Y1: a run that cannot finish is ended by renet at its deadline, commits nothing, and leaves the slot free. Control: the same change with time to spare stores."""
+        d, r = self.d, self.rt
+        d.step("Leg w (renet): a hung target run is killed at its deadline")
+        cell_bytes = int(r.cell_bytes)
+        r.run_vm(mutation_command(r.datastore, self.src, cell_bytes))
+        listed = self.b.lineage_snapshots(self.src)
+        trickle = max(cell_bytes // DEADLINE_TRICKLE_SECONDS, 1)
+        doc, result = self.target_run(self.src, "%ds" % DEADLINE_SECONDS, trickle)
+        elapsed = elapsed_of(result.stderr)
+        d.last_cmd = "renet backup snapshot --target %s --deadline %ds (one cell over %d s)" % (
+            TIER_TARGET,
+            DEADLINE_SECONDS,
+            DEADLINE_TRICKLE_SECONDS,
+        )
+        d.assert_equal(
+            "deadline-exceeded", str(doc.get("status", "")), "the run ends deadline-exceeded"
+        )
+        d.assert_not_equal("0", str(result.returncode), "and exits non-zero")
+        self.b.av(doc.get("targetMet") is False, True, "and says the target was not met")
+        self.b.av(
+            DEADLINE_SECONDS - 1 <= elapsed <= DEADLINE_SECONDS + DEADLINE_SLACK_SECONDS,
+            True,
+            "it ended at its deadline, not before and not long after (%d s for a %d s deadline)"
+            % (elapsed, DEADLINE_SECONDS),
+        )
+        alive = r.run_vm(snapshot_alive_command(self.src), must=False)
+        d.assert_not_equal("0", str(alive.returncode), "no part of the run is left alive")
+        d.assert_equal(
+            ",".join(listed),
+            ",".join(self.b.lineage_snapshots(self.src)),
+            "and nothing was committed",
+        )
+        # CONTROL: the same change with time to spare stores, and finds the slot free.
+        again, _ = self.target_run(self.src, UNIT_DEADLINE)
+        d.last_cmd = "renet backup snapshot --target %s --deadline %s" % (
+            TIER_TARGET,
+            UNIT_DEADLINE,
+        )
+        d.assert_equal(
+            "stored", str(again.get("status", "")), "CONTROL: with time to spare it stores"
+        )
+        self.b.av(
+            max(number(again, "slotWaitMs"), 0) < SLOT_WAITED_MS,
+            True,
+            "and the killed run left the slot free",
+        )
+
+    def tier_slot(self) -> None:
+        """Critical-tier box Y1: two repositories on one machine take the slot in turn, the second's wait recorded as lateness. Control: a slot held past a short deadline skips the run, bounded by that deadline."""
+        d, r = self.d, self.rt
+        d.step("Leg w (renet): two repositories share the machine's slot")
+        other, _ = self.own_repo(SLOT_NET_ID)
+        ds, cell_bytes = r.datastore, int(r.cell_bytes)
+        r.run_vm("sudo -n renet repository down --name %s" % other, must=False)
+        r.run_vm("sudo -n renet repository unmount --name %s" % other)
+        seed = r.snapshot(other)
+        d.last_cmd = "renet backup snapshot (the second repository's seed)"
+        d.assert_equal("stored", str(seed.get("status", "")), "the second repository is seeded")
+
+        r.run_vm(mutation_command(ds, self.src, cell_bytes))
+        r.run_vm(mutation_command(ds, other, cell_bytes))
+        slow = max(cell_bytes // SLOT_HOLD_SECONDS, 1)
+        r.run_vm(
+            background_command(target_args(ds, self.src, r.cell_bytes, SLOT_DEADLINE, slow), "a")
+        )
+        held = r.run_vm(slot_busy_command(30), must=False)
+        d.last_cmd = "flock -n %s" % TIER_SLOT
+        d.assert_equal("0", str(held.returncode), "the first repository's run holds the slot")
+        second, _ = self.target_run(other, SLOT_DEADLINE)
+        d.last_cmd = "renet backup snapshot --target (the second repository, slot busy)"
+        d.assert_equal(
+            "stored", str(second.get("status", "")), "the second repository's run stores"
+        )
+        self.b.av(
+            number(second, "slotWaitMs") >= SLOT_WAITED_MS,
+            True,
+            "after waiting for the slot (%d ms recorded)" % number(second, "slotWaitMs"),
+        )
+        done = r.run_vm(wait_pid_command("a", SLOT_WAIT_RUN_SECONDS), must=False)
+        d.assert_equal("0", str(done.returncode), "the first run ended")
+        first = r._json_result(r.run_vm(read_out_command("a"), must=False))
+        d.last_cmd = "renet backup snapshot --target (the first repository, in the background)"
+        d.assert_equal("stored", str(first.get("status", "")), "the first repository's run stored")
+        self.b.av(
+            max(number(first, "slotWaitMs"), 0) < SLOT_WAITED_MS,
+            True,
+            "and it had not waited",
+        )
+
+        # CONTROL: a slot nobody releases ends the run as skipped at its deadline, not a run that never returns.
+        r.run_vm(hold_slot_command())
+        try:
+            held = r.run_vm(slot_busy_command(30), must=False)
+            d.assert_equal("0", str(held.returncode), "CONTROL: the slot is held from outside")
+            refused, result = self.target_run(other, "%ds" % SLOT_REFUSE_DEADLINE_SECONDS)
+        finally:
+            # The holder goes before the unit half, whose runs take the same slot.
+            r.run_vm(tier_cleanup_command(), must=False)
+        d.last_cmd = (
+            "renet backup snapshot --target --deadline %ds (slot held)"
+            % SLOT_REFUSE_DEADLINE_SECONDS
+        )
+        d.assert_equal(
+            "skipped",
+            str(refused.get("status", "")),
+            "CONTROL: a run the slot never frees for is skipped",
+        )
+        self.b.av(
+            number(refused, "slotWaitMs") >= (SLOT_REFUSE_DEADLINE_SECONDS - 1) * 1000
+            and elapsed_of(result.stderr) <= SLOT_REFUSE_DEADLINE_SECONDS + DEADLINE_SLACK_SECONDS,
+            True,
+            "after waiting out its deadline and no longer (%d ms, %d s)"
+            % (number(refused, "slotWaitMs"), elapsed_of(result.stderr)),
+        )
+
+    def tier_unit(self) -> None:
+        """Critical-tier box Y1: a systemd unit at a 1-minute target fires on its timer, twice, about a minute apart, and each run meets the target. Control: before the timer starts the unit has run nothing."""
+        d, r = self.d, self.rt
+        d.step("Leg w (renet): a real unit at a %s target fires on its timer" % TIER_TARGET)
+        name = UNIT_PREFIX + self.src[:8]
+        try:
+            before = unit_records(r.run_vm(unit_journal_command(name), must=False).stdout, self.src)
+            d.last_cmd = "journalctl -u %s.service (before the timer)" % name
+            d.assert_equal(
+                "0", str(len(before)), "CONTROL: the unit has run nothing before its timer"
+            )
+            r.run_vm(
+                install_unit_command(
+                    name, tier_service_unit(r.datastore, self.src, r.cell_bytes), tier_timer_unit()
+                )
+            )
+            fired = r.run_vm(
+                wait_unit_runs_command(name, self.src, UNIT_RUNS, UNIT_WAIT_SECONDS), must=False
+            )
+            d.last_cmd = "journalctl -u %s.service (waiting %d s)" % (name, UNIT_WAIT_SECONDS)
+            d.assert_equal(
+                "0",
+                str(fired.returncode),
+                "the timer fired %d runs within %d s" % (UNIT_RUNS, UNIT_WAIT_SECONDS),
+            )
+            records = unit_records(
+                r.run_vm(unit_journal_command(name), must=False).stdout, self.src
+            )
+            runs = records[:UNIT_RUNS]
+            self.b.av(len(runs), UNIT_RUNS, "the unit's journal holds its runs' records")
+            for index, (_, rec) in enumerate(runs, start=1):
+                self.b.av(
+                    [
+                        str(rec.get("status", "")) in ("stored", "unchanged"),
+                        number(rec, "targetSeconds"),
+                        rec.get("targetMet"),
+                    ],
+                    [True, TIER_TARGET_SECONDS, True],
+                    "run %d succeeded on a %d s target and met it" % (index, TIER_TARGET_SECONDS),
+                )
+            if len(runs) == UNIT_RUNS:
+                gap = (runs[1][0] - runs[0][0]) // 1_000_000
+                low, high = UNIT_GAP_SECONDS
+                self.b.av(
+                    low <= gap <= high, True, "the two runs fired a target apart (%d s)" % gap
+                )
+        finally:
+            r.run_vm(unit_cleanup_command(name), must=False)
 
     # ------------------------------------------------------------------ leg x
 
