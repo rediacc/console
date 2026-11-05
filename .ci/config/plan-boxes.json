@@ -1966,24 +1966,24 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 11,
-      "done": 3,
+      "open": 8,
+      "done": 6,
       "open_sigs": [
-        "1068de3a",
         "2361305e",
         "2b5bfefa",
         "32d0c02a",
         "6ce89ed4",
         "9f253d25",
-        "a83d659c",
         "b589c4ea",
         "c2bc67d8",
-        "da3b6759",
         "e013e755"
       ],
       "done_sigs": [
+        "1068de3a",
         "9e557c7e",
+        "a83d659c",
         "b7afe4ea",
+        "da3b6759",
         "e3556815"
       ]
     },
