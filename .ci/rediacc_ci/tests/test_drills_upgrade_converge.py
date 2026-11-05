@@ -553,3 +553,191 @@ def test_fork_record_is_none_for_a_null_or_non_dict_state(state: object) -> None
         "state": state,
     }
     assert u.fork_record(doc, "base", "u1a") is None
+
+
+# --------------------------------------------------------------------------- PLAN-detached-jobs L1 step 5: the old renet refuses a job
+
+
+MACHINE = "ops-worker"
+HINT_ERR = (
+    "renet on '%s' is older than this CLI and cannot run repo status as a job. "
+    "Upgrade it: rdc machine setup %s\n" % (MACHINE, MACHINE)
+)
+
+
+def test_upgrade_hint_is_the_cli_refusal_line() -> None:
+    assert u.upgrade_hint(MACHINE) == "Upgrade it: rdc machine setup ops-worker"
+    # The row matches the CLI's own text (job-client.ts jobsUnsupportedMessage), so a reword there must turn this red.
+    cli = pathlib.Path(__file__).resolve().parents[3] / (
+        "packages/cli/src/services/executor/job-client.ts"
+    )
+    assert "`Upgrade it: rdc machine setup ${machineName}`" in cli.read_text()
+
+
+@pytest.mark.parametrize(
+    ("text", "want"),
+    [
+        ("SNAPSHOT-DONE\n", frozenset()),
+        (
+            "JOB j1\nUNIT rediacc-job-j1.service\nSNAPSHOT-DONE\n",
+            frozenset({"JOB j1", "UNIT rediacc-job-j1.service"}),
+        ),
+        # No marker: the probe failed part-way, which is not "no job".
+        ("JOB j1\n", None),
+        ("", None),
+        ("JOB a b\nnoise\nSNAPSHOT-DONE\n", frozenset()),
+    ],
+)
+def test_parse_job_snapshot(text: str, want: frozenset[str] | None) -> None:
+    assert u.parse_job_snapshot(text) == want
+
+
+def _stub_systemctl(tmp_path: pathlib.Path, body: str) -> dict[str, str]:
+    bindir = tmp_path / "bin"
+    bindir.mkdir(exist_ok=True)
+    stub = bindir / "systemctl"
+    stub.write_text("#!/bin/sh\n" + body)
+    stub.chmod(0o755)
+    return {**os.environ, "PATH": "%s:%s" % (bindir, os.environ.get("PATH", ""))}
+
+
+def _snapshot_run(env: dict[str, str]) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        ["sh", "-c", u.job_snapshot_script()], capture_output=True, text=True, env=env, check=False
+    )
+
+
+def test_job_snapshot_script_lists_spool_and_units(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    spool = tmp_path / "jobs"
+    monkeypatch.setattr(u, "JOBS_SPOOL_DIR", str(spool))
+    env = _stub_systemctl(tmp_path, "echo 'rediacc-job-j2.service loaded active running x'\n")
+    # No spool directory at all is an empty spool, not a failure.
+    first = _snapshot_run(env)
+    assert first.returncode == 0, first.stderr
+    assert u.parse_job_snapshot(first.stdout) == frozenset({"UNIT rediacc-job-j2.service"})
+    (spool / "j1").mkdir(parents=True)
+    (spool / "stray-file").write_text("x")
+    second = _snapshot_run(env)
+    assert second.returncode == 0, second.stderr
+    assert u.parse_job_snapshot(second.stdout) == frozenset(
+        {"JOB j1", "UNIT rediacc-job-j2.service"}
+    )
+
+
+def test_job_snapshot_script_with_a_failing_systemctl_is_no_reading(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(u, "JOBS_SPOOL_DIR", str(tmp_path / "jobs"))
+    out = _snapshot_run(_stub_systemctl(tmp_path, "exit 1\n"))
+    assert out.returncode != 0
+    assert u.parse_job_snapshot(out.stdout) is None
+
+
+SNAP = frozenset({"JOB old-1"})
+
+
+@pytest.mark.parametrize(
+    ("rc", "output", "after", "ok"),
+    [
+        (1, HINT_ERR, SNAP, True),
+        # Controls: a verb that ran (rc 0), another exit code, a refusal without the hint or naming another machine, a job left behind, an unread spool.
+        (0, HINT_ERR, SNAP, False),
+        (0, "", SNAP, False),
+        (2, HINT_ERR, SNAP, False),
+        (1, "Error: something else\n", SNAP, False),
+        (1, HINT_ERR.replace(MACHINE, "other-vm"), SNAP, False),
+        (1, HINT_ERR, SNAP | {"JOB new-2"}, False),
+        (1, HINT_ERR, SNAP | {"UNIT rediacc-job-new-2.service"}, False),
+        (1, HINT_ERR, None, False),
+    ],
+)
+def test_old_renet_refusal_verdict(
+    rc: int, output: str, after: frozenset[str] | None, ok: bool
+) -> None:
+    assert u.old_renet_refusal_verdict(rc, output, MACHINE, SNAP, after)[0] is ok
+
+
+def test_old_renet_refusal_verdict_needs_a_before_reading() -> None:
+    ok, evidence = u.old_renet_refusal_verdict(1, HINT_ERR, MACHINE, None, SNAP)
+    assert not ok
+    assert "unreadable" in evidence
+
+
+def _live_u1(
+    tmp_path: pathlib.Path, verb: _Res, snapshots: list[str]
+) -> tuple[u._LiveU1, list[tuple[str, bool, str]], list[tuple[str, ...]]]:
+    """A `_LiveU1` on a fake ctx: `rdc` answers `verb`, each ssh probe answers the next of `snapshots`."""
+    rows: list[tuple[str, bool, str]] = []
+    calls: list[tuple[str, ...]] = []
+    probes = iter(snapshots)
+
+    class Ctx:
+        machine = MACHINE
+        run_id = "vmc-1-abcdef"
+        work = str(tmp_path)
+        ssh_user, ssh_key, worker_ip = "u", "k", "1.2.3.4"
+
+        def __init__(self) -> None:
+            self.environ: dict[str, str] = {}
+            self.sweep_leftovers: list[str] = []
+
+        def rdc(self, *args: str, **_kw: object) -> _Res:
+            calls.append(("rdc", *args))
+            return verb
+
+        def host_run(self, argv: list[str], **_kw: object) -> _Res:
+            calls.append(("ssh", argv[-1]))
+            return _Res(out=next(probes))
+
+        def check(
+            self, step: str, desc: str, ok: bool, res: object = None, evidence: str = ""
+        ) -> bool:
+            del step, res
+            rows.append((desc, ok, evidence))
+            return ok
+
+    return u._LiveU1(Ctx()), rows, calls
+
+
+def test_the_live_step_passes_on_a_refusal_that_ran_no_job(tmp_path: pathlib.Path) -> None:
+    live, rows, calls = _live_u1(
+        tmp_path, _Res(rc=1, err=HINT_ERR), ["JOB old-1\nSNAPSHOT-DONE\n"] * 2
+    )
+    live._old_renet_refuses_a_job()
+    assert [ok for _d, ok, _e in rows] == [True], rows
+    # Snapshot, the one verb on fork A, snapshot: in that order.
+    assert [c[0] for c in calls] == ["ssh", "rdc", "ssh"]
+    assert calls[1][1:] == ("repo", "status", "%s:u1a" % live.parent)
+    assert "SNAPSHOT-DONE" in calls[0][1]
+
+
+@pytest.mark.parametrize(
+    ("verb", "snapshots"),
+    [
+        # Control: a verb that ran the job and exited 0.
+        (_Res(rc=0, out="status ok\n"), ["SNAPSHOT-DONE\n", "JOB j9\nSNAPSHOT-DONE\n"]),
+        # Control: a verb that exited 0 and left nothing behind is still red.
+        (_Res(rc=0, out="status ok\n"), ["SNAPSHOT-DONE\n", "SNAPSHOT-DONE\n"]),
+        # Control: rc 1 with the hint, but a job appeared on the worker.
+        (_Res(rc=1, err=HINT_ERR), ["SNAPSHOT-DONE\n", "JOB j9\nSNAPSHOT-DONE\n"]),
+        # Control: the refusal is right, but the after-snapshot never completed.
+        (_Res(rc=1, err=HINT_ERR), ["SNAPSHOT-DONE\n", "JOB j9\n"]),
+    ],
+)
+def test_the_live_step_is_red_when_a_job_ran_or_exit_is_zero(
+    tmp_path: pathlib.Path, verb: _Res, snapshots: list[str]
+) -> None:
+    live, rows, _calls = _live_u1(tmp_path, verb, snapshots)
+    live._old_renet_refuses_a_job()
+    assert [ok for _d, ok, _e in rows] == [False], rows
+
+
+def test_the_refusal_row_runs_between_the_old_layout_rows_and_the_upgrade() -> None:
+    src = inspect.getsource(u._LiveU1.execute)
+    assert (
+        src.index("_old_layout_before_upgrade()")
+        < src.index("_old_renet_refuses_a_job()")
+        < src.index("self._upgrade()")
+    )

@@ -3,6 +3,8 @@
 This is the live half of U1. `vm_check.py` registers it as the `U1` step of the renet phase and calls `run(ctx)` once the fleet, the account token and the ops grand are in hand; `ctx` is the running `VmCheck`, so every VM action still goes through its `./rdc.sh` helpers and its ssh probe, and the forks and the throwaway config this step creates are torn down here (leftovers ride `ctx.sweep_leftovers`, so the run cannot reach VERIFIED over one). The CLI-free pieces -- the layout path strings, the build and status command text, and the parsers that read their output -- are pure functions so `tests/test_drills_upgrade_converge.py` can pin them without a machine.
 
 WHY A PRE-ISOLATION renet AT ALL. A daemon started by a renet older than `0c3a88a` (the per-network layout) keeps the flat layout until something restarts it, and the converge pass (R1/C1) is what moves a machine an upgrade left behind. So U1 installs the commit BEFORE `0c3a88a` (`PRE_ISOLATION_COMMIT`), brings two forks up on it, upgrades through `rdc machine setup`, and asserts the convergence facts: the `net-<N>` socket present, the legacy socket gone, the runtime stamp naming the deployed renet, containers running, and a second dry run reporting nothing stale. Two rows read the cross-reach itself, from fork A's dockerd mount namespace: before the upgrade it lists fork B's socket (the breach), after the converge it lists only its own `net-<N>` directory. Isolation of a running workload is asserted by the I1 tenant drill (agent/plans/PLAN-sandbox-tenant-separation.md).
+
+WHILE THE OLD renet IS IN PLACE, one more row serves agent/plans/PLAN-detached-jobs.md L1 step 5: the pre-isolation renet predates the job model, so a CLI verb that runs as a job (`repo status`) must exit 1 with `Upgrade it: rdc machine setup <machine>` and leave the worker's job spool and `rediacc-job-*` units as they were (`old_renet_refusal_verdict`).
 """
 
 from __future__ import annotations
@@ -259,6 +261,68 @@ def dry_run_reports_zero_stale(report_json: str) -> bool:
     return not any(isinstance(e, dict) and e.get("stale_reasons") for e in plan)
 
 
+# The renet job spool and unit prefix (private/renet/pkg/jobs/jobs.go: `/var/lib/rediacc/jobs/<id>/`, `rediacc-job-<id>.service`).
+JOBS_SPOOL_DIR = "/var/lib/rediacc/jobs"
+JOB_UNIT_GLOB = "rediacc-job-*"
+SNAPSHOT_DONE = "SNAPSHOT-DONE"
+
+
+def job_snapshot_script() -> str:
+    """Root on the worker: print `JOB <id>` per spool directory and `UNIT <name>` per `rediacc-job-*` unit systemd knows, then `SNAPSHOT-DONE`. The marker is what tells "no job" from "the probe never ran": a snapshot without it is not a reading (`parse_job_snapshot` returns None). An absent spool directory is an empty spool, which is the normal state of a machine that never ran a job."""
+    return (
+        "set -eu; "
+        "if [ -d %(spool)s ]; then for d in %(spool)s/*/; do "
+        'if [ -d "$d" ]; then echo "JOB $(basename "$d")"; fi; done; fi; '
+        # Captured first so a failing systemctl aborts under `set -e` before the marker; a pipe would hand awk's status on.
+        "units=$(systemctl list-units %(glob)s --all --no-legend --plain); "
+        "printf '%%s\\n' \"$units\" | awk 'NF {print \"UNIT \" $1}'; "
+        "echo %(done)s"
+        % {
+            "spool": shlex.quote(JOBS_SPOOL_DIR),
+            "glob": shlex.quote(JOB_UNIT_GLOB),
+            "done": SNAPSHOT_DONE,
+        }
+    )
+
+
+def parse_job_snapshot(text: str) -> frozenset[str] | None:
+    """The `JOB`/`UNIT` entries a `job_snapshot_script` run printed, None when its `SNAPSHOT-DONE` marker is missing (the probe failed part-way or never ran)."""
+    entries: set[str] = set()
+    done = False
+    for raw in text.splitlines():
+        line = raw.strip()
+        if line == SNAPSHOT_DONE:
+            done = True
+        elif line.startswith(("JOB ", "UNIT ")) and len(line.split()) == 2:
+            entries.add(line)
+    return frozenset(entries) if done else None
+
+
+def upgrade_hint(machine: str) -> str:
+    """The line the CLI's refusal ends with when the machine's renet predates the job model (packages/cli/src/services/executor/job-client.ts jobsUnsupportedMessage)."""
+    return "Upgrade it: rdc machine setup %s" % machine
+
+
+def old_renet_refusal_verdict(
+    rc: int,
+    output: str,
+    machine: str,
+    before: frozenset[str] | None,
+    after: frozenset[str] | None,
+) -> tuple[bool, str]:
+    """(ok, evidence) for one CLI verb run against the pre-isolation renet (PLAN-detached-jobs L1 step 5): ok only when the verb exits 1, its output names `upgrade_hint(machine)`, and the worker's job snapshot is readable on both sides and gained no entry. A verb that exits 0, exits with another code, refuses without the hint, or leaves a new spool directory or unit behind is red; so is a snapshot that never ran, since an unread spool cannot show that no job started."""
+    hint = upgrade_hint(machine)
+    named = hint in output
+    if before is None or after is None:
+        return False, "job snapshot unreadable (before=%s after=%s)" % (
+            before is not None,
+            after is not None,
+        )
+    new = sorted(after - before)
+    evidence = "rc=%d hint=%s new_jobs=%s" % (rc, named, new[:4])
+    return rc == 1 and named and not new, evidence
+
+
 def config_name(run_id: str) -> str:
     """The throwaway config name for this run, e.g. `u1-10240427-94d613`."""
     return "u1-%s" % run_id
@@ -320,6 +384,7 @@ class _LiveU1:
             if not self._bring_up_old():
                 return
             self._old_layout_before_upgrade()
+            self._old_renet_refuses_a_job()
             if not self._upgrade():
                 return
             self._assert_converged()
@@ -471,6 +536,26 @@ class _LiveU1:
                 evidence="old=%s new=%s" % ("OLDSOCK" in text, "NEWSOCK" in text),
             )
         self._view_rows(before=True)
+
+    def _job_snapshot(self) -> frozenset[str] | None:
+        res = self.probe("sudo sh -c %s" % shlex.quote(job_snapshot_script()))
+        return parse_job_snapshot(res.out) if res.rc == 0 else None
+
+    def _old_renet_refuses_a_job(self) -> None:
+        """PLAN-detached-jobs L1 step 5: with the pre-isolation renet installed (it predates `job` and `--request-id`), one CLI verb that runs as a job refuses with the upgrade text, exits 1, and starts nothing on the worker. `repo status` is one read job, so a refusal cannot hide behind a half-done mutation. The symlink still names the old build with its provision cache cleared, so any provision the verb makes re-uploads the old binary rather than upgrading the machine under the row."""
+        before = self._job_snapshot()
+        res = self.crdc("repo", "status", "%s:%s" % (self.parent, self.tag_a), timeout=600)
+        after = self._job_snapshot()
+        ok, evidence = old_renet_refusal_verdict(
+            res.rc, res.out + res.err, self.ctx.machine, before, after
+        )
+        self.ctx.check(
+            STEP,
+            "the pre-isolation renet refuses `repo status` with the upgrade text, rc 1, no job",
+            ok,
+            res,
+            evidence=evidence,
+        )
 
     def _upgrade(self) -> bool:
         """Point the symlink at the current renet and run `rdc machine setup`, so the provision cache sees a new mtime/size and uploads the new binary; the setup converge pass then moves the stale daemons onto net-<N>/."""
@@ -837,10 +922,13 @@ __all__ = [
     "config_name",
     "dry_run_reports_zero_stale",
     "file_sha256",
+    "job_snapshot_script",
     "new_docker_pid_file",
     "new_docker_socket",
     "old_docker_pid_file",
     "old_docker_socket",
+    "old_renet_refusal_verdict",
+    "parse_job_snapshot",
     "parse_stamp",
     "peer_entries",
     "run",
@@ -848,4 +936,5 @@ __all__ = [
     "runtime_view_script",
     "runtime_view_verdict",
     "stamp_is_current",
+    "upgrade_hint",
 ]
