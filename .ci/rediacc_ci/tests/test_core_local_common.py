@@ -28,6 +28,7 @@ from rediacc_ci.core import local_common, stubfarm
 from rediacc_ci.core import local_common_actions_shadow_driver as actions_driver
 from rediacc_ci.core import local_common_shadow_driver as driver
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.tests.wkloader import path_farm_without
 
 TWIN = ".ci/lib/local-common.sh"
 PORT = ".ci/rediacc_ci/core/local_common.py"
@@ -500,6 +501,24 @@ def test_git_tree_fingerprint_refuses_outside_a_work_tree(tmp_path) -> None:
     assert len(fallback.out.strip()) == 64
 
 
+def test_path_farm_survives_a_dangling_symlink_listed_in_both_directories(tmp_path) -> None:
+    """CONTROL for the farm builder: a runner's dangling `/usr/bin/grub-ntldr-img` also listed in `/bin` raised FileExistsError."""
+    first = tmp_path / "usr-bin"
+    second = tmp_path / "bin"
+    first.mkdir()
+    second.mkdir()
+    (first / "grub-ntldr-img").symlink_to(tmp_path / "nowhere")
+    (second / "grub-ntldr-img").symlink_to(tmp_path / "nowhere")
+    (first / "tool").write_text("")
+    (second / "skipme").write_text("")
+    farm = tmp_path / "farm"
+    farm.mkdir()
+    linked = path_farm_without(farm, ("skipme",), (str(first), str(second)))
+    assert linked == 2
+    assert (farm / "grub-ntldr-img").is_symlink()
+    assert not (farm / "skipme").is_symlink()
+
+
 def test_no_sha256_tool_degrades_the_same_way_on_both_sides(tmp_path) -> None:
     """THE CASE THAT FOUND A REAL PORT DEFECT, kept because the differential cannot reach it.
 
@@ -510,16 +529,7 @@ def test_no_sha256_tool_degrades_the_same_way_on_both_sides(tmp_path) -> None:
     """
     farm = tmp_path / "nosha"
     farm.mkdir()
-    linked = 0
-    for directory in ("/usr/bin", "/bin"):
-        source = pathlib.Path(directory)
-        if not source.is_dir():
-            continue
-        for entry in source.iterdir():
-            if entry.name in ("sha256sum", "shasum") or (farm / entry.name).exists():
-                continue
-            (farm / entry.name).symlink_to(entry)
-            linked += 1
+    linked = path_farm_without(farm, ("sha256sum", "shasum"))
     assert linked > 100, "the PATH farm collapsed to %d binaries; nothing below would run" % linked
     for name in ("sha256sum", "shasum"):
         assert not (farm / name).exists(), (

@@ -32,6 +32,7 @@ from rediacc_ci import paths
 from rediacc_ci.core import account, account_lifecycle, shadow_driver, stubfarm
 from rediacc_ci.core import account_lifecycle_shadow_driver as lifecycle_driver
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.tests.wkloader import path_farm_without
 from rediacc_ci.well_known import ACCOUNT_DEV_PORT
 
 # NO MODULE-LEVEL GROUP SINCE 2026-10-05 (agent/plans/PLAN-prepush-full-cpu.md PF14). The module used to declare `XDIST_GROUP = "ports"`, which put all 107 items (183 s of test time on 2026-10-03) and three other modules on one worker. Two resources here really are machine-wide, both fixed by the drivers rather than by these tests, so only the items that touch one carry a group, each named for its resource:
@@ -398,16 +399,7 @@ def test_a_missing_curl_degrades_on_both_sides_instead_of_raising(tmp_path) -> N
     """
     farm = tmp_path / "nocurl"
     farm.mkdir()
-    linked = 0
-    for directory in ("/usr/bin", "/bin"):
-        source = pathlib.Path(directory)
-        if not source.is_dir():
-            continue
-        for entry in source.iterdir():
-            if entry.name == "curl" or (farm / entry.name).exists():
-                continue
-            (farm / entry.name).symlink_to(entry)
-            linked += 1
+    linked = path_farm_without(farm, ("curl",))
     assert linked > 100, "the PATH farm collapsed to %d binaries; nothing below would run" % linked
     assert not (farm / "curl").exists(), "curl survived into the farm, so this proves nothing"
     assert shutil.which("curl") is not None, (
