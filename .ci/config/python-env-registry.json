@@ -1396,6 +1396,7 @@
       "ACCOUNT_ED25519_PRIVATE_KEY",
       "ACCOUNT_ED25519_PUBLIC_KEY",
       "ACCOUNT_SERVER_API_KEY",
+      "GITHUB_ACTIONS",
       "GITHUB_ENV",
       "GITHUB_OUTPUT",
       "RUNNER_TEMP"
@@ -1771,6 +1772,9 @@
     ".ci/rediacc_ci/tests/test_drills_backup_local_plane.py": [
       "ACCOUNT_BACKUP_S3_BUCKET"
     ],
+    ".ci/rediacc_ci/tests/test_drills_backup_renet.py": [
+      "PATH"
+    ],
     ".ci/rediacc_ci/tests/test_drills_lib.py": [
       "HOME",
       "PATH"
@@ -1782,6 +1786,9 @@
       "PATH"
     ],
     ".ci/rediacc_ci/tests/test_drills_universe_transfer.py": [
+      "PATH"
+    ],
+    ".ci/rediacc_ci/tests/test_drills_upgrade_converge.py": [
       "PATH"
     ],
     ".ci/rediacc_ci/tests/test_drills_vm_check.py": [
@@ -1969,6 +1976,9 @@
     ],
     ".ci/rediacc_ci/tests/test_testrun_e2e.py": [
       "RENET_DATA_DIR"
+    ],
+    ".ci/rediacc_ci/tests/test_testrun_start_backup_plane.py": [
+      "RENET_BINARY_PATH"
     ],
     ".ci/rediacc_ci/tests/wkloader.py": [
       "PATH"
