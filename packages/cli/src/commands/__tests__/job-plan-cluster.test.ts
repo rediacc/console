@@ -10,7 +10,7 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { Command } from 'commander';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest';
 
 vi.mock('../../i18n/index.js', () => ({
   t: (key: string, params?: Record<string, unknown>) =>
@@ -322,6 +322,49 @@ describe('datastore reads (one read job, rendered by its step)', () => {
 
   it('control: datastore list is config only and starts no job', async () => {
     await run('list');
+    expect(executed).toHaveLength(0);
+  });
+
+  it('datastore list prints the rows from the config and the state, filtered by place', async () => {
+    m.listDatastores.mockResolvedValue({
+      tier1: { backend: { kind: 'local' }, size: '1G', cluster: 'c1' },
+      tier2: { backend: { kind: 'ceph' }, size: '2G' },
+    });
+    m.listDatastoreState.mockResolvedValue({ tier1: { attachedTo: 'm1', writes: 'local' } });
+    m.reposInDatastore.mockResolvedValue(['r1']);
+    onTestFinished(() => {
+      m.listDatastores.mockResolvedValue({});
+      m.reposInDatastore.mockResolvedValue([]);
+    });
+
+    await run('list');
+    expect(m.print).toHaveBeenLastCalledWith(
+      [
+        {
+          name: 'tier1',
+          backend: 'local',
+          size: '1G',
+          cluster: 'c1',
+          attachedTo: 'm1',
+          writes: 'local',
+          repos: 1,
+        },
+        {
+          name: 'tier2',
+          backend: 'ceph',
+          size: '2G',
+          cluster: undefined,
+          attachedTo: undefined,
+          writes: undefined,
+          repos: 1,
+        },
+      ],
+      'table'
+    );
+
+    await run('list', 'm1');
+    expect(m.print.mock.lastCall?.[0]).toHaveLength(1);
+    expect(m.print.mock.lastCall?.[0][0]).toMatchObject({ name: 'tier1' });
     expect(executed).toHaveLength(0);
   });
 });
