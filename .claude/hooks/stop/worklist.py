@@ -2892,7 +2892,13 @@ def main():
             sys.stderr.write(M.CLI_STATE_WHOLE_DOC % prefix)
             sys.exit(2)
         # Refuse a section the Stop check would reject, with the SAME rule. Accept-then-reject leaves the one artifact designed to survive compaction broken while the session believes it is fine; refusing leaves the previous good document untouched.
-        verdict, detail = S.agent_state_shape(body)
+        # THE OWED-TICKS DEMAND (agent/plans/PLAN-tick-tracking.md T12): the audit is cached per HEAD, so a --state write pays it once per commit. An audit that cannot run demands nothing.
+        owed = None
+        with contextlib.suppress(Exception):
+            import wl_boxaudit as BA
+
+            owed = BA.owned_owed_cached(root, prefix)
+        verdict, detail = S.agent_state_shape(body, owed)
         if verdict == "waitled":
             # Its own message: the generic one talks about char limits, which says nothing about why leading with a watch is refused, and a refusal a session cannot act on is a refusal it routes around.
             _m = S.AGENT_NEXT_RE.search(body)

@@ -2576,8 +2576,13 @@ def loop_state(worklist, session_id):
     return ("overdue" if mine[0] <= now else "ok"), mine[0], mine[1], others, mine[2]
 
 
-def agent_state_shape(body):
-    """Shape verdict for a STATE.md body not yet on disk: thin | bloated | aimless | waitled | unfocused | ok, plus a detail string.
+AGENT_OWED_RE = re.compile(r"^##[ \t]+Owed ticks\b", re.MULTILINE | re.IGNORECASE)
+
+
+def agent_state_shape(body, owed=None):
+    """Shape verdict for a STATE.md body not yet on disk: thin | bloated | aimless | waitled | unfocused | owing | ok, plus a detail string.
+
+    `owed` is the [(plan, sig, verdict)] the box audit finds tickable-now or live-owed in plans this session owns (`wl_boxaudit.owned_owed_cached`, agent/plans/PLAN-tick-tracking.md T12). When it is non-empty, a body with no `## Owed ticks` section is `owing`, refused like `unfocused`; None or [] demands nothing, so every caller that passes no audit keeps today's verdict.
 
     Extracted so BOTH write paths (`worklist.py --state` and the PreToolUse guard) refuse a bad document AT WRITE TIME with the identical rule the Stop check reads with. The handover this replaces once accepted any body and let the check reject it a stop later; an accept-then-reject asymmetry leaves the one artifact designed to survive compaction broken while the session believes
     it is fine.
@@ -2604,6 +2609,15 @@ def agent_state_shape(body):
         return "unfocused", (
             "no '## Big pieces' section; name the census's big pieces (the plans marked "
             "! BIG PIECE ! in the SessionStart plans block), or 'none' when no plan carries an open box"
+        )
+    if owed and not AGENT_OWED_RE.search(text):
+        return "owing", (
+            "no '## Owed ticks' section, and the box audit finds %d owed box(es) in plans this "
+            "session owns: %s. Name each (`worklist.py --box-audit <me>` prints the lines)"
+            % (
+                len(owed),
+                ", ".join("%s#%s %s" % (p.rsplit("/", 1)[-1], g, v) for p, g, v in owed[:6]),
+            )
         )
     return "ok", "%d chars" % len(text)
 

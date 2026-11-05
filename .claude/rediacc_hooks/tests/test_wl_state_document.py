@@ -647,3 +647,36 @@ def test_s5_a_plan_named_without_its_extension_counts(wl):
     got = wl.run()
     assert got.decision == "block", got.out[:300]
     assert "BIG PIECES DRIFT" not in got.out, got.out[:600]
+
+
+# ---- PLAN-tick-tracking T12: the "## Owed ticks" section --------------------------------------
+
+OWED_ONE = [("agent/plans/PLAN-fx.md", "fd66592c", "tickable-now")]
+OWED_SECTION = (
+    "\n\n## Owed ticks\n- tickable-now PLAN-fx.md#fd66592c: worklist.py --plan-tick deadbeef "
+    "agent/plans/PLAN-fx.md fd66592c 'commit:abc1234 landed' --write"
+)
+
+
+def test_owed_body_without_the_section_and_one_tickable_box_is_owing():
+    store = wlfix.import_wl("wl_store")
+    verdict, detail = store.agent_state_shape(B_BODY_29F, OWED_ONE)
+    assert verdict == "owing"
+    assert "PLAN-fx.md#fd66592c tickable-now" in detail
+
+
+def test_owed_the_same_body_with_the_section_is_ok():
+    store = wlfix.import_wl("wl_store")
+    assert store.agent_state_shape(B_BODY_29F + OWED_SECTION, OWED_ONE)[0] == "ok"
+
+
+def test_owed_no_owed_box_demands_no_section():
+    store = wlfix.import_wl("wl_store")
+    assert store.agent_state_shape(B_BODY_29F, [])[0] == "ok"
+
+
+def test_owed_control_with_the_audit_stubbed_out_the_first_case_reads_ok():
+    """The old verdict: no audit passed, so the owing body of the first case is `ok`."""
+    store = wlfix.import_wl("wl_store")
+    assert store.agent_state_shape(B_BODY_29F)[0] == "ok"
+    assert store.agent_state_shape(B_BODY_29F, None)[0] == "ok"
