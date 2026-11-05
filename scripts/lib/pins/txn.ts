@@ -436,6 +436,18 @@ const canonicalCmd = (v: string): string =>
 /** The root `.npmrc` that sets ignore-scripts stops at the root: npm reads its project config from the nearest package.json, so a directory below it spells the flag itself. */
 const nonRootCi = (v: string): string => `npx -y npm@${v} ci --ignore-scripts`;
 
+/** Does the project at `dir` declare an `install:natives` script? An unreadable manifest declares none. */
+const declaresNatives = (dir: string): boolean => {
+  try {
+    const manifest = JSON.parse(fs.readFileSync(path.join(dir, 'package.json'), 'utf8')) as {
+      scripts?: Record<string, string>;
+    };
+    return Boolean(manifest.scripts?.['install:natives']);
+  } catch {
+    return false;
+  }
+};
+
 export function runTransaction(plans: PinPlan[], o: TxnOptions): TxnResult {
   const dir = path.join(journalRoot(o.root), o.stamp);
   fs.mkdirSync(dir, { recursive: true });
@@ -637,6 +649,12 @@ export function runTransaction(plans: PinPlan[], o: TxnOptions): TxnResult {
       for (const d of installedDirs) {
         if (run(nonRootCi(npmVersion), d) !== 0)
           throw new Error(`npm ci failed in ${d} after its lockfile changed`);
+        // A project that blocks lifecycle scripts finishes its natives with its own script (private/account: esbuild, workerd), as the root does.
+        if (
+          declaresNatives(path.join(o.root, d)) &&
+          run(`npx -y npm@${npmVersion} run install:natives`, d) !== 0
+        )
+          throw new Error(`npm run install:natives failed in ${d} after npm ci`);
       }
       saveJournal(dir, j);
     }

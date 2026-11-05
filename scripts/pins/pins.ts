@@ -1742,11 +1742,15 @@ const CASES: Record<string, Case> = {
     const lockOf = (v: string): string => `{ "lockfileVersion": 3, "wrangler": "${v}" }\n`;
     const world = (name: string, relocked: string[], gateRc: number) => {
       const fx = fixtureTree();
-      for (const d of ['workers/app', 'workers/bare']) {
+      for (const d of ['workers/app', 'workers/bare', 'workers/natives']) {
         fs.mkdirSync(path.join(fx.root, d), { recursive: true });
-        fx.write(`${d}/package.json`, '{}\n');
+        fx.write(
+          `${d}/package.json`,
+          d === 'workers/natives' ? '{ "scripts": { "install:natives": "x" } }\n' : '{}\n'
+        );
         fx.write(`${d}/package-lock.json`, lockOf(OLD));
       }
+      fs.mkdirSync(path.join(fx.root, 'workers/natives/node_modules'), { recursive: true });
       sh(fx.root, 'add', '-A');
       sh(
         fx.root,
@@ -1801,7 +1805,16 @@ const CASES: Record<string, Case> = {
     const one = world('nonroot-green', [app, bare], 0);
     const both = world('nonroot-root', [app, 'package-lock.json'], 0);
     const red = world('nonroot-red', [app], 1);
+    const natives = world('nonroot-natives', ['workers/natives/package-lock.json'], 0);
     return [
+      {
+        name: 'txn: a non-root project that declares install:natives runs it after its npm ci, in its own directory, and only it',
+        ok:
+          natives.ran.includes(`workers/natives: ${NPM} run install:natives`) &&
+          !natives.ran.includes(NATIVES) &&
+          !one.ran.some((c) => c.startsWith('workers/app:') && c.endsWith('install:natives')),
+        detail: natives.ran.join(' | '),
+      },
       {
         name: 'txn: a changed non-root lock runs npm ci --ignore-scripts in its installed directory, so the install matches the lock, and a directory with no node_modules is left uninstalled',
         ok:
@@ -1821,7 +1834,7 @@ const CASES: Record<string, Case> = {
         detail: `left=${one.res.leftAlone} ${JSON.stringify(one.res.changes)}`,
       },
       {
-        name: 'txn: install:natives stays root only: a non-root lock alone never runs it, and a root lock beside one runs it once at the root',
+        name: 'txn: the root install:natives stays at the root: a non-root lock alone never runs it, and a root lock beside one runs it once there',
         ok:
           !one.ran.includes(NATIVES) &&
           both.ran.filter((c) => c.endsWith('install:natives')).length === 1 &&
