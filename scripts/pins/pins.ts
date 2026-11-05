@@ -1783,7 +1783,17 @@ const CASES: Record<string, Case> = {
       f.commands.push({ match: '^sneaky$', rc: 0, writes: { 'stray.txt': 'x\n' } });
     });
     const r = await runCli(['bump', 'embed:tool'], withMutant(fx, m));
+    const hooked = fixtureTree((f) => {
+      f.steps = { 'embed:tool': [{ label: 'hooked', run: 'hooked', cwd: '.', writes: [] }] };
+      f.commands.push({ match: '^hooked$', rc: 0, writes: { 'agent/ledgers/x.jsonl': 'x\n' } });
+    });
+    const appended = await runCli(['bump', 'embed:tool'], withMutant(hooked, m));
     return [
+      {
+        name: 'bump: a hook appending under agent/ while a step runs does not fail the run',
+        ok: appended.rc === 0,
+        detail: `rc=${appended.rc} ${appended.err}`,
+      },
       {
         name: 'bump: a step that changes a file it did not declare fails the run; the file is named and left, the sites restored',
         ok:

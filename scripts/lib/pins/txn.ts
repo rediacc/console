@@ -569,7 +569,9 @@ export function runTransaction(plans: PinPlan[], o: TxnOptions): TxnResult {
     const dirtyHashes = (r: string): Map<string, string> => {
       const out = new Map<string, string>();
       for (const f of dirtyPaths(path.join(o.root, r)) ?? new Set<string>()) {
-        if (f.endsWith('/') || (r === '.' && o.submodules.includes(f))) continue;
+        // agent/ belongs to the hooks and to other sessions, which append to it while a step runs; no pin step writes there.
+        if (f.endsWith('/') || (r === '.' && (o.submodules.includes(f) || f.startsWith('agent/'))))
+          continue;
         out.set(f, sha(readBytes(path.join(o.root, r, f))));
       }
       return out;
