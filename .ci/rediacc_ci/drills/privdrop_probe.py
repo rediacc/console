@@ -111,6 +111,13 @@ def run(repo: str, collect: bool = False) -> int:
                     up_failed = True
                     continue
                 break
+        # The verdicts judge the dropped runs, so the probe files are read BEFORE step 6: a root up rewrites them with uid 0 (observability on hostinger, 2026-11-05).
+        probes: dict[str, dict[str, str]] = {}
+        for name in (lp.UP_FILE, lp.DOWN_FILE):
+            probes[name] = lp.parse_probe(_run(read_argv(repo, name)).stdout)
+        rows = verdicts(probes[lp.UP_FILE], probes[lp.DOWN_FILE])
+        print(table(repo, rows))
+        failed = failed or not all(r[1] for r in rows)
         if up_failed:
             # H2 step 6: the root tier on the FORK alone, then up again, to tell a privilege failure from one the root tier does not fix either.
             for argv in root_retry(repo):
@@ -119,12 +126,6 @@ def run(repo: str, collect: bool = False) -> int:
                 if res.returncode != 0:
                     print(res.stdout[-2000:], file=sys.stderr)
                     print(res.stderr[-2000:], file=sys.stderr)
-        probes: dict[str, dict[str, str]] = {}
-        for name in (lp.UP_FILE, lp.DOWN_FILE):
-            probes[name] = lp.parse_probe(_run(read_argv(repo, name)).stdout)
-        rows = verdicts(probes[lp.UP_FILE], probes[lp.DOWN_FILE])
-        print(table(repo, rows))
-        failed = failed or not all(r[1] for r in rows)
         if collect:
             for cmd in COLLECT:
                 res = _run(rdc_argv("term", "connect", fork_ref(repo), "-c", cmd))
