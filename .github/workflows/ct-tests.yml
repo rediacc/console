@@ -390,20 +390,12 @@ jobs:
           # honest floor — one apt-family (ubuntu) + one rpm-family (fedora).
           # CRIU_EXPECTED=1 turns 13b's "CRIU absent" guard into a hard failure.
           #
-          # CLI_SUITE (suite 23, the rdc-driven migrate-routing e2e) is NOT enabled
-          # here yet: it needs a local two-worker validation of its exact argv +
-          # machine-registration/SSH wiring first (plan phase 5). To turn it on,
-          # add `cli-suite: '1'` to the ubuntu-24.04 leg below. Rationale +
-          # local-run instructions in packages/e2e-tests/README.md.
-          # cli-suite is declared EMPTY rather than omitted. An omitted matrix
-          # property still resolves to "" in `${{ matrix.cli-suite }}`, so the
-          # behaviour is identical -- but actionlint rightly flags a reference
-          # to a property the matrix never declares, and silencing that check
-          # would cost far more than it saves. Flipping the suite on is still a
-          # one-character edit: change '' to '1' on the ubuntu leg.
+          # CLI_SUITE (suite 23, the rdc-driven migrate-routing e2e) runs on the
+          # ubuntu leg only: its routing logic is distro-agnostic. Fedora declares
+          # it empty because actionlint flags a matrix property a leg never declares.
           - os-image: ubuntu-24.04
             full-integration: '1'
-            cli-suite: ''
+            cli-suite: '1'
           - os-image: fedora-43
             full-integration: '1'
             cli-suite: ''
@@ -590,10 +582,13 @@ jobs:
         # repository" failed right after 06-daemon-operations on both
         # full-integration distros, while beside 13-postgres-fork-isolation and
         # 14 on leg 6 it had passed; leg 1 holds 01, 15 and 25 (.ci/config/shards/test-e2e-workers.json), kept free of 06.
+        # Suite 23 rides leg 1 of the leg that sets cli-suite, the same way.
+        env:
+          CLI_ALSO: ${{ matrix.cli-suite == '1' && ',23-cli-migrate-routing.test.ts' || '' }}
         run: |
           ALSO=()
           if [[ "${{ matrix.full-integration }}" == '1' && "${{ matrix.shard }}" == '1' ]]; then
-            ALSO=(--also "12a-full-integration-repository.test.ts,12b-full-integration-checkpoint.test.ts,12d-full-integration-multi-machine.test.ts,13b-live-fork-checkpoint.test.ts")
+            ALSO=(--also "12a-full-integration-repository.test.ts,12b-full-integration-checkpoint.test.ts,12d-full-integration-multi-machine.test.ts,13b-live-fork-checkpoint.test.ts${CLI_ALSO:-}")
           fi
           PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --fail-on-skip \
             --shard-manifest .ci/config/shards/test-e2e-workers.json --shard "${{ matrix.shard }}/8" \

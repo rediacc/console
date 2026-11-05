@@ -59,9 +59,6 @@ machine_uninstall
 # leaves the Registry, fails the gate until it is deleted.
 # ---------------------------------------------------------------------------
 
-# BLOCKER: repository_migrate and repository_gc are dispatched only by the CLI job plans (packages/cli/src/services/jobs/plans-repo.ts and packages/cli/src/commands/repo-migrate.ts:525); their real-machine cases now exist in suite 23 (tests 10-12 of packages/e2e-tests/tests/23-cli-migrate-routing.test.ts: migrate deletes the source only after the target is up, a failed target keeps the source, gc keeps a candidate mounted between list and delete) but suite 23 is a declared dark suite (PRODUCTION_DARK_SUITES in scripts/gates/check-e2e-coverage.ts; CLI_SUITE is empty on every ct-tests.yml leg) until its fleet run passes, so no live suite counts it. The lead's step after that run passes: add CLI_SUITE: '1' to CI_LEG_ENABLE_FLAGS, drop the suite 23 dark entry, set `cli-suite: '1'` on the ubuntu-24.04 leg, and delete these two lines (the gate then demands it).
-repository_gc
-repository_migrate
 
 # BLOCKER: the bring-up steps of `rdc cluster provision` (packages/cli/src/services/cluster/cluster-provision.ts:182-251). On the CI fleet `renet ops up` bootstraps ceph on the ceph VMs before any suite runs (packages/provisioning/src/ops/OpsVMLifecycle.ts:82), and cluster-provision.ts:223 skips all three verbs when a mon already answers, so reaching them needs ceph VMs that come up without ceph, which the shared ceph suites (playwright.ceph*.config.ts) cannot run on.
 ceph_bootstrap_cluster
