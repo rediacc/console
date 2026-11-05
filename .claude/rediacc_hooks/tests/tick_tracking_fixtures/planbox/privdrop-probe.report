@@ -1,0 +1,56 @@
+---
+agent_id: a455a87b716637410
+agent_type: general-purpose
+agent_name: general-purpose
+session: d778be9d
+branch: 1104-1
+at: 2026-11-05T20:25:31Z
+source: hook
+sends: 0
+open_boxes: 0
+transcript: /home/developer/.claude/projects/-home-developer-console/d778be9d-a8e6-4b88-a419-e8a03e7e9888/subagents/agent-a455a87b716637410.jsonl
+bytes: 2960
+---
+
+## Final message
+
+The offline half of H2 is committed as `e841f2f78` on the detached HEAD of lease tree `agent-a455a87b716637410`. The live hostinger runs have not been done.
+
+The coordinator's ruling let me run `npx tsx scripts/gen/gen-docs.ts --write` in this lease, so the commit hook's stale-doc refusal no longer blocks. The one commit holds the three new files plus the two regenerated docs, `docs/ci-overhaul/07-port-brief.md` and `scripts/data/doc-registry.md`.
+
+```
+afa91934 H2 partial
+commits: e841f2f78
+commands:
+  npx tsx scripts/gen/gen-docs.ts --write  -> wrote the two docs, rc=0 (the tail of its output shows no error)
+  git commit -F /tmp/msg-09b8.txt -- <5 paths>  -> committed, rc=0
+  PYTHONPATH=.ci /home/developer/lang-gpu/.venv/bin/python -m pytest -c /dev/null --rootdir=. -p no:cacheprovider .ci/rediacc_ci/tests/test_drills_privdrop_probe.py .ci/rediacc_ci/tests/test_drills_lifecycle_privilege.py  -> rc=0, 40 passed (run before the doc regeneration; not re-run after)
+remains: the live per-repo runs
+```
+
+**Live half.** Run each repo one at a time from the console checkout:
+
+`PYTHONPATH=.ci python3 -m rediacc_ci.drills.privdrop_probe <repo> --collect`
+
+Repos: `demo-stackoverflow`, `nextcloud`, `observability`, `gitlab`. It goes through `--config eu-bench` and deletes only the `<repo>:privdrop@hostinger` fork.
+- **Still manual:** the step 1 baseline, the comparison of step 5's outputs against it, the step 6 `--root` grant if a repo breaks, and a final `repo list` showing no `privdrop`.
+- **uid 1000:** H2 says the probe should report uid 1000, but the verdicts only require a uid other than 0. Check the printed uid on the first live run.
+- **`grants=none`:** `denied_verdict` fails on `grants=none`. Read that as "not probed", not as a denial, if a worker has no `/etc/rediacc/grants`.
+
+**TICK block** (plan `agent/plans/PLAN-rediaccfile-unprivileged.md`, box `afa91934` H2, 7 clauses):
+- **Clauses:**
+  1. baseline read-only
+  2. fork without `--up`
+  3. upload the probe
+  4. up, down, up
+  5. the seven outputs
+  6. a `--root` grant if it broke
+  7. delete with `--dry-run` then `-y`, confirmed by `repo list`
+- **Satisfied by `e841f2f78`, offline only:** the recipe for 2, 3, 4 and 7 is in `privdrop_probe.py`. The probe-uid-and-denials part of 5 is in its verdict table. The probe file equals `lifecycle_privilege.probe_rediaccfile()`, which a test asserts.
+- **Open:** all of 1 and 6, the rest of 5, and the live run of 2, 3, 4 and 7 per repo. Accept ("one row per repo with the seven outputs, and `repo list` shows no `privdrop`") is not met until the live commands above have been run.
+- **Acceptance command:** the pytest above, rc=0, 40 passed. This covers only the offline half.
+
+Files are in `/home/developer/console/.claude/worktrees/agent-a455a87b716637410`:
+- `.ci/rediacc_ci/drills/privdrop-probe/Rediaccfile`
+- `.ci/rediacc_ci/drills/privdrop_probe.py`
+- `.ci/rediacc_ci/tests/test_drills_privdrop_probe.py`

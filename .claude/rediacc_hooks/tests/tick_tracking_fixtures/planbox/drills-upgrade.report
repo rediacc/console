@@ -1,0 +1,88 @@
+---
+agent_id: a7d77f04ac7cf729c
+agent_type: general-purpose
+agent_name: general-purpose
+session: d778be9d
+branch: 1104-1
+at: 2026-11-05T20:25:36Z
+source: hook
+sends: 0
+open_boxes: 0
+transcript: /home/developer/.claude/projects/-home-developer-console/d778be9d-a8e6-4b88-a419-e8a03e7e9888/subagents/agent-a7d77f04ac7cf729c.jsonl
+bytes: 7051
+---
+
+## Final message
+
+## Report: PR-TASK 09b8bdfa, box L1 step 5 (code half)
+
+The harness for step 5 now exists and passes its fake-driven tests. The live run itself is still open, as expected for a [live] box. Lease tree: **agent-a7d77f04ac7cf729c** (`/home/developer/console/.claude/worktrees/agent-a7d77f04ac7cf729c`).
+
+```
+1d17b634 partial
+commits: 2a3bb490a (test(drills): U1 asserts a pre-isolation renet refuses a CLI job with the upgrade text)
+commands:
+  PYTHONPATH=.ci python3 -m pytest .ci/rediacc_ci/tests/test_drills_upgrade_converge.py -q   rc=1 "No module named pytest" (system python and the lease's .venv have no pytest)
+  PYTHONPATH=.ci /home/developer/console/.ci/cache/toolchain/uv-tools/pytest/bin/python3 -m pytest .ci/rediacc_ci/tests/test_drills_upgrade_converge.py -q   rc=0 (89 passed, 1 skipped; the skip is the existing /proc/1/ns/mnt test)
+  ruff check <both files>   rc=1 the first time (PLW2901, RUF012 x2), fixed, then rc=0
+  ruff format --check <both files>   rc=0
+  MYPYPATH=.ci mypy <both files>   rc=0 (a control file with a type error gave rc=1, so the check does fail when it should)
+remains: steps 1-4 and the live run of step 5 (commands below), then the "Live records" entries and the tick.
+```
+
+### What changed
+Both files are in `.ci/rediacc_ci/drills/`. Only my own two files were edited.
+
+- **`upgrade_converge.py`**: a new row in U1, `_LiveU1._old_renet_refuses_a_job`.
+  - It runs in `execute()` after the old-layout rows and before `_upgrade()`, while the pre-isolation renet is installed. That renet has neither `job` nor `--request-id`.
+  - It runs one CLI verb, `repo status <parent>:u1a`, which is a single read job.
+  - The row is green only when the verb exits 1, its output contains `Upgrade it: rdc machine setup <machine>`, and nothing new appears on the worker. "Nothing new" means a before/after snapshot of `/var/lib/rediacc/jobs/*` and the `rediacc-job-*` units shows no added entry.
+  - A snapshot without its `SNAPSHOT-DONE` marker counts as no reading, so the row turns red rather than passing.
+  - New pure helpers: `job_snapshot_script`, `parse_job_snapshot`, `upgrade_hint`, `old_renet_refusal_verdict`.
+- **`tests/test_drills_upgrade_converge.py`**:
+  - Verdict controls, each of which must be red: rc 0, rc 2, no hint, another machine's hint, a new spool entry, a new unit, an unreadable snapshot.
+  - The snapshot script run for real against a temp spool and a stub `systemctl`, including a failing `systemctl`.
+  - The live method on a fake context: green on a clean refusal, red when the verb exits 0 (with or without a job), when a job appears, or when the snapshot is cut off.
+  - A check that the row sits in the right place in `execute()`.
+  - A pin on the CLI's refusal text in `packages/cli/src/services/executor/job-client.ts`.
+
+### Live commands for L1 (for the lead, in the main checkout)
+1. **Bench deploy:** `PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench` (it takes no arguments).
+2. **Proxy deploy:** `PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_proxy --target bench --region eu`
+3. **Hostinger provision:** `./rdc.sh --config eu-bench machine setup <hostinger alias>`. The receipt is `PYTHONPATH=.ci python3 -m rediacc_ci.ops.live_proof record --plan agent/plans/PLAN-detached-jobs.md --box <LP-hostinger sig> --target hostinger --check renet-live --write`, after a VERIFIED `npm run vm:check -- --changed`. The box text says to ask before this step; the survey brief says hostinger runs without asking. That conflict is yours to settle.
+4. **Steps 1-4, through `--config eu-bench` and the bench proxy:**
+   - Step 1: `rdc --config eu-bench --proxy <bench proxy origin> repo up <fork>`
+   - Step 2: `rdc --config eu-bench --proxy <origin> -b backup snapshot <fork>`, then `rdc --config eu-bench job list` and `rdc --config eu-bench job wait <id>`
+   - Step 3: `rdc --config eu-bench --proxy <origin> backup verify <fork>`, kill it mid-run, then run any `rdc --config eu-bench` command after the job ends
+   - Step 4: the MCP tools `backup_snapshot` and `job_status`
+5. **Step 5:** `npm run vm:check -- --only U1` on the ops dev-VM fleet. This one does **not** go through eu-bench: the box asks for "a pinned older renet on a dev VM", and the harness lives in U1. `vm:check` refuses a lease, so it needs 2a3bb490a landed first. A `--only` run writes a run record but no receipt. The row to read is "the pre-isolation renet refuses `repo status` with the upgrade text, rc 1, no job".
+
+### Findings
+- **Missing pytest:** the brief's acceptance command does not work in the lease. Plain `python3 -m pytest` fails with "No module named pytest", because neither `/usr/bin/python3` nor the lease's `.venv` has pytest installed. I used `/home/developer/console/.ci/cache/toolchain/uv-tools/pytest/bin/python3` instead. The coordinator's suggested `-p no:cacheprovider` flag also fails with this interpreter: "ERROR: Unknown config option: cache_dir", no tests ran.
+- **Unverified assumption:** whether the CLI's provision step, with `renetPath` still pointing at the old build, does anything beyond re-uploading the old binary. The first live U1 run will show it.
+- **Review finding for you:** a hook flagged review finding b9dfe975.1 [high] on `.claude/rediacc_hooks/guards/block_destructive_git_restore.py:1028`, where `-c core.worktree=` gets past the redirect check. It is outside my files and still open.
+
+### TICK block
+**`agent/plans/PLAN-detached-jobs.md`, box 1d17b634 L1 [live]**
+
+Clauses:
+- (a) Deploy the branch to bench: `deploy_bench`, then `deploy_proxy --target bench`.
+- (b) Provision the branch renet to hostinger (the box says to ask first).
+- (c) Step 1: `repo up <fork>` through the proxy ends at the 20 s window (or with the result), polls follow, rc 0.
+- (d) Step 2: `-b backup snapshot <fork>` returns a ticket at once; `job list` shows it; `job wait <id>` rc 0.
+- (e) Step 3: start `backup verify` followed, kill the client mid-run; the finished notice prints once.
+- (f) Step 4: MCP `backup_snapshot` returns a job id in under 30 s; `job_status` reaches `succeeded`.
+- (g) Step 5: a machine with an older renet refuses with the upgrade text, rc 1.
+- (h) Each step's command, rc and timing recorded under "Live records".
+
+Satisfied by commits:
+- **g, code half only:** 2a3bb490a. Acceptance command: `PYTHONPATH=.ci <pytest python> -m pytest .ci/rediacc_ci/tests/test_drills_upgrade_converge.py -q`, rc=0, 89 passed, 1 skipped.
+
+Still open:
+- **a:** `PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench`, then `PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_proxy --target bench --region eu`
+- **b:** `./rdc.sh --config eu-bench machine setup <hostinger alias>`, plus the `live_proof record ... --check renet-live` receipt
+- **c-f:** the step 1-4 commands above, through `--config eu-bench --proxy <bench proxy origin>`
+- **g, live half:** land 2a3bb490a, then `npm run vm:check -- --only U1`; the new row must be green
+- **h:** a plan edit under "Live records", done by the lead
+
+The box ticks only when a through h are all closed.

@@ -1,0 +1,74 @@
+---
+agent_id: ad26cf82f8c024294
+agent_type: general-purpose
+agent_name: general-purpose
+session: d778be9d
+branch: 1104-1
+at: 2026-11-05T20:26:28Z
+source: hook
+sends: 0
+open_boxes: 0
+transcript: /home/developer/.claude/projects/-home-developer-console/d778be9d-a8e6-4b88-a419-e8a03e7e9888/subagents/agent-ad26cf82f8c024294.jsonl
+bytes: 5750
+---
+
+## Final message
+
+The recorder and validator are fixed (option a), but box 7692f2db is still open. It needs a fresh live receipt, and a lease can't run vm:check or the live recorder.
+
+Lease tree id: `agent-ad26cf82f8c024294`
+
+```
+7692f2db partial
+commits: e72acf0a7
+commands:
+  PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest .ci/rediacc_ci/tests/test_ops_live_proof.py .ci/rediacc_ci/tests/test_proof_live_tier.py -q   rc=0 (123 passed)
+  ruff check (4 files) rc=0; ruff format --check (4 files) rc=0 after one ruff format of live_tier.py
+  mypy (4 files) rc=1: one error, rediacc_ci/proc.py:379, a file this commit does not touch; none in the 4 files
+  ledger count against the new validate_row rule: exit 0, 1 of 56 rows invalid
+remains: the live half, run from the main checkout once e72acf0a7 has landed:
+  1. npm run vm:check (full run; see the note below) on a clean tree, VERIFIED
+  2. PYTHONPATH=.ci python3 -m rediacc_ci.ops.live_proof record --plan agent/plans/PLAN-ssh-key-source-ranges.md --box 7692f2db --target hostinger --check renet-live --machine hostinger --write
+  The box text says to ASK the operator first: provisioning a branch renet restarts the router and daemons on hostinger.
+```
+
+**What changed**
+- **Cause:** the surveyed analysis was right. The recorder chose which VM phases to require from the row's own surfaces. The plan touches only `cli`, which has no VM phase, so the recorder never asked for a vm:check run and wrote `ladder.vm` as null, and the validator accepted the null.
+- **Fix:** both sides now use a new `ladder_phases(names, check)` in `/home/developer/console/.claude/worktrees/agent-ad26cf82f8c024294/.ci/rediacc_ci/proof/live_tier.py`. It returns the VM phases of the surfaces the row is already judged by, which add `renet` for a check whose deploy is the renet binary (`renet-live`).
+- **Recorder** (`/home/developer/console/.claude/worktrees/agent-ad26cf82f8c024294/.ci/rediacc_ci/ops/live_proof.py`): it now requires and records a vm:check run that ran the renet phase. If none exists, the refusal names the missing phase and says a full `npm run vm:check` runs every phase.
+- **Validator:** a row for such a check with a null `ladder.vm` is refused. Checks that provision nothing (`cli-bench`, deploy `tree`) are unaffected.
+- **Tests:** one existing test encoded the old acceptance and now carries a vm id. New tests cover:
+  - a renet-live row for a cli-only plan with a null vm is refused, after a passing control;
+  - a cli-only tree row with a null vm still passes;
+  - the recorder asks for exactly the renet phase and records the run id;
+  - the recorder refuses when no VM receipt exists, and nothing reaches hostinger;
+  - `cli-bench` asks for no VM run.
+
+**Note on the vm:check command:** the receipt must have run the renet phase (`vm_tier._phase_missing`). `vm:check -- --changed` runs only the phases the branch's diff hits. If the branch touches no renet path, it will not run the renet phase and the recorder will refuse. A full `npm run vm:check` always runs both phases.
+
+**Ledger impact:** exactly one existing row becomes invalid, `lp-decf11520448` (this plan, box 7692f2db). That is the receipt already reopened. `check_plan_live_proof` judges only rows that match ticked boxes, so with the box open the gate stays green. `live_proof verify` will now list that row as invalid.
+
+**Not changed:** `.ci/config/proof-tiers.json`. Option (b), the operator accepting a null `ladder.vm`, is not needed.
+
+**Other findings**
+- The system `python3` and the repo `.venv` have no pytest. The pinned one comes from `bash .ci/bootstrap.sh doctor`: `.ci/cache/toolchain/uv-tools/bin/pytest`. With `-p no:cacheprovider` it fails `ERROR: Unknown config option: cache_dir` (rc 4), so run it without that flag.
+- The brief's pytest command uses system `python3`, which fails with `No module named pytest`.
+- After the commit, a hook reported `review 585f5602 (console): findings, 1 open finding(s), 0 at or above high`. No review record for e72acf0a7 appeared in this tree, and `agent/**` is outside this lease's boundary. The lead should look at it from the main checkout.
+
+TICK block:
+```
+plan: agent/plans/PLAN-ssh-key-source-ranges.md
+box: 7692f2db (LP-hostinger, line ~122, reopened 2026-11-04)
+clauses:
+  C1 Fresh hostinger receipt through --config eu-bench (PLAN-tested-on-bench ruling 3)  -> OPEN
+  C2 after a VERIFIED npm run vm:check -- --changed on the same tree                   -> OPEN (live)
+  C3 ASK the operator first (branch renet provisioning restarts router and daemons)     -> OPEN (operator question)
+  C4 reopen note: the receipt's ladder.vm must name the VERIFIED vm:check run           -> recorder side satisfied by e72acf0a7 (recorder admits and records the renet-phase run for renet-live; validate_row refuses a null ladder.vm); the receipt itself is still OPEN
+  Accept: `live-proof hostinger renet-live`                                              -> OPEN
+acceptance commands run: PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest .ci/rediacc_ci/tests/test_ops_live_proof.py .ci/rediacc_ci/tests/test_proof_live_tier.py -q  rc=0 (123 passed)
+still open, with the closing commands (main checkout, after landing e72acf0a7, after the operator answers C3):
+  npm run vm:check            (full run; --changed runs the renet phase only if the branch touches renet)  -> VERIFIED, rc 0
+  PYTHONPATH=.ci python3 -m rediacc_ci.ops.live_proof record --plan agent/plans/PLAN-ssh-key-source-ranges.md --box 7692f2db --target hostinger --check renet-live --machine hostinger --write   -> VERIFIED row with non-null ladder.vm
+  then tick through worklist.py --live-proof with the new lp-<id>
+ledger rows newly invalid under the rule: 1 (lp-decf11520448, this box)
+```
