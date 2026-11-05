@@ -1058,8 +1058,11 @@ def hook_capture(sc: Scratch, recs: list[dict]) -> dict:
 
 def assert_no_orders(sc: Scratch, entry: dict, recs: list[dict]) -> None:
     body = body_of(sc.store / entry["body"])
+    # No lead-bound section; every order is still stored, under its own heading.
     assert "## SendMessage" not in body, body[:300]
-    assert "Coordinator ruling" not in body, "an order to a writer was stored as the report"
+    assert len(re.findall(r"^## Outgoing \d+ -> a[0-9a-f]{16}\b", body, re.MULTILINE)) == 21, body[
+        :300
+    ]
     assert final_text(recs) in body, "the final text was dropped"
     assert entry["sends"] == 0, entry
     assert entry["out"] == 21, entry
@@ -1080,10 +1083,78 @@ def test_31_recipient_control_the_old_harvest_kept_every_send(sc):
     assert report._title_of(old_sends, old_final).startswith("Coordinator ruling"), (
         "the old reading is not the defect being fixed"
     )
-    sends, final, _rec, out = report.harvest_transcript(tx)
+    sends, final, _rec, others = report.harvest_transcript(tx)
     assert sends == [], sends[:1]
-    assert out == 21, out
+    assert len(others) == 21, len(others)
+    assert [s["message"] for s in others] == [s["message"] for s in old_sends], (
+        "a send to another agent was dropped rather than kept aside"
+    )
     assert final == old_final, "the final text must be kept whole"
+
+
+def writer_records(to: str) -> list[dict]:
+    """A writer under a coordinator: its whole report is one long SendMessage to the coordinator, then a short sign-off."""
+    start = datetime.datetime.now(datetime.UTC) - datetime.timedelta(minutes=5)
+    report_text = "WRITER REPORT FOR THE COORDINATOR\n" + "Landed commit and test evidence. " * 60
+    return [
+        {
+            "type": "assistant",
+            "agentId": "awriterundercoord0001",
+            "sessionId": "sess1",
+            "gitBranch": "testbr",
+            "timestamp": start.strftime("%Y-%m-%dT%H:%M:%S.000Z"),
+            "message": {
+                "content": [
+                    {
+                        "type": "tool_use",
+                        "name": "SendMessage",
+                        "input": {"to": to, "summary": "report", "message": report_text},
+                    }
+                ]
+            },
+        },
+        {
+            "type": "assistant",
+            "agentId": "awriterundercoord0001",
+            "sessionId": "sess1",
+            "gitBranch": "testbr",
+            "timestamp": (start + datetime.timedelta(seconds=5)).strftime("%Y-%m-%dT%H:%M:%S.000Z"),
+            "message": {"content": [{"type": "text", "text": "Report sent."}]},
+        },
+    ]
+
+
+def test_31g_recipient_a_report_sent_to_the_coordinator_is_stored(sc):
+    """Review finding 0009f584.1: dropping every non-lead send lost a writer's report delivered by SendMessage to its coordinator. CONTROL: on 0009f584 the stored body held only "Report sent." and none of the report text."""
+    for n, to in enumerate(("coordinator", COORD)):
+        recs = writer_records(to)
+        aid = "awriterundercoord%04d" % n
+        tx = write_transcript(sc.subagents_dir() / ("agent-%s.jsonl" % aid), recs)
+        sc.raw_stop(
+            {
+                "agent_id": aid,
+                "agent_type": "general-purpose",
+                "session_id": READER,
+                "cwd": str(sc.repo),
+                "agent_transcript_path": str(tx),
+                "last_assistant_message": "Report sent.",
+            }
+        )
+        entry = json.loads(sc.index_lines()[-1])
+        body = body_of(sc.store / entry["body"])
+        assert "WRITER REPORT FOR THE COORDINATOR" in body, body[:300]
+        assert "## Outgoing 1 -> %s" % to in body, body[:300]
+        assert "## SendMessage" not in body, "a send to the coordinator was filed as lead-bound"
+        # Lead-bound counts are unchanged: the send is kept, not counted.
+        assert entry["sends"] == 0, entry
+        assert entry["out"] == 1, entry
+        assert entry["title"] == "Report sent.", entry["title"]
+        assert entry["relay"] is True, entry
+        # rejudge reads both header kinds: a body with an Outgoing section stays lead-free.
+        report = wlfix.import_wl("wl_report")
+        parts, final = report.body_parts(body)
+        assert [(k, t) for k, t, _m in parts] == [("Outgoing", to)], parts
+        assert final.strip() == "Report sent.", final
 
 
 def test_31b_recipient_hook_path_keeps_only_the_final_text(sc):
@@ -1214,3 +1285,17 @@ def test_31f_recipient_control_legacy_rows_with_lead_substance_still_surface(sc)
     plant_legacy(sc, "aaaa00000003", "", "plain final", 0, body="## Final message\n\n" + BIG)
     row = next(e for e in report.read_index(sc.store) if e["id"] == "aaaa00000003")
     assert report.rejudge(sc.store, row) is row
+    # Both header kinds in one body: an `## Outgoing` section never counts as lead-bound, even when its `to` reads `main`.
+    mixed = (
+        "## SendMessage 1 -> main\n\nLEAD PART\n\n"
+        "## Outgoing 1 -> main\n\nmislabelled order\n\n"
+        "## Outgoing 2 -> a0000000000000001\n\nan order\n\n"
+        "## Final message\n\nDone."
+    )
+    plant_legacy(sc, "aaaa00000004", "", "an order", 3, body=mixed)
+    row = next(e for e in report.read_index(sc.store) if e["id"] == "aaaa00000004")
+    judged = report.rejudge(sc.store, row)
+    assert judged["sends"] == 1, judged
+    assert judged["out"] == 3, judged
+    assert judged["title"] == "LEAD PART", judged["title"]
+    assert judged["relay"] is False, judged
