@@ -295,6 +295,11 @@ export async function handleUpAll(options: {
     skipRouterRestart: options.skipRouterRestart,
   });
 
+  // A job handed back (`--background`, a lost tail) is still running: the executor printed its ticket, and nothing has completed.
+  if (result.state === 'running') {
+    if (!result.success) setExitCode(result.exitCode);
+    return;
+  }
   if (result.success) {
     outputService.success(t('commands.repo.upAll.completed'));
   } else {
@@ -336,6 +341,11 @@ export async function handleDownAll(options: {
     skipRouterRestart: options.skipRouterRestart,
   });
 
+  // A job handed back (`--background`, a lost tail) is still running: the executor printed its ticket, and nothing has completed.
+  if (result.state === 'running') {
+    if (!result.success) setExitCode(result.exitCode);
+    return;
+  }
   if (result.success) {
     outputService.success(t('commands.repo.down.allCompleted'));
   } else {
