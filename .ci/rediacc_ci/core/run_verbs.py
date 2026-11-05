@@ -41,6 +41,7 @@ DRILL_MODULES = {
     "license": "rediacc_ci.drills.license",
     "backup": "rediacc_ci.drills.backup",
     "backup-onprem": "rediacc_ci.drills.backup_onprem",
+    "backup-elite-compose": "rediacc_ci.drills.backup_elite_compose",
     "vmcheck": "rediacc_ci.drills.vm_check",
 }
 
@@ -232,6 +233,8 @@ DRILL COMMANDS (scripted walkthroughs; non-zero exit on any failed assertion):
   drill backup        Live chunk-store battery: session mint, seed and incremental
                       upload, byte-identical restore, quota refusal (no VMs needed)
   drill backup-onprem Chunk-store backup against a local RustFS (the Elite on-prem plane)
+  drill backup-elite-compose
+                      Elite compose stack on one ops VM, snapshot from a second (two VMs)
   drill vmcheck       Repo shell, sync, SFTP and VS Code on the ops VMs (npm run vm:check)
   drill <name> --selftest
                       Plant one failing assertion; the run MUST exit non-zero
@@ -363,6 +366,7 @@ DRILL_ARMS: dict[str, Arm] = {
     "license": _module_arm(DRILL_MODULES["license"]),
     "backup": _module_arm(DRILL_MODULES["backup"]),
     "backup-onprem": _module_arm(DRILL_MODULES["backup-onprem"]),
+    "backup-elite-compose": _module_arm(DRILL_MODULES["backup-elite-compose"]),
     "vmcheck": _module_arm(DRILL_MODULES["vmcheck"]),
 }
 
