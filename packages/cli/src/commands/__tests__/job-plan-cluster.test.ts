@@ -56,16 +56,38 @@ vi.mock('../../services/config/config-resources.js', () => ({
     listClusters: vi.fn(),
     getLocalMachine: cfg.getLocalMachine,
     updateMachine: cfg.updateMachine,
+    updateCluster: provision.updateCluster,
+    removeMachine: provision.removeMachine,
     allocateNetworkId: vi.fn().mockResolvedValue(7),
   },
 }));
+const clusterConfig = vi.hoisted(() => ({
+  provider: 'kvm',
+  pools: [
+    { name: 'cp', role: 'k8s-server', count: 1 },
+    { name: 'ag', role: 'k8s-agent', count: 1 },
+  ] as { name: string; role: string; count: number }[],
+}));
+const provision = vi.hoisted(() => ({
+  materialize: vi.fn().mockResolvedValue(undefined),
+  updateCluster: vi.fn().mockResolvedValue(undefined),
+  removeMachine: vi.fn().mockResolvedValue(undefined),
+  bootstrap: vi.fn().mockResolvedValue(undefined),
+  members: [] as { pool: string; index: number; ip: string }[],
+}));
 vi.mock('../../services/config/config-cluster-ops.js', () => ({
-  getCluster: vi.fn().mockResolvedValue({
-    pools: [
-      { name: 'cp', role: 'k8s-server', count: 1 },
-      { name: 'ag', role: 'k8s-agent', count: 1 },
-    ],
-  }),
+  getCluster: () => Promise.resolve(clusterConfig),
+  materializeClusterMachines: provision.materialize,
+  resolveControlNode: vi.fn().mockResolvedValue('c1-cp-1'),
+}));
+vi.mock('../../services/cluster/kvm-provisioner.js', () => ({
+  provisionKvmCluster: () => Promise.resolve({ members: provision.members, kvm: {} }),
+  teardownKvmCluster: vi.fn(),
+}));
+vi.mock('../../services/renet/machine-bootstrap.js', () => ({
+  bootstrapMachine: provision.bootstrap,
+  scanHostKeys: () => '',
+  waitForSSH: () => Promise.resolve(),
 }));
 vi.mock('../../services/config/network-id-discovery.js', () => ({
   targetFloor: vi.fn().mockResolvedValue(0),
@@ -103,6 +125,7 @@ vi.mock('../../utils/errors.js', async (orig) => ({
 }));
 
 const { registerDatastoreCommands } = await import('../datastore.js');
+const { registerClusterCommands } = await import('../cluster/index.js');
 const { setCommandJobDeps } = await import('../../services/jobs/command-job.js');
 const { TicketStore } = await import('../../services/jobs/ticket-store.js');
 const { resolveStepHandler } = await import('../../services/jobs/steps.js');
@@ -661,5 +684,309 @@ describe('cluster verbs (one job per phase, one ticket per phase)', () => {
     const result = await dispatch('kube_install', 'c1-cp-1', {});
     expect(result.success).toBe(true);
     expect(executed).toHaveLength(1);
+  });
+});
+
+describe('cluster fork, migrate and rehearse (one job per phase, driven through the command)', () => {
+  const machines: Record<string, Record<string, unknown>> = {
+    'c1-cp-1': { ip: '10.0.0.1' },
+    'c1-ag-1': { ip: '10.0.0.2' },
+    'c2-cp-1': { ip: '10.0.1.1' },
+    'c2-ag-1': { ip: '10.0.1.2' },
+  };
+  const DATASTORES = JSON.stringify([
+    { name: 'ds-control-c1', backend: 'ceph', cluster: 'c1' },
+    { name: 'data1', backend: 'ceph', cluster: 'c1' },
+  ]);
+
+  /** The machine's answers to the reads the chain consumes; `override` answers first and falls through. */
+  const READS: Record<string, string> = {
+    datastore_list: DATASTORES,
+    datastore_fork: '{"name":"x"}',
+    kube_join_token: 'token K10abc',
+    ceph_client_config_export: '{"conf":"c","keyring":"k"}',
+  };
+  function scripted(override?: (o: Executed) => Record<string, unknown> | undefined) {
+    return (o: Executed): Record<string, unknown> | undefined => {
+      const first = override?.(o);
+      if (first) return first;
+      const stdout = READS[o.functionName] as string | undefined;
+      return stdout === undefined ? undefined : { ...FINISHED, stdout };
+    };
+  }
+
+  async function cluster(...argv: string[]): Promise<void> {
+    const program = new Command();
+    program.exitOverride();
+    registerClusterCommands(program);
+    await program.parseAsync(['node', 'rdc', 'cluster', ...argv]);
+  }
+
+  beforeEach(() => {
+    cfg.getLocalMachine.mockImplementation((name: string) =>
+      Promise.resolve(machines[name] ?? { ip: '10.0.9.9' })
+    );
+    respond = scripted();
+    // The dest control node runs no k3s of its own: the fail-fast probe must fail for the fork to go on.
+    m.direct.mockImplementation((options: unknown) => {
+      direct.push(options as Executed);
+      return Promise.resolve(
+        (options as Executed).functionName === 'kube_health' ? FAILED : FINISHED
+      );
+    });
+  });
+
+  it('fork: every phase is its own job under the verb, with the chain in order and no job for the probe', async () => {
+    await cluster('fork', 'c1', '--tag', 't1', '--to', 'c2');
+
+    expect(executed.map((o) => [o.functionName, o.machineName])).toEqual([
+      ['datastore_list', 'c1-cp-1'],
+      ['datastore_snapshot_create', 'c1-cp-1'],
+      ['datastore_fork', 'c1-cp-1'],
+      ['datastore_adopt', 'c2-cp-1'],
+      ['datastore_fork', 'c1-cp-1'],
+      ['datastore_adopt', 'c2-cp-1'],
+      ['datastore_attach', 'c2-cp-1'],
+      ['datastore_attach', 'c2-cp-1'],
+      ['kube_identity_rewrite', 'c2-cp-1'],
+      ['kube_join_token', 'c2-cp-1'],
+      ['kube_join', 'c2-ag-1'],
+    ]);
+    expect(direct.map((o) => o.functionName)).toEqual(['kube_health']);
+    expect(cfg.audit).toHaveBeenCalledOnce();
+    expect(m.success).toHaveBeenCalled();
+  });
+
+  it('fork: a phase still running stops the chain before the next phase starts', async () => {
+    respond = scripted((o) =>
+      o.functionName === 'datastore_snapshot_create' ? BACKGROUND : undefined
+    );
+
+    await expect(cluster('fork', 'c1', '--tag', 't1', '--to', 'c2')).rejects.toThrow(
+      /still running/
+    );
+    expect(executed.map((o) => o.functionName).at(-1)).toBe('datastore_snapshot_create');
+    expect(cfg.audit).not.toHaveBeenCalled();
+  });
+
+  it('fork: a failed phase throws with its function and machine, and the audit record is never written', async () => {
+    respond = scripted((o) =>
+      o.functionName === 'kube_identity_rewrite' ? { ...FAILED, error: 'rewrite broke' } : undefined
+    );
+
+    await expect(cluster('fork', 'c1', '--tag', 't1', '--to', 'c2')).rejects.toThrow(
+      /kube_identity_rewrite.*c2-cp-1/
+    );
+    expect(executed.map((o) => o.functionName)).not.toContain('kube_join');
+    expect(cfg.audit).not.toHaveBeenCalled();
+  });
+  describe('cluster scale', () => {
+    const base = [...clusterConfig.pools];
+    beforeEach(() => {
+      clusterConfig.pools = [
+        { name: 'cp', role: 'k8s-server', count: 1 },
+        { name: 'ag', role: 'k8s-agent', count: 3 },
+      ];
+    });
+    afterEach(() => {
+      clusterConfig.pools = [...base];
+    });
+
+    it('shrink: each removed member is a prep job on it, then a removal job on the control plane, highest first', async () => {
+      await cluster('scale', 'c1', '--pool', 'ag', '--count', '1');
+
+      expect(executed.map((o) => [o.functionName, o.machineName])).toEqual([
+        ['kube_prep_fork', 'c1-ag-3'],
+        ['kube_node_remove', 'c1-cp-1'],
+        ['kube_prep_fork', 'c1-ag-2'],
+        ['kube_node_remove', 'c1-cp-1'],
+      ]);
+      expect(provision.updateCluster).toHaveBeenCalledOnce();
+      expect(provision.removeMachine.mock.calls.map((call) => call[0])).toEqual([
+        'c1-ag-3',
+        'c1-ag-2',
+      ]);
+      expect(cfg.audit).toHaveBeenCalledOnce();
+    });
+
+    it('shrink: a phase still running stops the chain, records no pool count and drops no machine', async () => {
+      respond = (o) => (o.functionName === 'kube_node_remove' ? BACKGROUND : undefined);
+
+      await expect(cluster('scale', 'c1', '--pool', 'ag', '--count', '1')).rejects.toThrow(
+        /still running/
+      );
+
+      expect(executed.map((o) => o.functionName)).toEqual(['kube_prep_fork', 'kube_node_remove']);
+      expect(provision.updateCluster).not.toHaveBeenCalled();
+      expect(provision.removeMachine).not.toHaveBeenCalled();
+    });
+
+    it('control: a count equal to the current one starts no job', async () => {
+      await cluster('scale', 'c1', '--pool', 'ag', '--count', '3');
+
+      expect(executed).toEqual([]);
+    });
+  });
+
+  describe('cluster create over a ceph pool: one prerequisites job per member under one group', () => {
+    const base = [...clusterConfig.pools];
+    beforeEach(() => {
+      clusterConfig.pools = [{ name: 'ceph', role: 'ceph', count: 3 }];
+      provision.members = [1, 2, 3].map((index) => ({
+        pool: 'ceph',
+        index,
+        ip: `10.0.2.${index}`,
+      }));
+      m.direct.mockImplementation((options: unknown) => {
+        direct.push(options as Executed);
+        // No mon answers yet, so the full install runs.
+        return Promise.resolve(FAILED);
+      });
+    });
+    afterEach(() => {
+      clusterConfig.pools = [...base];
+    });
+
+    const groupOf = (call: Executed) =>
+      call.jobSteps?.map((step) => ({ name: step.name, ...step.params }));
+
+    it('starts three prerequisites jobs whose gates name one group and all three members, then the ceph chain', async () => {
+      await cluster('create', 'c1');
+
+      expect(executed.map((o) => [o.functionName, o.machineName])).toEqual([
+        ['ceph_install_prerequisites', 'c1-ceph-1'],
+        ['ceph_install_prerequisites', 'c1-ceph-2'],
+        ['ceph_install_prerequisites', 'c1-ceph-3'],
+        ['ceph_bootstrap_cluster', 'c1-ceph-1'],
+        ['ceph_cluster_create', 'c1-ceph-1'],
+        ['ceph_pool_create', 'c1-ceph-1'],
+      ]);
+      const gates = executed.slice(0, 3).map(groupOf);
+      for (const gate of gates) {
+        expect(gate?.map((step) => step.name)).toEqual([
+          'groupMemberSucceeded',
+          'groupMemberFailed',
+        ]);
+        expect(gate?.[0]).toMatchObject({ expected: 'c1-ceph-1,c1-ceph-2,c1-ceph-3' });
+      }
+      expect(new Set(gates.map((gate) => gate?.[0].group)).size).toBe(1);
+      expect(provision.bootstrap).toHaveBeenCalledTimes(3);
+      expect(cfg.audit).toHaveBeenCalledOnce();
+    });
+
+    it('a failure on one member throws with the member named, and the bootstrap never starts', async () => {
+      respond = (o) =>
+        o.functionName === 'ceph_install_prerequisites' && o.machineName === 'c1-ceph-2'
+          ? { ...FAILED, error: 'apt failed' }
+          : undefined;
+
+      await expect(cluster('create', 'c1')).rejects.toThrow(/c1-ceph-2: apt failed/);
+
+      expect(executed.map((o) => o.functionName)).not.toContain('ceph_bootstrap_cluster');
+      expect(cfg.audit).not.toHaveBeenCalled();
+    });
+
+    it('a member still running past its window stops the chain with the named pending error', async () => {
+      respond = (o) =>
+        o.functionName === 'ceph_install_prerequisites' && o.machineName === 'c1-ceph-3'
+          ? BACKGROUND
+          : undefined;
+
+      await expect(cluster('create', 'c1')).rejects.toThrow(/still running/);
+
+      expect(executed.map((o) => o.functionName)).not.toContain('ceph_bootstrap_cluster');
+    });
+
+    it('control: a mon that already answers skips the prerequisites group', async () => {
+      m.direct.mockImplementation((options: unknown) => {
+        direct.push(options as Executed);
+        return Promise.resolve(FINISHED);
+      });
+
+      await cluster('create', 'c1');
+
+      expect(executed.map((o) => o.functionName)).toEqual(['ceph_pool_create']);
+    });
+  });
+
+  describe('with a ceph pool', () => {
+    const base = [...clusterConfig.pools];
+    beforeEach(() => {
+      clusterConfig.pools = [...base, { name: 'ceph', role: 'ceph', count: 1 }];
+    });
+    afterEach(() => {
+      clusterConfig.pools = [...base];
+    });
+
+    it('migrate: the registry paperwork, the cutover and the forget are each their own job, in order', async () => {
+      m.direct.mockImplementation((options: unknown) => {
+        direct.push(options as Executed);
+        return Promise.resolve(FINISHED);
+      });
+
+      await cluster('migrate', 'c1', '--to', 'c2-cp-1');
+
+      const phases = executed.map((o) => [o.functionName, o.machineName]);
+      expect(phases).toContainEqual(['datastore_adopt', 'c2-cp-1']);
+      expect(phases.slice(-5)).toEqual([
+        ['kube_prep_fork', 'c1-cp-1'],
+        ['datastore_detach', 'c1-cp-1'],
+        ['datastore_attach', 'c2-cp-1'],
+        ['kube_identity_rewrite', 'c2-cp-1'],
+        ['datastore_forget', 'c1-cp-1'],
+      ]);
+      expect(direct.map((o) => o.functionName)).toEqual(['kube_health']);
+      expect(cfg.audit).toHaveBeenCalledOnce();
+    });
+
+    it('migrate: a failed destination attach rolls the source back and records no audit', async () => {
+      respond = scripted((o) =>
+        o.functionName === 'datastore_attach' && o.machineName === 'c2-cp-1'
+          ? { ...FAILED, error: 'fence refused' }
+          : undefined
+      );
+
+      await expect(cluster('migrate', 'c1', '--to', 'c2-cp-1')).rejects.toThrow(/ROLLED BACK/);
+
+      expect(executed.slice(-2).map((o) => [o.functionName, o.machineName])).toEqual([
+        ['datastore_attach', 'c1-cp-1'],
+        ['kube_identity_rewrite', 'c1-cp-1'],
+      ]);
+      expect(cfg.audit).not.toHaveBeenCalled();
+    });
+
+    it('rehearse: the fork phases run, then the discard runs as phases of its own', async () => {
+      let probes = 0;
+      m.direct.mockImplementation((options: unknown) => {
+        direct.push(options as Executed);
+        // The first kube_health is the dest probe, which must fail; the gate after the fork must pass.
+        probes += 1;
+        return Promise.resolve(probes === 1 ? FAILED : FINISHED);
+      });
+
+      await cluster('rehearse', 'c1', '--on', 'c2', '--tag', 'r1');
+
+      const names = executed.map((o) => o.functionName);
+      expect(names).toContain('kube_identity_rewrite');
+      expect(names.slice(-3)).toEqual(['kube_uninstall', 'datastore_detach', 'datastore_detach']);
+      expect(executed.at(-1)?.params).toMatchObject({ name: 'data1:r1', discard: true });
+      expect(executed.at(-1)?.machineName).toBe('c2-cp-1');
+    });
+
+    it('rehearse: a fork that fails still discards on the destination control machine, and the failure is the one thrown', async () => {
+      respond = scripted((o) =>
+        o.functionName === 'kube_identity_rewrite'
+          ? { ...FAILED, error: 'rewrite broke' }
+          : undefined
+      );
+
+      await expect(cluster('rehearse', 'c1', '--on', 'c2', '--tag', 'r1')).rejects.toThrow(
+        /kube_identity_rewrite/
+      );
+
+      const discard = executed.filter((o) => o.functionName === 'kube_uninstall');
+      expect(discard).toHaveLength(1);
+      expect(discard[0].machineName).toBe('c2-cp-1');
+    });
   });
 });
