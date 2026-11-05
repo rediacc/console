@@ -83,6 +83,15 @@ function loadOverlap(): OverlapModel {
 
 const byText = (a: string, b: string): number => a.localeCompare(b);
 
+/** The commands with neither a plan nor a listed section 24 exception. */
+function unplanned(
+  commands: readonly string[],
+  plans: Readonly<Record<string, unknown>>,
+  exceptions: Readonly<Record<string, string>>
+): string[] {
+  return commands.filter((cmd) => !(cmd in plans) && !(cmd in exceptions));
+}
+
 const overlap = loadOverlap();
 const machinePlane = CLI_CONTRACT.commands
   .filter((c) => c.plane === 'machine')
@@ -158,8 +167,21 @@ describe('JOB_PLANS coverage', () => {
   });
 
   it('every machine-plane contract command has a plan or a listed exception', () => {
-    const missing = machinePlane.filter((p) => !(p in JOB_PLANS) && !(p in JOB_EXCEPTIONS));
-    expect(missing).toEqual([]);
+    expect(unplanned(machinePlane, JOB_PLANS, JOB_EXCEPTIONS)).toEqual([]);
+  });
+
+  it('control: a machine-plane command with no plan and no exception fails the coverage check', () => {
+    // The check is only worth its green if a command it does not know about turns it red.
+    expect(unplanned([...machinePlane, 'repo planted'], JOB_PLANS, JOB_EXCEPTIONS)).toEqual([
+      'repo planted',
+    ]);
+    const { 'repo up': _removed, ...withoutUp } = JOB_PLANS;
+    expect(unplanned(machinePlane, withoutUp, JOB_EXCEPTIONS)).toEqual(['repo up']);
+    // A listed exception, and a plan, each cover their command.
+    expect(
+      unplanned(['repo planted'], JOB_PLANS, { 'repo planted': 'a reason long enough to count' })
+    ).toEqual([]);
+    expect(unplanned(['repo up'], JOB_PLANS, {})).toEqual([]);
   });
 
   it('no command has both a plan and an exception', () => {

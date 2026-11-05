@@ -328,6 +328,39 @@ describe('repo list', () => {
     expect(mockPrint).toHaveBeenCalledOnce();
   });
 
+  it('control: the listing it prints is the pre-job table, byte for byte', async () => {
+    const { outputService } = await import('../../services/core/output.js');
+    answer = finished(
+      JSON.stringify([
+        {
+          name: 'guid-1',
+          repo_name: 'shop',
+          size_human: '1.0 GB',
+          mounted: true,
+          docker_running: false,
+          containers_running: false,
+          container_count: 2,
+          service_count: 1,
+          modified_human: '3h ago',
+          is_fork: false,
+        },
+      ])
+    );
+    await handleRepoList({ machine: 'm1' });
+
+    expect(mockPrint).toHaveBeenCalledTimes(1);
+    const [rows, format] = mockPrint.mock.calls[0];
+    expect(format).toBe('table');
+    // Key order is the column order of the rendered table, so the serialisation pins it.
+    expect(JSON.stringify(rows)).toBe(
+      '[{"name":"shop *","tag":"latest","type":"unknown","size":"1.0 GB","mounted":"Yes","docker":"No","running":"No","containers":2,"services":1,"modified":"3h ago","gpu":"-","lifecycle":"-"}]'
+    );
+    expect(vi.mocked(outputService.info).mock.calls.map((c) => c[0])).toContain(
+      'commands.repo.list.serverNameLegend'
+    );
+    expect(vi.mocked(outputService.success)).toHaveBeenCalledWith('commands.repo.list.completed');
+  });
+
   it('control: under --background nothing is printed', async () => {
     answer = BACKGROUND;
     await handleRepoList({ machine: 'm1' });

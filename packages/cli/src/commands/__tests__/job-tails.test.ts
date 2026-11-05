@@ -201,6 +201,37 @@ describe('repo up (a success step: postRepoUpTasks)', () => {
   });
 });
 
+describe('repo down (a verb with no tail: one repository_down job and an empty plan)', () => {
+  it('under --background returns at the job start, with nothing planned on the ticket', async () => {
+    answer = BACKGROUND;
+    await runRepo(['down', 'app']);
+
+    expect(executed.map((o) => o.functionName)).toEqual(['repository_down']);
+    expect(executed[0].jobSteps ?? []).toEqual([]);
+    const ticket = onlyTicket();
+    expect(ticket.jobId).toBe('job-1');
+    expect(ticket.state).not.toBe('succeeded');
+    expect(ticket.steps).toEqual([]);
+    expect(mockPostRepoUpTasks).not.toHaveBeenCalled();
+  });
+
+  it('control: followed, the one job settles the ticket and no up tail runs', async () => {
+    await runRepo(['down', 'app']);
+
+    expect(executed.map((o) => o.functionName)).toEqual(['repository_down']);
+    expect(claims).toEqual([]);
+    expect(mockPostRepoUpTasks).not.toHaveBeenCalled();
+    expect(onlyTicket().acknowledged).toBe(true);
+  });
+
+  it('a failed down settles the ticket as failed', async () => {
+    answer = FAILED;
+    await runRepo(['down', 'app']);
+
+    expect(onlyTicket().state).toBe('failed');
+  });
+});
+
 describe('repo commit (a finalizer: recordRepoCommit)', () => {
   it('under --background records nothing in the config until the commit exists', async () => {
     answer = BACKGROUND;

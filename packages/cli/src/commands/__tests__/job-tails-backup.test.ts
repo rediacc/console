@@ -2,6 +2,9 @@
  * PLAN-detached-jobs J4, the successor class: `repo pull --up` runs `backup_pull` as its one job and carries the deploy
  * as the `pullDeploy` step. Under `--background` the command returns at the job start with the step on the ticket and
  * no `repository_up` started; followed, the step starts that job once; a failed pull starts none.
+ *
+ * `repo push` is the same shape: `backup_push` is the one job, the retained-base record is the `recordPushBase`
+ * finalizer and an immutable commit's `repository_commit_meta` is the `syncCommitMeta` successor (J16).
  */
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -15,10 +18,12 @@ vi.mock('../../i18n/index.js', () => ({
 }));
 
 const mockGetRepository = vi.hoisted(() => vi.fn());
+const mockAddRepository = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
 vi.mock('../../services/config/config-resources.js', () => ({
   configService: {
     getCurrent: vi.fn().mockResolvedValue({ resources: { repositories: { app: {} } } }),
     getRepository: mockGetRepository,
+    addRepository: mockAddRepository,
     getRepositoryKey: (ref: string) => Promise.resolve(ref),
     getRepositoryMachine: vi.fn().mockResolvedValue('m1'),
   },
@@ -128,6 +133,13 @@ afterEach(() => {
   process.exitCode = 0;
 });
 
+async function runPush(argv: string[] = []): Promise<void> {
+  const program = new Command();
+  program.exitOverride();
+  registerRepoBackupCommands(program.command('repo'));
+  await program.parseAsync(['node', 'rdc', 'repo', 'push', 'app', '--to-machine', 'm2', ...argv]);
+}
+
 async function runPull(extra: string[]): Promise<void> {
   const program = new Command();
   program.exitOverride();
@@ -180,6 +192,103 @@ describe('repo pull --up (a successor step: pullDeploy)', () => {
     await runPull([]);
 
     expect(jobCalls[0].jobSteps ?? []).toEqual([]);
+    expect(upCalls).toEqual([]);
+  });
+});
+
+const IMMUTABLE = {
+  repositoryGuid: 'g-commit',
+  networkId: 7,
+  credential: 'c',
+  immutable: true,
+  commitMessage: 'snap',
+  commitAuthor: 'me',
+  commitParent: 'g-parent',
+  grandGuid: 'g-grand',
+};
+
+describe('repo push (finalizer recordPushBase, successor syncCommitMeta)', () => {
+  it('under --background returns at the push start, with the base record on the ticket and not written', async () => {
+    answer = BACKGROUND;
+    await runPush();
+
+    expect(jobCalls.map((o) => o.functionName)).toEqual(['backup_push']);
+    expect(jobCalls[0].machineName).toBe('m1');
+    expect(jobCalls[0].params).toMatchObject({ to: 'm2', dest: 'g-app' });
+    expect(jobCalls[0].jobSteps?.map((s) => s.name)).toEqual(['reportPushStats', 'recordPushBase']);
+    expect(upCalls).toEqual([]);
+    expect(mockAddRepository).not.toHaveBeenCalled();
+    const [ticket] = store.tickets();
+    expect(ticket.steps.map((s) => s.name)).toEqual(['reportPushStats', 'recordPushBase']);
+    expect(ticket.stepsDone).toEqual([]);
+  });
+
+  it('control: followed, the retained base is recorded once, against the base the job retained', async () => {
+    await runPush();
+
+    const retained = (jobCalls[0].params as { retainBase: string }).retainBase;
+    expect(mockAddRepository).toHaveBeenCalledTimes(1);
+    expect(mockAddRepository.mock.calls[0][1]).toMatchObject({
+      pushState: { m2: { verifiedBase: retained } },
+    });
+    expect(store.tickets()[0].stepsDone).toEqual(['reportPushStats', 'recordPushBase']);
+  });
+
+  it('a failed push records no base and plans the same steps', async () => {
+    answer = FAILED;
+    await runPush();
+
+    expect(jobCalls[0].jobSteps?.map((s) => s.name)).toEqual(['reportPushStats', 'recordPushBase']);
+    expect(mockAddRepository).not.toHaveBeenCalled();
+    expect(store.tickets()[0].stepsDone).toEqual([]);
+  });
+
+  it('an immutable push under --background plans syncCommitMeta on the ticket and calls no machine for it', async () => {
+    mockGetRepository.mockResolvedValue(IMMUTABLE);
+    answer = BACKGROUND;
+    await runPush();
+
+    expect(jobCalls.map((o) => o.functionName)).toEqual(['backup_push']);
+    expect(jobCalls[0].jobSteps?.map((s) => s.name)).toEqual([
+      'reportPushStats',
+      'recordPushBase',
+      'syncCommitMeta',
+    ]);
+    const [ticket] = store.tickets();
+    expect(ticket.steps.map((s) => s.name)).toContain('syncCommitMeta');
+    expect(ticket.stepsDone).toEqual([]);
+    expect(upCalls).toEqual([]);
+  });
+
+  it('control: an immutable push followed runs repository_commit_meta once, on the push target and with no datastore', async () => {
+    mockGetRepository.mockResolvedValue(IMMUTABLE);
+    await runPush();
+
+    expect(upCalls.map((o) => o.functionName)).toEqual(['repository_commit_meta']);
+    expect(upCalls[0].machineName).toBe('m2');
+    expect(upCalls[0]).not.toHaveProperty('datastore');
+    expect(upCalls[0].params).toEqual({
+      repository: 'g-commit',
+      message: 'snap',
+      author: 'me',
+      commitParent: 'g-parent',
+      grandGuid: 'g-grand',
+    });
+  });
+
+  it('control: a failed immutable push syncs no commit metadata', async () => {
+    mockGetRepository.mockResolvedValue(IMMUTABLE);
+    answer = FAILED;
+    await runPush();
+
+    expect(jobCalls[0].jobSteps?.map((s) => s.name)).toContain('syncCommitMeta');
+    expect(upCalls).toEqual([]);
+  });
+
+  it('control: a mutable push plans no syncCommitMeta', async () => {
+    await runPush();
+
+    expect(jobCalls[0].jobSteps?.map((s) => s.name)).not.toContain('syncCommitMeta');
     expect(upCalls).toEqual([]);
   });
 });

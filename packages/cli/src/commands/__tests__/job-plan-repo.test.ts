@@ -104,6 +104,14 @@ vi.mock('../../services/core/output.js', () => ({
 }));
 vi.mock('../../utils/agent-guard.js', () => ({ assertAgentRepoCreate: vi.fn() }));
 vi.mock('../_validate.js', () => ({ assertMachineExists: vi.fn().mockResolvedValue(undefined) }));
+// `repo checkout` forks through the shared pooled connection and deploys the new fork's key; neither is under test.
+vi.mock('../../services/machine/machine-connection.js', () => ({
+  machineConnections: { acquire: vi.fn().mockResolvedValue({ release: vi.fn() }) },
+}));
+vi.mock('../../services/repo/repo-key-deployment.js', () => ({
+  deployRepoKeyIfNeeded: vi.fn().mockResolvedValue(undefined),
+  removeRepoKeyIfDeployed: vi.fn().mockResolvedValue(undefined),
+}));
 vi.mock('../../utils/ssh-keygen.js', () => ({
   generateSSHKeyPair: () => ({ privateKey: 'priv', publicKey: 'pub' }),
 }));
@@ -123,10 +131,12 @@ const { renderLocalExecutionFailure } = await import('../../utils/local-executio
 const { setCommandJobDeps } = await import('../../services/jobs/command-job.js');
 const { TicketStore } = await import('../../services/jobs/ticket-store.js');
 const { resolveStepHandler } = await import('../../services/jobs/steps.js');
+const { runTicketSteps } = await import('../../services/jobs/run-job.js');
 const { handleRepoCreate, registerRepoCreateDeleteCommands } = await import(
   '../repo-create-delete.js'
 );
 const { registerRepoPromoteCommand } = await import('../repo-promote.js');
+const { registerRepoBranchingCommands } = await import('../repo-branching.js');
 const { registerRepoPruneCommand } = await import('../repo-prune.js');
 const { registerRepoTrimCommand } = await import('../repo-trim.js');
 const { registerRepoContainerCommands } = await import('../repo-container.js');
@@ -250,20 +260,27 @@ describe('repo create (one job; rollback, identity refresh and schedules as step
     ]);
     expect(ticket.stepsDone).toEqual([]);
 
-    // The observer that sees the job finish runs the step from the ticket's recorded params.
-    const refresh = ticket.steps.find((s) => s.name === 'identityRefresh');
-    const handler = await resolveStepHandler('identityRefresh');
+    // The observer that sees the job finish (`rdc job wait`, the finished notice) runs the owed steps from the ticket's recorded params.
     expect(ticket.machine).toBe('m1');
-    await handler({
-      jobId: ticket.jobId ?? 'job-1',
-      machine: ticket.machine as string,
-      params: refresh?.params ?? {},
-      state: 'succeeded',
-    });
+    const report = await runTicketSteps(
+      store,
+      ticket,
+      { state: 'succeeded', finishedAt: '2026-11-05T00:00:00Z' },
+      {
+        observer: { configName: 'test' },
+        warn: () => undefined,
+        claim: ({ steps }) =>
+          Promise.resolve(steps.map((name) => ({ name, result: 'claimed' as const }))),
+      }
+    );
+    expect(report.ran).toEqual(['identityRefresh', 'reconcileBackupSchedules']);
     expect(mockRefreshIdentity).toHaveBeenCalledExactlyOnceWith('repository_create', 'm1', {
       repository: 'shop',
       size: '5G',
     });
+    expect(mockReconcile).toHaveBeenCalledTimes(1);
+    expect(mockRemoveRepository).not.toHaveBeenCalled();
+    expect(store.tickets()[0].stepsDone).toEqual(['identityRefresh', 'reconcileBackupSchedules']);
   });
 });
 
@@ -357,6 +374,59 @@ describe('repo verbs outside J4: one job per machine, the follow-up as steps', (
       answer = FAILED;
       await runVerb(promote, 'promote', 'shop:latest', '-y');
       expect(mockRemoveRepository).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('repo checkout', () => {
+    const checkout = (repo: CommandT) => registerRepoBranchingCommands(repo);
+    beforeEach(() => {
+      vi.mocked(configService.getRepository).mockImplementation((key: string) => {
+        if (key === 'shop') {
+          return Promise.resolve({
+            repositoryGuid: 'g-shop',
+            networkId: 7,
+            credential: 'c',
+            branches: { main: 'g-commit' },
+          } as never);
+        }
+        if (key === 'g-commit') {
+          return Promise.resolve({ repositoryGuid: 'g-commit', immutable: true } as never);
+        }
+        return Promise.resolve(undefined);
+      });
+    });
+
+    it('makes one repository_fork job on the source machine, with the tip as its last step', async () => {
+      await runVerb(checkout, 'checkout', 'main', '--from', 'shop', '--tag', 'w');
+
+      expect(executed.map((o) => [o.functionName, o.machineName])).toEqual([
+        ['repository_fork', 'm1'],
+      ]);
+      expect(executed[0].params).toMatchObject({ repository: 'g-commit' });
+      expect(stepNames(executed[0])).toEqual([
+        'rollbackFork',
+        'identityRefresh',
+        'reconcileBackupSchedules',
+        'advanceHeadCommit',
+      ]);
+      expect(store.tickets().map((ticket) => ticket.verb)).toEqual(['repo checkout']);
+      expect(mockReconcile).toHaveBeenCalledExactlyOnceWith('m1');
+    });
+
+    it('control: a ticket handed back early records no tip and refreshes nothing, and a failed job none either', async () => {
+      answer = BACKGROUND;
+      await runVerb(checkout, 'checkout', 'main', '--from', 'shop', '--tag', 'w');
+      expect(mockRefreshIdentity).not.toHaveBeenCalled();
+      expect(mockReconcile).not.toHaveBeenCalled();
+      expect(store.tickets()[0].steps.map((s) => s.name)).toContain('advanceHeadCommit');
+      // Only the new fork's registration was written, and it carries no tip.
+      expect(mockAddRepository).toHaveBeenCalledTimes(1);
+      expect(mockAddRepository.mock.calls[0][1]).not.toHaveProperty('headCommit');
+
+      answer = FAILED;
+      mockRefreshIdentity.mockClear();
+      await runVerb(checkout, 'checkout', 'main', '--from', 'shop', '--tag', 'w2');
+      expect(mockRefreshIdentity).not.toHaveBeenCalled();
     });
   });
 
