@@ -559,6 +559,30 @@ control(
     R.done_commit([("T1", _ticked), ("R", _open)], REL, R.box_sig(TASK_DONE)),
     "",
 )
+# A plan moved between folders keeps its boxes' tick dates: the ledger row follows the path, the identity is the basename.
+_live_rel = "agent/plans/PLAN-fixture.md"
+_done_rel = "agent/plans/_done/PLAN-fixture.md"
+_pre = {"plans": {_live_rel: _ticked["plans"][REL]}}
+_moved = {"plans": {_done_rel: _ticked["plans"][REL]}}
+control(
+    "a plan moved to _done/ is still done at its tick, not at the move",
+    R.done_commit([("T1", _pre), ("MV", _moved)], _done_rel, R.box_sig(TASK_DONE)),
+    "T1",
+)
+truthy(
+    "...and attested_at reads the moved row by identity",
+    R.attested_at(_pre, _done_rel, R.box_sig(TASK_DONE)),
+)
+control(
+    "...the unmoved control: a plan that never moved is dated by its own path, as before",
+    R.done_commit([("T1", _ticked), ("T2", _ticked)], REL, R.box_sig(TASK_DONE)),
+    "T1",
+)
+control(
+    "...and an unrelated plan's row never attests",
+    R.done_commit([("T1", _ticked)], "agent/plans/_done/PLAN-other.md", R.box_sig(TASK_DONE)),
+    "",
+)
 
 # --------------------------------------------------------------------------- 7. compact(): every refusal, and the pair that proves it is not refusing everything. ---------------------------------------------------------------------------
 raises(

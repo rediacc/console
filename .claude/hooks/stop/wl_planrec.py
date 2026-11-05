@@ -881,14 +881,23 @@ def ledger_at(root, commit, ledger_rel=LEDGER_REL):
         return None
 
 
+def plan_identity(rel):
+    """The basename for a path in a plan folder, else the path itself (so an unrelated file never pairs)."""
+    return "plan:" + rel.rsplit("/", 1)[-1] if plan_folder(rel) else rel
+
+
 def attested_at(ledger, rel, sig):
-    """Does this ledger document attest `sig` as DONE for plan `rel`?"""
+    """Does this ledger document attest `sig` as DONE for plan `rel`?
+
+    The plan is read by identity, not by path: `check:ci-plan-folders --move` relocates a finished plan into `_done/`, and a path-keyed read dates every box from that move instead of from its tick (the same defect 4b2b19bb3 fixed in the live-proof gate).
+    """
     if not isinstance(ledger, dict):
         return False
-    entry = (ledger.get("plans") or {}).get(rel)
-    if not isinstance(entry, dict):
-        return False
-    return sig in (entry.get("done_sigs") or [])
+    ident = plan_identity(rel)
+    return any(
+        plan_identity(r) == ident and isinstance(v, dict) and sig in (v.get("done_sigs") or [])
+        for r, v in (ledger.get("plans") or {}).items()
+    )
 
 
 def done_commit(history, rel, sig):
