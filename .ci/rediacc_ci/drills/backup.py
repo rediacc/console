@@ -55,6 +55,7 @@ from rediacc_ci.drills import (
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
+    from typing import NoReturn
 
 KNOWN_LEGS = [
     "a",
@@ -339,7 +340,7 @@ class Options:
 
     def needs_plane(self) -> bool:
         """Any leg that talks to the control plane needs BOTH the dev gateway and a reachable chunk store (g and i do not)."""
-        return any(self.enabled(leg) for leg in "abcdefhjklmnopqrstu")
+        return any(self.enabled(leg) for leg in "abcdefhjklmnopqrstuvwx")
 
     def using_real_store(self) -> bool:
         return bool(self.store_endpoint)
@@ -425,6 +426,8 @@ class Backup:
         self.snap_seed = "snap-seed-%d" % stamp
         self.snap_incr = "snap-incr-%d" % stamp
         self.bucket = opts.bucket
+        # Set when the leg selection was refused before any setup: that run records no receipt.
+        self.refused = False
         self.api_token = ""
         self.subscription_id = ""
         self.admin_jar: http.cookiejar.CookieJar | None = None
@@ -3356,6 +3359,13 @@ class Backup:
 
     # ------------------------------------------------------------------ main
 
+    def refuse(self, *lines: str) -> NoReturn:
+        """Refuse the leg selection before any setup. Nothing ran, so `main` writes no receipt for it (`refused`)."""
+        for line in lines:
+            log.error(line)
+        self.refused = True
+        raise SystemExit(1)
+
     def run_all(self) -> int:
         o, d = self.o, self.d
         self.announce_cost()
@@ -3365,31 +3375,34 @@ class Backup:
             return d.summary()
 
         # Leg dependencies are refused before any setup: the gateway restart alone costs 20s or more.
-        # Legs b-f, h, j, k, l, m, n and o all operate on the session and lineage leg a opens. Selecting them without leg a would produce a pile of 401s that read like defects.
+        # Every leg but g and i operates on the session and lineage leg a opens. Selecting one without leg a would produce a pile of 401s that read like defects.
         if o.needs_plane() and not o.enabled("a"):
-            log.error(
-                "Legs b-f, h, j, k, l, m, n and o all run inside the session leg a mints, and there is no"
+            self.refuse(
+                "Every leg but g and i runs inside the session leg a mints (selected: %s), and there is no"
+                % o.legs,
+                "session on disk to inherit. Include leg a:  --legs %s" % o.legs_with("a"),
             )
-            log.error("session on disk to inherit. Include leg a:  --legs %s" % o.legs_with("a"))
-            raise SystemExit(1)
 
         # Leg o reads the lineage and snapshot leg b stored: without them it would test an empty tenant and pass.
         if o.enabled("o") and not o.enabled("b"):
-            log.error("Leg o reaches for the lineage and snapshot leg b stores. Include leg b:")
-            log.error("    --legs %s" % o.legs_with("a", "b"))
-            raise SystemExit(1)
+            self.refuse(
+                "Leg o reaches for the lineage and snapshot leg b stores. Include leg b:",
+                "    --legs %s" % o.legs_with("a", "b"),
+            )
 
-        # Legs t and u are real-renet only and work on the repository leg b creates.
-        if any(o.enabled(leg) for leg in "tu") and not (o.renet and o.enabled("b")):
-            log.error("Legs t and u need --renet and the repository leg b creates. Run:")
-            log.error("    --legs %s --renet --vm <worker>" % o.legs_with("a", "b"))
-            raise SystemExit(1)
+        # Legs t to x are real-renet only and work on the repository leg b creates.
+        if any(o.enabled(leg) for leg in "tuvwx") and not (o.renet and o.enabled("b")):
+            self.refuse(
+                "Legs t to x need --renet and the repository leg b creates. Run:",
+                "    --legs %s --renet --vm <worker>" % o.legs_with("a", "b"),
+            )
 
         # The real-renet half of p and r works on the source repository legs b-d leave.
         if o.renet and any(o.enabled(leg) for leg in "pr") and not o.enabled("b"):
-            log.error("With --renet, legs p and r act on the repository leg b creates. Include it:")
-            log.error("    --legs %s" % o.legs_with("a", "b"))
-            raise SystemExit(1)
+            self.refuse(
+                "With --renet, legs p and r act on the repository leg b creates. Include it:",
+                "    --legs %s" % o.legs_with("a", "b"),
+            )
 
         self.preflight_tools()
         self.preflight_machines()
@@ -3513,7 +3526,9 @@ def main(argv: list[str]) -> int:
             backup.teardown_hook()
         drill.teardown()
     # The legs half of the backup receipt (box J4): the legs this run selected, VERIFIED only on a clean, non-empty pass.
-    backup_check_trigger.record_drill(drill, backup_check_trigger.LEGS_HALF, rc, opts.leg_set())
+    # A refused selection ran nothing and proved nothing, so it records nothing either (the receipt on file stays what it was).
+    if not backup.refused:
+        backup_check_trigger.record_drill(drill, backup_check_trigger.LEGS_HALF, rc, opts.leg_set())
     return rc
 
 

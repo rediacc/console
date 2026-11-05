@@ -371,9 +371,9 @@ def test_cleanup_pattern_cannot_match_its_own_shell() -> None:
 
 
 def test_docker_exec_uses_the_repository_socket() -> None:
-    cmd = backup_renet.docker_exec_command("2881", "exec db true")
+    cmd = backup_renet.docker_exec_command("2944", "exec db true")
     assert "DOCKER_HOST=unix://" in cmd
-    assert "net-2881/docker-2881.sock" in cmd
+    assert "net-2944/docker-2944.sock" in cmd
 
 
 def test_sample_found_missing_control_and_failures() -> None:
@@ -762,3 +762,40 @@ def test_leg_x_goes_red_on_the_defect_each_check_names(
         assert worker.removed
     finally:
         drill.teardown()
+
+
+# ------------------------------------------------------------------ leg u and leg v helpers
+
+
+def test_the_hook_network_id_is_one_renet_accepts() -> None:
+    """renet refuses a network id that is not 2816 + n * 64 (measured 2026-11-05 on the worker: 2881 was refused), and the id must differ from leg b's."""
+    ident = int(backup_renet.HOOK_NET_ID)
+    assert (ident - 2816) % 64 == 0
+    assert ident > 2816
+    assert backup_renet.HOOK_NET_ID != "2880"
+    # CONTROL: the id the drill used to name fails the same rule.
+    assert (2881 - 2816) % 64 != 0
+
+
+def test_journal_upload_snapshot_reads_the_in_flight_upload() -> None:
+    doc = json.dumps(
+        {"version": 1, "upload": {"snapshotId": "20261105T1-aa", "manifestCommitted": False}}
+    )
+    assert backup_renet.journal_upload_snapshot(doc) == "20261105T1-aa"
+
+
+@pytest.mark.parametrize(
+    "text",
+    ["", "not json", "[]", '{"anchor": {}}', '{"upload": null}', '{"upload": {"snapshotId": 3}}'],
+)
+def test_journal_upload_snapshot_is_empty_without_an_upload(text: str) -> None:
+    assert backup_renet.journal_upload_snapshot(text) == ""
+
+
+def test_lineage_rows_never_counts_a_skipped_row_as_judged() -> None:
+    skipped = {"lineageGuid": "g", "skipped": "leased", "observedBytes": 0, "ledgerBytesBefore": 9}
+    judged = {"lineageGuid": "h", "skipped": None, "observedBytes": 9, "ledgerBytesBefore": 9}
+    assert backup_renet.lineage_rows([skipped, judged]) == ([judged], [skipped])
+    # CONTROL: the skipped row alone leaves nothing judged, which is what leg u's assertion reads.
+    assert backup_renet.lineage_rows([skipped]) == ([], [skipped])
+    assert backup_renet.lineage_rows(None) == ([], [])

@@ -443,15 +443,24 @@ def record_half(
     started_at: str,
     finished_at: str,
     reason: dict[str, str] | None = None,
-) -> pathlib.Path:
+) -> pathlib.Path | None:
     """Record one drill's half of the receipt and carry the other half from the receipt already on file for this exact checkout (`_carried`).
 
-    The RustFS drill (`half="legs"`, `legs` = the legs that passed) and the on-premise variant (`half="onprem"`) are separate runs, and the receipt is VERIFIED only once both halves passed for one tree, one digest and one pair of checkouts. A half that did not pass contributes nothing (no legs, `onprem` false), so a failed re-run withdraws what that half had vouched for, and the other half survives it."""
+    The RustFS drill (`half="legs"`, `legs` = the legs that passed) and the on-premise variant (`half="onprem"`) are separate runs, and the receipt is VERIFIED only once both halves passed for one tree, one digest and one pair of checkouts. A half that did not pass contributes nothing (no legs, `onprem` false), so a failed re-run withdraws what that half had vouched for, and the other half survives it.
+
+    One exception, returning None with nothing written: a run of a PARTIAL leg selection (short of `REQUIRED_LEGS`) that did not fail, against a VERIFIED receipt already on file for this exact checkout. Such a run can only be NOT_VERIFIED (`legs-partial`) or an unavailable drill, and neither is evidence against what the fuller run proved on the same code. A FAILED verdict is always written, whatever the selection: a leg that really failed is never hidden."""
     if half not in HALVES:
         raise ValueError(f"half {half!r} is not one of {', '.join(HALVES)}")
     tree = make_git(root)(["rev-parse", "HEAD^{tree}"]) or ""
     prior = _carried(root, tree) or {}
     passed = status == VERIFIED
+    if (
+        half == LEGS_HALF
+        and status != FAILED
+        and prior.get("status") == VERIFIED
+        and any(leg not in legs for leg in REQUIRED_LEGS)
+    ):
+        return None
     if half == LEGS_HALF:
         ran = list(legs) if passed else []
         onprem = prior.get("onprem") is True
@@ -513,6 +522,12 @@ def record_drill(drill: Any, half: str, rc: int, legs: Sequence[str] = ()) -> pa
         )
     except (OSError, ValueError) as exc:
         print(f"backup-check: the receipt was NOT written ({exc})", file=sys.stderr)
+        return None
+    if path is None:
+        print(
+            "backup-check: a partial leg selection leaves the VERIFIED receipt for this tree as it is",
+            file=sys.stderr,
+        )
         return None
     written = read_latest(pathlib.Path(drill.root)) or {}
     print(

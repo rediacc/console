@@ -96,6 +96,29 @@ def journal_back_command(guid: str) -> str:
     )
 
 
+def journal_read_command(guid: str) -> str:
+    return "sudo -n sh -c 'cat %s/*-%s.json'" % (JOURNAL_DIR, guid)
+
+
+def journal_upload_snapshot(journal_text: str) -> str:
+    """The snapshot id of the upload a journal holds in flight (`upload.snapshotId`), empty when it holds none or is unreadable."""
+    try:
+        doc = json.loads(journal_text)
+    except ValueError:
+        return ""
+    upload = doc.get("upload") if isinstance(doc, dict) else None
+    value = upload.get("snapshotId") if isinstance(upload, dict) else None
+    return value if isinstance(value, str) else ""
+
+
+def lineage_rows(lineages: object) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """A reconcile answer's lineage rows split into (judged, skipped). A skipped row's observed figures are 0 by construction, a skip marker and not a count."""
+    rows = [
+        row for row in (lineages if isinstance(lineages, list) else []) if isinstance(row, dict)
+    ]
+    return [r for r in rows if not r.get("skipped")], [r for r in rows if r.get("skipped")]
+
+
 def repair_command(datastore: str, guid: str) -> str:
     return "sudo -n renet backup repair --datastore %s --repo %s --hashes-stdin" % (datastore, guid)
 
@@ -116,7 +139,7 @@ def uploaded(doc: dict[str, Any]) -> int:
 
 
 # Leg v: the hook drill's repository (own network id, beside leg b's source), its container, and the bounds. The deadman fires 2 x timeout + 30 s after the hook arms.
-HOOK_NET_ID = "2881"
+HOOK_NET_ID = "2944"
 HOOK_TIMEOUT_SECONDS = 5
 HOOK_DEADMAN_SECONDS = 2 * HOOK_TIMEOUT_SECONDS + 30
 HOOK_WAIT_SECONDS = HOOK_DEADMAN_SECONDS + 60
@@ -589,10 +612,36 @@ class RenetLegs:
         )
         d.last_cmd = "renet backup snapshot killed after %d s" % KILL_AFTER_SECONDS
         d.assert_not_equal("0", str(killed.returncode), "the first run was killed before it ended")
+        killed_snapshot = journal_upload_snapshot(
+            r.run_vm(journal_read_command(self.src), must=False).stdout
+        )
+        d.last_cmd = "the journal of the killed run"
+        d.assert_not_equal("", killed_snapshot, "the killed run left an upload in its journal")
         doc = r.snapshot(self.src)
         d.last_cmd = "renet backup snapshot (rerun)"
         d.assert_equal("stored", str(doc.get("status", "")), "the rerun stores the snapshot")
         self.b.release_probe_leases()
+        # The killed run's lease is the server's evidence that the run may still be alive: a rerun on the same machine inside the staleness window keeps it, and a live lease makes reconcile skip its lineage.
+        judged, skipped = self.reconcile_dry_run()
+        d.assert_equal(
+            "leased",
+            ",".join(str(row.get("skipped")) for row in skipped),
+            "CONTROL: while the killed run's lease lives the lineage is skipped, not judged",
+        )
+        d.assert_equal("[]", str(judged), "and a skipped lineage is not counted as judged")
+        self.expire_killed_lease(killed_snapshot)
+        judged, _ = self.reconcile_dry_run()
+        d.assert_not_equal("0", str(len(judged)), "the lineage was judged, not skipped")
+        drifted = [
+            str(row.get("lineageGuid"))
+            for row in judged
+            if row.get("observedBytes") != row.get("ledgerBytesBefore")
+            or row.get("observedChunks") != row.get("ledgerChunksBefore")
+        ]
+        d.assert_equal("[]", str(drifted), "no judged lineage drifted: --check would exit 0")
+
+    def reconcile_dry_run(self) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+        """POST /backups/reconcile as a dry run on the source lineage: the wire of `rdc backup reconcile --check`. Returns (judged, skipped) rows."""
         text = self.b.api(
             "POST",
             "%s/reconcile" % self.b.backup_api(),
@@ -602,21 +651,18 @@ class RenetLegs:
         self.b.capture(
             "POST /backups/reconcile (dry run: the wire of `rdc backup reconcile --check`)", text
         )
-        d.assert_equal("200", self.b.status, "the reconcile route answers")
-        lineages = self.b.field("lineages")
-        judged = [
-            row
-            for row in (lineages if isinstance(lineages, list) else [])
-            if isinstance(row, dict) and not row.get("skipped")
-        ]
-        d.assert_not_equal("0", str(len(judged)), "the lineage was judged, not skipped")
-        drifted = [
-            str(row.get("lineageGuid"))
-            for row in judged
-            if row.get("observedBytes") != row.get("ledgerBytesBefore")
-            or row.get("observedChunks") != row.get("ledgerChunksBefore")
-        ]
-        d.assert_equal("[]", str(drifted), "no judged lineage drifted: --check would exit 0")
+        self.d.assert_equal("200", self.b.status, "the reconcile route answers")
+        return lineage_rows(self.b.field("lineages"))
+
+    def expire_killed_lease(self, snapshot_id: str) -> None:
+        """Backdates the killed run's lease through the dev gateway's `/test/expire-lease` seam, the stand-in for waiting out its two-hour lifetime."""
+        text = self.b.api(
+            "POST",
+            "%s/test/expire-lease" % self.d.api_base(),
+            {"subscriptionId": self.b.subscription_id, "snapshotId": snapshot_id},
+        )
+        self.b.capture("POST /test/expire-lease (the killed run's snapshot)", text)
+        self.d.assert_equal("200", self.b.status, "the lease seam answers (dev gateway only)")
 
     # ------------------------------------------------------------------ leg v
 
