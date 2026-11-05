@@ -1029,16 +1029,13 @@ class RenetLegs:
         d.last_cmd = "renet backup snapshot (rerun)"
         d.assert_equal("stored", str(doc.get("status", "")), "the rerun stores the snapshot")
         self.b.release_probe_leases()
-        # The killed run's lease is the server's evidence that the run may still be alive: a rerun on the same machine inside the staleness window keeps it, and a live lease makes reconcile skip its lineage.
+        # The rerun's commit expires every other live lease on its own stream (private/account 1717250, measured on bench 2026-11-05: a kept lease left 53 chunks unbilled), so the lineage is judged at once, with no lease to wait out.
         judged, skipped = self.reconcile_dry_run()
         d.assert_equal(
-            "leased",
+            "",
             ",".join(str(row.get("skipped")) for row in skipped),
-            "CONTROL: while the killed run's lease lives the lineage is skipped, not judged",
+            "the killed run's lease ended with the rerun's commit: nothing is skipped",
         )
-        d.assert_equal("[]", str(judged), "and a skipped lineage is not counted as judged")
-        self.expire_killed_lease(killed_snapshot)
-        judged, _ = self.reconcile_dry_run()
         d.assert_not_equal("0", str(len(judged)), "the lineage was judged, not skipped")
         drifted = [
             str(row.get("lineageGuid"))
@@ -1061,16 +1058,6 @@ class RenetLegs:
         )
         self.d.assert_equal("200", self.b.status, "the reconcile route answers")
         return lineage_rows(self.b.field("lineages"))
-
-    def expire_killed_lease(self, snapshot_id: str) -> None:
-        """Backdates the killed run's lease through the dev gateway's `/test/expire-lease` seam, the stand-in for waiting out its two-hour lifetime."""
-        text = self.b.api(
-            "POST",
-            "%s/test/expire-lease" % self.d.api_base(),
-            {"subscriptionId": self.b.subscription_id, "snapshotId": snapshot_id},
-        )
-        self.b.capture("POST /test/expire-lease (the killed run's snapshot)", text)
-        self.d.assert_equal("200", self.b.status, "the lease seam answers (dev gateway only)")
 
     # ------------------------------------------------------------------ leg v
 
