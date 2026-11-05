@@ -1,5 +1,5 @@
 ---
-description: Drain the Promoted plans in agent/plans/QUEUE.md. One read-only survey sorts every open box into six groups first. Writers in leases take the code boxes only, grouped by the files a box touches, and land in one batch that is gated once. One sequential runner in the main checkout owns the live boxes, in the order fleet, bench, hostinger. Writers, gates and fleet runs never share the machine, and operator questions go in one batched ask. Free text after the command narrows it to matching plans.
+description: Drain the Promoted plans in agent/plans/QUEUE.md. One read-only survey sorts every open box into six groups first. Writers in leases take the code boxes only, grouped by the files a box touches, and land in one batch that is gated once. Live boxes run in the main checkout in three side-by-side queues: fleet, bench and hostinger, the last two started at once by any agent at any time. Writers, gates and fleet runs never share the local machine, and operator questions go in one batched ask. Free text after the command narrows it to matching plans.
 argument-hint: "[filter: plan names or substrings, e.g. 'backup proxy'; omit for every unfinished Promoted plan]"
 allowed-tools: Bash(.claude/hooks/stop/worklist.py --list --open:*), Bash(.claude/hooks/stop/worklist.py --plan-investigate:*), Bash(.claude/hooks/stop/worklist.py --plan-tick:*), Bash(.claude/hooks/stop/worklist.py --live-proof:*), Bash(.claude/hooks/stop/worklist.py --add:*), Bash(.claude/hooks/stop/worklist.py --add-many:*), Bash(.claude/hooks/stop/worklist.py --lease:*), Bash(.claude/hooks/stop/worklist.py --update:*), Bash(git add:*), Bash(git commit:*), Bash(npm run login\:bench:*), Bash(git branch:*), Bash(git log:*), Bash(sed:*), Bash(grep:*), Bash(date:*), Bash(uptime:*), Bash(nproc:*), Bash(python3 -c:*)
 ---
@@ -46,7 +46,9 @@ The route is `isolation: "worktree"` on the Agent call, which reaches a lease th
 
 ### 3. One thing at a time on the machine
 
-Writers, or gates, or a fleet run, never two of them: writers beside gates made load 70-90 and false timeouts. Before a wave, `uptime` is read against `nproc`, and a wave waits while load is above it. The order of a round is writers, landing, one gate run, then the live queue.
+Writers, or gates, or a fleet run, never two of them: writers beside gates made load 70-90 and false timeouts. Before a wave, `uptime` is read against `nproc`, and a wave waits while load is above it. The order of a round is writers, landing, one gate run, then the fleet part of the live queue.
+
+Bench and hostinger runs are exempt from this rule and from that order (standing operator order, 2026-11-05: bench and hostinger are open to every agent at any time). Their work runs on remote machines, not this host, so they start at once, beside writers, gates or a fleet run, and never wait for a landing, a gate, a push, a merge or an operator answer. Any agent may run them: the lead, a live runner or a writer whose box needs one. A box needing a fleet VM still waits for the fleet; a box needing bench or hostinger never does. "Waiting on the fleet" is therefore never a reason to leave a bench or hostinger box idle.
 
 ### 4. Start the writers, all at once
 
@@ -104,7 +106,7 @@ Once the batch is landed, the gates run once. Only the reviews, worklist, reggat
 
 G1 boxes first get their recorded correction: the box line stays byte-identical so its signature holds, with a `(corrected ASKED:<minute>Z) <bench form>` line under it. A clause bench cannot prove is named in its own box, never dropped. They then run as G2.
 
-G2 boxes run sequentially in the main checkout, because leases refuse `vm:check` and `live_proof`, in the order fleet, bench, hostinger. Each box takes `--plan-investigate`, then `worklist.py --live-proof <me> <plan> <sig> --write --tick`, or the box's own command. The runner holds a real lease (`worker:<agent-id>`, or `worker:lead` beside a running background task), since `queue-slot` trips on `worker:queue` beside a free slot. A box ticks only after every clause is read, citing the landed commit and the run's exit code, and it states bench-only proof plainly.
+G2 boxes run in the main checkout, because leases refuse `vm:check` and `live_proof`. Three queues run side by side, each sequential within itself: fleet (local VMs), bench (`--config eu-bench`), and hostinger. Bench and hostinger start at once, whatever the fleet and the writers are doing (step 3); two runners never touch the same remote machine at the same time. Each box takes `--plan-investigate`, then `worklist.py --live-proof <me> <plan> <sig> --write --tick`, or the box's own command. The runner holds a real lease (`worker:<agent-id>`, or `worker:lead` beside a running background task), since `queue-slot` trips on `worker:queue` beside a free slot. A box ticks only after every clause is read, citing the landed commit and the run's exit code, and it states bench-only proof plainly.
 
 Hostinger runs without asking, and provisioning restarts its services. Production data is never wiped; a restore test's temporary `-rt` copy is the only deletion, and `repo list` and `backup usage` are compared before and after each step. `backup schedule` and `strategy bind` go through `eu-remote`, never `eu-bench`.
 
