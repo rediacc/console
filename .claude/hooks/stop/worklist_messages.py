@@ -3023,18 +3023,21 @@ V_LOOP_NEXT_MERGED = (
     "    git branch -D %(branch)s\n"
     "    git switch -c %(next_branch)s\n"
     "%(stale)s"
-    "Then work %(next)s's first box: %(box)s%(turbo)s"
+    "Then preflight it (pr-babysitter loop step 0): `worklist.py --plan-preflight <me> %(next)s`, "
+    "and work %(next)s's first box: %(box)s%(turbo)s"
 )
 V_LOOP_NEXT_ON_MAIN = (
     "LOOP NEXT: on main with no live branch, and QUEUE.md holds %(next)s. Cut the next branch "
     "(block_second_branch admits exactly this name):\n"
     "    git switch -c %(next_branch)s\n"
     "%(stale)s"
-    "Then work %(next)s's first box: %(box)s%(turbo)s"
+    "Then preflight it (pr-babysitter loop step 0): `worklist.py --plan-preflight <me> %(next)s`, "
+    "and work %(next)s's first box: %(box)s%(turbo)s"
 )
 V_LOOP_NEXT_NO_PR_WORK = (
-    "LOOP NEXT: branch %(branch)s has no PR and no commit ahead of origin/main. Work %(next)s's "
-    "first box: %(box)s"
+    "LOOP NEXT: branch %(branch)s has no PR and no commit ahead of origin/main. Preflight %(next)s "
+    "(pr-babysitter loop step 0): `worklist.py --plan-preflight <me> %(next)s`, and work its first "
+    "box: %(box)s"
 )
 V_LOOP_NEXT_NO_PR_OPEN = (
     "LOOP NEXT: branch %(branch)s carries %(ahead)d commit(s) ahead of origin/main and has no PR. "
@@ -3073,7 +3076,8 @@ LOOP_NEXT_TURBO = (
 V_TURBO_NEXT = (
     "TURBO NEXT: turbo is on (agent/plans/QUEUE.md `## Settings`) and PR #%(pr)s has %(free)d free "
     "writer slot(s) of %(cap)d. Start ONLY the plans named here, each on its own writer with "
-    "`Plan: <path>` in the spawn prompt (block_plan_concurrency checks it):\n"
+    "`Plan: <path>` in the spawn prompt (block_plan_concurrency checks it), each preflighted first "
+    "(pr-babysitter loop step 0, `worklist.py --plan-preflight <me> <plan>`):\n"
     "%(picks)s\n"
     "Each joins PR #%(pr)s's `Plan:` line on the next push (refresh_pr_body). %(finished)d of the "
     "PR's plans are finished; the merge is offered at %(batch)d, or sooner when the queue has no "
@@ -3110,7 +3114,8 @@ V_TURBO_NEXT_LOCAL = (
     "TURBO NEXT: turbo is on (agent/plans/QUEUE.md `## Settings`) and the local batch on "
     "%(branch)s has %(free)d free writer slot(s) of %(cap)d. Start ONLY the plans named here, "
     "each on its own writer with `Plan: <path>` in the spawn prompt (block_plan_concurrency "
-    "checks it):\n"
+    "checks it), each preflighted first (pr-babysitter loop step 0, `worklist.py --plan-preflight "
+    "<me> <plan>`):\n"
     "%(picks)s\n"
     "Each joins the batch now, and `worklist.py --batch-body` writes it into the PR's `Plan:` "
     "line when the batch opens its PR. %(finished)d of the batch's plans are finished; the PR "

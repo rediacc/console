@@ -560,6 +560,28 @@ def test_the_written_message_names_the_ledger_beside_the_plan_and_renders():
     assert shown.count(".ci/config/plan-boxes.json") == 2
 
 
+@pytest.mark.parametrize(
+    "name",
+    [
+        "V_LOOP_NEXT_MERGED",
+        "V_LOOP_NEXT_ON_MAIN",
+        "V_LOOP_NEXT_NO_PR_WORK",
+        "V_TURBO_NEXT",
+        "V_TURBO_NEXT_LOCAL",
+    ],
+)
+def test_every_message_that_starts_a_plan_orders_the_preflight_first(name):
+    """The hook's start-a-plan lines are what a session follows, and they named the first box alone: 76 of the 80 plans in `_done` finished with no `Revalidated:` (box PF9)."""
+    text = getattr(import_wl("worklist_messages"), name)
+    assert "--plan-preflight" in text, name
+
+
+def test_control_a_message_that_starts_no_plan_names_no_preflight():
+    messages = import_wl("worklist_messages")
+    assert "--plan-preflight" not in messages.N_TURBO_LOCAL
+    assert "--plan-preflight" not in messages.V_LOOP_NEXT_MERGE
+
+
 def test_a_path_inside_a_lease_means_the_same_plan_as_the_path_in_the_main_checkout(repo):
     """A lease resolves to the main checkout's store, so a relative plan path typed in a lease used to reach the verbs as `.claude/worktrees/<id>/agent/plans/...`: the citation gate refused it and the ledger lookup missed its row."""
     lease = repo.root / ".claude" / "worktrees" / "lease-1"
