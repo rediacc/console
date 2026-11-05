@@ -2074,6 +2074,30 @@
         "d866721c"
       ]
     },
+    "agent/plans/PLAN-repo-resource-limits.md": {
+      "status": "approved",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 13,
+      "done": 0,
+      "open_sigs": [
+        "00d591f5",
+        "30d6b624",
+        "34dee0e7",
+        "4144aa75",
+        "4d4b8cd5",
+        "7eade686",
+        "93ff15df",
+        "9f6a0401",
+        "b9a0dc25",
+        "c461ba8c",
+        "dbc2245b",
+        "e12434a3",
+        "ff9329ec"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-require-testid-sweep.md": {
       "status": "compacted",
       "owner": "97604f47",
