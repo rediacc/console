@@ -2624,6 +2624,32 @@
       "open_sigs": [],
       "done_sigs": []
     },
+    "agent/plans/PLAN-tick-tracking.md": {
+      "status": "approved",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 15,
+      "done": 0,
+      "open_sigs": [
+        "3b2fb3e3",
+        "4de999b0",
+        "55fd614e",
+        "63f3f3e7",
+        "77b1c40a",
+        "86ef9770",
+        "95abb423",
+        "9c800464",
+        "9dd9fa99",
+        "a90de8bb",
+        "ca5c9685",
+        "cc856ac3",
+        "debe2a97",
+        "e135e1b5",
+        "f3b5dbf9"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-token-ip-rebind.md": {
       "status": "draft",
       "owner": "d778be9d",
