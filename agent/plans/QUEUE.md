@@ -72,25 +72,25 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 6 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic c6b82e88, plan agent/plans/PLAN-settings-set-verb.md, outside the set, 2 commit(s) on the branch, 0 open item(s): settings set verb: one source for the ceilings
   - epic dbb7de07, plan agent/plans/PLAN-cloudflare-spend-guard.md, outside the set, 47 commit(s) on the branch, 0 open item(s): cloudflare spend guard closure
-  - epic 09b8bdfa, plan agent/plans/PLAN-detached-jobs.md, outside the set, 320 commit(s) on the branch, 0 open item(s): detached jobs: proxied poll follow and job kinds
+  - epic 09b8bdfa, plan agent/plans/PLAN-detached-jobs.md, outside the set, 324 commit(s) on the branch, 0 open item(s): detached jobs: proxied poll follow and job kinds
   - epic ec9ba176, plan agent/plans/PLAN-backup-integrity.md, outside the set, 2 commit(s) on the branch, 0 open item(s): backup integrity docs and closure
   - epic d6bb9963, plan agent/plans/PLAN-backup-critical-tier.md, outside the set, 7 commit(s) on the branch, 0 open item(s): backup critical tier proofs
   - epic b21ab2e2, plan agent/plans/PLAN-jobs-backup-real-machine-tests.md, outside the set, 2 commit(s) on the branch, 0 open item(s): real machine tests for jobs and backup
   - epic 92df2f69, plan agent/plans/PLAN-free-license.md, outside the set, 5 commit(s) on the branch, 0 open item(s): free license ladder F6
   - epic 1f877343, plan agent/plans/PLAN-worktree-lease.md, outside the set, 55 commit(s) on the branch, 0 open item(s): guided detached worktree leases
-  - epic 2e0e531f, plan agent/plans/PLAN-rediaccfile-unprivileged.md, outside the set, 16 commit(s) on the branch, 0 open item(s): Rediaccfile lifecycle runs unprivileged
-  - epic 1d805023, plan agent/plans/PLAN-tick-tracking.md, outside the set, 25 commit(s) on the branch, 0 open item(s): tick tracking: plan-box trailer, landing prints the tick, box audit
+  - epic 2e0e531f, plan agent/plans/PLAN-rediaccfile-unprivileged.md, outside the set, 17 commit(s) on the branch, 0 open item(s): Rediaccfile lifecycle runs unprivileged
+  - epic 1d805023, plan agent/plans/PLAN-tick-tracking.md, outside the set, 26 commit(s) on the branch, 0 open item(s): tick tracking: plan-box trailer, landing prints the tick, box audit
   - epic f65726d5, plan agent/plans/PLAN-renet-down-before-kill.md, outside the set, 12 commit(s) on the branch, 0 open item(s): renet runs Rediaccfile down() before repo containers stop
   - epic 53c31db2, plan agent/plans/PLAN-repo-resource-limits.md, outside the set, 1 commit(s) on the branch, 0 open item(s): per-repo resource limits and a renet-managed RAM volume
-- Writers: 6 live of writer_cap 25 (session d778be9d): worker:ae41e9d4b09920af1, worker:a413d432d7ee7b647, worker:a7c2249fdac444f9d, worker:ae1b9a0fb2d1dfcd2, worker:a04daec04c418fbb6, worker:a7fdd74d2c1e6a1ad.
-- Leased items: 8: #11abe120 (worker:ae41e9d4b09920af1, d778be9d), #26f53f93 (worker:a04daec04c418fbb6, d778be9d), #2a0736bb (worker:a7c2249fdac444f9d, d778be9d), #361e06ef (worker:ae41e9d4b09920af1, d778be9d), #47d31fdd (worker:a7fdd74d2c1e6a1ad, d778be9d), #8bb9e583 (worker:ae1b9a0fb2d1dfcd2, d778be9d), #a150016d (worker:queue, d778be9d), #d0a7dd5c (worker:a413d432d7ee7b647, d778be9d).
+- Writers: 4 live of writer_cap 25 (session d778be9d): worker:ae41e9d4b09920af1, worker:a413d432d7ee7b647, worker:a7c2249fdac444f9d, worker:a7fdd74d2c1e6a1ad.
+- Leased items: 6: #11abe120 (worker:ae41e9d4b09920af1, d778be9d), #2a0736bb (worker:a7c2249fdac444f9d, d778be9d), #361e06ef (worker:ae41e9d4b09920af1, d778be9d), #47d31fdd (worker:a7fdd74d2c1e6a1ad, d778be9d), #a150016d (worker:queue, d778be9d), #d0a7dd5c (worker:a413d432d7ee7b647, d778be9d).
 - Next plan: agent/plans/PLAN-proxy-cd-six-targets.md, Promoted entry 17; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 14 of 43 plans done, 696 of 851 boxes done (81%).
+Promoted: 14 of 43 plans done, 699 of 851 boxes done (82%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -135,7 +135,7 @@ Promoted: 14 of 43 plans done, 696 of 851 boxes done (81%).
 | 39 | PLAN-rediaccfile-unprivileged.md | 14/23 | 9 open |
 | 40 | PLAN-worktree-lease.md | 15/16 | 1 open |
 | 41 | PLAN-tick-tracking.md | 13/15 | 2 open |
-| 42 | PLAN-renet-down-before-kill.md | 6/14 | 8 open |
+| 42 | PLAN-renet-down-before-kill.md | 9/14 | 5 open |
 | 43 | PLAN-repo-resource-limits.md | 0/13 | 13 open |
 <!-- queue:progress:end -->
 
