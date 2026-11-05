@@ -101,6 +101,10 @@
       "block": "low",
       "advise": "low"
     },
+    "plan-box-owed": {
+      "block": "smart",
+      "advise": "low"
+    },
     "pr-finish": {
       "block": "low",
       "advise": "low"

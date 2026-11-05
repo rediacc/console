@@ -4479,6 +4479,32 @@ def run_stop(event, event_ok, worklist, hook_file):
     except Exception:
         pass
 
+    # ---- LANDED WORK ON AN OPEN BOX WITH NO INVESTIGATION ROW (agent/plans/PLAN-tick-tracking.md Design 6, box T10). A commit landed on the live branch names a still-open box, by trailer or by report TICK, and the box has no investigation row; held for wl_boxaudit.OWED_STOPS stops in a row it blocks with the audit line and the --plan-investigate command. Writing the row drops the key. The audit is cached per HEAD and ledger size.
+    try:
+        import wl_boxaudit
+
+        _bo_memo, _bo_rows = wl_boxaudit.stop_check(
+            state_doc.get("boxowed"), wl_boxaudit.uninvestigated_cached(root, me8)
+        )
+        state_doc["boxowed"] = _bo_memo
+        if _bo_rows:
+            vadd(
+                "plan-box-owed",
+                False,
+                M.V_PLAN_BOX_OWED
+                % {
+                    "n": len(_bo_rows),
+                    "stops": wl_boxaudit.OWED_STOPS,
+                    "rows": "\n".join(
+                        "  %s\n    %s" % (line, cmd or "(no landed sha to cite)")
+                        for _k, line, cmd in _bo_rows[:8]
+                    ),
+                },
+                subject=sorted(k for k, _l, _c in _bo_rows),
+            )
+    except Exception:
+        pass
+
     pstate, pahead, pref = wl_ci.publish_divergence(root)
     if pstate == "stale-local":
         vadd("stale-local", False, M.V_STALE_LOCAL % (pref, pahead))

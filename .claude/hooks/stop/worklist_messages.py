@@ -1041,6 +1041,14 @@ V_PLAN_ADOPTED = (
 )
 
 # THE BODY IS BUILT BY `wl_planenforce.render`, NOT BY THIS STRING: the PR plan set's open counts and the one named box with its signature are computed there. What lives here is the one sentence that says why the turn is held, wrapped around that body.
+V_PLAN_BOX_OWED = (
+    "LANDED WORK, NO INVESTIGATION ROW: %(n)d open plan box(es) have a commit landed on this "
+    "branch (by Plan-Box trailer or by a report's TICK line) and no row in "
+    "agent/ledgers/plan-investigation.jsonl, for %(stops)d stops in a row. Record what landed, "
+    "in the main checkout, then commit the row:\n%(rows)s\n"
+    "`worklist.py --box-audit <me>` shows every box's verdict."
+)
+
 V_PLAN_UNIMPLEMENTED = (
     "THE PR'S PLAN IS NOT FINISHED. One plan per PR: its open boxes are the work this branch "
     "exists for, so the turn is held while one is open and nothing of this session is running "

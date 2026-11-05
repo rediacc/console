@@ -350,6 +350,59 @@ def audit(root, me, plan=None, *, reports=True):
     return out, head, base
 
 
+# ---- the blocking check `plan-box-owed` (T10) ----------------------------------------------
+
+OWED_STOPS = 3
+
+
+def uninvestigated(rows):
+    """[(key, line, investigate command)] of every open box with a LANDED commit (by trailer or by report TICK) and no investigation row."""
+    return [
+        ("%s#%s" % (a.plan.rsplit("/", 1)[-1], a.sig), line_of(a), a.investigate)
+        for a in rows
+        if a.landed and a.inv is None
+    ]
+
+
+def stop_check(memo, current, threshold=OWED_STOPS):
+    """`(new memo, blocking rows)`. `memo` is {key: consecutive stops seen}; `current` is `uninvestigated`'s rows for this stop. A key blocks once it has held for `threshold` stops in a row, three being the work window the effort tuner uses; a key absent this stop (its row was written, or the box closed) is dropped and starts over."""
+    memo = memo if isinstance(memo, dict) else {}
+    new = {}
+    blocking = []
+    for key, line, cmd in current:
+        n = int(memo.get(key) or 0) + 1
+        new[key] = n
+        if n >= threshold:
+            blocking.append((key, line, cmd))
+    return new, blocking
+
+
+def uninvestigated_cached(root, me):
+    """`uninvestigated` over the whole audit, cached per HEAD and per ledger size (the cache `owned_owed_cached` keeps, under its own key)."""
+    root = pathlib.Path(root)
+    head = head_of(root)
+    stamp = []
+    for path in (PB.progress_path(root), root / "agent" / "ledgers" / "plan-investigation.jsonl"):
+        try:
+            stamp.append(path.stat().st_size)
+        except OSError:
+            stamp.append(-1)
+    cache = cache_path(root, "owed-%s" % (head or "nohead"))
+    try:
+        doc = json.loads(cache.read_text(encoding="utf-8"))
+        if doc.get("stamp") == stamp and doc.get("me") == me[:8]:
+            return [tuple(x) for x in doc.get("rows") or []]
+    except (OSError, ValueError, AttributeError):
+        pass
+    rows, _head, _base = audit(root, me[:8])
+    found = uninvestigated(rows)
+    with contextlib.suppress(OSError):
+        cache.write_text(
+            json.dumps({"stamp": stamp, "me": me[:8], "rows": found}), encoding="utf-8"
+        )
+    return found
+
+
 # ---- the live-owed state on release (T11) -----------------------------------------------
 
 _SIG_TOKEN_RE = re.compile(r"(?<![0-9a-z])([0-9a-f]{8})(?![0-9a-z])")
