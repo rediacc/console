@@ -1,29 +1,28 @@
-## SESSION d778be9d 2026-11-05T23:26:54Z
+## SESSION d778be9d 2026-11-05T23:42:32Z
 
-# d778be9d STATE (2026-11-05 23:27Z)
+# d778be9d STATE (2026-11-05 23:45Z, written at 92% of auto-compact)
 
 ## Where things are
-Branch 1104-1, origin at ad4cf434c, ~120 local commits unpushed (backup push overdue: needs one ci:quick receipt; run when the fleet and writers are quiet, then push submodules first). Operator AFK ("go alone"); trust peer console-34 and fix its bugs inline. Bench and hostinger: any agent, at once, no asking. Hostinger runs renet 6a66e10 (runner pins with REDIACC_NO_PROVISION=1); needrestart exclusion in place; mail and demo-stackoverflow root grants. Bench account redeployed with the meter fix. Account dev gateway from the main checkout runs on :4800 (task bdjn2rbe4) for fleet suites.
+Branch 1104-1, origin at ad4cf434c, ~125 local commits unpushed (backup push overdue: one ci:quick receipt, then push submodules first). Operator AFK ("go alone"); trust peer console-34 (obs-lab, 172.236.218.232, eu-remote) and fix its bugs inline. Bench and hostinger: any agent, at once. Hostinger renet 6a66e10 (runner pins REDIACC_NO_PROVISION=1), needrestart exclusion in place, mail + demo-stackoverflow root grants. Bench account has the meter fix. Account dev gateway from the main checkout on :4800 (task bdjn2rbe4).
 
-## Landed tonight (all committed, unpushed)
-Tick plan T1-T12, T14 ticked; T13 clause maps 6e9584f51 (T13 open only on the carried P-A1 red of check:ci-plan-implementation); T15 open. Renet-down: S1-S3 a75f60acf, T1-T2 18f97680d, B1-B3 103177fb3, K0 ticked; open K1 (fleet), H1, LP-hostinger, W1 docs. Repo-resource-limits plan promoted (entry 43, 106a7e482). Suites: 26 (E2 E3), 32 (E1, and rc 0 again after the escaping fix 698cf7326). Meter fix account 1717250 + CLI e406259da + leg u 74e2c4724. Peer fixes: CRIU key 623f604d1, restore of a pushed repo 51f5060f0, run dirs 0755 + compose stderr cb7e070a8. Directive warning 1b571314f. privdrop_probe edfa50b69.
+## Landed tonight (unpushed)
+Meter fix proven live: PLAN-backup-meter-orphaned-chunks L1 ticked (3bb17fee; account pointer e406259da, CLI 433b5fd62). Renet-down: S1-S3, T1-T2, B1-B3 (103177fb3), K0 ticked; open K1 (fleet), H1, LP-hostinger, W1. Tick plan T1-T12, T14 ticked; T13 maps written (open on carried P-A1); T15 open. Suites 26, 32 ticked. Peer fixes: CRIU key, pushed-repo restore 51f5060f0, run dirs 0755 + compose stderr cb7e070a8. privdrop probe edfa50b69. Escaping 698cf7326.
 
 ## Delegated
-- ae41e9d4b09920af1 live runner, #11abe120 (lease 01:01Z) and #361e06ef (00:48Z): H2 done on 4 repos (gitlab, demo-stackoverflow PASS; nextcloud and observability fork ups fail fork-inherently: collabora port 9980, compose secret path hardcoded to net-3136; observability up verdicts need a rerun with edfa50b69). Next: census dry run; after the 21:50Z lease expires (~23:50Z) a clean meter replay on a fresh fork (meterprobe2 replay FAILED 601 vs 710, confounded by that cross-stream lease); then detached-jobs L1/L5 (2d).
-- a413d432d7ee7b647 #d0a7dd5c (00:20Z) lease: repo-resource-limits R1 R4 R5 M1 W2 K0b, then R2 R3 (unblocked: B landed, told).
+- a4d69930411bbd1ff, #17633b57, owns private/account backup-gc.service.ts + backup-storage.service.ts + tests/integration/backup-meter-cross-stream.test.ts; accept vitest tests/integration/backup rc 0 with 3 controls failing on old code, typecheck, lint (design by a00b7d7f5fc117ed5; its uncommitted draft lease agent-a00b7d7f5fc117ed5 is reference only, gc it after).
+- a24997e8372fe7c0f, #168f13f4 (#35d49bb1 #62605df1 #a0bd852b #4b33ce11), owns renet daemon_stop_hook.go, workflows.go MountWithDocker, term env, CLI repo up output and resolver, proxy 401 text, down_before_kill.py + test; accept named go tests, check:ci-renet, vitest, tsc, biome, drill pytest.
+- a413d432d7ee7b647, #d0a7dd5c, owns PLAN-repo-resource-limits Owns; accept each box's Accept + control; R2 R3 now unblocked.
+- ae41e9d4b09920af1, #11abe120, live runner, no tracked edits; next detached-jobs L1/L5 on fork demo-heartbeat:meterprobe, then delete it.
 
 ## Owed ticks
-- stale-investigation PLAN-backup-program.md#5d379672 (I3), PLAN-detached-jobs.md#1d17b634 (L1), PLAN-proxy-cd-six-targets.md#abe9b4eb (N1): clause maps written; re-investigate when their live halves run.
-- live halves owed: detached-jobs L5 3d256594 (bench steps), backup-local-image L2 339bf791 (run 1 load peak breached: partial), ssh-key-source-ranges 7692f2db (vm:check then hostinger receipt), meter L1 d36ccec3 (clean replay).
-
-## Open findings (tracked)
-#35d49bb1 (stop hook skips skewed daemons; MountWithDocker no up after restart; global umask; UNIVERSAL_USER_ID 1000; "Services started" before compose failure), #3e659eea (snapshot store from licence renewalUrl), #326b8a8c (converge dry run takes job scope), #5a2e9076 (bench WAF misses bench machine), #1d335181 (snapshot hides per-repo reason), #62605df1 (restored repo delete "ambiguous"), #a0bd852b (proxy 401 names no scope), #97b1a41b (term -c "" hangs), #e3740f12 (--root ran in agent mode), #df4e6bc2 (H0 grant table wrong), #f588a6da (guard differential red), #bbb04e1f done.
+- meter L2 fd8547ed: census PASS (834 = 834); Accept text names eu-remote and nextcloud: add a "(corrected ASKED...)"-style bench note under the box, then tick.
+- H2 afa91934 (rediaccfile-unprivileged): gitlab and demo-stackoverflow PASS; nextcloud/observability fork ups fail fork-inherently; observability up verdicts need a rerun with edfa50b69; box text says uid 1000, real is 7111.
+- stale-investigation: backup-program 5d379672, detached-jobs 1d17b634, proxy-cd abe9b4eb.
 
 ## Big pieces
 PLAN-backup-program, PLAN-detached-jobs, PLAN-backup-integrity, PLAN-backup-critical-tier, PLAN-rediaccfile-unprivileged, PLAN-first-release-checks, PLAN-tick-tracking, PLAN-renet-down-before-kill, PLAN-repo-resource-limits.
 
 ## Next action
-1. On the resource-limits writer's report: land (renet first; hashes.json keyCount conflict: set to merged entry count; gen-docs conflicts: take HEAD, gen-docs --write), rerun tests, plan-tick, gc; ping console-34 (tests on obs-lab) when limits and RAM volume land.
-2. On runner reports: tick with sha and run rc after reading every clause; meter d36ccec3 only on a clean replay.
-3. Fleet (gateway on :4800): vm:check with K1 rows, kube 16 and bridge suites after the escaping fix, drills; then ci:quick, review-commit, backup push (submodules first).
-4. Fix the tracked findings, smallest first.
+1. On each report: land (submodule first; hashes.json keyCount conflict = merged entry count; gen-docs conflicts: take HEAD, gen-docs --write), rerun its tests, plan-tick with the landed sha, gc. For #17633b57: land, deploy_bench, runner replays a cross-stream case.
+2. Ping console-34 when resource limits and RAM volume land.
+3. Fleet: vm:check with K1 rows, kube 16 and bridge suites; then ci:quick, review-commit, backup push (submodules first).
