@@ -39,7 +39,7 @@ The overrides (each level's bundle value in brackets for `high`):
 A ` -- solo` note on a Promoted entry keeps that plan alone in its PR under turbo.
 
 ```stop-hook
-effort: quiet
+effort: ultra
 turbo: on
 batch_size: 3 -- operator 2026-10-04: go in parallel as much as possible
 plan_concurrency: 5 -- operator 2026-10-04: plan limit 5
@@ -54,11 +54,11 @@ backup_push_h: 4 -- operator 2026-10-08: backup push valve, no PR
 What the loop is working on now, rendered between the markers by `.claude/hooks/stop/wl_planqueue.py` (`refresh_inflight`) on every stop and on every `worklist.py --queue-set` or `--phase`. It is runtime state: rewritten only when it changes, never compared by `npm run check:ci-plan-record`, and a committed copy is a snapshot from its commit.
 
 <!-- queue:inflight:begin -->
-- Mode: effort quiet; turbo on; turbo_push batch-end; batch_size 3; plan_concurrency 5; writer_cap 25; commit_remind_min 15; backup_push_h 4; judge off; cadence on; agent_hint off; agent_pushback off.
+- Mode: effort ultra; turbo on; turbo_push batch-end; batch_size 3; plan_concurrency 5; writer_cap 25; commit_remind_min 15; backup_push_h 4; judge full; cadence on; agent_hint on; agent_pushback on.
 - Phase: merge on PR #602 (branch 1023-1, session 45048a90, since 2026-11-03T09:46:12Z, past its 24-hour limit).
 - Branch: 1104-1, no PR yet.
 - Plans on the PR (10):
-  - agent/plans/PLAN-backup-program.md -- 168 of 192 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
+  - agent/plans/PLAN-backup-program.md -- 170 of 192 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-cloudflare-proxy.md -- 27 of 29 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-sync-remote-file-ownership.md -- 7 of 7 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-stop-hook-one-plan-scope.md -- 14 of 14 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
@@ -72,7 +72,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 3 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic c6b82e88, plan agent/plans/PLAN-settings-set-verb.md, outside the set, 2 commit(s) on the branch, 0 open item(s): settings set verb: one source for the ceilings
   - epic dbb7de07, plan agent/plans/PLAN-cloudflare-spend-guard.md, outside the set, 47 commit(s) on the branch, 0 open item(s): cloudflare spend guard closure
-  - epic 09b8bdfa, plan agent/plans/PLAN-detached-jobs.md, outside the set, 277 commit(s) on the branch, 0 open item(s): detached jobs: proxied poll follow and job kinds
+  - epic 09b8bdfa, plan agent/plans/PLAN-detached-jobs.md, outside the set, 278 commit(s) on the branch, 0 open item(s): detached jobs: proxied poll follow and job kinds
   - epic ec9ba176, plan agent/plans/PLAN-backup-integrity.md, outside the set, 2 commit(s) on the branch, 0 open item(s): backup integrity docs and closure
   - epic d6bb9963, plan agent/plans/PLAN-backup-critical-tier.md, outside the set, 7 commit(s) on the branch, 0 open item(s): backup critical tier proofs
   - epic b21ab2e2, plan agent/plans/PLAN-jobs-backup-real-machine-tests.md, outside the set, 2 commit(s) on the branch, 0 open item(s): real machine tests for jobs and backup
