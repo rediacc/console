@@ -68,26 +68,27 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-token-ip-rebind.md -- 10 of 11 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-sandbox-tenant-separation.md -- 6 of 8 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-gpu-device-grants.md -- 12 of 14 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
-- Work outside the PR's plans (10 epic(s)):
+- Work outside the PR's plans (11 epic(s)):
   - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 3 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic c6b82e88, plan agent/plans/PLAN-settings-set-verb.md, outside the set, 2 commit(s) on the branch, 0 open item(s): settings set verb: one source for the ceilings
   - epic dbb7de07, plan agent/plans/PLAN-cloudflare-spend-guard.md, outside the set, 47 commit(s) on the branch, 0 open item(s): cloudflare spend guard closure
-  - epic 09b8bdfa, plan agent/plans/PLAN-detached-jobs.md, outside the set, 307 commit(s) on the branch, 0 open item(s): detached jobs: proxied poll follow and job kinds
+  - epic 09b8bdfa, plan agent/plans/PLAN-detached-jobs.md, outside the set, 309 commit(s) on the branch, 0 open item(s): detached jobs: proxied poll follow and job kinds
   - epic ec9ba176, plan agent/plans/PLAN-backup-integrity.md, outside the set, 2 commit(s) on the branch, 0 open item(s): backup integrity docs and closure
   - epic d6bb9963, plan agent/plans/PLAN-backup-critical-tier.md, outside the set, 7 commit(s) on the branch, 0 open item(s): backup critical tier proofs
   - epic b21ab2e2, plan agent/plans/PLAN-jobs-backup-real-machine-tests.md, outside the set, 2 commit(s) on the branch, 0 open item(s): real machine tests for jobs and backup
   - epic 92df2f69, plan agent/plans/PLAN-free-license.md, outside the set, 5 commit(s) on the branch, 0 open item(s): free license ladder F6
   - epic 1f877343, plan agent/plans/PLAN-worktree-lease.md, outside the set, 55 commit(s) on the branch, 0 open item(s): guided detached worktree leases
   - epic 2e0e531f, plan agent/plans/PLAN-rediaccfile-unprivileged.md, outside the set, 15 commit(s) on the branch, 0 open item(s): Rediaccfile lifecycle runs unprivileged
-- Writers: 2 live of writer_cap 25 (session d778be9d): worker:ae1b9a0fb2d1dfcd2, worker:a84fdb443e69efa30.
-- Leased items: 3: #6a43917a (worker:ae1b9a0fb2d1dfcd2, d778be9d), #a150016d (worker:queue, d778be9d), #c7479f45 (worker:a84fdb443e69efa30, d778be9d).
+  - epic 1d805023, plan agent/plans/PLAN-tick-tracking.md, outside the set, 3 commit(s) on the branch, 0 open item(s): tick tracking: plan-box trailer, landing prints the tick, box audit
+- Writers: 4 live of writer_cap 25 (session d778be9d): worker:a84fdb443e69efa30, worker:ae41e9d4b09920af1, worker:a53bbdd2e0fd6f09a, worker:a4f5725b0356faeb9.
+- Leased items: 6: #11abe120 (worker:ae41e9d4b09920af1, d778be9d), #32e8514f (worker:a9d0b434edb27910c, d778be9d), #41c8b283 (worker:a4f5725b0356faeb9, d778be9d), #9c66cb32 (worker:a53bbdd2e0fd6f09a, d778be9d), #a150016d (worker:queue, d778be9d), #c7479f45 (worker:a84fdb443e69efa30, d778be9d).
 - Next plan: agent/plans/PLAN-proxy-cd-six-targets.md, Promoted entry 17; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 14 of 41 plans done, 674 of 824 boxes done (81%).
+Promoted: 14 of 42 plans done, 674 of 838 boxes done (80%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -132,6 +133,7 @@ Promoted: 14 of 41 plans done, 674 of 824 boxes done (81%).
 | 39 | PLAN-rediaccfile-unprivileged.md | 14/23 | 9 open |
 | 40 | PLAN-worktree-lease.md | 15/16 | 1 open |
 | 41 | PLAN-tick-tracking.md | 0/15 | 15 open |
+| 42 | PLAN-renet-down-before-kill.md | 0/14 | 14 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-backup-program.md -- operator 2026-10-20 ("move agent/plans/PLAN-backup-program.md to the promoted"): one backup program across renet, account, CLI and shared, ending in a live hostinger to eu R2 backup; P1; Depends-On PLAN-shell-sandbox-readonly-view.md and PLAN-account-vm-check.md (done 2026-10-20); released to writers by operator /ask ASKED:2026-10-20T15:14Z ("edit writers to go NOW")
@@ -175,6 +177,7 @@ Promoted: 14 of 41 plans done, 674 of 824 boxes done (81%).
 39. agent/plans/PLAN-rediaccfile-unprivileged.md -- operator /ask 2026-11-03: up() and down() run as the universal user with explicit grants, fixed in #602, tested on hostinger
 40. agent/plans/PLAN-worktree-lease.md -- operator order 2026-11-04: promote the new plan and continue until the full worktree solution
 41. agent/plans/PLAN-tick-tracking.md -- operator order 2026-11-05 ("let's plan for tick. make it promoted after planning."): a Plan-Box trailer on writer commits, worktree land prints the investigate and tick lines with the landed sha, code and live halves tracked per clause in a sibling ledger without touching a box line, worklist.py --box-audit, report capture keeps only lead-bound sends, a blocking plan-box-owed check, and a live-owed state on release; P1; Depends-On none; epic 1d805023
+42. agent/plans/PLAN-renet-down-before-kill.md -- operator task 2026-11-05 ("make renet run Rediaccfile down() before Docker repo containers are killed"; plan first, then implement; hostinger modification and testing allowed): an ExecStop stop hook running down() on every docker unit stop, a rediacc-repo-shutdown unit ordered after the docker units, no restart on a stop-side-only unit change, down() before every planned restart path, bounded up()/down() with a raise-only Rediaccfile directive, and a dev-VM marker drill across restart, unit rewrite, converge and reboot; P1; Depends-On none (shares files with PLAN-rediaccfile-unprivileged); epic f65726d5
 
 ## Generated
 

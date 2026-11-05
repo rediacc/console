@@ -1961,6 +1961,31 @@
         "d347a64f"
       ]
     },
+    "agent/plans/PLAN-renet-down-before-kill.md": {
+      "status": "approved",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 14,
+      "done": 0,
+      "open_sigs": [
+        "1068de3a",
+        "2361305e",
+        "2b5bfefa",
+        "32d0c02a",
+        "6ce89ed4",
+        "9e557c7e",
+        "9f253d25",
+        "a83d659c",
+        "b589c4ea",
+        "b7afe4ea",
+        "c2bc67d8",
+        "da3b6759",
+        "e013e755",
+        "e3556815"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-renet-executor-tiered-license-check.md": {
       "status": "executing",
       "owner": "d778be9d",

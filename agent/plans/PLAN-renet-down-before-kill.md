@@ -1,0 +1,138 @@
+# PLAN: renet runs Rediaccfile down() before a repository's containers stop, on every planned path
+
+Status: approved -- operator order 2026-11-05 ("Make renet run Rediaccfile down() before Docker repo containers are killed"); hostinger modification and testing allowed for this plan without an ask-first step (operator 2026-11-05: "allowed to modify/test on hostinger no worries")
+Priority: P1 -- stateful repos keeping data in RAM lose it on any stop that skips down(); hostinger observability (3136) was restarted 2026-11-05 06:34:17Z with no down()
+Owner: d778be9d
+Updated: 2026-11-05
+First-Seen: 2026-11-05
+Depends-On: no-dep -- shares files with agent/plans/PLAN-rediaccfile-unprivileged.md (private/renet/pkg/orchestration/**, private/renet/pkg/backuphook/**, private/renet/pkg/rediaccfile/**, .ci/rediacc_ci/drills/vm_check.py); its code boxes U1-U11 have landed and only its live boxes stay open, so this plan builds on the dropped-privilege executor and must not undo it
+Concurrency: parallel -- three writer groups, serialized inside each group: S (S1, S2, S3: pkg/daemon/systemd.go, setup.go, the autostart and reconcile commands), T (T1, T2: pkg/orchestration/rediaccfile.go, pkg/rediaccfile, pkg/backuphook), B (B1, B2, B3: orchestration workflows, ensure.go, converge, offline prune). B1 starts after S2 and T1 land (it uses the down marker and the timeout error) and edits setup.go after S1. Every renet box adds i18n keys to private/renet/pkg/i18n/locales/** (one writer at a time). K0 is independent. vm_check.py is shared with PLAN-rediaccfile-unprivileged P1/T1 (one added line in EXTRA_RENET_STEPS).
+Owns: private/renet/pkg/daemon/systemd.go, private/renet/pkg/daemon/setup.go, private/renet/pkg/daemon/ensure.go, private/renet/pkg/daemon/timeouts.go, private/renet/pkg/daemon/start_foreground.go, private/renet/pkg/daemon/downmarker*.go, private/renet/pkg/daemon/repo_shutdown_unit*.go, private/renet/pkg/daemon/unit_sides*.go, private/renet/pkg/daemon/runtime_epoch_test.go, private/renet/pkg/daemon/setup_restart_gate_test.go, private/renet/pkg/daemon/ensure_test.go, private/renet/pkg/daemon/testdata/**, private/renet/cmd/renet/repository_autostart*.go, private/renet/cmd/renet/repository_reconcile*.go, private/renet/cmd/renet/daemon_stop_hook*.go, private/renet/cmd/renet/daemon_commands.go, private/renet/cmd/renet/runtime_converge*.go, private/renet/cmd/renet/runtime_commands.go, private/renet/cmd/renet/repository_up.go, private/renet/cmd/renet/repository_down.go, private/renet/cmd/renet/repository_unmount.go, private/renet/cmd/renet/repository_docker_prune*.go, private/renet/cmd/renet/backup_snapshot_hook.go, private/renet/cmd/renet/main.go, private/renet/pkg/dockerstore/offline*.go, private/renet/pkg/orchestration/**, private/renet/pkg/rediaccfile/**, private/renet/pkg/backuphook/**, private/renet/pkg/i18n/locales/**, private/renet/docs/DOCKERD_SANDBOX.md, packages/shared/src/renet-contract/data/**, packages/www/src/content/docs/*/rediaccfile*.md, .ci/rediacc_ci/drills/down_before_kill.py, .ci/rediacc_ci/drills/vm_check.py, .ci/rediacc_ci/tests/test_drills_down_before_kill.py, agent/plans/PLAN-renet-down-before-kill.md
+Live-Proof: hostinger -- the docker unit, the stop hook, the shutdown unit and the timeouts under private/renet are the renet surface, whose only live target is hostinger; boxes H0, H1 and LP-hostinger run there, through --config eu-bench (hostinger is the only eu-bench machine).
+
+## The promise
+
+A repository's containers never stop unless its Rediaccfile down() has run and finished first. The only exceptions are a real crash of dockerd or the host, power loss, and a down() that exceeds its timeout during host shutdown, where systemd's budget is finite.
+
+## Why
+
+- On 2026-11-05 at 06:34:17Z every container of rediacc-docker-3136 on hostinger got SIGTERM. The unit became active again at 06:34:27 with NRestarts=0, so this was a planned restart and not a crash. The containers came back at 06:35:15 through `restart: always`, and down() never ran. The repo daemon runs with live-restore off (private/renet/pkg/daemon/systemd.go:599-604, :657).
+- At host shutdown, rediacc-autostart.service runs down() for autostart repos only (private/renet/cmd/renet/repository_autostart.go:957, :1029-1036). Nothing orders it against the docker units (private/renet/cmd/renet/repository_autostart.go:1134; private/renet/pkg/daemon/systemd.go:220), so dockerd can stop in the middle of down().
+- Eleven planned paths stop or restart a repo dockerd with no down(); see the restart table. up() and down() have no timeout (private/renet/pkg/orchestration/rediaccfile.go:269, :329).
+
+## Decisions (lead, under the operator order; recorded for veto)
+
+1. The guarantee lives in the docker unit. Each rediacc-docker-<N>.service gets `ExecStop=<renet> daemon stop-hook --network-id=<N>`. systemd runs ExecStop before it sends SIGTERM to the main process, on every stop: `systemctl stop` and `restart` from any caller, converge, a unit rewrite, and shutdown. The hook runs down() against the still-running daemon unless a down marker for the current daemon start shows that renet already ran it. That one choke point covers paths not yet known, including whatever caused the 06:34 restart.
+2. Nothing is ordered against rediacc-autostart.service. `After=` deadlocks at boot (the autostart ExecStart starts the docker units) and `Before=` deadlocks at shutdown (the autostart ExecStop stops them). A new unit, rediacc-repo-shutdown.service, takes the shutdown work: a version-stamped oneshot with `ExecStart=/bin/true`, `RemainAfterExit=yes` and an ExecStop of `renet repository autostart stop --all-mounted`. Every docker unit carries `After=rediacc-repo-shutdown.service`, so systemd stops the docker units first (each runs down() in its ExecStop, in parallel) and the sweep runs after them, unmounting and closing LUKS for every mounted repo. This follows the k3s and node-lifecycle pattern (private/renet/pkg/daemon/node_lifecycle_unit.go:30-33). The autostart unit loses its ExecStop and gets a version stamp so it is rewritten in place. Its ExecStart takes the `-` prefix, so a failed start does not leave the unit inactive.
+3. The mount stays until down() has finished. Each docker unit also carries `After=<escaped repo mount path>.mount` (ordering only, no `Requires=`). systemd therefore unmounts the repo only after the docker unit has stopped. Otherwise the host unmount can succeed while dockerd's private mount namespace still holds the mount, and down() would write to the empty directory underneath.
+4. Restarts follow two rules: no restart when only the stop side changed, and down() first when a restart is needed. The unit text splits into a start side (ExecStart, Environment, limits, the rest of [Service]) and a stop side (ExecStop, TimeoutStopSec, the [Unit] ordering lines). `ensureSystemdUnit` restarts only when the start side differs. A change to the stop side alone gets a `daemon-reload` and nothing else. Every reconcile tick rewrites the stop side of each unit in place and leaves the start side alone, so the next real start-side change still triggers its restart. The new stop side therefore reaches every running daemon within about 3 minutes of a renet upload, with no restart. When a start-side restart is needed, the caller runs down() first, because it holds the repo lock and the secrets; the hook is the backstop.
+5. Live-restore stays off for repo daemons. Trade-off: it would keep containers running across a daemon restart, but `KillMode=mixed` kills the containerd shims in the unit cgroup, so the restored daemon could not reattach to them. A restart that crosses layouts would orphan its tasks (private/renet/pkg/daemon/setup.go:915-920). The containers would also keep holding the mount through an intended stop, and live-restore does nothing at reboot. Hub daemons keep it.
+6. Timeouts. up() defaults to 10 minutes and down() to 10 minutes. Each runs in a process group of its own and gets SIGTERM, then SIGKILL after 10 s, reusing the backup hook's pattern (private/renet/pkg/backuphook/hook.go:422-490). The machine default comes from `RENET_UP_TIMEOUT` / `RENET_DOWN_TIMEOUT` or the `--up-timeout` / `--down-timeout` flags. A Rediaccfile directive `# rediacc:timeout up=<d> down=<d> backup=<d>` sits beside `# rediacc:needs` (private/renet/pkg/rediaccfile/rediaccfile.go:140-171). It can raise a timeout but never lower it. The caps are up 60 m, down 15 m, and backup 300 s (the existing MaxTimeout, private/renet/pkg/backuphook/hook.go:64). The tenant writes this file, so it cannot shorten down() into a kill.
+7. Shutdown budget. The docker unit's `TimeoutStopSec` is the down cap plus 2 m, 17 m in every unit, so a per-repo value never changes unit text. The shutdown unit gets `TimeoutStopSec=300`. The worst case is 15 m 10 s of down() plus dockerd exit plus 5 m of sweep, which comes to under 22 m. All repos run down() in parallel because their units stop in parallel. That fits reboot.target's `JobTimeoutSec=30min`, which K1 reads on the VM. During shutdown, a down() that times out is killed and the stop continues; that is the documented exception.
+8. When down() fails or times out outside shutdown. A down() that exits non-zero has run and finished, and the path continues. A down() that times out stops the path: `repo down --unmount`, `repo unmount --stop-docker`, a start-side restart, converge and the offline prune all leave the daemon and containers running and name the timeout and the directive. `--force` continues. The hook itself always exits 0, since systemd stops the unit anyway.
+9. The down marker. When renet's down() finishes, it writes `/var/run/rediacc/net-<N>/down-done`: `{main_pid, finished_at, outcome}`. The hook skips when `main_pid` equals `$MAINPID`. The hook also skips, with a log line, when the daemon socket does not answer (crash) or the repo has no Rediaccfile. It never takes the repo lock, because the caller stopping the unit may hold it, and it never runs the skew heal. up() removes the marker when it starts.
+
+## Restart paths and their outcome
+
+| Path | Today | After |
+| --- | --- | --- |
+| Unit rewrite in up/mount (private/renet/pkg/daemon/setup.go:921-947) | restart, no down() | stop-side change: reload only; start-side change: `SetupConfig.BeforeRestart` runs down(), then restart, then up() |
+| cgroup-parent patch (private/renet/pkg/orchestration/workflows.go:117-125) | StopService | down() first through the same helper |
+| Converge (private/renet/cmd/renet/runtime_converge.go:616-620) | RestartUnit, then up child | a `repository down` child with the repo's own secrets, then RestartUnit, then the up child; down timeout fails the repo with no restart |
+| Skew heal (private/renet/pkg/daemon/ensure.go:107-126; private/renet/pkg/orchestration/up_down_workflows.go:344) | restart before down() | down() against the old daemon through `LegacyDockerSocket` (private/renet/pkg/daemon/runtime_epoch.go:310), then heal |
+| `EnsureRunning` retry stop (private/renet/pkg/daemon/ensure.go:80-84) | stop and start | unchanged: the socket does not answer, so the hook finds no daemon; treated as a crash |
+| `stopRepoDocker`, `stopDockerEnvironment`, `unmount --stop-docker` (private/renet/pkg/orchestration/workflows.go:502-520, :760-765, :1089-1110) | containers stopped, sometimes with no down() | `ensureDownBeforeStop` first, unless the marker is current |
+| `TeardownDaemon` (private/renet/pkg/daemon/setup.go:280-290) | kill, then stop | repo flavor: stop first (the hook runs down()), then kill what is left |
+| `DeleteWithCleanup` other IDs (private/renet/pkg/orchestration/workflows.go:808-813) | StopService | covered by the hook |
+| `renet daemon restart` (private/renet/cmd/renet/daemon_commands.go:401) | restart | down() (the hook), restart, up() through the reconcile recovery path |
+| `daemon stop`, `stop-all`, `uninstall` (private/renet/cmd/renet/daemon_commands.go:201; private/renet/cmd/renet/lifecycle_commands.go:125; private/renet/cmd/renet/uninstall_command.go:125) | stop | covered by the hook |
+| Offline docker prune (private/renet/pkg/dockerstore/offline_linux.go:88) | stop and start, containers back through restart policy | down() under the window's repo lock, the window, then up(); verification compares images and the containers left after down() |
+| Host shutdown | race with autostart stop; repos with autostart off get nothing | each docker unit's ExecStop runs down(); the shutdown unit then unmounts every mounted repo |
+| Crash, power loss, `Restart=always` after the main process dies | none | none (excluded by the promise) |
+
+Hub daemons (private/renet/pkg/hub/gc.go:144; private/renet/pkg/hub/user_daemon.go:128, :159) and kube repos are out of scope.
+
+## Tasks
+
+- [ ] H0 [hostinger, read-only] What caused 3136's restart at 06:34. Through `./rdc.sh --config eu-bench term connect -m hostinger -c "<cmd>"`, read: `/var/lib/rediacc/runtime/converge-last.json` (mtime, started_at, the 3136 result), `/var/lib/rediacc/runtime/net-3136.json` (started_at, pid), the mtimes of the renet slots under `/usr/lib/rediacc/renet/`, `/var/lib/rediacc/reconcile/*.json`, `systemctl show rediacc-docker-3136 -p ExecMainStartTimestamp,MainPID`, and the ActiveEnterTimestamp of the other rediacc-docker units (did several restart at 06:34?). Record the most likely path and quote the evidence. No write.
+  - Accept: a tick line naming the path (converge, EnsureRunning retry, manual, or unknown) with the file and timestamp that show it. CONTROL: none -- read-only investigation.
+
+### Group S: units (one writer, S1 then S2 then S3)
+
+- [ ] S1 [renet] Docker unit stop side and the start/stop split per Decisions 1, 3, 4 and 7. `renderDockerUnit` (private/renet/pkg/daemon/systemd.go:213-245) emits `ExecStop`, `TimeoutStopSec=<down cap + 2m>`, `After=... rediacc-repo-shutdown.service <mount unit>`. The golden is updated. `unitStartSide(text)` and `patchStopSide(existing, rendered)` live in `unit_sides.go`. `ensureSystemdUnit` restarts only on a start-side difference and reloads on a stop-side one. The mount unit name uses systemd path escaping, with a test on a path that contains `-`.
+  - Accept: `cd private/renet && go test ./pkg/daemon/... -run 'SystemdDockerUnit|EnsureSystemdUnit|UnitSides' -count=1` rc 0 and `npm run check:ci-renet` rc 0.
+  - CONTROL: the new `TestSystemdDockerUnitGolden` fails against today's `renderDockerUnit` (no ExecStop, `TimeoutStopSec=120`), and `TestEnsureSystemdUnitStopSideOnlyReloads` fails on today's gate (private/renet/pkg/daemon/setup.go:929-940 restarts on any change).
+- [ ] S2 [renet] `renet daemon stop-hook --network-id N` (hidden) and the down marker per Decision 9. The repo is resolved from the unit's `--repo-mount-path` (`ParseExecStartFlags`). It calls `DownServices{Unmount:false, NoRefresh:true, SkipHeal:true}` with the down timeout. It skips on a current marker, a dead socket, hub flavor or no Rediaccfile, and always exits 0. `DownServices` writes the marker after `ExecuteDown`, whatever the outcome; `UpServices` removes it.
+  - Accept: `cd private/renet && go test ./pkg/daemon/... ./cmd/renet/ -run 'DownMarker|StopHook' -count=1` rc 0 and `npm run check:ci-renet` rc 0. Tests: a marker matching `$MAINPID` skips; a stale PID runs down(); a dead socket skips; the heal and the repo lock are never touched; the ExecStop command in the golden resolves to a registered cobra command.
+  - CONTROL: `TestStopHookCommandRegistered` fails on today's tree (no `daemon stop-hook`).
+- [ ] S3 [renet] rediacc-repo-shutdown.service and the rollout per Decision 2. `EnsureRepoShutdownUnit` is version-stamped as in private/renet/pkg/daemon/node_lifecycle_unit.go:34-76 and called from StartForeground (private/renet/pkg/daemon/start_foreground.go:133-143) and from each `repository reconcile` run. The autostart unit gets a version stamp, `ExecStart=-...` and no ExecStop, and is rewritten in place when the file exists. `autostart stop --all-mounted` covers every mounted repo whether or not autostart is on, skips down() on a current marker or a stopped daemon, then unmounts and closes LUKS. Each reconcile run applies `patchStopSide` to every `rediacc-docker-*.service` and reloads once when any changed, never restarting.
+  - Accept: `cd private/renet && go test ./pkg/daemon/... ./cmd/renet/ -run 'RepoShutdownUnit|AutostartUnit|AutostartStop|ReconcileStopSide' -count=1` rc 0 and `npm run check:ci-renet` rc 0. Tests: the shutdown unit has no ordering or Wants on any docker unit and does not start Docker (no boot cycle); the autostart unit has no ExecStop; the reconcile patch keeps the start side byte for byte and never calls restart; `--all-mounted` includes a repo with no keyfile.
+  - CONTROL: `TestAutostartUnitHasNoExecStop` fails on today's `generateAutostartServiceContent` (private/renet/cmd/renet/repository_autostart.go:1140).
+
+### Group T: timeouts (one writer, T1 then T2)
+
+- [ ] T1 [renet] Bounded up() and down() per Decision 6. `executeFunction` (private/renet/pkg/orchestration/rediaccfile.go:257-278) starts the command in its own process group and waits with a timer: SIGTERM to the group, then SIGKILL after 10 s, keeping the cgroup placement on SysProcAttr. The group-signal helpers move from private/renet/pkg/backuphook/hook.go:422-436 into pkg/orchestration and the hook imports them. `ErrFunctionTimeout` is added. Defaults come from `RENET_UP_TIMEOUT` and `RENET_DOWN_TIMEOUT`, and `--up-timeout` and `--down-timeout` on `repository up` and `repository down`. The renet contract is regenerated if the flags change it.
+  - Accept: `cd private/renet && go test ./pkg/orchestration/... ./pkg/backuphook/... -run 'FunctionTimeout|BackupHook' -count=1` rc 0 and `npm run check:ci-renet` rc 0. Test: a down() of `sleep 300 & sleep 300; wait` with `RENET_DOWN_TIMEOUT=2s` returns `ErrFunctionTimeout` within 15 s, and no process of its group is alive afterwards.
+  - CONTROL: the same test on today's tree runs until its own `-timeout 60s`, because private/renet/pkg/orchestration/rediaccfile.go:269 is unbounded.
+- [ ] T2 [renet] The directive per Decisions 6 and 7, plus requirement D. `rediaccfile.Timeouts(path)` parses `# rediacc:timeout up= down= backup=`, ignores unknown keys, raises only and clamps to the caps. `ExecuteUp` and `ExecuteDown` take the larger of the machine default and the directive. The backup hook uses `backup=` when `--hook-timeout` is unset, still capped at `MaxTimeout`.
+  - Accept: `cd private/renet && go test ./pkg/rediaccfile/... ./pkg/orchestration/... ./pkg/backuphook/... -run 'Timeouts|Directive|HookTimeout' -count=1` rc 0 and `npm run check:ci-renet` rc 0. Tests: `down=1s` under a 4 s default keeps 4 s; `down=2h` clamps to 15 m; `backup=600s` clamps to 300 s; a `backup_prepare` sleeping 35 s with `backup=45s` ends ok.
+  - CONTROL: that last case ends `timeout` on today's code (`DefaultTimeout` 30 s, private/renet/pkg/backuphook/hook.go:63).
+
+### Group B: restart paths (one writer, after S2 and T1; B1, then B2 and B3)
+
+- [ ] B1 [renet] `ensureDownBeforeStop` in pkg/orchestration per Decision 8. It is called from `stopRepoDocker`, `stopDockerEnvironment`, `UnmountWithDocker{StopDocker}`, `DeleteWithCleanup`, the cgroup-parent patch, and `SetupConfig.BeforeRestart`, which `ensureSystemdUnit` runs before `restartService`; an error there means no restart. `daemon.TeardownDaemon` stops before it kills for the repo flavor (killDaemonContainers becomes a seam).
+  - Accept: `cd private/renet && go test ./pkg/orchestration/... ./pkg/daemon/... -run 'DownBeforeStop|BeforeRestart|Teardown' -count=1` rc 0 and `npm run check:ci-renet` rc 0. Order tests with fakes record `down < stopContainers < StopService` for each path. A down timeout leaves containers running unless `Force` is set.
+  - CONTROL: the order test for `UnmountWithDocker{StopDocker:true}` records `stopContainers` with no down() on today's code (private/renet/pkg/orchestration/workflows.go:760-765, :502-520).
+- [ ] B2 [renet] Converge, `daemon restart` and the offline prune per the table. `convergeOne` runs a `repository down` child, built like `buildChildRequest` with the same secrets, before `RestartUnit`; a down timeout fails the repo and nothing restarts. `daemon restart` runs up() after the restart through the recovery path. The offline window runs down() before `w.Stop` and up() after the verified start.
+  - Accept: `cd private/renet && go test ./cmd/renet/ ./pkg/dockerstore/... -run 'Converge|DaemonRestart|Offline' -count=1` rc 0 and `npm run check:ci-renet` rc 0.
+  - CONTROL: the fake converge run on today's `convergeOne` records `RestartUnit` (private/renet/cmd/renet/runtime_converge.go:616-620) with no down child before it.
+- [ ] B3 [renet] Skew heal: down() first, against the old daemon. In `DownServices` and in the `EnsureRunning` heal, when `SupervisorSkewed` holds, down() runs with `DOCKER_HOST` at `LegacyDockerSocket` and a sandbox grant for it, then the heal runs.
+  - Accept: `cd private/renet && go test ./pkg/orchestration/... ./pkg/daemon/... -run 'Skew' -count=1` rc 0 and `npm run check:ci-renet` rc 0.
+  - CONTROL: today `healSkewedDaemon` (private/renet/pkg/orchestration/up_down_workflows.go:344) runs before `ExecuteDown` (:381), so the order assertion fails.
+
+### Docs
+
+- [ ] W1 [docs] Write up the promise, the directive and its caps, the shutdown order, the live-restore decision and the RAM-volume design (below). Targets: private/renet/docs/DOCKERD_SANDBOX.md, and the Rediaccfile page under packages/www/src/content/docs/*/rediaccfile*.md together with its translations.
+  - Accept: `npm run check:i18n`, `npm run check:ci-i18n-docs-untranslated`, `npm run check:ci-docs-structure-parity` and `npm run check:ci-prose-style` rc 0.
+  - CONTROL: none -- docs.
+
+### Drill
+
+- [ ] K0 [drill code] `.ci/rediacc_ci/drills/down_before_kill.py`, step K1 in `EXTRA_RENET_STEPS` (.ci/rediacc_ci/drills/vm_check.py:268-274), depends on P5. The probe Rediaccfile's `up()` appends `up <epoch>` and its `down()` runs `sleep 20` and appends `down <epoch>` to `downproof.log` in the mount. The pure parsers and verdicts are pinned by `.ci/rediacc_ci/tests/test_drills_down_before_kill.py`.
+  - Rows:
+    - K1.0: fork A (autostart on) and fork B (autostart off) are up.
+    - K1.1: A's unit has ExecStop and both `After=` lines.
+    - K1.2: a raw-ssh `sudo systemctl restart rediacc-docker-<N>` on the worker (192.168.111.* is the allowlisted raw-ssh target). A `down` line is written at least 20 s before the new `ExecMainStartTimestamp`.
+    - K1.3: unit rewrite. The worker's unit loses its `Environment=` line, `daemon-reload`, then `rdc repo up`. A `down` line comes before the restart and an `up` line after it.
+    - K1.4: stop-side-only drift plus one `renet repository reconcile` tick. MainPID is unchanged and the stop side is restored.
+    - K1.5: converge. A's stamp is removed and `rdc machine converge <worker>` runs. A `down` line comes before the restart.
+    - K1.6: rollout. The main-pointer renet is installed on the worker (reusing the installer of .ci/rediacc_ci/drills/upgrade_converge.py), A is upped, then `rdc machine setup` installs the branch renet. Neither daemon restarts, and the units carry the new stop side after one tick.
+    - K1.7: `sudo systemctl reboot`, then wait for ssh. A and B each have a `down` line timestamped before `uptime -s`. A is back up.
+    - K1.8: reads `systemctl show reboot.target -p JobTimeoutUSec` at 30 min or more.
+  - Accept: `PYTHONPATH=.ci python3 -m pytest .ci/rediacc_ci/tests/test_drills_down_before_kill.py -q` rc 0 (toolchain pytest).
+  - CONTROL: the verdict test feeds a log with no `down` line before the restart and expects FAIL.
+- [ ] K1 [fleet] The K1 rows on the local KVM fleet.
+  - Accept: `npm run vm:check -- --changed` VERIFIED with every K1 row ok.
+  - CONTROL: `npm run vm:check -- --only K1` with the renet pointer at the main commit records FAIL on K1.1, K1.2, K1.3, K1.5 and K1.7. Quote those rows in the tick.
+
+### Hostinger (allowed without an ask-first step; the observability repo stays untouched)
+
+- [ ] H1 [hostinger] Run the same marker proof on hostinger, after a VERIFIED K1 on the same tree.
+  - Before: snapshot `./rdc.sh --config eu-bench repo list -m hostinger -o json`, `./rdc.sh --config eu-bench backup usage`, and the MainPID and container start times of every rediacc-docker unit.
+  - Provision the branch renet with the first mutating eu-bench verb. Fork `demo-heartbeat` (it has no Rediaccfile) with `repo fork demo-heartbeat@hostinger --tag downproof`, upload the probe Rediaccfile with `repo sync upload`, then `repo up`.
+  - Proofs:
+    - (a) After provisioning and one reconcile tick (3 minutes or more), no original's MainPID or container start time has changed, and every unit carries the new stop side.
+    - (b) `sudo systemctl restart rediacc-docker-<fork N>` through machine-level `term connect` writes a `down` line 20 s before the restart.
+    - (c) `repo down` then `repo up` of the fork each write their line.
+  - After: repeat the snapshot. `repo list` and `backup usage` match except for the fork. Delete the fork with `repo delete ... --dry-run`, read that it names only the fork, then run it with `-y`. No reboot of hostinger, and no production data is wiped.
+  - Accept: a tick quoting the before and after snapshots and the fork's `downproof.log`.
+  - CONTROL: the same restart on the fork before provisioning writes no `down` line. Record that run first.
+- [ ] LP-hostinger [live] Fresh hostinger receipt after a VERIFIED `npm run vm:check -- --changed` on the same tree.
+  - Accept: `live-proof hostinger renet-live`
+
+## Design only: a renet-managed RAM volume per repository (requirement E, no box)
+
+- Request and grant: the Rediaccfile declares `# rediacc:ram size=6G` as a request. Only an operator grant (`renet daemon grant --network-id N --ram 8G`, beside the lifecycle grants) confers host RAM, because the repository's files belong to the tenant.
+- Lifecycle: StartForeground mounts tmpfs `size=<granted>,mode=0700,uid=<universal>` at `<mount>/ram`, in the host namespace, before it builds the daemon's mount namespace. A mount added later does not reach dockerd: the sandbox root is made MS_SLAVE and then sits under a private tmpfs (private/renet/pkg/daemon/mount_sandbox_linux.go:110-125), and the repo bind is recursive (private/renet/cmd/renet/daemon_containerd_exec.go:238). up() restores into it. It is removed only after down() and the daemon stop, before the unmount (the shutdown sweep and SafeShutdown), and never while dockerd runs.
+- Memory: tmpfs pages are charged to the memcg of the task that first touches them. Container writes therefore land in rediacc-<N>, which has no memory.max (private/renet/pkg/daemon/systemd.go:664). `size=` bounds the RAM disk, not the containers, so a per-repo memory.max (granted RAM plus headroom) is a separate plan, since applying one to running repos can OOM them. Use `noswap` where the kernel supports it.
+- Loss model: reboot and crash lose the RAM content. up() restores from the last down() save. A crash loses what changed since then, which is the promise's exception. `backup_prepare` can flush before a snapshot.
