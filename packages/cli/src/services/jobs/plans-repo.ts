@@ -82,6 +82,7 @@ export const REPO_JOB_PLANS: Readonly<Record<string, JobPlan>> = {
       'reportRestoreDamage',
       'rollbackRestoreRegistration',
       'reportRestorePath',
+      'reportRestorePathFailure',
       'restoreDeploy',
     ],
   },

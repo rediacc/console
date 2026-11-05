@@ -362,6 +362,15 @@ const DEFINITIONS: StepDefinition[] = [
     { name: 'reportRestorePath', on: 'success', needsOutput: true, params: ['repo', 'snapshot'] },
     () => import('../../commands/backup-restore-path.js')
   ),
+  boundStep(
+    {
+      name: 'reportRestorePathFailure',
+      on: 'failure',
+      needsOutput: true,
+      params: ['repo', 'snapshot'],
+    },
+    () => import('../../commands/backup-restore-path.js')
+  ),
   ...REPO_CONVERSION_STEPS,
   ...MACHINE_CONVERSION_STEPS,
 ];

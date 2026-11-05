@@ -298,7 +298,7 @@ describe('backup restore --path (a success step: reportRestorePath)', () => {
 
     expect(jobCalls.map((o) => o.functionName)).toEqual(['backup_restore_path']);
     expect(jobCalls[0].params).toMatchObject({ path: '/a', to: '/b', at: SNAPSHOT });
-    expect(stepNames(jobCalls[0])).toEqual(['reportRestorePath']);
+    expect(stepNames(jobCalls[0])).toEqual(['reportRestorePath', 'reportRestorePathFailure']);
     expect(mockSuccess).not.toHaveBeenCalled();
     expect(onlyTicket().stepsDone).toEqual([]);
     expect(mockAddRepository).not.toHaveBeenCalled();
@@ -323,17 +323,53 @@ describe('backup restore --path (a success step: reportRestorePath)', () => {
     expect(onlyTicket().state).toBe('failed');
   });
 
-  it('followed, a snapshot that cannot address the path warns and keeps exit code 18', async () => {
+  it('plans the exit-18 warning as a failure step beside the record print', async () => {
+    answer = BACKGROUND;
+    await run(PATH_RESTORE);
+
+    expect(stepNames(jobCalls[0])).toEqual(['reportRestorePath', 'reportRestorePathFailure']);
+    const failure = onlyTicket().steps.find((s) => s.name === 'reportRestorePathFailure');
+    expect(failure?.on).toBe('failure');
+  });
+
+  it('under --background a snapshot that cannot address the path warns nothing at the job start', async () => {
+    answer = { ...BACKGROUND, success: false, exitCode: 18 };
+    await run(PATH_RESTORE);
+
+    expect(mockWarn).not.toHaveBeenCalled();
+    expect(onlyTicket().stepsDone).toEqual([]);
+  });
+
+  it('followed, a snapshot that cannot address the path warns once and keeps exit code 18', async () => {
     answer = {
       ...FAILED,
       exitCode: 18,
-      stderr: JSON.stringify({ reason: 'live-mount' }),
+      stdout: `${JSON.stringify({ reason: 'live-mount' })}\n`,
     };
     await run(PATH_RESTORE);
 
+    const warned = mockWarn.mock.calls.filter((c) => String(c[0]).includes('pathNoListing'));
+    expect(warned).toHaveLength(1);
+    expect(String(warned[0][0])).toContain('commands.backup.restore.pathNoListingLiveMount');
+    expect(process.exitCode).toBe(18);
+    expect(onlyTicket().stepsDone).toEqual(['reportRestorePathFailure']);
+  });
+
+  it('followed, an exit-18 reason the output does not carry falls back to the generic message', async () => {
+    answer = { ...FAILED, exitCode: 18, stderr: JSON.stringify({ reason: 'live-mount' }) };
+    await run(PATH_RESTORE);
+
     expect(mockWarn).toHaveBeenCalledWith(
-      expect.stringContaining('commands.backup.restore.pathNoListingLiveMount')
+      expect.stringContaining('commands.backup.restore.pathNoListing:')
     );
     expect(process.exitCode).toBe(18);
+  });
+
+  it('control: any other failure warns nothing about a listing', async () => {
+    answer = { ...FAILED, exitCode: 2 };
+    await run(PATH_RESTORE);
+
+    expect(mockWarn.mock.calls.filter((c) => String(c[0]).includes('pathNoListing'))).toEqual([]);
+    expect(process.exitCode).not.toBe(18);
   });
 });

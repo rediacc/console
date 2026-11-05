@@ -158,7 +158,7 @@ export async function runRestorePath(args: {
   const lineage = lineageOf(repo);
   const snapshotId = await resolveSnapshot(lineage, at);
 
-  const result = await executeRepoFunction(
+  await executeRepoFunction(
     'backup_restore_path',
     repoKey,
     machineName,
@@ -169,7 +169,10 @@ export async function runRestorePath(args: {
       // The record print rides the job's ticket (PLAN-detached-jobs J4): a backgrounded restore-path prints it from `rdc job wait`.
       job: {
         verb: 'backup restore',
-        steps: [planStep('reportRestorePath', { repo: repoKey, snapshot: snapshotId })],
+        steps: [
+          planStep('reportRestorePath', { repo: repoKey, snapshot: snapshotId }),
+          planStep('reportRestorePathFailure', { repo: repoKey, snapshot: snapshotId }),
+        ],
       },
     },
     {
@@ -182,17 +185,6 @@ export async function runRestorePath(args: {
       failed: t('commands.backup.restore.pathFailed', { name: repoKey }),
     }
   );
-
-  if (!result.success) {
-    // 18 is a distinct code, as with browse: "this snapshot cannot address the path" is not "it broke".
-    if (result.exitCode === RENET_NO_LISTING_EXIT) {
-      const key = NO_LISTING_MESSAGES[noListingReason(result)];
-      outputService.warn(t(key ?? NO_LISTING_FALLBACK, { name: repoKey, snapshot: snapshotId }));
-      setExitCode(RENET_NO_LISTING_EXIT);
-    }
-    // Any other failure was rendered, with its exit code, by executeRepoFunction.
-    return;
-  }
 }
 
 /** Print the restore-path record parsed from the job's stdout. */
@@ -227,6 +219,28 @@ async function reportRestorePath(repoKey: string, stdout: string | undefined): P
     outputService.warn(t('commands.backup.restore.pathSkipped', { count: record.skipped }));
   }
 }
+
+/**
+ * The failure tail: 18 is a distinct code, as with browse ("this snapshot cannot address the path" is not "it broke"). It is a ticket step so a
+ * backgrounded restore-path keeps the warning and the exit code when `rdc job wait` or the finished notice runs it. Any other failure was rendered, with its exit code, by executeRepoFunction.
+ * The step sees the job's output and exit code, not its stderr: a NO_LISTING reason that renet printed only to stderr falls back to the generic message.
+ */
+function reportRestorePathFailure(
+  repoKey: string,
+  snapshotId: string,
+  exitCode: number | undefined,
+  output: string | undefined
+): void {
+  if (exitCode !== RENET_NO_LISTING_EXIT) return;
+  const key = NO_LISTING_MESSAGES[noListingReason({ stdout: output })];
+  outputService.warn(t(key ?? NO_LISTING_FALLBACK, { name: repoKey, snapshot: snapshotId }));
+  setExitCode(RENET_NO_LISTING_EXIT);
+}
+
+bindStepHandler('reportRestorePathFailure', ({ params, output, exitCode }) => {
+  reportRestorePathFailure(String(params.repo), String(params.snapshot), exitCode, output);
+  return Promise.resolve();
+});
 
 bindStepHandler('reportRestorePath', ({ params, output }) =>
   reportRestorePath(String(params.repo), output)
