@@ -1,22 +1,23 @@
-## SESSION d778be9d 2026-11-05T20:20:45Z
+## SESSION d778be9d 2026-11-05T20:43:40Z
 
-# d778be9d STATE (2026-11-05 ~20:40Z)
+# d778be9d STATE (2026-11-05 21:50Z)
 
 ## Where things are
-Branch 1104-1, origin at ad4cf434c, about 25 local commits since; nothing pushed since. Effort ultra. A push needs full drills, vm:check --changed, ci:quick with only carried reds (P-A1; docker-digest:workers/proxy/Dockerfile:20 until pins bump after 2026-11-07T00:00Z, #2f93f890). Guard change b9dfe9757 lets an idle lease tree be cleaned with a warning; both stale trees are collected.
+Branch 1104-1, origin at ad4cf434c, about 40 local commits since. Effort ultra. Push needs: full drills (VERIFIED receipt), vm:check --changed, review-commit, ci:quick with only carried reds (P-A1 for 12 plans; docker-digest:workers/proxy/Dockerfile:20 until pins bump image:proxy-node after 2026-11-07T00:00Z, #2f93f890).
+
+## Landed this context
+Guard -c bypass 585f56020; backstop isolated-overlap 4940ad9eb + a636b1e31; writers landed 1d600b20e (live-proof ladder), d4125a0b1 (U1 old renet), ec099603d (privdrop probe), e2bdb427c (load sampler), 4b3e830f0+769b8d9f8 (J3b retry seam); gen-docs 4b9f5ed01; writers-now pytest path dc5395205; start_account mask f96f4c737. Six leases collected; their items (#19138ae9 #2ec61cf7 #389225b4 #578584d9 #a81bf45c #477e8e47) are open with the exact live command in each LATEST.
 
 ## Delegated
-- a465aa7e2ca09a227, item #bd2bab8c: coordinator of writers-now round 2; spawns the survey's G5 writers in leases from /tmp/writers-now/1104-1-20261105T2005Z.md; each writer returns a TICK block (plan, box sig, clauses, which satisfied, accept command rc, open clause and its command). The lead lands with ./run.sh worktree land <id>, checks each TICK block against the plan text, and ticks.
-- a84fdb443e69efa30, item #c7479f45, main checkout: backup upload --up licence fix, suite 26 residue and rerun drift, start_backup_plane secret printing; on rc 0 of suite 26 tick E2, E3, V1 by clause.
-- Plan-concurrency alarms on these writers are a known false positive: the hook judges by plan Owns while leased writers are isolated (hint proposed).
-
-## Open owed
-E1 (planted-red seam), H8 (suites 19, 20), S5 (R2 half, cite check:ci-account-server for the isolation suite), J18 (older renet), F2, N5, R2 (CI on a PR). Three tiers plans are Status proposed in QUEUE.md outside Promoted; the operator wants agents to proceed on the writer's calls, posting only genuine product choices as [?] with a default.
+- a84fdb443e69efa30, #c7479f45, main checkout: upload --up licence fix, suite 26 teardown and quota arithmetic, plane mask. Run 2 rc 0 (26 passed); run 3 (back-to-back, /tmp/s26-run3.log) pending. Owns repo-backup.ts, job-tails-deploy.test.ts, repo-backup-datastore.test.ts, 26-backup-storage-cli.test.ts, e2e utils/backup/** (repoTeardown.ts new), backupStorage.ts + its test, start_backup_plane.py + test. Accept: run 3 rc 0, then the lead commits and ticks E2 E3 V1 clause by clause.
+- Leased writers still running: ad62f385134e2a7a2 (#04e613c8 drill-backup-legs), a0a09d850ee678f12 (#96ef7d09 elite compose), a3473353ec8f6bae9 (#20b44a09 meter census), ae1b9a0fb2d1dfcd2 (#6a43917a e2e-32), ae78e2ea41408c075 (#ad01092c nightly-fix). Each returns a TICK block.
+- a15c7528265e84f01, read-only: operator question, how sub-agent results and owed plan ticks get missed; inventory of mechanisms and gaps. No edits until the operator rules.
 
 ## Big pieces
-PLAN-backup-program, PLAN-detached-jobs, PLAN-backup-integrity, PLAN-backup-critical-tier, PLAN-rediaccfile-unprivileged, PLAN-first-release-checks (30 open, release-gated).
+PLAN-backup-program, PLAN-detached-jobs, PLAN-backup-integrity, PLAN-backup-critical-tier, PLAN-rediaccfile-unprivileged, PLAN-first-release-checks (release-gated).
 
 ## Next action
-1. As each writer reports: land, spot-check, commit by path, validate its TICK block clause by clause, tick.
-2. Gate once on the batch, then the live queue: fleet, bench, hostinger.
-3. Before a push: drills, vm:check --changed, review-commit, ci:quick, push submodules first.
+1. On each writer report: ./run.sh worktree land <id>, cherry-pick each line reading rc, rerun its tests on the landed tree, gen-docs --check, --update the item with the landed sha and live half, release the lease, gc --write --id.
+2. On a84f's run 3 rc 0: commit its files by path, tick E2 E3 V1 after reading every clause.
+3. Relay the investigation findings to the operator; change nothing until asked.
+4. After the batch: gate once, then the live queue fleet, bench, hostinger.
