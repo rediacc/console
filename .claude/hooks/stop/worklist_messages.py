@@ -413,7 +413,7 @@ CLI_UNKNOWN_VERB = (
     "closed that produced a PHANTOM STOP (a real block verdict at exit 0, from a\n"
     "battery run against an empty event), and with stdin open it hung forever.\n"
     "A typo must not be able to do either.\n"
-    "Verbs: --add --triage --tick --defer --lease --update --list --state --path\n"
+    "Verbs: --add --add-many --triage --tick --defer --lease --update --list --state --path\n"
     "       --compact --brief --loop --reports --session-start --post-compact\n"
     "       --help\n"
     "The Stop hook itself takes NO arguments; that is how it stays reachable.\n"
@@ -1628,8 +1628,23 @@ R_REGGATE_HALLUCINATED = (
 
 # ---- CLI texts (item verbs) -------------------------------------------------
 
+CLI_ADD_MANY_USAGE = (
+    "usage: worklist.py --add-many <my-prefix> <<'EOF' ... EOF\n"
+    "The items are read from STDIN, one per line, never from argv. Nothing was written.\n"
+)
+
+CLI_ADD_MANY_NO_BODY = (
+    "ADD-MANY REFUSED: no lines arrived on stdin%s. Items are read from STDIN, one per line: "
+    "worklist.py --add-many <my-prefix> <<'EOF' ... EOF. Nothing was written.\n"
+)
+
+CLI_ADD_MANY_REFUSED = "REFUSED: line %d: %s\n"
+
+CLI_ADD_MANY_NOTHING_WRITTEN = "Nothing was written, none of the %d line(s) was added.\n"
+
 CLI_ITEM_USAGE = (
     "usage: --add <my-prefix> <text...>\n"
+    "       --add-many <my-prefix> <<'EOF' ... EOF   one item per stdin line; a refused line writes nothing\n"
     "       --triage <my-prefix> [--id <id>] <finding...>   big or small, plus the exact next command\n"
     "       --tick <my-prefix> <id> <evidence...>   (a sha, run id, file:line, exit code or URL;\n"
     "                                an issue reference alone is refused unless it names a door:)\n"
@@ -2183,6 +2198,9 @@ USAGE = """worklist.py -- shared per-repo worklist.
 Items (v10: a JSONL event store; the old markdown file still works as an
 inbox and is synced in, but the verbs are the first-class interface):
   --add <me> <text...>          track a new open item (prints its #id)
+  --add-many <me> <<'EOF' ... EOF
+                                one item per stdin line, one append; a refused
+                                line writes nothing (prints each #id)
   --triage <me> [--id <id>] <finding...>
                                 is this finding small enough to fix inline, or
                                 does it need a plan file and a sub-agent? Prints

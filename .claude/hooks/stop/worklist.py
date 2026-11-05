@@ -1429,8 +1429,70 @@ def _dep_note(root, text, fold, what):
         )
 
 
+def _prepared_mine(fold, me):
+    """This session's open items, tokenised once, for the near-duplicate warning of `--add` and `--add-many`. The matcher is the plan-box one, so "similar" means what a box-to-item match means."""
+    import wl_planfile as PF
+
+    return PF.prepare(
+        [
+            (r["id"], r["state"], r.get("text") or "")
+            for r in fold.items
+            if r["state"] not in PF.CLOSED_STATES
+            and C.owned_by_me(r.get("owner"), C.resolve_session_id() or me)
+        ]
+    )
+
+
+def _add_many_cli(argv, worklist, me):
+    """`--add-many <me>` with one item per stdin line: every line judged by `--add`'s rules against one fold, then one append, so a refused line writes nothing and 34 items cost one process instead of 34 slow ones."""
+    import wl_planfile as PF
+
+    if len(argv) > 2:
+        sys.stderr.write(M.CLI_ADD_MANY_USAGE)
+        sys.exit(2)
+    if sys.stdin.isatty():
+        sys.stderr.write(M.CLI_ADD_MANY_NO_BODY % " (stdin is a terminal)")
+        sys.exit(2)
+    body, arrived = _read_document()
+    if not arrived:
+        sys.stderr.write(
+            M.CLI_ADD_MANY_NO_BODY
+            % (" (stdin stayed open and silent for %gs)" % STATE_STDIN_WAIT_SECONDS)
+        )
+        sys.exit(2)
+    texts = [line.strip() for line in body.splitlines()]
+    if not texts:
+        sys.stderr.write(M.CLI_ADD_MANY_NO_BODY % "")
+        sys.exit(2)
+    fold = S.load(worklist, sync=True)
+    refused = []
+    for number, text in enumerate(texts, 1):
+        reason = "an empty item tracks nothing" if not text else ""
+        if LH.blocked_by(text):
+            reason = LH.blocker_error("", text, fold.by_id)
+        if reason:
+            refused.append((number, reason))
+    if refused:
+        for number, reason in refused:
+            sys.stderr.write(M.CLI_ADD_MANY_REFUSED % (number, reason))
+        sys.stderr.write(M.CLI_ADD_MANY_NOTHING_WRITTEN % len(texts))
+        sys.exit(2)
+    prepared = _prepared_mine(fold, me)
+    hits = [PF.match_item(text, prepared) for text in texts]
+    ids = S.add_items(worklist, me, texts)
+    root = C.project_root(C.project_start())
+    for rid, text, hit in zip(ids, texts, hits, strict=True):
+        print("added #%s: %s" % (rid, text))
+        _dep_note(root, text, fold, "#%s" % rid)
+        if hit is not None:
+            print(
+                "WARNING: similar open item: #%s -- tick one if they track the same work" % hit[0],
+                file=sys.stderr,
+            )
+
+
 def _item_cli(argv, worklist):
-    """--add / --triage / --tick / --defer / --lease / --update / --list: the v10 item verbs. Exits non-zero on misuse, so a rejected write cannot be mistaken for a delivered one."""
+    """--add / --add-many / --triage / --tick / --defer / --lease / --update / --list: the v10 item verbs. Exits non-zero on misuse, so a rejected write cannot be mistaken for a delivered one."""
 
     def die(msg):
         print(msg, file=sys.stderr)
@@ -1475,7 +1537,7 @@ def _item_cli(argv, worklist):
                 )
             )
         return
-    if len(argv) < 3:
+    if len(argv) < (2 if mode == "--add-many" else 3):
         die(M.CLI_ITEM_USAGE)
     me = argv[1]
     if not C.PREFIX_RE.match(me):
@@ -1484,6 +1546,9 @@ def _item_cli(argv, worklist):
     if "wl_defersettle" not in _BROKEN and me == DS.ACTOR:
         die(M.CLI_RESERVED_ACTOR % me)
     _identity_or_die(me, die)
+    if mode == "--add-many":
+        _add_many_cli(argv, worklist, me)
+        return
     if mode == "--add":
         text = " ".join(argv[2:]).replace("\n", " ").strip()
         if not text:
@@ -1494,17 +1559,11 @@ def _item_cli(argv, worklist):
             if _berr:
                 print("REFUSED: %s" % _berr, file=sys.stderr)
                 sys.exit(2)
-        # A NEAR-DUPLICATE WARNS, and still adds (R20260925.7): on 2026-09-24 #48bc48b4 re-tracked #91224636's finding 49 seconds later. The matcher is the plan-box one, so "similar" means what a box-to-item match means.
+        # A NEAR-DUPLICATE WARNS, and still adds (R20260925.7): on 2026-09-24 #48bc48b4 re-tracked #91224636's finding 49 seconds later.
         import wl_planfile as PF
 
         fold = S.load(worklist, sync=True)
-        mine = [
-            (r["id"], r["state"], r.get("text") or "")
-            for r in fold.items
-            if r["state"] not in PF.CLOSED_STATES
-            and C.owned_by_me(r.get("owner"), C.resolve_session_id() or me)
-        ]
-        hit = PF.match_item(text, PF.prepare(mine))
+        hit = PF.match_item(text, _prepared_mine(fold, me))
         rid = S.add_item(worklist, me, text)
         print("added #%s: %s" % (rid, text))
         _dep_note(C.project_root(C.project_start()), text, fold, "#%s" % rid)
@@ -3380,6 +3439,7 @@ def main():
         return
     if sys.argv[1:2] and sys.argv[1] in (
         "--add",
+        "--add-many",
         "--triage",
         "--tick",
         "--defer",

@@ -1408,22 +1408,25 @@ def load(worklist, sync=True):
 
 
 def add_item(worklist, by, text, state=" ", owner=None):
-    rid = new_item_id(text)
-    append_events(
-        worklist,
-        [
-            {
-                "ev": "add",
-                "id": rid,
-                "at": C.stamp_now(),
-                "by": by,
-                "s": state,
-                "o": owner if owner is not None else by,
-                "t": text,
-            }
-        ],
-    )
-    return rid
+    return add_items(worklist, by, [text], state, owner)[0]
+
+
+def add_items(worklist, by, texts, state=" ", owner=None):
+    """One add event per text, all written by a single append under one lock. -> their ids, in order."""
+    events = [
+        {
+            "ev": "add",
+            "id": new_item_id(text),
+            "at": C.stamp_now(),
+            "by": by,
+            "s": state,
+            "o": owner if owner is not None else by,
+            "t": text,
+        }
+        for text in texts
+    ]
+    append_events(worklist, events)
+    return [ev["id"] for ev in events]
 
 
 def set_state(worklist, by, item_id, state, note="", extra=None):
