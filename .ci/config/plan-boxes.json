@@ -2679,15 +2679,19 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 13,
-      "done": 2,
+      "open": 2,
+      "done": 13,
       "open_sigs": [
-        "3b2fb3e3",
         "4de999b0",
+        "95abb423"
+      ],
+      "done_sigs": [
+        "3b2fb3e3",
         "55fd614e",
         "63f3f3e7",
         "77b1c40a",
-        "95abb423",
+        "86ef9770",
+        "9c800464",
         "9dd9fa99",
         "a90de8bb",
         "ca5c9685",
@@ -2695,10 +2699,6 @@
         "debe2a97",
         "e135e1b5",
         "f3b5dbf9"
-      ],
-      "done_sigs": [
-        "86ef9770",
-        "9c800464"
       ]
     },
     "agent/plans/PLAN-token-ip-rebind.md": {
