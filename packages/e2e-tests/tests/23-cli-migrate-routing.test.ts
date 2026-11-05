@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { expect, test } from '@playwright/test';
 import { getSSHPrivateKeyPath } from '@rediacc/provisioning';
-import { DS, repoIdentity } from '../src/utils/backup/chunkCliHarness';
+import { DS } from '../src/utils/backup/chunkCliHarness';
 import { CliRunner } from '../src/utils/CliRunner';
 import { loginCliToAccount } from '../src/utils/licence';
 import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
@@ -354,8 +354,11 @@ test.describe
       expect(res.code, `date on a worker: ${res.stderr}`).toBe(0);
       return BigInt(res.stdout.trim().split('\n').pop() ?? '0');
     };
-    const upStamp = (guid: string): string => `/var/tmp/e2e-m1-up-${guid}`;
+    // Rediaccfile functions run under the sandbox, whose write access is the repository, so the stamp lives there: `up()` starts in the repository root.
+    const UP_STAMP_FILE = '.e2e-m1-up';
+    const upStamp = (guid: string): string => `${DS}/mounts/${guid}/${UP_STAMP_FILE}`;
     const stopFile = (guid: string): string => `/var/tmp/e2e-m1-stop-${guid}`;
+    const goneFile = (guid: string): string => `/var/tmp/e2e-m1-gone-${guid}`;
     // How long up() holds after its first stamp. The last stamp marks the END of the target's bring-up, so a source delete that overlaps the bring-up lands before it.
     const UP_HOLD_S = 5;
 
@@ -377,7 +380,7 @@ test.describe
 
     test('10. migrate deletes the source only AFTER the target is up (observed on both machines)', async () => {
       // The CLI migrate dispatches the `repository_migrate` job verb on the source machine: that machine's renet must register it, or the job path under test cannot exist there.
-      const registry = await w1.executeViaBridge('renet functions list --all --internal');
+      const registry = await w1.executeViaBridge('renet functions list-functions --internal');
       expect(registry.code, `functions list: ${registry.stderr.slice(-400)}`).toBe(0);
       expect(registry.stdout, 'machine-11 renet does not register repository_migrate').toContain(
         'repository_migrate'
@@ -386,11 +389,9 @@ test.describe
       // `up()` appends a nanosecond timestamp to a host file, holds, then appends another: the last stamp is the end of the target's bring-up, read off the target itself.
       const guid = await seedRepo(
         APP_ORDER,
-        (g) =>
-          `    date +%s%N >> ${upStamp(g)}\n    sleep ${UP_HOLD_S}\n    date +%s%N >> ${upStamp(g)}`
+        () =>
+          `    date +%s%N >> ${UP_STAMP_FILE}\n    sleep ${UP_HOLD_S}\n    date +%s%N >> ${UP_STAMP_FILE}`
       );
-      await w1.executeViaBridge(`sudo rm -f ${upStamp(guid)}`);
-      await w2.executeViaBridge(`sudo rm -f ${upStamp(guid)}`);
 
       // Clock offset between the workers, so both timestamps compare on one scale. Reading machine-12 between two machine-11 reads brackets it: the offset is b minus the midpoint, and the measured error is half the bracket (one SSH round trip), subtracted from the margin below.
       const a = await nowNs(w1);
@@ -400,20 +401,28 @@ test.describe
       const errNs = (c - a) / 2n + 1n;
 
       // Watch the SOURCE image from the machine while the migrate runs: the first moment it is gone. The poll lag (about 0.1 s) only delays the reading, so it can hide a violation by that much; up() holds ${UP_HOLD_S} s, far above it. The loop ends at the stop file, which the finally below writes, so a failed assertion never leaves it running.
-      await w1.executeViaBridge(`sudo rm -f ${stopFile(guid)}`);
+      await w1.executeViaBridge(`sudo rm -f ${stopFile(guid)} ${goneFile(guid)}`);
+      // Base64, because the bridge's shell expands `$(...)` before the worker sees the command.
+      const watchScript = `for i in $(seq 1 3000); do sudo test -e ${imagePath(guid)} || { date +%s%N > ${goneFile(guid)}; exit 0; }; [ -e ${stopFile(guid)} ] && { echo stopped; exit 0; }; sleep 0.1; done; echo timeout`;
       const watcher = w1.executeViaBridge(
-        `for i in $(seq 1 3000); do sudo test -e ${imagePath(guid)} || { date +%s%N; exit 0; }; [ -e ${stopFile(guid)} ] && { echo stopped; exit 0; }; sleep 0.1; done; echo timeout`
+        `echo ${Buffer.from(watchScript).toString('base64')} | base64 -d | bash`
       );
       let gone = '';
+      let watcherOutput = '';
       try {
         const mig = await cli.run(['repo', 'migrate', `${APP_ORDER}@${M1}`, '--to', M2]);
         expect(mig.code, `migrate: ${(mig.stdout + mig.stderr).slice(-800)}`).toBe(0);
       } finally {
         await w1.executeViaBridge(`touch ${stopFile(guid)}`);
-        gone = (await watcher).stdout.trim().split('\n').pop() ?? '';
-        await w1.executeViaBridge(`rm -f ${stopFile(guid)}`);
+        const watched = await watcher;
+        watcherOutput = `code ${watched.code}: ${watched.stdout} ${watched.stderr}`.slice(-400);
+        gone = (await w1.executeViaBridge(`cat ${goneFile(guid)}`)).stdout.trim();
+        await w1.executeViaBridge(`rm -f ${stopFile(guid)} ${goneFile(guid)}`);
       }
-      expect(gone, 'the source image never disappeared during the migrate').toMatch(/^\d+$/);
+      expect(
+        gone,
+        `the source image never disappeared during the migrate (watcher ${watcherOutput})`
+      ).toMatch(/^\d+$/);
       const sourceGoneNs = BigInt(gone) + offsetNs;
 
       const stamps = await w2.executeViaBridge(`sudo cat ${upStamp(guid)}`);
@@ -464,7 +473,6 @@ test.describe
 
     test('12. repository_gc keeps a candidate that was mounted between the list and the delete', async () => {
       const fork = await seedRepo(APP_GC, () => '    true');
-      const id = repoIdentity(cli, APP_GC);
       const commit = randomUUID();
       extraGuids.add(commit);
       const committed = await w1.repositoryCommit(fork, commit, 'e2e gc race', DS);
@@ -484,9 +492,9 @@ test.describe
       const mapped = await w1.executeViaBridge(`test -e /dev/mapper/${commit}`);
       expect(mapped.code, 'the commit is already mapped before the race').not.toBe(0);
 
-      // The race: the commit is mounted AFTER the candidate list was taken and BEFORE gc runs. The seam already exists: `repository gc --candidates` takes the client's list as a parameter and re-checks every entry on the machine, so handing it the stale list after the mount is the interleaving, with no timing involved.
-      const mounted = await w1.repositoryMount(commit, id.credential, DS, id.networkId);
-      expect(mounted.code, `mount commit: ${w1.getCombinedOutput(mounted).slice(-600)}`).toBe(0);
+      // The race: a device-mapper entry appears AFTER the candidate list was taken and BEFORE gc runs, and `repository gc --candidates` re-checks the machine rather than trusting the list. renet refuses to mount an immutable commit, so a real mapping cannot be made through `repository_mount`: a zero-target entry under the commit's name is the state gc reads, and it holds no data.
+      const map = await w1.executeViaBridge(`sudo dmsetup create ${commit} --table '0 8 zero'`);
+      expect(map.code, `dmsetup create: ${w1.getCombinedOutput(map).slice(-600)}`).toBe(0);
 
       const kept = await gcRun();
       expect(kept.code, `gc failed instead of skipping: ${kept.raw}`).toBe(0);
@@ -496,9 +504,9 @@ test.describe
       expect(kept.summary, kept.raw).toMatchObject({ total: 1, deleted: 0, skipped: 1, failed: 0 });
       expect(await imageExists(w1, commit), 'gc deleted a mounted commit').toBe(true);
 
-      // Control: unmounted, the same call deletes it, so the skip above came from the mount and from nothing else.
-      const unmounted = await w1.repositoryUnmount(commit, DS, id.networkId);
-      expect(unmounted.code, `unmount: ${w1.getCombinedOutput(unmounted).slice(-600)}`).toBe(0);
+      // Control: with the entry gone, the same call deletes it, so the skip above came from the mapping and from nothing else.
+      const unmap = await w1.executeViaBridge(`sudo dmsetup remove ${commit}`);
+      expect(unmap.code, `dmsetup remove: ${w1.getCombinedOutput(unmap).slice(-600)}`).toBe(0);
       const deleted = await gcRun();
       expect(deleted.code, deleted.raw).toBe(0);
       expect(deleted.results, deleted.raw).toEqual([
