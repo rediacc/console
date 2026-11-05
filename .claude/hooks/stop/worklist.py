@@ -199,6 +199,21 @@ def _local_lease_main(tree):
     return main if theirs is not None and theirs[1] == mine[1] else None
 
 
+def _plan_rel(root, given):
+    """The repo-relative spelling of a plan path, the form every plan verb and the ledger key on. `root` of a lease is the main checkout (`_local_lease_main`), so a path inside the lease names the same plan as its twin in the main checkout, and a path resolved against `root` alone would come back carrying the lease's own folder ahead of `agent/plans/...`."""
+    home = pathlib.Path(root).resolve()
+    path = pathlib.Path(given).resolve()
+    for tree in path.parents:
+        if (tree / ".git").exists():
+            if _local_lease_main(tree) == home:
+                return str(path.relative_to(tree))
+            break
+    try:
+        return str(path.relative_to(home))
+    except ValueError:
+        return given.lstrip("./")
+
+
 def _local_worklist_path(start):
     """Self-contained twin of wl_core.worklist_for, used ONLY by --path, the self-contained append modes and the broken-sibling block, so the queries every script depends on work even when every sibling is missing. Keep in lockstep with wl_core.worklist_for."""
     p = pathlib.Path(start).resolve()
@@ -627,10 +642,7 @@ def _planrec_cli(argv):
             die("unknown flag %r\n\n%s" % (f, M.CLI_PLANREC_USAGE))
 
     # Accept an absolute or a ./-prefixed path and normalise to the repo-relative form every consumer uses. The ledger is keyed on that spelling, so a path that differs only in prefix would silently find no `done_sigs` and every box would record `abandoned` -- a wrong record produced by a right command.
-    try:
-        rel = str(pathlib.Path(rel).resolve().relative_to(pathlib.Path(root).resolve()))
-    except ValueError:
-        rel = rel.lstrip("./")
+    rel = _plan_rel(root, rel)
 
     if mode == "--plan-revive":
         try:
@@ -914,10 +926,7 @@ def _plantick_cli(argv):
         if f.startswith("--"):
             die("unknown flag %r\n\n%s" % (f, M.CLI_PLANTICK_USAGE))
     evidence = " ".join(rest)
-    try:
-        rel = str(pathlib.Path(rel).resolve().relative_to(pathlib.Path(root).resolve()))
-    except ValueError:
-        rel = rel.lstrip("./")
+    rel = _plan_rel(root, rel)
 
     _plantick_dep_gate(R, root, rel, selector, evidence)
     try:
@@ -1116,10 +1125,7 @@ def _planpreflight_cli(argv):
 
     root = C.project_root(C.project_start())
     rel = rest[0]
-    try:
-        rel = str(pathlib.Path(rel).resolve().relative_to(pathlib.Path(root).resolve()))
-    except ValueError:
-        rel = rel.lstrip("./")
+    rel = _plan_rel(root, rel)
     path = pathlib.Path(root) / rel
     if not path.is_file():
         die("%s does not exist\n\n%s" % (rel, M.CLI_PLANPREFLIGHT_USAGE))
@@ -1221,10 +1227,7 @@ def _planinvestigate_cli(argv):
     for f in pointer_tokens:
         if f.startswith("--"):
             die("unknown flag %r\n\n%s" % (f, usage))
-    try:
-        rel = str(pathlib.Path(rel).resolve().relative_to(pathlib.Path(root).resolve()))
-    except ValueError:
-        rel = rel.lstrip("./")
+    rel = _plan_rel(root, rel)
 
     try:
         row, resolved = R.plan_investigate(

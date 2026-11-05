@@ -558,3 +558,21 @@ def test_the_written_message_names_the_ledger_beside_the_plan_and_renders():
         "slug": "s",
     }
     assert shown.count(".ci/config/plan-boxes.json") == 2
+
+
+def test_a_path_inside_a_lease_means_the_same_plan_as_the_path_in_the_main_checkout(repo):
+    """A lease resolves to the main checkout's store, so a relative plan path typed in a lease used to reach the verbs as `.claude/worktrees/<id>/agent/plans/...`: the citation gate refused it and the ledger lookup missed its row."""
+    lease = repo.root / ".claude" / "worktrees" / "lease-1"
+    lease.parent.mkdir(parents=True)
+    repo.git("worktree", "add", "--detach", str(lease))
+    wl = import_wl("worklist")
+    assert wl._plan_rel(str(repo.root), str(lease / PLAN)) == PLAN
+    assert wl._plan_rel(str(repo.root), str(repo.root / PLAN)) == PLAN
+
+
+def test_control_a_plain_worktree_outside_the_lease_folder_keeps_its_own_path(repo):
+    other = repo.root / "elsewhere" / "tree"
+    other.parent.mkdir(parents=True)
+    repo.git("worktree", "add", "--detach", str(other))
+    wl = import_wl("worklist")
+    assert wl._plan_rel(str(repo.root), str(other / PLAN)) == "elsewhere/tree/" + PLAN
