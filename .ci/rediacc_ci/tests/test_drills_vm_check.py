@@ -20,6 +20,7 @@ import sys
 import tempfile
 import time
 import uuid
+from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any, cast
 
 import pytest
@@ -3797,3 +3798,32 @@ def test_only_accepts_an_external_leg_and_still_refuses_an_unknown_name(capsys):
     with pytest.raises(SystemExit):
         vm_check.parse_args(["--only", "no-such-leg"], {})
     assert "names no step" in capsys.readouterr().err
+
+
+def _receipt_stub(areas: set[str], receipt_fn: Any) -> Any:
+    return SimpleNamespace(
+        areas=frozenset(areas), root=pathlib.Path("."), tree="t", receipt_fn=receipt_fn
+    )
+
+
+def test_a_receipt_leg_that_cannot_pass_stops_the_run_before_any_vm_work():
+    stale = _receipt_stub({"backup"}, lambda _root, _tree: (False, "stale-gitlink"))
+    with pytest.raises(vm_check.NotVerifiedError) as refused:
+        vm_check.VmCheck._require_receipts(stale)
+    assert refused.value.cls == "receipt-first"
+    assert "stale-gitlink" in refused.value.detail
+    assert "./run.sh drill backup" in refused.value.detail
+
+
+def test_a_good_receipt_or_an_untouched_area_lets_the_run_start():
+    calls = []
+
+    def good(_root: pathlib.Path, _tree: str) -> tuple[bool, str]:
+        calls.append(1)
+        return True, "VERIFIED"
+
+    vm_check.VmCheck._require_receipts(_receipt_stub({"backup"}, good))
+    assert calls == [1]
+    vm_check.VmCheck._require_receipts(
+        _receipt_stub({"kube"}, lambda _root, _tree: (False, "stale-gitlink"))
+    )

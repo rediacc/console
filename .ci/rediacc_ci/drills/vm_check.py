@@ -1711,8 +1711,25 @@ class VmCheck:
         if self.opts.only:
             self._steps_only()
             return
+        self._require_receipts()
         self._battery()
         self._external_legs()
+
+    def _require_receipts(self) -> None:
+        """Stop before any VM work when a touched area's `receipt` leg cannot pass: the leg is judged last and no step here can produce it, so the run could only end NOT_VERIFIED after an hour or more."""
+        for name in trigger.AREAS:
+            if name not in self.areas:
+                continue
+            for leg in trigger.MAP.areas[name].legs:
+                if leg.kind != trigger.LEG_RECEIPT:
+                    continue
+                ok, message = self.receipt_fn(self.root, self.tree)
+                if not ok:
+                    raise NotVerifiedError(
+                        "receipt-first",
+                        "%s/%s: %s; produce it first with: %s"
+                        % (name, leg.id, message, " && ".join(leg.cmd)),
+                    )
 
     def _battery(self) -> None:
         """The base battery: A1, the infra chain, A0, A2 and the renet phase, as the required sides and the touched areas' `vmcheck` legs ask."""
