@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { expect, test } from '@playwright/test';
 import { WK_RUNTIME_DIR } from '@rediacc/shared/config/well-known.generated';
-import { DEFAULT_DATASTORE_PATH } from '../src/constants';
-import { e2eRepoGuid } from '../src/utils/licence';
+import { DEFAULT_DATASTORE_PATH, FORK_NETWORK_ID_A } from '../src/constants';
+import { e2eRepoGuid, installRepoLicence } from '../src/utils/licence';
 import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 
 // Suite 32: detached jobs on a real worker, through the bridge. Every assertion reads machine state (the job spool, `systemctl list-units 'rediacc-job-*'`, `renet job list`, `renet repository status`), never the stdout of the command under test alone. The unit tests of renet drive the same code against a temp dir and a fake systemd; the races here (two processes, one spool) only exist on a real machine.
@@ -70,11 +70,16 @@ test.describe
       return handle;
     };
 
+    // The unit name is the first column, cut here rather than by awk on the worker: executeViaBridge wraps the command in double quotes for its two-hop ssh and escapes only backslash and double quote (packages/provisioning/src/ssh/SSHExecutor.ts escapeForNestedSSH), so a shell expands `$1` before the worker runs it. `awk '{print $1}'` reached the worker as `awk '{print }'` and every line kept its state columns; case 4b caught it, and case 4 could only pass with no job unit loaded.
     const loadedJobUnits = async (): Promise<string[]> => {
       const r = await w.executeViaBridge(
-        `systemctl list-units 'rediacc-job-*' --all --no-legend --plain | awk '{print $1}'`
+        `systemctl list-units 'rediacc-job-*' --all --no-legend --plain --no-pager`
       );
-      return r.stdout.split('\n').filter((l) => l.startsWith('rediacc-job-'));
+      expect(r.code, r.stderr.slice(-400)).toBe(0);
+      return r.stdout
+        .split('\n')
+        .map((l) => l.trim().split(/\s+/)[0] ?? '')
+        .filter((u) => u.startsWith('rediacc-job-'));
     };
 
     const loadedUnitJobIds = async (): Promise<string[]> =>
@@ -123,6 +128,17 @@ test.describe
     });
 
     test.afterAll(async () => {
+      // A run that stops before case 7 leaves the holder frozen and both repositories behind, and REPO keeps the harness's default network id, which the next run's case 5 needs.
+      if (holder) {
+        await w
+          .executeViaBridge(`sudo systemctl kill -s CONT ${holder.unit}`)
+          .catch(() => undefined);
+        await w
+          .executeViaBridge(`sudo renet job cancel --id ${holder.job_id} --json`)
+          .catch(() => undefined);
+      }
+      await w.repositoryRm(REPO, DS).catch(() => undefined);
+      await w.repositoryRm(OTHER, DS, OTHER_NETWORK_ID).catch(() => undefined);
       await w
         .executeViaBridge(`sudo systemctl stop 'rediacc-job-*-${PLANT_SUFFIX}.service'`)
         .catch(() => undefined);
@@ -307,6 +323,7 @@ test.describe
     // Cases 5 to 7 share one holder: a job for a real repository, frozen while still non-terminal.
     const REPO = e2eRepoGuid();
     const OTHER = e2eRepoGuid();
+    const OTHER_NETWORK_ID = String(FORK_NETWORK_ID_A);
     let holder: Handle | undefined;
 
     test('5. a repo-exclusive start while a job holds the repository exits 15 naming the holder', async () => {
@@ -380,7 +397,22 @@ test.describe
     // Planted red of case 6: another repository's status must not list the holder, so case 6's predicate is not met by a jobs array that lists every job on the machine.
     test('6b. control: the status of another repository does not list the holder', async () => {
       expect(holder, 'case 5 started no holder').toBeTruthy();
-      const created = await w.repositoryNew(OTHER, '64M', 'e2e-jobs-pw', DS);
+      // On its own network id: repositoryNew always takes the harness default, which REPO already holds, and renet refuses a second repository on it (exit 17).
+      const licence = await installRepoLicence(w.executeViaBridge.bind(w), {
+        repositoryGuid: OTHER,
+        kind: 'grand',
+        size: '64M',
+        datastorePath: DS,
+      });
+      expect(licence.code, `licence: ${w.getCombinedOutput(licence).slice(-400)}`).toBe(0);
+      const created = await w.testFunction({
+        function: 'repository_create',
+        repository: OTHER,
+        size: '64M',
+        password: 'e2e-jobs-pw',
+        datastorePath: DS,
+        networkId: OTHER_NETWORK_ID,
+      });
       expect(created.code, `repository_create: ${w.getCombinedOutput(created).slice(-400)}`).toBe(
         0
       );
@@ -404,6 +436,6 @@ test.describe
       expect(again.code, `repository still held: ${again.stdout.slice(-300)}`).toBe(0);
       parseHandle(again.stdout);
       await w.repositoryRm(REPO, DS).catch(() => undefined);
-      await w.repositoryRm(OTHER, DS).catch(() => undefined);
+      await w.repositoryRm(OTHER, DS, OTHER_NETWORK_ID).catch(() => undefined);
     });
   });
