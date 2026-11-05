@@ -402,7 +402,7 @@ test.describe
       // Watch the SOURCE image from the machine while the migrate runs: the first moment it is gone. The poll lag (about 0.1 s) only delays the reading, so it can hide a violation by that much; up() holds ${UP_HOLD_S} s, far above it. The loop ends at the stop file, which the finally below writes, so a failed assertion never leaves it running.
       await w1.executeViaBridge(`sudo rm -f ${stopFile(guid)}`);
       const watcher = w1.executeViaBridge(
-        `for i in $(seq 1 3000); do [ -e ${stopFile(guid)} ] && { echo stopped; exit 0; }; sudo test -e ${imagePath(guid)} || { date +%s%N; exit 0; }; sleep 0.1; done; echo timeout`
+        `for i in $(seq 1 3000); do sudo test -e ${imagePath(guid)} || { date +%s%N; exit 0; }; [ -e ${stopFile(guid)} ] && { echo stopped; exit 0; }; sleep 0.1; done; echo timeout`
       );
       let gone = '';
       try {

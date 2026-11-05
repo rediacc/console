@@ -541,7 +541,9 @@ def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="read_cap_seed", description=__doc__.split("\n")[0])
     parser.add_argument("repo", help="repository name, name:tag for a fork")
     parser.add_argument("--machine", required=True)
-    parser.add_argument("--config", required=True, help="the config to run under; there is no default")
+    parser.add_argument(
+        "--config", required=True, help="the config to run under; there is no default"
+    )
     parser.add_argument("--stop-on", choices=("load", "cpu"), default="load")
     parser.add_argument("--rdc", default="./rdc.sh")
     parser.add_argument("--summary", default=DEFAULT_SUMMARY, type=Path)

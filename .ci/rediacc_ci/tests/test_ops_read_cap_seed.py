@@ -617,7 +617,9 @@ def test_a_bad_name_starts_nothing(argv, tmp_path, capsys):
         runner=world.runner, spawner=world.spawner, clock=world.clock, sleep=world.sleep
     )
     try:
-        rc: object = rcs.main([*argv, "--summary", str(tmp_path / "s.log")], deps=deps, out=io.StringIO())
+        rc: object = rcs.main(
+            [*argv, "--summary", str(tmp_path / "s.log")], deps=deps, out=io.StringIO()
+        )
     except SystemExit as exc:
         rc = exc.code
     assert rc == rcs.EXIT_USAGE
