@@ -3745,7 +3745,7 @@ def test_a_fleet_recipe_owns_its_subnet_and_the_plain_recipe_the_rest() -> None:
 
 @pytest.mark.parametrize("leg_id", ["k8s-15", "k8s-ceph-16", "k8s-multinode-17-24"])
 def test_a_kube_leg_turns_k8s_mode_on_as_its_ci_job_does(leg_id: str) -> None:
-    """CI sets K8S_MODE=1 at job level; without it every kube test skips and the leg can never pass."""
+    """CI sets K8S_MODE=1 at job level; without it every kube test skips. A leg gets it from `--k8s`, which writes it to the e2e .env Playwright loads."""
     legs = {leg.id: leg for leg in vm_check.trigger.MAP.areas["kube"].legs}
     assert "--k8s" in legs[leg_id].cmd[0]
 

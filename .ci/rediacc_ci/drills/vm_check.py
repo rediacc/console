@@ -347,7 +347,7 @@ def plan_ips(
 
 
 def recipe_plan(recipe: str) -> tuple[dict[str, str], list[str]] | None:
-    """(environment, `./rdc.sh` argv) of a fleet's `up` recipe, or None when the recipe is not the machine-runnable shape `[VAR=value ...] ./rdc.sh ops up [flags]` (the second-group fleet's two-step prose recipe is not)."""
+    """(environment, `./rdc.sh` argv) of a fleet's `up` recipe, or None when the recipe is not the machine-runnable shape `[VAR=value ...] ./rdc.sh ops up [flags]` (`test_every_mapped_fleet_is_runnable` holds the live map to it)."""
     try:
         words = shlex.split(recipe)
     except ValueError:
@@ -1475,7 +1475,7 @@ class VmCheck:
         )
         return "rc=%d stderr: %s | stdout: %s" % (
             res.rc,
-            last_lines(remote) or "<empty>",
+            last_lines(remote) or last_lines(res.err) or "<empty>",
             envelope_errors(res.out) or last_lines(res.out) or "<empty>",
         )
 
