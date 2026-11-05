@@ -390,6 +390,8 @@ class FakeWorker:
         self.comes_back = True
         # A skewed daemon's restart: down() through the old socket first (renet b63746a and the stop hook's fallback), or the heal restart first and down() after it (the order before b63746a).
         self.skew_down_first = True
+        # A mount-only up whose restart ran down(): up() after it (renet b52db1b), or none (MountWithDocker before it).
+        self.mount_restart_up = True
         self.plant_rc = 0
         self.root_calls: list[str] = []
 
@@ -520,7 +522,14 @@ class FakeWorker:
             if self.repo_up_rc:
                 return _Res(rc=self.repo_up_rc)
             nid = self.ref_nid(args[2])
+            drifted = "Environment=" not in self.units[nid]
             if "--no-start" in args:
+                # MountWithDocker: the same BeforeRestart down(), then up() only on a renet whose mount restart path runs it.
+                if self.repo_up_restarts and drifted:
+                    self.restart(nid, down_first=self.hook)
+                    self.units[nid] = unit_text(nid, self.nets[nid]["guid"])
+                    if self.mount_restart_up:
+                        self.up(nid)
                 return _Res()
             if self.repo_up_restarts and "Environment=" not in self.units[nid]:
                 # The start side differs from the render: BeforeRestart runs down() (fixed renet) or not.
@@ -736,6 +745,39 @@ def test_k1_9_skips_the_restart_when_the_plant_fails(tmp_path: pathlib.Path) -> 
     assert not any(c.startswith("renet daemon restart") for c in worker.root_calls)
 
 
+@pytest.mark.parametrize(
+    ("hook", "mount_up", "want"),
+    [
+        (True, True, True),
+        # CONTROL: MountWithDocker before renet b52db1b, restart with down() and no up() after it.
+        (True, False, False),
+        # CONTROL: a restart with no down() first.
+        (False, True, False),
+    ],
+)
+def test_k1_10_mount_restart(
+    tmp_path: pathlib.Path, hook: bool, mount_up: bool, want: bool
+) -> None:
+    worker = FakeWorker(hook=hook)
+    worker.mount_restart_up = mount_up
+    live, ctx = _ready(tmp_path, worker)
+    live.k1_10_mount_restart()
+    assert _oks(ctx, "K1.10 A's unit") == [True]
+    assert _oks(ctx, "K1.10 repo up") == [want], ctx.rows
+    assert ("rdc", "repo", "up", live.ref_a, "--no-start") in ctx.calls
+    if hook and not mount_up:
+        assert "no up line" in ctx.rows[-1][2]
+
+
+def test_k1_10_fails_when_the_mount_does_not_restart(tmp_path: pathlib.Path) -> None:
+    worker = FakeWorker()
+    worker.repo_up_restarts = False
+    live, ctx = _ready(tmp_path, worker)
+    live.k1_10_mount_restart()
+    assert _oks(ctx, "K1.10 repo up") == [False]
+    assert "nothing restarted" in ctx.rows[-1][2]
+
+
 def test_skew_sockets_follow_the_runtime_layout() -> None:
     assert k.current_socket(NID_A) == "%s/net-%d/docker-%d.sock" % (k.RUNTIME_DIR, NID_A, NID_A)
     assert k.legacy_socket(NID_A) == "%s/docker-%d.sock" % (k.RUNTIME_DIR, NID_A)
@@ -912,6 +954,7 @@ def test_execute_runs_the_rows_in_order_and_always_cleans_up(
         "k1_4_stop_side_drift",
         "k1_5_converge",
         "k1_9_skewed_restart",
+        "k1_10_mount_restart",
         "k1_6_rollout",
         "k1_8_job_timeout",
         "k1_7_reboot",

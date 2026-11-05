@@ -4,7 +4,7 @@
 
 THE PROBE. Repository A is a grand of its own (autostart is refused on a fork), with autostart on; repository B is a fork of A (`A:<tag>`), with autostart off. Both carry the probe Rediaccfile: `up()` appends `up <epoch>` to `downproof.log` in the mount, and `down()` appends `down <epoch>` and then sleeps `DOWN_SLEEP_S` seconds. The line is written at the START of `down()`, so a `down` line at least `DOWN_SLEEP_S` before the daemon's next `ExecMainStartTimestamp` proves the stop waited for the whole `down()` (a stop that killed it part way restarts sooner). Every epoch comes from the worker's own clock: the probe's `date +%s`, `systemctl show` and `uptime -s` read through `date -d`.
 
-THE ROWS. K1.0 A (autostart on) and B (autostart off) are up and each wrote an `up` line; K1.1 A's docker unit carries an `ExecStop` that runs `renet daemon stop-hook --network-id=<N>` and both `After=` lines (`rediacc-repo-shutdown.service` and the systemd-escaped mount unit); K1.2 a raw `systemctl restart` of A's unit writes a `down` line at least `DOWN_SLEEP_S` before the new start; K1.3 A's unit loses its first `Environment=` line, `daemon-reload`, then `rdc repo up`: a `down` line before the restart and an `up` line after it; K1.4 the stop side drifts (ExecStop and TimeoutStopSec removed), one `renet repository reconcile` tick restores it and MainPID is unchanged; K1.5 A's runtime stamp is removed and `rdc machine converge` restarts A with a `down` line before the restart; K1.9 A's daemon is made SKEWED (its live socket renamed to the old-layout path, so it answers only there, as a daemon an older-layout renet started does), then `rdc machine converge` restarts it with a `down` line at least `DOWN_SLEEP_S` before the new start (down() through the old socket before the heal, renet b63746a), and the same again through `renet daemon restart` (the stop hook's old-socket fallback) with an `up` line after the restart; K1.6 the main-pointer renet is installed on the worker (`upgrade_converge.install_current_renet_script`), A is upped under it through a throwaway config, `rdc machine setup` installs the branch renet back, neither daemon restarts, and after one reconcile tick both units carry the new stop side; K1.8 `reboot.target`'s `JobTimeoutUSec` is 30 min or more; K1.7 `systemctl reboot`, then both A and B have a `down` line timestamped at least `DOWN_SLEEP_S` before `uptime -s`, and A is back up with an `up` line after the boot. K1.8 runs before K1.7 so a worker that does not come back still leaves its read.
+THE ROWS. K1.0 A (autostart on) and B (autostart off) are up and each wrote an `up` line; K1.1 A's docker unit carries an `ExecStop` that runs `renet daemon stop-hook --network-id=<N>` and both `After=` lines (`rediacc-repo-shutdown.service` and the systemd-escaped mount unit); K1.2 a raw `systemctl restart` of A's unit writes a `down` line at least `DOWN_SLEEP_S` before the new start; K1.3 A's unit loses its first `Environment=` line, `daemon-reload`, then `rdc repo up`: a `down` line before the restart and an `up` line after it; K1.4 the stop side drifts (ExecStop and TimeoutStopSec removed), one `renet repository reconcile` tick restores it and MainPID is unchanged; K1.5 A's runtime stamp is removed and `rdc machine converge` restarts A with a `down` line before the restart; K1.9 A's daemon is made SKEWED (its live socket renamed to the old-layout path, so it answers only there, as a daemon an older-layout renet started does), then `rdc machine converge` restarts it with a `down` line at least `DOWN_SLEEP_S` before the new start (down() through the old socket before the heal, renet b63746a), and the same again through `renet daemon restart` (the stop hook's old-socket fallback) with an `up` line after the restart; K1.10 A's unit loses its first `Environment=` line again, then the mount-only `rdc repo up --no-start` (renet's MountWithDocker): a `down` line before the restart and an `up` line after it; K1.6 the main-pointer renet is installed on the worker (`upgrade_converge.install_current_renet_script`), A is upped under it through a throwaway config, `rdc machine setup` installs the branch renet back, neither daemon restarts, and after one reconcile tick both units carry the new stop side; K1.8 `reboot.target`'s `JobTimeoutUSec` is 30 min or more; K1.7 `systemctl reboot`, then both A and B have a `down` line timestamped at least `DOWN_SLEEP_S` before `uptime -s`, and A is back up with an `up` line after the boot. K1.8 runs before K1.7 so a worker that does not come back still leaves its read.
 
 TEARDOWN. B then A are deleted (A's autostart disabled first), the throwaway config files are removed, and a run that installed the main-pointer renet reverts the worker with `rdc machine setup`; anything that stays rides `ctx.sweep_leftovers`.
 
@@ -473,6 +473,7 @@ class _LiveK1:
             self.k1_4_stop_side_drift()
             self.k1_5_converge()
             self.k1_9_skewed_restart()
+            self.k1_10_mount_restart()
             self.k1_6_rollout()
             self.k1_8_job_timeout()
             self.k1_7_reboot()
@@ -637,6 +638,18 @@ class _LiveK1:
         self._skewed_row(
             "renet daemon restart",
             lambda: self.root(daemon_restart_script(self.nids[self.ref_a]), timeout=1200),
+            want_up=True,
+        )
+
+    def k1_10_mount_restart(self) -> None:
+        """A mount-only `repo up --no-start` reaches MountWithDocker; after a start-side change its restart runs down() first and, since renet's mount restart path brings the services back, up() after it."""
+        edit = self.root(drop_environment_script(self.nids[self.ref_a]))
+        if not self.check("K1.10 A's unit loses its Environment= line", edit.rc == 0, edit):
+            return
+        self._restart_row(
+            "K1.10 repo up --no-start after a start-side change runs down() before the restart"
+            " and up() after it",
+            lambda: self.rdc("repo", "up", self.ref_a, "--no-start"),
             want_up=True,
         )
 
