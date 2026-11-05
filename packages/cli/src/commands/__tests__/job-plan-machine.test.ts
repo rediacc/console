@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => ({
   setExitCode: vi.fn(),
   acquireRemoteRenet: vi.fn(),
   order: [] as string[],
+  stepWarnings: [] as string[],
 }));
 
 vi.mock('../../i18n/index.js', () => ({
@@ -53,7 +54,7 @@ vi.mock('../../services/config/config-resources.js', () => ({
       sshPrivateKey: 'key',
       sshPublicKey: 'ssh-ed25519 AAAA',
       ssh: {},
-      machines: {},
+      machines: { m1: { ip: '10.0.0.1', datastore: '/mnt/ds' } },
     }),
     getLocalMachine: async () => ({ ip: '10.0.0.1' }),
     listRepositories: async () => [],
@@ -105,6 +106,8 @@ const { registerRestartServicesCommand } = await import('../machine/restart-serv
 const { registerMachineRegistrationCommands } = await import('../machine/register.js');
 const { registerPruneCommand } = await import('../machine/prune.js');
 const { registerCloudCommands } = await import('../machine/provision.js');
+const { registerStatusCommand } = await import('../machine/status.js');
+const { registerHealthCommand } = await import('../machine/health.js');
 
 type Executed = {
   functionName: string;
@@ -125,6 +128,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mocks.format = 'table';
   mocks.order.length = 0;
+  mocks.stepWarnings.length = 0;
   executed = [];
   answer = OK;
   mocks.acquireRemoteRenet.mockImplementation(() => {
@@ -135,11 +139,14 @@ beforeEach(() => {
       routerRefreshDue: true,
     });
   });
-  restoreJobDeps = installJobDeps((options) => {
-    mocks.order.push('job');
-    executed.push(options as unknown as Executed);
-    return Promise.resolve(answer as never);
-  });
+  restoreJobDeps = installJobDeps(
+    (options) => {
+      mocks.order.push('job');
+      executed.push(options as unknown as Executed);
+      return Promise.resolve(answer as never);
+    },
+    (line) => mocks.stepWarnings.push(line)
+  );
 });
 
 afterEach(() => {
@@ -244,6 +251,20 @@ describe('machine setup', () => {
       'convergeAfterSetup',
       'settleSetupFailed',
     ]);
+  });
+
+  it('control: a renet already current is still verified first, and owes no router refresh', async () => {
+    mocks.acquireRemoteRenet.mockImplementation(() => {
+      mocks.order.push('bootstrap');
+      return Promise.resolve({ remotePath: '/usr/bin/renet', uploaded: false });
+    });
+
+    await run(registerMachineRegistrationCommands, 'setup', 'm1');
+
+    expect(mocks.order).toEqual(['bootstrap', 'job']);
+    expect(mocks.acquireRemoteRenet.mock.calls[0][0]).toBe('provision');
+    const converge = executed[0].jobSteps?.find((s) => s.name === 'convergeAfterSetup');
+    expect(converge?.params.routerRefreshDue).not.toBe(true);
   });
 
   it('records the owed router refresh and the converge choice in the plan, as scalars', async () => {
@@ -361,5 +382,121 @@ describe('machine provision', () => {
     expect(mocks.warn).toHaveBeenCalledWith('Machine setup exited with code 3');
     expect(mocks.setExitCode).toHaveBeenCalledWith(3);
     expect(mocks.success).not.toHaveBeenCalled();
+  });
+});
+
+describe('machine status', () => {
+  const DISK = { available: '60G', total: '100G', used: '40G', use_percent: '40%' };
+  const LISTING = {
+    repositories: [],
+    system: {
+      hostname: 'h1',
+      cpu_count: 4,
+      cpu_model: 'x',
+      kernel: 'k',
+      os_name: 'os',
+      system_time: 0,
+      system_time_human: 't',
+      timezone: 'UTC',
+      uptime: '1 day',
+      datastore: DISK,
+      disk: DISK,
+      memory: DISK,
+    },
+  };
+
+  it('makes one list-all job asking for the requested sections, with the render as its step', async () => {
+    answer = { ...OK, stdout: JSON.stringify(LISTING) };
+    mocks.format = 'json';
+
+    await run(registerStatusCommand, 'status', 'm1', '--network');
+
+    expect(executed).toHaveLength(1);
+    expect(executed[0]).toMatchObject({
+      functionName: 'list-all',
+      machineName: 'm1',
+      verb: 'machine status',
+      commandKind: {
+        name: 'list-all',
+        args: { datastore: '/mnt/ds', sections: 'network,system,licenses,stale-processes' },
+      },
+    });
+    expect(stepNames(executed[0])).toEqual(['renderMachineStatus']);
+    expect(mocks.stepWarnings).toEqual([]);
+    expect(mocks.print).toHaveBeenCalledTimes(1);
+  });
+
+  it('asks for the full listing when no section flag is given', async () => {
+    answer = { ...OK, stdout: JSON.stringify(LISTING) };
+    mocks.format = 'json';
+
+    await run(registerStatusCommand, 'status', 'm1');
+
+    expect(executed[0].commandKind?.args).toEqual({ datastore: '/mnt/ds' });
+  });
+
+  it('control: a job still running renders nothing', async () => {
+    answer = RUNNING;
+    mocks.format = 'json';
+
+    await run(registerStatusCommand, 'status', 'm1');
+
+    expect(executed).toHaveLength(1);
+    expect(mocks.print).not.toHaveBeenCalled();
+  });
+});
+
+describe('machine health', () => {
+  const DISK = { available: '60G', total: '100G', used: '40G', use_percent: '40%' };
+  const LISTING = {
+    repositories: [],
+    system: {
+      hostname: 'h1',
+      cpu_count: 4,
+      cpu_model: 'x',
+      kernel: 'k',
+      os_name: 'os',
+      system_time: 0,
+      system_time_human: 't',
+      timezone: 'UTC',
+      uptime: '1 day',
+      datastore: DISK,
+      disk: DISK,
+      memory: DISK,
+    },
+  };
+
+  it('makes one list-all job and prints the verdict from its output in the step', async () => {
+    answer = { ...OK, stdout: JSON.stringify(LISTING) };
+    mocks.format = 'json';
+
+    await run(registerHealthCommand, 'health', 'm1');
+
+    expect(executed).toHaveLength(1);
+    expect(executed[0]).toMatchObject({
+      functionName: 'list-all',
+      machineName: 'm1',
+      verb: 'machine health',
+      commandKind: { name: 'list-all', args: { datastore: '/mnt/ds' } },
+    });
+    expect(stepNames(executed[0])).toEqual(['renderMachineHealth']);
+    expect(mocks.stepWarnings).toEqual([]);
+    expect(mocks.print).toHaveBeenCalledTimes(1);
+    expect(mocks.print.mock.calls[0][0]).toHaveProperty('healthy');
+  });
+
+  it('control: a job still running prints no verdict', async () => {
+    answer = RUNNING;
+    mocks.format = 'json';
+
+    await run(registerHealthCommand, 'health', 'm1');
+
+    expect(executed).toHaveLength(1);
+    expect(mocks.print).not.toHaveBeenCalled();
+  });
+
+  it('refuses an unregistered machine before any job', async () => {
+    await expect(run(registerHealthCommand, 'health', 'nope')).rejects.toThrow();
+    expect(executed).toEqual([]);
   });
 });
