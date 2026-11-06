@@ -21,9 +21,9 @@ Body-Sig: 5a9a0f7ba6b69e1c
 ### db6aa555.1 [low] packages/cli/src/commands/machine/__tests__/deprovision-repos.test.ts:77
 Anchor: in-diff
 Claim: The check `toMatch(/obsram:latest, sockfix09b:latest|reposArchived/)` passes on the bare key `reposArchived`, so the test would not catch an archive message that omits the repo names.
-Resolution: open
+Resolution: fixed 4f612eca7020c28e93f5e83f533a36c731dde8c8 | d778be9d 2026-11-06T22:38:31Z
 
 ### db6aa555.2 [low] packages/cli/src/commands/machine/__tests__/deprovision-repos.test.ts:83
 Anchor: in-diff
 Claim: The warn check `toMatch(/obsram:latest|reposLeft/)` and the info check `toMatch(/--gone-machine-repos|reposLeftHint/)` each accept the bare i18n key, so the test does not prove the repos are named or the archive command is shown.
-Resolution: open
+Resolution: fixed 4f612eca7020c28e93f5e83f533a36c731dde8c8 | d778be9d 2026-11-06T22:38:31Z
