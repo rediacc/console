@@ -23,3 +23,24 @@ export async function peerKnownHostsArg(
 
   return value ? ` --${flag} ${value}` : '';
 }
+
+/**
+ * The vault form of the flags above: a literal `dest_machine` / `source_machine` param gets its scanned record as `dest_known_hosts` / `source_known_hosts`. A peer that answered nothing leaves the key OUT, as the flag form leaves the flag out, so the verb gives its coded refusal rather than reading an empty record.
+ */
+export async function peerKnownHostParams(
+  run: RunOnMachine,
+  params: Record<string, unknown>
+): Promise<Record<string, unknown>> {
+  const out = { ...params };
+  for (const [machineKey, recordKey] of [
+    ['dest_machine', 'dest_known_hosts'],
+    ['source_machine', 'source_known_hosts'],
+  ] as const) {
+    const machine = params[machineKey];
+    if (typeof machine !== 'string') continue;
+    const record = await peerKnownHosts(run, machine);
+    if (record) out[recordKey] = record;
+  }
+
+  return out;
+}

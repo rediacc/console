@@ -1397,8 +1397,17 @@ test.describe
           await cli.run(['backup', 'schedule', '-m', M1]);
         });
         // K7's strategy still holds the destination name `hosted` until the describe's teardown, and a destination name is unique across strategies, so it is released first.
-        await cli.run(['backup', 'strategy', 'unbind', STRATEGY, '-m', M1]);
-        await cli.run(['backup', 'strategy', 'remove', STRATEGY]);
+        // Nothing after E2b reads K7's strategy (its own cleanup runs at the describe's teardown and tolerates it gone), so it needs no restore; a failed release is named here instead of surfacing as a misleading `strategy set` error.
+        const unbound = await cli.run(['backup', 'strategy', 'unbind', STRATEGY, '-m', M1]);
+        expect(
+          unbound.code,
+          `releasing ${STRATEGY}, unbind: ${bothChannels(unbound).slice(-600)}`
+        ).toBe(0);
+        const removed = await cli.run(['backup', 'strategy', 'remove', STRATEGY]);
+        expect(
+          removed.code,
+          `releasing ${STRATEGY}, remove: ${bothChannels(removed).slice(-600)}`
+        ).toBe(0);
         const set = await cli.run([
           'backup',
           'strategy',
@@ -1428,8 +1437,8 @@ test.describe
         );
       });
 
-      test('E2c. --read-bwlimit 8M on a 256 MiB image takes at least 30 s', async () => {
-        // E2a ran its snapshot under the cap; a fresh repo of the same size is the clean measurement.
+      test('E2c. --read-bwlimit 8M on a 512 MiB image holding 300 MiB takes at least 30 s', async () => {
+        // E2a ran its snapshot under the cap on a 256 MiB image; a fresh repo holding real data (CAP_FILL_IMAGE_MIB) is the clean measurement.
         const name = `${CAP_NAME}-b`;
         cleanup.push(async () => {
           await cli.run(['repo', 'delete', name, '-y']);

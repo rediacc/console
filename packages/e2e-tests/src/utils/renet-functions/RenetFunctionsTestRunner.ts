@@ -53,7 +53,7 @@ import { SystemCheckMethods } from './methods/SystemCheckMethods';
 import { getOpsManager, OpsManager } from './OpsManager';
 import { formatExecutionLog } from './outputRedaction';
 import { buildPasswordVault } from './passwordVault';
-import { peerKnownHosts } from './peerKnownHosts';
+import { peerKnownHostParams, peerKnownHosts } from './peerKnownHosts';
 import { feedStdin } from './stdinFeed';
 import { buildTokenVault } from './tokenVault';
 import type { ExecResult, RunnerConfig, TestFunctionOptions, VMTarget } from './types';
@@ -1104,15 +1104,8 @@ export class RenetFunctionsTestRunner {
   private async withPeerKnownHostParams(functionName: string, vaultJSON: string): Promise<string> {
     if (!CROSS_VM_FUNCTIONS.has(functionName)) return vaultJSON;
     const vault = JSON.parse(vaultJSON) as { params?: Record<string, unknown> };
-    const params = vault.params ?? {};
     const run = (command: string, timeout?: number) => this.executeViaBridge(command, timeout);
-    if (typeof params.dest_machine === 'string') {
-      params.dest_known_hosts = await peerKnownHosts(run, params.dest_machine);
-    }
-    if (typeof params.source_machine === 'string') {
-      params.source_known_hosts = await peerKnownHosts(run, params.source_machine);
-    }
-    vault.params = params;
+    vault.params = await peerKnownHostParams(run, vault.params ?? {});
     return JSON.stringify(vault);
   }
 

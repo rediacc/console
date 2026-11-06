@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { peerKnownHosts, peerKnownHostsArg } from '../peerKnownHosts';
+import { peerKnownHostParams, peerKnownHosts, peerKnownHostsArg } from '../peerKnownHosts';
 import type { ExecResult } from '../types';
 
 function runner(result: Partial<ExecResult>, seen: string[] = []) {
@@ -34,5 +34,38 @@ describe('peerKnownHosts', () => {
     await expect(
       peerKnownHostsArg(runner({ stdout: '' }), 'src-known-hosts', '10.0.0.9')
     ).resolves.toBe('');
+  });
+});
+
+describe('peerKnownHostParams', () => {
+  it('adds a record beside each literal machine param, scanned per peer', async () => {
+    const seen: string[] = [];
+    const params = await peerKnownHostParams(runner({ stdout: 'cmVj' }, seen), {
+      dest_machine: '10.0.0.9',
+      source_machine: '10.0.0.8',
+      other: 1,
+    });
+    expect(params).toEqual({
+      dest_machine: '10.0.0.9',
+      source_machine: '10.0.0.8',
+      other: 1,
+      dest_known_hosts: 'cmVj',
+      source_known_hosts: 'cmVj',
+    });
+    expect(seen).toHaveLength(2);
+  });
+
+  it('leaves the key out for a peer that answered nothing, as the flag form does', async () => {
+    const params = await peerKnownHostParams(runner({ code: 1 }), { dest_machine: '10.0.0.9' });
+    expect(params).toEqual({ dest_machine: '10.0.0.9' });
+    expect('dest_known_hosts' in params).toBe(false);
+  });
+
+  it('scans nothing and adds nothing for a param set naming no machine', async () => {
+    const seen: string[] = [];
+    await expect(peerKnownHostParams(runner({}, seen), { size: '1G' })).resolves.toEqual({
+      size: '1G',
+    });
+    expect(seen).toEqual([]);
   });
 });

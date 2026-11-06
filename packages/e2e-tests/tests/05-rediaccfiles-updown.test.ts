@@ -428,11 +428,17 @@ test.describe
     // A serial describe skips every test after a failure, so the cleanup is a hook: a failed
     // test 2 or 3 still unmounts the repository and stops the daemon.
     test.afterAll(async () => {
+      // All three steps run whatever the earlier ones answered: a failed unmount must not leave the daemon running, so the verdicts are asserted together at the end.
       const unmount = await runner.repositoryUnmount(repositoryName, datastorePath);
-      expect(runner.isSuccess(unmount)).toBe(true);
       const rm = await runner.repositoryRm(repositoryName, datastorePath);
-      expect(runner.isSuccess(rm)).toBe(true);
       const teardown = await runner.daemonTeardown(DEFAULT_NETWORK_ID);
-      expect(runner.isSuccess(teardown)).toBe(true);
+      expect(
+        {
+          unmount: runner.isSuccess(unmount),
+          rm: runner.isSuccess(rm),
+          teardown: runner.isSuccess(teardown),
+        },
+        'cleanup steps'
+      ).toEqual({ unmount: true, rm: true, teardown: true });
     });
   });
