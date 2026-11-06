@@ -2871,6 +2871,7 @@
     },
     "invalidFunctionParams": "Paramètres invalides pour la fonction \"{{function}}\" : {{errors}}",
     "invalidKey": "Clé invalide. Clés valides : {{keys}}",
+    "invalidOutputFormat": "Format de sortie non valide \"{{value}}\". Valeurs autorisées : {{allowed}}",
     "license": {
       "machineSlotLimit": "Ce placement nécessite {{needed}} emplacement(s) de machine supplémentaire(s), et l'abonnement dispose de {{free}} libre(s) ({{active}} sur {{max}} utilisés). Un emplacement est libéré automatiquement 5 heures après la dernière activité de cette machine, ou immédiatement lorsque la machine est supprimée. Augmentez la limite en mettant à niveau votre offre, ou contactez les ventes pour une limite de machines Enterprise ou partenaire négociée.",
       "nothingProvisioned": "Rien n'a été provisionné : le dépôt n'a pas été créé.",

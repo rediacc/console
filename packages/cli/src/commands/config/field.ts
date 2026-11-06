@@ -35,7 +35,7 @@ import {
 } from '../../services/core/mutation-gate.js';
 import { outputService } from '../../services/core/output.js';
 import { isAgentEnvironment } from '../../utils/agent-guard.js';
-import { handleError, ValidationError } from '../../utils/errors.js';
+import { getOutputFormat, handleError, ValidationError } from '../../utils/errors.js';
 
 function configDir(): string {
   // configFileStorage exposes the directory via a private method indirectly ,
@@ -103,7 +103,7 @@ function printFieldValue(pointer: string, value: unknown, reveal: boolean | unde
 
   if (isSensitive && !reveal) {
     const stub = `${meta.redactAs ?? `<redacted:${meta.kind}>`}:${shortFingerprint(value)}`;
-    outputService.print({ pointer, value: stub }, 'json');
+    outputService.print({ pointer, value: stub }, getOutputFormat());
     emit({ command: 'config field get', paths: [pointer], outcome: 'ok' });
     return;
   }
@@ -112,7 +112,7 @@ function printFieldValue(pointer: string, value: unknown, reveal: boolean | unde
     checkFieldReveal(pointer);
   }
 
-  outputService.print({ pointer, value }, 'json');
+  outputService.print({ pointer, value }, getOutputFormat());
 }
 
 export function registerFieldCommands(parent: Command, _program: Command): void {
@@ -137,7 +137,7 @@ export function registerFieldCommands(parent: Command, _program: Command): void 
           const digest = digestForPointer(config, pointer);
           if (digest === undefined)
             throw new ValidationError(t('errors.config.pointerNotFound', { pointer }));
-          outputService.print({ pointer, digest }, 'json');
+          outputService.print({ pointer, digest }, getOutputFormat());
           emit({ command: 'config field get', paths: [pointer], outcome: 'ok' });
           return;
         }

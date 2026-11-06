@@ -2871,6 +2871,7 @@
     },
     "invalidFunctionParams": "함수 \"{{function}}\"에 대한 파라미터가 올바르지 않습니다: {{errors}}",
     "invalidKey": "유효하지 않은 키입니다. 유효한 키: {{keys}}",
+    "invalidOutputFormat": "잘못된 출력 형식 \"{{value}}\". 허용 값: {{allowed}}",
     "license": {
       "machineSlotLimit": "이 배치에는 머신 슬롯이 {{needed}}개 더 필요하지만, 구독에는 {{free}}개만 남아 있습니다 ({{max}}개 중 {{active}}개 사용 중). 슬롯은 해당 머신의 마지막 활동 후 5시간이 지나면 자동으로 해제되거나, 머신이 제거되면 즉시 해제됩니다. 플랜을 업그레이드하여 한도를 높이거나, Enterprise 또는 파트너 머신 한도 협의를 위해 영업팀에 문의하세요.",
       "nothingProvisioned": "아무것도 프로비저닝되지 않았습니다: 저장소가 생성되지 않았습니다.",

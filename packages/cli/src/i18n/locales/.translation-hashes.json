@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 2452,
-    "sourceCommit": "3f27f9ea6c303b12b92315f159ac6fbf5444e787"
+    "keyCount": 2454,
+    "sourceCommit": "acaf330e79e40a94ba1da4ac89dc801f3f08e9ef"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -2212,6 +2212,7 @@
     "errors.freeLicense.offerPrompt": "fe15d97f",
     "errors.invalidFunctionParams": "e00a56a1",
     "errors.invalidKey": "ce3f98e5",
+    "errors.invalidOutputFormat": "70d1e4d9",
     "errors.jobs.holderJob": "a9d4d173",
     "errors.jobs.holderOther": "59eaa4d8",
     "errors.jobs.orStopIt": "733ec08d",

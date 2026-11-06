@@ -2871,6 +2871,7 @@
     },
     "invalidFunctionParams": "Ungültige Parameter für Funktion \"{{function}}\": {{errors}}",
     "invalidKey": "Ungültiger Schlüssel. Gültige Schlüssel: {{keys}}",
+    "invalidOutputFormat": "Ungültiges Ausgabeformat \"{{value}}\". Erlaubt: {{allowed}}",
     "license": {
       "machineSlotLimit": "Diese Platzierung benötigt {{needed}} weitere(n) Maschinen-Slot(s), und das Abonnement hat noch {{free}} frei ({{active}} von {{max}} in Verwendung). Ein Slot wird automatisch 5 Stunden nach der letzten Aktivität dieser Maschine freigegeben, oder sofort, wenn die Maschine entfernt wird. Erhöhen Sie das Limit durch ein Upgrade des Plans, oder wenden Sie sich an den Vertrieb für ein verhandeltes Enterprise- oder Partner-Maschinenlimit.",
       "nothingProvisioned": "Nichts wurde bereitgestellt: Das Repository wurde nicht erstellt.",

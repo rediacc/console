@@ -2871,6 +2871,7 @@
     },
     "invalidFunctionParams": "Vigased parameetrid funktsioonile \"{{function}}\": {{errors}}",
     "invalidKey": "Vigane võti. Kehtivad võtmed: {{keys}}",
+    "invalidOutputFormat": "Kehtetu väljundvorming \"{{value}}\". Lubatud: {{allowed}}",
     "license": {
       "machineSlotLimit": "See paigutus vajab veel {{needed}} masinakoht(a) ja tellimusel on vaba {{free}} ({{active}} / {{max}} kasutusel). Koht vabaneb automaatselt 5 tundi pärast selle masina viimast aktiivsust või kohe, kui masin eemaldatakse. Tõsta limiiti paketti uuendades või võta ühendust müügiga, et leppida kokku Enterprise'i või partneri masinalimiit.",
       "nothingProvisioned": "Midagi ei loodud: repositooriumi ei loodud.",

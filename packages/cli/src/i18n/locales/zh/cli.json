@@ -2871,6 +2871,7 @@
     },
     "invalidFunctionParams": "函数 \"{{function}}\" 的参数无效：{{errors}}",
     "invalidKey": "无效的密钥。有效的密钥：{{keys}}",
+    "invalidOutputFormat": "输出格式 \"{{value}}\" 无效。允许的值：{{allowed}}",
     "license": {
       "machineSlotLimit": "此次部署还需要 {{needed}} 个机器名额，而订阅仅剩 {{free}} 个空闲名额（已使用 {{active}} / {{max}}）。名额会在该机器最后一次活动 5 小时后自动释放，或在机器被移除时立即释放。可通过升级套餐提高限制，或联系销售洽谈 Enterprise 或合作伙伴的机器限额。",
       "nothingProvisioned": "未创建任何资源：仓库未被创建。",

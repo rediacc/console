@@ -2852,6 +2852,7 @@
     },
     "invalidFunctionParams": "Invalid parameters for function \"{{function}}\": {{errors}}",
     "invalidKey": "Invalid key. Valid keys: {{keys}}",
+    "invalidOutputFormat": "Invalid output format \"{{value}}\". Allowed: {{allowed}}",
     "license": {
       "recoveryFailedTokenNotReady": "Your subscription token is not ready. Run: rdc subscription login, then retry.",
       "recoveryFailedNoKnownRepos": "Repositories were found on {{machine}} but none are tracked in your local config. List your tracked repos with `rdc repo list`, then retry.",

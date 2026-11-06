@@ -53,7 +53,7 @@ import { isTelemetryDisabled, telemetryService } from './services/telemetry/tele
 import type { OutputFormat } from './types/index.js';
 import { isAgentEnvironment } from './utils/agent-guard.js';
 import { attachExamples } from './utils/attach-examples.js';
-import { setOutputFormat } from './utils/errors.js';
+import { handleError, setOutputFormat, ValidationError } from './utils/errors.js';
 import { applyRegistry } from './utils/mode-guard.js';
 import { isDevBuild } from './utils/platform.js';
 import { VERSION } from './version.js';
@@ -144,6 +144,18 @@ async function setUserAndSubscriptionContext(): Promise<void> {
 
 // Output-format precedence when --output not explicitly set: 1. REDIACC_DEFAULT_OUTPUT env var (whitelist: table|json|yaml|csv) 2. Auto-JSON for non-TTY or agent environments 3. Default 'table' from .option() Used by tutorial recording to keep human-readable output even though
 // CLAUDECODE=1 in the parent shell triggers agent detection.
+const OUTPUT_FORMATS: readonly OutputFormat[] = ['table', 'json', 'yaml', 'csv'];
+
+/** Parse-time check of `-o`: an unknown format is refused with the usage-error exit code before any command runs. */
+function parseOutputFormat(value: string): OutputFormat {
+  if ((OUTPUT_FORMATS as readonly string[]).includes(value)) return value as OutputFormat;
+  return handleError(
+    new ValidationError(
+      t('errors.invalidOutputFormat', { value, allowed: OUTPUT_FORMATS.join(', ') })
+    )
+  );
+}
+
 function resolveOutputFormat(optsValue: OutputFormat, source: string | undefined): OutputFormat {
   if (source !== 'default') {
     return optsValue;
@@ -196,7 +208,7 @@ export function createCli(): Command {
     .description(t('cli.description'))
     .version(VERSION)
     .showHelpAfterError(true)
-    .option('-o, --output <format>', t('options.output'), 'table')
+    .option('-o, --output <format>', t('options.output'), parseOutputFormat, 'table')
     .option('--config <name>', t('options.config'))
     .option('-l, --lang <code>', t('options.lang', { languages: SUPPORTED_LANGUAGES.join('|') }))
     .option('-q, --quiet', t('options.quiet'))

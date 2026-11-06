@@ -2871,6 +2871,7 @@
     },
     "invalidFunctionParams": "Parametri non validi per la funzione \"{{function}}\": {{errors}}",
     "invalidKey": "Chiave non valida. Chiavi valide: {{keys}}",
+    "invalidOutputFormat": "Formato di output non valido \"{{value}}\". Consentiti: {{allowed}}",
     "license": {
       "machineSlotLimit": "Questo posizionamento richiede {{needed}} slot macchina in più, e l'abbonamento ne ha {{free}} liberi ({{active}} su {{max}} in uso). Uno slot si libera automaticamente 5 ore dopo l'ultima attività di quella macchina, o subito quando la macchina viene rimossa. Alza il limite passando a un piano superiore, oppure contatta le vendite per un limite macchine Enterprise o partner negoziato.",
       "nothingProvisioned": "Non è stato effettuato alcun provisioning: il repository non è stato creato.",

@@ -2871,6 +2871,7 @@
     },
     "invalidFunctionParams": "関数 \"{{function}}\" のパラメータが無効です: {{errors}}",
     "invalidKey": "無効なキーです。有効なキー: {{keys}}",
+    "invalidOutputFormat": "出力形式 \"{{value}}\" は無効です。使用できる値: {{allowed}}",
     "license": {
       "machineSlotLimit": "この配置にはあと {{needed}} 個のマシンスロットが必要ですが、サブスクリプションの空きは {{free}} 個です（{{max}} 個中 {{active}} 個使用中）。スロットはそのマシンの最終アクティビティから5時間後に自動的に解放されるか、マシンが削除されると即座に解放されます。プランをアップグレードして上限を引き上げるか、Enterprise または パートナーのマシン上限について営業にご相談ください。",
       "nothingProvisioned": "何もプロビジョニングされませんでした: リポジトリは作成されていません。",

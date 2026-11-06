@@ -2871,6 +2871,7 @@
     },
     "invalidFunctionParams": "\"{{function}}\" işlevi için geçersiz parametreler: {{errors}}",
     "invalidKey": "Geçersiz anahtar. Geçerli anahtarlar: {{keys}}",
+    "invalidOutputFormat": "Geçersiz çıktı biçimi \"{{value}}\". İzin verilenler: {{allowed}}",
     "license": {
       "machineSlotLimit": "Bu yerleştirme {{needed}} makine slotu daha gerektiriyor ve abonelikte {{free}} boş slot var ({{max}} slotun {{active}} tanesi kullanımda). Bir slot, o makinenin son etkinliğinden 5 saat sonra otomatik olarak veya makine kaldırıldığında hemen serbest kalır. Planı yükselterek sınırı artırın veya anlaşmalı bir Enterprise ya da iş ortağı makine sınırı için satış ekibiyle iletişime geçin.",
       "nothingProvisioned": "Hiçbir şey provizyonlanmadı: depo oluşturulmadı.",

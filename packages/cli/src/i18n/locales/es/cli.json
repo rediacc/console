@@ -2871,6 +2871,7 @@
     },
     "invalidFunctionParams": "Parámetros inválidos para función \"{{function}}\": {{errors}}",
     "invalidKey": "Clave inválida. Claves válidas: {{keys}}",
+    "invalidOutputFormat": "Formato de salida no válido \"{{value}}\". Permitidos: {{allowed}}",
     "license": {
       "machineSlotLimit": "Esta colocación necesita {{needed}} puesto(s) de máquina más, y la suscripción tiene {{free}} libre(s) ({{active}} de {{max}} en uso). Un puesto se libera automáticamente 5 horas después de la última actividad de esa máquina, o de inmediato cuando se elimina la máquina. Aumenta el límite mejorando el plan, o contacta con ventas para un límite de máquinas Enterprise o de socio negociado.",
       "nothingProvisioned": "No se aprovisionó nada: el repositorio no se creó.",

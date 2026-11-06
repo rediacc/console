@@ -10,7 +10,7 @@ import { t } from '../../i18n/index.js';
 import { type AuditEntry, readAuditLog, verifyChain } from '../../services/core/audit-log.js';
 import { outputService } from '../../services/core/output.js';
 import { writeStderr, writeStdout } from '../../services/core/request-context.js';
-import { handleError } from '../../utils/errors.js';
+import { getOutputFormat, handleError } from '../../utils/errors.js';
 
 function auditLogPath(): string {
   const xdg = process.env.XDG_CONFIG_HOME ?? `${process.env.HOME ?? ''}/.config`;
@@ -74,7 +74,7 @@ export function registerAuditCommands(parent: Command, _program: Command): void 
           if (!matchesPath(e, options.path)) return false;
           return true;
         });
-        outputService.print(filtered, 'json');
+        outputService.print(filtered, getOutputFormat());
       } catch (error) {
         handleError(error);
       }
