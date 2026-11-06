@@ -92,7 +92,9 @@ class Sampler:
         if sample is None:
             phase.failed += 1
             tail = " | ".join(stderr.strip().splitlines()[-2:])
-            print("sample failed (%s): rc=%d %s" % (phase.name, rc, tail), file=self.out, flush=True)
+            print(
+                "sample failed (%s): rc=%d %s" % (phase.name, rc, tail), file=self.out, flush=True
+            )
             return
         previous, self.prev = self.prev, sample
         figure = rcs.interval_figures(previous, sample) if previous else None
@@ -122,15 +124,22 @@ def _fmt(value: float | None, spec: str = "%.2f") -> str:
 
 
 def evaluate(
-    baseline: Phase, during: Phase, after: Phase, command_rc: int | None, max_delta: float, max_iowait: float
+    baseline: Phase,
+    during: Phase,
+    after: Phase,
+    command_rc: int | None,
+    max_delta: float,
+    max_iowait: float,
 ) -> tuple[int, list[str]]:
     """(exit code, the reasons it was chosen)."""
     reasons: list[str] = []
     if command_rc:
         return (128 - command_rc if command_rc < 0 else command_rc), ["command rc=%d" % command_rc]
-    for phase in (baseline, during, after):
-        if phase.failed:
-            reasons.append("%s: %d sample(s) unreadable" % (phase.name, phase.failed))
+    reasons.extend(
+        "%s: %d sample(s) unreadable" % (phase.name, phase.failed)
+        for phase in (baseline, during, after)
+        if phase.failed
+    )
     if not baseline.samples:
         reasons.append("no baseline sample")
     if not during.samples:
@@ -204,28 +213,35 @@ def run(deps: Deps, plan: Plan, out: TextIO) -> int:
     else:
         sampler.span(during, plan.duration_s, plan.interval_s)
     seconds = deps.clock() - began
-    sampler.span(after, plan.after_s, plan.interval_s)
+    if plan.after_s > 0:  # --after-s 0 asks for no after phase: no sample, so no failed one either
+        sampler.span(after, plan.after_s, plan.interval_s)
     code, reasons = evaluate(baseline, during, after, command_rc, plan.max_delta, plan.max_iowait)
     print(report(baseline, during, after, seconds, command_rc, code, reasons), file=out, flush=True)
     return code
 
 
 def _parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(prog="remote_load_sampler", description=(__doc__ or "").splitlines()[0])
+    p = argparse.ArgumentParser(
+        prog="remote_load_sampler", description=(__doc__ or "").splitlines()[0]
+    )
     p.add_argument("--machine", required=True)
     p.add_argument("--config", required=True, help="no default: a bare rdc targets production")
     p.add_argument("--rdc", default="./rdc.sh")
     p.add_argument("--baseline-s", type=float, default=BASELINE_S)
     p.add_argument("--interval-s", type=float, default=INTERVAL_S)
     p.add_argument("--after-s", type=float, default=AFTER_S)
-    p.add_argument("--duration-s", type=float, default=0.0, help="sampling time when no command is given")
+    p.add_argument(
+        "--duration-s", type=float, default=0.0, help="sampling time when no command is given"
+    )
     p.add_argument("--max-load-delta", type=float, default=MAX_LOAD_DELTA)
     p.add_argument("--max-iowait", type=float, default=MAX_IOWAIT)
     p.add_argument("command", nargs=argparse.REMAINDER, help="after `--`: the command to wrap")
     return p
 
 
-def main(argv: Sequence[str] | None = None, deps: Deps | None = None, out: TextIO | None = None) -> int:
+def main(
+    argv: Sequence[str] | None = None, deps: Deps | None = None, out: TextIO | None = None
+) -> int:
     out = out or sys.stdout
     try:
         args = _parser().parse_args(argv)
@@ -235,12 +251,28 @@ def main(argv: Sequence[str] | None = None, deps: Deps | None = None, out: TextI
     if not rcs.NAME.fullmatch(args.machine) or not rcs.NAME.fullmatch(args.config):
         print("bad --machine or --config", file=out)
         return EXIT_USAGE
-    if args.interval_s <= 0 or args.baseline_s < 0 or args.after_s < 0 or (not command and args.duration_s <= 0):
-        print("need a positive --interval-s, non-negative phases, and a command or --duration-s", file=out)
+    if (
+        args.interval_s <= 0
+        or args.baseline_s < 0
+        or args.after_s < 0
+        or (not command and args.duration_s <= 0)
+    ):
+        print(
+            "need a positive --interval-s, non-negative phases, and a command or --duration-s",
+            file=out,
+        )
         return EXIT_USAGE
     plan = Plan(
-        args.rdc, args.config, args.machine, command, args.baseline_s, args.interval_s,
-        args.after_s, args.duration_s, args.max_load_delta, args.max_iowait,
+        args.rdc,
+        args.config,
+        args.machine,
+        command,
+        args.baseline_s,
+        args.interval_s,
+        args.after_s,
+        args.duration_s,
+        args.max_load_delta,
+        args.max_iowait,
     )
     return run(deps or Deps(), plan, out)
 

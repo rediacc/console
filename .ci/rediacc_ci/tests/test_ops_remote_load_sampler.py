@@ -22,7 +22,7 @@ class World:
     def sleep(self, s):
         self.now += s
 
-    def runner(self, argv, timeout):
+    def runner(self, argv, _timeout):
         assert argv[1:4] == ["--config", "eu-bench", "term"]
         self.calls += 1
         if self.fail_from is not None and self.calls >= self.fail_from:
@@ -38,7 +38,7 @@ class World:
         )
         return 0, text, ""
 
-    def spawner(self, argv):
+    def spawner(self, _argv):
         self.started = self.now
         world = self
 
@@ -52,15 +52,27 @@ class World:
         return Proc()
 
     def deps(self):
-        return rls.Deps(runner=self.runner, spawner=self.spawner, clock=self.clock, sleep=self.sleep)
+        return rls.Deps(
+            runner=self.runner, spawner=self.spawner, clock=self.clock, sleep=self.sleep
+        )
 
 
 def drive(world, extra=()):
     out = io.StringIO()
     argv = [
-        "--machine", "hostinger", "--config", "eu-bench",
-        "--baseline-s", "20", "--after-s", "20", "--interval-s", "10",
-        *extra, "--", "true",
+        "--machine",
+        "hostinger",
+        "--config",
+        "eu-bench",
+        "--baseline-s",
+        "20",
+        "--after-s",
+        "20",
+        "--interval-s",
+        "10",
+        *extra,
+        "--",
+        "true",
     ]
     return rls.main(argv, world.deps(), out), out.getvalue()
 
@@ -69,8 +81,12 @@ def test_quiet_run_exits_zero_and_reports_every_phase():
     code, text = drive(World([1.0]))
     assert code == 0
     line = text.strip().splitlines()[-1]
-    assert "baseload=1.00" in line and "peakload=1.00" in line and "rc=0" in line
-    assert text.count("baseline load=") == 3 and "during load=" in text and "after load=" in text
+    assert "baseload=1.00" in line
+    assert "peakload=1.00" in line
+    assert "rc=0" in line
+    assert text.count("baseline load=") == 3
+    assert "during load=" in text
+    assert "after load=" in text
 
 
 def test_control_load_over_threshold_exits_nonzero():
@@ -82,7 +98,8 @@ def test_control_load_over_threshold_exits_nonzero():
 
 def test_control_iowait_over_threshold_exits_nonzero():
     code, text = drive(World([1.0], iowait_share=0.4))
-    assert code == rls.EXIT_THRESHOLD and "peak_iowait" in text
+    assert code == rls.EXIT_THRESHOLD
+    assert "peak_iowait" in text
 
 
 def test_thresholds_off_when_negative():
@@ -93,7 +110,8 @@ def test_thresholds_off_when_negative():
 
 def test_no_baseline_sample_exits_three():
     code, text = drive(World([1.0], fail_from=1))
-    assert code == rls.EXIT_SAMPLING and "no_baseline_sample" in text
+    assert code == rls.EXIT_SAMPLING
+    assert "no_baseline_sample" in text
 
 
 def test_unreadable_sample_midrun_exits_three():
@@ -103,20 +121,92 @@ def test_unreadable_sample_midrun_exits_three():
 
 def test_command_rc_is_propagated():
     code, text = drive(World([1.0], cmd_rc=7))
-    assert code == 7 and "cmdrc=7" in text
+    assert code == 7
+    assert "cmdrc=7" in text
 
 
 def test_duration_mode_without_command():
     out = io.StringIO()
     argv = [
-        "--machine", "hostinger", "--config", "eu-bench",
-        "--baseline-s", "10", "--after-s", "0", "--duration-s", "20",
+        "--machine",
+        "hostinger",
+        "--config",
+        "eu-bench",
+        "--baseline-s",
+        "10",
+        "--after-s",
+        "0",
+        "--duration-s",
+        "20",
     ]
     code = rls.main(argv, World([1.0]).deps(), out)
-    assert code == 0 and "cmdrc=none" in out.getvalue()
+    assert code == 0
+    assert "cmdrc=none" in out.getvalue()
 
 
 def test_bad_arguments_exit_two():
     out = io.StringIO()
-    assert rls.main(["--machine", "x y", "--config", "eu-bench", "--", "true"], World([1.0]).deps(), out) == 2
+    assert (
+        rls.main(
+            ["--machine", "x y", "--config", "eu-bench", "--", "true"], World([1.0]).deps(), out
+        )
+        == 2
+    )
     assert rls.main(["--machine", "m", "--config", "c"], World([1.0]).deps(), out) == 2
+
+
+def test_after_s_zero_takes_no_after_sample_and_a_failing_one_cannot_fail_the_run():
+    # The machine answers the baseline and the run, then goes down: with no after phase asked, nothing reads it.
+    out = io.StringIO()
+    argv = [
+        "--machine",
+        "hostinger",
+        "--config",
+        "eu-bench",
+        "--baseline-s",
+        "10",
+        "--after-s",
+        "0",
+        "--interval-s",
+        "10",
+        "--",
+        "true",
+    ]
+    world = World([1.0], run_s=10.0, fail_from=4)
+    code = rls.main(argv, world.deps(), out)
+    line = out.getvalue().strip().splitlines()[-1]
+    assert code == 0, out.getvalue()
+    assert line.count("after load=") == 0
+    assert "samples=2/1/0" in line
+
+
+def test_a_command_killed_by_a_signal_exits_128_plus_the_signal():
+    assert drive(World([1.0], cmd_rc=-15))[0] == 143
+    assert drive(World([1.0], cmd_rc=-9))[0] == 137
+
+
+def test_the_double_dash_is_stripped_from_the_wrapped_command():
+    seen = []
+    world = World([1.0])
+    inner = world.spawner
+
+    def spawner(argv):
+        seen.append(list(argv))
+        return inner(argv)
+
+    deps = rls.Deps(runner=world.runner, spawner=spawner, clock=world.clock, sleep=world.sleep)
+    argv = [
+        "--machine",
+        "m",
+        "--config",
+        "eu-bench",
+        "--baseline-s",
+        "10",
+        "--after-s",
+        "0",
+        "--",
+        "echo",
+        "hi",
+    ]
+    rls.main(argv, deps, io.StringIO())
+    assert seen == [["echo", "hi"]]
