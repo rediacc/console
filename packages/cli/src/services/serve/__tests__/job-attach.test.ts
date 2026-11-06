@@ -535,6 +535,9 @@ describe('attach window over /v1/command', () => {
       const finished = await poll();
       expect(finished.status).toMatchObject({ state: 'succeeded', exitCode: 0 });
       expect(Date.now() - t0).toBeGreaterThanOrEqual(40_000);
+      // Every poll reported what it saw to the ticket observer, in order, ending on the terminal state.
+      expect(observed.map((o) => o.state)).toEqual(['running', 'running', 'succeeded']);
+      expect(observed.every((o) => o.jobId === 'j18c1c04dd251ce26-0ccf9fe5')).toBe(true);
     });
 
     it('carries exactly two heartbeats, 10 s apart, in a quiet 25 s window', async () => {

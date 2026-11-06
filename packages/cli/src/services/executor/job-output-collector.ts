@@ -55,19 +55,27 @@ function logEventText(event: RenetEvent): string {
 const TAIL_MAX_LINES = 20;
 const TAIL_MAX_LINE_CHARS = 300;
 
-const boundLogLine = (msg: string): string =>
-  msg.length > TAIL_MAX_LINE_CHARS ? `${msg.slice(0, TAIL_MAX_LINE_CHARS)}…` : msg;
+/** Cut at the width, one unit earlier when the cut would split a surrogate pair into a lone high surrogate. */
+const boundLogLine = (msg: string): string => {
+  if (msg.length <= TAIL_MAX_LINE_CHARS) return msg;
+  const last = msg.charCodeAt(TAIL_MAX_LINE_CHARS - 1);
+  const cut = last >= 0xd800 && last <= 0xdbff ? TAIL_MAX_LINE_CHARS - 1 : TAIL_MAX_LINE_CHARS;
+  return `${msg.slice(0, cut)}…`;
+};
 
 /**
  * A failed job's stderr: the tail of log lines of any level, led by the error and warning lines the tail no longer
- * holds, so a problem logged more than {@link TAIL_MAX_LINES} lines before the failure still reaches the caller.
+ * holds (at most {@link TAIL_MAX_LINES} of them), so a problem logged more than {@link TAIL_MAX_LINES} lines before the
+ * failure still reaches the caller.
  */
 export function failedJobStderr(stderr: string, tail: string): string {
   const inTail = new Set(tail.split('\n'));
   const older = stderr
     .split('\n')
     .filter((line) => line !== '' && !inTail.has(boundLogLine(line)))
-    .map(boundLogLine);
+    .map(boundLogLine)
+    // The newest of the older problem lines, so the failure stays bounded however much a job logged.
+    .slice(-TAIL_MAX_LINES);
   return older.length === 0 ? tail : `${older.join('\n')}\n${tail}`;
 }
 
