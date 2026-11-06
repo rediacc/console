@@ -154,7 +154,9 @@ describe('CLI contract', () => {
     // 89 -> 90: `rdc job wait` landed (PLAN-detached-jobs J5). It follows a machine job over SSH like the other `job *` verbs, which are proxy-capable and never detachable (they read the spool).
     //
     // 90 -> 93: `repo permission grant`, `repo permission revoke` and `repo permission show` landed. Each runs a repository_permission_* renet function on the machine that holds the repository and is non-interactive, so all three are proxy-capable and detachable like `repo gpu grant`.
-    expect(proxyCapableCommands().length).toBe(93);
+    //
+    // 93 -> 94: `repo health` (PLAN-health-checks-local G3) runs repository_health on the machine that holds the repository, non-interactive, so proxy-capable and detachable like `repo status`.
+    expect(proxyCapableCommands().length).toBe(94);
   });
 
   it('every refusal carries a reason, and every proxyable command carries none', () => {
@@ -358,7 +360,8 @@ describe('CLI contract', () => {
       'vscode serve stop',
     ]);
     const detachable = CLI_CONTRACT.commands.filter((c) => c.detachable).map((c) => c.pathKey);
-    expect(detachable).toHaveLength(81);
+    // 81 -> 82: `repo health` (one repository_health read job, its print a step).
+    expect(detachable).toHaveLength(82);
     // The J0 covered verbs and the J0b converted rows a conversion box owns are all jobs; spot the four forms (single call, precondition fold, command-kind, multi-call).
     for (const pathKey of [
       'repo list',

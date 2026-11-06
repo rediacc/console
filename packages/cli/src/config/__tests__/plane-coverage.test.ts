@@ -140,8 +140,10 @@ describe('command plane coverage', () => {
     // 199 -> 203, machine 108 -> 109, other 34 -> 37: `backup immutability show`, `backup immutability set` and `backup undelete` (PLAN-backup-critical-tier N4) are accountServerFetch calls against the control plane, so `other`; `backup churn` (N5) drives the churn probe on a machine and keeps the backup domain's machine plane.
     //
     // 203 -> 206, machine 109 -> 112: `repo permission grant`, `revoke` and `show` (PLAN-rediaccfile-unprivileged U10) reach a machine, where the repository's lifecycle grant lives.
-    expect(COMMANDS.length).toBe(206);
-    expect(counts).toEqual({ config: 57, machine: 112, other: 37 });
+    //
+    // 206 -> 207, machine 112 -> 113: `repo health` (PLAN-health-checks-local G3) runs the repositories' health() on a machine.
+    expect(COMMANDS.length).toBe(207);
+    expect(counts).toEqual({ config: 57, machine: 113, other: 37 });
   });
 
   it('records the interactive commands', () => {
@@ -195,7 +197,8 @@ describe('command plane coverage', () => {
     // 101 -> 104: `backup repair`, `backup check` and `backup toc-key sync` are machine-plane and non-interactive.
     // 104 -> 105: `backup churn` (PLAN-backup-critical-tier N5) is machine-plane and non-interactive; it holds no credential or token, so it needs no PROXY_EXCLUSIONS entry unless the lead rules that a multi-hour verb must stay local.
     // 105 -> 108: the three `repo permission` leaves are machine-plane and non-interactive.
-    expect(machineNonInteractive.length).toBe(108);
+    // 108 -> 109: `repo health` is machine-plane and non-interactive.
+    expect(machineNonInteractive.length).toBe(109);
   });
 
   it('plane and interactive entries all point at real commands', () => {

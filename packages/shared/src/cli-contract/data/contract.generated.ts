@@ -11411,6 +11411,11 @@ export const CLI_CONTRACT: CliContract = {
         }
       ],
       "hasSubcommands": false,
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "read",
+      "timeoutMs": 120000,
+      "repoArg": "ref",
       "interactive": false,
       "proxyCapable": true,
       "detachable": true,

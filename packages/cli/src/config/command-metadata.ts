@@ -695,6 +695,16 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
       excludeOptions: ['debug', 'skip-router-restart'],
     },
   },
+  'repo health': {
+    mcp: {
+      destructive: false,
+      idempotent: true,
+      timeout: 'read' as const,
+      repoArg: 'ref',
+      requiredArgs: ['ref'],
+      excludeOptions: ['debug', 'skip-router-restart'],
+    },
+  },
   'repo list': {
     mcp: {
       destructive: false,
