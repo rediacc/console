@@ -10,7 +10,7 @@ Design: `agent/plans/PLAN-health-checks-local.md` (D-runner, D-record, D-mail, D
 - `src/probes.ts`: the five generic probe kinds (`tls`, `banner-465`, `https`, `health-endpoint`, `dnsbl-over-DoH`).
 - `src/state.ts`: the `OpsState` Durable Object, one SQLite-backed instance named `state`. It holds the probe records, the mail log, the last digest time, the certificate-transparency cache and the last ingest per source. Reads and writes are serialized in the object, so there is no D1 and no bucket.
 - `src/mail.ts`: the SES sender, the alert and the Monday digest.
-- Build-time targets: the account and proxy `/health` endpoints of every region in `regions.json`.
+- Build-time targets: only the account and proxy `/health` endpoints of every region in `regions.json`. A region change is a code change: edit `regions.json` and redeploy the Worker. Every other probe comes from the `OPS_HEALTH_TARGETS` secret (see Targets).
 
 ## Tokens and secrets
 
@@ -27,7 +27,7 @@ The `AWS_SES_*` names (`AWS_SES_ACCESS_KEY_ID_EU`, `AWS_SES_SECRET_ACCESS_KEY_EU
 
 ## Targets
 
-The target file schema is `{version: 1, probes: [{id, kind, host, port?, path?, expect?}], dnsbl: {ip, zones}}`. Probe ids match `^[a-z0-9][a-z0-9._:-]{0,63}$`, are unique, and never reuse `targets`, `mailer` or the `health:` prefix.
+The target file schema is `{version: 1, probes: [{id, kind, host, port?, path?, expect?}], dnsbl: {ip, zones}}`. Probe ids match `^[a-z0-9][a-z0-9._:-]{0,63}$`, are unique, and never reuse `targets`, `mailer` or the `health:` prefix. The optional `expect` field means one thing per kind: a certificate issuer name for `tls` (the filter on the Certificate Transparency lookup), a regular expression for the first line of `banner-465`, and a substring that the response body of `https` and `health-endpoint` must contain; `dnsbl-over-DoH` ignores it.
 
 The file lives in the operator's `ops` repo, not here. A target change reaches the Worker in two steps: edit the file in the `ops` repo, then re-run `deploy_ops_health` (a dry run by default, `--write` applies it). The deploy validates the file against this schema, compares what the Worker serves (`targets_sha` in `/v1/status`) and puts only what changed. A code edit is never how a target changes. The Worker cannot read the file out of the repo's backups, because those are encrypted chunks and the repo key never leaves the machine (F20), so the deploy reads it from the live repo.
 

@@ -24,7 +24,7 @@ export const CONFIG: OpsHealthConfig = raw;
  */
 export function ingestMaxAgeHours(source: string, config: OpsHealthConfig = CONFIG): number {
   const table = config.ingest.max_age_h;
-  if (source in table && !source.endsWith('*')) return table[source];
+  if (Object.hasOwn(table, source) && !source.endsWith('*')) return table[source];
   let best: { len: number; hours: number } | null = null;
   for (const [key, hours] of Object.entries(table)) {
     if (!key.endsWith('*')) continue;
