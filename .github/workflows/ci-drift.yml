@@ -43,6 +43,11 @@ jobs:
     permissions:
       contents: read
     steps:
+      # drift_job subtracts the setup time from its run budget, so the verdict is
+      # written before the job timeout however long the steps below take.
+      - name: Record job start
+        run: echo "DRIFT_JOB_STARTED_AT=$(date +%s)" >> "$GITHUB_ENV"
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # The private submodules hold sites the gates read (private/renet for

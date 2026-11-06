@@ -2437,7 +2437,7 @@ jobs:
         env:
           OPS_HEALTH_INGEST_TOKEN: ${{ env.BWS_OPS_HEALTH_INGEST_TOKEN }}
           CI_COMPLETE_RESULT: ${{ needs.ci-complete.result }}
-          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          WEEKLY_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           case "$CI_COMPLETE_RESULT" in
             success) state=green ;;
@@ -2445,4 +2445,4 @@ jobs:
             *) state=red ;;
           esac
           PYTHONPATH=.ci python3 -m rediacc_ci.release.drift_job --post-state "$state" \
-            --source ci-weekly --detail "Console CI weekly: CI Complete ${CI_COMPLETE_RESULT:-none}, $RUN_URL"
+            --source ci-weekly --detail "Console CI weekly: CI Complete ${CI_COMPLETE_RESULT:-none}, $WEEKLY_RUN_URL"
