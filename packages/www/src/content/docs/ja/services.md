@@ -9,8 +9,8 @@ tags:
 subcategory: workloads
 order: 5
 language: ja
-sourceHash: "fbdbed2c2d31b52c"
-sourceCommit: "9b8aa220de6eb4f7c7b7783456af6871202c8305"
+sourceHash: "a98cadc0afd3474b"
+sourceCommit: "9f58d83e01b4d46f8ce31af467a203b4d195e801"
 ---
 
 # サービス
@@ -35,8 +35,8 @@ renetは次のRediaccfile関数を実行します：
 |----------|-------------|---------|----------------|
 | `up()` | 開始時 | サービスの開始（例：`renet compose -- up -d`） | ルートの失敗は**クリティカル**（すべて停止）。サブディレクトリの失敗は**非クリティカル**（ログに記録し、続行） |
 | `down()` | 停止時 | サービスの停止（例：`renet compose -- down`） | **ベストエフォート** - 失敗はログに記録されますが、すべてのRediaccfileが常に試行されます |
-| `health()` | `rdc repo health`、`rdc machine health`、デプロイのヘルスゲート | リポジトリ自身の状態を報告：終了コード `0` は正常、`1` は警告、`2` はエラー | すべてのRediaccfileの `health()` が実行され、最も悪いレベルが採用されます。終了コード `75` はまだウォームアップ中（警告）を意味します。それ以外の終了コード、シグナル、タイムアウトはエラーです。どのRediaccfileも `health()` を定義していないリポジトリは**チェックなし**と報告され、正常とは見なされません |
-| `repair()` | `rdc repo repair`、および `health()` が正常でないリポジトリに対する `rdc machine repair` | 同じファイルの `health()` が報告した問題を修復 | そのファイルの `health()` が正常でなく、宣言されたクラスが許可されている場合にのみ実行されます（下記参照）。その後 `health()` が再度実行されます。失敗またはタイムアウトした `repair()` はエラーです |
+| `health()` | `rdc repo health`、`rdc machine health`、デプロイのヘルスゲート | リポジトリ自身の状態を報告：終了コード `0` は正常、`1` は警告、`2` はエラー | すべてのRediaccfileの `health()` が実行され、最も悪いレベルが採用されます。終了コード `75` はまだウォームアップ中（警告）を意味します。それ以外の終了コード、シグナル、タイムアウトはエラーです（デプロイのヘルスゲートはタイムアウトを「まだウォームアップ中」と読み、再試行します。[タイムアウトとシャットダウンの順序](#timeouts-and-shutdown-order)を参照）。どのRediaccfileも `health()` を定義していないリポジトリは**チェックなし**と報告され、正常とは見なされません |
+| `repair()` | `rdc repo repair`、および `health()` が正常でないリポジトリに対する `rdc machine repair` | 同じファイルの `health()` が報告した問題を修復 | そのファイルの `health()` が正常でなく、宣言されたクラスが許可されている場合にのみ実行されます（下記参照）。`health()` が終了コード `75`（まだウォームアップ中）で終わった場合は警告として扱われるため、`repair()` は起動中のリポジトリには手を出さないようにしてください。その後 `health()` が再度実行されます。失敗またはタイムアウトした `repair()` はエラーです |
 
 すべての関数はオプションです。関数が定義されていない場合、サイレントにスキップされます。
 
@@ -91,7 +91,7 @@ Rediaccfile関数の実行時、以下の環境変数が利用可能です：
 | Rediaccfileの処理 | 見えるもの | 対処 |
 |---|---|---|
 | `sudo x` | `sudo: The "no new privileges" flag is set` | `sudo`を外す。そのステップはrootが不要か、グラントが必要 |
-| `chown 5050 ...`、またはコンテナが所有するディレクトリへの`rm -rf` | `Operation not permitted`または`Permission denied` | ステップを使い捨てコンテナで実行する（rootになるのはコンテナ内のみで、マシン上ではありません）：`renet compose -- run --rm --no-deps --user 0 --entrypoint chown <service> -R 5050:5050 /data` |
+| `chown 5050 ...`、またはコンテナが所有するディレクトリへの`rm -rf` | `Operation not permitted`または`Permission denied` | ステップを使い捨てコンテナで実行する（rootになるのはコンテナ内で、リポジトリのDockerデーモンはリポジトリ自身のルート外へのバインドを拒否します）：`renet compose -- run --rm --no-deps --user 0 --entrypoint chown <service> -R 5050:5050 /data` |
 | マウント内の`.env`などのファイルへの書き込み | 動作する。ファイルの所有者はユニバーサルユーザー | 不要 |
 | `/etc/rediacc/*`、`/proc/kcore`、ブロックデバイスの読み取り | `Permission denied` | パスのグラントを依頼する |
 | ファイルシークレットを直接読み取る | `Permission denied` | composeの`secrets:`、またはenvモードのシークレットを使う |

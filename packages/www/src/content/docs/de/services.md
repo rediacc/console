@@ -10,8 +10,8 @@ tags:
 subcategory: workloads
 order: 5
 language: de
-sourceHash: "fbdbed2c2d31b52c"
-sourceCommit: "9b8aa220de6eb4f7c7b7783456af6871202c8305"
+sourceHash: "a98cadc0afd3474b"
+sourceCommit: "9f58d83e01b4d46f8ce31af467a203b4d195e801"
 ---
 
 # Dienste
@@ -36,8 +36,8 @@ renet führt diese Rediaccfile-Funktionen aus:
 |----------|---------------------|-------|-----------------|
 | `up()` | Beim Starten | Dienste starten (z. B. `renet compose -- up -d`) | Fehler im Root-Rediaccfile sind **kritisch** (stoppt alles). Fehler in Unterverzeichnissen sind **nicht-kritisch** (werden protokolliert, es wird mit dem nächsten fortgefahren). |
 | `down()` | Beim Stoppen | Dienste stoppen (z. B. `renet compose -- down`) | **Best-Effort** -- Fehler werden protokolliert, aber alle Rediaccfiles werden immer verarbeitet. |
-| `health()` | Bei `rdc repo health`, bei `rdc machine health` und im Health-Gate des Deployments | Den eigenen Zustand des Repositorys melden: Exit `0` ok, `1` Warnung, `2` Fehler | Das `health()` jedes Rediaccfiles läuft, und die schlechteste Stufe zählt. Exit `75` heißt: noch im Aufwärmen (eine Warnung). Jeder andere Exit, ein Signal oder ein Zeitlimit ist ein Fehler. Ein Repository, dessen Rediaccfiles kein `health()` definieren, meldet **keine Prüfung**, nie „gesund“ |
-| `repair()` | Bei `rdc repo repair` und bei `rdc machine repair` für ein Repository, dessen `health()` nicht ok ist | Beheben, was das `health()` derselben Datei gemeldet hat | Läuft nur, wenn das `health()` seiner Datei nicht ok ist und die deklarierte Klasse erlaubt ist (siehe unten). Danach läuft `health()` erneut. Ein fehlgeschlagenes `repair()` oder eines mit Zeitüberschreitung ist ein Fehler |
+| `health()` | Bei `rdc repo health`, bei `rdc machine health` und im Health-Gate des Deployments | Den eigenen Zustand des Repositorys melden: Exit `0` ok, `1` Warnung, `2` Fehler | Das `health()` jedes Rediaccfiles läuft, und die schlechteste Stufe zählt. Exit `75` heißt: noch im Aufwärmen (eine Warnung). Jeder andere Exit, ein Signal oder ein Zeitlimit ist ein Fehler (das Health-Gate des Deployments wertet ein Zeitlimit als „noch im Aufwärmen“ und versucht es erneut, siehe [Zeitlimits und Reihenfolge beim Herunterfahren](#timeouts-and-shutdown-order)). Ein Repository, dessen Rediaccfiles kein `health()` definieren, meldet **keine Prüfung**, nie „gesund“ |
+| `repair()` | Bei `rdc repo repair` und bei `rdc machine repair` für ein Repository, dessen `health()` nicht ok ist | Beheben, was das `health()` derselben Datei gemeldet hat | Läuft nur, wenn das `health()` seiner Datei nicht ok ist und die deklarierte Klasse erlaubt ist (siehe unten). Ein `health()` mit Exit `75` (noch im Aufwärmen) zählt als Warnung, daher sollte ein `repair()` ein Repository, das noch startet, in Ruhe lassen. Danach läuft `health()` erneut. Ein fehlgeschlagenes `repair()` oder eines mit Zeitüberschreitung ist ein Fehler |
 
 Jede Funktion ist optional. Ist eine Funktion nicht definiert, wird sie stillschweigend übersprungen.
 
@@ -92,7 +92,7 @@ Eine Zeile, die mehr als die Standardrechte braucht, scheitert mit der Fehlermel
 | Ein Rediaccfile macht | Es sieht | Lösung |
 |--------------------|--------------------|--------------------|
 | `sudo x` | `sudo: The "no new privileges" flag is set` | `sudo` entfernen. Der Schritt braucht entweder kein root oder eine Freigabe |
-| `chown 5050 ...` oder `rm -rf` auf ein Verzeichnis, das einem Container gehört | `Operation not permitted` / `Permission denied` | Den Schritt in einem Einmal-Container ausführen (root nur im Container, nicht auf dem Rechner): `renet compose -- run --rm --no-deps --user 0 --entrypoint chown <service> -R 5050:5050 /data` |
+| `chown 5050 ...` oder `rm -rf` auf ein Verzeichnis, das einem Container gehört | `Operation not permitted` / `Permission denied` | Den Schritt in einem Einmal-Container ausführen (root im Container; der Docker-Daemon des Repositorys lehnt Binds außerhalb der eigenen Wurzelverzeichnisse des Repositorys ab): `renet compose -- run --rm --no-deps --user 0 --entrypoint chown <service> -R 5050:5050 /data` |
 | Schreibt `.env` oder andere Dateien im Mount | Funktioniert; die Dateien gehören dem universellen Benutzer | Keine |
 | Liest `/etc/rediacc/*`, `/proc/kcore` oder ein Blockgerät | `Permission denied` | Eine Pfad-Freigabe anfordern |
 | Liest ein Datei-Secret direkt | `Permission denied` | Compose-`secrets:` oder ein Secret im Env-Modus verwenden |

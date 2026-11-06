@@ -9,8 +9,8 @@ tags:
 subcategory: workloads
 order: 5
 language: zh
-sourceHash: "fbdbed2c2d31b52c"
-sourceCommit: "9b8aa220de6eb4f7c7b7783456af6871202c8305"
+sourceHash: "a98cadc0afd3474b"
+sourceCommit: "9f58d83e01b4d46f8ce31af467a203b4d195e801"
 ---
 
 # 服务
@@ -35,8 +35,8 @@ renet 会运行 Rediaccfile 中的以下函数：
 |------|----------|------|----------|
 | `up()` | 启动时 | 启动服务（例如 `renet compose -- up -d`） | 根 Rediaccfile 失败是**关键性的**（停止所有操作）。子目录失败是**非关键性的**（记录日志，继续下一个） |
 | `down()` | 停止时 | 停止服务（例如 `renet compose -- down`） | **尽力而为** -- 失败会被记录，但所有 Rediaccfile 都会被执行 |
-| `health()` | 运行 `rdc repo health`、`rdc machine health` 以及部署的健康关卡时 | 报告仓库自身的健康状况：退出码 `0` 正常，`1` 警告，`2` 错误 | 每个 Rediaccfile 的 `health()` 都会运行，取最差的级别。退出码 `75` 表示仍在预热（警告）。任何其他退出码、信号或超时都算错误。没有任何 Rediaccfile 定义 `health()` 的仓库会报告**无检查**，绝不会算作健康 |
-| `repair()` | 运行 `rdc repo repair`，以及对 `health()` 不正常的仓库运行 `rdc machine repair` 时 | 修复同一文件的 `health()` 所报告的问题 | 仅当其所在文件的 `health()` 不正常且所声明的类别被允许时才会运行（见下文）。之后 `health()` 会再次运行。失败或超时的 `repair()` 算错误 |
+| `health()` | 运行 `rdc repo health`、`rdc machine health` 以及部署的健康关卡时 | 报告仓库自身的健康状况：退出码 `0` 正常，`1` 警告，`2` 错误 | 每个 Rediaccfile 的 `health()` 都会运行，取最差的级别。退出码 `75` 表示仍在预热（警告）。任何其他退出码、信号或超时都算错误（部署健康关卡把超时视为仍在预热并重试，见[超时与关机顺序](#timeouts-and-shutdown-order)）。没有任何 Rediaccfile 定义 `health()` 的仓库会报告**无检查**，绝不会算作健康 |
+| `repair()` | 运行 `rdc repo repair`，以及对 `health()` 不正常的仓库运行 `rdc machine repair` 时 | 修复同一文件的 `health()` 所报告的问题 | 仅当其所在文件的 `health()` 不正常且所声明的类别被允许时才会运行（见下文）。以退出码 `75`（仍在预热）结束的 `health()` 算警告，因此 `repair()` 应放过仍在启动的仓库。之后 `health()` 会再次运行。失败或超时的 `repair()` 算错误 |
 
 所有函数都是可选的。如果某个函数未定义，它会被静默跳过。
 
@@ -91,7 +91,7 @@ renet 会运行 Rediaccfile 中的以下函数：
 | Rediaccfile 的操作 | 看到的结果 | 处理方式 |
 |---|---|---|
 | `sudo x` | `sudo: The "no new privileges" flag is set` | 去掉 `sudo`。该步骤要么不需要 root，要么需要授权 |
-| `chown 5050 ...`，或对容器所属目录执行 `rm -rf` | `Operation not permitted` 或 `Permission denied` | 在一次性容器中运行该步骤（仅在容器内是 root，在机器上不是）：`renet compose -- run --rm --no-deps --user 0 --entrypoint chown <service> -R 5050:5050 /data` |
+| `chown 5050 ...`，或对容器所属目录执行 `rm -rf` | `Operation not permitted` 或 `Permission denied` | 在一次性容器中运行该步骤（仅在容器内是 root；仓库的 Docker 守护进程会拒绝仓库自身根目录之外的绑定）：`renet compose -- run --rm --no-deps --user 0 --entrypoint chown <service> -R 5050:5050 /data` |
 | 在挂载目录中写入 `.env` 或其他文件 | 正常；文件属于通用用户 | 无需处理 |
 | 读取 `/etc/rediacc/*`、`/proc/kcore` 或块设备 | `Permission denied` | 申请路径授权 |
 | 直接读取文件型密钥 | `Permission denied` | 使用 compose 的 `secrets:` 或 env 模式密钥 |

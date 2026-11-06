@@ -10,8 +10,8 @@ tags:
 subcategory: workloads
 order: 5
 language: pt
-sourceHash: "fbdbed2c2d31b52c"
-sourceCommit: "9b8aa220de6eb4f7c7b7783456af6871202c8305"
+sourceHash: "a98cadc0afd3474b"
+sourceCommit: "9f58d83e01b4d46f8ce31af467a203b4d195e801"
 ---
 
 # Serviços
@@ -36,8 +36,8 @@ O renet executa estas funções do Rediaccfile:
 |--------|-------------------|-----------|----------------------|
 | `up()` | Ao iniciar | Iniciar serviços (por exemplo, `renet compose -- up -d`) | Falha na raiz é **crítica** (para tudo). Falhas em subdiretórios são **não críticas** (registadas, continua) |
 | `down()` | Ao parar | Parar serviços (por exemplo, `renet compose -- down`) | **Melhor esforço** - falhas são registadas mas todos os Rediaccfiles são sempre tentados |
-| `health()` | Em `rdc repo health`, em `rdc machine health` e na verificação de saúde do deploy | Reportar a saúde do próprio repositório: saída `0` ok, `1` aviso, `2` erro | O `health()` de cada Rediaccfile é executado e conta o nível mais grave. A saída `75` significa que ainda está a aquecer (um aviso). Qualquer outra saída, um sinal ou um tempo esgotado é um erro. Um repositório em que nenhum Rediaccfile define `health()` reporta **sem verificação**, nunca saudável |
-| `repair()` | Em `rdc repo repair` e em `rdc machine repair` para um repositório cujo `health()` não está ok | Corrigir o que o `health()` do mesmo ficheiro reportou | Só é executado quando o `health()` do seu ficheiro não está ok e a classe declarada é permitida (ver abaixo). Depois o `health()` é executado novamente. Um `repair()` que falha ou esgota o tempo é um erro |
+| `health()` | Em `rdc repo health`, em `rdc machine health` e na verificação de saúde do deploy | Reportar a saúde do próprio repositório: saída `0` ok, `1` aviso, `2` erro | O `health()` de cada Rediaccfile é executado e conta o nível mais grave. A saída `75` significa que ainda está a aquecer (um aviso). Qualquer outra saída, um sinal ou um tempo esgotado é um erro (a verificação de saúde do deploy trata um tempo esgotado como «ainda a aquecer» e tenta de novo, ver [Tempos limite e ordem de desligamento](#timeouts-and-shutdown-order)). Um repositório em que nenhum Rediaccfile define `health()` reporta **sem verificação**, nunca saudável |
+| `repair()` | Em `rdc repo repair` e em `rdc machine repair` para um repositório cujo `health()` não está ok | Corrigir o que o `health()` do mesmo ficheiro reportou | Só é executado quando o `health()` do seu ficheiro não está ok e a classe declarada é permitida (ver abaixo). Um `health()` que termina com `75` (ainda a aquecer) conta como aviso, pelo que um `repair()` deve deixar em paz um repositório que ainda está a arrancar. Depois o `health()` é executado novamente. Um `repair()` que falha ou esgota o tempo é um erro |
 
 Todas as funções são opcionais. Se uma função não estiver definida, é silenciosamente ignorada.
 
@@ -92,7 +92,7 @@ Uma linha que precisa de mais que o padrão falha com o erro que o sandbox lhe d
 | O Rediaccfile faz | O que vê | Correção |
 |---|---|---|
 | `sudo x` | `sudo: The "no new privileges" flag is set` | Remova o `sudo`. O passo ou não precisa de root ou precisa de uma concessão |
-| `chown 5050 ...` ou `rm -rf` de um diretório que pertence a um contêiner | `Operation not permitted` ou `Permission denied` | Execute o passo em um contêiner descartável (root apenas dentro do contêiner, não na máquina): `renet compose -- run --rm --no-deps --user 0 --entrypoint chown <service> -R 5050:5050 /data` |
+| `chown 5050 ...` ou `rm -rf` de um diretório que pertence a um contêiner | `Operation not permitted` ou `Permission denied` | Execute o passo em um contêiner descartável (root dentro do contêiner; o daemon Docker do repositório recusa binds fora das raízes próprias do repositório): `renet compose -- run --rm --no-deps --user 0 --entrypoint chown <service> -R 5050:5050 /data` |
 | Escreve `.env` ou outros arquivos no mount | Funciona; os arquivos pertencem ao usuário universal | Nenhuma |
 | Lê `/etc/rediacc/*`, `/proc/kcore` ou um dispositivo de bloco | `Permission denied` | Peça uma concessão de caminho |
 | Lê diretamente um segredo em arquivo | `Permission denied` | Use `secrets:` do compose ou um segredo em modo env |

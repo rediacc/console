@@ -10,8 +10,8 @@ tags:
 subcategory: workloads
 order: 5
 language: es
-sourceHash: "fbdbed2c2d31b52c"
-sourceCommit: "9b8aa220de6eb4f7c7b7783456af6871202c8305"
+sourceHash: "a98cadc0afd3474b"
+sourceCommit: "9f58d83e01b4d46f8ce31af467a203b4d195e801"
 ---
 
 # Servicios
@@ -36,8 +36,8 @@ renet ejecuta estas funciones del Rediaccfile:
 |----------|-------------|---------|----------------|
 | `up()` | Al iniciar | Iniciar servicios (por ejemplo, `renet compose -- up -d`) | El fallo raíz es **crítico** (detiene todo). Los fallos en subdirectorios son **no críticos** (registrados, continúa) |
 | `down()` | Al detener | Detener servicios (por ejemplo, `renet compose -- down`) | **Mejor esfuerzo** -- los fallos se registran pero siempre se intenta ejecutar todos los Rediaccfiles |
-| `health()` | En `rdc repo health`, en `rdc machine health` y en la comprobación de salud del despliegue | Informar del estado propio del repositorio: salida `0` ok, `1` advertencia, `2` error | Se ejecuta el `health()` de cada Rediaccfile y cuenta el nivel más grave. La salida `75` significa que aún se está calentando (una advertencia). Cualquier otra salida, una señal o un tiempo agotado es un error. Un repositorio en el que ningún Rediaccfile define `health()` informa **sin comprobación**, nunca como saludable |
-| `repair()` | En `rdc repo repair` y en `rdc machine repair` para un repositorio cuyo `health()` no está ok | Corregir lo que informó el `health()` de ese mismo archivo | Solo se ejecuta cuando el `health()` de su archivo no está ok y la clase declarada está permitida (véase abajo). Después `health()` se ejecuta de nuevo. Un `repair()` que falla o agota el tiempo es un error |
+| `health()` | En `rdc repo health`, en `rdc machine health` y en la comprobación de salud del despliegue | Informar del estado propio del repositorio: salida `0` ok, `1` advertencia, `2` error | Se ejecuta el `health()` de cada Rediaccfile y cuenta el nivel más grave. La salida `75` significa que aún se está calentando (una advertencia). Cualquier otra salida, una señal o un tiempo agotado es un error (la comprobación de salud del despliegue interpreta un tiempo agotado como «aún calentando» y reintenta, véase [Tiempos límite y orden de apagado](#timeouts-and-shutdown-order)). Un repositorio en el que ningún Rediaccfile define `health()` informa **sin comprobación**, nunca como saludable |
+| `repair()` | En `rdc repo repair` y en `rdc machine repair` para un repositorio cuyo `health()` no está ok | Corregir lo que informó el `health()` de ese mismo archivo | Solo se ejecuta cuando el `health()` de su archivo no está ok y la clase declarada está permitida (véase abajo). Un `health()` que sale con `75` (aún calentando) cuenta como advertencia, así que un `repair()` debe dejar en paz a un repositorio que todavía está arrancando. Después `health()` se ejecuta de nuevo. Un `repair()` que falla o agota el tiempo es un error |
 
 Todas las funciones son opcionales. Si una función no está definida, se omite silenciosamente.
 
@@ -92,7 +92,7 @@ Una línea que necesite más que lo predeterminado falla con el error que le da 
 | Un Rediaccfile hace | Ve | Solución |
 |--------------------|--------------------|--------------------|
 | `sudo x` | `sudo: The "no new privileges" flag is set` | Quitar `sudo`. El paso o no necesita root o necesita una concesión |
-| `chown 5050 ...` o `rm -rf` de un directorio que pertenece a un contenedor | `Operation not permitted` / `Permission denied` | Ejecutar el paso en un contenedor de un solo uso (root solo dentro del contenedor, no en la máquina): `renet compose -- run --rm --no-deps --user 0 --entrypoint chown <service> -R 5050:5050 /data` |
+| `chown 5050 ...` o `rm -rf` de un directorio que pertenece a un contenedor | `Operation not permitted` / `Permission denied` | Ejecutar el paso en un contenedor de un solo uso (root dentro del contenedor; el daemon de Docker del repositorio rechaza los montajes fuera de las raíces propias del repositorio): `renet compose -- run --rm --no-deps --user 0 --entrypoint chown <service> -R 5050:5050 /data` |
 | Escribe `.env` u otros archivos en el montaje | Funciona; los archivos pertenecen al usuario universal | Ninguna |
 | Lee `/etc/rediacc/*`, `/proc/kcore` o un dispositivo de bloques | `Permission denied` | Pedir una concesión de ruta |
 | Lee directamente un secreto de archivo | `Permission denied` | Usar `secrets:` de compose o un secreto en modo env |

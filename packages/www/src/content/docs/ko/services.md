@@ -9,8 +9,8 @@ tags:
 subcategory: workloads
 order: 5
 language: ko
-sourceHash: "fbdbed2c2d31b52c"
-sourceCommit: "9b8aa220de6eb4f7c7b7783456af6871202c8305"
+sourceHash: "a98cadc0afd3474b"
+sourceCommit: "9f58d83e01b4d46f8ce31af467a203b4d195e801"
 ---
 
 # 서비스
@@ -35,8 +35,8 @@ renet은 다음 Rediaccfile 함수를 실행합니다.
 |------|---------|------|---------|
 | `up()` | 시작 시 | 서비스 시작 (예: `renet compose -- up -d`) | 루트 실패는 **치명적** (모든 것 중지). 하위 디렉터리 실패는 **비치명적** (로그 후 계속) |
 | `down()` | 중지 시 | 서비스 중지 (예: `renet compose -- down`) | **최선 노력** -- 실패가 로그되지만 모든 Rediaccfile이 항상 시도됨 |
-| `health()` | `rdc repo health`, `rdc machine health`, 배포 상태 확인 단계 | 저장소 자체의 상태 보고: 종료 코드 `0` 정상, `1` 경고, `2` 오류 | 모든 Rediaccfile의 `health()`가 실행되며 가장 나쁜 수준이 적용됨. 종료 코드 `75`는 아직 준비 중(경고)이라는 뜻. 그 밖의 종료 코드, 시그널, 시간 초과는 오류. 어떤 Rediaccfile도 `health()`를 정의하지 않은 저장소는 **검사 없음**으로 보고되며 정상으로 간주되지 않음 |
-| `repair()` | `rdc repo repair`, 그리고 `health()`가 정상이 아닌 저장소에 대한 `rdc machine repair` | 같은 파일의 `health()`가 보고한 문제를 복구 | 해당 파일의 `health()`가 정상이 아니고 선언된 클래스가 허용될 때만 실행됨(아래 참조). 이후 `health()`가 다시 실행됨. 실패하거나 시간 초과된 `repair()`는 오류 |
+| `health()` | `rdc repo health`, `rdc machine health`, 배포 상태 확인 단계 | 저장소 자체의 상태 보고: 종료 코드 `0` 정상, `1` 경고, `2` 오류 | 모든 Rediaccfile의 `health()`가 실행되며 가장 나쁜 수준이 적용됨. 종료 코드 `75`는 아직 준비 중(경고)이라는 뜻. 그 밖의 종료 코드, 시그널, 시간 초과는 오류(배포 상태 점검은 시간 초과를 아직 준비 중으로 읽고 재시도함, [타임아웃과 종료 순서](#timeouts-and-shutdown-order) 참조). 어떤 Rediaccfile도 `health()`를 정의하지 않은 저장소는 **검사 없음**으로 보고되며 정상으로 간주되지 않음 |
+| `repair()` | `rdc repo repair`, 그리고 `health()`가 정상이 아닌 저장소에 대한 `rdc machine repair` | 같은 파일의 `health()`가 보고한 문제를 복구 | 해당 파일의 `health()`가 정상이 아니고 선언된 클래스가 허용될 때만 실행됨(아래 참조). `health()`가 `75`로 종료하면(아직 준비 중) 경고로 간주되므로, `repair()`는 아직 시작 중인 저장소를 건드리지 않아야 함. 이후 `health()`가 다시 실행됨. 실패하거나 시간 초과된 `repair()`는 오류 |
 
 모든 함수는 선택 사항입니다. 함수가 정의되지 않으면 자동으로 건너뜁니다.
 
@@ -91,7 +91,7 @@ Rediaccfile 함수가 실행될 때 다음 환경 변수를 사용할 수 있습
 | Rediaccfile의 동작 | 보이는 결과 | 해결 |
 |---|---|---|
 | `sudo x` | `sudo: The "no new privileges" flag is set` | `sudo`를 뺍니다. 해당 단계는 root가 필요 없거나 권한 부여가 필요합니다 |
-| `chown 5050 ...` 또는 컨테이너가 소유한 디렉터리의 `rm -rf` | `Operation not permitted` 또는 `Permission denied` | 단발성 컨테이너에서 단계를 실행합니다(root는 컨테이너 안에서만이며 머신에서는 아닙니다): `renet compose -- run --rm --no-deps --user 0 --entrypoint chown <service> -R 5050:5050 /data` |
+| `chown 5050 ...` 또는 컨테이너가 소유한 디렉터리의 `rm -rf` | `Operation not permitted` 또는 `Permission denied` | 단발성 컨테이너에서 단계를 실행합니다(root는 컨테이너 안에서만 쓰며, 저장소의 Docker 데몬은 저장소 자체 루트 밖의 바인드를 거부합니다): `renet compose -- run --rm --no-deps --user 0 --entrypoint chown <service> -R 5050:5050 /data` |
 | 마운트 안에 `.env` 등의 파일 쓰기 | 동작함. 파일은 유니버설 사용자 소유가 됨 | 필요 없음 |
 | `/etc/rediacc/*`, `/proc/kcore` 또는 블록 장치 읽기 | `Permission denied` | 경로 권한을 요청합니다 |
 | 파일 시크릿을 직접 읽기 | `Permission denied` | compose의 `secrets:` 또는 env 모드 시크릿을 사용합니다 |

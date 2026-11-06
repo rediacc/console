@@ -10,8 +10,8 @@ tags:
 subcategory: workloads
 order: 5
 language: fr
-sourceHash: "fbdbed2c2d31b52c"
-sourceCommit: "9b8aa220de6eb4f7c7b7783456af6871202c8305"
+sourceHash: "a98cadc0afd3474b"
+sourceCommit: "9f58d83e01b4d46f8ce31af467a203b4d195e801"
 ---
 
 # Services
@@ -36,8 +36,8 @@ renet exécute ces fonctions du Rediaccfile :
 |----------|---------------------|----------|------------------------------|
 | `up()` | Au démarrage | Démarrer les services (par ex., `renet compose -- up -d`) | L'échec du Rediaccfile racine est **critique** (arrête tout). Les échecs des sous-répertoires sont **non critiques** (journalisés, passage au suivant) |
 | `down()` | Lors de l'arrêt | Arrêter les services (par ex., `renet compose -- down`) | **Au mieux** -- les échecs sont journalisés mais tous les Rediaccfiles sont toujours exécutés |
-| `health()` | Avec `rdc repo health`, avec `rdc machine health` et dans le contrôle de santé du déploiement | Signaler l'état propre du dépôt : code de sortie `0` ok, `1` avertissement, `2` erreur | Le `health()` de chaque Rediaccfile s'exécute et le niveau le plus grave compte. Le code `75` signifie que le dépôt est encore en chauffe (un avertissement). Tout autre code, un signal ou un dépassement de délai est une erreur. Un dépôt dont aucun Rediaccfile ne définit `health()` signale **aucun contrôle**, jamais « sain » |
-| `repair()` | Avec `rdc repo repair`, et avec `rdc machine repair` pour un dépôt dont le `health()` n'est pas ok | Corriger ce que le `health()` du même fichier a signalé | S'exécute uniquement si le `health()` de son fichier n'est pas ok et que la classe déclarée est autorisée (voir ci-dessous). `health()` s'exécute ensuite de nouveau. Un `repair()` qui échoue ou dépasse son délai est une erreur |
+| `health()` | Avec `rdc repo health`, avec `rdc machine health` et dans le contrôle de santé du déploiement | Signaler l'état propre du dépôt : code de sortie `0` ok, `1` avertissement, `2` erreur | Le `health()` de chaque Rediaccfile s'exécute et le niveau le plus grave compte. Le code `75` signifie que le dépôt est encore en chauffe (un avertissement). Tout autre code, un signal ou un dépassement de délai est une erreur (le contrôle de santé du déploiement lit un dépassement de délai comme « encore en chauffe » et réessaie, voir [Délais et ordre d'arrêt](#timeouts-and-shutdown-order)). Un dépôt dont aucun Rediaccfile ne définit `health()` signale **aucun contrôle**, jamais « sain » |
+| `repair()` | Avec `rdc repo repair`, et avec `rdc machine repair` pour un dépôt dont le `health()` n'est pas ok | Corriger ce que le `health()` du même fichier a signalé | S'exécute uniquement si le `health()` de son fichier n'est pas ok et que la classe déclarée est autorisée (voir ci-dessous). Un `health()` qui sort avec le code `75` (encore en chauffe) compte comme un avertissement : un `repair()` doit donc laisser tranquille un dépôt qui démarre encore. `health()` s'exécute ensuite de nouveau. Un `repair()` qui échoue ou dépasse son délai est une erreur |
 
 Chaque fonction est facultative. Si une fonction n'est pas définie, elle est silencieusement ignorée.
 
@@ -92,7 +92,7 @@ Une ligne qui a besoin de plus que le niveau par défaut échoue avec l'erreur q
 | Un Rediaccfile fait | Il voit | Correction |
 |--------------------|--------------------|--------------------|
 | `sudo x` | `sudo: The "no new privileges" flag is set` | Retirer `sudo`. L'étape n'a pas besoin de root ou nécessite une autorisation |
-| `chown 5050 ...` ou `rm -rf` sur un répertoire appartenant à un conteneur | `Operation not permitted` / `Permission denied` | Exécuter l'étape dans un conteneur à usage unique (root uniquement dans le conteneur, pas sur la machine) : `renet compose -- run --rm --no-deps --user 0 --entrypoint chown <service> -R 5050:5050 /data` |
+| `chown 5050 ...` ou `rm -rf` sur un répertoire appartenant à un conteneur | `Operation not permitted` / `Permission denied` | Exécuter l'étape dans un conteneur à usage unique (root dans le conteneur ; le démon Docker du dépôt refuse les montages en dehors des racines propres au dépôt) : `renet compose -- run --rm --no-deps --user 0 --entrypoint chown <service> -R 5050:5050 /data` |
 | Écrit `.env` ou d'autres fichiers dans le montage | Fonctionne ; les fichiers appartiennent à l'utilisateur universel | Aucune |
 | Lit `/etc/rediacc/*`, `/proc/kcore` ou un périphérique bloc | `Permission denied` | Demander une autorisation de chemin |
 | Lit directement un secret de type fichier | `Permission denied` | Utiliser `secrets:` de compose ou un secret en mode env |

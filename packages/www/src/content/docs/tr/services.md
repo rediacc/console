@@ -10,8 +10,8 @@ tags:
 subcategory: workloads
 order: 5
 language: tr
-sourceHash: "fbdbed2c2d31b52c"
-sourceCommit: "9b8aa220de6eb4f7c7b7783456af6871202c8305"
+sourceHash: "a98cadc0afd3474b"
+sourceCommit: "9f58d83e01b4d46f8ce31af467a203b4d195e801"
 ---
 
 # Servisler
@@ -36,8 +36,8 @@ renet, Rediaccfile içindeki şu fonksiyonları çalıştırır:
 |-----------|-------------------|-------|----------------|
 | `up()` | Başlatma sırasında | Servisleri başlatma (ör. `renet compose -- up -d`) | Kök hatası **kritiktir** (her şeyi durdurur). Alt dizin hataları **kritik değildir** (günlüğe kaydedilir, devam eder) |
 | `down()` | Durdurma sırasında | Servisleri durdurma (ör. `renet compose -- down`) | **En iyi çaba** -- hatalar günlüğe kaydedilir ancak tüm Rediaccfile'lar her zaman denenir |
-| `health()` | `rdc repo health` ile, `rdc machine health` ile ve dağıtımın sağlık geçidinde | Deponun kendi sağlığını bildirmek: çıkış `0` tamam, `1` uyarı, `2` hata | Her Rediaccfile'ın `health()` fonksiyonu çalışır ve en kötü düzey sayılır. Çıkış `75` hâlâ ısınıyor demektir (uyarı). Başka herhangi bir çıkış, bir sinyal veya zaman aşımı hatadır. Hiçbir Rediaccfile'ın `health()` tanımlamadığı bir depo **denetim yok** bildirir, asla sağlıklı değil |
-| `repair()` | `rdc repo repair` ile ve `health()` sonucu tamam olmayan bir depo için `rdc machine repair` ile | Aynı dosyanın `health()` fonksiyonunun bildirdiği sorunu gidermek | Yalnızca kendi dosyasının `health()` sonucu tamam değilse ve bildirilen sınıfa izin veriliyorsa çalışır (aşağıya bakın). Ardından `health()` yeniden çalışır. Başarısız olan veya zaman aşımına uğrayan bir `repair()` hatadır |
+| `health()` | `rdc repo health` ile, `rdc machine health` ile ve dağıtımın sağlık geçidinde | Deponun kendi sağlığını bildirmek: çıkış `0` tamam, `1` uyarı, `2` hata | Her Rediaccfile'ın `health()` fonksiyonu çalışır ve en kötü düzey sayılır. Çıkış `75` hâlâ ısınıyor demektir (uyarı). Başka herhangi bir çıkış, bir sinyal veya zaman aşımı hatadır (dağıtımın sağlık geçidi zaman aşımını hâlâ ısınıyor diye okur ve yeniden dener, bkz. [Zaman Aşımları ve Kapatma Sırası](#timeouts-and-shutdown-order)). Hiçbir Rediaccfile'ın `health()` tanımlamadığı bir depo **denetim yok** bildirir, asla sağlıklı değil |
+| `repair()` | `rdc repo repair` ile ve `health()` sonucu tamam olmayan bir depo için `rdc machine repair` ile | Aynı dosyanın `health()` fonksiyonunun bildirdiği sorunu gidermek | Yalnızca kendi dosyasının `health()` sonucu tamam değilse ve bildirilen sınıfa izin veriliyorsa çalışır (aşağıya bakın). `75` ile çıkan bir `health()` (hâlâ ısınıyor) uyarı sayılır; bu yüzden `repair()` hâlâ başlamakta olan bir depoya dokunmamalıdır. Ardından `health()` yeniden çalışır. Başarısız olan veya zaman aşımına uğrayan bir `repair()` hatadır |
 
 Her fonksiyon isteğe bağlıdır. Tanımlanmamış bir fonksiyon sessizce atlanır.
 
@@ -92,7 +92,7 @@ Varsayılandan fazlasına ihtiyaç duyan bir satır, sandbox'ın verdiği hatayl
 | Rediaccfile ne yapıyor | Ne görüyor | Çözüm |
 |---|---|---|
 | `sudo x` | `sudo: The "no new privileges" flag is set` | `sudo`yu bırakın. Adım ya root gerektirmez ya da bir izin gerektirir |
-| `chown 5050 ...` veya bir konteynerin sahip olduğu dizinde `rm -rf` | `Operation not permitted` veya `Permission denied` | Adımı tek kullanımlık bir konteynerde çalıştırın (root yalnızca konteyner içinde, makinede değil): `renet compose -- run --rm --no-deps --user 0 --entrypoint chown <service> -R 5050:5050 /data` |
+| `chown 5050 ...` veya bir konteynerin sahip olduğu dizinde `rm -rf` | `Operation not permitted` veya `Permission denied` | Adımı tek kullanımlık bir konteynerde çalıştırın (root konteyner içinde; deponun Docker daemon'ı deponun kendi kökleri dışındaki bağlamaları reddeder): `renet compose -- run --rm --no-deps --user 0 --entrypoint chown <service> -R 5050:5050 /data` |
 | Mount içine `.env` veya başka dosyalar yazar | Çalışır; dosyalar evrensel kullanıcıya aittir | Gerek yok |
 | `/etc/rediacc/*`, `/proc/kcore` veya bir blok aygıtını okur | `Permission denied` | Yol izni isteyin |
 | Bir dosya sırrını doğrudan okur | `Permission denied` | Compose `secrets:` veya env kipinde bir sır kullanın |

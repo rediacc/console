@@ -10,8 +10,8 @@ tags:
 subcategory: workloads
 order: 5
 language: et
-sourceHash: "fbdbed2c2d31b52c"
-sourceCommit: "9b8aa220de6eb4f7c7b7783456af6871202c8305"
+sourceHash: "a98cadc0afd3474b"
+sourceCommit: "9f58d83e01b4d46f8ce31af467a203b4d195e801"
 ---
 
 # Teenused
@@ -36,8 +36,8 @@ renet käivitab Rediaccfile'i neid funktsioone:
 |----------|-------------|---------|----------------|
 | `up()` | Käivitamisel | Käivita teenused (nt `renet compose -- up -d`) | Juure tõrge on **kriitiline** (peatab kõik). Alamkataloogi tõrked on **mittekritiiilised** (logitakse, jätkab) |
 | `down()` | Peatamisel | Peata teenused (nt `renet compose -- down`) | **Parima jõu põhimõttel** - tõrked logitakse, kuid kõiki Rediaccfile'e proovitakse alati |
-| `health()` | Käsuga `rdc repo health`, käsuga `rdc machine health` ja juurutuse tervisekontrollis | Teatada hoidla enda tervisest: väljumiskood `0` korras, `1` hoiatus, `2` viga | Iga Rediaccfile'i `health()` käivitatakse ja arvesse läheb halvim tase. Väljumiskood `75` tähendab, et hoidla alles soojeneb (hoiatus). Iga muu väljumiskood, signaal või ajalõpp on viga. Hoidla, mille ükski Rediaccfile `health()` ei defineeri, teatab **kontroll puudub**, mitte kunagi terve |
-| `repair()` | Käsuga `rdc repo repair` ja käsuga `rdc machine repair` hoidla puhul, mille `health()` pole korras | Parandada see, millest sama faili `health()` teatas | Käivitub ainult siis, kui tema faili `health()` pole korras ja deklareeritud klass on lubatud (vt allpool). Seejärel käivitatakse `health()` uuesti. Ebaõnnestunud või ajalõpuga `repair()` on viga |
+| `health()` | Käsuga `rdc repo health`, käsuga `rdc machine health` ja juurutuse tervisekontrollis | Teatada hoidla enda tervisest: väljumiskood `0` korras, `1` hoiatus, `2` viga | Iga Rediaccfile'i `health()` käivitatakse ja arvesse läheb halvim tase. Väljumiskood `75` tähendab, et hoidla alles soojeneb (hoiatus). Iga muu väljumiskood, signaal või ajalõpp on viga (juurutuse tervisekontroll loeb ajalõpu tähenduseks „alles soojeneb“ ja proovib uuesti, vt [Ajalõpud ja seiskamise järjekord](#timeouts-and-shutdown-order)). Hoidla, mille ükski Rediaccfile `health()` ei defineeri, teatab **kontroll puudub**, mitte kunagi terve |
+| `repair()` | Käsuga `rdc repo repair` ja käsuga `rdc machine repair` hoidla puhul, mille `health()` pole korras | Parandada see, millest sama faili `health()` teatas | Käivitub ainult siis, kui tema faili `health()` pole korras ja deklareeritud klass on lubatud (vt allpool). `health()`, mis väljub koodiga `75` (alles soojeneb), loetakse hoiatuseks, seega peaks `repair()` jätma alles käivituva hoidla rahule. Seejärel käivitatakse `health()` uuesti. Ebaõnnestunud või ajalõpuga `repair()` on viga |
 
 Iga funktsioon on valikuline. Kui funktsiooni pole määratletud, jäetakse see vaikselt vahele.
 
@@ -92,7 +92,7 @@ Rida, mis vajab enamat kui vaikimisi õigused, ebaõnnestub liivakasti antud vea
 | Rediaccfile teeb | See näeb | Parandus |
 |--------------------|--------------------|--------------------|
 | `sudo x` | `sudo: The "no new privileges" flag is set` | Jätke `sudo` ära. Samm kas ei vaja root-õigusi või vajab luba |
-| `chown 5050 ...` või `rm -rf` kataloogil, mis kuulub konteinerile | `Operation not permitted` / `Permission denied` | Käivitage samm ühekordses konteineris (juurkasutaja ainult konteineri sees, mitte masinas): `renet compose -- run --rm --no-deps --user 0 --entrypoint chown <service> -R 5050:5050 /data` |
+| `chown 5050 ...` või `rm -rf` kataloogil, mis kuulub konteinerile | `Operation not permitted` / `Permission denied` | Käivitage samm ühekordses konteineris (juurkasutaja konteineri sees; hoidla Docker-deemon keeldub sidumistest väljaspool hoidla enda juurkaustu): `renet compose -- run --rm --no-deps --user 0 --entrypoint chown <service> -R 5050:5050 /data` |
 | Kirjutab `.env` või muid faile haakepunkti | Töötab; failid kuuluvad universaalsele kasutajale | Pole vaja |
 | Loeb `/etc/rediacc/*`, `/proc/kcore` või plokkseadet | `Permission denied` | Taotlege rajaluba |
 | Loeb failisaladust otse | `Permission denied` | Kasutage composei `secrets:` või env-režiimi saladust |
