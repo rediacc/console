@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
+  createSkipLineScan,
   displayName,
   formatSkippedWarning,
   parseSkippedEntries,
@@ -88,6 +89,22 @@ describe('displayName', () => {
   });
 });
 
+describe('createSkipLineScan', () => {
+  it('keeps the skip lines, including one split across chunks, and drops the rest', () => {
+    const scan = createSkipLineScan();
+    scan.push('   1,024 100%  1.0MB/s 0:00:00 (xfr#1, to-chk=2/3)\nskipping non-regular');
+    scan.push(' file "link-a"\r   2,048 100%  1.0MB/s\nskipping non-regular file "b"');
+    expect(parseSkippedEntries(scan.text())).toEqual(['link-a', 'b']);
+    expect(scan.text()).not.toContain('xfr#');
+  });
+
+  it('holds nothing for a stream with no skip line, however long', () => {
+    const scan = createSkipLineScan();
+    for (let i = 0; i < 1000; i++) scan.push(`${i} 100% progress\n`);
+    expect(scan.text()).toBe('');
+  });
+});
+
 describe('parseSkippedEntries against a real rsync', () => {
   const rsyncAvailable = spawnSync('rsync', ['--version']).status === 0;
 
@@ -106,7 +123,7 @@ describe('parseSkippedEntries against a real rsync', () => {
         { encoding: 'utf8' }
       );
       expect(run.status).toBe(0);
-      expect(parseSkippedEntries(run.stderr)).toEqual([]);
+      // Which stream carries the message is rsync's choice; the scan reads both.
       expect(parseSkippedEntries(`${run.stdout}\n${run.stderr}`)).toEqual(['config']);
     } finally {
       rmSync(root, { recursive: true, force: true });

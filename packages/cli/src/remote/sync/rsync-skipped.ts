@@ -5,6 +5,29 @@
  */
 const SKIPPED_PATTERN = /(?:^|\r)skipping non-regular file "(.*)"\s*$/gm;
 
+/**
+ * Keeps only the "skipping non-regular file" lines of a stream that arrives in chunks, so a long sync with progress
+ * output holds those lines and one partial line, not every byte rsync printed. A line split across chunks is joined first.
+ */
+export function createSkipLineScan(): { push(chunk: string): void; text(): string } {
+  const kept: string[] = [];
+  let carry = '';
+  const keep = (line: string): void => {
+    if (line.includes('skipping non-regular file')) kept.push(line);
+  };
+  return {
+    push(chunk: string): void {
+      const lines = `${carry}${chunk}`.split(/[\r\n]/);
+      carry = lines.pop() ?? '';
+      for (const line of lines) keep(line);
+    },
+    text(): string {
+      const tail = carry.includes('skipping non-regular file') ? [carry] : [];
+      return [...kept, ...tail].join('\n');
+    },
+  };
+}
+
 /** Names shown in the warning before the rest is summarised as a count. */
 export const SKIPPED_NAMES_SHOWN = 5;
 

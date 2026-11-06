@@ -6,7 +6,7 @@ import type { SyncProgress, SyncResult } from '../types/index.js';
 import { commandExists, getPlatform } from '../utils/platform.js';
 import { prepareRsyncPaths } from './pathConverter.js';
 import { newRsyncCountState, updateRsyncCount } from './rsync-count.js';
-import { parseSkippedEntries } from './rsync-skipped.js';
+import { createSkipLineScan, parseSkippedEntries } from './rsync-skipped.js';
 
 /**
  * Gets the rsync command/path for the current platform
@@ -350,13 +350,13 @@ export async function executeRsync(
     let filesTransferred = 0;
     let bytesTransferred = 0;
     let stderrText = '';
-    // rsync prints "skipping non-regular file" as an info message, which the sender writes to stdout, so the skip scan reads both streams.
-    let stdoutText = '';
+    // rsync prints "skipping non-regular file" as an info message, which the sender writes to stdout, so the skip scan reads both streams. Only the skip lines of stdout are kept.
+    const stdoutSkips = createSkipLineScan();
     const countState = newRsyncCountState();
 
     rsync.stdout.on('data', (data: Buffer) => {
       const output = data.toString();
-      stdoutText += output;
+      stdoutSkips.push(output);
       options.onStdout?.(output);
 
       // Parse progress from rsync output
@@ -423,7 +423,7 @@ export async function executeRsync(
         bytesTransferred,
         errors: success ? [] : errors,
         duration: Date.now() - startTime,
-        skipped: parseSkippedEntries(`${stdoutText}\n${stderrText}`),
+        skipped: parseSkippedEntries(`${stdoutSkips.text()}\n${stderrText}`),
       });
     });
 
