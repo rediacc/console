@@ -1019,25 +1019,53 @@ def control_real_hook(tmp):
         check("%s still blocks" % label, got.decision, "block")
         check("%s is not reported as held" % label, held_text in got.out, False)
     ciq_lock.unlink()
+    # The stand-in writes the owner the way acquireLock does, `at` from `new Date().toISOString()` shifted by argv[2] seconds, from the cwd it is started in.
     ciq_stand_in = (
-        "import json, os, sys\n"
-        "open(sys.argv[1], 'x').write(json.dumps({'pid': os.getpid(), 'at': 'now'}))\n"
+        "import datetime, json, os, sys\n"
+        "at = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(seconds=int(sys.argv[2]))\n"
+        "stamp = at.strftime('%Y-%m-%dT%H:%M:%S.000Z')\n"
+        "open(sys.argv[1], 'x').write(json.dumps({'pid': os.getpid(), 'at': stamp}))\n"
         "print('held', flush=True)\n"
         "sys.stdin.read()\n"
         "os.remove(sys.argv[1])\n"
     )
-    holder = subprocess.Popen(
-        [sys.executable, "-c", ciq_stand_in, str(ciq_lock), "scripts/ci-runner/quick-clone.ts"],
-        stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        text=True,
-    )
-    try:
-        check("the ci:quick stand-in holds the marker", holder.stdout.readline().strip(), "held")
-        got = hook_stop(fix, env)
-    finally:
-        holder.stdin.close()
-        holder.wait(timeout=30)
+
+    def ciq_stop(age_s, cwd):
+        """One Stop while a ci:quick stand-in, its lock `age_s` old and its cwd `cwd`, holds the marker."""
+        holder = subprocess.Popen(
+            [
+                sys.executable,
+                "-c",
+                ciq_stand_in,
+                str(ciq_lock),
+                str(age_s),
+                "scripts/ci-runner/quick-clone.ts",
+            ],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            text=True,
+            cwd=str(cwd),
+        )
+        try:
+            check(
+                "the ci:quick stand-in holds the marker", holder.stdout.readline().strip(), "held"
+            )
+            return hook_stop(fix, env)
+        finally:
+            holder.stdin.close()
+            holder.wait(timeout=30)
+
+    # The design review of 581e1fe96: a live matching pid is not enough. A lock older than twice quick-clone.ts's LOCK_WAIT_MS (3 h) is not a run worth holding for, and a ci:quick whose cwd is another checkout is not this checkout's run.
+    got = ciq_stop(4 * 3600, fix.proj)
+    check("a ci:quick lock older than twice the wait still blocks", got.decision, "block")
+    check("an old ci:quick lock is not reported as held", held_text in got.out, False)
+    foreign = fix.base / "another-checkout"
+    foreign.mkdir()
+    got = ciq_stop(0, foreign)
+    check("a ci:quick of another checkout still blocks", got.decision, "block")
+    check("a foreign ci:quick is not reported as held", held_text in got.out, False)
+
+    got = ciq_stop(0, fix.proj)
     check("a running ci:quick lifts the block", got.decision, "allow")
     check("a running ci:quick reports the hold", held_text in got.out, True)
     check("the hold names the lease", "w1" in got.out, True)
@@ -1045,6 +1073,35 @@ def control_real_hook(tmp):
     got = hook_stop(fix, env)
     check("a free ci:quick marker blocks again", got.decision, "block")
     check("a free ci:quick marker names the lease again", needle in got.out, True)
+
+    # The age cap mirrors quick-clone.ts's LOCK_WAIT_MS; a change on either side alone fails here.
+    ts_text = (_REAL.parents[3] / "scripts/ci-runner/quick-clone.ts").read_text(encoding="utf-8")
+    ts_wait = re.search(r"^const LOCK_WAIT_MS = ([0-9_ *]+);$", ts_text, re.MULTILINE)
+    checks_tree = ast.parse((SOURCE / "hooks/stop/wl_checks.py").read_text(encoding="utf-8"))
+    py_wait = next(
+        (
+            node.value
+            for node in checks_tree.body
+            if isinstance(node, ast.Assign)
+            and any(getattr(t, "id", "") == "CI_QUICK_LOCK_WAIT_S" for t in node.targets)
+        ),
+        None,
+    )
+
+    def _product(text):
+        out = 1
+        for part in text.replace("_", "").split("*"):
+            out *= int(part.strip())
+        return out
+
+    check("quick-clone.ts still declares LOCK_WAIT_MS", ts_wait is not None, True)
+    check("wl_checks still declares CI_QUICK_LOCK_WAIT_S", py_wait is not None, True)
+    if ts_wait is not None and py_wait is not None:
+        check(
+            "CI_QUICK_LOCK_WAIT_S is quick-clone.ts's LOCK_WAIT_MS in seconds",
+            _product(ast.unparse(py_wait)) * 1000,
+            _product(ts_wait.group(1)),
+        )
 
     fix.bg = json.dumps(
         [{"id": "wa1", "type": "subagent", "status": "running", "description": "w"}]

@@ -2638,17 +2638,54 @@ def ci_quick_lock_path(root, environ=None):
     )
 
 
-def ci_quick_running(root, path=None, proc="/proc"):
-    """True only when the ci:quick lock of `root` exists and names a live pid whose argv is a ci:quick run (`acquireLock` writes `{"pid", "at"}` with one `wx` create and removes the file in its `finally`). A missing file, a malformed owner, a dead pid (the stale file a killed run leaves) or a pid reused by another program reads False, so a blind reading never stands the unlanded-lease block down."""
+# `LOCK_WAIT_MS` in scripts/ci-runner/quick-clone.ts (90 minutes): how long a second ci:quick waits for the lock. A lock older than twice that is not a run in progress worth holding a landing for, whatever its pid says (design review of 581e1fe96). test-wl_worktrees.py fails if this copy and the TypeScript constant part.
+CI_QUICK_LOCK_WAIT_S = 90 * 60
+CI_QUICK_MAX_AGE_S = 2 * CI_QUICK_LOCK_WAIT_S
+CI_QUICK_SCRIPT = "scripts/ci-runner/quick-clone.ts"
+
+
+def _lock_age_s(at, now):
+    """Seconds since the ISO-8601 `at` `acquireLock` writes (`new Date().toISOString()`), None when it is missing or does not parse."""
+    try:
+        stamp = datetime.datetime.fromisoformat(str(at))
+    except (TypeError, ValueError):
+        return None
+    if stamp.tzinfo is None:
+        return None
+    return now - stamp.timestamp()
+
+
+def _same_checkout(pid, words, root, proc):
+    """Is the ci:quick at `pid` this checkout's? Its cwd is `root` (npm runs the script in the package root, and quick-clone.ts never changes directory), or the script word resolved against that cwd is `<root>/scripts/ci-runner/quick-clone.ts`. A reused pid running another checkout's ci:quick answers neither."""
+    try:
+        cwd = os.path.realpath(os.path.join(proc, str(pid), "cwd"))
+    except OSError:
+        return False
+    real_root = os.path.realpath(root)
+    if cwd == real_root:
+        return True
+    want = os.path.join(real_root, CI_QUICK_SCRIPT)
+    return any(
+        w.endswith(CI_QUICK_ARGV) and os.path.realpath(os.path.join(cwd, w)) == want for w in words
+    )
+
+
+def ci_quick_running(root, path=None, proc="/proc", now=None):
+    """True only when the ci:quick lock of `root` exists and names a live pid whose argv is a ci:quick run of THIS checkout, taken within CI_QUICK_MAX_AGE_S (`acquireLock` writes `{"pid", "at"}` with one `wx` create and removes the file in its `finally`). A missing file, a malformed owner, a dead pid (the stale file a killed run leaves), a pid reused by another program, a ci:quick of another checkout, or an `at` that is missing, unparseable or older than twice the lock wait reads False, so a blind reading never stands the unlanded-lease block down."""
     path = path or ci_quick_lock_path(root)
     try:
-        raw = pathlib.Path(path).read_bytes()
-        pid = int(json.loads(raw.decode("utf-8", "replace")).get("pid"))
+        owner = json.loads(pathlib.Path(path).read_bytes().decode("utf-8", "replace"))
+        pid = int(owner.get("pid"))
         argv = pathlib.Path(proc, str(pid), "cmdline").read_bytes().split(b"\0")
     except (ValueError, TypeError, AttributeError, OSError):
         return False
+    age = _lock_age_s(owner.get("at"), time.time() if now is None else now)
+    if age is None or age > CI_QUICK_MAX_AGE_S:
+        return False
     words = [a.decode("utf-8", "replace") for a in argv]
-    return pid > 0 and any(w.endswith(CI_QUICK_ARGV) for w in words)
+    if pid <= 0 or not any(w.endswith(CI_QUICK_ARGV) for w in words):
+        return False
+    return _same_checkout(pid, words, root, proc)
 
 
 def worktree_check(worklist, session_id, state_doc, fold, roster, event, vadd):
