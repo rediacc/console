@@ -205,7 +205,122 @@ FALSE_POSITIVES = [
     ),
 ]
 
+# #3dc774ff: this file's own NAME holds `worktree` beside `add`, and three commands were refused on 2026-11-06 for naming it. The `$R` rows reach the `$`-path arm whatever the environment holds; the `$CLAUDE_PROJECT_DIR` rows are the spelling the lead types, resolved from the hook's own environment.
+SELF = ".claude/rediacc_hooks/guards/test-%s.py" % STEM
+WORKLIST = ".claude/hooks/stop/worklist.py"
+pathlib.Path(FIXTURE_DIR, "quotes_path.py").write_text(
+    "import subprocess\n\n"
+    "subprocess.run(['python3', '-c', 'print(1)'], check=True)\n"
+    "print(%r)\n" % (SELF + ":257"),
+    encoding="utf-8",
+)
+NAME_ROWS = [
+    (
+        "a review-mark naming this file, $R",
+        '%s $R/%s --review-mark d778be9d 3e0e50a8.1 not-a-bug %s:257 "a table row"'
+        % ("python3", WORKLIST, SELF),
+    ),
+    (
+        "an add-many heredoc naming it, $R",
+        "python3 $R/%s --add-many d778be9d <<'EOF'\nfix the refusal of %s\nand of %s.py\nEOF"
+        % (WORKLIST, SELF, STEM),
+    ),
+    ("an untracked script quoting the path", "python3 %s/quotes_path.py" % FIXTURE_DIR),
+]
+SESSION_ROWS = [
+    (
+        "a review-mark naming this file",
+        'python3 "$CLAUDE_PROJECT_DIR"/%s --review-mark d778be9d 3e0e50a8.1 not-a-bug %s:257 "x"'
+        % (WORKLIST, SELF),
+    ),
+    (
+        "an add-many heredoc naming it",
+        "python3 \"$CLAUDE_PROJECT_DIR\"/%s --add-many d778be9d <<'EOF'\nfix %s\nEOF"
+        % (WORKLIST, SELF),
+    ),
+    (
+        "prose naming the phrase, to worklist",
+        'python3 "${CLAUDE_PROJECT_DIR}"/%s --add d778be9d "never run git worktree add here"'
+        % WORKLIST,
+    ),
+]
+DATA_ROWS = [
+    (
+        "the review-mark, a literal path",
+        "python3 %s --review-mark a b not-a-bug %s:257 x" % (WORKLIST, SELF),
+    ),
+    ("a grep of this file", "grep -n worktree %s" % SELF),
+    ("a cat of this file", "cat %s" % SELF),
+    ("pytest on this file", "python3 -m pytest %s" % SELF),
+    ("git log of this file", "git log --oneline -- %s" % SELF),
+    ("git show of this file", "git show HEAD:%s | head -5" % SELF),
+    ("git diff of this file", "git diff -- %s" % SELF),
+]
+# The evasions the narrowing must not open: a word bash expands, an alias, a function's arguments, a run-time verb, and a script written and run in one command, by name or with the phrase in its code.
+pathlib.Path(FIXTURE_DIR, "named_worktree_add.py").write_text(
+    "import subprocess\nsubprocess.run(['git', 'worktree', 'add', '/tmp/x'])\n", encoding="utf-8"
+)
+EVASION_ROWS = [
+    ("the verb in a variable", "w=worktree; git $w add x"),
+    ("the verb in a braced, quoted variable", 'w=worktree; git "${w}" add x'),
+    ("the sub-verb in a variable", "v=add; git worktree $v x"),
+    ("git itself in a variable", "G=git; $G worktree add x"),
+    ("-C before the verb", "git -C . worktree add x"),
+    ("eval", 'eval "git worktree add x"'),
+    ("sh -c", "sh -c 'git worktree add x'"),
+    ("an alias on the run", "git -c alias.wt=worktree wt add x"),
+    ("a shell alias on the run", "git -c 'alias.wt=!git worktree add' wt x"),
+    (
+        "an alias in the environment",
+        "GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=alias.wt GIT_CONFIG_VALUE_0=worktree git wt add x",
+    ),
+    ("a function's arguments", 'f(){ git worktree "$@"; }; f add x'),
+    ("a run-time verb", "git $(echo worktree) add x"),
+    (
+        "a script written and run in one command",
+        "cat > %s/s.sh <<'EOF'\ngit worktree add x\nEOF\nbash %s/s.sh" % (FIXTURE_DIR, FIXTURE_DIR),
+    ),
+    (
+        "a script named for the phrase that runs it",
+        "python3 %s/named_worktree_add.py" % FIXTURE_DIR,
+    ),
+    (
+        "this file copied and run",
+        "cp %s %s/c.py; python3 %s/c.py" % (SELF, FIXTURE_DIR, FIXTURE_DIR),
+    ),
+    ("this file copied to a $-path and run", "cp %s $G/c.py; python3 $G/c.py" % SELF),
+    (
+        "a reassigned project dir",
+        "CLAUDE_PROJECT_DIR=%s; printf 'git worktree add x' > %s/p.py; python3 $CLAUDE_PROJECT_DIR/p.py"
+        % (FIXTURE_DIR, FIXTURE_DIR),
+    ),
+]
+REFUSED += EVASION_ROWS
+# The rows only the run walk refuses: each ran with rc 0 at 1f1bc3e90.
+WALK_ROWS = (
+    "the verb in a variable",
+    "the verb in a braced, quoted variable",
+    "an alias on the run",
+    "an alias in the environment",
+    "a function's arguments",
+)
+# The $-path arm's own false positives, through a variable the environment never holds, so they reach the narrowed line below whatever CLAUDE_PROJECT_DIR is (the rows above it resolve to a literal path).
+DOLLAR_FALSE_POSITIVES = [
+    (
+        "gc beside a $R worklist --add",
+        "./run.sh worktree gc --write --id x && python3 $R/%s --add a b" % WORKLIST,
+    ),
+    (
+        "gc beside a $R worklist tick",
+        "./run.sh worktree gc --write --id x; python3 $R/%s --tick a 1f removed" % WORKLIST,
+    ),
+]
+
 ALLOWED = [
+    *NAME_ROWS,
+    *SESSION_ROWS,
+    *DATA_ROWS,
+    *DOLLAR_FALSE_POSITIVES,
     # A variable script path with none of the words is out of reach, and must stay allowed: every session runs these.
     ("a variable script path, no words", "python3 $G/unrelated.py"),
     # A bare name aimed at another checkout says nothing about this checkout's trees.
@@ -283,10 +398,12 @@ BROKEN_RUNNER = (
     "import sys; sys.path.insert(0, %r)\n"
     "from rediacc_hooks import hookio\n"
     "src = open(%r, encoding='utf-8').read()\n"
-    "old, new = %r\n"
-    "assert old in src, 'the plant no longer applies'\n"
+    "pairs = %r\n"
+    "for old, new in [pairs] if isinstance(pairs[0], str) else pairs:\n"
+    "    assert old in src, 'the plant no longer applies'\n"
+    "    src = src.replace(old, new)\n"
     "ns = {'__name__': 'broken', '__file__': %r}\n"
-    "exec(compile(src.replace(old, new), 'broken', 'exec'), ns)\n"
+    "exec(compile(src, 'broken', 'exec'), ns)\n"
     "ev = hookio.Event(sys.stdin.read())\n"
     "rc = ns['run'](ev)\n"
     "sys.stderr.write(ev.result(rc)[2])\n"
@@ -439,7 +556,7 @@ REVERSE = [
     (
         "the script arm reads two words anywhere",
         (
-            "    if _spells_invocation(text) or _names_phrase(_code_text(family, text)):\n",
+            "    if _spells_invocation(masked) or _names_phrase(_code_text(family, masked)):\n",
             "    if _names_phrase(text):\n",
         ),
         FALSE_POSITIVES[0],
@@ -449,16 +566,34 @@ REVERSE = [
         ("mentions = _code_mentions(code)", 'mentions = "worktree" in code'),
         FALSE_POSITIVES[0],
     ),
+    # #3dc774ff: a `$CLAUDE_PROJECT_DIR` path now resolves to the literal one, so these plants drive the `$R` twins, which still reach the narrowed line.
     (
         "the unjudgeable arm reads two words anywhere",
-        ("_spells_invocation(cmd, lease=True)", "_could_spell(cmd)"),
-        FALSE_POSITIVES[1],
+        ("_spells_invocation(_mask_file_names(cmd), lease=True)", "_could_spell(cmd)"),
+        DOLLAR_FALSE_POSITIVES[0],
     ),
     # Review 52a0dd31.3: this row is refused under the restored `_could_spell` through the `move` verb inside `removed` (the row names no verb word of its own), so the plant pins that substring branch of the tuple, not a second copy of the row above.
     (
         "the unjudgeable arm reads two words anywhere (tick, the `move` in `removed`)",
-        ("_spells_invocation(cmd, lease=True)", "_could_spell(cmd)"),
-        FALSE_POSITIVES[2],
+        ("_spells_invocation(_mask_file_names(cmd), lease=True)", "_could_spell(cmd)"),
+        DOLLAR_FALSE_POSITIVES[1],
+    ),
+    # #3dc774ff: with file names read as the phrase again, each row naming this file is refused again; with no session variable, prose handed to worklist.py behind `$CLAUDE_PROJECT_DIR` is.
+    *(
+        (
+            "file names read as the phrase (%s)" % row[0],
+            (
+                '        lambda m: " FILE " if "worktree" in m.group(0).lower() else m.group(0), text\n',
+                "        lambda m: m.group(0), text\n",
+            ),
+            row,
+        )
+        for row in NAME_ROWS
+    ),
+    (
+        "no session variable",
+        ('SESSION_VARIABLES = ("CLAUDE_PROJECT_DIR",)', "SESSION_VARIABLES = ()"),
+        SESSION_ROWS[2],
     ),
     # The scanners always keeping the raw text refuse the whole-line comment rows again, so those rows reach the arm and are allowed BY the scanners.
     (
@@ -479,15 +614,23 @@ for label, pair, (row_name, row_command) in REVERSE:
     else:
         print("%s: %r refused again" % (label, row_name))
 
+WALK_OFF = ("WORKTREE_ADD, scan) or runs_worktree_add(cmd):", "WORKTREE_ADD, scan):")
+
 # THE REWORK'S OWN PLANTS: back to dd6898eb0's adjacency-only script arm, every shell APART script is admitted; without the written-script lookup in the `$` arm, the printf shape is admitted. So the APART rows are refused BY these lines, not by another arm.
 for label, pair, rows in (
     (
         "the script arm without the comment-stripped phrase",
         (
-            "_spells_invocation(text) or _names_phrase(_code_text(family, text))",
-            "_spells_invocation(text)",
+            "_spells_invocation(masked) or _names_phrase(_code_text(family, masked))",
+            "_spells_invocation(masked)",
         ),
         SCRIPT_ARM_ROWS,
+    ),
+    # #3dc774ff: without the run walk, every expanded spelling of the verb runs again, so those rows are refused BY `runs_worktree_add`, not by the text arm.
+    (
+        "the git run walk",
+        WALK_OFF,
+        [r for r in EVASION_ROWS if r[0] in WALK_ROWS],
     ),
     (
         "the $ arm without the written-script lookup",
@@ -523,7 +666,11 @@ for label, pair, rows in (
         [QUOTED_ROWS["quoted.pl"]],
     ),
 ):
-    admitted = [n for n, c in rows if run_guard(c, defect=pair)[0] == 0]
+    # #3dc774ff: an alias spelled in a script is also refused by the git run walk once the script text is judged as a command line, so the script-arm plants take the walk out too, and each row is shown refused BY the reading it pins.
+    planted: tuple[str, str] | list[tuple[str, str]] = pair
+    if label not in {"the git run walk", "the $ arm without the written-script lookup"}:
+        planted = [pair, WALK_OFF]
+    admitted = [n for n, c in rows if run_guard(c, defect=planted)[0] == 0]
     if len(admitted) != len(rows):
         failures.append("rework plant: %s" % label)
         print(

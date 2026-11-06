@@ -203,6 +203,76 @@ def runs_lease_verb(cmd):
     return False
 
 
+# THE REGEX ARM READS TEXT, AND A WORD BASH EXPANDS IS NOT TEXT (#3dc774ff). Measured 2026-11-06 through the dispatcher, each rc 0 before this arm: `w=worktree; git $w add x` (the verb in a variable), `git -c alias.wt=worktree wt add x` and its `GIT_CONFIG_KEY_0=alias.wt` twin (the verb behind an alias), and `f(){ git worktree "$@"; }; f add x` (the sub-verb from a function's arguments). The script arm already refused every one of them inside a file; typed at the prompt they ran.
+# So the git runs bash executes are walked: a variable the walk knows a literal for is put back, an alias set on the run (`-c alias.X=V`, the GIT_CONFIG_KEY_n/VALUE_n env pair) is expanded, and `worktree add` is refused. A verb, or a sub-verb after `worktree`, whose value the walk cannot know (a `$(...)`, an unresolved `$x`, `"$@"`) is refused when the command names `worktree` and a judged verb anywhere (`_could_spell`, the broad reading, file names included), so a word built at run time from text the command holds stays refused. `read w; git $w add x` names neither and stays out of reach, as any value only known at run time is.
+GIT_ALIAS = re.compile(r"^alias\.([^=]+)=(.*)$", re.DOTALL)
+GIT_CONFIG_KEY = re.compile(r"^GIT_CONFIG_KEY_(\d+)$")
+
+
+def _unknown_word(word):
+    """Does `word` hold a part bash fills in at run time that the walk could not resolve?"""
+    return any(mark in word for mark in ("$", "`", "\0"))
+
+
+def _git_aliases(run_, argv, at):
+    """`{name: value}` for every alias the git run `run_` sets for itself before its verb at `at`: `-c alias.X=V` (also attached, `-calias.X=V`) and the GIT_CONFIG_KEY_n/VALUE_n pair in its environment."""
+    found: dict[str, str] = {}
+    k = 0
+    while k < at:
+        word = argv[k]
+        setting = argv[k + 1] if word == "-c" and k + 1 < at else word[2:]
+        if word.startswith("-c"):
+            m = GIT_ALIAS.match(setting)
+            if m:
+                found[m.group(1)] = m.group(2)
+            k += 2 if word == "-c" else 1
+            continue
+        k += 1
+    env = getattr(run_, "env", None) or {}
+    for name, key in env.items():
+        m = GIT_CONFIG_KEY.match(name)
+        if not m:
+            continue
+        alias = GIT_ALIAS.match("%s=%s" % (key, env.get("GIT_CONFIG_VALUE_%s" % m.group(1), "")))
+        if alias:
+            found[alias.group(1)] = alias.group(2)
+    return found
+
+
+def runs_worktree_add(cmd, depth=0):
+    """Does `cmd` run `git worktree add` through a word bash expands: a known variable, an alias the run sets, or a verb whose value the walk cannot know beside text that names the phrase?"""
+    for run_ in shellscan.every_run(cmd):
+        if run_.name.rsplit("/", 1)[-1] != "git":
+            continue
+        argv = [_with_assigned_values(run_, w) for w in run_.argv]
+        at, _ = shellscan._git_verb_at(argv)
+        if at is None:
+            continue
+        verb, rest = argv[at], argv[at + 1 :]
+        alias = _git_aliases(run_, argv, at).get(verb)
+        if alias is not None:
+            if alias.startswith("!"):
+                if depth < MAX_PROGRAM_DEPTH and shell_verdict(
+                    "%s %s" % (alias[1:], shlex.join(rest)), depth + 1
+                ):
+                    return True
+                continue
+            words = alias.split()
+            if words:
+                verb, rest = words[0], words[1:] + rest
+        if _unknown_word(verb):
+            if _could_spell(cmd):
+                return True
+            continue
+        if verb != "worktree" or not rest:
+            continue
+        if rest[0] == "add":
+            return True
+        if _unknown_word(rest[0]) and PHRASE_VERB.search(PHRASE_NOISE.sub("", cmd).lower()):
+            return True
+    return False
+
+
 # THE INTERPRETER SAILED PAST ALL THREE ARMS, the way the wrapper sailed past the literal one and the port past the wrapper. Measured 2026-10-09 through chain-head.sh before this arm existed, every one rc 0:
 #
 #   python3 -c "import subprocess; subprocess.run(['git','worktree','add','/tmp/x'])"
@@ -754,6 +824,24 @@ def _spells_invocation(text, lease=False):
     return bool((LEASE_INVOCATION if lease else INVOCATION).search(bare))
 
 
+# A FILE NAME IS NOT AN INVOCATION (#3dc774ff). This guard's own test file is `test-block_worktree_add.py`, so every command or script that named it held `worktree` beside `add`, and three were refused on 2026-11-06 for nothing but the name: a `worklist.py --review-mark ... <that file>:257` behind a `"$CLAUDE_PROJECT_DIR"` path, a `worklist.py --add-many` heredoc whose item text spelled it, and an untracked /tmp script that printed the path.
+# So the phrase readings the script arm and the `$`-path arm apply first replace each FILE-NAME token that names `worktree` with a neutral word: a run of path characters ending in a source or document extension, an optional `:line[:col]` after it. A bare `worktree` word, `alias.wt=worktree`, `"worktree", "add"` and `git worktree add ./x.py` are untouched: none of those words sits in a token that ends in such an extension. The fail-closed readings are NOT masked: a script whose content this hook cannot read (`cp <that file> b.py; python3 b.py`, a `$`-path operand that itself names the phrase) is still judged by every word the command holds, because there the name is the only evidence of what the file holds.
+# OUT OF REACH, stated so a green is not read as more: a script that builds the verb at run time out of a file name it holds (`basename`, `tr`, a `.replace`), the edge every built string already sits on; and a run whose verb word is unknown is judged by `runs_worktree_add` on the unmasked text.
+FILE_NAME = re.compile(
+    r"(?<![\w.+@~/-])[\w.+@~/-]*\."
+    r"(?:py|pyi|sh|bash|zsh|js|mjs|cjs|ts|mts|cts|tsx|jsx|json|jsonl|md|txt|toml|ya?ml|cfg|ini|lock|log|pl|rb|go|rs)"
+    r"(?::\d+)*(?![\w.+@~/-])",
+    re.IGNORECASE,
+)
+
+
+def _mask_file_names(text):
+    """`text` with every file-name token that names `worktree` replaced by a neutral word, so the phrase readings see an invocation and not a path."""
+    return FILE_NAME.sub(
+        lambda m: " FILE " if "worktree" in m.group(0).lower() else m.group(0), text
+    )
+
+
 # The word after `bash`/`sh` options that is the script it runs: what `shellscan._shell_payload` calls a "file" operand.
 SHELL_VALUE_LONG = ("--rcfile", "--init-file")
 SOURCE_WORDS = (".", "source")
@@ -1076,6 +1164,7 @@ def _filled_sequences(sequences, mentions):
 
 def _code_mentions(code):
     """Does Python `code` name `worktree` outside a comment (a string, a name, an attribute)? A comment runs nothing, so it does not license filling an unknown argv element with the verb (#a904d9f4: `# ... worktree ...` above `g(root, "add", "-A")` filled `["git", *args]` into `git worktree add`). Code that does not tokenize reads as naming it, the over-reading direction."""
+    code = _mask_file_names(code)
     if "worktree" not in code:
         return False
     try:
@@ -1186,7 +1275,7 @@ def _text_verdict(code, depth):
 def _direct_verdict(cmd):
     """The arm that refuses `cmd` as the shell reads it, before any program text is opened: "git", "run.sh", "port", "lease", or None."""
     scan = shellscan._command_substitution(shellscan.scan_target(cmd))
-    if hookio.grep_q(WORKTREE_ADD, scan):
+    if hookio.grep_q(WORKTREE_ADD, scan) or runs_worktree_add(cmd):
         return "git"
     if hookio.grep_q(RUN_SH_CREATE, scan):
         return "run.sh"
@@ -1323,7 +1412,8 @@ def _code_text(family, text):
 
 def _file_verdict(family, text, depth):
     """The arm a script run by path trips: "script" when its text spells the invocation (`_spells_invocation`) or names the phrase anywhere outside a comment (`_names_phrase` of `_code_text`), else what the same text trips as a `-c` program (a built string folded, an implicit concatenation `ast` joins, the port's `cmd_create`), or for a shell script as a command line."""
-    if _spells_invocation(text) or _names_phrase(_code_text(family, text)):
+    masked = _mask_file_names(text)
+    if _spells_invocation(masked) or _names_phrase(_code_text(family, masked)):
         return "script"
     if family == "shell":
         return shell_verdict(text, depth)
@@ -1365,6 +1455,20 @@ def _with_assigned_values(run_, word):
     return re.sub(r"\$\{?([A-Za-z_][A-Za-z0-9_]*)\}?", value, word)
 
 
+# The variables a session's command inherits from the environment the hook runs in, so their value is known here: the harness sets CLAUDE_PROJECT_DIR for both. Put back only when the command never assigns the name (every mention of it is a `$NAME` or `${NAME}` expansion), so `CLAUDE_PROJECT_DIR=/tmp/x python3 $CLAUDE_PROJECT_DIR/p.py` and `read CLAUDE_PROJECT_DIR` keep it unknown.
+SESSION_VARIABLES = ("CLAUDE_PROJECT_DIR",)
+
+
+def _with_session_values(cmd, word):
+    """`word` with each SESSION_VARIABLES expansion the command does not reassign put back from the hook's own environment."""
+    for name in SESSION_VARIABLES:
+        held = os.environ.get(name)
+        if not held or "$" in held or len(re.findall(r"\$\{?%s\b" % name, cmd)) != cmd.count(name):
+            continue
+        word = held.join(re.split(r"\$(?:\{%s\}|%s\b)" % (name, name), word))
+    return word
+
+
 def _script_verdict(cmd, depth, cwd):
     if not (shellscan.PROGRAM_PREFILTER.search(cmd) or SHELL_SCRIPT_PREFILTER.search(cmd)):
         return None
@@ -1372,12 +1476,16 @@ def _script_verdict(cmd, depth, cwd):
         # A SCRIPT PATH THE SHELL WILL EXPAND FAILED OPEN (measured 2026-11-04: `python3 $G/test-...` of a dirty file ran, where the literal path was refused), since the unexpanded path "does not exist". shellscan keeps the operand raw, so with no such words in the command's text, a value it assigns is put back and this one run judged again with the literal path, and a variable whose value is not known stays out of reach, as with any file named only at run time. A command whose text spells the words is unjudgeable whatever the value; the literal path is the way past that.
         operand = _script_operand(run_, cmd, cwd) or ""
         if "$" in operand:
-            # Text spelling the words decides first: the rebuilt run below carries no earlier write of this command, so a script this command writes is only caught here (review 3a4cc6d0.1).
-            if _spells_invocation(cmd, lease=True):
-                return "unjudgeable"
-            known = _with_assigned_values(run_, operand)
-            # What this same command WROTE to the operand is judged as the script it is (design review of dd6898eb0): `printf 'git %s add %s\n' worktree /p > $G/a.sh; bash $G/a.sh` keeps the two words apart on the command line, and the rebuilt run below carries no earlier write. A write whose content the walk cannot read is unjudgeable once the command could spell a verb at all (the broad `_could_spell`, since the content is unknown): with no such word, `cat f > $G/b.sh; bash $G/b.sh` stays allowed, and UNJUDGEABLE_MESSAGE, which says the command names a worktree verb, stays true.
+            known = _with_session_values(cmd, _with_assigned_values(run_, operand))
             written = shellscan._written_scripts(cmd, run_, cwd)
+            # Text spelling the words decides first: the rebuilt run below carries no earlier write of this command, so a script this command writes is only caught here (review 3a4cc6d0.1). Two narrowings (#3dc774ff): a file name the command holds is not the phrase (`_mask_file_names`), though the operand naming it still is, since that name is all the hook knows of the script; and an operand that resolves IN FULL, in a command that writes no file before this run, is the literal path the rebuilt run below judges, so the words in its arguments or heredoc are data to a script the hook reads (`python3 "$CLAUDE_PROJECT_DIR"/.claude/hooks/stop/worklist.py --add ... "<the phrase>"`).
+            resolved = "$" not in known and not written
+            if not resolved and (
+                _spells_invocation(_mask_file_names(cmd), lease=True)
+                or _spells_invocation(operand, lease=True)
+            ):
+                return "unjudgeable"
+            # What this same command WROTE to the operand is judged as the script it is (design review of dd6898eb0): `printf 'git %s add %s\n' worktree /p > $G/a.sh; bash $G/a.sh` keeps the two words apart on the command line, and the rebuilt run below carries no earlier write. A write whose content the walk cannot read is unjudgeable once the command could spell a verb at all (the broad `_could_spell`, since the content is unknown): with no such word, `cat f > $G/b.sh; bash $G/b.sh` stays allowed, and UNJUDGEABLE_MESSAGE, which says the command names a worktree verb, stays true.
             family = _interpreter_name(run_.name) or "shell"
             for word in dict.fromkeys((operand, known)):
                 target = shellscan._script_path(word, run_.cwd, cwd)
