@@ -248,7 +248,7 @@ async function installCeph(
     if (prerequisites.pending) {
       throw new ClusterPhasePendingError(
         'ceph_install_prerequisites',
-        members.map((m) => m.name).join(', '),
+        prerequisites.pendingMachines.join(', '),
         undefined
       );
     }

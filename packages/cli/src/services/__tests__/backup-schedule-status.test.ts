@@ -335,6 +335,14 @@ describe('status from a folded job output', () => {
     expect(rows[0].reason).not.toMatch(/no timer/);
   });
 
+  it('a record without LoadState says so, and does not claim the machine returned no record', () => {
+    const text = fold(['Id=rediacc-backup-daily.timer', 'ActiveState=inactive']);
+    const rows = buildScheduleStatusRows([daily], parseFoldedSystemctlShow(text), NOW);
+    expect(rows[0]).toMatchObject({ unread: true });
+    expect(rows[0].reason).toMatch(/has no LoadState/);
+    expect(rows[0].reason).not.toMatch(/returned no record/);
+  });
+
   it('a real LoadState=not-found record still says not scheduled, and exits 1', () => {
     const text = fold([
       'Id=rediacc-backup-daily.timer',

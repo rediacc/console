@@ -112,6 +112,7 @@ describe('runJobGroup', () => {
     const result = await runJobGroup('cluster create', MEMBERS, groupSteps);
 
     expect(result.pending).toBe(true);
+    expect(result.pendingMachines).toEqual(['m3']);
     expect(recorded()).toEqual([]);
 
     // The observer of m3's finish runs the ticket's gate: the one that completes the group settles it.

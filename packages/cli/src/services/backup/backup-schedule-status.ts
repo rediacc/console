@@ -89,6 +89,13 @@ function iso(ms: number | undefined): string {
   return ms === undefined ? '-' : new Date(ms).toISOString().replace('.000Z', 'Z');
 }
 
+/** What is wrong with a timer that has no LoadState: no record at all, or a record that lacks it. */
+function missingRecordCause(found: SystemdProps | undefined, unitName: string): string {
+  return found
+    ? `the record for ${timerId(unitName)} has no LoadState`
+    : `the machine returned no record for ${timerId(unitName)}`;
+}
+
 /**
  * Build status rows from `systemctl show` records. Pure, so the missed-run rules are testable with
  * fixtures: a failed last run is missed; a last trigger older than 2x the cron interval is missed; a
@@ -116,7 +123,7 @@ export function buildScheduleStatusRows(
         nextRun: '-',
         missed: true,
         unread: true,
-        reason: `status could not be read: ${unreadCause ?? `the machine returned no record for ${timerId(unit.unitName)}`}`,
+        reason: `status could not be read: ${unreadCause ?? missingRecordCause(found, unit.unitName)}`,
       };
     }
     if (timer.LoadState !== 'loaded') {

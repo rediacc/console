@@ -51,6 +51,8 @@ export interface JobGroupResult {
   group: string;
   /** At least one member's job was still running when its attach window closed: the group settles later. */
   pending: boolean;
+  /** The members whose job was still running, in member order. */
+  pendingMachines: string[];
 }
 
 interface GroupStepWire {
@@ -181,7 +183,8 @@ export async function runJobGroup(
   if (errors.length > 0) {
     throw new Error(`${options.label ?? DEFAULT_STEP_LABEL} failed on ${errors.join('; ')}`);
   }
-  return { group, pending: settled.some((m) => m.pending) };
+  const pendingMachines = members.filter((_, i) => settled[i].pending).map((m) => m.machineName);
+  return { group, pending: pendingMachines.length > 0, pendingMachines };
 }
 
 /** One member's start: pending past the window, or the failure text of a finished or never-started job. */

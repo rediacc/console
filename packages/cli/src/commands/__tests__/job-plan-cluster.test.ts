@@ -912,9 +912,9 @@ describe('cluster fork, migrate and rehearse (one job per phase, driven through 
         ]);
         expect(gate?.[0]).toMatchObject({ expected: 'c1-ceph-1,c1-ceph-2,c1-ceph-3' });
       }
-      expect(
-        new Set(gates.map((gate) => (gate?.[0] as { group?: string } | undefined)?.group)).size
-      ).toBe(1);
+      const groups = gates.map((gate) => (gate?.[0] as { group?: string } | undefined)?.group);
+      expect(groups[0]).toEqual(expect.stringMatching(/\S/));
+      expect(new Set(groups).size).toBe(1);
       expect(provision.bootstrap).toHaveBeenCalledTimes(3);
       expect(cfg.audit).toHaveBeenCalledOnce();
     });
@@ -937,7 +937,10 @@ describe('cluster fork, migrate and rehearse (one job per phase, driven through 
           ? BACKGROUND
           : undefined;
 
-      await expect(cluster('create', 'c1')).rejects.toThrow(/still running/);
+      const failure = await cluster('create', 'c1').catch((e: unknown) => e);
+
+      expect((failure as Error).message).toMatch(/still running/);
+      expect((failure as Error).message).toContain('"ceph_install_prerequisites" on c1-ceph-3 is');
 
       expect(executed.map((o) => o.functionName)).not.toContain('ceph_bootstrap_cluster');
     });
@@ -998,6 +1001,19 @@ describe('cluster fork, migrate and rehearse (one job per phase, driven through 
         ['kube_identity_rewrite', 'c1-cp-1'],
       ]);
       expect(cfg.audit).not.toHaveBeenCalled();
+    });
+
+    it('migrate: a failed rollback is reported as not finished, never as ROLLED BACK', async () => {
+      respond = scripted((o) => {
+        if (o.functionName === 'datastore_attach') return { ...FAILED, error: 'fence refused' };
+        return undefined;
+      });
+
+      const failure = await cluster('migrate', 'c1', '--to', 'c2-cp-1').catch((e: unknown) => e);
+
+      expect((failure as Error).message).toMatch(/rollback to "c1-cp-1" did NOT finish/);
+      expect((failure as Error).message).not.toMatch(/ROLLED BACK/);
+      expect((failure as Error).message).toContain('fence refused');
     });
 
     it('rehearse: the fork phases run, then the discard runs as phases of its own', async () => {
