@@ -388,12 +388,10 @@ export async function dispatchCommand(args: DispatchArgs): Promise<DispatchOutco
 
   // Every machine call a served command makes is one job, attached for the window the executor seam sets and handed back as a ticket when it outlives it: the executor cannot assume the client's connection outlives the work. `onJobStarted` fires once per job so the route can announce the job line. A client-supplied request id is the invocation id: each call of the command mints `<id>:<machine>:<seq>` from it, so a retried POST attaches to the jobs the first one started and a second call of the same command is its own job.
   const minter = args.requestId ? new RequestIdMinter(args.requestId) : undefined;
-  // Renet's own stdout is the command's answer only for a verb that asked for it live (`passthroughOutput`: repo exec, repo logs) or under --debug. For every other verb a local run drops it (the step detector keeps step lines only, and a captureOutput verb prints what it chose from `result.stdout` itself), so a proxied run must not carry it either: the proxy client prints `output` events, which put renet's full repository-list JSON (the machine probe's answer) on the stdout of `repo up` and `repo down`. Events are therefore dropped here for such a verb; the raw `result.stdout` still travels on the wire for clients that want it.
-  let forwardRenetOutput = false;
+  // Renet's raw `output` events reach the caller only for the call that asked for them (passthroughOutput or --debug): tapExecutor (services/executor/event-tap.ts) decides that per call.
   let refusedOverlaps: JobOverlap[] | undefined;
   const recordingExecutor: Executor = {
     async execute(options) {
-      if (options.passthroughOutput || options.debug) forwardRenetOutput = true;
       functionName = options.functionName;
       machineName = options.machineName;
       let result: ExecuteResult;
@@ -426,10 +424,7 @@ export async function dispatchCommand(args: DispatchArgs): Promise<DispatchOutco
     output: createOutputState(),
     stdout: [],
     stderr: [],
-    onEvent: (event, line) => {
-      if (event.type === 'output' && !forwardRenetOutput) return;
-      args.onEvent(event, line);
-    },
+    onEvent: args.onEvent,
     executor: recordingExecutor,
     ...(args.config ? { config: createRequestConfigScope(args.config) } : {}),
   };
