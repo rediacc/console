@@ -622,6 +622,14 @@ export interface MachineVersionParams {}
 /** List network IDs in use on the machine */
 export interface NetworkUsedParams {}
 
+/** Anchor ACME challenge names that share a CNAME end and restart Traefik (JSON result) */
+export interface ProxyAcmeFixParams {
+  /** Report the collisions and the planned fix only */
+  dryRun?: boolean;
+  /** Restart Traefik even when nothing was anchored, so a stalled renewal retries now */
+  restart?: boolean;
+}
+
 /** Disable automatic repository start on boot */
 export interface RepositoryAutostartDisableParams {}
 
@@ -917,6 +925,16 @@ export interface RepositoryPruneParams {
   dryRun?: boolean;
 }
 
+/** Run the repository's Rediaccfile repair() functions that their declared class allows (JSON RepairReport) */
+export interface RepositoryRepairParams {
+  /** Comma-separated classes that may run: auto-safe, auto-with-backup, operator-only (an undeclared repair() is operator-only) */
+  allowClasses?: string;
+  /** The machine is inside its maintenance window, so window-only repairs may run */
+  inWindow?: boolean;
+  /** Run health() and report what would run, without running repair() */
+  dryRun?: boolean;
+}
+
 /** Resize a repository */
 export interface RepositoryResizeParams {
   /** New repository size */
@@ -1064,6 +1082,7 @@ export const RENET_FUNCTIONS = [
   'machine_uninstall',
   'machine_version',
   'network_used',
+  'proxy_acme_fix',
   'repository_autostart_disable',
   'repository_autostart_disable_all',
   'repository_autostart_enable',
@@ -1100,6 +1119,7 @@ export const RENET_FUNCTIONS = [
   'repository_policy_set',
   'repository_promote',
   'repository_prune',
+  'repository_repair',
   'repository_resize',
   'repository_status',
   'repository_template_apply',
@@ -1111,7 +1131,7 @@ export const RENET_FUNCTIONS = [
   'setup',
 ] as const;
 
-export const RENET_FUNCTIONS_VERSION = 'v3.0.0-187-g9500309';
+export const RENET_FUNCTIONS_VERSION = 'v3.0.0-190-g82badac';
 
 export type RenetFunctionName = (typeof RENET_FUNCTIONS)[number];
 
@@ -1253,6 +1273,7 @@ export const RENET_BRIDGE_FUNCTIONS = [
   'network_prune',
   'network_ps_status',
   'network_used',
+  'proxy_acme_fix',
   'replica_attach',
   'replica_discard',
   'replica_fork',
@@ -1296,6 +1317,7 @@ export const RENET_BRIDGE_FUNCTIONS = [
   'repository_policy_set',
   'repository_promote',
   'repository_prune',
+  'repository_repair',
   'repository_resize',
   'repository_status',
   'repository_template_apply',
@@ -1367,6 +1389,7 @@ export type FunctionParamsMap = {
   machine_uninstall: MachineUninstallParams;
   machine_version: MachineVersionParams;
   network_used: NetworkUsedParams;
+  proxy_acme_fix: ProxyAcmeFixParams;
   repository_autostart_disable: RepositoryAutostartDisableParams;
   repository_autostart_disable_all: RepositoryAutostartDisableAllParams;
   repository_autostart_enable: RepositoryAutostartEnableParams;
@@ -1403,6 +1426,7 @@ export type FunctionParamsMap = {
   repository_policy_set: RepositoryPolicySetParams;
   repository_promote: RepositoryPromoteParams;
   repository_prune: RepositoryPruneParams;
+  repository_repair: RepositoryRepairParams;
   repository_resize: RepositoryResizeParams;
   repository_status: RepositoryStatusParams;
   repository_template_apply: RepositoryTemplateApplyParams;
@@ -1586,6 +1610,9 @@ export const FUNCTION_REQUIREMENTS: Record<RenetFunctionName, { requirements: Pa
   'network_used': {
     requirements: { machine: true, team: true },
   },
+  'proxy_acme_fix': {
+    requirements: { machine: true },
+  },
   'repository_autostart_disable': {
     requirements: { machine: true, team: true, repository: true },
   },
@@ -1694,6 +1721,9 @@ export const FUNCTION_REQUIREMENTS: Record<RenetFunctionName, { requirements: Pa
   'repository_prune': {
     requirements: { machine: true },
   },
+  'repository_repair': {
+    requirements: { machine: true, team: true, repository: true },
+  },
   'repository_resize': {
     requirements: { machine: true, team: true, repository: true },
   },
@@ -1730,6 +1760,7 @@ export const FUNCTION_CATEGORIES = [
   'kube',
   'machine',
   'network',
+  'proxy',
   'repository',
 ] as const;
 
@@ -3225,6 +3256,24 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
     params: {
     },
   },
+  'proxy_acme_fix': {
+    name: 'proxy_acme_fix',
+    category: 'proxy',
+    showInMenu: false,
+    requirements: { machine: true },
+    params: {
+      dryRun: {
+        type: 'bool',
+        help: 'Report the collisions and the planned fix only',
+        options: ['true', 'false'],
+      },
+      restart: {
+        type: 'bool',
+        help: 'Restart Traefik even when nothing was anchored, so a stalled renewal retries now',
+        options: ['true', 'false'],
+      },
+    },
+  },
   'repository_autostart_disable': {
     name: 'repository_autostart_disable',
     category: 'repository',
@@ -3896,6 +3945,28 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
       },
     },
   },
+  'repository_repair': {
+    name: 'repository_repair',
+    category: 'repository',
+    showInMenu: false,
+    requirements: { machine: true, team: true, repository: true },
+    params: {
+      allowClasses: {
+        type: 'string',
+        help: 'Comma-separated classes that may run: auto-safe, auto-with-backup, operator-only (an undeclared repair() is operator-only)',
+      },
+      inWindow: {
+        type: 'bool',
+        help: 'The machine is inside its maintenance window, so window-only repairs may run',
+        options: ['true', 'false'],
+      },
+      dryRun: {
+        type: 'bool',
+        help: 'Run health() and report what would run, without running repair()',
+        options: ['true', 'false'],
+      },
+    },
+  },
   'repository_resize': {
     name: 'repository_resize',
     category: 'repository',
@@ -4196,6 +4267,7 @@ export const queueFunctions: QueueFunctionsType = {
   machine_uninstall: (params) => ({ functionName: 'machine_uninstall', params }),
   machine_version: (params) => ({ functionName: 'machine_version', params }),
   network_used: (params) => ({ functionName: 'network_used', params }),
+  proxy_acme_fix: (params) => ({ functionName: 'proxy_acme_fix', params }),
   repository_autostart_disable: (params) => ({ functionName: 'repository_autostart_disable', params }),
   repository_autostart_disable_all: (params) => ({ functionName: 'repository_autostart_disable_all', params }),
   repository_autostart_enable: (params) => ({ functionName: 'repository_autostart_enable', params }),
@@ -4232,6 +4304,7 @@ export const queueFunctions: QueueFunctionsType = {
   repository_policy_set: (params) => ({ functionName: 'repository_policy_set', params }),
   repository_promote: (params) => ({ functionName: 'repository_promote', params }),
   repository_prune: (params) => ({ functionName: 'repository_prune', params }),
+  repository_repair: (params) => ({ functionName: 'repository_repair', params }),
   repository_resize: (params) => ({ functionName: 'repository_resize', params }),
   repository_status: (params) => ({ functionName: 'repository_status', params }),
   repository_template_apply: (params) => ({ functionName: 'repository_template_apply', params }),

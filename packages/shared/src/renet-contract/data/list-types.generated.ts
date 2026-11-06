@@ -6,7 +6,7 @@
 // Machine status types from 'renet list all --json'
 // ============================================
 
-export const LIST_TYPES_VERSION = 'v3.0.0-187-g9500309';
+export const LIST_TYPES_VERSION = 'v3.0.0-190-g82badac';
 
 /** Storage/memory capacity information */
 export interface DiskInfo {

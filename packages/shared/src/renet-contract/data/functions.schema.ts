@@ -456,6 +456,12 @@ export const MachineVersionParamsSchema = z.object({});
 /** List network IDs in use on the machine */
 export const NetworkUsedParamsSchema = z.object({});
 
+/** Anchor ACME challenge names that share a CNAME end and restart Traefik (JSON result) */
+export const ProxyAcmeFixParamsSchema = z.object({
+  dryRun: z.boolean().optional().describe('Report the collisions and the planned fix only'),
+  restart: z.boolean().optional().describe('Restart Traefik even when nothing was anchored, so a stalled renewal retries now'),
+});
+
 /** Disable automatic repository start on boot */
 export const RepositoryAutostartDisableParamsSchema = z.object({});
 
@@ -671,6 +677,13 @@ export const RepositoryPruneParamsSchema = z.object({
   dryRun: z.boolean().optional().describe('Preview only, no changes'),
 });
 
+/** Run the repository's Rediaccfile repair() functions that their declared class allows (JSON RepairReport) */
+export const RepositoryRepairParamsSchema = z.object({
+  allowClasses: z.string().optional().describe('Comma-separated classes that may run: auto-safe, auto-with-backup, operator-only (an undeclared repair() is operator-only)'),
+  inWindow: z.boolean().optional().describe('The machine is inside its maintenance window, so window-only repairs may run'),
+  dryRun: z.boolean().optional().describe('Run health() and report what would run, without running repair()'),
+});
+
 /** Resize a repository */
 export const RepositoryResizeParamsSchema = z.object({
   size: z.string().min(1).describe('New repository size'),
@@ -816,6 +829,7 @@ export const FUNCTION_SCHEMAS = {
   machine_uninstall: MachineUninstallParamsSchema,
   machine_version: MachineVersionParamsSchema,
   network_used: NetworkUsedParamsSchema,
+  proxy_acme_fix: ProxyAcmeFixParamsSchema,
   repository_autostart_disable: RepositoryAutostartDisableParamsSchema,
   repository_autostart_disable_all: RepositoryAutostartDisableAllParamsSchema,
   repository_autostart_enable: RepositoryAutostartEnableParamsSchema,
@@ -852,6 +866,7 @@ export const FUNCTION_SCHEMAS = {
   repository_policy_set: RepositoryPolicySetParamsSchema,
   repository_promote: RepositoryPromoteParamsSchema,
   repository_prune: RepositoryPruneParamsSchema,
+  repository_repair: RepositoryRepairParamsSchema,
   repository_resize: RepositoryResizeParamsSchema,
   repository_status: RepositoryStatusParamsSchema,
   repository_template_apply: RepositoryTemplateApplyParamsSchema,
