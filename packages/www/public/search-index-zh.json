@@ -4038,7 +4038,7 @@
   {
     "id": "search-19558",
     "content": "1.1 prune",
-    "body": "从 ~/.config/rediacc/<config>.json 中的本地配置文件中移除无用内容。清理三类内容，全部为纯本地操作（无 SSH/renet 调用）：（1）锚点 GUID/仓库/机器不再存在于活动配置中的 ACME 证书缓存条目；（2）宽限期已过期的归档仓库（默认 7 天，参见 defaults.pruneGraceDays）；（3）悬空的交叉引用（machine→strategy、strategy→repo）。在用资源、凭据、存储令牌和 known-hosts 永远不会被触及。默认行为是应用更改；使用 --dry-run 仅预览。 rdc config prune [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|----------|---------| | --dry-run | 预览将要移除的内容，但不修改配置文件。镜像其他 prune 命令的默认关闭语义。 | 否 | - | | --certs-only | 限制为 ACME 证书缓存桶。跳过归档清除和交叉引用清理。与 --archives-only 和 --refs-only 互斥。 | 否 | - | | --archives-only | 限制为过期归档清除。跳过证书缓存和交叉引用清理。与 --certs-only 和 --refs-only 互斥。 | 否 | - | | --refs-only | 限制为悬空交叉引用（machine→strategy、strategy→repo 排除/包含）。跳过证书缓存和归档。与 --certs-only 和 --archives-only 互斥。 | 否 | - | | --purge-archived | 无论年龄如何，删除所有归档仓库，而不仅仅是超过宽限期的仓库。等同于对每个归档仓库运行 'rdc repo admin archive purge'。仅在确定不需要任何已保存的凭据进行恢复时使用。 | 否 | - | | --orphan-repos | 移除未部署在任何机器上的仓库条目。每个条目都保存着该仓库的凭据和 SSH 密钥，因此该操作不可恢复，请先运行 'rdc config reconcile'，使部署信息与机器实际状态保持一致。 | 否 | - | | --grace-days <days> | 覆盖此调用的归档宽限窗口（以天为单位）。回退到配置中的 defaults.pruneGraceDays，如果都未设置则回退到 7。 | 否 | - | <a id=\"cli-local-config-init\"></a>",
+    "body": "从 ~/.config/rediacc/<config>.json 中的本地配置文件中移除无用内容。清理三类内容，全部为纯本地操作（无 SSH/renet 调用）：（1）锚点 GUID/仓库/机器不再存在于活动配置中的 ACME 证书缓存条目；（2）宽限期已过期的归档仓库（默认 7 天，参见 defaults.pruneGraceDays）；（3）悬空的交叉引用（machine→strategy、strategy→repo）。在用资源、凭据、存储令牌和 known-hosts 永远不会被触及。默认行为是应用更改；使用 --dry-run 仅预览。 rdc config prune [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|----------|---------| | --dry-run | 预览将要移除的内容，但不修改配置文件。镜像其他 prune 命令的默认关闭语义。 | 否 | - | | --certs-only | 限制为 ACME 证书缓存桶。跳过归档清除和交叉引用清理。与 --archives-only 和 --refs-only 互斥。 | 否 | - | | --archives-only | 限制为过期归档清除。跳过证书缓存和交叉引用清理。与 --certs-only 和 --refs-only 互斥。 | 否 | - | | --refs-only | 限制为悬空交叉引用（machine→strategy、strategy→repo 排除/包含）。跳过证书缓存和归档。与 --certs-only 和 --archives-only 互斥。 | 否 | - | | --purge-archived | 无论年龄如何，删除所有归档仓库，而不仅仅是超过宽限期的仓库。等同于对每个归档仓库运行 'rdc repo admin archive purge'。仅在确定不需要任何已保存的凭据进行恢复时使用。 | 否 | - | | --orphan-repos | 移除未部署在任何机器上的仓库条目。每个条目都保存着该仓库的凭据和 SSH 密钥，因此该操作不可恢复，请先运行 'rdc config reconcile'，使部署信息与机器实际状态保持一致。 | 否 | - | | --gone-machine-repos | 归档放置在已不在配置中的机器上的仓库条目。是归档而非删除：每个条目保留其凭据，在归档宽限期结束前都可恢复。 | 否 | - | | --grace-days <days> | 覆盖此调用的归档宽限窗口（以天为单位）。回退到配置中的 defaults.pruneGraceDays，如果都未设置则回退到 7。 | 否 | - | <a id=\"cli-local-config-init\"></a>",
     "excerpt": "从 ~/.config/rediacc/<config>.json 中的本地配置文件中移除无用内容。清理三类内容，全部为纯本地操作（无 SSH/renet 调用）：（1）锚点 GUID/仓库/机器不再存在于活动配置中的 ACME 证书缓存条目；（2）宽限期已过期的归档仓库（默认 7 天，参见 def...",
     "category": "Documentation",
     "page": "/zh/docs/cli-application",
@@ -4410,7 +4410,7 @@
   {
     "id": "search-19589",
     "content": "3.4 deprovision",
-    "body": "销毁云配置的机器并从配置中移除 rdc machine deprovision <name> [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|----------|---------| | --force | 跳过确认提示 | 否 | - | | --debug | 启用调试输出（本地模式） | 否 | - | <a id=\"cli-local-machine-prune\"></a>",
+    "body": "销毁云配置的机器并从配置中移除 rdc machine deprovision <name> [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|----------|---------| | --force | 跳过确认提示 | 否 | - | | --archive-repos | 归档放置在此机器上的仓库的配置条目（保留凭据，可恢复） | 否 | - | | --debug | 启用调试输出（本地模式） | 否 | - | <a id=\"cli-local-machine-prune\"></a>",
     "excerpt": "销毁云配置的机器并从配置中移除 rdc machine deprovision <name> [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|----------|---------| | --force | 跳过确认提示 | 否 | -...",
     "category": "Documentation",
     "page": "/zh/docs/cli-application",
@@ -4482,7 +4482,7 @@
   {
     "id": "search-19595",
     "content": "3.10 remove",
-    "body": "从当前配置中移除机器 rdc machine remove <name> [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|----------|---------| | -y, --yes | 跳过确认提示 | 否 | - | | --force | 即使仓库仍放置在该机器上，或备份策略仍绑定到该机器，也移除该机器，使这些引用处于悬空状态。 | 否 | - | <a id=\"cli-local-machine-restart-services\"></a>",
+    "body": "从当前配置中移除机器 rdc machine remove <name> [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|----------|---------| | -y, --yes | 跳过确认提示 | 否 | - | | --force | 即使仓库仍放置在该机器上，或备份策略仍绑定到该机器，也移除该机器，使这些引用处于悬空状态。 | 否 | - | | --archive-repos | 归档放置在此机器上的仓库的配置条目（保留凭据，可恢复） | 否 | - | <a id=\"cli-local-machine-restart-services\"></a>",
     "excerpt": "从当前配置中移除机器 rdc machine remove <name> [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|----------|---------| | -y, --yes | 跳过确认提示 | 否 | - | | --f...",
     "category": "Documentation",
     "page": "/zh/docs/cli-application",

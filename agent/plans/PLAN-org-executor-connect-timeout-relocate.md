@@ -330,7 +330,7 @@ Platform assumptions, to verify on bench or edge:
 - [x] E12 [writer] ReachabilityGate: a 60 s verdict cache and at most 6 checks per window per instance. Landed in e154f2a8f.
   (ticked) 2026-11-06 by d778be9d: commit:e154f2a8f workers/proxy/src/org-executor-relocate.ts:107-160
 - [x] E13 [writer] Only a `reachable` verdict counts toward relocation; the guidance names an address the Worker could not reach either. Landed in e154f2a8f.
-  (ticked) 2026-11-06 by d778be9d: commit:e154f2a8f workers/proxy/src/org-executor.ts:215-217, workers/proxy/src/egress-report.ts:111-113
+  (ticked) 2026-11-06 by d778be9d: commit:e154f2a8f workers/proxy/src/org-executor.ts:215-217, packages/cli/src/services/serve/egress-report.ts:112
 - [x] E14 [writer] Reachability follow-ups. Landed in 1adf092da.
   (ticked) 2026-11-06 by d778be9d: commit:1adf092da
 - [x] E15 [writer] Bench-only egress drill seam (operator ruling ASKED:2026-11-06T13:44Z, banner read on hostinger 72.61.137.225:22): workers/proxy/src/drill.ts `drillProbeTarget` redirects only the Worker's reachability check from a configured unreachable address to a reachable sshd, only when `ENVIRONMENT === 'bench'`; wrangler.bench.toml carries `EGRESS_DRILL_PROBE = "192.0.2.10:22=72.61.137.225:22"`; proxy_configs.py refuses the var on every other target. E9 then runs on bench with the container's connection really unanswered and everything after it real.
