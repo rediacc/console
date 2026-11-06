@@ -105,6 +105,7 @@ Hub daemons (private/renet/pkg/hub/gc.go:144; private/renet/pkg/hub/user_daemon.
   - Accept: `npm run check:i18n`, `npm run check:ci-i18n-docs-untranslated`, `npm run check:ci-docs-structure-parity` and `npm run check:ci-prose-style` rc 0.
   - CONTROL: none -- docs.
     (ticked) 2026-11-06T17:09:59Z by d778be9d: commit:1bcc915dc renet docs 5c6b117 + fixes cc28489/156ce60; services.md 13 locales 1bcc915dc + b22874f2a/40b28261b; check:ci-prose-style rc=0, check:ci-i18n-docs-untranslated rc=0, check:ci-docs-structure-parity rc=0, check:i18n rc=0 after e7c46ba85
+  (corrected 2026-11-06) No `rediaccfile*.md` page exists under packages/www/src/content/docs; the Rediaccfile directives (`# rediacc:needs`) live on `services.md`, so the www half of the target is that page, which carries the section in all 13 locales.
 
 ### Drill
 
