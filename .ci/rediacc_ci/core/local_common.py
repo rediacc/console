@@ -1342,6 +1342,47 @@ def renet_head(renet_dir: str) -> str:
 
 RENET_STAMP_NAME = ".renet-build-stamp"
 
+# The per-worktree markers git leaves while an operation that can stop on a conflict is in progress.
+RENET_OPERATION_MARKERS = (
+    "CHERRY_PICK_HEAD",
+    "MERGE_HEAD",
+    "REVERT_HEAD",
+    "rebase-merge",
+    "rebase-apply",
+)
+
+
+def renet_mid_operation(renet_dir: str) -> str:
+    """Why renet's working tree cannot be built right now, "" when it can: unmerged paths, or a cherry-pick, merge, revert, rebase or am in progress (#fd1964b9).
+
+    WHY. On 2026-11-06 the lead was mid-cherry-pick in private/renet with conflict markers in pkg/i18n/locales/*.go, and every `./rdc.sh` call rebuilt renet from that tree and died on `syntax error: unexpected <<`. Only renet's own checkout is asked (the `renet_head` rule): from a plain directory inside the console, git would answer with the console's state.
+    """
+    top = _capture(["git", "rev-parse", "--show-toplevel"], quiet_err=True, cwd=renet_dir)
+    if top.returncode != 0 or os.path.realpath(_subst(top.stdout or "")) != os.path.realpath(
+        renet_dir
+    ):
+        return ""
+    unmerged = _capture(
+        ["git", "diff", "--name-only", "--diff-filter=U"], quiet_err=True, cwd=renet_dir
+    )
+    names = [line for line in (unmerged.stdout or "").splitlines() if line]
+    if names:
+        more = " and %d more" % (len(names) - 1) if len(names) > 1 else ""
+        return "%d unmerged path(s) (%s%s)" % (len(names), names[0], more)
+    argv = ["git", "rev-parse", "--path-format=absolute"]
+    for marker in RENET_OPERATION_MARKERS:
+        argv += ["--git-path", marker]
+    paths = _capture(argv, quiet_err=True, cwd=renet_dir)
+    if paths.returncode != 0:
+        return ""
+    # strict: git answers one path per `--git-path`, and any other count is a git this function was not written against.
+    for marker, path in zip(
+        RENET_OPERATION_MARKERS, (paths.stdout or "").splitlines(), strict=True
+    ):
+        if os.path.exists(path):
+            return "%s is present (an operation is in progress)" % marker
+    return ""
+
 
 def renet_stamp_key(source: str, head: str, account_key: str) -> str:
     """The digest `ensure_renet_built` stores in `bin/.renet-build-stamp`: the renet source fingerprint, renet's HEAD commit and the account key.
@@ -1440,6 +1481,12 @@ def renet_key_refusal(renet_bin: str, account_key: str) -> str | None:
     return None if passed else "%s does not bake the account key %s" % (renet_bin, want)
 
 
+def _stamped_bin(stamp: str) -> str:
+    """The `bin=` fingerprint `ensure_renet_built` wrote beside its stamp key, "" when there is none."""
+    lines = _subst(read_stamp_hash(stamp)).split("\n")
+    return "\n".join(line[len("bin=") :] for line in lines if line.startswith("bin="))
+
+
 def ensure_renet_built(
     env: dict[str, str] | None = None,
     status: list[int] | None = None,
@@ -1454,10 +1501,25 @@ def ensure_renet_built(
     system = _uname("-s")
     exe = ".exe" if system.startswith(("MINGW", "MSYS", "CYGWIN")) else ""
     renet_bin = os.path.join(renet_dir, "bin", "renet" + exe)
+    stamp = os.path.join(renet_dir, "bin", RENET_STAMP_NAME)
+
+    # A tree mid-cherry-pick holds conflict markers and cannot compile, so the last good build serves until the operation ends (#fd1964b9). "Good" is the stamp's: a binary the key gate refused has no stamp, and one changed since has another fingerprint.
+    paused = renet_mid_operation(renet_dir)
+    if paused:
+        if os.path.isfile(renet_bin) and _stamped_bin(stamp) == renet_artifact_fp(renet_bin):
+            log.warn(
+                "renet rebuild skipped: private/renet has %s; using the last good %s"
+                % (paused, renet_bin)
+            )
+            return True
+        log.error(
+            "private/renet has %s, so it cannot be built, and there is no last good renet at %s to use instead. Finish or abort the operation in private/renet, then rerun."
+            % (paused, renet_bin)
+        )
+        raise LocalCommonError("renet is mid-operation and no last good binary exists", code=1)
 
     check_go_installed()
 
-    stamp = os.path.join(renet_dir, "bin", RENET_STAMP_NAME)
     account_key = resolve_renet_account_key(renet_dir, environ)
 
     fingerprint = git_tree_fingerprint(renet_dir, ["."], env)
@@ -1469,10 +1531,8 @@ def ensure_renet_built(
         source = _subst(computed)
 
     current = renet_stamp_key(source, renet_head(renet_dir), account_key)
-    saved_stamp = _subst(read_stamp_hash(stamp))
-    saved_lines = saved_stamp.split("\n")
-    saved = saved_lines[0]
-    saved_bin = "\n".join(line[len("bin=") :] for line in saved_lines if line.startswith("bin="))
+    saved = _subst(read_stamp_hash(stamp)).split("\n")[0]
+    saved_bin = _stamped_bin(stamp)
 
     if (
         os.path.isfile(renet_bin)
