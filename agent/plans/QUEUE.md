@@ -55,7 +55,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 
 <!-- queue:inflight:begin -->
 - Mode: effort smart; turbo on; turbo_push batch-end; batch_size 3; plan_concurrency 5; writer_cap 25; commit_remind_min 15; backup_push_h 4; judge core; cadence on; agent_hint on; agent_pushback on.
-- Phase: merge on PR #602 (branch 1023-1, session 45048a90, since 2026-11-03T09:46:12Z, past its 24-hour limit).
+- Phase: merge on PR #602 (branch 1023-1, session 45048a90, since 2026-11-03T09:46:12Z, past its 24-hour limit); babysit on PR #? (branch 1104-1, session d778be9d, since 2026-11-06T19:22:42Z).
 - Branch: 1104-1, no PR yet.
 - Plans on the PR (10):
   - agent/plans/PLAN-backup-program.md -- 171 of 192 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
@@ -72,7 +72,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 11 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic c6b82e88, plan agent/plans/PLAN-settings-set-verb.md, outside the set, 2 commit(s) on the branch, 0 open item(s): settings set verb: one source for the ceilings
   - epic dbb7de07, plan agent/plans/PLAN-cloudflare-spend-guard.md, outside the set, 47 commit(s) on the branch, 0 open item(s): cloudflare spend guard closure
-  - epic 09b8bdfa, plan agent/plans/PLAN-detached-jobs.md, outside the set, 560 commit(s) on the branch, 0 open item(s): detached jobs: proxied poll follow and job kinds
+  - epic 09b8bdfa, plan agent/plans/PLAN-detached-jobs.md, outside the set, 561 commit(s) on the branch, 0 open item(s): detached jobs: proxied poll follow and job kinds
   - epic ec9ba176, plan agent/plans/PLAN-backup-integrity.md, outside the set, 2 commit(s) on the branch, 0 open item(s): backup integrity docs and closure
   - epic d6bb9963, plan agent/plans/PLAN-backup-critical-tier.md, outside the set, 7 commit(s) on the branch, 0 open item(s): backup critical tier proofs
   - epic b21ab2e2, plan agent/plans/PLAN-jobs-backup-real-machine-tests.md, outside the set, 2 commit(s) on the branch, 0 open item(s): real machine tests for jobs and backup
@@ -82,15 +82,15 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic 1d805023, plan agent/plans/PLAN-tick-tracking.md, outside the set, 26 commit(s) on the branch, 0 open item(s): tick tracking: plan-box trailer, landing prints the tick, box audit
   - epic f65726d5, plan agent/plans/PLAN-renet-down-before-kill.md, outside the set, 16 commit(s) on the branch, 0 open item(s): renet runs Rediaccfile down() before repo containers stop
   - epic 53c31db2, plan agent/plans/PLAN-repo-resource-limits.md, outside the set, 20 commit(s) on the branch, 0 open item(s): per-repo resource limits and a renet-managed RAM volume
-- Writers: 1 live of writer_cap 25 (session d778be9d): worker:a7543ea9b3763f231.
-- Leased items: 11: #11306719 (worker:bgm63ecv0, d778be9d), #13984b91 (worker:bgm63ecv0, d778be9d), #22854bf1 (worker:bgm63ecv0, d778be9d), #3805e275 (worker:bgm63ecv0, d778be9d), #84e99893 (worker:bgm63ecv0, d778be9d), #abd56226 (worker:bgm63ecv0, d778be9d), #b69ea0cf (worker:bgm63ecv0, d778be9d), #ba482602 (worker:ab467cb3d0377faf7, d778be9d), #e3f4063d (worker:bgm63ecv0, d778be9d), #eb5c1323 (worker:a7543ea9b3763f231, d778be9d), #ff56494f (worker:a7543ea9b3763f231, d778be9d).
+- Writers: 1 live of writer_cap 25 (session d778be9d): worker:ad1878e64bde02a93.
+- Leased items: 11: #11306719 (worker:bkzp9i6q2, d778be9d), #22854bf1 (worker:bkzp9i6q2, d778be9d), #3805e275 (worker:bkzp9i6q2, d778be9d), #815e6225 (worker:bkzp9i6q2, d778be9d), #84e99893 (worker:bkzp9i6q2, d778be9d), #abd56226 (worker:bkzp9i6q2, d778be9d), #b69ea0cf (worker:bkzp9i6q2, d778be9d), #cb61605a (worker:bkzp9i6q2, d778be9d), #de9e7e38 (worker:ad1878e64bde02a93, d778be9d), #e3f4063d (worker:bkzp9i6q2, d778be9d), #eb5c1323 (worker:a766e1a29db4ca9b7, d778be9d).
 - Next plan: agent/plans/PLAN-proxy-cd-six-targets.md, Promoted entry 17; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 14 of 44 plans done, 725 of 918 boxes done (78%).
+Promoted: 14 of 44 plans done, 726 of 939 boxes done (77%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -137,7 +137,7 @@ Promoted: 14 of 44 plans done, 725 of 918 boxes done (78%).
 | 41 | PLAN-tick-tracking.md | 13/15 | 2 open |
 | 42 | PLAN-renet-down-before-kill.md | 11/15 | 4 open |
 | 43 | PLAN-repo-resource-limits.md | 9/13 | 4 open |
-| 44 | PLAN-health-checks-local.md | 0/60 | 60 open |
+| 44 | PLAN-health-checks-local.md | 1/81 | 80 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-backup-program.md -- operator 2026-10-20 ("move agent/plans/PLAN-backup-program.md to the promoted"): one backup program across renet, account, CLI and shared, ending in a live hostinger to eu R2 backup; P1; Depends-On PLAN-shell-sandbox-readonly-view.md and PLAN-account-vm-check.md (done 2026-10-20); released to writers by operator /ask ASKED:2026-10-20T15:14Z ("edit writers to go NOW")
