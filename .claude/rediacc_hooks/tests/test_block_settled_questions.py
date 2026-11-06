@@ -194,6 +194,13 @@ BENCH_REFUSE += [
         "Could you try logging in to eu-bench again, as on eu-remote?",
         "",
     ),
+    # Review 2652b857.1 and .2: the "signing" form is the same ask, with and without eu-remote.
+    (
+        "signing in, beside eu-remote",
+        "Could you try signing in to eu-bench, as on eu-remote?",
+        "",
+    ),
+    ("signing in to bench", "Could you try signing in to bench?", ""),
 ]
 
 BENCH_PASS = [
