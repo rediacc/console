@@ -56,7 +56,7 @@ Unprefixed workflows gain `ops-`, and `Console CI -` and `Console CT -` display 
 
 **Never-lose list.** Media videos, the releases bucket and `account-db-eu`, whose archive is taken through `backup_d1` before any delete. `rediacc-backups-eu` is not on it, by ruling 2.
 
-**Copy tool.** `r2_promote` is same-bucket and forces `--metadata-directive REPLACE` (.ci/rediacc_ci/deploy/r2_promote.py:150), so W1 generalizes it rather than writing a second one; rclone is banned. Jurisdiction is set at create and does not carry over, and `.eu.` is the only endpoint that sees EU buckets. Without `--jurisdiction eu` a default bucket appears with no error.
+**Copy tool.** `r2_promote` is same-bucket and forces `--metadata-directive REPLACE` (.ci/rediacc_ci/deploy/r2_promote.py:150), so W1 generalizes it rather than writing a second one; no rclone path, per its retirement (agent/plans/PLAN-rclone-decommission.md). Jurisdiction is set at create and does not carry over, and `.eu.` is the only endpoint that sees EU buckets. Without `--jurisdiction eu` a default bucket appears with no error.
 
 **Worker mechanics.** account binds proxy and proxy binds account, and wrangler refuses a missing service, so a stub account Worker comes first, while `check_services` refuses before migrations (.ci/rediacc_ci/deploy/deploy_account.py:237). Secrets do not copy, so each new Worker takes a full push. The backup bucket is named twice, in the toml binding and in `ACCOUNT_BACKUP_S3_BUCKET`. A new script gets an empty Durable Object namespace; the org pins, marks and leases it loses heal themselves. Removing a Wrangler entry leaves the container application behind, so old apps are deleted by id.
 
