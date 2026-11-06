@@ -30,7 +30,7 @@ import { z } from 'zod';
 import { t } from '../../i18n/index.js';
 import { shellQuote } from '../../utils/shell-quote.js';
 import { writeStdout } from '../core/request-context.js';
-import { type JobOutputCollector } from './job-output-collector.js';
+import { failedJobStderr, type JobOutputCollector } from './job-output-collector.js';
 import { type RenetEnv, type RenetLaunch, sudoRenet } from './renet-launch.js';
 import type { ExecuteResult, RenetEvent } from './types.js';
 
@@ -787,9 +787,9 @@ function extractJsonValue(stdout: string): string {
   return trimmed.slice(start);
 }
 
-/** A failed job carries the last renet log lines of any level: its own explanation is often info-level, and the error/warning-only stderr leaves a bare "signal: killed". */
+/** A failed job carries the last renet log lines of any level, led by older error and warning lines: its own explanation is often info-level, and the error/warning-only stderr leaves a bare "signal: killed". */
 function jobStderr(success: boolean, output: { stderr: string; tail?: string }): string {
-  return !success && output.tail ? output.tail : output.stderr;
+  return !success && output.tail ? failedJobStderr(output.stderr, output.tail) : output.stderr;
 }
 
 /**

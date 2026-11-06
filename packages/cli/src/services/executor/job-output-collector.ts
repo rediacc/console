@@ -55,14 +55,26 @@ function logEventText(event: RenetEvent): string {
 const TAIL_MAX_LINES = 20;
 const TAIL_MAX_LINE_CHARS = 300;
 
+const boundLogLine = (msg: string): string =>
+  msg.length > TAIL_MAX_LINE_CHARS ? `${msg.slice(0, TAIL_MAX_LINE_CHARS)}…` : msg;
+
+/**
+ * A failed job's stderr: the tail of log lines of any level, led by the error and warning lines the tail no longer
+ * holds, so a problem logged more than {@link TAIL_MAX_LINES} lines before the failure still reaches the caller.
+ */
+export function failedJobStderr(stderr: string, tail: string): string {
+  const inTail = new Set(tail.split('\n'));
+  const older = stderr
+    .split('\n')
+    .filter((line) => line !== '' && !inTail.has(boundLogLine(line)))
+    .map(boundLogLine);
+  return older.length === 0 ? tail : `${older.join('\n')}\n${tail}`;
+}
+
 /** Keep the newest log lines of any level, bounded in count and width. */
 function rememberLogLine(tailLines: string[], event: RenetEvent): void {
   if (event.type !== 'log' || !event.msg) return;
-  tailLines.push(
-    event.msg.length > TAIL_MAX_LINE_CHARS
-      ? `${event.msg.slice(0, TAIL_MAX_LINE_CHARS)}…`
-      : event.msg
-  );
+  tailLines.push(boundLogLine(event.msg));
   if (tailLines.length > TAIL_MAX_LINES) tailLines.shift();
 }
 

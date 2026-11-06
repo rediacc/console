@@ -160,6 +160,18 @@ describe('ProxyClient follows by polls', () => {
     expect(attrs).not.toHaveProperty('rediacc.job.outcome');
   });
 
+  it('keeps the last state a poll reported on the span when the follow is lost afterwards', async () => {
+    const spy = vi.spyOn(telemetryService, 'annotateCommand').mockImplementation(() => {});
+    const { client } = setup((_url, call) =>
+      call === 1 ? poll('running') : new Response('bad gateway', { status: 502 })
+    );
+    await client.run('repo up', {}, {}, () => {});
+    expect(spy.mock.calls.at(-1)?.[0]).toMatchObject({
+      'rediacc.job.function': 'repository_up',
+      'rediacc.job.outcome': 'running',
+    });
+  });
+
   it('control: a terminal poll writes the function and the outcome onto the span', async () => {
     const spy = vi.spyOn(telemetryService, 'annotateCommand').mockImplementation(() => {});
     const { client } = setup(() => poll('succeeded', { exitCode: 0 }));

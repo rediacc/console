@@ -578,13 +578,14 @@ export class ProxyClient {
     let failingSince: number | undefined;
     let polls = 0;
     let fn = '';
+    let lastState: string | undefined;
     for (;;) {
       const poll = await this.fetchPoll(machine, jobId, nextLine);
       polls += 1;
       if (!poll) {
         failingSince ??= Date.now();
         if (Date.now() - failingSince >= this.lostBudgetMs) {
-          annotatePolled(jobId, fn, undefined, polls);
+          annotatePolled(jobId, fn, lastState, polls);
           return lostOutcome(jobId, machine, first);
         }
         await this.sleep(jittered(pace.delay, this.random));
@@ -593,6 +594,7 @@ export class ProxyClient {
       }
       failingSince = undefined;
       fn = poll.status.function;
+      lastState = poll.status.state;
       this.deliver(poll, onEvent, state, ticket, requestId);
       nextLine = poll.nextLine;
       if (isTerminalState(poll.status.state) && !poll.more) {

@@ -41,6 +41,23 @@ describe('failed job result', () => {
     expect((result.stderr ?? '').length).toBeLessThan(20 * 310);
   });
 
+  it('keeps an error logged before the tail window ahead of the tail', () => {
+    const collector = createJobOutputCollector();
+    collector.consume({ type: 'log', level: 'error', msg: 'disk full on /mnt/x' });
+    for (let i = 0; i < 100; i++) collector.consume(infoLine(`step ${i}`));
+    const result = jobStatusToExecuteResult(status, 10, collector);
+    expect(result.stderr).toContain('disk full on /mnt/x');
+    expect(result.stderr).toContain('step 99');
+  });
+
+  it('control: an error still inside the tail window is not repeated', () => {
+    const collector = createJobOutputCollector();
+    collector.consume({ type: 'log', level: 'error', msg: 'disk full on /mnt/x' });
+    collector.consume(infoLine('step 1'));
+    const result = jobStatusToExecuteResult(status, 10, collector);
+    expect(result.stderr?.match(/disk full/g)).toHaveLength(1);
+  });
+
   it('leaves a successful job stderr untouched', () => {
     const collector = createJobOutputCollector();
     collector.consume(infoLine('chatter'));

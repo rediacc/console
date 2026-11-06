@@ -31,6 +31,32 @@ describe('readLinuxClientMachineId without a host machine id', () => {
     expect(await readLinuxClientMachineId(sources)).toBe(first);
   });
 
+  it('two first runs racing report the one id that was persisted', async () => {
+    const dir = tmp();
+    const sources = {
+      hostPaths: [join(dir, 'missing')],
+      installIdPath: join(dir, 'cfg', 'client-machine-id'),
+    };
+    const ids = await Promise.all(
+      Array.from({ length: 8 }, () => readLinuxClientMachineId(sources))
+    );
+
+    expect(new Set(ids).size).toBe(1);
+    expect(await readLinuxClientMachineId(sources)).toBe(ids[0]);
+  });
+
+  it('replaces a corrupt leftover id file instead of failing on it', async () => {
+    const dir = tmp();
+    const installIdPath = join(dir, 'client-machine-id');
+    writeFileSync(installIdPath, 'garbage\n');
+    const sources = { hostPaths: [join(dir, 'missing')], installIdPath };
+
+    const id = await readLinuxClientMachineId(sources);
+
+    expect(id).toMatch(/^[a-f0-9]{64}$/);
+    expect(await readLinuxClientMachineId(sources)).toBe(id);
+  });
+
   it('prefers the host id when present', async () => {
     const dir = tmp();
     writeFileSync(join(dir, 'machine-id'), 'abc123\n');

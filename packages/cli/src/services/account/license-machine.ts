@@ -154,15 +154,43 @@ export async function readLinuxClientMachineId(
   if (/^[a-f0-9]{64}$/.test(existing)) return existing;
   const generated = `${randomUUID()}${randomUUID()}`.replaceAll('-', '').slice(0, 64);
   try {
-    await fsp.mkdir(dirname(sources.installIdPath), { recursive: true, mode: 0o700 });
-    await fsp.writeFile(sources.installIdPath, `${generated}\n`, { mode: 0o600 });
+    return await persistInstallId(sources.installIdPath, generated);
   } catch (error) {
     throw new CliExitError(
       ERROR_CODES.PRECONDITION_MISMATCH,
       `No client machine id: ${sources.hostPaths.join(' and ')} are missing and a generated one could not be saved to ${sources.installIdPath} (${error instanceof Error ? error.message : String(error)}). Make the CLI config directory writable.`
     );
   }
-  return generated;
+}
+
+/** Save a generated id with an exclusive create: of two first runs racing here, one id is persisted and both calls get it. */
+async function persistInstallId(path: string, generated: string): Promise<string> {
+  const fsp = await import('node:fs/promises');
+  try {
+    await fsp.mkdir(dirname(path), { recursive: true, mode: 0o700 });
+    await fsp.writeFile(path, `${generated}\n`, { mode: 0o600, flag: 'wx' });
+    return generated;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'EEXIST') {
+      const persisted = await readRacedInstallId(path);
+      if (persisted) return persisted;
+      // Nothing valid ever appeared: the file is a corrupt leftover, not a winner's, so it is replaced.
+      await fsp.writeFile(path, `${generated}\n`, { mode: 0o600 });
+      return generated;
+    }
+    throw error;
+  }
+}
+
+/** The id a racing first run persisted. The winner may still be writing, so a few short reads cover the gap between its create and its write. */
+async function readRacedInstallId(path: string): Promise<string | undefined> {
+  const { readFile } = await import('node:fs/promises');
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const persisted = (await readFile(path, 'utf-8').catch(() => '')).trim();
+    if (/^[a-f0-9]{64}$/.test(persisted)) return persisted;
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  }
+  return undefined;
 }
 
 /**
