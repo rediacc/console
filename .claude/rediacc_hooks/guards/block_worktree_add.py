@@ -184,7 +184,8 @@ def runs_lease_verb(cmd):
     for run_ in shellscan.every_run(cmd):
         if run_.name.rsplit("/", 1)[-1] != "git":
             continue
-        argv = list(run_.argv)
+        # A variable the walk knows a literal for is the word bash runs (#3dc774ff): `w=worktree; git $w remove .claude/worktrees/x` and `v=remove; git worktree $v ...` ran with rc 0 before.
+        argv = [_with_assigned_values(run_, w) for w in run_.argv]
         at, where = shellscan._git_verb_at(argv)
         if at is None or argv[at] != "worktree":
             continue

@@ -43,6 +43,8 @@ REFUSED = [
     ("remove, double force", "git worktree remove -f -f .claude/worktrees/x"),
     ("remove, absolute", "git worktree remove %s/.claude/worktrees/x" % ROOT),
     ("remove, a variable root", 'git worktree remove "$ROOT/.claude/worktrees/x"'),
+    ("remove, the verb in a variable", "w=worktree; git $w remove .claude/worktrees/x"),
+    ("remove, the sub-verb in a variable", "v=remove; git worktree $v .claude/worktrees/x"),
     ("remove, a dot segment", "git worktree remove .claude/./worktrees/x"),
     ("remove, through a parent", "git worktree remove docs/../.claude/worktrees/x"),
     ("move", "git worktree move .claude/worktrees/x /tmp/x"),
@@ -335,6 +337,7 @@ ALLOWED = [
     ("the gc verb", "./run.sh worktree gc --write --id x"),
     # The same verbs on any other tree are not this guard's business.
     ("remove elsewhere", "git worktree remove /tmp/wt"),
+    ("remove elsewhere, the verb in a variable", "w=worktree; git $w remove /tmp/wt"),
     ("remove in the operator's tree dir", "git worktree remove .worktrees/0101-1"),
     ("a look-alike directory", "git worktree remove .claude/worktrees-old/x"),
     ("a look-alike parent", "git worktree remove x.claude/worktrees/y"),
