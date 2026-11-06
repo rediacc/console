@@ -208,7 +208,7 @@ def lease_pr_task_refusal(msg: str, repo: str) -> int:
     return 0
 
 
-# A LEASE COMMIT NAMES THE PLAN BOX IT SERVES (agent/plans/PLAN-tick-tracking.md, box T3). `land` refuses a lease commit without a valid `Plan-Box:` trailer (T2); this hook refuses the same message at commit time, so the writer fixes it in its own lease before the lead reads it. The grammar is read in process from `wl_planbox.py`, loaded by file. The tree checks (the plan exists, the box is open, the clause is defined) import the worklist's plan modules, so they run as `python3 wl_planbox.py check --root <main checkout>`, a process whose own directory resolves those imports with no `sys.path` entry here. Only in a lease tree; the main checkout pays one `lease_root` call, which starts no subprocess outside the holder path.
+# A LEASE COMMIT NAMES THE PLAN BOX IT SERVES (agent/plans/PLAN-tick-tracking.md, box T3). `land` refuses a lease commit without a valid `Plan-Box:` trailer (T2); this hook refuses the same message at commit time, so the writer fixes it in its own lease before the lead reads it. The grammar is read in process from `wl_planbox.py`, loaded by file. The tree checks (the plan exists, the box is open, the clause is defined) import the worklist's plan modules, so they run as `<this hook's interpreter, sys.executable> wl_planbox.py check --root <main checkout>`, a process whose own directory resolves those imports with no `sys.path` entry here. Only in a lease tree; the main checkout pays one `lease_root` call, which starts no subprocess outside the holder path.
 PLANBOX_PATH = CONSOLE_ROOT / ".claude" / "hooks" / "stop" / "wl_planbox.py"
 PLANBOX_TIMEOUT_S = 60
 
