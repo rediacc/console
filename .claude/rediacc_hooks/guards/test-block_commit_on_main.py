@@ -354,6 +354,23 @@ AGENT_CASES = [
         True,
     ),
     ("a writer merges", "git merge --no-ff other", FEATURE, "general-purpose", True),
+    # #6bb5e37a: the verb git runs after every alias, not the one typed (tests/test_writer_commit_verbs.py drives the alias table by spelling).
+    (
+        "a writer cherry-picks through an inline alias",
+        "git -c alias.cp=cherry-pick cp -x 0123abc",
+        FEATURE,
+        "general-purpose",
+        True,
+    ),
+    (
+        "a writer cherry-picks through a configured alias",
+        "git pick -x 0123abc",
+        FEATURE,
+        "general-purpose",
+        True,
+    ),
+    ("a writer runs a shell alias", "git shpick 0123abc", FEATURE, "general-purpose", True),
+    ("a writer reads the log through an alias", "git lg -n 3", FEATURE, "general-purpose", False),
     ("a writer aborts a cherry-pick", "git cherry-pick --abort", FEATURE, "general-purpose", False),
     ("a writer reads the log", "git log -n 3", FEATURE, "general-purpose", False),
     (
@@ -364,6 +381,8 @@ AGENT_CASES = [
         False,
     ),
 ]
+for _name, _value in (("pick", "cherry-pick"), ("shpick", "!git cherry-pick"), ("lg", "log")):
+    git(FEATURE, "config", "alias.%s" % _name, _value)
 # The planted defect removes the arm; every fire case on the feature branch must then flip to allowed.
 AGENT_DEFECT = ("if not commit_policy.lease_root(write_repo):", "if False:")
 # A lease is the one place a writer commits. The same payload from a real linked tree under the lease root is allowed, and the plant below proves the row in the main checkout still fires.
@@ -386,6 +405,15 @@ AGENT_CASES.append(
     (
         "a writer in a lease cherry-picks",
         "git -C %s cherry-pick -x 0123abc" % LEASE_TREE,
+        FEATURE,
+        "general-purpose",
+        False,
+    )
+)
+AGENT_CASES.append(
+    (
+        "a writer in a lease cherry-picks through an alias",
+        "git -C %s pick -x 0123abc" % LEASE_TREE,
         FEATURE,
         "general-purpose",
         False,
