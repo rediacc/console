@@ -1095,6 +1095,11 @@ def _clone_fixture(gate, work):
     bin_dir.mkdir(parents=True)
     os.symlink(tsx, bin_dir / "tsx")
     (repo / "node_modules" / ".package-lock.json").write_text(lock, encoding="utf-8")
+    # The kept clone also checks each package the hidden lockfile names is on disk at that version (quick-clone.ts installedDifference), so the one locked package exists.
+    (repo / "node_modules" / "dep").mkdir()
+    (repo / "node_modules" / "dep" / "package.json").write_text(
+        '{"name": "dep", "version": "1.0.0"}\n', encoding="utf-8"
+    )
     (repo / "dirty.marker").write_text("not committed\n", encoding="utf-8")
     # THE RUNNER'S OWN SELFTEST STAYS OUT OF THIS FIXTURE: it drives real hung gates and a real checkout's state, and `check:ci-runner-selftest` runs it for real. A stub answers `--selftest` and hands every other call to the real runner's copy, so these cases still judge a real lane in a real clone; the stub is committed because the clone runs HEAD.
     runner_dir = repo / "scripts" / "ci-runner"
