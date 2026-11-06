@@ -386,7 +386,7 @@ test.describe
         'repository_migrate'
       );
 
-      // `up()` appends a nanosecond timestamp to a host file, holds, then appends another: the last stamp is the end of the target's bring-up, read off the target itself.
+      // `up()` appends a nanosecond timestamp to a stamp file inside the repository (UP_STAMP_FILE, so it travels with the repo and is readable on the target), holds, then appends another: the last stamp is the end of the target's bring-up, read off the target itself. seedRepo brings the repository up on machine-11 BEFORE it writes this Rediaccfile, so the source holds no stamp and every stamp on machine-12 is the target's own.
       const guid = await seedRepo(
         APP_ORDER,
         () =>
@@ -494,24 +494,37 @@ test.describe
       // The race: a device-mapper entry appears AFTER the candidate list was taken and BEFORE gc runs, and `repository gc --candidates` re-checks the machine rather than trusting the list. renet refuses to mount an immutable commit, so a real mapping cannot be made through `repository_mount`: a zero-target entry under the commit's name is the state gc reads, and it holds no data.
       const map = await w1.executeViaBridge(`sudo dmsetup create ${commit} --table '0 8 zero'`);
       expect(map.code, `dmsetup create: ${w1.getCombinedOutput(map).slice(-600)}`).toBe(0);
+      // The entry is removed on every path out of the assertions below, so a failed one never leaves a mapping named after a commit on the fleet machine.
+      let entryLive = true;
+      try {
+        const kept = await gcRun();
+        expect(kept.code, `gc failed instead of skipping: ${kept.raw}`).toBe(0);
+        expect(kept.results, kept.raw).toEqual([
+          expect.objectContaining({ guid: commit, status: 'skipped', reason: 'mounted' }),
+        ]);
+        expect(kept.summary, kept.raw).toMatchObject({
+          total: 1,
+          deleted: 0,
+          skipped: 1,
+          failed: 0,
+        });
+        expect(await imageExists(w1, commit), 'gc deleted a mounted commit').toBe(true);
 
-      const kept = await gcRun();
-      expect(kept.code, `gc failed instead of skipping: ${kept.raw}`).toBe(0);
-      expect(kept.results, kept.raw).toEqual([
-        expect.objectContaining({ guid: commit, status: 'skipped', reason: 'mounted' }),
-      ]);
-      expect(kept.summary, kept.raw).toMatchObject({ total: 1, deleted: 0, skipped: 1, failed: 0 });
-      expect(await imageExists(w1, commit), 'gc deleted a mounted commit').toBe(true);
-
-      // Control: with the entry gone, the same call deletes it, so the skip above came from the mapping and from nothing else.
-      const unmap = await w1.executeViaBridge(`sudo dmsetup remove ${commit}`);
-      expect(unmap.code, `dmsetup remove: ${w1.getCombinedOutput(unmap).slice(-600)}`).toBe(0);
-      const deleted = await gcRun();
-      expect(deleted.code, deleted.raw).toBe(0);
-      expect(deleted.results, deleted.raw).toEqual([
-        expect.objectContaining({ guid: commit, status: 'deleted' }),
-      ]);
-      expect(deleted.summary, deleted.raw).toMatchObject({ total: 1, deleted: 1, failed: 0 });
-      expect(await imageExists(w1, commit)).toBe(false);
+        // Control: with the entry gone, the same call deletes it, so the skip above came from the mapping and from nothing else.
+        const unmap = await w1.executeViaBridge(`sudo dmsetup remove ${commit}`);
+        expect(unmap.code, `dmsetup remove: ${w1.getCombinedOutput(unmap).slice(-600)}`).toBe(0);
+        entryLive = false;
+        const deleted = await gcRun();
+        expect(deleted.code, deleted.raw).toBe(0);
+        expect(deleted.results, deleted.raw).toEqual([
+          expect.objectContaining({ guid: commit, status: 'deleted' }),
+        ]);
+        expect(deleted.summary, deleted.raw).toMatchObject({ total: 1, deleted: 1, failed: 0 });
+        expect(await imageExists(w1, commit)).toBe(false);
+      } finally {
+        if (entryLive) {
+          await w1.executeViaBridge(`sudo dmsetup remove ${commit}`).catch(() => undefined);
+        }
+      }
     });
   });

@@ -127,16 +127,24 @@ test.describe
       await w.ensureDatastoreReady(DS);
     });
 
-    test.afterAll(async () => {
-      // A run that stops before case 7 leaves the holder frozen and both repositories behind, and REPO keeps the harness's default network id, which the next run's case 5 needs.
+    /** Thaws the holder and cancels every job this suite started that is still live, then waits for them to end, so a repository removal is never refused for a non-terminal job. Best effort: cleanup never fails a case. */
+    const releaseJobs = async (): Promise<void> => {
       if (holder) {
         await w
           .executeViaBridge(`sudo systemctl kill -s CONT ${holder.unit}`)
           .catch(() => undefined);
-        await w
-          .executeViaBridge(`sudo renet job cancel --id ${holder.job_id} --json`)
-          .catch(() => undefined);
       }
+      const live = await liveJobIds().catch(() => [] as string[]);
+      const mine = [...started].filter((id) => live.includes(id));
+      for (const id of mine) {
+        await w.executeViaBridge(`sudo renet job cancel --id ${id} --json`).catch(() => undefined);
+      }
+      await waitEnded(mine, 60_000).catch(() => undefined);
+    };
+
+    test.afterAll(async () => {
+      // A run that stops before case 7 leaves the holder frozen and both repositories behind, and REPO keeps the harness's default network id, which the next run's case 5 needs. Every job the suite started (the holder, case 5b's, case 7's) is cancelled and ended before the repositories go.
+      await releaseJobs();
       await w.repositoryRm(REPO, DS).catch(() => undefined);
       await w.repositoryRm(OTHER, DS, OTHER_NETWORK_ID).catch(() => undefined);
       await w
@@ -259,11 +267,19 @@ test.describe
       const first = await startAuto('auto-seq-1');
       await waitEnded([first.job_id]);
       const second = await startAuto('auto-seq-2');
-      expect(second.network_id, `the id ${first.network_id} of an ended job was not released`).toBe(
-        first.network_id
-      );
-      expect(distinctNetworkIds(first, second), 'case 3 would pass on two equal ids').toBe(false);
+      expect(second.network_id, 'the second auto start allocated no network id').toBeGreaterThan(0);
+      // Which free id the allocator picks is its own business, so the control does not pin it. The release is read from machine state (the ended job's id has no footprint, as in case 3), and the predicate's failure is shown on a pair planted with equal ids.
+      expect(
+        distinctNetworkIds({ ...first, network_id: 7 }, { ...second, network_id: 7 }),
+        'case 3 would pass on two equal ids'
+      ).toBe(false);
       await waitEnded([second.job_id]);
+      // Both jobs have ended, so neither id may hold a footprint, whichever ids the allocator handed out.
+      const used = await usedNetworkIds();
+      expect(
+        used.filter((id) => id === first.network_id || id === second.network_id),
+        'an ended job left its network id in use'
+      ).toEqual([]);
     });
 
     test('4. job gc --older-than 0 leaves loaded units equal to live jobs', async () => {
@@ -435,6 +451,8 @@ test.describe
       );
       expect(again.code, `repository still held: ${again.stdout.slice(-300)}`).toBe(0);
       parseHandle(again.stdout);
+      // The jobs of 5b and of this case are live too; end them before the repositories are removed.
+      await releaseJobs();
       await w.repositoryRm(REPO, DS).catch(() => undefined);
       await w.repositoryRm(OTHER, DS, OTHER_NETWORK_ID).catch(() => undefined);
     });
