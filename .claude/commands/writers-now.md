@@ -48,7 +48,7 @@ The route is `isolation: "worktree"` on the Agent call, which reaches a lease th
 
 Writers, or gates, or a fleet run, never two of them: writers beside gates made load 70-90 and false timeouts. Before a wave, `uptime` is read against `nproc`, and a wave waits while load is above it. The order of a round is writers, landing, one gate run, then the fleet part of the live queue.
 
-Bench and hostinger runs are exempt from this rule and from that order (standing operator order, 2026-11-05: bench and hostinger are open to every agent at any time). Their work runs on remote machines, not this host, so they start at once, beside writers, gates or a fleet run, and never wait for a landing, a gate, a push, a merge or an operator answer. Any agent may run them: the lead, a live runner or a writer whose box needs one. A box needing a fleet VM still waits for the fleet; a box needing bench or hostinger never does. "Waiting on the fleet" is therefore never a reason to leave a bench or hostinger box idle.
+Bench and hostinger runs are exempt from this rule and from that order (standing operator order, 2026-11-05: bench and hostinger are open to every agent at any time). Their work runs on remote machines, not this host, so they start at once, beside writers, gates or a fleet run, and never wait for a landing, a gate, a push, a merge or an operator answer. Any agent may run them: the lead, a live runner or a writer whose box needs one. Starting at once does not mean sharing a machine: two runs never touch the same bench or hostinger machine at the same time (section 7), and no lock enforces it, so a runner that finds another one on its machine queues behind it. A box needing a fleet VM still waits for the fleet; a box needing bench or hostinger never does. "Waiting on the fleet" is therefore never a reason to leave a bench or hostinger box idle.
 
 ### 4. Start the writers, all at once
 
@@ -82,7 +82,7 @@ lead instead); never vitest from the repo root; no inline suppression. This tree
     never push, never touch `agent/**` or a gitlink, never switch or create a branch;
   - run `npm run ci -- --narrow` or named tests; ci:quick, vm:check and live_proof record refuse a lease;
   - Python tests run with `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest <files> -q` (neither
-    the system python3 nor .venv has pytest, and `-p no:cacheprovider` fails on the repo's cache_dir);
+    the system python3 nor .venv has pytest, and `-p no:cacheprovider` fails on the repo's cache_dir); a lease is seeded with that binary, and one without it runs the main checkout's copy by absolute path with the lease as the working directory;
   - report the commit shas; the lead lands them. A result worth keeping goes in a commit or the
     report, because GC deletes the tree's ignored output with the tree.
 
