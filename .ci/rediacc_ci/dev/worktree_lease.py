@@ -240,8 +240,8 @@ def _write_record(root, record):
 def _rollback(repo, path):
     """Whatever state the lease reached. Locks go first, because a locked tree refuses removal. The signals are held for the rollback and restored after, so an ignored SIGTERM never outlives it."""
     before = _signal_handlers()
-    spike.hold_signals()
     try:
+        spike.hold_signals()
         return _rollback_held(repo, path)
     finally:
         _restore_signal_handlers(before)
@@ -304,8 +304,8 @@ def make_lease(root, *, name="", owner="", agent=""):
     lease_id, path = _reserve(root, name, owner)
     # The lease's own handler for the build, then each signal goes back to what the caller had (as _remove_row does): left armed, a caller's later SIGINT raised the lease's InterruptedRunError long after the lease was made.
     before = _signal_handlers()
-    spike.arm_signals()
     try:
+        spike.arm_signals()
         return _make_lease_armed(root, repo, held, tip, path, lease_id, owner, agent)
     finally:
         _restore_signal_handlers(before)
@@ -317,8 +317,15 @@ def _signal_handlers():
 
 
 def _restore_signal_handlers(before):
+    """Each signal goes back to what `_signal_handlers` found. A handler installed outside Python reads as None, which `signal.signal` refuses; SIG_DFL is the nearest disposition, and a failure on one signal never leaves the later ones unrestored."""
+    failure = None
     for signum, handler in before.items():
-        signal.signal(signum, handler)
+        try:
+            signal.signal(signum, signal.SIG_DFL if handler is None else handler)
+        except (TypeError, ValueError, OSError) as exc:
+            failure = failure or exc
+    if failure is not None:
+        raise failure
 
 
 def _make_lease_armed(root, repo, held, tip, path, lease_id, owner, agent):
@@ -498,7 +505,7 @@ def _boxes_named(message):
     ]
 
 
-def _problems(tree, sha, root=None):
+def _problems(tree, sha, root):
     """What makes `sha` refused for landing, one phrase each. `root` is the main checkout whose plans the Plan-Box trailer is judged against."""
     found = []
     trailers = spike.must(tree, "show", "-s", "--format=%B", sha)
@@ -511,8 +518,7 @@ def _problems(tree, sha, root=None):
     ).stdout
     if not any(line.startswith(TRAILER_KEY + ":") for line in parsed.splitlines()):
         found.append("no %s trailer" % TRAILER_KEY)
-    if root is not None:
-        found += _plan_box_problems(root, trailers)
+    found += _plan_box_problems(root, trailers)
     raw = spike.must(tree, "diff-tree", "-r", "--root", "-m", "--no-commit-id", "--raw", "-z", sha)
     fields = raw.split("\0")
     for meta, rel in zip(fields[0::2], fields[1::2], strict=False):
@@ -1423,14 +1429,12 @@ def _remove_row(world, row):
 
     The signals are held for the removal and each goes back to the handler it had before (not forced to the lease's `interrupted`, which would change the disposition for every caller). Left ignored, SIGTERM stayed ignored for the rest of the process and for every child it started afterwards, because an ignored disposition survives exec: a pytest worker that ran a gc test then spawned servers that no `terminate()` could stop.
     """
-    signums = (signal.SIGINT, signal.SIGTERM, signal.SIGHUP)
-    before = {signum: signal.getsignal(signum) for signum in signums}
-    spike.hold_signals()
+    before = _signal_handlers()
     try:
+        spike.hold_signals()
         return _remove_row_held(world, row)
     finally:
-        for signum, handler in before.items():
-            signal.signal(signum, handler)
+        _restore_signal_handlers(before)
 
 
 def _remove_row_held(world, row):

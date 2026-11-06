@@ -2413,3 +2413,73 @@ def test_gc_discard_dirty_refuses_a_sweep_or_a_short_reason(repo):
     short = run_gc(repo.root, "--write", "--id", "dirty-sweep", "--discard-dirty", "landed")
     assert short.returncode == 1
     assert "at least 20 characters" in short.stderr
+
+
+def test_make_lease_restores_the_signal_dispositions_when_the_build_raises(monkeypatch):
+    """The finally puts each caller handler back on the raising path too, and the original error surfaces."""
+    sentinel: dict[signal.Signals, Any] = {
+        signal.SIGINT: signal.SIG_DFL,
+        signal.SIGTERM: signal.SIG_DFL,
+        signal.SIGHUP: lambda *_a: None,
+    }
+    saved = {s: signal.getsignal(s) for s in SIGNUMS}
+    try:
+        for signum, handler in sentinel.items():
+            signal.signal(signum, handler)
+        monkeypatch.setattr(lease, "_main_checkout", lambda root: root)
+        monkeypatch.setattr(lease, "live_tip", lambda _root: "tip")
+        monkeypatch.setattr(lease, "gitlinks_at", lambda _root, _tip: [])
+        monkeypatch.setattr(lease, "_reserve", lambda _root, _name, _owner: ("id", "/tmp/x"))
+
+        def armed(*_a):
+            raise RuntimeError("build failed")
+
+        monkeypatch.setattr(lease, "_make_lease_armed", armed)
+        with pytest.raises(RuntimeError, match="build failed"):
+            lease.make_lease("/root")
+        assert {s: signal.getsignal(s) for s in SIGNUMS} == sentinel
+    finally:
+        for signum, handler in saved.items():
+            signal.signal(signum, handler)
+
+
+def test_make_lease_restores_the_signals_when_arming_itself_raises(monkeypatch):
+    """spike.arm_signals can fail after installing a handler; the restore must still run."""
+    saved = {s: signal.getsignal(s) for s in SIGNUMS}
+    try:
+        for signum in SIGNUMS:
+            signal.signal(signum, signal.SIG_DFL)
+        monkeypatch.setattr(lease, "_main_checkout", lambda root: root)
+        monkeypatch.setattr(lease, "live_tip", lambda _root: "tip")
+        monkeypatch.setattr(lease, "gitlinks_at", lambda _root, _tip: [])
+        monkeypatch.setattr(lease, "_reserve", lambda _root, _name, _owner: ("id", "/tmp/x"))
+
+        def half_armed():
+            signal.signal(signal.SIGTERM, signal.SIG_IGN)
+            raise OSError("arming failed")
+
+        monkeypatch.setattr(lease.spike, "arm_signals", half_armed)
+        with pytest.raises(OSError, match="arming failed"):
+            lease.make_lease("/root")
+        assert signal.getsignal(signal.SIGTERM) == signal.SIG_DFL
+    finally:
+        for signum, handler in saved.items():
+            signal.signal(signum, handler)
+
+
+def test_a_handler_installed_outside_python_restores_as_the_default_and_the_rest_come_back():
+    """getsignal answers None for such a handler, and signal.signal(signum, None) raises TypeError."""
+    saved = {s: signal.getsignal(s) for s in SIGNUMS}
+    try:
+        for signum in SIGNUMS:
+            signal.signal(signum, signal.SIG_IGN)
+        keep = lambda *_a: None  # noqa: E731
+        lease._restore_signal_handlers(
+            {signal.SIGINT: None, signal.SIGTERM: keep, signal.SIGHUP: signal.SIG_DFL}
+        )
+        assert signal.getsignal(signal.SIGINT) == signal.SIG_DFL
+        assert signal.getsignal(signal.SIGTERM) is keep
+        assert signal.getsignal(signal.SIGHUP) == signal.SIG_DFL
+    finally:
+        for signum, handler in saved.items():
+            signal.signal(signum, handler)
