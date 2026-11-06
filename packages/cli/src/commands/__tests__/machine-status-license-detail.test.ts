@@ -12,7 +12,7 @@ vi.mock('../../services/core/output.js', () => ({ outputService: { info: vi.fn()
 vi.mock('../../services/config/config-resources.js', () => ({ configService: {} }));
 vi.mock('../../i18n/index.js', () => ({ t: (k: string) => k }));
 
-const { licenseDetailOf } = await import('../machine/status.js');
+const { buildEnrichedJson, licenseDetailOf } = await import('../machine/status.js');
 const { registerHealthCommand } = await import('../machine/health.js');
 
 const GOOD = {
@@ -57,5 +57,29 @@ describe('machine health options', () => {
     registerHealthCommand(machine);
     const health = machine.commands.find((c) => c.name() === 'health');
     expect(health?.options.map((o) => o.long)).not.toContain('--team');
+  });
+});
+
+describe('buildEnrichedJson license_statuses', () => {
+  const json = (statuses: unknown) =>
+    buildEnrichedJson(
+      listing(statuses),
+      undefined,
+      undefined,
+      (guid) => guid,
+      (name) => ({ name, source: 'config' }) as never,
+      licenseDetailOf(listing(statuses)),
+      'm1'
+    ).license_statuses as Record<string, unknown>[];
+
+  it('marks every entry unknown when the detail is unreadable, so a blockedBackup check is not read as ok', () => {
+    const entries = json([{ repositoryGuid: 'g1', status: 'valid' }, { repositoryGuid: 2 }]);
+    expect(entries.map((e) => e.backups)).toEqual(['unknown', 'unknown']);
+  });
+
+  it('control: readable detail carries its own fields and no unknown marker', () => {
+    const [entry] = json([GOOD]);
+    expect(entry).toMatchObject({ datastoreId: 'ds-1', blockedBackup: { reason: 'expired' } });
+    expect(entry).not.toHaveProperty('backups');
   });
 });

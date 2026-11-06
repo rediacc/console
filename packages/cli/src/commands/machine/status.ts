@@ -601,7 +601,7 @@ function renderTableMode(
   printStorageSummary(listResult.system);
 }
 
-function buildEnrichedJson(
+export function buildEnrichedJson(
   listResult: ListResult,
   machineConfig: MachineConfig | undefined,
   infra: InfraConfig | undefined,
@@ -639,9 +639,12 @@ function buildEnrichedJson(
     storage: deriveStorageSummary(listResult.system),
     // Scripted consumers get the marker and the datastore scope too; a
     // `machine status -o json | jq` health check should not have to shell out to renet separately to learn that backups are blocked.
+    // Unknown detail is marked on each entry, as the table's backups cell says `unknown`: a `.blockedBackup` check must not read a missing field as not blocked.
     license_statuses: getLicenseStatuses(listResult).map((l) => ({
       ...l,
-      ...(licenseDetail?.get(l.repositoryGuid) ?? {}),
+      ...(licenseDetail === undefined
+        ? { backups: 'unknown' }
+        : (licenseDetail.get(l.repositoryGuid) ?? {})),
     })),
   };
 }
