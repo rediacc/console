@@ -406,7 +406,6 @@ async function showBackupStatus(
     if (code !== undefined) setExitCode(code);
     return;
   }
-  outputService.info(`\nRecent logs (${strategyFilter}):`);
   if (!journal.result.success) {
     renderLocalExecutionFailure(
       journal.result,
@@ -414,6 +413,7 @@ async function showBackupStatus(
     );
     return;
   }
+  outputService.info(`\nRecent logs (${strategyFilter}):`);
   const lines = (journal.result.stdout ?? '').trim();
   writeStdout(`${lines || '(no logs)'}\n`);
 }

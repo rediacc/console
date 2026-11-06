@@ -64,9 +64,9 @@ async function probeImage(
   sftp: { exec(command: string): Promise<string> },
   path: string
 ): Promise<boolean | undefined> {
-  const answer = (
-    await sftp.exec(`sudo sh -c "test -e ${shellQuote(path)} && echo ${PRESENT} || echo ${ABSENT}"`)
-  ).trim();
+  // The inner script is quoted as one word, so a `$` or backtick in the path is not expanded by the login shell before sh runs.
+  const script = `test -e ${shellQuote(path)} && echo ${PRESENT} || echo ${ABSENT}`;
+  const answer = (await sftp.exec(`sudo sh -c ${shellQuote(script)}`)).trim();
   if (answer === PRESENT) return true;
   return answer === ABSENT ? false : undefined;
 }

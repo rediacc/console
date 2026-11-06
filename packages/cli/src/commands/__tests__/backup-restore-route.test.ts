@@ -153,6 +153,7 @@ vi.mock('../../utils/errors.js', async () => {
 
 const { registerBackupCommands } = await import('../backup.js');
 const { outputService } = await import('../../services/core/output.js');
+const { sourceImageOnMachine } = await import('../backup-restore-route.js');
 
 async function run(argv: readonly string[]): Promise<void> {
   const program = new Command();
@@ -219,6 +220,19 @@ describe('backup restore from a repo push artifact', () => {
     // The probe asked about the fork's image, not the grand's.
     expect(String(mockSftpExec.mock.calls[0][0])).toContain(`repositories/${FORK_GUID}`);
     expect(mockRelease).toHaveBeenCalled();
+  });
+
+  it('quotes the probe script as one word, so a $ in a datastore path is not expanded early', async () => {
+    imageProbe.answer = 'present';
+    await sourceImageOnMachine({
+      machine: 'obs-lab',
+      guid: FORK_GUID,
+      placement: { datastore: 'ds' } as never,
+    });
+    const command = String(mockSftpExec.mock.calls[0][0]);
+    // The whole script after `sh -c` is one single-quoted word: no double-quoted span for the login shell to expand.
+    expect(command).toMatch(/^sudo sh -c '.*'$/);
+    expect(command).not.toContain('"');
   });
 
   it('keeps the tag when it resolves the source', async () => {
