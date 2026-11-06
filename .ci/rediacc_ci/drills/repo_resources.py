@@ -377,10 +377,17 @@ def unmounted_verdict(findmnt_after: str, target: str) -> tuple[bool, str]:
     return not mounted, ("%s still mounted" if mounted else "no mount at %s") % target
 
 
-def down_line_verdict(down_log: str) -> tuple[bool, str]:
-    """K3.5: down() logged a line while `.ram` was still a tmpfs."""
-    lines = [line for line in down_log.splitlines() if line.startswith("down findmnt")]
+def down_line_verdict(down_log: str, skip: int = 0) -> tuple[bool, str]:
+    """K3.5: down() logged a line while `.ram` was still a tmpfs. The log is appended to by every down(), so the `skip` lines already there before the action under test are not evidence."""
+    lines = [line for line in down_log.splitlines()[skip:] if line.startswith("down findmnt")]
     return any("tmpfs" in line for line in lines), lines[-1] if lines else "down() logged nothing"
+
+
+def refusal_verdict(rc: int, text: str, memory_max: str, want: str) -> tuple[bool, str]:
+    """K2.4: the cap below current use was refused by the verb itself (non-zero exit, its message names `--force`: renet's repolimits.below_current), and memory.max still reads `want`. A transport error or an unrelated failure carries no such message."""
+    named = "--force" in text
+    ok = rc != 0 and named and memory_max == want
+    return ok, "rc=%d names --force=%s memory.max=%s" % (rc, named, memory_max)
 
 
 def probe_up_verdict(up_log: str, target: str) -> tuple[bool, str]:
@@ -502,8 +509,14 @@ class _Live:
             self.k2_2_oom()
             self.k2_3_raise()
             res = self.policy(self.tag_c, "--memory-max", REFUSED_MEMORY)
+            ok_r, why_r = refusal_verdict(
+                res.rc, res.out + res.err, self.memory_max(self.tag_c), str(C_MEMORY_RAISED)
+            )
             self.check(
-                "K2.4 --memory-max %s without --force is refused" % REFUSED_MEMORY, res.rc != 0, res
+                "K2.4 --memory-max %s without --force is refused" % REFUSED_MEMORY,
+                ok_r,
+                res,
+                why_r,
             )
             self.k2_5_survives()
             self.k2_6_fork_inherits()
@@ -666,10 +679,13 @@ class _Live:
 
     def k3_5_unmount(self, e: str, target: str) -> None:
         before = marker_mounted_at(self.root("cat %s/%s" % (target, RAM_MARKER_FILE)).out)
+        logged_before = len(self.shell(e, "cat %s" % PROBE_DOWN_LOG).out.splitlines())
         down = self.ctx.rdc("repo", "down", self.ctx.ref(e), "--unmount", timeout=900, refuse=False)
         ok_u, why_u = unmounted_verdict(self.root(findmnt_script(self.mount[e])).out, target)
         up = self.ctx.rdc("repo", "up", self.ctx.ref(e), timeout=900, refuse=False)
-        ok_d, why_d = down_line_verdict(self.shell(e, "cat %s" % PROBE_DOWN_LOG).out)
+        ok_d, why_d = down_line_verdict(
+            self.shell(e, "cat %s" % PROBE_DOWN_LOG).out, skip=logged_before
+        )
         gone = self.root("test ! -e %s/data/%s" % (target, MARKER))
         now = marker_mounted_at(self.root("cat %s/%s" % (target, RAM_MARKER_FILE)).out)
         self.check(

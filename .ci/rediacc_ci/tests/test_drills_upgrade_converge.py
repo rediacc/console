@@ -648,6 +648,8 @@ SNAP = frozenset({"JOB old-1"})
         (2, HINT_ERR, SNAP, False),
         (1, "Error: something else\n", SNAP, False),
         (1, HINT_ERR.replace(MACHINE, "other-vm"), SNAP, False),
+        (1, HINT_ERR.replace(MACHINE, MACHINE + "-2"), SNAP, False),
+        (1, HINT_ERR.rstrip("\n") + ".\n", SNAP, True),
         (1, HINT_ERR, SNAP | {"JOB new-2"}, False),
         (1, HINT_ERR, SNAP | {"UNIT rediacc-job-new-2.service"}, False),
         (1, HINT_ERR, None, False),

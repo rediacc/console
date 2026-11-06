@@ -13,6 +13,7 @@ import hashlib
 import json
 import os
 import pathlib
+import re
 import shlex
 import shutil
 import uuid
@@ -312,7 +313,8 @@ def old_renet_refusal_verdict(
 ) -> tuple[bool, str]:
     """(ok, evidence) for one CLI verb run against the pre-isolation renet (PLAN-detached-jobs L1 step 5): ok only when the verb exits 1, its output names `upgrade_hint(machine)`, and the worker's job snapshot is readable on both sides and gained no entry. A verb that exits 0, exits with another code, refuses without the hint, or leaves a new spool directory or unit behind is red; so is a snapshot that never ran, since an unread spool cannot show that no job started."""
     hint = upgrade_hint(machine)
-    named = hint in output
+    # The hint ends at the machine name: `ops-worker-2` extends `ops-worker` and must not satisfy it.
+    named = re.search(re.escape(hint) + r"(?![\w-])(?!\.\w)", output) is not None
     if before is None or after is None:
         return False, "job snapshot unreadable (before=%s after=%s)" % (
             before is not None,

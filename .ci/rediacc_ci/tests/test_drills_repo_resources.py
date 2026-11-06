@@ -135,6 +135,23 @@ def test_unmount_verdicts_and_control() -> None:
     assert not r.down_line_verdict("")[0]
 
 
+def test_down_line_verdict_ignores_lines_logged_before_the_action() -> None:
+    """The log is appended to by every down(): an earlier down's tmpfs line is not K3.5's evidence."""
+    old = "down findmnt %s|tmpfs\n" % TARGET
+    assert not r.down_line_verdict(old + "down findmnt \n", skip=1)[0]
+    assert r.down_line_verdict(old + "down findmnt %s|tmpfs\n" % TARGET, skip=1)[0]
+    assert r.down_line_verdict(old)[0]  # without the skip the stale line passes: the defect
+
+
+def test_refusal_verdict_needs_the_verbs_own_message_and_an_unchanged_cap() -> None:
+    msg = "network 7 uses 48 MiB of memory now; give --force to cap it anyway"
+    want = str(r.C_MEMORY_RAISED)
+    assert r.refusal_verdict(1, msg, want, want)[0]
+    assert not r.refusal_verdict(255, "ssh: connect timed out", want, want)[0], "transport error"
+    assert not r.refusal_verdict(1, msg, "16777216", want)[0], "the cap moved"
+    assert not r.refusal_verdict(0, msg, want, want)[0]
+
+
 def test_shmem_verdict() -> None:
     assert r.shmem_verdict(220200960, 0, r.RESTORE_BYTES)[0]
     assert not r.shmem_verdict(1000, 220200960, r.RESTORE_BYTES)[0], (
