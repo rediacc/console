@@ -136,7 +136,10 @@ export async function readLinuxClientMachineId(
     installIdPath: join(getConfigDir(), CLIENT_INSTALL_ID_FILE),
   }
 ): Promise<string> {
-  const { readFile, writeFile, mkdir } = await import('node:fs/promises');
+  // writeFile and mkdir are read only on the fallback path: a caller with a host id
+  // (and a test that mocks node:fs/promises with readFile alone) never touches them.
+  const fsp = await import('node:fs/promises');
+  const { readFile } = fsp;
   for (const path of sources.hostPaths) {
     const id = await readFile(path, 'utf-8').then(
       (v) => v.trim(),
@@ -151,8 +154,8 @@ export async function readLinuxClientMachineId(
   if (/^[a-f0-9]{64}$/.test(existing)) return existing;
   const generated = `${randomUUID()}${randomUUID()}`.replaceAll('-', '').slice(0, 64);
   try {
-    await mkdir(dirname(sources.installIdPath), { recursive: true, mode: 0o700 });
-    await writeFile(sources.installIdPath, `${generated}\n`, { mode: 0o600 });
+    await fsp.mkdir(dirname(sources.installIdPath), { recursive: true, mode: 0o700 });
+    await fsp.writeFile(sources.installIdPath, `${generated}\n`, { mode: 0o600 });
   } catch (error) {
     throw new CliExitError(
       ERROR_CODES.PRECONDITION_MISMATCH,
