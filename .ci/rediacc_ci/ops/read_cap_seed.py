@@ -15,7 +15,7 @@ READ EVIDENCE. The record cannot state bytes read, so `read_evidence` derives it
 
 SUMMARY. One line appended to `--summary`, whitespace-separated `key=value` fields after the bare repository name, the shape the L2 Accept's awk reads. `rc` is the driver's exit code and `snapshotrc` the verb's. The verb's stdout and stderr are kept beside it as `<summary>.<repo>.out` and `.err`.
 
-EXIT. The snapshot's rc when it failed. Otherwise 3 when no sample was collected (no baseline means the snapshot never started), 4 when the stop rule fired (even if the snapshot committed before the cancel reached it), 130 on Ctrl-C (the job keeps running, and the commands that find and cancel it are printed), and 2 on bad arguments or an unwritable summary, and 5 when a backup timer's window or a running backup refuses the start (nothing runs; the stop rule's cancel is never held back by it).
+EXIT. The snapshot's rc when it failed. Otherwise 3 when no sample was collected (no baseline means the snapshot never started), 4 when the stop rule fired or the run outlived the `RUN_BUDGET_S` its window check cleared (stopped=`budget`), even if the snapshot committed before the cancel reached it, 130 on Ctrl-C (the job keeps running, and the commands that find and cancel it are printed), and 2 on bad arguments or an unwritable summary, and 5 when a backup timer's window or a running backup refuses the start (nothing runs; the stop rule's cancel is never held back by it).
 """
 
 from __future__ import annotations
@@ -366,15 +366,16 @@ def summary_line(result: RunResult) -> str:
     measured = [f for f in figures if not f.postexit]
     reasons = weak_reasons(evidence, len(measured))
     backups = [f.backup for f in figures]
+    # The peaks and the rule flags read the measured samples, the set `samples=` counts and the stop rule uses.
     fields = {
         "rc": result.rc,
-        "peakload": _num(_peak(f.load for f in figures)),
+        "peakload": _num(_peak(f.load for f in measured)),
         "baseload": _num(result.baseload),
-        "peakwa": _num(_peak(f.iowait for f in figures)),
+        "peakwa": _num(_peak(f.iowait for f in measured)),
         "loadover8x3": int(
-            result.baseload is not None and rule_fired("load", figures, result.baseload)
+            result.baseload is not None and rule_fired("load", measured, result.baseload)
         ),
-        "cpuover50x3": int(rule_fired("cpu", figures, 0.0)),
+        "cpuover50x3": int(rule_fired("cpu", measured, 0.0)),
         "snapshotrc": _token(result.snapshot_rc),
         "stopped": result.stopped,
         "cancelled": int(result.cancelled),
@@ -496,6 +497,8 @@ class _Watch:
     stopped: str = "none"
     cancelled: bool = False
     stop_at: float | None = None
+    # The clock reading after which the cleared backup window no longer covers the run.
+    deadline: float | None = None
 
 
 def watch_snapshot(
@@ -531,6 +534,20 @@ def watch_snapshot(
             watch.stopped = args.stop_on
             watch.stop_at = deps.clock()
             print("stop: the %s rule fired" % args.stop_on, file=out, flush=True)
+        if (
+            watch.stopped == "none"
+            and watch.deadline is not None
+            and deps.clock() >= watch.deadline
+        ):
+            # The window guard cleared RUN_BUDGET_S from its read; a longer run could reach a timer trigger.
+            watch.stopped = "budget"
+            watch.stop_at = deps.clock()
+            print(
+                "stop: the run outlived the %d s the backup window was cleared for"
+                % backup_window.RUN_BUDGET_S,
+                file=out,
+                flush=True,
+            )
         if watch.stopped != "none" and not watch.cancelled:
             watch.cancelled = _cancel_job(deps, args.rdc, args.config, args.repo, args.machine, out)
             if watch.cancelled:
@@ -601,7 +618,9 @@ def main(
 
     if not window_clear(deps, args, out):
         print("backup window: the snapshot was not started", file=out)
+        _append_summary(args.summary, RunResult(args.repo, EXIT_WINDOW, None, None), out)
         return EXIT_WINDOW
+    cleared_at = deps.clock()
     baseload, start = take_baseline(deps, args.rdc, args.config, args.machine, out)
     if baseload is None or start is None:
         print("no baseline sample: the snapshot was not started", file=out)
@@ -615,7 +634,7 @@ def main(
     proc = deps.spawner(
         snapshot_argv(args.rdc, args.config, args.repo, args.machine), out_path, err_path
     )
-    watch = _Watch()
+    watch = _Watch(deadline=cleared_at + backup_window.RUN_BUDGET_S)
     interrupted = False
     try:
         snapshot_rc = _shell_rc(watch_snapshot(deps, proc, start, baseload, args, out, watch))

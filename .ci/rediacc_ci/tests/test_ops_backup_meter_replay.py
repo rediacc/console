@@ -9,6 +9,7 @@ import datetime
 import io
 import json
 import subprocess
+import sys
 import urllib.parse
 from typing import TYPE_CHECKING, Any
 
@@ -529,3 +530,80 @@ def test_the_kill_signals_only_its_own_snapshot() -> None:
     assert "rediacc-backup-" in cmd
     assert "kill -KILL $p" in cmd
     assert subprocess.run(["bash", "-n", "-c", cmd], check=False).returncode == 0
+
+
+def _flaky_listing(w) -> None:
+    base_transport = w.transport
+    calls = {"n": 0}
+
+    def flaky(method, url, body, headers):
+        calls["n"] += 1
+        if calls["n"] >= 2:
+            return 500, b""
+        return base_transport(method, url, body, headers)
+
+    w.transport = flaky
+
+
+def test_an_unreachable_host_during_the_cleanup_kill_keeps_the_listing_failure(tmp_path):
+    w = seeded()
+    _flaky_listing(w)
+    runner = w.runner
+
+    def unreachable(argv, timeout):
+        if list(argv[3:5]) == ["term", "connect"] and argv[7] == mod.KILL_COMMAND:
+            return 255, "", "ssh: connect to host: timed out"
+        return runner(argv, timeout)
+
+    w.runner = unreachable
+    rc, text = run(w, tmp_path, *REPLAY)
+    assert rc == 2, text
+    assert "term connect" not in text, "the kill failure replaced the original cause"
+
+
+def test_a_kill_answer_that_echoes_the_command_is_not_gone(tmp_path):
+    w = seeded()
+    runner = w.runner
+
+    def echoing(argv, timeout):
+        if list(argv[3:5]) == ["term", "connect"] and argv[7] == mod.KILL_COMMAND:
+            return 0, "echo ALIVE || echo GONE\nALIVE\n", ""
+        return runner(argv, timeout)
+
+    w.runner = echoing
+    rc, text = run(w, tmp_path, *REPLAY, "--kill-after", "5")
+    assert rc == 2, text
+    assert "still runs" in text
+
+
+def test_replay_rechecks_the_window_before_the_rerun(tmp_path):
+    w = seeded()
+    w.refuse_window_on = 3
+    rc, text = run(w, tmp_path, *REPLAY)
+    assert rc == 2, text
+    assert "backup-window: refused" in text
+    assert not any(c[:2] == ["backup", "snapshot"] and "-o" not in c for c in w.calls)
+
+
+def _own_pids(token_of) -> set[int]:
+    child = subprocess.Popen(
+        [sys.executable, "-c", "import time; time.sleep(30)", "renet backup snapshot"]
+    )
+    try:
+        with open("/proc/%d/cgroup" % child.pid, encoding="utf-8") as fh:
+            cgroup = fh.read().splitlines()[0]
+        out = subprocess.run(
+            ["bash", "-c", mod.own_pids_command(token_of(cgroup))],
+            capture_output=True,
+            text=True,
+            check=False,
+        ).stdout.split()
+        return {child.pid} & {int(p) for p in out}
+    finally:
+        child.kill()
+        child.wait()
+
+
+def test_the_own_pid_filter_selects_a_snapshot_outside_a_backup_unit_and_skips_one_inside() -> None:
+    assert len(_own_pids(lambda _cgroup: "rediacc-backup-")) == 1
+    assert _own_pids(lambda cgroup: cgroup[:3]) == set()

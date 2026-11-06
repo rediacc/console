@@ -60,14 +60,25 @@ CLIENT_EXIT_WAIT_S = 120.0
 MAINTENANCE_HOUR_UTC = 3
 PROC_PATTERN = "[r]enet backup snapshot"
 RUNNING_COMMAND = "pgrep -f '%s' >/dev/null && echo RUNNING || echo IDLE" % PROC_PATTERN
-# Own snapshot only: a process whose cgroup is a rediacc-backup-* unit belongs to a scheduled backup and is never signalled.
-_OWN_PIDS = (
+
+
+def own_pids_command(unit_prefix: str = backup_window.UNIT_PREFIX) -> str:
+    """Shell that prints the pids of a renet snapshot whose cgroup is readable and is not a `unit_prefix` unit: this run's own, the only ones signalled. A cgroup that cannot be read fails CLOSED: the pid is not signalled."""
+    return (
+        "for p in $(pgrep -f '%s'); do [ -r /proc/$p/cgroup ] && ! grep -q '%s' /proc/$p/cgroup || continue; echo $p; done"
+        % (PROC_PATTERN, unit_prefix)
+    )
+
+
+# Own snapshot only: a process whose cgroup is a rediacc-backup-* unit belongs to a scheduled backup and is never signalled. The `left` check below counts a pid whose cgroup cannot be read, so an unsignalled unknown reads as ALIVE and not as GONE.
+_OWN_PIDS = own_pids_command()
+_LEFT_PIDS = (
     "for p in $(pgrep -f '%s'); do grep -q '%s' /proc/$p/cgroup 2>/dev/null || echo $p; done"
     % (PROC_PATTERN, backup_window.UNIT_PREFIX)
 )
 KILL_COMMAND = (
     "own=$(%s); for p in $own; do sudo kill -KILL $p; done; sleep 2; "
-    'left=$(%s); [ -n "$left" ] && echo ALIVE || echo GONE' % (_OWN_PIDS, _OWN_PIDS)
+    'left=$(%s); [ -n "$left" ] && echo ALIVE || echo GONE' % (_OWN_PIDS, _LEFT_PIDS)
 )
 
 PASS, FAIL, NOTE, UNKNOWN = "PASS", "FAIL", "NOTE", "NO-VERDICT"
@@ -454,7 +465,14 @@ def replay(rdc: Rdc, lister: Lister, a: ReplayArgs, report: Report) -> None:
         except NoVerdictError:
             # The throttled client and the remote renet snapshot must not outlive an unreadable listing.
             proc.kill()
-            rdc.on_machine(a.machine, KILL_COMMAND)
+            try:
+                rdc.on_machine(a.machine, KILL_COMMAND)
+            except NoVerdictError as kill_failure:
+                # The listing failure is the cause; an unreachable host must not replace it.
+                print(
+                    "the remote renet snapshot may still run on %s: %s" % (a.machine, kill_failure),
+                    file=sys.stderr,
+                )
             raise
         if uploaded >= a.kill_after:
             break
@@ -480,7 +498,8 @@ def replay(rdc: Rdc, lister: Lister, a: ReplayArgs, report: Report) -> None:
         raise
     killed_at = deps.now()
     answer = rdc.on_machine(a.machine, KILL_COMMAND)
-    if "GONE" not in answer:
+    # The last line is the verdict; a remote that echoed the command would carry both words earlier.
+    if answer.strip().splitlines()[-1:] != ["GONE"]:
         proc.kill()
         raise NoVerdictError("renet backup snapshot still runs on %s after SIGKILL" % a.machine)
     try:
@@ -501,6 +520,8 @@ def replay(rdc: Rdc, lister: Lister, a: ReplayArgs, report: Report) -> None:
             % (client_rc, base.manifests, after_kill.manifests)
         )
 
+    # The killed run is gone, so the timer window is judged again, running snapshot included, before the rerun.
+    window_guard(rdc, a.machine, backup_window.RUN_BUDGET_S, check_running=True)
     rc, stdout, stderr = rdc.run(
         "-o", "json", "backup", "snapshot", ref, timeout=a.snapshot_timeout
     )

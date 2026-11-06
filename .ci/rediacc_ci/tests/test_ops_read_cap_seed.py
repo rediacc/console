@@ -118,6 +118,8 @@ def test_only_a_transient_scope_counts_as_the_backup():
     """A process with the verb's name outside `run-*.scope` (a login session, init.scope) is not the backup."""
     holder = subprocess.Popen(["bash", "-c", 'exec -a "renet backup snapshot --repo x" sleep 15'])
     try:
+        with open("/proc/%d/cgroup" % holder.pid, encoding="utf-8") as fh:
+            holder_cgroup = fh.read().strip().removeprefix("0::")
         proc = subprocess.run(
             ["bash", "-c", rcs.SAMPLE_COMMAND], capture_output=True, text=True, check=False
         )
@@ -128,6 +130,8 @@ def test_only_a_transient_scope_counts_as_the_backup():
     parsed = rcs.parse_sample(proc.stdout)
     assert parsed is not None
     assert all("/run-" in path for path in parsed.scopes)
+    if not holder_cgroup.endswith(".scope") or "/run-" not in holder_cgroup:
+        assert holder_cgroup not in parsed.scopes, "the holder outside run-*.scope was counted"
 
 
 def test_the_sample_command_writes_nothing():
@@ -789,3 +793,28 @@ def test_a_running_seed_refuses_the_start(tmp_path):
     rc, _, _ = world.main()
     assert rc == rcs.EXIT_WINDOW
     assert world.spawned is None
+
+
+def test_a_run_outliving_the_cleared_window_budget_is_cancelled(tmp_path):
+    world = World(tmp_path, loads=[1.0] * 400, lives=400)
+    rc, out, summary = world.main()
+    assert rc == rcs.EXIT_STOPPED, out
+    assert "outlived" in out
+    assert [c for c in world.calls if "cancel" in c]
+    assert " stopped=budget " in summary.read_text()
+
+
+def test_a_window_refusal_leaves_a_summary_line(tmp_path):
+    world = World(tmp_path, window=WINDOW_NEAR)
+    rc, _, summary = world.main()
+    assert rc == rcs.EXIT_WINDOW
+    assert summary.read_text().startswith("demo-heartbeat rc=%d " % rcs.EXIT_WINDOW)
+
+
+def test_the_peaks_and_rule_flags_read_the_measured_samples_only():
+    post = rcs.Figures(load=40.0, busy=99.0, iowait=70.0, backup=None, postexit=True)
+    line = rcs.summary_line(result(figures=(fig(), fig(), fig(), post, post, post)))
+    assert " peakload=1.00 " in line
+    assert " cpuover50x3=0 " in line
+    assert " loadover8x3=0 " in line
+    assert " peakwa=1.00 " in line
