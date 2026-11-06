@@ -43,6 +43,7 @@ DOWNSTREAM_JOBS = (
     "Finalize Release Sentinel",
     "PR Labels",
     "Install Methods Complete",
+    "Report schedule",
 )
 AGGREGATORS = (*WATCHDOG_EXCLUDED, *DOWNSTREAM_JOBS)
 CAUSE_KINDS = (
