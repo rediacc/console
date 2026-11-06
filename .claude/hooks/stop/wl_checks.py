@@ -2391,6 +2391,9 @@ PRIORITY_LADDER = (
                 "roster-silent",
                 # A scheduled workflow red on main that this session claimed, or ticked without evidence (wl_schedred): the party owed is the release pipeline (promote-stable counts only green scheduled runs), which cannot see this session stop.
                 "scheduled-red",
+                # The same party owed for the live fleet (wl_opshealth): a red ops-health check this session claimed, or an off-box alerter whose cron stopped, is a production fault the operator learns of only by mail, and a rotating key would let it sit behind unrelated checks.
+                "ops-health-red",
+                "ops-health-offbox-stale",
                 # The context crossed ctx_budget.WISDOM_FRACTION with its in-flight work not handed over (wisdom_due): the party owed is the next context, which cannot see this one and rediscovers whatever it did not write down.
                 "wisdom-due",
             }
