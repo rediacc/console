@@ -4,17 +4,19 @@ WHAT IT READS. `.ci/cache/ops-health/state.json`, written by `python3 -m rediacc
 
 WHEN A CHECK IS DUE (its `at` older than its `ttl_s`, or no readable cache at all), ONE detached refresher is spawned, claimed through O_EXCL on `.ci/cache/ops-health/refresh.lock` (a lock older than LOCK_STALE_S is a dead refresher's and is taken over). The refresher is passed `--lock-held` and removes the lock when it ends. The hook never waits for it and never raises: the next stop reads what it wrote.
 
-OWNERSHIP reuses wl_schedred's claim file. An open `[ ]`/`[>]`/`[?]` item whose text names `ops-health` belongs to its owner (the open-items blocker already holds that owner, and a peer gets one advisory). With no such item, `wl_schedred.claim` picks ONE session: the holder is blocked (`ops-health-red`, `ops-health-offbox-stale`) and every other session gets an advisory (`ops-health-peer`). The claim's run id is a signature of the red subjects, so a new red re-claims.
+OWNERSHIP reuses wl_schedred's claim file. An open `[ ]`/`[>]`/`[?]` item whose text opens with `ops-health` (optionally behind a `(<hex prefix>)` tag) belongs to its owner (the open-items blocker already holds that owner, and a peer gets one advisory). With no such item, `wl_schedred.claim` picks ONE session: the holder is blocked (`ops-health-red`, `ops-health-offbox-stale`) and every other session gets an advisory (`ops-health-peer`). The claim's run id is a signature of the red subjects, so a new red re-claims.
 
 A cache that cannot be parsed, or a check that answered rc 2 (unreadable), is the advisory `ops-health-unreadable`, never a block.
 """
 
 import contextlib
 import datetime
+import fcntl
 import hashlib
 import json
 import os
 import pathlib
+import re
 import subprocess
 import sys
 import time
@@ -28,7 +30,12 @@ STATE_NAME = "state.json"
 LOCK_NAME = "refresh.lock"
 LOG_NAME = "refresh.log"
 LOCK_STALE_S = 20 * 60
-TRACK_WORD = "ops-health"
+# A refresher that fails leaves the cache due, so the next stop would start another one at once. One attempt per RETRY_S, whatever became of the last (review 3fe50062.3); the stamp lives in LAST_NAME.
+RETRY_S = 5 * 60
+LAST_NAME = "refresh.last"
+GUARD_NAME = "refresh.guard"
+# An item TRACKS the red only when its text opens with the tag the block's `--add` line prints, optionally behind the `(<session prefix>)` tag; a task that merely mentions ops-health tracks nothing (review 3fe50062.1).
+TRACK_RE = re.compile(r"^\s*(?:\([0-9a-f]{4,12}\)\s*)?ops-health\b", re.IGNORECASE)
 CLAIM_RED = "opshealth"
 CLAIM_OFFBOX = "opshealth-offbox"
 _OPEN_STATES = (" ", ">", "?")
@@ -86,11 +93,23 @@ def due(doc, now):
 
 
 def take_lock(root, now=None):
+    """Claim the refresh lock. The stale takeover (stat, unlink, create) runs under an flock on a guard file, so two stops that both see one stale lock take it in turn: the second finds the first's fresh lock and stands down instead of deleting it (review 3fe50062.2)."""
     now = time.time() if now is None else now
     d = cache_dir(root)
     with contextlib.suppress(OSError):
         d.mkdir(parents=True, exist_ok=True)
-    path = d / LOCK_NAME
+    try:
+        guard = os.open(str(d / GUARD_NAME), os.O_RDWR | os.O_CREAT, 0o644)
+    except OSError:
+        return False
+    try:
+        fcntl.flock(guard, fcntl.LOCK_EX)
+        return _take_lock_held(d / LOCK_NAME, now)
+    finally:
+        os.close(guard)
+
+
+def _take_lock_held(path, now):
     for _ in range(2):
         try:
             fd = os.open(str(path), os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o644)
@@ -112,14 +131,31 @@ def take_lock(root, now=None):
     return False
 
 
+def recent_attempt(root, now):
+    """True when a refresher was started less than RETRY_S before `now`."""
+    try:
+        at = float(json.loads((cache_dir(root) / LAST_NAME).read_text(encoding="utf-8"))["at"])
+    except (OSError, ValueError, KeyError, TypeError):
+        return False
+    return 0 <= now - at < RETRY_S
+
+
 def spawn_refresh(root, popen=None, now=None):
-    """Take the lock and start ONE detached refresher. True when this call started it."""
+    """Take the lock and start ONE detached refresher. True when this call started it. At most one attempt per RETRY_S."""
+    stamp = time.time() if now is None else now
+    if recent_attempt(root, stamp):
+        return False
     if not take_lock(root, now=now):
         return False
+    with contextlib.suppress(OSError):
+        (cache_dir(root) / LAST_NAME).write_text(json.dumps({"at": stamp}), encoding="utf-8")
     popen = subprocess.Popen if popen is None else popen
     root = pathlib.Path(root)
     env = dict(os.environ)
-    env["PYTHONPATH"] = str(root / ".ci")
+    # The operator's own PYTHONPATH stays behind the repo's (review 3fe50062.4).
+    env["PYTHONPATH"] = os.pathsep.join(
+        [str(root / ".ci"), *([env["PYTHONPATH"]] if env.get("PYTHONPATH") else [])]
+    )
     try:
         log_fd = os.open(
             str(cache_dir(root) / LOG_NAME), os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o644
@@ -240,7 +276,7 @@ def tracking_items(items):
     return [
         it
         for it in items or ()
-        if it.get("state") in _OPEN_STATES and TRACK_WORD in str(it.get("text") or "").lower()
+        if it.get("state") in _OPEN_STATES and TRACK_RE.match(str(it.get("text") or ""))
     ]
 
 

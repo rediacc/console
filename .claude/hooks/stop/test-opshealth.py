@@ -8,11 +8,13 @@ Auto-discovered by TAILED in .claude/rediacc_hooks/tests/test_hooks_delegates.py
 Every fixture is a temporary root holding `.ci/cache/ops-health/state.json` and a temporary worklist path for the claim files. The refresher is never started: `popen` is a recorder, so a control counts spawns instead of processes. Each refusal has a passing twin built from the same fixture with one fact changed.
 """
 
+import atexit
 import datetime
 import importlib.util
 import json
 import os
 import pathlib
+import shutil
 import tempfile
 import threading
 
@@ -96,6 +98,7 @@ class Spawns:
 
 def fixture(doc=None, raw=None):
     tmp = pathlib.Path(tempfile.mkdtemp(prefix="opshealth-"))
+    atexit.register(shutil.rmtree, tmp, ignore_errors=True)
     d = tmp / ".ci" / "cache" / "ops-health"
     d.mkdir(parents=True)
     if raw is not None:
@@ -165,7 +168,28 @@ check(
     ["-m", "rediacc_ci.ops.ops_health", "refresh", "--lock-held"],
 )
 check("stale: the refresher is detached", kw.get("start_new_session"), True)
-check("stale: the refresher gets PYTHONPATH=.ci", kw["env"]["PYTHONPATH"], str(root / ".ci"))
+check(
+    "stale: the refresher gets PYTHONPATH=.ci first",
+    kw["env"]["PYTHONPATH"].split(os.pathsep)[0],
+    str(root / ".ci"),
+)
+# Review 3fe50062.4: an operator PYTHONPATH is kept behind the repo's.
+_saved = os.environ.get("PYTHONPATH")
+os.environ["PYTHONPATH"] = "/operator/libs"
+try:
+    root_p, wl_p = fixture(None)
+    sp_p = Spawns()
+    assess(root_p, wl_p, A, popen=sp_p)
+    check(
+        "stale: an operator PYTHONPATH is kept",
+        sp_p.calls[0][1]["env"]["PYTHONPATH"],
+        "%s%s/operator/libs" % (root_p / ".ci", os.pathsep),
+    )
+finally:
+    if _saved is None:
+        del os.environ["PYTHONPATH"]
+    else:
+        os.environ["PYTHONPATH"] = _saved
 
 # --- two concurrent stops spawn one
 root, wl = fixture(None)
@@ -196,9 +220,10 @@ check("stale lock: the lock file exists", lock.exists(), True)
 old = NOW.timestamp() - O.LOCK_STALE_S - 5
 os.utime(lock, (old, old))
 sp2 = Spawns()
+# One attempt per RETRY_S: this stop is past the backoff of the spawn above (review 3fe50062.3).
 check(
     "stale lock: a lock older than 20 min is taken over",
-    assess(root, wl, A, popen=sp2)["spawned"],
+    assess(root, wl, A, popen=sp2, now=NOW + datetime.timedelta(seconds=O.RETRY_S + 1))["spawned"],
     True,
 )
 young = NOW.timestamp() - O.LOCK_STALE_S + 60
@@ -207,6 +232,60 @@ check(
     "stale lock twin: a 19 min lock is respected",
     assess(root, wl, A, popen=Spawns())["spawned"],
     False,
+)
+
+# --- a refresher that fails leaves the cache due: one attempt per RETRY_S (review 3fe50062.3)
+root, wl = fixture(None)
+check("backoff: the first stop spawns", assess(root, wl, A)["spawned"], True)
+(root / ".ci" / "cache" / "ops-health" / "refresh.lock").unlink()  # the failed refresher's cleanup
+check(
+    "backoff: a stop a minute later spawns nothing",
+    assess(root, wl, A, now=NOW + datetime.timedelta(seconds=60))["spawned"],
+    False,
+)
+check(
+    "backoff twin: a stop past RETRY_S spawns again",
+    assess(root, wl, A, now=NOW + datetime.timedelta(seconds=O.RETRY_S + 1))["spawned"],
+    True,
+)
+
+# --- many stops that all see one stale lock spawn one refresher (review 3fe50062.2)
+root, wl = fixture(None)
+lock = root / ".ci" / "cache" / "ops-health" / "refresh.lock"
+lock.write_text("{}")
+old = NOW.timestamp() - O.LOCK_STALE_S - 5
+os.utime(lock, (old, old))
+sp = Spawns()
+barrier = threading.Barrier(8)
+results = []
+
+
+def stale_stop():
+    barrier.wait()
+    results.append(O.take_lock(root, now=NOW.timestamp()))
+
+
+threads = [threading.Thread(target=stale_stop) for _ in range(8)]
+for th in threads:
+    th.start()
+for th in threads:
+    th.join()
+check("stale race: eight stops over one stale lock take it once", results.count(True), 1)
+
+# --- an unrelated open task that mentions ops-health tracks nothing (review 3fe50062.1)
+root, wl = fixture(red_doc())
+chatter = [{"state": " ", "owner": "bbbb2222", "text": "tidy the ops-health docs"}]
+check(
+    "tracking: an unrelated mention does not own the red",
+    bool(assess(root, wl, A, items=chatter)["block"]),
+    True,
+)
+tagged = [{"state": " ", "owner": "aaaa1111", "text": "(aaaa1111) ops-health red: machine m1"}]
+root, wl = fixture(red_doc())
+check(
+    "tracking twin: a tagged tracking item still owns it",
+    assess(root, wl, A, items=tagged)["block"],
+    "",
 )
 
 # --- the off-box alerter stopped
