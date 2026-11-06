@@ -504,10 +504,11 @@ export const DECLARED_HAND_WRITTEN_LANES: Readonly<Record<string, string>> = {
  * registered a manifest gate against them.
  *
  * NOT A SECOND ALLOWLIST, and the difference is the whole point. An entry here is an
- * open decision, printed on every run: either the lane earns a region by having gates
- * registered against it, or it moves into `DECLARED_HAND_WRITTEN_LANES` with its reason.
- * Deciding that is a design call this gate deliberately does not make; making the gap
- * VISIBLE instead of silent is what it does.
+ * open decision, and `partitionFindings` reports every entry as a finding, so the gate is
+ * red while one stands: either the lane earns a region by having gates registered against
+ * it, or it moves into `DECLARED_HAND_WRITTEN_LANES` with its reason. Deciding that is a
+ * design call this gate deliberately does not make; refusing to let the gap ride a green
+ * is what it does.
  */
 export const UNDECIDED_LANES: readonly string[] = [];
 
@@ -1184,19 +1185,26 @@ function selftestControls(scratch: string[]): number {
     },
     {
       name: 'FIRES: any undecided lane is a finding, so an open decision cannot ride a green',
-      ok: partitionFindings(
-        PART_JOBS,
-        PART_REGIONS,
-        PART_HAND,
-        ['quality-go'],
-        PART_SETUP,
-        {}
-      ).some((f) => f.includes('quality-go is UNDECIDED')),
+      ok: (() => {
+        // quality-go is taken out of the hand-written set, so the undecided clause alone is judged and the case does not also trip the "in 2 sets" clause.
+        const { 'quality-go': _decided, ...hand } = PART_HAND;
+        const found = partitionFindings(
+          PART_JOBS,
+          PART_REGIONS,
+          hand,
+          ['quality-go'],
+          PART_SETUP,
+          {}
+        );
+        return (
+          found.some((f) => f.includes('quality-go is UNDECIDED')) &&
+          !found.some((f) => f.includes('in 2 sets'))
+        );
+      })(),
     },
     {
       name: 'CONTROL: an empty undecided set is silent when every lane is decided',
-      ok:
-        partitionFindings(PART_JOBS, PART_REGIONS, PART_HAND, [], PART_SETUP, {}).length === 0,
+      ok: partitionFindings(PART_JOBS, PART_REGIONS, PART_HAND, [], PART_SETUP, {}).length === 0,
     },
     {
       name: 'FIRES: a lane in BOTH sets (region-bearing and allowlisted at once)',

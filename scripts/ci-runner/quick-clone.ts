@@ -1104,6 +1104,18 @@ export async function quickCloneSelftest(
       ) === undefined,
       'CONTROL: an optional package absent from disk is legitimate'
     );
+    check(
+      installedDifference(
+        diskRoot,
+        hiddenDisk({ 'node_modules/p': { version: '1.0.0', peer: true } })
+      ) === undefined,
+      'CONTROL: a peer package absent from disk is legitimate'
+    );
+    check(
+      installedDifference(diskRoot, hiddenDisk({ 'node_modules/p': { version: '1.0.0' } })) !==
+        undefined,
+      'CONTROL: the same package, neither optional nor peer, absent from disk must not match'
+    );
     const groups = dependencyGroups(
       [
         'package-lock.json',
