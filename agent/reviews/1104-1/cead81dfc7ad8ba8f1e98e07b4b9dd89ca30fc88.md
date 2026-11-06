@@ -21,14 +21,14 @@ Body-Sig: 6674ba0a62358aa0
 ### cead81df.1 [medium] packages/cli/src/services/account/license-machine.ts:177
 Anchor: in-diff
 Claim: When the id file already holds a corrupt value, two racing first runs both wait about 100ms in readRacedInstallId, find nothing valid, and each overwrite the file with their own generated id (no 'wx' flag), so they return different ids, which breaks the 'racing first runs agree' guarantee. A winner slower than about 100ms between create and write gets overwritten the same way.
-Resolution: open
+Resolution: fixed 2d80662abd1348e9586411198808ee031d90451f | d778be9d 2026-11-06T21:33:27Z
 
 ### cead81df.2 [medium] packages/cli/src/services/executor/job-output-collector.ts:71
 Anchor: in-diff
 Claim: failedJobStderr prepends every error or warning line from stderr that is not in the tail, with no count cap (only a per-line width cap), so a failed job that logged many older error lines now returns an unbounded stderr where the tail used to be at most 20 lines; the diff does not show whether output.stderr is capped upstream.
-Resolution: open
+Resolution: fixed 058f0e639f6117f9bcb72e99c9f266778b37fca4 | d778be9d 2026-11-06T21:33:27Z
 
 ### cead81df.3 [low] packages/cli/src/services/executor/proxy-client.ts:586
 Anchor: in-diff
 Claim: A follow lost after a non-terminal poll now writes that poll's state (e.g. 'running') into rediacc.job.outcome, while the returned lostOutcome is a failure, so telemetry consumers that read outcome as terminal see 'running' for a command that already ended.
-Resolution: open
+Resolution: not-a-bug | packages/cli/src/services/executor/job-span.ts:19 the documented outcomes include running for a ticket handed back, and a lost follow keeps its ticket with the job still running; proxy-client-poll.test.ts:163 pins it | d778be9d 2026-11-06T21:33:28Z

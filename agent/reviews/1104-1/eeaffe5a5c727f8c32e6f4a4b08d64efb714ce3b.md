@@ -26,9 +26,9 @@ Resolution: not-a-bug | cmd/renet/umask_unix.go:10 resolved: golangci-lint with 
 ### eeaffe5a.2 [low] pkg/backuphook/standin.go:17
 Anchor: in-diff
 Claim: UseMachineStandIn is an exported symbol of the public pkg/backuphook package and is removed from default builds, so any external importer of github.com/rediacc/renet/pkg/backuphook that called it stops compiling; the commit does not record whether such importers exist.
-Resolution: open
+Resolution: not-a-bug | private/renet/pkg/backuphook/standin.go:1 no importer outside the private module, and the renet_test tag is deliberate | d778be9d 2026-11-06T21:44:37Z
 
 ### eeaffe5a.3 [low] .ci/scripts/quality/deadcode.sh:94
 Anchor: in-diff
 Claim: Adding renet_test to TEST_BUILD_TAGS makes any production function reachable only from a renet_test-tagged test count as live, so the deadcode gate will no longer report such functions as dead.
-Resolution: open
+Resolution: not-a-bug | private/renet/.ci/scripts/quality/deadcode.sh:90 treating a function reachable from a tag-gated test as live is the script's stated rule | d778be9d 2026-11-06T21:44:37Z

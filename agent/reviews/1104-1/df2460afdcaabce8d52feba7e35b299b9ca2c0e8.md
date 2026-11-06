@@ -21,9 +21,9 @@ Body-Sig: 396a0415d319d12c
 ### df2460af.1 [low] packages/cli/src/remote/sync/rsync.ts:359
 Anchor: in-diff
 Claim: stdoutText accumulates every stdout chunk for the whole rsync run and is never trimmed, so a very long sync with progress output holds all of it in memory; stderrText already grows the same way, so this roughly doubles that growth.
-Resolution: open
+Resolution: fixed 942f387f2e5d096c802d789bac53155f1d63c527 | d778be9d 2026-11-06T21:33:32Z
 
 ### df2460af.2 [low] packages/cli/src/remote/sync/__tests__/rsync-skipped.test.ts:109
 Anchor: in-diff
 Claim: The assertion that run.stderr yields [] pins which stream rsync uses for the message, so a different rsync version that also writes it to stderr would fail this test even though the stdout fix is correct.
-Resolution: open
+Resolution: fixed 942f387f2e5d096c802d789bac53155f1d63c527 | d778be9d 2026-11-06T21:33:32Z

@@ -21,9 +21,9 @@ Body-Sig: e60a660ecfe30ddb
 ### bf676c04.1 [low] cmd/renet/job_infra_push.go:67
 Anchor: in-diff
 Claim: When `renet proxy install` is killed by a signal, `exitErr.ExitCode()` returns -1, so the reported line says the install 'exited with code -1' rather than naming the signal; the job still succeeds, as intended.
-Resolution: open
+Resolution: fixed 95740306a1c956cd0bf3d280553dfa1abdc28a40 | d778be9d 2026-11-06T21:44:32Z
 
 ### bf676c04.2 [low] cmd/renet/job_infra_push_test.go:100
 Anchor: in-diff
 Claim: TestRunInfraPushInstallExitIsReportedNotFatal checks only that the emitted line contains the digit "3", which would also pass for any message containing a 3 (e.g. a different code or a path), so it does not pin the exit-code wording.
-Resolution: open
+Resolution: fixed 95740306a1c956cd0bf3d280553dfa1abdc28a40 | d778be9d 2026-11-06T21:44:32Z

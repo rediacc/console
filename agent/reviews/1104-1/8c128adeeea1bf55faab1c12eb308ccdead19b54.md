@@ -21,4 +21,4 @@ Body-Sig: 03ffa6f3158afef0
 ### 8c128ade.1 [low] pkg/orchestration/procgroup_linux_test.go:13
 Anchor: in-diff
 Claim: TestFunctionTimeoutKeepsCgroupPlacement never runs a timeout or executeFunction; it only calls InOwnGroup on a FunctionCommand result, so the name claims coverage of the timeout path that the test does not exercise.
-Resolution: open
+Resolution: fixed c05eb5fd8e40485c0575b2893323fc43785bd0f0 | d778be9d 2026-11-06T21:44:38Z
