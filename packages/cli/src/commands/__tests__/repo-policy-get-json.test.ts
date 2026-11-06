@@ -128,4 +128,26 @@ describe('repo policy get with a structured output format', () => {
     expect(mocks.executeRepoFunction).not.toHaveBeenCalled();
     expect(mocks.print).not.toHaveBeenCalled();
   });
+
+  it('runs no limits job, and prints nothing, when the settings read finished failed', async () => {
+    mocks.runCommandJob.mockResolvedValue({ kind: 'finished', result: { success: false } });
+    await run();
+    expect(mocks.executeRepoFunction).not.toHaveBeenCalled();
+    expect(mocks.print).not.toHaveBeenCalled();
+  });
+
+  it('names a limits step that finds no held settings with a translated message', async () => {
+    const handler = await resolveStepHandler('renderLimitsResult');
+    await expect(
+      handler({
+        jobId: 'j2',
+        machine: 'm1',
+        params: { merge: true },
+        state: 'succeeded',
+        output: LIMITS_STDOUT,
+        exitCode: 0,
+      })
+    ).rejects.toThrow('commands.repo.policy.settingsNotHeld');
+    expect(mocks.print).not.toHaveBeenCalled();
+  });
 });

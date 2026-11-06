@@ -113,7 +113,7 @@ function parseBoolOption(flag: string, value: string | undefined): string | unde
 
 /**
  * Run the policy function; true when its answer reached this process finished and successful.
- * `merge` holds the settings document for the limits step to fold in (json and yaml print one document).
+ * `merge` (json and yaml print one document) makes the settings step hold its document in `heldPolicy` for the limits step to fold in.
  */
 async function runPolicyFunction(
   functionName: 'repository_policy_set' | 'repository_policy_get',
@@ -339,7 +339,7 @@ bindStepHandler('renderLimitsResult', async ({ output, params }) => {
       const policy = heldPolicy;
       heldPolicy = undefined;
       if (policy === undefined) {
-        throw new Error('repo policy get: the settings read did not reach this process');
+        throw new Error(t('commands.repo.policy.settingsNotHeld'));
       }
       outputService.print({ ...policy, ...limits }, format);
       return;
