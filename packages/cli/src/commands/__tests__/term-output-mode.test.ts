@@ -7,7 +7,8 @@
 
 import { describe, expect, it } from 'vitest';
 import { ValidationError } from '../../types/errors.js';
-import { assertCommandNotBlank, resolveTermOutputMode } from '../term.js';
+import { assertCommandNotBlank } from '../../utils/command-blank.js';
+import { resolveTermOutputMode } from '../term.js';
 
 describe('resolveTermOutputMode', () => {
   it('interactive shell: keep spinners + force TTY', () => {

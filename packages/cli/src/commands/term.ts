@@ -24,6 +24,7 @@ import {
 } from '../utils/agent-guard.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { debugLog } from '../utils/debug.js';
+import { assertCommandNotBlank } from '../utils/command-blank.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import {
   detectDirectRenetCommand,
@@ -368,15 +369,6 @@ function splitTargetRoles(target: ConnectTarget): {
     ...(target.kubeCluster !== undefined && { kubeNamespace: target.repoKey }),
     sessionScope: target.repoKey,
   };
-}
-
-// An empty or whitespace-only `-c` is falsy to the one-shot check and would open an interactive shell that waits on stdin, so it is refused before any resolution or SSH.
-export function assertCommandNotBlank(options: TermConnectOptions): void {
-  if (options.command !== undefined && options.command.trim() === '') {
-    throw new ValidationError(
-      'The -c command is empty. Pass a command to run, or omit -c for an interactive shell.'
-    );
-  }
 }
 
 async function connectTerminal(targetRef: string, options: TermConnectOptions): Promise<void> {

@@ -55,6 +55,7 @@ const repoEventTypes = [
   'cli.repo.fsck',
   'cli.repo.gc',
   'cli.repo.guid',
+  'cli.repo.limits_set',
   'cli.repo.list',
   'cli.repo.log',
   'cli.repo.merge',

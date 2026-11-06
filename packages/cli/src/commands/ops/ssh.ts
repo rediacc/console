@@ -6,8 +6,8 @@ import { outputService } from '../../services/core/output.js';
 import { setExitCode } from '../../services/core/request-context.js';
 import type { OpsBackend } from '../../services/executor/ops-executor.js';
 import { opsExecutorService } from '../../services/executor/ops-executor.js';
+import { assertCommandNotBlank } from '../../utils/command-blank.js';
 import { handleError } from '../../utils/errors.js';
-import { assertCommandNotBlank } from '../term.js';
 
 interface VMInfo {
   id: number;

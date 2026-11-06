@@ -245,7 +245,7 @@ def real_spawner(argv: Sequence[str], out_path: Path, err_path: Path) -> Process
 
 
 def last_object(text: str) -> dict[str, Any] | None:
-    """The last top-level JSON object in `text`; rdc output may span lines and follow log lines."""
+    """The last top-level JSON object in `text`; the CLI's output may span lines and follow log lines."""
     decoder = json.JSONDecoder()
     found = None
     i = 0

@@ -69,7 +69,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe('rdc subscription proxy-token inside $(...)', () => {
+describe('the subscription proxy-token command inside $(...)', () => {
   it('writes a refusal to stderr and nothing to stdout, even when the run resolved to JSON', async () => {
     // What the root preAction does when stdout is a pipe.
     setOutputFormat('json');
