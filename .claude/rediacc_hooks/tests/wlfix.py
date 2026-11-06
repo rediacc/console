@@ -476,6 +476,10 @@ class Fixture:
         self.git("init", "-q")
         self.git("config", "user.email", "t@t")
         self.git("config", "user.name", "t")
+        # The repo's own .gitignore carries `.ci/cache/`, where every stop's ops-health refresh (wl_opshealth) writes its log and lock; without it each stop leaves an untracked `.ci/` that the fix-set reads as the lead's work.
+        info = self.proj / ".git" / "info"
+        info.mkdir(parents=True, exist_ok=True)
+        (info / "exclude").write_text(".ci/cache/\n", encoding="utf-8")
         (self.proj / "base.txt").write_text("base\n", encoding="utf-8")
         self.git("add", "-A")
         self.git("commit", "-qm", "chore: base")

@@ -301,9 +301,11 @@ def test_l6_the_queue_switch_turns_the_stop_path_off_and_only_it(wl):
     queue_with(wl, "effort: low\nturbo: onn")
     wl.newturn()
     wl.say("working\n\n## Remaining\n- the item")
-    wl.run()
+    got = wl.run()
     state = json.loads(wl.wl.with_suffix(".state-%s.json" % wlfix.ME).read_text(encoding="utf-8"))
     texts = [e.get("text") or "" for e in (state.get("outq") or {}).get("items", [])]
+    # At low `open-items` only advises since 35afbb54e (tuner e8), so the stop allows and the advisory is delivered on it instead of waiting in the queue behind a block: either way it rides the stop.
+    texts.append(got.out.replace("\\n", "\n"))
     assert any("SETTINGS PROBLEM" in t and "turbo: expected on|off" in t for t in texts), texts
 
 

@@ -8,6 +8,7 @@ Three layers: `settle_by_effort` alone, `run_judge` through a canned `claude` th
 from __future__ import annotations
 
 import json
+import shutil
 import stat
 import types
 
@@ -33,6 +34,38 @@ REPORT_ONLY = {
     "next_action": "List every open item by id.",
     "basis": "out-of-sync",
 }
+
+
+# The live effort.json moves with every tuner run (35afbb54e made `no-remaining` and `out-of-sync` block at smart), so nothing here reads it: the report keys advise at smart and block at high in this pinned table, which is the shape the judge's settle logic exists for.
+PINNED = {
+    "checks": {
+        "no-remaining": {"block": "high", "advise": "smart"},
+        "out-of-sync": {"block": "high", "advise": "smart"},
+    }
+}
+
+
+@pytest.fixture(autouse=True)
+def pinned_table(monkeypatch):
+    """In-process `wl_effort.load()` answers PINNED (the subprocess layer gets the same table through `pinned_hook`)."""
+    monkeypatch.setattr(J.wl_effort, "load", lambda *_args: (PINNED, ""))
+
+
+def pinned_hook(fix):
+    """Point `fix` at a copy of the Stop hook whose effort.json (at the copy's parents[2] / config) is PINNED."""
+    hooks = fix.base / "hooks"
+    shutil.copytree(wlfix.STOP_DIR, hooks / "stop", ignore=shutil.ignore_patterns("__pycache__"))
+    shutil.copytree(
+        wlfix.STOP_DIR.parent / "context",
+        hooks / "context",
+        ignore=shutil.ignore_patterns("__pycache__", "state"),
+    )
+    # wl_proc finds .ci/rediacc_ci/proc.py, and wl_prscope the rediacc_hooks package, at the copy's parents[2].
+    (fix.base / ".ci").symlink_to(wlfix.STOP_DIR.parents[2] / ".ci")
+    (fix.base / "rediacc_hooks").symlink_to(wlfix.STOP_DIR.parents[1] / "rediacc_hooks")
+    (fix.base / "config").mkdir()
+    (fix.base / "config" / "effort.json").write_text(json.dumps(PINNED), encoding="utf-8")
+    fix.hook = hooks / "stop" / "worklist.py"
 
 
 # ---- settle_by_effort ---------------------------------------------------------------------------
@@ -166,6 +199,7 @@ def test_run_judge_at_high_asks_no_basis_and_blocks(judge):
 
 def one_writer_world(fix, level):
     """One live leased writer, nothing else open: the stop reaches the judge, which answers REPORT_ONLY."""
+    pinned_hook(fix)
     fix.settings(effort=level)
     fix.brief_now()
     fix.hand_now()

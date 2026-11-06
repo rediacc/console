@@ -239,8 +239,9 @@ def test_e4_a_phase_parks_and_never_adds_a_block(world):
     assert world.cli("--phase", wlfix.ME, "babysit", "--pr", "77", "--branch", "1014-1").rc == 0
     got = world.run()
     assert got.decision == "allow", got.out[:300]
-    # At low the open item blocks in build; under the babysit phase it is parked (it carries no pr:77).
-    world.settings(effort="low")
+    # At smart the open item blocks in build (effort.json `open-items` block moved low -> smart in
+    # 35afbb54e, tuner e8); under the babysit phase it is parked (it carries no pr:77).
+    world.settings(effort="smart")
     assert world.cli("--phase", wlfix.ME, "build").rc == 0
     assert world.run().decision == "block"
     blocked_keys(world)

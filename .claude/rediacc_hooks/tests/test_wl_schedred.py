@@ -214,6 +214,8 @@ def test_discovery_pins_this_repos_scheduled_workflows():
         "pins-soaked",
         "cf-usage-report",
         "telemetry-probe",
+        # Added by bc59d04d2, the weekly drift run that took over ci.yml's old schedule.
+        "ci-drift",
     }
 
 
