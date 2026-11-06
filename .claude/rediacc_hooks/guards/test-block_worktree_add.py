@@ -254,6 +254,8 @@ CODE_TEXT = [
     ("tsx", "<p>don't</p>; f(' // '); f('git -c alias.wt=worktree wt add /p');\n", True),
     ("node", '// a worktree note\nf("git add -A"); /* worktree */ f("http://a")\n', False),
     ("perl", "# a worktree note\nsystem('git add -A');\n", True),
+    # Review 3e0e50a8.1: ruby, like perl, has no exact cheap reading, so a whole-line comment still counts (the over-refusal the family paid for).
+    ("ruby", "# a worktree note\nsystem('git add -A')\n", True),
     ("ruby", 'puts "a #{1} #"; system("git -c alias.wt=worktree wt add /p")\n', True),
     ("python", "# a worktree note\ng('add', '-A')\n", False),
 ]
@@ -452,8 +454,9 @@ REVERSE = [
         ("_spells_invocation(cmd, lease=True)", "_could_spell(cmd)"),
         FALSE_POSITIVES[1],
     ),
+    # Review 52a0dd31.3: this row is refused under the restored `_could_spell` through the `move` verb inside `removed` (the row names no verb word of its own), so the plant pins that substring branch of the tuple, not a second copy of the row above.
     (
-        "the unjudgeable arm reads two words anywhere (tick)",
+        "the unjudgeable arm reads two words anywhere (tick, the `move` in `removed`)",
         ("_spells_invocation(cmd, lease=True)", "_could_spell(cmd)"),
         FALSE_POSITIVES[2],
     ),
