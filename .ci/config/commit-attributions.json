@@ -25,6 +25,11 @@
       "sha": "f0024a683260bcc33e1c3d66a1ee7391aaa145ee",
       "epic": "09b8bdfa",
       "reason": "Pins bump commit drafted by `npm run pins -- bump`, which omits the PR-TASK trailer when the branch snapshot names several epics and no --task is passed; the lead committed the printed draft during the quick-lane freshness repair, and the no-amend rule forbids rewriting it."
+    },
+    {
+      "sha": "f07996f4f00e4b3fde43bed77030a4d7feff4bd9",
+      "epic": "09b8bdfa",
+      "reason": "Landed from a worktree lease whose commit-msg hook admitted the malformed trailer `PR-TASK: tracked finding #d31b4054` (a finding id, not an epic); the work is the proxied -b background job path of epic 09b8bdfa, and the no-amend rule forbids rewriting it."
     }
   ]
 }
