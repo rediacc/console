@@ -120,17 +120,25 @@
       "dependents": [
         "cmd/renet",
         "pkg/backuphook",
+        "pkg/chunkstore",
         "pkg/compose",
         "pkg/convergeguard",
+        "pkg/daemon",
         "pkg/functions",
+        "pkg/hub",
         "pkg/kube/csidriver",
         "pkg/kube/distro",
         "pkg/kubecsi",
         "pkg/kubevolume",
         "pkg/list",
         "pkg/orchestration",
+        "pkg/prune",
+        "pkg/ps",
         "pkg/reporuntime",
-        "pkg/router"
+        "pkg/repository",
+        "pkg/restorepath",
+        "pkg/router",
+        "pkg/trim"
       ]
     },
     {
@@ -263,6 +271,7 @@
         "pkg/proxy",
         "pkg/prune",
         "pkg/ps",
+        "pkg/ramvolume",
         "pkg/rbd",
         "pkg/repodiff",
         "pkg/reporuntime",
@@ -416,6 +425,7 @@
         "pkg/proxy",
         "pkg/prune",
         "pkg/ps",
+        "pkg/repolimits",
         "pkg/reporuntime",
         "pkg/repository",
         "pkg/restorepath",
@@ -450,6 +460,7 @@
         "pkg/proxy",
         "pkg/prune",
         "pkg/ps",
+        "pkg/repolimits",
         "pkg/reporuntime",
         "pkg/repository",
         "pkg/restorepath",
@@ -649,17 +660,25 @@
         "cmd/renet",
         "pkg/backuphook",
         "pkg/certexport",
+        "pkg/chunkstore",
         "pkg/compose",
         "pkg/convergeguard",
+        "pkg/daemon",
         "pkg/functions",
+        "pkg/hub",
         "pkg/kube/csidriver",
         "pkg/kube/distro",
         "pkg/kubecsi",
         "pkg/kubevolume",
         "pkg/list",
         "pkg/orchestration",
+        "pkg/prune",
+        "pkg/ps",
         "pkg/reporuntime",
-        "pkg/router"
+        "pkg/repository",
+        "pkg/restorepath",
+        "pkg/router",
+        "pkg/trim"
       ]
     },
     {
@@ -768,8 +787,10 @@
         "pkg/proxy",
         "pkg/prune",
         "pkg/ps",
+        "pkg/ramvolume",
         "pkg/rbd",
         "pkg/repodiff",
+        "pkg/repolimits",
         "pkg/reporuntime",
         "pkg/repository",
         "pkg/restorepath",
@@ -1161,6 +1182,35 @@
       ]
     },
     {
+      "glob": "pkg/ramvolume/**",
+      "packages": [
+        "pkg/ramvolume"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/backuphook",
+        "pkg/certexport",
+        "pkg/chunkstore",
+        "pkg/compose",
+        "pkg/convergeguard",
+        "pkg/daemon",
+        "pkg/functions",
+        "pkg/hub",
+        "pkg/kube/csidriver",
+        "pkg/kube/distro",
+        "pkg/kubecsi",
+        "pkg/kubevolume",
+        "pkg/list",
+        "pkg/orchestration",
+        "pkg/prune",
+        "pkg/ps",
+        "pkg/reporuntime",
+        "pkg/repository",
+        "pkg/restorepath",
+        "pkg/trim"
+      ]
+    },
+    {
       "glob": "pkg/rbd/**",
       "packages": [
         "pkg/rbd"
@@ -1242,6 +1292,35 @@
       ]
     },
     {
+      "glob": "pkg/repolimits/**",
+      "packages": [
+        "pkg/repolimits"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/backuphook",
+        "pkg/certexport",
+        "pkg/chunkstore",
+        "pkg/compose",
+        "pkg/convergeguard",
+        "pkg/daemon",
+        "pkg/functions",
+        "pkg/hub",
+        "pkg/kube/csidriver",
+        "pkg/kube/distro",
+        "pkg/kubecsi",
+        "pkg/kubevolume",
+        "pkg/list",
+        "pkg/orchestration",
+        "pkg/prune",
+        "pkg/ps",
+        "pkg/reporuntime",
+        "pkg/repository",
+        "pkg/restorepath",
+        "pkg/trim"
+      ]
+    },
+    {
       "glob": "pkg/repomerge/**",
       "packages": [
         "pkg/repomerge"
@@ -1305,16 +1384,24 @@
         "cmd/renet",
         "pkg/backuphook",
         "pkg/certexport",
+        "pkg/chunkstore",
         "pkg/compose",
         "pkg/convergeguard",
+        "pkg/daemon",
         "pkg/functions",
+        "pkg/hub",
         "pkg/kube/csidriver",
         "pkg/kube/distro",
         "pkg/kubecsi",
         "pkg/kubevolume",
         "pkg/list",
         "pkg/orchestration",
-        "pkg/reporuntime"
+        "pkg/prune",
+        "pkg/ps",
+        "pkg/reporuntime",
+        "pkg/repository",
+        "pkg/restorepath",
+        "pkg/trim"
       ]
     },
     {
@@ -1348,6 +1435,7 @@
         "pkg/proxy",
         "pkg/prune",
         "pkg/ps",
+        "pkg/repolimits",
         "pkg/reporuntime",
         "pkg/repository",
         "pkg/restorepath",
@@ -1548,8 +1636,10 @@
         "pkg/chunkstore",
         "pkg/compose",
         "pkg/convergeguard",
+        "pkg/daemon",
         "pkg/datastore",
         "pkg/functions",
+        "pkg/hub",
         "pkg/infra/ceph",
         "pkg/kube/csidriver",
         "pkg/kube/distro",
@@ -1559,6 +1649,7 @@
         "pkg/nodeteardown",
         "pkg/orchestration",
         "pkg/prune",
+        "pkg/ps",
         "pkg/rbd",
         "pkg/reporuntime",
         "pkg/repository",
