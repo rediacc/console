@@ -128,7 +128,7 @@ function inExecutor(): boolean {
 
 /**
  * True when REDIACC_NO_PROVISION=1 holds the machine's renet: a mutating verb then runs the installed
- * binary as-is, like an executor, and only an explicit `rdc machine setup` (`explicitSetup`) uploads.
+ * binary as-is, like an executor, and only an explicit setup (`explicitSetup`: `rdc machine setup`, a cluster bootstrap, a machine provision) uploads.
  * Without it, a mutating verb run from a branch checkout replaces the machine's renet with that
  * branch's build (2026-11-05: a live runner found every mutating verb against hostinger would have
  * installed a renet 82 commits ahead of the one production ran, with no way to refuse it).

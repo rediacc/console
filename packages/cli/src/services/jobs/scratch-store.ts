@@ -147,7 +147,7 @@ export class ScratchStore {
   /**
    * Remove the group's records and done markers but keep the settlement claim, so an observer whose completeness check
    * ran before the drop cannot claim afterwards and settle a second time from empty scratch. The stale sweep removes the
-   * claim with the group a day later.
+   * claim with the group once it is a day old, on the first later write to another group (the sweep runs only from write()).
    */
   drop(group: string): void {
     const dir = this.groupDir(group);

@@ -205,7 +205,7 @@ export async function postPushDeploy(
     params: { repository: repo, mount: true },
     debug: options.debug as boolean | undefined,
   });
-  // A job handed back (`--background`, a lost tail) is still running: nothing has deployed yet.
+  // A job handed back (`--background`, a lost tail) is still running: the deploy has no outcome yet, so no success line and no verdict.
   if (upResult.state === 'running') {
     if (!upResult.success) setExitCode(upResult.exitCode);
     return;
@@ -396,7 +396,7 @@ export async function postPullDeploy(
     params: { repository: repo, mount: true },
     debug: options.debug as boolean | undefined,
   });
-  // A job handed back (`--background`, a lost tail) is still running: nothing has deployed yet.
+  // A job handed back (`--background`, a lost tail) is still running: the deploy has no outcome yet, so no success line and no verdict.
   if (upResult.state === 'running') {
     if (!upResult.success) setExitCode(upResult.exitCode);
     return;
