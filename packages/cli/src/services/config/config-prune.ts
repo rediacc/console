@@ -284,11 +284,7 @@ const EMPTY_ANALYSIS: ConfigPruneAnalysis = {
   goneMachineState: [],
 };
 
-/**
- * The one prune pass, run on `cfg` in place by both the dry run (on a clone) and the apply (inside
- * `updateSyncedConfig`, so a replay after a version conflict re-runs it on the fresh server copy).
- */
-/** Any bucket flag narrows the run to the buckets named; no bucket flag prunes every bucket. */
+/** Any bucket flag (`--certs-only`, `--archives-only`, `--refs-only`, `--gone-machine-repos`) narrows the run to the buckets named; no bucket flag prunes every bucket. `--gone-machine-repos` selects no cert, archive or ref bucket, so with it alone the run touches only the gone-machine repos and their state. */
 function selectBuckets(options: ConfigPruneOptions): {
   wantCerts: boolean;
   wantArchives: boolean;
@@ -307,6 +303,10 @@ function selectBuckets(options: ConfigPruneOptions): {
   };
 }
 
+/**
+ * The one prune pass, run on `cfg` in place by both the dry run (on a clone) and the apply (inside
+ * `updateSyncedConfig`, so a replay after a version conflict re-runs it on the fresh server copy).
+ */
 function prunePass(cfg: RdcConfig, options: ConfigPruneOptions): ConfigPruneAnalysis {
   const { wantCerts, wantArchives, wantRefs } = selectBuckets(options);
   const graceDays = options.graceDays ?? cfg.defaults?.pruneGraceDays ?? DEFAULT_GRACE_DAYS;

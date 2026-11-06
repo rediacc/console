@@ -179,13 +179,6 @@ export function refreshRepoLicensesBatch(
   );
 }
 
-/**
- * Scan, batch-refresh and install repo licenses over an established connection.
- * With `requiredGuid` (the repo renet refused) the batch only counts as a
- * recovery when THAT repo came back licensed; without it any licensed repo does.
- * `scanned` is a `license-scan` answer the caller already holds (the `subscription refresh` job's output), which
- * spares a second scan job.
- */
 /** The caller's `license-scan` answer when it holds one, else a scan job of its own. */
 function remoteScan(
   machineName: string,
@@ -195,6 +188,13 @@ function remoteScan(
   return scanned ? Promise.resolve(scanned) : scanRemoteRepoLicenses(machineName, datastore);
 }
 
+/**
+ * Scan, batch-refresh and install repo licenses over an established connection.
+ * With `requiredGuid` (the repo renet refused) the batch only counts as a
+ * recovery when THAT repo came back licensed; without it any licensed repo does.
+ * `scanned` is a `license-scan` answer the caller already holds (the `subscription refresh` job's output), which
+ * spares a second scan job.
+ */
 async function runRepoLicenseBatch(
   sftp: SFTPClient,
   machineName: string,
