@@ -1153,6 +1153,7 @@ export async function quickCloneSelftest(
     git(live, 'checkout', '-q', '-b', 'topic');
     // A live install, holding the lockfile's version and a workspace link: `@x/shared` must resolve inside the clone.
     write(path.join(live, 'node_modules', 'dep', 'index.js'), 'dep\n');
+    write(path.join(live, 'node_modules', 'dep', 'package.json'), '{"version":"1.0.0"}\n');
     write(
       path.join(live, 'node_modules', '.package-lock.json'),
       JSON.stringify({
