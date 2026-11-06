@@ -221,6 +221,46 @@ def test_tick_line_with_unknown_state_is_not_a_row():
     assert P.parse_tick("TICK PLAN-a.md#0123abcd finished commits=- landed=- owed=-\n") == []
 
 
+def test_a_malformed_tick_line_is_never_read_as_legacy_prose():
+    """Review 39bfb45b.1: a TICK line in the grammar's shape that fails it fell back to the legacy reader, which read the prose region after it as `legacy=True` rows. CONTROL: the same prose with no grammar-shaped line is still read."""
+    prose = "TICK agent/plans/PLAN-a.md box `0123abcd` done 4b3e830f0\n"
+    assert [r.legacy for r in P.parse_tick(prose)] == [True]
+    bad = "TICK PLAN-a.md#0123abcd finished commits=4b3e830f0 landed=all owed=-\n" + prose
+    assert P.parse_tick(bad) == []
+
+
+def test_an_unknown_owed_half_reads_as_the_placeholder():
+    """Review 39bfb45b.2: `owed=C1:bogus` kept `bogus`; an unknown or missing half is `?`."""
+    rows = P.parse_tick(
+        "TICK PLAN-a.md#0123abcd partial commits=- landed=- owed=C1:bogus,C2,C3:live\n"
+    )
+    assert rows[0].owed == (("C1", "?"), ("C2", "?"), ("C3", "live"))
+
+
+def test_landed_map_refuses_a_short_sha_two_lease_commits_share(tmp_path):
+    """Review 39bfb45b.3: a short lease sha matched the newest of every `-x` line it prefixes. Two lease shas sharing `abcdef1` make that prefix name neither, a 4-hex input is no sha at all, and a longer prefix still maps."""
+    repo = tmp_path / "r"
+    repo.mkdir()
+    _git(repo, "init", "-q", "-b", "main")
+    one, two = "abcdef1" + "0" * 33, "abcdef1" + "9" * 33
+    for n, lease in enumerate((one, two)):
+        _git(repo, "commit", "-q", "--allow-empty", "-m", "land %d\n\n" % n + P.PICKED_LINE % lease)
+    first = _git(repo, "rev-parse", "HEAD~1")
+    assert P.landed_map(repo, ["abcdef1"]) == {}
+    assert P.landed_map(repo, ["abcd"]) == {}
+    assert P.landed_map(repo, ["abcdef10"]) == {"abcdef10": first}
+
+
+@pytest.mark.parametrize("given", ["docs/PLAN-fx.md", "other/agent/plans/PLAN-fx.md"])
+def test_open_box_refuses_a_plan_path_outside_agent_plans(tmp_path, given):
+    """Review 52b4512d.1: only the basename resolved, so `docs/PLAN-fx.md` opened agent/plans/PLAN-fx.md. CONTROL: the basename, the repo-relative and the absolute path still open it."""
+    _plant(tmp_path)
+    with pytest.raises(P.PlanBoxError, match="no plan under agent/plans"):
+        P.open_box(tmp_path, given, OPEN_SIG)
+    for ok in ("PLAN-fx.md", "agent/plans/PLAN-fx.md", str(tmp_path / "agent/plans/PLAN-fx.md")):
+        assert P.open_box(tmp_path, ok, OPEN_SIG)[1] == OPEN_SIG
+
+
 def _bodies():
     return {name: (FIX / (name + ".report")).read_text(encoding="utf-8") for name in MEASURED}
 

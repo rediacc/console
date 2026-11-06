@@ -9,7 +9,7 @@ THE API (later boxes import exactly these names):
   `result.none_reason` is the reason of a `Plan-Box: none -- <reason>` trailer, or None.
   `result.errors` is a tuple of refusal lines, each naming `GRAMMAR`. `result.missing` is true when the trailer block holds no `Plan-Box:` line at all (its error is `NO_PLAN_BOX`), and `result.ok` is true when there is no error.
 - `parse_tick(body) -> list[TickRow]`: the boxes one writer report names. A `TickRow` carries `plan`, `sig`, `state`, `commits` (lease shas), `landed` (`"all"` or clause ids), `owed` ((clause, half) pairs), `close`, `legacy` and `line`.
-  The TICK line grammar is `TICK_GRAMMAR`. A body with no TICK line falls back to the legacy prose reader (below), whose rows carry `legacy=True`.
+  The TICK line grammar is `TICK_GRAMMAR`. A body with no line in the TICK grammar's shape falls back to the legacy prose reader (below), whose rows carry `legacy=True`; a grammar-shaped line that fails the grammar yields no row and no fallback.
 - `landed_map(root, lease_shas, rev="HEAD", since=None) -> dict | None`: {lease sha, lowercased and stripped: landed full sha}, read from the `(cherry picked from commit <sha>)` line that `git cherry-pick -x` writes. A lease sha with no landed commit is absent from the map; None means git could not answer.
 
 GRAMMAR AND TREE ARE SEPARATE. `parse_plan_box` is grammar only and needs nothing but text. The tree checks are `message_problems(root, message)` and `box_problems`: the plan exists under `agent/plans/` (a `Moved-To:` stub followed), the sig names an OPEN box (`wl_planrec.open_boxes`), and each named clause exists in the box's clause map (the latest `define` row of `agent/ledgers/plan-box-progress.jsonl`; a box with no map takes only `clauses=all`). `land` (T2) and the lease commit-msg hook (T3, through `main`, run as a process) both call `message_problems`, so the two refusals cannot disagree. The tree modules are imported inside those functions, so the grammar readers stay import-light.
@@ -47,7 +47,12 @@ _PLAN_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*\.md$")
 _SIG_RE = re.compile(r"^[0-9a-f]{8}$")
 _CLAUSE_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.]*$")
 _NONE_RE = re.compile(r"^none\s+--\s*(.*)$")
-_HEX_ARG_RE = re.compile(r"^[0-9a-f]{4,40}$")
+# Seven hex is git's own shortest abbreviation and the `-x` reader's floor; four matched many lease shas at once (review 39bfb45b.3).
+_HEX_ARG_RE = re.compile(r"^[0-9a-f]{7,40}$")
+# A line in the TICK grammar's shape (`TICK <plan>.md#<sig8> ...`) that fails it is a malformed TICK, never legacy prose (review 39bfb45b.1).
+_TICK_SHAPE_RE = re.compile(r"^\s*TICK\s+\S+?\.md#[0-9a-f]{8}(?![0-9a-z])")
+# The folders a plan path given to `open_box` may name: the live folder and the two terminal ones a stub points into.
+PLAN_FOLDERS = ("", "agent/plans", "agent/plans/_done", "agent/plans/_removed")
 
 _TICK_LINE_RE = re.compile(
     r"^\s*TICK\s+(?P<plan>\S+?\.md)#(?P<sig>[0-9a-f]{8})\s+(?P<state>[a-z]+)"
@@ -225,7 +230,8 @@ def _tick_lines(lines):
         owed = []
         for tok in _list_field(m.group("owed")):
             clause, _, half = tok.partition(":")
-            owed.append((clause, half if half in HALVES else half or "?"))
+            # An unknown or missing half is the `?` placeholder, never carried as given (review 39bfb45b.2).
+            owed.append((clause, half if half in HALVES else "?"))
         close = None
         if i + 1 < len(lines):
             c = _CLOSE_RE.match(lines[i + 1])
@@ -308,7 +314,9 @@ def parse_tick(body):
     text = body or ""
     lines = text.splitlines()
     rows = _tick_lines(lines)
-    return rows or _legacy(lines, text)
+    if rows or any(_TICK_SHAPE_RE.match(raw) for raw in lines):
+        return rows
+    return _legacy(lines, text)
 
 
 # ---- lease sha -> landed sha ------------------------------------------------------
@@ -354,6 +362,8 @@ def landed_map(root, lease_shas, rev="HEAD", since=None):
     if done.returncode != 0:
         return None
     out: dict[str, str] = {}
+    lease_of: dict[str, str] = {}
+    ambiguous: set[str] = set()
     for rec in done.stdout.split("\x1e"):
         landed, _, msg = rec.strip("\n").partition("\x00")
         if not landed:
@@ -363,9 +373,20 @@ def landed_map(root, lease_shas, rev="HEAD", since=None):
             if not m:
                 continue
             for s in wanted:
-                if s not in out and m.group(1).startswith(s):
+                if not m.group(1).startswith(s):
+                    continue
+                # A short sha two DIFFERENT lease commits share names neither; one lease commit picked twice is not ambiguous, and its newest landing wins.
+                if s in lease_of and not _same_sha(lease_of[s], m.group(1)):
+                    ambiguous.add(s)
+                elif s not in out:
                     out[s] = landed.strip()
-    return out
+                    lease_of[s] = m.group(1)
+    return {s: v for s, v in out.items() if s not in ambiguous}
+
+
+def _same_sha(a, b):
+    """Whether two hex spellings can name one commit: one is a prefix of the other."""
+    return a.startswith(b) or b.startswith(a)
 
 
 # ---- the tree checks: plan, open box, clause map (T2, T3) -----------------------
@@ -543,7 +564,11 @@ def open_box(root, plan, selector):
     """`(rel, sig, body)` of the ONE open box `selector` names in `plan` (a basename or a repo-relative path), through `wl_planrec.open_boxes` and `select_box`. Raises PlanBoxError."""
     import wl_planrec as R
 
-    base = str(plan or "").rsplit("/", 1)[-1]
+    given = str(plan or "").removeprefix(str(root).rstrip("/") + "/")
+    folder, _, base = given.removeprefix("./").rpartition("/")
+    # Only the basename resolves, so a path is admitted only where a plan lives: `docs/PLAN-fx.md` silently meant agent/plans/PLAN-fx.md (review 52b4512d.1).
+    if folder not in PLAN_FOLDERS:
+        raise PlanBoxError("%s is no plan under agent/plans/" % plan)
     resolved = resolve_plan(root, base) if _PLAN_RE.match(base) else None
     if resolved is None:
         raise PlanBoxError("%s is no plan under agent/plans/" % plan)
