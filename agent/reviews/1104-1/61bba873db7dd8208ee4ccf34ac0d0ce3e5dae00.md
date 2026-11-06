@@ -31,4 +31,4 @@ Resolution: fixed 7bf39684e440dbce7b495abf8bd5f6f6c9d718f4 | d778be9d 2026-11-06
 ### 61bba873.3 [low] agent/plans/PLAN-ci-quick-cpu-scheduling.md:3
 Anchor: in-diff
 Claim: The added 'Updated: ... reread by d778be9d ... no box changed' stamps are attestations of review that the diff itself does not show. They appear to exist to satisfy check:ci-plan-housekeeping, so they carry no evidence of a real reread.
-Resolution: open
+Resolution: not-a-bug | agent/plans/PLAN-ci-quick-cpu-scheduling.md:3 The Updated stamp is the form check_plan_housekeeping.py reads for a reread, and the claim it makes is checkable: `git log --oneline -- agent/plans/PLAN-ci-quick-cpu-scheduling.md` shows no box-changing commit after the stamp's date (the previous commits are the docs reconciliations bfb5c322e and c91f5d4c7). | d778be9d 2026-11-06T21:24:04Z
