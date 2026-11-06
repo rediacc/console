@@ -138,6 +138,18 @@ def _calls_in(func: ast.AST) -> list[tuple[int, str]]:
     return found
 
 
+def _dry_run_call_lines(func: ast.FunctionDef) -> set[int]:
+    """Line numbers of calls nested in an `if` whose test names a dry run (the preview branch)."""
+    lines: set[int] = set()
+    for node in ast.walk(func):
+        if isinstance(node, ast.If) and "dry" in ast.unparse(node.test).lower():
+            for inner in node.body:
+                for sub in ast.walk(inner):
+                    if isinstance(sub, ast.Call):
+                        lines.add(sub.lineno)
+    return lines
+
+
 def deploy_account_findings(source: str) -> list[str]:
     """deploy_account main checks the dist before the deploy and the served portal after it, and its rebuild hint binds the key."""
     out: list[str] = []
@@ -150,9 +162,12 @@ def deploy_account_findings(source: str) -> list[str]:
     first: dict[str, int] = {}
     for line, name in sorted(calls):
         first.setdefault(name, line)
-    # The dry-run preview calls deploy_argv before any check; the call that runs wrangler is the last one.
-    deploy_lines = [line for line, name in calls if name == "deploy_argv"]
-    deploy = max(deploy_lines) if deploy_lines else None
+    # The dry-run preview calls deploy_argv inside an `if <...dry_run...>:` branch before any check; only
+    # the calls outside such a branch run wrangler, and the refusal must precede every one of them.
+    preview = _dry_run_call_lines(main)
+    deploy_lines = [line for line, name in calls if name == "deploy_argv" and line not in preview]
+    deploy = min(deploy_lines) if deploy_lines else None
+    last_deploy = max(deploy_lines) if deploy_lines else None
     if deploy is None:
         out.append(
             "%s: main never calls deploy_argv; the check would pass vacuously" % DEPLOY_ACCOUNT_REL
@@ -164,7 +179,7 @@ def deploy_account_findings(source: str) -> list[str]:
             % DEPLOY_ACCOUNT_REL
         )
     smoke = first.get("portal_smoke")
-    if smoke is None or (deploy is not None and smoke < deploy):
+    if smoke is None or (last_deploy is not None and smoke < last_deploy):
         out.append(
             "%s: main does not smoke the served portal (portal_smoke) after wrangler deploy"
             % DEPLOY_ACCOUNT_REL
