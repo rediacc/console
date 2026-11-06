@@ -1155,7 +1155,7 @@ def test_31g_recipient_a_report_sent_to_the_coordinator_is_stored(sc):
         parts, final = report.body_parts(body)
         assert [(k, t) for k, t, _m in parts] == [("Outgoing", to)], parts
         assert final.strip() == "Report sent.", final
-        # CONTROL: the relay rule of 371592b85 and of 5e591cec2 marked this same row a relay, so it never reached the lead.
+        # CONTROL: the relay rule of 0009f5844 and of 862dd2246 marked this same row a relay, so it never reached the lead.
         assert _relay_before(entry["sends"], entry["out"], final), (
             "CONTROL: the old relay rule must mark the writer a relay"
         )
