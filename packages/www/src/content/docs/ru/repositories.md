@@ -195,7 +195,7 @@ rdc repo policy set my-app --clear-limits
 up() {
   if [ -n "$REDIACC_RAM_DIR" ] && [ ! -e "$REDIACC_RAM_DIR/.restored" ]; then
     mkdir -p "$REDIACC_RAM_DIR/data"
-    if [ -d data-saved ]; then cp -a data-saved/. "$REDIACC_RAM_DIR/data/"; fi
+    if [ -d data-saved ]; then cp -a data-saved/. "$REDIACC_RAM_DIR/data/" || return 1; fi
     touch "$REDIACC_RAM_DIR/.restored"
   fi
   renet compose -- up -d
@@ -204,8 +204,8 @@ up() {
 down() {
   renet compose -- down
   if [ -n "$REDIACC_RAM_DIR" ]; then
-    rm -rf data-saved.new && cp -a "$REDIACC_RAM_DIR/data" data-saved.new
-    rm -rf data-saved && mv data-saved.new data-saved
+    rm -rf data-saved.new && cp -a "$REDIACC_RAM_DIR/data" data-saved.new \
+      && rm -rf data-saved && mv data-saved.new data-saved
   fi
 }
 ```

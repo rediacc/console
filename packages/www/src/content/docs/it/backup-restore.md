@@ -454,7 +454,7 @@ rdc backup churn mail --samples 12 --interval 5m
 # Dichiara un obiettivo di 15 minuti per un repository su una strategia.
 rdc backup strategy set nightly-hot --repo-rpo mail=15m
 
-# Oppure un unico obiettivo per ogni repository coperto dalla strategia (almeno 5m; none lo azzera).
+# Oppure un unico obiettivo per ogni repository coperto dalla strategia (almeno 5m; none lo rimuove).
 rdc backup strategy set nightly-hot --rpo 15m
 ```
 

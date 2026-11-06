@@ -34,8 +34,8 @@ renet runs these Rediaccfile functions:
 |----------|-------------|---------|----------------|
 | `up()` | When starting | Start services (e.g., `renet compose -- up -d`) | Root failure is **critical** (stops everything). Subdirectory failures are **non-critical** (logged, continues) |
 | `down()` | When stopping | Stop services (e.g., `renet compose -- down`) | **Best-effort** -- failures are logged but all Rediaccfiles are always attempted |
-| `health()` | On `rdc repo health`, on `rdc machine health`, and in the deploy health gate | Report the repository's own health: exit `0` ok, `1` warning, `2` error | Every Rediaccfile's `health()` runs and the worst level counts. Exit `75` means still warming (a warning). Any other exit, a signal or a timeout is an error. A repository where no Rediaccfile defines `health()` reports **no check**, never healthy |
-| `repair()` | On `rdc repo repair`, and on `rdc machine repair` for a repository whose `health()` is not ok | Fix what that file's own `health()` reported | Runs only when its file's `health()` is not ok and its declared class is allowed (see below). `health()` runs again afterwards. A failed or timed-out `repair()` is an error |
+| `health()` | On `rdc repo health`, on `rdc machine health`, and in the deploy health gate | Report the repository's own health: exit `0` ok, `1` warning, `2` error | Every Rediaccfile's `health()` runs and the worst level counts. Exit `75` means still warming (a warning). Any other exit, a signal or a timeout is an error (the deploy health gate reads a timeout as still warming and retries, see [Timeouts and Shutdown Order](#timeouts-and-shutdown-order)). A repository where no Rediaccfile defines `health()` reports **no check**, never healthy |
+| `repair()` | On `rdc repo repair`, and on `rdc machine repair` for a repository whose `health()` is not ok | Fix what that file's own `health()` reported | Runs only when its file's `health()` is not ok and its declared class is allowed (see below). A `health()` that exits `75` (still warming) counts as a warning, so a `repair()` should leave a repository that is still starting alone. `health()` runs again afterwards. A failed or timed-out `repair()` is an error |
 
 Every function is optional. If a function is not defined, it is silently skipped.
 
@@ -90,7 +90,7 @@ A line that needs more than the default fails with the error the sandbox gives i
 | A Rediaccfile does | It sees | Fix |
 |--------------------|---------|-----|
 | `sudo x` | `sudo: The "no new privileges" flag is set` | Drop `sudo`. The step either needs no root or needs a grant |
-| `chown 5050 ...` or `rm -rf` of a directory a container owns | `Operation not permitted` or `Permission denied` | Run the step in a one-shot container (root inside the container only, not on the machine): `renet compose -- run --rm --no-deps --user 0 --entrypoint chown <service> -R 5050:5050 /data` |
+| `chown 5050 ...` or `rm -rf` of a directory a container owns | `Operation not permitted` or `Permission denied` | Run the step in a one-shot container (root inside the container; the repository's Docker daemon refuses binds outside the repository's own roots): `renet compose -- run --rm --no-deps --user 0 --entrypoint chown <service> -R 5050:5050 /data` |
 | Writes `.env` or other files in the mount | Works; the files belong to the universal user | None |
 | Reads `/etc/rediacc/*`, `/proc/kcore` or a block device | `Permission denied` | Ask for a path grant |
 | Reads a file secret directly | `Permission denied` | Use compose `secrets:` or an env-mode secret |

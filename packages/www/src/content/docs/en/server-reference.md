@@ -206,6 +206,8 @@ renet backup list --source machine --src-host {host} --src-user {user} --src-pat
   --src-known-hosts {known-hosts-base64}
 ```
 
+`{known-hosts-base64}` is the other machine's `known_hosts` record, base64-encoded (for example `ssh-keyscan -t ed25519 {host} | base64 -w0`).
+
 > Most users should use `rdc repo push/pull` instead. The `rdc` commands handle credentials and machine resolution automatically.
 
 ### Checkpointing (CRIU)

@@ -34,7 +34,7 @@ This reports:
 - **Certificates**: the proxy's certificates close to expiry, and shared ACME challenge CNAMEs
 - **Issues**: identified problems
 
-The exit code is the verdict: `0` healthy, `1` warning, `2` error, `3` critical (a failing disk, or a container or service in a restart loop). Use `--output json` for machine-readable output; it carries `repo_health` (one report per repository) and `findings`, each with a code, a severity (`info`, `warning`, `error` or `critical`), a subject, a detail and, where a fix exists, `fix` (see [Repair](#repair)).
+The exit code is the verdict: `0` no finding (a repository without a `health()` check is listed as no check, never counted as healthy), `1` warning, `2` error, `3` critical (a failing disk, or a container or service in a restart loop). Use `--output json` for machine-readable output; it carries `repo_health` (one report per repository) and `findings`, each with a code, a severity (`info`, `warning`, `error` or `critical`), a subject, a detail and, where a fix exists, `fix` (see [Repair](#repair)).
 
 ## Repository Health
 
@@ -52,7 +52,7 @@ The command exits with the worst level across the repository's Rediaccfiles. A r
 
 `rdc machine health` reads the proxy's ACME certificates and reports `cert.expiry.near` for each one under 21 days from expiry (a warning) or under 7 days (an error). The proxy renews 30 days ahead, so a certificate under 21 days means its renewal has failed for at least nine days.
 
-It also reports `acme.challenge.cname-shared` when the `_acme-challenge.<name>` record of a certificate name follows a CNAME to a name that is not itself an `_acme-challenge.` name, or when two names end at the same name. A wildcard record that is a CNAME produces this shape: every challenge lands on one name and the renewals collide. A deliberate delegation (for example `_acme-challenge.mail.example.com` pointing at `_acme-challenge.mail.example.io`) is not reported; list any other intended delegation in `ACME_DELEGATED_NAMES` (a comma list of certificate names) in the proxy's `config.env`. A name whose challenge chain could not be resolved (a DNS error or timeout) is reported as `acme.challenge.unknown`, a warning, because the check did not run for it.
+It also reports `acme.challenge.cname-shared` when the `_acme-challenge.<name>` record of a certificate name follows a CNAME to a name that is not itself an `_acme-challenge.` name, or when two names end at the same name. A wildcard record that is a CNAME produces this shape: every challenge lands on one name and the renewals collide. A deliberate delegation (for example `_acme-challenge.mail.example.com` pointing at `_acme-challenge.mail.example.io`) is not reported; list any other intended delegation in `ACME_DELEGATED_NAMES` (a comma list of certificate names) in the proxy's `config.env`. A name whose challenge chain could not be resolved (no DNS resolver answered for it) is reported as `acme.challenge.unknown`, a warning, because the check did not run for it.
 
 ## Repair
 
@@ -77,7 +77,7 @@ rdc machine repair server-1 --set-window 00:00-03:00
 rdc machine repair server-1 --set-window off
 ```
 
-Each fix first checks that its finding is still there, so a second run reports nothing to do. Fixes that act on the same thing run once (one Traefik restart covers every certificate). Each fix is logged to the machine journal with the tag `rediacc-repair` and in the JSON `actions` (`code`, `subject`, `action`, `class`, `result`, `before`, `after`), and the run ends with a full re-check. The exit code is `0` when nothing is left, `1` when warnings or operator-only items are left, and `2` when an error is left or a fix failed.
+Each fix first checks that its finding is still there, so a second run reports nothing to do. Fixes that act on the same thing run once (one Traefik restart covers every certificate). Each fix is logged to the machine journal with the tag `rediacc-repair` and in the JSON `actions` (`code`, `subject`, `action`, `class`, `result`, `before`, `after`), and the run ends with a full re-check. The exit code is `0` when nothing is left, `1` when warnings or operator-only items are left, and `2` when an error or a critical finding is left or a fix failed. `rdc machine repair` never exits `3`; only `rdc machine health` does.
 
 | Finding | Fix | Class |
 |---|---|---|
@@ -85,7 +85,7 @@ Each fix first checks that its finding is still there, so a second run reports n
 | `container.unhealthy`, `container.restart-loop` | Restart the container | auto-safe |
 | `renet.binary.replaced` | Restart the affected repository supervisors (`rdc machine restart-services --include-docker`, scoped to them) | auto-safe, window only |
 | `cert.expiry.near` | Restart Traefik so it retries the renewal | auto-safe |
-| `acme.challenge.cname-shared` | Write the ACME anchor (below) | auto-safe |
+| `acme.challenge.cname-shared` | Write the ACME anchor (below) | auto-safe (operator-only when a delegation is declared and no usable Cloudflare token exists) |
 | `repo.health.warning`, `repo.health.error` | Run the repository's `repair()` ([Services](/en/docs/services)) | the class the Rediaccfile declares |
 | `repo.unmounted`, `service.failed`, `service.restart-loop`, `backup.*`, `license.*`, `renet.repo-health.unsupported` | Printed as the command to run | operator-only |
 
@@ -104,7 +104,7 @@ rdc repo repair my-app@server-1
 
 ### The ACME anchor
 
-A wildcard DNS record that is a CNAME makes every `_acme-challenge.<host>` name follow it, so all challenges land on one name and the renewals collide (`acme.challenge.cname-shared`). The fix writes a TXT record with the value `rediacc-acme-anchor` at each colliding `_acme-challenge.<name>` through the proxy's Cloudflare token, then restarts Traefik. An explicit record takes the name out of the wildcard's reach, so the challenge lands where it belongs. The fix only adds records, and an existing anchor is left as it is.
+A wildcard DNS record that is a CNAME makes every `_acme-challenge.<host>` name follow it, so all challenges land on one name and the renewals collide (`acme.challenge.cname-shared`). The fix writes a TXT record with the value `rediacc-acme-anchor` at each colliding `_acme-challenge.<name>` through the proxy's Cloudflare token, then restarts Traefik. An explicit record takes the name out of the wildcard's reach, so the challenge lands where it belongs. The fix only adds records, and an existing anchor is left as it is. A challenge name that is itself a CNAME cannot hold a TXT record beside it: Cloudflare refuses the write, and the fix takes the same fallback as a zone its token cannot write (next paragraph).
 
 Names listed in `ACME_DELEGATED_NAMES` (a comma list of certificate names in the proxy's `config.env`) are deliberate delegations: they are never anchored and never reported. When the proxy has no usable Cloudflare token, the fix falls back to `LEGO_DISABLE_CNAME_SUPPORT=true` in `config.env`, but only when no delegated name is declared, because that variable switches CNAME following off for every name; with a delegation declared, the finding stays operator-only. The same fix runs at every proxy install (`rdc machine infra push`), and on its own with `renet proxy acme-fix` on the machine.
 
