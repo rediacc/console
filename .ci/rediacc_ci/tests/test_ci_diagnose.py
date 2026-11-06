@@ -1263,7 +1263,7 @@ SECURITY_AUDIT_RUN = [
     "2026-11-06T10:38:40.7338308Z ✓ No production vulnerabilities",
     "2026-11-06T10:38:40.7338877Z → Auditing all dependencies (allowlist for dev-only)",
     "2026-11-06T10:38:42.2973717Z ✗ Stale allowlist entry: 1244012 does not appear in audit-report.json",
-    "2026-11-06T10:38:42.2976464Z ✗ Allowlist problems found — see errors above: an entry either has an available fix without a BLOCKER annotation, or is stale",
+    "2026-11-06T10:38:42.2976464Z ✗ Allowlist problems found \u2014 see errors above: an entry either has an available fix without a BLOCKER annotation, or is stale",
     "2026-11-06T10:38:42.3172227Z ##[error]Process completed with exit code 1.",
 ]
 
