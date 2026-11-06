@@ -51,14 +51,14 @@
         "P-A1:agent/plans/PLAN-tick-tracking.md",
         "P-A1:agent/plans/PLAN-worktree-lease.md"
       ],
-      "reason": "P-A1 is a merge-time condition: every named plan still has open boxes, most of them live runs on bench, hostinger, edge or stable, or runs after a release. Edge boxes are open to run again (hold lifted 2026-11-06); stable deploys need an operator ASKED and the hostinger receipts wait on a VERIFIED fleet run (ASKED:2026-11-06T13:44Z), so those boxes cannot close yet. This entry exists for the backup push the backup_push_h valve admits, which opens no PR; CI still judges every key, and the entry is removed before any merge."
+      "reason": "P-A1 is a merge-time condition: every named plan still has open boxes, most of them live runs on bench, hostinger, edge or stable, or runs after a release. Edge boxes are open to run again (hold lifted 2026-11-06); stable deploys need an operator ASKED and the hostinger receipts wait on a VERIFIED fleet run (ASKED:2026-11-06T13:44Z), so those boxes cannot close yet. This entry exists for the backup push the backup_push_h valve admits, which opens no PR and carries the whole branch, so it names every plan with open boxes whatever its subject (the renet, repo-limits and tick-tracking plans among them, not only the backup ones); CI still judges every key, and the entry is removed before any merge."
     },
     {
       "gate": "check:ci-external-links",
       "findings": [
         "link:www.ppc.go.jp"
       ],
-      "reason": "www.ppc.go.jp (Japan's Personal Information Protection Commission, cited in legal-data-sovereignty.md in every locale) answered HTTP 503 to every request on 2026-11-06, the site root included, with and without a browser user agent: an outage or an IP block on the regulator's side, not a moved page. The URL is the regulator's canonical English legal page and stays; CI still judges it, and this entry goes when the site answers again."
+      "reason": "www.ppc.go.jp (Japan's Personal Information Protection Commission, cited in legal-data-sovereignty.md in every locale) answered HTTP 503 to every request on 2026-11-06, the site root included, with and without a browser user agent, from one machine on that one day; the cause (an outage or a block of this address) is not established, and a moved page is ruled out because the root fails too. The URL is the regulator's canonical English legal page and stays. CI still judges it, and the push guard refuses this entry the first time the link answers (a carry cannot outlive its failure), so no retest date is needed: the next push after the site recovers removes it."
     }
   ]
 }

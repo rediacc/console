@@ -144,25 +144,25 @@
       "kind": "no-github-twin",
       "reason": "Observability reader, stored 2026-10-13 on the operator's ruling that `rotation check` always compares against the live host and that the machine's existing key is reused. The `user@host[:port]` the reader connects to; not a credential. Bound by `bws_env exec --profile rotation|deploy-bench` for the local `./run.sh rotation check` (private/account/scripts/rotation/lib/observability-reader.ts); no workflow runs that check."
     },
-    "OPS_HEALTH_READ_TOKEN": {
-      "kind": "no-github-twin",
-      "reason": "The ops-health Worker's read bearer (PLAN-health-checks-local), bound only by `bws_env exec --profile ops-health` for the local deploy and for rediacc_ci.ops.ops_health offbox. Only the ingest token is requested by a workflow (ci-drift.yml)."
-    },
     "OPS_ALERT_EMAILS": {
       "kind": "no-github-twin",
       "reason": "The ops-health alerter's recipients (PLAN-health-checks-local), bound only by `bws_env exec --profile ops-health` for the local rediacc_ci.ops.deploy_ops_health, which pushes it to the ops-health Worker as a secret. No workflow sends mail with it."
+    },
+    "OPS_HEALTH_READ_TOKEN": {
+      "kind": "no-github-twin",
+      "reason": "The ops-health Worker's read bearer (PLAN-health-checks-local), bound only by `bws_env exec --profile ops-health` for the local deploy and for rediacc_ci.ops.ops_health offbox. Only the ingest token is requested by a workflow (ci-drift.yml)."
     },
     "OTEL_ENDPOINT": {
       "kind": "no-github-twin",
       "reason": "A constant endpoint (the OTLP collector URL), seeded 2026-09-24 from private/account/.env for PLAN-env-to-bitwarden-v2 box 27 so local .env hydration reads the vault; no workflow sends telemetry through it, so no call site requests it."
     },
-    "R2_PUBLIC_DATA_SECRET_ACCESS_KEY": {
-      "kind": "no-github-twin",
-      "reason": "The secret half of the rediacc-public-data upload key (PLAN-health-checks-local O2), bound only by `bws_env exec --profile public-data`. No workflow uploads public data."
-    },
     "R2_PUBLIC_DATA_ACCESS_KEY_ID": {
       "kind": "no-github-twin",
       "reason": "The bucket-scoped rediacc-public-data upload key (PLAN-health-checks-local O2), bound only by `bws_env exec --profile public-data` for the one-off archive upload and verification from hostinger. No workflow uploads public data."
+    },
+    "R2_PUBLIC_DATA_SECRET_ACCESS_KEY": {
+      "kind": "no-github-twin",
+      "reason": "The secret half of the rediacc-public-data upload key (PLAN-health-checks-local O2), bound only by `bws_env exec --profile public-data`. No workflow uploads public data."
     },
     "RELEASE_GPG_REVOCATION_CERT": {
       "kind": "no-github-twin",

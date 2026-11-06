@@ -2111,7 +2111,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `REDIACC_TEAM` | tombstone | tombstone proof: `packages/cli/src/__tests__/env-tombstones.test.ts` |
 | `REDIACC_TELEMETRY_DISABLED` | product-runtime | - |
 | `REDIACC_TELEMETRY_ENDPOINT` | product-runtime | - |
-| `REDIACC_TEST_DROP_FIRST_JOB_START` | product-runtime | - |
+| `REDIACC_TEST_DROP_FIRST_JOB_START` | harness | - |
 | `REDIACC_TEST_ENV_APPLY` | gate-seam | - |
 | `REDIACC_TIMEOUT_BIN` | harness | - |
 | `REDIACC_TOFU` | product-runtime | - |

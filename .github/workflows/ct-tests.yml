@@ -584,12 +584,13 @@ jobs:
         # 14 on leg 6 it had passed; leg 1 holds 01, 15 and 25 (.ci/config/shards/test-e2e-workers.json), kept free of 06.
         # Suite 23 rides leg 1 of the leg that sets cli-suite, the same way.
         env:
-          CLI_ALSO: ${{ matrix.cli-suite == '1' && ',23-cli-migrate-routing.test.ts' || '' }}
+          CLI_ALSO: ${{ matrix.cli-suite == '1' && '23-cli-migrate-routing.test.ts' || '' }}
         run: |
+          # Each flag adds its own suites, so a leg that sets cli-suite without full-integration still runs suite 23.
+          FULL_ALSO="${{ matrix.full-integration == '1' && '12a-full-integration-repository.test.ts,12b-full-integration-checkpoint.test.ts,12d-full-integration-multi-machine.test.ts,13b-live-fork-checkpoint.test.ts' || '' }}"
+          EXTRA="${FULL_ALSO}${FULL_ALSO:+${CLI_ALSO:+,}}${CLI_ALSO}"
           ALSO=()
-          if [[ "${{ matrix.full-integration }}" == '1' && "${{ matrix.shard }}" == '1' ]]; then
-            ALSO=(--also "12a-full-integration-repository.test.ts,12b-full-integration-checkpoint.test.ts,12d-full-integration-multi-machine.test.ts,13b-live-fork-checkpoint.test.ts${CLI_ALSO:-}")
-          fi
+          [[ "${{ matrix.shard }}" == '1' && -n "$EXTRA" ]] && ALSO=(--also "$EXTRA")
           PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --fail-on-skip \
             --shard-manifest .ci/config/shards/test-e2e-workers.json --shard "${{ matrix.shard }}/8" \
             "${ALSO[@]}"
@@ -2184,7 +2185,7 @@ jobs:
           BACKUP_STORAGE_SUITE: '1'
         run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --config playwright.backup-storage.config.ts --fail-on-skip
 
-      # K5 (PLAN-health-checks-local): suite 31, the large-repo incremental budget, at 2 GiB.
+      # Suite 31, the large-repo incremental budget, at 2 GiB.
       # The nightly ct-backup-perf.yml runs the same suite at 20 GiB; this leg keeps the
       # proportional budget and the anchor-deleted control (which MUST breach it)
       # honest on every PR. It runs last so a 45 minute job still reports suites 27
@@ -2218,7 +2219,8 @@ jobs:
             packages/e2e-tests/reports/backup-browse-at-logs/
             packages/e2e-tests/reports/backup-storage/
             packages/e2e-tests/reports/backup-storage-logs/
-            packages/e2e-tests/reports/backup-large-repo*
+            packages/e2e-tests/reports/backup-large-repo/
+            packages/e2e-tests/reports/backup-large-repo-logs/
           retention-days: 3
           if-no-files-found: ignore
 
