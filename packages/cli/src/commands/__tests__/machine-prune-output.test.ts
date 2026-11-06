@@ -9,6 +9,9 @@ const mocks = vi.hoisted(() => ({
   fail: false,
   repos: [] as Record<string, unknown>[],
   deletes: [] as string[],
+  deployed: [] as string[],
+  events: [] as string[],
+  sshEntries: [] as string[],
 }));
 
 vi.mock('../../utils/errors.js', () => ({
@@ -23,6 +26,7 @@ vi.mock('../../services/executor/executor-factory.js', () => ({
     execute: (req: { functionName: string; params?: { repository?: string } }) => {
       if (req.functionName === 'repository_delete') {
         mocks.deletes.push(String(req.params?.repository));
+        mocks.events.push(`delete:${String(req.params?.repository)}`);
       }
       return Promise.resolve({ success: true });
     },
@@ -35,12 +39,13 @@ vi.mock('../../services/machine/machine-status.js', () => ({
   fetchMachineStatus: async () => ({ repositories: mocks.repos }),
 }));
 vi.mock('@rediacc/shared/renet-contract/data/list-types.generated', () => ({
-  getRepositories: () => [{ name: KNOWN }, { name: ORPHAN }],
+  getRepositories: () => mocks.deployed.map((name) => ({ name })),
 }));
 vi.mock('../../services/config/config-resources.js', () => ({
   configService: {
     getCurrent: async () => ({}),
     getCurrentName: () => 'dev',
+    applyDefaults: async () => ({}),
     listRepositories: async () => [{ name: 'base', config: { repositoryGuid: KNOWN } }],
     listArchivedRepositories: async () => [],
     purgeExpiredArchives: async () => [],
@@ -50,9 +55,13 @@ vi.mock('../../adapters/config-file-storage.js', () => ({
   configFileStorage: { list: async () => ['dev'], load: async () => ({}) },
 }));
 vi.mock('../../remote/vscode/index.js', () => ({
-  listSSHConfigEntries: () => [],
-  removePersistedKeys: vi.fn(),
-  removeSSHConfigEntry: vi.fn(),
+  listSSHConfigEntries: () => mocks.sshEntries,
+  removePersistedKeys: (_team: string, _machine: string, repo: string) => {
+    mocks.events.push(`keys:${repo}`);
+  },
+  removeSSHConfigEntry: (entry: string) => {
+    mocks.events.push(`ssh:${entry}`);
+  },
 }));
 
 import { registerPruneCommand } from '../machine/prune.js';
@@ -88,6 +97,9 @@ beforeEach(() => {
   mocks.fail = false;
   mocks.repos = [];
   mocks.deletes = [];
+  mocks.deployed = [KNOWN, ORPHAN];
+  mocks.events = [];
+  mocks.sshEntries = [];
   vi.spyOn(process.stdout, 'write').mockImplementation((chunk: string | Uint8Array) => {
     stdout += String(chunk);
     return true;
@@ -160,5 +172,33 @@ describe('machine prune output', () => {
     mocks.repos = [{ name: ORPHAN, mounted: false, docker_running: false, container_count: 0 }];
     await run('--prune-unknown');
     expect(mocks.deletes).toEqual([ORPHAN]);
+  });
+
+  // The SSH-config cleanup runs client-side after a real orphan deletion, and only then.
+  describe('ssh artifact cleanup', () => {
+    const STALE = 'rediacc--ops-worker-gone';
+    const LIVE = 'rediacc--ops-worker-base';
+
+    it('removes the stale entry and its keys after the orphan is deleted, and keeps a configured repo', async () => {
+      mocks.format = 'json';
+      mocks.sshEntries = [STALE, LIVE, 'rediacc--other-machine-gone'];
+      await run('--orphaned-repos');
+      expect(mocks.events).toEqual([`delete:${ORPHAN}`, `ssh:${STALE}`, 'keys:gone']);
+    });
+
+    it('touches no ssh entry on a dry run', async () => {
+      mocks.format = 'json';
+      mocks.sshEntries = [STALE];
+      await run('--orphaned-repos', '--dry-run');
+      expect(mocks.events).toEqual([]);
+    });
+
+    it('touches no ssh entry when nothing is orphaned', async () => {
+      mocks.format = 'json';
+      mocks.deployed = [KNOWN];
+      mocks.sshEntries = [STALE];
+      await run('--orphaned-repos');
+      expect(mocks.events).toEqual([]);
+    });
   });
 });
