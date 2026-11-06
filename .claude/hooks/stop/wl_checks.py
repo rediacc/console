@@ -4680,7 +4680,7 @@ def run_stop(event, event_ok, worklist, hook_file):
         # A gate that raises says so: a bare pass here left plan-box-owed silently off (review 82fd346d.3).
         vadd(
             "plan-box-owed",
-            True,
+            False,
             "THIS IS A HOOK BUG: the plan-box-owed check failed: %s: %s"
             % (type(exc).__name__, str(exc)[:120]),
         )
