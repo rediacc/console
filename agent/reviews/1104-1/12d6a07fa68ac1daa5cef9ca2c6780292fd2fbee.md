@@ -21,7 +21,7 @@ Body-Sig: 63c2afea39a90569
 ### 12d6a07f.1 [medium] cmd/renet/repository_machine_prune.go:84
 Anchor: in-diff
 Claim: If the marker write for the units phase fails (stdout write error) after the datastore phase has run, `return err` skips the units phase and drops any datastore failure already collected in `errs`, contrary to the commit's 'a failed phase does not skip the other' contract.
-Resolution: open
+Resolution: fixed 350cf7625a0f0c0b5ac3dd473c28a6aa2976b0fd | d778be9d 2026-11-06T04:52:24Z
 
 ### 12d6a07f.2 [low] pkg/functions/commands/machine_prune.go:8
 Anchor: in-diff

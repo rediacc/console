@@ -26,7 +26,7 @@ Resolution: open
 ### 61bba873.2 [medium] packages/cli/src/commands/__tests__/backup-restore-path.test.ts:258
 Anchor: in-diff
 Claim: The exit-18 test no longer runs the `backup restore --path` command. It calls the reportRestorePathFailure step handler directly with a hand-built exitCode of 18, so a regression that stops the failed job's exit code reaching that step would still pass this file.
-Resolution: open
+Resolution: fixed 7bf39684e440dbce7b495abf8bd5f6f6c9d718f4 | d778be9d 2026-11-06T05:30:58Z
 
 ### 61bba873.3 [low] agent/plans/PLAN-ci-quick-cpu-scheduling.md:3
 Anchor: in-diff

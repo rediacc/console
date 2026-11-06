@@ -21,7 +21,7 @@ Body-Sig: a56adebec9c7d8a7
 ### eeaffe5a.1 [medium] .golangci.yml:12
 Anchor: in-diff
 Claim: The commit adds renet_test to golangci-lint build-tags, which brings tag-gated files into lint scope; the recorded run exits 1 with four goconst findings and no run before the change is recorded, so the lint gate's state before this commit is unknown and it is failing after it.
-Resolution: open
+Resolution: not-a-bug | cmd/renet/umask_unix.go:10 resolved: golangci-lint with renet_test reports 0 issues on linux, darwin and windows in check:ci-renet | d778be9d 2026-11-06T04:52:44Z
 
 ### eeaffe5a.2 [low] pkg/backuphook/standin.go:17
 Anchor: in-diff

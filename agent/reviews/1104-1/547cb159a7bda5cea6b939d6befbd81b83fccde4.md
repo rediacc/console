@@ -21,12 +21,12 @@ Body-Sig: c6beb8f7d4aa56a0
 ### 547cb159.1 [medium] .claude/rediacc_hooks/guards/block_commit_on_main.py:40
 Anchor: in-diff
 Claim: The commit says it covers every commit-creating verb, but WRITER_VERBS omits `fast-import` and `filter-branch`, which create commits on a ref, so a sub-agent's call to either in the main checkout is admitted. The comment on line 39 also says these verbs 'write a commit onto a ref', which is untrue for `commit-tree`, which writes only an object.
-Resolution: open
+Resolution: fixed fab283461947be21427a13da484af50521cc1ca1 | d778be9d 2026-11-06T03:45:56Z
 
 ### 547cb159.2 [medium] .claude/rediacc_hooks/guards/block_commit_on_main.py:67
 Anchor: in-diff
 Claim: A sub-agent's `git cherry-pick -n`, `git revert --no-commit` or `git merge --squash` in the main checkout is now refused, although these create no commit; the new refusal is untested and contradicts the stated 'creates a commit' rule.
-Resolution: open
+Resolution: fixed fab283461947be21427a13da484af50521cc1ca1 | d778be9d 2026-11-06T03:45:56Z
 
 ### 547cb159.3 [low] .claude/rediacc_hooks/guards/block_commit_on_main.py:67
 Anchor: in-diff

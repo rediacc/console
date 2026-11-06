@@ -21,4 +21,4 @@ Body-Sig: 49fb8f4f100c6457
 ### cd98d54e.1 [medium] cmd/renet/daemon_stop_hook.go:100
 Anchor: in-diff
 Claim: On the legacy-socket branch, runDown returns EnsureDownBeforeStopVia(ctx, socket, true) and drops the DownOptions the hook builds (Unmount:false, NoRefresh:true, SkipHeal:true), so a skewed daemon's stop runs down() with different options than the current-socket path, and no test checks that the legacy branch honours them.
-Resolution: open
+Resolution: not-a-bug | pkg/orchestration/down_before_stop.go:94 DownOptions{NoRefresh, SkipHeal, Force} with no Unmount, the same values the hook passes | d778be9d 2026-11-06T04:52:43Z

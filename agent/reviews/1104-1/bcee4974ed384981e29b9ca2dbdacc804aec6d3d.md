@@ -21,4 +21,4 @@ Body-Sig: 34fe9ad65d104b41
 ### bcee4974.1 [medium] .claude/rediacc_hooks/guards/block_settled_questions.py:212
 Anchor: in-diff
 Claim: The new `eu-remote` alternative in BENCH_OPERATOR_DOOR exempts any sentence that names eu-remote, so an eu-bench login ask in the same sentence passes, e.g. "Can you log into eu-bench again, same as eu-remote?". The added test only covers eu-remote in a separate sentence, so this same-sentence bypass is untested.
-Resolution: open
+Resolution: fixed b6058d34c64a6c0dcc9cb1584c089f6fc45d9c83 | d778be9d 2026-11-06T03:45:56Z
