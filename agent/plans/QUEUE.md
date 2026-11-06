@@ -69,7 +69,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-sandbox-tenant-separation.md -- 6 of 8 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-gpu-device-grants.md -- 12 of 14 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
 - Work outside the PR's plans (13 epic(s)):
-  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 10 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
+  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 11 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic c6b82e88, plan agent/plans/PLAN-settings-set-verb.md, outside the set, 2 commit(s) on the branch, 0 open item(s): settings set verb: one source for the ceilings
   - epic dbb7de07, plan agent/plans/PLAN-cloudflare-spend-guard.md, outside the set, 47 commit(s) on the branch, 0 open item(s): cloudflare spend guard closure
   - epic 09b8bdfa, plan agent/plans/PLAN-detached-jobs.md, outside the set, 361 commit(s) on the branch, 0 open item(s): detached jobs: proxied poll follow and job kinds
@@ -90,7 +90,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 14 of 43 plans done, 712 of 852 boxes done (83%).
+Promoted: 14 of 43 plans done, 713 of 852 boxes done (83%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -132,7 +132,7 @@ Promoted: 14 of 43 plans done, 712 of 852 boxes done (83%).
 | 36 | PLAN-free-license.md | 7/13 | 6 open |
 | 37 | PLAN-backup-integrity.md | 40/56 | 16 open |
 | 38 | PLAN-backup-critical-tier.md | 41/51 | 10 open |
-| 39 | PLAN-rediaccfile-unprivileged.md | 14/23 | 9 open |
+| 39 | PLAN-rediaccfile-unprivileged.md | 15/23 | 8 open |
 | 40 | PLAN-worktree-lease.md | 15/16 | 1 open |
 | 41 | PLAN-tick-tracking.md | 13/15 | 2 open |
 | 42 | PLAN-renet-down-before-kill.md | 10/14 | 4 open |
