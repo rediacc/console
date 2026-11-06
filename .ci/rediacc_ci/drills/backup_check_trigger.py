@@ -448,16 +448,17 @@ def record_half(
 
     The RustFS drill (`half="legs"`, `legs` = the legs that passed) and the on-premise variant (`half="onprem"`) are separate runs, and the receipt is VERIFIED only once both halves passed for one tree, one digest and one pair of checkouts. A half that did not pass contributes nothing (no legs, `onprem` false), so a failed re-run withdraws what that half had vouched for, and the other half survives it.
 
-    One exception, returning None with nothing written: a run of a PARTIAL leg selection (short of `REQUIRED_LEGS`) that did not fail, against a VERIFIED receipt already on file for this exact checkout. Such a run can only be NOT_VERIFIED (`legs-partial`) or an unavailable drill, and neither is evidence against what the fuller run proved on the same code. A FAILED verdict is always written, whatever the selection: a leg that really failed is never hidden."""
+    One exception, returning None with nothing written: a run of a PARTIAL leg selection (short of `REQUIRED_LEGS`) that did not fail, against a VERIFIED receipt already on file for the same TREE, whatever the worktree digest or submodule state of this run (a bench runner mid-edit still must not downgrade the tree's verdict; the receipt vouches for the committed tree, and `admit` re-checks its own digest and gitlinks). Such a run can only be NOT_VERIFIED (`legs-partial`) or an unavailable drill, and neither is evidence against what the fuller run proved on the same code. A FAILED verdict is always written, whatever the selection: a leg that really failed is never hidden."""
     if half not in HALVES:
         raise ValueError(f"half {half!r} is not one of {', '.join(HALVES)}")
     tree = make_git(root)(["rev-parse", "HEAD^{tree}"]) or ""
     prior = _carried(root, tree) or {}
+    on_file = (read_archive(root, tree) if tree else None) or {}
     passed = status == VERIFIED
     if (
         half == LEGS_HALF
         and status != FAILED
-        and prior.get("status") == VERIFIED
+        and on_file.get("status") == VERIFIED
         and any(leg not in legs for leg in REQUIRED_LEGS)
     ):
         return None

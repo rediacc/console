@@ -600,6 +600,43 @@ def test_a_partial_run_that_stopped_early_leaves_a_verified_receipt_alone(tmp_pa
     assert _admit(w).ok
 
 
+def _verified(w):
+    bct.record_drill(_drill(w), bct.LEGS_HALF, 0, bct.REQUIRED_LEGS)
+    bct.record_drill(_drill(w), bct.ONPREM_HALF, 0)
+    assert _admit(w).ok
+    return (w.root / bct.CACHE_DIR / bct.LATEST).read_text()
+
+
+def test_a_partial_run_over_uncommitted_edits_keeps_the_trees_verified_receipt(tmp_path):
+    """#815e6225: the partial run's digest differs from the full run's, yet the tree's verdict stays."""
+    w = World(tmp_path / "c")
+    before = _verified(w)
+    _write(w.root, CONSOLE_FILE, "an uncommitted edit under the partial run\n")
+    assert bct.record_drill(_drill(w), bct.LEGS_HALF, 0, ["a", "n"]) is None
+    assert (w.root / bct.CACHE_DIR / bct.LATEST).read_text() == before
+    assert _latest(w)["status"] == bct.VERIFIED
+    assert (w.root / bct.CACHE_DIR / ("%s.json" % w.tree())).read_text() == before
+
+
+def test_a_partial_run_over_a_moved_renet_checkout_keeps_the_trees_verified_receipt(tmp_path):
+    w = World(tmp_path / "c")
+    before = _verified(w)
+    sub = w.root / bct.RENET_SUBMODULE
+    _write(sub, RENET_FILE, "package chunkstore // edited under the partial run\n")
+    assert bct.record_drill(_drill(w), bct.LEGS_HALF, 0, ["a", "s"]) is None
+    assert (w.root / bct.CACHE_DIR / bct.LATEST).read_text() == before
+
+
+def test_a_full_run_that_fails_replaces_the_verified_receipt(tmp_path):
+    """CONTROL: a full selection is never protected."""
+    w = World(tmp_path / "c")
+    _verified(w)
+    path = bct.record_drill(_drill(w, count=0), bct.LEGS_HALF, 1, bct.REQUIRED_LEGS)
+    assert path is not None
+    assert _latest(w)["status"] == bct.NOT_VERIFIED
+    assert _admit(w).code == "not-verified"
+
+
 def test_a_partial_run_that_failed_is_still_recorded(tmp_path):
     """CONTROL: the rule above hides nothing, a leg that really failed replaces the VERIFIED verdict."""
     w = World(tmp_path / "c")
