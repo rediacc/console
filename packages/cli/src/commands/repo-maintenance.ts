@@ -257,29 +257,47 @@ function findDanglingRefs(
   return dangling;
 }
 
-/** The objects the `repository_fsck` job found: every `{"fsck_present": {datastore, guids}}` line of its stdout, merged. A line that is not one (a log line) is skipped. */
-export function parseFsckPresent(output: string | undefined): Set<string> | undefined {
+const trimTrailingSlashes = (path: string): string => path.replace(/\/+$/, '') || '/';
+
+/**
+ * The objects the `repository_fsck` job found: every `{"fsck_present": {datastore, guids}}` line of its stdout, merged.
+ * A line that is not one (a log line) is skipped. `expected` is the datastores the job was asked to list besides its
+ * own: a report missing one of them is truncated, and undefined, like one with no line at all.
+ */
+export function parseFsckPresent(
+  output: string | undefined,
+  expected: string[] = []
+): Set<string> | undefined {
   const present = new Set<string>();
-  let reported = false;
+  const reportedDatastores = new Set<string>();
   for (const raw of (output ?? '').split('\n')) {
     try {
-      const parsed = JSON.parse(raw) as { fsck_present?: { guids?: string[] } };
+      const parsed = JSON.parse(raw) as {
+        fsck_present?: { datastore?: string; guids?: string[] };
+      };
       if (!parsed.fsck_present) continue;
-      reported = true;
+      reportedDatastores.add(trimTrailingSlashes(parsed.fsck_present.datastore ?? ''));
       for (const guid of parsed.fsck_present.guids ?? []) present.add(guid);
     } catch {
       // Not a result line.
     }
   }
-  return reported ? present : undefined;
+  if (reportedDatastores.size === 0) return undefined;
+  return expected.every((datastore) => reportedDatastores.has(trimTrailingSlashes(datastore)))
+    ? present
+    : undefined;
 }
 
 /** Compare the config's refs with the objects the machine reported, print the drift, and exit 1 when there is any. */
-async function reportFsck(machine: string, output: string | undefined): Promise<void> {
+async function reportFsck(
+  machine: string,
+  output: string | undefined,
+  datastores: string
+): Promise<void> {
   const repos = await configService.listRepositories();
   const present = new Map<string, { mounted: boolean }>();
-  const reported = parseFsckPresent(output);
-  // No fsck_present line means the report never arrived (empty or truncated output), which is not the same as an empty machine.
+  const reported = parseFsckPresent(output, datastores === '' ? [] : datastores.split(','));
+  // No fsck_present line, or none for a datastore the job was asked to list, means the report never fully arrived (empty or truncated output), which is not the same as an empty machine.
   if (!reported) throw new Error(t('commands.repo.admin.fsck.noReport', { machine }));
   for (const guid of reported) present.set(guid, { mounted: false });
   const reachable = reachableCommits(repos);
@@ -307,7 +325,9 @@ async function reportFsck(machine: string, output: string | undefined): Promise<
   setExitCode(1);
 }
 
-bindStepHandler('reportRepoFsck', ({ machine, output }) => reportFsck(machine, output));
+bindStepHandler('reportRepoFsck', ({ machine, output, params }) =>
+  reportFsck(machine, output, typeof params.datastores === 'string' ? params.datastores : '')
+);
 
 /** repo fsck -m <machine>, report config-ref vs machine-object drift from one `repository_fsck` job. */
 async function handleFsck(options: { machine: string; debug?: boolean }): Promise<void> {
@@ -325,7 +345,7 @@ async function handleFsck(options: { machine: string; debug?: boolean }): Promis
         debug: options.debug,
         captureOutput: true,
       },
-      [planStep('reportRepoFsck', { machine: options.machine })]
+      [planStep('reportRepoFsck', { machine: options.machine, datastores: mounts.join(',') })]
     );
     if (outcome.kind === 'pending') {
       const code = pendingExitCode(outcome);

@@ -137,7 +137,7 @@ export const REPO_CONVERSION_STEPS: StepDefinition[] = [
   privateStep(
     'reportRepoFsck',
     'success',
-    ['machine'],
+    ['machine', 'datastores'],
     () => import('../../commands/repo-maintenance.js'),
     true
   ),

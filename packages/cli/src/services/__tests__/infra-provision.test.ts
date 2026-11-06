@@ -69,6 +69,7 @@ vi.mock('../../i18n/index.js', () => ({
 }));
 
 import { WK_INFRA_DOMAIN } from '@rediacc/shared/config/well-known.generated';
+import { resolveStepHandler } from '../jobs/steps.js';
 import {
   buildInfraPayload,
   ensureClusterDnsRecords,
@@ -334,5 +335,14 @@ describe('pushInfraConfig runs one infra-push job', () => {
 
     answer = { ...OK, state: 'running' };
     await expect(pushInfraConfig('m1')).resolves.toBe(false);
+  });
+
+  it('the pushProvisionedInfra step fails when the push fails, so the provision does not report a push that never happened', async () => {
+    answer = { success: false, exitCode: 1, durationMs: 1, state: 'failed', error: 'boom' };
+    const handler = await resolveStepHandler('pushProvisionedInfra');
+
+    await expect(
+      handler({ machine: 'm1', params: {} } as Parameters<typeof handler>[0])
+    ).rejects.toThrow('boom');
   });
 });

@@ -726,6 +726,31 @@ describe('repo verbs outside J4: one job per machine, the follow-up as steps', (
       expect(vi.mocked(outputService.error)).not.toHaveBeenCalled();
     });
 
+    it('the report step fails when a datastore the job was asked to list never reported', async () => {
+      mockListRepositories.mockResolvedValue([
+        { name: 'c1', config: { repositoryGuid: 'g-c1', immutable: true, headCommit: 'g-gone' } },
+      ]);
+      const handler = await resolveStepHandler('reportRepoFsck');
+      const base = { jobId: 'job-1', machine: 'm1', state: 'succeeded' as const };
+
+      await expect(
+        handler({
+          ...base,
+          params: { datastores: '/d,/named/' },
+          output: '{"fsck_present":{"datastore":"/d","guids":[]}}\n',
+        })
+      ).rejects.toThrow('fsck.noReport');
+      await handler({
+        ...base,
+        params: { datastores: '/d,/named/' },
+        output:
+          '{"fsck_present":{"datastore":"/d","guids":[]}}\n{"fsck_present":{"datastore":"/named","guids":[]}}\n',
+      });
+      expect(vi.mocked(outputService.error)).toHaveBeenCalledWith(
+        expect.stringContaining('fsck.danglingHeader')
+      );
+    });
+
     it('a failed gc job still reports its per-candidate lines and names the failed count from the summary', async () => {
       answer = {
         ...FAILED,
