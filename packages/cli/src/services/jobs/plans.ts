@@ -121,6 +121,8 @@ export const CONVERTED: ReadonlySet<string> = new Set<string>([
   'repo log',
   'repo merge',
   'repo status',
+  // G3 (PLAN-health-checks-local): one repository_health read job, its verdict print a step.
+  'repo health',
   'repo admin autostart disable',
   'repo admin autostart enable',
   'repo admin autostart list',

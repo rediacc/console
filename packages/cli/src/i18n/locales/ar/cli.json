@@ -1321,7 +1321,9 @@
         "systemDisk": "  القرص: {{percent}}",
         "systemMemory": "  الذاكرة: {{percent}}",
         "systemSection": "\nالنظام:",
-        "systemUptime": "  وقت التشغيل: {{uptime}}"
+        "systemUptime": "  وقت التشغيل: {{uptime}}",
+        "repoHealthSection": "\nصحة المستودعات:",
+        "repoHealthNoCheck": "  بلا فحص (لا توجد دالة health()): {{repositories}}"
       },
       "infra": {
         "cert": {
@@ -2264,6 +2266,21 @@
         "description": "الحصول على حالة المستودع",
         "failed": "فشل التحقق من الحالة",
         "starting": "جارٍ جلب حالة \"{{repository}}\" على \"{{machine}}\"..."
+      },
+      "health": {
+        "description": "تشغيل فحوص health() في ملف Rediaccfile للمستودع والخروج بالرمز 0 (سليم) أو 1 (تحذير) أو 2 (خطأ)",
+        "header": "\nصحة {{repository}}:",
+        "levelOk": "✓ سليم",
+        "levelWarning": "⚠ تحذير",
+        "levelError": "✗ خطأ",
+        "levelNone": "– لا يوجد فحص: لا يعرّف أي ملف Rediaccfile الدالة health()",
+        "fileLine": "  {{file}}: {{level}} (رمز الخروج {{exit}})",
+        "fileLevelOk": "سليم",
+        "fileLevelWarning": "تحذير",
+        "fileLevelError": "خطأ",
+        "failed": "فشل فحص صحة {{repository}}: {{message}}",
+        "unsupported": "إصدار renet على {{machine}} أقدم من فحوص صحة المستودعات؛ حدّثه عبر rdc machine setup {{machine}}",
+        "renetFailed": "تعذّر على renet تشغيل فحص الصحة"
       },
       "sync": {
         "description": "مزامنة المستودعات والملفات (دفع/سحب جماعي، نقل ملفات)",

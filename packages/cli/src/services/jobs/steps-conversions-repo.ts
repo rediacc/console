@@ -157,6 +157,13 @@ export const REPO_CONVERSION_STEPS: StepDefinition[] = [
   privateStep('forgetCanary', 'success', ['set'], () => import('../../commands/repo-canary.js')),
   privateStep('printRepoCat', 'success', [], () => import('../../commands/repo-cat.js'), true),
   privateStep(
+    'printRepoHealth',
+    'success',
+    ['name'],
+    () => import('../../commands/repo-health.js'),
+    true
+  ),
+  privateStep(
     'renderRepoDiff',
     'success',
     ['mode', 'format', 'path'],

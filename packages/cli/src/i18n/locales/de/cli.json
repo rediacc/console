@@ -1321,7 +1321,9 @@
         "systemDisk": "  Festplatte: {{percent}}",
         "systemMemory": "  Speicher: {{percent}}",
         "systemSection": "\nSysteminformationen:",
-        "systemUptime": "  Betriebszeit: {{uptime}}"
+        "systemUptime": "  Betriebszeit: {{uptime}}",
+        "repoHealthSection": "\nRepository-Zustand:",
+        "repoHealthNoCheck": "  Ohne Prüfung (kein health() definiert): {{repositories}}"
       },
       "infra": {
         "cert": {
@@ -2264,6 +2266,21 @@
         "description": "Repository-Status abrufen",
         "failed": "Statusabfrage fehlgeschlagen",
         "starting": "Status von \"{{repository}}\" auf \"{{machine}}\" wird abgerufen..."
+      },
+      "health": {
+        "description": "Die health()-Prüfungen der Rediaccfiles eines Repositorys ausführen und mit 0 (ok), 1 (Warnung) oder 2 (Fehler) beenden",
+        "header": "\nZustand von {{repository}}:",
+        "levelOk": "✓ Gesund",
+        "levelWarning": "⚠ Warnung",
+        "levelError": "✗ Fehler",
+        "levelNone": "– Keine Prüfung: kein Rediaccfile definiert health()",
+        "fileLine": "  {{file}}: {{level}} (Exit-Code {{exit}})",
+        "fileLevelOk": "ok",
+        "fileLevelWarning": "Warnung",
+        "fileLevelError": "Fehler",
+        "failed": "Zustandsprüfung von {{repository}} fehlgeschlagen: {{message}}",
+        "unsupported": "renet auf {{machine}} ist älter als die Repository-Zustandsprüfung; mit rdc machine setup {{machine}} aktualisieren",
+        "renetFailed": "renet konnte die Zustandsprüfung nicht ausführen"
       },
       "sync": {
         "description": "Repositories und Dateien synchronisieren (Massen-Push/Pull, Dateitransfer)",

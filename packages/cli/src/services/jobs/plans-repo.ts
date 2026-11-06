@@ -183,6 +183,14 @@ export const REPO_JOB_PLANS: Readonly<Record<string, JobPlan>> = {
     box: 'J16',
     steps: ['printRepoCat'],
   },
+  'repo health': {
+    form: 'single',
+    fn: 'repository_health',
+    lock: 'read',
+    timeout: '10m',
+    box: 'J16',
+    steps: ['printRepoHealth'],
+  },
   'repo checkout': {
     form: 'precondition',
     fn: 'repository_fork',

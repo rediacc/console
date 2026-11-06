@@ -1321,7 +1321,9 @@
         "systemDisk": "  Диск: {{percent}}",
         "systemMemory": "  Память: {{percent}}",
         "systemSection": "\nСистема:",
-        "systemUptime": "  Время работы: {{uptime}}"
+        "systemUptime": "  Время работы: {{uptime}}",
+        "repoHealthSection": "\nСостояние репозиториев:",
+        "repoHealthNoCheck": "  Без проверки (health() не определена): {{repositories}}"
       },
       "infra": {
         "cert": {
@@ -2264,6 +2266,21 @@
         "description": "Получить статус репозитория",
         "failed": "Ошибка проверки статуса",
         "starting": "Получение статуса \"{{repository}}\" на \"{{machine}}\"..."
+      },
+      "health": {
+        "description": "Запускает проверки health() из Rediaccfile репозитория и завершается с кодом 0 (норма), 1 (предупреждение) или 2 (ошибка)",
+        "header": "\nСостояние {{repository}}:",
+        "levelOk": "✓ Исправен",
+        "levelWarning": "⚠ Предупреждение",
+        "levelError": "✗ Ошибка",
+        "levelNone": "– Проверки нет: ни один Rediaccfile не определяет health()",
+        "fileLine": "  {{file}}: {{level}} (код выхода {{exit}})",
+        "fileLevelOk": "норма",
+        "fileLevelWarning": "предупреждение",
+        "fileLevelError": "ошибка",
+        "failed": "Проверка состояния {{repository}} не удалась: {{message}}",
+        "unsupported": "renet на {{machine}} старше проверок состояния репозиториев; обновите его командой rdc machine setup {{machine}}",
+        "renetFailed": "renet не смог выполнить проверку состояния"
       },
       "sync": {
         "description": "Синхронизация репозиториев и файлов (массовый push/pull, передача файлов)",

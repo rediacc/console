@@ -1321,7 +1321,9 @@
         "systemDisk": "  Disco: {{percent}}",
         "systemMemory": "  Memoria: {{percent}}",
         "systemSection": "\nSistema:",
-        "systemUptime": "  Uptime: {{uptime}}"
+        "systemUptime": "  Uptime: {{uptime}}",
+        "repoHealthSection": "\nStato dei repository:",
+        "repoHealthNoCheck": "  Senza controllo (nessun health() definito): {{repositories}}"
       },
       "infra": {
         "cert": {
@@ -2264,6 +2266,21 @@
         "description": "Ottieni lo stato del repository (stato del mount, daemon Docker in esecuzione, numero di contenitori, utilizzo del disco)",
         "failed": "Verifica dello stato non riuscita",
         "starting": "Recupero dello stato di \"{{repository}}\" su \"{{machine}}\"..."
+      },
+      "health": {
+        "description": "Esegue i controlli health() dei Rediaccfile del repository ed esce con 0 (ok), 1 (avviso) o 2 (errore)",
+        "header": "\nStato di {{repository}}:",
+        "levelOk": "✓ In salute",
+        "levelWarning": "⚠ Avviso",
+        "levelError": "✗ Errore",
+        "levelNone": "– Nessun controllo: nessun Rediaccfile definisce health()",
+        "fileLine": "  {{file}}: {{level}} (codice di uscita {{exit}})",
+        "fileLevelOk": "ok",
+        "fileLevelWarning": "avviso",
+        "fileLevelError": "errore",
+        "failed": "Controllo dello stato di {{repository}} non riuscito: {{message}}",
+        "unsupported": "Il renet su {{machine}} è precedente ai controlli di stato dei repository; aggiornalo con rdc machine setup {{machine}}",
+        "renetFailed": "renet non è riuscito a eseguire il controllo dello stato"
       },
       "sync": {
         "description": "Sincronizza repository e file (push/pull in blocco, trasferimento file)",

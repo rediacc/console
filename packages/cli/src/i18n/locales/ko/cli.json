@@ -1321,7 +1321,9 @@
         "systemDisk": "  디스크: {{percent}}",
         "systemMemory": "  메모리: {{percent}}",
         "systemSection": "\n시스템:",
-        "systemUptime": "  가동 시간: {{uptime}}"
+        "systemUptime": "  가동 시간: {{uptime}}",
+        "repoHealthSection": "\n저장소 상태:",
+        "repoHealthNoCheck": "  검사 없음 (health() 미정의): {{repositories}}"
       },
       "infra": {
         "cert": {
@@ -2264,6 +2266,21 @@
         "description": "저장소 상태를 가져옵니다 (마운트 상태, Docker 데몬 실행 여부, 컨테이너 수, 디스크 사용량)",
         "failed": "상태 확인 실패",
         "starting": "\"{{machine}}\"에서 \"{{repository}}\"의 상태를 가져오는 중..."
+      },
+      "health": {
+        "description": "저장소 Rediaccfile의 health() 검사를 실행하고 0(정상), 1(경고), 2(오류)로 종료합니다",
+        "header": "\n{{repository}} 상태:",
+        "levelOk": "✓ 정상",
+        "levelWarning": "⚠ 경고",
+        "levelError": "✗ 오류",
+        "levelNone": "– 검사 없음: health()를 정의한 Rediaccfile이 없습니다",
+        "fileLine": "  {{file}}: {{level}} (종료 코드 {{exit}})",
+        "fileLevelOk": "정상",
+        "fileLevelWarning": "경고",
+        "fileLevelError": "오류",
+        "failed": "{{repository}} 상태 검사 실패: {{message}}",
+        "unsupported": "{{machine}}의 renet은 저장소 상태 검사보다 오래된 버전입니다. rdc machine setup {{machine}}으로 업데이트하세요",
+        "renetFailed": "renet이 상태 검사를 실행하지 못했습니다"
       },
       "sync": {
         "description": "저장소와 파일을 동기화합니다 (일괄 push/pull, 파일 전송)",

@@ -1321,7 +1321,9 @@
         "systemDisk": "  Ketas: {{percent}}",
         "systemMemory": "  Mälu: {{percent}}",
         "systemSection": "\nSüsteem:",
-        "systemUptime": "  Tööaeg: {{uptime}}"
+        "systemUptime": "  Tööaeg: {{uptime}}",
+        "repoHealthSection": "\nHoidlate seisund:",
+        "repoHealthNoCheck": "  Kontrollita (health() puudub): {{repositories}}"
       },
       "infra": {
         "cert": {
@@ -2264,6 +2266,21 @@
         "description": "Hangi hoidla olek (haakimisseisund, Docker-daemoni töötamine, konteinerite arv, kettakasutus)",
         "failed": "Oleku kontrollimine ebaõnnestus",
         "starting": "Hoidla \"{{repository}}\" oleku pärimine masinal \"{{machine}}\"..."
+      },
+      "health": {
+        "description": "Käivita hoidla Rediaccfile'i health() kontrollid ja välju koodiga 0 (korras), 1 (hoiatus) või 2 (viga)",
+        "header": "\nHoidla {{repository}} seisund:",
+        "levelOk": "✓ Korras",
+        "levelWarning": "⚠ Hoiatus",
+        "levelError": "✗ Viga",
+        "levelNone": "– Kontroll puudub: ükski Rediaccfile ei defineeri health() funktsiooni",
+        "fileLine": "  {{file}}: {{level}} (väljumiskood {{exit}})",
+        "fileLevelOk": "korras",
+        "fileLevelWarning": "hoiatus",
+        "fileLevelError": "viga",
+        "failed": "Hoidla {{repository}} seisundi kontroll ebaõnnestus: {{message}}",
+        "unsupported": "Masina {{machine}} renet on vanem kui hoidlate seisundikontrollid; uuenda seda käsuga rdc machine setup {{machine}}",
+        "renetFailed": "renet ei saanud seisundikontrolli käivitada"
       },
       "sync": {
         "description": "Sünkrooni hoidlaid ja faile (pakkpush/pull, failide ülekanne)",

@@ -1321,7 +1321,9 @@
         "systemDisk": "  Disque : {{percent}}",
         "systemMemory": "  Mémoire : {{percent}}",
         "systemSection": "\nSystème :",
-        "systemUptime": "  Temps de fonctionnement : {{uptime}}"
+        "systemUptime": "  Temps de fonctionnement : {{uptime}}",
+        "repoHealthSection": "\nSanté des dépôts :",
+        "repoHealthNoCheck": "  Sans vérification (aucun health() défini) : {{repositories}}"
       },
       "infra": {
         "cert": {
@@ -2264,6 +2266,21 @@
         "description": "Obtenir le statut du dépôt",
         "failed": "Échec de la vérification du statut",
         "starting": "Récupération du statut de \"{{repository}}\" sur \"{{machine}}\"..."
+      },
+      "health": {
+        "description": "Exécute les vérifications health() des Rediaccfile du dépôt et quitte avec 0 (ok), 1 (avertissement) ou 2 (erreur)",
+        "header": "\nSanté de {{repository}} :",
+        "levelOk": "✓ En bonne santé",
+        "levelWarning": "⚠ Avertissement",
+        "levelError": "✗ Erreur",
+        "levelNone": "– Aucune vérification : aucun Rediaccfile ne définit health()",
+        "fileLine": "  {{file}} : {{level}} (code de sortie {{exit}})",
+        "fileLevelOk": "ok",
+        "fileLevelWarning": "avertissement",
+        "fileLevelError": "erreur",
+        "failed": "La vérification de santé de {{repository}} a échoué : {{message}}",
+        "unsupported": "Le renet de {{machine}} est antérieur aux vérifications de santé des dépôts ; mettez-le à jour avec rdc machine setup {{machine}}",
+        "renetFailed": "renet n'a pas pu exécuter la vérification de santé"
       },
       "sync": {
         "description": "Synchroniser les dépôts et fichiers (push/pull en masse, transfert de fichiers)",

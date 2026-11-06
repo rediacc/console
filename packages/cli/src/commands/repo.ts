@@ -25,6 +25,7 @@ import { registerRepoDiffCommand } from './repo-diff.js';
 import { registerExtendedRepoCommands } from './repo-extended.js';
 import { registerRepoForkCommand } from './repo-fork.js';
 import { registerRepoGpuCommands } from './repo-gpu.js';
+import { registerRepoHealthCommand } from './repo-health.js';
 import { registerRepoMaintenanceCommands } from './repo-maintenance.js';
 import { registerRepoMigrateCommand } from './repo-migrate.js';
 import { registerRepoPermissionCommands } from './repo-permission.js';
@@ -391,6 +392,7 @@ export function registerRepoCommands(program: Command): void {
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
     .action(handleRepoList);
+  registerRepoHealthCommand(repo);
   registerRepoCatCommand(repo);
   registerRepoForkCommand(repo);
   registerRepoDiffCommand(repo);

@@ -7,7 +7,7 @@ order: 2
 language: tr
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/tr/cli.json
-sourceHash: "8688da884ec17331"
+sourceHash: "1cb41766793ddc03"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -1004,6 +1004,7 @@ rdc machine restart-services <name> [options]
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
 | `--include-docker` | {{t:cli.commands.machine.restartServices.includeDockerOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--repo <name>` | {{t:cli.commands.machine.restartServices.repoOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--json` | {{t:cli.commands.machine.restartServices.jsonOption}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
@@ -1431,8 +1432,23 @@ rdc repo status <ref> [options]
 | `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
+<a id="cli-local-repo-health"></a>
+### 6.4 health
+
+{{t:cli.commands.repo.health.description}}
+
+```bash
+rdc repo health <ref> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
 <a id="cli-local-repo-cat"></a>
-### 6.4 cat
+### 6.5 cat
 
 {{t:cli.commands.repo.cat.description}}
 
@@ -1454,7 +1470,7 @@ rdc repo cat <ref> [options]
 
 
 <a id="cli-local-repo-diff"></a>
-### 6.5 diff
+### 6.6 diff
 
 {{t:cli.commands.repo.diff.description}}
 
@@ -1474,7 +1490,7 @@ rdc repo diff <ref> [options]
 
 
 <a id="cli-local-repo-list"></a>
-### 6.6 list
+### 6.7 list
 
 {{t:cli.commands.repo.list.description}}
 
@@ -1491,7 +1507,7 @@ rdc repo list [options]
 
 
 <a id="cli-local-repo-create"></a>
-### 6.7 create
+### 6.8 create
 
 {{t:cli.commands.repo.create.description}}
 
@@ -1510,7 +1526,7 @@ rdc repo create <name> [options]
 
 
 <a id="cli-local-repo-delete"></a>
-### 6.8 delete
+### 6.9 delete
 
 {{t:cli.commands.repo.delete.description}}
 
@@ -1529,7 +1545,7 @@ rdc repo delete <ref> [options]
 
 
 <a id="cli-local-repo-commit"></a>
-### 6.9 commit
+### 6.10 commit
 
 {{t:cli.commands.repo.commit.description}}
 
@@ -1545,7 +1561,7 @@ rdc repo commit <ref> [options]
 
 
 <a id="cli-local-repo-branch"></a>
-### 6.10 branch
+### 6.11 branch
 
 {{t:cli.commands.repo.branch.description}}
 
@@ -1559,7 +1575,7 @@ rdc repo branch <ref> [options]
 
 
 <a id="cli-local-repo-checkout"></a>
-### 6.11 checkout
+### 6.12 checkout
 
 {{t:cli.commands.repo.checkout.description}}
 
@@ -1576,7 +1592,7 @@ rdc repo checkout <commit-or-branch-ref> [options]
 
 
 <a id="cli-local-repo-log"></a>
-### 6.12 log
+### 6.13 log
 
 {{t:cli.commands.repo.log.description}}
 
@@ -1590,7 +1606,7 @@ rdc repo log <ref> [options]
 
 
 <a id="cli-local-repo-merge"></a>
-### 6.13 merge
+### 6.14 merge
 
 {{t:cli.commands.repo.merge.description}}
 
@@ -1608,7 +1624,7 @@ rdc repo merge <ref> [options]
 
 
 <a id="cli-local-repo-gc"></a>
-### 6.14 gc
+### 6.15 gc
 
 {{t:cli.commands.repo.gc.description}}
 
@@ -1624,7 +1640,7 @@ rdc repo gc [options]
 
 
 <a id="cli-local-repo-fork"></a>
-### 6.15 fork
+### 6.16 fork
 
 {{t:cli.commands.repo.fork.description}}
 
@@ -1644,7 +1660,7 @@ rdc repo fork <ref> [options]
 
 
 <a id="cli-local-repo-replicate"></a>
-### 6.16 replicate
+### 6.17 replicate
 
 {{t:cli.commands.repo.replicate.description}}
 
@@ -1686,7 +1702,7 @@ rdc repo replicate refresh <ref> [options]
 
 
 <a id="cli-local-repo-canary"></a>
-### 6.17 canary
+### 6.18 canary
 
 {{t:cli.commands.repo.canary.description}}
 
@@ -1748,7 +1764,7 @@ rdc repo canary create <ref> [options]
 
 
 <a id="cli-local-repo-resize"></a>
-### 6.18 resize
+### 6.19 resize
 
 {{t:cli.commands.repo.resize.description}}
 
@@ -1764,7 +1780,7 @@ rdc repo resize <ref> [options]
 
 
 <a id="cli-local-repo-expand"></a>
-### 6.19 expand
+### 6.20 expand
 
 {{t:cli.commands.repo.expand.description}}
 
@@ -1780,7 +1796,7 @@ rdc repo expand <ref> [options]
 
 
 <a id="cli-local-repo-trim"></a>
-### 6.20 trim
+### 6.21 trim
 
 {{t:cli.commands.repo.trim.description}}
 
@@ -1798,7 +1814,7 @@ rdc repo trim [ref] [options]
 
 
 <a id="cli-local-repo-prune"></a>
-### 6.21 prune
+### 6.22 prune
 
 {{t:cli.commands.repo.prune.description}}
 
@@ -1818,7 +1834,7 @@ rdc repo prune [ref] [options]
 
 
 <a id="cli-local-repo-policy"></a>
-### 6.22 policy
+### 6.23 policy
 
 {{t:cli.commands.repo.policy.description}}
 
@@ -1867,7 +1883,7 @@ rdc repo policy get [ref] [options]
 
 
 <a id="cli-local-repo-push"></a>
-### 6.23 push
+### 6.24 push
 
 {{t:cli.commands.repo.push.description}}
 
@@ -1890,7 +1906,7 @@ rdc repo push <ref> [options]
 
 
 <a id="cli-local-repo-pull"></a>
-### 6.24 pull
+### 6.25 pull
 
 {{t:cli.commands.repo.pull.description}}
 
@@ -1912,7 +1928,7 @@ rdc repo pull <ref> [options]
 
 
 <a id="cli-local-repo-migrate"></a>
-### 6.25 migrate
+### 6.26 migrate
 
 {{t:cli.commands.repo.migrate.description}}
 
@@ -1934,7 +1950,7 @@ rdc repo migrate <ref> [options]
 
 
 <a id="cli-local-repo-sync"></a>
-### 6.26 sync
+### 6.27 sync
 
 {{t:cli.commands.repo.sync.description}}
 
@@ -1997,7 +2013,7 @@ rdc repo sync status <ref> [options]
 
 
 <a id="cli-local-repo-tunnel"></a>
-### 6.27 tunnel
+### 6.28 tunnel
 
 {{t:cli.commands.repo.tunnel.description}}
 
@@ -2014,7 +2030,7 @@ rdc repo tunnel <ref> [options]
 
 
 <a id="cli-local-repo-secret"></a>
-### 6.28 secret
+### 6.29 secret
 
 {{t:cli.commands.repo.secret.description}}
 
@@ -2076,7 +2092,7 @@ rdc repo secret unset <ref> [options]
 
 
 <a id="cli-local-repo-admin"></a>
-### 6.29 admin
+### 6.30 admin
 
 {{t:cli.commands.repo.admin.description}}
 
@@ -2249,7 +2265,7 @@ rdc repo admin template apply <ref> [options]
 
 
 <a id="cli-local-repo-promote"></a>
-### 6.30 promote
+### 6.31 promote
 
 {{t:cli.commands.repo.promote.description}}
 
@@ -2265,7 +2281,7 @@ rdc repo promote <fork-ref> [options]
 
 
 <a id="cli-local-repo-logs"></a>
-### 6.31 logs
+### 6.32 logs
 
 {{t:cli.commands.repo.logs.description}}
 
@@ -2283,7 +2299,7 @@ rdc repo logs <ref> [options]
 
 
 <a id="cli-local-repo-exec"></a>
-### 6.32 exec
+### 6.33 exec
 
 {{t:cli.commands.repo.exec.description}}
 
@@ -2300,7 +2316,7 @@ rdc repo exec <ref> <cmd...> [options]
 
 
 <a id="cli-local-repo-gpu"></a>
-### 6.33 gpu
+### 6.34 gpu
 
 {{t:cli.commands.repo.gpu.description}}
 
@@ -2336,7 +2352,7 @@ rdc repo gpu revoke <ref> [options]
 
 
 <a id="cli-local-repo-permission"></a>
-### 6.34 permission
+### 6.35 permission
 
 {{t:cli.commands.repo.permission.description}}
 

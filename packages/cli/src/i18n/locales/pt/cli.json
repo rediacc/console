@@ -1321,7 +1321,9 @@
         "systemDisk": "  Disco: {{percent}}",
         "systemMemory": "  Memória: {{percent}}",
         "systemSection": "\nSistema:",
-        "systemUptime": "  Tempo de atividade: {{uptime}}"
+        "systemUptime": "  Tempo de atividade: {{uptime}}",
+        "repoHealthSection": "\nSaúde dos repositórios:",
+        "repoHealthNoCheck": "  Sem verificação (nenhum health() definido): {{repositories}}"
       },
       "infra": {
         "cert": {
@@ -2264,6 +2266,21 @@
         "description": "Obter o estado do repositório (estado de montagem, daemon Docker em execução, número de contentores, utilização do disco)",
         "failed": "Falha na verificação do estado",
         "starting": "A obter o estado de \"{{repository}}\" em \"{{machine}}\"..."
+      },
+      "health": {
+        "description": "Executa as verificações health() dos Rediaccfile do repositório e sai com 0 (ok), 1 (aviso) ou 2 (erro)",
+        "header": "\nSaúde de {{repository}}:",
+        "levelOk": "✓ Saudável",
+        "levelWarning": "⚠ Aviso",
+        "levelError": "✗ Erro",
+        "levelNone": "– Sem verificação: nenhum Rediaccfile define health()",
+        "fileLine": "  {{file}}: {{level}} (código de saída {{exit}})",
+        "fileLevelOk": "ok",
+        "fileLevelWarning": "aviso",
+        "fileLevelError": "erro",
+        "failed": "A verificação de saúde de {{repository}} falhou: {{message}}",
+        "unsupported": "O renet em {{machine}} é anterior às verificações de saúde de repositórios; atualize-o com rdc machine setup {{machine}}",
+        "renetFailed": "O renet não conseguiu executar a verificação de saúde"
       },
       "sync": {
         "description": "Sincronizar repositórios e ficheiros (push/pull em volume, transferência de ficheiros)",

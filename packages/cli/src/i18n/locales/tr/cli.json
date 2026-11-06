@@ -1321,7 +1321,9 @@
         "systemDisk": "  Disk alanı: {{percent}}",
         "systemMemory": "  Bellek: {{percent}}",
         "systemSection": "\nSistem:",
-        "systemUptime": "  Çalışma süresi: {{uptime}}"
+        "systemUptime": "  Çalışma süresi: {{uptime}}",
+        "repoHealthSection": "\nDepo sağlığı:",
+        "repoHealthNoCheck": "  Denetimsiz (health() tanımlı değil): {{repositories}}"
       },
       "infra": {
         "cert": {
@@ -2264,6 +2266,21 @@
         "description": "Depo durumunu al",
         "failed": "Durum kontrolü başarısız",
         "starting": "\"{{repository}}\" deposunun durumu \"{{machine}}\" üzerinden alınıyor..."
+      },
+      "health": {
+        "description": "Deponun Rediaccfile health() denetimlerini çalıştırır ve 0 (sağlıklı), 1 (uyarı) ya da 2 (hata) koduyla çıkar",
+        "header": "\n{{repository}} sağlık durumu:",
+        "levelOk": "✓ Sağlıklı",
+        "levelWarning": "⚠ Uyarı",
+        "levelError": "✗ Hata",
+        "levelNone": "– Denetim yok: hiçbir Rediaccfile health() tanımlamıyor",
+        "fileLine": "  {{file}}: {{level}} (çıkış kodu {{exit}})",
+        "fileLevelOk": "sağlıklı",
+        "fileLevelWarning": "uyarı",
+        "fileLevelError": "hata",
+        "failed": "{{repository}} sağlık denetimi başarısız oldu: {{message}}",
+        "unsupported": "{{machine}} üzerindeki renet, depo sağlık denetimlerinden eski; rdc machine setup {{machine}} ile güncelleyin",
+        "renetFailed": "renet sağlık denetimini çalıştıramadı"
       },
       "sync": {
         "description": "Depoları ve dosyaları senkronize et (toplu push/pull, dosya aktarımı)",

@@ -99,6 +99,21 @@ vi.mock('../../services/provision/infra-provision.js', () => ({
   removeMachineDnsRecords: vi.fn(),
 }));
 vi.mock('../../services/repo/repo-key-deployment.js', () => ({ deployAllRepoKeys: vi.fn() }));
+// machine health folds `repository_health --all --strict` (G4) through the executor, outside the list-all job.
+const repoHealthCalls = vi.hoisted(() => [] as Record<string, unknown>[]);
+vi.mock('../../services/executor/executor-factory.js', async (orig) => ({
+  ...(await orig<typeof import('../../services/executor/executor-factory.js')>()),
+  getExecutor: () => ({
+    execute: (options: Record<string, unknown>) => {
+      repoHealthCalls.push(options);
+      return Promise.resolve({
+        success: true,
+        stdout: JSON.stringify({ repositories: [{ guid: 'g1', name: 'app', level: 'ok' }] }),
+        stderr: '',
+      });
+    },
+  }),
+}));
 
 const { registerGpuCommands } = await import('../machine/gpu.js');
 const { registerConvergeCommand } = await import('../machine/converge.js');
@@ -130,6 +145,7 @@ beforeEach(() => {
   mocks.order.length = 0;
   mocks.stepWarnings.length = 0;
   executed = [];
+  repoHealthCalls.length = 0;
   answer = OK;
   mocks.acquireRemoteRenet.mockImplementation(() => {
     mocks.order.push('bootstrap');
@@ -497,6 +513,14 @@ describe('machine health', () => {
     expect(mocks.stepWarnings).toEqual([]);
     expect(mocks.print).toHaveBeenCalledTimes(1);
     expect(mocks.print.mock.calls[0][0]).toHaveProperty('healthy');
+    // The repo health read ran once, scoped to every repo in monitoring mode, and its answer was folded (not a failed read).
+    expect(repoHealthCalls).toHaveLength(1);
+    expect(repoHealthCalls[0]).toMatchObject({
+      functionName: 'repository_health',
+      machineName: 'm1',
+      params: { all: true, strict: true },
+    });
+    expect(mocks.print.mock.calls[0][0]).toMatchObject({ repo_health_status: 'ok' });
   });
 
   it('control: a job still running prints no verdict', async () => {

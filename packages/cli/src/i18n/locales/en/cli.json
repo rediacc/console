@@ -679,7 +679,9 @@
         "licensesSection": "\nLicenses:",
         "licensesSummary": "  {{valid}}/{{total}} valid, {{expired}} expired, {{mismatch}} machine mismatch, {{missing}} missing",
         "issuesSection": "\nIssues:",
-        "exitCode": "\nExit Code: {{code}}"
+        "exitCode": "\nExit Code: {{code}}",
+        "repoHealthSection": "\nRepository health:",
+        "repoHealthNoCheck": "  No check (no health() defined): {{repositories}}"
       },
       "provision": {
         "description": "Provision a new machine on a cloud provider using OpenTofu",
@@ -1198,6 +1200,21 @@
         "starting": "Getting status of \"{{repository}}\" on \"{{machine}}\"...",
         "completed": "Status retrieved",
         "failed": "Status check failed"
+      },
+      "health": {
+        "description": "Run the repository's Rediaccfile health() checks and exit 0 (ok), 1 (warning) or 2 (error)",
+        "header": "\nHealth of {{repository}}:",
+        "levelOk": "✓ Healthy",
+        "levelWarning": "⚠ Warning",
+        "levelError": "✗ Error",
+        "levelNone": "– No check: no Rediaccfile defines health()",
+        "fileLine": "  {{file}}: {{level}} (exit {{exit}})",
+        "fileLevelOk": "ok",
+        "fileLevelWarning": "warning",
+        "fileLevelError": "error",
+        "failed": "Health check of {{repository}} failed: {{message}}",
+        "unsupported": "renet on {{machine}} predates repository health checks; update it with rdc machine setup {{machine}}",
+        "renetFailed": "renet could not run the health check"
       },
       "cat": {
         "description": "Read a bounded window of a file in a repository to stdout (diagnostics go to stderr).",

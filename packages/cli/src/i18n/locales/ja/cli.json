@@ -1321,7 +1321,9 @@
         "systemDisk": "  ディスク: {{percent}}",
         "systemMemory": "  メモリ: {{percent}}",
         "systemSection": "\nシステム:",
-        "systemUptime": "  稼働時間: {{uptime}}"
+        "systemUptime": "  稼働時間: {{uptime}}",
+        "repoHealthSection": "\nリポジトリの健全性:",
+        "repoHealthNoCheck": "  チェックなし (health() 未定義): {{repositories}}"
       },
       "infra": {
         "cert": {
@@ -2264,6 +2266,21 @@
         "description": "リポジトリのステータスを取得する",
         "failed": "ステータスの確認に失敗しました",
         "starting": "\"{{repository}}\" のステータスを \"{{machine}}\" で取得中..."
+      },
+      "health": {
+        "description": "リポジトリの Rediaccfile の health() チェックを実行し、0 (正常)、1 (警告)、2 (エラー) で終了します",
+        "header": "\n{{repository}} の健全性:",
+        "levelOk": "✓ 正常",
+        "levelWarning": "⚠ 警告",
+        "levelError": "✗ エラー",
+        "levelNone": "– チェックなし: health() を定義した Rediaccfile がありません",
+        "fileLine": "  {{file}}: {{level}} (終了コード {{exit}})",
+        "fileLevelOk": "正常",
+        "fileLevelWarning": "警告",
+        "fileLevelError": "エラー",
+        "failed": "{{repository}} の健全性チェックに失敗しました: {{message}}",
+        "unsupported": "{{machine}} の renet はリポジトリの健全性チェックより古いバージョンです。rdc machine setup {{machine}} で更新してください",
+        "renetFailed": "renet が健全性チェックを実行できませんでした"
       },
       "sync": {
         "description": "リポジトリとファイルの同期（一括プッシュ/プル、ファイル転送）",

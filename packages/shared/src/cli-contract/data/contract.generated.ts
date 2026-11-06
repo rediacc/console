@@ -11368,6 +11368,60 @@ export const CLI_CONTRACT: CliContract = {
     {
       "path": [
         "repo",
+        "health"
+      ],
+      "pathKey": "repo health",
+      "domain": "repo",
+      "group": "REPOSITORIES",
+      "plane": "machine",
+      "descriptionKey": "commands.repo.health.description",
+      "label": "Run the repository's Rediaccfile health() checks and exit 0 (ok), 1 (warning) or 2 (error)",
+      "options": [
+        {
+          "flags": "--debug",
+          "long": "debug",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "options.debug",
+          "label": "Enable debug output"
+        },
+        {
+          "flags": "--skip-router-restart",
+          "long": "skip-router-restart",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "options.skipRouterRestart",
+          "label": "Skip restarting the route server after binary update"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
+      "hasSubcommands": false,
+      "interactive": false,
+      "proxyCapable": true,
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
+    },
+    {
+      "path": [
+        "repo",
         "list"
       ],
       "pathKey": "repo list",
