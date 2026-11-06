@@ -101,9 +101,10 @@ Hub daemons (private/renet/pkg/hub/gc.go:144; private/renet/pkg/hub/user_daemon.
 
 ### Docs
 
-- [ ] W1 [docs] Write up the promise, the directive and its caps, the shutdown order, the live-restore decision and the RAM-volume design (below). Targets: private/renet/docs/DOCKERD_SANDBOX.md, and the Rediaccfile page under packages/www/src/content/docs/*/rediaccfile*.md together with its translations.
+- [x] W1 [docs] Write up the promise, the directive and its caps, the shutdown order, the live-restore decision and the RAM-volume design (below). Targets: private/renet/docs/DOCKERD_SANDBOX.md, and the Rediaccfile page under packages/www/src/content/docs/*/rediaccfile*.md together with its translations.
   - Accept: `npm run check:i18n`, `npm run check:ci-i18n-docs-untranslated`, `npm run check:ci-docs-structure-parity` and `npm run check:ci-prose-style` rc 0.
   - CONTROL: none -- docs.
+    (ticked) 2026-11-06T17:09:59Z by d778be9d: commit:1bcc915dc renet docs 5c6b117 + fixes cc28489/156ce60; services.md 13 locales 1bcc915dc + b22874f2a/40b28261b; check:ci-prose-style rc=0, check:ci-i18n-docs-untranslated rc=0, check:ci-docs-structure-parity rc=0, check:i18n rc=0 after e7c46ba85
 
 ### Drill
 
