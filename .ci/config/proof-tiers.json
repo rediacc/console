@@ -103,7 +103,7 @@
       "fleets": {
         "worker": {
           "ips": ["192.168.111.1", "192.168.111.11"],
-          "up": "./rdc.sh ops up --basic"
+          "up": "VM_DSK=48 ./rdc.sh ops up --basic"
         },
         "two-workers": {
           "ips": ["192.168.111.1", "192.168.111.11", "192.168.111.12"],
@@ -334,6 +334,16 @@
               "receipt": "backup-check",
               "what": "the backup drills' VERIFIED receipt for this tree (rediacc_ci.drills.backup_check_trigger.admit, the receipt block_backup_unverified_push reads)",
               "cmd": ["./run.sh drill backup", "./run.sh drill backup-onprem"]
+            },
+            {
+              "id": "backup-large-2g",
+              "kind": "external",
+              "fleet": "worker",
+              "what": "suite 31 at a 2 GiB seed: the incremental byte, no-rehash and proportional time budget, and the anchor-deleted control that must breach it (VM_DSK=48 in the fleet's up keeps FREE_GIB_NEEDED=17 true)",
+              "cmd": [
+                "PYTHONPATH=.ci python3 -m rediacc_ci.env.create_e2e_env --renet-path \"$PWD/private/renet/bin/renet\" --output packages/e2e-tests/.env --vm-workers \"11\"",
+                "PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_backup_plane && K10_SEED_GB=2 BACKUP_LARGE_REPO_SUITE=1 BRIDGE_TEST_SKIP_RESET=1 PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --test 31-backup-large-repo --fail-on-skip"
+              ]
             }
           ],
           "suites": [
@@ -341,7 +351,8 @@
             "packages/e2e-tests/tests/15-storage-backup.test.ts",
             "packages/e2e-tests/tests/25-backup-chunk-store.test.ts",
             "packages/e2e-tests/tests/26-backup-storage-cli.test.ts",
-            "packages/e2e-tests/tests/27-backup-browse-at.test.ts"
+            "packages/e2e-tests/tests/27-backup-browse-at.test.ts",
+            "packages/e2e-tests/tests/31-backup-large-repo.test.ts"
           ],
           "ci_jobs": ["e2e_workers", "e2e_backup_browse_at"]
         }
