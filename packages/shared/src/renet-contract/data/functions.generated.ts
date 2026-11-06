@@ -1111,7 +1111,7 @@ export const RENET_FUNCTIONS = [
   'setup',
 ] as const;
 
-export const RENET_FUNCTIONS_VERSION = 'v3.0.0-162-g3735c4f';
+export const RENET_FUNCTIONS_VERSION = 'v3.0.0-187-g9500309';
 
 export type RenetFunctionName = (typeof RENET_FUNCTIONS)[number];
 
