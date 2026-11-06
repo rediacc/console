@@ -764,6 +764,12 @@ check(
     X.spawn_plans("Plan: PLAN-a.md, PLAN-b.md\n#abcd1234", BY_ID),
     {"PLAN-a.md", "PLAN-b.md"},
 )
+# Review 499fb754.1: the documented rule, pinned. A `Plan: none` line serves none, whatever else the brief names.
+check(
+    "spawn_plans: a Plan: none line wins over an explicit plan line",
+    X.spawn_plans("Plan: PLAN-e.md\nPlan: none -- a reader", BY_ID),
+    set(),
+)
 check(
     "spawn_plans: #refs resolve through items",
     X.spawn_plans("work #abcd1234 and #beef5678", BY_ID),

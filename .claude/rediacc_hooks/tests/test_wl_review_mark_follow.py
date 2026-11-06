@@ -118,6 +118,22 @@ def test_control_a_fix_of_an_unrelated_file_is_refused(tmp_path):
         R.mark(repo, BRANCH, fid, "fixed", [fix], ME)
 
 
+def test_a_refusal_says_when_the_move_search_was_cut_short(tmp_path, monkeypatch):
+    """Review 4bcec972.2: with more commits in base..fix than the search reads, the refusal names the cut. CONTROL: a range inside the cap carries no such sentence."""
+    repo, reviewed = _moved_world(tmp_path)
+    fid = _record(repo, reviewed, "config.py", "the late record lands in a dropped group")
+    for n in range(3):
+        _commit(repo, "noise %d" % n, **{"noise%d_dot_py" % n: "x = %d\n" % n})
+    fix = _commit(repo, "fix: elsewhere", other_dot_py="x = 1\n")
+    with pytest.raises(ValueError, match=r"does not touch config\.py") as plain:
+        R.mark(repo, BRANCH, fid, "fixed", [fix], ME)
+    assert "move search" not in str(plain.value)
+    monkeypatch.setattr(R, "MOVE_MAX_COMMITS", 2)
+    with pytest.raises(ValueError, match=r"the move search read only the newest 2 of the") as cut:
+        R.mark(repo, BRANCH, fid, "fixed", [fix], ME)
+    assert "move search" in str(cut.value)
+
+
 def test_a_two_line_overlap_is_no_move(tmp_path):
     """Three shared meaningful lines is the floor: a neighbour that shares two lines with the anchored file did not receive its code."""
     repo = _repo(tmp_path)

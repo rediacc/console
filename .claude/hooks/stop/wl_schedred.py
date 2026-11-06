@@ -51,7 +51,7 @@ _SCHED_WORDS = re.compile(r"\b(?:nightly|scheduled|schedule)\b", re.IGNORECASE)
 _RUN_TOKEN = re.compile(r"(?<!\d)(\d{6,})(?!\d)")
 _OPEN_STATES = (" ", ">", "?")
 
-# What a red blocks, by workflow stem: the nightly CI run is the soak the stable promotion counts; every other scheduled workflow is main's own hygiene.
+# What a red blocks, by workflow stem: the weekly fleet run is the test evidence the stable promotion waives its soak on; every other scheduled workflow is main's own hygiene.
 _BLOCKS = {
     "ci": "the weekly fleet run (the 5-OS stock-image fleet and the full union), which is the test evidence the stable promotion waives its soak on",
     "ci-drift": "the stable promotion's daily trigger and the operator's drift mail",

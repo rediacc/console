@@ -675,8 +675,8 @@ def test_owed_no_owed_box_demands_no_section():
     assert store.agent_state_shape(B_BODY_29F, [])[0] == "ok"
 
 
-def test_owed_control_with_the_audit_stubbed_out_the_first_case_reads_ok():
-    """The old verdict: no audit passed, so the owing body of the first case is `ok`."""
+def test_owed_control_without_the_owed_argument_the_first_case_reads_ok():
+    """The old verdict (review a94cd7a7.3): no `owed` argument passed, nothing stubbed, so the owing body of the first case is `ok`."""
     store = wlfix.import_wl("wl_store")
     assert store.agent_state_shape(B_BODY_29F)[0] == "ok"
     assert store.agent_state_shape(B_BODY_29F, None)[0] == "ok"

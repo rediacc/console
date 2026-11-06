@@ -3133,6 +3133,20 @@ def _diff_lines(text):
     return removed, added
 
 
+def move_search_note(repo, base, fix):
+    """A refusal sentence when `moved_successors` could not read every commit of `base..fix` (it takes the newest MOVE_MAX_COMMITS), else "" (review 4bcec972.2: a move older than that was never seen and nothing said so)."""
+    rc, out = git(repo, "rev-list", "--count", "--no-merges", "%s..%s" % (base, fix))
+    total = int(out.strip()) if rc == 0 and out.strip().isdigit() else 0
+    if total <= MOVE_MAX_COMMITS:
+        return ""
+    return " (the move search read only the newest %d of the %d commits in %s..%s)" % (
+        MOVE_MAX_COMMITS,
+        total,
+        base[:12],
+        fix[:12],
+    )
+
+
 def moved_successors(repo, anchored, base, fix):
     """The files that received code the anchored file lost in `base..fix`: a file is a successor when at least MOVE_MIN_LINES of its added lines, and at least half of them, are lines the same commit removed from the anchored file (or from an earlier successor).
 
@@ -3297,8 +3311,13 @@ def mark(root, branch, finding_id, kind, args, me, items=None, now=None, asked_o
             )
         if not followed:
             raise ValueError(
-                "%s does not touch %s, nor a file its code moved to, nor a test whose name carries `%s`"
-                % (fix[:12], finding.file, _norm_stem(finding.file))
+                "%s does not touch %s, nor a file its code moved to, nor a test whose name carries `%s`%s"
+                % (
+                    fix[:12],
+                    finding.file,
+                    _norm_stem(finding.file),
+                    move_search_note(repo, review.sha, fix),
+                )
             )
         resolution = "fixed %s | %s" % (fix, stamp)
     elif kind == "not-a-bug":
