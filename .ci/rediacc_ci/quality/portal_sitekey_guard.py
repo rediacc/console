@@ -150,7 +150,9 @@ def deploy_account_findings(source: str) -> list[str]:
     first: dict[str, int] = {}
     for line, name in sorted(calls):
         first.setdefault(name, line)
-    deploy = first.get("deploy_argv")
+    # The dry-run preview calls deploy_argv before any check; the call that runs wrangler is the last one.
+    deploy_lines = [line for line, name in calls if name == "deploy_argv"]
+    deploy = max(deploy_lines) if deploy_lines else None
     if deploy is None:
         out.append(
             "%s: main never calls deploy_argv; the check would pass vacuously" % DEPLOY_ACCOUNT_REL
