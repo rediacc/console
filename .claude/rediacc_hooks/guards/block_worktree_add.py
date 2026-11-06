@@ -1207,15 +1207,104 @@ def _code_verdict(family, code, depth):
 
 
 # A COMMENT RUNS NOTHING, AND IT IS ALL THE NARROWING DROPS (#a904d9f4, design review of dd6898eb0). Adjacency alone let a script keep the two words apart and still run the verb: a shell wrapper `wt(){ git worktree "$@"; }; wt add p`, an alias `git -c alias.wt=worktree wt add p`, the `GIT_CONFIG_KEY_0=alias.wt` form, a JS verb helper. So a script is still refused for naming the phrase ANYWHERE in its code, and only its comments are dropped first.
-# Python drops tokenize's COMMENT tokens; a shell, perl or ruby script drops `#...` only at a line start or after whitespace (`$#`, `${#x}` and `s#a#b#` stay code); a JS-family script drops `//...` and `/*...*/` at the same boundary, so `http://x` in a string stays. A script that does not tokenize keeps its raw text, the over-reading direction.
-HASH_COMMENT = re.compile(r"(?:^|(?<=\s))#.*$", re.MULTILINE)
-SLASH_COMMENT = re.compile(r"(?:^|(?<=\s))(?:/\*.*?\*/|//[^\n]*)", re.MULTILINE | re.DOTALL)
-HASH_FAMILIES = ("shell", "perl", "ruby")
+# A COMMENT MARKER INSIDE A STRING IS NOT A COMMENT (review ba934aef.1). A quote-blind strip of `#...` after whitespace turned `echo " #"; git -c alias.wt=worktree wt add /p` into `echo "`, and the script was admitted; the JS `//` and `/* */` strip and the perl/ruby `#` strip lost code inside a string literal the same way. So comments are found by a scanner that tracks the quoting, and ANY construct the scanner does not model exactly returns the raw text: a parse that loses its place inside a string can only over-read (refuse), never strip code.
+# Python drops tokenize's COMMENT tokens (exact). A shell script (`_shell_code_text`) models `'...'`, `"..."`, backslash escapes and `#` at a word start after an unescaped space or tab; command and parameter substitution, backquotes, `$'...'`, arithmetic and heredocs keep the raw text. A JS-family script (`_slash_code_text`) models `'...'`, `"..."` and the two comment forms; a template literal, a lone `/` (regex or division), a `<` that may open JSX, and a string that meets a bare newline keep the raw text. Perl and ruby (`q{}`, `qw()`, `%w[]`, `m#..#`, regex literals, heredocs) have no exact cheap reading, so their raw text is read, comments included: the over-reading direction, paid only by an untracked or edited script.
 SLASH_FAMILIES = ("node", "deno", "bun", "tsx")
 
 
+def _shell_code_text(text):
+    """A shell script's text with its `#` comments removed, or the raw text when it holds a construct this scanner does not read exactly."""
+    out: list[str] = []
+    i, n = 0, len(text)
+    boundary = True  # at a line start or after an unescaped space or tab, outside quotes
+    while i < n:
+        c = text[i]
+        if c == "#" and boundary:
+            while i < n and text[i] != "\n":
+                i += 1
+            continue
+        if c == "\\":
+            if i + 1 >= n:
+                return text
+            out.append(text[i : i + 2])
+            i += 2
+            boundary = False
+            continue
+        if c == "'":
+            end = text.find("'", i + 1)
+            if end < 0:
+                return text
+            out.append(text[i : end + 1])
+            i = end + 1
+            boundary = False
+            continue
+        if c == '"':
+            j = i + 1
+            while j < n and text[j] != '"':
+                if text[j] == "\\":
+                    j += 2
+                    continue
+                if text[j] == "`" or (text[j] == "$" and text[j + 1 : j + 2] in ("(", "{", "[")):
+                    return text
+                j += 1
+            if j >= n:
+                return text
+            out.append(text[i : j + 1])
+            i = j + 1
+            boundary = False
+            continue
+        if c == "`" or text.startswith("<<", i) or text.startswith("((", i):
+            return text
+        if c == "$" and text[i + 1 : i + 2] in ("(", "{", "[", "'", '"'):
+            return text
+        out.append(c)
+        boundary = c in " \t\n"
+        i += 1
+    return "".join(out)
+
+
+def _slash_code_text(text):
+    """A JS-family script's text with its `//` and `/* */` comments removed, or the raw text when it holds a construct this scanner does not read exactly."""
+    out: list[str] = []
+    i, n = 0, len(text)
+    while i < n:
+        c = text[i]
+        if text.startswith("//", i):
+            while i < n and text[i] != "\n":
+                i += 1
+            continue
+        if text.startswith("/*", i):
+            end = text.find("*/", i + 2)
+            if end < 0:
+                return text
+            out.append(" ")
+            i = end + 2
+            continue
+        if c in "'\"":
+            j = i + 1
+            while j < n and text[j] != c:
+                if text[j] == "\\":
+                    j += 2
+                    continue
+                if text[j] == "\n":
+                    return text
+                j += 1
+            if j >= n:
+                return text
+            out.append(text[i : j + 1])
+            i = j + 1
+            continue
+        if c in "`/":
+            return text
+        if c == "<" and re.match(r"[A-Za-z/>!]", text[i + 1 : i + 2]):
+            return text
+        out.append(c)
+        i += 1
+    return "".join(out)
+
+
 def _code_text(family, text):
-    """`text` with the comments its `family` writes removed, the raw text for a family this does not know or a Python text that does not tokenize."""
+    """`text` with the comments its `family` writes removed, the raw text for a family this does not read exactly or a text the family's scanner cannot place."""
     if family == "python":
         try:
             return " ".join(
@@ -1225,10 +1314,10 @@ def _code_text(family, text):
             )
         except (tokenize.TokenError, SyntaxError, ValueError):
             return text
-    if family in HASH_FAMILIES:
-        return HASH_COMMENT.sub("", text)
+    if family == "shell":
+        return _shell_code_text(text)
     if family in SLASH_FAMILIES:
-        return SLASH_COMMENT.sub("", text)
+        return _slash_code_text(text)
     return text
 
 

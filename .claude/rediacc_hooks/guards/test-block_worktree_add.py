@@ -146,6 +146,42 @@ PRINTF_ROW = (
     "G=%s; printf 'git %%s add %%s\\n' worktree /p > $G/a.sh; bash $G/a.sh" % FIXTURE_DIR,
 )
 REFUSED += [*APART_ROWS, PRINTF_ROW]
+
+# Review ba934aef.1: a comment marker INSIDE A STRING hid the code after it from a quote-blind strip. Each of these keeps the phrase apart, so only the script arm's comment-stripped reading can refuse it.
+QUOTED = {
+    "quoted.sh": ("bash", 'echo " #"; git -c alias.wt=worktree wt add /p\n'),
+    "quoted.js": (
+        "node",
+        (
+            'const { execSync } = require("child_process");\n'
+            'execSync("echo //"); execSync("git -c alias.wt=worktree wt add /p");\n'
+        ),
+    ),
+    "quoted.pl": ("perl", 'system("echo #"); system("git -c alias.wt=worktree wt add /p");\n'),
+}
+# A whole-line comment is the only `worktree` beside a `git add`: allowed in every family the scanners read.
+COMMENTED = {
+    "commented.sh": ("bash", "# a note on the worktree\ngit add -A\n"),
+    "commented.js": (
+        "node",
+        (
+            "// a note on the worktree\n"
+            "/* the worktree again */\n"
+            'require("child_process").execSync("git add -A");\n'
+        ),
+    ),
+}
+for fixture_name, (_runner, fixture_text) in {**QUOTED, **COMMENTED}.items():
+    pathlib.Path(FIXTURE_DIR, fixture_name).write_text(fixture_text, encoding="utf-8")
+QUOTED_ROWS = {
+    name: ("in a string: %s" % name, "%s %s/%s" % (runner, FIXTURE_DIR, name))
+    for name, (runner, _text) in QUOTED.items()
+}
+COMMENTED_ROWS = [
+    ("whole-line comment: %s" % name, "%s %s/%s" % (runner, FIXTURE_DIR, name))
+    for name, (runner, _text) in COMMENTED.items()
+]
+REFUSED += list(QUOTED_ROWS.values())
 # The JS helper is also caught by the text reading (`_text_verdict` folds the concatenation), so only the shell rows depend on the script arm alone.
 SCRIPT_ARM_ROWS = [row for row in APART_ROWS if row[1].startswith("bash ")]
 FALSE_POSITIVES = [
@@ -198,6 +234,28 @@ ALLOWED = [
     ("reading the lease root", "ls .claude/worktrees"),
     ("a git status inside", "git -C .claude/worktrees/x status"),
     *FALSE_POSITIVES,
+    *COMMENTED_ROWS,
+]
+
+# (family, text, does the comment-stripped text still name the phrase): the scanners on their own, both directions, and the raw-text fallback for a construct they do not read.
+CODE_TEXT = [
+    ("shell", 'echo " #"; git -c alias.wt=worktree wt add /p\n', True),
+    ("shell", "echo ' #'; git -c alias.wt=worktree wt add /p\n", True),
+    ("shell", "echo a\\ #b; git -c alias.wt=worktree wt add /p\n", True),
+    ("shell", "echo a # x; git -c alias.wt=worktree wt add /p\n", True),
+    ("shell", 'x="\n# "; git -c alias.wt=worktree wt add /p\n', True),
+    ("shell", "x=${y:-\n#}; git -c alias.wt=worktree wt add /p\n", True),
+    ("shell", "cat <<E\n'\nE\nx='\n# '; git -c alias.wt=worktree wt add /p\n", True),
+    ("shell", "# a worktree note\ngit add -A  # stage\n", False),
+    ("shell", "echo \"it's\" # the worktree\ngit add -A\n", False),
+    ("node", 'f("echo //"); f("git -c alias.wt=worktree wt add /p");\n', True),
+    ("node", 'f("/* x"); f("git -c alias.wt=worktree wt add /p"); g("*/");\n', True),
+    ("node", "f(`\n// `); f(`git -c alias.wt=worktree wt add /p`);\n", True),
+    ("tsx", "<p>don't</p>; f(' // '); f('git -c alias.wt=worktree wt add /p');\n", True),
+    ("node", '// a worktree note\nf("git add -A"); /* worktree */ f("http://a")\n', False),
+    ("perl", "# a worktree note\nsystem('git add -A');\n", True),
+    ("ruby", 'puts "a #{1} #"; system("git -c alias.wt=worktree wt add /p")\n', True),
+    ("python", "# a worktree note\ng('add', '-A')\n", False),
 ]
 
 # (operand, directory, trees on disk, does it name a lease)
@@ -301,6 +359,16 @@ for word, here, names, want in HELPER:
         failures.append("helper: %s" % word)
     print("%-40s want=%-5s got=%-5s %s" % (word, want, got, "ok" if got == want else "*** FAIL"))
 
+print("== the comment scanners, on the helper (%d rows)" % len(CODE_TEXT))
+for family, text, want in CODE_TEXT:
+    got = guard._names_phrase(guard._code_text(family, text))
+    if got != want:
+        failures.append("code text: %s %r" % (family, text[:40]))
+    print(
+        "%-40s want=%-5s got=%-5s %s"
+        % ("%s %r" % (family, text[:30]), want, got, "ok" if got == want else "*** FAIL")
+    )
+
 on_disk = guard._lease_names()
 print("== the suffix git resolves, on the %d tree(s) on disk" % len(on_disk))
 for tree_name in on_disk:
@@ -389,6 +457,9 @@ REVERSE = [
         ("_spells_invocation(cmd, lease=True)", "_could_spell(cmd)"),
         FALSE_POSITIVES[2],
     ),
+    # The scanners always keeping the raw text refuse the whole-line comment rows again, so those rows reach the arm and are allowed BY the scanners.
+    ("the scanners read nothing", ('    return "".join(out)\n', "    return text\n"), COMMENTED_ROWS[0]),
+    ("the scanners read nothing (js)", ('    return "".join(out)\n', "    return text\n"), COMMENTED_ROWS[1]),
 ]
 for label, pair, (row_name, row_command) in REVERSE:
     if run_guard(row_command, defect=pair)[0] != 2:
@@ -414,6 +485,31 @@ for label, pair, rows in (
             "            for word in ():\n",
         ),
         [PRINTF_ROW],
+    ),
+    # Review ba934aef.1: each family back on the quote-blind regex strip admits its in-a-string row, so those rows are refused BY the quote-aware reading.
+    (
+        "the quote-blind shell strip",
+        (
+            "        return _shell_code_text(text)\n",
+            '        return re.sub(r"(?:^|(?<=\\s))#.*$", "", text, flags=re.M)\n',
+        ),
+        [QUOTED_ROWS["quoted.sh"]],
+    ),
+    (
+        "the quote-blind JS strip",
+        (
+            "        return _slash_code_text(text)\n",
+            '        return re.sub(r"(?:^|(?<=\\s))(?:/\\*.*?\\*/|//[^\\n]*)", "", text, flags=re.M | re.S)\n',
+        ),
+        [QUOTED_ROWS["quoted.js"]],
+    ),
+    (
+        "the quote-blind perl strip",
+        (
+            '    if family == "shell":\n        return _shell_code_text(text)\n',
+            '    if family in ("shell", "perl"):\n        return re.sub(r"(?:^|(?<=\\s))#.*$", "", text, flags=re.M)\n',
+        ),
+        [QUOTED_ROWS["quoted.pl"]],
     ),
 ):
     admitted = [n for n, c in rows if run_guard(c, defect=pair)[0] == 0]
