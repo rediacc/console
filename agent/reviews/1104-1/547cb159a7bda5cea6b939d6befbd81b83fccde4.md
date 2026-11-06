@@ -31,7 +31,7 @@ Resolution: fixed fab283461947be21427a13da484af50521cc1ca1 | d778be9d 2026-11-06
 ### 547cb159.3 [low] .claude/rediacc_hooks/guards/block_commit_on_main.py:67
 Anchor: in-diff
 Claim: NO_COMMIT_FLAGS is matched as exact tokens, so the read-only `git am --show-current-patch=raw` (a valid `[=format]` form) is refused, contrary to the docstring's claim that the read-only form is admitted.
-Resolution: open
+Resolution: fixed ad958d5a5b27f4869cc422b79631ac4d32d65675 | d778be9d 2026-11-06T22:20:11Z
 
 ### 547cb159.4 [low] scripts/data/doc-registry.md:849
 Anchor: in-diff
