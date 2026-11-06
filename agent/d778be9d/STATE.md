@@ -1,21 +1,22 @@
-## SESSION d778be9d 2026-11-06T19:35:54Z
+## SESSION d778be9d 2026-11-06T20:04:55Z
 
-# STATE d778be9d (2026-11-06T20:40Z, 1104-1, effort smart; operator away, alone to go)
-
-## Standing orders (operator 2026-11-06)
-Continue ALL remaining jobs; any production change allowed; /pr-babysit; go parallel on ## Promoted; promote new plans automatically. Hostinger internal checks live on hostinger; `ops` repo is ordinary and backed up by the existing schedule.
+# STATE d778be9d (2026-11-06T21:10Z, 1104-1, effort smart; operator away: alone to go, parallel on Promoted, auto-promote plans, any prod change ok)
 
 ## Big pieces
-PLAN-health-checks-local (promoted 44, revised d49d7f078), PLAN-backup-program, PLAN-backup-integrity, PLAN-backup-critical-tier, PLAN-detached-jobs, PLAN-product-domain-rename (proposed, not promoted).
+PLAN-health-checks-local (promoted 44, revised d49d7f078), PLAN-backup-program, PLAN-backup-integrity, PLAN-backup-critical-tier, PLAN-detached-jobs.
 
 ## Delegated
-- Fleet run 9, task bkzp9i6q2 (backup drill PASSED, onprem, vm:check --changed; log /tmp/m/vmcheck9.log). VERIFIED -> push submodules (elite `-u origin 1104-1`) then console, draft PR, `--phase babysit`.
-- Writers (leases): C1-C4 a326ae2f5fe9d74cc #11b9b025; G1-G7 a9edb0d667fd1272f #4972d77c; N a aea53cc0e09a5c1c8 #64c4b522; W0-W4 a2c256ab3ae27bba9 #0e00781a. Land: spot-check, `worktree land`, cherry-pick -x submodule first, run the regenerate steps they name, `land --ticks`, gc --id. C1 and G5 both touch parsing-health.ts.
+- ci:quick run 16, task bl85mwwx0, log /tmp/m/ciquick16.log: push receipt for HEAD 4bb60fd14. Fleet run 9 VERIFIED (receipt tree ad2bb8913962, renet 30ee94f, 278 assertions 0 failed).
+- G1-G7 writer a9edb0d667fd1272f #4972d77c (renet health/certs, rdc repo health); accept: plan G boxes.
+- W0-W4 writer a2c256ab3ae27bba9 #0e00781a (workers/ops-health, deploy_ops_health.py, ops-health.json).
+- L1-L4 writer ac5f1baec2f1d2623 #7973258f (ops_health.py, wl_opshealth.py, effort keys, gate).
+- env+K5 writer a7dd030ac990343cd #24102bc6/#75f0a4ed (start_backup_plane local env; K5 step in test-e2e-backup-browse-at).
 - Archive runner ad1878e64bde02a93 #de9e7e38 (data.rediacc.com upload, no deletion).
-- Round log reports/pr-babysit-1104-1.md; heartbeat cron bb250576.
+- READY IN LEASES (land after the push): C1-C4 agent-a326ae2f5fe9d74cc (renet 187922a, c453e71; console 972d319ac f23c591bd 63fbc2632 495084b07); N agent-aea53cc0e09a5c1c8 (626ab7d17 8e81159f1 bf6aca184 c4a56f322); K agent-af9387ec3fc364286 (168884069 4a3d5c9fe 82168348a); D agent-a85743e19f6ae8610 (14c8665ef 66dfa7df1); X3/X5 agent-a5be00de3c05ddb8b (renet ccb2a90 2e71294 12f38fc); receipt fix agent-a13c89ceffdaa9dcd (c70d9402a).
 
 ## Next action
-1. Land each writer report as it arrives (above), then start the next wave: X1-X6, L1-L7, D1-D5, K1-K5 (order C1 -> G5 -> X1 on parsing-health.ts).
-2. On bkzp9i6q2 exit: VERIFIED -> review-commit, ci:quick if HEAD moved, push, draft PR, land c70d9402a (#815e6225), commit effort.json (#b69ea0cf).
-3. Then hostinger: branch renet at 00:00Z + one restart cycle (mail in 00:00-01:00Z, observability last), H3/J2-J4/L2 (#22854bf1).
-4. 2026-11-07 ~07:54Z Traefik renewal proof (#cb61605a).
+1. When run 16 ends red only on the carried keys (P-A1 plans, link:www.ppc.go.jp): `worklist.py --review-commit d778be9d`; push private/renet, private/account, private/elite (`git -C <s> push -u origin 1104-1`) then console, TURBO_PUSH_REASON='ci-cd: operator ordered /pr-babysit 2026-11-06'; `gh pr create --draft` (body: Plan: lines, Operational-Reason naming post-merge boxes, submodule PR links); submodule PRs plain; `worklist.py --phase d778be9d babysit`.
+2. Land every READY lease: `./run.sh worktree land <id>`, renet picks first, one gitlink commit, console picks; then O1 (OPS_HEALTH_INGEST_TOKEN etc. in bws-secret-map + secret-supply ops-health profile), X5 wiring (register createProxyAcmeFixCmd in private/renet/cmd/renet/main.go; shard manifest regen for proxy/acmefix), parsing-health.ts merge C1+G5, generate:cli-contract, gen-docs, i18n:generate-hashes; `land --ticks --run`; gc --id; commit effort.json (#b69ea0cf).
+3. Start fleet run 10 (`npm run vm:check -- --changed`) for the landed renet; then next push.
+4. 00:00Z: hostinger branch renet (after VERIFIED) + restart cycle per plan H4-H7 (mail 00:00-01:00Z, observability last), then H3/J2-J4/L2 (#22854bf1).
+5. 2026-11-07 ~07:54Z Traefik renewal proof (#cb61605a). Next writer wave: X1, X2, X4, X6 (after C1+G5 land), L5-L7, R1-R3 gated (#a6b50443).
