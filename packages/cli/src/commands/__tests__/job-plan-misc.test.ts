@@ -22,7 +22,8 @@ const m = vi.hoisted(() => ({
   report: vi.fn(),
   readActivation: vi.fn(),
   refreshBatch: vi.fn(),
-  refreshIdentity: vi.fn(),
+  sftpExec: vi.fn(),
+  accountFetch: vi.fn(),
   resolveRepoRef: vi.fn(),
   info: vi.fn(),
   setExitCode: vi.fn(),
@@ -38,12 +39,24 @@ vi.mock('../../services/account/subscription-auth.js', () => ({
   getSubscriptionServerUrl: () => 'https://account.test',
   getSubscriptionTokenState: () => ({ kind: 'ready', token: { teamName: 'team' } }),
 }));
-vi.mock('../../services/account/license.js', () => ({
+// The real refreshRepoLicenseIdentity runs; only the SFTP layer, the account server and the local machine id are faked.
+vi.mock('../../services/account/license.js', async (orig) => ({
+  ...(await orig<Record<string, unknown>>()),
   fetchSubscriptionLicenseReportOrThrow: m.report,
   readMachineActivationStatus: m.readActivation,
   readRuntimeRepoLicenseStatuses: vi.fn().mockResolvedValue([]),
-  refreshRepoLicenseIdentity: m.refreshIdentity,
   refreshRepoLicensesBatch: m.refreshBatch,
+}));
+vi.mock('../../services/machine/machine-connection.js', async (orig) => ({
+  ...(await orig<Record<string, unknown>>()),
+  sftpConfigForMachine: () => ({}),
+  withSharedOrPooledSftp: (_shared: unknown, _config: unknown, fn: (s: unknown) => unknown) =>
+    fn({ exec: m.sftpExec }),
+}));
+vi.mock('../../services/account/account-client.js', () => ({ accountServerFetch: m.accountFetch }));
+vi.mock('../../services/account/license-machine.js', async (orig) => ({
+  ...(await orig<Record<string, unknown>>()),
+  readLocalMachineId: () => Promise.resolve('b'.repeat(64)),
 }));
 vi.mock('../../utils/repo-target.js', () => ({ resolveRepoRef: m.resolveRepoRef }));
 vi.mock('../../utils/repo-executor.js', () => ({
@@ -220,17 +233,14 @@ describe('subscription verbs (J20)', () => {
     expect(m.refreshBatch).not.toHaveBeenCalled();
   });
 
-  it('refresh --repo reads and writes the machine only through executor jobs, never a client SSH command', async () => {
-    const machineLicense = await vi.importActual<
-      typeof import('../../services/account/license-machine.js')
-    >('../../services/account/license-machine.js');
+  it('refresh --repo reads the licenses and writes the new one through executor jobs, with the machine-id read as its one client SSH command', async () => {
     m.resolveRepoRef.mockResolvedValue({ repoKey: 'shop:test', machineName: 'm1' });
-    m.execute.mockResolvedValue({ ...OK, stdout: '[{"repositoryGuid":"guid-1"}]' });
-    m.refreshIdentity.mockImplementation(async (machineName: string) => {
-      await machineLicense.scanRemoteRepoLicenses(machineName, 'rediacc');
-      await machineLicense.writeRepoLicense(machineName, 'guid-1', { publicKeyId: 'a'.repeat(16) });
-      return true;
+    m.execute.mockResolvedValue({
+      ...OK,
+      stdout: '[{"repositoryGuid":"guid-1","requestedSizeGb":2}]',
     });
+    m.sftpExec.mockResolvedValue(`${'a'.repeat(64)}\n`);
+    m.accountFetch.mockResolvedValue({ license: { publicKeyId: 'a'.repeat(16) } });
 
     await executeRepoLicenseRefresh('shop:test');
 
@@ -244,6 +254,14 @@ describe('subscription verbs (J20)', () => {
     // Each is a probe whose answer the verb needs now, so no ticket is handed back in its place.
     expect(m.execute.mock.calls.every(([options]) => options.probe === true)).toBe(true);
     expect(m.jobs).toHaveLength(0);
+    // The only command the client itself runs over SSH is the machine-id read; the size came from the scan.
+    expect(m.sftpExec.mock.calls.map(([command]) => String(command))).toEqual([
+      expect.stringMatching(/machine-id$/),
+    ]);
+    expect(m.accountFetch).toHaveBeenCalledWith(
+      '/account/api/v1/licenses/activate-repo',
+      expect.objectContaining({ body: expect.objectContaining({ repositoryGuid: 'guid-1' }) })
+    );
   });
 
   it('the two machine verbs are converted, and the two vscode serve verbs stay exceptions with their reason', () => {
