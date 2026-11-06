@@ -19,6 +19,7 @@ import {
   BACKGROUND_UNSAFE,
   paramsFromCommand,
   proxyUrlFor,
+  withoutCapturedOutput,
 } from '../proxy-command.js';
 
 /**
@@ -48,6 +49,25 @@ function parse(argv: string[]): Command {
 
 /** The contract entry for a real command, so the test speaks the same list the wire does. */
 const REPO_CAT = getCommand('repo cat');
+
+describe('withoutCapturedOutput', () => {
+  it('drops the stdout a running result line carried, so the -o json ticket is the only stdout', () => {
+    const outcome = withoutCapturedOutput({
+      success: true,
+      exitCode: 0,
+      stdout: 'text',
+      stdoutBytes: new Uint8Array([1]),
+      stderr: 'warn',
+      jobId: 'j1',
+      running: true,
+      machine: 'm1',
+    });
+    expect(outcome.stdout).toBe('');
+    expect(outcome.stdoutBytes).toBeUndefined();
+    expect(outcome.stderr).toBe('warn');
+    expect(outcome.jobId).toBe('j1');
+  });
+});
 
 describe('paramsFromCommand', () => {
   it('keys options by their long flag, not by the name Commander stores them under', () => {

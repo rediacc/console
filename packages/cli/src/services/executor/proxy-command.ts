@@ -317,11 +317,18 @@ export async function runCommandThroughProxy(
     { background: context.background === true }
   );
 
-  writeOutcome(outcome);
-  if (outcome.running && outcome.jobId && outcome.machine) {
+  const ticketed = Boolean(outcome.running && outcome.jobId && outcome.machine);
+  writeOutcome(ticketed && getOutputFormat() === 'json' ? withoutCapturedOutput(outcome) : outcome);
+  if (ticketed && outcome.jobId && outcome.machine) {
     writeTicket(outcome.jobId, outcome.machine, commandPath);
   }
   return exitProcess(outcome.exitCode);
+}
+
+/** Under `-o json` a `-b` ticket is the one envelope on stdout, so the output the starting result line carried is not printed beside it. */
+export function withoutCapturedOutput(outcome: ProxyCommandOutcome): ProxyCommandOutcome {
+  const { stdout: _stdout, stdoutBytes: _stdoutBytes, ...rest } = outcome;
+  return { ...rest, stdout: '' };
 }
 
 /** Hand the `-b` ticket to the operator: the one envelope under `-o json`, the hint on stderr otherwise (stdout belongs to the command). */
