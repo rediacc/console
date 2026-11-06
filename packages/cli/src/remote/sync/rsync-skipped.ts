@@ -1,9 +1,9 @@
 /**
- * Entries rsync refuses to carry, read from its stderr.
+ * Entries rsync refuses to carry, read from its output (the sender prints them on stdout).
  *
  * A privileged sync runs with `--no-links --no-D`, so symlinks, devices and specials are dropped and rsync reports each one as `skipping non-regular file "<name>"` while still exiting 0.
  */
-const SKIPPED_PATTERN = /^skipping non-regular file "(.*)"\s*$/gm;
+const SKIPPED_PATTERN = /(?:^|\r)skipping non-regular file "(.*)"\s*$/gm;
 
 /** Names shown in the warning before the rest is summarised as a count. */
 export const SKIPPED_NAMES_SHOWN = 5;

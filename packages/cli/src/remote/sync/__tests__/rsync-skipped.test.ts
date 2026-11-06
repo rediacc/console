@@ -1,3 +1,7 @@
+import { spawnSync } from 'node:child_process';
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   displayName,
@@ -81,5 +85,31 @@ describe('displayName', () => {
 
   it('is applied to the names the warning shows', () => {
     expect(summarizeSkipped(['x\u001by']).shown).toEqual(['x\\x1by']);
+  });
+});
+
+describe('parseSkippedEntries against a real rsync', () => {
+  const rsyncAvailable = spawnSync('rsync', ['--version']).status === 0;
+
+  it.skipIf(!rsyncAvailable)('names a config/ subdir that is a symlink, read from stdout', () => {
+    const root = mkdtempSync(join(tmpdir(), 'rsync-skip-'));
+    try {
+      mkdirSync(join(root, 'real'));
+      writeFileSync(join(root, 'real', 'app.conf'), 'x');
+      mkdirSync(join(root, 'src'));
+      writeFileSync(join(root, 'src', 'a.txt'), 'a');
+      symlinkSync(join(root, 'real'), join(root, 'src', 'config'));
+      mkdirSync(join(root, 'dst'));
+      const run = spawnSync(
+        'rsync',
+        ['-a', '--no-links', '--no-D', `${join(root, 'src')}/`, `${join(root, 'dst')}/`],
+        { encoding: 'utf8' }
+      );
+      expect(run.status).toBe(0);
+      expect(parseSkippedEntries(run.stderr)).toEqual([]);
+      expect(parseSkippedEntries(`${run.stdout}\n${run.stderr}`)).toEqual(['config']);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 });
