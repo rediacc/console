@@ -18,6 +18,7 @@ const clean = {
   message: 'All systems healthy',
   details: {} as never,
   issues: [] as string[],
+  findings: [],
 };
 
 const answer = (repositories: unknown[]) => ({

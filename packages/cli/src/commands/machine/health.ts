@@ -5,6 +5,11 @@ import {
   parseListResult,
 } from '@rediacc/shared/services/machine';
 import {
+  type HealthFinding,
+  severityExitCode,
+  withFix,
+} from '@rediacc/shared/services/machine/findings';
+import {
   type CertificatesSectionInput,
   type ChallengeSectionInput,
   checkAcmeChallengeCnames,
@@ -189,21 +194,29 @@ export function applyStaleness(
   extra: HealthStaleness
 ): MachineHealthResult {
   const issues = [...health.issues];
+  const findings = [...health.findings];
   let exitCode = health.exitCode;
+  const warn = (text: string, code: string, subject: string): void => {
+    issues.push(text);
+    findings.push(withFix({ code, severity: 'warning', subject, detail: text }));
+    exitCode = Math.max(exitCode, 1);
+  };
   const binaries = extra.staleBinary ?? [];
   if (binaries.length > 0) {
-    issues.push(
-      `${binaries.length} renet process(es) run a replaced binary: ${binaries.map((p) => `${p.unit} (pid ${p.pid})`).join(', ')}`
+    warn(
+      `${binaries.length} renet process(es) run a replaced binary: ${binaries.map((p) => `${p.unit} (pid ${p.pid})`).join(', ')}`,
+      'renet.binary.replaced',
+      binaries.map((p) => p.unit).join(', ')
     );
-    exitCode = Math.max(exitCode, 1);
   }
   const behindSchedule = extra.staleBackups.filter((b) => b.targetSeconds === undefined);
   const behindTarget = extra.staleBackups.filter((b) => b.targetSeconds !== undefined);
   if (behindSchedule.length > 0) {
-    issues.push(
-      `${behindSchedule.length} repository(ies) last backed up more than twice their schedule interval ago`
+    warn(
+      `${behindSchedule.length} repository(ies) last backed up more than twice their schedule interval ago`,
+      'backup.schedule.behind',
+      behindSchedule.map((b) => b.name ?? b.guid).join(', ')
     );
-    exitCode = Math.max(exitCode, 1);
   }
   if (behindTarget.length > 0) {
     const named = behindTarget
@@ -212,8 +225,11 @@ export function applyStaleness(
           `${b.name ?? b.guid} (target ${formatSpan(b.targetSeconds ?? 0)}, last captured ${formatSpan(b.ageSeconds)} ago)`
       )
       .join(', ');
-    issues.push(`${behindTarget.length} repository(ies) missed their backup target: ${named}`);
-    exitCode = Math.max(exitCode, 1);
+    warn(
+      `${behindTarget.length} repository(ies) missed their backup target: ${named}`,
+      'backup.target.missed',
+      behindTarget.map((b) => b.name ?? b.guid).join(', ')
+    );
   }
   // A repo already reported as behind its target is not named a second time.
   const reported = new Set(extra.staleBackups.map((b) => b.guid));
@@ -226,22 +242,24 @@ export function applyStaleness(
         return `${m.name ?? m.guid} (target ${formatSpan(m.targetSeconds)}${achieved})`;
       })
       .join(', ');
-    issues.push(
-      `${missed.length} repository(ies) missed their backup target on the latest run: ${named}`
+    warn(
+      `${missed.length} repository(ies) missed their backup target on the latest run: ${named}`,
+      'backup.target.missed-latest',
+      missed.map((m) => m.name ?? m.guid).join(', ')
     );
-    exitCode = Math.max(exitCode, 1);
   }
   const failedVerifies = extra.failedVerifies ?? [];
   if (failedVerifies.length > 0) {
     const named = failedVerifies.map((f) => `${f.name ?? f.guid} (${f.status})`).join(', ');
-    issues.push(
-      `${failedVerifies.length} repository(ies) failed their last backup verify: ${named}`
+    warn(
+      `${failedVerifies.length} repository(ies) failed their last backup verify: ${named}`,
+      'backup.verify.failed',
+      failedVerifies.map((f) => f.name ?? f.guid).join(', ')
     );
-    exitCode = Math.max(exitCode, 1);
   }
   // Raised from 0 only by these checks, so the shared verdict's message moves with it.
   const message = exitCode === health.exitCode ? health.message : 'System has warnings';
-  return { ...health, issues, exitCode, healthy: exitCode === 0, message };
+  return { ...health, issues, findings, exitCode, healthy: exitCode === 0, message };
 }
 
 /** The machine's repos behind their schedule or target, and those whose latest run missed one. */
@@ -273,16 +291,6 @@ export type RepoHealthFold =
   | { status: 'ok'; repositories: RepoHealthEntry[] }
   | { status: 'unsupported'; repositories: [] }
   | { status: 'failed'; repositories: []; error: string };
-
-/** A coded finding (D-remedy); the fix table that adds `fix` to each code is the remediation layer's. */
-export interface HealthFinding {
-  code: string;
-  severity: 'warning' | 'error';
-  subject: string;
-  detail: string;
-}
-
-export type MachineHealthWithRepos = MachineHealthResult & { findings: HealthFinding[] };
 
 const LEVELS = new Set<string>(['ok', 'warning', 'error', 'none']);
 
@@ -337,34 +345,35 @@ function repoHealthDetail(r: RepoHealthEntry): string {
 /** The finding of one repo whose health() is not ok; none for ok or "no check". */
 function repoFinding(r: RepoHealthEntry): HealthFinding | null {
   if (r.level !== 'warning' && r.level !== 'error') return null;
-  return {
+  return withFix({
     code: r.level === 'warning' ? 'repo.health.warning' : 'repo.health.error',
     severity: r.level,
     subject: repoLabel(r),
     detail: repoHealthDetail(r),
-  };
+    target: { repository: r.guid, networkId: r.network_id },
+  });
 }
 
 /** The findings a repo-health read raises: one per repo not ok, or one for an older renet or a failed read. */
 export function repoHealthFindings(fold: RepoHealthFold, machineName: string): HealthFinding[] {
   if (fold.status === 'unsupported') {
     return [
-      {
+      withFix({
         code: 'renet.repo-health.unsupported',
         severity: 'warning',
         subject: machineName,
         detail: `renet on ${machineName} predates repository health checks; update it with rdc machine setup ${machineName}`,
-      },
+      }),
     ];
   }
   if (fold.status === 'failed') {
     return [
-      {
+      withFix({
         code: 'repo.health.failed',
         severity: 'error',
         subject: machineName,
         detail: `repository health checks could not run: ${fold.error}`,
-      },
+      }),
     ];
   }
   return fold.repositories.map(repoFinding).filter((f): f is HealthFinding => f !== null);
@@ -386,12 +395,13 @@ export function applyRepoHealth(
   health: MachineHealthResult,
   fold: RepoHealthFold,
   machineName: string
-): MachineHealthWithRepos {
-  const findings = repoHealthFindings(fold, machineName);
-  const issues = [...health.issues, ...findings.map(findingIssue)];
+): MachineHealthResult {
+  const repoFindings = repoHealthFindings(fold, machineName);
+  const issues = [...health.issues, ...repoFindings.map(findingIssue)];
+  const findings = [...health.findings, ...repoFindings];
   const exitCode = Math.max(
     health.exitCode,
-    ...findings.map((f) => (f.severity === 'error' ? 2 : 1))
+    ...repoFindings.map((f) => severityExitCode(f.severity))
   );
   if (exitCode === health.exitCode) return { ...health, issues, findings };
   const message = exitCode >= 2 ? 'System has errors' : 'System has warnings';
@@ -408,23 +418,25 @@ export type CertificatesListing = CertificatesSectionInput & ChallengeSectionInp
  * proxy has none and raises nothing.
  */
 export function applyCertificates(
-  health: MachineHealthWithRepos,
+  health: MachineHealthResult,
   section: CertificatesListing | null | undefined,
   now: Date = new Date()
-): MachineHealthWithRepos {
+): MachineHealthResult {
   const certFindings: HealthFinding[] = [
     ...checkCertificateExpiry(section, now),
     ...checkAcmeChallengeCnames(section),
-  ].map((f) => ({
-    code: f.code,
-    severity: f.severity,
-    subject: f.subject,
-    detail: f.detail,
-  }));
+  ].map((f) =>
+    withFix({
+      code: f.code,
+      severity: f.severity,
+      subject: f.subject,
+      detail: f.detail,
+    })
+  );
   if (certFindings.length === 0) return health;
   const exitCode = Math.max(
     health.exitCode,
-    ...certFindings.map((f) => (f.severity === 'error' ? 2 : 1))
+    ...certFindings.map((f) => severityExitCode(f.severity))
   );
   const findings = [...health.findings, ...certFindings];
   const issues = [...health.issues, ...certFindings.map((f) => f.detail)];

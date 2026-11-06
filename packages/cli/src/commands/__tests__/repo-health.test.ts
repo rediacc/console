@@ -132,6 +132,36 @@ describe('handleRepoHealthOutput', () => {
       'json'
     );
   });
+
+  it('-o json carries one coded finding with its fix for a warning, none for ok (X1)', () => {
+    handleRepoHealthOutput(
+      report('warning', [{ file: 'Rediaccfile', exit: 1, level: 'warning' }]),
+      'shop',
+      'm1',
+      'json'
+    );
+    expect(out.print).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        findings: [
+          expect.objectContaining({
+            code: 'repo.health.warning',
+            severity: 'warning',
+            subject: 'shop',
+            detail: 'Rediaccfile exit 1',
+            fix: { action: 'repo-repair', class: 'auto-safe', window_only: false },
+          }),
+        ],
+      }),
+      'json'
+    );
+    handleRepoHealthOutput(
+      report('ok', [{ file: 'Rediaccfile', exit: 0, level: 'ok' }]),
+      'shop',
+      'm1',
+      'json'
+    );
+    expect(out.print).toHaveBeenLastCalledWith(expect.objectContaining({ findings: [] }), 'json');
+  });
 });
 
 describe('handleRepoHealthJobFailure', () => {
@@ -150,7 +180,11 @@ describe('handleRepoHealthJobFailure', () => {
     );
     expect(code).toBe(2);
     expect(out.print).toHaveBeenCalledWith(
-      expect.objectContaining({ level: 'error', detail: 'commands.repo.health.unsupported' }),
+      expect.objectContaining({
+        level: 'error',
+        detail: 'commands.repo.health.unsupported',
+        findings: [expect.objectContaining({ code: 'repo.health.failed', severity: 'error' })],
+      }),
       'json'
     );
   });

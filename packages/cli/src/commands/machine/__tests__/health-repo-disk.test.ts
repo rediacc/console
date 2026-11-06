@@ -17,6 +17,7 @@ const fromParser = (exitCode: number, issues: string[]) => ({
   message: 'System has errors',
   details: {} as never,
   issues,
+  findings: [],
 });
 
 const staleBackups = [{ name: 'mail', ageDays: 12 }] as never;

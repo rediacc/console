@@ -1,3 +1,4 @@
+import { type HealthFinding, withFix } from '@rediacc/shared/services/machine/findings';
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { ensureRepositoryNetworkId } from '../services/config/network-id-discovery.js';
@@ -64,6 +65,26 @@ const FILE_LEVEL_KEY: Record<Exclude<RepoHealthLevel, 'none'>, string> = {
   error: 'commands.repo.health.fileLevelError',
 };
 
+/** The coded finding of a repo's health() verdict (D-remedy): one for a warning or an error, none otherwise. */
+export function repoHealthReportFindings(
+  report: RepoHealthReport & { level: RepoHealthLevel },
+  repository: string
+): HealthFinding[] {
+  if (report.level !== 'warning' && report.level !== 'error') return [];
+  const detail = (report.files ?? [])
+    .filter((f) => f.level === 'warning' || f.level === 'error')
+    .map((f) => `${f.file} exit ${f.exit}${f.detail ? `: ${f.detail}` : ''}`)
+    .join('; ');
+  return [
+    withFix({
+      code: report.level === 'warning' ? 'repo.health.warning' : 'repo.health.error',
+      severity: report.level,
+      subject: repository,
+      detail: detail || (report.detail ?? ''),
+    }),
+  ];
+}
+
 /** Print a completed report and answer its exit code. */
 export function renderRepoHealthReport(
   report: RepoHealthReport & { level: RepoHealthLevel },
@@ -80,6 +101,7 @@ export function renderRepoHealthReport(
         state: report.state,
         detail: report.detail ?? null,
         files,
+        findings: repoHealthReportFindings(report, repository),
         exitCode,
       },
       format
@@ -118,6 +140,14 @@ export function renderRepoHealthFailure(
         state: null,
         detail: message,
         files: [],
+        findings: [
+          withFix({
+            code: 'repo.health.failed',
+            severity: 'error',
+            subject: repository,
+            detail: message,
+          }),
+        ],
         exitCode: REPO_HEALTH_FAILURE_EXIT,
       },
       format
