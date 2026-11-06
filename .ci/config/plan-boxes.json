@@ -263,19 +263,19 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 3,
-      "done": 5,
+      "open": 2,
+      "done": 6,
       "open_sigs": [
         "11388dba",
-        "ef318b56",
-        "fd8547ed"
+        "ef318b56"
       ],
       "done_sigs": [
         "564c2d2d",
         "566ed3a4",
         "b45ef8a8",
         "b4fd892f",
-        "d36ccec3"
+        "d36ccec3",
+        "fd8547ed"
       ]
     },
     "agent/plans/PLAN-backup-plane-shared-bucket-hardening.md": {

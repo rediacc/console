@@ -475,7 +475,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-backup-integrity.md` | approved | 489 | 16 | 40 | 75088 |
 | `agent/plans/PLAN-backup-list-executor-fix.md` | compacted | 55 | 0 | 0 | 5498 |
 | `agent/plans/PLAN-backup-local-image.md` | approved | 457 | 4 | 10 | 57906 |
-| `agent/plans/PLAN-backup-meter-orphaned-chunks.md` | approved | 267 | 3 | 5 | 34934 |
+| `agent/plans/PLAN-backup-meter-orphaned-chunks.md` | approved | 268 | 2 | 6 | 35213 |
 | `agent/plans/PLAN-backup-plane-shared-bucket-hardening.md` | approved | 41 | 3 | 4 | 6848 |
 | `agent/plans/PLAN-backup-program.md` | approved | 583 | 22 | 170 | 151668 |
 | `agent/plans/PLAN-backup-quota-delta-gc.md` | compacted | 58 | 0 | 0 | 5584 |
@@ -548,7 +548,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-proxy-cd-six-targets.md` | approved | 411 | 4 | 27 | 69330 |
 | `agent/plans/PLAN-pytest-parallelism.md` | compacted | 57 | 0 | 10 | 4644 |
 | `agent/plans/PLAN-rclone-decommission.md` | compacted | 39 | 0 | 0 | 3027 |
-| `agent/plans/PLAN-rediaccfile-unprivileged.md` | executing | 260 | 9 | 14 | 39935 |
+| `agent/plans/PLAN-rediaccfile-unprivileged.md` | executing | 261 | 9 | 14 | 40293 |
 | `agent/plans/PLAN-reggate-effort-cap.md` | compacted | 38 | 0 | 0 | 2586 |
 | `agent/plans/PLAN-remove-autopilot.md` | compacted | 97 | 0 | 30 | 9220 |
 | `agent/plans/PLAN-renet-bridge-leftovers.md` | approved | 121 | 0 | 16 | 30497 |

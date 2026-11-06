@@ -242,7 +242,7 @@ Most of this exists already, and A1 pins it with tests:
   Owns: agent/plans/PLAN-backup-meter-orphaned-chunks.md (receipts only).
   Accept: `./rdc.sh --config eu-bench backup reconcile <repo> --check` rc 0, and the recorded usage and listing counts are equal.
 
-- [ ] L2 [live, hostinger, after A1 reaches stable eu] Repair, then check.
+- [x] L2 [live, hostinger, after A1 reaches stable eu] Repair, then check.
     (reopened 2026-11-04) Unmet: the box did not record the figures the ruling required. Recorded now: dry run drift 0 on 11 lineages, so step 2 did not run; backup reconcile --check rc=0; usage and an independent R2 listing equal at 83320 chunks and 349469409280 bytes, equal per lineage; nextcloud 31822184448 stored = 31625052160 referenced + 197132288 unreferenced (47 chunks in grace), accepted ASKED:2026-11-04T08:44Z. The tick's 08:4x was not a real timestamp. LP-hostinger of this plan is still open. Closes on the next tick with these figures read fresh.
   (note) Reworded to bench, ASKED:2026-11-04T16:07Z: `eu-remote` stops agents at the authenticator, so steps 1 to 3 run with `--config eu-bench` against the bench store and its own R2 prefix, and the equality is the check. The stable figures recorded in the reopen note above stay as the last production read; this box no longer re-proves them.
   1. `./rdc.sh --config eu-remote backup reconcile --dry-run -o json` records the before figures.
@@ -250,6 +250,7 @@ Most of this exists already, and A1 pins it with tests:
   3. `./rdc.sh --config eu-remote backup usage -o json`: storedBytes must equal the sum of `/c/` object sizes and chunkCount the count of `/c/` keys in a fresh independent R2 listing of the subscription prefix. The figures expected at the time of writing were 13,262,389,248 and 3162; the seed has since grown the store (2026-10-29: R2 106,940,214,348 bytes in 25,496 chunks against a ledger of 17,321 chunks), so the check is equality with a fresh listing, not those numbers; manifests are not counted.
   4. Over the manifest set: per lineage the reconcile output's referenced and unreferenced chunk counts sum to the listing count. `unreferencedChunks` need not be 0: unreferenced debris stays billed until GC deletes it after the 7-day grace (the Orphans ruling below), and `unreferencedPastGraceChunks` names what the next GC deletes.
   5. The rerun class is covered: nextcloud's first seed attempt failed at commit after uploading about 6607 chunks, and its rerun committed after uploading only 50 (snapshot 20261029T154848Z-4960a85b93ae46e0), so its lineage read about 0.2 GB for a 22.6 GB repo. After the repair, nextcloud's lineage bytes equal the referenced chunk bytes of its manifest.
+    (ticked) 2026-11-06T01:57:24Z by d778be9d: bench (reworded ASKED:2026-11-04T16:07Z): dry run drift 0, usage = listing 1051 = 1051 chunks and 4408213504 bytes, ref 975 + unref 76 = 1051, reconcile --check rc=0, rerun class via the killed-run replays; account commit:e276e9bb2
     (ticked) 2026-11-04T09:34:12Z by d778be9d: reconcile --check rc=0; usage equals the R2 listing 83320 chunks 349469409280 bytes; nextcloud stored = referenced + 47 unreferenced in grace, accepted by the operator ASKED:2026-11-04T08:4xZ
 
   Owns: agent/plans/PLAN-backup-meter-orphaned-chunks.md (receipts only).
