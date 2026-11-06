@@ -1998,6 +1998,13 @@ jobs:
       # backup plane start_backup_plane stands up on this runner.
       VM_WORKERS: '11 12'
       VM_CEPH_NODES: ''
+      # K5: suite 31 at K10_SEED_GB=2 needs FREE_GIB_NEEDED = 2 + 15 = 17 GiB free on the
+      # worker's datastore filesystem, and the default 16 GB worker disk shows less than
+      # that before anything is written. 40 GB leaves the OS, the 32G sparse datastore
+      # image (SEED_GB + 30) and a margin; the VM disk is sparse, so the runner only pays
+      # for the bytes written (about 3 GiB plus snapshots). Suites 27 and 26 are
+      # unaffected by a larger disk.
+      VM_DSK: '40'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -2177,6 +2184,19 @@ jobs:
           BACKUP_STORAGE_SUITE: '1'
         run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --config playwright.backup-storage.config.ts --fail-on-skip
 
+      # K5 (PLAN-health-checks-local): suite 31, the large-repo incremental budget, at 2 GiB.
+      # The nightly ct-backup-perf.yml runs the same suite at 20 GiB; this leg keeps the
+      # proportional budget and the anchor-deleted control (which MUST breach it)
+      # honest on every PR. It runs last so a 45 minute job still reports suites 27
+      # and 26, and has its own ceiling so a hung seed cannot eat the job.
+      - name: Run E2E Tests (Backup Large Repo, 2 GiB)
+        if: ${{ !cancelled() && steps.browse-at.outcome != 'skipped' }}
+        timeout-minutes: 15
+        env:
+          BACKUP_LARGE_REPO_SUITE: '1'
+          K10_SEED_GB: '2'
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --config playwright.backup-large-repo.config.ts --fail-on-skip
+
       # On failure, each VM's libvirt state, console and guest journal go into the upload below (see the collector's docstring).
       - name: Collect VM diagnostics
         if: failure()
@@ -2198,6 +2218,7 @@ jobs:
             packages/e2e-tests/reports/backup-browse-at-logs/
             packages/e2e-tests/reports/backup-storage/
             packages/e2e-tests/reports/backup-storage-logs/
+            packages/e2e-tests/reports/backup-large-repo*
           retention-days: 3
           if-no-files-found: ignore
 
