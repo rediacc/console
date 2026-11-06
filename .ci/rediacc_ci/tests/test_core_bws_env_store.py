@@ -47,6 +47,9 @@ if os.environ.get("FAKE_WRITER_FAIL"):
 req = json.loads(stdin)
 path = os.path.join(root, "store.json")
 rows = json.load(open(path))
+if req["op"] == "create":
+    req["id"] = "c0ffee00-0000-4000-8000-0000000000%02d" % (len(rows) + 1)
+    rows.append({"id": req["id"], "key": req["key"], "value": req["value"], "note": req["note"], "projectId": req["projectIds"][0]})
 for row in rows:
     if row["id"] == req["id"]:
         row.update(key=req["key"], value=req["value"], note=req["note"], projectId=req["projectIds"][0])
@@ -293,3 +296,68 @@ def test_write_secret_timeout_kills_the_writer_group(tmp_path, monkeypatch) -> N
     assert failure == "cannot run npx: TimeoutExpired"
     time.sleep(3.5)
     assert not marker.exists(), "the grandchild outlived the timeout and wrote late"
+
+
+def _run_spec(root, spec: str, *, create: bool) -> tuple[int, str, str]:
+    env = diff.env_for(
+        PATH="%s:/usr/local/bin:/usr/bin:/bin" % (root / "bin"),
+        BWS_ENV_ROOT=str(root),
+        XDG_CONFIG_HOME=str(root / "xdg"),
+        BWS_ACCESS_TOKEN="fixture-token-not-a-credential",
+        FIXTURE_ROOT=str(root),
+        DEMO_KEY=VALUE,
+    )
+    flag = "--create " if create else ""
+    return diff.bash_streams(
+        "PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env store-from-env %s%s"
+        % (flag, shlex.quote(spec)),
+        env=env,
+    )
+
+
+def _with_map(root, project: str | None) -> None:
+    cfg = root / ".ci" / "config"
+    cfg.mkdir(parents=True, exist_ok=True)
+    body: dict = {"secrets": {}}
+    if project is not None:
+        body["project"] = project
+    (cfg / "bws-secret-map.json").write_text(json.dumps(body), encoding="utf-8")
+
+
+def test_control_an_absent_name_is_refused_without_create(tmp_path) -> None:
+    root = _fixture(tmp_path / "nocreate")
+    _with_map(root, PROJECT)
+    code, out, err = _run_spec(root, "NEW_TOKEN > DEMO_KEY", create=False)
+    assert (code, out) == (1, "")
+    assert "refusing to create (pass --create): NEW_TOKEN" in err
+    assert [s["prog"] for s in _spawns(root)] == ["bws"], "no write"
+
+
+def test_create_makes_the_absent_name_in_the_maps_project_through_stdin(tmp_path) -> None:
+    root = _fixture(tmp_path / "create")
+    _with_map(root, PROJECT)
+    code, out, err = _run_spec(root, "NEW_TOKEN > DEMO_KEY", create=True)
+    assert (code, out) == (0, "DEMO_KEY MATCH\n"), err
+    spawns = _spawns(root)
+    assert [s["prog"] for s in spawns] == ["bws", "npx", "bws"], "list, create, read back"
+    for s in spawns:
+        assert not carries_secret(" ".join(s["argv"]), VALUE), s["argv"]
+    request = json.loads(spawns[1]["stdin"])
+    assert request == {
+        "op": "create",
+        "key": "NEW_TOKEN",
+        "value": VALUE,
+        "note": "created by bws_env store-from-env --create",
+        "projectIds": [PROJECT],
+    }
+    for stream in (out, err):
+        assert not carries_secret(stream, VALUE)
+
+
+def test_create_without_a_map_project_is_refused_before_any_write(tmp_path) -> None:
+    root = _fixture(tmp_path / "noproject")
+    _with_map(root, None)
+    code, _out, err = _run_spec(root, "NEW_TOKEN > DEMO_KEY", create=True)
+    assert code == 1
+    assert "names no `project`" in err
+    assert [s["prog"] for s in _spawns(root)] == ["bws"]

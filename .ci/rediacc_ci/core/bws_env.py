@@ -317,10 +317,12 @@ USAGE = """bws_env -- the `bws-env.sh` fetch, without the shell mutation.
       Nothing is written to stdout or to disk. With no token, it proceeds only
       when every REQUIRED name is already in the environment.
 
-  PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env store-from-env SPEC [SPEC ...]
+  PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env store-from-env [--create] SPEC [SPEC ...]
       For each `STORE > LOCAL` spec, write the environment's LOCAL value into
       the existing store entry STORE, then read it back with the same
       comparison `compare` makes. Prints names and MATCH/MISMATCH only.
+      --create makes an absent STORE in the map's project instead of refusing;
+      then run scripts/ops/bws-map-refresh.py to record its id.
 
   PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env park NAME [NAME ...]
       Rename each existing store entry NAME to `__NAME`, keeping its id and its
@@ -855,7 +857,15 @@ def main(argv: list[str]) -> int:
                 file=sys.stderr,
             )
             return 2
-        return _store_verb(rest)
+        create = rest[0] == "--create"
+        specs = rest[1:] if create else rest
+        if not specs:
+            print(
+                "rediacc_ci.core.bws_env: store-from-env takes at least one `STORE > LOCAL` SPEC",
+                file=sys.stderr,
+            )
+            return 2
+        return _store_verb(specs, create=create)
     if verb == "park":
         if not rest:
             print("rediacc_ci.core.bws_env: park takes at least one NAME", file=sys.stderr)
@@ -1336,10 +1346,10 @@ def write_secret(account_dir: str, request: dict, env: dict) -> str | None:
     return None
 
 
-def _store_verb(raw_specs: list[str]) -> int:
-    """`store-from-env STORE > LOCAL ...`: overwrite existing store entries from the environment, then read back.
+def _store_verb(raw_specs: list[str], *, create: bool = False) -> int:
+    """`store-from-env [--create] STORE > LOCAL ...`: overwrite store entries from the environment, then read back.
 
-    Only EXISTING entries are edited; a store name that is not there is refused, because creating one is a decision about which project it belongs to.
+    Without `--create` only EXISTING entries are edited and a store name that is not there is refused. With `--create` an absent name is created in the one project `.ci/config/bws-secret-map.json` records (`project`), which answers which project it belongs to; the map's `secrets` row for it is then added by `scripts/ops/bws-map-refresh.py`.
 
     THE VALUE NEVER REACHES ARGV. `bws secret edit --value <VALUE>` is the only edit bws 2.1.0 offers, and argv is world-readable through /proc/<pid>/cmdline. The write goes through `private/account/scripts/rotation/bws-write.ts` instead, which encrypts client-side and speaks the Secrets Manager REST API (its `lib/bws-api.ts`); the request, value included, travels on its STDIN, the token in its environment. The REST edit replaces key, note and project together, so the request carries the ones `bws secret list` reported for the entry. The child prints only the id; its stderr is relayed because bws-write's errors name the operation and HTTP status and never a value.
     """
@@ -1364,13 +1374,27 @@ def _store_verb(raw_specs: list[str]) -> int:
         return 1
     ids: dict[Any, Any] = {r.get("key"): r.get("id") for r in rows}
     absent = [n for n, _l in specs if not ids.get(n)]
-    if absent:
+    if absent and not create:
         print(
-            "rediacc_ci.core.bws_env: store-from-env: not in the store, refusing to create: %s"
+            "rediacc_ci.core.bws_env: store-from-env: not in the store, refusing to create (pass --create): %s"
             % " ".join(absent),
             file=sys.stderr,
         )
         return 1
+    project = ""
+    if absent:
+        try:
+            with open(map_path(environ), encoding="utf-8") as fh:
+                project = str(json.load(fh).get("project") or "")
+        except (OSError, ValueError):
+            project = ""
+        if not project:
+            print(
+                "rediacc_ci.core.bws_env: store-from-env --create: %s names no `project`"
+                % map_path(environ),
+                file=sys.stderr,
+            )
+            return 1
     by_key = {r.get("key"): r for r in rows}
     account = os.path.join(root(environ), *WRITER_DIR_PARTS)
     if not os.path.isfile(os.path.join(account, WRITER_SCRIPT_REL)):
@@ -1381,6 +1405,26 @@ def _store_verb(raw_specs: list[str]) -> int:
         )
         return 1
     for name, local in specs:
+        if name in absent:
+            failure = write_secret(
+                account,
+                {
+                    "op": "create",
+                    "key": name,
+                    "value": os.environ[local],
+                    "note": "created by bws_env store-from-env --create",
+                    "projectIds": [project],
+                },
+                environ,
+            )
+            if failure is not None:
+                print(
+                    "rediacc_ci.core.bws_env: store-from-env: creating %s failed (%s)"
+                    % (name, failure),
+                    file=sys.stderr,
+                )
+                return 1
+            continue
         row = by_key[name]
         if not row.get("projectId"):
             print(
