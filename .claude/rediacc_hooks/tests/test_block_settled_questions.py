@@ -169,6 +169,17 @@ BENCH_REFUSE += [
     # eu-remote in ANOTHER sentence does not excuse an eu-bench login ask.
     ("a login ask beside an eu-remote remark", "Can you log into eu-bench? eu-remote is fine.", ""),
     ("sign into spelling", "Please sign into bench for me.", ""),
+    # Review bcee4974.1: eu-remote in the SAME sentence as a comparison does not excuse it either.
+    (
+        "a login ask with eu-remote as a comparison",
+        "Can you log into eu-bench again, same as eu-remote?",
+        "",
+    ),
+    (
+        "a bench code ask naming eu-remote",
+        "Could you send the TOTP code for eu-bench, the one beside eu-remote's?",
+        "",
+    ),
 ]
 
 BENCH_PASS = [

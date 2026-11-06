@@ -209,7 +209,14 @@ BENCH_ASK_SHAPE = r"(^|[^a-z])(you|your|please|operator|(should|shall|may|can) (
 # The vault is the operator's genuine door; `login_bench` (the module, not the npm script) is a design discussion about the tool. A sentence naming eu-remote is about the config only the operator's authenticator opens, with bench at most an alternative, so `login:bench` is no answer to it (a 2026-11-04 question about eu-remote reads was refused here).
 BENCH_OPERATOR_DOOR = (
     r"placeholder|seed|bitwarden|(^|[^a-z])bws([^a-z]|$)|vault|machine token|rotate|login_bench"
-    r"|(^|[^a-z0-9_-])eu-remote([^a-z0-9_-]|$)"
+)
+EU_REMOTE_DOOR = r"(^|[^a-z0-9_-])eu-remote([^a-z0-9_-]|$)"
+# An eu-remote sentence that still aims the login or code at bench is the bench ask with eu-remote only as a comparison (a log-into-eu-bench ask ending "same as eu-remote", review bcee4974.1), so the eu-remote door does not open for it.
+BENCH_LOGIN_AIMED = (
+    r"(log|sign) (it |back )?in(to| to)? (the )?(eu-bench|bench)([^a-z0-9_-]|$)"
+    r"|re-?auth[a-z]* (the )?(eu-bench|bench)([^a-z0-9_-]|$)"
+    r"|(^|[^a-z0-9_-])(eu-bench|bench)('s)? (login|totp|authenticator|2fa|otp|verification code|code)"
+    r"|(totp|authenticator|2fa|otp|code) (code )?(for|of|from) (the )?(eu-bench|bench)([^a-z0-9_-]|$)"
 )
 
 _ASCII_LOWER = str.maketrans("ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz")
@@ -581,6 +588,8 @@ def _bench_login(text):
         return None
     for sentence in re.split(r"(?<=[.?!])\s+", text):
         if re.search(BENCH_OPERATOR_DOOR, sentence):
+            continue
+        if re.search(EU_REMOTE_DOOR, sentence) and not re.search(BENCH_LOGIN_AIMED, sentence):
             continue
         ask = re.search(BENCH_LOGIN_ASK, sentence)
         if ask:
