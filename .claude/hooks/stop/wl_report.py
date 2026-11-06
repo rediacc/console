@@ -373,10 +373,124 @@ def is_lead(to):
     return str(to or "").strip() in LEAD_RECIPIENTS
 
 
-def judge(lead, outgoing, final):
-    """(relay, title) for one capture: `lead` the lead-bound messages, `outgoing` the (to, message) pairs sent to anyone else, `final` the final text.
+# ---- direction of a send, from the spawn lineage (review findings 4e34cbde.2, 862dd224.1) ----
 
-    THREE SHAPES, told apart by who the agent talked to:
+# Shape cannot tell an order from a report: a coordinator's one long brief to its one writer and a writer's long report to its coordinator are the same shape, and so are a short order and a short report. The harness records who spawned whom (`parentAgentId` in each agent's meta sidecar, beside its transcript), and a SendMessage `to` is the recipient's full agent id. Measured
+# 2026-11-06 over the live store: of 93 non-lead sends, 68 went to an agent the sender spawned, 19 to the sender's own parent, and 6 to a sibling or a name the lineage does not settle.
+KIN_PARENT = "parent"
+KIN_CHILD = "child"
+# The `dir` field of an index row: written on every capture since this field, so an absent key marks a row captured before it.
+DIR_UP = "up"  # some non-lead send went to the sender's parent: a report
+DIR_DOWN = "down"  # every non-lead send went to an agent the sender spawned: orders
+DIR_UNKNOWN = "?"  # non-lead sends the lineage does not settle: the shape rule decides
+DIR_NONE = "-"  # no non-lead send at all
+_AGENT_ID = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
+
+
+def _subagents_root(transcript):
+    """The `<session>/subagents` directory a sub-agent transcript sits in (directly, or under `workflows/<run>/`), or None."""
+    if not transcript:
+        return None
+    try:
+        for anc in pathlib.Path(transcript).parents:
+            if anc.name == "subagents":
+                return anc
+    except (OSError, ValueError):
+        return None
+    return None
+
+
+def _read_meta(path):
+    try:
+        info = json.loads(path.read_text(encoding="utf-8", errors="replace"))
+    except (OSError, ValueError):
+        return None
+    return info if isinstance(info, dict) else None
+
+
+def _meta(root, aid):
+    """`aid`'s meta sidecar as a dict, or None when none can be read. The id is checked before it touches a path, because a `to` is whatever the sender typed."""
+    if root is None or not _AGENT_ID.match(str(aid or "")):
+        return None
+    try:
+        paths = [
+            root / ("agent-%s.meta.json" % aid),
+            *sorted(root.glob("workflows/*/agent-%s.meta.json" % aid)),
+        ]
+    except (OSError, ValueError):
+        return None
+    for path in paths:
+        info = _read_meta(path)
+        if info is not None:
+            return info
+    return None
+
+
+def _named(root, name):
+    """{agent id: meta} for every sidecar whose `name` is `name`: a teammate is addressed by its name, not its id. Read only when the id lookup missed."""
+    out = {}
+    try:
+        paths = list(root.glob("agent-*.meta.json")) + list(
+            root.glob("workflows/*/agent-*.meta.json")
+        )
+    except (OSError, ValueError):
+        return out
+    for path in paths:
+        info = _read_meta(path)
+        if info is not None and str(info.get("name") or "") == name:
+            out[path.name[len("agent-") : -len(".meta.json")]] = info
+    return out
+
+
+def kin_of(agent_id, transcript, tos):
+    """{recipient: KIN_PARENT | KIN_CHILD} for the non-lead recipients `tos` of agent `agent_id`, read from the meta sidecars beside `transcript`.
+
+    A recipient is the sender's PARENT when the sender's `parentAgentId` is it (or the parent's meta `name` is it), its CHILD when the recipient's `parentAgentId` is the sender (the recipient found by id, or by a meta `name` naming exactly agents the sender spawned). Any other recipient (a sibling, an agent with no meta, a name the sidecars do not hold) is left out, which is "unknown", never a guess."""
+    root = _subagents_root(transcript)
+    if root is None:
+        return {}
+    mine = str((_meta(root, agent_id) or {}).get("parentAgentId") or "")
+    parent_name = str((_meta(root, mine) or {}).get("name") or "") if mine else ""
+    out = {}
+    for to in tos:
+        if not to or is_lead(to):
+            continue
+        if mine and to in (mine, parent_name):
+            out[to] = KIN_PARENT
+            continue
+        info = _meta(root, to)
+        if info is not None:
+            if str(info.get("parentAgentId") or "") == agent_id:
+                out[to] = KIN_CHILD
+            continue
+        named = _named(root, to)
+        if named and all(str(m.get("parentAgentId") or "") == agent_id for m in named.values()):
+            out[to] = KIN_CHILD
+    return out
+
+
+def direction(outgoing, kin):
+    """DIR_UP, DIR_DOWN, DIR_UNKNOWN or DIR_NONE for the (to, message) pairs `outgoing`.
+
+    ASYMMETRIC ON PURPOSE. DIR_DOWN hides the row, so it needs EVERY send to go to a child; DIR_UP shows it, so ONE send to the parent is enough. Surfacing an order is a nuisance, hiding a report is the defect this module exists to close, so a coordinator that both reports up and orders down reads as a report."""
+    if not outgoing:
+        return DIR_NONE
+    kin = kin or {}
+    if any(kin.get(to) == KIN_PARENT for to, _msg in outgoing):
+        return DIR_UP
+    if all(kin.get(to) == KIN_CHILD for to, _msg in outgoing):
+        return DIR_DOWN
+    return DIR_UNKNOWN
+
+
+def judge(lead, outgoing, final, kin=None):
+    """(relay, title) for one capture: `lead` the lead-bound messages, `outgoing` the (to, message) pairs sent to anyone else, `final` the final text, `kin` the {recipient: KIN_PARENT | KIN_CHILD} map `kin_of` read from the spawn lineage (None or {} when unknown).
+
+    DIRECTION FIRST, when the lineage settles it (`direction`):
+      up           a send to the agent that spawned this one is a report to its parent: not a relay, titled from the last such send, however short (review finding 862dd224.1).
+      down         every non-lead send went to an agent this one spawned: orders, so a relay unless the final text clears RELAY_FLOOR, however long one order runs (review finding 4e34cbde.2: a coordinator's single long brief to its one writer surfaced as a report titled "Coordinator ruling: ...").
+
+    THE SHAPE RULE when the lineage is unknown (a row whose metas are gone, a send to a sibling or to a name, no transcript), three shapes told apart by who the agent talked to:
       lead-bound   any send to the lead is the report: not a relay, titled from the last one.
       one peer     every send went to ONE recipient: a writer reporting to its coordinator. That is miss 1 of agent/plans/PLAN-tick-tracking.md (a coordinator's writers' reports never reaching the lead), so the longest outgoing message is the substance: a report when it reaches SILENT_FLOOR, titled from it.
       fan-out      sends to TWO OR MORE recipients: a coordinator handing out orders. A relay unless the final text clears RELAY_FLOOR; the 19 measured coordinator turns (11 recipients each) are all relays.
@@ -384,8 +498,14 @@ def judge(lead, outgoing, final):
     final = str(final or "")
     if lead:
         return False, _first_line(lead[-1])
-    tos = {to for to, _msg in outgoing}
     short_final = len(final.strip()) < RELAY_FLOOR
+    way = direction(outgoing, kin)
+    if way == DIR_UP:
+        up = [msg for to, msg in outgoing if (kin or {}).get(to) == KIN_PARENT]
+        return False, _first_line(up[-1]) or _first_line(final)
+    if way == DIR_DOWN:
+        return short_final, _first_line(final) or _first_line(outgoing[-1][1])
+    tos = {to for to, _msg in outgoing}
     if len(tos) == 1:
         longest = max((msg for _to, msg in outgoing), key=lambda m: len(m.strip()))
         if len(longest.strip()) >= SILENT_FLOOR:
@@ -698,10 +818,18 @@ def capture(
     # DERIVED HERE, NOT PASSED IN, so every capture path records it: the `SubagentStop` hook and `--scan`'s self-healing pass both land in this one
     # function, and a kwarg would have left the scanned half of the store blind.
     opens = open_boxes(body)
-    # `sends` counts the lead-bound sends the body holds, `out` every send the agent made. An agent that sent anything ran and spoke, so it is never `silent`; one that sent only to other agents is a `relay` when `judge` says so: sends to two or more recipients with a final under RELAY_FLOOR, or sends to one recipient whose longest stays under SILENT_FLOOR with such a final (a one-recipient send reaching SILENT_FLOOR is a report, whatever the final).
+    # `sends` counts the lead-bound sends the body holds, `out` every send the agent made. An agent that sent anything ran and spoke, so it is never `silent`; one that sent only to other agents is a `relay` when `judge` says so: by the spawn lineage when it settles the direction (a send to the sender's parent is a report, sends only to its own children are orders with a final under RELAY_FLOOR), else by shape: sends to two or more recipients with a final under RELAY_FLOOR, or sends to one recipient whose longest stays under SILENT_FLOOR with such a final (a one-recipient send reaching SILENT_FLOOR is a report, whatever the final).
     out = max(int(out or 0), int(sends or 0))
     silent = out == 0 and len(body.strip()) < SILENT_FLOOR
-    relay = judge(*judge_body(body))[0] if out > sends else False
+    # THE DIRECTION OF THOSE SENDS, read here from the spawn lineage beside the transcript (`kin_of`), so the hook and `--scan` both record it. When it settles the question it outranks the shape rule, and the title follows it too: an order is not titled as a report, and a short report to the parent is titled from that report rather than from the sign-off.
+    lead_msgs, outgoing, final_msg = judge_body(body)
+    kin = kin_of(agent_id, transcript, {to for to, _msg in outgoing}) if outgoing else {}
+    way = direction(outgoing, kin)
+    relay = False
+    if out > sends:
+        relay, judged_title = judge(lead_msgs, outgoing, final_msg, kin)
+        if way in (DIR_UP, DIR_DOWN) and judged_title:
+            title = judged_title
     front = (
         "---\n"
         "agent_id: %s\nagent_type: %s\nagent_name: %s\nsession: %s\nbranch: %s\n"
@@ -750,6 +878,8 @@ def capture(
             # Every send the agent made, lead-bound or not. Its presence is also what marks a row as judged by the lead-only rule, so `rejudge` leaves it alone.
             "out": out,
             "relay": relay,
+            # Which way the non-lead sends went (`direction`): "up" to the sender's parent, "down" only to agents it spawned, "?" unsettled (the shape rule judged `relay`), "-" none. Always written, so an absent key marks a row captured before it.
+            "dir": way,
             # THE SUB-AGENT'S OWN TURN DISCIPLINE, recorded because it cannot be enforced. See `open_boxes`. Zero is a real answer ("handed nothing back"), which is why this is always written rather than only when non-zero: an absent key would be indistinguishable from a capture taken before this field existed.
             "opens": opens,
             # The content key this capture deduped against. Present from the moment bodies were keyed; ABSENT on every line written before, which is exactly how `capture` tells a legacy entry apart.

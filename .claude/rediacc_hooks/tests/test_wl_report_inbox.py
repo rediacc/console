@@ -1326,3 +1326,203 @@ def test_31f_recipient_control_legacy_rows_with_lead_substance_still_surface(sc)
     assert judged["out"] == 3, judged
     assert judged["title"] == "LEAD PART", judged["title"]
     assert judged["relay"] is False, judged
+
+
+# ---- direction from the spawn lineage (review findings 4e34cbde.2, 862dd224.1) ----
+
+PARENT_ID = "a1111111111111111"
+CHILD_ID = "a2222222222222222"
+SIBLING_ID = "a3333333333333333"
+BRIEF = "Coordinator ruling: own exactly these files and nothing else.\n" + "Detail. " * 80
+SHORT_REPORT = "DONE: commit abc1234, tests rc=0."
+
+
+def plant_meta(sc: Scratch, aid: str, parent: str = "", sub: str = "", name: str = "") -> None:
+    """The meta sidecar the harness writes beside a sub-agent transcript; `parent` is its `parentAgentId` ("" for one the lead spawned), `sub` a `workflows/<run>` subdirectory."""
+    where = sc.subagents_dir() / sub if sub else sc.subagents_dir()
+    where.mkdir(parents=True, exist_ok=True)
+    info: dict = {"agentType": "general-purpose", "spawnDepth": 2 if parent else 1}
+    if parent:
+        info["parentAgentId"] = parent
+    if name:
+        info["name"] = name
+    (where / ("agent-%s.meta.json" % aid)).write_text(json.dumps(info), encoding="utf-8")
+
+
+def sends_records(sender: str, sends: list, final: str) -> list[dict]:
+    start = datetime.datetime.now(datetime.UTC) - datetime.timedelta(minutes=5)
+
+    def rec(n, content):
+        return {
+            "type": "assistant",
+            "agentId": sender,
+            "sessionId": "sess1",
+            "gitBranch": "testbr",
+            "timestamp": (start + datetime.timedelta(seconds=n)).strftime("%Y-%m-%dT%H:%M:%S.000Z"),
+            "message": {"content": content},
+        }
+
+    recs = [
+        rec(n, [{"type": "tool_use", "name": "SendMessage", "input": {"to": to, "message": msg}}])
+        for n, (to, msg) in enumerate(sends)
+    ]
+    return [*recs, rec(len(sends), [{"type": "text", "text": final}])]
+
+
+def stop_with(sc: Scratch, sender: str, sends: list, final: str, sub: str = "") -> dict:
+    where = sc.subagents_dir() / sub if sub else sc.subagents_dir()
+    tx = write_transcript(where / ("agent-%s.jsonl" % sender), sends_records(sender, sends, final))
+    sc.raw_stop(
+        {
+            "agent_id": sender,
+            "agent_type": "general-purpose",
+            "session_id": READER,
+            "cwd": str(sc.repo),
+            "agent_transcript_path": str(tx),
+            "last_assistant_message": final,
+        }
+    )
+    return json.loads(sc.index_lines()[-1])
+
+
+def family(sc: Scratch) -> None:
+    plant_meta(sc, PARENT_ID)
+    plant_meta(sc, CHILD_ID, parent=PARENT_ID)
+    plant_meta(sc, SIBLING_ID, parent=PARENT_ID)
+
+
+def test_31i_direction_a_coordinators_long_brief_to_its_own_child_is_a_relay(sc):
+    """4e34cbde.2: one long brief to one writer is the one-peer SHAPE of a report, but the writer's meta names the sender as its parent, so it is an order and stays out of the lead's inbox."""
+    report = wlfix.import_wl("wl_report")
+    assert len(BRIEF.strip()) >= report.SILENT_FLOOR
+    # CONTROL: the shape rule alone reads this exact capture as a report titled from the order.
+    shape = report.judge([], [(CHILD_ID, BRIEF)], "Brief sent; waiting.")
+    assert shape == (False, "Coordinator ruling: own exactly these files and nothing else."), shape
+    family(sc)
+    entry = stop_with(sc, PARENT_ID, [(CHILD_ID, BRIEF)], "Brief sent; waiting.")
+    assert entry["relay"] is True, entry
+    assert not entry["title"].startswith("Coordinator ruling"), entry["title"]
+    assert entry["dir"] == "down", entry
+    assert entry["silent"] is False, entry
+    got = sc.report_py("--list", "--unread")
+    assert PARENT_ID[-12:] not in got.out, got.out
+    # Fan-out to two children is a relay too.
+    entry = stop_with(sc, PARENT_ID, [(CHILD_ID, BRIEF + " 2"), (SIBLING_ID, BRIEF)], "Waiting.")
+    assert (entry["dir"], entry["relay"]) == ("down", True), entry
+    # A coordinator whose final text reaches RELAY_FLOOR still surfaces, titled from that final.
+    long_final = "ROUND SUMMARY FOR THE LEAD\n" + "Finding with evidence. " * 40
+    assert len(long_final) >= report.RELAY_FLOOR
+    entry = stop_with(sc, PARENT_ID, [(CHILD_ID, BRIEF + " 3")], long_final)
+    assert (entry["dir"], entry["relay"]) == ("down", False), entry
+    assert entry["title"] == "ROUND SUMMARY FOR THE LEAD", entry["title"]
+
+
+def test_31j_direction_a_childs_short_report_to_its_parent_is_shown(sc):
+    """862dd224.1: a report under SILENT_FLOOR to the coordinator, with a short sign-off, is the shape of a relay; the sender's meta names the recipient as its parent, so it is a report and reaches the lead's inbox, titled from the report."""
+    report = wlfix.import_wl("wl_report")
+    assert len(SHORT_REPORT) < report.SILENT_FLOOR
+    # CONTROL: the shape rule alone hides this exact capture.
+    assert report.judge([], [(PARENT_ID, SHORT_REPORT)], "Sent.")[0] is True
+    family(sc)
+    entry = stop_with(sc, CHILD_ID, [(PARENT_ID, SHORT_REPORT)], "Sent.")
+    assert entry["relay"] is False, entry
+    assert entry["title"] == SHORT_REPORT, entry["title"]
+    assert entry["dir"] == "up", entry
+    got = sc.report_py("--list", "--unread")
+    assert CHILD_ID[-12:] in got.out, got.out
+
+
+def test_31k_direction_unknown_lineage_keeps_the_shape_rule(sc):
+    """No meta for either side, and a send to a sibling, both leave the direction unsettled: the shape rule decides exactly as before, and the row says so with `dir` "?"."""
+    # No metas at all: the 862dd224.1 shape is still a relay, the 4e34cbde.2 shape still a report.
+    entry = stop_with(sc, CHILD_ID, [(PARENT_ID, SHORT_REPORT)], "Sent.")
+    assert (entry["dir"], entry["relay"]) == ("?", True), entry
+    entry = stop_with(sc, PARENT_ID, [(CHILD_ID, BRIEF)], "Brief sent; waiting.")
+    assert (entry["dir"], entry["relay"]) == ("?", False), entry
+    assert entry["title"].startswith("Coordinator ruling"), entry["title"]
+    # Siblings (both children of one coordinator) do not settle it either.
+    family(sc)
+    entry = stop_with(sc, CHILD_ID, [(SIBLING_ID, SHORT_REPORT + " sib")], "Sent.")
+    assert (entry["dir"], entry["relay"]) == ("?", True), entry
+    # A send to the lead is the report whatever the lineage, and a capture with no non-lead send says so.
+    entry = stop_with(sc, SIBLING_ID, [("main", "LEAD REPORT\n" + BIG)], "Done.")
+    assert (entry["dir"], entry["relay"]) == ("-", False), entry
+    assert entry["title"] == "LEAD REPORT", entry["title"]
+
+
+def test_31l_direction_helpers():
+    """`judge` without lineage is the shape rule; `direction` shows on ONE send up and hides only on EVERY send down."""
+    report = wlfix.import_wl("wl_report")
+    shape = report.judge([], [(CHILD_ID, BRIEF)], "w")
+    assert report.judge([], [(CHILD_ID, BRIEF)], "w", None) == shape
+    assert report.judge([], [(CHILD_ID, BRIEF)], "w", {}) == shape
+    kin = {PARENT_ID: "parent", CHILD_ID: "child"}
+    assert report.direction([], kin) == "-"
+    assert report.direction([(CHILD_ID, "x")], kin) == "down"
+    assert report.direction([(CHILD_ID, "x"), (PARENT_ID, "y")], kin) == "up"
+    assert report.direction([(CHILD_ID, "x"), (SIBLING_ID, "y")], kin) == "?"
+    # Up wins over down, and the title is the report to the parent, not the order.
+    relay, title = report.judge([], [(PARENT_ID, "UP REPORT"), (CHILD_ID, BRIEF)], "ok", kin)
+    assert (relay, title) == (False, "UP REPORT")
+
+
+def test_31m_direction_kin_of_reads_the_sidecars(sc):
+    """Both edges, by id and by teammate name, a workflow agent's meta dir, and a `to` that is not an id refused before it touches a path."""
+    report = wlfix.import_wl("wl_report")
+    plant_meta(sc, PARENT_ID, name="coord")
+    plant_meta(sc, CHILD_ID, parent=PARENT_ID, name="writer-1")
+    plant_meta(sc, SIBLING_ID, parent=PARENT_ID, sub="workflows/run1")
+    tx = sc.subagents_dir() / ("agent-%s.jsonl" % PARENT_ID)
+    tos = {CHILD_ID, SIBLING_ID, "writer-1", "main", "../evil", "console-34"}
+    got = report.kin_of(PARENT_ID, str(tx), tos)
+    assert got == {CHILD_ID: "child", SIBLING_ID: "child", "writer-1": "child"}, got
+    wf_tx = sc.subagents_dir() / "workflows" / "run1" / ("agent-%s.jsonl" % SIBLING_ID)
+    assert report.kin_of(SIBLING_ID, str(wf_tx), {PARENT_ID}) == {PARENT_ID: "parent"}
+    assert report.kin_of(CHILD_ID, str(tx), {"coord", "writer-1"}) == {"coord": "parent"}
+    # No transcript, or one outside any `subagents` directory: unknown.
+    assert report.kin_of(CHILD_ID, "", {PARENT_ID}) == {}
+    assert report.kin_of(CHILD_ID, str(sc.t / "x.jsonl"), {PARENT_ID}) == {}
+    # A workflow agent's own capture reads its lineage too.
+    entry = stop_with(sc, SIBLING_ID, [(PARENT_ID, SHORT_REPORT)], "Sent.", sub="workflows/run1")
+    assert (entry["dir"], entry["relay"]) == ("up", False), entry
+
+
+def test_31n_direction_hook_and_scan_agree(sc):
+    """`--scan` captures through the same `capture`, so it reaches the hook's verdict on the same transcript."""
+    family(sc)
+    hooked = stop_with(sc, PARENT_ID, [(CHILD_ID, BRIEF)], "Brief sent; waiting.")
+    tx = write_transcript(
+        sc.subagents_dir() / ("agent-%s.jsonl" % CHILD_ID),
+        sends_records(CHILD_ID, [(PARENT_ID, SHORT_REPORT)], "Sent."),
+    )
+    old = time.time() - 3600
+    os.utime(tx, (old, old))
+    got = sc.report_py("--scan")
+    assert "indexed %s" % CHILD_ID[-12:] in got.out, got.out + got.err
+    scanned = json.loads(sc.index_lines()[-1])
+    assert scanned["src"] == "scan", scanned
+    assert (scanned["dir"], scanned["relay"], scanned["title"]) == ("up", False, SHORT_REPORT)
+    assert (hooked["dir"], hooked["relay"]) == ("down", True), hooked
+
+
+def test_31o_direction_rows_without_the_field_read_as_before(sc):
+    """A row captured before `dir` keeps its stored `relay` (it carries `out`, so `rejudge` leaves it alone), and a legacy row with no `out` is still re-judged by the shape rule."""
+    report = wlfix.import_wl("wl_report")
+    family(sc)
+    shown = stop_with(sc, CHILD_ID, [(PARENT_ID, SHORT_REPORT)], "Sent.")
+    assert shown["dir"] == "up", shown
+    assert shown["relay"] is False, shown
+    old = {k: v for k, v in shown.items() if k != "dir"}
+    old.update({"id": "abcdabcdabcd", "relay": True, "bkey": "0" * 16})
+    with sc.index.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(old, separators=(",", ":")) + "\n")
+    assert report.rejudge(sc.store, old) is old
+    ids = {str(e["id"]) for e in report.unread(sc.store, "testbr", READER)}
+    assert CHILD_ID[-12:] in ids, ids
+    assert "abcdabcdabcd" not in ids, "a pre-field row was re-judged by the lineage"
+    fifteen = (FIXTURES / "coordinator-report-15.body").read_text(encoding="utf-8")
+    plant_legacy(sc, "aaaa00000009", "", "Coordinator ruling: z", 21, body=fifteen)
+    row = next(e for e in report.read_index(sc.store) if e["id"] == "aaaa00000009")
+    judged = report.rejudge(sc.store, row)
+    assert judged["relay"] is True, judged
+    assert "dir" not in judged, judged
