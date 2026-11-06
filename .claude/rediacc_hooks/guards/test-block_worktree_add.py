@@ -101,6 +101,42 @@ REFUSED += [
     ),
 ]
 
+# #a904d9f4: the INVOCATION is judged, not two words anywhere. An untracked script that runs the argv is refused; one whose comment says `worktree` while its code runs `git add`, and a sanctioned `./run.sh worktree` verb beside a `$`-path script, are not.
+pathlib.Path(FIXTURE_DIR, "invoke.py").write_text(
+    "import subprocess\nsubprocess.run(['git', 'worktree', 'add', '/tmp/x', 'HEAD'])\n",
+    encoding="utf-8",
+)
+pathlib.Path(FIXTURE_DIR, "selftest.py").write_text(
+    "import subprocess\n\n"
+    "# A scratch repository stands in for the lease worktree.\n\n\n"
+    "def g(root, *args):\n"
+    "    return subprocess.run(['git', *args], cwd=root, check=True)\n\n\n"
+    "def selftest(root):\n"
+    "    g(root, 'add', '-A')\n",
+    encoding="utf-8",
+)
+REFUSED += [("an untracked script running the argv", "python3 %s/invoke.py" % FIXTURE_DIR)]
+FALSE_POSITIVES = [
+    (
+        "a comment naming the tree beside git add",
+        "python3 %s/selftest.py --selftest" % FIXTURE_DIR,
+    ),
+    (
+        "gc beside a $-path worklist --add",
+        (
+            "./run.sh worktree gc --write --id x && "
+            'python3 "$CLAUDE_PROJECT_DIR"/.claude/hooks/stop/worklist.py --add abcd1234 a note'
+        ),
+    ),
+    (
+        "gc beside a $-path worklist tick",
+        (
+            "./run.sh worktree gc --write --id x; "
+            "python3 $CLAUDE_PROJECT_DIR/.claude/hooks/stop/worklist.py --tick abcd1234 1f2e removed"
+        ),
+    ),
+]
+
 ALLOWED = [
     # A variable script path with none of the words is out of reach, and must stay allowed: every session runs these.
     ("a variable script path, no words", "python3 $G/unrelated.py"),
@@ -129,6 +165,7 @@ ALLOWED = [
     ("a python print", "python3 -c 'print(\"never git worktree remove .claude/worktrees/x\")'"),
     ("reading the lease root", "ls .claude/worktrees"),
     ("a git status inside", "git -C .claude/worktrees/x status"),
+    *FALSE_POSITIVES,
 ]
 
 # (operand, directory, trees on disk, does it name a lease)
@@ -294,6 +331,36 @@ for label, pair, rows in (
     if kept:
         failures.append("plant refused an allowed row: %s" % label)
         print("*** FAIL *** with %s planted, refused %r" % (label, kept[:3]))
+
+# THE REVERSE PLANTS (#a904d9f4): each puts back one piece of the old two-words-anywhere reading, and the false positive it caused must be refused again, so the allowed rows above cannot be green because the rows stopped reaching the arm.
+REVERSE = [
+    (
+        "the script arm reads two words anywhere",
+        ("    if _spells_invocation(text):\n", "    if _names_phrase(text):\n"),
+        FALSE_POSITIVES[0],
+    ),
+    (
+        "a comment licenses the argv fill",
+        ("mentions = _code_mentions(code)", 'mentions = "worktree" in code'),
+        FALSE_POSITIVES[0],
+    ),
+    (
+        "the unjudgeable arm reads two words anywhere",
+        ("_spells_invocation(cmd, lease=True)", "_could_spell(cmd)"),
+        FALSE_POSITIVES[1],
+    ),
+    (
+        "the unjudgeable arm reads two words anywhere (tick)",
+        ("_spells_invocation(cmd, lease=True)", "_could_spell(cmd)"),
+        FALSE_POSITIVES[2],
+    ),
+]
+for label, pair, (row_name, row_command) in REVERSE:
+    if run_guard(row_command, defect=pair)[0] != 2:
+        failures.append("reverse plant: %s" % label)
+        print("*** FAIL *** with %s planted, %r was not refused" % (label, row_name))
+    else:
+        print("%s: %r refused again" % (label, row_name))
 
 if failures:
     print("\n%d FAILED: %s" % (len(failures), ", ".join(failures[:25])))

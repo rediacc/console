@@ -713,7 +713,7 @@ def _joined(seq):
     return " ".join(shlex.quote(e) if e is not None else "X" for e in seq)
 
 
-# A SCRIPT RUN BY PATH THAT NAMES THE PHRASE IS REFUSED, WHATEVER IT DOES WITH IT. A program the command line itself holds (`-c`, a heredoc, a here-string) is judged by every string it carries, because the command line IS the program. A script read from disk (`python3 x.py`, `node x.js`, `./x.py` by its shebang, `bash x.sh`, `source x.sh`, `./x.sh`) is refused when its text names `worktree` together with `add` or `create` (`_names_phrase`), and otherwise judged as a `-c` program is.
+# A SCRIPT RUN BY PATH THAT SPELLS THE PHRASE IS REFUSED, WHATEVER IT DOES WITH IT. A program the command line itself holds (`-c`, a heredoc, a here-string) is judged by every string it carries, because the command line IS the program. A script read from disk (`python3 x.py`, `node x.js`, `./x.py` by its shebang, `bash x.sh`, `source x.sh`, `./x.sh`) is refused when its text spells `worktree` BESIDE `add` or `create` (`_spells_invocation`, narrowed from two words anywhere by #a904d9f4), and otherwise judged as a `-c` program is.
 #
 # NO QUESTION OF WHETHER THE FILE CAN RUN ANYTHING. An earlier reading allowed a file that mentioned the phrase when a deny list of exec primitives, dynamic reaches and code-running modules found no way for it to run a command. Every round of review found a stdlib road the list missed (`operator.methodcaller("system", ...)(os)`, `timeit.timeit`, `doctest`, `zipimport`, `functools.partial`), so the list could not be completed and the guard failed open on whatever it lacked. A test that cannot be completed is not a guard.
 #
@@ -724,9 +724,34 @@ PHRASE_NOISE = re.compile(r"[\"'`\\]")
 
 
 def _names_phrase(text):
-    """Does a script's text name `worktree` together with `add` or `create`, in any case, anywhere in the file?"""
+    """Does a script's text name `worktree` together with `add` or `create`, in any case, anywhere in the file? The cheap reading: it decides whether a script is READ (`_shell_script`), never whether it is refused (`_spells_invocation` decides that)."""
     bare = PHRASE_NOISE.sub("", text).lower()
     return "worktree" in bare and bool(PHRASE_VERB.search(bare))
+
+
+# THE PHRASE MUST BE THE INVOCATION'S SHAPE, NOT TWO WORDS ANYWHERE (#a904d9f4). `_names_phrase` and `_could_spell` read `worktree` and a verb ANYWHERE in a text, and two refusals followed from that alone, both measured 2026-11-06: a lease writer's `python3 .ci/scripts/quality/check_commit_citations.py --selftest`, whose file held `g(root, "add", "-A")` and the word `worktree` in a comment, was refused as a script naming the phrase;
+# and a lead's `./run.sh worktree gc --write --id X && python3 "$CLAUDE_PROJECT_DIR"/.claude/hooks/stop/worklist.py --add ...` was refused as unjudgeable, `worktree` coming from the sanctioned run.sh verb and `add` from `--add`. A refusal now needs `worktree` and a judged verb ADJACENT, in either order, with only non-alphanumerics between them once quotes and backslashes are gone:
+# `git worktree add`, `['worktree', 'add']`, `"worktree" + " add"`, `printf "git %s add" worktree` (reversed), `block_worktree_add` all match, and `worktree gc ... --add` does not. The cost, stated: a script that keeps the two words apart (`W = "worktree"` and later `[git, W, "add"]`) is no longer refused on its text; it is still judged as a `-c` program is (`_code_verdict`), which folds a built string.
+INVOCATION_VERBS = ("add", "create")
+LEASE_INVOCATION_VERBS = ("add", "create", "remove", "move", "prune", "lock", "unlock")
+_SEP = r"[^a-z0-9]{0,16}"
+
+
+def _invocation_rx(verbs):
+    verb = r"(?<![a-z0-9])(?:%s)(?![a-z0-9])" % "|".join(verbs)
+    return re.compile(
+        r"(?<![a-z0-9])worktree%s%s|%s%sworktree(?![a-z0-9])" % (_SEP, verb, verb, _SEP)
+    )
+
+
+INVOCATION = _invocation_rx(INVOCATION_VERBS)
+LEASE_INVOCATION = _invocation_rx(LEASE_INVOCATION_VERBS)
+
+
+def _spells_invocation(text, lease=False):
+    """Does `text` hold `worktree` beside a judged verb (`add`/`create`, or with `lease` the lease verbs too), the shape an invocation has? The refusal test the script and unjudgeable arms apply."""
+    bare = PHRASE_NOISE.sub("", text).lower()
+    return bool((LEASE_INVOCATION if lease else INVOCATION).search(bare))
 
 
 # The word after `bash`/`sh` options that is the script it runs: what `shellscan._shell_payload` calls a "file" operand.
@@ -949,7 +974,7 @@ def _redirect_verdict(family, word, cmd, cwd, depth):
         target = shellscan._script_path(word, run_cwd, cwd)
         if target in written:
             if written[target] is None:
-                if _could_spell(cmd):
+                if _spells_invocation(cmd, lease=True):
                     return "unjudgeable"
             else:
                 verdict = _file_verdict(family, written[target], depth + 1)
@@ -1049,11 +1074,25 @@ def _filled_sequences(sequences, mentions):
                 yield [fill if e is None else e for e in seq]
 
 
+def _code_mentions(code):
+    """Does Python `code` name `worktree` outside a comment (a string, a name, an attribute)? A comment runs nothing, so it does not license filling an unknown argv element with the verb (#a904d9f4: `# ... worktree ...` above `g(root, "add", "-A")` filled `["git", *args]` into `git worktree add`). Code that does not tokenize reads as naming it, the over-reading direction."""
+    if "worktree" not in code:
+        return False
+    try:
+        return any(
+            "worktree" in tok.string
+            for tok in tokenize.generate_tokens(io.StringIO(code).readline)
+            if tok.type != tokenize.COMMENT
+        )
+    except (tokenize.TokenError, SyntaxError, ValueError):
+        return True
+
+
 def _python_verdict(code, depth):
     """The arm a Python program text trips, or None. Python that does not parse runs nothing, but this module's own reading of a shell word may differ from bash's, so it falls back to the regex reading rather than to an allow."""
     try:
         tree = ast.parse(code)
-        mentions = "worktree" in code
+        mentions = _code_mentions(code)
         folds = _python_folds(tree, mentions)
     except (SyntaxError, ValueError, RecursionError, MemoryError):
         # fa5d11be.3: a program nested past the parser's recursion limit, or too large for it, is read like Python that does not parse: by the regex reading, which neither recurses nor allocates a tree. Not fail-open (its literals and argv shapes are still judged) and not a blanket refusal (a deep data structure is not a worktree add).
@@ -1168,8 +1207,8 @@ def _code_verdict(family, code, depth):
 
 
 def _file_verdict(family, text, depth):
-    """The arm a script run by path trips: "script" when its text names the phrase (`_names_phrase`), else what the same text trips as a `-c` program (a built string folded, an implicit concatenation `ast` joins, the port's `cmd_create`), or for a shell script as a command line."""
-    if _names_phrase(text):
+    """The arm a script run by path trips: "script" when its text spells the invocation (`_spells_invocation`), else what the same text trips as a `-c` program (a built string folded, an implicit concatenation `ast` joins, the port's `cmd_create`), or for a shell script as a command line."""
+    if _spells_invocation(text):
         return "script"
     if family == "shell":
         return shell_verdict(text, depth)
@@ -1219,7 +1258,7 @@ def _script_verdict(cmd, depth, cwd):
         operand = _script_operand(run_, cmd, cwd) or ""
         if "$" in operand:
             # Text spelling the words decides first: the rebuilt run below carries no earlier write of this command, so a script this command writes is only caught here (review 3a4cc6d0.1).
-            if _could_spell(cmd):
+            if _spells_invocation(cmd, lease=True):
                 return "unjudgeable"
             known = _with_assigned_values(run_, operand)
             if "$" not in known:
@@ -1247,7 +1286,7 @@ def _script_verdict(cmd, depth, cwd):
             verdict = _file_verdict(family, text, depth + 1)
             if verdict:
                 return verdict
-        elif kind == "unjudgeable" and _could_spell(cmd):
+        elif kind == "unjudgeable" and _spells_invocation(cmd, lease=True):
             return "unjudgeable"
     return None
 
