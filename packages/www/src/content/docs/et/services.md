@@ -10,8 +10,8 @@ tags:
 subcategory: workloads
 order: 5
 language: et
-sourceHash: "c0f1046e3af31219"
-sourceCommit: "40b28261b0fa1018c0268405cbfdb899ab283c06"
+sourceHash: "fbdbed2c2d31b52c"
+sourceCommit: "9b8aa220de6eb4f7c7b7783456af6871202c8305"
 ---
 
 # Teenused
@@ -30,14 +30,33 @@ Peidetud kataloogid (nimed algavad `.`-ga) jäetakse vahele.
 
 ### Elutsükli funktsioonid
 
-Rediaccfile sisaldab kuni kahte funktsiooni:
+renet käivitab Rediaccfile'i neid funktsioone:
 
 | Funktsioon | Millal käivitub | Eesmärk | Vea käitumine |
 |----------|-------------|---------|----------------|
 | `up()` | Käivitamisel | Käivita teenused (nt `renet compose -- up -d`) | Juure tõrge on **kriitiline** (peatab kõik). Alamkataloogi tõrked on **mittekritiiilised** (logitakse, jätkab) |
 | `down()` | Peatamisel | Peata teenused (nt `renet compose -- down`) | **Parima jõu põhimõttel** - tõrked logitakse, kuid kõiki Rediaccfile'e proovitakse alati |
+| `health()` | Käsuga `rdc repo health`, käsuga `rdc machine health` ja juurutuse tervisekontrollis | Teatada hoidla enda tervisest: väljumiskood `0` korras, `1` hoiatus, `2` viga | Iga Rediaccfile'i `health()` käivitatakse ja arvesse läheb halvim tase. Väljumiskood `75` tähendab, et hoidla alles soojeneb (hoiatus). Iga muu väljumiskood, signaal või ajalõpp on viga. Hoidla, mille ükski Rediaccfile `health()` ei defineeri, teatab **kontroll puudub**, mitte kunagi terve |
+| `repair()` | Käsuga `rdc repo repair` ja käsuga `rdc machine repair` hoidla puhul, mille `health()` pole korras | Parandada see, millest sama faili `health()` teatas | Käivitub ainult siis, kui tema faili `health()` pole korras ja deklareeritud klass on lubatud (vt allpool). Seejärel käivitatakse `health()` uuesti. Ebaõnnestunud või ajalõpuga `repair()` on viga |
 
-Mõlemad funktsioonid on valikulised. Kui funktsiooni pole määratletud, jäetakse see vaikselt vahele.
+Iga funktsioon on valikuline. Kui funktsiooni pole määratletud, jäetakse see vaikselt vahele.
+
+#### Paranduse klassi deklareerimine
+
+`repair()` saab väärtused `REDIACC_HEALTH_LEVEL` (`warning` või `error`, tase, millest tema enda faili `health()` teatas) ja `REDIACC_HEALTH_OUTPUT` (selle `health()` väljundi lõpp). Kommentaarirea abil deklareeritakse, kui turvaline funktsioon on:
+
+```bash
+# rediacc:repair class=auto-safe
+# rediacc:repair class=auto-with-backup window=only
+```
+
+| Klass | Kes seda käivitab |
+|---|---|
+| `auto-safe` | `rdc machine repair` ja `rdc repo repair` käivitavad selle ise |
+| `auto-with-backup` | Käivitub ainult koos lipuga `--with-backup`, pärast hoidla edukat hetktõmmist |
+| `operator-only` | Ei käivitu kunagi ise. `rdc repo repair` küsib enne (või võtab `--yes`); `rdc machine repair` ei käivita seda kunagi |
+
+Deklaratsioonita `repair()` on `operator-only`, seega ükski tööriist ei käivita hoidla koodi järelevalveta, kui hoidla pole ise öelnud, et see on turvaline. `window=only` lisab teise tingimuse: funktsioon käivitub ainult masina hooldusakna sees ([Jälgimine](/et/docs/monitoring#repair)) või koos lipuga `--window-override`. Kui klassi deklareerib mitu rida, kehtib kõige piiravam.
 
 ### Täitmise järjekord
 
@@ -112,7 +131,7 @@ Iga Dockeri üksus käivitab enne deemonile signaali saatmist peatamiskonksu. Ko
 `up()` ja `down()` saavad vaikimisi 10 minutit kumbki; seda seadistavad `RENET_UP_TIMEOUT` ja `RENET_DOWN_TIMEOUT` või `--up-timeout` ja `--down-timeout`. Ajalõpu korral saab protsessirühm SIGTERMi ja 10 sekundi pärast SIGKILLi. Toiming, mis vajab esmalt `down()`, näiteks `repo down --unmount` või converge'i taaskäivitus, jätab konteinerid tööle, kui `down()` ületab ajalõpu; `--force` jätkab. Rediaccfile saab piiri tõsta kommentaarireaga:
 
 ```bash
-# rediacc:timeout up=20m down=15m backup=120s
+# rediacc:timeout up=20m down=15m backup=120s health=60s repair=10m
 ```
 
 | Võti | Vaikimisi | Ülempiir |
@@ -120,6 +139,10 @@ Iga Dockeri üksus käivitab enne deemonile signaali saatmist peatamiskonksu. Ko
 | `up` | 10 minutit | 60 minutit |
 | `down` | 10 minutit | 15 minutit |
 | `backup` | 30 sekundit | 300 sekundit |
+| `health` | 30 sekundit | 300 sekundit |
+| `repair` | 5 minutit | 30 minutit |
+
+`health()` on piiratud samamoodi: vaikeaeg määratakse muutujaga `RENET_HEALTH_TIMEOUT` ja ajalõpu korral saab selle protsessirühm SIGTERM-i ning 10 sekundi pärast SIGKILL-i. Juurutuse tervisekontroll käsitleb ajalõpuga `health()` kui alles soojenevat ja proovib uuesti; `rdc repo health` ja `rdc machine health` teatavad sellest veana. `repair()` järgib sama mudelit muutujaga `RENET_REPAIR_TIMEOUT` ning ajalõpuga `repair()` loetakse ebaõnnestunuks.
 
 Direktiiv ainult tõstab piiri ja kärbitakse ülempiirini, nii et hoidla ei saa `down()` aega nii lühikeseks muuta, et see jõuga lõpetataks. Tundmatud võtmed jäetakse hoiatusega arvestamata.
 

@@ -9,8 +9,8 @@ tags:
 subcategory: workloads
 order: 5
 language: ko
-sourceHash: "c0f1046e3af31219"
-sourceCommit: "40b28261b0fa1018c0268405cbfdb899ab283c06"
+sourceHash: "fbdbed2c2d31b52c"
+sourceCommit: "9b8aa220de6eb4f7c7b7783456af6871202c8305"
 ---
 
 # 서비스
@@ -29,14 +29,33 @@ Rediaccfile은 두 위치에서 검색됩니다.
 
 ### 라이프사이클 함수
 
-Rediaccfile에는 최대 두 개의 함수가 포함됩니다.
+renet은 다음 Rediaccfile 함수를 실행합니다.
 
 | 함수 | 실행 시점 | 목적 | 오류 동작 |
 |------|---------|------|---------|
 | `up()` | 시작 시 | 서비스 시작 (예: `renet compose -- up -d`) | 루트 실패는 **치명적** (모든 것 중지). 하위 디렉터리 실패는 **비치명적** (로그 후 계속) |
 | `down()` | 중지 시 | 서비스 중지 (예: `renet compose -- down`) | **최선 노력** -- 실패가 로그되지만 모든 Rediaccfile이 항상 시도됨 |
+| `health()` | `rdc repo health`, `rdc machine health`, 배포 상태 확인 단계 | 저장소 자체의 상태 보고: 종료 코드 `0` 정상, `1` 경고, `2` 오류 | 모든 Rediaccfile의 `health()`가 실행되며 가장 나쁜 수준이 적용됨. 종료 코드 `75`는 아직 준비 중(경고)이라는 뜻. 그 밖의 종료 코드, 시그널, 시간 초과는 오류. 어떤 Rediaccfile도 `health()`를 정의하지 않은 저장소는 **검사 없음**으로 보고되며 정상으로 간주되지 않음 |
+| `repair()` | `rdc repo repair`, 그리고 `health()`가 정상이 아닌 저장소에 대한 `rdc machine repair` | 같은 파일의 `health()`가 보고한 문제를 복구 | 해당 파일의 `health()`가 정상이 아니고 선언된 클래스가 허용될 때만 실행됨(아래 참조). 이후 `health()`가 다시 실행됨. 실패하거나 시간 초과된 `repair()`는 오류 |
 
-두 함수 모두 선택 사항입니다. 함수가 정의되지 않으면 자동으로 건너뜁니다.
+모든 함수는 선택 사항입니다. 함수가 정의되지 않으면 자동으로 건너뜁니다.
+
+#### 복구 클래스 선언
+
+`repair()`는 `REDIACC_HEALTH_LEVEL`(`warning` 또는 `error`, 같은 파일의 `health()`가 보고한 수준)과 `REDIACC_HEALTH_OUTPUT`(해당 `health()` 출력의 끝부분)을 받습니다. 주석 한 줄로 함수가 얼마나 안전한지 선언합니다.
+
+```bash
+# rediacc:repair class=auto-safe
+# rediacc:repair class=auto-with-backup window=only
+```
+
+| 클래스 | 실행 주체 |
+|---|---|
+| `auto-safe` | `rdc machine repair`와 `rdc repo repair`가 스스로 실행 |
+| `auto-with-backup` | `--with-backup`을 지정했을 때만, 저장소 스냅샷이 성공한 뒤에 실행 |
+| `operator-only` | 스스로는 실행되지 않음. `rdc repo repair`는 먼저 확인을 묻고(또는 `--yes`를 받음), `rdc machine repair`는 절대 실행하지 않음 |
+
+선언이 없는 `repair()`는 `operator-only`로 취급되므로, 저장소가 안전하다고 밝히지 않는 한 어떤 도구도 저장소의 코드를 무인으로 실행하지 않습니다. `window=only`는 두 번째 조건을 더합니다. 함수는 머신의 유지보수 시간대([모니터링](/ko/docs/monitoring#repair)) 안에서만, 또는 `--window-override`를 지정했을 때만 실행됩니다. 여러 줄이 클래스를 선언하면 가장 제한적인 것이 적용됩니다.
 
 ### 실행 순서
 
@@ -111,7 +130,7 @@ Rediaccfile은 필요한 것을 주석 줄로 선언할 수 있으며, 이는 �
 `up()`과 `down()`은 기본적으로 각각 10분이며, `RENET_UP_TIMEOUT`과 `RENET_DOWN_TIMEOUT` 또는 `--up-timeout`과 `--down-timeout`으로 설정합니다. 타임아웃이 되면 프로세스 그룹에 SIGTERM을 보내고 10초 뒤 SIGKILL을 보냅니다. `repo down --unmount`나 converge 재시작처럼 `down()`이 먼저 필요한 경로는 `down()`이 타임아웃되면 컨테이너를 그대로 실행 상태로 두며, `--force`를 주면 계속 진행합니다. Rediaccfile은 주석 한 줄로 제한을 올릴 수 있습니다.
 
 ```bash
-# rediacc:timeout up=20m down=15m backup=120s
+# rediacc:timeout up=20m down=15m backup=120s health=60s repair=10m
 ```
 
 | 키 | 기본값 | 상한 |
@@ -119,6 +138,10 @@ Rediaccfile은 필요한 것을 주석 줄로 선언할 수 있으며, 이는 �
 | `up` | 10분 | 60분 |
 | `down` | 10분 | 15분 |
 | `backup` | 30초 | 300초 |
+| `health` | 30초 | 300초 |
+| `repair` | 5분 | 30분 |
+
+`health()`에도 같은 제한이 적용됩니다. 기본값은 `RENET_HEALTH_TIMEOUT`으로 설정하며, 시간 초과 시 프로세스 그룹에 SIGTERM을 보내고 10초 뒤 SIGKILL을 보냅니다. 배포 상태 확인 단계는 시간 초과된 `health()`를 아직 준비 중으로 보고 다시 시도하고, `rdc repo health`와 `rdc machine health`는 이를 오류로 보고합니다. `repair()`도 `RENET_REPAIR_TIMEOUT`으로 같은 방식을 따르며, 시간 초과된 `repair()`는 실패로 처리됩니다.
 
 지시어는 제한을 올리기만 하며 상한을 넘는 값은 상한으로 잘립니다. 따라서 저장소가 `down()`을 줄여 강제 종료시킬 수는 없습니다. 알 수 없는 키는 경고와 함께 무시됩니다.
 

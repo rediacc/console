@@ -9,8 +9,8 @@ tags:
 subcategory: operations
 order: 9
 language: fr
-sourceHash: "103d9f60b35eabc9"
-sourceCommit: "3fae98178f8020a40a5cf1344366fff376263262"
+sourceHash: "6e4968522e118c98"
+sourceCommit: "9b8aa220de6eb4f7c7b7783456af6871202c8305"
 ---
 
 # Supervision
@@ -26,12 +26,91 @@ rdc machine health server-1
 ```
 
 Ce rapport inclut :
-- **Système** : temps de fonctionnement, utilisation du disque, utilisation du datastore
-- **Conteneurs** : nombre en cours d'exécution, sains, défaillants
-- **Stockage** : santé SMART
+- **Système** : temps de fonctionnement, mémoire (avertissement au-delà de 80 %, erreur au-delà de 90 %), utilisation du disque et du datastore (avertissement au-delà de 85 %, erreur au-delà de 95 %)
+- **Conteneurs** : nombre en cours d'exécution, sains, défaillants ; un conteneur en boucle `Restarting` est critique
+- **Services** : unités systemd en échec (une erreur) et unités qui redémarrent sans cesse (critique)
+- **Stockage** : santé SMART (un disque défaillant est critique) et température des disques
+- **Dépôts** : dépôts à démarrage automatique qui ne sont pas montés, et utilisation du système de fichiers de chaque dépôt (avertissement au-delà de 85 %, erreur au-delà de 95 %)
+- **Sauvegardes** : dépôts non sauvegardés depuis plus de 10 jours, en retard sur leur planification ou leur cible, ou dont la dernière vérification a échoué
+- **Licences** : licences de dépôt expirées, absentes, non concordantes ou invalides, et licences à renouveler
+- **Processus renet** : démons qui exécutent encore un binaire renet remplacé
+- **Santé des dépôts** : le résultat de `health()` de chaque dépôt monté (voir ci-dessous)
+- **Certificats** : certificats du proxy proches de l'expiration, et CNAME de défi ACME partagés
 - **Problèmes** : problèmes identifiés
 
-Utilisez `--output json` pour une sortie lisible par les machines.
+Le code de sortie donne le verdict : `0` sain, `1` avertissement, `2` erreur, `3` critique (un disque défaillant, ou un conteneur ou un service en boucle de redémarrage). Utilisez `--output json` pour une sortie lisible par les machines ; elle contient `repo_health` (un rapport par dépôt) et `findings`, chacun avec un code, une gravité (`info`, `warning`, `error` ou `critical`), un sujet, un détail et, lorsqu'un correctif existe, `fix` (voir [Réparation](#repair)).
+
+## Santé des dépôts
+
+Un Rediaccfile peut définir une fonction `health()` qui vérifie les services du dépôt lui-même ([Services](/fr/docs/services)) : code `0` ok, `1` avertissement, `2` erreur. Pour l'exécuter sur un dépôt :
+
+```bash
+rdc repo health my-app@server-1
+```
+
+La commande se termine avec le niveau le plus grave parmi les Rediaccfiles du dépôt. Un dépôt dont aucun Rediaccfile ne définit `health()` affiche **aucun contrôle** et se termine avec `0` ; il n'est jamais signalé comme sain. Un `health()` qui dépasse son délai, est tué ou se termine avec un autre code est une erreur, tout comme l'impossibilité de joindre la machine (code `2`).
+
+`rdc machine health` exécute le `health()` de chaque dépôt monté en un seul appel et reporte le niveau le plus grave dans son propre code de sortie, avec un constat par dépôt en avertissement (`repo.health.warning`) ou en erreur (`repo.health.error`). Les dépôts sans contrôle sont listés, pas signalés. Quand le renet de la machine est antérieur aux contrôles de santé des dépôts, le résultat est un avertissement, `renet.repo-health.unsupported`, jusqu'à ce que `rdc machine setup` le mette à jour.
+
+## Expiration des certificats et défis ACME
+
+`rdc machine health` lit les certificats ACME du proxy et signale `cert.expiry.near` pour chacun de ceux qui expirent dans moins de 21 jours (un avertissement) ou moins de 7 jours (une erreur). Le proxy renouvelle 30 jours à l'avance : un certificat à moins de 21 jours signifie donc que son renouvellement échoue depuis au moins neuf jours.
+
+Il signale aussi `acme.challenge.cname-shared` lorsque l'enregistrement `_acme-challenge.<name>` d'un nom de certificat suit un CNAME vers un nom qui n'est pas lui-même un nom `_acme-challenge.`, ou lorsque deux noms aboutissent au même nom. Un enregistrement générique qui est un CNAME produit cette configuration : tous les défis atterrissent sur un seul nom et les renouvellements entrent en collision. Une délégation volontaire (par exemple `_acme-challenge.mail.example.com` pointant vers `_acme-challenge.mail.example.io`) n'est pas signalée ; ajoutez toute autre délégation voulue à `ACME_DELEGATED_NAMES` (une liste de noms de certificats séparés par des virgules) dans le `config.env` du proxy. Un nom dont la chaîne de défi n'a pas pu être résolue (erreur DNS ou délai dépassé) est signalé comme `acme.challenge.unknown`, un avertissement, car le contrôle n'a pas pu s'exécuter pour ce nom.
+
+## Réparation
+
+Chaque constat porte un code et, lorsqu'un correctif sûr existe, un `fix` avec une `action`, une `class` de sécurité et `window_only`. `rdc machine health` reste en lecture seule ; `rdc machine repair` est la commande qui agit :
+
+```bash
+rdc machine repair server-1 --dry-run     # list what would run
+rdc machine repair server-1               # run the auto-safe fixes, then re-check
+rdc machine repair server-1 --code cert.expiry.near
+```
+
+| Classe | Signification |
+|---|---|
+| `auto-safe` | S'exécute par défaut : redémarrer un conteneur ou Traefik, faire un trim et un nettoyage, écrire l'ancre ACME |
+| `auto-with-backup` | S'exécute uniquement avec `--with-backup`, après un instantané réussi du dépôt ; un instantané en échec annule le correctif |
+| `operator-only` | Ne s'exécute jamais. La commande affiche la commande exacte à lancer à la main. Tout ce qui supprime des données nommées ou engage de l'argent relève de cette classe |
+
+`window_only` est une condition ajoutée à la classe : le correctif ne s'exécute que dans la fenêtre de maintenance de la machine, `HH:MM-HH:MM` en UTC (elle peut franchir minuit). Une machine sans fenêtre n'exécute jamais ces correctifs d'elle-même ; `--window-override` les exécute à la main. Définissez ou effacez la fenêtre avec :
+
+```bash
+rdc machine repair server-1 --set-window 00:00-03:00
+rdc machine repair server-1 --set-window off
+```
+
+Chaque correctif vérifie d'abord que son constat est toujours présent : une seconde exécution n'a donc rien à faire. Les correctifs qui agissent sur la même chose ne s'exécutent qu'une fois (un seul redémarrage de Traefik couvre tous les certificats). Chaque correctif est consigné dans le journal de la machine avec l'étiquette `rediacc-repair` et dans le JSON `actions` (`code`, `subject`, `action`, `class`, `result`, `before`, `after`), et l'exécution se termine par une revérification complète. Le code de sortie est `0` quand il ne reste rien, `1` quand il reste des avertissements ou des éléments operator-only, et `2` quand il reste une erreur ou qu'un correctif a échoué.
+
+| Constat | Correctif | Classe |
+|---|---|---|
+| `datastore.usage.high`, `repo.disk.high` | Trim, puis nettoyage des conteneurs arrêtés, des volumes anonymes orphelins et des images inutilisées | auto-safe |
+| `container.unhealthy`, `container.restart-loop` | Redémarrer le conteneur | auto-safe |
+| `renet.binary.replaced` | Redémarrer les superviseurs de dépôt concernés (`rdc machine restart-services --include-docker`, limité à eux) | auto-safe, fenêtre uniquement |
+| `cert.expiry.near` | Redémarrer Traefik pour qu'il retente le renouvellement | auto-safe |
+| `acme.challenge.cname-shared` | Écrire l'ancre ACME (ci-dessous) | auto-safe |
+| `repo.health.warning`, `repo.health.error` | Exécuter le `repair()` du dépôt ([Services](/fr/docs/services)) | la classe que déclare le Rediaccfile |
+| `repo.unmounted`, `service.failed`, `service.restart-loop`, `backup.*`, `license.*`, `renet.repo-health.unsupported` | Affiché comme la commande à lancer | operator-only |
+
+Les constats sans correctif (échecs SMART, température, mémoire, disque système, vérification échouée) sont signalés et laissés à l'opérateur.
+
+Le nettoyage ne touche jamais le hub : les conteneurs portant le label `rediacc.hub.*` et les volumes portant le label `rediacc.hub.user` ou nommés `rediacc-hub-home-*` sont exclus, si bien que le répertoire personnel d'un utilisateur du hub survit à chaque récupération d'espace. Un résidu que le trim et le nettoyage ne peuvent pas libérer (volumes nommés, grosses données d'application) reste une décision de l'opérateur.
+
+### Réparation d'un dépôt
+
+```bash
+rdc repo repair my-app@server-1 --dry-run
+rdc repo repair my-app@server-1
+```
+
+`rdc repo repair` exécute les fonctions `repair()` du dépôt avec les mêmes classes : `auto-safe` s'exécute, `auto-with-backup` exige `--with-backup`, et un `repair()` non déclaré (`operator-only`) ne s'exécute qu'après une réponse à sa confirmation ou avec `--yes`. `health()` s'exécute de nouveau ensuite et le code de sortie suit le niveau final : `0` ok ou aucun contrôle, `1` avertissement, `2` erreur ou un `repair()` en échec.
+
+### L'ancre ACME
+
+Un enregistrement DNS générique qui est un CNAME fait que chaque nom `_acme-challenge.<host>` le suit : tous les défis atterrissent alors sur un seul nom et les renouvellements entrent en collision (`acme.challenge.cname-shared`). Le correctif écrit un enregistrement TXT de valeur `rediacc-acme-anchor` sur chaque `_acme-challenge.<name>` en collision, via le jeton Cloudflare du proxy, puis redémarre Traefik. Un enregistrement explicite soustrait le nom à la portée du générique, et le défi atterrit donc au bon endroit. Le correctif ne fait qu'ajouter des enregistrements, et une ancre existante est laissée telle quelle.
+
+Les noms listés dans `ACME_DELEGATED_NAMES` (une liste de noms de certificats séparés par des virgules dans le `config.env` du proxy) sont des délégations volontaires : ils ne sont jamais ancrés ni signalés. Quand le proxy n'a pas de jeton Cloudflare utilisable, le correctif se replie sur `LEGO_DISABLE_CNAME_SUPPORT=true` dans `config.env`, mais seulement si aucun nom délégué n'est déclaré, car cette variable désactive le suivi des CNAME pour tous les noms ; avec une délégation déclarée, le constat reste operator-only. Le même correctif s'exécute à chaque installation du proxy (`rdc machine infra push`), et seul avec `renet proxy acme-fix` sur la machine.
 
 ## Lister les conteneurs
 

@@ -10,8 +10,8 @@ tags:
 subcategory: workloads
 order: 5
 language: tr
-sourceHash: "c0f1046e3af31219"
-sourceCommit: "40b28261b0fa1018c0268405cbfdb899ab283c06"
+sourceHash: "fbdbed2c2d31b52c"
+sourceCommit: "9b8aa220de6eb4f7c7b7783456af6871202c8305"
 ---
 
 # Servisler
@@ -30,14 +30,33 @@ Gizli dizinler (`.` ile başlayan adlar) atlanır.
 
 ### Yaşam Döngüsü Fonksiyonları
 
-Bir Rediaccfile en fazla iki fonksiyon içerir:
+renet, Rediaccfile içindeki şu fonksiyonları çalıştırır:
 
 | Fonksiyon | Ne zaman çalışır | Amacı | Hata davranışı |
 |-----------|-------------------|-------|----------------|
 | `up()` | Başlatma sırasında | Servisleri başlatma (ör. `renet compose -- up -d`) | Kök hatası **kritiktir** (her şeyi durdurur). Alt dizin hataları **kritik değildir** (günlüğe kaydedilir, devam eder) |
 | `down()` | Durdurma sırasında | Servisleri durdurma (ör. `renet compose -- down`) | **En iyi çaba** -- hatalar günlüğe kaydedilir ancak tüm Rediaccfile'lar her zaman denenir |
+| `health()` | `rdc repo health` ile, `rdc machine health` ile ve dağıtımın sağlık geçidinde | Deponun kendi sağlığını bildirmek: çıkış `0` tamam, `1` uyarı, `2` hata | Her Rediaccfile'ın `health()` fonksiyonu çalışır ve en kötü düzey sayılır. Çıkış `75` hâlâ ısınıyor demektir (uyarı). Başka herhangi bir çıkış, bir sinyal veya zaman aşımı hatadır. Hiçbir Rediaccfile'ın `health()` tanımlamadığı bir depo **denetim yok** bildirir, asla sağlıklı değil |
+| `repair()` | `rdc repo repair` ile ve `health()` sonucu tamam olmayan bir depo için `rdc machine repair` ile | Aynı dosyanın `health()` fonksiyonunun bildirdiği sorunu gidermek | Yalnızca kendi dosyasının `health()` sonucu tamam değilse ve bildirilen sınıfa izin veriliyorsa çalışır (aşağıya bakın). Ardından `health()` yeniden çalışır. Başarısız olan veya zaman aşımına uğrayan bir `repair()` hatadır |
 
-Her iki fonksiyon da isteğe bağlıdır. Tanımlanmamış fonksiyonlar sessizce atlanır.
+Her fonksiyon isteğe bağlıdır. Tanımlanmamış bir fonksiyon sessizce atlanır.
+
+#### Onarım sınıfı bildirme
+
+`repair()`, `REDIACC_HEALTH_LEVEL` (`warning` veya `error`, kendi dosyasındaki `health()` fonksiyonunun bildirdiği düzey) ve `REDIACC_HEALTH_OUTPUT` (o `health()` çıktısının son kısmı) değerlerini alır. Bir yorum satırı, fonksiyonun ne kadar güvenli olduğunu bildirir:
+
+```bash
+# rediacc:repair class=auto-safe
+# rediacc:repair class=auto-with-backup window=only
+```
+
+| Sınıf | Kim çalıştırır |
+|---|---|
+| `auto-safe` | `rdc machine repair` ve `rdc repo repair` kendiliğinden çalıştırır |
+| `auto-with-backup` | Yalnızca `--with-backup` ile, deponun başarılı bir anlık görüntüsünden sonra çalışır |
+| `operator-only` | Kendiliğinden asla çalışmaz. `rdc repo repair` önce sorar (veya `--yes` alır); `rdc machine repair` asla çalıştırmaz |
+
+Bildirimi olmayan bir `repair()`, `operator-only` sayılır; böylece depo güvenli olduğunu söylemedikçe hiçbir araç deponun kodunu gözetimsiz çalıştırmaz. `window=only` ikinci bir koşul ekler: fonksiyon yalnızca makinenin bakım penceresi içinde ([İzleme](/tr/docs/monitoring#repair)) veya `--window-override` ile çalışır. Birden çok satır sınıf bildirirse en kısıtlayıcı olan geçerlidir.
 
 ### Çalıştırma Sırası
 
@@ -112,7 +131,7 @@ Her Docker birimi, daemon'a sinyal göndermeden önce bir durdurma kancası çal
 `up()` ve `down()` varsayılan olarak 10'ar dakika alır; `RENET_UP_TIMEOUT` ve `RENET_DOWN_TIMEOUT` ile ya da `--up-timeout` ve `--down-timeout` ile ayarlanır. Zaman aşımında süreç grubu SIGTERM alır, 10 saniye sonra SIGKILL gelir. `repo down --unmount` veya converge yeniden başlatması gibi önce `down()` gerektiren bir yol, `down()` zaman aşımına uğrarsa konteynerleri çalışır durumda bırakır; `--force` devam eder. Bir Rediaccfile, yorum satırıyla bir sınırı yükseltebilir:
 
 ```bash
-# rediacc:timeout up=20m down=15m backup=120s
+# rediacc:timeout up=20m down=15m backup=120s health=60s repair=10m
 ```
 
 | Anahtar | Varsayılan | Üst sınır |
@@ -120,6 +139,10 @@ Her Docker birimi, daemon'a sinyal göndermeden önce bir durdurma kancası çal
 | `up` | 10 dakika | 60 dakika |
 | `down` | 10 dakika | 15 dakika |
 | `backup` | 30 saniye | 300 saniye |
+| `health` | 30 saniye | 300 saniye |
+| `repair` | 5 dakika | 30 dakika |
+
+`health()` de aynı şekilde sınırlıdır: varsayılan süresi `RENET_HEALTH_TIMEOUT` ile ayarlanır ve zaman aşımında işlem grubuna önce SIGTERM, 10 saniye sonra SIGKILL gönderilir. Dağıtımın sağlık geçidi, zaman aşımına uğrayan bir `health()` çağrısını hâlâ ısınıyor sayar ve yeniden dener; `rdc repo health` ve `rdc machine health` ise bunu hata olarak bildirir. `repair()` aynı modeli `RENET_REPAIR_TIMEOUT` ile izler ve zaman aşımına uğrayan bir `repair()` başarısız sayılır.
 
 Yönerge yalnızca sınırı yükseltir ve üst sınıra kırpılır; böylece depo `down()` işlevini zorla sonlandırılacak kadar kısaltamaz. Bilinmeyen anahtarlar uyarıyla yok sayılır.
 

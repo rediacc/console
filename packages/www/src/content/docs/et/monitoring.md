@@ -7,8 +7,8 @@ tags:
 subcategory: operations
 order: 9
 language: et
-sourceHash: "103d9f60b35eabc9"
-sourceCommit: "3fae98178f8020a40a5cf1344366fff376263262"
+sourceHash: "6e4968522e118c98"
+sourceCommit: "9b8aa220de6eb4f7c7b7783456af6871202c8305"
 ---
 
 # Jälgimine
@@ -24,12 +24,91 @@ rdc machine health server-1
 ```
 
 See raporteerib:
-- **Süsteem**: tööaeg, ketta kasutus, andmehoidla kasutus
-- **Konteinerid**: töötavate, tervete, ebatervete arv
-- **Salvestus**: SMART tervise olek
+- **Süsteem**: tööaeg, mälu (hoiatus üle 80%, viga üle 90%), ketta ja andmehoidla kasutus (hoiatus üle 85%, viga üle 95%)
+- **Konteinerid**: töötavate, tervete ja ebatervete arv; `Restarting` tsüklis olev konteiner on kriitiline
+- **Teenused**: ebaõnnestunud systemd üksused (viga) ja üksused, mis taaskäivituvad pidevalt (kriitiline)
+- **Salvestus**: SMART tervise olek (rikkis ketas on kriitiline) ja ketta temperatuur
+- **Hoidlad**: automaatkäivitusega hoidlad, mis pole haagitud, ja iga hoidla failisüsteemi kasutus (hoiatus üle 85%, viga üle 95%)
+- **Varukoopiad**: hoidlad, millest pole üle 10 päeva varukoopiat tehtud, mis jäävad oma ajakavast või sihtkohast maha või mille viimane kontroll ebaõnnestus
+- **Litsentsid**: aegunud, puuduvad, mittevastavad või kehtetud hoidlalitsentsid ja litsentsid, mis vajavad uuendamist
+- **Renet-protsessid**: deemonid, mis käitavad endiselt asendatud renet-i binaarfaili
+- **Hoidla tervis**: iga haagitud hoidla enda `health()` tulemus (vt allpool)
+- **Sertifikaadid**: proksi aegumisele lähenevad sertifikaadid ja jagatud ACME väljakutse CNAME-kirjed
 - **Probleemid**: tuvastatud probleemid
 
-Kasutage `--output json` masinloetava väljundi jaoks.
+Väljumiskood on otsus: `0` terve, `1` hoiatus, `2` viga, `3` kriitiline (rikkis ketas või taaskäivitustsüklis olev konteiner või teenus). Kasutage `--output json` masinloetava väljundi jaoks; see sisaldab välju `repo_health` (üks aruanne hoidla kohta) ja `findings`, kus igal leiul on kood, tõsidus (`info`, `warning`, `error` või `critical`), subjekt, üksikasi ja, kui parandus on olemas, `fix` (vt [Parandus](#repair)).
+
+## Hoidla tervis
+
+Rediaccfile võib määratleda funktsiooni `health()`, mis kontrollib hoidla enda teenuseid ([Teenused](/et/docs/services)): väljumiskood `0` korras, `1` hoiatus, `2` viga. Ühe hoidla jaoks käivitatakse see nii:
+
+```bash
+rdc repo health my-app@server-1
+```
+
+Käsk lõpeb halvima tasemega hoidla kõigi Rediaccfile'ide seas. Hoidla, mille ükski Rediaccfile `health()` ei defineeri, prindib **kontroll puudub** ja lõpeb koodiga `0`; seda ei teatata kunagi terve hoidlana. Ajalõpuga, katkestatud või mõne muu koodiga lõppev `health()` on viga, samuti masinaga ühenduse puudumine (väljumiskood `2`).
+
+`rdc machine health` käivitab iga haagitud hoidla `health()` ühe kutsega ja liidab halvima taseme oma väljumiskoodi, tehes hoidla kohta ühe leiu hoiatusena (`repo.health.warning`) või veana (`repo.health.error`). Kontrollita hoidlad loetletakse, neist ei teatata. Kui masina renet on hoidla tervisekontrollidest vanem, on tulemuseks üks hoiatus, `renet.repo-health.unsupported`, kuni `rdc machine setup` selle uuendab.
+
+## Sertifikaadi aegumine ja ACME väljakutsed
+
+`rdc machine health` loeb proksi ACME sertifikaate ja teatab `cert.expiry.near` iga sertifikaadi kohta, mille aegumiseni on alla 21 päeva (hoiatus) või alla 7 päeva (viga). Proksi uuendab 30 päeva ette, seega alla 21 päeva tähendab, et uuendamine on ebaõnnestunud vähemalt üheksa päeva.
+
+Samuti teatab see `acme.challenge.cname-shared`, kui sertifikaadi nime kirje `_acme-challenge.<name>` järgib CNAME-i nimeni, mis ise pole `_acme-challenge.` nimi, või kui kaks nime lõpevad samal nimel. CNAME-ina olev metamärgikirje tekitab just sellise kuju: kõik väljakutsed jõuavad ühele nimele ja uuendused põrkuvad. Tahtlikku delegeerimist (näiteks `_acme-challenge.mail.example.com` viitab nimele `_acme-challenge.mail.example.io`) ei teatata; muud ettenähtud delegeerimised loetlege proksi `config.env` failis muutujas `ACME_DELEGATED_NAMES` (sertifikaatide nimede komaga eraldatud loend). Nimi, mille väljakutseahelat ei õnnestunud lahendada (DNS-viga või ajalõpp), esitatakse kui `acme.challenge.unknown`, hoiatus, sest selle nime kontrolli ei saanud teha.
+
+## Parandus
+
+Igal leiul on kood ja, kui turvaline parandus on olemas, `fix` väljadega `action`, turvaklass `class` ja `window_only`. `rdc machine health` jääb kirjutuskaitstuks; tegutseb käsk `rdc machine repair`:
+
+```bash
+rdc machine repair server-1 --dry-run     # list what would run
+rdc machine repair server-1               # run the auto-safe fixes, then re-check
+rdc machine repair server-1 --code cert.expiry.near
+```
+
+| Klass | Tähendus |
+|---|---|
+| `auto-safe` | Käivitub vaikimisi: konteineri või Traefiku taaskäivitamine, trim ja puhastus, ACME ankru kirjutamine |
+| `auto-with-backup` | Käivitub ainult koos lipuga `--with-backup`, pärast hoidla edukat hetktõmmist; ebaõnnestunud hetktõmmis tühistab paranduse |
+| `operator-only` | Ei käivitu kunagi. Käsk prindib täpse käsu, mis tuleb käsitsi käivitada. Siia kuulub kõik, mis kustutab nimega andmeid või kulutab raha |
+
+`window_only` on klassile lisanduv tingimus: parandus käivitub ainult masina hooldusakna sees, kujul `HH:MM-HH:MM` UTC-s (aken võib ületada keskööd). Aknata masin ei käivita neid parandusi kunagi ise; `--window-override` käivitab need käsitsi. Akna määramine või eemaldamine:
+
+```bash
+rdc machine repair server-1 --set-window 00:00-03:00
+rdc machine repair server-1 --set-window off
+```
+
+Iga parandus kontrollib esmalt, et selle leid on endiselt olemas, seega teisel käivitusel pole midagi teha. Parandused, mis puudutavad sama asja, käivituvad üks kord (üks Traefiku taaskäivitus katab kõik sertifikaadid). Iga parandus logitakse masina päevikusse sildiga `rediacc-repair` ning JSON-i väljale `actions` (`code`, `subject`, `action`, `class`, `result`, `before`, `after`) ja käivitus lõpeb täieliku uuesti kontrolliga. Väljumiskood on `0`, kui midagi ei jää, `1`, kui jäävad hoiatused või operator-only punktid, ja `2`, kui jääb viga või parandus ebaõnnestus.
+
+| Leid | Parandus | Klass |
+|---|---|---|
+| `datastore.usage.high`, `repo.disk.high` | Trim, seejärel peatatud konteinerite, anonüümsete orbude ja kasutamata kujutiste puhastamine | auto-safe |
+| `container.unhealthy`, `container.restart-loop` | Konteineri taaskäivitamine | auto-safe |
+| `renet.binary.replaced` | Mõjutatud hoidlate järelevaatajate taaskäivitamine (`rdc machine restart-services --include-docker`, piiratud nendega) | auto-safe, ainult aknas |
+| `cert.expiry.near` | Traefiku taaskäivitamine, et see uuendust uuesti prooviks | auto-safe |
+| `acme.challenge.cname-shared` | ACME ankru kirjutamine (vt allpool) | auto-safe |
+| `repo.health.warning`, `repo.health.error` | Hoidla `repair()` käivitamine ([Teenused](/et/docs/services)) | klass, mille Rediaccfile deklareerib |
+| `repo.unmounted`, `service.failed`, `service.restart-loop`, `backup.*`, `license.*`, `renet.repo-health.unsupported` | Prinditakse käivitatava käsuna | operator-only |
+
+Leide, millel parandust pole (SMART-rikked, temperatuur, mälu, süsteemiketas, ebaõnnestunud kontroll), teatatakse ja need jäetakse operaatorile.
+
+Puhastus ei puutu kunagi jaoturit (hub): sildiga `rediacc.hub.*` konteinerid ja sildiga `rediacc.hub.user` või nimega `rediacc-hub-home-*` mahud on välistatud, nii et jaoturi kasutaja kodukataloog püsib iga ruumi tagasivõtmise järel alles. Jääk, mida trim ja puhastus ei suuda vabastada (nimega mahud, suured rakenduse andmed), jääb operaatori otsustada.
+
+### Hoidla parandus
+
+```bash
+rdc repo repair my-app@server-1 --dry-run
+rdc repo repair my-app@server-1
+```
+
+`rdc repo repair` käivitab hoidla `repair()` funktsioonid samade klassidega: `auto-safe` käivitub, `auto-with-backup` vajab lippu `--with-backup` ning deklareerimata (`operator-only`) `repair()` käivitub alles pärast küsimusele vastamist või lipuga `--yes`. Seejärel käivitub `health()` uuesti ja väljumiskood järgib taset, kus see lõpeb: `0` korras või kontroll puudub, `1` hoiatus, `2` viga või ebaõnnestunud `repair()`.
+
+### ACME ankur
+
+CNAME-ina olev metamärgi DNS-kirje paneb iga nime `_acme-challenge.<host>` seda järgima, nii et kõik väljakutsed jõuavad ühele nimele ja uuendused põrkuvad (`acme.challenge.cname-shared`). Parandus kirjutab proksi Cloudflare'i tokeni abil igale põrkuvale `_acme-challenge.<name>` kirjele TXT-kirje väärtusega `rediacc-acme-anchor` ja taaskäivitab seejärel Traefiku. Selgesõnaline kirje viib nime metamärgi mõjualast välja, nii et väljakutse jõuab sinna, kuhu peab. Parandus ainult lisab kirjeid ja olemasolevat ankrut ei muudeta.
+
+Muutujas `ACME_DELEGATED_NAMES` (sertifikaatide nimede komaga eraldatud loend proksi `config.env` failis) loetletud nimed on tahtlikud delegeerimised: neid ei ankurdata ega teatata kunagi. Kui proksil pole kasutatavat Cloudflare'i tokenit, langeb parandus tagasi väärtusele `LEGO_DISABLE_CNAME_SUPPORT=true` failis `config.env`, kuid ainult siis, kui ühtegi delegeeritud nime pole deklareeritud, sest see muutuja lülitab CNAME-ide järgimise välja kõigi nimede jaoks; deklareeritud delegeerimise korral jääb leid operator-only. Sama parandus käivitub iga proksi paigaldusega (`rdc machine infra push`) ja eraldi käsuga `renet proxy acme-fix` masinas.
 
 ## Konteinerite loetlemine
 

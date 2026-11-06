@@ -9,8 +9,8 @@ tags:
 subcategory: workloads
 order: 5
 language: ja
-sourceHash: "c0f1046e3af31219"
-sourceCommit: "40b28261b0fa1018c0268405cbfdb899ab283c06"
+sourceHash: "fbdbed2c2d31b52c"
+sourceCommit: "9b8aa220de6eb4f7c7b7783456af6871202c8305"
 ---
 
 # サービス
@@ -29,14 +29,33 @@ Rediaccfileは2つの場所で検出されます：
 
 ### ライフサイクル関数
 
-Rediaccfileは最大2つの関数を含みます：
+renetは次のRediaccfile関数を実行します：
 
 | 関数 | 実行タイミング | 目的 | エラー動作 |
 |----------|-------------|---------|----------------|
 | `up()` | 開始時 | サービスの開始（例：`renet compose -- up -d`） | ルートの失敗は**クリティカル**（すべて停止）。サブディレクトリの失敗は**非クリティカル**（ログに記録し、続行） |
 | `down()` | 停止時 | サービスの停止（例：`renet compose -- down`） | **ベストエフォート** - 失敗はログに記録されますが、すべてのRediaccfileが常に試行されます |
+| `health()` | `rdc repo health`、`rdc machine health`、デプロイのヘルスゲート | リポジトリ自身の状態を報告：終了コード `0` は正常、`1` は警告、`2` はエラー | すべてのRediaccfileの `health()` が実行され、最も悪いレベルが採用されます。終了コード `75` はまだウォームアップ中（警告）を意味します。それ以外の終了コード、シグナル、タイムアウトはエラーです。どのRediaccfileも `health()` を定義していないリポジトリは**チェックなし**と報告され、正常とは見なされません |
+| `repair()` | `rdc repo repair`、および `health()` が正常でないリポジトリに対する `rdc machine repair` | 同じファイルの `health()` が報告した問題を修復 | そのファイルの `health()` が正常でなく、宣言されたクラスが許可されている場合にのみ実行されます（下記参照）。その後 `health()` が再度実行されます。失敗またはタイムアウトした `repair()` はエラーです |
 
-両方の関数はオプションです。関数が定義されていない場合、サイレントにスキップされます。
+すべての関数はオプションです。関数が定義されていない場合、サイレントにスキップされます。
+
+#### 修復クラスの宣言
+
+`repair()` には `REDIACC_HEALTH_LEVEL`（`warning` または `error`。同じファイルの `health()` が報告したレベル）と `REDIACC_HEALTH_OUTPUT`（その `health()` の出力の末尾）が渡されます。コメント行で、その関数がどれだけ安全かを宣言します：
+
+```bash
+# rediacc:repair class=auto-safe
+# rediacc:repair class=auto-with-backup window=only
+```
+
+| クラス | 実行するもの |
+|---|---|
+| `auto-safe` | `rdc machine repair` と `rdc repo repair` が自動的に実行します |
+| `auto-with-backup` | `--with-backup` を付けた場合にのみ、リポジトリのスナップショットが成功した後で実行されます |
+| `operator-only` | 自動では実行されません。`rdc repo repair` は先に確認し（または `--yes` を受け付け）、`rdc machine repair` は実行しません |
+
+宣言のない `repair()` は `operator-only` として扱われるため、リポジトリ自身が安全だと示さない限り、どのツールもそのコードを無人で実行しません。`window=only` は2つ目の条件を加えます。関数はマシンのメンテナンスウィンドウ内（[モニタリング](/ja/docs/monitoring#repair)）か、`--window-override` を付けた場合にのみ実行されます。複数の行でクラスが宣言されている場合は、最も制限の厳しいものが採用されます。
 
 ### 実行順序
 
@@ -111,7 +130,7 @@ Rediaccfileは、必要なものをコメント行で宣言できます。これ
 `up()` と `down()` の既定値はそれぞれ 10 分で、`RENET_UP_TIMEOUT` と `RENET_DOWN_TIMEOUT`、または `--up-timeout` と `--down-timeout` で設定します。タイムアウトすると、プロセスグループに SIGTERM が送られ、10 秒後に SIGKILL が送られます。`repo down --unmount` や converge による再起動のように先に `down()` が必要な操作は、`down()` がタイムアウトした場合にコンテナを動かしたままにし、`--force` を付けると続行します。Rediaccfile はコメント行で上限を引き上げられます。
 
 ```bash
-# rediacc:timeout up=20m down=15m backup=120s
+# rediacc:timeout up=20m down=15m backup=120s health=60s repair=10m
 ```
 
 | キー | 既定値 | 上限 |
@@ -119,6 +138,10 @@ Rediaccfileは、必要なものをコメント行で宣言できます。これ
 | `up` | 10 分 | 60 分 |
 | `down` | 10 分 | 15 分 |
 | `backup` | 30 秒 | 300 秒 |
+| `health` | 30 秒 | 300 秒 |
+| `repair` | 5 分 | 30 分 |
+
+`health()` にも同じ制限があります。既定値は `RENET_HEALTH_TIMEOUT` で設定し、タイムアウトするとプロセスグループにSIGTERMが送られ、10秒後にSIGKILLが送られます。デプロイのヘルスゲートは、タイムアウトした `health()` をまだウォームアップ中と見なして再試行します。`rdc repo health` と `rdc machine health` はこれをエラーとして報告します。`repair()` も `RENET_REPAIR_TIMEOUT` で同じ仕組みに従い、タイムアウトした `repair()` は失敗として扱われます。
 
 ディレクティブは制限を引き上げるだけで、上限を超える値は上限に切り詰められます。そのためリポジトリ側から `down()` を短くして強制終了させることはできません。未知のキーは警告を出して無視されます。
 

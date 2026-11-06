@@ -10,8 +10,8 @@ tags:
 subcategory: workloads
 order: 5
 language: es
-sourceHash: "c0f1046e3af31219"
-sourceCommit: "40b28261b0fa1018c0268405cbfdb899ab283c06"
+sourceHash: "fbdbed2c2d31b52c"
+sourceCommit: "9b8aa220de6eb4f7c7b7783456af6871202c8305"
 ---
 
 # Servicios
@@ -30,14 +30,33 @@ Se omiten los directorios ocultos (nombres que comienzan con `.`).
 
 ### Funciones del Ciclo de Vida
 
-Un Rediaccfile contiene hasta dos funciones:
+renet ejecuta estas funciones del Rediaccfile:
 
 | Función | Cuándo se ejecuta | Propósito | Comportamiento en caso de error |
 |----------|-------------|---------|----------------|
 | `up()` | Al iniciar | Iniciar servicios (por ejemplo, `renet compose -- up -d`) | El fallo raíz es **crítico** (detiene todo). Los fallos en subdirectorios son **no críticos** (registrados, continúa) |
 | `down()` | Al detener | Detener servicios (por ejemplo, `renet compose -- down`) | **Mejor esfuerzo** -- los fallos se registran pero siempre se intenta ejecutar todos los Rediaccfiles |
+| `health()` | En `rdc repo health`, en `rdc machine health` y en la comprobación de salud del despliegue | Informar del estado propio del repositorio: salida `0` ok, `1` advertencia, `2` error | Se ejecuta el `health()` de cada Rediaccfile y cuenta el nivel más grave. La salida `75` significa que aún se está calentando (una advertencia). Cualquier otra salida, una señal o un tiempo agotado es un error. Un repositorio en el que ningún Rediaccfile define `health()` informa **sin comprobación**, nunca como saludable |
+| `repair()` | En `rdc repo repair` y en `rdc machine repair` para un repositorio cuyo `health()` no está ok | Corregir lo que informó el `health()` de ese mismo archivo | Solo se ejecuta cuando el `health()` de su archivo no está ok y la clase declarada está permitida (véase abajo). Después `health()` se ejecuta de nuevo. Un `repair()` que falla o agota el tiempo es un error |
 
-Ambas funciones son opcionales. Si una función no está definida, se omite silenciosamente.
+Todas las funciones son opcionales. Si una función no está definida, se omite silenciosamente.
+
+#### Declarar una clase de reparación
+
+`repair()` recibe `REDIACC_HEALTH_LEVEL` (`warning` o `error`, el nivel que informó el `health()` de su propio archivo) y `REDIACC_HEALTH_OUTPUT` (el final de la salida de ese `health()`). Una línea de comentario declara lo segura que es la función:
+
+```bash
+# rediacc:repair class=auto-safe
+# rediacc:repair class=auto-with-backup window=only
+```
+
+| Clase | Quién la ejecuta |
+|---|---|
+| `auto-safe` | `rdc machine repair` y `rdc repo repair` la ejecutan por su cuenta |
+| `auto-with-backup` | Solo se ejecuta con `--with-backup`, tras una instantánea correcta del repositorio |
+| `operator-only` | Nunca se ejecuta por sí sola. `rdc repo repair` pregunta antes (o acepta `--yes`); `rdc machine repair` nunca la ejecuta |
+
+Un `repair()` sin declaración es `operator-only`, de modo que ninguna herramienta ejecuta código de un repositorio sin supervisión a menos que el repositorio indique que es seguro. `window=only` añade una segunda condición: la función se ejecuta solo dentro de la ventana de mantenimiento de la máquina ([Monitoreo](/es/docs/monitoring#repair)) o con `--window-override`. Cuando varias líneas declaran una clase, cuenta la más restrictiva.
 
 ### Orden de Ejecución
 
@@ -112,7 +131,7 @@ Cada unidad Docker ejecuta un gancho de parada antes de enviar la señal al demo
 `up()` y `down()` disponen de 10 minutos cada uno por defecto, configurables con `RENET_UP_TIMEOUT` y `RENET_DOWN_TIMEOUT` o con `--up-timeout` y `--down-timeout`. Al agotarse el tiempo, el grupo de procesos recibe SIGTERM y, tras 10 segundos, SIGKILL. Una operación que necesita `down()` primero, como `repo down --unmount` o un reinicio por converge, deja los contenedores en marcha si `down()` agota el tiempo; `--force` continúa. Un Rediaccfile puede subir un límite con una línea de comentario:
 
 ```bash
-# rediacc:timeout up=20m down=15m backup=120s
+# rediacc:timeout up=20m down=15m backup=120s health=60s repair=10m
 ```
 
 | Clave | Predeterminado | Máximo |
@@ -120,6 +139,10 @@ Cada unidad Docker ejecuta un gancho de parada antes de enviar la señal al demo
 | `up` | 10 minutos | 60 minutos |
 | `down` | 10 minutos | 15 minutos |
 | `backup` | 30 segundos | 300 segundos |
+| `health` | 30 segundos | 300 segundos |
+| `repair` | 5 minutos | 30 minutos |
+
+`health()` tiene el mismo límite: su valor predeterminado se fija con `RENET_HEALTH_TIMEOUT` y, al agotarse el tiempo, su grupo de procesos recibe SIGTERM y, 10 segundos después, SIGKILL. La comprobación de salud del despliegue interpreta un `health()` con tiempo agotado como que aún se está calentando y reintenta; `rdc repo health` y `rdc machine health` lo informan como un error. `repair()` sigue el mismo modelo con `RENET_REPAIR_TIMEOUT`, y un `repair()` con tiempo agotado cuenta como fallido.
 
 Una directiva solo sube un límite y se recorta a su máximo, así que el repositorio no puede acortar `down()` hasta convertirlo en una muerte forzada. Las claves desconocidas se ignoran con una advertencia.
 

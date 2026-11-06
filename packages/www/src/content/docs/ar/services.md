@@ -9,8 +9,8 @@ tags:
 subcategory: workloads
 order: 5
 language: ar
-sourceHash: "c0f1046e3af31219"
-sourceCommit: "40b28261b0fa1018c0268405cbfdb899ab283c06"
+sourceHash: "fbdbed2c2d31b52c"
+sourceCommit: "9b8aa220de6eb4f7c7b7783456af6871202c8305"
 ---
 
 # الخدمات
@@ -29,14 +29,33 @@ sourceCommit: "40b28261b0fa1018c0268405cbfdb899ab283c06"
 
 ### دوال دورة الحياة
 
-يحتوي Rediaccfile على دالتين كحد أقصى:
+ينفّذ renet دوال Rediaccfile التالية:
 
 | الدالة | وقت التشغيل | الغرض | سلوك الخطأ |
 |--------|------------|-------|------------|
 | `up()` | عند التشغيل | بدء الخدمات (مثل `renet compose -- up -d`) | فشل الجذر **حرج** (يوقف كل شيء). فشل المجلدات الفرعية **غير حرج** (يُسجّل ويستمر) |
 | `down()` | عند الإيقاف | إيقاف الخدمات (مثل `renet compose -- down`) | **أفضل جهد** -- الأخطاء تُسجّل لكن تُنفّذ جميع ملفات Rediaccfile دائماً |
+| `health()` | عند `rdc repo health` وعند `rdc machine health` وفي فحص الصحة أثناء النشر | الإبلاغ عن صحة المستودع نفسه: رمز الخروج `0` سليم، `1` تحذير، `2` خطأ | تُنفَّذ `health()` في كل ملف Rediaccfile ويُعتدّ بأسوأ مستوى. يعني الرمز `75` أن المستودع ما زال في طور الإحماء (تحذير). أي رمز خروج آخر أو إشارة أو انتهاء المهلة يُعدّ خطأ. المستودع الذي لا يعرّف أي Rediaccfile فيه `health()` يُبلغ **لا يوجد فحص** ولا يُعدّ سليمًا أبدًا |
+| `repair()` | عند `rdc repo repair` وعند `rdc machine repair` لمستودع لا تكون `health()` فيه سليمة | إصلاح ما أبلغت عنه `health()` في الملف نفسه | لا تعمل إلا إذا كانت `health()` في ملفها غير سليمة وكان الصنف المعلن مسموحًا به (انظر أدناه). بعد ذلك تعمل `health()` مرة أخرى. فشل `repair()` أو انتهاء مهلته يُعدّ خطأ |
 
-كلتا الدالتين اختيارية. إذا لم تُعرّف دالة، يتم تخطيها بصمت.
+كل دالة اختيارية. إذا لم تُعرّف دالة، يتم تخطيها بصمت.
+
+#### إعلان صنف الإصلاح
+
+تتلقى `repair()` المتغيرين `REDIACC_HEALTH_LEVEL` (`warning` أو `error`، وهو المستوى الذي أبلغت عنه `health()` في ملفها نفسه) و`REDIACC_HEALTH_OUTPUT` (ذيل مخرجات تلك `health()`). يعلن سطر تعليق مدى أمان الدالة:
+
+```bash
+# rediacc:repair class=auto-safe
+# rediacc:repair class=auto-with-backup window=only
+```
+
+| الصنف | من ينفّذه |
+|---|---|
+| `auto-safe` | ينفّذه `rdc machine repair` و`rdc repo repair` من تلقاء نفسيهما |
+| `auto-with-backup` | يعمل فقط مع `--with-backup`، بعد لقطة ناجحة للمستودع |
+| `operator-only` | لا يعمل من تلقاء نفسه أبدًا. يسأل `rdc repo repair` أولًا (أو يقبل `--yes`)؛ أما `rdc machine repair` فلا ينفّذه أبدًا |
+
+`repair()` بلا إعلان تُعدّ `operator-only`، فلا تشغّل أي أداة شيفرة مستودع دون إشراف ما لم يصرّح المستودع بأنها آمنة. يضيف `window=only` شرطًا ثانيًا: تعمل الدالة فقط داخل نافذة الصيانة الخاصة بالجهاز ([المراقبة](/ar/docs/monitoring#repair)) أو مع `--window-override`. وعندما تعلن عدة أسطر صنفًا، يُعتدّ بالأكثر تقييدًا.
 
 ### ترتيب التنفيذ
 
@@ -111,7 +130,7 @@ rdc repo permission revoke <repo-ref> --path /srv/data
 تحصل `up()` و`down()` افتراضيًا على 10 دقائق لكل منهما، وتُضبط عبر `RENET_UP_TIMEOUT` و`RENET_DOWN_TIMEOUT` أو `--up-timeout` و`--down-timeout`. عند انتهاء المهلة تتلقى مجموعة العمليات SIGTERM ثم SIGKILL بعد 10 ثوانٍ. المسار الذي يحتاج إلى `down()` أولًا، مثل `repo down --unmount` أو إعادة التشغيل عند converge، يترك الحاويات تعمل إذا انتهت مهلة `down()`، ويتابع الخيار `--force`. يمكن لملف Rediaccfile رفع الحد بسطر تعليق:
 
 ```bash
-# rediacc:timeout up=20m down=15m backup=120s
+# rediacc:timeout up=20m down=15m backup=120s health=60s repair=10m
 ```
 
 | المفتاح | الافتراضي | الحد الأقصى |
@@ -119,6 +138,10 @@ rdc repo permission revoke <repo-ref> --path /srv/data
 | `up` | 10 دقائق | 60 دقيقة |
 | `down` | 10 دقائق | 15 دقيقة |
 | `backup` | 30 ثانية | 300 ثانية |
+| `health` | 30 ثانية | 300 ثانية |
+| `repair` | 5 دقائق | 30 دقيقة |
+
+تخضع `health()` للتقييد نفسه: يُضبط افتراضيها بـ `RENET_HEALTH_TIMEOUT`، وعند انتهاء المهلة تتلقى مجموعة عملياتها SIGTERM ثم SIGKILL بعد 10 ثوانٍ. يعامل فحص الصحة أثناء النشر `health()` التي انتهت مهلتها على أنها ما زالت في طور الإحماء ويعيد المحاولة؛ أما `rdc repo health` و`rdc machine health` فتُبلغان عنها كخطأ. تتبع `repair()` النموذج نفسه مع `RENET_REPAIR_TIMEOUT`، ويُعدّ `repair()` الذي انتهت مهلته فاشلًا.
 
 التوجيه يرفع الحد فقط ويُقصّ عند حده الأقصى، فلا يستطيع المستودع تقصير `down()` إلى حد قتله قسرًا. تُتجاهل المفاتيح غير المعروفة مع تحذير.
 

@@ -7,8 +7,8 @@ tags:
 subcategory: operations
 order: 9
 language: zh
-sourceHash: "103d9f60b35eabc9"
-sourceCommit: "3fae98178f8020a40a5cf1344366fff376263262"
+sourceHash: "6e4968522e118c98"
+sourceCommit: "9b8aa220de6eb4f7c7b7783456af6871202c8305"
 ---
 
 # 监控
@@ -24,12 +24,91 @@ rdc machine health server-1
 ```
 
 报告内容：
-- **System**：运行时间、磁盘使用率、数据存储使用率
-- **容器**：运行中、健康和不健康的容器数量
-- **存储**：SMART 健康状态
+- **系统**：运行时间、内存（超过 80% 为警告，超过 90% 为错误）、磁盘和数据存储使用率（超过 85% 为警告，超过 95% 为错误）
+- **容器**：运行中、健康和不健康的容器数量；处于 `Restarting` 循环的容器为严重
+- **服务**：失败的 systemd 单元（错误）和不断重启的单元（严重）
+- **存储**：SMART 健康状态（即将损坏的磁盘为严重）和磁盘温度
+- **仓库**：未挂载的自动启动仓库，以及每个仓库的文件系统使用率（超过 85% 为警告，超过 95% 为错误）
+- **备份**：超过 10 天未备份、落后于计划或目标，或上次验证失败的仓库
+- **许可证**：已过期、缺失、不匹配或无效的仓库许可证，以及需要刷新的许可证
+- **renet 进程**：仍在运行已被替换的 renet 二进制文件的守护进程
+- **仓库健康**：每个已挂载仓库自身的 `health()` 结果（见下文）
+- **证书**：代理中即将到期的证书，以及共享的 ACME 质询 CNAME
 - **问题**：已识别的问题
 
-使用 `--output json` 获取机器可读的输出。
+退出码就是结论：`0` 健康，`1` 警告，`2` 错误，`3` 严重（磁盘即将损坏，或容器、服务陷入重启循环）。使用 `--output json` 获取机器可读的输出；其中包含 `repo_health`（每个仓库一份报告）和 `findings`，每条发现都带有代码、严重程度（`info`、`warning`、`error` 或 `critical`）、对象、详情，以及（存在修复方法时）`fix`（见[修复](#repair)）。
+
+## 仓库健康
+
+Rediaccfile 可以定义一个 `health()` 函数来检查仓库自身的服务（[服务](/zh/docs/services)）：退出码 `0` 正常，`1` 警告，`2` 错误。对单个仓库运行：
+
+```bash
+rdc repo health my-app@server-1
+```
+
+该命令以仓库所有 Rediaccfile 中最差的级别退出。没有任何 Rediaccfile 定义 `health()` 的仓库会输出**无检查**并以 `0` 退出；它绝不会被报告为健康。超时、被终止或以其他退出码结束的 `health()` 算错误，无法连接机器同样如此（退出码 `2`）。
+
+`rdc machine health` 会一次调用运行所有已挂载仓库的 `health()`，并把最差的级别并入自己的退出码，每个仓库对应一条警告（`repo.health.warning`）或错误（`repo.health.error`）级别的发现。没有检查的仓库只会列出，不会作为问题报告。当机器上的 renet 早于仓库健康检查的版本时，结果是一条警告 `renet.repo-health.unsupported`，直到 `rdc machine setup` 将其更新。
+
+## 证书到期与 ACME 质询
+
+`rdc machine health` 会读取代理的 ACME 证书，对距离到期不足 21 天的证书报告 `cert.expiry.near`（警告），不足 7 天则为错误。代理会提前 30 天续期，所以证书不足 21 天意味着它的续期已经至少失败了九天。
+
+当证书名称的 `_acme-challenge.<name>` 记录通过 CNAME 指向一个本身并非 `_acme-challenge.` 的名称，或者两个名称最终指向同一个名称时，它还会报告 `acme.challenge.cname-shared`。属于 CNAME 的通配符记录会造成这种情形：所有质询都落到同一个名称上，续期互相冲突。有意的委派（例如 `_acme-challenge.mail.example.com` 指向 `_acme-challenge.mail.example.io`）不会被报告；其他有意的委派请列在代理 `config.env` 的 `ACME_DELEGATED_NAMES` 中（以逗号分隔的证书名称列表）。质询链无法解析的名称（DNS 错误或超时）会报告为 `acme.challenge.unknown`，这是一条警告，因为针对它的检查没有运行。
+
+## 修复
+
+每条发现都带有代码；如果存在安全的修复方法，还带有 `fix`，其中包含 `action`、安全 `class` 和 `window_only`。`rdc machine health` 保持只读；真正执行操作的是 `rdc machine repair`：
+
+```bash
+rdc machine repair server-1 --dry-run     # list what would run
+rdc machine repair server-1               # run the auto-safe fixes, then re-check
+rdc machine repair server-1 --code cert.expiry.near
+```
+
+| 类别 | 含义 |
+|---|---|
+| `auto-safe` | 默认运行：重启容器或 Traefik、trim 和清理、写入 ACME 锚点 |
+| `auto-with-backup` | 仅在使用 `--with-backup` 且仓库快照成功之后运行；快照失败会取消修复 |
+| `operator-only` | 绝不运行。命令会输出需要手动运行的确切命令。所有会删除命名数据或产生费用的操作都属于此类 |
+
+`window_only` 是在类别之上的附加条件：修复只在机器的维护窗口内运行，格式为 UTC 的 `HH:MM-HH:MM`（可以跨越午夜）。没有窗口的机器绝不会自行运行这些修复；`--window-override` 可手动运行它们。按如下方式设置或清除窗口：
+
+```bash
+rdc machine repair server-1 --set-window 00:00-03:00
+rdc machine repair server-1 --set-window off
+```
+
+每个修复都会先确认其对应的发现仍然存在，因此第二次运行会报告无事可做。作用于同一对象的修复只运行一次（一次 Traefik 重启即可覆盖所有证书）。每个修复都会以标签 `rediacc-repair` 记录到机器日志，并记录在 JSON 的 `actions` 中（`code`、`subject`、`action`、`class`、`result`、`before`、`after`），运行结束时会做一次完整的重新检查。没有剩余问题时退出码为 `0`，剩下警告或 operator-only 项时为 `1`，剩下错误或有修复失败时为 `2`。
+
+| 发现 | 修复 | 类别 |
+|---|---|---|
+| `datastore.usage.high`, `repo.disk.high` | 先 trim，再清理已停止的容器、匿名的孤立卷和未使用的镜像 | auto-safe |
+| `container.unhealthy`, `container.restart-loop` | 重启容器 | auto-safe |
+| `renet.binary.replaced` | 重启受影响的仓库监督进程（`rdc machine restart-services --include-docker`，仅限这些进程） | auto-safe，仅限窗口内 |
+| `cert.expiry.near` | 重启 Traefik，让它重试续期 | auto-safe |
+| `acme.challenge.cname-shared` | 写入 ACME 锚点（见下文） | auto-safe |
+| `repo.health.warning`, `repo.health.error` | 运行仓库的 `repair()`（[服务](/zh/docs/services)） | Rediaccfile 声明的类别 |
+| `repo.unmounted`, `service.failed`, `service.restart-loop`, `backup.*`, `license.*`, `renet.repo-health.unsupported` | 以需要运行的命令形式输出 | operator-only |
+
+没有修复方法的发现（SMART 故障、温度、内存、系统盘、验证失败）只会被报告，留给运维人员处理。
+
+清理绝不会触碰 hub：带有 `rediacc.hub.*` 标签的容器，以及带有 `rediacc.hub.user` 标签或名为 `rediacc-hub-home-*` 的卷都会被排除，因此 hub 用户的主目录在每次空间回收中都能保留。trim 和清理都无法释放的残余（命名卷、大型应用数据）仍由运维人员决定。
+
+### 仓库修复
+
+```bash
+rdc repo repair my-app@server-1 --dry-run
+rdc repo repair my-app@server-1
+```
+
+`rdc repo repair` 按同样的类别运行仓库的 `repair()` 函数：`auto-safe` 会运行，`auto-with-backup` 需要 `--with-backup`，而未声明的（`operator-only`）`repair()` 只有在回答其确认提示后或使用 `--yes` 时才运行。之后 `health()` 会再次运行，退出码取决于最终的级别：`0` 正常或无检查，`1` 警告，`2` 错误或 `repair()` 失败。
+
+### ACME 锚点
+
+属于 CNAME 的通配符 DNS 记录会让每个 `_acme-challenge.<host>` 名称都跟随它，于是所有质询落到同一个名称上，续期互相冲突（`acme.challenge.cname-shared`）。修复会通过代理的 Cloudflare 令牌，在每个发生冲突的 `_acme-challenge.<name>` 上写入值为 `rediacc-acme-anchor` 的 TXT 记录，然后重启 Traefik。显式记录会让该名称脱离通配符的作用范围，质询便会落到该去的地方。该修复只添加记录，已有的锚点保持原样。
+
+列在 `ACME_DELEGATED_NAMES`（代理 `config.env` 中以逗号分隔的证书名称列表）里的名称是有意的委派：它们不会被写入锚点，也不会被报告。当代理没有可用的 Cloudflare 令牌时，修复会退而使用 `config.env` 中的 `LEGO_DISABLE_CNAME_SUPPORT=true`，但仅限没有声明任何委派名称的情况，因为该变量会对所有名称关闭 CNAME 跟随；声明了委派时，这条发现仍然是 operator-only。同一个修复会在每次代理安装时运行（`rdc machine infra push`），也可以在机器上用 `renet proxy acme-fix` 单独运行。
 
 ## 列出容器
 

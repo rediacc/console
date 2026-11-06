@@ -9,8 +9,8 @@ tags:
 subcategory: operations
 order: 9
 language: tr
-sourceHash: "103d9f60b35eabc9"
-sourceCommit: "3fae98178f8020a40a5cf1344366fff376263262"
+sourceHash: "6e4968522e118c98"
+sourceCommit: "9b8aa220de6eb4f7c7b7783456af6871202c8305"
 ---
 
 # İzleme
@@ -26,12 +26,91 @@ rdc machine health server-1
 ```
 
 Rapor içeriği:
-- **Sistem**: çalışma süresi, disk kullanımı, datastore kullanımı
-- **Konteynerler**: çalışan, sağlıklı ve sağlıksız konteyner sayıları
-- **Depolama**: SMART sağlık durumu
+- **Sistem**: çalışma süresi, bellek (yüzde 80 üzerinde uyarı, yüzde 90 üzerinde hata), disk ve datastore kullanımı (yüzde 85 üzerinde uyarı, yüzde 95 üzerinde hata)
+- **Konteynerler**: çalışan, sağlıklı ve sağlıksız konteyner sayıları; `Restarting` döngüsündeki bir konteyner kritiktir
+- **Servisler**: başarısız systemd birimleri (hata) ve sürekli yeniden başlayan birimler (kritik)
+- **Depolama**: SMART sağlık durumu (bozulan bir disk kritiktir) ve disk sıcaklığı
+- **Depolar**: bağlı olmayan otomatik başlatmalı depolar ve her deponun dosya sistemi kullanımı (yüzde 85 üzerinde uyarı, yüzde 95 üzerinde hata)
+- **Yedeklemeler**: 10 günden uzun süredir yedeklenmeyen, zamanlamasının veya hedefinin gerisinde kalan ya da son doğrulaması başarısız olan depolar
+- **Lisanslar**: süresi dolmuş, eksik, eşleşmeyen veya geçersiz depo lisansları ile yenilenmesi gereken lisanslar
+- **Renet süreçleri**: değiştirilmiş bir renet ikilisini hâlâ çalıştıran daemon'lar
+- **Depo sağlığı**: bağlı her deponun kendi `health()` sonucu (aşağıya bakın)
+- **Sertifikalar**: süresi dolmak üzere olan proxy sertifikaları ve paylaşılan ACME challenge CNAME kayıtları
 - **Sorunlar**: tespit edilen sorunlar
 
-Makine tarafından okunabilir çıktı için `--output json` kullanın.
+Çıkış kodu hükmü verir: `0` sağlıklı, `1` uyarı, `2` hata, `3` kritik (bozulan bir disk ya da yeniden başlatma döngüsündeki bir konteyner veya servis). Makine tarafından okunabilir çıktı için `--output json` kullanın; çıktı `repo_health` (depo başına bir rapor) ve `findings` alanlarını içerir, her bulgu bir kod, bir önem derecesi (`info`, `warning`, `error` veya `critical`), bir konu, bir ayrıntı ve düzeltmesi varsa `fix` taşır ([Onarım](#repair) bölümüne bakın).
+
+## Depo Sağlığı
+
+Bir Rediaccfile, deponun kendi servislerini denetleyen bir `health()` fonksiyonu tanımlayabilir ([Servisler](/tr/docs/services)): çıkış `0` tamam, `1` uyarı, `2` hata. Tek bir depo için şöyle çalıştırılır:
+
+```bash
+rdc repo health my-app@server-1
+```
+
+Komut, deponun Rediaccfile'ları arasındaki en kötü düzeyle çıkar. Hiçbir Rediaccfile'ın `health()` tanımlamadığı bir depo **denetim yok** yazdırır ve `0` ile çıkar; asla sağlıklı olarak bildirilmez. Zaman aşımına uğrayan, sonlandırılan veya başka bir kodla çıkan bir `health()` hatadır; makineye ulaşılamaması da öyledir (çıkış `2`).
+
+`rdc machine health`, bağlı her deponun `health()` fonksiyonunu tek çağrıda çalıştırır ve en kötü düzeyi kendi çıkış koduna katar; her depo için uyarı (`repo.health.warning`) veya hata (`repo.health.error`) düzeyinde bir bulgu üretilir. Denetimi olmayan depolar listelenir, bildirilmez. Makinedeki renet depo sağlık denetimlerinden eskiyse sonuç tek bir uyarıdır, `renet.repo-health.unsupported`; `rdc machine setup` onu güncelleyene kadar böyle kalır.
+
+## Sertifika Süresi ve ACME Challenge'ları
+
+`rdc machine health`, proxy'nin ACME sertifikalarını okur ve süresinin dolmasına 21 günden az kalan her sertifika için (uyarı) veya 7 günden az kalanlar için (hata) `cert.expiry.near` bildirir. Proxy 30 gün önceden yeniler; dolayısıyla 21 günün altındaki bir sertifika, yenilemesinin en az dokuz gündür başarısız olduğu anlamına gelir.
+
+Ayrıca bir sertifika adının `_acme-challenge.<name>` kaydı, kendisi `_acme-challenge.` adı olmayan bir ada CNAME ile gidiyorsa ya da iki ad aynı adda sona eriyorsa `acme.challenge.cname-shared` bildirir. CNAME olan bir joker karakter kaydı bu şekli üretir: tüm challenge'lar tek bir ada düşer ve yenilemeler çakışır. Bilinçli bir yetkilendirme (örneğin `_acme-challenge.mail.example.com` kaydının `_acme-challenge.mail.example.io` adına işaret etmesi) bildirilmez; amaçlanan diğer yetkilendirmeleri proxy'nin `config.env` dosyasındaki `ACME_DELEGATED_NAMES` değişkenine (sertifika adlarının virgülle ayrılmış listesi) yazın. Challenge zinciri çözümlenemeyen bir ad (DNS hatası veya zaman aşımı), denetim o ad için çalışmadığından bir uyarı olan `acme.challenge.unknown` olarak bildirilir.
+
+## Onarım
+
+Her bulgu bir kod taşır; güvenli bir düzeltme varsa ayrıca `action`, güvenlik `class` değeri ve `window_only` içeren bir `fix` taşır. `rdc machine health` salt okunur kalır; işlemi yapan komut `rdc machine repair` komutudur:
+
+```bash
+rdc machine repair server-1 --dry-run     # list what would run
+rdc machine repair server-1               # run the auto-safe fixes, then re-check
+rdc machine repair server-1 --code cert.expiry.near
+```
+
+| Sınıf | Anlamı |
+|---|---|
+| `auto-safe` | Varsayılan olarak çalışır: bir konteyneri veya Traefik'i yeniden başlatma, trim ve temizlik, ACME çapasını yazma |
+| `auto-with-backup` | Yalnızca `--with-backup` ile, deponun başarılı bir anlık görüntüsünden sonra çalışır; anlık görüntü başarısız olursa düzeltme iptal edilir |
+| `operator-only` | Asla çalışmaz. Komut, elle çalıştırılacak tam komutu yazdırır. Adlandırılmış veriyi silen veya para harcayan her şey burada yer alır |
+
+`window_only`, sınıfın üzerine eklenen bir koşuldur: düzeltme yalnızca makinenin bakım penceresi içinde çalışır; pencere UTC saatiyle `HH:MM-HH:MM` biçimindedir (gece yarısını aşabilir). Penceresi olmayan bir makine bu düzeltmeleri kendiliğinden hiç çalıştırmaz; `--window-override` bunları elle çalıştırır. Pencereyi şöyle ayarlayın veya kaldırın:
+
+```bash
+rdc machine repair server-1 --set-window 00:00-03:00
+rdc machine repair server-1 --set-window off
+```
+
+Her düzeltme önce bulgusunun hâlâ var olduğunu denetler; bu yüzden ikinci çalıştırma yapacak bir şey bulmaz. Aynı şey üzerinde etkili olan düzeltmeler bir kez çalışır (tek bir Traefik yeniden başlatması tüm sertifikaları kapsar). Her düzeltme makine günlüğüne `rediacc-repair` etiketiyle ve JSON çıktısındaki `actions` alanına (`code`, `subject`, `action`, `class`, `result`, `before`, `after`) kaydedilir; çalıştırma tam bir yeniden denetimle biter. Çıkış kodu, geriye bir şey kalmadığında `0`, uyarılar veya operator-only öğeler kaldığında `1`, bir hata kaldığında ya da bir düzeltme başarısız olduğunda `2` olur.
+
+| Bulgu | Düzeltme | Sınıf |
+|---|---|---|
+| `datastore.usage.high`, `repo.disk.high` | Trim, ardından durdurulmuş konteynerleri, sahipsiz anonim birimleri ve kullanılmayan imajları temizleme | auto-safe |
+| `container.unhealthy`, `container.restart-loop` | Konteyneri yeniden başlatma | auto-safe |
+| `renet.binary.replaced` | Etkilenen depo denetleyicilerini yeniden başlatma (`rdc machine restart-services --include-docker`, yalnızca bunlarla sınırlı) | auto-safe, yalnızca pencerede |
+| `cert.expiry.near` | Traefik'i yeniden başlatıp yenilemeyi yeniden deneme | auto-safe |
+| `acme.challenge.cname-shared` | ACME çapasını yazma (aşağıya bakın) | auto-safe |
+| `repo.health.warning`, `repo.health.error` | Deponun `repair()` fonksiyonunu çalıştırma ([Servisler](/tr/docs/services)) | Rediaccfile'ın bildirdiği sınıf |
+| `repo.unmounted`, `service.failed`, `service.restart-loop`, `backup.*`, `license.*`, `renet.repo-health.unsupported` | Çalıştırılacak komut olarak yazdırılır | operator-only |
+
+Düzeltmesi olmayan bulgular (SMART arızaları, sıcaklık, bellek, sistem diski, başarısız bir doğrulama) bildirilir ve operatöre bırakılır.
+
+Temizlik hub'a asla dokunmaz: `rediacc.hub.*` etiketli konteynerler ile `rediacc.hub.user` etiketli veya adı `rediacc-hub-home-*` olan birimler dışarıda tutulur; böylece bir hub kullanıcısının ana dizini her alan geri kazanımından sağ çıkar. Trim ve temizliğin boşaltamadığı artık (adlandırılmış birimler, büyük uygulama verileri) operatörün kararı olarak kalır.
+
+### Depo Onarımı
+
+```bash
+rdc repo repair my-app@server-1 --dry-run
+rdc repo repair my-app@server-1
+```
+
+`rdc repo repair`, deponun `repair()` fonksiyonlarını aynı sınıflarla çalıştırır: `auto-safe` çalışır, `auto-with-backup` için `--with-backup` gerekir, bildirimi olmayan (`operator-only`) bir `repair()` ise yalnızca sorusu yanıtlandıktan sonra ya da `--yes` ile çalışır. Ardından `health()` yeniden çalışır ve çıkış kodu, sonunda ulaşılan düzeyi izler: `0` tamam veya denetim yok, `1` uyarı, `2` hata veya başarısız bir `repair()`.
+
+### ACME Çapası
+
+CNAME olan bir joker karakterli DNS kaydı, her `_acme-challenge.<host>` adının onu izlemesine yol açar; böylece tüm challenge'lar tek bir ada düşer ve yenilemeler çakışır (`acme.challenge.cname-shared`). Düzeltme, proxy'nin Cloudflare belirteci üzerinden çakışan her `_acme-challenge.<name>` adına `rediacc-acme-anchor` değerli bir TXT kaydı yazar, ardından Traefik'i yeniden başlatır. Açık bir kayıt adı joker karakterin kapsamından çıkarır ve challenge olması gereken yere düşer. Düzeltme yalnızca kayıt ekler; var olan bir çapaya dokunulmaz.
+
+`ACME_DELEGATED_NAMES` içinde (proxy'nin `config.env` dosyasında sertifika adlarının virgülle ayrılmış listesi) yer alan adlar bilinçli yetkilendirmelerdir: hiçbir zaman çapalanmaz ve bildirilmez. Proxy'nin kullanılabilir bir Cloudflare belirteci yoksa düzeltme `config.env` içindeki `LEGO_DISABLE_CNAME_SUPPORT=true` ayarına başvurur, ancak yalnızca hiçbir yetkilendirilmiş ad bildirilmemişse; çünkü bu değişken tüm adlar için CNAME takibini kapatır. Bir yetkilendirme bildirilmişse bulgu operator-only kalır. Aynı düzeltme her proxy kurulumunda (`rdc machine infra push`) ve makinede `renet proxy acme-fix` ile tek başına çalışır.
 
 ## Konteynerleri Listeleme
 

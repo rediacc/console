@@ -9,8 +9,8 @@ tags:
 subcategory: workloads
 order: 5
 language: zh
-sourceHash: "c0f1046e3af31219"
-sourceCommit: "40b28261b0fa1018c0268405cbfdb899ab283c06"
+sourceHash: "fbdbed2c2d31b52c"
+sourceCommit: "9b8aa220de6eb4f7c7b7783456af6871202c8305"
 ---
 
 # 服务
@@ -29,14 +29,33 @@ Rediaccfile 在两个位置被发现：
 
 ### 生命周期函数
 
-一个 Rediaccfile 最多包含两个函数：
+renet 会运行 Rediaccfile 中的以下函数：
 
 | 函数 | 运行时机 | 用途 | 错误行为 |
 |------|----------|------|----------|
 | `up()` | 启动时 | 启动服务（例如 `renet compose -- up -d`） | 根 Rediaccfile 失败是**关键性的**（停止所有操作）。子目录失败是**非关键性的**（记录日志，继续下一个） |
 | `down()` | 停止时 | 停止服务（例如 `renet compose -- down`） | **尽力而为** -- 失败会被记录，但所有 Rediaccfile 都会被执行 |
+| `health()` | 运行 `rdc repo health`、`rdc machine health` 以及部署的健康关卡时 | 报告仓库自身的健康状况：退出码 `0` 正常，`1` 警告，`2` 错误 | 每个 Rediaccfile 的 `health()` 都会运行，取最差的级别。退出码 `75` 表示仍在预热（警告）。任何其他退出码、信号或超时都算错误。没有任何 Rediaccfile 定义 `health()` 的仓库会报告**无检查**，绝不会算作健康 |
+| `repair()` | 运行 `rdc repo repair`，以及对 `health()` 不正常的仓库运行 `rdc machine repair` 时 | 修复同一文件的 `health()` 所报告的问题 | 仅当其所在文件的 `health()` 不正常且所声明的类别被允许时才会运行（见下文）。之后 `health()` 会再次运行。失败或超时的 `repair()` 算错误 |
 
-两个函数都是可选的。如果某个函数未定义，它会被静默跳过。
+所有函数都是可选的。如果某个函数未定义，它会被静默跳过。
+
+#### 声明修复类别
+
+`repair()` 会收到 `REDIACC_HEALTH_LEVEL`（`warning` 或 `error`，即其所在文件的 `health()` 报告的级别）和 `REDIACC_HEALTH_OUTPUT`（该 `health()` 输出的末尾部分）。用一行注释声明这个函数有多安全：
+
+```bash
+# rediacc:repair class=auto-safe
+# rediacc:repair class=auto-with-backup window=only
+```
+
+| 类别 | 由谁运行 |
+|---|---|
+| `auto-safe` | `rdc machine repair` 和 `rdc repo repair` 会自行运行 |
+| `auto-with-backup` | 仅在使用 `--with-backup` 且仓库快照成功之后运行 |
+| `operator-only` | 绝不会自行运行。`rdc repo repair` 会先询问（或接受 `--yes`）；`rdc machine repair` 从不运行 |
+
+没有声明的 `repair()` 视为 `operator-only`，因此除非仓库自己表明安全，否则没有任何工具会在无人值守时运行仓库的代码。`window=only` 增加第二个条件：该函数只在机器的维护窗口内（[监控](/zh/docs/monitoring#repair)）运行，或在使用 `--window-override` 时运行。当多行声明了类别时，以最严格的为准。
 
 ### 执行顺序
 
@@ -111,7 +130,7 @@ Rediaccfile 可以用注释行声明自己的需求，这只是一个请求：
 `up()` 和 `down()` 默认各有 10 分钟,可通过 `RENET_UP_TIMEOUT` 和 `RENET_DOWN_TIMEOUT` 或 `--up-timeout` 和 `--down-timeout` 设置。超时后,进程组先收到 SIGTERM,10 秒后收到 SIGKILL。需要先执行 `down()` 的操作(如 `repo down --unmount` 或 converge 重启)在 `down()` 超时时会让容器继续运行,加上 `--force` 则继续执行。Rediaccfile 可以用一行注释调高限制:
 
 ```bash
-# rediacc:timeout up=20m down=15m backup=120s
+# rediacc:timeout up=20m down=15m backup=120s health=60s repair=10m
 ```
 
 | 键 | 默认值 | 上限 |
@@ -119,6 +138,10 @@ Rediaccfile 可以用注释行声明自己的需求，这只是一个请求：
 | `up` | 10 分钟 | 60 分钟 |
 | `down` | 10 分钟 | 15 分钟 |
 | `backup` | 30 秒 | 300 秒 |
+| `health` | 30 秒 | 300 秒 |
+| `repair` | 5 分钟 | 30 分钟 |
+
+`health()` 同样有时间限制：默认值通过 `RENET_HEALTH_TIMEOUT` 设置，超时时其进程组会先收到 SIGTERM，10 秒后收到 SIGKILL。部署的健康关卡把超时的 `health()` 视为仍在预热并重试；`rdc repo health` 和 `rdc machine health` 则把它报告为错误。`repair()` 遵循同样的模型，使用 `RENET_REPAIR_TIMEOUT`，超时的 `repair()` 算作失败。
 
 该指令只能调高限制,并且会被截断到上限,因此仓库无法把 `down()` 缩短到被强制终止的程度。未知的键会被忽略并给出警告。
 
