@@ -121,6 +121,13 @@ export async function handleRepoDelete(
   }
 ): Promise<void> {
   try {
+    // A repo whose machine left the config has nothing to reach: its delete is config-only (#80f7476a).
+    const { deleteOnGoneMachine, goneMachineOf } = await import('./repo-delete-machine-gone.js');
+    const goneMachine = await goneMachineOf(ref);
+    if (goneMachine !== undefined) {
+      await deleteOnGoneMachine(ref, goneMachine, options);
+      return;
+    }
     // Converge-to-absent (#45/#95): delete RETAINS the config family by design ("may exist on other machines"), so a delete whose image is already gone is a legitimate sequence, resolve with absentOk and skip the machine dispatch on a definite absence instead of refusing with exit 12.
     const { name, repoKey, machineName, kubeCluster, imageAbsent } = await resolveRepoRef(ref, {
       absentOk: true,

@@ -787,7 +787,12 @@
         "removedCerts": "{{count}} 件の証明書キャッシュエントリが{{verb}}削除されました：",
         "removedOrphanRepos": "{{count}} 件のリポジトリエントリ（どのマシンにも配置されていません）が{{verb}}削除されました：",
         "scanning": "古い残留物のためにローカル設定をスキャンしています...",
-        "tooManyOnlyFlags": "--certs-only / --archives-only / --refs-only のうち最大 1 つを渡してください。"
+        "tooManyOnlyFlags": "--certs-only / --archives-only / --refs-only のうち最大 1 つを渡してください。",
+        "goneMachineReposOption": "構成にもう存在しないマシンに配置されたリポジトリエントリをアーカイブします。削除ではなくアーカイブで、各エントリは認証情報を保持し、アーカイブの猶予期間が切れるまで復元できます。",
+        "foundGoneMachineRepos": "{{count}} 件のリポジトリエントリが、構成にもう存在しないマシンに配置されています:",
+        "archivedGoneMachineRepos": "{{count}} 件のリポジトリエントリ {{verb}} アーカイブ (構成にもう存在しないマシンに配置):",
+        "goneMachineReposHint": "'rdc config prune --gone-machine-repos' でアーカイブできます。各エントリはアーカイブの猶予期間が切れるまで復元可能です。",
+        "droppedGoneMachineState": "構成にもう存在しないマシンを指すランタイムレコード {{count}} 件 {{verb}} 削除:"
       },
       "reconcile": {
         "acceptObservedUnfiltered": "--accept-observed は --machine と組み合わせられません: 部分スキャンでは配置が一意であることを証明できないため、書き換えは推測になってしまいます。フィルタなしで 'rdc config reconcile --accept-observed' を実行してください。",
@@ -899,7 +904,8 @@
           "notEnabled": "リモート設定は有効になっていません。",
           "pulled": "設定を取得済み",
           "pulling": "リモートから設定を取得中...",
-          "success": "リモートから設定を更新しました (バージョン {{version}})。"
+          "success": "リモートから設定を更新しました (バージョン {{version}})。",
+          "replacedLocal": "構成「{{config}}」: ローカルファイルはサーバーバージョン {{version}} と異なっていたため、置き換えました: {{changes}}"
         },
         "staleSlot": "キースロットが古くなっています（設定の暗号化キーがローテーションされました）。次のコマンドで再登録してください: rdc config remote enable",
         "status": {
@@ -982,7 +988,10 @@
           "invalidVersion": "バージョンは正の整数で指定してください。指定された値: \"{{version}}\"",
           "alreadyCurrent": "バージョン {{version}} はすでに設定 \"{{config}}\" の現在のバージョンです。復元するものはありません。",
           "success": "設定 \"{{config}}\" のバージョン {{restored}} をバージョン {{version}} として復元しました。"
-        }
+        },
+        "localEditsPushed": "構成「{{config}}」: ローカルファイルにサーバーバージョン {{from}} 以降の編集がありました。バージョン {{to}} としてプッシュしました: {{changes}}",
+        "localEditsConflict": "構成「{{config}}」: ローカルファイルにサーバーバージョン {{cached}} 以降の編集があり ({{changes}})、サーバーはバージョン {{server}} に進んでいます。何も上書きしていません。編集内容を退避し、「rdc config remote refresh」でバージョン {{server}} を取得してから (ローカルファイルは置き換わります)、編集を再適用してください。",
+        "localEditsUnverifiable": "構成「{{config}}」: ローカルファイルがサーバーバージョン {{server}} と異なり ({{changes}})、キャッシュ元のバージョン {{cached}} を読み戻せませんでした ({{reason}})。そのため、ローカル編集とサーバー側の変更を区別できません。何も上書きしていません。編集内容を退避し、「rdc config remote refresh」でバージョン {{server}} を取得してから (ローカルファイルは置き換わります)、編集を再適用してください。"
       },
       "rotateCek": {
         "cancelled": "ローテーションをキャンセルしました。何も変更されていません",
@@ -1277,7 +1286,11 @@
         "dnsCleanedUp": "{{count}} 件のDNSレコードを削除しました",
         "dnsDeleted": "DNSレコードを削除しました: {{type}} {{name}}",
         "noState": "\"{{name}}\" のOpenTofu状態が見つかりません。手動で追加したマシンには 'config remove-machine' を使用してください。",
-        "optionForce": "確認プロンプトをスキップ"
+        "optionForce": "確認プロンプトをスキップ",
+        "optionArchiveRepos": "このマシンに配置されたリポジトリの構成エントリをアーカイブする (認証情報は保持され、復元可能)",
+        "reposArchived": "{{machine}} に配置されたリポジトリエントリ {{count}} 件をアーカイブしました: {{repos}}",
+        "reposLeft": "{{count}} 件のリポジトリエントリが、この構成にもう存在しない {{machine}} をまだ指しています: {{repos}}",
+        "reposLeftHint": "'rdc config prune --gone-machine-repos' でまとめて、または 'rdc repo delete <name> -y' で1件ずつアーカイブできます。"
       },
       "description": "リモートマシンの状態を調べる: システムリソース、実行中のコンテナ、systemd サービス、デプロイ済みリポジトリ、ヘルス診断。読み取り専用のクエリであり、リポジトリを変更するには `repo` を使用する。主なサブコマンド: status（--system、--containers、--repositories、--services で絞り込める完全な状態）、health、list、add、remove、setup、prune、provision、deprovision。",
       "descriptionShort": "リモートマシンの管理（status、health、list、add、remove、setup、prune）",
@@ -1864,7 +1877,9 @@
         "licenseRetireFailed": "「{{repository}}」のライセンスが返却済みであることをアカウントサーバーに伝えられませんでした({{reason}})。返却されるまでは、サーバー側のライセンス合計に含まれたままになります。",
         "backupsPurged": "「{{repository}}」のクラウドスナップショットを {{count}} 件削除し、{{bytes}} を解放しました。",
         "purgeBackupsOption": "リポジトリのクラウドバックアップも、失効を待たずに今すぐ削除します",
-        "purgeForkRefused": "「{{repository}}」はフォークで、バックアップ系列を親と共有しているため、--purge-backups では親のバックアップも削除されます。このオプションなしでフォークを削除してください。"
+        "purgeForkRefused": "「{{repository}}」はフォークで、バックアップ系列を親と共有しているため、--purge-backups では親のバックアップも削除されます。このオプションなしでフォークを削除してください。",
+        "confirmMachineGone": "リポジトリ「{{repository}}」のマシン「{{machine}}」はこの構成にもう存在しないため、マシン上では何も変更しません。「{{repository}}」の構成エントリをアーカイブしますか?",
+        "machineGoneArchived": "「{{repository}}」の構成エントリをアーカイブしました: マシン「{{machine}}」はこの構成にもう存在しないため、どのマシンにも接続していません"
       },
       "description": "マシン上の暗号化リポジトリをデプロイ・管理する。主なサブコマンド: create、up（デプロイ）、down（停止）、fork（即時 CoW クローン）、delete、push/pull（バックアップ）、sync（ファイル転送）。ライフサイクル: repo create → repo up → repo down。アーキテクチャ、ルーティング、環境変数の詳細は rdc --help の Key Concepts を参照。",
       "descriptionShort": "マシン上の暗号化リポジトリをデプロイ・管理する",

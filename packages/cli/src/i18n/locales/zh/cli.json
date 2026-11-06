@@ -787,7 +787,12 @@
         "removedCerts": "{{count}} 个证书缓存条目{{verb}}移除：",
         "removedOrphanRepos": "{{count}} 个仓库条目（未部署在任何机器上）{{verb}}移除：",
         "scanning": "正在扫描本地配置中的过时残留...",
-        "tooManyOnlyFlags": "最多传递 --certs-only / --archives-only / --refs-only 中的一个。"
+        "tooManyOnlyFlags": "最多传递 --certs-only / --archives-only / --refs-only 中的一个。",
+        "goneMachineReposOption": "归档放置在已不在配置中的机器上的仓库条目。是归档而非删除：每个条目保留其凭据，在归档宽限期结束前都可恢复。",
+        "foundGoneMachineRepos": "有 {{count}} 个仓库条目放置在已不在配置中的机器上：",
+        "archivedGoneMachineRepos": "{{count}} 个仓库条目 {{verb}} 归档（放置在已不在配置中的机器上）：",
+        "goneMachineReposHint": "可使用 'rdc config prune --gone-machine-repos' 归档；在归档宽限期结束前都可恢复。",
+        "droppedGoneMachineState": "{{count}} 条指向已不在配置中的机器的运行时记录 {{verb}} 删除："
       },
       "reconcile": {
         "acceptObservedUnfiltered": "--accept-observed 不能与 --machine 同时使用：部分扫描无法证明放置位置是无歧义的，因此重写将只是猜测。请不加过滤地运行 'rdc config reconcile --accept-observed'。",
@@ -899,7 +904,8 @@
           "notEnabled": "远程配置未启用。",
           "pulled": "配置已拉取",
           "pulling": "正在从远程服务器拉取配置...",
-          "success": "已从远程服务器刷新配置（版本 {{version}}）。"
+          "success": "已从远程服务器刷新配置（版本 {{version}}）。",
+          "replacedLocal": "配置“{{config}}”：本地文件与服务器版本 {{version}} 不同，已被其替换：{{changes}}"
         },
         "staleSlot": "你的密钥槽位已过期（配置加密密钥已被轮换）。请使用以下命令重新注册：rdc config remote enable",
         "status": {
@@ -982,7 +988,10 @@
           "invalidVersion": "版本必须是正整数，收到的是 \"{{version}}\"。",
           "alreadyCurrent": "版本 {{version}} 已是配置 \"{{config}}\" 的当前版本，无需恢复。",
           "success": "已将配置 \"{{config}}\" 的版本 {{restored}} 恢复为版本 {{version}}。"
-        }
+        },
+        "localEditsPushed": "配置“{{config}}”：本地文件包含服务器版本 {{from}} 之后的修改，已作为版本 {{to}} 推送：{{changes}}",
+        "localEditsConflict": "配置“{{config}}”：本地文件包含服务器版本 {{cached}} 之后的修改（{{changes}}），而服务器已更新到版本 {{server}}。未覆盖任何内容。请先另存这些修改，运行“rdc config remote refresh”获取版本 {{server}}（会替换本地文件），再重新应用修改。",
+        "localEditsUnverifiable": "配置“{{config}}”：本地文件与服务器版本 {{server}} 不同（{{changes}}），且无法读回其缓存来源版本 {{cached}}（{{reason}}），因此无法区分本地修改与服务器变更。未覆盖任何内容。请先另存修改，运行“rdc config remote refresh”获取版本 {{server}}（会替换本地文件），再重新应用修改。"
       },
       "rotateCek": {
         "cancelled": "轮换已取消。未做任何更改。",
@@ -1277,7 +1286,11 @@
         "dnsCleanedUp": "已移除 {{count}} 条 DNS 记录",
         "dnsDeleted": "已删除 DNS 记录：{{type}} {{name}}",
         "noState": "未找到 \"{{name}}\" 的OpenTofu状态。手动添加的机器请使用 'config remove-machine'。",
-        "optionForce": "跳过确认提示"
+        "optionForce": "跳过确认提示",
+        "optionArchiveRepos": "归档放置在此机器上的仓库的配置条目（保留凭据，可恢复）",
+        "reposArchived": "已归档放置在 {{machine}} 上的 {{count}} 个仓库条目：{{repos}}",
+        "reposLeft": "有 {{count}} 个仓库条目仍指向已不在此配置中的 {{machine}}：{{repos}}",
+        "reposLeftHint": "可使用 'rdc config prune --gone-machine-repos' 一次归档，或用 'rdc repo delete <name> -y' 逐个归档。"
       },
       "description": "检查远程机器状态：系统资源、运行中的容器、systemd 服务、已部署的仓库以及健康诊断。只读查询；如需修改仓库请使用 `repo`。关键子命令：status（完整状态，可用 --system、--containers、--repositories、--services 缩小范围）、health、list、add、remove、setup、prune、provision、deprovision。",
       "descriptionShort": "管理远程机器（status、health、list、add、remove、setup、prune）",
@@ -1864,7 +1877,9 @@
         "licenseRetireFailed": "无法告知账户服务器“{{repository}}”的许可证已退还({{reason}})。在退还之前,它仍会计入服务器的许可证总数。",
         "backupsPurged": "已删除“{{repository}}”的 {{count}} 个云快照,释放了 {{bytes}}。",
         "purgeBackupsOption": "同时立即删除该仓库的云备份,而不是等它们过期",
-        "purgeForkRefused": "“{{repository}}”是一个 fork,与其父仓库共用备份谱系,因此 --purge-backups 也会删除父仓库的备份。请不带此选项删除该 fork。"
+        "purgeForkRefused": "“{{repository}}”是一个 fork,与其父仓库共用备份谱系,因此 --purge-backups 也会删除父仓库的备份。请不带此选项删除该 fork。",
+        "confirmMachineGone": "仓库“{{repository}}”的机器“{{machine}}”已不在此配置中，因此不会改动任何机器。要归档“{{repository}}”的配置条目吗？",
+        "machineGoneArchived": "已归档“{{repository}}”的配置条目：其机器“{{machine}}”已不在此配置中，因此未联系任何机器"
       },
       "description": "在机器上部署和管理加密仓库。关键子命令：create、up（部署）、down（停止）、fork（即时 CoW 克隆）、delete、push/pull（备份）、sync（文件传输）。生命周期：repo create → repo up → repo down。有关架构、路由和环境变量的详细信息，请参阅 rdc --help 中的关键概念。",
       "descriptionShort": "在机器上部署和管理加密仓库",

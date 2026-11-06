@@ -7,7 +7,7 @@ order: 2
 language: ru
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/ru/cli.json
-sourceHash: "e17289c6a2dc6647"
+sourceHash: "a140dc7c22d1f22c"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -68,6 +68,7 @@ rdc config prune [options]
 | `--refs-only` | {{t:cli.commands.config.prune.refsOnlyOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--purge-archived` | {{t:cli.commands.config.prune.purgeArchivedOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--orphan-repos` | {{t:cli.commands.config.prune.orphanReposOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--gone-machine-repos` | {{t:cli.commands.config.prune.goneMachineReposOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--grace-days <days>` | {{t:cli.commands.config.prune.graceDaysOption}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
@@ -764,6 +765,7 @@ rdc machine deprovision <name> [options]
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
 | `--force` | {{t:cli.options.yes}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--archive-repos` | {{t:cli.commands.machine.deprovision.optionArchiveRepos}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 
 

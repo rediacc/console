@@ -787,7 +787,12 @@
         "removedCerts": "{{count}} voce/voci della cache certificati {{verb}} rimossa/e:",
         "removedOrphanRepos": "{{count}} voce/i di repository {{verb}} rimosse (non associate a nessuna macchina):",
         "scanning": "Scansione della configurazione locale per elementi obsoleti...",
-        "tooManyOnlyFlags": "Passa al massimo uno tra --certs-only / --archives-only / --refs-only."
+        "tooManyOnlyFlags": "Passa al massimo uno tra --certs-only / --archives-only / --refs-only.",
+        "goneMachineReposOption": "Archiviare le voci di repository collocate su una macchina non più presente nella configurazione. Archiviate, non eliminate: ognuna conserva la propria credenziale ed è ripristinabile fino alla scadenza del periodo di grazia dell'archivio.",
+        "foundGoneMachineRepos": "{{count}} voci di repository sono collocate su una macchina non più presente nella configurazione:",
+        "archivedGoneMachineRepos": "{{count}} voci di repository {{verb}} archiviate (collocate su una macchina non più nella configurazione):",
+        "goneMachineReposHint": "Archiviarle con 'rdc config prune --gone-machine-repos'; ognuna resta ripristinabile fino alla scadenza del periodo di grazia dell'archivio.",
+        "droppedGoneMachineState": "{{count}} record di runtime che indicano una macchina non più nella configurazione {{verb}} rimossi:"
       },
       "reconcile": {
         "acceptObservedUnfiltered": "--accept-observed non può essere combinato con --machine: una scansione parziale non può dimostrare che un posizionamento sia inequivocabile, quindi la riscrittura sarebbe un'ipotesi. Esegui 'rdc config reconcile --accept-observed' senza filtri.",
@@ -899,7 +904,8 @@
           "notEnabled": "La configurazione remota non è abilitata.",
           "pulled": "Configurazione recuperata",
           "pulling": "Recupero della configurazione dal remoto...",
-          "success": "Configurazione aggiornata dal remoto (versione {{version}})."
+          "success": "Configurazione aggiornata dal remoto (versione {{version}}).",
+          "replacedLocal": "Configurazione \"{{config}}\": il file locale differiva dalla versione {{version}} del server ed è stato sostituito: {{changes}}"
         },
         "staleSlot": "Il tuo key slot non è aggiornato (la chiave di cifratura della config è stata ruotata). Ripeti l'iscrizione con: rdc config remote enable",
         "status": {
@@ -982,7 +988,10 @@
           "invalidVersion": "La versione deve essere un numero intero positivo, ricevuto \"{{version}}\".",
           "alreadyCurrent": "La versione {{version}} è già la versione corrente della configurazione \"{{config}}\"; non c'è nulla da ripristinare.",
           "success": "Versione {{restored}} della configurazione \"{{config}}\" ripristinata come versione {{version}}."
-        }
+        },
+        "localEditsPushed": "Configurazione \"{{config}}\": il file locale conteneva modifiche fatte dalla versione {{from}} del server; inviate come versione {{to}}: {{changes}}",
+        "localEditsConflict": "Configurazione \"{{config}}\": il file locale contiene modifiche fatte dalla versione {{cached}} del server ({{changes}}), e il server è passato alla versione {{server}}. Non è stato sovrascritto nulla. Mettere da parte le modifiche, eseguire \"rdc config remote refresh\" per prendere la versione {{server}} (sostituisce il file locale) e poi applicarle di nuovo.",
+        "localEditsUnverifiable": "Configurazione \"{{config}}\": il file locale differisce dalla versione {{server}} del server ({{changes}}) e la versione {{cached}} da cui proviene non è leggibile ({{reason}}), quindi una modifica locale non è distinguibile da una del server. Non è stato sovrascritto nulla. Mettere da parte le modifiche, eseguire \"rdc config remote refresh\" per prendere la versione {{server}} (sostituisce il file locale) e poi applicarle di nuovo."
       },
       "rotateCek": {
         "cancelled": "Rotazione annullata. Nessuna modifica effettuata.",
@@ -1277,7 +1286,11 @@
         "dnsCleanedUp": "{{count}} record DNS rimosso/i",
         "dnsDeleted": "Record DNS eliminato: {{type}} {{name}}",
         "noState": "Nessuno stato OpenTofu trovato per \"{{name}}\". Usa 'config remove-machine' per le macchine aggiunte manualmente.",
-        "optionForce": "Salta la conferma"
+        "optionForce": "Salta la conferma",
+        "optionArchiveRepos": "Archiviare le voci di configurazione dei repository collocati su questa macchina (credenziali conservate, ripristinabili)",
+        "reposArchived": "Archiviate {{count}} voci di repository collocate su {{machine}}: {{repos}}",
+        "reposLeft": "{{count}} voci di repository indicano ancora {{machine}}, che non è più in questa configurazione: {{repos}}",
+        "reposLeftHint": "Archiviarle con 'rdc config prune --gone-machine-repos', oppure una alla volta con 'rdc repo delete <name> -y'."
       },
       "description": "Ispeziona lo stato delle macchine remote: risorse di sistema, container in esecuzione, servizi systemd, repository distribuiti e diagnostica di salute. Query di sola lettura; per modificare i repository usa `repo`. Sottocomandi principali: status (stato completo, filtrabile con --system, --containers, --repositories, --services), health, list, add, remove, setup, prune, provision, deprovision.",
       "descriptionShort": "Gestisci macchine remote (stato, salute, elenco, aggiunta, rimozione, configurazione, pulizia)",
@@ -1864,7 +1877,9 @@
         "licenseRetireFailed": "Impossibile comunicare al server dell'account che la licenza di \"{{repository}}\" è stata ritirata ({{reason}}). Resta conteggiata nei totali delle licenze del server finché non viene ritirata.",
         "backupsPurged": "Eliminati {{count}} snapshot cloud di \"{{repository}}\", liberati {{bytes}}.",
         "purgeBackupsOption": "Elimina subito anche i backup cloud del repository, invece di lasciarli scadere",
-        "purgeForkRefused": "\"{{repository}}\" è un fork e condivide la linea di backup con il genitore, quindi --purge-backups eliminerebbe anche i backup del genitore. Elimina il fork senza questa opzione."
+        "purgeForkRefused": "\"{{repository}}\" è un fork e condivide la linea di backup con il genitore, quindi --purge-backups eliminerebbe anche i backup del genitore. Elimina il fork senza questa opzione.",
+        "confirmMachineGone": "La macchina \"{{machine}}\" del repository \"{{repository}}\" non è più in questa configurazione, quindi nessuna macchina viene toccata. Archiviare la voce di configurazione di \"{{repository}}\"?",
+        "machineGoneArchived": "Voce di configurazione di \"{{repository}}\" archiviata: la sua macchina \"{{machine}}\" non è più in questa configurazione, quindi nessuna macchina è stata contattata"
       },
       "description": "Distribuisci e gestisci repository cifrati sui macchinari. Sottocomandi principali: create, up (distribuisci), down (ferma), fork (clone CoW istantaneo), delete, push/pull (backup), sync (trasferimento file). Ciclo di vita: repo create → repo up → repo down. Consulta Concetti Chiave in rdc --help per architettura, routing e variabili d'ambiente.",
       "descriptionShort": "Distribuisci e gestisci repository cifrati sui macchinari",

@@ -787,7 +787,12 @@
         "removedCerts": "{{count}} إدخال/إدخالات ذاكرة التخزين المؤقت للشهادات {{verb}} إزالتها:",
         "removedOrphanRepos": "{{count}} من إدخالات المستودعات {{verb}} إزالتها (غير مرتبطة بأي جهاز):",
         "scanning": "جارٍ فحص التكوين المحلي بحثاً عن البقايا القديمة...",
-        "tooManyOnlyFlags": "مرر على الأكثر واحداً من --certs-only / --archives-only / --refs-only."
+        "tooManyOnlyFlags": "مرر على الأكثر واحداً من --certs-only / --archives-only / --refs-only.",
+        "goneMachineReposOption": "أرشفة إدخالات المستودعات الموضوعة على جهاز لم يعد في الإعداد. تُؤرشف ولا تُحذف: يحتفظ كل منها ببيانات اعتماده ويبقى قابلًا للاستعادة حتى تنتهي مهلة الأرشيف.",
+        "foundGoneMachineRepos": "{{count}} من إدخالات المستودعات موضوعة على جهاز لم يعد في الإعداد:",
+        "archivedGoneMachineRepos": "{{count}} من إدخالات المستودعات {{verb}} مؤرشفة (موضوعة على جهاز لم يعد في الإعداد):",
+        "goneMachineReposHint": "أرشفها باستخدام 'rdc config prune --gone-machine-repos'؛ يبقى كل منها قابلًا للاستعادة حتى تنتهي مهلة الأرشيف.",
+        "droppedGoneMachineState": "{{count}} من سجلات التشغيل التي تشير إلى جهاز لم يعد في الإعداد {{verb}} محذوفة:"
       },
       "reconcile": {
         "acceptObservedUnfiltered": "لا يمكن دمج --accept-observed مع --machine: الفحص الجزئي لا يمكنه إثبات أن الموضع لا لبس فيه، لذا ستكون إعادة الكتابة تخمينًا. شغّل 'rdc config reconcile --accept-observed' دون تصفية.",
@@ -899,7 +904,8 @@
           "notEnabled": "الإعدادات عن بُعد غير مفعّلة.",
           "pulled": "تم سحب الإعدادات",
           "pulling": "جارٍ سحب الإعدادات من الخادم البعيد...",
-          "success": "تم تحديث الإعدادات من الخادم البعيد (الإصدار {{version}})."
+          "success": "تم تحديث الإعدادات من الخادم البعيد (الإصدار {{version}}).",
+          "replacedLocal": "الإعداد \"{{config}}\": كان الملف المحلي مختلفًا عن إصدار الخادم {{version}} فاستُبدل به: {{changes}}"
         },
         "staleSlot": "فتحة مفتاحك قديمة (تم تدوير مفتاح تشفير الإعدادات). أعد التسجيل عبر: rdc config remote enable",
         "status": {
@@ -982,7 +988,10 @@
           "invalidVersion": "يجب أن يكون الإصدار عددًا صحيحًا موجبًا، والقيمة المُدخلة \"{{version}}\".",
           "alreadyCurrent": "الإصدار {{version}} هو بالفعل الإصدار الحالي من الإعدادات \"{{config}}\"، فلا يوجد ما يُستعاد.",
           "success": "تمت استعادة الإصدار {{restored}} من الإعدادات \"{{config}}\" بوصفه الإصدار {{version}}."
-        }
+        },
+        "localEditsPushed": "الإعداد \"{{config}}\": احتوى الملف المحلي على تعديلات منذ إصدار الخادم {{from}}، وقد رُفعت بوصفها الإصدار {{to}}: {{changes}}",
+        "localEditsConflict": "الإعداد \"{{config}}\": يحتوي الملف المحلي على تعديلات منذ إصدار الخادم {{cached}} ({{changes}})، وقد انتقل الخادم إلى الإصدار {{server}}. لم يُستبدل أي شيء. انسخ التعديلات جانبًا، ثم شغّل \"rdc config remote refresh\" لأخذ الإصدار {{server}} (يستبدل الملف المحلي)، ثم طبّقها مجددًا.",
+        "localEditsUnverifiable": "الإعداد \"{{config}}\": يختلف الملف المحلي عن إصدار الخادم {{server}} ({{changes}})، وتعذّرت قراءة الإصدار {{cached}} الذي أُخذ منه ({{reason}})، لذا لا يمكن تمييز تعديل محلي عن تغيير على الخادم. لم يُستبدل أي شيء. انسخ التعديلات جانبًا، ثم شغّل \"rdc config remote refresh\" لأخذ الإصدار {{server}} (يستبدل الملف المحلي)، ثم طبّقها مجددًا."
       },
       "rotateCek": {
         "cancelled": "تم إلغاء التدوير. لم يتغيّر شيء.",
@@ -1277,7 +1286,11 @@
         "dnsCleanedUp": "تمت إزالة {{count}} سجل(ات) DNS",
         "dnsDeleted": "تم حذف سجل DNS: {{type}} {{name}}",
         "noState": "لم يتم العثور على حالة OpenTofu لـ \"{{name}}\". استخدم 'config remove-machine' للأجهزة المضافة يدوياً.",
-        "optionForce": "تخطي مطالبة التأكيد"
+        "optionForce": "تخطي مطالبة التأكيد",
+        "optionArchiveRepos": "أرشفة إدخالات الإعداد للمستودعات الموضوعة على هذا الجهاز (تُحفظ بيانات الاعتماد وتبقى قابلة للاستعادة)",
+        "reposArchived": "أُرشف {{count}} من إدخالات المستودعات الموضوعة على {{machine}}: {{repos}}",
+        "reposLeft": "لا يزال {{count}} من إدخالات المستودعات يشير إلى {{machine}} الذي لم يعد في هذا الإعداد: {{repos}}",
+        "reposLeftHint": "أرشفها باستخدام 'rdc config prune --gone-machine-repos'، أو واحدًا تلو الآخر باستخدام 'rdc repo delete <name> -y'."
       },
       "description": "فحص حالة الأجهزة البعيدة: موارد النظام، والحاويات قيد التشغيل، وخدمات systemd، والمستودعات المنشورة، وتشخيصات الصحة. استعلامات للقراءة فقط؛ لتعديل المستودعات استخدم `repo`. الأوامر الفرعية الرئيسية: status (الحالة الكاملة، مُضيَّقة بـ --system و--containers و--repositories و--services)، health، list، add، remove، setup، prune، provision، deprovision.",
       "descriptionShort": "إدارة الأجهزة البعيدة (status، health، list، add، remove، setup، prune)",
@@ -1864,7 +1877,9 @@
         "licenseRetireFailed": "تعذّر إبلاغ خادم الحساب بأن ترخيص \"{{repository}}\" قد سُحب ({{reason}}). يبقى محتسبًا ضمن إجمالي تراخيص الخادم إلى أن يُسحب.",
         "backupsPurged": "حُذفت {{count}} من اللقطات السحابية لـ \"{{repository}}\" وتحرّر {{bytes}}.",
         "purgeBackupsOption": "احذف النسخ الاحتياطية السحابية للمستودع الآن أيضًا بدل تركها تنتهي",
-        "purgeForkRefused": "\"{{repository}}\" فرع (fork) ويشارك سلسلة نسخه الاحتياطية مع أصله، لذا سيحذف --purge-backups نسخ الأصل أيضًا. احذف الفرع بدون هذا الخيار."
+        "purgeForkRefused": "\"{{repository}}\" فرع (fork) ويشارك سلسلة نسخه الاحتياطية مع أصله، لذا سيحذف --purge-backups نسخ الأصل أيضًا. احذف الفرع بدون هذا الخيار.",
+        "confirmMachineGone": "الجهاز \"{{machine}}\" الخاص بالمستودع \"{{repository}}\" لم يعد في هذا الإعداد، لذا لن يُمسّ أي شيء على أي جهاز. هل تريد أرشفة إدخال الإعداد الخاص بـ \"{{repository}}\"؟",
+        "machineGoneArchived": "أُرشف إدخال الإعداد الخاص بـ \"{{repository}}\": جهازه \"{{machine}}\" لم يعد في هذا الإعداد، لذا لم يُتّصل بأي جهاز"
       },
       "description": "نشر وإدارة المستودعات المشفرة على الأجهزة. الأوامر الفرعية الرئيسية: create، up (نشر)، down (إيقاف)، fork (استنساخ CoW فوري)، delete، push/pull (نسخ احتياطي)، sync (نقل الملفات). دورة الحياة: repo create → repo up → repo down. راجع المفاهيم الأساسية في rdc --help لتفاصيل البنية والتوجيه ومتغيرات البيئة.",
       "descriptionShort": "نشر وإدارة المستودعات المشفرة على الأجهزة",

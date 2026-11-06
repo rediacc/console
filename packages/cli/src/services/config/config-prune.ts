@@ -10,6 +10,9 @@
  *      (default 7). In-grace entries are kept for accidental-delete
  *      recovery.
  *   3. Dangling cross-references (machine→strategy, strategy→repo).
+ *   4. References to a machine the config no longer has (#80f7476a): `state.licenseRefresh` and
+ *      `pushState` entries are dropped (runtime records, no secrets); repository entries placed on
+ *      such a machine are reported, and archived (credential kept) with `--gone-machine-repos`.
  *
  * Exposes `analyzeConfigPrune(options)` for preview + `applyConfigPrune`
  * for the real run. The analysis return shape feeds directly into the CLI
@@ -22,6 +25,9 @@ import { parseRepoRef } from '../../utils/config-schema.js';
 import { type ConfigAnchors, pruneCertsByAnchor } from '../account/cert-cache.js';
 import { type DroppedRef, pruneDanglingRefs } from './config-refs-prune.js';
 import { configService } from './config-resources.js';
+import { buildArchivedRecord } from './config-resources-resolve.js';
+import { findGoneMachineRepos, type GoneMachineRepo, machineExists } from './machine-gone-repos.js';
+import { flattenRepositories } from './resource-state.js';
 import { updateSyncedConfig } from './synced-write.js';
 
 /** Default archive grace period if not set in config. Mirrors `prune.ts`. */
@@ -45,6 +51,11 @@ export interface ConfigPruneOptions {
    * unrecoverable if the image turns out to exist somewhere after all.
    */
   orphanRepos?: boolean;
+  /**
+   * Archive repository entries placed on a machine the config no longer has. Archived, not
+   * dropped: the credential stays restorable until the archive grace expires.
+   */
+  goneMachineRepos?: boolean;
 }
 
 export interface CertPruneEntry {
@@ -78,6 +89,13 @@ export interface ConfigPruneAnalysis {
   orphanRepos: OrphanRepoEntry[];
   /** `state.repos` records whose repository entry no longer exists. */
   orphanStateRepos: OrphanStateRepo[];
+  /**
+   * Repository entries placed on a machine the config no longer has. Always reported; archived
+   * only when `goneMachineRepos` is set.
+   */
+  goneMachineRepos: GoneMachineRepo[];
+  /** Runtime records naming a machine the config no longer has, as JSON-ish paths; always dropped. */
+  goneMachineState: string[];
 }
 
 export interface OrphanRepoEntry {
@@ -254,50 +272,47 @@ export function classifyArchives(
   return { expired, inGrace };
 }
 
-/**
- * Compute the prune analysis without writing anything. Safe to call any
- * number of times.
- */
-export async function analyzeConfigPrune(
-  options: ConfigPruneOptions = {}
-): Promise<ConfigPruneAnalysis> {
-  const config = await configService.getCurrent();
-  if (!config) {
-    return {
-      staleCerts: [],
-      expiredArchives: [],
-      graceArchives: [],
-      droppedRefs: [],
-      warnings: [],
-      orphanRepos: [],
-      orphanStateRepos: [],
-    };
-  }
+const EMPTY_ANALYSIS: ConfigPruneAnalysis = {
+  staleCerts: [],
+  expiredArchives: [],
+  graceArchives: [],
+  droppedRefs: [],
+  warnings: [],
+  orphanRepos: [],
+  orphanStateRepos: [],
+  goneMachineRepos: [],
+  goneMachineState: [],
+};
 
+/**
+ * The one prune pass, run on `cfg` in place by both the dry run (on a clone) and the apply (inside
+ * `updateSyncedConfig`, so a replay after a version conflict re-runs it on the fresh server copy).
+ */
+function prunePass(cfg: RdcConfig, options: ConfigPruneOptions): ConfigPruneAnalysis {
   const wantCerts = !options.archivesOnly && !options.refsOnly;
   const wantArchives = !options.certsOnly && !options.refsOnly;
   const wantRefs = !options.certsOnly && !options.archivesOnly;
+  const graceDays = options.graceDays ?? cfg.defaults?.pruneGraceDays ?? DEFAULT_GRACE_DAYS;
 
-  // Deep-clone so the analysis pass leaves the in-memory config untouched, the apply path re-runs the same logic via `updateSyncedConfig`.
-  const clone = JSON.parse(JSON.stringify(config)) as RdcConfig;
-  const graceDays = options.graceDays ?? clone.defaults?.pruneGraceDays ?? DEFAULT_GRACE_DAYS;
-
-  // Apply archive removal to the clone FIRST so cert anchors are computed against the post-prune resource set; otherwise certs whose anchor is in expiredArchives would be classified as live and survive the run.
+  // Archives FIRST so the cert anchors below are computed against the post-prune resource set; otherwise certs whose anchor is in expiredArchives would be classified as live and survive the run.
   const arch = wantArchives
-    ? mutateAndExtractArchives(clone, graceDays, Boolean(options.purgeArchived))
+    ? mutateAndExtractArchives(cfg, graceDays, Boolean(options.purgeArchived))
     : { expired: [] as ArchivedRepository[], inGrace: [] as ArchiveGraceEntry[] };
 
-  const anchors = buildConfigAnchors(clone);
-  const staleCerts = wantCerts ? pruneCertCacheBuckets(clone, anchors) : [];
+  const goneMachineRepos = findGoneMachineRepos(cfg);
+  if (options.goneMachineRepos) archiveGoneMachineRepos(cfg, goneMachineRepos);
+  const goneMachineState = wantRefs ? pruneGoneMachineState(cfg) : [];
+
+  const staleCerts = wantCerts ? pruneCertCacheBuckets(cfg, buildConfigAnchors(cfg)) : [];
   const refs = wantRefs
-    ? pruneDanglingRefs(clone)
+    ? pruneDanglingRefs(cfg)
     : { dropped: [] as DroppedRef[], warnings: [] as string[] };
 
   // Reported whichever bucket filter is active: an orphan repo entry is worth surfacing even when the operator asked for a narrower run, because it is the one leftover that silently carries secrets.
-  const orphanRepos = findOrphanRepos(clone);
-  if (options.orphanRepos) removeOrphanRepos(clone, orphanRepos);
+  const orphanRepos = findOrphanRepos(cfg);
+  if (options.orphanRepos) removeOrphanRepos(cfg, orphanRepos);
   // Runs after removal so entries dropped above have their state records collected in the same pass rather than needing a second invocation.
-  const orphanStateRepos = pruneOrphanStateRepos(clone);
+  const orphanStateRepos = pruneOrphanStateRepos(cfg);
 
   return {
     staleCerts,
@@ -307,7 +322,22 @@ export async function analyzeConfigPrune(
     warnings: refs.warnings,
     orphanRepos,
     orphanStateRepos,
+    goneMachineRepos,
+    goneMachineState,
   };
+}
+
+/**
+ * Compute the prune analysis without writing anything. Safe to call any
+ * number of times.
+ */
+export async function analyzeConfigPrune(
+  options: ConfigPruneOptions = {}
+): Promise<ConfigPruneAnalysis> {
+  const config = await configService.getCurrent();
+  if (!config) return structuredClone(EMPTY_ANALYSIS);
+  // Deep-clone so the analysis pass leaves the in-memory config untouched.
+  return prunePass(JSON.parse(JSON.stringify(config)) as RdcConfig, options);
 }
 
 /**
@@ -383,6 +413,74 @@ export function pruneOrphanStateRepos(cfg: RdcConfig): OrphanStateRepo[] {
   return dropped;
 }
 
+/**
+ * Move every tag of each listed family into `resources.deletedRepositories` (the same record
+ * `repo delete --archive-config` writes), and drop the family and its `state.repos` runtime.
+ */
+function archiveGoneMachineRepos(cfg: RdcConfig, gone: GoneMachineRepo[]): void {
+  const families = cfg.resources?.repositories;
+  if (!cfg.resources || !families || gone.length === 0) return;
+  const flat = flattenRepositories(families, cfg.state?.repos);
+  const archived = [...(cfg.resources.deletedRepositories ?? [])];
+  for (const { name } of gone) {
+    const keys = Object.keys(families[name]?.tags ?? {}).map((tag) => `${name}:${tag}`);
+    archived.push(
+      ...keys.filter((key) => key in flat).map((key) => buildArchivedRecord(key, flat[key]))
+    );
+    delete families[name];
+    if (cfg.state?.repos) delete cfg.state.repos[name];
+  }
+  cfg.resources.deletedRepositories = archived;
+}
+
+/**
+ * Drop runtime records keyed by a machine the config no longer has: `state.licenseRefresh.<m>`
+ * (the licence-refresh rate limit) and `state.repos.<repo>.<tag>.pushState.<m>` (the push record
+ * `repo delete` reads as "another machine holds a copy"). Runtime only, no secrets: dropped
+ * unconditionally. Returns the dropped paths.
+ */
+export function pruneGoneMachineState(cfg: RdcConfig): string[] {
+  const state = cfg.state;
+  if (!state) return [];
+  return [...pruneGoneLicenseRefresh(cfg, state), ...pruneGonePushState(cfg, state)];
+}
+
+type PruneState = NonNullable<RdcConfig['state']>;
+
+/** Drop `state.licenseRefresh.<m>` for every machine the config no longer has. */
+function pruneGoneLicenseRefresh(cfg: RdcConfig, state: PruneState): string[] {
+  const refresh = state.licenseRefresh;
+  if (!refresh) return [];
+  const gone = Object.keys(refresh).filter((machine) => !machineExists(cfg, machine));
+  for (const machine of gone) delete refresh[machine];
+  if (Object.keys(refresh).length === 0) delete state.licenseRefresh;
+  return gone.map((machine) => `state.licenseRefresh.${machine}`);
+}
+
+/** Drop `state.repos.<repo>.<tag>.pushState.<m>` for every machine the config no longer has. */
+function pruneGonePushState(cfg: RdcConfig, state: PruneState): string[] {
+  const dropped: string[] = [];
+  for (const [repo, tags] of Object.entries(state.repos ?? {})) {
+    for (const [tag, runtime] of Object.entries(tags)) {
+      const prefix = `state.repos.${repo}.${tag}.pushState`;
+      dropped.push(...dropGonePushEntries(cfg, runtime, prefix));
+    }
+  }
+  return dropped;
+}
+
+type RepoRuntimeRecord = NonNullable<PruneState['repos']>[string][string];
+
+/** Drop one runtime record's pushState entries for gone machines; returns their paths. */
+function dropGonePushEntries(cfg: RdcConfig, runtime: RepoRuntimeRecord, prefix: string): string[] {
+  const push = runtime.pushState;
+  if (!push) return [];
+  const gone = Object.keys(push).filter((machine) => !machineExists(cfg, machine));
+  for (const machine of gone) delete push[machine];
+  if (gone.length > 0 && Object.keys(push).length === 0) delete runtime.pushState;
+  return gone.map((machine) => `${prefix}.${machine}`);
+}
+
 /** Classify and remove expired archives from `cfg` in-place; return both lists. */
 function mutateAndExtractArchives(
   cfg: RdcConfig,
@@ -412,50 +510,10 @@ function mutateAndExtractArchives(
 export async function applyConfigPrune(
   options: ConfigPruneOptions = {}
 ): Promise<ConfigPruneAnalysis> {
-  const configName = configService.getEffectiveConfigName();
-
-  const wantCerts = !options.archivesOnly && !options.refsOnly;
-  const wantArchives = !options.certsOnly && !options.refsOnly;
-  const wantRefs = !options.certsOnly && !options.archivesOnly;
-
-  let analysis: ConfigPruneAnalysis = {
-    staleCerts: [],
-    expiredArchives: [],
-    graceArchives: [],
-    droppedRefs: [],
-    warnings: [],
-    orphanRepos: [],
-    orphanStateRepos: [],
-  };
-
-  await updateSyncedConfig(configName, (cfg) => {
-    const graceDays = options.graceDays ?? cfg.defaults?.pruneGraceDays ?? DEFAULT_GRACE_DAYS;
-
-    // Prune archives FIRST so the cert-anchor pass below sees the post-prune resource set. If we built anchors from the pre-prune config, certs anchored to repositories about to be purged would survive the run as "live" and need a second invocation to be removed.
-    const arch = wantArchives
-      ? mutateAndExtractArchives(cfg, graceDays, Boolean(options.purgeArchived))
-      : { expired: [] as ArchivedRepository[], inGrace: [] as ArchiveGraceEntry[] };
-    const anchors = buildConfigAnchors(cfg);
-    const staleCerts = wantCerts ? pruneCertCacheBuckets(cfg, anchors) : [];
-    const refs = wantRefs
-      ? pruneDanglingRefs(cfg)
-      : { dropped: [] as DroppedRef[], warnings: [] as string[] };
-
-    const orphanRepos = findOrphanRepos(cfg);
-    if (options.orphanRepos) removeOrphanRepos(cfg, orphanRepos);
-    const orphanStateRepos = pruneOrphanStateRepos(cfg);
-
-    analysis = {
-      staleCerts,
-      expiredArchives: arch.expired,
-      graceArchives: arch.inGrace,
-      droppedRefs: refs.dropped,
-      warnings: refs.warnings,
-      orphanRepos,
-      orphanStateRepos,
-    };
+  let analysis = structuredClone(EMPTY_ANALYSIS);
+  await updateSyncedConfig(configService.getEffectiveConfigName(), (cfg) => {
+    analysis = prunePass(cfg, options);
     return cfg;
   });
-
   return analysis;
 }

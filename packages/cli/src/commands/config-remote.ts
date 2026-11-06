@@ -163,13 +163,26 @@ async function refreshRemote(configName: string): Promise<void> {
   );
 
   const { pullOrPurge, writeRemoteCache } = await import('../services/config/remote-cache.js');
-  const { config: pulledConfig, version } = await withSpinner(
+  const pulled = await withSpinner(
     t('commands.config.remote.refresh.pulling'),
     () => pullOrPurge(adapter, configName),
     t('commands.config.remote.refresh.pulled')
   );
+  const { config: pulledConfig, version } = pulled;
 
+  // Refresh is the explicit "take the server copy": it replaces what the local file holds, and names what it replaced.
+  const { localEditsAgainst } = await import('../services/config/local-edit-guard.js');
+  const replaced = localEditsAgainst(await configFileStorage.loadDecrypted(configName), pulled);
   await writeRemoteCache(configName, pulledConfig, version);
+  if (replaced) {
+    outputService.warn(
+      t('commands.config.remote.refresh.replacedLocal', {
+        config: configName,
+        version: String(version),
+        changes: replaced,
+      })
+    );
+  }
 
   outputService.success(t('commands.config.remote.refresh.success', { version: String(version) }));
 }

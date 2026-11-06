@@ -82,7 +82,7 @@ function pickKeys<T extends object>(source: Record<string, unknown>, keys: reado
 }
 
 /** Build the flat `Record<'base:tag', RepositoryConfig>` view from the config. */
-function flattenRepositories(
+export function flattenRepositories(
   families: Record<string, RepoFamily> | undefined,
   stateRepos: Record<string, Record<string, RepoRuntime>> | undefined
 ): Record<string, RepositoryConfig> {

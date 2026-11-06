@@ -466,6 +466,27 @@ class ConfigService extends ConfigAccessService {
     await state.setRepositories(repos);
   }
 
+  /**
+   * Archive several repository entries in one write per bucket (a deprovisioned machine's repos):
+   * each keeps its GUID and credential in the archive, restorable with `config repository restore`.
+   * Keys not in the config are skipped; the archived keys are returned.
+   */
+  async archiveRepositories(repoKeys: string[]): Promise<string[]> {
+    await this.requireSelfHosted();
+    const state = await this.getResourceState();
+    const repos = state.getRepositories();
+    const archived = repoKeys.filter((key) => key in repos);
+    if (archived.length === 0) return [];
+
+    const deletedRepos = state.getDeletedRepositories();
+    for (const key of archived) deletedRepos.push(buildArchivedRecord(key, repos[key]));
+    await state.setDeletedRepositories(deletedRepos);
+
+    for (const key of archived) delete repos[key];
+    await state.setRepositories(repos);
+    return archived;
+  }
+
   async restoreArchivedRepository(guid: string, name?: string): Promise<string> {
     await this.requireSelfHosted();
     const state = await this.getResourceState();

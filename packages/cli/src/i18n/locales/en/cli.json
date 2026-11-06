@@ -209,7 +209,12 @@
         "droppedRefs": "{{count}} dangling cross-reference(s) {{verb}} removed:",
         "nothingToPrune": "Nothing to prune: the config is already clean.",
         "dryRun": "Dry run: {{count}} change(s) would be applied. Re-run without --dry-run to commit.",
-        "completed": "Pruned {{count}} stale entry/entries from local config."
+        "completed": "Pruned {{count}} stale entry/entries from local config.",
+        "goneMachineReposOption": "Archive repository entries placed on a machine that is no longer in the config. Archived, not dropped: each keeps its credential and is restorable until the archive grace expires.",
+        "foundGoneMachineRepos": "{{count}} repository entry/entries are placed on a machine that is no longer in the config:",
+        "archivedGoneMachineRepos": "{{count}} repository entry/entries {{verb}} archived (placed on a machine no longer in the config):",
+        "goneMachineReposHint": "Archive them with 'rdc config prune --gone-machine-repos'; each stays restorable until the archive grace expires.",
+        "droppedGoneMachineState": "{{count}} runtime record(s) naming a machine no longer in the config {{verb}} dropped:"
       },
       "init": {
         "description": "Create a new named config file",
@@ -426,7 +431,8 @@
           "pulling": "Pulling config from remote...",
           "pulled": "Config pulled",
           "success": "Config refreshed from remote (version {{version}}).",
-          "notEnabled": "Remote config is not enabled."
+          "notEnabled": "Remote config is not enabled.",
+          "replacedLocal": "Config \"{{config}}\": the local file differed from server version {{version}} and was replaced by it: {{changes}}"
         },
         "tokenRefresh": {
           "noLogin": "No login for {{apiUrl}} is stored on this device, so the config token could not be renewed automatically. Run \"rdc subscription login\" and retry, or run \"rdc config remote enable\" again.",
@@ -454,7 +460,10 @@
           "invalidVersion": "Version must be a positive whole number, got \"{{version}}\".",
           "alreadyCurrent": "Version {{version}} is already the current version of config \"{{config}}\"; there is nothing to restore.",
           "success": "Restored version {{restored}} of config \"{{config}}\" as version {{version}}."
-        }
+        },
+        "localEditsPushed": "Config \"{{config}}\": the local file held edits made since server version {{from}}; pushed them as version {{to}}: {{changes}}",
+        "localEditsConflict": "Config \"{{config}}\": the local file holds edits made since server version {{cached}} ({{changes}}), and the server has moved to version {{server}}. Nothing was overwritten. Copy the edits aside, run \"rdc config remote refresh\" to take version {{server}} (it replaces the local file), then apply them again.",
+        "localEditsUnverifiable": "Config \"{{config}}\": the local file differs from server version {{server}} ({{changes}}), and version {{cached}}, which it was cached from, could not be read back ({{reason}}), so a local edit cannot be told apart from a server change. Nothing was overwritten. Copy any edits aside, run \"rdc config remote refresh\" to take version {{server}} (it replaces the local file), then apply them again."
       },
       "field": {
         "description": "Pointer-addressed config field operations (get/set/unset/rotate/list). JSON Pointers (RFC 6901) like /credentials/cfDnsApiToken.",
@@ -705,7 +714,11 @@
         "destroyFailed": "Infrastructure destroy failed for {{name}}: {{error}}. Continuing with config removal (--force).",
         "dnsDeleted": "Deleted DNS record: {{type}} {{name}}",
         "dnsCleanedUp": "Removed {{count}} DNS record(s)",
-        "deactivateFailed": "Could not release the account activation slot for {{name}}: {{reason}}. The slot frees on its own 5 hours after the last activity."
+        "deactivateFailed": "Could not release the account activation slot for {{name}}: {{reason}}. The slot frees on its own 5 hours after the last activity.",
+        "optionArchiveRepos": "Archive the config entries of the repositories placed on this machine (credentials kept, restorable)",
+        "reposArchived": "Archived {{count}} repository entry/entries placed on {{machine}}: {{repos}}",
+        "reposLeft": "{{count}} repository entry/entries still name {{machine}}, which is no longer in this config: {{repos}}",
+        "reposLeftHint": "Archive them with 'rdc config prune --gone-machine-repos', or one at a time with 'rdc repo delete <name> -y'."
       },
       "prune": {
         "description": "Remove orphaned datastore resources and stale snapshots from a machine. The base run cleans renet-internal datastore artifacts (BTRFS subvolumes, lock files, tmpfiles). The optional flags below enable progressively narrower repo cleanups: --orphaned-repos uses the local CLI config as the only signal, while --prune-unknown additionally consults the renet .interim/state mirror so legitimate forks created by other tools survive even when missing from the local config. Both deletion paths run a mount-safety preflight; pass --force-delete-mounted to override.",
@@ -1275,7 +1288,9 @@
         "licenseRetireFailed": "Could not tell the account server that the license of \"{{repository}}\" is retired ({{reason}}). It stays counted in the server's license totals until retired.",
         "backupsPurged": "Deleted {{count}} cloud snapshot(s) of \"{{repository}}\" and freed {{bytes}}.",
         "purgeBackupsOption": "Also delete the repository's cloud backups now, instead of letting them expire",
-        "purgeForkRefused": "\"{{repository}}\" is a fork and shares its backup lineage with its parent, so --purge-backups would delete the parent's backups too. Delete the fork without it."
+        "purgeForkRefused": "\"{{repository}}\" is a fork and shares its backup lineage with its parent, so --purge-backups would delete the parent's backups too. Delete the fork without it.",
+        "confirmMachineGone": "Machine \"{{machine}}\" of repository \"{{repository}}\" is no longer in this config, so nothing on a machine is touched. Archive the config entry of \"{{repository}}\"?",
+        "machineGoneArchived": "Archived the config entry of \"{{repository}}\": its machine \"{{machine}}\" is no longer in this config, so no machine was contacted"
       },
       "commit": {
         "descriptionShort": "Freeze a working fork into a new immutable commit",

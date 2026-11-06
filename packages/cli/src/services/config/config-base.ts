@@ -228,6 +228,15 @@ export class ConfigServiceBase {
       return cached;
     }
 
+    // A local edit of the cache file is pushed (server unmoved) or refused (both sides moved), never overwritten by the pull (#5013fce6).
+    const { reconcileLocalEdits } = await import('./local-edit-guard.js');
+    ({ config, version, sdkEpoch } = await reconcileLocalEdits(
+      adapter,
+      configName,
+      await configFileStorage.loadDecrypted(configName),
+      { config, version, sdkEpoch }
+    ));
+
     // Awaited on purpose: a fire-and-forget refresh that loses the write is silent staleness on the next offline read. The in-memory config IS what the cache now holds (device-local pointers overlaid by the one overlayDeviceLocal), so RemoteResourceState.load sees `state` and a later push cannot rewrite state.repos without it (F3).
     config = await writeRemoteCache(configName, config, version);
 

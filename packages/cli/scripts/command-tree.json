@@ -541,6 +541,12 @@
               "defaultValue": null
             },
             {
+              "flags": "--archive-repos",
+              "descriptionKey": "commands.machine.deprovision.optionArchiveRepos",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
               "flags": "--debug",
               "descriptionKey": "options.debug",
               "mandatory": false,
@@ -4889,6 +4895,12 @@
             {
               "flags": "--orphan-repos",
               "descriptionKey": "commands.config.prune.orphanReposOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--gone-machine-repos",
+              "descriptionKey": "commands.config.prune.goneMachineReposOption",
               "mandatory": false,
               "defaultValue": null
             },

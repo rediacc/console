@@ -4548,6 +4548,17 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Remove repository entries that are placed on no machine. Each entry holds that repo's credential and SSH key, so this is unrecoverable. Run 'rdc config reconcile' first so placement reflects the machines."
         },
         {
+          "flags": "--gone-machine-repos",
+          "long": "gone-machine-repos",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.config.prune.goneMachineReposOption",
+          "label": "Archive repository entries placed on a machine that is no longer in the config. Archived, not dropped: each keeps its credential and is restorable until the archive grace expires."
+        },
+        {
           "flags": "--grace-days <days>",
           "long": "grace-days",
           "valueTaking": true,
@@ -6995,6 +7006,17 @@ export const CLI_CONTRACT: CliContract = {
           "tier": "advanced",
           "descriptionKey": "options.yes",
           "label": "Skip confirmation prompt"
+        },
+        {
+          "flags": "--archive-repos",
+          "long": "archive-repos",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.machine.deprovision.optionArchiveRepos",
+          "label": "Archive the config entries of the repositories placed on this machine (credentials kept, restorable)"
         },
         {
           "flags": "--debug",

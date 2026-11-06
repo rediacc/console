@@ -61,6 +61,11 @@ vi.mock('../../../adapters/remote-config-adapter.js', async (importOriginal) => 
         sdkEpoch: 1,
       });
     }
+    // The version the cache was taken from: the local file as it was, so the cache is behind, not edited.
+    pullVersion(version: number) {
+      const { state: _state, ...archived } = localDisk();
+      return Promise.resolve({ config: archived as unknown as RdcConfig, version, sdkEpoch: 1 });
+    }
     push(doc: RdcConfig, current: number) {
       if (h.conflictsLeft > 0) {
         h.conflictsLeft -= 1;
@@ -83,7 +88,8 @@ const REMOTE = {
   storeId: '11111111-1111-4111-8111-111111111111',
   configId: '22222222-2222-4222-8222-222222222222',
   storageKeyId: 'rdc:pk:key-1',
-  cachedVersion: 7,
+  // One behind the server (7): the server copy differs from the cache because it moved on, not because the file was edited.
+  cachedVersion: 6,
   cachedAt: '2026-09-25T00:00:00.000Z',
 };
 

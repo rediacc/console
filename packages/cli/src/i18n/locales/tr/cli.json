@@ -787,7 +787,12 @@
         "removedCerts": "{{count}} sertifika önbellek girişi {{verb}} kaldırıldı:",
         "removedOrphanRepos": "{{count}} depo girişi (hiçbir makinede yer almayan) {{verb}} kaldırıldı:",
         "scanning": "Yerel yapılandırma eski kalıntılar için taranıyor...",
-        "tooManyOnlyFlags": "--certs-only / --archives-only / --refs-only seçeneklerinden en fazla birini geçirin."
+        "tooManyOnlyFlags": "--certs-only / --archives-only / --refs-only seçeneklerinden en fazla birini geçirin.",
+        "goneMachineReposOption": "Artık yapılandırmada olmayan bir makineye yerleştirilmiş depo kayıtlarını arşivle. Silinmez, arşivlenir: her biri kimlik bilgisini korur ve arşiv süresi dolana kadar geri yüklenebilir.",
+        "foundGoneMachineRepos": "{{count}} depo kaydı artık yapılandırmada olmayan bir makineye yerleştirilmiş:",
+        "archivedGoneMachineRepos": "{{count}} depo kaydı {{verb}} arşivlendi (artık yapılandırmada olmayan bir makinede):",
+        "goneMachineReposHint": "Bunları 'rdc config prune --gone-machine-repos' ile arşivleyin; her biri arşiv süresi dolana kadar geri yüklenebilir kalır.",
+        "droppedGoneMachineState": "Artık yapılandırmada olmayan bir makineyi gösteren {{count}} çalışma kaydı {{verb}} kaldırıldı:"
       },
       "reconcile": {
         "acceptObservedUnfiltered": "--accept-observed, --machine ile birleştirilemez: kısmi bir tarama, bir yerleşimin belirsizlik içermediğini kanıtlayamaz, bu yüzden yeniden yazma bir tahmin olur. 'rdc config reconcile --accept-observed' komutunu filtresiz çalıştırın.",
@@ -899,7 +904,8 @@
           "notEnabled": "Uzak yapılandırma etkin değil.",
           "pulled": "Yapılandırma alındı",
           "pulling": "Yapılandırma uzak sunucudan alınıyor...",
-          "success": "Yapılandırma uzak sunucudan güncellendi (sürüm {{version}})."
+          "success": "Yapılandırma uzak sunucudan güncellendi (sürüm {{version}}).",
+          "replacedLocal": "\"{{config}}\" yapılandırması: yerel dosya sunucu sürümü {{version}} ile farklıydı ve onunla değiştirildi: {{changes}}"
         },
         "staleSlot": "Key slot'unuz güncel değil (yapılandırma şifreleme anahtarı döndürüldü). Şununla yeniden kaydolun: rdc config remote enable",
         "status": {
@@ -982,7 +988,10 @@
           "invalidVersion": "Sürüm pozitif bir tam sayı olmalı, girilen: \"{{version}}\".",
           "alreadyCurrent": "{{version}} sürümü zaten \"{{config}}\" yapılandırmasının güncel sürümü; geri yüklenecek bir şey yok.",
           "success": "\"{{config}}\" yapılandırmasının {{restored}} sürümü, {{version}} sürümü olarak geri yüklendi."
-        }
+        },
+        "localEditsPushed": "\"{{config}}\" yapılandırması: yerel dosyada sunucu sürümü {{from}} sonrasında yapılmış düzenlemeler vardı; bunlar {{to}} sürümü olarak gönderildi: {{changes}}",
+        "localEditsConflict": "\"{{config}}\" yapılandırması: yerel dosyada sunucu sürümü {{cached}} sonrasında yapılmış düzenlemeler var ({{changes}}) ve sunucu {{server}} sürümüne geçti. Hiçbir şeyin üzerine yazılmadı. Düzenlemeleri bir kenara kopyalayın, {{server}} sürümünü almak için \"rdc config remote refresh\" çalıştırın (yerel dosyayı değiştirir) ve ardından düzenlemeleri yeniden uygulayın.",
+        "localEditsUnverifiable": "\"{{config}}\" yapılandırması: yerel dosya sunucu sürümü {{server}} ile farklı ({{changes}}) ve önbelleğin alındığı {{cached}} sürümü okunamadı ({{reason}}); bu yüzden yerel bir düzenleme sunucu değişikliğinden ayırt edilemiyor. Hiçbir şeyin üzerine yazılmadı. Düzenlemeleri bir kenara kopyalayın, {{server}} sürümünü almak için \"rdc config remote refresh\" çalıştırın (yerel dosyayı değiştirir) ve ardından yeniden uygulayın."
       },
       "rotateCek": {
         "cancelled": "Döndürme iptal edildi. Hiçbir şey değişmedi.",
@@ -1277,7 +1286,11 @@
         "dnsCleanedUp": "{{count}} DNS kaydı kaldırıldı",
         "dnsDeleted": "DNS kaydı silindi: {{type}} {{name}}",
         "noState": "\"{{name}}\" için OpenTofu durumu bulunamadı. Manuel eklenen makineler için 'config remove-machine' kullanın.",
-        "optionForce": "Onay istemini atla"
+        "optionForce": "Onay istemini atla",
+        "optionArchiveRepos": "Bu makineye yerleştirilmiş depoların yapılandırma kayıtlarını arşivle (kimlik bilgileri korunur, geri yüklenebilir)",
+        "reposArchived": "{{machine}} üzerindeki {{count}} depo kaydı arşivlendi: {{repos}}",
+        "reposLeft": "{{count}} depo kaydı hâlâ artık bu yapılandırmada olmayan {{machine}} makinesini gösteriyor: {{repos}}",
+        "reposLeftHint": "Bunları 'rdc config prune --gone-machine-repos' ile ya da tek tek 'rdc repo delete <name> -y' ile arşivleyin."
       },
       "description": "Uzak makine durumunu incele: sistem kaynakları, çalışan konteynerler, systemd servisleri, dağıtılmış depolar ve sağlık tanılaması. Salt okunur sorgulardır; depoları değiştirmek için `repo` kullanın. Temel alt komutlar: status (--system, --containers, --repositories, --services ile daraltılan tam durum), health, list, add, remove, setup, prune, provision, deprovision.",
       "descriptionShort": "Uzak makineleri yönetin (status, health, list, add, remove, setup, prune)",
@@ -1864,7 +1877,9 @@
         "licenseRetireFailed": "\"{{repository}}\" deposunun lisansının iade edildiği hesap sunucusuna bildirilemedi ({{reason}}). İade edilene kadar sunucunun lisans toplamlarında sayılmaya devam eder.",
         "backupsPurged": "\"{{repository}}\" deposunun {{count}} bulut anlık görüntüsü silindi, {{bytes}} yer açıldı.",
         "purgeBackupsOption": "Deponun bulut yedeklerini süresinin dolmasını beklemeden hemen sil",
-        "purgeForkRefused": "\"{{repository}}\" bir fork ve yedek soyunu ana depoyla paylaşıyor; --purge-backups ana deponun yedeklerini de silerdi. Fork'u bu seçenek olmadan silin."
+        "purgeForkRefused": "\"{{repository}}\" bir fork ve yedek soyunu ana depoyla paylaşıyor; --purge-backups ana deponun yedeklerini de silerdi. Fork'u bu seçenek olmadan silin.",
+        "confirmMachineGone": "\"{{repository}}\" deposunun \"{{machine}}\" makinesi artık bu yapılandırmada yok; hiçbir makinede değişiklik yapılmaz. \"{{repository}}\" yapılandırma kaydı arşivlensin mi?",
+        "machineGoneArchived": "\"{{repository}}\" yapılandırma kaydı arşivlendi: makinesi \"{{machine}}\" artık bu yapılandırmada olmadığından hiçbir makineye bağlanılmadı"
       },
       "description": "Makinelerde şifreli depoları dağıt ve yönet. Temel alt komutlar: create, up (dağıt), down (durdur), fork (anında CoW klonu), delete, push/pull (yedekleme), sync (dosya aktarımı). Yaşam döngüsü: repo create → repo up → repo down. Mimari, yönlendirme ve ortam değişkeni ayrıntıları için rdc --help çıktısındaki Temel Kavramlar bölümüne bakın.",
       "descriptionShort": "Makinelerde şifrelenmiş depoları dağıt ve yönet",

@@ -787,7 +787,12 @@
         "removedCerts": "{{count}}개의 인증서 캐시 항목이 {{verb}} 제거되었습니다:",
         "removedOrphanRepos": "{{count}}개의 저장소 항목(어떤 머신에도 배치되지 않음)이 {{verb}} 제거되었습니다:",
         "scanning": "오래된 항목에 대해 로컬 설정을 검사하는 중...",
-        "tooManyOnlyFlags": "--certs-only / --archives-only / --refs-only 중 하나만 전달하십시오."
+        "tooManyOnlyFlags": "--certs-only / --archives-only / --refs-only 중 하나만 전달하십시오.",
+        "goneMachineReposOption": "구성에 더 이상 없는 머신에 배치된 리포지토리 항목을 보관합니다. 삭제가 아닌 보관이므로 각 항목은 자격 증명을 유지하며 보관 유예 기간이 끝날 때까지 복원할 수 있습니다.",
+        "foundGoneMachineRepos": "리포지토리 항목 {{count}}개가 구성에 더 이상 없는 머신에 배치되어 있습니다:",
+        "archivedGoneMachineRepos": "리포지토리 항목 {{count}}개 {{verb}} 보관 (구성에 더 이상 없는 머신에 배치됨):",
+        "goneMachineReposHint": "'rdc config prune --gone-machine-repos'로 보관하세요. 각 항목은 보관 유예 기간이 끝날 때까지 복원할 수 있습니다.",
+        "droppedGoneMachineState": "구성에 더 이상 없는 머신을 가리키는 런타임 기록 {{count}}개 {{verb}} 삭제:"
       },
       "reconcile": {
         "acceptObservedUnfiltered": "--accept-observed는 --machine과 함께 사용할 수 없습니다: 부분 스캔으로는 배치가 모호하지 않음을 증명할 수 없으므로, 다시 쓰는 것은 추측이 됩니다. 필터 없이 'rdc config reconcile --accept-observed'를 실행하세요.",
@@ -899,7 +904,8 @@
           "notEnabled": "원격 설정이 활성화되어 있지 않습니다.",
           "pulled": "설정 가져오기 완료",
           "pulling": "원격에서 설정을 가져오는 중...",
-          "success": "원격에서 설정이 새로 고침되었습니다 (버전 {{version}})."
+          "success": "원격에서 설정이 새로 고침되었습니다 (버전 {{version}}).",
+          "replacedLocal": "구성 \"{{config}}\": 로컬 파일이 서버 버전 {{version}}과(와) 달라 해당 버전으로 교체했습니다: {{changes}}"
         },
         "staleSlot": "키 슬롯이 오래되었습니다 (설정 암호화 키가 교체되었습니다). 다음 명령으로 다시 등록하세요: rdc config remote enable",
         "status": {
@@ -982,7 +988,10 @@
           "invalidVersion": "버전은 양의 정수여야 합니다. 입력한 값: \"{{version}}\"",
           "alreadyCurrent": "버전 {{version}}은(는) 이미 구성 \"{{config}}\"의 현재 버전이므로 복원할 것이 없습니다.",
           "success": "구성 \"{{config}}\"의 버전 {{restored}}을(를) 버전 {{version}}(으)로 복원했습니다."
-        }
+        },
+        "localEditsPushed": "구성 \"{{config}}\": 로컬 파일에 서버 버전 {{from}} 이후의 편집이 있어 버전 {{to}}(으)로 푸시했습니다: {{changes}}",
+        "localEditsConflict": "구성 \"{{config}}\": 로컬 파일에 서버 버전 {{cached}} 이후의 편집({{changes}})이 있고 서버는 버전 {{server}}(으)로 이동했습니다. 아무것도 덮어쓰지 않았습니다. 편집 내용을 따로 복사하고 \"rdc config remote refresh\"로 버전 {{server}}을(를) 받은 뒤(로컬 파일이 교체됨) 다시 적용하세요.",
+        "localEditsUnverifiable": "구성 \"{{config}}\": 로컬 파일이 서버 버전 {{server}}과(와) 다르고({{changes}}) 캐시 원본인 버전 {{cached}}을(를) 읽지 못해({{reason}}) 로컬 편집과 서버 변경을 구분할 수 없습니다. 아무것도 덮어쓰지 않았습니다. 편집 내용을 따로 복사하고 \"rdc config remote refresh\"로 버전 {{server}}을(를) 받은 뒤(로컬 파일이 교체됨) 다시 적용하세요."
       },
       "rotateCek": {
         "cancelled": "교체가 취소되었습니다. 변경된 사항이 없습니다",
@@ -1277,7 +1286,11 @@
         "dnsCleanedUp": "DNS 레코드 {{count}}개 제거됨",
         "dnsDeleted": "DNS 레코드 삭제됨: {{type}} {{name}}",
         "noState": "\"{{name}}\"에 대한 OpenTofu 상태를 찾을 수 없습니다. 수동으로 추가한 머신에는 'config remove-machine'을 사용하세요.",
-        "optionForce": "확인 메시지 건너뜀"
+        "optionForce": "확인 메시지 건너뜀",
+        "optionArchiveRepos": "이 머신에 배치된 리포지토리의 구성 항목을 보관 (자격 증명 유지, 복원 가능)",
+        "reposArchived": "{{machine}}에 배치된 리포지토리 항목 {{count}}개를 보관했습니다: {{repos}}",
+        "reposLeft": "리포지토리 항목 {{count}}개가 이 구성에 더 이상 없는 {{machine}}을(를) 여전히 가리킵니다: {{repos}}",
+        "reposLeftHint": "'rdc config prune --gone-machine-repos'로 한 번에, 또는 'rdc repo delete <name> -y'로 하나씩 보관하세요."
       },
       "description": "원격 머신 상태를 검사합니다: 시스템 리소스, 실행 중인 컨테이너, systemd 서비스, 배포된 저장소, 상태 진단. 읽기 전용 조회이며, 저장소를 수정하려면 `repo`를 사용하세요. 주요 하위 명령어: status (--system, --containers, --repositories, --services로 좁힐 수 있는 전체 상태), health, list, add, remove, setup, prune, provision, deprovision.",
       "descriptionShort": "원격 머신 관리 (상태, 헬스체크, 목록, 추가, 제거, 설정, 정리)",
@@ -1864,7 +1877,9 @@
         "licenseRetireFailed": "\"{{repository}}\"의 라이선스가 반납되었다고 계정 서버에 알리지 못했습니다({{reason}}). 반납될 때까지 서버의 라이선스 합계에 계속 포함됩니다.",
         "backupsPurged": "\"{{repository}}\"의 클라우드 스냅샷 {{count}}개를 삭제하고 {{bytes}}를 확보했습니다.",
         "purgeBackupsOption": "저장소의 클라우드 백업도 만료를 기다리지 않고 지금 삭제합니다",
-        "purgeForkRefused": "\"{{repository}}\"은(는) 포크이며 백업 계보를 부모와 공유하므로 --purge-backups는 부모의 백업도 삭제합니다. 이 옵션 없이 포크를 삭제하세요."
+        "purgeForkRefused": "\"{{repository}}\"은(는) 포크이며 백업 계보를 부모와 공유하므로 --purge-backups는 부모의 백업도 삭제합니다. 이 옵션 없이 포크를 삭제하세요.",
+        "confirmMachineGone": "리포지토리 \"{{repository}}\"의 머신 \"{{machine}}\"이(가) 이 구성에 더 이상 없어 머신에서는 아무것도 변경하지 않습니다. \"{{repository}}\"의 구성 항목을 보관할까요?",
+        "machineGoneArchived": "\"{{repository}}\"의 구성 항목을 보관했습니다: 머신 \"{{machine}}\"이(가) 이 구성에 더 이상 없어 어떤 머신에도 연결하지 않았습니다"
       },
       "description": "머신에서 암호화된 저장소를 배포하고 관리합니다. 주요 하위 명령어: create, up (배포), down (중지), fork (즉시 CoW 클론), delete, push/pull (백업), sync (파일 전송). 수명 주기: repo create → repo up → repo down. 아키텍처, 라우팅, 환경 변수 세부 정보는 rdc --help의 핵심 개념을 참조하십시오.",
       "descriptionShort": "머신에서 암호화된 저장소를 배포하고 관리합니다",

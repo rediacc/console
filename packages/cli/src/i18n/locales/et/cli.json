@@ -787,7 +787,12 @@
         "removedCerts": "{{count}} sertifikaadi vahemälu kirje {{verb}} eemaldatud:",
         "removedOrphanRepos": "{{count}} repositooriumikirjet {{verb}} eemaldatud (ei ole ühelegi masinale määratud):",
         "scanning": "Vananenud jääkide otsimine kohalikust konfiguratsioonist...",
-        "tooManyOnlyFlags": "Anna korraga maksimaalselt üks lipp: --certs-only / --archives-only / --refs-only."
+        "tooManyOnlyFlags": "Anna korraga maksimaalselt üks lipp: --certs-only / --archives-only / --refs-only.",
+        "goneMachineReposOption": "Arhiveeri hoidlakirjed, mis asuvad masinal, mida konfiguratsioonis enam pole. Arhiveeritakse, mitte ei kustutata: iga kirje säilitab oma mandaadi ja on taastatav kuni arhiivi ooteaja lõpuni.",
+        "foundGoneMachineRepos": "{{count}} hoidlakirjet asub masinal, mida konfiguratsioonis enam pole:",
+        "archivedGoneMachineRepos": "{{count}} hoidlakirjet {{verb}} arhiveeritud (asuvad masinal, mida konfiguratsioonis enam pole):",
+        "goneMachineReposHint": "Arhiveeri need käsuga 'rdc config prune --gone-machine-repos'; iga kirje jääb taastatavaks kuni arhiivi ooteaja lõpuni.",
+        "droppedGoneMachineState": "{{count}} käituskirjet, mis viitavad konfiguratsioonist puuduvale masinale, {{verb}} eemaldatud:"
       },
       "reconcile": {
         "acceptObservedUnfiltered": "--accept-observed ei saa kombineerida --machine'iga: osaline skaneerimine ei suuda tõestada, et asukoht on ühemõtteline, seega oleks ümberkirjutamine oletus. Käivita 'rdc config reconcile --accept-observed' ilma filtrita.",
@@ -899,7 +904,8 @@
           "notEnabled": "Kaugkonfiguratsioon ei ole lubatud.",
           "pulled": "Konfiguratsioon toodud",
           "pulling": "Konfiguratsiooni toomine kaugelt...",
-          "success": "Konfiguratsioon värskendati kaugelt (versioon {{version}})."
+          "success": "Konfiguratsioon värskendati kaugelt (versioon {{version}}).",
+          "replacedLocal": "Konfiguratsioon \"{{config}}\": kohalik fail erines serveri versioonist {{version}} ja asendati sellega: {{changes}}"
         },
         "staleSlot": "Sinu key slot on aegunud (konfiguratsiooni krüptovõti roteeriti). Registreeru uuesti käsuga: rdc config remote enable",
         "status": {
@@ -982,7 +988,10 @@
           "invalidVersion": "Versioon peab olema positiivne täisarv, saadi \"{{version}}\".",
           "alreadyCurrent": "Versioon {{version}} on juba konfiguratsiooni \"{{config}}\" praegune versioon; taastada pole midagi.",
           "success": "Konfiguratsiooni \"{{config}}\" versioon {{restored}} taastati versioonina {{version}}."
-        }
+        },
+        "localEditsPushed": "Konfiguratsioon \"{{config}}\": kohalikus failis olid muudatused pärast serveri versiooni {{from}}; need saadeti versioonina {{to}}: {{changes}}",
+        "localEditsConflict": "Konfiguratsioon \"{{config}}\": kohalikus failis on muudatused pärast serveri versiooni {{cached}} ({{changes}}) ja server on liikunud versioonile {{server}}. Midagi ei kirjutatud üle. Kopeeri muudatused kõrvale, käivita \"rdc config remote refresh\", et võtta versioon {{server}} (see asendab kohaliku faili), ja rakenda need uuesti.",
+        "localEditsUnverifiable": "Konfiguratsioon \"{{config}}\": kohalik fail erineb serveri versioonist {{server}} ({{changes}}) ja versiooni {{cached}}, millest see vahemällu võeti, ei õnnestunud lugeda ({{reason}}), seega ei saa kohalikku muudatust serveri muudatusest eristada. Midagi ei kirjutatud üle. Kopeeri muudatused kõrvale, käivita \"rdc config remote refresh\", et võtta versioon {{server}} (see asendab kohaliku faili), ja rakenda need uuesti."
       },
       "rotateCek": {
         "cancelled": "Rotatsioon tühistatud. Midagi ei muutunud.",
@@ -1277,7 +1286,11 @@
         "dnsCleanedUp": "Eemaldatud {{count}} DNS-kirjet",
         "dnsDeleted": "DNS-kirje kustutatud: {{type}} {{name}}",
         "noState": "Masina \"{{name}}\" jaoks pole OpenTofu olekut leitud. Kasuta käsitsi lisatud masinate jaoks 'config remove-machine'.",
-        "optionForce": "Jätab kinnitusviipa vahele"
+        "optionForce": "Jätab kinnitusviipa vahele",
+        "optionArchiveRepos": "Arhiveeri selle masina hoidlate konfiguratsioonikirjed (mandaadid säilivad, taastatavad)",
+        "reposArchived": "Arhiveeriti {{count}} masinal {{machine}} asunud hoidlakirjet: {{repos}}",
+        "reposLeft": "{{count}} hoidlakirjet viitab endiselt masinale {{machine}}, mida selles konfiguratsioonis enam pole: {{repos}}",
+        "reposLeftHint": "Arhiveeri need käsuga 'rdc config prune --gone-machine-repos' või ükshaaval käsuga 'rdc repo delete <name> -y'."
       },
       "description": "Vaatab kaugmasina olekut: süsteemi ressursid, töötavad konteinerid, systemd teenused, juurutatud repositooriumid ja tervisediagnostika. Ainult lugemiseks; repositooriumide muutmiseks kasuta `repo`. Peamised alamkomandod: status (täisolek, kitsendatav lippudega --system, --containers, --repositories, --services), health, list, add, remove, setup, prune, provision, deprovision.",
       "descriptionShort": "Halda kaugmasinaid (olek, tervis, loetlemine, lisamine, eemaldamine, seadistamine, koristamine)",
@@ -1864,7 +1877,9 @@
         "licenseRetireFailed": "Kontoserverile ei õnnestunud teada anda, et hoidla \"{{repository}}\" litsents on tagastatud ({{reason}}). See jääb serveri litsentside kogusummas arvesse, kuni see on tagastatud.",
         "backupsPurged": "Hoidla \"{{repository}}\" {{count}} pilvehetktõmmist kustutati, vabanes {{bytes}}.",
         "purgeBackupsOption": "Kustuta hoidla pilvevarukoopiad kohe, selle asemel et lasta neil aeguda",
-        "purgeForkRefused": "\"{{repository}}\" on fork ja jagab varunduse liini oma lähtehoidlaga, nii et --purge-backups kustutaks ka lähtehoidla varukoopiad. Kustuta fork ilma selle valikuta."
+        "purgeForkRefused": "\"{{repository}}\" on fork ja jagab varunduse liini oma lähtehoidlaga, nii et --purge-backups kustutaks ka lähtehoidla varukoopiad. Kustuta fork ilma selle valikuta.",
+        "confirmMachineGone": "Hoidla \"{{repository}}\" masinat \"{{machine}}\" selles konfiguratsioonis enam pole, seega ühelgi masinal midagi ei muudeta. Kas arhiveerida hoidla \"{{repository}}\" konfiguratsioonikirje?",
+        "machineGoneArchived": "Hoidla \"{{repository}}\" konfiguratsioonikirje arhiveeriti: selle masinat \"{{machine}}\" selles konfiguratsioonis enam pole, seega ühegi masinaga ei ühendatud"
       },
       "description": "Juuruta ja halda krüpteeritud hoidlaid masinatel. Peamised alamkomandod: create, up (juuruta), down (peata), fork (hetkeline CoW-kloon), delete, push/pull (varukoopia), sync (failide ülekanne). Elutsükkel: repo create → repo up → repo down. Vaata arhitektuuri, marsruutimise ja keskkonna muutujate üksikasju käsuga rdc --help.",
       "descriptionShort": "Juuruta ja halda krüpteeritud hoidlaid masinatel",
