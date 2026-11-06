@@ -5,17 +5,24 @@
  * calls that consume it live in `license.ts` and `license-batch.ts`.
  */
 
+import { randomUUID } from 'node:crypto';
+import { dirname, join } from 'node:path';
 import { DEFAULTS } from '@rediacc/shared/config';
 import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
+import { getConfigDir } from '@rediacc/shared/paths';
 import { isValidPublicKeyId } from '@rediacc/shared/subscription';
 import type { SFTPClient } from '../../remote/sftp/index.js';
+import { ERROR_CODES } from '../../types/errors.js';
 import type { MachineConfig } from '../../types/index.js';
+import { CliExitError } from '../../utils/cli-exit-error.js';
 import { shellQuote } from '../../utils/shell-quote.js';
 import { outputService } from '../core/output.js';
 import { getExecutor } from '../executor/executor-factory.js';
 import type { RemoteRepoLicenseScanEntry, RuntimeRepoLicenseStatus } from './license-types.js';
 
 const CLIENT_MACHINE_ID_PATH = '/etc/machine-id';
+const CLIENT_MACHINE_ID_DBUS_PATH = '/var/lib/dbus/machine-id';
+const CLIENT_INSTALL_ID_FILE = 'client-machine-id';
 export const DEFAULT_DATASTORE = WK_DATASTORE_PATH;
 
 /**
@@ -101,9 +108,58 @@ export async function readLocalMachineId(): Promise<string> {
     if (!match) throw new Error('Failed to read macOS IOPlatformUUID');
     return createHash('sha256').update(match[1].trim()).digest('hex');
   }
-  // Linux
-  const { readFile } = await import('node:fs/promises');
-  return (await readFile(CLIENT_MACHINE_ID_PATH, 'utf-8')).trim();
+  return readLinuxClientMachineId();
+}
+
+export interface LinuxClientIdSources {
+  /** Host identity files, tried in order. */
+  hostPaths: string[];
+  /** Where a generated per-install id is kept when no host file exists. */
+  installIdPath: string;
+}
+
+/**
+ * The client id on Linux. The account server stores `clientMachineId` as the
+ * identity of the CLIENT host (it rides the signed blob and the audit log; it
+ * is never compared, renet only carries the field). The licensed machine is
+ * identified separately by `machineId`, read remotely as root.
+ *
+ * A caller without a host id is normal, not broken: a proxied command runs in
+ * the executor container, which has no /etc/machine-id. It then uses a
+ * generated id persisted in the CLI config dir, so the same install reports
+ * the same client. When even that cannot be written, the failure is a named
+ * PRECONDITION_MISMATCH, never a raw ENOENT.
+ */
+export async function readLinuxClientMachineId(
+  sources: LinuxClientIdSources = {
+    hostPaths: [CLIENT_MACHINE_ID_PATH, CLIENT_MACHINE_ID_DBUS_PATH],
+    installIdPath: join(getConfigDir(), CLIENT_INSTALL_ID_FILE),
+  }
+): Promise<string> {
+  const { readFile, writeFile, mkdir } = await import('node:fs/promises');
+  for (const path of sources.hostPaths) {
+    const id = await readFile(path, 'utf-8').then(
+      (v) => v.trim(),
+      () => ''
+    );
+    if (id) return id;
+  }
+  const existing = await readFile(sources.installIdPath, 'utf-8').then(
+    (v) => v.trim(),
+    () => ''
+  );
+  if (/^[a-f0-9]{64}$/.test(existing)) return existing;
+  const generated = `${randomUUID()}${randomUUID()}`.replaceAll('-', '').slice(0, 64);
+  try {
+    await mkdir(dirname(sources.installIdPath), { recursive: true, mode: 0o700 });
+    await writeFile(sources.installIdPath, `${generated}\n`, { mode: 0o600 });
+  } catch (error) {
+    throw new CliExitError(
+      ERROR_CODES.PRECONDITION_MISMATCH,
+      `No client machine id: ${sources.hostPaths.join(' and ')} are missing and a generated one could not be saved to ${sources.installIdPath} (${error instanceof Error ? error.message : String(error)}). Make the CLI config directory writable.`
+    );
+  }
+  return generated;
 }
 
 /**
