@@ -8,7 +8,9 @@ type RunOnMachine = (command: string, timeout?: number) => Promise<ExecResult>;
  * Production pins the key `rdc machine scan-keys` recorded. A suite has no such record and its VMs are rebuilt between runs, so it scans the peer from the machine that will connect to it, on the private fleet network. A peer that answers nothing yields an empty value: the flag stays off and the verb gives its coded refusal (exit 20), rather than the suite hiding the failure.
  */
 export async function peerKnownHosts(run: RunOnMachine, host: string): Promise<string> {
-  const scanned = await run(`ssh-keyscan -T 5 ${host} 2>/dev/null | base64 -w0`, 30_000);
+  // Single-quoted: a machine name with shell metacharacters is data here, not part of the command.
+  const quoted = `'${host.replaceAll("'", "'\\''")}'`;
+  const scanned = await run(`ssh-keyscan -T 5 ${quoted} 2>/dev/null | base64 -w0`, 30_000);
 
   return scanned.code === 0 ? scanned.stdout.trim() : '';
 }
@@ -25,7 +27,7 @@ export async function peerKnownHostsArg(
 }
 
 /**
- * The vault form of the flags above: a literal `dest_machine` / `source_machine` param gets its scanned record as `dest_known_hosts` / `source_known_hosts`. A peer that answered nothing leaves the key OUT, as the flag form leaves the flag out, so the verb gives its coded refusal rather than reading an empty record.
+ * The vault form of the flags above: a literal `dest_machine` / `source_machine` param gets its scanned record as `dest_known_hosts` / `source_known_hosts`. A peer that answered nothing leaves the key OUT, as the flag form leaves the flag out, so the verb gives its coded refusal rather than reading an empty record; a record the caller already supplied is kept as given.
  */
 export async function peerKnownHostParams(
   run: RunOnMachine,

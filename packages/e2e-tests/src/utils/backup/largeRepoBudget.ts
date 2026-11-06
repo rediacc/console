@@ -112,8 +112,12 @@ export const largeRepoBudgetViolations = (input: LargeRepoBudgetInput): string[]
   }
   const budget = incrTimeBudgetMs(seed.durationMs, input.seedBytes);
   if (incr.durationMs > budget) {
+    const capped = input.seedBytes >= CAP_FLOOR_BYTES;
+    const capNote = capped
+      ? `, capped at ${INCR_TIME_CAP_MS} ms from 20 GiB`
+      : ', no cap under 20 GiB';
     out.push(
-      `the incremental took ${incr.durationMs} ms, over the ${budget} ms budget (${INCR_TIME_RATIO * 100}% of the ${seed.durationMs} ms seed, capped at ${INCR_TIME_CAP_MS} ms from 20 GiB)`
+      `the incremental took ${incr.durationMs} ms, over the ${budget} ms budget (${INCR_TIME_RATIO * 100}% of the ${seed.durationMs} ms seed${capNote})`
     );
   }
   return out;

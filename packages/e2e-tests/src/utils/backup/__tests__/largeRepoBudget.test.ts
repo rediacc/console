@@ -4,6 +4,7 @@ import {
   GIB,
   INCR_TIME_CAP_MS,
   incrTimeBudgetMs,
+  largeRepoBudgetViolations,
   seedFileLimitMs,
   seedFileViolation,
 } from '../largeRepoBudget';
@@ -36,5 +37,26 @@ describe('per-seed-file time guard', () => {
     expect(seedFileViolation(3, 20, GIB, seedFileLimitMs(GIB))).toBeUndefined();
     const v = seedFileViolation(3, 20, GIB, seedFileLimitMs(GIB) + 1);
     expect(v).toContain('seed file 3 of 20');
+  });
+});
+
+describe('the time-budget violation message', () => {
+  const seed = { durationMs: 100_000, bytesUploaded: 100, chunksUploaded: 1 };
+  const incr = { durationMs: 50_000, bytesUploaded: 10, chunksUploaded: 1 };
+  const input = { seed, incr, changedBytes: 10, cellBytes: 1024 };
+
+  it('names no cap for a seed under 20 GiB', () => {
+    const msg = largeRepoBudgetViolations({ ...input, seedBytes: 100 }).find((v) =>
+      v.includes('budget')
+    );
+    expect(msg).toContain('no cap under 20 GiB');
+    expect(msg).not.toContain('capped at');
+  });
+
+  it('names the cap from 20 GiB up', () => {
+    const msg = largeRepoBudgetViolations({ ...input, seedBytes: 20 * GIB }).find((v) =>
+      v.includes('budget')
+    );
+    expect(msg).toContain(`capped at ${INCR_TIME_CAP_MS} ms from 20 GiB`);
   });
 });

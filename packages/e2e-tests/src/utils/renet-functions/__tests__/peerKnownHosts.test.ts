@@ -18,7 +18,7 @@ describe('peerKnownHosts', () => {
     await expect(
       peerKnownHosts(runner({ stdout: 'c2Nhbm5lZA==\n' }, seen), '10.0.0.9')
     ).resolves.toBe('c2Nhbm5lZA==');
-    expect(seen).toEqual(['ssh-keyscan -T 5 10.0.0.9 2>/dev/null | base64 -w0']);
+    expect(seen).toEqual([`ssh-keyscan -T 5 '10.0.0.9' 2>/dev/null | base64 -w0`]);
   });
 
   it('yields nothing for a scan that failed, so the verb gives its coded refusal', async () => {
@@ -34,6 +34,14 @@ describe('peerKnownHosts', () => {
     await expect(
       peerKnownHostsArg(runner({ stdout: '' }), 'src-known-hosts', '10.0.0.9')
     ).resolves.toBe('');
+  });
+});
+
+describe('peerKnownHosts quoting', () => {
+  it('passes a host with shell metacharacters as one quoted word', async () => {
+    const seen: string[] = [];
+    await peerKnownHosts(runner({ stdout: 'eA==' }, seen), "a;b'c $(x)");
+    expect(seen[0]).toContain("ssh-keyscan -T 5 'a;b'\\''c $(x)' 2>/dev/null");
   });
 });
 
@@ -59,6 +67,14 @@ describe('peerKnownHostParams', () => {
     const params = await peerKnownHostParams(runner({ code: 1 }), { dest_machine: '10.0.0.9' });
     expect(params).toEqual({ dest_machine: '10.0.0.9' });
     expect('dest_known_hosts' in params).toBe(false);
+  });
+
+  it('keeps a record the caller supplied when the scan answers nothing', async () => {
+    const params = await peerKnownHostParams(runner({ code: 1 }), {
+      dest_machine: '10.0.0.9',
+      dest_known_hosts: 'Y2FsbGVy',
+    });
+    expect(params.dest_known_hosts).toBe('Y2FsbGVy');
   });
 
   it('scans nothing and adds nothing for a param set naming no machine', async () => {

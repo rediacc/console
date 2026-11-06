@@ -71,7 +71,10 @@ export function usageViolations(usage: BackupUsage): string[] {
 function ledgerArithmeticViolations(usage: BackupUsage): string[] {
   const bad: string[] = [];
   // The server's quotaUsedBytes: live (stored minus waiting) plus the adjustment, floored at nothing, plus held leases. Stored bytes the retained versions cannot restore from are not billed, so a subscription that has ever pruned a snapshot has stored > used by exactly its waiting bytes.
-  const live = Math.max(0, usage.storedBytes - usage.waitingBytes);
+  // A response without waitingBytes would turn every figure below into NaN; name the missing field once and compute with no waiting bytes.
+  const hasWaiting = typeof usage.waitingBytes === 'number';
+  if (!hasWaiting) bad.push('waitingBytes is missing from the usage response');
+  const live = Math.max(0, usage.storedBytes - (hasWaiting ? usage.waitingBytes : 0));
   const expectedUsed = Math.max(0, live + usage.usageAdjustment) + usage.leasedBytes;
   if (usage.usedBytes !== expectedUsed) {
     bad.push(

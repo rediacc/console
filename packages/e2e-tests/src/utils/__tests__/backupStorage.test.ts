@@ -48,6 +48,12 @@ describe('usageViolations', () => {
     expect(usageViolations(healthyUsage())).toEqual([]);
   });
 
+  it('names a missing waitingBytes once instead of reporting a ledger mismatch on NaN', () => {
+    const { waitingBytes: _omitted, ...rest } = healthyUsage();
+    const bad = usageViolations(rest as BackupUsage);
+    expect(bad).toEqual(['waitingBytes is missing from the usage response']);
+  });
+
   it('catches usedBytes that is not the sum of its parts', () => {
     const bad = usageViolations(healthyUsage({ usedBytes: 999 }));
     expect(bad.join('\n')).toContain(
