@@ -582,7 +582,7 @@
   "commands.config.prune.foundGoneMachineRepos": "{{count}} repository entry/entries are placed on a machine that is no longer in the config:",
   "commands.config.prune.foundOrphanRepos": "{{count}} repository entry/entries are placed on no machine:",
   "commands.config.prune.goneMachineReposHint": "Archive them with 'rdc config prune --gone-machine-repos'; each stays restorable until the archive grace expires.",
-  "commands.config.prune.goneMachineReposOption": "Archive repository entries placed on a machine that is no longer in the config. Archived, not dropped: each keeps its credential and is restorable until the archive grace expires.",
+  "commands.config.prune.goneMachineReposOption": "Archive repository entries placed on a machine that is no longer in the config. Archived, not dropped: each keeps its credential and is restorable until the archive grace expires. Selects only this bucket: the cert-cache, archive and cross-reference buckets are skipped unless their own --*-only flag is also given.",
   "commands.config.prune.graceDaysOption": "Override the archive grace window (in days) for this invocation. Falls back to defaults.pruneGraceDays in the config, then to 7 if neither is set.",
   "commands.config.prune.keptArchivesInGrace": "Kept archived repositories still in grace (recoverable via 'rdc repo admin archive restore'):",
   "commands.config.prune.nothingToPrune": "Nothing to prune: the config is already clean.",

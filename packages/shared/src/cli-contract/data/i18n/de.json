@@ -582,7 +582,7 @@
   "commands.config.prune.foundGoneMachineRepos": "{{count}} Repository-Eintrag/-Einträge liegen auf einer Maschine, die nicht mehr in der Konfiguration ist:",
   "commands.config.prune.foundOrphanRepos": "{{count}} Repository-Eintrag/-Einträge sind keiner Maschine zugeordnet:",
   "commands.config.prune.goneMachineReposHint": "Mit 'rdc config prune --gone-machine-repos' archivieren; jeder bleibt bis zum Ablauf der Archivfrist wiederherstellbar.",
-  "commands.config.prune.goneMachineReposOption": "Repository-Einträge archivieren, die auf einer nicht mehr in der Konfiguration vorhandenen Maschine liegen. Archiviert, nicht gelöscht: Jeder behält seine Zugangsdaten und bleibt bis zum Ablauf der Archivfrist wiederherstellbar.",
+  "commands.config.prune.goneMachineReposOption": "Repository-Einträge archivieren, die auf einer nicht mehr in der Konfiguration vorhandenen Maschine liegen. Archiviert, nicht gelöscht: Jeder behält seine Zugangsdaten und bleibt bis zum Ablauf der Archivfrist wiederherstellbar. Wählt nur diesen Bereich: Zertifikat-Cache, Archive und Querverweise werden übersprungen, sofern nicht auch ihr eigenes --*-only angegeben ist.",
   "commands.config.prune.graceDaysOption": "Überschreibt das Archiv-Schonfristfenster (in Tagen) für diesen Aufruf. Greift auf defaults.pruneGraceDays in der Konfiguration zurück, dann auf 7, wenn keines gesetzt ist.",
   "commands.config.prune.keptArchivesInGrace": "Archivierte Repositories noch in Schonfrist behalten (wiederherstellbar über 'rdc repo admin archive restore'):",
   "commands.config.prune.nothingToPrune": "Nichts zu bereinigen: Konfiguration ist bereits sauber.",

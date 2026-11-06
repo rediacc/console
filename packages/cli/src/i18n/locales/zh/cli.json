@@ -788,7 +788,7 @@
         "removedOrphanRepos": "{{count}} 个仓库条目（未部署在任何机器上）{{verb}}移除：",
         "scanning": "正在扫描本地配置中的过时残留...",
         "tooManyOnlyFlags": "最多传递 --certs-only / --archives-only / --refs-only 中的一个。",
-        "goneMachineReposOption": "归档放置在已不在配置中的机器上的仓库条目。是归档而非删除：每个条目保留其凭据，在归档宽限期结束前都可恢复。",
+        "goneMachineReposOption": "归档放置在已不在配置中的机器上的仓库条目。是归档而非删除：每个条目保留其凭据，在归档宽限期结束前都可恢复。 仅选择此类别：除非同时传入各自的 --*-only 选项，否则跳过证书缓存、归档和交叉引用类别。",
         "foundGoneMachineRepos": "有 {{count}} 个仓库条目放置在已不在配置中的机器上：",
         "archivedGoneMachineRepos": "{{count}} 个仓库条目 {{verb}} 归档（放置在已不在配置中的机器上）：",
         "goneMachineReposHint": "可使用 'rdc config prune --gone-machine-repos' 归档；在归档宽限期结束前都可恢复。",

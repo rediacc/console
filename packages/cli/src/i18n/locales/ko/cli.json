@@ -788,7 +788,7 @@
         "removedOrphanRepos": "{{count}}개의 저장소 항목(어떤 머신에도 배치되지 않음)이 {{verb}} 제거되었습니다:",
         "scanning": "오래된 항목에 대해 로컬 설정을 검사하는 중...",
         "tooManyOnlyFlags": "--certs-only / --archives-only / --refs-only 중 하나만 전달하십시오.",
-        "goneMachineReposOption": "구성에 더 이상 없는 머신에 배치된 리포지토리 항목을 보관합니다. 삭제가 아닌 보관이므로 각 항목은 자격 증명을 유지하며 보관 유예 기간이 끝날 때까지 복원할 수 있습니다.",
+        "goneMachineReposOption": "구성에 더 이상 없는 머신에 배치된 리포지토리 항목을 보관합니다. 삭제가 아닌 보관이므로 각 항목은 자격 증명을 유지하며 보관 유예 기간이 끝날 때까지 복원할 수 있습니다. 이 항목만 선택합니다. 각자의 --*-only 옵션을 함께 전달하지 않으면 인증서 캐시, 보관본, 상호 참조 항목은 건너뜁니다.",
         "foundGoneMachineRepos": "리포지토리 항목 {{count}}개가 구성에 더 이상 없는 머신에 배치되어 있습니다:",
         "archivedGoneMachineRepos": "리포지토리 항목 {{count}}개 {{verb}} 보관 (구성에 더 이상 없는 머신에 배치됨):",
         "goneMachineReposHint": "'rdc config prune --gone-machine-repos'로 보관하세요. 각 항목은 보관 유예 기간이 끝날 때까지 복원할 수 있습니다.",

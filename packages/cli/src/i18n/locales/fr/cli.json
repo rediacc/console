@@ -788,7 +788,7 @@
         "removedOrphanRepos": "{{count}} entrée(s) de dépôt {{verb}} supprimées (non associées à une machine) :",
         "scanning": "Analyse de la configuration locale à la recherche de résidus obsolètes...",
         "tooManyOnlyFlags": "Passez au maximum un de --certs-only / --archives-only / --refs-only.",
-        "goneMachineReposOption": "Archiver les entrées de dépôt placées sur une machine qui n'est plus dans la configuration. Archivées, pas supprimées : chacune garde ses identifiants et reste restaurable jusqu'à la fin du délai de grâce de l'archive.",
+        "goneMachineReposOption": "Archiver les entrées de dépôt placées sur une machine qui n'est plus dans la configuration. Archivées, pas supprimées : chacune garde ses identifiants et reste restaurable jusqu'à la fin du délai de grâce de l'archive. Sélectionne uniquement ce groupe : le cache de certificats, les archives et les références croisées sont ignorés, sauf si leur propre option --*-only est aussi passée.",
         "foundGoneMachineRepos": "{{count}} entrée(s) de dépôt sont placées sur une machine qui n'est plus dans la configuration :",
         "archivedGoneMachineRepos": "{{count}} entrée(s) de dépôt {{verb}} archivée(s) (placées sur une machine absente de la configuration) :",
         "goneMachineReposHint": "Les archiver avec 'rdc config prune --gone-machine-repos' ; chacune reste restaurable jusqu'à la fin du délai de grâce de l'archive.",

@@ -788,7 +788,7 @@
         "removedOrphanRepos": "{{count}} repositooriumikirjet {{verb}} eemaldatud (ei ole ühelegi masinale määratud):",
         "scanning": "Vananenud jääkide otsimine kohalikust konfiguratsioonist...",
         "tooManyOnlyFlags": "Anna korraga maksimaalselt üks lipp: --certs-only / --archives-only / --refs-only.",
-        "goneMachineReposOption": "Arhiveeri hoidlakirjed, mis asuvad masinal, mida konfiguratsioonis enam pole. Arhiveeritakse, mitte ei kustutata: iga kirje säilitab oma mandaadi ja on taastatav kuni arhiivi ooteaja lõpuni.",
+        "goneMachineReposOption": "Arhiveeri hoidlakirjed, mis asuvad masinal, mida konfiguratsioonis enam pole. Arhiveeritakse, mitte ei kustutata: iga kirje säilitab oma mandaadi ja on taastatav kuni arhiivi ooteaja lõpuni. Valib ainult selle rühma: sertifikaadivahemälu, arhiivide ja ristviidete rühmad jäetakse vahele, kui nende oma --*-only lippu ei anta.",
         "foundGoneMachineRepos": "{{count}} hoidlakirjet asub masinal, mida konfiguratsioonis enam pole:",
         "archivedGoneMachineRepos": "{{count}} hoidlakirjet {{verb}} arhiveeritud (asuvad masinal, mida konfiguratsioonis enam pole):",
         "goneMachineReposHint": "Arhiveeri need käsuga 'rdc config prune --gone-machine-repos'; iga kirje jääb taastatavaks kuni arhiivi ooteaja lõpuni.",

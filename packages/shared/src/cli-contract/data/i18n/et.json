@@ -582,7 +582,7 @@
   "commands.config.prune.foundGoneMachineRepos": "{{count}} hoidlakirjet asub masinal, mida konfiguratsioonis enam pole:",
   "commands.config.prune.foundOrphanRepos": "{{count}} repositooriumikirjet ei ole ühelegi masinale määratud:",
   "commands.config.prune.goneMachineReposHint": "Arhiveeri need käsuga 'rdc config prune --gone-machine-repos'; iga kirje jääb taastatavaks kuni arhiivi ooteaja lõpuni.",
-  "commands.config.prune.goneMachineReposOption": "Arhiveeri hoidlakirjed, mis asuvad masinal, mida konfiguratsioonis enam pole. Arhiveeritakse, mitte ei kustutata: iga kirje säilitab oma mandaadi ja on taastatav kuni arhiivi ooteaja lõpuni.",
+  "commands.config.prune.goneMachineReposOption": "Arhiveeri hoidlakirjed, mis asuvad masinal, mida konfiguratsioonis enam pole. Arhiveeritakse, mitte ei kustutata: iga kirje säilitab oma mandaadi ja on taastatav kuni arhiivi ooteaja lõpuni. Valib ainult selle rühma: sertifikaadivahemälu, arhiivide ja ristviidete rühmad jäetakse vahele, kui nende oma --*-only lippu ei anta.",
   "commands.config.prune.graceDaysOption": "Tühista arhiivi kaitsevali aken (päevades) selle käivituse jaoks. Langeb tagasi väärtusele defaults.pruneGraceDays konfiguratsioonis, seejärel 7-le, kui kumbagi ei ole seatud.",
   "commands.config.prune.keptArchivesInGrace": "Säilitati kaitsevalis olevad arhiveeritud hoidlad (taastatavad käsuga 'rdc repo admin archive restore'):",
   "commands.config.prune.nothingToPrune": "Midagi ei ole vaja puhastada: konfiguratsioon on juba puhas.",

@@ -788,7 +788,7 @@
         "removedOrphanRepos": "{{count}} voce/i di repository {{verb}} rimosse (non associate a nessuna macchina):",
         "scanning": "Scansione della configurazione locale per elementi obsoleti...",
         "tooManyOnlyFlags": "Passa al massimo uno tra --certs-only / --archives-only / --refs-only.",
-        "goneMachineReposOption": "Archiviare le voci di repository collocate su una macchina non più presente nella configurazione. Archiviate, non eliminate: ognuna conserva la propria credenziale ed è ripristinabile fino alla scadenza del periodo di grazia dell'archivio.",
+        "goneMachineReposOption": "Archiviare le voci di repository collocate su una macchina non più presente nella configurazione. Archiviate, non eliminate: ognuna conserva la propria credenziale ed è ripristinabile fino alla scadenza del periodo di grazia dell'archivio. Seleziona solo questo gruppo: cache dei certificati, archivi e riferimenti incrociati vengono saltati, a meno che non sia passato anche il rispettivo --*-only.",
         "foundGoneMachineRepos": "{{count}} voci di repository sono collocate su una macchina non più presente nella configurazione:",
         "archivedGoneMachineRepos": "{{count}} voci di repository {{verb}} archiviate (collocate su una macchina non più nella configurazione):",
         "goneMachineReposHint": "Archiviarle con 'rdc config prune --gone-machine-repos'; ognuna resta ripristinabile fino alla scadenza del periodo di grazia dell'archivio.",

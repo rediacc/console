@@ -582,7 +582,7 @@
   "commands.config.prune.foundGoneMachineRepos": "有 {{count}} 个仓库条目放置在已不在配置中的机器上：",
   "commands.config.prune.foundOrphanRepos": "{{count}} 个仓库条目未部署在任何机器上：",
   "commands.config.prune.goneMachineReposHint": "可使用 'rdc config prune --gone-machine-repos' 归档；在归档宽限期结束前都可恢复。",
-  "commands.config.prune.goneMachineReposOption": "归档放置在已不在配置中的机器上的仓库条目。是归档而非删除：每个条目保留其凭据，在归档宽限期结束前都可恢复。",
+  "commands.config.prune.goneMachineReposOption": "归档放置在已不在配置中的机器上的仓库条目。是归档而非删除：每个条目保留其凭据，在归档宽限期结束前都可恢复。 仅选择此类别：除非同时传入各自的 --*-only 选项，否则跳过证书缓存、归档和交叉引用类别。",
   "commands.config.prune.graceDaysOption": "覆盖此调用的归档宽限窗口（以天为单位）。回退到配置中的 defaults.pruneGraceDays，如果都未设置则回退到 7。",
   "commands.config.prune.keptArchivesInGrace": "保留仍在宽限期内的归档仓库（可通过 'rdc repo admin archive restore' 恢复）：",
   "commands.config.prune.nothingToPrune": "无需清理，配置已经干净。",

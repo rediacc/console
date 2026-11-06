@@ -582,7 +582,7 @@
   "commands.config.prune.foundGoneMachineRepos": "{{count}} entrée(s) de dépôt sont placées sur une machine qui n'est plus dans la configuration :",
   "commands.config.prune.foundOrphanRepos": "{{count}} entrée(s) de dépôt ne sont associées à aucune machine :",
   "commands.config.prune.goneMachineReposHint": "Les archiver avec 'rdc config prune --gone-machine-repos' ; chacune reste restaurable jusqu'à la fin du délai de grâce de l'archive.",
-  "commands.config.prune.goneMachineReposOption": "Archiver les entrées de dépôt placées sur une machine qui n'est plus dans la configuration. Archivées, pas supprimées : chacune garde ses identifiants et reste restaurable jusqu'à la fin du délai de grâce de l'archive.",
+  "commands.config.prune.goneMachineReposOption": "Archiver les entrées de dépôt placées sur une machine qui n'est plus dans la configuration. Archivées, pas supprimées : chacune garde ses identifiants et reste restaurable jusqu'à la fin du délai de grâce de l'archive. Sélectionne uniquement ce groupe : le cache de certificats, les archives et les références croisées sont ignorés, sauf si leur propre option --*-only est aussi passée.",
   "commands.config.prune.graceDaysOption": "Remplace la fenêtre de grâce d'archive (en jours) pour cette invocation. Repli sur defaults.pruneGraceDays dans la configuration, puis sur 7 si aucun n'est défini.",
   "commands.config.prune.keptArchivesInGrace": "Dépôts archivés encore en période de grâce conservés (récupérables via 'rdc repo admin archive restore') :",
   "commands.config.prune.nothingToPrune": "Rien à nettoyer, la configuration est déjà propre.",

@@ -788,7 +788,7 @@
         "removedOrphanRepos": "{{count}} entrada(s) de repositorio {{verb}} eliminadas (sin asignar a ninguna máquina):",
         "scanning": "Escaneando configuración local en busca de restos obsoletos...",
         "tooManyOnlyFlags": "Pasa como máximo uno de --certs-only / --archives-only / --refs-only.",
-        "goneMachineReposOption": "Archivar las entradas de repositorio ubicadas en una máquina que ya no está en la configuración. Se archivan, no se eliminan: cada una conserva su credencial y es restaurable hasta que vence el periodo de gracia del archivo.",
+        "goneMachineReposOption": "Archivar las entradas de repositorio ubicadas en una máquina que ya no está en la configuración. Se archivan, no se eliminan: cada una conserva su credencial y es restaurable hasta que vence el periodo de gracia del archivo. Selecciona solo este grupo: se omiten los de caché de certificados, archivos y referencias cruzadas salvo que se pase también su propio indicador --*-only.",
         "foundGoneMachineRepos": "{{count}} entrada(s) de repositorio están ubicadas en una máquina que ya no está en la configuración:",
         "archivedGoneMachineRepos": "{{count}} entrada(s) de repositorio {{verb}} archivadas (ubicadas en una máquina que ya no está en la configuración):",
         "goneMachineReposHint": "Archívelas con 'rdc config prune --gone-machine-repos'; cada una sigue siendo restaurable hasta que vence el periodo de gracia del archivo.",

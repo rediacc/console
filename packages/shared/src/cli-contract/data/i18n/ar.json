@@ -582,7 +582,7 @@
   "commands.config.prune.foundGoneMachineRepos": "{{count}} من إدخالات المستودعات موضوعة على جهاز لم يعد في الإعداد:",
   "commands.config.prune.foundOrphanRepos": "{{count}} من إدخالات المستودعات غير مرتبطة بأي جهاز:",
   "commands.config.prune.goneMachineReposHint": "أرشفها باستخدام 'rdc config prune --gone-machine-repos'؛ يبقى كل منها قابلًا للاستعادة حتى تنتهي مهلة الأرشيف.",
-  "commands.config.prune.goneMachineReposOption": "أرشفة إدخالات المستودعات الموضوعة على جهاز لم يعد في الإعداد. تُؤرشف ولا تُحذف: يحتفظ كل منها ببيانات اعتماده ويبقى قابلًا للاستعادة حتى تنتهي مهلة الأرشيف.",
+  "commands.config.prune.goneMachineReposOption": "أرشفة إدخالات المستودعات الموضوعة على جهاز لم يعد في الإعداد. تُؤرشف ولا تُحذف: يحتفظ كل منها ببيانات اعتماده ويبقى قابلًا للاستعادة حتى تنتهي مهلة الأرشيف. يحدد هذه الفئة فقط: تُتخطى فئات ذاكرة الشهادات المؤقتة والأرشيفات والمراجع المتقاطعة ما لم يُمرَّر أيضاً خيارها --*-only الخاص بها.",
   "commands.config.prune.graceDaysOption": "تجاوز نافذة سماح الأرشيف (بالأيام) لهذا الاستدعاء. يعود إلى defaults.pruneGraceDays في التكوين، ثم إلى 7 إذا لم يتم تعيين أي منهما.",
   "commands.config.prune.keptArchivesInGrace": "تم الاحتفاظ بالمستودعات المؤرشفة في فترة السماح (يمكن استعادتها عبر 'rdc repo admin archive restore'):",
   "commands.config.prune.nothingToPrune": "لا شيء للتنظيف، التكوين نظيف بالفعل.",

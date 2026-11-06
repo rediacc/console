@@ -788,7 +788,7 @@
         "removedOrphanRepos": "{{count}} depo girişi (hiçbir makinede yer almayan) {{verb}} kaldırıldı:",
         "scanning": "Yerel yapılandırma eski kalıntılar için taranıyor...",
         "tooManyOnlyFlags": "--certs-only / --archives-only / --refs-only seçeneklerinden en fazla birini geçirin.",
-        "goneMachineReposOption": "Artık yapılandırmada olmayan bir makineye yerleştirilmiş depo kayıtlarını arşivle. Silinmez, arşivlenir: her biri kimlik bilgisini korur ve arşiv süresi dolana kadar geri yüklenebilir.",
+        "goneMachineReposOption": "Artık yapılandırmada olmayan bir makineye yerleştirilmiş depo kayıtlarını arşivle. Silinmez, arşivlenir: her biri kimlik bilgisini korur ve arşiv süresi dolana kadar geri yüklenebilir. Yalnızca bu grubu seçer: kendi --*-only seçeneği de verilmedikçe sertifika önbelleği, arşiv ve çapraz başvuru grupları atlanır.",
         "foundGoneMachineRepos": "{{count}} depo kaydı artık yapılandırmada olmayan bir makineye yerleştirilmiş:",
         "archivedGoneMachineRepos": "{{count}} depo kaydı {{verb}} arşivlendi (artık yapılandırmada olmayan bir makinede):",
         "goneMachineReposHint": "Bunları 'rdc config prune --gone-machine-repos' ile arşivleyin; her biri arşiv süresi dolana kadar geri yüklenebilir kalır.",

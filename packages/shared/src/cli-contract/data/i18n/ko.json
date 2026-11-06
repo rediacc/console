@@ -582,7 +582,7 @@
   "commands.config.prune.foundGoneMachineRepos": "리포지토리 항목 {{count}}개가 구성에 더 이상 없는 머신에 배치되어 있습니다:",
   "commands.config.prune.foundOrphanRepos": "{{count}}개의 저장소 항목이 어떤 머신에도 배치되어 있지 않습니다:",
   "commands.config.prune.goneMachineReposHint": "'rdc config prune --gone-machine-repos'로 보관하세요. 각 항목은 보관 유예 기간이 끝날 때까지 복원할 수 있습니다.",
-  "commands.config.prune.goneMachineReposOption": "구성에 더 이상 없는 머신에 배치된 리포지토리 항목을 보관합니다. 삭제가 아닌 보관이므로 각 항목은 자격 증명을 유지하며 보관 유예 기간이 끝날 때까지 복원할 수 있습니다.",
+  "commands.config.prune.goneMachineReposOption": "구성에 더 이상 없는 머신에 배치된 리포지토리 항목을 보관합니다. 삭제가 아닌 보관이므로 각 항목은 자격 증명을 유지하며 보관 유예 기간이 끝날 때까지 복원할 수 있습니다. 이 항목만 선택합니다. 각자의 --*-only 옵션을 함께 전달하지 않으면 인증서 캐시, 보관본, 상호 참조 항목은 건너뜁니다.",
   "commands.config.prune.graceDaysOption": "이번 실행에 대한 보관 유예 기간 (일 단위)을 재정의합니다. 설정의 defaults.pruneGraceDays로 대체되며 둘 다 설정되지 않은 경우 7을 사용합니다.",
   "commands.config.prune.keptArchivesInGrace": "유예 기간 내에 있는 보관 저장소가 유지되었습니다 ('rdc repo admin archive restore'를 통해 복구 가능):",
   "commands.config.prune.nothingToPrune": "정리할 항목이 없습니다. 설정이 이미 깨끗합니다.",

@@ -210,7 +210,7 @@
         "nothingToPrune": "Nothing to prune: the config is already clean.",
         "dryRun": "Dry run: {{count}} change(s) would be applied. Re-run without --dry-run to commit.",
         "completed": "Pruned {{count}} stale entry/entries from local config.",
-        "goneMachineReposOption": "Archive repository entries placed on a machine that is no longer in the config. Archived, not dropped: each keeps its credential and is restorable until the archive grace expires.",
+        "goneMachineReposOption": "Archive repository entries placed on a machine that is no longer in the config. Archived, not dropped: each keeps its credential and is restorable until the archive grace expires. Selects only this bucket: the cert-cache, archive and cross-reference buckets are skipped unless their own --*-only flag is also given.",
         "foundGoneMachineRepos": "{{count}} repository entry/entries are placed on a machine that is no longer in the config:",
         "archivedGoneMachineRepos": "{{count}} repository entry/entries {{verb}} archived (placed on a machine no longer in the config):",
         "goneMachineReposHint": "Archive them with 'rdc config prune --gone-machine-repos'; each stays restorable until the archive grace expires.",

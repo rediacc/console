@@ -788,7 +788,7 @@
         "removedOrphanRepos": "{{count}} Repository-Eintrag/-Einträge {{verb}} entfernt (keiner Maschine zugeordnet):",
         "scanning": "Lokale Konfiguration wird auf veraltete Reste durchsucht...",
         "tooManyOnlyFlags": "Höchstens eines von --certs-only / --archives-only / --refs-only übergeben.",
-        "goneMachineReposOption": "Repository-Einträge archivieren, die auf einer nicht mehr in der Konfiguration vorhandenen Maschine liegen. Archiviert, nicht gelöscht: Jeder behält seine Zugangsdaten und bleibt bis zum Ablauf der Archivfrist wiederherstellbar.",
+        "goneMachineReposOption": "Repository-Einträge archivieren, die auf einer nicht mehr in der Konfiguration vorhandenen Maschine liegen. Archiviert, nicht gelöscht: Jeder behält seine Zugangsdaten und bleibt bis zum Ablauf der Archivfrist wiederherstellbar. Wählt nur diesen Bereich: Zertifikat-Cache, Archive und Querverweise werden übersprungen, sofern nicht auch ihr eigenes --*-only angegeben ist.",
         "foundGoneMachineRepos": "{{count}} Repository-Eintrag/-Einträge liegen auf einer Maschine, die nicht mehr in der Konfiguration ist:",
         "archivedGoneMachineRepos": "{{count}} Repository-Eintrag/-Einträge {{verb}} archiviert (auf einer nicht mehr vorhandenen Maschine):",
         "goneMachineReposHint": "Mit 'rdc config prune --gone-machine-repos' archivieren; jeder bleibt bis zum Ablauf der Archivfrist wiederherstellbar.",

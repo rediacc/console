@@ -582,7 +582,7 @@
   "commands.config.prune.foundGoneMachineRepos": "{{count}} depo kaydı artık yapılandırmada olmayan bir makineye yerleştirilmiş:",
   "commands.config.prune.foundOrphanRepos": "{{count}} depo girişi hiçbir makinede yer almıyor:",
   "commands.config.prune.goneMachineReposHint": "Bunları 'rdc config prune --gone-machine-repos' ile arşivleyin; her biri arşiv süresi dolana kadar geri yüklenebilir kalır.",
-  "commands.config.prune.goneMachineReposOption": "Artık yapılandırmada olmayan bir makineye yerleştirilmiş depo kayıtlarını arşivle. Silinmez, arşivlenir: her biri kimlik bilgisini korur ve arşiv süresi dolana kadar geri yüklenebilir.",
+  "commands.config.prune.goneMachineReposOption": "Artık yapılandırmada olmayan bir makineye yerleştirilmiş depo kayıtlarını arşivle. Silinmez, arşivlenir: her biri kimlik bilgisini korur ve arşiv süresi dolana kadar geri yüklenebilir. Yalnızca bu grubu seçer: kendi --*-only seçeneği de verilmedikçe sertifika önbelleği, arşiv ve çapraz başvuru grupları atlanır.",
   "commands.config.prune.graceDaysOption": "Bu çağrı için arşiv erteleme penceresini (gün cinsinden) geçersiz kıl. Yapılandırmadaki defaults.pruneGraceDays değerine geri döner, hiçbiri ayarlanmazsa 7'ye düşer.",
   "commands.config.prune.keptArchivesInGrace": "Hâlâ erteleme süresinde olan arşivlenmiş depolar saklandı ('rdc repo admin archive restore' ile kurtarılabilir):",
   "commands.config.prune.nothingToPrune": "Temizlenecek bir şey yok, yapılandırma zaten temiz.",
