@@ -780,7 +780,12 @@ export interface RepositoryGpuRevokeParams {
 }
 
 /** Evaluate the repository health gate once (JSON HealthReport) */
-export interface RepositoryHealthParams {}
+export interface RepositoryHealthParams {
+  /** Monitoring mode: no readiness fallback; a repository without health() answers level none */
+  strict?: boolean;
+  /** Evaluate every mounted repository (no repository is named) */
+  all?: boolean;
+}
 
 /** Get repository information */
 export interface RepositoryInfoParams {}
@@ -1106,7 +1111,7 @@ export const RENET_FUNCTIONS = [
   'setup',
 ] as const;
 
-export const RENET_FUNCTIONS_VERSION = 'dev';
+export const RENET_FUNCTIONS_VERSION = 'v3.0.0-162-g3735c4f';
 
 export type RenetFunctionName = (typeof RENET_FUNCTIONS)[number];
 
@@ -3583,6 +3588,18 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
     showInMenu: false,
     requirements: { machine: true, team: true, repository: true },
     params: {
+      strict: {
+        type: 'bool',
+        default: 'false',
+        help: 'Monitoring mode: no readiness fallback; a repository without health() answers level none',
+        options: ['true', 'false'],
+      },
+      all: {
+        type: 'bool',
+        default: 'false',
+        help: 'Evaluate every mounted repository (no repository is named)',
+        options: ['true', 'false'],
+      },
     },
   },
   'repository_info': {

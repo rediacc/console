@@ -571,7 +571,10 @@ export const RepositoryGpuRevokeParamsSchema = z.object({
 });
 
 /** Evaluate the repository health gate once (JSON HealthReport) */
-export const RepositoryHealthParamsSchema = z.object({});
+export const RepositoryHealthParamsSchema = z.object({
+  strict: z.boolean().default(false).optional().describe('Monitoring mode: no readiness fallback; a repository without health() answers level none'),
+  all: z.boolean().default(false).optional().describe('Evaluate every mounted repository (no repository is named)'),
+});
 
 /** Get repository information */
 export const RepositoryInfoParamsSchema = z.object({});

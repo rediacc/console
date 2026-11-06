@@ -6,7 +6,7 @@
 // Machine status types from 'renet list all --json'
 // ============================================
 
-export const LIST_TYPES_VERSION = 'dev';
+export const LIST_TYPES_VERSION = 'v3.0.0-162-g3735c4f';
 
 /** Storage/memory capacity information */
 export interface DiskInfo {
@@ -374,6 +374,7 @@ export interface StaleProcess {
 export interface ListResult {
   backup_coverage?: BackupCoverage;
   block_devices: BlockDevice[];
+  certificates?: CertificatesSection;
   containers?: ContainersResult;
   health_drift?: HealthDriftSummary;
   jobs: JobInfo[];
@@ -409,6 +410,28 @@ export interface BackupRepoStatus {
   target_met?: boolean;
   target_seconds?: number;
   ticks_missed?: number;
+}
+
+/** CertificateInfo (referenced type) */
+export interface CertificateInfo {
+  challenges?: ChallengeInfo[];
+  main: string;
+  not_after: string;
+  sans: string[];
+}
+
+/** CertificatesSection (referenced type) */
+export interface CertificatesSection {
+  certificates: CertificateInfo[];
+  delegated_names?: string[];
+  error?: string;
+  status: string;
+}
+
+/** ChallengeInfo (referenced type) */
+export interface ChallengeInfo {
+  cname?: string;
+  name: string;
 }
 
 /** RepositoryResources (referenced type) */
