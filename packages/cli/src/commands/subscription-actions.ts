@@ -413,10 +413,16 @@ async function renderActivationSection(
   }
 }
 
-/** A `license-status` / `license-scan` answer: a JSON array, or nothing usable. */
-function parseJsonArray<T>(output: string | undefined): T[] {
-  const parsed: unknown = JSON.parse(output ?? '[]');
-  return Array.isArray(parsed) ? (parsed as T[]) : [];
+/** A `license-status` / `license-scan` answer: a JSON array. Anything else fails with the job's name, as the awaited probe form did. */
+function parseJsonArray<T>(name: string, output: string | undefined): T[] {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(output ?? '');
+  } catch {
+    throw new Error(`renet ${name} returned output that is not JSON`);
+  }
+  if (!Array.isArray(parsed)) throw new Error(`renet ${name} returned no JSON array`);
+  return parsed as T[];
 }
 
 /** The failure of a licence job the command ran: the same text the awaited probe form threw. */
@@ -460,10 +466,13 @@ export async function executeMachineStatus(machineName: string): Promise<void> {
 }
 
 bindStepHandler('renderSubscriptionStatus', async ({ machine, output }) => {
-  const entries = parseJsonArray<RuntimeRepoLicenseStatus>(output);
   const context = await resolveMachineContext(machine, 'read-only');
+  // The activation section goes first: an unusable licence answer fails the step after it, not before it.
   await renderActivationSection(machine, context);
-  renderRepoLicenseTable(machine, entries);
+  renderRepoLicenseTable(
+    machine,
+    parseJsonArray<RuntimeRepoLicenseStatus>('license-status', output)
+  );
 });
 
 function runRepoBatchRefresh(
@@ -539,7 +548,7 @@ bindStepHandler('renderSubscriptionRefresh', async ({ machine, output }) => {
   const batchSummary = await runRepoBatchRefresh(
     machine,
     context,
-    parseJsonArray<RemoteRepoLicenseScanEntry>(output)
+    parseJsonArray<RemoteRepoLicenseScanEntry>('license-scan', output)
   );
   outputService.success(t('commands.subscription.refresh.success'));
   renderRepoBatchRefreshSummary(batchSummary);

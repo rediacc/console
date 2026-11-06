@@ -43,7 +43,8 @@ export function handleExecutionResult(result: {
   state?: string;
 }): void {
   // A job handed back (`--background`, a lost tail) is still running: nothing has completed.
-  if (result.state === 'running') {
+  // A failed result without an exit code is not a hand-back: it falls through to the failure rendering.
+  if (result.state === 'running' && (result.success || result.exitCode !== undefined)) {
     if (!result.success && result.exitCode !== undefined) setExitCode(result.exitCode);
     return;
   }

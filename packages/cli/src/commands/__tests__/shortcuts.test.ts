@@ -90,4 +90,22 @@ describe('handleExecutionResult', () => {
     });
     expect(process.exitCode).toBe(10);
   });
+
+  it('renders a failed running result that carries no exit code as a failure', () => {
+    mockGetOutputFormat.mockReturnValue('json');
+
+    handleExecutionResult({ success: false, state: 'running', error: 'tail lost' });
+
+    expect(stdoutWrite).toHaveBeenCalledTimes(1);
+    expect(process.exitCode).toBeTruthy();
+  });
+
+  it('control: a running hand-back with its exit code prints nothing and keeps the code', () => {
+    mockGetOutputFormat.mockReturnValue('json');
+
+    handleExecutionResult({ success: false, state: 'running', exitCode: 130 });
+
+    expect(stdoutWrite).not.toHaveBeenCalled();
+    expect(process.exitCode).toBe(130);
+  });
 });

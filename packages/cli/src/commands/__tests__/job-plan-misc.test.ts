@@ -86,16 +86,21 @@ const {
 const { JOB_PLANS, CONVERTED, JOB_EXCEPTIONS } = await import('../../services/jobs/plans.js');
 
 let restoreJobDeps: () => void;
+let stepWarnings: string[] = [];
 const OK = { success: true, exitCode: 0, durationMs: 1, state: 'succeeded' as const };
 
 beforeEach(() => {
   vi.clearAllMocks();
   m.jobs.length = 0;
   m.jobAnswer = { ...OK, stdout: '[]' };
-  restoreJobDeps = installJobDeps((options) => {
-    m.jobs.push(options as unknown as Record<string, unknown>);
-    return Promise.resolve(m.jobAnswer as never);
-  });
+  stepWarnings = [];
+  restoreJobDeps = installJobDeps(
+    (options) => {
+      m.jobs.push(options as unknown as Record<string, unknown>);
+      return Promise.resolve(m.jobAnswer as never);
+    },
+    (line) => stepWarnings.push(line)
+  );
   m.report.mockResolvedValue({
     orgName: 'org',
     teamName: 'team',
@@ -137,6 +142,16 @@ describe('subscription verbs (J20)', () => {
     expect(m.info).toHaveBeenCalledWith(
       expect.stringContaining('commands.subscription.repo.status.entry')
     );
+  });
+
+  it('status -m renders the activation section, then fails its step on an answer that is not JSON', async () => {
+    m.readActivation.mockResolvedValue(null);
+    m.jobAnswer = { ...OK, stdout: 'not json' };
+
+    await executeMachineStatus('m1');
+
+    expect(m.readActivation).toHaveBeenCalled();
+    expect(stepWarnings).toEqual(['renet license-status returned output that is not JSON']);
   });
 
   it('status -m control: a job still running renders nothing and sets its exit code', async () => {
@@ -185,6 +200,15 @@ describe('subscription verbs (J20)', () => {
     expect(m.refreshBatch).toHaveBeenCalledTimes(1);
     expect(m.refreshBatch.mock.calls[0][5]).toBeUndefined();
     expect(m.refreshBatch.mock.calls[0][6]).toEqual(scan);
+  });
+
+  it('refresh -m fails its step on an empty scan answer instead of treating it as no repositories', async () => {
+    m.jobAnswer = { ...OK, stdout: '' };
+
+    await executeMachineRefresh('m1');
+
+    expect(m.refreshBatch).not.toHaveBeenCalled();
+    expect(stepWarnings).toEqual(['renet license-scan returned output that is not JSON']);
   });
 
   it('refresh -m control: a job still running issues nothing', async () => {

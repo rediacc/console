@@ -401,6 +401,17 @@ describe('runJob', () => {
       expect(store.pending().map((t) => t.requestId)).toEqual(['r1']);
     });
 
+    it('keeps an acknowledged ticket closed when the retry meets a job that already ran', async () => {
+      await runJob(pendingCall(), planFor('guid-first'), deps());
+      store.append('finished', 'r1', { state: 'succeeded', exitCode: 0 });
+      store.append('acknowledged', 'r1', { state: 'succeeded' });
+
+      await runJob(pendingCall(), planFor('guid-retry'), deps());
+
+      expect(store.tickets().find((t) => t.requestId === 'r1')?.acknowledged).toBe(true);
+      expect(store.pending().map((t) => t.requestId)).toEqual([]);
+    });
+
     it('control: a different request id keeps its own plan', async () => {
       await runJob(pendingCall(), planFor('guid-first'), deps());
       const other = await runJob(pendingCall(), planFor('guid-other'), {

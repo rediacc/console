@@ -253,8 +253,9 @@ const COPIED_FIELDS = [
 /** Per-kind effect on the folded ticket. Kinds with no entry only copy fields. */
 const KIND_EFFECTS: Partial<Record<TicketKind, (t: Ticket, e: TicketEvent) => void>> = {
   // A retried start after a refusal may make the job the refusal did not, so the refusal's acknowledgement no longer holds.
+  // A ticket that already has a job keeps its acknowledgement: the retry dedupes onto that job, whose notice was printed.
   starting: (t) => {
-    t.acknowledged = false;
+    if (!t.jobId) t.acknowledged = false;
   },
   started: (t, e) => {
     if (!isTerminalTicketState(t.state)) t.state = e.state ?? STATE_RUNNING;
