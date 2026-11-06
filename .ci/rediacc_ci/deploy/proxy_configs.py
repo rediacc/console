@@ -293,9 +293,11 @@ def _optional_var_refusals(variables: dict, optional: frozenset[str]) -> list[st
     out: list[str] = []
     raw = variables.get("EGRESS_DRILL_PROBE")
     if "EGRESS_DRILL_PROBE" in optional and "EGRESS_DRILL_PROBE" in variables:
-        valid = isinstance(raw, str) and DRILL_PROBE_RE.fullmatch(raw) is not None
-        if valid and not all(int(p.rsplit(":", 1)[1]) <= 65535 for p in raw.split("=")):
-            valid = False
+        valid = (
+            isinstance(raw, str)
+            and DRILL_PROBE_RE.fullmatch(raw) is not None
+            and all(int(p.rsplit(":", 1)[1]) <= 65535 for p in raw.split("="))
+        )
         if not valid:
             out.append(
                 "vars.EGRESS_DRILL_PROBE is %r, not <host:port>=<host:port> with ports up to 65535"
