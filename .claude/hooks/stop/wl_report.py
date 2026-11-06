@@ -698,7 +698,7 @@ def capture(
     # DERIVED HERE, NOT PASSED IN, so every capture path records it: the `SubagentStop` hook and `--scan`'s self-healing pass both land in this one
     # function, and a kwarg would have left the scanned half of the store blind.
     opens = open_boxes(body)
-    # `sends` counts the lead-bound sends the body holds, `out` every send the agent made. An agent that sent anything ran and spoke, so it is never `silent`; one that sent only to other agents and ended on a short line is a `relay` (see judge).
+    # `sends` counts the lead-bound sends the body holds, `out` every send the agent made. An agent that sent anything ran and spoke, so it is never `silent`; one that sent only to other agents is a `relay` when `judge` says so: sends to two or more recipients with a final under RELAY_FLOOR, or sends to one recipient whose longest stays under SILENT_FLOOR with such a final (a one-recipient send reaching SILENT_FLOOR is a report, whatever the final).
     out = max(int(out or 0), int(sends or 0))
     silent = out == 0 and len(body.strip()) < SILENT_FLOOR
     relay = judge(*judge_body(body))[0] if out > sends else False
