@@ -123,3 +123,6 @@
 {"at":"2026-11-05T17:29:03Z","by":"d778be9d","id":"fbb27b45","title":"Product moves to rediacc.cloud and names drop their prefixes","covers":[],"order":null,"plan":"agent/plans/PLAN-product-domain-rename.md"}
 {"at":"2026-11-05T17:29:03Z","by":"d778be9d","id":"5eb69cff","title":"Website routing, company lookup and product mail on .cloud","covers":[],"order":null,"plan":"agent/plans/PLAN-website-routing-and-mail.md"}
 {"at":"2026-11-05T17:29:03Z","by":"d778be9d","id":"783185d2","title":"Enterprise per-company isolation, regional signers and release rings","covers":[],"order":null,"plan":"agent/plans/PLAN-enterprise-isolation.md"}
+{"at":"2026-11-05T21:04:23Z","by":"d778be9d","id":"1d805023","title":"tick tracking: plan-box trailer, landing prints the tick, box audit","covers":[],"order":null,"plan":"agent/plans/PLAN-tick-tracking.md"}
+{"at":"2026-11-05T21:30:52Z","by":"d778be9d","id":"f65726d5","title":"renet runs Rediaccfile down() before repo containers stop","covers":[],"order":null,"plan":"agent/plans/PLAN-renet-down-before-kill.md"}
+{"at":"2026-11-05T22:10:14Z","by":"d778be9d","id":"53c31db2","title":"per-repo resource limits and a renet-managed RAM volume","covers":[],"order":null,"plan":"agent/plans/PLAN-repo-resource-limits.md"}
