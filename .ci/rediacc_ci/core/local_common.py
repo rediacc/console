@@ -1369,7 +1369,8 @@ def renet_mid_operation(renet_dir: str) -> str:
     if names:
         more = " and %d more" % (len(names) - 1) if len(names) > 1 else ""
         return "%d unmerged path(s) (%s%s)" % (len(names), names[0], more)
-    argv = ["git", "rev-parse", "--path-format=absolute"]
+    # No `--path-format=absolute`: a git older than 2.31 refuses it and the check would read "nothing in progress". Each path is relative to renet_dir (or absolute) and is joined to it.
+    argv = ["git", "rev-parse"]
     for marker in RENET_OPERATION_MARKERS:
         argv += ["--git-path", marker]
     paths = _capture(argv, quiet_err=True, cwd=renet_dir)
@@ -1379,7 +1380,7 @@ def renet_mid_operation(renet_dir: str) -> str:
     for marker, path in zip(
         RENET_OPERATION_MARKERS, (paths.stdout or "").splitlines(), strict=True
     ):
-        if os.path.exists(path):
+        if os.path.exists(os.path.join(renet_dir, path)):
             return "%s is present (an operation is in progress)" % marker
     return ""
 
@@ -1503,7 +1504,7 @@ def ensure_renet_built(
     renet_bin = os.path.join(renet_dir, "bin", "renet" + exe)
     stamp = os.path.join(renet_dir, "bin", RENET_STAMP_NAME)
 
-    # A tree mid-cherry-pick holds conflict markers and cannot compile, so the last good build serves until the operation ends (#fd1964b9). "Good" is the stamp's: a binary the key gate refused has no stamp, and one changed since has another fingerprint.
+    # A tree mid-cherry-pick holds conflict markers and cannot compile, so the last good build serves until the operation ends (#fd1964b9). "Good" is the stamp's AND the key check's: a binary the key gate refused has no stamp, one changed since has another fingerprint, and a stamped one that no longer bakes today's account key is refused below (review 520056bf.1).
     paused = renet_mid_operation(renet_dir)
     if paused:
         if os.path.isfile(renet_bin) and _stamped_bin(stamp) == renet_artifact_fp(renet_bin):

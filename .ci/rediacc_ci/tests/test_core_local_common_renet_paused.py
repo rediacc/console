@@ -198,3 +198,24 @@ def test_control_a_clean_tree_with_a_stale_stamp_still_builds(tmp_path, monkeypa
     _good_binary(renet)
     assert local_common.ensure_renet_built(env) is False
     assert builds == [(["./build.sh", "dev"], str(renet))]
+
+
+def test_an_old_git_without_path_format_still_names_the_marker(tmp_path, monkeypatch):
+    """A git older than 2.31 refuses `--path-format`; the marker check must not fall back to "nothing in progress"."""
+    renet = _renet(tmp_path / "renet")
+    _git(renet, "cherry-pick", "other", check=False)
+    (renet / "pkg" / "i18n" / "locales" / "en.go").write_text(
+        'package locales\n\nconst Hello = "hi"\n'
+    )
+    _git(renet, "add", "pkg/i18n/locales/en.go")
+    real = local_common._capture
+
+    def old_git(argv, **kw):
+        if any(a.startswith("--path-format") for a in argv):
+            return subprocess.CompletedProcess(argv, 129, "", "")
+        return real(argv, **kw)
+
+    monkeypatch.setattr(local_common, "_capture", old_git)
+    assert local_common.renet_mid_operation(str(renet)) == (
+        "CHERRY_PICK_HEAD is present (an operation is in progress)"
+    )
