@@ -351,7 +351,6 @@ def test_hook_log_events_and_count_of() -> None:
 
 def test_deadman_bound_follows_the_documented_formula() -> None:
     assert backup_renet.HOOK_DEADMAN_SECONDS == 2 * backup_renet.HOOK_TIMEOUT_SECONDS + 30
-    assert backup_renet.HOOK_WAIT_SECONDS > backup_renet.HOOK_DEADMAN_SECONDS
 
 
 def test_marker_wait_and_kill_commands() -> None:
@@ -472,10 +471,17 @@ class HookWorker:
                 return rt.VmResult(0 if self.marker else 1)
             if self.bug == "no-deadman":
                 return rt.VmResult(1)
+            if self.bug == "late-deadman":
+                # the hold ends only after the bound: a wait window of exactly the bound sees nothing
+                seconds = int(re.search(r"-lt (\d+)", command).group(1))
+                if seconds <= backup_renet.HOOK_DEADMAN_SECONDS:
+                    return rt.VmResult(1)
             self.frozen = self.marker = False
             self.log.append("finish")
             return rt.VmResult(0)
         if "backup snapshot" in command and "--hook-timeout" in command:
+            if self.bug == "control-fails" and not self.hooks:
+                return rt.VmResult(1, "")
             claim = "app-quiesced" if self.hooks or self.bug == "claims-without-hook" else "crash"
             if self.hooks:
                 order = (
@@ -526,6 +532,8 @@ def test_leg_v_passes_and_its_controls_run(make: typing.Callable) -> None:
         ("wrong-order", "the hooks ran once each, prepare first"),
         ("never-held", "the run held the application (marker stands)"),
         ("no-deadman", "the deadman ended the hold within its bound"),
+        ("late-deadman", "the deadman ended the hold within its bound"),
+        ("control-fails", "CONTROL: a repository with no hook is not claimed app-quiesced"),
     ],
 )
 def test_leg_v_goes_red_on_the_defect_each_check_names(
@@ -890,6 +898,8 @@ class TargetWorker:
         if "s=$(date" in command and "--target" in command:
             return self.timed(command)
         if "pgrep -f" in command:
+            if self.bug == "sudo-refused":
+                return rt.VmResult(3)
             return rt.VmResult(0 if self.bug == "left-alive" else 1)
         if "nohup renet backup snapshot" in command or "kill -0" in command:
             return rt.VmResult(0)
@@ -950,6 +960,7 @@ def test_target_halves_pass_and_clean_up(make: typing.Callable) -> None:
         ("deadline-ignored", "the run ends deadline-exceeded"),
         ("slow-kill", "it ended at its deadline, not before and not long after"),
         ("left-alive", "no part of the run is left alive"),
+        ("sudo-refused", "no part of the run is left alive"),
         ("slot-kept", "and the killed run left the slot free"),
         ("no-wait", "after waiting for the slot"),
         ("unbounded-slot", "CONTROL: a run the slot never frees for is skipped"),
@@ -1378,3 +1389,40 @@ def test_verify_probe_reads_the_running_verbs_cgroup_through_the_real_shell(
     assert fields["cgroup"].startswith("/"), done.stdout + done.stderr
     assert fields["rc"] == 0
     assert fields["record"] == {"status": "verified", "level": "full"}
+
+
+class _KilledRunWorker:
+    """Leg u's worker: the killed run exits 137, the journal names an upload, the rerun stores."""
+
+    def __call__(self, command: str, stdin_data: str | None = None) -> rt.VmResult:
+        del stdin_data
+        if "renet machine-id" in command:
+            return rt.VmResult(0, "mid-1\n")
+        if "timeout -s KILL" in command:
+            return rt.VmResult(137)
+        if "journal" in command:
+            return rt.VmResult(0, json.dumps({"upload": {"snapshotId": "killed-1"}}))
+        if "backup snapshot" in command:
+            return rt.VmResult(0, json.dumps({"status": "stored", "snapshotId": "rerun-1"}))
+        return rt.VmResult(0)
+
+
+@pytest.mark.parametrize(("lease_live", "failures"), [(True, 0), (False, 1)])
+def test_leg_u_requires_the_killed_runs_lease_to_be_live_before_the_rerun(
+    make: typing.Callable, lease_live: bool, failures: int
+) -> None:
+    """CONTROL: a killed run that never leased would also read clean after the rerun."""
+    drill, legs = make(Worker())
+    legs.rt.vm = _KilledRunWorker()
+    legs.src = "src-guid-0001"
+    legs.b.av = _equal_av(drill)
+    legs.b.release_probe_leases = lambda: None
+    clean_row = {"lineageGuid": "l", "observedBytes": 1, "ledgerBytesBefore": 1}
+    clean_row.update({"observedChunks": 1, "ledgerChunksBefore": 1})
+    answers = iter([([], [{"skipped": "leased"}] if lease_live else []), ([clean_row], [])])
+    legs.reconcile_dry_run = lambda: next(answers)
+    try:
+        legs.leg_u()
+        assert drill.failures == failures
+    finally:
+        drill.teardown()

@@ -143,7 +143,6 @@ def uploaded(doc: dict[str, Any]) -> int:
 HOOK_NET_ID = "2944"
 HOOK_TIMEOUT_SECONDS = 5
 HOOK_DEADMAN_SECONDS = 2 * HOOK_TIMEOUT_SECONDS + 30
-HOOK_WAIT_SECONDS = HOOK_DEADMAN_SECONDS + 60
 HOOK_MARKER_DIR = "/run/rediacc/backup-hook"
 HOOK_LOG = "hook-log"
 HOOK_CONTAINER = "db"
@@ -485,8 +484,8 @@ def tier_cleanup_command() -> str:
 
 
 def snapshot_alive_command(guid: str) -> str:
-    """Exit 0 when a `renet backup snapshot` of `guid` is still running on the worker."""
-    return 'sudo -n pgrep -f "[r]enet backup snapshot .*--repo %s"' % guid
+    """Exit 0 when a `renet backup snapshot` of `guid` is still running on the worker, 1 when none is, 3 when sudo itself is refused."""
+    return 'sudo -n true || exit 3; sudo -n pgrep -f "[r]enet backup snapshot .*--repo %s"' % guid
 
 
 def tier_service_unit(datastore: str, guid: str, cell_bytes: str) -> str:
@@ -1025,6 +1024,14 @@ class RenetLegs:
         )
         d.last_cmd = "the journal of the killed run"
         d.assert_not_equal("", killed_snapshot, "the killed run left an upload in its journal")
+        # CONTROL: before the rerun the killed run's lease is live, so its lineage is skipped as leased; without it the clean read after the rerun could be a run that never leased.
+        _, leased = self.reconcile_dry_run()
+        d.last_cmd = "reconcile dry run before the rerun"
+        self.b.av(
+            any(row.get("skipped") == "leased" for row in leased),
+            True,
+            "CONTROL: before the rerun the killed run's lease lives and its lineage is skipped",
+        )
         doc = r.snapshot(self.src)
         d.last_cmd = "renet backup snapshot (rerun)"
         d.assert_equal("stored", str(doc.get("status", "")), "the rerun stores the snapshot")
@@ -1108,8 +1115,10 @@ class RenetLegs:
                 )
             )
             control = self.hook_snapshot(guid)
+            # A control snapshot that failed (no status, no consistency field) proves nothing: it must have stored and named a consistency other than app-quiesced.
             self.b.av(
-                control.get("consistency") != "app-quiesced",
+                control.get("status") == "stored"
+                and str(control.get("consistency") or "") not in ("", "app-quiesced"),
                 True,
                 "CONTROL: a repository with no hook is not claimed app-quiesced",
             )
@@ -1134,7 +1143,7 @@ class RenetLegs:
                 "CONTROL: right after the kill the application is still held",
             )
             frozen_rows = count_of(r.run_vm(rows_command(nid), must=False).stdout)
-            thawed = r.run_vm(wait_marker_command(guid, False, HOOK_WAIT_SECONDS), must=False)
+            thawed = r.run_vm(wait_marker_command(guid, False, HOOK_DEADMAN_SECONDS), must=False)
             d.last_cmd = "the hold marker after the deadman delay (%d s)" % HOOK_DEADMAN_SECONDS
             d.assert_equal(
                 "0", str(thawed.returncode), "the deadman ended the hold within its bound"
@@ -1270,7 +1279,8 @@ class RenetLegs:
             % (elapsed, DEADLINE_SECONDS),
         )
         alive = r.run_vm(snapshot_alive_command(self.src), must=False)
-        d.assert_not_equal("0", str(alive.returncode), "no part of the run is left alive")
+        # pgrep exits 1 for "no match"; a sudo refusal or a pgrep error is another code (or sudo's own 1, which the command's `sudo -n true` guard turns into 3).
+        d.assert_equal("1", str(alive.returncode), "no part of the run is left alive")
         d.assert_equal(
             ",".join(listed),
             ",".join(self.b.lineage_snapshots(self.src)),
