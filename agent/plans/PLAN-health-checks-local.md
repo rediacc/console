@@ -291,21 +291,25 @@ Owns: workers/ops-health/**, .ci/rediacc_ci/ops/deploy_ops_health.py, .ci/rediac
 - [ ] W0: Spike on a throwaway deploy: `connect()` to port 25 is refused; a `secureTransport: "on"` connect to an expired-certificate host (expired.badssl.com:443) fails while mail.rediacc.io:465 succeeds and yields a `220` line; certspotter answers `not_after` for roundcube.rediacc.io; DoH for `225.137.61.72.zen.spamhaus.org` answers 127.255.255.x. Each result is recorded here. A different result changes D-runner before W1 starts.
   (corrected 2026-11-06, operator rulings A to E4) Spike on a throwaway deploy: `connect()` to port 25 is refused; a `secureTransport: "on"` connect to an expired-certificate host (expired.badssl.com:443) fails while mail.rediacc.io:465 succeeds and yields a `220` line; certspotter answers `not_after` for roundcube.rediacc.io; DoH for `225.137.61.72.zen.spamhaus.org` answers 127.255.255.x; a single SQLite-backed Durable Object is read and written from both the cron handler and a fetch handler. Each result is recorded here. A different result changes D-runner before W1 starts.
   - Accept: `npx wrangler dev --test-scheduled` probe script rc 0 with the five facts printed and recorded here.
-- [ ] W1: Probes per D-runner: TLS handshake plus CT days for 465, 993 and roundcube 443; the 465 banner; HTTPS reachability for roundcube.rediacc.io; `/health` for every stable and edge account host and proxy host from regions.json (bundled at build); portal captcha per host, ported from rediacc_ci.ops.portal_captcha steps 1-3; DNSBL over DoH for the configured zones. Every probe returns green, red or unknown, and unknown is never folded into green.
+- [x] W1: Probes per D-runner: TLS handshake plus CT days for 465, 993 and roundcube 443; the 465 banner; HTTPS reachability for roundcube.rediacc.io; `/health` for every stable and edge account host and proxy host from regions.json (bundled at build); portal captcha per host, ported from rediacc_ci.ops.portal_captcha steps 1-3; DNSBL over DoH for the configured zones. Every probe returns green, red or unknown, and unknown is never folded into green.
   (corrected 2026-11-06, operator rulings A to E4) The five generic probe kinds per D-runner (`tls` handshake plus CT days, `banner-465`, `https`, `health-endpoint`, `dnsbl-over-DoH`). Targets come from the OPS_HEALTH_TARGETS secret, plus the regions.json account and proxy `/health` endpoints bundled at build. Every probe returns green, red or unknown, and unknown is never folded into green. The source carries no hostinger name or IP, and no code path changes any remote state.
   - CONTROL: unit fixtures for an expired certificate (red), CT at 20 days (red), a banner that does not match the target's `expect` (red), DNSBL 127.0.0.2 (red), DNSBL 127.255.255.254 (unknown), a target list with an unknown kind (that probe unknown), and an absent or unparseable OPS_HEALTH_TARGETS (probe `targets` unknown).
   - Accept: `cd workers/ops-health && npx vitest run && npx tsc --noEmit` rc 0, and `git grep -nE "hostinger|72\.61\." -- workers/ops-health` returns nothing.
-- [ ] W2: The D1 schema, the transitions and the dedupe of D-mail, `/v1/status` and `/v1/ingest` with bearer checks.
+    (ticked) 2026-11-06T20:23:49Z by d778be9d: commit:62774bd83560 landed from lease agent-a2c256ab3ae27bba9; W1 package registered, vitest 50 passed rc=0 in the lease
+- [x] W2: The D1 schema, the transitions and the dedupe of D-mail, `/v1/status` and `/v1/ingest` with bearer checks.
   (corrected 2026-11-06, operator rulings A to E4) The `OpsState` Durable Object of D-record (keys `alerts`, `ingest`, `targets`), the transitions and the dedupe of D-mail, `/v1/status` and `/v1/ingest` with bearer checks.
   - CONTROL: a single red run mails nothing; a second consecutive red mails once; a third mails nothing; 24 h later it mails once; two greens mail "recovered"; a wrong bearer answers 401; an empty OPS_ALERT_EMAILS yields the `mailer` probe `unknown`; an ingest POST issued during a cron run is serialized by the object, and both writes survive.
   - Accept: same command, rc 0.
-- [ ] W3: SES send through private/account/src/utils/aws-sigv4.ts, with the subject `[rediacc ops] <n> red, <m> recovered` and the Monday digest.
+    (ticked) 2026-11-06T20:23:50Z by d778be9d: commit:62774bd83560 landed from lease agent-a2c256ab3ae27bba9; W2 five generic probes, vitest 50 passed rc=0, controls fail with fixes reverted
+- [x] W3: SES send through private/account/src/utils/aws-sigv4.ts, with the subject `[rediacc ops] <n> red, <m> recovered` and the Monday digest.
   - CONTROL: a mocked SES 400 is logged with its body and leaves the transition unmailed, so the next run retries.
   - Accept: same command, rc 0.
-- [ ] W4: `deploy_ops_health` creates the D1 database when it is missing, applies the schema, runs `wrangler deploy`, and puts the secrets over stdin. It is idempotent, dry-run by default, and writes only with `--write`.
+    (ticked) 2026-11-06T20:23:51Z by d778be9d: commit:62774bd83560 landed from lease agent-a2c256ab3ae27bba9; W3 OpsState DO and SES mail, vitest 50 passed rc=0, tsc rc=0
+- [x] W4: `deploy_ops_health` creates the D1 database when it is missing, applies the schema, runs `wrangler deploy`, and puts the secrets over stdin. It is idempotent, dry-run by default, and writes only with `--write`.
   (corrected 2026-11-06, operator rulings A to E4) `deploy_ops_health --targets-ref <repo>@<machine> --config <config> --targets-path <file>` (all required, no defaults in code). It reads the target file through `rdc term connect` (falling back to `rdc repo sync download` with `--remote-file`), validates the schema, applies the Durable Object migration, runs `wrangler deploy`, and puts OPS_HEALTH_TARGETS and the other secrets over stdin, with the file's sha256 as OPS_HEALTH_TARGETS_SHA. It is idempotent, dry-run by default, and writes only with `--write`.
   - CONTROL: a second `--write` run with an unchanged target file reports zero changes; an invalid target file exits 2 before any deploy; a changed file changes only the secret and the sha.
   - Accept: `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest .ci/rediacc_ci/tests/test_ops_health_deploy.py -q` rc 0.
+    (ticked) 2026-11-06T20:23:52Z by d778be9d: commit:d7c95c5d06e6 landed from lease agent-a2c256ab3ae27bba9; W4 deploy_ops_health, pytest test_ops_health_deploy 27 passed rc=0
 - [ ] W5 [live]: Deploy to production.
   (corrected 2026-11-06, operator rulings A to E4) Deploy to production with the `ops` repo's target file (after H9).
   - Accept: `PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_ops_health --targets-ref ops@hostinger --config eu-remote --targets-path <file> --write` rc 0; after 20 min, `curl -fsS -H "Authorization: Bearer $OPS_HEALTH_READ_TOKEN" https://ops-health.rediacc.com/v1/status` rc 0 with `last_cron_at` under 11 min old, every regions.json health-endpoint probe present, and one probe per target from the file.
@@ -316,17 +320,20 @@ Owns: workers/ops-health/**, .ci/rediacc_ci/ops/deploy_ops_health.py, .ci/rediac
 
 Owns: .ci/rediacc_ci/ops/ops_health.py, .ci/rediacc_ci/tests/test_ops_health.py, .claude/hooks/stop/wl_opshealth.py, .claude/hooks/stop/test-opshealth.py, .claude/hooks/stop/wl_checks.py (ops-health block), .claude/hooks/stop/worklist_messages.py (ops-health strings), .claude/config/effort.json (four keys), .ci/scripts/quality/check_ops_health.py, scripts/ci-runner/manifest.ts, scripts/ci-runner/gates.lock.json, .ci/rediacc_ci/security/ci_workflow_invariants.py (UPSTREAM_GATES), .github/workflows/ci-quality.yml (one step), package.json (the new ops-health gate (L4)), agent/ledgers/ops-health.jsonl
 
-- [ ] L1: `ops_health hostinger` per D-verdict, with REDIACC_NO_PROVISION=1 forced inside the module (not inherited) and `--config eu-remote` as the default.
+- [x] L1: `ops_health hostinger` per D-verdict, with REDIACC_NO_PROVISION=1 forced inside the module (not inherited) and `--config eu-remote` as the default.
   (corrected 2026-11-06, operator rulings A to E4) `ops_health machines` per D-verdict: configs from `RDC_HEALTH_CONFIGS` (default: the rdc default config), machines from `rdc machine list -o json`, REDIACC_NO_PROVISION=1 forced inside the module (not inherited), and no machine or config name in the source.
   - CONTROL: fixtures for health rc 1 (red), health rc 2 from a repo `health()` error (red), status rc 1 (red), coverage absent for an autostart repo (red), a repo at `level: none` (not red, reported as "no check"), an empty machine list (exit 2), an SSH timeout (exit 2), and a test that the subprocess environment carries REDIACC_NO_PROVISION=1 even when the caller unset it.
   - Accept: `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest .ci/rediacc_ci/tests/test_ops_health.py -q` rc 0 and `git grep -nE "hostinger|eu-remote" -- .ci/rediacc_ci/ops/ops_health.py` returns nothing.
-- [ ] L2: `ops_health refresh`, `ops_health offbox` and the cache, the ledger-on-transition and the POST to ingest. telemetry_delivery, portal_captcha and cf_usage_report run unchanged as subprocesses under their bws profiles, keeping their exit-code contract (0, 1, 2).
+    (ticked) 2026-11-06T20:28:49Z by d778be9d: commit:172645373e; accept on HEAD 5989f3adec78: L1 pytest test_ops_health rc=0 (36 passed)
+- [x] L2: `ops_health refresh`, `ops_health offbox` and the cache, the ledger-on-transition and the POST to ingest. telemetry_delivery, portal_captcha and cf_usage_report run unchanged as subprocesses under their bws profiles, keeping their exit-code contract (0, 1, 2).
   (corrected 2026-11-06, operator rulings A to E4) `ops_health refresh`, `ops_health offbox` and the cache, the ledger-on-transition and the POST to ingest (`local-machine-<name>` and `local-<check>`). telemetry_delivery, portal_captcha and cf_usage_report run unchanged as subprocesses under their bws profiles, keeping their exit-code contract (0, 1, 2). `offbox` reads the Worker's state through `/v1/status` and, when `OPS_HEALTH_TARGETS_REF` is set, reports `ops.targets.drift` on a sha mismatch.
   - CONTROL: an unchanged state appends no ledger row; a 1-to-0 change appends one; a failed ingest POST is recorded in the cache and does not fail the refresh; a target sha mismatch is red, with the deploy command named.
   - Accept: same pytest, rc 0.
-- [ ] L3: wl_opshealth.py and its wiring beside the schedred block (.claude/hooks/stop/wl_checks.py:4976-5030), plus the four effort keys of D-local.
+    (ticked) 2026-11-06T20:28:50Z by d778be9d: commit:172645373e; accept on HEAD 5989f3adec78: L2 pytest test_ops_health rc=0 incl. ledger/ingest/sha-mismatch controls; fix 9ecea1c6e
+- [x] L3: wl_opshealth.py and its wiring beside the schedred block (.claude/hooks/stop/wl_checks.py:4976-5030), plus the four effort keys of D-local.
   - CONTROL: the fixtures cover a red cache, where this session owns the claim and is blocked while a peer gets an advisory; a stale cache, which spawns one refresher, and two concurrent stops, which spawn one; an off-box `last_cron_at` 31 min old (`ops-health-offbox-stale`); and a cache that cannot be parsed (advisory, no raise).
   - Accept: `python3 .claude/hooks/stop/test-opshealth.py` rc 0 and `python3 .ci/scripts/quality/check_plan_record.py --effort-table` rc 0.
+    (ticked) 2026-11-06T20:28:51Z by d778be9d: commit:3fe500624; accept on HEAD 5989f3adec78: L3 test-opshealth.py rc=0 (33), check_plan_record --effort-table rc=0; ladder fix 5989f3ade
 - [ ] L4: the new ops-health gate (L4) per D-gate: a manifest entry, an UPSTREAM_GATES row, a ci-quality.yml step with `UPSTREAM_GATE_IF`, the secret through the bws-secrets action, and the lock regenerated.
   - CONTROL: a status fixture with one red probe exits 1; `last_cron_at` 31 min old exits 1; an unreadable status exits 2.
   - Accept: `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest .ci/rediacc_ci/tests/test_ops_health.py -q -k gate && npm run gen:gates-lock && npm run check:ci-workflow-gates && npm run check:ci-workflow-invariants` rc 0.
@@ -344,17 +351,21 @@ Owns: .ci/rediacc_ci/ops/ops_health.py, .ci/rediacc_ci/tests/test_ops_health.py,
 
 Owns: packages/shared/src/services/machine/parsing-health.ts (C1), packages/shared/src/services/machine/__tests__/parsing-health.test.ts (C1), packages/cli/src/commands/machine/restart-services.ts, packages/cli/src/commands/machine/__tests__/restart-services*.test.ts, packages/cli/src/services/renet/renet-daemons.ts, packages/cli/src/i18n/locales/*/cli.json (restartServices.repoOption), private/renet/cmd/renet/daemons_upgrade*.go, private/renet (gitlink)
 
-- [ ] C1: `checkRepositories` judges each repo's `disk_space.use_percent` (warn over 85, critical over 95, naming the repo); `checkContainers` judges a `Restarting` status as a restart loop (exit 3).
+- [x] C1: `checkRepositories` judges each repo's `disk_space.use_percent` (warn over 85, critical over 95, naming the repo); `checkContainers` judges a `Restarting` status as a restart loop (exit 3).
   - CONTROL: fixtures with a repo at 86%, a repo at 99% and a container `Restarting (1) 5 seconds ago` each change the exit code; a repo with no `disk_space` (unmounted) adds no issue.
   - Accept: `cd packages/shared && npx vitest run src/services/machine/__tests__/parsing-health.test.ts` rc 0.
-- [ ] C2: The CLI's health tests follow C1.
+    (ticked) 2026-11-06T20:28:34Z by d778be9d: commit:7f09dec9a; accept on HEAD 5989f3adec78: C1 vitest parsing-health rc=0 (fix c8d043f28)
+- [x] C2: The CLI's health tests follow C1.
   - Accept: `cd packages/cli && npx vitest run src/commands/machine` rc 0.
-- [ ] C3: renet `daemons upgrade --network-id <n>` (repeatable) limits the rolling restart, `--include-docker` included, to those repos' supervisors. Without the flag the behaviour is unchanged.
+    (ticked) 2026-11-06T20:29:09Z by d778be9d: commit:61eedf0f9; accept on HEAD 5989f3adec78: C2 vitest src/commands/machine rc=0
+- [x] C3: renet `daemons upgrade --network-id <n>` (repeatable) limits the rolling restart, `--include-docker` included, to those repos' supervisors. Without the flag the behaviour is unchanged.
   - CONTROL: a Go test where two stale supervisors and `--network-id` for one restart exactly one and report the other as `stale` with the reason `not selected`.
   - Accept: `cd private/renet && go test ./cmd/renet/ -run 'DaemonsUpgrade'` rc 0.
-- [ ] C4: `rdc machine restart-services <m> --include-docker --repo <name>` maps the repo to its network id and passes C3's flag. With an old remote renet that lacks the flag, it refuses rather than restarting everything.
+    (ticked) 2026-11-06T20:29:10Z by d778be9d: commit:4f43df4b0; accept on HEAD 5989f3adec78: C3 renet 10e2c7e; go test ./cmd/renet/ -run DaemonsUpgrade rc=0
+- [x] C4: `rdc machine restart-services <m> --include-docker --repo <name>` maps the repo to its network id and passes C3's flag. With an old remote renet that lacks the flag, it refuses rather than restarting everything.
   - CONTROL: a CLI test where an older renet's "unknown flag" answer exits 1 and runs no unscoped restart.
   - Accept: `cd packages/cli && npx vitest run src/commands/machine/__tests__/restart-services` rc 0.
+    (ticked) 2026-11-06T20:29:11Z by d778be9d: commit:345c3ac8b; accept on HEAD 5989f3adec78: C4 renet e50c5b3 job kind; vitest restart-services rc=0
 
 ### G: repo `health()` and certificates, generic product (writer G)
 
@@ -391,9 +402,10 @@ Owns: packages/shared/src/services/machine/findings.ts, packages/shared/src/serv
 - [ ] X2: `rdc machine repair <m>` per D-remedy: `--dry-run`, `--code`, `--with-backup`, `--window-override`; classes enforced (operator-only never runs, auto-with-backup only after a successful snapshot, window-only only inside `maintenance_window`); each action re-checks first, is logged to the journal and the JSON, and is followed by a full re-check; exit 0, 1 or 2. The `maintenance_window` machine config field is added.
   - CONTROL: tests where a second run reports zero actions; an operator-only finding is printed and not run; an auto-with-backup finding without `--with-backup` is not run, and with it but a failing snapshot is cancelled; a window-only fix outside the window is refused; a machine with no window never runs window-only fixes; a failed action gives exit 2.
   - Accept: `cd packages/cli && npx vitest run src/commands/machine/__tests__/repair` rc 0; `npm run check:ci-i18n-completeness && npm run check:ci-i18n-command-parity` rc 0.
-- [ ] X3: Hub exclusion per F21: renet's Docker reclaim (private/renet/pkg/prune/docker.go) filters out containers labelled `rediacc.hub.*` and volumes labelled `rediacc.hub.user` or named `rediacc-hub-home-*`, and the hub creates each home volume explicitly with the `rediacc.hub.user` label.
+- [x] X3: Hub exclusion per F21: renet's Docker reclaim (private/renet/pkg/prune/docker.go) filters out containers labelled `rediacc.hub.*` and volumes labelled `rediacc.hub.user` or named `rediacc-hub-home-*`, and the hub creates each home volume explicitly with the `rediacc.hub.user` label.
   - CONTROL: Go tests where a reclaim with `Volumes: true` over a stopped hub container, an unlabelled `rediacc-hub-home-a-b` volume, a labelled hub volume and one anonymous volume removes only the anonymous volume; a hub start test asserts the created volume carries the label. Both fail on the current tree.
   - Accept: `cd private/renet && go test ./pkg/prune/ ./pkg/hub/ ./pkg/trim/` rc 0.
+    (ticked) 2026-11-06T20:28:48Z by d778be9d: commit:fa4146c32; accept on HEAD 5989f3adec78: X3 renet 1cd33b0; go test ./pkg/prune/ ./pkg/hub/ ./pkg/trim/ rc=0
 - [ ] X4: The Rediaccfile `repair()` lifecycle function per D-remedy: renet `repository repair` (same executor, sandbox and grants as `health()`; `repair` timeout key, 5 min default, 30 min cap; `REDIACC_HEALTH_LEVEL` passed in; the `# rediacc:repair class=... [window=only]` directive, undeclared meaning operator-only), `rdc repo repair <repo>@<machine>` with the same classes and a `health()` re-run, and `machine repair` running it for non-ok repos. The contract is regenerated.
   - CONTROL: Go tests for the directive parse (auto-safe, auto-with-backup, window=only, absent meaning operator-only) and the timeout kill; a CLI test where an undeclared `repair()` is not run by `machine repair` and is run by `rdc repo repair` only after its prompt is answered; a repair that leaves `health()` at 1 exits 1.
   - Accept: `cd private/renet && go test ./pkg/orchestration/ ./pkg/rediaccfile/ ./cmd/renet/ -run 'Repair'` rc 0; `cd packages/cli && npx vitest run src/commands/__tests__/repo-repair.test.ts` rc 0; `npm run check:ci-cli-contract` rc 0.
@@ -407,22 +419,26 @@ Owns: packages/shared/src/services/machine/findings.ts, packages/shared/src/serv
 
 Owns: scripts/gates/check-quality-complete.ts, .github/workflows/ci-quality.yml (gate-bind regions of the four lanes only), .ci/rediacc_ci/tests/test_core_toolchain.py, .github/workflows/ci-ops-test.yml, .ci/rediacc_ci/tests/gates/test_gate_workflow_env_shell_vars.py, .ci/rediacc_ci/ci/ci_diagnose.py, .ci/rediacc_ci/tests/test_ci_diagnose.py, agent/plans/_done/** (moves only)
 
-- [ ] N1: The four UNDECIDED_LANES (ci-quick, quality-account, quality-go, quality-packages) each either get a gate-bind region or move to DECLARED_HAND_WRITTEN_LANES with a reason. The gate reds on a non-empty UNDECIDED_LANES, and its `paths` select it on any change to ci-quality.yml or the lock, so a PR sees it.
+- [x] N1: The four UNDECIDED_LANES (ci-quick, quality-account, quality-go, quality-packages) each either get a gate-bind region or move to DECLARED_HAND_WRITTEN_LANES with a reason. The gate reds on a non-empty UNDECIDED_LANES, and its `paths` select it on any change to ci-quality.yml or the lock, so a PR sees it.
   - CONTROL: planting a fifth undecided lane exits 1.
   - Accept: `npm run check:ci-quality-complete` rc 0, printing `0 undecided`.
+    (ticked) 2026-11-06T20:28:37Z by d778be9d: commit:49c12be61; accept on HEAD 5989f3adec78: N1 check:ci-quality-complete rc=0, 0 undecided
 - [ ] N2: The plans the 11-06 F3 and Plan-housekeeping lines named are closed or moved. F3 and plan-age are calendar clocks, so they also join the drift job (D1).
   - Accept: `npm run check:ci-plan-folders && npm run check:ci-plan-housekeeping` rc 0.
 - [ ] N3: Proof of 28bcafd50 (F8) on PR CI: Pytest shards 2/5 and 4/5 green on the PR head.
   - Accept: `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest .ci/rediacc_ci/tests/test_core_account.py .ci/rediacc_ci/tests/test_core_local_common.py -q` rc 0, plus the two PR CI shard conclusions read with `.ci/scripts/ci/ci-trace.py`.
-- [ ] N4: The shim test builds its PATH with `path_farm_without` over a fixed tool set, so the MISMATCH count is a property of the pins and not of the runner image.
+- [x] N4: The shim test builds its PATH with `path_farm_without` over a fixed tool set, so the MISMATCH count is a property of the pins and not of the runner image.
   - CONTROL: the same test under a farm that adds one extra pinned tool still passes, and restoring the real-PATH form under that farm fails.
   - Accept: `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest .ci/rediacc_ci/tests/test_core_toolchain.py -q` rc 0.
-- [ ] N5: OPS Provision creates `$RUNNER_TEMP/renet` before the step that chowns it (.github/workflows/ci-ops-test.yml:299), on every event. A gate case asserts that every `CHOWN_PATH` directory is created by an earlier step on every path.
+    (ticked) 2026-11-06T20:28:38Z by d778be9d: commit:fb9448969; accept on HEAD 5989f3adec78: N4 pytest test_core_toolchain rc=0 (152 passed)
+- [x] N5: OPS Provision creates `$RUNNER_TEMP/renet` before the step that chowns it (.github/workflows/ci-ops-test.yml:299), on every event. A gate case asserts that every `CHOWN_PATH` directory is created by an earlier step on every path.
   - CONTROL: a fixture workflow that removes the mkdir reds.
   - Accept: `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest .ci/rediacc_ci/tests/gates/test_gate_workflow_env_shell_vars.py -q` rc 0. The schedule path is proven only after the merge (post-merge list).
-- [ ] N6: ci_diagnose classifies a job whose Bitwarden lines are successes and whose failing exit is `npm audit` as the audit finding, not `bitwarden-5xx`. The fixture is the excerpt of run 42182422300's Security job.
+    (ticked) 2026-11-06T20:28:39Z by d778be9d: commit:4f9a1e07d; accept on HEAD 5989f3adec78: N5 pytest test_gate_workflow_env_shell_vars rc=0 (14 passed); schedule path proven only after merge per the box
+- [x] N6: ci_diagnose classifies a job whose Bitwarden lines are successes and whose failing exit is `npm audit` as the audit finding, not `bitwarden-5xx`. The fixture is the excerpt of run 42182422300's Security job.
   - CONTROL: the test fails on the current classifier.
   - Accept: `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest .ci/rediacc_ci/tests/test_ci_diagnose.py -q` rc 0.
+    (ticked) 2026-11-06T20:28:40Z by d778be9d: commit:6057b0059; accept on HEAD 5989f3adec78: N6 pytest test_ci_diagnose rc=0 (93 passed, after 6e21c7a66 fixed D3's Report schedule aggregator)
 
 ### D: drift job, weekly fleet, promotion (writer D)
 
@@ -431,30 +447,39 @@ Owns: .ci/rediacc_ci/release/drift_job.py, .ci/rediacc_ci/release/check_soak_per
 - [ ] D1: drift_job.py and `npm run ci:drift` per D-drift. The set is computed from `DRIFT_GATE_IDS` plus `CLOCK_GATE_IDS` plus the two split steps, never listed twice.
   - CONTROL: a lock missing one drift id exits 2 (DriftSetError); one planted red gate gives exit 1 with that gate named in the JSON.
   - Accept: `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest .ci/rediacc_ci/tests/test_release_drift_job.py -q` rc 0; `npm run ci:drift` runs locally with its rc recorded here.
-- [ ] D2: ci-drift.yml (daily `15 2 * * *`, `CI - Drift`, timeout 30 min, permissions contents read, the readonly app token for private/renet, OPS_HEALTH_INGEST_TOKEN through bws-secrets, and the ingest POST under `if: always()`).
+- [x] D2: ci-drift.yml (daily `15 2 * * *`, `CI - Drift`, timeout 30 min, permissions contents read, the readonly app token for private/renet, OPS_HEALTH_INGEST_TOKEN through bws-secrets, and the ingest POST under `if: always()`).
+  (corrected 2026-11-06, review bc59d04d.1 and .3) timeout 40 min around drift_job's 25-minute RUN_BUDGET_S, so the verdict is always written; OPS_HEALTH_INGEST_TOKEN is fetched in its own `if: always()` bws-secrets step after the drift checks, never visible to them.
   - Accept: `npm run check:ci-workflows && npm run check:ci-workflow-invariants && npm run check:ci-bws-step-scope` rc 0.
-- [ ] D3: ci.yml cron becomes `0 1 * * 0`, with the header comment rewritten; a schedule-only `report-schedule` job POSTs the run verdict to ingest `ci-weekly`.
+    (ticked) 2026-11-06T20:29:24Z by d778be9d: commit:bc59d04d2 + 2f7cc3f07; check:ci-workflows && ci-workflow-invariants && ci-bws-step-scope rc=0; daily cron first fires after merge
+- [x] D3: ci.yml cron becomes `0 1 * * 0`, with the header comment rewritten; a schedule-only `report-schedule` job POSTs the run verdict to ingest `ci-weekly`.
   - Accept: same gates, rc 0.
-- [ ] D4: promote-stable and check_soak_period per D-promote.
+    (ticked) 2026-11-06T20:28:41Z by d778be9d: commit:bc59d04d2; accept on HEAD 5989f3adec78: D3 check:ci-workflows, ci-workflow-invariants, ci-bws-step-scope rc=0
+- [x] D4: promote-stable and check_soak_period per D-promote.
   - CONTROL: tests where a cancelled drift run means no promotion; an edge not contained in the weekly head falls back to soak; a weekly run 9 days old falls back to soak; a weekly run red on a non-drift step means no waiver; and a green weekly run containing the edge plus a drift `failure` gives the waiver.
   - Accept: `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest .ci/rediacc_ci/tests/test_release_check_soak_period.py .ci/rediacc_ci/tests/test_release_nightly_tested_edge.py -q` rc 0.
-- [ ] D5: wl_schedred `_BLOCKS`: `ci` names the weekly fleet; `ci-drift` names "the stable promotion's daily trigger and the operator's drift mail".
+    (ticked) 2026-11-06T20:28:42Z by d778be9d: commit:bc59d04d2; accept on HEAD 5989f3adec78: D4 pytest test_release_check_soak_period + nightly_tested_edge rc=0 (71 passed); empty-conclusion hardening 2f7cc3f07
+- [x] D5: wl_schedred `_BLOCKS`: `ci` names the weekly fleet; `ci-drift` names "the stable promotion's daily trigger and the operator's drift mail".
   - Accept: `python3 .claude/hooks/stop/test-plandeps.py` and the schedred tests, rc 0.
+    (ticked) 2026-11-06T20:28:43Z by d778be9d: commit:c769dcf6e; accept on HEAD 5989f3adec78: D5 test-plandeps.py rc=0; all 24 stop-hook test files rc=0
 
 ### K: backup performance (writer K)
 
 Owns: packages/e2e-tests/tests/31-backup-large-repo.test.ts, packages/e2e-tests/src/utils/backup/withMount.ts, packages/e2e-tests/src/utils/backup/vmEvidence.ts, packages/e2e-tests/src/utils/backup/largeRepoBudget.ts, packages/e2e-tests/src/utils/backup/__tests__/**, .github/workflows/ct-backup-perf.yml, .github/workflows/ct-tests.yml (K10 leg), .ci/config/shards/test-e2e-workers.json, .ci/config/proof-tiers.json (backup area leg)
 
-- [ ] K1: `withMount` moves to a util. When the body throws, the unmount still runs, and the thrown error names the body error first and the unmount error second.
+- [x] K1: `withMount` moves to a util. When the body throws, the unmount still runs, and the thrown error names the body error first and the unmount error second.
   - CONTROL: a unit test with a throwing body and a failing unmount fails on the old `finally`.
   - Accept: `cd packages/e2e-tests && npx vitest run src/utils/backup/__tests__` rc 0.
-- [ ] K2: Each seed file runs under its own time guard (a proportional per-GiB limit), and its failure names the file index. On an SSH loss, `vmEvidence` records the runner side (`uptime`, `free -m`, `dmesg | tail -200`, qemu process state, `df` of REDIACC_VM_DISK_DIR), then retries SSH for 120 s and records the worker's `uptime; dmesg | tail -200`. `incrTimeBudgetMs` drops the absolute cap below 20 GiB, so the 2 GiB budget is purely proportional.
+    (ticked) 2026-11-06T20:29:12Z by d778be9d: commit:9a3124033; accept on HEAD 5989f3adec78: K1 vitest src/utils/backup/__tests__ rc=0
+- [x] K2: Each seed file runs under its own time guard (a proportional per-GiB limit), and its failure names the file index. On an SSH loss, `vmEvidence` records the runner side (`uptime`, `free -m`, `dmesg | tail -200`, qemu process state, `df` of REDIACC_VM_DISK_DIR), then retries SSH for 120 s and records the worker's `uptime; dmesg | tail -200`. `incrTimeBudgetMs` drops the absolute cap below 20 GiB, so the 2 GiB budget is purely proportional.
   - CONTROL: unit tests for the evidence helper with a fake runner, and for the budget at 2 GiB with no cap applied.
   - Accept: same command, rc 0.
-- [ ] K3: ct-backup-perf.yml: VM_RAM_WORKER 8192, K10_SEED_GB 20, and cron `30 2 * * 6`.
+    (ticked) 2026-11-06T20:29:13Z by d778be9d: commit:9a3124033; accept on HEAD 5989f3adec78: K2 vitest src/utils/backup/__tests__ rc=0
+- [x] K3: ct-backup-perf.yml: VM_RAM_WORKER 8192, K10_SEED_GB 20, and cron `30 2 * * 6`.
   - Accept: `npm run check:ci-workflows && npm run check:ci-workflow-env-provision` rc 0.
-- [ ] K4: The vm:check `backup` area gains an `external` leg `backup-large-2g` (fleet `worker`, VM_DSK sized so FREE_GIB_NEEDED=17 holds, `K10_SEED_GB=2 BACKUP_LARGE_REPO_SUITE=1 ... --test 31-backup-large-repo --fail-on-skip`), and suite 31 joins the area's `suites`.
+    (ticked) 2026-11-06T20:28:45Z by d778be9d: commit:5383871ce; accept on HEAD 5989f3adec78: K3 check:ci-workflows + ci-workflow-env-provision rc=0
+- [x] K4: The vm:check `backup` area gains an `external` leg `backup-large-2g` (fleet `worker`, VM_DSK sized so FREE_GIB_NEEDED=17 holds, `K10_SEED_GB=2 BACKUP_LARGE_REPO_SUITE=1 ... --test 31-backup-large-repo --fail-on-skip`), and suite 31 joins the area's `suites`.
   - Accept: `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest .ci/rediacc_ci/tests -q -k proof_tiers` rc 0.
+    (ticked) 2026-11-06T20:28:47Z by d778be9d: commit:23b4a200a; accept on HEAD 5989f3adec78: K4 pytest -k proof_tiers rc=0
 - [ ] K5: A PR CI leg runs suite 31 at K10_SEED_GB=2 in test-e2e-workers, within the 15 min lane budget.
   - CONTROL: the anchor-deleted step must breach the budget at 2 GiB. A pass of that step fails the leg, which proves the proportional budget still discriminates.
   - Accept: `npm run check:ci-shard-manifest-coverage && npm run check:ci-lane-budget` rc 0, and the leg green on the PR head (P2).
