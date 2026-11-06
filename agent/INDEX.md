@@ -537,7 +537,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-localize-cheat-sheet-rendering.md` | compacted | 50 | 0 | 0 | 4436 |
 | `agent/plans/PLAN-nightly-retry-and-watchdog-noise.md` | compacted | 39 | 0 | 0 | 2744 |
 | `agent/plans/PLAN-npm-ci-parallel-parity.md` | compacted | 40 | 0 | 0 | 3252 |
-| `agent/plans/PLAN-org-executor-connect-timeout-relocate.md` | executing | 352 | 3 | 14 | 52531 |
+| `agent/plans/PLAN-org-executor-connect-timeout-relocate.md` | executing | 354 | 1 | 16 | 53557 |
 | `agent/plans/PLAN-plan-compaction-bindings.md` | approved | 51 | 7 | 0 | 7885 |
 | `agent/plans/PLAN-plan-preflight.md` | approved | 190 | 0 | 8 | 29710 |
 | `agent/plans/PLAN-plan-verbs.md` | draft | 35 | 3 | 0 | 3779 |

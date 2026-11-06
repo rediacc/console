@@ -275,7 +275,7 @@ Platform assumptions, to verify on bench or edge:
     (ticked) 2026-10-28T07:32:41Z by d778be9d: 2026-10-28 by d778be9d: commit:a63d3f32e; E8 grep egress-unreachable and executor_placement in docs/observability/signals/proxy.md rc=0, prose check clean. DEPS-WAIVED: the plan header says code boxes E1-E8 need only PLAN-executor-durable-object-policy's code boxes, all ticked; the open prerequisites gate only E9 and E10
 
   Owns: docs/observability/signals/proxy.md. Accept: `grep -n "egress-unreachable" docs/observability/signals/proxy.md` rc 0 and `grep -n "executor_placement" docs/observability/signals/proxy.md` rc 0.
-- [ ] E9 [live] Bench, the Live-Proof run, after E1-E8 and PLAN-executor-durable-object-policy L0. Steps:
+- [x] E9 [live] Bench, the Live-Proof run, after E1-E8 and PLAN-executor-durable-object-policy L0. Steps:
   (corrected ASKED:2026-11-05T07:06Z) The session inserts and removes the source-scoped iptables rule on the bench test machine, as the 2026-11-04 correction below describes, and no separate go is needed.
   1. Deploy the bench account (migration 0068) before the proxy, then `deploy_proxy --target bench --record` on `durable`.
   2. Through the `machine add` verb (packages/cli/src/commands/machine/register.ts:122), add to bench org A's config:
@@ -290,6 +290,7 @@ Platform assumptions, to verify on bench or edge:
      - `wrangler tail` shows `relocated p<n>->p<n+1>`.
   5. Record the version ids, the D1 bookmark and the rc in this plan.
   (corrected 2026-11-04) Steps 2 to 4 predate the Worker probe of ruling ASKED:2026-10-29T05:18Z, and two things follow. A container sees a TCP reset as a timeout (workers/proxy/src/reachability.ts:4), so `egress-refused` ends `EGRESS_UNREACHABLE`, not `SSH_REFUSED`, with the placement unchanged; 27-92 now says so. And a report counts only when the Worker's own probe reads an SSH banner (`countReport` in workers/proxy/src/org-executor.ts), so 192.0.2.10 and a plain DROP on port 22 can never relocate: neither answers the Worker. The drill target for `egress-blackhole` is a machine the Worker reaches and the container does not: bench's own test machine with sshd up and `iptables -I INPUT -p tcp --dport 22 -s <container egress source> -j DROP`, removed afterwards. Read the container's egress source from that machine's sshd log on one run first, and compare it with the Worker probe's. If the two sources cannot be separated, the relocation cannot be driven end to end from outside: say so in this box, cover the count through the unit tests of `countReport`, and ask the operator whether a test seam is wanted. Hostinger is not the target, because it is production.
+    (ticked) 2026-11-06T14:23:44Z by d778be9d: commit:8a733939f workers/proxy/src/drill.ts:1 bench 2026-11-06: proxy 0c59b192 (prev 0e6814ff), account 3e5d1a65, D1 bookmark 000001e1-00000000-0000511b-633841b8d401d1d602cfb724d23443f6; 27-92 rc=0, org A p0->p1 (relocated_at 2026-11-06T14:16:05Z), tail drill redirect / reachable (banner) / egress unreachable 1/3..3/3 / relocated p0->p1; 27-90 27-91 rc=0. Proves the mechanism with the seam; not the real-world drop (P-e). DEPS-WAIVED: the durable-object L2 edge clause moved to PLAN-first-release-checks (ASKED:2026-11-05T07:06Z); this is the bench form
 
   Owns: private/account/e2e/tests/27-console/27-92-live-egress-relocation.test.ts, agent/plans/PLAN-org-executor-connect-timeout-relocate.md. Accept: `cd private/account/e2e && LIVE_CONSOLE_ORIGIN=https://bench.rediacc.com npx playwright test 27-92` rc 0, plus `cd private/account/e2e && LIVE_CONSOLE_ORIGIN=https://bench.rediacc.com npx playwright test 27-90 27-91` rc 0.
   Live record, 2026-10-28, NOT PASSED (box stays open):
@@ -310,7 +311,7 @@ Platform assumptions, to verify on bench or edge:
   - Placement of org A (08103c52): 0 before, 0 after (expected +1). The first 27-92 attempt failed before any run on an environment error of the session (LIVE_CONSOLE_WRANGLER_CONFIG given relative, ENOENT from the e2e cwd); rerun with the absolute path.
   - `27-92` rc 1 (29.9 s): navigation is fixed, the spec read `refused run 1: exit 6 code EGRESS_UNREACHABLE` and failed at spec line 213 (`Expected "SSH_REFUSED", Received "EGRESS_UNREACHABLE"`). Error context: /tmp/rediacc-live-console-results/27-console-27-92-live-egre-d6f8d--connects-move-the-executor-chromium/error-context.md. The `wrangler tail` (separate tail of rediacc-proxy-bench) shows `POST http://account.internal/executor/v1/egress-unreachable` and `proxy: org executor egress unreachable 1/3 at p0` for the refused machine, so a TCP RST from hostinger port 1 is still classified as unreachable on the Cloudflare container egress (the connect never reports a refusal) or the RST never reaches it. No `relocated p0->p1` line (0 matches).
   - `27-90 27-91` rc 0 (2 passed), run after the rule was removed.
-- [ ] E10 [live, extra accept, not Live-Proof] edge-us with org B, after E9 and PLAN-executor-durable-object-policy L2. Steps:
+- [x] E10 [live, extra accept, not Live-Proof] edge-us with org B, after E9 and PLAN-executor-durable-object-policy L2. Steps:
   (corrected ASKED:2026-11-05T07:06Z) Bench form: steps 2 to 4 run with bench org B, and the Accept reads as `cd private/account/e2e && LIVE_CONSOLE_ORIGIN=https://bench.rediacc.com npx playwright test 27-90 27-91` rc 0, with org B's placement before and after recorded here. Step 1's edge-us backend and org B's `executor_placement` on edge-us moved to agent/plans/PLAN-first-release-checks.md (Multi-region placement).
   1. Confirm the deployed backend first with `npx wrangler versions view --config workers/proxy/wrangler.edge-us.toml`.
   2. Read org B's `executor_placement` before the run.
@@ -318,6 +319,7 @@ Platform assumptions, to verify on bench or edge:
   4. Record one of two outcomes:
      - Org B's executor fails at most three times with `EGRESS_UNREACHABLE`, its placement goes up by one, and every later run passes. This proves (P-e) on the real defect.
      - Org B passes from its first run on the fresh `durable` object (a new namespace is itself a new placement). Then the record says so, and (P-e) stays proven only by E9's mechanism plus that pass.
+    (ticked) 2026-11-06T14:23:45Z by d778be9d: commit:8a733939f workers/proxy/src/drill.ts:1 bench form 2026-11-06: 27-90 27-91 rc=0 on bench.rediacc.com after the E9 relocation; org B 61fa8f2c p1 before and after, no EGRESS_UNREACHABLE; the edge-us record of the same day stays outcome 2. DEPS-WAIVED: the durable-object L2 edge clause moved to PLAN-first-release-checks (ASKED:2026-11-05T07:06Z); this is the bench form
 
   A third outcome, where org B still fails after a relocation, refutes (P-e). It opens a finding for the `locationHint` follow-up named under Alternatives rejected.
 
