@@ -53,7 +53,10 @@ vi.mock('../../services/machine/machine-connection.js', async (orig) => ({
   withSharedOrPooledSftp: (_shared: unknown, _config: unknown, fn: (s: unknown) => unknown) =>
     fn({ exec: m.sftpExec }),
 }));
-vi.mock('../../services/account/account-client.js', () => ({ accountServerFetch: m.accountFetch }));
+vi.mock('../../services/account/account-client.js', async (orig) => ({
+  ...(await orig<Record<string, unknown>>()),
+  accountServerFetch: m.accountFetch,
+}));
 vi.mock('../../services/account/license-machine.js', async (orig) => ({
   ...(await orig<Record<string, unknown>>()),
   readLocalMachineId: () => Promise.resolve('b'.repeat(64)),
@@ -213,6 +216,8 @@ describe('subscription verbs (J20)', () => {
     expect(m.refreshBatch).toHaveBeenCalledTimes(1);
     expect(m.refreshBatch.mock.calls[0][5]).toBeUndefined();
     expect(m.refreshBatch.mock.calls[0][6]).toEqual(scan);
+    // The machine form runs no client SSH command: the scan answered through the executor job.
+    expect(m.sftpExec).not.toHaveBeenCalled();
   });
 
   it('refresh -m fails its step on an empty scan answer instead of treating it as no repositories', async () => {
@@ -260,7 +265,9 @@ describe('subscription verbs (J20)', () => {
     ]);
     expect(m.accountFetch).toHaveBeenCalledWith(
       '/account/api/v1/licenses/activate-repo',
-      expect.objectContaining({ body: expect.objectContaining({ repositoryGuid: 'guid-1' }) })
+      expect.objectContaining({
+        body: expect.objectContaining({ repositoryGuid: 'guid-1', requestedSizeGb: 2 }),
+      })
     );
   });
 

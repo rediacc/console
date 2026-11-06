@@ -331,7 +331,10 @@ describe('datastore reads (one read job, rendered by its step)', () => {
       tier2: { backend: { kind: 'ceph' }, size: '2G' },
     });
     m.listDatastoreState.mockResolvedValue({ tier1: { attachedTo: 'm1', writes: 'local' } });
-    m.reposInDatastore.mockResolvedValue(['r1']);
+    // Per datastore: the row counts come from each one's own repositories, not from one constant answer.
+    m.reposInDatastore.mockImplementation(async (name: string) =>
+      name === 'tier1' ? ['r1', 'r2'] : ['r3']
+    );
     onTestFinished(() => {
       m.listDatastores.mockResolvedValue({});
       m.reposInDatastore.mockResolvedValue([]);
@@ -347,7 +350,7 @@ describe('datastore reads (one read job, rendered by its step)', () => {
           cluster: 'c1',
           attachedTo: 'm1',
           writes: 'local',
-          repos: 1,
+          repos: 2,
         },
         {
           name: 'tier2',
@@ -967,6 +970,8 @@ describe('cluster fork, migrate and rehearse (one job per phase, driven through 
     });
 
     it('migrate: the registry paperwork, the cutover and the forget are each their own job, in order', async () => {
+      // The one direct kube_health is the post-cutover gate (it must pass to release the source); migrate runs no
+      // destination probe, which is the fork's refuse-if-already-serving check and wants a failing health.
       m.direct.mockImplementation((options: unknown) => {
         direct.push(options as Executed);
         return Promise.resolve(FINISHED);
@@ -1021,8 +1026,10 @@ describe('cluster fork, migrate and rehearse (one job per phase, driven through 
       m.direct.mockImplementation((options: unknown) => {
         direct.push(options as Executed);
         // The first kube_health is the dest probe, which must fail; the gate after the fork must pass.
-        probes += 1;
-        return Promise.resolve(probes === 1 ? FAILED : FINISHED);
+        if ((options as Executed).functionName === 'kube_health') probes += 1;
+        return Promise.resolve(
+          probes === 1 && (options as Executed).functionName === 'kube_health' ? FAILED : FINISHED
+        );
       });
 
       await cluster('rehearse', 'c1', '--on', 'c2', '--tag', 'r1');

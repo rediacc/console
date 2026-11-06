@@ -70,6 +70,18 @@ describe('BACKGROUND_UNSAFE and CONVERTED', () => {
 
 type Placement = 'unsafe' | 'converted' | 'both' | 'neither';
 
+/** The detachable verbs that are in both sets or in neither: the invariant's offenders. */
+function offendersOf(
+  detachable: readonly string[],
+  refused: ReadonlySet<string>,
+  converted: ReadonlySet<string>
+): string[] {
+  return detachable.filter((verb) => {
+    const where = placement(verb, refused, converted);
+    return where !== 'unsafe' && where !== 'converted';
+  });
+}
+
 /** Which of the two states a verb is in. The invariant is that every detachable verb is `unsafe` or `converted`. */
 function placement(
   verb: string,
@@ -88,11 +100,7 @@ describe('every detachable verb is in exactly one of BACKGROUND_UNSAFE or CONVER
   const detachable = CLI_CONTRACT.commands.filter((c) => c.detachable).map((c) => c.pathKey);
 
   it('holds for the whole contract', () => {
-    const offenders = detachable.filter((verb) => {
-      const where = placement(verb, refused, CONVERTED);
-      return where !== 'unsafe' && where !== 'converted';
-    });
-    expect(offenders).toEqual([]);
+    expect(offendersOf(detachable, refused, CONVERTED)).toEqual([]);
   });
 
   it('control: a verb planted in both sets, and one planted in neither, are both caught', () => {
@@ -100,6 +108,13 @@ describe('every detachable verb is in exactly one of BACKGROUND_UNSAFE or CONVER
     expect(placement('repo up', new Set(), new Set())).toBe('neither');
     expect(placement('repo up', new Set(['repo up']), new Set())).toBe('unsafe');
     expect(placement('repo up', new Set(), new Set(['repo up']))).toBe('converted');
+  });
+
+  it('control: the offender filter itself catches planted verbs and passes a well-placed one', () => {
+    const verbs = ['both-verb', 'neither-verb', 'unsafe-verb', 'converted-verb'];
+    const unsafe = new Set(['both-verb', 'unsafe-verb']);
+    const converted = new Set(['both-verb', 'converted-verb']);
+    expect(offendersOf(verbs, unsafe, converted)).toEqual(['both-verb', 'neither-verb']);
   });
 });
 
@@ -156,11 +171,15 @@ describe('under --background every converted verb records its steps in the spool
 
       const outcome = await runCommandJob(
         verb,
+        // The command-kind verbs (backup status, machine restart-services, ...) plan no `fn`: the placeholder only labels the
+        // fake call, and what the case pins is the steps, not the function.
         { functionName: JOB_PLANS[verb].fn ?? 'x', machineName: 'm1', attachWindowMs: 0 },
         planned.map((name) => planStep(name))
       );
 
       expect(outcome.kind).toBe('pending');
+      if (outcome.kind !== 'pending') return;
+      expect(outcome.ticket.state).toBe('running');
       expect(starts).toHaveLength(1);
       expect(starts[0].jobSteps?.map((st) => st.name)).toEqual(planned);
       expect(outcome.ticket.steps.map((st) => st.name)).toEqual(planned);

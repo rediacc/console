@@ -221,7 +221,8 @@ describe('backup run on deployed units', () => {
       verb: 'backup run',
       function: 'backup-unit',
     });
-    expect(['starting', 'running']).toContain(store.tickets()[0].state);
+    // The fake executor answers `running` without a job event, so the ticket is still the one the start recorded.
+    expect(store.tickets()[0].state).toBe('starting');
   });
 
   it('control: a job that finished inside the window records a finished ticket, not a running one', async () => {

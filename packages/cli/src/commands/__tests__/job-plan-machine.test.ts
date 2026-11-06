@@ -50,6 +50,8 @@ vi.mock('../../services/core/request-context.js', async (orig) => ({
 }));
 vi.mock('../../services/config/config-resources.js', () => ({
   configService: {
+    // m1 is registered with a datastore for every test in this file: machine health reads it into the list-all args
+    // (see the health test), and setup and provision only need the machine to exist.
     getLocalConfig: async () => ({
       sshPrivateKey: 'key',
       sshPublicKey: 'ssh-ed25519 AAAA',
@@ -280,7 +282,8 @@ describe('machine setup', () => {
     expect(mocks.order).toEqual(['bootstrap', 'job']);
     expect(mocks.acquireRemoteRenet.mock.calls[0][0]).toBe('provision');
     const converge = executed[0].jobSteps?.find((s) => s.name === 'convergeAfterSetup');
-    expect(converge?.params.routerRefreshDue).not.toBe(true);
+    // An explicit false, not an absent key: the plan records that no refresh is owed.
+    expect(converge?.params.routerRefreshDue).toBe(false);
   });
 
   it('records the owed router refresh and the converge choice in the plan, as scalars', async () => {
@@ -534,7 +537,9 @@ describe('machine health', () => {
   });
 
   it('refuses an unregistered machine before any job', async () => {
-    await expect(run(registerHealthCommand, 'health', 'nope')).rejects.toThrow();
+    await expect(run(registerHealthCommand, 'health', 'nope')).rejects.toThrow(
+      /errors\.machineNotFound.*nope/
+    );
     expect(executed).toEqual([]);
   });
 });

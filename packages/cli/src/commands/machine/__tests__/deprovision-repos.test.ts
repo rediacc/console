@@ -74,14 +74,18 @@ describe('machine deprovision: the machine repos', () => {
     await settleMachineRepos('obs-lab', ['obsram:latest', 'sockfix09b:latest'], true);
     expect(h.archived).toEqual([['obsram:latest', 'sockfix09b:latest']]);
     expect(h.warn).toEqual([]);
-    expect(h.info.join('\n')).toMatch(/obsram:latest, sockfix09b:latest|reposArchived/);
+    expect(h.info.join('\n')).toContain(
+      'Archived 2 repository entry/entries placed on obs-lab: obsram:latest, sockfix09b:latest'
+    );
   });
 
   it('names them and the way to archive them without the flag, and archives nothing', async () => {
     await settleMachineRepos('obs-lab', ['obsram:latest'], false);
     expect(h.archived).toEqual([]);
-    expect(h.warn.join('\n')).toMatch(/obsram:latest|reposLeft/);
-    expect(h.info.join('\n')).toMatch(/--gone-machine-repos|reposLeftHint/);
+    expect(h.warn.join('\n')).toContain(
+      '1 repository entry/entries still name obs-lab, which is no longer in this config: obsram:latest'
+    );
+    expect(h.info.join('\n')).toContain('rdc config prune --gone-machine-repos');
   });
 
   it('says nothing when no repo was placed on the machine', async () => {
