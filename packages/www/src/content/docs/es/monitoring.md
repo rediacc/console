@@ -9,8 +9,8 @@ tags:
 subcategory: operations
 order: 9
 language: es
-sourceHash: "6e4968522e118c98"
-sourceCommit: "9b8aa220de6eb4f7c7b7783456af6871202c8305"
+sourceHash: "acef592a7065cac7"
+sourceCommit: "9f58d83e01b4d46f8ce31af467a203b4d195e801"
 ---
 
 # Monitoreo
@@ -38,7 +38,7 @@ Esto reporta:
 - **Certificados**: certificados del proxy próximos a caducar y CNAME de desafío ACME compartidos
 - **Problemas**: problemas identificados
 
-El código de salida es el veredicto: `0` saludable, `1` advertencia, `2` error, `3` crítico (un disco que falla, o un contenedor o servicio en bucle de reinicios). Use `--output json` para salida legible por máquinas; incluye `repo_health` (un informe por repositorio) y `findings`, cada uno con un código, una gravedad (`info`, `warning`, `error` o `critical`), un sujeto, un detalle y, cuando existe una solución, `fix` (véase [Reparación](#repair)).
+El código de salida es el veredicto: `0` sin hallazgos (un repositorio sin comprobación `health()` se lista como «sin comprobación», nunca se cuenta como saludable), `1` advertencia, `2` error, `3` crítico (un disco que falla, o un contenedor o servicio en bucle de reinicios). Use `--output json` para salida legible por máquinas; incluye `repo_health` (un informe por repositorio) y `findings`, cada uno con un código, una gravedad (`info`, `warning`, `error` o `critical`), un sujeto, un detalle y, cuando existe una solución, `fix` (véase [Reparación](#repair)).
 
 ## Salud del repositorio
 
@@ -56,7 +56,7 @@ El comando termina con el peor nivel de todos los Rediaccfiles del repositorio. 
 
 `rdc machine health` lee los certificados ACME del proxy e informa `cert.expiry.near` para cada uno a menos de 21 días de caducar (una advertencia) o a menos de 7 días (un error). El proxy renueva con 30 días de antelación, así que un certificado con menos de 21 días significa que su renovación lleva fallando al menos nueve días.
 
-También informa `acme.challenge.cname-shared` cuando el registro `_acme-challenge.<name>` del nombre de un certificado sigue un CNAME hacia un nombre que no es a su vez un nombre `_acme-challenge.`, o cuando dos nombres terminan en el mismo nombre. Un registro comodín que es un CNAME produce esta forma: todos los desafíos llegan a un solo nombre y las renovaciones colisionan. Una delegación deliberada (por ejemplo, `_acme-challenge.mail.example.com` apuntando a `_acme-challenge.mail.example.io`) no se informa; añada cualquier otra delegación prevista a `ACME_DELEGATED_NAMES` (una lista separada por comas de nombres de certificado) en el `config.env` del proxy. Un nombre cuya cadena de desafío no pudo resolverse (error de DNS o tiempo agotado) se informa como `acme.challenge.unknown`, una advertencia, porque la comprobación no se ejecutó para él.
+También informa `acme.challenge.cname-shared` cuando el registro `_acme-challenge.<name>` del nombre de un certificado sigue un CNAME hacia un nombre que no es a su vez un nombre `_acme-challenge.`, o cuando dos nombres terminan en el mismo nombre. Un registro comodín que es un CNAME produce esta forma: todos los desafíos llegan a un solo nombre y las renovaciones colisionan. Una delegación deliberada (por ejemplo, `_acme-challenge.mail.example.com` apuntando a `_acme-challenge.mail.example.io`) no se informa; añada cualquier otra delegación prevista a `ACME_DELEGATED_NAMES` (una lista separada por comas de nombres de certificado) en el `config.env` del proxy. Un nombre cuya cadena de desafío no pudo resolverse (ningún resolvedor DNS respondió por él) se informa como `acme.challenge.unknown`, una advertencia, porque la comprobación no se ejecutó para él.
 
 ## Reparación
 
@@ -81,7 +81,7 @@ rdc machine repair server-1 --set-window 00:00-03:00
 rdc machine repair server-1 --set-window off
 ```
 
-Cada solución comprueba primero que su hallazgo sigue presente, así que una segunda ejecución no tiene nada que hacer. Las soluciones que actúan sobre lo mismo se ejecutan una vez (un reinicio de Traefik cubre todos los certificados). Cada solución se registra en el diario de la máquina con la etiqueta `rediacc-repair` y en el JSON `actions` (`code`, `subject`, `action`, `class`, `result`, `before`, `after`), y la ejecución termina con una nueva comprobación completa. El código de salida es `0` cuando no queda nada, `1` cuando quedan advertencias o elementos operator-only, y `2` cuando queda un error o falló una solución.
+Cada solución comprueba primero que su hallazgo sigue presente, así que una segunda ejecución no tiene nada que hacer. Las soluciones que actúan sobre lo mismo se ejecutan una vez (un reinicio de Traefik cubre todos los certificados). Cada solución se registra en el diario de la máquina con la etiqueta `rediacc-repair` y en el JSON `actions` (`code`, `subject`, `action`, `class`, `result`, `before`, `after`), y la ejecución termina con una nueva comprobación completa. El código de salida es `0` cuando no queda nada, `1` cuando quedan advertencias o elementos operator-only, y `2` cuando queda un error o un hallazgo crítico, o falló una solución. `rdc machine repair` nunca sale con `3`; solo `rdc machine health` lo hace.
 
 | Hallazgo | Solución | Clase |
 |---|---|---|
@@ -89,7 +89,7 @@ Cada solución comprueba primero que su hallazgo sigue presente, así que una se
 | `container.unhealthy`, `container.restart-loop` | Reiniciar el contenedor | auto-safe |
 | `renet.binary.replaced` | Reiniciar los supervisores de repositorio afectados (`rdc machine restart-services --include-docker`, limitado a ellos) | auto-safe, solo en ventana |
 | `cert.expiry.near` | Reiniciar Traefik para que reintente la renovación | auto-safe |
-| `acme.challenge.cname-shared` | Escribir el ancla ACME (abajo) | auto-safe |
+| `acme.challenge.cname-shared` | Escribir el ancla ACME (abajo) | auto-safe (operator-only cuando se declara una delegación y no existe un token de Cloudflare utilizable) |
 | `repo.health.warning`, `repo.health.error` | Ejecutar el `repair()` del repositorio ([Servicios](/es/docs/services)) | la clase que declara el Rediaccfile |
 | `repo.unmounted`, `service.failed`, `service.restart-loop`, `backup.*`, `license.*`, `renet.repo-health.unsupported` | Se imprime como el comando que hay que ejecutar | operator-only |
 
@@ -108,7 +108,7 @@ rdc repo repair my-app@server-1
 
 ### El ancla ACME
 
-Un registro DNS comodín que es un CNAME hace que todos los nombres `_acme-challenge.<host>` lo sigan, así que todos los desafíos llegan a un solo nombre y las renovaciones colisionan (`acme.challenge.cname-shared`). La solución escribe un registro TXT con el valor `rediacc-acme-anchor` en cada `_acme-challenge.<name>` en colisión mediante el token de Cloudflare del proxy y luego reinicia Traefik. Un registro explícito saca el nombre del alcance del comodín, de modo que el desafío llega adonde corresponde. La solución solo añade registros y un ancla existente se deja como está.
+Un registro DNS comodín que es un CNAME hace que todos los nombres `_acme-challenge.<host>` lo sigan, así que todos los desafíos llegan a un solo nombre y las renovaciones colisionan (`acme.challenge.cname-shared`). La solución escribe un registro TXT con el valor `rediacc-acme-anchor` en cada `_acme-challenge.<name>` en colisión mediante el token de Cloudflare del proxy y luego reinicia Traefik. Un registro explícito saca el nombre del alcance del comodín, de modo que el desafío llega adonde corresponde. La solución solo añade registros y un ancla existente se deja como está. Un nombre de desafío que ya es un CNAME no puede tener un registro TXT a su lado: Cloudflare rechaza la escritura y la solución recurre al mismo plan alternativo que para una zona que su token no puede escribir (siguiente párrafo).
 
 Los nombres incluidos en `ACME_DELEGATED_NAMES` (una lista separada por comas de nombres de certificado en el `config.env` del proxy) son delegaciones deliberadas: nunca se anclan ni se informan. Cuando el proxy no tiene un token de Cloudflare utilizable, la solución recurre a `LEGO_DISABLE_CNAME_SUPPORT=true` en `config.env`, pero solo cuando no se ha declarado ningún nombre delegado, porque esa variable desactiva el seguimiento de CNAME para todos los nombres; con una delegación declarada, el hallazgo sigue siendo operator-only. La misma solución se ejecuta en cada instalación del proxy (`rdc machine infra push`) y por sí sola con `renet proxy acme-fix` en la máquina.
 

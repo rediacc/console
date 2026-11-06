@@ -7,8 +7,8 @@ tags:
 subcategory: operations
 order: 9
 language: ar
-sourceHash: "6e4968522e118c98"
-sourceCommit: "9b8aa220de6eb4f7c7b7783456af6871202c8305"
+sourceHash: "acef592a7065cac7"
+sourceCommit: "9f58d83e01b4d46f8ce31af467a203b4d195e801"
 ---
 
 # المراقبة
@@ -36,7 +36,7 @@ rdc machine health server-1
 - **الشهادات**: شهادات الوكيل القريبة من الانتهاء، وسجلات CNAME المشتركة لتحدي ACME
 - **المشكلات**: المشكلات المكتشفة
 
-رمز الخروج هو الحكم: `0` سليم، `1` تحذير، `2` خطأ، `3` حرج (قرص معطوب، أو حاوية أو خدمة في حلقة إعادة تشغيل). استخدم `--output json` للحصول على مخرجات قابلة للقراءة آليًا؛ وهي تتضمن `repo_health` (تقرير لكل مستودع) و`findings`، ولكل نتيجة رمز ودرجة خطورة (`info` أو `warning` أو `error` أو `critical`) وموضوع وتفصيل، وعند وجود إصلاح تتضمن `fix` (انظر [الإصلاح](#repair)).
+رمز الخروج هو الحكم: `0` لا توجد نتائج (المستودع الذي لا يملك فحص `health()` يُدرج بوصفه «بلا فحص» ولا يُحتسب سليمًا أبدًا)، `1` تحذير، `2` خطأ، `3` حرج (قرص معطوب، أو حاوية أو خدمة في حلقة إعادة تشغيل). استخدم `--output json` للحصول على مخرجات قابلة للقراءة آليًا؛ وهي تتضمن `repo_health` (تقرير لكل مستودع) و`findings`، ولكل نتيجة رمز ودرجة خطورة (`info` أو `warning` أو `error` أو `critical`) وموضوع وتفصيل، وعند وجود إصلاح تتضمن `fix` (انظر [الإصلاح](#repair)).
 
 ## صحة المستودع
 
@@ -54,7 +54,7 @@ rdc repo health my-app@server-1
 
 يقرأ `rdc machine health` شهادات ACME الخاصة بالوكيل ويُبلغ عن `cert.expiry.near` لكل شهادة يقل ما تبقى على انتهائها عن 21 يومًا (تحذير) أو عن 7 أيام (خطأ). يجدّد الوكيل قبل 30 يومًا، ولذلك فإن شهادة تقل عن 21 يومًا تعني أن تجديدها يفشل منذ تسعة أيام على الأقل.
 
-كما يُبلغ عن `acme.challenge.cname-shared` عندما يتبع سجل `_acme-challenge.<name>` لاسم شهادة سجل CNAME إلى اسم ليس هو نفسه اسم `_acme-challenge.`، أو عندما ينتهي اسمان عند الاسم نفسه. السجل البديل (wildcard) الذي هو CNAME ينتج هذا الشكل: تصل كل التحديات إلى اسم واحد وتتصادم التجديدات. لا يُبلَّغ عن التفويض المقصود (مثل `_acme-challenge.mail.example.com` الذي يشير إلى `_acme-challenge.mail.example.io`)؛ أدرج أي تفويض مقصود آخر في `ACME_DELEGATED_NAMES` (قائمة أسماء شهادات مفصولة بفواصل) في `config.env` الخاص بالوكيل. أما الاسم الذي تعذّر حلّ سلسلة تحديه (خطأ DNS أو انتهاء مهلة) فيُبلَّغ عنه كـ `acme.challenge.unknown`، وهو تحذير، لأن الفحص لم يُنفَّذ له.
+كما يُبلغ عن `acme.challenge.cname-shared` عندما يتبع سجل `_acme-challenge.<name>` لاسم شهادة سجل CNAME إلى اسم ليس هو نفسه اسم `_acme-challenge.`، أو عندما ينتهي اسمان عند الاسم نفسه. السجل البديل (wildcard) الذي هو CNAME ينتج هذا الشكل: تصل كل التحديات إلى اسم واحد وتتصادم التجديدات. لا يُبلَّغ عن التفويض المقصود (مثل `_acme-challenge.mail.example.com` الذي يشير إلى `_acme-challenge.mail.example.io`)؛ أدرج أي تفويض مقصود آخر في `ACME_DELEGATED_NAMES` (قائمة أسماء شهادات مفصولة بفواصل) في `config.env` الخاص بالوكيل. أما الاسم الذي تعذّر حلّ سلسلة تحديه (لم يردّ أي محلّل DNS بشأنه) فيُبلَّغ عنه كـ `acme.challenge.unknown`، وهو تحذير، لأن الفحص لم يُنفَّذ له.
 
 ## الإصلاح
 
@@ -79,7 +79,7 @@ rdc machine repair server-1 --set-window 00:00-03:00
 rdc machine repair server-1 --set-window off
 ```
 
-يتحقق كل إصلاح أولًا من أن نتيجته ما زالت قائمة، ولذلك يُبلغ التشغيل الثاني بألا شيء يستدعي العمل. الإصلاحات التي تعمل على الشيء نفسه تُنفَّذ مرة واحدة (إعادة تشغيل واحدة لـ Traefik تغطي كل الشهادات). يُسجَّل كل إصلاح في سجل الجهاز بالوسم `rediacc-repair` وفي حقل JSON المسمى `actions` (`code` و`subject` و`action` و`class` و`result` و`before` و`after`)، وينتهي التشغيل بإعادة فحص كاملة. رمز الخروج `0` عندما لا يتبقى شيء، و`1` عندما تتبقى تحذيرات أو عناصر operator-only، و`2` عندما يتبقى خطأ أو يفشل إصلاح.
+يتحقق كل إصلاح أولًا من أن نتيجته ما زالت قائمة، ولذلك يُبلغ التشغيل الثاني بألا شيء يستدعي العمل. الإصلاحات التي تعمل على الشيء نفسه تُنفَّذ مرة واحدة (إعادة تشغيل واحدة لـ Traefik تغطي كل الشهادات). يُسجَّل كل إصلاح في سجل الجهاز بالوسم `rediacc-repair` وفي حقل JSON المسمى `actions` (`code` و`subject` و`action` و`class` و`result` و`before` و`after`)، وينتهي التشغيل بإعادة فحص كاملة. رمز الخروج `0` عندما لا يتبقى شيء، و`1` عندما تتبقى تحذيرات أو عناصر operator-only، و`2` عندما يتبقى خطأ أو نتيجة حرجة أو يفشل إصلاح. لا ينتهي `rdc machine repair` برمز `3` أبدًا؛ وحده `rdc machine health` يفعل ذلك.
 
 | النتيجة | الإصلاح | الصنف |
 |---|---|---|
@@ -87,7 +87,7 @@ rdc machine repair server-1 --set-window off
 | `container.unhealthy`, `container.restart-loop` | إعادة تشغيل الحاوية | auto-safe |
 | `renet.binary.replaced` | إعادة تشغيل مشرفي المستودعات المتأثرة (`rdc machine restart-services --include-docker`، مقصورًا عليها) | auto-safe، داخل النافذة فقط |
 | `cert.expiry.near` | إعادة تشغيل Traefik ليعيد محاولة التجديد | auto-safe |
-| `acme.challenge.cname-shared` | كتابة مرساة ACME (أدناه) | auto-safe |
+| `acme.challenge.cname-shared` | كتابة مرساة ACME (أدناه) | auto-safe (operator-only عند الإعلان عن تفويض وعدم وجود رمز Cloudflare صالح للاستخدام) |
 | `repo.health.warning`, `repo.health.error` | تشغيل `repair()` الخاصة بالمستودع ([الخدمات](/ar/docs/services)) | الصنف الذي يعلنه Rediaccfile |
 | `repo.unmounted`, `service.failed`, `service.restart-loop`, `backup.*`, `license.*`, `renet.repo-health.unsupported` | يُطبع كأمر يجب تشغيله | operator-only |
 
@@ -106,7 +106,7 @@ rdc repo repair my-app@server-1
 
 ### مرساة ACME
 
-السجل البديل (wildcard) في DNS الذي هو CNAME يجعل كل اسم `_acme-challenge.<host>` يتبعه، فتصل كل التحديات إلى اسم واحد وتتصادم التجديدات (`acme.challenge.cname-shared`). يكتب الإصلاح سجل TXT بالقيمة `rediacc-acme-anchor` عند كل `_acme-challenge.<name>` متصادم عبر رمز Cloudflare الخاص بالوكيل، ثم يعيد تشغيل Traefik. السجل الصريح يُخرج الاسم من نطاق السجل البديل، فيصل التحدي إلى حيث ينبغي. يضيف الإصلاح سجلات فقط، وتُترك المرساة الموجودة كما هي.
+السجل البديل (wildcard) في DNS الذي هو CNAME يجعل كل اسم `_acme-challenge.<host>` يتبعه، فتصل كل التحديات إلى اسم واحد وتتصادم التجديدات (`acme.challenge.cname-shared`). يكتب الإصلاح سجل TXT بالقيمة `rediacc-acme-anchor` عند كل `_acme-challenge.<name>` متصادم عبر رمز Cloudflare الخاص بالوكيل، ثم يعيد تشغيل Traefik. السجل الصريح يُخرج الاسم من نطاق السجل البديل، فيصل التحدي إلى حيث ينبغي. يضيف الإصلاح سجلات فقط، وتُترك المرساة الموجودة كما هي. اسم التحدي الذي هو نفسه CNAME لا يمكن أن يحمل سجل TXT إلى جانبه: يرفض Cloudflare الكتابة، ويتبع الإصلاح البديل نفسه المتبع مع منطقة لا يستطيع رمزه الكتابة فيها (الفقرة التالية).
 
 الأسماء المدرجة في `ACME_DELEGATED_NAMES` (قائمة أسماء شهادات مفصولة بفواصل في `config.env` الخاص بالوكيل) تفويضات مقصودة: لا تُرسَّخ بمرساة ولا يُبلَّغ عنها أبدًا. وعندما لا يملك الوكيل رمز Cloudflare صالحًا للاستخدام، يلجأ الإصلاح إلى `LEGO_DISABLE_CNAME_SUPPORT=true` في `config.env`، ولكن فقط عندما لا يكون أي اسم مفوَّض معلنًا، لأن هذا المتغير يوقف تتبع CNAME لكل الأسماء؛ ومع إعلان تفويض تبقى النتيجة operator-only. يعمل الإصلاح نفسه عند كل تثبيت للوكيل (`rdc machine infra push`) ومنفردًا عبر `renet proxy acme-fix` على الجهاز.
 

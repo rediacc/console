@@ -7,8 +7,8 @@ tags:
 subcategory: operations
 order: 9
 language: ko
-sourceHash: "6e4968522e118c98"
-sourceCommit: "9b8aa220de6eb4f7c7b7783456af6871202c8305"
+sourceHash: "acef592a7065cac7"
+sourceCommit: "9f58d83e01b4d46f8ce31af467a203b4d195e801"
 ---
 
 # 모니터링
@@ -36,7 +36,7 @@ rdc machine health server-1
 - **인증서**: 만료가 가까운 프록시 인증서와 공유된 ACME 챌린지 CNAME
 - **문제**: 식별된 문제
 
-종료 코드가 판정입니다. `0` 정상, `1` 경고, `2` 오류, `3` 치명적(고장 나는 디스크, 또는 재시작 루프에 빠진 컨테이너나 서비스)입니다. 머신 가독성 출력을 위해 `--output json`을 사용하십시오. 출력에는 `repo_health`(저장소별 보고서 하나)와 `findings`가 포함되며, 각 항목에는 코드, 심각도(`info`, `warning`, `error`, `critical`), 대상, 세부 내용, 그리고 해결 방법이 있으면 `fix`가 들어 있습니다([복구](#repair) 참조).
+종료 코드가 판정입니다. `0` 발견 사항 없음(`health()` 검사가 없는 저장소는 '검사 없음'으로 표시되며 정상으로 집계되지 않음), `1` 경고, `2` 오류, `3` 치명적(고장 나는 디스크, 또는 재시작 루프에 빠진 컨테이너나 서비스)입니다. 머신 가독성 출력을 위해 `--output json`을 사용하십시오. 출력에는 `repo_health`(저장소별 보고서 하나)와 `findings`가 포함되며, 각 항목에는 코드, 심각도(`info`, `warning`, `error`, `critical`), 대상, 세부 내용, 그리고 해결 방법이 있으면 `fix`가 들어 있습니다([복구](#repair) 참조).
 
 ## 저장소 상태
 
@@ -54,7 +54,7 @@ rdc repo health my-app@server-1
 
 `rdc machine health`는 프록시의 ACME 인증서를 읽고, 만료까지 21일 미만이면 경고, 7일 미만이면 오류로 `cert.expiry.near`를 보고합니다. 프록시는 30일 전에 갱신하므로, 21일 미만이 남았다는 것은 갱신이 적어도 9일째 실패하고 있다는 뜻입니다.
 
-또한 인증서 이름의 `_acme-challenge.<name>` 레코드가 그 자체로는 `_acme-challenge.` 이름이 아닌 이름으로 CNAME을 따라가거나, 두 이름이 같은 이름에서 끝나면 `acme.challenge.cname-shared`를 보고합니다. CNAME인 와일드카드 레코드가 이런 모양을 만듭니다. 모든 챌린지가 한 이름으로 몰리고 갱신이 충돌합니다. 의도적인 위임(예: `_acme-challenge.mail.example.com`이 `_acme-challenge.mail.example.io`를 가리키는 경우)은 보고되지 않습니다. 의도한 다른 위임은 프록시의 `config.env`에 있는 `ACME_DELEGATED_NAMES`(인증서 이름의 쉼표 구분 목록)에 나열하십시오. 챌린지 체인을 확인하지 못한 이름(DNS 오류 또는 시간 초과)은 해당 이름에 대한 검사가 실행되지 않았으므로 경고인 `acme.challenge.unknown`으로 보고됩니다.
+또한 인증서 이름의 `_acme-challenge.<name>` 레코드가 그 자체로는 `_acme-challenge.` 이름이 아닌 이름으로 CNAME을 따라가거나, 두 이름이 같은 이름에서 끝나면 `acme.challenge.cname-shared`를 보고합니다. CNAME인 와일드카드 레코드가 이런 모양을 만듭니다. 모든 챌린지가 한 이름으로 몰리고 갱신이 충돌합니다. 의도적인 위임(예: `_acme-challenge.mail.example.com`이 `_acme-challenge.mail.example.io`를 가리키는 경우)은 보고되지 않습니다. 의도한 다른 위임은 프록시의 `config.env`에 있는 `ACME_DELEGATED_NAMES`(인증서 이름의 쉼표 구분 목록)에 나열하십시오. 챌린지 체인을 확인하지 못한 이름(어떤 DNS 리졸버도 응답하지 않음)은 해당 이름에 대한 검사가 실행되지 않았으므로 경고인 `acme.challenge.unknown`으로 보고됩니다.
 
 ## 복구
 
@@ -79,7 +79,7 @@ rdc machine repair server-1 --set-window 00:00-03:00
 rdc machine repair server-1 --set-window off
 ```
 
-각 해결은 먼저 해당 항목이 아직 남아 있는지 확인하므로, 두 번째 실행은 할 일이 없다고 보고합니다. 같은 대상에 작용하는 해결은 한 번만 실행됩니다(Traefik을 한 번 재시작하면 모든 인증서가 처리됨). 각 해결은 `rediacc-repair` 태그로 머신 저널에, 그리고 JSON의 `actions`(`code`, `subject`, `action`, `class`, `result`, `before`, `after`)에 기록되며, 실행은 전체 재검사로 끝납니다. 종료 코드는 남은 것이 없으면 `0`, 경고나 operator-only 항목이 남으면 `1`, 오류가 남았거나 해결이 실패하면 `2`입니다.
+각 해결은 먼저 해당 항목이 아직 남아 있는지 확인하므로, 두 번째 실행은 할 일이 없다고 보고합니다. 같은 대상에 작용하는 해결은 한 번만 실행됩니다(Traefik을 한 번 재시작하면 모든 인증서가 처리됨). 각 해결은 `rediacc-repair` 태그로 머신 저널에, 그리고 JSON의 `actions`(`code`, `subject`, `action`, `class`, `result`, `before`, `after`)에 기록되며, 실행은 전체 재검사로 끝납니다. 종료 코드는 남은 것이 없으면 `0`, 경고나 operator-only 항목이 남으면 `1`, 오류나 치명적 발견 사항이 남았거나 해결이 실패하면 `2`입니다. `rdc machine repair`는 `3`으로 종료하지 않으며, `rdc machine health`만 그렇게 합니다.
 
 | 항목 | 해결 | 클래스 |
 |---|---|---|
@@ -87,7 +87,7 @@ rdc machine repair server-1 --set-window off
 | `container.unhealthy`, `container.restart-loop` | 컨테이너 재시작 | auto-safe |
 | `renet.binary.replaced` | 영향받는 저장소 슈퍼바이저 재시작(`rdc machine restart-services --include-docker`, 해당 대상으로 한정) | auto-safe, 시간대 안에서만 |
 | `cert.expiry.near` | Traefik을 재시작해 갱신을 다시 시도하게 함 | auto-safe |
-| `acme.challenge.cname-shared` | ACME 앵커 기록(아래 참조) | auto-safe |
+| `acme.challenge.cname-shared` | ACME 앵커 기록(아래 참조) | auto-safe(위임이 선언되어 있고 사용할 수 있는 Cloudflare 토큰이 없으면 operator-only) |
 | `repo.health.warning`, `repo.health.error` | 저장소의 `repair()` 실행([서비스](/ko/docs/services)) | Rediaccfile이 선언한 클래스 |
 | `repo.unmounted`, `service.failed`, `service.restart-loop`, `backup.*`, `license.*`, `renet.repo-health.unsupported` | 실행할 명령으로 출력됨 | operator-only |
 
@@ -106,7 +106,7 @@ rdc repo repair my-app@server-1
 
 ### ACME 앵커
 
-CNAME인 와일드카드 DNS 레코드가 있으면 모든 `_acme-challenge.<host>` 이름이 그것을 따라가서, 모든 챌린지가 한 이름으로 몰리고 갱신이 충돌합니다(`acme.challenge.cname-shared`). 해결은 프록시의 Cloudflare 토큰으로 충돌하는 각 `_acme-challenge.<name>`에 값이 `rediacc-acme-anchor`인 TXT 레코드를 기록한 다음 Traefik을 재시작합니다. 명시적인 레코드가 있으면 그 이름은 와일드카드의 영향 범위에서 벗어나므로 챌린지가 제자리로 갑니다. 이 해결은 레코드를 추가하기만 하며, 이미 있는 앵커는 그대로 둡니다.
+CNAME인 와일드카드 DNS 레코드가 있으면 모든 `_acme-challenge.<host>` 이름이 그것을 따라가서, 모든 챌린지가 한 이름으로 몰리고 갱신이 충돌합니다(`acme.challenge.cname-shared`). 해결은 프록시의 Cloudflare 토큰으로 충돌하는 각 `_acme-challenge.<name>`에 값이 `rediacc-acme-anchor`인 TXT 레코드를 기록한 다음 Traefik을 재시작합니다. 명시적인 레코드가 있으면 그 이름은 와일드카드의 영향 범위에서 벗어나므로 챌린지가 제자리로 갑니다. 이 해결은 레코드를 추가하기만 하며, 이미 있는 앵커는 그대로 둡니다. CNAME인 챌린지 이름에는 TXT 레코드를 함께 둘 수 없습니다. Cloudflare가 쓰기를 거부하며, 이 경우 해결은 토큰으로 쓸 수 없는 영역과 같은 대체 경로를 따릅니다(다음 문단).
 
 `ACME_DELEGATED_NAMES`(프록시의 `config.env`에 있는 인증서 이름의 쉼표 구분 목록)에 나열된 이름은 의도적인 위임이며, 앵커가 기록되지도 보고되지도 않습니다. 프록시에 사용할 수 있는 Cloudflare 토큰이 없으면 해결은 `config.env`의 `LEGO_DISABLE_CNAME_SUPPORT=true`로 대체되지만, 위임된 이름이 하나도 선언되지 않은 경우에 한합니다. 이 변수는 모든 이름에 대해 CNAME 추적을 끄기 때문입니다. 위임이 선언되어 있으면 해당 항목은 operator-only로 남습니다. 같은 해결은 프록시를 설치할 때마다(`rdc machine infra push`) 실행되며, 머신에서 `renet proxy acme-fix`로 단독 실행할 수도 있습니다.
 

@@ -7,8 +7,8 @@ tags:
 subcategory: operations
 order: 9
 language: pt
-sourceHash: "6e4968522e118c98"
-sourceCommit: "9b8aa220de6eb4f7c7b7783456af6871202c8305"
+sourceHash: "acef592a7065cac7"
+sourceCommit: "9f58d83e01b4d46f8ce31af467a203b4d195e801"
 ---
 
 # Monitorização
@@ -36,7 +36,7 @@ Isto reporta:
 - **Certificados**: certificados do proxy perto de expirar e CNAMEs de desafio ACME partilhados
 - **Problemas**: problemas identificados
 
-O código de saída é o veredicto: `0` saudável, `1` aviso, `2` erro, `3` crítico (um disco a falhar, ou um contentor ou serviço num ciclo de reinício). Use `--output json` para saída legível por máquina; inclui `repo_health` (um relatório por repositório) e `findings`, cada um com um código, uma gravidade (`info`, `warning`, `error` ou `critical`), um assunto, um detalhe e, onde existe uma correção, `fix` (ver [Reparação](#repair)).
+O código de saída é o veredicto: `0` sem achados (um repositório sem verificação `health()` é listado como «sem verificação», nunca contado como saudável), `1` aviso, `2` erro, `3` crítico (um disco a falhar, ou um contentor ou serviço num ciclo de reinício). Use `--output json` para saída legível por máquina; inclui `repo_health` (um relatório por repositório) e `findings`, cada um com um código, uma gravidade (`info`, `warning`, `error` ou `critical`), um assunto, um detalhe e, onde existe uma correção, `fix` (ver [Reparação](#repair)).
 
 ## Saúde do repositório
 
@@ -54,7 +54,7 @@ O `rdc machine health` executa o `health()` de cada repositório montado numa s�
 
 O `rdc machine health` lê os certificados ACME do proxy e reporta `cert.expiry.near` para cada um a menos de 21 dias de expirar (um aviso) ou a menos de 7 dias (um erro). O proxy renova com 30 dias de antecedência, pelo que um certificado abaixo de 21 dias significa que a sua renovação falha há pelo menos nove dias.
 
-Também reporta `acme.challenge.cname-shared` quando o registo `_acme-challenge.<name>` do nome de um certificado segue um CNAME para um nome que não é ele próprio um nome `_acme-challenge.`, ou quando dois nomes acabam no mesmo nome. Um registo wildcard que é um CNAME produz esta forma: todos os desafios caem num só nome e as renovações colidem. Uma delegação deliberada (por exemplo, `_acme-challenge.mail.example.com` a apontar para `_acme-challenge.mail.example.io`) não é reportada; liste qualquer outra delegação pretendida em `ACME_DELEGATED_NAMES` (uma lista separada por vírgulas de nomes de certificado) no `config.env` do proxy. Um nome cuja cadeia de desafio não pôde ser resolvida (erro de DNS ou tempo esgotado) é reportado como `acme.challenge.unknown`, um aviso, porque a verificação não foi executada para ele.
+Também reporta `acme.challenge.cname-shared` quando o registo `_acme-challenge.<name>` do nome de um certificado segue um CNAME para um nome que não é ele próprio um nome `_acme-challenge.`, ou quando dois nomes acabam no mesmo nome. Um registo wildcard que é um CNAME produz esta forma: todos os desafios caem num só nome e as renovações colidem. Uma delegação deliberada (por exemplo, `_acme-challenge.mail.example.com` a apontar para `_acme-challenge.mail.example.io`) não é reportada; liste qualquer outra delegação pretendida em `ACME_DELEGATED_NAMES` (uma lista separada por vírgulas de nomes de certificado) no `config.env` do proxy. Um nome cuja cadeia de desafio não pôde ser resolvida (nenhum resolvedor DNS respondeu por ele) é reportado como `acme.challenge.unknown`, um aviso, porque a verificação não foi executada para ele.
 
 ## Reparação
 
@@ -79,7 +79,7 @@ rdc machine repair server-1 --set-window 00:00-03:00
 rdc machine repair server-1 --set-window off
 ```
 
-Cada correção verifica primeiro que o seu achado ainda existe, pelo que uma segunda execução não tem nada a fazer. As correções que atuam sobre a mesma coisa executam uma vez (um reinício do Traefik cobre todos os certificados). Cada correção é registada no journal da máquina com a etiqueta `rediacc-repair` e no JSON `actions` (`code`, `subject`, `action`, `class`, `result`, `before`, `after`), e a execução termina com uma nova verificação completa. O código de saída é `0` quando nada resta, `1` quando restam avisos ou itens operator-only, e `2` quando resta um erro ou uma correção falhou.
+Cada correção verifica primeiro que o seu achado ainda existe, pelo que uma segunda execução não tem nada a fazer. As correções que atuam sobre a mesma coisa executam uma vez (um reinício do Traefik cobre todos os certificados). Cada correção é registada no journal da máquina com a etiqueta `rediacc-repair` e no JSON `actions` (`code`, `subject`, `action`, `class`, `result`, `before`, `after`), e a execução termina com uma nova verificação completa. O código de saída é `0` quando nada resta, `1` quando restam avisos ou itens operator-only, e `2` quando resta um erro ou um achado crítico, ou uma correção falhou. `rdc machine repair` nunca termina com `3`; só `rdc machine health` o faz.
 
 | Achado | Correção | Classe |
 |---|---|---|
@@ -87,7 +87,7 @@ Cada correção verifica primeiro que o seu achado ainda existe, pelo que uma se
 | `container.unhealthy`, `container.restart-loop` | Reiniciar o contentor | auto-safe |
 | `renet.binary.replaced` | Reiniciar os supervisores de repositório afetados (`rdc machine restart-services --include-docker`, limitado a eles) | auto-safe, só na janela |
 | `cert.expiry.near` | Reiniciar o Traefik para que repita a renovação | auto-safe |
-| `acme.challenge.cname-shared` | Escrever a âncora ACME (abaixo) | auto-safe |
+| `acme.challenge.cname-shared` | Escrever a âncora ACME (abaixo) | auto-safe (operator-only quando uma delegação é declarada e não existe um token Cloudflare utilizável) |
 | `repo.health.warning`, `repo.health.error` | Executar o `repair()` do repositório ([Serviços](/pt/docs/services)) | a classe que o Rediaccfile declara |
 | `repo.unmounted`, `service.failed`, `service.restart-loop`, `backup.*`, `license.*`, `renet.repo-health.unsupported` | Impresso como o comando a executar | operator-only |
 
@@ -106,7 +106,7 @@ O `rdc repo repair` executa as funções `repair()` do repositório com as mesma
 
 ### A âncora ACME
 
-Um registo DNS wildcard que é um CNAME faz com que todos os nomes `_acme-challenge.<host>` o sigam, pelo que todos os desafios caem num só nome e as renovações colidem (`acme.challenge.cname-shared`). A correção escreve um registo TXT com o valor `rediacc-acme-anchor` em cada `_acme-challenge.<name>` em colisão, através do token Cloudflare do proxy, e depois reinicia o Traefik. Um registo explícito tira o nome do alcance do wildcard, e o desafio cai onde deve. A correção só acrescenta registos, e uma âncora existente é deixada como está.
+Um registo DNS wildcard que é um CNAME faz com que todos os nomes `_acme-challenge.<host>` o sigam, pelo que todos os desafios caem num só nome e as renovações colidem (`acme.challenge.cname-shared`). A correção escreve um registo TXT com o valor `rediacc-acme-anchor` em cada `_acme-challenge.<name>` em colisão, através do token Cloudflare do proxy, e depois reinicia o Traefik. Um registo explícito tira o nome do alcance do wildcard, e o desafio cai onde deve. A correção só acrescenta registos, e uma âncora existente é deixada como está. Um nome de desafio que é ele próprio um CNAME não pode ter um registo TXT ao lado: a Cloudflare recusa a escrita, e a correção segue a mesma alternativa que para uma zona que o seu token não pode escrever (parágrafo seguinte).
 
 Os nomes listados em `ACME_DELEGATED_NAMES` (uma lista separada por vírgulas de nomes de certificado no `config.env` do proxy) são delegações deliberadas: nunca são ancorados nem reportados. Quando o proxy não tem um token Cloudflare utilizável, a correção recorre a `LEGO_DISABLE_CNAME_SUPPORT=true` em `config.env`, mas só quando nenhum nome delegado está declarado, porque essa variável desativa o seguimento de CNAME para todos os nomes; com uma delegação declarada, o achado continua operator-only. A mesma correção executa em cada instalação do proxy (`rdc machine infra push`) e, por si só, com `renet proxy acme-fix` na máquina.
 

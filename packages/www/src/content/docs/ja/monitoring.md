@@ -7,8 +7,8 @@ tags:
 subcategory: operations
 order: 9
 language: ja
-sourceHash: "6e4968522e118c98"
-sourceCommit: "9b8aa220de6eb4f7c7b7783456af6871202c8305"
+sourceHash: "acef592a7065cac7"
+sourceCommit: "9f58d83e01b4d46f8ce31af467a203b4d195e801"
 ---
 
 # モニタリング
@@ -36,7 +36,7 @@ rdc machine health server-1
 - **証明書**: 期限が近いプロキシの証明書と、共有されているACMEチャレンジのCNAME
 - **問題点**: 検出された問題
 
-終了コードが判定結果です。`0` は正常、`1` は警告、`2` はエラー、`3` はクリティカル（故障しかけのディスク、または再起動ループ中のコンテナやサービス）です。マシン可読な出力には `--output json` を使用してください。出力には `repo_health`（リポジトリごとに1件のレポート）と `findings` が含まれ、各検出事項にはコード、重大度（`info`、`warning`、`error`、`critical`）、対象、詳細、修復方法がある場合は `fix` が付きます（[修復](#repair)を参照）。
+終了コードが判定結果です。`0` は検出事項なし（`health()` チェックのないリポジトリは「チェックなし」と表示され、正常とは数えません）、`1` は警告、`2` はエラー、`3` はクリティカル（故障しかけのディスク、または再起動ループ中のコンテナやサービス）です。マシン可読な出力には `--output json` を使用してください。出力には `repo_health`（リポジトリごとに1件のレポート）と `findings` が含まれ、各検出事項にはコード、重大度（`info`、`warning`、`error`、`critical`）、対象、詳細、修復方法がある場合は `fix` が付きます（[修復](#repair)を参照）。
 
 ## リポジトリの健全性
 
@@ -54,7 +54,7 @@ rdc repo health my-app@server-1
 
 `rdc machine health` はプロキシのACME証明書を読み取り、期限まで21日未満のものは警告、7日未満のものはエラーとして `cert.expiry.near` を報告します。プロキシは30日前に更新するため、21日を切った証明書は、更新が少なくとも9日間失敗し続けていることを意味します。
 
-また、証明書名の `_acme-challenge.<name>` レコードが、それ自体は `_acme-challenge.` 名ではない名前へCNAMEでたどり着く場合、または2つの名前が同じ名前に行き着く場合に、`acme.challenge.cname-shared` を報告します。CNAMEであるワイルドカードレコードがあると、この形になります。すべてのチャレンジが1つの名前に集まり、更新が衝突します。意図的な委任（たとえば `_acme-challenge.mail.example.com` が `_acme-challenge.mail.example.io` を指す場合）は報告されません。それ以外の意図した委任は、プロキシの `config.env` にある `ACME_DELEGATED_NAMES`（証明書名のカンマ区切りリスト）に列挙してください。チャレンジのチェーンを解決できなかった名前（DNSエラーまたはタイムアウト）は、その名前に対するチェックが実行されなかったため、警告の `acme.challenge.unknown` として報告されます。
+また、証明書名の `_acme-challenge.<name>` レコードが、それ自体は `_acme-challenge.` 名ではない名前へCNAMEでたどり着く場合、または2つの名前が同じ名前に行き着く場合に、`acme.challenge.cname-shared` を報告します。CNAMEであるワイルドカードレコードがあると、この形になります。すべてのチャレンジが1つの名前に集まり、更新が衝突します。意図的な委任（たとえば `_acme-challenge.mail.example.com` が `_acme-challenge.mail.example.io` を指す場合）は報告されません。それ以外の意図した委任は、プロキシの `config.env` にある `ACME_DELEGATED_NAMES`（証明書名のカンマ区切りリスト）に列挙してください。チャレンジのチェーンを解決できなかった名前（どのDNSリゾルバーからも応答がなかった）は、その名前に対するチェックが実行されなかったため、警告の `acme.challenge.unknown` として報告されます。
 
 ## 修復
 
@@ -79,7 +79,7 @@ rdc machine repair server-1 --set-window 00:00-03:00
 rdc machine repair server-1 --set-window off
 ```
 
-各修復は最初に検出事項がまだ存在することを確認するため、2回目の実行では何もすることがないと報告されます。同じ対象に作用する修復は1回だけ実行されます（Traefikを1回再起動すれば、すべての証明書に効きます）。各修復は、タグ `rediacc-repair` でマシンのジャーナルに、またJSONの `actions`（`code`、`subject`、`action`、`class`、`result`、`before`、`after`）に記録され、実行の最後には全体の再チェックが行われます。終了コードは、何も残らなければ `0`、警告またはoperator-onlyの項目が残れば `1`、エラーが残るか修復が失敗した場合は `2` です。
+各修復は最初に検出事項がまだ存在することを確認するため、2回目の実行では何もすることがないと報告されます。同じ対象に作用する修復は1回だけ実行されます（Traefikを1回再起動すれば、すべての証明書に効きます）。各修復は、タグ `rediacc-repair` でマシンのジャーナルに、またJSONの `actions`（`code`、`subject`、`action`、`class`、`result`、`before`、`after`）に記録され、実行の最後には全体の再チェックが行われます。終了コードは、何も残らなければ `0`、警告またはoperator-onlyの項目が残れば `1`、エラーまたはクリティカルな検出事項が残るか、修復が失敗した場合は `2` です。`rdc machine repair` は `3` で終了することはなく、`3` を返すのは `rdc machine health` だけです。
 
 | 検出事項 | 修復 | クラス |
 |---|---|---|
@@ -87,7 +87,7 @@ rdc machine repair server-1 --set-window off
 | `container.unhealthy`, `container.restart-loop` | コンテナを再起動 | auto-safe |
 | `renet.binary.replaced` | 影響を受けるリポジトリのスーパーバイザーを再起動（`rdc machine restart-services --include-docker`、対象に限定） | auto-safe、ウィンドウ内のみ |
 | `cert.expiry.near` | Traefikを再起動して更新を再試行させる | auto-safe |
-| `acme.challenge.cname-shared` | ACMEアンカーを書き込む（下記参照） | auto-safe |
+| `acme.challenge.cname-shared` | ACMEアンカーを書き込む（下記参照） | auto-safe（委任が宣言されていて、使えるCloudflareトークンがない場合は operator-only） |
 | `repo.health.warning`, `repo.health.error` | リポジトリの `repair()` を実行（[サービス](/ja/docs/services)） | Rediaccfileが宣言したクラス |
 | `repo.unmounted`, `service.failed`, `service.restart-loop`, `backup.*`, `license.*`, `renet.repo-health.unsupported` | 実行すべきコマンドとして表示 | operator-only |
 
@@ -106,7 +106,7 @@ rdc repo repair my-app@server-1
 
 ### ACMEアンカー
 
-CNAMEであるワイルドカードDNSレコードがあると、すべての `_acme-challenge.<host>` 名がそれをたどり、すべてのチャレンジが1つの名前に集まって更新が衝突します（`acme.challenge.cname-shared`）。修復では、プロキシのCloudflareトークンを使って、衝突している各 `_acme-challenge.<name>` に値 `rediacc-acme-anchor` のTXTレコードを書き込み、その後Traefikを再起動します。明示的なレコードがあれば、その名前はワイルドカードの影響範囲から外れ、チャレンジは本来の場所に届きます。この修復はレコードを追加するだけで、既存のアンカーはそのまま残されます。
+CNAMEであるワイルドカードDNSレコードがあると、すべての `_acme-challenge.<host>` 名がそれをたどり、すべてのチャレンジが1つの名前に集まって更新が衝突します（`acme.challenge.cname-shared`）。修復では、プロキシのCloudflareトークンを使って、衝突している各 `_acme-challenge.<name>` に値 `rediacc-acme-anchor` のTXTレコードを書き込み、その後Traefikを再起動します。明示的なレコードがあれば、その名前はワイルドカードの影響範囲から外れ、チャレンジは本来の場所に届きます。この修復はレコードを追加するだけで、既存のアンカーはそのまま残されます。それ自体がCNAMEであるチャレンジ名には、TXTレコードを並べて置けません。Cloudflareが書き込みを拒否し、修復はトークンで書き込めないゾーンの場合と同じフォールバックに進みます（次の段落）。
 
 `ACME_DELEGATED_NAMES`（プロキシの `config.env` にある証明書名のカンマ区切りリスト）に列挙された名前は意図的な委任であり、アンカーが書き込まれることも報告されることもありません。プロキシに使えるCloudflareトークンがない場合、修復は `config.env` の `LEGO_DISABLE_CNAME_SUPPORT=true` にフォールバックしますが、これは委任された名前が1つも宣言されていない場合に限ります。この変数はすべての名前でCNAMEの追跡を無効にするためです。委任が宣言されている場合、検出事項はoperator-onlyのままです。同じ修復はプロキシのインストールごと（`rdc machine infra push`）に実行され、マシン上で `renet proxy acme-fix` を使って単独でも実行できます。
 

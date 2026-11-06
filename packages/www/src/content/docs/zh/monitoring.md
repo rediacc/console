@@ -7,8 +7,8 @@ tags:
 subcategory: operations
 order: 9
 language: zh
-sourceHash: "6e4968522e118c98"
-sourceCommit: "9b8aa220de6eb4f7c7b7783456af6871202c8305"
+sourceHash: "acef592a7065cac7"
+sourceCommit: "9f58d83e01b4d46f8ce31af467a203b4d195e801"
 ---
 
 # 监控
@@ -36,7 +36,7 @@ rdc machine health server-1
 - **证书**：代理中即将到期的证书，以及共享的 ACME 质询 CNAME
 - **问题**：已识别的问题
 
-退出码就是结论：`0` 健康，`1` 警告，`2` 错误，`3` 严重（磁盘即将损坏，或容器、服务陷入重启循环）。使用 `--output json` 获取机器可读的输出；其中包含 `repo_health`（每个仓库一份报告）和 `findings`，每条发现都带有代码、严重程度（`info`、`warning`、`error` 或 `critical`）、对象、详情，以及（存在修复方法时）`fix`（见[修复](#repair)）。
+退出码就是结论：`0` 无发现（没有 `health()` 检查的仓库会列为“无检查”，绝不算作健康），`1` 警告，`2` 错误，`3` 严重（磁盘即将损坏，或容器、服务陷入重启循环）。使用 `--output json` 获取机器可读的输出；其中包含 `repo_health`（每个仓库一份报告）和 `findings`，每条发现都带有代码、严重程度（`info`、`warning`、`error` 或 `critical`）、对象、详情，以及（存在修复方法时）`fix`（见[修复](#repair)）。
 
 ## 仓库健康
 
@@ -54,7 +54,7 @@ rdc repo health my-app@server-1
 
 `rdc machine health` 会读取代理的 ACME 证书，对距离到期不足 21 天的证书报告 `cert.expiry.near`（警告），不足 7 天则为错误。代理会提前 30 天续期，所以证书不足 21 天意味着它的续期已经至少失败了九天。
 
-当证书名称的 `_acme-challenge.<name>` 记录通过 CNAME 指向一个本身并非 `_acme-challenge.` 的名称，或者两个名称最终指向同一个名称时，它还会报告 `acme.challenge.cname-shared`。属于 CNAME 的通配符记录会造成这种情形：所有质询都落到同一个名称上，续期互相冲突。有意的委派（例如 `_acme-challenge.mail.example.com` 指向 `_acme-challenge.mail.example.io`）不会被报告；其他有意的委派请列在代理 `config.env` 的 `ACME_DELEGATED_NAMES` 中（以逗号分隔的证书名称列表）。质询链无法解析的名称（DNS 错误或超时）会报告为 `acme.challenge.unknown`，这是一条警告，因为针对它的检查没有运行。
+当证书名称的 `_acme-challenge.<name>` 记录通过 CNAME 指向一个本身并非 `_acme-challenge.` 的名称，或者两个名称最终指向同一个名称时，它还会报告 `acme.challenge.cname-shared`。属于 CNAME 的通配符记录会造成这种情形：所有质询都落到同一个名称上，续期互相冲突。有意的委派（例如 `_acme-challenge.mail.example.com` 指向 `_acme-challenge.mail.example.io`）不会被报告；其他有意的委派请列在代理 `config.env` 的 `ACME_DELEGATED_NAMES` 中（以逗号分隔的证书名称列表）。质询链无法解析的名称（没有 DNS 解析器对它作出应答）会报告为 `acme.challenge.unknown`，这是一条警告，因为针对它的检查没有运行。
 
 ## 修复
 
@@ -79,7 +79,7 @@ rdc machine repair server-1 --set-window 00:00-03:00
 rdc machine repair server-1 --set-window off
 ```
 
-每个修复都会先确认其对应的发现仍然存在，因此第二次运行会报告无事可做。作用于同一对象的修复只运行一次（一次 Traefik 重启即可覆盖所有证书）。每个修复都会以标签 `rediacc-repair` 记录到机器日志，并记录在 JSON 的 `actions` 中（`code`、`subject`、`action`、`class`、`result`、`before`、`after`），运行结束时会做一次完整的重新检查。没有剩余问题时退出码为 `0`，剩下警告或 operator-only 项时为 `1`，剩下错误或有修复失败时为 `2`。
+每个修复都会先确认其对应的发现仍然存在，因此第二次运行会报告无事可做。作用于同一对象的修复只运行一次（一次 Traefik 重启即可覆盖所有证书）。每个修复都会以标签 `rediacc-repair` 记录到机器日志，并记录在 JSON 的 `actions` 中（`code`、`subject`、`action`、`class`、`result`、`before`、`after`），运行结束时会做一次完整的重新检查。没有剩余问题时退出码为 `0`，剩下警告或 operator-only 项时为 `1`，剩下错误或严重发现，或有修复失败时为 `2`。`rdc machine repair` 从不以 `3` 退出，只有 `rdc machine health` 会。
 
 | 发现 | 修复 | 类别 |
 |---|---|---|
@@ -87,7 +87,7 @@ rdc machine repair server-1 --set-window off
 | `container.unhealthy`, `container.restart-loop` | 重启容器 | auto-safe |
 | `renet.binary.replaced` | 重启受影响的仓库监督进程（`rdc machine restart-services --include-docker`，仅限这些进程） | auto-safe，仅限窗口内 |
 | `cert.expiry.near` | 重启 Traefik，让它重试续期 | auto-safe |
-| `acme.challenge.cname-shared` | 写入 ACME 锚点（见下文） | auto-safe |
+| `acme.challenge.cname-shared` | 写入 ACME 锚点（见下文） | auto-safe（已声明委派且没有可用的 Cloudflare 令牌时为 operator-only） |
 | `repo.health.warning`, `repo.health.error` | 运行仓库的 `repair()`（[服务](/zh/docs/services)） | Rediaccfile 声明的类别 |
 | `repo.unmounted`, `service.failed`, `service.restart-loop`, `backup.*`, `license.*`, `renet.repo-health.unsupported` | 以需要运行的命令形式输出 | operator-only |
 
@@ -106,7 +106,7 @@ rdc repo repair my-app@server-1
 
 ### ACME 锚点
 
-属于 CNAME 的通配符 DNS 记录会让每个 `_acme-challenge.<host>` 名称都跟随它，于是所有质询落到同一个名称上，续期互相冲突（`acme.challenge.cname-shared`）。修复会通过代理的 Cloudflare 令牌，在每个发生冲突的 `_acme-challenge.<name>` 上写入值为 `rediacc-acme-anchor` 的 TXT 记录，然后重启 Traefik。显式记录会让该名称脱离通配符的作用范围，质询便会落到该去的地方。该修复只添加记录，已有的锚点保持原样。
+属于 CNAME 的通配符 DNS 记录会让每个 `_acme-challenge.<host>` 名称都跟随它，于是所有质询落到同一个名称上，续期互相冲突（`acme.challenge.cname-shared`）。修复会通过代理的 Cloudflare 令牌，在每个发生冲突的 `_acme-challenge.<name>` 上写入值为 `rediacc-acme-anchor` 的 TXT 记录，然后重启 Traefik。显式记录会让该名称脱离通配符的作用范围，质询便会落到该去的地方。该修复只添加记录，已有的锚点保持原样。本身就是 CNAME 的质询名称无法在旁边再放 TXT 记录：Cloudflare 会拒绝写入，修复会采用与令牌无法写入的区域相同的回退方式（见下一段）。
 
 列在 `ACME_DELEGATED_NAMES`（代理 `config.env` 中以逗号分隔的证书名称列表）里的名称是有意的委派：它们不会被写入锚点，也不会被报告。当代理没有可用的 Cloudflare 令牌时，修复会退而使用 `config.env` 中的 `LEGO_DISABLE_CNAME_SUPPORT=true`，但仅限没有声明任何委派名称的情况，因为该变量会对所有名称关闭 CNAME 跟随；声明了委派时，这条发现仍然是 operator-only。同一个修复会在每次代理安装时运行（`rdc machine infra push`），也可以在机器上用 `renet proxy acme-fix` 单独运行。
 
