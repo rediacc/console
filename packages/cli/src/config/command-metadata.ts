@@ -99,6 +99,11 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   'machine health': {
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },
+  // The repair verbs act on findings (restarts, prune, a repository's own repair() code); they run through the CLI, where the safety classes, the maintenance window and the journal apply, and the local ops refresher calls the CLI the same way.
+  'machine repair': {
+    mcpExcludeReason:
+      'Runs fixes on a machine (restarts, prune, repository repair()); use the CLI, where the safety classes, the maintenance window and the journal apply',
+  },
   'machine list': {
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },
@@ -685,16 +690,6 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     grandGuard: true,
     mcpExcludeReason: 'Production swap; human decision.',
   },
-  'repo status': {
-    mcp: {
-      destructive: false,
-      idempotent: true,
-      timeout: 'read' as const,
-      repoArg: 'ref',
-      requiredArgs: ['ref'],
-      excludeOptions: ['debug', 'skip-router-restart'],
-    },
-  },
   'repo health': {
     mcp: {
       destructive: false,
@@ -705,6 +700,21 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
       excludeOptions: ['debug', 'skip-router-restart'],
     },
   },
+  'repo repair': {
+    mcpExcludeReason:
+      "Runs a repository's own repair() code, operator-only ones after a prompt; use the CLI, where the classes and the prompt apply",
+  },
+  'repo status': {
+    mcp: {
+      destructive: false,
+      idempotent: true,
+      timeout: 'read' as const,
+      repoArg: 'ref',
+      requiredArgs: ['ref'],
+      excludeOptions: ['debug', 'skip-router-restart'],
+    },
+  },
+
   'repo list': {
     mcp: {
       destructive: false,

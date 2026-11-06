@@ -156,7 +156,9 @@ describe('CLI contract', () => {
     // 90 -> 93: `repo permission grant`, `repo permission revoke` and `repo permission show` landed. Each runs a repository_permission_* renet function on the machine that holds the repository and is non-interactive, so all three are proxy-capable and detachable like `repo gpu grant`.
     //
     // 93 -> 94: `repo health` (PLAN-health-checks-local G3) runs repository_health on the machine that holds the repository, non-interactive, so proxy-capable and detachable like `repo status`.
-    expect(proxyCapableCommands().length).toBe(94);
+    //
+    // 94 -> 96: `repo repair` and `machine repair` (PLAN-health-checks-local X2, X4) run renet functions on the machine that holds the repository, non-interactive, so proxy-capable and detachable.
+    expect(proxyCapableCommands().length).toBe(96);
   });
 
   it('every refusal carries a reason, and every proxyable command carries none', () => {
@@ -361,7 +363,8 @@ describe('CLI contract', () => {
     ]);
     const detachable = CLI_CONTRACT.commands.filter((c) => c.detachable).map((c) => c.pathKey);
     // 81 -> 82: `repo health` (one repository_health read job, its print a step).
-    expect(detachable).toHaveLength(82);
+    // 82 -> 84: `repo repair` and `machine repair` (PLAN-health-checks-local X2, X4).
+    expect(detachable).toHaveLength(84);
     // The J0 covered verbs and the J0b converted rows a conversion box owns are all jobs; spot the four forms (single call, precondition fold, command-kind, multi-call).
     for (const pathKey of [
       'repo list',

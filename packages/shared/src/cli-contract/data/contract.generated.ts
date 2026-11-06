@@ -8327,6 +8327,7 @@ export const CLI_CONTRACT: CliContract = {
         }
       ],
       "hasSubcommands": false,
+      "mcpExcludeReason": "Runs fixes on a machine (restarts, prune, repository repair()); use the CLI, where the safety classes, the maintenance window and the journal apply",
       "interactive": false,
       "proxyCapable": true,
       "detachable": true,
@@ -13185,6 +13186,7 @@ export const CLI_CONTRACT: CliContract = {
         }
       ],
       "hasSubcommands": false,
+      "mcpExcludeReason": "Runs a repository's own repair() code, operator-only ones after a prompt; use the CLI, where the classes and the prompt apply",
       "interactive": false,
       "proxyCapable": true,
       "detachable": true,
