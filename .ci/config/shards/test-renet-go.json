@@ -1,7 +1,7 @@
 {
   "lane": "test-renet-go",
   "of": 2,
-  "generatedAt": "2026-11-02T10:25:32.788Z",
+  "generatedAt": "2026-11-06T00:07:02.845Z",
   "legs": [
     {
       "index": 1,
@@ -99,9 +99,11 @@
         "github.com/rediacc/renet/pkg/orchestration",
         "github.com/rediacc/renet/pkg/procwalk",
         "github.com/rediacc/renet/pkg/prune",
+        "github.com/rediacc/renet/pkg/ramvolume",
         "github.com/rediacc/renet/pkg/rbd",
         "github.com/rediacc/renet/pkg/rediaccfile",
         "github.com/rediacc/renet/pkg/repoguid",
+        "github.com/rediacc/renet/pkg/repolimits",
         "github.com/rediacc/renet/pkg/repomerge",
         "github.com/rediacc/renet/pkg/repository",
         "github.com/rediacc/renet/pkg/restorepath",

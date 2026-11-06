@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 5,
-  "generatedAt": "2026-11-05T21:57:05.118Z",
+  "generatedAt": "2026-11-06T00:07:03.115Z",
   "legs": [
     {
       "index": 1,
@@ -150,6 +150,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_hooks_trapguard.py",
         "pytest:.claude/rediacc_hooks/tests/test_landing.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_add_many.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_boxaudit.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_ci_verdict_surface.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_cite_extensions.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_drift_loops_freshness.py",
@@ -323,6 +324,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_wl_queue_progress.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_queue_retire.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_remaining_bank.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_report_tick.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_review_deferrals.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_rulings.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_schedred.py",
@@ -406,6 +408,7 @@
         "pytest:.ci/rediacc_ci/tests/test_drills_backup_renet.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_license_seed.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_privdrop_probe.py",
+        "pytest:.ci/rediacc_ci/tests/test_drills_repo_resources.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_universe_transfer.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_upgrade_converge.py",
         "pytest:.ci/rediacc_ci/tests/test_env_create_e2e_env.py",
@@ -792,6 +795,7 @@
         "pytest:.ci/rediacc_ci/tests/test_workflows.py",
         "pytest:.ci/rediacc_ci/tests/test_worklist_state_stdin.py",
         "pytest:.claude/rediacc_hooks/tests/test_bash_semantics.py",
+        "pytest:.claude/rediacc_hooks/tests/test_githook_plan_box.py",
         "pytest:.claude/rediacc_hooks/tests/test_guard_event_cwd.py",
         "pytest:.claude/rediacc_hooks/tests/test_guards_process_table.py",
         "pytest:.claude/rediacc_hooks/tests/test_hookio_world_symlink.py",

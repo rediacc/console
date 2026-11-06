@@ -1483,6 +1483,14 @@ Set size policy fields. Only the flags you pass are changed; other stored fields
 - `--grow-step <step>`: Growth per step: absolute (10G) or percent of quota (20%)
 - `--auto-trim <bool>`: Enable scheduled trim (true/false)
 - `--trim-interval <hours>`: Minimum hours between automatic trims (default 24)
+- `--memory-max <size>`: Memory cap of the repository (e.g. 10G, or max to remove); at the cap one of its containers is OOM-killed, nothing outside it
+- `--memory-high <size>`: Memory throttle point of the repository (e.g. 8G, or max to remove)
+- `--cpu-max <cores>`: CPU cap of the repository in cores (4, 2.5) or N%, or max to remove
+- `--io-max <limits>`: I/O cap of the repository's device: rbps=,wbps=,riops=,wiops= (any subset, e.g. rbps=200M,wbps=100M; KEY=max removes one), or max
+- `--pids-max <count>`: Process cap of the repository (pids.max), or max to remove
+- `--ram-volume <size>`: Size of the repository's RAM volume at <mount>/.ram (e.g. 8G, or max to remove); the memory cap must stay 1G above it
+- `--clear-limits`: Remove every limit and the RAM volume of the repository
+- `--force`: Allow a memory cap below the repository's current memory use
 - `-m, --machine <name>`: Target machine name
 - `--debug`: Enable debug output
 
