@@ -253,12 +253,20 @@ describe('backup restore --path', () => {
     ['', 'pathNoListing'],
   ])('turns exit 18 (reason "%s") into exit code 18 and the %s message', async (reason, key) => {
     const payload = JSON.stringify({ code: 'NO_LISTING', ...(reason && { reason }) });
-    const { resolveStepHandler } = await import('../../services/jobs/steps.js');
+    // The command itself plans the failure step: its name, its trigger and its params come from the real `backup restore --path` run, not from this test.
+    await run(['r@m1', '--at', SNAPSHOT, '--path', '/a']);
+    const { job } = mockExecuteRepoFunction.mock.calls[0][4] as {
+      job: { steps: { name: string; params: Record<string, unknown> }[] };
+    };
+    const planned = job.steps.find((step) => step.name === 'reportRestorePathFailure');
+    expect(planned?.params).toEqual({ repo: 'r', snapshot: SNAPSHOT });
+    const { getStepDefinition, resolveStepHandler } = await import('../../services/jobs/steps.js');
+    expect(getStepDefinition('reportRestorePathFailure')?.on).toBe('failure');
     const handler = await resolveStepHandler('reportRestorePathFailure');
     await handler({
       jobId: 'j1',
       machine: 'm1',
-      params: { repo: 'r', snapshot: SNAPSHOT },
+      params: planned?.params ?? {},
       state: 'failed',
       output: `${payload}\n`,
       exitCode: 18,
