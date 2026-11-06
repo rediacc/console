@@ -111,11 +111,16 @@ function parseBoolOption(flag: string, value: string | undefined): string | unde
   return value;
 }
 
+/**
+ * Run the policy function; true when its answer reached this process finished and successful.
+ * `merge` holds the settings document for the limits step to fold in (json and yaml print one document).
+ */
 async function runPolicyFunction(
   functionName: 'repository_policy_set' | 'repository_policy_get',
   target: PolicyTarget,
-  debug: boolean | undefined
-): Promise<void> {
+  debug: boolean | undefined,
+  merge = false
+): Promise<boolean> {
   await assertMachineExists(target.machineName);
 
   // The settings table is the job's step, so a ticket handed back early prints nothing half-done.
@@ -129,22 +134,32 @@ async function runPolicyFunction(
       debug,
       captureOutput: true,
     },
-    [planStep('renderPolicyResult')]
+    [planStep('renderPolicyResult', merge ? { merge } : {})]
   );
   if (outcome.kind === 'pending') {
     const code = pendingExitCode(outcome);
     if (code !== undefined) setExitCode(code);
-    return;
+    return false;
   }
   if (!outcome.result.success) {
     renderLocalExecutionFailure(outcome.result, t('commands.repo.policy.failed'));
+    return false;
   }
+  return true;
 }
 
-bindStepHandler('renderPolicyResult', ({ output }) => {
+/** The settings document a `repo policy get -o json|yaml` holds until its limits step folds it into the one printed document. */
+let heldPolicy: Record<string, unknown> | undefined;
+
+bindStepHandler('renderPolicyResult', ({ output, params }) => {
   const text = requireStepOutput(output, 'repo policy');
   if (text === undefined) return Promise.resolve();
-  return renderPolicyResult(parseDatastorePruneOutput(text));
+  const parsed = parseDatastorePruneOutput(text);
+  if (params.merge === true) {
+    heldPolicy = parsed;
+    return Promise.resolve();
+  }
+  return renderPolicyResult(parsed);
 });
 
 interface PolicyFields {
@@ -247,7 +262,8 @@ async function runLimitsFunction(
   functionName: 'repository_limits_set' | 'repository_limits_show',
   target: PolicyTarget & { repo: PolicyRepo },
   params: Record<string, unknown>,
-  debug: boolean | undefined
+  debug: boolean | undefined,
+  merge = false
 ): Promise<void> {
   const verb = functionName === 'repository_limits_set' ? 'repo policy set' : 'repo policy get';
   await executeRepoFunction(
@@ -255,7 +271,11 @@ async function runLimitsFunction(
     target.repo.repoKey,
     target.machineName,
     params,
-    { debug, captureOutput: true, job: { verb, steps: [planStep('renderLimitsResult')] } },
+    {
+      debug,
+      captureOutput: true,
+      job: { verb, steps: [planStep('renderLimitsResult', merge ? { merge } : {})] },
+    },
     {
       starting: t('commands.repo.policy.limits.starting', {
         repository: target.repo.name,
@@ -308,13 +328,23 @@ export async function limitRows(grant: GrantLimits): Promise<{ limit: string; va
   ];
 }
 
-bindStepHandler('renderLimitsResult', async ({ output }) => {
+bindStepHandler('renderLimitsResult', async ({ output, params }) => {
   const text = requireStepOutput(output, 'repo policy limits');
   if (text === undefined) return;
   const grant = parseCapturedJson<GrantLimits>(text);
   const format = getOutputFormat();
   if (format !== 'table') {
-    outputService.print({ limits: grant.limits ?? {}, ram_volume: grant.ram_volume ?? {} }, format);
+    const limits = { limits: grant.limits ?? {}, ram_volume: grant.ram_volume ?? {} };
+    if (params.merge === true) {
+      const policy = heldPolicy;
+      heldPolicy = undefined;
+      if (policy === undefined) {
+        throw new Error('repo policy get: the settings read did not reach this process');
+      }
+      outputService.print({ ...policy, ...limits }, format);
+      return;
+    }
+    outputService.print(limits, format);
     return;
   }
   outputService.print(await limitRows(grant), 'table');
@@ -419,14 +449,17 @@ export function registerRepoPolicyCommand(repo: Command): void {
       try {
         // get is read-only: skip the derived-machine remote round-trip.
         const target = await resolvePolicyTarget(ref, options.machine, 'policy get', true);
-        await runPolicyFunction('repository_policy_get', target, options.debug);
+        // json and yaml print ONE document: the settings merged with the limits, so the limits job folds in the settings the first job held.
+        const merge = target.repo !== undefined && getOutputFormat() !== 'table';
+        const read = await runPolicyFunction('repository_policy_get', target, options.debug, merge);
         // A single-repo get adds the repository's limits table (Decision 2).
-        if (target.repo) {
+        if (target.repo && (read || !merge)) {
           await runLimitsFunction(
             'repository_limits_show',
             { ...target, repo: target.repo },
             {},
-            options.debug
+            options.debug,
+            merge
           );
         }
       } catch (error) {

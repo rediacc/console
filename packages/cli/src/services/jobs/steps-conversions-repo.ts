@@ -201,14 +201,14 @@ export const REPO_CONVERSION_STEPS: StepDefinition[] = [
   privateStep(
     'renderPolicyResult',
     'success',
-    [],
+    ['merge'],
     () => import('../../commands/repo-policy.js'),
     true
   ),
   privateStep(
     'renderLimitsResult',
     'success',
-    [],
+    ['merge'],
     () => import('../../commands/repo-policy.js'),
     true
   ),
