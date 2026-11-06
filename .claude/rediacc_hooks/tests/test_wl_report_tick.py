@@ -84,6 +84,8 @@ def test_capture_of_two_tick_lines_indexes_two_boxes(tmp_path):
         ("PLAN-b.md", "89abcdef", "partial", ["def5678", "1234abc"]),
     ]
     assert entry["boxes"][1]["owed"] == [["C2", "live"]]
+    # Review 9079c2c0.3: `owed=-` is an empty list and `landed=all` stays the word, not a leftover dash.
+    assert (entry["boxes"][0]["landed"], entry["boxes"][0]["owed"]) == ("all", [])
     assert RP.read_index(tmp_path)[-1]["boxes"] == entry["boxes"]
 
 

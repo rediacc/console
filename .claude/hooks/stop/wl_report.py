@@ -371,7 +371,7 @@ OUTGOING_SECTION = "Outgoing"
 
 def is_lead(to):
     """Is this SendMessage recipient the lead?"""
-    return str(to or "").strip() in LEAD_RECIPIENTS
+    return str(to or "").strip().lower() in LEAD_RECIPIENTS
 
 
 # ---- direction of a send, from the spawn lineage (review findings 4e34cbde.2, 862dd224.1) ----
@@ -385,7 +385,7 @@ DIR_UP = "up"  # some non-lead send went to the sender's parent: a report
 DIR_DOWN = "down"  # every non-lead send went to an agent the sender spawned: orders
 DIR_UNKNOWN = "?"  # non-lead sends the lineage does not settle: the shape rule decides
 DIR_NONE = "-"  # no non-lead send at all
-_AGENT_ID = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
+_AGENT_ID = re.compile(r"^[A-Za-z0-9_-]{1,64}\Z")
 
 
 def _subagents_root(transcript):
@@ -453,6 +453,8 @@ def kin_of(agent_id, transcript, tos):
     mine = str((_meta(root, agent_id) or {}).get("parentAgentId") or "")
     parent_name = str((_meta(root, mine) or {}).get("name") or "") if mine else ""
     out = {}
+    # `_named` walks every sidecar, so each name is read once per call, however many recipients repeat it (review 1468d197.2).
+    named_cache: dict[str, dict[str, Any]] = {}
     for to in tos:
         if not to or is_lead(to):
             continue
@@ -464,7 +466,9 @@ def kin_of(agent_id, transcript, tos):
             if str(info.get("parentAgentId") or "") == agent_id:
                 out[to] = KIN_CHILD
             continue
-        named = _named(root, to)
+        if to not in named_cache:
+            named_cache[to] = _named(root, to)
+        named = named_cache[to]
         if named and all(str(m.get("parentAgentId") or "") == agent_id for m in named.values()):
             out[to] = KIN_CHILD
     return out
@@ -494,11 +498,11 @@ def judge(lead, outgoing, final, kin=None):
     THE SHAPE RULE when the lineage is unknown (a row whose metas are gone, a send to a sibling or to a name, no transcript), three shapes told apart by who the agent talked to:
       lead-bound   any send to the lead is the report: not a relay, titled from the last one.
       one peer     every send went to ONE recipient: a writer reporting to its coordinator. That is miss 1 of agent/plans/PLAN-tick-tracking.md (a coordinator's writers' reports never reaching the lead), so the longest outgoing message is the substance: a report when it reaches SILENT_FLOOR, titled from it.
-      fan-out      sends to TWO OR MORE recipients: a coordinator handing out orders. A relay unless the final text clears RELAY_FLOOR; the 19 measured coordinator turns (11 recipients each) are all relays.
+      fan-out      sends to TWO OR MORE recipients: a coordinator handing out orders. A relay unless the final text clears RELAY_FLOOR; every measured coordinator turn (11 recipients each) is a relay.
     """
     final = str(final or "")
     if lead:
-        return False, _first_line(lead[-1])
+        return False, _first_line(lead[-1]) or _first_line(final)
     short_final = len(final.strip()) < RELAY_FLOOR
     way = direction(outgoing, kin)
     if way == DIR_UP:
@@ -1180,6 +1184,16 @@ def harvest_transcript(jsonl):
     return sends, final, rec, others
 
 
+_SECTION_LINE = re.compile(
+    r"^(?=## (?:(?:SendMessage|Outgoing) \d+ -> |Final message$))", re.MULTILINE
+)
+
+
+def _defang(text):
+    """`text` with a line that spells a body section heading backslash-escaped, so a payload that quotes this file's own format stays inside its section (review 862dd224.3)."""
+    return _SECTION_LINE.sub(lambda _m: "\\", str(text or ""))
+
+
 def assemble_body(sends, final, others=()):
     """The durable artifact: every lead-bound send under `## SendMessage N`, every other send under `## Outgoing N`, then the sign-off. Whole and uncapped -- that is the point of storing bodies in their own files rather than in any of the existing capped carriers."""
     parts = []
@@ -1190,9 +1204,9 @@ def assemble_body(sends, final, others=()):
                 head += "  (%s)" % s["at"]
             if s.get("summary"):
                 head += "\n_%s_" % s["summary"]
-            parts.append("%s\n\n%s" % (head, s["message"]))
+            parts.append("%s\n\n%s" % (head, _defang(s["message"])))
     if str(final or "").strip():
-        parts.append("## Final message\n\n%s" % final)
+        parts.append("## Final message\n\n%s" % _defang(final))
     return "\n\n".join(parts)
 
 

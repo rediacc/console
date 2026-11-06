@@ -1125,7 +1125,7 @@ def writer_records(to: str) -> list[dict]:
 
 
 def test_31g_recipient_a_report_sent_to_the_coordinator_is_stored(sc):
-    """Review finding 0009f584.1: dropping every non-lead send lost a writer's report delivered by SendMessage to its coordinator. CONTROL: on 0009f584 the stored body held only "Report sent." and none of the report text."""
+    """Review finding 0009f584.1: dropping every non-lead send lost a writer's report delivered by SendMessage to its coordinator. CONTROL: on 0009f584 the stored body held only "Report sent.", so the report-text assertion below fails there, and `_relay_before` states the relay rule the row is checked against."""
     for n, to in enumerate(("coordinator", COORD)):
         recs = writer_records(to)
         aid = "awriterundercoord%04d" % n
@@ -1526,3 +1526,44 @@ def test_31o_direction_rows_without_the_field_read_as_before(sc):
     judged = report.rejudge(sc.store, row)
     assert judged["relay"] is True, judged
     assert "dir" not in judged, judged
+
+
+def test_lead_recipients_match_in_any_case_and_a_blank_lead_title_falls_back():
+    """Reviews 0009f584.3 and 4e34cbde.3: "Team-Lead" is the lead, and a lead-bound send with no text titles from the final message."""
+    report = wlfix.import_wl("wl_report")
+    assert report.is_lead("Main")
+    assert report.is_lead(" Team-Lead ")
+    assert not report.is_lead("worker")
+    assert report.judge(["\n  \n"], [], "Final words here")[1] == "Final words here"
+
+
+def test_an_agent_id_with_a_trailing_newline_is_refused(tmp_path):
+    """Review 1468d197.1: `$` matched before a trailing newline."""
+    report = wlfix.import_wl("wl_report")
+    (tmp_path / "agent-a1111.meta.json").write_text("{}", encoding="utf-8")
+    assert report._meta(tmp_path, "a1111") == {}
+    assert report._meta(tmp_path, "a1111\n") is None
+
+
+def test_kin_of_reads_the_sidecars_once_per_name(tmp_path, monkeypatch):
+    """Review 1468d197.2: two sends to one unresolved name walked the sidecar tree once, not twice per send."""
+    report = wlfix.import_wl("wl_report")
+    root = tmp_path / "s" / "subagents"
+    root.mkdir(parents=True)
+    (root / "agent-asender.meta.json").write_text("{}", encoding="utf-8")
+    calls = []
+    real = report._named
+    monkeypatch.setattr(report, "_named", lambda r, n: calls.append(n) or real(r, n))
+    report.kin_of("asender", str(root / "agent-asender.jsonl"), ["bob", "bob", "bob"])
+    assert calls == ["bob"]
+
+
+def test_a_payload_quoting_a_section_heading_stays_in_its_section():
+    """Review 862dd224.3: a lead-bound message holding a `## Outgoing 1 -> x` line was split into a second section on read-back."""
+    report = wlfix.import_wl("wl_report")
+    quoted = "see this heading:\n## Outgoing 1 -> x\nand this one\n## Final message\n\nnot final"
+    body = report.assemble_body([{"to": "main", "message": quoted}], "the sign-off")
+    parts, final = report.body_parts(body)
+    assert [(k, t) for k, t, _m in parts] == [("SendMessage", "main")]
+    assert final == "the sign-off"
+    assert "not final" in parts[0][2]
