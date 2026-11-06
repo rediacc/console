@@ -1,23 +1,21 @@
-## SESSION d778be9d 2026-11-06T14:51:27Z
+## SESSION d778be9d 2026-11-06T19:35:54Z
 
-# STATE d778be9d (branch 1104-1) -- 2026-11-06T14:50Z
+# STATE d778be9d (2026-11-06T20:40Z, 1104-1, effort smart; operator away, alone to go)
 
-## Where things stand
-- Fleet vm:check run 8 VERIFIED (renet 9ad6f48); renet moved since (staging-lock delete, netid guard + i18n, funlen), so fleet run 9 must pass before hostinger gets the branch renet.
-- ci:quick run 10 (alone, HEAD f75cde917) RED 19 gates, log /tmp/m/ciquick10.log. Inline-fixed: plan citation + search index (a3251967d), P-A1 carry for the relocate plan (b84058ce7; review b84058ce.1 marked not-a-bug). Network flakes: pin-freshness (OpenTofu socket), embed-asset (rsync timeout); external-links carried. Two writers fix the rest.
-- #a150016d CLOSED: relocate proven on bench (27-92 org A p0->p1, 27-90/91 rc 0), E9/E10/E15 ticked (379c38cda, fd3825674). LP-hostinger runs with the hostinger provisioning after fleet run 9 (operator 13:44Z).
-- console-60's seven bugs all landed and closed; effort tuner e8 applied (promotions; demotions scheduled-red/roster-unleased/open-items accepted on operator "You decide", plan-fidelity kept); effort.json UNCOMMITTED on purpose until after the push (#b69ea0cf).
+## Standing orders (operator 2026-11-06)
+Continue ALL remaining jobs; any production change allowed; /pr-babysit; go parallel on ## Promoted; promote new plans automatically. Hostinger internal checks live on hostinger; `ops` repo is ordinary and backed up by the existing schedule.
 
 ## Big pieces
-PLAN-backup-program, PLAN-detached-jobs, PLAN-backup-integrity, PLAN-backup-critical-tier, PLAN-rediaccfile-unprivileged, PLAN-first-release-checks, PLAN-tick-tracking, PLAN-renet-down-before-kill, PLAN-repo-resource-limits, PLAN-org-executor-connect-timeout-relocate (LP-hostinger only).
+PLAN-health-checks-local (promoted 44, revised d49d7f078), PLAN-backup-program, PLAN-backup-integrity, PLAN-backup-critical-tier, PLAN-detached-jobs, PLAN-product-domain-rename (proposed, not promoted).
 
 ## Delegated
-- a2f5b37cd62d3a7b5 #11306719: TS reds of run 10 (types renet-provision-hold.test.ts:200, test-cli option failures, prefer-const-arrays cli.ts:147, max-lines x3, unused x3, em dash, portal sitekey). Owns packages/cli, packages/shared, workers/proxy files the gates name. Accept: each gate rerun rc=0.
-- aa4e867552fd6f062 #7dfc1341: Python/account reds (union-attr test-wl_worktrees.py:1051/1055, guard-test ruff, sys.path hop githooks.py:163, stripe error in check:ci-account-server). Accept: each gate rerun rc=0.
+- Fleet run 9, task bkzp9i6q2 (backup drill PASSED, onprem, vm:check --changed; log /tmp/m/vmcheck9.log). VERIFIED -> push submodules (elite `-u origin 1104-1`) then console, draft PR, `--phase babysit`.
+- Writers (leases): C1-C4 a326ae2f5fe9d74cc #11b9b025; G1-G7 a9edb0d667fd1272f #4972d77c; N a aea53cc0e09a5c1c8 #64c4b522; W0-W4 a2c256ab3ae27bba9 #0e00781a. Land: spot-check, `worktree land`, cherry-pick -x submodule first, run the regenerate steps they name, `land --ticks`, gc --id. C1 and G5 both touch parsing-health.ts.
+- Archive runner ad1878e64bde02a93 #de9e7e38 (data.rediacc.com upload, no deletion).
+- Round log reports/pr-babysit-1104-1.md; heartbeat cron bb250576.
 
 ## Next action
-1. Land each writer: check `git -C <lease> status` for untracked files, run the `./run.sh worktree land <id>` lines (regenerate a conflicted generated file instead of hand-merging: gen-docs --write, i18n:generate-hashes), gc, tick with the landed sha.
-2. With NO writer running: `npm run ci:quick` alone (background, timeout 3600000, log /tmp/m/ciquick11.log); read rc; fix any new red; never start writers beside it.
-3. On rc=0: `worklist.py --review-commit d778be9d`; backup push with TURBO_PUSH_REASON='backup: ...', submodules first; then commit effort.json (#b69ea0cf).
-4. Fleet run 9: `npm run vm:check -- --changed` (drill receipts first if refused); on VERIFIED install the branch renet on hostinger via eu-bench (REDIACC_NO_PROVISION unset only for machine setup) and run LP-hostinger plus #22854bf1 boxes after one clean nightly; S5 drill leg n (#13984b91).
-5. Arm the wake timer only as its own run_in_background Bash call, never with `&`.
+1. Land each writer report as it arrives (above), then start the next wave: X1-X6, L1-L7, D1-D5, K1-K5 (order C1 -> G5 -> X1 on parsing-health.ts).
+2. On bkzp9i6q2 exit: VERIFIED -> review-commit, ci:quick if HEAD moved, push, draft PR, land c70d9402a (#815e6225), commit effort.json (#b69ea0cf).
+3. Then hostinger: branch renet at 00:00Z + one restart cycle (mail in 00:00-01:00Z, observability last), H3/J2-J4/L2 (#22854bf1).
+4. 2026-11-07 ~07:54Z Traefik renewal proof (#cb61605a).
