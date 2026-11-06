@@ -1507,6 +1507,16 @@ def ensure_renet_built(
     paused = renet_mid_operation(renet_dir)
     if paused:
         if os.path.isfile(renet_bin) and _stamped_bin(stamp) == renet_artifact_fp(renet_bin):
+            # The stamp proves the binary is the one built, not that it bakes TODAY's account key (review 520056bf.1).
+            refusal = renet_key_refusal(renet_bin, resolve_renet_account_key(renet_dir, environ))
+            if refusal:
+                log.error(
+                    "private/renet has %s, so it cannot be built, and the last renet at %s is not usable: %s. Finish or abort the operation in private/renet, then rerun."
+                    % (paused, renet_bin, refusal)
+                )
+                raise LocalCommonError(
+                    "renet is mid-operation and the last binary %s" % refusal, code=1
+                )
             log.warn(
                 "renet rebuild skipped: private/renet has %s; using the last good %s"
                 % (paused, renet_bin)

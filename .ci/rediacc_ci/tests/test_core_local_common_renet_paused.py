@@ -132,8 +132,13 @@ def _good_binary(renet):
 def test_mid_cherry_pick_the_last_good_binary_serves_without_a_build(tmp_path, monkeypatch, capsys):
     renet, env, builds = _world(tmp_path, monkeypatch)
     _good_binary(renet)
+    gated = []
+    monkeypatch.setattr(
+        local_common, "renet_key_refusal", lambda b, k: gated.append((b, k)) or None
+    )
     _git(renet, "cherry-pick", "other", check=False)
     assert local_common.ensure_renet_built(env) is True
+    assert gated == [(str(renet / "bin" / "renet"), KEY)]
     assert builds == []
     out, err = capsys.readouterr()
     assert out == ""
@@ -141,6 +146,26 @@ def test_mid_cherry_pick_the_last_good_binary_serves_without_a_build(tmp_path, m
     assert len(lines) == 1, err
     assert "unmerged path(s)" in lines[0]
     assert "last good" in lines[0]
+
+
+def test_mid_cherry_pick_a_binary_of_another_account_key_is_not_handed_on(
+    tmp_path, monkeypatch, capsys
+):
+    """Review 520056bf.1: the stamp proves the build, not today's key, so the key gate runs on the fallback too."""
+    renet, env, builds = _world(tmp_path, monkeypatch)
+    _good_binary(renet)
+    monkeypatch.setattr(
+        local_common,
+        "renet_key_refusal",
+        lambda b, _k: "%s does not bake the account key ab:cd" % b,
+    )
+    _git(renet, "cherry-pick", "other", check=False)
+    with pytest.raises(local_common.LocalCommonError):
+        local_common.ensure_renet_built(env)
+    assert builds == []
+    err = capsys.readouterr().err
+    assert "not usable" in err
+    assert "does not bake the account key" in err
 
 
 def test_mid_cherry_pick_with_no_binary_refuses_by_name(tmp_path, monkeypatch, capsys):
