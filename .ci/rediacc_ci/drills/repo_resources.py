@@ -22,7 +22,7 @@ import shlex
 from typing import Any
 
 from rediacc_ci.drills import vm_ssh
-from rediacc_ci.well_known import DATASTORE_PATH
+from rediacc_ci.well_known import DATASTORE_PATH, RUNTIME_DIR
 
 K2_ID = "K2"
 K3_ID = "K3"
@@ -138,16 +138,22 @@ def alloc_command(name: str) -> str:
     )
 
 
-def writer_command(mount: str) -> str:
-    """A container that writes MARKER into `.ram/data` through a bind and reads it back.
+def writer_command(mount: str, network_id: int) -> str:
+    """A container of the fork that writes MARKER into `.ram/data` through a bind and reads it back.
 
-    No shell redirect: `rdc term connect -c` refuses any `>` as a file write (VALIDATION_ERROR, vm:check run of 2026-11-06), so `tee` writes the file and echoes MARKER for the read-back.
+    Run through the drill's root ssh against the fork's own Docker socket, not `rdc term connect -c`: in agent mode term connect refuses every file-write pattern (a redirect, then `tee`, vm:check runs of 2026-11-06), and a container writing a file is the whole point of K3.2.
     """
-    inner = "printf %s %s | tee /data/%s && cat /data/%s" % ("%s", MARKER, MARKER, MARKER)
-    return "docker run --rm -v %s/data:/data %s sh -c %s" % (
-        ram_dir(mount),
-        IMAGE,
-        shlex.quote(inner),
+    inner = "echo %s > /data/%s && cat /data/%s" % (MARKER, MARKER, MARKER)
+    return (
+        "env DOCKER_HOST=unix://%s/net-%d/docker-%d.sock docker run --rm -v %s/data:/data %s sh -c %s"
+        % (
+            RUNTIME_DIR,
+            int(network_id),
+            int(network_id),
+            ram_dir(mount),
+            IMAGE,
+            shlex.quote(inner),
+        )
     )
 
 
@@ -604,7 +610,7 @@ class _Live:
         up_log = self.shell(e, "cat %s" % PROBE_UP_LOG).out
         ok, why = probe_up_verdict(up_log, target)
         self.check("K3.1 the tmpfs is at %s, size 512M, before up() runs" % target, ok, None, why)
-        w = self.shell(e, writer_command(self.mount[e]))
+        w = self.root(writer_command(self.mount[e], self.nid[e]))
         self.check(
             "K3.2 a container writes %s into .ram/data through a bind" % MARKER,
             w.rc == 0 and MARKER in w.out,

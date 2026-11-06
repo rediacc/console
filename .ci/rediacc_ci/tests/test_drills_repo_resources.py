@@ -158,9 +158,11 @@ def test_probe_rediaccfile_and_commands_are_valid_shell() -> None:
     for script in (r.probe_rediaccfile(), r.cgroup_readout_script(3200), r.findmnt_script(MOUNT)):
         assert subprocess.run(["bash", "-n"], input=script, text=True, check=False).returncode == 0
     assert "head -c 2147483648 /dev/zero | tail" in r.alloc_command("vmc-k2-alloc-x")
-    assert "%s/data:/data" % TARGET in r.writer_command(MOUNT)
-    # `rdc term connect -c` refuses any `>` as a file write; the K3.2 writer runs through it.
-    assert ">" not in r.writer_command(MOUNT)
+    w = r.writer_command(MOUNT, 3200)
+    assert "%s/data:/data" % TARGET in w
+    # The writer runs through root ssh on the fork's own socket: term connect refuses every file-write pattern in agent mode.
+    assert w.startswith("env DOCKER_HOST=unix://")
+    assert "/net-3200/docker-3200.sock docker run" in w
 
 
 # The rows vm:check run vmc-11060119-8cbbc0 recorded, read back through the verdicts.
