@@ -323,7 +323,10 @@ def lease_failures() -> tuple[list[str], int]:
         holder.wait()
     judge(idle_cases, "idle")
     # The main checkout's refusal is byte for byte the one this very checkout gets today.
-    if drive("git -C %s clean -f -- junk.txt" % main, project=main)[1] != drive("git clean -fd")[1]:
+    if (
+        drive("git -C %s clean -f -- junk.txt" % main, project=main)[1]
+        != drive("git clean -fd", cwd=main, project=main)[1]
+    ):
         failures.append("lease: the main checkout's refusal message changed")
     return failures, len(held_cases) + len(idle_cases) + 1
 

@@ -25,7 +25,6 @@ import importlib
 import json
 import os
 import pathlib
-import subprocess
 import time
 
 from rediacc_hooks import commit_policy, hookio, syspath
@@ -106,6 +105,9 @@ def write_session(config_dir, root, session_id, agents):
 
 
 def _writer_world(target):
+    # Imported here: only this fixture builder spawns a process, and the guard itself pays nothing for it on a Bash call.
+    import subprocess
+
     root = pathlib.Path(target)
     root.mkdir(parents=True, exist_ok=True)
     subprocess.run(["git", "init", "-q", str(root)], check=True, capture_output=True)

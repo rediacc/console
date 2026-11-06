@@ -181,6 +181,9 @@ _git(TWIN, "push", "-q", "origin", "0914-1:refs/heads/0914-2")
 _git(TWIN, "fetch", "-q", "origin")
 TWIN_SHA = _tip(TWIN, "origin/0914-1")
 
+# The host is read from the hook layer for every row below, and pinned here as a literal, so a wrong host in `githooks` fails this suite instead of moving the rows with it.
+if githooks.MIRROR_HOST != "gitlab.rediacc.io":
+    raise SystemExit("githooks.MIRROR_HOST is %r, want 'gitlab.rediacc.io'" % githooks.MIRROR_HOST)
 MIRROR_HOST = githooks.MIRROR_HOST
 MIRROR_URL = "https://%s/rediacc-org/github/console.git" % MIRROR_HOST
 
