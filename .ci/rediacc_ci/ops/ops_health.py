@@ -281,7 +281,9 @@ def coverage_problems(listing: dict, max_age_days: float) -> list:
             problems.append("backup.coverage.absent: %s" % name)
             continue
         age = hit.get("age_days")
-        if isinstance(age, (int, float)) and age > max_age_days:
+        if isinstance(age, bool) or not isinstance(age, (int, float)):
+            problems.append("backup.age.unknown: %s (age_days %r)" % (name, age))
+        elif age > max_age_days:
             problems.append("backup.age.stale: %s (%s days)" % (name, age))
     return problems
 
@@ -308,10 +310,15 @@ def check_machine(config: str | None, machine: str, runner: Runner, env: dict, c
     if health.timed_out:
         unreadable.append("machine health timed out after %ds" % RDC_TIMEOUT_S)
     elif not isinstance(data, dict):
-        unreadable.append(
-            "machine health rc %d printed no JSON: %s"
-            % (health.rc, _trim(health.stderr or health.stdout, 200))
+        detail = "machine health rc %d printed no JSON: %s" % (
+            health.rc,
+            _trim(health.stderr or health.stdout, 200),
         )
+        # An exit of 1 or more is red whether or not the output could be read.
+        if health.rc >= 1:
+            row["problems"].append(detail)
+        else:
+            unreadable.append(detail)
     else:
         if health.rc >= 1:
             issues = [str(i) for i in data.get("issues") or []] or [str(data.get("message") or "")]
@@ -361,7 +368,10 @@ def repair_settings(cfg: dict) -> tuple[set, int]:
     if not isinstance(ar, dict):
         ar = {}
     classes = {str(c) for c in ar.get("classes") or []}
-    limit = int(ar.get("max_attempts_per_code_per_machine_per_day") or 0)
+    try:
+        limit = int(ar.get("max_attempts_per_code_per_machine_per_day") or 0)
+    except (TypeError, ValueError):
+        limit = 0
     return classes, limit
 
 
@@ -401,10 +411,11 @@ def repair_machine(
         if code in out["codes"]:
             continue
         rec = attempts.get(_attempt_key(row["config"], row["machine"], code)) or {}
-        if rec.get("day") == today and int(rec.get("n") or 0) >= limit:
+        used = int(rec.get("n") or 0) if rec.get("day") == today else 0
+        if used >= limit:
             out["advisories"].append(
                 "repair of %s skipped: %d attempts today (limit %d); run it by hand"
-                % (code, int(rec.get("n") or 0), limit)
+                % (code, used, limit)
             )
             continue
         out["codes"].append(code)
@@ -426,8 +437,10 @@ def repair_machine(
         for a in actions
         if not str(a.get("result") or "").lower().startswith(NOT_RUN_RESULTS)
     }
+    reported = {str(a.get("code")) for a in actions}
     for code in out["codes"]:
-        if code in ran or not actions:
+        # An attempt counts unless the CLI said it did not run it: a code with no action at all is an attempt that did nothing, and must still trip the daily limit.
+        if code in ran or code not in reported:
             key = _attempt_key(row["config"], row["machine"], code)
             rec = attempts.get(key) or {}
             n = int(rec.get("n") or 0) if rec.get("day") == today else 0
@@ -699,7 +712,7 @@ def subprocess_check(name: str, runner: Runner, env: dict) -> dict:
     argv = [py, "-m", module]
     if profile:
         argv = [py, "-m", "rediacc_ci.core.bws_env", "exec", "--profile", profile, "--", *argv]
-    cenv = dict(env)
+    cenv = child_env(env)
     cenv["PYTHONPATH"] = str(repo_root() / ".ci")
     res = runner(argv, cenv, SUBPROCESS_TIMEOUT_S)
     rc = 2 if res.timed_out else res.rc
@@ -745,9 +758,19 @@ def is_due(entry: object, ttl: int, now: datetime.datetime) -> bool:
 def sources_of(check: str, entry: dict) -> dict:
     """source -> (state, detail) for the ingest and the ledger."""
     if check == "machines":
+        rows = [r for r in entry.get("rows") or [] if isinstance(r, dict)]
+        configs_of: dict[str, set] = {}
+        for r in rows:
+            configs_of.setdefault(r["machine"], set()).add(r.get("config") or "")
         out = {
-            "local-machine-%s" % r["machine"]: (r["state"], machines_detail([r], []))
-            for r in entry.get("rows") or []
+            # A machine name two configs share keeps both verdicts: the config joins the source name.
+            "local-machine-%s"
+            % (
+                "%s-%s" % (r["config"], r["machine"])
+                if len(configs_of[r["machine"]]) > 1 and r.get("config")
+                else r["machine"]
+            ): (r["state"], machines_detail([r], []))
+            for r in rows
         }
         if entry.get("setup"):
             out["local-machines"] = (UNKNOWN, "\n".join(entry["setup"]))
@@ -777,12 +800,13 @@ def transitions(old: dict, new: dict, now: datetime.datetime) -> list:
 
 
 def repair_rows(entry: dict, now: datetime.datetime) -> list:
-    """One ledger row per repair action the machines check ran."""
-    return [
-        {
+    """One ledger row per repair action the machines check ran, and one per code whose repair timed out or failed without naming any action."""
+
+    def row_of(source: str, action: dict) -> dict:
+        return {
             "at": iso(now),
             "kind": "repair",
-            "source": "local-machine-%s" % row["machine"],
+            "source": source,
             "code": action.get("code"),
             "action": action.get("action"),
             "class": action.get("class"),
@@ -790,9 +814,20 @@ def repair_rows(entry: dict, now: datetime.datetime) -> list:
             "before": action.get("before"),
             "after": action.get("after"),
         }
-        for row in entry.get("rows") or []
-        for action in (row.get("repair") or {}).get("actions") or []
-    ]
+
+    out: list = []
+    for row in entry.get("rows") or []:
+        repair = row.get("repair") or {}
+        actions = repair.get("actions") or []
+        source = "local-machine-%s" % row["machine"]
+        out.extend(row_of(source, action) for action in actions)
+        rc = repair.get("rc")
+        if not actions and rc not in (None, 0):
+            out.extend(
+                row_of(source, {"code": code, "result": "no action reported (rc %s)" % rc})
+                for code in repair.get("codes") or []
+            )
+    return out
 
 
 def append_ledger(root: pathlib.Path, rows: list) -> str:

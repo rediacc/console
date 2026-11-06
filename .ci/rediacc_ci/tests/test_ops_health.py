@@ -426,11 +426,16 @@ def test_gate_unreadable_status_exits_2():
     assert gate(Web(status_doc(verdict="unknown"))) == 2
 
 
-def test_gate_without_origin_is_2():
+def test_gate_without_origin_is_2(monkeypatch):
     env = {k: v for k, v in ENV.items() if k != "OPS_HEALTH_URL"}
-    assert gate(Web(status_doc()), env=env) == (
-        0 if oh.load_config(oh.repo_root()).get("worker_url") else 2
-    )
+    monkeypatch.setattr(oh, "load_config", lambda _root: {})
+    assert gate(Web(status_doc()), env=env) == 2
+
+
+def test_control_gate_with_a_configured_origin_and_no_env_url_reads_it(monkeypatch):
+    env = {k: v for k, v in ENV.items() if k != "OPS_HEALTH_URL"}
+    monkeypatch.setattr(oh, "load_config", lambda _root: {"worker_url": "https://w.example.test"})
+    assert gate(Web(status_doc()), env=env) == 0
 
 
 def test_gate_script_runs_the_module_entry():
@@ -667,3 +672,94 @@ def test_machines_verb_alone_never_repairs():
     out = machines(fleet)
     assert out["rc"] == 1
     assert fleet.repair_calls() == []
+
+
+def test_coverage_with_an_unknown_age_fails_closed():
+    for age in (None, "9", True):
+        listing = {
+            "repositories": [{"name": "a", "guid": "g-a", "autostart": True}],
+            "backup_coverage": {"repos": [{"guid": "g-a", "age_days": age}]},
+        }
+        out = machines(Fleet(listing=listing))
+        assert out["rc"] == 1, age
+        assert "backup.age.unknown: a" in out["detail"]
+
+
+def test_health_rc1_with_no_json_is_red_not_unreadable():
+    out = machines(Fleet(health=(1, None)))
+    assert out["rows"][0]["rc"] == 1
+    assert "printed no JSON" in out["detail"]
+
+
+def test_health_rc0_with_no_json_stays_unreadable():
+    out = machines(Fleet(health=(0, None)))
+    assert out["rows"][0]["rc"] == 2
+
+
+def test_a_machine_two_configs_share_keeps_both_verdicts_in_the_sources():
+    rows = [
+        {"config": "a", "machine": "m1", "state": "red", "problems": ["p"], "no_check": []},
+        {"config": "b", "machine": "m1", "state": "green", "problems": [], "no_check": []},
+        {"config": "a", "machine": "solo", "state": "green", "problems": [], "no_check": []},
+    ]
+    out = oh.sources_of("machines", {"rows": rows})
+    assert out["local-machine-a-m1"][0] == "red"
+    assert out["local-machine-b-m1"][0] == "green"
+    assert "local-machine-solo" in out
+
+
+def test_subprocess_checks_carry_no_provision():
+    seen = []
+
+    def runner(_argv, env, _timeout):
+        seen.append(env)
+        return oh.Result(0, "ok")
+
+    oh.subprocess_check("telemetry", runner, {"PATH": "/usr/bin", oh.NO_PROVISION_ENV: "0"})
+    assert seen[0][oh.NO_PROVISION_ENV] == "1"
+
+
+def test_repair_limit_zero_runs_no_repair_even_on_the_first_attempt():
+    fleet = RepairFleet([finding("a.b")])
+    out = oh.machines_check(
+        fleet,
+        {"PATH": "/usr/bin"},
+        {**CFG, "auto_repair": {"classes": ["auto-safe"]}},
+        attempts={},
+        now=NOW,
+    )
+    assert fleet.repair_calls() == []
+    assert "limit 0" in out["detail"]
+
+
+def test_a_non_numeric_repair_limit_degrades_to_no_repair():
+    classes, limit = oh.repair_settings(
+        {"auto_repair": {"classes": ["x"], "max_attempts_per_code_per_machine_per_day": "many"}}
+    )
+    assert (classes, limit) == ({"x"}, 0)
+
+
+def test_repair_that_reports_only_other_codes_still_counts_an_attempt():
+    findings = [finding("a.b"), finding("c.d")]
+    only_cd = [{"code": "c.d", "action": "act", "class": "auto-safe", "result": "fixed"}]
+    attempts: dict = {}
+    fleet = RepairFleet(findings, actions=only_cd, heals=False)
+    oh.machines_check(fleet, {"PATH": "/usr/bin"}, CFG, attempts=attempts, now=NOW)
+    assert attempts[oh._attempt_key("", "m1", "a.b")]["n"] == 1
+
+
+def test_a_timed_out_repair_without_actions_is_ledgered(tmp_path):
+    fleet = RepairFleet([finding("a.b")])
+    fleet.timeout_on = "machine repair"
+    refreshed(tmp_path, fleet)
+    rows = [r for r in ledger_rows(tmp_path) if r["kind"] == "repair"]
+    assert [(r["code"], r["result"]) for r in rows] == [("a.b", "no action reported (rc timeout)")]
+
+
+def test_a_long_bws_refusal_keeps_its_first_200_characters():
+    def hydrate(_names):
+        raise RuntimeError("H" * 200 + "T" * 100)
+
+    _env, error = oh.token_env({"PATH": "/usr/bin"}, hydrate)
+    assert error.endswith("H" * 200)
+    assert "T" not in error
