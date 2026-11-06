@@ -3,9 +3,9 @@
  * on purpose (PLAN-pins-command T8, survey item 10).
  *
  * A base-image tag is a judgment call (the language runtime, the distro release, the CUDA
- * generation), so the driver reports and refuses by default: every candidate is labelled
- * `<image>:<tag>`, which the core can only read as a major move, and a major is taken solely
- * by `npm run pins -- bump <id> --major --reason "<why>"`. The candidates are the tags of the
+ * generation), so the driver reports and refuses by default: every series-move candidate is
+ * labelled `<image>:<tag>`, which the core can only read as a major move, and a major is
+ * taken solely by `npm run pins -- bump <id> --major --reason "<why>"`. The candidates are the tags of the
  * same SHAPE as the pin (the same suffix, the same number of version components) with a
  * greater version, newest first, from Docker Hub's tag list with each tag's `last_updated`.
  * A tag of another shape (an `-alpine` sibling, `latest`) is never a candidate.
@@ -30,9 +30,12 @@
  * Hub serves another index digest for the PINNED tag, inspect offers that tag again, labelled
  * `<image>:<tag>@<first 12 hex of the served digest>`. The label carries no second colon on
  * purpose: status.ts `majorLineOf` reads the text after the last colon, and a hex prefix that
- * starts with digits would read as a phantom newer major line. Like every docker candidate the
- * core reads it as a major, so it is taken only with `--major --reason`; it is dated by the
- * tag's last push and waits out the shared release-age window like any new image. The plan
+ * starts with digits would read as a phantom newer major line. It carries `redigest: true`, so
+ * the core reads it as the pinned version and never as a major: a plain `npm run pins -- bump
+ * <id>` takes it (reading it as a major once sent node:26.13.0-slim to a false major-only
+ * refusal, #3bb2d9bc). It is dated by the tag's last push and waits out the shared release-age
+ * window like any new image, and its deferred verdict carries the instant the window clears, so
+ * `pins when` and check:ci-docker-image-freshness name the same time. The plan
  * rewrites the digest alone, and refuses when Hub has moved the tag again since the label
  * was printed. A pinned tag whose digest matches offers nothing.
  *
@@ -58,6 +61,7 @@ import { isWithinFreshnessWindow } from '../../release-age.js';
 import type { DriverContext, Inspection, PinDriver, PinPlan, PlanStep } from '../driver.js';
 import { leafCurrent, PlanRefused, planLeafSites } from '../driver.js';
 import { type PinEntry, siteMatches } from '../registry.js';
+import { iso, soakClearsAt } from '../soak.js';
 import type { LineDatedRelease } from '../status.js';
 import {
   cmpVersion,
@@ -155,17 +159,21 @@ async function redigestRelease(
   const publishedMs = Number.isNaN(at) ? null : at;
   const fresh =
     publishedMs === null || isWithinFreshnessWindow(publishedMs, deps.nowMs(), deps.windowMs());
+  const clearsAt =
+    publishedMs === null || !fresh ? null : soakClearsAt(publishedMs, deps.windowMs());
   return {
     version: `${image}:${tag}@${served.slice('sha256:'.length, 'sha256:'.length + REDIGEST_HEX)}`,
     publishedMs,
+    redigest: true,
     verdict: fresh
       ? {
           eligible: false,
-          why: `a re-digest of ${image}:${tag} to ${served}: ${publishedMs === null ? 'the re-push has no date' : `re-pushed ${new Date(publishedMs).toISOString()}, inside the release-age window`}`,
+          why: `a re-digest of ${image}:${tag} to ${served}: ${publishedMs === null ? 'the re-push has no date' : `re-pushed ${iso(publishedMs)}, inside the release-age window until ${clearsAt === null ? '?' : iso(clearsAt)}`}`,
+          clearsAt,
         }
       : {
           eligible: true,
-          why: `a re-digest of ${image}:${tag}: Docker Hub serves ${served}, the file pins ${pinned}; taken only with --major --reason`,
+          why: `a re-digest of ${image}:${tag}: Docker Hub serves ${served}, the file pins ${pinned}`,
         },
   };
 }

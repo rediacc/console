@@ -49,7 +49,13 @@ export function judge(
   ignoreSoak: boolean
 ): Verdict {
   if (ignoreSoak) return { eligible: true, why: 'MUTANT ignore-soak', clearsAt: null };
-  if (r.verdict) return { eligible: r.verdict.eligible, why: r.verdict.why, clearsAt: null };
+  // A driver verdict that dates its own deferral (a docker re-digest waiting out the window) keeps that instant, so `when` can name it.
+  if (r.verdict)
+    return {
+      eligible: r.verdict.eligible,
+      why: r.verdict.why,
+      clearsAt: r.verdict.eligible ? null : (r.verdict.clearsAt ?? null),
+    };
   if (entry.safety.mode !== 'release-age')
     return {
       eligible: false,

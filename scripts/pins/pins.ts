@@ -2258,6 +2258,78 @@ const CASES: Record<string, Case> = {
       },
     ];
   },
+  // A RE-DIGEST (#3bb2d9bc): the pinned version again with new content, labelled the way the docker driver labels one (`<name>:<version>@<hex>`, which majorOf cannot read), is never a major.
+  async redigest(m) {
+    const label = `fx:1.0.0@${'b'.repeat(12)}`;
+    const clears = '2026-10-16T00:00:00Z';
+    const tree = (eligible: boolean) =>
+      fixtureTree((fx) => {
+        fx.releases['embed:tool'] = [
+          {
+            version: label,
+            published: '2026-10-14T06:00:00Z',
+            redigest: true,
+            values: { version: '1.0.0', 'sha256:amd64': SHA('b') },
+            verdict: eligible
+              ? { eligible: true, why: 'a re-digest of fx 1.0.0, past the window' }
+              : {
+                  eligible: false,
+                  why: `a re-digest of fx 1.0.0, inside the release-age window until ${clears}`,
+                  clearsAt: clears,
+                },
+          },
+          { version: '1.0.0', published: '2026-09-01T00:00:00Z' },
+        ];
+      });
+    const waiting = tree(false);
+    const ready = tree(true);
+    const plan = await runCli(['plan', 'embed:tool'], withMutant(waiting, m));
+    const st = await runCli(['status', 'embed:tool', '--json'], withMutant(waiting, m));
+    const when = await runCli(['when', 'embed:tool'], withMutant(waiting, m));
+    const take = await runCli(['plan', 'embed:tool', '--json'], withMutant(ready, m));
+    const v = st.rc === 0 ? (JSON.parse(st.out) as { pins: PinView[] }).pins[0] : null;
+    const to =
+      take.rc === 0
+        ? (JSON.parse(take.out) as { plans: Array<{ id: string; to: string }> }).plans.find(
+            (p) => p.id === 'embed:tool'
+          )?.to
+        : undefined;
+    return [
+      {
+        name: 'redigest: a plain plan over a re-digest inside the window reports it deferred, never major-only',
+        ok:
+          !`${plan.out}${plan.err}`.includes('major') &&
+          `${plan.out}${plan.err}`.includes('deferred') &&
+          `${plan.out}${plan.err}`.includes(label),
+        detail: `rc=${plan.rc} ${plan.out} ${plan.err}`,
+      },
+      {
+        name: 'redigest: status reads a re-digest inside the window as deferred, with the instant the driver dated',
+        ok:
+          v !== null &&
+          v.state === 'deferred' &&
+          v.deferred?.version === label &&
+          v.deferred.clearsAt === Date.parse(clears) &&
+          v.eligibleMajors.length === 0,
+        detail: JSON.stringify(v),
+      },
+      {
+        name: 'redigest: when names the clear time and the plain bump line, not "no release is waiting"',
+        ok:
+          when.rc === 0 &&
+          when.out.includes(`${label} clears the release-age window at ${clears}`) &&
+          when.out.includes(
+            `DEFAULT: on or after ${clears} run \`npm run pins -- bump embed:tool\``
+          ),
+        detail: `rc=${when.rc} ${when.out} ${when.err}`,
+      },
+      {
+        name: 'redigest: past the window a plain plan (no --major) takes the re-digest',
+        ok: to === label,
+        detail: `rc=${take.rc} ${take.err} ${take.out.slice(0, 400)}`,
+      },
+    ];
+  },
   async restoreDone(m) {
     const fx = fixtureTree();
     const r = await runCli(['bump', 'embed:tool', '--json'], withMutant(fx, m));

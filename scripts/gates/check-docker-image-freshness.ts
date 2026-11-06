@@ -49,8 +49,10 @@ import { spawnSync } from 'node:child_process';
  * against the index digest Docker Hub serves for its tag (scripts/lib/docker-hub.ts). It FAILS
  * CLOSED: a mismatch is red, and so is a lookup that cannot answer (a 429, a 5xx, a 404, an
  * answer with no top-level `digest` or a malformed one), because an unchecked digest is not
- * an agreeing one. A digest with no tag on its line (`COPY --from=<image>@sha256:...`, a compose
- * `image: <image>@sha256:...`) names nothing to agree with, so it is LISTED every run as
+ * an agreeing one. The one exception is a re-push Hub dates inside the shared release-age
+ * window: that mismatch is printed as deferred, with the instant it clears and the `npm run pins
+ * -- bump <leaf>` line that takes it then (digestFindings below). A digest with no tag on its
+ * line (`COPY --from=<image>@sha256:...`, a compose `image: <image>@sha256:...`) names nothing to agree with, so it is LISTED every run as
  * untagged, with no verdict either way; a digest of another registry is listed the same way.
  *
  * DOCKER_HUB_API_BASE points the tag listings at another host (a stub in the remedy test);
@@ -69,6 +71,7 @@ import { errorLines, GREEN, NC, RED, YELLOW } from '../lib/console.js';
 import { HUB_DEFAULT_BASE, hubRepo, hubTagUrl, parseTagDigest } from '../lib/docker-hub.js';
 import { loadRegistry, type PinEntry, siteRegex } from '../lib/pins/registry.js';
 import { bumpRemedy } from '../lib/pins/remedy.js';
+import { iso, soakClearsAt } from '../lib/pins/soak.js';
 import { getMinReleaseAgeMs, isWithinFreshnessWindow } from '../lib/release-age.js';
 import {
   baselineAdditions,
@@ -142,6 +145,14 @@ export function digestRefs(src: string, file: string): DigestRef[] {
 export interface TagAnswer {
   digest: string | null;
   why?: string;
+  /** When Hub last pushed the tag (`tag_last_pushed`, else `last_updated`); null when it gave no date. */
+  pushedMs?: number | null;
+}
+
+/** The release-age clock a re-push is judged by: now, and the shared window. */
+export interface Clock {
+  nowMs: number;
+  windowMs: number;
 }
 
 /**
@@ -150,16 +161,28 @@ export interface TagAnswer {
  * answer or a null one (unknown is never agreement). Untagged and other-registry references
  * are returned as `unjudged`, never judged. `leafOf` names the pins leaf that moves a line,
  * or null. Pure.
+ *
+ * A RE-PUSH INSIDE THE WINDOW IS DEFERRED, NOT RED. Docker Official Images re-push a tag when
+ * its parent is rebuilt, so a pinned digest goes stale under an unchanged tag, and the docker
+ * driver offers that tag again as a re-digest (scripts/lib/pins/drivers/docker.ts THE
+ * RE-DIGEST) which waits out the shared release-age window like any new image. A mismatch
+ * whose re-push Hub dates inside the window is therefore `deferred`, printed with the instant
+ * the window clears and the `npm run pins -- bump <leaf>` line that applies after it; past
+ * the window it is a finding with that same line. A re-push with no date stays a finding,
+ * since its age is unknown (2026-11-06: node:26.13.0-slim re-pushed 2026-11-05T11:41Z read red
+ * with a fix that named no path, #3bb2d9bc).
  */
 export function digestFindings(
   refs: DigestRef[],
   answers: Map<string, TagAnswer>,
-  leafOf: (r: DigestRef) => string | null
-): { findings: string[]; keys: string[]; agreed: number; unjudged: string[] } {
+  leafOf: (r: DigestRef) => string | null,
+  clock: Clock
+): { findings: string[]; keys: string[]; agreed: number; unjudged: string[]; deferred: string[] } {
   const findings: string[] = [];
   // One finding key per finding, same index: `docker-digest:<file:line>`, built from the ref and not parsed back out of the display text.
   const keys: string[] = [];
   const unjudged: string[] = [];
+  const deferred: string[] = [];
   let agreed = 0;
   for (const r of refs) {
     const at = `${r.file}:${r.line}`;
@@ -187,15 +210,24 @@ export function digestFindings(
       continue;
     }
     const leaf = leafOf(r);
+    const fix =
+      leaf === null
+        ? 'No docker leaf of .ci/config/pins.json claims the line; give the leaf that pins it a site with role digest, then bump it.'
+        : `npm run pins -- bump ${leaf} rewrites the digest alone (never hand-edit it).`;
+    const pushed = a.pushedMs ?? null;
+    if (pushed !== null && isWithinFreshnessWindow(pushed, clock.nowMs, clock.windowMs)) {
+      const clears = soakClearsAt(pushed, clock.windowMs);
+      deferred.push(
+        `${at}  ${ref}@${r.digest}: Docker Hub re-pushed ${ref} as ${a.digest} at ${iso(pushed)}, inside the release-age window until ${clears === null ? '?' : iso(clears)}; then ${fix}`
+      );
+      continue;
+    }
     keys.push(`docker-digest:${at}`);
     findings.push(
-      `${at}  ${ref}@${r.digest}: Docker Hub serves ${a.digest} for ${ref}, so this line pulls another image than its tag names. ` +
-        (leaf === null
-          ? 'No docker leaf of .ci/config/pins.json claims the line; give the leaf that pins it a site with role digest, then bump it.'
-          : `Move the tag and the digest together: npm run pins -- bump ${leaf} --to ${ref} --major --reason "<why>" (the core refuses a target equal to the pinned tag, so with no newer tag this waits on a re-digest path; never hand-edit the digest).`)
+      `${at}  ${ref}@${r.digest}: Docker Hub serves ${a.digest} for ${ref}${pushed === null ? ' and gives the re-push no date, so its age is unknown' : ` (re-pushed ${iso(pushed)}, past the release-age window)`}, so this line pulls another image than its tag names. ${fix}`
     );
   }
-  return { findings, keys, agreed, unjudged };
+  return { findings, keys, agreed, unjudged, deferred };
 }
 
 /** A numeric series, so `3.9-slim` and `3.13-slim` are comparable but `bookworm` is not. */
@@ -319,16 +351,53 @@ async function hubGetJson(url: string, key: string): Promise<unknown | null> {
   return null;
 }
 
-async function listHubTags(repo: string): Promise<TagInfo[] | null> {
-  const url = `${HUB_BASE || HUB_DEFAULT_BASE}/v2/repositories/${repo}/tags?page_size=100&ordering=last_updated`;
-  const j = (await hubGetJson(url, repo)) as {
-    results?: { name: string; last_updated?: string }[];
-  } | null;
-  if (j === null) return null;
-  return (j.results ?? []).map((t) => ({
-    name: t.name,
-    pushedMs: t.last_updated ? Date.parse(t.last_updated) : null,
-  }));
+/** Pages of 100 a tag listing follows, the docker driver's own PAGES (scripts/lib/pins/drivers/docker.ts). */
+const LIST_PAGES = 5;
+
+/** The images whose listing still had pages after LIST_PAGES, named in the success line. */
+const truncated: string[] = [];
+
+/**
+ * The first page of a pin's tag listing: every tag of `repo` whose name contains the pin's
+ * non-numeric remainder (`24-bookworm-slim` lists `bookworm-slim`; a bare `24.04` lists all),
+ * newest push first. Pure.
+ *
+ * WHY THE NAME FILTER. The unfiltered first page of library/node by `last_updated` is whatever
+ * the last rebuild wave re-stamped: measured 2026-11-06, it held no `<n>-bookworm-slim` tag at
+ * all, so node:24-bookworm-slim read as no longer stale and the gate demanded a baseline drain
+ * while node 25 and 26 bookworm-slim were both published (#3bb2d9bc).
+ */
+export function tagListUrl(base: string, repo: string, tag: string): string {
+  const shape = tag.replace(/^v?\d+(\.\d+)*/, '').replace(/^-/, '');
+  return `${base}/v2/repositories/${repo}/tags?page_size=100&ordering=last_updated${shape === '' ? '' : `&name=${encodeURIComponent(shape)}`}`;
+}
+
+/**
+ * The tags of the pin's shape, following `next` for up to LIST_PAGES pages, newest push first.
+ * A listing with pages left is used as read and its image is recorded in `truncated`, which the
+ * success line counts: a series newer than the pin is a supported line, and Docker Official
+ * Images re-push every supported line in each rebuild wave, so it sits at the head of a
+ * `last_updated` listing; what falls past 500 shape-matching pushes is the old lines (measured
+ * 2026-11-06: `node` `slim` runs past 10 pages, and 26-slim and 24-slim are on page one).
+ */
+async function listHubTags(repo: string, tag: string): Promise<TagInfo[] | null> {
+  let url: string | null = tagListUrl(HUB_BASE || HUB_DEFAULT_BASE, repo, tag);
+  const out: TagInfo[] = [];
+  for (let page = 0; url !== null; page++) {
+    if (page === LIST_PAGES) {
+      truncated.push(`${repo}:${tag}`);
+      break;
+    }
+    const j = (await hubGetJson(url, repo)) as {
+      results?: { name: string; last_updated?: string }[];
+      next?: unknown;
+    } | null;
+    if (j === null) return null;
+    for (const t of j.results ?? [])
+      out.push({ name: t.name, pushedMs: t.last_updated ? Date.parse(t.last_updated) : null });
+    url = typeof j.next === 'string' && j.next !== '' ? j.next : null;
+  }
+  return out;
 }
 
 /** The index digest Docker Hub serves for `<image>:<tag>`, or a null digest with the cause. */
@@ -337,9 +406,12 @@ async function hubTagDigest(repo: string, tag: string): Promise<TagAnswer> {
   const j = await hubGetJson(hubTagUrl(HUB_BASE || HUB_DEFAULT_BASE, repo, tag), key);
   if (j === null) return { digest: null, why: lastFailure.get(key) ?? 'the lookup failed' };
   const digest = parseTagDigest(j);
-  return digest === null
-    ? { digest: null, why: 'the answer carries no top-level sha256 index digest' }
-    : { digest };
+  if (digest === null)
+    return { digest: null, why: 'the answer carries no top-level sha256 index digest' };
+  const stamp = j as { tag_last_pushed?: unknown; last_updated?: unknown };
+  const pushed = stamp.tag_last_pushed ?? stamp.last_updated;
+  const at = typeof pushed === 'string' ? Date.parse(pushed) : Number.NaN;
+  return { digest, pushedMs: Number.isNaN(at) ? null : at };
 }
 
 /**
@@ -581,6 +653,16 @@ function selftest(): { bad: number; total: number } {
     staleEvidence('3.9-slim', [{ name: '3.14-slim', pushedMs: null }], NOW, SOAK).length > 0
   );
   check('a non-numeric tag yields no series', series('bookworm') === null);
+  check(
+    'the tag listing is filtered by the pin shape, so a rebuild wave cannot push the newer series off the first page (#3bb2d9bc)',
+    tagListUrl('https://h', 'library/node', '24-bookworm-slim').endsWith(
+      '/v2/repositories/library/node/tags?page_size=100&ordering=last_updated&name=bookworm-slim'
+    ) && tagListUrl('https://h', 'library/python', '3.9-slim').endsWith('&name=slim')
+  );
+  check(
+    'CONTROL: a bare numeric tag lists every tag, with no name filter',
+    tagListUrl('https://h', 'library/ubuntu', '24.04').endsWith('ordering=last_updated')
+  );
   check('the same version is not newer', !isNewer('24.04', '24.04'));
   // The window is the SHARED one; a release published now must be deferred.
   const win = getMinReleaseAgeMs();
@@ -693,36 +775,81 @@ function selftest(): { bad: number; total: number } {
   );
   const proxy = digestRefs(`FROM node:26.13.0-slim@${dA}\n`, 'workers/proxy/Dockerfile');
   const leafOf = () => 'image:proxy-node';
-  const mismatch = digestFindings(proxy, new Map([['node:26.13.0-slim', { digest: dB }]]), leafOf);
+  // The clock of the digest controls: the shared one-day window, a re-push a day past it and one six hours old.
+  const clock: Clock = { nowMs: Date.parse('2026-11-06T12:00:00Z'), windowMs: DAY };
+  const pastPush = Date.parse('2026-11-04T06:00:00Z');
+  const freshPush = Date.parse('2026-11-06T06:00:00Z');
+  const mismatch = digestFindings(
+    proxy,
+    new Map([['node:26.13.0-slim', { digest: dB, pushedMs: pastPush }]]),
+    leafOf,
+    clock
+  );
   check(
-    'CONTROL: a digest that differs from the one Hub serves for the tag is a finding naming the bump',
+    'CONTROL: a digest that differs from the one Hub serves, re-pushed past the window, is a finding naming the plain bump (no --to, no --major, no "waits on a re-digest path")',
     mismatch.findings.length === 1 &&
+      mismatch.deferred.length === 0 &&
       mismatch.findings[0].startsWith('workers/proxy/Dockerfile:1') &&
-      mismatch.findings[0].includes('npm run pins -- bump image:proxy-node --to node:26.13.0-slim')
+      mismatch.findings[0].includes('npm run pins -- bump image:proxy-node rewrites the digest') &&
+      !mismatch.findings[0].includes('--major') &&
+      !mismatch.findings[0].includes('waits on a re-digest path')
+  );
+  const inWindow = digestFindings(
+    proxy,
+    new Map([['node:26.13.0-slim', { digest: dB, pushedMs: freshPush }]]),
+    leafOf,
+    clock
+  );
+  check(
+    'a re-push inside the release-age window is deferred, not a finding, naming the clear instant and the bump line (#3bb2d9bc)',
+    inWindow.findings.length === 0 &&
+      inWindow.keys.length === 0 &&
+      inWindow.deferred.length === 1 &&
+      inWindow.deferred[0].startsWith('workers/proxy/Dockerfile:1') &&
+      inWindow.deferred[0].includes('until 2026-11-08T00:00:00Z') &&
+      inWindow.deferred[0].includes('npm run pins -- bump image:proxy-node')
+  );
+  const undated = digestFindings(
+    proxy,
+    new Map([['node:26.13.0-slim', { digest: dB, pushedMs: null }]]),
+    leafOf,
+    clock
+  );
+  check(
+    'CONTROL: a mismatch whose re-push Hub gives no date stays a finding (unknown age is never deferred)',
+    undated.findings.length === 1 &&
+      undated.deferred.length === 0 &&
+      undated.findings[0].includes('no date')
   );
   check(
     'CONTROL: no answer, and a failed lookup, are both findings (unknown is not agreement)',
-    digestFindings(proxy, new Map(), leafOf).findings.length === 1 &&
+    digestFindings(proxy, new Map(), leafOf, clock).findings.length === 1 &&
       digestFindings(
         proxy,
         new Map([['node:26.13.0-slim', { digest: null, why: 'HTTP 429' }]]),
-        leafOf
+        leafOf,
+        clock
       ).findings[0]?.includes('HTTP 429') === true
   );
   check(
     'each finding carries the key docker-digest:<file:line>, one per finding, whatever its text says',
     mismatch.keys.join() === 'docker-digest:workers/proxy/Dockerfile:1' &&
-      digestFindings(proxy, new Map(), leafOf).keys.join() ===
+      digestFindings(proxy, new Map(), leafOf, clock).keys.join() ===
         'docker-digest:workers/proxy/Dockerfile:1' &&
-      digestFindings(proxy, new Map([['node:26.13.0-slim', { digest: dA }]]), leafOf).keys
+      digestFindings(proxy, new Map([['node:26.13.0-slim', { digest: dA }]]), leafOf, clock).keys
         .length === 0
   );
-  const agree = digestFindings(proxy, new Map([['node:26.13.0-slim', { digest: dA }]]), leafOf);
+  const agree = digestFindings(
+    proxy,
+    new Map([['node:26.13.0-slim', { digest: dA }]]),
+    leafOf,
+    clock
+  );
   check(
     'a digest equal to the one Hub serves agrees',
     agree.findings.length === 0 && agree.agreed === 1
   );
-  const unj = digestFindings(refs.slice(1, 3), new Map(), leafOf);
+  const unj = digestFindings(refs.slice(1, 3), new Map(), leafOf, clock);
   check(
     'untagged refs are listed unjudged, never a finding and never agreement',
     unj.findings.length === 0 &&
@@ -791,7 +918,7 @@ async function main(): Promise<void> {
   for (const p of seen.values()) {
     const repo = hubRepo(p.image);
     if (repo === null) continue; // non-Hub registry (e.g. mcr): not listed here
-    const tags = await listHubTags(repo);
+    const tags = await listHubTags(repo, p.tag);
     if (tags === null) {
       unknown.push(
         `${p.image}:${p.tag} (${p.file}:${p.line}) - ${lastFailure.get(repo) ?? 'tags could not be listed'}`
@@ -822,10 +949,18 @@ async function main(): Promise<void> {
     if (r.tag === null || repo === null || answers.has(`${r.image}:${r.tag}`)) continue;
     answers.set(`${r.image}:${r.tag}`, await hubTagDigest(repo, r.tag));
   }
-  const digests = digestFindings(refs, answers, (r) =>
-    leafFor({ image: r.image, tag: r.tag ?? '', file: r.file, line: r.line, text: r.text }, entries)
+  const digests = digestFindings(
+    refs,
+    answers,
+    (r) =>
+      leafFor(
+        { image: r.image, tag: r.tag ?? '', file: r.file, line: r.line, text: r.text },
+        entries
+      ),
+    { nowMs: now, windowMs: win }
   );
   for (const u of digests.unjudged) console.log(`${YELLOW}!${NC} ${u}`);
+  for (const d of digests.deferred) console.log(`${YELLOW}deferred${NC} ${d}`);
   if (digests.findings.length > 0) {
     console.error(
       `\n${RED}✗${NC} ${digests.findings.length} digest-pinned line(s) do not agree with the tag they name:\n`
@@ -942,9 +1077,9 @@ async function main(): Promise<void> {
     for (const s of stale) console.log(`    ${s}`);
   }
   console.log(
-    `${GREEN}✓${NC} ${checked} Docker Hub pin(s) checked, ${checked - stale.length} current, ` +
+    `${GREEN}✓${NC} ${checked} Docker Hub pin(s) checked (${truncated.length} listing(s) read to the ${LIST_PAGES}-page cap: ${truncated.join(', ') || 'none'}), ${checked - stale.length} current, ` +
       `${stale.length} known-stale and baselined. No NEW staleness. ${pins.length} literal image:tag FROM line(s) (variable-image FROMs carry no pin), each claimed by a docker leaf. ` +
-      `${refs.length} digest-pinned reference(s) in ${imageFiles.length} tracked Dockerfile/compose file(s): ${digests.agreed} agree with Docker Hub, ${digests.unjudged.length} listed unjudged.`
+      `${refs.length} digest-pinned reference(s) in ${imageFiles.length} tracked Dockerfile/compose file(s): ${digests.agreed} agree with Docker Hub, ${digests.deferred.length} re-pushed inside the release-age window (deferred), ${digests.unjudged.length} listed unjudged.`
   );
 }
 

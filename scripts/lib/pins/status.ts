@@ -319,6 +319,8 @@ export async function viewOf(
     r.breaking !== undefined && w.mutant !== 'breaking-is-minor';
   const isMajor = (r: Release): boolean => {
     if (breaking(r)) return true;
+    // The pinned version with new content is no move at all, let alone a major (2026-11-06: node:26.13.0-slim re-pushed read as major-only).
+    if (r.redigest) return false;
     const a = insp.current === null ? null : majorOf(insp.current);
     const b = majorOf(r.version);
     return a === null || b === null || a !== b;
