@@ -81,22 +81,25 @@ Order and shared files: one writer in one worktree, box by box, in this order: R
 
 ### Resource limits (independent of any other plan)
 
-- [ ] R1 [renet] Grant schema and the `daemon grant` flags, per Decisions 1, 4, 9 and 13.
+- [x] R1 [renet] Grant schema and the `daemon grant` flags, per Decisions 1, 4, 9 and 13.
   - pkg/dockergrant/limits.go defines `Limits{MemoryMax, MemoryHigh, CPUMax, IOMax}` and `RAMVolume{Size}`, with parse and validate functions. It enforces memory.max ≥ RAM size + 1 GiB.
   - Both fields are added to `Grant` (private/renet/pkg/dockergrant/grant.go:117-146) and to `Empty()` (:159-162).
   - `createDaemonGrantCmd` (private/renet/cmd/renet/daemon_grant.go:56-77) gains `--memory-max`, `--memory-high`, `--cpu-max`, `--io-max`, `--ram-volume`, `--clear-limits` and `--force`. `--show` prints `limits` and `ram_volume`.
   - Accept: `cd private/renet && go test ./pkg/dockergrant/... ./cmd/renet/ -run 'Limits|RAMVolume|DaemonGrant' -count=1` rc 0 and `npm run check:ci-renet` rc 0. The tests cover a limits-only grant that survives a write, the RAM-versus-memory refusal, and `--cpu-max 2.5` stored as `250000 100000`.
   - CONTROL: `TestGrantLimitsOnlyIsKept` fails on today's tree, because `Empty()` ignores the field and the file is removed (private/renet/pkg/dockergrant/grant.go:490-493). `TestDaemonGrantMemoryMaxFlag` fails too, because the flag does not exist.
-- [ ] R2 [renet] pkg/repolimits applies the limits, per Decisions 3, 5, 6 and 7.
+    (ticked) 2026-11-06T00:23:22Z by d778be9d: commit:3ef7cdd22 (renet 67e2d5f); go test ./pkg/dockergrant/... ./cmd/renet/ -run Limits|RAMVolume|DaemonGrant rc=0; check:ci-renet rc=0
+- [x] R2 [renet] pkg/repolimits applies the limits, per Decisions 3, 5, 6 and 7.
   - `Apply(root, netID, grant, dev)` writes memory.max, memory.high, cpu.max and io.max on rediacc-<N>, and memory.oom.group=1 on every existing service directory. Its cgroupfs root is a parameter, so tests run against a temp dir.
   - It is called from StartForeground before Step 2, from SafeStartup after step 3d, from `daemon grant` after a write (live; a decrease below memory.current is refused without `--force`), and from each `repository reconcile` run, for every mounted repo with a grant.
   - The out-of-date comment at private/renet/pkg/daemon/systemd.go:539-549 is corrected.
   - Accept: `cd private/renet && go test ./pkg/repolimits/... ./pkg/daemon/... ./pkg/orchestration/... ./cmd/renet/ -run 'RepoLimits|ApplyLimits|ReconcileLimits|StartForegroundLimits' -count=1` rc 0 and `npm run check:ci-renet` rc 0.
   - CONTROL: `TestStartForegroundAppliesLimitsBeforeContainerd` records no memory.max write before the containerd spawn on today's StartForeground.
-- [ ] R3 [renet] The lifecycle leaf cgroup, per Decision 10. `OpenLifecycleCgroupFD(netID, alias)` lives in pkg/ebpf/lifecycle_cgroup.go, with a stub in stub_other.go. It creates rediacc-<N>/@lifecycle, writes the exec-style entry when the manager exists, and returns an FD. UpServices uses it in place of `OpenExecCgroupFD` (private/renet/pkg/orchestration/up_down_workflows.go:217-228). DownServices sets it as well (:367-369). SafeShutdown step 0 writes `cgroup.kill` on @lifecycle after down(). `repo_default_inspect.go` reports @lifecycle as the repo's lifecycle cgroup.
+    (ticked) 2026-11-06T00:23:23Z by d778be9d: commit:3ef7cdd22 (renet 53dd2f2); go test repolimits/daemon/orchestration/cmd -run RepoLimits|ApplyLimits|ReconcileLimits|StartForegroundLimits rc=0; check:ci-renet rc=0
+- [x] R3 [renet] The lifecycle leaf cgroup, per Decision 10. `OpenLifecycleCgroupFD(netID, alias)` lives in pkg/ebpf/lifecycle_cgroup.go, with a stub in stub_other.go. It creates rediacc-<N>/@lifecycle, writes the exec-style entry when the manager exists, and returns an FD. UpServices uses it in place of `OpenExecCgroupFD` (private/renet/pkg/orchestration/up_down_workflows.go:217-228). DownServices sets it as well (:367-369). SafeShutdown step 0 writes `cgroup.kill` on @lifecycle after down(). `repo_default_inspect.go` reports @lifecycle as the repo's lifecycle cgroup.
   - Accept: `cd private/renet && go test ./pkg/ebpf/... ./pkg/orchestration/... ./pkg/dockerproxy/... -run 'Lifecycle|NetworkOfCgroup|SafeShutdown' -count=1` rc 0 and `npm run check:ci-renet` rc 0. The tests check that the executor's FD path lies under `RepoCgroupPath(N)` for both up() and down(), and that `networkOfCgroup("/rediacc.slice/rediacc-7/@lifecycle") == 7`.
   - CONTROL: `TestUpCgroupUnderRepoCgroup` fails on today's tree, because the path is /rediacc.slice/renet-exec-<N> (private/renet/pkg/ebpf/manager.go:270-273), and `TestDownHasCgroupFD` fails as well.
-- [ ] R4 [renet] Functions, tier, fork inheritance and status data, per Decisions 2, 8 and 9.
+    (ticked) 2026-11-06T00:23:25Z by d778be9d: commit:3ef7cdd22 (renet c123f8d); go test ./pkg/ebpf/... ./pkg/orchestration/... ./pkg/dockerproxy/... -run Lifecycle|NetworkOfCgroup|SafeShutdown rc=0; check:ci-renet rc=0
+- [x] R4 [renet] Functions, tier, fork inheritance and status data, per Decisions 2, 8 and 9.
   - `repository_limits_set` and `repository_limits_show` (requirements `destTypeMachine, paramTeam, catRepository`) are defined and built as `renet daemon grant --network-id N ... --show`.
   - Their tier entries go in private/renet/pkg/license/tiermap.go.
   - `forkDockerRepo` copies `limits` and `ram_volume` into the fork's grant.
@@ -104,16 +107,18 @@ Order and shared files: one writer in one worktree, box by box, in this order: R
   - The contract is regenerated into packages/shared/src/renet-contract/data/.
   - Accept: `cd private/renet && go test ./pkg/functions/... ./pkg/license/... ./pkg/list/... ./cmd/renet/ -run 'Limits|Resources|Tier|ForkLimits' -count=1` rc 0 and `npm run check:ci-renet` rc 0.
   - CONTROL: `TestForkCopiesLimits` fails on today's `forkDockerRepo`, which writes no grant.
-- [ ] R5 [console] The CLI surface, per Decisions 2, 5 and 9.
+    (ticked) 2026-11-06T00:23:28Z by d778be9d: commit:3ef7cdd22 (renet 374272d) commit:3a5d92be8; go test functions/license/list/cmd -run Limits|Resources|Tier|ForkLimits rc=0; check:ci-renet rc=0
+- [x] R5 [console] The CLI surface, per Decisions 2, 5 and 9.
   - packages/cli/src/commands/repo-policy.ts gains the limit flags. They are routed to `repository_limits_set` through `executeRepoFunction`. `policy get <ref>` adds the limits table. A limit flag without a ref is refused. The agent ancestry guard applies to grand repos.
   - `machine status` (packages/cli/src/commands/machine/status.ts:182-184, :576) gains memory (current / max), oom_kills and ram (used / size), and marks repos that have no memory.max.
   - Locale keys are added in every language.
   - Accept: `npx tsc --noEmit --project packages/cli/tsconfig.json` rc 0; `cd packages/cli && npx vitest run src/commands/__tests__/repo-policy-limits.test.ts src/commands/machine` rc 0; `npm run check:i18n` rc 0; `npm run check:ci-cli-contract` rc 0.
   - CONTROL: `rdc repo policy set x --memory-max 1G` exits with commander's unknown-option error on today's tree. The new test asserts that it is accepted and routed.
+    (ticked) 2026-11-06T00:23:29Z by d778be9d: commit:8a05322a9 commit:21fb3af37; tsc rc=0; vitest repo-policy-limits.test.ts src/commands/machine rc=0; check:i18n rc=0; check:ci-cli-contract rc=0
 
 ### RAM volume (M1 independent; M2 after S1, S2 and S3 of PLAN-renet-down-before-kill)
 
-- [ ] M1 [renet] pkg/ramvolume and its lifecycle, per Decisions 11, 12 and 13.
+- [x] M1 [renet] pkg/ramvolume and its lifecycle, per Decisions 11, 12 and 13.
   - pkg/ramvolume provides `Ensure`, `Unmount` and `Usage`, with the mount syscalls behind a seam. Ensure uses `noswap` when the kernel supports it and remounts on a size change.
   - Ensure is called at SafeStartup step 2c and in StartForeground before the sandbox.
   - `Repository.Unmount` (private/renet/pkg/repository/mount.go:262) unmounts `.ram` first, and refuses while the docker unit is active unless forced.
@@ -121,6 +126,7 @@ Order and shared files: one writer in one worktree, box by box, in this order: R
   - A dockerpolicy test pins that a bind of `<mount>/.ram/data` is allowed.
   - Accept: `cd private/renet && go test ./pkg/ramvolume/... ./pkg/repository/... ./pkg/orchestration/... ./pkg/daemon/... ./pkg/dockerpolicy/... -run 'RamVolume|UnmountOrder|RamBind' -count=1` rc 0 and `npm run check:ci-renet` rc 0. Order test: `ramUnmount < storageUnmount`. Other tests: a non-empty `.ram` refuses; an active docker unit refuses; a size change remounts and does not unmount.
   - CONTROL: `TestUnmountRemovesRamVolumeFirst` records `Storage.Unmount` with no submount step on today's `Repository.Unmount`.
+    (ticked) 2026-11-06T00:23:30Z by d778be9d: commit:3ef7cdd22 (renet 3ca1a70); go test ramvolume/repository/orchestration/daemon/dockerpolicy -run RamVolume|UnmountOrder|RamBind rc=0; check:ci-renet rc=0
 - [ ] M2 [renet] The RAM volume in the shutdown order, after S1, S2 and S3.
   - `renderDockerUnit`'s stop side (S1's unit_sides.go) gains `After=<escaped mount>-.ram.mount`. The line is always present, because ordering against a missing unit does nothing, and it changes only the stop side, so it causes a reload and no restart.
   - `ramvolume.Unmount` refuses when the volume holds data and S2's down marker is not current, unless forced.
@@ -130,13 +136,14 @@ Order and shared files: one writer in one worktree, box by box, in this order: R
 
 ### Docs
 
-- [ ] W2 [docs] private/renet/docs/REPO_RESOURCES.md (new) and the limits and RAM-volume section of packages/www/src/content/docs/*/repositories.md with its translations. They cover the flags, the grant and who may set it, OOM scope, fork inheritance, the loss model table, and the up()/down() restore-and-save pattern (restore only when `$REDIACC_RAM_DIR/.restored` is missing).
+- [x] W2 [docs] private/renet/docs/REPO_RESOURCES.md (new) and the limits and RAM-volume section of packages/www/src/content/docs/*/repositories.md with its translations. They cover the flags, the grant and who may set it, OOM scope, fork inheritance, the loss model table, and the up()/down() restore-and-save pattern (restore only when `$REDIACC_RAM_DIR/.restored` is missing).
   - Accept: `npm run check:i18n`, `npm run check:ci-i18n-docs-untranslated`, `npm run check:ci-docs-structure-parity` and `npm run check:ci-prose-style` rc 0.
   - CONTROL: none -- docs.
+    (ticked) 2026-11-06T00:23:32Z by d778be9d: commit:3ef7cdd22 (renet 73e0aff) commit:ab266526d; check:i18n, check:ci-i18n-docs-untranslated, check:ci-docs-structure-parity, check:ci-prose-style rc=0
 
 ### Drill
 
-- [ ] K0b [drill code] `.ci/rediacc_ci/drills/repo_resources.py`, with steps K2 and K3 added to `EXTRA_RENET_STEPS` (.ci/rediacc_ci/drills/vm_check.py:269-276), both depending on P5. The pure parsers and verdicts (memory.events, /proc/vmstat, findmnt, statfs) are pinned by `.ci/rediacc_ci/tests/test_drills_repo_resources.py`.
+- [x] K0b [drill code] `.ci/rediacc_ci/drills/repo_resources.py`, with steps K2 and K3 added to `EXTRA_RENET_STEPS` (.ci/rediacc_ci/drills/vm_check.py:269-276), both depending on P5. The pure parsers and verdicts (memory.events, /proc/vmstat, findmnt, statfs) are pinned by `.ci/rediacc_ci/tests/test_drills_repo_resources.py`.
   - K2 rows (limits):
     - K2.0: fork C (`--memory-max 1G --cpu-max 1`) and fork D (no limits) are up on the worker.
     - K2.1: rediacc-<C> has memory.max 1073741824 and cpu.max `100000 100000`, and every service directory has memory.oom.group 1. rediacc-<D> has memory.max `max`.
@@ -155,6 +162,7 @@ Order and shared files: one writer in one worktree, box by box, in this order: R
     - K3.6 (needs K1 VERIFIED): reboot. The data saved by down() is restored by up().
   - Accept: `PYTHONPATH=.ci python3 -m pytest .ci/rediacc_ci/tests/test_drills_repo_resources.py -q` rc 0 (toolchain pytest).
   - CONTROL: the verdict test feeds an oom_kill delta that appears in D and expects FAIL. It also feeds a findmnt listing with `.ram` mounted after the unmount and expects FAIL.
+    (ticked) 2026-11-06T00:23:33Z by d778be9d: commit:e17477770; test_drills_repo_resources.py 11 passed rc=0
 - [ ] K2 [fleet] The K2 rows on the local KVM fleet (192.168.111.*).
   - Accept: `npm run vm:check -- --changed` VERIFIED with every K2 row ok.
   - CONTROL: `npm run vm:check -- --only K2` with the renet pointer at the main commit records FAIL on K2.1 and K2.2 (no cap; the alloc container is not OOM-killed). Quote both rows in the tick.

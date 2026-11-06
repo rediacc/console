@@ -2079,24 +2079,25 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 13,
-      "done": 0,
+      "open": 5,
+      "done": 8,
       "open_sigs": [
-        "00d591f5",
         "30d6b624",
         "34dee0e7",
-        "4144aa75",
         "4d4b8cd5",
+        "e12434a3",
+        "ff9329ec"
+      ],
+      "done_sigs": [
+        "00d591f5",
+        "4144aa75",
         "7eade686",
         "93ff15df",
         "9f6a0401",
         "b9a0dc25",
         "c461ba8c",
-        "dbc2245b",
-        "e12434a3",
-        "ff9329ec"
-      ],
-      "done_sigs": []
+        "dbc2245b"
+      ]
     },
     "agent/plans/PLAN-require-testid-sweep.md": {
       "status": "compacted",
