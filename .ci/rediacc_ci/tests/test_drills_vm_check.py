@@ -3827,3 +3827,51 @@ def test_a_good_receipt_or_an_untouched_area_lets_the_run_start():
     vm_check.VmCheck._require_receipts(
         _receipt_stub({"kube"}, lambda _root, _tree: (False, "stale-gitlink"))
     )
+
+
+def _order_stub(only: set[str]) -> Any:
+    """A VmCheck stand-in whose every phase records its name, so the ORDER `_steps` and `_steps_only` call them in is what a test reads."""
+    calls: list[tuple[str, Any]] = []
+
+    def rec(name: str) -> Any:
+        def call(*args: Any) -> bool:
+            calls.append((name, args[0] if args else None))
+            return True
+
+        return call
+
+    stub = SimpleNamespace(opts=SimpleNamespace(only=only), calls=calls, areas=frozenset())
+    for name in (
+        "_require_receipts",
+        "_battery",
+        "_external_legs",
+        "p0_lock",
+        "p1_renet",
+        "a0_gateway",
+        "p4_account",
+        "p2_fleet",
+        "p4_rebind",
+        "p3_keys",
+    ):
+        setattr(stub, name, rec(name))
+    stub.say = lambda _text: None
+    stub._only_wants = lambda _step: False
+    return stub
+
+
+def test_steps_checks_the_receipts_before_the_battery_and_the_external_legs():
+    stub = _order_stub(set())
+    vm_check.VmCheck._steps(stub)
+    assert [name for name, _ in stub.calls] == ["_require_receipts", "_battery", "_external_legs"]
+
+
+def test_a_named_leg_runs_through_the_external_legs_with_exactly_that_leg():
+    leg = "cli-migrate-23"
+    stub = _order_stub({leg})
+    stub._steps_only = lambda: vm_check.VmCheck._steps_only(stub)
+    vm_check.VmCheck._steps(stub)
+    names = [name for name, _ in stub.calls]
+    assert "_require_receipts" not in names
+    assert names[-1] == "_external_legs"
+    assert stub.calls[-1][1] == {leg}
+    assert names.index("p3_keys") < names.index("_external_legs")
