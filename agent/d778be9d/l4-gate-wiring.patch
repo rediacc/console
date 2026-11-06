@@ -1,0 +1,87 @@
+diff --git a/.ci/rediacc_ci/security/ci_workflow_invariants.py b/.ci/rediacc_ci/security/ci_workflow_invariants.py
+index 205a8ea5b..cd9e23d48 100755
+--- a/.ci/rediacc_ci/security/ci_workflow_invariants.py
++++ b/.ci/rediacc_ci/security/ci_workflow_invariants.py
+@@ -1022,6 +1022,7 @@ UPSTREAM_GATES = (
+     "check:ci-dkim-notify",
+     "check:ci-go-deps",
+     "check:deps",
++    "check:ci-ops-health",
+ )
+ UPSTREAM_GATE_LABEL = "no-external-quality"
+ UPSTREAM_GATE_ANNOUNCER = "rediacc_ci.quality.announce_gate_skips"
+diff --git a/.github/workflows/ci-quality.yml b/.github/workflows/ci-quality.yml
+index a8a30d265..f2b95d5a4 100644
+--- a/.github/workflows/ci-quality.yml
++++ b/.github/workflows/ci-quality.yml
+@@ -2694,6 +2694,7 @@ jobs:
+           secrets: |
+             GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
+             GITHUB_APP_ID > BWS_APP_ID
++            OPS_HEALTH_READ_TOKEN > BWS_OPS_HEALTH_READ_TOKEN
+ 
+       - uses: ./.github/actions/app-token
+         id: app-token
+@@ -2846,7 +2847,7 @@ jobs:
+         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+         env:
+           GATE_SKIP_MODE: ${{ inputs.external_quality == 'skip' && 'skip' || 'hard' }}
+-        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.announce_gate_skips no-external-quality check:ci-go-deps check:ci-embed-asset-freshness check:ci-devcontainer-pins check:ci-real-provider-pins
++        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.announce_gate_skips no-external-quality check:ci-go-deps check:ci-embed-asset-freshness check:ci-devcontainer-pins check:ci-real-provider-pins check:ci-ops-health
+ 
+       # Freshness of the embedded-binary version pins vs upstream
+       # (api.github.com and download.samba.org). GITHUB_TOKEN raises the API
+@@ -2881,6 +2882,17 @@ jobs:
+           GITHUB_TOKEN: ${{ github.token }}
+         run: npm run check:ci-real-provider-pins
+ 
++      # The off-box ops-health Worker's own state (agent/plans/PLAN-health-checks-local.md
++      # D-gate): red on a red verdict or when its last cron run is older than the
++      # stale limit in .ci/config/ops-health.json, so a stopped alerter is seen
++      # here too. Hard on every cadence and held only by the label, like the pin
++      # gates above; the announcer above names it.
++      - name: Off-box ops health
++        if: ${{ !cancelled() && steps.setup.outcome == 'success' && inputs.external_quality != 'skip' }}
++        env:
++          OPS_HEALTH_READ_TOKEN: ${{ env.BWS_OPS_HEALTH_READ_TOKEN }}
++        run: npm run check:ci-ops-health
++
+       # Kept inline (3 logic lines, under check-workflows.sh's limit) rather than
+       # extracted: a check-*.sh path would make check-ci-parity's R2 demand a
+       # manifest entry for it, which would newly require clang + libbpf on a
+diff --git a/package.json b/package.json
+index f4dbd8b4b..a5cff1c05 100644
+--- a/package.json
++++ b/package.json
+@@ -29,6 +29,7 @@
+     "check:deps": "tsx scripts/gates/check-deps.ts --selftest && tsx scripts/gates/check-deps.ts",
+     "check:ci-compose-env": ".ci/scripts/quality/check_compose_env.py",
+     "check:ci-go-deps": ".ci/scripts/quality/check_go_deps.py",
++    "check:ci-ops-health": ".ci/scripts/quality/check_ops_health.py",
+     "check:ci-go-module-sync": ".ci/scripts/quality/check_go_module_sync.py",
+     "check:ci-renet-types": ".ci/scripts/quality/check_renet_types.py",
+     "check:ci-renet-tiers": ".ci/scripts/quality/check_renet_tier_map.py",
+diff --git a/scripts/ci-runner/manifest.ts b/scripts/ci-runner/manifest.ts
+index 23da64947..105041424 100644
+--- a/scripts/ci-runner/manifest.ts
++++ b/scripts/ci-runner/manifest.ts
+@@ -3991,6 +3991,19 @@ export const GATES: readonly GateSpec[] = [
+       step: 'Check Go dependency freshness',
+     },
+   },
++  {
++    // The off-box ops-health Worker's /v1/status (agent/plans/PLAN-health-checks-local.md D-gate): red verdict or a stale last_cron_at is red. An UPSTREAM_GATES member, so its step carries the label hold and its job's announcer names it.
++    id: 'check:ci-ops-health',
++    run: 'npm run check:ci-ops-health',
++    gate: true,
++    leaves: ['.ci/scripts/quality/check_ops_health.py'],
++    ci: {
++      kind: 'step',
++      workflow: '.github/workflows/ci-quality.yml',
++      job: 'quality-go',
++      step: 'Off-box ops health',
++    },
++  },
+   {
+     id: 'check:ci-renet-types',
+     run: 'npm run check:ci-renet-types',
