@@ -12,9 +12,15 @@ vi.mock('../../../services/core/output.js', () => ({
 }));
 vi.mock('../../../services/config/config-resources.js', () => ({ configService: {} }));
 vi.mock('../../../i18n/index.js', () => ({ t: (k: string) => k }));
+const acquire = vi.hoisted(() => vi.fn());
+vi.mock('../../../services/machine/machine-connection.js', () => ({
+  machineConnections: { acquire },
+}));
 
 const {
+  FIX_HANDLERS,
   inMaintenanceWindow,
+  realDeps,
   parseMaintenanceWindow,
   repairExitCode,
   repoRepairOutcome,
@@ -267,5 +273,48 @@ describe('repair helpers', () => {
       ok: true,
       detail: 'Rediaccfile: skipped (class operator-only is not allowed)',
     });
+  });
+});
+
+describe('fix handlers refuse a fix that would widen its scope', () => {
+  const ctx = { allowClasses: ['auto-safe'], inWindow: true };
+  const env = (exec: ReturnType<typeof vi.fn>) => ({ machine: 'm1', exec, datastore: '/mnt/d' });
+
+  it('runs no unscoped trim for a repo.disk.high finding that names no repository', async () => {
+    const exec = vi.fn().mockResolvedValue({ success: true, exitCode: 0 });
+    const handler = FIX_HANDLERS['trim-prune'];
+    const out = await handler?.(finding('repo.disk.high', 'shop'), ctx, env(exec));
+    expect(exec).not.toHaveBeenCalled();
+    expect(out?.ok).toBe(false);
+    // A datastore finding is machine-wide by design and still trims.
+    await handler?.(finding('datastore.usage.high', '/mnt/d'), ctx, env(exec));
+    expect(exec).toHaveBeenCalledTimes(1);
+  });
+
+  it('runs no machine-wide supervisor restart when the finding names no rediacc-docker unit', async () => {
+    const exec = vi.fn().mockResolvedValue({ success: true, exitCode: 0 });
+    const handler = FIX_HANDLERS['restart-repo-supervisors'];
+    const out = await handler?.(finding('renet.binary.replaced', 'rediacc-router'), ctx, env(exec));
+    expect(exec).not.toHaveBeenCalled();
+    expect(out?.ok).toBe(false);
+    await handler?.(finding('renet.binary.replaced', 'rediacc-docker-5'), ctx, env(exec));
+    expect(exec.mock.calls[0][0].commandKind.args['network-ids']).toEqual([5]);
+  });
+});
+
+describe('the machine journal', () => {
+  it('is a record, never a precondition: an SSH acquire failure does not reject', async () => {
+    acquire.mockRejectedValueOnce(new Error('ssh down'));
+    const action = { code: 'c', subject: 's' } as never;
+    await expect(realDeps('m1').journal('m1', action)).resolves.toBeUndefined();
+  });
+
+  it('releases the lease after writing the line', async () => {
+    const release = vi.fn();
+    const exec = vi.fn().mockResolvedValue(undefined);
+    acquire.mockResolvedValueOnce({ sftp: { exec }, release });
+    await realDeps('m1').journal('m1', { code: 'c', subject: 's' } as never);
+    expect(exec).toHaveBeenCalledTimes(1);
+    expect(release).toHaveBeenCalledTimes(1);
   });
 });

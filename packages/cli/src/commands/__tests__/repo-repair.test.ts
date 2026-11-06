@@ -139,6 +139,13 @@ describe('rdc repo repair (X4 control)', () => {
     expect(r.calls[0].dryRun).toBe(true);
     expect(out.report.ran).toBe(0);
   });
+
+  it('reports nothing withheld under --dry-run: no prompt would be shown', async () => {
+    const r = fakeRenet('operator-only');
+    const out = await runRepoRepair({ dryRun: true }, false, r.deps);
+    expect(out.withheld).toEqual([]);
+    expect(r.prompts()).toBe(0);
+  });
 });
 
 describe('rdc machine repair never allows an undeclared repair()', () => {

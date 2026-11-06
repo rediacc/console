@@ -1344,6 +1344,7 @@
         "reasonNoWindow": "yalnızca bakım penceresinde, ama makinenin penceresi yok (--set-window ile ayarlayın)",
         "reasonSnapshotFailed": "anlık görüntü alınamadı; yedek gerektiren düzeltmeler çalışmadı: {{detail}}",
         "reasonNoRepository": "depo bu yapılandırmada yok",
+        "reasonNoNetworkIds": "bulgu hiçbir rediacc-docker gözetmenini adlandırmıyor, bu yüzden yeniden başlatma makinedeki hepsine ulaşırdı",
         "reasonNoAction": "bu bulgu için bilinen bir düzeltme yok",
         "resultOk": "düzeltildi",
         "resultFailed": "düzeltme başarısız",
@@ -1488,7 +1489,7 @@
         "unknownCompleted": "{{count}} bilinmeyen depo temizlendi",
         "unknownFound": "{{count}} bilinmeyen depo bulundu (bağlama güvenlik kontrolünden sonra {{deletable}} silinebilir)",
         "unknownStarting": "{{machine}} üzerinde bilinmeyen depolar taranıyor (yerel yapılandırmada yok + fork işaretli ayna yok)...",
-        "orphanFormsNeedFinishedJob": "Temizleme işi hâlâ çalışıyor, bu yüzden sahipsiz depoların silinmesi başlamadı. 'rdc job wait' işin bittiğini bildirince komutu yeniden çalıştırın."
+        "orphanFormsNeedFinishedJob": "Temizleme işi hâlâ çalışıyor, bu yüzden --orphaned-repos ve --prune-unknown silmeleri başlamadı. 'rdc job wait' işin bittiğini bildirince komutu yeniden çalıştırın."
       },
       "converge": {
         "autoFailed": "'{{machine}}' üzerinde runtime eşitlemesi başarısız oldu: {{error}}. Kaldığı yerden sürdürmek için: {{command}}",
@@ -2098,6 +2099,7 @@
         "description": "Makinenin depolama bakımcısının uyguladığı otomatik boyut politikasını yönetir: depo dolduğunda kotayı çevrimiçi büyütür (asla max-quota üzerine çıkmaz, havuz azaldığında büyütmez) ve planlı trimler çalıştırır. Otomatik küçültme yoktur; bunun için 'repo resize' kullanın. Referans verilmezse -m üzerindeki makine geneli varsayılan politika hedeflenir",
         "descriptionShort": "Otomatik boyut politikasını yönet (otomatik büyüme, planlı trim)",
         "failed": "Politika işlemi başarısız",
+        "settingsNotHeld": "Ayarların okunması bu işleme ulaşmadı, bu yüzden sınırlar tek bir belgede birleştirilemiyor.",
         "get": {
           "description": "Kayıtlı makine varsayılanını, depo geçersiz kılmasını (bir referansla) ve bakımcının uyguladığı birleşik etkin politikayı gösterir",
           "descriptionShort": "Boyut politikasını göster (makine varsayılanı, depo geçersiz kılması, etkin)"

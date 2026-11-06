@@ -1344,6 +1344,7 @@
         "reasonNoWindow": "メンテナンスウィンドウ内でのみ実行しますが、このマシンにはウィンドウがありません (--set-window で設定)",
         "reasonSnapshotFailed": "スナップショットに失敗したため、バックアップが必要な修正は実行しませんでした: {{detail}}",
         "reasonNoRepository": "このリポジトリはこの設定にありません",
+        "reasonNoNetworkIds": "検出結果に rediacc-docker スーパーバイザーが指定されていないため、再起動するとマシン上のすべてに及びます",
         "reasonNoAction": "この検出項目に対する修正は不明です",
         "resultOk": "修正済み",
         "resultFailed": "修正に失敗",
@@ -1488,7 +1489,7 @@
         "unknownCompleted": "{{count}} 件の不明なリポジトリをクリーンアップしました",
         "unknownFound": "{{count}} 件の不明なリポジトリが見つかりました（マウント安全チェック後に {{deletable}} 件削除可能）",
         "unknownStarting": "{{machine}} で不明なリポジトリをスキャンしています（ローカル設定になし + フォークマークされたミラーなし）...",
-        "orphanFormsNeedFinishedJob": "prune ジョブがまだ実行中のため、孤立したリポジトリの削除は開始していません。'rdc job wait' で完了を確認してから、もう一度コマンドを実行してください。"
+        "orphanFormsNeedFinishedJob": "prune ジョブがまだ実行中のため、--orphaned-repos と --prune-unknown の削除は開始していません。'rdc job wait' で完了を確認してから、もう一度コマンドを実行してください。"
       },
       "converge": {
         "autoFailed": "'{{machine}}' のランタイム収束に失敗しました: {{error}}。再開するには: {{command}}",
@@ -2098,6 +2099,7 @@
         "description": "マシンのストレージメンテナが適用する自動サイズポリシーを管理する: リポジトリが満杯に近づくとクォータをオンラインで拡大し（max-quota を超えず、プール残量が少ないときは拡大しない）、スケジュールされたトリムを実行する。自動縮小はない。縮小には 'repo resize' を使用する。ref を省略すると、-m のマシン全体のデフォルトポリシーを対象とする",
         "descriptionShort": "自動サイズポリシーを管理（自動拡大、スケジュールトリム）",
         "failed": "ポリシー操作に失敗しました",
+        "settingsNotHeld": "設定の読み取りがこのプロセスに届かなかったため、制限を 1 つのドキュメントにまとめられません。",
         "get": {
           "description": "保存されたマシンデフォルト、リポジトリの上書き（ref 指定時）、メンテナが実際に適用するマージ済みの有効ポリシーを表示する",
           "descriptionShort": "サイズポリシーを表示（マシンデフォルト、リポジトリ上書き、有効値）"

@@ -1344,6 +1344,7 @@
         "reasonNoWindow": "só na janela de manutenção, e a máquina não tem nenhuma (defina-a com --set-window)",
         "reasonSnapshotFailed": "o snapshot falhou, por isso as correções que precisam de cópia não correram: {{detail}}",
         "reasonNoRepository": "o repositório não está nesta configuração",
+        "reasonNoNetworkIds": "o achado não nomeia nenhum supervisor rediacc-docker, então um reinício alcançaria todos os da máquina",
         "reasonNoAction": "não se conhece nenhuma correção para este problema",
         "resultOk": "corrigido",
         "resultFailed": "a correção falhou",
@@ -1488,7 +1489,7 @@
         "unknownCompleted": "{{count}} repositório(s) desconhecido(s) removido(s)",
         "unknownFound": "Encontrado(s) {{count}} repositório(s) desconhecido(s) ({{deletable}} eliminável(eis) após verificação de segurança de montagem)",
         "unknownStarting": "A procurar repositórios desconhecidos em {{machine}} (não na configuração local + sem espelho marcado como fork)...",
-        "orphanFormsNeedFinishedJob": "A tarefa de limpeza ainda está em execução, por isso a remoção dos repositórios órfãos não começou. Execute o comando novamente quando 'rdc job wait' indicar que terminou."
+        "orphanFormsNeedFinishedJob": "A tarefa de limpeza ainda está em execução, por isso as remoções de --orphaned-repos e --prune-unknown não começaram. Execute o comando novamente quando 'rdc job wait' indicar que terminou."
       },
       "converge": {
         "autoFailed": "A convergência do runtime em '{{machine}}' falhou: {{error}}. Para retomar: {{command}}",
@@ -2098,6 +2099,7 @@
         "description": "Gerir a política de tamanho automática aplicada pelo mantenedor de armazenamento da máquina: aumentar a cota de um repositório online quando ele enche (nunca além de max-quota, nunca com o pool baixo) e executar trims agendados. Não há redução automática; para isso use 'repo resize'. Sem uma ref, é gerida a política predefinida de toda a máquina em -m",
         "descriptionShort": "Gerenciar a política de tamanho automática (auto-crescimento, trim agendado)",
         "failed": "Falha na operação de política",
+        "settingsNotHeld": "A leitura das configurações não chegou a este processo, por isso os limites não podem ser mesclados em um único documento.",
         "get": {
           "description": "Mostra a predefinição da máquina guardada, a substituição do repositório (com uma ref) e a política efetiva combinada sobre a qual o mantenedor atua",
           "descriptionShort": "Mostrar a política de tamanho (padrão da máquina, substituição do repositório, efetiva)"

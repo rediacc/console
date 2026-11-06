@@ -1344,6 +1344,7 @@
         "reasonNoWindow": "solo en la ventana de mantenimiento, y la máquina no tiene ninguna (defínela con --set-window)",
         "reasonSnapshotFailed": "la instantánea falló, así que no se ejecutaron las correcciones que necesitan copia: {{detail}}",
         "reasonNoRepository": "el repositorio no está en esta configuración",
+        "reasonNoNetworkIds": "el hallazgo no nombra ningún supervisor rediacc-docker, así que un reinicio alcanzaría a todos los de la máquina",
         "reasonNoAction": "no se conoce ninguna corrección para este hallazgo",
         "resultOk": "corregido",
         "resultFailed": "la corrección falló",
@@ -1488,7 +1489,7 @@
         "unknownCompleted": "Limpiados {{count}} repositorios desconocidos",
         "unknownFound": "Encontrados {{count}} repositorio(s) desconocido(s) ({{deletable}} eliminables tras verificación de seguridad de montaje)",
         "unknownStarting": "Buscando repositorios desconocidos en {{machine}} (no en configuración local + sin espejo marcado como fork)...",
-        "orphanFormsNeedFinishedJob": "El trabajo de limpieza sigue en marcha, así que no se ha empezado a borrar los repositorios huérfanos. Vuelve a ejecutar el comando cuando 'rdc job wait' indique que ha terminado."
+        "orphanFormsNeedFinishedJob": "El trabajo de limpieza sigue en marcha, así que no han empezado los borrados de --orphaned-repos y --prune-unknown. Vuelve a ejecutar el comando cuando 'rdc job wait' indique que ha terminado."
       },
       "converge": {
         "autoFailed": "La convergencia del runtime en '{{machine}}' falló: {{error}}. Para continuar: {{command}}",
@@ -2098,6 +2099,7 @@
         "description": "Gestiona la política de tamaño automática que aplica el mantenedor de almacenamiento de la máquina: amplía la cuota de un repositorio en línea cuando se llena (nunca más allá de max-quota, nunca con el pool escaso) y ejecuta recortes programados. No existe la reducción automática; para eso usa 'repo resize'. Sin una referencia, se gestiona la política predeterminada de toda la máquina en -m",
         "descriptionShort": "Gestionar la política de tamaño automática (auto-crecimiento, recorte programado)",
         "failed": "La operación de política falló",
+        "settingsNotHeld": "La lectura de la configuración no llegó a este proceso, así que los límites no se pueden fusionar en un solo documento.",
         "get": {
           "description": "Muestra el valor predeterminado de la máquina guardado, la anulación del repositorio (con una referencia) y la política efectiva combinada sobre la que actúa el mantenedor",
           "descriptionShort": "Mostrar la política de tamaño (predeterminada, anulación del repositorio, efectiva)"

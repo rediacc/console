@@ -1344,6 +1344,7 @@
         "reasonNoWindow": "solo nella finestra di manutenzione, e la macchina non ne ha una (impostarla con --set-window)",
         "reasonSnapshotFailed": "lo snapshot è fallito, quindi le correzioni che richiedono un backup non sono state eseguite: {{detail}}",
         "reasonNoRepository": "il repository non è in questa configurazione",
+        "reasonNoNetworkIds": "il rilevamento non nomina alcun supervisore rediacc-docker, quindi un riavvio li raggiungerebbe tutti sulla macchina",
         "reasonNoAction": "nessuna correzione nota per questo problema",
         "resultOk": "corretto",
         "resultFailed": "correzione fallita",
@@ -1488,7 +1489,7 @@
         "unknownCompleted": "{{count}} repository sconosciuti rimossi",
         "unknownFound": "Trovato/i {{count}} repository sconosciuto/i ({{deletable}} eliminabile/i dopo il controllo di sicurezza del montaggio)",
         "unknownStarting": "Scansione dei repository sconosciuti su {{machine}} (non presenti nella configurazione locale + senza mirror con marcatura fork) in corso...",
-        "orphanFormsNeedFinishedJob": "Il job di pulizia è ancora in corso, quindi l'eliminazione dei repository orfani non è partita. Esegui di nuovo il comando quando 'rdc job wait' ne segnala la fine."
+        "orphanFormsNeedFinishedJob": "Il job di pulizia è ancora in corso, quindi le eliminazioni di --orphaned-repos e --prune-unknown non sono partite. Esegui di nuovo il comando quando 'rdc job wait' ne segnala la fine."
       },
       "converge": {
         "autoFailed": "Convergenza del runtime su '{{machine}}' non riuscita: {{error}}. Per riprendere: {{command}}",
@@ -2098,6 +2099,7 @@
         "description": "Gestisce la politica di dimensione automatica applicata dal manutentore dello storage della macchina: amplia online la quota di un repository quando si riempie (mai oltre max-quota, mai con il pool scarso) ed esegue trim pianificati. Non esiste riduzione automatica; per quella usare 'repo resize'. Senza un riferimento, viene interessata la politica predefinita a livello di macchina su -m",
         "descriptionShort": "Gestire la politica di dimensione automatica (auto-crescita, trim pianificato)",
         "failed": "Operazione sulla politica non riuscita",
+        "settingsNotHeld": "La lettura delle impostazioni non è arrivata a questo processo, quindi i limiti non possono essere uniti in un unico documento.",
         "get": {
           "description": "Mostra il predefinito macchina salvato, l'override del repository (con un riferimento) e la politica effettiva unita su cui agisce il manutentore",
           "descriptionShort": "Mostrare la politica di dimensione (predefinito macchina, override repository, effettiva)"

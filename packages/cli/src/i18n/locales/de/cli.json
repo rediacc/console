@@ -1344,6 +1344,7 @@
         "reasonNoWindow": "nur im Wartungsfenster erlaubt, und die Maschine hat keins (mit --set-window festlegen)",
         "reasonSnapshotFailed": "der Snapshot ist fehlgeschlagen, daher liefen Korrekturen mit Backup-Pflicht nicht: {{detail}}",
         "reasonNoRepository": "das Repository steht nicht in dieser Konfiguration",
+        "reasonNoNetworkIds": "der Befund nennt keinen rediacc-docker-Supervisor, ein Neustart würde daher jeden auf der Maschine erreichen",
         "reasonNoAction": "für diesen Befund ist keine Korrektur bekannt",
         "resultOk": "behoben",
         "resultFailed": "Korrektur fehlgeschlagen",
@@ -1488,7 +1489,7 @@
         "unknownCompleted": "{{count}} unbekannte Repositories bereinigt",
         "unknownFound": "{{count}} unbekannte(s) Repository/Repositories gefunden ({{deletable}} löschbar nach Mount-Sicherheitsprüfung)",
         "unknownStarting": "Suche nach unbekannten Repositories auf {{machine}} (nicht in lokaler Konfiguration + kein fork-markierter Mirror)...",
-        "orphanFormsNeedFinishedJob": "Der Prune-Job läuft noch, daher wurden die verwaisten Repositories nicht gelöscht. Führen Sie den Befehl erneut aus, sobald 'rdc job wait' das Ende meldet."
+        "orphanFormsNeedFinishedJob": "Der Prune-Job läuft noch, daher haben die Löschvorgänge von --orphaned-repos und --prune-unknown nicht begonnen. Führen Sie den Befehl erneut aus, sobald 'rdc job wait' das Ende meldet."
       },
       "converge": {
         "autoFailed": "Runtime-Angleichung auf '{{machine}}' fehlgeschlagen: {{error}}. Fortsetzen mit: {{command}}",
@@ -2098,6 +2099,7 @@
         "description": "Verwaltet die automatische Größenrichtlinie des Speicher-Maintainers der Maschine: vergrößert das Kontingent eines Repositorys online, wenn es voll läuft (nie über max-quota hinaus, nie bei knappem Pool), und führt geplante Trims aus. Automatisches Verkleinern gibt es nicht; dafür 'repo resize' verwenden. Ohne Referenz wird die maschinenweite Standardrichtlinie auf -m angesprochen",
         "descriptionShort": "Automatische Größenrichtlinie verwalten (Auto-Grow, geplanter Trim)",
         "failed": "Richtlinienvorgang fehlgeschlagen",
+        "settingsNotHeld": "Das Lesen der Einstellungen hat diesen Prozess nicht erreicht, daher lassen sich die Limits nicht zu einem Dokument zusammenführen.",
         "get": {
           "description": "Zeigt den gespeicherten Maschinenstandard, die Repository-Überschreibung (mit einer Referenz) und die effektive zusammengeführte Richtlinie, nach der der Maintainer handelt",
           "descriptionShort": "Größenrichtlinie anzeigen (Maschinenstandard, Repository-Überschreibung, effektiv)"

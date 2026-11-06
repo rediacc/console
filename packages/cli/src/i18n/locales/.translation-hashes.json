@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 2530,
-    "sourceCommit": "30284be02bed84eb2e9dee61eecc4c436d595ebf"
+    "keyCount": 2532,
+    "sourceCommit": "94332990d93a9fa1913a0383a1445b6c7392c66c"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -1162,7 +1162,7 @@
     "commands.machine.prune.orphanedReposCompleted": "9b5f6016",
     "commands.machine.prune.orphanedReposOption": "36cee01b",
     "commands.machine.prune.orphanedReposStarting": "84182a2b",
-    "commands.machine.prune.orphanFormsNeedFinishedJob": "c68b7285",
+    "commands.machine.prune.orphanFormsNeedFinishedJob": "74c67630",
     "commands.machine.prune.previewEmpty": "e6e862ac",
     "commands.machine.prune.pruneUnknownOption": "6fa1dfd1",
     "commands.machine.prune.startingDatastore": "3716a1e2",
@@ -1198,6 +1198,7 @@
     "commands.machine.repair.optionWithBackup": "291ba747",
     "commands.machine.repair.reasonNeedsBackup": "4668cb2a",
     "commands.machine.repair.reasonNoAction": "b3675a4a",
+    "commands.machine.repair.reasonNoNetworkIds": "0c227715",
     "commands.machine.repair.reasonNoRepository": "dd4ec8bf",
     "commands.machine.repair.reasonNoWindow": "5fbdd44d",
     "commands.machine.repair.reasonOutsideWindow": "ddb2ce38",
@@ -1678,6 +1679,7 @@
     "commands.repo.policy.set.pidsMaxOption": "5c9b9df0",
     "commands.repo.policy.set.ramVolumeOption": "4f61b649",
     "commands.repo.policy.set.trimIntervalOption": "c0f0f354",
+    "commands.repo.policy.settingsNotHeld": "d52d1112",
     "commands.repo.promote.backupInfo": "25175124",
     "commands.repo.promote.completed": "658b6f7a",
     "commands.repo.promote.configSaveFailed": "5db72e0f",

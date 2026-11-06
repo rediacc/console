@@ -1344,6 +1344,7 @@
         "reasonNoWindow": "仅在维护窗口内执行,但该机器没有维护窗口(用 --set-window 设置)",
         "reasonSnapshotFailed": "快照失败,因此未执行需要备份的修复:{{detail}}",
         "reasonNoRepository": "此配置中没有该仓库",
+        "reasonNoNetworkIds": "该发现没有指明任何 rediacc-docker 监督进程，重启会波及机器上的全部监督进程",
         "reasonNoAction": "此发现没有已知的修复",
         "resultOk": "已修复",
         "resultFailed": "修复失败",
@@ -1488,7 +1489,7 @@
         "unknownCompleted": "已清理 {{count}} 个未知仓库",
         "unknownFound": "找到 {{count}} 个未知仓库（挂载安全检查后 {{deletable}} 个可删除）",
         "unknownStarting": "正在 {{machine}} 上扫描未知仓库（不在本地配置中 + 没有标记为 fork 的镜像）...",
-        "orphanFormsNeedFinishedJob": "清理作业仍在运行，因此尚未开始删除孤立仓库。请在 'rdc job wait' 报告完成后重新运行此命令。"
+        "orphanFormsNeedFinishedJob": "清理作业仍在运行，因此 --orphaned-repos 和 --prune-unknown 的删除尚未开始。请在 'rdc job wait' 报告完成后重新运行此命令。"
       },
       "converge": {
         "autoFailed": "'{{machine}}' 上的运行时收敛失败：{{error}}。继续执行：{{command}}",
@@ -2098,6 +2099,7 @@
         "description": "管理机器存储维护器所执行的自动大小策略：当仓库快满时在线扩大其配额（绝不超过 max-quota，存储池空间不足时也不扩大），并按计划执行修剪。不存在自动缩小；如需缩小请使用 'repo resize'。不带引用时，操作的是 -m 上的机器级默认策略",
         "descriptionShort": "管理自动大小策略（自动扩容、计划修剪）",
         "failed": "策略操作失败",
+        "settingsNotHeld": "设置读取结果没有送达此进程，因此无法把限制合并成一个文档。",
         "get": {
           "description": "显示已保存的机器默认值、仓库覆盖值（带引用时）以及维护器实际执行的合并后有效策略",
           "descriptionShort": "显示大小策略（机器默认、仓库覆盖、有效值）"

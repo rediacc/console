@@ -105,8 +105,9 @@ async function operatorDecision(
 ): Promise<{ allow: boolean; withheld?: string }> {
   const files = planned.filter((f) => f.class === 'operator-only').map((f) => f.file);
   if (files.length === 0) return { allow: false };
-  if (opts.yes) return { allow: true };
-  const confirmed = !opts.dryRun && (await deps.confirm(files));
+  // A dry run shows no prompt, so nothing is withheld for want of an answer.
+  if (opts.yes || opts.dryRun) return { allow: true };
+  const confirmed = await deps.confirm(files);
   return confirmed ? { allow: true } : { allow: false, withheld: 'not-confirmed' };
 }
 

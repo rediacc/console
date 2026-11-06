@@ -380,6 +380,8 @@ const NO_REPOSITORY = (): FixOutcome => ({
 });
 
 const trimPrune: FixHandler = async (f, _ctx, { machine, exec, datastore }) => {
+  // A repo.disk.high finding is one repository's: without it named, an unscoped trim would reach every repository.
+  if (f.code === 'repo.disk.high' && !f.target?.repository) return NO_REPOSITORY();
   const one = f.code === 'repo.disk.high' && f.target?.repository;
   return callOutcome(
     await exec({
@@ -409,13 +411,16 @@ const proxyFix =
 
 const restartSupervisors: FixHandler = async (f, _ctx, { machine, exec }) => {
   const ids = supervisorNetworkIds(f.subject);
+  // Without the stale supervisors' ids the restart would reach every docker supervisor on the machine.
+  if (ids.length === 0)
+    return { ok: false, detail: t('commands.machine.repair.reasonNoNetworkIds') };
   return callOutcome(
     await exec({
       functionName: 'daemons-restart',
       machineName: machine,
       commandKind: {
         name: 'daemons-restart',
-        args: { 'include-docker': true, ...(ids.length > 0 ? { 'network-ids': ids } : {}) },
+        args: { 'include-docker': true, 'network-ids': ids },
       },
     })
   );
@@ -451,7 +456,7 @@ const repoRepair: FixHandler = async (f, ctx, { machine, exec }) => {
 };
 
 /** The renet call behind each auto-run fix action. */
-const FIX_HANDLERS: Partial<Record<FixAction, FixHandler>> = {
+export const FIX_HANDLERS: Partial<Record<FixAction, FixHandler>> = {
   'trim-prune': trimPrune,
   'restart-traefik': proxyFix(true),
   'acme-anchor': proxyFix(false),
@@ -460,7 +465,7 @@ const FIX_HANDLERS: Partial<Record<FixAction, FixHandler>> = {
   'repo-repair': repoRepair,
 };
 
-function realDeps(machine: string): RepairDeps {
+export function realDeps(machine: string): RepairDeps {
   const exec: Exec = (o) => getExecutor().execute({ ...o, probe: true, captureOutput: true });
   return {
     readHealth: async () =>
@@ -484,13 +489,14 @@ function realDeps(machine: string): RepairDeps {
       return handler(f, ctx, { machine, exec, datastore: await machineDatastore(machine) });
     },
     journal: async (m, action) => {
-      const lease = await machineConnections.acquire(m);
+      let lease: Awaited<ReturnType<typeof machineConnections.acquire>> | undefined;
       try {
+        lease = await machineConnections.acquire(m);
         await lease.sftp.exec(`logger -t rediacc-repair -- ${shellQuote(JSON.stringify(action))}`);
       } catch {
         // The journal line is a record, not a precondition: the JSON output carries the same row.
       } finally {
-        lease.release();
+        lease?.release();
       }
     },
   };

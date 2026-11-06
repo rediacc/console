@@ -1344,6 +1344,7 @@
         "reasonNoWindow": "ainult hooldusaknas, aga masinal pole hooldusakent (määra --set-window abil)",
         "reasonSnapshotFailed": "hetktõmmis ebaõnnestus, seega varukoopiat vajavaid parandusi ei käivitatud: {{detail}}",
         "reasonNoRepository": "hoidlat pole selles konfiguratsioonis",
+        "reasonNoNetworkIds": "leid ei nimeta ühtegi rediacc-docker järelevaatajat, seega taaskäivitus puudutaks kõiki masina järelevaatajaid",
         "reasonNoAction": "selle leiu jaoks pole teadaolevat parandust",
         "resultOk": "parandatud",
         "resultFailed": "parandus ebaõnnestus",
@@ -1488,7 +1489,7 @@
         "unknownCompleted": "{{count}} tundmatut repositooriumi koristatud",
         "unknownFound": "Leitud {{count}} tundmat repositooriumi ({{deletable}} kustutatavad pärast ühendusohutuse kontrolli)",
         "unknownStarting": "Tundmatute repositooriumide skaneerimine masinal {{machine}} (pole kohalikus konfiguratsioonis + puudub fork-märgistusega peegel)...",
-        "orphanFormsNeedFinishedJob": "Puhastustöö alles käib, seega orbhoidlate kustutamine ei alanud. Käivita käsk uuesti, kui 'rdc job wait' teatab töö lõpust."
+        "orphanFormsNeedFinishedJob": "Puhastustöö alles käib, seega kustutamised valikutega --orphaned-repos ja --prune-unknown ei alanud. Käivita käsk uuesti, kui 'rdc job wait' teatab töö lõpust."
       },
       "converge": {
         "autoFailed": "Runtime'i ühtlustamine masinas '{{machine}}' ebaõnnestus: {{error}}. Jätkamiseks: {{command}}",
@@ -2098,6 +2099,7 @@
         "description": "Haldab masina salvestushooldaja rakendatavat automaatset suurusepoliitikat: kasvatab hoidla kvooti võrgus, kui see täitub (mitte üle max-quota ega siis, kui puulis on ruumi vähe), ja käivitab plaanitud trimme. Automaatset vähendamist ei ole; selleks kasuta 'repo resize'. Ilma viiteta hallatakse masinaülest vaikepoliitikat -m peal",
         "descriptionShort": "Halda automaatset suurusepoliitikat (automaatkasv, plaanitud trim)",
         "failed": "Poliitikatoiming ebaõnnestus",
+        "settingsNotHeld": "Seadete lugemine ei jõudnud sellesse protsessi, seega ei saa piiranguid ühte dokumenti liita.",
         "get": {
           "description": "Näitab salvestatud masina vaikeväärtust, hoidla ülekirjutust (viitega) ja hooldaja rakendatavat ühendatud kehtivat poliitikat",
           "descriptionShort": "Näita suurusepoliitikat (masina vaikimisi, hoidla ülekirjutus, kehtiv)"

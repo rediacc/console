@@ -1344,6 +1344,7 @@
         "reasonNoWindow": "réservé à la fenêtre de maintenance, et la machine n'en a pas (la définir avec --set-window)",
         "reasonSnapshotFailed": "l'instantané a échoué, les correctifs qui exigent une sauvegarde n'ont donc pas tourné : {{detail}}",
         "reasonNoRepository": "le dépôt n'est pas dans cette configuration",
+        "reasonNoNetworkIds": "le constat ne nomme aucun superviseur rediacc-docker : un redémarrage les atteindrait tous sur la machine",
         "reasonNoAction": "aucun correctif connu pour ce constat",
         "resultOk": "corrigé",
         "resultFailed": "échec du correctif",
@@ -1488,7 +1489,7 @@
         "unknownCompleted": "{{count}} dépôts inconnus nettoyés",
         "unknownFound": "{{count}} dépôt(s) inconnu(s) trouvé(s) ({{deletable}} supprimables après vérification de sécurité de montage)",
         "unknownStarting": "Recherche de dépôts inconnus sur {{machine}} (pas dans la configuration locale + pas de miroir marqué fork)...",
-        "orphanFormsNeedFinishedJob": "Le job de nettoyage est toujours en cours : la suppression des dépôts orphelins n'a donc pas commencé. Relancez la commande quand 'rdc job wait' indique qu'il est terminé."
+        "orphanFormsNeedFinishedJob": "Le job de nettoyage est toujours en cours : les suppressions de --orphaned-repos et --prune-unknown n'ont donc pas commencé. Relancez la commande quand 'rdc job wait' indique qu'il est terminé."
       },
       "converge": {
         "autoFailed": "La convergence du runtime sur '{{machine}}' a échoué : {{error}}. Pour reprendre : {{command}}",
@@ -2098,6 +2099,7 @@
         "description": "Gère la politique de taille automatique appliquée par le mainteneur de stockage de la machine : agrandit le quota d'un dépôt en ligne quand il se remplit (jamais au-delà de max-quota, jamais quand le pool est bas) et lance des trims planifiés. Il n'y a pas de réduction automatique ; utilisez 'repo resize' pour cela. Sans réf, la politique par défaut à l'échelle de la machine sur -m est visée",
         "descriptionShort": "Gérer la politique de taille automatique (auto-agrandissement, trim planifié)",
         "failed": "Échec de l'opération de politique",
+        "settingsNotHeld": "La lecture des paramètres n'est pas parvenue à ce processus : les limites ne peuvent donc pas être fusionnées en un seul document.",
         "get": {
           "description": "Affiche le défaut machine enregistré, la surcharge du dépôt (avec une réf), et la politique effective fusionnée appliquée par le mainteneur",
           "descriptionShort": "Afficher la politique de taille (défaut machine, surcharge du dépôt, effective)"
