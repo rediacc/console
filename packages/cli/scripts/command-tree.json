@@ -3575,6 +3575,54 @@
                   "defaultValue": null
                 },
                 {
+                  "flags": "--memory-max <size>",
+                  "descriptionKey": "commands.repo.policy.set.memoryMaxOption",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--memory-high <size>",
+                  "descriptionKey": "commands.repo.policy.set.memoryHighOption",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--cpu-max <cores>",
+                  "descriptionKey": "commands.repo.policy.set.cpuMaxOption",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--io-max <limits>",
+                  "descriptionKey": "commands.repo.policy.set.ioMaxOption",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--pids-max <count>",
+                  "descriptionKey": "commands.repo.policy.set.pidsMaxOption",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--ram-volume <size>",
+                  "descriptionKey": "commands.repo.policy.set.ramVolumeOption",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--clear-limits",
+                  "descriptionKey": "commands.repo.policy.set.clearLimitsOption",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--force",
+                  "descriptionKey": "commands.repo.policy.set.forceOption",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
                   "flags": "-m, --machine <name>",
                   "descriptionKey": "commands.repo.machineOption",
                   "mandatory": false,

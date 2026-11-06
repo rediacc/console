@@ -7,7 +7,7 @@ order: 2
 language: zh
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/zh/cli.json
-sourceHash: "0b9d4e197ad7716b"
+sourceHash: "e17289c6a2dc6647"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -1836,6 +1836,14 @@ rdc repo policy set [ref] [options]
 | `--grow-step <step>` | {{t:cli.commands.repo.policy.set.growStepOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--auto-trim <bool>` | {{t:cli.commands.repo.policy.set.autoTrimOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--trim-interval <hours>` | {{t:cli.commands.repo.policy.set.trimIntervalOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--memory-max <size>` | {{t:cli.commands.repo.policy.set.memoryMaxOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--memory-high <size>` | {{t:cli.commands.repo.policy.set.memoryHighOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--cpu-max <cores>` | {{t:cli.commands.repo.policy.set.cpuMaxOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--io-max <limits>` | {{t:cli.commands.repo.policy.set.ioMaxOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--pids-max <count>` | {{t:cli.commands.repo.policy.set.pidsMaxOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--ram-volume <size>` | {{t:cli.commands.repo.policy.set.ramVolumeOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--clear-limits` | {{t:cli.commands.repo.policy.set.clearLimitsOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--force` | {{t:cli.commands.repo.policy.set.forceOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 
