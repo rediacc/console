@@ -549,7 +549,9 @@ describe('attach window over /v1/command', () => {
       await until(() => started);
       await vi.advanceTimersByTimeAsync(25_000);
       const all = await lines(response);
-      const beats = all.flatMap((l) => (l.kind === 'heartbeat' && l.ts !== undefined ? [Date.parse(l.ts)] : []));
+      const beats = all.flatMap((l) =>
+        l.kind === 'heartbeat' && l.ts !== undefined ? [Date.parse(l.ts)] : []
+      );
       // A 10 s period gives exactly the beats at 10 s and 20 s; a 5 s period gives four, a 12.5 s one gives one.
       expect(beats).toHaveLength(2);
       expect(beats[1] - beats[0]).toBe(10_000);

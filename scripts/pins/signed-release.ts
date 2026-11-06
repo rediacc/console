@@ -127,7 +127,10 @@ function pinnedCosignVersion(root: string): string | null {
  * (`.ci/bootstrap.sh install cosign` writes .ci/cache/toolchain/cosign/<COSIGN_VERSION>/cosign),
  * then `cosign` on PATH.
  */
-export const cosignBinary = (env: NodeJS.ProcessEnv = process.env, root: string = REPO_ROOT): string => {
+export const cosignBinary = (
+  env: NodeJS.ProcessEnv = process.env,
+  root: string = REPO_ROOT
+): string => {
   if (env.PINS_COSIGN && env.PINS_COSIGN !== '') return env.PINS_COSIGN;
   const v = pinnedCosignVersion(root);
   if (v) {

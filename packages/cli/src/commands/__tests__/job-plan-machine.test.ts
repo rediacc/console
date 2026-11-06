@@ -9,7 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { installJobDeps } from './job-deps.js';
 
 const mocks = vi.hoisted(() => ({
-  format: 'table' as 'json' | 'table',
+  format: 'table' as 'json' | 'table' | 'yaml',
   print: vi.fn(),
   info: vi.fn(),
   success: vi.fn(),

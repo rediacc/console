@@ -643,7 +643,9 @@ TOOLS: tuple[Tool, ...] = (
             "brew": ".ci/bootstrap.sh install cosign",
             "repo": ".ci/bootstrap.sh install cosign   # sigstore release binary, sha256-checked, into .ci/cache/toolchain/cosign/<pin>",
         },
-        provenance=(".ci/bootstrap.sh install_cosign and .devcontainer/toolchain.env COSIGN_VERSION"),
+        provenance=(
+            ".ci/bootstrap.sh install_cosign and .devcontainer/toolchain.env COSIGN_VERSION"
+        ),
         probe=("cosign", "version"),
         note=(
             "OPTIONAL ON A DEVELOPER HOST: only a bump of a cosign-signed pin needs it. It lives in a "
