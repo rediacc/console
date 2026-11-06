@@ -403,8 +403,9 @@ Owns: private/renet (gitlink; pkg/orchestration, pkg/rediaccfile, pkg/reporuntim
   - CONTROL: fixtures for F17's shape (`_acme-challenge.a.example` and `_acme-challenge.b.example` both ending at `www.example`: finding), a deliberate delegation (`_acme-challenge.mail.example.com` to `_acme-challenge.mail.example.io`: no finding), a shared end listed in `acme.delegated_names` (no finding), and no CNAME (no finding).
   - Accept: same two commands, rc 0.
     (ticked) 2026-11-06T20:40:08Z by d778be9d: commit:30284be02; accept on HEAD 30284be02bed: G6 renet feb3997 + shared e87d4b485, CLI fold 30284be02; same commands rc=0
-- [ ] G7: Docs. services.md: the lifecycle table (packages/www/src/content/docs/en/services.md:29-38) gains `health()` with the 0, 1, 2 contract and "no check" when undefined, the "up to two functions" text is corrected, and the timeout table gains `health` (30 s default, 300 s cap). monitoring.md: `rdc repo health`, the fold into `machine health`, the certificate dimension and the CNAME finding. cli-application.md is regenerated.
+- [x] G7: Docs. services.md: the lifecycle table (packages/www/src/content/docs/en/services.md:29-38) gains `health()` with the 0, 1, 2 contract and "no check" when undefined, the "up to two functions" text is corrected, and the timeout table gains `health` (30 s default, 300 s cap). monitoring.md: `rdc repo health`, the fold into `machine health`, the certificate dimension and the CNAME finding. cli-application.md is regenerated.
   - Accept: `npm run gen:docs` then `npm run check:ci-i18n-www-cli-docs && npm run check:ci-prose-style` rc 0.
+    (ticked) 2026-11-06T22:24:07Z by d778be9d: commit:394f8862f (en 342939d5c, 7449f13da); parity, www-cli-docs, prose, check:i18n rc=0
 
 ### X: remediation, generic product (writer X)
 
