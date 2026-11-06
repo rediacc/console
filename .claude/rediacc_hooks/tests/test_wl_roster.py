@@ -2144,6 +2144,25 @@ def test_report_item_naming_a_box_renders_the_report_beside_it(tmp_path):
     assert roster.item_box_citations("- [ ] no box here", entries, store) == []
 
 
+def test_report_an_unreadable_body_is_cited_as_unread_not_as_naming_no_box(tmp_path):
+    """Review d03f8895.1: a captured report whose body cannot be read was cited `boxes no box named`, a claim about boxes never read."""
+    roster = wlfix.import_wl("wl_roster")
+    report = wlfix.import_wl("wl_report")
+    store, metas, entries = _report_world(tmp_path)
+    aid, sig = CHILD_BOXES["sampler"]
+    (store / "1104-1" / "sampler.md").unlink()
+    lines = roster.report_citations([("i1", COORD)], metas, None, entries=entries, store=store)[
+        "i1"
+    ]
+    rid = report.short_id(aid)
+    assert "child %s: report %s, boxes no box named" % (aid, rid) not in lines
+    assert (
+        "child %s: report %s, boxes unread (body 1104-1/sampler.md could not be read)" % (aid, rid)
+        in lines
+    )
+    assert roster.item_box_citations("- [ ] box %s" % sig, entries, store) == []
+
+
 def test_report_control_the_old_dead_row_holds_no_report_id():
     roster = wlfix.import_wl("wl_roster")
     report = wlfix.import_wl("wl_report")

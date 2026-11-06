@@ -1792,7 +1792,7 @@ def row_line(row):
 
 
 def _report_boxes(store, entry):
-    """[(sig, state, owed halves)] of one report index entry: its `boxes` field (T6), else its body through `wl_planbox.parse_tick`."""
+    """[(sig, state, owed halves)] of one report index entry: its `boxes` field (T6), else its body through `wl_planbox.parse_tick`. None when the body had to be read and could not be, so a caller never reads an unread body as one naming no box (review d03f8895.1)."""
     import wl_planbox
 
     boxes = entry.get("boxes")
@@ -1802,7 +1802,7 @@ def _report_boxes(store, entry):
                 encoding="utf-8", errors="replace"
             )
         except OSError:
-            return []
+            return None
         boxes = [
             {"sig": r.sig, "state": r.state, "owed": [list(x) for x in r.owed]}
             for r in wl_planbox.parse_tick(body)
@@ -1829,6 +1829,12 @@ def _cite(store, entries, agent_id):
     if entry is None:
         return "%s: no captured report" % agent_id, []
     boxes = _report_boxes(store, entry)
+    if boxes is None:
+        return "%s: report %s, boxes unread (body %s could not be read)" % (
+            agent_id,
+            entry["id"],
+            entry.get("body") or "(none)",
+        ), []
     sigs = " ".join(sig for sig, _st, _h in boxes) or "no box named"
     return "%s: report %s, boxes %s" % (agent_id, entry["id"], sigs), boxes
 
@@ -1855,7 +1861,7 @@ def item_box_citations(text, entries, store):
         return []
     found = {}
     for entry in entries:
-        for sig, state, halves in _report_boxes(store, entry):
+        for sig, state, halves in _report_boxes(store, entry) or []:
             if sig in named:
                 found[sig] = (entry["id"], state, halves)
     return [
