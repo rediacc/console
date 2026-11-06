@@ -9,6 +9,7 @@ import json
 import os
 import pathlib
 import shlex
+import shutil
 import signal
 import subprocess
 import sys
@@ -55,6 +56,7 @@ def make_repo(base, *, live_branch=True, plant=False):
     write_json(live_sub / "package-lock.json", SUB_LOCK)
     spike.commit_all(live_sub, "sub: manifest")
     write_json(live_sub / "node_modules" / ".package-lock.json", SUB_LOCK)
+    write_json(live_sub / "node_modules" / "z" / "package.json", {"name": "z", "version": "1.0.0"})
 
     ignore = root / ".gitignore"
     spike.write(ignore, ignore.read_text(encoding="utf-8") + "dist/\n.env*\n.venv/\n.ci/cache/\n")
@@ -80,6 +82,7 @@ def make_repo(base, *, live_branch=True, plant=False):
 
     modules = root / "node_modules"
     spike.write(modules / "dep" / "index.js", "module.exports = 'dep';\n")
+    write_json(modules / "dep" / "package.json", {"name": "dep", "version": "1.0.0"})
     write_json(modules / ".package-lock.json", {"packages": dict(ROOT_LOCK["packages"])})
     (modules / "@x").mkdir()
     (modules / "@x" / "shared").symlink_to("../../packages/shared")
@@ -2306,3 +2309,11 @@ def test_remove_row_restores_the_signal_dispositions_it_found(monkeypatch, raise
     finally:
         for signum, handler in saved.items():
             signal.signal(signum, handler)
+
+
+def test_lease_hidden_lock_package_missing_on_disk_forces_a_real_install(repo):
+    """A package the hidden lockfile lists but the disk lacks makes the live install a difference, so the seed installs instead of linking it."""
+    root = repo.root
+    shutil.rmtree(root / "node_modules" / "dep")
+    result = run_lease(root, "--name", "t")
+    assert "node_modules/dep is in the hidden lockfile but not on disk" in result.stderr
