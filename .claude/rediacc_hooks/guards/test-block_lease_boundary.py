@@ -456,7 +456,7 @@ GIT_HOOKS = str(HOOKS / "git")
 _git("config", "core.hooksPath", GIT_HOOKS, cwd=MAIN)
 _git("config", "core.hooksPath", GIT_HOOKS, cwd=SUB_STORE)
 _git("update-ref", "refs/worktrees/x", "HEAD", cwd=MAIN)
-_write(TMP / "m", "chore: fixture\n")
+_write(TMP / "m", "chore: fixture\n\nPlan-Box: none -- fixture commit of the boundary control\n")
 MESSAGE_FILE = str(TMP / "m")
 
 

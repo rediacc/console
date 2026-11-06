@@ -480,7 +480,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/hooks/stop/wl_agents.py | (none) | via .claude/rediacc_hooks/guards/block_settled_questions.py | py |
 | .claude/hooks/stop/wl_backlog.py | (none) | via .claude/hooks/stop/test-backlog.py | py |
 | .claude/hooks/stop/wl_bgsweep.py | (none) | via .claude/hooks/stop/test-bgsweep.py | py |
-| .claude/hooks/stop/wl_boxaudit.py | (none) | via .claude/hooks/stop/worklist.py | py |
+| .claude/hooks/stop/wl_boxaudit.py | (none) | via .claude/hooks/stop/test-always-tier.py | py |
 | .claude/hooks/stop/wl_bravedefault.py | (none) | via .claude/hooks/stop/test-judge-schema.py | py |
 | .claude/hooks/stop/wl_checklist.py | (none) | via .claude/hooks/stop/test-always-tier.py | py |
 | .claude/hooks/stop/wl_checks.py | (none) | via .claude/hooks/post-bash/loop_speed_note.py | py |

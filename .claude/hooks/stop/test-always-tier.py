@@ -107,6 +107,8 @@ HYGIENE_KEYS = frozenset(
         "found-not-fixed",
         "no-remaining",
         "loop-died",
+        # Landed work on an open plan box with no investigation row (wl_boxaudit, PLAN-tick-tracking T10): it already blocks only after OWED_STOPS consecutive stops, and the box's own mission item sits at T_MISSION, so the nag stays at the tier it has always had by default.
+        "plan-box-owed",
     }
 )
 
