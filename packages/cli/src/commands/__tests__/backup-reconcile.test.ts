@@ -1,7 +1,8 @@
 import { Command } from 'commander';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('../../i18n/index.js', () => ({ t: (key: string) => key }));
+const mockT = vi.hoisted(() => vi.fn((key: string, _params?: Record<string, unknown>) => key));
+vi.mock('../../i18n/index.js', () => ({ t: mockT }));
 
 const mockFetch = vi.hoisted(() => vi.fn());
 const mockPrint = vi.hoisted(() => vi.fn());
@@ -85,6 +86,7 @@ describe('backup reconcile', () => {
     mockPrint.mockReset();
     mockSetExitCode.mockReset();
     mockWarn.mockReset();
+    mockT.mockClear();
     mockInfo.mockReset();
     mockFormat.mockClear();
     outputFormat.value = 'json';
@@ -153,6 +155,9 @@ describe('backup reconcile', () => {
     await run(['--check']);
     expect(mockSetExitCode).toHaveBeenCalledWith(1);
     expect(mockWarn).toHaveBeenCalledWith('commands.backup.reconcile.checkSkipped');
+    expect(mockT).toHaveBeenCalledWith('commands.backup.reconcile.checkSkipped', {
+      lineages: 'busy-1 (leased)',
+    });
     const rows = mockFormat.mock.calls[0][0] as { lineage: string; status: string }[];
     expect(rows.find((r) => r.lineage === 'busy-1')?.status).toBe(
       'commands.backup.reconcile.skipped.leased'
@@ -164,12 +169,16 @@ describe('backup reconcile', () => {
     for (const reason of ['leased', 'unreadable']) {
       mockSetExitCode.mockReset();
       mockWarn.mockReset();
+      mockT.mockClear();
       mockFetch.mockResolvedValue(
         response({ lineages: [lineage({ lineageGuid: 'busy-1', skipped: reason })] })
       );
       await run(['--check']);
       expect(mockSetExitCode).toHaveBeenCalledWith(1);
       expect(mockWarn).toHaveBeenCalledWith('commands.backup.reconcile.checkSkipped');
+      expect(mockT).toHaveBeenCalledWith('commands.backup.reconcile.checkSkipped', {
+        lineages: `busy-1 (${reason})`,
+      });
     }
   });
 
