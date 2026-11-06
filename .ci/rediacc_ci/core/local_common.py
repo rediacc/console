@@ -844,9 +844,61 @@ def prepare_node_deps_packages(env: dict[str, str] | None = None) -> bool:
     )
 
 
-def prepare_cli(env: dict[str, str] | None = None) -> bool:
-    """`rdc.sh`'s whole preparation as one call: node floor, dependencies, shared packages, the CLI bundle, renet. First failure stops it."""
-    return prepare_node_deps_packages(env) and ensure_cli_built(env) and ensure_renet_built(env)
+# Top-level verbs, and verb/subverb pairs, that never upload renet to a machine: the CLI declares them 'read-only' at their renet call sites (`packages/cli/src/__tests__/renet-access-ledger.test.ts`) or never reach a machine at all.
+_READ_ONLY_VERBS = frozenset(
+    {"term", "status", "config", "doctor", "version", "help", "completion"}
+)
+_READ_ONLY_PAIRS = frozenset(
+    {
+        ("machine", "status"),
+        ("machine", "health"),
+        ("job", "list"),
+        ("job", "status"),
+        ("job", "logs"),
+    }
+)
+_VALUE_FLAGS = frozenset({"--config", "--output", "-o"})
+
+
+def renet_build_tolerated(argv: list[str]) -> bool:
+    """Whether a renet build failure may be waved through for this `rdc.sh` command line (#680c2665).
+
+    WHY. `./rdc.sh` builds renet from the working tree on every call, so one uncommitted broken file from another session (`undefined: errors` in pkg/compose) failed every command, including read-only `term connect`. A read-only verb never uploads renet, so the last good `bin/renet` serves it. A mutating verb is NOT tolerated: it must fail on a broken build rather than run against a stale one. No verb at all (`--help`, `--version`, a bare `rdc.sh`) is read-only.
+    """
+    words: list[str] = []
+    skip = False
+    for arg in argv:
+        if skip:
+            skip = False
+        elif arg in _VALUE_FLAGS:
+            skip = True
+        elif not arg.startswith("-"):
+            words.append(arg)
+    if not words:
+        return True
+    return (
+        words[0] in _READ_ONLY_VERBS
+        or (words[0], words[1] if len(words) > 1 else "") in _READ_ONLY_PAIRS
+    )
+
+
+def prepare_cli(env: dict[str, str] | None = None, argv: list[str] | None = None) -> bool:
+    """`rdc.sh`'s whole preparation as one call: node floor, dependencies, shared packages, the CLI bundle, renet. First failure stops it.
+
+    A renet build failure under a read-only command line (`renet_build_tolerated`) falls back to the last `bin/renet` with a warning instead of failing the command.
+    """
+    if not (prepare_node_deps_packages(env) and ensure_cli_built(env)):
+        return False
+    if ensure_renet_built(env):
+        return True
+    renet_bin = os.path.join(local_root_dir(env), "private", "renet", "bin", "renet")
+    if renet_build_tolerated(argv or []) and os.path.isfile(renet_bin):
+        log.warn(
+            "renet build failed; this command is read-only, so it runs with the last built %s"
+            % renet_bin
+        )
+        return True
+    return False
 
 
 def prompt_continue(message: str = "Continue?") -> bool:
@@ -1707,7 +1759,7 @@ _BOOL_VERBS = {
     "ensure-docker-installed": lambda _rest: ensure_docker_installed(),
     "ensure-docker-group": lambda _rest: ensure_docker_group(),
     "ensure-renet-built": lambda _rest: ensure_renet_built(),
-    "prepare-cli": lambda _rest: prepare_cli(),
+    "prepare-cli": lambda rest: prepare_cli(argv=rest),
     "prepare-node-deps-packages": lambda _rest: prepare_node_deps_packages(),
 }
 

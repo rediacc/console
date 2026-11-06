@@ -74,7 +74,7 @@ log_step "Preparing CLI development environment"
 # stdout belongs to the CLI command — a rebuild triggered by an edit must not
 # corrupt an `rdc ... -o json` pipeline with npm build logs (observed live:
 # the first post-edit invocation broke JSON.parse for the caller).
-PYTHONPATH="$ROOT_DIR/.ci${PYTHONPATH:+:$PYTHONPATH}" python3 -m rediacc_ci.core.local_common prepare-cli >&2
+PYTHONPATH="$ROOT_DIR/.ci${PYTHONPATH:+:$PYTHONPATH}" python3 -m rediacc_ci.core.local_common prepare-cli "$@" >&2
 
 # Regenerate skill reference if CLI has changed
 ref_file="$ROOT_DIR/.claude/skills/rdc/reference.md"
