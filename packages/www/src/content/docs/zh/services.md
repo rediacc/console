@@ -106,7 +106,7 @@ Rediaccfile 可以用注释行声明自己的需求，这只是一个请求：
 
 仓库的容器必须等到其 `down()` 运行并结束后才会停止。这适用于对仓库 Docker 单元执行的 `systemctl stop` 和 `restart`、`machine converge`、`repo down --unmount`、单元重写以及主机关机。例外情况是 Docker 守护进程或主机崩溃、断电,以及在主机关机期间超过超时的 `down()`。
 
-每个 Docker 单元在向守护进程发送信号之前会运行一个停止钩子。除非 renet 已在本次守护进程启动中运行过,钩子会对仍在运行的守护进程执行 `down()`;如果守护进程没有响应或仓库没有 Rediaccfile,则跳过。主机关机时,先停止各 Docker 单元,每个单元并行执行 `down()`,随后清扫单元会卸载所有已挂载的仓库,无论是否启用自动启动。单元的停止预算为 17 分钟,可以放进重启任务 30 分钟的上限内。
+每个 Docker 单元在向守护进程发送信号之前会运行一个停止钩子。除非 renet 已在本次守护进程启动中运行过,钩子会对仍在运行的守护进程执行 `down()`;如果守护进程没有响应或仓库没有 Rediaccfile,则跳过。主机关机时,先停止各 Docker 单元,每个单元并行执行 `down()`,随后清扫单元会卸载所有已挂载的仓库,无论是否启用自动启动。单元的停止预算为 17 分钟,可以放进重启任务 30 分钟的上限内。 如果 `down()` 在这个钩子中超时,其进程组会被终止,记录一条警告,钩子仍以 0 退出,systemd 因此继续停止。所以超时的 `down()` 最多让 `systemctl stop` 或重启延迟其超时时长(上限为 15 分钟,在 17 分钟预算之内),不会阻止停止。拒绝停止只适用于 renet 自己的路径,例如 `repo down --unmount`。
 
 `up()` 和 `down()` 默认各有 10 分钟,可通过 `RENET_UP_TIMEOUT` 和 `RENET_DOWN_TIMEOUT` 或 `--up-timeout` 和 `--down-timeout` 设置。超时后,进程组先收到 SIGTERM,10 秒后收到 SIGKILL。需要先执行 `down()` 的操作(如 `repo down --unmount` 或 converge 重启)在 `down()` 超时时会让容器继续运行,加上 `--force` 则继续执行。Rediaccfile 可以用一行注释调高限制:
 
