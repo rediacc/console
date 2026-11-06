@@ -1,6 +1,6 @@
 """Tests for `wl_boxaudit.py`, box T9 of agent/plans/PLAN-tick-tracking.md (`worklist.py --box-audit`).
 
-One fixture repository holds a plan with one box per verdict, a live branch past `main`, a lease commit landed with `cherry-pick -x` that carries no trailer, a report store whose TICK line names that lease commit, and the three ledgers. Each verdict is asserted on its own box.
+One fixture repository holds a plan with one box per verdict, a live branch past `main`, a lease commit landed with `cherry-pick -x` that carries no Plan-Box trailer (only a PR-TASK one), a report store whose TICK line names that lease commit, and the three ledgers. Each verdict is asserted on its own box.
 
 THE CONTROL is the report store pointed at an empty directory: the box linked only by its report reads `untouched`, which proves report linkage is what finds work that carries no trailer.
 """
@@ -384,7 +384,15 @@ def test_the_audit_cache_misses_on_every_input_it_reads(world, monkeypatch, tmp_
     assert calls == [], "an unchanged world missed the cache"
     plan = world.root / "agent" / "plans" / PLAN
     ledger = world.root / "agent" / "ledgers" / "live-proof.jsonl"
-    for path in (plan, ledger):
+    # Review 1a8431fd.1: the progress ledger, the investigation ledger and the report index each miss the stamp too.
+    progress = world.root / "agent" / "ledgers" / "plan-box-progress.jsonl"
+    investigations = world.root / "agent" / "ledgers" / "plan-investigation.jsonl"
+    index = world.reports / "index.jsonl"
+    other_plan = world.root / "agent" / "plans" / "PLAN-other.md"
+    other_plan.write_text("# PLAN: other\n\nStatus: approved\nOwner: %s\n" % ME, encoding="utf-8")
+    fn(world.root, ME)
+    calls.clear()
+    for path in (plan, ledger, progress, investigations, index, other_plan):
         before = path.read_bytes()
         try:
             path.write_bytes(before + b"\n")
@@ -395,6 +403,49 @@ def test_the_audit_cache_misses_on_every_input_it_reads(world, monkeypatch, tmp_
         calls.clear()
         fn(world.root, ME)
         calls.clear()
+
+
+def test_report_rows_compare_the_merge_base_in_utc(world):
+    """Review ec1efb0e.5: the report at 2099-01-01T00:00:00Z is before a merge-base of 2099-01-01T00:30:00+01:00 only when the offset is applied (23:30Z the day before is EARLIER, so the report stays); a bare cut of the offset compared 00:30 with 00:00 and dropped it."""
+    assert [rid for rid, _row in BA.report_rows(world.root, "2099-01-01T00:30:00+01:00")]
+    assert not [rid for rid, _row in BA.report_rows(world.root, "2099-01-01T00:30:00+00:00")]
+
+
+def test_report_rows_keep_a_capped_row_whose_body_is_gone(world):
+    """Review c44d4b9a.1: a `boxes_capped` row with an unreadable body still yields the boxes the index kept."""
+    box = {"plan": PLAN, "sig": SIG["tick"], "state": "done", "commits": [], "landed": "all"}
+    _jsonl(
+        world.reports / "index.jsonl",
+        [
+            {
+                "ev": "report",
+                "id": "rep000000002",
+                "at": "2099-01-01T00:00:00Z",
+                "body": "missing/none.md",
+                "boxes": [box],
+                "boxes_capped": True,
+            }
+        ],
+    )
+    got = BA.report_rows(world.root)
+    assert [(rid, row.sig) for rid, row in got] == [("rep000000002", SIG["tick"])]
+
+
+def test_the_descends_memo_asks_git_once_per_pair(world, monkeypatch):
+    """Review ec1efb0e.3: the receipts of a box share their landed commits and heads."""
+    calls = []
+    real = BA._git
+
+    def counting(root, *args):
+        calls.append(args)
+        return real(root, *args)
+
+    monkeypatch.setattr(BA, "_git", counting)
+    memo = {}
+    older, newer = world.shas["tick"], world.shas["live"]
+    assert BA._descends(world.root, older, newer, memo)
+    assert BA._descends(world.root, older, newer, memo)
+    assert len(calls) == 1
 
 
 # ---- T10: the blocking check plan-box-owed -----------------------------------------------

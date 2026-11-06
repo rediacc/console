@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import contextlib
 import dataclasses
+import datetime
 import json
 import os
 import pathlib
@@ -117,10 +118,15 @@ def trailer_links(root, base):
     return links
 
 
-def _descends(root, older, newer):
+def _descends(root, older, newer, memo=None):
+    """Whether `newer` descends from `older`. `memo` ({(older, newer): bool}, one per audit) keeps a pair already asked off the next `git` call: the receipts of a box share heads and landed commits (review ec1efb0e.3)."""
     if not newer:
         return False
+    if memo is not None and (older, newer) in memo:
+        return memo[(older, newer)]
     rc, _ = _git(root, "merge-base", "--is-ancestor", older, newer)
+    if memo is not None:
+        memo[(older, newer)] = rc == 0
     return rc == 0
 
 
@@ -143,14 +149,42 @@ def _commit_time(root, sha):
 # ---- reports -------------------------------------------------------------------------
 
 
+def _utc_stamp(iso):
+    """`iso` (git's `%cI`, with its UTC offset) as the `YYYY-MM-DDTHH:MM:SS` UTC second the report index's `at` is written in (`C.stamp_now`), or its first 19 characters when it does not parse. Review ec1efb0e.5: cutting the offset off compared a local wall time with a UTC one."""
+    try:
+        stamp = datetime.datetime.fromisoformat(iso)
+    except (TypeError, ValueError):
+        return str(iso or "")[:19]
+    if stamp.tzinfo is None:
+        return stamp.strftime("%Y-%m-%dT%H:%M:%S")
+    return stamp.astimezone(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%S")
+
+
+def _index_since(rp, store, since):
+    """The report index rows from `since` (a `_utc_stamp`) on. The index is append-ordered and grows for good, so the tail is read, four times wider until its oldest row reaches back past `since` or the whole file is in hand (review ec1efb0e.4: the audit read it all with `max_bytes=None`)."""
+    try:
+        size = rp.index_path(store).stat().st_size
+    except OSError:
+        return []
+    limit = rp.INDEX_READ_MAX_BYTES
+    while True:
+        rows = rp.read_index(store, max_bytes=limit)
+        if not since or limit >= size:
+            return rows
+        if rows and str(rows[0].get("at") or "")[:19] < since:
+            return rows
+        limit *= 4
+
+
 def report_rows(root, since_iso=""):
     """[(report id, TickRow)] of every captured report since `since_iso` that names a box."""
     import wl_report as RP
 
     store = RP.store_root(root)
     out: list[Any] = []
-    for entry in RP.read_index(store, max_bytes=None):
-        if since_iso and str(entry.get("at") or "") < since_iso[:19]:
+    since = _utc_stamp(since_iso) if since_iso else ""
+    for entry in _index_since(RP, store, since):
+        if since and str(entry.get("at") or "") < since:
             continue
         rid = str(entry.get("id"))
         boxes = entry.get("boxes")
@@ -163,6 +197,9 @@ def report_rows(root, since_iso=""):
                 encoding="utf-8", errors="replace"
             )
         except OSError:
+            # An unreadable body must not drop the row: a capped list is still the boxes the index kept (review c44d4b9a.1).
+            if isinstance(boxes, list):
+                out.extend((rid, _row_of(b)) for b in boxes if isinstance(b, dict) and b.get("sig"))
             continue
         if "TICK" not in body:
             continue
@@ -315,6 +352,7 @@ def audit(root, me, plan=None, *, reports=True):
     inv_rows = R.read_investigations(root)
     lp_rows = LP.verified_rows(root)
     out = []
+    descends_memo: dict[tuple[str, str], bool] = {}
     for rel, sig, body in open_plan_boxes(root, plan):
         base_name = rel.rsplit("/", 1)[-1]
         a = BoxAudit(rel, sig, body)
@@ -345,7 +383,9 @@ def audit(root, me, plan=None, *, reports=True):
             for r in lp_rows
             if r.get("box") == sig
             and PB.same_plan(r.get("plan"), rel)
-            and all(_descends(root, s, str(r.get("head") or "")) for s, _src in a.landed)
+            and all(
+                _descends(root, s, str(r.get("head") or ""), descends_memo) for s, _src in a.landed
+            )
         ]
         out.append(_judge(root, a, base, head, me))
     return out, head, base
@@ -383,16 +423,16 @@ def inputs_stamp(root):
 
     Review 82fd346d.1 and ec1efb0e.2: the stamp held only the progress and investigation ledger sizes, so a box closed by editing its plan, a VERIFIED live-proof row, or a newly captured report at the same HEAD kept answering the old verdict until the next commit. A missing file stamps as -1.
     """
-    import wl_liveproof as LP
-    import wl_report as RP
-
     root = pathlib.Path(root)
-    paths = [
-        PB.progress_path(root),
-        root / "agent" / "ledgers" / "plan-investigation.jsonl",
-        root / LP.LEDGER_REL,
-    ]
+    paths = [PB.progress_path(root), root / "agent" / "ledgers" / "plan-investigation.jsonl"]
+    # The live-proof and report imports sit inside the suppress: a failing one leaves its file out of the stamp, and the cached verdict is read as it always was, instead of the check raising (review 1a8431fd.2).
     with contextlib.suppress(Exception):
+        import wl_liveproof as LP
+
+        paths.append(root / LP.LEDGER_REL)
+    with contextlib.suppress(Exception):
+        import wl_report as RP
+
         paths.append(RP.index_path(RP.store_root(root)))
     paths += sorted((root / "agent" / "plans").glob("PLAN-*.md"))
     stamp = []

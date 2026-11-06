@@ -161,7 +161,7 @@ def _fit(obj):
             < INDEX_LINE_MAX
         ):
             return obj
-    # `boxes` (PLAN-tick-tracking T6) shrinks next, last entry first: the body keeps every TICK line, so a capped list loses nothing a reader cannot re-derive, and `boxes_capped` says so (a reader then re-reads the body).
+    # `boxes` (PLAN-tick-tracking T6) shrinks next, last entry first: the body keeps every TICK line, so a capped list loses nothing a reader cannot re-derive, and `boxes_capped` says so (a reader then re-reads the body). The marker is set BEFORE the loop on purpose: the loop starts only for a line the title shrink left over the cap, and its first pass always removes one box, so the marker is true whenever the list changes; a loop made conditional must move the marker with it.
     if obj.get("boxes"):
         obj["boxes_capped"] = True
     while obj.get("boxes"):
