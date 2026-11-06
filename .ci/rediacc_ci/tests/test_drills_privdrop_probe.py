@@ -230,7 +230,7 @@ def test_run_refuses_when_the_timer_read_fails(monkeypatch) -> None:
 def test_a_refused_recheck_deletes_nothing_and_prints_the_manual_command(
     capsys, monkeypatch
 ) -> None:
-    calls = _recorder(monkeypatch, lambda a: False)
+    calls = _recorder(monkeypatch, lambda _a: False)
     answers = iter([True])
     monkeypatch.setattr(pp, "backup_window_clear", lambda *_a, **_k: next(answers, False))
     monkeypatch.setattr(pp.time, "sleep", lambda _s: None)
@@ -240,7 +240,7 @@ def test_a_refused_recheck_deletes_nothing_and_prints_the_manual_command(
 
 
 def test_the_recheck_polls_until_clear_then_deletes(monkeypatch) -> None:
-    calls = _recorder(monkeypatch, lambda a: False)
+    calls = _recorder(monkeypatch, lambda _a: False)
     answers = iter([True, False, False, True])
     monkeypatch.setattr(pp, "backup_window_clear", lambda *_a, **_k: next(answers))
     monkeypatch.setattr(pp.time, "sleep", lambda _s: None)

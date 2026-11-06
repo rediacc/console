@@ -9,8 +9,10 @@ from __future__ import annotations
 
 import datetime as dt
 import re
-from collections.abc import Callable
-from typing import NamedTuple
+from typing import TYPE_CHECKING, NamedTuple
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 LEAD_S = 5 * 60
 TAIL_S = 45 * 60

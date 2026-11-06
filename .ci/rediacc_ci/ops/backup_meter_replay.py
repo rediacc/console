@@ -13,7 +13,7 @@ THE LISTING. ListObjectsV2 over `t/<subscriptionId>/` (or one lineage's `l/<line
 A MOVING STORE IS NO VERDICT. Every equality reads the listing, then the meter, then the listing again. Two listings that differ mean an upload or a GC ran in between, and the run exits 2 instead of judging a race.
 
 `replay` (L1), in order:
-  1. `backup reconcile <repo>@<machine> --dry-run -o json` names the subscription and the lineage (`--lineage` overrides the lineage, for a lineage the server has no row for yet). No `renet backup snapshot` may already run on the machine: the kill in step 4 matches every one there.
+  1. `backup reconcile <repo>@<machine> --dry-run -o json` names the subscription and the lineage (`--lineage` overrides the lineage, for a lineage the server has no row for yet). No `renet backup snapshot` may already run on the machine, and the backup-window guard (`drills/backup_window.py`) must be clear; the kill in step 4 signals only snapshot processes outside a rediacc-backup-* unit, after a second window check.
   2. List the lineage: the baseline chunk and manifest counts.
   3. Start `backup snapshot <repo>@<machine> --bwlimit <rate> -o json` and list the lineage every `--poll` seconds.
   4. Once at least `--kill-after` new chunks are listed, SIGKILL `renet backup snapshot` on the machine through `rdc term connect <machine> -c`, the way renet's old execute timeout killed the hostinger run: the journal keeps the snapshot with ManifestCommitted=false, which is what R1's supersede reads. Killing the local client alone only detaches a followed job. A snapshot that finishes before the threshold, or a killed run that committed a manifest, is no verdict (exit 2): the sequence did not happen.
@@ -48,7 +48,7 @@ from typing import Any, Protocol, TextIO
 
 from rediacc_ci import paths
 from rediacc_ci.deploy import set_account_worker_secrets
-from rediacc_ci.drills import wire
+from rediacc_ci.drills import backup_window, wire
 from rediacc_ci.ops import backup_bucket_scope_probe as scope
 from rediacc_ci.ops import push_backup_credentials as pbc
 
@@ -60,9 +60,14 @@ CLIENT_EXIT_WAIT_S = 120.0
 MAINTENANCE_HOUR_UTC = 3
 PROC_PATTERN = "[r]enet backup snapshot"
 RUNNING_COMMAND = "pgrep -f '%s' >/dev/null && echo RUNNING || echo IDLE" % PROC_PATTERN
+# Own snapshot only: a process whose cgroup is a rediacc-backup-* unit belongs to a scheduled backup and is never signalled.
+_OWN_PIDS = (
+    "for p in $(pgrep -f '%s'); do grep -q '%s' /proc/$p/cgroup 2>/dev/null || echo $p; done"
+    % (PROC_PATTERN, backup_window.UNIT_PREFIX)
+)
 KILL_COMMAND = (
-    "sudo pkill -KILL -f '%s'; sleep 2; pgrep -f '%s' >/dev/null && echo ALIVE || echo GONE"
-    % (PROC_PATTERN, PROC_PATTERN)
+    "own=$(%s); for p in $own; do sudo kill -KILL $p; done; sleep 2; "
+    'left=$(%s); [ -n "$left" ] && echo ALIVE || echo GONE' % (_OWN_PIDS, _OWN_PIDS)
 )
 
 PASS, FAIL, NOTE, UNKNOWN = "PASS", "FAIL", "NOTE", "NO-VERDICT"
@@ -391,6 +396,20 @@ class ReplayArgs:
     snapshot_timeout: float = SNAPSHOT_TIMEOUT_S
 
 
+def window_guard(rdc: Rdc, machine: str, run_s: int, *, check_running: bool) -> None:
+    """Refuse inside a backup timer's window (finding #5ec68285); `run_s=0` is the re-check a moment before the kill."""
+
+    def on_machine(command: str) -> tuple[int, str]:
+        rc, stdout, _ = rdc.run("term", "connect", machine, "-c", command)
+        return rc, stdout
+
+    clear, why = backup_window.machine_verdict(
+        on_machine, run_s, require_timer=True, check_running=check_running
+    )
+    if not clear:
+        raise NoVerdictError(why)
+
+
 def replay(rdc: Rdc, lister: Lister, a: ReplayArgs, report: Report) -> None:
     deps = rdc.deps
     ref = "%s@%s" % (a.repo, a.machine)
@@ -409,6 +428,7 @@ def replay(rdc: Rdc, lister: Lister, a: ReplayArgs, report: Report) -> None:
         "target",
         "subscription %s, lineage %s, bucket %s" % (subscription, lineage, lister.bucket.name),
     )
+    window_guard(rdc, a.machine, backup_window.RUN_BUDGET_S, check_running=True)
     if "RUNNING" in rdc.on_machine(a.machine, RUNNING_COMMAND):
         raise NoVerdictError(
             "a renet backup snapshot already runs on %s; the kill would hit it" % a.machine
@@ -449,6 +469,15 @@ def replay(rdc: Rdc, lister: Lister, a: ReplayArgs, report: Report) -> None:
             raise NoVerdictError(
                 "no %d new chunks within %.0f s" % (a.kill_after, a.snapshot_timeout)
             )
+    try:
+        window_guard(rdc, a.machine, 0, check_running=False)
+    except NoVerdictError:
+        proc.kill()
+        print(
+            "the throttled snapshot may still run on %s: cancel its job by hand" % a.machine,
+            file=sys.stderr,
+        )
+        raise
     killed_at = deps.now()
     answer = rdc.on_machine(a.machine, KILL_COMMAND)
     if "GONE" not in answer:

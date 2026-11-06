@@ -15,7 +15,7 @@ READ EVIDENCE. The record cannot state bytes read, so `read_evidence` derives it
 
 SUMMARY. One line appended to `--summary`, whitespace-separated `key=value` fields after the bare repository name, the shape the L2 Accept's awk reads. `rc` is the driver's exit code and `snapshotrc` the verb's. The verb's stdout and stderr are kept beside it as `<summary>.<repo>.out` and `.err`.
 
-EXIT. The snapshot's rc when it failed. Otherwise 3 when no sample was collected (no baseline means the snapshot never started), 4 when the stop rule fired (even if the snapshot committed before the cancel reached it), 130 on Ctrl-C (the job keeps running, and the commands that find and cancel it are printed), and 2 on bad arguments or an unwritable summary.
+EXIT. The snapshot's rc when it failed. Otherwise 3 when no sample was collected (no baseline means the snapshot never started), 4 when the stop rule fired (even if the snapshot committed before the cancel reached it), 130 on Ctrl-C (the job keeps running, and the commands that find and cancel it are printed), and 2 on bad arguments or an unwritable summary, and 5 when a backup timer's window or a running backup refuses the start (nothing runs; the stop rule's cancel is never held back by it).
 """
 
 from __future__ import annotations
@@ -31,6 +31,8 @@ from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any, Protocol, TextIO
+
+from rediacc_ci.drills import backup_window
 
 BWLIMIT = "100Mbps"
 PARALLELISM = "2"
@@ -49,6 +51,7 @@ DEFAULT_SUMMARY = "/tmp/seed/summary.log"
 EXIT_USAGE = 2
 EXIT_NO_SAMPLES = 3
 EXIT_STOPPED = 4
+EXIT_WINDOW = 5
 EXIT_INTERRUPTED = 130
 
 NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
@@ -399,6 +402,19 @@ def summary_line(result: RunResult) -> str:
     return " ".join([result.repo, *("%s=%s" % kv for kv in fields.items())])
 
 
+def window_clear(deps: Deps, args: argparse.Namespace, out: TextIO) -> bool:
+    """The backup-window guard before the snapshot starts (finding #5ec68285): no timer trigger inside the run budget and no backup running. The stop rule's cancel of this run's own job is never refused by it."""
+
+    def on_machine(command: str) -> tuple[int, str]:
+        argv = [args.rdc, "--config", args.config, "term", "connect", args.machine, "-c", command]
+        rc, stdout, _ = deps.runner(argv, SAMPLE_TIMEOUT_S)
+        return rc, stdout
+
+    clear, why = backup_window.machine_verdict(on_machine, require_timer=True)
+    print(why, file=out, flush=True)
+    return clear
+
+
 def _take_sample(deps: Deps, rdc: str, config: str, machine: str, out: TextIO) -> Sample | None:
     rc, stdout, stderr = deps.runner(sample_argv(rdc, config, machine), SAMPLE_TIMEOUT_S)
     sample = parse_sample(stdout) if rc == 0 else None
@@ -583,6 +599,9 @@ def main(
     if not _usable_args(args, out):
         return EXIT_USAGE
 
+    if not window_clear(deps, args, out):
+        print("backup window: the snapshot was not started", file=out)
+        return EXIT_WINDOW
     baseload, start = take_baseline(deps, args.rdc, args.config, args.machine, out)
     if baseload is None or start is None:
         print("no baseline sample: the snapshot was not started", file=out)

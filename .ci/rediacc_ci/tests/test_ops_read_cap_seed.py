@@ -10,6 +10,7 @@ from typing import Any
 
 import pytest
 
+from rediacc_ci.drills import backup_window as bw
 from rediacc_ci.ops import read_cap_seed as rcs
 
 # PLAN-snapshot-read-io-cap.md, the L2 Accept's program, byte for byte.
@@ -439,6 +440,17 @@ def test_final_rc(snapshot_rc, count, stopped, want):
 # ---------------------------------------------------------------- full runs on a fake rdc
 
 
+WINDOW_CLEAR = (
+    "NEXT LEFT LAST PASSED UNIT ACTIVATES\n"
+    "Sat 2026-11-07 02:00:00 UTC 17h Fri 2026-11-06 02:00:00 UTC 7h ago "
+    "rediacc-backup-nightly-hot.timer x\nNOW=1793955600\nRUNNING-BEGIN\nRUNNING-END\n"
+)
+WINDOW_NEAR = WINDOW_CLEAR.replace("NOW=1793955600", "NOW=1793930280")
+WINDOW_SEED = WINDOW_CLEAR.replace(
+    "RUNNING-BEGIN\n", "RUNNING-BEGIN\n4242 renet backup snapshot x\n"
+)
+
+
 class FakeProc:
     """A snapshot client that exits on its `lives`-th wait, or on a cancel."""
 
@@ -464,7 +476,10 @@ class FakeProc:
 class World:
     """The fake machine and rdc: `loads` is one load per sample read after the baseline."""
 
-    def __init__(self, tmp_path, loads=(), lives=3, rc=0, sample_rc=0, rec=None, cancel_rc=0):
+    def __init__(
+        self, tmp_path, loads=(), lives=3, rc=0, sample_rc=0, rec=None, cancel_rc=0, window=None
+    ):
+        self.window = window or WINDOW_CLEAR
         self.now = 0.0
         self.tmp_path = tmp_path
         self.loads = list(loads)
@@ -489,6 +504,8 @@ class World:
         self.calls.append(list(argv))
         verb = argv[argv.index("--config") + 2 :]
         if "connect" in verb:
+            if verb[-1] == bw.timers_script():
+                return 0, self.window, ""
             return self._sample()
         if "cancel" in verb:
             self.cancelled = self.cancel_rc == 0
@@ -737,7 +754,10 @@ def test_the_real_subprocess_path_with_a_fake_rdc_script(tmp_path, monkeypatch):
     payload = json.dumps({"success": True, "data": record()}, indent=2)
     script.write_text(
         "#!/bin/bash\n"
-        'if [ "$4" = connect ]; then exec bash -c "$7"; fi\n'
+        # The window read would list this developer machine's own processes; it gets the canned table.
+        'if [ "$4" = connect ]; then case "$7" in *list-timers*) cat <<\'W\'\n'
+        + WINDOW_CLEAR
+        + 'W\nexit 0;; esac; exec bash -c "$7"; fi\n'
         "if [ \"$6\" = snapshot ]; then sleep 1; cat <<'JSON'\n" + payload + "\nJSON\nexit 0; fi\n"
         "exit 9\n"
     )
@@ -753,3 +773,19 @@ def test_the_real_subprocess_path_with_a_fake_rdc_script(tmp_path, monkeypatch):
     assert line.startswith("demo-heartbeat rc=0 ")
     assert " snapshotId=20261105T000000Z-abc " in line
     assert (tmp_path / "summary.log.demo-heartbeat.out").read_text().strip() == payload
+
+
+def test_a_timer_window_refuses_before_any_sample_or_snapshot(tmp_path):
+    world = World(tmp_path, window=WINDOW_NEAR)
+    rc, out, _ = world.main()
+    assert rc == rcs.EXIT_WINDOW
+    assert world.spawned is None
+    assert world.tick == 0
+    assert "backup-window: refused" in out
+
+
+def test_a_running_seed_refuses_the_start(tmp_path):
+    world = World(tmp_path, window=WINDOW_SEED)
+    rc, _, _ = world.main()
+    assert rc == rcs.EXIT_WINDOW
+    assert world.spawned is None

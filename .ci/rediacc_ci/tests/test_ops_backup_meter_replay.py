@@ -8,15 +8,33 @@ from __future__ import annotations
 import datetime
 import io
 import json
+import subprocess
 import urllib.parse
 from typing import TYPE_CHECKING, Any
 
 import pytest
 
+from rediacc_ci.drills import backup_window as bw
 from rediacc_ci.ops import backup_meter_replay as mod
 
 if TYPE_CHECKING:
     from pathlib import Path
+
+TIMER_LINE = (
+    "Sat 2026-11-07 02:00:00 UTC 17h Fri 2026-11-06 02:00:00 UTC 7h ago "
+    "rediacc-backup-nightly-hot.timer rediacc-backup-nightly-hot.service\n"
+)
+AT_0900 = 1793955600  # 2026-11-06 09:00:00Z
+AT_0158 = 1793930280  # 2026-11-06 01:58:00Z
+
+
+def timers_text(now: int, *rows: str) -> str:
+    return "NEXT LEFT LAST PASSED UNIT ACTIVATES\n%sNOW=%d\nRUNNING-BEGIN\n%sRUNNING-END\n" % (
+        TIMER_LINE,
+        now,
+        "".join(r + "\n" for r in rows),
+    )
+
 
 SECRET = "s3cr3t-value-that-must-never-print"
 KEY_ID = "key-id-that-must-never-print"
@@ -66,6 +84,8 @@ class World:
         self.move_on_list: int | None = None  # add a chunk on this listing call
         self.headers: list[dict] = []
         self.check_rc_override: int | None = None
+        self.window_calls = 0
+        self.refuse_window_on: int | None = None  # the n-th timer read answers 01:58Z
 
     # -- store
     def add_chunks(self, lineage: str, n: int) -> None:
@@ -162,6 +182,10 @@ class World:
         self.calls.append(args)
         if args[:2] == ["term", "connect"]:
             cmd = args[4]
+            if cmd == bw.timers_script():
+                self.window_calls += 1
+                near = self.refuse_window_on == self.window_calls
+                return 0, timers_text(AT_0158 if near else AT_0900), ""
             if cmd == mod.RUNNING_COMMAND:
                 return 0, "RUNNING\n" if self.snapshot_running else "IDLE\n", ""
             if cmd == mod.KILL_COMMAND:
@@ -479,3 +503,29 @@ def test_real_runner_missing_binary_is_127_not_a_crash():
     rc, _out, err = mod.real_runner(["/nonexistent/rdc-binary", "x"], 5)
     assert rc == 127
     assert "/nonexistent/rdc-binary" in err
+
+
+def test_replay_refuses_inside_the_backup_window_before_any_snapshot(tmp_path):
+    w = seeded()
+    w.refuse_window_on = 1
+    rc, text = run(w, tmp_path, *REPLAY)
+    assert rc == 2
+    assert "backup-window: refused" in text
+    assert not w.snapshot_running
+
+
+def test_replay_rechecks_the_window_right_before_the_kill(tmp_path):
+    w = seeded()
+    w.refuse_window_on = 2
+    rc, text = run(w, tmp_path, *REPLAY, "--kill-after", "50")
+    assert rc == 2, text
+    assert "backup-window: refused" in text
+    assert ["term", "connect", "hostinger", "-c", mod.KILL_COMMAND] not in w.calls
+
+
+def test_the_kill_signals_only_its_own_snapshot() -> None:
+    cmd = mod.KILL_COMMAND
+    assert "pkill" not in cmd
+    assert "rediacc-backup-" in cmd
+    assert "kill -KILL $p" in cmd
+    assert subprocess.run(["bash", "-n", "-c", cmd], check=False).returncode == 0
