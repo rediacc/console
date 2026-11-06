@@ -76,7 +76,7 @@ _reset_pgadmin_data() {
 
 up() {
     _apply_auth_mode || return 1
-    _reset_pgadmin_data
+    _reset_pgadmin_data || return 1
     renet compose -- up -d
 }
 

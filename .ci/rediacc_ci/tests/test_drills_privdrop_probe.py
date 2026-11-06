@@ -156,3 +156,31 @@ def test_table_is_red_when_a_step_failed_though_the_rows_hold() -> None:
     rows = pp.verdicts(lp.parse_probe(GOOD_UP), lp.parse_probe(GOOD_UP))
     assert "PASS" in pp.table("x", rows)
     assert "FAIL" in pp.table("x", rows, steps_ok=False).splitlines()[0]
+
+
+# The demo-pgadmin tutorial app's Rediaccfile is one of the Rediaccfiles H2 drops privileges for; its up() must stop on a failed data reset.
+PGADMIN_REDIACCFILE = pp.PROBE_DIR.parents[2] / "tutorials/apps/demo-pgadmin/Rediaccfile"
+
+
+def _pgadmin_up(reset_rc: int, tmp_path) -> tuple[int, str]:
+    log = tmp_path / "renet.log"
+    script = (
+        'renet() { echo "renet $*" >> "%s"; }\n'
+        "source %s\n"
+        "_reset_pgadmin_data() { return %d; }\n"
+        "up\n" % (log, PGADMIN_REDIACCFILE, reset_rc)
+    )
+    done = subprocess.run(["bash", "-c", script], check=False, capture_output=True, text=True)
+    return done.returncode, log.read_text() if log.exists() else ""
+
+
+def test_pgadmin_up_starts_the_stack_after_a_good_reset(tmp_path) -> None:
+    rc, calls = _pgadmin_up(0, tmp_path)
+    assert rc == 0
+    assert "renet compose -- up -d" in calls
+
+
+def test_pgadmin_up_does_not_start_the_stack_after_a_failed_reset(tmp_path) -> None:
+    rc, calls = _pgadmin_up(1, tmp_path)
+    assert rc == 1
+    assert "up -d" not in calls
