@@ -1046,13 +1046,14 @@ def control_real_hook(tmp):
             text=True,
             cwd=str(cwd),
         )
+        stand_in_in, stand_in_out = holder.stdin, holder.stdout
+        if stand_in_in is None or stand_in_out is None:
+            raise SystemExit("the ci:quick stand-in was started without its stdin/stdout pipes")
         try:
-            check(
-                "the ci:quick stand-in holds the marker", holder.stdout.readline().strip(), "held"
-            )
+            check("the ci:quick stand-in holds the marker", stand_in_out.readline().strip(), "held")
             return hook_stop(fix, env)
         finally:
-            holder.stdin.close()
+            stand_in_in.close()
             holder.wait(timeout=30)
 
     # The design review of 581e1fe96: a live matching pid is not enough. A lock older than twice quick-clone.ts's LOCK_WAIT_MS (3 h) is not a run worth holding for, and a ci:quick whose cwd is another checkout is not this checkout's run.
