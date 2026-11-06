@@ -954,7 +954,7 @@ def control_real_hook(tmp):
     finally:
         fcntl.flock(held, fcntl.LOCK_UN)
         os.close(held)
-    check("a running vm:check lifts the block", needle in got.out, False)
+    check("a running vm:check lifts the block", got.decision, "allow")
     got = hook_stop(fix, env)
     check("a free fleet lock blocks again", got.decision, "block")
     check("a free fleet lock names the lease again", needle in got.out, True)
