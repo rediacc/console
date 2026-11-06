@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 from rediacc_ci.drills import backup_window
@@ -97,17 +98,33 @@ def _run(argv: list[str], timeout: int = 1800) -> subprocess.CompletedProcess[st
     return subprocess.run(argv, capture_output=True, text=True, timeout=timeout, check=False)
 
 
-def window_argv() -> list[str]:
-    return rdc_argv("term", "connect", MACHINE, "-c", backup_window.timers_script())
+def window_argv(command: str) -> list[str]:
+    return rdc_argv("term", "connect", MACHINE, "-c", command)
 
 
-def backup_window_clear() -> bool:
-    """The guard before anything is forked: the machine's backup timers are read through `term connect` and the run refuses inside a timer's window (finding #5ec68285)."""
-    res = _run(window_argv(), 300)
-    text = res.stdout if res.returncode == 0 else ""
-    clear, why = backup_window.window_verdict(text)
-    print("%s%s" % (why, "" if res.returncode == 0 else " (timer read rc=%d)" % res.returncode))
+def backup_window_clear(run_s: int = backup_window.RUN_BUDGET_S) -> bool:
+    """The guard: the machine's backup timers and running backups are read through `term connect` and the caller refuses inside a window (finding #5ec68285). `run_s=0` is the re-check a moment before the delete."""
+
+    def on_machine(command: str) -> tuple[int, str]:
+        res = _run(window_argv(command), 300)
+        return res.returncode, res.stdout
+
+    clear, why = backup_window.machine_verdict(on_machine, run_s, require_timer=True)
+    print(why)
     return clear
+
+
+RECHECK_POLL_S = 60
+RECHECK_POLLS = 50
+
+
+def wait_until_clear() -> bool:
+    """The re-check before the delete: poll, bounded, until the window is clear."""
+    for _ in range(RECHECK_POLLS):
+        if backup_window_clear(0):
+            return True
+        time.sleep(RECHECK_POLL_S)
+    return False
 
 
 def run(repo: str, collect: bool = False) -> int:
@@ -160,6 +177,13 @@ def run(repo: str, collect: bool = False) -> int:
             print("no fork was made by this run: nothing to delete")
         else:
             for dry in (True, False):
+                if not dry and not wait_until_clear():
+                    failed = True
+                    print(
+                        "a backup window never cleared: the fork is NOT deleted; delete it by hand once clear: %s"
+                        % " ".join(delete_argv(repo, False))
+                    )
+                    break
                 argv = delete_argv(repo, dry)
                 res = _run(argv)
                 print("$ %s -> rc=%d" % (" ".join(argv), res.returncode))

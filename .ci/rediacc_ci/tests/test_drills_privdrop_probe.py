@@ -16,7 +16,7 @@ _REAL_WINDOW_CLEAR = pp.backup_window_clear
 @pytest.fixture(autouse=True)
 def _window_clear(monkeypatch) -> None:
     # The recipe tests drive `run` with fake rdc results; the guard has its own tests below.
-    monkeypatch.setattr(pp, "backup_window_clear", lambda: True)
+    monkeypatch.setattr(pp, "backup_window_clear", lambda *_a, **_k: True)
 
 
 def test_probe_file_matches_l1_probe() -> None:
@@ -200,6 +200,7 @@ TIMERS_0158 = (
     "NEXT                        LEFT   LAST                        PASSED UNIT                            ACTIVATES\n"
     "Fri 2026-11-06 02:00:00 UTC 1min   Thu 2026-11-05 02:00:00 UTC 23h ago rediacc-backup-nightly-hot.timer rediacc-backup-nightly-hot.service\n"
     "NOW=1793930280\n"
+    "RUNNING-BEGIN\nRUNNING-END\n"
 )
 
 
@@ -224,3 +225,24 @@ def test_run_refuses_when_the_timer_read_fails(monkeypatch) -> None:
     monkeypatch.setattr(pp, "backup_window_clear", _REAL_WINDOW_CLEAR)
     assert pp.run("x") == 2
     assert len(calls) == 1
+
+
+def test_a_refused_recheck_deletes_nothing_and_prints_the_manual_command(
+    capsys, monkeypatch
+) -> None:
+    calls = _recorder(monkeypatch, lambda a: False)
+    answers = iter([True])
+    monkeypatch.setattr(pp, "backup_window_clear", lambda *_a, **_k: next(answers, False))
+    monkeypatch.setattr(pp.time, "sleep", lambda _s: None)
+    assert pp.run("x") == 1
+    assert not any(c[3:5] == ["repo", "delete"] and "--dry-run" not in c for c in calls)
+    assert "repo delete x:privdrop@hostinger -y" in capsys.readouterr().out
+
+
+def test_the_recheck_polls_until_clear_then_deletes(monkeypatch) -> None:
+    calls = _recorder(monkeypatch, lambda a: False)
+    answers = iter([True, False, False, True])
+    monkeypatch.setattr(pp, "backup_window_clear", lambda *_a, **_k: next(answers))
+    monkeypatch.setattr(pp.time, "sleep", lambda _s: None)
+    assert pp.run("x") == 1  # the fake probe reads fail the verdict rows; the delete still ran
+    assert any(c[3:5] == ["repo", "delete"] and "-y" in c for c in calls)

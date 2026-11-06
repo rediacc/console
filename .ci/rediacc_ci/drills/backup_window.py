@@ -9,14 +9,19 @@ from __future__ import annotations
 
 import datetime as dt
 import re
+from collections.abc import Callable
 from typing import NamedTuple
 
 LEAD_S = 5 * 60
 TAIL_S = 45 * 60
+# What the caller's own run may take: a start is refused when a trigger falls inside [now, now + RUN_BUDGET_S + LEAD_S].
+RUN_BUDGET_S = 30 * 60
 UNIT_PREFIX = "rediacc-backup-"
+RUNNING_BEGIN = "RUNNING-BEGIN"
+RUNNING_END = "RUNNING-END"
 
 _STAMP = re.compile(r"\w{3} (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) (\w+)")
-_UNIT = re.compile(r"(rediacc-backup-\S*\.timer)")
+_UNIT = re.compile(r"(%s\S*\.timer)" % re.escape(UNIT_PREFIX))
 
 
 class Timer(NamedTuple):
@@ -27,7 +32,25 @@ class Timer(NamedTuple):
 
 def timers_script() -> str:
     """The shell to run on the machine: the timer table in UTC, then the machine's clock as an epoch (`NOW=`)."""
-    return "TZ=UTC systemctl list-timers --all --no-pager; echo NOW=$(date -u +%s)"
+    return (
+        "TZ=UTC systemctl list-timers --all --no-pager; echo NOW=$(date -u +%s); "
+        "echo " + RUNNING_BEGIN + "; "
+        "systemctl list-units --all --no-legend --plain '" + UNIT_PREFIX + "*.service' "
+        "--state=activating,active,deactivating || echo LIST-UNITS-FAILED; "
+        "pgrep -af '[r]enet backup (snapshot|verify|push)' || true; "
+        "echo " + RUNNING_END
+    )
+
+
+def parse_running(text: str) -> list[str] | None:
+    """The rows between the markers (a backup service in an active state, a renet backup process), or None when a marker is missing."""
+    lines = text.splitlines()
+    try:
+        begin = lines.index(RUNNING_BEGIN)
+        end = lines.index(RUNNING_END, begin)
+    except ValueError:
+        return None
+    return [ln.strip() for ln in lines[begin + 1 : end] if ln.strip()]
 
 
 def parse_now(text: str) -> int | None:
@@ -65,36 +88,77 @@ def _utc(epoch: int) -> str:
     return dt.datetime.fromtimestamp(epoch, dt.UTC).strftime("%Y-%m-%d %H:%M:%SZ")
 
 
-def window_verdict(text: str, now: int | None = None) -> tuple[bool, str]:
-    """(clear, why) from a `timers_script` read. `now` defaults to the read's own `NOW=` line. Refuses inside [trigger - LEAD_S, trigger + TAIL_S] of any backup timer and names the next clear time."""
+def window_verdict(
+    text: str,
+    now: int | None = None,
+    run_s: int = RUN_BUDGET_S,
+    *,
+    require_timer: bool = False,
+    check_running: bool = True,
+) -> tuple[bool, str]:
+    """(clear, why) from a `timers_script` read. `now` defaults to the read's own `NOW=` line. Refuses when a backup is running now (`check_running`), and inside [trigger - LEAD_S - run_s, trigger + TAIL_S] of any backup timer, naming the next clear time. `run_s` is the time the caller's own run needs; 0 re-checks a moment before one destructive step. `require_timer` refuses a machine that lists no backup timer at all."""
     if now is None:
         now = parse_now(text)
     if now is None:
         return False, "backup-window: the machine's clock was not read, so the window is unchecked"
     if "NEXT" not in text:
         return False, "backup-window: the timer table was not read, so the window is unchecked"
+    if check_running:
+        running = parse_running(text)
+        if running is None:
+            return (
+                False,
+                "backup-window: the running-backup read has no markers, so it is unchecked",
+            )
+        if running:
+            return False, "backup-window: refused, a backup is running: %s" % "; ".join(running)
     rows = parse_timers(text)
     if any(not r.utc for r in rows):
         return (
             False,
             "backup-window: a backup timer stamp is not in UTC, so the window is unchecked",
         )
+    if require_timer and not rows:
+        return (
+            False,
+            "backup-window: no %s*.timer is listed, so the window is unchecked" % UNIT_PREFIX,
+        )
     holds = [
         (trig + TAIL_S, "%s at %s" % (r.unit, _utc(trig)))
         for r in rows
         for trig in r.triggers
-        if trig - LEAD_S <= now <= trig + TAIL_S
+        if trig - LEAD_S - run_s <= now <= trig + TAIL_S
     ]
     if not holds:
         return True, "backup-window: clear at %s (%d backup timer(s))" % (_utc(now), len(rows))
     clear_at = max(h[0] for h in holds)
     return False, (
-        "backup-window: refused at %s, within %d min before to %d min after %s; next clear time %s"
+        "backup-window: refused at %s, within %d min before (run budget %d min) to %d min after %s; next clear time %s"
         % (
             _utc(now),
             LEAD_S // 60,
+            run_s // 60,
             TAIL_S // 60,
             "; ".join(h[1] for h in holds),
             _utc(clear_at + 1),
         )
+    )
+
+
+def machine_verdict(
+    run: Callable[[str], tuple[int, str]],
+    run_s: int = RUN_BUDGET_S,
+    *,
+    require_timer: bool = True,
+    check_running: bool = True,
+) -> tuple[bool, str]:
+    """Read the machine through `run(command) -> (rc, stdout)` and judge it. A failed read refuses."""
+    rc, out = run(timers_script())
+    if rc != 0:
+        return (
+            False,
+            "backup-window: the timer read failed (rc=%d), so the window is unchecked" % rc,
+        )
+    return window_verdict(
+        out, run_s=run_s, require_timer=require_timer, check_running=check_running
     )
