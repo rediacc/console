@@ -289,9 +289,13 @@ const EMPTY_ANALYSIS: ConfigPruneAnalysis = {
  * `updateSyncedConfig`, so a replay after a version conflict re-runs it on the fresh server copy).
  */
 function prunePass(cfg: RdcConfig, options: ConfigPruneOptions): ConfigPruneAnalysis {
-  const wantCerts = !options.archivesOnly && !options.refsOnly;
-  const wantArchives = !options.certsOnly && !options.refsOnly;
-  const wantRefs = !options.certsOnly && !options.archivesOnly;
+  // Any bucket flag narrows the run to the buckets named; no bucket flag prunes every bucket.
+  const narrowed = Boolean(
+    options.certsOnly || options.archivesOnly || options.refsOnly || options.goneMachineRepos
+  );
+  const wantCerts = !narrowed || Boolean(options.certsOnly);
+  const wantArchives = !narrowed || Boolean(options.archivesOnly);
+  const wantRefs = !narrowed || Boolean(options.refsOnly);
   const graceDays = options.graceDays ?? cfg.defaults?.pruneGraceDays ?? DEFAULT_GRACE_DAYS;
 
   // Archives FIRST so the cert anchors below are computed against the post-prune resource set; otherwise certs whose anchor is in expiredArchives would be classified as live and survive the run.
@@ -301,7 +305,7 @@ function prunePass(cfg: RdcConfig, options: ConfigPruneOptions): ConfigPruneAnal
 
   const goneMachineRepos = findGoneMachineRepos(cfg);
   if (options.goneMachineRepos) archiveGoneMachineRepos(cfg, goneMachineRepos);
-  const goneMachineState = wantRefs ? pruneGoneMachineState(cfg) : [];
+  const goneMachineState = wantRefs || options.goneMachineRepos ? pruneGoneMachineState(cfg) : [];
 
   const staleCerts = wantCerts ? pruneCertCacheBuckets(cfg, buildConfigAnchors(cfg)) : [];
   const refs = wantRefs

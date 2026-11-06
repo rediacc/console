@@ -105,6 +105,43 @@ describe('config prune: references to a machine no longer in the config', () => 
     expect(analysis.expiredArchives).toEqual([]);
   });
 
+  it('--gone-machine-repos alone selects only that bucket: expired archives and certs stay', async () => {
+    const cfg = config();
+    cfg.resources!.deletedRepositories = [
+      {
+        name: 'old',
+        tag: 'latest',
+        repositoryGuid: '99999999-9999-4999-8999-999999999999',
+        deletedAt: '2020-01-01T00:00:00.000Z',
+      } as never,
+    ];
+    h.disk = cfg;
+
+    const analysis = await applyConfigPrune({ goneMachineRepos: true });
+
+    expect(analysis.goneMachineRepos).toHaveLength(1);
+    expect(analysis.expiredArchives).toEqual([]);
+    expect(analysis.staleCerts).toEqual([]);
+    expect(disk().resources?.deletedRepositories?.map((a) => a.name)).toContain('old');
+  });
+
+  it('--gone-machine-repos with --archives-only also purges the expired archives', async () => {
+    const cfg = config();
+    cfg.resources!.deletedRepositories = [
+      {
+        name: 'old',
+        tag: 'latest',
+        repositoryGuid: '99999999-9999-4999-8999-999999999999',
+        deletedAt: '2020-01-01T00:00:00.000Z',
+      } as never,
+    ];
+    h.disk = cfg;
+
+    const analysis = await applyConfigPrune({ goneMachineRepos: true, archivesOnly: true });
+
+    expect(analysis.expiredArchives.map((a) => a.name)).toEqual(['old']);
+  });
+
   it('changes nothing on a dry run', async () => {
     const analysis = await analyzeConfigPrune({ goneMachineRepos: true });
     expect(analysis.goneMachineRepos).toHaveLength(1);

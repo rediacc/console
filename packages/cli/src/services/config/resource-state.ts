@@ -549,7 +549,8 @@ export class RemoteResourceState implements ResourceState {
    */
   private async pushOnce(build: (base: RdcConfig) => RdcConfig): Promise<PushAttempt> {
     const base = await configFileStorage.loadDecrypted(this.configName);
-    const merged = build(base);
+    // `base` is configFileStorage's in-process cache and an edit may mutate the document it is given (config prune does, in place): built on a COPY, `merged` and `base` stay two documents, so the edit is seen as a change and is pushed instead of being skipped as "nothing changed" while the cache silently held it.
+    const merged = build(structuredClone(base));
     // Nothing a push carries changed: the version stays, no push goes out (R2). The cache may lag the server, though, and "equals the cache" then says nothing about the server's copy: a newer server value would win over the intended one. So a no-op is skipped only after one pull confirms the server is still at the version this state was built on; otherwise the push goes out, takes the 409 and replays the intended value as it always did.
     if (isNoopPush(merged, base) && (await this.serverIsAt(this.version))) return { pushed: base };
     try {
