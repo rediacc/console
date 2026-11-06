@@ -160,7 +160,10 @@ describe('findings table (X1)', () => {
         ).toBe(true);
       }
     }
-    expect([...raised].sort()).toEqual([...new Set(PRODUCERS.map(([, c]) => c))].sort());
+    const byName = (a: string, b: string) => a.localeCompare(b);
+    expect([...raised].sort(byName)).toEqual(
+      [...new Set(PRODUCERS.map(([, c]) => c))].sort(byName)
+    );
   });
 
   it('keeps the issue strings exactly as before', () => {

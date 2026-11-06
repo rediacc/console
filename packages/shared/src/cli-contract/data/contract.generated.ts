@@ -8251,6 +8251,93 @@ export const CLI_CONTRACT: CliContract = {
     {
       "path": [
         "machine",
+        "repair"
+      ],
+      "pathKey": "machine repair",
+      "domain": "machine",
+      "group": "INFRASTRUCTURE",
+      "plane": "machine",
+      "descriptionKey": "commands.machine.repair.description",
+      "label": "Run the safe fixes for a machine's health findings, then re-check (exit 0 nothing left, 1 warnings or operator items left, 2 an error left or a fix failed)",
+      "options": [
+        {
+          "flags": "--dry-run",
+          "long": "dry-run",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.machine.repair.optionDryRun",
+          "label": "List the fixes that would run without running them"
+        },
+        {
+          "flags": "--code <code>",
+          "long": "code",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.machine.repair.optionCode",
+          "label": "Only fix this finding code (repeatable)"
+        },
+        {
+          "flags": "--with-backup",
+          "long": "with-backup",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.machine.repair.optionWithBackup",
+          "label": "Allow auto-with-backup fixes, each after a successful snapshot of its repository"
+        },
+        {
+          "flags": "--window-override",
+          "long": "window-override",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.machine.repair.optionWindowOverride",
+          "label": "Run window-only fixes outside the maintenance window"
+        },
+        {
+          "flags": "--set-window <window>",
+          "long": "set-window",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.machine.repair.optionSetWindow",
+          "label": "Store the machine's maintenance window (HH:MM-HH:MM, UTC) or clear it with off, then exit"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "name",
+          "kind": "machine",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.name",
+          "label": "Resource name"
+        }
+      ],
+      "hasSubcommands": false,
+      "interactive": false,
+      "proxyCapable": true,
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": "name",
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "machine",
         "restart-services"
       ],
       "pathKey": "machine restart-services",
@@ -13010,6 +13097,94 @@ export const CLI_CONTRACT: CliContract = {
       "timeoutMs": 300000,
       "repoArg": "ref",
       "grandGuard": true,
+      "interactive": false,
+      "proxyCapable": true,
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
+    },
+    {
+      "path": [
+        "repo",
+        "repair"
+      ],
+      "pathKey": "repo repair",
+      "domain": "repo",
+      "group": "REPOSITORIES",
+      "plane": "machine",
+      "descriptionKey": "commands.repo.repair.description",
+      "label": "Run the repository's Rediaccfile repair() functions that their declared class allows, then health() again (exit 0 ok, 1 warning, 2 error or a failed repair)",
+      "options": [
+        {
+          "flags": "--dry-run",
+          "long": "dry-run",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.repo.repair.optionDryRun",
+          "label": "Show which repair() would run, without running any"
+        },
+        {
+          "flags": "--with-backup",
+          "long": "with-backup",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.repo.repair.optionWithBackup",
+          "label": "Allow auto-with-backup repair() functions, after a successful snapshot of the repository"
+        },
+        {
+          "flags": "--window-override",
+          "long": "window-override",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.repo.repair.optionWindowOverride",
+          "label": "Run window-only repair() functions outside the machine's maintenance window"
+        },
+        {
+          "flags": "-y, --yes",
+          "long": "yes",
+          "short": "y",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.repo.repair.optionYes",
+          "label": "Run undeclared (operator-only) repair() functions without asking"
+        },
+        {
+          "flags": "--debug",
+          "long": "debug",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "options.debug",
+          "label": "Enable debug output"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
+      "hasSubcommands": false,
       "interactive": false,
       "proxyCapable": true,
       "detachable": true,

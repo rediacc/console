@@ -120,6 +120,8 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   // Cluster backref on materialized pool members — non-secret inventory.
   '/resources/machines/*/cluster/cluster': { kind: 'public' },
   '/resources/machines/*/cluster/pool': { kind: 'public' },
+  // When window-only repair fixes may run (`rdc machine repair`); a schedule, not an identifier.
+  '/resources/machines/*/maintenanceWindow': { kind: 'public' },
 
   // ── Datastores (named local/rbd registry; unencrypted by design, 02 §5) ────
   '/resources/datastores/*/backend/kind': { kind: 'public' },

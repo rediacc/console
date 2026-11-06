@@ -474,6 +474,51 @@
           "subcommands": []
         },
         {
+          "name": "repair",
+          "descriptionKey": "commands.machine.repair.description",
+          "options": [
+            {
+              "flags": "--dry-run",
+              "descriptionKey": "commands.machine.repair.optionDryRun",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--code <code>",
+              "descriptionKey": "commands.machine.repair.optionCode",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--with-backup",
+              "descriptionKey": "commands.machine.repair.optionWithBackup",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--window-override",
+              "descriptionKey": "commands.machine.repair.optionWindowOverride",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--set-window <window>",
+              "descriptionKey": "commands.machine.repair.optionSetWindow",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "name",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
           "name": "provision",
           "descriptionKey": "commands.machine.provision.description",
           "options": [
@@ -2697,6 +2742,51 @@
             {
               "flags": "--skip-router-restart",
               "descriptionKey": "options.skipRouterRestart",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "ref",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "repair",
+          "descriptionKey": "commands.repo.repair.description",
+          "options": [
+            {
+              "flags": "--dry-run",
+              "descriptionKey": "commands.repo.repair.optionDryRun",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--with-backup",
+              "descriptionKey": "commands.repo.repair.optionWithBackup",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--window-override",
+              "descriptionKey": "commands.repo.repair.optionWindowOverride",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "-y, --yes",
+              "descriptionKey": "commands.repo.repair.optionYes",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--debug",
+              "descriptionKey": "options.debug",
               "mandatory": false,
               "defaultValue": null
             }

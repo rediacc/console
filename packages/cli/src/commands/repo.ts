@@ -29,6 +29,7 @@ import { registerRepoHealthCommand } from './repo-health.js';
 import { registerRepoMaintenanceCommands } from './repo-maintenance.js';
 import { registerRepoMigrateCommand } from './repo-migrate.js';
 import { registerRepoPermissionCommands } from './repo-permission.js';
+import { registerRepoRepairCommand } from './repo-repair.js';
 import { registerRepoReplicateCommands } from './repo-replicate.js';
 import { registerRepoSecretCommands } from './repo-secret.js';
 import { registerRepoSyncCommands } from './repo-sync.js';
@@ -393,6 +394,7 @@ export function registerRepoCommands(program: Command): void {
     .option('--skip-router-restart', t('options.skipRouterRestart'))
     .action(handleRepoList);
   registerRepoHealthCommand(repo);
+  registerRepoRepairCommand(repo);
   registerRepoCatCommand(repo);
   registerRepoForkCommand(repo);
   registerRepoDiffCommand(repo);

@@ -1325,6 +1325,36 @@
         "repoHealthSection": "\nصحة المستودعات:",
         "repoHealthNoCheck": "  بلا فحص (لا توجد دالة health()): {{repositories}}"
       },
+      "repair": {
+        "description": "يشغّل الإصلاحات الآمنة لنتائج فحص صحة الجهاز ثم يعيد الفحص (رمز الخروج 0: لم يبقَ شيء، 1: بقيت تحذيرات أو مهام للمشغّل، 2: بقي خطأ أو فشل إصلاح)",
+        "optionDryRun": "يسرد الإصلاحات التي ستُشغَّل دون تشغيلها",
+        "optionCode": "يصلح رمز النتيجة هذا فقط (قابل للتكرار)",
+        "optionWithBackup": "يسمح بإصلاحات auto-with-backup، كلٌّ منها بعد لقطة ناجحة لمستودعه",
+        "optionWindowOverride": "يشغّل إصلاحات window=only خارج نافذة الصيانة",
+        "optionSetWindow": "يحفظ نافذة صيانة الجهاز (HH:MM-HH:MM بتوقيت UTC) أو يمسحها بـ off ثم يخرج",
+        "header": "\nإصلاح {{name}}:",
+        "nothingDue": "  لا توجد نتيجة لها إصلاح مستحق",
+        "runByHand": "    يُشغَّل يدويًا: {{command}}",
+        "summary": "شُغِّل {{ran}} إصلاح، وفشل {{failed}}؛ وبقيت {{remaining}} نتيجة",
+        "windowSet": "عُيِّنت نافذة صيانة {{name}} على {{window}} UTC",
+        "windowCleared": "مُسحت نافذة صيانة {{name}}؛ لم تعد إصلاحات window=only تعمل تلقائيًا",
+        "windowInvalid": "نافذة صيانة غير صالحة \"{{window}}\": استخدم HH:MM-HH:MM بتوقيت UTC، أو off",
+        "reasonNeedsBackup": "يتطلب --with-backup (تُؤخذ لقطة أولًا)",
+        "reasonOutsideWindow": "داخل نافذة الصيانة {{window}} UTC فقط (‏--window-override يشغّله الآن)",
+        "reasonNoWindow": "داخل نافذة الصيانة فقط، وليس للجهاز نافذة (عيّنها بـ --set-window)",
+        "reasonSnapshotFailed": "فشلت اللقطة، لذا لم تُشغَّل الإصلاحات التي تحتاج إلى نسخة احتياطية: {{detail}}",
+        "reasonNoRepository": "المستودع غير موجود في هذا الإعداد",
+        "reasonNoAction": "لا يُعرف إصلاح لهذه النتيجة",
+        "resultOk": "تم الإصلاح",
+        "resultFailed": "فشل الإصلاح",
+        "resultPlanned": "سيُشغَّل",
+        "resultSkipped": "تم التخطي",
+        "resultRefused": "مرفوض",
+        "resultCancelled": "أُلغي",
+        "resultGone": "زال بالفعل",
+        "resultCovered": "غطّاه إصلاح سابق",
+        "resultOperator": "قرار المشغّل"
+      },
       "infra": {
         "cert": {
           "clear": {
@@ -2281,6 +2311,22 @@
         "failed": "فشل فحص صحة {{repository}}: {{message}}",
         "unsupported": "إصدار renet على {{machine}} أقدم من فحوص صحة المستودعات؛ حدّثه عبر rdc machine setup {{machine}}",
         "renetFailed": "تعذّر على renet تشغيل فحص الصحة"
+      },
+      "repair": {
+        "description": "يشغّل دوال repair() في ملفات Rediaccfile الخاصة بالمستودع التي تسمح بها فئتها المُعلنة، ثم health() مجددًا (رمز الخروج 0 سليم، 1 تحذير، 2 خطأ أو إصلاح فاشل)",
+        "optionDryRun": "يعرض أي repair() سيُشغَّل دون تشغيل أي منها",
+        "optionWithBackup": "يسمح بدوال repair() من فئة auto-with-backup بعد لقطة ناجحة للمستودع",
+        "optionWindowOverride": "يشغّل دوال repair() من نوع window=only خارج نافذة صيانة الجهاز",
+        "optionYes": "يشغّل دون سؤال دوال repair() التي لا تُعلن فئة (operator-only)",
+        "header": "\nإصلاح {{repository}}:",
+        "summary": "شُغِّل {{ran}} من repair()، وفشل {{failed}}؛ وأصبحت health() الآن {{level}}",
+        "withheldNeedsBackup": "لم تُشغَّل دوال repair() من فئة auto-with-backup: أضف --with-backup",
+        "withheldSnapshotFailed": "لم تُشغَّل دوال repair() من فئة auto-with-backup: فشلت اللقطة",
+        "withheldNotConfirmed": "لم تُشغَّل دوال repair() التي لا تُعلن فئة (operator-only): لم يُؤكَّد تشغيلها (‏--yes يشغّلها)",
+        "confirmOperatorOnly": "دوال repair() هذه لا تُعلن فئة وتُعدّ operator-only: {{files}}. هل تُشغَّل؟",
+        "unreadable": "أجاب renet دون تقرير إصلاح",
+        "unsupported": "إصدار renet على {{machine}} أقدم من repository repair؛ حدّثه بـ rdc machine setup {{machine}}",
+        "renetFailed": "تعذّر على renet تشغيل الإصلاح"
       },
       "sync": {
         "description": "مزامنة المستودعات والملفات (دفع/سحب جماعي، نقل ملفات)",

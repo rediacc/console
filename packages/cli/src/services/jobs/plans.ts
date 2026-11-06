@@ -123,6 +123,9 @@ export const CONVERTED: ReadonlySet<string> = new Set<string>([
   'repo status',
   // G3 (PLAN-health-checks-local): one repository_health read job, its verdict print a step.
   'repo health',
+  // X2, X4 (PLAN-health-checks-local): chains of attached probe calls, so --background never detaches a call whose answer the next one reads.
+  'machine repair',
+  'repo repair',
   'repo admin autostart disable',
   'repo admin autostart enable',
   'repo admin autostart list',

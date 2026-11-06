@@ -231,6 +231,14 @@ const MachineClusterRefSchema = z.object({
   pool: resourceName,
 });
 
+// A machine's maintenance window, `HH:MM-HH:MM` in UTC (it may wrap midnight): window-only repair fixes run only inside it (D-remedy).
+const MaintenanceWindowSchema = z
+  .string()
+  .regex(
+    /^([01]\d|2[0-3]):[0-5]\d-([01]\d|2[0-3]):[0-5]\d$/,
+    'Maintenance window must be HH:MM-HH:MM (UTC)'
+  );
+
 const MachineConfigSchema = z.object({
   ip: ipOrHostname,
   user: z.string().min(1, 'SSH user cannot be empty'),
@@ -240,6 +248,7 @@ const MachineConfigSchema = z.object({
   infra: InfraConfigSchema.optional(),
   backupStrategies: z.array(z.string()).optional(),
   cluster: MachineClusterRefSchema.optional(),
+  maintenanceWindow: MaintenanceWindowSchema.optional(),
 });
 
 // =============================================================================

@@ -122,6 +122,8 @@ export const LONG_TIMEOUT_FUNCTIONS: ReadonlySet<string> = new Set([
   'repository_expand',
   'repository_trim',
   'repository_docker_prune',
+  // Each Rediaccfile's repair() may take up to its 30-minute cap, plus two health() runs per file.
+  'repository_repair',
   // Two backup pushes to the destination machine, sized by the image.
   'repository_migrate',
   // CRIU checkpoints grow with the memory they dump and restore.
@@ -283,6 +285,7 @@ export const DEFAULT_TIMEOUT_FUNCTIONS: ReadonlySet<string> = new Set([
   'repository_gpu_grant',
   'repository_gpu_revoke',
   'repository_health',
+  'proxy_acme_fix',
   'repository_info',
   'repository_limits_set',
   'repository_limits_show',

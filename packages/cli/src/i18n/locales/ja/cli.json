@@ -1325,6 +1325,36 @@
         "repoHealthSection": "\nリポジトリの健全性:",
         "repoHealthNoCheck": "  チェックなし (health() 未定義): {{repositories}}"
       },
+      "repair": {
+        "description": "マシンのヘルス検出項目に対する安全な修正を実行し、再確認します (終了コード 0: 残りなし、1: 警告またはオペレーター対応が残る、2: エラーが残るか修正に失敗)",
+        "optionDryRun": "実行される修正を、実行せずに一覧表示します",
+        "optionCode": "この検出コードだけを修正します (繰り返し指定可)",
+        "optionWithBackup": "auto-with-backup の修正を許可します。各修正はそのリポジトリのスナップショットが成功した後に実行されます",
+        "optionWindowOverride": "window=only の修正をメンテナンスウィンドウ外でも実行します",
+        "optionSetWindow": "マシンのメンテナンスウィンドウ (HH:MM-HH:MM、UTC) を保存するか、off で削除して終了します",
+        "header": "\n{{name}} の修復:",
+        "nothingDue": "  実行すべき修正がある検出項目はありません",
+        "runByHand": "    手動で実行: {{command}}",
+        "summary": "修正 {{ran}} 件を実行、失敗 {{failed}} 件。残りの検出項目 {{remaining}} 件",
+        "windowSet": "{{name}} のメンテナンスウィンドウを {{window}} UTC に設定しました",
+        "windowCleared": "{{name}} のメンテナンスウィンドウを削除しました。window=only の修正は自動では実行されなくなります",
+        "windowInvalid": "メンテナンスウィンドウ「{{window}}」が無効です。UTC の HH:MM-HH:MM か off を指定してください",
+        "reasonNeedsBackup": "--with-backup が必要です (先にスナップショットを取得します)",
+        "reasonOutsideWindow": "メンテナンスウィンドウ {{window}} UTC 内でのみ実行します (--window-override で今すぐ実行)",
+        "reasonNoWindow": "メンテナンスウィンドウ内でのみ実行しますが、このマシンにはウィンドウがありません (--set-window で設定)",
+        "reasonSnapshotFailed": "スナップショットに失敗したため、バックアップが必要な修正は実行しませんでした: {{detail}}",
+        "reasonNoRepository": "このリポジトリはこの設定にありません",
+        "reasonNoAction": "この検出項目に対する修正は不明です",
+        "resultOk": "修正済み",
+        "resultFailed": "修正に失敗",
+        "resultPlanned": "実行予定",
+        "resultSkipped": "スキップ",
+        "resultRefused": "拒否",
+        "resultCancelled": "中止",
+        "resultGone": "すでに解消",
+        "resultCovered": "先の修正で対応済み",
+        "resultOperator": "オペレーターの判断が必要"
+      },
       "infra": {
         "cert": {
           "clear": {
@@ -2281,6 +2311,22 @@
         "failed": "{{repository}} の健全性チェックに失敗しました: {{message}}",
         "unsupported": "{{machine}} の renet はリポジトリの健全性チェックより古いバージョンです。rdc machine setup {{machine}} で更新してください",
         "renetFailed": "renet が健全性チェックを実行できませんでした"
+      },
+      "repair": {
+        "description": "宣言されたクラスが許可するリポジトリの Rediaccfile の repair() 関数を実行し、その後 health() を再実行します (終了コード 0: ok、1: 警告、2: エラーまたは修復失敗)",
+        "optionDryRun": "どの repair() が実行されるかを、何も実行せずに表示します",
+        "optionWithBackup": "リポジトリのスナップショットが成功した後に auto-with-backup の repair() 関数を許可します",
+        "optionWindowOverride": "window=only の repair() 関数をマシンのメンテナンスウィンドウ外でも実行します",
+        "optionYes": "クラスを宣言していない (operator-only) repair() 関数を確認なしで実行します",
+        "header": "\n{{repository}} の修復:",
+        "summary": "repair() を {{ran}} 件実行、失敗 {{failed}} 件。health() は現在 {{level}} です",
+        "withheldNeedsBackup": "auto-with-backup の repair() 関数は実行されませんでした。--with-backup を指定してください",
+        "withheldSnapshotFailed": "auto-with-backup の repair() 関数は実行されませんでした。スナップショットに失敗しました",
+        "withheldNotConfirmed": "クラスを宣言していない (operator-only) repair() 関数は確認されなかったため実行されませんでした (--yes で実行)",
+        "confirmOperatorOnly": "これらの repair() 関数はクラスを宣言しておらず operator-only として扱われます: {{files}}。実行しますか?",
+        "unreadable": "renet が修復レポートなしで応答しました",
+        "unsupported": "{{machine}} の renet は repository repair に対応していません。rdc machine setup {{machine}} で更新してください",
+        "renetFailed": "renet は修復を実行できませんでした"
       },
       "sync": {
         "description": "リポジトリとファイルの同期（一括プッシュ/プル、ファイル転送）",

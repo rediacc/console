@@ -1325,6 +1325,36 @@
         "repoHealthSection": "\nDepo sağlığı:",
         "repoHealthNoCheck": "  Denetimsiz (health() tanımlı değil): {{repositories}}"
       },
+      "repair": {
+        "description": "Bir makinenin sağlık bulguları için güvenli düzeltmeleri çalıştırır ve yeniden denetler (çıkış 0: hiçbir şey kalmadı, 1: uyarı veya operatör işi kaldı, 2: hata kaldı ya da bir düzeltme başarısız oldu)",
+        "optionDryRun": "Çalışacak düzeltmeleri çalıştırmadan listeler",
+        "optionCode": "Yalnızca bu bulgu kodunu düzeltir (tekrarlanabilir)",
+        "optionWithBackup": "auto-with-backup düzeltmelerine izin verir; her biri deposunun başarılı bir anlık görüntüsünden sonra çalışır",
+        "optionWindowOverride": "window=only düzeltmelerini bakım penceresi dışında da çalıştırır",
+        "optionSetWindow": "Makinenin bakım penceresini kaydeder (HH:MM-HH:MM, UTC) ya da off ile siler ve çıkar",
+        "header": "\n{{name}} onarımı:",
+        "nothingDue": "  Çalıştırılacak düzeltmesi olan bulgu yok",
+        "runByHand": "    Elle çalıştırın: {{command}}",
+        "summary": "{{ran}} düzeltme çalıştı, {{failed}} başarısız; {{remaining}} bulgu kaldı",
+        "windowSet": "{{name}} bakım penceresi {{window}} UTC olarak ayarlandı",
+        "windowCleared": "{{name}} bakım penceresi silindi; window=only düzeltmeler artık kendiliğinden çalışmaz",
+        "windowInvalid": "Geçersiz bakım penceresi \"{{window}}\": UTC olarak HH:MM-HH:MM ya da off kullanın",
+        "reasonNeedsBackup": "--with-backup gerekir (önce bir anlık görüntü alınır)",
+        "reasonOutsideWindow": "yalnızca {{window}} UTC bakım penceresinde (--window-override şimdi çalıştırır)",
+        "reasonNoWindow": "yalnızca bakım penceresinde, ama makinenin penceresi yok (--set-window ile ayarlayın)",
+        "reasonSnapshotFailed": "anlık görüntü alınamadı; yedek gerektiren düzeltmeler çalışmadı: {{detail}}",
+        "reasonNoRepository": "depo bu yapılandırmada yok",
+        "reasonNoAction": "bu bulgu için bilinen bir düzeltme yok",
+        "resultOk": "düzeltildi",
+        "resultFailed": "düzeltme başarısız",
+        "resultPlanned": "çalışacaktı",
+        "resultSkipped": "atlandı",
+        "resultRefused": "reddedildi",
+        "resultCancelled": "iptal edildi",
+        "resultGone": "zaten giderilmiş",
+        "resultCovered": "önceki bir düzeltmeyle karşılandı",
+        "resultOperator": "operatör kararı"
+      },
       "infra": {
         "cert": {
           "clear": {
@@ -2281,6 +2311,22 @@
         "failed": "{{repository}} sağlık denetimi başarısız oldu: {{message}}",
         "unsupported": "{{machine}} üzerindeki renet, depo sağlık denetimlerinden eski; rdc machine setup {{machine}} ile güncelleyin",
         "renetFailed": "renet sağlık denetimini çalıştıramadı"
+      },
+      "repair": {
+        "description": "Deponun Rediaccfile dosyalarındaki, bildirilen sınıfının izin verdiği repair() işlevlerini çalıştırır, ardından health() yeniden çalışır (çıkış 0 ok, 1 uyarı, 2 hata ya da başarısız onarım)",
+        "optionDryRun": "Hangi repair() işlevinin çalışacağını, hiçbirini çalıştırmadan gösterir",
+        "optionWithBackup": "auto-with-backup repair() işlevlerine, deponun başarılı bir anlık görüntüsünden sonra izin verir",
+        "optionWindowOverride": "window=only repair() işlevlerini makinenin bakım penceresi dışında da çalıştırır",
+        "optionYes": "Sınıf bildirmeyen (operator-only) repair() işlevlerini sormadan çalıştırır",
+        "header": "\n{{repository}} onarımı:",
+        "summary": "{{ran}} repair() çalıştı, {{failed}} başarısız; health() şimdi {{level}}",
+        "withheldNeedsBackup": "auto-with-backup repair() işlevleri çalışmadı: --with-backup verin",
+        "withheldSnapshotFailed": "auto-with-backup repair() işlevleri çalışmadı: anlık görüntü alınamadı",
+        "withheldNotConfirmed": "Sınıf bildirmeyen (operator-only) repair() işlevleri çalışmadı: onaylanmadılar (--yes çalıştırır)",
+        "confirmOperatorOnly": "Bu repair() işlevleri sınıf bildirmiyor ve operator-only sayılıyor: {{files}}. Çalıştırılsın mı?",
+        "unreadable": "renet onarım raporu olmadan yanıt verdi",
+        "unsupported": "{{machine}} üzerindeki renet repository repair desteğinden eski; rdc machine setup {{machine}} ile güncelleyin",
+        "renetFailed": "renet onarımı çalıştıramadı"
       },
       "sync": {
         "description": "Depoları ve dosyaları senkronize et (toplu push/pull, dosya aktarımı)",

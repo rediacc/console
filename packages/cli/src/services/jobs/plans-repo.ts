@@ -191,6 +191,15 @@ export const REPO_JOB_PLANS: Readonly<Record<string, JobPlan>> = {
     box: 'J16',
     steps: ['printRepoHealth'],
   },
+  // X4 (PLAN-health-checks-local): a dry-run plan, an optional snapshot, then the repair; every call is an attached probe.
+  'repo repair': {
+    form: 'compound',
+    fn: 'repository_repair',
+    lock: 'repo-exclusive',
+    timeout: '24h',
+    box: 'J16',
+    note: "the allowed classes of the second call depend on the first call's plan and the snapshot",
+  },
   'repo checkout': {
     form: 'precondition',
     fn: 'repository_fork',

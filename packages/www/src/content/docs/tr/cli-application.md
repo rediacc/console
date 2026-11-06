@@ -7,7 +7,7 @@ order: 2
 language: tr
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/tr/cli.json
-sourceHash: "1cb41766793ddc03"
+sourceHash: "c85a345167235f35"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -732,8 +732,26 @@ rdc machine list [options]
 rdc machine health <name>
 ```
 
+<a id="cli-local-machine-repair"></a>
+### 3.3 repair
+
+{{t:cli.commands.machine.repair.description}}
+
+```bash
+rdc machine repair <name> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--dry-run` | {{t:cli.commands.machine.repair.optionDryRun}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--code <code>` | {{t:cli.commands.machine.repair.optionCode}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--with-backup` | {{t:cli.commands.machine.repair.optionWithBackup}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--window-override` | {{t:cli.commands.machine.repair.optionWindowOverride}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--set-window <window>` | {{t:cli.commands.machine.repair.optionSetWindow}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
 <a id="cli-local-machine-provision"></a>
-### 3.3 provision
+### 3.4 provision
 
 {{t:cli.commands.machine.provision.description}}
 
@@ -754,7 +772,7 @@ rdc machine provision <name> [options]
 
 
 <a id="cli-local-machine-deprovision"></a>
-### 3.4 deprovision
+### 3.5 deprovision
 
 {{t:cli.commands.machine.deprovision.description}}
 
@@ -770,7 +788,7 @@ rdc machine deprovision <name> [options]
 
 
 <a id="cli-local-machine-prune"></a>
-### 3.5 prune
+### 3.6 prune
 
 {{t:cli.commands.machine.prune.description}}
 
@@ -790,7 +808,7 @@ rdc machine prune <name> [options]
 
 
 <a id="cli-local-machine-converge"></a>
-### 3.6 converge
+### 3.7 converge
 
 {{t:cli.commands.machine.converge.description}}
 
@@ -809,7 +827,7 @@ rdc machine converge <name> [options]
 
 
 <a id="cli-local-machine-add"></a>
-### 3.7 add
+### 3.8 add
 
 {{t:cli.commands.machine.add.description}}
 
@@ -825,7 +843,7 @@ rdc machine add <name> [options]
 
 
 <a id="cli-local-machine-infra"></a>
-### 3.8 infra
+### 3.9 infra
 
 {{t:cli.commands.machine.infra.description}}
 
@@ -924,7 +942,7 @@ rdc machine infra show <machine>
 ```
 
 <a id="cli-local-machine-provider"></a>
-### 3.9 provider
+### 3.10 provider
 
 {{t:cli.commands.machine.provider.description}}
 
@@ -977,7 +995,7 @@ rdc machine provider remove <name>
 ```
 
 <a id="cli-local-machine-remove"></a>
-### 3.10 remove
+### 3.11 remove
 
 {{t:cli.commands.machine.remove.description}}
 
@@ -993,7 +1011,7 @@ rdc machine remove <name> [options]
 
 
 <a id="cli-local-machine-restart-services"></a>
-### 3.11 restart-services
+### 3.12 restart-services
 
 {{t:cli.commands.machine.restartServices.description}}
 
@@ -1009,7 +1027,7 @@ rdc machine restart-services <name> [options]
 
 
 <a id="cli-local-machine-scan-keys"></a>
-### 3.12 scan-keys
+### 3.13 scan-keys
 
 {{t:cli.commands.machine.scanKeys.description}}
 
@@ -1018,7 +1036,7 @@ rdc machine scan-keys [name]
 ```
 
 <a id="cli-local-machine-setup"></a>
-### 3.13 setup
+### 3.14 setup
 
 {{t:cli.commands.machine.setup.description}}
 
@@ -1035,7 +1053,7 @@ rdc machine setup <name> [options]
 
 
 <a id="cli-local-machine-status"></a>
-### 3.14 status
+### 3.15 status
 
 {{t:cli.commands.machine.status.description}}
 
@@ -1063,7 +1081,7 @@ rdc machine status [name] [options]
 
 
 <a id="cli-local-machine-gpu"></a>
-### 3.15 gpu
+### 3.16 gpu
 
 {{t:cli.commands.machine.gpu.description}}
 
@@ -1082,7 +1100,7 @@ rdc machine gpu list <name> [options]
 
 
 <a id="cli-local-machine-access"></a>
-### 3.16 access
+### 3.17 access
 
 {{t:cli.commands.machine.access.description}}
 
@@ -1447,8 +1465,26 @@ rdc repo health <ref> [options]
 | `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
+<a id="cli-local-repo-repair"></a>
+### 6.5 repair
+
+{{t:cli.commands.repo.repair.description}}
+
+```bash
+rdc repo repair <ref> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--dry-run` | {{t:cli.commands.repo.repair.optionDryRun}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--with-backup` | {{t:cli.commands.repo.repair.optionWithBackup}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--window-override` | {{t:cli.commands.repo.repair.optionWindowOverride}} | {{t:cli.docs.optionLabels.no}} | - |
+| `-y, --yes` | {{t:cli.commands.repo.repair.optionYes}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
 <a id="cli-local-repo-cat"></a>
-### 6.5 cat
+### 6.6 cat
 
 {{t:cli.commands.repo.cat.description}}
 
@@ -1470,7 +1506,7 @@ rdc repo cat <ref> [options]
 
 
 <a id="cli-local-repo-diff"></a>
-### 6.6 diff
+### 6.7 diff
 
 {{t:cli.commands.repo.diff.description}}
 
@@ -1490,7 +1526,7 @@ rdc repo diff <ref> [options]
 
 
 <a id="cli-local-repo-list"></a>
-### 6.7 list
+### 6.8 list
 
 {{t:cli.commands.repo.list.description}}
 
@@ -1507,7 +1543,7 @@ rdc repo list [options]
 
 
 <a id="cli-local-repo-create"></a>
-### 6.8 create
+### 6.9 create
 
 {{t:cli.commands.repo.create.description}}
 
@@ -1526,7 +1562,7 @@ rdc repo create <name> [options]
 
 
 <a id="cli-local-repo-delete"></a>
-### 6.9 delete
+### 6.10 delete
 
 {{t:cli.commands.repo.delete.description}}
 
@@ -1545,7 +1581,7 @@ rdc repo delete <ref> [options]
 
 
 <a id="cli-local-repo-commit"></a>
-### 6.10 commit
+### 6.11 commit
 
 {{t:cli.commands.repo.commit.description}}
 
@@ -1561,7 +1597,7 @@ rdc repo commit <ref> [options]
 
 
 <a id="cli-local-repo-branch"></a>
-### 6.11 branch
+### 6.12 branch
 
 {{t:cli.commands.repo.branch.description}}
 
@@ -1575,7 +1611,7 @@ rdc repo branch <ref> [options]
 
 
 <a id="cli-local-repo-checkout"></a>
-### 6.12 checkout
+### 6.13 checkout
 
 {{t:cli.commands.repo.checkout.description}}
 
@@ -1592,7 +1628,7 @@ rdc repo checkout <commit-or-branch-ref> [options]
 
 
 <a id="cli-local-repo-log"></a>
-### 6.13 log
+### 6.14 log
 
 {{t:cli.commands.repo.log.description}}
 
@@ -1606,7 +1642,7 @@ rdc repo log <ref> [options]
 
 
 <a id="cli-local-repo-merge"></a>
-### 6.14 merge
+### 6.15 merge
 
 {{t:cli.commands.repo.merge.description}}
 
@@ -1624,7 +1660,7 @@ rdc repo merge <ref> [options]
 
 
 <a id="cli-local-repo-gc"></a>
-### 6.15 gc
+### 6.16 gc
 
 {{t:cli.commands.repo.gc.description}}
 
@@ -1640,7 +1676,7 @@ rdc repo gc [options]
 
 
 <a id="cli-local-repo-fork"></a>
-### 6.16 fork
+### 6.17 fork
 
 {{t:cli.commands.repo.fork.description}}
 
@@ -1660,7 +1696,7 @@ rdc repo fork <ref> [options]
 
 
 <a id="cli-local-repo-replicate"></a>
-### 6.17 replicate
+### 6.18 replicate
 
 {{t:cli.commands.repo.replicate.description}}
 
@@ -1702,7 +1738,7 @@ rdc repo replicate refresh <ref> [options]
 
 
 <a id="cli-local-repo-canary"></a>
-### 6.18 canary
+### 6.19 canary
 
 {{t:cli.commands.repo.canary.description}}
 
@@ -1764,7 +1800,7 @@ rdc repo canary create <ref> [options]
 
 
 <a id="cli-local-repo-resize"></a>
-### 6.19 resize
+### 6.20 resize
 
 {{t:cli.commands.repo.resize.description}}
 
@@ -1780,7 +1816,7 @@ rdc repo resize <ref> [options]
 
 
 <a id="cli-local-repo-expand"></a>
-### 6.20 expand
+### 6.21 expand
 
 {{t:cli.commands.repo.expand.description}}
 
@@ -1796,7 +1832,7 @@ rdc repo expand <ref> [options]
 
 
 <a id="cli-local-repo-trim"></a>
-### 6.21 trim
+### 6.22 trim
 
 {{t:cli.commands.repo.trim.description}}
 
@@ -1814,7 +1850,7 @@ rdc repo trim [ref] [options]
 
 
 <a id="cli-local-repo-prune"></a>
-### 6.22 prune
+### 6.23 prune
 
 {{t:cli.commands.repo.prune.description}}
 
@@ -1834,7 +1870,7 @@ rdc repo prune [ref] [options]
 
 
 <a id="cli-local-repo-policy"></a>
-### 6.23 policy
+### 6.24 policy
 
 {{t:cli.commands.repo.policy.description}}
 
@@ -1883,7 +1919,7 @@ rdc repo policy get [ref] [options]
 
 
 <a id="cli-local-repo-push"></a>
-### 6.24 push
+### 6.25 push
 
 {{t:cli.commands.repo.push.description}}
 
@@ -1906,7 +1942,7 @@ rdc repo push <ref> [options]
 
 
 <a id="cli-local-repo-pull"></a>
-### 6.25 pull
+### 6.26 pull
 
 {{t:cli.commands.repo.pull.description}}
 
@@ -1928,7 +1964,7 @@ rdc repo pull <ref> [options]
 
 
 <a id="cli-local-repo-migrate"></a>
-### 6.26 migrate
+### 6.27 migrate
 
 {{t:cli.commands.repo.migrate.description}}
 
@@ -1950,7 +1986,7 @@ rdc repo migrate <ref> [options]
 
 
 <a id="cli-local-repo-sync"></a>
-### 6.27 sync
+### 6.28 sync
 
 {{t:cli.commands.repo.sync.description}}
 
@@ -2013,7 +2049,7 @@ rdc repo sync status <ref> [options]
 
 
 <a id="cli-local-repo-tunnel"></a>
-### 6.28 tunnel
+### 6.29 tunnel
 
 {{t:cli.commands.repo.tunnel.description}}
 
@@ -2030,7 +2066,7 @@ rdc repo tunnel <ref> [options]
 
 
 <a id="cli-local-repo-secret"></a>
-### 6.29 secret
+### 6.30 secret
 
 {{t:cli.commands.repo.secret.description}}
 
@@ -2092,7 +2128,7 @@ rdc repo secret unset <ref> [options]
 
 
 <a id="cli-local-repo-admin"></a>
-### 6.30 admin
+### 6.31 admin
 
 {{t:cli.commands.repo.admin.description}}
 
@@ -2265,7 +2301,7 @@ rdc repo admin template apply <ref> [options]
 
 
 <a id="cli-local-repo-promote"></a>
-### 6.31 promote
+### 6.32 promote
 
 {{t:cli.commands.repo.promote.description}}
 
@@ -2281,7 +2317,7 @@ rdc repo promote <fork-ref> [options]
 
 
 <a id="cli-local-repo-logs"></a>
-### 6.32 logs
+### 6.33 logs
 
 {{t:cli.commands.repo.logs.description}}
 
@@ -2299,7 +2335,7 @@ rdc repo logs <ref> [options]
 
 
 <a id="cli-local-repo-exec"></a>
-### 6.33 exec
+### 6.34 exec
 
 {{t:cli.commands.repo.exec.description}}
 
@@ -2316,7 +2352,7 @@ rdc repo exec <ref> <cmd...> [options]
 
 
 <a id="cli-local-repo-gpu"></a>
-### 6.34 gpu
+### 6.35 gpu
 
 {{t:cli.commands.repo.gpu.description}}
 
@@ -2352,7 +2388,7 @@ rdc repo gpu revoke <ref> [options]
 
 
 <a id="cli-local-repo-permission"></a>
-### 6.35 permission
+### 6.36 permission
 
 {{t:cli.commands.repo.permission.description}}
 

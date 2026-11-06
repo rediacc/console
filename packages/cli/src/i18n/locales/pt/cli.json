@@ -1325,6 +1325,36 @@
         "repoHealthSection": "\nSaúde dos repositórios:",
         "repoHealthNoCheck": "  Sem verificação (nenhum health() definido): {{repositories}}"
       },
+      "repair": {
+        "description": "Executa as correções seguras para os problemas de saúde de uma máquina e volta a verificar (saída 0: nada pendente, 1: ficam avisos ou tarefas do operador, 2: fica um erro ou uma correção falhou)",
+        "optionDryRun": "Lista as correções que correriam, sem as correr",
+        "optionCode": "Corrige apenas este código de problema (repetível)",
+        "optionWithBackup": "Permite correções auto-with-backup, cada uma após um snapshot bem-sucedido do seu repositório",
+        "optionWindowOverride": "Corre as correções window=only fora da janela de manutenção",
+        "optionSetWindow": "Guarda a janela de manutenção da máquina (HH:MM-HH:MM, UTC) ou apaga-a com off, e termina",
+        "header": "\nReparação de {{name}}:",
+        "nothingDue": "  Nenhum problema tem uma correção por correr",
+        "runByHand": "    Correr à mão: {{command}}",
+        "summary": "{{ran}} correção(ões) corrida(s), {{failed}} falhada(s); ficam {{remaining}} problema(s)",
+        "windowSet": "Janela de manutenção de {{name}} definida para {{window}} UTC",
+        "windowCleared": "Janela de manutenção de {{name}} apagada; as correções window=only deixam de correr sozinhas",
+        "windowInvalid": "Janela de manutenção inválida \"{{window}}\": use HH:MM-HH:MM em UTC, ou off",
+        "reasonNeedsBackup": "requer --with-backup (corre primeiro um snapshot)",
+        "reasonOutsideWindow": "só na janela de manutenção {{window}} UTC (--window-override corre-a já)",
+        "reasonNoWindow": "só na janela de manutenção, e a máquina não tem nenhuma (defina-a com --set-window)",
+        "reasonSnapshotFailed": "o snapshot falhou, por isso as correções que precisam de cópia não correram: {{detail}}",
+        "reasonNoRepository": "o repositório não está nesta configuração",
+        "reasonNoAction": "não se conhece nenhuma correção para este problema",
+        "resultOk": "corrigido",
+        "resultFailed": "a correção falhou",
+        "resultPlanned": "correria",
+        "resultSkipped": "ignorado",
+        "resultRefused": "recusado",
+        "resultCancelled": "cancelado",
+        "resultGone": "já resolvido",
+        "resultCovered": "coberto por uma correção anterior",
+        "resultOperator": "decisão do operador"
+      },
       "infra": {
         "cert": {
           "clear": {
@@ -2281,6 +2311,22 @@
         "failed": "A verificação de saúde de {{repository}} falhou: {{message}}",
         "unsupported": "O renet em {{machine}} é anterior às verificações de saúde de repositórios; atualize-o com rdc machine setup {{machine}}",
         "renetFailed": "O renet não conseguiu executar a verificação de saúde"
+      },
+      "repair": {
+        "description": "Corre as funções repair() dos Rediaccfile do repositório que a sua classe declarada permite e depois health() de novo (saída 0 ok, 1 aviso, 2 erro ou reparação falhada)",
+        "optionDryRun": "Mostra que repair() correria, sem correr nenhum",
+        "optionWithBackup": "Permite as funções repair() auto-with-backup, após um snapshot bem-sucedido do repositório",
+        "optionWindowOverride": "Corre as funções repair() window=only fora da janela de manutenção da máquina",
+        "optionYes": "Corre sem perguntar as funções repair() sem classe declarada (operator-only)",
+        "header": "\nReparação de {{repository}}:",
+        "summary": "{{ran}} repair() corrido(s), {{failed}} falhado(s); health() está agora em {{level}}",
+        "withheldNeedsBackup": "As funções repair() auto-with-backup não correram: indique --with-backup",
+        "withheldSnapshotFailed": "As funções repair() auto-with-backup não correram: o snapshot falhou",
+        "withheldNotConfirmed": "As funções repair() sem classe declarada (operator-only) não correram: não foram confirmadas (--yes corre-as)",
+        "confirmOperatorOnly": "Estas funções repair() não declaram classe e contam como operator-only: {{files}}. Corrê-las?",
+        "unreadable": "o renet respondeu sem relatório de reparação",
+        "unsupported": "o renet em {{machine}} é anterior a repository repair; atualize-o com rdc machine setup {{machine}}",
+        "renetFailed": "o renet não conseguiu correr a reparação"
       },
       "sync": {
         "description": "Sincronizar repositórios e ficheiros (push/pull em volume, transferência de ficheiros)",

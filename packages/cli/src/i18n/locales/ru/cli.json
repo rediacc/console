@@ -1325,6 +1325,36 @@
         "repoHealthSection": "\nСостояние репозиториев:",
         "repoHealthNoCheck": "  Без проверки (health() не определена): {{repositories}}"
       },
+      "repair": {
+        "description": "Выполнить безопасные исправления по находкам проверки машины и проверить её снова (код 0: ничего не осталось, 1: остались предупреждения или задачи оператора, 2: осталась ошибка или исправление не удалось)",
+        "optionDryRun": "Показать исправления, которые были бы выполнены, не выполняя их",
+        "optionCode": "Исправлять только этот код находки (можно повторять)",
+        "optionWithBackup": "Разрешить исправления auto-with-backup, каждое после успешного снимка его репозитория",
+        "optionWindowOverride": "Выполнять исправления window=only вне окна обслуживания",
+        "optionSetWindow": "Сохранить окно обслуживания машины (HH:MM-HH:MM, UTC) или удалить его значением off и выйти",
+        "header": "\nИсправление {{name}}:",
+        "nothingDue": "  Ни для одной находки нет исправления к запуску",
+        "runByHand": "    Выполнить вручную: {{command}}",
+        "summary": "Выполнено исправлений: {{ran}}, неудачных: {{failed}}; осталось находок: {{remaining}}",
+        "windowSet": "Окно обслуживания {{name}}: {{window}} UTC",
+        "windowCleared": "Окно обслуживания {{name}} удалено; исправления window=only больше не запускаются сами",
+        "windowInvalid": "Недопустимое окно обслуживания «{{window}}»: укажите HH:MM-HH:MM в UTC или off",
+        "reasonNeedsBackup": "нужен --with-backup (сначала выполняется снимок)",
+        "reasonOutsideWindow": "только в окне обслуживания {{window}} UTC (--window-override запустит сейчас)",
+        "reasonNoWindow": "только в окне обслуживания, а у машины его нет (задайте через --set-window)",
+        "reasonSnapshotFailed": "снимок не удался, поэтому исправления, которым нужна резервная копия, не выполнялись: {{detail}}",
+        "reasonNoRepository": "репозитория нет в этой конфигурации",
+        "reasonNoAction": "для этой находки исправление неизвестно",
+        "resultOk": "исправлено",
+        "resultFailed": "исправление не удалось",
+        "resultPlanned": "будет выполнено",
+        "resultSkipped": "пропущено",
+        "resultRefused": "отклонено",
+        "resultCancelled": "отменено",
+        "resultGone": "уже устранено",
+        "resultCovered": "покрыто предыдущим исправлением",
+        "resultOperator": "решение оператора"
+      },
       "infra": {
         "cert": {
           "clear": {
@@ -2281,6 +2311,22 @@
         "failed": "Проверка состояния {{repository}} не удалась: {{message}}",
         "unsupported": "renet на {{machine}} старше проверок состояния репозиториев; обновите его командой rdc machine setup {{machine}}",
         "renetFailed": "renet не смог выполнить проверку состояния"
+      },
+      "repair": {
+        "description": "Выполнить функции repair() файлов Rediaccfile репозитория, которые разрешает их объявленный класс, затем снова health() (код 0: ok, 1: предупреждение, 2: ошибка или неудачное исправление)",
+        "optionDryRun": "Показать, какой repair() был бы запущен, ничего не запуская",
+        "optionWithBackup": "Разрешить функции repair() класса auto-with-backup после успешного снимка репозитория",
+        "optionWindowOverride": "Запускать функции repair() с window=only вне окна обслуживания машины",
+        "optionYes": "Запускать без вопроса функции repair() без объявленного класса (operator-only)",
+        "header": "\nИсправление {{repository}}:",
+        "summary": "Запущено repair(): {{ran}}, неудачных: {{failed}}; health() теперь {{level}}",
+        "withheldNeedsBackup": "Функции repair() класса auto-with-backup не запускались: укажите --with-backup",
+        "withheldSnapshotFailed": "Функции repair() класса auto-with-backup не запускались: снимок не удался",
+        "withheldNotConfirmed": "Функции repair() без объявленного класса (operator-only) не запускались: нет подтверждения (--yes запустит их)",
+        "confirmOperatorOnly": "Эти функции repair() не объявляют класс и считаются operator-only: {{files}}. Запустить?",
+        "unreadable": "renet ответил без отчёта об исправлении",
+        "unsupported": "renet на {{machine}} не знает repository repair; обновите его командой rdc machine setup {{machine}}",
+        "renetFailed": "renet не смог выполнить исправление"
       },
       "sync": {
         "description": "Синхронизация репозиториев и файлов (массовый push/pull, передача файлов)",

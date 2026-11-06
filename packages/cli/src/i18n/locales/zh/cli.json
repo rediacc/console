@@ -1325,6 +1325,36 @@
         "repoHealthSection": "\n仓库健康状况：",
         "repoHealthNoCheck": "  无检查（未定义 health()）：{{repositories}}"
       },
+      "repair": {
+        "description": "对机器的健康检查发现执行安全修复,然后重新检查(退出码 0:没有遗留,1:遗留警告或需运维人员处理的项,2:遗留错误或有修复失败)",
+        "optionDryRun": "列出将要执行的修复,但不执行",
+        "optionCode": "只修复此发现代码(可重复)",
+        "optionWithBackup": "允许 auto-with-backup 修复,每项在其仓库快照成功后执行",
+        "optionWindowOverride": "在维护窗口之外也执行 window=only 修复",
+        "optionSetWindow": "保存机器的维护窗口(HH:MM-HH:MM,UTC),或用 off 清除,然后退出",
+        "header": "\n{{name}} 的修复:",
+        "nothingDue": "  没有需要执行修复的发现",
+        "runByHand": "    手动执行:{{command}}",
+        "summary": "执行了 {{ran}} 项修复,{{failed}} 项失败;遗留 {{remaining}} 项发现",
+        "windowSet": "{{name}} 的维护窗口已设为 {{window}} UTC",
+        "windowCleared": "已清除 {{name}} 的维护窗口;window=only 修复将不再自动执行",
+        "windowInvalid": "维护窗口“{{window}}”无效:请使用 UTC 的 HH:MM-HH:MM,或 off",
+        "reasonNeedsBackup": "需要 --with-backup(先执行快照)",
+        "reasonOutsideWindow": "仅在维护窗口 {{window}} UTC 内执行(--window-override 可立即执行)",
+        "reasonNoWindow": "仅在维护窗口内执行,但该机器没有维护窗口(用 --set-window 设置)",
+        "reasonSnapshotFailed": "快照失败,因此未执行需要备份的修复:{{detail}}",
+        "reasonNoRepository": "此配置中没有该仓库",
+        "reasonNoAction": "此发现没有已知的修复",
+        "resultOk": "已修复",
+        "resultFailed": "修复失败",
+        "resultPlanned": "将会执行",
+        "resultSkipped": "已跳过",
+        "resultRefused": "已拒绝",
+        "resultCancelled": "已取消",
+        "resultGone": "已不存在",
+        "resultCovered": "已由先前的修复覆盖",
+        "resultOperator": "需运维人员决定"
+      },
       "infra": {
         "cert": {
           "clear": {
@@ -2281,6 +2311,22 @@
         "failed": "{{repository}} 的健康检查失败：{{message}}",
         "unsupported": "{{machine}} 上的 renet 早于仓库健康检查功能；请运行 rdc machine setup {{machine}} 更新",
         "renetFailed": "renet 无法运行健康检查"
+      },
+      "repair": {
+        "description": "运行仓库 Rediaccfile 中其声明类别允许的 repair() 函数,然后再次运行 health()(退出码 0:ok,1:警告,2:错误或修复失败)",
+        "optionDryRun": "显示将会运行哪些 repair(),但不运行",
+        "optionWithBackup": "在仓库快照成功后允许 auto-with-backup 的 repair() 函数",
+        "optionWindowOverride": "在机器维护窗口之外也运行 window=only 的 repair() 函数",
+        "optionYes": "不经询问运行未声明类别(operator-only)的 repair() 函数",
+        "header": "\n{{repository}} 的修复:",
+        "summary": "运行了 {{ran}} 个 repair(),{{failed}} 个失败;health() 现在为 {{level}}",
+        "withheldNeedsBackup": "未运行 auto-with-backup 的 repair() 函数:请加上 --with-backup",
+        "withheldSnapshotFailed": "未运行 auto-with-backup 的 repair() 函数:快照失败",
+        "withheldNotConfirmed": "未运行未声明类别(operator-only)的 repair() 函数:未获确认(--yes 可运行)",
+        "confirmOperatorOnly": "这些 repair() 函数未声明类别,视为 operator-only:{{files}}。要运行吗?",
+        "unreadable": "renet 的应答中没有修复报告",
+        "unsupported": "{{machine}} 上的 renet 早于 repository repair;请用 rdc machine setup {{machine}} 更新",
+        "renetFailed": "renet 无法运行修复"
       },
       "sync": {
         "description": "同步仓库和文件（批量推送/拉取，文件传输）",

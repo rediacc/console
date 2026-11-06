@@ -1325,6 +1325,36 @@
         "repoHealthSection": "\nHoidlate seisund:",
         "repoHealthNoCheck": "  Kontrollita (health() puudub): {{repositories}}"
       },
+      "repair": {
+        "description": "Käivitab masina tervisekontrolli leidude ohutud parandused ja kontrollib uuesti (väljumiskood 0: midagi ei jäänud, 1: jäid hoiatused või operaatori tööd, 2: jäi viga või parandus ebaõnnestus)",
+        "optionDryRun": "Loetleb parandused, mis käivitataks, neid käivitamata",
+        "optionCode": "Parandab ainult selle leiu koodi (korratav)",
+        "optionWithBackup": "Lubab auto-with-backup parandused, igaüks pärast oma hoidla õnnestunud hetktõmmist",
+        "optionWindowOverride": "Käivitab window=only parandused ka väljaspool hooldusakent",
+        "optionSetWindow": "Salvestab masina hooldusakna (HH:MM-HH:MM, UTC) või kustutab selle väärtusega off ja lõpetab",
+        "header": "\n{{name}} parandamine:",
+        "nothingDue": "  Ühelgi leiul pole käivitatavat parandust",
+        "runByHand": "    Käivita käsitsi: {{command}}",
+        "summary": "Käivitati {{ran}} parandust, ebaõnnestus {{failed}}; jäi {{remaining}} leidu",
+        "windowSet": "Masina {{name}} hooldusaken on nüüd {{window}} UTC",
+        "windowCleared": "Masina {{name}} hooldusaken kustutati; window=only parandused enam iseenesest ei käivitu",
+        "windowInvalid": "Vigane hooldusaken „{{window}}“: kasuta UTC-ajas HH:MM-HH:MM või off",
+        "reasonNeedsBackup": "vajab --with-backup (enne tehakse hetktõmmis)",
+        "reasonOutsideWindow": "ainult hooldusaknas {{window}} UTC (--window-override käivitab kohe)",
+        "reasonNoWindow": "ainult hooldusaknas, aga masinal pole hooldusakent (määra --set-window abil)",
+        "reasonSnapshotFailed": "hetktõmmis ebaõnnestus, seega varukoopiat vajavaid parandusi ei käivitatud: {{detail}}",
+        "reasonNoRepository": "hoidlat pole selles konfiguratsioonis",
+        "reasonNoAction": "selle leiu jaoks pole teadaolevat parandust",
+        "resultOk": "parandatud",
+        "resultFailed": "parandus ebaõnnestus",
+        "resultPlanned": "käivitataks",
+        "resultSkipped": "vahele jäetud",
+        "resultRefused": "keeldutud",
+        "resultCancelled": "tühistatud",
+        "resultGone": "juba kadunud",
+        "resultCovered": "kaetud varasema parandusega",
+        "resultOperator": "operaatori otsus"
+      },
       "infra": {
         "cert": {
           "clear": {
@@ -2281,6 +2311,22 @@
         "failed": "Hoidla {{repository}} seisundi kontroll ebaõnnestus: {{message}}",
         "unsupported": "Masina {{machine}} renet on vanem kui hoidlate seisundikontrollid; uuenda seda käsuga rdc machine setup {{machine}}",
         "renetFailed": "renet ei saanud seisundikontrolli käivitada"
+      },
+      "repair": {
+        "description": "Käivitab hoidla Rediaccfile'ide repair() funktsioonid, mida nende deklareeritud klass lubab, ja seejärel uuesti health() (väljumiskood 0 ok, 1 hoiatus, 2 viga või ebaõnnestunud parandus)",
+        "optionDryRun": "Näitab, milline repair() käivitataks, midagi käivitamata",
+        "optionWithBackup": "Lubab auto-with-backup repair() funktsioonid pärast hoidla õnnestunud hetktõmmist",
+        "optionWindowOverride": "Käivitab window=only repair() funktsioonid ka väljaspool masina hooldusakent",
+        "optionYes": "Käivitab klassi deklareerimata (operator-only) repair() funktsioonid küsimata",
+        "header": "\n{{repository}} parandamine:",
+        "summary": "Käivitati {{ran}} repair(), ebaõnnestus {{failed}}; health() on nüüd {{level}}",
+        "withheldNeedsBackup": "auto-with-backup repair() funktsioone ei käivitatud: lisa --with-backup",
+        "withheldSnapshotFailed": "auto-with-backup repair() funktsioone ei käivitatud: hetktõmmis ebaõnnestus",
+        "withheldNotConfirmed": "Klassi deklareerimata (operator-only) repair() funktsioone ei käivitatud: neid ei kinnitatud (--yes käivitab need)",
+        "confirmOperatorOnly": "Need repair() funktsioonid ei deklareeri klassi ja loetakse operator-only'ks: {{files}}. Kas käivitada?",
+        "unreadable": "renet vastas ilma parandusaruandeta",
+        "unsupported": "Masina {{machine}} renet on vanem kui repository repair; uuenda seda käsuga rdc machine setup {{machine}}",
+        "renetFailed": "renet ei suutnud parandust käivitada"
       },
       "sync": {
         "description": "Sünkrooni hoidlaid ja faile (pakkpush/pull, failide ülekanne)",

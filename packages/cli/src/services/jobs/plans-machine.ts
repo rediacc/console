@@ -118,6 +118,15 @@ export const MACHINE_JOB_PLANS: Readonly<Record<string, JobPlan>> = {
     steps: ['purgeExpiredArchives', 'renderPruneOutcome'],
     note: 'one machine_prune job runs repository_prune then the unit prune and renders in renderPruneOutcome; the deletion sets of the orphaned and unknown forms stay client-side after a finished job (the config GUID set is not in the vault)',
   },
+  // X2 (PLAN-health-checks-local): read the findings, then one fix call per finding, each re-checked first; every call is an attached probe.
+  'machine repair': {
+    form: 'compound',
+    lock: 'machine-exclusive',
+    lockFrom: 'daemons-restart',
+    timeout: '24h',
+    box: 'J18',
+    note: `${CHAIN}; each fix depends on the re-check before it (list-all, then repository_trim, container_restart, daemons-restart, proxy_acme_fix or repository_repair)`,
+  },
   'machine restart-services': {
     form: 'command-kind',
     lock: 'machine-exclusive',

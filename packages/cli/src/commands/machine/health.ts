@@ -463,6 +463,8 @@ export async function fetchRepoHealth(machineName: string): Promise<RepoHealthFo
       datastore: machine?.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH,
       params: { all: true, strict: true },
       captureOutput: true,
+      // The verdict reads this answer now: `--background` must not hand back a ticket in its place.
+      probe: true,
     });
     return foldRepoHealthResult(result);
   } catch (error) {
@@ -500,12 +502,9 @@ const REPO_LEVEL_KEY: Record<Exclude<RepoHealthLevel, 'none'>, string> = {
 };
 
 /** The `renderMachineHealth` step: the verdict for the listing the `list-all` job produced, plus every repo's health(). */
-async function renderHealthFromJob(
-  name: string,
-  output: string | undefined,
-  format: OutputFormat
-): Promise<void> {
-  const vaultStatus = JSON.stringify(parseMachineStatus(output));
+/** The full machine verdict for one listing: the shared parser, then staleness, every repo's health() and the certificates. */
+export async function composeMachineHealth(name: string, listing: unknown) {
+  const vaultStatus = JSON.stringify(listing);
   const machine = { machineName: name, vaultStatus };
   const listResult = parseListResult(vaultStatus);
   // The listing the job returned already holds the stale-process section.
@@ -526,6 +525,16 @@ async function renderHealthFromJob(
     ),
     certificatesOf(listResult)
   );
+  return { health, staleBinary, staleBackups, missedTargets, failedVerifies, repoHealth };
+}
+
+async function renderHealthFromJob(
+  name: string,
+  output: string | undefined,
+  format: OutputFormat
+): Promise<void> {
+  const { health, staleBinary, staleBackups, missedTargets, failedVerifies, repoHealth } =
+    await composeMachineHealth(name, parseMachineStatus(output));
 
   if (format === 'json') {
     outputService.print(
