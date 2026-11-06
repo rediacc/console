@@ -8,8 +8,8 @@ tags:
 subcategory: architecture
 order: 3
 language: es
-sourceHash: "f44f082dfde1c0f4"
-sourceCommit: "6070e89a722d3b5ac511023f5ee069a3bb8f1317"
+sourceHash: "5858f8461b70efa2"
+sourceCommit: "9f58d83e01b4d46f8ce31af467a203b4d195e801"
 ---
 
 # Referencia del Servidor
@@ -207,6 +207,8 @@ renet backup pull --name {uuid} --network-id {id} --source machine \
 renet backup list --source machine --src-host {host} --src-user {user} --src-path /mnt/rediacc \
   --src-known-hosts {known-hosts-base64}
 ```
+
+`{known-hosts-base64}` es el registro `known_hosts` de la otra máquina, codificado en base64 (por ejemplo, `ssh-keyscan -t ed25519 {host} | base64 -w0`).
 
 > La mayoría de los usuarios debería usar `rdc repo push/pull` en su lugar. Los comandos `rdc` gestionan automáticamente las credenciales y la resolución de máquinas.
 

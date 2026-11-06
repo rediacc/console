@@ -8,8 +8,8 @@ tags:
 subcategory: architecture
 order: 3
 language: ko
-sourceHash: "f44f082dfde1c0f4"
-sourceCommit: "6070e89a722d3b5ac511023f5ee069a3bb8f1317"
+sourceHash: "5858f8461b70efa2"
+sourceCommit: "9f58d83e01b4d46f8ce31af467a203b4d195e801"
 ---
 
 # 서버 레퍼런스
@@ -207,6 +207,8 @@ renet backup pull --name {uuid} --network-id {id} --source machine \
 renet backup list --source machine --src-host {host} --src-user {user} --src-path /mnt/rediacc \
   --src-known-hosts {known-hosts-base64}
 ```
+
+`{known-hosts-base64}`는 상대 머신의 `known_hosts` 레코드를 base64로 인코딩한 값입니다(예: `ssh-keyscan -t ed25519 {host} | base64 -w0`).
 
 > 대부분의 사용자는 `rdc repo push/pull`을 사용해야 합니다. `rdc` 명령은 자격 증명과 머신 확인을 자동으로 처리합니다.
 

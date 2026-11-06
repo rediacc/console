@@ -8,8 +8,8 @@ tags:
 subcategory: architecture
 order: 3
 language: zh
-sourceHash: "f44f082dfde1c0f4"
-sourceCommit: "6070e89a722d3b5ac511023f5ee069a3bb8f1317"
+sourceHash: "5858f8461b70efa2"
+sourceCommit: "9f58d83e01b4d46f8ce31af467a203b4d195e801"
 ---
 
 # 服务器参考
@@ -207,6 +207,8 @@ renet backup pull --name {uuid} --network-id {id} --source machine \
 renet backup list --source machine --src-host {host} --src-user {user} --src-path /mnt/rediacc \
   --src-known-hosts {known-hosts-base64}
 ```
+
+`{known-hosts-base64}` 是另一台机器的 `known_hosts` 记录，经 base64 编码（例如 `ssh-keyscan -t ed25519 {host} | base64 -w0`）。
 
 > 大多数用户应改用 `rdc repo push/pull`。`rdc` 命令会自动处理凭据和机器解析。
 
