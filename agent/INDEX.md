@@ -472,7 +472,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-ask-flow-preemptive-settled-check.md` | compacted | 38 | 0 | 0 | 2358 |
 | `agent/plans/PLAN-backup-critical-tier.md` | approved | 780 | 10 | 41 | 107172 |
 | `agent/plans/PLAN-backup-download-from-store.md` | approved | 49 | 3 | 6 | 9471 |
-| `agent/plans/PLAN-backup-integrity.md` | approved | 491 | 15 | 41 | 75555 |
+| `agent/plans/PLAN-backup-integrity.md` | approved | 492 | 14 | 42 | 75846 |
 | `agent/plans/PLAN-backup-list-executor-fix.md` | compacted | 55 | 0 | 0 | 5498 |
 | `agent/plans/PLAN-backup-local-image.md` | approved | 457 | 4 | 10 | 57906 |
 | `agent/plans/PLAN-backup-meter-orphaned-chunks.md` | approved | 268 | 2 | 6 | 35213 |

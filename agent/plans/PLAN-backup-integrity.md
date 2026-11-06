@@ -402,9 +402,10 @@ V1 to V6 share `backup.go`, `backup_snapshot.go` and `backup_restore.go`, and on
 - [ ] B1: A replayed bad night and alert on `eu-bench`: a failed verify and a stopped nightly produce one digest email; a repeat that day produces none.
   (corrected ASKED:2026-11-05T07:06Z) "After the merge and edge deploy" in the section heading no longer applies: bench runs the branch head through `deploy_bench`, and the Accept already reads as bench.
   - Accept: `./rdc.sh --config eu-bench backup manifests <repo> -o json` rc 0 shows the states, and the delivery is recorded here.
-- [ ] B2: Repair on bench with a chunk corrupted through the store's credentials.
+- [x] B2: Repair on bench with a chunk corrupted through the store's credentials.
   (corrected ASKED:2026-11-05T07:06Z) "After the merge and edge deploy" in the section heading no longer applies: bench runs the branch head through `deploy_bench`, and the Accept already reads as bench.
   - Accept: `./rdc.sh --config eu-bench backup repair <repo>` rc 0, then `backup verify <repo> --store` rc 0.
+    (ticked) 2026-11-06T17:40:07Z by d778be9d: commit:f5bc56d80 bench 2026-11-06 fresh lineage 3495cb83: chunk corrupted via store keys, verify --store rc 1 corrupt 1, backup repair rc 0, verify --store rc 0 checked 157 corrupt []; repo and its store objects deleted after; bench-only proof
 
 ### H: hostinger, after the release (lead)
 
