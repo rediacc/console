@@ -1,5 +1,7 @@
+import { exec } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
+import { promisify } from 'node:util';
 import { expect, test } from '@playwright/test';
 import {
   accountPrereqs,
@@ -24,7 +26,11 @@ import {
   largeRepoBudgetViolations,
   MIB,
   type SnapshotMeasure,
+  seedFileLimitMs,
+  seedFileViolation,
 } from '../src/utils/backup/largeRepoBudget';
+import { collectVmEvidence, isSshLoss } from '../src/utils/backup/vmEvidence';
+import { withMount as withMountOps } from '../src/utils/backup/withMount';
 import { type BackupUsage, chunkVerbs, type SnapshotRecord } from '../src/utils/backupStorage';
 import type { CliRunner } from '../src/utils/CliRunner';
 import {
@@ -37,9 +43,9 @@ import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunc
 /**
  * Suite 31 -- large-repository performance (box K10 of agent/plans/PLAN-backup-program.md).
  *
- * Seeds `K10_SEED_GB` GiB (default 50) into one repository, snapshots it, changes 256 MiB, snapshots again, and holds the second snapshot to a byte, no-rehash and time budget (`largeRepoBudgetViolations`). Then it deletes the backup anchor, writes 4 MiB and snapshots a third time: that control MUST rehash and MUST breach the budget, which proves the budget separates "anchor used" from "anchor lost" at this size, every night.
+ * Seeds `K10_SEED_GB` GiB (default 50) into one repository, snapshots it, changes 256 MiB, snapshots again, and holds the second snapshot to a byte, no-rehash and time budget (`largeRepoBudgetViolations`). Then it deletes the backup anchor, writes 4 MiB and snapshots a third time: that control MUST rehash and MUST breach the budget, which proves the budget separates "anchor used" from "anchor lost" at this size, every run.
  *
- * Only the standalone nightly `.github/workflows/ct-backup-perf.yml` runs it: a worker VM with a 100 GB disk, a backup plane and an account server. It is not a ct-tests.yml job because check:ci-lane-budget prices jobs from pull_request samples and caps them at 15 minutes.
+ * Only the standalone weekly `.github/workflows/ct-backup-perf.yml` runs it: a worker VM with a 100 GB disk, a backup plane and an account server. It is not a ct-tests.yml job because check:ci-lane-budget prices jobs from pull_request samples and caps them at 15 minutes.
  *
  * Run it with:
  *   BACKUP_LARGE_REPO_SUITE=1 VM_WORKERS="11" VM_DSK=100 REDIACC_ACCOUNT_SERVER=http://<host>:<port> \
@@ -104,7 +110,7 @@ test.describe
         process.stderr.write(
           [
             '',
-            '  Declared skip: the prerequisites are missing. This suite is run by the nightly',
+            '  Declared skip: the prerequisites are missing. This suite is run by the weekly',
             '  ct-backup-perf.yml; to run by hand see the header of tests/31-backup-large-repo.test.ts.',
             '',
           ].join('\n')
@@ -143,24 +149,58 @@ test.describe
         return found;
       };
 
-      /** Mount, run the writes through the filesystem, sync, unmount. */
-      const withMount = async (writes: () => Promise<void>): Promise<void> => {
-        const mounted = await w1.repositoryMount(repo.guid, repo.credential, DS, repo.networkId);
-        expect(
-          mounted.code,
-          `mounting ${repo.guid}: ${w1.getCombinedOutput(mounted).slice(-800)}`
-        ).toBe(0);
-        try {
-          await writes();
-          const synced = await w1.executeViaBridge('sync');
-          expect(synced.code, `sync: ${w1.getCombinedOutput(synced)}`).toBe(0);
-        } finally {
-          const unmounted = await w1.repositoryUnmount(repo.guid, DS);
-          expect(
-            unmounted.code,
-            `unmounting ${repo.guid}: ${w1.getCombinedOutput(unmounted).slice(-800)}`
-          ).toBe(0);
-        }
+      /** Mount, run the writes through the filesystem, sync, unmount. A body failure is reported before an unmount failure (withMount util). */
+      const withMount = (writes: () => Promise<void>): Promise<void> =>
+        withMountOps(
+          {
+            mount: async () => {
+              const mounted = await w1.repositoryMount(
+                repo.guid,
+                repo.credential,
+                DS,
+                repo.networkId
+              );
+              expect(
+                mounted.code,
+                `mounting ${repo.guid}: ${w1.getCombinedOutput(mounted).slice(-800)}`
+              ).toBe(0);
+            },
+            sync: async () => {
+              const synced = await w1.executeViaBridge('sync');
+              expect(synced.code, `sync: ${w1.getCombinedOutput(synced)}`).toBe(0);
+            },
+            unmount: async () => {
+              const unmounted = await w1.repositoryUnmount(repo.guid, DS);
+              expect(
+                unmounted.code,
+                `unmounting ${repo.guid}: ${w1.getCombinedOutput(unmounted).slice(-800)}`
+              ).toBe(0);
+            },
+          },
+          writes
+        );
+
+      /** The runner's and the worker's state after the worker stopped answering SSH, written to stderr. */
+      const recordVmEvidence = async (): Promise<string> => {
+        const evidence = await collectVmEvidence(
+          {
+            runLocal: async (cmd) => {
+              const r = await promisify(exec)(cmd, { shell: '/bin/bash', timeout: 30_000 }).catch(
+                (e: { stdout?: string; stderr?: string }) => e
+              );
+              return `${r.stdout ?? ''}${r.stderr ?? ''}`;
+            },
+            runWorker: async (cmd) => {
+              const r = await w1.executeViaBridge(cmd, 20_000);
+              return { code: r.code, output: w1.getCombinedOutput(r) };
+            },
+            sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+            now: () => Date.now(),
+          },
+          { diskDir: process.env.REDIACC_VM_DISK_DIR ?? '' }
+        );
+        process.stderr.write(`K10 VM EVIDENCE\n${evidence}\n`);
+        return evidence;
       };
 
       const mountedPath = (file: string): string => `${DS}/mounts/${repo.guid}/${file}`;
@@ -199,12 +239,22 @@ test.describe
       test('2. seed: the full image uploads', async () => {
         await withMount(async () => {
           // Zeros are fast to write, and under LUKS-XTS every sector's ciphertext is unique, so no cell dedupes against another.
+          const fileBytes = GIB;
           for (let i = 0; i < SEED_GB; i++) {
+            const startedAt = Date.now();
             const dd = await w1.executeViaBridge(
               `sudo dd if=/dev/zero of="${mountedPath(`seed-${i}.bin`)}" bs=4M count=256 oflag=direct status=none`,
-              900_000
+              seedFileLimitMs(fileBytes)
             );
-            expect(dd.code, `seeding file ${i}: ${w1.getCombinedOutput(dd).slice(-400)}`).toBe(0);
+            if (dd.code !== 0 && isSshLoss({ code: dd.code, output: w1.getCombinedOutput(dd) })) {
+              await recordVmEvidence();
+            }
+            expect(
+              dd.code,
+              `seed file ${i} of ${SEED_GB}: ${w1.getCombinedOutput(dd).slice(-400)}`
+            ).toBe(0);
+            const slow = seedFileViolation(i, SEED_GB, fileBytes, Date.now() - startedAt);
+            expect(slow, slow).toBeUndefined();
           }
         });
         seed = await snapshot();
@@ -271,7 +321,7 @@ test.describe
           violations.length,
           'the budget did not flag the anchor-deleted snapshot'
         ).toBeGreaterThan(0);
-        const budgetMs = incrTimeBudgetMs((seed as SnapshotRecord).durationMs);
+        const budgetMs = incrTimeBudgetMs((seed as SnapshotRecord).durationMs, SEED_BYTES);
         expect(
           control.durationMs,
           `the rehash took ${control.durationMs} ms, not over the ${budgetMs} ms incremental budget (cap ${INCR_TIME_CAP_MS}); the budget does not separate the two cases on this runner`
@@ -285,7 +335,7 @@ test.describe
           seed: measure(seed as SnapshotRecord),
           incr: measure(incr as SnapshotRecord),
           control: measure(control as SnapshotRecord),
-          incrBudgetMs: incrTimeBudgetMs((seed as SnapshotRecord).durationMs),
+          incrBudgetMs: incrTimeBudgetMs((seed as SnapshotRecord).durationMs, SEED_BYTES),
           runner: {
             workers: workers.join(' '),
             vmDsk: process.env.VM_DSK ?? '',

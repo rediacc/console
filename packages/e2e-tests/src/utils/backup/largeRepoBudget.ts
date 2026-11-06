@@ -39,9 +39,33 @@ export interface LargeRepoBudgetInput {
   cellBytes: number;
 }
 
-/** The incremental's time budget in ms: the smaller of the cap and a tenth of the seed. */
-export const incrTimeBudgetMs = (seedDurationMs: number): number =>
-  Math.min(INCR_TIME_CAP_MS, INCR_TIME_RATIO * seedDurationMs);
+/** The absolute cap applies from this seed size up; below it the budget is purely proportional. */
+export const CAP_FLOOR_BYTES = 20 * GIB;
+
+/** The incremental's time budget in ms: a tenth of the seed, clipped to the cap when the seed is at least 20 GiB (or its size is not given). */
+export const incrTimeBudgetMs = (seedDurationMs: number, seedBytes?: number): number => {
+  const proportional = INCR_TIME_RATIO * seedDurationMs;
+  if (seedBytes !== undefined && seedBytes < CAP_FLOOR_BYTES) return proportional;
+  return Math.min(INCR_TIME_CAP_MS, proportional);
+};
+
+/** Time one seed file may take, per GiB written (a 4M-block direct-I/O dd on a worker VM measures well under half this). */
+const SEED_FILE_MS_PER_GIB = 120_000;
+
+/** The limit for one seed file of `bytes` bytes. */
+export const seedFileLimitMs = (bytes: number): number =>
+  Math.ceil((bytes / GIB) * SEED_FILE_MS_PER_GIB);
+
+/** A message when seed file `index` (0-based) of `total` took longer than its limit; undefined otherwise. */
+export const seedFileViolation = (
+  index: number,
+  total: number,
+  bytes: number,
+  elapsedMs: number
+): string | undefined =>
+  elapsedMs > seedFileLimitMs(bytes)
+    ? `seed file ${index} of ${total} took ${elapsedMs} ms, over its ${seedFileLimitMs(bytes)} ms limit`
+    : undefined;
 
 /** What must hold about the SEED snapshot: the 50 GiB really went up, so the later ratio compares against a real full upload. */
 export const seedViolations = (seed: SnapshotMeasure, seedBytes: number): string[] => {
@@ -86,10 +110,10 @@ export const largeRepoBudgetViolations = (input: LargeRepoBudgetInput): string[]
       `the incremental uploaded ${incr.chunksUploaded} chunks, over the ${chunkCeiling} ceiling`
     );
   }
-  const budget = incrTimeBudgetMs(seed.durationMs);
+  const budget = incrTimeBudgetMs(seed.durationMs, input.seedBytes);
   if (incr.durationMs > budget) {
     out.push(
-      `the incremental took ${incr.durationMs} ms, over the ${budget} ms budget (min of ${INCR_TIME_CAP_MS} and ${INCR_TIME_RATIO * 100}% of the ${seed.durationMs} ms seed)`
+      `the incremental took ${incr.durationMs} ms, over the ${budget} ms budget (${INCR_TIME_RATIO * 100}% of the ${seed.durationMs} ms seed, capped at ${INCR_TIME_CAP_MS} ms from 20 GiB)`
     );
   }
   return out;
