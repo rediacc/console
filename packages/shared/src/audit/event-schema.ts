@@ -27,6 +27,7 @@ const machineEventTypes = [
   'cli.machine.match',
   'cli.machine.mismatch',
   'cli.machine.ping',
+  // The audit event of the renet function `machine_prune` (`rdc machine prune`), which check:ci-audit-coverage requires.
   'cli.machine.prune',
   'cli.machine.provision',
   'cli.machine.query',
