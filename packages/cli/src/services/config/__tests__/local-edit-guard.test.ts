@@ -224,6 +224,52 @@ describe('a local edit of the cache file is not overwritten by the next read', (
   });
 });
 
+describe('runtime state the cache merge resolves is not a local edit', () => {
+  const serverState = {
+    repos: { mail: { latest: { networkId: 3008 } } },
+    networkIds: { next: 3072 },
+  };
+
+  beforeEach(() => {
+    h.versions = new Map([[7, { ...serverV7(), state: serverState }]]);
+  });
+
+  it('pushes nothing for a state-only difference, and the pulled runtime wins', async () => {
+    h.disk = {
+      ...cacheOfV7(),
+      state: {
+        repos: { mail: { latest: { networkId: 9999 } }, legacy: { latest: { networkId: 4032 } } },
+      },
+    };
+
+    const config = await read();
+
+    expect(h.pushed).toHaveLength(0);
+    expect(h.warnings).toEqual([]);
+    expect(config?.state?.repos?.mail?.latest?.networkId).toBe(3008);
+    expect(config?.state?.repos?.legacy?.latest?.networkId).toBe(4032);
+  });
+
+  it('still pushes a repos removal made beside a state difference, without the local state', async () => {
+    h.disk = { ...editedCache(), state: { repos: { mail: { latest: { networkId: 9999 } } } } };
+
+    await read();
+
+    expect(h.pushed).toHaveLength(1);
+    const pushed = h.pushed[0].doc as RdcConfig;
+    expect(Object.keys(pushed.resources?.repositories ?? {})).toEqual(['shop']);
+    expect(pushed.state?.repos?.mail?.latest?.networkId).toBe(3008);
+    expect(h.warnings).toHaveLength(1);
+    expect(h.warnings[0]).not.toContain('/state');
+  });
+
+  it('names no state pointer to config remote refresh', () => {
+    const local = { ...cacheOfV7(), state: { repos: { mail: { latest: { networkId: 9999 } } } } };
+    const pulled = { config: h.versions.get(7) as RdcConfig, version: 7, sdkEpoch: 1 };
+    expect(localEditsAgainst(local as unknown as RdcConfig, pulled)).toBeNull();
+  });
+});
+
 describe('config remote refresh names what it replaces', () => {
   const pulled = () => ({ config: serverV7() as unknown as RdcConfig, version: 7, sdkEpoch: 1 });
 

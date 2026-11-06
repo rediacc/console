@@ -17,6 +17,9 @@
  *   version that cannot be read back is refused the same way, because a local edit cannot then be
  *   told apart from the server's change.
  *
+ * Only a hand edit counts: `state` is runtime the cache merge resolves per repo, so a difference
+ * there is settled by the merge, never pushed (S3 in private/account config-sync/state-sync.test.ts).
+ *
  * The offline path is untouched: the file is what is served, local edits included.
  */
 
@@ -62,18 +65,38 @@ export class RemoteLocalEditConflictError extends Error {
   }
 }
 
-/** The local file's synced content differs from what the cache of `copy` at `version` holds. */
-function differs(local: RdcConfig, copy: RdcConfig, version: number): RdcConfig | null {
+/**
+ * What a hand edit of `local` means against `expected` (the cache of a pulled copy): the file with
+ * every family the cache merge resolves taken from `expected`. `state` is runtime the merge settles
+ * per repo (the pulled copy wins where both have a repo), so a state difference is never an edit to
+ * push; the device-local pointers already take the local value in `expected`.
+ */
+function asHandEdit(local: RdcConfig, expected: RdcConfig): RdcConfig {
+  const edited: RdcConfig = { ...local };
+  if (expected.state === undefined) delete edited.state;
+  else edited.state = expected.state;
+  return edited;
+}
+
+interface LocalEdit {
+  /** The cache form of the pulled copy: the push base. */
+  expected: RdcConfig;
+  /** The local file as a hand edit: what gets pushed. */
+  edited: RdcConfig;
+}
+
+/** The local file's hand edit against the cache of `copy` at `version`, or null when it holds none. */
+function differs(local: RdcConfig, copy: RdcConfig, version: number): LocalEdit | null {
   const expected = mergeRemoteIntoCache(local, copy, version);
-  return isNoopPush(local, expected) ? null : expected;
+  const edited = asHandEdit(local, expected);
+  return isNoopPush(edited, expected) ? null : { expected, edited };
 }
 
 /** Push the local edit made on top of server version `cached`, whose cache form is `base`. */
 async function pushLocalEdit(
   adapter: RemoteConfigAdapter,
   configName: string,
-  local: RdcConfig,
-  base: RdcConfig,
+  { expected: base, edited: local }: LocalEdit,
   pulled: PullResult
 ): Promise<PullResult> {
   const cached = pulled.version;
@@ -121,7 +144,7 @@ export async function reconcileLocalEdits(
   const againstPulled = differs(local, pulled.config, pulled.version);
   if (!againstPulled) return pulled;
   if (pulled.version === cached) {
-    return pushLocalEdit(adapter, configName, local, againstPulled, pulled);
+    return pushLocalEdit(adapter, configName, againstPulled, pulled);
   }
   await refuseIfEditedSince(adapter, configName, local, cached, pulled.version, againstPulled);
   return pulled;
@@ -137,7 +160,7 @@ async function refuseIfEditedSince(
   local: RdcConfig,
   cached: number,
   serverVersion: number,
-  againstPulled: RdcConfig
+  againstPulled: LocalEdit
 ): Promise<void> {
   let atCached: PullResult;
   try {
@@ -148,7 +171,7 @@ async function refuseIfEditedSince(
       configName,
       cached,
       serverVersion,
-      describeChange(local, againstPulled) || '-',
+      describeChange(againstPulled.edited, againstPulled.expected) || '-',
       error instanceof Error ? error.message : String(error)
     );
   }
@@ -158,7 +181,7 @@ async function refuseIfEditedSince(
     configName,
     cached,
     serverVersion,
-    describeChange(local, againstCached) || '-'
+    describeChange(againstCached.edited, againstCached.expected) || '-'
   );
 }
 
@@ -168,6 +191,6 @@ async function refuseIfEditedSince(
  */
 export function localEditsAgainst(local: RdcConfig, pulled: PullResult): string | null {
   if (local.remote?.cachedVersion === undefined) return null;
-  const expected = differs(local, pulled.config, pulled.version);
-  return expected ? describeChange(local, expected) || '-' : null;
+  const edit = differs(local, pulled.config, pulled.version);
+  return edit ? describeChange(edit.edited, edit.expected) || '-' : null;
 }
