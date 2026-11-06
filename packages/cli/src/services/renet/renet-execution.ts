@@ -13,6 +13,7 @@ import { FUNCTION_REQUIREMENTS } from '@rediacc/shared/renet-contract/data/funct
 import type { SFTPClient } from '../../remote/sftp/index.js';
 import { EXIT_CODES, type MachineConfig } from '../../types/index.js';
 import { CliExitError } from '../../utils/cli-exit-error.js';
+import { askConfirm } from '../../utils/prompt.js';
 import { reportStateWriteRefused } from '../config/state-write-failure.js';
 import { isSEA } from '../core/embedded-assets.js';
 import { outputService } from '../core/output.js';
@@ -36,7 +37,13 @@ import {
 } from './renet-clean-build-fs.js';
 import type { RenetDrift } from './renet-inspect.js';
 import { renetProvisioner } from './renet-provisioner.js';
-import { inExecutor, provisionHeld, renetMayUpload } from './renet-upload-decision.js';
+import {
+  inExecutor,
+  mayOfferReplacement,
+  type RenetHold,
+  renetHold,
+  renetMayUpload,
+} from './renet-upload-decision.js';
 import { buildRepositories, type RepoEntryConfig } from './renet-vault-sections.js';
 
 // The SSH key helpers moved to services/machine/ssh-key.ts so the connection pool can read a team key without importing renet. Re-exported here: this module is where the rest of the CLI has always imported them from.
@@ -338,12 +345,15 @@ function shortHash(hash: string | null): string {
 }
 
 /** The last sentence of the drift warning: who may replace the remote renet, and how. */
-function driftRemedy(machineName: string, executor: boolean, held: boolean): string {
+function driftRemedy(machineName: string, executor: boolean, held: RenetHold): string {
   if (executor) {
     return `An executor never replaces it: run 'rdc machine setup ${machineName}' without --proxy to update it.`;
   }
-  if (held) {
+  if (held === 'env') {
     return `REDIACC_NO_PROVISION=1 holds it: run 'rdc machine setup ${machineName}' to update it.`;
+  }
+  if (held === 'dev') {
+    return `A development build does not replace it as a side effect: run 'rdc machine setup ${machineName}' to update it.`;
   }
   return `Run 'rdc machine setup ${machineName}' or any mutating command to update it.`;
 }
@@ -354,7 +364,7 @@ async function acquireReadOnly(
   sshPrivateKey: string,
   localBinaryPath: string | undefined,
   sftp?: SFTPClient,
-  held = false
+  held: RenetHold = null
 ): Promise<RenetAcquireResult> {
   const executor = inExecutor();
   const inspected = await renetProvisioner.inspect(
@@ -388,6 +398,55 @@ async function acquireReadOnly(
   return { remotePath: inspected.remotePath, uploaded: false, drift: inspected.drift };
 }
 
+/** Answers already given this process, per host: a verb that connects twice asks once. */
+const replacementAnswers = new Map<string, boolean>();
+
+/** The renet source commit behind a local binary, or null when it sits outside a git work tree. */
+function localRenetCommit(localBinaryPath: string | undefined): string | null {
+  if (localBinaryPath === undefined) return null;
+  try {
+    const state = renetSourceState(localBinaryPath);
+    return state === null ? null : gitOut(['rev-parse', 'HEAD'], state.top);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Ask whether a development build may replace the machine's renet, naming the remote build and the local
+ * commit. No question when nothing differs or renet is absent (the read-only path reports that).
+ */
+async function confirmReplacement(
+  machine: MachineConfig,
+  machineName: string,
+  sshPrivateKey: string,
+  localBinaryPath: string | undefined,
+  sftp?: SFTPClient
+): Promise<boolean> {
+  const hostKey = `${machine.ip}:${machine.port ?? DEFAULTS.SSH.PORT}`;
+  const known = replacementAnswers.get(hostKey);
+  if (known !== undefined) return known;
+  const inspected = await renetProvisioner.inspect(
+    sftpConfigForMachine(machine, sshPrivateKey),
+    { localBinaryPath },
+    sftp
+  );
+  if (
+    inspected.drift === 'none' ||
+    inspected.drift === 'missing' ||
+    inspected.remotePath === null
+  ) {
+    return false;
+  }
+  const commit = localRenetCommit(localBinaryPath);
+  const answer = await askConfirm(
+    `renet on ${machineName} is v${inspected.remoteVersion ?? STATUS_DEFAULTS.UNKNOWN_PLACEHOLDER} build ${shortHash(inspected.remoteHash)}; this development build has renet commit ${commit === null ? STATUS_DEFAULTS.UNKNOWN_PLACEHOLDER : commit.slice(0, 12)} (build ${shortHash(inspected.localHash)}). Replace the remote renet with it?`,
+    false
+  );
+  replacementAnswers.set(hostKey, answer);
+  return answer;
+}
+
 /**
  * Resolve the renet binary to run on a remote machine.
  *
@@ -404,7 +463,7 @@ export async function acquireRemoteRenet(
     deferRouterRefresh?: boolean;
     /** Name used in operator-facing messages; defaults to the machine IP. */
     machineName?: string;
-    /** `rdc machine setup` itself: provisions even under REDIACC_NO_PROVISION=1 ({@link provisionHeld}). */
+    /** `rdc machine setup` itself: provisions even under REDIACC_NO_PROVISION=1 ({@link renetHold}). */
     explicitSetup?: boolean;
   },
   sftp?: SFTPClient
@@ -415,8 +474,18 @@ export async function acquireRemoteRenet(
   }
   const machineName = options.machineName ?? machine.ip;
 
-  const held = provisionHeld() && options.explicitSetup !== true;
-  if (!renetMayUpload(access, options.explicitSetup)) {
+  const held = options.explicitSetup === true ? null : renetHold();
+  let mayUpload = renetMayUpload(access, options.explicitSetup);
+  if (!mayUpload && mayOfferReplacement(access, options.explicitSetup)) {
+    mayUpload = await confirmReplacement(
+      machine,
+      machineName,
+      sshPrivateKey,
+      localBinaryPath,
+      sftp
+    );
+  }
+  if (!mayUpload) {
     return acquireReadOnly(machine, machineName, sshPrivateKey, localBinaryPath, sftp, held);
   }
 
