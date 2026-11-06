@@ -41,6 +41,7 @@
         "P-A1:agent/plans/PLAN-detached-jobs.md",
         "P-A1:agent/plans/PLAN-free-license.md",
         "P-A1:agent/plans/PLAN-jobs-backup-real-machine-tests.md",
+        "P-A1:agent/plans/PLAN-org-executor-connect-timeout-relocate.md",
         "P-A1:agent/plans/PLAN-production-key-only.md",
         "P-A1:agent/plans/PLAN-rediaccfile-unprivileged.md",
         "P-A1:agent/plans/PLAN-renet-down-before-kill.md",
