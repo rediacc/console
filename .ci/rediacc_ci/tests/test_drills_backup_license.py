@@ -995,6 +995,7 @@ def test_the_run_verbs_route_license_and_backup_to_the_ports() -> None:
         "license",
         "backup",
         "backup-onprem",
+        "backup-elite-compose",
         "vmcheck",
     ]
 
