@@ -3902,6 +3902,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-account-scope-audit',
     run: 'VITEST_MAX_WORKERS="$CI_RUNNER_CORES" npm run check:ci-account-scope-audit',
     gate: true,
+    needs: ['build:packages'],
     mutex: ['account-vitest'],
     // ELASTIC (PF5, 2026-10-05): `weight: 2` retired. vitest takes every core by default, so the old budget of 2 understated it. VITEST_MAX_WORKERS is the knob (vitest 5.0.3 reads it after config resolution and it overrides `maxWorkers`), set from the pool's grant; it travels through npm and the Python proxies, which pass the environment on. Unset (a CI step, where no runner grants) it is empty, and vitest keeps its own default.
     cores: { min: 1, max: 'all' },
@@ -3921,6 +3922,7 @@ export const GATES: readonly GateSpec[] = [
     run: 'VITEST_MAX_WORKERS="$CI_RUNNER_CORES" npm run check:ci-test-account-web',
     slow: true, // 32.6s measured
     gate: true,
+    needs: ['build:packages'],
     mutex: ['account-vitest'],
     // ELASTIC (PF5, 2026-10-05): `weight: 2` retired. vitest takes every core by default, so the old budget of 2 understated it. VITEST_MAX_WORKERS is the knob (vitest 5.0.3 reads it after config resolution and it overrides `maxWorkers`), set from the pool's grant; it travels through npm and the Python proxies, which pass the environment on. Unset (a CI step, where no runner grants) it is empty, and vitest keeps its own default.
     cores: { min: 1, max: 'all' },
@@ -4183,6 +4185,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-account-backup',
     run: 'VITEST_MAX_WORKERS="$CI_RUNNER_CORES" npm run check:ci-account-backup',
     gate: true,
+    needs: ['build:packages'],
     // Measured 21s in CI on 2026-11-02, after the backup integrity and critical-tier suites grew it.
     slow: true,
     mutex: ['account-vitest'],

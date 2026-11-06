@@ -106,16 +106,26 @@ export function describeDrift(committed: string, fresh: string): string[] {
 }
 
 /**
- * Vitest gates whose tests import `@rediacc/shared`, which resolves to `dist` and never to source. Without the edge, the kept ci:quick clone judges them against the previous run's build, which fails right after a contract change and, worse, passes against a contract the tree no longer has. CI builds first, so this keeps the local runner honest to it.
+ * Vitest gates whose tests import `@rediacc/shared`, which resolves to `dist` and never to source (the account suites through their `file:` dependency, the CLI, www and shared suites through the workspace link). Without a `needs` edge on a build, the kept ci:quick clone judges them against the previous run's build, which fails right after a contract change and, worse, passes against a contract the tree no longer has. CI builds first, so this keeps the local runner honest to it.
+ *
+ * The rule is the leaf, not a list: every gate whose leaves include `vitest` needs `build:packages` or `build:www` (which builds the packages itself), so a new vitest gate cannot slip past. The three named ids stay as well, so one that leaves the manifest is reported rather than passed.
  */
 const SHARED_DIST_VITEST_GATES = ['check:test-cli', 'check:test-shared', 'check:test-www'];
+const DIST_BUILD_EDGES = ['build:packages', 'build:www'];
 
-/** The named gates with no `needs` edge on the build of the dist they read. */
+/** The vitest gates with no `needs` edge on the build of the dist they read, and any named gate gone from the manifest. */
 export function gatesReadingAnUnbuiltDist(gates: readonly GateSpec[]): string[] {
-  return SHARED_DIST_VITEST_GATES.filter((id) => {
-    const gate = gates.find((candidate) => candidate.id === id);
-    return gate === undefined || !gate.needs?.includes('build:packages');
-  });
+  const missing = SHARED_DIST_VITEST_GATES.filter(
+    (id) => !gates.some((candidate) => candidate.id === id)
+  );
+  const unbuilt = gates
+    .filter(
+      (gate) =>
+        (gate.leaves?.includes('vitest') === true || SHARED_DIST_VITEST_GATES.includes(gate.id)) &&
+        !DIST_BUILD_EDGES.some((edge) => gate.needs?.includes(edge))
+    )
+    .map((gate) => gate.id);
+  return [...new Set([...missing, ...unbuilt])];
 }
 
 function selftest(): number {
@@ -178,6 +188,21 @@ function selftest(): number {
     'CONTROL: a dist-reading vitest gate with no build edge is named',
     gatesReadingAnUnbuiltDist([needing('check:test-cli'), ...built.slice(1)]).join() ===
       'check:test-cli'
+  );
+  const vitestLeaf = (id: string, needs?: string[]): GateSpec =>
+    ({ id, run: 'true', gate: true, needs, leaves: ['vitest'] }) as GateSpec;
+  ck(
+    'CONTROL: a NEW vitest-leaf gate with no build edge is named, though it is on no list',
+    gatesReadingAnUnbuiltDist([...built, vitestLeaf('check:new-vitest')]).join() ===
+      'check:new-vitest'
+  );
+  ck(
+    'a vitest-leaf gate behind build:packages or build:www passes',
+    gatesReadingAnUnbuiltDist([
+      ...built,
+      vitestLeaf('check:a', ['build:packages']),
+      vitestLeaf('check:b', ['build:www']),
+    ]).length === 0
   );
   ck(
     'CONTROL: a dist-reading vitest gate gone from the manifest is named, not passed',

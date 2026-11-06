@@ -329,7 +329,7 @@ export function lockDifference(lockText: string, hiddenText: string): string | u
 /**
  * Does each package the hidden lockfile names sit on disk at the version the hidden lockfile records? Undefined means yes, or nothing to judge; a string names the first difference.
  *
- * The hidden lockfile alone cannot answer, because `npm install --package-lock-only` rewrites it without touching node_modules (measured under npm 11.21.0: after a wrangler bump the hidden lock read 4.157.0 while node_modules/wrangler/package.json stayed 4.156.2). `lockDifference` then reports a match, and the stale files get hard-linked into every clone. A package with no readable package.json is not judged here; `lockDifference` already covers what is absent from the lock.
+ * The hidden lockfile alone cannot answer, because `npm install --package-lock-only` rewrites it without touching node_modules (measured under npm 11.21.0: after a wrangler bump the hidden lock read 4.157.0 while node_modules/wrangler/package.json stayed 4.156.2). `lockDifference` then reports a match, and the stale files get hard-linked into every clone. A package whose directory holds no package.json is a difference too, unless it is optional or a peer: a lockfile-only rewrite can add a nested package to both lockfiles and leave node_modules without it, and `lockDifference` compares the two lockfiles only, never the disk. An unparseable package.json is not judged.
  */
 export function installedDifference(projectDir: string, hiddenText: string): string | undefined {
   const hidden =
@@ -344,7 +344,13 @@ export function installedDifference(projectDir: string, hiddenText: string): str
           version?: string;
         }
       ).version;
-    } catch {
+    } catch (error) {
+      if (
+        (error as NodeJS.ErrnoException).code === 'ENOENT' &&
+        entry.optional !== true &&
+        entry.peer !== true
+      )
+        return `${key} is in the hidden lockfile but not on disk`;
       continue;
     }
     if (onDisk !== undefined && onDisk !== entry.version)
@@ -1074,6 +1080,29 @@ export async function quickCloneSelftest(
     check(
       lockDifference(lockOf('1.0.0'), '{}') !== undefined,
       'an empty install must not match the lockfile'
+    );
+    // THE DISK MATCH: the hidden lockfile can name a package node_modules does not hold.
+    const diskRoot = path.join(root, 'disk-match');
+    write(path.join(diskRoot, 'node_modules', 'a', 'package.json'), '{"version":"1.0.0"}\n');
+    const hiddenDisk = (extra: Record<string, HiddenPackage>): string =>
+      JSON.stringify({ packages: { 'node_modules/a': { version: '1.0.0' }, ...extra } });
+    check(
+      installedDifference(diskRoot, hiddenDisk({})) === undefined,
+      'a hidden lockfile matching the disk must match'
+    );
+    check(
+      installedDifference(
+        diskRoot,
+        hiddenDisk({ 'node_modules/a/node_modules/n': { version: '1.0.0' } })
+      ) !== undefined,
+      'a nested package the hidden lockfile names and the disk lacks must not match'
+    );
+    check(
+      installedDifference(
+        diskRoot,
+        hiddenDisk({ 'node_modules/o': { version: '1.0.0', optional: true } })
+      ) === undefined,
+      'CONTROL: an optional package absent from disk is legitimate'
     );
     const groups = dependencyGroups(
       [

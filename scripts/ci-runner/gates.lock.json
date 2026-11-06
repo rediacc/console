@@ -4146,6 +4146,9 @@
     "id": "check:ci-account-scope-audit",
     "run": "VITEST_MAX_WORKERS=\"$CI_RUNNER_CORES\" npm run check:ci-account-scope-audit",
     "gate": true,
+    "needs": [
+      "build:packages"
+    ],
     "mutex": [
       "account-vitest"
     ],
@@ -4169,6 +4172,9 @@
     "run": "VITEST_MAX_WORKERS=\"$CI_RUNNER_CORES\" npm run check:ci-test-account-web",
     "slow": true,
     "gate": true,
+    "needs": [
+      "build:packages"
+    ],
     "mutex": [
       "account-vitest"
     ],
@@ -4460,6 +4466,9 @@
     "id": "check:ci-account-backup",
     "run": "VITEST_MAX_WORKERS=\"$CI_RUNNER_CORES\" npm run check:ci-account-backup",
     "gate": true,
+    "needs": [
+      "build:packages"
+    ],
     "slow": true,
     "mutex": [
       "account-vitest"
