@@ -582,7 +582,7 @@
   "commands.config.prune.foundGoneMachineRepos": "{{count}} 件のリポジトリエントリが、構成にもう存在しないマシンに配置されています:",
   "commands.config.prune.foundOrphanRepos": "{{count}} 件のリポジトリエントリがどのマシンにも配置されていません：",
   "commands.config.prune.goneMachineReposHint": "'rdc config prune --gone-machine-repos' でアーカイブできます。各エントリはアーカイブの猶予期間が切れるまで復元可能です。",
-  "commands.config.prune.goneMachineReposOption": "構成にもう存在しないマシンに配置されたリポジトリエントリをアーカイブします。削除ではなくアーカイブで、各エントリは認証情報を保持し、アーカイブの猶予期間が切れるまで復元できます。 このバケットのみを選択します。各自の --*-only オプションも渡さない限り、証明書キャッシュ、アーカイブ、相互参照のバケットはスキップされます。",
+  "commands.config.prune.goneMachineReposOption": "構成にもう存在しないマシンに配置されたリポジトリエントリをアーカイブします。削除ではなくアーカイブで、各エントリは認証情報を保持し、アーカイブの猶予期間が切れるまで復元できます。このバケットのみを選択します。各自の --*-only オプションも渡さない限り、証明書キャッシュ、アーカイブ、相互参照のバケットはスキップされます。",
   "commands.config.prune.graceDaysOption": "この呼び出しのアーカイブ猶予期間（日数）を上書きします。設定の defaults.pruneGraceDays にフォールバックし、どちらも設定されていない場合は 7 にフォールバックします。",
   "commands.config.prune.keptArchivesInGrace": "猶予期間内のアーカイブ済みリポジトリを保持（'rdc repo admin archive restore' で復元可能）：",
   "commands.config.prune.nothingToPrune": "クリーンアップするものはありません。設定はすでにクリーンです。",
