@@ -31,6 +31,9 @@ TEXT_FORMATS = [
     "scripts/setup.ps1",
     "patches/fix.patch",
     "native/probe.c",
+    "tests/tick_tracking_fixtures/report/coordinator-report-01.body",
+    "tests/tick_tracking_fixtures/planbox/control-4b3e830f0.msg",
+    "tests/tick_tracking_fixtures/planbox/sampler.report",
 ]
 
 
