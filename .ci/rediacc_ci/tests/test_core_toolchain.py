@@ -50,6 +50,7 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.core import toolchain
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.tests.wkloader import path_farm_without
 
 SHIM = ".ci/scripts/lib/toolchain.sh"
 CONSTANTS = ".ci/config/constants.sh"
@@ -560,6 +561,19 @@ def _stub_dir(tmp_path: pathlib.Path, tool: str, body: str) -> pathlib.Path:
     binary.write_text("#!/bin/bash\n%s\n" % body, encoding="utf-8")
     binary.chmod(0o755)
     return binary
+
+
+def _pinned_tool_farm(tmp_path: pathlib.Path, extra: tuple[str, ...] = ()) -> str:
+    """A PATH holding every system binary EXCEPT the pinned tools the report probes.
+
+    `SYSTEM_PATH` alone makes the MISMATCH count a property of the runner image: a runner that ships one pinned tool at its pin (or at a different version) changes how many rows read `ok`. Omitting every `REPORT_TOOLS` name makes every row `absent`, so the count is a property of the pins. `extra` directories are scanned first, so a tool planted there is still left out.
+    """
+    farm = tmp_path / "farm"
+    farm.mkdir(exist_ok=True)
+    linked = path_farm_without(farm, toolchain.REPORT_TOOLS, (*extra, "/usr/bin", "/bin"))
+    assert linked > 0, "the farm is empty: the gate is not seeing the system binaries"
+    assert not [t for t in toolchain.REPORT_TOOLS if (farm / t).is_symlink()]
+    return str(farm)
 
 
 def _probe_cases() -> list[tuple[str, str]]:
@@ -1129,22 +1143,41 @@ def test_acquire_refuses_an_empty_pin() -> None:
 # --------------------------------------------------------------------------- The twin's defects, pinned so they cannot rot ---------------------------------------------------------------------------
 
 
-def test_defect_1_toolchain_sh_verify_cannot_fail() -> None:
+def test_defect_1_toolchain_sh_verify_cannot_fail(tmp_path: pathlib.Path) -> None:
     """DRIVEN, not read: six MISMATCH rows and exit 0. See the module docstring.
 
     RED WHEN THE TWIN IS FIXED. Adding `exit` to the `--verify` arm (or moving the dispatch block to the end of the file) makes this case fail, which is when the finding closes with evidence rather than being forgotten.
     """
-    shell_env = diff.env_for(PATH=SYSTEM_PATH)
+    shell_env = diff.env_for(PATH=_pinned_tool_farm(tmp_path))
     rc, out, _err = diff.bash_streams(
         "bash %s --verify" % _q(str(paths.from_root(SHIM))), env=shell_env
     )
-    assert out.count("MISMATCH") == 6, out
+    assert out.count("MISMATCH") == len(toolchain.REPORT_TOOLS), out
     assert rc == 0, "toolchain.sh --verify now fails on a mismatch; delete this pin"
     # And the FUNCTION, which is correct, so the finding is localised to the dispatch rather than smeared over the whole file.
     frc, _fout, _ferr = diff.bash_streams(
         "%s; toolchain_report --verify" % SOURCE_SHIM, env=shell_env
     )
     assert frc == 1, "the function's rc was already right; re-derive the finding"
+
+
+def test_mismatch_count_ignores_an_extra_pinned_tool_on_the_runner(
+    tmp_path: pathlib.Path,
+) -> None:
+    """CONTROL (PLAN-health-checks-local N4): a runner that carries one more pinned tool.
+
+    The planted `shfmt` answers at its pin, which is the runner-image variation F9 named. Under the farm the count is still the number of pinned tools; under the real-PATH form it drops by one, which is the form this case restores to prove the control can fail.
+    """
+    plant = _stub_dir(tmp_path / "extra", "shfmt", 'printf "v%s\n"' % toolchain.pin_for("shfmt"))
+    script = "bash %s --verify" % _q(str(paths.from_root(SHIM)))
+    farm_env = diff.env_for(PATH=_pinned_tool_farm(tmp_path, extra=(str(plant.parent),)))
+    _rc, farm_out, _err = diff.bash_streams(script, env=farm_env)
+    assert farm_out.count("MISMATCH") == len(toolchain.REPORT_TOOLS), farm_out
+    real_env = diff.env_for(PATH="%s:%s" % (plant.parent, SYSTEM_PATH))
+    _rc, real_out, _err = diff.bash_streams(script, env=real_env)
+    assert real_out.count("MISMATCH") < len(toolchain.REPORT_TOOLS), (
+        "the real-PATH form no longer varies with the runner; the control proves nothing"
+    )
 
 
 def test_defect_1_has_a_live_variant_on_env() -> None:
@@ -1171,7 +1204,7 @@ def test_defect_1_has_a_live_variant_on_env() -> None:
     )
 
 
-def test_defect_1_the_port_does_not_reproduce_the_always_zero_exit() -> None:
+def test_defect_1_the_port_does_not_reproduce_the_always_zero_exit(tmp_path: pathlib.Path) -> None:
     """`... core.toolchain verify` MUST exit 1 where the twin exits 0.
 
     The defect is in the twin's SCRIPT DISPATCH, not in the library function, and this module is the library. Reproducing an always-green exit here would be porting a vacuity into the replacement.
@@ -1182,9 +1215,9 @@ def test_defect_1_the_port_does_not_reproduce_the_always_zero_exit() -> None:
         text=True,
         check=False,
         cwd=str(paths.from_root(".ci")),
-        env={**os.environ, "PATH": SYSTEM_PATH, "PYTHONDONTWRITEBYTECODE": "1"},
+        env={**os.environ, "PATH": _pinned_tool_farm(tmp_path), "PYTHONDONTWRITEBYTECODE": "1"},
     )
-    assert proc.stdout.count("MISMATCH") == 6, proc.stdout
+    assert proc.stdout.count("MISMATCH") == len(toolchain.REPORT_TOOLS), proc.stdout
     assert proc.returncode == 1
 
 
