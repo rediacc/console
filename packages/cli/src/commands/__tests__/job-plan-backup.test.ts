@@ -399,12 +399,15 @@ describe('backup status', () => {
     const failed = { ...FINISHED, success: false, exitCode: 1, state: 'failed' as const };
     answer = { ...FINISHED, stdout: SHOW };
     // The table step runs inside the first job; the journal job after it answers with the failure.
+    let tableSteps = 0;
     schedule.renderBackupScheduleStatus.mockImplementation(() => {
+      tableSteps += 1;
       answer = failed;
     });
 
     await rdcBackup('status', 'nightly', '-m', 'm1');
 
+    expect(tableSteps).toBe(1);
     expect(executed).toHaveLength(2);
     expect(mockRenderFailure).toHaveBeenCalledTimes(1);
   });
