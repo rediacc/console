@@ -1,0 +1,151 @@
+name: CI - Drift
+
+run-name: "CI - Drift: ${{ github.event_name }}"
+
+# PLAN-health-checks-local D2 (design D-drift). One cheap daily job: the checks
+# whose answer moves with the outside world or the calendar, with no commit in
+# between (rediacc_ci.release.drift_job: the upstream gates, the audit, the
+# clock-based plan and image lookups, the OBS upstream check and govulncheck).
+# The full suite runs weekly in Console CI; this job is what keeps an upstream
+# move from waiting a week to be seen.
+#
+# It writes a per-check verdict JSON and exits 1 on any red. The verdict is
+# POSTed to the ops-health ingest (source `drift`) under `if: always()`, so a
+# red reaches the operator by mail between sessions, and a job that died before
+# it wrote a verdict is posted as red rather than read as silence.
+#
+# promote-stable.yml fires on this workflow's completion (a run that concluded
+# success or failure qualifies; every step here is drift by construction, so a
+# red keeps the soak waiver). wl_schedred watches it by discovery.
+#
+# TESTING NOTE: `schedule` and `workflow_run` execute the file from the default
+# branch, so the cron first runs after merge; workflow_dispatch from main is the
+# pre-release check.
+
+on:
+  schedule:
+    - cron: '15 2 * * *' # Daily at 02:15 UTC (clear of CI '0 1 * * 0', pins-soaked '30 0', housekeeping '0 3', promote-stable '0 6')
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-drift
+  cancel-in-progress: false
+
+jobs:
+  drift:
+    name: Drift checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # The private submodules hold sites the gates read (private/renet for
+      # govulncheck and the Go module checks, the account manifests). The App
+      # token checks them out, read-only.
+      - name: Fetch secrets from Bitwarden
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
+            GITHUB_APP_ID > BWS_APP_ID
+
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          client-id: ${{ env.BWS_APP_ID }}
+          private-key: ${{ env.BWS_GITHUB_APP_PRIVATE_KEY }}
+          preset: readonly
+          repositories: console,renet,account,elite,homebrew-tap
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Deep: the suppression-liveness checks read commit topology (when an
+          # allowlist line was added), as in quality-security. blob:none, since
+          # this needs commits and trees, never a historical file's content.
+          fetch-depth: 0
+          filter: blob:none
+          submodules: true
+          token: ${{ steps.app-token.outputs.token }}
+          persist-credentials: false
+
+      # bws-secrets exports both values to $GITHUB_ENV for the rest of the job,
+      # and the checks below run freshly resolved dependency code, which must
+      # never hold the App private key; the invariant requires this step here.
+      - name: Drop the App credentials from the job environment
+        run: |
+          echo "BWS_GITHUB_APP_PRIVATE_KEY=" >> "$GITHUB_ENV"
+          echo "BWS_APP_ID=" >> "$GITHUB_ENV"
+
+      # app-token writes the token into the global git config
+      # (url.<x-access-token>.insteadOf), so every later step could read the
+      # private repos; remove it and prove it is gone.
+      - name: Drop the App token from the global git config
+        run: |
+          while read -r key; do
+            case "$key" in *x-access-token*) git config --global --unset-all "$key" ;; esac
+          done < <(git config --global --name-only --get-regexp '^url\..*\.insteadof$')
+          if git config --global --get-regexp 'x-access-token' >/dev/null || git config --global --get-regexp '.' 'x-access-token' >/dev/null; then
+            echo "::error::an x-access-token entry is still in the global git config"; exit 1
+          fi
+
+      - uses: ./.github/actions/profiler
+        with:
+          runner-label: ubuntu-latest
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          # Renet's own declared toolchain, as in quality-go: govulncheck reads
+          # the module the way the build does.
+          go-version-file: private/renet/go.mod
+          cache: true
+          cache-dependency-path: private/renet/go.sum
+
+      - id: setup
+        uses: ./.github/actions/setup-workspace
+        with:
+          account: 'true'
+          natives: 'true'
+          build-packages: 'true'
+
+      # Read by the Docker image freshness check and by the ingest POST below.
+      - name: Fetch secrets from Bitwarden (checks and ingest)
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            DOCKERHUB_TOKEN > BWS_DOCKERHUB_TOKEN
+            OPS_HEALTH_INGEST_TOKEN > BWS_OPS_HEALTH_INGEST_TOKEN
+
+      # Exit 0 all green, 1 any red (named in drift-verdict.json), 2 the drift
+      # set could not be derived. No `continue-on-error`: the ingest step below
+      # runs under `if: always()` and reads the verdict file itself.
+      - name: Run the drift checks
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ github.token }}
+          DOCKERHUB_TOKEN: ${{ env.BWS_DOCKERHUB_TOKEN }}
+        run: npm run ci:drift -- --out drift-verdict.json
+
+      - name: Upload the verdict
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        with:
+          name: drift-verdict
+          path: drift-verdict.json
+          if-no-files-found: ignore
+          retention-days: 3
+
+      # Under `if: always()`: a red run, a cancelled run and a run that died
+      # before it wrote a verdict all reach the ingest. drift_job posts a
+      # missing verdict as red.
+      - name: Post the verdict to the ops-health ingest
+        if: always()
+        env:
+          OPS_HEALTH_INGEST_TOKEN: ${{ env.BWS_OPS_HEALTH_INGEST_TOKEN }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.release.drift_job --post drift-verdict.json --source drift

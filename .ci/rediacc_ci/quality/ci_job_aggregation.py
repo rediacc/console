@@ -109,6 +109,9 @@ pipeline-sentinel
 # BLOCKER: runs downstream of the aggregator by design (needs: [initialize, ci-complete], if ci-complete succeeded), because it decides the PR's release labels only once CI is green (operator ruling 2026-10-02); aggregating it would close a cycle, and it is advisory (rediacc_ci.review.pr_labels always exits 0), so it has no verdict to report
 pr-labels
 
+# BLOCKER: runs downstream of the aggregator (needs: [initialize, ci-complete]) and only on `schedule`, to POST the weekly run's verdict to the ops-health ingest (PLAN-health-checks-local D3); aggregating it would close a cycle, and its own failure must not red the run it reports, since the ingest's staleness check is what notices a weekly run that stopped reporting
+report-schedule
+
 # BLOCKER: designed to be force-cancelled by a newer run (its if: is !cancelled(), and cancel-older-runs.sh cancels peers), so a cancelled conclusion is the routine outcome; the soft tier accepts only success or skipped, so aggregating it would turn every superseded push red
 cancel-watchdog
 
@@ -593,7 +596,8 @@ def selftest() -> int:
     # -- the exempt set, both directions ------------------------------------
     exempt = exempt_entries()
     # Seven since ad738360a: `pr-labels` (d16bc52d2) runs after the aggregator by design (the release bump decided at CI green), and `duplicate-run` runs before initialize with no verdict to aggregate.
-    ctl.check("the exempt set has exactly seven entries", len(exempt), 7)
+    # Eight with `report-schedule` (PLAN-health-checks-local D3), downstream of the aggregator like `pr-labels`.
+    ctl.check("the exempt set has exactly eight entries", len(exempt), 8)
     ctl.truthy("the aggregator itself is exempt", AGGREGATOR in exempt)
     ctl.check(
         "every exempt entry carries a BLOCKER reason",

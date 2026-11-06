@@ -6,14 +6,22 @@ on:
   pull_request:
     types: [opened, synchronize]
   schedule:
+    # WEEKLY, Sundays, since PLAN-health-checks-local D3: the scheduled run is
+    # the full union and the 5-OS stock-image fleet, which costs too much to run
+    # daily. The cheap clock-based checks run daily in `CI - Drift`
+    # (.github/workflows/ci-drift.yml), and the stable promotion reads this run
+    # as its test evidence for up to 8 days (rediacc_ci.release.nightly_tested_edge).
+    # The `report-schedule` job posts this run's verdict to the ops-health
+    # ingest (source `ci-weekly`).
+    #
     # DECLARED 01:00 UTC, ACTUALLY DISPATCHED just after 04:00. Measured across
-    # all 12 available scheduled runs: drift +2h53m to +3h35m, mean +3h15m,
+    # all 12 daily scheduled runs: drift +2h53m to +3h35m, mean +3h15m,
     # never once below +2h53m. That is GitHub deferring scheduled workflows on
     # the free plan, not jitter, and it is stated here because someone checking
     # at 01:05 finds no run and reasonably concludes the schedule is broken.
-    # The window to look in is 04:00-04:40 UTC; after that, a missing run IS a
-    # finding.
-    - cron: '0 1 * * *'
+    # The window to look in is 04:00-04:40 UTC on Sunday; after that, a missing
+    # run IS a finding.
+    - cron: '0 1 * * 0'
   # workflow_dispatch is the NIGHTLY REHEARSAL, guarded to main by the first
   # step of `initialize`.
   #
@@ -2385,3 +2393,56 @@ jobs:
       - name: Check finalize-release-sentinel conclusion (release channels only)
         if: needs.initialize.result == 'success' && (needs.initialize.outputs.channel == 'edge' || needs.initialize.outputs.channel == 'stable')
         run: PYTHONPATH=.ci python3 -m rediacc_ci.ci.assert_job_succeeded finalize-release-sentinel "${{ needs.finalize-release-sentinel.result }}" "${{ needs.ci-complete.result }}"
+
+  # ============================================================================
+  # REPORT SCHEDULE: the weekly fleet run's verdict, to the ops-health ingest
+  # PLAN-health-checks-local D3. Scheduled runs only (a push or a PR never
+  # posts). The scheduled run is weekly now, so this is how a red reaches the
+  # operator by mail between sessions: source `ci-weekly`, green when CI
+  # Complete succeeded, unknown when it was cancelled, red otherwise.
+  # Downstream of the aggregator like pr-labels, so a failed POST never reds
+  # CI itself; the ingest's own staleness check (a `ci-weekly` entry older than
+  # its max_age_h) is what notices a run that stopped reporting.
+  # ============================================================================
+  report-schedule:
+    name: Report schedule
+    runs-on: ubuntu-slim
+    needs: [initialize, ci-complete]
+    timeout-minutes: 5
+    if: always() && github.event_name == 'schedule'
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: |
+            .ci/rediacc_ci
+            .ci/config/bws-secret-map.json
+            .github/actions/bws-secrets
+            .github/actions/profiler
+          sparse-checkout-cone-mode: false
+
+      - uses: ./.github/actions/profiler
+        with:
+          runner-label: ubuntu-slim
+
+      - name: Fetch secrets from Bitwarden
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            OPS_HEALTH_INGEST_TOKEN > BWS_OPS_HEALTH_INGEST_TOKEN
+
+      - name: Post the run verdict to the ops-health ingest
+        env:
+          OPS_HEALTH_INGEST_TOKEN: ${{ env.BWS_OPS_HEALTH_INGEST_TOKEN }}
+          CI_COMPLETE_RESULT: ${{ needs.ci-complete.result }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          case "$CI_COMPLETE_RESULT" in
+            success) state=green ;;
+            cancelled) state=unknown ;;
+            *) state=red ;;
+          esac
+          PYTHONPATH=.ci python3 -m rediacc_ci.release.drift_job --post-state "$state" \
+            --source ci-weekly --detail "Console CI weekly: CI Complete ${CI_COMPLETE_RESULT:-none}, $RUN_URL"

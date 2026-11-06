@@ -2,9 +2,9 @@
 
 Selects the edge release to promote to stable and says whether it can be promoted. Emits `ready=true|false`, `path=force|nightly|soak` (which rule decided), `version=` / `date=` (the selected release, empty when none), `blocked=r2-channel-snapshot` when the selection cannot be promoted, and human-readable lines to stdout.
 
-THE WALK BACK (PLAN-plan-per-pr-loop R2). With a release on every merge the newest edge is almost always younger than `SOAK_DAYS`, so judging only the newest one starved stable from 2026-09-15 on. The candidates are the newest edge (`EDGE_VERSION`, dated by the manifest's `EDGE_DATE`) and every older release in `EDGE_RELEASES` (`list_edge_releases`' JSON) that is still newer than `STABLE_VERSION`; the selection is the NEWEST candidate that has soaked. `FORCE=true` selects the newest edge. With `PROMOTE_TRIGGER=workflow_run` the soak is waived for the newest candidate whose tagged commit `nightly_tested_edge` proves is contained in `NIGHTLY_HEAD_SHA`; every other outcome falls back to the soak rule.
+THE WALK BACK (PLAN-plan-per-pr-loop R2). With a release on every merge the newest edge is almost always younger than `SOAK_DAYS`, so judging only the newest one starved stable from 2026-09-15 on. The candidates are the newest edge (`EDGE_VERSION`, dated by the manifest's `EDGE_DATE`) and every older release in `EDGE_RELEASES` (`list_edge_releases`' JSON) that is still newer than `STABLE_VERSION`; the selection is the NEWEST candidate that has soaked. `FORCE=true` selects the newest edge. With `PROMOTE_TRIGGER=workflow_run` the soak is waived for the newest candidate whose tagged commit `nightly_tested_edge` proves is contained in `NIGHTLY_HEAD_SHA`, the weekly run's head; every other outcome falls back to the soak rule.
 
-A NIGHTLY THAT CONCLUDED `failure` (`NIGHTLY_CONCLUSION`) reaches the waiver only when `nightly_tested_edge.nightly_failures_are_drift_only` accepts its jobs (read for `NIGHTLY_RUN_ID` in `GITHUB_REPOSITORY`); otherwise it decides `ready=false` with no soak fallback, exactly as the workflow's `if:` refused every red nightly before. Any other non-success conclusion is refused the same way.
+THE SOAK RE-POINTED (PLAN-health-checks-local D4). A `workflow_run` promotion is triggered by a `CI - Drift` run (`DRIFT_CONCLUSION`): only `success` or `failure` qualifies (`nightly_tested_edge.drift_run_qualifies`), anything else, or a missing value, decides `ready=false` with `path=nightly`. The TEST EVIDENCE (`NIGHTLY_HEAD_SHA`, `NIGHTLY_CONCLUSION`, `NIGHTLY_RUN_ID`) is the newest completed scheduled Console CI run, now weekly, found by `nightly_tested_edge`'s `main` (conclusion `none` when no run is at most 8 days old). A `failure` reaches the waiver only when `nightly_failures_are_drift_only` accepts its jobs. Evidence that does not count (red on a non-drift step, `cancelled`, `none`, unreadable jobs) is NO WAIVER, and the ordinary soak rule decides.
 
 THE DECISION IS `select`, a pure function of the values (box W2-A of agent/plans/PLAN-local-release.md): `main` reads the environment, calls it, prints its lines and writes `$GITHUB_OUTPUT`, and `rediacc_ci.release.local_gates` calls it directly for a local stable promote.
 
@@ -134,6 +134,7 @@ def select(
     snapshots: frozenset[str] = frozenset(),
     nightly: bool = False,
     nightly_head_sha: str = "",
+    trigger_refusal: str = "",
     nightly_tested: Callable[[], tuple[bool, str]] | None = None,
     tested_by_nightly: Callable[[str, str], tuple[bool, str]] | None = None,
     epoch: Callable[[str], int | None] | None = None,
@@ -177,22 +178,27 @@ def select(
         selected, path = newest, "force"
     else:
         # The nightly waiver (operator ruling 2026-09-30): a green scheduled Console CI run releases edge to stable without the soak, but only for an edge whose tagged commit that run's head provably contains -- the newest such edge. Anything short of proof falls through to the soak rule below.
+        if nightly and trigger_refusal:
+            # The `CI - Drift` run that fired this promotion did not conclude success or failure (D-promote): no promotion at all, not even by the soak.
+            lines.append(f"Trigger: {trigger_refusal}")
+            lines.append("Decided by: the triggering drift run does not qualify, not promoting")
+            return Selection(None, "nightly", False, tuple(lines))
         if nightly:
             tested, reason = (nightly_tested or _nightly_tested)()
-            lines.append(f"Nightly verdict: {reason}")
+            lines.append(f"Test evidence: {reason}")
             if not tested:
-                lines.append("Decided by: the nightly did not pass its tests, not promoting")
-                return Selection(None, "nightly", False, tuple(lines))
-            prove = tested_by_nightly or edge_tested_by_nightly
-            for edge in walk:
-                proven, reason = prove(edge.version, nightly_head_sha)
-                lines.append(f"Nightly check: {reason}")
-                if proven:
-                    lines.append(
-                        "Decided by: green nightly contains the edge commit, skipping soak check"
-                    )
-                    selected, path = edge, "nightly"
-                    break
+                lines.append("No waiver from the test evidence, the ordinary soak rule decides")
+            else:
+                prove = tested_by_nightly or edge_tested_by_nightly
+                for edge in walk:
+                    proven, reason = prove(edge.version, nightly_head_sha)
+                    lines.append(f"Nightly check: {reason}")
+                    if proven:
+                        lines.append(
+                            "Decided by: green nightly contains the edge commit, skipping soak check"
+                        )
+                        selected, path = edge, "nightly"
+                        break
         if selected is None:
             if newest.age_days >= soak_days and newest_in_bounds:
                 lines.append("Soak period complete")
@@ -271,6 +277,10 @@ def main(argv: list[str]) -> int:
         print(f"{SELF}: EDGE_RELEASES is not a release list ({exc})", file=sys.stderr)
         return 1
 
+    # The trigger is a `CI - Drift` run: only a run that concluded success or failure may promote. A missing conclusion is "could not tell", and that is a no.
+    triggered, trigger_reason = nightly_tested_edge.drift_run_qualifies(
+        os.environ.get("DRIFT_CONCLUSION", "")
+    )
     try:
         verdict = select(
             edge_version=edge_version,
@@ -283,6 +293,7 @@ def main(argv: list[str]) -> int:
             snapshots=snapshots,
             nightly=os.environ.get("PROMOTE_TRIGGER", "") == "workflow_run",
             nightly_head_sha=os.environ.get("NIGHTLY_HEAD_SHA", ""),
+            trigger_refusal="" if triggered else trigger_reason,
         )
     except SelectError as exc:
         print(str(exc), file=sys.stderr)
@@ -304,7 +315,7 @@ def _write(output_path: str, selected: Edge | None, path: str, *, blocked: bool)
 
 
 def _nightly_tested() -> tuple[bool, str]:
-    """Whether the triggering nightly counts as having passed its tests. `success` (or no conclusion given) does; `failure` does only when its failures are all drift gates; anything else, or a job list that cannot be read, does not."""
+    """Whether the weekly fleet run (`NIGHTLY_*`, found by `nightly_tested_edge`'s evidence step) counts as having passed its tests. `success` (or no conclusion given) does; `failure` does only when its failures are all drift gates; anything else (`none` when no run qualified, `cancelled`), or a job list that cannot be read, does not. Not counting is no waiver, and the caller falls back to the soak."""
     conclusion = os.environ.get("NIGHTLY_CONCLUSION", "")
     if conclusion in ("", "success"):
         return True, "the nightly concluded %s" % (

@@ -465,6 +465,7 @@ def soak_env(tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch) -> pathlib
     monkeypatch.setenv("SOAK_DAYS", "7")
     monkeypatch.setenv("EDGE_VERSION", "1.2.3")
     monkeypatch.setenv("PROMOTE_TRIGGER", "workflow_run")
+    monkeypatch.setenv("DRIFT_CONCLUSION", "success")
     monkeypatch.setenv("NIGHTLY_HEAD_SHA", "a" * 40)
     monkeypatch.setenv("NIGHTLY_CONCLUSION", "failure")
     monkeypatch.setenv("NIGHTLY_RUN_ID", "36827121342")
@@ -492,9 +493,10 @@ def test_soak_check_waives_on_a_drift_only_failed_nightly(
     assert (got["ready"], got["path"], got["version"]) == ("true", "nightly", "1.2.3")
 
 
-def test_soak_check_refuses_a_nightly_with_a_test_failure_even_when_soaked(
+def test_soak_check_gives_no_waiver_to_a_weekly_run_with_a_test_failure(
     soak_env: pathlib.Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """D-promote: a weekly run red on a non-drift step is no waiver. The soak rule then decides, so a long-soaked edge still promotes, by `soak`; a fresh one waits."""
     jobs = with_job(
         audit_failed(green_jobs()),
         job("Tests + Infra / Unit", "failure", [step("Run unit tests", "failure")]),
@@ -502,10 +504,24 @@ def test_soak_check_refuses_a_nightly_with_a_test_failure_even_when_soaked(
     monkeypatch.setattr(nightly_tested_edge, "fetch_run_jobs", lambda *_: jobs)
     assert check_soak_period.main([]) == 0
     got = outputs(soak_env)
-    assert (got["ready"], got["path"], got["version"]) == ("false", "nightly", "")
+    assert (got["ready"], got["path"], got["version"]) == ("true", "soak", "1.2.3")
 
 
-def test_soak_check_refuses_a_cancelled_nightly(
+def test_soak_check_gives_a_fresh_edge_no_waiver_on_a_red_weekly_run(
+    soak_env: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    jobs = with_job(
+        audit_failed(green_jobs()),
+        job("Tests + Infra / Unit", "failure", [step("Run unit tests", "failure")]),
+    )
+    monkeypatch.setattr(nightly_tested_edge, "fetch_run_jobs", lambda *_: jobs)
+    monkeypatch.setenv("EDGE_DATE", "2999-01-01T00:00:00")
+    assert check_soak_period.main([]) == 0
+    got = outputs(soak_env)
+    assert (got["ready"], got["path"], got["version"]) == ("false", "soak", "")
+
+
+def test_soak_check_gives_no_waiver_to_a_cancelled_weekly_run(
     soak_env: pathlib.Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setenv("NIGHTLY_CONCLUSION", "cancelled")
@@ -514,19 +530,23 @@ def test_soak_check_refuses_a_cancelled_nightly(
         "fetch_run_jobs",
         lambda *_: pytest.fail("a cancelled run is never read"),
     )
+    monkeypatch.setenv("EDGE_DATE", "2999-01-01T00:00:00")
     assert check_soak_period.main([]) == 0
-    assert outputs(soak_env)["ready"] == "false"
+    got = outputs(soak_env)
+    assert (got["ready"], got["path"]) == ("false", "soak")
 
 
-def test_soak_check_refuses_when_the_jobs_cannot_be_read(
+def test_soak_check_gives_no_waiver_when_the_jobs_cannot_be_read(
     soak_env: pathlib.Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     def broken(*_: str) -> list[dict[str, Any]]:
         raise ghx.GhError(["gh", "api"], 1, "HTTP 502", "server")
 
     monkeypatch.setattr(nightly_tested_edge, "fetch_run_jobs", broken)
+    monkeypatch.setenv("EDGE_DATE", "2999-01-01T00:00:00")
     assert check_soak_period.main([]) == 0
-    assert outputs(soak_env)["ready"] == "false"
+    got = outputs(soak_env)
+    assert (got["ready"], got["path"]) == ("false", "soak")
 
 
 # --- gh_retry (PLAN-gh-retry G12): a transient read fault is retried, a non-transient one is not ---

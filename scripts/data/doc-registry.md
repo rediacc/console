@@ -962,14 +962,14 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/proof | 5 | .py 5 |
 | .ci/rediacc_ci/proxies | 10 | .py 10 |
 | .ci/rediacc_ci/quality | 120 | .py 120 |
-| .ci/rediacc_ci/release | 35 | .py 35 |
+| .ci/rediacc_ci/release | 36 | .py 36 |
 | .ci/rediacc_ci/review | 8 | .py 8 |
 | .ci/rediacc_ci/review/prompts | 2 | .md 2 |
 | .ci/rediacc_ci/security | 10 | .py 10 |
 | .ci/rediacc_ci/setup | 13 | .py 13 |
 | .ci/rediacc_ci/spikes | 2 | .py 2 |
 | .ci/rediacc_ci/testrun | 12 | .py 12 |
-| .ci/rediacc_ci/tests | 495 | .py 495 |
+| .ci/rediacc_ci/tests | 497 | .py 497 |
 | .ci/rediacc_ci/tests/data | 2 | .json 1, .yml 1 |
 | .ci/rediacc_ci/tests/fixtures | 2 | .json 2 |
 | .ci/rediacc_ci/tests/fixtures/budget_drift | 1 | .json 1 |
@@ -1151,7 +1151,7 @@ Scans: every `.github/workflows/*.yml` that calls a reusable workflow, folded to
 | `ci.yml` | 6 | `deploy-preview`, `validate-install`, `validate-promote` | `ct-install-methods.yml` |
 | `ci.yml` | 7 | `smoke-test-preview` | - |
 | `ci.yml` | 8 | `ci-complete` | - |
-| `ci.yml` | 9 | `finalize-release-sentinel`, `pr-labels` | - |
+| `ci.yml` | 9 | `finalize-release-sentinel`, `pr-labels`, `report-schedule` | - |
 | `ci.yml` | 10 | `pipeline-sentinel` | - |
 | `promote-stable.yml` | 0 | `promote` | - |
 | `promote-stable.yml` | 1 | `deploy-account-stable`, `deploy-marketing-stable` | `cd-deploy-account.yml`, `cd-deploy-worker.yml` |

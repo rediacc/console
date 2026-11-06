@@ -168,6 +168,8 @@ def nightly_env(days_ago: int, head_sha: str, version: str = "1.2.3") -> dict[st
         "PROMOTE_TRIGGER": "workflow_run",
         "EDGE_VERSION": version,
         "NIGHTLY_HEAD_SHA": head_sha,
+        # The `CI - Drift` run that triggered the promotion (D-promote); the weekly fleet run is the evidence (NIGHTLY_*).
+        "DRIFT_CONCLUSION": "success",
     }
 
 
@@ -385,7 +387,9 @@ def test_nightly_waiver_selects_the_newest_tested_edge(tmp_path: pathlib.Path) -
     _git(repo_dir, "tag", "v1.0.3", h["C"])
     _git(repo_dir, "tag", "v1.0.2", h["A"])
     _git(repo_dir, "tag", "v1.0.1", h["A"])
-    env = walk_env(PROMOTE_TRIGGER="workflow_run", NIGHTLY_HEAD_SHA=h["B"])
+    env = walk_env(
+        PROMOTE_TRIGGER="workflow_run", NIGHTLY_HEAD_SHA=h["B"], DRIFT_CONCLUSION="success"
+    )
     (exit_code, out, err), written = run_in(repo_dir, tmp_path, env)
     assert (exit_code, err) == (0, "")
     got = outputs(written)
@@ -398,7 +402,9 @@ def test_nightly_waiver_on_the_newest_edge_is_ready(tmp_path: pathlib.Path) -> N
     repo_dir = tmp_path / "r"
     h = make_history(repo_dir)
     _git(repo_dir, "tag", "v1.0.3", h["B"])
-    env = walk_env(PROMOTE_TRIGGER="workflow_run", NIGHTLY_HEAD_SHA=h["B"])
+    env = walk_env(
+        PROMOTE_TRIGGER="workflow_run", NIGHTLY_HEAD_SHA=h["B"], DRIFT_CONCLUSION="success"
+    )
     (exit_code, _out, err), written = run_in(repo_dir, tmp_path, env)
     assert (exit_code, err) == (0, "")
     got = outputs(written)
@@ -670,3 +676,104 @@ def test_select_takes_the_nightly_readers_injected() -> None:
     )
     assert got.ready
     assert got.path == "nightly"
+
+
+# --- The soak re-pointed (PLAN-health-checks-local D4, design D-promote) ---------------------
+#
+# The trigger is a `CI - Drift` run (DRIFT_CONCLUSION); the test evidence is the weekly fleet run (NIGHTLY_HEAD_SHA, NIGHTLY_CONCLUSION).
+
+
+def test_control_a_cancelled_drift_run_means_no_promotion(tmp_path: pathlib.Path) -> None:
+    """Even an edge that soaked for nine days is not promoted by a cancelled drift run."""
+    repo_dir = tmp_path / "r"
+    h = make_history(repo_dir)
+    _git(repo_dir, "tag", "v1.2.3", h["A"])
+    env = nightly_env(9, h["B"])
+    env["DRIFT_CONCLUSION"] = "cancelled"
+    (exit_code, out, err), written = run_in(repo_dir, tmp_path, env)
+    assert (exit_code, err) == (0, "")
+    assert "never triggers a promotion" in out
+    assert head(written) == "ready=false\npath=nightly\n"
+    assert "version=\n" in written
+
+
+def test_a_missing_drift_conclusion_is_no_promotion(tmp_path: pathlib.Path) -> None:
+    repo_dir = tmp_path / "r"
+    h = make_history(repo_dir)
+    _git(repo_dir, "tag", "v1.2.3", h["A"])
+    env = nightly_env(9, h["B"])
+    del env["DRIFT_CONCLUSION"]
+    (exit_code, _, err), written = run_in(repo_dir, tmp_path, env)
+    assert (exit_code, err) == (0, "")
+    assert head(written) == "ready=false\npath=nightly\n"
+
+
+def test_a_green_weekly_run_containing_the_edge_plus_a_drift_failure_waives_the_soak(
+    tmp_path: pathlib.Path,
+) -> None:
+    repo_dir = tmp_path / "r"
+    h = make_history(repo_dir)
+    _git(repo_dir, "tag", "v1.2.3", h["A"])
+    env = nightly_env(1, h["B"])
+    env["DRIFT_CONCLUSION"] = "failure"
+    env["NIGHTLY_CONCLUSION"] = "success"
+    (exit_code, out, err), written = run_in(repo_dir, tmp_path, env)
+    assert (exit_code, err) == (0, "")
+    assert "Decided by: green nightly contains the edge commit" in out
+    assert head(written) == "ready=true\npath=nightly\n"
+    assert "version=1.2.3\n" in written
+
+
+def test_no_weekly_evidence_falls_back_to_soak(tmp_path: pathlib.Path) -> None:
+    """The evidence step found no qualifying run (none, or one 9 days old): a fresh edge waits out its soak."""
+    repo_dir = tmp_path / "r"
+    h = make_history(repo_dir)
+    _git(repo_dir, "tag", "v1.2.3", h["A"])
+    env = nightly_env(2, "")
+    env["NIGHTLY_CONCLUSION"] = "none"
+    (exit_code, out, err), written = run_in(repo_dir, tmp_path, env)
+    assert (exit_code, err) == (0, "")
+    assert "Edge needs 5 more day(s) of soak" in out
+    assert head(written) == "ready=false\npath=soak\n"
+
+
+def test_no_weekly_evidence_still_promotes_a_soaked_edge(tmp_path: pathlib.Path) -> None:
+    repo_dir = tmp_path / "r"
+    h = make_history(repo_dir)
+    _git(repo_dir, "tag", "v1.2.3", h["A"])
+    env = nightly_env(9, "")
+    env["NIGHTLY_CONCLUSION"] = "none"
+    (exit_code, _, err), written = run_in(repo_dir, tmp_path, env)
+    assert (exit_code, err) == (0, "")
+    assert head(written) == "ready=true\npath=soak\n"
+
+
+def test_select_a_refused_trigger_decides_nothing_and_reads_no_evidence() -> None:
+    got = check_soak_period.select(
+        edge_version="1.2.3",
+        edge_date="-9",
+        soak_days=7,
+        now_epoch=NOW_EPOCH,
+        nightly=True,
+        trigger_refusal="the drift run concluded cancelled",
+        nightly_tested=lambda: pytest.fail("the evidence is not read for a refused trigger"),
+        epoch=_days_ago,
+    )
+    assert not got.ready
+    assert got.path == "nightly"
+
+
+def test_select_untested_evidence_falls_through_to_the_soak() -> None:
+    got = check_soak_period.select(
+        edge_version="1.2.3",
+        edge_date="-9",
+        soak_days=7,
+        now_epoch=NOW_EPOCH,
+        nightly=True,
+        nightly_head_sha="f" * 40,
+        nightly_tested=lambda: (False, "the weekly run is red on a test lane"),
+        tested_by_nightly=lambda *_: pytest.fail("ancestry is not asked of untested evidence"),
+        epoch=_days_ago,
+    )
+    assert got.ready
+    assert got.path == "soak"

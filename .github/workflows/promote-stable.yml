@@ -9,17 +9,19 @@ on:
         description: 'Force promotion (skip 7-day soak period)'
         type: boolean
         default: false
-  # Operator ruling 2026-09-30: a green NIGHTLY also releases edge to stable, in
-  # addition to the 06:00 soak run above. Every Console CI completion on main
-  # fires this; the promote job's `if:` keeps only the scheduled ones that
-  # concluded success or failure, and check_soak_period waives the soak only
-  # when that nightly's head provably contains the edge tag's commit
-  # (rediacc_ci.release.nightly_tested_edge). A FAILED nightly counts as tested
-  # only when every failed step is a drift gate (upstream advisories, dependency
-  # freshness: nightly_tested_edge.drift_steps(), PLAN-plan-per-pr-loop R1); any
-  # other failure decides ready=false, as before.
+  # PLAN-health-checks-local D4 (ruling 6): the daily `CI - Drift` run fires
+  # this, in addition to the 06:00 soak run above. A drift run that concluded
+  # success or failure qualifies (every step of that job is drift by
+  # construction, so its reds keep the waiver); cancelled and startup_failure
+  # never do, and the promote job's `if:` keeps only the qualifying ones.
+  # The TEST EVIDENCE is the newest completed scheduled Console CI run on main,
+  # now weekly: the "Find the weekly fleet run" step reads it, and
+  # check_soak_period waives the soak only when that run is at most 8 days old,
+  # is green or red on drift steps only (nightly_tested_edge.drift_steps(),
+  # PLAN-plan-per-pr-loop R1), and its head provably contains the edge tag's
+  # commit. Anything else is no waiver and the 7-day soak decides.
   workflow_run:
-    workflows: ["Console CI"]
+    workflows: ["CI - Drift"]
     types: [completed]
     branches: [main]
 
@@ -42,11 +44,11 @@ jobs:
   promote:
     name: Release to Production
     runs-on: ubuntu-latest
-    # workflow_run fires on EVERY Console CI completion on main (push, rehearsal,
-    # red or green); only a scheduled nightly that concluded success or failure
-    # may proceed (cancelled is never a pass), and check_soak_period refuses a
-    # failure whose failed steps are not all drift gates. The schedule and
-    # workflow_dispatch triggers pass unconditionally, as before.
+    # workflow_run fires on EVERY CI - Drift completion on main (red or green);
+    # only a scheduled drift run that concluded success or failure may proceed
+    # (cancelled and startup_failure never do; check_soak_period repeats that
+    # refusal from DRIFT_CONCLUSION). The schedule and workflow_dispatch
+    # triggers pass unconditionally, as before.
     if: >-
       github.event_name != 'workflow_run'
       || (github.event.workflow_run.event == 'schedule'
@@ -125,6 +127,17 @@ jobs:
           CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.release.list_channel_snapshots
 
+      # The test evidence for a drift-triggered run (D-promote): the newest
+      # completed scheduled Console CI run on main, at most 8 days old. No
+      # qualifying run writes conclusion=none, which check_soak_period reads as
+      # "no waiver", so the 7-day soak decides.
+      - name: Find the weekly fleet run
+        if: steps.edge.outputs.skip != 'true' && steps.stable.outputs.same != 'true' && github.event_name == 'workflow_run'
+        id: weekly
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.release.nightly_tested_edge
+
       # SOAK_DAYS comes from the workflow-level env: above. Every step after this
       # one promotes steps.soak.outputs.version, the SELECTED release, never
       # whatever edge happens to be newest when the step runs.
@@ -136,9 +149,10 @@ jobs:
           FORCE: ${{ inputs.force }}
           PROMOTE_TRIGGER: ${{ github.event_name }}
           EDGE_VERSION: ${{ steps.edge.outputs.version }}
-          NIGHTLY_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
-          NIGHTLY_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
-          NIGHTLY_RUN_ID: ${{ github.event.workflow_run.id }}
+          DRIFT_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          NIGHTLY_HEAD_SHA: ${{ steps.weekly.outputs.head_sha }}
+          NIGHTLY_CONCLUSION: ${{ steps.weekly.outputs.conclusion }}
+          NIGHTLY_RUN_ID: ${{ steps.weekly.outputs.run_id }}
           GH_TOKEN: ${{ github.token }}
           STABLE_VERSION: ${{ steps.stable.outputs.version }}
           EDGE_RELEASES: ${{ steps.releases.outputs.releases }}

@@ -408,6 +408,7 @@
     "ci": "tsx scripts/ci-runner/run.ts --selftest && tsx scripts/ci-runner/run.ts",
     "ci:quick": "(PYTHONPATH=.ci python3 -m rediacc_ci.ops.bench_access preflight || true) && tsx scripts/ci-runner/quick-clone.ts",
     "ci:list": "tsx scripts/ci-runner/run.ts --list",
+    "ci:drift": "PYTHONPATH=.ci python3 -m rediacc_ci.release.drift_job",
     "pins": "tsx scripts/pins/pins.ts",
     "settings": "tsx scripts/settings/settings.ts",
     "release:local": "PYTHONPATH=\"$PWD/.ci\" PYTHONPYCACHEPREFIX=/dev/null /usr/bin/python3 -P -s -m rediacc_ci.release.local",
