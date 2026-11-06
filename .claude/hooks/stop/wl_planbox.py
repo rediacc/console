@@ -47,7 +47,7 @@ _PLAN_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*\.md$")
 _SIG_RE = re.compile(r"^[0-9a-f]{8}$")
 _CLAUSE_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.]*$")
 _NONE_RE = re.compile(r"^none\s+--\s*(.*)$")
-# Seven hex is git's own shortest abbreviation and the `-x` reader's floor; four matched many lease shas at once (review 39bfb45b.3).
+# Seven hex is git's default abbreviation (`core.abbrev` can go lower) and this reader's floor, a choice and not git's minimum; four matched many lease shas at once (review 39bfb45b.3).
 _HEX_ARG_RE = re.compile(r"^[0-9a-f]{7,40}$")
 # A line in the TICK grammar's shape (`TICK <plan>.md#<sig8> ...`) that fails it is a malformed TICK, never legacy prose (review 39bfb45b.1).
 _TICK_SHAPE_RE = re.compile(r"^\s*TICK\s+\S+?\.md#[0-9a-f]{8}(?![0-9a-z])")
@@ -401,12 +401,19 @@ def plan_rel_of(plan):
     return "/".join((*PLANS_REL, plan))
 
 
-def resolve_plan(root, plan):
-    """`(rel, text)` of the plan a trailer basename names under `agent/plans/`, a `Moved-To:` stub followed, or None when no such plan exists."""
+def resolve_plan(root, plan, folder=""):
+    """`(rel, text)` of the plan a trailer basename names under `agent/plans/` (under `folder`, a plan folder, when the caller named one), a `Moved-To:` stub followed, or None when no such plan exists. Raises PlanBoxError for a stub chain longer than STUB_HOPS (review 214fe8a1.3: that read as "no plan" though the plan exists).
+
+    A stub target outside `agent/plans/` is no plan: `Moved-To: ../x` or an absolute path would read a file outside the checkout (review 214fe8a1.2)."""
+    import posixpath
+
     import wl_store as S
 
-    rel = plan_rel_of(plan)
+    rel = posixpath.join(folder, plan) if folder else plan_rel_of(plan)
     for _hop in range(STUB_HOPS):
+        rel = posixpath.normpath(rel)
+        if rel != "agent/plans" and not rel.startswith("agent/plans/"):
+            return None
         path = Path(root, rel)
         try:
             text = path.read_text(encoding="utf-8", errors="replace")
@@ -416,7 +423,7 @@ def resolve_plan(root, plan):
         if not target:
             return rel, text
         rel = target.removeprefix("./")
-    return None
+    raise PlanBoxError("%s is a Moved-To chain longer than %d stubs" % (plan, STUB_HOPS))
 
 
 def progress_path(root):
@@ -510,7 +517,10 @@ def open_sigs(text):
 
 def box_problems(root, box, rows=None):
     """Why one parsed `PlanBox` cannot be landed against the tree at `root`, one phrase each ([] when it can)."""
-    resolved = resolve_plan(root, box.plan)
+    try:
+        resolved = resolve_plan(root, box.plan)
+    except PlanBoxError as exc:
+        return [str(exc)]
     if resolved is None:
         return ["Plan-Box names %s, which is no plan under agent/plans/" % box.plan]
     rel, text = resolved
@@ -569,7 +579,7 @@ def open_box(root, plan, selector):
     # Only the basename resolves, so a path is admitted only where a plan lives: `docs/PLAN-fx.md` silently meant agent/plans/PLAN-fx.md (review 52b4512d.1).
     if folder not in PLAN_FOLDERS:
         raise PlanBoxError("%s is no plan under agent/plans/" % plan)
-    resolved = resolve_plan(root, base) if _PLAN_RE.match(base) else None
+    resolved = resolve_plan(root, base, folder) if _PLAN_RE.match(base) else None
     if resolved is None:
         raise PlanBoxError("%s is no plan under agent/plans/" % plan)
     rel, text = resolved

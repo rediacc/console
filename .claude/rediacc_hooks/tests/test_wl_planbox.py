@@ -261,6 +261,52 @@ def test_open_box_refuses_a_plan_path_outside_agent_plans(tmp_path, given):
         assert P.open_box(tmp_path, ok, OPEN_SIG)[1] == OPEN_SIG
 
 
+def test_open_box_honours_the_plan_folder_it_was_given(tmp_path):
+    """Review a493639d.1: `agent/plans/_removed/PLAN-fx.md` opened the live PLAN-fx.md. CONTROL: the live path still opens it; a folder with no such plan is refused."""
+    _plant(tmp_path)
+    assert P.open_box(tmp_path, "agent/plans/PLAN-fx.md", OPEN_SIG)[0] == "agent/plans/PLAN-fx.md"
+    with pytest.raises(P.PlanBoxError, match="no plan under agent/plans"):
+        P.open_box(tmp_path, "agent/plans/_removed/PLAN-fx.md", OPEN_SIG)
+    done = tmp_path / "agent" / "plans" / "_done" / "PLAN-fx.md"
+    done.parent.mkdir(parents=True)
+    done.write_text(PLAN_TEXT, encoding="utf-8")
+    assert P.open_box(tmp_path, "agent/plans/_done/PLAN-fx.md", OPEN_SIG)[0] == (
+        "agent/plans/_done/PLAN-fx.md"
+    )
+
+
+def _stub(root, name, target):
+    path = root / "agent" / "plans" / name
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("# stub\n\nStatus: moved\nMoved-To: %s\n" % target, encoding="utf-8")
+
+
+@pytest.mark.parametrize("target", ["../../outside.md", "/etc/hostname", "docs/PLAN-fx.md"])
+def test_a_stub_pointing_outside_agent_plans_is_no_plan(tmp_path, target):
+    """Review 214fe8a1.2: the `Moved-To:` target was read as given, so a stub could name a file outside the checkout. CONTROL: a stub into `_done/` resolves."""
+    (tmp_path / "outside.md").write_text("secret\n", encoding="utf-8")
+    _stub(tmp_path, "PLAN-s.md", target)
+    assert P.resolve_plan(tmp_path, "PLAN-s.md") is None
+    (tmp_path / "agent" / "plans" / "_done").mkdir(parents=True)
+    (tmp_path / "agent" / "plans" / "_done" / "PLAN-s.md").write_text(PLAN_TEXT, encoding="utf-8")
+    _stub(tmp_path, "PLAN-s.md", "agent/plans/_done/PLAN-s.md")
+    assert P.resolve_plan(tmp_path, "PLAN-s.md")[0] == "agent/plans/_done/PLAN-s.md"
+
+
+def test_a_stub_chain_longer_than_the_hop_limit_is_named_not_missing(tmp_path):
+    """Review 214fe8a1.3: a deep chain read as "no plan under agent/plans/"."""
+    _plant(tmp_path)
+    names = ["PLAN-h%d.md" % i for i in range(P.STUB_HOPS)]
+    for i, name in enumerate(names):
+        _stub(
+            tmp_path, name, "agent/plans/" + (names[i + 1] if i + 1 < len(names) else "PLAN-fx.md")
+        )
+    with pytest.raises(P.PlanBoxError, match="Moved-To chain"):
+        P.resolve_plan(tmp_path, names[0])
+    box = P.parse_plan_box("x\n\nPlan-Box: %s#%s clauses=all\n" % (names[0], OPEN_SIG)).boxes[0]
+    assert "Moved-To chain" in P.box_problems(tmp_path, box)[0]
+
+
 def _bodies():
     return {name: (FIX / (name + ".report")).read_text(encoding="utf-8") for name in MEASURED}
 
