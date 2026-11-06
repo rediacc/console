@@ -18,6 +18,9 @@ while the gate reported "All workflows are clean". It was caught only by plantin
 NO `xdist_group`. Each case gets its own `mktemp -d` fixture directory, and the subject is driven with a per-subprocess environment rather than by mutating this one.
 """
 
+import re
+
+from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness, workflow_rule
 
 
@@ -176,3 +179,108 @@ def test_the_fixture_directory_is_what_is_judged(gate):
     gate.log_pass(
         "the verdict tracks WORKFLOW_DIR, so the fixtures above are really what is judged"
     )
+
+
+# --------------------------------------------------------------------------- CHOWN_PATH is created first (PLAN-health-checks-local N5, F12) ---------------------------------------------------------------------------
+#
+# OPS Provision failed on every scheduled run since 2026-11-05 with "cannot access '/home/runner/work/_temp/renet'": the `Verify: SSH connectivity` step chowns `${{ runner.temp }}/renet`, and that directory was created only as a side effect of a cache restore and `ops up`, neither of which every event takes. The rule is not about `renet`: a `CHOWN_PATH` directory must be made by an earlier, UNCONDITIONAL step of the same job.
+
+WORKFLOW_OPS = (".github", "workflows", "ci-ops-test.yml")
+_TEMP = r"(?:\$\{\{\s*runner\.temp\s*\}\}|\$\{?RUNNER_TEMP\}?)"
+_STEP_START = re.compile(r"^      - ")
+_JOB_START = re.compile(r"^  [A-Za-z0-9_-]+:\s*$")
+
+
+def _jobs_steps(text: str) -> list[tuple[str, list[str]]]:
+    """(job name, one text block per step) for every job, read line by line like the gate does."""
+    jobs: list[tuple[str, list[str]]] = []
+    in_jobs = False
+    for line in text.split("\n"):
+        if re.match(r"^jobs:\s*$", line):
+            in_jobs = True
+        elif in_jobs and _JOB_START.match(line):
+            jobs.append((line.strip().rstrip(":"), []))
+        elif in_jobs and jobs and _STEP_START.match(line):
+            jobs[-1][1].append(line)
+        elif in_jobs and jobs and jobs[-1][1]:
+            jobs[-1][1][-1] += "\n" + line
+    return jobs
+
+
+def chown_paths_not_created(text: str) -> list[str]:
+    """Every `CHOWN_PATH` whose directory no EARLIER, UNCONDITIONAL step of the same job makes.
+
+    A step with its own `if:` does not count, because the gap F12 found was a path the schedule does not take.
+    """
+    findings: list[str] = []
+    for job, steps in _jobs_steps(text):
+        for index, step in enumerate(steps):
+            for match in re.finditer(r"^\s+CHOWN_PATH:\s*(.+?)\s*$", step, re.M):
+                value = re.sub(_TEMP, "$RUNNER_TEMP", match.group(1).strip("\"'"))
+                made = any(
+                    not re.search(r"^        if:", earlier, re.M)
+                    and re.search(
+                        r"mkdir\s+(?:-\S+\s+)*[^\n]*?(?:\"|')?%s(?:/|\"|'|\s|$)"
+                        % re.escape(value),
+                        re.sub(_TEMP, "$RUNNER_TEMP", earlier),
+                    )
+                    for earlier in steps[:index]
+                )
+                if not made:
+                    findings.append(
+                        "%s: CHOWN_PATH %s is created by no earlier unconditional step; add a "
+                        "`mkdir -p` step before the one that chowns it" % (job, value)
+                    )
+    return findings
+
+
+_OPS_FIXTURE = """jobs:
+  prov:
+    steps:
+      - name: Make the directory
+        run: mkdir -p "$RUNNER_TEMP/renet"
+      - name: Chown it
+        run: ./verify.sh
+        env:
+          CHOWN_PATH: ${{ runner.temp }}/renet
+"""
+
+
+def test_every_chown_path_is_created_by_an_earlier_step_in_the_real_workflow():
+    text = paths.from_root(*WORKFLOW_OPS).read_text(encoding="utf-8")
+    scanned = sum(len(steps) for _job, steps in _jobs_steps(text))
+    assert scanned > 20, "the reader sees %d steps; the check would be vacuous" % scanned
+    assert "CHOWN_PATH" in text, "no CHOWN_PATH left to police; delete this case on purpose"
+    assert chown_paths_not_created(text) == []
+
+
+def test_a_fixture_that_makes_the_directory_first_is_clean():
+    assert chown_paths_not_created(_OPS_FIXTURE) == []
+
+
+def test_removing_the_mkdir_reds():
+    """CONTROL: the fixture without the creating step names the path."""
+    broken = _OPS_FIXTURE.replace('mkdir -p "$RUNNER_TEMP/renet"', "echo nothing")
+    assert len(chown_paths_not_created(broken)) == 1
+    assert "$RUNNER_TEMP/renet" in chown_paths_not_created(broken)[0]
+
+
+def test_a_conditional_mkdir_does_not_count():
+    """CONTROL: a creating step that the schedule does not take is the F12 shape."""
+    gated = _OPS_FIXTURE.replace(
+        "      - name: Make the directory\n",
+        "      - name: Make the directory\n        if: github.event_name != 'schedule'\n",
+    )
+    assert len(chown_paths_not_created(gated)) == 1
+
+
+def test_a_later_mkdir_does_not_count():
+    """CONTROL: order matters, the creating step must come BEFORE the chowning one."""
+    steps = _OPS_FIXTURE.split("      - name: Chown it")
+    swapped = (
+        steps[0].split("      - name: Make the directory")[0]
+        + "      - name: Chown it"
+        + steps[1]
+        + "      - name: Make the directory\n        run: mkdir -p \"$RUNNER_TEMP/renet\"\n"
+    )
+    assert len(chown_paths_not_created(swapped)) == 1

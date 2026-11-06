@@ -247,6 +247,14 @@ jobs:
             '{id:"00000000-0000-0000-0000-000000000000",version:1,renetPath:$renet}' \
             > "$CONFIG_DIR/rediacc.json"
 
+      # The renet work directory exists BEFORE anything chowns it, on every event.
+      # `Verify: SSH connectivity` chowns it, and it used to appear only as a side
+      # effect of the cache restore and `ops up`, which the schedule does not both
+      # take (OPS Provision failed on every scheduled run from 2026-11-05 with
+      # "cannot access '/home/runner/work/_temp/renet'").
+      - name: Create the renet work directory
+        run: mkdir -p "$RUNNER_TEMP/renet"
+
       # VM base-image cache: warm runs restore the Ubuntu cloud image into the
       # renet disks dir so `ops up` skips the network download entirely; the
       # bounded downloader in renet is the cold-path fallback. The key rotates
