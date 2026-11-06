@@ -1209,6 +1209,7 @@
     ".ci/rediacc_ci/release/check_soak_period.py": [
       "*name",
       "CHANNEL_SNAPSHOTS",
+      "DRIFT_CONCLUSION",
       "EDGE_RELEASES",
       "EDGE_VERSION",
       "FORCE",
@@ -1258,6 +1259,10 @@
     ".ci/rediacc_ci/release/mark_production.py": [
       "GITHUB_REPOSITORY",
       "VERSION"
+    ],
+    ".ci/rediacc_ci/release/nightly_tested_edge.py": [
+      "GITHUB_OUTPUT",
+      "GITHUB_REPOSITORY"
     ],
     ".ci/rediacc_ci/release/order.py": [
       "CLOUDFLARE_R2_ACCESS_KEY_ID",
