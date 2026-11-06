@@ -47,7 +47,7 @@ def _can_fail(holder: dict, *, gated: bool = False) -> bool:
 def probe_wiring(workflow: dict) -> list[str]:
     """The jobs that start elite and do not run the probe after it (empty when every such job is wired).
 
-    Wired means: a live probe call (no `--selftest`) in a step after the start, that step and the job carry no `if:` and no `continue-on-error`, the call does not end in `|| true`, and a `--selftest` call comes before it, in the same step or an earlier one.
+    Wired means: a live probe call (no `--selftest`) in a step after the start, that step carries no `if:` and no `continue-on-error`, the job carries no `continue-on-error` and no constant-false `if:` (any other job `if:` is the suite switch and stays allowed), neither call is followed by an `||` that swallows its status, and a `--selftest` call (held to the same rule) comes before the live one, in the same step or an earlier one.
     """
     unwired = []
     starters = 0
@@ -62,9 +62,13 @@ def probe_wiring(workflow: dict) -> list[str]:
         live = [
             (i, n)
             for i, n, call in calls
-            if "--selftest" not in call and "|| true" not in runs[i] and _can_fail(steps[i])
+            if "--selftest" not in call and "||" not in call and _can_fail(steps[i])
         ]
-        selftests = [(i, n) for i, n, call in calls if "--selftest" in call]
+        selftests = [
+            (i, n)
+            for i, n, call in calls
+            if "--selftest" in call and "||" not in call and _can_fail(steps[i])
+        ]
         ok = (
             _can_fail(job, gated=True)
             and bool(live)
@@ -169,3 +173,36 @@ def test_a_selftest_in_its_own_earlier_step_is_wired(workflow: dict) -> None:
                 steps[i : i + 1] = [selftest, {**step, "run": live}]
                 break
     assert probe_wiring(mutated) == []
+
+
+def test_control_a_selftest_that_cannot_fail_the_job_does_not_count(workflow: dict) -> None:
+    """The selftest is half the wiring: a swallowed or skipped one proves nothing, whatever the live call does."""
+    for swallow in (" || true", " || :", " || exit 0", " || echo ignored"):
+        mutated = copy.deepcopy(workflow)
+        for job in mutated["jobs"].values():
+            steps = job.get("steps", [])
+            for i, step in enumerate(steps):
+                if PROBE in str(step.get("run", "")):
+                    live = f"PYTHONPATH=.ci python3 -m {PROBE}"
+                    selftest = {"name": "selftest", "run": f"{live} --selftest{swallow}"}
+                    steps[i : i + 1] = [selftest, {**step, "run": live}]
+                    break
+        assert probe_wiring(mutated) != [], swallow
+    mutated = copy.deepcopy(workflow)
+    for job in mutated["jobs"].values():
+        steps = job.get("steps", [])
+        for i, step in enumerate(steps):
+            if PROBE in str(step.get("run", "")):
+                live = f"PYTHONPATH=.ci python3 -m {PROBE}"
+                selftest = {"name": "selftest", "if": "false", "run": f"{live} --selftest"}
+                steps[i : i + 1] = [selftest, {**step, "run": live}]
+                break
+    assert probe_wiring(mutated) != []
+
+
+def test_control_a_live_call_swallowed_by_any_or_is_unwired(workflow: dict) -> None:
+    for swallow in (" || :", " || echo ignored", " || exit 0", " || true"):
+        mutated = copy.deepcopy(workflow)
+        for step in _probe_steps(mutated):
+            step["run"] += swallow
+        assert probe_wiring(mutated) != [], swallow
