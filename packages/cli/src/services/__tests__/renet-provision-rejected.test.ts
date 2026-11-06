@@ -33,6 +33,12 @@ vi.mock('../core/embedded-assets.js', () => ({
   isSEA: () => false,
 }));
 
+// A release build: a development build holds the machine's renet (renet-provision-hold.test.ts).
+vi.mock('../../utils/platform.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../utils/platform.js')>()),
+  isDevBuild: () => false,
+}));
+
 vi.mock('../machine/machine-connection.js', () => ({
   sftpConfigForMachine: vi.fn(() => ({ host: '10.0.0.5', username: 'root', privateKey: 'k' })),
   withSharedOrPooledSftp: vi.fn(),

@@ -31,6 +31,8 @@ vi.mock('../../services/config/config-resources.js', () => ({
     resolveDestructiveTarget: (key: string) =>
       Promise.resolve({ key, config: { repositoryGuid: 'g1' } }),
     getRepository: () => Promise.resolve({ repositoryGuid: 'g1' }),
+    // No readable config: the gone-machine probe answers undefined and the machine-side path runs.
+    getCurrent: () => Promise.resolve(undefined),
   },
 }));
 vi.mock('../../services/config/network-id-discovery.js', () => ({

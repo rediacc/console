@@ -30,6 +30,11 @@ vi.mock('../renet/renet-execution.js', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../renet/renet-execution.js')>()),
   acquireRemoteRenet: mocks.acquire,
 }));
+// A release build: a development build holds the machine's renet (renet-provision-hold.test.ts).
+vi.mock('../../utils/platform.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../utils/platform.js')>()),
+  isDevBuild: () => false,
+}));
 vi.mock('../account/license.js', () => ({
   refreshRepoLicensesBatch: () =>
     Promise.resolve({ scanned: 0, valid: 0, issued: 0, refreshed: 0, unchanged: 0, failed: 0 }),
