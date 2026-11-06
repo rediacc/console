@@ -253,7 +253,10 @@ describe('repo diff', () => {
       ['repository_diff', 'm1'],
     ]);
     expect(stepNames()).toEqual([['renderRepoDiff', 'success']]);
-    expect(jobStarts()[0].jobSteps?.[0].params).toMatchObject({ mode: 'name-only', json: false });
+    expect(jobStarts()[0].jobSteps?.[0].params).toMatchObject({
+      mode: 'name-only',
+      format: 'table',
+    });
   });
 
   it('control: under --background nothing is rendered', async () => {

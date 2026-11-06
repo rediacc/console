@@ -8,6 +8,7 @@ import { setExitCode, writeStdout } from '../services/core/request-context.js';
 import { pendingExitCode, runCommandJob } from '../services/jobs/command-job.js';
 import { bindStepHandler, planStep } from '../services/jobs/steps.js';
 import { optStr } from '../services/jobs/steps-support.js';
+import type { OutputFormat } from '../types/index.js';
 import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { recordedDatastoreMount } from '../utils/repo-executor.js';
@@ -228,15 +229,15 @@ type DiffMode =
   | { kind: 'content'; path: string }
   | { kind: 'render'; render: (d: DiffResult) => void };
 
-function pickRenderer(options: DiffOptions, asJson: boolean): (d: DiffResult) => void {
-  if (asJson) return (d) => outputService.print(d, 'json');
+function pickRenderer(options: DiffOptions, format: OutputFormat): (d: DiffResult) => void {
+  if (format !== 'table') return (d) => outputService.print(d, format);
   if (options.nameOnly) return renderNameOnly;
   if (options.stat) return renderStat;
   return renderNameStatus;
 }
 
 /** Pick the single output mode, enforcing mutual exclusivity. */
-function selectMode(options: DiffOptions, asJson: boolean): DiffMode {
+function selectMode(options: DiffOptions, format: OutputFormat): DiffMode {
   const contentMode = options.content !== undefined;
   const formats = [options.nameOnly, options.stat, contentMode].filter(Boolean).length;
   if (formats > 1) {
@@ -248,13 +249,13 @@ function selectMode(options: DiffOptions, asJson: boolean): DiffMode {
     }
     return { kind: 'content', path: options.content };
   }
-  return { kind: 'render', render: pickRenderer(options, asJson) };
+  return { kind: 'render', render: pickRenderer(options, format) };
 }
 
 async function runDiff(ref: string, options: DiffOptions): Promise<void> {
-  // JSON output rides the global -o json (the per-command --json flag is retired).
-  const asJson = getOutputFormat() === 'json';
-  const mode = selectMode(options, asJson);
+  // Structured output rides the global -o format (the per-command --json flag is retired).
+  const format = getOutputFormat();
+  const mode = selectMode(options, format);
   const { repoKey, machineName, kubeCluster } = await resolveRepoRef(ref, { readOnly: true });
   const { baseGuid, targetGuid } = await resolveBaseTarget(repoKey, options.base);
   if (baseGuid === targetGuid) {
@@ -288,7 +289,7 @@ async function runDiff(ref: string, options: DiffOptions): Promise<void> {
       skipRouterRestart: options.skipRouterRestart,
       captureOutput: true,
     },
-    [planStep('renderRepoDiff', { mode: modeName(options), json: asJson, path: modePath(mode) })]
+    [planStep('renderRepoDiff', { mode: modeName(options), format, path: modePath(mode) })]
   );
   if (outcome.kind === 'pending') {
     const code = pendingExitCode(outcome);
@@ -320,26 +321,26 @@ function modePath(mode: DiffMode): string {
 
 bindStepHandler('renderRepoDiff', ({ output, params }) => {
   const name = optStr(params, 'mode') ?? DEFAULT_DIFF_MODE;
-  const asJson = params.json === true;
+  const format = (optStr(params, 'format') ?? 'table') as OutputFormat;
   const path = optStr(params, 'path');
   const mode: DiffMode =
     name === 'content' && path !== undefined
       ? { kind: 'content', path }
       : {
           kind: 'render',
-          render: pickRenderer({ nameOnly: name === 'name-only', stat: name === 'stat' }, asJson),
+          render: pickRenderer({ nameOnly: name === 'name-only', stat: name === 'stat' }, format),
         };
-  renderResult(mode, output ?? '', asJson);
+  renderResult(mode, output ?? '', format);
   return Promise.resolve();
 });
 
 /** Parse the renet JSON payload and render it per the selected mode. */
-function renderResult(mode: DiffMode, stdout: string, asJson: boolean): void {
+function renderResult(mode: DiffMode, stdout: string, format: OutputFormat): void {
   if (mode.kind === 'content') {
     const c = extractJson<ContentDiffResult>(stdout);
     if (!c) throw new Error(t('commands.repo.diff.failed'));
-    if (asJson) outputService.print(c, 'json');
-    else renderContent(c);
+    if (format === 'table') renderContent(c);
+    else outputService.print(c, format);
     return;
   }
   const d = extractJson<DiffResult>(stdout);

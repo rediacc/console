@@ -159,7 +159,7 @@ export const REPO_CONVERSION_STEPS: StepDefinition[] = [
   privateStep(
     'renderRepoDiff',
     'success',
-    ['mode', 'json', 'path'],
+    ['mode', 'format', 'path'],
     () => import('../../commands/repo-diff.js'),
     true
   ),

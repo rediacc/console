@@ -207,8 +207,9 @@ bindStepHandler('renderRepoLog', ({ output }) => {
   const parsed = parseRenetJson<{ entries: Record<string, unknown>[] }>(text);
   // Structured output rides the global `-o json` format now; the dedicated
   // `--json` flag is gone (spec/03 §5.4).
-  if (getOutputFormat() === 'json') {
-    outputService.print(parsed ?? { entries: [] }, 'json');
+  const format = getOutputFormat();
+  if (format !== 'table') {
+    outputService.print(parsed ?? { entries: [] }, format);
     return Promise.resolve();
   }
   for (const e of parsed?.entries ?? []) renderLogEntry(e);
