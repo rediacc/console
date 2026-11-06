@@ -83,8 +83,11 @@ def verdicts(up: dict[str, str], down: dict[str, str]) -> list[tuple[str, bool, 
     return rows
 
 
-def table(repo: str, rows: list[tuple[str, bool, str]]) -> str:
-    lines = ["%s: %s" % (fork_ref(repo), "PASS" if all(r[1] for r in rows) else "FAIL")]
+def table(repo: str, rows: list[tuple[str, bool, str]], steps_ok: bool = True) -> str:
+    """The verdict table; PASS needs every verdict row ok AND every rdc step of the recipe to have exited 0."""
+    lines = [
+        "%s: %s" % (fork_ref(repo), "PASS" if steps_ok and all(r[1] for r in rows) else "FAIL")
+    ]
     lines += ["  %-14s %s  %s" % (n, "ok  " if ok else "FAIL", why) for n, ok, why in rows]
     return "\n".join(lines)
 
@@ -97,28 +100,33 @@ def run(repo: str, collect: bool = False) -> int:
     """Run the recipe for one repo; 0 only when every verdict holds and every rdc step exited 0."""
     failed = False
     up_failed = False
+    stopped = False
+    forked = False
     try:
         for argv in recipe(repo):
             res = _run(argv)
+            if argv[3:5] == ["repo", "fork"] and res.returncode == 0:
+                forked = True
             print("$ %s -> rc=%d" % (" ".join(argv), res.returncode))
             if res.returncode != 0:
                 # rdc prints its JSON error envelope on stdout and progress on stderr: both are needed to see why.
                 print(res.stdout[-2000:], file=sys.stderr)
                 print(res.stderr[-2000:], file=sys.stderr)
                 failed = True
-                # A failing up is itself the H2 data point (a fork's container cannot bind a host port its running original holds, hostinger 2026-11-05); the fork stays mounted, so the probe can still land. A failing fork or upload leaves nothing to probe.
+                # A failing up is itself the H2 data point (a fork's container cannot bind a host port its running original holds, hostinger 2026-11-05); the fork stays mounted, so the probe can still land. A failing fork, upload or down stops the recipe: the probe files are still read, and a file that never arrived fails every row.
                 if argv[3:5] == ["repo", "up"]:
                     up_failed = True
                     continue
+                stopped = True
                 break
         # The verdicts judge the dropped runs, so the probe files are read BEFORE step 6: a root up rewrites them with uid 0 (observability on hostinger, 2026-11-05).
         probes: dict[str, dict[str, str]] = {}
         for name in (lp.UP_FILE, lp.DOWN_FILE):
             probes[name] = lp.parse_probe(_run(read_argv(repo, name)).stdout)
         rows = verdicts(probes[lp.UP_FILE], probes[lp.DOWN_FILE])
-        print(table(repo, rows))
+        print(table(repo, rows, steps_ok=not failed))
         failed = failed or not all(r[1] for r in rows)
-        if up_failed:
+        if up_failed and not stopped:
             # H2 step 6: the root tier on the FORK alone, then up again, to tell a privilege failure from one the root tier does not fix either.
             for argv in root_retry(repo):
                 res = _run(argv)
@@ -131,14 +139,20 @@ def run(repo: str, collect: bool = False) -> int:
                 res = _run(rdc_argv("term", "connect", fork_ref(repo), "-c", cmd))
                 print("$ %s -> rc=%d\n%s" % (cmd, res.returncode, res.stdout.strip()))
     finally:
-        for dry in (True, False):
-            argv = delete_argv(repo, dry)
-            res = _run(argv)
-            print("$ %s -> rc=%d" % (" ".join(argv), res.returncode))
-            if dry:
-                print(res.stdout.strip())
-            if res.returncode != 0:
-                failed = True
+        # Only a fork this run made is deleted: a failed fork step may have met a fork of the fixed tag that is not ours.
+        if not forked:
+            print("no fork was made by this run: nothing to delete")
+        else:
+            for dry in (True, False):
+                argv = delete_argv(repo, dry)
+                res = _run(argv)
+                print("$ %s -> rc=%d" % (" ".join(argv), res.returncode))
+                if dry:
+                    print(res.stdout.strip())
+                if res.returncode != 0:
+                    failed = True
+                    # A failing preview stops the real delete.
+                    break
     return 1 if failed else 0
 
 

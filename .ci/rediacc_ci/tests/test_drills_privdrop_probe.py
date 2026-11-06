@@ -110,3 +110,49 @@ def test_missing_probe_fails_everything() -> None:
 def test_dry_run_prints_recipe(capsys) -> None:
     assert pp.main(["nextcloud", "--dry-run"]) == 0
     assert "repo fork nextcloud@hostinger --tag privdrop" in capsys.readouterr().out
+
+
+def _recorder(monkeypatch, fail):
+    calls: list[list[str]] = []
+
+    def fake(argv, _timeout=1800):
+        calls.append(argv)
+        return subprocess.CompletedProcess(argv, 1 if fail(argv) else 0, "", "")
+
+    monkeypatch.setattr(pp, "_run", fake)
+    return calls
+
+
+def test_a_failed_fork_deletes_nothing(monkeypatch) -> None:
+    calls = _recorder(monkeypatch, lambda a: a[3:5] == ["repo", "fork"])
+    assert pp.run("x") == 1
+    assert not any(c[3:5] == ["repo", "delete"] for c in calls)
+
+
+def test_a_failing_dry_run_stops_the_real_delete(monkeypatch) -> None:
+    calls = _recorder(monkeypatch, lambda a: a[3:5] == ["repo", "delete"] and "--dry-run" in a)
+    assert pp.run("x") == 1
+    deletes = [c for c in calls if c[3:5] == ["repo", "delete"]]
+    assert len(deletes) == 1
+    assert "--dry-run" in deletes[0]
+
+
+def test_a_later_stop_skips_the_root_retry(monkeypatch) -> None:
+    # the first up fails (continue), then the upload fails (break): step 6 must not run on that fork
+    state = {"ups": 0}
+
+    def fail(argv) -> bool:
+        if argv[3:5] == ["repo", "up"]:
+            state["ups"] += 1
+            return state["ups"] == 1
+        return argv[3:6] == ["repo", "sync", "upload"]
+
+    calls = _recorder(monkeypatch, fail)
+    assert pp.run("x") == 1
+    assert not any(c[3:6] == ["repo", "permission", "grant"] for c in calls)
+
+
+def test_table_is_red_when_a_step_failed_though_the_rows_hold() -> None:
+    rows = pp.verdicts(lp.parse_probe(GOOD_UP), lp.parse_probe(GOOD_UP))
+    assert "PASS" in pp.table("x", rows)
+    assert "FAIL" in pp.table("x", rows, steps_ok=False).splitlines()[0]

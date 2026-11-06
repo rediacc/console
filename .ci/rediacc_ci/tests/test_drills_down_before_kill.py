@@ -1049,13 +1049,13 @@ class _RowProbe(k._LiveK1):
             ]
         )
 
-    def state(self, ref: str) -> dict:
+    def state(self, _ref: str) -> dict:
         return next(self._states)
 
-    def events(self, ref: str) -> list:
+    def events(self, _ref: str) -> list:
         return [("down", 50)]
 
-    def check(self, desc: str, ok: bool, res=None, evidence: str = "") -> bool:
+    def check(self, _desc: str, ok: bool, _res=None, evidence: str = "") -> bool:
         self.seen.append((evidence, ok))
         return ok
 
