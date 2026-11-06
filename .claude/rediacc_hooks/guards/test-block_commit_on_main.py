@@ -338,6 +338,23 @@ AGENT_CASES = [
         "pr-babysitter",
         True,
     ),
+    # #60454abe: every commit-creating verb, not only `commit` (tests/test_writer_commit_verbs.py drives the full verb by spelling table).
+    (
+        "a writer cherry-picks in the main checkout",
+        "git cherry-pick -x 0123abc",
+        FEATURE,
+        "general-purpose",
+        True,
+    ),
+    (
+        "a writer cherry-picks in a nested repository",
+        "git -C private/account cherry-pick -x 0123abc",
+        CONSOLE,
+        "general-purpose",
+        True,
+    ),
+    ("a writer merges", "git merge --no-ff other", FEATURE, "general-purpose", True),
+    ("a writer aborts a cherry-pick", "git cherry-pick --abort", FEATURE, "general-purpose", False),
     ("a writer reads the log", "git log -n 3", FEATURE, "general-purpose", False),
     (
         "a writer commits outside the checkout",
@@ -348,7 +365,7 @@ AGENT_CASES = [
     ),
 ]
 # The planted defect removes the arm; every fire case on the feature branch must then flip to allowed.
-AGENT_DEFECT = ('if ev.field("agent_id") and not commit_policy.lease_root(repo):', "if False:")
+AGENT_DEFECT = ("if not commit_policy.lease_root(write_repo):", "if False:")
 # A lease is the one place a writer commits. The same payload from a real linked tree under the lease root is allowed, and the plant below proves the row in the main checkout still fires.
 LEASE_TREE = pathlib.Path(FEATURE) / ".claude" / "worktrees" / "lease-x"
 subprocess.run(
@@ -360,6 +377,15 @@ AGENT_CASES.append(
     (
         "a writer in a lease commits",
         "git -C %s commit -m 'feat: x' -- a.txt" % LEASE_TREE,
+        FEATURE,
+        "general-purpose",
+        False,
+    )
+)
+AGENT_CASES.append(
+    (
+        "a writer in a lease cherry-picks",
+        "git -C %s cherry-pick -x 0123abc" % LEASE_TREE,
         FEATURE,
         "general-purpose",
         False,

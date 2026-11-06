@@ -14,7 +14,7 @@ OFF `main` THE TAG IS REFUSED, so the audit stays clean: a `[hotfix]` on a featu
 
 WHAT IS JUDGED. Every `git commit` bash would run in the command (a `sh -c` payload and an `eval` included), each against the branch of the repository it acts on: this checkout, or a submodule inside it through `cd`/`-C` (`git -C private/account commit` on account's `main` is refused like the console's). A repository outside this checkout (a `/tmp` fixture) is not this policy's business. The message is read in the three shapes `block_untagged_commit` established; one this guard cannot read on `main` is refused, because a hotfix it cannot see is not one it can admit. A `-F <file>` that an earlier clause of the same command writes is refused unread on any branch (`commit_policy.written_message_refusal`): its bytes on disk are an earlier command's, and reading them admitted a stale `[hotfix]` onto `main`.
 
-WRITERS NEVER COMMIT IN THE MAIN CHECKOUT (section 3.2 of the commit-policy plan). The lead commits each writer's output once it has spot-checked it, so a `git commit` from a sub-agent is refused on any branch, unless its repository is a lease tree (`commit_policy.lease_root`), where the writer commits on the detached HEAD and the lead lands it. T0(a) settled how a sub-agent is recognised: PreToolUse fires for a sub-agent's Bash call (probed live 2026-10-04 from a writer: a `timeout 1 sleep 600` was refused by `block_long_sleep`), and the payload carries `agent_id` and `agent_type` only for a sub-agent, never on a main-loop call (measured 2026-08-09, `.claude/hooks/trapguard/dispatch.py`). There is no exemption (operator /ask 2026-10-04 declined one for `pr-babysitter`): a delegated `/pr-babysit bg` loop reports, and the lead commits.
+WRITERS NEVER COMMIT IN THE MAIN CHECKOUT (section 3.2 of the commit-policy plan). The lead commits each writer's output once it has spot-checked it, so every git verb that creates a commit (`WRITER_VERBS`: `commit`, and the landing verbs `cherry-pick`, `revert`, `merge`, `am`, `rebase`, `pull` and `commit-tree`, in any `-C`/`cd` spelling and in any submodule of this checkout) from a sub-agent is refused on any branch, unless its repository is a lease tree (`commit_policy.lease_root`), where the writer commits on the detached HEAD and the lead lands it. T0(a) settled how a sub-agent is recognised: PreToolUse fires for a sub-agent's Bash call (probed live 2026-10-04 from a writer: a `timeout 1 sleep 600` was refused by `block_long_sleep`), and the payload carries `agent_id` and `agent_type` only for a sub-agent, never on a main-loop call (measured 2026-08-09, `.claude/hooks/trapguard/dispatch.py`). There is no exemption (operator /ask 2026-10-04 declined one for `pr-babysitter`): a delegated `/pr-babysit bg` loop reports, and the lead commits. Before #60454abe only `commit` was judged, and a landing sub-agent ran `git -C private/renet cherry-pick` in the main checkout unrefused (2026-11-06). A sequencer's `--abort`/`--quit` and the read-only `--show-current-patch` create nothing and stay admitted.
 
 THE GIT-LEVEL TWIN. `.claude/rediacc_hooks/git/commit-msg` enforces the same rule on every commit in a checkout whose `core.hooksPath` points there, including the operator's own terminal; that layer honours `COMMIT_POLICY_OK=1`, this one never does.
 """
@@ -36,8 +36,15 @@ ENVS: list[tuple[str, dict[str, str], dict[str, str]]] = [
 HOTFIX = 'git commit -m "fix(ci): x [hotfix]\n\nHotfix-Evidence: 12345678" -- a.ts'
 
 
+# Every git subcommand that writes a commit onto a ref. `stash` is not here: it writes no branch commit, and its own guard refuses it.
+WRITER_VERBS = frozenset(
+    ("commit", "cherry-pick", "revert", "merge", "am", "rebase", "pull", "commit-tree")
+)
+# The sequencer flags that create no commit: leaving an operation, or reading its state.
+NO_COMMIT_FLAGS = frozenset(("--abort", "--quit", "--show-current-patch"))
+
 WRITER_COMMIT = (
-    "BLOCKED: a sub-agent (`%s`) is committing, and writers never commit.\n"
+    "BLOCKED: a sub-agent (`%s`) is committing (`git %s`), and writers never commit.\n"
     "\n"
     "The lead commits each writer's output once it has spot-checked it (the\n"
     "commit-policy plan, section 3.1): a writer committing its own work commits an\n"
@@ -45,7 +52,23 @@ WRITER_COMMIT = (
     "parallel writers race on index.lock and HEAD.\n"
     "\n"
     "Leave the change in the tree and list every path it touched in the report.\n"
+    "Landing a lease (`cherry-pick`, `merge`, `am`) is the lead's too: report the\n"
+    "lines `./run.sh worktree land <id>` prints, and the lead runs them.\n"
 )
+
+
+def writer_runs(cmd):
+    """Every git invocation in `cmd` that creates a commit (`WRITER_VERBS`), minus a sequencer's `--abort`/`--quit`/`--show-current-patch`."""
+    found = []
+    for run in commit_policy.git_runs(cmd):
+        if run.git_sub not in WRITER_VERBS:
+            continue
+        _, _, args = commit_policy.git_split(run.argv)
+        if run.git_sub != "commit" and NO_COMMIT_FLAGS.intersection(args):
+            continue
+        found.append(run)
+    return found
+
 
 EDGE_CASES = [
     ("a plain commit", 'git commit -m "feat(x): y" -- a.ts'),
@@ -120,23 +143,30 @@ def run(ev):
     if cmd in ("", "null"):
         return hookio.ALLOW
     commits = commit_policy.git_runs(cmd, "commit")
-    if not commits:
+    writes = writer_runs(cmd) if ev.field("agent_id") else []
+    if not commits and not writes:
         return hookio.ALLOW
 
     root = ev.env("CLAUDE_PROJECT_DIR") or hookio.git_out(["rev-parse", "--show-toplevel"])
     base = ev.field("cwd") or root
-    cfg = commit_policy.load_config(root)
-    hints: dict[str, str] = {}
+    created = commit_policy.created_dirs(cmd, base)
     agent_type = ev.field("agent_type") or "unknown"
-    for commit in commits:
+    for write in writes:
         # A directory that resolves to no repository is one git itself will refuse; one outside this checkout is not this policy's business.
-        repo = commit_policy.run_repo(commit, base, commit_policy.created_dirs(cmd, base))
-        if not repo or not commit_policy.is_inside(repo, root):
+        write_repo = commit_policy.run_repo(write, base, created)
+        if not write_repo or not commit_policy.is_inside(write_repo, root):
             continue
         # A lease is the one place a writer commits: its HEAD is detached, its pin keeps the commit, and the lead lands it with `git cherry-pick -x` (agent/plans/PLAN-worktree-lease.md Design 3).
-        if ev.field("agent_id") and not commit_policy.lease_root(repo):
-            ev.warn_raw(WRITER_COMMIT % agent_type)
+        if not commit_policy.lease_root(write_repo):
+            ev.warn_raw(WRITER_COMMIT % (agent_type, write.git_sub))
             return hookio.DENY
+
+    cfg = commit_policy.load_config(root)
+    hints: dict[str, str] = {}
+    for commit in commits:
+        repo = commit_policy.run_repo(commit, base, created)
+        if not repo or not commit_policy.is_inside(repo, root):
+            continue
         # A `-F <file>` this same command writes first holds an earlier command's bytes: judging it admitted a stale `[hotfix]` onto `main` (#9888de00).
         written = commit_policy.written_message_refusal(cmd, commit, base, "`block_commit_on_main`")
         if written:
