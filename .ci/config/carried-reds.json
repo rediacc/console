@@ -35,6 +35,7 @@
         "P-A1:agent/plans/PLAN-backup-critical-tier.md",
         "P-A1:agent/plans/PLAN-backup-integrity.md",
         "P-A1:agent/plans/PLAN-backup-local-image.md",
+        "P-A1:agent/plans/PLAN-backup-meter-orphaned-chunks.md",
         "P-A1:agent/plans/PLAN-backup-program.md",
         "P-A1:agent/plans/PLAN-cloudflare-proxy.md",
         "P-A1:agent/plans/PLAN-detached-jobs.md",
@@ -42,17 +43,13 @@
         "P-A1:agent/plans/PLAN-jobs-backup-real-machine-tests.md",
         "P-A1:agent/plans/PLAN-production-key-only.md",
         "P-A1:agent/plans/PLAN-rediaccfile-unprivileged.md",
+        "P-A1:agent/plans/PLAN-renet-down-before-kill.md",
+        "P-A1:agent/plans/PLAN-repo-resource-limits.md",
         "P-A1:agent/plans/PLAN-tested-on-bench.md",
+        "P-A1:agent/plans/PLAN-tick-tracking.md",
         "P-A1:agent/plans/PLAN-worktree-lease.md"
       ],
       "reason": "P-A1 is a merge-time condition: every named plan still has open boxes, most of them live runs on bench, hostinger, edge or stable, or runs after a release. The operator put edge and stable on hold (ASKED:2026-11-04T16:33Z), so those boxes cannot close yet. This entry exists for the backup push the backup_push_h valve admits, which opens no PR; CI still judges every key, and the entry is removed before any merge."
-    },
-    {
-      "gate": "check:ci-docker-image-freshness",
-      "findings": [
-        "docker-digest:workers/proxy/Dockerfile:20"
-      ],
-      "reason": "Docker Hub re-pushed node:26.13.0-slim on 2026-11-05T11:41:58Z, so workers/proxy/Dockerfile:20 disagrees with the tag, and the 24 h release-age window refuses `pins bump image:proxy-node` until the next UTC midnight after it ages. CI still judges it; the entry goes with the bump tracked on the worklist."
     }
   ]
 }
