@@ -14,7 +14,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { inspectMock, provisionMock, warnMock, devBuild, confirmMock } = vi.hoisted(() => ({
   devBuild: { value: false },
-  confirmMock: vi.fn(() => Promise.resolve(true)),
+  confirmMock: vi.fn<(question: string) => Promise<boolean>>(() => Promise.resolve(true)),
   inspectMock: vi.fn(() =>
     Promise.resolve({
       drift: 'hash',
