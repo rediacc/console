@@ -71,6 +71,9 @@ HEAVY_CAP_BY_TARGET: dict[str, str] = dict.fromkeys(TARGET_KEYS, "5")
 EXECUTOR_VARS = ("EXECUTOR_CAP", "EXECUTOR_HEAVY_CAP")
 # The bench config alone may carry the reachability drill's probe redirect (PLAN-org-executor-connect-timeout-relocate box E15); any other target carrying it is refused as a var it may not carry.
 BENCH_OPTIONAL_VARS = frozenset({"EGRESS_DRILL_PROBE"})
+# The drill var's shape as workers/proxy/src/drill.ts reads it: `<host:port>=<host:port>`, a host bare or an IPv6 literal in brackets, a decimal port up to 65535. The Worker falls back silently on anything else, so a typo is refused here; whether an address is one the probe admits stays the Worker's own check.
+DRILL_SIDE = r"(?:\[[0-9a-fA-F:.]+\]|[^\s:\[\]=]+):\d{1,5}"
+DRILL_PROBE_RE = re.compile(r"^%s=%s$" % (DRILL_SIDE, DRILL_SIDE))
 PLACEHOLDER_RE = re.compile(r"@@[A-Z_]+@@")
 
 # The WK_PROXY_*_HOST value for each (region, channel); --check holds each equal to proxy.<domain> from regions.json.
@@ -286,6 +289,21 @@ def _executor_var_refusals(variables: dict) -> list[str]:
     return out
 
 
+def _optional_var_refusals(variables: dict, optional: frozenset[str]) -> list[str]:
+    out: list[str] = []
+    raw = variables.get("EGRESS_DRILL_PROBE")
+    if "EGRESS_DRILL_PROBE" in optional and "EGRESS_DRILL_PROBE" in variables:
+        valid = isinstance(raw, str) and DRILL_PROBE_RE.fullmatch(raw) is not None
+        if valid and not all(int(p.rsplit(":", 1)[1]) <= 65535 for p in raw.split("=")):
+            valid = False
+        if not valid:
+            out.append(
+                "vars.EGRESS_DRILL_PROBE is %r, not <host:port>=<host:port> with ports up to 65535"
+                % (raw,)
+            )
+    return out
+
+
 def _executor_refusals(config: dict) -> list[str]:
     """The container, Durable Object and migration blocks: the one `OrgExecutor` entry, the two bindings, and v1, v2, v3."""
     out: list[str] = []
@@ -403,6 +421,7 @@ def config_refusals(text: str, target: Target, all_regions: frozenset[str]) -> l
         )
     )
     out.extend(_executor_var_refusals(variables))
+    out.extend(_optional_var_refusals(variables, target.optional_variables))
 
     services = config.get("services") or []
     seen: dict[str, list[dict]] = {}

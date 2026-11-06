@@ -256,6 +256,31 @@ def test_the_drill_var_in_a_rendered_non_bench_config_is_refused(key: str) -> No
     assert "vars.EGRESS_DRILL_PROBE is not one a %s config may carry" % key in out, out
 
 
+@pytest.mark.parametrize(
+    "value",
+    ["", "192.0.2.10:22", "192.0.2.10:22=", "192.0.2.10:ssh=72.61.137.225:22", "a:22=b:70000"],
+)
+def test_a_malformed_drill_var_on_bench_is_refused(value: str) -> None:
+    text = plant(
+        real("bench"),
+        'EGRESS_DRILL_PROBE = "192.0.2.10:22=72.61.137.225:22"',
+        'EGRESS_DRILL_PROBE = "%s"' % value,
+    )
+    out = refusals(text, "bench")
+    assert any(
+        "vars.EGRESS_DRILL_PROBE is" in line and "not <host:port>" in line for line in out
+    ), out
+
+
+def test_a_bracketed_ipv6_drill_var_on_bench_passes() -> None:
+    text = plant(
+        real("bench"),
+        'EGRESS_DRILL_PROBE = "192.0.2.10:22=72.61.137.225:22"',
+        'EGRESS_DRILL_PROBE = "[2001:db8::1]:22=[2001:db8::2]:2222"',
+    )
+    assert refusals(text, "bench") == []
+
+
 def test_the_drill_var_in_the_dev_config_is_refused() -> None:
     text = plant(
         real("dev"), "[vars]\n", '[vars]\nEGRESS_DRILL_PROBE = "192.0.2.10:22=72.61.137.225:22"\n'

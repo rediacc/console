@@ -18,7 +18,11 @@ PATHSPEC = "private/renet"
 
 
 def _git(*args: str) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(["git", *args], capture_output=True, text=True, check=False)
+    """One git call; a git that cannot be run answers rc 127, so every caller's fail-open rule still holds."""
+    try:
+        return subprocess.run(["git", *args], capture_output=True, text=True, check=False)
+    except OSError as exc:
+        return subprocess.CompletedProcess(["git", *args], 127, "", str(exc))
 
 
 def _has_commit(sha: str) -> bool:
@@ -50,8 +54,11 @@ def decide(event: str, before_sha: str, base_sha: str) -> bool:
             print(f"::warning::base '{base_sha}' unavailable, so every renet leg runs")
             return True
         mb = _git("merge-base", base_sha, "HEAD")
-        base = mb.stdout.strip() if mb.returncode == 0 and mb.stdout.strip() else base_sha
-        return _moved(base)
+        if mb.returncode != 0 or not mb.stdout.strip():
+            # Comparing against the base tip instead would call a PR renet-changed whenever main moved the gitlink after the branch point.
+            print("::warning::no merge base with '%s', so every renet leg runs" % base_sha)
+            return True
+        return _moved(mb.stdout.strip())
     return False
 
 

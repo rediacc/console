@@ -60,6 +60,8 @@ SPLIT_COMMANDS: Mapping[str, tuple[str, ...]] = {
 CHECK_TIMEOUT_S = 25 * 60
 # The whole run's budget, inside ci-drift.yml's job timeout with room for the setup steps before it and the ingest POST after it: a check is given at most what is left, and a check reached with nothing left is recorded red unrun, so the verdict file is always written before the runner kills the job.
 RUN_BUDGET_S = 25 * 60
+# The workflow's first step writes the job's start (epoch seconds) here; the time already spent before drift_job runs is taken off the budget, so the job timeout is held by the code and not by the setup steps being quick.
+STARTED_ENV = "DRIFT_JOB_STARTED_AT"
 TAIL_CHARS = 2000
 DETAIL_CHARS = 500
 POST_ATTEMPTS = 3
@@ -218,6 +220,15 @@ def _read_verdict(path: pathlib.Path, now: datetime) -> tuple[str, str, str]:
         return "red", f"no verdict was written ({path}): the job died before it finished", stamp
 
 
+def _spent_before_main_s(environment: Mapping[str, str], now: datetime) -> float:
+    """Seconds between the job's recorded start and now, 0 when the start is unset or unreadable and never more than the budget."""
+    try:
+        started = float(environment.get(STARTED_ENV, ""))
+    except ValueError:
+        return 0.0
+    return min(max(0.0, now.timestamp() - started), float(RUN_BUDGET_S))
+
+
 def main(
     argv: Sequence[str] | None = None,
     *,
@@ -266,7 +277,7 @@ def main(
 
     run = runner or subprocess.run
     results = []
-    deadline = (clock or time.monotonic)() + RUN_BUDGET_S
+    deadline = (clock or time.monotonic)() + RUN_BUDGET_S - _spent_before_main_s(environment, now)
     for check in checks:
         left = deadline - (clock or time.monotonic)()
         result = run_check(check, run, min(CHECK_TIMEOUT_S, left))

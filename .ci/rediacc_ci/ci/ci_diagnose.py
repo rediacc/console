@@ -36,7 +36,7 @@ REVIEW_JOB_CONTEXTS = ("Review Status", "Claude Review")
 NONBLOCKING_CONTEXTS = frozenset({CHECK_NAME, PUBLISH_JOB_NAME, *REVIEW_JOB_CONTEXTS})
 # The watchdog's own exclusions (WATCHDOG_EXCLUDE_PATTERNS in .github/workflows/watchdog-monitor.yml): aggregators and observers, never the first failure of a Console CI run. All of REVIEW_CONTEXTS stay here, Review Complete included: the review runs in its own workflows after CI, so it observes a Console CI run rather than belonging to it, and its required-check verdict is read by ci-trace and the Stop hook (wl_ci.py), not by the watchdog. Matched as substrings; none of REVIEW_CONTEXTS is a substring of "Review Gate".
 WATCHDOG_EXCLUDED = ("Watchdog", "CI Complete", *REVIEW_CONTEXTS)
-# DOWNSTREAM OF A VERDICT, never the cause of one. Console CI jobs that read another job's result and fail BECAUSE it failed: every job whose `needs:` holds `ci-complete` in .github/workflows/ci.yml (Pipeline Sentinel, Finalize Release Sentinel, PR Labels) and the install legs' own roll-up. Main push run 37394654719 attempt 2 (2026-10-06) had exactly two failures, CI Complete and Pipeline Sentinel, both reporting a
+# DOWNSTREAM OF A VERDICT, never the cause of one. Console CI jobs that read another job's result and fail BECAUSE it failed: every job whose `needs:` holds `ci-complete` in .github/workflows/ci.yml (Pipeline Sentinel, Finalize Release Sentinel, PR Labels, Report schedule) and the install legs' own roll-up. Main push run 37394654719 attempt 2 (2026-10-06) had exactly two failures, CI Complete and Pipeline Sentinel, both reporting a
 # Validate Promotion that hit its 15 min timeout, and `--why` named Pipeline Sentinel as the first failure. test_ci_diagnose pins this list against ci.yml's `needs:` graph, so a new downstream job cannot slip in as a root cause. Matched as substrings, like WATCHDOG_EXCLUDED.
 DOWNSTREAM_JOBS = (
     "Pipeline Sentinel",
@@ -198,7 +198,7 @@ SIGNATURES = (
         "audit-finding",
         "code",
         re.compile(r"\u2717 (?:Stale allowlist entry|Allowlist problems found)"),
-        "npm audit found an allowlist problem or an advisory in the tree (delete the stale entry or fix the dependency)",
+        "npm audit's allowlist check failed (delete the stale entry or fix the dependency)",
         0,
     ),
     ("go-fail", "code", re.compile(r"^--- FAIL: "), "a Go test failed", 0),
@@ -800,7 +800,8 @@ def _sig_hit(line):
     if RETRY_NOTE_RE.search(body):
         return None
     # A line a gate marks as a pass is no failure signature: `\u2713 bws map: ..., 520 env.BWS_* read(s)` matched the Bitwarden 5xx row on its COUNT.
-    if body.lstrip().startswith("\u2713"):
+    # A line that carries a failure mark after its pass mark is still read.
+    if body.lstrip().startswith("\u2713") and "\u2717" not in body:
         return None
     for sid, cat, rx, label, min_s in SIGNATURES:
         m = rx.search(body)

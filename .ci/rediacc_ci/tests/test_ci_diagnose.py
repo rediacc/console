@@ -1274,10 +1274,16 @@ def test_an_npm_audit_exit_after_successful_bitwarden_lines_is_the_audit_finding
     assert "allowlist" in D.signature_label("audit-finding")
 
 
-def test_a_success_line_is_never_a_signature_hit():
+def test_a_success_marked_line_alone_is_no_signature_hit():
     """Control on the cause: the success-marked line alone is no hit, so the verdict does not depend on the audit row outranking it."""
     assert D._sig_hit(SECURITY_AUDIT_RUN[1]) is None
     assert D.classify(SECURITY_AUDIT_RUN[:2]) == ("unknown", "")
+
+
+def test_a_line_with_a_pass_mark_and_a_failure_mark_is_still_read():
+    line = "2026-11-06T10:38:42.0Z \u2713 No production vulnerabilities \u2717 Stale allowlist entry: 1 is stale"
+    assert D._sig_hit(line) is not None
+    assert D.classify([line]) == ("code-likely", "audit-finding")
 
 
 def test_a_real_bitwarden_5xx_still_reads_infra_beside_the_audit_lines():

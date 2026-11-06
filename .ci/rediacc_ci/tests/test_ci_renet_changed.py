@@ -87,3 +87,21 @@ def test_missing_base_fails_open(repo: pathlib.Path) -> None:
 def test_other_events_are_false(repo: pathlib.Path) -> None:
     _commit(repo, "private/renet/x", "1")
     assert renet_changed.decide("schedule", "", "") is False
+
+
+def test_a_base_with_no_merge_base_fails_open(repo: pathlib.Path) -> None:
+    _commit(repo, "a.txt", "1")
+    _run(repo, "git", "checkout", "-q", "--orphan", "unrelated")
+    unrelated = _commit(repo, "u.txt", "orphan")
+    _run(repo, "git", "checkout", "-q", "main")
+    assert renet_changed.decide("pull_request", unrelated, unrelated) is True
+
+
+@pytest.mark.usefixtures("repo")
+def test_a_missing_git_binary_answers_true_not_a_crash(monkeypatch: pytest.MonkeyPatch) -> None:
+    def no_git(*_a: object, **_k: object) -> None:
+        raise FileNotFoundError("git")
+
+    monkeypatch.setattr(renet_changed.subprocess, "run", no_git)
+    assert renet_changed.decide("push", "1" * 40, "") is True
+    assert renet_changed.decide("pull_request", "", "1" * 40) is True
