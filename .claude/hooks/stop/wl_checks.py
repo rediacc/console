@@ -2575,8 +2575,26 @@ def vm_check_lock_path(environ=None):
     return os.path.join("/tmp", "rediacc-vm-check-%d.lock" % uid)
 
 
+# The argv words that name a vm:check process: `npm run vm:check` runs `python3 -m rediacc_ci.drills.vm_check`, and a direct run names the file.
+VM_CHECK_ARGV = ("rediacc_ci.drills.vm_check", "drills/vm_check.py")
+
+
+def vm_check_holder(raw, proc="/proc"):
+    """True when `raw`, the lock file's bytes, names a live pid whose argv is a vm:check run (`vm_check.Lock.acquire` writes `{"pid", "session", "since"}` once it holds the lock).
+
+    The flock alone says SOMETHING holds the file, not that it is vm:check: a `flock` the agent itself starts on that path would stand the unlanded-lease block down (review cc0a9ef9.1). An empty or malformed owner, a dead pid, a pid reused by another program or an unreadable argv all read False, so the block stays.
+    """
+    try:
+        pid = int(json.loads(raw.decode("utf-8", "replace")).get("pid"))
+        argv = pathlib.Path(proc, str(pid), "cmdline").read_bytes().split(b"\0")
+    except (ValueError, TypeError, AttributeError, OSError):
+        return False
+    words = [a.decode("utf-8", "replace") for a in argv]
+    return pid > 0 and any(w.endswith(VM_CHECK_ARGV) for w in words)
+
+
 def vm_check_running(path=None):
-    """True only when another process holds the vm:check fleet lock; a missing file, an unreadable one or a free lock reads as not running, so a blind reading never stands a check down."""
+    """True only when a vm:check run holds the fleet lock (vm_check_holder names it); a missing file, an unreadable one, a free lock or a holder that is not vm:check reads as not running, so a blind reading never stands a check down."""
     import fcntl
 
     path = path or vm_check_lock_path()
@@ -2587,7 +2605,10 @@ def vm_check_running(path=None):
     try:
         fcntl.flock(fd, fcntl.LOCK_SH | fcntl.LOCK_NB)
     except BlockingIOError:
-        return True
+        try:
+            return vm_check_holder(os.pread(fd, 4096, 0))
+        except OSError:
+            return False
     except OSError:
         return False
     else:

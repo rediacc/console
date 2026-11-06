@@ -944,16 +944,52 @@ def control_real_hook(tmp):
     cached = hook_state(fix).get("worktrees", {}).get("w1", {})
     check("the state doc keeps the figures for the next stop", bool(cached.get("sig")), True)
 
-    # A running vm:check (its fleet lock held) holds the landing: reported, not blocked.
+    # A lock held by something that is not vm:check (review cc0a9ef9.1): the flock alone, with an empty owner or an owner pid whose argv is not vm:check, blocks as before.
     lock = runtime / "rediacc-vm-check.lock"
+    for label, owner in (
+        ("an empty owner", ""),
+        ("an owner pid that is not vm:check", json.dumps({"pid": os.getpid()})),
+        ("a malformed owner", "{not json"),
+    ):
+        lock.write_text(owner, encoding="utf-8")
+        held = os.open(str(lock), os.O_RDWR)
+        fcntl.flock(held, fcntl.LOCK_EX)
+        try:
+            got = hook_stop(fix, env)
+        finally:
+            fcntl.flock(held, fcntl.LOCK_UN)
+            os.close(held)
+        check("a fleet lock with %s still blocks" % label, got.decision, "block")
+
+    # A running vm:check (the lock held by a process whose argv names the module, owner written the way vm_check.Lock.acquire writes it) holds the landing: reported, not blocked.
     lock.write_text("", encoding="utf-8")
-    held = os.open(str(lock), os.O_RDWR)
-    fcntl.flock(held, fcntl.LOCK_EX)
+    stand_in = (
+        "import fcntl, json, os, sys\n"
+        "fd = os.open(sys.argv[1], os.O_RDWR)\n"
+        "fcntl.flock(fd, fcntl.LOCK_EX)\n"
+        "os.ftruncate(fd, 0)\n"
+        "os.pwrite(fd, json.dumps({'pid': os.getpid()}).encode(), 0)\n"
+        "print('held', flush=True)\n"
+        "sys.stdin.read()\n"
+    )
+    holder = subprocess.Popen(
+        [
+            sys.executable,
+            "-c",
+            stand_in,
+            str(lock),
+            "rediacc_ci.drills.vm_check",
+        ],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        text=True,
+    )
     try:
+        check("the vm:check stand-in holds the lock", holder.stdout.readline().strip(), "held")
         got = hook_stop(fix, env)
     finally:
-        fcntl.flock(held, fcntl.LOCK_UN)
-        os.close(held)
+        holder.stdin.close()
+        holder.wait(timeout=30)
     check("a running vm:check lifts the block", got.decision, "allow")
     got = hook_stop(fix, env)
     check("a free fleet lock blocks again", got.decision, "block")
