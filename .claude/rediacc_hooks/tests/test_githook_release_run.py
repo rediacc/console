@@ -185,6 +185,7 @@ def _make_console(
         hooks = root / ".claude" / "rediacc_hooks"
         shutil.copytree(HOOKS, hooks / "git", ignore=shutil.ignore_patterns("__pycache__"))
         shutil.copy2(HOOKS.parent / "commit_policy.py", hooks / "commit_policy.py")
+        shutil.copy2(HOOKS.parent / "syspath.py", hooks / "syspath.py")
     _git(root, "add", "-A")
     _git(root, "commit", "-q", "-m", "seed")
     time.sleep(RR.SETTLE_S + 0.3)
