@@ -334,14 +334,30 @@ def stop_side_verdict(unit: dict[str, Any], network_id: int | str, guid: str) ->
     return ok and t_ok, "%s timeout_stop_s=%s (want %d)" % (why, t, STOP_TIMEOUT_S)
 
 
+def restarted(issued: int, at: int, pids: tuple[int, int] | None = None) -> bool:
+    """Whether the daemon restarted after the drill acted: its MainPID changed (both readings non-zero), or its start is after `issued`. Both clocks read whole seconds, so a restart within the second the drill acted shows only in the MainPID (vm:check run vmc-11060119-8cbbc0 K1.9 read one as "nothing restarted")."""
+    if pids is not None and pids[0] and pids[1] and pids[0] != pids[1]:
+        return True
+    return at > issued
+
+
 def down_before_verdict(
-    events: list[tuple[str, int]], issued: int, at: int, gap: int = DOWN_SLEEP_S
+    events: list[tuple[str, int]],
+    issued: int,
+    at: int,
+    gap: int = DOWN_SLEEP_S,
+    pids: tuple[int, int] | None = None,
 ) -> tuple[bool, str]:
-    """(ok, evidence): a `down` line written no earlier than `issued` (when the drill acted) and at least `gap` seconds before `at` (the daemon's new start, or the boot), and `at` itself after `issued` (the restart or reboot happened). A log with no such line is a FAIL, which is the K1 CONTROL."""
+    """(ok, evidence): a `down` line written no earlier than `issued` (when the drill acted) and at least `gap` seconds before `at` (the daemon's new start, or the boot), and a restart or reboot after `issued` (`restarted`: a later start, or a MainPID change when `pids` = (before, after) is given). A log with no such line is a FAIL, which is the K1 CONTROL."""
     if not issued or not at:
         return False, "no reading: issued=%s at=%s" % (issued, at)
-    if at <= issued:
-        return False, "nothing restarted: start %d is not after the action at %d" % (at, issued)
+    if not restarted(issued, at, pids):
+        tail = " and MainPID stayed %d" % pids[1] if pids is not None else ""
+        return False, "nothing restarted: start %d is not after the action at %d%s" % (
+            at,
+            issued,
+            tail,
+        )
     downs = [ts for kind, ts in events if kind == "down" and ts >= issued]
     good = [ts for ts in downs if ts + gap <= at]
     if good:
@@ -559,7 +575,10 @@ class _LiveK1:
         res = act()
         after = self.state(self.ref_a)
         events = self.events(self.ref_a)
-        ok, why = down_before_verdict(events, before["now"], after["start"])
+        ok, why = down_before_verdict(
+            events, before["now"], after["start"], pids=(before["pid"], after["pid"])
+        )
+        why = "%s (MainPID %s->%s)" % (why, before["pid"], after["pid"])
         if want_up:
             ok_up, why_up = up_after_verdict(events, after["start"])
             ok, why = ok and ok_up, "%s; %s" % (why, why_up)
@@ -893,6 +912,7 @@ __all__ = [
     "remove_stamp_script",
     "repo_names",
     "restart_script",
+    "restarted",
     "run",
     "runs_stop_hook",
     "state_script",

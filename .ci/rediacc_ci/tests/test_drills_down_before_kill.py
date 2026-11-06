@@ -324,6 +324,35 @@ def test_down_before_verdict_fails(
     assert needle in why
 
 
+def test_down_before_verdict_same_second_restart_is_a_restart() -> None:
+    """vm:check run vmc-11060119-8cbbc0 K1.9: the daemon restarted within the second the drill acted (start 1793929092, action 1793929092) with a new MainPID, and down() never ran; the row must say no down() ran, not that nothing restarted."""
+    ok, why = k.down_before_verdict(
+        [("up", 1793929093)], 1793929092, 1793929092, pids=(84380, 85230)
+    )
+    assert not ok
+    assert "nothing restarted" not in why
+    assert "no down line" in why
+    ok, why = k.down_before_verdict([], 1793929092, 1793929092, pids=(84380, 84380))
+    assert not ok
+    assert "nothing restarted" in why
+    assert "MainPID stayed 84380" in why
+
+
+@pytest.mark.parametrize(
+    ("issued", "at", "pids", "want"),
+    [
+        (100, 101, None, True),
+        (100, 100, None, False),
+        (100, 100, (7, 8), True),
+        (100, 100, (7, 7), False),
+        (100, 100, (0, 8), False),
+        (100, 101, (7, 7), True),
+    ],
+)
+def test_restarted(issued: int, at: int, pids: tuple[int, int] | None, want: bool) -> None:
+    assert k.restarted(issued, at, pids) is want
+
+
 def test_up_after_and_up_written_verdicts() -> None:
     assert k.up_after_verdict([("down", 100), ("up", 130)], 125)[0]
     assert not k.up_after_verdict([("up", 120)], 125)[0]
