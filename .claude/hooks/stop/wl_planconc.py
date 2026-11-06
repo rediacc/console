@@ -56,6 +56,8 @@ CLAIM_TTL_S = 180
 CLAIMS_SUFFIX = ".spawnclaims"
 
 PLAN_LINE_RE = re.compile(r"^Plan:[ \t]*(\S.*?)[ \t]*$", re.MULTILINE)
+# A `Plan: none -- <reason>` value: the spawn serves no plan, so no item ref or plan-link token elsewhere in the brief makes it serve one.
+PLAN_NONE_RE = re.compile(r"^none\b", re.IGNORECASE)
 PROMPT_OWNS_RE = re.compile(r"^Owns:[ \t]*(\S.*?)[ \t]*$", re.MULTILINE)
 BASENAME_RE = re.compile(r"^(?:.*/)?(PLAN-[A-Za-z0-9._-]+\.md)$")
 
@@ -502,9 +504,13 @@ def item_plan(rec: dict) -> str | None:
 
 
 def spawn_plans(text: str, by_id: dict | None = None) -> set[str]:
-    """Section 3: the plans a spawn's prompt+description serves. An explicit `Plan: PLAN-x.md[, PLAN-y.md]` line wins; else every `#<id>` that names an item linked to a plan; else every bare `PLAN-x.md [<8hex>]` token."""
+    """Section 3: the plans a spawn's prompt+description serves. A `Plan: none -- <reason>` line serves none, whatever else the brief names; an explicit `Plan: PLAN-x.md[, PLAN-y.md]` line wins; else every `#<id>` that names an item linked to a plan; else every bare `PLAN-x.md [<8hex>]` token."""
     text = str(text or "")
     out: set[str] = set()
+    if any(
+        PLAN_NONE_RE.match(m.group(1).split(" -- ")[0].strip()) for m in PLAN_LINE_RE.finditer(text)
+    ):
+        return out
     for m in PLAN_LINE_RE.finditer(text):
         for tok in m.group(1).split(","):
             b = _base(tok.split(" -- ")[0])
@@ -534,6 +540,19 @@ def declared_owns(text: str) -> tuple[str, ...] | None:
     if errors or owns is None:
         return None
     return owns.globs
+
+
+def owns_line_problem(text: str) -> str | None:
+    """Why a spawn's `Owns:` line could not be read, or None when it reads or is absent. `declared_owns` reads a malformed line as none, so a refusal built on that None names this reason (#55b1f90b: a prose Owns line was refused as unknown files with no word about the line)."""
+    m = PROMPT_OWNS_RE.search(str(text or ""))
+    if not m:
+        return None
+    owns, errors = D.parse_owns(m.group(1))
+    if errors:
+        return "; ".join(str(e) for e in errors)
+    if owns is None:
+        return "the line parses to nothing"
+    return None
 
 
 # ---------------------------------------------------------------- reading plan headers on the spawn path
@@ -608,10 +627,13 @@ class LivePlans(dict):
     """`live_plans`' map ({plan basename: [holder, ...]}) carrying `owns`: {plan basename: the union of the `Owns:` lines its live holders' prompts declare}, present only for a plan whose EVERY holder declared one (#f412fdb8). A holder seen only through a lease has no prompt to read, so its plan keeps the whole plan Owns. A dict, so every caller that reads holders is unchanged; `spawn_verdict` reads `owns` with getattr, so a plain dict means no narrowing."""
 
     owns: dict[str, tuple[str, ...]]
+    # Live agents of a writer type that hold no plan: each brief says `Owns: none` and its transcript shows no edit (#55b1f90b).
+    readers: list[str]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.owns = {}
+        self.readers = []
 
 
 def live_plans(cwd, session_id, fold, now=None) -> dict[str, list[str]] | None:
@@ -630,13 +652,25 @@ def live_plans(cwd, session_id, fold, now=None) -> dict[str, list[str]] | None:
     # Per plan, each holder's declared Owns (None when it declared none or is a lease without a prompt).
     declared: dict[str, list[tuple[str, ...] | None]] = {}
     live_ids: set[str] = set()
+    readers: list[str] = []
     for row in rows or []:
         if not row.get("writer"):
             continue
-        live_ids.add(row["id"])
         meta = metas.get(row["id"]) or {}
         prompt = LH.first_prompt(meta.get("jsonl")) if meta.get("jsonl") else ""
         text = "%s\n%s" % (row.get("desc") or "", prompt)
+        # A writer TYPE briefed `Owns: none` that has made no edit is a reader (a live run, a probe): it holds no plan, and a
+        # same-session lease to it falls out below with it. One edit makes it a holder again (#55b1f90b).
+        if (
+            declared_owns(text) == ()
+            and meta.get("jsonl")
+            and wl_roster.full_edit_count(meta["jsonl"]) == 0
+        ):
+            readers.append(
+                "reader %s (%s): declares Owns none, no edit" % (row["id"], row.get("type") or "?")
+            )
+            continue
+        live_ids.add(row["id"])
         for plan in sorted(spawn_plans(text, by_id)):
             holders.setdefault(plan, []).append(
                 "writer %s (%s)" % (row["id"], row.get("type") or "?")
@@ -674,6 +708,7 @@ def live_plans(cwd, session_id, fold, now=None) -> dict[str, list[str]] | None:
     if rows is None and not peers:
         return None
     out = LivePlans(holders)
+    out.readers = readers
     for plan, owns in declared.items():
         if owns and all(o for o in owns):
             out.owns[plan] = tuple(dict.fromkeys(g for o in owns if o for g in o))

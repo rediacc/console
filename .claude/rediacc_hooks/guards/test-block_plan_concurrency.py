@@ -60,8 +60,8 @@ def stamp(minutes):
     return t.strftime("%Y-%m-%dT%H:%MZ")
 
 
-def world(plans, writers=(), finished=(), items=(), leases=(), cap=None):
-    """A fresh fixture. `plans` maps a name to its X lines (without Priority); `writers`/`finished` are first prompts of this session's live/finished general-purpose agents; `items` are (id, owner, text); `leases` are (id, owner, worker, minutes ahead)."""
+def world(plans, writers=(), finished=(), items=(), leases=(), cap=None, editors=()):
+    """A fresh fixture. `plans` maps a name to its X lines (without Priority); `writers`/`finished`/`editors` are first prompts of this session's live/finished/live-and-editing general-purpose agents (an editor's last record is an in-flight Edit call); `items` are (id, owner, text); `leases` are (id, owner, worker, minutes ahead)."""
     if BASE.exists():
         shutil.rmtree(BASE)
     proj = BASE / "proj"
@@ -86,8 +86,14 @@ def world(plans, writers=(), finished=(), items=(), leases=(), cap=None):
         "type": "assistant",
         "message": {"stop_reason": "end_turn", "content": [{"type": "text", "text": "done"}]},
     }
+    editing = {
+        "type": "assistant",
+        "message": {
+            "content": [{"type": "tool_use", "name": "Edit", "input": {"file_path": "docs/e/x.md"}}]
+        },
+    }
     n = 0
-    for prompts, last in ((writers, working), (finished, done)):
+    for prompts, last in ((writers, working), (finished, done), (editors, editing)):
         for prompt in prompts:
             n += 1
             aid = "a%016d" % n
@@ -184,6 +190,7 @@ PAR_Z = "Concurrency: parallel\nOwns: z/y.py\n"
 NO_OWNS = "Concurrency: parallel\n"
 NONE = "Concurrency: parallel\nOwns: none -- an operator-action fixture plan\n"
 BASIC = {"e": EXCL, "f": PAR_F, "o": PAR_EO}
+READER_E = "Plan: PLAN-e.md\nOwns: none -- live E10 run, edits nothing"
 E_ITEM = ("e0e0e0e0", SID[:8], "regenerate PLAN-e.md [e1e1e1e1]")
 P_ITEM = ("a0a0a0a0", PEER, "edit a PLAN-p.md [a1a1a1a1]")
 
@@ -393,6 +400,104 @@ CASES: list[tuple[str, dict[str, typing.Any], typing.Any, int, typing.Any]] = [
         payload("Plan: PLAN-h.md", isolation=ISOLATED),
         2,
         ["declares no valid Owns"],
+    ),
+    (
+        "x1 a prose Owns line under a live exclusive is refused and named",
+        {"plans": BASIC, "writers": ["Plan: PLAN-e.md"]},
+        payload("Plan: none -- tracked finding #11306719\nOwns: the timeout files in the executor"),
+        2,
+        ["PLAN-e.md is exclusive", "Owns: line was not read"],
+    ),
+    (
+        "x2 Plan none with Owns overlapping a live exclusive",
+        {"plans": BASIC, "writers": ["Plan: PLAN-e.md"]},
+        payload("Plan: none -- tracked finding #11306719\nOwns: docs/e/x.md"),
+        2,
+        ["PLAN-e.md is exclusive"],
+    ),
+    (
+        "x3 Plan none with Owns disjoint from a live exclusive",
+        {"plans": BASIC, "writers": ["Plan: PLAN-e.md"]},
+        payload("Plan: none -- tracked finding #11306719\nOwns: c/**, .ci/x.py"),
+        0,
+        [],
+    ),
+    (
+        "x4 Plan none ignores a plan-linked item the brief names",
+        {
+            "plans": {"f": PAR_F, "g": "Concurrency: parallel\nOwns: docs/f/x.md\n"},
+            "writers": ["Plan: PLAN-f.md"],
+            "items": [("f0f0f0f0", SID[:8], "docs PLAN-g.md [f1f1f1f1]")],
+        },
+        payload("Plan: none -- tracked finding #f0f0f0f0"),
+        0,
+        [],
+    ),
+    (
+        "r1 a planless spawn beside a read-only holder of an exclusive plan",
+        {"plans": BASIC, "writers": [READER_E]},
+        payload("fix a typo"),
+        0,
+        ["hold no plan", "reader a0000000000000001"],
+    ),
+    (
+        "r1b a plan overlapping the exclusive one, beside its read-only holder",
+        {"plans": BASIC, "writers": [READER_E]},
+        payload("Plan: PLAN-o.md"),
+        0,
+        [],
+    ),
+    (
+        "r1c control: the same holder briefed without Owns none still holds",
+        {"plans": BASIC, "writers": ["Plan: PLAN-e.md\nlive E10 run"]},
+        payload("Plan: PLAN-o.md"),
+        2,
+        ["PLAN-e.md is exclusive"],
+    ),
+    (
+        "r2 a holder briefed Owns none that edited still holds",
+        {"plans": BASIC, "editors": [READER_E]},
+        payload("Plan: PLAN-o.md"),
+        2,
+        ["PLAN-e.md is exclusive"],
+    ),
+    (
+        "r3 a same-session lease to a read-only runner holds nothing",
+        {
+            "plans": BASIC,
+            "writers": [READER_E],
+            "items": [E_ITEM],
+            "leases": [("e0e0e0e0", SID[:8], "a0000000000000001", 60)],
+        },
+        payload("Plan: PLAN-o.md"),
+        0,
+        [],
+    ),
+    (
+        "r4 a peer's lease on an exclusive plan still holds",
+        {
+            "plans": BASIC,
+            "writers": [READER_E],
+            "items": [("e0e0e0e0", PEER, "regenerate PLAN-e.md [e1e1e1e1]")],
+            "leases": [("e0e0e0e0", PEER, "b9b9b9b9", 60)],
+        },
+        payload("Plan: PLAN-o.md"),
+        2,
+        ["PLAN-e.md is exclusive", "session 0fee0fee"],
+    ),
+    (
+        "r5 the exclusive plan starts beside a read-only holder",
+        {"plans": BASIC, "writers": ["Plan: PLAN-f.md\nOwns: none -- live run, edits nothing"]},
+        payload("Plan: PLAN-e.md"),
+        0,
+        [],
+    ),
+    (
+        "i6 isolation does not excuse a prose Owns line under a live exclusive",
+        {"plans": BASIC, "writers": ["Plan: PLAN-e.md"]},
+        payload("fix it\nOwns: whatever the timeout touches", isolation=ISOLATED),
+        2,
+        ["PLAN-e.md is exclusive", "Owns: line was not read"],
     ),
     (
         "a reader under a live exclusive",

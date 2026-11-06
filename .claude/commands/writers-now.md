@@ -42,7 +42,7 @@ Writers are grouped by the files a box touches, never by thirds of a plan: boxes
 
 Two hard limits bound the roster: the 20 concurrent subagents of the harness, and the 25 trees on disk at `writer_cap`. `.ci/rediacc_ci/dev/worktree_lease.py` counts finished trees too, so each is collected by `--id` as its report lands (step 6). Free slots are the smaller limit minus the running writers and the trees still on disk (`./run.sh worktree leases`).
 
-The route is `isolation: "worktree"` on the Agent call, which reaches a lease through the harness's create hook: a detached tree under `.claude/worktrees/<id>` at the live branch's tip, submodules at their gitlinks, dependencies seeded. Uncommitted work in the main checkout is not in it. Which writer gets a lease is not asked (`block_settled_questions`). Separate leases cannot corrupt each other: `block_plan_concurrency` turns an `Owns` overlap into a note for an isolated spawn, and a clash surfaces as a cherry-pick conflict at landing, where the lead re-reads the file whole and matches its hunks to each report.
+The route is `isolation: "worktree"` on the Agent call, which reaches a lease through the harness's create hook: a detached tree under `.claude/worktrees/<id>` at the live branch's tip, submodules at their gitlinks, dependencies seeded. Uncommitted work in the main checkout is not in it. Which writer gets a lease is not asked (`block_settled_questions`). Separate leases cannot corrupt each other: `block_plan_concurrency` turns an `Owns` overlap into a note for an isolated spawn (an exclusive plan's mutex still refuses an isolated spawn whose Owns overlap it), and a clash surfaces as a cherry-pick conflict at landing, where the lead re-reads the file whole and matches its hunks to each report.
 
 ### 3. One thing at a time on the machine
 
@@ -54,7 +54,7 @@ Bench and hostinger runs are exempt from this rule and from that order (standing
 
 Every writer that fits starts in ONE message with parallel Agent calls. Model: `sonnet` when its boxes implement against an existing oracle (ports, tests, sweeps, translations); `opus` when they create the oracle (a new gate, guard, schema or design). Never `haiku` for writes. A plan's `Concurrency: exclusive` is no reason to hold a writer back: it is started anyway, and `block_plan_concurrency` decides.
 
-Each brief stands alone, because the writer sees nothing else. Its first two lines are load-bearing for the guards:
+Each brief stands alone, because the writer sees nothing else. Its first two lines are load-bearing for the guards. `Owns:` is comma-separated globs; a prose line is not read, and the refusal says so. A planless brief opens `Plan: none -- <reason>`, which serves no plan whatever items the brief names. A live runner of a writer type that edits nothing is briefed `Owns: none -- <reason>`, so it holds no plan while its transcript shows no edit:
 
 ```
 Plan: agent/plans/<PLAN-file>.md
