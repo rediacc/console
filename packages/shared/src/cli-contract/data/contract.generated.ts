@@ -8205,6 +8205,17 @@ export const CLI_CONTRACT: CliContract = {
           "tier": "advanced",
           "descriptionKey": "commands.machine.remove.forceOption",
           "label": "Remove the machine even if repositories are placed on it or backup strategies are bound to it, leaving those references dangling."
+        },
+        {
+          "flags": "--archive-repos",
+          "long": "archive-repos",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.machine.deprovision.optionArchiveRepos",
+          "label": "Archive the config entries of the repositories placed on this machine (credentials kept, restorable)"
         }
       ],
       "positionals": [

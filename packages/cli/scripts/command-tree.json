@@ -257,6 +257,12 @@
               "descriptionKey": "commands.machine.remove.forceOption",
               "mandatory": false,
               "defaultValue": null
+            },
+            {
+              "flags": "--archive-repos",
+              "descriptionKey": "commands.machine.deprovision.optionArchiveRepos",
+              "mandatory": false,
+              "defaultValue": null
             }
           ],
           "arguments": [

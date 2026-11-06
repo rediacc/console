@@ -18,6 +18,7 @@ import { assertResourceName, MachineConfigSchema, parseConfig } from '../../util
 import { handleError } from '../../utils/errors.js';
 import { classifyKeyChange, scanHostKeys, shortFingerprint } from '../../utils/host-keys.js';
 import { convergeAfterSetup } from './converge.js';
+import { reposOn, settleMachineRepos } from './provision.js';
 
 /** Exported for tests: re-deploy repo keys, re-apply access keys, and push infra after a successful setup. */
 export async function postSetupMachineTasks(name: string, debug?: boolean): Promise<void> {
@@ -189,24 +190,35 @@ function registerRemove(machine: Command): void {
     .description(t('commands.machine.remove.description'))
     .option('-y, --yes', t('options.yes'))
     .option('--force', t('commands.machine.remove.forceOption'))
-    .action(async (name: string, options: { yes?: boolean; force?: boolean }) => {
-      try {
-        // Refuse (exit 12) if repositories are still placed on this machine, unless --force. Runs before the confirm so we fail fast and teaching.
-        await guardMachineRemoval(name, options.force);
-        if (!options.yes) {
-          const { askConfirm } = await import('../../utils/prompt.js');
-          const confirmed = await askConfirm(t('commands.machine.remove.confirm', { name }));
-          if (!confirmed) {
-            outputService.info(t('status.cancelled'));
-            return;
+    .option('--archive-repos', t('commands.machine.deprovision.optionArchiveRepos'))
+    .action(
+      async (name: string, options: { yes?: boolean; force?: boolean; archiveRepos?: boolean }) => {
+        try {
+          // Read before the machine leaves the config: afterwards its repos still name it, and nothing else can (#f9759988).
+          const repoKeys = await reposOn(name);
+          // Refuse (exit 12) if repositories are still placed on this machine, unless --force or --archive-repos. Runs before the confirm so we fail fast and teaching.
+          await guardMachineRemoval(name, options.force, options.archiveRepos === true);
+          if (!options.yes) {
+            const { askConfirm } = await import('../../utils/prompt.js');
+            const confirmed = await askConfirm(t('commands.machine.remove.confirm', { name }));
+            if (!confirmed) {
+              outputService.info(t('status.cancelled'));
+              return;
+            }
           }
+          await configService.removeMachine(name);
+          outputService.success(t('commands.machine.remove.success', { name }));
+          if (options.archiveRepos === true) {
+            await settleMachineRepos(name, repoKeys, true);
+          } else if (repoKeys.length > 0) {
+            // --force: the guard already named the repos; add how to archive them.
+            outputService.info(t('commands.machine.deprovision.reposLeftHint'));
+          }
+        } catch (error) {
+          handleError(error);
         }
-        await configService.removeMachine(name);
-        outputService.success(t('commands.machine.remove.success', { name }));
-      } catch (error) {
-        handleError(error);
       }
-    });
+    );
 }
 
 /** `machine list`, list registered machines. */

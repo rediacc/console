@@ -4,7 +4,7 @@ import { createCloudMachine, destroyCloudMachine } from '../../services/tofu/ind
 import { handleError } from '../../utils/errors.js';
 
 /** The repository keys placed on `machine` (#80f7476a). */
-async function reposOn(machine: string): Promise<string[]> {
+export async function reposOn(machine: string): Promise<string[]> {
   const { configService } = await import('../../services/config/config-resources.js');
   const { repoKeysPlacedOn } = await import('../../services/config/machine-gone-repos.js');
   const config = await configService.getCurrent();

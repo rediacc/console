@@ -7,7 +7,7 @@ order: 2
 language: fr
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/fr/cli.json
-sourceHash: "a140dc7c22d1f22c"
+sourceHash: "8688da884ec17331"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -989,6 +989,7 @@ rdc machine remove <name> [options]
 |------|-------------|----------|---------|
 | `-y, --yes` | {{t:cli.options.yes}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--force` | {{t:cli.commands.machine.remove.forceOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--archive-repos` | {{t:cli.commands.machine.deprovision.optionArchiveRepos}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 <a id="cli-local-machine-restart-services"></a>
