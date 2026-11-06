@@ -44,3 +44,13 @@ def test_run_pytest_missing_is_a_named_failure(tmp_path, capsys):
 def test_run_without_a_verb_is_usage(tmp_path, capsys):
     assert lp.run([], tmp_path) == 2
     assert "Usage" in capsys.readouterr().err
+
+
+def test_a_removed_verb_is_refused_even_when_the_wrapper_exists(tmp_path, capsys):
+    """The `guard` verb ran a command through the wrapper's neighbour and was removed: re-adding it, or any verb but `pytest`, must fail here."""
+    marker = tmp_path / "ran"
+    _fake_wrapper(tmp_path, '#!/bin/sh\ntouch "%s"\n' % marker)
+    for verb in ("guard", "clone", "git"):
+        assert lp.run([verb, "x"], tmp_path) == 2
+    assert not marker.exists()
+    assert "Usage" in capsys.readouterr().err

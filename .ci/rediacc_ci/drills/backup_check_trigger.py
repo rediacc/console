@@ -4,7 +4,7 @@ THE CLONE. This is the backup twin of the `vm:check` pair: `rediacc_ci.proof.sur
 
 WHAT IS TOUCHED. Three path tables, one per repository, each entry either a directory prefix (ending in `/`) or an `fnmatch` pattern (`*` crosses `/`):
 
-  CONSOLE_PATHS   the CLI backup commands and services, and the drill modules that write the receipt (the legs, their real-renet half, the round trip and the on-premise half)
+  CONSOLE_PATHS   the CLI backup commands and services, and the drill modules whose runs the receipt vouches for (the legs, their real-renet half, the round trip and the on-premise half; only `backup` and `backup_onprem` write it, see WHO WRITES IT)
   RENET_PATHS     relative to private/renet: the backup, datastore and prune commands, the chunk store, delta, datastore, coldbackup, backupstate and prune packages, go.mod and go.sum
   ACCOUNT_PATHS   relative to private/account: the backup routes, services and DTO, their migrations, `src/entry/on-premise.ts` (the I7 boot) and `src/routes/test.ts` (the session-TTL seam that legs t and u drive)
 
