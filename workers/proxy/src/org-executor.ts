@@ -10,6 +10,7 @@
 
 import { DurableObject } from 'cloudflare:workers';
 import { capacityStub, type ExecutorCapacity, type ExecutorSize } from './capacity';
+import { drillProbeTarget } from './drill';
 import {
   type ExecutorIdentity,
   pinRefusal,
@@ -212,7 +213,8 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
   ): Promise<EgressReportAnswer> {
     const stored = (await this.ctx.storage.get<number[]>(UNREACHABLE_KEY)) ?? [];
     if (this.isRetired()) return reportAnswer(recentCount(stored, Date.now()), true, 'skipped');
-    const probe = await this.reachability.verdict(target, placement);
+    const probed = drillProbeTarget(this.env, target, placement);
+    const probe = await this.reachability.verdict(probed, placement);
     const now = Date.now();
     if (probe !== 'reachable') return reportAnswer(recentCount(stored, now), false, probe);
     const recent = [...stored, now].filter((at) => unreachableRecent(at, now));

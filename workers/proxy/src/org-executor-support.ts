@@ -66,6 +66,10 @@ export interface OrgExecutorEnv {
   ISSUER?: Pick<ExecutorIssuerRpc, 'relocate'>;
   /** Region label, handed to the executor as REDIACC_REGION; `eu` when unset or empty. */
   REGION?: string;
+  /** The deploy environment (`bench`, `edge`, `production`); the reachability drill acts only on `bench` (src/drill.ts). */
+  ENVIRONMENT?: string;
+  /** Bench only: `<from host:port>=<to host:port>`, the reachability drill's probe redirect (src/drill.ts); every other target's config refuses it. */
+  EGRESS_DRILL_PROBE?: string;
 }
 
 /** What a running container was started with, kept in Durable Object storage so a restarted instance can recover it. */

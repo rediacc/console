@@ -235,6 +235,35 @@ def test_an_executor_backend_var_is_refused() -> None:
     assert "vars.EXECUTOR_BACKEND is not one a edge-eu config may carry" in out, out
 
 
+# --- the bench-only reachability drill var (PLAN-org-executor-connect-timeout-relocate E15) ---
+
+
+def test_the_committed_bench_config_carries_the_drill_var_and_passes() -> None:
+    text = real("bench")
+    assert tomllib.loads(text)["vars"]["EGRESS_DRILL_PROBE"] == "192.0.2.10:22=72.61.137.225:22"
+    assert refusals(text, "bench") == []
+
+
+@pytest.mark.parametrize("key", ["edge-us", "eu"])
+def test_the_drill_var_in_a_rendered_non_bench_config_is_refused(key: str) -> None:
+    template = (PROXY / pc.TEMPLATE).read_text(encoding="utf-8")
+    rendered = pc.render(template, TARGETS[key])
+    assert refusals(rendered, key) == [], "control: the rendered %s config passes" % key
+    text = plant(
+        rendered, "[vars]\n", '[vars]\nEGRESS_DRILL_PROBE = "192.0.2.10:22=72.61.137.225:22"\n'
+    )
+    out = refusals(text, key)
+    assert "vars.EGRESS_DRILL_PROBE is not one a %s config may carry" % key in out, out
+
+
+def test_the_drill_var_in_the_dev_config_is_refused() -> None:
+    text = plant(
+        real("dev"), "[vars]\n", '[vars]\nEGRESS_DRILL_PROBE = "192.0.2.10:22=72.61.137.225:22"\n'
+    )
+    out = refusals(text, "dev")
+    assert "vars.EGRESS_DRILL_PROBE is not one a dev config may carry" in out, out
+
+
 def test_a_missing_v2_migration_is_refused() -> None:
     text = plant(
         real("eu"),

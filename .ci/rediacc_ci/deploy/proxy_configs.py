@@ -3,7 +3,7 @@
 
 WHAT IT GENERATES. `workers/proxy/wrangler.template.toml` plus `regions.json` give `wrangler.<target>.toml` for the six deployable targets, `eu`, `us`, `asia` (production) and `edge-eu`, `edge-us`, `edge-asia` (edge). Each names `rediacc-proxy-<r>` or `edge-rediacc-proxy-<r>` (regions.json `proxyWorkerName` / `edgeProxyWorkerName`), routes the custom domain `proxy.<domain>` or `proxy.<edgeDomain>` (the WK_PROXY_*_HOST values of .ci/config/well-known.env), and binds both ACCOUNT (entrypoint CloudflareInternal) and ISSUER (entrypoint ExecutorIssuer) to the same target's account Worker (agent/plans/PLAN-proxy-cd-six-targets.md Design item 7).
 
-WHAT IT REFUSES. `config_refusals(text, target)` is the generalization of `deploy_proxy.bench_refusals` to every target, the bench and dev configs included: the exact name, routes, `[vars]`, service bindings and their entrypoints, container blocks (the one `OrgExecutor` entry of the `durable_object` scheduling policy, which carries no `max_instances` or `instance_type`), the Durable Object bindings (`ORG_EXECUTOR`, `EXECUTOR_CAPACITY`), the migration list v1, v2, v3 (v3 deletes the retired `ExecutorContainer` class), the `EXECUTOR_CAP` / `EXECUTOR_HEAVY_CAP` vars (caps at most 25 and 5; an `EXECUTOR_BACKEND` var is refused as one no config may carry), telemetry destinations with `persist = false`, the top-level key allowlist, no `[env.*]` table, no EXECUTOR_TOKEN anywhere in the text, and a name, route, service or destination naming another region or channel refused by name (a us config can never carry an eu binding). `--check` runs it over every file, refuses a generated file that differs from what the template generates, a `wrangler*.toml` that is no known target, a WK_PROXY_*_HOST that disagrees with regions.json, and a workers/account config whose EXECUTOR binding is not the same target's proxy.
+WHAT IT REFUSES. `config_refusals(text, target)` is the generalization of `deploy_proxy.bench_refusals` to every target, the bench and dev configs included: the exact name, routes, `[vars]`, service bindings and their entrypoints, container blocks (the one `OrgExecutor` entry of the `durable_object` scheduling policy, which carries no `max_instances` or `instance_type`), the Durable Object bindings (`ORG_EXECUTOR`, `EXECUTOR_CAPACITY`), the migration list v1, v2, v3 (v3 deletes the retired `ExecutorContainer` class), the `EXECUTOR_CAP` / `EXECUTOR_HEAVY_CAP` vars (caps at most 25 and 5; an `EXECUTOR_BACKEND` var is refused as one no config may carry, and `EGRESS_DRILL_PROBE` as one only bench may carry), telemetry destinations with `persist = false`, the top-level key allowlist, no `[env.*]` table, no EXECUTOR_TOKEN anywhere in the text, and a name, route, service or destination naming another region or channel refused by name (a us config can never carry an eu binding). `--check` runs it over every file, refuses a generated file that differs from what the template generates, a `wrangler*.toml` that is no known target, a WK_PROXY_*_HOST that disagrees with regions.json, and a workers/account config whose EXECUTOR binding is not the same target's proxy.
 
 USAGE.
     PYTHONPATH=.ci python3 -m rediacc_ci.deploy.proxy_configs [generate]   write the six configs
@@ -69,6 +69,8 @@ TARGET_KEYS = ("eu", "us", "asia", "edge-eu", "edge-us", "edge-asia", "bench", "
 CAP_BY_TARGET: dict[str, str] = dict.fromkeys(TARGET_KEYS, "25")
 HEAVY_CAP_BY_TARGET: dict[str, str] = dict.fromkeys(TARGET_KEYS, "5")
 EXECUTOR_VARS = ("EXECUTOR_CAP", "EXECUTOR_HEAVY_CAP")
+# The bench config alone may carry the reachability drill's probe redirect (PLAN-org-executor-connect-timeout-relocate box E15); any other target carrying it is refused as a var it may not carry.
+BENCH_OPTIONAL_VARS = frozenset({"EGRESS_DRILL_PROBE"})
 PLACEHOLDER_RE = re.compile(r"@@[A-Z_]+@@")
 
 # The WK_PROXY_*_HOST value for each (region, channel); --check holds each equal to proxy.<domain> from regions.json.
@@ -126,6 +128,8 @@ class Target:
     generated: bool
     own_tokens: frozenset[str]
     executor_vars: tuple[tuple[str, str], ...] = ()
+    # Vars this target may carry but need not: the bench-only reachability drill seam (workers/proxy/src/drill.ts). Every other target leaves it empty, so the var is refused there by name.
+    optional_variables: frozenset[str] = frozenset()
 
 
 class ConfigError(Exception):
@@ -211,6 +215,7 @@ def targets(regions: list[dict]) -> dict[str, Target]:
         generated=False,
         own_tokens=frozenset({"bench"}),
         executor_vars=executor_vars("bench"),
+        optional_variables=BENCH_OPTIONAL_VARS,
     )
     out["dev"] = Target(
         key="dev",
@@ -393,7 +398,9 @@ def config_refusals(text: str, target: Target, all_regions: frozenset[str]) -> l
             out.append("vars.%s is %r, not %r" % (key, variables.get(key), value))
     out.extend(
         "vars.%s is not one a %s config may carry" % (key, target.key)
-        for key in sorted(set(variables) - set(want) - set(EXECUTOR_VARS))
+        for key in sorted(
+            set(variables) - set(want) - set(EXECUTOR_VARS) - target.optional_variables
+        )
     )
     out.extend(_executor_var_refusals(variables))
 

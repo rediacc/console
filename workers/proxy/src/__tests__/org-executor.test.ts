@@ -26,6 +26,7 @@ import {
   executorEnv,
   READY_TIMEOUT_MS,
 } from '../org-executor';
+import type { OrgExecutorEnv } from '../org-executor-support';
 import { flush, harness, IMAGE_V1, IMAGE_V2, LEASE, ORG, T0 } from './helpers/org-executor-harness';
 
 beforeEach(() => {
@@ -489,5 +490,47 @@ describe('reachability gate on egress-unreachable reports (PLAN-org-executor-con
     );
     expect(lines).toContain('proxy: org executor reachability probe skipped (no-target) at p0');
     expect(lines.join('\n')).not.toContain('203.0.113.7');
+  });
+
+  describe('the bench drill seam (src/drill.ts, E15)', () => {
+    const DRILL = { host: '192.0.2.10', port: 22 };
+
+    /** The harness with `ENVIRONMENT` and the drill var set on the instance's env. */
+    function drillHarness(environment: string) {
+      const h = harness();
+      Object.assign((h.executor as unknown as { env: OrgExecutorEnv }).env, {
+        ENVIRONMENT: environment,
+        EGRESS_DRILL_PROBE: '192.0.2.10:22=203.0.113.7:22',
+      });
+      return h;
+    }
+
+    it('on bench, three reports of the drill address probe the redirect and relocate once', async () => {
+      const h = drillHarness('bench');
+      await h.ready;
+      await h.executor.pin(ORG, 0, 'light');
+      await report(h, T0 + MINUTE, DRILL);
+      await report(h, T0 + 3 * MINUTE, DRILL);
+      expect(await report(h, T0 + 5 * MINUTE, DRILL)).toMatchObject({
+        count: 3,
+        relocated: true,
+        counted: true,
+        probe: 'reachable',
+      });
+      expect(h.issuer.relocate).toHaveBeenCalledTimes(1);
+      expect(h.probes).toEqual([
+        { hostname: '203.0.113.7', port: 22 },
+        { hostname: '203.0.113.7', port: 22 },
+        { hostname: '203.0.113.7', port: 22 },
+      ]);
+    });
+
+    it('on edge, the same var leaves the probe at the reported address', async () => {
+      const h = drillHarness('edge');
+      await h.ready;
+      await h.executor.pin(ORG, 0, 'light');
+      await report(h, T0 + MINUTE, DRILL);
+      expect(h.probes).toEqual([{ hostname: '192.0.2.10', port: 22 }]);
+    });
   });
 });

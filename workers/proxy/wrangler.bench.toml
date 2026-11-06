@@ -26,6 +26,10 @@ REGION = "eu"
 ENVIRONMENT = "bench"
 EXECUTOR_CAP = "25"
 EXECUTOR_HEAVY_CAP = "5"
+# The E9 reachability drill (PLAN-org-executor-connect-timeout-relocate box E15, src/drill.ts): the
+# Worker's probe of the blackholed drill address 192.0.2.10:22 reads hostinger's SSH banner instead,
+# so the drill's reports count. Bench only: proxy_configs refuses this var in every other config.
+EGRESS_DRILL_PROBE = "192.0.2.10:22=72.61.137.225:22"
 
 # The same-zone reason as wrangler.template.toml: introspection goes through the binding, never a
 # public fetch. The named entrypoint is one only a service binding can reach: it marks the request
