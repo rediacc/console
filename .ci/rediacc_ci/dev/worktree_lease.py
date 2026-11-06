@@ -17,6 +17,7 @@ import json
 import os
 import pathlib
 import re
+import signal
 import subprocess
 import sys
 import time
@@ -714,12 +715,11 @@ def tick_report(root, lease_id, me):
                 "  worklist.py --plan-investigate %s %s %s %s %s -- %s --write"
                 % (me, rel, box.sig, "present" if done else "partial", pointers, note)
             )
+            if not done:
+                lines.append(_owed_line(ids, covered))
             continue
         if not done:
-            owed = [i for i in ids if i not in covered]
-            lines.append(
-                "  owed: %s (no tick until every clause is landed or proved)" % ",".join(owed)
-            )
+            lines.append(_owed_line(ids, covered))
             continue
         evidence = "commit:%s landed from lease %s" % (last[:12], lease_id)
         if inv.get("retro") or rec.clause1_ordering(root, inv, evidence):
@@ -733,6 +733,12 @@ def tick_report(root, lease_id, me):
             "  worklist.py --plan-tick %s %s %s '%s' --write" % (me, rel, box.sig, evidence)
         )
     return lines, progress, ticks
+
+
+def _owed_line(ids, covered):
+    """The `owed:` line of a box with an uncovered clause."""
+    owed = [i for i in ids if i not in covered]
+    return "  owed: %s (no tick until every clause is landed or proved)" % ",".join(owed)
 
 
 def _run_tick(root, me, rel, sig, evidence):
@@ -1383,13 +1389,16 @@ def _outside_rows(world):
 def _remove_row(world, row):
     """Unlock, submodule trees, console tree, pins, then the record, only when nothing else survived. Returns what survived. The predicate is the only guard: `--force` is unavoidable, because git refuses any tree with a submodule without it.
 
-    The signals are held for the removal and armed again after it. Left ignored, SIGTERM stayed ignored for the rest of the process and for every child it started afterwards, because an ignored disposition survives exec: a pytest worker that ran a gc test then spawned servers that no `terminate()` could stop.
+    The signals are held for the removal and each goes back to the handler it had before (not forced to the lease's `interrupted`, which would change the disposition for every caller). Left ignored, SIGTERM stayed ignored for the rest of the process and for every child it started afterwards, because an ignored disposition survives exec: a pytest worker that ran a gc test then spawned servers that no `terminate()` could stop.
     """
+    signums = (signal.SIGINT, signal.SIGTERM, signal.SIGHUP)
+    before = {signum: signal.getsignal(signum) for signum in signums}
     spike.hold_signals()
     try:
         return _remove_row_held(world, row)
     finally:
-        spike.arm_signals()
+        for signum, handler in before.items():
+            signal.signal(signum, handler)
 
 
 def _remove_row_held(world, row):

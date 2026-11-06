@@ -9,6 +9,7 @@ import json
 import os
 import pathlib
 import shlex
+import signal
 import subprocess
 import sys
 from typing import NamedTuple
@@ -1130,6 +1131,16 @@ def test_land_ticks_uncovered_clause_gets_only_the_progress_line(ticked):
     block = box_block(run_land(ticked.repo.root, LAND_ID, "--ticks").stdout.splitlines(), FX_MAPPED)
     assert "  progress %s C1 landed %s" % (FX_MAPPED, ticked.landed[FX_MAPPED][:12]) in block
     assert not [x for x in block if "--plan-tick" in x or "--plan-investigate" in x]
+    assert any(x.startswith("  owed: C2") for x in block)
+
+
+def test_land_ticks_partial_box_with_no_row_still_prints_the_owed_line(ticked, monkeypatch):
+    """A box with a clause still uncovered and no investigation row printed only the investigate line, so the owed clauses stayed unnamed."""
+    monkeypatch.setattr(lease._hook_module("wl_planrec"), "investigation_for", lambda *_a: None)
+    lines, rc = lease.land_ticks(ticked.repo.root, LAND_ID, me="feedface")
+    assert rc == 0, lines
+    block = box_block(lines, FX_MAPPED)
+    assert [x for x in block if "--plan-investigate" in x and " partial " in x]
     assert any(x.startswith("  owed: C2") for x in block)
 
 
@@ -2259,3 +2270,39 @@ def test_lease_seed_dist_of_a_dependant_follows_the_dirt_of_shared(tmp_path, sha
     tree = pathlib.Path(result.stdout.splitlines()[-1])
     built = tree / "packages" / "provisioning" / "dist" / "built.txt"
     assert built.read_text(encoding="utf-8") == dist
+
+
+SIGNUMS = (signal.SIGINT, signal.SIGTERM, signal.SIGHUP)
+
+
+@pytest.mark.parametrize("raises", [False, True])
+def test_remove_row_restores_the_signal_dispositions_it_found(monkeypatch, raises):
+    """The removal holds the signals; afterwards each one is what it was, also when the removal raised."""
+    sentinel = {
+        signal.SIGINT: signal.SIG_DFL,
+        signal.SIGTERM: signal.SIG_DFL,
+        signal.SIGHUP: lambda *_a: None,
+    }
+    saved = {s: signal.getsignal(s) for s in SIGNUMS}
+    try:
+        for signum, handler in sentinel.items():
+            signal.signal(signum, handler)
+        seen = {}
+
+        def held(_world, _row):
+            seen.update({s: signal.getsignal(s) for s in SIGNUMS})
+            if raises:
+                raise RuntimeError("boom")
+            return []
+
+        monkeypatch.setattr(lease, "_remove_row_held", held)
+        if raises:
+            with pytest.raises(RuntimeError):
+                lease._remove_row(None, None)
+        else:
+            assert lease._remove_row(None, None) == []
+        assert set(seen.values()) == {signal.SIG_IGN}
+        assert {s: signal.getsignal(s) for s in SIGNUMS} == sentinel
+    finally:
+        for signum, handler in saved.items():
+            signal.signal(signum, handler)
