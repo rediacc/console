@@ -85,8 +85,20 @@ ALL_CHECKS = (*LOCAL_CHECKS, "offbox")
 
 RDC_TIMEOUT_S = 300.0
 REPAIR_TIMEOUT_S = 900.0
-# An action `result` that starts with one of these did not run the fix, so it does not use up the day's attempts.
-NOT_RUN_RESULTS = ("skipped", "noop", "none", "already", "refused", "dry")
+# An action `result` that starts with one of these did not run the fix, so it does not use up the day's attempts. `rdc machine repair -o json` reports `planned` (dry run), `skipped`, `refused`, `cancelled`, `gone` (the finding had cleared), `covered` (another fix covered it) and `operator` (never run); only `ok` and `failed` ran a fix (packages/cli/src/commands/machine/repair.ts RepairResult).
+NOT_RUN_RESULTS = (
+    "planned",
+    "skipped",
+    "refused",
+    "cancelled",
+    "gone",
+    "covered",
+    "operator",
+    "noop",
+    "none",
+    "already",
+    "dry",
+)
 SUBPROCESS_TIMEOUT_S = 900.0
 HTTP_TIMEOUT_S = 20.0
 DETAIL_MAX = 600

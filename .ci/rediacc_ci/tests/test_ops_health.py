@@ -763,3 +763,14 @@ def test_a_long_bws_refusal_keeps_its_first_200_characters():
     _env, error = oh.token_env({"PATH": "/usr/bin"}, hydrate)
     assert error.endswith("H" * 200)
     assert "T" not in error
+
+
+@pytest.mark.parametrize("result", ["gone", "covered", "planned", "cancelled", "operator"])
+def test_repair_results_that_ran_no_fix_do_not_use_up_attempts(tmp_path, result):
+    # CONTROL: the result names `rdc machine repair` (RepairResult) gives an action it did not run.
+    findings = [finding("restart.loop")]
+    acts = [{"code": "restart.loop", "action": "restart", "class": "auto-safe", "result": result}]
+    for n in range(5):
+        fleet = RepairFleet(findings, actions=acts, heals=False)
+        refreshed(tmp_path, fleet, now=NOW + datetime.timedelta(minutes=40 * n))
+        assert len(fleet.repair_calls()) == 1
