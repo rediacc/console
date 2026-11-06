@@ -43,6 +43,7 @@ Spawner = Callable[[Sequence[str]], Process]
 
 
 def real_spawner(argv: Sequence[str]) -> Process:
+    # stdin is closed on purpose: the wrapped command runs unattended, so a prompt on stdin (a confirmation, a passphrase) reads EOF instead of hanging the sampler.
     return subprocess.Popen(list(argv), stdin=subprocess.DEVNULL)
 
 

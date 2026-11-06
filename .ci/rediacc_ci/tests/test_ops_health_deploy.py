@@ -217,10 +217,10 @@ def test_a_failed_secret_step_leaves_the_vars_behind_so_a_rerun_retries(capsys):
     assert "secret:OPS_HEALTH_TARGETS" in capsys.readouterr().out
 
 
-def test_missing_secrets_exit_2_naming_the_profile(capsys):
+def test_missing_secrets_exit_3_naming_the_profile(capsys):
     world = FakeWorld(json.dumps(GOOD))
     env = {k: v for k, v in SECRETS.items() if k != "AWS_SES_FROM"}
-    assert run_main(world, env=env) == 2
+    assert run_main(world, env=env) == d.EXIT_NO_SECRETS
     err = capsys.readouterr().err
     assert "AWS_SES_FROM" in err
     assert "--profile ops-health" in err
@@ -330,3 +330,39 @@ def test_main_refuses_to_deploy_when_the_status_is_unreadable(
     assert rc == d.EXIT_FAILED
     assert world.wrangler_calls() == []
     assert "HTTP 401" in capsys.readouterr().err
+
+
+class _Auth:
+    created = True
+    token = "minted"
+
+
+def test_a_failed_propagation_wait_still_destroys_the_minted_token(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    destroyed: list[object] = []
+    auth = _Auth()
+    monkeypatch.setattr(d.cf_auth, "resolve", lambda _account: auth)
+
+    def boom(_auth: object) -> None:
+        raise RuntimeError("token never propagated")
+
+    monkeypatch.setattr(d.cf_auth, "await_propagation", boom)
+    monkeypatch.setattr(d.cf_auth, "self_destruct", destroyed.append)
+    with pytest.raises(RuntimeError, match="never propagated"):
+        d._cloudflare_env({})
+    assert destroyed == [auth]
+
+
+def test_the_scrubbed_global_key_is_not_restored_from_the_caller_environment(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    auth = _Auth()
+    auth.created = False
+    monkeypatch.setattr(d.cf_auth, "resolve", lambda _account: auth)
+    monkeypatch.setattr(
+        d.cf_auth, "wrangler_env", lambda *_a, **_k: {"CLOUDFLARE_API_TOKEN": "minted"}
+    )
+    base = {"CF_GLOBAL_API_KEY": "g", "CF_API_KEY": "k", "CF_EMAIL": "e", "OPS_HEALTH_X": "x"}
+    env, _cleanup = d._cloudflare_env(base)
+    assert env == {"CLOUDFLARE_API_TOKEN": "minted", "OPS_HEALTH_X": "x"}

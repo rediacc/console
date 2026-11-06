@@ -499,7 +499,7 @@ def record(
             message = f"no VM receipt admits the head tree ({verdict.code}: {verdict.message})"
             if phases - S.phases_for(names):
                 message += (
-                    f"; check {check.id} deploys renet to a real machine, so the receipt must run the "
+                    f"; check {check.id} needs a VM receipt that ran the "
                     f"{', '.join(sorted(phases - S.phases_for(names)))} phase: a full `npm run vm:check` runs every phase"
                 )
             return _refuse(run, root, world, R.NOT_VERIFIED, CODE_LADDER, message)

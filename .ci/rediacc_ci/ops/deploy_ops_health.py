@@ -75,6 +75,10 @@ RESERVED_PREFIX = "health:"
 
 EXIT_INVALID = 2
 EXIT_FAILED = 1
+# The Global API Key names `cf_auth.wrangler_env(scrub_global_key=True)` removes; the caller's copies are never put back.
+SCRUBBED_ENV = frozenset({"CF_GLOBAL_API_KEY", "CF_API_KEY", "CF_EMAIL"})
+# A secret absent from the environment is the caller's setup, not a bad target file.
+EXIT_NO_SECRETS = 3
 
 
 class TargetsInvalidError(ValueError):
@@ -435,11 +439,17 @@ class Seams:
 def _cloudflare_env(base: Mapping[str, str]) -> tuple[dict[str, str], Callable[[], None]]:
 
     auth = cf_auth.resolve(cf_auth.DEFAULT_ACCOUNT_ID)
-    if auth.created:
-        cf_auth.await_propagation(auth)
-    env = cf_auth.wrangler_env(auth, cf_auth.DEFAULT_ACCOUNT_ID, scrub_global_key=True)
+    try:
+        if auth.created:
+            cf_auth.await_propagation(auth)
+        env = cf_auth.wrangler_env(auth, cf_auth.DEFAULT_ACCOUNT_ID, scrub_global_key=True)
+    except BaseException:
+        # A token minted for this run must not outlive a failure before the caller holds its cleanup.
+        cf_auth.self_destruct(auth)
+        raise
     for name, value in base.items():
-        env.setdefault(name, value)
+        if name not in SCRUBBED_ENV:
+            env.setdefault(name, value)
     return env, lambda: cf_auth.self_destruct(auth)
 
 
@@ -473,7 +483,7 @@ def main(
             % (SELF, ", ".join(missing)),
             file=sys.stderr,
         )
-        return EXIT_INVALID
+        return EXIT_NO_SECRETS
 
     try:
         deployed = seams.fetch_deployed(status_url(root), env["OPS_HEALTH_READ_TOKEN"])
@@ -506,7 +516,7 @@ def main(
         cleanup()
     if status:
         print(
-            "%s: a wrangler step exited %d; the vars were not advanced, so a re-run retries"
+            "%s: a wrangler step exited %d; the digests var was not written, so a re-run retries"
             % (SELF, status),
             file=sys.stderr,
         )
