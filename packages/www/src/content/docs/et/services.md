@@ -10,8 +10,8 @@ tags:
 subcategory: workloads
 order: 5
 language: et
-sourceHash: "514acd70833da4cb"
-sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
+sourceHash: "82563884bd7c5d9b"
+sourceCommit: "1bcc915dcbe72895053ebc9fd5ce5a5c3a594701"
 ---
 
 # Teenused

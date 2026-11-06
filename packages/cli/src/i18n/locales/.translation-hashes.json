@@ -3,7 +3,7 @@
     "algorithm": "crc32",
     "sourceLanguage": "en",
     "keyCount": 2469,
-    "sourceCommit": "db6aa555ff6c0dc4acaddc0afa2264369dffcdae"
+    "sourceCommit": "60514a69b700ff8837e04873544ddba149349156"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -590,7 +590,7 @@
     "commands.config.prune.foundGoneMachineRepos": "0489b1e9",
     "commands.config.prune.foundOrphanRepos": "1b596cd9",
     "commands.config.prune.goneMachineReposHint": "bbe7470d",
-    "commands.config.prune.goneMachineReposOption": "32d2e9cb",
+    "commands.config.prune.goneMachineReposOption": "310e9c54",
     "commands.config.prune.graceDaysOption": "71228f3d",
     "commands.config.prune.keptArchivesInGrace": "1f85fa0c",
     "commands.config.prune.nothingToPrune": "2b01f707",
