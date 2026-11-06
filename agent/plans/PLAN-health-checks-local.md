@@ -456,9 +456,11 @@ Owns: scripts/gates/check-quality-complete.ts, .github/workflows/ci-quality.yml 
 
 Owns: .ci/rediacc_ci/release/drift_job.py, .ci/rediacc_ci/release/check_soak_period.py, .ci/rediacc_ci/release/nightly_tested_edge.py, .ci/rediacc_ci/tests/test_release_*.py, .github/workflows/ci-drift.yml, .github/workflows/ci.yml, .github/workflows/promote-stable.yml, .claude/hooks/stop/wl_schedred.py (`_BLOCKS`), package.json (`ci:drift`)
 
-- [ ] D1: drift_job.py and `npm run ci:drift` per D-drift. The set is computed from `DRIFT_GATE_IDS` plus `CLOCK_GATE_IDS` plus the two split steps, never listed twice.
+- [x] D1: drift_job.py and `npm run ci:drift` per D-drift. The set is computed from `DRIFT_GATE_IDS` plus `CLOCK_GATE_IDS` plus the two split steps, never listed twice.
   - CONTROL: a lock missing one drift id exits 2 (DriftSetError); one planted red gate gives exit 1 with that gate named in the JSON.
   - Accept: `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest .ci/rediacc_ci/tests/test_release_drift_job.py -q` rc 0; `npm run ci:drift` runs locally with its rc recorded here.
+  - Record 2026-11-06 22:30Z: `npm run ci:drift -- --out drift-verdict.json` under `bws_env exec --profile deploy-workers` ran all 15 checks and exited rc=1, red only on check:ci-external-links (`::finding::link:www.ppc.go.jp`, the host does not answer automated clients; the carried red of carried-reds.json). test_release_drift_job.py rc=0 (2f7cc3f07 added the run-budget control).
+    (ticked) 2026-11-06T21:20:10Z by d778be9d: commit:bc59d04d2 (+2f7cc3f07); pytest rc=0; local ci:drift rc=1 with the one carried red (www.ppc.go.jp), recorded under D1
 - [x] D2: ci-drift.yml (daily `15 2 * * *`, `CI - Drift`, timeout 30 min, permissions contents read, the readonly app token for private/renet, OPS_HEALTH_INGEST_TOKEN through bws-secrets, and the ingest POST under `if: always()`).
   (corrected 2026-11-06, review bc59d04d.1 and .3) timeout 40 min around drift_job's 25-minute RUN_BUDGET_S, so the verdict is always written; OPS_HEALTH_INGEST_TOKEN is fetched in its own `if: always()` bws-secrets step after the drift checks, never visible to them.
   - Accept: `npm run check:ci-workflows && npm run check:ci-workflow-invariants && npm run check:ci-bws-step-scope` rc 0.
