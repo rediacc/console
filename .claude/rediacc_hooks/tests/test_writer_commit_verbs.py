@@ -40,6 +40,18 @@ LANDING = [
     ("rebase", "rebase main"),
     ("pull", "pull origin main"),
     ("commit-tree", "commit-tree HEAD^{tree} -m x"),
+    # Review 547cb159.1: these write commits onto refs too, and were admitted before.
+    ("fast-import", "fast-import --quiet"),
+    ("filter-branch", "filter-branch -f HEAD"),
+    ("filter-repo", "filter-repo --force"),
+    ("replay", "replay --onto main HEAD~1..HEAD"),
+]
+# Review 547cb159.2: the landing verbs' no-commit forms apply another commit's change to the main checkout, which is landing, and stay refused (`merge --no-commit` still fast-forwards HEAD).
+NO_COMMIT_LANDING = [
+    ("cherry-pick", "cherry-pick -n 0123abc"),
+    ("revert", "revert --no-commit HEAD"),
+    ("merge", "merge --squash other"),
+    ("merge", "merge --no-commit other"),
 ]
 # `commit` was refused before the fix too, so its rows are the unchanged baseline beside the new verbs.
 ALL_VERBS = [*LANDING, ("commit", "commit -m 'feat: x' -- a.txt")]
@@ -195,6 +207,16 @@ def test_a_writer_command_that_creates_no_commit_is_admitted(world, command):
     assert not refused, err
 
 
+@pytest.mark.parametrize(("verb", "args"), NO_COMMIT_LANDING, ids=[a for _, a in NO_COMMIT_LANDING])
+def test_a_writer_no_commit_landing_in_the_main_checkout_is_refused(world, verb, args):
+    root, lease = world
+    refused, err = _verdict("git %s" % args, root, "general-purpose")
+    assert refused, "a sub-agent's `git %s` in the main checkout was admitted" % args
+    assert "`git %s`" % verb in err
+    leased, err = _verdict("git -C %s %s" % (lease, args), root, "general-purpose")
+    assert not leased, err
+
+
 def test_a_writer_landing_outside_the_checkout_is_admitted(world, tmp_path):
     root, _lease = world
     outside = tmp_path / "outside"
@@ -221,6 +243,12 @@ ALIAS_COMMANDS = [
     ("--config-env", "ZV=am git --config-env=alias.zv=ZV zv fix.mbox"),
     ("alias defined earlier", "git config alias.zq cherry-pick && git zq -x 0123abc"),
     ("alias redefined earlier", "git config alias.lg cherry-pick; git lg -x 0123abc"),
+    # Review 50ba07da.1: a later `[alias]` section in the config file wins, and the hook read the file before the write.
+    (
+        "alias redefined by a file write earlier",
+        "printf '[alias]\\n\\tlg = cherry-pick\\n' >> .git/config && git lg -x 0123abc",
+    ),
+    ("alias redefined by a copy earlier", "cp /tmp/evil.cfg .git/config; git lg -x 0123abc"),
 ]
 
 
@@ -281,6 +309,8 @@ def test_a_writer_alias_from_the_environment_or_an_earlier_step_is_refused(world
         "git -c alias.zl=log zl -n 1",
         "git gc --auto",
         "git -c alias.status=commit status",
+        "cd private/renet && git lg -n 3",
+        "echo x > /dev/null && git lg -n 3",
     ],
 )
 def test_a_writer_alias_that_creates_no_commit_is_admitted(world, command):

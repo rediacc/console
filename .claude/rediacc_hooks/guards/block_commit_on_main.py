@@ -14,9 +14,9 @@ OFF `main` THE TAG IS REFUSED, so the audit stays clean: a `[hotfix]` on a featu
 
 WHAT IS JUDGED. Every `git commit` bash would run in the command (a `sh -c` payload and an `eval` included), each against the branch of the repository it acts on: this checkout, or a submodule inside it through `cd`/`-C` (`git -C private/account commit` on account's `main` is refused like the console's). A repository outside this checkout (a `/tmp` fixture) is not this policy's business. The message is read in the three shapes `block_untagged_commit` established; one this guard cannot read on `main` is refused, because a hotfix it cannot see is not one it can admit. A `-F <file>` that an earlier clause of the same command writes is refused unread on any branch (`commit_policy.written_message_refusal`): its bytes on disk are an earlier command's, and reading them admitted a stale `[hotfix]` onto `main`.
 
-WRITERS NEVER COMMIT IN THE MAIN CHECKOUT (section 3.2 of the commit-policy plan). The lead commits each writer's output once it has spot-checked it, so every git verb that creates a commit (`WRITER_VERBS`: `commit`, and the landing verbs `cherry-pick`, `revert`, `merge`, `am`, `rebase`, `pull` and `commit-tree`, in any `-C`/`cd` spelling and in any submodule of this checkout) from a sub-agent is refused on any branch, unless its repository is a lease tree (`commit_policy.lease_root`), where the writer commits on the detached HEAD and the lead lands it. T0(a) settled how a sub-agent is recognised: PreToolUse fires for a sub-agent's Bash call (probed live 2026-10-04 from a writer: a `timeout 1 sleep 600` was refused by `block_long_sleep`), and the payload carries `agent_id` and `agent_type` only for a sub-agent, never on a main-loop call (measured 2026-08-09, `.claude/hooks/trapguard/dispatch.py`). There is no exemption (operator /ask 2026-10-04 declined one for `pr-babysitter`): a delegated `/pr-babysit bg` loop reports, and the lead commits. Before #60454abe only `commit` was judged, and a landing sub-agent ran `git -C private/renet cherry-pick` in the main checkout unrefused (2026-11-06). A sequencer's `--abort`/`--quit` and the read-only `--show-current-patch` create nothing and stay admitted.
+WRITERS NEVER COMMIT IN THE MAIN CHECKOUT (section 3.2 of the commit-policy plan). The lead commits each writer's output once it has spot-checked it, so every git verb that creates a commit (`WRITER_VERBS`: `commit`, the landing verbs `cherry-pick`, `revert`, `merge`, `am`, `rebase`, `pull` and `commit-tree` with their no-commit forms, and the ref writers `fast-import`, `filter-branch`, `filter-repo` and `replay`, in any `-C`/`cd` spelling and in any submodule of this checkout) from a sub-agent is refused on any branch, unless its repository is a lease tree (`commit_policy.lease_root`), where the writer commits on the detached HEAD and the lead lands it. T0(a) settled how a sub-agent is recognised: PreToolUse fires for a sub-agent's Bash call (probed live 2026-10-04 from a writer: a `timeout 1 sleep 600` was refused by `block_long_sleep`), and the payload carries `agent_id` and `agent_type` only for a sub-agent, never on a main-loop call (measured 2026-08-09, `.claude/hooks/trapguard/dispatch.py`). There is no exemption (operator /ask 2026-10-04 declined one for `pr-babysitter`): a delegated `/pr-babysit bg` loop reports, and the lead commits. Before #60454abe only `commit` was judged, and a landing sub-agent ran `git -C private/renet cherry-pick` in the main checkout unrefused (2026-11-06). A sequencer's `--abort`/`--quit` and the read-only `--show-current-patch` create nothing and stay admitted.
 
-THE VERB IS THE ONE GIT RUNS, NOT THE ONE TYPED (#6bb5e37a). Until then `git -c alias.cp=cherry-pick cp <sha>`, or `git cp` with `alias.cp` in the repository's config, created a commit from a sub-agent unrefused. `resolve` follows the typed verb through the command line's `-c`/`--config-env`/`GIT_CONFIG_*` and the configuration git reads where it runs (`-C` included), alias by alias up to `ALIAS_DEPTH`. Where it cannot read the answer (a `!shell` alias, an unreadable configuration, a chain past the cap, a name that is neither a command nor an alias, a `git config` naming an alias earlier in the same command) a sub-agent in the main checkout is refused, never admitted unread. Lease and lead behave exactly as before.
+THE VERB IS THE ONE GIT RUNS, NOT THE ONE TYPED (#6bb5e37a). Until then `git -c alias.cp=cherry-pick cp <sha>`, or `git cp` with `alias.cp` in the repository's config, created a commit from a sub-agent unrefused. `resolve` follows the typed verb through the command line's `-c`/`--config-env`/`GIT_CONFIG_*` and the configuration git reads where it runs (`-C` included), alias by alias up to `ALIAS_DEPTH`. Where it cannot read the answer (a `!shell` alias, an unreadable configuration, a chain past the cap, a name that is neither a command nor an alias, a `git config` naming an alias earlier in the same command, or any earlier clause that can write a file, such as `printf '[alias]...' >> .git/config`) a sub-agent in the main checkout is refused, never admitted unread. Lease and lead behave exactly as before.
 
 THE GIT-LEVEL TWIN. `.claude/rediacc_hooks/git/commit-msg` enforces the same rule on every commit in a checkout whose `core.hooksPath` points there, including the operator's own terminal; that layer honours `COMMIT_POLICY_OK=1`, this one never does.
 """
@@ -43,12 +43,49 @@ ENVS: list[tuple[str, dict[str, str], dict[str, str]]] = [
 HOTFIX = 'git commit -m "fix(ci): x [hotfix]\n\nHotfix-Evidence: 12345678" -- a.ts'
 
 
-# Every git subcommand that writes a commit onto a ref. `stash` is not here: it writes no branch commit, and its own guard refuses it.
+# Every git subcommand that writes a commit onto a ref. Their no-commit forms stay refused too (`cherry-pick -n`, `revert --no-commit`, `merge --squash`): each applies another commit's change to the main checkout, which is landing, and landing is the lead's (`WRITER_COMMIT`); `merge --no-commit` still fast-forwards HEAD. `fast-import`, `filter-branch`, `filter-repo` and `replay` write commits onto refs as well (review 547cb159.1). `stash` is not here: it writes no branch commit, and its own guard refuses it.
 WRITER_VERBS = frozenset(
-    ("commit", "cherry-pick", "revert", "merge", "am", "rebase", "pull", "commit-tree")
+    (
+        "commit",
+        "cherry-pick",
+        "revert",
+        "merge",
+        "am",
+        "rebase",
+        "pull",
+        "commit-tree",
+        "fast-import",
+        "filter-branch",
+        "filter-repo",
+        "replay",
+    )
 )
 # The sequencer flags that create no commit: leaving an operation, or reading its state.
 NO_COMMIT_FLAGS = frozenset(("--abort", "--quit", "--show-current-patch"))
+# The non-git commands that write no file of their own, so an alias read at hook time is still the one git reads after them. Any other command, and any of these with an output redirect, can write a git configuration file (`printf '[alias]...' >> .git/config`) and redefine a later alias (review 50ba07da.1), so it fails closed.
+INERT_COMMANDS = frozenset(
+    (
+        ":",
+        "[",
+        "cat",
+        "cd",
+        "date",
+        "echo",
+        "false",
+        "grep",
+        "head",
+        "ls",
+        "popd",
+        "printf",
+        "pushd",
+        "pwd",
+        "sleep",
+        "tail",
+        "test",
+        "true",
+        "wc",
+    )
+)
 
 WRITER_COMMIT = (
     "BLOCKED: a sub-agent (`%s`) is committing (`git %s`), and writers never commit.\n"
@@ -282,11 +319,37 @@ def resolve(run, base, created=frozenset()):
             return done()
 
 
+def _file_writer(run):
+    """A label for a non-git `run` that can write a git configuration file, "" for one that cannot (an `INERT_COMMANDS` name with no output redirect)."""
+    from rediacc_hooks import shellscan
+
+    name = commit_policy._base(run.name)
+    targets = [
+        t
+        for t in shellscan.redirect_targets(run)
+        if t not in ("/dev/null", "/dev/stdout", "/dev/stderr", "/dev/tty")
+        and not t.startswith("/dev/fd/")
+    ]
+    if targets:
+        return "%s > %s" % (name, targets[0])
+    if name in INERT_COMMANDS:
+        return ""
+    # A `sh -c` payload and an `eval` string are walked into runs of their own, which this loop judges in turn.
+    if name == "eval" or (name in ("sh", "bash", "dash", "zsh") and "-c" in run.argv):
+        return ""
+    return " ".join([name, *run.argv][:4])
+
+
 def writer_runs(cmd, base, created=frozenset()):
     """Every git invocation in `cmd` that creates a commit (`WRITER_VERBS`, through any alias), minus a sequencer's `--abort`/`--quit`/`--show-current-patch`, plus every one `resolve` cannot read."""
     found = []
     defining = ""
-    for run in commit_policy.git_runs(cmd):
+    for run in commit_policy.runs(cmd):
+        if commit_policy._base(run.name) != "git":
+            label = _file_writer(run)
+            if label and not defining:
+                defining = label
+            continue
         write = resolve(run, base, created)
         # An alias read at hook time is the configuration BEFORE the command runs, so a `git config` earlier in the same command that names an alias or an include can redefine what the later verb means.
         if defining and not write.refusal and write.typed not in WRITER_VERBS | PLAIN_VERBS:
