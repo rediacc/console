@@ -632,6 +632,26 @@ TOOLS: tuple[Tool, ...] = (
         ),
     ),
     Tool(
+        name="cosign",
+        purpose="the sigstore verifier `npm run pins -- bump` runs over a signed SHA256SUMS (the opentofu pin)",
+        pin_key="COSIGN_VERSION",
+        install={
+            "apt": ".ci/bootstrap.sh install cosign",
+            "dnf": ".ci/bootstrap.sh install cosign",
+            "pacman": ".ci/bootstrap.sh install cosign",
+            "apk": ".ci/bootstrap.sh install cosign",
+            "brew": ".ci/bootstrap.sh install cosign",
+            "repo": ".ci/bootstrap.sh install cosign   # sigstore release binary, sha256-checked, into .ci/cache/toolchain/cosign/<pin>",
+        },
+        provenance=(".ci/bootstrap.sh install_cosign and .devcontainer/toolchain.env COSIGN_VERSION"),
+        probe=("cosign", "version"),
+        note=(
+            "OPTIONAL ON A DEVELOPER HOST: only a bump of a cosign-signed pin needs it. It lives in a "
+            "cache directory rather than on PATH, so it reads ABSENT here while the pins tool works: "
+            "scripts/pins/signed-release.ts resolves PINS_COSIGN, then that cache at the pin, then PATH."
+        ),
+    ),
+    Tool(
         name="gitleaks",
         purpose="the tracked-credentials scan",
         pin_key=None,

@@ -95,6 +95,8 @@ toolchain_probe_version() {
             ;;
         # agg prints `agg 1.9.0`: the second word.
         agg) out="$("$bin" --version 2>/dev/null | head -1 | awk '{print $2}')" ;;
+        # cosign prints a block with `GitVersion:    v2.6.5`: the value, `v` stripped.
+        cosign) out="$("$bin" version 2>/dev/null | awk '/^GitVersion:/ {print $2}')" ;;
         *) return 2 ;;
     esac
     # Strip a leading v or go, then keep the leading dotted-numeric run.
@@ -128,6 +130,7 @@ toolchain_pin_for() {
         pytest) key=PYTEST_VERSION ;;
         aws) key=AWSCLI_VERSION ;;
         agg) key=AGG_VERSION ;;
+        cosign) key=COSIGN_VERSION ;;
         *) return 2 ;;
     esac
     printf '%s' "${!key:-}"

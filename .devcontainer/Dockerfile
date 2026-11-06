@@ -531,6 +531,25 @@ RUN . /etc/rediacc/toolchain.env \
     && rm -rf /tmp/aws /tmp/awscliv2.zip \
     && aws --version | grep -q "^aws-cli/${AWSCLI_VERSION} "
 
+# cosign -- the sigstore verifier `npm run pins -- bump` runs over a signed SHA256SUMS
+# (scripts/pins/signed-release.ts). Without it a bump of a cosign-signed pin (opentofu)
+# REFUSES. The release binary at COSIGN_VERSION, checked against the sha256 toolchain.env
+# records for this arch BEFORE it is made executable (the same asset and hash
+# .ci/bootstrap.sh install_cosign uses), and verified by the version it reports.
+RUN . /etc/rediacc/toolchain.env \
+    && : "${COSIGN_VERSION:?toolchain.env did not define COSIGN_VERSION}" \
+    && case "$(dpkg --print-architecture)" in \
+    amd64) COSIGN_ARCH=amd64 COSIGN_SHA="${COSIGN_SHA256_LINUX_AMD64:?}" ;; \
+    arm64) COSIGN_ARCH=arm64 COSIGN_SHA="${COSIGN_SHA256_LINUX_ARM64:?}" ;; \
+    *) echo "unsupported arch for cosign: $(dpkg --print-architecture)" >&2; exit 1 ;; \
+    esac \
+    && curl -fsSL $CURL_RETRY -o /tmp/cosign \
+        "https://github.com/sigstore/cosign/releases/download/v${COSIGN_VERSION}/cosign-linux-${COSIGN_ARCH}" \
+    && echo "${COSIGN_SHA}  /tmp/cosign" | sha256sum -c - \
+    && install -m 0755 /tmp/cosign /usr/local/bin/cosign \
+    && rm -f /tmp/cosign \
+    && cosign version | grep -q "^GitVersion: *v${COSIGN_VERSION}$"
+
 # glab — GitLab CLI (https://gitlab.com/gitlab-org/cli)
 ARG GLAB_VERSION=1.90.0
 # From the release's own checksums.txt:
