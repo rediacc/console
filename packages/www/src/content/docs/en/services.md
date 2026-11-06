@@ -28,14 +28,15 @@ Hidden directories (names starting with `.`) are skipped.
 
 ### Lifecycle Functions
 
-A Rediaccfile contains up to two functions:
+renet runs these Rediaccfile functions:
 
 | Function | When it runs | Purpose | Error behavior |
 |----------|-------------|---------|----------------|
 | `up()` | When starting | Start services (e.g., `renet compose -- up -d`) | Root failure is **critical** (stops everything). Subdirectory failures are **non-critical** (logged, continues) |
 | `down()` | When stopping | Stop services (e.g., `renet compose -- down`) | **Best-effort** -- failures are logged but all Rediaccfiles are always attempted |
+| `health()` | On `rdc repo health`, on `rdc machine health`, and in the deploy health gate | Report the repository's own health: exit `0` ok, `1` warning, `2` error | Every Rediaccfile's `health()` runs and the worst level counts. Exit `75` means still warming (a warning). Any other exit, a signal or a timeout is an error. A repository where no Rediaccfile defines `health()` reports **no check**, never healthy |
 
-Both functions are optional. If a function is not defined, it is silently skipped.
+Every function is optional. If a function is not defined, it is silently skipped.
 
 ### Execution Order
 
@@ -110,7 +111,7 @@ Each Docker unit runs a stop hook before the daemon is signalled. The hook runs 
 `up()` and `down()` get 10 minutes each by default, set with `RENET_UP_TIMEOUT` and `RENET_DOWN_TIMEOUT` or `--up-timeout` and `--down-timeout`. On a timeout the process group gets SIGTERM, then SIGKILL after 10 seconds. A path that needs `down()` first, such as `repo down --unmount` or a converge restart, leaves the containers running when `down()` times out, and `--force` continues. A Rediaccfile can raise a limit with a comment line:
 
 ```bash
-# rediacc:timeout up=20m down=15m backup=120s
+# rediacc:timeout up=20m down=15m backup=120s health=60s
 ```
 
 | Key | Default | Cap |
@@ -118,6 +119,9 @@ Each Docker unit runs a stop hook before the daemon is signalled. The hook runs 
 | `up` | 10 minutes | 60 minutes |
 | `down` | 10 minutes | 15 minutes |
 | `backup` | 30 seconds | 300 seconds |
+| `health` | 30 seconds | 300 seconds |
+
+`health()` is bounded the same way: its default is set with `RENET_HEALTH_TIMEOUT`, and on a timeout its process group gets SIGTERM, then SIGKILL after 10 seconds. The deploy health gate reads a timed-out `health()` as still warming and retries; `rdc repo health` and `rdc machine health` report it as an error.
 
 A directive only raises a limit and is clamped to its cap, so the repository cannot shorten `down()` into a kill. Unknown keys are ignored with a warning.
 

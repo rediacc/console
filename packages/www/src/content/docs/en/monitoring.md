@@ -25,9 +25,29 @@ This reports:
 - **System**: uptime, disk usage, datastore usage
 - **Containers**: running, healthy, unhealthy counts
 - **Storage**: SMART health status
+- **Repository health**: each mounted repository's own `health()` result (see below)
+- **Certificates**: the proxy's certificates close to expiry, and shared ACME challenge CNAMEs
 - **Issues**: identified problems
 
-Use `--output json` for machine-readable output.
+The exit code is the verdict: `0` healthy, `1` warning, `2` error. Use `--output json` for machine-readable output; it carries `repo_health` (one report per repository) and `findings`, each with a code, a severity, a subject and a detail.
+
+## Repository Health
+
+A Rediaccfile can define a `health()` function that checks the repository's own services ([Services](/en/docs/services)): exit `0` ok, `1` warning, `2` error. Run it for one repository:
+
+```bash
+rdc repo health my-app@server-1
+```
+
+The command exits with the worst level across the repository's Rediaccfiles. A repository where no Rediaccfile defines `health()` prints **no check** and exits `0`; it is never reported as healthy. A `health()` that times out, is killed or exits with any other code is an error, and so is a failure to reach the machine (exit `2`).
+
+`rdc machine health` runs every mounted repository's `health()` in one call and folds the worst level into its own exit code, with one finding per repository at warning (`repo.health.warning`) or error (`repo.health.error`). Repositories without a check are listed, not reported. When the machine's renet predates repository health checks, the result is one warning, `renet.repo-health.unsupported`, until `rdc machine setup` updates it.
+
+## Certificate Expiry and ACME Challenges
+
+`rdc machine health` reads the proxy's ACME certificates and reports `cert.expiry.near` for each one under 21 days from expiry (a warning) or under 7 days (an error). The proxy renews 30 days ahead, so a certificate under 21 days means its renewal has failed for at least nine days.
+
+It also reports `acme.challenge.cname-shared` when the `_acme-challenge.<name>` record of a certificate name follows a CNAME to a name that is not itself an `_acme-challenge.` name, or when two names end at the same name. A wildcard record that is a CNAME produces this shape: every challenge lands on one name and the renewals collide. A deliberate delegation (for example `_acme-challenge.mail.example.com` pointing at `_acme-challenge.mail.example.io`) is not reported; list any other intended delegation in `ACME_DELEGATED_NAMES` (a comma list of certificate names) in the proxy's `config.env`.
 
 ## List Containers
 
