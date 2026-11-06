@@ -432,6 +432,10 @@ SIG_CASES = {
         "  Bitwarden CLI (pinned 2026.9.0): GET api.github.com/repos/bitwarden/clients/releases -> HTTP 503, after 3 attempt(s)",
         "? Bitwarden CLI: attempt 1 of 3 failed (HTTP 503), asking again in 2 s",
     ),
+    "audit-finding": (
+        "\u2717 Stale allowlist entry: 1244012 does not appear in audit-report.json",
+        "\u2713 No production vulnerabilities",
+    ),
     "pin-stale": (
         "\u2717 1 devcontainer pin(s) are behind upstream:",
         "\u2713 Every devcontainer pin is current or deferred (5 of 5 compared with upstream, 0 held).",
@@ -1249,3 +1253,37 @@ def test_span_of_a_job_cancelled_before_it_ran_is_no_duration():
     """FIRES-if-unfixed: run 37633980671 a2 (2026-10-07) carried started_at after completed_at, and `--history` printed "-7m40s"."""
     assert D._span("2026-10-07T14:20:00Z", "2026-10-07T14:12:20Z") is None
     assert D._span("2026-10-07T14:12:20Z", "2026-10-07T14:20:00Z") == 460
+
+
+# The excerpt of run 42182422300's Security job (job 127846206473), PLAN-health-checks-local N6 / F11. The Bitwarden fetch SUCCEEDED; the only line that names `bws` beside a three-digit 5xx number is a gate's own success line, where 520 is a COUNT of `env.BWS_*` reads. The exit 1 came from `npm audit`'s allowlist check.
+SECURITY_AUDIT_RUN = [
+    "2026-11-06T10:37:29.7286673Z Authenticating with Bitwarden...",
+    "2026-11-06T10:37:56.4608282Z ✓ bws map: 151 secret(s) mapped, 27 caller file(s) all resolve (floor 19), 520 env.BWS_* read(s) each supplied by a fetch above it",
+    "2026-11-06T10:38:40.2847563Z → Auditing production dependencies (no allowlist for new advisories)",
+    "2026-11-06T10:38:40.7338308Z ✓ No production vulnerabilities",
+    "2026-11-06T10:38:40.7338877Z → Auditing all dependencies (allowlist for dev-only)",
+    "2026-11-06T10:38:42.2973717Z ✗ Stale allowlist entry: 1244012 does not appear in audit-report.json",
+    "2026-11-06T10:38:42.2976464Z ✗ Allowlist problems found — see errors above: an entry either has an available fix without a BLOCKER annotation, or is stale",
+    "2026-11-06T10:38:42.3172227Z ##[error]Process completed with exit code 1.",
+]
+
+
+def test_an_npm_audit_exit_after_successful_bitwarden_lines_is_the_audit_finding():
+    """The current classifier read the count `520` on the bws success line as an HTTP 5xx and called the job infrastructure, so a re-run was advised for a red that is a stale allowlist entry in the tree."""
+    assert D.classify(SECURITY_AUDIT_RUN) == ("code-likely", "audit-finding")
+    assert "allowlist" in D.signature_label("audit-finding")
+
+
+def test_a_success_line_is_never_a_signature_hit():
+    """Control on the cause: the success-marked line alone is no hit, so the verdict does not depend on the audit row outranking it."""
+    assert D._sig_hit(SECURITY_AUDIT_RUN[1]) is None
+    assert D.classify(SECURITY_AUDIT_RUN[:2]) == ("unknown", "")
+
+
+def test_a_real_bitwarden_5xx_still_reads_infra_beside_the_audit_lines():
+    """Control for the other direction: a genuine Bitwarden failure is still infrastructure, and still outranks the audit finding."""
+    lines = [
+        "2026-11-06T10:37:30.0000000Z ##[warning]bws-secrets: attempt 4 of 4 failed (Received error message from server: [502 Bad Gateway])",
+        *SECURITY_AUDIT_RUN[5:],
+    ]
+    assert D.classify(lines) == ("infra-likely", "bitwarden-5xx")

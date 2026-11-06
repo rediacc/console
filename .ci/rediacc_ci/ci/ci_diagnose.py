@@ -192,6 +192,14 @@ SIGNATURES = (
         "a pinned version is behind upstream (the message names the bump command)",
         0,
     ),
+    # `npm audit`'s allowlist check (rediacc_ci.security.audit). Security job 127846206473 (run 42182422300) failed on a stale allowlist entry and read `bitwarden-5xx`, because a gate's success line carried the count 520 beside `bws`.
+    (
+        "audit-finding",
+        "code",
+        re.compile(r"\u2717 (?:Stale allowlist entry|Allowlist problems found)"),
+        "npm audit found an allowlist problem or an advisory in the tree (delete the stale entry or fix the dependency)",
+        0,
+    ),
     ("go-fail", "code", re.compile(r"^--- FAIL: "), "a Go test failed", 0),
     # This repo's gates print `::finding::<key>` beside the finding they report (Quality / Branch on run 36974364712: `::finding::P-A1:...` under "P-A1 OPEN BOXES").
     ("gate-finding", "code", re.compile(r"^::finding::\S"), "a repo gate reported a finding", 0),
@@ -789,6 +797,9 @@ RETRY_NOTE_RE = re.compile(r"attempt \d+ of \d+ failed \(.*\), asking again in "
 def _sig_hit(line):
     body = SHORT_TS_RE.sub("", TS_RE.sub("", line, count=1), count=1)
     if RETRY_NOTE_RE.search(body):
+        return None
+    # A line a gate marks as a pass is no failure signature: `\u2713 bws map: ..., 520 env.BWS_* read(s)` matched the Bitwarden 5xx row on its COUNT.
+    if body.lstrip().startswith("\u2713"):
         return None
     for sid, cat, rx, label, min_s in SIGNATURES:
         m = rx.search(body)
