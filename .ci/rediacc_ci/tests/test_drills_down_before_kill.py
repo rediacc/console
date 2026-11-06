@@ -12,6 +12,7 @@ from typing import Any
 
 import pytest
 
+from rediacc_ci import well_known
 from rediacc_ci.drills import down_before_kill as k
 from rediacc_ci.drills import upgrade_converge, vm_check
 
@@ -83,7 +84,7 @@ def test_probe_down_writes_its_line_before_it_sleeps() -> None:
     ("path", "want"),
     [
         # Each expectation is what `systemd-escape --path` printed for the same input (systemd 255).
-        ("/mnt/rediacc/mounts/ab-cd.ef_g:h", "mnt-rediacc-mounts-ab\\x2dcd.ef_g:h"),
+        (well_known.DATASTORE_PATH + "/mounts/ab-cd.ef_g:h", "mnt-rediacc-mounts-ab\\x2dcd.ef_g:h"),
         ("/.x/y", "\\x2ex-y"),
         ("//a//b/", "a-b"),
         ("/", "-"),
@@ -1024,7 +1025,7 @@ def test_cleanup_deletes_the_fork_before_the_grand(tmp_path: pathlib.Path) -> No
 
 def test_no_hardcoded_mount_root() -> None:
     source = pathlib.Path(k.__file__).read_text()
-    assert '"/mnt/rediacc' not in source
+    assert '"' + well_known.DATASTORE_PATH not in source
 
 
 def test_parse_unit_empty_exec_stop_resets_the_list() -> None:
