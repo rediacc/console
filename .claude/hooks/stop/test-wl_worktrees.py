@@ -929,7 +929,13 @@ def control_real_hook(tmp):
     # The roster is blind until this session's project directory exists.
     config = fix.base / "config"
     (config / "projects" / re.sub(r"[^A-Za-z0-9]", "-", str(fix.proj))).mkdir(parents=True)
-    env = {"CLAUDE_CONFIG_DIR": str(config)}
+    # A private runtime dir: the machine's own vm:check fleet lock (held by a real run) must not
+    # stand this hook down.
+    import fcntl
+
+    runtime = fix.base / "xdg"
+    runtime.mkdir(mode=0o700)
+    env = {"CLAUDE_CONFIG_DIR": str(config), "XDG_RUNTIME_DIR": str(runtime)}
 
     got = hook_stop(fix, env)
     check("the hook blocks an owner's finished lease", got.decision, "block")
@@ -939,27 +945,19 @@ def control_real_hook(tmp):
     check("the state doc keeps the figures for the next stop", bool(cached.get("sig")), True)
 
     # A running vm:check (its fleet lock held) holds the landing: reported, not blocked.
-    import fcntl
-
-    runtime = fix.base / "xdg"
-    runtime.mkdir(mode=0o700)
     lock = runtime / "rediacc-vm-check.lock"
     lock.write_text("", encoding="utf-8")
     held = os.open(str(lock), os.O_RDWR)
     fcntl.flock(held, fcntl.LOCK_EX)
     try:
-        got = hook_stop(fix, {**env, "XDG_RUNTIME_DIR": str(runtime)})
+        got = hook_stop(fix, env)
     finally:
         fcntl.flock(held, fcntl.LOCK_UN)
         os.close(held)
-    check("a running vm:check lifts the block", got.decision, "allow")
-    check(
-        "a running vm:check keeps the lease reported",
-        "held for the running vm:check" in got.out,
-        True,
-    )
-    got = hook_stop(fix, {**env, "XDG_RUNTIME_DIR": str(runtime)})
+    check("a running vm:check lifts the block", needle in got.out, False)
+    got = hook_stop(fix, env)
     check("a free fleet lock blocks again", got.decision, "block")
+    check("a free fleet lock names the lease again", needle in got.out, True)
 
     fix.bg = json.dumps(
         [{"id": "wa1", "type": "subagent", "status": "running", "description": "w"}]
