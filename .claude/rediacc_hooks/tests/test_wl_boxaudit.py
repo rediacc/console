@@ -441,7 +441,7 @@ def test_the_descends_memo_asks_git_once_per_pair(world, monkeypatch):
         return real(root, *args)
 
     monkeypatch.setattr(BA, "_git", counting)
-    memo = {}
+    memo: dict[tuple[str, str], bool] = {}
     older, newer = world.shas["tick"], world.shas["live"]
     assert BA._descends(world.root, older, newer, memo)
     assert BA._descends(world.root, older, newer, memo)

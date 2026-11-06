@@ -1551,9 +1551,14 @@ def test_kin_of_reads_the_sidecars_once_per_name(tmp_path, monkeypatch):
     root = tmp_path / "s" / "subagents"
     root.mkdir(parents=True)
     (root / "agent-asender.meta.json").write_text("{}", encoding="utf-8")
-    calls = []
+    calls: list[str] = []
     real = report._named
-    monkeypatch.setattr(report, "_named", lambda r, n: calls.append(n) or real(r, n))
+
+    def counting(r, n):
+        calls.append(n)
+        return real(r, n)
+
+    monkeypatch.setattr(report, "_named", counting)
     report.kin_of("asender", str(root / "agent-asender.jsonl"), ["bob", "bob", "bob"])
     assert calls == ["bob"]
 
