@@ -200,7 +200,7 @@ async function handleCheckout(
   }
 }
 
-/** The success step of `repo log`: the entries the job printed, as JSON under `-o json` and as rows otherwise. */
+/** The success step of `repo log`: the entries the job printed, as one structured document under any non-table `-o` format (json, yaml) and as rows otherwise. */
 bindStepHandler('renderRepoLog', ({ output }) => {
   const text = requireStepOutput(output, 'repo log');
   if (text === undefined) return Promise.resolve();

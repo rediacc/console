@@ -18,6 +18,7 @@ import { recordedDatastoreMount } from '../utils/repo-executor.js';
 import { resolveRepoRef } from '../utils/repo-target.js';
 import { bwlimitParam } from './bwlimit-param.js';
 import { coerceCliParams, validateFunctionParams } from './function-params.js';
+import { settleHandedBack } from './repo-batch-utils.js';
 import { applyPullDeltaParams, applyPushDeltaParams } from './repo-delta.js';
 
 interface BackupRunOptions {
@@ -205,11 +206,7 @@ export async function postPushDeploy(
     params: { repository: repo, mount: true },
     debug: options.debug as boolean | undefined,
   });
-  // A job handed back (`--background`, a lost tail) is still running: the deploy has no outcome yet, so no success line and no verdict.
-  if (upResult.state === 'running') {
-    if (!upResult.success) setExitCode(upResult.exitCode);
-    return;
-  }
+  if (settleHandedBack(upResult)) return;
   if (upResult.success) {
     outputService.success(t('commands.repo.push.deployed', { repo, machine: targetName }));
   } else {
@@ -396,11 +393,7 @@ export async function postPullDeploy(
     params: { repository: repo, mount: true },
     debug: options.debug as boolean | undefined,
   });
-  // A job handed back (`--background`, a lost tail) is still running: the deploy has no outcome yet, so no success line and no verdict.
-  if (upResult.state === 'running') {
-    if (!upResult.success) setExitCode(upResult.exitCode);
-    return;
-  }
+  if (settleHandedBack(upResult)) return;
   if (upResult.success) {
     outputService.success(t('commands.repo.pull.deployed', { repo, machine: targetMachine }));
   } else {

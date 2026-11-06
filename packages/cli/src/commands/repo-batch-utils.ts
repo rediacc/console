@@ -6,7 +6,7 @@ import { getDatastore, requireDatastoreHost } from '../services/config/config-da
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
 import { setExitCode } from '../services/core/request-context.js';
-import { getExecutor } from '../services/executor/executor-factory.js';
+import { type ExecuteResult, getExecutor } from '../services/executor/executor-factory.js';
 import { pendingExitCode, runCommandJob } from '../services/jobs/command-job.js';
 import { bindStepHandler, planStep } from '../services/jobs/steps.js';
 import type { MachineConnectionLease } from '../services/machine/machine-connection.js';
@@ -261,6 +261,19 @@ export function printServiceUrlPattern(repoName: string, machineDomain: string):
   }
 }
 
+/**
+ * A job handed back (`--background`, a lost tail, a Ctrl-C detach) is still running: it has no outcome yet, so the
+ * caller prints no success line and no failure. The executor already printed the ticket or resume hint; a lost tail
+ * or a detach carries a non-zero exit code, which is kept. True when the call was handed back.
+ */
+export function settleHandedBack(
+  result: Pick<ExecuteResult, 'state' | 'success' | 'exitCode'>
+): boolean {
+  if (result.state !== 'running') return false;
+  if (!result.success) setExitCode(result.exitCode);
+  return true;
+}
+
 export async function handleUpAll(options: {
   machine?: string;
   /** Commander sets this false when `--no-start` is passed (mount-only batch). */
@@ -295,11 +308,7 @@ export async function handleUpAll(options: {
     skipRouterRestart: options.skipRouterRestart,
   });
 
-  // A job handed back (`--background`, a lost tail) is still running: the executor printed its ticket, and nothing has completed.
-  if (result.state === 'running') {
-    if (!result.success) setExitCode(result.exitCode);
-    return;
-  }
+  if (settleHandedBack(result)) return;
   if (result.success) {
     outputService.success(t('commands.repo.upAll.completed'));
   } else {
@@ -341,11 +350,7 @@ export async function handleDownAll(options: {
     skipRouterRestart: options.skipRouterRestart,
   });
 
-  // A job handed back (`--background`, a lost tail) is still running: the executor printed its ticket, and nothing has completed.
-  if (result.state === 'running') {
-    if (!result.success) setExitCode(result.exitCode);
-    return;
-  }
+  if (settleHandedBack(result)) return;
   if (result.success) {
     outputService.success(t('commands.repo.down.allCompleted'));
   } else {

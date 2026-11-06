@@ -116,9 +116,10 @@ vi.mock('../function-params.js', () => ({
   coerceCliParams: (_fn: string, params: Record<string, unknown>) => params,
   validateFunctionParams: vi.fn(),
 }));
+const outputFormat = vi.hoisted(() => ({ current: 'table' }));
 vi.mock('../../utils/errors.js', async (orig) => ({
   ...(await orig<Record<string, unknown>>()),
-  getOutputFormat: () => 'table',
+  getOutputFormat: () => outputFormat.current,
   handleError: (e: unknown) => {
     throw e;
   },
@@ -257,6 +258,17 @@ describe('repo diff', () => {
       mode: 'name-only',
       format: 'table',
     });
+  });
+
+  it('carries the global output format onto the step, so -o yaml renders as yaml', async () => {
+    answer = finished(diff);
+    outputFormat.current = 'yaml';
+    try {
+      await run(registerRepoDiffCommand, 'diff', 'shop', '--base', 'other', '--stat');
+    } finally {
+      outputFormat.current = 'table';
+    }
+    expect(jobStarts()[0].jobSteps?.[0].params).toMatchObject({ mode: 'stat', format: 'yaml' });
   });
 
   it('control: under --background nothing is rendered', async () => {
