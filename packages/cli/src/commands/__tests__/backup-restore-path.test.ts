@@ -9,6 +9,7 @@
 
 import { Command } from 'commander';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { PlannedStep } from '../../services/jobs/steps-support.js';
 
 vi.mock('../../i18n/index.js', () => ({
   t: (key: string, params?: Record<string, unknown>) =>
@@ -63,9 +64,10 @@ vi.mock('../../utils/command-policy.js', () => ({
 
 const mockWarn = vi.hoisted(() => vi.fn());
 const mockSuccess = vi.hoisted(() => vi.fn());
+const mockInfo = vi.hoisted(() => vi.fn());
 vi.mock('../../services/core/output.js', () => ({
   outputService: {
-    info: vi.fn(),
+    info: mockInfo,
     success: mockSuccess,
     warn: mockWarn,
     error: vi.fn(),
@@ -256,7 +258,7 @@ describe('backup restore --path', () => {
     // The command itself plans the failure step: its name, its trigger and its params come from the real `backup restore --path` run, not from this test.
     await run(['r@m1', '--at', SNAPSHOT, '--path', '/a']);
     const { job } = mockExecuteRepoFunction.mock.calls[0][4] as {
-      job: { steps: { name: string; params: Record<string, unknown> }[] };
+      job: { steps: PlannedStep[] };
     };
     const planned = job.steps.find((step) => step.name === 'reportRestorePathFailure');
     expect(planned?.params).toEqual({ repo: 'r', snapshot: SNAPSHOT });
@@ -289,6 +291,51 @@ describe('backup restore --path', () => {
     expect(process.exitCode).toBe(19);
     expect(mockWarn).not.toHaveBeenCalled();
     expect(mockSuccess).not.toHaveBeenCalled();
+  });
+
+  // The record is what tells the operator that a path restore fetched a fraction of the image: 3 of 100 cells here.
+  it('prints the fetched-cells line from the record, selected below total', async () => {
+    await run(['r@m1', '--at', SNAPSHOT, '--path', '/a']);
+    const { job } = mockExecuteRepoFunction.mock.calls[0][4] as { job: { steps: PlannedStep[] } };
+    const planned = job.steps.find((step) => step.name === 'reportRestorePath');
+    const { resolveStepHandler } = await import('../../services/jobs/steps.js');
+    const handler = await resolveStepHandler('reportRestorePath');
+    expect(record.chunksFetched).toBeLessThan(record.cellsTotal);
+    await handler({
+      jobId: 'j1',
+      machine: 'm1',
+      params: planned?.params ?? {},
+      state: 'succeeded',
+      output: `${JSON.stringify(record)}\n`,
+      exitCode: 0,
+    });
+    expect(mockInfo).toHaveBeenCalledTimes(1);
+    expect(mockInfo.mock.calls[0][0]).toContain(
+      `commands.backup.restore.pathFetched {"selected":3,"total":100,`
+    );
+  });
+
+  // renet exits 19 (NO_SUCH_PATH) when the snapshot has a listing and the path is not in it. The failure step must not
+  // recast it as the exit-18 "no listing" warning, nor print a success; the 19 stays the process exit code.
+  it('keeps exit 19 for a path missing from a snapshot that has a listing', async () => {
+    await run(['r@m1', '--at', SNAPSHOT, '--path', '/nope']);
+    const { job } = mockExecuteRepoFunction.mock.calls[0][4] as { job: { steps: PlannedStep[] } };
+    const planned = job.steps.find((step) => step.name === 'reportRestorePathFailure');
+    const { resolveStepHandler } = await import('../../services/jobs/steps.js');
+    const handler = await resolveStepHandler('reportRestorePathFailure');
+    process.exitCode = 19;
+    await handler({
+      jobId: 'j1',
+      machine: 'm1',
+      params: planned?.params ?? {},
+      state: 'failed',
+      output: `${JSON.stringify({ code: 'NO_SUCH_PATH', snapshotId: SNAPSHOT })}\n`,
+      exitCode: 19,
+    });
+    expect(process.exitCode).toBe(19);
+    expect(mockWarn).not.toHaveBeenCalled();
+    expect(mockSuccess).not.toHaveBeenCalled();
+    expect(mockInfo).not.toHaveBeenCalled();
   });
 
   it('with a cluster place and -m, runs on -m and scopes the stream to -m', async () => {
