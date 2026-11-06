@@ -6,7 +6,8 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { resolveTermOutputMode } from '../term.js';
+import { ValidationError } from '../../types/errors.js';
+import { assertCommandNotBlank, resolveTermOutputMode } from '../term.js';
 
 describe('resolveTermOutputMode', () => {
   it('interactive shell: keep spinners + force TTY', () => {
@@ -25,5 +26,16 @@ describe('resolveTermOutputMode', () => {
       quietOutput: false,
       noTTY: false,
     });
+  });
+});
+
+describe('assertCommandNotBlank', () => {
+  it.each(['', '   ', '\t\n'])('refuses %j before any SSH', (command) => {
+    expect(() => assertCommandNotBlank({ command })).toThrow(ValidationError);
+  });
+
+  it('accepts a real command and an omitted -c', () => {
+    expect(() => assertCommandNotBlank({ command: 'uptime' })).not.toThrow();
+    expect(() => assertCommandNotBlank({})).not.toThrow();
   });
 });
