@@ -237,11 +237,9 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
   private async retire(to: number): Promise<void> {
     this.retiredTo = to;
     this.draining = true;
-    try {
-      await this.ctx.storage.put(RETIRED_KEY, { to });
-    } catch {
-      console.warn('proxy: org executor retired state not stored');
-    }
+    await this.ctx.storage
+      .put(RETIRED_KEY, { to })
+      .catch(() => console.warn('proxy: org executor retired state not stored'));
     if (this.inFlight === 0) await this.finishDrain();
   }
 

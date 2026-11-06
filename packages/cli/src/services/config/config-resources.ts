@@ -28,7 +28,12 @@ import type {
 } from '../../types/index.js';
 import { outputService } from '../core/output.js';
 import { currentRequestConfig } from '../core/request-context.js';
-import { ConfigAccessService, dropAccessBindings } from './config-access.js';
+import {
+  applyDestinationRemoval,
+  applyDestinationUpsert,
+  applyStrategyUpdate,
+} from './backup-strategy-edits.js';
+import { ConfigAccessService, dropAccessBindings, hasAccessBindings } from './config-access.js';
 import {
   assertClusterMembersUnique,
   assertUniqueName,
@@ -241,12 +246,8 @@ class ConfigService extends ConfigAccessService {
     // A removed machine keeps no access-key binding (PLAN-ssh-key-source-ranges Design 4). The
     // bindings go first, so a failed prune leaves the machine in place instead of orphaned bindings.
     const access = (await this.getCurrent())?.access;
-    const bound = Object.values(access?.keys ?? {}).some(
-      (key) => key.machines?.[machineName] !== undefined
-    );
-    if (bound) {
-      await this.updateAccess((current) => dropAccessBindings(current, machineName));
-    }
+    const bound = hasAccessBindings(access, machineName);
+    if (bound) await this.updateAccess((current) => dropAccessBindings(current, machineName));
 
     delete machines[machineName];
     try {
@@ -557,10 +558,9 @@ class ConfigService extends ConfigAccessService {
     strategyName: string,
     update: Partial<BackupStrategyConfig>
   ): Promise<void> {
-    await this.editBackupStrategies((strategies) => {
-      const existing = strategies[strategyName] ?? { destinations: [], schedule: '' };
-      strategies[strategyName] = { ...existing, ...update };
-    });
+    await this.editBackupStrategies((strategies) =>
+      applyStrategyUpdate(strategies, strategyName, update)
+    );
   }
 
   async removeBackupStrategy(strategyName: string): Promise<void> {
@@ -577,27 +577,15 @@ class ConfigService extends ConfigAccessService {
         `Backup strategy "${strategyName}" not found. Create it first with: rdc backup strategy set ${strategyName} --cron "..."`
       );
     }
-    await this.editBackupStrategies((strategies) => {
-      const strategy = strategies[strategyName] as BackupStrategyConfig | undefined;
-      if (!strategy) throw new Error(`Backup strategy "${strategyName}" not found`);
-      const destinations = [...strategy.destinations];
-      const idx = destinations.findIndex((d) => d.name === dest.name);
-      if (idx >= 0) destinations[idx] = { ...destinations[idx], ...dest };
-      else destinations.push(dest);
-      destinations.sort((a, b) => a.name.localeCompare(b.name));
-      strategies[strategyName] = { ...strategy, destinations };
-    });
+    await this.editBackupStrategies((strategies) =>
+      applyDestinationUpsert(strategies, strategyName, dest)
+    );
   }
 
   async removeBackupDestination(strategyName: string, destName: string): Promise<void> {
-    await this.editBackupStrategies((strategies) => {
-      if (!Object.hasOwn(strategies, strategyName)) return;
-      const strategy = strategies[strategyName];
-      strategies[strategyName] = {
-        ...strategy,
-        destinations: strategy.destinations.filter((d) => d.name !== destName),
-      };
-    });
+    await this.editBackupStrategies((strategies) =>
+      applyDestinationRemoval(strategies, strategyName, destName)
+    );
   }
 
   /**

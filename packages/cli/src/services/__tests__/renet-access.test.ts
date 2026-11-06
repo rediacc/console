@@ -27,6 +27,12 @@ vi.mock('../core/embedded-assets.js', () => ({
   isSEA: () => false,
 }));
 
+// A release build: a development build holds the machine's renet (renet-provision-hold.test.ts).
+vi.mock('../../utils/platform.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../utils/platform.js')>()),
+  isDevBuild: () => false,
+}));
+
 vi.mock('../machine/machine-connection.js', () => ({
   sftpConfigForMachine: vi.fn(() => ({ host: '10.0.0.5', username: 'root', privateKey: 'k' })),
   withSharedOrPooledSftp: vi.fn(),
@@ -56,6 +62,10 @@ function inspectResult(overrides: Record<string, unknown> = {}) {
 
 function load() {
   return import('../renet/renet-execution.js');
+}
+
+function loadCleanBuild() {
+  return import('../renet/renet-clean-build.js');
 }
 
 describe('acquireRemoteRenet', () => {
@@ -148,7 +158,7 @@ describe('acquireRemoteRenet', () => {
       args.includes('rev-parse') ? '/src/renet\n' : ' M pkg/list.go\n?? pkg/new.go\n'
     );
     // A tree dirty at selection time gets a clean HEAD build instead (renet-clean-build.test.ts); the guard still refuses a tree that turned dirty after that choice.
-    const { assertRenetSourceClean } = await load();
+    const { assertRenetSourceClean } = await loadCleanBuild();
     const uploadGuard = () => assertRenetSourceClean('/src/renet/bin/renet', MACHINE);
 
     expect(() => uploadGuard()).toThrow(/REDIACC_ALLOW_DIRTY_RENET/);
@@ -160,7 +170,7 @@ describe('acquireRemoteRenet', () => {
   });
 
   it('the upload guard passes a clean tree and a binary outside any git tree', async () => {
-    const { assertRenetSourceClean } = await load();
+    const { assertRenetSourceClean } = await loadCleanBuild();
 
     mockExecFileSync.mockImplementation((_cmd: string, args: string[]) =>
       args.includes('rev-parse') ? '/src/renet\n' : ''

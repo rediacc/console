@@ -15,7 +15,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { RenetCleanBuildDeps } from '../renet-execution.js';
+import type { RenetCleanBuildDeps } from '../renet-clean-build.js';
 
 const { mockExecFileSync, mockProvision, mockInfo } = vi.hoisted(() => ({
   mockExecFileSync: vi.fn(),
@@ -128,6 +128,10 @@ const cacheRoot = () => path.join(superproject, '.ci', 'cache', 'renet-head');
 const keyId = () => createHash('sha256').update(KEY).digest('hex').slice(0, 16);
 
 function load() {
+  return import('../renet-clean-build.js');
+}
+
+function loadExecution() {
   return import('../renet-execution.js');
 }
 
@@ -380,7 +384,7 @@ describe('acquireRemoteRenet with a dirty renet tree', () => {
       arch: 'amd64',
       remotePath: '/usr/lib/rediacc/renet/1.2.4/renet',
     });
-    const { acquireRemoteRenet } = await load();
+    const { acquireRemoteRenet } = await loadExecution();
     await acquireRemoteRenet('provision', { renetPath: workingBinary }, MACHINE, 'key', {});
 
     const options = mockProvision.mock.calls[0][1] as {
@@ -402,7 +406,7 @@ describe('acquireRemoteRenet with a dirty renet tree', () => {
       arch: 'amd64',
       remotePath: '/usr/lib/rediacc/renet/1.2.4/renet',
     });
-    const { acquireRemoteRenet } = await load();
+    const { acquireRemoteRenet } = await loadExecution();
     await acquireRemoteRenet('provision', { renetPath: workingBinary }, MACHINE, 'key', {});
     const options = mockProvision.mock.calls[0][1] as {
       localBinaryPath: string;
