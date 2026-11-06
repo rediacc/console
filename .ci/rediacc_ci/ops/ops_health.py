@@ -727,7 +727,7 @@ def token_env(env: dict, hydrate: Callable[[list], dict] | None) -> tuple[dict, 
     try:
         return {**env, **hydrate([CREDENTIAL_PROFILE])}, ""
     except (RuntimeError, OSError, ValueError, KeyError) as exc:
-        return env, "bws profile %s: %s" % (CREDENTIAL_PROFILE, _trim(str(exc), 200))
+        return env, "bws profile %s: %s" % (CREDENTIAL_PROFILE, str(exc)[:200])
 
 
 def bws_hydrate(names: list) -> dict:
