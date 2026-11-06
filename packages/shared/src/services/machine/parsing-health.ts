@@ -521,3 +521,71 @@ export function getMachineHealth(machine: MachineWithVaultStatus): MachineHealth
     issues: ctx.issues,
   };
 }
+
+// Certificate expiry (G5, D-certs): the proxy's ACME certificates from the listing's `certificates` section. Traefik renews 30 days ahead, so a certificate under 21 days means at least nine days of failed renewals.
+
+/** Days left below which a certificate is a warning. */
+export const CERT_EXPIRY_WARNING_DAYS = 21;
+/** Days left below which a certificate is an error. */
+export const CERT_EXPIRY_ERROR_DAYS = 7;
+
+/** The listing's `certificates` section (renet pkg/list CertificatesSection). */
+export interface CertificatesSectionInput {
+  status: string;
+  certificates: { main: string; sans?: string[]; not_after: string }[] | null;
+  error?: string;
+}
+
+/** One certificate finding: `cert.expiry.near`, or `cert.store.unreadable` when acme.json could not be read. */
+export interface CertificateFinding {
+  code: 'cert.expiry.near' | 'cert.store.unreadable';
+  severity: 'warning' | 'error';
+  subject: string;
+  detail: string;
+  daysLeft?: number;
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function certificateFinding(
+  cert: { main: string; not_after: string },
+  now: Date
+): CertificateFinding | null {
+  const notAfter = Date.parse(cert.not_after);
+  if (Number.isNaN(notAfter)) return null;
+  const daysLeft = Math.floor((notAfter - now.getTime()) / DAY_MS);
+  if (daysLeft >= CERT_EXPIRY_WARNING_DAYS) return null;
+  return {
+    code: 'cert.expiry.near',
+    severity: daysLeft < CERT_EXPIRY_ERROR_DAYS ? 'error' : 'warning',
+    subject: cert.main,
+    daysLeft,
+    detail:
+      daysLeft < 0
+        ? `Certificate ${cert.main} expired ${-daysLeft} day(s) ago (${cert.not_after})`
+        : `Certificate ${cert.main} expires in ${daysLeft} day(s) (${cert.not_after})`,
+  };
+}
+
+/**
+ * Judge each certificate's expiry: under 21 days a warning, under 7 an error, each naming the certificate. An absent section (no proxy on the machine) raises nothing; a section renet could not read is one warning, never a clean machine.
+ */
+export function checkCertificateExpiry(
+  section: CertificatesSectionInput | null | undefined,
+  now: Date = new Date()
+): CertificateFinding[] {
+  if (!section) return [];
+  if (section.status !== 'ok') {
+    return [
+      {
+        code: 'cert.store.unreadable',
+        severity: 'warning',
+        subject: 'acme.json',
+        detail: `proxy certificate store unreadable: ${section.error ?? section.status}`,
+      },
+    ];
+  }
+  return (section.certificates ?? [])
+    .map((cert) => certificateFinding(cert, now))
+    .filter((f): f is CertificateFinding => f !== null);
+}
