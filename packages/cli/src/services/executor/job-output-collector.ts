@@ -29,6 +29,8 @@ export interface JobOutputCollector {
   readonly stdout: string;
   /** The reconstructed stderr (error and warning log lines). */
   readonly stderr: string;
+  /** The last few log lines of ANY level, bounded, for a failed run's error details. */
+  readonly tail: string;
   /** Step timings recovered from `step_done` events. */
   readonly steps: { name: string; duration_ms: number; detail?: string }[];
 }
@@ -49,6 +51,21 @@ function logEventText(event: RenetEvent): string {
   return event.type === 'log' && isProblem && event.msg != null ? `${event.msg}\n` : '';
 }
 
+/** How many log lines, and how many characters of each, the failure tail keeps. */
+const TAIL_MAX_LINES = 20;
+const TAIL_MAX_LINE_CHARS = 300;
+
+/** Keep the newest log lines of any level, bounded in count and width. */
+function rememberLogLine(tailLines: string[], event: RenetEvent): void {
+  if (event.type !== 'log' || !event.msg) return;
+  tailLines.push(
+    event.msg.length > TAIL_MAX_LINE_CHARS
+      ? `${event.msg.slice(0, TAIL_MAX_LINE_CHARS)}…`
+      : event.msg
+  );
+  if (tailLines.length > TAIL_MAX_LINES) tailLines.shift();
+}
+
 /** The step timing a `step_done` event contributes, or null when incomplete. */
 function stepDoneEntry(
   event: RenetEvent
@@ -66,12 +83,14 @@ function stepDoneEntry(
 export function createJobOutputCollector(): JobOutputCollector {
   let stdout = '';
   let stderr = '';
+  const tailLines: string[] = [];
   const steps: { name: string; duration_ms: number; detail?: string }[] = [];
 
   return {
     consume(event: RenetEvent): void {
       stdout += outputEventText(event);
       stderr += logEventText(event);
+      rememberLogLine(tailLines, event);
       const step = stepDoneEntry(event);
       if (step) steps.push(step);
     },
@@ -80,6 +99,9 @@ export function createJobOutputCollector(): JobOutputCollector {
     },
     get stderr() {
       return stderr;
+    },
+    get tail() {
+      return tailLines.join('\n');
     },
     get steps() {
       return steps;

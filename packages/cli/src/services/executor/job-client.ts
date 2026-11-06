@@ -787,6 +787,11 @@ function extractJsonValue(stdout: string): string {
   return trimmed.slice(start);
 }
 
+/** A failed job carries the last renet log lines of any level: its own explanation is often info-level, and the error/warning-only stderr leaves a bare "signal: killed". */
+function jobStderr(success: boolean, output: { stderr: string; tail?: string }): string {
+  return !success && output.tail ? output.tail : output.stderr;
+}
+
 /**
  * Map a terminal job status onto the ExecuteResult the rest of the CLI expects,
  * so a detached run renders and exits exactly like a synchronous one.
@@ -799,7 +804,7 @@ function extractJsonValue(stdout: string): string {
 export function jobStatusToExecuteResult(
   status: JobStatus,
   wallMs: number,
-  output?: Pick<JobOutputCollector, 'stdout' | 'stderr' | 'steps'>
+  output?: Pick<JobOutputCollector, 'stdout' | 'stderr' | 'steps'> & { tail?: string }
 ): ExecuteResult {
   const success = status.state === 'succeeded';
   const operationDurationMs = jobDurationMs(status) ?? wallMs;
@@ -814,7 +819,7 @@ export function jobStatusToExecuteResult(
     ...(output
       ? {
           stdout: output.stdout,
-          stderr: output.stderr,
+          stderr: jobStderr(success, output),
           ...(output.steps.length > 0 ? { steps: output.steps } : {}),
         }
       : {}),

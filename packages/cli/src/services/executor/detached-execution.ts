@@ -72,6 +72,7 @@ import {
   passthroughJobRenderer,
   readJobStatus,
   renderJobEvent,
+  renderJobEventDebug,
 } from './job-remote.js';
 import { annotateJobSpan, followKindOf } from './job-span.js';
 import {
@@ -543,7 +544,7 @@ class JobRun {
 function defaultRenderer(options: ExecuteOptions): ((event: RenetEvent) => void) | undefined {
   if (options.captureOutput) return undefined;
   if (options.passthroughOutput) return passthroughJobRenderer(!options.quietSpinners);
-  if (options.debug) return renderJobEvent;
+  if (options.debug) return renderJobEventDebug;
   // Renet's own output lines are chatter for every verb that did not ask for them, as on the `renet execute` path: steps and problems render, output does not.
   return (event) => {
     if (event.type !== 'output') renderJobEvent(event);

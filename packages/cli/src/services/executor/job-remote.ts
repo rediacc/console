@@ -19,6 +19,7 @@
 
 import { BACKUP_DEFAULTS } from '@rediacc/shared/config';
 import type { SFTPClient } from '../../remote/sftp/index.js';
+import { getOutputFormat } from '../../utils/errors.js';
 import { formatStepDoneLine, getActiveLabel } from '../../utils/timeline.js';
 import { configService } from '../config/config-resources.js';
 import { outputService } from '../core/output.js';
@@ -465,6 +466,23 @@ export function renderJobEvent(event: RenetEvent): void {
     return;
   }
 
+  writeStdout(line.text);
+}
+
+/**
+ * The `--debug` renderer: every log line, whatever its level, reaches STDERR (renderJobEvent keeps error and warning only), and steps and renet's output lines follow stdout in text mode but move to stderr under `-o json`, where stdout belongs to the one envelope.
+ */
+export function renderJobEventDebug(event: RenetEvent): void {
+  if (event.type === 'log') {
+    if (event.msg) writeStderr(`${event.msg}\n`);
+    return;
+  }
+  const line = jobEventLine(event);
+  if (!line) return;
+  if (line.stream === 'err' || getOutputFormat() === 'json') {
+    writeStderr(line.text);
+    return;
+  }
   writeStdout(line.text);
 }
 
