@@ -10,8 +10,8 @@ tags:
 subcategory: workloads
 order: 5
 language: it
-sourceHash: "5541232492923a20"
-sourceCommit: "b22874f2af47f26811729aad731349efa2f05459"
+sourceHash: "c0f1046e3af31219"
+sourceCommit: "40b28261b0fa1018c0268405cbfdb899ab283c06"
 ---
 
 # Servizi
