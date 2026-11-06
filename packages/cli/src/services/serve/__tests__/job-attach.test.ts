@@ -513,18 +513,31 @@ describe('attach window over /v1/command', () => {
             )
           ).json()
         );
-      const trailer = (state: string, exit: number | null) =>
-        `${JSON.stringify({ type: 'job_status', state, function: 'repository_up', exit_code: exit })}\n`;
-      spool.stdout = trailer('running', null);
+      // The job's own clock: the spool trailer is derived from elapsed fake time, so a poll
+      // reports 'succeeded' only once the 40 s job has really run out, not because the test says so.
+      const JOB_MS = 40_000;
+      const syncSpool = () => {
+        const done = Date.now() - t0 >= JOB_MS;
+        spool.stdout = `${JSON.stringify({
+          type: 'job_status',
+          state: done ? 'succeeded' : 'running',
+          function: 'repository_up',
+          exit_code: done ? 0 : null,
+        })}\n`;
+      };
+      syncSpool();
       expect((await poll()).status?.state).toBe('running');
-      await vi.advanceTimersByTimeAsync(20_000);
-      spool.stdout = trailer('succeeded', 0);
+      await vi.advanceTimersByTimeAsync(19_000);
+      syncSpool();
+      expect((await poll()).status?.state).toBe('running');
+      await vi.advanceTimersByTimeAsync(1_000);
+      syncSpool();
       const finished = await poll();
       expect(finished.status).toMatchObject({ state: 'succeeded', exitCode: 0 });
       expect(Date.now() - t0).toBeGreaterThanOrEqual(40_000);
     });
 
-    it('carries at least two heartbeats in a quiet 25 s window at the real 10 s period', async () => {
+    it('carries exactly two heartbeats, 10 s apart, in a quiet 25 s window', async () => {
       let started = false;
       boot(async () => {
         started = true;
@@ -536,7 +549,10 @@ describe('attach window over /v1/command', () => {
       await until(() => started);
       await vi.advanceTimersByTimeAsync(25_000);
       const all = await lines(response);
-      expect(all.filter((l) => l.kind === 'heartbeat').length).toBeGreaterThanOrEqual(2);
+      const beats = all.flatMap((l) => (l.kind === 'heartbeat' ? [Date.parse(l.ts)] : []));
+      // A 10 s period gives exactly the beats at 10 s and 20 s; a 5 s period gives four, a 12.5 s one gives one.
+      expect(beats).toHaveLength(2);
+      expect(beats[1] - beats[0]).toBe(10_000);
       expect(all.at(-1)?.kind).toBe('result');
     });
   });
