@@ -325,7 +325,7 @@ describe('per-repo disk usage', () => {
   it('adds no issue at 85% exactly, below the threshold, or without disk_space', () => {
     const health = getMachineHealth(
       machineWith({
-        repositories: [repo('a', '85%'), repo('b', '40%'), repo('unmounted')],
+        repositories: [repo('a', '85%'), repo('b', '40%'), repo('no-disk-space')],
       })
     );
     expect(health.issues).toEqual([]);
@@ -356,5 +356,28 @@ describe('restarting containers', () => {
     );
     expect(health.issues).toEqual([]);
     expect(health.exitCode).toBe(0);
+  });
+});
+
+describe('container health-streak findings carry their own severity', () => {
+  const streaking = (name: string, failing_streak: number) => ({
+    name,
+    repository: 'g1',
+    state: 'running',
+    status: 'Up',
+    health: { status: 'starting', failing_streak },
+  });
+
+  it('is critical only for a container over 5, a warning for one at 3 to 5', () => {
+    const health = getMachineHealth(
+      machineWith({ containers: [streaking('mild', 4), streaking('bad', 9)] })
+    );
+    const bySubject = Object.fromEntries(
+      health.findings
+        .filter((f) => f.code === 'container.health-streak')
+        .map((f) => [f.subject, f.severity])
+    );
+    expect(bySubject).toEqual({ mild: 'warning', bad: 'critical' });
+    expect(health.exitCode).toBe(3);
   });
 });

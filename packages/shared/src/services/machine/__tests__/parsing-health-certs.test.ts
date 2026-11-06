@@ -63,3 +63,17 @@ describe('checkCertificateExpiry', () => {
     ).toEqual([expect.objectContaining({ code: 'cert.store.unreadable', severity: 'warning' })]);
   });
 });
+
+describe('checkCertificateExpiry with an unreadable expiry', () => {
+  it('is a warning naming the certificate, never a clean machine', () => {
+    expect(
+      checkCertificateExpiry(section({ main: 'a.example.com', not_after: 'not a date' }), NOW)
+    ).toEqual([
+      expect.objectContaining({
+        code: 'cert.store.unreadable',
+        severity: 'warning',
+        subject: 'a.example.com',
+      }),
+    ]);
+  });
+});

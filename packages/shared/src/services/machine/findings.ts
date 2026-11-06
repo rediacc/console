@@ -235,7 +235,6 @@ const OPERATOR_COMMANDS: Readonly<
   'license-refresh': (_f, m) => `rdc subscription refresh -m ${m}`,
   'machine-setup': (_f, m) => `rdc machine setup ${m}`,
   'redeploy-ops-health': () => 'PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_ops_health',
-  'trim-prune': (_f, m) => `rdc machine repair ${m} --code datastore.usage.high`,
 };
 
 /** The exact command an operator runs for a finding's fix, or undefined when it has no fix. */

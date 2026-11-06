@@ -229,7 +229,7 @@ function checkContainers(
       containers.filter((c) => c.health?.status === 'unhealthy'),
       'unhealthy'
     );
-    // The summary counts what the per-container records may not name; the verdict never drops below it.
+    // The summary and the findings filter the same container list, so they agree; the verdict never drops below the summary regardless.
     ctx.exitCode = Math.max(ctx.exitCode, 2);
   }
 
@@ -239,14 +239,25 @@ function checkContainers(
     containerFindings(ctx, 3, 'container.restart-loop', looping, 'in a restart loop');
   }
 
-  const streakText = `Container health check failing streak: ${maxFailingStreak}`;
-  const streaking = containers.filter((c) => (c.health?.failing_streak ?? 0) > 2);
-  if (maxFailingStreak > 5) {
-    ctx.issues.push(streakText);
-    containerFindings(ctx, 3, 'container.health-streak', streaking, 'health check failing streak');
-  } else if (maxFailingStreak > 2) {
-    ctx.issues.push(streakText);
-    containerFindings(ctx, 1, 'container.health-streak', streaking, 'health check failing streak');
+  if (maxFailingStreak > 2) {
+    ctx.issues.push(`Container health check failing streak: ${maxFailingStreak}`);
+    // Each container carries its own streak's severity: over 5 is critical, 3 to 5 a warning.
+    const streakOf = (c: ContainerInfo): number => c.health?.failing_streak ?? 0;
+    const what = 'health check failing streak';
+    containerFindings(
+      ctx,
+      3,
+      'container.health-streak',
+      containers.filter((c) => streakOf(c) > 5),
+      what
+    );
+    containerFindings(
+      ctx,
+      1,
+      'container.health-streak',
+      containers.filter((c) => streakOf(c) > 2 && streakOf(c) <= 5),
+      what
+    );
   }
 
   return {
@@ -669,7 +680,7 @@ export interface CertificatesSectionInput {
   error?: string;
 }
 
-/** One certificate finding: `cert.expiry.near`, or `cert.store.unreadable` when acme.json could not be read. */
+/** One certificate finding: `cert.expiry.near`, or `cert.store.unreadable` when acme.json (or one certificate's expiry) could not be read. */
 export interface CertificateFinding {
   code: 'cert.expiry.near' | 'cert.store.unreadable';
   severity: 'warning' | 'error';
@@ -685,7 +696,15 @@ function certificateFinding(
   now: Date
 ): CertificateFinding | null {
   const notAfter = Date.parse(cert.not_after);
-  if (Number.isNaN(notAfter)) return null;
+  if (Number.isNaN(notAfter)) {
+    // An expiry that cannot be read is never a clean certificate.
+    return {
+      code: 'cert.store.unreadable',
+      severity: 'warning',
+      subject: cert.main,
+      detail: `Certificate ${cert.main} has an unreadable expiry (${cert.not_after})`,
+    };
+  }
   const daysLeft = Math.floor((notAfter - now.getTime()) / DAY_MS);
   if (daysLeft >= CERT_EXPIRY_WARNING_DAYS) return null;
   return {
@@ -727,7 +746,7 @@ export function checkCertificateExpiry(
 
 /**
  * A certificates section that carries where each name's challenge lands (renet pkg/list ChallengeInfo). `unknown` is set
- * when renet could not resolve the chain (a DNS error or timeout), which is neither "no CNAME" nor a clean check.
+ * when no resolver answered for the name, so renet could not resolve the chain, which is neither "no CNAME" nor a clean check.
  */
 export interface ChallengeSectionInput {
   status: string;
@@ -806,7 +825,10 @@ function sharedEndFindings(ends: Map<string, Set<string>>): AcmeChallengeFinding
       severity: 'warning',
       subject: end,
       names,
-      detail: `ACME challenge for ${names.join(', ')} follows a CNAME to ${end}; renewals there collide`,
+      detail:
+        names.length > 1
+          ? `ACME challenge for ${names.join(', ')} follows a CNAME to ${end}; renewals there collide`
+          : `ACME challenge for ${names.join(', ')} follows a CNAME to ${end}, which is not an _acme-challenge name; the challenge record lands there, not at the name`,
     });
   }
   return findings;

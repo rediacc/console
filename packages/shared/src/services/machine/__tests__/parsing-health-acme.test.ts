@@ -109,3 +109,33 @@ describe('checkAcmeChallengeCnames with an unreadable chain (renet ChallengeInfo
     ).toEqual([]);
   });
 });
+
+describe('checkAcmeChallengeCnames detail text', () => {
+  const one = (name: string, cname: string) =>
+    checkAcmeChallengeCnames({
+      status: 'ok',
+      certificates: [{ main: name, challenges: [{ name, cname }] }],
+    });
+
+  it('does not say renewals collide for a single name ending outside _acme-challenge', () => {
+    const [finding] = one('a.example', 'www.other.example');
+    expect(finding.detail).not.toContain('collide');
+    expect(finding.detail).toContain('www.other.example');
+  });
+
+  it('says renewals collide when several names share one end (control)', () => {
+    const findings = checkAcmeChallengeCnames({
+      status: 'ok',
+      certificates: [
+        {
+          main: 'a.example',
+          challenges: [
+            { name: 'a.example', cname: '_acme-challenge.x.example' },
+            { name: 'b.example', cname: '_acme-challenge.x.example' },
+          ],
+        },
+      ],
+    });
+    expect(findings[0].detail).toContain('renewals there collide');
+  });
+});

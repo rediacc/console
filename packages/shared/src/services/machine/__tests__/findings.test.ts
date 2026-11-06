@@ -244,4 +244,12 @@ describe('findings table (X1)', () => {
       expect(cmd, code).toMatch(/^(rdc |PYTHONPATH=)/);
     }
   });
+
+  it('names the finding’s own code in the by-hand command of a trim-prune fix', () => {
+    for (const code of ['datastore.usage.high', 'repo.disk.high']) {
+      expect(
+        operatorCommand(withFix({ code, severity: 'warning', subject: 's1', detail: '' }), 'm1')
+      ).toBe(`rdc machine repair m1 --code ${code}`);
+    }
+  });
 });
