@@ -124,7 +124,7 @@ def local_step_findings(steps: Iterable[Any]) -> list[str]:
     return out
 
 
-def _calls_in(func: ast.AST) -> list[tuple[int, str]]:
+def _calls_in(func: ast.AST) -> list[tuple[int, str, ast.Call]]:
     found = []
     for node in ast.walk(func):
         if isinstance(node, ast.Call):
@@ -134,28 +134,67 @@ def _calls_in(func: ast.AST) -> list[tuple[int, str]]:
                 if isinstance(f, ast.Name)
                 else (f.attr if isinstance(f, ast.Attribute) else "")
             )
-            found.append((node.lineno, name))
+            found.append((node.lineno, name, node))
     return found
 
 
-def _dry_run_call_lines(func: ast.FunctionDef) -> set[int]:
-    """Line numbers of calls in the preview branch: an `if` whose test is a positive (not negated) dry-run
-    check and whose body ends in `return`, so nothing after it in that branch can reach wrangler."""
-    lines: set[int] = set()
+# The only spellings of a positive dry-run test the gate trusts: `dry_run`, `args.dry_run`, `args.get("ARG_DRY_RUN")` and `"ARG_DRY_RUN" in args`. Any other test (a negation, a comparison, a name that merely contains "dry") is not a preview branch.
+_DRY_NAME = re.compile(r"(?:\w+\.)*(?:arg_)?dry_run")
+_DRY_GET = re.compile(r"\w+\.get\(['\"]arg_dry_run['\"]\)")
+
+
+def _is_positive_dry_run_test(test: ast.expr) -> bool:
+    if (
+        isinstance(test, ast.Compare)
+        and len(test.ops) == 1
+        and isinstance(test.ops[0], ast.In)
+        and isinstance(test.left, ast.Constant)
+        and isinstance(test.left.value, str)
+    ):
+        return test.left.value.lower() == "arg_dry_run"
+    if isinstance(test, ast.Name | ast.Attribute | ast.Call):
+        text = ast.unparse(test).lower()
+        return bool(_DRY_NAME.fullmatch(text) or _DRY_GET.fullmatch(text))
+    return False
+
+
+def _dry_run_preview_calls(func: ast.FunctionDef) -> set[int]:
+    """`id()` of each `deploy_argv` call that only formats a preview: a call nested in a `print(...)` or `log.*(...)` argument inside the body of an `if` whose test is a positive dry-run check and whose body ends in `return`.
+
+    Nodes, not line numbers, so a real deploy sharing a physical line with a preview is still checked; and only a call that is the argument of a print or log call is set aside, so `_run(deploy_argv(...))` inside the branch still counts as a real deploy.
+    """
+    exempt: set[int] = set()
     for node in ast.walk(func):
-        if (
+        if not (
             isinstance(node, ast.If)
-            and not isinstance(node.test, ast.UnaryOp)
-            and "dry" in ast.unparse(node.test).lower()
-            and "not " not in ast.unparse(node.test).lower()
+            and _is_positive_dry_run_test(node.test)
             and node.body
             and isinstance(node.body[-1], ast.Return)
         ):
-            for inner in node.body:
-                for sub in ast.walk(inner):
-                    if isinstance(sub, ast.Call):
-                        lines.add(sub.lineno)
-    return lines
+            continue
+        for inner in node.body:
+            for outer in ast.walk(inner):
+                if not isinstance(outer, ast.Call):
+                    continue
+                f = outer.func
+                if not (
+                    (isinstance(f, ast.Name) and f.id == "print")
+                    or (
+                        isinstance(f, ast.Attribute)
+                        and isinstance(f.value, ast.Name)
+                        and f.value.id == "log"
+                    )
+                ):
+                    continue
+                for arg in outer.args:
+                    for sub in ast.walk(arg):
+                        if (
+                            isinstance(sub, ast.Call)
+                            and isinstance(sub.func, ast.Name)
+                            and sub.func.id == "deploy_argv"
+                        ):
+                            exempt.add(id(sub))
+    return exempt
 
 
 def deploy_account_findings(source: str) -> list[str]:
@@ -168,12 +207,13 @@ def deploy_account_findings(source: str) -> list[str]:
         return ["%s: no main(); the check would pass vacuously" % DEPLOY_ACCOUNT_REL]
     calls = _calls_in(main)
     first: dict[str, int] = {}
-    for line, name in sorted(calls):
+    for line, name, _node in sorted(calls, key=lambda c: (c[0], c[1])):
         first.setdefault(name, line)
-    # The dry-run preview calls deploy_argv inside an `if <...dry_run...>:` branch before any check; only
-    # the calls outside such a branch run wrangler, and the refusal must precede every one of them.
-    preview = _dry_run_call_lines(main)
-    deploy_lines = [line for line, name in calls if name == "deploy_argv" and line not in preview]
+    # The dry-run preview prints `deploy_argv(...)` inside a positive dry-run `if` that returns; only a deploy_argv outside such a print runs wrangler, and the refusal must precede every one of them and the smoke must follow the last.
+    preview = _dry_run_preview_calls(main)
+    deploy_lines = [
+        line for line, name, node in calls if name == "deploy_argv" and id(node) not in preview
+    ]
     deploy = min(deploy_lines) if deploy_lines else None
     last_deploy = max(deploy_lines) if deploy_lines else None
     if deploy is None:
@@ -404,6 +444,65 @@ def _local_selftest() -> bool:
         "deploy_account smoking BEFORE the deploy was not reported",
         deploy_account_findings(swapped),
         True,
+    )
+    guarded = "def main(argv):\n"
+
+    def with_branch(test: str, body: str) -> str:
+        return _ACCOUNT_OK.replace(
+            guarded, guarded + "    if %s:\n        %s\n        return 0\n" % (test, body)
+        )
+
+    preview = 'print("would run: %s" % " ".join(deploy_argv(config)))'
+    expect(
+        "a dry-run preview printing deploy_argv read as a finding",
+        deploy_account_findings(with_branch('"ARG_DRY_RUN" in args', preview)),
+        False,
+    )
+    expect(
+        "a dry_run preview printing deploy_argv read as a finding",
+        deploy_account_findings(with_branch("dry_run", preview)),
+        False,
+    )
+    for test in (
+        "not dry_run",
+        "dry_run is False",
+        "dry_run == False",
+        "is_dry_run_disabled",
+        "not_dry_run",
+        "no_dry_run or dry_run",
+    ):
+        expect(
+            "a deploy_argv under the non-preview test %r was exempted" % test,
+            deploy_account_findings(with_branch(test, preview)),
+            True,
+        )
+    expect(
+        "a real deploy before the refusal inside a positive dry-run branch was exempted",
+        deploy_account_findings(with_branch("dry_run", "_run(deploy_argv(config))")),
+        True,
+    )
+    expect(
+        "a real deploy on the physical line of a preview was exempted",
+        deploy_account_findings(with_branch("dry_run", preview + "; _run(deploy_argv(config))")),
+        True,
+    )
+    two = _ACCOUNT_OK.replace(
+        "    smoke = portal_smoke(worker_dir / config, os.environ)\n",
+        "    smoke = portal_smoke(worker_dir / config, os.environ)\n    status = _run(deploy_argv(config))\n",
+    )
+    expect(
+        "a deploy after the smoke (the LAST deploy_argv decides) was not reported",
+        deploy_account_findings(two),
+        True,
+    )
+    both = _ACCOUNT_OK.replace(
+        "    status = _run(deploy_argv(config))\n",
+        "    status = _run(deploy_argv(config))\n    status = _run(deploy_argv(config))\n",
+    )
+    expect(
+        "two deploys both followed by the smoke read as a finding",
+        deploy_account_findings(both),
+        False,
     )
     expect(
         "a deploy_account rebuild hint with no key was not reported",
