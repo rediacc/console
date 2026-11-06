@@ -3,7 +3,7 @@
 
 WHY (worklist #f7b8953f, 2026-10-23). A PR merges by `gh pr merge --rebase`, which REWRITES every commit of the branch. A SHA a branch file cites for one of the branch's own commits therefore points at nothing once the PR lands: two such SHAs sat in two tests and the retire-bash-oracles inventory after their commits were rewritten, until a hand remap (the worklist item names both). Nothing noticed in between, because a dead SHA reads exactly like a live one.
 
-WHAT IS A CITATION. Purely textual, so a local run and CI agree byte for byte:
+WHAT IS A CITATION. Purely textual, so a local run and CI agree byte for byte. What it names is a commit of this repository, or a lease commit that exists now only as the `(cherry picked from commit <sha>)` line of the commit that landed it (THE VERDICT):
 
   - any word of exactly 9 lowercase hex characters with at least one digit and one letter
     (this repository's `core.abbrev` width, the form `git log --oneline` prints and the
@@ -24,6 +24,8 @@ THE VERDICT reads commit TOPOLOGY only, never object types, because the CI lane 
             which the rebase-merge will rewrite. Printed, never failing; remap it on main after
             the merge (the /pr-merge follow-up);
   dead      neither. A finding.
+
+A LEASE COMMIT. A writer commits on a lease's detached HEAD, the lead lands it with `git cherry-pick -x`, and the lease is garbage-collected, so the lease SHA survives only in the landed commit's `(cherry picked from commit <full sha>)` line (wl_planbox.landed_map reads it as data). A citation that is a prefix of a SHA named by such a line takes the verdict of the commit carrying the line: ok when that commit is reachable from origin/<base>, pending when it is only in origin/<base>..HEAD. The map is built once per run from one `git log --format=%H%x00%B` per range, commit messages only, so it stays a topology read. A SHA named by no commit and by no such line is still dead.
 
 SHRINK-ONLY BASELINE (.ci/config/commit-citations-baseline.json). The findings of the day the gate landed are frozen by a stable id, a hash of the file path and the cited token (never a line number). A NEW dead citation fails. A baselined one that no longer fires fails too, until `--write-baseline` drains it; that writer only ever REMOVES entries, so a drain cannot absorb a fresh finding. `--init-baseline` writes the first file and refuses when one exists.
 
@@ -165,31 +167,61 @@ class Commits:
         return i < len(self.shas) and self.shas[i].startswith(token)
 
 
-def reachable(root, base_ref: str) -> tuple[Commits, Commits]:
-    """(commits of `base_ref`, commits of `base_ref..HEAD`). RuntimeError when the base is not fetched."""
+PICKED = re.compile(r"^\(cherry picked from commit ([0-9a-f]{40})\)[ \t]*$", re.MULTILINE)
+RECORD = re.compile(r"^([0-9a-f]{40})\x00", re.MULTILINE)
+
+
+@dataclasses.dataclass(frozen=True)
+class Topology:
+    """The commit sets a verdict reads: each range's commits, and the lease SHAs its `cherry picked from` lines name."""
+
+    main: Commits
+    branch: Commits
+    main_picked: Commits
+    branch_picked: Commits
+
+
+def parse_log(log: str) -> tuple[list[str], list[str]]:
+    """(commit ids, cherry-picked SHAs) of one `git log --format=%H%x00%B` output."""
+    return RECORD.findall(log), PICKED.findall(log)
+
+
+def reachable(root, base_ref: str) -> Topology:
+    """The commits of `base_ref` and of `base_ref..HEAD`, and the SHAs each range's cherry-pick lines name. RuntimeError when the base is not fetched."""
     if _git(root, "rev-parse", "--verify", "-q", "%s^{commit}" % base_ref).returncode:
         raise RuntimeError(
             "%s is not fetched, so no citation can be judged; run: git fetch origin %s"
             % (base_ref, base_ref.split("/", 1)[-1])
         )
-    main = _git(root, "rev-list", base_ref)
-    branch = _git(root, "rev-list", "%s..HEAD" % base_ref)
-    if main.returncode or branch.returncode:
-        raise RuntimeError("git rev-list failed: %s" % (main.stderr + branch.stderr).strip()[:200])
-    return Commits(main.stdout.split()), Commits(branch.stdout.split())
+    sets = []
+    for rng in (base_ref, "%s..HEAD" % base_ref):
+        # One read per range: the full id opens each record and the message follows, so the commit set and the cherry-pick map come out of the same output.
+        got = _git(root, "log", "--format=%H%x00%B", rng, "--")
+        if got.returncode:
+            raise RuntimeError("git log %s failed: %s" % (rng, got.stderr.strip()[:200]))
+        shas, picked = parse_log(got.stdout)
+        sets.append((Commits(shas), Commits(picked)))
+    (main, main_picked), (branch, branch_picked) = sets
+    return Topology(main, branch, main_picked, branch_picked)
 
 
-def classify(found, main: Commits, branch: Commits):
-    """(ok, pending, dead) lists of citations."""
-    ok, pending, dead = [], [], []
+def classify(found, topo: Topology):
+    """(ok, pending, dead, picked) lists of citations; `picked` holds the ok and pending ones that resolved only through a cherry-pick line."""
+    ok, pending, dead, picked = [], [], [], []
     for c in found:
-        if main.has_prefix(c.token):
+        if topo.main.has_prefix(c.token):
             ok.append(c)
-        elif branch.has_prefix(c.token):
+        elif topo.main_picked.has_prefix(c.token):
+            ok.append(c)
+            picked.append(c)
+        elif topo.branch.has_prefix(c.token):
             pending.append(c)
+        elif topo.branch_picked.has_prefix(c.token):
+            pending.append(c)
+            picked.append(c)
         else:
             dead.append(c)
-    return ok, pending, dead
+    return ok, pending, dead, picked
 
 
 def load_baseline(root) -> dict[str, dict]:
@@ -221,7 +253,7 @@ def write_baseline(root, entries: dict[str, dict]) -> None:
 def run(root, base_ref: str, mode: str = "check", out=sys.stdout, err=sys.stderr) -> int:
     try:
         scanned, found = scan(root)
-        main, branch = reachable(root, base_ref)
+        topo = reachable(root, base_ref)
     except RuntimeError as exc:
         print("✗ commit citations: CANNOT RUN: %s" % exc, file=err)
         return 2
@@ -237,11 +269,12 @@ def run(root, base_ref: str, mode: str = "check", out=sys.stdout, err=sys.stderr
         return 2
     fixtures = [c for c in found if is_fixture(c.token)]
     found = [c for c in found if not is_fixture(c.token)]
-    ok, pending, dead = classify(found, main, branch)
+    ok, pending, dead, picked = classify(found, topo)
     if not ok:
         print(
             "✗ commit citations: CANNOT RUN: %d citation(s) and not one resolves to %s (%d "
-            "commits); the commit set is not what it seems" % (len(found), base_ref, len(main)),
+            "commits); the commit set is not what it seems"
+            % (len(found), base_ref, len(topo.main)),
             file=err,
         )
         return 2
@@ -313,7 +346,7 @@ def run(root, base_ref: str, mode: str = "check", out=sys.stdout, err=sys.stderr
         rc = 1
     shape = (
         "%d file(s), %d citation(s): %d on %s, %d pending, %d dead (%d baselined), "
-        "%d fixture token(s) skipped"
+        "%d fixture token(s) skipped, %d resolved through a cherry-pick line"
         % (
             scanned,
             len(found),
@@ -323,6 +356,7 @@ def run(root, base_ref: str, mode: str = "check", out=sys.stdout, err=sys.stderr
             len(dead),
             len(dead_by_key) - len(new),
             len(fixtures),
+            len(picked),
         )
     )
     if rc == 0:
@@ -391,13 +425,26 @@ def _selftest() -> int:
             raise RuntimeError("no usable scratch SHA in 64 tries")
 
         a = commit("A")
+        # Two lease commits on a detached HEAD that no ref keeps: L1 lands on main and L2 on the branch through `cherry-pick -x`, so each survives only as a `cherry picked from` line, as a garbage-collected lease's commits do.
+        g(root, "checkout", "-q", "--detach")
+        (root / "l1.py").write_text("l = 1\n", encoding="utf-8")
+        g(root, "add", "-A")
+        l1 = commit("L1")
+        l1_full = g(root, "rev-parse", "HEAD")
+        (root / "l2.py").write_text("l = 2\n", encoding="utf-8")
+        g(root, "add", "-A")
+        l2 = commit("L2")
+        l2_full = g(root, "rev-parse", "HEAD")
+        g(root, "checkout", "-q", "main")
+        g(root, "cherry-pick", "-x", l1_full)
         g(root, "update-ref", "refs/remotes/origin/main", "HEAD")
         g(root, "checkout", "-q", "-b", "feature")
         (root / "b.py").write_text("y = 2\n", encoding="utf-8")
         g(root, "add", "-A")
         b = commit("B")
+        g(root, "cherry-pick", "-x", l2_full)
         # Built at run time: a literal here would be a dead citation in this very file.
-        dead = "5e1f2a3b" + ("8" if "5e1f2a3b" + "9" in a + b else "9")
+        dead = "5e1f2a3b" + ("8" if "5e1f2a3b" + "9" in a + b + l1_full + l2_full else "9")
         (root / "cite.py").write_text("# on main %s\n# branch %s\n" % (a, b), encoding="utf-8")
         (root / "agent" / "reviews" / "x").mkdir(parents=True)
         (root / "agent" / "reviews" / "x" / "r.py").write_text("# %s\n" % dead, encoding="utf-8")
@@ -417,6 +464,44 @@ def _selftest() -> int:
             True,
         )
         check("clean: the shape is printed", "1 on origin/main, 1 pending, 0 dead" in out, True)
+        # A lease SHA takes the verdict of the commit its `cherry picked from` line sits in.
+        (root / "lease.py").write_text("# landed %s\n# picked %s\n" % (l1, l2), encoding="utf-8")
+        g(root, "add", "-A")
+        rc, out, err = go()
+        check("lease: a lease SHA landed on main passes", rc, 0)
+        check(
+            "lease: landed on main is ok, on the branch only is pending",
+            "2 on origin/main, 2 pending, 0 dead" in out,
+            True,
+        )
+        check(
+            "lease: the branch-only lease SHA is named pending",
+            "pending lease.py:2 cites %s" % l2 in out,
+            True,
+        )
+        check(
+            "lease: the shape counts the picks",
+            "2 resolved through a cherry-pick line" in out,
+            True,
+        )
+        # CONTROL: the same citations with the cherry-pick map emptied are dead, so the controls above hold only because of the rule.
+        topo = reachable(root, "origin/main")
+        check(
+            "lease: the map holds L1 on main and L2 on the branch",
+            (topo.main_picked.has_prefix(l1), topo.branch_picked.has_prefix(l2)),
+            (True, True),
+        )
+        bare = Topology(topo.main, topo.branch, Commits([]), Commits([]))
+        lease_cites = citations("lease.py", "# landed %s\n# picked %s\n" % (l1, l2))
+        check(
+            "lease CONTROL: without the cherry-pick map both lease SHAs are dead",
+            [c.token for c in classify(lease_cites, bare)[2]],
+            [l1, l2],
+        )
+        # A SHA named by no commit and by no cherry-pick line stays dead under the rule.
+        nowhere = citations("x.py", "# fixed in %s\n" % dead)
+        check("lease: a SHA named nowhere stays dead", len(classify(nowhere, topo)[2]), 1)
+        g(root, "rm", "-qf", "lease.py")
         # A fixture token is skipped, and counted in the shape.
         (root / "fx.py").write_text("# sha: deadbeef1\n", encoding="utf-8")
         g(root, "add", "-A")
