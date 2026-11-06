@@ -8,8 +8,8 @@ tags:
 subcategory: workloads
 order: 4
 language: ar
-sourceHash: "8421082e9553c8f0"
-sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
+sourceHash: "79fefe63b4a7c7be"
+sourceCommit: "9f58d83e01b4d46f8ce31af467a203b4d195e801"
 ---
 
 # المستودعات
