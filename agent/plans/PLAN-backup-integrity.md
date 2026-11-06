@@ -389,9 +389,10 @@ V1 to V6 share `backup.go`, `backup_snapshot.go` and `backup_restore.go`, and on
 - [x] P2: Drills: `./run.sh drill backup` and `./run.sh drill backup-onprem`, with new legs p to s and their controls firing.
   - Accept: both rc 0; the receipt `block_backup_unverified_push` reads is fresh for this tree.
     (ticked) 2026-11-02T08:01:50Z by 45048a90: commit:ebd89f860. ./run.sh drill backup rc=0 and ./run.sh drill backup-onprem rc=0; receipt VERIFIED with legs a to s and onprem true; each new leg has a planted control, in commit 075c90af3.
-- [ ] P3: R2 tier B (needs decision O1): `./run.sh drill backup --legs a,s` with `DRILL_STORE_*` on the probe bucket, proving a duplicate PUT answers 412 and a wrong checksum is refused. The result corrects the grants.go comment and 07-execution-record.md in the same commit. If R2 refuses a wrong checksum differently than documented, that is a finding, not a retune.
+- [x] P3: R2 tier B (needs decision O1): `./run.sh drill backup --legs a,s` with `DRILL_STORE_*` on the probe bucket, proving a duplicate PUT answers 412 and a wrong checksum is refused. The result corrects the grants.go comment and 07-execution-record.md in the same commit. If R2 refuses a wrong checksum differently than documented, that is a finding, not a retune.
   (corrected ASKED:2026-11-05T07:06Z) Decision O1 is settled: `DRILL_STORE_*` points at the existing `rediacc-backups-bench` bucket and its bench keys, not a separate probe bucket.
   - Accept: the command rc 0, the status codes recorded here.
+    (ticked) 2026-11-06T16:36:46Z by d778be9d: commit:5357e04f8 drill backup --legs a,s on rediacc-backups-bench rc=0 24/24, duplicate_put=412 wrong_checksum=400; comment and record corrected in the same unit (f51aa5e + 5357e04f8); bench-only proof
 - [ ] P4: The D1 clone check covers migration 0073.
   - Accept: the CD or local `rediacc_ci.deploy.test_d1_migrations` run rc 0 for eu, recorded with its run id.
 

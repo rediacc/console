@@ -472,12 +472,12 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-ask-flow-preemptive-settled-check.md` | compacted | 38 | 0 | 0 | 2358 |
 | `agent/plans/PLAN-backup-critical-tier.md` | approved | 780 | 10 | 41 | 107172 |
 | `agent/plans/PLAN-backup-download-from-store.md` | approved | 49 | 3 | 6 | 9471 |
-| `agent/plans/PLAN-backup-integrity.md` | approved | 489 | 16 | 40 | 75088 |
+| `agent/plans/PLAN-backup-integrity.md` | approved | 490 | 15 | 41 | 75337 |
 | `agent/plans/PLAN-backup-list-executor-fix.md` | compacted | 55 | 0 | 0 | 5498 |
 | `agent/plans/PLAN-backup-local-image.md` | approved | 457 | 4 | 10 | 57906 |
 | `agent/plans/PLAN-backup-meter-orphaned-chunks.md` | approved | 268 | 2 | 6 | 35213 |
 | `agent/plans/PLAN-backup-plane-shared-bucket-hardening.md` | approved | 41 | 3 | 4 | 6848 |
-| `agent/plans/PLAN-backup-program.md` | approved | 583 | 22 | 170 | 151668 |
+| `agent/plans/PLAN-backup-program.md` | approved | 584 | 21 | 171 | 151910 |
 | `agent/plans/PLAN-backup-quota-delta-gc.md` | compacted | 58 | 0 | 0 | 5584 |
 | `agent/plans/PLAN-backup-restore-path.md` | executing | 202 | 3 | 7 | 35742 |
 | `agent/plans/PLAN-backup-restore-target-license.md` | compacted | 56 | 0 | 0 | 5560 |
