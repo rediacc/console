@@ -159,6 +159,8 @@ def test_probe_rediaccfile_and_commands_are_valid_shell() -> None:
         assert subprocess.run(["bash", "-n"], input=script, text=True, check=False).returncode == 0
     assert "head -c 2147483648 /dev/zero | tail" in r.alloc_command("vmc-k2-alloc-x")
     assert "%s/data:/data" % TARGET in r.writer_command(MOUNT)
+    # `rdc term connect -c` refuses any `>` as a file write; the K3.2 writer runs through it.
+    assert ">" not in r.writer_command(MOUNT)
 
 
 # The rows vm:check run vmc-11060119-8cbbc0 recorded, read back through the verdicts.

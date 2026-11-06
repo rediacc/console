@@ -139,8 +139,11 @@ def alloc_command(name: str) -> str:
 
 
 def writer_command(mount: str) -> str:
-    """A container that writes MARKER into `.ram/data` through a bind and reads it back."""
-    inner = "echo %s > /data/%s && cat /data/%s" % (MARKER, MARKER, MARKER)
+    """A container that writes MARKER into `.ram/data` through a bind and reads it back.
+
+    No shell redirect: `rdc term connect -c` refuses any `>` as a file write (VALIDATION_ERROR, vm:check run of 2026-11-06), so `tee` writes the file and echoes MARKER for the read-back.
+    """
+    inner = "printf %s %s | tee /data/%s && cat /data/%s" % ("%s", MARKER, MARKER, MARKER)
     return "docker run --rm -v %s/data:/data %s sh -c %s" % (
         ram_dir(mount),
         IMAGE,
