@@ -210,3 +210,14 @@ def test_a_dry_run_flag_with_an_empty_or_false_value_still_runs_nothing(
     fake = _fake(monkeypatch, module)
     assert module.main(argv) == 0
     assert fake.calls == []
+
+
+@pytest.mark.usefixtures("tree")
+def test_a_dry_run_over_an_unreadable_database_name_refuses_like_the_real_run(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    fake = _fake(monkeypatch, deploy_account)
+    monkeypatch.setattr(deploy_account, "database_name", lambda _config: "")
+    assert deploy_account.main(["--region", "eu", "--dry-run"]) == 1
+    assert fake.calls == []
+    assert "would run" not in capsys.readouterr().out

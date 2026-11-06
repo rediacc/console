@@ -327,7 +327,11 @@ def main(argv: list[str]) -> int:
 
     if "ARG_DRY_RUN" in args:
         # Stops before npm install, the services audit, migrations and the deploy: nothing here reaches Cloudflare or the network.
-        db_preview = database_name(str(worker_dir / config)) or "(database_name unreadable)"
+        db_preview = database_name(str(worker_dir / config))
+        if not db_preview:
+            # The real run refuses here too; a preview naming a placeholder database would misstate the plan.
+            log.error("Could not read database_name from %s" % config)
+            return 1
         log.step("DRY RUN: %s %s (%s); no command is run" % (target, region, config))
         print("would run: %s" % " ".join(migrations_argv(db_preview, config)), flush=True)
         print("would run: %s" % " ".join(deploy_argv(config)), flush=True)
