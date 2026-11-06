@@ -22,9 +22,9 @@ import {
   isAgentEnvironment,
   isLegitimateWildcardOverride,
 } from '../utils/agent-guard.js';
+import { assertCommandNotBlank } from '../utils/command-blank.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { debugLog } from '../utils/debug.js';
-import { assertCommandNotBlank } from '../utils/command-blank.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import {
   detectDirectRenetCommand,

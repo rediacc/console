@@ -44,6 +44,15 @@ import { getEffectiveConfigName } from '../config/config-name.js';
 import { TicketStore } from '../jobs/ticket-store.js';
 import { annotatePolled } from './job-span.js';
 import {
+  deliverPage,
+  describeFetchFailure,
+  hostOf,
+  ProxyStreamTruncatedError,
+  ProxyVersionMismatchError,
+  proxyRequestTimeoutMs,
+  toArrayBuffer,
+} from './proxy-client-support.js';
+import {
   emptyOutcome,
   foldJobLine,
   foldResultLine,
@@ -60,15 +69,6 @@ import {
   type StreamState,
   terminalOutcome,
 } from './proxy-follow.js';
-import {
-  deliverPage,
-  describeFetchFailure,
-  hostOf,
-  ProxyStreamTruncatedError,
-  ProxyVersionMismatchError,
-  proxyRequestTimeoutMs,
-  toArrayBuffer,
-} from './proxy-client-support.js';
 import { traceProxyRequest } from './proxy-trace.js';
 
 import type { RenetEvent } from './types.js';
