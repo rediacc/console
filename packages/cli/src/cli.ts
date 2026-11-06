@@ -144,7 +144,7 @@ async function setUserAndSubscriptionContext(): Promise<void> {
 
 // Output-format precedence when --output not explicitly set: 1. REDIACC_DEFAULT_OUTPUT env var (whitelist: table|json|yaml|csv) 2. Auto-JSON for non-TTY or agent environments 3. Default 'table' from .option() Used by tutorial recording to keep human-readable output even though
 // CLAUDECODE=1 in the parent shell triggers agent detection.
-const OUTPUT_FORMATS: readonly OutputFormat[] = ['table', 'json', 'yaml', 'csv'];
+const OUTPUT_FORMATS = ['table', 'json', 'yaml', 'csv'] as const satisfies readonly OutputFormat[];
 
 /** Parse-time check of `-o`: an unknown format is refused with the usage-error exit code before any command runs. */
 function parseOutputFormat(value: string): OutputFormat {

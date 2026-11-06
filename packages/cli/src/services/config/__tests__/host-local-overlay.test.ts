@@ -63,7 +63,8 @@ vi.mock('../../../adapters/remote-config-adapter.js', async (importOriginal) => 
     }
     // The version the cache was taken from: the local file as it was, so the cache is behind, not edited.
     pullVersion(version: number) {
-      const { state: _state, ...archived } = localDisk();
+      const archived: Partial<RdcConfig> = { ...localDisk() };
+      delete archived.state;
       return Promise.resolve({ config: archived as unknown as RdcConfig, version, sdkEpoch: 1 });
     }
     push(doc: RdcConfig, current: number) {

@@ -82,7 +82,7 @@ describe('archiveRepository — scrubs secrets', () => {
   });
 });
 
-describe('archiveRepositories — a deprovisioned machine repos in one write per bucket', () => {
+describe('archiveRepositories: a deprovisioned machine repos in one write per bucket', () => {
   beforeEach(() => {
     mockRepos = {
       'app:latest': {
