@@ -897,9 +897,14 @@ def attested_at(ledger, rel, sig):
 
 
 def attested_by_identity(ledger, rel, sig):
-    """`attested_at` for the plan under any folder: `check:ci-plan-folders --move` relocates a finished plan into `_done/`, and the move must not read as the tick."""
+    """`attested_at` for the plan under any folder: `check:ci-plan-folders --move` relocates a finished plan into `_done/`, and the move must not read as the tick.
+
+    A row under `rel` itself decides alone; the other folders' rows are read only when there is none (the ledgers from before the move). `merge_ledger` replaces one row and leaves a stale pre-move row beside the new one, so ORing every row of the basename read a box reopened after the move as still attested by the row the move left behind (review f142ed91.1).
+    """
     if not isinstance(ledger, dict):
         return False
+    if isinstance((ledger.get("plans") or {}).get(rel), dict):
+        return attested_at(ledger, rel, sig)
     ident = plan_identity(rel)
     return any(
         plan_identity(r) == ident and isinstance(v, dict) and sig in (v.get("done_sigs") or [])

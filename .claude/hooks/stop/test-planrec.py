@@ -573,6 +573,28 @@ truthy(
     "...and attested_by_identity reads the moved row",
     R.attested_by_identity(_pre, _done_rel, R.box_sig(TASK_DONE)),
 )
+# Review f142ed91.1: a box ticked before the move and reopened after it, with the pre-move row still in the ledger, is not done.
+_reopened = {"plans": {_live_rel: _ticked["plans"][REL], _done_rel: _open["plans"][REL]}}
+falsy(
+    "a box reopened after a move is not attested by the stale pre-move row",
+    R.attested_by_identity(_reopened, _done_rel, R.box_sig(TASK_DONE)),
+)
+control(
+    "...and done_commit reads it as not done",
+    R.done_commit(
+        [("T1", _pre), ("MV", _moved), ("R", _reopened)], _done_rel, R.box_sig(TASK_DONE)
+    ),
+    "",
+)
+control(
+    "...the re-tick after the reopen is dated at the re-tick",
+    R.done_commit(
+        [("T1", _pre), ("MV", _moved), ("R", _reopened), ("T2", _moved)],
+        _done_rel,
+        R.box_sig(TASK_DONE),
+    ),
+    "T2",
+)
 control(
     "...the unmoved control: a plan that never moved is dated by its own path, as before",
     R.done_commit([("T1", _ticked), ("T2", _ticked)], REL, R.box_sig(TASK_DONE)),
