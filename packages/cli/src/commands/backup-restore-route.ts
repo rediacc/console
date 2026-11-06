@@ -1,8 +1,12 @@
 import type { Placement } from '@rediacc/shared/config-schema';
+import { t } from '../i18n/index.js';
+import { accountServerFetch } from '../services/account/account-client.js';
 import { DEFAULT_DATASTORE } from '../services/account/license-machine.js';
 import { namedDatastoreMount } from '../services/cluster/cluster-target.js';
+import { outputService } from '../services/core/output.js';
 import { machineConnections } from '../services/machine/machine-connection.js';
 import { shellQuote } from '../utils/shell-quote.js';
+import type { BackupManifestsResponse } from './backup-storage.js';
 
 const GUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const PRESENT = 'present';
@@ -65,4 +69,28 @@ async function probeImage(
   ).trim();
   if (answer === PRESENT) return true;
   return answer === ABSENT ? false : undefined;
+}
+
+/**
+ * Whether the account index holds any snapshot of the lineage. An unreachable
+ * index or an unreadable answer is "no": the caller then takes the pull route,
+ * which is what restore did before the chunk store existed. That fallback is
+ * said out loud, since on a chunk-store repo the pull has nothing to fetch.
+ */
+export async function lineageHasSnapshots(lineage: string, name: string): Promise<boolean> {
+  try {
+    const result = await accountServerFetch<BackupManifestsResponse>(
+      // Whether any row exists: one is enough, and the listing is capped per page.
+      `/account/api/v1/backups/manifests?lineage=${encodeURIComponent(lineage)}&limit=1`
+    );
+    return result.manifests.length > 0; // a malformed answer throws into the catch
+  } catch (error) {
+    outputService.warn(
+      t('commands.backup.restore.snapshotIndexUnreadable', {
+        name,
+        reason: error instanceof Error ? error.message : String(error),
+      })
+    );
+    return false;
+  }
 }

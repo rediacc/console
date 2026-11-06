@@ -422,23 +422,6 @@ export function parseJobList(stdout: string): JobStatus[] {
   return z.array(JobStatusSchema).parse(parsed);
 }
 
-/** What `renet job gc --json` prints. */
-const JobGcResultSchema = z.object({
-  removed: z.array(z.string()).nullable().default([]),
-  count: z.number(),
-});
-
-export interface JobGcResult {
-  removed: string[];
-  count: number;
-}
-
-/** Parse `renet job gc --json` output. */
-export function parseJobGcResult(stdout: string): JobGcResult {
-  const parsed = JobGcResultSchema.parse(JSON.parse(extractJsonObject(stdout)));
-  return { removed: parsed.removed ?? [], count: parsed.count };
-}
-
 /**
  * How long a job ran, as a short human string. A job that has not finished
  * reports how long it has been running so far, because "how long has this been
@@ -764,7 +747,7 @@ export function createEventLineReader(
  * before renet's own output, so we start at the first brace rather than
  * assuming the payload begins at byte zero.
  */
-function extractJsonObject(stdout: string): string {
+export function extractJsonObject(stdout: string): string {
   const start = stdout.indexOf('{');
   const end = stdout.lastIndexOf('}');
   if (start < 0 || end < start) {

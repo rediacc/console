@@ -3,7 +3,6 @@ import { DEFAULTS } from '@rediacc/shared/config';
 import type { Placement } from '@rediacc/shared/config-schema';
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
-import { accountServerFetch } from '../services/account/account-client.js';
 import { issueFreeRepoLicense, resolveLicenseAuthority } from '../services/account/free-license.js';
 import { issueRepoLicense } from '../services/account/license.js';
 import { DEFAULT_DATASTORE, measureRepoSizeGb } from '../services/account/license-machine.js';
@@ -39,8 +38,8 @@ import {
   streamScopeFor,
 } from './backup-restore-chunk.js';
 import { assertRestorePathFlags, isPathRoute, runRestorePath } from './backup-restore-path.js';
-import { sourceImageOnMachine } from './backup-restore-route.js';
-import { type BackupManifestsResponse, registerBackupStorageCommands } from './backup-storage.js';
+import { lineageHasSnapshots, sourceImageOnMachine } from './backup-restore-route.js';
+import { registerBackupStorageCommands } from './backup-storage.js';
 import { registerBackupStrategyCommands } from './backup-strategy.js';
 import { listBackups } from './repo-backup-list.js';
 
@@ -620,30 +619,6 @@ async function defaultRestoreAt(args: {
   return (await lineageHasSnapshots(args.lineage, args.name))
     ? new Date().toISOString()
     : undefined;
-}
-
-/**
- * Whether the account index holds any snapshot of the lineage. An unreachable
- * index or an unreadable answer is "no": the caller then takes the pull route,
- * which is what restore did before the chunk store existed. That fallback is
- * said out loud, since on a chunk-store repo the pull has nothing to fetch.
- */
-async function lineageHasSnapshots(lineage: string, name: string): Promise<boolean> {
-  try {
-    const result = await accountServerFetch<BackupManifestsResponse>(
-      // Whether any row exists: one is enough, and the listing is capped per page.
-      `/account/api/v1/backups/manifests?lineage=${encodeURIComponent(lineage)}&limit=1`
-    );
-    return result.manifests.length > 0; // a malformed answer throws into the catch
-  } catch (error) {
-    outputService.warn(
-      t('commands.backup.restore.snapshotIndexUnreadable', {
-        name,
-        reason: error instanceof Error ? error.message : String(error),
-      })
-    );
-    return false;
-  }
 }
 
 export { resolveSnapshotAt, type StreamScope } from './backup-restore-chunk.js';

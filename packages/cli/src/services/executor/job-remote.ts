@@ -18,6 +18,7 @@
  */
 
 import { BACKUP_DEFAULTS } from '@rediacc/shared/config';
+import { z } from 'zod';
 import type { SFTPClient } from '../../remote/sftp/index.js';
 import { getOutputFormat } from '../../utils/errors.js';
 import { formatStepDoneLine, getActiveLabel } from '../../utils/timeline.js';
@@ -34,11 +35,10 @@ import {
   buildJobLogsCommand,
   buildJobStatusCommand,
   createEventLineReader,
+  extractJsonObject,
   isRenetFlagUnsupported,
-  type JobGcResult,
   JobLogCursor,
   type JobStatus,
-  parseJobGcResult,
   parseJobList,
   parseJobStatus,
   renetOlderThanCliMessage,
@@ -202,6 +202,23 @@ export async function cancelJob(conn: JobConnection, jobId: string): Promise<Job
     `cancel job ${jobId}`
   );
   return parseJobStatus(stdout);
+}
+
+/** What `renet job gc --json` prints. */
+const JobGcResultSchema = z.object({
+  removed: z.array(z.string()).nullable().default([]),
+  count: z.number(),
+});
+
+interface JobGcResult {
+  removed: string[];
+  count: number;
+}
+
+/** Parse `renet job gc --json` output. */
+function parseJobGcResult(stdout: string): JobGcResult {
+  const parsed = JobGcResultSchema.parse(JSON.parse(extractJsonObject(stdout)));
+  return { removed: parsed.removed ?? [], count: parsed.count };
 }
 
 /** Remove finished jobs and their logs. Running jobs are never collected. */

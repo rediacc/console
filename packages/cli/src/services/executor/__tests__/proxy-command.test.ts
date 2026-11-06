@@ -11,11 +11,8 @@ import { getCommand } from '@rediacc/shared/cli-contract';
 import { PROXY_ROUTES } from '@rediacc/shared/cli-contract/wire';
 import { Command } from 'commander';
 import { describe, expect, it } from 'vitest';
-import {
-  ProxyClient,
-  ProxyStreamTruncatedError,
-  ProxyVersionMismatchError,
-} from '../proxy-client.js';
+import { ProxyClient } from '../proxy-client.js';
+import { ProxyStreamTruncatedError, ProxyVersionMismatchError } from '../proxy-client-support.js';
 import {
   assertDetachable,
   assertProxyCapable,
