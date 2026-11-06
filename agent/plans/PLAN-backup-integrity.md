@@ -393,6 +393,7 @@ V1 to V6 share `backup.go`, `backup_snapshot.go` and `backup_restore.go`, and on
   (corrected ASKED:2026-11-05T07:06Z) Decision O1 is settled: `DRILL_STORE_*` points at the existing `rediacc-backups-bench` bucket and its bench keys, not a separate probe bucket.
   - Accept: the command rc 0, the status codes recorded here.
     (ticked) 2026-11-06T16:36:46Z by d778be9d: commit:5357e04f8 drill backup --legs a,s on rediacc-backups-bench rc=0 24/24, duplicate_put=412 wrong_checksum=400; comment and record corrected in the same unit (f51aa5e + 5357e04f8); bench-only proof
+  (note 2026-11-06) "The same commit" holds at the console level: grants.go lives in the renet submodule, so its fix is renet f51aa5e, and console 5357e04f8 carries the record and the pointer move to it as one commit.
 - [ ] P4: The D1 clone check covers migration 0073.
   - Accept: the CD or local `rediacc_ci.deploy.test_d1_migrations` run rc 0 for eu, recorded with its run id.
 
