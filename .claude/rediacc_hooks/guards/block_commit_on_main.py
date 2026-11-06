@@ -332,18 +332,11 @@ def _redirect_target(run):
 
 
 def _file_writer(run):
-    """A label for a non-git `run` that can write a git configuration file, "" for one that cannot (an `INERT_COMMANDS` name with no output redirect)."""
-    from rediacc_hooks import shellscan
-
+    """A label for a non-git `run` that can write a git configuration file, "" for one that cannot: an `INERT_COMMANDS` name with no output redirect, and `eval` or a `sh -c` payload, whose own runs this loop judges in turn."""
     name = commit_policy._base(run.name)
-    targets = [
-        t
-        for t in shellscan.redirect_targets(run)
-        if t not in ("/dev/null", "/dev/stdout", "/dev/stderr", "/dev/tty")
-        and not t.startswith("/dev/fd/")
-    ]
-    if targets:
-        return "%s > %s" % (name, targets[0])
+    target = _redirect_target(run)
+    if target:
+        return "%s > %s" % (name, target)
     if name in INERT_COMMANDS:
         return ""
     # A `sh -c` payload and an `eval` string are walked into runs of their own, which this loop judges in turn.
@@ -387,7 +380,9 @@ def writer_runs(cmd, base, created=frozenset()):
             continue
         if write.verb not in WRITER_VERBS:
             continue
-        if write.verb != "commit" and NO_COMMIT_FLAGS.intersection(write.args):
+        if write.verb != "commit" and any(
+            a.partition("=")[0] in NO_COMMIT_FLAGS for a in write.args
+        ):
             continue
         found.append(write)
     return found

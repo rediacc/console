@@ -195,6 +195,7 @@ def test_the_lead_landing_in_the_main_checkout_is_admitted(world, verb, args, sh
         "git -C private/renet cherry-pick --quit",
         "git merge --abort",
         "git am --show-current-patch",
+        "git am --show-current-patch=raw",
         "git rebase --abort",
         "git merge-base HEAD main",
         "git log -n 3",
@@ -254,7 +255,25 @@ ALIAS_COMMANDS = [
         "alias redefined by a git redirect earlier",
         "git log -1 --format='[alias]%n%tlg = cherry-pick' > .git/config && git lg -x 0123abc",
     ),
+    # Review fab28346.2 and 6ef8c42e.1: any other command, and a git run redirected into ANY file, fails the later alias closed (the hook cannot tell a config from a link to one).
+    ("alias after a non-inert command", "make test && git lg -x 0123abc"),
+    ("alias after a git redirect to a plain file", "git status > /tmp/s.txt && git lg -x 0123abc"),
 ]
+# Review fab28346.4: a git run reached only through a wrapper is a writer run like any other.
+WRAPPED_COMMANDS = [
+    ("timeout", "timeout 5 git cherry-pick -x 0123abc"),
+    ("env", "env A=1 git cherry-pick -x 0123abc"),
+    ("nohup", "nohup git cherry-pick -x 0123abc"),
+]
+
+
+@pytest.mark.parametrize(("row", "command"), WRAPPED_COMMANDS, ids=[r for r, _ in WRAPPED_COMMANDS])
+def test_a_writer_landing_verb_behind_a_wrapper_is_refused(world, row, command):
+    root, lease = world
+    refused, err = _verdict(command, root, "general-purpose")
+    assert refused, "a sub-agent's `%s` (%s) in the main checkout was admitted" % (command, row)
+    leased, err = _verdict("cd %s && %s" % (lease, command), root, "general-purpose")
+    assert not leased, "the same `%s` (%s) in the lease was refused: %s" % (command, row, err)
 
 
 @pytest.mark.parametrize(("row", "args", "verb"), ALIASED, ids=[r for r, _, _ in ALIASED])
@@ -316,6 +335,10 @@ def test_a_writer_alias_from_the_environment_or_an_earlier_step_is_refused(world
         "git -c alias.status=commit status",
         "cd private/renet && git lg -n 3",
         "echo x > /dev/null && git lg -n 3",
+        # Review 6ef8c42e.2: a git run into a /dev sink writes no file, so a later alias stays readable.
+        "git log -1 > /dev/null && git lg -n 3",
+        "git log -1 > /dev/stderr && git lg -n 3",
+        "git log -1 2> /dev/fd/2 && git lg -n 3",
     ],
 )
 def test_a_writer_alias_that_creates_no_commit_is_admitted(world, command):
