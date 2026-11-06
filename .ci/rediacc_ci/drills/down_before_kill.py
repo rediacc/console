@@ -286,7 +286,10 @@ def parse_unit(text: str) -> dict[str, Any]:
         key, value = line.split("=", 1)
         key, value = key.strip(), value.strip()
         if key == "ExecStop":
-            exec_stop.append(value)
+            if value:
+                exec_stop.append(value)
+            else:
+                exec_stop.clear()  # systemd: an empty assignment resets the earlier ExecStop= list
         elif key == "After":
             after.update(value.split())
         elif key == "Environment":

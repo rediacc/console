@@ -1025,3 +1025,46 @@ def test_cleanup_deletes_the_fork_before_the_grand(tmp_path: pathlib.Path) -> No
 def test_no_hardcoded_mount_root() -> None:
     source = pathlib.Path(k.__file__).read_text()
     assert '"/mnt/rediacc' not in source
+
+
+def test_parse_unit_empty_exec_stop_resets_the_list() -> None:
+    """A drop-in `ExecStop=` (empty) clears the base unit's stop hook, as systemd reads it."""
+    text = unit_text(NID_A, GUID_A) + "\n[Service]\nExecStop=\n"
+    assert k.parse_unit(text)["exec_stop"] == []
+    reset_then_set = text + "ExecStop=/bin/true\n"
+    assert k.parse_unit(reset_then_set)["exec_stop"] == ["/bin/true"]
+    assert not k.stop_side_verdict(k.parse_unit(text), NID_A, GUID_A)[0]
+
+
+class _RowProbe(k._LiveK1):
+    """A K1 whose reads are canned, to drive `_restart_row` alone."""
+
+    def __init__(self) -> None:
+        self.ref_a = "a"
+        self.seen: list[tuple[str, bool]] = []
+        self._states = iter(
+            [
+                {"now": 100, "pid": 11, "start": 90},
+                {"now": 100, "pid": 22, "start": 100},
+            ]
+        )
+
+    def state(self, ref: str) -> dict:
+        return next(self._states)
+
+    def events(self, ref: str) -> list:
+        return [("down", 50)]
+
+    def check(self, desc: str, ok: bool, res=None, evidence: str = "") -> bool:
+        self.seen.append((evidence, ok))
+        return ok
+
+
+def test_restart_row_passes_both_main_pids_to_the_verdict() -> None:
+    """A restart inside the second the drill acted shows only as a MainPID change: the row passes the pids and prints them."""
+    live = _RowProbe()
+    live._restart_row("row", lambda: _Res(0), want_up=False)
+    evidence, ok = live.seen[0]
+    assert "MainPID 11->22" in evidence
+    assert "nothing restarted" not in evidence
+    assert ok is False  # restarted, but no down() at or after the action

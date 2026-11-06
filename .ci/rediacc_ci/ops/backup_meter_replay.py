@@ -233,6 +233,9 @@ def real_runner(argv: Sequence[str], timeout: float) -> tuple[int, str, str]:
         )
     except subprocess.TimeoutExpired:
         return 124, "", "timed out after %.0f s" % timeout
+    except OSError as exc:
+        # A missing or non-executable --rdc is no verdict (127), not a Python crash that exits 1, the disagreement code.
+        return 127, "", "cannot run %s: %s" % (argv[0], exc)
     return proc.returncode, proc.stdout, proc.stderr
 
 
@@ -426,7 +429,13 @@ def replay(rdc: Rdc, lister: Lister, a: ReplayArgs, report: Report) -> None:
     uploaded = 0
     while True:
         deps.sleep(a.poll)
-        uploaded = lister.list(subscription, lineage).of(lineage).chunks - base.chunks
+        try:
+            uploaded = lister.list(subscription, lineage).of(lineage).chunks - base.chunks
+        except NoVerdictError:
+            # The throttled client and the remote renet snapshot must not outlive an unreadable listing.
+            proc.kill()
+            rdc.on_machine(a.machine, KILL_COMMAND)
+            raise
         if uploaded >= a.kill_after:
             break
         if proc.poll() is not None:

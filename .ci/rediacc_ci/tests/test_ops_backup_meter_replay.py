@@ -453,3 +453,28 @@ def test_parse_page_decodes_entities_and_token():
     objects, token = mod.parse_page(xml)
     assert objects == [("t/s/l/x/m/a&b", 3)]
     assert token == "tok&1"
+
+
+def test_replay_unreadable_listing_mid_poll_kills_the_client_and_the_remote_run(tmp_path):
+    w = seeded()
+    base_transport = w.transport
+    calls = {"n": 0}
+
+    def flaky(method, url, body, headers):
+        calls["n"] += 1
+        # the baseline listing is call 1 (one page); the first poll listing fails
+        if calls["n"] >= 2:
+            return 500, b""
+        return base_transport(method, url, body, headers)
+
+    w.transport = flaky
+    rc, text = run(w, tmp_path, *REPLAY)
+    assert rc == 2, text
+    assert ["term", "connect", "hostinger", "-c", mod.KILL_COMMAND] in w.calls
+    assert w.snapshot_running is False
+
+
+def test_real_runner_missing_binary_is_127_not_a_crash():
+    rc, _out, err = mod.real_runner(["/nonexistent/rdc-binary", "x"], 5)
+    assert rc == 127
+    assert "/nonexistent/rdc-binary" in err
