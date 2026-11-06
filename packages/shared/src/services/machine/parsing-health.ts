@@ -15,11 +15,8 @@ import {
   type ListResult,
   type ServiceInfo,
   type SystemInfo,
-} from "../../renet-contract/data/list-types.generated.js";
-import {
-  type MachineWithVaultStatus,
-  parseListResult,
-} from "./parsing-types.js";
+} from '../../renet-contract/data/list-types.generated.js';
+import { type MachineWithVaultStatus, parseListResult } from './parsing-types.js';
 
 /**
  * Health check result for CI/CD pipelines.
@@ -89,7 +86,7 @@ function parsePercent(val: string | null): number | null {
 }
 
 /** Get default empty health details */
-function getDefaultHealthDetails(): MachineHealthResult["details"] {
+function getDefaultHealthDetails(): MachineHealthResult['details'] {
   return {
     system: {
       memoryPercent: null,
@@ -134,8 +131,8 @@ function getDefaultHealthDetails(): MachineHealthResult["details"] {
 /** Check system resource usage (memory, disk, datastore) */
 function checkSystemUsage(
   systemInfo: SystemInfo | null,
-  ctx: HealthCheckContext,
-): MachineHealthResult["details"]["system"] {
+  ctx: HealthCheckContext
+): MachineHealthResult['details']['system'] {
   const systemDetails = {
     memoryPercent: systemInfo?.memory.use_percent ?? null,
     diskPercent: systemInfo?.disk.use_percent ?? null,
@@ -147,9 +144,9 @@ function checkSystemUsage(
   const diskPct = parsePercent(systemDetails.diskPercent);
   const dsPct = parsePercent(systemDetails.datastorePercent);
 
-  checkUsageThreshold(memPct, "Memory", 90, 80, ctx);
-  checkUsageThreshold(diskPct, "Disk", 95, 85, ctx);
-  checkUsageThreshold(dsPct, "Datastore", 95, 85, ctx);
+  checkUsageThreshold(memPct, 'Memory', 90, 80, ctx);
+  checkUsageThreshold(diskPct, 'Disk', 95, 85, ctx);
+  checkUsageThreshold(dsPct, 'Datastore', 95, 85, ctx);
 
   return systemDetails;
 }
@@ -160,7 +157,7 @@ function checkUsageThreshold(
   name: string,
   criticalThreshold: number,
   warningThreshold: number,
-  ctx: HealthCheckContext,
+  ctx: HealthCheckContext
 ): void {
   if (value === null) return;
 
@@ -177,40 +174,30 @@ function checkUsageThreshold(
 function checkContainers(
   containers: ContainerInfo[],
   healthSummary: ReturnType<typeof getListHealthSummary>,
-  ctx: HealthCheckContext,
-): MachineHealthResult["details"]["containers"] {
-  const runningContainers = containers.filter(
-    (c) => c.state === "running",
-  ).length;
+  ctx: HealthCheckContext
+): MachineHealthResult['details']['containers'] {
+  const runningContainers = containers.filter((c) => c.state === 'running').length;
   const maxFailingStreak = containers.reduce(
     (max, c) => Math.max(max, c.health?.failing_streak ?? 0),
-    0,
+    0
   );
 
   if (healthSummary.containersUnhealthy > 0) {
-    ctx.issues.push(
-      `${healthSummary.containersUnhealthy} unhealthy container(s)`,
-    );
+    ctx.issues.push(`${healthSummary.containersUnhealthy} unhealthy container(s)`);
     ctx.exitCode = Math.max(ctx.exitCode, 2);
   }
 
-  const restartLoops = containers.filter((c) =>
-    /^restarting\b/i.test(c.status ?? ""),
-  ).length;
+  const restartLoops = containers.filter((c) => /^restarting\b/i.test(c.status ?? '')).length;
   if (restartLoops > 0) {
     ctx.issues.push(`${restartLoops} container(s) in restart loop`);
     ctx.exitCode = Math.max(ctx.exitCode, 3);
   }
 
   if (maxFailingStreak > 5) {
-    ctx.issues.push(
-      `Container health check failing streak: ${maxFailingStreak}`,
-    );
+    ctx.issues.push(`Container health check failing streak: ${maxFailingStreak}`);
     ctx.exitCode = Math.max(ctx.exitCode, 3);
   } else if (maxFailingStreak > 2) {
-    ctx.issues.push(
-      `Container health check failing streak: ${maxFailingStreak}`,
-    );
+    ctx.issues.push(`Container health check failing streak: ${maxFailingStreak}`);
     ctx.exitCode = Math.max(ctx.exitCode, 1);
   }
 
@@ -227,10 +214,10 @@ function checkContainers(
 function checkServices(
   services: ServiceInfo[],
   healthSummary: ReturnType<typeof getListHealthSummary>,
-  ctx: HealthCheckContext,
-): MachineHealthResult["details"]["services"] {
+  ctx: HealthCheckContext
+): MachineHealthResult['details']['services'] {
   const restartingServices = services.filter(
-    (s) => s.restart_count > 3 || s.sub_state === "auto-restart",
+    (s) => s.restart_count > 3 || s.sub_state === 'auto-restart'
   ).length;
 
   if (healthSummary.servicesFailed > 0) {
@@ -260,7 +247,7 @@ interface StorageMetrics {
 
 /** Check if SMART health indicates a healthy device */
 function isSmartHealthy(smartHealth: string | undefined): boolean {
-  return smartHealth === "PASSED" || smartHealth === "OK";
+  return smartHealth === 'PASSED' || smartHealth === 'OK';
 }
 
 /**
@@ -272,14 +259,7 @@ function isSmartHealthy(smartHealth: string | undefined): boolean {
  * than saying nothing — an alert that always fires teaches people to ignore the
  * ones that matter.
  */
-const SMART_INDETERMINATE = new Set([
-  "N/A",
-  "unknown",
-  "UNKNOWN",
-  "Unknown",
-  "-",
-  "",
-]);
+const SMART_INDETERMINATE = new Set(['N/A', 'unknown', 'UNKNOWN', 'Unknown', '-', '']);
 
 /** Check if SMART health indicates a failing device */
 function isSmartFailing(smartHealth: string | undefined): boolean {
@@ -301,10 +281,7 @@ function collectStorageMetrics(blockDevices: BlockDevice[]): StorageMetrics {
       smartFailing++;
     }
     if (device.temperature !== undefined) {
-      maxTemp =
-        maxTemp === null
-          ? device.temperature
-          : Math.max(maxTemp, device.temperature);
+      maxTemp = maxTemp === null ? device.temperature : Math.max(maxTemp, device.temperature);
     }
   }
 
@@ -314,14 +291,12 @@ function collectStorageMetrics(blockDevices: BlockDevice[]): StorageMetrics {
 /** Check storage health */
 function checkStorage(
   blockDevices: BlockDevice[],
-  ctx: HealthCheckContext,
-): MachineHealthResult["details"]["storage"] {
+  ctx: HealthCheckContext
+): MachineHealthResult['details']['storage'] {
   const metrics = collectStorageMetrics(blockDevices);
 
   if (metrics.smartFailing > 0) {
-    ctx.issues.push(
-      `${metrics.smartFailing} storage device(s) with SMART failure`,
-    );
+    ctx.issues.push(`${metrics.smartFailing} storage device(s) with SMART failure`);
     ctx.exitCode = Math.max(ctx.exitCode, 3);
   }
 
@@ -337,19 +312,16 @@ function checkStorage(
 function checkRepositories(
   listResult: ListResult,
   healthSummary: ReturnType<typeof getListHealthSummary>,
-  ctx: HealthCheckContext,
-): MachineHealthResult["details"]["repositories"] {
+  ctx: HealthCheckContext
+): MachineHealthResult['details']['repositories'] {
   const repositoryDetails = {
     total: healthSummary.repositoriesTotal,
     mounted: healthSummary.repositoriesMounted,
-    dockerRunning: listResult.repositories.filter((r) => r.docker_running)
-      .length,
+    dockerRunning: listResult.repositories.filter((r) => r.docker_running).length,
   };
 
   // Only repos that are SUPPOSED to be up count as a problem. A repo with autostart off is deliberately parked — reporting it as unhealthy every time is the same cry-wolf failure as flagging a virtual disk's unknown SMART state, and it buries the repos that really did fall over.
-  const unmountedCount = listResult.repositories.filter(
-    (r) => r.autostart && !r.mounted,
-  ).length;
+  const unmountedCount = listResult.repositories.filter((r) => r.autostart && !r.mounted).length;
   if (unmountedCount > 0) {
     ctx.issues.push(`${unmountedCount} repository(ies) not mounted`);
     ctx.exitCode = Math.max(ctx.exitCode, 1);
@@ -381,29 +353,22 @@ const BACKUP_STALE_DAYS = 10;
  * than it should — the failure mode that unit status, exit codes and
  * `backup status` all miss by construction, because the job genuinely succeeds.
  */
-function checkBackupCoverage(
-  listResult: ListResult,
-  ctx: HealthCheckContext,
-): void {
+function checkBackupCoverage(listResult: ListResult, ctx: HealthCheckContext): void {
   const coverage = listResult.backup_coverage;
   if (!coverage) return; // no backup has ever run; absent is not a claim of health
 
   const stale = coverage.repos.filter((r) => r.age_days >= BACKUP_STALE_DAYS);
   if (stale.length > 0) {
     ctx.issues.push(
-      `${stale.length} repository(ies) not backed up in over ${BACKUP_STALE_DAYS} days`,
+      `${stale.length} repository(ies) not backed up in over ${BACKUP_STALE_DAYS} days`
     );
     ctx.exitCode = Math.max(ctx.exitCode, 1);
   }
 
   // A repo with no successful backup on record AND a recorded skip is a real incident. Without the skip it is most likely newly created and simply has not had its first run yet — flagging that would fire on every new repo.
-  const neverBackedUp = coverage.repos.filter(
-    (r) => r.age_days < 0 && Boolean(r.last_skipped_at),
-  );
+  const neverBackedUp = coverage.repos.filter((r) => r.age_days < 0 && Boolean(r.last_skipped_at));
   if (neverBackedUp.length > 0) {
-    ctx.issues.push(
-      `${neverBackedUp.length} repository(ies) have never been backed up`,
-    );
+    ctx.issues.push(`${neverBackedUp.length} repository(ies) have never been backed up`);
     ctx.exitCode = Math.max(ctx.exitCode, 2);
   }
 }
@@ -415,9 +380,7 @@ function checkBackupCoverage(
  * read as overdue — the server owns this hint, and inventing urgency from a
  * missing field would fire on every machine whose licences predate the field.
  */
-function isPastRefreshWindow(
-  refreshRecommendedAt: string | undefined,
-): boolean {
+function isPastRefreshWindow(refreshRecommendedAt: string | undefined): boolean {
   if (!refreshRecommendedAt) return false;
   const due = Date.parse(refreshRecommendedAt);
   if (Number.isNaN(due)) return false;
@@ -427,8 +390,8 @@ function isPastRefreshWindow(
 /** Check license statuses */
 function checkLicenses(
   listResult: ListResult,
-  ctx: HealthCheckContext,
-): MachineHealthResult["details"]["licenses"] {
+  ctx: HealthCheckContext
+): MachineHealthResult['details']['licenses'] {
   const statuses = getLicenseStatuses(listResult);
   const details = {
     total: statuses.length,
@@ -441,20 +404,20 @@ function checkLicenses(
 
   for (const s of statuses) {
     switch (s.status) {
-      case "valid":
+      case 'valid':
         details.valid++;
         break;
-      case "expired":
+      case 'expired':
         details.expired++;
         break;
-      case "machine_mismatch":
+      case 'machine_mismatch':
         details.machineMismatch++;
         break;
-      case "missing":
+      case 'missing':
         details.missing++;
         break;
-      case "invalid_signature":
-      case "sequence_regression":
+      case 'invalid_signature':
+      case 'sequence_regression':
         details.invalidSignature++;
         break;
     }
@@ -462,7 +425,7 @@ function checkLicenses(
 
   // Licences carry a soft window (refreshRecommendedAt) before they hard-expire, so a lapse is predictable rather than sudden. Saying so while everything still works is the only warning that arrives in time to act on: once a licence actually expires, the backup has already started skipping that repo. Severity stays below expired — this is "action is due", not "something broke".
   const dueForRefresh = statuses.filter(
-    (s) => s.runtimeValid && isPastRefreshWindow(s.refreshRecommendedAt),
+    (s) => s.runtimeValid && isPastRefreshWindow(s.refreshRecommendedAt)
   ).length;
   if (dueForRefresh > 0) {
     ctx.issues.push(`${dueForRefresh} repo license(s) due for refresh`);
@@ -473,19 +436,15 @@ function checkLicenses(
     ctx.exitCode = Math.max(ctx.exitCode, 1);
   }
   if (details.machineMismatch > 0) {
-    ctx.issues.push(
-      `${details.machineMismatch} repo license(s) have machine ID mismatch`,
-    );
+    ctx.issues.push(`${details.machineMismatch} repo license(s) have machine ID mismatch`);
     ctx.exitCode = Math.max(ctx.exitCode, 1);
   }
   if (details.invalidSignature > 0) {
-    ctx.issues.push(
-      `${details.invalidSignature} repo license(s) have invalid signatures`,
-    );
+    ctx.issues.push(`${details.invalidSignature} repo license(s) have invalid signatures`);
     ctx.exitCode = Math.max(ctx.exitCode, 2);
   }
   if (details.total > 0 && details.missing === details.total) {
-    ctx.issues.push("All repo licenses are missing");
+    ctx.issues.push('All repo licenses are missing');
     ctx.exitCode = Math.max(ctx.exitCode, 2);
   } else if (details.missing > 0) {
     // A repo without a license is silently dropped from backups (the sync skips unlicensed repos and still exits 0), so a partial outage is exactly the
@@ -501,11 +460,11 @@ function checkLicenses(
 /** Get health message based on exit code */
 function getHealthMessage(exitCode: number): string {
   const messages: Record<number, string> = {
-    0: "All systems healthy",
-    1: "System has warnings",
-    2: "System has errors",
+    0: 'All systems healthy',
+    1: 'System has warnings',
+    2: 'System has errors',
   };
-  return messages[exitCode] ?? "System has critical issues";
+  return messages[exitCode] ?? 'System has critical issues';
 }
 
 /**
@@ -518,18 +477,16 @@ function getHealthMessage(exitCode: number): string {
  * - 2: Errors (unhealthy containers, failed services)
  * - 3: Critical (SMART failing, crash loops)
  */
-export function getMachineHealth(
-  machine: MachineWithVaultStatus,
-): MachineHealthResult {
+export function getMachineHealth(machine: MachineWithVaultStatus): MachineHealthResult {
   const listResult = parseListResult(machine.vaultStatus);
 
   if (!listResult) {
     return {
       healthy: false,
       exitCode: 2,
-      message: "No status data available",
+      message: 'No status data available',
       details: getDefaultHealthDetails(),
-      issues: ["No vault status data"],
+      issues: ['No vault status data'],
     };
   }
 

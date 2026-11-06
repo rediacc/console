@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { getMachineHealth } from "../parsing-health.js";
+import { describe, expect, it } from 'vitest';
+import { getMachineHealth } from '../parsing-health.js';
 
 /**
  * Build the minimum vaultStatus shape getMachineHealth parses. Only the fields
@@ -27,229 +27,205 @@ function machineWith(overrides: {
   } as unknown as Parameters<typeof getMachineHealth>[0];
 }
 
-const issuesOf = (m: Parameters<typeof getMachineHealth>[0]) =>
-  getMachineHealth(m).issues;
+const issuesOf = (m: Parameters<typeof getMachineHealth>[0]) => getMachineHealth(m).issues;
 
-describe("SMART health classification", () => {
+describe('SMART health classification', () => {
   // The regression: a QEMU/KVM guest reports smart_health "unknown" because a virtual disk exposes no SMART data. Counting that as a failure raised the file's highest-severity issue on every VM.
-  it("does not report a failure for unknown SMART state", () => {
+  it('does not report a failure for unknown SMART state', () => {
     const issues = issuesOf(
-      machineWith({ blockDevices: [{ name: "sda", smart_health: "unknown" }] }),
+      machineWith({ blockDevices: [{ name: 'sda', smart_health: 'unknown' }] })
     );
-    expect(issues.join(" ")).not.toContain("SMART");
+    expect(issues.join(' ')).not.toContain('SMART');
   });
 
-  it.each(["N/A", "UNKNOWN", "Unknown", "-", ""])(
-    "treats %j as indeterminate, not failing",
+  it.each(['N/A', 'UNKNOWN', 'Unknown', '-', ''])(
+    'treats %j as indeterminate, not failing',
     (state) => {
       const issues = issuesOf(
-        machineWith({ blockDevices: [{ name: "sda", smart_health: state }] }),
+        machineWith({ blockDevices: [{ name: 'sda', smart_health: state }] })
       );
-      expect(issues.join(" ")).not.toContain("SMART");
-    },
+      expect(issues.join(' ')).not.toContain('SMART');
+    }
   );
 
-  it.each(["PASSED", "OK"])("treats %j as healthy", (state) => {
-    const issues = issuesOf(
-      machineWith({ blockDevices: [{ name: "sda", smart_health: state }] }),
-    );
-    expect(issues.join(" ")).not.toContain("SMART");
+  it.each(['PASSED', 'OK'])('treats %j as healthy', (state) => {
+    const issues = issuesOf(machineWith({ blockDevices: [{ name: 'sda', smart_health: state }] }));
+    expect(issues.join(' ')).not.toContain('SMART');
   });
 
   // Control: a genuinely failing disk must still raise, or the fix above would have silenced the check entirely rather than corrected it.
-  it.each(["FAILED", "FAILING!"])("still reports %j as a failure", (state) => {
-    const issues = issuesOf(
-      machineWith({ blockDevices: [{ name: "sda", smart_health: state }] }),
-    );
-    expect(issues.join(" ")).toContain("SMART failure");
+  it.each(['FAILED', 'FAILING!'])('still reports %j as a failure', (state) => {
+    const issues = issuesOf(machineWith({ blockDevices: [{ name: 'sda', smart_health: state }] }));
+    expect(issues.join(' ')).toContain('SMART failure');
   });
 
-  it("sets a non-zero exit code for a real SMART failure", () => {
+  it('sets a non-zero exit code for a real SMART failure', () => {
     const health = getMachineHealth(
-      machineWith({ blockDevices: [{ name: "sda", smart_health: "FAILED" }] }),
+      machineWith({ blockDevices: [{ name: 'sda', smart_health: 'FAILED' }] })
     );
     expect(health.exitCode).toBeGreaterThan(0);
     expect(health.healthy).toBe(false);
   });
 });
 
-describe("unmounted repository reporting", () => {
+describe('unmounted repository reporting', () => {
   // A repo with autostart off is parked on purpose; flagging it every run buries
   // the repos that actually fell over.
-  it("ignores an unmounted repo that is not set to autostart", () => {
+  it('ignores an unmounted repo that is not set to autostart', () => {
     const issues = issuesOf(
       machineWith({
-        repositories: [{ name: "demo", mounted: false, autostart: false }],
-      }),
+        repositories: [{ name: 'demo', mounted: false, autostart: false }],
+      })
     );
-    expect(issues.join(" ")).not.toContain("not mounted");
+    expect(issues.join(' ')).not.toContain('not mounted');
   });
 
-  it("reports an unmounted repo that should have autostarted", () => {
+  it('reports an unmounted repo that should have autostarted', () => {
     const issues = issuesOf(
       machineWith({
-        repositories: [{ name: "mail", mounted: false, autostart: true }],
-      }),
+        repositories: [{ name: 'mail', mounted: false, autostart: true }],
+      })
     );
-    expect(issues.join(" ")).toContain("1 repository(ies) not mounted");
+    expect(issues.join(' ')).toContain('1 repository(ies) not mounted');
   });
 
-  it("counts only the autostart repos that are down", () => {
+  it('counts only the autostart repos that are down', () => {
     const issues = issuesOf(
       machineWith({
         repositories: [
-          { name: "up", mounted: true, autostart: true },
-          { name: "parked", mounted: false, autostart: false },
-          { name: "down-a", mounted: false, autostart: true },
-          { name: "down-b", mounted: false, autostart: true },
+          { name: 'up', mounted: true, autostart: true },
+          { name: 'parked', mounted: false, autostart: false },
+          { name: 'down-a', mounted: false, autostart: true },
+          { name: 'down-b', mounted: false, autostart: true },
         ],
-      }),
+      })
     );
-    expect(issues.join(" ")).toContain("2 repository(ies) not mounted");
+    expect(issues.join(' ')).toContain('2 repository(ies) not mounted');
   });
 });
 
-describe("docker daemon count", () => {
+describe('docker daemon count', () => {
   // docker_running means the repo's dockerd answers its socket, so a daemon up
   // with no container still counts. containers_running is a separate field.
-  it("counts a repo whose daemon answers with zero containers", () => {
+  it('counts a repo whose daemon answers with zero containers', () => {
     const health = getMachineHealth(
       machineWith({
         repositories: [
           {
-            name: "hermes",
+            name: 'hermes',
             mounted: true,
             docker_running: true,
             containers_running: false,
             container_count: 0,
           },
           {
-            name: "parked",
+            name: 'parked',
             mounted: false,
             docker_running: false,
             container_count: 0,
           },
         ],
-      }),
+      })
     );
     expect(health.details.repositories.dockerRunning).toBe(1);
   });
 });
 
-describe("repo license reporting", () => {
-  const lic = (status: string, n: number) =>
-    Array.from({ length: n }, () => ({ status }));
+describe('repo license reporting', () => {
+  const lic = (status: string, n: number) => Array.from({ length: n }, () => ({ status }));
 
   // The gap: partial-missing was counted but never surfaced, so repos could drop out of backups (the sync skips unlicensed repos) with no signal anywhere.
-  it("reports partially missing licenses", () => {
+  it('reports partially missing licenses', () => {
     const issues = issuesOf(
       machineWith({
-        licenseStatuses: [...lic("missing", 3), ...lic("valid", 8)],
-      }),
+        licenseStatuses: [...lic('missing', 3), ...lic('valid', 8)],
+      })
     );
-    expect(issues.join(" ")).toContain("3 repo license(s) missing");
+    expect(issues.join(' ')).toContain('3 repo license(s) missing');
   });
 
-  it("still reports the all-missing case distinctly", () => {
-    const issues = issuesOf(
-      machineWith({ licenseStatuses: lic("missing", 4) }),
-    );
-    expect(issues.join(" ")).toContain("All repo licenses are missing");
-    expect(issues.join(" ")).not.toContain("4 repo license(s) missing");
+  it('still reports the all-missing case distinctly', () => {
+    const issues = issuesOf(machineWith({ licenseStatuses: lic('missing', 4) }));
+    expect(issues.join(' ')).toContain('All repo licenses are missing');
+    expect(issues.join(' ')).not.toContain('4 repo license(s) missing');
   });
 
-  it("says nothing when every license is valid", () => {
-    const issues = issuesOf(machineWith({ licenseStatuses: lic("valid", 11) }));
-    expect(issues.join(" ")).not.toContain("license");
+  it('says nothing when every license is valid', () => {
+    const issues = issuesOf(machineWith({ licenseStatuses: lic('valid', 11) }));
+    expect(issues.join(' ')).not.toContain('license');
   });
 
   it.each([
-    ["expired", "expired"],
-    ["machine_mismatch", "machine ID mismatch"],
-    ["invalid_signature", "invalid signatures"],
-  ])("still reports %s licenses", (status, expected) => {
+    ['expired', 'expired'],
+    ['machine_mismatch', 'machine ID mismatch'],
+    ['invalid_signature', 'invalid signatures'],
+  ])('still reports %s licenses', (status, expected) => {
     const issues = issuesOf(
-      machineWith({ licenseStatuses: [...lic(status, 2), ...lic("valid", 5)] }),
+      machineWith({ licenseStatuses: [...lic(status, 2), ...lic('valid', 5)] })
     );
-    expect(issues.join(" ")).toContain(expected);
+    expect(issues.join(' ')).toContain(expected);
   });
 });
 
-describe("license refresh window", () => {
-  const daysFromNow = (n: number) =>
-    new Date(Date.now() + n * 86400_000).toISOString();
+describe('license refresh window', () => {
+  const daysFromNow = (n: number) => new Date(Date.now() + n * 86400_000).toISOString();
   const valid = (refreshRecommendedAt?: string) => ({
-    status: "valid",
+    status: 'valid',
     runtimeValid: true,
     ...(refreshRecommendedAt ? { refreshRecommendedAt } : {}),
   });
 
   // The warning that arrives in time to act on: once a licence actually expires the backup has already started skipping that repo.
-  it("warns when a still-valid license is past its refresh window", () => {
-    const issues = issuesOf(
-      machineWith({ licenseStatuses: [valid(daysFromNow(-2))] }),
-    );
-    expect(issues.join(" ")).toContain("1 repo license(s) due for refresh");
+  it('warns when a still-valid license is past its refresh window', () => {
+    const issues = issuesOf(machineWith({ licenseStatuses: [valid(daysFromNow(-2))] }));
+    expect(issues.join(' ')).toContain('1 repo license(s) due for refresh');
   });
 
-  it("stays quiet when the refresh window is still in the future", () => {
-    const issues = issuesOf(
-      machineWith({ licenseStatuses: [valid(daysFromNow(30))] }),
-    );
-    expect(issues.join(" ")).not.toContain("due for refresh");
+  it('stays quiet when the refresh window is still in the future', () => {
+    const issues = issuesOf(machineWith({ licenseStatuses: [valid(daysFromNow(30))] }));
+    expect(issues.join(' ')).not.toContain('due for refresh');
   });
 
   // An absent hint means the server published no window — not that the licence is overdue. Treating missing as overdue would fire on every machine whose licences predate the field.
-  it("does not treat a missing refresh hint as overdue", () => {
+  it('does not treat a missing refresh hint as overdue', () => {
     const issues = issuesOf(machineWith({ licenseStatuses: [valid()] }));
-    expect(issues.join(" ")).not.toContain("due for refresh");
+    expect(issues.join(' ')).not.toContain('due for refresh');
   });
 
-  it("does not treat an unparseable refresh hint as overdue", () => {
-    const issues = issuesOf(
-      machineWith({ licenseStatuses: [valid("not-a-date")] }),
-    );
-    expect(issues.join(" ")).not.toContain("due for refresh");
+  it('does not treat an unparseable refresh hint as overdue', () => {
+    const issues = issuesOf(machineWith({ licenseStatuses: [valid('not-a-date')] }));
+    expect(issues.join(' ')).not.toContain('due for refresh');
   });
 
-  it("counts only the licenses actually past the window", () => {
+  it('counts only the licenses actually past the window', () => {
     const issues = issuesOf(
       machineWith({
-        licenseStatuses: [
-          valid(daysFromNow(-1)),
-          valid(daysFromNow(-5)),
-          valid(daysFromNow(10)),
-        ],
-      }),
+        licenseStatuses: [valid(daysFromNow(-1)), valid(daysFromNow(-5)), valid(daysFromNow(10))],
+      })
     );
-    expect(issues.join(" ")).toContain("2 repo license(s) due for refresh");
+    expect(issues.join(' ')).toContain('2 repo license(s) due for refresh');
   });
 
   // Severity: due-for-refresh is advisory. An estate that is merely due must not report as unhealthy, or the signal becomes indistinguishable from breakage.
-  it("does not mark the machine unhealthy for a refresh-due license alone", () => {
-    const health = getMachineHealth(
-      machineWith({ licenseStatuses: [valid(daysFromNow(-2))] }),
-    );
+  it('does not mark the machine unhealthy for a refresh-due license alone', () => {
+    const health = getMachineHealth(machineWith({ licenseStatuses: [valid(daysFromNow(-2))] }));
     expect(health.exitCode).toBe(0);
     expect(health.healthy).toBe(true);
   });
 
-  it("still reports expired separately from due-for-refresh", () => {
+  it('still reports expired separately from due-for-refresh', () => {
     const issues = issuesOf(
       machineWith({
-        licenseStatuses: [
-          valid(daysFromNow(-2)),
-          { status: "expired", runtimeValid: false },
-        ],
-      }),
+        licenseStatuses: [valid(daysFromNow(-2)), { status: 'expired', runtimeValid: false }],
+      })
     );
-    const joined = issues.join(" ");
-    expect(joined).toContain("due for refresh");
-    expect(joined).toContain("expired");
+    const joined = issues.join(' ');
+    expect(joined).toContain('due for refresh');
+    expect(joined).toContain('expired');
   });
 });
 
-describe("backup coverage", () => {
+describe('backup coverage', () => {
   const cov = (repos: unknown[]) =>
     ({
       vaultStatus: JSON.stringify({
@@ -260,64 +236,60 @@ describe("backup coverage", () => {
         block_devices: [],
         repositories: [],
         license_statuses: [],
-        backup_coverage: { updated_at: "2026-07-18T00:00:00Z", repos },
+        backup_coverage: { updated_at: '2026-07-18T00:00:00Z', repos },
       }),
     }) as unknown as Parameters<typeof getMachineHealth>[0];
 
   // The incident: repos at 10 and 11 days while the job reported success.
-  it("reports a repo that has gone stale", () => {
-    const issues = getMachineHealth(
-      cov([{ guid: "big-repo", age_days: 11 }]),
-    ).issues;
-    expect(issues.join(" ")).toContain("not backed up in over");
+  it('reports a repo that has gone stale', () => {
+    const issues = getMachineHealth(cov([{ guid: 'big-repo', age_days: 11 }])).issues;
+    expect(issues.join(' ')).toContain('not backed up in over');
   });
 
   // Control: an on-schedule estate must stay silent, or the warning is noise.
-  it("stays quiet for recently backed up repos", () => {
+  it('stays quiet for recently backed up repos', () => {
     const issues = getMachineHealth(
       cov([
-        { guid: "a", age_days: 1 },
-        { guid: "b", age_days: 6 },
-      ]),
+        { guid: 'a', age_days: 1 },
+        { guid: 'b', age_days: 6 },
+      ])
     ).issues;
-    expect(issues.join(" ")).not.toContain("not backed up");
+    expect(issues.join(' ')).not.toContain('not backed up');
   });
 
-  it("counts only the stale repos", () => {
+  it('counts only the stale repos', () => {
     const issues = getMachineHealth(
       cov([
-        { guid: "a", age_days: 1 },
-        { guid: "b", age_days: 11 },
-        { guid: "c", age_days: 20 },
-      ]),
+        { guid: 'a', age_days: 1 },
+        { guid: 'b', age_days: 11 },
+        { guid: 'c', age_days: 20 },
+      ])
     ).issues;
-    expect(issues.join(" ")).toContain("2 repository(ies) not backed up");
+    expect(issues.join(' ')).toContain('2 repository(ies) not backed up');
   });
 
   // A never-backed-up repo that was actively skipped is an incident...
-  it("reports a never-backed-up repo that was skipped", () => {
+  it('reports a never-backed-up repo that was skipped', () => {
     const issues = getMachineHealth(
-      cov([
-        { guid: "a", age_days: -1, last_skipped_at: "2026-07-18T00:00:00Z" },
-      ]),
+      cov([{ guid: 'a', age_days: -1, last_skipped_at: '2026-07-18T00:00:00Z' }])
     ).issues;
-    expect(issues.join(" ")).toContain("never been backed up");
+    expect(issues.join(' ')).toContain('never been backed up');
   });
 
   // ...but a brand new repo that simply has not had its first run is not.
-  it("stays quiet for a new repo with no skip recorded", () => {
-    const issues = getMachineHealth(cov([{ guid: "a", age_days: -1 }])).issues;
-    expect(issues.join(" ")).not.toContain("never been backed up");
+  it('stays quiet for a new repo with no skip recorded', () => {
+    const issues = getMachineHealth(cov([{ guid: 'a', age_days: -1 }])).issues;
+    expect(issues.join(' ')).not.toContain('never been backed up');
   });
 
   // Absent coverage means no backup has ever run — that is not a claim of health, but it must not fabricate an issue either.
-  it("says nothing when no backup state exists", () => {
+  it('says nothing when no backup state exists', () => {
     const issues = issuesOf(machineWith({}));
-    expect(issues.join(" ")).not.toContain("backed up");
+    expect(issues.join(' ')).not.toContain('backed up');
   });
 });
 
-describe("per-repo disk usage", () => {
+describe('per-repo disk usage', () => {
   const repo = (name: string, usePercent?: string) => ({
     name,
     mounted: true,
@@ -325,9 +297,9 @@ describe("per-repo disk usage", () => {
     ...(usePercent
       ? {
           disk_space: {
-            total: "100G",
-            used: "1G",
-            available: "1G",
+            total: '100G',
+            used: '1G',
+            available: '1G',
             use_percent: usePercent,
           },
         }
@@ -335,54 +307,52 @@ describe("per-repo disk usage", () => {
   });
 
   // CONTROL: demo-stackoverflow sat at 99% and raised no issue.
-  it("warns over 85% and names the repo", () => {
-    const health = getMachineHealth(
-      machineWith({ repositories: [repo("datastore-a", "86%")] }),
-    );
-    expect(health.issues.join(" ")).toContain("datastore-a");
-    expect(health.issues.join(" ")).toContain("86%");
+  it('warns over 85% and names the repo', () => {
+    const health = getMachineHealth(machineWith({ repositories: [repo('datastore-a', '86%')] }));
+    expect(health.issues.join(' ')).toContain('datastore-a');
+    expect(health.issues.join(' ')).toContain('86%');
     expect(health.exitCode).toBe(1);
   });
 
-  it("is critical over 95% and names the repo", () => {
+  it('is critical over 95% and names the repo', () => {
     const health = getMachineHealth(
-      machineWith({ repositories: [repo("demo-stackoverflow", "99%")] }),
+      machineWith({ repositories: [repo('demo-stackoverflow', '99%')] })
     );
-    expect(health.issues.join(" ")).toContain("demo-stackoverflow");
+    expect(health.issues.join(' ')).toContain('demo-stackoverflow');
     expect(health.exitCode).toBe(2);
   });
 
-  it("adds no issue at 85% exactly, below the threshold, or without disk_space", () => {
+  it('adds no issue at 85% exactly, below the threshold, or without disk_space', () => {
     const health = getMachineHealth(
       machineWith({
-        repositories: [repo("a", "85%"), repo("b", "40%"), repo("unmounted")],
-      }),
+        repositories: [repo('a', '85%'), repo('b', '40%'), repo('unmounted')],
+      })
     );
     expect(health.issues).toEqual([]);
     expect(health.exitCode).toBe(0);
   });
 });
 
-describe("restarting containers", () => {
-  const container = (status: string, state = "restarting") => ({
-    name: "web",
-    id: "abc",
+describe('restarting containers', () => {
+  const container = (status: string, state = 'restarting') => ({
+    name: 'web',
+    id: 'abc',
     state,
     status,
-    repository: "hermes",
+    repository: 'hermes',
   });
 
-  it("judges a Restarting status as a restart loop with exit 3", () => {
+  it('judges a Restarting status as a restart loop with exit 3', () => {
     const health = getMachineHealth(
-      machineWith({ containers: [container("Restarting (1) 5 seconds ago")] }),
+      machineWith({ containers: [container('Restarting (1) 5 seconds ago')] })
     );
-    expect(health.issues.join(" ")).toContain("restart loop");
+    expect(health.issues.join(' ')).toContain('restart loop');
     expect(health.exitCode).toBe(3);
   });
 
-  it("leaves a running container alone", () => {
+  it('leaves a running container alone', () => {
     const health = getMachineHealth(
-      machineWith({ containers: [container("Up 3 hours", "running")] }),
+      machineWith({ containers: [container('Up 3 hours', 'running')] })
     );
     expect(health.issues).toEqual([]);
     expect(health.exitCode).toBe(0);
