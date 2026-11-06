@@ -4,9 +4,19 @@ from __future__ import annotations
 
 import subprocess
 
+import pytest
+
 from rediacc_ci.drills import lifecycle_privilege as lp
 from rediacc_ci.drills import privdrop_probe as pp
 from rediacc_ci.tests.test_drills_lifecycle_privilege import GOOD_UP, ROOT_UP
+
+_REAL_WINDOW_CLEAR = pp.backup_window_clear
+
+
+@pytest.fixture(autouse=True)
+def _window_clear(monkeypatch) -> None:
+    # The recipe tests drive `run` with fake rdc results; the guard has its own tests below.
+    monkeypatch.setattr(pp, "backup_window_clear", lambda: True)
 
 
 def test_probe_file_matches_l1_probe() -> None:
@@ -184,3 +194,33 @@ def test_pgadmin_up_does_not_start_the_stack_after_a_failed_reset(tmp_path) -> N
     rc, calls = _pgadmin_up(1, tmp_path)
     assert rc == 1
     assert "up -d" not in calls
+
+
+TIMERS_0158 = (
+    "NEXT                        LEFT   LAST                        PASSED UNIT                            ACTIVATES\n"
+    "Fri 2026-11-06 02:00:00 UTC 1min   Thu 2026-11-05 02:00:00 UTC 23h ago rediacc-backup-nightly-hot.timer rediacc-backup-nightly-hot.service\n"
+    "NOW=1793930280\n"
+)
+
+
+def test_run_refuses_before_any_fork_inside_the_backup_window(capsys, monkeypatch) -> None:
+    # 2026-11-06 01:58:00Z, the timer fires at 02:00:00Z (the hostinger incident).
+    calls: list[list[str]] = []
+
+    def fake(argv, _timeout=1800):
+        calls.append(argv)
+        return subprocess.CompletedProcess(argv, 0, TIMERS_0158, "")
+
+    monkeypatch.setattr(pp, "_run", fake)
+    monkeypatch.setattr(pp, "backup_window_clear", _REAL_WINDOW_CLEAR)
+    assert pp.run("observability") == 2
+    assert len(calls) == 1
+    assert calls[0][3:5] == ["term", "connect"]
+    assert "next clear time 2026-11-06 02:45:01Z" in capsys.readouterr().out
+
+
+def test_run_refuses_when_the_timer_read_fails(monkeypatch) -> None:
+    calls = _recorder(monkeypatch, lambda a: a[3:5] == ["term", "connect"])
+    monkeypatch.setattr(pp, "backup_window_clear", _REAL_WINDOW_CLEAR)
+    assert pp.run("x") == 2
+    assert len(calls) == 1

@@ -12,6 +12,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+from rediacc_ci.drills import backup_window
 from rediacc_ci.drills import lifecycle_privilege as lp
 
 CONFIG = "eu-bench"
@@ -96,8 +97,23 @@ def _run(argv: list[str], timeout: int = 1800) -> subprocess.CompletedProcess[st
     return subprocess.run(argv, capture_output=True, text=True, timeout=timeout, check=False)
 
 
+def window_argv() -> list[str]:
+    return rdc_argv("term", "connect", MACHINE, "-c", backup_window.timers_script())
+
+
+def backup_window_clear() -> bool:
+    """The guard before anything is forked: the machine's backup timers are read through `term connect` and the run refuses inside a timer's window (finding #5ec68285)."""
+    res = _run(window_argv(), 300)
+    text = res.stdout if res.returncode == 0 else ""
+    clear, why = backup_window.window_verdict(text)
+    print("%s%s" % (why, "" if res.returncode == 0 else " (timer read rc=%d)" % res.returncode))
+    return clear
+
+
 def run(repo: str, collect: bool = False) -> int:
-    """Run the recipe for one repo; 0 only when every verdict holds and every rdc step exited 0."""
+    """Run the recipe for one repo; 0 only when every verdict holds and every rdc step exited 0. Refuses with rc 2, before any fork, inside a backup timer's window."""
+    if not backup_window_clear():
+        return 2
     failed = False
     up_failed = False
     stopped = False
