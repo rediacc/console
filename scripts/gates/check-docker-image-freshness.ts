@@ -155,8 +155,10 @@ export function digestFindings(
   refs: DigestRef[],
   answers: Map<string, TagAnswer>,
   leafOf: (r: DigestRef) => string | null
-): { findings: string[]; agreed: number; unjudged: string[] } {
+): { findings: string[]; keys: string[]; agreed: number; unjudged: string[] } {
   const findings: string[] = [];
+  // One finding key per finding, same index: `docker-digest:<file:line>`, built from the ref and not parsed back out of the display text.
+  const keys: string[] = [];
   const unjudged: string[] = [];
   let agreed = 0;
   for (const r of refs) {
@@ -174,6 +176,7 @@ export function digestFindings(
     const ref = `${r.image}:${r.tag}`;
     const a = answers.get(ref);
     if (a === undefined || a.digest === null) {
+      keys.push(`docker-digest:${at}`);
       findings.push(
         `${at}  ${ref}@${r.digest}: the index digest of ${ref} could NOT be read from Docker Hub (${a?.why ?? 'no lookup was made'}). Unknown is not agreement.`
       );
@@ -184,6 +187,7 @@ export function digestFindings(
       continue;
     }
     const leaf = leafOf(r);
+    keys.push(`docker-digest:${at}`);
     findings.push(
       `${at}  ${ref}@${r.digest}: Docker Hub serves ${a.digest} for ${ref}, so this line pulls another image than its tag names. ` +
         (leaf === null
@@ -191,7 +195,7 @@ export function digestFindings(
           : `Move the tag and the digest together: npm run pins -- bump ${leaf} --to ${ref} --major --reason "<why>" (the core refuses a target equal to the pinned tag, so with no newer tag this waits on a re-digest path; never hand-edit the digest).`)
     );
   }
-  return { findings, agreed, unjudged };
+  return { findings, keys, agreed, unjudged };
 }
 
 /** A numeric series, so `3.9-slim` and `3.13-slim` are comparable but `bookworm` is not. */
@@ -705,6 +709,14 @@ function selftest(): { bad: number; total: number } {
         leafOf
       ).findings[0]?.includes('HTTP 429') === true
   );
+  check(
+    'each finding carries the key docker-digest:<file:line>, one per finding, whatever its text says',
+    mismatch.keys.join() === 'docker-digest:workers/proxy/Dockerfile:1' &&
+      digestFindings(proxy, new Map(), leafOf).keys.join() ===
+        'docker-digest:workers/proxy/Dockerfile:1' &&
+      digestFindings(proxy, new Map([['node:26.13.0-slim', { digest: dA }]]), leafOf).keys
+        .length === 0
+  );
   const agree = digestFindings(proxy, new Map([['node:26.13.0-slim', { digest: dA }]]), leafOf);
   check(
     'a digest equal to the one Hub serves agrees',
@@ -818,11 +830,11 @@ async function main(): Promise<void> {
     console.error(
       `\n${RED}✗${NC} ${digests.findings.length} digest-pinned line(s) do not agree with the tag they name:\n`
     );
-    for (const f of digests.findings) {
+    digests.findings.forEach((f, i) => {
       console.error(`    ${f}`);
       // One key per pinned line, so a carry names this line and not the whole gate.
-      emitFinding(`docker-digest:${f.split('  ')[0]}`);
-    }
+      emitFinding(digests.keys[i]);
+    });
   }
 
   if (unknown.length > 0) {

@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import os
 import stat
+import subprocess
 import time
 from typing import TYPE_CHECKING
 
@@ -380,3 +381,52 @@ def test_original_network_mode_is_kept(env: pathlib.Path, monkeypatch: pytest.Mo
     assert lifecycle.main([], package_dir=env) == 0
     assert not any(line.startswith("docker network") for line in _docker_log(env))
     assert os.environ["REPOSITORY_NETWORK_MODE"] == "mine"
+
+
+SOLR_REDIACCFILE = os.path.join(
+    os.path.dirname(__file__),
+    "../../../packages/json/templates/databases/solr/Rediaccfile",
+)
+
+
+def _run_solr_up(workdir: pathlib.Path, chown_rc: int) -> tuple[int, list[str], str]:
+    """Source the real solr Rediaccfile with `renet` replaced by a recording stub whose chown one-shot answers `chown_rc`."""
+    log = workdir / "renet.log"
+    script = f"""
+renet() {{
+    echo "$*" >> {log}
+    case "$*" in
+        *--entrypoint\\ chown*) return {chown_rc} ;;
+    esac
+    return 0
+}}
+sleep() {{ :; }}
+source {SOLR_REDIACCFILE}
+up
+"""
+    done = subprocess.run(
+        ["bash", "-c", script],
+        cwd=workdir,
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=60,
+    )
+    calls = log.read_text().splitlines() if log.exists() else []
+    return done.returncode, calls, done.stdout
+
+
+def test_solr_up_stops_when_the_root_chown_one_shot_fails(tmp_path: pathlib.Path) -> None:
+    """Review 42a84c60.2: Solr must not start on a data directory that was not handed to uid 8983."""
+    rc, calls, stdout = _run_solr_up(tmp_path, chown_rc=1)
+    assert rc != 0
+    assert any("--entrypoint chown" in call for call in calls)
+    assert not any("up -d" in call for call in calls), calls
+    assert "Starting Apache Solr" not in stdout
+
+
+def test_solr_up_control_a_passing_chown_starts_solr(tmp_path: pathlib.Path) -> None:
+    rc, calls, stdout = _run_solr_up(tmp_path, chown_rc=0)
+    assert rc == 0
+    assert any("up -d" in call for call in calls), calls
+    assert "Starting Apache Solr" in stdout
