@@ -589,3 +589,61 @@ export function checkCertificateExpiry(
     .map((cert) => certificateFinding(cert, now))
     .filter((f): f is CertificateFinding => f !== null);
 }
+
+// The ACME shared-CNAME class (G6, D-certs, F17): lego follows a CNAME on `_acme-challenge.<name>` and writes the challenge TXT at the chain's end, so an end that is not itself an `_acme-challenge.` name, or one end shared by several names, makes those renewals collide.
+
+/** A certificates section that carries where each name's challenge lands (renet pkg/list ChallengeInfo). */
+export interface ChallengeSectionInput {
+  status: string;
+  certificates: { main: string; challenges?: { name: string; cname?: string }[] }[] | null;
+  delegated_names?: string[];
+}
+
+/** One `acme.challenge.cname-shared` finding: the chain end, and the certificate names that land there. */
+export interface AcmeChallengeFinding {
+  code: 'acme.challenge.cname-shared';
+  severity: 'warning';
+  subject: string;
+  names: string[];
+  detail: string;
+}
+
+const stripWildcard = (name: string): string => name.replace(/^\*\./, '').toLowerCase();
+
+/** Map each challenge chain end to the (wildcard-stripped) names landing there, delegated names and ends left out. */
+function challengeEnds(section: ChallengeSectionInput): Map<string, Set<string>> {
+  const delegated = new Set((section.delegated_names ?? []).map(stripWildcard));
+  const ends = new Map<string, Set<string>>();
+  const challenges = (section.certificates ?? []).flatMap((cert) => cert.challenges ?? []);
+  for (const ch of challenges) {
+    const name = stripWildcard(ch.name);
+    const end = (ch.cname ?? '').toLowerCase();
+    if (!end || delegated.has(name) || delegated.has(end)) continue;
+    ends.set(end, (ends.get(end) ?? new Set<string>()).add(name));
+  }
+  return ends;
+}
+
+/**
+ * Report the F17 shape: a challenge chain that ends at a name not beginning `_acme-challenge.`, or two names sharing
+ * one end. A name (or end) in the proxy's `delegated_names` is a deliberate delegation and never reported; a name with
+ * no CNAME raises nothing.
+ */
+export function checkAcmeChallengeCnames(
+  section: ChallengeSectionInput | null | undefined
+): AcmeChallengeFinding[] {
+  if (section?.status !== 'ok') return [];
+  const findings: AcmeChallengeFinding[] = [];
+  for (const [end, nameSet] of challengeEnds(section)) {
+    const names = [...nameSet].sort((a, b) => a.localeCompare(b));
+    if (end.startsWith('_acme-challenge.') && names.length < 2) continue;
+    findings.push({
+      code: 'acme.challenge.cname-shared',
+      severity: 'warning',
+      subject: end,
+      names,
+      detail: `ACME challenge for ${names.join(', ')} follows a CNAME to ${end}; renewals there collide`,
+    });
+  }
+  return findings;
+}
