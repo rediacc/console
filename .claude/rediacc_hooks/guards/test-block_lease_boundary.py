@@ -456,7 +456,14 @@ GIT_HOOKS = str(HOOKS / "git")
 _git("config", "core.hooksPath", GIT_HOOKS, cwd=MAIN)
 _git("config", "core.hooksPath", GIT_HOOKS, cwd=SUB_STORE)
 _git("update-ref", "refs/worktrees/x", "HEAD", cwd=MAIN)
-_write(TMP / "m", "chore: fixture\n\nPlan-Box: none -- fixture commit of the boundary control\n")
+# A lease commit also names a declared epic (bd540a13c: the lease `commit-msg` hook judges `PR-TASK` against the MAIN checkout's `agent/pr/<live branch>.md` united with the ledger), so the main checkout declares one and the message names it. Untracked, so no lease above sees it.
+FIXTURE_EPIC = "f1c7a5e0"
+_write(MAIN / "agent" / "pr" / "1104-1.md", "`PR-TASK: %s`\n" % FIXTURE_EPIC)
+_write(
+    TMP / "m",
+    "chore: fixture\n\nPR-TASK: %s\nPlan-Box: none -- fixture commit of the boundary control\n"
+    % FIXTURE_EPIC,
+)
 MESSAGE_FILE = str(TMP / "m")
 
 

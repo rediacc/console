@@ -25,6 +25,7 @@ import importlib
 import json
 import os
 import pathlib
+import subprocess
 import time
 
 from rediacc_hooks import commit_policy, hookio, syspath
@@ -50,7 +51,9 @@ ROSTER_ERRORS = (
     AttributeError,
 )
 
-# THE DIFFERENTIAL'S WORLD. A config directory holding one session with a live and a finished writer, so `test_guards_differential` sees this guard refuse and sees its DEFECT stop the refusal: a payload without a locatable session only ever reaches the fail-open branch.
+# THE DIFFERENTIAL'S WORLD. A repository of its own holding a config directory with one session that has a live and a finished writer, so `test_guards_differential` sees this guard refuse and sees its DEFECT stop the refusal: a payload without a locatable session only ever reaches the fail-open branch.
+#
+# ITS OWN REPOSITORY, NOT THE ONE RUNNING PYTEST, found 2026-11-06 (#d7056e06). The world used to be planted under the munged path of the running checkout, and the cases ran there. From a lease tree that can never refuse: `wl_core.project_root` answers a lease with the main checkout (6fd1f6511), so the session was looked up under a directory nothing planted, and every case took the fail-open branch, where the DEFECT cannot bite. A lease writer's own edits are also dropped by `wl_roster.in_lease_tree`, so no planting from inside a lease could have made a lease commit refusable. So the root is named twice: `CLAUDE_PROJECT_DIR` in the `writers` variant, which is where `wl_core.project_start` starts (above the hook file's own repository and the cwd), and the harness's `CWD_WORLDS` for the cwd the commit's repository is resolved from; the payloads carry no `cwd`, so the guard reads `ev.cwd`.
 FIXTURE_SESSION = "f1x7ure0-live-writer-guard-000000000000"
 FIXTURE_DIR = "zz-live-writer-fixture"
 LIVE_AGENT = "afixturelivewriter0001"
@@ -103,9 +106,11 @@ def write_session(config_dir, root, session_id, agents):
 
 
 def _writer_world(target):
-    root = pathlib.Path(__file__).resolve().parents[3]
+    root = pathlib.Path(target)
+    root.mkdir(parents=True, exist_ok=True)
+    subprocess.run(["git", "init", "-q", str(root)], check=True, capture_output=True)
     write_session(
-        target,
+        root / "config",
         root,
         FIXTURE_SESSION,
         [
@@ -119,14 +124,21 @@ def _writer_world(target):
             ),
         ],
     )
-    return target
+    return str(root)
 
 
 FIXTURES = {"live-writer-world": _writer_world}
 
 ENVS: list[tuple[str, dict[str, str], dict[str, str]]] = [
     ("default", {}, {}),
-    ("writers", {"CLAUDE_CONFIG_DIR": "{FIXTURE:live-writer-world}"}, {}),
+    (
+        "writers",
+        {
+            "CLAUDE_CONFIG_DIR": "{FIXTURE:live-writer-world}/config",
+            "CLAUDE_PROJECT_DIR": "{FIXTURE:live-writer-world}",
+        },
+        {},
+    ),
 ]
 
 
@@ -134,7 +146,6 @@ def _payload(command):
     return {
         "tool_name": "Bash",
         "session_id": FIXTURE_SESSION,
-        "cwd": "/home/developer/console",
         "tool_input": {"command": command},
     }
 

@@ -201,10 +201,12 @@ FIXTURE_BUILDERS = {
 #
 # So each gets a synthetic world, built once per session like every other fixture here, and the harness hands it over rather than the guard being changed: `cwd` for the branch guard, and a `repo_root` plus a PATH tail made only of the fixture's own `bin/` for the toolchain guard. The guard's code path is untouched; only the world it looks at stops being this machine.
 #
+#   * `block_commit_of_live_writer_file` planted its session under the munged path of the checkout running pytest and ran there, so from a lease tree (whose `wl_core.project_root` is the main checkout) every case failed open and its DEFECT changed no answer (#d7056e06). It runs in its own `live-writer-world` repository.
 #   * `block_premature_ready` resolved a selector-less `gh pr ready` against `git -C . branch --show-current`, the PYTEST PROCESS's directory, whatever `cwd` the harness handed the event. Its goldens were frozen on a checkout with a branch; CI's `actions/checkout` of a pull_request is a DETACHED merge commit, where the same read prints nothing and the guard takes its "no current branch" refusal instead. Six records went red in CI only (run 37649744806, #6f901a98). The guard now falls back to `ev.cwd`, and the harness hands it `console-pr-checkout`.
 CWD_WORLDS = {
     "block_stale_pr_branch_date": "stale-branch-checkout",
     "block_premature_ready": "console-pr-checkout",
+    "block_commit_of_live_writer_file": "live-writer-world",
 }
 HOST_WORLDS = {"block_host_toolchain_run": "toolchain-host"}
 
