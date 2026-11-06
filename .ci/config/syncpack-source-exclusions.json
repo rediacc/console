@@ -16,6 +16,7 @@
     "private/account/web/package.json": "BLOCKER: the account portal's own React/Vite tree, versioned with the portal rather than with the CLI monorepo. Bringing it under these pins is a real convergence with its own blast radius (33 declared dependencies) and belongs in its own change -- NOT a silent omission, which is what this file exists to distinguish.",
     "workers/account/package.json": "BLOCKER: a Cloudflare Worker bundle with wrangler-managed deps, deployed independently of the npm workspaces.",
     "workers/mta-sts/package.json": "BLOCKER: same -- an independently deployed Worker.",
+    "workers/ops-health/package.json": "BLOCKER: same -- an independently deployed Worker.",
     "workers/proxy/package.json": "BLOCKER: same -- an independently deployed Worker.",
     "workers/www/package.json": "BLOCKER: same -- an independently deployed Worker."
   }

@@ -50,6 +50,7 @@ MUST_NOT_MATCH = (
     "edge-rediacc-proxy-asia",  # workers/proxy/wrangler.edge-asia.toml
     "rediacc-proxy-bench",  # workers/proxy/wrangler.bench.toml
     "mta-sts-policy",  # workers/mta-sts/wrangler.toml:1
+    "ops-health",  # workers/ops-health/wrangler.toml:1
     "pr-main",  # pr- prefix, not a number
     "pr-574-old",  # trailing junk
     "prefix-pr-574",  # not anchored at the start
