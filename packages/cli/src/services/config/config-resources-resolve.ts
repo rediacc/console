@@ -293,7 +293,9 @@ function grandKeyOf(
   repos: Record<string, RepositoryConfig>,
   fork: RepositoryConfig
 ): string | undefined {
-  return Object.entries(repos).find(([, cfg]) => cfg.repositoryGuid === fork.grandGuid)?.[0];
+  if (fork.grandGuid === undefined) return undefined;
+  const grandGuid = fork.grandGuid;
+  return Object.entries(repos).find(([, cfg]) => cfg.repositoryGuid === grandGuid)?.[0];
 }
 
 /**

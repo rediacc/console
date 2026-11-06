@@ -96,7 +96,7 @@ export async function joinCluster(machineName: string, options: JoinClusterOptio
   const cluster = await getCluster(options.cluster);
   const control = controlMember(options.cluster, cluster);
   // The control machine has to exist before anything starts.
-  await configService.getLocalMachine(control.name);
+  const controlMachine = await configService.getLocalMachine(control.name);
   const pool = agentPool(options.cluster, cluster);
   const controlMount = controlDatastoreMount(options.cluster);
 
@@ -107,7 +107,6 @@ export async function joinCluster(machineName: string, options: JoinClusterOptio
   // ★ #25: no per-node repo. An adopted agent's k3s state is a disposable cache;
   // `renet kube join` creates its own data-dir under the mount path. Only the networkID (its systemd unit + node interface) is allocated. See allocateAgentNetworkId in cluster-kube.ts for the full reasoning.
   const net = await allocateAgentNetworkId(machineName);
-  const controlMachine = await configService.getLocalMachine(control.name);
 
   // One `cluster_join` job on the member: renet reads the CA-derived join token from the control plane over ssh and joins with it, so the token reaches no client. The membership record (repo create --machine refuses on it, R2-F12) and the audit line are ticket steps, so a ticket handed back early still owes them.
   const { pending, unfinished } = await runClusterPhase(

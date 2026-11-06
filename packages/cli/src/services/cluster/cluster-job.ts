@@ -3,9 +3,9 @@
  *
  * A cluster verb sequences renet calls across several machines, and a later call consumes an earlier one (the token
  * read feeds the join, the identity rewrite follows the attach) or a client decision sits between them. renet has no
- * compound function for those chains, so each phase is its own job on its own
- * ticket (a phase over every member is one job per member under one group, services/jobs/job-group.ts), started through `runCommandJob` under the verb's name, and the client drives the order. The audit record and
- * the config writes of a verb that has a single closing call ride that call's ticket as steps; a chain never ends
+ * compound function for those chains, so each phase is its own job on its own ticket (a phase over every member is one
+ * job per member under one group, services/jobs/job-group.ts), started through `runCommandJob` under the verb's name,
+ * and the client drives the order. The audit record and the config writes of a verb that has a single closing call ride that call's ticket as steps; a chain never ends
  * early, because a phase still running past the attach window stops the chain with a named error instead of letting
  * the next phase start before the previous one finished.
  */

@@ -9,6 +9,7 @@ import { localExecutorService } from '../../executor/local-executor.js';
 import {
   __setHealthGateClock,
   __setHealthGateDelay,
+  describeRollback,
   forkCluster,
   migrateCluster,
   rehearseCluster,
@@ -516,6 +517,18 @@ describe('migrateCluster (P3 in-Ceph fenced remap, zero-copy)', () => {
     await expect(migrateCluster('prod', { to: 'relocate-target' })).rejects.toThrow(
       /in-Ceph fenced remap/
     );
+  });
+});
+
+describe('describeRollback', () => {
+  it('says a still-running rollback is running, and advises no manual command beside it', () => {
+    const running = describeRollback('running', 'prod-cp-1');
+    expect(running).toMatch(/STILL RUNNING/);
+    expect(running).not.toMatch(/did NOT finish/);
+  });
+  it('keeps the failed and rolled-back wording', () => {
+    expect(describeRollback('failed', 'prod-cp-1')).toMatch(/did NOT finish/);
+    expect(describeRollback('rolled-back', 'prod-cp-1')).toMatch(/ROLLED BACK/);
   });
 });
 

@@ -482,6 +482,19 @@ function warnPendingTeardown(err: unknown): void {
   outputService.warn(`  teardown not finished: ${detail}`);
 }
 
+type RollbackState = 'rolled-back' | 'running' | 'failed';
+
+/** What the migrate error tells the operator about the rollback: a rollback phase still running has not failed, so no manual command is advised beside it. */
+export function describeRollback(state: RollbackState, controlName: string): string {
+  if (state === 'running') {
+    return `failed at the destination attach, and the rollback to "${controlName}" is STILL RUNNING; wait for it with "rdc job wait" and check "${controlName}" before running anything by hand. `;
+  }
+  if (state === 'failed') {
+    return `failed at the destination attach, and the rollback to "${controlName}" did NOT finish. `;
+  }
+  return `failed at the destination attach and was ROLLED BACK to "${controlName}" (control datastore re-attached + control plane restarted). `;
+}
+
 export interface MigrateClusterOptions {
   to: string;
   debug?: boolean;
@@ -583,16 +596,14 @@ export async function migrateCluster(
       { debug: options.debug }
     );
   } catch (attachErr) {
-    let rollbackFailed = false;
+    let rollback: RollbackState = 'rolled-back';
     await rollbackMigrateToSource(control, controlDs, controlDsMount, options.debug).catch(
       (rollbackErr: unknown) => {
-        rollbackFailed = true;
+        rollback = rollbackErr instanceof ClusterPhasePendingError ? 'running' : 'failed';
         warnPendingTeardown(rollbackErr);
       }
     );
-    const outcome = rollbackFailed
-      ? `failed at the destination attach, and the rollback to "${control.name}" did NOT finish. `
-      : `failed at the destination attach and was ROLLED BACK to "${control.name}" (control datastore re-attached + control plane restarted). `;
+    const outcome = describeRollback(rollback, control.name);
     throw new Error(
       `cluster migrate "${clusterName}" ${outcome}` +
         `The dest's ` +
