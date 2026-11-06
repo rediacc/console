@@ -117,15 +117,16 @@ GIT_REDIRECT_ENV = frozenset(
     ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_COMMON_DIR", "GIT_OBJECT_DIRECTORY")
 )
 GIT_REDIRECT_GLOBS = ("--git-dir", "--work-tree", "--bare", "--super-prefix")
-# Any configuration handed to git on the command line or through the environment can redirect it (`-c core.worktree=<main>`, `GIT_CONFIG_COUNT`, an `include.path`, an alias), so the admission refuses the whole class rather than listing keys: every `-c`/`--config-env` option and every `GIT_CONFIG*` variable.
+# Any configuration handed to git on the command line or through the environment can redirect it (`-c core.worktree=<main>`, `GIT_CONFIG_COUNT`, an `include.path`, an alias, a smudge filter or hooks path that runs a program), so the admission refuses the whole class rather than listing keys: every `-c`/`--config-env` option, every `GIT_CONFIG*` variable, and the variables that move where git finds its global configuration (`HOME`, `XDG_CONFIG_HOME`, review 585f5602.1).
 GIT_CONFIG_GLOBS = ("-c", "--config-env")
 GIT_CONFIG_ENV_PREFIX = "GIT_CONFIG"
+GIT_CONFIG_HOME_ENV = frozenset(("HOME", "XDG_CONFIG_HOME"))
 
 
 def _config_injected(globs, env):
     """Whether the git process is handed configuration by an option or by the environment."""
     return any(g.startswith(GIT_CONFIG_GLOBS) for g in globs) or any(
-        name.startswith(GIT_CONFIG_ENV_PREFIX) for name in env
+        name.startswith(GIT_CONFIG_ENV_PREFIX) or name in GIT_CONFIG_HOME_ENV for name in env
     )
 
 

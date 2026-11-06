@@ -287,6 +287,9 @@ def lease_failures() -> tuple[list[str], int]:
         ("git -C %s -c core.worktree=%s clean -fd" % (tree, main), 2, "", "ADMITTED"),
         ("git -C %s clean -fd" % tree, 0, "ADMITTED IN A LEASE TREE", "BLOCKED"),
         ("git -C %s --config-env=core.worktree=X clean -fd" % tree, 2, "", "ADMITTED"),
+        # Review 585f5602.1: a moved HOME or XDG_CONFIG_HOME hands git another global configuration.
+        ("HOME=%s git -C %s clean -fd" % (RUN_TMP, tree), 2, "", "ADMITTED"),
+        ("XDG_CONFIG_HOME=%s git -C %s clean -fd" % (RUN_TMP, tree), 2, "", "ADMITTED"),
         (
             "GIT_CONFIG_PARAMETERS=\"'core.worktree=%s'\" git -C %s clean -fd" % (main, tree),
             2,
