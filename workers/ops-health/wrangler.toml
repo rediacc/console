@@ -1,0 +1,38 @@
+name = "ops-health"
+main = "src/index.ts"
+compatibility_date = "2026-01-20"
+
+# The off-box ops-health alerter (agent/plans/PLAN-health-checks-local.md D-runner).
+# Deployed only by `python3 -m rediacc_ci.ops.deploy_ops_health`, which reads the target file
+# out of the `ops` repo and puts it as the OPS_HEALTH_TARGETS secret, and passes
+# OPS_HEALTH_TARGETS_SHA, OPS_HEALTH_CODE_SHA and OPS_HEALTH_SECRET_DIGESTS as --var.
+workers_dev = false
+routes = [
+  { pattern = "ops-health.rediacc.com", custom_domain = true },
+]
+
+[triggers]
+crons = ["*/10 * * * *"]
+
+# One SQLite-backed Durable Object holds the alert state (D-runner: serialized
+# read-modify-writes, no D1 and no bucket).
+[[durable_objects.bindings]]
+name = "OPS_STATE"
+class_name = "OpsState"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["OpsState"]
+
+# Operator ruling 2026-10-23: Cloudflare keeps no copy of Workers logs or traces.
+# This Worker has no OTLP destination, so logs and traces are off.
+[observability]
+enabled = false
+
+[observability.logs]
+enabled = false
+persist = false
+
+[observability.traces]
+enabled = false
+persist = false
