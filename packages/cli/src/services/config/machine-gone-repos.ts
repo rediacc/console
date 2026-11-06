@@ -10,7 +10,7 @@
 import type { RdcConfig } from '@rediacc/shared/config-schema';
 
 /** The machine a family's placement resolves to, or undefined when it names none. */
-export function placementMachine(
+function placementMachine(
   config: RdcConfig,
   placement: { machine: string } | { datastore: string } | undefined
 ): string | undefined {

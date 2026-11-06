@@ -36,7 +36,7 @@ export function renetHold(): RenetHold {
 }
 
 /** True when any hold applies ({@link renetHold}). */
-export function provisionHeld(): boolean {
+function provisionHeld(): boolean {
   return renetHold() !== null;
 }
 

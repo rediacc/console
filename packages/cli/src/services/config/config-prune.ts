@@ -439,7 +439,7 @@ function archiveGoneMachineRepos(cfg: RdcConfig, gone: GoneMachineRepo[]): void 
  * `repo delete` reads as "another machine holds a copy"). Runtime only, no secrets: dropped
  * unconditionally. Returns the dropped paths.
  */
-export function pruneGoneMachineState(cfg: RdcConfig): string[] {
+function pruneGoneMachineState(cfg: RdcConfig): string[] {
   const state = cfg.state;
   if (!state) return [];
   return [...pruneGoneLicenseRefresh(cfg, state), ...pruneGonePushState(cfg, state)];
