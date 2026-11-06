@@ -571,7 +571,7 @@ LOST_CELL = b"the cell the store lost"
 
 
 class HealWorker:
-    """A worker for leg w: an idle image whose target runs sample the store and reach the lost chunk on run `finds_on` (0: never)."""
+    """A worker for leg w: an idle image whose target runs sample the store and reach the lost chunk on the `finds_on`-th target run after the first idle one, so the run count is `finds_on + 1` at the find (0: never)."""
 
     def __init__(self, store: dict[str, bytes], digest: str, bug: str, finds_on: int) -> None:
         self.store = store
