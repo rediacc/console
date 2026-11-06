@@ -160,7 +160,13 @@ them. Its first draft did NOT fire on its own headline defect in any of the four
 | C | CF API, genuine temp creds | never | that R2 ENFORCES the JWT prefixes, delete-free actions and exp: the ransomware property |
 | D | a bucket the operator creates | n/a | prerequisite for every write test in B and C |
 
-### 6.1 What the read-only JWT probe settled, and what it did not
+### 6.1 Tier B result (2026-11-06)
+
+Run 2026-11-06 against the bench bucket `rediacc-backups-bench` with its bench keys (decision O1, ASKED:2026-11-05T07:06Z): `./run.sh drill backup --legs a,s` with `DRILL_STORE_*` from the `backup-push-bench` bws profile exited 0 with 24 of 24 assertions passed. The proof line read `STORE-PROOF tier=B duplicate_put=412 wrong_checksum=400`. A duplicate PUT answered 412 and a wrong `x-amz-checksum-sha256` was refused with 400, as R2's documentation states, so nothing was retuned.
+
+The same day, legs `a,n` on the same bucket exited 0 with 23 of 23 passed: a PUT one byte longer than the signed length was refused with 403, and the exact body through the same URL was accepted.
+
+### 6.2 What the read-only JWT probe settled, and what it did not
 
 Run 2026-08-14 under a narrow operator authorisation: sign the JWT locally from the `.env` pair and use the triple for a READ-ONLY `ListObjectsV2` against an EXISTING bucket. No writes, no bucket creation, no mutating Cloudflare or R2 call. The boundary held.
 
