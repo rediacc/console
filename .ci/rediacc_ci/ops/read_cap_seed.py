@@ -291,7 +291,7 @@ def _bare_name(repo: str) -> str:
 
 
 def find_job_id(text: str, repo: str, machine: str) -> str | None:
-    """The newest live `backup snapshot` ticket of this repository and machine in `rdc -o json job list`."""
+    """The newest live `backup snapshot` ticket of this repository and machine in `rdc -o json job list`. The list is newest first (packages/cli/src/services/jobs/ticket-store.ts `pending()` sorts by startedAt descending), so the first match is the newest."""
     for payload in _payloads(text):
         if not isinstance(payload, list):
             continue
@@ -509,7 +509,9 @@ def watch_snapshot(
                 figure = replace(figure, postexit=True)
             watch.figures.append(figure)
             _print_sample(len(watch.figures), figure, out)
-        if watch.stopped == "none" and rule_fired(args.stop_on, watch.figures, baseload):
+        # A post-exit sample is not a measured one: it cannot start a stop of a client that already exited.
+        measured = [f for f in watch.figures if not f.postexit]
+        if watch.stopped == "none" and rule_fired(args.stop_on, measured, baseload):
             watch.stopped = args.stop_on
             watch.stop_at = deps.clock()
             print("stop: the %s rule fired" % args.stop_on, file=out, flush=True)

@@ -346,6 +346,73 @@ def test_find_job_id_takes_the_live_ticket_of_this_repository_only():
     assert rcs.find_job_id(text, "demo-heartbeat", "elsewhere") is None
 
 
+def test_find_job_id_takes_the_first_live_row_because_the_list_is_newest_first():
+    rows = [
+        {"id": "newest", "verb": "backup snapshot", "repo": "demo", "machine": "m", "state": "running"},
+        {"id": "stale", "verb": "backup snapshot", "repo": "demo", "machine": "m", "state": "running"},
+    ]  # fmt: skip
+    assert rcs.find_job_id(json.dumps({"success": True, "data": rows}), "demo", "m") == "newest"
+
+
+class _ExitingProc:
+    """A client that times out at the loop top, reports exited at the post-sample check, then exits."""
+
+    def __init__(self):
+        self.answers = [None, 0, 0]
+
+    def wait(self, timeout=None):
+        answer = self.answers.pop(0)
+        if answer is None:
+            raise subprocess.TimeoutExpired("rdc", timeout)
+        return answer
+
+    def send_signal(self, _sig):
+        raise AssertionError("no detach expected")
+
+    def kill(self):
+        raise AssertionError("no kill expected")
+
+
+def _watch_after_exit():
+    over = rcs.Figures(load=50.0, busy=5.0, iowait=0.0, backup=0.5)
+    watch = rcs._Watch(figures=[over, over])
+    calls = []
+    tick = {"n": 0}
+
+    def runner(argv, _timeout):
+        calls.append(list(argv))
+        tick["n"] += 1
+        n = tick["n"]
+        text = "uptime %.1f 0\nload 50.00 1 1 1/1 1\ncpu  %d 0 0 %d 0 0 0 0 0 0\nnproc 8\n" % (
+            n * 10.0,
+            n * 100,
+            n * 700,
+        )
+        return 0, text, ""
+
+    deps = rcs.Deps(runner=runner, spawner=None, clock=lambda: 0.0, sleep=lambda _s: None)
+    start = rcs.parse_sample(
+        "uptime 0.0 0\nload 1.00 1 1 1/1 1\ncpu  0 0 0 0 0 0 0 0 0 0\nnproc 8\n"
+    )
+    args = rcs.argparse.Namespace(rdc="rdc", config="c", machine="m", repo="r", stop_on="load")
+    out = io.StringIO()
+    rc = rcs.watch_snapshot(deps, _ExitingProc(), start, 1.0, args, out, watch)
+    return rc, watch, calls
+
+
+def test_watch_snapshot_marks_a_sample_taken_after_the_client_exited():
+    rc, watch, _ = _watch_after_exit()
+    assert rc == 0
+    assert [f.postexit for f in watch.figures] == [False, False, True]
+
+
+def test_a_postexit_sample_cannot_complete_the_stop_streak():
+    """Two measured over-load samples plus the post-exit one would be three; the stop must not fire or cancel."""
+    _, watch, calls = _watch_after_exit()
+    assert watch.stopped == "none"
+    assert not any("cancel" in c for c in calls)
+
+
 # ---------------------------------------------------------------- the exit code
 
 
