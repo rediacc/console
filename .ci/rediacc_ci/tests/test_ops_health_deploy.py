@@ -5,10 +5,12 @@ A recording runner stands in for `rdc` and `wrangler`, and a fake Worker answers
 
 from __future__ import annotations
 
+import email.message
 import json
 import pathlib
 import subprocess
-from typing import Any
+import urllib.error
+from typing import Any, Self
 
 import pytest
 
@@ -265,3 +267,66 @@ def test_the_digest_var_survives_wrangler_var_syntax():
     assert encoded == "A=abcd,B=00ff"
     assert ":" not in encoded
     assert '"' not in encoded
+
+
+# CONTROL for review d7c95c5d.1: an HTTP error from /v1/status other than 404 is not a first deploy.
+class _Resp:
+    def __init__(self, body: bytes) -> None:
+        self._body = body
+
+    def __enter__(self) -> Self:
+        return self
+
+    def __exit__(self, *_a: object) -> None:
+        return None
+
+    def read(self) -> bytes:
+        return self._body
+
+
+def _http_error(code: int) -> Exception:
+    return urllib.error.HTTPError("https://x", code, "status", email.message.Message(), None)
+
+
+def _fetch_with(monkeypatch: pytest.MonkeyPatch, outcome: Any) -> Any:
+    def urlopen(_request: Any, **_kw: Any) -> Any:
+        if isinstance(outcome, BaseException):
+            raise outcome
+        return _Resp(outcome)
+
+    monkeypatch.setattr(d.https, "urlopen", urlopen)
+    return d.fetch_deployed("https://ops-health.example.test/v1/status", "tok")
+
+
+@pytest.mark.parametrize("code", [401, 403, 500, 503])
+def test_control_a_refused_or_failing_status_raises_rather_than_reading_as_first_deploy(
+    monkeypatch: pytest.MonkeyPatch, code: int
+) -> None:
+    with pytest.raises(d.StatusUnreadableError, match="HTTP %d" % code):
+        _fetch_with(monkeypatch, _http_error(code))
+
+
+def test_a_404_or_an_unreachable_host_is_a_first_deploy(monkeypatch: pytest.MonkeyPatch) -> None:
+    assert _fetch_with(monkeypatch, _http_error(404)) is None
+    assert _fetch_with(monkeypatch, urllib.error.URLError("Name or service not known")) is None
+
+
+def test_a_non_json_status_body_raises(monkeypatch: pytest.MonkeyPatch) -> None:
+    with pytest.raises(d.StatusUnreadableError, match="not JSON"):
+        _fetch_with(monkeypatch, b"<html>")
+
+
+def test_main_refuses_to_deploy_when_the_status_is_unreadable(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    world = FakeWorld(json.dumps(GOOD))
+    base = world.seams()
+
+    def refused(_url: str, _token: str) -> d.Deployed | None:
+        raise d.StatusUnreadableError("https://ops-health.example.test/v1/status answered HTTP 401")
+
+    seams = d.Seams(run=base.run, fetch_deployed=refused, wrangler_env=base.wrangler_env)
+    rc = d.main([*ARGS, "--write"], seams, environ=dict(SECRETS))
+    assert rc == d.EXIT_FAILED
+    assert world.wrangler_calls() == []
+    assert "HTTP 401" in capsys.readouterr().err

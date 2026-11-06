@@ -159,6 +159,9 @@ function verdict(f, state, deploy) {
   return ok;
 }
 
+// Cloudflare documents that a new Cron Trigger can take up to 15 minutes to reach its network, so a shorter wait reads a not-yet-scheduled cron as a Durable Object the cron cannot write (first run: 150 s, writers ["fetch"]).
+const CRON_PROPAGATION_MS = 16 * 60 * 1000;
+
 async function main() {
   const a = args();
   const dir = scratch(a.deploy);
@@ -187,7 +190,7 @@ async function main() {
       ? await waitFor(async () => {
           const s = await getJson(`${base}/state`);
           return s.writers.includes('cron') ? s : null;
-        }, 150000) ?? (await getJson(`${base}/state`))
+        }, CRON_PROPAGATION_MS) ?? (await getJson(`${base}/state`))
       : await getJson(`${base}/state`);
     const f = await getJson(`${base}/facts?${q}`);
     return verdict(f, state, a.deploy) ? 0 : 1;

@@ -85,6 +85,10 @@ class ReadFailedError(RuntimeError):
     """Neither rdc path could read the target file."""
 
 
+class StatusUnreadableError(RuntimeError):
+    """`/v1/status` answered, but not with a readable state: a refused token or a server error is never a first deploy."""
+
+
 def _is_ipv4(value: object) -> bool:
     if not isinstance(value, str):
         return False
@@ -336,13 +340,26 @@ def status_url(root: pathlib.Path) -> str:
 
 
 def fetch_deployed(url: str, token: str) -> Deployed | None:
-    """The deployed state from `/v1/status`; None when the Worker does not answer (a first deploy)."""
+    """The deployed state from `/v1/status`; None only when no Worker answers there (a first deploy).
+
+    A first deploy is a host that does not resolve or connect, or a 404. Any other HTTP status (a 401 from a rotated read token, a 5xx) or an unreadable body raises StatusUnreadableError: reading it as a first deploy would re-put every secret and run the create deploy over a Worker that exists.
+    """
     request = https.build_request(url, headers={"Authorization": "Bearer %s" % token})
     try:
         with https.urlopen(request, timeout=20) as response:
-            body = json.loads(response.read())
-    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, OSError):
+            raw = response.read()
+    except urllib.error.HTTPError as exc:
+        if exc.code == 404:
+            return None
+        raise StatusUnreadableError("%s answered HTTP %d" % (url, exc.code)) from exc
+    except (urllib.error.URLError, TimeoutError, OSError):
         return None
+    try:
+        body = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise StatusUnreadableError("%s answered a body that is not JSON" % url) from exc
+    if not isinstance(body, dict):
+        raise StatusUnreadableError("%s answered JSON that is not an object" % url)
     deploy = body.get("deploy") or {}
     return Deployed(
         targets_sha=body.get("targets_sha"),
@@ -458,7 +475,15 @@ def main(
         )
         return EXIT_INVALID
 
-    deployed = seams.fetch_deployed(status_url(root), env["OPS_HEALTH_READ_TOKEN"])
+    try:
+        deployed = seams.fetch_deployed(status_url(root), env["OPS_HEALTH_READ_TOKEN"])
+    except StatusUnreadableError as exc:
+        print(
+            "%s: %s; the deployed state is unknown, so nothing was deployed (check OPS_HEALTH_READ_TOKEN against the Worker)"
+            % (SELF, exc),
+            file=sys.stderr,
+        )
+        return EXIT_FAILED
     plan = make_plan(targets_text=text, env=env, code=code_sha(root), deployed=deployed)
     changes = plan.changes()
     print(
