@@ -1,26 +1,22 @@
-## SESSION d778be9d 2026-11-06T00:30:44Z
+## SESSION d778be9d 2026-11-06T00:54:04Z
 
-# d778be9d STATE (2026-11-06T01:45Z, branch 1104-1, operator away)
+# d778be9d STATE (2026-11-06T02:05Z, branch 1104-1, operator away)
 
 ## Landed this context
-- Lease A fixes: renet pointer 046fd78b1, console 4dbd88c0f 5f4f2f5ed..b72cb0321.
-- Resource limits: pointer 3ef7cdd22, console 3a5d92be8 8a05322a9 ab266526d e17477770, docs regen 21fb3af37; ticks R1 R2 R3 R4 R5 M1 W2 K0b (e28db1018).
-- Proxy: 78ce9d5b4 999e9b6ee 7a3b14218; J25 f07996f4f (box e116473e); machine-id 166c0ee0a + 426fa3546.
-- Guard verbs 547cb159a; rdc.sh mid-pick renet 520056bf6 + 5202b351d. Review highs fixed (369e221 via 9aa74e1e, 5202b351d).
-- No-infra container recovery: renet 2b005a2 11ef953 via bc38b93d4 (#687fed68, live half open).
+- Restart-path fixes (046fd78b1), resource limits (3ef7cdd22 ... e28db1018 ticks R1 R2 R3 R4 R5 M1 W2 K0b), M2 + umask (fc222a8d1, 1873c299), proxy fixes, J25 (e116473e), machine-id, guard verbs + aliases (547cb159a, 50ba07da3), rdc.sh mid-pick (520056bf6, 5202b351d), no-infra recovery (bc38b93d4, live PASS on obs-lab, #687fed68 ticked). #35d49bb1 #62605df1 #a0bd852b #6bb5e37a ticked.
 
 ## Delegated
-- a321c4aad1931dec8: PLAN-repo-resource-limits M2 (34dee0e7), lease, renet unit_sides/ramvolume/autostart; accept the box's go test line rc=0.
-- ae41e9d4b09920af1 (#11abe120, #17633b57): live runner; cross-stream fork B replay, then snapshot-read-io-cap L3 e990ac90.
+- a2dc74c9ecaa34c80 (#8977ca59): URGENT, every up()/down() SIGKILLed on obs-lab since the c123f8d batch (@lifecycle leaf). renet SIGKILLs its own child (bpftrace), no interrupt, no OOM. Owns renet orchestration/ebpf/sandbox; obs-lab free for repro.
+- ad7f4c9c91e86153d (#6fc65401): repo up --debug shows no renet log; CLI executor.
+- ae41e9d4b09920af1 (#11abe120, #17633b57): live runner, cross-stream B replay, then snapshot-read-io-cap L3.
 
 ## Big pieces
 PLAN-backup-program, PLAN-detached-jobs, PLAN-backup-integrity, PLAN-backup-critical-tier, PLAN-rediaccfile-unprivileged, PLAN-first-release-checks, PLAN-tick-tracking, PLAN-renet-down-before-kill, PLAN-repo-resource-limits.
 
 ## Next action
-1. Run `npm run vm:check -- --changed` on the fleet once M2 lands (land M2 first: renet pick, pointer, go test, plan-tick 34dee0e7). Then the LP boxes: prune 7692f2db (closes L2 cc94874d), resource-limits K2 K3, down-before-kill K1.
-2. ci:quick, review-commit, backup push (TURBO_PUSH_REASON='backup: ...', submodules first).
-3. On the live runner report: tick L5 3d256594, meter #17633b57.
+1. Land the #8977ca59 fix (renet pick, pointer, go test, check:ci-renet), confirm on obs-lab, reply console-34 with commit, Rediaccfile state (minimal; real one at observability/Rediaccfile.ram) and whether .ram is mounted. Then plan-tick M2 34dee0e7 (accept rc=0 already, fc222a8d1) and re-verify R3.
+2. Rerun `npm run vm:check -- --changed` with NOTHING editing renet (run 1 failed V1.1 because renet was edited mid-run); then LP boxes, ci:quick, review-commit, backup push.
 
 ## Owed ticks
-- resource-limits K2 K3 H2 LP-hostinger; meter L2 fd8547ed (reword Accept to bench); H2 afa91934; detached-jobs L5 3d256594; prune L2 cc94874d.
-- Live halves: #d6589a7a and #d31b4054 (executor must ship this build), #687fed68 (--no-infra VM kill test; console-34 may run it on obs-lab).
+- resource-limits M2 (after regression verdict), K2 K3 H2 LP-hostinger; meter L2 fd8547ed; H2 afa91934; detached-jobs L5 3d256594; prune L2 cc94874d.
+- Live halves: #d6589a7a, #d31b4054 (executor must ship this build).
