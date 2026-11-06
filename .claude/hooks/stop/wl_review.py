@@ -3108,16 +3108,24 @@ def _meaningful(line):
 
 
 def _diff_lines(text):
-    """({path: removed lines}, {path: added lines}) of a `git show -U0` text, lines stripped and the trivial ones dropped."""
+    """({path: removed lines}, {path: added lines}) of a `git show -U0` text, lines stripped and the trivial ones dropped.
+
+    The `---`/`+++` file headers are read only between a `diff --git` line and its first `@@` hunk: inside a hunk a removed `-- comment` (SQL, Lua, Haskell) is the line `--- comment`, and read as a header it renamed the file every later removed line was filed under (review 4bcec972.1).
+    """
     removed: dict[str, list[str]] = {}
     added: dict[str, list[str]] = {}
     old = new = ""
+    in_hunk = False
     for line in text.splitlines():
-        if line.startswith("--- "):
+        if line.startswith("diff --git "):
+            in_hunk = False
+        elif line.startswith("@@"):
+            in_hunk = True
+        elif not in_hunk and line.startswith("--- "):
             old = "" if line == "--- /dev/null" else line[4:].removeprefix("a/")
-        elif line.startswith("+++ "):
+        elif not in_hunk and line.startswith("+++ "):
             new = "" if line == "+++ /dev/null" else line[4:].removeprefix("b/")
-        elif line[:1] in ("-", "+"):
+        elif in_hunk and line[:1] in ("-", "+"):
             side, path = (removed, old) if line[0] == "-" else (added, new)
             kept = _meaningful(line[1:]) if path else ""
             if kept:

@@ -343,3 +343,25 @@ def test_the_detached_reviewer_runs_with_optional_locks_off(tmp_path, monkeypatc
     (tmp_path / "logs").mkdir()
     assert R.spawn_detached(repo, repo, "a" * 40, BRANCH) == 4242
     assert seen["env"]["GIT_OPTIONAL_LOCKS"] == "0"
+
+
+def test_diff_lines_files_a_removed_sql_comment_under_its_own_file():
+    """Review 4bcec972.1: a removed `-- comment` line is `--- comment` inside a hunk, and read as a file header it renamed the file every later removed line was filed under. CONTROL: the real headers of two files still set each file."""
+    text = (
+        "diff --git a/q.sql b/q.sql\n"
+        "--- a/q.sql\n"
+        "+++ b/q.sql\n"
+        "@@ -1,2 +0,0 @@\n"
+        "--- the old reporting query comment\n"
+        "-SELECT name, total FROM orders_by_customer;\n"
+        "diff --git a/r.sql b/r.sql\n"
+        "--- a/r.sql\n"
+        "+++ b/r.sql\n"
+        "@@ -0,0 +1 @@\n"
+        "+SELECT name, total FROM orders_by_customer;\n"
+    )
+    removed, added = R._diff_lines(text)
+    assert set(removed) == {"q.sql"}, removed
+    assert "SELECT name, total FROM orders_by_customer;" in removed["q.sql"]
+    assert "-- the old reporting query comment" in removed["q.sql"]
+    assert added == {"r.sql": ["SELECT name, total FROM orders_by_customer;"]}
