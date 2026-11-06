@@ -238,8 +238,16 @@ def _write_record(root, record):
 
 
 def _rollback(repo, path):
-    """Whatever state the lease reached. Locks go first, because a locked tree refuses removal."""
+    """Whatever state the lease reached. Locks go first, because a locked tree refuses removal. The signals are held for the rollback and restored after, so an ignored SIGTERM never outlives it."""
+    before = _signal_handlers()
     spike.hold_signals()
+    try:
+        return _rollback_held(repo, path)
+    finally:
+        _restore_signal_handlers(before)
+
+
+def _rollback_held(repo, path):
     for store, tree in (
         *((repo.store(sub), path / sub) for sub in repo.submodules),
         (repo.root / ".git", path),
@@ -294,7 +302,26 @@ def make_lease(root, *, name="", owner="", agent=""):
         raise LeaseRefusedError(message)
     repo = spike.Repo(root, [sub for sub, _ in held])
     lease_id, path = _reserve(root, name, owner)
+    # The lease's own handler for the build, then each signal goes back to what the caller had (as _remove_row does): left armed, a caller's later SIGINT raised the lease's InterruptedRunError long after the lease was made.
+    before = _signal_handlers()
     spike.arm_signals()
+    try:
+        return _make_lease_armed(root, repo, held, tip, path, lease_id, owner, agent)
+    finally:
+        _restore_signal_handlers(before)
+
+
+def _signal_handlers():
+    """The current SIGINT, SIGTERM and SIGHUP dispositions, for `_restore_signal_handlers`."""
+    return {s: signal.getsignal(s) for s in (signal.SIGINT, signal.SIGTERM, signal.SIGHUP)}
+
+
+def _restore_signal_handlers(before):
+    for signum, handler in before.items():
+        signal.signal(signum, handler)
+
+
+def _make_lease_armed(root, repo, held, tip, path, lease_id, owner, agent):
     try:
         _add_tree(root, path, tip, lease_id)
         for sub, sha in held:

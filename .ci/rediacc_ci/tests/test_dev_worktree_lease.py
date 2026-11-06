@@ -2311,6 +2311,69 @@ def test_remove_row_restores_the_signal_dispositions_it_found(monkeypatch, raise
             signal.signal(signum, handler)
 
 
+@pytest.mark.parametrize("raises", [False, True])
+def test_rollback_restores_the_signal_dispositions_it_found(monkeypatch, raises):
+    """#feeca5b3: the rollback holds the signals and puts each back, so an ignored SIGTERM never outlives it."""
+    sentinel = {
+        signal.SIGINT: signal.SIG_DFL,
+        signal.SIGTERM: signal.SIG_DFL,
+        signal.SIGHUP: lambda *_a: None,
+    }
+    saved = {s: signal.getsignal(s) for s in SIGNUMS}
+    try:
+        for signum, handler in sentinel.items():
+            signal.signal(signum, handler)
+        seen = {}
+
+        def held(_repo, _path):
+            seen.update({s: signal.getsignal(s) for s in SIGNUMS})
+            if raises:
+                raise RuntimeError("boom")
+            return []
+
+        monkeypatch.setattr(lease, "_rollback_held", held)
+        if raises:
+            with pytest.raises(RuntimeError):
+                lease._rollback(None, None)
+        else:
+            assert lease._rollback(None, None) == []
+        assert set(seen.values()) == {signal.SIG_IGN}
+        assert {s: signal.getsignal(s) for s in SIGNUMS} == sentinel
+    finally:
+        for signum, handler in saved.items():
+            signal.signal(signum, handler)
+
+
+def test_make_lease_restores_the_signal_dispositions_it_found(monkeypatch):
+    """#feeca5b3: make_lease arms the lease's handler only for the build; the caller's handlers come back after."""
+    sentinel = {
+        signal.SIGINT: signal.SIG_DFL,
+        signal.SIGTERM: signal.SIG_DFL,
+        signal.SIGHUP: lambda *_a: None,
+    }
+    saved = {s: signal.getsignal(s) for s in SIGNUMS}
+    try:
+        for signum, handler in sentinel.items():
+            signal.signal(signum, handler)
+        seen = {}
+        monkeypatch.setattr(lease, "_main_checkout", lambda root: root)
+        monkeypatch.setattr(lease, "live_tip", lambda _root: "tip")
+        monkeypatch.setattr(lease, "gitlinks_at", lambda _root, _tip: [])
+        monkeypatch.setattr(lease, "_reserve", lambda _root, _name, _owner: ("id", "/tmp/x"))
+
+        def armed(*_a):
+            seen.update({s: signal.getsignal(s) for s in SIGNUMS})
+            return "/tmp/x"
+
+        monkeypatch.setattr(lease, "_make_lease_armed", armed)
+        assert lease.make_lease("/root") == "/tmp/x"
+        assert seen[signal.SIGTERM] is not signal.SIG_DFL
+        assert {s: signal.getsignal(s) for s in SIGNUMS} == sentinel
+    finally:
+        for signum, handler in saved.items():
+            signal.signal(signum, handler)
+
+
 def test_lease_hidden_lock_package_missing_on_disk_forces_a_real_install(repo):
     """A package the hidden lockfile lists but the disk lacks makes the live install a difference, so the seed installs instead of linking it."""
     root = repo.root
