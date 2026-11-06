@@ -1967,18 +1967,18 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 5,
-      "done": 9,
+      "open": 4,
+      "done": 10,
       "open_sigs": [
         "2361305e",
         "32d0c02a",
-        "6ce89ed4",
         "b589c4ea",
         "e013e755"
       ],
       "done_sigs": [
         "1068de3a",
         "2b5bfefa",
+        "6ce89ed4",
         "9e557c7e",
         "9f253d25",
         "a83d659c",
@@ -2080,17 +2080,17 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 5,
-      "done": 8,
+      "open": 4,
+      "done": 9,
       "open_sigs": [
         "30d6b624",
-        "34dee0e7",
         "4d4b8cd5",
         "e12434a3",
         "ff9329ec"
       ],
       "done_sigs": [
         "00d591f5",
+        "34dee0e7",
         "4144aa75",
         "7eade686",
         "93ff15df",

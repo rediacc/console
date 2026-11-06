@@ -127,12 +127,13 @@ Order and shared files: one writer in one worktree, box by box, in this order: R
   - Accept: `cd private/renet && go test ./pkg/ramvolume/... ./pkg/repository/... ./pkg/orchestration/... ./pkg/daemon/... ./pkg/dockerpolicy/... -run 'RamVolume|UnmountOrder|RamBind' -count=1` rc 0 and `npm run check:ci-renet` rc 0. Order test: `ramUnmount < storageUnmount`. Other tests: a non-empty `.ram` refuses; an active docker unit refuses; a size change remounts and does not unmount.
   - CONTROL: `TestUnmountRemovesRamVolumeFirst` records `Storage.Unmount` with no submount step on today's `Repository.Unmount`.
     (ticked) 2026-11-06T00:23:30Z by d778be9d: commit:3ef7cdd22 (renet 3ca1a70); go test ramvolume/repository/orchestration/daemon/dockerpolicy -run RamVolume|UnmountOrder|RamBind rc=0; check:ci-renet rc=0
-- [ ] M2 [renet] The RAM volume in the shutdown order, after S1, S2 and S3.
+- [x] M2 [renet] The RAM volume in the shutdown order, after S1, S2 and S3.
   - `renderDockerUnit`'s stop side (S1's unit_sides.go) gains `After=<escaped mount>-.ram.mount`. The line is always present, because ordering against a missing unit does nothing, and it changes only the stop side, so it causes a reload and no restart.
   - `ramvolume.Unmount` refuses when the volume holds data and S2's down marker is not current, unless forced.
   - A test drives S3's `autostart stop --all-mounted` through a fake and records `down < dockerStop < ramUnmount < repoUnmount`.
   - Accept: `cd private/renet && go test ./pkg/daemon/... ./pkg/ramvolume/... ./cmd/renet/ -run 'SystemdDockerUnit|RamVolumeMarker|AllMountedRamOrder' -count=1` rc 0 and `npm run check:ci-renet` rc 0.
   - CONTROL: the updated `TestSystemdDockerUnitGolden` fails against S1's golden, which has no `.ram` line.
+    (ticked) 2026-11-06T01:19:13Z by d778be9d: commit:fc222a8d1 (renet 3bdf95a); go test daemon/ramvolume/cmd -run SystemdDockerUnit|RamVolumeMarker|AllMountedRamOrder rc=0; check:ci-renet rc=0
 
 ### Docs
 

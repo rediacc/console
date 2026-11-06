@@ -54,8 +54,9 @@ Hub daemons (private/renet/pkg/hub/gc.go:144; private/renet/pkg/hub/user_daemon.
 
 ## Tasks
 
-- [ ] H0 [hostinger, read-only] What caused 3136's restart at 06:34. Through `./rdc.sh --config eu-bench term connect -m hostinger -c "<cmd>"`, read: `/var/lib/rediacc/runtime/converge-last.json` (mtime, started_at, the 3136 result), `/var/lib/rediacc/runtime/net-3136.json` (started_at, pid), the mtimes of the renet slots under `/usr/lib/rediacc/renet/`, `/var/lib/rediacc/reconcile/*.json`, `systemctl show rediacc-docker-3136 -p ExecMainStartTimestamp,MainPID`, and the ActiveEnterTimestamp of the other rediacc-docker units (did several restart at 06:34?). Record the most likely path and quote the evidence. No write.
+- [x] H0 [hostinger, read-only] What caused 3136's restart at 06:34. Through `./rdc.sh --config eu-bench term connect -m hostinger -c "<cmd>"`, read: `/var/lib/rediacc/runtime/converge-last.json` (mtime, started_at, the 3136 result), `/var/lib/rediacc/runtime/net-3136.json` (started_at, pid), the mtimes of the renet slots under `/usr/lib/rediacc/renet/`, `/var/lib/rediacc/reconcile/*.json`, `systemctl show rediacc-docker-3136 -p ExecMainStartTimestamp,MainPID`, and the ActiveEnterTimestamp of the other rediacc-docker units (did several restart at 06:34?). Record the most likely path and quote the evidence. No write.
   - Accept: a tick line naming the path (converge, EnsureRunning retry, manual, or unknown) with the file and timestamp that show it. CONTROL: none -- read-only investigation.
+    (ticked) 2026-11-06T01:19:38Z by d778be9d: path: needrestart via unattended-upgrades; apt history 06:34:12, journal 06:34:17, net-3136 started_at 06:34:44 (live runner read, hostinger 2026-11-05); fix S3 commit:a75f60acf
 
 ### Group S: units (one writer, S1 then S2 then S3)
 

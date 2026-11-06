@@ -553,13 +553,13 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-remove-autopilot.md` | compacted | 97 | 0 | 30 | 9220 |
 | `agent/plans/PLAN-renet-bridge-leftovers.md` | approved | 121 | 0 | 16 | 30497 |
 | `agent/plans/PLAN-renet-docker-running-semantics.md` | executing | 75 | 4 | 11 | 15762 |
-| `agent/plans/PLAN-renet-down-before-kill.md` | approved | 147 | 5 | 9 | 30101 |
+| `agent/plans/PLAN-renet-down-before-kill.md` | approved | 148 | 4 | 10 | 30326 |
 | `agent/plans/PLAN-renet-executor-tiered-license-check.md` | executing | 55 | 2 | 2 | 12295 |
 | `agent/plans/PLAN-renet-fetch-retries.md` | approved | 55 | 0 | 3 | 7190 |
 | `agent/plans/PLAN-renet-run-docker-sock-isolation.md` | draft | 101 | 0 | 4 | 11627 |
 | `agent/plans/PLAN-renet-runtime-converge.md` | approved | 45 | 0 | 5 | 9337 |
 | `agent/plans/PLAN-repo-docker-storage-prune.md` | executing | 137 | 3 | 11 | 34534 |
-| `agent/plans/PLAN-repo-resource-limits.md` | approved | 187 | 5 | 8 | 27310 |
+| `agent/plans/PLAN-repo-resource-limits.md` | approved | 188 | 4 | 9 | 27504 |
 | `agent/plans/PLAN-require-testid-sweep.md` | compacted | 39 | 0 | 0 | 2511 |
 | `agent/plans/PLAN-resprofile-wave2.md` | compacted | 39 | 0 | 0 | 3076 |
 | `agent/plans/PLAN-rest-graphql-guard-parity.md` | compacted | 54 | 0 | 8 | 4010 |
