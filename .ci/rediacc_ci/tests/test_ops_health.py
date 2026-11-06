@@ -1,0 +1,442 @@
+"""ops_health against an injected runner and HTTP function: no rdc call, no SSH and no request leaves the process (agent/plans/PLAN-health-checks-local.md L1, L2, L4)."""
+
+from __future__ import annotations
+
+import datetime
+import hashlib
+import json
+import os
+import pathlib
+import subprocess
+
+import pytest
+
+from rediacc_ci.ops import ops_health as oh
+
+NOW = datetime.datetime(2026, 11, 6, 12, 0, tzinfo=datetime.UTC)
+CFG = oh.load_config(pathlib.Path("/nonexistent"))
+
+
+def envelope(data) -> str:
+    return json.dumps({"success": True, "command": "x", "data": data, "errors": None})
+
+
+HEALTH_OK = {"healthy": True, "exitCode": 0, "message": "ok", "issues": []}
+LISTING_OK = {
+    "repositories": [{"name": "app", "guid": "g-app", "autostart": True}],
+    "backup_coverage": {"repos": [{"guid": "g-app", "name": "app", "age_days": 0}]},
+}
+
+
+class Fleet:
+    """A scripted rdc: answers per (config, verb) and records every call with its environment."""
+
+    def __init__(self, machines=("m1",), health=(0, HEALTH_OK), status=0, listing=LISTING_OK):
+        self.machines = {None: list(machines)}
+        self.health = health
+        self.status = status
+        self.listing = listing
+        self.calls: list[tuple[list, dict]] = []
+        self.timeout_on: str | None = None
+
+    def __call__(self, argv, env, _timeout):
+        self.calls.append((list(argv), dict(env)))
+        args = list(argv[1:])
+        config = None
+        if args[:1] == ["--config"]:
+            config, args = args[1], args[2:]
+        verb = " ".join(args[:2])
+        if self.timeout_on and self.timeout_on in " ".join(args):
+            return oh.Result(124, "", "", timed_out=True)
+        if verb == "machine list":
+            names = self.machines.get(config, [])
+            return oh.Result(0, envelope([{"name": n} for n in names]))
+        if verb == "machine health":
+            rc, data = self.health
+            return oh.Result(rc, envelope(data) if data is not None else "boom")
+        if verb == "machine status":
+            if "--health-check" in args or "--stability-check" in args:
+                return oh.Result(self.status, "", "unhealthy" if self.status else "")
+            return oh.Result(0, envelope(self.listing))
+        return oh.Result(99, "", "unexpected %s" % argv)
+
+
+def machines(fleet, env=None):
+    return oh.machines_check(fleet, dict(env or {"PATH": "/usr/bin"}), CFG)
+
+
+# --------------------------------------------------------------------------- L1
+
+
+def test_green_machine_is_rc0():
+    out = machines(Fleet())
+    assert out["rc"] == 0, out["detail"]
+    assert out["rows"][0]["state"] == "green"
+
+
+def test_health_rc1_warning_is_red():
+    out = machines(Fleet(health=(1, {**HEALTH_OK, "exitCode": 1, "issues": ["datastore 86%"]})))
+    assert out["rc"] == 1
+    assert "datastore 86%" in out["detail"]
+
+
+def test_health_rc2_from_repo_health_error_is_red():
+    data = {
+        **HEALTH_OK,
+        "exitCode": 2,
+        "issues": ["repo mail health() error"],
+        "findings": [{"code": "repo.health.error", "severity": "error", "subject": "mail"}],
+    }
+    out = machines(Fleet(health=(2, data)))
+    assert out["rc"] == 1
+    assert out["rows"][0]["findings"][0]["code"] == "repo.health.error"
+
+
+def test_status_rc1_is_red():
+    out = machines(Fleet(status=1))
+    assert out["rc"] == 1
+    assert "--containers rc 1" in out["detail"]
+    assert "--services rc 1" in out["detail"]
+
+
+def test_coverage_absent_for_autostart_repo_is_red():
+    listing = {"repositories": [{"name": "mail", "guid": "g-m", "autostart": True}]}
+    out = machines(Fleet(listing=listing))
+    assert out["rc"] == 1
+    assert "backup.coverage.absent: mail" in out["detail"]
+
+
+def test_coverage_present_but_old_is_red_and_non_autostart_is_ignored():
+    listing = {
+        "repositories": [
+            {"name": "a", "guid": "g-a", "autostart": True},
+            {"name": "b", "guid": "g-b", "autostart": False},
+        ],
+        "backup_coverage": {"repos": [{"guid": "g-a", "age_days": 9}]},
+    }
+    out = machines(Fleet(listing=listing))
+    assert out["rc"] == 1
+    assert "backup.age.stale: a" in out["detail"]
+    assert " b" not in out["detail"].replace("backup.age.stale: a", "")
+
+
+def test_coverage_read_from_health_json_when_it_carries_repositories():
+    data = {**HEALTH_OK, **LISTING_OK}
+    fleet = Fleet(health=(0, data), listing={"repositories": [{"name": "x", "autostart": True}]})
+    out = machines(fleet)
+    assert out["rc"] == 0, out["detail"]
+    assert not any(c[0][-2:] == ["-o", "json"] and "status" in c[0] for c in fleet.calls)
+
+
+def test_repo_at_level_none_is_not_red_and_reported_as_no_check():
+    data = {**HEALTH_OK, "repo_health": [{"name": "plain", "level": "none"}]}
+    out = machines(Fleet(health=(0, data)))
+    assert out["rc"] == 0
+    assert out["rows"][0]["no_check"] == ["plain"]
+    assert "no check: plain" in out["detail"]
+
+
+def test_empty_machine_list_is_exit_2():
+    out = machines(Fleet(machines=()))
+    assert out["rc"] == 2
+    assert "names no machine" in out["detail"]
+
+
+def test_ssh_timeout_is_exit_2():
+    fleet = Fleet()
+    fleet.timeout_on = "machine health"
+    out = machines(fleet)
+    assert out["rc"] == 2
+    assert out["state"] == "unknown"
+
+
+def test_red_wins_over_unreadable_in_aggregate():
+    fleet = Fleet(machines=("m1", "m2"), status=1)
+    out = machines(fleet)
+    assert out["rc"] == 1
+    assert oh.worst_rc([2, 1, 0]) == 1
+
+
+def test_no_provision_forced_even_when_caller_unset_it():
+    fleet = Fleet()
+    machines(fleet, env={"PATH": "/usr/bin"})
+    assert fleet.calls
+    assert all(env.get("REDIACC_NO_PROVISION") == "1" for _argv, env in fleet.calls)
+    fleet2 = Fleet()
+    machines(fleet2, env={"PATH": "/usr/bin", "REDIACC_NO_PROVISION": "0"})
+    assert all(env.get("REDIACC_NO_PROVISION") == "1" for _argv, env in fleet2.calls)
+
+
+def test_configs_from_env_and_the_default_config():
+    assert oh.configs_from_env({}) == [None]
+    assert oh.configs_from_env({"RDC_HEALTH_CONFIGS": " a, b ,"}) == ["a", "b"]
+    fleet = Fleet()
+    fleet.machines = {"a": ["x"], "b": ["y"]}
+    out = machines(fleet, env={"RDC_HEALTH_CONFIGS": "a,b"})
+    assert [(r["config"], r["machine"]) for r in out["rows"]] == [("a", "x"), ("b", "y")]
+    assert all(c[0][1:3] in (["--config", "a"], ["--config", "b"]) for c in fleet.calls)
+
+
+def test_source_names_no_machine_or_config():
+    text = pathlib.Path(oh.__file__).read_text(encoding="utf-8")
+    for word in ("hostinger", "eu-remote"):
+        assert word not in text
+
+
+# --------------------------------------------------------------------------- L2: cache, ledger, ingest, offbox
+
+
+class Web:
+    def __init__(self, status_doc=None, status_code=200, ingest_code=200):
+        self.status_doc = status_doc
+        self.status_code = status_code
+        self.ingest_code = ingest_code
+        self.calls: list = []
+
+    def __call__(self, method, url, headers, body):
+        self.calls.append((method, url, dict(headers), body))
+        if url.endswith("/v1/status"):
+            if self.status_doc is None:
+                return oh.Reply(self.status_code, "", "HTTP %d" % self.status_code)
+            return oh.Reply(self.status_code, json.dumps(self.status_doc))
+        if url.endswith("/v1/ingest"):
+            return oh.Reply(self.ingest_code, "{}", "" if self.ingest_code < 300 else "HTTP 500")
+        return oh.Reply(404)
+
+
+def status_doc(verdict="green", cron_age_min=5, probes=(), sha="abc"):
+    return {
+        "last_cron_at": oh.iso(NOW - datetime.timedelta(minutes=cron_age_min)),
+        "targets_sha": sha,
+        "verdict": verdict,
+        "probes": list(probes),
+        "ingest": [],
+    }
+
+
+ENV = {
+    "PATH": "/usr/bin",
+    "OPS_HEALTH_URL": "https://ops-health.example.test",
+    "OPS_HEALTH_READ_TOKEN": "r",
+    "OPS_HEALTH_INGEST_TOKEN": "i",
+}
+
+
+class Combined(Fleet):
+    """The fleet plus the three subprocess checks, each with a scripted exit code."""
+
+    def __init__(self, sub_rc=None, **kw):
+        super().__init__(**kw)
+        self.sub_rc = {"telemetry_delivery": 0, "portal_captcha": 0, "cf_usage_report": 0}
+        self.sub_rc.update(sub_rc or {})
+
+    def __call__(self, argv, env, timeout):
+        joined = " ".join(argv)
+        for mod, rc in self.sub_rc.items():
+            if "rediacc_ci.ops." + mod in joined:
+                self.calls.append((list(argv), dict(env)))
+                return oh.Result(rc, "line %s" % mod)
+        return super().__call__(argv, env, timeout)
+
+
+def run_refresh(root, runner, web, now=NOW, **kw):
+    return oh.refresh(root, runner=runner, fetch=web, hydrate=None, env=dict(ENV), now=now, **kw)
+
+
+def ledger_rows(root):
+    path = root / oh.LEDGER_REL
+    if not path.exists():
+        return []
+    return [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
+
+
+def test_refresh_writes_cache_posts_ingest_and_runs_under_profiles(tmp_path):
+    runner, web = Combined(), Web(status_doc())
+    rc, doc = run_refresh(tmp_path, runner, web)
+    assert rc == 0, json.dumps(doc, indent=1)
+    cached = json.loads((tmp_path / oh.CACHE_DIR_REL / oh.STATE_NAME).read_text())
+    assert set(cached["checks"]) == set(oh.ALL_CHECKS)
+    posted = sorted(b["source"] for m, u, h, b in web.calls if m == "POST")
+    assert posted == [
+        "local-cf-usage",
+        "local-machine-m1",
+        "local-portal-captcha",
+        "local-telemetry",
+    ]
+    assert all(h["Authorization"] == "Bearer i" for m, u, h, b in web.calls if m == "POST")
+    argv_by_mod = {
+        mod: next(a for a, _e in runner.calls if "rediacc_ci.ops." + mod in " ".join(a))
+        for mod in ("telemetry_delivery", "cf_usage_report", "portal_captcha")
+    }
+    assert "--profile telemetry-probe" in " ".join(argv_by_mod["telemetry_delivery"])
+    assert "--profile cf-usage-report" in " ".join(argv_by_mod["cf_usage_report"])
+    assert "bws_env" not in " ".join(argv_by_mod["portal_captcha"])
+
+
+def test_subprocess_exit_contract_is_kept():
+    for rc, state in ((0, "green"), (1, "red"), (2, "unknown"), (127, "unknown")):
+        out = oh.subprocess_check("portal-captcha", lambda _a, _e, _t, rc=rc: oh.Result(rc), {})
+        assert out["state"] == state
+        assert out["rc"] == (rc if rc in (0, 1) else 2)
+    timed = oh.subprocess_check("telemetry", lambda _a, _e, _t: oh.Result(124, timed_out=True), {})
+    assert timed["rc"] == 2
+
+
+def test_unchanged_state_appends_no_ledger_row(tmp_path):
+    web = Web(status_doc())
+    run_refresh(tmp_path, Combined(), web, force=True)
+    first = len(ledger_rows(tmp_path))
+    assert first == 4  # first sight of each source
+    run_refresh(tmp_path, Combined(), web, force=True, now=NOW + datetime.timedelta(minutes=1))
+    assert len(ledger_rows(tmp_path)) == first
+
+
+def test_one_to_zero_change_appends_one_row(tmp_path):
+    web = Web(status_doc())
+    run_refresh(tmp_path, Combined(status=1), web, force=True)
+    before = ledger_rows(tmp_path)
+    run_refresh(
+        tmp_path, Combined(status=0), web, force=True, now=NOW + datetime.timedelta(minutes=1)
+    )
+    added = ledger_rows(tmp_path)[len(before) :]
+    assert [(r["source"], r["from"], r["to"]) for r in added] == [
+        ("local-machine-m1", "red", "green")
+    ]
+
+
+def test_failed_ingest_is_recorded_and_does_not_fail_refresh(tmp_path):
+    web = Web(status_doc(), ingest_code=500)
+    rc, doc = run_refresh(tmp_path, Combined(), web)
+    assert rc == 0
+    assert doc["ingest"]["posted"] == []
+    assert len(doc["ingest"]["errors"]) == 4
+    assert "500" in doc["ingest"]["errors"][0]
+
+
+def test_missing_ingest_token_is_recorded_not_raised(tmp_path):
+    env = {k: v for k, v in ENV.items() if k != "OPS_HEALTH_INGEST_TOKEN"}
+    rc, doc = oh.refresh(
+        tmp_path, runner=Combined(), fetch=Web(status_doc()), hydrate=None, env=env, now=NOW
+    )
+    assert rc == 0
+    assert "OPS_HEALTH_INGEST_TOKEN unavailable" in doc["ingest"]["errors"][0]
+
+
+def test_hydrate_failure_is_recorded(tmp_path):
+    def boom(_names):
+        raise RuntimeError("no token")
+
+    env = {"PATH": "/usr/bin", "OPS_HEALTH_URL": "https://ops-health.example.test"}
+    rc, doc = oh.refresh(
+        tmp_path, runner=Combined(), fetch=Web(status_doc()), hydrate=boom, env=env, now=NOW
+    )
+    assert doc["checks"]["offbox"]["state"] == "unknown"
+    assert "no token" in doc["checks"]["offbox"]["detail"]
+    assert rc == 2
+
+
+def test_only_due_checks_run(tmp_path):
+    web = Web(status_doc())
+    run_refresh(tmp_path, Combined(), web)
+    runner = Combined()
+    run_refresh(tmp_path, runner, web, now=NOW + datetime.timedelta(minutes=20))
+    assert runner.calls == []  # machines 30 min, the rest longer
+    runner2 = Combined()
+    run_refresh(tmp_path, runner2, web, now=NOW + datetime.timedelta(minutes=31))
+    joined = [" ".join(a) for a, _e in runner2.calls]
+    assert any("machine health" in j for j in joined)
+    assert not any("telemetry_delivery" in j for j in joined)
+
+
+def test_target_sha_mismatch_is_red_with_deploy_command():
+    body = '{"version":1}'
+    good = hashlib.sha256(body.encode()).hexdigest()
+
+    def term(argv, env, _timeout):
+        assert env["REDIACC_NO_PROVISION"] == "1"
+        assert "term" in argv
+        assert "connect" in argv
+        return oh.Result(0, body)
+
+    env = {**ENV, "OPS_HEALTH_TARGETS_REF": "ops@box", "OPS_HEALTH_TARGETS_PATH": "targets.json"}
+    red = oh.offbox_check(CFG, env, Web(status_doc(sha="stale")), term, NOW, with_targets=True)
+    assert red["rc"] == 1
+    assert "ops.targets.drift" in red["detail"]
+    assert "rediacc_ci.ops.deploy_ops_health --targets-ref ops@box" in red["detail"]
+    assert "--targets-path targets.json --write" in red["detail"]
+    ok = oh.offbox_check(CFG, env, Web(status_doc(sha=good)), term, NOW, with_targets=True)
+    assert ok["rc"] == 0, ok["detail"]
+
+
+def test_offbox_without_targets_ref_does_not_read_the_repo():
+    def never(*_a):
+        raise AssertionError("no rdc call expected")
+
+    out = oh.offbox_check(CFG, dict(ENV), Web(status_doc()), never, NOW, with_targets=True)
+    assert out["rc"] == 0
+
+
+def test_offbox_stale_is_flagged():
+    out = oh.offbox_check(CFG, dict(ENV), Web(status_doc(cron_age_min=31)), None, NOW, False)
+    assert out["rc"] == 1
+    assert out["stale"] is True
+
+
+def test_lock_is_exclusive_and_stale_after_twenty_minutes(tmp_path):
+    assert oh.take_lock(tmp_path, now=1000.0)
+    assert not oh.take_lock(tmp_path, now=1000.0)
+    lock = tmp_path / oh.CACHE_DIR_REL / oh.LOCK_NAME
+    os.utime(lock, (1000.0, 1000.0))
+    assert oh.take_lock(tmp_path, now=1000.0 + oh.LOCK_STALE_S + 1)
+    oh.release_lock(tmp_path)
+    assert not lock.exists()
+
+
+# --------------------------------------------------------------------------- L4: the gate
+
+
+def gate(web, env=None, now=NOW):
+    return oh.gate_main(fetch=web, env=dict(env or ENV), now=now)
+
+
+def test_gate_green_is_0():
+    assert gate(Web(status_doc())) == 0
+
+
+def test_gate_red_probe_exits_1(capsys):
+    probe = {"probe": "tls-x", "state": "red", "since": "2026-11-06T10:00:00Z", "detail": "6 days"}
+    assert gate(Web(status_doc(verdict="red", probes=[probe]))) == 1
+    assert "probe tls-x red" in capsys.readouterr().err
+
+
+def test_gate_stale_cron_exits_1(capsys):
+    assert gate(Web(status_doc(cron_age_min=31))) == 1
+    assert "31 min old" in capsys.readouterr().err
+
+
+def test_gate_unreadable_status_exits_2():
+    assert gate(Web(None, status_code=503)) == 2
+    assert gate(Web(status_doc(verdict="unknown"))) == 2
+
+
+def test_gate_without_origin_is_2():
+    env = {k: v for k, v in ENV.items() if k != "OPS_HEALTH_URL"}
+    assert gate(Web(status_doc()), env=env) == (
+        0 if oh.load_config(oh.repo_root()).get("worker_url") else 2
+    )
+
+
+def test_gate_script_runs_the_module_entry():
+    script = pathlib.Path(oh.repo_root()) / ".ci/scripts/quality/check_ops_health.py"
+    text = script.read_text(encoding="utf-8")
+    assert "ops_health" in text
+    assert "gate_main" in text
+    proc = subprocess.run(
+        [str(script), "--help"], capture_output=True, text=True, check=False, timeout=60
+    )
+    assert proc.returncode == 0, proc.stderr
+
+
+@pytest.mark.parametrize(("rcs", "want"), [([0, 0], 0), ([0, 2], 2), ([2, 1], 1), ([], 0)])
+def test_worst_rc(rcs, want):
+    assert oh.worst_rc(rcs) == want

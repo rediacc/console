@@ -956,7 +956,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/env | 2 | .py 2 |
 | .ci/rediacc_ci/housekeeping | 8 | .py 8 |
 | .ci/rediacc_ci/infra | 21 | .py 21 |
-| .ci/rediacc_ci/ops | 36 | .py 36 |
+| .ci/rediacc_ci/ops | 37 | .py 37 |
 | .ci/rediacc_ci/pr | 2 | .py 2 |
 | .ci/rediacc_ci/private | 10 | .py 10 |
 | .ci/rediacc_ci/proof | 5 | .py 5 |
@@ -969,7 +969,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/setup | 13 | .py 13 |
 | .ci/rediacc_ci/spikes | 2 | .py 2 |
 | .ci/rediacc_ci/testrun | 12 | .py 12 |
-| .ci/rediacc_ci/tests | 497 | .py 497 |
+| .ci/rediacc_ci/tests | 498 | .py 498 |
 | .ci/rediacc_ci/tests/data | 2 | .json 1, .yml 1 |
 | .ci/rediacc_ci/tests/fixtures | 2 | .json 2 |
 | .ci/rediacc_ci/tests/fixtures/budget_drift | 1 | .json 1 |
@@ -1063,7 +1063,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/scripts/infra | 3 | .sh 3 |
 | .ci/scripts/lib | 1 | .sh 1 |
 | .ci/scripts/private/license-mint | 3 | .go 1, .mod 1, .sum 1 |
-| .ci/scripts/quality | 174 | .py 172, .json 1, .mjs 1 |
+| .ci/scripts/quality | 175 | .py 173, .json 1, .mjs 1 |
 | .ci/scripts/quality/lib | 1 | .py 1 |
 | .ci/scripts/security | 2 | .py 2 |
 | .ci/scripts/test | 2 | .sh 1, .ts 1 |
