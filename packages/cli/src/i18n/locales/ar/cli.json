@@ -1512,6 +1512,10 @@
         "includeDockerOption": "إعادة تشغيل مشرف rediacc-docker-N لكل مستودع أيضًا (يعيد تشغيل حاويات المستودع)",
         "jsonOption": "طباعة التقرير بتنسيق JSON",
         "nothingStale": "لا توجد خدمة renet على '{{machine}}' تعمل بملف تنفيذي مستبدَل.",
+        "repoNeedsDocker": "يتطلب --repo استخدام --include-docker: يُقيَّد فقط مشرف مستودع واحد",
+        "repoNoNetworkId": "لا يحتوي المستودع '{{repo}}' على معرّف شبكة في هذا الإعداد؛ تحقق منه عبر rdc repo list",
+        "repoOption": "تقييد إعادة التشغيل بمشرف مستودع واحد (يتطلب --include-docker)",
+        "repoRenetTooOld": "لا يدعم renet على '{{machine}}' الخيار --repo بعد ورفض النطاق؛ لم يُعد تشغيل أي شيء. شغّل rdc machine setup {{machine}} أولاً",
         "starting": "جارٍ إعادة تشغيل خدمات renet على '{{machine}}'..."
       },
       "scanKeys": {

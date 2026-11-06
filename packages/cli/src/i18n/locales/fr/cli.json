@@ -1512,6 +1512,10 @@
         "includeDockerOption": "Redémarrer aussi le superviseur rediacc-docker-N de chaque dépôt (redémarre ses conteneurs)",
         "jsonOption": "Afficher le rapport en JSON",
         "nothingStale": "Aucun démon renet sur '{{machine}}' n'exécute un binaire remplacé.",
+        "repoNeedsDocker": "--repo exige --include-docker : seul le superviseur d'un dépôt est ciblé",
+        "repoNoNetworkId": "Le dépôt '{{repo}}' n'a pas d'identifiant réseau dans cette configuration ; vérifiez-le avec rdc repo list",
+        "repoOption": "Limite le redémarrage au superviseur d'un dépôt (exige --include-docker)",
+        "repoRenetTooOld": "renet sur '{{machine}}' ne connaît pas encore --repo et a refusé la portée ; rien n'a été redémarré. Lancez d'abord rdc machine setup {{machine}}",
         "starting": "Redémarrage des démons renet sur '{{machine}}'..."
       },
       "scanKeys": {

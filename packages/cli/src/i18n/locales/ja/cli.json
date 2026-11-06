@@ -1512,6 +1512,10 @@
         "includeDockerOption": "各リポジトリの rediacc-docker-N スーパーバイザーも再起動する（そのリポジトリのコンテナが再起動されます）",
         "jsonOption": "レポートを JSON で出力",
         "nothingStale": "'{{machine}}' に置き換え済みのバイナリで動作している renet デーモンはありません。",
+        "repoNeedsDocker": "--repo には --include-docker が必要です。対象にできるのはリポジトリ単位のスーパーバイザーだけです",
+        "repoNoNetworkId": "このコンフィグでは、リポジトリ '{{repo}}' にネットワーク ID がありません。rdc repo list で確認してください",
+        "repoOption": "再起動を 1 つのリポジトリのスーパーバイザーに限定します（--include-docker が必要）",
+        "repoRenetTooOld": "'{{machine}}' の renet は --repo に未対応で、範囲指定を拒否しました。何も再起動していません。先に rdc machine setup {{machine}} を実行してください",
         "starting": "'{{machine}}' の renet デーモンを再起動しています..."
       },
       "scanKeys": {

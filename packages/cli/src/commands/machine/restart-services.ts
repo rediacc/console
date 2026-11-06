@@ -1,16 +1,19 @@
 /**
- * `rdc machine restart-services <name> [--include-docker]`: a rolling restart of the renet daemons
+ * `rdc machine restart-services <name> [--include-docker [--repo <name>]]`: a rolling restart of the renet daemons
  * that still run a replaced binary. renet confirms each unit healthy before it restarts the next.
  * With --include-docker a `rediacc-docker-N` supervisor restart also restarts that repo's dockerd:
  * renet records the containers running before it, starts them again, waits until each is running
  * (and healthy where it has a healthcheck), reports the repo under `repos`, and stops the rolling
  * restart at the first repo that does not come back (its supervisor is `failed`, so the exit is 1).
+ * `--repo <name>` (with --include-docker) scopes the restart to that repo's network id; a renet that predates the scope refuses it and nothing restarts.
  */
 
 import type { Command } from 'commander';
 import { t } from '../../i18n/index.js';
+import { configService } from '../../services/config/config-resources.js';
 import { outputService } from '../../services/core/output.js';
 import { setExitCode } from '../../services/core/request-context.js';
+import { isRenetFlagUnsupported } from '../../services/executor/job-client.js';
 import { pendingExitCode, runCommandJob } from '../../services/jobs/command-job.js';
 import { bindStepHandler, planStep } from '../../services/jobs/steps.js';
 import { parseDaemonUpgradeJson, reportDaemonUpgrade } from '../../services/renet/renet-daemons.js';
@@ -21,7 +24,60 @@ import { assertMachineExists } from '../_validate.js';
 
 interface RestartServicesOptions {
   includeDocker?: boolean;
+  repo?: string;
   json?: boolean;
+}
+
+/** The refusal of a renet that predates `--network-id`: cobra's unknown flag, or the job builder's closed argument list. */
+function isScopeUnsupported(text: string): boolean {
+  return isRenetFlagUnsupported(text) || /argument "network-ids" is not allowed/.test(text);
+}
+
+/** The argument object of the daemons-restart job. */
+function restartArgs(
+  options: RestartServicesOptions,
+  networkIds: number[] | undefined
+): Record<string, unknown> {
+  return {
+    ...(options.includeDocker ? { 'include-docker': true } : {}),
+    ...(networkIds ? { 'network-ids': networkIds } : {}),
+  };
+}
+
+/** Whether a failed job's output is an older renet refusing the scope. */
+function isScopeRefused(result: { stderr?: string; stdout?: string; error?: string }): boolean {
+  return isScopeUnsupported(
+    `${result.stderr ?? ''}\n${result.stdout ?? ''}\n${result.error ?? ''}`
+  );
+}
+
+/** The network ids `--repo` selects, undefined without it, or 'refused' once the refusal is printed. */
+async function resolveScope(
+  options: RestartServicesOptions
+): Promise<number[] | undefined | 'refused'> {
+  if (options.repo === undefined) return undefined;
+  const resolved = await resolveRepoNetworkId(options);
+  if ('error' in resolved) {
+    outputService.error(resolved.error);
+    setExitCode(1);
+    return 'refused';
+  }
+  return [resolved.networkId];
+}
+
+/** Map `--repo` to its network id, or say why not: a refusal runs nothing. */
+async function resolveRepoNetworkId(
+  options: RestartServicesOptions
+): Promise<{ networkId: number } | { error: string }> {
+  const repo = options.repo as string;
+  if (!options.includeDocker) {
+    return { error: t('commands.machine.restartServices.repoNeedsDocker') };
+  }
+  const config = await configService.getRepository(repo);
+  if (!config?.networkId || config.networkId <= 0) {
+    return { error: t('commands.machine.restartServices.repoNoNetworkId', { repo }) };
+  }
+  return { networkId: config.networkId };
 }
 
 /** Print the report of the `daemons-restart` job, as tables or as data, and settle the exit code. */
@@ -63,6 +119,9 @@ async function runRestartServices(
 ): Promise<void> {
   await assertMachineExists(machineName);
   const format: OutputFormat = options.json ? 'json' : getOutputFormat();
+  const scope = await resolveScope(options);
+  if (scope === 'refused') return;
+  const networkIds = scope;
   if (format === 'table') {
     outputService.info(t('commands.machine.restartServices.starting', { machine: machineName }));
   }
@@ -75,7 +134,7 @@ async function runRestartServices(
       machineName,
       commandKind: {
         name: 'daemons-restart',
-        args: options.includeDocker ? { 'include-docker': true } : {},
+        args: restartArgs(options, networkIds),
       },
       captureOutput: true,
     },
@@ -86,7 +145,15 @@ async function runRestartServices(
     if (code !== undefined) setExitCode(code);
     return;
   }
-  if (!outcome.result.success) renderRestartFailure(machineName, outcome.result, format);
+  if (outcome.result.success) return;
+  if (networkIds && isScopeRefused(outcome.result)) {
+    outputService.error(
+      t('commands.machine.restartServices.repoRenetTooOld', { machine: machineName })
+    );
+    setExitCode(1);
+    return;
+  }
+  renderRestartFailure(machineName, outcome.result, format);
 }
 
 /** A failed job still prints the report it left on stdout (the failed units), then exits non-zero. */
@@ -110,6 +177,7 @@ export function registerRestartServicesCommand(machine: Command): void {
     .summary(t('commands.machine.restartServices.descriptionShort'))
     .description(t('commands.machine.restartServices.description'))
     .option('--include-docker', t('commands.machine.restartServices.includeDockerOption'))
+    .option('--repo <name>', t('commands.machine.restartServices.repoOption'))
     .option('--json', t('commands.machine.restartServices.jsonOption'))
     .action(async (name: string, options: RestartServicesOptions) => {
       try {

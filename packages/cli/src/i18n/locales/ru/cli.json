@@ -1512,6 +1512,10 @@
         "includeDockerOption": "Также перезапустить супервизор rediacc-docker-N каждого репозитория (перезапускает его контейнеры)",
         "jsonOption": "Вывести отчёт в формате JSON",
         "nothingStale": "На '{{machine}}' нет демонов renet, работающих на заменённом бинарнике.",
+        "repoNeedsDocker": "--repo требует --include-docker: ограничивается только супервизор одного репозитория",
+        "repoNoNetworkId": "У репозитория '{{repo}}' в этой конфигурации нет идентификатора сети; проверьте его через rdc repo list",
+        "repoOption": "Ограничить перезапуск супервизором одного репозитория (нужен --include-docker)",
+        "repoRenetTooOld": "renet на '{{machine}}' ещё не знает --repo и отклонил область; ничего не перезапущено. Сначала выполните rdc machine setup {{machine}}",
         "starting": "Перезапуск демонов renet на '{{machine}}'..."
       },
       "scanKeys": {

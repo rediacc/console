@@ -1512,6 +1512,10 @@
         "includeDockerOption": "Her deponun rediacc-docker-N denetleyicisini de yeniden başlat (deponun konteynerlerini yeniden başlatır)",
         "jsonOption": "Raporu JSON olarak yazdır",
         "nothingStale": "'{{machine}}' üzerinde değiştirilmiş bir ikili dosyayı çalıştıran renet daemon'ı yok.",
+        "repoNeedsDocker": "--repo için --include-docker gerekir: yalnızca tek bir deponun denetleyicisi hedeflenir",
+        "repoNoNetworkId": "'{{repo}}' deposunun bu yapılandırmada ağ kimliği yok; rdc repo list ile kontrol edin",
+        "repoOption": "Yeniden başlatmayı tek bir deponun denetleyicisiyle sınırla (--include-docker gerekir)",
+        "repoRenetTooOld": "'{{machine}}' üzerindeki renet --repo seçeneğini henüz tanımıyor ve kapsamı reddetti; hiçbir şey yeniden başlatılmadı. Önce rdc machine setup {{machine}} çalıştırın",
         "starting": "'{{machine}}' üzerindeki renet daemon'ları yeniden başlatılıyor..."
       },
       "scanKeys": {

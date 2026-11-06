@@ -1512,6 +1512,10 @@
         "includeDockerOption": "Taaskäivita ka iga repositooriumi rediacc-docker-N supervisor (taaskäivitab selle konteinerid)",
         "jsonOption": "Väljasta aruanne JSON-vormingus",
         "nothingStale": "Masinas '{{machine}}' ei kasuta ükski renet'i deemon asendatud binaari.",
+        "repoNeedsDocker": "--repo nõuab --include-docker: piiratakse ainult ühe hoidla järelevaataja",
+        "repoNoNetworkId": "Hoidlal '{{repo}}' pole selles konfiguratsioonis võrgu ID-d; kontrolli käsuga rdc repo list",
+        "repoOption": "Piira taaskäivitus ühe hoidla järelevaatajaga (nõuab --include-docker)",
+        "repoRenetTooOld": "Masina '{{machine}}' renet ei tunne veel --repo valikut ja keeldus ulatusest; midagi ei taaskäivitatud. Käivita esmalt rdc machine setup {{machine}}",
         "starting": "Masina '{{machine}}' renet'i deemonite taaskäivitamine..."
       },
       "scanKeys": {

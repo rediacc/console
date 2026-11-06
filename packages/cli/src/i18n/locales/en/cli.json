@@ -887,6 +887,10 @@
         "includeDockerOption": "Also restart each per-repo rediacc-docker-N supervisor (restarts that repo's containers)",
         "jsonOption": "Print the report as JSON",
         "nothingStale": "No renet daemon on '{{machine}}' runs a replaced binary.",
+        "repoNeedsDocker": "--include-docker is required with --repo: only a repo's supervisor is scoped",
+        "repoNoNetworkId": "Repository '{{repo}}' has no network id in this config; check it with rdc repo list",
+        "repoOption": "Limit the restart to one repo's supervisor (needs --include-docker)",
+        "repoRenetTooOld": "renet on '{{machine}}' predates --repo and refused the scope; nothing was restarted. Run rdc machine setup {{machine}} first",
         "starting": "Restarting renet daemons on '{{machine}}'..."
       },
       "scanKeys": {

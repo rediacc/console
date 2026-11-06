@@ -8272,6 +8272,20 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Also restart each per-repo rediacc-docker-N supervisor (restarts that repo's containers)"
         },
         {
+          "flags": "--repo <name>",
+          "long": "repo",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "kinds": [
+            "repo"
+          ],
+          "tier": "common",
+          "descriptionKey": "commands.machine.restartServices.repoOption",
+          "label": "Limit the restart to one repo's supervisor (needs --include-docker)"
+        },
+        {
           "flags": "--json",
           "long": "json",
           "valueTaking": false,
@@ -8302,7 +8316,7 @@ export const CLI_CONTRACT: CliContract = {
       "proxyCapable": true,
       "detachable": true,
       "machineOption": null,
-      "repoOption": null,
+      "repoOption": "repo",
       "machinePositional": "name",
       "repoPositional": null
     },

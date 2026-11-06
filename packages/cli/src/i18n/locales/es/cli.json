@@ -1512,6 +1512,10 @@
         "includeDockerOption": "Reiniciar también el supervisor rediacc-docker-N de cada repositorio (reinicia sus contenedores)",
         "jsonOption": "Mostrar el informe en JSON",
         "nothingStale": "Ningún daemon de renet en '{{machine}}' ejecuta un binario reemplazado.",
+        "repoNeedsDocker": "--repo requiere --include-docker: solo se acota el supervisor de un repositorio",
+        "repoNoNetworkId": "El repositorio '{{repo}}' no tiene id de red en esta configuración; compruébalo con rdc repo list",
+        "repoOption": "Limita el reinicio al supervisor de un repositorio (requiere --include-docker)",
+        "repoRenetTooOld": "renet en '{{machine}}' no conoce --repo y rechazó el alcance; no se reinició nada. Ejecuta primero rdc machine setup {{machine}}",
         "starting": "Reiniciando los daemons de renet en '{{machine}}'..."
       },
       "scanKeys": {

@@ -1512,6 +1512,10 @@
         "includeDockerOption": "同时重启每个仓库的 rediacc-docker-N 监管进程（会重启该仓库的容器）",
         "jsonOption": "以 JSON 格式输出报告",
         "nothingStale": "'{{machine}}' 上没有运行已替换二进制文件的 renet 守护进程。",
+        "repoNeedsDocker": "--repo 需要同时使用 --include-docker：只能限定单个仓库的监管进程",
+        "repoNoNetworkId": "此配置中仓库 '{{repo}}' 没有网络 ID；请用 rdc repo list 检查",
+        "repoOption": "将重启限定在单个仓库的监管进程（需要 --include-docker）",
+        "repoRenetTooOld": "'{{machine}}' 上的 renet 尚不支持 --repo，已拒绝该范围；没有重启任何内容。请先运行 rdc machine setup {{machine}}",
         "starting": "正在重启 '{{machine}}' 上的 renet 守护进程..."
       },
       "scanKeys": {
