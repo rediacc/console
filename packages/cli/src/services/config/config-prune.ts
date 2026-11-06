@@ -288,14 +288,27 @@ const EMPTY_ANALYSIS: ConfigPruneAnalysis = {
  * The one prune pass, run on `cfg` in place by both the dry run (on a clone) and the apply (inside
  * `updateSyncedConfig`, so a replay after a version conflict re-runs it on the fresh server copy).
  */
+/** Any bucket flag narrows the run to the buckets named; no bucket flag prunes every bucket. */
+function selectBuckets(options: ConfigPruneOptions): {
+  wantCerts: boolean;
+  wantArchives: boolean;
+  wantRefs: boolean;
+} {
+  const narrowed = [
+    options.certsOnly,
+    options.archivesOnly,
+    options.refsOnly,
+    options.goneMachineRepos,
+  ].some(Boolean);
+  return {
+    wantCerts: !narrowed || Boolean(options.certsOnly),
+    wantArchives: !narrowed || Boolean(options.archivesOnly),
+    wantRefs: !narrowed || Boolean(options.refsOnly),
+  };
+}
+
 function prunePass(cfg: RdcConfig, options: ConfigPruneOptions): ConfigPruneAnalysis {
-  // Any bucket flag narrows the run to the buckets named; no bucket flag prunes every bucket.
-  const narrowed = Boolean(
-    options.certsOnly || options.archivesOnly || options.refsOnly || options.goneMachineRepos
-  );
-  const wantCerts = !narrowed || Boolean(options.certsOnly);
-  const wantArchives = !narrowed || Boolean(options.archivesOnly);
-  const wantRefs = !narrowed || Boolean(options.refsOnly);
+  const { wantCerts, wantArchives, wantRefs } = selectBuckets(options);
   const graceDays = options.graceDays ?? cfg.defaults?.pruneGraceDays ?? DEFAULT_GRACE_DAYS;
 
   // Archives FIRST so the cert anchors below are computed against the post-prune resource set; otherwise certs whose anchor is in expiredArchives would be classified as live and survive the run.
