@@ -11,10 +11,11 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { installJobDeps } from '../../../commands/__tests__/job-deps.js';
 
-const audit = vi.hoisted(() => ({ recorded: [] as { functionName: string }[] }));
+const audit = vi.hoisted(() => ({ recorded: [] as { functionName: string }[], throwOn: '' }));
 vi.mock('../../core/audit.js', () => ({
   auditService: {
     recordOperation: (entry: { functionName: string }) => {
+      if (entry.functionName === audit.throwOn) throw new Error('audit store unreadable');
       audit.recorded.push(entry);
     },
   },
@@ -48,6 +49,7 @@ let restore: () => void;
 
 beforeEach(() => {
   audit.recorded.length = 0;
+  audit.throwOn = '';
   executed = [];
   answer = () => OK;
   configDir = mkdtempSync(join(tmpdir(), 'job-group-'));
@@ -104,6 +106,19 @@ describe('runJobGroup', () => {
     await expect(runJobGroup('cluster create', MEMBERS, groupSteps)).rejects.toThrow(/m3: refused/);
 
     expect(recorded()).toEqual(['group_failed']);
+  });
+
+  it('keeps the member failure in the error when the group failure step itself throws', async () => {
+    restore();
+    restore = installJobDeps((options) => {
+      if (options.machineName === 'm3') return Promise.reject(new Error('refused'));
+      return Promise.resolve(OK as never);
+    });
+    audit.throwOn = 'group_failed';
+
+    await expect(runJobGroup('cluster create', MEMBERS, groupSteps)).rejects.toThrow(
+      /m3: refused.*audit store unreadable/
+    );
   });
 
   it('holds the group steps while a member is still running, and the later observer runs them once', async () => {

@@ -60,9 +60,12 @@ interface GroupStepWire {
   params: Record<string, string | number | boolean>;
 }
 
+function stepsToWire(steps: PlannedStep[] | undefined): GroupStepWire[] {
+  return (steps ?? []).map((s) => ({ name: s.name, params: s.params }));
+}
+
 function toWire(steps: PlannedStep[] | undefined): string {
-  const wire: GroupStepWire[] = (steps ?? []).map((s) => ({ name: s.name, params: s.params }));
-  return JSON.stringify(wire);
+  return JSON.stringify(stepsToWire(steps));
 }
 
 function fromWire(raw: unknown): GroupStepWire[] {
@@ -173,7 +176,7 @@ export async function runJobGroup(
           scratch,
           { group, machine: member.machineName, expected, ok: false, reason },
           { jobId: '', machine: member.machineName, params: {}, state: 'failed' },
-          { success: [], failure: fromWire(toWire(groupStepsOf.failure)) }
+          { success: [], failure: stepsToWire(groupStepsOf.failure) }
         );
       })
     )
@@ -211,7 +214,24 @@ async function startMember(
     };
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error);
-    await onNotStarted(reason);
-    return { pending: false, error: `${member.machineName}: ${reason}` };
+    return { pending: false, error: await settleNotStarted(member, reason, onNotStarted) };
   }
+}
+
+/**
+ * The failure text of a member whose job never started, after its group settled for it. The member's own failure stays
+ * in the aggregated message; a group step that fails while settling is named beside it, never in its place.
+ */
+async function settleNotStarted(
+  member: JobGroupMember,
+  reason: string,
+  onNotStarted: (reason: string) => Promise<void>
+): Promise<string> {
+  try {
+    await onNotStarted(reason);
+  } catch (settleError) {
+    const settleReason = settleError instanceof Error ? settleError.message : String(settleError);
+    return `${member.machineName}: ${reason} (group settlement failed: ${settleReason})`;
+  }
+  return `${member.machineName}: ${reason}`;
 }

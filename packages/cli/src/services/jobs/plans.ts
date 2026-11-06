@@ -115,7 +115,6 @@ export const CONVERTED: ReadonlySet<string> = new Set<string>([
   'repo replicate',
   'repo replicate refresh',
   'repo replicate remove',
-  // J16 (repo verbs outside J4, half A): one job each; delete and promote settle the config in a step, prune, trim and autostart list render in one. gc runs one job per deletion (no compound renet function yet).
   // J16 (outside J4, half C): log and status are one read job each with the print as a step; merge is one job whose success step advances the working fork's tip; admin fsck is one repository_fsck job with its report as a step.
   'repo admin fsck',
   'repo log',
@@ -126,6 +125,7 @@ export const CONVERTED: ReadonlySet<string> = new Set<string>([
   // X2, X4 (PLAN-health-checks-local): chains of attached probe calls, so --background never detaches a call whose answer the next one reads.
   'machine repair',
   'repo repair',
+  // J16 (repo verbs outside J4, half A): one job each; delete and promote settle the config in a step, prune, trim and autostart list render in one. gc runs one job per deletion (no compound renet function yet).
   'repo admin autostart disable',
   'repo admin autostart enable',
   'repo admin autostart list',

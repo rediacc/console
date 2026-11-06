@@ -106,7 +106,7 @@ export class ScratchStore {
     return out;
   }
 
-  /** Whether the group's settlement was claimed (and so its records are read or dropped). */
+  /** Whether the group's settlement was claimed: write() and finish() then record nothing for it, since the claiming observer reads its records and drops them. */
   private settled(dir: string): boolean {
     return existsSync(join(dir, CLAIM_DIR));
   }
