@@ -263,6 +263,24 @@ def test_a_good_l3_line_passes_and_each_miss_is_rejected():
         assert awk_rc(L3_AWK, rcs.summary_line(planted) + "\n") == 1, planted
 
 
+def test_a_sample_after_the_backup_exited_is_not_counted_in_samples():
+    post = rcs.Figures(load=1.0, busy=5.0, iowait=0.0, backup=None, postexit=True)
+    planted = result(figures=(fig(backup=1.39), fig(backup=2.39), post))
+    line = rcs.summary_line(planted)
+    assert " samples=2 " in line
+    assert " postexit=1 " in line
+    assert " backupcpun=2 " in line
+    assert " backupcpu=1.39,2.39,none " in line
+    assert awk_rc(L3_AWK, line + "\n") == 0
+
+
+def test_a_scopeless_sample_during_the_run_still_fails_l3():
+    planted = result(figures=(fig(), fig(backup=None), fig()))
+    line = rcs.summary_line(planted)
+    assert " postexit=0 " in line
+    assert awk_rc(L3_AWK, line + "\n") == 1
+
+
 def test_the_line_stays_one_field_per_value():
     line = rcs.summary_line(result(record=record(snapshotId="a b=c")))
     assert "\n" not in line

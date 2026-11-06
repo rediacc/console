@@ -28,7 +28,7 @@ import subprocess
 import sys
 import time
 from collections.abc import Callable, Iterable, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any, Protocol, TextIO
 
@@ -83,6 +83,8 @@ class Figures:
     busy: float
     iowait: float
     backup: float | None
+    # Taken after the snapshot's client had exited, so no backup scope could exist; not a measured sample.
+    postexit: bool = False
 
 
 @dataclass(frozen=True)
@@ -358,7 +360,8 @@ def summary_line(result: RunResult) -> str:
     figures = result.figures
     record = result.record or {}
     evidence = read_evidence(result.record)
-    reasons = weak_reasons(evidence, len(figures))
+    measured = [f for f in figures if not f.postexit]
+    reasons = weak_reasons(evidence, len(measured))
     backups = [f.backup for f in figures]
     fields = {
         "rc": result.rc,
@@ -372,7 +375,8 @@ def summary_line(result: RunResult) -> str:
         "snapshotrc": _token(result.snapshot_rc),
         "stopped": result.stopped,
         "cancelled": int(result.cancelled),
-        "samples": len(figures),
+        "samples": len(measured),
+        "postexit": len(figures) - len(measured),
         "failedsamples": result.failed_samples,
         "readkind": evidence.kind,
         "readbytes": evidence.bytes,
@@ -501,6 +505,8 @@ def watch_snapshot(
             watch.failed += 1
         else:
             prev = sample
+            if figure.backup is None and _wait(proc, 0) is not None:
+                figure = replace(figure, postexit=True)
             watch.figures.append(figure)
             _print_sample(len(watch.figures), figure, out)
         if watch.stopped == "none" and rule_fired(args.stop_on, watch.figures, baseload):
