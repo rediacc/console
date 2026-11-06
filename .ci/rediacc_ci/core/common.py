@@ -130,6 +130,7 @@ import re
 import shutil
 import subprocess
 import sys
+import typing
 
 from rediacc_ci import log, paths
 
@@ -428,8 +429,44 @@ def _valid_identifier(name: str) -> bool:
     return all(c.isascii() and (c.isalnum() or c == "_") for c in tail)
 
 
-def parse_args(argv: list[str]) -> dict[str, str]:
+def refuse_unknown(parsed: dict[str, str], allowed: typing.Collection[str]) -> None:
+    """Refuse every parsed `ARG_*` key the caller does not handle, naming each one.
+
+    A flag that parses into the dict and is never read is a flag that does nothing while looking accepted: `--dry-run` on a deploy module deployed for real. Raised as `RefusalError(code=2)`, the same status an invalid key gets, so a caller's existing handler reports it before any side effect.
+    """
+    unknown = sorted(key for key in parsed if key not in allowed)
+    if unknown:
+        flags = ", ".join(
+            "--" + k.removeprefix(ARG_PREFIX).lower().replace("_", "-") for k in unknown
+        )
+        accepted = ", ".join(
+            "--" + k.removeprefix(ARG_PREFIX).lower().replace("_", "-") for k in sorted(allowed)
+        )
+        raise RefusalError(
+            "unknown option(s) %s; this command handles only: %s" % (flags, accepted or "(none)"),
+            code=2,
+        )
+
+
+def refuse_arguments(argv: list[str]) -> int | None:
+    """For a module that takes no arguments: `None` when argv is empty, else report and return exit 2.
+
+    `del argv` made every flag look accepted, so `--dry-run` on a promote or a delete ran the real thing. The caller returns the status before any side effect:
+
+        refused = common.refuse_arguments(argv)
+        if refused is not None:
+            return refused
+    """
+    if not argv:
+        return None
+    log.error("unknown option(s) %s; this command takes no arguments" % " ".join(argv))
+    return 2
+
+
+def parse_args(argv: list[str], *, allowed: typing.Collection[str] | None = None) -> dict[str, str]:
     """`parse_args` (common.sh:324-353), as a dict instead of shell globals.
+
+    `allowed`, when given, is the set of `ARG_*` keys the caller reads; any other parsed key is refused by `refuse_unknown` before this returns. Every module under `rediacc_ci/deploy` passes it (pinned by `test_deploy_arg_refusal.py`), because a deploy that silently ignores a flag is the failure that sentence names.
 
     THE SECURITY PROPERTY IS THE REASON THIS FUNCTION IS WORTH PORTING AT ALL.
     common.sh:309-314 records it: the assignment used to be
@@ -476,6 +513,8 @@ def parse_args(argv: list[str]) -> dict[str, str]:
                 i += 1
         else:
             i += 1
+    if allowed is not None:
+        refuse_unknown(out, allowed)
     return out
 
 

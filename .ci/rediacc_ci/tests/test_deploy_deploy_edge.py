@@ -245,13 +245,15 @@ def test_the_one_wrangler_call_is_pinned_in_full(tmp_path: pathlib.Path) -> None
     _assert_agree(old, new, "happy-path", old_calls, new_calls)
 
 
-def test_every_argument_is_ignored(tmp_path: pathlib.Path) -> None:
-    """NO `parse_args` CALL AT ALL (contrast `deploy-account.sh:17`). `--foo.bar` exits 2 in the account sibling and is invisible here, and `--region eu` does not mean anything either. Both sides must agree that they mean nothing."""
+def test_an_unhandled_argument_is_refused_where_the_twin_ignored_it(
+    tmp_path: pathlib.Path,
+) -> None:
+    """DELIBERATE DIVERGENCE, port only (the frozen twin answered `--region eu --foo x` with exit 0 and a deploy; there is no bash left to record a new case from). The port refuses with exit 2 and records no child, because an ignored `--dry-run` deployed for real."""
     root = _fixture_root(tmp_path)
-    old, new, old_calls, new_calls = run_both(tmp_path, root, "--region", "eu", "--foo.bar", "x")
-    assert old.returncode == 0, old.stderr
-    assert port.ARGUMENTS_ARE_IGNORED
-    _assert_agree(old, new, "arguments-ignored", old_calls, new_calls)
+    new, new_calls = _run_live(PORT, tmp_path, root, ("--region", "eu", "--foo", "x"))
+    assert new.returncode == 2, new.stderr
+    assert new_calls == "", "the port ran a child before refusing"
+    assert "unknown option(s)" in new.stderr
 
 
 def test_a_missing_config_names_the_absolute_path(tmp_path: pathlib.Path) -> None:

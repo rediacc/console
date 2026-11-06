@@ -366,9 +366,13 @@ def _preview(worker_name: str, worker_dir: pathlib.Path) -> int:
     return 0
 
 
+# Every `ARG_*` key `main` reads; any other flag is refused before a side effect.
+ACCEPTED_ARGS = frozenset({"ARG_NAME"})
+
+
 def main(argv: list[str]) -> int:
     try:
-        args = common.parse_args(argv)
+        args = common.parse_args(argv, allowed=ACCEPTED_ARGS)
     except common.RefusalError as exc:
         # THE DIVERGENCE: bash names common.sh's path and line here.
         print("%s: %s" % (SELF, exc.lines[0]), file=sys.stderr, flush=True)

@@ -465,7 +465,9 @@ def _purge(purge_urls: list[str], zone: str) -> None:
 
 
 def main(argv: list[str]) -> int:
-    del argv  # the twin takes no argv; every input is an environment variable
+    refused = common.refuse_arguments(argv)
+    if refused is not None:
+        return refused
 
     root = repo_root()
     try:

@@ -591,7 +591,9 @@ def _wrangler(argv: list[str], payload: str) -> int:
 
 
 def main(argv: list[str]) -> int:
-    del argv  # the twin parses nothing; extra arguments are ignored by both
+    refused = common.refuse_arguments(argv)
+    if refused is not None:
+        return refused
 
     # ORDER IS OBSERVABLE: `require_cmd jq` runs first, so a run missing both binaries names jq, and both run BEFORE the three `:?` refusals.
     for tool in ("jq", "npx"):

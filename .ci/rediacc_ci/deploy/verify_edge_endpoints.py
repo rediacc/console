@@ -186,7 +186,9 @@ def grep_f(text: str, needle: str) -> None:
 
 
 def main(argv: list[str]) -> int:
-    del argv  # the twin takes no arguments
+    refused = common.refuse_arguments(argv)
+    if refused is not None:
+        return refused
 
     try:
         common.require_cmd("curl")

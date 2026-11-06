@@ -434,7 +434,9 @@ def _one_region(
 
 
 def main(argv: list[str]) -> int:
-    del argv  # the twin parses nothing; every input is an environment variable
+    refused = common.refuse_arguments(argv)
+    if refused is not None:
+        return refused
 
     root = repo_root()
     # `cd "$REPO_ROOT"` (twin :37).

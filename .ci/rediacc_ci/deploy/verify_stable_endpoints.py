@@ -89,7 +89,9 @@ class _TransportError(Exception):
 
 
 def main(argv: list[str]) -> int:
-    del argv  # the twin takes no arguments and no environment input
+    refused = common.refuse_arguments(argv)
+    if refused is not None:
+        return refused
 
     try:
         common.require_cmd("curl")

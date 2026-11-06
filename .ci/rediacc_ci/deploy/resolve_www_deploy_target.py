@@ -14,6 +14,7 @@ from __future__ import annotations
 import os
 import sys
 
+from rediacc_ci.core import common
 from rediacc_ci.well_known import EDGE_ORIGIN, SITE_ORIGIN
 
 EDGE_HOST = EDGE_ORIGIN.removeprefix("https://")
@@ -31,7 +32,9 @@ def _require(name: str) -> str:
 
 
 def main(argv: list[str]) -> int:
-    del argv  # no CLI arguments; every input arrives through the environment
+    refused = common.refuse_arguments(argv)
+    if refused is not None:
+        return refused
     target = _require("TARGET")
     output_path = _require("GITHUB_OUTPUT")
 

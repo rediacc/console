@@ -122,7 +122,9 @@ def _docker(argv: list[str]) -> int:
 
 
 def main(argv: list[str]) -> int:
-    del argv  # the twin parses nothing; extra arguments are ignored by both
+    refused = common.refuse_arguments(argv)
+    if refused is not None:
+        return refused
 
     try:
         common.require_cmd("docker")

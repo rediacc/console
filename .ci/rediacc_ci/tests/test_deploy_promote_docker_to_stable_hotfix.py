@@ -228,12 +228,16 @@ def test_a_missing_docker_refuses_before_any_call(tmp_path) -> None:
     assert old_calls == "", "a refused run still called docker"
 
 
-def test_extra_arguments_are_ignored_by_both(tmp_path) -> None:
-    """NOT AN ACADEMIC CASE. `--dry-run` looks like it would be honoured and is not: the twin parses no argv at all, so a caller reaching for a safety flag gets a real promotion. Recorded as agreement rather than as a wish."""
-    old, new, old_calls, new_calls = run_both(tmp_path, ["--dry-run", "extra"])
-    _agree(old, new, "argv", old_calls, new_calls)
-    assert old.returncode == 0
-    assert len(old_calls.splitlines()) == 3
+def test_extra_arguments_are_refused_where_the_twin_ignored_them(tmp_path) -> None:
+    """DELIBERATE DIVERGENCE, port only. NOT AN ACADEMIC CASE: the twin parsed no argv, so a caller reaching for `--dry-run` got a real promotion. The port refuses with exit 2 before any `docker` call; the control is the same fixture without arguments, which makes the three promotions."""
+    root = fixture(tmp_path)
+    control, control_calls = _run(root, "new", [])
+    assert control.returncode == 0, control.stderr
+    assert len(control_calls.splitlines()) == 3, "the control is vacuous: no promotion ran"
+    refused, calls = _run(root, "new", ["--dry-run", "extra"])
+    assert refused.returncode == 2, refused.stderr
+    assert calls == "", "a flag was accepted and a promotion ran"
+    assert "unknown option(s) --dry-run extra" in refused.stderr
 
 
 # --------------------------------------------------------------------------- The stream-ordering control, which is what `_flush` exists for ---------------------------------------------------------------------------

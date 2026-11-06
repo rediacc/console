@@ -7,9 +7,9 @@ is served by the separate `edge-rediacc-account-{eu,us,asia}` Workers that
 
 IT IS NOT `deploy-account.sh` WITH THE MIGRATIONS REMOVED, and the differences are the reason this is its own file rather than a flag. Against its sibling:
 
-  * IT PARSES NO ARGUMENTS AT ALL. There is no `parse_args` call (:12-14 of the
+  * THE TWIN PARSED NO ARGUMENTS AT ALL (no `parse_args` call; :12-14 of the
     twin has the source line and then goes straight to the repo root), so
-    `--region eu` is silently ignored rather than rejected. Pinned in the
+    `--region eu` was silently ignored. THE PORT NO LONGER DOES THAT: it accepts `--dry-run` and refuses every other flag. Pinned in the
     differential, because "it takes no options" and "it refuses options" are
     different behaviours and only one of them is true here.
   * THE INSTALL CONDITION IS DIFFERENT. This one is `[[ ! -d "node_modules" ]]`
@@ -56,8 +56,9 @@ REQUIRED_VARS = ("CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID")
 # See the docstring: demanded, then never read by this script.
 THE_ACCOUNT_ID_IS_CHECKED_AND_UNUSED = True
 
-# `parse_args` IS NOT CALLED (contrast `deploy-account.sh:16` and `deploy-proxy.sh:23`), so every argument is discarded in silence.
-ARGUMENTS_ARE_IGNORED = True
+# The bash twin called no `parse_args` and discarded every argument in silence. The port DELIBERATELY DIVERGES: a flag it does not handle is refused (exit 2) before any side effect, because an ignored `--dry-run` deployed for real.
+# The one option this module handles.
+ACCEPTED_ARGS = frozenset({"ARG_DRY_RUN"})
 
 
 def strip_newlines(token: str) -> str:
@@ -91,13 +92,22 @@ def _run(argv: list[str]) -> int:
 
 
 def main(argv: list[str]) -> int:
-    del argv  # the twin parses nothing; see ARGUMENTS_ARE_IGNORED
+    try:
+        args = common.parse_args(argv, allowed=ACCEPTED_ARGS)
+    except common.RefusalError as exc:
+        exc.report()
+        return exc.code
 
     worker_dir = common.repo_root().joinpath(*WORKER_SUBDIR)
 
     if not (worker_dir / CONFIG).is_file():
         log.error("Edge worker config not found at %s/%s" % (worker_dir, CONFIG))
         return 1
+
+    if args.get("ARG_DRY_RUN"):
+        log.step("DRY RUN: edge worker (%s); no command is run" % EDGE_HOST)
+        print("would run: %s" % " ".join(deploy_argv()), flush=True)
+        return 0
 
     os.chdir(worker_dir)
 

@@ -18,6 +18,8 @@ from __future__ import annotations
 import os
 import sys
 
+from rediacc_ci.core import common
+
 SELF = "rediacc_ci.deploy.resolve_account_deploy_config"
 
 
@@ -30,7 +32,9 @@ def _require(name: str) -> str:
 
 
 def main(argv: list[str]) -> int:
-    del argv  # no CLI arguments; every input arrives through the environment
+    refused = common.refuse_arguments(argv)
+    if refused is not None:
+        return refused
     target = _require("TARGET")
     region = _require("MATRIX_ID")
     _require("MATRIX_SECRET_SUFFIX")

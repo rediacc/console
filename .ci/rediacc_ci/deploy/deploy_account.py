@@ -292,6 +292,10 @@ def deploy_argv(config: str) -> list[str]:
     return [*wrangler_cmd.ARGV, "deploy", "--config", config]
 
 
+# Every `ARG_*` key `main` reads. Anything else is refused by `common.parse_args` before a side effect; `--dry-run` is real (see `main`).
+ACCEPTED_ARGS = frozenset({"ARG_REGION", "ARG_TARGET", "ARG_DRY_RUN"})
+
+
 def _run(argv: list[str]) -> int:
     """One child with BOTH streams inherited, as the twin leaves them.
 
@@ -302,7 +306,7 @@ def _run(argv: list[str]) -> int:
 
 def main(argv: list[str]) -> int:
     try:
-        args = common.parse_args(argv)
+        args = common.parse_args(argv, allowed=ACCEPTED_ARGS)
     except common.RefusalError as exc:
         print("%s: %s" % (SELF, exc.lines[0]), file=sys.stderr, flush=True)
         return exc.code
@@ -320,6 +324,14 @@ def main(argv: list[str]) -> int:
     if not (worker_dir / config).is_file():
         log.error("Wrangler config not found: %s/%s" % (worker_dir, config))
         return 1
+
+    if args.get("ARG_DRY_RUN"):
+        # Stops before npm install, the services audit, migrations and the deploy: nothing here reaches Cloudflare or the network.
+        db_preview = database_name(str(worker_dir / config)) or "(database_name unreadable)"
+        log.step("DRY RUN: %s %s (%s); no command is run" % (target, region, config))
+        print("would run: %s" % " ".join(migrations_argv(db_preview, config)), flush=True)
+        print("would run: %s" % " ".join(deploy_argv(config)), flush=True)
+        return 0
 
     os.chdir(worker_dir)
 

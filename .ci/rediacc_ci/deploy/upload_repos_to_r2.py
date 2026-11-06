@@ -674,7 +674,9 @@ def _prune_trees(channel: str, endpoint: str, current: str) -> None:
 
 
 def main(argv: list[str]) -> int:
-    del argv  # the twin takes no argv, and says so at :62
+    refused = common.refuse_arguments(argv)
+    if refused is not None:
+        return refused
 
     try:
         awscli.require()

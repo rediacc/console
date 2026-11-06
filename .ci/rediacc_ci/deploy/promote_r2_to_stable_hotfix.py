@@ -197,7 +197,9 @@ def _purge(urls: list[str], zone: str) -> None:
 
 
 def main(argv: list[str]) -> int:
-    del argv  # the twin takes no argv, and says so at :22-23
+    refused = common.refuse_arguments(argv)
+    if refused is not None:
+        return refused
 
     try:
         awscli.require()
