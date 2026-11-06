@@ -147,6 +147,47 @@ def spawn_refresh(root, popen=None, now=None):
     return True
 
 
+def repair_command(row, finding):
+    """The exact `machine repair` line for one fix still due."""
+    fix = finding.get("fix") or {}
+    parts = ["./rdc.sh"]
+    if row.get("config"):
+        parts += ["--config", str(row["config"])]
+    parts += ["machine", "repair", str(row.get("machine")), "--code", str(finding.get("code"))]
+    if fix.get("class") == "auto-with-backup":
+        parts.append("--with-backup")
+    return " ".join(parts)
+
+
+def machine_lines(row):
+    """What the refresher repaired, what it held back, and what is left: a fix due as its command, an operator-only item as an ask."""
+    lines = []
+    for act in (row.get("repair") or {}).get("actions") or []:
+        what = "%s %s: %s" % (act.get("code"), act.get("action"), act.get("result"))
+        lines.append(M.OPS_REPAIRED_LINE % {"what": what})
+    lines += [M.OPS_ADVISORY_LINE % {"what": a} for a in row.get("advisories") or []]
+    for finding in row.get("findings") or []:
+        fix = finding.get("fix")
+        if not isinstance(fix, dict):
+            continue
+        klass = str(fix.get("class") or "")
+        if klass == "operator-only":
+            lines.append(
+                M.OPS_ASK_LINE % {"code": finding.get("code"), "action": fix.get("action") or "?"}
+            )
+        else:
+            lines.append(
+                M.OPS_FIX_DUE_LINE
+                % {
+                    "code": finding.get("code"),
+                    "klass": klass,
+                    "window": M.OPS_WINDOW_NOTE if fix.get("window_only") else "",
+                    "command": repair_command(row, finding),
+                }
+            )
+    return lines
+
+
 def red_rows(doc):
     """[(subject, text)] for every red check; the off-box entry counts when it is red for a reason other than a stale cron, which has its own key."""
     out = []
@@ -159,6 +200,7 @@ def red_rows(doc):
                     subject = "machine %s" % row.get("machine")
                     lines = ["  %s:" % subject]
                     lines += ["    - %s" % p for p in row.get("problems") or []]
+                    lines += machine_lines(row)
                     out.append((subject, "\n".join(lines)))
             continue
         detail = str(entry.get("detail") or "")

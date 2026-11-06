@@ -598,10 +598,19 @@ V_OPS_HEALTH_RED = (
     "OPS HEALTH RED, UNTRACKED, and this session holds its claim (cache %(updated)s):\n"
     "%(rows)s\n"
     "A red machine or probe outside the PR reaches nobody between sessions, and a red seen here "
-    "is fixed here, not reported. Track it, fix it, then re-check:\n"
+    "is fixed here, not reported. The refresher already ran the auto-safe repairs it may, so what "
+    "is listed is what is left: run each `fix due` command and put each `ASK` to the operator "
+    "(a tool never runs an operator-only fix). Track it, fix it, then re-check:\n"
     "    .claude/hooks/stop/worklist.py --add %(me)s '%(add)s'\n"
     "    PYTHONPATH=.ci python3 -m rediacc_ci.ops.ops_health refresh --force"
 )
+
+# One machine row's repair lines (wl_opshealth.machine_lines, D-remedy local side).
+OPS_REPAIRED_LINE = "    - repaired: %(what)s"
+OPS_ADVISORY_LINE = "    - advisory: %(what)s"
+OPS_FIX_DUE_LINE = "    - fix due (%(code)s, %(klass)s%(window)s): %(command)s"
+OPS_ASK_LINE = "    - ASK the operator (%(code)s, operator-only): %(action)s"
+OPS_WINDOW_NOTE = ", inside the maintenance window only"
 
 V_OPS_HEALTH_OFFBOX_STALE = (
     "OPS HEALTH ALERTER STOPPED: the off-box Worker's last cron run was at %(last)s, %(age)s min "

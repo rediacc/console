@@ -171,7 +171,7 @@ check("stale: the refresher gets PYTHONPATH=.ci", kw["env"]["PYTHONPATH"], str(r
 root, wl = fixture(None)
 sp = Spawns()
 barrier = threading.Barrier(4)
-results = []
+results: list[bool] = []
 
 
 def stop(sid):
@@ -262,5 +262,79 @@ check(
     True,
 )
 check("unknown: no block", k["block"], "")
+
+
+# --- L7: what is left after the refresher's auto-repair
+def repair_doc(row_extra):
+    doc = green_doc()
+    doc["checks"]["machines"] = entry(
+        "red",
+        1,
+        rows=[
+            {
+                "config": "eu-remote",
+                "machine": "m1",
+                "state": "red",
+                "problems": ["machine health rc 1: backup.coverage.absent"],
+                **row_extra,
+            }
+        ],
+    )
+    return doc
+
+
+def fnd(code, klass, action, window=False):
+    return {
+        "code": code,
+        "fix": {"action": action, "class": klass, "window_only": window},
+    }
+
+
+root, wl = fixture(
+    repair_doc(
+        {
+            "findings": [
+                fnd("backup.coverage.absent", "operator-only", "bind a backup strategy"),
+                fnd("renet.binary.replaced", "auto-safe", "restart-services", window=True),
+                fnd("container.restart-loop", "auto-safe", "restart"),
+            ],
+            "repair": {
+                "actions": [{"code": "datastore.usage.high", "action": "trim", "result": "fixed"}]
+            },
+            "advisories": ["repair of container.restart-loop skipped: 3 attempts today (limit 3)"],
+        }
+    )
+)
+blk = assess(root, wl, A)["block"]
+check(
+    "repair: an operator-only item is an ask with its action",
+    "ASK the operator (backup.coverage.absent, operator-only): bind a backup strategy" in blk,
+    True,
+)
+check(
+    "repair: an operator-only item has no repair command",
+    "machine repair m1 --code backup.coverage.absent" in blk,
+    False,
+)
+check(
+    "repair: a fix still due lists the exact repair command with its config",
+    "./rdc.sh --config eu-remote machine repair m1 --code container.restart-loop" in blk,
+    True,
+)
+check(
+    "repair: a window-only fix says so",
+    "renet.binary.replaced, auto-safe, inside the maintenance window only" in blk,
+    True,
+)
+check(
+    "repair: what was repaired is listed", "repaired: datastore.usage.high trim: fixed" in blk, True
+)
+check("repair: the attempt-limit advisory is listed", "advisory: repair of container" in blk, True)
+root, wl = fixture(repair_doc({"findings": [fnd("a.b", "auto-safe", "x")]}))
+check(
+    "repair: no ASK line when the row holds no operator-only finding",
+    "ASK the operator" in assess(root, wl, A)["block"],
+    False,
+)
 
 T.exit()

@@ -71,6 +71,7 @@ DEFAULTS: dict = {
     },
     "stale": {"last_cron_at_min": 30},
     "backup_max_age_days": 2,
+    "auto_repair": {"classes": ["auto-safe"], "max_attempts_per_code_per_machine_per_day": 3},
 }
 
 # The order a refresh runs them in, and each one's command. `machines` runs in-process.
@@ -83,6 +84,9 @@ LOCAL_CHECKS = ("machines", *SUBPROCESS_CHECKS)
 ALL_CHECKS = (*LOCAL_CHECKS, "offbox")
 
 RDC_TIMEOUT_S = 300.0
+REPAIR_TIMEOUT_S = 900.0
+# An action `result` that starts with one of these did not run the fix, so it does not use up the day's attempts.
+NOT_RUN_RESULTS = ("skipped", "noop", "none", "already", "refused", "dry")
 SUBPROCESS_TIMEOUT_S = 900.0
 HTTP_TIMEOUT_S = 20.0
 DETAIL_MAX = 600
@@ -352,9 +356,124 @@ def check_machine(config: str | None, machine: str, runner: Runner, env: dict, c
     return row
 
 
-def machines_check(runner: Runner, env: dict, cfg: dict) -> dict:
-    """D-verdict over every config and machine. {rc, state, detail, rows, setup}."""
+def repair_settings(cfg: dict) -> tuple[set, int]:
+    ar = cfg.get("auto_repair")
+    if not isinstance(ar, dict):
+        ar = {}
+    classes = {str(c) for c in ar.get("classes") or []}
+    limit = int(ar.get("max_attempts_per_code_per_machine_per_day") or 0)
+    return classes, limit
+
+
+def _attempt_key(config: str | None, machine: str, code: str) -> str:
+    return "%s|%s|%s" % (config or "", machine, code)
+
+
+def _action_text(action: dict) -> str:
+    return "%s %s: %s" % (action.get("code"), action.get("action"), action.get("result"))
+
+
+def _failed_actions(actions: list) -> list:
+    return [
+        _action_text(a)
+        for a in actions
+        if str(a.get("result") or "").lower().startswith(("fail", "error"))
+    ]
+
+
+def repair_machine(
+    row: dict,
+    runner: Runner,
+    env: dict,
+    cfg: dict,
+    attempts: dict,
+    now: datetime.datetime,
+) -> dict:
+    """D-remedy, local side. Runs `rdc machine repair <m>` for the findings whose fix class is in `auto_repair.classes` and whose code is under the daily attempt limit. {codes, actions, rc, failed, advisories}; never raises. Operator-only and every class outside the config are never passed."""
+    classes, limit = repair_settings(cfg)
+    today = now.strftime("%Y-%m-%d")
+    out: dict = {"codes": [], "actions": [], "rc": None, "failed": "", "advisories": []}
+    for finding in row.get("findings") or []:
+        fix = finding.get("fix")
+        code = str(finding.get("code") or "")
+        if not code or not isinstance(fix, dict) or str(fix.get("class") or "") not in classes:
+            continue
+        if code in out["codes"]:
+            continue
+        rec = attempts.get(_attempt_key(row["config"], row["machine"], code)) or {}
+        if rec.get("day") == today and int(rec.get("n") or 0) >= limit:
+            out["advisories"].append(
+                "repair of %s skipped: %d attempts today (limit %d); run it by hand"
+                % (code, int(rec.get("n") or 0), limit)
+            )
+            continue
+        out["codes"].append(code)
+    if not out["codes"]:
+        return out
+    args = ["machine", "repair", row["machine"], "-o", "json"]
+    for code in out["codes"]:
+        args += ["--code", code]
+    if "auto-with-backup" in classes:
+        args.append("--with-backup")
+    res = runner(rdc_argv(env, row["config"] or None, args), env, REPAIR_TIMEOUT_S)
+    out["rc"] = "timeout" if res.timed_out else res.rc
+    data = envelope_data(res.stdout) if not res.timed_out else None
+    raw = data.get("actions") if isinstance(data, dict) else None
+    actions = [a for a in raw or [] if isinstance(a, dict)]
+    out["actions"] = actions
+    ran = {
+        str(a.get("code"))
+        for a in actions
+        if not str(a.get("result") or "").lower().startswith(NOT_RUN_RESULTS)
+    }
+    for code in out["codes"]:
+        if code in ran or not actions:
+            key = _attempt_key(row["config"], row["machine"], code)
+            rec = attempts.get(key) or {}
+            n = int(rec.get("n") or 0) if rec.get("day") == today else 0
+            attempts[key] = {"day": today, "n": n + 1}
+    if res.timed_out or res.rc >= 2 or res.rc < 0:
+        out["failed"] = "machine repair %s: %s" % (
+            "timed out" if res.timed_out else "rc %d" % res.rc,
+            "; ".join(_failed_actions(actions)) or _trim(res.stderr or "no action reported", 200),
+        )
+    return out
+
+
+def repair_and_recheck(
+    row: dict,
+    config: str | None,
+    runner: Runner,
+    env: dict,
+    cfg: dict,
+    attempts: dict,
+    now: datetime.datetime,
+) -> dict:
+    """The red row after its auto-repair and a full re-check, carrying `repair` (what ran) and `advisories`."""
+    done = repair_machine(row, runner, env, cfg, attempts, now)
+    if done["rc"] is None:
+        row["advisories"] = done["advisories"]
+        return row
+    new = check_machine(config, row["machine"], runner, env, cfg)
+    new["repair"] = {"codes": done["codes"], "rc": done["rc"], "actions": done["actions"]}
+    new["advisories"] = done["advisories"]
+    if done["failed"]:
+        new["problems"].append(done["failed"])
+        new["rc"], new["state"] = 1, RED
+    return new
+
+
+def machines_check(
+    runner: Runner,
+    env: dict,
+    cfg: dict,
+    *,
+    attempts: dict | None = None,
+    now: datetime.datetime | None = None,
+) -> dict:
+    """D-verdict over every config and machine. {rc, state, detail, rows, setup}. With `attempts` (the refresher passes its persisted counters) a red machine is auto-repaired and re-checked first (D-remedy)."""
     env = child_env(env)
+    now = now or utcnow()
     rows: list[dict] = []
     setup: list[str] = []
     for config in configs_from_env(env):
@@ -371,7 +490,11 @@ def machines_check(runner: Runner, env: dict, cfg: dict) -> dict:
         if not names:
             setup.append("%s: machine list names no machine" % label)
             continue
-        rows += [check_machine(config, name, runner, env, cfg) for name in names]
+        for name in names:
+            row = check_machine(config, name, runner, env, cfg)
+            if attempts is not None and row["rc"] == 1:
+                row = repair_and_recheck(row, config, runner, env, cfg, attempts, now)
+            rows.append(row)
     rc = worst_rc([r["rc"] for r in rows] + [2] * len(setup)) if (rows or setup) else 2
     return {
         "rc": rc,
@@ -389,6 +512,9 @@ def machines_detail(rows: list, setup: list) -> str:
         lines.append(head)
         lines += ["  - %s" % p for p in r["problems"]]
         lines += ["  - unreadable: %s" % u for u in r.get("unreadable") or []]
+        done = (r.get("repair") or {}).get("actions") or []
+        lines += ["  - repaired: %s" % _action_text(x) for x in done]
+        lines += ["  - %s" % x for x in r.get("advisories") or []]
         if r["no_check"]:
             lines.append("  - no check: %s" % ", ".join(r["no_check"]))
     return "\n".join(lines)
@@ -650,6 +776,25 @@ def transitions(old: dict, new: dict, now: datetime.datetime) -> list:
     return rows
 
 
+def repair_rows(entry: dict, now: datetime.datetime) -> list:
+    """One ledger row per repair action the machines check ran."""
+    return [
+        {
+            "at": iso(now),
+            "kind": "repair",
+            "source": "local-machine-%s" % row["machine"],
+            "code": action.get("code"),
+            "action": action.get("action"),
+            "class": action.get("class"),
+            "result": action.get("result"),
+            "before": action.get("before"),
+            "after": action.get("after"),
+        }
+        for row in entry.get("rows") or []
+        for action in (row.get("repair") or {}).get("actions") or []
+    ]
+
+
 def append_ledger(root: pathlib.Path, rows: list) -> str:
     """The empty string on success, else the reason. Never raises."""
     if not rows:
@@ -759,6 +904,12 @@ def refresh(
     for name, entry in checks.items():
         if isinstance(entry, dict):
             old_sources.update(sources_of(name, entry))
+    today = now.strftime("%Y-%m-%d")
+    attempts = {
+        k: v
+        for k, v in (cache.get("repair_attempts") or {}).items()
+        if isinstance(v, dict) and v.get("day") == today
+    }
     wanted = [c for c in ALL_CHECKS if not only or c in only]
     due = [c for c in wanted if force or only or is_due(checks.get(c), ttl_s(cfg, c), now)]
 
@@ -766,7 +917,7 @@ def refresh(
     fresh: dict = {}
     for name in due:
         if name == "machines":
-            entry = machines_check(runner, env, cfg)
+            entry = machines_check(runner, env, cfg, attempts=attempts, now=now)
         elif name == "offbox":
             entry = offbox_check(cfg, tenv, fetch, runner, now, with_targets=True)
             if token_error and entry["state"] == UNKNOWN:
@@ -782,6 +933,8 @@ def refresh(
     for name, entry in fresh.items():
         new_sources.update(sources_of(name, entry))
     ledger_rows = transitions(old_sources, new_sources, now)
+    if "machines" in fresh:
+        ledger_rows += repair_rows(fresh["machines"], now)
     ledger_error = append_ledger(root, ledger_rows)
     ingest = post_ingest(
         worker_url(cfg, tenv), tenv.get(INGEST_CREDENTIAL_ENV) or "", new_sources, now, fetch
@@ -793,6 +946,7 @@ def refresh(
         "version": 1,
         "updated_at": iso(now),
         "checks": checks,
+        "repair_attempts": attempts,
         "ingest": ingest if new_sources else cache.get("ingest") or {},
         "ledger": {"rows": len(ledger_rows), "error": ledger_error},
     }

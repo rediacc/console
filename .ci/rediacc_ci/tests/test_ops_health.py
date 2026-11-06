@@ -447,3 +447,223 @@ def test_gate_script_runs_the_module_entry():
 @pytest.mark.parametrize(("rcs", "want"), [([0, 0], 0), ([0, 2], 2), ([2, 1], 1), ([], 0)])
 def test_worst_rc(rcs, want):
     assert oh.worst_rc(rcs) == want
+
+
+# --------------------------------------------------------------------------- L7 (D-remedy, local side)
+
+
+def finding(code, klass="auto-safe", window_only=False, subject="m1"):
+    return {
+        "code": code,
+        "severity": "warning",
+        "subject": subject,
+        "detail": code,
+        "fix": {"action": "act-" + code, "class": klass, "window_only": window_only},
+    }
+
+
+def red_health(*findings):
+    return (
+        1,
+        {
+            **HEALTH_OK,
+            "exitCode": 1,
+            "issues": [f["code"] for f in findings],
+            "findings": list(findings),
+        },
+    )
+
+
+class RepairFleet(Fleet):
+    """A fleet whose `machine repair` answers a scripted rc and actions, and turns `machine health` green once a repair ran with exit 0 or 1."""
+
+    def __init__(self, findings, repair_rc=0, actions=None, heals=True, **kw):
+        super().__init__(health=red_health(*findings), **kw)
+        self.repair_rc = repair_rc
+        self.actions = actions
+        self.heals = heals
+        self.repaired = False
+
+    def repair_calls(self):
+        return [a for a, _e in self.calls if a[1:3] == ["machine", "repair"]]
+
+    def __call__(self, argv, env, timeout):
+        args = list(argv[1:])
+        if args[:2] == ["machine", "repair"]:
+            if self.timeout_on and self.timeout_on in " ".join(args):
+                self.calls.append((list(argv), dict(env)))
+                return oh.Result(124, "", "", timed_out=True)
+            self.calls.append((list(argv), dict(env)))
+            codes = [args[i + 1] for i, a in enumerate(args) if a == "--code"]
+            actions = self.actions
+            if actions is None:
+                actions = [
+                    {
+                        "code": c,
+                        "action": "act-" + c,
+                        "class": "auto-safe",
+                        "result": "fixed",
+                        "before": "86%",
+                        "after": "40%",
+                    }
+                    for c in codes
+                ]
+            if self.repair_rc < 2 and self.heals:
+                self.repaired = True
+            return oh.Result(
+                self.repair_rc,
+                envelope({"actions": actions}),
+                "boom" if self.repair_rc == 2 else "",
+            )
+        if self.repaired and args[:2] == ["machine", "health"]:
+            self.calls.append((list(argv), dict(env)))
+            return oh.Result(0, envelope(HEALTH_OK))
+        return super().__call__(argv, env, timeout)
+
+
+def refreshed(tmp_path, fleet, now=NOW, cfg_extra=None):
+    if cfg_extra is not None:
+        (tmp_path / ".ci" / "config").mkdir(parents=True, exist_ok=True)
+        (tmp_path / oh.CONFIG_REL).write_text(json.dumps(cfg_extra))
+    web = Web(status_doc())
+    out = oh.refresh(
+        tmp_path, runner=fleet, fetch=web, hydrate=None, env={**ENV}, now=now, only=["machines"]
+    )
+    return out, web
+
+
+def test_repair_auto_safe_finding_rechecks_green_posts_green_and_ledgers_one_action(tmp_path):
+    fleet = RepairFleet([finding("datastore.usage.high")])
+    (rc, doc), web = refreshed(tmp_path, fleet)
+    assert rc == 0, json.dumps(doc, indent=1)
+    (call,) = fleet.repair_calls()
+    assert call[1:] == ["machine", "repair", "m1", "-o", "json", "--code", "datastore.usage.high"]
+    posted = [(b["source"], b["state"]) for m, u, h, b in web.calls if m == "POST"]
+    assert posted == [("local-machine-m1", "green")]
+    repairs = [r for r in ledger_rows(tmp_path) if r["kind"] == "repair"]
+    assert len(repairs) == 1
+    assert repairs[0]["code"] == "datastore.usage.high"
+    assert repairs[0]["result"] == "fixed"
+    assert (repairs[0]["before"], repairs[0]["after"]) == ("86%", "40%")
+
+
+def test_repair_call_carries_no_provision():
+    fleet = RepairFleet([finding("a.b")])
+    oh.machines_check(fleet, {"PATH": "/usr/bin"}, CFG, attempts={}, now=NOW)
+    envs = [e for a, e in fleet.calls if a[1:3] == ["machine", "repair"]]
+    assert envs
+    assert all(e[oh.NO_PROVISION_ENV] == "1" for e in envs)
+
+
+def test_repair_operator_only_finding_is_never_passed_and_stays_red(tmp_path):
+    fleet = RepairFleet([finding("backup.coverage.absent", klass="operator-only")])
+    (rc, _doc), _web = refreshed(tmp_path, fleet)
+    assert rc == 1
+    assert fleet.repair_calls() == []
+    assert [r for r in ledger_rows(tmp_path) if r["kind"] == "repair"] == []
+
+
+def test_repair_only_the_allowed_class_codes_are_passed(tmp_path):
+    fleet = RepairFleet(
+        [
+            finding("safe.one"),
+            finding("ops.only", klass="operator-only"),
+            finding("needs.backup", klass="auto-with-backup"),
+        ],
+        heals=False,
+    )
+    refreshed(tmp_path, fleet)
+    (call,) = fleet.repair_calls()
+    assert call[call.index("--code") :] == ["--code", "safe.one"]
+    assert "--with-backup" not in call
+
+
+def test_repair_auto_with_backup_is_not_run_unless_configured_and_then_carries_the_flag(tmp_path):
+    fleet = RepairFleet([finding("needs.backup", klass="auto-with-backup")], heals=False)
+    refreshed(tmp_path, fleet)
+    assert fleet.repair_calls() == []
+    fleet2 = RepairFleet([finding("needs.backup", klass="auto-with-backup")], heals=False)
+    refreshed(
+        tmp_path / "second",
+        fleet2,
+        cfg_extra={"auto_repair": {"classes": ["auto-safe", "auto-with-backup"]}},
+    )
+    (call,) = fleet2.repair_calls()
+    assert "--with-backup" in call
+
+
+def test_repair_daily_limit_skips_the_fourth_attempt_with_an_advisory(tmp_path):
+    findings = [finding("restart.loop")]
+    for n in range(3):
+        fleet = RepairFleet(findings, heals=False)
+        refreshed(tmp_path, fleet, now=NOW + datetime.timedelta(minutes=40 * n))
+        assert len(fleet.repair_calls()) == 1
+    fleet = RepairFleet(findings, heals=False)
+    (rc, doc), _web = refreshed(tmp_path, fleet, now=NOW + datetime.timedelta(minutes=200))
+    assert fleet.repair_calls() == []
+    assert rc == 1
+    row = doc["checks"]["machines"]["rows"][0]
+    assert "restart.loop skipped: 3 attempts today (limit 3)" in " ".join(row["advisories"])
+    assert "limit 3" in doc["checks"]["machines"]["detail"]
+
+
+def test_repair_daily_limit_resets_the_next_day(tmp_path):
+    findings = [finding("restart.loop")]
+    for n in range(3):
+        step = datetime.timedelta(minutes=40 * n)
+        refreshed(tmp_path, RepairFleet(findings, heals=False), now=NOW + step)
+    fleet = RepairFleet(findings, heals=False)
+    refreshed(tmp_path, fleet, now=NOW + datetime.timedelta(days=1))
+    assert len(fleet.repair_calls()) == 1
+
+
+def test_repair_skipped_action_does_not_use_up_an_attempt(tmp_path):
+    findings = [finding("renet.binary.replaced", window_only=True)]
+    skipped = [
+        {
+            "code": "renet.binary.replaced",
+            "action": "restart",
+            "class": "auto-safe",
+            "result": "skipped: outside the window",
+        }
+    ]
+    for n in range(5):
+        fleet = RepairFleet(findings, actions=skipped, heals=False)
+        refreshed(tmp_path, fleet, now=NOW + datetime.timedelta(minutes=40 * n))
+        assert len(fleet.repair_calls()) == 1
+
+
+def test_repair_exit_2_keeps_red_names_the_failed_action_and_is_recorded(tmp_path):
+    failed = [
+        {
+            "code": "a.b",
+            "action": "act-a.b",
+            "class": "auto-safe",
+            "result": "failed: docker said no",
+        }
+    ]
+    fleet = RepairFleet([finding("a.b")], repair_rc=2, actions=failed)
+    (rc, doc), web = refreshed(tmp_path, fleet)
+    assert rc == 1
+    row = doc["checks"]["machines"]["rows"][0]
+    assert row["state"] == "red"
+    assert any("machine repair rc 2" in p and "docker said no" in p for p in row["problems"])
+    posted = [(b["source"], b["state"]) for m, u, h, b in web.calls if m == "POST"]
+    assert posted == [("local-machine-m1", "red")]
+    results = [r["result"] for r in ledger_rows(tmp_path) if r["kind"] == "repair"]
+    assert results == ["failed: docker said no"]
+
+
+def test_repair_timeout_is_red_not_raised(tmp_path):
+    fleet = RepairFleet([finding("a.b")])
+    fleet.timeout_on = "machine repair"
+    (rc, doc), _web = refreshed(tmp_path, fleet)
+    assert rc == 1
+    assert any("timed out" in p for p in doc["checks"]["machines"]["rows"][0]["problems"])
+
+
+def test_machines_verb_alone_never_repairs():
+    fleet = RepairFleet([finding("a.b")])
+    out = machines(fleet)
+    assert out["rc"] == 1
+    assert fleet.repair_calls() == []
