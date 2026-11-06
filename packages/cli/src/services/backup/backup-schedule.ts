@@ -24,6 +24,7 @@
 import { BACKUP_DEFAULTS } from '@rediacc/shared/config';
 import type { SFTPClient } from '../../remote/sftp/index.js';
 import type { BackupStrategyConfig } from '../../types/index.js';
+import { getOutputFormat } from '../../utils/errors.js';
 import { refreshRepoLicensesBatch } from '../account/license.js';
 import { configService } from '../config/config-resources.js';
 import { outputService } from '../core/output.js';
@@ -33,6 +34,7 @@ import type { PlannedStep } from '../jobs/steps.js';
 import { machineConnections } from '../machine/machine-connection.js';
 import { acquireRemoteRenet, readSSHKey } from '../renet/renet-execution.js';
 import { REMOTE_INSTALL_PATH } from '../renet/renet-provisioner.js';
+import { renetMayUpload } from '../renet/renet-upload-decision.js';
 import { envFilePath, generateEnvFile } from './backup-env-file.js';
 import {
   buildSchedulePayload,
@@ -146,7 +148,13 @@ async function preDeployProvisioning(
     // therefore hashes match against previously-deployed unit files).
     return REMOTE_INSTALL_PATH;
   }
-  outputService.info(`Provisioning renet to ${machine.ip}...`);
+  if (renetMayUpload('provision')) {
+    outputService.info(`Provisioning renet to ${machine.ip}...`);
+  } else {
+    outputService.info(
+      `Using the installed renet on ${machine.ip} (REDIACC_NO_PROVISION=1 holds it).`
+    );
+  }
   const { remotePath } = await acquireRemoteRenet(
     'provision',
     { renetPath: localConfig.renetPath },
@@ -363,7 +371,7 @@ export function renderBackupScheduleStatus(
       nextRun: r.nextRun,
       missed: r.missed ? (r.reason ?? BACKUP_DEFAULTS.MISSED_REASON_FALLBACK) : '-',
     })),
-    'table'
+    getOutputFormat()
   );
   const unread = rows.filter((r) => r.unread);
   if (unread.length > 0) {
@@ -549,5 +557,6 @@ export const _testing = {
   applyInFlightGate,
   parseStrategyFromPath,
   parseSystemctlShow,
+  preDeployProvisioning,
 };
 export { sanitizeBackupOutput };

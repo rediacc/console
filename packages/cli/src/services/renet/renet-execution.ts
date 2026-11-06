@@ -16,7 +16,6 @@ import { CliExitError } from '../../utils/cli-exit-error.js';
 import { reportStateWriteRefused } from '../config/state-write-failure.js';
 import { isSEA } from '../core/embedded-assets.js';
 import { outputService } from '../core/output.js';
-import { currentRequestContext } from '../core/request-context.js';
 import type { ExtraMachine } from '../executor/types.js';
 import { sftpConfigForMachine, withSharedOrPooledSftp } from '../machine/machine-connection.js';
 import { isSetupVerifiedFresh, recordSetupVerified } from './provision-state.js';
@@ -37,6 +36,7 @@ import {
 } from './renet-clean-build-fs.js';
 import type { RenetDrift } from './renet-inspect.js';
 import { renetProvisioner } from './renet-provisioner.js';
+import { inExecutor, provisionHeld, renetMayUpload } from './renet-upload-decision.js';
 import { buildRepositories, type RepoEntryConfig } from './renet-vault-sections.js';
 
 // The SSH key helpers moved to services/machine/ssh-key.ts so the connection pool can read a team key without importing renet. Re-exported here: this module is where the rest of the CLI has always imported them from.
@@ -113,28 +113,6 @@ export interface RenetAcquireResult {
   drift: RenetDrift | null;
   /** A router refresh the caller deferred (`deferRouterRefresh`) and still owes. */
   routerRefreshDue?: boolean;
-}
-
-/**
- * True inside a served request (`rdc serve`, either tier): the dispatch binds a request context,
- * which a laptop's `rdc` and the local daemon never have. An executor never replaces a machine's
- * renet. Its binary is whatever its image was built with, and the image outlives the machine's
- * upgrades (2026-11-04: a six-day-old bench image replaced hostinger's renet during a proxied
- * `repo up`). Only a CLI talking to the machine directly provisions one.
- */
-function inExecutor(): boolean {
-  return currentRequestContext() !== undefined;
-}
-
-/**
- * True when REDIACC_NO_PROVISION=1 holds the machine's renet: a mutating verb then runs the installed
- * binary as-is, like an executor, and only an explicit setup (`explicitSetup`: `rdc machine setup`, a cluster bootstrap, a machine provision) uploads.
- * Without it, a mutating verb run from a branch checkout replaces the machine's renet with that
- * branch's build (2026-11-05: a live runner found every mutating verb against hostinger would have
- * installed a renet 82 commits ahead of the one production ran, with no way to refuse it).
- */
-function provisionHeld(): boolean {
-  return process.env.REDIACC_NO_PROVISION === '1';
 }
 
 /** Hosts already warned about drift in this process (one line per host). */
@@ -438,7 +416,7 @@ export async function acquireRemoteRenet(
   const machineName = options.machineName ?? machine.ip;
 
   const held = provisionHeld() && options.explicitSetup !== true;
-  if (access === 'read-only' || inExecutor() || held) {
+  if (!renetMayUpload(access, options.explicitSetup)) {
     return acquireReadOnly(machine, machineName, sshPrivateKey, localBinaryPath, sftp, held);
   }
 

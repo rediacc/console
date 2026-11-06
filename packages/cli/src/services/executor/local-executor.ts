@@ -34,6 +34,7 @@ import {
   parseRenetLicenseFailure,
   type RenetLicenseFailure,
 } from '../renet/renet-license-contract.js';
+import { renetMayUpload } from '../renet/renet-upload-decision.js';
 import {
   CONVERGE_FUNCTION,
   parseConvergeReport,
@@ -333,7 +334,7 @@ class LocalExecutorService {
       remotePath: remoteRenetPath,
       uploaded: renetUploaded,
       routerRefreshDue,
-    } = quiet
+    } = quiet || !renetMayUpload(access)
       ? await provisionFn()
       : await timedStep(t('timing.step.provisioning'), 'timing.step.renetProvisioned', provisionFn);
     cliSteps.push({
