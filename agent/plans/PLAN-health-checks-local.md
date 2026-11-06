@@ -567,12 +567,16 @@ The hostinger-side scripts are written on hostinger and live only in its repos. 
 ### S: demo-stackoverflow archives to the public bucket (lead, live; repo guid db315abd-e300-47e4-bbb6-c383d6defe81)
 
 - [ ] S1 [live]: Bucket rediacc-public-data, custom domain data.rediacc.com on the rediacc.com zone, a Cache Rule (`public, max-age=31536000, immutable`), CORS GET and HEAD for `*`, all per .ci/docs/r2-media-setup.md sections 2, 5 and 5b. The commands are recorded in a new section of that doc.
+  - Record 2026-11-06: bucket rediacc-public-data created (EEUR, default jurisdiction), custom domain data.rediacc.com on the rediacc.com zone, a set_cache_settings rule `(http.host eq "data.rediacc.com")` respecting origin TTL (objects carry `public, max-age=31536000, immutable`), CORS GET and HEAD for `*` (rule public-data-read). The doc's section 5 endpoint answers 405 and is corrected in .ci/docs/r2-media-setup.md.
   - Accept: `curl -sI https://data.rediacc.com/stackexchange/README.txt` answers 200 after S8's upload.
 - [ ] S2 [live]: `sha256sum data/*.7z > SHA256SUMS` on hostinger, run niced and ionice'd, covering 371 lines.
+  - Record 2026-11-06: SHA256SUMS written niced and ionice'd in the demo-stackoverflow repo root, 371 lines (36,270 bytes), basenames only, rc 0.
   - Accept: rc 0, and `wc -l SHA256SUMS` is 371.
 - [ ] S3 [live]: The upload from hostinger (a throwaway `amazon/aws-cli` container inside the repo, credentials over stdin, a bandwidth limit, multipart) of the 371 files plus SHA256SUMS under `stackexchange/`.
+  - Record 2026-11-06: `amazon/aws-cli s3 sync` from inside the repo (--network host, env file removed after, 30 MB/s, 64 MB parts) ran 63 min, rc 0; head-object sizes equal local for 371 of 371; SHA256SUMS uploaded (36,270 bytes, served: 371 lines through https://data.rediacc.com/stackexchange/SHA256SUMS).
   - Accept: rc 0; HEAD sizes equal the local sizes for 371 of 371.
 - [ ] S4 [live]: Verification by streaming each object back: `curl -fsS https://data.rediacc.com/stackexchange/<f> | sha256sum`, compared with SHA256SUMS.
+  - Progress 2026-11-06: 369 of 371 objects streamed back with a matching sha256, no mismatch; stackoverflow.com-Posts.7z (23.0 GB) and stackoverflow.com-PostHistory.7z (37.7 GB) not verified yet (stream about 5 to 28 MB/s); resume with `./pubdata-s4d.sh <file>` in the repo on hostinger. S7 waits for both.
   - Accept: a 371 of 371 OK line, rc 0.
 - [ ] S5 [live]: download/download.sh: BASE_URL is the bucket; the file list comes from SHA256SUMS; `sha256sum -c` runs after `7z t`; `--only <site,...>` is added. The diff is recorded here, since the source lives only on hostinger.
   - Accept: `bash -n download/download.sh` rc 0.
@@ -584,6 +588,7 @@ The hostinger-side scripts are written on hostinger and live only in its repos. 
   (corrected 2026-11-06, operator rulings A to E4) Only after S4 and S6: delete data/*.7z (the operator-only half of `repo.disk.high`), run `rdc repo trim demo-stackoverflow@hostinger`, and check that the Postgres container and volume are unaffected (.vscode-server was already removed on 2026-11-06, F16).
   - Accept: `machine health hostinger -o json` shows demo-stackoverflow disk under 85%; `docker ps` shows stack-db-1 healthy.
 - [ ] S8 [live]: `stackexchange/README.txt` with the CC BY-SA 4.0 attribution (Stack Exchange, Inc., source archive.org/details/stackexchange, unmodified).
+  - Record 2026-11-06: stackexchange/README.txt (279 bytes) served HTTP 200, text/plain, cache-control immutable, access-control-allow-origin *.
   - Accept: the S1 curl rc 0.
 
 ### P: proof before the merge (lead)

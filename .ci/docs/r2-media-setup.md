@@ -81,11 +81,13 @@ Unlike `releases.rediacc.com` (which **bypasses** cache to avoid stale package-m
 | **Expression** | `(http.host eq "media.rediacc.com")` |
 | **Action** | `set_cache_settings` with `cache: true`, `edge_ttl.mode: respect_origin`, `browser_ttl.mode: respect_origin` |
 
-Recreate via API if ever needed (appends to the existing ruleset without disturbing the `releases.rediacc.com` rule):
+Recreate via API if ever needed (appends to the existing ruleset without disturbing the `releases.rediacc.com` rule). The phase entrypoint's `/rules` path answers 405 ("Method not allowed for this authentication scheme", measured 2026-11-06 with the Global API Key and with a zone token carrying Cache Settings Write), so read the entrypoint's ruleset id first and append to that ruleset:
 ```bash
+RULESET=$(curl -sS "https://api.cloudflare.com/client/v4/zones/9e802649c143c9cefd811d8fd671d31c/rulesets/phases/http_request_cache_settings/entrypoint" \
+  -H "X-Auth-Email: $CF_EMAIL" -H "X-Auth-Key: $CF_GLOBAL_API_KEY" | jq -r .result.id)
 curl -sS -X POST \
-  "https://api.cloudflare.com/client/v4/zones/9e802649c143c9cefd811d8fd671d31c/rulesets/phases/http_request_cache_settings/entrypoint/rules" \
-  -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H "Content-Type: application/json" \
+  "https://api.cloudflare.com/client/v4/zones/9e802649c143c9cefd811d8fd671d31c/rulesets/$RULESET/rules" \
+  -H "X-Auth-Email: $CF_EMAIL" -H "X-Auth-Key: $CF_GLOBAL_API_KEY" -H "Content-Type: application/json" \
   --data '{
     "description": "Cache media.rediacc.com, respect origin TTL",
     "expression": "(http.host eq \"media.rediacc.com\")",
@@ -94,6 +96,8 @@ curl -sS -X POST \
     "enabled": true
   }'
 ```
+
+The rule respects the origin TTL, so `Cache-Control: public, max-age=31536000, immutable` is set on each object at upload time, not by the rule. Upload before probing: a probe of a key that does not exist yet caches the 404 at the edge until it is purged (`POST /zones/<zone>/purge_cache` with `{"files": ["<url>"]}`).
 
 Verify caching + range-request support (needed for video seeking):
 ```bash
