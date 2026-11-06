@@ -1,3 +1,4 @@
+import { DEFAULTS } from '@rediacc/shared/config';
 import chalk from 'chalk';
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
@@ -321,7 +322,7 @@ function modePath(mode: DiffMode): string {
 
 bindStepHandler('renderRepoDiff', ({ output, params }) => {
   const name = optStr(params, 'mode') ?? DEFAULT_DIFF_MODE;
-  const format = (optStr(params, 'format') ?? 'table') as OutputFormat;
+  const format = (optStr(params, 'format') ?? DEFAULTS.CONTEXT.OUTPUT_FORMAT) as OutputFormat;
   const path = optStr(params, 'path');
   const mode: DiffMode =
     name === 'content' && path !== undefined

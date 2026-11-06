@@ -19,6 +19,7 @@
  * names the module, and loading it binds the handler.
  */
 
+import { DEFAULTS } from '@rediacc/shared/config';
 import type { OutputFormat } from '../../types/index.js';
 import { MACHINE_CONVERSION_STEPS } from './steps-conversions-machine.js';
 import { REPO_CONVERSION_STEPS } from './steps-conversions-repo.js';
@@ -214,7 +215,7 @@ const DEFINITIONS: StepDefinition[] = [
           str(ctx.params, 'target'),
           targetType,
           local,
-          (optStr(ctx.params, 'format') ?? 'table') as OutputFormat
+          (optStr(ctx.params, 'format') ?? DEFAULTS.CONTEXT.OUTPUT_FORMAT) as OutputFormat
         );
         return Promise.resolve();
       };

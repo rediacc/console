@@ -369,6 +369,9 @@ export const CONTEXT_DEFAULTS = {
 
   /** Default output format for config field list */
   FIELD_LIST_OUTPUT: 'table',
+
+  /** Output format a planned job step falls back to when its params carry none */
+  OUTPUT_FORMAT: 'table',
 } as const;
 
 /**
