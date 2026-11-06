@@ -15,7 +15,6 @@ import ast
 import hashlib
 import json
 import os
-import pathlib
 import re
 import shutil
 import subprocess

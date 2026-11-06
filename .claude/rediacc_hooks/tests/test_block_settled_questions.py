@@ -189,7 +189,11 @@ BENCH_REFUSE += [
     ),
     ("sign back in, beside eu-remote", "Could you sign back in to bench, like eu-remote?", ""),
     ("re-login, beside eu-remote", "Please re-login to eu-bench, same as eu-remote.", ""),
-    ("logging in, beside eu-remote", "Could you try logging in to eu-bench again, as on eu-remote?", ""),
+    (
+        "logging in, beside eu-remote",
+        "Could you try logging in to eu-bench again, as on eu-remote?",
+        "",
+    ),
 ]
 
 BENCH_PASS = [

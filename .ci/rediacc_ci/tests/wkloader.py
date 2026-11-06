@@ -47,7 +47,9 @@ def docker_less_path(farm: pathlib.Path) -> str:
     return str(farm)
 
 
-def path_farm_without(farm: pathlib.Path, omit: tuple[str, ...], directories=("/usr/bin", "/bin")) -> int:
+def path_farm_without(
+    farm: pathlib.Path, omit: tuple[str, ...], directories=("/usr/bin", "/bin")
+) -> int:
     """Fill `farm` with a symlink per binary in `directories`, minus the names in `omit`, and return the count.
 
     The first directory wins a name. A DANGLING symlink in a directory (a runner's `/usr/bin/grub-ntldr-img`) answers False to `exists()`, so the skip tests `is_symlink()` as well, or the second directory plants the same name again and `symlink_to` raises FileExistsError.
