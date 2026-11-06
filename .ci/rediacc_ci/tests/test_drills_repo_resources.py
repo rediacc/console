@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import inspect
 import shutil
 import subprocess
 
@@ -210,3 +211,10 @@ def test_k3_compose_body_names_a_service() -> None:
     assert body.startswith("services:\n  keep:\n")
     assert "image: %s" % r.IMAGE in body
     assert r.COMPOSE_FILE == "docker-compose.yml"
+
+
+def test_k3_records_no_skip_row_that_would_void_the_renet_phase() -> None:
+    """vm_check.phase_ran counts a phase only when every row is ok, so a recorded K3.6 skip row made every fleet run NOT_VERIFIED phase-not-run (run of 2026-11-06, 278 assertions, 0 failed)."""
+    src = inspect.getsource(r._Live.k3)
+    assert "record(" not in src.split("k3_5_unmount", 1)[1]
+    assert "K3.6" in r.K3_6_NOTE
