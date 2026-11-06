@@ -1,8 +1,8 @@
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { Command } from 'commander';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createCli } from '../cli.js';
 import { registerAuditCommands } from '../commands/config/audit.js';
 import { initI18n } from '../i18n/index.js';
@@ -44,7 +44,8 @@ describe('global -o validation', () => {
         .mock.calls.map((c) => String(c[0]))
         .join('');
       expect(stderr).toContain(bad);
-      expect(stderr).toContain('table, json, yaml, csv');
+      // The allowed formats are named, whatever separator the message joins them with.
+      for (const allowed of ['table', 'json', 'yaml', 'csv']) expect(stderr).toContain(allowed);
     }
   );
 
@@ -60,6 +61,7 @@ describe('global -o validation', () => {
 describe('config audit log honours the output format', () => {
   const dir = mkdtempSync(join(tmpdir(), 'audit-fmt-'));
   const prev = process.env.XDG_CONFIG_HOME;
+  afterAll(() => rmSync(dir, { recursive: true, force: true }));
   beforeEach(async () => {
     await initI18n();
     process.env.XDG_CONFIG_HOME = dir;
@@ -73,12 +75,23 @@ describe('config audit log honours the output format', () => {
 
   it.each(['yaml', 'table'] as const)('renders %s, not JSON', async (fmt) => {
     mkdirSync(join(dir, 'rediacc'), { recursive: true });
-    writeFileSync(join(dir, 'rediacc', 'audit.log.jsonl'), '');
+    const entry = {
+      ts: '2026-11-06T00:00:00Z',
+      actor: { kind: 'human', agentSignals: [] },
+      command: 'config audit probe',
+      paths: [],
+      outcome: 'ok',
+      prevHash: '',
+    };
+    writeFileSync(join(dir, 'rediacc', 'audit.log.jsonl'), `${JSON.stringify(entry)}\n`);
     setOutputFormat(fmt);
-    const print = vi.spyOn(outputService, 'print').mockImplementation(() => undefined);
+    const write = vi.spyOn(process.stdout, 'write').mockReturnValue(true);
     const program = new Command();
     registerAuditCommands(program.command('config'), program);
     await program.parseAsync(['node', 'rdc', 'config', 'audit', 'log']);
-    expect(print).toHaveBeenCalledWith([], fmt);
+    const text = write.mock.calls.map((c) => String(c[0])).join('');
+    // The rendered bytes carry the entry (a table cell may be cut, so only its start is checked) but are not a JSON document.
+    expect(text).toContain('config');
+    expect(() => JSON.parse(text)).toThrow();
   });
 });

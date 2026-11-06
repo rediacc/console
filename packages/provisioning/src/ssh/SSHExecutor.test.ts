@@ -53,8 +53,11 @@ describe('SSHExecutor escaping round-trips through real shells', () => {
   });
 
   afterAll(() => {
-    process.env.PATH = saved.PATH;
-    process.env.USER = saved.USER;
+    // An unset variable is deleted, not assigned: assigning undefined stores the string 'undefined'.
+    for (const [key, value] of Object.entries({ PATH: saved.PATH, USER: saved.USER })) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
     if (saved.LOG === undefined) delete process.env.FAKE_SSH_LOG;
     else process.env.FAKE_SSH_LOG = saved.LOG;
     rmSync(dir, { recursive: true, force: true });

@@ -1,7 +1,12 @@
 import { Command } from 'commander';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const mockT = vi.hoisted(() => vi.fn((key: string, _params?: Record<string, unknown>) => key));
+// The stand-in `t` carries its params into the text, so a test sees whether a value reaches the rendered message.
+const mockT = vi.hoisted(() =>
+  vi.fn((key: string, params?: Record<string, unknown>) =>
+    params ? `${key} ${Object.values(params).join(' ')}` : key
+  )
+);
 vi.mock('../../i18n/index.js', () => ({ t: mockT }));
 
 const mockFetch = vi.hoisted(() => vi.fn());
@@ -154,7 +159,7 @@ describe('backup reconcile', () => {
     mockFetch.mockResolvedValue(response({ lineages: [lineage(), skipped] }));
     await run(['--check']);
     expect(mockSetExitCode).toHaveBeenCalledWith(1);
-    expect(mockWarn).toHaveBeenCalledWith('commands.backup.reconcile.checkSkipped');
+    expect(mockWarn).toHaveBeenCalledWith(expect.stringContaining('busy-1 (leased)'));
     expect(mockT).toHaveBeenCalledWith('commands.backup.reconcile.checkSkipped', {
       lineages: 'busy-1 (leased)',
     });
@@ -175,7 +180,7 @@ describe('backup reconcile', () => {
       );
       await run(['--check']);
       expect(mockSetExitCode).toHaveBeenCalledWith(1);
-      expect(mockWarn).toHaveBeenCalledWith('commands.backup.reconcile.checkSkipped');
+      expect(mockWarn).toHaveBeenCalledWith(expect.stringContaining(`busy-1 (${reason})`));
       expect(mockT).toHaveBeenCalledWith('commands.backup.reconcile.checkSkipped', {
         lineages: `busy-1 (${reason})`,
       });
@@ -226,7 +231,9 @@ describe('backup reconcile', () => {
       expect.any(Array)
     );
     expect(mockPrint).toHaveBeenCalledWith('TABLE');
-    expect(mockInfo).toHaveBeenCalledWith('commands.backup.reconcile.summary');
+    expect(mockInfo).toHaveBeenCalledWith(
+      expect.stringContaining('commands.backup.reconcile.summary')
+    );
   });
 
   it('table output does not warn when the response is complete, and prints empty', async () => {

@@ -1,4 +1,4 @@
-import { execFileSync, spawn, type ChildProcess } from 'node:child_process';
+import { type ChildProcess, execFileSync, spawn } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
@@ -79,7 +79,9 @@ describe.skipIf(!haveOpenSsh)('real OpenSSH with the built options', () => {
   afterEach(() => sshd?.kill());
 
   it('accepts the recorded host key and refuses an impostor', async () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pin-ssh-'));
+    // The ssh argv below is rebuilt by splitting the option string on spaces, so the paths in it must hold none.
+    const base = /\s/.test(os.tmpdir()) ? '/tmp' : os.tmpdir();
+    const dir = fs.mkdtempSync(path.join(base, 'pin-ssh-'));
     try {
       const gen = (n: string) =>
         execFileSync('ssh-keygen', ['-q', '-t', 'ed25519', '-N', '', '-f', path.join(dir, n)]);

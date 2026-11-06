@@ -154,10 +154,12 @@ describe('backup restore --path', () => {
     expect(options.job.steps).toEqual([
       expect.objectContaining({
         name: 'reportRestorePath',
+        on: 'success',
         params: { repo: 'r', snapshot: SNAPSHOT },
       }),
       expect.objectContaining({
         name: 'reportRestorePathFailure',
+        on: 'failure',
         params: { repo: 'r', snapshot: SNAPSHOT },
       }),
     ]);
@@ -262,6 +264,8 @@ describe('backup restore --path', () => {
     };
     const planned = job.steps.find((step) => step.name === 'reportRestorePathFailure');
     expect(planned?.params).toEqual({ repo: 'r', snapshot: SNAPSHOT });
+    // The trigger the command planned, not only the registry's.
+    expect(planned?.on).toBe('failure');
     const { getStepDefinition, resolveStepHandler } = await import('../../services/jobs/steps.js');
     expect(getStepDefinition('reportRestorePathFailure')?.on).toBe('failure');
     const handler = await resolveStepHandler('reportRestorePathFailure');
@@ -298,6 +302,7 @@ describe('backup restore --path', () => {
     await run(['r@m1', '--at', SNAPSHOT, '--path', '/a']);
     const { job } = mockExecuteRepoFunction.mock.calls[0][4] as { job: { steps: PlannedStep[] } };
     const planned = job.steps.find((step) => step.name === 'reportRestorePath');
+    expect(planned, 'the command planned no reportRestorePath step').toBeDefined();
     const { resolveStepHandler } = await import('../../services/jobs/steps.js');
     const handler = await resolveStepHandler('reportRestorePath');
     expect(record.chunksFetched).toBeLessThan(record.cellsTotal);
@@ -321,6 +326,7 @@ describe('backup restore --path', () => {
     await run(['r@m1', '--at', SNAPSHOT, '--path', '/nope']);
     const { job } = mockExecuteRepoFunction.mock.calls[0][4] as { job: { steps: PlannedStep[] } };
     const planned = job.steps.find((step) => step.name === 'reportRestorePathFailure');
+    expect(planned, 'the command planned no reportRestorePathFailure step').toBeDefined();
     const { resolveStepHandler } = await import('../../services/jobs/steps.js');
     const handler = await resolveStepHandler('reportRestorePathFailure');
     process.exitCode = 19;

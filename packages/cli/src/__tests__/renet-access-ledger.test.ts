@@ -50,7 +50,6 @@ const LEDGER: Record<string, string[]> = {
     'provision',
   ],
   'commands/subscription-actions.ts::<module>::resolveMachineContext': ['read-only'],
-  'services/tofu/provision.ts::runProvisionSetupJob::acquireRemoteRenet': ['provision'],
   'commands/term.ts::connectTerminal::acquireRemoteRenet': ['read-only'],
   'commands/vscode-browser.ts::prepareBrowserConnection::acquireRemoteRenet': ['read-only'],
   'commands/vscode.ts::prepareRemote::acquireRemoteRenet': ['read-only'],
@@ -70,6 +69,7 @@ const LEDGER: Record<string, string[]> = {
   // The serve job routes moved out of server.ts; the ledger had not followed (found by J17, pre-existing).
   'services/serve/job-routes.ts::pollOnce::connectForJobs': ['read-only'],
   'services/serve/job-routes.ts::registerJobRoutes::connectForJobs': ['read-only'],
+  'services/tofu/provision.ts::runProvisionSetupJob::acquireRemoteRenet': ['provision'],
 };
 
 function walk(dir: string, out: string[] = []): string[] {

@@ -148,11 +148,11 @@ afterEach(() => {
   process.exitCode = 0;
 });
 
-/** The step's own machine calls; the read-only mounted-on-target probe before the job is not a second leg. */
+/** The step's own machine calls; only the read-only `repository_list` mounted-on-target probe before the job is not a second leg, so a real leg that happened to set `probe` still shows. */
 const plainCalls = () =>
   mockPlainExecute.mock.calls
     .map((c) => c[0] as { functionName: string; machineName: string; probe?: boolean })
-    .filter((c) => c.probe !== true);
+    .filter((c) => !(c.probe === true && c.functionName === 'repository_list'));
 
 describe('repo migrate (the compound class: one repository_migrate job and a plan)', () => {
   it('under --background returns at the one job start, with the plan on the ticket and no second leg', async () => {
