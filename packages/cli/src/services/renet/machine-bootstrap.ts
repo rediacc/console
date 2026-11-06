@@ -8,6 +8,8 @@
 
 import { setTimeout as sleep } from 'node:timers/promises';
 import { NETWORK_DEFAULTS } from '@rediacc/shared/config';
+import { ERROR_CODES } from '../../types/errors.js';
+import { CliExitError } from '../../utils/cli-exit-error.js';
 import { scanHostKeys } from '../../utils/host-keys.js';
 import { shellQuote } from '../../utils/shell-quote.js';
 import { configService } from '../config/config-resources.js';
@@ -56,6 +58,8 @@ export async function bootstrapMachine(
   );
 
   const lease = await machineConnections.acquireFor(machine, sshPrivateKey);
+  let failure: string | undefined;
+  let failureExit = 1;
 
   try {
     const datastorePath = machine.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH;
@@ -71,9 +75,14 @@ export async function bootstrapMachine(
     });
     stderrPump.flush(exitCode !== 0);
     if (exitCode !== 0) {
-      outputService.warn(`Machine setup exited with code ${exitCode}`);
+      failure = `Machine setup exited with code ${exitCode}`;
+      failureExit = exitCode > 0 ? exitCode : 1;
     }
   } finally {
     lease.release();
+  }
+  if (failure !== undefined) {
+    outputService.warn(failure);
+    throw new CliExitError(ERROR_CODES.INFRA_FAILED, failure, { exitCode: failureExit });
   }
 }

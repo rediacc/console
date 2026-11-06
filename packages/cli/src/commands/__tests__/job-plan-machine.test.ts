@@ -374,13 +374,17 @@ describe('machine provision', () => {
     expect(mocks.success).not.toHaveBeenCalled();
   });
 
-  it('a failed setup warns, sets the exit code and announces no completion', async () => {
-    answer = { ...OK, success: false, exitCode: 3, state: 'failed' as const };
+  it('a failed setup warns, fails with a named error carrying the exit code and announces no completion', async () => {
+    answer = { ...OK, success: false, exitCode: 100, state: 'failed' as const };
 
-    await provision('--no-infra');
+    await expect(provision('--no-infra')).rejects.toMatchObject({
+      name: 'CliExitError',
+      code: 'INFRA_FAILED',
+      exitCode: 100,
+      message: 'Machine setup exited with code 100',
+    });
 
-    expect(mocks.warn).toHaveBeenCalledWith('Machine setup exited with code 3');
-    expect(mocks.setExitCode).toHaveBeenCalledWith(3);
+    expect(mocks.warn).toHaveBeenCalledWith('Machine setup exited with code 100');
     expect(mocks.success).not.toHaveBeenCalled();
   });
 });

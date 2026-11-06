@@ -11,6 +11,8 @@ import { join } from 'node:path';
 import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
 import { getConfigDir } from '@rediacc/shared/paths';
 import { t } from '../../i18n/index.js';
+import { ERROR_CODES } from '../../types/errors.js';
+import { CliExitError } from '../../utils/cli-exit-error.js';
 import { accountServerFetch } from '../account/account-client.js';
 import { readRemoteMachineId } from '../account/license-machine.js';
 import { getSubscriptionTokenState } from '../account/subscription-auth.js';
@@ -223,9 +225,10 @@ export async function createCloudMachine(
     return;
   }
   if (!outcome.result.success) {
-    outputService.warn(`Machine setup exited with code ${outcome.result.exitCode}`);
-    setExitCode(outcome.result.exitCode > 0 ? outcome.result.exitCode : 1);
-    return;
+    const exitCode = outcome.result.exitCode > 0 ? outcome.result.exitCode : 1;
+    const message = `Machine setup exited with code ${outcome.result.exitCode}`;
+    outputService.warn(message);
+    throw new CliExitError(ERROR_CODES.INFRA_FAILED, message, { exitCode });
   }
 
   outputService.success(t('commands.machine.provision.completed', { name: machineName, ip: ipv4 }));
