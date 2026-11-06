@@ -98,6 +98,13 @@ def _run(argv: list[str], timeout: int = 1800) -> subprocess.CompletedProcess[st
     return subprocess.run(argv, capture_output=True, text=True, timeout=timeout, check=False)
 
 
+def _echo_tails(res: subprocess.CompletedProcess[str]) -> None:
+    """The tails of a failed step's stdout and stderr, each only when it holds something."""
+    for tail in (res.stdout, res.stderr):
+        if tail:
+            print(tail[-2000:], file=sys.stderr)
+
+
 def window_argv(command: str) -> list[str]:
     return rdc_argv("term", "connect", MACHINE, "-c", command)
 
@@ -115,15 +122,17 @@ def backup_window_clear(run_s: int = backup_window.RUN_BUDGET_S) -> bool:
 
 
 RECHECK_POLL_S = 60
-RECHECK_POLLS = 50
+# A re-check begun LEAD_S before a trigger sees the window clear LEAD_S + TAIL_S later, so that many minutes of polls plus the read at the end of them, and a spare.
+RECHECK_POLLS = (backup_window.LEAD_S + backup_window.TAIL_S) // RECHECK_POLL_S + 2
 
 
 def wait_until_clear() -> bool:
     """The re-check before the delete: poll, bounded, until the window is clear."""
-    for _ in range(RECHECK_POLLS):
+    for poll in range(RECHECK_POLLS):
         if backup_window_clear(0):
             return True
-        time.sleep(RECHECK_POLL_S)
+        if poll < RECHECK_POLLS - 1:
+            time.sleep(RECHECK_POLL_S)
     return False
 
 
@@ -143,8 +152,7 @@ def run(repo: str, collect: bool = False) -> int:
             print("$ %s -> rc=%d" % (" ".join(argv), res.returncode))
             if res.returncode != 0:
                 # rdc prints its JSON error envelope on stdout and progress on stderr: both are needed to see why.
-                print(res.stdout[-2000:], file=sys.stderr)
-                print(res.stderr[-2000:], file=sys.stderr)
+                _echo_tails(res)
                 failed = True
                 # A failing up is itself the H2 data point (a fork's container cannot bind a host port its running original holds, hostinger 2026-11-05); the fork stays mounted, so the probe can still land. A failing fork, upload or down stops the recipe: the probe files are still read, and a file that never arrived fails every row.
                 if argv[3:5] == ["repo", "up"]:
@@ -154,8 +162,9 @@ def run(repo: str, collect: bool = False) -> int:
                 break
         # The verdicts judge the dropped runs, so the probe files are read BEFORE step 6: a root up rewrites them with uid 0 (observability on hostinger, 2026-11-05).
         probes: dict[str, dict[str, str]] = {}
+        # A fork this run did not make may be a leftover of the fixed tag holding an earlier run's files, so nothing is read from it: the empty probes fail every row.
         for name in (lp.UP_FILE, lp.DOWN_FILE):
-            probes[name] = lp.parse_probe(_run(read_argv(repo, name)).stdout)
+            probes[name] = lp.parse_probe(_run(read_argv(repo, name)).stdout) if forked else {}
         rows = verdicts(probes[lp.UP_FILE], probes[lp.DOWN_FILE])
         print(table(repo, rows, steps_ok=not failed))
         failed = failed or not all(r[1] for r in rows)
@@ -165,8 +174,7 @@ def run(repo: str, collect: bool = False) -> int:
                 res = _run(argv)
                 print("$ %s -> rc=%d (step 6)" % (" ".join(argv), res.returncode))
                 if res.returncode != 0:
-                    print(res.stdout[-2000:], file=sys.stderr)
-                    print(res.stderr[-2000:], file=sys.stderr)
+                    _echo_tails(res)
         if collect:
             for cmd in COLLECT:
                 res = _run(rdc_argv("term", "connect", fork_ref(repo), "-c", cmd))

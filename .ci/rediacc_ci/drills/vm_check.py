@@ -784,7 +784,7 @@ class Leftover:
 
 
 def receipt_leftover_refs(receipt: Mapping[str, Any] | None) -> tuple[frozenset[str], list[str]]:
-    """(the guids and repository names a prior receipt's teardown leftovers and undeleted forks name, the leftover lines). Names are any whitespace- or paren-delimited word holding a `:` or one of the harness prefixes; matching them against the worker is what decides, so an over-broad word only costs a lookup."""
+    """(the guids and repository names a prior receipt's teardown leftovers and undeleted forks name, the leftover lines). Names are the whitespace- or paren-delimited words holding a `:` (a fork's `parent:tag`); a bare word is never taken for a name, because a worker repository called `state` or `grand` would then read as a leftover of the receipt's prose, and a harness grand without a `:` is found by `harness_repo_name` instead."""
     if not isinstance(receipt, dict):
         return frozenset(), []
     teardown = receipt.get("teardown")
@@ -793,7 +793,7 @@ def receipt_leftover_refs(receipt: Mapping[str, Any] | None) -> tuple[frozenset[
     refs: set[str] = set()
     for line in lines:
         refs.update(_UUID.findall(line))
-        refs.update(w for w in re.split(r"[\s(),;]+", line) if w)
+        refs.update(w for w in re.split(r"[\s(),;]+", line) if ":" in w)
     forks = receipt.get("forks")
     for fork in forks if isinstance(forks, list) else []:
         if isinstance(fork, dict) and fork.get("created") and not fork.get("deleted"):
@@ -817,8 +817,10 @@ def find_fleet_leftovers(
     config_entries: Sequence[Mapping[str, Any]],
     parent: str,
     now: float,
+    p5_sweeps: bool = True,
 ) -> tuple[list[Leftover], list[str]]:
-    """(the leftovers on the worker, the exemptions said aloud). Run under the fleet lock, before this run created anything, so nothing of a live run can be on the worker. A worker repository counts when a prior receipt's teardown named it (by guid or name), or when its name is this harness's (`harness_repo_name`). A live `rediacc-docker-<N>` daemon counts when no repository of the run's config has network id N (a crashed delete keeps the daemon after the repository is gone). The one exemption is a `<parent>:vmc-` fork the run's config lists that is older than STALE_FORK_S: the P5 sweep deletes it through the CLI on this very run, and it is named in the second list so the exemption stays visible."""
+    """(the leftovers on the worker, the exemptions said aloud). Run under the fleet lock, before this run created anything, so nothing of a live run can be on the worker. A worker repository counts when a prior receipt's teardown named it (by guid or name), or when its name is this harness's (`harness_repo_name`).
+    A live `rediacc-docker-<N>` daemon counts when no repository of the run's config has network id N (a crashed delete keeps the daemon after the repository is gone). The one exemption is a `<parent>:vmc-` fork the run's config lists that is older than STALE_FORK_S, and only when `p5_sweeps` says this run reaches P5: the P5 sweep deletes it through the CLI on this very run, and it is named in the second list so the exemption stays visible. A run that skips P5 (account-only, or `--only` without P5) exempts nothing."""
     refs, _lines = receipt_leftover_refs(prior)
     harness = harness_repo_name(parent)
     config_names = {str(e.get("name", "")) for e in config_entries}
@@ -840,7 +842,7 @@ def find_fleet_leftovers(
             continue
         fork_parent, _, tag = name.partition(":")
         match = FORK_TAG.match(tag)
-        if fork_parent == parent and match and name in config_names:
+        if p5_sweeps and fork_parent == parent and match and name in config_names:
             age = stamp_age_s(match.group(1), now)
             if age is not None and age > STALE_FORK_S:
                 exempt.append("%s (left to the P5 sweep, older than %d s)" % (name, STALE_FORK_S))
@@ -1935,20 +1937,21 @@ class VmCheck:
         self._external_legs()
 
     def _require_receipts(self) -> None:
-        """Stop before any VM work when a touched area's `receipt` leg cannot pass: the leg is judged last and no step here can produce it, so the run could only end NOT_VERIFIED after an hour or more."""
+        """Stop before any VM work when a touched area's `receipt` leg cannot pass: the leg is judged last and no step here can produce it, so the run could only end NOT_VERIFIED after all its VM work."""
         for name in trigger.AREAS:
             if name not in self.areas:
                 continue
-            for leg in trigger.MAP.areas[name].legs:
-                if leg.kind != trigger.LEG_RECEIPT:
-                    continue
-                ok, message = self.receipt_fn(self.root, self.tree)
-                if not ok:
-                    raise NotVerifiedError(
-                        "receipt-first",
-                        "%s/%s: %s; produce it first with: %s"
-                        % (name, leg.id, message, " && ".join(leg.cmd)),
-                    )
+            legs = [leg for leg in trigger.MAP.areas[name].legs if leg.kind == trigger.LEG_RECEIPT]
+            if not legs:
+                continue
+            # The receipt check reads the root and the tree, not the leg, so it runs once per area.
+            ok, message = self.receipt_fn(self.root, self.tree)
+            if not ok:
+                raise NotVerifiedError(
+                    "receipt-first",
+                    "%s/%s: %s; produce it first with: %s"
+                    % (name, legs[0].id, message, " && ".join(legs[0].cmd)),
+                )
 
     def _battery(self) -> None:
         """The base battery: A1, the infra chain, A0, A2 and the renet phase, as the required sides and the touched areas' `vmcheck` legs ask."""
@@ -2050,7 +2053,7 @@ class VmCheck:
     # ------------------------------------------------------------------ X: the external legs
 
     def _external_legs(self, named: Collection[str] | None = None) -> None:
-        """Run every `external` leg of the touched areas, after the base battery and under the same fleet lock: tear this run's forks down first (an e2e global setup may recreate the VMs), bring each leg's fleet up (or reuse it when every ip already runs), run the leg's commands from the console root, record one `X.<leg id>` row, then prove the parent grand is still on the worker and recreate it when it is not. A run whose battery already has a finding skips them: its verdict cannot become VERIFIED, and an e2e run costs minutes to an hour."""
+        """Run every `external` leg of the touched areas (with `named`, the named legs of any area, touched or not: naming a leg is the request to run it), after the base battery and under the same fleet lock: tear this run's forks down first (an e2e global setup may recreate the VMs), bring each leg's fleet up (or reuse it when every ip already runs), run the leg's commands from the console root, record one `X.<leg id>` row, then prove the parent grand is still on the worker and recreate it when it is not. A run whose battery already has a finding skips them: its verdict cannot become VERIFIED, and an e2e run costs minutes to an hour."""
         legs = (
             external_legs(self.areas)
             if named is None
@@ -2470,8 +2473,11 @@ class VmCheck:
         if listed.rc != 0:
             # Without the run's own repositories no daemon can be told from an orphan, so the check stops here, with the class P5 would have named.
             raise self._repo_list_refusal(listed)
+        p5_sweeps = (
+            self._only_wants("P5") if self.opts.only else bool(self.phases[SIDE_RENET]["required"])
+        )
         found, exempt = find_fleet_leftovers(
-            prior, repos, units, entries, self.opts.parent, self.host.now()
+            prior, repos, units, entries, self.opts.parent, self.host.now(), p5_sweeps
         )
         if exempt:
             self.say("        leftover check exempts: %s" % ", ".join(exempt))

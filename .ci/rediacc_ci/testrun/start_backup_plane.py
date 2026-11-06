@@ -1,6 +1,7 @@
 """Start the backup plane a CI leg needs for the `rdc backup browse --at` end-to-end tier: RustFS with the probe bucket, and an account server that mints backup-capable tokens and presigns against that bucket.
 
     PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_backup_plane [--port <n>] [--worker <n>] [--rebuild-renet | --no-rebuild-renet]
+    PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_backup_plane --verify-renet <binary> [--verify-renet <binary> ...]
     PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_backup_plane [options] -- <command> [args...]
 
 Five steps, each fatal on failure (the drill `drills.backup_local_plane` only warns on a bucket failure, since it starts a dev gateway that may reuse an existing bucket; a CI leg has nothing to reuse, so a missing bucket would surface minutes later as a presign error):
@@ -18,6 +19,7 @@ The suite's S3 credentials are exported as E2E_BACKUP_S3_KEY and E2E_BACKUP_S3_S
 
 from __future__ import annotations
 
+import contextlib
 import dataclasses
 import os
 import pathlib
@@ -27,6 +29,7 @@ import signal
 import subprocess
 import sys
 import tempfile
+import time
 from typing import TYPE_CHECKING
 
 from rediacc_ci import log, paths
@@ -52,6 +55,9 @@ PUBLIC_KEY_ENV = "ACCOUNT_ED25519_PUBLIC_KEY"
 PRIVATE_KEY_ENV = "ACCOUNT_ED25519_PRIVATE_KEY"
 # The binaries a local rebuild stages: the host one and the two the CLI pushes to a machine of either architecture.
 STAGED_RENETS = ("renet", "renet-linux-amd64", "renet-linux-arm64")
+# The directory `pin_renet` makes per run. The suite runs from it after this process execs, so it cannot be removed here; the next pin removes the ones a day old.
+PINNED_PREFIX = "renet-backup-plane-"
+PINNED_MAX_AGE_S = 24 * 60 * 60
 # The build-info reader is shared with the release gate (`rediacc_ci.release.renet_key_gate`).
 SPKI_ED25519_HEADER = renet_key_gate.SPKI_ED25519_HEADER
 
@@ -178,6 +184,21 @@ def staged_renets() -> list[str]:
     return [str(bin_dir / name) for name in STAGED_RENETS if (bin_dir / name).is_file()]
 
 
+def prune_pinned(now: float | None = None) -> None:
+    """Remove the pinned directories of earlier runs that are more than PINNED_MAX_AGE_S old."""
+    cutoff = (time.time() if now is None else now) - PINNED_MAX_AGE_S
+    root = tempfile.gettempdir()
+    for name in os.listdir(root):
+        path = os.path.join(root, name)
+        with contextlib.suppress(OSError):
+            if (
+                name.startswith(PINNED_PREFIX)
+                and os.path.isdir(path)
+                and os.stat(path).st_mtime < cutoff
+            ):
+                shutil.rmtree(path, ignore_errors=True)
+
+
 def pin_renet(
     binaries: Sequence[str],
     public_key: str,
@@ -189,11 +210,16 @@ def pin_renet(
     by_name = {os.path.basename(b): b for b in binaries}
     if "renet" not in by_name:
         raise PlaneError("the renet rebuild staged no host `renet` binary to pin")
-    pinned = tempfile.mkdtemp(prefix="renet-backup-plane-")
-    for name, source in by_name.items():
-        shutil.copy2(source, os.path.join(pinned, name))
-    for name in by_name:
-        verify_renet(os.path.join(pinned, name), public_key, run)
+    prune_pinned()
+    pinned = tempfile.mkdtemp(prefix=PINNED_PREFIX)
+    try:
+        for name, source in by_name.items():
+            shutil.copy2(source, os.path.join(pinned, name))
+        for name in by_name:
+            verify_renet(os.path.join(pinned, name), public_key, run)
+    except BaseException:
+        shutil.rmtree(pinned, ignore_errors=True)
+        raise
     return os.path.join(pinned, "renet")
 
 
@@ -291,7 +317,7 @@ def exec_follow_on(
 ) -> None:
     """Replace this process with `command`, run with the plane's environment: what a local run cannot get from `$GITHUB_ENV`.
 
-    The environment already holds the account and S3 variables, the signing pair's public half and RENET_BINARY_PATH (set in-process by `run` and `start_account.publish`); the suite's two S3 credentials are added here. Nothing is printed. The account server runs in its own session, so it outlives the exec."""
+    The environment already holds the account and S3 variables, the signing pair's public half and, with `--rebuild-renet`, RENET_BINARY_PATH (set in-process by `run` and `start_account.publish`); the suite's two S3 credentials are added here. Nothing is printed. The account server runs in its own session, so it outlives the exec."""
     env = dict(os.environ)
     env["E2E_BACKUP_S3_KEY"] = k["RUSTFS_KEY"]
     env["E2E_BACKUP_S3_SECRET"] = k["RUSTFS_SECRET"]

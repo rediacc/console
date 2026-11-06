@@ -16,11 +16,12 @@ if TYPE_CHECKING:
 
 LEAD_S = 5 * 60
 TAIL_S = 45 * 60
-# What the caller's own run may take: a start is refused when a trigger falls inside [now, now + RUN_BUDGET_S + LEAD_S].
+# What the caller's own run may take: a start is refused when a trigger falls inside [now, now + RUN_BUDGET_S + LEAD_S], and, past a trigger, until TAIL_S after it.
 RUN_BUDGET_S = 30 * 60
 UNIT_PREFIX = "rediacc-backup-"
 RUNNING_BEGIN = "RUNNING-BEGIN"
 RUNNING_END = "RUNNING-END"
+LIST_FAILED = "LIST-UNITS-FAILED"
 
 _STAMP = re.compile(r"\w{3} (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) (\w+)")
 _UNIT = re.compile(r"(%s\S*\.timer)" % re.escape(UNIT_PREFIX))
@@ -38,7 +39,7 @@ def timers_script() -> str:
         "TZ=UTC systemctl list-timers --all --no-pager; echo NOW=$(date -u +%s); "
         "echo " + RUNNING_BEGIN + "; "
         "systemctl list-units --all --no-legend --plain '" + UNIT_PREFIX + "*.service' "
-        "--state=activating,active,deactivating || echo LIST-UNITS-FAILED; "
+        "--state=activating,active,deactivating || echo '" + LIST_FAILED + "'; "
         "pgrep -af '[r]enet backup (snapshot|verify|push)' || true; "
         "echo " + RUNNING_END
     )
@@ -63,7 +64,10 @@ def parse_now(text: str) -> int | None:
 def _epoch(stamp: str, zone: str) -> int | None:
     if zone not in ("UTC", "GMT"):
         return None
-    when = dt.datetime.strptime(stamp, "%Y-%m-%d %H:%M:%S").replace(tzinfo=dt.UTC)
+    try:
+        when = dt.datetime.strptime(stamp, "%Y-%m-%d %H:%M:%S").replace(tzinfo=dt.UTC)
+    except ValueError:
+        return None
     return int(when.timestamp())
 
 
@@ -112,28 +116,39 @@ def window_verdict(
                 False,
                 "backup-window: the running-backup read has no markers, so it is unchecked",
             )
+        if LIST_FAILED in running:
+            return (
+                False,
+                "backup-window: the backup unit listing failed, so a running backup is unchecked",
+            )
         if running:
             return False, "backup-window: refused, a backup is running: %s" % "; ".join(running)
     rows = parse_timers(text)
     if any(not r.utc for r in rows):
         return (
             False,
-            "backup-window: a backup timer stamp is not in UTC, so the window is unchecked",
+            "backup-window: a backup timer stamp is not a readable UTC time, so the window is unchecked",
         )
     if require_timer and not rows:
         return (
             False,
             "backup-window: no %s*.timer is listed, so the window is unchecked" % UNIT_PREFIX,
         )
-    holds = [
-        (trig + TAIL_S, "%s at %s" % (r.unit, _utc(trig)))
+    windows = [
+        (trig - LEAD_S - run_s, trig + TAIL_S, "%s at %s" % (r.unit, _utc(trig)))
         for r in rows
         for trig in r.triggers
-        if trig - LEAD_S - run_s <= now <= trig + TAIL_S
     ]
+    holds = [(end, why) for start, end, why in windows if start <= now <= end]
     if not holds:
         return True, "backup-window: clear at %s (%d backup timer(s))" % (_utc(now), len(rows))
+    # The first moment no window holds: the end of the latest window holding `now`, and past it the end of any window that opens before then.
     clear_at = max(h[0] for h in holds)
+    while True:
+        later = [end for start, end, _ in windows if start <= clear_at + 1 <= end]
+        if not later:
+            break
+        clear_at = max(later)
     return False, (
         "backup-window: refused at %s, within %d min before (run budget %d min) to %d min after %s; next clear time %s"
         % (

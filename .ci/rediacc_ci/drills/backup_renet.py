@@ -98,7 +98,7 @@ def journal_back_command(guid: str) -> str:
 
 
 def journal_read_command(guid: str) -> str:
-    return "sudo -n sh -c 'cat %s/*-%s.json'" % (JOURNAL_DIR, guid)
+    return "sudo -n sh -c 'cat \"$(ls -t %s/*-%s.json | head -n 1)\"'" % (JOURNAL_DIR, guid)
 
 
 def journal_upload_snapshot(journal_text: str) -> str:
@@ -1010,6 +1010,8 @@ class RenetLegs:
             "Leg u (renet): a killed snapshot and its rerun leave `backup reconcile --check` clean"
         )
         cell_bytes = int(r.cell_bytes)
+        # Legs e and h leave live probe leases on this lineage; they end first, so a "leased" skip in the control below can only be the killed run's.
+        self.b.release_probe_leases()
         r.run_vm(mutation_command(r.datastore, self.src, cell_bytes))
         slow = max(cell_bytes // (4 * KILL_AFTER_SECONDS), 1)
         killed = r.run_vm(
@@ -1120,7 +1122,7 @@ class RenetLegs:
                 control.get("status") == "stored"
                 and str(control.get("consistency") or "") not in ("", "app-quiesced"),
                 True,
-                "CONTROL: a repository with no hook is not claimed app-quiesced",
+                "CONTROL: a repository with no hook stores and is not claimed app-quiesced",
             )
 
             # The deadman: prepare holds the application, renet is SIGKILLed, and the timer thaws it.
@@ -1279,7 +1281,7 @@ class RenetLegs:
             % (elapsed, DEADLINE_SECONDS),
         )
         alive = r.run_vm(snapshot_alive_command(self.src), must=False)
-        # pgrep exits 1 for "no match"; a sudo refusal or a pgrep error is another code (or sudo's own 1, which the command's `sudo -n true` guard turns into 3).
+        # pgrep exits 1 for "no match", 2 for a bad option and 3 for a fatal error; the command's `sudo -n true || exit 3` guard also gives 3, so any code but 1 fails here without saying which of those it was.
         d.assert_equal("1", str(alive.returncode), "no part of the run is left alive")
         d.assert_equal(
             ",".join(listed),

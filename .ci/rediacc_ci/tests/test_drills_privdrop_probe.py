@@ -162,6 +162,12 @@ def test_a_later_stop_skips_the_root_retry(monkeypatch) -> None:
     assert not any(c[3:6] == ["repo", "permission", "grant"] for c in calls)
 
 
+def test_a_failed_fork_step_reads_no_probe_from_a_fork_that_is_not_this_runs(monkeypatch) -> None:
+    calls = _recorder(monkeypatch, lambda argv: argv[3:5] == ["repo", "fork"])
+    assert pp.run("x") == 1
+    assert not any(lp.UP_FILE in " ".join(c) or lp.DOWN_FILE in " ".join(c) for c in calls)
+
+
 def test_table_is_red_when_a_step_failed_though_the_rows_hold() -> None:
     rows = pp.verdicts(lp.parse_probe(GOOD_UP), lp.parse_probe(GOOD_UP))
     assert "PASS" in pp.table("x", rows)
@@ -246,3 +252,11 @@ def test_the_recheck_polls_until_clear_then_deletes(monkeypatch) -> None:
     monkeypatch.setattr(pp.time, "sleep", lambda _s: None)
     assert pp.run("x") == 1  # the fake probe reads fail the verdict rows; the delete still ran
     assert any(c[3:5] == ["repo", "delete"] and "-y" in c for c in calls)
+
+
+def test_the_recheck_waits_out_a_window_that_opened_at_the_lead_edge(monkeypatch) -> None:
+    # A re-check begun LEAD_S before a trigger sees the window clear LEAD_S + TAIL_S later: 50 minutes of one-minute polls, so the 51st read is the first clear one.
+    answers = iter([False] * 50 + [True])
+    monkeypatch.setattr(pp, "backup_window_clear", lambda *_a, **_k: next(answers, False))
+    monkeypatch.setattr(pp.time, "sleep", lambda _s: None)
+    assert pp.wait_until_clear()

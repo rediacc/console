@@ -122,3 +122,29 @@ def test_no_backup_timer_on_a_read_table_is_clear() -> None:
     other = TABLE.splitlines()[0] + "\nFri 2026-11-06 12:00:00 UTC 12h n/a n/a apt-daily.timer a\n"
     other += "RUNNING-BEGIN\nRUNNING-END\n"
     assert bw.window_verdict(other, at(2, 0))[0]
+
+
+def test_a_failed_unit_listing_is_not_reported_as_a_running_backup() -> None:
+    clear, why = bw.window_verdict(with_running("LIST-UNITS-FAILED"), at(9, 0))
+    assert not clear
+    assert "a backup is running" not in why
+    assert "unit listing failed" in why
+
+
+def test_the_next_clear_time_is_outside_every_window_not_only_the_first() -> None:
+    # A 02:50 timer beside the 02:00 one: its window opens at 02:15, so clearing the 02:00 tail at 02:45:01 lands inside it.
+    table = TABLE.replace(
+        "n/a                         n/a   n/a                         n/a     rediacc-backup-weekly.timer",
+        "Fri 2026-11-06 02:50:00 UTC 2h    n/a                         n/a     rediacc-backup-weekly.timer",
+    )
+    clear, why = bw.window_verdict(table, at(1, 58))
+    assert not clear
+    assert "next clear time 2026-11-06 03:35:01Z" in why
+    assert bw.window_verdict(table, at(3, 35, 1))[0]
+
+
+def test_an_impossible_date_in_a_stamp_refuses_without_raising() -> None:
+    table = TABLE.replace("2026-11-06 02:00:00 UTC 2h ", "2026-13-06 02:00:00 UTC 2h ", 1)
+    clear, why = bw.window_verdict(table, at(9, 0))
+    assert not clear
+    assert "unchecked" in why

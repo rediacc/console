@@ -3972,6 +3972,21 @@ def test_an_empty_prior_receipt_and_only_the_grand_find_nothing() -> None:
         assert (found, exempt) == ([], []), prior
 
 
+def test_a_repository_named_like_a_word_of_the_leftover_text_is_left_alone() -> None:
+    """RUN6_RECEIPT's text holds the words `grand`, `state` and `licence`; a worker repository of that name is not a name the receipt gave."""
+    words = ("grand", "state", "licence")
+    repos = [GRAND_REPO] + [
+        {"name": "%08d-2222-4333-8444-555555555555" % i, "repo_name": w, "network_id": 3100 + i}
+        for i, w in enumerate(words)
+    ]
+    entries = [GRAND_ENTRY] + [
+        {"name": w, "guid": r["name"], "networkId": str(r["network_id"])}
+        for w, r in zip(words, repos[1:], strict=True)
+    ]
+    found, _exempt = vm_check.find_fleet_leftovers(RUN6_RECEIPT, repos, {}, entries, PARENT, NOW)
+    assert found == [], [x.line() for x in found]
+
+
 def test_a_repository_neither_named_nor_of_this_harness_is_left_alone() -> None:
     repos = [GRAND_REPO, {"name": RUN6_GRAND, "repo_name": "mail", "network_id": 3008}]
     entries = [GRAND_ENTRY, {"name": "mail", "guid": RUN6_GRAND, "networkId": "3008"}]
@@ -4016,6 +4031,18 @@ def test_a_stale_config_fork_is_left_to_the_p5_sweep_and_said() -> None:
     )
     assert [x.guid for x in found] == [RUN6_GRAND]
     assert exempt == ["%s (left to the P5 sweep, older than 3600 s)" % stale]
+
+
+def test_a_stale_config_fork_is_a_leftover_when_this_run_does_not_sweep() -> None:
+    """P5 is skipped on an account-only run and on an `--only` run that does not name it, so nothing would delete the fork."""
+    stale = "%s:vmc-10141500-abcdef-a" % PARENT
+    repos = [{"name": RUN6_FORK, "repo_name": stale, "network_id": 6000}]
+    entries = [{"name": stale, "guid": RUN6_FORK, "networkId": "6000"}]
+    found, exempt = vm_check.find_fleet_leftovers(
+        None, repos, {6000: "active"}, entries, PARENT, NOW, p5_sweeps=False
+    )
+    assert [x.guid for x in found] == [RUN6_FORK]
+    assert exempt == []
 
 
 def test_a_live_daemon_no_config_repository_owns_is_a_leftover() -> None:

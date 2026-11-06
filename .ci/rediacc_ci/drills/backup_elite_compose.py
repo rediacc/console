@@ -66,6 +66,8 @@ LOGIN_PHRASE = (
 # What a value written into the `.env` may carry: neither compose's env-file reader nor a later `source .env` reads any of these specially.
 ENV_SAFE = re.compile(r"^[A-Za-z0-9._~@%+=:,/-]*$")
 CURL_NOTHING = "000"
+# The planted closed-port control's port. It is fixed because a port that is free on the drill host (`lib.free_port`) says nothing about the elite VM, where it could be listening; tcpmux (1) is never served there.
+CLOSED_PORT = 1
 # The ops fleet's network; `--elite` and `--machine` name any other pair.
 VM_NET_BASE = "192.168.111"
 
@@ -463,7 +465,7 @@ class EliteCompose:
             got,
             "the published store answers 403 (up, wants credentials) from outside the stack",
         )
-        closed = "http://%s:%d/" % (o.elite_vm, lib.free_port())
+        closed = "http://%s:%d/" % (o.elite_vm, CLOSED_PORT)
         got = self.machine(curl_status_command(closed), None).stdout.strip()
         d.last_cmd = "machine: curl %s" % closed
         d.assert_equal(

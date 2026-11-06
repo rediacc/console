@@ -9,6 +9,7 @@ import signal
 import subprocess
 import sys
 import tempfile
+import time
 from typing import Any
 
 import pytest
@@ -401,6 +402,36 @@ def test_pin_refuses_a_renet_that_bakes_another_key(
         plane.pin_renet([str(tmp_path / "renet")], PUB)
     assert fp(PUB) in str(exc.value)
     assert fp(OTHER) in str(exc.value)
+
+
+def test_a_refused_pin_leaves_no_directory_behind(
+    tmp_path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    (tmp_path / "renet").write_text("r")
+    before = set(os.listdir(tempfile.gettempdir()))
+    monkeypatch.setattr(plane, "baked_public_key", lambda _b, *_a: OTHER)
+    with pytest.raises(plane.PlaneError):
+        plane.pin_renet([str(tmp_path / "renet")], PUB)
+    assert set(os.listdir(tempfile.gettempdir())) == before
+
+
+def test_a_pin_prunes_the_directories_of_earlier_runs_a_day_old_and_keeps_fresh_ones(
+    tmp_path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    stale = tmp_path / (plane.PINNED_PREFIX + "stale")
+    fresh = tmp_path / (plane.PINNED_PREFIX + "fresh")
+    other = tmp_path / "unrelated-dir"
+    for directory in (stale, fresh, other):
+        directory.mkdir()
+    old = time.time() - plane.PINNED_MAX_AGE_S - 60
+    os.utime(stale, (old, old))
+    os.utime(other, (old, old))
+    (tmp_path / "renet").write_text("r")
+    monkeypatch.setattr(plane, "baked_public_key", lambda _b, *_a: PUB)
+    plane.pin_renet([str(tmp_path / "renet")], PUB)
+    assert not stale.exists()
+    assert fresh.exists()
+    assert other.exists()
 
 
 def test_pin_needs_the_host_binary(tmp_path) -> None:

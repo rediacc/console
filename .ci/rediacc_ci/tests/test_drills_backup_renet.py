@@ -530,12 +530,18 @@ def test_leg_v_passes_and_its_controls_run(make: typing.Callable) -> None:
 @pytest.mark.parametrize(
     ("bug", "desc"),
     [
-        ("claims-without-hook", "CONTROL: a repository with no hook is not claimed app-quiesced"),
+        (
+            "claims-without-hook",
+            "CONTROL: a repository with no hook stores and is not claimed app-quiesced",
+        ),
         ("wrong-order", "the hooks ran once each, prepare first"),
         ("never-held", "the run held the application (marker stands)"),
         ("no-deadman", "the deadman ended the hold within its bound"),
         ("late-deadman", "the deadman ended the hold within its bound"),
-        ("control-fails", "CONTROL: a repository with no hook is not claimed app-quiesced"),
+        (
+            "control-fails",
+            "CONTROL: a repository with no hook stores and is not claimed app-quiesced",
+        ),
     ],
 )
 def test_leg_v_goes_red_on_the_defect_each_check_names(
@@ -794,6 +800,20 @@ def test_the_hook_network_id_is_one_renet_accepts() -> None:
     assert backup_renet.HOOK_NET_ID != "2880"
     # CONTROL: the id the drill used to name fails the same rule.
     assert (2881 - 2816) % 64 != 0
+
+
+def test_journal_read_command_reads_one_document_when_several_files_match(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(backup_renet, "JOURNAL_DIR", str(tmp_path))
+    old = tmp_path / "1-g1.json"
+    old.write_text('{"upload": {"snapshotId": "old"}}')
+    os.utime(old, (1, 1))
+    (tmp_path / "2-g1.json").write_text('{"upload": {"snapshotId": "new"}}')
+    (tmp_path / "3-g2.json").write_text('{"upload": {"snapshotId": "other"}}')
+    command = 'sudo() { shift; "$@"; }; ' + backup_renet.journal_read_command("g1")
+    done = subprocess.run(["bash", "-c", command], check=False, capture_output=True, text=True)
+    assert backup_renet.journal_upload_snapshot(done.stdout) == "new", done
 
 
 def test_journal_upload_snapshot_reads_the_in_flight_upload() -> None:
@@ -1429,5 +1449,31 @@ def test_leg_u_requires_the_killed_runs_lease_to_be_live_before_the_rerun(
     try:
         legs.leg_u()
         assert drill.failures == failures
+    finally:
+        drill.teardown()
+
+
+def test_leg_u_ends_the_probe_leases_before_the_killed_run(make: typing.Callable) -> None:
+    """CONTROL: legs e and h leave live leases on the source lineage, and a dry run that skips the lineage as leased could be reading one of those instead of the killed run's."""
+    drill, legs = make(Worker())
+    events: list[str] = []
+    killed = _KilledRunWorker()
+
+    def worker(command: str, stdin_data: str | None = None) -> rt.VmResult:
+        if "timeout -s KILL" in command:
+            events.append("kill")
+        return killed(command, stdin_data)
+
+    legs.rt.vm = worker
+    legs.src = "src-guid-0001"
+    legs.b.av = _equal_av(drill)
+    legs.b.release_probe_leases = lambda: events.append("release")
+    clean_row = {"lineageGuid": "l", "observedBytes": 1, "ledgerBytesBefore": 1}
+    clean_row.update({"observedChunks": 1, "ledgerChunksBefore": 1})
+    answers = iter([([], [{"skipped": "leased"}]), ([clean_row], [])])
+    legs.reconcile_dry_run = lambda: next(answers)
+    try:
+        legs.leg_u()
+        assert events.index("release") < events.index("kill"), events
     finally:
         drill.teardown()
