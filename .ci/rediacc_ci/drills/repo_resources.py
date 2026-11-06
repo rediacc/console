@@ -2,7 +2,8 @@
 
 `vm_check.py` registers this module through `EXTRA_RENET_STEPS` as two steps of the renet phase, `K2` (limits) and `K3` (RAM volume), each depending on P5 so the run's parent grand exists. `ctx` is the running `VmCheck`: VM actions go through its `./rdc.sh` helper (`rdc`), its raw ssh recipe (`vm_ssh.ssh_argv` through `host_run`, as root on the worker) and its ledger (`check`, `record`).
 
-K2 ROWS. K2.0 fork C (`--memory-max 1G --cpu-max 1`) and fork D (no limits) are up; K2.1 rediacc-<C> has memory.max 1073741824 and cpu.max `100000 100000`, every service directory has memory.oom.group 1, and rediacc-<D> has memory.max `max`; K2.2 an `alloc` container in C runs `head -c 2147483648 /dev/zero | tail`, after which C's memory.events oom_kill rose by at least 1, D's did not move, the host's /proc/vmstat oom_kill delta equals C's, C's other containers and every D container keep their StartedAt, and sshd answers; K2.3 `rdc repo policy set C --memory-max 1536M` changes memory.max with the daemon's MainPID and the container start times unchanged; K2.4 `--memory-max 16M` without `--force` is refused; K2.5 memory.max survives `systemctl daemon-reload`, a restart of an unrelated unit, and `systemctl restart rediacc-docker-<C>`; K2.6 a fork of C inherits memory.max.
+K2 ROWS. Both forks fork an empty grand, so after the limits K2.0 starts holder containers: in C one under the `keep` service directory that fills 48 MiB of /dev/shm and one ad-hoc leaf, in D one under `keep`.
+K2.0 fork C (`--memory-max 1G --cpu-max 1`) and fork D (no limits) are up; K2.1 rediacc-<C> has memory.max 1073741824 and cpu.max `100000 100000`, every container cgroup under it (the `keep` directory and the ad-hoc leaf, both made after the limits) has memory.oom.group 1, and rediacc-<D> has memory.max `max`; K2.2 an `alloc` container in C runs `head -c 2147483648 /dev/zero | tail`, after which C's memory.events oom_kill rose by at least 1, D's did not move, the host's /proc/vmstat oom_kill delta equals C's, C's other containers and every D container keep their StartedAt, and sshd answers; K2.3 `rdc repo policy set C --memory-max 1536M` changes memory.max with the daemon's MainPID and the container start times unchanged; K2.4 `--memory-max 16M` without `--force` is refused; K2.5 memory.max survives `systemctl daemon-reload`, a restart of an unrelated unit, and `systemctl restart rediacc-docker-<C>`; K2.6 a fork of C inherits memory.max.
 
 K3 ROWS. K3.0 fork E is up with `--ram-volume 512M --memory-max 1536M` and the probe Rediaccfile; K3.1 the tmpfs exists, size 512M, before up() runs (the probe's up() logged it); K3.2 a container writes `marker` into `.ram/data` through a bind; K3.3 up() restored 200 MB into `.ram`, rediacc-<E>'s memory.stat shmem holds at least that, and renet-exec-<E> does not; K3.4 `systemctl restart rediacc-docker-<E>` keeps `marker`; K3.5 `rdc repo down E --unmount` logs a down() line while `.ram` is still mounted and leaves no `.ram` mount, and after `rdc repo up E` the marker is gone and `.rediacc-ram` has a new mounted_at; K3.6 (the reboot row) needs K1 VERIFIED on the same tree and is a skip row here.
 
@@ -44,6 +45,10 @@ SECTION = "== "
 PROBE_UP_LOG = ".ram-probe-up.log"
 PROBE_DOWN_LOG = ".ram-probe-down.log"
 RAM_MARKER_FILE = ".rediacc-ram"
+COMPOSE_FILE = "docker-compose.yml"
+KEEP_SERVICE = "keep"
+# C's holder fills this much of /dev/shm (docker's default shm is 64 MiB), so C's memory.current is well above REFUSED_MEMORY and K2.4's refusal has usage to protect. The forks fork an empty grand, so without it C used under 16 MiB and the refusal rightly refused nothing (vm:check run vmc-11060119-8cbbc0 K2.4).
+HOLD_SHM_BYTES = 48 * MIB
 
 
 def fork_tags(tags: tuple[str, str]) -> tuple[str, str, str, str]:
@@ -66,10 +71,32 @@ def cgroup_readout_script(network_id: int) -> str:
     parts = ["d=%s; test -d $d || { echo NO_CGROUP; exit 0; }" % shlex.quote(d)]
     parts += ["echo '%s%s'; cat $d/%s 2>/dev/null" % (SECTION, f, f) for f in files]
     parts.append(
-        "for s in $d/*/; do n=$(basename $s); case $n in @*) continue;; esac; "
+        'for s in $d/*/; do [ -d "$s" ] || continue; n=$(basename $s); case $n in @*) continue;; esac; '
         'echo "%soom.group $n"; cat $s/memory.oom.group 2>/dev/null; done' % SECTION
     )
     return "; ".join(parts)
+
+
+def keep_command(name: str, cgroup_parent: str = "", shm_bytes: int = 0) -> str:
+    """A detached container that stays up: under `cgroup_parent` when given (a service directory, as compose places one), else straight under rediacc-<N> (an ad-hoc `docker run`); with `shm_bytes` it first fills /dev/shm, which is charged to the repository, so the repository's memory.current stays above that."""
+    inner = "exec sleep 86400"
+    if shm_bytes:
+        inner = "head -c %d /dev/zero > /dev/shm/hold && %s" % (shm_bytes, inner)
+    parent = " --cgroup-parent %s" % shlex.quote(cgroup_parent) if cgroup_parent else ""
+    return "docker run -d --name %s%s %s sh -c %s" % (name, parent, IMAGE, shlex.quote(inner))
+
+
+def service_parent(network_id: int, service: str) -> str:
+    """The cgroup parent compose gives a service: /rediacc.slice/rediacc-<N>/<service>."""
+    return "/rediacc.slice/rediacc-%d/%s" % (int(network_id), service)
+
+
+def compose_body() -> str:
+    """K3's compose file: one service that stays up, so the probe's `renet compose -- up -d` has a file to start (vm:check run vmc-11060119-8cbbc0 K3.0 failed `renet compose up -d: no compose file found`, the grand being empty)."""
+    return 'services:\n  %s:\n    image: %s\n    command: ["sleep", "86400"]\n' % (
+        KEEP_SERVICE,
+        IMAGE,
+    )
 
 
 def vmstat_script() -> str:
@@ -271,8 +298,11 @@ def marker_mounted_at(text: str) -> str | None:
 # --------------------------------------------------------------------------- verdicts
 
 
+CONTAINER_LEAF = re.compile(r"^[0-9a-f]{64}$")
+
+
 def limits_verdict(readout: str, memory_max: int, cpu_max: str) -> tuple[bool, str]:
-    """K2.1 for C: memory.max and cpu.max are the granted ones and every service directory has memory.oom.group 1."""
+    """K2.1 for C: memory.max and cpu.max are the granted ones, and every container cgroup under rediacc-<C> has memory.oom.group 1: the KEEP_SERVICE directory and at least one ad-hoc container leaf (a 64-hex id), both made after the limits were applied."""
     mem, cpu, groups = (
         section_value(readout, "memory.max"),
         section_value(readout, "cpu.max"),
@@ -281,7 +311,8 @@ def limits_verdict(readout: str, memory_max: int, cpu_max: str) -> tuple[bool, s
     ok = (
         mem == str(memory_max)
         and cpu == cpu_max
-        and bool(groups)
+        and KEEP_SERVICE in groups
+        and any(CONTAINER_LEAF.match(name) for name in groups)
         and all(v == "1" for v in groups.values())
     )
     return ok, "memory.max=%s cpu.max=%r oom.group=%s" % (mem, cpu, groups)
@@ -373,6 +404,8 @@ class _Live:
         self.nid: dict[str, int] = {}
         self.mount: dict[str, str] = {}
         self.alloc = "vmc-k2-alloc-%s" % ctx.run_id[-6:]
+        self.keep = "vmc-k2-keep-%s" % ctx.run_id[-6:]
+        self.adhoc = "vmc-k2-adhoc-%s" % ctx.run_id[-6:]
 
     # -- helpers ---------------------------------------------------------------
 
@@ -441,16 +474,19 @@ class _Live:
             "K2.0 rdc repo policy set %s --memory-max 1G --cpu-max 1" % ref_c, res.rc == 0, res
         ):
             return
-        ok_c, why_c = limits_verdict(self.readout(self.tag_c), C_MEMORY_MAX, CPU_ONE_CORE)
-        ok_d, why_d = uncapped_verdict(self.readout(self.tag_d))
-        self.check(
-            "K2.1 rediacc-%d capped (1G, one core, oom.group 1); rediacc-%d uncapped"
-            % (self.nid[self.tag_c], self.nid[self.tag_d]),
-            ok_c and ok_d,
-            None,
-            "C %s; D %s" % (why_c, why_d),
-        )
         try:
+            # The containers come after the limits, so K2.1 sees cgroups made after Apply.
+            if not self.k2_0_containers():
+                return
+            ok_c, why_c = limits_verdict(self.readout(self.tag_c), C_MEMORY_MAX, CPU_ONE_CORE)
+            ok_d, why_d = uncapped_verdict(self.readout(self.tag_d))
+            self.check(
+                "K2.1 rediacc-%d capped (1G, one core, oom.group 1); rediacc-%d uncapped"
+                % (self.nid[self.tag_c], self.nid[self.tag_d]),
+                ok_c and ok_d,
+                None,
+                "C %s; D %s" % (why_c, why_d),
+            )
             self.k2_2_oom()
             self.k2_3_raise()
             res = self.policy(self.tag_c, "--memory-max", REFUSED_MEMORY)
@@ -460,7 +496,36 @@ class _Live:
             self.k2_5_survives()
             self.k2_6_fork_inherits()
         finally:
-            self.shell(self.tag_c, "docker rm -f %s >/dev/null 2>&1 || true" % self.alloc)
+            gone = "docker rm -f %s %s %s >/dev/null 2>&1 || true"
+            self.shell(self.tag_c, gone % (self.alloc, self.keep, self.adhoc))
+            self.shell(self.tag_d, gone % (self.alloc, self.keep, self.adhoc))
+
+    def k2_0_containers(self) -> bool:
+        """C and D fork an empty grand, so neither runs a container of its own. C gets a service-directory holder that fills /dev/shm and an ad-hoc one, D a service-directory one: K2.1 reads their oom.group, K2.2 and K2.3 their StartedAt, and K2.4 needs C's usage (vm:check run vmc-11060119-8cbbc0: K2.1 read `{'*': ''}`, K2.2/K2.3 failed on an empty StartedAt baseline, K2.4 had under 16 MiB to protect)."""
+        starts = (
+            (
+                self.tag_c,
+                keep_command(
+                    self.keep, service_parent(self.nid[self.tag_c], KEEP_SERVICE), HOLD_SHM_BYTES
+                ),
+            ),
+            (self.tag_c, keep_command(self.adhoc)),
+            (
+                self.tag_d,
+                keep_command(self.keep, service_parent(self.nid[self.tag_d], KEEP_SERVICE)),
+            ),
+        )
+        failed = None
+        for tag, command in starts:
+            res = self.shell(tag, command)
+            if res.rc != 0:
+                failed = res
+                break
+        return self.check(
+            "K2.0 the holder containers run in C (a service directory and an ad-hoc leaf) and D",
+            failed is None,
+            failed,
+        )
 
     def k2_2_oom(self) -> None:
         c0, d0, h0 = self.oom_counters()
@@ -562,6 +627,7 @@ class _Live:
         work = self.ctx.work / "k3-probe"
         work.mkdir(parents=True, exist_ok=True)
         (work / "Rediaccfile").write_text(probe_rediaccfile())
+        (work / COMPOSE_FILE).write_text(compose_body())
         sent = self.ctx.rdc(
             "repo", "sync", "upload", self.ctx.ref(e), "--local", str(work) + "/", refuse=False
         )
