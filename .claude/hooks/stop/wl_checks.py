@@ -5051,6 +5051,42 @@ def run_stop(event, event_ok, worklist, hook_file):
             1,
             refresh_min=60,
         )
+    # ---- OPS HEALTH (agent/plans/PLAN-health-checks-local.md L3, D-local). The machines the operator's rdc config names, the local probes and the off-box alerter, read from the shared .ci/cache/ops-health/state.json; a check past its TTL spawns ONE detached refresher and this stop never waits for it. Ownership is wl_schedred's claim, so one session is blocked and every other one gets an advisory.
+    #   block   a red this session claimed (`ops-health-red`), or the off-box alerter's last cron older than its limit (`ops-health-offbox-stale`).
+    #   advise  a red a peer owns (`ops-health-peer`); a cache that cannot be parsed or a check that answered rc 2 (`ops-health-unreadable`, also the key of a raise here, which never blocks).
+    try:
+        import wl_opshealth
+
+        _oh = wl_opshealth.assess(root, worklist, fold.items, session_id)
+        if _oh["block"]:
+            vadd("ops-health-red", False, _oh["block"])
+        if _oh["offbox_stale"]:
+            vadd("ops-health-offbox-stale", False, _oh["offbox_stale"])
+        if _oh["peer"]:
+            outq_add(
+                worklist, session_id, state_doc, "ops-health-peer", _oh["peer"], 2, refresh_min=360
+            )
+        if _oh["unreadable"]:
+            outq_add(
+                worklist,
+                session_id,
+                state_doc,
+                "ops-health-unreadable",
+                _oh["unreadable"],
+                2,
+                refresh_min=60,
+            )
+    except Exception as exc:
+        outq_add(
+            worklist,
+            session_id,
+            state_doc,
+            "ops-health-unreadable",
+            "THIS IS A HOOK BUG: the ops-health check failed: %s: %s"
+            % (type(exc).__name__, str(exc)[:160]),
+            1,
+            refresh_min=60,
+        )
     # ---- THE PR-LEVEL CLAUDE REVIEW ON A GREEN HEAD (agent/plans/PLAN-github-pr-review-restore.md, box GR9). Only once ci_trouble reads the head green: before that the review has not run, and a red head has its own block. Review Complete is a required check (operator ruling 2026-10-03), so an unanswered summary or a failed review run is work this loop owns; the
     # bounded ceiling and the gh budget live in prreview_nudge and prreview_runner.
     if cistate == "ok" and isinstance(cidetail, dict):

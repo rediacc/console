@@ -189,6 +189,14 @@
       "block": "high",
       "advise": "low"
     },
+    "ops-health-red": {
+      "block": "smart",
+      "advise": "low"
+    },
+    "ops-health-offbox-stale": {
+      "block": "high",
+      "advise": "low"
+    },
     "pr-unreadable": {
       "block": "smart",
       "advise": "low"
@@ -441,6 +449,12 @@
       "advise": "smart"
     },
     "scheduled-red-peer": {
+      "advise": "smart"
+    },
+    "ops-health-peer": {
+      "advise": "smart"
+    },
+    "ops-health-unreadable": {
       "advise": "smart"
     },
     "scheduled-unreadable": {

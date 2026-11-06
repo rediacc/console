@@ -1,0 +1,266 @@
+#!/usr/bin/env python3
+"""Controls for wl_opshealth, the Stop hook's ops-health check (agent/plans/PLAN-health-checks-local.md L3, D-local).
+
+    python3 .claude/hooks/stop/test-opshealth.py
+
+Auto-discovered by TAILED in .claude/rediacc_hooks/tests/test_hooks_delegates.py (glob over test-*.py under .claude/hooks/stop/).
+
+Every fixture is a temporary root holding `.ci/cache/ops-health/state.json` and a temporary worklist path for the claim files. The refresher is never started: `popen` is a recorder, so a control counts spawns instead of processes. Each refusal has a passing twin built from the same fixture with one fact changed.
+"""
+
+import datetime
+import importlib.util
+import json
+import os
+import pathlib
+import tempfile
+import threading
+
+import wl_opshealth as O
+
+_CI = pathlib.Path(__file__).resolve().parents[3] / ".ci" / "rediacc_ci"
+
+
+def _by_file(name):
+    """A `.ci/rediacc_ci` module loaded BY FILE, not through a `sys.path` hop (test_canonical_sys_path_hop.py freezes those)."""
+    spec = importlib.util.spec_from_file_location(name, _CI / ("%s.py" % name))
+    if spec is None or spec.loader is None:
+        raise SystemExit("%s: .ci/rediacc_ci/%s.py is missing" % (__file__, name))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+controls = _by_file("controls")
+T = controls.Controls("opshealth", floor=33)
+check = T.check
+
+NOW = datetime.datetime(2026, 11, 6, 12, 0, tzinfo=datetime.UTC)
+A = "aaaa1111-0000-0000-0000-000000000000"
+B = "bbbb2222-0000-0000-0000-000000000000"
+
+
+def iso(when):
+    return when.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def entry(state="green", rc=0, age_min=1, ttl_s=1800, **extra):
+    return {
+        "state": state,
+        "rc": rc,
+        "at": iso(NOW - datetime.timedelta(minutes=age_min)),
+        "ttl_s": ttl_s,
+        "detail": extra.pop("detail", state),
+        **extra,
+    }
+
+
+def green_doc():
+    return {
+        "updated_at": iso(NOW),
+        "checks": {
+            "machines": entry(rows=[{"machine": "m1", "state": "green", "problems": []}]),
+            "telemetry": entry(ttl_s=21600),
+            "portal-captcha": entry(ttl_s=21600),
+            "cf-usage": entry(ttl_s=604800),
+            "offbox": entry(ttl_s=900, stale=False, last_cron_at=iso(NOW)),
+        },
+    }
+
+
+def red_doc():
+    doc = green_doc()
+    doc["checks"]["machines"] = entry(
+        "red",
+        1,
+        rows=[
+            {
+                "machine": "m1",
+                "state": "red",
+                "problems": ["machine health rc 1: datastore 86%"],
+            }
+        ],
+    )
+    return doc
+
+
+class Spawns:
+    def __init__(self):
+        self.calls = []
+        self.lock = threading.Lock()
+
+    def __call__(self, argv, **kw):
+        with self.lock:
+            self.calls.append((argv, kw))
+
+
+def fixture(doc=None, raw=None):
+    tmp = pathlib.Path(tempfile.mkdtemp(prefix="opshealth-"))
+    d = tmp / ".ci" / "cache" / "ops-health"
+    d.mkdir(parents=True)
+    if raw is not None:
+        (d / "state.json").write_text(raw)
+    elif doc is not None:
+        (d / "state.json").write_text(json.dumps(doc))
+    return tmp, tmp / "worklist.md"
+
+
+def assess(root, wl, sid, items=(), popen=None, now=NOW):
+    return O.assess(root, wl, list(items), sid, now=now, popen=popen or Spawns())
+
+
+# --- a red cache: the claimant is blocked, a peer is advised
+root, wl = fixture(red_doc())
+a = assess(root, wl, A)
+check("red: the first session claims and is blocked", bool(a["block"]), True)
+check("red: the block names the machine and its problem", "datastore 86%" in a["block"], True)
+check(
+    "red: the block carries the --add line for this session",
+    "--add aaaa1111 'ops-health red: machine m1'" in a["block"],
+    True,
+)
+check("red: the claimant gets no peer advisory", a["peer"], "")
+b = assess(root, wl, B)
+check("red: a peer is not blocked", b["block"], "")
+check(
+    "red: a peer gets the advisory naming the owner", "owned by session aaaa1111" in b["peer"], True
+)
+check("red: a fresh cache spawns no refresher", a["spawned"] or b["spawned"], False)
+
+# --- a green twin: nothing
+root, wl = fixture(green_doc())
+g = assess(root, wl, A)
+check("green: no block", g["block"], "")
+check("green: no advisory", (g["peer"], g["unreadable"], g["offbox_stale"]), ("", "", ""))
+
+# --- tracking items own the red
+root, wl = fixture(red_doc())
+mine = [{"state": " ", "owner": "aaaa1111", "text": "ops-health red: machine m1"}]
+t = assess(root, wl, A, items=mine)
+check("tracked by this session: the open-items blocker holds it, no second block", t["block"], "")
+check("tracked by this session: no peer advisory", t["peer"], "")
+t2 = assess(root, wl, B, items=mine)
+check("tracked by a peer: this session gets the advisory", "aaaa1111" in t2["peer"], True)
+closed = [{"state": "x", "owner": "aaaa1111", "text": "ops-health red: machine m1"}]
+check(
+    "a ticked item tracks nothing: the claim blocks again",
+    bool(assess(root, wl, A, items=closed)["block"]),
+    True,
+)
+
+# --- a stale cache spawns ONE refresher, and a second stop spawns none
+root, wl = fixture(
+    dict(green_doc(), checks=dict(green_doc()["checks"], machines=entry(age_min=31)))
+)
+sp = Spawns()
+s1 = assess(root, wl, A, popen=sp)
+s2 = assess(root, wl, B, popen=sp)
+check("stale: the first stop spawns the refresher", s1["spawned"], True)
+check("stale: the second stop finds the lock and spawns none", s2["spawned"], False)
+check("stale: exactly one spawn recorded", len(sp.calls), 1)
+argv, kw = sp.calls[0]
+check(
+    "stale: the refresher is `ops_health refresh --lock-held`",
+    argv[1:],
+    ["-m", "rediacc_ci.ops.ops_health", "refresh", "--lock-held"],
+)
+check("stale: the refresher is detached", kw.get("start_new_session"), True)
+check("stale: the refresher gets PYTHONPATH=.ci", kw["env"]["PYTHONPATH"], str(root / ".ci"))
+
+# --- two concurrent stops spawn one
+root, wl = fixture(None)
+sp = Spawns()
+barrier = threading.Barrier(4)
+results = []
+
+
+def stop(sid):
+    barrier.wait()
+    results.append(assess(root, wl, sid, popen=sp)["spawned"])
+
+
+threads = [threading.Thread(target=stop, args=(s,)) for s in (A, B, A, B)]
+for th in threads:
+    th.start()
+for th in threads:
+    th.join()
+check(
+    "concurrent: four stops with no cache spawn exactly one refresher",
+    (len(sp.calls), results.count(True)),
+    (1, 1),
+)
+
+# --- a dead refresher's lock is taken over after 20 minutes
+lock = root / ".ci" / "cache" / "ops-health" / "refresh.lock"
+check("stale lock: the lock file exists", lock.exists(), True)
+old = NOW.timestamp() - O.LOCK_STALE_S - 5
+os.utime(lock, (old, old))
+sp2 = Spawns()
+check(
+    "stale lock: a lock older than 20 min is taken over",
+    assess(root, wl, A, popen=sp2)["spawned"],
+    True,
+)
+young = NOW.timestamp() - O.LOCK_STALE_S + 60
+os.utime(lock, (young, young))
+check(
+    "stale lock twin: a 19 min lock is respected",
+    assess(root, wl, A, popen=Spawns())["spawned"],
+    False,
+)
+
+# --- the off-box alerter stopped
+doc = green_doc()
+doc["checks"]["offbox"] = entry(
+    "red",
+    1,
+    ttl_s=900,
+    stale=True,
+    last_cron_at=iso(NOW - datetime.timedelta(minutes=31)),
+    cron_age_min=31.0,
+    stale_limit_min=30.0,
+    read_at=iso(NOW),
+    detail="last_cron_at x is 31 min old (limit 30): the alerter is not running",
+)
+root, wl = fixture(doc)
+o = assess(root, wl, A)
+check(
+    "offbox stale: the claimant gets ops-health-offbox-stale",
+    "ALERTER STOPPED" in o["offbox_stale"],
+    True,
+)
+check("offbox stale: the age is named", "31.0 min" in o["offbox_stale"], True)
+check("offbox stale: it is not also a red row", o["block"], "")
+check(
+    "offbox stale: a peer gets the advisory",
+    "off-box alerter stopped" in assess(root, wl, B)["peer"],
+    True,
+)
+doc["checks"]["offbox"]["stale"] = False
+doc["checks"]["offbox"]["state"] = "green"
+root, wl = fixture(doc)
+check("offbox twin: a 29 min cron is not stale", assess(root, wl, A)["offbox_stale"], "")
+
+# --- a cache that cannot be parsed: advisory, no raise, a refresh is spawned
+root, wl = fixture(raw="{not json")
+sp = Spawns()
+u = assess(root, wl, A, popen=sp)
+check("unparseable: advisory names the cache", "does not parse" in u["unreadable"], True)
+check("unparseable: no block", (u["block"], u["offbox_stale"]), ("", ""))
+check("unparseable: a refresh is spawned to rewrite it", len(sp.calls), 1)
+
+# --- an unreadable check (rc 2) is an advisory, not a block
+doc = green_doc()
+doc["checks"]["telemetry"] = entry(
+    "unknown", 2, ttl_s=21600, detail="bws profile telemetry-probe: no token"
+)
+root, wl = fixture(doc)
+k = assess(root, wl, A)
+check(
+    "unknown: advisory names the check and its reason",
+    "telemetry (bws profile telemetry-probe: no token)" in k["unreadable"],
+    True,
+)
+check("unknown: no block", k["block"], "")
+
+T.exit()

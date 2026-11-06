@@ -593,6 +593,34 @@ CTX_MAIN_PUSH_RED_SESSION_START = (
     "%(root)s -- %(tracked)s%(stale)s; .ci/scripts/ci/ci-trace.py --run %(run)s --why"
 )
 
+# OPS HEALTH (agent/plans/PLAN-health-checks-local.md L3, D-local; wl_opshealth). Read from .ci/cache/ops-health/state.json, which `rediacc_ci.ops.ops_health refresh` writes. One session owns a red through the same claim as a scheduled red; the claimant's block carries the exact `--add` line, because the item IS the ownership record.
+V_OPS_HEALTH_RED = (
+    "OPS HEALTH RED, UNTRACKED, and this session holds its claim (cache %(updated)s):\n"
+    "%(rows)s\n"
+    "A red machine or probe outside the PR reaches nobody between sessions, and a red seen here "
+    "is fixed here, not reported. Track it, fix it, then re-check:\n"
+    "    .claude/hooks/stop/worklist.py --add %(me)s '%(add)s'\n"
+    "    PYTHONPATH=.ci python3 -m rediacc_ci.ops.ops_health refresh --force"
+)
+
+V_OPS_HEALTH_OFFBOX_STALE = (
+    "OPS HEALTH ALERTER STOPPED: the off-box Worker's last cron run was at %(last)s, %(age)s min "
+    "before the read at %(read)s (limit %(limit)s min). Between sessions nothing mails a red "
+    "while it is silent. Track it, then read it:\n"
+    "    .claude/hooks/stop/worklist.py --add %(me)s '%(add)s'\n"
+    "    PYTHONPATH=.ci python3 -m rediacc_ci.ops.ops_health offbox"
+)
+
+N_OPS_HEALTH_PEER = (
+    "Ops health red owned by session %(owner)s: %(subjects)s. Nothing to do here; "
+    "`PYTHONPATH=.ci python3 -m rediacc_ci.ops.ops_health refresh --force` re-checks it."
+)
+
+N_OPS_HEALTH_UNREADABLE = (
+    "Ops health could not be judged: %(what)s. Nothing blocks on it; "
+    "`PYTHONPATH=.ci python3 -m rediacc_ci.ops.ops_health refresh --force` reads it by hand."
+)
+
 # The SessionStart line (wl_schedred.session_start_line), one per red, from the shared cache alone.
 CTX_SCHEDULED_RED_SESSION_START = (
     "Scheduled red on main: %(name)s run %(run)s (%(conclusion)s, %(age)s) -- %(tracked)s%(stale)s; "
