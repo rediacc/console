@@ -50,6 +50,13 @@
         "P-A1:agent/plans/PLAN-worktree-lease.md"
       ],
       "reason": "P-A1 is a merge-time condition: every named plan still has open boxes, most of them live runs on bench, hostinger, edge or stable, or runs after a release. The operator put edge and stable on hold (ASKED:2026-11-04T16:33Z), so those boxes cannot close yet. This entry exists for the backup push the backup_push_h valve admits, which opens no PR; CI still judges every key, and the entry is removed before any merge."
+    },
+    {
+      "gate": "check:ci-external-links",
+      "findings": [
+        "link:www.ppc.go.jp"
+      ],
+      "reason": "www.ppc.go.jp (Japan's Personal Information Protection Commission, cited in legal-data-sovereignty.md in every locale) answered HTTP 503 to every request on 2026-11-06, the site root included, with and without a browser user agent: an outage or an IP block on the regulator's side, not a moved page. The URL is the regulator's canonical English legal page and stays; CI still judges it, and this entry goes when the site answers again."
     }
   ]
 }
