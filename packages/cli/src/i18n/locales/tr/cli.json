@@ -2978,6 +2978,7 @@
       "sshCode127": "Komut uzak makinede bulunamadı",
       "sshCode130": "Bağlantı kullanıcı tarafından sonlandırıldı (Ctrl+C)",
       "sshCode255": "SSH bağlantısı başarısız - olası nedenler:\n    - Kimlik doğrulama başarısız (SSH anahtar izinlerini kontrol edin)\n    - Ana bilgisayar anahtarı doğrulaması başarısız\n    - Ağ bağlantısı kesildi\n    - Uzak SSH hizmeti çalışmıyor",
+      "blankCommand": "-c komutu boş. Çalıştırılacak bir komut verin ya da etkileşimli kabuk için -c'yi kullanmayın.",
       "sshExitCode": "SSH {{code}} koduyla çıktı",
       "secretStagingFailed": "Depo gizli değerleri makineye hazırlanamadı (ssh çıkış kodu {{code}})."
     },

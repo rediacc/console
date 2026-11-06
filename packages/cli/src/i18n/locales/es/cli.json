@@ -2978,6 +2978,7 @@
       "sshCode127": "Comando no encontrado en máquina remota",
       "sshCode130": "Conexión terminada por usuario (Ctrl+C)",
       "sshCode255": "Falló la conexión SSH - causas posibles:\n    - Falló la autenticación (verificar permisos de clave SSH)\n    - Falló la verificación de clave de host\n    - Conexión de red perdida\n    - Servicio SSH remoto no en ejecución",
+      "blankCommand": "El comando de -c está vacío. Indica un comando para ejecutar u omite -c para abrir una shell interactiva.",
       "sshExitCode": "SSH salió con código {{code}}",
       "secretStagingFailed": "No se pudieron preparar los secretos del repositorio en la máquina (código de salida de ssh {{code}})."
     },

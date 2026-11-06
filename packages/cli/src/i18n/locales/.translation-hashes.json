@@ -2285,6 +2285,7 @@
     "errors.sync.remoteAndRemoteFile": "90129347",
     "errors.sync.remoteFileLocalNotDir": "db805163",
     "errors.sync.remoteFileRequiresSingleFile": "75b06174",
+    "errors.term.blankCommand": "1fb7324a",
     "errors.term.connectivityFailed": "f87c9121",
     "errors.term.dockerComposeForbidden": "f008863a",
     "errors.term.fileWriteDetected": "c91548c7",

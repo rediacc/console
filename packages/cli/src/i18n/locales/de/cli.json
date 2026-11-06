@@ -2978,6 +2978,7 @@
       "sshCode127": "Befehl auf Remote-Machine nicht gefunden",
       "sshCode130": "Verbindung vom Benutzer beendet (Strg+C)",
       "sshCode255": "SSH-Verbindung fehlgeschlagen - mögliche Ursachen:\n    - Authentifizierung fehlgeschlagen (SSH-Schlüssel-Berechtigungen überprüfen)\n    - Host-Schlüssel-Überprüfung fehlgeschlagen\n    - Netzwerkverbindung unterbrochen\n    - Remote-SSH-Service läuft nicht",
+      "blankCommand": "Der Befehl für -c ist leer. Geben Sie einen auszuführenden Befehl an oder lassen Sie -c weg, um eine interaktive Shell zu öffnen.",
       "sshExitCode": "SSH mit Code {{code}} beendet",
       "secretStagingFailed": "Die Repository-Secrets konnten nicht auf der Maschine bereitgestellt werden (SSH-Exitcode {{code}})."
     },

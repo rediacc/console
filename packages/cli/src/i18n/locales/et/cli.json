@@ -2978,6 +2978,7 @@
       "sshCode127": "Käsku ei leitud kaugmasinas",
       "sshCode130": "Ühenduse lõpetas kasutaja (Ctrl+C)",
       "sshCode255": "SSH-ühendus ebaõnnestus - võimalikud põhjused:\n    - Autentimine ebaõnnestus (kontrolli SSH-võtme õigusi)\n    - Hosti võtme kontrollimine ebaõnnestus\n    - Võrguühendus katkes\n    - Kaugmasinas ei tööta SSH-teenus",
+      "blankCommand": "Valik -c on tühi. Anna käivitatav käsk või jäta -c ära, et avada interaktiivne kest.",
       "sshExitCode": "SSH lõpetas koodiga {{code}}",
       "secretStagingFailed": "Hoidla saladusi ei õnnestunud masinasse ette valmistada (ssh väljumiskood {{code}})."
     },

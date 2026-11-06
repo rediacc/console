@@ -2978,6 +2978,7 @@
       "sshCode127": "Commande non trouvée sur la machine distante",
       "sshCode130": "Connexion terminée par l'utilisateur (Ctrl+C)",
       "sshCode255": "Échec de la connexion SSH - causes possibles :\n    - Authentification échouée (vérifiez les permissions de la clé SSH)\n    - Vérification de la clé d'hôte échouée\n    - Connexion réseau interrompue\n    - Service SSH distant non en cours d'exécution",
+      "blankCommand": "La commande de -c est vide. Indiquez une commande à exécuter, ou omettez -c pour ouvrir un shell interactif.",
       "sshExitCode": "SSH s'est terminé avec le code {{code}}",
       "secretStagingFailed": "Impossible de déposer les secrets du dépôt sur la machine (code de sortie ssh {{code}})."
     },
