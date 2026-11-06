@@ -192,3 +192,21 @@ def test_no_deploy_main_discards_its_argv() -> None:
                 )
     assert mains >= 20, "the sweep found %d mains; it is not seeing the tree" % mains
     assert not discarding, "main() discards argv (use common.refuse_arguments): %s" % discarding
+
+
+@pytest.mark.usefixtures("tree")
+@pytest.mark.parametrize(
+    ("module", "argv"),
+    [
+        (deploy_account, ["--region", "eu", "--dry-run", ""]),
+        (deploy_account, ["--region", "eu", "--dry-run=false"]),
+        (deploy_edge, ["--dry-run", ""]),
+        (deploy_edge, ["--dry-run=false"]),
+    ],
+)
+def test_a_dry_run_flag_with_an_empty_or_false_value_still_runs_nothing(
+    monkeypatch: pytest.MonkeyPatch, module: typing.Any, argv: list[str]
+) -> None:
+    fake = _fake(monkeypatch, module)
+    assert module.main(argv) == 0
+    assert fake.calls == []

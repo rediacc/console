@@ -20,6 +20,8 @@ from rediacc_ci.core import local_common
         ["-o", "json", "machine", "status", "m1"],
         ["machine", "health", "m1"],
         ["job", "list"],
+        ["--lang", "de", "status"],
+        ["--config=bench", "status"],
     ],
 )
 def test_read_only_command_lines_tolerate_a_build_failure(argv):
@@ -36,6 +38,8 @@ def test_read_only_command_lines_tolerate_a_build_failure(argv):
         ["--config", "term", "repo", "up", "box"],
         ["machine"],
         ["job", "cancel", "j1"],
+        ["--region", "term", "repo", "up", "box"],
+        ["--unknown-flag", "status"],
     ],
 )
 def test_mutating_command_lines_keep_failing_on_a_broken_build(argv):

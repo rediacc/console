@@ -104,7 +104,7 @@ def main(argv: list[str]) -> int:
         log.error("Edge worker config not found at %s/%s" % (worker_dir, CONFIG))
         return 1
 
-    if args.get("ARG_DRY_RUN"):
+    if "ARG_DRY_RUN" in args:
         log.step("DRY RUN: edge worker (%s); no command is run" % EDGE_HOST)
         print("would run: %s" % " ".join(deploy_argv()), flush=True)
         return 0

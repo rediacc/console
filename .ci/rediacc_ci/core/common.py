@@ -466,7 +466,7 @@ def refuse_arguments(argv: list[str]) -> int | None:
 def parse_args(argv: list[str], *, allowed: typing.Collection[str] | None = None) -> dict[str, str]:
     """`parse_args` (common.sh:324-353), as a dict instead of shell globals.
 
-    `allowed`, when given, is the set of `ARG_*` keys the caller reads; any other parsed key is refused by `refuse_unknown` before this returns. Every module under `rediacc_ci/deploy` passes it (pinned by `test_deploy_arg_refusal.py`), because a deploy that silently ignores a flag is the failure that sentence names.
+    `allowed`, when given, is the set of `ARG_*` keys the caller reads; any other parsed key is refused by `refuse_unknown` before this returns. Every module under `rediacc_ci/deploy` that parses arguments passes it, and one that takes none calls `refuse_arguments` instead (both pinned by `test_deploy_arg_refusal.py`), because a deploy that silently ignores a flag is the failure that sentence names.
 
     THE SECURITY PROPERTY IS THE REASON THIS FUNCTION IS WORTH PORTING AT ALL.
     common.sh:309-314 records it: the assignment used to be

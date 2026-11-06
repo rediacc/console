@@ -361,3 +361,40 @@ def test_create_without_a_map_project_is_refused_before_any_write(tmp_path) -> N
     assert code == 1
     assert "names no `project`" in err
     assert [s["prog"] for s in _spawns(root)] == ["bws"]
+
+
+def test_create_refuses_one_absent_name_given_twice_before_any_write(tmp_path) -> None:
+    root = _fixture(tmp_path / "dupcreate")
+    _with_map(root, PROJECT)
+    env = diff.env_for(
+        PATH="%s:/usr/local/bin:/usr/bin:/bin" % (root / "bin"),
+        BWS_ENV_ROOT=str(root),
+        XDG_CONFIG_HOME=str(root / "xdg"),
+        BWS_ACCESS_TOKEN="fixture-token-not-a-credential",
+        FIXTURE_ROOT=str(root),
+        DEMO_KEY=VALUE,
+        OTHER_KEY=VALUE,
+    )
+    code, _out, err = diff.bash_streams(
+        "PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env store-from-env --create "
+        "'NEW_TOKEN > DEMO_KEY' 'NEW_TOKEN > OTHER_KEY'",
+        env=env,
+    )
+    assert code == 1
+    assert "named more than once: NEW_TOKEN" in err
+    assert [s["prog"] for s in _spawns(root)] == ["bws"], "no write"
+
+
+def test_create_with_an_unreadable_map_names_that_cause_not_a_missing_project(tmp_path) -> None:
+    root = _fixture(tmp_path / "badmap")
+    cfg = root / ".ci" / "config"
+    cfg.mkdir(parents=True, exist_ok=True)
+    (cfg / "bws-secret-map.json").write_text("[1, 2]", encoding="utf-8")
+    code, _out, err = _run_spec(root, "NEW_TOKEN > DEMO_KEY", create=True)
+    assert code == 1
+    assert "names no `project`" in err
+    (cfg / "bws-secret-map.json").write_text("{not json", encoding="utf-8")
+    code, _out, err = _run_spec(root, "NEW_TOKEN > DEMO_KEY", create=True)
+    assert code == 1
+    assert "cannot read" in err
+    assert "names no `project`" not in err

@@ -325,7 +325,7 @@ def main(argv: list[str]) -> int:
         log.error("Wrangler config not found: %s/%s" % (worker_dir, config))
         return 1
 
-    if args.get("ARG_DRY_RUN"):
+    if "ARG_DRY_RUN" in args:
         # Stops before npm install, the services audit, migrations and the deploy: nothing here reaches Cloudflare or the network.
         db_preview = database_name(str(worker_dir / config)) or "(database_name unreadable)"
         log.step("DRY RUN: %s %s (%s); no command is run" % (target, region, config))

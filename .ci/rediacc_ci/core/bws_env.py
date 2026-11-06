@@ -1383,11 +1383,26 @@ def _store_verb(raw_specs: list[str], *, create: bool = False) -> int:
         return 1
     project = ""
     if absent:
+        duplicated = sorted({n for n in absent if absent.count(n) > 1})
+        if duplicated:
+            # Two specs for one absent name would each create an entry, leaving two store rows under one key.
+            print(
+                "rediacc_ci.core.bws_env: store-from-env --create: named more than once: %s"
+                % " ".join(duplicated),
+                file=sys.stderr,
+            )
+            return 1
         try:
             with open(map_path(environ), encoding="utf-8") as fh:
-                project = str(json.load(fh).get("project") or "")
-        except (OSError, ValueError):
-            project = ""
+                loaded = json.load(fh)
+        except (OSError, ValueError) as exc:
+            print(
+                "rediacc_ci.core.bws_env: store-from-env --create: cannot read %s (%s)"
+                % (map_path(environ), type(exc).__name__),
+                file=sys.stderr,
+            )
+            return 1
+        project = str(loaded.get("project") or "") if isinstance(loaded, dict) else ""
         if not project:
             print(
                 "rediacc_ci.core.bws_env: store-from-env --create: %s names no `project`"

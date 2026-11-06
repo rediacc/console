@@ -857,7 +857,23 @@ _READ_ONLY_PAIRS = frozenset(
         ("job", "logs"),
     }
 )
-_VALUE_FLAGS = frozenset({"--config", "--output", "-o"})
+# The CLI's global options (`packages/cli/src/cli.ts`): those that take a separate value, and those that do not. An option in neither set could swallow the next word, so the verb cannot be told and the command is not tolerated.
+_VALUE_FLAGS = frozenset({"--config", "--output", "-o", "--lang", "-l", "--proxy", "--fields"})
+_BOOLEAN_FLAGS = frozenset(
+    {
+        "--dev",
+        "-q",
+        "--quiet",
+        "-y",
+        "--yes",
+        "-b",
+        "--background",
+        "--help",
+        "-h",
+        "--version",
+        "-V",
+    }
+)
 
 
 def renet_build_tolerated(argv: list[str]) -> bool:
@@ -874,6 +890,10 @@ def renet_build_tolerated(argv: list[str]) -> bool:
             skip = True
         elif not arg.startswith("-"):
             words.append(arg)
+        elif arg in _BOOLEAN_FLAGS or ("=" in arg and arg.split("=", 1)[0] in _VALUE_FLAGS):
+            continue
+        else:
+            return False
     if not words:
         return True
     return (
@@ -883,7 +903,7 @@ def renet_build_tolerated(argv: list[str]) -> bool:
 
 
 def prepare_cli(env: dict[str, str] | None = None, argv: list[str] | None = None) -> bool:
-    """`rdc.sh`'s whole preparation as one call: node floor, dependencies, shared packages, the CLI bundle, renet. First failure stops it.
+    """`rdc.sh`'s whole preparation as one call: node floor, dependencies, shared packages, the CLI bundle, renet. The first failure stops it, except a renet build failure under a read-only command.
 
     A renet build failure under a read-only command line (`renet_build_tolerated`) falls back to the last `bin/renet` with a warning instead of failing the command.
     """
