@@ -357,6 +357,7 @@ test.describe
     const repositoryName = e2eRepoGuid();
     const datastorePath = DEFAULT_DATASTORE_PATH;
     const mountPath = `${datastorePath}/mounts/${repositoryName}`;
+    let created = false;
 
     const ownerProbe = [
       '#!/bin/bash',
@@ -393,6 +394,7 @@ test.describe
     test('1. create repository', async () => {
       const result = await runner.repositoryNew(repositoryName, '1G', TEST_PASSWORD, datastorePath);
       expect(runner.isSuccess(result)).toBe(true);
+      created = true;
     });
 
     test('2. up() file is owned by the universal user', async () => {
@@ -428,16 +430,21 @@ test.describe
     // A serial describe skips every test after a failure, so the cleanup is a hook: a failed
     // test 2 or 3 still unmounts the repository and stops the daemon.
     test.afterAll(async () => {
-      // All three steps run whatever the earlier ones answered: a failed unmount must not leave the daemon running, so the verdicts are asserted together at the end.
-      const unmount = await runner.repositoryUnmount(repositoryName, datastorePath);
-      const rm = await runner.repositoryRm(repositoryName, datastorePath);
-      const teardown = await runner.daemonTeardown(DEFAULT_NETWORK_ID);
+      // Every step runs whatever the earlier ones answered or threw: a failed unmount must not leave the daemon running, so the verdicts are asserted together at the end. Unmount and rm are asserted only for a repository test 1 created, so a failure before it is not buried under errors about state that never existed.
+      const attempt = async (
+        step: () => Promise<Parameters<typeof runner.isSuccess>[0]>
+      ): Promise<boolean> => {
+        try {
+          return runner.isSuccess(await step());
+        } catch {
+          return false;
+        }
+      };
+      const unmount = await attempt(() => runner.repositoryUnmount(repositoryName, datastorePath));
+      const rm = await attempt(() => runner.repositoryRm(repositoryName, datastorePath));
+      const teardown = await attempt(() => runner.daemonTeardown(DEFAULT_NETWORK_ID));
       expect(
-        {
-          unmount: runner.isSuccess(unmount),
-          rm: runner.isSuccess(rm),
-          teardown: runner.isSuccess(teardown),
-        },
+        { unmount: !created || unmount, rm: !created || rm, teardown },
         'cleanup steps'
       ).toEqual({ unmount: true, rm: true, teardown: true });
     });

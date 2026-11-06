@@ -1437,7 +1437,7 @@ test.describe
         );
       });
 
-      test('E2c. --read-bwlimit 8M on a 512 MiB image holding 300 MiB takes at least 30 s', async () => {
+      test(`E2c. --read-bwlimit 8M on a ${CAP_FILL_IMAGE_MIB} MiB image holding ${CAP_FILL_MIB} MiB takes at least ${CAP_FLOOR_S} s`, async () => {
         // E2a ran its snapshot under the cap on a 256 MiB image; a fresh repo holding real data (CAP_FILL_IMAGE_MIB) is the clean measurement.
         const name = `${CAP_NAME}-b`;
         cleanup.push(async () => {
@@ -1445,6 +1445,8 @@ test.describe
         });
         // The uploader reads only the cells that hold data (a fresh image is mostly zero: 15 of 64 cells were read, which is 62.9 MB and 8 s at 8 MB/s), so the floor needs the image to HOLD more than 30 s x 8 MB/s of data.
         const repo = await provisionRepo(cli, w1, name, M1, `${CAP_FILL_IMAGE_MIB}M`);
+        // Registered after the delete above, so it runs first: a failed fill or unmount below must not leave the image mounted under `repo delete`.
+        cleanup.push(async () => w1.repositoryUnmount(repo.guid, DS));
         const mounted = await w1.repositoryMount(repo.guid, repo.credential, DS, repo.networkId);
         expect(
           mounted.code,

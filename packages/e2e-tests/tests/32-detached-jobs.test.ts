@@ -134,8 +134,9 @@ test.describe
           .executeViaBridge(`sudo systemctl kill -s CONT ${holder.unit}`)
           .catch(() => undefined);
       }
-      const live = await liveJobIds().catch(() => [] as string[]);
-      const mine = [...started].filter((id) => live.includes(id));
+      // When the live list cannot be read, every started job is cancelled: a cancel of an ended job is harmless and swallowed below.
+      const live = await liveJobIds().catch(() => undefined);
+      const mine = [...started].filter((id) => live === undefined || live.includes(id));
       for (const id of mine) {
         await w.executeViaBridge(`sudo renet job cancel --id ${id} --json`).catch(() => undefined);
       }
@@ -309,7 +310,8 @@ test.describe
           false
         );
       } finally {
-        await w.executeViaBridge(`sudo systemctl stop ${unit}.service`);
+        // A rejected stop must not replace the failure above; a unit left loaded fails the check below, and afterAll stops every planted unit.
+        await w.executeViaBridge(`sudo systemctl stop ${unit}.service`).catch(() => undefined);
       }
       expect(await loadedUnitJobIds(), `the planted unit ${unit} stayed loaded`).not.toContain(
         fakeId
@@ -396,9 +398,17 @@ test.describe
       );
       expect(status.code, status.stderr.slice(-400)).toBe(0);
       const jsonStart = status.stdout.indexOf('{');
-      const doc = JSON.parse(status.stdout.slice(jsonStart)) as {
-        jobs?: { job_id?: string; JobID?: string }[];
-      };
+      expect(jsonStart, `no JSON document in: ${status.stdout.slice(-400)}`).toBeGreaterThanOrEqual(
+        0
+      );
+      let doc: { jobs?: { job_id?: string; JobID?: string }[] };
+      try {
+        doc = JSON.parse(status.stdout.slice(jsonStart)) as typeof doc;
+      } catch (error) {
+        throw new Error(
+          `repository status printed unparseable JSON (${String(error)}): ${status.stdout.slice(-400)}`
+        );
+      }
       expect(Array.isArray(doc.jobs), `no jobs array in: ${status.stdout.slice(-400)}`).toBe(true);
       return (doc.jobs ?? []).map((j) => j.job_id ?? j.JobID);
     };
@@ -445,6 +455,8 @@ test.describe
       await w.executeViaBridge(`sudo systemctl kill -s CONT ${holder?.unit}`);
       const cancel = await w.executeViaBridge(`sudo renet job cancel --id ${id} --json`);
       expect(cancel.code, cancel.stderr.slice(-400)).toBe(0);
+      // Cancel may return before the unit is terminal; the repository is released once the holder has left the active set.
+      await waitEnded([id], 60_000);
       const vault = await stageVault('third', vaultFor(2897, REPO));
       const again = await w.executeViaBridge(
         `sudo renet job start --executor local --json --vault @${vault}`

@@ -177,7 +177,7 @@ const REPLICA_COMPOUNDS = [
   'replica_discard',
 ] as const;
 
-/** The job id a `--background` start hands back, from its JSON envelope or its hint. TRANSCRIPT-CONFIRM. */
+/** The job id a `--background` start hands back, from its JSON envelope or its hint. */
 function backgroundJobId(text: string): string | undefined {
   return /"jobId":\s*"([^"]+)"/.exec(text)?.[1] ?? /rdc job wait ([\w-]+)/.exec(text)?.[1];
 }
