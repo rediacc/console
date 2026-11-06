@@ -1775,6 +1775,9 @@
     ".ci/rediacc_ci/tests/test_drills_backup_renet.py": [
       "PATH"
     ],
+    ".ci/rediacc_ci/tests/test_drills_down_before_kill.py": [
+      "PATH"
+    ],
     ".ci/rediacc_ci/tests/test_drills_lib.py": [
       "HOME",
       "PATH"
@@ -2155,6 +2158,9 @@
       "WORKLIST_BGSWEEP_AGE_MIN",
       "WORKLIST_HARNESS_PID"
     ],
+    ".claude/hooks/stop/wl_boxaudit.py": [
+      "TMPDIR"
+    ],
     ".claude/hooks/stop/wl_bravedefault.py": [
       "WORKLIST_BRAVE_MAX_FIRES",
       "WORKLIST_BRAVE_TTL_MIN"
@@ -2248,6 +2254,9 @@
       "WORKLIST_ROSTER_MAX",
       "WORKLIST_TEAMMATE_FRESH_MIN",
       "WORKLIST_TEAMMATE_TAIL_BYTES"
+    ],
+    ".claude/hooks/stop/wl_planbox.py": [
+      "TMPDIR"
     ],
     ".claude/hooks/stop/wl_planfid.py": [
       "WORKLIST_PLANFID_MIN_TASKS",
