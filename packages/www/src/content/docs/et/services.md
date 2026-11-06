@@ -103,6 +103,30 @@ Rediaccfile võib kommentaarireaga deklareerida, mida ta vajab, ainult taotlusen
 
 `up()` võrdleb deklaratsiooni loaga. Kui luba puudub, lükatakse `up()` tagasi enne ühegi rea käivitamist ja teade trükib täpse loa andmise käsu. `down()` ei kontrolli deklaratsiooni kunagi, et hoidlas muudetud kommentaar ei saaks takistada operaatori `repo down`-i; `down()`, mis tõesti vajab luba, ebaõnnestub oma sammus. `machine converge` jätab sellise hoidla vahele olekuga `needs_lifecycle_grant`, selle asemel et seda keeldumisse taaskäivitada.
 
+### Ajalõpud ja seiskamise järjekord
+
+Hoidla konteinerid ei peatu enne, kui selle `down()` on käivitunud ja lõppenud. See kehtib hoidla Dockeri üksuse käskude `systemctl stop` ja `restart`, käskude `machine converge` ja `repo down --unmount`, üksuse ümberkirjutamise ning hosti seiskamise kohta. Erandid on Dockeri deemoni või hosti krahh, voolukatkestus ning `down()`, mis ületab hosti seiskamisel oma ajalõpu.
+
+Iga Dockeri üksus käivitab enne deemonile signaali saatmist peatamiskonksu. Konks käivitab `down()` veel töötaval deemonil, kui renet pole seda selle deemoni käivituse jaoks juba teinud, ja jätab selle vahele, kui deemon ei vasta või hoidlal pole Rediaccfile'i. Hosti seiskamisel peatuvad kõigepealt Dockeri üksused ja igaüks käivitab `down()` paralleelselt, seejärel haagib puhastusüksus lahti kõik haagitud hoidlad, olenemata automaatkäivitusest. Üksuse peatamisbudget on 17 minutit, mis mahub taaskäivitustöö 30-minutilisse piiri.
+
+`up()` ja `down()` saavad vaikimisi 10 minutit kumbki; seda seadistavad `RENET_UP_TIMEOUT` ja `RENET_DOWN_TIMEOUT` või `--up-timeout` ja `--down-timeout`. Ajalõpu korral saab protsessirühm SIGTERMi ja 10 sekundi pärast SIGKILLi. Toiming, mis vajab esmalt `down()`, näiteks `repo down --unmount` või converge'i taaskäivitus, jätab konteinerid tööle, kui `down()` ületab ajalõpu; `--force` jätkab. Rediaccfile saab piiri tõsta kommentaarireaga:
+
+```bash
+# rediacc:timeout up=20m down=15m backup=120s
+```
+
+| Võti | Vaikimisi | Ülempiir |
+|---|---|---|
+| `up` | 10 minutit | 60 minutit |
+| `down` | 10 minutit | 15 minutit |
+| `backup` | 30 sekundit | 300 sekundit |
+
+Direktiiv ainult tõstab piiri ja kärbitakse ülempiirini, nii et hoidla ei saa `down()` aega nii lühikeseks muuta, et see jõuga lõpetataks. Tundmatud võtmed jäetakse hoiatusega arvestamata.
+
+Hoidla deemonid hoiavad Dockeri `live-restore` välja lülitatuna. Konteinerid elaksid deemoni taaskäivitusest üle, kuid shim-protsessid jagavad üksuse cgroupi ja lõpetatakse koos sellega, nii et taastatud deemon ei saaks neid uuesti siduda ning konteinerid hoiaksid planeeritud peatamisel haakepunkti hõivatuna.
+
+Renet'i hallatav hoidlapõhine RAM-köide (`# rediacc:ram size=6G`, hosti mälu annab operaator) on praegu vaid kavand ja pole veel realiseeritud.
+
 ### Näide
 
 ```bash

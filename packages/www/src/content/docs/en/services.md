@@ -101,6 +101,30 @@ A Rediaccfile can declare what it needs with a comment line, as a request only:
 
 `up()` compares the declaration with the grant. When the grant is missing, `up()` is refused before any line runs, and the message prints the exact grant command. `down()` never checks the declaration, so a comment edited inside the repository cannot stop an operator's `repo down`; a `down()` that really needs the grant fails in its own step. `machine converge` skips such a repository as `needs_lifecycle_grant` instead of restarting it into the refusal.
 
+### Timeouts and Shutdown Order
+
+A repository's containers do not stop until its `down()` has run and finished. This covers `systemctl stop` and `restart` of the repository's Docker unit, `machine converge`, `repo down --unmount`, a unit rewrite and a host shutdown. The exceptions are a crash of the Docker daemon or the host, power loss, and a `down()` that exceeds its timeout during host shutdown.
+
+Each Docker unit runs a stop hook before the daemon is signalled. The hook runs `down()` against the still-running daemon, unless renet already ran it for this daemon start, and skips it when the daemon does not answer or the repository has no Rediaccfile. At host shutdown the Docker units stop first, each running `down()` in parallel, and a sweep unit then unmounts every mounted repository, with or without autostart. The stop budget of a unit is 17 minutes, which fits the 30-minute reboot job timeout.
+
+`up()` and `down()` get 10 minutes each by default, set with `RENET_UP_TIMEOUT` and `RENET_DOWN_TIMEOUT` or `--up-timeout` and `--down-timeout`. On a timeout the process group gets SIGTERM, then SIGKILL after 10 seconds. A path that needs `down()` first, such as `repo down --unmount` or a converge restart, leaves the containers running when `down()` times out, and `--force` continues. A Rediaccfile can raise a limit with a comment line:
+
+```bash
+# rediacc:timeout up=20m down=15m backup=120s
+```
+
+| Key | Default | Cap |
+|---|---|---|
+| `up` | 10 minutes | 60 minutes |
+| `down` | 10 minutes | 15 minutes |
+| `backup` | 30 seconds | 300 seconds |
+
+A directive only raises a limit and is clamped to its cap, so the repository cannot shorten `down()` into a kill. Unknown keys are ignored with a warning.
+
+Repository daemons keep Docker's `live-restore` off. Containers would survive a daemon restart, but the container shims share the unit's cgroup and are killed with it, so the restored daemon could not reattach, and the containers would keep the mount busy through a planned stop.
+
+A renet-managed RAM volume per repository (`# rediacc:ram size=6G`, with the host RAM granted by the operator) is a design only and has no implementation yet.
+
 ### Example
 
 ```bash

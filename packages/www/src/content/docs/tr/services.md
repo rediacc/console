@@ -103,6 +103,30 @@ Bir Rediaccfile, ihtiyacını bir yorum satırıyla bildirebilir; bu yalnızca b
 
 `up()` bildirimi izinle karşılaştırır. İzin eksikse `up()` hiçbir satır çalışmadan reddedilir ve mesajda tam izin komutu yazdırılır. `down()` bildirimi hiç denetlemez; böylece repo içinde düzenlenen bir yorum, operatörün `repo down` komutunu durduramaz. İzne gerçekten ihtiyaç duyan bir `down()` kendi adımında başarısız olur. `machine converge`, böyle bir repoyu reddedilecek duruma yeniden başlatmak yerine `needs_lifecycle_grant` olarak atlar.
 
+### Zaman Aşımları ve Kapatma Sırası
+
+Bir deponun konteynerleri, `down()` işlevi çalışıp bitmeden durmaz. Bu, deponun Docker birimine yapılan `systemctl stop` ve `restart`, `machine converge`, `repo down --unmount`, bir birimin yeniden yazılması ve ana makinenin kapatılması için geçerlidir. İstisnalar Docker daemon'ının veya ana makinenin çökmesi, elektrik kesintisi ve ana makine kapanırken zaman aşımına uğrayan bir `down()` işlevidir.
+
+Her Docker birimi, daemon'a sinyal göndermeden önce bir durdurma kancası çalıştırır. Kanca, renet bu daemon başlangıcı için zaten çalıştırmadıysa `down()` işlevini hâlâ çalışan daemon üzerinde yürütür; daemon yanıt vermiyorsa veya depoda Rediaccfile yoksa atlar. Ana makine kapanırken önce Docker birimleri durur, her biri `down()` işlevini paralel çalıştırır; ardından bir süpürme birimi, otomatik başlatma olsun olmasın bağlı tüm depoları ayırır. Bir birimin durdurma bütçesi 17 dakikadır ve yeniden başlatma işinin 30 dakikalık sınırına sığar.
+
+`up()` ve `down()` varsayılan olarak 10'ar dakika alır; `RENET_UP_TIMEOUT` ve `RENET_DOWN_TIMEOUT` ile ya da `--up-timeout` ve `--down-timeout` ile ayarlanır. Zaman aşımında süreç grubu SIGTERM alır, 10 saniye sonra SIGKILL gelir. `repo down --unmount` veya converge yeniden başlatması gibi önce `down()` gerektiren bir yol, `down()` zaman aşımına uğrarsa konteynerleri çalışır durumda bırakır; `--force` devam eder. Bir Rediaccfile, yorum satırıyla bir sınırı yükseltebilir:
+
+```bash
+# rediacc:timeout up=20m down=15m backup=120s
+```
+
+| Anahtar | Varsayılan | Üst sınır |
+|---|---|---|
+| `up` | 10 dakika | 60 dakika |
+| `down` | 10 dakika | 15 dakika |
+| `backup` | 30 saniye | 300 saniye |
+
+Yönerge yalnızca sınırı yükseltir ve üst sınıra kırpılır; böylece depo `down()` işlevini zorla sonlandırılacak kadar kısaltamaz. Bilinmeyen anahtarlar uyarıyla yok sayılır.
+
+Depo daemon'ları Docker'ın `live-restore` özelliğini kapalı tutar. Konteynerler daemon yeniden başlatmasından sağ çıkardı, ancak shim süreçleri birimin cgroup'unu paylaşır ve onunla birlikte sonlandırılır; geri yüklenen daemon bunlara yeniden bağlanamazdı ve konteynerler planlı durdurmada bağlama noktasını meşgul tutardı.
+
+Her depo için renet tarafından yönetilen bir RAM birimi (`# rediacc:ram size=6G`, ana makine RAM'ini operatör tahsis eder) yalnızca bir tasarımdır ve henüz uygulanmamıştır.
+
 ### Örnek
 
 ```bash

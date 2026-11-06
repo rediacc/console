@@ -103,6 +103,30 @@ Un Rediaccfile puede declarar lo que necesita con una línea de comentario, solo
 
 `up()` compara la declaración con la concesión. Cuando falta la concesión, `up()` se rechaza antes de ejecutar ninguna línea, y el mensaje imprime el comando de concesión exacto. `down()` nunca comprueba la declaración, de modo que un comentario editado dentro del repositorio no pueda impedir el `repo down` de un operador; un `down()` que de verdad necesita la concesión falla en su propio paso. `machine converge` omite un repositorio así como `needs_lifecycle_grant` en lugar de reiniciarlo hacia el rechazo.
 
+### Tiempos límite y orden de apagado
+
+Los contenedores de un repositorio no se detienen hasta que su `down()` se ha ejecutado y ha terminado. Esto abarca `systemctl stop` y `restart` de la unidad Docker del repositorio, `machine converge`, `repo down --unmount`, la reescritura de una unidad y el apagado del host. Las excepciones son una caída del demonio de Docker o del host, un corte de energía y un `down()` que supera su tiempo límite durante el apagado del host.
+
+Cada unidad Docker ejecuta un gancho de parada antes de enviar la señal al demonio. El gancho ejecuta `down()` contra el demonio que sigue activo, salvo que renet ya lo haya hecho en este arranque del demonio, y lo omite si el demonio no responde o el repositorio no tiene Rediaccfile. En el apagado del host se detienen primero las unidades Docker, cada una con su `down()` en paralelo, y después una unidad de barrido desmonta todos los repositorios montados, con o sin autostart. El presupuesto de parada de una unidad es de 17 minutos, que cabe en el límite de 30 minutos del trabajo de reinicio.
+
+`up()` y `down()` disponen de 10 minutos cada uno por defecto, configurables con `RENET_UP_TIMEOUT` y `RENET_DOWN_TIMEOUT` o con `--up-timeout` y `--down-timeout`. Al agotarse el tiempo, el grupo de procesos recibe SIGTERM y, tras 10 segundos, SIGKILL. Una operación que necesita `down()` primero, como `repo down --unmount` o un reinicio por converge, deja los contenedores en marcha si `down()` agota el tiempo; `--force` continúa. Un Rediaccfile puede subir un límite con una línea de comentario:
+
+```bash
+# rediacc:timeout up=20m down=15m backup=120s
+```
+
+| Clave | Predeterminado | Máximo |
+|---|---|---|
+| `up` | 10 minutos | 60 minutos |
+| `down` | 10 minutos | 15 minutos |
+| `backup` | 30 segundos | 300 segundos |
+
+Una directiva solo sube un límite y se recorta a su máximo, así que el repositorio no puede acortar `down()` hasta convertirlo en una muerte forzada. Las claves desconocidas se ignoran con una advertencia.
+
+Los demonios de repositorio mantienen `live-restore` de Docker desactivado. Los contenedores sobrevivirían a un reinicio del demonio, pero los shims comparten el cgroup de la unidad y mueren con ella, de modo que el demonio restaurado no podría reconectarse, y los contenedores mantendrían ocupado el montaje durante una parada planificada.
+
+Un volumen de RAM gestionado por renet para cada repositorio (`# rediacc:ram size=6G`, con la RAM del host concedida por el operador) es solo un diseño y aún no está implementado.
+
 ### Ejemplo
 
 ```bash

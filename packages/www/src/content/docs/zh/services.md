@@ -102,6 +102,30 @@ Rediaccfile 可以用注释行声明自己的需求，这只是一个请求：
 
 `up()` 会把声明与授权进行比对。授权缺失时，`up()` 在任何一行运行之前就会被拒绝，消息中会打印确切的授权命令。`down()` 从不检查声明，因此在仓库内修改注释无法阻止运维人员的 `repo down`；真正需要授权的 `down()` 会在自己的步骤中失败。`machine converge` 会把这样的仓库作为 `needs_lifecycle_grant` 跳过，而不是把它重启进拒绝状态。
 
+### 超时与关机顺序
+
+仓库的容器必须等到其 `down()` 运行并结束后才会停止。这适用于对仓库 Docker 单元执行的 `systemctl stop` 和 `restart`、`machine converge`、`repo down --unmount`、单元重写以及主机关机。例外情况是 Docker 守护进程或主机崩溃、断电,以及在主机关机期间超过超时的 `down()`。
+
+每个 Docker 单元在向守护进程发送信号之前会运行一个停止钩子。除非 renet 已在本次守护进程启动中运行过,钩子会对仍在运行的守护进程执行 `down()`;如果守护进程没有响应或仓库没有 Rediaccfile,则跳过。主机关机时,先停止各 Docker 单元,每个单元并行执行 `down()`,随后清扫单元会卸载所有已挂载的仓库,无论是否启用自动启动。单元的停止预算为 17 分钟,可以放进重启任务 30 分钟的上限内。
+
+`up()` 和 `down()` 默认各有 10 分钟,可通过 `RENET_UP_TIMEOUT` 和 `RENET_DOWN_TIMEOUT` 或 `--up-timeout` 和 `--down-timeout` 设置。超时后,进程组先收到 SIGTERM,10 秒后收到 SIGKILL。需要先执行 `down()` 的操作(如 `repo down --unmount` 或 converge 重启)在 `down()` 超时时会让容器继续运行,加上 `--force` 则继续执行。Rediaccfile 可以用一行注释调高限制:
+
+```bash
+# rediacc:timeout up=20m down=15m backup=120s
+```
+
+| 键 | 默认值 | 上限 |
+|---|---|---|
+| `up` | 10 分钟 | 60 分钟 |
+| `down` | 10 分钟 | 15 分钟 |
+| `backup` | 30 秒 | 300 秒 |
+
+该指令只能调高限制,并且会被截断到上限,因此仓库无法把 `down()` 缩短到被强制终止的程度。未知的键会被忽略并给出警告。
+
+仓库守护进程保持 Docker 的 `live-restore` 关闭。开启后容器可以在守护进程重启后存活,但容器 shim 与单元共用 cgroup,会随单元一起被终止,恢复后的守护进程无法重新接管,而且在计划内停止期间容器仍会占用挂载点。
+
+由 renet 管理的每仓库 RAM 卷(`# rediacc:ram size=6G`,主机内存由运维人员授予)目前只是设计,尚未实现。
+
 ### 示例
 
 ```bash

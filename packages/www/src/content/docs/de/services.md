@@ -103,6 +103,30 @@ Ein Rediaccfile kann mit einer Kommentarzeile angeben, was es braucht, nur als A
 
 `up()` vergleicht die Angabe mit der Freigabe. Fehlt die Freigabe, wird `up()` abgelehnt, bevor eine Zeile läuft, und die Meldung gibt den genauen Freigabe-Befehl aus. `down()` prüft die Angabe nie, damit ein im Repository bearbeiteter Kommentar das `repo down` eines Operators nicht verhindern kann; ein `down()`, das die Freigabe wirklich braucht, scheitert in seinem eigenen Schritt. `machine converge` überspringt ein solches Repository als `needs_lifecycle_grant`, statt es in die Ablehnung hinein neu zu starten.
 
+### Zeitlimits und Reihenfolge beim Herunterfahren
+
+Die Container eines Repositorys werden erst gestoppt, wenn dessen `down()` gelaufen und beendet ist. Das gilt für `systemctl stop` und `restart` der Docker-Unit des Repositorys, für `machine converge`, `repo down --unmount`, das Neuschreiben einer Unit und das Herunterfahren des Hosts. Ausnahmen sind ein Absturz des Docker-Daemons oder des Hosts, ein Stromausfall und ein `down()`, das beim Herunterfahren des Hosts sein Zeitlimit überschreitet.
+
+Jede Docker-Unit führt vor dem Signal an den Daemon einen Stop-Hook aus. Der Hook führt `down()` gegen den noch laufenden Daemon aus, sofern renet es für diesen Daemon-Start nicht bereits getan hat, und überspringt es, wenn der Daemon nicht antwortet oder das Repository kein Rediaccfile hat. Beim Herunterfahren des Hosts stoppen zuerst die Docker-Units, die jeweils parallel `down()` ausführen, danach hängt eine Aufräum-Unit jedes eingehängte Repository aus, mit oder ohne Autostart. Das Stopp-Budget einer Unit beträgt 17 Minuten und passt damit in das 30-Minuten-Limit des Reboot-Jobs.
+
+`up()` und `down()` erhalten standardmäßig je 10 Minuten, einstellbar mit `RENET_UP_TIMEOUT` und `RENET_DOWN_TIMEOUT` oder `--up-timeout` und `--down-timeout`. Beim Zeitlimit erhält die Prozessgruppe SIGTERM und nach 10 Sekunden SIGKILL. Ein Ablauf, der zuerst `down()` braucht, etwa `repo down --unmount` oder ein Converge-Neustart, lässt die Container weiterlaufen, wenn `down()` das Zeitlimit überschreitet; `--force` macht trotzdem weiter. Ein Rediaccfile kann ein Limit per Kommentarzeile anheben:
+
+```bash
+# rediacc:timeout up=20m down=15m backup=120s
+```
+
+| Schlüssel | Standard | Obergrenze |
+|---|---|---|
+| `up` | 10 Minuten | 60 Minuten |
+| `down` | 10 Minuten | 15 Minuten |
+| `backup` | 30 Sekunden | 300 Sekunden |
+
+Eine Direktive hebt ein Limit nur an und wird auf ihre Obergrenze begrenzt. Das Repository kann `down()` also nicht bis zum Abbruch verkürzen. Unbekannte Schlüssel werden mit einer Warnung ignoriert.
+
+Repository-Daemons lassen `live-restore` von Docker ausgeschaltet. Container würden zwar einen Daemon-Neustart überleben, aber die Container-Shims teilen sich die Cgroup der Unit und werden mit ihr beendet. Der wiederhergestellte Daemon könnte sie nicht wieder anbinden, und die Container hielten den Mount bei einem geplanten Stopp belegt.
+
+Ein von renet verwaltetes RAM-Volume pro Repository (`# rediacc:ram size=6G`, der Host-RAM wird vom Operator freigegeben) ist bisher nur ein Entwurf und noch nicht umgesetzt.
+
 ### Beispiel
 
 ```bash
