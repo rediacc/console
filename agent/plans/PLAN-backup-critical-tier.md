@@ -382,6 +382,7 @@ Control rule: every new test fails without its fix. Each tick note records the t
   - Owns: private/account/tests/integration/backup-critical-week.test.ts
   - Accept: `cd private/account && npx vitest run tests/integration/backup-critical-week.test.ts` rc 0.
     (ticked) 2026-11-04T14:59:06Z by d778be9d: commit:5610b2859 private/account 1b81d26 vitest backup-critical-week rc=0, 9 passed; verify at both levels, reconcile zero drift, five off-grid --at minutes, the rewritten cell moves by its own bytes; mutation controls drop-live-chunk and wide-window rc=1 (writer's run)
+  (corrected 2026-11-06, review 782014d5.3) The lead re-ran the X2 evidence on head fb518889d from private/account: `npx vitest run tests/integration/backup-critical-week.test.ts` rc=0 (9 passed); `X2_MUTANT=drop-live-chunk` rc=1 (the 9 tests skipped after the day-1 failure) and `X2_MUTANT=wide-window` rc=1 (4 failed, 5 passed), so both mutation controls fail on the mutated run and the control rule at line 372 holds by the tree's own mutants rather than a stash.
     (ticked) 2026-11-04T08:05:19Z by d778be9d: private/account 8dc6ee6; 9ebd3cf5f X2 week 7 passed. DEPS-WAIVED: this test uses nothing the plan's prerequisites still owe
 - [x] X3: The cost formula against counted operations: the test counts Class A, Class B and D1 row writes per the simulated run and holds them within 10% of `rpo-cost.ts`.
     (reopened 2026-11-04) Unmet: the control rule at line 372, as for X2. The D1 check is a pin, because 9ebd3cf5f fitted the constants to the count, so it is not independent evidence for D1. Class A and B remain a real comparison.
@@ -439,6 +440,9 @@ Control rule: every new test fails without its fix. Each tick note records the t
   - Accept: `cd private/account && npx vitest run tests/integration/backup-target-alerts.test.ts tests/integration/backup-alerts.test.ts` rc 0.
     (ticked) 2026-11-04T19:18:22Z by d778be9d: commit:ce7173cfd vitest backup-target-alerts and backup-alerts from private/account rc=0 with 62 tests, docs clause present
     (ticked) 2026-11-04T09:37:16Z by d778be9d: fileline:private/account/tests/integration/backup-target-alerts.test.ts:1 M9 target alerts landed in private/account e3bc304; vitest backup-target-alerts rc=0. DEPS-WAIVED: this box's evidence does not depend on the open prerequisite
+  (corrected 2026-11-06, review 846b61e7.3) The ledger row's "rc 1 control was run by the writer" (agent/ledgers/plan-investigation.jsonl, sig 139edf31) had no recorded output; the control is now measured and recorded in the line above (6-hour constant at 1000 ms: backup-target-alerts rc=1), so the ledger note and this plan agree.
+  (corrected 2026-11-06, review 846b61e7.2) rc 1 control, run 2026-11-06 in a scratch copy of private/account with `BACKUP_TARGET_ALERT_INTERVAL_MS` (private/account/src/services/backup-gc.service.ts:225) set to 1000 ms: `npx vitest run tests/integration/backup-target-alerts.test.ts` rc=1 (1 failed, 22 passed: "a repeat inside 6 hours sends nothing, and one after them sends again"); the unmodified tree gives rc=0 with 23 passed.
+  (corrected 2026-11-06, review 846b61e7.1) The reopen note's docs clause is met: commit ce7173cfd added the target alert and its detection latency to packages/www/src/content/docs/en/backup-restore.md (the Failure alerts paragraph at line 519 and the Missed-target alerts section at line 581, "Detection latency equals the maintenance sweep interval, which is hourly").
 
 - [x] M10: The age anchor: each stream always keeps one snapshot older than `D`, so a flood of new versions or backed-up ransomware cannot age every good version out inside the window, and routine pruning cannot bypass delayed destruction.
   - Owns: private/account/src/services/backup-gc.service.ts, private/account/tests/integration/backup-age-anchor.test.ts
@@ -580,6 +584,7 @@ Control rule: every new test fails without its fix. Each tick note records the t
   - Owns: packages/shared/src/renet-contract/data/functions.schema.ts, packages/shared/src/renet-contract/data/functions.generated.ts, private/renet/pkg/i18n/**
   - Accept: `npm run check:ci-renet-types && npm run check:ci-renet-tiers && npm run check:ci-renet` rc 0.
     (ticked) 2026-11-04T19:18:25Z by d778be9d: commit:68e6092ca check:ci-renet-types rc=0, check:ci-renet-tiers rc=0, check:ci-renet rc=0 on this tree
+  (corrected 2026-11-06, review 846b61e7.4) The commit's Verified list names only check:ci-renet-types and check:ci-renet-tiers; the third Accept command `npm run check:ci-renet` (package.json:299) was the lead's own run at the tick and has no other record, and a re-run on 2026-11-06 at tree 9b3d314b9 exits rc=1 for an unrelated cause (private/renet/cmd/renet/repository_health.go:147 undefined: mountedRepoGUIDs), so the rc=0 cannot be reproduced now.
 - [x] T2: CLI artifacts: command metadata and planes for `backup churn`, `backup immutability`, `backup undelete`; count pins with reasons; strings in all 13 locales; regenerate contract and docs data.
   - Owns: packages/cli/src/config/command-metadata.ts, packages/cli/src/config/command-planes.ts, packages/cli/src/config/__tests__/plane-coverage.test.ts, packages/cli/src/i18n/locales/**, packages/shared/src/cli-contract/**
   - Accept: `npm run check:ci-i18n-completeness && npm run check:ci-i18n-hashes && npm run check:ci-i18n-cli-key-usage && npm run check:ci-i18n-placeholders && npm run check:ci-cli-contract` rc 0, and `npm run typecheck -w @rediacc/cli` rc 0.
@@ -607,6 +612,7 @@ Control rule: every new test fails without its fix. Each tick note records the t
   (note) Read legs t to x: hook order is v, heal is w and restore-at-run is x, because t and u in `backup.py` were already taken.
   - Accept: `./run.sh drill backup` and `./run.sh drill backup-onprem` rc 0, and the receipt `block_backup_unverified_push` reads is fresh for this tree.
     (ticked) 2026-11-05T17:56:40Z by d778be9d: commit:4e665bbc8 every clause read: legs t to x run with controls firing on a real worker, 115 of 115; drill backup rc=0 427 of 427, backup-onprem rc=0 17 of 17; receipt VERIFIED for tree e448b9115dc0
+  (corrected 2026-11-06, review 2e764bc9.1) The receipt tree e448b9115dc0 is the git tree of the ledger row's head: `git rev-parse --short=12 4e665bbc8^{tree}` prints e448b9115dc0, so the receipt is fresh for the tree the drills ran on.
 - [ ] Y3: The D1 clone check covers migration 0074.
   - Accept: the CD or local `rediacc_ci.deploy.test_d1_migrations` run rc 0 for eu, recorded with its run id.
 

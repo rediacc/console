@@ -52,3 +52,4 @@ Worklist: #9a7c3258, PR-TASK 9f92c43e
 - [x] LP-bench [live] Fresh bench receipt through worklist.py --live-proof, after this plan's bench-deployable boxes land.
   Accept: live-proof bench cli-bench
     (ticked) 2026-11-04T16:59:14Z by d778be9d: live-proof lp-6e5db4c87cf3 bench cli-bench rc=0 v=cli:f5138b837a218ac7362c52306c7c2c5dd7903981
+  (corrected 2026-11-06, review 8f81083f.2) The ledger row for sig 11388dba with verdict absent (agent/ledgers/plan-investigation.jsonl:2687, 16:58:25Z) predates the receipt lp-6e5db4c87cf3 recorded at 16:59:13Z (agent/ledgers/live-proof.jsonl:56); the receipt is this box's evidence and the absent row only said no fresh receipt existed yet.

@@ -488,7 +488,7 @@ Two holes went to another session on 2026-10-15 for an immediate fix: cross-tena
 - [x] S11: Small fixes: requireTwoFactor on DELETE /configs/:id (private/account/src/routes/configs.ts:1436), /rotate-cek/status limited to admins (:812), CI_MODE pinned false in the Workers entry (private/account/src/entry/cloudflare.ts:36). Accept: vitest per route.
     (ticked) 2026-10-24T16:02:44Z by d778be9d: commit:cdaa70209 (account 8e97b94) requireTwoFactor on DELETE /configs/:id, requireRotationAdmin on rotate-cek/status, CI_MODE pinned false in entry/cloudflare.ts; vitest 50 passed rc=0, refusals failed before the fix
 - [x] S12: An isolation test suite that keeps these closed: two subscriptions, two orgs, two teams and two stores sharing ids, run in account vitest and in the RustFS drill (J4 receipt). Accept: the suite fails if any of S2-S8 is reverted.
-  (record 2026-11-05) account 3ea471b and 6fd73b1: 139 mutations, 136 red; one survivor gained a case and went red on rerun, and two are redundant layers whose stronger forms went red. Live and open: drill leg o and the J4 receipt.
+  (record 2026-11-05) account 3ea471b and 6fd73b1: 139 mutations, 136 red; one survivor gained a case and went red on rerun, and two are redundant layers whose stronger forms went red. Live and open when recorded (2026-11-05); the tick below (2026-11-05T17:45Z) records drill leg o PASS and the J4 receipt VERIFIED.
     (ticked) 2026-11-05T17:45:00Z by d778be9d: commit:18412e082 every clause read: two subscriptions, orgs, teams and stores in the suite; account vitest rc=0, drill leg o PASS, J4 receipt VERIFIED; mutation proof per the record line, run by the writer
 
 ### Phase P: local integration proof (dev VMs, account gateway, RustFS)
