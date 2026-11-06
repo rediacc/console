@@ -993,6 +993,8 @@ def control_real_hook(tmp):
         text=True,
     )
     if holder.stdin is None or holder.stdout is None:
+        holder.kill()
+        holder.wait(timeout=30)
         raise AssertionError("the stand-in holder was not started with pipes")
     try:
         check("the vm:check stand-in holds the lock", holder.stdout.readline().strip(), "held")
@@ -1049,6 +1051,8 @@ def control_real_hook(tmp):
         )
         stand_in_in, stand_in_out = holder.stdin, holder.stdout
         if stand_in_in is None or stand_in_out is None:
+            holder.kill()
+            holder.wait(timeout=30)
             raise SystemExit("the ci:quick stand-in was started without its stdin/stdout pipes")
         try:
             check("the ci:quick stand-in holds the marker", stand_in_out.readline().strip(), "held")
