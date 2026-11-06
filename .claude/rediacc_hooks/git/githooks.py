@@ -54,6 +54,7 @@ def _load(name: str, path: pathlib.Path):
 cp = _load("commit_policy", HERE.parent / "commit_policy.py")
 ga = _load("githook_artifacts", HERE / "artifacts.py")
 rr = _load("githook_release_run", HERE / "release_run.py")
+sp = _load("githook_syspath", HERE.parent / "syspath.py")
 
 SHAPE = re.compile(r"^[0-9]{4}-[0-9]+$")
 
@@ -159,8 +160,7 @@ GUARD_PACKAGE_ROOT = CONSOLE_ROOT / ".claude"
 
 
 def _untagged_guard():
-    if str(GUARD_PACKAGE_ROOT) not in sys.path:
-        sys.path.insert(0, str(GUARD_PACKAGE_ROOT))
+    sp.on_sys_path(GUARD_PACKAGE_ROOT)
     return importlib.import_module("rediacc_hooks.guards.block_untagged_commit")
 
 
