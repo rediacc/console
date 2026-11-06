@@ -1,6 +1,8 @@
 /**
  * Whether a renet acquire may upload the machine's renet. Kept apart from renet-execution so a caller
- * that announces "Provisioning renet" reads the same decision `acquireRemoteRenet` acts on.
+ * that announces "Provisioning renet" reads the same decision `acquireRemoteRenet` acts on, except on the
+ * confirmation path ({@link mayOfferReplacement}): there `renetMayUpload` stays false, the operator's prompt
+ * names the replacement itself, and the upload follows only on a yes.
  */
 
 import { isDevBuild } from '../../utils/platform.js';
@@ -33,6 +35,14 @@ export function renetHold(): RenetHold {
   if (setting === '1') return 'env';
   if (setting !== '0' && isDevBuild()) return 'dev';
   return null;
+}
+
+/** The cause that keeps a mutating verb from replacing the machine's renet, for a message. */
+export function renetHoldReason(): string {
+  if (inExecutor()) return 'a served request never replaces it';
+  if (renetHold() === 'env') return 'REDIACC_NO_PROVISION=1 holds it';
+  if (renetHold() === 'dev') return 'a development build holds it';
+  return 'nothing holds it';
 }
 
 /** True when any hold applies ({@link renetHold}). */

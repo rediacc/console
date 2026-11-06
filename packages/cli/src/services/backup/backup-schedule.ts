@@ -34,7 +34,11 @@ import type { PlannedStep } from '../jobs/steps.js';
 import { machineConnections } from '../machine/machine-connection.js';
 import { acquireRemoteRenet, readSSHKey } from '../renet/renet-execution.js';
 import { REMOTE_INSTALL_PATH } from '../renet/renet-provisioner.js';
-import { renetMayUpload } from '../renet/renet-upload-decision.js';
+import {
+  mayOfferReplacement,
+  renetHoldReason,
+  renetMayUpload,
+} from '../renet/renet-upload-decision.js';
 import { envFilePath, generateEnvFile } from './backup-env-file.js';
 import {
   buildSchedulePayload,
@@ -150,10 +154,8 @@ async function preDeployProvisioning(
   }
   if (renetMayUpload('provision')) {
     outputService.info(`Provisioning renet to ${machine.ip}...`);
-  } else {
-    outputService.info(
-      `Using the installed renet on ${machine.ip} (REDIACC_NO_PROVISION=1 holds it).`
-    );
+  } else if (!mayOfferReplacement('provision')) {
+    outputService.info(`Using the installed renet on ${machine.ip} (${renetHoldReason()}).`);
   }
   const { remotePath } = await acquireRemoteRenet(
     'provision',
@@ -339,8 +341,8 @@ export async function expectedStatusUnits(
 
 /**
  * `backup status` render: per unit, scheduled or not, last run and result, next run, and a missed-run verdict, from
- * the `systemctl show` text a `backup-status` job returned. Prints the table and sets exit code 1 when any unit is
- * unscheduled or missed a run.
+ * the `systemctl show` text a `backup-status` job returned. Prints the table and sets exit code 2 when any unit could
+ * not be read, else 1 when any unit is unscheduled or missed a run ({@link scheduleStatusExitCode}).
  */
 export function renderBackupScheduleStatus(
   machineName: string,

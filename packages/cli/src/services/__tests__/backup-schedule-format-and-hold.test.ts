@@ -42,6 +42,7 @@ vi.mock('../account/license.js', () => ({
 
 const { renderBackupScheduleStatus, _testing } = await import('../backup/backup-schedule.js');
 const { setOutputFormat } = await import('../../utils/errors.js');
+const { createOutputState, runInRequestContext } = await import('../core/request-context.js');
 
 const EXPECTED = [{ unitName: 'nightly', strategyName: 'nightly', schedule: '0 3 * * *' }];
 
@@ -87,5 +88,13 @@ describe('the provisioning announcement follows the hold', () => {
     await run();
     expect(infos().some((m) => m.includes('Provisioning renet'))).toBe(false);
     expect(infos().some((m) => m.includes('REDIACC_NO_PROVISION=1'))).toBe(true);
+  });
+
+  it('inside a served request names that, not an unset REDIACC_NO_PROVISION', async () => {
+    delete process.env.REDIACC_NO_PROVISION;
+    await runInRequestContext({ output: createOutputState(), stdout: [], stderr: [] }, run);
+    expect(infos().some((m) => m.includes('Provisioning renet'))).toBe(false);
+    expect(infos().some((m) => m.includes('REDIACC_NO_PROVISION'))).toBe(false);
+    expect(infos().some((m) => m.includes('served request'))).toBe(true);
   });
 });
