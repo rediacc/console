@@ -22,14 +22,19 @@ rdc machine health server-1
 ```
 
 This reports:
-- **System**: uptime, disk usage, datastore usage
-- **Containers**: running, healthy, unhealthy counts
-- **Storage**: SMART health status
+- **System**: uptime, memory (warning above 80%, error above 90%), disk and datastore usage (warning above 85%, error above 95%)
+- **Containers**: running, healthy, unhealthy counts; a container in a `Restarting` loop is critical
+- **Services**: failed systemd units (an error) and units that keep restarting (critical)
+- **Storage**: SMART health status (a failing disk is critical) and disk temperature
+- **Repositories**: autostart repositories that are not mounted, and each repository's filesystem usage (warning above 85%, error above 95%)
+- **Backups**: repositories not backed up in over 10 days, behind their schedule or target, or whose last verify failed
+- **Licenses**: expired, missing, mismatched or invalid repository licenses, and licenses due for refresh
+- **Renet processes**: daemons still running a replaced renet binary
 - **Repository health**: each mounted repository's own `health()` result (see below)
 - **Certificates**: the proxy's certificates close to expiry, and shared ACME challenge CNAMEs
 - **Issues**: identified problems
 
-The exit code is the verdict: `0` healthy, `1` warning, `2` error. Use `--output json` for machine-readable output; it carries `repo_health` (one report per repository) and `findings`, each with a code, a severity, a subject and a detail.
+The exit code is the verdict: `0` healthy, `1` warning, `2` error, `3` critical (a failing disk, or a container or service in a restart loop). Use `--output json` for machine-readable output; it carries `repo_health` (one report per repository) and `findings`, each with a code, a severity (`info`, `warning`, `error` or `critical`), a subject, a detail and, where a fix exists, `fix` (see [Repair](#repair)).
 
 ## Repository Health
 
@@ -48,6 +53,60 @@ The command exits with the worst level across the repository's Rediaccfiles. A r
 `rdc machine health` reads the proxy's ACME certificates and reports `cert.expiry.near` for each one under 21 days from expiry (a warning) or under 7 days (an error). The proxy renews 30 days ahead, so a certificate under 21 days means its renewal has failed for at least nine days.
 
 It also reports `acme.challenge.cname-shared` when the `_acme-challenge.<name>` record of a certificate name follows a CNAME to a name that is not itself an `_acme-challenge.` name, or when two names end at the same name. A wildcard record that is a CNAME produces this shape: every challenge lands on one name and the renewals collide. A deliberate delegation (for example `_acme-challenge.mail.example.com` pointing at `_acme-challenge.mail.example.io`) is not reported; list any other intended delegation in `ACME_DELEGATED_NAMES` (a comma list of certificate names) in the proxy's `config.env`.
+
+## Repair
+
+Every finding carries a code, and where a safe fix exists, a `fix` with an `action`, a safety `class` and `window_only`. `rdc machine health` stays read-only; `rdc machine repair` is the command that acts:
+
+```bash
+rdc machine repair server-1 --dry-run     # list what would run
+rdc machine repair server-1               # run the auto-safe fixes, then re-check
+rdc machine repair server-1 --code cert.expiry.near
+```
+
+| Class | Meaning |
+|---|---|
+| `auto-safe` | Runs by default: restart a container or Traefik, trim and prune, write the ACME anchor |
+| `auto-with-backup` | Runs only with `--with-backup`, after a successful snapshot of the repository; a failed snapshot cancels the fix |
+| `operator-only` | Never runs. The command prints the exact command to run by hand. Everything that deletes named data or spends money is here |
+
+`window_only` is a condition on top of the class: the fix runs only inside the machine's maintenance window, `HH:MM-HH:MM` in UTC (it may wrap midnight). A machine without a window never runs these fixes on its own; `--window-override` runs them by hand. Set or clear the window with:
+
+```bash
+rdc machine repair server-1 --set-window 00:00-03:00
+rdc machine repair server-1 --set-window off
+```
+
+Each fix first checks that its finding is still there, so a second run reports nothing to do. Fixes that act on the same thing run once (one Traefik restart covers every certificate). Each fix is logged to the machine journal with the tag `rediacc-repair` and in the JSON `actions` (`code`, `subject`, `action`, `class`, `result`, `before`, `after`), and the run ends with a full re-check. The exit code is `0` when nothing is left, `1` when warnings or operator-only items are left, and `2` when an error is left or a fix failed.
+
+| Finding | Fix | Class |
+|---|---|---|
+| `datastore.usage.high`, `repo.disk.high` | Trim, then prune stopped containers, anonymous dangling volumes and unused images | auto-safe |
+| `container.unhealthy`, `container.restart-loop` | Restart the container | auto-safe |
+| `renet.binary.replaced` | Restart the affected repository supervisors (`rdc machine restart-services --include-docker`, scoped to them) | auto-safe, window only |
+| `cert.expiry.near` | Restart Traefik so it retries the renewal | auto-safe |
+| `acme.challenge.cname-shared` | Write the ACME anchor (below) | auto-safe |
+| `repo.health.warning`, `repo.health.error` | Run the repository's `repair()` ([Services](/en/docs/services)) | the class the Rediaccfile declares |
+| `repo.unmounted`, `service.failed`, `service.restart-loop`, `backup.*`, `license.*`, `renet.repo-health.unsupported` | Printed as the command to run | operator-only |
+
+Findings with no fix (SMART failures, temperature, memory, the system disk, a failed verify) are reported and left to the operator.
+
+The prune never touches the hub: containers labelled `rediacc.hub.*` and volumes labelled `rediacc.hub.user` or named `rediacc-hub-home-*` are excluded, so a hub user's home survives every reclaim. A residue that trim and prune cannot free (named volumes, large application data) stays an operator decision.
+
+### Repository repair
+
+```bash
+rdc repo repair my-app@server-1 --dry-run
+rdc repo repair my-app@server-1
+```
+
+`rdc repo repair` runs the repository's `repair()` functions with the same classes: `auto-safe` runs, `auto-with-backup` needs `--with-backup`, and an undeclared (`operator-only`) `repair()` runs only after its prompt is answered or with `--yes`. `health()` runs again afterwards, and the exit code follows the level it ends at: `0` ok or no check, `1` warning, `2` error or a failed `repair()`.
+
+### The ACME anchor
+
+A wildcard DNS record that is a CNAME makes every `_acme-challenge.<host>` name follow it, so all challenges land on one name and the renewals collide (`acme.challenge.cname-shared`). The fix writes a TXT record with the value `rediacc-acme-anchor` at each colliding `_acme-challenge.<name>` through the proxy's Cloudflare token, then restarts Traefik. An explicit record takes the name out of the wildcard's reach, so the challenge lands where it belongs. The fix only adds records, and an existing anchor is left as it is.
+
+Names listed in `ACME_DELEGATED_NAMES` (a comma list of certificate names in the proxy's `config.env`) are deliberate delegations: they are never anchored and never reported. When the proxy has no usable Cloudflare token, the fix falls back to `LEGO_DISABLE_CNAME_SUPPORT=true` in `config.env`, but only when no delegated name is declared, because that variable switches CNAME following off for every name; with a delegation declared, the finding stays operator-only. The same fix runs at every proxy install (`rdc machine infra push`), and on its own with `renet proxy acme-fix` on the machine.
 
 ## List Containers
 

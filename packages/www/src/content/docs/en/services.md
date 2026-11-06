@@ -35,8 +35,26 @@ renet runs these Rediaccfile functions:
 | `up()` | When starting | Start services (e.g., `renet compose -- up -d`) | Root failure is **critical** (stops everything). Subdirectory failures are **non-critical** (logged, continues) |
 | `down()` | When stopping | Stop services (e.g., `renet compose -- down`) | **Best-effort** -- failures are logged but all Rediaccfiles are always attempted |
 | `health()` | On `rdc repo health`, on `rdc machine health`, and in the deploy health gate | Report the repository's own health: exit `0` ok, `1` warning, `2` error | Every Rediaccfile's `health()` runs and the worst level counts. Exit `75` means still warming (a warning). Any other exit, a signal or a timeout is an error. A repository where no Rediaccfile defines `health()` reports **no check**, never healthy |
+| `repair()` | On `rdc repo repair`, and on `rdc machine repair` for a repository whose `health()` is not ok | Fix what that file's own `health()` reported | Runs only when its file's `health()` is not ok and its declared class is allowed (see below). `health()` runs again afterwards. A failed or timed-out `repair()` is an error |
 
 Every function is optional. If a function is not defined, it is silently skipped.
+
+#### Declaring a repair class
+
+`repair()` receives `REDIACC_HEALTH_LEVEL` (`warning` or `error`, the level its own file's `health()` reported) and `REDIACC_HEALTH_OUTPUT` (the tail of that `health()` output). A comment line declares how safe the function is:
+
+```bash
+# rediacc:repair class=auto-safe
+# rediacc:repair class=auto-with-backup window=only
+```
+
+| Class | Who runs it |
+|---|---|
+| `auto-safe` | `rdc machine repair` and `rdc repo repair` run it on their own |
+| `auto-with-backup` | Runs only with `--with-backup`, after a successful snapshot of the repository |
+| `operator-only` | Never runs on its own. `rdc repo repair` asks first (or takes `--yes`); `rdc machine repair` never runs it |
+
+A `repair()` with no declaration is `operator-only`, so no tool runs a repository's code unattended unless the repository says it is safe. `window=only` adds a second condition: the function runs only inside the machine's maintenance window ([Monitoring](/en/docs/monitoring#repair)), or with `--window-override`. When several lines declare a class, the most restrictive one counts.
 
 ### Execution Order
 
@@ -111,7 +129,7 @@ Each Docker unit runs a stop hook before the daemon is signalled. The hook runs 
 `up()` and `down()` get 10 minutes each by default, set with `RENET_UP_TIMEOUT` and `RENET_DOWN_TIMEOUT` or `--up-timeout` and `--down-timeout`. On a timeout the process group gets SIGTERM, then SIGKILL after 10 seconds. A path that needs `down()` first, such as `repo down --unmount` or a converge restart, leaves the containers running when `down()` times out, and `--force` continues. A Rediaccfile can raise a limit with a comment line:
 
 ```bash
-# rediacc:timeout up=20m down=15m backup=120s health=60s
+# rediacc:timeout up=20m down=15m backup=120s health=60s repair=10m
 ```
 
 | Key | Default | Cap |
@@ -120,8 +138,9 @@ Each Docker unit runs a stop hook before the daemon is signalled. The hook runs 
 | `down` | 10 minutes | 15 minutes |
 | `backup` | 30 seconds | 300 seconds |
 | `health` | 30 seconds | 300 seconds |
+| `repair` | 5 minutes | 30 minutes |
 
-`health()` is bounded the same way: its default is set with `RENET_HEALTH_TIMEOUT`, and on a timeout its process group gets SIGTERM, then SIGKILL after 10 seconds. The deploy health gate reads a timed-out `health()` as still warming and retries; `rdc repo health` and `rdc machine health` report it as an error.
+`health()` is bounded the same way: its default is set with `RENET_HEALTH_TIMEOUT`, and on a timeout its process group gets SIGTERM, then SIGKILL after 10 seconds. The deploy health gate reads a timed-out `health()` as still warming and retries; `rdc repo health` and `rdc machine health` report it as an error. `repair()` follows the same model with `RENET_REPAIR_TIMEOUT`, and a timed-out `repair()` counts as failed.
 
 A directive only raises a limit and is clamped to its cap, so the repository cannot shorten `down()` into a kill. Unknown keys are ignored with a warning.
 
