@@ -249,6 +249,11 @@ ALIAS_COMMANDS = [
         "printf '[alias]\\n\\tlg = cherry-pick\\n' >> .git/config && git lg -x 0123abc",
     ),
     ("alias redefined by a copy earlier", "cp /tmp/evil.cfg .git/config; git lg -x 0123abc"),
+    # Review fab28346.1: a git run whose output is redirected into the config writes it just the same.
+    (
+        "alias redefined by a git redirect earlier",
+        "git log -1 --format='[alias]%n%tlg = cherry-pick' > .git/config && git lg -x 0123abc",
+    ),
 ]
 
 

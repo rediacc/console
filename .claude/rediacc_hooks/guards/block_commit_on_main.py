@@ -319,6 +319,18 @@ def resolve(run, base, created=frozenset()):
             return done()
 
 
+def _redirect_target(run):
+    """The first file `run`'s output is redirected into, "" when there is none (a /dev sink is no file)."""
+    from rediacc_hooks import shellscan
+
+    for t in shellscan.redirect_targets(run):
+        if t not in ("/dev/null", "/dev/stdout", "/dev/stderr", "/dev/tty") and not t.startswith(
+            "/dev/fd/"
+        ):
+            return t
+    return ""
+
+
 def _file_writer(run):
     """A label for a non-git `run` that can write a git configuration file, "" for one that cannot (an `INERT_COMMANDS` name with no output redirect)."""
     from rediacc_hooks import shellscan
@@ -351,6 +363,12 @@ def writer_runs(cmd, base, created=frozenset()):
                 defining = label
             continue
         write = resolve(run, base, created)
+        # A git run whose output is redirected into a file can write a configuration too (`git log --format='[alias]...' > .git/config`, review fab28346.1), so a LATER verb's alias is as unreadable as after any other file writer; this run itself is judged as it reads now.
+        redirected = _redirect_target(run)
+        if redirected and not defining:
+            later_defining = "git %s > %s" % (run.argv[0] if run.argv else "", redirected)
+        else:
+            later_defining = ""
         # An alias read at hook time is the configuration BEFORE the command runs, so a `git config` earlier in the same command that names an alias or an include can redefine what the later verb means.
         if defining and not write.refusal and write.typed not in WRITER_VERBS | PLAIN_VERBS:
             write = write._replace(
@@ -362,6 +380,8 @@ def writer_runs(cmd, base, created=frozenset()):
             for a in write.args
         ):
             defining = "git config " + " ".join(write.args)
+        if later_defining and not defining:
+            defining = later_defining
         if write.refusal:
             found.append(write)
             continue
