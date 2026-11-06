@@ -475,6 +475,20 @@ export const DECLARED_HAND_WRITTEN_LANES: Readonly<Record<string, string>> = {
   'quality-pytest':
     'split out of quality-security (PLAN-ci-time-budget T2.15) to run the one hand-written ' +
     'Python package test step, which no gate-bind region emits; T2.8 unit sharding replaces it',
+  'ci-quick':
+    'runs the RUNNER, never the gates: one hand-written `Quick lane plan` step with a ' +
+    'collapse floor, so no gate-bind region has a gate to emit',
+  'quality-account':
+    'checks out the private account submodule under an App token and builds natives, then ' +
+    'runs hand-written `npm run check:ci-account-*` steps and the account suite; the manifest ' +
+    'binds them by step name, and a region would not carry the secrets and checkout order',
+  'quality-go':
+    'hand-written steps by design: they install clang, prefer the archive mirror and run ' +
+    'against the renet checkout, an ordering a generated region would not preserve; the ' +
+    'manifest binds them by step name',
+  'quality-packages':
+    'hand-written steps that interleave installs (agent-browser, OpenTofu) with the package ' +
+    'test suites they serve, and upload artifacts; the manifest binds them by step name',
   'quality-secure-storage':
     'a three-OS matrix (ubuntu, macOS, Windows) that runs one vitest file against the real ' +
     'keyring, Keychain and DPAPI backends; it holds no manifest gate, and an emitted region ' +
@@ -495,12 +509,7 @@ export const DECLARED_HAND_WRITTEN_LANES: Readonly<Record<string, string>> = {
  * Deciding that is a design call this gate deliberately does not make; making the gap
  * VISIBLE instead of silent is what it does.
  */
-export const UNDECIDED_LANES: readonly string[] = [
-  'ci-quick',
-  'quality-packages',
-  'quality-account',
-  'quality-go',
-];
+export const UNDECIDED_LANES: readonly string[] = [];
 
 /**
  * Step names a lane's `# >>> gate-bind` region emits, per lane.
@@ -647,6 +656,15 @@ export function partitionFindings(
     if (inSets.length > 1) {
       findings.push(`${lane} is in ${inSets.length} sets at once (${inSets.join(', ')})`);
     }
+  }
+
+  // THE UNDECIDED CLAUSE (PLAN-health-checks-local N1). The set is kept as the place a NEW lane could be parked, but a parked lane is a red, not a printed note: a decision that prints on every green run is a decision nobody takes.
+  for (const lane of [...undecided].sort((a, b) => Number(a > b) - Number(a < b))) {
+    findings.push(
+      `${lane} is UNDECIDED: setup-having and region-less, hand-written by omission. ` +
+        'Give it a `# >>> gate-bind` region by registering gates against it, or move it into ' +
+        'DECLARED_HAND_WRITTEN_LANES with the reason recorded.'
+    );
   }
 
   // THE ALLOWLIST CLAUSE. A lane with no setup step is hand-written by construction; one WITH a setup step chose to be, and the choice has to be recorded or the allowlist quietly absorbs lanes that should have earned a region.
@@ -901,8 +919,9 @@ const PART_REGIONS: ReadonlySet<string> = new Set(['quality-code']);
 const PART_HAND: Readonly<Record<string, string>> = {
   'quality-branch': 'no `- id: setup`, so invariant 11 forbids a region here',
   [HOST_LANE]: 'holds this gate, which must never be conjuncted onto a shard leg',
+  'quality-go': 'hand-written steps by design',
 };
-const PART_UNDECIDED: readonly string[] = ['quality-go'];
+const PART_UNDECIDED: readonly string[] = [];
 const PART_SETUP = (lane: string): boolean => lane !== 'quality-branch';
 
 function selftest(): number {
@@ -1162,6 +1181,22 @@ function selftestControls(scratch: string[]): number {
         PART_SETUP,
         {}
       ).some((f) => f.includes('quality-new is in NO set')),
+    },
+    {
+      name: 'FIRES: any undecided lane is a finding, so an open decision cannot ride a green',
+      ok: partitionFindings(
+        PART_JOBS,
+        PART_REGIONS,
+        PART_HAND,
+        ['quality-go'],
+        PART_SETUP,
+        {}
+      ).some((f) => f.includes('quality-go is UNDECIDED')),
+    },
+    {
+      name: 'CONTROL: an empty undecided set is silent when every lane is decided',
+      ok:
+        partitionFindings(PART_JOBS, PART_REGIONS, PART_HAND, [], PART_SETUP, {}).length === 0,
     },
     {
       name: 'FIRES: a lane in BOTH sets (region-bearing and allowlisted at once)',
