@@ -1989,6 +1989,18 @@ def test_w12_a_lease_edit_spelled_with_dotdot_is_dropped(tmp_path):
     assert got == []
 
 
+def test_w12_a_relative_lease_edit_spelled_with_dotdot_is_dropped(tmp_path):
+    """Review aa366a68.1. CONTROL: a relative main-tree path with a `..` in it is kept, normalized."""
+    got = _edit_paths(
+        tmp_path,
+        lambda root: [
+            ("Write", {"file_path": ".claude/x/../../.claude/worktrees/x/src/a.ts"}, str(root)),
+            ("Write", {"file_path": "src/y/../a.ts"}, str(root)),
+        ],
+    )
+    assert got == ["src/a.ts"]
+
+
 def test_w12_a_bash_write_from_a_lease_cwd_is_dropped(tmp_path):
     got = _edit_paths(
         tmp_path,

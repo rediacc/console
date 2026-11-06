@@ -1417,9 +1417,8 @@ def edit_paths(jsonl, root):
             path = str(inp.get("file_path") or inp.get("notebook_path") or "")
             if path:
                 # NORMALIZED FIRST: `<root>/.claude/x/../../../.claude/worktrees/<id>/f` names a lease file, and unnormalized it kept its `.claude/x/..` head, dodged `in_lease_tree`, and made block_commit_of_live_writer_file refuse a lease writer's own commit (2026-11-05).
-                out.add(
-                    (os.path.normpath(path) if path.startswith("/") else path).removeprefix(base)
-                )
+                # A relative spelling is normalized too (review aa366a68.1): a `..` path that climbs back into a lease tree dodged the lease filter the same way.
+                out.add(os.path.normpath(path).removeprefix(base))
     return {p for p in out if not in_lease_tree(p)}
 
 
@@ -1792,7 +1791,7 @@ def row_line(row):
 
 
 def _report_boxes(store, entry):
-    """[(sig, state, owed halves)] of one report index entry: its `boxes` field (T6), else its body through `wl_planbox.parse_tick`. None when the body had to be read and could not be, so a caller never reads an unread body as one naming no box (review d03f8895.1)."""
+    """[(sig, state, owed halves)] of one report index entry: its `boxes` field (T6), else its body through `wl_planbox.parse_tick`. None when the body had to be read and could not be, so a caller never reads an unread body as one naming no box."""
     import wl_planbox
 
     boxes = entry.get("boxes")
