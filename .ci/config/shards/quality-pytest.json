@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 5,
-  "generatedAt": "2026-11-06T00:07:03.115Z",
+  "generatedAt": "2026-11-06T04:48:50.185Z",
   "legs": [
     {
       "index": 1,
@@ -491,7 +491,8 @@
         "pytest:.claude/rediacc_hooks/tests/test_wl_prreview.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_soakedpins.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_waiter_controls.py",
-        "pytest:.claude/rediacc_hooks/tests/test_wl_wisdom.py"
+        "pytest:.claude/rediacc_hooks/tests/test_wl_wisdom.py",
+        "pytest:.claude/rediacc_hooks/tests/test_writer_commit_verbs.py"
       ]
     },
     {
@@ -562,6 +563,7 @@
         "pytest:.ci/rediacc_ci/tests/test_core_account.py",
         "pytest:.ci/rediacc_ci/tests/test_core_allowlist.py",
         "pytest:.ci/rediacc_ci/tests/test_core_bws_env_store.py",
+        "pytest:.ci/rediacc_ci/tests/test_core_local_common_renet_paused.py",
         "pytest:.ci/rediacc_ci/tests/test_core_secrets.py",
         "pytest:.ci/rediacc_ci/tests/test_core_xml_trusted.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_console_executor.py",

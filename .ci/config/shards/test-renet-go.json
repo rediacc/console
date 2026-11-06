@@ -1,7 +1,7 @@
 {
   "lane": "test-renet-go",
   "of": 2,
-  "generatedAt": "2026-11-06T00:07:02.845Z",
+  "generatedAt": "2026-11-06T04:46:37.970Z",
   "legs": [
     {
       "index": 1,
@@ -110,6 +110,7 @@
         "github.com/rediacc/renet/pkg/runpaths",
         "github.com/rediacc/renet/pkg/sandbox",
         "github.com/rediacc/renet/pkg/ssh",
+        "github.com/rediacc/renet/pkg/statfs",
         "github.com/rediacc/renet/pkg/storage",
         "github.com/rediacc/renet/pkg/telemetry",
         "github.com/rediacc/renet/pkg/thinpool",
