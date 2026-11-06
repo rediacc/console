@@ -301,7 +301,7 @@ function grandKeyOf(
  * grand registered elsewhere in the config: a bare name means the grand, so
  * a destructive command refuses to guess the fork (#495) and names it.
  */
-export class ForkUnderBareRefError extends Error {
+class ForkUnderBareRefError extends Error {
   constructor(ref: string, forkKey: string, grandKey: string | undefined) {
     const grand = grandKey ? `the grand registered as "${grandKey}"` : 'a grand not in this config';
     super(

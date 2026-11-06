@@ -155,7 +155,7 @@ const failedLabels: Record<string, string> = {
 };
 
 /** Human label for a step that ended in failure. */
-export function getFailedLabel(name: string): string {
+function getFailedLabel(name: string): string {
   return failedLabels[name] ?? `${getActiveLabel(name)} failed`;
 }
 

@@ -30,7 +30,7 @@ import type { RenetEvent } from './types.js';
  * used to hit the proxy branch, print its refusal envelope on stdout, and hand that JSON to the next
  * call as a token (bench, 2026-11-05).
  */
-export const ACCOUNT_DIRECT_COMMANDS: ReadonlySet<string> = new Set(['subscription proxy-token']);
+const ACCOUNT_DIRECT_COMMANDS: ReadonlySet<string> = new Set(['subscription proxy-token']);
 
 /** The proxy URL a command runs through, or undefined when it runs here. */
 export function proxyUrlFor(

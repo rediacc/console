@@ -167,7 +167,7 @@ export function printFinishedNotices(deps: Pick<NoticeDeps, 'store' | 'write' | 
 /**
  * Acknowledge the finished tickets whose repository left the config. Their steps have nothing left to act on, since each one works on the repository's config entry (settleRepoDelete refuses outright without one), so the ticket used to print `steps pending: rdc job wait <id>` on every later command forever (a deleted fork on bench, 2026-11-05). Never rejects.
  */
-export async function dropOrphanedTickets(
+async function dropOrphanedTickets(
   deps: Pick<NoticeDeps, 'store' | 'repoExists'>
 ): Promise<void> {
   const repoExists = deps.repoExists;
