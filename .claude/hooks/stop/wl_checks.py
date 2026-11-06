@@ -2561,6 +2561,42 @@ def _soaked_pins_report(worklist, session_id, state_doc):
             outq_add(worklist, session_id, state_doc, "soaked-pins", text, 3)
 
 
+VM_CHECK_LOCK_NAME = "rediacc-vm-check.lock"
+
+
+def vm_check_lock_path(environ=None):
+    """The fleet lock `npm run vm:check` holds for its whole run, at the path `.ci/rediacc_ci/drills/vm_check.py` lock_path computes: `$XDG_RUNTIME_DIR`, then `/run/user/<uid>`, each only when it is this user's directory, else a per-user name in /tmp."""
+    env = os.environ if environ is None else environ
+    uid = os.getuid()
+    for runtime in ((env.get("XDG_RUNTIME_DIR") or "").strip(), "/run/user/%d" % uid):
+        with contextlib.suppress(OSError):
+            if runtime and os.path.isdir(runtime) and os.stat(runtime).st_uid == uid:
+                return os.path.join(runtime, VM_CHECK_LOCK_NAME)
+    return os.path.join("/tmp", "rediacc-vm-check-%d.lock" % uid)
+
+
+def vm_check_running(path=None):
+    """True only when another process holds the vm:check fleet lock; a missing file, an unreadable one or a free lock reads as not running, so a blind reading never stands a check down."""
+    import fcntl
+
+    path = path or vm_check_lock_path()
+    try:
+        fd = os.open(path, os.O_RDONLY)
+    except OSError:
+        return False
+    try:
+        fcntl.flock(fd, fcntl.LOCK_SH | fcntl.LOCK_NB)
+    except BlockingIOError:
+        return True
+    except OSError:
+        return False
+    else:
+        fcntl.flock(fd, fcntl.LOCK_UN)
+        return False
+    finally:
+        os.close(fd)
+
+
 def worktree_check(worklist, session_id, state_doc, fold, roster, event, vadd):
     """Follow this repo's lease trees (wl_worktrees). A survey that raises says so in the report and blocks nothing: a blind reading never accuses a lease."""
     root = C.project_root(C.project_start(event))
@@ -2581,7 +2617,17 @@ def worktree_check(worklist, session_id, state_doc, fold, roster, event, vadd):
         outq_add(worklist, session_id, state_doc, "worktree-orphan", text, 3)
         return
     state_doc["worktrees"] = got["cache"]
-    if got["unlanded"]:
+    if got["unlanded"] and vm_check_running():
+        # Landing a CLI or renet commit while a vm:check runs changes the tree it rebuilds from on every rdc call (a run of 2026-11-06 failed V1.1 that way), so the lease waits for the run: reported, not blocked.
+        outq_add(
+            worklist,
+            session_id,
+            state_doc,
+            "worktree-orphan",
+            M.N_WORKTREE_VMCHECK % wl_worktrees.unlanded_lines(got),
+            3,
+        )
+    elif got["unlanded"]:
         vadd(
             "worktree-unlanded",
             False,

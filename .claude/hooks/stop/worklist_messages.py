@@ -3311,6 +3311,12 @@ V_WORKTREE_UNLANDED = (
 
 N_WORKTREE_REPORT = "LEASE TREES (nothing blocks on these):\n%s"
 
+N_WORKTREE_VMCHECK = (
+    "UNLANDED LEASE, held for the running vm:check (its fleet lock is taken): landing a CLI or "
+    "renet commit now would change the tree it rebuilds from on every rdc call. Land these once "
+    "it ends:\n%s"
+)
+
 CLI_STATUS_NONE = (
     "--status: no live subagent matched %r. The roster reads the last Stop event plus every "
     "agent started since it; an id that finished its turn is not live."

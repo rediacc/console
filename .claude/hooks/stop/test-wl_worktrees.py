@@ -938,6 +938,29 @@ def control_real_hook(tmp):
     cached = hook_state(fix).get("worktrees", {}).get("w1", {})
     check("the state doc keeps the figures for the next stop", bool(cached.get("sig")), True)
 
+    # A running vm:check (its fleet lock held) holds the landing: reported, not blocked.
+    import fcntl
+
+    runtime = fix.base / "xdg"
+    runtime.mkdir(mode=0o700)
+    lock = runtime / "rediacc-vm-check.lock"
+    lock.write_text("", encoding="utf-8")
+    held = os.open(str(lock), os.O_RDWR)
+    fcntl.flock(held, fcntl.LOCK_EX)
+    try:
+        got = hook_stop(fix, {**env, "XDG_RUNTIME_DIR": str(runtime)})
+    finally:
+        fcntl.flock(held, fcntl.LOCK_UN)
+        os.close(held)
+    check("a running vm:check lifts the block", got.decision, "allow")
+    check(
+        "a running vm:check keeps the lease reported",
+        "held for the running vm:check" in got.out,
+        True,
+    )
+    got = hook_stop(fix, {**env, "XDG_RUNTIME_DIR": str(runtime)})
+    check("a free fleet lock blocks again", got.decision, "block")
+
     fix.bg = json.dumps(
         [{"id": "wa1", "type": "subagent", "status": "running", "description": "w"}]
     )
