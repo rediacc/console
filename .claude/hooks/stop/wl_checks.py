@@ -2580,6 +2580,15 @@ def vm_check_lock_path(environ=None):
 
 # The argv words that name a vm:check process: `npm run vm:check` runs `python3 -m rediacc_ci.drills.vm_check`, and a direct run names the file.
 VM_CHECK_ARGV = ("rediacc_ci.drills.vm_check", "drills/vm_check.py")
+# A process runs a script or module only through an interpreter, so the word that names it counts only behind one: `tail -f <repo>/drills/vm_check.py` or `grep scripts/ci-runner/quick-clone.ts` merely carries the path (reviews a90d9cb2.1, d640b348.1).
+RUNNER_ARGV0 = re.compile(r"^(python[0-9.]*|node(js)?|tsx|bun|deno|uv)$")
+
+
+def argv_runs(words, targets):
+    """True when `words` is an interpreter run (RUNNER_ARGV0) with an operand that IS one of `targets` or ends with it after a `/`."""
+    if not words or not RUNNER_ARGV0.match(os.path.basename(words[0])):
+        return False
+    return any(w == t or w.endswith("/" + t) for w in words[1:] for t in targets)
 
 
 def vm_check_holder(raw, proc="/proc"):
@@ -2590,10 +2599,10 @@ def vm_check_holder(raw, proc="/proc"):
     try:
         pid = int(json.loads(raw.decode("utf-8", "replace")).get("pid"))
         argv = pathlib.Path(proc, str(pid), "cmdline").read_bytes().split(b"\0")
-    except (ValueError, TypeError, AttributeError, OSError):
+    except (ValueError, TypeError, AttributeError, OSError, OverflowError):
         return False
     words = [a.decode("utf-8", "replace") for a in argv]
-    return pid > 0 and any(w.endswith(VM_CHECK_ARGV) for w in words)
+    return pid > 0 and argv_runs(words, VM_CHECK_ARGV)
 
 
 def vm_check_running(path=None):
@@ -2669,7 +2678,9 @@ def _same_checkout(pid, words, root, proc):
         return True
     want = os.path.join(real_root, CI_QUICK_SCRIPT)
     return any(
-        w.endswith(CI_QUICK_ARGV) and os.path.realpath(os.path.join(cwd, w)) == want for w in words
+        argv_runs([words[0], w], (CI_QUICK_ARGV,))
+        and os.path.realpath(os.path.join(cwd, w)) == want
+        for w in words[1:]
     )
 
 
@@ -2680,13 +2691,13 @@ def ci_quick_running(root, path=None, proc="/proc", now=None):
         owner = json.loads(pathlib.Path(path).read_bytes().decode("utf-8", "replace"))
         pid = int(owner.get("pid"))
         argv = pathlib.Path(proc, str(pid), "cmdline").read_bytes().split(b"\0")
-    except (ValueError, TypeError, AttributeError, OSError):
+    except (ValueError, TypeError, AttributeError, OSError, OverflowError):
         return False
     age = _lock_age_s(owner.get("at"), time.time() if now is None else now)
     if age is None or age > CI_QUICK_MAX_AGE_S:
         return False
     words = [a.decode("utf-8", "replace") for a in argv]
-    if pid <= 0 or not any(w.endswith(CI_QUICK_ARGV) for w in words):
+    if pid <= 0 or not argv_runs(words, (CI_QUICK_ARGV,)):
         return False
     return _same_checkout(pid, words, root, proc)
 
@@ -4665,8 +4676,14 @@ def run_stop(event, event_ok, worklist, hook_file):
                 },
                 subject=sorted(k for k, _l, _c in _bo_rows),
             )
-    except Exception:
-        pass
+    except Exception as exc:
+        # A gate that raises says so: a bare pass here left plan-box-owed silently off (review 82fd346d.3).
+        vadd(
+            "plan-box-owed",
+            True,
+            "THIS IS A HOOK BUG: the plan-box-owed check failed: %s: %s"
+            % (type(exc).__name__, str(exc)[:120]),
+        )
 
     pstate, pahead, pref = wl_ci.publish_divergence(root)
     if pstate == "stale-local":

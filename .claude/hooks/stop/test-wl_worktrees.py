@@ -11,6 +11,7 @@ Auto-discovered by TAILED in .claude/rediacc_hooks/tests/test_hooks_delegates.py
 """
 
 import ast
+import datetime
 import importlib.util
 import json
 import os
@@ -1069,7 +1070,7 @@ def control_real_hook(tmp):
     got = ciq_stop(0, fix.proj)
     check("a running ci:quick lifts the block", got.decision, "allow")
     check("a running ci:quick reports the hold", held_text in got.out, True)
-    check("the hold names the lease", "w1" in got.out, True)
+    check("the hold names the lease", "    w1 (" in got.out, True)
     check("the run ended and removed its marker", ciq_lock.exists(), False)
     got = hook_stop(fix, env)
     check("a free ci:quick marker blocks again", got.decision, "block")
@@ -1129,6 +1130,54 @@ def control_real_hook(tmp):
     check("a peer's lease is reported once", got.out.count("peer lease w1"), 1)
 
 
+def control_probes(tmp):
+    """The lock-owner readers, called directly over a fake /proc: the argv must be an interpreter run of the script (a `tail` or `grep` that carries the path is not one), an `Infinity` pid reads False, and a host with no /proc reads False (reviews a90d9cb2.1, d640b348.1 to .3)."""
+    sys.path.insert(0, str(SOURCE / "hooks/stop"))
+    import wl_checks
+
+    fake = tmp / "fakeproc"
+    root = tmp / "probe-root"
+    root.mkdir()
+    pid = 4242
+    (fake / str(pid)).mkdir(parents=True)
+    (fake / str(pid) / "cwd").symlink_to(root)
+    stamp = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%S.000Z")
+    lock = tmp / "probe.lock"
+
+    def argv_is(*words):
+        (fake / str(pid) / "cmdline").write_bytes(b"\0".join(w.encode() for w in words) + b"\0")
+
+    def ciq(raw=None, proc=str(fake)):
+        lock.write_text(raw or json.dumps({"pid": pid, "at": stamp}), encoding="utf-8")
+        return wl_checks.ci_quick_running(str(root), path=str(lock), proc=proc)
+
+    script = "scripts/ci-runner/quick-clone.ts"
+    argv_is("node", "--require", "p.cjs", script)
+    check("ci:quick: an interpreter run of the script holds", ciq(), True)
+    argv_is("grep", script)
+    check("ci:quick: a grep naming the script is not a run", ciq(), False)
+    argv_is("node", "xci-runner/quick-clone.ts")
+    check("ci:quick: a word that only ends with the path is not the script", ciq(), False)
+    argv_is("node", script)
+    check(
+        "ci:quick: pid Infinity reads False, not a raise",
+        ciq('{"pid": Infinity, "at": "x"}'),
+        False,
+    )
+    check("ci:quick: a host with no /proc reads False", ciq(proc=str(tmp / "no-proc")), False)
+
+    vm = "rediacc_ci.drills.vm_check"
+    holder = wl_checks.vm_check_holder
+    raw = json.dumps({"pid": pid}).encode()
+    argv_is("python3", "-m", vm)
+    check("vm:check: the module run holds", holder(raw, proc=str(fake)), True)
+    argv_is("python3", ".ci/rediacc_ci/drills/vm_check.py")
+    check("vm:check: the file run holds", holder(raw, proc=str(fake)), True)
+    argv_is("tail", "-f", "/repo/.ci/rediacc_ci/drills/vm_check.py")
+    check("vm:check: a tail of the file is not a run", holder(raw, proc=str(fake)), False)
+    check("vm:check: pid Infinity reads False", holder(b'{"pid": Infinity}', proc=str(fake)), False)
+
+
 def section_stop():
     tmp = pathlib.Path(runtmp.run_dir("wl-worktrees-stop-")).resolve()
     for sub in ("t", "home", "cache"):
@@ -1143,6 +1192,7 @@ def section_stop():
     control_submodule(tmp)
     control_effort_table(tmp)
     control_real_hook(tmp)
+    control_probes(tmp)
 
 
 SECTIONS = {"root": section_root, "stop": section_stop}

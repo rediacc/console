@@ -7,6 +7,7 @@ THE CONTROL is the report store pointed at an empty directory: the box linked on
 
 from __future__ import annotations
 
+import ast
 import json
 import pathlib
 import subprocess
@@ -420,6 +421,22 @@ def test_stopcheck_quiet_for_two_stops_blocks_on_the_third_and_the_row_silences_
     memo, blocking = BA.stop_check(memo, BA.uninvestigated(rows))
     assert blocking == []
     assert key not in memo
+
+
+def test_stopcheck_a_failing_audit_is_reported_not_swallowed():
+    """Review 82fd346d.3: the try around the audit in run_stop must name its failure, never end in a bare pass."""
+    path = pathlib.Path(wlfix.import_wl("wl_checks").__file__)
+    tree = ast.parse(path.read_text(encoding="utf-8"))
+    tries = [
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Try)
+        and "uninvestigated_cached" in ast.unparse(ast.Module(node.body, []))
+    ]
+    assert len(tries) == 1
+    handler = tries[0].handlers[0]
+    assert not all(isinstance(stmt, ast.Pass) for stmt in handler.body)
+    assert "plan-box-owed" in ast.unparse(ast.Module(handler.body, []))
 
 
 def test_stopcheck_the_key_is_in_the_effort_table_and_off_at_quiet():
