@@ -139,10 +139,18 @@ def _calls_in(func: ast.AST) -> list[tuple[int, str]]:
 
 
 def _dry_run_call_lines(func: ast.FunctionDef) -> set[int]:
-    """Line numbers of calls nested in an `if` whose test names a dry run (the preview branch)."""
+    """Line numbers of calls in the preview branch: an `if` whose test is a positive (not negated) dry-run
+    check and whose body ends in `return`, so nothing after it in that branch can reach wrangler."""
     lines: set[int] = set()
     for node in ast.walk(func):
-        if isinstance(node, ast.If) and "dry" in ast.unparse(node.test).lower():
+        if (
+            isinstance(node, ast.If)
+            and not isinstance(node.test, ast.UnaryOp)
+            and "dry" in ast.unparse(node.test).lower()
+            and "not " not in ast.unparse(node.test).lower()
+            and node.body
+            and isinstance(node.body[-1], ast.Return)
+        ):
             for inner in node.body:
                 for sub in ast.walk(inner):
                     if isinstance(sub, ast.Call):
