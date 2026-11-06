@@ -143,7 +143,14 @@ export async function readLinuxClientMachineId(
   for (const path of sources.hostPaths) {
     const id = await readFile(path, 'utf-8').then(
       (v) => v.trim(),
-      () => ''
+      (error: unknown) => {
+        // Only an absent file means "no host id". An unreadable one (EACCES, EISDIR) would make the same host report a different client id from one run to the next.
+        if ((error as NodeJS.ErrnoException).code === 'ENOENT') return '';
+        throw new CliExitError(
+          ERROR_CODES.PRECONDITION_MISMATCH,
+          `Cannot read the client machine id at ${path} (${error instanceof Error ? error.message : String(error)}).`
+        );
+      }
     );
     if (id) return id;
   }
@@ -174,11 +181,34 @@ async function persistInstallId(path: string, generated: string): Promise<string
     if ((error as NodeJS.ErrnoException).code === 'EEXIST') {
       const persisted = await readRacedInstallId(path);
       if (persisted) return persisted;
-      // Nothing valid ever appeared: the file is a corrupt leftover, not a winner's, so it is replaced.
-      await fsp.writeFile(path, `${generated}\n`, { mode: 0o600 });
-      return generated;
+      // Nothing valid ever appeared: the file is a corrupt leftover, not a winner's. One racer replaces it under an exclusive lock file, so two runs never both overwrite it with their own ids.
+      return replaceCorruptInstallId(path, generated);
     }
     throw error;
+  }
+}
+
+/** Replace a corrupt id file: the lock holder re-checks, then writes; a racer that lost the lock reads what the holder wrote. */
+async function replaceCorruptInstallId(path: string, generated: string): Promise<string> {
+  const fsp = await import('node:fs/promises');
+  const lockPath = `${path}.replace`;
+  try {
+    await fsp.writeFile(lockPath, '', { mode: 0o600, flag: 'wx' });
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
+    // Another run holds the lock: wait for its write. A holder that died leaves the lock behind, so after the wait the file is replaced anyway.
+    const persisted = await readRacedInstallId(path);
+    if (persisted) return persisted;
+    await fsp.writeFile(path, `${generated}\n`, { mode: 0o600 });
+    return generated;
+  }
+  try {
+    const current = (await fsp.readFile(path, 'utf-8').catch(() => '')).trim();
+    if (/^[a-f0-9]{64}$/.test(current)) return current;
+    await fsp.writeFile(path, `${generated}\n`, { mode: 0o600 });
+    return generated;
+  } finally {
+    await fsp.rm(lockPath, { force: true });
   }
 }
 

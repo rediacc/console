@@ -1,4 +1,4 @@
-import { chmodSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -55,6 +55,33 @@ describe('readLinuxClientMachineId without a host machine id', () => {
 
     expect(id).toMatch(/^[a-f0-9]{64}$/);
     expect(await readLinuxClientMachineId(sources)).toBe(id);
+  });
+
+  it('two first runs racing over a corrupt leftover still report one id', async () => {
+    const dir = tmp();
+    const installIdPath = join(dir, 'client-machine-id');
+    writeFileSync(installIdPath, 'garbage\n');
+    const sources = { hostPaths: [join(dir, 'missing')], installIdPath };
+
+    const ids = await Promise.all(
+      Array.from({ length: 8 }, () => readLinuxClientMachineId(sources))
+    );
+
+    expect(new Set(ids).size).toBe(1);
+    expect(await readLinuxClientMachineId(sources)).toBe(ids[0]);
+  });
+
+  it('names an unreadable host id file instead of quietly reporting a generated id', async () => {
+    const dir = tmp();
+    // A directory where the id file should be: readFile fails with EISDIR, not ENOENT.
+    const hostPath = join(dir, 'machine-id');
+    mkdirSync(hostPath);
+    const err = await readLinuxClientMachineId({
+      hostPaths: [hostPath],
+      installIdPath: join(dir, 'cfg', 'client-machine-id'),
+    }).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(CliExitError);
+    expect((err as Error).message).toContain(hostPath);
   });
 
   it('prefers the host id when present', async () => {
