@@ -150,7 +150,62 @@ def commit_msg(argv: list[str]) -> int:
                 "[no-review] is for writing only; these paths are not: %s."
                 % (", ".join(offenders[:8]) or "(no staged path)")
             )
-    return lease_plan_box_refusal(msg, repo)
+    return lease_pr_task_refusal(msg, repo) or lease_plan_box_refusal(msg, repo)
+
+
+# A LEASE COMMIT NAMES A DECLARED EPIC (#c9ca8d23). In the main checkout `block_untagged_commit` refuses a `PR-TASK:` trailer that is missing or names no epic of the branch; a lease writer's commit reached the tree with `PR-TASK: tracked finding #d31b4054` (f07996f4f, lease 9010a7b9) because nothing here asked. The epic set is the MAIN checkout's (its live branch's `agent/pr/<branch>.md` united with
+# `agent/worklist/epics.jsonl`), since the lease is detached and an epic declared after the lease was cut lives only there. The parser is the guard's own, imported with `.claude` on `sys.path`: `trailer_id`, `declared_epics`, `epic_named`, `epic_menu` and the two refusal texts. With no epic set at all there is nothing to judge an id against, and the guard allows that case too.
+GUARD_PACKAGE_ROOT = CONSOLE_ROOT / ".claude"
+
+
+def _untagged_guard():
+    if str(GUARD_PACKAGE_ROOT) not in sys.path:
+        sys.path.insert(0, str(GUARD_PACKAGE_ROOT))
+    return importlib.import_module("rediacc_hooks.guards.block_untagged_commit")
+
+
+def _main_branch(main: str) -> str:
+    """The main checkout's live branch. Git exports `GIT_DIR` and `GIT_INDEX_FILE` to a hook, and `-C` does not override them, so a plain `git -C <main>` from the lease's `commit-msg` answered the LEASE's detached HEAD: empty, which judged the trailer against the ledger alone (measured by `test_pr_task_hook_runs_under_a_real_git_commit`)."""
+    env = {
+        k: v
+        for k, v in os.environ.items()
+        if not k.startswith("GIT_") or k.startswith("GIT_CONFIG")
+    }
+    try:
+        done = subprocess.run(
+            ["git", "-C", main, "branch", "--show-current"],
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=30,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return ""
+    return done.stdout.strip() if done.returncode == 0 else ""
+
+
+def lease_pr_task_refusal(msg: str, repo: str) -> int:
+    lease = cp.lease_root(repo) if repo else ""
+    if not lease:
+        return 0
+    main = lease.partition(cp.LEASE_HOLDER)[0]
+    guard = _untagged_guard()
+    branch = _main_branch(main)
+    known, shown, snap, branch_key = guard.declared_epics(main, branch)
+    menu = "\n".join(guard.epic_menu(shown, snap, branch_key, branch))
+    found = guard.trailer_id(msg)
+    if found == "":
+        return _refuse(
+            "this commit from the lease tree %s carries no PR-TASK trailer.\n%s%s\n"
+            % (lease, guard.MISSING_TRAILER, menu)
+        )
+    if known and not guard.epic_named(found, known):
+        return _refuse(
+            "this commit from the lease tree %s names no declared epic.\n%s%s\n"
+            % (lease, guard.NO_EPIC % found, menu)
+        )
+    return 0
 
 
 # A LEASE COMMIT NAMES THE PLAN BOX IT SERVES (agent/plans/PLAN-tick-tracking.md, box T3). `land` refuses a lease commit without a valid `Plan-Box:` trailer (T2); this hook refuses the same message at commit time, so the writer fixes it in its own lease before the lead reads it. The grammar is read in process from `wl_planbox.py`, loaded by file. The tree checks (the plan exists, the box is open, the clause is defined) import the worklist's plan modules, so they run as `python3 wl_planbox.py check --root <main checkout>`, a process whose own directory resolves those imports with no `sys.path` entry here. Only in a lease tree; the main checkout pays one `lease_root` call, which starts no subprocess outside the holder path.

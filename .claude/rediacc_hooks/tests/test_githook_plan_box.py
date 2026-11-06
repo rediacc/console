@@ -199,3 +199,95 @@ def test_plan_box_hook_runs_under_a_real_git_commit(repos):
         check=False,
     )
     assert admitted.returncode == 0, admitted.stderr
+
+
+# --------------------------------------------------------------------------- the PR-TASK epic check (#c9ca8d23) ---------------------------------------------------------------------------
+# A lease writer's commit reached the tree carrying `PR-TASK: tracked finding #d31b4054`, a value naming no epic. `githooks.lease_pr_task_refusal` judges the trailer with `block_untagged_commit`'s own parser against the MAIN checkout's live branch: its `agent/pr/<branch>.md` united with the ledger.
+EPIC, LEDGER_EPIC = "1d805023", "0f9e8d7c"
+NONE_BOX = "Plan-Box: none -- a fixture commit that serves no box\n"
+
+
+@pytest.fixture
+def epics(repos):
+    """The fixture main checkout on a `MMDD-N` branch that declares EPIC, with LEDGER_EPIC only in the ledger."""
+    main, lease, plain = repos
+    _git(main, "switch", "-q", "-c", "0101-1")
+    (main / "agent" / "pr").mkdir(parents=True)
+    (main / "agent" / "pr" / "0101-1.md").write_text(
+        "### Port the guards\n\n`PR-TASK: %s`\n" % EPIC, encoding="utf-8"
+    )
+    (main / "agent" / "worklist").mkdir(parents=True)
+    (main / "agent" / "worklist" / "epics.jsonl").write_text(
+        '{"id": "%s", "title": "an older epic"}\n' % LEDGER_EPIC, encoding="utf-8"
+    )
+    return main, lease, plain
+
+
+@pytest.mark.parametrize(
+    ("trailer", "why"),
+    [
+        ("PR-TASK: tracked finding #d31b4054", "carries no PR-TASK trailer"),
+        ("", "carries no PR-TASK trailer"),
+        ("PR-TASK: f2757831", "PR-TASK id 'f2757831' names no epic"),
+    ],
+)
+def test_pr_task_naming_no_declared_epic_in_a_lease_exits_1_with_the_epic_list(
+    epics, monkeypatch, tmp_path, capsys, trailer, why
+):
+    _main, lease, _plain = epics
+    rc = _run(monkeypatch, tmp_path, lease, BODY + trailer + "\n" + NONE_BOX)
+    assert rc == 1
+    err = capsys.readouterr().err
+    assert why in err
+    assert "Epics declared for this branch (agent/pr/0101-1.md):" in err
+    assert "    %s  Port the guards" % EPIC in err
+
+
+@pytest.mark.parametrize("epic", [EPIC, LEDGER_EPIC])
+def test_pr_task_naming_a_declared_epic_in_a_lease_exits_0(epics, monkeypatch, tmp_path, epic):
+    _main, lease, _plain = epics
+    assert _run(monkeypatch, tmp_path, lease, BODY + "PR-TASK: %s\n" % epic + NONE_BOX) == 0
+
+
+def test_pr_task_outside_a_lease_is_the_pre_bash_guards_business(epics, monkeypatch, tmp_path):
+    main, _lease, _plain = epics
+    assert _run(monkeypatch, tmp_path, main, BODY + "PR-TASK: tracked finding #d31b4054\n") == 0
+
+
+def test_pr_task_control_the_old_hook_admits_the_malformed_lease_value(
+    epics, monkeypatch, tmp_path
+):
+    _main, lease, _plain = epics
+    for trailer in ("PR-TASK: tracked finding #d31b4054", "PR-TASK: f2757831"):
+        message = BODY + trailer + "\n" + NONE_BOX
+        assert _run(monkeypatch, tmp_path, lease, message) == 1
+        with monkeypatch.context() as m:
+            m.setattr(GH, "lease_pr_task_refusal", lambda _msg, _repo: 0)
+            assert _run(monkeypatch, tmp_path, lease, message) == 0
+
+
+def test_pr_task_hook_runs_under_a_real_git_commit(epics):
+    _main, lease, _plain = epics
+    (lease / "g.txt").write_text("g\n", encoding="utf-8")
+    _git(lease, "add", "--", "g.txt")
+    env = {k: v for k, v in os.environ.items() if k not in STRIP}
+    base = ["git", "-c", "core.hooksPath=%s" % HOOKS, "commit", "-q", "--no-gpg-sign", "-m"]
+    refused = subprocess.run(
+        [*base, BODY + "PR-TASK: tracked finding #d31b4054\n" + NONE_BOX],
+        cwd=str(lease),
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert refused.returncode != 0
+    assert "carries no PR-TASK trailer" in refused.stderr
+    admitted = subprocess.run(
+        [*base, BODY + "PR-TASK: %s\n" % EPIC + NONE_BOX],
+        cwd=str(lease),
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert admitted.returncode == 0, admitted.stderr
