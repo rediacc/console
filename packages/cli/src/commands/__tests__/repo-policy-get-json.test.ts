@@ -2,6 +2,7 @@
  * `repo policy get <ref> -o json|yaml` runs two jobs (the size policy, then the limits)
  * and must still print exactly ONE document on stdout.
  */
+import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { Command } from 'commander';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { PlannedStep } from '../../services/jobs/steps-support.js';
@@ -36,7 +37,7 @@ vi.mock('../../utils/repo-target.js', () => ({
 }));
 vi.mock('../../utils/repo-executor.js', () => ({
   executeRepoFunction: mocks.executeRepoFunction,
-  recordedDatastoreMount: async () => '/mnt/rediacc',
+  recordedDatastoreMount: async () => WK_DATASTORE_PATH,
 }));
 vi.mock('../../services/jobs/command-job.js', () => ({
   runCommandJob: mocks.runCommandJob,

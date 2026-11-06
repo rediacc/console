@@ -15,6 +15,7 @@
  *
  * Each `it` below fails on that code.
  */
+import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { Command } from 'commander';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -88,7 +89,7 @@ vi.mock('../../services/machine/machine-connection.js', () => ({
     acquire: vi.fn().mockImplementation(() =>
       Promise.resolve({
         sftp: { exec: mockSftpExec },
-        machine: { ip: '10.0.0.1', user: 'u', datastore: '/mnt/rediacc' },
+        machine: { ip: '10.0.0.1', user: 'u', datastore: WK_DATASTORE_PATH },
         sshPrivateKey: 'k',
         release: mockRelease,
       })
@@ -100,7 +101,7 @@ vi.mock('../../services/executor/repo-license-context.js', () => ({
     repositoryGuid: 'g',
     grandGuid: 'g',
     kind: 'fork',
-    datastoreMount: '/mnt/rediacc',
+    datastoreMount: WK_DATASTORE_PATH,
   }),
   restoreLicenseAlreadyInstalled: vi.fn().mockResolvedValue(true),
 }));

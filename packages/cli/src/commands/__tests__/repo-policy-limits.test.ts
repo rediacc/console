@@ -1,3 +1,4 @@
+import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { Command } from 'commander';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -37,7 +38,7 @@ vi.mock('../../utils/repo-target.js', () => ({
 }));
 vi.mock('../../utils/repo-executor.js', () => ({
   executeRepoFunction: mocks.executeRepoFunction,
-  recordedDatastoreMount: async () => '/mnt/rediacc',
+  recordedDatastoreMount: async () => WK_DATASTORE_PATH,
 }));
 vi.mock('../../services/jobs/command-job.js', () => ({
   runCommandJob: mocks.runCommandJob,
@@ -68,7 +69,7 @@ async function run(argv: string[]): Promise<void> {
 
 const GRANT_STDOUT = JSON.stringify({
   version: 1,
-  repo_mount_path: '/mnt/rediacc/mounts/g-app',
+  repo_mount_path: `${WK_DATASTORE_PATH}/mounts/g-app`,
   limits: {
     memory_max: 1610612736,
     cpu_max: '250000 100000',
