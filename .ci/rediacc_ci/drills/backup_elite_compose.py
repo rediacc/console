@@ -122,7 +122,7 @@ def env_text(values: dict[str, str]) -> str:
     """The `.env` the stack reads, one `KEY="value"` line each in a stable order. A value compose or bash would read specially raises `ValueError` naming the key, never the value."""
     lines = []
     for key in sorted(values):
-        if not ENV_SAFE.match(values[key]):
+        if not ENV_SAFE.fullmatch(values[key]):
             raise ValueError("%s carries a character the .env cannot hold safely" % key)
         lines.append('%s="%s"' % (key, values[key]))
     return "\n".join(lines) + "\n"
@@ -473,8 +473,8 @@ class EliteCompose:
         )
         resolved = self.machine("getent hosts %s" % INTERNAL_STORE_HOST, None)
         d.last_cmd = "machine: getent hosts %s" % INTERNAL_STORE_HOST
-        d.assert_not_equal(
-            "0",
+        d.assert_equal(
+            "2",  # getent's "key not found"; an ssh failure (255) or a missing getent (127) is no answer
             str(resolved.returncode),
             "control: the machine cannot resolve %s, so it is outside the docker network and only "
             "the public endpoint can serve it" % INTERNAL_STORE_HOST,

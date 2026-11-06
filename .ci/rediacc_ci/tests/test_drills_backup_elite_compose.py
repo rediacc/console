@@ -95,6 +95,24 @@ def test_the_env_text_is_quoted_and_refuses_a_value_it_cannot_hold() -> None:
     assert "se" not in str(caught.value).replace("KEY carries", "")
 
 
+def test_the_env_text_refuses_a_value_with_a_trailing_newline() -> None:
+    with pytest.raises(ValueError, match="KEY carries"):
+        ec.env_text({"KEY": "abc\n"})
+
+
+@pytest.mark.parametrize("code", [255, 127])
+def test_a_failed_resolution_probe_is_not_the_outside_control(harness, code: int) -> None:
+    run = harness(
+        machine_answers=[
+            (ec.SERVER_INFO, ok("200")),
+            (":%d/" % ec.STORE_PORT, ok("403")),
+            ("curl", ok("000")),
+            ("getent", rt.VmResult(code, "", "")),
+        ]
+    )
+    assert any("outside the docker network" in desc for desc in failed(run))
+
+
 def test_the_cert_is_carried_as_base64_json_and_its_subscription_read_back() -> None:
     b64 = ec.cert_base64(json.dumps({"cert": signed_cert()}))
     assert json.loads(base64.b64decode(b64))["publicKeyId"] == "kid"
