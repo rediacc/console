@@ -19,6 +19,9 @@
  *
  * Only a hand edit counts: `state` is runtime the cache merge resolves per repo, so a difference
  * there is settled by the merge, never pushed (S3 in private/account config-sync/state-sync.test.ts).
+ * The CLI-maintained `resources` families (CLI_MAINTAINED_RESOURCES: archive records) are not hand
+ * edits either: each is written by its own CLI command through a versioned push, so a read never
+ * pushes a difference there and the pulled copy's value wins.
  *
  * The offline path is untouched: the file is what is served, local edits included.
  */
@@ -75,6 +78,30 @@ function asHandEdit(local: RdcConfig, expected: RdcConfig): RdcConfig {
   const edited: RdcConfig = { ...local };
   if (expected.state === undefined) delete edited.state;
   else edited.state = expected.state;
+  return withCliMaintainedFrom(edited, expected);
+}
+
+/**
+ * The `resources` families only CLI commands write (repo delete/archive and config prune), each
+ * through the normal versioned push: a person does not hand-edit them, so a local difference there
+ * is never an edit for a read to push (#46e74ab0).
+ */
+const CLI_MAINTAINED_RESOURCES = ['deletedRepositories'] as const;
+
+/** `edited` with every CLI-maintained `resources` family taken from `expected`. */
+function withCliMaintainedFrom(edited: RdcConfig, expected: RdcConfig): RdcConfig {
+  if (edited.resources === undefined && expected.resources === undefined) return edited;
+  const resources: NonNullable<RdcConfig['resources']> = { ...edited.resources };
+  for (const key of CLI_MAINTAINED_RESOURCES) {
+    const value = expected.resources?.[key];
+    if (value === undefined) delete resources[key];
+    else resources[key] = value;
+  }
+  if (Object.keys(resources).length === 0 && expected.resources === undefined) {
+    delete edited.resources;
+  } else {
+    edited.resources = resources;
+  }
   return edited;
 }
 

@@ -270,6 +270,69 @@ describe('runtime state the cache merge resolves is not a local edit', () => {
   });
 });
 
+describe('a CLI-maintained family is not a local edit (#46e74ab0)', () => {
+  const archived = (guid: string) => ({
+    repositoryGuid: guid,
+    name: 'old',
+    tag: 'latest',
+    deletedAt: '2026-11-01T00:00:00.000Z',
+  });
+
+  it('pushes nothing for a deletedRepositories-only difference, and the pulled copy wins', async () => {
+    const atSeven = serverV7();
+    (atSeven.resources as Record<string, unknown>).deletedRepositories = [archived('guid-a')];
+    h.versions = new Map([[7, atSeven]]);
+    const local = cacheOfV7();
+    (local.resources as Record<string, unknown>).deletedRepositories = [
+      archived('guid-a'),
+      archived('guid-b'),
+    ];
+    h.disk = local;
+
+    const config = await read();
+
+    expect(h.pushed).toHaveLength(0);
+    expect(h.warnings).toEqual([]);
+    expect(config?.resources?.deletedRepositories?.map((a) => a.repositoryGuid)).toEqual([
+      'guid-a',
+    ]);
+    expect(disk().resources?.deletedRepositories?.map((a) => a.repositoryGuid)).toEqual(['guid-a']);
+  });
+
+  it('pushes nothing when only the local file holds archive records', async () => {
+    const local = cacheOfV7();
+    (local.resources as Record<string, unknown>).deletedRepositories = [archived('guid-b')];
+    h.disk = local;
+
+    await read();
+
+    expect(h.pushed).toHaveLength(0);
+    expect(h.warnings).toEqual([]);
+  });
+
+  it('still pushes a hand repo removal made beside an archive difference, without it', async () => {
+    const local = editedCache();
+    (local.resources as Record<string, unknown>).deletedRepositories = [archived('guid-b')];
+    h.disk = local;
+
+    await read();
+
+    expect(h.pushed).toHaveLength(1);
+    const pushed = h.pushed[0].doc as RdcConfig;
+    expect(Object.keys(pushed.resources?.repositories ?? {})).toEqual(['shop']);
+    expect(pushed.resources?.deletedRepositories).toBeUndefined();
+    expect(h.warnings).toHaveLength(1);
+    expect(h.warnings[0]).not.toContain('deletedRepositories');
+  });
+
+  it('names no archive pointer to config remote refresh', () => {
+    const local = cacheOfV7();
+    (local.resources as Record<string, unknown>).deletedRepositories = [archived('guid-b')];
+    const pulled = { config: serverV7() as unknown as RdcConfig, version: 7, sdkEpoch: 1 };
+    expect(localEditsAgainst(local as unknown as RdcConfig, pulled)).toBeNull();
+  });
+});
+
 describe('config remote refresh names what it replaces', () => {
   const pulled = () => ({ config: serverV7() as unknown as RdcConfig, version: 7, sdkEpoch: 1 });
 
