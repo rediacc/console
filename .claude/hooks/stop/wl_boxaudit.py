@@ -153,7 +153,8 @@ def report_rows(root, since_iso=""):
             continue
         rid = str(entry.get("id"))
         boxes = entry.get("boxes")
-        if isinstance(boxes, list) and boxes:
+        # A capped list (`boxes_capped`) lost a box or a commit; the body holds them all.
+        if isinstance(boxes, list) and boxes and not entry.get("boxes_capped"):
             out.extend((rid, _row_of(b)) for b in boxes if isinstance(b, dict) and b.get("sig"))
             continue
         try:

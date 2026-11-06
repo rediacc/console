@@ -160,7 +160,9 @@ def _fit(obj):
             < INDEX_LINE_MAX
         ):
             return obj
-    # `boxes` (PLAN-tick-tracking T6) shrinks next, last entry first: the body keeps every TICK line, so a capped list loses nothing a reader cannot re-derive.
+    # `boxes` (PLAN-tick-tracking T6) shrinks next, last entry first: the body keeps every TICK line, so a capped list loses nothing a reader cannot re-derive, and `boxes_capped` says so (a reader then re-reads the body).
+    if obj.get("boxes"):
+        obj["boxes_capped"] = True
     while obj.get("boxes"):
         obj["boxes"] = obj["boxes"][:-1]
         if (
@@ -599,8 +601,16 @@ BOXES_MAX = 6
 BOX_COMMITS_MAX = 4
 
 
+def boxes_capped(body):
+    """Does `boxes_of(body)` drop anything: more than BOXES_MAX boxes, or a box with more than BOX_COMMITS_MAX commits? A capped row carries `boxes_capped`, and its readers (the box audit's report rows, the roster's report boxes) re-read the body rather than trust a list that silently lost a box (review 9079c2c0.1)."""
+    import wl_planbox
+
+    rows = wl_planbox.parse_tick(body)
+    return len(rows) > BOXES_MAX or any(len(r.commits) > BOX_COMMITS_MAX for r in rows)
+
+
 def boxes_of(body):
-    """The `boxes` index field (PLAN-tick-tracking Design 5, box T6): one dict per box the body's TICK lines name, through `wl_planbox.parse_tick` (the legacy prose reader included), bounded here and again by `_fit`."""
+    """The `boxes` index field (PLAN-tick-tracking Design 5, box T6): one dict per box the body's TICK lines name, through `wl_planbox.parse_tick` (the legacy prose reader included), bounded here and again by `_fit`; `boxes_capped` says when the bound dropped anything."""
     import wl_planbox
 
     return [
@@ -746,6 +756,8 @@ def capture(
             "bkey": body_key,
             # The boxes the report's TICK lines name (T6). Always written, [] included, so an absent key marks a capture taken before the field existed.
             "boxes": boxes_of(body),
+            # Written only when the bound dropped a box or a commit; `_fit` sets it too when it shrinks `boxes`.
+            **({"boxes_capped": True} if boxes_capped(body) else {}),
             # WHETHER THE TRANSCRIPT PATH ACTUALLY RESOLVED, checked at capture. A stored path that silently does not exist is worse than a null: every reader treats it as readable and quietly gets nothing, which is the vacuous-check class -- a lookup that cannot succeed and never says so. Found live: a stop fired with a well-formed path to a file that was never written, and the
             # SendMessage harvest read nothing from it without anybody being able to tell that from an agent that simply sent nothing.
             "tx": tx,

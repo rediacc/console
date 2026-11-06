@@ -99,6 +99,70 @@ def test_a_capture_with_no_tick_line_indexes_an_empty_list(tmp_path):
     assert _capture(tmp_path, "Nothing here names a box.", "none")["boxes"] == []
 
 
+def _ticks(n, commits=1):
+    return "".join(
+        "TICK PLAN-a.md#%08x done commits=%s landed=all owed=-\n  close: nothing\n"
+        % (0x10000000 + i, ",".join("%07x" % (0xA000000 + i * 16 + c) for c in range(commits)))
+        for i in range(n)
+    )
+
+
+def test_seven_boxes_are_capped_and_marked_and_the_audit_reads_all_seven(tmp_path, monkeypatch):
+    """Review 9079c2c0.1-2: past BOXES_MAX the index keeps six and says it dropped one; wl_boxaudit then reads the body's seven."""
+    audit = wlfix.import_wl("wl_boxaudit")
+    entry = _capture(tmp_path, "Seven boxes.\n\n" + _ticks(RP.BOXES_MAX + 1), "seven")
+    assert len(entry["boxes"]) == RP.BOXES_MAX
+    assert entry["boxes_capped"] is True
+    monkeypatch.setattr(RP, "store_root", lambda _root: tmp_path)
+    sigs = [row.sig for _rid, row in audit.report_rows(tmp_path)]
+    assert len(sigs) == RP.BOXES_MAX + 1
+    assert "%08x" % (0x10000000 + RP.BOXES_MAX) in sigs
+
+
+def test_five_commits_are_capped_and_marked_and_the_audit_reads_all_five(tmp_path, monkeypatch):
+    audit = wlfix.import_wl("wl_boxaudit")
+    entry = _capture(tmp_path, _ticks(1, commits=RP.BOX_COMMITS_MAX + 1), "commits")
+    assert len(entry["boxes"][0]["commits"]) == RP.BOX_COMMITS_MAX
+    assert entry["boxes_capped"] is True
+    monkeypatch.setattr(RP, "store_root", lambda _root: tmp_path)
+    [(_rid, row)] = audit.report_rows(tmp_path)
+    assert len(row.commits) == RP.BOX_COMMITS_MAX + 1
+
+
+def test_control_at_the_bounds_nothing_is_capped(tmp_path):
+    entry = _capture(tmp_path, _ticks(RP.BOXES_MAX), "bounds")
+    assert len(entry["boxes"]) == RP.BOXES_MAX
+    assert "boxes_capped" not in entry
+    entry = _capture(tmp_path, _ticks(1, commits=RP.BOX_COMMITS_MAX), "bound-commits")
+    assert len(entry["boxes"][0]["commits"]) == RP.BOX_COMMITS_MAX
+    assert "boxes_capped" not in entry
+
+
+def test_fit_shrinks_boxes_under_the_line_cap_and_marks_them():
+    """The `_fit` shrink branch: a row over INDEX_LINE_MAX with the title already empty loses boxes from the end, and says so."""
+    obj = {
+        "ev": "report",
+        "id": "x",
+        "title": "",
+        "transcript": "",
+        "boxes": [
+            {"plan": "PLAN-%s.md" % ("p" * 120), "sig": "%08x" % i, "commits": []}
+            for i in range(RP.BOXES_MAX)
+        ],
+    }
+    got = RP._fit(obj)
+    assert 0 < len(got["boxes"]) < RP.BOXES_MAX
+    assert got["boxes_capped"] is True
+    assert len(RP.json.dumps(got, separators=(",", ":")).encode()) < RP.INDEX_LINE_MAX
+
+
+def test_the_roster_reads_a_capped_row_from_its_body(tmp_path):
+    roster = wlfix.import_wl("wl_roster")
+    entry = _capture(tmp_path, _ticks(RP.BOXES_MAX + 1), "roster")
+    got = roster._report_boxes(tmp_path, entry)
+    assert len(got) == RP.BOXES_MAX + 1
+
+
 def test_control_the_old_report_template_parses_to_zero_boxes():
     assert P.parse_tick(OLD_TEMPLATE) == []
     assert "one block per box signature" not in DOC.read_text(encoding="utf-8")

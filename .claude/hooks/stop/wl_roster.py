@@ -1796,7 +1796,8 @@ def _report_boxes(store, entry):
     import wl_planbox
 
     boxes = entry.get("boxes")
-    if not isinstance(boxes, list):
+    # A capped list (`boxes_capped`) lost a box; the body holds them all.
+    if not isinstance(boxes, list) or entry.get("boxes_capped"):
         try:
             body = (store / str(entry.get("body") or "")).read_text(
                 encoding="utf-8", errors="replace"
