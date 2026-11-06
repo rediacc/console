@@ -402,7 +402,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:test-www | quality-packages / Run www unit tests | yes | no |
 | check:test:tutorial-player | quality-packages / Tutorial player release gate | yes | yes |
 | check:types | quality-code / TypeScript | yes | yes |
-| check:types:incremental | local-only | yes | yes |
+| check:types:incremental | local-only | yes | no |
 | check:version | quality-code / Versions | yes | no |
 | env:register | local-only | no | no |
 | gen:docs | local-only | no | no |
