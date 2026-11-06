@@ -170,6 +170,12 @@
     ".ci/rediacc_ci/ci/profiler_panel.py": [
       "*name"
     ],
+    ".ci/rediacc_ci/ci/renet_changed.py": [
+      "BASE_SHA",
+      "BEFORE_SHA",
+      "EVENT_NAME",
+      "GITHUB_OUTPUT"
+    ],
     ".ci/rediacc_ci/ci/scope_reconcile_shadow.py": [
       "GITHUB_REPOSITORY",
       "GITHUB_RUN_ID",
