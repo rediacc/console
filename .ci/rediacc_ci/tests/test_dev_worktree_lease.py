@@ -2380,3 +2380,36 @@ def test_lease_hidden_lock_package_missing_on_disk_forces_a_real_install(repo):
     shutil.rmtree(root / "node_modules" / "dep")
     result = run_lease(root, "--name", "t")
     assert "node_modules/dep is in the hidden lockfile but not on disk" in result.stderr
+
+
+def test_control_gc_keeps_a_dirty_tree_without_discard(repo):
+    made = run_lease(repo.root, "--name", "dirty-keep", "--owner", "cli")
+    assert made.returncode == 0, made.stderr
+    tree = pathlib.Path(made.stdout.strip())
+    spike.write(tree / "scratch.txt", "work\n")
+    done = run_gc(repo.root, "--write", "--id", "dirty-keep")
+    assert done.returncode == 1
+    assert (tree / "scratch.txt").is_file()
+
+
+def test_gc_discard_dirty_removes_the_named_tree_and_prints_the_reason(repo):
+    made = run_lease(repo.root, "--name", "dirty-done", "--owner", "cli")
+    assert made.returncode == 0, made.stderr
+    tree = pathlib.Path(made.stdout.strip())
+    spike.write(tree / "scratch.txt", "work\n")
+    reason = "already landed on the tip as a3-way apply"
+    done = run_gc(repo.root, "--write", "--id", "dirty-done", "--discard-dirty", reason)
+    assert done.returncode == 0, done.stdout + done.stderr
+    assert not tree.exists()
+    assert "WAIVE" in done.stdout
+    assert reason in done.stdout
+
+
+def test_gc_discard_dirty_refuses_a_sweep_or_a_short_reason(repo):
+    make_tree(repo, "dirty-sweep")
+    sweep = run_gc(repo.root, "--write", "--discard-dirty", "a long enough reason for this")
+    assert sweep.returncode == 1
+    assert "needs --write and --id" in sweep.stderr
+    short = run_gc(repo.root, "--write", "--id", "dirty-sweep", "--discard-dirty", "landed")
+    assert short.returncode == 1
+    assert "at least 20 characters" in short.stderr

@@ -875,6 +875,11 @@ Nothing changes without --write, which deletes what passes every rule:
 Ignored files do not keep a tree and die with it, so a result worth keeping goes
 in a report or a commit. A pin of a removed tree goes with its record once its
 commits are landed. `--write --id <id>` exits 1 when that lease was kept.
+
+  --discard-dirty '<reason>'  with --write --id only: waive rule 3's uncommitted
+     paths for that one tree, after the lead has shown they are already on the
+     live tip or superseded there (the reason, at least 20 characters, is printed
+     with the deletion). Every other rule still applies, unlanded commits included.
 """
 RULE_PLACE = "rule 1"
 RULE_LIVE = "rule 2"
@@ -1468,15 +1473,32 @@ def _gc_rows(world, live, only):
             yield row or _judge(world, live, lease_id)
 
 
-def run_gc(root, *, write=False, only=""):
-    """(rc, lines): the listing, and with `write` the deletion."""
+DISCARD_REASON_MIN = 20
+
+
+def _is_dirty_problem(why):
+    """Rule 3's uncommitted-path phrase: the one problem `--discard-dirty` waives (a failed status or a broken tree still keeps it)."""
+    return why.startswith(RULE_CLEAN + ":") and "uncommitted path(s)" in why
+
+
+def run_gc(root, *, write=False, only="", discard_dirty=""):
+    """(rc, lines): the listing, and with `write` the deletion. `discard_dirty` waives the uncommitted paths of the one tree `only` names."""
     root = _main_checkout(root)
     lines = []
     deletable, kept, failed = 0, 0, 0
     with _project_env(root):
         world = _read_world(root)
         live = _read_live(root, named=bool(only))
-        for row in _gc_rows(world, live, only):
+        for judged in _gc_rows(world, live, only):
+            row = judged
+            if discard_dirty and judged.lease_id == only:
+                waived = [w for w in judged.why if _is_dirty_problem(w)]
+                if waived:
+                    row = judged._replace(why=[w for w in judged.why if not _is_dirty_problem(w)])
+                    lines.append(
+                        "  %-6s  %-24s %s; discarded by the lead: %s"
+                        % ("WAIVE", row.lease_id, "; ".join(waived), discard_dirty)
+                    )
             if row.why:
                 kept += 1
                 lines.append("  %-6s  %-24s %s" % ("KEEP", row.lease_id, "; ".join(row.why)))
@@ -1498,8 +1520,8 @@ def run_gc(root, *, write=False, only=""):
 
 
 def _parse_gc(args):
-    """`(write, id)`, or None after an error line."""
-    write, only = False, ""
+    """`(write, id, discard_reason)`, or None after an error line."""
+    write, only, discard = False, "", ""
     rest = list(args)
     while rest:
         arg = rest.pop(0)
@@ -1507,10 +1529,23 @@ def _parse_gc(args):
             write = True
         elif arg == "--id" and rest and ID_RE.match(rest[0]):
             only = rest.pop(0)
+        elif arg == "--discard-dirty" and rest:
+            discard = rest.pop(0).strip()
         else:
             log.error("Unknown or incomplete option: %s" % arg)
             return None
-    return write, only
+    if discard and not (write and only):
+        log.error(
+            "--discard-dirty needs --write and --id <id>: it waives one named tree, never a sweep"
+        )
+        return None
+    if discard and len(discard) < DISCARD_REASON_MIN:
+        log.error(
+            "--discard-dirty needs a reason of at least %d characters naming where the work already is"
+            % DISCARD_REASON_MIN
+        )
+        return None
+    return write, only, discard
 
 
 def _hook_input():
@@ -1572,7 +1607,9 @@ def cmd_gc(args):
     if parsed is None:
         return 1
     try:
-        code, lines = run_gc(paths.repo_root(), write=parsed[0], only=parsed[1])
+        code, lines = run_gc(
+            paths.repo_root(), write=parsed[0], only=parsed[1], discard_dirty=parsed[2]
+        )
     except (OSError, RuntimeError, ValueError, subprocess.SubprocessError) as exc:
         log.error("refused: %s" % exc)
         return 1
