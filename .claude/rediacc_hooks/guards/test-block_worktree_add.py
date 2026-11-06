@@ -247,7 +247,7 @@ CODE_TEXT = [
     ("shell", "x=${y:-\n#}; git -c alias.wt=worktree wt add /p\n", True),
     ("shell", "cat <<E\n'\nE\nx='\n# '; git -c alias.wt=worktree wt add /p\n", True),
     ("shell", "# a worktree note\ngit add -A  # stage\n", False),
-    ("shell", "echo \"it's\" # the worktree\ngit add -A\n", False),
+    ("shell", 'echo "it\'s" # the worktree\ngit add -A\n', False),
     ("node", 'f("echo //"); f("git -c alias.wt=worktree wt add /p");\n', True),
     ("node", 'f("/* x"); f("git -c alias.wt=worktree wt add /p"); g("*/");\n', True),
     ("node", "f(`\n// `); f(`git -c alias.wt=worktree wt add /p`);\n", True),
@@ -458,8 +458,16 @@ REVERSE = [
         FALSE_POSITIVES[2],
     ),
     # The scanners always keeping the raw text refuse the whole-line comment rows again, so those rows reach the arm and are allowed BY the scanners.
-    ("the scanners read nothing", ('    return "".join(out)\n', "    return text\n"), COMMENTED_ROWS[0]),
-    ("the scanners read nothing (js)", ('    return "".join(out)\n', "    return text\n"), COMMENTED_ROWS[1]),
+    (
+        "the scanners read nothing",
+        ('    return "".join(out)\n', "    return text\n"),
+        COMMENTED_ROWS[0],
+    ),
+    (
+        "the scanners read nothing (js)",
+        ('    return "".join(out)\n', "    return text\n"),
+        COMMENTED_ROWS[1],
+    ),
 ]
 for label, pair, (row_name, row_command) in REVERSE:
     if run_guard(row_command, defect=pair)[0] != 2:
