@@ -1,7 +1,7 @@
 """Start the backup plane a CI leg needs for the `rdc backup browse --at` end-to-end tier: RustFS with the probe bucket, and an account server that mints backup-capable tokens and presigns against that bucket.
 
     PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_backup_plane [--port <n>] [--worker <n>] [--rebuild-renet | --no-rebuild-renet]
-    PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_backup_plane --verify-renet <binary> [--verify-renet <binary> ...]
+    PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_backup_plane [options] -- <command> [args...]
 
 Five steps, each fatal on failure (the drill `drills.backup_local_plane` only warns on a bucket failure, since it starts a dev gateway that may reuse an existing bucket; a CI leg has nothing to reuse, so a missing bucket would surface minutes later as a presign error):
 
@@ -11,7 +11,7 @@ Five steps, each fatal on failure (the drill `drills.backup_local_plane` only wa
   4. `start_account` with the backup scopes, `--advertise-host <bridge>` and the ACCOUNT_BACKUP_S3_* environment. It publishes the public half as ACCOUNT_ED25519_PUBLIC_KEY (in `$GITHUB_ENV` under Actions, where the rebuild step reads it). The private half is never printed or written.
   5. Two requests from the worker VM over SSH: `/health` on the advertised URL, and any HTTP answer from ACCOUNT_BACKUP_S3_ENDPOINT (RustFS answers 403 to an anonymous GET). No CI job had a VM call a service on the runner before, so an unreachable account server or RustFS fails here instead of as a timeout inside a test.
 
-The suite's S3 credentials are exported as E2E_BACKUP_S3_KEY and E2E_BACKUP_S3_SECRET: appended to `$GITHUB_ENV` (and masked, only when `GITHUB_ACTIONS` is true) when `$GITHUB_ENV` is set, otherwise only their names are printed. Their values are never printed.
+The suite's S3 credentials are exported as E2E_BACKUP_S3_KEY and E2E_BACKUP_S3_SECRET: appended to `$GITHUB_ENV` (and masked, only when `GITHUB_ACTIONS` is true) when `$GITHUB_ENV` is set, otherwise only their names are printed. Their values are never printed. A local run exports nothing to a shell, so a chained command cannot see them: put it after `--` and it is exec'd with the full environment (account server, token, public key, S3 credentials, RENET_BINARY_PATH) once the plane is up, e.g. `start_backup_plane -- npm run e2e -- --test 31-backup-large-repo`. The GITHUB_ENV writes are unchanged.
 
 `--verify-renet <binary>` does nothing but the preflight: it reads the key baked into each binary from its build info (`go version -m`, the `-X .../keys.ProductionPublicKey=` ldflag) and refuses, naming both fingerprints, when it is not ACCOUNT_ED25519_PUBLIC_KEY. The workflow runs it after its rebuild.
 """
@@ -44,7 +44,8 @@ DEFAULT_WORKER = "11"
 SCOPES = "license:read,license:activate,subscription:read,backup:read,backup:manage"
 USAGE = (
     "usage: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_backup_plane [--port <n>] [--worker <n>] [--rebuild-renet | --no-rebuild-renet]\n"
-    "       PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_backup_plane --verify-renet <binary> [--verify-renet <binary> ...]"
+    "       PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_backup_plane --verify-renet <binary> [--verify-renet <binary> ...]\n"
+    "       PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_backup_plane [options] -- <command> [args...]"
 )
 PROBE_TIMEOUT = 20
 PUBLIC_KEY_ENV = "ACCOUNT_ED25519_PUBLIC_KEY"
@@ -65,9 +66,18 @@ class Options:
     worker: str
     rebuild_renet: bool
     verify: list[str] = dataclasses.field(default_factory=list)
+    command: list[str] = dataclasses.field(default_factory=list)
 
 
 def parse(argv: Sequence[str]) -> Options:
+    # Everything after a bare `--` is the follow-on command (`--exec`-style): run with the plane's environment once the plane is up.
+    command: list[str] = []
+    if "--" in argv:
+        split = list(argv).index("--")
+        command = list(argv[split + 1 :])
+        argv = argv[:split]
+        if not command:
+            raise ValueError("-- needs a command to run")
     values = {"port": os.environ.get("ACCOUNT_API_PORT") or DEFAULT_PORT, "worker": DEFAULT_WORKER}
     flags = {"--port": "port", "--worker": "worker"}
     # In CI the workflow rebuilds renet after this step (it needs renet to bring the VMs up first), so the rebuild here is a local default.
@@ -92,7 +102,7 @@ def parse(argv: Sequence[str]) -> Options:
     for name, value in values.items():
         if not (value.isascii() and value.isdigit()):
             raise ValueError(f"--{name} must be a number, got {value!r}")
-    return Options(values["port"], values["worker"], rebuild, verify)
+    return Options(values["port"], values["worker"], rebuild, verify, command)
 
 
 def key_fingerprint(public_key: str) -> str:
@@ -274,6 +284,20 @@ def export_credentials(k: dict[str, str]) -> None:
     )
 
 
+def exec_follow_on(
+    command: Sequence[str],
+    k: dict[str, str],
+    execvpe: Callable[..., object] = os.execvpe,
+) -> None:
+    """Replace this process with `command`, run with the plane's environment: what a local run cannot get from `$GITHUB_ENV`.
+
+    The environment already holds the account and S3 variables, the signing pair's public half and RENET_BINARY_PATH (set in-process by `run` and `start_account.publish`); the suite's two S3 credentials are added here. Nothing is printed. The account server runs in its own session, so it outlives the exec."""
+    env = dict(os.environ)
+    env["E2E_BACKUP_S3_KEY"] = k["RUSTFS_KEY"]
+    env["E2E_BACKUP_S3_SECRET"] = k["RUSTFS_SECRET"]
+    execvpe(command[0], list(command), env)
+
+
 def stop_account() -> None:
     """Stop the account server a failed probe leaves behind (its listener pid is recorded by start_account)."""
     pid_file = pathlib.Path(os.environ.get("RUNNER_TEMP") or "/tmp") / "account-for-e2e.pid"
@@ -344,6 +368,12 @@ def run(opts: Options) -> int:
     except PlaneError as exc:
         log.error(str(exc))
         return 1
+    if opts.command:
+        try:
+            exec_follow_on(opts.command, k)
+        except OSError as exc:
+            log.error(f"could not run {opts.command[0]}: {exc}")
+            return 127
     return 0
 
 

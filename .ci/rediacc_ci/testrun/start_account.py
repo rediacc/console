@@ -396,6 +396,12 @@ def terminate(server: subprocess.Popen) -> None:
 
 def publish(server_url: str, token: str, public_key: str) -> None:
     """The server URL, the token and the PUBLIC signing key (unmasked: it is public, and a renet build bakes it). The private half never reaches this function."""
+    # In-process, so a follow-on command exec'd by `start_backup_plane -- <cmd>` inherits them (a local run has no $GITHUB_ENV).
+    os.environ.update(
+        REDIACC_ACCOUNT_SERVER=server_url,
+        ACCOUNT_ED25519_PUBLIC_KEY=public_key,
+        E2E_ACCOUNT_API_TOKEN=token,
+    )
     github_env = os.environ.get("GITHUB_ENV")
     if github_env:
         # Not a `secrets.*` value, so Actions would not mask it on its own. Off Actions the line is a workflow command nobody consumes,

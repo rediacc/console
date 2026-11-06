@@ -7,6 +7,7 @@ import hashlib
 import os
 import signal
 import subprocess
+import sys
 import tempfile
 from typing import Any
 
@@ -436,3 +437,49 @@ def test_ci_mode_pins_nothing(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(plane, "export_renet_path", exported.append)
     assert plane.run(plane.Options("4900", "11", rebuild_renet=False)) == 0
     assert exported == []
+
+
+def test_parse_splits_the_follow_on_command_after_a_bare_dash_dash() -> None:
+    opts = plane.parse(["--port", "4911", "--", "npm", "run", "e2e", "--", "--test", "31"])
+    assert opts.port == "4911"
+    assert opts.command == ["npm", "run", "e2e", "--", "--test", "31"]
+    assert plane.parse([]).command == []
+    assert plane.main(["--"]) == 2
+
+
+def test_exec_follow_on_hands_the_plane_environment_to_the_command(monkeypatch) -> None:
+    seen: dict[str, Any] = {}
+    monkeypatch.setattr(os, "environ", {"REDIACC_ACCOUNT_SERVER": "http://b:4900"})
+    plane.exec_follow_on(["cmd", "a"], K, lambda f, argv, env: seen.update(f=f, argv=argv, env=env))
+    assert seen["f"] == "cmd"
+    assert seen["argv"] == ["cmd", "a"]
+    assert seen["env"]["E2E_BACKUP_S3_KEY"] == "kk"
+    assert seen["env"]["E2E_BACKUP_S3_SECRET"] == "ss"
+    assert seen["env"]["REDIACC_ACCOUNT_SERVER"] == "http://b:4900"
+
+
+def test_a_real_follow_on_process_sees_the_variables_and_nothing_is_printed() -> None:
+    """Fails without the fix: a local run exported nothing, so the chained command saw neither variable."""
+    check = 'test "$E2E_BACKUP_S3_KEY" = kk && test "$E2E_BACKUP_S3_SECRET" = ss'
+    code = (
+        "from rediacc_ci.testrun import start_backup_plane as p;"
+        f"p.exec_follow_on(['sh', '-c', {check!r}], {K!r})"
+    )
+    env = {k: v for k, v in os.environ.items() if not k.startswith("E2E_BACKUP_S3")}
+    result = subprocess.run(
+        [sys.executable, "-c", code], env=env, capture_output=True, text=True, check=False
+    )
+    assert result.returncode == 0, result.stderr
+    assert "kk" not in result.stdout + result.stderr
+
+
+def test_run_execs_the_follow_on_only_after_the_plane_is_up(monkeypatch) -> None:
+    drive(monkeypatch, "192.168.111.254")
+    ran: list[list[str]] = []
+    monkeypatch.setattr(plane, "exec_follow_on", lambda cmd, _k: ran.append(list(cmd)))
+    assert plane.run(plane.Options("4900", "11", True, [], ["true"])) == 0
+    assert ran == [["true"]]
+    ran.clear()
+    drive(monkeypatch, "192.168.111.254", probe_ok=False)
+    assert plane.run(plane.Options("4900", "11", True, [], ["true"])) == 1
+    assert ran == []
