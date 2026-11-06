@@ -33,7 +33,7 @@
       "gate": "check:ci-plan-implementation",
       "findings": [
         "P-A1:agent/plans/PLAN-backup-critical-tier.md",
-    "P-A1:agent/plans/PLAN-backup-download-from-store.md",
+        "P-A1:agent/plans/PLAN-backup-download-from-store.md",
         "P-A1:agent/plans/PLAN-backup-integrity.md",
         "P-A1:agent/plans/PLAN-backup-local-image.md",
         "P-A1:agent/plans/PLAN-backup-meter-orphaned-chunks.md",
@@ -51,7 +51,7 @@
         "P-A1:agent/plans/PLAN-tick-tracking.md",
         "P-A1:agent/plans/PLAN-worktree-lease.md"
       ],
-      "reason": "P-A1 is a merge-time condition: every named plan still has open boxes, most of them live runs on bench, hostinger, edge or stable, or runs after a release. Stable deploys need an operator ASKED and the hostinger receipts wait on a VERIFIED fleet run (ASKED:2026-11-06T13:44Z), so those boxes cannot close yet. This entry exists for the backup push the backup_push_h valve admits, which opens no PR; CI still judges every key, and the entry is removed before any merge."
+      "reason": "P-A1 is a merge-time condition: every named plan still has open boxes, most of them live runs on bench, hostinger, edge or stable, or runs after a release. Edge boxes are open to run again (hold lifted 2026-11-06); stable deploys need an operator ASKED and the hostinger receipts wait on a VERIFIED fleet run (ASKED:2026-11-06T13:44Z), so those boxes cannot close yet. This entry exists for the backup push the backup_push_h valve admits, which opens no PR; CI still judges every key, and the entry is removed before any merge."
     },
     {
       "gate": "check:ci-external-links",
