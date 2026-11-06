@@ -94,7 +94,7 @@
     "unread-reports": "floor",
     "wake-timer": "floor",
     "open-items": {
-      "block": "low",
+      "block": "smart",
       "advise": "low"
     },
     "plan-unimplemented": {
@@ -186,7 +186,7 @@
       "advise": "low"
     },
     "scheduled-red": {
-      "block": "smart",
+      "block": "high",
       "advise": "low"
     },
     "pr-unreadable": {
@@ -254,7 +254,7 @@
       "advise": "low"
     },
     "roster-unleased": {
-      "block": "smart",
+      "block": "high",
       "advise": "low"
     },
     "queue-slot": {
@@ -298,7 +298,7 @@
       "advise": "smart"
     },
     "out-of-sync": {
-      "block": "high",
+      "block": "smart",
       "advise": "smart"
     },
     "agent-state": {
@@ -330,11 +330,11 @@
       "advise": "smart"
     },
     "submodule": {
-      "block": "high",
+      "block": "smart",
       "advise": "smart"
     },
     "bigpieces": {
-      "block": "high",
+      "block": "smart",
       "advise": "smart"
     },
     "pr-stale": {
@@ -350,7 +350,7 @@
       "advise": "smart"
     },
     "bg-orphan": {
-      "block": "high",
+      "block": "smart",
       "advise": "smart"
     },
     "ci-report": {
@@ -414,13 +414,13 @@
       "advise": "smart"
     },
     "claim-check": {
-      "advise": "smart"
+      "advise": "low"
     },
     "reg-capped": {
-      "advise": "smart"
+      "advise": "low"
     },
     "reg-flood": {
-      "advise": "smart"
+      "advise": "low"
     },
     "reg-forgot": {
       "advise": "smart"
@@ -429,10 +429,10 @@
       "advise": "smart"
     },
     "reg-settled": {
-      "advise": "smart"
+      "advise": "low"
     },
     "sweep-ungrounded": {
-      "advise": "smart"
+      "advise": "low"
     },
     "scheduled-green": {
       "advise": "smart"
@@ -549,6 +549,121 @@
       "tuned_at": "2026-10-14T22:42:13Z",
       "review_after": "2026-10-28T22:42:13Z",
       "evidence": "eo-5b51a195, eo-4a48cdfe, eo-2c8ce2cb, eo-2e161bd7, eo-426369d0"
+    },
+    "bg-orphan": {
+      "direction": "promote",
+      "from": {
+        "block": "high",
+        "advise": "smart"
+      },
+      "tuned_at": "2026-11-06T14:23:19Z",
+      "review_after": "2026-11-20T14:23:19Z",
+      "evidence": "eo-9ab70ff1, eo-379a4415, eo-42efd5b4, eo-78895369, eo-2f9f7bf5, eo-02484451, eo-2a20f586, eo-6bd1980b, eo-0ca1c93d, eo-fd8c1ec3, eo-6051c7be, eo-57c989aa"
+    },
+    "bigpieces": {
+      "direction": "promote",
+      "from": {
+        "block": "high",
+        "advise": "smart"
+      },
+      "tuned_at": "2026-11-06T14:23:19Z",
+      "review_after": "2026-11-20T14:23:19Z",
+      "evidence": "eo-8e489f0e, eo-cf9e8c96, eo-f2d930a8, eo-5fee2b7f, eo-ed0ffc6b, eo-ee9336d0, eo-b281ce13, eo-d4c6f02b, eo-fbd1734a, eo-de55de3a, eo-347560bb, eo-72f9f8ba"
+    },
+    "claim-check": {
+      "direction": "promote",
+      "from": {
+        "advise": "smart"
+      },
+      "tuned_at": "2026-11-06T14:23:19Z",
+      "review_after": "2026-11-20T14:23:19Z",
+      "evidence": "eo-6064c474, eo-63c5b57a, eo-905d7062, eo-3402a702, eo-76ecab46, eo-71073147, eo-46ff6676, eo-49b083b7, eo-d570962c, eo-bc24ae51, eo-030c1558, eo-c15194bf"
+    },
+    "out-of-sync": {
+      "direction": "promote",
+      "from": {
+        "block": "high",
+        "advise": "smart"
+      },
+      "tuned_at": "2026-11-06T14:23:19Z",
+      "review_after": "2026-11-20T14:23:19Z",
+      "evidence": "eo-7af458c7, eo-7c629d3e, eo-1279e2e7, eo-4910ad27, eo-6954f7ef, eo-9ef59881, eo-5eddde17, eo-d5189bfa, eo-e63ed506, eo-51f0eaa8, eo-9bfe5c49, eo-cee58da0"
+    },
+    "reg-capped": {
+      "direction": "promote",
+      "from": {
+        "advise": "smart"
+      },
+      "tuned_at": "2026-11-06T14:23:19Z",
+      "review_after": "2026-11-20T14:23:19Z",
+      "evidence": "eo-cc58dd24, eo-dbeca78d, eo-4c0f8270, eo-a60147f4, eo-e4bc17ae, eo-50905e4d, eo-55319689, eo-3fcbad42, eo-5f182438, eo-d184e279, eo-53ca15a0, eo-f6f5f5cf"
+    },
+    "reg-flood": {
+      "direction": "promote",
+      "from": {
+        "advise": "smart"
+      },
+      "tuned_at": "2026-11-06T14:23:19Z",
+      "review_after": "2026-11-20T14:23:19Z",
+      "evidence": "eo-e49a8333, eo-698df3c0, eo-a41016b1, eo-350d0edc, eo-7ed8993a, eo-d7367419, eo-568bb8c8, eo-68dd8615, eo-6cd70ec9, eo-b6466765, eo-2bbcc613, eo-a6ddac93"
+    },
+    "reg-settled": {
+      "direction": "promote",
+      "from": {
+        "advise": "smart"
+      },
+      "tuned_at": "2026-11-06T14:23:19Z",
+      "review_after": "2026-11-20T14:23:19Z",
+      "evidence": "eo-2babb889, eo-60d07410, eo-6634c182, eo-19460157, eo-6ce0058c, eo-654dfabf, eo-cc02280a, eo-eb3d0bb5, eo-7949662b, eo-eb6cdcbe, eo-4a537b90, eo-e1f99fb4"
+    },
+    "submodule": {
+      "direction": "promote",
+      "from": {
+        "block": "high",
+        "advise": "smart"
+      },
+      "tuned_at": "2026-11-06T14:23:19Z",
+      "review_after": "2026-11-20T14:23:19Z",
+      "evidence": "eo-23b61f97, eo-8fc5457c, eo-f7cd436e, eo-d8214fd0, eo-8d01e8bd, eo-9ed8cfb1, eo-0bec4ef1, eo-aefa4365, eo-33f96724, eo-fa1c5b2f, eo-744b0cf3, eo-af2c03dc"
+    },
+    "sweep-ungrounded": {
+      "direction": "promote",
+      "from": {
+        "advise": "smart"
+      },
+      "tuned_at": "2026-11-06T14:23:19Z",
+      "review_after": "2026-11-20T14:23:19Z",
+      "evidence": "eo-c9995656, eo-5782e96a, eo-755dc36d, eo-b30c16e5, eo-fd399b20, eo-d08889d4, eo-6b09a5f2, eo-c16b69ac, eo-574e3910, eo-ff5d4398, eo-ceefac56, eo-41eb6f41"
+    },
+    "scheduled-red": {
+      "direction": "demote",
+      "from": {
+        "advise": "low",
+        "block": "smart"
+      },
+      "tuned_at": "2026-11-06T14:26:07Z",
+      "review_after": "2026-11-20T14:26:07Z",
+      "evidence": "eo-6939aea4, eo-e98d8f99, eo-50fb11fc, eo-c01cf35e, eo-69be2077, eo-55ffad4c, eo-1e7c57dd, eo-6a180fe4, eo-e88bd2e8, eo-4ede2dc4, eo-f64a806f, eo-cd68352f"
+    },
+    "roster-unleased": {
+      "direction": "demote",
+      "from": {
+        "advise": "low",
+        "block": "smart"
+      },
+      "tuned_at": "2026-11-06T14:26:09Z",
+      "review_after": "2026-11-20T14:26:09Z",
+      "evidence": "eo-ffd26543, eo-5e54638c, eo-e6fc1279, eo-8a9643cd, eo-18310dcb, eo-5fbc4791, eo-9bc57e1a, eo-3eb12d11, eo-ba9eba50, eo-971a0a63, eo-0099cd7b, eo-a6807a36"
+    },
+    "open-items": {
+      "direction": "demote",
+      "from": {
+        "advise": "low",
+        "block": "low"
+      },
+      "tuned_at": "2026-11-06T14:26:11Z",
+      "review_after": "2026-11-20T14:26:11Z",
+      "evidence": "eo-f5c470ec, eo-a90fd65f, eo-f839d387, eo-18ee6d54, eo-79f1e507, eo-bc8bc913, eo-f25187cf, eo-6a651a46, eo-6cbfee0e, eo-103661a5, eo-d87e9bc3, eo-e1790bf4"
     }
   }
 }
