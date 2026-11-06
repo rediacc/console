@@ -635,7 +635,7 @@ def test_the_worktree_harness_reads_no_rollup(gate):
         gate.log_fail("no ci_rollup mention at all: the claim this test pins has moved")
     if len(mentions) != len(writers):
         gate.log_fail("test-wl_worktrees.py mentions ci_rollup other than as the fixture writer")
-    if re.search(r"^\s*(import|from)\s+wl_ci\b|ci-trace", text, re.MULTILINE):
+    if re.search(r"^\s*(?:import|from)\b[^\n]*\bwl_ci\b|ci-trace", text, re.MULTILINE):
         gate.log_fail("test-wl_worktrees.py reaches a rollup reader")
     gate.log_pass("the only ci_rollup in test-wl_worktrees.py is the fixture writer")
 

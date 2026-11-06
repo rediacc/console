@@ -84,7 +84,7 @@ def test_probe_down_writes_its_line_before_it_sleeps() -> None:
     ("path", "want"),
     [
         # Each expectation is what `systemd-escape --path` printed for the same input (systemd 255).
-        (well_known.DATASTORE_PATH + "/mounts/ab-cd.ef_g:h", "mnt-rediacc-mounts-ab\\x2dcd.ef_g:h"),
+        ("/mnt/rediacc/mounts/ab-cd.ef_g:h", "mnt-rediacc-mounts-ab\\x2dcd.ef_g:h"),
         ("/.x/y", "\\x2ex-y"),
         ("//a//b/", "a-b"),
         ("/", "-"),

@@ -1,4 +1,4 @@
-"""`rediacc_ci.drills.backup_renet` (legs b-d with real renet, `--renet`) against a scripted worker VM and a scripted control plane.
+"""`rediacc_ci.drills.backup_renet` (legs b-d and v-x with real renet, `--renet`) against a scripted worker VM and a scripted control plane.
 
 The VM keeps a repository image per guid as a digest, mutates it on the planted rewrite, and restores a snapshot into a target by copying the digest recorded when that snapshot was cut. The live run on the ops worker is the acceptance and belongs to the lead; these cases pin the legs' own logic and that each goes red on the defect it names.
 """
@@ -19,7 +19,7 @@ import typing
 
 import pytest
 
-from rediacc_ci.drills import backup, backup_renet, lib
+from rediacc_ci.drills import backup, backup_renet, lib, wire
 from rediacc_ci.drills import backup_roundtrip as rt
 from rediacc_ci.well_known import ACCOUNT_DEV_PORT, DATASTORE_PATH
 
@@ -508,7 +508,7 @@ def _legs_for_v(
     drill, legs = make(Worker())
     legs.rt.vm = worker
     legs.b.av = lambda value, expected, desc: drill.assert_equal(
-        str(bool(expected)), str(bool(value)), desc
+        wire.jstr(expected), wire.jstr(value), desc
     )
     return drill, legs
 
@@ -793,7 +793,7 @@ def test_leg_x_goes_red_on_the_defect_each_check_names(
 
 
 def test_the_hook_network_id_is_one_renet_accepts() -> None:
-    """renet refuses a network id that is not 2816 + n * 64 (measured 2026-11-05 on the worker: 2881 was refused), and the id must differ from leg b's."""
+    """The network id must satisfy the 2816 + n * 64 shape the one measured renet refusal implies (2881 was refused on the worker, 2026-11-05), and differ from leg b's; an id outside that shape is only known to be refused when it is 2881, so this pins the drill's own choice and not renet's full rule."""
     ident = int(backup_renet.HOOK_NET_ID)
     assert (ident - 2816) % 64 == 0
     assert ident > 2816

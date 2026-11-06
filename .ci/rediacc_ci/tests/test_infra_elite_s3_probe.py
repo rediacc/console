@@ -39,7 +39,10 @@ def _calls(run: str) -> list[str]:
 
 def _can_fail(holder: dict, *, gated: bool = False) -> bool:
     """False when a step carries an `if:`, or a step or job is marked `continue-on-error`, either of which keeps a red probe from failing the job. A job's own `if:` is a legitimate skip gate (the suite switch), so `gated` refuses only one that is a constant false."""
-    skipped = str(holder.get("if", "")).strip().lower() in {"false", "0"}
+    expression = str(holder.get("if", "")).strip().lower()
+    # `${{ false }}` is the same constant as `false`.
+    wrapped = re.fullmatch(r"\$\{\{\s*(.*?)\s*\}\}", expression)
+    skipped = (wrapped.group(1) if wrapped else expression) in {"false", "0"}
     conditional = skipped if gated else "if" in holder
     return not conditional and str(holder.get("continue-on-error", False)).lower() != "true"
 
@@ -47,7 +50,7 @@ def _can_fail(holder: dict, *, gated: bool = False) -> bool:
 def probe_wiring(workflow: dict) -> list[str]:
     """The jobs that start elite and do not run the probe after it (empty when every such job is wired).
 
-    Wired means: a live probe call (no `--selftest`) in a step after the start, that step carries no `if:` and no `continue-on-error`, the job carries no `continue-on-error` and no constant-false `if:` (any other job `if:` is the suite switch and stays allowed), neither call is followed by an `||` that swallows its status, and a `--selftest` call (held to the same rule) comes before the live one, in the same step or an earlier one.
+    Wired means: a live probe call (no `--selftest`) in a step after the start, that step carries no `if:` and no `continue-on-error`, the job carries no `continue-on-error` and no constant-false `if:` (any other job `if:` is the suite switch and stays allowed), neither call contains an `||` (the rule is deliberately wider than a swallowed status), and a `--selftest` call (held to the same rule) comes before the live one, in the same step or an earlier one.
     """
     unwired = []
     starters = 0
@@ -59,11 +62,14 @@ def probe_wiring(workflow: dict) -> list[str]:
         starters += 1
         steps = job["steps"]
         calls = [(i, n, call) for i, run in enumerate(runs) for n, call in enumerate(_calls(run))]
+        # Where the start sits in its step, so `start && probe` in ONE step counts as after the start and `probe && start` does not.
+        start_at = (starts[0], runs[starts[0]].index(START))
         live = [
             (i, n)
             for i, n, call in calls
             if "--selftest" not in call and "||" not in call and _can_fail(steps[i])
         ]
+        live_at = [(i, runs[i].index(call)) for i, n, call in calls if (i, n) in live]
         selftests = [
             (i, n)
             for i, n, call in calls
@@ -72,7 +78,7 @@ def probe_wiring(workflow: dict) -> list[str]:
         ok = (
             _can_fail(job, gated=True)
             and bool(live)
-            and min(live) > (starts[0], 99)
+            and min(live_at) > start_at
             and bool(selftests)
             and min(selftests) < min(live)
         )
@@ -206,3 +212,37 @@ def test_control_a_live_call_swallowed_by_any_or_is_unwired(workflow: dict) -> N
         for step in _probe_steps(mutated):
             step["run"] += swallow
         assert probe_wiring(mutated) != [], swallow
+
+
+_SAME_STEP = """jobs:
+  elite:
+    steps:
+      - run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.ci_start_elite && PYTHONPATH=.ci python3 -m rediacc_ci.infra.elite_s3_probe --selftest && PYTHONPATH=.ci python3 -m rediacc_ci.infra.elite_s3_probe
+"""
+
+
+def test_a_probe_after_the_start_in_the_same_step_is_wired() -> None:
+    assert probe_wiring(yaml.safe_load(_SAME_STEP)) == []
+
+
+def test_control_a_probe_before_the_start_in_the_same_step_is_unwired() -> None:
+    before = (
+        "PYTHONPATH=.ci python3 -m rediacc_ci.infra.elite_s3_probe --selftest"
+        " && PYTHONPATH=.ci python3 -m rediacc_ci.infra.elite_s3_probe"
+        " && PYTHONPATH=.ci python3 -m rediacc_ci.infra.ci_start_elite"
+    )
+    doc = yaml.safe_load("jobs:\n  elite:\n    steps:\n      - run: " + before + "\n")
+    assert probe_wiring(doc) == ["elite"]
+
+
+@pytest.mark.parametrize("expression", ["false", "0", "${{ false }}", "${{false}}"])
+def test_control_a_constant_false_job_condition_is_unwired(expression: str) -> None:
+    doc = yaml.safe_load(_SAME_STEP)
+    doc["jobs"]["elite"]["if"] = expression
+    assert probe_wiring(doc) == ["elite"]
+
+
+def test_a_suite_switch_job_condition_stays_allowed() -> None:
+    doc = yaml.safe_load(_SAME_STEP)
+    doc["jobs"]["elite"]["if"] = "${{ needs.plan.outputs.suite == 'full' }}"
+    assert probe_wiring(doc) == []

@@ -480,7 +480,7 @@ def test_parse_splits_the_follow_on_command_after_a_bare_dash_dash() -> None:
 
 def test_exec_follow_on_hands_the_plane_environment_to_the_command(monkeypatch) -> None:
     seen: dict[str, Any] = {}
-    monkeypatch.setattr(os, "environ", {"REDIACC_ACCOUNT_SERVER": "http://b:4900"})
+    monkeypatch.setenv("REDIACC_ACCOUNT_SERVER", "http://b:4900")
     plane.exec_follow_on(["cmd", "a"], K, lambda f, argv, env: seen.update(f=f, argv=argv, env=env))
     assert seen["f"] == "cmd"
     assert seen["argv"] == ["cmd", "a"]

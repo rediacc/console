@@ -198,6 +198,9 @@ def _jobs_steps(text: str) -> list[tuple[str, list[str]]]:
     for line in text.split("\n"):
         if re.match(r"^jobs:\s*$", line):
             in_jobs = True
+        elif in_jobs and re.match(r"^[A-Za-z_]", line):
+            # A top-level key after the jobs block (permissions:, env:) belongs to no step.
+            in_jobs = False
         elif in_jobs and _JOB_START.match(line):
             jobs.append((line.strip().rstrip(":"), []))
         elif in_jobs and jobs and _STEP_START.match(line):
@@ -215,13 +218,12 @@ def chown_paths_not_created(text: str) -> list[str]:
     findings: list[str] = []
     for job, steps in _jobs_steps(text):
         for index, step in enumerate(steps):
-            for match in re.finditer(r"^\s+CHOWN_PATH:\s*(.+?)\s*$", step, re.M):
+            for match in re.finditer(r"^\s+CHOWN_PATH:\s*(.+?)\s*$", step, re.MULTILINE):
                 value = re.sub(_TEMP, "$RUNNER_TEMP", match.group(1).strip("\"'"))
                 made = any(
-                    not re.search(r"^        if:", earlier, re.M)
+                    not re.search(r"^(?:        |      - )if:", earlier, re.MULTILINE)
                     and re.search(
-                        r"mkdir\s+(?:-\S+\s+)*[^\n]*?(?:\"|')?%s(?:/|\"|'|\s|$)"
-                        % re.escape(value),
+                        r"mkdir\s+(?:-\S+\s+)*[^\n]*?(?:\"|')?%s(?:/|\"|'|\s|$)" % re.escape(value),
                         re.sub(_TEMP, "$RUNNER_TEMP", earlier),
                     )
                     for earlier in steps[:index]
@@ -281,6 +283,25 @@ def test_a_later_mkdir_does_not_count():
         steps[0].split("      - name: Make the directory")[0]
         + "      - name: Chown it"
         + steps[1]
-        + "      - name: Make the directory\n        run: mkdir -p \"$RUNNER_TEMP/renet\"\n"
+        + '      - name: Make the directory\n        run: mkdir -p "$RUNNER_TEMP/renet"\n'
     )
     assert len(chown_paths_not_created(swapped)) == 1
+
+
+def test_a_creating_step_whose_first_key_is_if_does_not_count():
+    """CONTROL: `- if:` as the step's first key is as conditional as an `if:` under the name."""
+    gated = _OPS_FIXTURE.replace(
+        "      - name: Make the directory\n        run:",
+        "      - if: github.event_name != 'schedule'\n        name: Make the directory\n        run:",
+    )
+    assert gated != _OPS_FIXTURE
+    assert len(chown_paths_not_created(gated)) == 1
+
+
+def test_a_top_level_key_after_the_jobs_block_is_not_part_of_the_last_step():
+    trailing = _OPS_FIXTURE.replace('mkdir -p "$RUNNER_TEMP/renet"', "echo nothing") + (
+        "env:\n  NOTE: mkdir -p $RUNNER_TEMP/renet\n"
+    )
+    steps = [step for _job, block in _jobs_steps(trailing) for step in block]
+    assert all("NOTE" not in step for step in steps)
+    assert len(chown_paths_not_created(trailing)) == 1

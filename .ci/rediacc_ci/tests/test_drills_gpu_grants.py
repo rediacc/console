@@ -51,6 +51,8 @@ def test_fork_tags_are_swept_as_stale_vmc_forks() -> None:
     for tag in (d, e, *tags):
         assert vm_check.FORK_TAG.match(tag)
     # The sweep pattern spans the letters a-j (K2 and K3 forks take later letters), so the first letter past it is the non-match.
+    assert vm_check.FORK_TAG.match("vmc-10251200-abc123-j"), "the upper bound a-j is matched"
+    assert vm_check.FORK_TAG.match("vmc-10251200-abc123-a")
     assert not vm_check.FORK_TAG.match("vmc-10251200-abc123-k")
 
 

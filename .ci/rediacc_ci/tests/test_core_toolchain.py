@@ -1144,7 +1144,7 @@ def test_acquire_refuses_an_empty_pin() -> None:
 
 
 def test_defect_1_toolchain_sh_verify_cannot_fail(tmp_path: pathlib.Path) -> None:
-    """DRIVEN, not read: six MISMATCH rows and exit 0. See the module docstring.
+    """DRIVEN, not read: one MISMATCH row per reported tool (`REPORT_TOOLS`) and exit 0. See the module docstring.
 
     RED WHEN THE TWIN IS FIXED. Adding `exit` to the `--verify` arm (or moving the dispatch block to the end of the file) makes this case fail, which is when the finding closes with evidence rather than being forgotten.
     """

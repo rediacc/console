@@ -3912,6 +3912,9 @@ def test_a_named_leg_runs_through_the_external_legs_with_exactly_that_leg():
     assert names[-1] == "_external_legs"
     assert stub.calls[-1][1] == {leg}
     assert names.index("p3_keys") < names.index("_external_legs")
+    # The whole infra chain runs in its own order before the legs: lock, renet, gateway (a leg is named, so its e2e setup needs it), account, fleet, rebind, keys.
+    chain = ["p0_lock", "p1_renet", "a0_gateway", "p4_account", "p2_fleet", "p4_rebind", "p3_keys"]
+    assert [n for n in names if n in chain] == chain
     # The leftover check runs on an `--only` run too, right after the keys and before any step.
     assert names.index("p3_keys") < names.index("p3_leftovers") < names.index("_external_legs")
 

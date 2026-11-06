@@ -260,3 +260,18 @@ def test_the_recheck_waits_out_a_window_that_opened_at_the_lead_edge(monkeypatch
     monkeypatch.setattr(pp, "backup_window_clear", lambda *_a, **_k: next(answers, False))
     monkeypatch.setattr(pp.time, "sleep", lambda _s: None)
     assert pp.wait_until_clear()
+
+
+def test_a_failed_up_followed_by_a_failed_upload_does_not_run_step_6(monkeypatch) -> None:
+    calls: list[list[str]] = []
+
+    def fake(argv, _timeout=1800):
+        calls.append(argv)
+        failing = argv[3:5] == ["repo", "up"] or argv[3:6] == ["repo", "sync", "upload"]
+        return subprocess.CompletedProcess(argv, 1 if failing else 0, "", "")
+
+    monkeypatch.setattr(pp, "_run", fake)
+    assert pp.run("nextcloud") == 1
+    verbs = [c[3:6] for c in calls]
+    assert ["repo", "sync", "upload"] in verbs
+    assert ["repo", "permission", "grant"] not in verbs

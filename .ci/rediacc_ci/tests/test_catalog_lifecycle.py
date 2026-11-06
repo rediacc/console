@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import os
+import shlex
 import stat
 import subprocess
 import time
@@ -394,14 +395,14 @@ def _run_solr_up(workdir: pathlib.Path, chown_rc: int) -> tuple[int, list[str], 
     log = workdir / "renet.log"
     script = f"""
 renet() {{
-    echo "$*" >> {log}
+    echo "$*" >> {shlex.quote(str(log))}
     case "$*" in
         *--entrypoint\\ chown*) return {chown_rc} ;;
     esac
     return 0
 }}
 sleep() {{ :; }}
-source {SOLR_REDIACCFILE}
+source {shlex.quote(os.path.abspath(SOLR_REDIACCFILE))}
 up
 """
     done = subprocess.run(
