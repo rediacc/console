@@ -111,7 +111,7 @@ def test_started_at_and_main_pid() -> None:
     assert r.parse_main_pid("MAINPID=0\n") is None
 
 
-def test_findmnt_and_statfs() -> None:
+def test_findmnt() -> None:
     line = (
         "%s tmpfs rw,nosuid,nodev,relatime,size=524288k,mode=770,uid=1001,gid=1001,noswap" % TARGET
     )
@@ -121,8 +121,6 @@ def test_findmnt_and_statfs() -> None:
     assert not r.probe_up_verdict("findmnt \n", TARGET)[0], "up() saw no tmpfs"
     assert not r.probe_up_verdict(probe.replace("524288k", "1048576k"), TARGET)[0]
     assert r.tmpfs_size("rw,size=1g") == r.GIB
-    assert r.parse_statfs("131072 80000 4096") == (536870912, 209190912)
-    assert r.parse_statfs("garbage") is None
 
 
 def test_unmount_verdicts_and_control() -> None:

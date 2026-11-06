@@ -5,13 +5,13 @@
 K2 ROWS. Both forks fork an empty grand, so after the limits K2.0 starts holder containers: in C one under the `keep` service directory that fills 48 MiB of /dev/shm and one ad-hoc leaf, in D one under `keep`.
 K2.0 fork C (`--memory-max 1G --cpu-max 1`) and fork D (no limits) are up; K2.1 rediacc-<C> has memory.max 1073741824 and cpu.max `100000 100000`, every container cgroup under it (the `keep` directory and the ad-hoc leaf, both made after the limits) has memory.oom.group 1, and rediacc-<D> has memory.max `max`; K2.2 an `alloc` container in C runs `head -c 2147483648 /dev/zero | tail`, after which C's memory.events oom_kill rose by at least 1, D's did not move, the host's /proc/vmstat oom_kill delta equals C's, C's other containers and every D container keep their StartedAt, and sshd answers; K2.3 `rdc repo policy set C --memory-max 1536M` changes memory.max with the daemon's MainPID and the container start times unchanged; K2.4 `--memory-max 16M` without `--force` is refused; K2.5 memory.max survives `systemctl daemon-reload`, a restart of an unrelated unit, and `systemctl restart rediacc-docker-<C>`; K2.6 a fork of C inherits memory.max.
 
-K3 ROWS. K3.0 fork E is up with `--ram-volume 512M --memory-max 1536M` and the probe Rediaccfile; K3.1 the tmpfs exists, size 512M, before up() runs (the probe's up() logged it); K3.2 a container writes `marker` into `.ram/data` through a bind; K3.3 up() restored 200 MB into `.ram`, rediacc-<E>'s memory.stat shmem holds at least that, and renet-exec-<E> does not; K3.4 `systemctl restart rediacc-docker-<E>` keeps `marker`; K3.5 `rdc repo down E --unmount` logs a down() line while `.ram` is still mounted and leaves no `.ram` mount, and after `rdc repo up E` the marker is gone and `.rediacc-ram` has a new mounted_at; K3.6 (the reboot row) needs K1 VERIFIED on the same tree and is a skip row here.
+K3 ROWS. K3.0 fork E is up with `--ram-volume 512M --memory-max 1536M`, the probe Rediaccfile and the docker-compose.yml its up() requires; K3.1 the tmpfs exists, size 512M, before up() runs (the probe's up() logged it); K3.2 a container writes `marker` into `.ram/data` through a bind; K3.3 up() restored 200 MB into `.ram`, rediacc-<E>'s memory.stat shmem holds at least that, and renet-exec-<E> does not; K3.4 `systemctl restart rediacc-docker-<E>` keeps `marker`; K3.5 `rdc repo down E --unmount` logs a down() line while `.ram` is still mounted and leaves no `.ram` mount, and after `rdc repo up E` the marker is gone and `.rediacc-ram` has a new mounted_at; K3.6 (the reboot row) needs K1 VERIFIED on the same tree and is a skip row here.
 
 Deviation: the plan's K3.0 names `--memory-max 1G` with a 512M volume, which Decision 13 refuses (memory.max must be at least the volume plus 1 GiB); the fork takes 1536M, the smallest cap Decision 13 admits.
 
 TEARDOWN. Every fork joins `ctx.forks`, so the run's teardown deletes it and purges its licence state even when a step crashes; this module removes only its detached container.
 
-The pure pieces (the readout scripts, the probe Rediaccfile, and the parsers and verdicts of memory.events, /proc/vmstat, memory.stat, findmnt, statfs, the probe logs and StartedAt listings) are pinned by `tests/test_drills_repo_resources.py` without a machine.
+The pure pieces (the readout scripts, the probe Rediaccfile, and the parsers and verdicts of memory.events, /proc/vmstat, memory.stat, findmnt, the probe logs and StartedAt listings) are pinned by `tests/test_drills_repo_resources.py` without a machine.
 """
 
 from __future__ import annotations
@@ -259,15 +259,6 @@ def ram_mounted(findmnt: str, target: str) -> tuple[bool, int | None]:
         if row["target"] == target and row["fstype"] == "tmpfs":
             return True, tmpfs_size(row["options"])
     return False, None
-
-
-def parse_statfs(text: str) -> tuple[int, int] | None:
-    """`stat -f -c '%b %f %S'` (blocks, free, block size) as (size, used) bytes."""
-    parts = text.split()
-    if len(parts) != 3 or not all(p.isdigit() for p in parts):
-        return None
-    blocks, free, bsize = (int(p) for p in parts)
-    return blocks * bsize, (blocks - free) * bsize
 
 
 def started_at(text: str) -> dict[str, str]:

@@ -35,16 +35,17 @@ CREATED_FILE = ".lifecycle-probe-created"
 FAIL_MARKER = "lifecycle-probe-fail-compose"
 # While present, down() asks the repository's Docker daemon something and fails loudly when the daemon does not answer.
 DOWN_MARKER = "lifecycle-probe-down-docker"
+# A marker string down() prints on stderr, matched back by `down_honest_verdict`; it is not a credential.
 DOWN_FAIL_MARK = "lifecycle-probe-down-daemon-unreachable"
 BAD_COMPOSE = "lifecycle-probe-bad.yml"
 NNP_TEXT = "no new privileges"
 # gpu_grants' fake CDI device: a 0666 character node no driver claims, so opening it is ENXIO whenever the sandbox lets the function reach it.
 CDI_NODE = gpu_grants.NODE_PATH
 CDI_REACHED = gpu_grants.ENXIO
-# Probe keys the denied-read verdicts judge.
 # The one service of `bad_compose()`; a failing `renet compose` names its image.
 BAD_IMAGE_HOST = "rediacc.invalid"
 BAD_IMAGE_NAME = "lifecycle-probe-missing"
+# Probe keys the denied-read verdicts judge.
 DENIED_KEYS = ("kcore", "shadow", "block", "grants")
 
 
