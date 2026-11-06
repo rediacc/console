@@ -192,7 +192,7 @@ export function repoResourceCells(r: RepositoryResources | undefined): {
 /** The display names of the repositories whose cgroup runs without a memory.max: any one of them can take the host's memory. */
 export function uncappedRepoNames(listResult: ListResult, repoName: RepoNameResolver): string[] {
   return getRepositories(listResult)
-    .filter((repo) => repo.resources !== undefined && repo.resources.memory_max === 0)
+    .filter((repo) => repo.resources !== undefined && !(repo.resources.memory_max > 0))
     .map((repo) => repoName(repo.name, repo.repo_name).name);
 }
 
@@ -639,12 +639,10 @@ export function buildEnrichedJson(
     storage: deriveStorageSummary(listResult.system),
     // Scripted consumers get the marker and the datastore scope too; a
     // `machine status -o json | jq` health check should not have to shell out to renet separately to learn that backups are blocked.
-    // Unknown detail is marked on each entry, as the table's backups cell says `unknown`: a `.blockedBackup` check must not read a missing field as not blocked.
+    // An entry whose detail is unknown (the whole detail unreadable or never read, or no entry for this guid) is marked `backups: unknown`, as the table's cell says: a `.blockedBackup` check must not read a missing field as not blocked.
     license_statuses: getLicenseStatuses(listResult).map((l) => ({
       ...l,
-      ...(licenseDetail === undefined
-        ? { backups: 'unknown' }
-        : (licenseDetail.get(l.repositoryGuid) ?? {})),
+      ...(licenseDetail?.get(l.repositoryGuid) ?? { backups: 'unknown' }),
     })),
   };
 }

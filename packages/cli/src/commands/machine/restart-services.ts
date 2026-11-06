@@ -18,7 +18,7 @@ import { pendingExitCode, runCommandJob } from '../../services/jobs/command-job.
 import { bindStepHandler, planStep } from '../../services/jobs/steps.js';
 import { parseDaemonUpgradeJson, reportDaemonUpgrade } from '../../services/renet/renet-daemons.js';
 import type { OutputFormat } from '../../types/index.js';
-import { getOutputFormat, handleError } from '../../utils/errors.js';
+import { getOutputFormat, handleError, ValidationError } from '../../utils/errors.js';
 import { renderLocalExecutionFailure } from '../../utils/local-execution-failures.js';
 import { assertMachineExists } from '../_validate.js';
 
@@ -28,9 +28,29 @@ interface RestartServicesOptions {
   json?: boolean;
 }
 
-/** The refusal of a renet that predates `--network-id`: cobra's unknown flag, or the job builder's closed argument list. */
+/** The refusal of a renet that predates `--network-id`: cobra's unknown flag naming it, or the job builder's closed argument list. */
 function isScopeUnsupported(text: string): boolean {
-  return isRenetFlagUnsupported(text) || /argument "network-ids" is not allowed/.test(text);
+  return (
+    (isRenetFlagUnsupported(text) && /unknown (?:shorthand )?flag[^\n]*network-id/.test(text)) ||
+    /argument "network-ids" is not allowed/.test(text)
+  );
+}
+
+/** Whether the job's stdout is the restart report of a run that started, which no refusal ever prints. */
+function isRestartReport(stdout: string | undefined): boolean {
+  try {
+    parseDaemonUpgradeJson(stdout ?? '');
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** A refusal: the JSON error envelope under `--json`, the error text and exit 1 otherwise. */
+function refuse(message: string, format: OutputFormat): void {
+  if (format === 'json') handleError(new ValidationError(message));
+  outputService.error(message);
+  setExitCode(1);
 }
 
 /** The argument object of the daemons-restart job. */
@@ -46,20 +66,20 @@ function restartArgs(
 
 /** Whether a failed job's output is an older renet refusing the scope. */
 function isScopeRefused(result: { stderr?: string; stdout?: string; error?: string }): boolean {
-  return isScopeUnsupported(
-    `${result.stderr ?? ''}\n${result.stdout ?? ''}\n${result.error ?? ''}`
-  );
+  // A report on stdout means units were handled, so its text is data, not a refusal.
+  const stdout = isRestartReport(result.stdout) ? '' : (result.stdout ?? '');
+  return isScopeUnsupported(`${result.stderr ?? ''}\n${stdout}\n${result.error ?? ''}`);
 }
 
 /** The network ids `--repo` selects, undefined without it, or 'refused' once the refusal is printed. */
 async function resolveScope(
-  options: RestartServicesOptions
+  options: RestartServicesOptions,
+  format: OutputFormat
 ): Promise<number[] | undefined | 'refused'> {
   if (options.repo === undefined) return undefined;
   const resolved = await resolveRepoNetworkId(options);
   if ('error' in resolved) {
-    outputService.error(resolved.error);
-    setExitCode(1);
+    refuse(resolved.error, format);
     return 'refused';
   }
   return [resolved.networkId];
@@ -119,7 +139,7 @@ async function runRestartServices(
 ): Promise<void> {
   await assertMachineExists(machineName);
   const format: OutputFormat = options.json ? 'json' : getOutputFormat();
-  const scope = await resolveScope(options);
+  const scope = await resolveScope(options, format);
   if (scope === 'refused') return;
   const networkIds = scope;
   if (format === 'table') {
@@ -147,10 +167,7 @@ async function runRestartServices(
   }
   if (outcome.result.success) return;
   if (networkIds && isScopeRefused(outcome.result)) {
-    outputService.error(
-      t('commands.machine.restartServices.repoRenetTooOld', { machine: machineName })
-    );
-    setExitCode(1);
+    refuse(t('commands.machine.restartServices.repoRenetTooOld', { machine: machineName }), format);
     return;
   }
   renderRestartFailure(machineName, outcome.result, format);

@@ -454,9 +454,9 @@ function certificatesOf(listResult: unknown): CertificatesListing | undefined {
 
 /** Run `repository_health --all --strict` on the machine and fold its answer. */
 export async function fetchRepoHealth(machineName: string): Promise<RepoHealthFold> {
-  const localConfig = await configService.getLocalConfig();
-  const machine = localConfig.machines[machineName] as { datastore?: string } | undefined;
   try {
+    const localConfig = await configService.getLocalConfig();
+    const machine = localConfig.machines[machineName] as { datastore?: string } | undefined;
     const result = await getExecutor().execute({
       functionName: 'repository_health',
       machineName,

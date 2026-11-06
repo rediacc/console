@@ -64,7 +64,7 @@ vi.mock('../../remote/vscode/index.js', () => ({
   },
 }));
 
-import { registerPruneCommand } from '../machine/prune.js';
+import { registerPruneCommand, splitPrunePhases } from '../machine/prune.js';
 import { installJobDeps } from './job-deps.js';
 
 /** The one machine_prune job's stdout: each phase behind its marker line. */
@@ -201,4 +201,26 @@ describe('machine prune output', () => {
       expect(mocks.events).toEqual([]);
     });
   });
+});
+
+describe('splitPrunePhases', () => {
+  it('splits the two phases at their markers', () => {
+    expect(splitPrunePhases(PRUNE_STDOUT)).toEqual({
+      datastore: JSON.stringify({ stale_locks: null, auth_keys: [] }),
+      units: 'Nothing to prune. All networks have repositories.',
+    });
+  });
+
+  it.each(['constructor', '__proto__', 'toString'])(
+    'skips the lines of an unknown marker named %s instead of throwing',
+    (name) => {
+      const out = [
+        '{"prune_phase":"datastore"}',
+        '{"a":1}',
+        `{"prune_phase":"${name}"}`,
+        'stray',
+      ].join('\n');
+      expect(splitPrunePhases(out)).toEqual({ datastore: '{"a":1}', units: '' });
+    }
+  );
 });

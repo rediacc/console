@@ -10,7 +10,7 @@ vi.mock('../../../services/core/output.js', () => ({ outputService: { info: vi.f
 vi.mock('../../../services/config/config-resources.js', () => ({ configService: {} }));
 vi.mock('../../../i18n/index.js', () => ({ t: (k: string) => k }));
 
-const { applyRepoHealth, foldRepoHealthResult } = await import('../health.js');
+const { applyRepoHealth, fetchRepoHealth, foldRepoHealthResult } = await import('../health.js');
 
 const clean = {
   healthy: true,
@@ -136,5 +136,14 @@ describe('applyRepoHealth', () => {
       'm1'
     );
     expect(h.exitCode).toBe(2);
+  });
+});
+
+describe('fetchRepoHealth', () => {
+  it('folds an unreadable local config into repo.health.failed instead of rejecting', async () => {
+    // The mocked configService has no getLocalConfig, so the read throws before any renet call.
+    const fold = await fetchRepoHealth('m1');
+    expect(fold.status).toBe('failed');
+    expect(applyRepoHealth(clean, fold, 'm1').exitCode).toBe(2);
   });
 });

@@ -51,6 +51,29 @@ describe('licenseDetailOf', () => {
   });
 });
 
+describe('buildEnrichedJson with no detail held', () => {
+  const json = (detail: ReturnType<typeof licenseDetailOf>) =>
+    buildEnrichedJson(
+      listing([GOOD]),
+      undefined,
+      undefined,
+      (g) => g,
+      ((n: string) => ({ name: n, source: 'guid' })) as never,
+      detail,
+      'm1'
+    ).license_statuses as Record<string, unknown>[];
+
+  it('marks an entry whose detail is not held as unknown, never as not blocked', () => {
+    // A filtered run that never read the licence detail passes an empty map.
+    expect(json(new Map())[0].backups).toBe('unknown');
+    expect(json(undefined)[0].backups).toBe('unknown');
+  });
+
+  it('control: an entry with its detail carries no unknown marker', () => {
+    expect(json(licenseDetailOf(listing([GOOD])))[0].backups).toBeUndefined();
+  });
+});
+
 describe('machine health options', () => {
   it('registers no -t/--team option, since the action never read it', () => {
     const machine = new Command('machine');

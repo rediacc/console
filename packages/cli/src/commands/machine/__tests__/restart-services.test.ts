@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => ({
   warn: vi.fn(),
   setExitCode: vi.fn(),
   repos: {} as Record<string, { networkId?: number }>,
+  format: 'table',
 }));
 
 vi.mock('../../../i18n/index.js', () => ({
@@ -23,7 +24,7 @@ vi.mock('../../../i18n/index.js', () => ({
 }));
 vi.mock('../../../utils/errors.js', async (orig) => ({
   ...(await orig<Record<string, unknown>>()),
-  getOutputFormat: () => 'table',
+  getOutputFormat: () => mocks.format,
   handleError: (error: unknown) => {
     throw error;
   },
@@ -66,6 +67,7 @@ let restoreJobDeps: () => void;
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.format = 'table';
   executed = [];
   answer = { ...OK, stdout: JSON.stringify({ processes: [], repos: [] }) };
   mocks.repos = { mail: { networkId: 2880 }, bare: {} };
@@ -140,5 +142,62 @@ describe('machine restart-services --repo', () => {
     ).toBe(true);
     expect(mocks.setExitCode).toHaveBeenCalledWith(1);
     expect(mocks.error.mock.calls.join(' ')).toContain('restartServices.repoRenetTooOld');
+  });
+
+  it('does not read a refusal into a failed run whose stdout is a restart report', async () => {
+    answer = {
+      success: false,
+      exitCode: 1,
+      durationMs: 1,
+      state: 'failed',
+      stdout: JSON.stringify({
+        processes: [
+          {
+            unit: 'rediacc-docker-2880',
+            state: 'failed',
+            error: 'Error: unknown flag: --network-id',
+          },
+        ],
+        repos: [],
+      }),
+      stderr: '',
+    };
+    await run('--include-docker', '--repo', 'mail');
+    expect(mocks.error.mock.calls.join(' ')).not.toContain('repoRenetTooOld');
+  });
+
+  it('does not call another unknown flag a renet that predates --repo', async () => {
+    answer = {
+      success: false,
+      exitCode: 1,
+      durationMs: 1,
+      state: 'failed',
+      stdout: '',
+      stderr: 'Error: unknown flag: --include-docker',
+    };
+    await run('--include-docker', '--repo', 'mail');
+    expect(mocks.error.mock.calls.join(' ')).not.toContain('repoRenetTooOld');
+  });
+
+  it('answers a refusal under --json with the error envelope, not plain error text', async () => {
+    mocks.format = 'json';
+    await expect(run('--include-docker', '--repo', 'ghost', '--json')).rejects.toThrow(
+      /repoNoNetworkId/
+    );
+    expect(mocks.error).not.toHaveBeenCalled();
+    expect(executed).toHaveLength(0);
+
+    answer = {
+      success: false,
+      exitCode: 1,
+      durationMs: 1,
+      state: 'failed',
+      stdout: '',
+      stderr: 'Error: unknown flag: --network-id',
+    };
+    await expect(run('--include-docker', '--repo', 'mail', '--json')).rejects.toThrow(
+      /repoRenetTooOld/
+    );
+    expect(mocks.error).not.toHaveBeenCalled();
   });
 });

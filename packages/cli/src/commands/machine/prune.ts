@@ -53,7 +53,8 @@ export function splitPrunePhases(output: string | undefined): { datastore: strin
     try {
       const marker = (JSON.parse(line) as { prune_phase?: string } | null)?.prune_phase;
       if (marker !== undefined) {
-        current = phases[marker];
+        // Only the two known phases own lines; `constructor` and the like are not phases.
+        current = Object.hasOwn(phases, marker) ? phases[marker] : undefined;
         continue;
       }
     } catch {

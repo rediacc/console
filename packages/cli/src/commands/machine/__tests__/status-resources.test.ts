@@ -56,4 +56,13 @@ describe('machine status resource cells (PLAN-repo-resource-limits R5)', () => {
     const names = uncappedRepoNames(list, (guid) => ({ name: guid, source: 'config' }));
     expect(names).toEqual(['open']);
   });
+
+  it('names a repository whose memory_max is absent, as the cell shows it as no cap', () => {
+    const list = {
+      repositories: [repo('omitted', { ...resources({}), memory_max: undefined } as never)],
+    } as unknown as ListResult;
+    expect(uncappedRepoNames(list, (guid) => ({ name: guid, source: 'config' }))).toEqual([
+      'omitted',
+    ]);
+  });
 });
