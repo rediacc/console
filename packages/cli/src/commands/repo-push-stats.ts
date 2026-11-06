@@ -10,6 +10,7 @@
 import { t } from '../i18n/index.js';
 import { outputService } from '../services/core/output.js';
 import type { ExecuteResult } from '../services/executor/local-executor.js';
+import type { OutputFormat } from '../types/index.js';
 import { formatBytes, formatDuration } from '../utils/format.js';
 
 /** Stats emitted by `renet backup push` as the `push_result` stdout line. */
@@ -101,19 +102,19 @@ export function renderPushStats(repo: string, machine: string, stats: PushResult
 /**
  * Parse + print real transfer stats after a successful `repo push` (local
  * adapter only; the cloud path has no captured stdout and keeps its output
- * as-is). The human line is machine-target only; --json prints for both.
+ * as-is). The human line is machine-target only; a structured -o format prints for both.
  */
 export function reportPushStats(
   repo: string,
   targetName: string,
   resolvedType: 'machine' | 'storage',
   local: ExecuteResult | undefined,
-  asJson: boolean
+  format: OutputFormat
 ): void {
   const stats = extractPushResult(local?.stdout);
   if (!stats) return;
-  if (asJson) {
-    outputService.print(stats, 'json');
+  if (format !== 'table') {
+    outputService.print(stats, format);
   } else if (resolvedType === 'machine') {
     renderPushStats(repo, targetName, stats);
   }

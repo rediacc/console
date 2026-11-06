@@ -1038,7 +1038,20 @@ async function renderStatusFromJob(
     );
   }
 
-  if (format === 'json') {
+  if (format === 'table') {
+    renderTableMode(
+      listResult,
+      machineConfig,
+      infra,
+      resolve,
+      repoName,
+      licenseDetail,
+      machineName
+    );
+    renderBlockedBackupAlerts(licenseDetail);
+    renderStaleness(staleBinary, staleBackups, resolve, failedVerifies, missedTargets);
+    renderRunningJobs(listResult.jobs, resolve);
+  } else {
     const enriched = buildEnrichedJson(
       listResult,
       machineConfig,
@@ -1060,19 +1073,6 @@ async function renderStatusFromJob(
       ),
       format
     );
-  } else {
-    renderTableMode(
-      listResult,
-      machineConfig,
-      infra,
-      resolve,
-      repoName,
-      licenseDetail,
-      machineName
-    );
-    renderBlockedBackupAlerts(licenseDetail);
-    renderStaleness(staleBinary, staleBackups, resolve, failedVerifies, missedTargets);
-    renderRunningJobs(listResult.jobs, resolve);
   }
 
   // Hint: nudge toward --storage-health (stderr so it doesn't break JSON piping)

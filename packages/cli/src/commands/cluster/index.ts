@@ -137,8 +137,9 @@ function registerStatus(cluster: Command): void {
         return;
       }
       const clusters = await configService.listClusters();
-      if (getOutputFormat() === 'json') {
-        outputService.print(clusters, 'json');
+      const format = getOutputFormat();
+      if (format !== 'table') {
+        outputService.print(clusters, format);
         return;
       }
       if (clusters.length === 0) {

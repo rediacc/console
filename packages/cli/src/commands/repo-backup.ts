@@ -11,7 +11,7 @@ import { bindStepHandler, type PlannedStep, planStep } from '../services/jobs/st
 import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
 import { ensureTargetRepoLicense } from '../services/repo-migrate-license.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
-import { handleError, ValidationError } from '../utils/errors.js';
+import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { type ResolvedRemote, resolveRemoteName } from '../utils/remote-resolve.js';
 import { recordedDatastoreMount } from '../utils/repo-executor.js';
@@ -309,7 +309,7 @@ async function pushRepo(ref: string, options: Record<string, unknown>): Promise<
         repo: name,
         target: targetName,
         targetType: resolvedType,
-        json: !!execOptions.json,
+        format: getOutputFormat(),
       }),
       // retainBase is set only for machine targets; the commit-meta successor syncs an immutable commit's mirror to the target.
       ...(resolvedType === 'machine'

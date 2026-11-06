@@ -19,6 +19,7 @@
  * names the module, and loading it binds the handler.
  */
 
+import type { OutputFormat } from '../../types/index.js';
 import { MACHINE_CONVERSION_STEPS } from './steps-conversions-machine.js';
 import { REPO_CONVERSION_STEPS } from './steps-conversions-repo.js';
 import {
@@ -202,7 +203,7 @@ const DEFINITIONS: StepDefinition[] = [
     name: 'reportPushStats',
     on: 'success',
     needsOutput: true,
-    params: ['repo', 'target', 'targetType', 'json'],
+    params: ['repo', 'target', 'targetType', 'format'],
     load: async () => {
       const { reportPushStats } = await import('../../commands/repo-push-stats.js');
       return (ctx) => {
@@ -213,7 +214,7 @@ const DEFINITIONS: StepDefinition[] = [
           str(ctx.params, 'target'),
           targetType,
           local,
-          ctx.params.json === true
+          (optStr(ctx.params, 'format') ?? 'table') as OutputFormat
         );
         return Promise.resolve();
       };

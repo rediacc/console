@@ -52,7 +52,7 @@ describe('step registry', () => {
   it('writes the spool form renet parses, and the trigger is the registry one', () => {
     const steps = [
       planStep('migratePlacement', { repo: 'web', machine: 'm2' }),
-      planStep('reportPushStats', { repo: 'web', target: 'm2', json: true }),
+      planStep('reportPushStats', { repo: 'web', target: 'm2', format: 'json' }),
     ];
     expect(toSpoolSteps(steps)).toEqual([
       {
@@ -63,7 +63,7 @@ describe('step registry', () => {
       {
         name: 'reportPushStats',
         on: 'success',
-        params: { repo: 'web', target: 'm2', json: true },
+        params: { repo: 'web', target: 'm2', format: 'json' },
         needs_output: true,
       },
     ]);

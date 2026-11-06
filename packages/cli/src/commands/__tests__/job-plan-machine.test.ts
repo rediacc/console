@@ -426,6 +426,16 @@ describe('machine status', () => {
     expect(mocks.print).toHaveBeenCalledTimes(1);
   });
 
+  it('prints the status document in a non-json structured format too (yaml)', async () => {
+    answer = { ...OK, stdout: JSON.stringify(LISTING) };
+    mocks.format = 'yaml';
+
+    await run(registerStatusCommand, 'status', 'm1');
+
+    expect(mocks.print).toHaveBeenCalledTimes(1);
+    expect(mocks.print.mock.calls[0][1]).toBe('yaml');
+  });
+
   it('asks for the full listing when no section flag is given', async () => {
     answer = { ...OK, stdout: JSON.stringify(LISTING) };
     mocks.format = 'json';
