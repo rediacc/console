@@ -725,16 +725,24 @@ export function checkCertificateExpiry(
 
 // The ACME shared-CNAME class (G6, D-certs, F17): lego follows a CNAME on `_acme-challenge.<name>` and writes the challenge TXT at the chain's end, so an end that is not itself an `_acme-challenge.` name, or one end shared by several names, makes those renewals collide.
 
-/** A certificates section that carries where each name's challenge lands (renet pkg/list ChallengeInfo). */
+/**
+ * A certificates section that carries where each name's challenge lands (renet pkg/list ChallengeInfo). `unknown` is set
+ * when renet could not resolve the chain (a DNS error or timeout), which is neither "no CNAME" nor a clean check.
+ */
 export interface ChallengeSectionInput {
   status: string;
-  certificates: { main: string; challenges?: { name: string; cname?: string }[] }[] | null;
+  certificates:
+    | { main: string; challenges?: { name: string; cname?: string; unknown?: boolean }[] }[]
+    | null;
   delegated_names?: string[];
 }
 
-/** One `acme.challenge.cname-shared` finding: the chain end, and the certificate names that land there. */
+/**
+ * One ACME challenge finding: `acme.challenge.cname-shared` names the chain end and the certificate names landing there;
+ * `acme.challenge.unknown` names the certificate names whose chain renet could not resolve.
+ */
 export interface AcmeChallengeFinding {
-  code: 'acme.challenge.cname-shared';
+  code: 'acme.challenge.cname-shared' | 'acme.challenge.unknown';
   severity: 'warning';
   subject: string;
   names: string[];
@@ -743,32 +751,55 @@ export interface AcmeChallengeFinding {
 
 const stripWildcard = (name: string): string => name.replace(/^\*\./, '').toLowerCase();
 
-/** Map each challenge chain end to the (wildcard-stripped) names landing there, delegated names and ends left out. */
-function challengeEnds(section: ChallengeSectionInput): Map<string, Set<string>> {
+/**
+ * Map each challenge chain end to the (wildcard-stripped) names landing there, and collect the names whose chain could
+ * not be resolved. Delegated names (and ends) are left out of both.
+ */
+function challengeEnds(section: ChallengeSectionInput): {
+  ends: Map<string, Set<string>>;
+  unknown: Set<string>;
+} {
   const delegated = new Set((section.delegated_names ?? []).map(stripWildcard));
+  const isDelegated = (name: string, end: string): boolean =>
+    delegated.has(name) || delegated.has(end);
   const ends = new Map<string, Set<string>>();
+  const unknown = new Set<string>();
   const challenges = (section.certificates ?? []).flatMap((cert) => cert.challenges ?? []);
   for (const ch of challenges) {
     const name = stripWildcard(ch.name);
     const end = (ch.cname ?? '').toLowerCase();
-    if (!end || delegated.has(name) || delegated.has(end)) continue;
-    ends.set(end, (ends.get(end) ?? new Set<string>()).add(name));
+    if (isDelegated(name, end)) continue;
+    if (ch.unknown === true) unknown.add(name);
+    else if (end !== '') addToEnd(ends, end, name);
   }
-  return ends;
+  return { ends, unknown };
 }
+
+function addToEnd(ends: Map<string, Set<string>>, end: string, name: string): void {
+  ends.set(end, (ends.get(end) ?? new Set<string>()).add(name));
+}
+
+const byName = (a: string, b: string): number => a.localeCompare(b);
 
 /**
  * Report the F17 shape: a challenge chain that ends at a name not beginning `_acme-challenge.`, or two names sharing
  * one end. A name (or end) in the proxy's `delegated_names` is a deliberate delegation and never reported; a name with
- * no CNAME raises nothing.
+ * no CNAME raises nothing. A name whose chain renet could not resolve is `acme.challenge.unknown`: never counted toward
+ * a shared end and never read as clean.
  */
 export function checkAcmeChallengeCnames(
   section: ChallengeSectionInput | null | undefined
 ): AcmeChallengeFinding[] {
   if (section?.status !== 'ok') return [];
+  const { ends, unknown } = challengeEnds(section);
+  return [...sharedEndFindings(ends), ...unknownChainFindings(unknown)];
+}
+
+/** The F17 findings: an end outside `_acme-challenge.`, or one end several names share. */
+function sharedEndFindings(ends: Map<string, Set<string>>): AcmeChallengeFinding[] {
   const findings: AcmeChallengeFinding[] = [];
-  for (const [end, nameSet] of challengeEnds(section)) {
-    const names = [...nameSet].sort((a, b) => a.localeCompare(b));
+  for (const [end, nameSet] of ends) {
+    const names = [...nameSet].sort(byName);
     if (end.startsWith('_acme-challenge.') && names.length < 2) continue;
     findings.push({
       code: 'acme.challenge.cname-shared',
@@ -779,4 +810,19 @@ export function checkAcmeChallengeCnames(
     });
   }
   return findings;
+}
+
+/** One `acme.challenge.unknown` finding naming every name whose chain renet could not resolve. */
+function unknownChainFindings(unknown: Set<string>): AcmeChallengeFinding[] {
+  if (unknown.size === 0) return [];
+  const names = [...unknown].sort(byName);
+  return [
+    {
+      code: 'acme.challenge.unknown',
+      severity: 'warning',
+      subject: names.join(', '),
+      names,
+      detail: `ACME challenge chain of ${names.join(', ')} could not be resolved; the shared-CNAME check is unknown for them`,
+    },
+  ];
 }

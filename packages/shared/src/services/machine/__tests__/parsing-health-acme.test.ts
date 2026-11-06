@@ -65,3 +65,47 @@ describe('checkAcmeChallengeCnames', () => {
     expect(checkAcmeChallengeCnames({ status: 'unknown', certificates: null })).toEqual([]);
   });
 });
+
+describe('checkAcmeChallengeCnames with an unreadable chain (renet ChallengeInfo.unknown)', () => {
+  const withUnknown = (
+    challenges: { name: string; cname?: string; unknown?: boolean }[],
+    delegated_names?: string[]
+  ) => ({
+    status: 'ok',
+    certificates: [{ main: 'a.example', challenges }],
+    ...(delegated_names ? { delegated_names } : {}),
+  });
+
+  it('reports a name whose chain could not be resolved as unknown, never as clean', () => {
+    const findings = checkAcmeChallengeCnames(withUnknown([{ name: 'a.example', unknown: true }]));
+    expect(findings).toEqual([
+      expect.objectContaining({
+        code: 'acme.challenge.unknown',
+        severity: 'warning',
+        names: ['a.example'],
+      }),
+    ]);
+  });
+
+  it('does not count an unknown name toward a shared end, and keeps the real collision', () => {
+    const findings = checkAcmeChallengeCnames(
+      withUnknown([
+        { name: 'a.example', cname: 'www.example' },
+        { name: 'b.example', cname: 'www.example' },
+        { name: 'c.example', cname: 'www.example', unknown: true },
+      ])
+    );
+    expect(findings.map((f) => [f.code, f.names])).toEqual([
+      ['acme.challenge.cname-shared', ['a.example', 'b.example']],
+      ['acme.challenge.unknown', ['c.example']],
+    ]);
+  });
+
+  it('leaves a delegated unknown name silent (control)', () => {
+    expect(
+      checkAcmeChallengeCnames(
+        withUnknown([{ name: 'mail.example', unknown: true }], ['mail.example'])
+      )
+    ).toEqual([]);
+  });
+});

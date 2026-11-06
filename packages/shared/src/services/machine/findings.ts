@@ -176,6 +176,10 @@ export const FINDING_TABLE = {
     description: 'ACME challenge names share a CNAME end, so their renewals collide',
     fix: fix('acme-anchor', 'auto-safe'),
   },
+  'acme.challenge.unknown': {
+    description:
+      'the ACME challenge chain of a certificate name could not be resolved, so the shared-CNAME check is unknown',
+  },
   'ops.targets.drift': {
     description: 'the ops-health Worker runs a target list other than the ops repository’s file',
     fix: fix('redeploy-ops-health', 'operator-only'),

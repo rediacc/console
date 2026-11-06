@@ -52,7 +52,7 @@ The command exits with the worst level across the repository's Rediaccfiles. A r
 
 `rdc machine health` reads the proxy's ACME certificates and reports `cert.expiry.near` for each one under 21 days from expiry (a warning) or under 7 days (an error). The proxy renews 30 days ahead, so a certificate under 21 days means its renewal has failed for at least nine days.
 
-It also reports `acme.challenge.cname-shared` when the `_acme-challenge.<name>` record of a certificate name follows a CNAME to a name that is not itself an `_acme-challenge.` name, or when two names end at the same name. A wildcard record that is a CNAME produces this shape: every challenge lands on one name and the renewals collide. A deliberate delegation (for example `_acme-challenge.mail.example.com` pointing at `_acme-challenge.mail.example.io`) is not reported; list any other intended delegation in `ACME_DELEGATED_NAMES` (a comma list of certificate names) in the proxy's `config.env`.
+It also reports `acme.challenge.cname-shared` when the `_acme-challenge.<name>` record of a certificate name follows a CNAME to a name that is not itself an `_acme-challenge.` name, or when two names end at the same name. A wildcard record that is a CNAME produces this shape: every challenge lands on one name and the renewals collide. A deliberate delegation (for example `_acme-challenge.mail.example.com` pointing at `_acme-challenge.mail.example.io`) is not reported; list any other intended delegation in `ACME_DELEGATED_NAMES` (a comma list of certificate names) in the proxy's `config.env`. A name whose challenge chain could not be resolved (a DNS error or timeout) is reported as `acme.challenge.unknown`, a warning, because the check did not run for it.
 
 ## Repair
 
