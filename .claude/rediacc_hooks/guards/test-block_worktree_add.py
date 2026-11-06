@@ -116,6 +116,38 @@ pathlib.Path(FIXTURE_DIR, "selftest.py").write_text(
     encoding="utf-8",
 )
 REFUSED += [("an untracked script running the argv", "python3 %s/invoke.py" % FIXTURE_DIR)]
+
+# The design review of dd6898eb0: adjacency alone let a script keep the two words apart and still run the verb. Each of these names the phrase in CODE (not a comment), so it is refused.
+APART = {
+    "helper.js": (
+        "node",
+        (
+            'const { execSync } = require("child_process");\n'
+            "// a helper per verb\n"
+            'const tree = (verb, p) => execSync("git worktree " + verb + " " + p);\n'
+            'tree("add", "/tmp/x");\n'
+        ),
+    ),
+    "wrapper.sh": ("bash", 'wt(){ git worktree "$@"; }\nwt add /tmp/x\n'),
+    "alias.sh": ("bash", "git -c alias.wt=worktree wt add /tmp/x\n"),
+    "config.sh": (
+        "bash",
+        "GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=alias.wt GIT_CONFIG_VALUE_0=worktree git wt add /x\n",
+    ),
+}
+for apart_name, (_runner, apart_text) in APART.items():
+    pathlib.Path(FIXTURE_DIR, apart_name).write_text(apart_text, encoding="utf-8")
+APART_ROWS = [
+    ("apart: %s" % name, "%s %s/%s" % (runner, FIXTURE_DIR, name))
+    for name, (runner, _text) in APART.items()
+]
+PRINTF_ROW = (
+    "apart: printf into a $-path script",
+    "G=%s; printf 'git %%s add %%s\\n' worktree /p > $G/a.sh; bash $G/a.sh" % FIXTURE_DIR,
+)
+REFUSED += [*APART_ROWS, PRINTF_ROW]
+# The JS helper is also caught by the text reading (`_text_verdict` folds the concatenation), so only the shell rows depend on the script arm alone.
+SCRIPT_ARM_ROWS = [row for row in APART_ROWS if row[1].startswith("bash ")]
 FALSE_POSITIVES = [
     (
         "a comment naming the tree beside git add",
@@ -336,7 +368,10 @@ for label, pair, rows in (
 REVERSE = [
     (
         "the script arm reads two words anywhere",
-        ("    if _spells_invocation(text):\n", "    if _names_phrase(text):\n"),
+        (
+            "    if _spells_invocation(text) or _names_phrase(_code_text(family, text)):\n",
+            "    if _names_phrase(text):\n",
+        ),
         FALSE_POSITIVES[0],
     ),
     (
@@ -361,6 +396,35 @@ for label, pair, (row_name, row_command) in REVERSE:
         print("*** FAIL *** with %s planted, %r was not refused" % (label, row_name))
     else:
         print("%s: %r refused again" % (label, row_name))
+
+# THE REWORK'S OWN PLANTS: back to dd6898eb0's adjacency-only script arm, every shell APART script is admitted; without the written-script lookup in the `$` arm, the printf shape is admitted. So the APART rows are refused BY these lines, not by another arm.
+for label, pair, rows in (
+    (
+        "the script arm without the comment-stripped phrase",
+        (
+            "_spells_invocation(text) or _names_phrase(_code_text(family, text))",
+            "_spells_invocation(text)",
+        ),
+        SCRIPT_ARM_ROWS,
+    ),
+    (
+        "the $ arm without the written-script lookup",
+        (
+            "            for word in dict.fromkeys((operand, known)):\n",
+            "            for word in ():\n",
+        ),
+        [PRINTF_ROW],
+    ),
+):
+    admitted = [n for n, c in rows if run_guard(c, defect=pair)[0] == 0]
+    if len(admitted) != len(rows):
+        failures.append("rework plant: %s" % label)
+        print(
+            "*** FAIL *** with %s planted, only %d of %d admitted"
+            % (label, len(admitted), len(rows))
+        )
+    else:
+        print("%s: all %d admitted" % (label, len(rows)))
 
 if failures:
     print("\n%d FAILED: %s" % (len(failures), ", ".join(failures[:25])))

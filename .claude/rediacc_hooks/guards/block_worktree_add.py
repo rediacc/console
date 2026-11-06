@@ -1206,9 +1206,35 @@ def _code_verdict(family, code, depth):
     return _text_verdict(code, depth)
 
 
+# A COMMENT RUNS NOTHING, AND IT IS ALL THE NARROWING DROPS (#a904d9f4, design review of dd6898eb0). Adjacency alone let a script keep the two words apart and still run the verb: a shell wrapper `wt(){ git worktree "$@"; }; wt add p`, an alias `git -c alias.wt=worktree wt add p`, the `GIT_CONFIG_KEY_0=alias.wt` form, a JS verb helper. So a script is still refused for naming the phrase ANYWHERE in its code, and only its comments are dropped first.
+# Python drops tokenize's COMMENT tokens; a shell, perl or ruby script drops `#...` only at a line start or after whitespace (`$#`, `${#x}` and `s#a#b#` stay code); a JS-family script drops `//...` and `/*...*/` at the same boundary, so `http://x` in a string stays. A script that does not tokenize keeps its raw text, the over-reading direction.
+HASH_COMMENT = re.compile(r"(?:^|(?<=\s))#.*$", re.MULTILINE)
+SLASH_COMMENT = re.compile(r"(?:^|(?<=\s))(?:/\*.*?\*/|//[^\n]*)", re.MULTILINE | re.DOTALL)
+HASH_FAMILIES = ("shell", "perl", "ruby")
+SLASH_FAMILIES = ("node", "deno", "bun", "tsx")
+
+
+def _code_text(family, text):
+    """`text` with the comments its `family` writes removed, the raw text for a family this does not know or a Python text that does not tokenize."""
+    if family == "python":
+        try:
+            return " ".join(
+                tok.string
+                for tok in tokenize.generate_tokens(io.StringIO(text).readline)
+                if tok.type != tokenize.COMMENT
+            )
+        except (tokenize.TokenError, SyntaxError, ValueError):
+            return text
+    if family in HASH_FAMILIES:
+        return HASH_COMMENT.sub("", text)
+    if family in SLASH_FAMILIES:
+        return SLASH_COMMENT.sub("", text)
+    return text
+
+
 def _file_verdict(family, text, depth):
-    """The arm a script run by path trips: "script" when its text spells the invocation (`_spells_invocation`), else what the same text trips as a `-c` program (a built string folded, an implicit concatenation `ast` joins, the port's `cmd_create`), or for a shell script as a command line."""
-    if _spells_invocation(text):
+    """The arm a script run by path trips: "script" when its text spells the invocation (`_spells_invocation`) or names the phrase anywhere outside a comment (`_names_phrase` of `_code_text`), else what the same text trips as a `-c` program (a built string folded, an implicit concatenation `ast` joins, the port's `cmd_create`), or for a shell script as a command line."""
+    if _spells_invocation(text) or _names_phrase(_code_text(family, text)):
         return "script"
     if family == "shell":
         return shell_verdict(text, depth)
@@ -1261,6 +1287,19 @@ def _script_verdict(cmd, depth, cwd):
             if _spells_invocation(cmd, lease=True):
                 return "unjudgeable"
             known = _with_assigned_values(run_, operand)
+            # What this same command WROTE to the operand is judged as the script it is (design review of dd6898eb0): `printf 'git %s add %s\n' worktree /p > $G/a.sh; bash $G/a.sh` keeps the two words apart on the command line, and the rebuilt run below carries no earlier write. A write whose content the walk cannot read is unjudgeable once the command could spell a verb at all (the broad `_could_spell`, since the content is unknown): with no such word, `cat f > $G/b.sh; bash $G/b.sh` stays allowed, and UNJUDGEABLE_MESSAGE, which says the command names a worktree verb, stays true.
+            written = shellscan._written_scripts(cmd, run_, cwd)
+            family = _interpreter_name(run_.name) or "shell"
+            for word in dict.fromkeys((operand, known)):
+                target = shellscan._script_path(word, run_.cwd, cwd)
+                if target in written:
+                    if written[target] is None:
+                        if _could_spell(cmd):
+                            return "unjudgeable"
+                        continue
+                    verdict = _file_verdict(family, written[target], depth + 1)
+                    if verdict:
+                        return verdict
             if "$" not in known:
                 words = [known if w == operand else w for w in (run_.name, *run_.argv)]
                 typed = shlex.join(words)
