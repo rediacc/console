@@ -3317,6 +3317,12 @@ N_WORKTREE_VMCHECK = (
     "it ends:\n%s"
 )
 
+N_WORKTREE_CIQUICK = (
+    "UNLANDED LEASE, held for the running ci:quick (its clone lock names a live run): landing "
+    "now moves HEAD, and the receipt the push guard keys on HEAD^{tree} would vouch for the old "
+    "tree. Land these once it ends:\n%s"
+)
+
 CLI_STATUS_NONE = (
     "--status: no live subagent matched %r. The roster reads the last Stop event plus every "
     "agent started since it; an id that finished its turn is not live."

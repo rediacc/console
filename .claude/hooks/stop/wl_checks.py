@@ -2618,6 +2618,39 @@ def vm_check_running(path=None):
         os.close(fd)
 
 
+# The argv word that names a ci:quick run: `npm run ci:quick` runs `tsx scripts/ci-runner/quick-clone.ts`, and the pid `acquireLock` writes is the node process whose argv carries that script path as its own word (measured 2026-11-06 under tsx: `node --require .../preflight.cjs --import .../loader.mjs <script>`).
+CI_QUICK_ARGV = "ci-runner/quick-clone.ts"
+
+
+def ci_quick_lock_path(root, environ=None):
+    """The pid lock `npm run ci:quick` holds for its whole run on the checkout `root`: `<clone>.lock` beside the kept clone, where `scripts/ci-runner/quick-clone.ts` cloneDirFor puts it (`CI_QUICK_CLONE_DIR`, else `${XDG_CACHE_HOME:-~/.cache}/rediacc/ci-quick-clones/<basename>-<sha8 of the real path>`)."""
+    env = os.environ if environ is None else environ
+    override = env.get("CI_QUICK_CLONE_DIR") or ""
+    if override:
+        return os.path.abspath(override) + ".lock"
+    base = env.get("XDG_CACHE_HOME") or os.path.join(
+        env.get("HOME") or os.path.expanduser("~"), ".cache"
+    )
+    real = os.path.realpath(root)
+    key = hashlib.sha256(real.encode("utf-8")).hexdigest()[:8]
+    return os.path.join(
+        base, "rediacc", "ci-quick-clones", "%s-%s.lock" % (os.path.basename(real), key)
+    )
+
+
+def ci_quick_running(root, path=None, proc="/proc"):
+    """True only when the ci:quick lock of `root` exists and names a live pid whose argv is a ci:quick run (`acquireLock` writes `{"pid", "at"}` with one `wx` create and removes the file in its `finally`). A missing file, a malformed owner, a dead pid (the stale file a killed run leaves) or a pid reused by another program reads False, so a blind reading never stands the unlanded-lease block down."""
+    path = path or ci_quick_lock_path(root)
+    try:
+        raw = pathlib.Path(path).read_bytes()
+        pid = int(json.loads(raw.decode("utf-8", "replace")).get("pid"))
+        argv = pathlib.Path(proc, str(pid), "cmdline").read_bytes().split(b"\0")
+    except (ValueError, TypeError, AttributeError, OSError):
+        return False
+    words = [a.decode("utf-8", "replace") for a in argv]
+    return pid > 0 and any(w.endswith(CI_QUICK_ARGV) for w in words)
+
+
 def worktree_check(worklist, session_id, state_doc, fold, roster, event, vadd):
     """Follow this repo's lease trees (wl_worktrees). A survey that raises says so in the report and blocks nothing: a blind reading never accuses a lease."""
     root = C.project_root(C.project_start(event))
@@ -2646,6 +2679,16 @@ def worktree_check(worklist, session_id, state_doc, fold, roster, event, vadd):
             state_doc,
             "worktree-orphan",
             M.N_WORKTREE_VMCHECK % wl_worktrees.unlanded_lines(got),
+            3,
+        )
+    elif got["unlanded"] and ci_quick_running(root):
+        # Landing a lease moves HEAD, and the receipt a running ci:quick writes vouches for the tree it started on, the one the push guard keys on HEAD^{tree}: landing now voids the run (#b872c325). The lease waits for it: reported, not blocked.
+        outq_add(
+            worklist,
+            session_id,
+            state_doc,
+            "worktree-orphan",
+            M.N_WORKTREE_CIQUICK % wl_worktrees.unlanded_lines(got),
             3,
         )
     elif got["unlanded"]:

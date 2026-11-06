@@ -935,7 +935,14 @@ def control_real_hook(tmp):
 
     runtime = fix.base / "xdg"
     runtime.mkdir(mode=0o700)
-    env = {"CLAUDE_CONFIG_DIR": str(config), "XDG_RUNTIME_DIR": str(runtime)}
+    # A private ci:quick clone path too, for the same reason: a real ci:quick on this machine holds its own clone lock.
+    ciq_clone = fix.base / "ciq" / "clone"
+    ciq_clone.parent.mkdir()
+    env = {
+        "CLAUDE_CONFIG_DIR": str(config),
+        "XDG_RUNTIME_DIR": str(runtime),
+        "CI_QUICK_CLONE_DIR": str(ciq_clone),
+    }
 
     got = hook_stop(fix, env)
     check("the hook blocks an owner's finished lease", got.decision, "block")
@@ -996,6 +1003,48 @@ def control_real_hook(tmp):
     got = hook_stop(fix, env)
     check("a free fleet lock blocks again", got.decision, "block")
     check("a free fleet lock names the lease again", needle in got.out, True)
+
+    # A running ci:quick (#b872c325): landing moves HEAD and voids the receipt it writes, so its clone lock holds the landing the way the fleet lock does. The marker is `<clone>.lock`, `{"pid", "at"}` written by quick-clone.ts acquireLock; only a live pid whose argv names the script counts.
+    ciq_lock = pathlib.Path(str(ciq_clone) + ".lock")
+    held_text = "held for the running ci:quick"
+    dead = subprocess.Popen([sys.executable, "-c", "pass"])
+    dead.wait(timeout=30)
+    for label, owner in (
+        ("a stale marker (its pid is gone)", json.dumps({"pid": dead.pid, "at": "x"})),
+        ("a marker whose pid is not ci:quick", json.dumps({"pid": os.getpid(), "at": "x"})),
+        ("a malformed marker", "{not json"),
+    ):
+        ciq_lock.write_text(owner, encoding="utf-8")
+        got = hook_stop(fix, env)
+        check("%s still blocks" % label, got.decision, "block")
+        check("%s is not reported as held" % label, held_text in got.out, False)
+    ciq_lock.unlink()
+    ciq_stand_in = (
+        "import json, os, sys\n"
+        "open(sys.argv[1], 'x').write(json.dumps({'pid': os.getpid(), 'at': 'now'}))\n"
+        "print('held', flush=True)\n"
+        "sys.stdin.read()\n"
+        "os.remove(sys.argv[1])\n"
+    )
+    holder = subprocess.Popen(
+        [sys.executable, "-c", ciq_stand_in, str(ciq_lock), "scripts/ci-runner/quick-clone.ts"],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        text=True,
+    )
+    try:
+        check("the ci:quick stand-in holds the marker", holder.stdout.readline().strip(), "held")
+        got = hook_stop(fix, env)
+    finally:
+        holder.stdin.close()
+        holder.wait(timeout=30)
+    check("a running ci:quick lifts the block", got.decision, "allow")
+    check("a running ci:quick reports the hold", held_text in got.out, True)
+    check("the hold names the lease", "w1" in got.out, True)
+    check("the run ended and removed its marker", ciq_lock.exists(), False)
+    got = hook_stop(fix, env)
+    check("a free ci:quick marker blocks again", got.decision, "block")
+    check("a free ci:quick marker names the lease again", needle in got.out, True)
 
     fix.bg = json.dumps(
         [{"id": "wa1", "type": "subagent", "status": "running", "description": "w"}]
