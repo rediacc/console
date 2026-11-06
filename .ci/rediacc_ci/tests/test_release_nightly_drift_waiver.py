@@ -602,3 +602,19 @@ def test_fetch_run_jobs_404_is_not_retried(monkeypatch) -> None:
         nightly_tested_edge.fetch_run_jobs("o/r", "42")
     assert len(fake.calls) == 1
     assert fake.slept == []
+
+
+def test_soak_check_gives_no_waiver_when_no_conclusion_is_given(
+    soak_env: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # CONTROL for review bc59d04d.2: an empty NIGHTLY_CONCLUSION used to read as success.
+    monkeypatch.setenv("NIGHTLY_CONCLUSION", "")
+    monkeypatch.setattr(
+        nightly_tested_edge,
+        "fetch_run_jobs",
+        lambda *_: pytest.fail("a run with no conclusion is never read"),
+    )
+    monkeypatch.setenv("EDGE_DATE", "2999-01-01T00:00:00")
+    assert check_soak_period.main([]) == 0
+    got = outputs(soak_env)
+    assert (got["ready"], got["path"]) == ("false", "soak")

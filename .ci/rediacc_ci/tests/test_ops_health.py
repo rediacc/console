@@ -32,7 +32,7 @@ class Fleet:
     """A scripted rdc: answers per (config, verb) and records every call with its environment."""
 
     def __init__(self, machines=("m1",), health=(0, HEALTH_OK), status=0, listing=LISTING_OK):
-        self.machines = {None: list(machines)}
+        self.machines: dict[str | None, list] = {None: list(machines)}
         self.health = health
         self.status = status
         self.listing = listing
@@ -275,7 +275,11 @@ def test_refresh_writes_cache_posts_ingest_and_runs_under_profiles(tmp_path):
 
 def test_subprocess_exit_contract_is_kept():
     for rc, state in ((0, "green"), (1, "red"), (2, "unknown"), (127, "unknown")):
-        out = oh.subprocess_check("portal-captcha", lambda _a, _e, _t, rc=rc: oh.Result(rc), {})
+
+        def run(_a, _e, _t, rc=rc):
+            return oh.Result(rc)
+
+        out = oh.subprocess_check("portal-captcha", run, {})
         assert out["state"] == state
         assert out["rc"] == (rc if rc in (0, 1) else 2)
     timed = oh.subprocess_check("telemetry", lambda _a, _e, _t: oh.Result(124, timed_out=True), {})
@@ -377,7 +381,10 @@ def test_offbox_without_targets_ref_does_not_read_the_repo():
 
 
 def test_offbox_stale_is_flagged():
-    out = oh.offbox_check(CFG, dict(ENV), Web(status_doc(cron_age_min=31)), None, NOW, False)
+    def never(*_a):
+        raise AssertionError("no rdc call expected")
+
+    out = oh.offbox_check(CFG, dict(ENV), Web(status_doc(cron_age_min=31)), never, NOW, False)
     assert out["rc"] == 1
     assert out["stale"] is True
 

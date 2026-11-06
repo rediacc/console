@@ -317,3 +317,32 @@ def test_a_401_is_not_retried(tmp_path: pathlib.Path) -> None:
     )
     assert rc == 1
     assert len(log) == 1
+
+
+def test_control_a_spent_budget_records_the_rest_red_unrun_and_still_writes(
+    tmp_path: pathlib.Path,
+) -> None:
+    # CONTROL for review bc59d04d.3: the run budget, not the job timeout, ends a slow run,
+    # so the verdict file exists for the ingest step.
+    lock = write_lock(tmp_path / "lock.json", full_ids())
+    out = tmp_path / "v.json"
+    ticks = iter(
+        [0.0, 0.0, float(drift_job.RUN_BUDGET_S + 1)] + [float(drift_job.RUN_BUDGET_S + 1)] * 200
+    )
+    calls: list[float] = []
+
+    def runner(argv: Sequence[str], **kw: Any) -> subprocess.CompletedProcess[str]:
+        calls.append(kw["timeout"])
+        return subprocess.CompletedProcess(list(argv), 0, "ok\n", "")
+
+    rc = drift_job.main(
+        ["--lock", str(lock), "--out", str(out)], runner=runner, clock=lambda: next(ticks)
+    )
+    assert rc == 1
+    verdict = json.loads(out.read_text(encoding="utf-8"))
+    assert len(calls) == 1
+    assert calls[0] <= drift_job.CHECK_TIMEOUT_S
+    unrun = [c for c in verdict["checks"] if c["rc"] == 124]
+    assert unrun
+    assert len(unrun) == len(verdict["checks"]) - 1
+    assert all("run budget" in c["tail"] for c in unrun)

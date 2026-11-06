@@ -58,6 +58,8 @@ SPLIT_COMMANDS: Mapping[str, tuple[str, ...]] = {
 }
 
 CHECK_TIMEOUT_S = 25 * 60
+# The whole run's budget, inside ci-drift.yml's job timeout with room for the setup steps before it and the ingest POST after it: a check is given at most what is left, and a check reached with nothing left is recorded red unrun, so the verdict file is always written before the runner kills the job.
+RUN_BUDGET_S = 25 * 60
 TAIL_CHARS = 2000
 DETAIL_CHARS = 500
 POST_ATTEMPTS = 3
@@ -98,8 +100,15 @@ def _tail(text: str) -> str:
     return text[-TAIL_CHARS:]
 
 
-def run_check(check: Check, runner: Runner) -> dict[str, Any]:
+def run_check(check: Check, runner: Runner, timeout_s: float = CHECK_TIMEOUT_S) -> dict[str, Any]:
     started = time.monotonic()
+    if timeout_s <= 0:
+        return {
+            "name": check.name,
+            "rc": 124,
+            "seconds": 0.0,
+            "tail": f"not run: the run budget of {RUN_BUDGET_S} s was spent",
+        }
     try:
         proc = runner(
             list(check.argv),
@@ -107,12 +116,12 @@ def run_check(check: Check, runner: Runner) -> dict[str, Any]:
             capture_output=True,
             text=True,
             check=False,
-            timeout=CHECK_TIMEOUT_S,
+            timeout=timeout_s,
             env={**os.environ, "PYTHONPATH": str(REPO_ROOT / ".ci")},
         )
         rc, tail = proc.returncode, _tail((proc.stdout or "") + (proc.stderr or ""))
     except subprocess.TimeoutExpired:
-        rc, tail = 124, f"timed out after {CHECK_TIMEOUT_S} s"
+        rc, tail = 124, f"timed out after {round(timeout_s)} s"
     except OSError as exc:
         rc, tail = 127, f"could not start {check.argv[0]}: {exc}"
     return {
@@ -216,6 +225,7 @@ def main(
     env: Mapping[str, str] | None = None,
     connect: Connector | None = None,
     sleep: Callable[[float], None] | None = None,
+    clock: Callable[[], float] | None = None,
 ) -> int:
     args = _parser().parse_args(list(argv) if argv is not None else None)
     environment = os.environ if env is None else env
@@ -256,8 +266,10 @@ def main(
 
     run = runner or subprocess.run
     results = []
+    deadline = (clock or time.monotonic)() + RUN_BUDGET_S
     for check in checks:
-        result = run_check(check, run)
+        left = deadline - (clock or time.monotonic)()
+        result = run_check(check, run, min(CHECK_TIMEOUT_S, left))
         print(
             f"drift_job: {'ok ' if result['rc'] == 0 else 'RED'} {check.name} ({result['seconds']} s)"
         )

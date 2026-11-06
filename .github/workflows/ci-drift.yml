@@ -38,7 +38,8 @@ jobs:
   drift:
     name: Drift checks
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # drift_job's RUN_BUDGET_S (25 min) plus the setup steps and the ingest POST.
+    timeout-minutes: 40
     permissions:
       contents: read
     steps:
@@ -113,14 +114,16 @@ jobs:
           natives: 'true'
           build-packages: 'true'
 
-      # Read by the Docker image freshness check and by the ingest POST below.
-      - name: Fetch secrets from Bitwarden (checks and ingest)
+      # Read by the Docker image freshness check. The ingest token is fetched
+      # only after the checks ran (below): bws-secrets exports to $GITHUB_ENV,
+      # and the checks run freshly resolved dependency code that must not hold
+      # a token able to post a forged verdict.
+      - name: Fetch secrets from Bitwarden (checks)
         uses: ./.github/actions/bws-secrets
         with:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
             DOCKERHUB_TOKEN > BWS_DOCKERHUB_TOKEN
-            OPS_HEALTH_INGEST_TOKEN > BWS_OPS_HEALTH_INGEST_TOKEN
 
       # Exit 0 all green, 1 any red (named in drift-verdict.json), 2 the drift
       # set could not be derived. No `continue-on-error`: the ingest step below
@@ -144,6 +147,14 @@ jobs:
       # Under `if: always()`: a red run, a cancelled run and a run that died
       # before it wrote a verdict all reach the ingest. drift_job posts a
       # missing verdict as red.
+      - name: Fetch secrets from Bitwarden (ingest)
+        if: always()
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            OPS_HEALTH_INGEST_TOKEN > BWS_OPS_HEALTH_INGEST_TOKEN
+
       - name: Post the verdict to the ops-health ingest
         if: always()
         env:

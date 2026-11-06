@@ -315,12 +315,12 @@ def _write(output_path: str, selected: Edge | None, path: str, *, blocked: bool)
 
 
 def _nightly_tested() -> tuple[bool, str]:
-    """Whether the weekly fleet run (`NIGHTLY_*`, found by `nightly_tested_edge`'s evidence step) counts as having passed its tests. `success` (or no conclusion given) does; `failure` does only when its failures are all drift gates; anything else (`none` when no run qualified, `cancelled`), or a job list that cannot be read, does not. Not counting is no waiver, and the caller falls back to the soak."""
+    """Whether the weekly fleet run (`NIGHTLY_*`, found by `nightly_tested_edge`'s evidence step) counts as having passed its tests. `success` does; `failure` does only when its failures are all drift gates; anything else (no conclusion given, `none` when no run qualified, `cancelled`), or a job list that cannot be read, does not. Not counting is no waiver, and the caller falls back to the soak."""
     conclusion = os.environ.get("NIGHTLY_CONCLUSION", "")
-    if conclusion in ("", "success"):
-        return True, "the nightly concluded %s" % (
-            conclusion or "without a conclusion given, read as success"
-        )
+    if not conclusion:
+        return False, "the nightly evidence gave no conclusion, which is not a pass"
+    if conclusion == "success":
+        return True, "the nightly concluded success"
     if conclusion != "failure":
         return False, f"the nightly concluded {conclusion}, which is not a pass"
     run_id = os.environ.get("NIGHTLY_RUN_ID", "")

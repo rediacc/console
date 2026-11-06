@@ -168,6 +168,8 @@ def nightly_env(days_ago: int, head_sha: str, version: str = "1.2.3") -> dict[st
         "PROMOTE_TRIGGER": "workflow_run",
         "EDGE_VERSION": version,
         "NIGHTLY_HEAD_SHA": head_sha,
+        # The evidence step always writes a conclusion; an empty one is no waiver.
+        "NIGHTLY_CONCLUSION": "success",
         # The `CI - Drift` run that triggered the promotion (D-promote); the weekly fleet run is the evidence (NIGHTLY_*).
         "DRIFT_CONCLUSION": "success",
     }
@@ -388,7 +390,10 @@ def test_nightly_waiver_selects_the_newest_tested_edge(tmp_path: pathlib.Path) -
     _git(repo_dir, "tag", "v1.0.2", h["A"])
     _git(repo_dir, "tag", "v1.0.1", h["A"])
     env = walk_env(
-        PROMOTE_TRIGGER="workflow_run", NIGHTLY_HEAD_SHA=h["B"], DRIFT_CONCLUSION="success"
+        PROMOTE_TRIGGER="workflow_run",
+        NIGHTLY_HEAD_SHA=h["B"],
+        NIGHTLY_CONCLUSION="success",
+        DRIFT_CONCLUSION="success",
     )
     (exit_code, out, err), written = run_in(repo_dir, tmp_path, env)
     assert (exit_code, err) == (0, "")
@@ -403,7 +408,10 @@ def test_nightly_waiver_on_the_newest_edge_is_ready(tmp_path: pathlib.Path) -> N
     h = make_history(repo_dir)
     _git(repo_dir, "tag", "v1.0.3", h["B"])
     env = walk_env(
-        PROMOTE_TRIGGER="workflow_run", NIGHTLY_HEAD_SHA=h["B"], DRIFT_CONCLUSION="success"
+        PROMOTE_TRIGGER="workflow_run",
+        NIGHTLY_HEAD_SHA=h["B"],
+        NIGHTLY_CONCLUSION="success",
+        DRIFT_CONCLUSION="success",
     )
     (exit_code, _out, err), written = run_in(repo_dir, tmp_path, env)
     assert (exit_code, err) == (0, "")

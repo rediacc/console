@@ -885,9 +885,9 @@ def main(argv: list | None = None) -> int:
     finally:
         release_lock(root)
     for name in ALL_CHECKS:
-        entry = (doc.get("checks") or {}).get(name)
-        if isinstance(entry, dict):
-            _print_entry(name, entry, sys.stdout)
+        cached = (doc.get("checks") or {}).get(name)
+        if isinstance(cached, dict):
+            _print_entry(name, cached, sys.stdout)
     for err in (doc.get("ingest") or {}).get("errors") or []:
         print("ingest: %s" % err, file=sys.stderr)
     if (doc.get("ledger") or {}).get("error"):
