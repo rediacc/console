@@ -992,7 +992,9 @@ def _boxrow_cli(argv):
         else:
             if len(rest) != 5:
                 die(usage)
-            row = PB.progress_row(root, _plan_rel(root, rest[0]), *rest[1:], me[:8])
+            row = PB.progress_row(
+                root, _plan_rel(root, rest[0]), rest[1], rest[2], rest[3], rest[4], me[:8]
+            )
     except PB.PlanBoxError as exc:
         die(M.CLI_PLANREC_REFUSED % exc)
         return

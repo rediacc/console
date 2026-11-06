@@ -13,7 +13,7 @@ import shutil
 import signal
 import subprocess
 import sys
-from typing import NamedTuple
+from typing import Any, NamedTuple
 
 import pytest
 
@@ -2281,7 +2281,7 @@ SIGNUMS = (signal.SIGINT, signal.SIGTERM, signal.SIGHUP)
 @pytest.mark.parametrize("raises", [False, True])
 def test_remove_row_restores_the_signal_dispositions_it_found(monkeypatch, raises):
     """The removal holds the signals; afterwards each one is what it was, also when the removal raised."""
-    sentinel = {
+    sentinel: dict[signal.Signals, Any] = {
         signal.SIGINT: signal.SIG_DFL,
         signal.SIGTERM: signal.SIG_DFL,
         signal.SIGHUP: lambda *_a: None,
@@ -2314,7 +2314,7 @@ def test_remove_row_restores_the_signal_dispositions_it_found(monkeypatch, raise
 @pytest.mark.parametrize("raises", [False, True])
 def test_rollback_restores_the_signal_dispositions_it_found(monkeypatch, raises):
     """#feeca5b3: the rollback holds the signals and puts each back, so an ignored SIGTERM never outlives it."""
-    sentinel = {
+    sentinel: dict[signal.Signals, Any] = {
         signal.SIGINT: signal.SIG_DFL,
         signal.SIGTERM: signal.SIG_DFL,
         signal.SIGHUP: lambda *_a: None,
@@ -2346,7 +2346,7 @@ def test_rollback_restores_the_signal_dispositions_it_found(monkeypatch, raises)
 
 def test_make_lease_restores_the_signal_dispositions_it_found(monkeypatch):
     """#feeca5b3: make_lease arms the lease's handler only for the build; the caller's handlers come back after."""
-    sentinel = {
+    sentinel: dict[signal.Signals, Any] = {
         signal.SIGINT: signal.SIG_DFL,
         signal.SIGTERM: signal.SIG_DFL,
         signal.SIGHUP: lambda *_a: None,

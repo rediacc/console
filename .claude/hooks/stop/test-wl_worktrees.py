@@ -984,6 +984,8 @@ def control_real_hook(tmp):
         stdout=subprocess.PIPE,
         text=True,
     )
+    if holder.stdin is None or holder.stdout is None:
+        raise AssertionError("the stand-in holder was not started with pipes")
     try:
         check("the vm:check stand-in holds the lock", holder.stdout.readline().strip(), "held")
         got = hook_stop(fix, env)

@@ -651,7 +651,7 @@ def landed_boxes(root, lease_id):
     record = json.loads(path.read_text(encoding="utf-8"))
     pb = _hook_module("wl_planbox")
     keys = [*sorted(k for k in record.get("base", {}) if k != "."), "."]
-    boxes = {}
+    boxes: dict[tuple[str, str], BoxLanding] = {}
     for key in keys:
         found = _lease_commits(root, record, key)
         if found is None or not found[2]:
@@ -835,7 +835,7 @@ def cmd_land(args):
     if "--ticks" in flags:
         return _cmd_ticks(ids[0], flags)
     args = ids
-    notes = []
+    notes: list[str] = []
     try:
         lines = land_plan(paths.repo_root(), args[0], notes)
     except (OSError, RuntimeError, ValueError, subprocess.SubprocessError) as exc:

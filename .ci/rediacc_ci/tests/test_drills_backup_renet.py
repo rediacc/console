@@ -473,7 +473,9 @@ class HookWorker:
                 return rt.VmResult(1)
             if self.bug == "late-deadman":
                 # the hold ends only after the bound: a wait window of exactly the bound sees nothing
-                seconds = int(re.search(r"-lt (\d+)", command).group(1))
+                waited = re.search(r"-lt (\d+)", command)
+                assert waited is not None
+                seconds = int(waited.group(1))
                 if seconds <= backup_renet.HOOK_DEADMAN_SECONDS:
                     return rt.VmResult(1)
             self.frozen = self.marker = False
@@ -601,6 +603,10 @@ class HealWorker:
         return rt.VmResult(0, json.dumps(doc))
 
 
+# Filled by the target_halves stand-in `_legs_for_w` installs, cleared on each call.
+TARGET_HALVES_REACHED: list[bool] = []
+
+
 def _legs_for_w(
     make: typing.Callable, bug: str = "", finds_on: int = 3, digest_known: bool = True
 ) -> tuple[lib.Drill, backup_renet.RenetLegs]:
@@ -632,9 +638,8 @@ def _legs_for_w(
     legs.b.av = lambda value, expected, desc: drill.assert_equal(str(expected), str(value), desc)
     legs.b.restore_session_token = "tok"
     # The target halves have their own worker (TargetWorker below); here only that the heal hands over to them.
-    reached: list[bool] = []
-    legs.target_halves = lambda: reached.append(True)
-    legs.reached_target_halves = reached
+    TARGET_HALVES_REACHED.clear()
+    legs.target_halves = lambda: TARGET_HALVES_REACHED.append(True)
     return drill, legs
 
 
@@ -647,7 +652,7 @@ def test_leg_w_heals_a_deleted_chunk_after_idle_runs_that_upload_nothing(
         assert drill.failures == 0
         # The idle first run, two idle runs before the find, and the finding run.
         assert typing.cast("HealWorker", legs.rt.vm).runs == 4
-        assert legs.reached_target_halves == [True]
+        assert TARGET_HALVES_REACHED == [True]
     finally:
         drill.teardown()
 

@@ -991,7 +991,7 @@ def test_execute_runs_the_rows_in_order_and_always_cleans_up(
         "cleanup",
     )
     for name in names:
-        monkeypatch.setattr(live, name, lambda n=name: order.append(n) or True)
+        monkeypatch.setattr(live, name, lambda n=name: _mark(order, n, True))
     live.execute()
     assert order == list(names)
 
@@ -1001,7 +1001,7 @@ def test_execute_cleans_up_when_bring_up_fails(
 ) -> None:
     live, _ctx = _live(tmp_path, FakeWorker())
     order: list[str] = []
-    monkeypatch.setattr(live, "k1_0_bring_up", lambda: order.append("k1_0") and False)
+    monkeypatch.setattr(live, "k1_0_bring_up", lambda: _mark(order, "k1_0", False))
     monkeypatch.setattr(live, "k1_1_unit_order", lambda: order.append("k1_1"))
     monkeypatch.setattr(live, "cleanup", lambda: order.append("cleanup"))
     live.execute()
@@ -1021,6 +1021,12 @@ def test_cleanup_deletes_the_fork_before_the_grand(tmp_path: pathlib.Path) -> No
         ("repo", "delete", live.ref_a),
     ]
     assert ctx.sweep_leftovers == ["K1 grand %s (delete rc=1)" % live.ref_a]
+
+
+def _mark(order: list[str], name: str, result: bool) -> bool:
+    """Record that a stand-in ran and answer what the real step would."""
+    order.append(name)
+    return result
 
 
 def test_no_hardcoded_mount_root() -> None:

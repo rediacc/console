@@ -14,7 +14,7 @@ class World:
     def __init__(self, loads, iowait_share=0.0, run_s=30.0, cmd_rc=0, fail_from=None):
         self.now, self.loads, self.iowait_share = 0.0, list(loads), iowait_share
         self.run_s, self.cmd_rc, self.fail_from = run_s, cmd_rc, fail_from
-        self.calls, self.started = 0, None
+        self.calls, self.started = 0, 0.0
 
     def clock(self):
         return self.now

@@ -10,6 +10,7 @@ import json
 import pathlib
 import shutil
 import types
+import typing
 
 import pytest
 
@@ -218,7 +219,7 @@ def harness(tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch):
         image_rc=0,
         keep_stack=False,
     ):
-        drill = lib.Drill("backup-elite-compose", selftest=False, keep_work=False)
+        drill: typing.Any = lib.Drill("backup-elite-compose", selftest=False, keep_work=False)
         drill.init()
         posts: list[tuple[str, dict]] = []
         drill.gateway_alive = lambda: True
@@ -259,7 +260,7 @@ def harness(tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch):
             machine=machine,
             ship=lambda: ship_rc,
             local=lambda _argv: image_rc,
-            api_factory=api_factory,
+            api_factory=typing.cast("typing.Any", api_factory),
             roundtrip_factory=FakeTrip(trip_rc, seen),
             sleep=lambda _s: None,
         )

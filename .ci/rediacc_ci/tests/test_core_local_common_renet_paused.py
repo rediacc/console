@@ -129,13 +129,15 @@ def _good_binary(renet):
     return binary
 
 
+def _gate(gated: list, binary, key) -> None:
+    gated.append((binary, key))
+
+
 def test_mid_cherry_pick_the_last_good_binary_serves_without_a_build(tmp_path, monkeypatch, capsys):
     renet, env, builds = _world(tmp_path, monkeypatch)
     _good_binary(renet)
-    gated = []
-    monkeypatch.setattr(
-        local_common, "renet_key_refusal", lambda b, k: gated.append((b, k)) or None
-    )
+    gated: list = []
+    monkeypatch.setattr(local_common, "renet_key_refusal", lambda b, k: _gate(gated, b, k))
     _git(renet, "cherry-pick", "other", check=False)
     assert local_common.ensure_renet_built(env) is True
     assert gated == [(str(renet / "bin" / "renet"), KEY)]

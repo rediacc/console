@@ -304,7 +304,7 @@ def runs_stop_hook(command: str, network_id: int | str) -> bool:
     if STOP_HOOK not in " ".join(command.split()):
         return False
     m = re.search(r"--network-id(?:=|\s+)(\d+)\b", command)
-    return bool(m) and m.group(1) == str(int(network_id))
+    return m is not None and m.group(1) == str(int(network_id))
 
 
 # --------------------------------------------------------------------------- verdicts

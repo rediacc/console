@@ -425,7 +425,7 @@ def progress_path(root):
 
 def read_progress(root):
     """[row] of `agent/ledgers/plan-box-progress.jsonl`, oldest first, [] when absent. A malformed line is skipped (the investigation ledger's rule)."""
-    out = []
+    out: list[dict] = []
     try:
         raw = progress_path(root).read_text(encoding="utf-8", errors="replace")
     except OSError:
@@ -582,7 +582,7 @@ def open_box(root, plan, selector):
 
 def parse_clause_specs(specs):
     """[{id, half, text}] from `C1 [code] <text>` strings. Raises PlanBoxError on a bad shape, an unknown half, the id `all` or a repeated id."""
-    out = []
+    out: list[dict] = []
     for spec in specs:
         m = _SPEC_RE.match(spec or "")
         if not m:

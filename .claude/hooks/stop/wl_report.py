@@ -42,6 +42,7 @@ import pathlib
 import re
 import sys
 import time
+from typing import Any
 
 import wl_core as C
 
@@ -428,7 +429,7 @@ def _meta(root, aid):
 
 def _named(root, name):
     """{agent id: meta} for every sidecar whose `name` is `name`: a teammate is addressed by its name, not its id. Read only when the id lookup missed."""
-    out = {}
+    out: dict[str, Any] = {}
     try:
         paths = list(root.glob("agent-*.meta.json")) + list(
             root.glob("workflows/*/agent-*.meta.json")
@@ -1134,7 +1135,9 @@ def harvest_transcript(jsonl):
 
     That is not a corner case: "the report arrives by SendMessage and nowhere the lead can look afterwards" is the literal statement of the problem this file exists to solve, so the SendMessage payload is the PRIMARY artifact and the final message is the postscript.
     """
-    sends, final, rec, others = [], "", {}, []
+    sends: list[Any] = []
+    others: list[Any] = []
+    final, rec = "", {}
     for line in _bounded_lines(jsonl):
         try:
             r = json.loads(line)

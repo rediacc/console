@@ -30,6 +30,7 @@ import os
 import pathlib
 import re
 import subprocess
+from typing import Any
 
 import wl_planbox as PB
 
@@ -50,8 +51,8 @@ class BoxAudit:
     reports: list = dataclasses.field(default_factory=list)  # [(report id, TickRow)]
     covered: set = dataclasses.field(default_factory=set)
     owed: list = dataclasses.field(default_factory=list)  # [(clause, half)]
-    cmap: object = None
-    inv: object = None
+    cmap: Any = None
+    inv: Any = None
     lp: list = dataclasses.field(default_factory=list)
     progress: dict = dataclasses.field(default_factory=dict)
     verdict: str = "untouched"
@@ -104,7 +105,7 @@ def trailer_links(root, base):
     """{(plan basename, sig): [(landed sha, clauses)]} from the Plan-Box trailers of base..HEAD."""
     rng = "%s..HEAD" % base if base else "HEAD"
     rc, out = _git(root, "log", "--format=%H%x00%B%x1e", rng)
-    links = {}
+    links: dict[tuple[str, str], list[tuple[str, str]]] = {}
     if rc != 0:
         return links
     for rec in out.split("\x1e"):
@@ -147,7 +148,7 @@ def report_rows(root, since_iso=""):
     import wl_report as RP
 
     store = RP.store_root(root)
-    out = []
+    out: list[Any] = []
     for entry in RP.read_index(store, max_bytes=None):
         if since_iso and str(entry.get("at") or "") < since_iso[:19]:
             continue

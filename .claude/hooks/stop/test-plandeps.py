@@ -852,6 +852,8 @@ check("verdict n1: Owns none refuses a writer", sv({"PLAN-n.md"}, {}).kind, "own
 _po_spec = importlib.util.spec_from_file_location(
     "wl_planorder", pathlib.Path(__file__).with_name("wl_planorder.py")
 )
+if _po_spec is None or _po_spec.loader is None:
+    raise AssertionError("wl_planorder.py is not importable beside this suite")
 PO = importlib.util.module_from_spec(_po_spec)
 _po_spec.loader.exec_module(PO)
 _LIVE_FG = {

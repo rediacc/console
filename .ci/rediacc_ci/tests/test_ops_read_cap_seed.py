@@ -6,6 +6,7 @@ import io
 import json
 import stat
 import subprocess
+from typing import Any
 
 import pytest
 
@@ -390,10 +391,14 @@ def _watch_after_exit():
         )
         return 0, text, ""
 
-    deps = rcs.Deps(runner=runner, spawner=None, clock=lambda: 0.0, sleep=lambda _s: None)
+    def no_spawn(*_argv: Any) -> Any:
+        raise AssertionError("no spawn expected: the client is already running")
+
+    deps = rcs.Deps(runner=runner, spawner=no_spawn, clock=lambda: 0.0, sleep=lambda _s: None)
     start = rcs.parse_sample(
         "uptime 0.0 0\nload 1.00 1 1 1/1 1\ncpu  0 0 0 0 0 0 0 0 0 0\nnproc 8\n"
     )
+    assert start is not None
     args = rcs.argparse.Namespace(rdc="rdc", config="c", machine="m", repo="r", stop_on="load")
     out = io.StringIO()
     rc = rcs.watch_snapshot(deps, _ExitingProc(), start, 1.0, args, out, watch)

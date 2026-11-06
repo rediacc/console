@@ -9,7 +9,7 @@ import datetime
 import io
 import json
 import urllib.parse
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
@@ -261,7 +261,8 @@ REPLAY = (
 )
 
 
-def seeded(**kw) -> World:
+# Any, not World: the cases replace World methods with variants to plant one defect each.
+def seeded(**kw) -> Any:
     w = World(**kw)
     w.add_chunks(LIN, 5)
     w.add_manifest(LIN, "old")
