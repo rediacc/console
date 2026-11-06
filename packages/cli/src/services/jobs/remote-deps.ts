@@ -1,12 +1,14 @@
 /**
  * The real, SSH-backed dependencies of `job wait` and the finished notice.
- * The proxy path is J6's seam: neither object supplies `followProxy`, and the
- * notice cannot observe a proxy ticket yet.
+ * `job wait` follows a proxy ticket (`-b` through `--proxy`) with short polls
+ * through `followProxy`; the notice cannot observe a proxy ticket yet.
  */
 
+import { CLI_CONTRACT_VERSION } from '@rediacc/shared/cli-contract';
+import { getSubscriptionTokenState } from '../account/subscription-auth.js';
 import { getEffectiveConfigName } from '../config/config-name.js';
 import { writeStderr } from '../core/request-context.js';
-import { JobLogCursor } from '../executor/job-client.js';
+import { JobLogCursor, type JobStatus } from '../executor/job-client.js';
 import {
   connectForJobs,
   followJobLogs,
@@ -14,10 +16,11 @@ import {
   readJobStatus,
   replayJobLogs,
 } from '../executor/job-remote.js';
+import { ProxyClient } from '../executor/proxy-client.js';
 import type { RenetEvent } from '../executor/types.js';
 import { liveRepoExists, type NoticeDeps, type TicketObservation } from './finished-notice.js';
 import type { JobWaitDeps } from './job-wait.js';
-import { TicketStore } from './ticket-store.js';
+import { type Ticket, TicketStore } from './ticket-store.js';
 
 export function openTicketStore(): TicketStore {
   return new TicketStore(getEffectiveConfigName());
@@ -35,8 +38,59 @@ async function withConnection<T>(
   }
 }
 
-export function sshWaitDeps(): JobWaitDeps {
+/** The proxy client a ticket's `via.url` names, signed in with this device's account login. */
+function proxyClientFor(url: string): ProxyClient {
+  return new ProxyClient({
+    baseUrl: url,
+    contractVersion: CLI_CONTRACT_VERSION,
+    getToken: () => {
+      const state = getSubscriptionTokenState();
+      if (state.kind !== 'ready') {
+        return Promise.reject(
+          new Error(
+            'Following a proxied job needs an account login. Run "rdc subscription login" first.'
+          )
+        );
+      }
+      return Promise.resolve(state.token.token);
+    },
+  });
+}
+
+/** Follow a proxy ticket by polls and give the terminal state in renet's status shape. */
+export async function followProxyTicket(
+  ticket: Ticket,
+  signal: AbortSignal,
+  onEvent: (event: RenetEvent, line?: number) => void,
+  clientFor: (url: string) => Pick<ProxyClient, 'followJob'> = proxyClientFor
+): Promise<JobStatus | undefined> {
+  if (!(ticket.via?.url && ticket.machine && ticket.jobId)) return undefined;
+  const status = await clientFor(ticket.via.url).followJob(
+    ticket.machine,
+    ticket.jobId,
+    ticket.lastSeenLine,
+    onEvent,
+    signal
+  );
+  if (!status) return undefined;
   return {
+    job_id: ticket.jobId,
+    function: status.function,
+    state: status.state,
+    exit_code: status.exitCode ?? null,
+    started_at: status.startedAt ?? '',
+    ...(status.finishedAt ? { finished_at: status.finishedAt } : {}),
+  };
+}
+
+export function sshWaitDeps(onEvent?: (event: RenetEvent, line?: number) => void): JobWaitDeps {
+  return {
+    ...(onEvent
+      ? {
+          followProxy: (ticket: Ticket, signal: AbortSignal) =>
+            followProxyTicket(ticket, signal, onEvent),
+        }
+      : {}),
     withConnection: (machine, fn) => withConnection(machine, (conn) => fn(conn)),
     follow: (
       conn,

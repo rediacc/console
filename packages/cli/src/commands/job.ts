@@ -334,7 +334,7 @@ async function runJobWait(requested: string, options: JobCommandOptions): Promis
   if (!ticket) throw new Error(t('commands.job.machineRequired', { jobId: requested }));
 
   const target = ticket.jobId ?? ticket.requestId;
-  const outcome = await waitForJob(store, ticket, sshWaitDeps(), {
+  const outcome = await waitForJob(store, ticket, sshWaitDeps(renderJobEvent), {
     timeoutMs,
     onEvent: renderJobEvent,
   });

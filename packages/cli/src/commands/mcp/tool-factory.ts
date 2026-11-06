@@ -57,6 +57,12 @@ export interface ToolDef {
 /** What a windowed tool's description tells the model about the job it may start. */
 const ATTACH_WINDOW_NOTE = `Returns the result, or a job id when the run outlasts about ${JOB_ATTACH_WINDOW_MS / 1000} s (follow it with job_status or job_logs).`;
 
+/** The optional `background` field of a windowed tool: start the job and return its ticket at once (the child runs `rdc --background`, which a `--proxy` executor honours). */
+const BACKGROUND_FIELD = z
+  .boolean()
+  .optional()
+  .describe('Start the job and return its job id at once instead of waiting for it.');
+
 /** Does a command run as a machine job the MCP child attaches to for the window? One predicate, shared with the executor. */
 export function hasAttachWindow(cmd: Pick<ContractCommand, 'plane' | 'detachable'>): boolean {
   return cmd.plane === 'machine' && cmd.detachable;
@@ -249,7 +255,7 @@ export function buildToolsFromContract(): ToolDef[] {
         ? `${baseDescription.replace(/\.$/, '')}. ${ATTACH_WINDOW_NOTE}`
         : baseDescription,
       ...(windowed ? { attachWindowMs: JOB_ATTACH_WINDOW_MS } : {}),
-      schema,
+      schema: windowed ? { ...schema, background: BACKGROUND_FIELD } : schema,
       command: commandFn,
       isDestructive: mcp.destructive,
       isIdempotent: mcp.idempotent,

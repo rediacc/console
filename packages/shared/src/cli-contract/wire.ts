@@ -77,6 +77,12 @@ export const CommandRequestSchema = z.object({
     .string()
     .regex(/^[A-Za-z0-9][A-Za-z0-9._:@-]{0,199}$/)
     .optional(),
+  /**
+   * `-b` / `--background`: the executor starts each machine job with a zero
+   * attach window and answers with the job's ticket at once, so the client does
+   * not follow it. Absent means the served window (the job is followed).
+   */
+  background: z.boolean().optional(),
 });
 
 type CommandRequest = z.infer<typeof CommandRequestSchema>;

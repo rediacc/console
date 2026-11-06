@@ -11,6 +11,8 @@ const execFileAsync = promisify(execFile);
 export interface ExecutorOptions {
   configName?: string;
   defaultTimeoutMs: number;
+  /** Run the child as `rdc --background`: the ticket returns at once, also through a `--proxy` executor. */
+  background?: boolean;
 }
 
 export interface ExecutionResult {
@@ -121,6 +123,7 @@ export async function executeRdcCommand(
     args.push('--config', options.configName);
   }
   args.push(...argv, '--output', 'json', '--yes', '--quiet');
+  if (options.background) args.push('--background');
 
   const timeoutMs = options.timeoutMs ?? options.defaultTimeoutMs;
   const bin = resolveRdcBinary();

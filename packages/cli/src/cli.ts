@@ -278,6 +278,7 @@ export function createCli(): Command {
         await runCommandThroughProxy(commandPath, actionCommand, {
           baseUrl: proxyUrl,
           contractVersion: CLI_CONTRACT_VERSION,
+          background: opts.background === true,
           getToken: () => {
             const state = getSubscriptionTokenState();
             if (state.kind !== 'ready') {

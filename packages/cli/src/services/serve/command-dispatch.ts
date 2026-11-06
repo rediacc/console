@@ -94,6 +94,8 @@ export interface DispatchArgs {
   onEvent: (event: RenetEvent, line?: number) => void;
   /** The client's idempotency key for this invocation (CommandRequest.requestId). */
   requestId?: string;
+  /** The client asked for `--background` (CommandRequest.background): each job returns its ticket at once. */
+  background?: boolean;
   /**
    * Called once per job with its id, machine and the overlaps the start met,
    * the instant it starts and before any event. The route emits its
@@ -426,6 +428,7 @@ export async function dispatchCommand(args: DispatchArgs): Promise<DispatchOutco
     stderr: [],
     onEvent: args.onEvent,
     executor: recordingExecutor,
+    ...(args.background ? { background: true } : {}),
     ...(args.config ? { config: createRequestConfigScope(args.config) } : {}),
   };
 

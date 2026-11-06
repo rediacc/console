@@ -39,6 +39,7 @@ import {
   runInRequestContext,
 } from '../core/request-context.js';
 import { InvalidJobIdError } from '../executor/job-client.js';
+import { traceProxyRequest } from '../executor/proxy-trace.js';
 import { AuthError, type AuthVerifier } from './auth.js';
 import { CommandRejected, dispatchCommand, prepareCommand } from './command-dispatch.js';
 import type { ServeDeps } from './deps.js';
@@ -180,6 +181,8 @@ export function createServeApp(deps: ServeDeps): Hono {
       return c.json({ error: message, ...(code ? { code } : {}) }, status);
     }
 
+    traceProxyRequest('received', request);
+
     const clientContract = c.req.header(CONTRACT_VERSION_HEADER) ?? request.contractVersion;
     if (clientContract !== CLI_CONTRACT_VERSION) {
       return c.json(
@@ -273,6 +276,7 @@ export function createServeApp(deps: ServeDeps): Hono {
           },
           // The executor seam gives every call of a served dispatch the attach window (executor-factory attachDecorator), so a job that outlives it returns its ticket and the client follows with polls.
           ...(request.requestId ? { requestId: request.requestId } : {}),
+          ...(request.background ? { background: true } : {}),
           // Announce the job the instant it starts, before any event, so a dropped request can be followed by polling it.
           onJobStarted: (jobId, machine, overlaps) => {
             safeWrite({

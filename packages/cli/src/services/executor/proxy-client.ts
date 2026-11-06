@@ -44,6 +44,7 @@ import { getEffectiveConfigName } from '../config/config-name.js';
 import { TicketStore } from '../jobs/ticket-store.js';
 import { annotatePolled } from './job-span.js';
 import {
+  emptyOutcome,
   foldJobLine,
   foldResultLine,
   isTerminalState,
@@ -59,6 +60,7 @@ import {
   type StreamState,
   terminalOutcome,
 } from './proxy-follow.js';
+import { traceProxyRequest } from './proxy-trace.js';
 
 import type { RenetEvent } from './types.js';
 
@@ -184,6 +186,15 @@ function describeFetchFailure(error: unknown): string {
   return source.message && source.message !== code ? `${code} (${source.message})` : code;
 }
 
+/** Hand a page's events to the renderer, with their 1-based spool ordinals. True when the page ends the job. */
+function deliverPage(
+  poll: JobPollResponse,
+  onEvent: (event: RenetEvent, line?: number) => void
+): boolean {
+  for (const entry of poll.events) onEvent(entry.event, entry.line + 1);
+  return isTerminalState(poll.status.state) && !poll.more;
+}
+
 export class ProxyClient {
   private readonly baseUrl: string;
   private readonly getToken: () => Promise<string>;
@@ -274,7 +285,8 @@ export class ProxyClient {
     params: Record<string, unknown>,
     positionals: Record<string, unknown>,
     onEvent: (event: RenetEvent) => void,
-    reattach?: ReattachTarget
+    reattach?: ReattachTarget,
+    options: { background?: boolean } = {}
   ): Promise<ProxyCommandOutcome> {
     await this.ensureSession();
 
@@ -286,7 +298,9 @@ export class ProxyClient {
       params,
       positionals,
       requestId,
+      ...(options.background ? { background: true } : {}),
     };
+    traceProxyRequest('sent', request);
 
     const state: ClientStreamState = {
       eventsSeen: 0,
@@ -295,7 +309,7 @@ export class ProxyClient {
       unorderedSkip: 0,
     };
     await this.startCommand(request, onEvent, state, reattach?.machine);
-    return this.finishOrPoll(pathKey, requestId, onEvent, state, reattach);
+    return this.finishOrPoll(pathKey, requestId, onEvent, state, reattach, options.background);
   }
 
   /**
@@ -386,7 +400,8 @@ export class ProxyClient {
     requestId: string,
     onEvent: (event: RenetEvent) => void,
     state: StreamState,
-    reattach: ReattachTarget | undefined
+    reattach: ReattachTarget | undefined,
+    background = false
   ): Promise<ProxyCommandOutcome> {
     const machine = state.machine ?? reattach?.machine;
     if (state.outcome && !state.running) {
@@ -405,6 +420,10 @@ export class ProxyClient {
       state: 'running',
       via: { kind: 'proxy', url: this.baseUrl },
     });
+    // `-b`: the ticket is the answer. The job keeps running at the executor, and `rdc job wait <id>` follows it through the proxy later.
+    if (background) {
+      return { ...(state.outcome ?? emptyOutcome()), jobId: state.jobId, running: true, machine };
+    }
     const outcome = await this.followByPolls(
       machine,
       state.jobId,
@@ -414,6 +433,50 @@ export class ProxyClient {
       ticket
     );
     return outcome;
+  }
+
+  /**
+   * Follow a job this client started earlier (a `-b` ticket with `via: proxy`) by
+   * short polls until it is terminal, from `fromLine`. Returns undefined when
+   * `signal` aborts first, or when the executor stays unreachable past the lost
+   * budget; the job keeps running either way.
+   */
+  async followJob(
+    machine: string,
+    jobId: string,
+    fromLine: number,
+    onEvent: (event: RenetEvent, line?: number) => void,
+    signal?: AbortSignal
+  ): Promise<JobPollResponse['status'] | undefined> {
+    await this.ensureSession();
+    const pace = { delay: POLL_FIRST_DELAY_MS };
+    const failing: { since?: number } = {};
+    let nextLine = fromLine;
+    while (!signal?.aborted) {
+      const poll = await this.fetchPoll(machine, jobId, nextLine);
+      if (!poll) {
+        if (await this.retryLostPoll(pace, failing)) continue;
+        return undefined;
+      }
+      failing.since = undefined;
+      nextLine = poll.nextLine;
+      const done = deliverPage(poll, onEvent);
+      if (done) return poll.status;
+      await this.pausePoll(pace, poll);
+    }
+    return undefined;
+  }
+
+  /** Wait out one failed poll on the ladder. False once failures have lasted the lost budget. */
+  private async retryLostPoll(
+    pace: { delay: number },
+    failing: { since?: number }
+  ): Promise<boolean> {
+    failing.since ??= Date.now();
+    if (Date.now() - failing.since >= this.lostBudgetMs) return false;
+    await this.sleep(jittered(pace.delay, this.random));
+    pace.delay = nextPollDelayMs(pace.delay);
+    return true;
   }
 
   private openTicket(): TicketStore | undefined {

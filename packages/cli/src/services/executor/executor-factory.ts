@@ -234,9 +234,9 @@ async function recordAllocatedNetworkId(
  * JOB_ATTACH_WINDOW_MS inside a served dispatch or an MCP child, and 0 under
  * `--background`, whose ticket returns the moment the job starts.
  *
- * The `--background` global is ignored inside a serve request context: it would
- * otherwise leak across concurrent in-flight requests, and a dispatch's window is
- * the proxy's. The request id is minted here, in the invoking process, once per
+ * Inside a serve request context the `--background` global is ignored, since it
+ * would leak across concurrent in-flight requests; the request's own `background`
+ * flag (sent by the proxy client for `-b`) gives that dispatch's calls the zero window. The request id is minted here, in the invoking process, once per
  * call, so a start retried after a dropped answer carries the same id and a call
  * served by the executor daemon still carries the client's invocation.
  *
@@ -249,11 +249,14 @@ async function recordAllocatedNetworkId(
 export function attachDecorator(inner: Executor): Executor {
   return {
     async execute(options) {
-      const served = currentRequestContext() !== undefined;
+      const context = currentRequestContext();
+      const served = context !== undefined;
+      // Inside a dispatch the request's own flag decides (CommandRequest.background); the process global would leak across concurrent requests.
+      const background = served ? context.background === true : isBackgroundRequested();
       const window =
         options.attachWindowMs === undefined
           ? attachWindowMs({
-              background: isBackgroundRequested() && !served && options.probe !== true,
+              background: background && options.probe !== true,
               served,
               client: clientKindFromEnv(),
             })

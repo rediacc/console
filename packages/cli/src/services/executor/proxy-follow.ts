@@ -18,6 +18,15 @@ export interface ProxyCommandOutcome {
   /** Raw bytes the command wrote instead (`repo cat` of a binary file). Written verbatim. */
   stdoutBytes?: Uint8Array;
   stderr: string;
+  /** The job is still running at the executor: the outcome is its ticket (`-b`), not a result. */
+  running?: boolean;
+  /** The machine the running job is on, set with `running`. */
+  machine?: string;
+}
+
+/** The outcome of a request that ended with a job line and no result line (a `-b` start whose result was lost). */
+export function emptyOutcome(): ProxyCommandOutcome {
+  return { success: true, exitCode: 0, stdout: '', stderr: '' };
 }
 
 /** The poll pacing (Design 5): 2 s, growing by half each empty poll, capped at 30 s, with +-20 % jitter. */
