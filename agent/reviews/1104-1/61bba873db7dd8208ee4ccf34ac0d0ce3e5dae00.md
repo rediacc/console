@@ -21,7 +21,7 @@ Body-Sig: 06d6c763e4ceac3c
 ### 61bba873.1 [medium] .ci/config/carried-reds.json:42
 Anchor: in-diff
 Claim: The commit adds PLAN-jobs-backup-real-machine-tests.md to the P-A1 carried-red list, so that plan's open-box finding no longer fails the gate. The reason says the entry is removed before any merge, but nothing in the diff enforces that removal, so the entry can outlive the backup push it was meant for.
-Resolution: open
+Resolution: not-a-bug | .ci/config/carried-reds.json:2 CI still runs and fails every carried gate, so CI Complete blocks the merge | d778be9d 2026-11-06T05:35:59Z
 
 ### 61bba873.2 [medium] packages/cli/src/commands/__tests__/backup-restore-path.test.ts:258
 Anchor: in-diff
