@@ -1007,6 +1007,52 @@ def _boxrow_cli(argv):
     sys.stdout.write(M.CLI_BOXROW_WROTE % {"ledger": ledger, "row": json.dumps(stored)})
 
 
+def _release_live_owed(root, text, me, rid):
+    """Write and list the `live-owed` rows a release of item `rid` owes; returns 0, or 1 after naming the failure on stderr.
+
+    THE LIVE-OWED STATE (agent/plans/PLAN-tick-tracking.md Design 7, box T11): an item naming a box whose code landed and whose live or operator half is unproved leaves a `live-owed` progress row per such clause, so writers-now step 7 schedules the half instead of forgetting it. Nothing is printed when nothing is owed, so the release message stays byte-identical. A failure of the audit or the ledger write is SAID (review 0e0808a5.1): swallowed, it left the half unscheduled behind a release that read as complete.
+    """
+    try:
+        import wl_boxaudit as BA
+
+        rows = BA.release_live_owed(root, text, me[:8], rid)
+        for row in rows:
+            print(
+                "  live-owed %s#%s clause %s -> %s"
+                % (
+                    row["plan"].rsplit("/", 1)[-1],
+                    row["sig"],
+                    row["clause"],
+                    "/".join(BA.PB.PROGRESS_REL),
+                )
+            )
+    except Exception as exc:
+        sys.stderr.write(
+            "live-owed: NOT WRITTEN for #%s (%s: %s). The release itself is recorded; do not "
+            "repeat it. Any live or operator half its boxes owe is unscheduled: list them with "
+            "`worklist.py --box-audit %s --live-owed`.\n" % (rid, type(exc).__name__, exc, me)
+        )
+        return 1
+    return 0
+
+
+def _owed_for_state(root, prefix):
+    """The owed boxes a `--state` write must name (`wl_boxaudit.owned_owed_cached`), or None when the audit cannot run.
+
+    THE OWED-TICKS DEMAND (agent/plans/PLAN-tick-tracking.md T12): the audit is cached per HEAD, so a --state write pays it once per commit. An audit that cannot run demands nothing, so a broken audit never locks the one document built to survive compaction, but it says so on stderr rather than passing as "nothing owed" (review a94cd7a7.2).
+    """
+    try:
+        import wl_boxaudit as BA
+
+        return BA.owned_owed_cached(root, prefix)
+    except Exception as exc:
+        sys.stderr.write(
+            "owed ticks: UNCHECKED, the box audit failed (%s: %s); the section was not demanded "
+            "this write.\n" % (type(exc).__name__, exc)
+        )
+        return None
+
+
 def _boxaudit_cli(argv):
     """--box-audit <me> [plan] [--sha <list>] [--live-owed] [--mixed-unsplit] [--all] (agent/plans/PLAN-tick-tracking.md Design 4, box T9).
 
@@ -1835,20 +1881,8 @@ def _item_cli(argv, worklist):
                 "released #%s back to open; it is ordinary open work again, "
                 "claimed by no worker" % _rid
             )
-            # THE LIVE-OWED STATE (agent/plans/PLAN-tick-tracking.md Design 7, box T11): an item naming a box whose code landed and whose live or operator half is unproved leaves a `live-owed` progress row per such clause, so writers-now step 7 schedules the half instead of forgetting it. Nothing is printed when nothing is owed, so the release message stays byte-identical.
-            with contextlib.suppress(Exception):
-                import wl_boxaudit as BA
-
-                for row in BA.release_live_owed(root, str(rec.get("text") or ""), me[:8], _rid):
-                    print(
-                        "  live-owed %s#%s clause %s -> %s"
-                        % (
-                            row["plan"].rsplit("/", 1)[-1],
-                            row["sig"],
-                            row["clause"],
-                            "/".join(BA.PB.PROGRESS_REL),
-                        )
-                    )
+            if _release_live_owed(root, str(rec.get("text") or ""), me, _rid):
+                sys.exit(1)
             return
         _dep_gate(root, fold, rec, rest, "--lease")
         until_arg = argv[3]
@@ -2892,12 +2926,7 @@ def main():
             sys.stderr.write(M.CLI_STATE_WHOLE_DOC % prefix)
             sys.exit(2)
         # Refuse a section the Stop check would reject, with the SAME rule. Accept-then-reject leaves the one artifact designed to survive compaction broken while the session believes it is fine; refusing leaves the previous good document untouched.
-        # THE OWED-TICKS DEMAND (agent/plans/PLAN-tick-tracking.md T12): the audit is cached per HEAD, so a --state write pays it once per commit. An audit that cannot run demands nothing.
-        owed = None
-        with contextlib.suppress(Exception):
-            import wl_boxaudit as BA
-
-            owed = BA.owned_owed_cached(root, prefix)
+        owed = _owed_for_state(root, prefix)
         verdict, detail = S.agent_state_shape(body, owed)
         if verdict == "waitled":
             # Its own message: the generic one talks about char limits, which says nothing about why leading with a watch is refused, and a refusal a session cannot act on is a refusal it routes around.

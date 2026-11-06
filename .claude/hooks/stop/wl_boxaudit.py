@@ -38,7 +38,6 @@ OWED_VERDICTS = ("tickable-now", "live-owed")
 LIVE_HALVES = ("live", "operator")
 GIT_TIMEOUT_S = 60
 SHOWN_LANDED = 4
-SECTION = "## Owed ticks"
 CACHE_NAME = "box-audit-%s.json"
 
 
@@ -377,16 +376,38 @@ def stop_check(memo, current, threshold=OWED_STOPS):
     return new, blocking
 
 
+def inputs_stamp(root):
+    """The cache stamp of everything `audit` reads beside HEAD: `[name, size, mtime_ns]` of the progress, investigation and live-proof ledgers, the report index, and every live plan file under agent/plans/.
+
+    Review 82fd346d.1 and ec1efb0e.2: the stamp held only the progress and investigation ledger sizes, so a box closed by editing its plan, a VERIFIED live-proof row, or a newly captured report at the same HEAD kept answering the old verdict until the next commit. A missing file stamps as -1.
+    """
+    import wl_liveproof as LP
+    import wl_report as RP
+
+    root = pathlib.Path(root)
+    paths = [
+        PB.progress_path(root),
+        root / "agent" / "ledgers" / "plan-investigation.jsonl",
+        root / LP.LEDGER_REL,
+    ]
+    with contextlib.suppress(Exception):
+        paths.append(RP.index_path(RP.store_root(root)))
+    paths += sorted((root / "agent" / "plans").glob("PLAN-*.md"))
+    stamp = []
+    for path in paths:
+        try:
+            st = path.stat()
+            stamp.append([str(path), st.st_size, st.st_mtime_ns])
+        except OSError:
+            stamp.append([str(path), -1, -1])
+    return stamp
+
+
 def uninvestigated_cached(root, me):
-    """`uninvestigated` over the whole audit, cached per HEAD and per ledger size (the cache `owned_owed_cached` keeps, under its own key)."""
+    """`uninvestigated` over the whole audit, cached per HEAD and per `inputs_stamp` (the cache `owned_owed_cached` keeps, under its own key)."""
     root = pathlib.Path(root)
     head = head_of(root)
-    stamp = []
-    for path in (PB.progress_path(root), root / "agent" / "ledgers" / "plan-investigation.jsonl"):
-        try:
-            stamp.append(path.stat().st_size)
-        except OSError:
-            stamp.append(-1)
+    stamp = inputs_stamp(root)
     cache = cache_path(root, "owed-%s" % (head or "nohead"))
     try:
         doc = json.loads(cache.read_text(encoding="utf-8"))
@@ -503,16 +524,6 @@ def owed_ticks(rows, owned):
     return [a for a in rows if a.verdict in OWED_VERDICTS and a.plan in owned]
 
 
-def section_text(rows):
-    """The `## Owed ticks` section body for `owed_ticks` rows."""
-    out = [SECTION, ""]
-    for a in rows:
-        out.append("- %s" % line_of(a))
-        if a.tick:
-            out.append("  %s" % a.tick)
-    return "\n".join(out) + "\n"
-
-
 # ---- the per-HEAD cache (T12) ----------------------------------------------------------
 
 
@@ -524,17 +535,12 @@ def cache_path(root, head):
 
 
 def owned_owed_cached(root, me):
-    """[(plan, sig, verdict)] of the owed boxes of plans `me` owns, cached per HEAD and per ledger size, so a STATE.md write pays the audit once per commit."""
+    """[(plan, sig, verdict)] of the owed boxes of plans `me` owns, cached per HEAD and per `inputs_stamp`, so a STATE.md write pays the audit once per change of what it reads."""
     import wl_checks as CK
 
     root = pathlib.Path(root)
     head = head_of(root)
-    stamp = []
-    for path in (PB.progress_path(root), root / "agent" / "ledgers" / "plan-investigation.jsonl"):
-        try:
-            stamp.append(path.stat().st_size)
-        except OSError:
-            stamp.append(-1)
+    stamp = inputs_stamp(root)
     cache = cache_path(root, head or "nohead")
     try:
         doc = json.loads(cache.read_text(encoding="utf-8"))

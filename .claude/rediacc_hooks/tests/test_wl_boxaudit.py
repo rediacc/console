@@ -323,6 +323,79 @@ def test_release_control_the_message_stays_byte_identical(wl):
     )
 
 
+def test_release_writes_and_lists_the_live_owed_row_through_the_cli_helper(world, capsys):
+    """Review 0e0808a5.1, CONTROL half: the helper the `--lease ... release` branch calls writes the row and lists it, rc 0."""
+    wl = wlfix.import_wl("worklist")
+    assert wl._release_live_owed(world.root, "box %s" % SIG["live"], ME, "beef0001") == 0
+    got = capsys.readouterr()
+    assert "live-owed %s#%s clause all" % (PLAN, SIG["live"]) in got.out
+    assert got.err == ""
+
+
+def test_release_names_a_failed_live_owed_write_and_exits_1(world, capsys, monkeypatch):
+    """Review 0e0808a5.1: an audit or ledger failure was swallowed by `contextlib.suppress(Exception)`, so the release read as complete with the half unscheduled. It is said now, with the command that lists what is owed."""
+    wl = wlfix.import_wl("worklist")
+
+    def broken(*_a, **_k):
+        raise OSError("ledger is read-only")
+
+    monkeypatch.setattr(BA, "release_live_owed", broken)
+    assert wl._release_live_owed(world.root, "box %s" % SIG["live"], ME, "beef0002") == 1
+    err = capsys.readouterr().err
+    assert "live-owed: NOT WRITTEN for #beef0002 (OSError: ledger is read-only)" in err
+    assert "--box-audit %s --live-owed" % ME in err
+
+
+def test_state_owed_demand_reads_the_cached_audit(world, capsys):
+    """Review a94cd7a7.2: the `--state` wiring hands `agent_state_shape` exactly what the cached audit answers, silently."""
+    wl = wlfix.import_wl("worklist")
+    assert wl._owed_for_state(world.root, ME) == BA.owned_owed_cached(world.root, ME)
+    assert capsys.readouterr().err == ""
+
+
+def test_state_owed_demand_says_when_the_audit_cannot_run(world, capsys, monkeypatch):
+    """Review a94cd7a7.2: a failing audit demands nothing (the document is never locked), and says the demand went unchecked rather than reading as nothing owed."""
+    wl = wlfix.import_wl("worklist")
+
+    def broken(*_a, **_k):
+        raise ValueError("bad ledger row")
+
+    monkeypatch.setattr(BA, "owned_owed_cached", broken)
+    assert wl._owed_for_state(world.root, ME) is None
+    assert "owed ticks: UNCHECKED" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("cached", ["uninvestigated_cached", "owned_owed_cached"])
+def test_the_audit_cache_misses_on_every_input_it_reads(world, monkeypatch, tmp_path, cached):
+    """Review 82fd346d.1 and ec1efb0e.2: at one HEAD a plan edit, a live-proof row or a captured report changes a verdict, so each must miss the cache. CONTROL: an unchanged world hits it."""
+    monkeypatch.setenv("TMPDIR", str(tmp_path))
+    fn = getattr(BA, cached)
+    fn(world.root, ME)
+    calls = []
+    real = BA.audit
+
+    def counting(*a, **k):
+        calls.append(1)
+        return real(*a, **k)
+
+    monkeypatch.setattr(BA, "audit", counting)
+    fn(world.root, ME)
+    assert calls == [], "an unchanged world missed the cache"
+    plan = world.root / "agent" / "plans" / PLAN
+    ledger = world.root / "agent" / "ledgers" / "live-proof.jsonl"
+    for path in (plan, ledger):
+        before = path.read_bytes()
+        try:
+            path.write_bytes(before + b"\n")
+            fn(world.root, ME)
+        finally:
+            path.write_bytes(before)
+        assert calls, "a change to %s hit the stale cache" % path.name
+        calls.clear()
+        fn(world.root, ME)
+        calls.clear()
+
+
 # ---- T10: the blocking check plan-box-owed -----------------------------------------------
 
 
