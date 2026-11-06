@@ -53,7 +53,8 @@ _OPEN_STATES = (" ", ">", "?")
 
 # What a red blocks, by workflow stem: the nightly CI run is the soak the stable promotion counts; every other scheduled workflow is main's own hygiene.
 _BLOCKS = {
-    "ci": "the stable promotion (promote-stable counts only green scheduled Console CI runs)"
+    "ci": "the weekly fleet run (the 5-OS stock-image fleet and the full union), which is the test evidence the stable promotion waives its soak on",
+    "ci-drift": "the stable promotion's daily trigger and the operator's drift mail",
 }
 _BLOCKS_DEFAULT = "main hygiene (this workflow's scheduled job is not running clean)"
 
