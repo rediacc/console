@@ -26,6 +26,6 @@ up() {
 down() {
   _report lifecycle-probe.down
   if [ -f "$REDIACC_WORKING_DIR/lifecycle-probe-down-docker" ]; then
-    docker info >/dev/null 2>&1 || { echo lifecycle-probe-down-daemon-unreachable >&2; return 1; }
+    di=$(docker info 2>&1) || { case "$di" in *ermission*denied*) echo "docker info: permission denied" >&2;; *) echo lifecycle-probe-down-daemon-unreachable >&2;; esac; return 1; }
   fi
 }

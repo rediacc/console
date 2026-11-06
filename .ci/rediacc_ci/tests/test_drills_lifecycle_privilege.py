@@ -326,6 +326,67 @@ def test_down_honest_verdict_control_and_failures() -> None:
     assert not lp.down_honest_verdict(1, "unrelated failure")[0]  # failed for another reason
 
 
+def test_down_permission_denied_on_the_socket_is_not_an_unreachable_daemon() -> None:
+    """`docker info` refused for the dropped uid is not the stopped-daemon complaint, so L1.11 cannot pass on it."""
+    with tempfile.TemporaryDirectory() as work:
+        open(os.path.join(work, lp.DOWN_MARKER), "w").close()
+        runner = (
+            "source /dev/stdin <<'EOF'\n%sEOF\nsudo() { return 1; }\n"
+            "docker() { echo 'permission denied while trying to connect to the docker API' >&2; return 1; }\n"
+            "down\n" % lp.probe_rediaccfile()
+        )
+        env = {**os.environ, "REDIACC_WORKING_DIR": work, "LC_ALL": "C"}
+        res = subprocess.run(
+            ["bash", "-c", runner], env=env, capture_output=True, text=True, check=False
+        )
+    assert res.returncode != 0
+    assert lp.DOWN_FAIL_MARK not in res.stderr
+    assert not lp.down_honest_verdict(res.returncode, res.stdout + res.stderr)[0]
+
+
+class _Reply:
+    def __init__(self, rc: int) -> None:
+        self.rc, self.out, self.err = rc, "", ""
+
+
+class _StopProbe(lp._LiveL1):
+    """An L1 whose root scripts are canned: the daemon stop exits 1 after stopping the unit, the start fails too."""
+
+    def __init__(self) -> None:
+        self.nid = 7
+        self.ref = "r"
+        self.root_granted = False
+        self.autostart_enabled = False
+        self.daemon_stopped = False
+        self.reboot_grand = ""
+        self.device_granted = False
+        self.fake_written = False
+        self.scripts: list[str] = []
+
+    def up(self, _extra_env=None):
+        return _Reply(0)
+
+    def shell(self, _command: str, _ref: str = ""):
+        return _Reply(0)
+
+    def check(self, _desc: str, ok: bool, _res=None, _evidence: str = "") -> bool:
+        return ok
+
+    def root(self, command: str, _timeout: float = 60.0):
+        self.scripts.append(command)
+        return _Reply(1)
+
+
+def test_a_failed_stop_still_leaves_the_daemon_for_teardown_to_start() -> None:
+    probe = _StopProbe()
+    probe.l1_11_down_stopped_daemon()
+    assert probe.daemon_stopped is True  # stop rc=1 and start rc=1: teardown must retry the start
+    probe.scripts.clear()
+    probe.ctx = type("Ctx", (), {"sweep_leftovers": [], "scrub": staticmethod(str)})()
+    probe.cleanup()
+    assert lp.daemon_stop_script(7, False) in probe.scripts
+
+
 def test_cold_barrier_verdict_control_and_failures() -> None:
     good = lp.parse_probe(GOOD_UP)
     assert lp.cold_barrier_verdict(good)[0]

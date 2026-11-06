@@ -79,7 +79,7 @@ def probe_rediaccfile() -> str:
         "down() {\n"
         "  _report %(downf)s\n"
         '  if [ -f "$REDIACC_WORKING_DIR/%(downmarker)s" ]; then\n'
-        "    docker info >/dev/null 2>&1 || { echo %(downtoken)s >&2; return 1; }\n"
+        '    di=$(docker info 2>&1) || { case "$di" in *ermission*denied*) echo "docker info: permission denied" >&2;; *) echo %(downtoken)s >&2;; esac; return 1; }\n'
         "  fi\n"
         "}\n"
     ) % {
@@ -529,7 +529,8 @@ class _LiveL1:
             return
         self.shell(down_marker_command(True))
         stopped = self.root(daemon_stop_script(self.nid, True))
-        self.daemon_stopped = stopped.rc == 0 or self.daemon_stopped
+        # A stop that exits non-zero may still have stopped the unit: the daemon counts as stopped from the attempt on, so teardown starts it again.
+        self.daemon_stopped = True
         try:
             if not self.check(
                 "L1.11 the Docker daemon of net-%d is stopped" % self.nid,
