@@ -18,7 +18,8 @@ PHASES. There are two sides, the trigger's `renet` and `account` (`rediacc_ci.pr
   A0  account only. The dev gateway does not hot-reload, so it is reused only when it is healthy, the `started=` and `gateway_port=` of `.account-state` equal the record `.ci/cache/vm-check/gateway.json` this runner wrote when it last started one, and that record's `account` equals `rediacc_ci.proof.surfaces.account_worktree_digest`. Otherwise `lib.Drill.restart_gateway` starts it with its log at `.ci/cache/vm-check/gateway.log`, the record is rewritten (mode `started`, or `restarted` when a gateway was already answering), and `detach_gateway` leaves it running after the run for the next one to reuse. A restart rotates every dev password and may move the port, and the run says so. A start that fails, or a gateway still unhealthy after it, is `account-gateway` with the log tail.
   P4  chooses the config every later CLI call runs under. The stored token is used when `subscription status` accepts it; that verb exits non-zero when the config holds no token at all (before 2026-10-15 it exited 0 printing "Not logged in", so P4 read an absent token as a valid one and `repo create` then refused with "Subscription token required"). Otherwise a token is minted on the running dev gateway for the dedicated login ACCOUNT_LOGIN, with a password generated per run and held in memory (`account-unavailable`). The token reaches `rdc` only as REDIACC_TOKEN in the child environment, beside REDIACC_ACCOUNT_SERVER naming the gateway that minted it: never on argv, never in the config, never printed, never in the receipt, never in a suite's or a drill's environment. A minted token also puts every later CLI call under the dev config (RDC_DEV=1, which makes `./rdc.sh` seed ~/.config/rediacc/dev.json with the gateway's address and E2E key and select it), since the default config carries the production server's E2E key and a dev-gateway response then fails "Decryption failed" (2026-10-15T05:4xZ). The operator's default config is never written on that path; a valid stored token keeps it. The minted token names the gateway at this host's address on the VM network (`wire.bridge_host`, 192.168.111.254), never localhost: the CLI sends every licence request there and the account stamps each licence's renewalUrl from that request, so a localhost token left every fork's and the grand's blob unrenewable from the worker (2026-10-20). With no interface on that network yet (a cold fleet) the token is minted on localhost for the fleet steps and re-minted on the bridge address right after P2, before anything issues a licence. The subscription of ACCOUNT_LOGIN is kept across runs (`subscription_reuse_refusal` names when it is recreated instead), since `/test/ensure-subscription` deletes it and with it every licence an earlier run issued.
   P2  `/dev/kvm` and `virsh` (`no-kvm`); `rdc ops status -o json`: the bridge (.1) and the worker (.11) both running is REUSE, neither is COLD (`ops up --basic`), anything else is `fleet-unavailable`. The worker's machine name comes from `machine list` (`worker-not-in-config`). Under the dev config a worker absent from it is registered as OPS_WORKER_NAME (`machine add`), and a `--machine` name absent from it is `worker-not-in-config` naming the command; a dev config that cannot be listed ("Decryption failed") is `account-unavailable`.
-  P3  `machine scan-keys <worker>` before any other ssh, then the worker's /etc/os-release, which under `--os` must match a reused fleet (`fleet-os-mismatch`). A config with no SSH key (`config ssh show` says `embedded: no`) gets the key the ops VMs authorize (`config ssh set --key`, the license drill's step), since the CLI would otherwise offer ~/.ssh/id_rsa or id_ed25519, which the VMs reject; a config holding another key is never overwritten, and a failing `config ssh show` leaves the config alone and lets P5 judge. P3's own os-release probe uses the drill's key, not the CLI's, so its failure stays `fleet-unavailable`; the CLI's key is first used at P5, where an ssh authentication refusal is `worker-ssh-key`.
+  P3  `machine scan-keys <worker>` before any other ssh, then the worker's /etc/os-release, which under `--os` must match a reused fleet (`fleet-os-mismatch`). A config with no SSH key (`config ssh show` says `embedded: no`) gets the key the ops VMs authorize (`config ssh set --key`, the license drill's step), since the CLI would otherwise offer ~/.ssh/id_rsa or id_ed25519, which the VMs reject; a config holding another key is never overwritten, and a failing `config ssh show` leaves the config alone and lets P5 judge. P3's own os-release probe uses the drill's key, not the CLI's, so its failure stays `fleet-unavailable`; the CLI's key is first used by the leftover check's `repo list`, where an ssh authentication refusal is `worker-ssh-key`.
+      Then, also on an `--only` run and before any step creates anything, the LEFTOVER CHECK (`find_fleet_leftovers`): renet's repository list and every `rediacc-docker-*.service` read as root on the worker (`inventory_script`), the newest earlier receipt (`prior_receipt`) and the run's `repo list`. A worker repository counts when the earlier receipt's teardown named it (by guid or name) or its name is this harness's (`harness_repo_name`); a live daemon counts when no repository of the run's config has its network id. Any of them ends the run NOT_VERIFIED `fleet-leftovers`, naming each one with `sudo renet repository delete --name <guid> --force --stop-docker --datastore /mnt/rediacc --network-id <N>` (or `systemctl disable --now` for a daemon with no repository); nothing is deleted, and the leftovers ride into T's leftovers so the next run names them until they are gone. An unreadable inventory is `fleet-leftovers` too, since unchecked is not clean. The one exemption, said aloud, is a config-listed `<parent>:vmc-` fork older than an hour, which P5's sweep deletes on the same run (2026-11-06: run 7 failed U1, K1.5 and K1.9 on run 6's orphan fork and its U2 parent, not on its own tree).
   A2  account only, against the worker: A2.1 `PYTHONPATH=.ci python3 -m rediacc_ci.drills.universe --no-restart`, A2.2 `PYTHONPATH=.ci python3 -m rediacc_ci.drills.transfer --no-restart`, A2.3 `PYTHONPATH=.ci python3 -m rediacc_ci.drills.license --legs c,d,e,f --no-restart --seed-repo --vm <worker ip>`. Each drill is judged by its summary line (`%d assertions: %d passed, %d failed`, `classify_drill`): a failed assertion is a failed row naming the drill and the failed assertions by number and description (the row's `failedAssertions`, and the head of its evidence); rc 0 with a positive count and the PASSED line is ok; a SKIPPED line, 0 assertions, or rc 0 with no summary line at all is `account-drill-skipped`; anything else, such as a non-zero rc with no summary (a preflight `SystemExit`), is `account-drill-setup`. All three run; a failed row ends the run FAILED, otherwise the first could-not-judge class ends it NOT_VERIFIED. A2 runs before P5 because the license drill deploys `bin/renet` to the worker, and P5 re-uploads that same binary before the V-steps; there is one licensed build, so neither rebuilds it.
   P5  renet only. The parent must be a grand on the worker. When it is missing and the worker's configured address is on the ops VM network (OPS_VM_NETWORK, the predicate of packages/cli/src/utils/ops-vm.ts), the check creates it with `repo create <parent> -m <worker> --size 2G` under P4's credential, says so and records the creation as a P5 row: the ops VMs are development-only (operator ruling 2026-10-15, .claude/agents/ops-vms.md), so that step is never an operator's. A failed create is `parent-grand-missing` naming the CLI's error; on any other worker a missing grand stays `parent-grand-missing` naming the command for the operator. Stale `vmc-` forks of the parent older than an hour are deleted on every path once `repo list` answers, before the grand is judged (a missing grand that is then created included), nothing else is touched.
   V1.1-V1.7  renet only: two forks, cross-repo read-only denial, the positive set, isolation, sync round trip, VS Code URL and SFTP confinement.
@@ -688,6 +689,219 @@ def verdict(
             "detail": "teardown left: " + ", ".join(leftovers),
         }
     return receipt_mod.VERIFIED, None
+
+
+# --------------------------------------------------------------------------- fleet leftovers
+
+# The class a run ends with when the worker still holds what an earlier run left behind: a repository of this harness, or a Docker daemon no repository of the run's config owns. Run 7 (2026-11-06, vmc-11060626-bbced0) failed U1, K1.5 and K1.9 on run 6's orphan fork 285f6dc4 (network 31744) and its parent 643b9a9d (network 31680), which converge reported stale_unhandled, not on its own tree.
+FLEET_LEFTOVERS = "fleet-leftovers"
+_UUID = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
+_DOCKER_UNIT = re.compile(r"^rediacc-docker-(\d+)\.service$")
+INVENTORY_REPOS_BEGIN = "VMC-INVENTORY-REPOS-BEGIN"
+INVENTORY_REPOS_END = "VMC-INVENTORY-REPOS-END"
+INVENTORY_DONE = "VMC-INVENTORY-DONE"
+# The ACTIVE states of a unit whose daemon is running or about to.
+_LIVE_UNIT_STATES = frozenset({"active", "activating", "reloading"})
+
+
+def harness_repo_name(parent: str) -> re.Pattern[str]:
+    """The repository names this harness creates on the worker: the parent's `vmc-` forks (V1.1, I1, G1, L1, K2, K3), U1's and U2's `u1base-`/`u2base-` grands and their forks, and K1's and L1's `k1-vmc-`/`l1-vmc-` grands and their forks. The parent grand itself is not one: it is kept across runs."""
+    return re.compile(
+        r"^(?:%s:vmc-|u[12]base-[0-9a-f]{6}(?::|$)|k1-vmc-|l1-vmc-)" % re.escape(parent)
+    )
+
+
+def inventory_script(datastore: str = DATASTORE_PATH) -> str:
+    """Root on the worker: renet's own list of the repositories on the datastore (JSON, between two markers), then one `UNIT <name> <active>` line per `rediacc-docker-*.service` systemd knows, then INVENTORY_DONE. The marker is what tells "nothing there" from "the probe never ran": `parse_inventory` returns None without it."""
+    return (
+        "set -eu; "
+        # Captured first so a failing command aborts under `set -e` before the marker; a pipe would hand on the last command's status.
+        "repos=$(renet list repositories --json --datastore %(ds)s); "
+        "units=$(systemctl list-units 'rediacc-docker-*.service' --all --no-legend --plain); "
+        "echo %(begin)s; printf '%%s\\n' \"$repos\"; echo %(end)s; "
+        'printf \'%%s\\n\' "$units" | awk \'NF {print "UNIT " $1 " " $3}\'; '
+        "echo %(done)s"
+        % {
+            "ds": shlex.quote(datastore),
+            "begin": INVENTORY_REPOS_BEGIN,
+            "end": INVENTORY_REPOS_END,
+            "done": INVENTORY_DONE,
+        }
+    )
+
+
+def parse_inventory(text: str) -> tuple[list[dict[str, Any]], dict[int, str]] | None:
+    """(repositories, {network id: ACTIVE state}) from an `inventory_script` run; None when its done marker is missing or the repository JSON is unreadable. An empty datastore prints `null` or `[]`, both an empty list."""
+    lines = text.splitlines()
+    stripped = [ln.strip() for ln in lines]
+    if INVENTORY_DONE not in stripped or INVENTORY_REPOS_BEGIN not in stripped:
+        return None
+    start = stripped.index(INVENTORY_REPOS_BEGIN)
+    if INVENTORY_REPOS_END not in stripped[start:]:
+        return None
+    end = start + stripped[start:].index(INVENTORY_REPOS_END)
+    try:
+        parsed = json.loads("\n".join(lines[start + 1 : end]).strip() or "null")
+    except ValueError:
+        return None
+    if parsed is None:
+        parsed = []
+    if not isinstance(parsed, list):
+        return None
+    repos = [r for r in parsed if isinstance(r, dict)]
+    units: dict[int, str] = {}
+    for line in stripped[end + 1 :]:
+        parts = line.split()
+        if len(parts) >= 2 and parts[0] == "UNIT":
+            match = _DOCKER_UNIT.match(parts[1])
+            if match:
+                units[int(match.group(1))] = parts[2] if len(parts) > 2 else ""
+    return repos, units
+
+
+def leftover_command(guid: str, network_id: int | None) -> str:
+    """The exact command that removes one leftover on the worker. A daemon with no repository behind it is stopped and disabled by unit name."""
+    if not guid:
+        return "sudo systemctl disable --now rediacc-docker-%d" % (network_id or 0)
+    return "sudo renet repository delete --name %s --force --stop-docker --datastore %s%s" % (
+        guid,
+        DATASTORE_PATH,
+        " --network-id %d" % network_id if network_id else "",
+    )
+
+
+@dataclasses.dataclass(frozen=True)
+class Leftover:
+    """One thing an earlier run left on the worker: what it is, why it counts, and the command that removes it."""
+
+    what: str
+    why: str
+    guid: str
+    network_id: int | None
+
+    def line(self) -> str:
+        return "%s (%s): %s" % (self.what, self.why, leftover_command(self.guid, self.network_id))
+
+
+def receipt_leftover_refs(receipt: Mapping[str, Any] | None) -> tuple[frozenset[str], list[str]]:
+    """(the guids and repository names a prior receipt's teardown leftovers and undeleted forks name, the leftover lines). Names are any whitespace- or paren-delimited word holding a `:` or one of the harness prefixes; matching them against the worker is what decides, so an over-broad word only costs a lookup."""
+    if not isinstance(receipt, dict):
+        return frozenset(), []
+    teardown = receipt.get("teardown")
+    raw = teardown.get("leftovers") if isinstance(teardown, dict) else None
+    lines = [x for x in (raw if isinstance(raw, list) else []) if isinstance(x, str)]
+    refs: set[str] = set()
+    for line in lines:
+        refs.update(_UUID.findall(line))
+        refs.update(w for w in re.split(r"[\s(),;]+", line) if w)
+    forks = receipt.get("forks")
+    for fork in forks if isinstance(forks, list) else []:
+        if isinstance(fork, dict) and fork.get("created") and not fork.get("deleted"):
+            guid = str(fork.get("guid") or "")
+            if guid:
+                refs.add(guid)
+    return frozenset(refs), lines
+
+
+def _network_id(value: object) -> int | None:
+    with contextlib.suppress(TypeError, ValueError):
+        nid = int(str(value))
+        return nid if nid > 0 else None
+    return None
+
+
+def find_fleet_leftovers(
+    prior: Mapping[str, Any] | None,
+    repos: Sequence[Mapping[str, Any]],
+    units: Mapping[int, str],
+    config_entries: Sequence[Mapping[str, Any]],
+    parent: str,
+    now: float,
+) -> tuple[list[Leftover], list[str]]:
+    """(the leftovers on the worker, the exemptions said aloud). Run under the fleet lock, before this run created anything, so nothing of a live run can be on the worker. A worker repository counts when a prior receipt's teardown named it (by guid or name), or when its name is this harness's (`harness_repo_name`). A live `rediacc-docker-<N>` daemon counts when no repository of the run's config has network id N (a crashed delete keeps the daemon after the repository is gone). The one exemption is a `<parent>:vmc-` fork the run's config lists that is older than STALE_FORK_S: the P5 sweep deletes it through the CLI on this very run, and it is named in the second list so the exemption stays visible."""
+    refs, _lines = receipt_leftover_refs(prior)
+    harness = harness_repo_name(parent)
+    config_names = {str(e.get("name", "")) for e in config_entries}
+    config_nids = {
+        nid
+        for e in config_entries
+        if (nid := _network_id(e.get("networkId", e.get("network_id")))) is not None
+    }
+    found: list[Leftover] = []
+    exempt: list[str] = []
+    seen_nids: set[int] = set()
+    for repo in repos:
+        guid = str(repo.get("name") or "")
+        name = str(repo.get("repo_name") or "")
+        nid = _network_id(repo.get("network_id"))
+        named = guid in refs or (bool(name) and name in refs)
+        ours = bool(name) and harness.match(name) is not None
+        if not (named or ours):
+            continue
+        fork_parent, _, tag = name.partition(":")
+        match = FORK_TAG.match(tag)
+        if fork_parent == parent and match and name in config_names:
+            age = stamp_age_s(match.group(1), now)
+            if age is not None and age > STALE_FORK_S:
+                exempt.append("%s (left to the P5 sweep, older than %d s)" % (name, STALE_FORK_S))
+                continue
+        if nid is not None:
+            seen_nids.add(nid)
+        found.append(
+            Leftover(
+                "repository %s%s network %s" % (guid, " (%s)" % name if name else "", nid or "?"),
+                "named by the previous run's teardown leftovers"
+                if named
+                else "this harness's naming, and no run holds the fleet",
+                guid,
+                nid,
+            )
+        )
+    repo_by_nid = {
+        nid: str(r.get("name") or "")
+        for r in repos
+        if (nid := _network_id(r.get("network_id"))) is not None
+    }
+    for nid, state in sorted(units.items()):
+        if state not in _LIVE_UNIT_STATES or nid in config_nids or nid in seen_nids:
+            continue
+        guid = repo_by_nid.get(nid, "")
+        found.append(
+            Leftover(
+                "daemon rediacc-docker-%d (%s)"
+                % (nid, "repository %s" % guid if guid else "no repository on the datastore"),
+                "%s, and no repository of the run's config has network id %d" % (state, nid),
+                guid,
+                nid,
+            )
+        )
+    return found, exempt
+
+
+def leftovers_detail(leftovers: Sequence[Leftover], machine: str) -> str:
+    """The NOT_VERIFIED detail: every leftover with the command that removes it. Refused, never deleted here: an orphan can hold data the next reader needs."""
+    return (
+        "%s holds %d leftover(s) of an earlier run, which would fail this run's converge steps on state it did not make; remove each, then rerun: %s"
+        % (machine, len(leftovers), "; ".join(x.line() for x in leftovers))
+    )
+
+
+def prior_receipt(root: pathlib.Path) -> dict[str, Any] | None:
+    """The newest record of an earlier run: `receipt.json` or a `runs/<runId>/receipt.json`, by `finishedAt`. Read as plain JSON, not through the schema check, so a receipt of an earlier schema still names its leftovers."""
+    folder = receipt_mod.receipt_dir(root)
+    paths = [
+        folder / receipt_mod.LATEST,
+        *sorted(folder.glob("%s/*/%s" % (RUNS_DIR, receipt_mod.LATEST))),
+    ]
+    best: dict[str, Any] | None = None
+    for path in paths:
+        with contextlib.suppress(OSError, ValueError):
+            doc = json.loads(path.read_text(encoding="utf-8"))
+            if isinstance(doc, dict) and (
+                best is None or str(doc.get("finishedAt", "")) > str(best.get("finishedAt", ""))
+            ):
+                best = doc
+    return best
 
 
 # --------------------------------------------------------------------------- the outside world
@@ -1768,6 +1982,7 @@ class VmCheck:
         self.p2_fleet()
         self.p4_rebind()
         self.p3_keys()
+        self.p3_leftovers()
         # A2 before P5: the license drill deploys bin/renet and P5 re-uploads the same binary; neither rebuilds it.
         if account and not self.a2_drills():
             return
@@ -1805,6 +2020,7 @@ class VmCheck:
         self.p2_fleet()
         self.p4_rebind()
         self.p3_keys()
+        self.p3_leftovers()
         if account_named:
             self.a1_suites()
             self.a2_drills()
@@ -2227,6 +2443,53 @@ class VmCheck:
             )
         self.record("P3", "host keys pinned for %s (%s)" % (self.machine, self.fleet_os), True)
 
+    def p3_leftovers(self) -> None:
+        """Refuse a worker that still holds an earlier run's leftovers (`find_fleet_leftovers`), before any step creates anything: NOT_VERIFIED FLEET_LEFTOVERS naming each one and its cleanup command. Nothing is deleted here. An inventory that cannot be read is unchecked, so it refuses too. The leftovers ride into this run's teardown leftovers, so the next run's prior receipt still names them until they are gone."""
+        prior = prior_receipt(self.root)
+        _refs, prior_lines = receipt_leftover_refs(prior)
+        argv = vm_ssh.ssh_argv(
+            self.ssh_user,
+            self.ssh_key,
+            self.worker_ip,
+            "sudo sh -c %s" % shlex.quote(inventory_script()),
+        )
+        res = self.host.run(argv, env=self.environ, timeout=180)
+        inventory = parse_inventory(res.out) if res.rc == 0 else None
+        if inventory is None:
+            raise NotVerifiedError(
+                FLEET_LEFTOVERS,
+                "the worker's repository and daemon inventory is unreadable (rc=%d: %s), so leftovers of an earlier run are unchecked%s"
+                % (
+                    res.rc,
+                    last_lines(res.err) or last_lines(res.out) or "no output",
+                    "; the previous run left: %s" % ", ".join(prior_lines) if prior_lines else "",
+                ),
+            )
+        repos, units = inventory
+        listed, entries = self.repo_list()
+        if listed.rc != 0:
+            # Without the run's own repositories no daemon can be told from an orphan, so the check stops here, with the class P5 would have named.
+            raise self._repo_list_refusal(listed)
+        found, exempt = find_fleet_leftovers(
+            prior, repos, units, entries, self.opts.parent, self.host.now()
+        )
+        if exempt:
+            self.say("        leftover check exempts: %s" % ", ".join(exempt))
+        if prior_lines and not found:
+            self.say(
+                "        the previous run left %d item(s); none remains on %s"
+                % (len(prior_lines), self.machine)
+            )
+        if found:
+            self.sweep_leftovers.extend("left by an earlier run: %s" % x.line() for x in found)
+            raise NotVerifiedError(FLEET_LEFTOVERS, leftovers_detail(found, self.machine))
+        self.record(
+            "P3",
+            "no leftovers of an earlier run on %s (%d repositories, %d docker units inspected)"
+            % (self.machine, len(repos), len(units)),
+            True,
+        )
+
     def p4_account(self) -> None:
         stored = self.rdc("subscription", "status", "-o", "json")
         if stored.rc == 0:
@@ -2301,23 +2564,27 @@ class VmCheck:
         self.minted_on_loopback = False
         self._mint_on(addr)
 
+    def _repo_list_refusal(self, res: Result) -> NotVerifiedError:
+        """The NOT_VERIFIED a failed `repo list` ends the run with: `worker-ssh-key` naming the key the ops VMs authorize when the worker refused the CLI's key, else `fleet-unavailable`. The CLI's key is first used here (P3's leftover check, then P5)."""
+        why = rdc_failure(res)
+        return NotVerifiedError(
+            "worker-ssh-key" if "authentication methods failed" in why else "fleet-unavailable",
+            "repo list -m %s rc=%d: %s%s"
+            % (
+                self.machine,
+                res.rc,
+                why,
+                "; the worker refused the CLI's SSH key, and the key the ops VMs authorize is "
+                "%s (./rdc.sh config ssh set --key %s)" % (self.ssh_key, self.ssh_key)
+                if "authentication methods failed" in why
+                else "",
+            ),
+        )
+
     def p5_parent(self) -> None:
         res, entries = self.repo_list()
         if res.rc != 0:
-            why = rdc_failure(res)
-            raise NotVerifiedError(
-                "worker-ssh-key" if "authentication methods failed" in why else "fleet-unavailable",
-                "repo list -m %s rc=%d: %s%s"
-                % (
-                    self.machine,
-                    res.rc,
-                    why,
-                    "; the worker refused the CLI's SSH key, and the key the ops VMs authorize is "
-                    "%s (./rdc.sh config ssh set --key %s)" % (self.ssh_key, self.ssh_key)
-                    if "authentication methods failed" in why
-                    else "",
-                ),
-            )
+            raise self._repo_list_refusal(res)
         names = [str(e.get("name", "")) for e in entries]
         # The sweep runs before the grand is judged, so stale forks beside a missing grand go too (review 8b3374e0.2: the create path returned before it).
         swept, sweep = self._sweep_stale_forks(

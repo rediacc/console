@@ -222,6 +222,8 @@ class World(vm_check.Host):
         self.os_release = over.pop("os_release", "ubuntu 24.04")
         self.stored_ok = over.pop("stored_ok", False)
         self.repos: dict[str, str] = {g: "guid-" + g for g in over.pop("grands", (PARENT,))}
+        # The worker's renet lists the grands; an `extra_repos` entry is a config entry only (the P5 sweep's input), and a leftover on the worker is planted with `worker_extra`.
+        self.worker_grands = set(self.repos)
         # True: forks (made here or listed as extra repos) get real UUID guids (renet's shape), so T and the P5 sweep purge their licence state; `purge_rc` and `purge_out` are that purge's answer, and `purges` the scripts it was sent.
         self.uuid_forks = over.pop("uuid_forks", False)
         for name in over.pop("extra_repos", ()):
@@ -295,6 +297,11 @@ class World(vm_check.Host):
         self.external: dict[str, tuple[int, str]] = dict(over.pop("external", {}))
         self.e2e_resets = over.pop("e2e_resets", False)
         self.bash_cmds: list[str] = []
+        # The worker's own inventory (P3's leftover check): renet lists the grands the config holds, each with an active daemon, plus `worker_extra` repositories (renet's `list repositories --json` shape) and `worker_units` ({network id: ACTIVE state}) an earlier run left; `inventory_rc` fails the probe.
+        self.worker_extra: list[dict[str, Any]] = list(over.pop("worker_extra", ()))
+        self.worker_units: dict[int, str] = dict(over.pop("worker_units", {}))
+        self.inventory_rc = over.pop("inventory_rc", 0)
+        self.inventory_probes = 0
         assert not over, over
         self.store = root / "remote-store"
         self.mnt = root / "mnt"
@@ -370,6 +377,8 @@ class World(vm_check.Host):
                 return vm_check.Result(0, HASH + "\n")
             if argv[-1] == vm_check.PROBE_OS_RELEASE:
                 return vm_check.Result(0, self.os_release + "\n")
+            if argv[-1] == "sudo sh -c %s" % shlex.quote(vm_check.inventory_script()):
+                return self._inventory()
             if argv[-1].startswith("sudo install -d -o root -g root -m 755 "):
                 path = shlex.split(argv[-1])[-1]
                 guid, rel = path[len(vm_check.MOUNTS) + 1 :].split("/", 1)
@@ -604,6 +613,33 @@ class World(vm_check.Host):
                 self.repos.clear()
             return vm_check.Result(0, e2e_output(), "", 90000)
         return vm_check.Result(127, "", "unscripted bash command: %s" % command)
+
+    def _inventory(self) -> vm_check.Result:
+        self.inventory_probes += 1
+        if self.inventory_rc:
+            return vm_check.Result(self.inventory_rc, "", "sudo: renet: command not found")
+        repos: list[dict[str, Any]] = [
+            {"name": e["guid"], "repo_name": e["name"], "network_id": int(e["networkId"])}
+            for e in self._repo_data()
+            if e["name"] in self.worker_grands
+        ]
+        units = {int(r["network_id"]): "active" for r in repos}
+        repos += self.worker_extra
+        units.update(self.worker_units)
+        out = "\n".join(
+            [
+                vm_check.INVENTORY_REPOS_BEGIN,
+                json.dumps(repos, indent=2),
+                vm_check.INVENTORY_REPOS_END,
+                *(
+                    # What the script's awk prints: the unit and its ACTIVE column.
+                    "UNIT rediacc-docker-%d.service %s" % (n, st)
+                    for n, st in sorted(units.items())
+                ),
+                vm_check.INVENTORY_DONE,
+            ]
+        )
+        return vm_check.Result(0, out + "\n")
 
     def _repo_data(self) -> list[dict[str, str]]:
         return [
@@ -3852,6 +3888,7 @@ def _order_stub(only: set[str]) -> Any:
         "p2_fleet",
         "p4_rebind",
         "p3_keys",
+        "p3_leftovers",
     ):
         setattr(stub, name, rec(name))
     stub.say = lambda _text: None
@@ -3875,3 +3912,212 @@ def test_a_named_leg_runs_through_the_external_legs_with_exactly_that_leg():
     assert names[-1] == "_external_legs"
     assert stub.calls[-1][1] == {leg}
     assert names.index("p3_keys") < names.index("_external_legs")
+    # The leftover check runs on an `--only` run too, right after the keys and before any step.
+    assert names.index("p3_keys") < names.index("p3_leftovers") < names.index("_external_legs")
+
+
+# --------------------------------------------------------------------------- fleet leftovers (finding fb978446)
+
+# Run 6's leftovers (vmc-11060530-b46557) as its receipt recorded them, and the two repositories they left on the worker, which made run 7's converge report stale_unhandled.
+RUN6_FORK = "285f6dc4-42c9-4138-9c52-983b74172d29"
+RUN6_GRAND = "643b9a9d-1111-4222-8333-944455556666"
+RUN6_RECEIPT: dict[str, Any] = {
+    "teardown": {
+        "ok": False,
+        "leftovers": [
+            "U2 licence state (%s, 755b641e-480f-4870-8130-c993ac5483c6) not purged (rc=1)"
+            % RUN6_FORK,
+            "U2 grand u2base-b46557 not deleted (rc=1)",
+        ],
+    },
+    "forks": [],
+}
+GRAND_GUID = "11111111-2222-4333-8444-555555555555"
+GRAND_REPO = {"name": GRAND_GUID, "repo_name": PARENT, "network_id": 2880}
+GRAND_ENTRY = {"name": PARENT, "guid": GRAND_GUID, "networkId": "2880"}
+
+
+def _delete_cmd(guid: str, nid: int) -> str:
+    return (
+        "sudo renet repository delete --name %s --force --stop-docker --datastore %s --network-id %d"
+        % (guid, DATASTORE_PATH, nid)
+    )
+
+
+def test_prior_receipt_leftovers_still_on_the_worker_are_named_with_their_commands() -> None:
+    repos = [
+        GRAND_REPO,
+        {"name": RUN6_FORK, "repo_name": "", "network_id": 31744},
+        {"name": RUN6_GRAND, "repo_name": "u2base-b46557", "network_id": 31680},
+    ]
+    found, exempt = vm_check.find_fleet_leftovers(
+        RUN6_RECEIPT, repos, {2880: "active", 31744: "active"}, [GRAND_ENTRY], PARENT, NOW
+    )
+    assert exempt == []
+    lines = [x.line() for x in found]
+    assert len(found) == 2, lines
+    # The fork carries no mirrored name: only the prior receipt's guid can name it.
+    assert any(_delete_cmd(RUN6_FORK, 31744) in x and "previous run" in x for x in lines), lines
+    assert any(_delete_cmd(RUN6_GRAND, 31680) in x for x in lines), lines
+    detail = vm_check.leftovers_detail(found, "ops-worker")
+    assert "2 leftover(s)" in detail
+    assert _delete_cmd(RUN6_FORK, 31744) in detail
+
+
+def test_an_empty_prior_receipt_and_only_the_grand_find_nothing() -> None:
+    for prior in (None, {}, {"teardown": {"ok": True, "leftovers": []}, "forks": []}):
+        found, exempt = vm_check.find_fleet_leftovers(
+            prior, [GRAND_REPO], {2880: "active"}, [GRAND_ENTRY], PARENT, NOW
+        )
+        assert (found, exempt) == ([], []), prior
+
+
+def test_a_repository_neither_named_nor_of_this_harness_is_left_alone() -> None:
+    repos = [GRAND_REPO, {"name": RUN6_GRAND, "repo_name": "mail", "network_id": 3008}]
+    entries = [GRAND_ENTRY, {"name": "mail", "guid": RUN6_GRAND, "networkId": "3008"}]
+    found, _exempt = vm_check.find_fleet_leftovers(
+        None, repos, {2880: "active", 3008: "active"}, entries, PARENT, NOW
+    )
+    assert found == []
+
+
+def test_harness_named_repositories_count_without_any_prior_receipt() -> None:
+    names = (
+        "%s:vmc-10141750-abcdef-b" % PARENT,
+        "u1base-abcdef",
+        "u2base-abcdef:u2r",
+        "k1-vmc-10141750-abcdef:k1b",
+        "l1-vmc-10141750-abcdef-f",
+    )
+    repos = [
+        {"name": str(uuid.uuid5(uuid.NAMESPACE_OID, n)), "repo_name": n, "network_id": 4000 + i}
+        for i, n in enumerate(names)
+    ]
+    found, _exempt = vm_check.find_fleet_leftovers(None, repos, {}, [], PARENT, NOW)
+    assert sorted(x.network_id or 0 for x in found) == [4000, 4001, 4002, 4003, 4004]
+    # A name that only shares a prefix is not this harness's.
+    near = [{"name": RUN6_GRAND, "repo_name": "u2base-notahex", "network_id": 5000}]
+    assert vm_check.find_fleet_leftovers(None, near, {}, [], PARENT, NOW)[0] == []
+
+
+def test_a_stale_config_fork_is_left_to_the_p5_sweep_and_said() -> None:
+    stale = "%s:vmc-10141500-abcdef-a" % PARENT
+    fresh = "%s:vmc-10141750-abcdef-b" % PARENT
+    repos = [
+        {"name": RUN6_FORK, "repo_name": stale, "network_id": 6000},
+        {"name": RUN6_GRAND, "repo_name": fresh, "network_id": 6001},
+    ]
+    entries = [
+        {"name": stale, "guid": RUN6_FORK, "networkId": "6000"},
+        {"name": fresh, "guid": RUN6_GRAND, "networkId": "6001"},
+    ]
+    found, exempt = vm_check.find_fleet_leftovers(
+        None, repos, {6000: "active", 6001: "active"}, entries, PARENT, NOW
+    )
+    assert [x.guid for x in found] == [RUN6_GRAND]
+    assert exempt == ["%s (left to the P5 sweep, older than 3600 s)" % stale]
+
+
+def test_a_live_daemon_no_config_repository_owns_is_a_leftover() -> None:
+    found, _exempt = vm_check.find_fleet_leftovers(
+        None,
+        [GRAND_REPO],
+        {2880: "active", 31744: "active", 31808: "inactive"},
+        [GRAND_ENTRY],
+        PARENT,
+        NOW,
+    )
+    assert [x.network_id for x in found] == [31744]
+    assert found[0].line().endswith("sudo systemctl disable --now rediacc-docker-31744")
+
+
+def test_parse_inventory_needs_its_markers() -> None:
+    body = (
+        f"{vm_check.INVENTORY_REPOS_BEGIN}\nnull\n{vm_check.INVENTORY_REPOS_END}\n"
+        "UNIT rediacc-docker-31744.service active\n"
+        "UNIT rediacc-docker-x.service active"
+    )
+    assert vm_check.parse_inventory(body) is None
+    assert vm_check.parse_inventory(body + "\n" + vm_check.INVENTORY_DONE + "\n") == (
+        [],
+        {31744: "active"},
+    )
+    broken = body.replace("null", "{not json") + "\n" + vm_check.INVENTORY_DONE
+    assert vm_check.parse_inventory(broken) is None
+
+
+def test_the_fleet_leftovers_class_is_not_verified_exit_77() -> None:
+    status, reason = vm_check.verdict(3, [], (vm_check.FLEET_LEFTOVERS, "x"), [])
+    assert status == receipt_mod.NOT_VERIFIED
+    assert reason == {"class": "fleet-leftovers", "detail": "x"}
+    assert vm_check.EXIT_CODES[status] == vm_check.EXIT_NOT_VERIFIED == 77
+
+
+def test_a_clean_worker_records_the_inventory_it_inspected(tmp_path: pathlib.Path) -> None:
+    world = make_world(tmp_path)
+    rc, out, receipt = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    assert world.inventory_probes == 1
+    rows = [r["desc"] for r in receipt["steps"] if r["id"] == "P3"]
+    assert any("no leftovers of an earlier run on ops-worker (1 repositories" in d for d in rows), (
+        rows
+    )
+
+
+def test_a_run_refuses_the_leftovers_its_predecessor_left_until_they_are_gone(
+    tmp_path: pathlib.Path,
+) -> None:
+    world = make_world(tmp_path, uuid_forks=True, undeletable_suffix="-b")
+    rc, out, first = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    assert first["reason"]["class"] == "teardown-failed"
+    (left,) = world.forks_left()
+    nid = next(int(e["networkId"]) for e in world._repo_data() if e["name"] == left)
+    # The worker still holds the fork, without a mirrored name: only the receipt names it.
+    world.worker_extra = [{"name": world.repos[left], "repo_name": "", "network_id": nid}]
+    world.undeletable_suffix = ""
+    forked_before = len([c for c in world.rdc_calls() if c[:2] == ["repo", "fork"]])
+
+    rc, out, second = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    assert second["reason"]["class"] == vm_check.FLEET_LEFTOVERS, second["reason"]
+    assert _delete_cmd(world.repos[left], nid) in second["reason"]["detail"]
+    assert "NOT VERIFIED (fleet-leftovers)" in out
+    # Refused, never deleted, and nothing of this run made: no fork, the leftover still there.
+    assert len([c for c in world.rdc_calls() if c[:2] == ["repo", "fork"]]) == forked_before
+    assert left in world.repos
+    assert lock_is_free(tmp_path)
+    # The refusal carries the leftover forward, so the next run still names it.
+    assert any(world.repos[left] in x for x in second["teardown"]["leftovers"])
+    rc, out, third = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    assert third["reason"]["class"] == vm_check.FLEET_LEFTOVERS
+
+    # The operator ran the command: the worker no longer holds it, and the run goes ahead.
+    world.worker_extra = []
+    del world.repos[left]
+    _rc, out, fourth = run_check(tmp_path, world)
+    assert (fourth["reason"] or {}).get("class") != vm_check.FLEET_LEFTOVERS, out
+    assert "none remains on ops-worker" in out
+    rows = [r for r in fourth["steps"] if r["id"] == "P3"]
+    assert any("no leftovers of an earlier run" in r["desc"] for r in rows), rows
+    assert any(r["id"] == "P5" for r in fourth["steps"]), out
+
+
+def test_an_orphan_daemon_on_the_worker_refuses_the_run(tmp_path: pathlib.Path) -> None:
+    world = make_world(tmp_path, worker_units={31744: "active"})
+    rc, out, receipt = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    assert receipt["reason"]["class"] == vm_check.FLEET_LEFTOVERS
+    assert "sudo systemctl disable --now rediacc-docker-31744" in receipt["reason"]["detail"]
+    assert world.forks_left() == []
+
+
+def test_an_unreadable_inventory_is_unchecked_not_clean(tmp_path: pathlib.Path) -> None:
+    world = make_world(tmp_path, inventory_rc=1)
+    rc, out, receipt = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    assert receipt["reason"]["class"] == vm_check.FLEET_LEFTOVERS
+    assert "unchecked" in receipt["reason"]["detail"]
+    assert "renet: command not found" in receipt["reason"]["detail"]
+    assert world.forks_left() == []
