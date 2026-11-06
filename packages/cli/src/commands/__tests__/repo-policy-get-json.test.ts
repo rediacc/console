@@ -4,6 +4,7 @@
  */
 import { Command } from 'commander';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { PlannedStep } from '../../services/jobs/steps-support.js';
 
 const mocks = vi.hoisted(() => ({
   format: 'json' as 'json' | 'yaml' | 'table',
@@ -57,7 +58,7 @@ const { resolveStepHandler } = await import('../../services/jobs/steps.js');
 const POLICY_STDOUT = JSON.stringify({ effective: { auto_grow: true }, repo_override: null });
 const LIMITS_STDOUT = JSON.stringify({ limits: { pids_max: 4096 }, ram_volume: { size: 1 } });
 
-type Planned = { name: string; params: Record<string, unknown> };
+type Planned = Pick<PlannedStep, 'name' | 'params'>;
 
 /** Settle planned steps the way the job does once its function finished. */
 async function settle(steps: Planned[], output: string): Promise<void> {
