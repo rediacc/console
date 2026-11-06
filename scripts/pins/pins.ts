@@ -2287,6 +2287,10 @@ const CASES: Record<string, Case> = {
     const st = await runCli(['status', 'embed:tool', '--json'], withMutant(waiting, m));
     const when = await runCli(['when', 'embed:tool'], withMutant(waiting, m));
     const take = await runCli(['plan', 'embed:tool', '--json'], withMutant(ready, m));
+    const soakedRun = await runCli(
+      ['apply-soaked', '--json', '--out', path.join(ready.root, 'out')],
+      withMutant(ready, m)
+    );
     const v = st.rc === 0 ? (JSON.parse(st.out) as { pins: PinView[] }).pins[0] : null;
     const to =
       take.rc === 0
@@ -2327,6 +2331,12 @@ const CASES: Record<string, Case> = {
         name: 'redigest: past the window a plain plan (no --major) takes the re-digest',
         ok: to === label,
         detail: `rc=${take.rc} ${take.err} ${take.out.slice(0, 400)}`,
+      },
+      {
+        // The re-digest is the pinned version, so the unattended run treats it as it treats any non-major.
+        name: 'redigest: apply-soaked past the window takes the re-digest, as it takes any non-major',
+        ok: soakedRun.rc === 0 && soakedRun.out.includes(label),
+        detail: `rc=${soakedRun.rc} ${soakedRun.err} ${soakedRun.out.slice(0, 400)}`,
       },
     ];
   },

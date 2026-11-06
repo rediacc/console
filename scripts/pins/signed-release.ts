@@ -122,6 +122,15 @@ function pinnedCosignVersion(root: string): string | null {
   }
 }
 
+function isExecutableFile(file: string): boolean {
+  try {
+    fs.accessSync(file, fs.constants.X_OK);
+    return fs.statSync(file).isFile();
+  } catch {
+    return false;
+  }
+}
+
 /**
  * The cosign binary, in this order: PINS_COSIGN when set, the toolchain cache at the pin
  * (`.ci/bootstrap.sh install cosign` writes .ci/cache/toolchain/cosign/<COSIGN_VERSION>/cosign),
@@ -135,7 +144,8 @@ export const cosignBinary = (
   const v = pinnedCosignVersion(root);
   if (v) {
     const cached = path.join(root, '.ci', 'cache', 'toolchain', 'cosign', v, 'cosign');
-    if (fs.existsSync(cached)) return cached;
+    // An unexecutable file is no rung: spawning it would fail with EACCES, which reads as a broken check and not as the missing binary the install hint answers.
+    if (isExecutableFile(cached)) return cached;
   }
   return 'cosign';
 };

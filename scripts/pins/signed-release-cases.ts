@@ -12,6 +12,9 @@
  *
  * No network: an upstream URL the stub does not hold fails the case rather than being fetched.
  */
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import type { ControlCase } from '../lib/controls.js';
 import { leafCurrent, PlanRefused } from '../lib/pins/driver.js';
 import { createToolchainDriver } from '../lib/pins/drivers/toolchain.js';
@@ -27,6 +30,7 @@ import { REPO_ROOT } from '../lib/repo-root.js';
 import { assetOf, driftOf, GENERATED_REL, PIN_ID, PLATFORMS } from './opentofu-pin.js';
 import {
   type CosignRunner,
+  cosignBinary,
   EVIDENCE_FILES,
   parseSums,
   readEvidence,
@@ -88,11 +92,58 @@ async function driverCases(): Promise<ControlCase[]> {
   ];
 }
 
+/** cosignBinary's resolution order over a temporary root: PINS_COSIGN, the cache at the pin, then PATH. */
+function cosignBinaryCases(): ControlCase[] {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'cosign-rungs-'));
+  try {
+    fs.mkdirSync(path.join(root, '.devcontainer'), { recursive: true });
+    fs.writeFileSync(path.join(root, '.devcontainer', 'toolchain.env'), 'COSIGN_VERSION=9.9.9\n');
+    const dir = path.join(root, '.ci', 'cache', 'toolchain', 'cosign');
+    const cached = path.join(dir, '9.9.9', 'cosign');
+    const none = cosignBinary({}, root);
+    fs.mkdirSync(path.dirname(cached), { recursive: true });
+    fs.writeFileSync(cached, '#!/bin/sh\n', { mode: 0o644 });
+    const notExecutable = cosignBinary({}, root);
+    fs.chmodSync(cached, 0o755);
+    const executable = cosignBinary({}, root);
+    const explicit = cosignBinary({ PINS_COSIGN: '/x/cosign' }, root);
+    fs.mkdirSync(path.join(dir, '1.0.0'), { recursive: true });
+    fs.writeFileSync(path.join(dir, '1.0.0', 'cosign'), '#!/bin/sh\n', { mode: 0o755 });
+    fs.rmSync(path.join(dir, '9.9.9'), { recursive: true });
+    const otherVersion = cosignBinary({}, root);
+    return [
+      {
+        name: 'cosignBinary: PINS_COSIGN wins over the cache',
+        ok: explicit === '/x/cosign',
+        detail: explicit,
+      },
+      {
+        name: 'cosignBinary: an executable cosign cached at the pinned version is the second rung',
+        ok: executable === cached,
+        detail: executable,
+      },
+      {
+        name: 'CONTROL: a cached file that is not executable is skipped, so the PATH rung and its install hint answer',
+        ok: notExecutable === 'cosign',
+        detail: notExecutable,
+      },
+      {
+        name: 'CONTROL: no cache, and a cache at another version, both fall through to PATH',
+        ok: none === 'cosign' && otherVersion === 'cosign',
+        detail: `${none} ${otherVersion}`,
+      },
+    ];
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+}
+
 export async function signedReleaseSelftest(): Promise<ControlCase[]> {
   try {
     const drift = driftOf();
     return [
       ...(await signedReleaseCases()),
+      ...cosignBinaryCases(),
       ...(await driverCases()),
       {
         name: `${PIN_ID}: ${GENERATED_REL} is byte-equal to its template`,

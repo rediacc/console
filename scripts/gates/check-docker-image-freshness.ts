@@ -372,6 +372,15 @@ export function tagListUrl(base: string, repo: string, tag: string): string {
   return `${base}/v2/repositories/${repo}/tags?page_size=100&ordering=last_updated${shape === '' ? '' : `&name=${encodeURIComponent(shape)}`}`;
 }
 
+/** Whether a `next` URL the API supplied stays on the Hub origin `base`: hubGetJson sends the credential with every request, so a page naming another host is never followed. */
+export function nextOnBase(next: string, base: string): boolean {
+  try {
+    return new URL(next).origin === new URL(base).origin;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * The tags of the pin's shape, following `next` for up to LIST_PAGES pages, newest push first.
  * A listing with pages left is used as read and its image is recorded in `truncated`, which the
@@ -396,6 +405,8 @@ async function listHubTags(repo: string, tag: string): Promise<TagInfo[] | null>
     for (const t of j.results ?? [])
       out.push({ name: t.name, pushedMs: t.last_updated ? Date.parse(t.last_updated) : null });
     url = typeof j.next === 'string' && j.next !== '' ? j.next : null;
+    // A page that leaves the Hub origin is no answer: the listing fails closed instead of the credential travelling to another host.
+    if (url !== null && !nextOnBase(url, HUB_BASE || HUB_DEFAULT_BASE)) return null;
   }
   return out;
 }
@@ -662,6 +673,17 @@ function selftest(): { bad: number; total: number } {
   check(
     'CONTROL: a bare numeric tag lists every tag, with no name filter',
     tagListUrl('https://h', 'library/ubuntu', '24.04').endsWith('ordering=last_updated')
+  );
+  check(
+    'a `next` URL on the Hub origin is followed',
+    nextOnBase('https://h/v2/repositories/library/node/tags?page=2', 'https://h')
+  );
+  check(
+    'CONTROL: a `next` URL on another host, scheme or port, or one that does not parse, is refused',
+    !nextOnBase('https://evil.example/v2/x', 'https://h') &&
+      !nextOnBase('http://h/v2/x', 'https://h') &&
+      !nextOnBase('https://h:8443/v2/x', 'https://h') &&
+      !nextOnBase('not a url', 'https://h')
   );
   check('the same version is not newer', !isNewer('24.04', '24.04'));
   // The window is the SHARED one; a release published now must be deferred.
