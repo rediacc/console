@@ -353,18 +353,39 @@ PLANE = re.compile(r"rediacc_ci\.testrun\.start_backup_plane\b")
 CHAIN = re.compile(r"&&|\|\||;|\|")
 
 
+QUOTED = re.compile("'[^']*'|\"[^\"]*\"")
+
+
 def plane_misuse(cmd: str) -> bool:
-    """True when some `start_backup_plane` in `cmd` neither hands its follow-on the environment (`-- <cmd>`) nor is a bare `--verify-renet` check. Each occurrence is judged over its own span, up to the next one: a second plane start chained after a valid follow-on is judged too, and a `--verify-renet` on a chained command is not the plane's own flag (only the plane's arguments, up to the first chain operator, count)."""
+    """True when some `start_backup_plane` in `cmd` neither hands its follow-on the environment (`-- <cmd>`) nor is a bare `--verify-renet` check. Each occurrence is judged over its own span, up to the next one: a second plane start chained after a valid follow-on is judged too. Only the plane's own arguments (before ` -- `, up to the first chain operator) can carry `--verify-renet`, and a chain operator inside the follow-on (outside quotes) starts a command the environment never reaches."""
     starts = list(PLANE.finditer(cmd))
     for n, m in enumerate(starts):
-        end = starts[n + 1].start() if n + 1 < len(starts) else len(cmd)
+        last = n + 1 == len(starts)
+        end = len(cmd) if last else starts[n + 1].start()
         tail = cmd[m.end() : end]
-        own_args = CHAIN.split(tail, maxsplit=1)[0]
-        if "--verify-renet" in own_args:
+        if not last:
+            # What follows the last chain operator is the next command's own prefix (`PYTHONPATH=.ci python3 -m`), not this follow-on.
+            ops = list(CHAIN.finditer(tail))
+            tail = tail[: ops[-1].start()] if ops else tail
+        own_args, sep, follow_on = tail.partition(" -- ")
+        if "--verify-renet" in CHAIN.split(own_args, maxsplit=1)[0]:
             continue
-        if " -- " not in tail or CHAIN.search(tail.split(" -- ", 1)[0]):
+        if not sep or CHAIN.search(own_args) or CHAIN.search(QUOTED.sub("", follow_on)):
             return True
     return False
+
+
+def test_plane_misuse_judges_only_the_planes_own_arguments_and_its_whole_follow_on() -> None:
+    """CONTROL for review 677a9b42.1 and .2: each spelling below runs a command outside the plane's environment."""
+    plane = "python3 -m rediacc_ci.testrun.start_backup_plane"
+    assert not plane_misuse("%s --verify-renet" % plane)
+    assert not plane_misuse("%s --verify-renet && echo done" % plane)
+    assert not plane_misuse("%s -- python3 -m suite" % plane)
+    assert not plane_misuse('%s -- bash -c "a && b"' % plane)
+    assert not plane_misuse("%s -- a && X=1 python3 -m %s -- b" % (plane, plane))
+    assert plane_misuse("%s -- python3 -m suite --verify-renet && python3 -m other" % plane)
+    assert plane_misuse("%s -- python3 -m suite && python3 -m other" % plane)
+    assert plane_misuse("%s && python3 -m suite" % plane)
 
 
 def test_a_leg_that_starts_the_backup_plane_runs_the_suite_as_its_follow_on() -> None:

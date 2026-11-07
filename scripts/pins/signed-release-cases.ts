@@ -103,7 +103,19 @@ function cosignBinaryCases(): ControlCase[] {
     const none = cosignBinary({}, root);
     fs.mkdirSync(path.dirname(cached), { recursive: true });
     fs.writeFileSync(cached, '#!/bin/sh\n', { mode: 0o644 });
-    const notExecutable = cosignBinary({}, root);
+    const warned: string[] = [];
+    const realWrite = process.stderr.write.bind(process.stderr);
+    process.stderr.write = ((chunk: string | Uint8Array) => {
+      warned.push(String(chunk));
+      return true;
+    }) as typeof process.stderr.write;
+    let notExecutable: string;
+    try {
+      notExecutable = cosignBinary({}, root);
+      cosignBinary({}, root);
+    } finally {
+      process.stderr.write = realWrite;
+    }
     fs.chmodSync(cached, 0o755);
     const executable = cosignBinary({}, root);
     const explicit = cosignBinary({ PINS_COSIGN: '/x/cosign' }, root);
@@ -126,6 +138,11 @@ function cosignBinaryCases(): ControlCase[] {
         name: 'CONTROL: a cached file that is not executable is skipped, so the PATH rung and its install hint answer',
         ok: notExecutable === 'cosign',
         detail: notExecutable,
+      },
+      {
+        name: 'cosignBinary: the not-executable warning names the file once however many checks call it',
+        ok: warned.length === 1 && warned[0].includes(cached),
+        detail: `${warned.length} warning(s)`,
       },
       {
         name: 'CONTROL: no cache, and a cache at another version, both fall through to PATH',

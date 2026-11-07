@@ -87,7 +87,7 @@ The phase entrypoint's `/rules` path answers 405 ("Method not allowed for this a
 ```bash
 ZONE=9e802649c143c9cefd811d8fd671d31c
 RULESET=$(curl -fsS "https://api.cloudflare.com/client/v4/zones/$ZONE/rulesets/phases/http_request_cache_settings/entrypoint" \
-  -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" | jq -er .result.id) || { echo "ruleset id not read" >&2; exit 1; }
+  -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" | jq -er '.result.id | select(length > 0)') || { echo "ruleset id not read" >&2; exit 1; }
 curl -fsS -X POST \
   "https://api.cloudflare.com/client/v4/zones/$ZONE/rulesets/$RULESET/rules" \
   -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H "Content-Type: application/json" \

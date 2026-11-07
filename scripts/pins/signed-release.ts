@@ -131,6 +131,9 @@ function isExecutableFile(file: string): boolean {
   }
 }
 
+// One warning per unexecutable cached file: systemCosign resolves the binary on every call, so a run with several cosign checks would repeat the line.
+const warnedUnexecutable = new Set<string>();
+
 /**
  * The cosign binary, in this order: PINS_COSIGN when set, the toolchain cache at the pin
  * (`.ci/bootstrap.sh install cosign` writes .ci/cache/toolchain/cosign/<COSIGN_VERSION>/cosign),
@@ -147,10 +150,12 @@ export const cosignBinary = (
     // An unexecutable file is no rung: spawning it would fail with EACCES, which reads as a broken check and not as the missing binary the install hint answers.
     if (isExecutableFile(cached)) return cached;
     // Said aloud: the PATH rung below may be any cosign version, not the pinned one this file was proven with.
-    if (fs.existsSync(cached))
+    if (fs.existsSync(cached) && !warnedUnexecutable.has(cached)) {
+      warnedUnexecutable.add(cached);
       process.stderr.write(
         `warning: the pinned cosign ${cached} is not an executable file; falling back to the cosign on PATH, which may not be version ${v}\n`
       );
+    }
   }
   return 'cosign';
 };
