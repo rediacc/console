@@ -94,12 +94,17 @@ interface ClaimRequest {
 /** `renet job claim` exits with this when the job is not in the spool: the steps it owes can never run. */
 export const JOB_NOT_FOUND_EXIT = 16;
 
+/** Each expiry reason's text, spelled as literal keys so the orphan check sees every one of them. */
+const REASON_TEXT: Record<ExpiredReason, () => string> = {
+  gone: () => t('commands.job.steps.reason.gone'),
+  'never-started': () => t('commands.job.steps.reason.never-started'),
+  age: () => t('commands.job.steps.reason.age'),
+  dismissed: () => t('commands.job.steps.reason.dismissed'),
+};
+
 /** The one line printed when a ticket is given up on: `job X: steps abandoned (reason)`. */
 export function abandonedLine(jobId: string, reason: ExpiredReason): string {
-  return t('commands.job.steps.abandoned', {
-    jobId,
-    reason: t(`commands.job.steps.reason.${reason}`),
-  });
+  return t('commands.job.steps.abandoned', { jobId, reason: REASON_TEXT[reason]() });
 }
 
 /** The claim reached the machine and the job is gone from it. */
