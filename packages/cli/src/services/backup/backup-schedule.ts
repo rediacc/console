@@ -82,6 +82,7 @@ import {
   sanitizeBackupOutput,
   sha256Hex,
 } from './backup-schedule-unit-generator.js';
+import { expectedAccountServerOrigin } from './backup-store-universe.js';
 
 type PushScheduleOptions = ReconcileOptions & {
   /** Client-side steps the apply job carries on its ticket (they run after it, whoever observes it). */
@@ -242,6 +243,7 @@ export async function buildStrategyCommandsForMachine(
 ): Promise<string[]> {
   const specs = await resolveUnitSpecs(machineName, [{ name: strategyName, config: strategy }]);
   const commands: string[] = [];
+  const accountServer = expectedAccountServerOrigin();
   for (const spec of specs) {
     const enabled = spec.strategy.destinations.filter((d) => d.enabled !== false);
     commands.push(
@@ -250,7 +252,11 @@ export async function buildStrategyCommandsForMachine(
         enabled,
         spec.datastore.path,
         remoteRenetPath,
-        spec.scope
+        spec.scope,
+        undefined,
+        spec.strategy.schedule,
+        undefined,
+        accountServer
       ).commands
     );
   }
@@ -484,7 +490,12 @@ export async function pushBackupSchedule(
   try {
     const cpuCount = await resolveMachineCpuCount(sftp);
     await installTocKeys(sftp, machineName, specs, remoteRenetPath, options);
-    const desired = computeDesiredUnits(specs, remoteRenetPath, cpuCount);
+    const desired = computeDesiredUnits(
+      specs,
+      remoteRenetPath,
+      cpuCount,
+      expectedAccountServerOrigin()
+    );
     const remote = await readRemoteState(sftp, Array.from(desired.keys()));
     const plan = computeReconcilePlan(desired, remote);
     applyInFlightGate(plan, options.force ?? false);

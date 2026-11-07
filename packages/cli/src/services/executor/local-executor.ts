@@ -16,7 +16,10 @@ import type { SFTPClient } from '../../remote/sftp/index.js';
 import { CliExitError } from '../../utils/cli-exit-error.js';
 import { formatDuration } from '../../utils/format.js';
 import { startSpinner, stopSpinner } from '../../utils/spinner.js';
-import { assertBackupStoreUniverse } from '../backup/backup-store-universe.js';
+import {
+  assertBackupStoreUniverse,
+  withExpectedAccountServer,
+} from '../backup/backup-store-universe.js';
 import { clusterKubeconfigRemotePath } from '../cluster/cluster-target.js';
 import { configService } from '../config/config-resources.js';
 import { auditService } from '../core/audit.js';
@@ -435,7 +438,8 @@ class LocalExecutorService {
       await loadContextRepositories();
 
     // Peer machines (backup push/pull targets) are resolved HERE, from params, against the executor's own config. Callers may still pass them explicitly (tests do), but no command should: a proxy client holds no config and so cannot resolve a peer's IP. Deriving executor-side keeps one code path.
-    const params = options.params ?? {};
+    // A backup-session verb carries this config's account-server origin, so renet refuses a licence from another account universe even where the pre-flight's read cannot speak for the licence renet picks.
+    const params = withExpectedAccountServer(options.functionName, options.params ?? {});
     const extraMachines =
       options.extraMachines ?? (await resolveExtraMachines(params, options.functionName));
 

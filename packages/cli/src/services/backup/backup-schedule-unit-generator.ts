@@ -39,6 +39,9 @@ import {
   STRATEGY_UPLOAD_PARALLELISM,
 } from './backup-strategy-validate.js';
 
+/** renet's flag on every chunk-store session verb (private/renet cmd/renet/backup_endpoints.go flagExpectAccountServer). */
+const EXPECT_ACCOUNT_SERVER_FLAG = '--expect-account-server';
+
 /** SHA-256 hex digest for UTF-8 content, used by the reconciler for diff. */
 export function sha256Hex(content: string): string {
   return createHash('sha256').update(content, 'utf8').digest('hex');
@@ -187,7 +190,8 @@ function buildChunkStoreCommand(
   scope: UnitScope,
   cpuCount: number | undefined,
   schedule: string,
-  run: UnitRun | undefined
+  run: UnitRun | undefined,
+  accountServer: string | undefined
 ): string {
   const parts = [`${remoteRenetPath} backup snapshot`, `--datastore ${datastore}`];
   // `mode: cold` was REFUSED here until 2026-08-15, because `backup snapshot` had no way to express it and scheduling one would have run a HOT snapshot where the operator asked for cold, their stated intent silently inverted. The verb now has --cold, so the mode is emitted instead of rejected.
@@ -207,7 +211,17 @@ function buildChunkStoreCommand(
   const readCap = readCapBytesPerSecond(strategy.readBandwidthLimit);
   if (readCap !== undefined) parts.push(`--read-bwlimit ${readCap}`);
   parts.push(...cpuFlags(strategy, cpuCount));
+  parts.push(...accountServerFlags(accountServer));
   return parts.join(' ');
+}
+
+/**
+ * The `--expect-account-server` flag of a scheduled command: the config's account-server origin, so renet refuses a
+ * licence from another account universe at 03:00, where the CLI's pre-flight never runs. The origin is a URL origin
+ * (scheme, host, port), which carries no space and no `%`, so it needs no quoting and no systemd specifier escape.
+ */
+export function accountServerFlags(accountServer: string | undefined): string[] {
+  return accountServer ? [`${EXPECT_ACCOUNT_SERVER_FLAG} ${accountServer}`] : [];
 }
 
 /** The `--cpu-limit` and `--cpu-quota` flags of a scheduled command. The ceiling itself is the unit's CPUQuota= (cpuQuotaDirective); the flags only make the snapshot record say what bound it. Emitted only with a resolved core count, like the directive. */
@@ -243,7 +257,8 @@ export function buildBackupCommands(
   scope: UnitScope = unresolvedScope(strategy),
   cpuCount?: number,
   schedule: string = strategy.schedule,
-  run?: UnitRun
+  run?: UnitRun,
+  accountServer?: string
 ): BackupBuild {
   const envVars: Record<string, string> = {};
 
@@ -259,7 +274,8 @@ export function buildBackupCommands(
         scope,
         cpuCount,
         schedule,
-        run
+        run,
+        accountServer
       ),
     ],
     envVars,
@@ -369,7 +385,8 @@ export function generateServiceUnit(
   scope?: UnitScope,
   cpuCount?: number,
   schedule: string = strategy.schedule,
-  run?: UnitRun
+  run?: UnitRun,
+  accountServer?: string
 ): ServiceUnitBuild {
   const { commands, envVars } = buildBackupCommands(
     strategy,
@@ -379,7 +396,8 @@ export function generateServiceUnit(
     scope,
     cpuCount,
     schedule,
-    run
+    run,
+    accountServer
   );
   // The spot verify is a second ExecStart of a oneshot unit: systemd runs them in order and stops at the first failure, so a failed snapshot is never verified, and a failed verify fails the unit (and with it OnFailure=). It carries the snapshot's scope; `scope ?? unresolved` already threw above for a name-bearing strategy.
   const verify = verifySettings(strategy);
@@ -510,15 +528,21 @@ export function generateAlertServiceUnit(
   datastore: string,
   remoteRenetPath: string,
   scope: UnitScope,
-  kind: 'snapshot' | 'verify'
+  kind: 'snapshot' | 'verify',
+  accountServer?: string
 ): string {
   const failedFile = `rediacc-backup-${failedUnitName}.service`;
+  // `backup report` mints a session from the licence too, so it is held to the same account server as the snapshot.
+  const report = [
+    failureReportCommand(remoteRenetPath, datastore, scope, failedFile, kind),
+    ...accountServerFlags(accountServer),
+  ].join(' ');
   return `[Unit]
 Description=Rediacc Backup Failure Report (${failedUnitName})
 
 [Service]
 Type=oneshot
 ${LOW_PRIORITY_DIRECTIVES}
-ExecStart=${failureReportCommand(remoteRenetPath, datastore, scope, failedFile, kind)}
+ExecStart=${report}
 `;
 }

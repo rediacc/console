@@ -26,8 +26,12 @@ vi.mock('../../config/config-resources.js', () => ({
   },
 }));
 
-const { assertBackupStoreUniverse, LISTING_COMPLETE_MARKER, licenseOriginsFromListing } =
-  await import('../backup-store-universe.js');
+const {
+  assertBackupStoreUniverse,
+  LISTING_COMPLETE_MARKER,
+  licenseOriginsFromListing,
+  withExpectedAccountServer,
+} = await import('../backup-store-universe.js');
 
 /** One licence file as the remote read prints it: the file's bytes, base64 on one line. */
 function licenseLine(renewalUrl: string | undefined): string {
@@ -183,5 +187,36 @@ describe('licenseOriginsFromListing', () => {
       'https://bench.rediacc.com',
       'https://eu.rediacc.com',
     ]);
+  });
+});
+
+// The executor's params for a session verb carry the config's account-server origin, so renet refuses a licence from
+// another account server itself (`--expect-account-server`), whatever licence it picks.
+describe('withExpectedAccountServer', () => {
+  it.each([
+    'backup_snapshot',
+    'backup_restore',
+    'backup_restore_path',
+    'backup_browse_at',
+    'backup_repair',
+  ])('adds the config origin to %s', (fn) => {
+    env.server = 'https://bench.rediacc.com/account/';
+    expect(withExpectedAccountServer(fn, { repository: 'mail' })).toEqual({
+      repository: 'mail',
+      expect_account_server: 'https://bench.rediacc.com',
+    });
+  });
+
+  it('leaves every other function untouched', () => {
+    const params = { repository: 'mail' };
+    expect(withExpectedAccountServer('backup_verify', params)).toBe(params);
+    expect(withExpectedAccountServer('repository_up', params)).toBe(params);
+  });
+
+  it('adds nothing when the config names no usable server', () => {
+    env.server = 'not a url';
+    expect(withExpectedAccountServer('backup_snapshot', { repository: 'mail' })).toEqual({
+      repository: 'mail',
+    });
   });
 });

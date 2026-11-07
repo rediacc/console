@@ -280,7 +280,8 @@ export async function resolveMachineCpuCount(sftp: SFTPClient): Promise<number> 
 export function computeDesiredUnits(
   specs: ScheduleUnitSpec[],
   remoteRenetPath: string,
-  cpuCount?: number
+  cpuCount?: number,
+  accountServer?: string
 ): Map<string, DesiredUnit> {
   const result = new Map<string, DesiredUnit>();
   const add = (unit: DesiredUnit): void => {
@@ -307,7 +308,8 @@ export function computeDesiredUnits(
       spec.scope,
       cpuCount,
       spec.schedule,
-      spec.run
+      spec.run,
+      accountServer
     );
     const timerContent = generateTimerUnit(
       spec.unitName,
@@ -327,7 +329,8 @@ export function computeDesiredUnits(
         spec.datastore.path,
         remoteRenetPath,
         spec.scope,
-        'snapshot'
+        'snapshot',
+        accountServer
       ),
       timerContent: '',
       envFileContent: '',
@@ -353,7 +356,8 @@ export function computeDesiredUnits(
         spec.datastore.path,
         remoteRenetPath,
         spec.scope,
-        'verify'
+        'verify',
+        accountServer
       ),
       timerContent: '',
       envFileContent: '',

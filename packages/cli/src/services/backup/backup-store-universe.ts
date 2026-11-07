@@ -47,6 +47,28 @@ function originOf(url: string): string | undefined {
   }
 }
 
+/** The renet function param that holds a session verb to this config's account server (the verb's `--expect-account-server`). */
+export const EXPECT_ACCOUNT_SERVER_PARAM = 'expect_account_server';
+
+/** The active config's account-server origin, the one every licence a backup verb presents must name. */
+export function expectedAccountServerOrigin(): string | undefined {
+  return originOf(getSubscriptionServerUrl());
+}
+
+/**
+ * `params` with the expected account-server origin added for a backup-session function, so renet itself refuses a
+ * licence from another account server (`--expect-account-server`). The pre-flight below asks the same question from
+ * the CLI; this answer travels with the run, which is what a scheduled unit (no CLI in the loop) relies on too.
+ */
+export function withExpectedAccountServer(
+  functionName: string,
+  params: Record<string, unknown>
+): Record<string, unknown> {
+  if (!isBackupSessionFunction(functionName)) return params;
+  const origin = expectedAccountServerOrigin();
+  return origin ? { ...params, [EXPECT_ACCOUNT_SERVER_PARAM]: origin } : params;
+}
+
 /**
  * The account-server origins of the licences in `listing`: base64 lines, one per installed licence file, as the
  * remote read in {@link readInstalledLicenseOrigins} prints them. A line that does not decode to a licence carrying a
