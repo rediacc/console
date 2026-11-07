@@ -206,7 +206,8 @@
         "bind": {
           "alreadyBound": "备份策略 \"{{strategy}}\" 已经绑定到机器 \"{{machine}}\"",
           "bound": "备份策略 \"{{strategy}}\" 已绑定到机器 \"{{machine}}\"",
-          "description": "将备份策略绑定到机器，以便其调度部署到该机器"
+          "description": "将备份策略绑定到机器，以便其调度部署到该机器",
+          "uncheckedTargets": "未检查以下存储库是否已注册:{{targets}}。写入单元时,调度会拒绝未注册的存储库。"
         },
         "description": "管理命名备份策略（热/冷模式、目标、调度）",
         "list": {
@@ -233,6 +234,7 @@
           "optionBwlimit": "上传带宽限制，单位为字节/秒，可加 K/M/G 后缀（例如 \"6M\"、\"500K\"）",
           "optionCron": "Cron 调度（例如 \"0 * * * *\" 表示每小时）",
           "optionDestination": "策略内的目标名称。会创建一个 Rediacc 分块存储目标",
+          "optionTarget": "目标写入的已注册存储库 ID(默认值:home)。与 --destination 配合使用",
           "optionDisable": "禁用策略或目标",
           "optionEnable": "启用策略或目标",
           "optionExclude": "从备份中排除这些仓库（逗号分隔的名称）",

@@ -206,7 +206,8 @@
         "bind": {
           "alreadyBound": "Backup-Strategie \"{{strategy}}\" ist bereits an Maschine \"{{machine}}\" gebunden",
           "bound": "Backup-Strategie \"{{strategy}}\" an Maschine \"{{machine}}\" gebunden",
-          "description": "Backup-Strategie an eine Maschine binden, damit ihr Zeitplan dort deployed wird"
+          "description": "Backup-Strategie an eine Maschine binden, damit ihr Zeitplan dort deployed wird",
+          "uncheckedTargets": "Die Registrierung des Stores wurde nicht geprüft für: {{targets}}. Der Zeitplan lehnt einen nicht registrierten Store ab, sobald die Unit geschrieben wird."
         },
         "description": "Benannte Backup-Strategien verwalten (Hot/Cold-Modi, Ziele, Zeitplanung)",
         "list": {
@@ -233,6 +234,7 @@
           "optionBwlimit": "Upload-Bandbreitenlimit in Bytes pro Sekunde, optional mit K/M/G-Suffix (z.B. \"6M\", \"500K\")",
           "optionCron": "Cron-Zeitplan (z.B. \"0 * * * *\" für stündlich)",
           "optionDestination": "Zielname innerhalb der Strategie. Erstellt ein Rediacc-Chunk-Store-Ziel",
+          "optionTarget": "Registrierte Store-ID, in die das Ziel schreibt (Standard: home). Zusammen mit --destination verwenden",
           "optionDisable": "Strategie oder Ziel deaktivieren",
           "optionEnable": "Strategie oder Ziel aktivieren",
           "optionExclude": "Diese Repos vom Backup ausschließen (kommagetrennte Namen)",

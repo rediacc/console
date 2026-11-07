@@ -206,7 +206,8 @@
         "bind": {
           "alreadyBound": "백업 전략 \"{{strategy}}\"이(가) 이미 머신 \"{{machine}}\"에 연결되어 있습니다",
           "bound": "백업 전략 \"{{strategy}}\"이(가) 머신 \"{{machine}}\"에 연결되었습니다",
-          "description": "백업 전략을 머신에 연결하여 일정이 그곳에 배포되도록 합니다"
+          "description": "백업 전략을 머신에 연결하여 일정이 그곳에 배포되도록 합니다",
+          "uncheckedTargets": "다음 스토어는 등록 여부를 확인하지 않았습니다: {{targets}}. 유닛을 기록할 때 등록되지 않은 스토어는 스케줄이 거부합니다."
         },
         "description": "이름 지정 백업 전략을 관리합니다 (hot/cold 모드, 대상, 스케줄링)",
         "list": {
@@ -233,6 +234,7 @@
           "optionBwlimit": "업로드 대역폭 제한(초당 바이트, K/M/G 접미사 선택 가능. 예: \"6M\", \"500K\")",
           "optionCron": "크론 스케줄 (예: \"0 * * * *\" 은 매시간)",
           "optionDestination": "전략 내 대상 이름. Rediacc 청크 스토리지 대상을 생성합니다",
+          "optionTarget": "대상이 쓰기를 수행할 등록된 스토어 ID(기본값: home). --destination과 함께 사용합니다",
           "optionDisable": "전략 또는 대상을 비활성화합니다",
           "optionEnable": "전략 또는 대상을 활성화합니다",
           "optionExclude": "백업에서 이 저장소를 제외합니다 (쉼표로 구분된 이름)",

@@ -206,7 +206,8 @@
         "bind": {
           "alreadyBound": "La strategia di backup \"{{strategy}}\" è già associata alla macchina \"{{machine}}\"",
           "bound": "Strategia di backup \"{{strategy}}\" associata alla macchina \"{{machine}}\"",
-          "description": "Associa una strategia di backup a una macchina per distribuirvi la sua pianificazione"
+          "description": "Associa una strategia di backup a una macchina per distribuirvi la sua pianificazione",
+          "uncheckedTargets": "La registrazione dello store non è stata verificata per: {{targets}}. La pianificazione rifiuta uno store non registrato quando l'unità viene scritta."
         },
         "description": "Gestisci le strategie di backup con nome (modalità hot/cold, destinazioni, pianificazione)",
         "list": {
@@ -233,6 +234,7 @@
           "optionBwlimit": "Limite di banda in upload in byte al secondo, con suffisso K/M/G facoltativo (es. \"6M\", \"500K\")",
           "optionCron": "Pianificazione cron (es. \"0 * * * *\" per ogni ora)",
           "optionDestination": "Nome della destinazione all'interno della strategia. Crea una destinazione storage a chunk di Rediacc",
+          "optionTarget": "ID dello store registrato su cui scrive la destinazione (predefinito: home). Da usare con --destination",
           "optionDisable": "Disabilita la strategia o la destinazione",
           "optionEnable": "Abilita la strategia o la destinazione",
           "optionExclude": "Escludi questi repo dal backup (nomi separati da virgola)",

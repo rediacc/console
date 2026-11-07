@@ -206,7 +206,8 @@
         "bind": {
           "alreadyBound": "Varundusstrateegia \"{{strategy}}\" on juba seotud masinaga \"{{machine}}\"",
           "bound": "Varundusstrateegia \"{{strategy}}\" seoti masinaga \"{{machine}}\"",
-          "description": "Seo varundusstrateegia masinaga, et selle ajakava sinna juurutataks"
+          "description": "Seo varundusstrateegia masinaga, et selle ajakava sinna juurutataks",
+          "uncheckedTargets": "Hoidla registreerimist ei kontrollitud: {{targets}}. Ajakava keeldub registreerimata hoidlast, kui üksust kirjutatakse."
         },
         "description": "Halda nimelist varundusstrateegiat (hot/cold režiimid, sihtkohad, ajakava)",
         "list": {
@@ -233,6 +234,7 @@
           "optionBwlimit": "Üleslaadimise ribalaiuse piirang baitides sekundis, valikulise K/M/G järelliitega (nt \"6M\", \"500K\")",
           "optionCron": "Cron-ajakava (nt \"0 * * * *\" tunni kaupa)",
           "optionDestination": "Sihtkoha nimi strateegia sees. Loob Rediacc chunk-hoidla sihtkoha",
+          "optionTarget": "Registreeritud hoidla ID, kuhu sihtkoht kirjutab (vaikimisi: home). Kasuta koos valikuga --destination",
           "optionDisable": "Keela strateegia või sihtkoht",
           "optionEnable": "Luba strateegia või sihtkoht",
           "optionExclude": "Jäta need hoidlad varundusest välja (komaga eraldatud nimed)",

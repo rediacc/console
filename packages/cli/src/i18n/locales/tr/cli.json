@@ -206,7 +206,8 @@
         "bind": {
           "alreadyBound": "\"{{strategy}}\" yedekleme stratejisi zaten \"{{machine}}\" makinesine bağlı",
           "bound": "\"{{strategy}}\" yedekleme stratejisi \"{{machine}}\" makinesine bağlandı",
-          "description": "Bir yedekleme stratejisini bir makineye bağla, böylece zamanlaması orada dağıtılır"
+          "description": "Bir yedekleme stratejisini bir makineye bağla, böylece zamanlaması orada dağıtılır",
+          "uncheckedTargets": "Depo kaydı şunlar için denetlenmedi: {{targets}}. Birim yazılırken zamanlama, kayıtlı olmayan bir depoyu reddeder."
         },
         "description": "Adlandırılmış yedekleme stratejilerini yönet (sıcak/soğuk modlar, hedefler, zamanlama)",
         "list": {
@@ -233,6 +234,7 @@
           "optionBwlimit": "Saniye başına bayt cinsinden yükleme bant genişliği sınırı, isteğe bağlı K/M/G son ekiyle (ör. \"6M\", \"500K\")",
           "optionCron": "Cron zamanlaması (ör. \"0 * * * *\" saatlik için)",
           "optionDestination": "Strateji içindeki hedef adı. Bir Rediacc parça depolama hedefi oluşturur",
+          "optionTarget": "Hedefin yazdığı kayıtlı depo kimliği (varsayılan: home). --destination ile birlikte kullanılır",
           "optionDisable": "Stratejiyi veya hedefi devre dışı bırak",
           "optionEnable": "Stratejiyi veya hedefi etkinleştir",
           "optionExclude": "Bu depoları yedeklemeden hariç tut (virgülle ayrılmış adlar)",

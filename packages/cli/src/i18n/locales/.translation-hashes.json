@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 2568,
-    "sourceCommit": "ecb3adb7ebc3a9554d94495324dbe037a5563292"
+    "keyCount": 2570,
+    "sourceCommit": "be7b8a312d93d3819ec51ae601f3bde3a55cf29a"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -286,6 +286,7 @@
     "commands.backup.strategy.bind.alreadyBound": "61556d7d",
     "commands.backup.strategy.bind.bound": "53d34cf1",
     "commands.backup.strategy.bind.description": "a51ab41b",
+    "commands.backup.strategy.bind.uncheckedTargets": "91b2e0a3",
     "commands.backup.strategy.description": "af66a16f",
     "commands.backup.strategy.list.description": "16e519fb",
     "commands.backup.strategy.readBandwidthUnconvertible": "ff0099d4",
@@ -324,6 +325,7 @@
     "commands.backup.strategy.set.optionRepoRpo": "733bcf00",
     "commands.backup.strategy.set.optionRetention": "d88da710",
     "commands.backup.strategy.set.optionRpo": "db47eb58",
+    "commands.backup.strategy.set.optionTarget": "cf176c72",
     "commands.backup.strategy.set.readBwlimitStrategyOnly": "2eb6af31",
     "commands.backup.strategy.set.repoCellSizeNeedsTarget": "9da4719d",
     "commands.backup.strategy.set.repoOptionInvalid": "ce597aa3",

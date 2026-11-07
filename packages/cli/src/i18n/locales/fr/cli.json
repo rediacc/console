@@ -206,7 +206,8 @@
         "bind": {
           "alreadyBound": "La stratégie de sauvegarde \"{{strategy}}\" est déjà associée à la machine \"{{machine}}\"",
           "bound": "Stratégie de sauvegarde \"{{strategy}}\" associée à la machine \"{{machine}}\"",
-          "description": "Associer une stratégie de sauvegarde à une machine pour y déployer sa planification"
+          "description": "Associer une stratégie de sauvegarde à une machine pour y déployer sa planification",
+          "uncheckedTargets": "L'enregistrement du store n'a pas été vérifié pour : {{targets}}. La planification refuse un store non enregistré à l'écriture de l'unité."
         },
         "description": "Gérer les stratégies de sauvegarde nommées (modes chaud/froid, destinations, planification)",
         "list": {
@@ -233,6 +234,7 @@
           "optionBwlimit": "Limite de bande passante en envoi, en octets par seconde, avec un suffixe K/M/G facultatif (ex. \"6M\", \"500K\")",
           "optionCron": "Planification cron (ex. \"0 * * * *\" pour toutes les heures)",
           "optionDestination": "Nom de la destination au sein de la stratégie. Crée une destination de stockage fragmenté Rediacc",
+          "optionTarget": "Identifiant du store enregistré dans lequel la destination écrit (par défaut : home). À utiliser avec --destination",
           "optionDisable": "Désactiver la stratégie ou la destination",
           "optionEnable": "Activer la stratégie ou la destination",
           "optionExclude": "Exclure ces repos de la sauvegarde (noms séparés par des virgules)",

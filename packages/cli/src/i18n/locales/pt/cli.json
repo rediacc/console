@@ -206,7 +206,8 @@
         "bind": {
           "alreadyBound": "Estratégia de cópia de segurança \"{{strategy}}\" já está vinculada à máquina \"{{machine}}\"",
           "bound": "Estratégia de cópia de segurança \"{{strategy}}\" vinculada à máquina \"{{machine}}\"",
-          "description": "Vincular uma estratégia de cópia de segurança a uma máquina para que o seu agendamento seja implementado nela"
+          "description": "Vincular uma estratégia de cópia de segurança a uma máquina para que o seu agendamento seja implementado nela",
+          "uncheckedTargets": "O registo do armazenamento não foi verificado para: {{targets}}. O agendamento recusa um armazenamento não registado quando a unidade é escrita."
         },
         "description": "Gerir estratégias de cópia de segurança com nome (modos hot/cold, destinos, agendamento)",
         "list": {
@@ -233,6 +234,7 @@
           "optionBwlimit": "Limite de largura de banda de envio em bytes por segundo, com sufixo K/M/G opcional (por ex., \"6M\", \"500K\")",
           "optionCron": "Agendamento cron (por ex., \"0 * * * *\" para de hora em hora)",
           "optionDestination": "Nome do destino dentro da estratégia. Cria um destino de armazenamento fragmentado da Rediacc",
+          "optionTarget": "ID do armazenamento registado em que o destino escreve (predefinição: home). Usar com --destination",
           "optionDisable": "Desactivar a estratégia ou destino",
           "optionEnable": "Activar a estratégia ou destino",
           "optionExclude": "Excluir estes repositórios da cópia de segurança (nomes separados por vírgula)",

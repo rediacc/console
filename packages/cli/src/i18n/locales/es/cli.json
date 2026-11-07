@@ -206,7 +206,8 @@
         "bind": {
           "alreadyBound": "La estrategia de respaldo \"{{strategy}}\" ya está vinculada a la máquina \"{{machine}}\"",
           "bound": "Estrategia de respaldo \"{{strategy}}\" vinculada a la máquina \"{{machine}}\"",
-          "description": "Vincular una estrategia de respaldo a una máquina para desplegar su programación allí"
+          "description": "Vincular una estrategia de respaldo a una máquina para desplegar su programación allí",
+          "uncheckedTargets": "No se comprobó el registro del almacén para: {{targets}}. La programación rechaza un almacén sin registrar cuando se escribe la unidad."
         },
         "description": "Gestionar estrategias de respaldo con nombre (modos caliente/frío, destinos, programación)",
         "list": {
@@ -233,6 +234,7 @@
           "optionBwlimit": "Límite de ancho de banda de subida en bytes por segundo, con sufijo opcional K/M/G (ej. \"6M\", \"500K\")",
           "optionCron": "Programación cron (ej. \"0 * * * *\" para cada hora)",
           "optionDestination": "Nombre del destino dentro de la estrategia. Crea un destino de almacenamiento fragmentado de Rediacc",
+          "optionTarget": "ID del almacén registrado en el que escribe el destino (predeterminado: home). Se usa junto con --destination",
           "optionDisable": "Deshabilitar la estrategia o destino",
           "optionEnable": "Habilitar la estrategia o destino",
           "optionExclude": "Excluir estos repos del respaldo (nombres separados por comas)",
