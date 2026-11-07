@@ -62,6 +62,12 @@ vi.mock('../../utils/command-policy.js', () => ({
   CMD: { BACKUP_RESTORE: 'backup.restore' },
 }));
 
+// The failure the executor would render (it exits the process in agent mode); the fallback renders only the one that ends the run.
+const mockRenderFailure = vi.hoisted(() => vi.fn());
+vi.mock('../../utils/local-execution-failures.js', () => ({
+  renderLocalExecutionFailure: mockRenderFailure,
+}));
+
 const mockWarn = vi.hoisted(() => vi.fn());
 const mockSuccess = vi.hoisted(() => vi.fn());
 const mockInfo = vi.hoisted(() => vi.fn());
@@ -399,5 +405,85 @@ describe('backup restore --path', () => {
     const machines = mockExecuteRepoFunction.mock.calls.map((c) => [c[0], c[2]]);
     expect(machines).toContainEqual(['backup_verify', 'm1']);
     expect(machines).toContainEqual(['backup_restore_path', 'm2']);
+  });
+});
+
+describe('backup restore --path store fallback', () => {
+  const failed = (error: string) => ({ success: false, exitCode: 1, error, stdout: '' });
+  const ok = { success: true, exitCode: 0, stdout: JSON.stringify(record) };
+  const stores = () => mockExecuteRepoFunction.mock.calls.map((c) => c[3].store);
+  const toTargets = () => mockExecuteRepoFunction.mock.calls.map((c) => c[3].to);
+  const FALLBACK = `commands.backup.restore.storeFallback ${JSON.stringify({ failed: 'eu-west', next: 'home' })}`;
+  const ARGV = ['r@m1', '--at', SNAPSHOT, '--path', '/a', '--to', '/b'];
+
+  /** The account ranks eu-west ahead of home; the executor answers each attempt in turn, the last repeating. */
+  function answers(...results: Record<string, unknown>[]): void {
+    mockAccountServerFetch.mockImplementation((path: string) =>
+      Promise.resolve(
+        path.includes('/stores/lineage/')
+          ? {
+              stores: ['eu-west', 'home'].map((storeId) => ({
+                storeId,
+                newestSnapshotId: SNAPSHOT,
+                newestSnapshotAt: null,
+                lastVerifyOk: true,
+              })),
+            }
+          : undefined
+      )
+    );
+    let i = 0;
+    mockExecuteRepoFunction.mockImplementation(() => {
+      const result = results[Math.min(i, results.length - 1)];
+      i += 1;
+      return Promise.resolve(result);
+    });
+  }
+
+  it('falls back to the next store on a 5xx, asks for the same --to, and names the store that served', async () => {
+    answers(failed('HTTP 502 bad gateway'), ok);
+
+    await run(ARGV);
+
+    expect(stores()).toEqual(['eu-west', undefined]);
+    // renet stages the fetch and places under --to only after it, so the failed attempt wrote nothing there; the retry targets the same directory.
+    expect(toTargets()).toEqual(['/b', '/b']);
+    expect(mockWarn).toHaveBeenCalledWith(FALLBACK);
+    expect(mockInfo).toHaveBeenCalledWith(
+      `commands.backup.restore.storeServed ${JSON.stringify({ store: 'home' })}`
+    );
+    expect(mockRenderFailure).not.toHaveBeenCalled();
+    expect(mockExecuteRepoFunction.mock.calls.every((c) => c[4].failureIsAnswer === true)).toBe(
+      true
+    );
+  });
+
+  it('does not fall back after a copy-out that renet rolled back, which a second store cannot cure', async () => {
+    answers(failed('write failed: timed out (every path this run created was removed)'), ok);
+
+    await run(ARGV);
+
+    expect(stores()).toEqual(['eu-west']);
+    expect(mockRenderFailure).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not fall back when the snapshot is missing, and renders that failure', async () => {
+    answers(failed('snapshot snap-1 not found in the manifest index'), ok);
+
+    await run(ARGV);
+
+    expect(stores()).toEqual(['eu-west']);
+    expect(mockWarn).not.toHaveBeenCalled();
+    expect(mockRenderFailure).toHaveBeenCalledTimes(1);
+  });
+
+  it('never falls back from an explicit --from, even on a 5xx', async () => {
+    answers(failed('HTTP 503 service unavailable'), ok);
+
+    await run([...ARGV, '--from', 'eu-west']);
+
+    expect(stores()).toEqual(['eu-west']);
+    expect(mockWarn).not.toHaveBeenCalled();
+    expect(mockRenderFailure).toHaveBeenCalledTimes(1);
   });
 });

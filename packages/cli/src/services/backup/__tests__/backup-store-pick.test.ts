@@ -9,15 +9,19 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mockFetch = vi.hoisted(() => vi.fn());
 vi.mock('../../account/account-client.js', () => ({ accountServerFetch: mockFetch }));
 const mockWarn = vi.hoisted(() => vi.fn());
-vi.mock('../../core/output.js', () => ({ outputService: { warn: mockWarn } }));
+const mockInfo = vi.hoisted(() => vi.fn());
+vi.mock('../../core/output.js', () => ({ outputService: { warn: mockWarn, info: mockInfo } }));
+const mockRender = vi.hoisted(() => vi.fn());
+vi.mock('../../../utils/local-execution-failures.js', () => ({
+  renderLocalExecutionFailure: mockRender,
+}));
 vi.mock('../../../i18n/index.js', () => ({
   t: (key: string, params?: Record<string, unknown>) =>
     params ? `${key} ${JSON.stringify(params)}` : key,
 }));
 
-const { isStoreFailure, pickStores, runWithFallback, storeParam } = await import(
-  '../backup-store-pick.js'
-);
+const { executeWithStoreFallback, isStoreFailure, pickStores, runWithFallback, storeParam } =
+  await import('../backup-store-pick.js');
 
 const row = (storeId: string, newestSnapshotId: string | null = 's') => ({
   storeId,
@@ -131,5 +135,50 @@ describe('runWithFallback', () => {
     const attempt = vi.fn().mockResolvedValue(fail('HTTP 503'));
     const result = await runWithFallback({ stores: ['a', 'b'], explicit: false }, attempt);
     expect(result).toEqual({ ok: false, store: 'b', failure: { error: 'HTTP 503' } });
+  });
+});
+
+describe('isStoreFailure on a path restore', () => {
+  it('is not a store failure when the path is absent, has no listing, or the copy-out rolled back', () => {
+    expect(isStoreFailure({ exitCode: 19, error: 'HTTP 502 bad gateway' })).toBe(false);
+    expect(isStoreFailure({ exitCode: 18, error: 'timed out' })).toBe(false);
+    expect(
+      isStoreFailure({ stderr: 'copy failed: timed out (every path this run created was removed)' })
+    ).toBe(false);
+  });
+});
+
+describe('executeWithStoreFallback', () => {
+  const ok = { success: true, exitCode: 0, durationMs: 1 };
+  const bad = (error: string) => ({ success: false, exitCode: 1, error, durationMs: 1 });
+
+  it('returns the first success, announcing a non-home store, and renders nothing', async () => {
+    const run = vi.fn(async () => ok);
+    const out = await executeWithStoreFallback(
+      { stores: ['eu-west'], explicit: true },
+      run,
+      'failed'
+    );
+    expect(out.store).toBe('eu-west');
+    expect(mockInfo).toHaveBeenCalledTimes(1);
+    expect(mockRender).not.toHaveBeenCalled();
+  });
+
+  it('says nothing for home alone served first, as before stores existed', async () => {
+    await executeWithStoreFallback({ stores: ['home'], explicit: false }, async () => ok, 'failed');
+    expect(mockInfo).not.toHaveBeenCalled();
+  });
+
+  it('renders the failure that ends the run, with the executor message or the fallback text', async () => {
+    const run = vi.fn(async () => bad('HTTP 502 bad gateway'));
+    const out = await executeWithStoreFallback(
+      { stores: ['a', 'b'], explicit: false },
+      run,
+      'failed'
+    );
+    expect(run).toHaveBeenCalledTimes(2);
+    expect(out.store).toBe('b');
+    expect(mockRender).toHaveBeenCalledTimes(1);
+    expect(mockRender.mock.calls[0][1]).toBe('HTTP 502 bad gateway');
   });
 });

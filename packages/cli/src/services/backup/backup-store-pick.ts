@@ -9,8 +9,10 @@
  */
 
 import { t } from '../../i18n/index.js';
+import { renderLocalExecutionFailure } from '../../utils/local-execution-failures.js';
 import { accountServerFetch } from '../account/account-client.js';
 import { outputService } from '../core/output.js';
+import type { ExecuteResult } from '../executor/types.js';
 
 /** The store every subscription has from the first day; renet takes no `--store` for it. */
 export const HOME_STORE = 'home';
@@ -88,6 +90,12 @@ export interface AttemptFailure {
 const SNAPSHOT_OWN =
   /snapshot[^\n]{0,40}(not found|missing|unknown|expired)|no such snapshot|manifest[^\n]{0,40}(not found|invalid|corrupt)|verif(y|ication) failed|digest mismatch|hash mismatch|BACKUP_RETENTION_EXPIRED|SNAPSHOT_NOT_FOUND/i;
 
+/**
+ * Faults of the machine or the request, never of the store: a path absent from the snapshot (19), a snapshot whose listing cannot address the path (18), and a copy-out that failed after the fetch, whose rollback line renet prints (`restorepath.rolled_back`, `restorepath.rollback_incomplete`). A retry elsewhere cannot help, and after a copy-out failure it could meet files the first attempt left.
+ */
+const LOCAL_OWN =
+  /NO_SUCH_PATH|NO_LISTING|every path this run created was removed|some paths this run created could not be removed/i;
+
 /** The store's faults: a server error, a refused grant or session, an endpoint that does not answer. */
 const STORE_SIDE =
   /\b5\d\d\b|bad gateway|service unavailable|gateway timeout|grant[^\n]{0,40}(refused|denied|forbidden|failed)|session[^\n]{0,40}(refused|denied|invalid|failed)|BACKUP_SESSION_INVALID|EGRESS_UNREACHABLE|ECONNREFUSED|ECONNRESET|ETIMEDOUT|ENOTFOUND|EHOSTUNREACH|unreachable|timed out|connection (refused|reset)|store[^\n]{0,30}suspended|STORE_SUSPENDED/i;
@@ -100,7 +108,8 @@ export function isStoreFailure(failure: AttemptFailure): boolean {
   const text = [failure.errorCode, failure.error, failure.stderr, failure.stdout]
     .filter((s): s is string => typeof s === 'string')
     .join('\n');
-  if (SNAPSHOT_OWN.test(text)) return false;
+  if (failure.exitCode === 18 || failure.exitCode === 19) return false;
+  if (SNAPSHOT_OWN.test(text) || LOCAL_OWN.test(text)) return false;
   return STORE_SIDE.test(text);
 }
 
@@ -130,6 +139,46 @@ export async function runWithFallback<T>(
     onFallback?.(store, next, outcome.failure);
   }
   return { ok: false, ...last };
+}
+
+/**
+ * Run a renet verb through `executeRepoFunction` once per store until one serves it. The verb must be called with
+ * `failureIsAnswer: true`, because a failure that rendered would exit the process before the next store was tried.
+ * The failure that ends the run (a snapshot's own, an explicit `--from`, the last store) is rendered here, exactly as
+ * `executeRepoFunction` would have. A job still running past the attach window counts as served. The store that
+ * served is announced when it is not home alone, which is what every read did before stores existed.
+ */
+export async function executeWithStoreFallback(
+  pick: StorePick,
+  run: (store: string) => Promise<ExecuteResult>,
+  failedMessage: string
+): Promise<{ result: ExecuteResult; store: string }> {
+  // The result of the latest attempt: when no store serves, it is the one to render.
+  let latest: ExecuteResult | undefined;
+  let fellBack = false;
+  const served = await runWithFallback(
+    pick,
+    async (store) => {
+      const result = await run(store);
+      latest = result;
+      if (result.success || result.state === 'running') return { ok: true as const, value: result };
+      const { exitCode, error, errorCode, stdout, stderr } = result;
+      return { ok: false as const, failure: { exitCode, error, errorCode, stdout, stderr } };
+    },
+    (failed, next) => {
+      fellBack = true;
+      outputService.warn(t('commands.backup.restore.storeFallback', { failed, next }));
+    }
+  );
+  if (served.ok) {
+    if (served.store !== HOME_STORE || pick.explicit || fellBack) {
+      outputService.info(t('commands.backup.restore.storeServed', { store: served.store }));
+    }
+    return { result: served.value, store: served.store };
+  }
+  const result = latest as ExecuteResult;
+  renderLocalExecutionFailure(result, result.error ?? failedMessage);
+  return { result, store: served.store };
 }
 
 /** What `backup status` says about one store, summed over the streams the machine's repositories write to it. */
@@ -219,8 +268,12 @@ export function summarizeStatus(
  */
 export async function readStoreStatuses(lineages: string[]): Promise<Record<string, StoreStatus>> {
   try {
-    const response = await accountServerFetch<StatusResponse>('/account/api/v1/backups/status');
-    return Array.isArray(response?.streams) ? summarizeStatus(response, new Set(lineages)) : {};
+    const response = await accountServerFetch<StatusResponse | undefined>(
+      '/account/api/v1/backups/status'
+    );
+    return response && Array.isArray(response.streams)
+      ? summarizeStatus(response, new Set(lineages))
+      : {};
   } catch {
     return {};
   }

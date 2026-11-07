@@ -2,7 +2,11 @@
 
 import { BACKUP_BROWSE_DEFAULTS } from '@rediacc/shared/config/defaults';
 import { t } from '../i18n/index.js';
-import { HOME_STORE, pickStores, storeParam } from '../services/backup/backup-store-pick.js';
+import {
+  executeWithStoreFallback,
+  pickStores,
+  storeParam,
+} from '../services/backup/backup-store-pick.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
 import { bindStepHandler, planStep } from '../services/jobs/steps.js';
@@ -57,45 +61,46 @@ export async function runBrowseAt(
   const { resolveSnapshotAt } = await import('./backup.js');
   // A listing is read from the snapshot, so a time with no listing falls back to the nearest one that has it.
   const snapshotId = await resolveSnapshotAt(lineage, at, { anyStream: true }, { indexed: true });
-  // A listing is one read, so it takes the first store of the pick; the whole-image restore is the verb that falls back.
-  const {
-    stores: [store],
-  } = await pickStores(lineage, options.from);
-  // Home alone is what every read did before stores existed, so only another store, or a named one, is announced.
-  if (store !== HOME_STORE || options.from !== undefined) {
-    outputService.info(t('commands.backup.restore.storeServed', { store }));
-  }
-  const result = await executeRepoFunction(
-    'backup_browse_at',
-    repoKey,
-    machineName,
-    {
-      lineage,
-      at: snapshotId,
-      path: options.path ?? '',
-      depth: options.depth ?? BACKUP_BROWSE_DEFAULTS.DEPTH,
-      limit: options.limit ?? BACKUP_BROWSE_DEFAULTS.LIMIT,
-      ...storeParam(store),
-    },
-    {
-      debug: options.debug,
-      captureOutput: true,
-      job: {
-        verb: 'backup browse',
-        steps: [
-          planStep('renderBackupBrowse', {
-            repo: repoKey,
-            snapshot: snapshotId,
-            limit: options.limit ?? BACKUP_BROWSE_DEFAULTS.LIMIT,
-          }),
-        ],
-      },
-    },
-    {
-      starting: t('commands.backup.browse.startingAt', { name: repoKey, snapshot: snapshotId }),
-      completed: t('commands.backup.browse.completed', { name: repoKey }),
-      failed: t('commands.backup.browse.failed', { name: repoKey }),
-    }
+  // A store that fails for its own reasons (a 5xx, a refused grant) hands the listing to the next ranked one.
+  const pick = await pickStores(lineage, options.from);
+  const failedMessage = t('commands.backup.browse.failed', { name: repoKey });
+  const { result } = await executeWithStoreFallback(
+    pick,
+    (store) =>
+      executeRepoFunction(
+        'backup_browse_at',
+        repoKey,
+        machineName,
+        {
+          lineage,
+          at: snapshotId,
+          path: options.path ?? '',
+          depth: options.depth ?? BACKUP_BROWSE_DEFAULTS.DEPTH,
+          limit: options.limit ?? BACKUP_BROWSE_DEFAULTS.LIMIT,
+          ...storeParam(store),
+        },
+        {
+          debug: options.debug,
+          captureOutput: true,
+          failureIsAnswer: true,
+          job: {
+            verb: 'backup browse',
+            steps: [
+              planStep('renderBackupBrowse', {
+                repo: repoKey,
+                snapshot: snapshotId,
+                limit: options.limit ?? BACKUP_BROWSE_DEFAULTS.LIMIT,
+              }),
+            ],
+          },
+        },
+        {
+          starting: t('commands.backup.browse.startingAt', { name: repoKey, snapshot: snapshotId }),
+          completed: t('commands.backup.browse.completed', { name: repoKey }),
+          failed: failedMessage,
+        }
+      ),
+    failedMessage
   );
   return { result, snapshotId };
 }

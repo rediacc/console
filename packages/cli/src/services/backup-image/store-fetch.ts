@@ -171,11 +171,17 @@ async function resolveTarget(
   }
 }
 
-/** What a thrown mint or fetch error says to the store-fault classifier: its HTTP status counts as text. */
+/**
+ * What a thrown mint or fetch error says to the store-fault classifier: its HTTP status counts as text, and a mint the
+ * store refused with a 403 that names no account-level code (retention, team scope, role) is that store's refused grant.
+ * A session refusal was rewritten into a message for the operator, so the original error rides as `cause`.
+ */
 function failureOf(error: unknown): AttemptFailure {
-  const status = (error as StatusError | null)?.status;
-  const message = error instanceof Error ? error.message : String(error);
-  return { error: status === undefined ? message : `HTTP ${status} ${message}` };
+  const original = (error as { cause?: unknown } | null)?.cause ?? error;
+  const { status, code } = (original ?? {}) as StatusError;
+  const message = original instanceof Error ? original.message : String(original);
+  if (status === 403 && code === undefined) return { error: `grant refused (HTTP 403) ${message}` };
+  return { error: status === undefined ? message : `HTTP ${status} ${message}`, errorCode: code };
 }
 
 /** One store's attempt: mint its session, run renet's fetch, return the record. Throws what went wrong. */
@@ -192,7 +198,7 @@ async function fetchFromStore(
       ? deps.mintSession(lineage)
       : deps.mintSession(lineage, store));
   } catch (error) {
-    throw describeSessionRefusal(error);
+    throw Object.assign(describeSessionRefusal(error), { cause: error });
   }
 
   const stdin = JSON.stringify({ ...session, apiBase: deps.apiBase(), lineageGuid: lineage });

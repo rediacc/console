@@ -7,7 +7,11 @@
  */
 
 import { t } from '../i18n/index.js';
-import { HOME_STORE, pickStores, storeParam } from '../services/backup/backup-store-pick.js';
+import {
+  executeWithStoreFallback,
+  pickStores,
+  storeParam,
+} from '../services/backup/backup-store-pick.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
 import { setExitCode } from '../services/core/request-context.js';
@@ -160,41 +164,41 @@ export async function runRestorePath(args: {
   }
   const lineage = lineageOf(repo);
   const snapshotId = await resolveSnapshot(lineage, at);
-  // A single-path read is one attempt, so it takes the first store of the pick; the whole-image restore is the verb that falls back.
-  const {
-    stores: [store],
-  } = await pickStores(lineage, args.from);
-  // Home alone is what every read did before stores existed, so only another store, or a named one, is announced.
-  if (store !== HOME_STORE || args.from !== undefined) {
-    outputService.info(t('commands.backup.restore.storeServed', { store }));
-  }
-
-  await executeRepoFunction(
-    'backup_restore_path',
-    repoKey,
-    machineName,
-    { lineage, at: snapshotId, path, to: to ?? '', ...storeParam(store) },
-    {
-      debug,
-      captureOutput: true,
-      // The record print rides the job's ticket (PLAN-detached-jobs J4): a backgrounded restore-path prints it from `rdc job wait`.
-      job: {
-        verb: 'backup restore',
-        steps: [
-          planStep('reportRestorePath', { repo: repoKey, snapshot: snapshotId }),
-          planStep('reportRestorePathFailure', { repo: repoKey, snapshot: snapshotId }),
-        ],
-      },
-    },
-    {
-      starting: t('commands.backup.restore.pathStarting', {
-        name: repoKey,
-        path,
-        snapshot: snapshotId,
-      }),
-      completed: t('commands.backup.restore.pathCompleted', { name: repoKey }),
-      failed: t('commands.backup.restore.pathFailed', { name: repoKey }),
-    }
+  // A store that fails for its own reasons (a 5xx, a refused grant) hands the read to the next ranked one. renet fetches into a staging file and places under --to only afterwards, rolling back what it placed on failure, so a failed attempt leaves nothing under --to for the next one to meet.
+  const pick = await pickStores(lineage, args.from);
+  const failedMessage = t('commands.backup.restore.pathFailed', { name: repoKey });
+  await executeWithStoreFallback(
+    pick,
+    (store) =>
+      executeRepoFunction(
+        'backup_restore_path',
+        repoKey,
+        machineName,
+        { lineage, at: snapshotId, path, to: to ?? '', ...storeParam(store) },
+        {
+          debug,
+          captureOutput: true,
+          failureIsAnswer: true,
+          // The record print rides the job's ticket (PLAN-detached-jobs J4): a backgrounded restore-path prints it from `rdc job wait`.
+          job: {
+            verb: 'backup restore',
+            steps: [
+              planStep('reportRestorePath', { repo: repoKey, snapshot: snapshotId }),
+              planStep('reportRestorePathFailure', { repo: repoKey, snapshot: snapshotId }),
+            ],
+          },
+        },
+        {
+          starting: t('commands.backup.restore.pathStarting', {
+            name: repoKey,
+            path,
+            snapshot: snapshotId,
+          }),
+          completed: t('commands.backup.restore.pathCompleted', { name: repoKey }),
+          failed: failedMessage,
+        }
+      ),
+    failedMessage
   );
 }
 
