@@ -163,6 +163,8 @@ export interface HarnessOptions {
   sameIdForEveryOrg?: boolean;
   /** Storage keys whose `put` rejects. */
   failPut?: string[];
+  /** Storage keys whose `put` throws before it returns a promise. */
+  throwPut?: string[];
   /** Storage keys whose `delete` rejects. */
   failDelete?: string[];
   /** What each probe socket reads; an SSH banner when unset. */
@@ -189,6 +191,7 @@ export function harness(options: HarnessOptions = {}): Harness {
     storage: {
       get: (key: string) => Promise.resolve(storage.get(key)),
       put: (key: string, value: unknown) => {
+        if (options.throwPut?.includes(key)) throw new Error('put threw');
         if (options.failPut?.includes(key)) return Promise.reject(new Error('put failed'));
         storage.set(key, structuredClone(value));
         return Promise.resolve();

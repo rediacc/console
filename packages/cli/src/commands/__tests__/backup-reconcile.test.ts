@@ -231,8 +231,16 @@ describe('backup reconcile', () => {
       expect.any(Array)
     );
     expect(mockPrint).toHaveBeenCalledWith('TABLE');
+    // The summary carries the ledger, the bucket and the absolute drift, each as formatted bytes.
+    const { formatSizeBytes } = await import('@rediacc/shared/renet-contract');
+    const params = {
+      ledger: formatSizeBytes(100),
+      bucket: formatSizeBytes(100),
+      drift: formatSizeBytes(0),
+    };
+    expect(mockT).toHaveBeenCalledWith('commands.backup.reconcile.summary', params);
     expect(mockInfo).toHaveBeenCalledWith(
-      expect.stringContaining('commands.backup.reconcile.summary')
+      `commands.backup.reconcile.summary ${Object.values(params).join(' ')}`
     );
   });
 

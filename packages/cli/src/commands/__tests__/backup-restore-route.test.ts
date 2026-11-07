@@ -222,7 +222,7 @@ describe('backup restore from a repo push artifact', () => {
     expect(mockRelease).toHaveBeenCalled();
   });
 
-  it('quotes the probe script as one word, so a $ in a datastore path is not expanded early', async () => {
+  it('quotes the probe script as one single-quoted word, so the login shell expands nothing in it', async () => {
     imageProbe.answer = 'present';
     await sourceImageOnMachine({
       machine: 'obs-lab',

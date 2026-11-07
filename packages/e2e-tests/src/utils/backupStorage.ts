@@ -67,20 +67,24 @@ export function usageViolations(usage: BackupUsage): string[] {
   return [...ledgerArithmeticViolations(usage), ...lineageBreakdownViolations(usage)];
 }
 
+/** The usedBytes sum check: a missing waitingBytes is named once and the sum skipped, which would otherwise report a mismatch the server may not have. */
+function usedBytesViolations(usage: BackupUsage): string[] {
+  if (typeof usage.waitingBytes !== 'number') {
+    return ['waitingBytes is missing from the usage response'];
+  }
+  const live = Math.max(0, usage.storedBytes - usage.waitingBytes);
+  const expectedUsed = Math.max(0, live + usage.usageAdjustment) + usage.leasedBytes;
+  if (usage.usedBytes === expectedUsed) return [];
+  return [
+    `usedBytes ${usage.usedBytes} is not max(0, (storedBytes - waitingBytes) + usageAdjustment) + leasedBytes (${expectedUsed})`,
+  ];
+}
+
 /** The aggregate row: the sum, the flag, and the counters that back them. */
 function ledgerArithmeticViolations(usage: BackupUsage): string[] {
   const bad: string[] = [];
   // The server's quotaUsedBytes: live (stored minus waiting) plus the adjustment, floored at nothing, plus held leases. Stored bytes the retained versions cannot restore from are not billed, so a subscription that has ever pruned a snapshot has stored > used by exactly its waiting bytes.
-  // A response without waitingBytes would turn every figure below into NaN; name the missing field once and compute with no waiting bytes.
-  const hasWaiting = typeof usage.waitingBytes === 'number';
-  if (!hasWaiting) bad.push('waitingBytes is missing from the usage response');
-  const live = Math.max(0, usage.storedBytes - (hasWaiting ? usage.waitingBytes : 0));
-  const expectedUsed = Math.max(0, live + usage.usageAdjustment) + usage.leasedBytes;
-  if (usage.usedBytes !== expectedUsed) {
-    bad.push(
-      `usedBytes ${usage.usedBytes} is not max(0, (storedBytes - waitingBytes) + usageAdjustment) + leasedBytes (${expectedUsed})`
-    );
-  }
+  bad.push(...usedBytesViolations(usage));
   if (usage.overLimit !== usage.usedBytes > usage.quotaBytes) {
     bad.push(
       `overLimit is ${usage.overLimit} while usedBytes ${usage.usedBytes} vs quotaBytes ${usage.quotaBytes} says ${usage.usedBytes > usage.quotaBytes}`

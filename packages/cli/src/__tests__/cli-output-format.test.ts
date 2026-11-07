@@ -44,8 +44,8 @@ describe('global -o validation', () => {
         .mock.calls.map((c) => String(c[0]))
         .join('');
       expect(stderr).toContain(bad);
-      // The allowed formats are named, whatever separator the message joins them with.
-      for (const allowed of ['table', 'json', 'yaml', 'csv']) expect(stderr).toContain(allowed);
+      // The whole allowed list is named in order, whatever separator the message joins it with, so a dropped format fails here.
+      expect(stderr).toMatch(/table\W+json\W+yaml\W+csv/);
     }
   );
 

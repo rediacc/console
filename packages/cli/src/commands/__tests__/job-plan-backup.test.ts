@@ -411,14 +411,22 @@ describe('backup status', () => {
     expect(tableSteps).toBe(1);
     expect(executed).toHaveLength(2);
     expect(mockRenderFailure).toHaveBeenCalledTimes(1);
+    const { outputService } = await import('../../services/core/output.js');
+    expect(vi.mocked(outputService.info)).not.toHaveBeenCalledWith(
+      expect.stringContaining('Recent logs')
+    );
   });
 
-  it('control: a succeeding journal job renders no failure', async () => {
+  it('control: a succeeding journal job renders no failure and prints the heading', async () => {
     answer = { ...FINISHED, stdout: SHOW };
 
     await rdcBackup('status', 'nightly', '-m', 'm1');
 
     expect(mockRenderFailure).not.toHaveBeenCalled();
+    const { outputService } = await import('../../services/core/output.js');
+    expect(vi.mocked(outputService.info)).toHaveBeenCalledWith(
+      expect.stringContaining('Recent logs (nightly)')
+    );
   });
 
   it('the table step refuses a missing or malformed expected param, and renders with a valid one', async () => {
