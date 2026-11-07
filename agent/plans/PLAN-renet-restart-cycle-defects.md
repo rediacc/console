@@ -16,7 +16,7 @@ Worklist: #5e864374, PR-TASK 09b8bdfa
 - Defect 1: `prepareLifecycleTree` (private/renet/pkg/orchestration/lifecycle.go:292-309) already re-owns root-owned files before an unprivileged up(), but `chownEntry` (private/renet/pkg/filesystem/permissions.go:286-288) skips any directory not owned by root, so root-owned files under a 7111-owned directory stay root (marketing n8n: 3047 files, EACCES crashloop; mautic apache/ports.conf).
 - Defect 2: the list-all sections pattern rejected hyphens (private/renet/cmd/renet/job_commands.go:906), so `machine status --containers` failed.
 - Defect 3: `recoverRepoContainers` (private/renet/cmd/renet/daemons_upgrade.go:557-607) starts the containers once against the ids of the first listing, folds "No such container" errors from recreated containers into the result, and waits against a fixed deadline with a 2-minute floor.
-- Defect 4: a `starting` ticket is never checked (packages/cli/src/services/jobs/finished-notice.ts:90-96, `resolveStarting` unwired in remote-deps.ts:86), and a finished ticket whose step cannot run stays pending with no age limit.
+- Defect 4: a `starting` ticket is never checked (packages/cli/src/services/jobs/finished-notice.ts:90-96, `resolveStarting` was unwired in remote-deps.ts when the defect was found, and is wired at packages/cli/src/services/jobs/remote-deps.ts:119 and :152 now), and a finished ticket whose step cannot run stays pending with no age limit.
 - Defect 5: `renet version` printed no trailing newline.
 
 ## Boxes

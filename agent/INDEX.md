@@ -476,7 +476,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-backup-list-executor-fix.md` | compacted | 55 | 0 | 0 | 5498 |
 | `agent/plans/PLAN-backup-local-image.md` | approved | 457 | 4 | 10 | 57906 |
 | `agent/plans/PLAN-backup-meter-orphaned-chunks.md` | approved | 271 | 2 | 6 | 36324 |
-| `agent/plans/PLAN-backup-multi-target.md` | approved | 82 | 18 | 0 | 25671 |
+| `agent/plans/PLAN-backup-multi-target.md` | approved | 82 | 18 | 0 | 25949 |
 | `agent/plans/PLAN-backup-plane-shared-bucket-hardening.md` | approved | 41 | 3 | 4 | 6848 |
 | `agent/plans/PLAN-backup-program.md` | approved | 595 | 17 | 175 | 157092 |
 | `agent/plans/PLAN-backup-quota-delta-gc.md` | compacted | 58 | 0 | 0 | 5584 |
@@ -503,7 +503,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-consolidation-pressure.md` | compacted | 60 | 0 | 10 | 5277 |
 | `agent/plans/PLAN-converge-preflight-and-repo-recovery.md` | executing | 94 | 0 | 19 | 34124 |
 | `agent/plans/PLAN-deletion-budget.md` | draft | 387 | 28 | 0 | 53262 |
-| `agent/plans/PLAN-detached-jobs.md` | approved | 1060 | 9 | 31 | 194068 |
+| `agent/plans/PLAN-detached-jobs.md` | approved | 1060 | 9 | 31 | 194046 |
 | `agent/plans/PLAN-devbox-uid-derived-image.md` | compacted | 36 | 0 | 0 | 2750 |
 | `agent/plans/PLAN-docker-image-freshness-soak-filter.md` | compacted | 39 | 0 | 0 | 2715 |
 | `agent/plans/PLAN-docker-pin-digest.md` | executing | 118 | 1 | 8 | 19848 |
@@ -545,7 +545,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-plan-verbs.md` | draft | 35 | 3 | 0 | 3779 |
 | `agent/plans/PLAN-printf-echo-pipefail-sweep.md` | compacted | 103 | 0 | 33 | 10281 |
 | `agent/plans/PLAN-product-domain-rename.md` | proposed | 179 | 28 | 0 | 25711 |
-| `agent/plans/PLAN-production-key-only.md` | approved | 346 | 5 | 12 | 51079 |
+| `agent/plans/PLAN-production-key-only.md` | approved | 346 | 5 | 12 | 51083 |
 | `agent/plans/PLAN-promote-mutation-runner.md` | compacted | 39 | 0 | 0 | 2977 |
 | `agent/plans/PLAN-proxy-cd-six-targets.md` | approved | 411 | 4 | 27 | 69330 |
 | `agent/plans/PLAN-pytest-parallelism.md` | compacted | 57 | 0 | 10 | 4644 |
@@ -558,7 +558,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-renet-down-before-kill.md` | approved | 153 | 4 | 11 | 31850 |
 | `agent/plans/PLAN-renet-executor-tiered-license-check.md` | executing | 55 | 2 | 2 | 12295 |
 | `agent/plans/PLAN-renet-fetch-retries.md` | approved | 55 | 0 | 3 | 7190 |
-| `agent/plans/PLAN-renet-restart-cycle-defects.md` | approved | 36 | 1 | 5 | 5461 |
+| `agent/plans/PLAN-renet-restart-cycle-defects.md` | approved | 36 | 1 | 5 | 5568 |
 | `agent/plans/PLAN-renet-run-docker-sock-isolation.md` | draft | 101 | 0 | 4 | 11627 |
 | `agent/plans/PLAN-renet-runtime-converge.md` | approved | 63 | 0 | 5 | 10310 |
 | `agent/plans/PLAN-repo-docker-storage-prune.md` | executing | 137 | 3 | 11 | 34534 |

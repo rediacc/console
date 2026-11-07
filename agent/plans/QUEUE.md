@@ -73,7 +73,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 11 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic c6b82e88, plan agent/plans/PLAN-settings-set-verb.md, outside the set, 2 commit(s) on the branch, 0 open item(s): settings set verb: one source for the ceilings
   - epic dbb7de07, plan agent/plans/PLAN-cloudflare-spend-guard.md, outside the set, 48 commit(s) on the branch, 0 open item(s): cloudflare spend guard closure
-  - epic 09b8bdfa, plan agent/plans/PLAN-detached-jobs.md, outside the set, 889 commit(s) on the branch, 0 open item(s): detached jobs: proxied poll follow and job kinds
+  - epic 09b8bdfa, plan agent/plans/PLAN-detached-jobs.md, outside the set, 904 commit(s) on the branch, 0 open item(s): detached jobs: proxied poll follow and job kinds
   - epic ec9ba176, plan agent/plans/PLAN-backup-integrity.md, outside the set, 2 commit(s) on the branch, 0 open item(s): backup integrity docs and closure
   - epic d6bb9963, plan agent/plans/PLAN-backup-critical-tier.md, outside the set, 7 commit(s) on the branch, 0 open item(s): backup critical tier proofs
   - epic b21ab2e2, plan agent/plans/PLAN-jobs-backup-real-machine-tests.md, outside the set, 2 commit(s) on the branch, 0 open item(s): real machine tests for jobs and backup
@@ -83,8 +83,8 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic 1d805023, plan agent/plans/PLAN-tick-tracking.md, outside the set, 26 commit(s) on the branch, 0 open item(s): tick tracking: plan-box trailer, landing prints the tick, box audit
   - epic f65726d5, plan agent/plans/PLAN-renet-down-before-kill.md, outside the set, 16 commit(s) on the branch, 0 open item(s): renet runs Rediaccfile down() before repo containers stop
   - epic 53c31db2, plan agent/plans/PLAN-repo-resource-limits.md, outside the set, 20 commit(s) on the branch, 0 open item(s): per-repo resource limits and a renet-managed RAM volume
-- Writers: 2 live of writer_cap 25 (session d778be9d): worker:a02181dc5c7dfd29b, worker:a51344c483970dcb9.
-- Leased items: 12: #11306719 (worker:b0w9tr1kq, d778be9d), #235d49d7 (worker:b0w9tr1kq, d778be9d), #55959f83 (worker:b0w9tr1kq, d778be9d), #6e4bf502 (worker:b0w9tr1kq, d778be9d), #7a629da2 (worker:b0w9tr1kq, d778be9d), #7b35ff7b (worker:b0w9tr1kq, d778be9d), #9ebb1ebe (worker:a02181dc5c7dfd29b, d778be9d), #a1fadff8 (worker:b0w9tr1kq, d778be9d), #b0afd68b (worker:b0w9tr1kq, d778be9d), #b2443afb (worker:a51344c483970dcb9, d778be9d), #d96e4aab (worker:b0w9tr1kq, d778be9d), #eb5c1323 (worker:b0w9tr1kq, d778be9d).
+- Writers: 1 live of writer_cap 25 (session d778be9d): worker:a210e27c6460ba4c4.
+- Leased items: 11: #11306719 (worker:b2lsdh494, d778be9d), #55959f83 (worker:b2lsdh494, d778be9d), #6e4bf502 (worker:b2lsdh494, d778be9d), #7b35ff7b (worker:b2lsdh494, d778be9d), #82ec5326 (worker:b2lsdh494, d778be9d), #9ebb1ebe (worker:b2lsdh494, d778be9d), #a1fadff8 (worker:b2lsdh494, d778be9d), #b0afd68b (worker:b2lsdh494, d778be9d), #b1e6c572 (worker:a210e27c6460ba4c4, d778be9d), #b2443afb (worker:a51344c483970dcb9, d778be9d), #eb5c1323 (worker:b2lsdh494, d778be9d).
 - Next plan: agent/plans/PLAN-console-executor-multi-org.md, Promoted entry 18; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
