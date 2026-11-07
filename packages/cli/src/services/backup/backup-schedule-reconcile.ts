@@ -269,7 +269,7 @@ export async function resolveMachineCpuCount(sftp: SFTPClient): Promise<number> 
 /**
  * The account-server origin to write into a unit, or undefined when the machine's renet predates `--expect-account-server`.
  *
- * Why a probe: the flag reaches every scheduled snapshot, and an older renet dies at cobra's flag parse at 03:00, so a backup silently never runs. A renet held in place (a development build, REDIACC_NO_PROVISION=1) can be older than this CLI, and a version string cannot say it (a development build is 0.0.0-dev), so the installed binary is asked: its own `backup snapshot --help` lists the flag or does not. A renet whose help runs and lacks the flag gets a unit without it and a warning. A probe that fails (a non-zero exit) refuses the reconcile instead: dropping the flag there would turn the licence check off for a reason nobody can see, while the snapshot it guards would fail at 03:00 anyway.
+ * Why a probe: the flag reaches every scheduled snapshot, and an older renet dies at cobra's flag parse at 03:00, so a backup silently never runs. A renet held in place (a development build, REDIACC_NO_PROVISION=1) can be older than this CLI, and a version string cannot say it (a development build is 0.0.0-dev), so the installed binary is asked: its own `backup snapshot --help` lists the flag or does not. A renet whose help runs and lacks the flag gets a unit without it and a warning. A probe that fails (a non-zero exit) refuses the reconcile instead: it says nothing about the flag either way, and dropping the flag on it would turn the licence check off for a reason nobody can see.
  */
 export async function accountServerForRenet(
   sftp: SFTPClient,
