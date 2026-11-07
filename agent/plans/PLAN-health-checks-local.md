@@ -316,9 +316,10 @@ Owns: workers/ops-health/**, .ci/rediacc_ci/ops/deploy_ops_health.py, .ci/rediac
   - CONTROL: a second `--write` run with an unchanged target file reports zero changes; an invalid target file exits 2 before any deploy; a changed file changes only the secret and the sha.
   - Accept: `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest .ci/rediacc_ci/tests/test_ops_health_deploy.py -q` rc 0.
     (ticked) 2026-11-06T20:23:52Z by d778be9d: commit:d7c95c5d06e6 landed from lease agent-a2c256ab3ae27bba9; W4 deploy_ops_health, pytest test_ops_health_deploy 27 passed rc=0
-- [ ] W5 [live]: Deploy to production.
+- [x] W5 [live]: Deploy to production.
   (corrected 2026-11-06, operator rulings A to E4) Deploy to production with the `ops` repo's target file (after H9).
   - Accept: `PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_ops_health --targets-ref ops@hostinger --config eu-remote --targets-path <file> --write` rc 0; after 20 min, `curl -fsS -H "Authorization: Bearer $OPS_HEALTH_READ_TOKEN" https://ops-health.rediacc.com/v1/status` rc 0 with `last_cron_at` under 11 min old, every regions.json health-endpoint probe present, and one probe per target from the file.
+    (ticked) 2026-11-07T01:44:02Z by d778be9d: commit:2c2a4e39c deploy_ops_health --write rc 0 (version d25bf6a6), /v1/status rc 0 at 01:43Z: green, last_cron_at 3.4 min old, 12 regions.json health probes and one probe per target (28) from the ops repo file, targets_sha 26b90fde; check:ci-ops-health rc 0
 - [ ] W6 [live]: A forced transition: `POST /v1/ingest {source:"selftest", state:"red"}`, then green. Each mail is logged with an SES MessageId, and the operator's receipt is reported back on the worklist item, without a question.
   - Accept: the two `mail_log` entries read through `/v1/status?mail=1` rc 0.
 
