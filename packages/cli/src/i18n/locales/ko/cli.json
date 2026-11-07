@@ -2995,6 +2995,7 @@
     "license": {
       "machineSlotLimit": "이 배치에는 머신 슬롯이 {{needed}}개 더 필요하지만, 구독에는 {{free}}개만 남아 있습니다 ({{max}}개 중 {{active}}개 사용 중). 슬롯은 해당 머신의 마지막 활동 후 5시간이 지나면 자동으로 해제되거나, 머신이 제거되면 즉시 해제됩니다. 플랜을 업그레이드하여 한도를 높이거나, Enterprise 또는 파트너 머신 한도 협의를 위해 영업팀에 문의하세요.",
       "nothingProvisioned": "아무것도 프로비저닝되지 않았습니다: 저장소가 생성되지 않았습니다.",
+      "backupStoreMismatch": "거부됨: {{machine}}의 저장소 \"{{repo}}\"에는 {{installed}}에서 발급한 라이선스가 있습니다. 따라서 이 백업 명령은 구성 \"{{config}}\"의 계정 서버인 {{expected}}의 저장소가 아니라 그 계정의 백업 저장소를 사용하게 됩니다. 계정 서버가 {{installed}}인 구성으로 실행하세요.",
       "partialPlacement": "배치가 도중에 중단되었습니다: {{placed}}대의 머신이 완료되었고 ({{placedNames}}), {{remaining}}대는 시작되지 않았습니다 ({{remainingNames}}). 아무것도 롤백되지 않았으므로 완료된 머신은 저장소와 슬롯을 그대로 유지합니다. 슬롯을 확보하거나 한도를 높인 후 다시 실행하세요: {{command}}",
       "preflightTokenNotReady": "구독 토큰이 준비되지 않았습니다. 실행: rdc subscription login. {{machine}}에 대한 배포를 건너뛰었습니다.",
       "recoveryFailedNoKnownRepos": "{{machine}}에서 저장소가 발견되었지만 로컬 설정에 추적된 항목이 없습니다. 추적 중인 저장소 목록을 보려면 `rdc repo list`를 실행한 후 다시 시도하세요.",

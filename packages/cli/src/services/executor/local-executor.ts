@@ -16,6 +16,7 @@ import type { SFTPClient } from '../../remote/sftp/index.js';
 import { CliExitError } from '../../utils/cli-exit-error.js';
 import { formatDuration } from '../../utils/format.js';
 import { startSpinner, stopSpinner } from '../../utils/spinner.js';
+import { assertBackupStoreUniverse } from '../backup/backup-store-universe.js';
 import { clusterKubeconfigRemotePath } from '../cluster/cluster-target.js';
 import { configService } from '../config/config-resources.js';
 import { auditService } from '../core/audit.js';
@@ -396,6 +397,14 @@ class LocalExecutorService {
       options.machineName,
       sshPrivateKey,
       remoteRenetPath,
+      sftp
+    );
+
+    // After the licence pre-flight and refresh, so a licence this config just installed counts.
+    await assertBackupStoreUniverse(
+      options.functionName,
+      options.machineName,
+      options.params ?? {},
       sftp
     );
 

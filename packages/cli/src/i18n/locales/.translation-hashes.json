@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 2562,
-    "sourceCommit": "e573d1e0d7bc0aa7a2a6f977ea9fb983258b8a1a"
+    "keyCount": 2563,
+    "sourceCommit": "86992ee91a4a2ca51cc2a37a2311231dca132ef0"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -2335,6 +2335,7 @@
     "errors.jobs.overlap.warningHead": "5f79de1d",
     "errors.jobs.overlap.whatJob": "a9d4d173",
     "errors.jobs.refused": "3cf7f09f",
+    "errors.license.backupStoreMismatch": "8bb1db50",
     "errors.license.machineSlotLimit": "4364dd2e",
     "errors.license.nothingProvisioned": "9c165bf2",
     "errors.license.partialPlacement": "eb0dd784",

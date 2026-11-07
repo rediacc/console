@@ -2995,6 +2995,7 @@
     "license": {
       "machineSlotLimit": "See paigutus vajab veel {{needed}} masinakoht(a) ja tellimusel on vaba {{free}} ({{active}} / {{max}} kasutusel). Koht vabaneb automaatselt 5 tundi pärast selle masina viimast aktiivsust või kohe, kui masin eemaldatakse. Tõsta limiiti paketti uuendades või võta ühendust müügiga, et leppida kokku Enterprise'i või partneri masinalimiit.",
       "nothingProvisioned": "Midagi ei loodud: repositooriumi ei loodud.",
+      "backupStoreMismatch": "Keeldutud: masinas {{machine}} oleval repositooriumil \"{{repo}}\" on litsents, mille väljastas {{installed}}, seega kasutaks see varundamiskäsk selle konto varunduste salvestust, mitte konfiguratsiooni \"{{config}}\" kontoserveri {{expected}} oma. Käivitage see konfiguratsiooniga, mille kontoserver on {{installed}}.",
       "partialPlacement": "Paigutus katkes poole peal: {{placed}} masin(at) lõpetatud ({{placedNames}}) ja {{remaining}} jäi käivitamata ({{remainingNames}}). Midagi ei võetud tagasi, seega lõpetatud masinad säilitavad oma repositooriumid ja kohad. Vabasta koht või tõsta limiiti ning käivita uuesti: {{command}}",
       "preflightTokenNotReady": "Sinu tellimuse token ei ole valmis. Käivita: rdc subscription login. Juurutamine masinale {{machine}} jäeti vahele.",
       "recoveryFailedNoKnownRepos": "Masinal {{machine}} leiti hoidlaid, kuid ükski neist ei ole sinu kohalikus konfiguratsioonis jälgitud. Kuva jälgitavad hoidlad käsuga `rdc repo list`, seejärel proovi uuesti.",
