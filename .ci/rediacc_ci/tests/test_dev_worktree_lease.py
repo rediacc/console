@@ -2405,6 +2405,20 @@ def test_gc_discard_dirty_removes_the_named_tree_and_prints_the_reason(repo):
     assert reason in done.stdout
 
 
+def test_gc_discard_dirty_prints_no_waiver_when_the_removal_did_not_finish(gc_repo, monkeypatch):
+    """Review 891cacd3.1: the WAIVE line audits a discard that happened, and a removal that left survivors discarded nothing completely."""
+    repo = gc_repo
+    tree = make_tree(repo, "wv")
+    spike.write(tree / "scratch.txt", "work\n")
+    gc_in_process(monkeypatch, repo.root)
+    reason = "already landed on the tip as a 3-way apply"
+    monkeypatch.setattr(lease, "_rollback", lambda *_args: [])
+    code, lines = lease.run_gc(repo.root, write=True, only="wv", discard_dirty=reason)
+    assert code == 1
+    assert not [ln for ln in lines if "WAIVE" in ln], lines
+    assert "1 not fully removed" in lines[-1]
+
+
 def test_gc_discard_dirty_refuses_a_sweep_or_a_short_reason(repo):
     make_tree(repo, "dirty-sweep")
     sweep = run_gc(repo.root, "--write", "--discard-dirty", "a long enough reason for this")

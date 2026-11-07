@@ -8,6 +8,7 @@ from __future__ import annotations
 import datetime
 import io
 import json
+import shlex
 import subprocess
 import sys
 import urllib.parse
@@ -625,6 +626,15 @@ def test_the_rerun_is_held_to_the_window_the_guard_cleared(tmp_path):
     rc, text = run(w, tmp_path, *REPLAY)
     assert rc == 0, text
     assert timeouts == [bw.RUN_BUDGET_S]
+
+
+def test_the_proc_root_is_quoted_into_the_shell_command(tmp_path):
+    """A proc root with a space or a metacharacter stays one word, so it cannot split or alter the command."""
+    root = tmp_path / "a b;touch pwned"
+    command = mod.own_pids_command(proc=str(root))
+    assert command.count(shlex.quote(str(root))) == 2
+    assert subprocess.run(["bash", "-c", command], capture_output=True, check=False).returncode == 0
+    assert not (tmp_path / "pwned").exists()
 
 
 def test_a_pid_whose_cgroup_cannot_be_read_is_not_signalled(tmp_path):

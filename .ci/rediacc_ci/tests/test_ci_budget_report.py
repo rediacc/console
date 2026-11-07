@@ -3005,6 +3005,38 @@ def test_a_refresh_counts_variant_evidence_per_variant_not_per_lane(tmp_path):
     assert written["fedora-43"]["fixedMinutes"] == 6.0
 
 
+def test_a_lane_with_two_thin_variants_is_counted_as_two_entries(tmp_path, capsys):
+    """The kept-on-thin summary counts `variantCosts` entries, one `lane/variant` each, so a lane with two thin variants reads 2 and names both."""
+    prior = {
+        "test-e2e-workers": {
+            "ubuntu-24.04": {"fixedMinutes": 5.4, "units": {}},
+            "fedora-43": {"fixedMinutes": 6.0, "units": {}},
+        }
+    }
+    measured = {
+        "test-e2e-workers": {
+            "ubuntu-24.04": {"fixedMinutes": 4.37, "units": {}},
+            "fedora-43": {"fixedMinutes": 3.0, "units": {}},
+        }
+    }
+    path = tmp_path / "lane-durations.json"
+    path.write_text(json.dumps({"concurrency": 20, "jobs": {}, "units": {}, "variantCosts": prior}))
+    compute = _fake_compute(
+        variant_costs=measured,
+        measured_runs={
+            "variant_costs": {"test-e2e-workers": 1},
+            "variant_entries": {
+                "test-e2e-workers/ubuntu-24.04": 1,
+                "test-e2e-workers/fedora-43": 1,
+            },
+        },
+    )
+    assert br.refresh_lane_durations(path, limit=10, compute=compute) == 0
+    err = capsys.readouterr().err
+    assert "2 variantCosts entr(ies)" in err
+    assert "test-e2e-workers/fedora-43, test-e2e-workers/ubuntu-24.04" in err
+
+
 def test_cached_variant_log_fetches_once_and_caches_only_the_filtered_lines(tmp_path):
     calls = []
 

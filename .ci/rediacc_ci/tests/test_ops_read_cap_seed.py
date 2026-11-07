@@ -139,9 +139,9 @@ def test_only_a_transient_scope_counts_as_the_backup():
     parsed = rcs.parse_sample(proc.stdout)
     assert parsed is not None
     assert all("/run-" in path for path in parsed.scopes)
-    if holder_cgroup is not None and (
-        not holder_cgroup.endswith(".scope") or "/run-" not in holder_cgroup
-    ):
+    if holder_cgroup is None:
+        pytest.skip("cgroup v1: no unified path to compare, so the scope filter is not exercised")
+    if not holder_cgroup.endswith(".scope") or "/run-" not in holder_cgroup:
         assert holder_cgroup not in parsed.scopes, "the holder outside run-*.scope was counted"
 
 

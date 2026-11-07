@@ -37,6 +37,7 @@ import datetime
 import html
 import json
 import re
+import shlex
 import subprocess
 import sys
 import time
@@ -64,9 +65,10 @@ RUNNING_COMMAND = "pgrep -f '%s' >/dev/null && echo RUNNING || echo IDLE" % PROC
 
 def own_pids_command(unit_prefix: str = backup_window.UNIT_PREFIX, proc: str = "/proc") -> str:
     """Shell that prints the pids of a renet snapshot whose cgroup is readable and is not a `unit_prefix` unit: this run's own, the only ones signalled. A cgroup that cannot be read fails CLOSED: the pid is not signalled."""
+    proc_dir = shlex.quote(proc)
     return (
         "for p in $(pgrep -f '%s'); do [ -r %s/$p/cgroup ] && ! grep -q '%s' %s/$p/cgroup || continue; echo $p; done"
-        % (PROC_PATTERN, proc, unit_prefix, proc)
+        % (PROC_PATTERN, proc_dir, unit_prefix, proc_dir)
     )
 
 
@@ -404,6 +406,7 @@ class ReplayArgs:
     kill_after: int
     poll: float
     lineage: str | None
+    # Bounds the killed run's wait. The rerun is held to `backup_window.RUN_BUDGET_S` whatever this says, so it cannot run into the timer window the guard judged clear.
     snapshot_timeout: float = SNAPSHOT_TIMEOUT_S
 
 
