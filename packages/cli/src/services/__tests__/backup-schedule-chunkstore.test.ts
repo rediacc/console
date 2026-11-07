@@ -127,7 +127,11 @@ describe('scheduled backups to the chunk store', () => {
     // `backup strategy set s --destination d --bwlimit 6M` stores the cap on the destination; the generator read only the strategy-level field, so no unit ever applied it.
     const { commands } = buildBackupCommands(
       strategy({ bandwidthLimit: '100Mbps' }),
-      [hosted('a'), { ...hosted('b'), target: 'offsite', bandwidthLimit: '6M' }],
+      [
+        hosted('a'),
+        { ...hosted('b'), target: 'offsite', bandwidthLimit: '6M' },
+        { ...hosted('c'), target: 'third', bandwidthLimit: '200Mbps' },
+      ],
       DATASTORE,
       RENET,
       undefined,
@@ -141,6 +145,9 @@ describe('scheduled backups to the chunk store', () => {
     expect(commands[0]).toContain('--bwlimit 12500000');
     expect(commands[1]).toContain('--bwlimit 6000000');
     expect(commands[1]).not.toContain('--bwlimit 12500000');
+    // c's own cap (200 Mbps) is looser than the strategy's, so the strategy's 100 Mbps wins on c's command.
+    expect(commands[2]).toContain('--bwlimit 12500000');
+    expect(commands[2]).not.toContain('--bwlimit 25000000');
   });
 
   it('runs the scheduled unit and the ad-hoc strategy run at low CPU and I/O priority', () => {
@@ -225,7 +232,7 @@ describe('scheduled backups to the chunk store', () => {
     ).toThrow(/Bandwidth limit "fast" cannot be converted/);
   });
 
-  it('takes one snapshot per enabled destination, each into its own store (C2)', () => {
+  it('takes one snapshot per destination it is given, each into its own store (C2)', () => {
     const { commands } = buildBackupCommands(
       strategy(),
       [hosted('chunks-a'), { ...hosted('chunks-b'), target: 'offsite' }],
