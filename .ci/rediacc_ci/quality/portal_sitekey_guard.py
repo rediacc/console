@@ -161,7 +161,7 @@ def _is_positive_dry_run_test(test: ast.expr) -> bool:
 def _dry_run_preview_calls(func: ast.FunctionDef) -> set[int]:
     """`id()` of each `deploy_argv` call that only formats a preview: a call nested in a `print(...)` or `log.*(...)` argument inside the body of an `if` whose test is a positive dry-run check and whose body ends in `return`.
 
-    Nodes, not line numbers, so a real deploy sharing a physical line with a preview is still checked; and only a call that is the argument of a print or log call is set aside, so `_run(deploy_argv(...))` inside the branch still counts as a real deploy.
+    Nodes, not line numbers, so a real deploy sharing a physical line with a preview is still checked; and only a `deploy_argv` that reaches a print or log argument through formatting calls alone (`" ".join(...)`, `str(...)`) is set aside, so `_run(deploy_argv(...))` inside the branch, and `print(_run(deploy_argv(...)))`, still count as a real deploy.
     """
     exempt: set[int] = set()
     for node in ast.walk(func):
@@ -187,14 +187,26 @@ def _dry_run_preview_calls(func: ast.FunctionDef) -> set[int]:
                 ):
                     continue
                 for arg in outer.args:
-                    for sub in ast.walk(arg):
-                        if (
-                            isinstance(sub, ast.Call)
-                            and isinstance(sub.func, ast.Name)
-                            and sub.func.id == "deploy_argv"
-                        ):
-                            exempt.add(id(sub))
+                    _collect_preview(arg, exempt)
     return exempt
+
+
+# Calls that only turn their arguments into text, so a `deploy_argv(...)` under them is still only formatted. Any other call between the print and the deploy_argv may run it (`print(_run(deploy_argv(config)))` executes wrangler), so it is not a preview.
+_PURE_FORMATTERS = frozenset({"join", "str", "repr", "format", "list", "tuple", "quote"})
+
+
+def _collect_preview(node: ast.AST, exempt: set[int], *, pure: bool = True) -> None:
+    """Add `id()` of each `deploy_argv` call under `node` that is reached only through formatting calls."""
+    if isinstance(node, ast.Call):
+        f = node.func
+        name = f.id if isinstance(f, ast.Name) else (f.attr if isinstance(f, ast.Attribute) else "")
+        if name == "deploy_argv":
+            if pure:
+                exempt.add(id(node))
+        else:
+            pure = pure and name in _PURE_FORMATTERS
+    for child in ast.iter_child_nodes(node):
+        _collect_preview(child, exempt, pure=pure)
 
 
 def deploy_account_findings(source: str) -> list[str]:
@@ -480,6 +492,21 @@ def _local_selftest() -> bool:
         "a real deploy before the refusal inside a positive dry-run branch was exempted",
         deploy_account_findings(with_branch("dry_run", "_run(deploy_argv(config))")),
         True,
+    )
+    for wrapped in (
+        "print(_run(deploy_argv(config)))",
+        'log.info("ran %s" % _run(deploy_argv(config)))',
+        "print(str(_run(deploy_argv(config))))",
+    ):
+        expect(
+            "a deploy_argv run inside a print argument was exempted: %s" % wrapped,
+            deploy_account_findings(with_branch("dry_run", wrapped)),
+            True,
+        )
+    expect(
+        "a deploy_argv only formatted through str() read as a finding",
+        deploy_account_findings(with_branch("dry_run", "print(str(deploy_argv(config)))")),
+        False,
     )
     expect(
         "a real deploy on the physical line of a preview was exempted",

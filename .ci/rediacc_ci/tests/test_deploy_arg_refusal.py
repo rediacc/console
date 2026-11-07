@@ -221,3 +221,41 @@ def test_a_dry_run_over_an_unreadable_database_name_refuses_like_the_real_run(
     assert deploy_account.main(["--region", "eu", "--dry-run"]) == 1
     assert fake.calls == []
     assert "would run" not in capsys.readouterr().out
+
+
+@pytest.mark.usefixtures("tree")
+@pytest.mark.parametrize(
+    ("module", "argv"),
+    [
+        (deploy_account, ["--region", "eu"]),
+        (deploy_edge, []),
+    ],
+)
+def test_a_run_without_the_dry_run_flag_still_reaches_the_deploy(
+    monkeypatch: pytest.MonkeyPatch, module: typing.Any, argv: list[str]
+) -> None:
+    """The dry-run gate is key presence, so the flag's absence is what lets the real run through."""
+    fake = _fake(monkeypatch, module)
+    assert module.main(argv) == 1
+    assert fake.calls, "no child was reached: the run was treated as a dry run"
+
+
+def test_every_deploy_main_reads_its_argv() -> None:
+    """The sweep for a `main(argv)` that neither parses nor refuses: one that never reads `argv` ignores every flag, as `del argv` did."""
+    mains = 0
+    ignoring: list[str] = []
+    for path in sorted(DEPLOY_DIR.glob("*.py")):
+        for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+            if (
+                isinstance(node, ast.FunctionDef)
+                and node.name == "main"
+                and any(a.arg == "argv" for a in node.args.args)
+            ):
+                mains += 1
+                if not any(
+                    isinstance(n, ast.Name) and n.id == "argv" and isinstance(n.ctx, ast.Load)
+                    for n in ast.walk(node)
+                ):
+                    ignoring.append("%s:%d" % (path.name, node.lineno))
+    assert mains >= 20, "the sweep found %d mains; it is not seeing the tree" % mains
+    assert not ignoring, "main(argv) never reads argv (parse it or refuse it): %s" % ignoring

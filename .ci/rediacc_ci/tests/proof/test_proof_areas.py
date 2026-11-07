@@ -349,16 +349,46 @@ def test_the_map_file_is_the_one_surfaces_reads() -> None:
     assert pathlib.Path(S.MAP_PATH) == ROOT / ".ci" / "config" / "proof-tiers.json"
 
 
+PLANE = re.compile(r"rediacc_ci\.testrun\.start_backup_plane\b")
+CHAIN = re.compile(r"&&|\|\||;|\|")
+
+
+def plane_misuse(cmd: str) -> bool:
+    """True when some `start_backup_plane` in `cmd` neither hands its follow-on the environment (`-- <cmd>`) nor is a bare `--verify-renet` check. Each occurrence is judged over its own span, up to the next one: a second plane start chained after a valid follow-on is judged too, and a `--verify-renet` on a chained command is not the plane's own flag (only the plane's arguments, up to the first chain operator, count)."""
+    starts = list(PLANE.finditer(cmd))
+    for n, m in enumerate(starts):
+        end = starts[n + 1].start() if n + 1 < len(starts) else len(cmd)
+        tail = cmd[m.end() : end]
+        own_args = CHAIN.split(tail, maxsplit=1)[0]
+        if "--verify-renet" in own_args:
+            continue
+        if " -- " not in tail or CHAIN.search(tail.split(" -- ", 1)[0]):
+            return True
+    return False
+
+
 def test_a_leg_that_starts_the_backup_plane_runs_the_suite_as_its_follow_on() -> None:
     """start_backup_plane sets RENET_BINARY_PATH (the pinned, plane-keyed renet), the account server, its token and the S3 credentials in-process only; a command chained with && or ; never sees them and falls back to the shared bin/renet from .env, which another ./rdc.sh can rebuild mid-deploy (vm:check run 11, 2026-11-07: MD5 mismatch after deploy). Only `start_backup_plane -- <cmd>` hands them on."""
     offenders = []
+    plane = 0
     for area, spec in _raw()["tiers"]["vm"]["areas"].items():
         for leg in spec["legs"]:
             for cmd in leg.get("cmd", []):
-                m = re.search(r"rediacc_ci\.testrun\.start_backup_plane\b(.*)", cmd)
-                if not m or "--verify-renet" in m.group(1):
-                    continue
-                tail = m.group(1)
-                if " -- " not in tail or re.search(r"&&|\|\||;|\|", tail.split(" -- ", 1)[0]):
+                plane += len(PLANE.findall(cmd))
+                if plane_misuse(cmd):
                     offenders.append(f"{area}/{leg['id']}: {cmd}")
+    assert plane > 0, "no leg starts the plane: the sweep is not seeing the map"
     assert not offenders, offenders
+
+
+def test_control_the_plane_rule_catches_each_chained_shape() -> None:
+    mod = "PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_backup_plane"
+    assert not plane_misuse(f"{mod} -- python3 -m suite --workers 1")
+    assert not plane_misuse(f"{mod} --verify-renet")
+    assert plane_misuse(f"{mod} && python3 -m suite")
+    assert plane_misuse(f"{mod}; python3 -m suite")
+    # The suite's own flag after a chain is not the plane's.
+    assert plane_misuse(f"{mod} && python3 -m suite --verify-renet")
+    # A second plane start chained after a valid follow-on is judged on its own.
+    assert plane_misuse(f"{mod} -- python3 -m suite && {mod} && python3 -m other")
+    assert not plane_misuse(f"{mod} -- python3 -m suite && {mod} -- python3 -m other")

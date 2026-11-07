@@ -24,6 +24,7 @@ THE SWEEP IS A READ, NEVER A WRITE. The twin records that an earlier version wro
 NO `xdist_group`. Shims and probes are written into pytest's own `tmp_path`; the tree is read (git ls-files, and the two subject files) and never written.
 """
 
+import ast
 import datetime
 import hashlib
 import importlib.util
@@ -623,6 +624,31 @@ def test_every_caller_handles_the_no_pr_state(gate):
     )
 
 
+def imports_wl_ci(text):
+    """Whether the Python source `text` imports `wl_ci`, read from its syntax tree: a parenthesized `from pkg import (` with `wl_ci,` on a line of its own is one statement over several lines, which a line-by-line match misses."""
+    imported = set()
+    for node in ast.walk(ast.parse(text)):
+        if isinstance(node, ast.Import):
+            imported.update(part for a in node.names for part in a.name.split("."))
+        elif isinstance(node, ast.ImportFrom):
+            imported.update((node.module or "").split("."))
+            imported.update(a.name for a in node.names)
+    return "wl_ci" in imported
+
+
+def test_control_the_reader_import_check_sees_a_multi_line_import(gate):
+    gate.log_test(
+        "CONTROL: a parenthesized multi-line import of wl_ci is found, and a mention is not"
+    )
+    if not imports_wl_ci("from pkg import (\n    other,\n    wl_ci,\n)\n"):
+        gate.log_fail("CONTROL DID NOT FIRE: a multi-line import of wl_ci read as absent")
+    if not imports_wl_ci("import wl_ci\n") or not imports_wl_ci("from wl_ci import x\n"):
+        gate.log_fail("CONTROL DID NOT FIRE: a plain import of wl_ci read as absent")
+    if imports_wl_ci("x = 'wl_ci'  # wl_ci\nimport os\n"):
+        gate.log_fail("a mention of wl_ci in a string or comment read as an import")
+    gate.log_pass("the reader-import check follows the syntax tree")
+
+
 def test_the_worktree_harness_reads_no_rollup(gate):
     gate.log_test("the exclusion of test-wl_worktrees.py rests on it reading no ci_rollup")
     # The enumeration skips this file by path, so if it ever consumed a rollup the gate would not see it. Every mention of `ci_rollup` there must be the fixture writer `ci_status.ci_rollup(fix, ...)`, and the file must not import the readers (`wl_ci`, `ci-trace`).
@@ -635,7 +661,7 @@ def test_the_worktree_harness_reads_no_rollup(gate):
         gate.log_fail("no ci_rollup mention at all: the claim this test pins has moved")
     if len(mentions) != len(writers):
         gate.log_fail("test-wl_worktrees.py mentions ci_rollup other than as the fixture writer")
-    if re.search(r"^\s*(?:import|from)\b[^\n]*\bwl_ci\b|ci-trace", text, re.MULTILINE):
+    if imports_wl_ci(text) or "ci-trace" in text:
         gate.log_fail("test-wl_worktrees.py reaches a rollup reader")
     gate.log_pass("the only ci_rollup in test-wl_worktrees.py is the fixture writer")
 

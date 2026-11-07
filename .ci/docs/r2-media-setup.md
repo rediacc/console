@@ -81,13 +81,14 @@ Unlike `releases.rediacc.com` (which **bypasses** cache to avoid stale package-m
 | **Expression** | `(http.host eq "media.rediacc.com")` |
 | **Action** | `set_cache_settings` with `cache: true`, `edge_ttl.mode: respect_origin`, `browser_ttl.mode: respect_origin` |
 
-Recreate via API if ever needed (appends to the existing ruleset without disturbing the `releases.rediacc.com` rule). The phase entrypoint's `/rules` path answers 405 ("Method not allowed for this authentication scheme", measured 2026-11-06 with the Global API Key and with a zone token carrying Cache Settings Write), so read the entrypoint's ruleset id first and append to that ruleset:
+Recreate via API if ever needed (appends to the existing ruleset without disturbing the `releases.rediacc.com` rule). The phase entrypoint's `/rules` path answers 405 ("Method not allowed for this authentication scheme", measured 2026-11-06 with the Global API Key and with a zone token carrying Cache Settings Write), so read the entrypoint's ruleset id first and append to that ruleset. Authenticate with a zone-scoped `$CLOUDFLARE_API_TOKEN` (Zone > Cache Rules > Edit); the account-wide Global API Key (`-H "X-Auth-Email: $CF_EMAIL" -H "X-Auth-Key: $CF_GLOBAL_API_KEY"` in place of the Bearer header) grants far more than this one write needs and is the fallback only when the scoped token is refused. The id lookup stops on a failed call or an empty id, so the POST never targets `/rulesets//rules`:
 ```bash
-RULESET=$(curl -sS "https://api.cloudflare.com/client/v4/zones/9e802649c143c9cefd811d8fd671d31c/rulesets/phases/http_request_cache_settings/entrypoint" \
-  -H "X-Auth-Email: $CF_EMAIL" -H "X-Auth-Key: $CF_GLOBAL_API_KEY" | jq -r .result.id)
-curl -sS -X POST \
-  "https://api.cloudflare.com/client/v4/zones/9e802649c143c9cefd811d8fd671d31c/rulesets/$RULESET/rules" \
-  -H "X-Auth-Email: $CF_EMAIL" -H "X-Auth-Key: $CF_GLOBAL_API_KEY" -H "Content-Type: application/json" \
+ZONE=9e802649c143c9cefd811d8fd671d31c
+RULESET=$(curl -fsS "https://api.cloudflare.com/client/v4/zones/$ZONE/rulesets/phases/http_request_cache_settings/entrypoint" \
+  -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" | jq -er .result.id) || { echo "ruleset id not read" >&2; exit 1; }
+curl -fsS -X POST \
+  "https://api.cloudflare.com/client/v4/zones/$ZONE/rulesets/$RULESET/rules" \
+  -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H "Content-Type: application/json" \
   --data '{
     "description": "Cache media.rediacc.com, respect origin TTL",
     "expression": "(http.host eq \"media.rediacc.com\")",

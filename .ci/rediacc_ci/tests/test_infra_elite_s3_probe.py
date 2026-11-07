@@ -32,9 +32,16 @@ def _step_runs(job: dict) -> list[str]:
     return [str(step.get("run", "")) for step in job.get("steps", [])]
 
 
-def _calls(run: str) -> list[str]:
-    """The probe invocations of one step's `run`, in order: the commands joined by `&&`, `;` or a newline that name the probe."""
-    return [part for part in re.split(r"&&|;|\n", run) if PROBE in part]
+def _calls(run: str) -> list[tuple[int, str]]:
+    """(offset in `run`, text) of the probe invocations of one step's `run`, in order: the commands joined by `&&`, `;` or a newline that name the probe. The offset is where THAT part sits: a live call is a prefix of a `--selftest` call, so a substring search for its text would land inside an earlier selftest part."""
+    found = []
+    pos = 0
+    for part in re.split(r"&&|;|\n", run):
+        at = run.index(part, pos)
+        pos = at + len(part)
+        if PROBE in part:
+            found.append((at, part))
+    return found
 
 
 def _can_fail(holder: dict, *, gated: bool = False) -> bool:
@@ -61,18 +68,22 @@ def probe_wiring(workflow: dict) -> list[str]:
             continue
         starters += 1
         steps = job["steps"]
-        calls = [(i, n, call) for i, run in enumerate(runs) for n, call in enumerate(_calls(run))]
+        calls = [
+            (i, n, at, call)
+            for i, run in enumerate(runs)
+            for n, (at, call) in enumerate(_calls(run))
+        ]
         # Where the start sits in its step, so `start && probe` in ONE step counts as after the start and `probe && start` does not.
         start_at = (starts[0], runs[starts[0]].index(START))
         live = [
             (i, n)
-            for i, n, call in calls
+            for i, n, _at, call in calls
             if "--selftest" not in call and "||" not in call and _can_fail(steps[i])
         ]
-        live_at = [(i, runs[i].index(call)) for i, n, call in calls if (i, n) in live]
+        live_at = [(i, at) for i, n, at, _call in calls if (i, n) in live]
         selftests = [
             (i, n)
-            for i, n, call in calls
+            for i, n, _at, call in calls
             if "--selftest" in call and "||" not in call and _can_fail(steps[i])
         ]
         ok = (
@@ -105,6 +116,19 @@ def test_selftest_conformant_stub_passes_and_non_conformant_stub_is_red() -> Non
 
 def test_the_job_that_starts_elite_probes_it_after_the_start(workflow: dict) -> None:
     assert probe_wiring(workflow) == []
+
+
+def test_a_selftest_part_before_the_start_does_not_misplace_the_live_call() -> None:
+    """The live call's text is a prefix of the selftest's, so a first-substring search placed the live call at the selftest's offset, before the start, and called a wired job unwired."""
+    probe = "PYTHONPATH=.ci python3 -m %s" % PROBE
+    job = {
+        "steps": [
+            {"run": "%s --selftest && %s && %s && %s" % (probe, START, probe, "true")},
+        ]
+    }
+    assert probe_wiring({"jobs": {"elite": job}}) == []
+    before = {"steps": [{"run": "%s --selftest && %s && %s" % (probe, probe, START)}]}
+    assert probe_wiring({"jobs": {"elite": before}}) != []
 
 
 def test_control_a_workflow_without_the_probe_step_is_unwired(workflow: dict) -> None:
