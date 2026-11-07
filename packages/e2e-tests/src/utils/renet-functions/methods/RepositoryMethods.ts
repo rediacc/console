@@ -231,6 +231,35 @@ export class RepositoryMethods {
     });
   }
 
+  /** repository_repair: runs health() then the allowed repair() functions of the repo's Rediaccfile; `dryRun` plans only. */
+  repositoryRepair(
+    name: string,
+    opts: {
+      allowClasses?: string;
+      inWindow?: boolean;
+      dryRun?: boolean;
+      datastorePath?: string;
+    } = {}
+  ): Promise<ExecResult> {
+    return this.testFunction({
+      function: 'repository_repair',
+      repository: name,
+      allowClasses: opts.allowClasses,
+      inWindow: opts.inWindow,
+      dryRun: opts.dryRun,
+      datastorePath: opts.datastorePath,
+    });
+  }
+
+  /** proxy_acme_fix: anchors colliding ACME challenge names and restarts Traefik; `dryRun` reports only. */
+  proxyAcmeFix(opts: { dryRun?: boolean; restart?: boolean } = {}): Promise<ExecResult> {
+    return this.testFunction({
+      function: 'proxy_acme_fix',
+      dryRun: opts.dryRun,
+      restart: opts.restart,
+    });
+  }
+
   repositoryLogs(
     name: string,
     opts: { container?: string; lines?: string; datastorePath?: string } = {}

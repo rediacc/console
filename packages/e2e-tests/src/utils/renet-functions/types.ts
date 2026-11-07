@@ -119,6 +119,12 @@ export interface TestFunctionOptions {
   reportOnly?: boolean;
   /** machine_converge_runtime: print the restart plan without restarting any repository daemon. */
   dryRun?: boolean;
+  /** repository_repair: comma-separated repair classes that may run. */
+  allowClasses?: string;
+  /** repository_repair: the machine counts as inside its maintenance window. */
+  inWindow?: boolean;
+  /** proxy_acme_fix: restart Traefik even when nothing was anchored. */
+  restart?: boolean;
 }
 
 /**

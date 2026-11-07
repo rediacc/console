@@ -239,6 +239,24 @@ test.describe('Container Operations @bridge', () => {
       /healthy|warming|unhealthy|unknown/
     );
   });
+
+  test('repository_repair plans a repair run without running any repair()', async () => {
+    const result = await runner.repositoryRepair(testRepo, {
+      allowClasses: 'auto-safe',
+      dryRun: true,
+      datastorePath,
+    });
+    // The RepairReport JSON (renet cmd/renet/repository_repair.go) names how many repair() functions ran; a dry run plans only, so none ran and none failed.
+    const out = runner.getCombinedOutput(result);
+    expect(out).toMatch(/"ran":\s*0/);
+    expect(out).toMatch(/"failed":\s*0/);
+  });
+
+  test('proxy_acme_fix dry run reports collisions or names the missing proxy config', async () => {
+    const result = await runner.proxyAcmeFix({ dryRun: true });
+    // renet proxy acme-fix --json answers with a Result carrying `collisions`, or fails on a machine whose proxy has no config.env. Anything else (an unknown function, a bad flag) is a regression.
+    expect(runner.getCombinedOutput(result)).toMatch(/"collisions"|config\.env/);
+  });
 });
 
 /**

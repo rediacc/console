@@ -922,7 +922,16 @@ export class RenetFunctionsTestRunner {
     if (opts.reportOnly) flags += ` --report-only`;
     // machine_converge_runtime: derived from the renet ParamDef registry as a boolean flag.
     if (opts.dryRun) flags += ` --dry-run`;
-    return flags + this.buildDockerPruneFlags(opts);
+    return flags + this.buildRepairFlags(opts) + this.buildDockerPruneFlags(opts);
+  }
+
+  /** repository_repair and proxy_acme_fix flags. */
+  private buildRepairFlags(opts: TestFunctionOptions): string {
+    let flags = '';
+    if (opts.allowClasses) flags += ` --allow-classes ${opts.allowClasses}`;
+    if (opts.inWindow) flags += ` --in-window`;
+    if (opts.restart) flags += ` --restart`;
+    return flags;
   }
 
   /** repository_docker_prune: plain boolean flags. */
@@ -1402,6 +1411,12 @@ export class RenetFunctionsTestRunner {
   repositoryTrim = (opts?: RepositoryTrimOptions) => this.repositoryMethods.repositoryTrim(opts);
   repositoryDockerPrune = (opts?: RepositoryDockerPruneOptions) =>
     this.repositoryMethods.repositoryDockerPrune(opts);
+  repositoryRepair = (
+    name: string,
+    opts?: { allowClasses?: string; inWindow?: boolean; dryRun?: boolean; datastorePath?: string }
+  ) => this.repositoryMethods.repositoryRepair(name, opts);
+  proxyAcmeFix = (opts?: { dryRun?: boolean; restart?: boolean }) =>
+    this.repositoryMethods.proxyAcmeFix(opts);
   repositoryLogs = (
     name: string,
     opts?: { container?: string; lines?: string; datastorePath?: string }
