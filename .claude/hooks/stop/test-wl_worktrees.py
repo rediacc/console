@@ -980,14 +980,12 @@ def control_real_hook(tmp):
         "print('held', flush=True)\n"
         "sys.stdin.read()\n"
     )
+    # A real interpreter run of a file named like the script (`python3 .../drills/vm_check.py <lock>`): argv_runs reads only the first operand (review 94493878.3), so a `-c` stand-in carrying the name as a trailing word no longer counts.
+    vm_script = fix.base / "standins" / "drills" / "vm_check.py"
+    vm_script.parent.mkdir(parents=True)
+    vm_script.write_text(stand_in, encoding="utf-8")
     holder = subprocess.Popen(
-        [
-            sys.executable,
-            "-c",
-            stand_in,
-            str(lock),
-            "rediacc_ci.drills.vm_check",
-        ],
+        [sys.executable, str(vm_script), str(lock)],
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         text=True,
@@ -995,12 +993,16 @@ def control_real_hook(tmp):
     if holder.stdin is None or holder.stdout is None:
         holder.kill()
         holder.wait(timeout=30)
+        for pipe in (holder.stdin, holder.stdout):
+            if pipe is not None:
+                pipe.close()
         raise AssertionError("the stand-in holder was not started with pipes")
     try:
         check("the vm:check stand-in holds the lock", holder.stdout.readline().strip(), "held")
         got = hook_stop(fix, env)
     finally:
         holder.stdin.close()
+        holder.stdout.close()
         holder.wait(timeout=30)
     check("a running vm:check lifts the block", got.decision, "allow")
     got = hook_stop(fix, env)
@@ -1033,17 +1035,14 @@ def control_real_hook(tmp):
         "os.remove(sys.argv[1])\n"
     )
 
+    ciq_script = fix.base / "standins" / "scripts" / "ci-runner" / "quick-clone.ts"
+    ciq_script.parent.mkdir(parents=True)
+    ciq_script.write_text(ciq_stand_in, encoding="utf-8")
+
     def ciq_stop(age_s, cwd):
         """One Stop while a ci:quick stand-in, its lock `age_s` old and its cwd `cwd`, holds the marker."""
         holder = subprocess.Popen(
-            [
-                sys.executable,
-                "-c",
-                ciq_stand_in,
-                str(ciq_lock),
-                str(age_s),
-                "scripts/ci-runner/quick-clone.ts",
-            ],
+            [sys.executable, str(ciq_script), str(ciq_lock), str(age_s)],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             text=True,
@@ -1053,12 +1052,16 @@ def control_real_hook(tmp):
         if stand_in_in is None or stand_in_out is None:
             holder.kill()
             holder.wait(timeout=30)
+            for pipe in (stand_in_in, stand_in_out):
+                if pipe is not None:
+                    pipe.close()
             raise SystemExit("the ci:quick stand-in was started without its stdin/stdout pipes")
         try:
             check("the ci:quick stand-in holds the marker", stand_in_out.readline().strip(), "held")
             return hook_stop(fix, env)
         finally:
             stand_in_in.close()
+            stand_in_out.close()
             holder.wait(timeout=30)
 
     # The design review of 581e1fe96: a live matching pid is not enough. A lock older than twice quick-clone.ts's LOCK_WAIT_MS (3 h) is not a run worth holding for, and a ci:quick whose cwd is another checkout is not this checkout's run.
@@ -1162,6 +1165,10 @@ def control_probes(tmp):
     check("ci:quick: a grep naming the script is not a run", ciq(), False)
     argv_is("node", "xci-runner/quick-clone.ts")
     check("ci:quick: a word that only ends with the path is not the script", ciq(), False)
+    argv_is("node", "xscripts/ci-runner/quick-clone.ts")
+    check("ci:quick: a word with the path glued to a prefix is not the script", ciq(), False)
+    argv_is("python3", "tools/lint.py", script)
+    check("ci:quick: a script that only takes the path as an argument is not a run", ciq(), False)
     argv_is("node", script)
     check(
         "ci:quick: pid Infinity reads False, not a raise",
@@ -1177,6 +1184,14 @@ def control_probes(tmp):
     check("vm:check: the module run holds", holder(raw, proc=str(fake)), True)
     argv_is("python3", ".ci/rediacc_ci/drills/vm_check.py")
     check("vm:check: the file run holds", holder(raw, proc=str(fake)), True)
+    argv_is("uv", "run", "python", ".ci/rediacc_ci/drills/vm_check.py")
+    check("vm:check: a uv wrapper is not the lock holder", holder(raw, proc=str(fake)), False)
+    argv_is("python3", "tools/lint.py", ".ci/rediacc_ci/drills/vm_check.py")
+    check(
+        "vm:check: a script that only takes the file as an argument is no run",
+        holder(raw, proc=str(fake)),
+        False,
+    )
     argv_is("tail", "-f", "/repo/.ci/rediacc_ci/drills/vm_check.py")
     check("vm:check: a tail of the file is not a run", holder(raw, proc=str(fake)), False)
     check("vm:check: pid Infinity reads False", holder(b'{"pid": Infinity}', proc=str(fake)), False)

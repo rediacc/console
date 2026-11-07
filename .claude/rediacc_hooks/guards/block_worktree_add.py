@@ -1165,12 +1165,13 @@ def _filled_sequences(sequences, mentions):
 
 def _code_mentions(code):
     """Does Python `code` name `worktree` outside a comment (a string, a name, an attribute)? A comment runs nothing, so it does not license filling an unknown argv element with the verb (#a904d9f4: `# ... worktree ...` above `g(root, "add", "-A")` filled `["git", *args]` into `git worktree add`). Code that does not tokenize reads as naming it, the over-reading direction."""
-    code = _mask_file_names(code)
     if "worktree" not in code:
         return False
+    # A file name is masked inside a string only: a Python NAME or attribute spelled like one (`worktree.lock(...)`, `worktree.log`) is still a mention of the module (review 599bc50b.2).
     try:
         return any(
-            "worktree" in tok.string
+            "worktree"
+            in (tok.string if tok.type == tokenize.NAME else _mask_file_names(tok.string))
             for tok in tokenize.generate_tokens(io.StringIO(code).readline)
             if tok.type != tokenize.COMMENT
         )

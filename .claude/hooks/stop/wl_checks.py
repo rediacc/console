@@ -2581,14 +2581,41 @@ def vm_check_lock_path(environ=None):
 # The argv words that name a vm:check process: `npm run vm:check` runs `python3 -m rediacc_ci.drills.vm_check`, and a direct run names the file.
 VM_CHECK_ARGV = ("rediacc_ci.drills.vm_check", "drills/vm_check.py")
 # A process runs a script or module only through an interpreter, so the word that names it counts only behind one: `tail -f <repo>/drills/vm_check.py` or `grep scripts/ci-runner/quick-clone.ts` merely carries the path (reviews a90d9cb2.1, d640b348.1).
-RUNNER_ARGV0 = re.compile(r"^(python[0-9.]*|node(js)?|tsx|bun|deno|uv)$")
+# `uv` is not here: `uv run` is a wrapper, and the pid a lock records is the interpreter's own, never the wrapper's (review 94493878.2).
+RUNNER_ARGV0 = re.compile(r"^(python[0-9.]*|node(js)?|tsx|bun|deno)$")
+# Interpreter options that take the NEXT word as their value, so that word is no operand (`node --require p.cjs --import l.mjs script.ts`).
+RUNNER_VALUE_OPTS = frozenset(
+    (
+        "--require",
+        "-r",
+        "--import",
+        "--loader",
+        "--experimental-loader",
+        "-W",
+        "-X",
+        "--conditions",
+        "-C",
+    )
+)
 
 
 def argv_runs(words, targets):
-    """True when `words` is an interpreter run (RUNNER_ARGV0) with an operand that IS one of `targets` or ends with it after a `/`."""
+    """True when `words` is an interpreter run (RUNNER_ARGV0) whose SCRIPT, the first operand (or the module after `-m`), IS one of `targets` or ends with it after a `/`.
+
+    Only the first operand counts: `python3 tools/lint.py .ci/rediacc_ci/drills/vm_check.py` runs lint.py and merely carries the path as an argument (review 94493878.3). An option from RUNNER_VALUE_OPTS skips its value; an unknown option that takes a value makes the next word read as the script, which fails toward "not a run", so the block stays.
+    """
     if not words or not RUNNER_ARGV0.match(os.path.basename(words[0])):
         return False
-    return any(w == t or w.endswith("/" + t) for w in words[1:] for t in targets)
+    rest = iter(words[1:])
+    for word in rest:
+        if word in RUNNER_VALUE_OPTS:
+            next(rest, None)
+            continue
+        if word != "-m" and word.startswith("-"):
+            continue
+        script = next(rest, "") if word == "-m" else word
+        return any(script == t or script.endswith("/" + t) for t in targets)
+    return False
 
 
 def vm_check_holder(raw, proc="/proc"):

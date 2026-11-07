@@ -117,7 +117,22 @@ pathlib.Path(FIXTURE_DIR, "selftest.py").write_text(
     "    g(root, 'add', '-A')\n",
     encoding="utf-8",
 )
-REFUSED += [("an untracked script running the argv", "python3 %s/invoke.py" % FIXTURE_DIR)]
+# Review 599bc50b.2: a Python attribute spelled like a listed extension (`worktree.lock`) is a mention of the module, not a file name, so the unknown argv element is still filled with the verb. selftest.py above, with no mention, stays allowed.
+pathlib.Path(FIXTURE_DIR, "attr.py").write_text(
+    "import subprocess\nimport worktree\n\nworktree.lock()\n\n\n"
+    "def g(root, *args):\n"
+    "    return subprocess.run(['git', *args], cwd=root, check=True)\n\n\n"
+    "def selftest(root):\n"
+    "    g(root, 'add', '-A')\n",
+    encoding="utf-8",
+)
+REFUSED += [
+    ("an untracked script running the argv", "python3 %s/invoke.py" % FIXTURE_DIR),
+    (
+        "a script whose only mention is an attribute spelled like a file",
+        "python3 %s/attr.py" % FIXTURE_DIR,
+    ),
+]
 
 # The design review of dd6898eb0: adjacency alone let a script keep the two words apart and still run the verb. Each of these names the phrase in CODE (not a comment), so it is refused.
 APART = {
