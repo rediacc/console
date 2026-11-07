@@ -1495,18 +1495,24 @@ def run_gc(root, *, write=False, only="", discard_dirty=""):
         live = _read_live(root, named=bool(only))
         for judged in _gc_rows(world, live, only):
             row = judged
+            waive_line = ""
             if discard_dirty and judged.lease_id == only:
                 waived = [w for w in judged.why if _is_dirty_problem(w)]
                 if waived:
                     row = judged._replace(why=[w for w in judged.why if not _is_dirty_problem(w)])
-                    lines.append(
-                        "  %-6s  %-24s %s; discarded by the lead: %s"
-                        % ("WAIVE", row.lease_id, "; ".join(waived), discard_dirty)
+                    # Printed only when the waiver lets the tree go: another problem (an unlanded commit, a failed status) keeps it, and a discard that did not happen is not audited as one.
+                    waive_line = "  %-6s  %-24s %s; discarded by the lead: %s" % (
+                        "WAIVE",
+                        row.lease_id,
+                        "; ".join(waived),
+                        discard_dirty,
                     )
             if row.why:
                 kept += 1
                 lines.append("  %-6s  %-24s %s" % ("KEEP", row.lease_id, "; ".join(row.why)))
                 continue
+            if waive_line:
+                lines.append(waive_line)
             lines.append("  %-6s  %-24s every rule holds" % ("DELETE", row.lease_id))
             survived = _remove_row(world, row) if write else []
             if survived:
@@ -1525,7 +1531,7 @@ def run_gc(root, *, write=False, only="", discard_dirty=""):
 
 def _parse_gc(args):
     """`(write, id, discard_reason)`, or None after an error line."""
-    write, only, discard = False, "", ""
+    write, only, discard = False, "", None
     rest = list(args)
     while rest:
         arg = rest.pop(0)
@@ -1538,18 +1544,18 @@ def _parse_gc(args):
         else:
             log.error("Unknown or incomplete option: %s" % arg)
             return None
-    if discard and not (write and only):
+    if discard is not None and not (write and only):
         log.error(
             "--discard-dirty needs --write and --id <id>: it waives one named tree, never a sweep"
         )
         return None
-    if discard and len(discard) < DISCARD_REASON_MIN:
+    if discard is not None and len(discard) < DISCARD_REASON_MIN:
         log.error(
             "--discard-dirty needs a reason of at least %d characters naming where the work already is"
             % DISCARD_REASON_MIN
         )
         return None
-    return write, only, discard
+    return write, only, discard or ""
 
 
 def _hook_input():

@@ -2413,6 +2413,31 @@ def test_gc_discard_dirty_refuses_a_sweep_or_a_short_reason(repo):
     short = run_gc(repo.root, "--write", "--id", "dirty-sweep", "--discard-dirty", "landed")
     assert short.returncode == 1
     assert "at least 20 characters" in short.stderr
+    for reason in ("", "   "):
+        empty = run_gc(repo.root, "--write", "--id", "dirty-sweep", "--discard-dirty", reason)
+        assert empty.returncode == 1, "an empty reason was ignored instead of refused"
+        assert "at least 20 characters" in empty.stderr
+
+
+def test_gc_discard_dirty_audits_no_waiver_for_a_tree_another_problem_keeps(repo):
+    """The WAIVE line says the dirty paths were discarded; a tree that stays (here an unlanded commit) must not print it."""
+    made = run_lease(repo.root, "--name", "dirty-kept", "--owner", "cli")
+    assert made.returncode == 0, made.stderr
+    tree = pathlib.Path(made.stdout.strip())
+    committed(tree, "unlanded.txt")
+    spike.write(tree / "scratch.txt", "work\n")
+    done = run_gc(
+        repo.root,
+        "--write",
+        "--id",
+        "dirty-kept",
+        "--discard-dirty",
+        "already landed elsewhere, checked",
+    )
+    assert done.returncode == 1, done.stdout + done.stderr
+    assert tree.exists()
+    assert "KEEP" in done.stdout
+    assert "WAIVE" not in done.stdout
 
 
 def test_make_lease_restores_the_signal_dispositions_when_the_build_raises(monkeypatch):
@@ -2486,3 +2511,36 @@ def test_a_handler_installed_outside_python_restores_as_the_default_and_the_rest
     finally:
         for signum, handler in saved.items():
             signal.signal(signum, handler)
+
+
+def test_a_failed_restore_of_one_signal_still_restores_the_later_ones(monkeypatch):
+    """The failure on SIGINT is collected and raised after the loop, so SIGTERM and SIGHUP still go back."""
+    real = signal.signal
+    calls: list[int] = []
+
+    def flaky(signum, handler):
+        calls.append(signum)
+        if signum == signal.SIGINT:
+            raise OSError("cannot set SIGINT")
+        return real(signum, handler)
+
+    saved = {s: signal.getsignal(s) for s in SIGNUMS}
+    try:
+        for signum in SIGNUMS:
+            real(signum, signal.SIG_IGN)
+
+        def keep(*_a: object) -> None:
+            return None
+
+        monkeypatch.setattr(lease.signal, "signal", flaky)
+        with pytest.raises(OSError, match="cannot set SIGINT"):
+            lease._restore_signal_handlers(
+                {signal.SIGINT: keep, signal.SIGTERM: keep, signal.SIGHUP: signal.SIG_DFL}
+            )
+        monkeypatch.undo()
+        assert calls == [signal.SIGINT, signal.SIGTERM, signal.SIGHUP]
+        assert signal.getsignal(signal.SIGTERM) is keep
+        assert signal.getsignal(signal.SIGHUP) == signal.SIG_DFL
+    finally:
+        for signum, handler in saved.items():
+            real(signum, handler)

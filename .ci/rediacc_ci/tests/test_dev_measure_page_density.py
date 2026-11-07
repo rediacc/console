@@ -295,3 +295,45 @@ def test_runs_as_a_module_with_the_documented_command() -> None:
         env={**os.environ, "PYTHONPATH": str(mpd.paths.repo_root() / ".ci")},
     )
     assert proc.returncode == 0, proc.stderr
+
+
+@pytest.mark.usefixtures("browser")
+def test_a_server_that_survives_sigkill_is_named_on_stderr(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A wait that times out after the kill must not pass in silence: the run still writes its rows, but the leaked pid is reported."""
+    real_popen = subprocess.Popen
+    started: list[subprocess.Popen[bytes]] = []
+
+    class Stubborn:
+        def __init__(self, argv: list[str], **kwargs: int) -> None:
+            self.real = real_popen(argv, **kwargs)
+            started.append(self.real)
+            self.pid = self.real.pid
+
+        def terminate(self) -> None:
+            return None
+
+        def poll(self) -> int | None:
+            return self.real.poll()
+
+        def kill(self) -> None:
+            self.real.kill()
+
+        def wait(self, timeout: float | None = None) -> int:
+            raise subprocess.TimeoutExpired("server", timeout or 0)
+
+    def popen(argv: list[str], **kwargs: int) -> object:
+        # `subprocess` is one module for the whole process: only the preview server is stubborn.
+        return Stubborn(argv, **kwargs) if "http.server" in argv else real_popen(argv, **kwargs)
+
+    monkeypatch.setattr(mpd.subprocess, "Popen", popen)
+    try:
+        assert mpd.main([str(tmp_path / "out.csv")], www=_site(tmp_path)) == 0
+    finally:
+        for proc in started:
+            proc.kill()
+            proc.wait()
+    err = capsys.readouterr().err
+    assert "still alive 10 s after SIGKILL" in err
+    assert "pid %d" % started[0].pid in err

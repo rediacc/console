@@ -289,8 +289,14 @@ def main(argv: list[str] | None = None, www: pathlib.Path | None = None) -> int:
             server.wait(timeout=5)
         if server.poll() is None:
             server.kill()
-            with contextlib.suppress(subprocess.TimeoutExpired):
+            try:
                 server.wait(timeout=10)
+            except subprocess.TimeoutExpired:
+                print(
+                    "the preview server (pid %d) is still alive 10 s after SIGKILL; stop it by hand"
+                    % server.pid,
+                    file=sys.stderr,
+                )
     print("wrote %s" % out)
     print(column_table(out.read_text(encoding="utf-8")))
     return 0
