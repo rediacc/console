@@ -187,6 +187,8 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   '/resources/backupStrategies/*/destinations/*/bandwidthLimit': { kind: 'public' },
   // A destination names the registered store it writes to (`target`, a store id; absent means home). `endpoint` and `vaultContent` are removed fields the schema refuses (z.never); their pointers stay registered, as for repoSchedules.
   '/resources/backupStrategies/*/destinations/*/target': { kind: 'public' },
+  '/resources/backupStrategies/*/destinations/*/mode': { kind: 'public' },
+  '/resources/backupStrategies/*/destinations/*/from': { kind: 'public' },
   '/resources/backupStrategies/*/destinations/*/endpoint': { kind: 'identifier' },
   '/resources/backupStrategies/*/destinations/*/vaultContent': { kind: 'secret' },
   // Verification switches and a cron; non-sensitive.

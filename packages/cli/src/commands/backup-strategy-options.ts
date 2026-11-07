@@ -28,6 +28,8 @@ interface UpsertDestOpts {
   bwlimit?: string;
   /** A registered store id the destination writes to; absent keeps the stored one (or `home`). */
   target?: string;
+  /** Makes the destination a replicate one: the account server copies this store into `target`, so the machine uploads nothing to it. */
+  replicateFrom?: string;
 }
 
 /**
@@ -65,6 +67,7 @@ export function buildDestination(
       enabled: o.enabled,
       bandwidthLimit: o.bwlimit,
       target: o.target,
+      ...(o.replicateFrom === undefined ? {} : { mode: 'replicate', from: o.replicateFrom }),
     }),
     'backup destination'
   );

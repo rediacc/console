@@ -40,6 +40,7 @@ import {
   parseCpuLimitPercent,
   readCapBytesPerSecond,
   STRATEGY_UPLOAD_PARALLELISM,
+  uploadDestinations,
 } from './backup-strategy-validate.js';
 
 /** renet's flag on every chunk-store session verb (private/renet cmd/renet/backup_endpoints.go flagExpectAccountServer). */
@@ -302,8 +303,10 @@ export function buildBackupCommands(
 
   // A HARD ERROR, not a skip. Emitting nothing is the defect the hosted-service branch was written to fix: a timer that backed up nothing with no error anywhere. The rules live in backup-strategy-validate.ts, shared with `backup strategy bind`.
   assertStrategySchedulable(strategy, destinations);
+  // A replicate destination takes no machine command: the account server copies into it after each commit on its source.
+  const uploads = uploadDestinations(destinations);
   const perDestination: (BackupStrategyDestination | undefined)[] =
-    destinations.length > 0 ? destinations : [undefined];
+    uploads.length > 0 ? uploads : [undefined];
   const commands = perDestination.map((dest) =>
     buildChunkStoreCommand(
       strategy,

@@ -278,19 +278,46 @@ const removedDestinationField = (field: string) =>
  * `vaultContent` fields are refused with a message naming the replacement, and so
  * are destinations of the removed `storage` kind (or without a `kind`).
  */
-export const BackupDestinationSchema = z.object({
-  kind: z.literal('hosted-service'),
-  ...backupDestinationCommon,
-  target: z
-    .string()
-    .regex(
-      BACKUP_STORE_ID_PATTERN,
-      'A backup target is a store id: lowercase letters, digits and dashes'
-    )
-    .optional(),
-  endpoint: removedDestinationField('endpoint').optional(),
-  vaultContent: removedDestinationField('vaultContent').optional(),
-});
+export const BackupDestinationSchema = z
+  .object({
+    kind: z.literal('hosted-service'),
+    ...backupDestinationCommon,
+    target: z
+      .string()
+      .regex(
+        BACKUP_STORE_ID_PATTERN,
+        'A backup target is a store id: lowercase letters, digits and dashes'
+      )
+      .optional(),
+    /** `upload` (absent) takes a machine snapshot into `target`; `replicate` has the account server copy `from` into `target`, so the machine uploads once. */
+    mode: z.enum(['upload', 'replicate']).optional(),
+    /** The source store of a replicate destination. Required for `replicate`, refused for `upload`. */
+    from: z
+      .string()
+      .regex(
+        BACKUP_STORE_ID_PATTERN,
+        'A replication source is a store id: lowercase letters, digits and dashes'
+      )
+      .optional(),
+    endpoint: removedDestinationField('endpoint').optional(),
+    vaultContent: removedDestinationField('vaultContent').optional(),
+  })
+  .superRefine((dest, ctx) => {
+    if (dest.mode === 'replicate' && dest.from === undefined) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['from'],
+        message: 'A replicate destination needs `from`, the store it copies from',
+      });
+    }
+    if (dest.mode !== 'replicate' && dest.from !== undefined) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['from'],
+        message: '`from` belongs to a replicate destination; set `mode: replicate` or drop it',
+      });
+    }
+  });
 
 /**
  * GFS-style retention policy for a strategy's manifests.

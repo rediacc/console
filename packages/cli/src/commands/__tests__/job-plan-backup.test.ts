@@ -23,7 +23,13 @@ const STRATEGY = vi.hoisted(() => ({
 }));
 
 /** The store columns of a unit with no destination data: one home row. */
-const HOME_COLUMNS = { store: 'home', newestSnapshot: '-', verify: '-', cleanup: 'enabled' };
+const HOME_COLUMNS = {
+  store: 'home',
+  newestSnapshot: '-',
+  verify: '-',
+  cleanup: 'enabled',
+  copyLag: '-',
+};
 
 vi.mock('../../services/config/config-resources.js', () => ({
   configService: {

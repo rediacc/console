@@ -24,7 +24,7 @@ vi.mock('../../utils/errors.js', async () => {
 });
 
 const { renderBackupScheduleStatus } = await import('../../services/backup/backup-schedule.js');
-const { expandStatusRows, summarizeStatus } = await import(
+const { copyLag, expandStatusRows, summarizeStatus } = await import(
   '../../services/backup/backup-store-pick.js'
 );
 
@@ -133,6 +133,7 @@ describe('expandStatusRows', () => {
         newestSnapshot: '-',
         verify: '-',
         cleanup: 'enabled',
+        copyLag: '-',
       },
     ]);
   });
@@ -158,6 +159,52 @@ describe('expandStatusRows', () => {
     expect(out.every((r) => r.status === 'scheduled')).toBe(true);
     // A store the account has a run for says its own outcome; one with none keeps the unit's.
     expect(out.map((r) => r.result)).toEqual(['success', 'failed']);
+  });
+});
+
+describe('replicate destination copy lag', () => {
+  const rows = [{ strategy: 'nightly', unit: 'nightly', status: 'scheduled', result: 'success' }];
+  const targets = (copy: Record<string, unknown>) => ({
+    byStrategy: { nightly: ['home', 'eu-west'] },
+    replicas: { nightly: { 'eu-west': 'home' } },
+    stores: {
+      home: known({ newestSnapshotAt: '2026-11-07T01:30:00Z' }),
+      'eu-west': known(copy),
+    },
+  });
+
+  it('shows the source newest snapshot minus the replica newest, and only on the replica row', () => {
+    const out = expandStatusRows(rows, targets({ newestSnapshotAt: '2026-11-07T01:00:00Z' }));
+    expect(out.map((r) => [r.store, r.copyLag])).toEqual([
+      ['home', '-'],
+      ['eu-west', '30m'],
+    ]);
+  });
+
+  it('says not copied when the replica holds no snapshot yet, and 0s when level', () => {
+    expect(expandStatusRows(rows, targets({ newestSnapshotAt: null }))[1].copyLag).toBe(
+      'not copied'
+    );
+    expect(
+      expandStatusRows(rows, targets({ newestSnapshotAt: '2026-11-07T01:30:00Z' }))[1].copyLag
+    ).toBe('0s');
+  });
+
+  it('never goes negative when the replica is ahead, and is - without a source snapshot', () => {
+    expect(copyLag(known({ newestSnapshotAt: '2026-11-07T01:00:00Z' }), known())).toBe('0s');
+    expect(copyLag(undefined, known())).toBe('-');
+    expect(copyLag(known({ newestSnapshotAt: null }), known())).toBe('-');
+  });
+
+  it('reaches the printed row of renderBackupScheduleStatus', () => {
+    renderBackupScheduleStatus(
+      'm1',
+      [UNIT],
+      SHOW,
+      targets({ newestSnapshotAt: '2026-11-07T00:30:00Z' })
+    );
+    const printed = mockPrint.mock.calls[0][0] as Record<string, string>[];
+    expect(printed.map((r) => r.copyLag)).toEqual(['-', '1h']);
   });
 });
 

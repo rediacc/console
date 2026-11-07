@@ -44,3 +44,45 @@ describe('removed destination fields', () => {
     expect(BackupDestinationSchema.safeParse({ ...base, target: 'home' }).success).toBe(true);
   });
 });
+
+describe('buildDestination --replicate-from', () => {
+  it('stores a replicate destination with its source', () => {
+    expect(
+      buildDestination({ destinationName: 'copy', target: 'eu-west', replicateFrom: 'home' })
+    ).toMatchObject({ mode: 'replicate', from: 'home', target: 'eu-west' });
+  });
+
+  it('omits mode and from when the flag is absent', () => {
+    const built = buildDestination({ destinationName: 'copy', target: 'eu-west' });
+    expect('mode' in built).toBe(false);
+    expect('from' in built).toBe(false);
+  });
+
+  it('refuses a source that is not a store id', () => {
+    expect(() => buildDestination({ destinationName: 'c', replicateFrom: 'Bad Id' })).toThrow();
+  });
+});
+
+describe('destination mode and from in the schema', () => {
+  const base = { kind: 'hosted-service', name: 'd', target: 'eu-west' };
+
+  it('requires from for replicate', () => {
+    const result = BackupDestinationSchema.safeParse({ ...base, mode: 'replicate' });
+    expect(result.success).toBe(false);
+    expect(JSON.stringify(result.error?.issues)).toMatch(/needs `from`/);
+  });
+
+  it('refuses from on an upload destination, explicit or implied', () => {
+    expect(BackupDestinationSchema.safeParse({ ...base, from: 'home' }).success).toBe(false);
+    expect(
+      BackupDestinationSchema.safeParse({ ...base, mode: 'upload', from: 'home' }).success
+    ).toBe(false);
+  });
+
+  it('admits replicate with from, and an explicit upload without it', () => {
+    expect(
+      BackupDestinationSchema.safeParse({ ...base, mode: 'replicate', from: 'home' }).success
+    ).toBe(true);
+    expect(BackupDestinationSchema.safeParse({ ...base, mode: 'upload' }).success).toBe(true);
+  });
+});

@@ -2150,6 +2150,8 @@
           "optionCron": "Cron schedule (e.g., \"0 * * * *\" for hourly)",
           "optionDestination": "Destination name within the strategy. Creates a Rediacc chunk-store destination",
           "optionTarget": "Registered store id the destination writes to (default: home). Use with --destination",
+          "optionReplicateFrom": "Make the destination a replica: the account server copies this store into the destination's target, so the machine uploads nothing to it. Use with --destination and --target",
+          "replicateFromNeedsDestination": "--replicate-from names the source of one destination; add --destination <name>.",
           "optionDisable": "Disable the strategy or destination",
           "optionEnable": "Enable the strategy or destination",
           "optionExclude": "Exclude these repos from backup (comma-separated names)",
@@ -2188,6 +2190,14 @@
           "retentionDefaultNoStorage": "The {{plan}} plan has no cloud backup storage, so no retention default was set.",
           "retentionDefaultNoPlan": "The plan could not be read, so no retention default was set. Declare one with --retention.",
           "dryRun": "Dry run: strategy \"{{strategy}}\" would change ({{changes}}). Nothing was written."
+        },
+        "replication": {
+          "registered": "Replication: {{count}} rule(s) registered with the account server",
+          "removed": "Replication: {{count}} rule(s) removed from the account server",
+          "unsupported": "The account server has no replication rules (HTTP 404), so no copy will run. The strategy is saved; update the account server, then bind again.",
+          "notPushed": "Replication rules were not sent: no account token. Log in, then bind the strategy again.",
+          "failed": "Replication rule for lineage {{lineage}} into store {{target}} was refused: {{reason}}",
+          "syncFailed": "Replication rules could not be synced: {{reason}}"
         },
         "bind": {
           "description": "Bind a backup strategy to a machine so its schedule is deployed there",

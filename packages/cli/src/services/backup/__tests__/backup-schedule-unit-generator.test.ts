@@ -171,6 +171,30 @@ describe('one snapshot command per enabled destination', () => {
     for (const c of commands) expect(c.endsWith(` --expect-account-server ${ORIGIN}`)).toBe(true);
   });
 
+  it('emits no command for a replicate destination, only for the upload it copies from', () => {
+    const replica: BackupStrategyDestination = {
+      name: 'copy',
+      kind: 'hosted-service',
+      target: 'eu-west',
+      mode: 'replicate',
+      from: 'home',
+    };
+    const commands = build([home, replica]);
+    expect(commands).toHaveLength(1);
+    expect(commands[0]).not.toContain('--store');
+  });
+
+  it('refuses a strategy whose only destination is a replicate one', () => {
+    const replica: BackupStrategyDestination = {
+      name: 'copy',
+      kind: 'hosted-service',
+      target: 'eu-west',
+      mode: 'replicate',
+      from: 'home',
+    };
+    expect(() => build([replica])).toThrow(/replicat/);
+  });
+
   it('omits --store for a home destination, so a single-destination timer is unchanged', () => {
     const [only] = build([home]);
     expect(only).not.toContain('--store');

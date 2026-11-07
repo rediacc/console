@@ -8,6 +8,7 @@
  * snapshot everywhere it is asked for, so it is never retried elsewhere, and an explicit `--from` never falls back.
  */
 
+import { formatDuration } from '@rediacc/shared/backup/duration';
 import { t } from '../../i18n/index.js';
 import { renderLocalExecutionFailure } from '../../utils/local-execution-failures.js';
 import { accountServerFetch } from '../account/account-client.js';
@@ -307,6 +308,20 @@ export interface StoreStatus {
 export interface StatusTargets {
   byStrategy: Record<string, string[]>;
   stores: Record<string, StoreStatus>;
+  /** Per strategy, each replicate destination's target store mapped to the store it copies from. */
+  replicas?: Record<string, Record<string, string>>;
+}
+
+/**
+ * How far a replicate destination's store trails its source: the source's newest snapshot time minus the target's,
+ * from the same status data. `-` when there is nothing to compare (no source snapshot or no data), `not copied` when
+ * the target holds none yet, and `0s` when it is level.
+ */
+export function copyLag(source: StoreStatus | undefined, target: StoreStatus | undefined): string {
+  if (!source?.newestSnapshotAt) return '-';
+  if (!target?.newestSnapshotAt) return 'not copied';
+  const behind = Date.parse(source.newestSnapshotAt) - Date.parse(target.newestSnapshotAt);
+  return Number.isNaN(behind) ? '-' : formatDuration(Math.max(0, behind) / 1000);
 }
 
 /** One stream of `GET /backups/status`; a row without `storeId` is `home`. */
@@ -404,12 +419,14 @@ export function expandStatusRows<R extends { strategy: string; unit: string }>(
   newestSnapshot: string;
   verify: string;
   cleanup: string;
+  copyLag: string;
 })[] {
   return rows.flatMap((row) => {
     const { strategy, unit, ...rest } = row;
     const stores = targets?.byStrategy[strategy];
     return (stores && stores.length > 0 ? stores : [HOME_STORE]).map((store) => {
       const known = targets?.stores[store];
+      const from = targets?.replicas?.[strategy]?.[store];
       const run = known?.lastRunAt
         ? { lastRun: known.lastRunAt, result: known.lastRunStatus ?? '-' }
         : {};
@@ -422,6 +439,7 @@ export function expandStatusRows<R extends { strategy: string; unit: string }>(
         newestSnapshot: known?.newestSnapshotAt ?? '-',
         verify: known?.verify ?? '-',
         cleanup: known?.cleanup ?? 'enabled',
+        copyLag: from === undefined ? '-' : copyLag(targets?.stores[from], known),
       };
     });
   });

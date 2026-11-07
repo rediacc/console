@@ -63,3 +63,53 @@ describe('destination targets', () => {
     expect(uncheckedTargets(list, ['home'])).toEqual([]);
   });
 });
+
+describe('replicate destinations', () => {
+  const replica = (name: string, from?: string, target?: string): BackupStrategyDestination => ({
+    ...dest(name, target),
+    mode: 'replicate',
+    ...(from === undefined ? {} : { from }),
+  });
+  const home = dest('primary');
+
+  it('admits a replica of an enabled upload destination', () => {
+    expect(reason([home, replica('copy', 'home', 'eu-west')])).toBeUndefined();
+  });
+
+  it('refuses a replica with no source', () => {
+    expect(reason([home, replica('copy', undefined, 'eu-west')])).toMatch(/needs `from`/);
+  });
+
+  it('refuses a replica whose target is its source', () => {
+    const msg = reason([home, replica('copy', 'home', 'home')]);
+    expect(msg).toMatch(/duplicate|name the target "home"|into itself/);
+    expect(reason([dest('up', 'eu-west'), replica('copy', 'eu-west', 'eu-west')])).toBeDefined();
+  });
+
+  it('refuses a source that no enabled upload destination writes to', () => {
+    expect(reason([home, replica('copy', 'office', 'eu-west')])).toMatch(
+      /"office".*not the target of another enabled upload destination/
+    );
+  });
+
+  it('refuses a source whose upload destination is disabled (the scheduler passes enabled ones only)', () => {
+    expect(reason([replica('copy', 'home', 'eu-west')])).toBeDefined();
+  });
+
+  it('refuses a chain: a replica of a replica', () => {
+    const msg = reason([home, replica('a', 'home', 'eu-west'), replica('b', 'eu-west', 'office')]);
+    expect(msg).toMatch(/itself a replicate destination/);
+  });
+
+  it('refuses a strategy whose destinations are all replicas', () => {
+    expect(reason([replica('copy', 'home', 'eu-west')])).toMatch(
+      /no machine would upload|not the target/
+    );
+  });
+
+  it('still refuses an unregistered replica target', () => {
+    expect(reason([home, replica('copy', 'home', 'ghost')], ['home'])).toMatch(
+      /"ghost".*not a registered store/
+    );
+  });
+});

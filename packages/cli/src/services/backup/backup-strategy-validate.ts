@@ -241,6 +241,59 @@ function destinationsReason(
     const reason = targetReason(dest, seen, registeredStores);
     if (reason) return reason;
   }
+  return replicationReason(destinations);
+}
+
+/** Whether a destination is copied server-side from another store instead of uploaded by the machine. */
+export function isReplicateDestination(dest: { mode?: string }): boolean {
+  return dest.mode === 'replicate';
+}
+
+/** The destinations a machine snapshots into: every one that is not a replicate destination. */
+export function uploadDestinations<D extends { mode?: string }>(destinations: D[]): D[] {
+  return destinations.filter((d) => !isReplicateDestination(d));
+}
+
+/**
+ * The replicate rules, over the enabled destinations the scheduler passes. A replicate destination needs `from`, a store
+ * that is not its own target and is the target of ANOTHER ENABLED UPLOAD destination of the strategy (the machine must
+ * put the snapshot there first). A source that is itself a replicate destination's target would be a chain, which the
+ * server refuses too. A strategy whose destinations are all replicate has nothing to upload and is refused.
+ */
+function replicationReason(destinations: BackupStrategyDestination[]): string | undefined {
+  const replicas = destinations.filter(isReplicateDestination);
+  if (replicas.length === 0) return undefined;
+  const uploadTargets = new Set(uploadDestinations(destinations).map(destinationTarget));
+  if (uploadTargets.size === 0) {
+    return 'Every destination of this backup strategy is a replicate destination, so no machine would upload anything. Add an enabled upload destination to copy from.';
+  }
+  const replicaTargets = new Set(replicas.map(destinationTarget));
+  for (const dest of replicas) {
+    const reason = replicaSourceReason(dest, uploadTargets, replicaTargets);
+    if (reason) return reason;
+  }
+  return undefined;
+}
+
+/** The first problem with one replicate destination's `from`. */
+function replicaSourceReason(
+  dest: BackupStrategyDestination,
+  uploadTargets: ReadonlySet<string>,
+  replicaTargets: ReadonlySet<string>
+): string | undefined {
+  const from = dest.from;
+  if (from === undefined || !BACKUP_STORE_ID_PATTERN.test(from)) {
+    return `Backup destination "${dest.name}" is a replicate destination and needs \`from\`, the store id it copies from.`;
+  }
+  if (from === destinationTarget(dest)) {
+    return `Backup destination "${dest.name}" replicates "${from}" into itself; its target must differ from \`from\`.`;
+  }
+  if (replicaTargets.has(from)) {
+    return `Backup destination "${dest.name}" replicates from "${from}", which is itself a replicate destination. A copy of a copy is not supported; replicate from the store a machine uploads to.`;
+  }
+  if (!uploadTargets.has(from)) {
+    return `Backup destination "${dest.name}" replicates from "${from}", which is not the target of another enabled upload destination of this strategy. Add or enable an upload destination that writes to "${from}".`;
+  }
   return undefined;
 }
 

@@ -1,6 +1,7 @@
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import type { SFTPClient } from '../remote/sftp/index.js';
+import { replicateDestinations } from '../services/backup/backup-replication.js';
 import { hasAccountToken, pushStrategyRetention } from '../services/backup/backup-retention.js';
 import {
   ALERT_UNIT_SUFFIX,
@@ -408,12 +409,19 @@ async function readStatusTargets(
   strategies: string[]
 ): Promise<StatusTargets> {
   const byStrategy: Record<string, string[]> = {};
+  const replicas: Record<string, Record<string, string>> = {};
   const bound = await configService.listBackupStrategies();
   for (const name of new Set(strategies)) {
     const destinations = bound[name]?.destinations ?? [];
-    byStrategy[name] = [
-      ...new Set(destinations.filter((d) => d.enabled !== false).map((d) => d.target ?? 'home')),
-    ];
+    const enabled = destinations.filter((d) => d.enabled !== false);
+    byStrategy[name] = [...new Set(enabled.map((d) => d.target ?? 'home'))];
+    // A replicate destination's row shows its copy lag against the store it copies from.
+    const copies = replicateDestinations({ destinations: enabled }, true).filter((d) => d.from);
+    if (copies.length > 0) {
+      replicas[name] = Object.fromEntries(
+        copies.map((d) => [d.target ?? 'home', d.from as string])
+      );
+    }
   }
   const repos = await configService.listRepositories();
   const lineages = new Set(
@@ -422,7 +430,7 @@ async function readStatusTargets(
       .filter(({ config }) => (config.placement as { machine: string }).machine === machineName)
       .map(({ config }) => config.grandGuid ?? config.repositoryGuid)
   );
-  return { byStrategy, stores: await readStoreStatuses([...lineages]) };
+  return { byStrategy, replicas, stores: await readStoreStatuses([...lineages]) };
 }
 
 /**

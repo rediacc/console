@@ -3,6 +3,12 @@ import { BACKUP_DEFAULTS } from '@rediacc/shared/config';
 import { type Command, Option } from 'commander';
 import { t } from '../i18n/index.js';
 import {
+  type ReplicationSyncResult,
+  registerStrategyReplication,
+  removeReplicationRulesFor,
+  replicateDestinations,
+} from '../services/backup/backup-replication.js';
+import {
   type CronCadence,
   hasAccountToken,
   pushStrategyRetention,
@@ -22,6 +28,7 @@ import {
 import { configService } from '../services/config/config-resources.js';
 import {
   bindBackupStrategy,
+  machinesBoundToStrategy,
   removeStrategyChecked,
   unbindBackupStrategy,
 } from '../services/config/config-strategy-binding.js';
@@ -71,6 +78,7 @@ export async function applyBackupStrategyOptions(
   options: {
     destination?: string;
     target?: string;
+    replicateFrom?: string;
     cron?: string;
     mode?: string;
     bwlimit?: string;
@@ -94,6 +102,9 @@ export async function applyBackupStrategyOptions(
   const targetsDestination = Boolean(options.destination);
   if (!targetsDestination && options.target !== undefined) {
     throw new ValidationError(t('commands.backup.strategy.set.targetNeedsDestination'));
+  }
+  if (!targetsDestination && options.replicateFrom !== undefined) {
+    throw new ValidationError(t('commands.backup.strategy.set.replicateFromNeedsDestination'));
   }
   if (targetsDestination && options.readBwlimit !== undefined) {
     throw new ValidationError(t('commands.backup.strategy.set.readBwlimitStrategyOnly'));
@@ -134,7 +145,11 @@ export async function applyBackupStrategyOptions(
       enabled,
       bwlimit: options.bwlimit,
       target: options.target,
+      replicateFrom: options.replicateFrom,
     });
+    if (enabled !== undefined || options.replicateFrom !== undefined) {
+      await syncReplicationRules(name);
+    }
   }
 
   // Warn after the write, from the stored result: `--cron` alone can invalidate a retention set earlier.
@@ -337,6 +352,75 @@ function collectRepeated(value: string, previous: string[]): string[] {
   return [...previous, value];
 }
 
+/** Say what a replication-rule sync did. Never throws: the config change it follows has already been written. */
+function reportReplication(result: ReplicationSyncResult, verb: 'registered' | 'removed'): void {
+  if (result.unsupported) {
+    outputService.warn(t('commands.backup.strategy.replication.unsupported'));
+    return;
+  }
+  if (result.done > 0) {
+    outputService.info(t(`commands.backup.strategy.replication.${verb}`, { count: result.done }));
+  }
+  for (const failure of result.failures) {
+    outputService.warn(
+      t('commands.backup.strategy.replication.failed', {
+        lineage: failure.lineageGuid,
+        target: failure.target,
+        reason: failure.reason,
+      })
+    );
+  }
+}
+
+/** Run a rule sync when the strategy has replicate destinations and an account token exists to authenticate it. */
+async function withReplication(
+  strategy: Pick<BackupStrategyConfig, 'include' | 'exclude' | 'destinations'> | undefined,
+  run: (
+    strategy: Pick<BackupStrategyConfig, 'include' | 'exclude' | 'destinations'>
+  ) => Promise<void>
+): Promise<void> {
+  if (!strategy || replicateDestinations(strategy, false).length === 0) return;
+  if (!hasAccountToken()) {
+    outputService.warn(t('commands.backup.strategy.replication.notPushed'));
+    return;
+  }
+  try {
+    await run(strategy);
+  } catch (error) {
+    outputService.warn(
+      t('commands.backup.strategy.replication.syncFailed', {
+        reason: error instanceof Error ? error.message : String(error),
+      })
+    );
+  }
+}
+
+/**
+ * Bring the server's rules in line with one strategy's replicate destinations after a destination changed: a disabled
+ * one loses its rules, an enabled one is registered for every machine the strategy is bound to.
+ */
+async function syncReplicationRules(name: string): Promise<void> {
+  const strategy = await configService.getBackupStrategy(name);
+  await withReplication(strategy, async (found) => {
+    const disabled = replicateDestinations(found, false).filter((d) => d.enabled === false);
+    reportReplication(await removeReplicationRulesFor(found, disabled), 'removed');
+    for (const machine of await machinesBoundToStrategy(name)) {
+      reportReplication(await registerStrategyReplication(found, machine), 'registered');
+    }
+  });
+}
+
+/** Drop every replicate destination's rules for the lineages a strategy covers on one machine (an unbind). */
+async function dropReplicationForMachine(
+  strategy: BackupStrategyConfig | undefined,
+  machine: string
+): Promise<void> {
+  await withReplication(strategy, async (found) => {
+    const all = replicateDestinations(found, false);
+    reportReplication(await removeReplicationRulesFor(found, all, machine), 'removed');
+  });
+}
+
 /** Register the `backup strategy` subgroup (named backup strategy records). */
 export function registerBackupStrategyCommands(backup: Command): void {
   const group = backup.command('strategy').description(t('commands.backup.strategy.description'));
@@ -347,6 +431,7 @@ export function registerBackupStrategyCommands(backup: Command): void {
     .description(t('commands.backup.strategy.set.description'))
     .option('--destination <name>', t('commands.backup.strategy.set.optionDestination'))
     .option('--target <storeId>', t('commands.backup.strategy.set.optionTarget'))
+    .option('--replicate-from <storeId>', t('commands.backup.strategy.set.optionReplicateFrom'))
     .option('--cron <expression>', t('commands.backup.strategy.set.optionCron'))
     .addOption(
       new Option('--mode <mode>', t('commands.backup.strategy.set.optionMode')).choices([
@@ -402,6 +487,13 @@ export function registerBackupStrategyCommands(backup: Command): void {
           );
         }
         const bound = await bindBackupStrategy(options.machine, strategy);
+        // The bind is written; a rule that cannot be registered is a warning, and a later `bind` or `set` retries it.
+        await withReplication(await configService.getBackupStrategy(strategy), async (found) => {
+          reportReplication(
+            await registerStrategyReplication(found, options.machine),
+            'registered'
+          );
+        });
         outputService.success(
           bound
             ? t('commands.backup.strategy.bind.bound', {
@@ -425,7 +517,9 @@ export function registerBackupStrategyCommands(backup: Command): void {
     .description(t('commands.backup.strategy.unbind.description'))
     .action(async (strategy: string, options: { machine: string }) => {
       try {
+        const stored = await configService.getBackupStrategy(strategy);
         const removed = await unbindBackupStrategy(options.machine, strategy);
+        if (removed) await dropReplicationForMachine(stored, options.machine);
         outputService.success(
           removed
             ? t('commands.backup.strategy.unbind.unbound', {
@@ -456,9 +550,21 @@ export function registerBackupStrategyCommands(backup: Command): void {
     .action(async (strategy: string, options) => {
       try {
         if (options.destination) {
+          const stored = await configService.getBackupStrategy(strategy);
+          const gone = stored?.destinations.filter((d) => d.name === options.destination);
           await configService.removeBackupDestination(strategy, options.destination);
+          if (stored && gone && gone.length > 0) {
+            await withReplication({ ...stored, destinations: gone }, async (found) => {
+              reportReplication(
+                await removeReplicationRulesFor(found, replicateDestinations(found, false)),
+                'removed'
+              );
+            });
+          }
         } else {
+          const stored = await configService.getBackupStrategy(strategy);
           const unbound = await removeStrategyChecked(strategy, options.unbind === true);
+          for (const machine of unbound) await dropReplicationForMachine(stored, machine);
           if (unbound.length > 0) {
             outputService.warn(
               t('commands.backup.strategy.remove.unboundWarn', {

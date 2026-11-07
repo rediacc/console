@@ -1993,6 +1993,17 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Registered store id the destination writes to (default: home). Use with --destination"
         },
         {
+          "flags": "--replicate-from <storeId>",
+          "long": "replicate-from",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.strategy.set.optionReplicateFrom",
+          "label": "Make the destination a replica: the account server copies this store into the destination's target, so the machine uploads nothing to it. Use with --destination and --target"
+        },
+        {
           "flags": "--cron <expression>",
           "long": "cron",
           "valueTaking": true,
