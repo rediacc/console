@@ -97,10 +97,6 @@ NOT_RUN_RESULTS = (
     "gone",
     "covered",
     "operator",
-    "noop",
-    "none",
-    "already",
-    "dry",
 )
 SUBPROCESS_TIMEOUT_S = 900.0
 HTTP_TIMEOUT_S = 20.0
@@ -785,23 +781,41 @@ def postable_sources(sources: dict, env: dict) -> dict:
     return {k: v for k, v in sources.items() if not k.startswith("local-machine-")}
 
 
+def _row_key(row: dict) -> tuple:
+    return (row.get("config") or "", row["machine"])
+
+
+def machine_sources(rows: list) -> dict:
+    """(config, machine) -> the `local-machine-...` source of each machines row, shared by the verdicts and the repair ledger. A machine name two configs share keeps both verdicts: the config joins the source name. Joined with `-`, two different pairs can spell one name (config `a` + machine `b-c`, config `a-b` + machine `c`); every pair that collides takes a short hash of the pair, so neither verdict overwrites the other."""
+    configs_of: dict[str, set] = {}
+    for r in rows:
+        configs_of.setdefault(r["machine"], set()).add(r.get("config") or "")
+    base = {
+        _row_key(r): "local-machine-%s"
+        % (
+            "%s-%s" % (r["config"], r["machine"])
+            if len(configs_of[r["machine"]]) > 1 and r.get("config")
+            else r["machine"]
+        )
+        for r in rows
+    }
+    claimed: dict[str, int] = {}
+    for name in base.values():
+        claimed[name] = claimed.get(name, 0) + 1
+    return {
+        key: name
+        if claimed[name] == 1
+        else "%s-%s" % (name, hashlib.sha1(("%s\0%s" % key).encode()).hexdigest()[:6])
+        for key, name in base.items()
+    }
+
+
 def sources_of(check: str, entry: dict) -> dict:
     """source -> (state, detail) for the ingest and the ledger."""
     if check == "machines":
         rows = [r for r in entry.get("rows") or [] if isinstance(r, dict)]
-        configs_of: dict[str, set] = {}
-        for r in rows:
-            configs_of.setdefault(r["machine"], set()).add(r.get("config") or "")
-        out = {
-            # A machine name two configs share keeps both verdicts: the config joins the source name.
-            "local-machine-%s"
-            % (
-                "%s-%s" % (r["config"], r["machine"])
-                if len(configs_of[r["machine"]]) > 1 and r.get("config")
-                else r["machine"]
-            ): (r["state"], machines_detail([r], []))
-            for r in rows
-        }
+        names = machine_sources(rows)
+        out = {names[_row_key(r)]: (r["state"], machines_detail([r], [])) for r in rows}
         if entry.get("setup"):
             out["local-machines"] = (UNKNOWN, "\n".join(entry["setup"]))
         return out
@@ -846,10 +860,12 @@ def repair_rows(entry: dict, now: datetime.datetime) -> list:
         }
 
     out: list = []
-    for row in entry.get("rows") or []:
+    all_rows = [r for r in entry.get("rows") or [] if isinstance(r, dict)]
+    names = machine_sources(all_rows)
+    for row in all_rows:
         repair = row.get("repair") or {}
         actions = repair.get("actions") or []
-        source = "local-machine-%s" % row["machine"]
+        source = names[_row_key(row)]
         out.extend(row_of(source, action) for action in actions)
         rc = repair.get("rc")
         if not actions and rc not in (None, 0):

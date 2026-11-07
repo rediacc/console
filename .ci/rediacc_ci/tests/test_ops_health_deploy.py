@@ -316,6 +316,55 @@ def test_a_non_json_status_body_raises(monkeypatch: pytest.MonkeyPatch) -> None:
         _fetch_with(monkeypatch, b"<html>")
 
 
+class _DroppedResp(_Resp):
+    """An answer whose body read dies after the connection succeeded."""
+
+    def __init__(self, error: BaseException) -> None:
+        super().__init__(b"")
+        self._error = error
+
+    def read(self) -> bytes:
+        raise self._error
+
+
+@pytest.mark.parametrize("error", [TimeoutError("read timed out"), ConnectionResetError("reset")])
+def test_a_connection_that_dies_mid_body_is_unreadable_not_a_first_deploy(
+    monkeypatch: pytest.MonkeyPatch, error: BaseException
+) -> None:
+    monkeypatch.setattr(d.https, "urlopen", lambda _request, **_kw: _DroppedResp(error))
+    with pytest.raises(d.StatusUnreadableError, match="dropped the connection"):
+        d.fetch_deployed("https://ops-health.example.test/v1/status", "tok")
+
+
+def test_a_body_of_invalid_utf8_is_unreadable_not_a_traceback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    with pytest.raises(d.StatusUnreadableError, match="not JSON"):
+        _fetch_with(monkeypatch, b"\xff\xfe{")
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        {"deploy": "oops"},
+        {"deploy": ["a"]},
+        {"deploy": {"code_sha": "x", "secret_digests": "nope"}},
+    ],
+)
+def test_a_deploy_block_that_is_not_an_object_is_unreadable(
+    monkeypatch: pytest.MonkeyPatch, body: dict[str, Any]
+) -> None:
+    with pytest.raises(d.StatusUnreadableError, match="not an object"):
+        _fetch_with(monkeypatch, json.dumps(body).encode())
+
+
+def test_a_status_with_no_deploy_block_reads_as_nothing_deployed_yet(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    got = _fetch_with(monkeypatch, json.dumps({"targets_sha": "t"}).encode())
+    assert (got.targets_sha, got.code_sha, got.digests) == ("t", None, {})
+
+
 def test_main_refuses_to_deploy_when_the_status_is_unreadable(
     capsys: pytest.CaptureFixture[str],
 ) -> None:

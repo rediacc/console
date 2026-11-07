@@ -39,7 +39,8 @@ class Fleet:
     """A scripted rdc: answers per (config, verb) and records every call with its environment."""
 
     def __init__(self, machines=("m1",), health=(0, HEALTH_OK), status=0, listing=LISTING_OK):
-        self.machines: dict[str | None, list] = {None: list(machines)}
+        # The default config and ENV's RDC_HEALTH_CONFIGS name ("prod") list `machines`; any other config the scenario did not script lists none, so a test cannot pass on machines it never meant a config to hold.
+        self.machines: dict[str | None, list] = {None: list(machines), "prod": list(machines)}
         self.health = health
         self.status = status
         self.listing = listing
@@ -56,8 +57,7 @@ class Fleet:
         if self.timeout_on and self.timeout_on in " ".join(args):
             return oh.Result(124, "", "", timed_out=True)
         if verb == "machine list":
-            # A config the scenario did not script (ENV's RDC_HEALTH_CONFIGS) lists the default machines.
-            names = self.machines.get(config, self.machines.get(None, []))
+            names = self.machines.get(config, [])
             return oh.Result(0, envelope([{"name": n} for n in names]))
         if verb == "machine health":
             rc, data = self.health
@@ -814,6 +814,56 @@ def test_a_machine_two_configs_share_keeps_both_verdicts_in_the_sources():
     assert out["local-machine-a-m1"][0] == "red"
     assert out["local-machine-b-m1"][0] == "green"
     assert "local-machine-solo" in out
+
+
+def test_two_pairs_that_spell_one_source_name_keep_both_verdicts():
+    rows = [
+        {"config": "a", "machine": "b-c", "state": "red", "problems": ["p"], "no_check": []},
+        {"config": "a-b", "machine": "c", "state": "green", "problems": [], "no_check": []},
+    ]
+    out = oh.sources_of("machines", {"rows": rows})
+    assert len(out) == 2
+    assert sorted(v[0] for v in out.values()) == ["green", "red"]
+
+
+def test_repair_ledger_rows_use_the_source_of_the_machines_verdict():
+    """Two configs share machine m1: each config's repair row names the same source its verdict does."""
+    action = {"code": "a.b", "action": "act", "class": "auto-safe", "result": "ok"}
+    rows = [
+        {
+            "config": cfg,
+            "machine": "m1",
+            "state": "green",
+            "problems": [],
+            "no_check": [],
+            "repair": {"actions": [action], "rc": 0, "codes": ["a.b"]},
+        }
+        for cfg in ("a", "b")
+    ]
+    entry = {"rows": rows}
+    sources = set(oh.sources_of("machines", entry))
+    assert (
+        {r["source"] for r in oh.repair_rows(entry, NOW)}
+        == sources
+        == {
+            "local-machine-a-m1",
+            "local-machine-b-m1",
+        }
+    )
+
+
+def test_a_repair_that_exited_1_with_no_actions_is_ledgered_as_such():
+    entry = {
+        "rows": [
+            {
+                "config": "",
+                "machine": "m1",
+                "repair": {"actions": [], "rc": 1, "codes": ["a.b"]},
+            }
+        ]
+    }
+    rows = oh.repair_rows(entry, NOW)
+    assert [(r["code"], r["result"]) for r in rows] == [("a.b", "no action reported (rc 1)")]
 
 
 def test_subprocess_checks_carry_no_provision():

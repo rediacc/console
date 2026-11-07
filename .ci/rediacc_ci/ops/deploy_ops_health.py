@@ -8,9 +8,11 @@ All three arguments are required and have no default in code: the repo, its mach
 WHAT A RUN DOES, in order:
   1. Reads the target file out of the live repo from this machine: `rdc --config <config> term connect <ref> -c 'cat -- <path>'`, falling back to `rdc repo sync download <ref> --remote-file <path>`. REDIACC_NO_PROVISION=1 is forced in the child, so a read never installs renet or restarts daemons as a side effect (F5). The Worker cannot read the file itself: backups are encrypted chunks and the repo key never leaves the machine (F20).
   2. Validates it against the schema of D-record (the same rules as workers/ops-health/src/targets.ts). An invalid file exits 2 before anything is deployed.
-  3. Computes what is deployed now from the Worker's own `/v1/status` (bearer OPS_HEALTH_READ_TOKEN): `targets_sha`, and the `deploy` block that carries the code sha and the salted secret digests a previous run set as vars. An unreachable status means a first deploy.
+  3. Computes what is deployed now from the Worker's own `/v1/status` (bearer OPS_HEALTH_READ_TOKEN): `targets_sha`, and the `deploy` block that carries the code sha and the salted secret digests a previous run set as vars. A host that does not resolve or connect, or a 404, means a first deploy; any other answer (a 401, a 5xx, a body that is not the status JSON) or a read that dies mid-body stops the run with the deployed state unknown.
   4. Plans the change set: the code (a sha over the Worker source, its wrangler.toml and lockfile, .ci/config/ops-health.json and regions.json), the OPS_HEALTH_TARGETS_SHA var, and each secret whose salted digest differs. An unchanged input plans zero changes and runs nothing.
   5. Dry run (the default) prints the plan. `--write` puts the changed secrets in ONE `wrangler secret bulk` call over stdin, then runs `wrangler deploy` with the three vars (which also applies the Durable Object migration in wrangler.toml). A first deploy runs `wrangler deploy` first, because a secret needs an existing Worker, and deploys once more after the secrets so the digests var is written only once the secrets are in.
+
+EXIT CODES: 0 done (or a dry run printed its plan); 1 a read, a status or a deploy step failed; 2 the target file is invalid or an argument is bad; 3 a required secret is absent from the environment (the caller's setup, not a bad file).
 
 SECRETS NEVER TRAVEL AS ARGUMENTS OR IN OUTPUT. The values come from the environment (`bws_env exec --profile ops-health`) and reach wrangler as a JSON document on stdin. A digest is HMAC-SHA256 keyed with OPS_HEALTH_INGEST_TOKEN and truncated to 16 hex characters, so the var reveals nothing a reader of the dashboard could invert.
 """
@@ -21,6 +23,7 @@ import argparse
 import dataclasses
 import hashlib
 import hmac
+import http.client
 import ipaddress
 import json
 import os
@@ -349,25 +352,38 @@ def fetch_deployed(url: str, token: str) -> Deployed | None:
     """
     request = https.build_request(url, headers={"Authorization": "Bearer %s" % token})
     try:
-        with https.urlopen(request, timeout=20) as response:
-            raw = response.read()
+        response = https.urlopen(request, timeout=20)
     except urllib.error.HTTPError as exc:
         if exc.code == 404:
             return None
         raise StatusUnreadableError("%s answered HTTP %d" % (url, exc.code)) from exc
     except (urllib.error.URLError, TimeoutError, OSError):
         return None
+    # The connection is made: a stall or a reset from here on is a Worker that answers and then fails, never a first deploy.
+    with response:
+        try:
+            raw = response.read()
+        except (TimeoutError, OSError, http.client.HTTPException) as exc:
+            raise StatusUnreadableError(
+                "%s dropped the connection while answering: %s" % (url, exc)
+            ) from exc
     try:
         body = json.loads(raw)
-    except json.JSONDecodeError as exc:
+    except ValueError as exc:
+        # JSONDecodeError, and the UnicodeDecodeError a body of invalid UTF-8 raises first.
         raise StatusUnreadableError("%s answered a body that is not JSON" % url) from exc
     if not isinstance(body, dict):
         raise StatusUnreadableError("%s answered JSON that is not an object" % url)
-    deploy = body.get("deploy") or {}
+    deploy = body.get("deploy")
+    if deploy is None:
+        deploy = {}
+    digests = deploy.get("secret_digests") if isinstance(deploy, dict) else None
+    if not isinstance(deploy, dict) or not (digests is None or isinstance(digests, dict)):
+        raise StatusUnreadableError("%s answered a deploy block that is not an object" % url)
     return Deployed(
         targets_sha=body.get("targets_sha"),
         code_sha=deploy.get("code_sha"),
-        digests=dict(deploy.get("secret_digests") or {}),
+        digests=dict(digests or {}),
     )
 
 
@@ -443,7 +459,7 @@ def _cloudflare_env(base: Mapping[str, str]) -> tuple[dict[str, str], Callable[[
             cf_auth.await_propagation(auth)
         env = cf_auth.wrangler_env(auth, cf_auth.DEFAULT_ACCOUNT_ID, scrub_global_key=True)
     except BaseException:
-        # A token minted for this run must not outlive a failure before the caller holds its cleanup.
+        # The credential this run used is destroyed on a failure before the caller holds its cleanup, exactly as on the normal path (`self_destruct` deletes the token in use, minted by this run or supplied to it).
         cf_auth.self_destruct(auth)
         raise
     for name, value in base.items():
