@@ -21,9 +21,9 @@ Body-Sig: 38071faa32b61d3d
 ### 3cd1b54f.1 [low] pkg/ebpf/clone_leaf_hold_test.go:169
 Anchor: in-diff
 Claim: The new test's comment says the uncreatable leaf is modelled on a host without cgroup write access, but the test only makes the parent a regular file (ENOTDIR); it never exercises a permission-denied case, so the comment overstates what is pinned.
-Resolution: open
+Resolution: fixed 4f458e44502fd6bc5c5e451369ab2550924bba9c | d778be9d 2026-11-07T12:06:13Z
 
 ### 3cd1b54f.2 [low] pkg/ebpf/clone_leaf_hold_test.go:69
 Anchor: in-diff
 Claim: The removeCgroupDir stub calls unix.Rmdir directly instead of the saved hook 'old' as the sibling test in clone_leaf_test.go does, so this test would bypass any previously installed hook and the two tests count removals differently.
-Resolution: open
+Resolution: fixed 4f458e44502fd6bc5c5e451369ab2550924bba9c | d778be9d 2026-11-07T12:06:13Z

@@ -21,4 +21,4 @@ Body-Sig: 83fa832547a9146e
 ### c094e2bb.1 [low] docs/design/06-cli-reshape.md:61
 Anchor: in-diff
 Claim: The prose says "Twenty-six differences", but this commit adds a 27th row to the §1.1 table at line 90 without updating the count, so the sentence is stale if it counts table rows.
-Resolution: open
+Resolution: fixed 906d073c835d5477178601839eb6c5e60745ed2a | d778be9d 2026-11-07T12:04:48Z
