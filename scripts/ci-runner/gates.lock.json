@@ -3176,6 +3176,21 @@
     }
   },
   {
+    "id": "check:ci-docs-frontmatter",
+    "run": "npm run check:ci-docs-frontmatter",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-docs-frontmatter.ts",
+      "scripts/__tests__/check-docs-frontmatter.control.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-content",
+      "step": "Docs front matter matches the content schema"
+    }
+  },
+  {
     "id": "check:ci-lint-scope-coverage",
     "run": "npm run check:ci-lint-scope-coverage",
     "slow": true,

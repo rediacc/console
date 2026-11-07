@@ -3030,6 +3030,22 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   // <<< gen-manifest: region 21
+  // A ru page wrote its tags list with en dashes, YAML read `tags` as one string, every local gate passed, and only the Astro content loader refused it (10eae6293b). This validates every docs and blog entry with the REAL zod schema from content.config.ts, parsed by the parser Astro itself calls. Hand-written (two leaves), so it sits outside the generated regions.
+  {
+    id: 'check:ci-docs-frontmatter',
+    run: 'npm run check:ci-docs-frontmatter',
+    gate: true,
+    leaves: [
+      'scripts/gates/check-docs-frontmatter.ts',
+      'scripts/__tests__/check-docs-frontmatter.control.ts',
+    ],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-content',
+      step: 'Docs front matter matches the content schema',
+    },
+  },
   {
     id: 'check:ci-lint-scope-coverage',
     run: 'npm run check:ci-lint-scope-coverage',

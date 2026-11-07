@@ -267,6 +267,7 @@
     "check:ci-test-file-orphans": ".ci/scripts/quality/check_test_file_orphans.py",
     "check:ci-sentence-wrapping": "tsx scripts/gates/check-sentence-wrapping.ts --selftest && tsx scripts/gates/check-sentence-wrapping.ts",
     "check:ci-docs-thumb-coverage": "tsx scripts/gates/check-docs-thumb-coverage.ts --selftest && tsx scripts/gates/check-docs-thumb-coverage.ts",
+    "check:ci-docs-frontmatter": "tsx scripts/gates/check-docs-frontmatter.ts --selftest && tsx scripts/__tests__/check-docs-frontmatter.control.ts && tsx scripts/gates/check-docs-frontmatter.ts",
     "check:ci-docs-copy-units": "tsx scripts/gates/check-docs-copy-units.ts --selftest && tsx scripts/gates/check-docs-copy-units.ts",
     "check:ci-docs-browse-invariants": "tsx scripts/gates/check-docs-browse-invariants.ts --selftest && tsx scripts/gates/check-docs-browse-invariants.ts",
     "check:ci-skill-size": "tsx scripts/gates/check-skill-size.ts --selftest && tsx scripts/gates/check-skill-size.ts",
