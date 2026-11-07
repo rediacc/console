@@ -2328,7 +2328,6 @@ export const GATES: readonly GateSpec[] = [
     },
     run: 'npm run check:ci-plan-live-proof',
     gate: true,
-    slow: true, // 83.2 s CI step p90 (lane-durations refresh 2026-11-01); the tier is judged on the CI step, and a9981f7cd halving the local run (27 s -> 14 s) projects that step to about 40 s, still over the 20 s ceiling
     leaves: ['.ci/scripts/quality/check_plan_live_proof.py'],
     ci: {
       kind: 'step',
@@ -5200,7 +5199,6 @@ export const GATES: readonly GateSpec[] = [
     // The line budget eslint's `max-lines` enforced until the Biome-only lint cut (PLAN-biome-only-lint); its own gate header binds it to this step. Wired 2026-09-26 after gate-bind --write emitted the step while no script or entry existed, so CI ran `npm run check:ci-max-lines` against a missing script.
     id: 'check:ci-max-lines',
     run: 'npm run check:ci-max-lines',
-    slow: true, // 24.1s measured: counts lines across every tracked source file
     gate: true,
     leaves: ['scripts/gates/check-max-lines.ts'],
     ci: {

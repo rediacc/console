@@ -212,7 +212,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-locale-sources | quality-i18n / Locale sources | yes | no |
 | check:ci-locale-tutorial-assets | quality-content / Validate per-locale tutorial video assets exist | yes | no |
 | check:ci-lockfile | quality-code / Lockfile | yes | yes |
-| check:ci-max-lines | quality-code / No source file exceeds the line-count budget | yes | yes |
+| check:ci-max-lines | quality-code / No source file exceeds the line-count budget | yes | no |
 | check:ci-merge-method-prose | quality-code / Instruction files do not prescribe a rejected merge method | yes | no |
 | check:ci-model-invocable-commands | quality-code / Model-invocable commands | yes | no |
 | check:ci-mutate-check | quality-static / Mutation runner self-test | yes | no |
@@ -244,7 +244,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-plan-folders | quality-branch / Plan folders and retention | yes | yes |
 | check:ci-plan-housekeeping | quality-i18n / Plan file housekeeping | yes | yes |
 | check:ci-plan-implementation | quality-branch / Plan implementation clock | yes | yes |
-| check:ci-plan-live-proof | quality-branch / Plan live proof | yes | yes |
+| check:ci-plan-live-proof | quality-branch / Plan live proof | yes | no |
 | check:ci-plan-record | quality-branch / Plan records | yes | yes |
 | check:ci-plant-proofs | quality-static / Control plant proofs | yes | no |
 | check:ci-player-css-scope | quality-www-build / Player CSS scope | yes | yes |
