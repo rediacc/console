@@ -266,14 +266,25 @@ const MATRIX: Record<string, ScheduledStrategy> = {
   },
 };
 
+const RENET_PATH = '/usr/lib/rediacc/renet/current/renet';
+
 /**
  * The renet commands of one ExecStart. A unit with several destinations runs them in one isolating `sh -c`
- * (isolateCommands: `rc=0; <cmd> || rc=1; ... exit $$rc`), and each command inside must parse like a bare one; a
- * wrapper of any other shape throws, so a changed wrapper cannot hide its commands from this contract.
+ * (isolateCommands: `rc=0; <cmd> || rc=1; ... exit $$rc`), and each command inside must parse like a bare one. Any
+ * other ExecStart must be a bare renet command, so a wrapper of another shape (double quotes, bash, env) throws
+ * rather than hiding its commands from this contract.
  */
 function renetCommandsOf(execStart: string): string[] {
   const wrapper = /^\/bin\/sh -c '(.*)'$/.exec(execStart);
-  if (!wrapper) return [execStart];
+  if (!wrapper) {
+    // Anything else must be a bare renet command; a shell or env wrapper of another shape would otherwise pass unparsed.
+    if (!execStart.startsWith(`${RENET_PATH} `)) {
+      throw new Error(
+        `unrecognized ExecStart (neither a bare renet command nor the isolating wrapper): ${execStart}`
+      );
+    }
+    return [execStart];
+  }
   const parts = wrapper[1].split('; ');
   const commands = parts.slice(1, -1);
   if (
@@ -293,7 +304,7 @@ function generatedExecStarts(): string[] {
   // fails the parse below on `unknown flag: --store`.
   const units = computeDesiredUnits(
     machineUnitSpecs(strategies, config, 'm1'),
-    '/usr/lib/rediacc/renet/current/renet',
+    RENET_PATH,
     undefined,
     undefined,
     true
