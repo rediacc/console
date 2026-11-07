@@ -95,10 +95,49 @@ interface Leg {
   requestInRoutes?: boolean;
   /** How the speaker spells a key, for one that is no Go JSON tag. Absent means clientNames. */
   keySpelling?: (key: string) => RegExp;
+  /**
+   * The slice of the speaker that is this leg's REQUEST, which the request keys are looked for in. A speaker that also
+   * holds other objects naming the same key (a response struct, another body) would otherwise keep the gate green after
+   * the request drops it. Null means the request cannot be found in the speaker, which is a finding. Absent means the
+   * whole speaker.
+   */
+  requestScope?: (speaker: string) => string | null;
 }
 
 /** A key of a TypeScript object literal the CLI sends as a JSON body. */
 const bodyKey = (key: string) => new RegExp(`[{,]\\s*${key}\\s*[:,}]`);
+
+/**
+ * The expression the CLI passes as `body:` to the POST to `call`: from the first `body:` after the route to the
+ * property's end (a top-level comma or the closing brace of the options object), so a ternary of two object literals
+ * is read whole and a `{ storeId` elsewhere in the file is not.
+ */
+function postBodyOf(call: string): (speaker: string) => string | null {
+  return (speaker) => {
+    const at = speaker.indexOf(call);
+    if (at === -1) return null;
+    const bodyAt = speaker.indexOf('body:', at);
+    if (bodyAt === -1) return null;
+    let depth = 0;
+    for (let i = bodyAt + 'body:'.length; i < speaker.length; i++) {
+      const ch = speaker[i];
+      if (ch === '{' || ch === '(' || ch === '[') depth++;
+      else if (ch === '}' || ch === ')' || ch === ']') {
+        depth--;
+        if (depth < 0) return speaker.slice(bodyAt, i);
+      } else if (ch === ',' && depth === 0) return speaker.slice(bodyAt, i);
+    }
+    return speaker.slice(bodyAt);
+  };
+}
+
+/** The Go struct that is the session request body, comments dropped. */
+function sessionRequestStruct(speaker: string): string | null {
+  const at = speaker.indexOf('type sessionRequest struct {');
+  if (at === -1) return null;
+  const end = speaker.indexOf('\n}', at);
+  return end === -1 ? null : stripGoComments(speaker.slice(at, end));
+}
 
 /** A key of a query string the CLI composes. */
 const queryKey = (key: string) => new RegExp(`[?&]${key}=`);
@@ -110,7 +149,9 @@ const LEGS: Leg[] = [
     requestSchema: 'backupSessionRequest',
     responseSchema: 'backupSessionResponse',
     // `intent` splits the session in two ('backup' | 'restore'). A restore session is the only credential a lapsed-but-retained subscription can get, so a client that cannot spell the field cannot restore at all.
-    requestKeys: ['license', 'machineId', 'intent'],
+    // `storeId` names the backup store the session is for (PLAN-backup-multi-target R2; renet sends it for a store other than home). A spelling the schema does not accept is stripped silently and every session opens on `home`.
+    requestKeys: ['license', 'machineId', 'intent', 'storeId'],
+    requestScope: sessionRequestStruct,
     responseKeys: ['token', 'subscriptionId', 'dataPlaneUrl', 'grantKind'],
   },
   {
@@ -261,6 +302,7 @@ const LEGS: Leg[] = [
     clientCall: /\/backups\/restore-session/,
     clientFiles: [RESTORE_SESSION_TS],
     keySpelling: bodyKey,
+    requestScope: postBodyOf('/backups/restore-session'),
   },
   // A delayed delete still restores until its time, and the resolve route hides it unless asked. The two by-id size reads ask: without it a restore of one is licensed at the minimum size, and a restore test refuses it for an unknown size.
   ...[RESTORE_SIZE_TS, RESTORE_TEST_TS].map(
@@ -343,7 +385,8 @@ function read(rel: string): string {
 }
 
 /**
- * Top-level keys of a `export const <name> = z.object({...})` declaration.
+ * Top-level keys of a `const <name> = z.object({...})` declaration, exported or not (the restore-session body is a
+ * route-local const).
  * The formatter splits a refined schema as `z\n  .object({...})\n  .superRefine(fn)`
  * (backupGrantRequest since plan S5), so whitespace around `.object(` is allowed;
  * the walk below still starts at the object literal and ignores the refinement.
@@ -538,10 +581,15 @@ function checkLegs(
         }
       }
     }
+    const requestText = leg.requestScope ? leg.requestScope(speaker) : speaker;
+    if (requestText === null) {
+      problems.push(
+        `    ${leg.path}\n      the request body is not found in ${speakerName}, so its keys are unchecked.`
+      );
+    }
     for (const key of [...leg.requestKeys, ...leg.responseKeys]) {
-      const named = leg.keySpelling
-        ? leg.keySpelling(key).test(speaker)
-        : clientNames(speaker, key);
+      const text = leg.requestKeys.includes(key) ? (requestText ?? '') : speaker;
+      const named = leg.keySpelling ? leg.keySpelling(key).test(text) : clientNames(text, key);
       if (!named) {
         problems.push(
           `    ${leg.path} field "${key}"\n` +
@@ -804,6 +852,14 @@ if (!restoreLeg) {
     run(`${route}\n${both}`, '', 'lineageGuid, storeId: store').length !== 0 ||
     run(`${route}\n${noStore}`, '', 'lineageGuid, storeId: store').length === 0 ||
     run(`${route}\n${both}`, '', 'lineageGuid').length === 0 ||
+    // storeId named elsewhere in the speaker (another body) must not stand in for the restore-session body.
+    checkLegs([restoreLeg], `${route}\n${both}`, '', '', {
+      [RESTORE_SESSION_TS]: `other: { storeId: x }\n${call} body: { lineageGuid }, headers: {}\nlater: { storeId: y }`,
+    }).length === 0 ||
+    // the ternary of two literals the real client sends is read whole.
+    checkLegs([restoreLeg], `${route}\n${both}`, '', '', {
+      [RESTORE_SESSION_TS]: `${call} body: s === undefined ? { lineageGuid } : { lineageGuid, storeId: s }, x: 1`,
+    }).length !== 0 ||
     run(`${route}`, both, 'lineageGuid, storeId: store').length === 0
   ) {
     console.error('✗ restore-session control: storeId not pinned on both sides of the leg.');

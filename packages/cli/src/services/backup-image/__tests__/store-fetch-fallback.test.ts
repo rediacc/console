@@ -124,3 +124,24 @@ describe('backup download --store fallback', () => {
     expect(mockWarn).not.toHaveBeenCalled();
   });
 });
+
+describe('failure classification', () => {
+  it('keeps the own classification of an unrelated error that carries a cause', async () => {
+    const d = deps({}, () =>
+      Promise.reject(
+        Object.assign(new Error('renet spawn failed'), { cause: httpError(502, 'bad gateway') })
+      )
+    );
+    await expect(runStoreFetch({ ref: 'r', dest: '/d' }, d.base)).rejects.toThrow(
+      'renet spawn failed'
+    );
+    expect(d.runRenet).toHaveBeenCalledTimes(1);
+    expect(mockWarn).not.toHaveBeenCalled();
+  });
+
+  it('still reads the original of a refused session mint', async () => {
+    const d = deps({ 'eu-west': httpError(502, 'bad gateway') });
+    await runStoreFetch({ ref: 'r', dest: '/d' }, d.base);
+    expect(minted(d)).toEqual(['eu-west', undefined]);
+  });
+});

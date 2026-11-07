@@ -171,13 +171,20 @@ async function resolveTarget(
   }
 }
 
+/** Marks an error `fetchFromStore` rewrote from a refused session mint, and holds the original. */
+const REFUSED_FROM = Symbol('sessionRefusalOf');
+
+function isSessionRefusal(error: unknown): error is Error & { [REFUSED_FROM]: unknown } {
+  return error instanceof Error && REFUSED_FROM in error;
+}
+
 /**
  * What a thrown mint or fetch error says to the store-fault classifier: its HTTP status counts as text, and a mint the
  * store refused with a 403 that names no account-level code (retention, team scope, role) is that store's refused grant.
- * A session refusal was rewritten into a message for the operator, so the original error rides as `cause`.
+ * A session refusal was rewritten into a message for the operator, so the original error rides marked under `REFUSED_FROM`; any other error is read as it is, whatever `cause` it carries.
  */
 function failureOf(error: unknown): AttemptFailure {
-  const original = (error as { cause?: unknown } | null)?.cause ?? error;
+  const original = isSessionRefusal(error) ? error[REFUSED_FROM] : error;
   const { status, code } = (original ?? {}) as StatusError;
   const message = original instanceof Error ? original.message : String(original);
   if (status === 403 && code === undefined) return { error: `grant refused (HTTP 403) ${message}` };
@@ -198,7 +205,7 @@ async function fetchFromStore(
       ? deps.mintSession(lineage)
       : deps.mintSession(lineage, store));
   } catch (error) {
-    throw Object.assign(describeSessionRefusal(error), { cause: error });
+    throw Object.assign(describeSessionRefusal(error), { [REFUSED_FROM]: error });
   }
 
   const stdin = JSON.stringify({ ...session, apiBase: deps.apiBase(), lineageGuid: lineage });
