@@ -223,8 +223,7 @@ async function reportRestorePath(repoKey: string, stdout: string | undefined): P
 /**
  * The failure tail: 18 is a distinct code, as with browse ("this snapshot cannot address the path" is not "it broke"). It is a ticket step so a
  * backgrounded restore-path keeps the warning and the exit code when `rdc job wait` or the finished notice runs it. Any other failure was rendered, with its exit code, by executeRepoFunction.
- * The step sees the job's output and exit code, not its stderr: a NO_LISTING reason that renet printed only to stderr falls back to the generic message.
- * This is a change from the inline version, which also read the stderr of the result it held; a ticket step has only the replayed output.
+ * The step sees the job's output and exit code, not its stderr, because a ticket step has only the replayed output: a NO_LISTING reason that renet printed only to stderr falls back to the generic message.
  */
 function reportRestorePathFailure(
   repoKey: string,

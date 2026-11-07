@@ -69,4 +69,14 @@ describe('functionNameToEventType', () => {
   it('maps a renet function to its dotted type', () => {
     expect(functionNameToEventType('repository_up')).toBe('cli.repo.up');
   });
+
+  it.each([
+    ['repository_health', 'cli.repo.health'],
+    ['repository_repair', 'cli.repo.repair'],
+    ['backup_snapshot', 'cli.backup.snapshot'],
+    ['container_restart', 'cli.container.restart'],
+    ['proxy_acme_fix', 'cli.proxy_acme_fix'],
+  ])('maps %s to %s', (functionName, type) => {
+    expect(functionNameToEventType(functionName)).toBe(type);
+  });
 });

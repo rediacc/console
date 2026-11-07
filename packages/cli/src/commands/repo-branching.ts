@@ -205,7 +205,7 @@ bindStepHandler('renderRepoLog', ({ output }) => {
   const text = requireStepOutput(output, 'repo log');
   if (text === undefined) return Promise.resolve();
   const parsed = parseRenetJson<{ entries: Record<string, unknown>[] }>(text);
-  // Structured output rides the global `-o json` format now; the dedicated
+  // Structured output rides the global `-o` format (any non-table one); the dedicated
   // `--json` flag is gone (spec/03 §5.4).
   const format = getOutputFormat();
   if (format !== 'table') {

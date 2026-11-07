@@ -20,12 +20,6 @@ const machineEventTypes = [
   'cli.machine.health',
   'cli.machine.id',
   'cli.machine.list',
-  // Emitted by `machine prune` (packages/cli/src/commands/machine/prune.ts), which prunes orphaned network units on the machine.
-  'cli.network_prune',
-  // Emitted by the network-id discovery read (packages/cli/src/services/config/network-id-discovery.ts), renet's read-only `network_used` function.
-  'cli.network_used',
-  // Emitted by `machine repair` (packages/cli/src/commands/machine/repair.ts) for the ACME anchor fix and its Traefik restart; renet's `proxy_acme_fix` takes the fall-through name.
-  'cli.proxy_acme_fix',
   'cli.machine.match',
   'cli.machine.mismatch',
   'cli.machine.ping',
@@ -36,6 +30,12 @@ const machineEventTypes = [
   'cli.machine.repos',
   'cli.machine.services',
   'cli.machine.ssh_test',
+  // Emitted by `machine prune` (packages/cli/src/commands/machine/prune.ts), which prunes orphaned network units on the machine.
+  'cli.network_prune',
+  // Emitted by the network-id discovery read (packages/cli/src/services/config/network-id-discovery.ts), renet's read-only `network_used` function.
+  'cli.network_used',
+  // Emitted by `machine repair` (packages/cli/src/commands/machine/repair.ts) for the ACME anchor fix and its Traefik restart; renet's `proxy_acme_fix` takes the fall-through name.
+  'cli.proxy_acme_fix',
 ] as const;
 
 const repoEventTypes = [
@@ -120,7 +120,7 @@ const datastoreEventTypes = [
   'cli.datastore.volumes_open',
 ] as const;
 
-// `repo logs` / `repo exec` (repo-container.ts, new in P4). Dotted, like every other group — the fall-through would have produced `cli.container_exec`.
+// `repo logs` / `repo exec` (repo-container.ts, new in P4) and the container restart `machine repair` issues. Dotted, like every other group — the fall-through would have produced `cli.container_exec`.
 const containerEventTypes = [
   'cli.container.exec',
   'cli.container.logs',

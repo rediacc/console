@@ -19,7 +19,7 @@ behind `REDIACC_ALLOW_CLUSTER_OPS`; hidden `run` unchanged, absolutely agent-blo
 
 ## 1. The tree — AS BUILT (verified against the live CLI, 2026-07-13)
 
-This is no longer a target. It is a transcript of the shipped tree, generated from `packages/cli/scripts/command-tree.json` and checked in BOTH directions: every leaf below exists in the CLI, and every leaf in the CLI appears below. **189 contract commands** (105 machine-plane, 55 config-plane, 29 other; 93 proxyCapable). `run` is hidden and held out of the contract.
+This is no longer a target. It is a transcript of the shipped tree, generated from `packages/cli/scripts/command-tree.json` and checked in BOTH directions: every leaf below exists in the CLI, and every leaf in the CLI appears below. **210 contract commands** (116 machine-plane, 57 config-plane, 37 other; 97 proxyCapable). `run` is hidden and held out of the contract.
 
 ```
 rdc config:     init list show current delete set clear recover prune edit reconcile rotate-cek
@@ -57,7 +57,7 @@ rdc doctor | credits | update | serve | mcp serve | run (hidden)
 
 ### 1.1 Where the shipped tree differs from the tree this section used to draw
 
-Twenty-six differences. The first six are deliberate and each is traceable to a ruling. The seventh IS drift, and is recorded as such: it is what this gate exists to catch. The next two are a whole program landing after this transcript was drawn, and the rest are later additions.
+Twenty-seven differences. The first six are deliberate and each is traceable to a ruling. The seventh IS drift, and is recorded as such: it is what this gate exists to catch. The next two are a whole program landing after this transcript was drawn, and the rest are later additions.
 
 | Was drawn as | Shipped as | Why |
 |---|---|---|

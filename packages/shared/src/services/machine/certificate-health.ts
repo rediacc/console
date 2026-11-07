@@ -79,7 +79,7 @@ export function checkCertificateExpiry(
     .filter((f): f is CertificateFinding => f !== null);
 }
 
-// The ACME shared-CNAME class (G6, D-certs, F17): lego follows a CNAME on `_acme-challenge.<name>` and writes the challenge TXT at the chain's end, so an end that is not itself an `_acme-challenge.` name, or one end shared by several names, makes those renewals collide.
+// The ACME shared-CNAME class (G6, D-certs, F17): lego follows a CNAME on `_acme-challenge.<name>` and writes the challenge TXT at the chain's end, so one end shared by several names makes those renewals collide, and an end that is not itself an `_acme-challenge.` name puts the challenge record there instead of at the name.
 
 /**
  * A certificates section that carries where each name's challenge lands (renet pkg/list ChallengeInfo). `unknown` is set
