@@ -39,7 +39,7 @@ import { assertMachineExists } from '../_validate.js';
 import { composeMachineHealth } from './health.js';
 
 /** How one finding's fix ended in a repair run. */
-export type RepairResult =
+type RepairResult =
   | 'ok'
   | 'failed'
   | 'planned'
@@ -73,7 +73,7 @@ export interface MachineRepairOptions {
 }
 
 /** What a fix needs from the run: the repair() classes it may run and whether window-only work may run now. */
-export interface FixContext {
+interface FixContext {
   allowClasses: string[];
   inWindow: boolean;
 }
@@ -526,7 +526,7 @@ function printAction(a: RepairAction): void {
 }
 
 /** Print a finished run, as tables or as data. */
-export function renderRepairOutcome(outcome: RepairOutcome, format: OutputFormat): void {
+function renderRepairOutcome(outcome: RepairOutcome, format: OutputFormat): void {
   if (format === 'json') {
     outputService.print(
       {
@@ -569,6 +569,7 @@ async function setMaintenanceWindow(machine: string, spec: string): Promise<void
 export function registerRepairCommand(machine: Command): void {
   machine
     .command('repair')
+    .summary(t('commands.machine.repair.descriptionShort'))
     .description(t('commands.machine.repair.description'))
     .argument('<name>', t('options.name'))
     .option('--dry-run', t('commands.machine.repair.optionDryRun'))

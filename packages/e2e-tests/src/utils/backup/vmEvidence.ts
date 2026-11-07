@@ -39,7 +39,7 @@ export const isSshLoss = (r: RunResult): boolean => r.code === 255 || SSH_LOSS_T
 const shellQuote = (s: string): string => `'${s.replace(/'/g, `'\\''`)}'`;
 
 /** The runner-side commands, in order. */
-export const runnerEvidenceCommands = (diskDir: string): string[] => [
+const runnerEvidenceCommands = (diskDir: string): string[] => [
   'uptime',
   'free -m',
   'dmesg | tail -200',

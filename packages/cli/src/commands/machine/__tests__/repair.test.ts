@@ -278,7 +278,12 @@ describe('repair helpers', () => {
 
 describe('fix handlers refuse a fix that would widen its scope', () => {
   const ctx = { allowClasses: ['auto-safe'], inWindow: true };
-  const env = (exec: ReturnType<typeof vi.fn>) => ({ machine: 'm1', exec, datastore: '/mnt/d' });
+  type Env = Parameters<NonNullable<(typeof FIX_HANDLERS)['trim-prune']>>[2];
+  const env = (exec: ReturnType<typeof vi.fn>): Env => ({
+    machine: 'm1',
+    exec: exec as unknown as Env['exec'],
+    datastore: '/mnt/d',
+  });
 
   it('runs no unscoped trim for a repo.disk.high finding that names no repository', async () => {
     const exec = vi.fn().mockResolvedValue({ success: true, exitCode: 0 });

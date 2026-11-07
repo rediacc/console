@@ -31,7 +31,7 @@ import {
 } from './repo-health.js';
 
 /** One Rediaccfile's part of renet's RepairReport. */
-export interface RepoRepairFile {
+interface RepoRepairFile {
   file: string;
   class: string;
   declared: boolean;
@@ -80,7 +80,7 @@ export interface RepoRepairOutcome {
 export function repoRepairExitCode(report: RepoRepairReport): number {
   if (report.failed > 0) return 2;
   const level = (report.after ?? report.before).level;
-  return REPO_HEALTH_LEVEL_EXIT[level] ?? 2;
+  return REPO_HEALTH_LEVEL_EXIT[level] ?? REPO_HEALTH_LEVEL_EXIT.error;
 }
 
 /** Whether auto-with-backup may run: only with --with-backup and, outside a dry run, a snapshot that succeeded. */
@@ -260,6 +260,7 @@ async function repairRepo(
 export function registerRepoRepairCommand(repo: Command): void {
   repo
     .command('repair')
+    .summary(t('commands.repo.repair.descriptionShort'))
     .description(t('commands.repo.repair.description'))
     .argument('<ref>', t('options.repoRef'))
     .option('--dry-run', t('commands.repo.repair.optionDryRun'))

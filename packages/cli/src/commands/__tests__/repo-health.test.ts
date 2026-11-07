@@ -4,6 +4,7 @@
  * answer and a renet that predates `--strict` are each exit 2.
  */
 
+import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { Command } from 'commander';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -43,7 +44,7 @@ vi.mock('../../services/config/network-id-discovery.js', () => ({
   ensureRepositoryNetworkId: () => Promise.resolve(),
 }));
 vi.mock('../../utils/repo-executor.js', () => ({
-  recordedDatastoreMount: () => Promise.resolve('/mnt/rediacc'),
+  recordedDatastoreMount: () => Promise.resolve(WK_DATASTORE_PATH),
 }));
 vi.mock('../../utils/errors.js', () => ({
   getOutputFormat: () => 'table',
