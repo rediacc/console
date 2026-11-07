@@ -843,11 +843,13 @@ def test_config_file_keys_reach_the_readers(tmp_path):
 
 
 def test_the_repo_config_names_every_key_the_readers_use():
-    """Every TTL and stale key the code reads is present in the shipped file, so none of them silently falls back to a default."""
+    """The key ttl_s derives for every check in ALL_CHECKS is in the shipped file and in DEFAULTS, so no check silently falls back to 30 minutes."""
     doc = json.loads(
         (
             pathlib.Path(__file__).resolve().parents[3] / ".ci" / "config" / "ops-health.json"
         ).read_text(encoding="utf-8")
     )
-    assert set(oh.DEFAULTS["local_ttl_minutes"]) <= set(doc["local_ttl_minutes"])
+    derived = {oh.TTL_KEYS.get(check, check.replace("-", "_")) for check in oh.ALL_CHECKS}
+    assert derived <= set(doc["local_ttl_minutes"])
+    assert derived <= set(oh.DEFAULTS["local_ttl_minutes"])
     assert set(oh.DEFAULTS["stale"]) <= set(doc["stale"])
