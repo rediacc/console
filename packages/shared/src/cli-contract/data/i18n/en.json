@@ -66,6 +66,7 @@
   "commands.backup.download.resuming": "Resuming the interrupted copy of {{repo}}; only the differences are sent",
   "commands.backup.download.retrying": "Retrying {{repo}} after a transfer failure: {{error}}",
   "commands.backup.download.starting": "Copying {{repo}} from {{machine}}...",
+  "commands.backup.download.storeCellsRoot": "Snapshot root check: {{outcome}}",
   "commands.backup.download.storeDone": "{{repo}}: fetched snapshot {{snapshot}} -> {{image}} ({{bytes}} bytes fetched)",
   "commands.backup.download.storeOfflineNote": "The copy is encrypted and cannot be opened on this OS; send it to a Linux machine with 'rdc backup upload'.",
   "commands.backup.download.summaryError": "  error: {{error}}",

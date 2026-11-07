@@ -2297,6 +2297,7 @@
         "optionStore": "Rebuild the encrypted image straight from the backup store, with no machine. Needs an API token with the backup:read and backup:restore scopes in REDIACC_TOKEN",
         "optionAt": "With --store, the snapshot to fetch: a time (ISO 8601) or a snapshot id (default: the newest)",
         "storeDone": "{{repo}}: fetched snapshot {{snapshot}} -> {{image}} ({{bytes}} bytes fetched)",
+        "storeCellsRoot": "Snapshot root check: {{outcome}}",
         "storeOfflineNote": "The copy is encrypted and cannot be opened on this OS; send it to a Linux machine with 'rdc backup upload'."
       },
       "upload": {

@@ -27,6 +27,9 @@ interface FetchImageRecord {
   snapshotId?: string;
   partial?: string;
   bytesFetched?: number;
+  /** The engine's Merkle-root check: "verified" or "absent". */
+  cellsRoot?: string;
+  cellsRootValue?: string;
   chunksFetched?: number;
   chunksReused?: number;
   imageBytes?: number;
@@ -64,6 +67,19 @@ export interface StoreFetchResult {
   snapshotId: string;
   dest: string;
   record: FetchImageRecord;
+}
+
+/** The JSON `rdc backup download --store` prints: the fetch result plus the engine's own root check. */
+export function storeFetchJson(result: StoreFetchResult): Record<string, unknown> {
+  const { record } = result;
+  return {
+    status: record.status,
+    image: result.dest,
+    snapshotId: result.snapshotId,
+    bytesFetched: record.bytesFetched ?? 0,
+    ...(record.cellsRoot ? { cellsRoot: record.cellsRoot } : {}),
+    ...(record.cellsRootValue ? { cellsRootValue: record.cellsRootValue } : {}),
+  };
 }
 
 /** "LUKS" followed by 0xBA 0xBE: the first six bytes of every LUKS1 and LUKS2 volume. */

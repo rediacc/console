@@ -1,7 +1,7 @@
 import { join, resolve as resolvePath } from 'node:path';
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
-import { runStoreFetch } from '../services/backup-image/store-fetch.js';
+import { runStoreFetch, storeFetchJson } from '../services/backup-image/store-fetch.js';
 import { runDownload, runUpload } from '../services/backup-image/transfer.js';
 import { configService } from '../services/config/config-resources.js';
 import { setExitCode, writeStdout } from '../services/core/request-context.js';
@@ -77,14 +77,15 @@ async function runStoreDownloadCommand(refs: string[], options: DownloadCliOptio
   );
   const { record } = result;
   if (json) {
-    writeStdout(
-      `${JSON.stringify({ status: record.status, image: dest, snapshotId: result.snapshotId, bytesFetched: record.bytesFetched ?? 0 })}\n`
-    );
+    writeStdout(`${JSON.stringify(storeFetchJson({ ...result, dest }))}\n`);
     return;
   }
   writeStdout(
     `${t('commands.backup.download.storeDone', { repo: repoKey, snapshot: result.snapshotId, image: dest, bytes: String(record.bytesFetched ?? 0) })}\n`
   );
+  if (record.cellsRoot) {
+    writeStdout(`${t('commands.backup.download.storeCellsRoot', { outcome: record.cellsRoot })}\n`);
+  }
   if (process.platform !== 'linux') {
     writeStdout(`${t('commands.backup.download.storeOfflineNote')}\n`);
   }

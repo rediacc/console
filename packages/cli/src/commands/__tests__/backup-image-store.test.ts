@@ -12,6 +12,7 @@ import {
   type RenetRun,
   runStoreFetch,
   type StoreFetchDeps,
+  storeFetchJson,
 } from '../../services/backup-image/store-fetch.js';
 
 const LINEAGE = 'f6545d49-c46e-4c14-8006-0ad5b37f3e08';
@@ -190,5 +191,31 @@ describe('backup download --store option refusals', () => {
     await expect(
       backup.parseAsync(['download', 'mail', '--to', '/tmp', '--at', 'now'], { from: 'user' })
     ).rejects.toThrow('errors.backupImage.atNeedsStore');
+  });
+});
+
+describe('storeFetchJson', () => {
+  it('keeps the engine root check from the renet record', () => {
+    const root = 'ab'.repeat(32);
+    const record = {
+      status: 'fetched',
+      bytesFetched: 42,
+      cellsRoot: 'verified',
+      cellsRootValue: root,
+    };
+    expect(storeFetchJson({ snapshotId: SNAP, dest: '/d.img', record })).toEqual({
+      status: 'fetched',
+      image: '/d.img',
+      snapshotId: SNAP,
+      bytesFetched: 42,
+      cellsRoot: 'verified',
+      cellsRootValue: root,
+    });
+  });
+
+  it('omits the root fields when the record has none', () => {
+    const out = storeFetchJson({ snapshotId: SNAP, dest: '/d.img', record: { status: 'fetched' } });
+    expect(out).not.toHaveProperty('cellsRoot');
+    expect(out).not.toHaveProperty('cellsRootValue');
   });
 });
