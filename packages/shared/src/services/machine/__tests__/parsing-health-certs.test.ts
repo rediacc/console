@@ -3,7 +3,7 @@
  * under 7 days an error, naming the certificate. No proxy on the machine raises nothing.
  */
 import { describe, expect, it } from 'vitest';
-import { checkCertificateExpiry } from '../parsing-health.js';
+import { checkCertificateExpiry } from '../certificate-health.js';
 
 const NOW = new Date('2026-11-06T12:00:00Z');
 const inDays = (d: number) => new Date(NOW.getTime() + d * 24 * 60 * 60 * 1000).toISOString();

@@ -4,7 +4,7 @@
  * silent.
  */
 import { describe, expect, it } from 'vitest';
-import { checkAcmeChallengeCnames } from '../parsing-health.js';
+import { checkAcmeChallengeCnames } from '../certificate-health.js';
 
 const section = (challenges: { name: string; cname?: string }[], delegated_names?: string[]) => ({
   status: 'ok',

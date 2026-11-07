@@ -229,7 +229,7 @@ const OPERATOR_COMMANDS: Readonly<
 > = {
   'repo-up': (f, m) => `rdc repo up ${f.subject}@${m}`,
   'restart-service': (f, m) =>
-    `rdc term connect -m ${m} -c 'sudo systemctl restart ${f.target?.unit ?? f.subject}'`,
+    `rdc term connect ${m} -c 'sudo systemctl restart ${f.target?.unit ?? f.subject}'`,
   'run-backup': (_f, m) => `rdc backup status -m ${m}`,
   'bind-backup-strategy': (_f, m) => `rdc backup strategy bind <strategy> -m ${m}`,
   'license-refresh': (_f, m) => `rdc subscription refresh -m ${m}`,

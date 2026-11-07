@@ -9,7 +9,7 @@ vi.mock('../../../services/core/output.js', () => ({ outputService: { info: vi.f
 vi.mock('../../../services/config/config-resources.js', () => ({ configService: {} }));
 vi.mock('../../../i18n/index.js', () => ({ t: (k: string) => k }));
 
-const { applyCertificates } = await import('../health.js');
+const { applyCertificates } = await import('../health-folds.js');
 
 const NOW = new Date('2026-11-06T12:00:00Z');
 const inDays = (d: number) => new Date(NOW.getTime() + d * 86_400_000).toISOString();

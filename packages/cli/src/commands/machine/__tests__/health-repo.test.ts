@@ -10,7 +10,8 @@ vi.mock('../../../services/core/output.js', () => ({ outputService: { info: vi.f
 vi.mock('../../../services/config/config-resources.js', () => ({ configService: {} }));
 vi.mock('../../../i18n/index.js', () => ({ t: (k: string) => k }));
 
-const { applyRepoHealth, fetchRepoHealth, foldRepoHealthResult } = await import('../health.js');
+const { fetchRepoHealth } = await import('../health.js');
+const { applyRepoHealth, foldRepoHealthResult } = await import('../health-folds.js');
 
 const clean = {
   healthy: true,

@@ -10,7 +10,8 @@ vi.mock('../../../services/core/output.js', () => ({ outputService: { info: vi.f
 vi.mock('../../../services/config/config-resources.js', () => ({ configService: {} }));
 vi.mock('../../../i18n/index.js', () => ({ t: (k: string) => k }));
 
-const { applyStaleness, applyRepoHealth, applyCertificates } = await import('../health.js');
+const { applyStaleness } = await import('../health.js');
+const { applyRepoHealth, applyCertificates } = await import('../health-folds.js');
 
 const NOW = new Date('2026-11-06T00:00:00Z');
 const clean = {
@@ -73,12 +74,12 @@ const EXPECTED = [
   'repo.health.error',
   'cert.expiry.near',
   'acme.challenge.cname-shared',
-];
+] as const;
 
 describe('machine health findings from the CLI producers (X1)', () => {
   it('codes every issue it adds, from the table', () => {
     const health = everything();
-    expect(health.findings.map((f) => f.code)).toEqual(EXPECTED);
+    expect(health.findings.map((f) => f.code)).toEqual([...EXPECTED]);
     for (const f of health.findings) expect(isKnownFindingCode(f.code), f.code).toBe(true);
     // One issue string per finding, unchanged in wording.
     expect(health.issues).toHaveLength(EXPECTED.length);
