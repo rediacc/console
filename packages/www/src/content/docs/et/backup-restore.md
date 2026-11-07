@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 7
 language: et
-sourceHash: "f48b4310b385d8cf"
-sourceCommit: "abbcec18caa5bafe792600a5679107a2a217e270"
+sourceHash: "677e95e38761776f"
+sourceCommit: "d1141cb40538b792a1c385b399ef948033e3139a"
 ---
 
 # Varundamine ja taastamine
@@ -61,9 +61,9 @@ Masina-masina push ja pull ei vaja kumbagi. Need on otsene ülekanne kahe masina
 - **See ei ole pidev replikatsioon.** Hetktõmmis on hetk, mille sa jäädvustasid, ja sa võid kaotada kõik, mis on kirjutatud alates viimasest. Kui palju see on, sõltub sellest, kui sageli sa käivitad.
 - **Salvestatud objektid on üks kord kirjutatavad, mitte sertifitseeritud WORM.** Rakud kirjutatakse ainult-loomise tingimusega, masina saadav õigus ei saa midagi kustutada, ja kustutamised toimuvad serveripoolselt säilituspoliitika alusel. See on tõeline tõke kompromiteeritud masinale, mis hävitab oma varukopiad. See ei ole vastavussertifikaat ja seda ei auditeerita sellisena.
 
-### Üks sihtkohatüüp
+### Sihtkohad
 
-Tükksalvestuse varukoopiatel on üks sihtkohatüüp: teenuse majutatud tükksalvestus, millele pääseb ligi kontoserveri kaudu. Väliste salvestusotspunktide registrit ei ole, seega nimetavad `--to` ja `--from` käskudel `repo push` ja `repo pull` ainult masinat.
+Strateegia võib kirjutada hoidlasse `home`, teise majutatud regiooni või registreeritud kliendi ämbrisse (bucket), ja iga sihtkoht on eraldi taastepunkt. Hoidlad, sihtkoha hoidla nimetamine, taastamine käsuga `--from` ja sihtkohtade kaupa olek on lehel [Varunduse sihtkohad](/et/docs/backup-destinations). Käskudes `repo push` ja `repo pull` nimetavad `--to` ja `--from` endiselt ainult masinat.
 
 ### Tükksalvestuse käsud
 
@@ -329,6 +329,8 @@ rdc backup restore my-app@server-1 --as my-app --machine server-1 --up
 
 Aeg lahendatakse ainult selle repositooriumi hetktõmmiste hulgas selle lähtemasinal. Teiste masinate või sama liini forkide kirjutatud hetktõmmiseid ei arvestata, kui `--any-stream` ei laienda otsingut tahtlikult. Kui repositooriumi enda voogu ei saa kindlaks teha, lükatakse taaste tagasi ja küsitakse `--any-stream`, selle asemel et arvata.
 
+Kui repositooriumi hoiab mitu hoidlat, loeb taastamine hoidlast, mille uusim hetktõmmis läbis viimase kontrolli, ja liigub järgmisse hoidlasse, kui hoidla tõrgub. `--from <storeId>` loeb ühte nimetatud hoidlat ega lähe kunagi üle teisele. Vaata lehte [Varunduse sihtkohad](/et/docs/backup-destinations).
+
 Taastamine uue nime alla käsuga `--as` ei kirjuta midagi üle, seega on taastamise harjutus ohutu käivitada elava masina vastu. Taastamine juba olemasoleva nime alla lükatakse tagasi.
 
 | Valik | Kirjeldus |
@@ -338,6 +340,7 @@ Taastamine uue nime alla käsuga `--as` ei kirjuta midagi üle, seega on taastam
 | `-m, --machine <machine>` | Masin, kuhu taastada |
 | `--datastore <name>` | Taasta sellesse nimetatud andmehoidlasse, mille ühendatud masin seda majutab |
 | `--at <time>` | Taasta ajahetk: hetktõmmise id või RFC 3339 aeg |
+| `--from <storeId>` | Loe hetktõmmis sellest varundushoidlast. Ilma selleta loetakse hoidlat, kus on uusim kontrollitud hetktõmmis, ja hoidla tõrke korral järgmist hoidlat. Valikuga `--from` varuvarianti ei ole |
 | `--any-stream` | Koos `--at` arvesta ka teiste masinate ja selle liini forkide hetktõmmiseid |
 | `--up` | Juuruta taastatud repositoorium pärast ülekannet |
 | `--allow-unopenable` | Paiguta kujutis ka siis, kui repositooriumi paroolifraas seda ei ava (hetktõmmis paroolifraasi vahetuse eelsest ajast) |

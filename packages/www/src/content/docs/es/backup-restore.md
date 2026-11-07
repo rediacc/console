@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 7
 language: es
-sourceHash: "f48b4310b385d8cf"
-sourceCommit: "abbcec18caa5bafe792600a5679107a2a217e270"
+sourceHash: "677e95e38761776f"
+sourceCommit: "d1141cb40538b792a1c385b399ef948033e3139a"
 ---
 
 # Respaldo y Restauración
@@ -61,9 +61,9 @@ El push y el pull de máquina a máquina no necesitan ninguna de las dos cosas. 
 - **No es replicación continua.** Un snapshot es un punto que tomaste, y puedes perder todo lo escrito desde el último. Cuánto sea eso depende de con qué frecuencia lo ejecutes.
 - **Los objetos almacenados son de escritura única, no WORM certificado.** Las celdas se escriben con una condición de solo creación, el permiso que obtiene una máquina no puede borrar nada, y las eliminaciones ocurren en el servidor según la política de retención. Eso es una barrera real contra una máquina comprometida que destruye sus propios respaldos. No es una certificación de cumplimiento, y no se audita como tal.
 
-### Un único tipo de destino
+### Destinos
 
-Los backups en almacenamiento fragmentado tienen un único tipo de destino: un almacenamiento fragmentado alojado en el servicio, al que se llega a través del servidor de cuentas. No existe un registro de endpoints de almacenamiento externos, así que `--to` y `--from` en `repo push` y `repo pull` solo aceptan una máquina.
+Una estrategia puede escribir en el almacén `home`, en una segunda región alojada o en un bucket de cliente registrado, y cada destino es un punto de recuperación propio. Los almacenes, cómo indicar el almacén de un destino, la restauración con `--from` y el estado por destino están en la página [Destinos de backup](/es/docs/backup-destinations). `--to` y `--from` en `repo push` y `repo pull` siguen aceptando solo una máquina.
 
 ### Comandos de almacenamiento fragmentado
 
@@ -329,6 +329,8 @@ rdc backup restore my-app@server-1 --as my-app --machine server-1 --up
 
 Una hora se resuelve solo entre los snapshots de este repositorio en su máquina de origen. Los snapshots escritos por otras máquinas o por forks del mismo linaje no se consideran, salvo que `--any-stream` amplíe la búsqueda a propósito. Si no se puede determinar el flujo propio del repositorio, la restauración se rechaza y pide `--any-stream` en lugar de adivinar.
 
+Si varios almacenes contienen el repositorio, la restauración lee el almacén cuyo snapshot más reciente superó la última verificación y pasa al siguiente almacén cuando uno falla. `--from <storeId>` lee un único almacén indicado y nunca recurre a otro. Consulta [Destinos de backup](/es/docs/backup-destinations).
+
 Restaurar bajo un nombre nuevo con `--as` no sobrescribe nada, así que un simulacro de restauración es seguro de ejecutar contra una máquina en vivo. Restaurar sobre un nombre que ya existe se rechaza.
 
 | Opción | Descripción |
@@ -338,6 +340,7 @@ Restaurar bajo un nombre nuevo con `--as` no sobrescribe nada, así que un simul
 | `-m, --machine <machine>` | Máquina en la que restaurar |
 | `--datastore <name>` | Restaurar en este datastore nombrado, cuya máquina asociada lo aloja |
 | `--at <time>` | Restaurar un punto en el tiempo: un id de snapshot o una hora RFC 3339 |
+| `--from <storeId>` | Leer el snapshot de este almacén de backup. Sin esta opción se lee el almacén con el snapshot verificado más reciente, y si un almacén falla se sigue con el siguiente. Con `--from` no hay alternativa |
 | `--any-stream` | Con `--at`, considera también los snapshots de otras máquinas y de forks de este linaje |
 | `--up` | Desplegar el repositorio restaurado después de la transferencia |
 | `--allow-unopenable` | Colocar la imagen aunque la frase de contraseña del repositorio no la abra (un snapshot anterior a un cambio de frase de contraseña) |

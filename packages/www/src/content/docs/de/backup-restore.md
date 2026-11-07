@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 7
 language: de
-sourceHash: "f48b4310b385d8cf"
-sourceCommit: "abbcec18caa5bafe792600a5679107a2a217e270"
+sourceHash: "677e95e38761776f"
+sourceCommit: "d1141cb40538b792a1c385b399ef948033e3139a"
 ---
 
 # Backup & Wiederherstellung
@@ -61,9 +61,9 @@ Maschine-zu-Maschine-Push und -Pull brauchen keins von beidem. Sie sind eine dir
 - **Es ist keine kontinuierliche Replikation.** Ein Snapshot ist ein Zeitpunkt, den Sie erfasst haben, und Sie können alles verlieren, was seit dem letzten geschrieben wurde. Wie viel das ist, hängt davon ab, wie oft Sie laufen lassen.
 - **Gespeicherte Objekte sind write-once, nicht zertifiziertes WORM.** Zellen werden mit einer Nur-Erstellen-Bedingung geschrieben, die Berechtigung, die eine Maschine erhält, kann nichts löschen, und Löschungen geschehen serverseitig nach Aufbewahrungsrichtlinie. Das ist eine echte Barriere dagegen, dass eine kompromittierte Maschine ihre eigenen Backups zerstört. Es ist keine Compliance-Zertifizierung, und es wird nicht als eine geprüft.
 
-### Eine einzige Zielart
+### Ziele
 
-Chunk-Store-Backups haben genau eine Zielart: einen gehosteten Chunk-Store, der über den Account-Server erreicht wird. Es gibt keine Registry externer Speicher-Endpunkte, daher nennen `--to` und `--from` bei `repo push` und `repo pull` nur eine Maschine.
+Eine Strategie kann in den Store `home`, in eine zweite gehostete Region oder in einen registrierten Kunden-Bucket schreiben, und jedes Ziel ist ein eigener Wiederherstellungspunkt. Stores, die Benennung des Stores eines Ziels, die Wiederherstellung mit `--from` und der Status je Ziel stehen auf der Seite [Backup-Ziele](/de/docs/backup-destinations). `--to` und `--from` bei `repo push` und `repo pull` nennen weiterhin nur eine Maschine.
 
 ### Chunk-Storage-Befehle
 
@@ -329,6 +329,8 @@ rdc backup restore my-app@server-1 --as my-app --machine server-1 --up
 
 Eine Zeit wird nur unter den Snapshots dieses Repositorys auf seiner Quellmaschine aufgelöst. Snapshots anderer Maschinen oder von Forks derselben Lineage bleiben unberücksichtigt, es sei denn, `--any-stream` weitet die Suche bewusst aus. Lässt sich der eigene Stream des Repositorys nicht bestimmen, wird die Wiederherstellung zurückgewiesen und verlangt `--any-stream`, statt zu raten.
 
+Halten mehrere Stores das Repository, liest die Wiederherstellung den Store, dessen neuester Snapshot die letzte Verifizierung bestanden hat, und wechselt zum nächsten Store, wenn ein Store ausfällt. `--from <storeId>` liest genau einen benannten Store und weicht nie aus. Siehe [Backup-Ziele](/de/docs/backup-destinations).
+
 Die Wiederherstellung unter einem neuen Namen mit `--as` überschreibt nichts, sodass eine Wiederherstellungsübung gefahrlos gegen eine Live-Maschine läuft. Die Wiederherstellung auf einen bereits vorhandenen Namen wird zurückgewiesen.
 
 | Option | Beschreibung |
@@ -338,6 +340,7 @@ Die Wiederherstellung unter einem neuen Namen mit `--as` überschreibt nichts, s
 | `-m, --machine <machine>` | Maschine, auf die wiederhergestellt wird |
 | `--datastore <name>` | In diesen benannten Datastore wiederherstellen, dessen angeschlossene Maschine ihn hostet |
 | `--at <time>` | Einen Zeitpunkt wiederherstellen: eine Snapshot-ID oder eine RFC-3339-Zeit |
+| `--from <storeId>` | Den Snapshot aus diesem Backup-Store lesen. Ohne die Option wird der Store mit dem neuesten verifizierten Snapshot gelesen, und bei einem Store-Fehler folgt der nächste Store. Mit `--from` gibt es keinen Ausweichstore |
 | `--any-stream` | Mit `--at` auch Snapshots von anderen Maschinen und Forks dieser Lineage berücksichtigen |
 | `--up` | Wiederhergestelltes Repository nach der Übertragung bereitstellen |
 | `--allow-unopenable` | Das Image auch ablegen, wenn die Passphrase des Repositorys es nicht öffnet (ein Snapshot aus der Zeit vor einem Passphrase-Wechsel) |

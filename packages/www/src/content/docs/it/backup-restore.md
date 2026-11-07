@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 7
 language: it
-sourceHash: "f48b4310b385d8cf"
-sourceCommit: "abbcec18caa5bafe792600a5679107a2a217e270"
+sourceHash: "677e95e38761776f"
+sourceCommit: "d1141cb40538b792a1c385b399ef948033e3139a"
 ---
 
 # Backup e Ripristino
@@ -61,9 +61,9 @@ Il push e il pull da macchina a macchina non necessitano di nessuno dei due. Son
 - **Non è una replica continua.** Uno snapshot è un punto che hai catturato, e puoi perdere tutto ciò che è stato scritto dall'ultimo. Quanto sia dipende dalla frequenza con cui lo esegui.
 - **Gli oggetti memorizzati sono write-once, non WORM certificato.** Le celle vengono scritte con una condizione di sola creazione, il permesso ottenuto da una macchina non può eliminare nulla, e le eliminazioni avvengono lato server secondo la politica di conservazione. È una barriera reale contro una macchina compromessa che distrugge i propri backup. Non è una certificazione di conformità, e non viene verificata come tale.
 
-### Un solo tipo di destinazione
+### Destinazioni
 
-I backup nello storage a chunk hanno un solo tipo di destinazione: uno storage a chunk ospitato dal servizio, raggiunto tramite il server degli account. Non esiste un registro di endpoint di storage esterni, quindi `--to` e `--from` su `repo push` e `repo pull` indicano soltanto una macchina.
+Una strategia può scrivere nello store `home`, in una seconda regione ospitata o in un bucket del cliente registrato, e ogni destinazione è un punto di ripristino a sé. Store, indicazione dello store di una destinazione, ripristino con `--from` e stato per destinazione sono nella pagina [Destinazioni di backup](/it/docs/backup-destinations). `--to` e `--from` su `repo push` e `repo pull` indicano ancora soltanto una macchina.
 
 ### Comandi per lo storage a chunk
 
@@ -329,6 +329,8 @@ rdc backup restore my-app@server-1 --as my-app --machine server-1 --up
 
 Un orario viene risolto solo tra gli snapshot di questo repository sulla sua macchina di origine. Gli snapshot scritti da altre macchine o da fork dello stesso lignaggio non vengono considerati, a meno che `--any-stream` non allarghi la ricerca di proposito. Se il flusso del repository non si può determinare, il ripristino viene rifiutato e richiede `--any-stream` invece di tirare a indovinare.
 
+Quando più store contengono il repository, il ripristino legge lo store il cui snapshot più recente ha superato l'ultima verifica e passa allo store successivo se uno store fallisce. `--from <storeId>` legge un solo store indicato e non ripiega mai su un altro. Vedi [Destinazioni di backup](/it/docs/backup-destinations).
+
 Ripristinare con un nuovo nome tramite `--as` non sovrascrive nulla, quindi un'esercitazione di ripristino è sicura da eseguire su una macchina live. Ripristinare su un nome già esistente viene rifiutato.
 
 | Opzione | Descrizione |
@@ -338,6 +340,7 @@ Ripristinare con un nuovo nome tramite `--as` non sovrascrive nulla, quindi un'e
 | `-m, --machine <machine>` | Macchina su cui ripristinare |
 | `--datastore <name>` | Ripristina in questo datastore denominato, la cui macchina collegata lo ospita |
 | `--at <time>` | Ripristina un punto nel tempo: un id di snapshot o un orario RFC 3339 |
+| `--from <storeId>` | Legge lo snapshot da questo store di backup. Senza l'opzione viene letto lo store con lo snapshot verificato più recente, e in caso di errore si passa allo store successivo. Con `--from` non c'è alcun ripiego |
 | `--any-stream` | Con `--at`, considera anche gli snapshot di altre macchine e dei fork di questo lignaggio |
 | `--up` | Distribuisce il repository ripristinato dopo il trasferimento |
 | `--allow-unopenable` | Colloca l'immagine anche se la passphrase del repository non la apre (uno snapshot precedente a un cambio di passphrase) |

@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 7
 language: tr
-sourceHash: "f48b4310b385d8cf"
-sourceCommit: "abbcec18caa5bafe792600a5679107a2a217e270"
+sourceHash: "677e95e38761776f"
+sourceCommit: "d1141cb40538b792a1c385b399ef948033e3139a"
 ---
 
 # Yedekleme ve Geri Yükleme
@@ -62,9 +62,9 @@ Makineler arası push ve pull, ikisine de ihtiyaç duymaz. Zaten yapılandırman
 - **Sürekli çoğaltma değildir.** Bir anlık görüntü, aldığınız bir andır ve son anlık görüntüden bu yana yazılmış her şeyi kaybedebilirsiniz. Bunun ne kadar olduğu, ne sıklıkla çalıştırdığınıza bağlıdır.
 - **Depolanan nesneler bir kez yazılır, sertifikalı WORM değildir.** Hücreler yalnızca oluşturmaya izin veren koşullu bir şekilde yazılır, bir makinenin aldığı izin hiçbir şeyi silemez ve silmeler saklama politikasına göre sunucu tarafında gerçekleşir. Bu, ele geçirilmiş bir makinenin kendi yedeklerini yok etmesine karşı gerçek bir engeldir. Bir uyumluluk sertifikası değildir ve öyle denetlenmez.
 
-### Tek hedef türü
+### Hedefler
 
-Chunk deposu yedeklerinin tek bir hedef türü vardır: hesap sunucusu üzerinden erişilen, hizmet tarafından barındırılan bir chunk deposu. Harici depolama uç noktalarının bir kaydı yoktur; bu yüzden `repo push` ve `repo pull` komutlarındaki `--to` ve `--from` yalnızca bir makine adı alır.
+Bir strateji `home` deposuna, ikinci bir barındırılan bölgeye ya da kayıtlı bir müşteri bucket'ına yazabilir; her hedef ayrı bir kurtarma noktasıdır. Depolar, bir hedefin deposunu belirtme, `--from` ile geri yükleme ve hedef başına durum [Yedekleme Hedefleri](/tr/docs/backup-destinations) sayfasında anlatılır. `repo push` ve `repo pull` komutlarındaki `--to` ve `--from` hâlâ yalnızca bir makine adı alır.
 
 ### Chunk depolama komutları
 
@@ -330,6 +330,8 @@ rdc backup restore my-app@server-1 --as my-app --machine server-1 --up
 
 Bir zaman, yalnızca bu deponun kaynak makinesindeki anlık görüntüleri arasında çözülür. Diğer makinelerin ya da aynı soy hattının fork'larının yazdığı anlık görüntüler, `--any-stream` aramayı bilerek genişletmedikçe dikkate alınmaz. Deponun kendi akışı belirlenemezse geri yükleme reddedilir ve tahmin yürütmek yerine `--any-stream` ister.
 
+Depoyu birden fazla depo tutuyorsa geri yükleme, en yeni anlık görüntüsü son doğrulamayı geçen depodan okur ve bir depo başarısız olursa sıradakine geçer. `--from <storeId>` adı verilen tek bir depoyu okur ve hiçbir zaman başka depoya geçmez. Bkz. [Yedekleme Hedefleri](/tr/docs/backup-destinations).
+
 `--as` ile yeni bir ad altında geri yükleme hiçbir şeyin üzerine yazmaz; bu yüzden bir geri yükleme provası, canlı bir makinede güvenle çalıştırılabilir. Zaten var olan bir ada geri yükleme reddedilir.
 
 | Seçenek | Açıklama |
@@ -339,6 +341,7 @@ Bir zaman, yalnızca bu deponun kaynak makinesindeki anlık görüntüleri aras�
 | `-m, --machine <machine>` | Geri yüklenecek makine |
 | `--datastore <name>` | Bu adlandırılmış veri deposuna geri yükle; bağlı makinesi onu barındırır |
 | `--at <time>` | Belirli bir zaman noktasını geri yükle: bir anlık görüntü kimliği veya RFC 3339 zamanı |
+| `--from <storeId>` | Anlık görüntüyü bu yedekleme deposundan oku. Verilmezse en yeni doğrulanmış anlık görüntüye sahip depo okunur, bir depo başarısız olursa sıradakine geçilir. `--from` ile başka depoya geçilmez |
 | `--any-stream` | `--at` ile birlikte diğer makinelerin ve bu soy hattının fork'larının anlık görüntülerini de dikkate al |
 | `--up` | Aktarımdan sonra geri yüklenen depoyu dağıt |
 | `--allow-unopenable` | Deponun parolası imajı açmasa bile imajı yerine koy (parola değişikliğinden önce alınmış bir anlık görüntü) |

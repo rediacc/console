@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 7
 language: fr
-sourceHash: "f48b4310b385d8cf"
-sourceCommit: "abbcec18caa5bafe792600a5679107a2a217e270"
+sourceHash: "677e95e38761776f"
+sourceCommit: "d1141cb40538b792a1c385b399ef948033e3139a"
 ---
 
 # Sauvegarde et restauration
@@ -61,9 +61,9 @@ Le push et le pull de machine à machine n'ont besoin ni de l'un ni de l'autre. 
 - **Ce n'est pas une réplication continue.** Un instantané est un point que vous avez pris, et vous pouvez perdre tout ce qui a été écrit depuis le dernier. Combien dépend de la fréquence à laquelle vous l'exécutez.
 - **Les objets stockés sont en écriture unique, pas un WORM certifié.** Les cellules sont écrites avec une condition de création seule, l'autorisation qu'obtient une machine ne peut rien supprimer, et les suppressions se font côté serveur selon la politique de rétention. C'est une vraie barrière contre une machine compromise qui détruirait ses propres sauvegardes. Ce n'est pas une certification de conformité, et ce n'est pas audité comme telle.
 
-### Un seul type de destination
+### Destinations
 
-Les sauvegardes dans le stockage fragmenté n'ont qu'un seul type de destination : un stockage fragmenté hébergé par le service, atteint via le serveur de comptes. Il n'existe aucun registre de points de terminaison de stockage externes, donc `--to` et `--from` sur `repo push` et `repo pull` ne désignent qu'une machine.
+Une stratégie peut écrire dans le store `home`, dans une seconde région hébergée ou dans un bucket client enregistré, et chaque destination est son propre point de récupération. Les stores, la désignation du store d'une destination, la restauration avec `--from` et l'état par destination sont décrits sur la page [Destinations de sauvegarde](/fr/docs/backup-destinations). `--to` et `--from` sur `repo push` et `repo pull` ne désignent toujours qu'une machine.
 
 ### Commandes de stockage fragmenté
 
@@ -329,6 +329,8 @@ rdc backup restore my-app@server-1 --as my-app --machine server-1 --up
 
 Une heure se résout uniquement parmi les instantanés de ce dépôt sur sa machine source. Les instantanés écrits par d'autres machines ou par des forks de la même lignée ne sont pas pris en compte, sauf si `--any-stream` élargit volontairement la recherche. Quand le flux propre du dépôt ne peut pas être déterminé, la restauration est refusée et demande `--any-stream` au lieu de deviner.
 
+Lorsque plusieurs stores contiennent le dépôt, la restauration lit le store dont l'instantané le plus récent a passé la dernière vérification, et passe au store suivant quand un store échoue. `--from <storeId>` lit un seul store nommé et ne bascule jamais. Voir [Destinations de sauvegarde](/fr/docs/backup-destinations).
+
 Restaurer sous un nouveau nom avec `--as` n'écrase rien, si bien qu'un exercice de restauration est sûr à exécuter sur une machine en direct. Restaurer sur un nom déjà existant est refusé.
 
 | Option | Description |
@@ -338,6 +340,7 @@ Restaurer sous un nouveau nom avec `--as` n'écrase rien, si bien qu'un exercice
 | `-m, --machine <machine>` | Machine sur laquelle restaurer |
 | `--datastore <name>` | Restaurer dans ce datastore nommé, dont la machine attachée l'héberge |
 | `--at <time>` | Restaurer un point dans le temps : un id d'instantané ou une heure RFC 3339 |
+| `--from <storeId>` | Lire l'instantané depuis ce store de sauvegarde. Sans cette option, le store qui détient l'instantané vérifié le plus récent est lu, puis le suivant en cas d'échec d'un store. Avec `--from`, il n'y a pas de repli |
 | `--any-stream` | Avec `--at`, considère aussi les instantanés d'autres machines et de forks de cette lignée |
 | `--up` | Déployer le dépôt restauré après le transfert |
 | `--allow-unopenable` | Placer l'image même si la phrase secrète du dépôt ne l'ouvre pas (instantané antérieur à un changement de phrase secrète) |
