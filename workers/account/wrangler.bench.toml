@@ -95,3 +95,29 @@ bucket_name = "rediacc-backups-bench"
 [[services]]
 binding = "EXECUTOR"
 service = "rediacc-proxy-bench"
+
+# Replicate mode (private/account/src/services/backup-replicate.service.ts): a new snapshot, a new
+# rule and the hourly sweep send a message here; `queue` in src/index.ts kicks one BackupReplicator
+# per (subscription, lineage, target store), whose alarm runs the copy. DEPLOY ORDER: both queues
+# are a provision step and must exist before the first deploy of this block
+# (`wrangler queues create rediacc-backup-replicate-bench` and `wrangler queues create rediacc-backup-replicate-bench-dlq`).
+# Gated by private/account/tests/integration/replicate-wiring.test.ts.
+[[queues.producers]]
+binding = "BACKUP_REPLICATE_QUEUE"
+queue = "rediacc-backup-replicate-bench"
+
+[[queues.consumers]]
+queue = "rediacc-backup-replicate-bench"
+max_batch_size = 10
+max_retries = 5
+dead_letter_queue = "rediacc-backup-replicate-bench-dlq"
+
+[[durable_objects.bindings]]
+name = "BACKUP_REPLICATOR"
+class_name = "BackupReplicator"
+
+# Each Worker script has its own Durable Object namespace, so this migration applies afresh to
+# every target.
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["BackupReplicator"]
