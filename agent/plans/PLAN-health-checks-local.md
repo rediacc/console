@@ -523,7 +523,7 @@ Owns: packages/e2e-tests/tests/31-backup-large-repo.test.ts, packages/e2e-tests/
   - CONTROL: test_gate_budget_check_report asserts a failing budget post still mentions the `github_mentions` handles.
   - Accept: `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest .ci/rediacc_ci/tests/gates/test_gate_budget_check_report.py .ci/rediacc_ci/tests/gates/test_gate_label_inventory.py -q && npm run check:ci-label-inventory && .ci/scripts/quality/check_prose_style.py check --drain` rc 0.
 
-### H: hostinger (lead, live; machine hostinger, `./rdc.sh --config eu-remote`, REDIACC_NO_PROVISION=1 unless the box says otherwise)
+### H: hostinger (lead, live; machine hostinger, `./rdc.sh --config eu-bench` (eu-remote until the 2026-11-07 ruling below), REDIACC_NO_PROVISION=1 unless the box says otherwise)
 (ruling ASKED:2026-11-07T03:55Z) Agents reach hostinger through `--config eu-bench`; eu-remote stays for what only it can reach (the eu store reads, backup schedule and strategy bind). check:ci-ops-health stays hard on every PR.
 
 The hostinger-side scripts are written on hostinger and live only in its repos. Each box below records what a script checks and its exit codes, never its content. No box prunes or repairs a hub-owned container or volume (F21).
@@ -598,9 +598,10 @@ The hostinger-side scripts are written on hostinger and live only in its repos. 
 - [x] S6 [live]: A fork test: `repo fork demo-stackoverflow@hostinger --tag fetchtest`, data/*.7z emptied in the fork only, `download.sh --only` for three small sites, `sha256sum -c` passing, one `pipeline.py <site>` import, then the fork deleted.
   - Accept: each rc 0; parent data/ untouched (count 371).
     (ticked) 2026-11-07T03:43:48Z by d778be9d: commit:62106f7b3 fetchtest fork: each step rc 0 (fork, empty data in the fork, download --only three sites, sha256sum -c OK x3, pipeline.py solana.meta import 1699 rows, fork deleted); parent data/ 371 before and after
-- [ ] S7 [live]: Only after S4 and S6: delete data/*.7z, run `rdc repo trim demo-stackoverflow@hostinger`, and check that the Postgres container and volume are unaffected (.vscode-server was already removed on 2026-11-06, F16).
+- [x] S7 [live]: Only after S4 and S6: delete data/*.7z, run `rdc repo trim demo-stackoverflow@hostinger`, and check that the Postgres container and volume are unaffected (.vscode-server was already removed on 2026-11-06, F16).
   (corrected 2026-11-06, operator rulings A to E4) Only after S4 and S6: delete data/*.7z (the operator-only half of `repo.disk.high`), run `rdc repo trim demo-stackoverflow@hostinger`, and check that the Postgres container and volume are unaffected (.vscode-server was already removed on 2026-11-06, F16).
   - Accept: `machine health hostinger -o json` shows demo-stackoverflow disk under 85%; `docker ps` shows stack-db-1 healthy.
+    (ticked) 2026-11-07T04:03:41Z by d778be9d: commit:7815a7394 operator-approved S7: 371 archives deleted, repo trim rc 0 (99.7 GB), machine health shows demo-stackoverflow 16% (under 85%), stack-db-1 healthy and not restarted
 - [x] S8 [live]: `stackexchange/README.txt` with the CC BY-SA 4.0 attribution (Stack Exchange, Inc., source archive.org/details/stackexchange, unmodified).
   - Record 2026-11-06: stackexchange/README.txt (279 bytes) served HTTP 200, text/plain, cache-control immutable, access-control-allow-origin *.
   - Accept: the S1 curl rc 0.
