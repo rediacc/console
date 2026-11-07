@@ -2798,14 +2798,14 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 3,
-      "done": 12,
+      "open": 2,
+      "done": 13,
       "open_sigs": [
-        "3b2fb3e3",
         "4de999b0",
         "95abb423"
       ],
       "done_sigs": [
+        "3b2fb3e3",
         "55fd614e",
         "63f3f3e7",
         "77b1c40a",
