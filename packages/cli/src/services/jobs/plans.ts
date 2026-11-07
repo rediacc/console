@@ -42,6 +42,7 @@ const NO_RENET =
 /** Machine-plane commands that do not become jobs, each with its section 24 reason. */
 export const JOB_EXCEPTIONS: Readonly<Record<string, string>> = {
   'job cancel': SPOOL,
+  'job dismiss': SPOOL,
   'job gc': SPOOL,
   'job list': SPOOL,
   'job logs': SPOOL,
