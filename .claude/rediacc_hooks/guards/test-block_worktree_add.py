@@ -209,6 +209,20 @@ pathlib.Path(FIXTURE_DIR, "ambiguous.js").write_text(
     "if (process.argv) /[//]/.test('x'); execSync('git -c alias.wt=worktree wt add /p');\n",
     encoding="utf-8",
 )
+# Review d4393918.1: a JS line comment ends at CR, U+2028 and U+2029 too, so the code after one is code, never comment.
+TERMINATOR_ROWS = []
+for _tag, _term in (("cr", "\r"), ("ls", "\u2028"), ("ps", "\u2029")):
+    pathlib.Path(FIXTURE_DIR, "term_%s.js" % _tag).write_text(
+        'const { execSync } = require("child_process");\n'
+        "x = 1; // note" + _term + "execSync('git -c alias.wt=worktree wt add /p');\n",
+        encoding="utf-8",
+    )
+    TERMINATOR_ROWS.append(
+        (
+            "an alias after a %s that ends a // comment" % _tag,
+            "node %s/term_%s.js" % (FIXTURE_DIR, _tag),
+        )
+    )
 DEPS_LIKE_ROW = (
     "a TS comment saying worktree warning",
     "npx tsx %s/deps_like.ts --selftest" % FIXTURE_DIR,
@@ -217,6 +231,7 @@ AMBIGUOUS_ROW = ("an alias behind a regex after )", "node %s/ambiguous.js" % FIX
 REFUSED += [
     ("a TS script running the invocation", "npx tsx %s/deps_invoke.ts --selftest" % FIXTURE_DIR),
     AMBIGUOUS_ROW,
+    *TERMINATOR_ROWS,
 ]
 # The JS helper is also caught by the text reading (`_text_verdict` folds the concatenation), so only the shell rows depend on the script arm alone.
 SCRIPT_ARM_ROWS = [row for row in APART_ROWS if row[1].startswith("bash ")]
@@ -731,6 +746,14 @@ for label, pair, rows in (
             "    return as_division\n",
         ),
         [AMBIGUOUS_ROW],
+    ),
+    (
+        "the JS line comment ends only at LF",
+        (
+            "            while i < n and text[i] not in JS_LINE_TERMINATORS:\n",
+            '            while i < n and text[i] != "\\n":\n',
+        ),
+        TERMINATOR_ROWS,
     ),
     (
         "the quote-blind perl strip",

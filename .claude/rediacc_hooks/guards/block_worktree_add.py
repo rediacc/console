@@ -1304,6 +1304,8 @@ def _code_verdict(family, code, depth):
 # A COMMENT MARKER INSIDE A STRING IS NOT A COMMENT (review ba934aef.1). A quote-blind strip of `#...` after whitespace turned `echo " #"; git -c alias.wt=worktree wt add /p` into `echo "`, and the script was admitted; the JS `//` and `/* */` strip and the perl/ruby `#` strip lost code inside a string literal the same way. So comments are found by a scanner that tracks the quoting, and ANY construct the scanner does not model exactly returns the raw text: a parse that loses its place inside a string can only over-read (refuse), never strip code.
 # Python drops tokenize's COMMENT tokens (exact). A shell script (`_shell_code_text`) models `'...'`, `"..."`, backslash escapes and `#` at a word start after an unescaped space or tab; command and parameter substitution, backquotes, `$'...'`, arithmetic and heredocs keep the raw text. A JS-family script (`_slash_code_text`) models `'...'`, `"..."`, template literals with nested `${...}`, regex literals and the two comment forms; a `<` that may open JSX, a string or regex that meets a bare newline, and anything left open at the end keep the raw text. Perl and ruby (`q{}`, `qw()`, `%w[]`, `m#..#`, regex literals, heredocs) have no exact cheap reading, so their raw text is read, comments included: the over-reading direction, paid only by an untracked or edited script.
 SLASH_FAMILIES = ("node", "deno", "bun", "tsx")
+# ECMAScript LineTerminator: LF, CR, LINE SEPARATOR, PARAGRAPH SEPARATOR.
+JS_LINE_TERMINATORS = "\n\r\u2028\u2029"
 
 
 def _shell_code_text(text):
@@ -1425,7 +1427,8 @@ def _slash_scan(text, ambiguous_regex):
             i += 1
             continue
         if text.startswith("//", i):
-            while i < n and text[i] != "\n":
+            # A JS line comment ends at ANY line terminator, CR and U+2028/U+2029 included (review d4393918.1); stopping at LF alone dropped the code after a bare CR as comment.
+            while i < n and text[i] not in JS_LINE_TERMINATORS:
                 i += 1
             continue
         if text.startswith("/*", i):
