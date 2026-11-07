@@ -185,7 +185,8 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   '/resources/backupStrategies/*/destinations/*/name': { kind: 'public' },
   '/resources/backupStrategies/*/destinations/*/enabled': { kind: 'public' },
   '/resources/backupStrategies/*/destinations/*/bandwidthLimit': { kind: 'public' },
-  // hosted-service destination: the endpoint identifies a customer/elite plane (mirror accountServer/releasesUrl → identifier); vaultContent is the credential bag, one container-level secret leaf.
+  // A destination names the registered store it writes to (`target`, a store id; absent means home). `endpoint` and `vaultContent` are removed fields the schema refuses (z.never); their pointers stay registered, as for repoSchedules.
+  '/resources/backupStrategies/*/destinations/*/target': { kind: 'public' },
   '/resources/backupStrategies/*/destinations/*/endpoint': { kind: 'identifier' },
   '/resources/backupStrategies/*/destinations/*/vaultContent': { kind: 'secret' },
   // Verification switches and a cron; non-sensitive.

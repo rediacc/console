@@ -323,7 +323,9 @@ describe('backup run ad hoc', () => {
       STRATEGY,
       '/r/renet',
       // The config names no account server, so the ad-hoc run carries no --expect-account-server.
-      undefined
+      undefined,
+      // The fake machine's renet probe prints no `--store` flag, so the run is told it lacks one.
+      false
     );
     const staged = machine.commands.find((c) => c.command.startsWith('sudo tee'));
     expect(staged?.command).toContain("'/etc/systemd/system/rediacc-backup-nightly-adhoc.service'");

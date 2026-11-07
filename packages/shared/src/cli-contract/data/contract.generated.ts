@@ -1949,6 +1949,17 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Destination name within the strategy. Creates a Rediacc chunk-store destination"
         },
         {
+          "flags": "--target <storeId>",
+          "long": "target",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.strategy.set.optionTarget",
+          "label": "Registered store id the destination writes to (default: home). Use with --destination"
+        },
+        {
           "flags": "--cron <expression>",
           "long": "cron",
           "valueTaking": true,

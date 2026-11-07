@@ -83,7 +83,7 @@ import {
   sanitizeBackupOutput,
   sha256Hex,
 } from './backup-schedule-unit-generator.js';
-import { expectedAccountServerOrigin } from './backup-store-universe.js';
+import { expectedAccountServerOrigin, storeFlagForRenet } from './backup-store-universe.js';
 
 type PushScheduleOptions = ReconcileOptions & {
   /** Client-side steps the apply job carries on its ticket (they run after it, whoever observes it). */
@@ -241,7 +241,8 @@ export async function buildStrategyCommandsForMachine(
   strategyName: string,
   strategy: ScheduledStrategy,
   remoteRenetPath: string,
-  accountServer?: string
+  accountServer?: string,
+  renetHasStoreFlag = false
 ): Promise<string[]> {
   const specs = await resolveUnitSpecs(machineName, [{ name: strategyName, config: strategy }]);
   const commands: string[] = [];
@@ -257,7 +258,8 @@ export async function buildStrategyCommandsForMachine(
         undefined,
         spec.strategy.schedule,
         undefined,
-        accountServer
+        accountServer,
+        renetHasStoreFlag
       ).commands
     );
   }
@@ -495,7 +497,8 @@ export async function pushBackupSchedule(
       specs,
       remoteRenetPath,
       cpuCount,
-      await accountServerForRenet(sftp, remoteRenetPath, expectedAccountServerOrigin())
+      await accountServerForRenet(sftp, remoteRenetPath, expectedAccountServerOrigin()),
+      await storeFlagForRenet(sftp, remoteRenetPath)
     );
     const remote = await readRemoteState(sftp, Array.from(desired.keys()));
     const plan = computeReconcilePlan(desired, remote);

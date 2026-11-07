@@ -314,7 +314,8 @@ export function computeDesiredUnits(
   specs: ScheduleUnitSpec[],
   remoteRenetPath: string,
   cpuCount?: number,
-  accountServer?: string
+  accountServer?: string,
+  renetHasStoreFlag = false
 ): Map<string, DesiredUnit> {
   const result = new Map<string, DesiredUnit>();
   const add = (unit: DesiredUnit): void => {
@@ -342,7 +343,8 @@ export function computeDesiredUnits(
       cpuCount,
       spec.schedule,
       spec.run,
-      accountServer
+      accountServer,
+      renetHasStoreFlag
     );
     const timerContent = generateTimerUnit(
       spec.unitName,

@@ -43,8 +43,7 @@ describe('walker', () => {
             {
               kind: 'hosted-service' as const,
               name: 's3-prod',
-              endpoint: 'https://s3.example.com',
-              vaultContent: { accessKeyId: 'AKID', secretAccessKey: 'SECRET' },
+              target: 'offsite-r2',
             },
           ],
         },
@@ -83,7 +82,7 @@ describe('walker', () => {
     expect(pointers).toContain('/resources/machines/web-1/ip');
     expect(pointers).toContain('/resources/machines/web-1/user');
     expect(pointers).toContain('/resources/machines/web-2/ip');
-    expect(pointers).toContain('/resources/backupStrategies/nightly/destinations/0/vaultContent');
+    expect(pointers).toContain('/resources/backupStrategies/nightly/destinations/0/target');
     expect(pointers).toContain('/resources/repositories/app/tags/latest/credential');
     expect(pointers).toContain('/resources/repositories/app/tags/latest/repositoryGuid');
   });

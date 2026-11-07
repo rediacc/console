@@ -2141,6 +2141,7 @@
           "readBwlimitStrategyOnly": "--read-bwlimit applies to the whole strategy (the read is local to the machine); drop --destination.",
           "optionCron": "Cron schedule (e.g., \"0 * * * *\" for hourly)",
           "optionDestination": "Destination name within the strategy. Creates a Rediacc chunk-store destination",
+          "optionTarget": "Registered store id the destination writes to (default: home). Use with --destination",
           "optionDisable": "Disable the strategy or destination",
           "optionEnable": "Enable the strategy or destination",
           "optionExclude": "Exclude these repos from backup (comma-separated names)",
@@ -2183,7 +2184,8 @@
         "bind": {
           "description": "Bind a backup strategy to a machine so its schedule is deployed there",
           "bound": "Backup strategy \"{{strategy}}\" bound to machine \"{{machine}}\"",
-          "alreadyBound": "Backup strategy \"{{strategy}}\" is already bound to machine \"{{machine}}\""
+          "alreadyBound": "Backup strategy \"{{strategy}}\" is already bound to machine \"{{machine}}\"",
+          "uncheckedTargets": "Store registration was not checked for: {{targets}}. The schedule refuses an unregistered store when the unit is written."
         },
         "unbind": {
           "description": "Unbind a backup strategy from a machine",

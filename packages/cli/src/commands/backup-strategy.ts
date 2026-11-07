@@ -17,6 +17,7 @@ import {
 import {
   cronFloorReason,
   strategyUnschedulableReason,
+  uncheckedTargets,
 } from '../services/backup/backup-strategy-validate.js';
 import { configService } from '../services/config/config-resources.js';
 import {
@@ -51,24 +52,25 @@ async function assertKnownRepoNames(names: string[] | undefined): Promise<void> 
 /**
  * Refuse to bind a strategy `backup schedule` could not turn into a unit, through the same rules schedule applies (strategyUnschedulableReason). Disabled destinations are skipped, as the scheduler skips them.
  */
-export async function assertStrategyBindable(strategyName: string): Promise<void> {
+export async function assertStrategyBindable(strategyName: string): Promise<string[]> {
   const strategy = await configService.getBackupStrategy(strategyName);
-  if (!strategy) return;
-  const reason = strategyUnschedulableReason(
-    strategy,
-    strategy.destinations.filter((d) => d.enabled !== false)
-  );
+  if (!strategy) return [];
+  const enabled = strategy.destinations.filter((d) => d.enabled !== false);
+  const reason = strategyUnschedulableReason(strategy, enabled);
   if (reason) {
     throw new ValidationError(
       `Strategy "${strategyName}" cannot be scheduled, not bound. ${reason}`
     );
   }
+  // No store list client exists in the CLI, so registration is not checked offline; the caller says so.
+  return uncheckedTargets(enabled, undefined);
 }
 
 export async function applyBackupStrategyOptions(
   name: string,
   options: {
     destination?: string;
+    target?: string;
     cron?: string;
     mode?: string;
     bwlimit?: string;
@@ -128,6 +130,7 @@ export async function applyBackupStrategyOptions(
       destinationName: options.destination,
       enabled,
       bwlimit: options.bwlimit,
+      target: options.target,
     });
   }
 
@@ -340,6 +343,7 @@ export function registerBackupStrategyCommands(backup: Command): void {
     .argument('<strategy>', t('options.strategyName'))
     .description(t('commands.backup.strategy.set.description'))
     .option('--destination <name>', t('commands.backup.strategy.set.optionDestination'))
+    .option('--target <storeId>', t('commands.backup.strategy.set.optionTarget'))
     .option('--cron <expression>', t('commands.backup.strategy.set.optionCron'))
     .addOption(
       new Option('--mode <mode>', t('commands.backup.strategy.set.optionMode')).choices([
@@ -388,7 +392,12 @@ export function registerBackupStrategyCommands(backup: Command): void {
     .description(t('commands.backup.strategy.bind.description'))
     .action(async (strategy: string, options: { machine: string }) => {
       try {
-        await assertStrategyBindable(strategy);
+        const unchecked = await assertStrategyBindable(strategy);
+        if (unchecked.length > 0) {
+          outputService.info(
+            t('commands.backup.strategy.bind.uncheckedTargets', { targets: unchecked.join(', ') })
+          );
+        }
         const bound = await bindBackupStrategy(options.machine, strategy);
         outputService.success(
           bound

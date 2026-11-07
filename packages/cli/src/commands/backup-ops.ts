@@ -119,7 +119,7 @@ async function stageAdhocUnit(
   const [
     { buildStrategyCommandsForMachine, sanitizeBackupOutput },
     { accountServerForRenet },
-    { expectedAccountServerOrigin },
+    { expectedAccountServerOrigin, storeFlagForRenet },
   ] = await Promise.all([
     import('../services/backup/backup-schedule.js'),
     import('../services/backup/backup-schedule-reconcile.js'),
@@ -130,7 +130,8 @@ async function stageAdhocUnit(
     name,
     config,
     remoteRenetPath,
-    await accountServerForRenet(sftp, remoteRenetPath, expectedAccountServerOrigin())
+    await accountServerForRenet(sftp, remoteRenetPath, expectedAccountServerOrigin()),
+    await storeFlagForRenet(sftp, remoteRenetPath)
   );
   if (commands.length === 0) {
     outputService.warn(`Backup strategy "${name}" covers no repository on ${machineName}`);
