@@ -87,7 +87,7 @@ rdc backup restore my-app --as my-app-copy --at <snapshot-id> --from office-rust
 
 Without `--from`, the CLI asks the account server which stores hold the repository's lineage, ranked with the store whose newest snapshot passed its last verify first, and tries them in that order. A store with no snapshot is skipped. If the ranking cannot be read, the restore uses `home` and says so.
 
-The whole-image restore falls back to the next store when a failure belongs to the store: a server error, a refused grant or session, or an endpoint that does not answer. It says which store served the restore. It never falls back for a fault of the snapshot itself. A missing, expired or corrupt snapshot looks the same in every store, so the error is shown instead. A restore with `--from` never falls back. `restore --path`, `browse --at` and `download --store` read the first store and do not fall back.
+Without `--from`, `backup restore`, `restore --path`, `browse --at` and `download --store` start from the first store of that ranking and fall back to the next store when a failure belongs to the store: a server error, a refused grant or session, or an endpoint that does not answer. Each says which store served it. None of them falls back for a fault of the snapshot itself. A missing, expired or corrupt snapshot looks the same in every store, so the error is shown instead. A command given `--from` reads only that store and never falls back.
 
 A snapshot id given without `--from` is looked up across the lineage's stores.
 
