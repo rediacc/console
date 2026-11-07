@@ -310,17 +310,19 @@ There are two account keypairs today. Production is one keypair, the same for al
   5. Run `--config eu-bench subscription refresh -m <each bench machine>`.
   6. Run a bench backup drill. It must pass with licences under `fingerprint:fb37f1ae16f8b7c0`.
 
-- [ ] L3 [live] hostinger, read-only first.
+- [x] L3 [live] hostinger, read-only first.
   1. Run `renet_key_gate` against the local `private/renet/bin/renet` built by `./rdc.sh`. It must pass and name `fingerprint:fb37f1ae16f8b7c0`.
   2. Run `./rdc.sh machine status hostinger --config eu-bench --licenses -o json`. Every repo licence must be present under that fingerprint.
   3. Then, with the operator's go (a mutating verb uploads renet), rerun the snapshot that failed on one repo and record its rc and record id.
+    (ticked) 2026-11-07T08:54:53Z by d778be9d: live 2026-11-07: (1) renet_key_gate private/renet/bin/renet rc=0 naming fingerprint:fb37f1ae16f8b7c0. (2) REDIACC_NO_PROVISION=1 ./rdc.sh --config eu-bench machine status hostinger --licenses -o json rc=1 on the old remote renet (it rejects the section list "licenses,system,stale-processes", a version-skew finding), so the full listing machine status hostinger -o json rc=0 was read: license_statuses 13 for 13 repositories, all status valid, lastRenewal keyId fingerprint:fb37f1ae16f8b7c0 on every one, none without a repository. (3) operator go ASKED:2026-11-07T08:27Z "Install now" (renet installed, so the snapshot uploads no renet): backup snapshot demo-heartbeat@hostinger --bwlimit 100Mbps --parallelism 2 rc=0, record id 20261107T084519Z-f6fab71abceb119f, status stored, identityVerdict same (the failed run had died on "no installed repository license", which any repo hit under the DEV key). Outputs /tmp/m/host-production-key-only-c0e271b1/ and /tmp/m/hostB/snap-demo-heartbeat.json
 
 - [ ] L4 [live] Local machines and VMs.
   1. Run `./run.sh setup` on each dev box. The cache must now hold the production public key, which `renet_key_gate.key_fingerprint` checks.
   2. Run `./run.sh account reset` (DB only) or `rdc --dev subscription refresh -m <vm>` for each ops VM.
   3. Run `npm run vm:check -- --changed` green on the merged tree.
 
-- [ ] L5 [live] Replace the nolicense renet on hostinger, after N1-N3 land. Run `renet_key_gate` on the freshly built `private/renet/bin/renet` (it must pass and name `fingerprint:fb37f1ae16f8b7c0`), then `./rdc.sh --config eu-bench machine setup hostinger`, then confirm the remote `/usr/lib/rediacc/renet/current/renet` sha equals the local one and is no longer `sha256:f56e1ef1a638d33d`. Record both hashes and a snapshot rc.
+- [x] L5 [live] Replace the nolicense renet on hostinger, after N1-N3 land. Run `renet_key_gate` on the freshly built `private/renet/bin/renet` (it must pass and name `fingerprint:fb37f1ae16f8b7c0`), then `./rdc.sh --config eu-bench machine setup hostinger`, then confirm the remote `/usr/lib/rediacc/renet/current/renet` sha equals the local one and is no longer `sha256:f56e1ef1a638d33d`. Record both hashes and a snapshot rc.
+    (ticked) 2026-11-07T08:54:43Z by d778be9d: live 2026-11-07 under operator ruling ASKED:2026-11-07T08:27Z "Install now": PYTHONPATH=.ci python3 -m rediacc_ci.release.renet_key_gate private/renet/bin/renet rc=0 (ok, production key fingerprint:fb37f1ae16f8b7c0; retired key refused); ./rdc.sh --config eu-bench machine setup hostinger rc=0; remote /usr/lib/rediacc/renet/current/renet sha256:eb4796dcdcab71f38c9db84ad06c11d18210a467b670e9e12c5b914255d954fc equals the local sha256 (the previous remote renet was sha256:0e2223099081, and neither is sha256:f56e1ef1a638d33d); snapshot rc: backup snapshot demo-heartbeat@hostinger --bwlimit 100Mbps --parallelism 2 rc=0, snapshotId 20261107T084519Z-f6fab71abceb119f, status stored. Outputs /tmp/m/hostB/ and /tmp/m/host-production-key-only-c0e271b1/
 
 - [ ] LP-bench [live] Fresh bench receipt through worklist.py --live-proof after L2.
   Accept: live-proof bench cli-bench
