@@ -91,11 +91,11 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 15 of 44 plans done, 793 of 939 boxes done (84%).
+Promoted: 15 of 44 plans done, 794 of 939 boxes done (84%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
-| 1 | PLAN-backup-program.md | 172/192 | 20 open |
+| 1 | PLAN-backup-program.md | 173/192 | 19 open |
 | 2 | PLAN-cloudflare-proxy.md | 27/29 | 2 open |
 | 3 | PLAN-sync-remote-file-ownership.md | 7/7 | done |
 | 4 | PLAN-telemetry-export.md | 19/19 | done |
