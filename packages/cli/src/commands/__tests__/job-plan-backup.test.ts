@@ -321,7 +321,9 @@ describe('backup run ad hoc', () => {
       'm1',
       'nightly',
       STRATEGY,
-      '/r/renet'
+      '/r/renet',
+      // The config names no account server, so the ad-hoc run carries no --expect-account-server.
+      undefined
     );
     const staged = machine.commands.find((c) => c.command.startsWith('sudo tee'));
     expect(staged?.command).toContain("'/etc/systemd/system/rediacc-backup-nightly-adhoc.service'");
