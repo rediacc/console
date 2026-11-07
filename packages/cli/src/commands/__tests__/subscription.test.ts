@@ -388,6 +388,32 @@ describe('subscription command helpers', () => {
       );
     });
 
+    it('prints the none line and succeeds when no license is installed', async () => {
+      mockRenewInstalledLicenses.mockResolvedValue({ renewed: 0, results: [] });
+
+      await expect(executeMachineRefresh('hostinger')).resolves.toBeUndefined();
+
+      expect(mockOutputInfo).toHaveBeenCalledWith('commands.subscription.refresh.noLogin.none');
+    });
+
+    it('names a real renewal failure instead of asking for a login', async () => {
+      mockRenewInstalledLicenses.mockResolvedValue({
+        renewed: 0,
+        results: [{ repositoryGuid: 'guid-e', outcome: 'error', message: 'connection reset' }],
+      });
+
+      const error = await executeMachineRefresh('hostinger').catch((e: unknown) => e);
+
+      expect((error as Error).message).toContain('commands.subscription.refresh.noLogin.failed');
+      expect((error as Error).message).not.toContain('errors.subscription.notLoggedIn');
+      expect(mockOutputWarn).toHaveBeenCalledWith(
+        'commands.subscription.refresh.noLogin.repoFailed:guid-e:connection reset'
+      );
+      expect(mockOutputInfo).not.toHaveBeenCalledWith(
+        'commands.subscription.refresh.noLogin.paidNote'
+      );
+    });
+
     it('with a token the batch refresh runs and the token-free renewal does not', async () => {
       mockGetSubscriptionTokenState.mockReturnValue({
         kind: 'ready',

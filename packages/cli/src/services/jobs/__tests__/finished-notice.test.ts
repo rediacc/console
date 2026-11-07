@@ -181,6 +181,14 @@ describe('stale tickets', () => {
     expect(write).toHaveBeenCalledWith(expect.stringContaining('steps abandoned'));
   });
 
+  it('asks renet about a starting ticket whose start time cannot be read', async () => {
+    store.append('starting', 'r-n', { machine: 'm1', verb: 'repo up' });
+    const resolve = vi.fn(async () => 'j9-aaaaaaaa');
+    await checkPendingTickets(withResolver(resolve, T0));
+    expect(resolve).toHaveBeenCalledTimes(1);
+    expect(store.find('r-n')?.jobId).toBe('j9-aaaaaaaa');
+  });
+
   it('keeps an unreachable ticket until 7 days, then expires it by age', async () => {
     addStarting('a', T0);
     await checkPendingTickets(withResolver(async () => undefined, T0 + 2 * DAY));

@@ -523,7 +523,7 @@ export async function executeAccountRefresh(): Promise<void> {
  */
 export async function executeMachineRefresh(machineName: string): Promise<void> {
   // No login: a FREE licence is issued and renewed without one, so the refresh runs renet's blob-authenticated renewal instead of failing on the missing token.
-  if (getSubscriptionTokenState().kind !== 'ready') {
+  if (getSubscriptionTokenState().kind === 'missing') {
     await executeTokenFreeMachineRefresh(machineName);
     return;
   }
@@ -566,30 +566,43 @@ async function executeTokenFreeMachineRefresh(machineName: string): Promise<void
     outputService.info(t('commands.subscription.refresh.noLogin.none'));
     return;
   }
-  let needsLogin = 0;
-  let handled = 0;
-  for (const r of results) {
-    const repositoryGuid = r.repositoryGuid;
-    if (r.outcome === 'renewed') {
-      handled++;
-      outputService.info(
-        t('commands.subscription.refresh.noLogin.repoRenewed', { repositoryGuid })
-      );
-    } else if (r.outcome === 'skipped_fresh') {
-      handled++;
-      outputService.info(t('commands.subscription.refresh.noLogin.repoNotDue', { repositoryGuid }));
-    } else {
-      needsLogin++;
-      outputService.warn(
-        t('commands.subscription.refresh.noLogin.repoNeedsLogin', {
-          repositoryGuid,
-          detail: [r.code, r.message].filter(Boolean).join(': ') || r.outcome,
-        })
-      );
-    }
+  const tally = { handled: 0, needsLogin: 0, failed: 0 };
+  for (const r of results) reportTokenFreeRenewal(r, tally);
+  if (tally.needsLogin > 0) outputService.info(t('commands.subscription.refresh.noLogin.paidNote'));
+  if (tally.failed > 0) {
+    throw new ValidationError(
+      t('commands.subscription.refresh.noLogin.failed', { count: tally.failed })
+    );
   }
-  if (needsLogin > 0) outputService.info(t('commands.subscription.refresh.noLogin.paidNote'));
-  if (handled === 0) throw new ValidationError(t('errors.subscription.notLoggedIn'));
+  if (tally.handled === 0) throw new ValidationError(t('errors.subscription.notLoggedIn'));
+}
+
+/** One repo's line of the token-free refresh, counted into `tally`. */
+function reportTokenFreeRenewal(
+  r: { repositoryGuid: string; outcome: string; code?: string; message?: string },
+  tally: { handled: number; needsLogin: number; failed: number }
+): void {
+  const repositoryGuid = r.repositoryGuid;
+  const detail = [r.code, r.message].filter(Boolean).join(': ') || r.outcome;
+  if (r.outcome === 'renewed') {
+    tally.handled++;
+    outputService.info(t('commands.subscription.refresh.noLogin.repoRenewed', { repositoryGuid }));
+  } else if (r.outcome === 'skipped_fresh') {
+    tally.handled++;
+    outputService.info(t('commands.subscription.refresh.noLogin.repoNotDue', { repositoryGuid }));
+  } else if (r.outcome === 'refused') {
+    // The server answered 4xx for the blob alone: a licence that needs an account.
+    tally.needsLogin++;
+    outputService.warn(
+      t('commands.subscription.refresh.noLogin.repoNeedsLogin', { repositoryGuid, detail })
+    );
+  } else {
+    // A transport or server failure, or a blob renet cannot renew: a login would not change it.
+    tally.failed++;
+    outputService.warn(
+      t('commands.subscription.refresh.noLogin.repoFailed', { repositoryGuid, detail })
+    );
+  }
 }
 
 bindStepHandler('renderSubscriptionRefresh', async ({ machine, output }) => {

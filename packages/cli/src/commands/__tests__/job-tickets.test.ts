@@ -167,6 +167,28 @@ describe('job dismiss', () => {
     expect(rows).toEqual([expect.objectContaining({ id: JOB_ID, state: 'expired:dismissed' })]);
   });
 
+  it('keeps the reason of a ticket that was already given up on', async () => {
+    addTicket();
+    store.append('expired', 'req-1', { reason: 'gone' });
+    await run('dismiss', JOB_ID);
+
+    expect(store.find(JOB_ID)?.expiredReason).toBe('gone');
+    expect(out.success).not.toHaveBeenCalled();
+    expect(out.info).toHaveBeenCalledWith('No matching tickets.');
+  });
+
+  it('refuses job ids with --stale, and --older-than without it, instead of ignoring them', async () => {
+    addTicket();
+    const exit = vi.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
+    await run('dismiss', JOB_ID, '--stale', '--yes');
+    await run('dismiss', JOB_ID, '--older-than', '1h');
+    exit.mockRestore();
+    const messages = out.error.mock.calls.map((c) => String(c[0]));
+    expect(messages.some((m) => /not both/.test(m))).toBe(true);
+    expect(messages).toHaveLength(2);
+    expect(store.find(JOB_ID)?.expiredReason).toBeUndefined();
+  });
+
   it('--stale dismisses only tickets older than --older-than', async () => {
     store.append('starting', 'old', {
       machine: 'm',

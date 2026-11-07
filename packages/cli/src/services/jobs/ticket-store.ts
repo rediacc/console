@@ -272,6 +272,11 @@ const KIND_EFFECTS: Partial<Record<TicketKind, (t: Ticket, e: TicketEvent) => vo
   },
   started: (t, e) => {
     if (!isTerminalTicketState(t.state)) t.state = e.state ?? STATE_RUNNING;
+    // An expiry as never-started was a guess from renet's silence; the job existing after all revives the ticket. Other reasons stand.
+    if (t.expiredReason === 'never-started') {
+      t.expiredReason = undefined;
+      t.acknowledged = false;
+    }
   },
   seen: (t, e) => {
     t.lastCheckedAt = e.ts;

@@ -2553,6 +2553,8 @@
           "repoRenewed": "{{repositoryGuid}}: renewed",
           "repoNotDue": "{{repositoryGuid}}: not due",
           "repoNeedsLogin": "{{repositoryGuid}}: skipped, needs login ({{detail}})",
+          "repoFailed": "{{repositoryGuid}}: could not be renewed ({{detail}})",
+          "failed": "{{count}} license(s) could not be renewed; see the lines above. Logging in does not change this.",
           "paidNote": "Without a login only licenses that renew on their own are renewed (FREE licenses); paid licenses need \"rdc subscription login\"."
         }
       }
@@ -2815,6 +2817,7 @@
         "none": "No matching tickets.",
         "invalidOlderThan": "--older-than must be a duration such as 90m or 24h (got \"{{value}}\")",
         "needsTarget": "Name at least one job id, or pass --stale.",
+        "conflictingTargets": "Pass job ids, or --stale (with an optional --older-than), not both; --older-than needs --stale.",
         "notFound": "No ticket for {{jobId}} in this config."
       }
     },

@@ -196,6 +196,22 @@ describe('ticket store: expired', () => {
     expect(storeIn().all()).toHaveLength(1);
   });
 
+  it('a late started event revives a ticket expired as never-started, and no other reason', () => {
+    const store = storeIn();
+    store.append('starting', 'r1', { machine: 'm1' });
+    store.append('expired', 'r1', { reason: 'never-started' });
+    store.append('started', 'r1', { jobId: 'j1-aaaaaaaa' });
+    const [revived] = storeIn().tickets();
+    expect(revived.expiredReason).toBeUndefined();
+    expect(revived.acknowledged).toBe(false);
+    expect(storeIn().pending()).toHaveLength(1);
+
+    store.append('starting', 'r2', { machine: 'm1' });
+    store.append('expired', 'r2', { reason: 'dismissed' });
+    store.append('started', 'r2', { jobId: 'j2-aaaaaaaa' });
+    expect(storeIn().find('r2')?.expiredReason).toBe('dismissed');
+  });
+
   it('drops a reason outside the schema and defaults the fold to age', () => {
     const store = storeIn();
     store.append('starting', 'r1', {});

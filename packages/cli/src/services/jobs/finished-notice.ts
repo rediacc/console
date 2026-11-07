@@ -113,7 +113,10 @@ function ageMs(ticket: Ticket, now: number): number | undefined {
 }
 
 function startingTooLong(ticket: Ticket, now: number): boolean {
-  return ticket.state === 'starting' && (ageMs(ticket, now) ?? 0) >= STARTING_CHECK_AFTER_MS;
+  if (ticket.state !== 'starting') return false;
+  // A starting ticket whose time cannot be read is asked about too: it could otherwise never come due.
+  const age = ageMs(ticket, now);
+  return age === undefined || age >= STARTING_CHECK_AFTER_MS;
 }
 
 function dueForCheck(ticket: Ticket, now: number): boolean {
