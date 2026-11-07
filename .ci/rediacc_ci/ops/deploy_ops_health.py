@@ -348,7 +348,7 @@ def status_url(root: pathlib.Path) -> str:
 def fetch_deployed(url: str, token: str) -> Deployed | None:
     """The deployed state from `/v1/status`; None only when no Worker answers there (a first deploy).
 
-    A first deploy is a host that does not resolve or connect, or a 404. Any other HTTP status (a 401 from a rotated read token, a 5xx) or an unreadable body raises StatusUnreadableError: reading it as a first deploy would re-put every secret and run the create deploy over a Worker that exists.
+    A first deploy is a host that does not resolve or connect, or a 404. Any other HTTP status (a 401 from a rotated read token, a 5xx), a stall or malformed reply after the connection is made, or an unreadable body raises StatusUnreadableError: reading it as a first deploy would re-put every secret and run the create deploy over a Worker that exists.
     """
     request = https.build_request(url, headers={"Authorization": "Bearer %s" % token})
     try:
@@ -357,8 +357,12 @@ def fetch_deployed(url: str, token: str) -> Deployed | None:
         if exc.code == 404:
             return None
         raise StatusUnreadableError("%s answered HTTP %d" % (url, exc.code)) from exc
-    except (urllib.error.URLError, TimeoutError, OSError):
+    except urllib.error.URLError:
+        # urllib wraps a failure to resolve or connect in URLError; that is the only "no Worker answers" outcome.
         return None
+    except (TimeoutError, OSError, http.client.HTTPException) as exc:
+        # urllib lets these escape only once the connection is made (a stall waiting for headers, a reset, a malformed reply): a Worker that exists and answers badly, never a first deploy.
+        raise StatusUnreadableError("%s answered badly: %s" % (url, exc)) from exc
     # The connection is made: a stall or a reset from here on is a Worker that answers and then fails, never a first deploy.
     with response:
         try:

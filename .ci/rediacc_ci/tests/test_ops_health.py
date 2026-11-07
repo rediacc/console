@@ -817,13 +817,20 @@ def test_a_machine_two_configs_share_keeps_both_verdicts_in_the_sources():
 
 
 def test_two_pairs_that_spell_one_source_name_keep_both_verdicts():
+    """Each machine name is held by two configs, so both are joined to their config and (a, b-c) and (a-b, c) spell `local-machine-a-b-c`."""
     rows = [
         {"config": "a", "machine": "b-c", "state": "red", "problems": ["p"], "no_check": []},
         {"config": "a-b", "machine": "c", "state": "green", "problems": [], "no_check": []},
+        {"config": "x", "machine": "b-c", "state": "green", "problems": [], "no_check": []},
+        {"config": "x", "machine": "c", "state": "green", "problems": [], "no_check": []},
     ]
+    names = oh.machine_sources(rows)
+    colliding = [names[("a", "b-c")], names[("a-b", "c")]]
+    assert colliding[0] != colliding[1]
+    assert all(n.startswith("local-machine-a-b-c-") for n in colliding)
     out = oh.sources_of("machines", {"rows": rows})
-    assert len(out) == 2
-    assert sorted(v[0] for v in out.values()) == ["green", "red"]
+    assert len(out) == 4
+    assert sorted(out[n][0] for n in colliding) == ["green", "red"]
 
 
 def test_repair_ledger_rows_use_the_source_of_the_machines_verdict():
@@ -970,4 +977,5 @@ def test_the_repo_config_names_every_key_the_readers_use():
     derived = {oh.TTL_KEYS.get(check, check.replace("-", "_")) for check in oh.ALL_CHECKS}
     assert derived <= set(doc["local_ttl_minutes"])
     assert derived <= set(oh.DEFAULTS["local_ttl_minutes"])
+    assert set(oh.DEFAULTS["local_ttl_minutes"]) <= set(doc["local_ttl_minutes"])
     assert set(oh.DEFAULTS["stale"]) <= set(doc["stale"])

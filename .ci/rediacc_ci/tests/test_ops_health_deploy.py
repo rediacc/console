@@ -6,6 +6,7 @@ A recording runner stands in for `rdc` and `wrangler`, and a fake Worker answers
 from __future__ import annotations
 
 import email.message
+import http.client
 import json
 import pathlib
 import subprocess
@@ -340,7 +341,18 @@ def test_a_body_of_invalid_utf8_is_unreadable_not_a_traceback(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     with pytest.raises(d.StatusUnreadableError, match="not JSON"):
-        _fetch_with(monkeypatch, b"\xff\xfe{")
+        _fetch_with(monkeypatch, b"{\xff")
+
+
+@pytest.mark.parametrize(
+    "error",
+    [TimeoutError("timed out"), ConnectionResetError("reset"), http.client.BadStatusLine("junk")],
+)
+def test_a_failure_after_the_connection_is_made_is_unreadable_not_a_first_deploy(
+    monkeypatch: pytest.MonkeyPatch, error: BaseException
+) -> None:
+    with pytest.raises(d.StatusUnreadableError, match="answered badly"):
+        _fetch_with(monkeypatch, error)
 
 
 @pytest.mark.parametrize(
