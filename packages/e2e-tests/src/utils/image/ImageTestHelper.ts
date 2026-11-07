@@ -351,8 +351,11 @@ export class ImageTestHelper {
    */
   listCustomImages(): string[] {
     try {
-      const files = fs.readdirSync(this.disksPath);
-      return files.filter((f) => f.endsWith('.qcow2') || f.endsWith('.img'));
+      // Only the files renet writes for the configured images, never other disks in the directory.
+      const built = new Set(
+        CONFIGURED_IMAGES.map((image) => path.basename(new URL(image.url).pathname))
+      );
+      return fs.readdirSync(this.disksPath).filter((f) => built.has(f));
     } catch {
       return [];
     }
