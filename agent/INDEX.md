@@ -599,7 +599,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-tested-on-bench.md` | approved | 336 | 4 | 16 | 48530 |
 | `agent/plans/PLAN-testing-surface-audit.md` | compacted | 38 | 0 | 0 | 3684 |
 | `agent/plans/PLAN-tick-tracking.md` | approved | 268 | 3 | 12 | 37657 |
-| `agent/plans/PLAN-token-ip-rebind.md` | draft | 424 | 1 | 10 | 41282 |
+| `agent/plans/PLAN-token-ip-rebind.md` | draft | 425 | 0 | 11 | 41597 |
 | `agent/plans/PLAN-unify-trap-corpus.md` | compacted | 39 | 0 | 0 | 2772 |
 | `agent/plans/PLAN-w7p4w-docker-cutover.md` | compacted | 62 | 0 | 12 | 4758 |
 | `agent/plans/PLAN-w7p5a-deploy-release-port.md` | compacted | 53 | 0 | 8 | 3914 |
