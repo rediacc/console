@@ -3,8 +3,8 @@ title: "Назначения резервного копирования"
 description: "Отправляйте каждую стратегию резервного копирования в несколько хранилищ, восстанавливайтесь из хранилища с лучшим снимком и читайте отдельную строку статуса для каждого назначения."
 category: "Guides"
 tags:
-  – backup
-  – storage
+  - backup
+  - storage
 subcategory: data-protection
 order: 8
 language: ru
