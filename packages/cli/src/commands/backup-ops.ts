@@ -116,14 +116,21 @@ async function stageAdhocUnit(
   debug?: boolean
 ): Promise<string | undefined> {
   outputService.info(`No deployed unit for "${name}", running ad-hoc...`);
-  const { buildStrategyCommandsForMachine, sanitizeBackupOutput } = await import(
-    '../services/backup/backup-schedule.js'
-  );
+  const [
+    { buildStrategyCommandsForMachine, sanitizeBackupOutput },
+    { accountServerForRenet },
+    { expectedAccountServerOrigin },
+  ] = await Promise.all([
+    import('../services/backup/backup-schedule.js'),
+    import('../services/backup/backup-schedule-reconcile.js'),
+    import('../services/backup/backup-store-universe.js'),
+  ]);
   const commands = await buildStrategyCommandsForMachine(
     machineName,
     name,
     config,
-    remoteRenetPath
+    remoteRenetPath,
+    await accountServerForRenet(sftp, remoteRenetPath, expectedAccountServerOrigin())
   );
   if (commands.length === 0) {
     outputService.warn(`Backup strategy "${name}" covers no repository on ${machineName}`);

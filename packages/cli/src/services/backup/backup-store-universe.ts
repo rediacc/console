@@ -59,6 +59,8 @@ export function expectedAccountServerOrigin(): string | undefined {
  * `params` with the expected account-server origin added for a backup-session function, so renet itself refuses a
  * licence from another account server (`--expect-account-server`). The pre-flight below asks the same question from
  * the CLI; this answer travels with the run, which is what a scheduled unit (no CLI in the loop) relies on too.
+ * It OVERWRITES an `expect_account_server` the caller passed: the config's origin is the only one a verb may be held to,
+ * so a caller cannot widen it.
  */
 export function withExpectedAccountServer(
   functionName: string,
@@ -157,7 +159,8 @@ export async function assertBackupStoreUniverse(
       t('errors.license.backupStoreUnreadable', { repo: repoName, machine: machineName })
     );
   }
-  const foreign = installed.filter((origin) => origin !== expected);
+  // A licence origin that is not itself a URL origin (an unparseable renewalUrl kept as its raw string) is never this config's, even when the config's own server URL is the same raw string.
+  const foreign = installed.filter((origin) => origin !== expected || originOf(origin) !== origin);
   if (foreign.length === 0) return;
 
   throw new ValidationError(

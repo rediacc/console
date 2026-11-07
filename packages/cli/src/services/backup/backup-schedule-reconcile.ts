@@ -14,6 +14,7 @@ import type { ScheduleUnitSpec } from './backup-schedule-targets.js';
 import {
   alertUnitName,
   cronToOnCalendar,
+  EXPECT_ACCOUNT_SERVER_FLAG,
   generateAlertServiceUnit,
   generateServiceUnit,
   generateTimerUnit,
@@ -263,6 +264,33 @@ export async function resolveMachineCpuCount(sftp: SFTPClient): Promise<number> 
     );
   }
   return n;
+}
+
+/**
+ * The account-server origin to write into a unit, or undefined when the machine's renet predates `--expect-account-server`.
+ *
+ * Why a probe: the flag reaches every scheduled snapshot, and an older renet dies at cobra's flag parse at 03:00, so a backup silently never runs. A renet held in place (a development build, REDIACC_NO_PROVISION=1) can be older than this CLI, and a version string cannot say it (a development build is 0.0.0-dev), so the installed binary is asked: its own `backup snapshot --help` lists the flag or does not. A failed probe omits the flag, which only skips the extra licence check and never the backup.
+ */
+export async function accountServerForRenet(
+  sftp: SFTPClient,
+  remoteRenetPath: string,
+  accountServer: string | undefined
+): Promise<string | undefined> {
+  if (!accountServer) return undefined;
+  let out = '';
+  const exitCode = await sftp.execStreaming(`${remoteRenetPath} backup snapshot --help 2>&1`, {
+    onStdout: (data) => {
+      out += data;
+    },
+    onStderr: (data) => {
+      out += data;
+    },
+  });
+  if (exitCode === 0 && out.includes(EXPECT_ACCOUNT_SERVER_FLAG)) return accountServer;
+  outputService.warn(
+    `renet at ${remoteRenetPath} does not list ${EXPECT_ACCOUNT_SERVER_FLAG}; the unit is written without it. Update renet on the machine to hold scheduled backups to the config's account server.`
+  );
+  return undefined;
 }
 
 // --------------------------------------------------------------------------- Phase B, Compute desired units ---------------------------------------------------------------------------

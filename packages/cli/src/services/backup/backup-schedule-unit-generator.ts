@@ -40,7 +40,7 @@ import {
 } from './backup-strategy-validate.js';
 
 /** renet's flag on every chunk-store session verb (private/renet cmd/renet/backup_endpoints.go flagExpectAccountServer). */
-const EXPECT_ACCOUNT_SERVER_FLAG = '--expect-account-server';
+export const EXPECT_ACCOUNT_SERVER_FLAG = '--expect-account-server';
 
 /** SHA-256 hex digest for UTF-8 content, used by the reconciler for diff. */
 export function sha256Hex(content: string): string {

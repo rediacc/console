@@ -47,6 +47,7 @@ import {
   type SchedulePayload,
 } from './backup-schedule-execute.js';
 import {
+  accountServerForRenet,
   applyInFlightGate,
   computeDesiredUnits,
   computeReconcilePlan,
@@ -239,11 +240,11 @@ export async function buildStrategyCommandsForMachine(
   machineName: string,
   strategyName: string,
   strategy: ScheduledStrategy,
-  remoteRenetPath: string
+  remoteRenetPath: string,
+  accountServer?: string
 ): Promise<string[]> {
   const specs = await resolveUnitSpecs(machineName, [{ name: strategyName, config: strategy }]);
   const commands: string[] = [];
-  const accountServer = expectedAccountServerOrigin();
   for (const spec of specs) {
     const enabled = spec.strategy.destinations.filter((d) => d.enabled !== false);
     commands.push(
@@ -494,7 +495,7 @@ export async function pushBackupSchedule(
       specs,
       remoteRenetPath,
       cpuCount,
-      expectedAccountServerOrigin()
+      await accountServerForRenet(sftp, remoteRenetPath, expectedAccountServerOrigin())
     );
     const remote = await readRemoteState(sftp, Array.from(desired.keys()));
     const plan = computeReconcilePlan(desired, remote);

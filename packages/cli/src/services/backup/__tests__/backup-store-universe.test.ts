@@ -165,6 +165,14 @@ describe('assertBackupStoreUniverse', () => {
     ).rejects.toThrow(/backupStoreMismatch/);
   });
 
+  it('refuses an unparseable renewalUrl even when the config server URL is the same raw string', async () => {
+    env.server = 'not a url';
+    const m = machineWith(licenseLine('not a url'));
+    await expect(
+      assertBackupStoreUniverse('backup_snapshot', 'hostinger', { repository: 'mail' }, m.sftp)
+    ).rejects.toThrow(/backupStoreMismatch/);
+  });
+
   it('skips a repository the config does not track', async () => {
     const m = machineWith(licenseLine(EU));
     await expect(
@@ -205,6 +213,15 @@ describe('withExpectedAccountServer', () => {
       repository: 'mail',
       expect_account_server: 'https://bench.rediacc.com',
     });
+  });
+
+  it('overwrites an expect_account_server the caller passed', () => {
+    expect(
+      withExpectedAccountServer('backup_snapshot', {
+        repository: 'mail',
+        expect_account_server: 'https://other.example.com',
+      })
+    ).toEqual({ repository: 'mail', expect_account_server: 'https://bench.rediacc.com' });
   });
 
   it('leaves every other function untouched', () => {

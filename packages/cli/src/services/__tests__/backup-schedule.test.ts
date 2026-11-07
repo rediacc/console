@@ -106,6 +106,11 @@ function scriptedExec(scripts: ExecScript[]): void {
       }
       // The deploy reads the machine's core count for the unit's CPUQuota; an unscripted machine has eight.
       if (cmd === 'nproc') opts?.onStdout?.(Buffer.from('8\n'));
+      // An unscripted machine holds a renet new enough to list the account-server flag (accountServerForRenet).
+      if (cmd.includes('backup snapshot --help'))
+        opts?.onStdout?.(
+          Buffer.from('  --expect-account-server string   refuse a foreign licence\n')
+        );
       return Promise.resolve(0);
     }
   );
