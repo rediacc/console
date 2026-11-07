@@ -1158,16 +1158,19 @@ def gate_step_seconds(
     root: Path,
     patterns: Mapping[str, re.Pattern[str]],
     jobs_by_run: Sequence[list[dict[str, Any]]],
+    runs: dict[str, int] | None = None,
 ) -> dict[str, float]:
     """`{gate id: p90 seconds}`, each gate's OWN step (`_exclusive_ci_steps` -- see there for why a step SHARED by several gates is excluded rather than mis-attributed), timed by `completed_at - started_at`, success-only (both the job and the step), over `jobs_by_run` -- the SAME PR-full sample `jobs`/`units`/`job_p90_minutes` already walk, so this costs no extra network call and inherits the same 14-day sample-age refusal `refresh_lane_durations` already applies to that sample.
     `patterns` is `lane_display_patterns`'s own map (already general over every job inside a reusable workflow, not only the test lanes), keyed by the job's YAML id -- the same key `ci.job` names.
-    A gate whose job has no pattern yet, or whose named step never appears success-only in the sample, contributes no entry -- never a guessed number."""
+    A gate whose job has no pattern yet, or whose named step never appears success-only in the sample, contributes no entry -- never a guessed number.
+    `runs`, when given, is filled with `{gate id: how many sampled runs measured its step}`, the evidence `refreshed_on_evidence` keeps a committed value on."""
     samples: dict[str, list[float]] = {}
+    seen_in: dict[str, set[int]] = {}
     for gate_id, (job_id, step_name) in _exclusive_ci_steps(root).items():
         pattern = patterns.get(job_id)
         if pattern is None:
             continue
-        for run_jobs in jobs_by_run:
+        for run_index, run_jobs in enumerate(jobs_by_run):
             for job in run_jobs:
                 if job.get("conclusion") != "success" or not pattern.match(job.get("name") or ""):
                     continue
@@ -1178,11 +1181,14 @@ def gate_step_seconds(
                     end = _iso_to_epoch(step.get("completed_at"))
                     if start is not None and end is not None:
                         samples.setdefault(gate_id, []).append(max(0.0, end - start))
+                        seen_in.setdefault(gate_id, set()).add(run_index)
     result: dict[str, float] = {}
     for gate_id, secs in samples.items():
         s = stats(secs)
         if s is not None:
             result[gate_id] = s["p90"]
+            if runs is not None:
+                runs[gate_id] = len(seen_in.get(gate_id, ()))
     return result
 
 
@@ -1626,13 +1632,20 @@ def compute_lane_durations(
             raise
 
     patterns = lane_display_patterns(tree_root, workflow)
+    # How many sampled runs measured each entry, per section: the evidence `refreshed_on_evidence` and the job drift check count, the same `MIN_DRIFT_RUNS` units are held to.
+    measured_runs: dict[str, dict[str, int]] = {
+        "jobs": {},
+        "job_p90_minutes": {},
+        "gate_step_p90_seconds": {},
+    }
     jobs_minutes: dict[str, float] = {}
     for lane, pattern in patterns.items():
         runner_re = RUNNER_STEP_PATTERNS.get(lane)
         if runner_re is None:
             continue
         samples: list[float] = []
-        for run_jobs in pr_jobs_by_run:
+        lane_runs: set[int] = set()
+        for run_index, run_jobs in enumerate(pr_jobs_by_run):
             for job in run_jobs:
                 if job.get("conclusion") != "success":
                     continue
@@ -1641,23 +1654,28 @@ def compute_lane_durations(
                 cost = job_fixed_cost_minutes(job, runner_re)
                 if cost is not None:
                     samples.append(cost)
+                    lane_runs.add(run_index)
         s = stats(samples)
         if s is not None:
             jobs_minutes[lane] = s["p90"]
+            measured_runs["jobs"][lane] = len(lane_runs)
 
     # T3.1: check 2's own gap -- a whole-job p90 (success-only wall time, MINUTES) by Actions API DISPLAY NAME (e.g. "Tests + Infra / E2E K8s Ceph"), for every job seen in the same PR-full sample `jobs_minutes` above already walks. `check-lane-budget.ts` reads it by display name (`displayNamePattern`, one pattern per call site), so this writes the number under the one name `--refresh` can derive without re-parsing `ci.yml` a second time.
     job_wall_by_name: dict[str, list[float]] = {}
-    for run_jobs in pr_jobs_by_run:
+    job_runs_by_name: dict[str, set[int]] = {}
+    for run_index, run_jobs in enumerate(pr_jobs_by_run):
         for job in run_jobs:
             name = job.get("name") or "?"
             wall = job_wall_minutes(job)
             if wall is not None:
                 job_wall_by_name.setdefault(name, []).append(wall)
+                job_runs_by_name.setdefault(name, set()).add(run_index)
     job_p90_minutes: dict[str, float] = {}
     for name, walls in job_wall_by_name.items():
         s = stats(walls)
         if s is not None:
             job_p90_minutes[name] = s["p90"]
+            measured_runs["job_p90_minutes"][name] = len(job_runs_by_name[name])
 
     bucket_titles = _e2e_shard_bucket_titles()
     run_ids = [run["id"] for run in pr_runs]
@@ -1724,6 +1742,14 @@ def compute_lane_durations(
             % (name, main_only[name], len(main_runs))
         )
     job_p90_minutes.update(main_only)
+    for name in main_only:
+        measured_runs["job_p90_minutes"][name] = sum(
+            1
+            for run_jobs in main_jobs_by_run
+            if any(
+                job.get("name") == name and job_wall_minutes(job) is not None for job in run_jobs
+            )
+        )
     job_max_seconds: dict[str, dict[str, Any]] = {}
     for name in HEADROOM_JOBS:
         wall_minutes = [
@@ -1759,7 +1785,11 @@ def compute_lane_durations(
         "job_max_seconds": job_max_seconds,
         "job_p90_minutes": job_p90_minutes,
         # CI-representative gate-step timing for check-gate-manifest.ts's tier verdict; see gate_step_seconds.
-        "gate_step_p90_seconds": gate_step_seconds(tree_root, patterns, pr_jobs_by_run),
+        "gate_step_p90_seconds": gate_step_seconds(
+            tree_root, patterns, pr_jobs_by_run, measured_runs["gate_step_p90_seconds"]
+        ),
+        # The evidence behind each `jobs`/`job_p90_minutes`/`gate_step_p90_seconds` entry, read by the refresh's keep rule and the job drift check and never written; see `refreshed_on_evidence`. Filled by the call above before this dict is read.
+        "measured_runs": measured_runs,
         # Per-matrix-variant leg pricing measured from the same sample's job logs; see `collect_variant_costs`.
         "variant_costs": variant_costs,
         "variant_legs": variant_legs,
@@ -2250,6 +2280,26 @@ def refreshed_units(
     return units
 
 
+def refreshed_on_evidence(
+    committed: Mapping[str, float],
+    measured: Mapping[str, float],
+    runs: Mapping[str, int],
+) -> tuple[dict[str, float], list[str]]:
+    """`(the entries a refresh writes, the ids it kept on a thin sample)` for `jobs`, `job_p90_minutes` and `gate_step_p90_seconds`: `refreshed_units`' rule, counted in `runs` (how many sampled runs measured each id; absent is zero). An entry the table already holds moves only on `MIN_DRIFT_RUNS` runs, either direction; an id new to the table is written from one.
+
+    WHY. These three were rewritten from any sample, one run included. MEASURED 2026-11-07: the 14-day pull_request window held one Console CI run (41769535457, a 23-commit PR), and recomputed on it the refresh writes check:ci-plan-live-proof's step at 3.0 s over a committed 69.3 s and Quality / Branch at 3.5 m over 10.3 m. check-gate-manifest.ts judges `slow` on that step and check-lane-budget.ts judges every job on these p90s, so one runner's numbers set a tier and a lane verdict.
+    """
+    out = dict(committed)
+    kept: list[str] = []
+    for key, value in measured.items():
+        if key in committed and runs.get(key, 0) < MIN_DRIFT_RUNS:
+            if committed[key] != value:
+                kept.append(key)
+            continue
+        out[key] = value
+    return out, sorted(kept)
+
+
 def prune_units_to_manifests(units: dict[str, Any], root: Path) -> dict[str, Any]:
     """Drop a unit id its lane's committed manifest no longer names.
 
@@ -2309,10 +2359,11 @@ def refresh_lane_durations(
             % (len(stale), SAMPLE_MAX_AGE_DAYS)
         )
         return 1
+    sample_size = sample_size_text(computed, limit)
     for lane in computed["missing_artifact_lanes"]:
         log.warn(
             "budget_report --refresh: lane %r has NO unit-duration artifacts in the last "
-            "%d sampled PR-full run(s); its units are UNCHANGED, not zeroed." % (lane, limit)
+            "%s; its units are UNCHANGED, not zeroed." % (lane, sample_size)
         )
     if (
         not computed["jobs"]
@@ -2323,10 +2374,11 @@ def refresh_lane_durations(
         and not computed.get("variant_costs")
     ):
         log.error(
-            "budget_report --refresh: matched nothing at all across %d sampled run(s); "
-            "refusing to stamp refreshed_at on numbers nothing verified." % limit
+            "budget_report --refresh: matched nothing at all across %s; "
+            "refusing to stamp refreshed_at on numbers nothing verified." % sample_size
         )
         return 1
+    evidence = computed.get("measured_runs") or {}
 
     # .ci/config/lane-durations.json -> the repo root, three levels up, so a fixture path prunes against its own tree.
     repo_root_for_pruning = path.resolve().parent.parent.parent
@@ -2336,7 +2388,11 @@ def refresh_lane_durations(
         updated["$comment"] = existing["$comment"]
     updated["refreshed_at"] = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
     updated["concurrency"] = existing.get("concurrency", 20)
-    updated["jobs"] = {**existing.get("jobs", {}), **computed["jobs"]}
+    # `jobs`, `job_p90_minutes` and `gate_step_p90_seconds` move on the evidence units move on (`refreshed_on_evidence`), and every entry a thin sample left alone is named.
+    kept_on_thin: dict[str, list[str]] = {}
+    updated["jobs"], kept_on_thin["jobs"] = refreshed_on_evidence(
+        existing.get("jobs", {}), computed["jobs"], evidence.get("jobs") or {}
+    )
     measured_stats = computed.get("unit_stats") or {}
     updated["units"] = prune_units_to_manifests(
         refreshed_units(existing.get("units", {}), computed["units"], measured_stats),
@@ -2405,21 +2461,43 @@ def refresh_lane_durations(
             }
             for lane, variants in variant_costs.items()
         }
-    updated["job_p90_minutes"] = {
-        **existing.get("job_p90_minutes", {}),
-        **computed["job_p90_minutes"],
-    }
+    existing_p90 = existing.get("job_p90_minutes", {})
+    p90_runs = evidence.get("job_p90_minutes") or {}
+    updated["job_p90_minutes"], kept_on_thin["job_p90_minutes"] = refreshed_on_evidence(
+        existing_p90, computed["job_p90_minutes"], p90_runs
+    )
+    # A name kept on a thin sample keeps its plan entry too: its p90 still describes the samples that entry names.
+    rewritten = [
+        name
+        for name in computed["job_p90_minutes"]
+        if name not in existing_p90 or p90_runs.get(name, 0) >= MIN_DRIFT_RUNS
+    ]
     plans = merged_job_p90_plans(
         existing.get("job_p90_plans") or {},
-        computed["job_p90_minutes"],
-        computed.get("job_p90_plans") or {},
+        rewritten,
+        {n: v for n, v in (computed.get("job_p90_plans") or {}).items() if n in set(rewritten)},
     )
     if plans:
         updated["job_p90_plans"] = plans
-    updated["gate_step_p90_seconds"] = prune_gate_steps_to_lock(
-        {**existing.get("gate_step_p90_seconds", {}), **computed["gate_step_p90_seconds"]},
-        repo_root_for_pruning,
+    gate_steps, kept_on_thin["gate_step_p90_seconds"] = refreshed_on_evidence(
+        existing.get("gate_step_p90_seconds", {}),
+        computed["gate_step_p90_seconds"],
+        evidence.get("gate_step_p90_seconds") or {},
     )
+    updated["gate_step_p90_seconds"] = prune_gate_steps_to_lock(gate_steps, repo_root_for_pruning)
+    for table_key, ids in kept_on_thin.items():
+        if ids:
+            log.warn(
+                "budget_report --refresh: %d %s entr(ies) measured by fewer than %d sampled run(s) KEEP "
+                "their committed value (%s%s)."
+                % (
+                    len(ids),
+                    table_key,
+                    MIN_DRIFT_RUNS,
+                    ", ".join(ids[:3]),
+                    ", ..." if len(ids) > 3 else "",
+                )
+            )
     if isinstance(existing.get("job_max_seconds"), dict):
         updated["job_max_seconds"] = existing["job_max_seconds"]
     if computed["job_max_seconds"]:
@@ -2434,19 +2512,30 @@ def refresh_lane_durations(
         return 0
     path.write_text(payload, encoding="utf-8")
     print(
-        "lane-durations.json refreshed from %d sampled run(s): %d job(s), %d unit(s) measured "
-        "(%d kept on a thin sample), %d headroom job(s), %d other job p90(s), %d gate step p90(s)."
+        "lane-durations.json refreshed from %s: %d job(s), %d unit(s) measured "
+        "(%d kept on a thin sample), %d headroom job(s), %d other job p90(s) (%d kept on a thin sample), "
+        "%d gate step p90(s) (%d kept on a thin sample)."
         % (
-            limit,
+            sample_size,
             len(computed["jobs"]),
             len(computed["units"]),
             len(kept_thin),
             len(computed["job_max_seconds"]),
             len(computed["job_p90_minutes"]),
+            len(kept_on_thin["job_p90_minutes"]),
             len(computed["gate_step_p90_seconds"]),
+            len(kept_on_thin["gate_step_p90_seconds"]),
         )
     )
     return 0
+
+
+def sample_size_text(computed: Mapping[str, Any], limit: int) -> str:
+    """How many runs a measurement read, for a summary line: the count of `sampled_runs`, never the requested `limit`. MEASURED 2026-11-07: the refresh printed "refreshed from 10 sampled run(s)" over a 14-day window that held one pull_request run. A compute that names no runs (a test fake) says so rather than borrowing the limit."""
+    runs = computed.get("sampled_runs")
+    if isinstance(runs, list):
+        return "%d sampled run(s)" % len(runs)
+    return "an unnamed sample (limit %d)" % limit
 
 
 def compute_for_check(*args: Any, **kwargs: Any) -> dict[str, Any]:
@@ -2511,11 +2600,12 @@ def check_lane_durations(
         return 1
 
     computed = _compute_sample(compute, repo, workflow, branch, limit, as_of)
+    sample_size = sample_size_text(computed, limit)
     # EVERY FINDING IS KEYED (`freshness.Keyed`, review d21f5510.1): `lane-durations:<class>:<lane, unit or job>`, never the count, the run id or the measured number, so the same finding keeps its key from run to run.
     findings: list[str] = [
         Keyed(
             "lane-durations:no-unit-artifacts:%s" % key_part(lane),
-            "lane %r has NO unit-duration artifacts in the last %d sampled run(s)." % (lane, limit),
+            "lane %r has NO unit-duration artifacts in the last %s." % (lane, sample_size),
         )
         for lane in computed["missing_artifact_lanes"]
     ]
@@ -2525,10 +2615,16 @@ def check_lane_durations(
     )
 
     committed_jobs = committed.get("jobs") or {}
+    # A job's drift needs the evidence a unit's does (`MIN_DRIFT_RUNS` runs; absent is zero), because the refresh keeps a thinly measured job's committed value (`refreshed_on_evidence`) and a check that judged it would red on the very sample the refresh just declined to write.
+    job_runs = (computed.get("measured_runs") or {}).get("jobs") or {}
+    thin_jobs: list[str] = []
     for lane, minutes in sorted(computed["jobs"].items()):
         f = leg_over_budget_finding(lane, minutes)
         if f:
             findings.append(Keyed("lane-durations:leg-over-budget:%s" % key_part(lane), f))
+        if job_runs.get(lane, 0) < MIN_DRIFT_RUNS:
+            thin_jobs.append(lane)
+            continue
         d = drift_finding("job %r fixed cost" % lane, committed_jobs.get(lane), minutes)
         if d:
             findings.append(Keyed("lane-durations:drift:job:%s" % key_part(lane), d))
@@ -2574,6 +2670,14 @@ def check_lane_durations(
             shape["thin"],
             MIN_DRIFT_RUNS,
             no_row,
+        ),
+        "%d job lane(s) measured: %d judged for drift, %d thin (fewer than %d sampled runs, not judged%s)."
+        % (
+            len(computed["jobs"]),
+            len(computed["jobs"]) - len(thin_jobs),
+            len(thin_jobs),
+            MIN_DRIFT_RUNS,
+            ": %s" % ", ".join(thin_jobs) if thin_jobs else "",
         ),
         sample_line(computed, as_of),
     ]

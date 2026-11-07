@@ -15,7 +15,7 @@ import re
 import threading
 import time
 import zipfile
-from typing import Any
+from typing import Any, cast
 
 import pytest
 
@@ -567,6 +567,14 @@ def _fake_compute(**overrides):
         "missing_artifact_lanes": [],
     }
     base.update(overrides)
+    # Every entry a fake measures carries `MIN_DRIFT_RUNS` runs of evidence unless the test says otherwise, so a test about merging or drift is not silently turned into a test about thin samples.
+    if "measured_runs" not in overrides:
+        base["measured_runs"] = {
+            section: dict.fromkeys(
+                cast("dict[str, Any]", base.get(section) or {}), br.MIN_DRIFT_RUNS
+            )
+            for section in ("jobs", "job_p90_minutes", "gate_step_p90_seconds")
+        }
 
     def compute(_repo, _workflow, _branch, _limit):
         return base
@@ -2226,6 +2234,147 @@ def test_refresh_lane_durations_merges_job_p90_minutes_with_existing(tmp_path):
         "Quality / Content": 3.0,
         "Tests + Infra / E2E K8s Ceph": 14.0,
     }
+
+
+def _one_run_night(**overrides):
+    """The 2026-11-07 shape: a 14-day window holding one pull_request run (41769535457), measured against the table the 11-03 refresh wrote. Every entry the fake measures has one run of evidence unless `measured_runs` says otherwise."""
+    measured = {
+        "jobs": {"test-e2e-workers": 2.2},
+        "job_p90_minutes": {
+            "Quality / Branch": 3.5,
+            "Build (Renet) / Renet (Full)": 6.2,
+            "Brand New Job": 1.0,
+        },
+        "gate_step_p90_seconds": {"check:ci-plan-live-proof": 3.0, "check:ci-max-lines": 5.0},
+    }
+    runs = {section: dict.fromkeys(values, 1) for section, values in measured.items()}
+    return _fake_compute(
+        **measured,
+        measured_runs=overrides.pop("measured_runs", runs),
+        sampled_runs=[{"id": 41769535457, "updated_at": "2026-11-04T05:05:10Z"}],
+        **overrides,
+    )
+
+
+def _the_11_03_table():
+    return {
+        "refreshed_at": "2026-11-03T10:13:26Z",
+        "concurrency": 20,
+        "jobs": {"test-e2e-workers": 3.1},
+        "units": {},
+        "job_p90_minutes": {"Quality / Branch": 10.3, "Build (Renet) / Renet (Full)": 7.0},
+        "job_p90_plans": {"Quality / Branch": ["aaaaaaaaaaaaaaaa"]},
+        "gate_step_p90_seconds": {"check:ci-plan-live-proof": 69.3, "check:ci-max-lines": 5.3},
+    }
+
+
+def test_a_one_run_refresh_keeps_every_committed_job_and_gate_step_and_names_them(tmp_path, capsys):
+    """One run is one runner: a refresh on it moves no `jobs`, `job_p90_minutes` or `gate_step_p90_seconds` entry the table already holds, either direction (69.3 s -> 3.0 s down, 7.0 m -> 6.2 m down, the fixed cost up), writes a name new to the table, keeps a kept name's plan entry, and says how many runs it read rather than the limit."""
+    path = _fixture_tree(tmp_path, {})
+    path.write_text(json.dumps(_the_11_03_table()))
+    assert br.refresh_lane_durations(path, limit=10, compute=_one_run_night()) == 0
+    data = json.loads(path.read_text())
+    assert data["jobs"] == {"test-e2e-workers": 3.1}
+    assert data["job_p90_minutes"] == {
+        "Quality / Branch": 10.3,
+        "Build (Renet) / Renet (Full)": 7.0,
+        "Brand New Job": 1.0,  # new to the table: written from one run
+    }
+    assert data["job_p90_plans"] == {"Quality / Branch": ["aaaaaaaaaaaaaaaa"]}
+    steps = data["gate_step_p90_seconds"]
+    assert steps.get("check:ci-plan-live-proof") == 69.3
+    assert steps.get("check:ci-max-lines") == 5.3
+    captured = capsys.readouterr()
+    assert "refreshed from 1 sampled run(s)" in captured.out
+    assert "10 sampled run(s)" not in captured.out
+    assert (
+        "2 job_p90_minutes entr(ies) measured by fewer than 2 sampled run(s) KEEP" in captured.err
+    )
+    assert "2 gate_step_p90_seconds entr(ies)" in captured.err
+    assert "1 jobs entr(ies)" in captured.err
+
+
+def test_a_refresh_on_two_runs_rewrites_the_same_entries(tmp_path):
+    """CONTROL: the identical measurement with two runs behind every entry moves them all, so the keep rule is the evidence count and nothing else."""
+    path = _fixture_tree(tmp_path, {})
+    path.write_text(json.dumps(_the_11_03_table()))
+    two = {
+        "jobs": {"test-e2e-workers": 2},
+        "job_p90_minutes": {"Quality / Branch": 2, "Build (Renet) / Renet (Full)": 2},
+        "gate_step_p90_seconds": {"check:ci-plan-live-proof": 2, "check:ci-max-lines": 2},
+    }
+    assert br.refresh_lane_durations(path, limit=10, compute=_one_run_night(measured_runs=two)) == 0
+    data = json.loads(path.read_text())
+    assert data["jobs"] == {"test-e2e-workers": 2.2}
+    assert data["job_p90_minutes"]["Quality / Branch"] == 3.5
+    assert data["job_p90_minutes"]["Build (Renet) / Renet (Full)"] == 6.2
+    assert "Quality / Branch" not in data.get("job_p90_plans", {}), (
+        "a re-measured name drops its old plan"
+    )
+    steps = data["gate_step_p90_seconds"]
+    assert steps.get("check:ci-plan-live-proof") == 3.0
+    assert steps.get("check:ci-max-lines") == 5.0
+
+
+def test_refreshed_on_evidence_counts_absent_evidence_as_none():
+    assert br.refreshed_on_evidence({"a": 1.0}, {"a": 2.0, "b": 3.0}, {}) == (
+        {"a": 1.0, "b": 3.0},
+        ["a"],
+    )
+    assert br.refreshed_on_evidence({"a": 1.0}, {"a": 2.0}, {"a": br.MIN_DRIFT_RUNS}) == (
+        {"a": 2.0},
+        [],
+    )
+
+
+def test_a_check_judges_a_job_fixed_cost_drift_only_on_two_runs(tmp_path, capsys):
+    """The check holds a job to the refresh's evidence: a one-run 29% move is counted thin and printed, never a finding, and the same move on two runs is (the CONTROL). A check after a one-run refresh is therefore green on that sample."""
+    path = tmp_path / "lane-durations.json"
+    path.write_text(json.dumps(_committed(jobs={"test-e2e-workers": 3.1})))
+    thin = _fake_compute(
+        jobs={"test-e2e-workers": 2.2}, measured_runs={"jobs": {"test-e2e-workers": 1}}
+    )
+    assert br.check_lane_durations(path, limit=10, compute=thin) == 0
+    assert "1 job lane(s) measured: 0 judged for drift, 1 thin" in capsys.readouterr().out
+    two = _fake_compute(
+        jobs={"test-e2e-workers": 2.2}, measured_runs={"jobs": {"test-e2e-workers": 2}}
+    )
+    assert br.check_lane_durations(path, limit=10, compute=two) == 1
+    # And the ceiling is not an evidence question: a one-run leg over 12 minutes is still red.
+    over = _fake_compute(
+        jobs={"test-e2e-workers": 12.5}, measured_runs={"jobs": {"test-e2e-workers": 1}}
+    )
+    assert br.check_lane_durations(path, limit=10, compute=over) == 1
+
+
+def test_gate_step_seconds_counts_the_runs_behind_each_step(tmp_path, monkeypatch):
+    monkeypatch.setattr(
+        br, "_exclusive_ci_steps", lambda _root: {"g": ("quality-branch", "Plan live proof")}
+    )
+    pattern = re.compile(r"^Quality / Branch$")
+
+    def run(seconds):
+        return [
+            {
+                "name": "Quality / Branch",
+                "conclusion": "success",
+                "steps": [
+                    {
+                        "name": "Plan live proof",
+                        "conclusion": "success",
+                        "started_at": "2026-11-04T03:55:00Z",
+                        "completed_at": "2026-11-04T03:55:%02dZ" % seconds,
+                    }
+                ],
+            }
+        ]
+
+    runs: dict[str, int] = {}
+    assert br.gate_step_seconds(tmp_path, {"quality-branch": pattern}, [run(3)], runs) == {"g": 3.0}
+    assert runs == {"g": 1}
+    runs.clear()
+    br.gate_step_seconds(tmp_path, {"quality-branch": pattern}, [run(3), run(40), []], runs)
+    assert runs == {"g": 2}
 
 
 def test_refresh_lane_durations_still_refuses_when_only_job_p90_minutes_would_be_empty(tmp_path):
