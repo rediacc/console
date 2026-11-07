@@ -176,3 +176,25 @@ export async function assertBackupStoreUniverse(
     })
   );
 }
+
+/**
+ * Whether the installed renet lists `--store` on `backup snapshot`, the same probe `accountServerForRenet` makes for
+ * `--expect-account-server`: an older renet dies at cobra's flag parse at 03:00, so the flag reaches a unit only when
+ * the binary lists it. A failed probe answers false. The generator then omits `--store` for a `home` destination and
+ * refuses a destination on any other store, which would otherwise be written into `home`.
+ */
+export async function storeFlagForRenet(
+  sftp: Pick<SFTPClient, 'execStreaming'>,
+  remoteRenetPath: string
+): Promise<boolean> {
+  let out = '';
+  const exitCode = await sftp.execStreaming(`${remoteRenetPath} backup snapshot --help 2>&1`, {
+    onStdout: (data) => {
+      out += data;
+    },
+    onStderr: (data) => {
+      out += data;
+    },
+  });
+  return exitCode === 0 && out.includes('--store ');
+}

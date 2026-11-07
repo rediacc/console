@@ -26,6 +26,8 @@ interface UpsertDestOpts {
   destinationName: string;
   enabled?: boolean;
   bwlimit?: string;
+  /** A registered store id the destination writes to; absent keeps the stored one (or `home`). */
+  target?: string;
 }
 
 /**
@@ -48,8 +50,9 @@ function definedOnly(o: Record<string, unknown>): Record<string, unknown> {
  * Build the destination record to store, from the flags. Pure: no config reads,
  * no writes, so a test can drive the exact object the operator's flags produce
  * and hand it straight to the unit generator. Every destination is the chunk
- * store (`hosted-service`); the stored `endpoint` and `vaultContent` of an
- * existing destination are kept by the merge in `addBackupDestination`.
+ * store (`hosted-service`); `target` names the registered store it writes to, and an
+ * existing destination's stored target is kept by the merge in `addBackupDestination`
+ * when the flag is absent.
  */
 export function buildDestination(
   o: Omit<UpsertDestOpts, 'strategyName'>
@@ -61,6 +64,7 @@ export function buildDestination(
       name: o.destinationName,
       enabled: o.enabled,
       bandwidthLimit: o.bwlimit,
+      target: o.target,
     }),
     'backup destination'
   );

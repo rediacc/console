@@ -263,18 +263,33 @@ const backupDestinationCommon = {
   bandwidthLimit: z.string().optional(),
 };
 
+/** A backup store id: a lowercase slug (`home`, `eu-west`, `office-rustfs`), unique per subscription. */
+export const BACKUP_STORE_ID_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,62})$/;
+
+const removedDestinationField = (field: string) =>
+  z.never({
+    error: `A backup destination no longer carries \`${field}\`: bucket credentials live on the account server. Register the store (\`POST /backups/stores\`) and name it with \`target\`.`,
+  });
+
 /**
- * A backup destination: the content-addressed chunk store. Absent `endpoint` =
- * the Rediacc-hosted plane (server-stamped URL, license-blob auth, nothing in
- * config); set `endpoint` for a customer S3 / self-hosted elite plane whose
- * credentials ride a container-level `vaultContent` bag. Destinations of the
- * removed `storage` kind (or without a `kind`) are refused.
+ * A backup destination: the content-addressed chunk store. `target` names a store
+ * registered on the account server (absent = `home`, the store every subscription
+ * has), so no bucket credential sits in a config file. The removed `endpoint` and
+ * `vaultContent` fields are refused with a message naming the replacement, and so
+ * are destinations of the removed `storage` kind (or without a `kind`).
  */
 export const BackupDestinationSchema = z.object({
   kind: z.literal('hosted-service'),
   ...backupDestinationCommon,
-  endpoint: z.string().optional(),
-  vaultContent: z.record(z.string(), z.unknown()).optional(),
+  target: z
+    .string()
+    .regex(
+      BACKUP_STORE_ID_PATTERN,
+      'A backup target is a store id: lowercase letters, digits and dashes'
+    )
+    .optional(),
+  endpoint: removedDestinationField('endpoint').optional(),
+  vaultContent: removedDestinationField('vaultContent').optional(),
 });
 
 /**
