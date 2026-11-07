@@ -327,8 +327,9 @@ export async function runCommandThroughProxy(
 
 /** Under `-o json` a `-b` ticket is the one envelope on stdout, so the output the starting result line carried is not printed beside it. */
 export function withoutCapturedOutput(outcome: ProxyCommandOutcome): ProxyCommandOutcome {
-  const { stdout: _stdout, stdoutBytes: _stdoutBytes, ...rest } = outcome;
-  return { ...rest, stdout: '' };
+  const rest: ProxyCommandOutcome = { ...outcome, stdout: '' };
+  delete rest.stdoutBytes;
+  return rest;
 }
 
 /** Hand the `-b` ticket to the operator: the one envelope under `-o json`, the hint on stderr otherwise (stdout belongs to the command). */
