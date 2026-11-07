@@ -357,3 +357,12 @@ export async function registerEgress(
     () => new StallError('egress')
   );
 }
+
+/** Run a storage step whose failure must not stop the caller: a throw, synchronous or from the promise, is logged as `message` and swallowed. */
+export async function warnIfThrows(run: () => Promise<unknown>, message: string): Promise<void> {
+  try {
+    await run();
+  } catch {
+    console.warn(message);
+  }
+}

@@ -60,6 +60,7 @@ import {
   UNREACHABLE_AT_KEY,
   UNREACHABLE_KEY,
   wait,
+  warnIfThrows,
 } from './org-executor-support';
 import { executorName, placementOf, UNREACHABLE_THRESHOLD, unreachableRecent } from './placement';
 import type { ProbeTarget } from './reachability';
@@ -237,11 +238,10 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
   private async retire(to: number): Promise<void> {
     this.retiredTo = to;
     this.draining = true;
-    try {
-      await this.ctx.storage.put(RETIRED_KEY, { to });
-    } catch {
-      console.warn('proxy: org executor retired state not stored');
-    }
+    await warnIfThrows(
+      () => this.ctx.storage.put(RETIRED_KEY, { to }),
+      'proxy: org executor retired state not stored'
+    );
     if (this.inFlight === 0) await this.finishDrain();
   }
 
@@ -388,12 +388,10 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
 
   /** A request finished: count the activity, and finish a drain once nothing is in flight. */
   private async afterRequest(): Promise<void> {
-    try {
+    await warnIfThrows(async () => {
       await this.touch();
       if (this.isDraining() && this.inFlight === 0) await this.finishDrain();
-    } catch {
-      console.warn('proxy: org executor after-request bookkeeping failed');
-    }
+    }, 'proxy: org executor after-request bookkeeping failed');
   }
 
   /** End a drain with nothing in flight: stop the container. A retired instance also releases its slot, which is keyed by its own name and so never the new placement's; a lost lease has no slot left to release. */
@@ -551,11 +549,10 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
       console.warn('proxy: org executor exit bookkeeping failed');
     }
     // The record is deleted whatever the OOM flags did. If this delete also fails, the stale record is harmless: `recover` finds no running container and clears it, so a dead container is never recovered as running.
-    try {
-      await this.ctx.storage.delete(RECORD_KEY);
-    } catch {
-      console.warn('proxy: org executor record delete failed');
-    }
+    await warnIfThrows(
+      () => this.ctx.storage.delete(RECORD_KEY),
+      'proxy: org executor record delete failed'
+    );
     await releaseLease(this.capacity(), owner?.orgId, owner?.placement);
   }
 
