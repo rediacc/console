@@ -8,8 +8,8 @@ tags:
 subcategory: setup
 order: -1
 language: de
-sourceHash: "05e87ddd9ad815ff"
-sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
+sourceHash: "1a57c2ff08008d4e"
+sourceCommit: "c1e4f1e1584c84a89aaa6b606f4195df0d6725b0"
 ---
 
 # Schnellstart
@@ -223,7 +223,7 @@ rdc backup usage
 
 Snapshots werden in den Chunk-Store hochgeladen, wofür ein Account-Server und ein lizenziertes Repository nötig sind. Es werden nur geänderte Daten gespeichert, sodass ein zweiter Snapshot desselben Repositorys nur die Differenz statt des gesamten Images kostet.
 
-Backups haben eine einzige Zielart, den gehosteten Chunk-Store, und `--to` bei `repo push` nennt nur eine Maschine. Die Aufbewahrung wird pro Repository-Lineage mit `rdc backup retention set` festgelegt, und geplante Läufe entstehen aus `rdc backup strategy set` plus `rdc backup schedule`. Siehe [Backup & Wiederherstellung](/de/docs/backup-restore).
+Backups gehen in registrierte Stores: `home`, den gehosteten Store, den jedes Abonnement hat, plus eine zweite gehostete Region oder einen Kunden-Bucket, jeweils benannt über das `--target` eines Ziels (siehe [Backup-Ziele](/de/docs/backup-destinations)). `--to` bei `repo push` nennt nur eine Maschine. Die Aufbewahrung wird pro Repository-Lineage mit `rdc backup retention set` festgelegt, und geplante Läufe entstehen aus `rdc backup strategy set` plus `rdc backup schedule`. Siehe [Backup & Wiederherstellung](/de/docs/backup-restore).
 
 ### 4. Von Remote abrufen
 

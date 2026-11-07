@@ -8,8 +8,8 @@ tags:
 subcategory: setup
 order: -1
 language: it
-sourceHash: "05e87ddd9ad815ff"
-sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
+sourceHash: "1a57c2ff08008d4e"
+sourceCommit: "c1e4f1e1584c84a89aaa6b606f4195df0d6725b0"
 ---
 
 # Quick Start
@@ -223,7 +223,7 @@ rdc backup usage
 
 Gli snapshot vengono caricati sullo storage a chunk, che richiede un server dell'account e un repository con licenza. Vengono memorizzati solo i dati modificati, quindi un secondo snapshot dello stesso repository costa solo la differenza invece dell'intera immagine.
 
-I backup hanno un solo tipo di destinazione, lo storage a chunk ospitato dal servizio, e `--to` su `repo push` indica soltanto una macchina. La retention si dichiara per lignaggio di repository con `rdc backup retention set`, e le esecuzioni pianificate nascono da `rdc backup strategy set` più `rdc backup schedule`. Vedi [Backup & Restore](/it/docs/backup-restore).
+I backup vanno in store registrati: `home`, lo store ospitato che ha ogni abbonamento, più una seconda regione ospitata o un bucket del cliente, ciascuno indicato dal `--target` di una destinazione (vedi [Destinazioni di backup](/it/docs/backup-destinations)). `--to` su `repo push` indica soltanto una macchina. La retention si dichiara per lignaggio di repository con `rdc backup retention set`, e le esecuzioni pianificate nascono da `rdc backup strategy set` più `rdc backup schedule`. Vedi [Backup & Restore](/it/docs/backup-restore).
 
 ### 4. Scarica da Remoto
 

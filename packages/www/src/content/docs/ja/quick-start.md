@@ -8,8 +8,8 @@ tags:
 subcategory: setup
 order: -1
 language: ja
-sourceHash: "05e87ddd9ad815ff"
-sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
+sourceHash: "1a57c2ff08008d4e"
+sourceCommit: "c1e4f1e1584c84a89aaa6b606f4195df0d6725b0"
 ---
 
 # クイックスタート
@@ -223,7 +223,7 @@ rdc backup usage
 
 スナップショットはチャンクストレージにアップロードされます。これにはアカウントサーバーとライセンス済みのリポジトリが必要です。変更されたデータのみが保存されるため、同じリポジトリの2回目のスナップショットはイメージ全体ではなく差分のコストで済みます。
 
-バックアップの宛先の種類は、サービスホスト型のチャンクストアの1つだけで、`repo push` の `--to` はマシンだけを指定します。保持はリポジトリの系統ごとに `rdc backup retention set` で宣言し、スケジュール実行は `rdc backup strategy set` と `rdc backup schedule` で行います。[バックアップとリストア](/ja/docs/backup-restore)を参照してください。
+バックアップは登録済みのストアに書き込まれます。すべてのサブスクリプションにあるホスト型ストアの `home` に加えて、2つ目のホスト型リージョンやお客様のバケットも使え、それぞれ宛先の `--target` で指定します([バックアップの宛先](/ja/docs/backup-destinations)を参照)。`repo push` の `--to` はマシンだけを指定します。保持はリポジトリの系統ごとに `rdc backup retention set` で宣言し、スケジュール実行は `rdc backup strategy set` と `rdc backup schedule` で行います。[バックアップとリストア](/ja/docs/backup-restore)を参照してください。
 
 ### 4. リモートからのプル
 
