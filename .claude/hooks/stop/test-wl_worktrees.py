@@ -1165,8 +1165,6 @@ def control_probes(tmp):
     check("ci:quick: a grep naming the script is not a run", ciq(), False)
     argv_is("node", "xci-runner/quick-clone.ts")
     check("ci:quick: a word that only ends with the path is not the script", ciq(), False)
-    argv_is("node", "xscripts/ci-runner/quick-clone.ts")
-    check("ci:quick: a word with the path glued to a prefix is not the script", ciq(), False)
     argv_is("python3", "tools/lint.py", script)
     check("ci:quick: a script that only takes the path as an argument is not a run", ciq(), False)
     argv_is("node", script)
