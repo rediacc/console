@@ -106,9 +106,9 @@ two machines already in your config.
   compromised machine destroying its own backups. It is not a compliance
   certification, and it is not audited as one.
 
-### One destination kind
+### Destinations
 
-Chunk-store backups have a single destination kind, a hosted-service chunk store reached through the account server. There is no registry of external storage endpoints, so `--to` and `--from` on `repo push` and `repo pull` name a machine only.
+A strategy can write to the `home` store, to a second hosted region, or to a registered customer bucket, and each destination is its own recovery point. Stores, naming a destination's store, restoring with `--from` and the per-destination status are on the [Backup Destinations](/en/docs/backup-destinations) page. `--to` and `--from` on `repo push` and `repo pull` still name a machine only.
 
 ### Chunk-storage commands
 
@@ -394,6 +394,8 @@ than rounded forward.
 
 A time resolves only among the snapshots of this repository on its source machine. Snapshots written by other machines or by forks of the same lineage are not considered unless `--any-stream` widens the search on purpose. When the repository's own stream cannot be determined, the restore is refused and asks for `--any-stream` instead of guessing.
 
+With several stores holding the repository, the restore reads the store whose newest snapshot passed its last verify and moves to the next store when a store fails. `--from <storeId>` reads one named store and never falls back. See [Backup Destinations](/en/docs/backup-destinations).
+
 Restoring under a new name with `--as` overwrites nothing, so a restore drill is
 safe to run against a live machine. Restoring onto a name that already exists is
 refused.
@@ -405,6 +407,7 @@ refused.
 | `-m, --machine <machine>` | Machine to restore onto |
 | `--datastore <name>` | Restore into this named datastore, whose attached machine hosts it |
 | `--at <time>` | Restore a point in time: a snapshot id or an RFC 3339 time |
+| `--from <storeId>` | Read the snapshot from this backup store. Without it the store with the newest verified snapshot is read, and the next store follows on a store failure. With `--from` there is no fallback |
 | `--any-stream` | With `--at`, also consider snapshots from other machines and forks of this lineage |
 | `--up` | Deploy the restored repository after the transfer |
 | `--allow-unopenable` | Place the image even if the repository passphrase does not open it (a snapshot from before a passphrase change) |
