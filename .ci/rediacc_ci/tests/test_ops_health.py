@@ -814,3 +814,40 @@ def test_repair_results_that_ran_no_fix_do_not_use_up_attempts(tmp_path, result)
         fleet = RepairFleet(findings, actions=acts, heals=False)
         refreshed(tmp_path, fleet, now=NOW + datetime.timedelta(minutes=40 * n))
         assert len(fleet.repair_calls()) == 1
+
+
+def test_config_file_keys_reach_the_readers(tmp_path):
+    """The names in .ci/config/ops-health.json are the ones ttl_s and stale_min read, so a value set there is honoured."""
+    cfg_dir = tmp_path / ".ci" / "config"
+    cfg_dir.mkdir(parents=True)
+    (cfg_dir / "ops-health.json").write_text(
+        json.dumps(
+            {
+                "stale": {"last_cron_minutes": 45},
+                "local_ttl_minutes": {
+                    "portal_captcha": 7,
+                    "cf_usage": 8,
+                    "offbox_read": 9,
+                    "machines": 11,
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    cfg = oh.load_config(tmp_path)
+    assert oh.stale_min(cfg) == 45.0
+    assert oh.ttl_s(cfg, "portal-captcha") == 7 * 60
+    assert oh.ttl_s(cfg, "cf-usage") == 8 * 60
+    assert oh.ttl_s(cfg, "offbox") == 9 * 60
+    assert oh.ttl_s(cfg, "machines") == 11 * 60
+
+
+def test_the_repo_config_names_every_key_the_readers_use():
+    """Every TTL and stale key the code reads is present in the shipped file, so none of them silently falls back to a default."""
+    doc = json.loads(
+        (
+            pathlib.Path(__file__).resolve().parents[3] / ".ci" / "config" / "ops-health.json"
+        ).read_text(encoding="utf-8")
+    )
+    assert set(oh.DEFAULTS["local_ttl_minutes"]) <= set(doc["local_ttl_minutes"])
+    assert set(oh.DEFAULTS["stale"]) <= set(doc["stale"])

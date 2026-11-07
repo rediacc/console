@@ -63,14 +63,14 @@ TARGETS_CONFIG_ENV = "OPS_HEALTH_TARGETS_CONFIG"
 CREDENTIAL_PROFILE = "ops-health"
 
 DEFAULTS: dict = {
-    "local_ttl_min": {
+    "local_ttl_minutes": {
         "machines": 30,
         "telemetry": 360,
-        "portal-captcha": 360,
-        "cf-usage": 10080,
-        "offbox": 15,
+        "portal_captcha": 360,
+        "cf_usage": 10080,
+        "offbox_read": 15,
     },
-    "stale": {"last_cron_at_min": 30},
+    "stale": {"last_cron_minutes": 30},
     "backup_max_age_days": 2,
     "auto_repair": {"classes": ["auto-safe"], "max_attempts_per_code_per_machine_per_day": 3},
 }
@@ -165,12 +165,17 @@ def load_config(root: pathlib.Path) -> dict:
     return cfg
 
 
+# A check's key in .ci/config/ops-health.json `local_ttl_minutes`, the file the Worker bundles too: underscores, and the off-box read is `offbox_read`.
+TTL_KEYS = {"offbox": "offbox_read"}
+
+
 def ttl_s(cfg: dict, check: str) -> int:
-    return int(float((cfg.get("local_ttl_min") or {}).get(check, 30)) * 60)
+    key = TTL_KEYS.get(check, check.replace("-", "_"))
+    return int(float((cfg.get("local_ttl_minutes") or {}).get(key, 30)) * 60)
 
 
 def stale_min(cfg: dict) -> float:
-    return float((cfg.get("stale") or {}).get("last_cron_at_min", 30))
+    return float((cfg.get("stale") or {}).get("last_cron_minutes", 30))
 
 
 def worker_url(cfg: dict, env: dict) -> str:
