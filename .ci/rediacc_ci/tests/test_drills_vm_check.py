@@ -3861,6 +3861,13 @@ def test_the_root_disk_probe_never_reads_a_filesystem_size() -> None:
     assert "lsblk -b -n -s" in vm_check.PROBE_ROOT_DISK
 
 
+def test_the_root_disk_probe_reads_a_btrfs_source_and_the_smallest_backing_disk() -> None:
+    """findmnt prints a btrfs root as `/dev/vdaN[/subvol]`, which lsblk refuses, and `lsblk -s` lists every disk under an LVM root: the probe drops the subvolume suffix and keeps the smallest disk."""
+    assert "findmnt -n -v -o SOURCE /" in vm_check.PROBE_ROOT_DISK
+    assert "sort -n | head -n 1" in vm_check.PROBE_ROOT_DISK
+    assert "tail" not in vm_check.PROBE_ROOT_DISK
+
+
 def test_a_fleet_whose_recipe_sets_no_vm_dsk_is_reused_without_a_disk_probe(
     tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -4313,7 +4320,11 @@ def test_legs_whose_fleet_sizes_the_disk_run_before_the_resetting_legs() -> None
     ]
     assert any(sized), "the live map has no VM_DSK fleet, so this control proves nothing"
     assert sized == sorted(sized, reverse=True), [leg.id for _, leg in ordered]
-    assert sorted(ordered, key=lambda al: al[1].id) == sorted(legs, key=lambda al: al[1].id)
+    # A multiset check by equality, so two legs that share an id cannot tie-order differently.
+    unplaced = list(legs)
+    for al in ordered:
+        unplaced.remove(al)
+    assert not unplaced
     keep = [
         al
         for al in legs
@@ -4341,3 +4352,15 @@ def test_a_sized_leg_that_skips_the_reset_runs_before_a_sized_leg_that_resets() 
     assert vm_check.leg_skips_reset(ordered[ids.index("backup-large-2g")])
     assert not vm_check.leg_skips_reset(ordered[ids.index("k8s-15")])
     assert ids.index("backup-large-2g") < ids.index("k8s-15"), ids
+
+
+def test_an_external_leg_command_runs_under_its_fleet_recipe_environment(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The leg's `bash -c` receives the fleet recipe's VM_DSK, so its e2e setup resets the fleet at the recipe's disk size and not the default."""
+    _sized_two_workers(monkeypatch, "VM_DSK=48 ./rdc.sh ops up")
+    world = make_world(tmp_path, running=TWO_WORKERS)
+    run_areas(tmp_path, monkeypatch, world, {"multi-vm"})
+    bash_envs = [e for c, e in zip(world.calls, world.envs, strict=True) if c[:2] == ["bash", "-c"]]
+    assert len(bash_envs) == 2
+    assert all(e.get("VM_DSK") == "48" for e in bash_envs), [e.get("VM_DSK") for e in bash_envs]

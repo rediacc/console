@@ -234,18 +234,32 @@ def test_k3_records_no_skip_row_that_would_void_the_renet_phase() -> None:
     """vm_check.phase_ran counts a phase only when every row is ok, so a recorded K3.6 skip row made every fleet run NOT_VERIFIED phase-not-run (run of 2026-11-06, 278 assertions, 0 failed)."""
     src = inspect.getsource(r._Live.k3)
     assert "record(" not in src.split("k3_5_unmount", 1)[1]
-    # By the syntax tree: a K3.6 reference anywhere inside a `record(...)` call, however it is spelled (the literal, the K3_6_NOTE constant, a nested call).
+    # By the syntax tree: a K3.6 reference anywhere inside a `record(...)` call (the literal, the K3_6_NOTE constant, a nested call), or a name an assignment bound to one (`note = r.K3_6_NOTE`; `record(note)`).
     tree = ast.parse(textwrap.dedent(src))
+
+    def mentions(node: ast.AST, aliases: set[str]) -> bool:
+        return any(
+            (isinstance(n, ast.Constant) and isinstance(n.value, str) and "K3.6" in n.value)
+            or (isinstance(n, ast.Name | ast.Attribute) and "K3_6" in ast.unparse(n))
+            or (isinstance(n, ast.Name) and n.id in aliases)
+            for n in ast.walk(node)
+        )
+
+    aliases: set[str] = set()
+    for _ in range(3):  # an alias of an alias
+        aliases |= {
+            t.id
+            for a in ast.walk(tree)
+            if isinstance(a, ast.Assign) and mentions(a.value, aliases)
+            for t in a.targets
+            if isinstance(t, ast.Name)
+        }
     skips = [
         ast.unparse(call)
         for call in ast.walk(tree)
         if isinstance(call, ast.Call)
         and (getattr(call.func, "attr", "") == "record" or getattr(call.func, "id", "") == "record")
-        and any(
-            (isinstance(n, ast.Constant) and isinstance(n.value, str) and "K3.6" in n.value)
-            or (isinstance(n, ast.Name | ast.Attribute) and "K3_6" in ast.unparse(n))
-            for n in ast.walk(call)
-        )
+        and mentions(call, aliases)
     ]
     assert not skips, "no row anywhere in k3 may record the K3.6 skip: %s" % skips
     assert "K3.6" in r.K3_6_NOTE

@@ -137,11 +137,11 @@ SYNC_BIG_BYTES = 1024 * 1024
 # The raw probes: read-only, and the only ssh/sftp argv this module builds besides `sftp -b` below.
 PROBE_RENET_HASH = "renet hash"
 PROBE_OS_RELEASE = '. /etc/os-release && printf "%s %s\\n" "$ID" "$VERSION_ID"'
-# A VM's root disk in bytes: the virtio disk the ops VMs boot from, else the whole disk under the root mount (`lsblk -s` walks from the root partition down to its disk; a filesystem size from `df` would read below the disk size and refuse a worker built at exactly VM_DSK).
+# A VM's root disk in bytes: the virtio disk the ops VMs boot from, else the whole disk under the root mount (`lsblk -s` walks from the root partition down to its disk, the smallest one when an LVM root spans several, and `findmnt -v` drops a btrfs `[/subvol]` suffix lsblk would refuse; a filesystem size from `df` would read below the disk size and refuse a worker built at exactly VM_DSK).
 PROBE_ROOT_DISK = (
     "lsblk -b -d -n -o SIZE /dev/vda 2>/dev/null"
-    ' || lsblk -b -n -s -o SIZE,TYPE "$(findmnt -n -o SOURCE /)"'
-    " | awk '$2 == \"disk\" {print $1}' | tail -n 1"
+    ' || lsblk -b -n -s -o SIZE,TYPE "$(findmnt -n -v -o SOURCE /)"'
+    " | awk '$2 == \"disk\" {print $1}' | sort -n | head -n 1"
 )
 GIB = 1 << 30
 # No `-q`: an alias that does not resolve or a key ssh refuses must reach the row's evidence.
@@ -2215,7 +2215,7 @@ class VmCheck:
         plans: Sequence[tuple[dict[str, str], list[str]]] | None,
         running: Sequence[str],
     ) -> str:
-        """Why a running fleet is not the one its recipe asks for, or "" when it is: each running worker whose plan sets VM_DSK=<N> must have a root disk of at least N GiB (one ssh per VM). `ops up` without `--force` leaves a running VM alone, so bringing the fleet up cannot grow it, and like P3's `fleet-os-mismatch` the check never tears a running fleet down: it refuses, naming the commands that recreate it."""
+        """Why a running fleet is not the one its recipe asks for, or "" when it is: each running worker whose plan sets VM_DSK=<N> must have a root disk of at least N GiB (one ssh per VM). With no runnable recipe (`plans` is None) there is no plan, and the smallest VM_DSK from `loose_disk_floors` is the floor. `ops up` without `--force` leaves a running VM alone, so bringing the fleet up cannot grow it, and like P3's `fleet-os-mismatch` the check never tears a running fleet down: it refuses, naming the commands that recreate it."""
         short: list[str] = []
         down: list[int] = []
         floors = loose_disk_floors(fleet) if plans is None else disk_floors(fleet, plans)
