@@ -560,6 +560,17 @@ def external_legs(areas: Collection[str]) -> list[tuple[str, trigger.Leg]]:
     ]
 
 
+def recipe_env(fleet: trigger.Fleet) -> dict[str, str]:
+    """The environment of a fleet's own `up` recipe ({} when it is not runnable). A leg runs under it because an e2e global setup recreates the VMs with `renet ops up --force` and reads sizes such as VM_DSK only from the environment, so a leg run without it rebuilds its fleet at the defaults."""
+    plan = fleet_up_plan(fleet)
+    return dict(plan[0]) if plan is not None else {}
+
+
+def order_legs(legs: Sequence[tuple[str, trigger.Leg]]) -> list[tuple[str, trigger.Leg]]:
+    """`legs` with those whose fleet recipe sizes the disk (VM_DSK) first, map order kept within each group: another leg's e2e setup resets every VM at the default disk, so a leg that reuses a sized VM without resetting it must run before any such reset."""
+    return sorted(legs, key=lambda al: "VM_DSK" not in recipe_env(trigger.MAP.fleets[al[1].fleet]))
+
+
 def judge_areas(
     areas: Collection[str],
     rows: Sequence[Mapping[str, Any]],
@@ -2110,6 +2121,7 @@ class VmCheck:
         )
         if not legs:
             return
+        legs = order_legs(legs)
         if self.failures:
             self.say(
                 "vm:check: %d external leg(s) not run: the base battery already failed (%s)"
@@ -2251,7 +2263,7 @@ class VmCheck:
             self.steps[-1]["outcome"] = OUTCOME_NOT_VERIFIED
             return False
         self.say("        %s; running %s" % (how, leg.id))
-        env = self.drill_env()
+        env = {**self.drill_env(), **recipe_env(fleet)}
         root = shlex.quote(str(self.root))
         total_ms = 0
         res = Result(0)

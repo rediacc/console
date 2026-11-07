@@ -4301,3 +4301,29 @@ def test_an_unreadable_inventory_is_unchecked_not_clean(tmp_path: pathlib.Path) 
     assert "unchecked" in receipt["reason"]["detail"]
     assert "renet: command not found" in receipt["reason"]["detail"]
     assert world.forks_left() == []
+
+
+def test_legs_whose_fleet_sizes_the_disk_run_before_the_resetting_legs() -> None:
+    """Fleet run 13 lost both worker legs: the ceph and k3s legs' e2e setup reset every VM with `ops up --force` at the default disk before the worker legs ran, so the worker VM was 19.5 GiB of VM_DSK=48. Legs on a VM_DSK fleet now run first, map order kept within each group."""
+    legs = vm_check.external_legs(vm_check.trigger.AREAS)
+    ordered = vm_check.order_legs(legs)
+    sized = [
+        "VM_DSK" in vm_check.recipe_env(vm_check.trigger.MAP.fleets[leg.fleet])
+        for _, leg in ordered
+    ]
+    assert any(sized), "the live map has no VM_DSK fleet, so this control proves nothing"
+    assert sized == sorted(sized, reverse=True), [leg.id for _, leg in ordered]
+    assert sorted(ordered, key=lambda al: al[1].id) == sorted(legs, key=lambda al: al[1].id)
+    keep = [
+        al
+        for al in legs
+        if "VM_DSK" in vm_check.recipe_env(vm_check.trigger.MAP.fleets[al[1].fleet])
+    ]
+    assert [al for al in ordered if al in keep] == keep
+
+
+def test_a_leg_runs_under_its_fleet_recipe_environment() -> None:
+    """The worker fleet's recipe is `VM_DSK=48 ./rdc.sh ops up --basic`; a leg on it carries VM_DSK=48 into its e2e setup, whose `ops up --force` reads the size only from the environment. A fleet whose recipe sets nothing adds nothing."""
+    fleets = vm_check.trigger.MAP.fleets
+    assert vm_check.recipe_env(fleets["worker"]) == {"VM_DSK": "48"}
+    assert vm_check.recipe_env(fleets["two-workers"]) == {}
