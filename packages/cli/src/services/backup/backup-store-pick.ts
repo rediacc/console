@@ -91,48 +91,9 @@ const SNAPSHOT_OWN =
   /snapshot[^\n]{0,40}(not found|missing|unknown|expired)|no such snapshot|manifest[^\n]{0,40}(not found|invalid|corrupt)|verif(y|ication) failed|digest mismatch|hash mismatch|BACKUP_RETENTION_EXPIRED|SNAPSHOT_NOT_FOUND/i;
 
 /**
- * The rollback lines renet appends to a failed copy-out (`restorepath.rolled_back`, `restorepath.rollback_incomplete`),
- * one per locale. They are plain wrapped text with no code or key, so what arrives is the machine's own language
- * (renet reads RENET_LANG); every locale of the two catalog entries is listed, the incomplete one up to its path list.
+ * Faults of the machine or the request, never of the store: a path absent from the snapshot (19), a snapshot whose listing cannot address the path (18), and a copy-out that failed after the fetch (ROLLED_BACK, ROLLBACK_INCOMPLETE, coded by renet). A retry elsewhere cannot help, and after a copy-out failure it could meet files the first attempt left.
  */
-export const ROLLBACK_LINES: readonly string[] = [
-  'every path this run created was removed',
-  'some paths this run created could not be removed',
-  'أُزيلت كل المسارات التي أنشأها هذا التشغيل',
-  'تعذّرت إزالة بعض المسارات التي أنشأها هذا التشغيل',
-  'Alle von diesem Lauf angelegten Pfade wurden entfernt',
-  'Einige von diesem Lauf angelegte Pfade ließen sich nicht entfernen',
-  'se eliminaron todas las rutas creadas en esta ejecución',
-  'no se pudieron eliminar algunas rutas creadas en esta ejecución',
-  'kõik selle käivituse loodud teed eemaldati',
-  'osa selle käivituse loodud teid ei õnnestunud eemaldada',
-  'tous les chemins créés par cette exécution ont été supprimés',
-  "certains chemins créés par cette exécution n'ont pas pu être supprimés",
-  'tutti i percorsi creati da questa esecuzione sono stati rimossi',
-  'alcuni percorsi creati da questa esecuzione non sono stati rimossi',
-  'この実行で作成したパスはすべて削除しました',
-  'この実行で作成した一部のパスを削除できませんでした',
-  '이번 실행에서 만든 경로를 모두 제거했습니다',
-  '이번 실행에서 만든 경로 일부를 제거하지 못했습니다',
-  'todos os caminhos criados por esta execução foram removidos',
-  'alguns caminhos criados por esta execução não puderam ser removidos',
-  'все пути, созданные этим запуском, удалены',
-  'некоторые пути, созданные этим запуском, удалить не удалось',
-  'bu çalıştırmanın oluşturduğu tüm yollar kaldırıldı',
-  'bu çalıştırmanın oluşturduğu bazı yollar kaldırılamadı',
-  '本次运行创建的所有路径均已删除',
-  '本次运行创建的部分路径无法删除',
-];
-
-const escapeRegExp = (text: string): string => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-/**
- * Faults of the machine or the request, never of the store: a path absent from the snapshot (19), a snapshot whose listing cannot address the path (18), and a copy-out that failed after the fetch, whose rollback line renet prints in the machine's language. A retry elsewhere cannot help, and after a copy-out failure it could meet files the first attempt left.
- */
-const LOCAL_OWN = new RegExp(
-  `NO_SUCH_PATH|NO_LISTING|${ROLLBACK_LINES.map(escapeRegExp).join('|')}`,
-  'i'
-);
+const LOCAL_OWN = /NO_SUCH_PATH|NO_LISTING|ROLLED_BACK|ROLLBACK_INCOMPLETE/i;
 
 /** The store's faults: a server error, a refused grant or session, an endpoint that does not answer. */
 const STORE_SIDE =

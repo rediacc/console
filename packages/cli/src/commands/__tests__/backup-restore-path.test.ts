@@ -459,7 +459,7 @@ describe('backup restore --path store fallback', () => {
   });
 
   it('does not fall back after a copy-out that renet rolled back, which a second store cannot cure', async () => {
-    answers(failed('write failed: timed out (every path this run created was removed)'), ok);
+    answers(failed('{"code":"ROLLED_BACK","message":"write failed: timed out (translated)"}'), ok);
 
     await run(ARGV);
 

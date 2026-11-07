@@ -4,7 +4,6 @@
  * The ranking route is declared wire (`GET /backups/stores/lineage/:lineageGuid`), so the pick is tested against both
  * its answer and its absence: an older account server answers 404, which means `home` alone and says nothing.
  */
-import { existsSync, readFileSync } from 'node:fs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mockFetch = vi.hoisted(() => vi.fn());
@@ -21,14 +20,8 @@ vi.mock('../../../i18n/index.js', () => ({
     params ? `${key} ${JSON.stringify(params)}` : key,
 }));
 
-const {
-  ROLLBACK_LINES,
-  executeWithStoreFallback,
-  isStoreFailure,
-  pickStores,
-  runWithFallback,
-  storeParam,
-} = await import('../backup-store-pick.js');
+const { executeWithStoreFallback, isStoreFailure, pickStores, runWithFallback, storeParam } =
+  await import('../backup-store-pick.js');
 
 const row = (storeId: string, newestSnapshotId: string | null = 's') => ({
   storeId,
@@ -150,44 +143,20 @@ describe('isStoreFailure on a path restore', () => {
     expect(isStoreFailure({ exitCode: 19, error: 'HTTP 502 bad gateway' })).toBe(false);
     expect(isStoreFailure({ exitCode: 18, error: 'timed out' })).toBe(false);
     expect(
-      isStoreFailure({ stderr: 'copy failed: timed out (every path this run created was removed)' })
+      isStoreFailure({ stderr: '{"code":"ROLLED_BACK","message":"copy failed: timed out"}' })
     ).toBe(false);
   });
 });
 
-describe('isStoreFailure on a rollback line in any renet locale', () => {
-  it.each(ROLLBACK_LINES)('is not a store failure when the line reads %s', (line) => {
-    expect(isStoreFailure({ stderr: `copy failed: connection reset (${line})` })).toBe(false);
-  });
-
-  it('lists every locale of both renet catalog entries', () => {
-    const dir = new URL('../../../../../../private/renet/pkg/i18n/locales/', import.meta.url);
-    expect(existsSync(dir), 'renet locale catalogs are not checked out').toBe(true);
-    const lines: string[] = [];
-    for (const lang of [
-      'ar',
-      'de',
-      'en',
-      'es',
-      'et',
-      'fr',
-      'it',
-      'ja',
-      'ko',
-      'pt',
-      'ru',
-      'tr',
-      'zh',
-    ]) {
-      const source = readFileSync(new URL(`${lang}.go`, dir), 'utf8');
-      for (const key of ['rolled_back', 'rollback_incomplete']) {
-        const found = new RegExp(`"restorepath\\.${key}", "(.*)"\\)`).exec(source);
-        expect(found, `${lang} ${key}`).not.toBeNull();
-        lines.push((found?.[1] ?? '').split(/\s*[:：]|%s/)[0]);
-      }
+describe('isStoreFailure on a coded rollback', () => {
+  it.each(['ROLLED_BACK', 'ROLLBACK_INCOMPLETE'])(
+    'is not a store failure when renet says %s',
+    (code) => {
+      const line = JSON.stringify({ code, message: 'copy failed: connection reset (translated)' });
+      expect(isStoreFailure({ stdout: line })).toBe(false);
+      expect(isStoreFailure({ stderr: line })).toBe(false);
     }
-    for (const line of lines) expect(ROLLBACK_LINES).toContain(line);
-  });
+  );
 });
 
 describe('executeWithStoreFallback', () => {
