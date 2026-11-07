@@ -523,7 +523,7 @@ Owns: packages/e2e-tests/tests/31-backup-large-repo.test.ts, packages/e2e-tests/
   - CONTROL: test_gate_budget_check_report asserts a failing budget post still mentions the `github_mentions` handles.
   - Accept: `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest .ci/rediacc_ci/tests/gates/test_gate_budget_check_report.py .ci/rediacc_ci/tests/gates/test_gate_label_inventory.py -q && npm run check:ci-label-inventory && .ci/scripts/quality/check_prose_style.py check --drain` rc 0.
 
-### H: hostinger (lead, live; machine hostinger, `./rdc.sh --config eu-bench` (eu-remote until the 2026-11-07 ruling below), REDIACC_NO_PROVISION=1 unless the box says otherwise)
+### H: hostinger (lead, live; machine hostinger, `./rdc.sh --config eu-bench` for machine steps and `--config eu-remote` for the eu store reads and the backup schedule and bind (2026-11-07 ruling below), REDIACC_NO_PROVISION=1 unless the box says otherwise)
 (ruling ASKED:2026-11-07T03:55Z) Agents reach hostinger through `--config eu-bench`; eu-remote stays for what only it can reach (the eu store reads, backup schedule and strategy bind). check:ci-ops-health stays hard on every PR.
 
 The hostinger-side scripts are written on hostinger and live only in its repos. Each box below records what a script checks and its exit codes, never its content. No box prunes or repairs a hub-owned container or volume (F21).
