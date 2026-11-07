@@ -573,7 +573,7 @@ def _fake_compute(**overrides):
             section: dict.fromkeys(
                 cast("dict[str, Any]", base.get(section) or {}), br.MIN_DRIFT_RUNS
             )
-            for section in ("jobs", "job_p90_minutes", "gate_step_p90_seconds")
+            for section in ("jobs", "job_p90_minutes", "gate_step_p90_seconds", "variant_costs")
         }
 
     def compute(_repo, _workflow, _branch, _limit):
@@ -2949,6 +2949,30 @@ def test_refresh_writes_measured_variant_costs(tmp_path):
     assert json.loads(path.read_text())["variantCosts"] == measured
 
 
+def test_a_refresh_moves_a_priced_variant_lane_only_on_two_runs(tmp_path, capsys):
+    """variantCosts follows the other sections' evidence rule at lane level: one run of leg logs keeps a lane the table prices (named), two runs replace it, and a lane new to the table is written from one."""
+    prior = {"test-e2e-workers": {"ubuntu-24.04": {"fixedMinutes": 5.4, "units": {}}}}
+    measured = {
+        "test-e2e-workers": {"ubuntu-24.04": {"fixedMinutes": 4.37, "units": {}}},
+        "ops-tutorials": {"linux-amd64": {"fixedMinutes": 3.34, "units": {}}},
+    }
+    for runs, expected_e2e in ((1, 5.4), (2, 4.37)):
+        path = tmp_path / ("lane-durations-%d.json" % runs)
+        path.write_text(
+            json.dumps({"concurrency": 20, "jobs": {}, "units": {}, "variantCosts": prior})
+        )
+        compute = _fake_compute(
+            variant_costs=measured,
+            measured_runs={"variant_costs": {"test-e2e-workers": runs, "ops-tutorials": 1}},
+        )
+        assert br.refresh_lane_durations(path, limit=10, compute=compute) == 0
+        written = json.loads(path.read_text())["variantCosts"]
+        assert written["test-e2e-workers"]["ubuntu-24.04"]["fixedMinutes"] == expected_e2e
+        assert written["ops-tutorials"]["linux-amd64"]["fixedMinutes"] == 3.34
+        err = capsys.readouterr().err
+        assert ("1 variantCosts entr(ies)" in err) is (runs == 1)
+
+
 def test_cached_variant_log_fetches_once_and_caches_only_the_filtered_lines(tmp_path):
     calls = []
 
@@ -3014,6 +3038,7 @@ def test_collect_variant_costs_prices_each_variant_from_its_own_legs_logs(tmp_pa
         "test-e2e-workers": re.compile(r"^Tests \+ Infra / E2E Workers \(.+?, .+?/8\)$"),
         "ops-vm-provision": re.compile(r"^OPS Tests / OPS Provision \(.+?, .+?/.+?\)$"),
     }
+    runs: dict[str, int] = {}
     costs, legs = br.collect_variant_costs(
         "o/r",
         [[e2e, ops, failed]],
@@ -3022,9 +3047,26 @@ def test_collect_variant_costs_prices_each_variant_from_its_own_legs_logs(tmp_pa
         bucket_titles=_BUCKETS,
         fetch_log=fetch,
         cache_dir=tmp_path / "cache",
+        runs=runs,
     )
     assert sorted(fetched) == [11, 12]  # the failed leg is never read
     assert legs == {"test-e2e-workers": 1, "ops-tutorials": 1}
+    assert runs == {"test-e2e-workers": 1, "ops-tutorials": 1}
+    # The same e2e leg in a second run is a second run of evidence; the failed leg still counts for nothing.
+    again = dict(e2e, id=14)
+    logs[14] = _E2E_FIXTURE_LOG
+    runs.clear()
+    br.collect_variant_costs(
+        "o/r",
+        [[e2e, ops, failed], [again]],
+        pats,
+        tmp_path,
+        bucket_titles=_BUCKETS,
+        fetch_log=fetch,
+        cache_dir=tmp_path / "cache",
+        runs=runs,
+    )
+    assert runs == {"test-e2e-workers": 2, "ops-tutorials": 1}
     assert costs["test-e2e-workers"]["fedora-43"]["legExtraMinutes"] == {"1": 0.5}
     assert costs["test-e2e-workers"]["fedora-43"]["units"] == {
         "e2e-workers:01-system-checks.test.ts": 10000,

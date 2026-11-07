@@ -1450,10 +1450,12 @@ def collect_variant_costs(
     fetch_log: Callable[[str, int], str] = fetch_job_log,
     cache_dir: Path | None = None,
     max_jobs: int = VARIANT_LOG_MAX_JOBS,
+    runs: dict[str, int] | None = None,
 ) -> tuple[dict[str, dict[str, dict[str, Any]]], dict[str, int]]:
-    """`(variantCosts measured from `jobs_by_run`'s success legs, {lane: legs priced})`. A leg whose log cannot be fetched or parsed is skipped with a warning; a lane that prices no leg is simply absent, which `merge_variant_costs` turns into "kept the prior value" rather than a dropped one."""
+    """`(variantCosts measured from `jobs_by_run`'s success legs, {lane: legs priced})`. A leg whose log cannot be fetched or parsed is skipped with a warning; a lane that prices no leg is simply absent, which `merge_variant_costs` turns into "kept the prior value" rather than a dropped one. `runs`, when given, is filled with `{lane: how many sampled runs its priced legs came from}`, the evidence the refresh keeps a committed lane on."""
     manifest_ids = _manifest_unit_ids(root, VARIANT_E2E_LANE)
     candidates: list[tuple[str, dict[str, Any]]] = []
+    run_of: dict[int, int] = {}
     for lane, job_id in VARIANT_LANE_JOBS.items():
         pattern = patterns.get(job_id)
         if pattern is None:
@@ -1462,11 +1464,12 @@ def collect_variant_costs(
                 % (job_id, lane)
             )
             continue
-        for run_jobs in jobs_by_run:
+        for run_index, run_jobs in enumerate(jobs_by_run):
             for job in run_jobs:
                 name = job.get("name") or ""
                 if job.get("conclusion") == "success" and pattern.match(name) and job_leg(name):
                     candidates.append((lane, job))
+                    run_of[id(job)] = run_index
     if len(candidates) > max_jobs:
         log.warn(
             "budget_report: %d variant legs in the sample; reading the logs of the first %d only"
@@ -1489,6 +1492,7 @@ def collect_variant_costs(
         results = list(pool.map(read, candidates))
 
     measurements: dict[str, list[dict[str, Any]]] = {}
+    priced_runs: dict[str, set[int]] = {}
     unpriced = 0
     for lane, job, text in results:
         if text is None:
@@ -1502,6 +1506,9 @@ def collect_variant_costs(
             unpriced += 1
             continue
         measurements.setdefault(lane, []).append(row)
+        priced_runs.setdefault(lane, set()).add(run_of.get(id(job), -1))
+    if runs is not None:
+        runs.update({lane: len(indexes) for lane, indexes in priced_runs.items()})
     if unpriced:
         log.warn(
             "budget_report: %d variant leg log(s) carried no parseable timing; skipped" % unpriced
@@ -1637,6 +1644,7 @@ def compute_lane_durations(
         "jobs": {},
         "job_p90_minutes": {},
         "gate_step_p90_seconds": {},
+        "variant_costs": {},
     }
     jobs_minutes: dict[str, float] = {}
     for lane, pattern in patterns.items():
@@ -1720,6 +1728,7 @@ def compute_lane_durations(
             cache_dir=log_cache_dir
             if log_cache_dir is not None
             else tree_root / VARIANT_LOG_CACHE_REL_PATH,
+            runs=measured_runs["variant_costs"],
         )
     units_ms: dict[str, float] = {}
     unit_stats: dict[str, dict[str, float]] = {}
@@ -2438,9 +2447,15 @@ def refresh_lane_durations(
     if "rebalanceConstraints" in existing:
         updated["rebalanceConstraints"] = existing["rebalanceConstraints"]
     # variantCosts is MEASURED (collect_variant_costs) and merged so nothing the sample missed is dropped: an unmeasured lane, variant, leg extra or unit keeps its prior value, and every such keep is printed.
-    variant_costs, variant_notes = merge_variant_costs(
-        existing.get("variantCosts") or {}, computed.get("variant_costs") or {}
-    )
+    # A lane the table already prices moves only on `MIN_DRIFT_RUNS` runs of leg logs, the rule the other measured sections follow: one run's legs all ran on one day's runners. Held back here, `merge_variant_costs` keeps the lane and names it.
+    existing_variants = existing.get("variantCosts") or {}
+    variant_runs = evidence.get("variant_costs") or {}
+    measured_variants = dict(computed.get("variant_costs") or {})
+    for lane in sorted(measured_variants):
+        if lane in existing_variants and variant_runs.get(lane, 0) < MIN_DRIFT_RUNS:
+            del measured_variants[lane]
+            kept_on_thin.setdefault("variantCosts", []).append(lane)
+    variant_costs, variant_notes = merge_variant_costs(existing_variants, measured_variants)
     for note in variant_notes:
         log.warn("budget_report --refresh: %s" % note)
     for lane, legs in sorted((computed.get("variant_legs") or {}).items()):
