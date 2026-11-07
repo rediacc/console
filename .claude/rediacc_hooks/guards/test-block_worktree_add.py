@@ -185,7 +185,7 @@ COMMENTED_ROWS = [
 ]
 REFUSED += list(QUOTED_ROWS.values())
 
-# #1ecd3fec: an edited scripts/gates/check-deps.ts was refused for a comment ("see CLAUDE.md's worktree warning") beside a `.add(` call, because the JS scanner gave up at the first backtick or `/`, and the text reading then filled a `${...}` hole with the verb. DEPS_LIKE has the same shape: a template literal with a hole, a regex, a division and the comment, and is allowed; DEPS_INVOKE adds the invocation and is refused. AMBIGUOUS hides its alias behind `//` inside a regex after `)`, which only the both-ways reading of an ambiguous `/` keeps as code.
+# #1ecd3fec: an edited scripts/gates/check-deps.ts was refused for a comment ("see CLAUDE.md's worktree warning") beside a `.add(` call, because the JS scanner gave up at the first backtick or `/`, and the text reading then filled a `${...}` hole with the verb. DEPS_LIKE has the same shape: a template literal with a hole, a regex, a division, the comment, and check-deps.ts's own line 1793 quoted as a node program (the string whose `${name}` the comment let the text reading fill), and is allowed; DEPS_INVOKE adds the invocation and is refused. AMBIGUOUS hides its alias behind `//` inside a regex after `)`, which only the both-ways reading of an ambiguous `/` keeps as code.
 DEPS_LIKE = (
     "// A sibling repo (see CLAUDE.md's worktree warning) is never scanned.\n"
     "const seen = new Set<string>();\n"
@@ -195,6 +195,8 @@ DEPS_LIKE = (
     "seen.add(name);\n"
     "const ratio = (seen.size - 1) / 2;\n"
     "console.log(`${ratio} ok`);\n"
+    "const program = \"  if (typeof ov[name] === 'string' && /^\\\\d+\\\\.\\\\d+\\\\.\\\\d+$/"
+    '.test(ov[name])) lock.packages[`node_modules/${name}`] = { version: ov[name] };";\n'
 )
 pathlib.Path(FIXTURE_DIR, "deps_like.ts").write_text(DEPS_LIKE, encoding="utf-8")
 pathlib.Path(FIXTURE_DIR, "deps_invoke.ts").write_text(
