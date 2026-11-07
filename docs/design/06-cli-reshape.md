@@ -26,7 +26,7 @@ rdc config:     init list show current delete set clear recover prune edit recon
                 access {add remove ranges list}
                 field {get set unset rotate list}    audit {log tail verify}
                 remote {enable disable status refresh versions restore master-password {change}}    ssh {set show remove}
-rdc machine:    add remove list status setup scan-keys health prune converge restart-services
+rdc machine:    add remove list status setup scan-keys health repair prune converge restart-services
                 provision deprovision
                 access {set remove show push}
                 provider {add remove list}    gpu {list}
@@ -34,7 +34,7 @@ rdc machine:    add remove list status setup scan-keys health prune converge res
 rdc datastore:  create list status attach detach fork snapshot {create list} resize delete
 rdc repo:       create up down status list delete fork push pull migrate promote prune
                 secret {get list set unset}    sync {upload download status}
-                cat diff logs exec tunnel
+                cat diff logs exec tunnel health repair
                 replicate {status remove refresh}          (the parent also runs: `replicate <ref>`)
                 commit branch checkout log merge gc
                 resize expand trim policy {set get}
@@ -57,7 +57,7 @@ rdc doctor | credits | update | serve | mcp serve | run (hidden)
 
 ### 1.1 Where the shipped tree differs from the tree this section used to draw
 
-Twenty-one differences. The first six are deliberate and each is traceable to a ruling. The seventh IS drift, and is recorded as such: it is what this gate exists to catch. The next two are a whole program landing after this transcript was drawn, and the last ten are later additions.
+Twenty-six differences. The first six are deliberate and each is traceable to a ruling. The seventh IS drift, and is recorded as such: it is what this gate exists to catch. The next two are a whole program landing after this transcript was drawn, and the rest are later additions.
 
 | Was drawn as | Shipped as | Why |
 |---|---|---|
@@ -86,6 +86,7 @@ Twenty-one differences. The first six are deliberate and each is traceable to a 
 | `backup` with no image transfer | `backup {download upload purge reconcile}` | The backup-local-image work: `download` copies a repository's image from a machine to a local directory or external drive (rsync delta, resumable, sha256-verified) and `upload` sends such an image to a machine and registers it as a new repository. `purge` deletes every stored snapshot of a repository from the chunk store while keeping the repository, and `reconcile` resets the repository's stored-bytes ledger to what the store holds, never deleting a chunk. All four postdate this transcript. |
 | `job {list,status,logs,cancel,gc}` | `job {list,status,logs,cancel,gc,wait}` | `job wait` resumes following a job from its ticket, acknowledges it and exits with the job's own exit code, so a script can follow a `--background` job without polling `job status`. |
 | no `tools` noun | `tools {install list}` | PLAN-cli-tofu-toolchain: `install` downloads the pinned OpenTofu release, checks its SHA-256 against the checksum built into the CLI and places the binary in the CLI's tools directory; `list` shows the provisioning engine the CLI would run and each OpenTofu version found, with its source. A tool is neither a machine, a repository nor a job, so the verbs get a noun of their own. |
+| `machine` and `repo` with no health repair verbs | `repo health`, `repo repair` + `machine repair` | PLAN-health-checks-local: `repo health` runs a repository's Rediaccfile `health()` checks and exits 0 (ok), 1 (warning) or 2 (error); `repo repair` runs the `repair()` functions their declared class allows and then `health()` again; `machine repair` runs the safe fixes for a machine's health findings and re-checks, and `--set-window` stores the machine's maintenance window. |
 
 Four families were built by operator commits AFTER this tree was drawn. They exist in the live CLI today, so P4 recontracts them; it does not invent them. **All four were ruled on 2026-07-13** (spec/03 §9) and are folded into the §1 tree above:
 
