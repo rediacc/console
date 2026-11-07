@@ -54,7 +54,7 @@
         "@opentelemetry/exporter-trace-otlp-http",
         "@opentelemetry/sdk-node"
       ],
-      "pinVersion": "^0.300.0"
+      "pinVersion": "^0.301.0"
     },
     {
       "label": "Pin the OpenTelemetry api-logs line (no 0.300 release yet)",
@@ -77,7 +77,7 @@
         "@opentelemetry/sdk-logs",
         "@opentelemetry/sdk-metrics"
       ],
-      "pinVersion": "^3.0.0"
+      "pinVersion": "^3.1.0"
     },
     {
       "label": "Pin i18next for CLI",
@@ -87,7 +87,7 @@
       "dependencies": [
         "i18next"
       ],
-      "pinVersion": "^26.7.1"
+      "pinVersion": "^26.7.2"
     },
     {
       "label": "Pin vite-tsconfig-paths to latest",
