@@ -21,7 +21,7 @@ const SES_KEYS = [
   'AWS_SES_ACCESS_KEY_ID_EU',
   'AWS_SES_SECRET_ACCESS_KEY_EU',
   'AWS_SES_REGION_EU',
-  'AWS_SES_FROM',
+  'OPS_MAIL_FROM',
 ] as const;
 
 /** The `mailer` probe: unknown when there is nobody to mail or a SES setting is missing (named, never printed), green otherwise. */
@@ -87,7 +87,7 @@ export async function sendSes(
   const region = env.AWS_SES_REGION_EU as string;
   const endpoint = `https://email.${region}.amazonaws.com/v2/email/outbound-emails`;
   const body = JSON.stringify({
-    FromEmailAddress: env.AWS_SES_FROM,
+    FromEmailAddress: env.OPS_MAIL_FROM,
     Destination: { ToAddresses: to },
     Content: {
       Simple: {

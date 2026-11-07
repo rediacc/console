@@ -39,7 +39,6 @@ SECRETS = {
     "AWS_SES_ACCESS_KEY_ID_EU": "AKID-SECRET-VALUE",
     "AWS_SES_SECRET_ACCESS_KEY_EU": "ses-secret-value-xyz",
     "AWS_SES_REGION_EU": "eu-central-1",
-    "AWS_SES_FROM": "alerts@example.test",
     "OPS_HEALTH_READ_TOKEN": "read-token-value",
     "OPS_HEALTH_INGEST_TOKEN": "ingest-token-value",
 }
@@ -220,10 +219,10 @@ def test_a_failed_secret_step_leaves_the_vars_behind_so_a_rerun_retries(capsys):
 
 def test_missing_secrets_exit_3_naming_the_profile(capsys):
     world = FakeWorld(json.dumps(GOOD))
-    env = {k: v for k, v in SECRETS.items() if k != "AWS_SES_FROM"}
+    env = {k: v for k, v in SECRETS.items() if k != "AWS_SES_REGION_EU"}
     assert run_main(world, env=env) == d.EXIT_NO_SECRETS
     err = capsys.readouterr().err
-    assert "AWS_SES_FROM" in err
+    assert "AWS_SES_REGION_EU" in err
     assert "--profile ops-health" in err
 
 

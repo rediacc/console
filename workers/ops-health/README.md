@@ -23,7 +23,7 @@ Secrets are named here and never written down. They live in the `ops-health` bws
 | `OPS_ALERT_EMAILS` | The recipients, comma separated. An empty list shows as the `mailer` probe in state `unknown`. |
 | `OPS_HEALTH_TARGETS` | The target file, read out of the `ops` repo at deploy time. |
 
-The `AWS_SES_*` names (`AWS_SES_ACCESS_KEY_ID_EU`, `AWS_SES_SECRET_ACCESS_KEY_EU`, `AWS_SES_REGION_EU`, `AWS_SES_FROM`) configure the mail send, and `SPAMHAUS_DQS_KEY` is optional. A missing secret is reported as an `unknown` probe or a 401, never a crash.
+The `AWS_SES_*` secrets (`AWS_SES_ACCESS_KEY_ID_EU`, `AWS_SES_SECRET_ACCESS_KEY_EU`, `AWS_SES_REGION_EU`) configure the mail send, and the sender is the plain var `OPS_MAIL_FROM` in `wrangler.toml`, `ai@notify.rediacc.com`, so ops alerts are told apart from the product's `noreply@` mail; and `SPAMHAUS_DQS_KEY` is optional. A missing secret is reported as an `unknown` probe or a 401, never a crash.
 
 ## Targets
 

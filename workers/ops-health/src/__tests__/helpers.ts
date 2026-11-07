@@ -40,7 +40,7 @@ export const SES_ENV = {
   AWS_SES_ACCESS_KEY_ID_EU: 'AKIDEXAMPLE',
   AWS_SES_SECRET_ACCESS_KEY_EU: 'secret-example',
   AWS_SES_REGION_EU: 'eu-central-1',
-  AWS_SES_FROM: 'alerts@example.test',
+  OPS_MAIL_FROM: 'alerts@example.test',
 };
 
 export function harness(overrides: Partial<Env> = {}): Harness {
