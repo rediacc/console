@@ -1,6 +1,6 @@
 # PLAN: one account, several backup destinations, each a separately committed recovery point, after a renet-side account-server check
 
-Status: proposed -- awaiting operator approval; the operator chose "option 1" on 2026-11-07 (several destinations inside ONE account: one config, one licence, one bill), with a small renet-side account-server check first (worklist #61cbbe8d)
+Status: approved -- operator ruling ASKED:2026-11-07T12:26Z ("Approve and queue"); option 1 chosen on 2026-11-07 (several destinations inside ONE account: one config, one licence, one bill), R1 first
 Depends-On: no-dep -- the CLI store refusal this plan builds on landed in ecb3adb7e, and no open box of another live plan is a prerequisite
 Owner: d778be9d
 Priority: P2 -- customers ask for more than one copy of their backups for more recovery points; nothing is broken today, but R1 closes a wrong-store write path that scheduled units still have, so R1 alone ranks as P1 work and may land ahead of the rest

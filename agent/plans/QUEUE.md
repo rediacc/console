@@ -91,7 +91,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 15 of 44 plans done, 794 of 939 boxes done (84%).
+Promoted: 15 of 45 plans done, 794 of 957 boxes done (82%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -139,6 +139,7 @@ Promoted: 15 of 44 plans done, 794 of 939 boxes done (84%).
 | 42 | PLAN-renet-down-before-kill.md | 11/15 | 4 open |
 | 43 | PLAN-repo-resource-limits.md | 9/13 | 4 open |
 | 44 | PLAN-health-checks-local.md | 58/81 | 23 open |
+| 45 | PLAN-backup-multi-target.md | 0/18 | 18 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-backup-program.md -- operator 2026-10-20 ("move agent/plans/PLAN-backup-program.md to the promoted"): one backup program across renet, account, CLI and shared, ending in a live hostinger to eu R2 backup; P1; Depends-On PLAN-shell-sandbox-readonly-view.md and PLAN-account-vm-check.md (done 2026-10-20); released to writers by operator /ask ASKED:2026-10-20T15:14Z ("edit writers to go NOW")
@@ -185,6 +186,7 @@ Promoted: 15 of 44 plans done, 794 of 939 boxes done (84%).
 42. agent/plans/PLAN-renet-down-before-kill.md -- operator task 2026-11-05 ("make renet run Rediaccfile down() before Docker repo containers are killed"; plan first, then implement; hostinger modification and testing allowed): an ExecStop stop hook running down() on every docker unit stop, a rediacc-repo-shutdown unit ordered after the docker units, no restart on a stop-side-only unit change, down() before every planned restart path, bounded up()/down() with a raise-only Rediaccfile directive, and a dev-VM marker drill across restart, unit rewrite, converge and reboot; P1; Depends-On none (shares files with PLAN-rediaccfile-unprivileged); epic f65726d5
 43. agent/plans/PLAN-repo-resource-limits.md -- operator follow-up 2026-11-05 ("per-repo resource limits, and a renet-managed RAM volume"; "the new plan should be promoted and implemented on a new sub-agent via worktree"; hostinger testing without asking): memory.max, memory.high, cpu.max and io.max on each repo's cgroup as an operator grant, applied live and inherited by forks, OOM kills confined to one container of the capped repo, up()/down() moved into the repo cgroup, and a tmpfs RAM volume at <mount>/.ram unmounted only after down() and dockerd stop; P1; Depends-On PLAN-renet-down-before-kill.md (RAM-volume half only); epic 53c31db2
 44. agent/plans/PLAN-health-checks-local.md -- operator order 2026-11-06 ("promote the new plan when it finishes"): scheduled health pings move to the Stop hook, CI gates and one off-box Cloudflare alerter mailing OPS_ALERT_EMAILS via SES; hostinger health fails on warnings; nightly split into a daily drift job and a weekly fleet; backup-perf harness fixed with a 2 GiB variant; demo-stackoverflow archives move to data.rediacc.com
+45. agent/plans/PLAN-backup-multi-target.md -- operator ruling ASKED:2026-11-07T12:26Z ("Approve and queue"): several backup destinations in one account (one config, one licence, one bill), R1 renet account-server check first, then the store registry, per-destination snapshots, restore --from and a bench proof.
 
 ## Generated
 
@@ -209,13 +211,12 @@ Promoted: 15 of 44 plans done, 794 of 939 boxes done (84%).
 18. agent/plans/PLAN-product-domain-rename.md -- P1, proposed, not started
 19. agent/plans/PLAN-website-routing-and-mail.md -- P1, proposed, not started, dep-blocked
 20. agent/plans/PLAN-enterprise-isolation.md -- P1, proposed, not started, dep-blocked
-21. agent/plans/PLAN-backup-multi-target.md -- P2, proposed, not started
-22. agent/plans/PLAN-first-release-checks.md -- P2, approved, not started
-23. agent/plans/PLAN-stop-hook-retro-20261101.md -- P2, ready, not started
-24. agent/plans/PLAN-lessons-registry-followups.md -- P3, draft, not started
-25. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
-26. agent/plans/PLAN-retire-bash-oracles.A0.md -- P3, executing, not started
-27. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
+21. agent/plans/PLAN-first-release-checks.md -- P2, approved, not started
+22. agent/plans/PLAN-stop-hook-retro-20261101.md -- P2, ready, not started
+23. agent/plans/PLAN-lessons-registry-followups.md -- P3, draft, not started
+24. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
+25. agent/plans/PLAN-retire-bash-oracles.A0.md -- P3, executing, not started
+26. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
 
 ### Not queued
 
