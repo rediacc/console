@@ -580,9 +580,10 @@ The hostinger-side scripts are written on hostinger and live only in its repos. 
   - Record 2026-11-06: `amazon/aws-cli s3 sync` from inside the repo (--network host, env file removed after, 30 MB/s, 64 MB parts) ran 63 min, rc 0; head-object sizes equal local for 371 of 371; SHA256SUMS uploaded (36,270 bytes, served: 371 lines through https://data.rediacc.com/stackexchange/SHA256SUMS).
   - Accept: rc 0; HEAD sizes equal the local sizes for 371 of 371.
     (ticked) 2026-11-06T22:16:06Z by d778be9d: commit:4e5652933 live run recorded; README HTTP 200 and SHA256SUMS 371 lines re-read
-- [ ] S4 [live]: Verification by streaming each object back: `curl -fsS https://data.rediacc.com/stackexchange/<f> | sha256sum`, compared with SHA256SUMS.
+- [x] S4 [live]: Verification by streaming each object back: `curl -fsS https://data.rediacc.com/stackexchange/<f> | sha256sum`, compared with SHA256SUMS.
   - Progress 2026-11-06: 369 of 371 objects streamed back with a matching sha256, no mismatch; stackoverflow.com-Posts.7z (23.0 GB) and stackoverflow.com-PostHistory.7z (37.7 GB) not verified yet (stream about 5 to 28 MB/s); resume with `./pubdata-s4d.sh <file>` in the repo on hostinger. S7 waits for both.
   - Accept: a 371 of 371 OK line, rc 0.
+    (ticked) 2026-11-07T03:09:19Z by d778be9d: commit:4e5652933 371 of 371 OK: 369 streamed 2026-11-06, Posts.7z streamed OK 2026-11-07, PostHistory.7z verified through a resumable download then sha256sum (streaming broke on HTTP/2 resets) matching SHA256SUMS dcb0c911...; rc 0
 - [ ] S5 [live]: download/download.sh: BASE_URL is the bucket; the file list comes from SHA256SUMS; `sha256sum -c` runs after `7z t`; `--only <site,...>` is added. The diff is recorded here, since the source lives only on hostinger.
   - Accept: `bash -n download/download.sh` rc 0.
 - [ ] S5b [live, optional]: pipeline.py fetch-import-delete per site, so the datastore holds one archive at a time.

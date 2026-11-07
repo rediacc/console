@@ -526,7 +526,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-gpu-device-grants.md` | approved | 83 | 2 | 12 | 29663 |
 | `agent/plans/PLAN-greenlight-verify-at-read.md` | compacted | 44 | 0 | 0 | 3606 |
 | `agent/plans/PLAN-haiku-model-routing.md` | executing | 249 | 9 | 11 | 30400 |
-| `agent/plans/PLAN-health-checks-local.md` | approved | 669 | 33 | 48 | 115119 |
+| `agent/plans/PLAN-health-checks-local.md` | approved | 670 | 32 | 49 | 115397 |
 | `agent/plans/PLAN-hostinger-upgrade-followups.md` | in-progress | 36 | 4 | 0 | 3965 |
 | `agent/plans/PLAN-jobs-backup-real-machine-tests.md` | approved | 53 | 3 | 8 | 12090 |
 | `agent/plans/PLAN-judge-gate-worthiness-and-surface-scope.md` | compacted | 39 | 0 | 0 | 3232 |
