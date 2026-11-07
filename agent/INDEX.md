@@ -526,7 +526,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-gpu-device-grants.md` | approved | 83 | 2 | 12 | 29663 |
 | `agent/plans/PLAN-greenlight-verify-at-read.md` | compacted | 44 | 0 | 0 | 3606 |
 | `agent/plans/PLAN-haiku-model-routing.md` | executing | 249 | 9 | 11 | 30400 |
-| `agent/plans/PLAN-health-checks-local.md` | approved | 683 | 25 | 56 | 122383 |
+| `agent/plans/PLAN-health-checks-local.md` | approved | 685 | 23 | 58 | 123775 |
 | `agent/plans/PLAN-hostinger-upgrade-followups.md` | in-progress | 36 | 4 | 0 | 3965 |
 | `agent/plans/PLAN-jobs-backup-real-machine-tests.md` | approved | 54 | 2 | 9 | 12543 |
 | `agent/plans/PLAN-judge-gate-worthiness-and-surface-scope.md` | compacted | 39 | 0 | 0 | 3232 |
@@ -579,7 +579,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-shell-command-gate-regex-fix.md` | compacted | 39 | 0 | 0 | 3165 |
 | `agent/plans/PLAN-shell-resource-profiling.md` | compacted | 38 | 0 | 0 | 3311 |
 | `agent/plans/PLAN-skip-release-gates-r2-manifest.md` | compacted | 39 | 0 | 0 | 3156 |
-| `agent/plans/PLAN-snapshot-read-io-cap.md` | approved | 259 | 4 | 12 | 37094 |
+| `agent/plans/PLAN-snapshot-read-io-cap.md` | approved | 260 | 3 | 13 | 37828 |
 | `agent/plans/PLAN-split-cli-files-over-512-line-budget.md` | executing | 36 | 2 | 5 | 5318 |
 | `agent/plans/PLAN-ssh-key-source-ranges.md` | executing | 142 | 1 | 10 | 32161 |
 | `agent/plans/PLAN-ssr-nav-locale.md` | compacted | 36 | 0 | 0 | 1976 |

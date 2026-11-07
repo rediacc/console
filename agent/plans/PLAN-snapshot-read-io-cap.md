@@ -247,9 +247,10 @@ Asked after erpnext peaked at load 12.89 at --parallelism 1, the operator answer
   - The unit carries `CPUQuota=<percent x nproc>%`, with nproc read on the machine at schedule time; the snapshot summary prints the CPU limit.
   - Accept: `cd packages/cli && npx vitest run src/commands/__tests__/backup-snapshot-bwlimit.test.ts src/commands/__tests__/backup-strategy.test.ts src/services/__tests__/backup-schedule-chunkstore.test.ts` rc 0, and `npx tsc --noEmit --project packages/cli/tsconfig.json` rc 0.
     (ticked) 2026-10-29T13:33:02Z by d778be9d: commit:03aeb5213 vitest 148 passed rc=0, tsc rc=0, check:ci-cli-contract rc=0
-- [ ] L3. hostinger: a capped snapshot of one remaining repo shows backup CPU at or below 50 % of all cores in every sample, with the record carrying cpuQuota=400%.
+- [x] L3. hostinger: a capped snapshot of one remaining repo shows backup CPU at or below 50 % of all cores in every sample, with the record carrying cpuQuota=400%.
   - Owns: none in the tree.
   - Accept: `PYTHONPATH=.ci python3 -m rediacc_ci.ops.read_cap_seed <repo> --machine hostinger --config eu-bench --stop-on cpu && grep '^<repo> ' /tmp/seed/summary.log | tail -n 1 | awk '{for(i=2;i<=NF;i++){split($i,a,"=");v[a[1]]=a[2]}} END{exit !(v["rc"]=="0" && v["cpuQuota"]=="400%" && v["backupcpun"]+0>0 && v["backupcpun"]==v["samples"] && v["backupcpuover50"]=="0")}'` rc 0, with the line's `backupcpu=` and `busycpu=` figures recorded under this box.
+    (ticked) 2026-11-07T09:57:32Z by d778be9d: live 2026-11-07T09:56Z on the installed branch renet: PYTHONPATH=.ci python3 -m rediacc_ci.ops.read_cap_seed mautic --machine hostinger --config eu-bench --stop-on cpu rc=0, and the Accept awk over the last mautic line of /tmp/seed/summary.log rc=0. Line: rc=0 snapshotrc=0 cpuQuota=400% cpuLimitPercent=50 readCapBps=50000000 hashWorkers=1 samples=5 backupcpun=5 backupcpuover50=0 backupcpu=1.66,1.44,0.99,1.05,1.20,none busycpu=24.25,20.54,18.34,19.00,32.67,18.84 peakload=2.79 baseload=1.80 peakwa=4.13 readkind=changed-cells readbytes=385875968 bytesUploaded=385875968 durationMs=48138 snapshotId=20261107T095621Z-2cfe776ce7c3149c. Outputs /tmp/m/host-snapshot-read-io-cap-e990ac90/
 
 
 - [ ] LP-hostinger [live] Fresh hostinger receipt through worklist.py --live-proof, after this plan's hostinger-deployable boxes land.

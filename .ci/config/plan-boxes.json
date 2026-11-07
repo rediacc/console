@@ -1401,8 +1401,8 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 25,
-      "done": 56,
+      "open": 23,
+      "done": 58,
       "open_sigs": [
         "0b3361b6",
         "121aedb1",
@@ -1413,7 +1413,6 @@
         "34210882",
         "50c5369e",
         "52c95fff",
-        "5967d40c",
         "5c5ec96d",
         "752e2a42",
         "75b25301",
@@ -1421,7 +1420,6 @@
         "85f55665",
         "86440c28",
         "89250539",
-        "94a12f68",
         "9cbe0eff",
         "b3cce7b6",
         "b820f351",
@@ -1446,6 +1444,7 @@
         "4b968342",
         "4f73913f",
         "4fe9fc22",
+        "5967d40c",
         "5a75d738",
         "640d41b2",
         "6d7813fa",
@@ -1465,6 +1464,7 @@
         "8e5e0232",
         "9106e823",
         "93a31f2a",
+        "94a12f68",
         "ae6b6cb1",
         "ae9e3575",
         "b317b310",
@@ -2451,12 +2451,11 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 4,
-      "done": 12,
+      "open": 3,
+      "done": 13,
       "open_sigs": [
         "11388dba",
         "b9daaf63",
-        "e990ac90",
         "ef318b56"
       ],
       "done_sigs": [
@@ -2471,7 +2470,8 @@
         "9da781a9",
         "9f4cc8b1",
         "a63d1aaf",
-        "ae0adefa"
+        "ae0adefa",
+        "e990ac90"
       ]
     },
     "agent/plans/PLAN-split-cli-files-over-512-line-budget.md": {
