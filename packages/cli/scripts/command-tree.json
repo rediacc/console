@@ -1267,6 +1267,12 @@
                   "defaultValue": null
                 },
                 {
+                  "flags": "--target <storeId>",
+                  "descriptionKey": "commands.backup.strategy.set.optionTarget",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
                   "flags": "--cron <expression>",
                   "descriptionKey": "commands.backup.strategy.set.optionCron",
                   "mandatory": false,
@@ -1682,6 +1688,12 @@
             {
               "flags": "--at <time|snapshot>",
               "descriptionKey": "commands.backup.browse.optionAt",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--from <storeId>",
+              "descriptionKey": "commands.backup.browse.optionFrom",
               "mandatory": false,
               "defaultValue": null
             },
@@ -2212,6 +2224,12 @@
               "descriptionKey": "commands.backup.download.optionAt",
               "mandatory": false,
               "defaultValue": null
+            },
+            {
+              "flags": "--from <storeId>",
+              "descriptionKey": "commands.backup.download.optionFrom",
+              "mandatory": false,
+              "defaultValue": null
             }
           ],
           "arguments": [
@@ -2318,6 +2336,12 @@
             {
               "flags": "--at <time>",
               "descriptionKey": "commands.backup.restore.optionAt",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--from <storeId>",
+              "descriptionKey": "commands.backup.restore.optionFrom",
               "mandatory": false,
               "defaultValue": null
             },

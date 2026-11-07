@@ -7,7 +7,7 @@ order: 2
 language: zh
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/zh/cli.json
-sourceHash: "ddb7c607e4b17eb8"
+sourceHash: "518beefda78a69df"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -2578,6 +2578,7 @@ rdc backup browse <repo-ref> [options]
 | `--depth <n>` | {{t:cli.commands.backup.browse.optionDepth}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--limit <n>` | {{t:cli.commands.backup.browse.optionLimit}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--at <time|snapshot>` | {{t:cli.commands.backup.browse.optionAt}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--from <storeId>` | {{t:cli.commands.backup.browse.optionFrom}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
@@ -2643,6 +2644,7 @@ rdc backup restore <artifact-ref> [options]
 | `-m, --machine <name>` | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--datastore <name>` | {{t:cli.commands.backup.restore.optionDatastore}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--at <time>` | {{t:cli.commands.backup.restore.optionAt}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--from <storeId>` | {{t:cli.commands.backup.restore.optionFrom}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--any-stream` | {{t:cli.commands.backup.restore.optionAnyStream}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--no-seed` | {{t:cli.commands.backup.restore.optionNoSeed}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--allow-unopenable` | {{t:cli.commands.backup.restore.optionAllowUnopenable}} | {{t:cli.docs.optionLabels.no}} | - |
@@ -2793,6 +2795,7 @@ rdc backup strategy set <strategy> [options]
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
 | `--destination <name>` | {{t:cli.commands.backup.strategy.set.optionDestination}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--target <storeId>` | {{t:cli.commands.backup.strategy.set.optionTarget}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--cron <expression>` | {{t:cli.commands.backup.strategy.set.optionCron}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--mode <mode>` | {{t:cli.commands.backup.strategy.set.optionMode}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--bwlimit <limit>` | {{t:cli.commands.backup.strategy.set.optionBwlimit}} | {{t:cli.docs.optionLabels.no}} | - |
@@ -2948,6 +2951,7 @@ rdc backup download [refs...] [options]
 | `--skip-space-check` | {{t:cli.commands.backup.download.optionSkipSpaceCheck}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--store` | {{t:cli.commands.backup.download.optionStore}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--at <time|snapshot>` | {{t:cli.commands.backup.download.optionAt}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--from <storeId>` | {{t:cli.commands.backup.download.optionFrom}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 <a id="cli-local-backup-upload"></a>
