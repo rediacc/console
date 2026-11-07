@@ -5,6 +5,7 @@
 
 import { isKnownFindingCode } from '@rediacc/shared/services/machine/findings';
 import { describe, expect, it, vi } from 'vitest';
+import type { RenetProcess } from '../../../services/renet/renet-daemons.js';
 
 vi.mock('../../../services/core/output.js', () => ({ outputService: { info: vi.fn() } }));
 vi.mock('../../../services/config/config-resources.js', () => ({ configService: {} }));
@@ -23,10 +24,13 @@ const clean = {
   findings: [],
 };
 
+const DELETED = '/usr/lib/rediacc/renet/0.0.0-dev/renet (deleted)';
+const proc = (unit: string, pid: number): RenetProcess => ({ unit, pid, exe: DELETED });
+
 /** Every CLI producer triggered once. */
 function everything() {
   const stale = applyStaleness(clean, {
-    staleBinary: [{ unit: 'rediacc-docker-5', pid: 42 }] as never,
+    staleBinary: [proc('rediacc-docker-5', 42)],
     staleBackups: [
       { guid: 'g1', name: 'mail', ageSeconds: 900_000 },
       { guid: 'g2', name: 'wiki', ageSeconds: 900_000, targetSeconds: 3600 },
@@ -125,10 +129,10 @@ describe('machine health findings from the CLI producers (X1)', () => {
   it('names each replaced-binary unit once however many processes it runs', () => {
     const folded = applyStaleness(clean, {
       staleBinary: [
-        { unit: 'rediacc-docker-5', pid: 41 },
-        { unit: 'rediacc-docker-5', pid: 42 },
-        { unit: 'rediacc-docker-12', pid: 43 },
-      ] as never,
+        proc('rediacc-docker-5', 41),
+        proc('rediacc-docker-5', 42),
+        proc('rediacc-docker-12', 43),
+      ],
       staleBackups: [],
     });
     const replaced = folded.findings.find((f) => f.code === 'renet.binary.replaced');
