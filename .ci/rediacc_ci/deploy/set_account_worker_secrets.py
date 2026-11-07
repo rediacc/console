@@ -158,7 +158,7 @@ BACKUP_PAIR_EDGE = (
     "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_EDGE",
 )
 
-# The region-and-channel fan-ins, `<PREFIX>_<SUFFIX>_<CHANNEL>`: one vault name per region and channel, none shared. `read_env` reads both channels of this run's region so `config_server_key` can refuse the other one. A tuple, as `SUFFIXED_PREFIXES` is, because `check:ci-builder-env-contract` reads the prefixes from it and expands each over the three regions and both channels to meet the six names cd-deploy-account.yml exports.
+# The region-and-channel fan-ins, `<PREFIX>_<SUFFIX>_<CHANNEL>`: one vault name per region and channel, none shared. `read_env` reads both channels of this run's region so `config_server_key` can refuse the other one. A tuple, as `SUFFIXED_PREFIXES` is, because `check:ci-builder-env-contract` reads the prefixes from it and expands each over the three regions and both channels to meet the six names per prefix (twelve for the two prefixes) that cd-deploy-account.yml exports.
 SUFFIXED_CHANNEL_PREFIXES: tuple[str, ...] = (
     "ACCOUNT_CONFIG_SERVER_KEY",
     "ACCOUNT_BACKUP_STORE_KEK",
