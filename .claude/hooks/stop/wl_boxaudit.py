@@ -523,12 +523,49 @@ def line_of(a):
     )
 
 
-def render(rows, head, base, *, shas=None, mixed=False, live_owed=False, verbose=False):
+def closed_links(root, base, shas):
+    """{given sha: [(plan rel or basename, sig, source)]}: the Plan-Box trailers and investigation rows that link each sha to any box, open or closed.
+
+    `audit` judges open boxes only, so a sha whose box is already ticked finds no row there; without this a commit linked to a closed box read as `untouched`, which its own message calls "no trailer, report or ledger row links it" (T9 review ef3c5efa.2, ec099603d and H2).
+    """
+    import wl_planrec as R
+
+    found: dict[str, list[tuple[str, str, str]]] = {g: [] for g in shas}
+    for (plan, sig), landed in trailer_links(root, base).items():
+        for sha, _clauses in landed:
+            for given in shas:
+                if sha.lower().startswith(given.lower()):
+                    found[given].append((plan, sig, "trailer %s" % sha[:12]))
+    for row in R.read_investigations(root):
+        cited = [str(t) for k, t in row.get("pointers") or [] if k == "commit"]
+        cited += [str(r[2]) for r in row.get("resolved") or [] if len(r) > 2 and r[0] == "commit"]
+        for given in shas:
+            if any(c.lower().startswith(given.lower()) for c in cited):
+                entry = (
+                    str(row.get("plan")),
+                    str(row.get("sig")),
+                    "investigation row %s" % row.get("at", "?"),
+                )
+                if entry not in found[given]:
+                    found[given].append(entry)
+    return found
+
+
+def render(
+    rows, head, base, *, shas=None, closed=None, mixed=False, live_owed=False, verbose=False
+):
     """`(text, exit code)` of `--box-audit`."""
     out = ["BOX AUDIT @ %s since %s" % (head[:12] or "?", base[:12] or "(no merge-base)")]
     if shas:
         for given in shas:
             hits = [a for a in rows if any(s.startswith(given.lower()) for s, _src in a.landed)]
+            if not hits and (closed or {}).get(given):
+                for plan, sig, source in closed[given]:
+                    out.append(
+                        "%s -> closed box %s#%s (%s; no open box left to judge)"
+                        % (given, plan, sig, source)
+                    )
+                continue
             if not hits:
                 out.append("%s untouched: no trailer, report or ledger row links it" % given)
             for a in hits:
@@ -623,6 +660,7 @@ def main(argv, me, root):
         head,
         base,
         shas=shas,
+        closed=closed_links(root, base, shas) if shas else None,
         mixed="--mixed-unsplit" in flags,
         live_owed="--live-owed" in flags,
         verbose="--all" in flags,

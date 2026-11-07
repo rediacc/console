@@ -238,6 +238,36 @@ def test_render_sha_names_each_landed_sha_against_its_box(world):
     assert "0000000 untouched" in text
 
 
+def test_render_sha_names_the_closed_box_an_investigation_row_links(world):
+    """T9 review ef3c5efa.2: a sha whose box is already ticked found no open row and read as `untouched`."""
+    rows, head, base = BA.audit(world.root, ME)
+    given = "abcdef123"
+    text, _rc = BA.render(rows, head, base, shas=[given])
+    assert "%s untouched" % given in text, "CONTROL: an unlinked sha reads untouched"
+    inv = world.root / "agent" / "ledgers" / "plan-investigation.jsonl"
+    with inv.open("a", encoding="utf-8") as fh:
+        fh.write(
+            json.dumps(
+                {
+                    "at": "2026-11-07T06:58:47Z",
+                    "plan": "agent/plans/PLAN-closed.md",
+                    "sig": "afa91934",
+                    "pointers": [["commit", given]],
+                    "resolved": [["commit", True, given + "0" * 31]],
+                }
+            )
+            + "\n"
+        )
+    closed = BA.closed_links(world.root, base, [given])
+    assert closed[given] == [
+        ("agent/plans/PLAN-closed.md", "afa91934", "investigation row 2026-11-07T06:58:47Z")
+    ]
+    text, rc = BA.render(rows, head, base, shas=[given], closed=closed)
+    assert rc == 0
+    assert "%s -> closed box agent/plans/PLAN-closed.md#afa91934" % given in text
+    assert "untouched" not in text
+
+
 def test_mixed_unsplit_lists_landed_boxes_with_no_map_and_exits_1(world):
     rows, head, base = BA.audit(world.root, ME)
     text, rc = BA.render(rows, head, base, mixed=True)
