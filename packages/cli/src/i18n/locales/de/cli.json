@@ -1327,6 +1327,7 @@
       },
       "repair": {
         "description": "Die sicheren Korrekturen für die Befunde einer Maschine ausführen und erneut prüfen (Exit 0: nichts offen, 1: Warnungen oder Betreiberpunkte offen, 2: ein Fehler offen oder eine Korrektur fehlgeschlagen)",
+        "descriptionShort": "Sichere Korrekturen für die Gesundheitsbefunde einer Maschine ausführen, danach erneut prüfen",
         "optionDryRun": "Die Korrekturen auflisten, die laufen würden, ohne sie auszuführen",
         "optionCode": "Nur diesen Befundcode korrigieren (wiederholbar)",
         "optionWithBackup": "auto-with-backup-Korrekturen zulassen, jeweils nach einem erfolgreichen Snapshot des Repositorys",
@@ -1546,7 +1547,7 @@
         "jsonOption": "Bericht als JSON ausgeben",
         "nothingStale": "Auf '{{machine}}' führt kein renet-Daemon ein ersetztes Binary aus.",
         "repoNeedsDocker": "--repo erfordert --include-docker: nur der Supervisor eines Repositorys wird eingegrenzt",
-        "repoNoNetworkId": "Repository '{{repo}}' hat in dieser Konfiguration keine Netzwerk-ID; mit rdc repo list prüfen",
+        "repoNoNetworkId": "Repository '{{repo}}' hat in dieser Konfiguration keine Netzwerk-ID; zu prüfen mit rdc repo list",
         "repoOption": "Neustart auf den Supervisor eines Repositorys beschränken (erfordert --include-docker)",
         "repoRenetTooOld": "renet auf '{{machine}}' kennt --repo noch nicht und hat den Bereich abgelehnt; es wurde nichts neu gestartet. Zuerst rdc machine setup {{machine}} ausführen",
         "starting": "renet-Daemons auf '{{machine}}' werden neu gestartet..."
@@ -2316,6 +2317,7 @@
       },
       "repair": {
         "description": "Die repair()-Funktionen der Rediaccfiles des Repositorys ausführen, die ihre deklarierte Klasse erlaubt, dann erneut health() (Exit 0: ok, 1: Warnung, 2: Fehler oder fehlgeschlagene Reparatur)",
+        "descriptionShort": "Die erlaubten repair()-Funktionen der Rediaccfile eines Repositorys ausführen, danach die Gesundheit erneut prüfen",
         "optionDryRun": "Anzeigen, welches repair() laufen würde, ohne eines auszuführen",
         "optionWithBackup": "repair()-Funktionen der Klasse auto-with-backup zulassen, nach einem erfolgreichen Snapshot des Repositorys",
         "optionWindowOverride": "repair()-Funktionen mit window=only außerhalb des Wartungsfensters der Maschine ausführen",

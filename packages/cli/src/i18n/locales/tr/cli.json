@@ -1327,6 +1327,7 @@
       },
       "repair": {
         "description": "Bir makinenin sağlık bulguları için güvenli düzeltmeleri çalıştırır ve yeniden denetler (çıkış 0: hiçbir şey kalmadı, 1: uyarı veya operatör işi kaldı, 2: hata kaldı ya da bir düzeltme başarısız oldu)",
+        "descriptionShort": "Bir makinenin sağlık bulguları için güvenli düzeltmeleri çalıştırır, ardından yeniden denetler",
         "optionDryRun": "Çalışacak düzeltmeleri çalıştırmadan listeler",
         "optionCode": "Yalnızca bu bulgu kodunu düzeltir (tekrarlanabilir)",
         "optionWithBackup": "auto-with-backup düzeltmelerine izin verir; her biri deposunun başarılı bir anlık görüntüsünden sonra çalışır",
@@ -1546,7 +1547,7 @@
         "jsonOption": "Raporu JSON olarak yazdır",
         "nothingStale": "'{{machine}}' üzerinde değiştirilmiş bir ikili dosyayı çalıştıran renet daemon'ı yok.",
         "repoNeedsDocker": "--repo için --include-docker gerekir: yalnızca tek bir deponun denetleyicisi hedeflenir",
-        "repoNoNetworkId": "'{{repo}}' deposunun bu yapılandırmada ağ kimliği yok; rdc repo list ile kontrol edin",
+        "repoNoNetworkId": "'{{repo}}' deposunun bu yapılandırmada ağ kimliği yok; şununla kontrol edin: rdc repo list",
         "repoOption": "Yeniden başlatmayı tek bir deponun denetleyicisiyle sınırla (--include-docker gerekir)",
         "repoRenetTooOld": "'{{machine}}' üzerindeki renet --repo seçeneğini henüz tanımıyor ve kapsamı reddetti; hiçbir şey yeniden başlatılmadı. Önce rdc machine setup {{machine}} çalıştırın",
         "starting": "'{{machine}}' üzerindeki renet daemon'ları yeniden başlatılıyor..."
@@ -2316,6 +2317,7 @@
       },
       "repair": {
         "description": "Deponun Rediaccfile dosyalarındaki, bildirilen sınıfının izin verdiği repair() işlevlerini çalıştırır, ardından health() yeniden çalışır (çıkış 0 ok, 1 uyarı, 2 hata ya da başarısız onarım)",
+        "descriptionShort": "Bir deponun Rediaccfile dosyasındaki izin verilen repair() işlevlerini çalıştırır, ardından sağlığını yeniden denetler",
         "optionDryRun": "Hangi repair() işlevinin çalışacağını, hiçbirini çalıştırmadan gösterir",
         "optionWithBackup": "auto-with-backup repair() işlevlerine, deponun başarılı bir anlık görüntüsünden sonra izin verir",
         "optionWindowOverride": "window=only repair() işlevlerini makinenin bakım penceresi dışında da çalıştırır",

@@ -1327,6 +1327,7 @@
       },
       "repair": {
         "description": "머신의 상태 점검 결과에 대한 안전한 수정을 실행하고 다시 점검합니다 (종료 코드 0: 남은 항목 없음, 1: 경고나 운영자 작업이 남음, 2: 오류가 남았거나 수정이 실패함)",
+        "descriptionShort": "머신의 상태 점검 결과에 대해 안전한 수정을 실행한 뒤 다시 점검합니다",
         "optionDryRun": "실행될 수정을 실행하지 않고 나열합니다",
         "optionCode": "이 결과 코드만 수정합니다 (반복 지정 가능)",
         "optionWithBackup": "auto-with-backup 수정을 허용합니다. 각 수정은 해당 저장소의 스냅샷이 성공한 뒤에 실행됩니다",
@@ -2316,6 +2317,7 @@
       },
       "repair": {
         "description": "선언된 등급이 허용하는 저장소 Rediaccfile의 repair() 함수를 실행한 뒤 health()를 다시 실행합니다 (종료 코드 0: ok, 1: 경고, 2: 오류 또는 수리 실패)",
+        "descriptionShort": "리포지토리 Rediaccfile에서 허용된 repair() 함수를 실행한 뒤 상태를 다시 점검합니다",
         "optionDryRun": "어떤 repair()가 실행될지 아무것도 실행하지 않고 보여 줍니다",
         "optionWithBackup": "저장소 스냅샷이 성공한 뒤 auto-with-backup repair() 함수를 허용합니다",
         "optionWindowOverride": "window=only repair() 함수를 머신의 유지보수 창 밖에서도 실행합니다",

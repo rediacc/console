@@ -1327,6 +1327,7 @@
       },
       "repair": {
         "description": "マシンのヘルス検出項目に対する安全な修正を実行し、再確認します (終了コード 0: 残りなし、1: 警告またはオペレーター対応が残る、2: エラーが残るか修正に失敗)",
+        "descriptionShort": "マシンのヘルス検査で見つかった問題に安全な修正を適用し、再検査します",
         "optionDryRun": "実行される修正を、実行せずに一覧表示します",
         "optionCode": "この検出コードだけを修正します (繰り返し指定可)",
         "optionWithBackup": "auto-with-backup の修正を許可します。各修正はそのリポジトリのスナップショットが成功した後に実行されます",
@@ -2316,6 +2317,7 @@
       },
       "repair": {
         "description": "宣言されたクラスが許可するリポジトリの Rediaccfile の repair() 関数を実行し、その後 health() を再実行します (終了コード 0: ok、1: 警告、2: エラーまたは修復失敗)",
+        "descriptionShort": "リポジトリの Rediaccfile で許可された repair() 関数を実行し、ヘルスを再検査します",
         "optionDryRun": "どの repair() が実行されるかを、何も実行せずに表示します",
         "optionWithBackup": "リポジトリのスナップショットが成功した後に auto-with-backup の repair() 関数を許可します",
         "optionWindowOverride": "window=only の repair() 関数をマシンのメンテナンスウィンドウ外でも実行します",

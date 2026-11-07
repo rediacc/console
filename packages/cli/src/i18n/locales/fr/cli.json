@@ -1327,6 +1327,7 @@
       },
       "repair": {
         "description": "Applique les correctifs sûrs aux constats de santé d'une machine, puis revérifie (sortie 0 : rien ne reste, 1 : avertissements ou actions opérateur restants, 2 : une erreur reste ou un correctif a échoué)",
+        "descriptionShort": "Applique les corrections sûres aux constats de santé d'une machine, puis revérifie",
         "optionDryRun": "Liste les correctifs qui seraient appliqués, sans les appliquer",
         "optionCode": "Ne corrige que ce code de constat (répétable)",
         "optionWithBackup": "Autorise les correctifs auto-with-backup, chacun après un instantané réussi de son dépôt",
@@ -2316,6 +2317,7 @@
       },
       "repair": {
         "description": "Exécute les fonctions repair() des Rediaccfile du dépôt que leur classe déclarée autorise, puis relance health() (sortie 0 ok, 1 avertissement, 2 erreur ou réparation en échec)",
+        "descriptionShort": "Exécute les fonctions repair() autorisées du Rediaccfile d'un dépôt, puis revérifie sa santé",
         "optionDryRun": "Affiche quel repair() serait lancé, sans en lancer aucun",
         "optionWithBackup": "Autorise les fonctions repair() auto-with-backup, après un instantané réussi du dépôt",
         "optionWindowOverride": "Lance les fonctions repair() window=only hors de la fenêtre de maintenance de la machine",

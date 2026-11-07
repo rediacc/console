@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 2532,
-    "sourceCommit": "94332990d93a9fa1913a0383a1445b6c7392c66c"
+    "keyCount": 2534,
+    "sourceCommit": "0e0fb8aabca6c0880e06a7fa29c5e3acb28e4944"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -1189,6 +1189,7 @@
     "commands.machine.remove.strategiesBoundNext": "43301f2a",
     "commands.machine.remove.success": "af1a44ce",
     "commands.machine.repair.description": "b46fa350",
+    "commands.machine.repair.descriptionShort": "864351c8",
     "commands.machine.repair.header": "5558f9bf",
     "commands.machine.repair.nothingDue": "f4bfccd1",
     "commands.machine.repair.optionCode": "c4d5ac8c",
@@ -1761,6 +1762,7 @@
     "commands.repo.refMachineConflict": "66730cfb",
     "commands.repo.repair.confirmOperatorOnly": "06bef85e",
     "commands.repo.repair.description": "b39ab7cd",
+    "commands.repo.repair.descriptionShort": "486868a5",
     "commands.repo.repair.header": "6c7bea39",
     "commands.repo.repair.optionDryRun": "aa603c90",
     "commands.repo.repair.optionWindowOverride": "50980833",

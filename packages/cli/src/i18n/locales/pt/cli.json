@@ -1327,6 +1327,7 @@
       },
       "repair": {
         "description": "Executa as correções seguras para os problemas de saúde de uma máquina e volta a verificar (saída 0: nada pendente, 1: ficam avisos ou tarefas do operador, 2: fica um erro ou uma correção falhou)",
+        "descriptionShort": "Aplica as correções seguras aos achados de saúde de uma máquina e verifica de novo",
         "optionDryRun": "Lista as correções que correriam, sem as correr",
         "optionCode": "Corrige apenas este código de problema (repetível)",
         "optionWithBackup": "Permite correções auto-with-backup, cada uma após um snapshot bem-sucedido do seu repositório",
@@ -2316,6 +2317,7 @@
       },
       "repair": {
         "description": "Corre as funções repair() dos Rediaccfile do repositório que a sua classe declarada permite e depois health() de novo (saída 0 ok, 1 aviso, 2 erro ou reparação falhada)",
+        "descriptionShort": "Executa as funções repair() permitidas do Rediaccfile de um repositório e verifica a saúde de novo",
         "optionDryRun": "Mostra que repair() correria, sem correr nenhum",
         "optionWithBackup": "Permite as funções repair() auto-with-backup, após um snapshot bem-sucedido do repositório",
         "optionWindowOverride": "Corre as funções repair() window=only fora da janela de manutenção da máquina",

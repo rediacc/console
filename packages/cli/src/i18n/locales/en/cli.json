@@ -685,6 +685,7 @@
       },
       "repair": {
         "description": "Run the safe fixes for a machine's health findings, then re-check (exit 0 nothing left, 1 warnings or operator items left, 2 an error left or a fix failed)",
+        "descriptionShort": "Run the safe fixes for a machine's health findings, then re-check",
         "optionDryRun": "List the fixes that would run without running them",
         "optionCode": "Only fix this finding code (repeatable)",
         "optionWithBackup": "Allow auto-with-backup fixes, each after a successful snapshot of its repository",
@@ -1249,6 +1250,7 @@
       },
       "repair": {
         "description": "Run the repository's Rediaccfile repair() functions that their declared class allows, then health() again (exit 0 ok, 1 warning, 2 error or a failed repair)",
+        "descriptionShort": "Run a repository's allowed Rediaccfile repair() functions, then re-check its health",
         "optionDryRun": "Show which repair() would run, without running any",
         "optionWithBackup": "Allow auto-with-backup repair() functions, after a successful snapshot of the repository",
         "optionWindowOverride": "Run window-only repair() functions outside the machine's maintenance window",

@@ -1327,6 +1327,7 @@
       },
       "repair": {
         "description": "Käivitab masina tervisekontrolli leidude ohutud parandused ja kontrollib uuesti (väljumiskood 0: midagi ei jäänud, 1: jäid hoiatused või operaatori tööd, 2: jäi viga või parandus ebaõnnestus)",
+        "descriptionShort": "Käivitab masina tervisehuvastuste ohutud parandused ja kontrollib seejärel uuesti",
         "optionDryRun": "Loetleb parandused, mis käivitataks, neid käivitamata",
         "optionCode": "Parandab ainult selle leiu koodi (korratav)",
         "optionWithBackup": "Lubab auto-with-backup parandused, igaüks pärast oma hoidla õnnestunud hetktõmmist",
@@ -2316,6 +2317,7 @@
       },
       "repair": {
         "description": "Käivitab hoidla Rediaccfile'ide repair() funktsioonid, mida nende deklareeritud klass lubab, ja seejärel uuesti health() (väljumiskood 0 ok, 1 hoiatus, 2 viga või ebaõnnestunud parandus)",
+        "descriptionShort": "Käivitab hoidla Rediaccfile'i lubatud repair() funktsioonid ja kontrollib seejärel selle tervist uuesti",
         "optionDryRun": "Näitab, milline repair() käivitataks, midagi käivitamata",
         "optionWithBackup": "Lubab auto-with-backup repair() funktsioonid pärast hoidla õnnestunud hetktõmmist",
         "optionWindowOverride": "Käivitab window=only repair() funktsioonid ka väljaspool masina hooldusakent",
