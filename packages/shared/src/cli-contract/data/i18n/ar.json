@@ -1957,7 +1957,7 @@
   "commands.subscription.refresh.account.refreshed": "تم تحديث حالة الحساب",
   "commands.subscription.refresh.account.refreshing": "جارٍ تحديث حالة الحساب...",
   "commands.subscription.refresh.description": "تحديث التراخيص من خادم الحساب.",
-  "commands.subscription.refresh.noLogin.failed": "تعذّر تجديد {{count}} ترخيص؛ راجع الأسطر أعلاه. تسجيل الدخول لا يغيّر ذلك.",
+  "commands.subscription.refresh.noLogin.failed": "تعذّر تجديد التراخيص: {{count}}؛ راجع الأسطر أعلاه. تسجيل الدخول لا يغيّر ذلك.",
   "commands.subscription.refresh.noLogin.none": "لا توجد تراخيص مستودعات مثبّتة على هذا الجهاز.",
   "commands.subscription.refresh.noLogin.paidNote": "بدون تسجيل الدخول تُجدَّد فقط التراخيص التي تجدد نفسها (تراخيص FREE)؛ التراخيص المدفوعة تتطلب \"rdc subscription login\".",
   "commands.subscription.refresh.noLogin.renewed": "اكتمل تجديد التراخيص",

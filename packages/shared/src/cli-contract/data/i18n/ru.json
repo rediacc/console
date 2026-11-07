@@ -1957,7 +1957,7 @@
   "commands.subscription.refresh.account.refreshed": "Состояние аккаунта обновлено",
   "commands.subscription.refresh.account.refreshing": "Обновление состояния аккаунта...",
   "commands.subscription.refresh.description": "Обновить лицензии с сервера аккаунта.",
-  "commands.subscription.refresh.noLogin.failed": "Не удалось продлить лицензии ({{count}}); см. строки выше. Вход в систему этого не изменит.",
+  "commands.subscription.refresh.noLogin.failed": "Не удалось продлить лицензий: {{count}}; см. строки выше. Вход в систему этого не изменит.",
   "commands.subscription.refresh.noLogin.none": "На этой машине нет установленных лицензий репозиториев.",
   "commands.subscription.refresh.noLogin.paidNote": "Без входа обновляются только лицензии, которые обновляются сами (лицензии FREE); для платных лицензий нужен \"rdc subscription login\".",
   "commands.subscription.refresh.noLogin.renewed": "Обновление лицензий завершено",
