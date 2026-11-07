@@ -3840,6 +3840,27 @@ def test_a_running_fleet_whose_disks_meet_vm_dsk_is_reused(
     assert sorted(_disk_probes(world)) == sorted([WORKER, NET + ".12"])
 
 
+def test_a_fleet_with_an_unrunnable_recipe_still_has_its_disks_probed(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A recipe outside the machine-runnable shape gives no plan, but its VM_DSK=<N> is still a floor for the running workers."""
+    _sized_two_workers(monkeypatch, "VM_DSK=48 ./rdc.sh ops up; echo done")
+    assert vm_check.fleet_up_plans(vm_check.trigger.MAP.fleets["two-workers"]) is None
+    world = make_world(tmp_path, running=TWO_WORKERS, disks={WORKER: 18 * vm_check.GIB})
+    rc, out, receipt = run_areas(tmp_path, monkeypatch, world, {"multi-vm"})
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    leg = _leg(receipt, "multi-vm", "multi-machine-11")
+    assert "fleet-disk-too-small" in leg["detail"]
+    assert "%s has 18.0 GiB of VM_DSK=48" % WORKER in leg["detail"]
+    assert sorted(_disk_probes(world)) == sorted([WORKER, NET + ".12"])
+
+
+def test_the_root_disk_probe_never_reads_a_filesystem_size() -> None:
+    """`df` reports the root filesystem, below the disk it sits on: a worker built at exactly VM_DSK would read under it."""
+    assert "df " not in vm_check.PROBE_ROOT_DISK
+    assert "lsblk -b -n -s" in vm_check.PROBE_ROOT_DISK
+
+
 def test_a_fleet_whose_recipe_sets_no_vm_dsk_is_reused_without_a_disk_probe(
     tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -4101,6 +4122,22 @@ def test_a_repository_named_like_a_word_of_the_leftover_text_is_left_alone() -> 
     ]
     found, _exempt = vm_check.find_fleet_leftovers(RUN6_RECEIPT, repos, {}, entries, PARENT, NOW)
     assert found == [], [x.line() for x in found]
+
+
+def test_a_leftover_line_a_run_recorded_is_found_again_by_its_guid_whatever_the_name() -> None:
+    """The receipt's leftover lines come from `Leftover.line`, whose command carries the guid, so a worker repository with a bare non-harness name is still found by guid when a prior receipt recorded it."""
+    guid = "99999999-2222-4333-8444-555555555555"
+    left = vm_check.Leftover("repository mail", "left behind", guid, 3008)
+    receipt = {"teardown": {"ok": False, "leftovers": [left.line()]}, "forks": []}
+    refs, lines = vm_check.receipt_leftover_refs(receipt)
+    assert guid in refs
+    assert lines == [left.line()]
+    repos = [GRAND_REPO, {"name": guid, "repo_name": "mail", "network_id": 3008}]
+    entries = [GRAND_ENTRY, {"name": "mail", "guid": guid, "networkId": "3008"}]
+    found, _exempt = vm_check.find_fleet_leftovers(
+        receipt, repos, {2880: "active", 3008: "active"}, entries, PARENT, NOW
+    )
+    assert [x.guid for x in found] == [guid]
 
 
 def test_a_repository_neither_named_nor_of_this_harness_is_left_alone() -> None:

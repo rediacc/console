@@ -137,9 +137,11 @@ SYNC_BIG_BYTES = 1024 * 1024
 # The raw probes: read-only, and the only ssh/sftp argv this module builds besides `sftp -b` below.
 PROBE_RENET_HASH = "renet hash"
 PROBE_OS_RELEASE = '. /etc/os-release && printf "%s %s\\n" "$ID" "$VERSION_ID"'
-# A VM's root disk in bytes: the virtio disk the ops VMs boot from, else the root filesystem's size (smaller than its disk, so the fallback can only under-report).
+# A VM's root disk in bytes: the virtio disk the ops VMs boot from, else the whole disk under the root mount (`lsblk -s` walks from the root partition down to its disk; a filesystem size from `df` would read below the disk size and refuse a worker built at exactly VM_DSK).
 PROBE_ROOT_DISK = (
-    "lsblk -b -d -n -o SIZE /dev/vda 2>/dev/null || df -B1 --output=size / | tail -n 1"
+    "lsblk -b -d -n -o SIZE /dev/vda 2>/dev/null"
+    ' || lsblk -b -n -s -o SIZE,TYPE "$(findmnt -n -o SOURCE /)"'
+    " | awk '$2 == \"disk\" {print $1}' | tail -n 1"
 )
 GIB = 1 << 30
 # No `-q`: an alias that does not resolve or a key ssh refuses must reach the row's evidence.
@@ -404,6 +406,20 @@ def disk_floors(
             if ip.rsplit(".", 1)[-1] != bridge
         ]
     return floors
+
+
+def loose_disk_floors(fleet: trigger.Fleet) -> list[tuple[str, int, int]]:
+    """(ip, GiB, 0) for every worker of a fleet whose up recipes are not the machine-runnable shape: the smallest `VM_DSK=<GiB>` any of its recipes spells, since which recipe brought up which VM is not known. A fleet below even that is not the fleet any recipe asks for."""
+    sizes = [
+        int(m.group(1))
+        for recipe in (fleet.up, *fleet.also_up)
+        for m in [re.search(r"\bVM_DSK=(\d+)\b", recipe)]
+        if m
+    ]
+    if not sizes:
+        return []
+    bridge = BRIDGE_SUFFIX.lstrip(".")
+    return [(ip, min(sizes), 0) for ip in fleet.ips if ip.rsplit(".", 1)[-1] != bridge]
 
 
 def spell_recipe(env: Mapping[str, str], args: Sequence[str]) -> str:
@@ -2120,10 +2136,9 @@ class VmCheck:
             if status.rc != 0:
                 return "ops status rc=%d: %s" % (status.rc, rdc_failure(status)), ""
             running += lib.running_ips(status.out)
-        if plans is not None:
-            small = self._undersized(fleet, plans, running)
-            if small:
-                return small, ""
+        small = self._undersized(fleet, plans, running)
+        if small:
+            return small, ""
         if set(fleet.ips) <= set(running):
             self.ips = list(running) if plans is None else self._own_group(plans, running)
             return "", "fleet %s reused (%s running)" % (fleet.name, " ".join(fleet.ips))
@@ -2171,13 +2186,14 @@ class VmCheck:
     def _undersized(
         self,
         fleet: trigger.Fleet,
-        plans: Sequence[tuple[dict[str, str], list[str]]],
+        plans: Sequence[tuple[dict[str, str], list[str]]] | None,
         running: Sequence[str],
     ) -> str:
         """Why a running fleet is not the one its recipe asks for, or "" when it is: each running worker whose plan sets VM_DSK=<N> must have a root disk of at least N GiB (one ssh per VM). `ops up` without `--force` leaves a running VM alone, so bringing the fleet up cannot grow it, and like P3's `fleet-os-mismatch` the check never tears a running fleet down: it refuses, naming the commands that recreate it."""
         short: list[str] = []
         down: list[int] = []
-        for ip, gib, index in disk_floors(fleet, plans):
+        floors = loose_disk_floors(fleet) if plans is None else disk_floors(fleet, plans)
+        for ip, gib, index in floors:
             if ip not in running:
                 continue
             res = self.host.run(
@@ -2197,10 +2213,13 @@ class VmCheck:
                     down.append(index)
         if not short:
             return ""
-        commands = []
-        for index in down:
-            env, args = plans[index]
-            commands += [spell_recipe(env, ["ops", "down"]), spell_recipe(env, args)]
+        commands: list[str] = []
+        if plans is None:
+            commands = ["./rdc.sh ops down", fleet.up]
+        else:
+            for index in down:
+                env, args = plans[index]
+                commands += [spell_recipe(env, ["ops", "down"]), spell_recipe(env, args)]
         # The row's evidence is clipped to EVIDENCE_MAX bytes, so the commands come first and the reasoning goes to the run's output.
         self.say(
             "        fleet %s is not reused: `ops up` leaves a running VM alone and vm:check never tears a running fleet down"
