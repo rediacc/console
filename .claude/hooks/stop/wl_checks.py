@@ -2604,7 +2604,7 @@ RUNNER_SUBCOMMAND_RUN = frozenset(("bun", "deno"))
 
 
 def argv_runs(words, targets):
-    """True when `words` is an interpreter run (RUNNER_ARGV0) whose SCRIPT, the first operand (or the module after `-m`), IS one of `targets` or ends with it after a `/`.
+    """True when `words` is an interpreter run (RUNNER_ARGV0) whose SCRIPT, the first operand (or the module after `-m`), IS one of `targets` or ends with it after a `/`. The script is also the word after `--`, and the word after the `run` subcommand of `bun` and `deno` (RUNNER_SUBCOMMAND_RUN). A lone `-` (the stdin program) is no run.
 
     Only the first operand counts: `python3 tools/lint.py .ci/rediacc_ci/drills/vm_check.py` runs lint.py and merely carries the path as an argument (review 94493878.3). An option from RUNNER_VALUE_OPTS skips its value; an unknown option that takes a value makes the next word read as the script, which fails toward "not a run", so the block stays.
     """

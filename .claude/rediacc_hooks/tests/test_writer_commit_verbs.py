@@ -58,6 +58,9 @@ NO_COMMIT_LANDING = [
     # Review d412dae6.1: a word consumed by a value-taking option is that option's value.
     ("merge", "merge -m --quit other"),
     ("cherry-pick", "cherry-pick -m --abort 0123abc"),
+    # `-s` and `-x` take a value on merge and rebase only.
+    ("merge", "merge -s --quit other"),
+    ("rebase", "rebase -x --abort main"),
 ]
 # `commit` was refused before the fix too, so its rows are the unchanged baseline beside the new verbs.
 ALL_VERBS = [*LANDING, ("commit", "commit -m 'feat: x' -- a.txt")]
@@ -200,6 +203,11 @@ def test_the_lead_landing_in_the_main_checkout_is_admitted(world, verb, args, sh
         "git cherry-pick --abort",
         "git -C private/renet cherry-pick --quit",
         "git merge --abort",
+        # Review 39851e86.1: `-x`, `-s` and `-S` are boolean here, so the sequencer flag after them is still a flag.
+        "git cherry-pick -x --quit",
+        "git revert -s --abort",
+        "git cherry-pick -S --abort",
+        "git am -s --show-current-patch",
         "git am --show-current-patch",
         "git am --show-current-patch=raw",
         "git rebase --abort",
