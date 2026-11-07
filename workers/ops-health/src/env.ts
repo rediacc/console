@@ -20,7 +20,7 @@ export interface Env {
   AWS_SES_ACCESS_KEY_ID_EU?: string;
   AWS_SES_SECRET_ACCESS_KEY_EU?: string;
   AWS_SES_REGION_EU?: string;
-  /** The sender, a plain var in wrangler.toml (ai@notify.rediacc.com), not a secret. */
+  /** The sender, the plain var OPS_MAIL_FROM in wrangler.toml, not a secret. */
   OPS_MAIL_FROM?: string;
   /** Optional Spamhaus Data Query Service key; without it a Spamhaus zone is `unknown`. */
   SPAMHAUS_DQS_KEY?: string;
