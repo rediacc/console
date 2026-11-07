@@ -104,6 +104,7 @@ Remove a machine from the config. Does not touch the machine itself.
 
 - `-y, --yes`: Skip confirmation prompt
 - `--force`: Remove the machine even if repositories are placed on it or backup strategies are bound to it, leaving those references dangling.
+- `--archive-repos`: Archive the config entries of the repositories placed on this machine (credentials kept, restorable)
 
 > MCP tool
 
@@ -168,6 +169,20 @@ Check machine health for CI/CD pipelines
 
 > MCP tool
 
+### rdc machine repair <name>
+
+Run the safe fixes for a machine's health findings, then re-check (exit 0 nothing left, 1 warnings or operator items left, 2 an error left or a fix failed)
+
+**Options:**
+
+- `--dry-run`: List the fixes that would run without running them
+- `--code <code>`: Only fix this finding code (repeatable) (default: )
+- `--with-backup`: Allow auto-with-backup fixes, each after a successful snapshot of its repository
+- `--window-override`: Run window-only fixes outside the maintenance window
+- `--set-window <window>`: Store the machine's maintenance window (HH:MM-HH:MM, UTC) or clear it with off, then exit
+
+> MCP excluded: Runs fixes on a machine (restarts, prune, repository repair()); use the CLI, where the safety classes, the maintenance window and the journal apply
+
 ### rdc machine provision <name>
 
 Provision a new machine on a cloud provider using OpenTofu
@@ -192,6 +207,7 @@ Destroy a cloud-provisioned machine and remove from config
 **Options:**
 
 - `--force`: Skip confirmation prompt
+- `--archive-repos`: Archive the config entries of the repositories placed on this machine (credentials kept, restorable)
 - `--debug`: Enable debug output
 
 > MCP tool
@@ -244,6 +260,7 @@ Roll the renet daemons that still run a replaced binary onto the installed one, 
 **Options:**
 
 - `--include-docker`: Also restart each per-repo rediacc-docker-N supervisor (restarts that repo's containers)
+- `--repo <name>`: Limit the restart to one repo's supervisor (needs --include-docker)
 - `--json`: Print the report as JSON
 
 > MCP tool
@@ -1178,6 +1195,31 @@ List repositories on a machine
 
 > MCP tool
 
+### rdc repo health <ref>
+
+Run the repository's Rediaccfile health() checks and exit 0 (ok), 1 (warning) or 2 (error)
+
+**Options:**
+
+- `--debug`: Enable debug output
+- `--skip-router-restart`: Skip restarting the route server after binary update
+
+> MCP tool
+
+### rdc repo repair <ref>
+
+Run the repository's Rediaccfile repair() functions that their declared class allows, then health() again (exit 0 ok, 1 warning, 2 error or a failed repair)
+
+**Options:**
+
+- `--dry-run`: Show which repair() would run, without running any
+- `--with-backup`: Allow auto-with-backup repair() functions, after a successful snapshot of the repository
+- `--window-override`: Run window-only repair() functions outside the machine's maintenance window
+- `-y, --yes`: Run undeclared (operator-only) repair() functions without asking
+- `--debug`: Enable debug output
+
+> MCP excluded: Runs a repository's own repair() code, operator-only ones after a prompt; use the CLI, where the classes and the prompt apply
+
 ### rdc repo cat <ref>
 
 Read a bounded window of a file in a repository to stdout (diagnostics go to stderr).
@@ -1874,6 +1916,7 @@ Remove dead weight from the local config file at ~/.config/rediacc/<config>.json
 - `--refs-only`: Restrict to dangling cross-references (machine→strategy, strategy→repo excludes/includes). Skips cert-cache and archives. Mutually exclusive with --certs-only and --archives-only.
 - `--purge-archived`: Drop ALL archived repositories regardless of age, not just those past grace. Equivalent to running 'rdc repo admin archive purge' for every archived repo. Use only when you're sure you don't need any of the stashed credentials for restore.
 - `--orphan-repos`: Remove repository entries that are placed on no machine. Each entry holds that repo's credential and SSH key, so this is unrecoverable. Run 'rdc config reconcile' first so placement reflects the machines.
+- `--gone-machine-repos`: Archive repository entries placed on a machine that is no longer in the config. Archived, not dropped: each keeps its credential and is restorable until the archive grace expires. Selects only this bucket: the cert-cache, archive and cross-reference buckets are skipped unless their own --*-only flag is also given.
 - `--grace-days <days>`: Override the archive grace window (in days) for this invocation. Falls back to defaults.pruneGraceDays in the config, then to 7 if neither is set.
 
 > MCP tool
