@@ -20,7 +20,7 @@ export interface Runtime {
 }
 
 const SOURCE_RE = /^[a-z0-9][a-z0-9._-]{0,63}$/;
-const STATES: readonly TriState[] = ['green', 'red', 'unknown'];
+const STATES = ['green', 'red', 'unknown'] as const satisfies readonly TriState[];
 const DETAIL_MAX = 2000;
 const HOUR_MS = 3_600_000;
 

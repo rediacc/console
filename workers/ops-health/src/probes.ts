@@ -1,6 +1,10 @@
 import { CONFIG, type OpsHealthConfig } from './config';
 import type { ProbeTarget, TriState } from './targets';
 
+const TLS_DEFAULT_PORT = 443;
+const SMTPS_DEFAULT_PORT = 465;
+const NO_CT_ANSWER = 'no CT answer';
+
 /**
  * The five generic probe kinds of D-runner. Every probe answers green, red or unknown, and unknown is never folded into green. No probe writes to a socket or sends anything but a GET, so no code path here changes remote state.
  */
@@ -224,7 +228,7 @@ async function handshakeError(
 
 async function probeTls(target: ProbeTarget, deps: ProbeDeps): Promise<ProbeResult> {
   const config = deps.config ?? CONFIG;
-  const failed = await handshakeError(target, deps, target.port ?? 443);
+  const failed = await handshakeError(target, deps, target.port ?? TLS_DEFAULT_PORT);
   if (failed) return failed;
   const ct = await deps.ct(target.host, target.expect);
   const scope = target.expect ? `issuer "${target.expect}"` : 'any issuer';
@@ -232,7 +236,7 @@ async function probeTls(target: ProbeTarget, deps: ProbeDeps): Promise<ProbeResu
     return result(
       target,
       'unknown',
-      `handshake ok; days to expiry unknown for ${scope} (${ct.detail ?? 'no CT answer'})`
+      `handshake ok; days to expiry unknown for ${scope} (${ct.detail ?? NO_CT_ANSWER})`
     );
   }
   const days = Math.floor((Date.parse(ct.notAfter) - deps.now()) / DAY_MS);
@@ -274,7 +278,7 @@ async function readFirstLine(socket: Socket, ms: number, what: string): Promise<
 
 async function probeBanner(target: ProbeTarget, deps: ProbeDeps): Promise<ProbeResult> {
   const config = deps.config ?? CONFIG;
-  const port = target.port ?? 465;
+  const port = target.port ?? SMTPS_DEFAULT_PORT;
   const expect = compileExpect(target.expect, /^220[ -]/);
   if (expect === null) {
     return result(target, 'unknown', `expect is not a valid pattern: ${target.expect}`);

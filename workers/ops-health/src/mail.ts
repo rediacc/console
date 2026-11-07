@@ -16,6 +16,7 @@ export function recipients(env: Env): string[] {
     .filter((address) => address.length > 0);
 }
 
+const NO_CRON_RUN = 'never';
 const SES_KEYS = [
   'AWS_SES_ACCESS_KEY_ID_EU',
   'AWS_SES_SECRET_ACCESS_KEY_EU',
@@ -62,7 +63,7 @@ export function digestSubject(view: StatusView): string {
 export function digestBody(view: StatusView, at: string): string {
   const lines = [
     `ops-health weekly digest at ${at}. This mail arriving is the proof the alerter is alive.`,
-    `verdict: ${view.verdict}; last cron run: ${view.last_cron_at ?? 'never'}; targets sha: ${view.targets_sha ?? 'none'}`,
+    `verdict: ${view.verdict}; last cron run: ${view.last_cron_at ?? NO_CRON_RUN}; targets sha: ${view.targets_sha ?? 'none'}`,
     '',
   ];
   for (const probe of view.probes)
