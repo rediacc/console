@@ -373,6 +373,7 @@
         "optionStore": "无需机器，直接从备份存储重建加密镜像。需要在 REDIACC_TOKEN 中提供带 backup:read + backup:restore 范围的 API 令牌",
         "optionAt": "配合 --store 使用，指定要获取的快照：时间 (ISO 8601) 或快照 ID (默认：最新)",
         "storeDone": "{{repo}}：已获取快照 {{snapshot}} -> {{image}} (已下载 {{bytes}} 字节)",
+        "storeCellsRoot": "快照根校验：{{outcome}}",
         "storeOfflineNote": "该副本已加密，无法在此操作系统上打开；可用 'rdc backup upload' 发送到 Linux 机器。"
       },
       "upload": {

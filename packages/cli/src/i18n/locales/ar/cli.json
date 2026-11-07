@@ -373,6 +373,7 @@
         "optionStore": "يعيد بناء الصورة المشفرة مباشرة من مخزن النسخ الاحتياطية دون أي جهاز. يتطلب رمز API بنطاق backup:read + backup:restore في REDIACC_TOKEN",
         "optionAt": "مع --store: اللقطة المطلوب جلبها، وقت (ISO 8601) أو معرّف لقطة (الافتراضي: الأحدث)",
         "storeDone": "{{repo}}: جُلبت اللقطة {{snapshot}} -> {{image}} (نُزّل {{bytes}} بايت)",
+        "storeCellsRoot": "فحص جذر اللقطة: {{outcome}}",
         "storeOfflineNote": "النسخة مشفرة ولا يمكن فتحها على نظام التشغيل هذا؛ يمكن إرسالها إلى جهاز Linux بالأمر 'rdc backup upload'."
       },
       "upload": {

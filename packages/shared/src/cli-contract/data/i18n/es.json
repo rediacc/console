@@ -66,6 +66,7 @@
   "commands.backup.download.resuming": "Reanudando la copia interrumpida de {{repo}}; solo se envían las diferencias",
   "commands.backup.download.retrying": "Reintentando {{repo}} tras un fallo de transferencia: {{error}}",
   "commands.backup.download.starting": "Copiando {{repo}} desde {{machine}}...",
+  "commands.backup.download.storeCellsRoot": "Comprobación de la raíz de la instantánea: {{outcome}}",
   "commands.backup.download.storeDone": "{{repo}}: instantánea {{snapshot}} obtenida -> {{image}} ({{bytes}} bytes descargados)",
   "commands.backup.download.storeOfflineNote": "La copia está cifrada y no se puede abrir en este sistema operativo; se envía a una máquina Linux con 'rdc backup upload'.",
   "commands.backup.download.summaryError": "  fallo: {{error}}",

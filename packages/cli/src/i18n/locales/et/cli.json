@@ -373,6 +373,7 @@
         "optionStore": "Ehitab krüptitud kujutise otse varunduste hoidlast, ilma masinata. Vaja on API-tokenit skoobiga backup:read + backup:restore muutujas REDIACC_TOKEN",
         "optionAt": "Koos --store'iga: hangitav hetktõmmis, kellaaeg (ISO 8601) või hetktõmmise id (vaikimisi uusim)",
         "storeDone": "{{repo}}: hetktõmmis {{snapshot}} hangitud -> {{image}} ({{bytes}} baiti alla laaditud)",
+        "storeCellsRoot": "Hetktõmmise juure kontroll: {{outcome}}",
         "storeOfflineNote": "Koopia on krüptitud ja seda ei saa selles operatsioonisüsteemis avada; selle saab Linuxi masinasse saata käsuga 'rdc backup upload'."
       },
       "upload": {

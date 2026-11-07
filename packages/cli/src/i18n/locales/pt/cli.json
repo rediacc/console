@@ -373,6 +373,7 @@
         "optionStore": "Reconstrói a imagem cifrada diretamente do armazém de backups, sem máquina. Requer um token de API com o escopo backup:read + backup:restore em REDIACC_TOKEN",
         "optionAt": "Com --store, o snapshot a obter: um horário (ISO 8601) ou um id de snapshot (padrão: o mais recente)",
         "storeDone": "{{repo}}: snapshot {{snapshot}} obtido -> {{image}} ({{bytes}} bytes baixados)",
+        "storeCellsRoot": "Verificação da raiz do snapshot: {{outcome}}",
         "storeOfflineNote": "A cópia é cifrada e não pode ser aberta neste sistema operacional; envia-se a uma máquina Linux com 'rdc backup upload'."
       },
       "upload": {

@@ -373,6 +373,7 @@
         "optionStore": "Şifreli imajı makine olmadan doğrudan yedek deposundan yeniden oluşturur. REDIACC_TOKEN içinde backup:read + backup:restore kapsamlı bir API belirteci gerekir",
         "optionAt": "--store ile alınacak anlık görüntü: bir zaman (ISO 8601) veya anlık görüntü kimliği (varsayılan: en yenisi)",
         "storeDone": "{{repo}}: {{snapshot}} anlık görüntüsü alındı -> {{image}} ({{bytes}} bayt indirildi)",
+        "storeCellsRoot": "Anlık görüntü kökü denetimi: {{outcome}}",
         "storeOfflineNote": "Kopya şifrelidir ve bu işletim sisteminde açılamaz; 'rdc backup upload' ile bir Linux makinesine gönderilebilir."
       },
       "upload": {

@@ -373,6 +373,7 @@
         "optionStore": "Das verschlüsselte Image direkt aus dem Backup-Speicher aufbauen, ohne Maschine. Benötigt ein API-Token mit dem Scope backup:read + backup:restore in REDIACC_TOKEN",
         "optionAt": "Mit --store: der abzurufende Snapshot als Zeitpunkt (ISO 8601) oder Snapshot-ID (Standard: der neueste)",
         "storeDone": "{{repo}}: Snapshot {{snapshot}} abgerufen -> {{image}} ({{bytes}} Bytes geladen)",
+        "storeCellsRoot": "Prüfung der Snapshot-Wurzel: {{outcome}}",
         "storeOfflineNote": "Die Kopie ist verschlüsselt und lässt sich auf diesem Betriebssystem nicht öffnen; mit 'rdc backup upload' auf eine Linux-Maschine übertragen."
       },
       "upload": {

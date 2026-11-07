@@ -66,6 +66,7 @@
   "commands.backup.download.resuming": "Jätkan hoidla {{repo}} katkenud kopeerimist; saadetakse vaid erinevused",
   "commands.backup.download.retrying": "Proovin hoidlat {{repo}} uuesti pärast edastustõrget: {{error}}",
   "commands.backup.download.starting": "Kopeerin hoidlat {{repo}} masinast {{machine}}...",
+  "commands.backup.download.storeCellsRoot": "Hetktõmmise juure kontroll: {{outcome}}",
   "commands.backup.download.storeDone": "{{repo}}: hetktõmmis {{snapshot}} hangitud -> {{image}} ({{bytes}} baiti alla laaditud)",
   "commands.backup.download.storeOfflineNote": "Koopia on krüptitud ja seda ei saa selles operatsioonisüsteemis avada; selle saab Linuxi masinasse saata käsuga 'rdc backup upload'.",
   "commands.backup.download.summaryError": "  viga: {{error}}",

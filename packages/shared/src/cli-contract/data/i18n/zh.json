@@ -66,6 +66,7 @@
   "commands.backup.download.resuming": "正在续传 {{repo}} 中断的复制；只发送差异部分",
   "commands.backup.download.retrying": "传输失败，正在重试 {{repo}}：{{error}}",
   "commands.backup.download.starting": "正在从 {{machine}} 复制 {{repo}}...",
+  "commands.backup.download.storeCellsRoot": "快照根校验：{{outcome}}",
   "commands.backup.download.storeDone": "{{repo}}：已获取快照 {{snapshot}} -> {{image}} (已下载 {{bytes}} 字节)",
   "commands.backup.download.storeOfflineNote": "该副本已加密，无法在此操作系统上打开；可用 'rdc backup upload' 发送到 Linux 机器。",
   "commands.backup.download.summaryError": "  错误：{{error}}",

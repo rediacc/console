@@ -66,6 +66,7 @@
   "commands.backup.download.resuming": "Возобновление прерванного копирования {{repo}}; передаются только различия",
   "commands.backup.download.retrying": "Повторная попытка для {{repo}} после сбоя передачи: {{error}}",
   "commands.backup.download.starting": "Копирование {{repo}} с {{machine}}...",
+  "commands.backup.download.storeCellsRoot": "Проверка корня снимка: {{outcome}}",
   "commands.backup.download.storeDone": "{{repo}}: снимок {{snapshot}} получен -> {{image}} (загружено байт: {{bytes}})",
   "commands.backup.download.storeOfflineNote": "Копия зашифрована и не открывается в этой ОС; её можно отправить на машину с Linux командой 'rdc backup upload'.",
   "commands.backup.download.summaryError": "  ошибка: {{error}}",

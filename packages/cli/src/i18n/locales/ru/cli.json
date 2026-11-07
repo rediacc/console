@@ -373,6 +373,7 @@
         "optionStore": "Собирает зашифрованный образ прямо из хранилища резервных копий, без машины. Нужен API-токен с областью backup:read + backup:restore в REDIACC_TOKEN",
         "optionAt": "Вместе с --store: какой снимок получить, время (ISO 8601) или id снимка (по умолчанию самый новый)",
         "storeDone": "{{repo}}: снимок {{snapshot}} получен -> {{image}} (загружено байт: {{bytes}})",
+        "storeCellsRoot": "Проверка корня снимка: {{outcome}}",
         "storeOfflineNote": "Копия зашифрована и не открывается в этой ОС; её можно отправить на машину с Linux командой 'rdc backup upload'."
       },
       "upload": {

@@ -66,6 +66,7 @@
   "commands.backup.download.resuming": "中断した {{repo}} のコピーを再開します。送信するのは差分だけです",
   "commands.backup.download.retrying": "転送に失敗したため {{repo}} を再試行します: {{error}}",
   "commands.backup.download.starting": "{{machine}} から {{repo}} をコピーしています...",
+  "commands.backup.download.storeCellsRoot": "スナップショットのルート検証: {{outcome}}",
   "commands.backup.download.storeDone": "{{repo}}: スナップショット {{snapshot}} を取得しました -> {{image}} ({{bytes}} バイト取得)",
   "commands.backup.download.storeOfflineNote": "このコピーは暗号化されており、この OS では開けません。'rdc backup upload' で Linux マシンへ送れます。",
   "commands.backup.download.summaryError": "  エラー: {{error}}",

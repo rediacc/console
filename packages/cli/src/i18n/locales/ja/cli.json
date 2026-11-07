@@ -373,6 +373,7 @@
         "optionStore": "マシンを使わず、バックアップストアから暗号化イメージを直接再構築します。REDIACC_TOKEN に backup:read + backup:restore スコープ付きの API トークンが必要です",
         "optionAt": "--store と併用して取得するスナップショット。時刻 (ISO 8601) またはスナップショット ID (既定: 最新)",
         "storeDone": "{{repo}}: スナップショット {{snapshot}} を取得しました -> {{image}} ({{bytes}} バイト取得)",
+        "storeCellsRoot": "スナップショットのルート検証: {{outcome}}",
         "storeOfflineNote": "このコピーは暗号化されており、この OS では開けません。'rdc backup upload' で Linux マシンへ送れます。"
       },
       "upload": {

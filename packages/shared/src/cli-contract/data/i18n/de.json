@@ -66,6 +66,7 @@
   "commands.backup.download.resuming": "Die unterbrochene Kopie von {{repo}} wird fortgesetzt; es werden nur die Unterschiede gesendet",
   "commands.backup.download.retrying": "Neuer Versuch für {{repo}} nach einem Übertragungsfehler: {{error}}",
   "commands.backup.download.starting": "{{repo}} wird von {{machine}} kopiert...",
+  "commands.backup.download.storeCellsRoot": "Prüfung der Snapshot-Wurzel: {{outcome}}",
   "commands.backup.download.storeDone": "{{repo}}: Snapshot {{snapshot}} abgerufen -> {{image}} ({{bytes}} Bytes geladen)",
   "commands.backup.download.storeOfflineNote": "Die Kopie ist verschlüsselt und lässt sich auf diesem Betriebssystem nicht öffnen; mit 'rdc backup upload' auf eine Linux-Maschine übertragen.",
   "commands.backup.download.summaryError": "  Fehler: {{error}}",

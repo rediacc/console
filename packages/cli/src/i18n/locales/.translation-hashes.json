@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 2534,
-    "sourceCommit": "0e0fb8aabca6c0880e06a7fa29c5e3acb28e4944"
+    "keyCount": 2535,
+    "sourceCommit": "be22c5b36aad7180c2f629bfcf70a7963e7ee25d"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -74,6 +74,7 @@
     "commands.backup.download.resuming": "d3cb5612",
     "commands.backup.download.retrying": "c6d56fad",
     "commands.backup.download.starting": "5d5b936c",
+    "commands.backup.download.storeCellsRoot": "95b7e52f",
     "commands.backup.download.storeDone": "9e5ad44b",
     "commands.backup.download.storeOfflineNote": "79fc9ffd",
     "commands.backup.download.summaryError": "89f8f433",

@@ -66,6 +66,7 @@
   "commands.backup.download.resuming": "Ripresa della copia interrotta di {{repo}}; vengono inviate solo le differenze",
   "commands.backup.download.retrying": "Nuovo tentativo per {{repo}} dopo un errore di trasferimento: {{error}}",
   "commands.backup.download.starting": "Copia di {{repo}} da {{machine}} in corso...",
+  "commands.backup.download.storeCellsRoot": "Verifica della radice dello snapshot: {{outcome}}",
   "commands.backup.download.storeDone": "{{repo}}: snapshot {{snapshot}} recuperato -> {{image}} ({{bytes}} byte scaricati)",
   "commands.backup.download.storeOfflineNote": "La copia è cifrata e non si può aprire su questo sistema operativo; si invia a una macchina Linux con 'rdc backup upload'.",
   "commands.backup.download.summaryError": "  errore: {{error}}",

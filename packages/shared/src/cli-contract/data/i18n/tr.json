@@ -66,6 +66,7 @@
   "commands.backup.download.resuming": "{{repo}} için yarım kalan kopyalama sürdürülüyor; yalnızca farklar gönderilir",
   "commands.backup.download.retrying": "Aktarım hatasından sonra {{repo}} yeniden deneniyor: {{error}}",
   "commands.backup.download.starting": "{{repo}}, {{machine}} makinesinden kopyalanıyor...",
+  "commands.backup.download.storeCellsRoot": "Anlık görüntü kökü denetimi: {{outcome}}",
   "commands.backup.download.storeDone": "{{repo}}: {{snapshot}} anlık görüntüsü alındı -> {{image}} ({{bytes}} bayt indirildi)",
   "commands.backup.download.storeOfflineNote": "Kopya şifrelidir ve bu işletim sisteminde açılamaz; 'rdc backup upload' ile bir Linux makinesine gönderilebilir.",
   "commands.backup.download.summaryError": "  hata: {{error}}",

@@ -66,6 +66,7 @@
   "commands.backup.download.resuming": "Reprise de la copie interrompue de {{repo}} ; seules les différences sont envoyées",
   "commands.backup.download.retrying": "Nouvelle tentative pour {{repo}} après un échec de transfert : {{error}}",
   "commands.backup.download.starting": "Copie de {{repo}} depuis {{machine}}...",
+  "commands.backup.download.storeCellsRoot": "Vérification de la racine de l’instantané : {{outcome}}",
   "commands.backup.download.storeDone": "{{repo}} : instantané {{snapshot}} récupéré -> {{image}} ({{bytes}} octets téléchargés)",
   "commands.backup.download.storeOfflineNote": "La copie est chiffrée et ne peut pas être ouverte sur ce système ; elle s'envoie vers une machine Linux avec 'rdc backup upload'.",
   "commands.backup.download.summaryError": "  erreur : {{error}}",

@@ -66,6 +66,7 @@
   "commands.backup.download.resuming": "جارٍ استئناف نسخ {{repo}} الذي انقطع؛ تُرسل الفروقات فقط",
   "commands.backup.download.retrying": "إعادة محاولة {{repo}} بعد فشل في النقل: {{error}}",
   "commands.backup.download.starting": "جارٍ نسخ {{repo}} من {{machine}}...",
+  "commands.backup.download.storeCellsRoot": "فحص جذر اللقطة: {{outcome}}",
   "commands.backup.download.storeDone": "{{repo}}: جُلبت اللقطة {{snapshot}} -> {{image}} (نُزّل {{bytes}} بايت)",
   "commands.backup.download.storeOfflineNote": "النسخة مشفرة ولا يمكن فتحها على نظام التشغيل هذا؛ يمكن إرسالها إلى جهاز Linux بالأمر 'rdc backup upload'.",
   "commands.backup.download.summaryError": "  خطأ: {{error}}",

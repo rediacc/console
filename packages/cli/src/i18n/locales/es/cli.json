@@ -373,6 +373,7 @@
         "optionStore": "Reconstruye la imagen cifrada directamente desde el almacén de copias, sin máquina. Requiere un token de API con el ámbito backup:read + backup:restore en REDIACC_TOKEN",
         "optionAt": "Con --store, la instantánea que se obtiene: una fecha (ISO 8601) o un id de instantánea (por defecto, la más reciente)",
         "storeDone": "{{repo}}: instantánea {{snapshot}} obtenida -> {{image}} ({{bytes}} bytes descargados)",
+        "storeCellsRoot": "Comprobación de la raíz de la instantánea: {{outcome}}",
         "storeOfflineNote": "La copia está cifrada y no se puede abrir en este sistema operativo; se envía a una máquina Linux con 'rdc backup upload'."
       },
       "upload": {
