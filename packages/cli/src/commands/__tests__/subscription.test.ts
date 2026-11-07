@@ -34,6 +34,7 @@ const {
   mockPromptRegionSelection,
   mockReadStdinValue,
   mockHandleError,
+  mockRenewInstalledLicenses,
 } = vi.hoisted(() => ({
   mockGetSubscriptionTokenState: vi.fn(),
   mockFetchLicenseReportOrThrow: vi.fn(),
@@ -70,6 +71,7 @@ const {
   mockPromptRegionSelection: vi.fn(),
   mockReadStdinValue: vi.fn(),
   mockHandleError: vi.fn(),
+  mockRenewInstalledLicenses: vi.fn(),
 }));
 
 vi.mock('../../i18n/index.js', () => ({
@@ -103,6 +105,10 @@ vi.mock('../../services/account/license.js', () => ({
   readRuntimeRepoLicenseStatuses: mockReadRuntimeRepoLicenseStatuses,
   refreshRepoLicensesBatch: mockRefreshRepoLicensesBatch,
   refreshRepoLicenseIdentity: mockRefreshRepoLicenseIdentity,
+}));
+
+vi.mock('../../services/account/free-license.js', () => ({
+  renewInstalledLicenses: mockRenewInstalledLicenses,
 }));
 
 vi.mock('../../utils/repo-target.js', () => ({
@@ -323,7 +329,6 @@ describe('subscription command helpers', () => {
   it.each([
     ['status', () => executeSubscriptionStatus()],
     ['refresh', () => executeAccountRefresh()],
-    ['refresh -m', () => executeMachineRefresh('hostinger')],
   ])('%s fails on a missing token with its own diagnostic', async (_verb, run) => {
     mockGetSubscriptionTokenState.mockReturnValue({ kind: 'missing' });
 
@@ -334,6 +339,67 @@ describe('subscription command helpers', () => {
     );
     expect(mockOutputInfo).not.toHaveBeenCalledWith('errors.subscription.notLoggedIn');
     expect(mockFetchLicenseReportOrThrow).not.toHaveBeenCalled();
+  });
+
+  // No login: a FREE licence renews through renet's blob-authenticated path, so a no-token refresh -m renews instead of failing on the token.
+  describe('refresh -m without a login', () => {
+    beforeEach(() => {
+      mockGetSubscriptionTokenState.mockReturnValue({ kind: 'missing' });
+    });
+
+    it('renews through the token-free path and prints one line per repo', async () => {
+      mockRenewInstalledLicenses.mockResolvedValue({
+        renewed: 1,
+        results: [
+          { repositoryGuid: 'guid-a', outcome: 'renewed' },
+          { repositoryGuid: 'guid-b', outcome: 'skipped_fresh' },
+          { repositoryGuid: 'guid-c', outcome: 'refused', code: 'LOGIN_REQUIRED' },
+        ],
+      });
+
+      await executeMachineRefresh('hostinger');
+
+      expect(mockRenewInstalledLicenses).toHaveBeenCalledTimes(1);
+      expect(mockRenewInstalledLicenses.mock.calls[0][2]).toMatchObject({
+        remoteRenetPath: '/usr/bin/renet',
+      });
+      expect(mockRefreshRepoLicensesBatch).not.toHaveBeenCalled();
+      expect(mockFetchLicenseReportOrThrow).not.toHaveBeenCalled();
+      expect(mockOutputInfo).toHaveBeenCalledWith(
+        'commands.subscription.refresh.noLogin.repoRenewed:guid-a'
+      );
+      expect(mockOutputInfo).toHaveBeenCalledWith(
+        'commands.subscription.refresh.noLogin.repoNotDue:guid-b'
+      );
+      expect(mockOutputWarn).toHaveBeenCalledWith(
+        'commands.subscription.refresh.noLogin.repoNeedsLogin:guid-c:LOGIN_REQUIRED'
+      );
+      expect(mockOutputInfo).toHaveBeenCalledWith('commands.subscription.refresh.noLogin.paidNote');
+    });
+
+    it('still reports that login is needed when nothing could renew without one', async () => {
+      mockRenewInstalledLicenses.mockResolvedValue({
+        renewed: 0,
+        results: [{ repositoryGuid: 'paid-1', outcome: 'refused', code: 'LOGIN_REQUIRED' }],
+      });
+
+      await expect(executeMachineRefresh('hostinger')).rejects.toThrow(
+        'errors.subscription.notLoggedIn'
+      );
+    });
+
+    it('with a token the batch refresh runs and the token-free renewal does not', async () => {
+      mockGetSubscriptionTokenState.mockReturnValue({
+        kind: 'ready',
+        serverUrl: `http://localhost:${WK_ACCOUNT_DEV_PORT}`,
+        token: { token: 'rdt_test', teamName: 'Platform', orgName: 'Acme' },
+      });
+
+      await executeMachineRefresh('hostinger');
+
+      expect(mockRefreshRepoLicensesBatch).toHaveBeenCalledTimes(1);
+      expect(mockRenewInstalledLicenses).not.toHaveBeenCalled();
+    });
   });
 
   afterEach(() => {

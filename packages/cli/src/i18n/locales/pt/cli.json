@@ -2591,7 +2591,16 @@
           "refreshing": "A atualizar licenças de repositório..."
         },
         "success": "Licenças de repositório processadas",
-        "targetExclusive": "Passe no máximo um de -m ou --repo. --repo já deriva a sua própria máquina a partir da ref."
+        "targetExclusive": "Passe no máximo um de -m ou --repo. --repo já deriva a sua própria máquina a partir da ref.",
+        "noLogin": {
+          "renewing": "Renovando as licenças com as próprias credenciais...",
+          "renewed": "Renovação das licenças concluída",
+          "none": "Nenhuma licença de repositório instalada nesta máquina.",
+          "repoRenewed": "{{repositoryGuid}}: renovada",
+          "repoNotDue": "{{repositoryGuid}}: ainda não vence",
+          "repoNeedsLogin": "{{repositoryGuid}}: ignorada, requer login ({{detail}})",
+          "paidNote": "Sem login, só são renovadas as licenças que se renovam sozinhas (licenças FREE); as licenças pagas exigem \"rdc subscription login\"."
+        }
       },
       "repo": {
         "status": {

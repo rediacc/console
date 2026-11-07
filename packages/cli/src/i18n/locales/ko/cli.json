@@ -2591,7 +2591,16 @@
           "refreshing": "저장소 라이선스 갱신 중..."
         },
         "success": "저장소 라이선스가 처리되었습니다",
-        "targetExclusive": "-m 또는 --repo 중 하나만 지정하세요. --repo는 참조에서 자동으로 머신을 결정합니다"
+        "targetExclusive": "-m 또는 --repo 중 하나만 지정하세요. --repo는 참조에서 자동으로 머신을 결정합니다",
+        "noLogin": {
+          "renewing": "라이선스 자체 자격 증명으로 갱신하는 중...",
+          "renewed": "라이선스 갱신 완료",
+          "none": "이 머신에 설치된 리포지토리 라이선스가 없습니다.",
+          "repoRenewed": "{{repositoryGuid}}: 갱신됨",
+          "repoNotDue": "{{repositoryGuid}}: 아직 갱신 시기가 아님",
+          "repoNeedsLogin": "{{repositoryGuid}}: 건너뜀, 로그인 필요 ({{detail}})",
+          "paidNote": "로그인하지 않으면 자체 갱신되는 라이선스(FREE 라이선스)만 갱신됩니다. 유료 라이선스는 \"rdc subscription login\"이 필요합니다."
+        }
       },
       "repo": {
         "status": {

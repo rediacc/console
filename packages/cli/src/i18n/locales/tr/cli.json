@@ -2591,7 +2591,16 @@
           "refreshing": "Depo lisansları yenileniyor..."
         },
         "success": "Lisans yenilendi ve yüklendi",
-        "targetExclusive": "-m veya --repo seçeneklerinden en fazla birini geçirin. --repo kendi makinesini referanstan kendisi belirler."
+        "targetExclusive": "-m veya --repo seçeneklerinden en fazla birini geçirin. --repo kendi makinesini referanstan kendisi belirler.",
+        "noLogin": {
+          "renewing": "Lisanslar kendi kimlik bilgileriyle yenileniyor...",
+          "renewed": "Lisans yenileme tamamlandı",
+          "none": "Bu makinede kurulu depo lisansı yok.",
+          "repoRenewed": "{{repositoryGuid}}: yenilendi",
+          "repoNotDue": "{{repositoryGuid}}: henüz yenileme zamanı gelmedi",
+          "repoNeedsLogin": "{{repositoryGuid}}: atlandı, oturum açmak gerekiyor ({{detail}})",
+          "paidNote": "Oturum açılmadan yalnızca kendi kendine yenilenen lisanslar (FREE lisanslar) yenilenir; ücretli lisanslar için \"rdc subscription login\" gerekir."
+        }
       },
       "repo": {
         "status": {

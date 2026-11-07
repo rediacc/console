@@ -2,7 +2,7 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 2555,
+    "keyCount": 2562,
     "sourceCommit": "e573d1e0d7bc0aa7a2a6f977ea9fb983258b8a1a"
   },
   "hashes": {
@@ -1963,6 +1963,13 @@
     "commands.subscription.refresh.account.refreshed": "ce330e1a",
     "commands.subscription.refresh.account.refreshing": "698e6fe1",
     "commands.subscription.refresh.description": "3f220309",
+    "commands.subscription.refresh.noLogin.none": "ec54b5d9",
+    "commands.subscription.refresh.noLogin.paidNote": "762544a4",
+    "commands.subscription.refresh.noLogin.renewed": "c18c37b3",
+    "commands.subscription.refresh.noLogin.renewing": "af06b5c3",
+    "commands.subscription.refresh.noLogin.repoNeedsLogin": "7bdd2f1d",
+    "commands.subscription.refresh.noLogin.repoNotDue": "f7b96b39",
+    "commands.subscription.refresh.noLogin.repoRenewed": "5363a627",
     "commands.subscription.refresh.repo.failed": "c10b7db5",
     "commands.subscription.refresh.repo.notFound": "f5317b07",
     "commands.subscription.refresh.repo.refreshed": "f5a31865",

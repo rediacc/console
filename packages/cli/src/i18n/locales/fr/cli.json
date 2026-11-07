@@ -2591,7 +2591,16 @@
           "refreshing": "Actualisation des licences des dépôts..."
         },
         "success": "Licence renouvelée et installée",
-        "targetExclusive": "Passez au plus l'un de -m ou --repo. --repo dérive sa propre machine depuis la réf."
+        "targetExclusive": "Passez au plus l'un de -m ou --repo. --repo dérive sa propre machine depuis la réf.",
+        "noLogin": {
+          "renewing": "Renouvellement des licences avec leurs propres identifiants...",
+          "renewed": "Renouvellement des licences terminé",
+          "none": "Aucune licence de dépôt n'est installée sur cette machine.",
+          "repoRenewed": "{{repositoryGuid}} : renouvelée",
+          "repoNotDue": "{{repositoryGuid}} : pas encore à renouveler",
+          "repoNeedsLogin": "{{repositoryGuid}} : ignorée, connexion requise ({{detail}})",
+          "paidNote": "Sans connexion, seules les licences qui se renouvellent d'elles-mêmes le sont (licences FREE) ; les licences payantes nécessitent \"rdc subscription login\"."
+        }
       },
       "repo": {
         "status": {

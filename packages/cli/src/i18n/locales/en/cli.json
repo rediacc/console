@@ -2545,7 +2545,16 @@
           "refreshed": "Account state refreshed",
           "failed": "Could not read account state from the account server."
         },
-        "targetExclusive": "Pass at most one of -m or --repo. --repo derives its own machine from the ref."
+        "targetExclusive": "Pass at most one of -m or --repo. --repo derives its own machine from the ref.",
+        "noLogin": {
+          "renewing": "Renewing licenses with the licenses' own credentials...",
+          "renewed": "License renewal finished",
+          "none": "No installed repo licenses on this machine.",
+          "repoRenewed": "{{repositoryGuid}}: renewed",
+          "repoNotDue": "{{repositoryGuid}}: not due",
+          "repoNeedsLogin": "{{repositoryGuid}}: skipped, needs login ({{detail}})",
+          "paidNote": "Without a login only licenses that renew on their own are renewed (FREE licenses); paid licenses need \"rdc subscription login\"."
+        }
       }
     },
     "shortcuts": {

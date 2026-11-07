@@ -8,6 +8,7 @@
  */
 
 import { t } from '../i18n/index.js';
+import { renewInstalledLicenses } from '../services/account/free-license.js';
 import {
   fetchSubscriptionLicenseReportOrThrow,
   type RepoBatchRefreshResult,
@@ -521,6 +522,11 @@ export async function executeAccountRefresh(): Promise<void> {
  * its `renderSubscriptionRefresh` step, so a ticket handed back early issues nothing.
  */
 export async function executeMachineRefresh(machineName: string): Promise<void> {
+  // No login: a FREE licence is issued and renewed without one, so the refresh runs renet's blob-authenticated renewal instead of failing on the missing token.
+  if (getSubscriptionTokenState().kind !== 'ready') {
+    await executeTokenFreeMachineRefresh(machineName);
+    return;
+  }
   const context = await resolveSubscriptionCommandContext(machineName);
   const outcome = await runCommandJob(
     'subscription refresh',
@@ -541,6 +547,49 @@ export async function executeMachineRefresh(machineName: string): Promise<void> 
     return;
   }
   if (!outcome.result.success) throw licenseJobFailure('license-scan', machineName, outcome.result);
+}
+
+/**
+ * `subscription refresh -m <machine>` with no login: renet renews each installed blob that is due, the blob itself being the credential (the same renewal `renewWithoutToken` runs for an expired licence). One line per repo. A blob the server will not renew without an account (a paid licence) is reported as needing login, and a run that renewed nothing for that reason still fails with the login message.
+ */
+async function executeTokenFreeMachineRefresh(machineName: string): Promise<void> {
+  const context = await resolveMachineContext(machineName, 'provision');
+  const { results } = await withSpinner(
+    t('commands.subscription.refresh.noLogin.renewing'),
+    () =>
+      renewInstalledLicenses(context.machine, context.sshPrivateKey, {
+        remoteRenetPath: context.remoteRenetPath,
+      }),
+    t('commands.subscription.refresh.noLogin.renewed')
+  );
+  if (results.length === 0) {
+    outputService.info(t('commands.subscription.refresh.noLogin.none'));
+    return;
+  }
+  let needsLogin = 0;
+  let handled = 0;
+  for (const r of results) {
+    const repositoryGuid = r.repositoryGuid;
+    if (r.outcome === 'renewed') {
+      handled++;
+      outputService.info(
+        t('commands.subscription.refresh.noLogin.repoRenewed', { repositoryGuid })
+      );
+    } else if (r.outcome === 'skipped_fresh') {
+      handled++;
+      outputService.info(t('commands.subscription.refresh.noLogin.repoNotDue', { repositoryGuid }));
+    } else {
+      needsLogin++;
+      outputService.warn(
+        t('commands.subscription.refresh.noLogin.repoNeedsLogin', {
+          repositoryGuid,
+          detail: [r.code, r.message].filter(Boolean).join(': ') || r.outcome,
+        })
+      );
+    }
+  }
+  if (needsLogin > 0) outputService.info(t('commands.subscription.refresh.noLogin.paidNote'));
+  if (handled === 0) throw new ValidationError(t('errors.subscription.notLoggedIn'));
 }
 
 bindStepHandler('renderSubscriptionRefresh', async ({ machine, output }) => {

@@ -2591,7 +2591,16 @@
           "refreshing": "Repo-Lizenzen werden aktualisiert..."
         },
         "success": "Lizenz erneuert und installiert",
-        "targetExclusive": "Geben Sie höchstens eines von -m oder --repo an. --repo leitet seine eigene Maschine aus der Referenz ab."
+        "targetExclusive": "Geben Sie höchstens eines von -m oder --repo an. --repo leitet seine eigene Maschine aus der Referenz ab.",
+        "noLogin": {
+          "renewing": "Lizenzen werden mit ihren eigenen Zugangsdaten erneuert...",
+          "renewed": "Lizenzerneuerung abgeschlossen",
+          "none": "Auf diesem Rechner sind keine Repo-Lizenzen installiert.",
+          "repoRenewed": "{{repositoryGuid}}: erneuert",
+          "repoNotDue": "{{repositoryGuid}}: noch nicht fällig",
+          "repoNeedsLogin": "{{repositoryGuid}}: übersprungen, Anmeldung erforderlich ({{detail}})",
+          "paidNote": "Ohne Anmeldung werden nur Lizenzen erneuert, die sich selbst erneuern (FREE-Lizenzen); kostenpflichtige Lizenzen erfordern \"rdc subscription login\"."
+        }
       },
       "repo": {
         "status": {

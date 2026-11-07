@@ -2591,7 +2591,16 @@
           "refreshing": "リポジトリライセンスを更新中..."
         },
         "success": "ライセンスが更新・インストールされました",
-        "targetExclusive": "-m または --repo のどちらか一方のみを指定してください。--repo は ref から自動的にマシンを決定します"
+        "targetExclusive": "-m または --repo のどちらか一方のみを指定してください。--repo は ref から自動的にマシンを決定します",
+        "noLogin": {
+          "renewing": "ライセンス自身の認証情報で更新しています...",
+          "renewed": "ライセンスの更新が完了しました",
+          "none": "このマシンにはインストール済みのリポジトリライセンスがありません。",
+          "repoRenewed": "{{repositoryGuid}}: 更新しました",
+          "repoNotDue": "{{repositoryGuid}}: 更新時期ではありません",
+          "repoNeedsLogin": "{{repositoryGuid}}: スキップしました。ログインが必要です ({{detail}})",
+          "paidNote": "ログインなしで更新されるのは自己更新できるライセンス (FREE ライセンス) のみです。有料ライセンスには \"rdc subscription login\" が必要です。"
+        }
       },
       "repo": {
         "status": {

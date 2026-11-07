@@ -2591,7 +2591,16 @@
           "refreshing": "Repositooriumi litsentse uuendatakse..."
         },
         "success": "Repositooriumi litsentsid töödeldud",
-        "targetExclusive": "Anna kõige rohkem üks: -m või --repo. --repo tuletab oma masina viitest."
+        "targetExclusive": "Anna kõige rohkem üks: -m või --repo. --repo tuletab oma masina viitest.",
+        "noLogin": {
+          "renewing": "Litsentse uuendatakse nende enda mandaatidega...",
+          "renewed": "Litsentside uuendamine lõpetatud",
+          "none": "Sellesse masinasse pole paigaldatud ühtegi hoidla litsentsi.",
+          "repoRenewed": "{{repositoryGuid}}: uuendatud",
+          "repoNotDue": "{{repositoryGuid}}: pole veel uuendamise aeg",
+          "repoNeedsLogin": "{{repositoryGuid}}: vahele jäetud, vaja on sisselogimist ({{detail}})",
+          "paidNote": "Ilma sisselogimiseta uuendatakse ainult litsentse, mis uuenevad ise (FREE litsentsid); tasulised litsentsid nõuavad käsku \"rdc subscription login\"."
+        }
       },
       "repo": {
         "status": {
