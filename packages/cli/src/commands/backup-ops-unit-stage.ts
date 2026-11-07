@@ -39,9 +39,9 @@ export async function strategyUnitNames(
   return units.length > 0 ? units : [strategyName];
 }
 
-export const SYSTEMD_DIR = '/etc/systemd/system';
+const SYSTEMD_DIR = '/etc/systemd/system';
 export const UNIT_PREFIX = 'rediacc-backup-';
-export const UNIT_SUFFIX = '.service';
+const UNIT_SUFFIX = '.service';
 
 /**
  * Whether a unit name (after `rediacc-backup-`) is one of the strategy's scheduled units: the base unit, a `.ds.` or a
