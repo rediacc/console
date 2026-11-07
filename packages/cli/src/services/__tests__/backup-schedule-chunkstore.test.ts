@@ -16,10 +16,7 @@
  * destination throws rather than producing a unit with no ExecStart at all.
  */
 
-import {
-  WK_ACCOUNT_DEFAULT_ORIGIN,
-  WK_DATASTORE_PATH,
-} from '@rediacc/shared/config/well-known.generated';
+import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { describe, expect, it } from 'vitest';
 import type { BackupStrategyConfig, BackupStrategyDestination } from '../../types/index.js';
 import {
@@ -130,12 +127,20 @@ describe('scheduled backups to the chunk store', () => {
     // `backup strategy set s --destination d --bwlimit 6M` stores the cap on the destination; the generator read only the strategy-level field, so no unit ever applied it.
     const { commands } = buildBackupCommands(
       strategy({ bandwidthLimit: '100Mbps' }),
-      [hosted('a'), { ...hosted('b'), bandwidthLimit: '6M' }],
+      [hosted('a'), { ...hosted('b'), target: 'offsite', bandwidthLimit: '6M' }],
       DATASTORE,
-      RENET
+      RENET,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      true
     );
-    expect(commands[0]).toContain('--bwlimit 6000000');
-    expect(commands[0]).not.toContain('--bwlimit 12500000');
+    // Each destination's command carries its own cap: the strategy's for a, b's own for b.
+    expect(commands[0]).toContain('--bwlimit 12500000');
+    expect(commands[1]).toContain('--bwlimit 6000000');
+    expect(commands[1]).not.toContain('--bwlimit 12500000');
   });
 
   it('runs the scheduled unit and the ad-hoc strategy run at low CPU and I/O priority', () => {
@@ -220,23 +225,28 @@ describe('scheduled backups to the chunk store', () => {
     ).toThrow(/Bandwidth limit "fast" cannot be converted/);
   });
 
-  it('takes ONE snapshot per run whatever the number of destinations (G3)', () => {
-    // A command per destination uploaded the same cells twice and committed two manifests for one point in time. The renet command carries nothing from the destination, so a second one could only ever repeat the first.
+  it('takes one snapshot per enabled destination, each into its own store (C2)', () => {
     const { commands } = buildBackupCommands(
       strategy(),
-      [hosted('chunks-a'), hosted('chunks-b')],
+      [hosted('chunks-a'), { ...hosted('chunks-b'), target: 'offsite' }],
       DATASTORE,
-      RENET
+      RENET,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      true
     );
-    expect(commands).toHaveLength(1);
+    expect(commands).toHaveLength(2);
+    expect(commands[0]).not.toContain('--store');
+    expect(commands[1]).toContain('--store offsite');
   });
 
-  it('refuses destinations on two different endpoints, which one snapshot cannot serve', () => {
-    const a: BackupStrategyDestination = { ...hosted('a'), endpoint: WK_ACCOUNT_DEFAULT_ORIGIN };
-    const b: BackupStrategyDestination = { ...hosted('b'), endpoint: 'https://s3.example.com' };
-    expect(() => buildBackupCommands(strategy(), [a, b], DATASTORE, RENET)).toThrow(
-      /2 different endpoints/
-    );
+  it('refuses two destinations that name the same target', () => {
+    expect(() =>
+      buildBackupCommands(strategy(), [hosted('a'), hosted('b')], DATASTORE, RENET)
+    ).toThrow(/name the target "home"/);
   });
 });
 
@@ -326,7 +336,10 @@ describe('the CPU ceiling reaches the scheduled unit and the ad-hoc run', () => 
 
   it('renders one ExecStart per command, in order', () => {
     const unitText = generateAdhocServiceUnit('u', ['renet a', 'renet b'], 4);
-    expect(unitText).toContain('ExecStart=renet a\nExecStart=renet b\n');
+    // More than one command runs in one `sh -c`, so a failure does not skip the next and the unit still exits non-zero.
+    expect(unitText).toMatch(
+      /ExecStart=\/bin\/sh -c .*renet a \|\| rc=1;.*renet b \|\| rc=1;.*exit \$\$rc/
+    );
     expect(unitText).not.toContain('[Install]');
   });
 });

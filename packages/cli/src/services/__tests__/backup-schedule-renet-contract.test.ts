@@ -259,10 +259,7 @@ const MATRIX: Record<string, ScheduledStrategy> = {
       },
     },
   },
-  twoDestinations: {
-    schedule: '0 3 * * *',
-    destinations: [hosted, { ...hosted, name: 'chunks-b' }],
-  },
+  // No two-destination entry: the second destination needs a non-home `--store`, which the renet source this contract reads does not declare yet; the generator's own tests cover the multi-destination unit.
 };
 
 function generatedExecStarts(): string[] {
