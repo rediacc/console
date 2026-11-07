@@ -595,7 +595,10 @@ REVERSE = [
     ),
     (
         "no session variable",
-        ('SESSION_VARIABLES = ("CLAUDE_PROJECT_DIR",)', "SESSION_VARIABLES = ()"),
+        (
+            'SESSION_VARIABLES = {\n    "CLAUDE_PROJECT_DIR": lambda: os.environ.get("CLAUDE_PROJECT_DIR"),\n}',
+            "SESSION_VARIABLES = {}",
+        ),
         SESSION_ROWS[2],
     ),
     # The scanners always keeping the raw text refuse the whole-line comment rows again, so those rows reach the arm and are allowed BY the scanners.

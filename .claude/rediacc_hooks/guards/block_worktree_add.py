@@ -1457,12 +1457,15 @@ def _with_assigned_values(run_, word):
 
 
 # The variables a session's command inherits from the environment the hook runs in, so their value is known here: the harness sets CLAUDE_PROJECT_DIR for both. Put back only when the command never assigns the name (every mention of it is a `$NAME` or `${NAME}` expansion), so `CLAUDE_PROJECT_DIR=/tmp/x python3 $CLAUDE_PROJECT_DIR/p.py` and `read CLAUDE_PROJECT_DIR` keep it unknown.
-SESSION_VARIABLES = ("CLAUDE_PROJECT_DIR",)
+# Each name maps to its own reader, spelled out by name rather than `os.environ.get(name)` so the env registry sees which variable this module takes in; a name added without a reader is a syntax-level omission, not a silent None.
+SESSION_VARIABLES = {
+    "CLAUDE_PROJECT_DIR": lambda: os.environ.get("CLAUDE_PROJECT_DIR"),
+}
 
 
 def _session_value(name):
-    """The hook's own value of a SESSION_VARIABLES name. The read is spelled out by name, not `os.environ.get(name)`, so the env registry sees which variable this module takes in."""
-    return os.environ.get("CLAUDE_PROJECT_DIR") if name == "CLAUDE_PROJECT_DIR" else None
+    """The hook's own value of a SESSION_VARIABLES name."""
+    return SESSION_VARIABLES[name]()
 
 
 def _with_session_values(cmd, word):
