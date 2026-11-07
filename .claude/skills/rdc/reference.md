@@ -10,6 +10,7 @@ List detached jobs on a machine, newest first
 **Options:**
 
 - `-m, --machine <name>`: Target machine name (omit to list this config's pending job tickets)
+- `--all`: Include expired and dismissed tickets
 
 > MCP tool
 
@@ -57,6 +58,16 @@ Resume following a job from its ticket, then acknowledge it and exit with the jo
 - `--timeout <duration>`: Stop waiting after this long (30s, 5m, 2h; a bare number is seconds). The job keeps running.
 
 > MCP excluded: An agent cannot usefully block until the job ends; poll with job_status and job_logs.
+
+### rdc job dismiss [job-id]
+
+Give up on job tickets locally: their owed steps are dropped and the ticket stops showing up. Makes no machine call and does not touch the job itself.
+
+**Options:**
+
+- `--stale`: Dismiss every pending ticket older than --older-than (default 24h)
+- `--older-than <duration>`: With --stale, the minimum ticket age, e.g. 90m, 24h (default: 24h)
+- `-y, --yes`: Skip confirmation prompt
 
 ### rdc job gc
 
@@ -1410,6 +1421,9 @@ Change repository directory ownership UID on the mounted volume (default: 7111).
 **Options:**
 
 - `--uid <uid>`: Owner UID (default: 7111)
+- `--root-owned`: Hand root-owned files to the owner UID below directories owned by root or that UID, recording each in an undo manifest
+- `--dry-run`: With --root-owned: list the files that would change, and change nothing
+- `--undo`: With --root-owned: return the files in the undo manifest that the owner UID still owns to root
 - `--debug`: Enable debug output
 - `--skip-router-restart`: Skip restarting the route server after binary update
 
