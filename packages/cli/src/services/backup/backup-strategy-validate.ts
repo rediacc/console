@@ -10,6 +10,7 @@
 
 import { parseDurationSeconds, RPO_MIN_SECONDS, rpoProblem } from '@rediacc/shared/backup/duration';
 import { BACKUP_DEFAULTS } from '@rediacc/shared/config';
+import { BACKUP_STORE_ID_PATTERN } from '@rediacc/shared/config-schema';
 import { t } from '../../i18n/index.js';
 import type { BackupStrategyDestination } from '../../types/index.js';
 import { ValidationError } from '../../utils/errors.js';
@@ -209,8 +210,6 @@ export function destinationTarget(dest: { target?: string }): string {
   return dest.target ?? HOME_STORE_ID;
 }
 
-const STORE_ID_SHAPE = /^[a-z0-9](?:[a-z0-9-]{0,62})$/;
-
 /**
  * The non-home targets of `destinations` that the validator could not check against the account's registered stores
  * (no list was available). The caller says so, since an offline validation covers shape and duplicates only.
@@ -252,11 +251,11 @@ function targetReason(
   registeredStores: readonly string[] | undefined
 ): string | undefined {
   const target = destinationTarget(dest);
-  if (!STORE_ID_SHAPE.test(target)) {
+  if (!BACKUP_STORE_ID_PATTERN.test(target)) {
     return `Backup destination "${dest.name}" has target "${target}", which is not a store id (lowercase letters, digits and dashes).`;
   }
   if (seen.has(target)) {
-    return `Two enabled destinations of this backup strategy name the target "${target}". Each destination is its own recovery point in its own store; point one of them at another registered store or disable it.`;
+    return `Two destinations of this backup strategy name the target "${target}". Each destination is its own recovery point in its own store; point one of them at another registered store or disable it.`;
   }
   seen.add(target);
   if (registeredStores && !registeredStores.includes(target)) {
