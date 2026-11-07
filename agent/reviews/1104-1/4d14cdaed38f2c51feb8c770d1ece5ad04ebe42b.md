@@ -21,4 +21,4 @@ Body-Sig: b83ed47d28491108
 ### 4d14cdae.1 [low] agent/d778be9d/STATE.md:8
 Anchor: in-diff
 Claim: The line 'Every writer wave has landed and no lease is left' conflicts with the Delegated section on lines 16-17, which still lists a running bench runner (aa127d0782bfcb0d8) and a running S4 stream task (b2h0vztj1), so a reader cannot tell whether the handover is fully quiet.
-Resolution: open
+Resolution: not-a-bug | agent/d778be9d/STATE.md:3 STATE.md is the compact-recovery handover rewritten each context; the line the finding names is superseded by the 10:35Z rewrite (d876b1ec4), which carries the current delegation, owed ticks and next action | d778be9d 2026-11-07T10:49:02Z
