@@ -21,15 +21,30 @@ import { t } from '../../i18n/index.js';
 import { getEffectiveConfigName } from '../config/config-name.js';
 import { writeStderr } from '../core/request-context.js';
 import { formatAge } from './duration.js';
-import { liveStepRunnerDeps, runTicketSteps, type StepRunnerDeps } from './run-job.js';
+import {
+  abandonedLine,
+  liveStepRunnerDeps,
+  runTicketSteps,
+  type StepRunnerDeps,
+} from './run-job.js';
 import { pendingStepNames } from './steps.js';
-import { isTerminalTicketState, type Ticket, TicketStore } from './ticket-store.js';
+import {
+  type ExpiredReason,
+  isTerminalTicketState,
+  type Ticket,
+  TicketStore,
+} from './ticket-store.js';
 
 export const NOTICE_MAX_TICKETS = 5;
 const NOTICE_BUDGET_MS = 2_000;
 const NOTICE_THROTTLE_MS = 60_000;
 /** How long the notice may spend starting steps after the command's own output. */
 const NOTICE_STEPS_BUDGET_MS = 20_000;
+
+/** A ticket still `starting` after this long is resolved through `job list --request-id`. */
+const STARTING_CHECK_AFTER_MS = 10 * 60_000;
+/** A ticket that owes something for this long is given up on: nothing resolved it in a week. */
+export const TICKET_EXPIRE_AFTER_MS = 7 * 24 * 3_600_000;
 
 /** What one status read learned about a ticket. */
 export interface TicketObservation {
@@ -48,6 +63,11 @@ export interface NoticeDeps {
   now?: () => number;
   /** The step runner; built live only when a finished ticket owes a step. */
   steps?: StepRunnerDeps;
+  /**
+   * Resolve a ticket stuck at `starting` through `renet job list --request-id`: the job id,
+   * null when renet answered that no job has that request id, undefined when it could not be asked.
+   */
+  resolveStarting?(ticket: Ticket): Promise<string | null | undefined>;
   /** Whether this is an interactive run (steps run only then). Defaults to stderr being a TTY. */
   interactive?: boolean;
   /** Whether a ticket's repository is still in the config: false drops the ticket, undefined (could not tell) keeps it. Absent, nothing is dropped. */
@@ -87,12 +107,45 @@ export function shouldRunNotice(params: NoticeParams): boolean {
   return recordedMode === 'full';
 }
 
+function ageMs(ticket: Ticket, now: number): number | undefined {
+  const from = Date.parse(ticket.finishedAt ?? ticket.startedAt ?? '');
+  return Number.isNaN(from) ? undefined : now - from;
+}
+
+function startingTooLong(ticket: Ticket, now: number): boolean {
+  return ticket.state === 'starting' && (ageMs(ticket, now) ?? 0) >= STARTING_CHECK_AFTER_MS;
+}
+
 function dueForCheck(ticket: Ticket, now: number): boolean {
-  if (!ticket.jobId || isTerminalTicketState(ticket.state) || ticket.state === 'starting') {
-    return false;
-  }
+  if (isTerminalTicketState(ticket.state)) return false;
+  if (ticket.state === 'starting' && !startingTooLong(ticket, now)) return false;
+  if (!ticket.jobId && ticket.state !== 'starting') return false;
   const last = ticket.lastCheckedAt ? Date.parse(ticket.lastCheckedAt) : 0;
   return now - last >= NOTICE_THROTTLE_MS;
+}
+
+function expire(
+  deps: Pick<NoticeDeps, 'store' | 'write'>,
+  ticket: Ticket,
+  reason: ExpiredReason
+): void {
+  deps.store.append('expired', ticket.requestId, { reason });
+  deps.write(abandonedLine(ticket.jobId ?? ticket.requestId, reason));
+}
+
+/** Resolve a ticket whose start was never confirmed. */
+async function resolveStartingTicket(deps: NoticeDeps, ticket: Ticket, now: number): Promise<void> {
+  const answer = await deps.resolveStarting?.(ticket).catch(() => undefined);
+  if (typeof answer === 'string') {
+    deps.store.append('started', ticket.requestId, { jobId: answer });
+  } else if (answer === null) {
+    expire(deps, ticket, 'never-started');
+  } else if ((ageMs(ticket, now) ?? 0) >= TICKET_EXPIRE_AFTER_MS) {
+    expire(deps, ticket, 'age');
+  } else {
+    // Could not tell: note the attempt so the next command does not retry within the throttle.
+    deps.store.append('seen', ticket.requestId);
+  }
 }
 
 /** The preAction half. Never rejects: a notice must not break the command it rides on. */
@@ -106,8 +159,12 @@ export async function checkPendingTickets(deps: NoticeDeps): Promise<void> {
     if (due.length === 0) return;
 
     const checks = due.map(async (ticket) => {
+      if (!ticket.jobId) {
+        await resolveStartingTicket(deps, ticket, now);
+        return;
+      }
       const seen = await deps.observe(ticket).catch(() => undefined);
-      if (!seen || !ticket.jobId) return;
+      if (!seen) return;
       if (isTerminalTicketState(seen.state)) {
         deps.store.append('finished', ticket.requestId, { ...seen });
       } else {
@@ -125,6 +182,22 @@ export async function checkPendingTickets(deps: NoticeDeps): Promise<void> {
     });
     await Promise.race([Promise.all(checks), budget]);
     if (timer) clearTimeout(timer);
+  } catch {
+    // swallowed on purpose
+  }
+}
+
+/**
+ * Give up on finished tickets that owe something for over a week. No machine call, so it runs in
+ * `pending-only` mode too. Never rejects.
+ */
+function expireOldTickets(deps: Pick<NoticeDeps, 'store' | 'write' | 'now'>): void {
+  try {
+    const now = (deps.now ?? Date.now)();
+    for (const ticket of deps.store.pending()) {
+      if (!(ticket.jobId && isTerminalTicketState(ticket.state))) continue;
+      if ((ageMs(ticket, now) ?? 0) >= TICKET_EXPIRE_AFTER_MS) expire(deps, ticket, 'age');
+    }
   } catch {
     // swallowed on purpose
   }
@@ -266,7 +339,7 @@ export function startNoticeCheck(deps: NoticeDeps): void {
   active = { deps, check: checkPendingTickets(deps) };
 }
 
-type PendingDeps = Pick<NoticeDeps, 'store' | 'write' | 'repoExists'>;
+type PendingDeps = Pick<NoticeDeps, 'store' | 'write' | 'repoExists' | 'now'>;
 
 function livePendingDeps(): PendingDeps {
   return {
@@ -293,6 +366,7 @@ export async function finishNotice(
     try {
       const deps = pendingDeps();
       await dropOrphanedTickets(deps);
+      expireOldTickets(deps);
       printPendingSteps(deps);
     } catch {
       // a config name the store rejects never breaks the command
@@ -301,6 +375,7 @@ export async function finishNotice(
   }
   await current.check;
   await dropOrphanedTickets(current.deps);
+  expireOldTickets(current.deps);
   if (current.deps.interactive ?? Boolean(process.stderr.isTTY)) {
     await runNoticeSteps(current.deps);
   }

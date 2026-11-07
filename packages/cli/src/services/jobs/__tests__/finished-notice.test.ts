@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   checkPendingTickets,
+  finishNotice,
   NOTICE_MAX_TICKETS,
   type NoticeDeps,
   printFinishedNotices,
@@ -132,5 +133,77 @@ describe('shouldRunNotice', () => {
 
   it('does not skip a command that merely starts with the letters job', () => {
     expect(shouldRunNotice({ ...base, commandPath: 'jobs-report' })).toBe(true);
+  });
+});
+
+describe('stale tickets', () => {
+  const MIN = 60_000;
+  const DAY = 24 * 60 * MIN;
+  const T0 = Date.parse('2026-06-01T00:00:00Z');
+  const iso = (ms: number) => new Date(ms).toISOString();
+
+  function addStarting(id: string, startedAt: number): void {
+    store.append('starting', `r-${id}`, {
+      machine: 'm1',
+      verb: 'repo up',
+      startedAt: iso(startedAt),
+    });
+  }
+  function withResolver(
+    resolveStarting: NoticeDeps['resolveStarting'],
+    now: number,
+    write = vi.fn()
+  ): NoticeDeps {
+    return { store, observe: async () => undefined, write, resolveStarting, now: () => now };
+  }
+
+  it('does not check a fresh starting ticket', async () => {
+    addStarting('a', T0);
+    const resolve = vi.fn(async () => null);
+    await checkPendingTickets(withResolver(resolve, T0 + 5 * MIN));
+    expect(resolve).not.toHaveBeenCalled();
+  });
+
+  it('a starting ticket older than 10 minutes that renet knows gets its job id', async () => {
+    addStarting('a', T0);
+    await checkPendingTickets(withResolver(async () => 'j1-aaaaaaaa', T0 + 11 * MIN));
+    const ticket = store.find('r-a');
+    expect(ticket?.jobId).toBe('j1-aaaaaaaa');
+    expect(ticket?.state).toBe('running');
+  });
+
+  it('expires never-started when renet answers there is no job', async () => {
+    addStarting('a', T0);
+    const write = vi.fn();
+    await checkPendingTickets(withResolver(async () => null, T0 + 11 * MIN, write));
+    expect(store.find('r-a')?.expiredReason).toBe('never-started');
+    expect(store.pending()).toEqual([]);
+    expect(write).toHaveBeenCalledWith(expect.stringContaining('steps abandoned'));
+  });
+
+  it('keeps an unreachable ticket until 7 days, then expires it by age', async () => {
+    addStarting('a', T0);
+    await checkPendingTickets(withResolver(async () => undefined, T0 + 2 * DAY));
+    expect(store.pending()).toHaveLength(1);
+    addStarting('b', T0);
+    await checkPendingTickets(withResolver(async () => undefined, T0 + 8 * DAY));
+    expect(store.find('r-b')?.expiredReason).toBe('age');
+  });
+
+  it('pending-only ages out a finished ticket without observing', async () => {
+    addRunning('f', { startedAt: iso(T0) });
+    store.append('finished', 'r-f', { state: 'succeeded', exitCode: 0, finishedAt: iso(T0) });
+    const write = vi.fn();
+    shouldRunNotice({
+      commandPath: 'repo up',
+      quiet: true,
+      format: 'table',
+      inExecutorRequest: false,
+    });
+    await finishNotice(() => ({ store, write, now: () => T0 + 8 * DAY }));
+    expect(store.find('r-f')?.expiredReason).toBe('age');
+    expect(write.mock.calls.map((c) => c[0])).toEqual([
+      expect.stringContaining('older than 7 days'),
+    ]);
   });
 });

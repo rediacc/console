@@ -1221,7 +1221,8 @@
           "basic": "マシン上のジョブを一覧表示する"
         },
         "machineOption": "対象マシン名(省略すると、この設定の保留中ジョブのチケットを一覧表示)",
-        "emptyTickets": "この設定に保留中のジョブはありません。"
+        "emptyTickets": "この設定に保留中のジョブはありません。",
+        "allOption": "期限切れおよび却下済みのチケットも表示"
       },
       "logs": {
         "description": "デタッチジョブのイベントログを再生またはフォロー",
@@ -1264,7 +1265,26 @@
       },
       "steps": {
         "pending": "未実行のステップがあります: rdc job wait {{jobId}}",
-        "pendingForConfig": "設定 {{config}} の未実行ステップ: {{count}} 件"
+        "pendingForConfig": "設定 {{config}} の未実行ステップ: {{count}} 件",
+        "abandoned": "ジョブ {{jobId}}: ステップを破棄しました ({{reason}})",
+        "reason": {
+          "gone": "ジョブがマシン上に存在しません",
+          "never-started": "開始されませんでした",
+          "age": "7日より前",
+          "dismissed": "却下済み"
+        }
+      },
+      "dismiss": {
+        "description": "ジョブチケットをローカルで破棄します。未実行のステップは破棄され、チケットは表示されなくなります。マシンへの接続は行わず、ジョブ自体には触れません。",
+        "idArg": "却下するチケットのジョブ ID またはリクエスト ID",
+        "staleOption": "--older-than より古い保留中のチケットをすべて却下 (既定: 24h)",
+        "olderThanOption": "--stale 指定時のチケットの最小経過時間 (例: 90m、24h。既定: 24h)",
+        "confirm": "{{count}} 件のチケットを却下しますか? 未実行のステップは実行されません。",
+        "dismissed": "{{count}} 件のチケットを却下しました。",
+        "none": "該当するチケットはありません。",
+        "invalidOlderThan": "--older-than は 90m や 24h のような期間で指定してください (指定値: \"{{value}}\")",
+        "needsTarget": "ジョブ ID を 1 つ以上指定するか、--stale を付けてください。",
+        "notFound": "この設定に {{jobId}} のチケットはありません。"
       }
     },
     "machine": {

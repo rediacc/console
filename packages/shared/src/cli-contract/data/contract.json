@@ -6173,6 +6173,73 @@
     {
       "path": [
         "job",
+        "dismiss"
+      ],
+      "pathKey": "job dismiss",
+      "domain": "job",
+      "group": "EXECUTION",
+      "plane": "machine",
+      "descriptionKey": "commands.job.dismiss.description",
+      "label": "Give up on job tickets locally: their owed steps are dropped and the ticket stops showing up. Makes no machine call and does not touch the job itself.",
+      "options": [
+        {
+          "flags": "--stale",
+          "long": "stale",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.job.dismiss.staleOption",
+          "label": "Dismiss every pending ticket older than --older-than (default 24h)"
+        },
+        {
+          "flags": "--older-than <duration>",
+          "long": "older-than",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "format": "integer",
+          "tier": "advanced",
+          "descriptionKey": "commands.job.dismiss.olderThanOption",
+          "label": "With --stale, the minimum ticket age, e.g. 90m, 24h (default: 24h)"
+        },
+        {
+          "flags": "-y, --yes",
+          "long": "yes",
+          "short": "y",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "options.yes",
+          "label": "Skip confirmation prompt"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "job-id",
+          "kind": "job-id",
+          "required": false,
+          "variadic": true,
+          "descriptionKey": "commands.job.dismiss.idArg",
+          "label": "Job ids or request ids of the tickets to dismiss"
+        }
+      ],
+      "hasSubcommands": false,
+      "interactive": false,
+      "proxyCapable": true,
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "job",
         "gc"
       ],
       "pathKey": "job gc",
@@ -6262,6 +6329,17 @@
           "tier": "common",
           "descriptionKey": "commands.job.list.machineOption",
           "label": "Target machine name (omit to list this config's pending job tickets)"
+        },
+        {
+          "flags": "--all",
+          "long": "all",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.job.list.allOption",
+          "label": "Include expired and dismissed tickets"
         }
       ],
       "positionals": [],

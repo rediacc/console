@@ -1221,7 +1221,8 @@
           "basic": "Lista os jobs de uma máquina."
         },
         "machineOption": "Nome da máquina de destino (omita para listar os tickets de jobs pendentes desta configuração)",
-        "emptyTickets": "Nenhum job pendente nesta configuração."
+        "emptyTickets": "Nenhum job pendente nesta configuração.",
+        "allOption": "Incluir os tickets expirados e descartados"
       },
       "logs": {
         "description": "Reproduz ou acompanha o log de eventos de um job desanexado",
@@ -1264,7 +1265,26 @@
       },
       "steps": {
         "pending": "etapas pendentes: rdc job wait {{jobId}}",
-        "pendingForConfig": "{{count}} etapas pendentes para a configuração {{config}}"
+        "pendingForConfig": "{{count}} etapas pendentes para a configuração {{config}}",
+        "abandoned": "job {{jobId}}: etapas abandonadas ({{reason}})",
+        "reason": {
+          "gone": "o job não existe mais na máquina",
+          "never-started": "nunca foi iniciado",
+          "age": "com mais de 7 dias",
+          "dismissed": "descartado"
+        }
+      },
+      "dismiss": {
+        "description": "Abandonar tickets de job localmente: as etapas pendentes são descartadas e o ticket deixa de aparecer. Não contata a máquina nem altera o job.",
+        "idArg": "IDs de job ou de requisição dos tickets a descartar",
+        "staleOption": "Descartar todos os tickets pendentes mais antigos que --older-than (padrão 24h)",
+        "olderThanOption": "Com --stale, a idade mínima do ticket, por ex. 90m, 24h (padrão: 24h)",
+        "confirm": "Descartar {{count}} ticket(s)? As etapas pendentes deles nunca serão executadas.",
+        "dismissed": "{{count}} ticket(s) descartado(s).",
+        "none": "Nenhum ticket correspondente.",
+        "invalidOlderThan": "--older-than deve ser uma duração como 90m ou 24h (recebido: \"{{value}}\")",
+        "needsTarget": "Informe ao menos um ID de job ou use --stale.",
+        "notFound": "Nenhum ticket para {{jobId}} nesta configuração."
       }
     },
     "machine": {

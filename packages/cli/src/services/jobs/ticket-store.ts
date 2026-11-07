@@ -52,7 +52,13 @@ export type TicketKind =
   | 'acknowledged'
   | 'announced'
   | 'then-started'
-  | 'step-done';
+  | 'step-done'
+  | 'expired';
+
+/** Why a ticket was given up on: its job is gone, never started, too old, or dismissed by the operator. */
+export type ExpiredReason = 'gone' | 'never-started' | 'age' | 'dismissed';
+
+const EXPIRED_REASONS: readonly ExpiredReason[] = ['gone', 'never-started', 'age', 'dismissed'];
 
 export type TicketState = 'starting' | 'running' | 'succeeded' | 'failed' | 'cancelled' | 'unknown';
 
@@ -99,6 +105,8 @@ export interface TicketEvent {
   steps?: TicketStep[];
   /** The step a `step-done` event reports. */
   step?: string;
+  /** Why an `expired` event gave the ticket up. */
+  reason?: ExpiredReason;
 }
 
 /** The folded view of one request id. */
@@ -121,6 +129,8 @@ export interface Ticket {
   steps: TicketStep[];
   stepsDone: string[];
   acknowledged: boolean;
+  /** Set once an `expired` event closed the ticket (it is acknowledged too, so compaction drops it). */
+  expiredReason?: ExpiredReason;
   /** The finished notice was printed once; a ticket still owing a step gets only the pending line afterwards. */
   announced: boolean;
   /** Timestamp of the last event that observed the job (seen or finished). */
@@ -199,6 +209,9 @@ export function sanitizeEvent(
   if (typeof input.lastSeenLine === 'number') event.lastSeenLine = input.lastSeenLine;
   if (typeof input.exitCode === 'number') event.exitCode = input.exitCode;
   if (typeof input.state === 'string') event.state = input.state as TicketState;
+  if (EXPIRED_REASONS.includes(input.reason as ExpiredReason)) {
+    event.reason = input.reason as ExpiredReason;
+  }
   event.via = cleanVia(input.via);
   event.then = cleanThen(input.then);
   event.steps = cleanSteps(input.steps);
@@ -272,6 +285,10 @@ const KIND_EFFECTS: Partial<Record<TicketKind, (t: Ticket, e: TicketEvent) => vo
   },
   acknowledged: (t) => {
     t.acknowledged = true;
+  },
+  expired: (t, e) => {
+    t.acknowledged = true;
+    t.expiredReason = e.reason ?? 'age';
   },
   announced: (t) => {
     t.announced = true;
@@ -377,6 +394,11 @@ export class TicketStore {
 
   tickets(): Ticket[] {
     return foldEvents(this.readEvents());
+  }
+
+  /** Every ticket, expired ones included, newest first (`rdc job list --all`). */
+  all(): Ticket[] {
+    return this.tickets().sort((a, b) => (b.startedAt ?? '').localeCompare(a.startedAt ?? ''));
   }
 
   /** Tickets that are pending or finished and not yet acknowledged, newest first. */

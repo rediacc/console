@@ -1221,7 +1221,8 @@
           "basic": "列出某台机器上的任务。"
         },
         "machineOption": "目标机器名称(省略则列出此配置中待处理的任务凭据)",
-        "emptyTickets": "此配置没有待处理的任务。"
+        "emptyTickets": "此配置没有待处理的任务。",
+        "allOption": "同时显示已过期和已忽略的票据"
       },
       "logs": {
         "description": "回放或跟踪分离任务的事件日志",
@@ -1264,7 +1265,26 @@
       },
       "steps": {
         "pending": "有待执行的步骤：rdc job wait {{jobId}}",
-        "pendingForConfig": "配置 {{config}} 有 {{count}} 个待执行的步骤"
+        "pendingForConfig": "配置 {{config}} 有 {{count}} 个待执行的步骤",
+        "abandoned": "作业 {{jobId}}：已放弃其步骤（{{reason}}）",
+        "reason": {
+          "gone": "该作业已不在机器上",
+          "never-started": "它从未启动",
+          "age": "已超过 7 天",
+          "dismissed": "已忽略"
+        }
+      },
+      "dismiss": {
+        "description": "在本地放弃作业票据：待执行的步骤将被丢弃，票据不再显示。不会连接机器，也不会改动作业本身。",
+        "idArg": "要忽略的票据的作业 ID 或请求 ID",
+        "staleOption": "忽略所有早于 --older-than 的待处理票据（默认 24h）",
+        "olderThanOption": "与 --stale 一起使用时票据的最短存在时间，例如 90m、24h（默认：24h）",
+        "confirm": "忽略 {{count}} 张票据？它们待执行的步骤将永远不会运行。",
+        "dismissed": "已忽略 {{count}} 张票据。",
+        "none": "没有匹配的票据。",
+        "invalidOlderThan": "--older-than 必须是类似 90m 或 24h 的时长（收到：\"{{value}}\"）",
+        "needsTarget": "请至少指定一个作业 ID，或传入 --stale。",
+        "notFound": "此配置中没有 {{jobId}} 的票据。"
       }
     },
     "machine": {

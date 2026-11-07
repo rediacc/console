@@ -1221,7 +1221,8 @@
           "basic": "Loetle masina tööd."
         },
         "machineOption": "Sihtmasina nimi (jäta ära, et näha selle konfiguratsiooni pooleliolevate tööde pileteid)",
-        "emptyTickets": "Selles konfiguratsioonis pole pooleliolevaid töid."
+        "emptyTickets": "Selles konfiguratsioonis pole pooleliolevaid töid.",
+        "allOption": "Kuva ka aegunud ja hüljatud piletid"
       },
       "logs": {
         "description": "Taasesita või jälgi eraldiseisva töö sündmuslogi",
@@ -1264,7 +1265,26 @@
       },
       "steps": {
         "pending": "ootel sammud: rdc job wait {{jobId}}",
-        "pendingForConfig": "Konfiguratsioonil {{config}} on {{count}} sammu ootel"
+        "pendingForConfig": "Konfiguratsioonil {{config}} on {{count}} sammu ootel",
+        "abandoned": "töö {{jobId}}: sammudest loobuti ({{reason}})",
+        "reason": {
+          "gone": "tööd pole masinas enam",
+          "never-started": "see ei käivitunudki",
+          "age": "vanem kui 7 päeva",
+          "dismissed": "hüljatud"
+        }
+      },
+      "dismiss": {
+        "description": "Loobu tööpiletitest kohalikult: ootel sammud visatakse ära ja pilet ei ilmu enam. Masinaga ei ühenduta ja tööd ennast ei puututa.",
+        "idArg": "Hüljatavate piletite töö- või päringu-ID-d",
+        "staleOption": "Hülga kõik ootel piletid, mis on vanemad kui --older-than (vaikimisi 24h)",
+        "olderThanOption": "Koos --stale'iga pileti minimaalne vanus, nt 90m, 24h (vaikimisi: 24h)",
+        "confirm": "Kas hüljata {{count}} piletit? Nende ootel samme ei täideta kunagi.",
+        "dismissed": "Hüljati {{count}} piletit.",
+        "none": "Sobivaid pileteid pole.",
+        "invalidOlderThan": "--older-than peab olema kestus nagu 90m või 24h (saadud: \"{{value}}\")",
+        "needsTarget": "Anna vähemalt üks töö-ID või lisa --stale.",
+        "notFound": "Selles konfiguratsioonis pole {{jobId}} jaoks piletit."
       }
     },
     "machine": {

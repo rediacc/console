@@ -1221,7 +1221,8 @@
           "basic": "Die Jobs auf einer Maschine auflisten."
         },
         "machineOption": "Name der Zielmaschine (weglassen, um die offenen Job-Tickets dieser Konfiguration aufzulisten)",
-        "emptyTickets": "Keine offenen Jobs in dieser Konfiguration."
+        "emptyTickets": "Keine offenen Jobs in dieser Konfiguration.",
+        "allOption": "Abgelaufene und verworfene Tickets einbeziehen"
       },
       "logs": {
         "description": "Gibt das Ereignisprotokoll eines entkoppelten Jobs wieder oder verfolgt es live",
@@ -1264,7 +1265,26 @@
       },
       "steps": {
         "pending": "Schritte ausstehend: rdc job wait {{jobId}}",
-        "pendingForConfig": "{{count}} Schritte ausstehend für die Konfiguration {{config}}"
+        "pendingForConfig": "{{count}} Schritte ausstehend für die Konfiguration {{config}}",
+        "abandoned": "Job {{jobId}}: Schritte aufgegeben ({{reason}})",
+        "reason": {
+          "gone": "der Job existiert auf der Maschine nicht mehr",
+          "never-started": "er wurde nie gestartet",
+          "age": "älter als 7 Tage",
+          "dismissed": "verworfen"
+        }
+      },
+      "dismiss": {
+        "description": "Job-Tickets lokal aufgeben: ausstehende Schritte entfallen und das Ticket erscheint nicht mehr. Es erfolgt kein Maschinenaufruf, der Job selbst bleibt unberührt.",
+        "idArg": "Job-IDs oder Request-IDs der zu verwerfenden Tickets",
+        "staleOption": "Alle offenen Tickets verwerfen, die älter als --older-than sind (Standard: 24h)",
+        "olderThanOption": "Mit --stale das Mindestalter eines Tickets, z. B. 90m, 24h (Standard: 24h)",
+        "confirm": "{{count}} Ticket(s) verwerfen? Ihre ausstehenden Schritte laufen dann nie.",
+        "dismissed": "{{count}} Ticket(s) verworfen.",
+        "none": "Keine passenden Tickets.",
+        "invalidOlderThan": "--older-than muss eine Dauer wie 90m oder 24h sein (erhalten: \"{{value}}\")",
+        "needsTarget": "Mindestens eine Job-ID angeben oder --stale übergeben.",
+        "notFound": "Kein Ticket für {{jobId}} in dieser Konfiguration."
       }
     },
     "machine": {

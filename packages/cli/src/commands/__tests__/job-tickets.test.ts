@@ -149,3 +149,36 @@ describe('the optional -m takes the machine from the ticket', () => {
     err.mockRestore();
   });
 });
+
+describe('job dismiss', () => {
+  it('dismisses a ticket by job id locally and hides it from list until --all', async () => {
+    addTicket();
+    await run('dismiss', JOB_ID);
+
+    expect(remote.connectForJobs).not.toHaveBeenCalled();
+    expect(store.find(JOB_ID)?.expiredReason).toBe('dismissed');
+    expect(out.success).toHaveBeenCalledWith('Dismissed 1 ticket(s).');
+
+    await run('list');
+    expect(out.print).not.toHaveBeenCalled();
+
+    await run('list', '--all');
+    const [rows] = out.print.mock.calls[0];
+    expect(rows).toEqual([expect.objectContaining({ id: JOB_ID, state: 'expired:dismissed' })]);
+  });
+
+  it('--stale dismisses only tickets older than --older-than', async () => {
+    store.append('starting', 'old', {
+      machine: 'm',
+      startedAt: new Date(Date.now() - 3 * 86_400_000).toISOString(),
+    });
+    addTicket();
+    await run('dismiss', '--stale', '--yes');
+
+    expect(store.find('old')?.expiredReason).toBe('dismissed');
+    expect(store.find(JOB_ID)?.expiredReason).toBeUndefined();
+
+    await run('dismiss', '--stale', '--older-than', '0s', '--yes');
+    expect(store.find(JOB_ID)?.expiredReason).toBe('dismissed');
+  });
+});

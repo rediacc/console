@@ -2726,7 +2726,8 @@
           "basic": "List the jobs on a machine."
         },
         "machineOption": "Target machine name (omit to list this config's pending job tickets)",
-        "emptyTickets": "No pending jobs for this config."
+        "emptyTickets": "No pending jobs for this config.",
+        "allOption": "Include expired and dismissed tickets"
       },
       "status": {
         "description": "Show a detached job's status",
@@ -2786,7 +2787,26 @@
       },
       "steps": {
         "pending": "steps pending: rdc job wait {{jobId}}",
-        "pendingForConfig": "{{count}} steps pending for config {{config}}"
+        "pendingForConfig": "{{count}} steps pending for config {{config}}",
+        "abandoned": "job {{jobId}}: steps abandoned ({{reason}})",
+        "reason": {
+          "gone": "the job is gone from the machine",
+          "never-started": "it never started",
+          "age": "older than 7 days",
+          "dismissed": "dismissed"
+        }
+      },
+      "dismiss": {
+        "description": "Give up on job tickets locally: their owed steps are dropped and the ticket stops showing up. Makes no machine call and does not touch the job itself.",
+        "idArg": "Job ids or request ids of the tickets to dismiss",
+        "staleOption": "Dismiss every pending ticket older than --older-than (default 24h)",
+        "olderThanOption": "With --stale, the minimum ticket age, e.g. 90m, 24h (default: 24h)",
+        "confirm": "Dismiss {{count}} ticket(s)? Their owed steps will never run.",
+        "dismissed": "Dismissed {{count}} ticket(s).",
+        "none": "No matching tickets.",
+        "invalidOlderThan": "--older-than must be a duration such as 90m or 24h (got \"{{value}}\")",
+        "needsTarget": "Name at least one job id, or pass --stale.",
+        "notFound": "No ticket for {{jobId}} in this config."
       }
     },
     "tools": {

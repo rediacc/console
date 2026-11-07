@@ -20,6 +20,7 @@
 
 import { randomUUID } from 'node:crypto';
 import { hostname } from 'node:os';
+import { t } from '../../i18n/index.js';
 import { shellQuote } from '../../utils/shell-quote.js';
 import { assertJobId } from '../executor/job-client.js';
 import type { RenetEvent } from '../executor/types.js';
@@ -32,7 +33,14 @@ import {
   toSpoolSteps,
   toTicketSteps,
 } from './steps.js';
-import type { Ticket, TicketState, TicketStep, TicketStore, TicketVia } from './ticket-store.js';
+import type {
+  ExpiredReason,
+  Ticket,
+  TicketState,
+  TicketStep,
+  TicketStore,
+  TicketVia,
+} from './ticket-store.js';
 
 // --- the observation ---------------------------------------------------------
 
@@ -81,6 +89,25 @@ interface ClaimRequest {
   steps: string[];
   /** Record the steps as done instead of claiming them. */
   done?: boolean;
+}
+
+/** `renet job claim` exits with this when the job is not in the spool: the steps it owes can never run. */
+export const JOB_NOT_FOUND_EXIT = 16;
+
+/** The one line printed when a ticket is given up on: `job X: steps abandoned (reason)`. */
+export function abandonedLine(jobId: string, reason: ExpiredReason): string {
+  return t('commands.job.steps.abandoned', {
+    jobId,
+    reason: t(`commands.job.steps.reason.${reason}`),
+  });
+}
+
+/** The claim reached the machine and the job is gone from it. */
+export class JobGoneError extends Error {
+  constructor(jobId: string) {
+    super(`Job ${jobId} is gone from the machine`);
+    this.name = 'JobGoneError';
+  }
 }
 
 /** `renet job claim --id <jobId> --steps a,b [--done]`, run on the job's machine. */
@@ -146,6 +173,7 @@ function openStepSession(
 ): StepSession {
   const { jobId, machine } = ticket;
   const resolve = deps.resolve ?? resolveStepHandler;
+  let gone = false;
   const recordDone = (name: string) => store.append('step-done', ticket.requestId, { step: name });
 
   const run = async (step: TicketStep): Promise<boolean> => {
@@ -171,9 +199,17 @@ function openStepSession(
 
   return {
     async claim(names) {
+      if (gone) return undefined;
       try {
         return await deps.claim({ machine, jobId, steps: names });
       } catch (error) {
+        if (error instanceof JobGoneError) {
+          // The job left the spool, so no observer can ever claim its steps: close the ticket instead of retrying forever.
+          gone = true;
+          store.append('expired', ticket.requestId, { reason: 'gone' });
+          deps.warn(abandonedLine(jobId, 'gone'));
+          return undefined;
+        }
         deps.warn(errorText(error));
         report.failed.push(...names);
         return undefined;
@@ -525,6 +561,7 @@ function liveClaimExec(observer: ConfigIdentity): ClaimExec {
           stderr += data.toString();
         },
       });
+      if (exitCode === JOB_NOT_FOUND_EXIT) throw new JobGoneError(request.jobId);
       if (exitCode !== 0) {
         const detail = (stderr || stdout).trim().split('\n')[0] ?? '';
         throw new Error(

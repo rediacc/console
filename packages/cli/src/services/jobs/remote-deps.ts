@@ -5,16 +5,18 @@
  */
 
 import { CLI_CONTRACT_VERSION } from '@rediacc/shared/cli-contract';
+import { shellQuote } from '../../utils/shell-quote.js';
 import { getSubscriptionTokenState } from '../account/subscription-auth.js';
 import { getEffectiveConfigName } from '../config/config-name.js';
 import { writeStderr } from '../core/request-context.js';
-import { JobLogCursor, type JobStatus } from '../executor/job-client.js';
+import { JobLogCursor, type JobStatus, parseJobList } from '../executor/job-client.js';
 import {
   connectForJobs,
   followJobLogs,
   type JobConnection,
   readJobStatus,
   replayJobLogs,
+  runJobCommand,
 } from '../executor/job-remote.js';
 import { ProxyClient } from '../executor/proxy-client.js';
 import type { RenetEvent } from '../executor/types.js';
@@ -83,6 +85,29 @@ export async function followProxyTicket(
   };
 }
 
+/**
+ * Ask the ticket's machine which job (if any) carries its request id, through
+ * `renet job list --request-id`: the job id, null when renet answered with no
+ * job, undefined when the machine could not be asked (unreachable, an older
+ * renet without the flag, a proxy ticket).
+ */
+export async function resolveStartingTicket(ticket: Ticket): Promise<string | null | undefined> {
+  if (ticket.via?.kind === 'proxy' || !ticket.machine) return undefined;
+  try {
+    return await withConnection(ticket.machine, async (conn) => {
+      const stdout = await runJobCommand(
+        conn,
+        `sudo ${shellQuote(conn.remoteRenetPath)} job list --request-id ${shellQuote(ticket.requestId)} --json`,
+        'resolve a starting job'
+      );
+      const found = parseJobList(stdout);
+      return found.length === 0 ? null : found[0].job_id;
+    });
+  } catch {
+    return undefined;
+  }
+}
+
 export function sshWaitDeps(onEvent?: (event: RenetEvent, line?: number) => void): JobWaitDeps {
   return {
     ...(onEvent
@@ -91,6 +116,7 @@ export function sshWaitDeps(onEvent?: (event: RenetEvent, line?: number) => void
             followProxyTicket(ticket, signal, onEvent),
         }
       : {}),
+    resolveStarting: resolveStartingTicket,
     withConnection: (machine, fn) => withConnection(machine, (conn) => fn(conn)),
     follow: (
       conn,
@@ -123,6 +149,7 @@ export function liveNoticeDeps(): NoticeDeps {
     store: openTicketStore(),
     write: (line) => writeStderr(`${line}\n`),
     repoExists: liveRepoExists,
+    resolveStarting: resolveStartingTicket,
     observe: (ticket): Promise<TicketObservation | undefined> => {
       if (ticket.via?.kind === 'proxy' || !ticket.machine || !ticket.jobId) {
         return Promise.resolve(undefined);

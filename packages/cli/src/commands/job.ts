@@ -54,7 +54,12 @@ interface JobCommandOptions {
   olderThan?: string;
   yes?: boolean;
   debug?: boolean;
+  all?: boolean;
+  stale?: boolean;
 }
+
+/** `rdc job dismiss --stale` without `--older-than` takes tickets a day old. */
+const DEFAULT_STALE_MS = 24 * 3_600_000;
 
 /** Options once the target machine is known: required for gc, resolved from `-m` or the ticket elsewhere. */
 type MachineJobOptions = JobCommandOptions & { machine: string };
@@ -92,7 +97,7 @@ function resolveJobTarget(
 function toTicketRow(ticket: Ticket) {
   return {
     id: ticket.jobId ?? ticket.requestId,
-    state: ticket.state,
+    state: ticket.expiredReason ? `expired:${ticket.expiredReason}` : ticket.state,
     verb: ticket.verb ?? ticket.function ?? '-',
     repo: ticket.repo ?? '-',
     machine: ticket.machine ?? '-',
@@ -102,9 +107,9 @@ function toTicketRow(ticket: Ticket) {
 }
 
 /** `rdc job list` without -m: this config's pending and unacknowledged tickets. */
-function listTickets(format: OutputFormat): void {
+function listTickets(format: OutputFormat, all = false): void {
   const store = openTicketStore();
-  const tickets = store.pending();
+  const tickets = all ? store.all() : store.pending();
   store.compactIfNeeded();
   if (tickets.length === 0 && format === 'table') {
     outputService.info(t('commands.job.list.emptyTickets'));
@@ -163,12 +168,13 @@ export function registerJobCommands(program: Command): void {
     .command('list')
     .description(t('commands.job.list.description'))
     .option('-m, --machine <name>', t('commands.job.list.machineOption'))
+    .option('--all', t('commands.job.list.allOption'))
     .action(async (options: JobCommandOptions) => {
       try {
         const format = getOutputFormat();
 
         if (!options.machine) {
-          listTickets(format);
+          listTickets(format, options.all);
           return;
         }
 
@@ -244,6 +250,21 @@ export function registerJobCommands(program: Command): void {
     .action(async (requested: string, options: JobCommandOptions) => {
       try {
         await runJobWait(requested, options);
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
+  job
+    .command('dismiss')
+    .description(t('commands.job.dismiss.description'))
+    .argument('[job-id...]', t('commands.job.dismiss.idArg'))
+    .option('--stale', t('commands.job.dismiss.staleOption'))
+    .option('--older-than <duration>', t('commands.job.dismiss.olderThanOption'))
+    .option('-y, --yes', t('options.yes'))
+    .action(async (ids: string[], options: JobCommandOptions) => {
+      try {
+        await runJobDismiss(ids, options);
       } catch (error) {
         handleError(error);
       }
@@ -427,6 +448,55 @@ async function runJobCancel(options: MachineJobOptions, format: OutputFormat): P
     outputService.success(t('commands.job.cancel.requested', { jobId }));
     outputService.print(status, format);
   });
+}
+
+/**
+ * Give up on tickets locally: no machine call. By id, or `--stale` for every
+ * unacknowledged ticket older than `--older-than` (default 24h).
+ */
+function staleTickets(store: ReturnType<typeof openTicketStore>, olderThan?: string): Ticket[] {
+  const olderMs = olderThan === undefined ? DEFAULT_STALE_MS : parseWaitTimeoutMs(olderThan);
+  if (olderMs === undefined) {
+    throw new Error(t('commands.job.dismiss.invalidOlderThan', { value: olderThan }));
+  }
+  const now = Date.now();
+  return store.pending().filter((ticket) => {
+    const from = Date.parse(ticket.startedAt ?? '');
+    return !Number.isNaN(from) && now - from >= olderMs;
+  });
+}
+
+function ticketsById(store: ReturnType<typeof openTicketStore>, ids: string[]): Ticket[] {
+  if (ids.length === 0) throw new Error(t('commands.job.dismiss.needsTarget'));
+  return ids.map((id) => {
+    const ticket = store.find(id);
+    if (!ticket) throw new Error(t('commands.job.dismiss.notFound', { jobId: id }));
+    return ticket;
+  });
+}
+
+export async function runJobDismiss(ids: string[], options: JobCommandOptions): Promise<void> {
+  const store = openTicketStore();
+  const targets = options.stale ? staleTickets(store, options.olderThan) : ticketsById(store, ids);
+
+  if (targets.length === 0) {
+    outputService.info(t('commands.job.dismiss.none'));
+    return;
+  }
+
+  if (options.stale && !options.yes) {
+    const { askConfirm } = await import('../utils/prompt.js');
+    if (!(await askConfirm(t('commands.job.dismiss.confirm', { count: targets.length })))) {
+      outputService.info(t('status.cancelled'));
+      return;
+    }
+  }
+
+  for (const ticket of targets) {
+    store.append('expired', ticket.requestId, { reason: 'dismissed' });
+  }
+  store.compactIfNeeded();
+  outputService.success(t('commands.job.dismiss.dismissed', { count: targets.length }));
 }
 
 /** Remove finished jobs and their logs. Running jobs are never collected. */

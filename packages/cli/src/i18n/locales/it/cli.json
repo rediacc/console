@@ -1221,7 +1221,8 @@
           "basic": "Elenca i job di una macchina."
         },
         "machineOption": "Nome della macchina di destinazione (omettilo per elencare i ticket dei job in sospeso di questa configurazione)",
-        "emptyTickets": "Nessun job in sospeso per questa configurazione."
+        "emptyTickets": "Nessun job in sospeso per questa configurazione.",
+        "allOption": "Includi i ticket scaduti e scartati"
       },
       "logs": {
         "description": "Riproduce o segue il log degli eventi di un job in background",
@@ -1264,7 +1265,26 @@
       },
       "steps": {
         "pending": "passaggi in sospeso: rdc job wait {{jobId}}",
-        "pendingForConfig": "{{count}} passaggi in sospeso per la configurazione {{config}}"
+        "pendingForConfig": "{{count}} passaggi in sospeso per la configurazione {{config}}",
+        "abandoned": "job {{jobId}}: passaggi abbandonati ({{reason}})",
+        "reason": {
+          "gone": "il job non esiste più sulla macchina",
+          "never-started": "non è mai partito",
+          "age": "più vecchio di 7 giorni",
+          "dismissed": "scartato"
+        }
+      },
+      "dismiss": {
+        "description": "Abbandona i ticket dei job in locale: i passaggi dovuti vengono eliminati e il ticket non compare più. Nessuna chiamata alla macchina, il job non viene toccato.",
+        "idArg": "ID di job o di richiesta dei ticket da scartare",
+        "staleOption": "Scarta tutti i ticket in sospeso più vecchi di --older-than (predefinito 24h)",
+        "olderThanOption": "Con --stale, l'età minima del ticket, ad es. 90m, 24h (predefinito: 24h)",
+        "confirm": "Scartare {{count}} ticket? I loro passaggi dovuti non verranno mai eseguiti.",
+        "dismissed": "{{count}} ticket scartati.",
+        "none": "Nessun ticket corrispondente.",
+        "invalidOlderThan": "--older-than deve essere una durata come 90m o 24h (ricevuto: \"{{value}}\")",
+        "needsTarget": "Indica almeno un ID di job oppure passa --stale.",
+        "notFound": "Nessun ticket per {{jobId}} in questa configurazione."
       }
     },
     "machine": {

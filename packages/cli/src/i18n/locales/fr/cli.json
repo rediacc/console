@@ -1221,7 +1221,8 @@
           "basic": "Lister les jobs d'une machine."
         },
         "machineOption": "Nom de la machine cible (à omettre pour lister les tickets de jobs en attente de cette configuration)",
-        "emptyTickets": "Aucun job en attente pour cette configuration."
+        "emptyTickets": "Aucun job en attente pour cette configuration.",
+        "allOption": "Inclure les tickets expirés et écartés"
       },
       "logs": {
         "description": "Rejouer ou suivre le journal d'événements d'un job détaché",
@@ -1264,7 +1265,26 @@
       },
       "steps": {
         "pending": "étapes en attente : rdc job wait {{jobId}}",
-        "pendingForConfig": "{{count}} étapes en attente pour la configuration {{config}}"
+        "pendingForConfig": "{{count}} étapes en attente pour la configuration {{config}}",
+        "abandoned": "tâche {{jobId}} : étapes abandonnées ({{reason}})",
+        "reason": {
+          "gone": "la tâche n'existe plus sur la machine",
+          "never-started": "elle n'a jamais démarré",
+          "age": "plus de 7 jours",
+          "dismissed": "écartée"
+        }
+      },
+      "dismiss": {
+        "description": "Abandonner des tickets de tâche en local : leurs étapes dues sont supprimées et le ticket n'apparaît plus. Aucun appel à la machine, la tâche n'est pas modifiée.",
+        "idArg": "Identifiants de tâche ou de requête des tickets à écarter",
+        "staleOption": "Écarter tous les tickets en attente plus anciens que --older-than (24h par défaut)",
+        "olderThanOption": "Avec --stale, l'âge minimal du ticket, p. ex. 90m, 24h (24h par défaut)",
+        "confirm": "Écarter {{count}} ticket(s) ? Leurs étapes dues ne s'exécuteront jamais.",
+        "dismissed": "{{count}} ticket(s) écarté(s).",
+        "none": "Aucun ticket correspondant.",
+        "invalidOlderThan": "--older-than doit être une durée comme 90m ou 24h (reçu : \"{{value}}\")",
+        "needsTarget": "Indiquez au moins un identifiant de tâche, ou passez --stale.",
+        "notFound": "Aucun ticket pour {{jobId}} dans cette configuration."
       }
     },
     "machine": {
