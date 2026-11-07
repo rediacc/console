@@ -206,14 +206,15 @@ Promoted: 15 of 44 plans done, 777 of 939 boxes done (82%).
 15. agent/plans/PLAN-hostinger-upgrade-followups.md -- P1, in-progress, not started
 16. agent/plans/PLAN-plan-compaction-bindings.md -- P1, approved, not started
 17. agent/plans/PLAN-product-domain-rename.md -- P1, proposed, not started
-18. agent/plans/PLAN-website-routing-and-mail.md -- P1, proposed, not started, dep-blocked
-19. agent/plans/PLAN-enterprise-isolation.md -- P1, proposed, not started, dep-blocked
-20. agent/plans/PLAN-first-release-checks.md -- P2, approved, not started
-21. agent/plans/PLAN-stop-hook-retro-20261101.md -- P2, ready, not started
-22. agent/plans/PLAN-lessons-registry-followups.md -- P3, draft, not started
-23. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
-24. agent/plans/PLAN-retire-bash-oracles.A0.md -- P3, executing, not started
-25. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
+18. agent/plans/PLAN-renet-restart-cycle-defects.md -- P1, approved, not started
+19. agent/plans/PLAN-website-routing-and-mail.md -- P1, proposed, not started, dep-blocked
+20. agent/plans/PLAN-enterprise-isolation.md -- P1, proposed, not started, dep-blocked
+21. agent/plans/PLAN-first-release-checks.md -- P2, approved, not started
+22. agent/plans/PLAN-stop-hook-retro-20261101.md -- P2, ready, not started
+23. agent/plans/PLAN-lessons-registry-followups.md -- P3, draft, not started
+24. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
+25. agent/plans/PLAN-retire-bash-oracles.A0.md -- P3, executing, not started
+26. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
 
 ### Not queued
 
