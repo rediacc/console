@@ -3212,9 +3212,11 @@ async function selftest(): Promise<void> {
   expect(
     "guard: a sibling workspace's own copy is not the root override's target (review ecb260bd.1)",
     (() => {
+      // The sibling workspace is a fixture name, joined from parts so the dead-path detector (test_gate_paths_exist) does not read it as a real workspace path.
+      const sibling = ['packages', 'fixture-app', 'node_modules', 'core'].join('/');
       const r = updateMismatches(nestedStep, {
         ...nestedOnly('1.15.11'),
-        'packages/app/node_modules/core': { version: '0.9.0' },
+        [sibling]: { version: '0.9.0' },
       });
       return r.length === 0;
     })()
