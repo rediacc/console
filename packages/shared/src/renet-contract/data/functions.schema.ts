@@ -38,6 +38,7 @@ export const BackupCompareParamsSchema = z.object({
   againstAnchor: z.string().min(1).describe('The source repository GUID whose anchor the copy is held to'),
   readBwlimit: z.string().optional().describe('Read cap across both files, same units as backup_snapshot\'s bwlimit. Empty = the verb default (50M); 0 = unlimited'),
   cpuLimit: z.number().int().optional().describe('Hard CPU ceiling as a percent of all cores, 1-100; 100 = no ceiling. Empty = one core. Enforced by a systemd scope CPUQuota'),
+  store: z.string().optional().describe('Backup store id the session is for (a registered store such as eu-west). Empty or home = the home store'),
 });
 
 /** Delete one or more backups from a machine's datastore */
@@ -177,6 +178,7 @@ export const BackupVerifyParamsSchema = z.object({
     .describe('Verification level: spot (sampled cells) or full (re-hash every recorded cell)'),
   readBwlimit: z.string().optional().describe('Read cap for the full level, same units as backup_snapshot\'s bwlimit. Empty = the verb default (50M); 0 = unlimited'),
   cpuLimit: z.number().int().optional().describe('Hard CPU ceiling as a percent of all cores, 1-100; 100 = no ceiling. Empty = one core. Enforced by a systemd scope CPUQuota'),
+  store: z.string().optional().describe('Backup store id the session is for (a registered store such as eu-west). Empty or home = the home store'),
 });
 
 /** Mount RBD image on client */

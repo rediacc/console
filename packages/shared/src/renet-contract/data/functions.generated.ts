@@ -50,6 +50,8 @@ export interface BackupCompareParams {
   readBwlimit?: string;
   /** Hard CPU ceiling as a percent of all cores, 1-100; 100 = no ceiling. Empty = one core. Enforced by a systemd scope CPUQuota */
   cpuLimit?: number;
+  /** Backup store id the session is for (a registered store such as eu-west). Empty or home = the home store */
+  store?: string;
 }
 
 /** Delete one or more backups from a machine's datastore */
@@ -240,6 +242,8 @@ export interface BackupVerifyParams {
   readBwlimit?: string;
   /** Hard CPU ceiling as a percent of all cores, 1-100; 100 = no ceiling. Empty = one core. Enforced by a systemd scope CPUQuota */
   cpuLimit?: number;
+  /** Backup store id the session is for (a registered store such as eu-west). Empty or home = the home store */
+  store?: string;
 }
 
 /** Mount RBD image on client */
@@ -1951,6 +1955,10 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
         type: 'int',
         help: 'Hard CPU ceiling as a percent of all cores, 1-100; 100 = no ceiling. Empty = one core. Enforced by a systemd scope CPUQuota',
       },
+      store: {
+        type: 'string',
+        help: 'Backup store id the session is for (a registered store such as eu-west). Empty or home = the home store',
+      },
     },
   },
   'backup_delete': {
@@ -2415,6 +2423,10 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
       cpuLimit: {
         type: 'int',
         help: 'Hard CPU ceiling as a percent of all cores, 1-100; 100 = no ceiling. Empty = one core. Enforced by a systemd scope CPUQuota',
+      },
+      store: {
+        type: 'string',
+        help: 'Backup store id the session is for (a registered store such as eu-west). Empty or home = the home store',
       },
     },
   },
