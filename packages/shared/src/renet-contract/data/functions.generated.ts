@@ -30,6 +30,8 @@ export interface BackupBrowseAtParams {
   limit?: string;
   /** Refuse unless the repository licence names this account-server origin (scheme://host[:port]). Empty = no check */
   expectAccountServer?: string;
+  /** Backup store id the session is for (a registered store such as eu-west). Empty or home = the home store */
+  store?: string;
 }
 
 /** Measure a repository's block churn since the last probe, projected at each cell size */
@@ -138,6 +140,8 @@ export interface BackupRepairParams {
   cpuLimit?: number;
   /** Refuse unless the repository licence names this account-server origin (scheme://host[:port]). Empty = no check */
   expectAccountServer?: string;
+  /** Backup store id the session is for (a registered store such as eu-west). Empty or home = the home store */
+  store?: string;
 }
 
 /** Restore a repository image from a chunk-store snapshot */
@@ -156,6 +160,8 @@ export interface BackupRestoreParams {
   salvage?: boolean;
   /** Refuse unless the repository licence names this account-server origin (scheme://host[:port]). Empty = no check */
   expectAccountServer?: string;
+  /** Backup store id the session is for (a registered store such as eu-west). Empty or home = the home store */
+  store?: string;
 }
 
 /** Restore one file or directory from a chunk-store snapshot, without restoring the whole image */
@@ -170,6 +176,8 @@ export interface BackupRestorePathParams {
   to?: string;
   /** Refuse unless the repository licence names this account-server origin (scheme://host[:port]). Empty = no check */
   expectAccountServer?: string;
+  /** Backup store id the session is for (a registered store such as eu-west). Empty or home = the home store */
+  store?: string;
 }
 
 /** Upload a chunk-store snapshot: full inventory first, changed cells after */
@@ -208,6 +216,8 @@ export interface BackupSnapshotParams {
   acceptGridChange?: boolean;
   /** Refuse unless the repository licence names this account-server origin (scheme://host[:port]). Empty = no check */
   expectAccountServer?: string;
+  /** Backup store id the session is for (a registered store such as eu-west). Empty or home = the home store */
+  store?: string;
 }
 
 /** Inspect or install a repository's browse-listing public key */
@@ -1147,7 +1157,7 @@ export const RENET_FUNCTIONS = [
   'setup',
 ] as const;
 
-export const RENET_FUNCTIONS_VERSION = 'v3.0.0-200-gd85a3ca';
+export const RENET_FUNCTIONS_VERSION = 'dev';
 
 export type RenetFunctionName = (typeof RENET_FUNCTIONS)[number];
 
@@ -1898,6 +1908,10 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
         type: 'string',
         help: 'Refuse unless the repository licence names this account-server origin (scheme://host[:port]). Empty = no check',
       },
+      store: {
+        type: 'string',
+        help: 'Backup store id the session is for (a registered store such as eu-west). Empty or home = the home store',
+      },
     },
   },
   'backup_churn_probe': {
@@ -2171,6 +2185,10 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
         type: 'string',
         help: 'Refuse unless the repository licence names this account-server origin (scheme://host[:port]). Empty = no check',
       },
+      store: {
+        type: 'string',
+        help: 'Backup store id the session is for (a registered store such as eu-west). Empty or home = the home store',
+      },
     },
   },
   'backup_restore': {
@@ -2215,6 +2233,10 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
         type: 'string',
         help: 'Refuse unless the repository licence names this account-server origin (scheme://host[:port]). Empty = no check',
       },
+      store: {
+        type: 'string',
+        help: 'Backup store id the session is for (a registered store such as eu-west). Empty or home = the home store',
+      },
     },
   },
   'backup_restore_path': {
@@ -2248,6 +2270,10 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
       expectAccountServer: {
         type: 'string',
         help: 'Refuse unless the repository licence names this account-server origin (scheme://host[:port]). Empty = no check',
+      },
+      store: {
+        type: 'string',
+        help: 'Backup store id the session is for (a registered store such as eu-west). Empty or home = the home store',
       },
     },
   },
@@ -2332,6 +2358,10 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
       expectAccountServer: {
         type: 'string',
         help: 'Refuse unless the repository licence names this account-server origin (scheme://host[:port]). Empty = no check',
+      },
+      store: {
+        type: 'string',
+        help: 'Backup store id the session is for (a registered store such as eu-west). Empty or home = the home store',
       },
     },
   },
