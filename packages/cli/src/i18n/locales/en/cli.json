@@ -2985,7 +2985,8 @@
       "machineSlotLimit": "This placement needs {{needed}} more machine slot(s), and the subscription has {{free}} free ({{active}} of {{max}} in use). A slot is released automatically 5 hours after that machine's last activity, or immediately when the machine is removed. Raise the ceiling by upgrading the plan, or contact sales for a negotiated Enterprise or partner machine ceiling.",
       "partialPlacement": "The placement stopped part-way: {{placed}} machine(s) completed ({{placedNames}}) and {{remaining}} were never started ({{remainingNames}}). Nothing was rolled back, so the completed machines keep their repositories and their slots. Free a slot or raise the ceiling, then re-run: {{command}}",
       "nothingProvisioned": "Nothing was provisioned: the repository was not created.",
-      "backupStoreMismatch": "Refused: repository \"{{repo}}\" on {{machine}} holds a license issued by {{installed}}, so this backup command would use that account's backup store, not the store of {{expected}}, the account server of config \"{{config}}\". Run it with the config whose account server is {{installed}}."
+      "backupStoreMismatch": "Refused: repository \"{{repo}}\" on {{machine}} holds a license issued by {{installed}}, so this backup command would use that account's backup store, not the store of {{expected}}, the account server of config \"{{config}}\". Run it with the config whose account server is {{installed}}.",
+      "backupStoreUnreadable": "Refused: the licenses installed for repository \"{{repo}}\" on {{machine}} could not be read, so it is unknown which account's backup store this backup command would use. Check that passwordless sudo works on {{machine}}, then retry."
     },
     "freeLicense": {
       "offerPrompt": "This command needs a license, and no login was found. Log in, or continue with a free license?",

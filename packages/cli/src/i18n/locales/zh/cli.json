@@ -3000,6 +3000,7 @@
       "machineSlotLimit": "此次部署还需要 {{needed}} 个机器名额，而订阅仅剩 {{free}} 个空闲名额（已使用 {{active}} / {{max}}）。名额会在该机器最后一次活动 5 小时后自动释放，或在机器被移除时立即释放。可通过升级套餐提高限制，或联系销售洽谈 Enterprise 或合作伙伴的机器限额。",
       "nothingProvisioned": "未创建任何资源：仓库未被创建。",
       "backupStoreMismatch": "已拒绝：{{machine}} 上的仓库 \"{{repo}}\" 持有 {{installed}} 签发的许可证，因此该备份命令会使用那个账户的备份存储，而不是配置 \"{{config}}\" 的账户服务器 {{expected}} 的存储。请改用账户服务器为 {{installed}} 的配置运行。",
+      "backupStoreUnreadable": "已拒绝：无法读取 {{machine}} 上仓库 \"{{repo}}\" 已安装的许可证，因此不清楚该备份命令会使用哪个账户的备份存储。请检查 {{machine}} 上的免密码 sudo 是否可用，然后重试。",
       "partialPlacement": "部署中途停止：已完成 {{placed}} 台机器（{{placedNames}}），{{remaining}} 台从未启动（{{remainingNames}}）。没有执行任何回滚，因此已完成的机器保留其仓库和名额。请释放名额或提高限制，然后重新运行：{{command}}",
       "preflightTokenNotReady": "订阅令牌尚未就绪。请运行：rdc subscription login。已跳过部署到 {{machine}}。",
       "recoveryFailedNoKnownRepos": "在 {{machine}} 上发现了仓库，但本地配置中未追踪任何仓库。请运行 `rdc repo list` 列出已追踪的仓库，然后重试。",

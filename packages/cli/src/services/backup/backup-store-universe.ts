@@ -79,15 +79,29 @@ function licenseLineOrigin(encoded: string): string | undefined {
   }
 }
 
-/** The account-server origins of every licence installed on the machine for one repository GUID. */
+/** Printed by the listing script only after it read every file, so a listing without it was cut short. */
+export const LISTING_COMPLETE_MARKER = '__RDC_LICENSE_LISTING_COMPLETE__';
+
+/**
+ * The account-server origins of every licence installed on the machine for one repository GUID, or undefined when
+ * the listing could not be read (sudo refused, a file unreadable, the command failed): the caller fails closed then,
+ * since an empty answer would let a backup verb through without the check.
+ */
 async function readInstalledLicenseOrigins(
   sftp: Pick<SFTPClient, 'exec'>,
   repositoryGuid: string
-): Promise<string[]> {
+): Promise<string[] | undefined> {
   const script =
-    `for f in ${LICENSE_DIR}/repos/${repositoryGuid}/*.json ${LICENSE_DIR}/datastores/*/repos/${repositoryGuid}/*.json; ` +
-    `do [ -f "$f" ] && base64 -w0 "$f" && echo; done; true`;
-  const listing = await sftp.exec(`sudo -n sh -c ${shellQuote(script)} 2>/dev/null || true`);
+    `set -e; for f in ${LICENSE_DIR}/repos/${repositoryGuid}/*.json ${LICENSE_DIR}/datastores/*/repos/${repositoryGuid}/*.json; ` +
+    `do if [ -f "$f" ]; then base64 -w0 "$f"; echo; fi; done; echo ${LISTING_COMPLETE_MARKER}`;
+  let listing: string;
+  try {
+    listing = await sftp.exec(`sudo -n sh -c ${shellQuote(script)}`);
+  } catch {
+    return undefined;
+  }
+  if (!listing.split('\n').some((line) => line.trim() === LISTING_COMPLETE_MARKER))
+    return undefined;
   return licenseOriginsFromListing(listing);
 }
 
@@ -110,6 +124,11 @@ export async function assertBackupStoreUniverse(
   const expected = originOf(getSubscriptionServerUrl());
   if (!expected) return;
   const installed = await readInstalledLicenseOrigins(sftp, repositoryGuid);
+  if (installed === undefined) {
+    throw new ValidationError(
+      t('errors.license.backupStoreUnreadable', { repo: repoName, machine: machineName })
+    );
+  }
   const foreign = installed.filter((origin) => origin !== expected);
   if (foreign.length === 0) return;
 

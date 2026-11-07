@@ -26,9 +26,8 @@ vi.mock('../../config/config-resources.js', () => ({
   },
 }));
 
-const { assertBackupStoreUniverse, licenseOriginsFromListing } = await import(
-  '../backup-store-universe.js'
-);
+const { assertBackupStoreUniverse, LISTING_COMPLETE_MARKER, licenseOriginsFromListing } =
+  await import('../backup-store-universe.js');
 
 /** One licence file as the remote read prints it: the file's bytes, base64 on one line. */
 function licenseLine(renewalUrl: string | undefined): string {
@@ -47,7 +46,7 @@ function machineWith(...lines: string[]) {
     sftp: {
       exec: (cmd: string) => {
         commands.push(cmd);
-        return Promise.resolve(lines.join(''));
+        return Promise.resolve(`${lines.join('')}${LISTING_COMPLETE_MARKER}\n`);
       },
     },
   };
@@ -117,6 +116,29 @@ describe('assertBackupStoreUniverse', () => {
       assertBackupStoreUniverse('repository_up', 'hostinger', { repository: 'mail' }, other.sftp)
     ).resolves.toBeUndefined();
     expect(other.commands).toEqual([]);
+  });
+
+  it('refuses when the licence listing is cut short (no completion marker), instead of passing on an empty read', async () => {
+    const m = {
+      sftp: { exec: () => Promise.resolve(licenseLine(BENCH)) },
+    };
+    const run = assertBackupStoreUniverse(
+      'backup_snapshot',
+      'hostinger',
+      { repository: 'mail' },
+      m.sftp
+    );
+    await expect(run).rejects.toThrow(/errors\.license\.backupStoreUnreadable/);
+    await expect(run).rejects.toThrow(/"machine":"hostinger"/);
+  });
+
+  it('refuses when the licence listing command fails (sudo refused or the read errors)', async () => {
+    const m = {
+      sftp: { exec: () => Promise.reject(new Error('sudo: a password is required')) },
+    };
+    await expect(
+      assertBackupStoreUniverse('backup_snapshot', 'hostinger', { repository: 'mail' }, m.sftp)
+    ).rejects.toThrow(/errors\.license\.backupStoreUnreadable/);
   });
 
   it('skips a repository the config does not track', async () => {

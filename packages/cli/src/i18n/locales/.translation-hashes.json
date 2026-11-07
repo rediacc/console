@@ -2,7 +2,7 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 2567,
+    "keyCount": 2568,
     "sourceCommit": "c486ae57f8c2b9858dafdaf2777834def1dd4442"
   },
   "hashes": {
@@ -2340,6 +2340,7 @@
     "errors.jobs.overlap.whatJob": "a9d4d173",
     "errors.jobs.refused": "3cf7f09f",
     "errors.license.backupStoreMismatch": "8bb1db50",
+    "errors.license.backupStoreUnreadable": "7632b3e1",
     "errors.license.machineSlotLimit": "4364dd2e",
     "errors.license.nothingProvisioned": "9c165bf2",
     "errors.license.partialPlacement": "eb0dd784",
