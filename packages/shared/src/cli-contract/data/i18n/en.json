@@ -1361,6 +1361,7 @@
   "commands.repo.admin.ownership.descriptionShort": "Change repository directory ownership UID",
   "commands.repo.admin.ownership.dryRunOption": "With --root-owned: list the files that would change, and change nothing",
   "commands.repo.admin.ownership.failed": "Ownership update failed",
+  "commands.repo.admin.ownership.rootOwnedDryRunSummary": "{{count}} root-owned entries under {{repository}} on {{machine}} would be handed to the owner UID; nothing changed.",
   "commands.repo.admin.ownership.rootOwnedOption": "Hand root-owned files to the owner UID below directories owned by root or that UID, recording each in an undo manifest",
   "commands.repo.admin.ownership.rootOwnedQualifiers": "--dry-run and --undo each apply only with --root-owned, and cannot be combined",
   "commands.repo.admin.ownership.starting": "Setting ownership of \"{{repository}}\" on \"{{machine}}\"...",

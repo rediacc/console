@@ -1793,7 +1793,8 @@
           "rootOwnedOption": "تسليم الملفات المملوكة لـ root الموجودة تحت أدلة يملكها root أو هذا UID إلى UID المالك، مع تسجيل كل منها في بيان تراجع",
           "dryRunOption": "مع --root-owned: عرض الملفات التي ستتغير دون تغيير أي شيء",
           "undoOption": "مع --root-owned: إعادة ملفات بيان التراجع التي لا يزال UID المالك يملكها إلى root",
-          "rootOwnedQualifiers": "لا يُستخدم --dry-run و--undo إلا مع --root-owned، ولا يمكن الجمع بينهما"
+          "rootOwnedQualifiers": "لا يُستخدم --dry-run و--undo إلا مع --root-owned، ولا يمكن الجمع بينهما",
+          "rootOwnedDryRunSummary": "سيُنقل {{count}} من العناصر المملوكة لـ root ضمن {{repository}} على {{machine}} إلى معرّف المستخدم المالك؛ لم يتغير شيء."
         },
         "template": {
           "apply": {

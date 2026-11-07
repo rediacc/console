@@ -1360,6 +1360,7 @@
   "commands.repo.admin.ownership.descriptionShort": "저장소 디렉터리 소유권 UID를 변경합니다",
   "commands.repo.admin.ownership.dryRunOption": "--root-owned와 함께: 변경될 파일을 나열하고 아무것도 변경하지 않습니다",
   "commands.repo.admin.ownership.failed": "소유권 업데이트 실패",
+  "commands.repo.admin.ownership.rootOwnedDryRunSummary": "{{machine}}의 {{repository}} 아래에서 root 소유 항목 {{count}}개가 소유자 UID로 넘겨집니다. 아무것도 변경되지 않았습니다.",
   "commands.repo.admin.ownership.rootOwnedOption": "root 또는 해당 UID가 소유한 디렉터리 아래의 root 소유 파일을 소유자 UID에게 넘기고, 각각을 되돌리기 매니페스트에 기록합니다",
   "commands.repo.admin.ownership.rootOwnedQualifiers": "--dry-run과 --undo는 --root-owned와 함께 쓸 때만 적용되며 서로 함께 사용할 수 없습니다",
   "commands.repo.admin.ownership.starting": "\"{{machine}}\"에서 \"{{repository}}\"의 소유권을 설정하는 중...",

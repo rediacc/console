@@ -1793,7 +1793,8 @@
           "rootOwnedOption": "Confier à l'UID propriétaire les fichiers appartenant à root situés sous des répertoires de root ou de cet UID, en consignant chacun dans un manifeste d'annulation",
           "dryRunOption": "Avec --root-owned : lister les fichiers qui changeraient, sans rien modifier",
           "undoOption": "Avec --root-owned : rendre à root les fichiers du manifeste d'annulation que l'UID propriétaire possède encore",
-          "rootOwnedQualifiers": "--dry-run et --undo ne s'utilisent qu'avec --root-owned et ne peuvent pas être combinés"
+          "rootOwnedQualifiers": "--dry-run et --undo ne s'utilisent qu'avec --root-owned et ne peuvent pas être combinés",
+          "rootOwnedDryRunSummary": "{{count}} entrées appartenant à root sous {{repository}} sur {{machine}} seraient confiées à l'UID propriétaire ; rien n'a été modifié."
         },
         "template": {
           "apply": {

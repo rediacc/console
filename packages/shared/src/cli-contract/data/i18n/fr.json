@@ -1360,6 +1360,7 @@
   "commands.repo.admin.ownership.descriptionShort": "Changer l'UID du propriétaire du répertoire du dépôt",
   "commands.repo.admin.ownership.dryRunOption": "Avec --root-owned : lister les fichiers qui changeraient, sans rien modifier",
   "commands.repo.admin.ownership.failed": "Échec de la mise à jour de la propriété",
+  "commands.repo.admin.ownership.rootOwnedDryRunSummary": "{{count}} entrées appartenant à root sous {{repository}} sur {{machine}} seraient confiées à l'UID propriétaire ; rien n'a été modifié.",
   "commands.repo.admin.ownership.rootOwnedOption": "Confier à l'UID propriétaire les fichiers appartenant à root situés sous des répertoires de root ou de cet UID, en consignant chacun dans un manifeste d'annulation",
   "commands.repo.admin.ownership.rootOwnedQualifiers": "--dry-run et --undo ne s'utilisent qu'avec --root-owned et ne peuvent pas être combinés",
   "commands.repo.admin.ownership.starting": "Définition de la propriété de \"{{repository}}\" sur \"{{machine}}\"...",

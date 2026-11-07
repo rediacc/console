@@ -1360,6 +1360,7 @@
   "commands.repo.admin.ownership.descriptionShort": "リポジトリディレクトリの所有者 UID を変更する",
   "commands.repo.admin.ownership.dryRunOption": "--root-owned と併用: 変更されるファイルを一覧表示し、何も変更しません",
   "commands.repo.admin.ownership.failed": "所有権の更新に失敗しました",
+  "commands.repo.admin.ownership.rootOwnedDryRunSummary": "{{machine}} 上の {{repository}} 配下にある root 所有のエントリ {{count}} 件が所有者 UID に引き渡されます。変更は行われていません。",
   "commands.repo.admin.ownership.rootOwnedOption": "root またはその UID が所有するディレクトリ配下にある root 所有のファイルを所有者 UID に引き渡し、それぞれを取り消し用マニフェストに記録します",
   "commands.repo.admin.ownership.rootOwnedQualifiers": "--dry-run と --undo は --root-owned と併用した場合にのみ有効で、同時には指定できません",
   "commands.repo.admin.ownership.starting": "\"{{machine}}\" で \"{{repository}}\" の所有権を設定中...",

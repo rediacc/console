@@ -1360,6 +1360,7 @@
   "commands.repo.admin.ownership.descriptionShort": "UID des Repository-Verzeichnisbesitzers ändern",
   "commands.repo.admin.ownership.dryRunOption": "Mit --root-owned: die Dateien auflisten, die sich ändern würden, ohne etwas zu ändern",
   "commands.repo.admin.ownership.failed": "Besitz-Aktualisierung fehlgeschlagen",
+  "commands.repo.admin.ownership.rootOwnedDryRunSummary": "{{count}} root-eigene Einträge unter {{repository}} auf {{machine}} würden an die Eigentümer-UID übergeben; nichts wurde geändert.",
   "commands.repo.admin.ownership.rootOwnedOption": "Root-eigene Dateien unterhalb von Verzeichnissen, die root oder dieser UID gehören, an die Eigentümer-UID übergeben und jede in einem Rückgängig-Manifest festhalten",
   "commands.repo.admin.ownership.rootOwnedQualifiers": "--dry-run und --undo gelten jeweils nur zusammen mit --root-owned und lassen sich nicht kombinieren",
   "commands.repo.admin.ownership.starting": "Besitz von \"{{repository}}\" wird auf \"{{machine}}\" gesetzt...",

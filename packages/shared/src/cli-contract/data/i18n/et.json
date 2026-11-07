@@ -1360,6 +1360,7 @@
   "commands.repo.admin.ownership.descriptionShort": "Muuda hoidla kataloogi omaniku UID-i",
   "commands.repo.admin.ownership.dryRunOption": "Koos --root-owned-iga: loetle failid, mis muutuksid, midagi muutmata",
   "commands.repo.admin.ownership.failed": "Omandiõiguse uuendamine ebaõnnestus",
+  "commands.repo.admin.ownership.rootOwnedDryRunSummary": "{{count}} root'i omanduses kirjet asukohas {{repository}} masinas {{machine}} antaks omaniku UID-le üle; midagi ei muudetud.",
   "commands.repo.admin.ownership.rootOwnedOption": "Anna root-kasutajale kuuluvad failid, mis asuvad root-i või selle UID kataloogide all, omaniku UID-le ja salvesta igaüks tagasivõtmise manifesti",
   "commands.repo.admin.ownership.rootOwnedQualifiers": "--dry-run ja --undo kehtivad ainult koos --root-owned-iga ning neid ei saa koos kasutada",
   "commands.repo.admin.ownership.starting": "Hoidla \"{{repository}}\" omandiõiguse seadistamine masinal \"{{machine}}\"...",

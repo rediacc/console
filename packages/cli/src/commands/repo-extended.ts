@@ -3,9 +3,10 @@ import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
+import { writeStdout } from '../services/core/request-context.js';
 import { runCommandJob } from '../services/jobs/command-job.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
-import { handleError, ValidationError } from '../utils/errors.js';
+import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
 import { executeRepoFunction } from '../utils/repo-executor.js';
 import { resolveRepoRef } from '../utils/repo-target.js';
 import { assertMachineExists } from './_validate.js';
@@ -64,6 +65,38 @@ function ownershipParams(options: {
   if (options.dryRun) params.dry_run = true;
   if (options.undo) params.undo = true;
   return params;
+}
+
+/**
+ * The `--root-owned --dry-run` answer: renet prints each entry it would hand over, one path per line relative to the
+ * mount (cmd/renet/repository_ownership.go runRootOwnedOwnership). JSON and YAML get the object, the table the list and
+ * its count.
+ */
+function renderRootOwnedDryRun(
+  repository: string,
+  machine: string,
+  stdout: string | undefined
+): void {
+  const entries = (stdout ?? '')
+    .split('\n')
+    .map((line) => line.trimEnd())
+    .filter((line) => line.length > 0);
+  const format = getOutputFormat();
+  if (format !== 'table') {
+    outputService.print(
+      { repository, machine, dryRun: true, count: entries.length, entries },
+      format
+    );
+    return;
+  }
+  if (entries.length > 0) writeStdout(`${entries.join('\n')}\n`);
+  outputService.info(
+    t('commands.repo.admin.ownership.rootOwnedDryRunSummary', {
+      count: entries.length,
+      repository,
+      machine,
+    })
+  );
 }
 
 /** Execute a machine-level function (no repository context needed). */
@@ -409,8 +442,10 @@ export function registerExtendedRepoCommands(repo: Command, admin: Command): voi
           const params = ownershipParams(options);
           const { repoKey, machineName, kubeCluster } = await resolveRepoRef(ref);
           await assertCommandPolicy(CMD.REPO_ADMIN_OWNERSHIP, repoKey);
+          // The dry run's answer is the list renet prints on stdout; without capturing it the list reached the terminal only under --debug.
+          const listing = options.rootOwned === true && options.dryRun === true;
 
-          await executeRepoFunction(
+          const result = await executeRepoFunction(
             'repository_ownership',
             repoKey,
             machineName,
@@ -418,6 +453,7 @@ export function registerExtendedRepoCommands(repo: Command, admin: Command): voi
             {
               ...options,
               ...(kubeCluster !== undefined && { kubeCluster }),
+              ...(listing && { captureOutput: true }),
               job: { verb: 'repo admin ownership', steps: [] },
             },
             {
@@ -429,6 +465,9 @@ export function registerExtendedRepoCommands(repo: Command, admin: Command): voi
               failed: t('commands.repo.admin.ownership.failed'),
             }
           );
+          if (listing && result.success && result.state !== 'running') {
+            renderRootOwnedDryRun(repoKey, machineName, result.stdout);
+          }
         } catch (error) {
           handleError(error);
         }

@@ -1360,6 +1360,7 @@
   "commands.repo.admin.ownership.descriptionShort": "Изменить UID владельца каталога репозитория",
   "commands.repo.admin.ownership.dryRunOption": "С --root-owned: перечислить файлы, которые изменились бы, ничего не меняя",
   "commands.repo.admin.ownership.failed": "Ошибка обновления владельца",
+  "commands.repo.admin.ownership.rootOwnedDryRunSummary": "{{count}} записей, принадлежащих root, в {{repository}} на {{machine}} были бы переданы UID владельца; ничего не изменено.",
   "commands.repo.admin.ownership.rootOwnedOption": "Передать UID владельца файлы root, лежащие в каталогах root или этого UID, и записать каждый в манифест отмены",
   "commands.repo.admin.ownership.rootOwnedQualifiers": "--dry-run и --undo применяются только вместе с --root-owned, и их нельзя использовать одновременно",
   "commands.repo.admin.ownership.starting": "Установка владельца \"{{repository}}\" на \"{{machine}}\"...",

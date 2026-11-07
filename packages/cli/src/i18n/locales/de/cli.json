@@ -1793,7 +1793,8 @@
           "rootOwnedOption": "Root-eigene Dateien unterhalb von Verzeichnissen, die root oder dieser UID gehören, an die Eigentümer-UID übergeben und jede in einem Rückgängig-Manifest festhalten",
           "dryRunOption": "Mit --root-owned: die Dateien auflisten, die sich ändern würden, ohne etwas zu ändern",
           "undoOption": "Mit --root-owned: die Dateien aus dem Rückgängig-Manifest, die noch der Eigentümer-UID gehören, an root zurückgeben",
-          "rootOwnedQualifiers": "--dry-run und --undo gelten jeweils nur zusammen mit --root-owned und lassen sich nicht kombinieren"
+          "rootOwnedQualifiers": "--dry-run und --undo gelten jeweils nur zusammen mit --root-owned und lassen sich nicht kombinieren",
+          "rootOwnedDryRunSummary": "{{count}} root-eigene Einträge unter {{repository}} auf {{machine}} würden an die Eigentümer-UID übergeben; nichts wurde geändert."
         },
         "template": {
           "apply": {

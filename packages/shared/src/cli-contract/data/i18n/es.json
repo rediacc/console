@@ -1360,6 +1360,7 @@
   "commands.repo.admin.ownership.descriptionShort": "Cambiar UID de propiedad del directorio del repositorio",
   "commands.repo.admin.ownership.dryRunOption": "Con --root-owned: listar los archivos que cambiarían, sin cambiar nada",
   "commands.repo.admin.ownership.failed": "Error al actualizar la propiedad",
+  "commands.repo.admin.ownership.rootOwnedDryRunSummary": "{{count}} entradas propiedad de root en {{repository}} en {{machine}} pasarían al UID propietario; no se cambió nada.",
   "commands.repo.admin.ownership.rootOwnedOption": "Entregar al UID propietario los archivos de root que estén bajo directorios de root o de ese UID, registrando cada uno en un manifiesto para deshacer",
   "commands.repo.admin.ownership.rootOwnedQualifiers": "--dry-run y --undo solo se aplican junto con --root-owned y no se pueden combinar",
   "commands.repo.admin.ownership.starting": "Estableciendo propiedad de \"{{repository}}\" en \"{{machine}}\"...",

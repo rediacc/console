@@ -144,6 +144,7 @@ const { registerExtendedRepoCommands } = await import('../repo-extended.js');
 const { registerRepoMaintenanceCommands } = await import('../repo-maintenance.js');
 await import('../repo-delta.js');
 const { Command } = await import('commander');
+const { setOutputFormat } = await import('../../utils/errors.js');
 
 type Executed = {
   functionName: string;
@@ -598,6 +599,71 @@ describe('repo verbs outside J4: one job per machine, the follow-up as steps', (
 
       expect(executed.map((o) => o.functionName)).toEqual(['repository_ownership']);
       expect(executed[0].params).toEqual({ repository: 'shop:latest', ...params });
+    });
+
+    describe('repo admin ownership --root-owned --dry-run renders the list without --debug', () => {
+      const LIST = 'data/db/pg_hba.conf\ndata/cache\n';
+
+      afterEach(() => {
+        setOutputFormat('table');
+      });
+
+      it('captures the job output and prints each entry and the count in the table form', async () => {
+        answer = { ...FINISHED, stdout: LIST };
+        const written: string[] = [];
+        const spy = vi.spyOn(process.stdout, 'write').mockImplementation((chunk) => {
+          written.push(String(chunk));
+          return true;
+        });
+
+        try {
+          await runVerb(extended, 'admin', 'ownership', 'shop:latest', '--root-owned', '--dry-run');
+        } finally {
+          spy.mockRestore();
+        }
+
+        expect((executed[0] as Executed & { captureOutput?: boolean }).captureOutput).toBe(true);
+        expect(written.join('')).toBe(LIST);
+        expect(outputService.info).toHaveBeenCalledWith(
+          'commands.repo.admin.ownership.rootOwnedDryRunSummary:{"count":2,"repository":"shop:latest","machine":"m1"}'
+        );
+      });
+
+      it('prints the list and the count as one object under -o json', async () => {
+        answer = { ...FINISHED, stdout: LIST };
+        setOutputFormat('json');
+
+        await runVerb(extended, 'admin', 'ownership', 'shop:latest', '--root-owned', '--dry-run');
+
+        expect(mockPrint).toHaveBeenCalledWith(
+          {
+            repository: 'shop:latest',
+            machine: 'm1',
+            dryRun: true,
+            count: 2,
+            entries: ['data/db/pg_hba.conf', 'data/cache'],
+          },
+          'json'
+        );
+      });
+
+      it('control: an empty dry run reports zero entries, and a real run captures nothing', async () => {
+        answer = { ...FINISHED, stdout: '' };
+        setOutputFormat('json');
+        await runVerb(extended, 'admin', 'ownership', 'shop:latest', '--root-owned', '--dry-run');
+        expect(mockPrint).toHaveBeenCalledWith(
+          { repository: 'shop:latest', machine: 'm1', dryRun: true, count: 0, entries: [] },
+          'json'
+        );
+
+        mockPrint.mockClear();
+        executed = [];
+        await runVerb(extended, 'admin', 'ownership', 'shop:latest', '--root-owned');
+        expect(
+          (executed[0] as Executed & { captureOutput?: boolean }).captureOutput
+        ).toBeUndefined();
+        expect(mockPrint).not.toHaveBeenCalled();
+      });
     });
 
     it.each([[['--dry-run']], [['--undo']], [['--root-owned', '--dry-run', '--undo']]])(

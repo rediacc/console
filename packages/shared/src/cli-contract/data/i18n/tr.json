@@ -1360,6 +1360,7 @@
   "commands.repo.admin.ownership.descriptionShort": "Depo dizininin sahiplik UID değerini değiştir",
   "commands.repo.admin.ownership.dryRunOption": "--root-owned ile: değişecek dosyaları listele, hiçbir şeyi değiştirme",
   "commands.repo.admin.ownership.failed": "Sahiplik güncelleme başarısız",
+  "commands.repo.admin.ownership.rootOwnedDryRunSummary": "{{machine}} üzerindeki {{repository}} altında root'a ait {{count}} girdi sahip UID'ye devredilirdi; hiçbir şey değiştirilmedi.",
   "commands.repo.admin.ownership.rootOwnedOption": "root'a ya da bu UID'ye ait dizinlerin altındaki root dosyalarını sahip UID'ye devret ve her birini geri alma manifestine kaydet",
   "commands.repo.admin.ownership.rootOwnedQualifiers": "--dry-run ve --undo yalnızca --root-owned ile birlikte geçerlidir ve birlikte kullanılamaz",
   "commands.repo.admin.ownership.starting": "\"{{machine}}\" üzerinde \"{{repository}}\" sahipliği ayarlanıyor...",

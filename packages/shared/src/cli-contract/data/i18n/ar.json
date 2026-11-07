@@ -1360,6 +1360,7 @@
   "commands.repo.admin.ownership.descriptionShort": "تغيير UID مالك دليل المستودع",
   "commands.repo.admin.ownership.dryRunOption": "مع --root-owned: عرض الملفات التي ستتغير دون تغيير أي شيء",
   "commands.repo.admin.ownership.failed": "فشل تحديث الملكية",
+  "commands.repo.admin.ownership.rootOwnedDryRunSummary": "سيُنقل {{count}} من العناصر المملوكة لـ root ضمن {{repository}} على {{machine}} إلى معرّف المستخدم المالك؛ لم يتغير شيء.",
   "commands.repo.admin.ownership.rootOwnedOption": "تسليم الملفات المملوكة لـ root الموجودة تحت أدلة يملكها root أو هذا UID إلى UID المالك، مع تسجيل كل منها في بيان تراجع",
   "commands.repo.admin.ownership.rootOwnedQualifiers": "لا يُستخدم --dry-run و--undo إلا مع --root-owned، ولا يمكن الجمع بينهما",
   "commands.repo.admin.ownership.starting": "جارٍ تعيين ملكية \"{{repository}}\" على \"{{machine}}\"...",

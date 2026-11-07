@@ -1793,7 +1793,8 @@
           "rootOwnedOption": "root'a ya da bu UID'ye ait dizinlerin altındaki root dosyalarını sahip UID'ye devret ve her birini geri alma manifestine kaydet",
           "dryRunOption": "--root-owned ile: değişecek dosyaları listele, hiçbir şeyi değiştirme",
           "undoOption": "--root-owned ile: geri alma manifestindeki, hâlâ sahip UID'ye ait dosyaları root'a geri ver",
-          "rootOwnedQualifiers": "--dry-run ve --undo yalnızca --root-owned ile birlikte geçerlidir ve birlikte kullanılamaz"
+          "rootOwnedQualifiers": "--dry-run ve --undo yalnızca --root-owned ile birlikte geçerlidir ve birlikte kullanılamaz",
+          "rootOwnedDryRunSummary": "{{machine}} üzerindeki {{repository}} altında root'a ait {{count}} girdi sahip UID'ye devredilirdi; hiçbir şey değiştirilmedi."
         },
         "template": {
           "apply": {

@@ -1793,7 +1793,8 @@
           "rootOwnedOption": "Entregar ao UID proprietário os ficheiros de root que estejam sob diretórios de root ou desse UID, registando cada um num manifesto para desfazer",
           "dryRunOption": "Com --root-owned: listar os ficheiros que mudariam, sem alterar nada",
           "undoOption": "Com --root-owned: devolver a root os ficheiros do manifesto para desfazer que ainda pertencem ao UID proprietário",
-          "rootOwnedQualifiers": "--dry-run e --undo só se aplicam com --root-owned e não podem ser combinados"
+          "rootOwnedQualifiers": "--dry-run e --undo só se aplicam com --root-owned e não podem ser combinados",
+          "rootOwnedDryRunSummary": "{{count}} entradas pertencentes ao root em {{repository}} na {{machine}} seriam passadas para o UID proprietário; nada foi alterado."
         },
         "template": {
           "apply": {

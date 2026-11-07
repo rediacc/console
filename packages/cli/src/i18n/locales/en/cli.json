@@ -1778,6 +1778,7 @@
           "dryRunOption": "With --root-owned: list the files that would change, and change nothing",
           "undoOption": "With --root-owned: return the files in the undo manifest that the owner UID still owns to root",
           "rootOwnedQualifiers": "--dry-run and --undo each apply only with --root-owned, and cannot be combined",
+          "rootOwnedDryRunSummary": "{{count}} root-owned entries under {{repository}} on {{machine}} would be handed to the owner UID; nothing changed.",
           "starting": "Setting ownership of \"{{repository}}\" on \"{{machine}}\"...",
           "completed": "Ownership updated",
           "failed": "Ownership update failed"

@@ -1793,7 +1793,8 @@
           "rootOwnedOption": "Anna root-kasutajale kuuluvad failid, mis asuvad root-i või selle UID kataloogide all, omaniku UID-le ja salvesta igaüks tagasivõtmise manifesti",
           "dryRunOption": "Koos --root-owned-iga: loetle failid, mis muutuksid, midagi muutmata",
           "undoOption": "Koos --root-owned-iga: tagasta root-ile tagasivõtmise manifesti failid, mis kuuluvad endiselt omaniku UID-le",
-          "rootOwnedQualifiers": "--dry-run ja --undo kehtivad ainult koos --root-owned-iga ning neid ei saa koos kasutada"
+          "rootOwnedQualifiers": "--dry-run ja --undo kehtivad ainult koos --root-owned-iga ning neid ei saa koos kasutada",
+          "rootOwnedDryRunSummary": "{{count}} root'i omanduses kirjet asukohas {{repository}} masinas {{machine}} antaks omaniku UID-le üle; midagi ei muudetud."
         },
         "template": {
           "apply": {
