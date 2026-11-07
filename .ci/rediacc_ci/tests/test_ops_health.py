@@ -421,6 +421,36 @@ def test_lock_is_exclusive_and_stale_after_twenty_minutes(tmp_path):
     assert not lock.exists()
 
 
+def _dead_pid() -> int:
+    proc = subprocess.Popen(["true"])
+    proc.wait()
+    return proc.pid
+
+
+def test_lock_of_a_dead_pid_is_taken_over_at_once(tmp_path):
+    assert oh.take_lock(tmp_path, now=1000.0)
+    lock = tmp_path / oh.CACHE_DIR_REL / oh.LOCK_NAME
+    lock.write_text(json.dumps({"pid": _dead_pid(), "at": 1000.0}), encoding="utf-8")
+    os.utime(lock, (1000.0, 1000.0))
+    assert oh.take_lock(tmp_path, now=1001.0)
+    assert json.loads(lock.read_text(encoding="utf-8"))["pid"] == os.getpid()
+
+
+def test_lock_of_a_live_pid_holds_until_it_is_stale(tmp_path):
+    assert oh.take_lock(tmp_path, now=1000.0)
+    lock = tmp_path / oh.CACHE_DIR_REL / oh.LOCK_NAME
+    os.utime(lock, (1000.0, 1000.0))
+    assert not oh.take_lock(tmp_path, now=1001.0)
+
+
+def test_lock_held_refresher_stamps_its_own_pid(tmp_path):
+    assert oh.take_lock(tmp_path, now=1000.0)
+    lock = tmp_path / oh.CACHE_DIR_REL / oh.LOCK_NAME
+    lock.write_text(json.dumps({"pid": _dead_pid(), "at": 1000.0}), encoding="utf-8")
+    oh.stamp_lock(tmp_path, now=1002.0)
+    assert json.loads(lock.read_text(encoding="utf-8"))["pid"] == os.getpid()
+
+
 # --------------------------------------------------------------------------- L4: the gate
 
 

@@ -48,7 +48,7 @@ STATE_NAME = "state.json"
 LOCK_NAME = "refresh.lock"
 LEDGER_REL = "agent/ledgers/ops-health.jsonl"
 LEDGER_LOCK_NAME = "ledger.lock"
-# The hook treats an older lock as a dead refresher (D-local).
+# An older lock, or one whose recorded pid is dead, is a dead refresher's (D-local).
 LOCK_STALE_S = 20 * 60
 
 NO_PROVISION_ENV = "REDIACC_NO_PROVISION"
@@ -896,8 +896,46 @@ def post_ingest(url: str, token: str, sources: dict, now: datetime.datetime, fet
     return out
 
 
+def pid_alive(pid: int) -> bool:
+    """True when `pid` names a running process (a pid owned by another user counts as running)."""
+    try:
+        os.kill(pid, 0)
+    except PermissionError:
+        return True
+    except (OSError, OverflowError, ValueError):
+        return False
+    return True
+
+
+def lock_holder(path: pathlib.Path) -> int | None:
+    """The pid a lock file records, or None when it records none (a lock mid-write, or a foreign one)."""
+    try:
+        pid = json.loads(path.read_text(encoding="utf-8")).get("pid")
+    except (OSError, ValueError, AttributeError):
+        return None
+    return pid if isinstance(pid, int) and not isinstance(pid, bool) and pid > 0 else None
+
+
+def lock_is_stale(path: pathlib.Path, now: float) -> bool:
+    """A lock whose recorded pid is dead is stale at once; any lock older than LOCK_STALE_S is stale. Raises OSError when the lock vanished."""
+    age = now - path.stat().st_mtime
+    pid = lock_holder(path)
+    if pid is not None and not pid_alive(pid):
+        return True
+    return age >= LOCK_STALE_S
+
+
+def stamp_lock(root: pathlib.Path, now: float | None = None) -> None:
+    """Record this process as the lock's holder: a `--lock-held` refresher replaces the pid of the hook that took the lock for it."""
+    now = time.time() if now is None else now
+    with contextlib.suppress(OSError):
+        (cache_dir(root) / LOCK_NAME).write_text(
+            json.dumps({"pid": os.getpid(), "at": now}), encoding="utf-8"
+        )
+
+
 def take_lock(root: pathlib.Path, now: float | None = None) -> bool:
-    """O_EXCL on refresh.lock; a lock older than LOCK_STALE_S is a dead refresher's and is taken over."""
+    """O_EXCL on refresh.lock; a lock whose recorded pid is dead, or older than LOCK_STALE_S, is a dead refresher's and is taken over."""
     now = time.time() if now is None else now
     d = cache_dir(root)
     d.mkdir(parents=True, exist_ok=True)
@@ -907,10 +945,10 @@ def take_lock(root: pathlib.Path, now: float | None = None) -> bool:
             fd = os.open(str(path), os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o644)
         except FileExistsError:
             try:
-                age = now - path.stat().st_mtime
+                stale = lock_is_stale(path, now)
             except OSError:
                 continue
-            if age < LOCK_STALE_S:
+            if not stale:
                 return False
             with contextlib.suppress(OSError):
                 path.unlink()
@@ -1094,7 +1132,9 @@ def main(argv: list | None = None) -> int:
         return entry["rc"]
 
     # refresh
-    if not args.lock_held and not take_lock(root):
+    if args.lock_held:
+        stamp_lock(root)
+    elif not take_lock(root):
         print(
             "ops_health refresh: %s/%s is held by a live refresher; nothing run."
             % (CACHE_DIR_REL, LOCK_NAME),

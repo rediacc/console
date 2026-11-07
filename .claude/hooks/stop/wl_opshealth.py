@@ -2,7 +2,7 @@
 
 WHAT IT READS. `.ci/cache/ops-health/state.json`, written by `python3 -m rediacc_ci.ops.ops_health refresh` (gitignored). Every check entry carries its own `at` and `ttl_s`, so the TTLs live in .ci/config/ops-health.json and the refresher, never here.
 
-WHEN A CHECK IS DUE (its `at` older than its `ttl_s`, or no readable cache at all), ONE detached refresher is spawned, claimed through O_EXCL on `.ci/cache/ops-health/refresh.lock` (a lock older than LOCK_STALE_S is a dead refresher's and is taken over). The refresher is passed `--lock-held` and removes the lock when it ends. The hook never waits for it and never raises: the next stop reads what it wrote.
+WHEN A CHECK IS DUE (its `at` older than its `ttl_s`, or no readable cache at all), ONE detached refresher is spawned, claimed through O_EXCL on `.ci/cache/ops-health/refresh.lock` (a lock whose recorded pid is dead, or older than LOCK_STALE_S, is a dead refresher's and is taken over). The refresher is passed `--lock-held` and removes the lock when it ends. The hook never waits for it and never raises: the next stop reads what it wrote.
 
 OWNERSHIP reuses wl_schedred's claim file. An open `[ ]`/`[>]`/`[?]` item whose text opens with `ops-health` (optionally behind a `(<hex prefix>)` tag) belongs to its owner (the open-items blocker already holds that owner, and a peer gets one advisory). With no such item, `wl_schedred.claim` picks ONE session: the holder is blocked (`ops-health-red`, `ops-health-offbox-stale`) and every other session gets an advisory (`ops-health-peer`). The claim's run id is a signature of the red subjects, so a new red re-claims.
 
@@ -111,16 +111,45 @@ def take_lock(root, now=None):
         os.close(guard)
 
 
+def pid_alive(pid):
+    """True when `pid` names a running process (a pid owned by another user counts as running)."""
+    try:
+        os.kill(pid, 0)
+    except PermissionError:
+        return True
+    except (OSError, OverflowError, ValueError):
+        return False
+    return True
+
+
+def lock_holder(path):
+    """The pid a lock file records, or None when it records none (a lock mid-write, or a foreign one)."""
+    try:
+        pid = json.loads(path.read_text(encoding="utf-8")).get("pid")
+    except (OSError, ValueError, AttributeError):
+        return None
+    return pid if isinstance(pid, int) and not isinstance(pid, bool) and pid > 0 else None
+
+
+def lock_is_stale(path, now):
+    """A lock whose recorded pid is dead is stale at once; any lock older than LOCK_STALE_S is stale. Raises OSError when the lock vanished."""
+    age = now - path.stat().st_mtime
+    pid = lock_holder(path)
+    if pid is not None and not pid_alive(pid):
+        return True
+    return age >= LOCK_STALE_S
+
+
 def _take_lock_held(path, now):
     for _ in range(2):
         try:
             fd = os.open(str(path), os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o644)
         except FileExistsError:
             try:
-                age = now - path.stat().st_mtime
+                stale = lock_is_stale(path, now)
             except OSError:
                 continue
-            if age < LOCK_STALE_S:
+            if not stale:
                 return False
             with contextlib.suppress(OSError):
                 path.unlink()
@@ -169,7 +198,7 @@ def spawn_refresh(root, popen=None, now=None):
     except OSError:
         log_fd = subprocess.DEVNULL
     try:
-        popen(
+        proc = popen(
             [sys.executable or "python3", *_REFRESH_ARGV],
             cwd=str(root),
             env=env,
@@ -186,6 +215,13 @@ def spawn_refresh(root, popen=None, now=None):
         if log_fd != subprocess.DEVNULL:
             with contextlib.suppress(OSError):
                 os.close(log_fd)
+    # The lock names this hook's pid, which exits at once; hand it to the refresher so the next stop's liveness check sees a live holder.
+    child = getattr(proc, "pid", None)
+    if isinstance(child, int) and child > 0:
+        with contextlib.suppress(OSError):
+            (cache_dir(root) / LOCK_NAME).write_text(
+                json.dumps({"pid": child, "at": stamp, "by": "wl_opshealth"}), encoding="utf-8"
+            )
     return True
 
 

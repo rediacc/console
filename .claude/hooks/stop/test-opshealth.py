@@ -15,6 +15,7 @@ import json
 import os
 import pathlib
 import shutil
+import subprocess
 import tempfile
 import threading
 
@@ -449,5 +450,41 @@ check(
     "ASK the operator" in assess(root, wl, A)["block"],
     False,
 )
+
+# --- a lock whose recorded pid is dead is taken over at once; a live holder's is not (hostinger runner D-c)
+_gone = subprocess.Popen(["true"])
+_gone.wait()
+root, wl = fixture(None)
+lock = root / ".ci" / "cache" / "ops-health" / "refresh.lock"
+lock.write_text(json.dumps({"pid": _gone.pid, "at": NOW.timestamp()}))
+os.utime(lock, (NOW.timestamp(), NOW.timestamp()))
+check(
+    "dead holder: a fresh lock of a dead pid is taken over",
+    O.take_lock(root, now=NOW.timestamp() + 1),
+    True,
+)
+root, wl = fixture(None)
+lock = root / ".ci" / "cache" / "ops-health" / "refresh.lock"
+lock.write_text(json.dumps({"pid": os.getpid(), "at": NOW.timestamp()}))
+os.utime(lock, (NOW.timestamp(), NOW.timestamp()))
+check(
+    "dead holder twin: a fresh lock of a live pid holds",
+    O.take_lock(root, now=NOW.timestamp() + 1),
+    False,
+)
+
+
+class _Child:
+    pid = os.getpid()
+
+
+def _child_popen(_argv, **_kw):
+    return _Child()
+
+
+root, wl = fixture(None)
+O.spawn_refresh(root, popen=_child_popen, now=NOW.timestamp())
+lock = root / ".ci" / "cache" / "ops-health" / "refresh.lock"
+check("spawn: the lock names the refresher's pid", json.loads(lock.read_text())["pid"], _Child.pid)
 
 T.exit()
