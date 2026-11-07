@@ -7,8 +7,14 @@
 // with OTLP env vars, or constructing an exporter. All three should skip
 // when this returns true.
 
-import { metrics as metricsApi, type Span, SpanStatusCode, type Tracer } from '@opentelemetry/api';
-import { type Logger, SeverityNumber } from '@opentelemetry/api-logs';
+import {
+  type Logger,
+  metrics as metricsApi,
+  SeverityNumber,
+  type Span,
+  SpanStatusCode,
+  type Tracer,
+} from '@opentelemetry/api';
 import { type PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
 import { type NodeSDK } from '@opentelemetry/sdk-node';
 import { DEFAULTS, UPDATE_DEFAULTS } from '@rediacc/shared/config';
