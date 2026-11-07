@@ -7,6 +7,7 @@ import { t } from '../i18n/index.js';
 import { parseRetentionSpec, RetentionSpecError } from '../services/backup/backup-retention.js';
 import {
   bandwidthToBytesPerSecond,
+  destinationTarget,
   parseCpuLimitPercent,
   readCapBytesPerSecond,
 } from '../services/backup/backup-strategy-validate.js';
@@ -71,6 +72,22 @@ export function buildDestination(
     }),
     'backup destination'
   );
+}
+
+/** A replicate destination copies `from` into its target: refuse a self-copy where it is typed, with the target the merge would leave (the flag, else the stored one, else `home`). */
+export async function assertReplicaIsNotSelfCopy(
+  o: Pick<UpsertDestOpts, 'strategyName' | 'destinationName' | 'target' | 'replicateFrom'>
+): Promise<void> {
+  if (o.replicateFrom === undefined) return;
+  const stored = (await configService.getBackupStrategy(o.strategyName))?.destinations.find(
+    (d) => d.name === o.destinationName
+  );
+  const target = destinationTarget({ target: o.target ?? stored?.target });
+  if (o.replicateFrom === target) {
+    throw new ValidationError(
+      `Backup destination "${o.destinationName}" would replicate "${o.replicateFrom}" into itself; pass --target <storeId> naming a different store than --replicate-from.`
+    );
+  }
 }
 
 export async function upsertBackupDestination(o: UpsertDestOpts): Promise<void> {

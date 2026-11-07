@@ -190,6 +190,22 @@ describe('replicate destination copy lag', () => {
     ).toBe('0s');
   });
 
+  it('stays - when the target store has no status entry (an unreadable listing is not a missing copy)', () => {
+    const noReplica = {
+      byStrategy: { nightly: ['home', 'eu-west'] },
+      replicas: { nightly: { 'eu-west': 'home' } },
+      stores: { home: known({ newestSnapshotAt: '2026-11-07T01:30:00Z' }) },
+    };
+    expect(expandStatusRows(rows, noReplica)[1].copyLag).toBe('-');
+    expect(copyLag(known({ newestSnapshotAt: '2026-11-07T01:30:00Z' }), undefined)).toBe('-');
+    expect(
+      copyLag(
+        known({ newestSnapshotAt: '2026-11-07T01:30:00Z' }),
+        known({ newestSnapshotAt: null })
+      )
+    ).toBe('not copied');
+  });
+
   it('never goes negative when the replica is ahead, and is - without a source snapshot', () => {
     expect(copyLag(known({ newestSnapshotAt: '2026-11-07T01:00:00Z' }), known())).toBe('0s');
     expect(copyLag(undefined, known())).toBe('-');

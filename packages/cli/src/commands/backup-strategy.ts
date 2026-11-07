@@ -34,6 +34,7 @@ import { outputService } from '../services/core/output.js';
 import type { BackupStrategyConfig } from '../types/index.js';
 import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
 import {
+  assertReplicaIsNotSelfCopy,
   buildStrategyUpdate,
   resolveEnabledFlag,
   upsertBackupDestination,
@@ -42,6 +43,7 @@ import {
   dropReplicationForMachine,
   reportReplication,
   syncReplicationRules,
+  syncStrategyEnabledRules,
   withReplication,
 } from './backup-strategy-replication.js';
 import { strategyBindings, strategyRow } from './backup-strategy-rows.js';
@@ -119,6 +121,15 @@ export async function applyBackupStrategyOptions(
     throw new ValidationError(t('commands.backup.strategy.set.cpuLimitStrategyOnly'));
   }
 
+  if (options.destination && options.replicateFrom !== undefined) {
+    await assertReplicaIsNotSelfCopy({
+      strategyName: name,
+      destinationName: options.destination,
+      target: options.target,
+      replicateFrom: options.replicateFrom,
+    });
+  }
+
   // Strategy fields and destination fields are applied in the SAME call. This used to be an either/or, so creating a strategy with a destination took two invocations, and the first one, `set <new> --destination …`, silently produced a strategy with an empty schedule.
   //
   // `--bwlimit` and `--enable/--disable` stay scoped to the destination when one is named, which is what they have always meant there: `set s --destination d --disable` disables that destination, not the whole strategy.
@@ -138,6 +149,9 @@ export async function applyBackupStrategyOptions(
   const fill = await applyTargetOptions(name, options, update, deps);
   if (options.dryRun) return undefined;
 
+  // The rules the server holds follow the stored destinations, so the strategy as it stood is kept to find what a change leaves stale.
+  const previous = await configService.getBackupStrategy(name);
+
   // Order matters: upsertBackupDestination reads the stored strategy to merge destination defaults, so the strategy has to exist before the destination is attached. These cannot run in parallel.
   if (!targetsDestination || Object.keys(update).length > 0) {
     await configService.setBackupStrategy(name, update);
@@ -152,9 +166,15 @@ export async function applyBackupStrategyOptions(
       target: options.target,
       replicateFrom: options.replicateFrom,
     });
-    if (enabled !== undefined || options.replicateFrom !== undefined) {
-      await syncReplicationRules(name);
+    if (
+      enabled !== undefined ||
+      options.replicateFrom !== undefined ||
+      options.target !== undefined
+    ) {
+      await syncReplicationRules(name, previous);
     }
+  } else if (enabled !== undefined) {
+    await syncStrategyEnabledRules(name, enabled);
   }
 
   // Warn after the write, from the stored result: `--cron` alone can invalidate a retention set earlier.

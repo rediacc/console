@@ -314,12 +314,14 @@ export interface StatusTargets {
 
 /**
  * How far a replicate destination's store trails its source: the source's newest snapshot time minus the target's,
- * from the same status data. `-` when there is nothing to compare (no source snapshot or no data), `not copied` when
- * the target holds none yet, and `0s` when it is level.
+ * from the same status data. `-` when there is nothing to compare (no source snapshot, or the target has no status
+ * entry because the listing was unreadable or never named it), `not copied` when the target is listed with no snapshot
+ * yet, and `0s` when it is level.
  */
 export function copyLag(source: StoreStatus | undefined, target: StoreStatus | undefined): string {
   if (!source?.newestSnapshotAt) return '-';
-  if (!target?.newestSnapshotAt) return 'not copied';
+  if (!target) return '-';
+  if (!target.newestSnapshotAt) return 'not copied';
   const behind = Date.parse(source.newestSnapshotAt) - Date.parse(target.newestSnapshotAt);
   return Number.isNaN(behind) ? '-' : formatDuration(Math.max(0, behind) / 1000);
 }

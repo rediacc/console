@@ -6,6 +6,7 @@ import {
   replicateDestinations,
 } from '../services/backup/backup-replication.js';
 import { hasAccountToken } from '../services/backup/backup-retention.js';
+import { destinationTarget } from '../services/backup/backup-strategy-validate.js';
 import { configService } from '../services/config/config-resources.js';
 import { machinesBoundToStrategy } from '../services/config/config-strategy-binding.js';
 import { outputService } from '../services/core/output.js';
@@ -64,13 +65,43 @@ export async function withReplication(
 
 /**
  * Bring the server's rules in line with one strategy's replicate destinations after a destination changed: a disabled
- * one loses its rules, an enabled one is registered for every machine the strategy is bound to.
+ * one loses its rules, a destination whose target moved loses the rules at its old target (`previous` is the strategy as
+ * it stood before the change), and an enabled one is registered for every machine the strategy is bound to.
  */
-export async function syncReplicationRules(name: string): Promise<void> {
+export async function syncReplicationRules(
+  name: string,
+  previous?: Pick<BackupStrategyConfig, 'destinations'>
+): Promise<void> {
   const strategy = await configService.getBackupStrategy(name);
   await withReplication(strategy, async (found) => {
     const disabled = replicateDestinations(found, false).filter((d) => d.enabled === false);
-    reportReplication(await removeReplicationRulesFor(found, disabled), 'removed');
+    const moved = previous
+      ? replicateDestinations(previous, false).filter((old) => {
+          const now = found.destinations.find((d) => d.name === old.name);
+          return now !== undefined && destinationTarget(now) !== destinationTarget(old);
+        })
+      : [];
+    reportReplication(await removeReplicationRulesFor(found, [...disabled, ...moved]), 'removed');
+    for (const machine of await machinesBoundToStrategy(name)) {
+      reportReplication(await registerStrategyReplication(found, machine), 'registered');
+    }
+  });
+}
+
+/**
+ * The whole strategy was switched off or on: switching it off drops every replicate destination's rules (the server
+ * would keep copying a strategy that no longer runs), and switching it on registers them again for every bound machine.
+ */
+export async function syncStrategyEnabledRules(name: string, enabled: boolean): Promise<void> {
+  const strategy = await configService.getBackupStrategy(name);
+  await withReplication(strategy, async (found) => {
+    if (!enabled) {
+      reportReplication(
+        await removeReplicationRulesFor(found, replicateDestinations(found, false)),
+        'removed'
+      );
+      return;
+    }
     for (const machine of await machinesBoundToStrategy(name)) {
       reportReplication(await registerStrategyReplication(found, machine), 'registered');
     }
