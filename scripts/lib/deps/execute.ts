@@ -122,7 +122,7 @@ export function updateMismatches(
   for (const { pkg, workspace } of checks) {
     const nested = workspace ? lock?.[`${workspace}/node_modules/${pkg.name}`] : undefined;
     const top = (nested ?? lock?.[`node_modules/${pkg.name}`])?.version;
-    // npm may install the copy an override governs only nested (`node_modules/<dependent>/node_modules/<name>`) when another dependent holds the top-level slot with a different line, so a missing hoisted entry is judged against every nested copy before it counts as missing.
+    // npm may install the copy an override governs only nested when another dependent holds the top-level slot with a different line, so a missing hoisted entry is judged against every nested copy under the judged tree (`node_modules/<dependent>/node_modules/<name>` for the root, `<workspace>/node_modules/<dependent>/node_modules/<name>` for a workspace step) before it counts as missing. A copy outside that tree is another tree's own and is judged by that tree's check.
     const copies: Array<{ key?: string; version: string | undefined }> =
       top === undefined
         ? nestedCopies(lock, pkg.name, workspace ? `${workspace}/node_modules/` : 'node_modules/')

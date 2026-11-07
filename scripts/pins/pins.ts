@@ -2291,6 +2291,10 @@ const CASES: Record<string, Case> = {
       ['apply-soaked', '--json', '--out', path.join(ready.root, 'out')],
       withMutant(ready, m)
     );
+    const soakedWaiting = await runCli(
+      ['apply-soaked', '--json', '--out', path.join(waiting.root, 'out')],
+      withMutant(waiting, m)
+    );
     const v = st.rc === 0 ? (JSON.parse(st.out) as { pins: PinView[] }).pins[0] : null;
     const to =
       take.rc === 0
@@ -2335,8 +2339,17 @@ const CASES: Record<string, Case> = {
       {
         // The re-digest is the pinned version, so the unattended run treats it as it treats any non-major.
         name: 'redigest: apply-soaked past the window takes the re-digest, as it takes any non-major',
-        ok: soakedRun.rc === 0 && soakedRun.out.includes(label),
+        // The file itself is the proof: the re-digest's sha256 is written into the Dockerfile, not just named somewhere in the output.
+        ok: soakedRun.rc === 0 && ready.read('Dockerfile').includes(`TOOL_SHA256=${SHA('b')}`),
         detail: `rc=${soakedRun.rc} ${soakedRun.err} ${soakedRun.out.slice(0, 400)}`,
+      },
+      {
+        name: 'redigest: CONTROL: apply-soaked inside the window leaves the re-digest unwritten',
+        ok:
+          soakedWaiting.rc === 0 &&
+          waiting.read('Dockerfile').includes(`TOOL_SHA256=${SHA('a')}`) &&
+          !waiting.read('Dockerfile').includes(SHA('b')),
+        detail: `rc=${soakedWaiting.rc} ${soakedWaiting.err} ${waiting.read('Dockerfile')}`,
       },
     ];
   },

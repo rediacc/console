@@ -389,15 +389,20 @@ export function nextOnBase(next: string, base: string): boolean {
  * `last_updated` listing; what falls past 500 shape-matching pushes is the old lines (measured
  * 2026-11-06: `node` `slim` runs past 10 pages, and 26-slim and 24-slim are on page one).
  */
-async function listHubTags(repo: string, tag: string): Promise<TagInfo[] | null> {
-  let url: string | null = tagListUrl(HUB_BASE || HUB_DEFAULT_BASE, repo, tag);
+export async function listHubTags(
+  repo: string,
+  tag: string,
+  getJson: (url: string, key: string) => Promise<unknown | null> = hubGetJson,
+  base: string = HUB_BASE || HUB_DEFAULT_BASE
+): Promise<TagInfo[] | null> {
+  let url: string | null = tagListUrl(base, repo, tag);
   const out: TagInfo[] = [];
   for (let page = 0; url !== null; page++) {
     if (page === LIST_PAGES) {
       truncated.push(`${repo}:${tag}`);
       break;
     }
-    const j = (await hubGetJson(url, repo)) as {
+    const j = (await getJson(url, repo)) as {
       results?: { name: string; last_updated?: string }[];
       next?: unknown;
     } | null;
@@ -406,7 +411,7 @@ async function listHubTags(repo: string, tag: string): Promise<TagInfo[] | null>
       out.push({ name: t.name, pushedMs: t.last_updated ? Date.parse(t.last_updated) : null });
     url = typeof j.next === 'string' && j.next !== '' ? j.next : null;
     // A page that leaves the Hub origin is no answer: the listing fails closed instead of the credential travelling to another host.
-    if (url !== null && !nextOnBase(url, HUB_BASE || HUB_DEFAULT_BASE)) return null;
+    if (url !== null && !nextOnBase(url, base)) return null;
   }
   return out;
 }
@@ -556,7 +561,7 @@ export function unclaimedPins(pins: Pin[], entries: PinEntry[]): string[] {
     );
 }
 
-function selftest(): { bad: number; total: number } {
+async function selftest(): Promise<{ bad: number; total: number }> {
   let bad = 0;
   let total = 0;
   const check = (label: string, ok: boolean) => {
@@ -684,6 +689,40 @@ function selftest(): { bad: number; total: number } {
       !nextOnBase('http://h/v2/x', 'https://h') &&
       !nextOnBase('https://h:8443/v2/x', 'https://h') &&
       !nextOnBase('not a url', 'https://h')
+  );
+  // listHubTags follows `next` only on the Hub origin; both walks run against a canned answer, so a removed or inverted guard at the call site turns one of these red.
+  const pageOf = (names: string[], next?: string) => ({
+    results: names.map((name) => ({ name })),
+    ...(next === undefined ? {} : { next }),
+  });
+  const hubCalls: string[] = [];
+  const walk = (answers: Record<string, unknown>) => async (url: string) => {
+    hubCalls.push(url);
+    return answers[url] ?? null;
+  };
+  const first = tagListUrl('https://h', 'library/node', '24.04');
+  const offOrigin = await listHubTags(
+    'library/node',
+    '24.04',
+    walk({
+      [first]: pageOf(['1'], 'https://evil.example/v2/x'),
+      'https://evil.example/v2/x': pageOf(['2']),
+    }),
+    'https://h'
+  );
+  check(
+    'CONTROL: a listing whose `next` leaves the Hub origin fails closed and never requests that page',
+    offOrigin === null && !hubCalls.includes('https://evil.example/v2/x')
+  );
+  const onOrigin = await listHubTags(
+    'library/node',
+    '24.04',
+    walk({ [first]: pageOf(['1'], 'https://h/v2/page2'), 'https://h/v2/page2': pageOf(['2']) }),
+    'https://h'
+  );
+  check(
+    'a listing whose `next` stays on the Hub origin is followed to its last page',
+    onOrigin !== null && onOrigin.map((t) => t.name).join() === '1,2'
   );
   check('the same version is not newer', !isNewer('24.04', '24.04'));
   // The window is the SHARED one; a release published now must be deferred.
@@ -886,7 +925,7 @@ function selftest(): { bad: number; total: number } {
 async function main(): Promise<void> {
   if (process.argv.includes('--selftest')) {
     console.log('docker image freshness selftest');
-    const { bad, total } = selftest();
+    const { bad, total } = await selftest();
     console.log(
       bad === 0
         ? `\n${GREEN}✓${NC} ${total}/${total} controls pass`
@@ -894,7 +933,7 @@ async function main(): Promise<void> {
     );
     process.exit(bad === 0 ? 0 : 1);
   }
-  if (selftest().bad !== 0) {
+  if ((await selftest()).bad !== 0) {
     console.error('controls failed; the gate cannot be trusted');
     process.exit(1);
   }

@@ -360,7 +360,7 @@ export async function viewOf(
       const r = pool.find((x) => x.version === v) as Release;
       if (
         !(sel.onlyInRange
-          ? !breaking(r) && inRange(insp.current, r.version)
+          ? !breaking(r) && (r.redigest === true || inRange(insp.current, r.version))
           : sel.allowMajor === true || !isMajor(r))
       )
         return {
@@ -383,7 +383,8 @@ export async function viewOf(
   }
   const admitted = pool.filter((r) =>
     sel.onlyInRange
-      ? !breaking(r) && inRange(insp.current, r.version)
+      ? // A re-digest is the pinned version with new content: its label (`<name>:<version>@<hex>`) is no version `inRange` can read, so it is admitted by what it is, and the soak judge below still holds it inside the window.
+        !breaking(r) && (r.redigest === true || inRange(insp.current, r.version))
       : sel.allowMajor === true || !isMajor(r)
   );
   for (const r of admitted) {

@@ -3222,6 +3222,23 @@ async function selftest(): Promise<void> {
     })()
   );
   expect(
+    'guard: a workspace step judges only the copies nested under its own tree (review 06ca86a9.2)',
+    (() => {
+      // Fixture workspace names are joined from parts so the dead-path detector does not read them as real paths.
+      const own = ['packages', 'fixture-app'].join('/');
+      const other = ['packages', 'fixture-other'].join('/');
+      const wsStep = { ...nestedStep, checks: [{ pkg: nestedStep.packages[0], workspace: own }] };
+      const ownCopy = `${own}/node_modules/unstorage/node_modules/core`;
+      const lock = {
+        [ownCopy]: { version: '1.15.10' },
+        [`${other}/node_modules/unstorage/node_modules/core`]: { version: '0.9.0' },
+        'node_modules/unstorage/node_modules/core': { version: '0.8.0' },
+      };
+      const r = updateMismatches(wsStep, lock);
+      return r.length === 1 && r[0].held && r[0].line.includes(`only nested, at ${ownCopy}`);
+    })()
+  );
+  expect(
     'guard: CONTROL: no copy anywhere is still refused as not in package-lock.json',
     (() => {
       const r = updateMismatches(nestedStep, { 'node_modules/other': { version: '2.0.0' } });
