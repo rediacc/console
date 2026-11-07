@@ -460,7 +460,7 @@ What `--plan-why <path>` answers from. Each row is a path a compacted plan cited
 
 ## Plan census
 
-Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans block can be printed from THIS file instead of opening all 226 of them. The hook checks freshness with `stat` alone (path set plus byte size) and falls back to reading the plans, loudly, when the two disagree.
+Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans block can be printed from THIS file instead of opening all 227 of them. The hook checks freshness with `stat` alone (path set plus byte size) and falls back to reading the plans, loudly, when the two disagree.
 
 | Plan | Status | lines | open | ticked | bytes |
 |---|---|---|---|---|---|
@@ -476,6 +476,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-backup-list-executor-fix.md` | compacted | 55 | 0 | 0 | 5498 |
 | `agent/plans/PLAN-backup-local-image.md` | approved | 457 | 4 | 10 | 57906 |
 | `agent/plans/PLAN-backup-meter-orphaned-chunks.md` | approved | 271 | 2 | 6 | 36324 |
+| `agent/plans/PLAN-backup-multi-target.md` | proposed | 82 | 18 | 0 | 25713 |
 | `agent/plans/PLAN-backup-plane-shared-bucket-hardening.md` | approved | 41 | 3 | 4 | 6848 |
 | `agent/plans/PLAN-backup-program.md` | approved | 589 | 19 | 173 | 154715 |
 | `agent/plans/PLAN-backup-quota-delta-gc.md` | compacted | 58 | 0 | 0 | 5584 |
@@ -691,7 +692,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-www-solution-video-gaps.md` | done | 65 | 0 | 0 | 6663 |
 | `agent/plans/_removed/PLAN-uncommitted-work-exposure-check.md` | removed | 107 | 0 | 0 | 15888 |
 
-226 plan(s), 163 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
+227 plan(s), 164 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
 
 ## Expired plans
 

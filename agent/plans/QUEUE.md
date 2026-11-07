@@ -58,7 +58,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 - Phase: merge on PR #602 (branch 1023-1, session 45048a90, since 2026-11-03T09:46:12Z, past its 24-hour limit).
 - Branch: 1104-1, no PR yet.
 - Plans on the PR (11):
-  - agent/plans/PLAN-backup-program.md -- 172 of 192 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
+  - agent/plans/PLAN-backup-program.md -- 173 of 192 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-cloudflare-proxy.md -- 27 of 29 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-sync-remote-file-ownership.md -- 7 of 7 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-stop-hook-one-plan-scope.md -- 14 of 14 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
@@ -73,7 +73,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 11 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic c6b82e88, plan agent/plans/PLAN-settings-set-verb.md, outside the set, 2 commit(s) on the branch, 0 open item(s): settings set verb: one source for the ceilings
   - epic dbb7de07, plan agent/plans/PLAN-cloudflare-spend-guard.md, outside the set, 48 commit(s) on the branch, 0 open item(s): cloudflare spend guard closure
-  - epic 09b8bdfa, plan agent/plans/PLAN-detached-jobs.md, outside the set, 826 commit(s) on the branch, 0 open item(s): detached jobs: proxied poll follow and job kinds
+  - epic 09b8bdfa, plan agent/plans/PLAN-detached-jobs.md, outside the set, 881 commit(s) on the branch, 0 open item(s): detached jobs: proxied poll follow and job kinds
   - epic ec9ba176, plan agent/plans/PLAN-backup-integrity.md, outside the set, 2 commit(s) on the branch, 0 open item(s): backup integrity docs and closure
   - epic d6bb9963, plan agent/plans/PLAN-backup-critical-tier.md, outside the set, 7 commit(s) on the branch, 0 open item(s): backup critical tier proofs
   - epic b21ab2e2, plan agent/plans/PLAN-jobs-backup-real-machine-tests.md, outside the set, 2 commit(s) on the branch, 0 open item(s): real machine tests for jobs and backup
@@ -83,8 +83,8 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic 1d805023, plan agent/plans/PLAN-tick-tracking.md, outside the set, 26 commit(s) on the branch, 0 open item(s): tick tracking: plan-box trailer, landing prints the tick, box audit
   - epic f65726d5, plan agent/plans/PLAN-renet-down-before-kill.md, outside the set, 16 commit(s) on the branch, 0 open item(s): renet runs Rediaccfile down() before repo containers stop
   - epic 53c31db2, plan agent/plans/PLAN-repo-resource-limits.md, outside the set, 20 commit(s) on the branch, 0 open item(s): per-repo resource limits and a renet-managed RAM volume
-- Writers: 1 live of writer_cap 25 (session d778be9d): worker:aed47e5b2fb1501c0.
-- Leased items: 11: #11306719 (worker:bflm16uei, d778be9d), #55959f83 (worker:bflm16uei, d778be9d), #6e4bf502 (worker:bflm16uei, d778be9d), #7b35ff7b (worker:bflm16uei, d778be9d), #8390cf95 (worker:aed47e5b2fb1501c0, d778be9d), #85407d3c (worker:aed47e5b2fb1501c0, d778be9d), #a1fadff8 (worker:bflm16uei, d778be9d), #b0afd68b (worker:bflm16uei, d778be9d), #cea7894e (worker:aed47e5b2fb1501c0, d778be9d), #d391cd19 (worker:aed47e5b2fb1501c0, d778be9d), #eb5c1323 (worker:bflm16uei, d778be9d).
+- Writers: 4 live of writer_cap 25 (session d778be9d): worker:a20bd86ed94be0d53, worker:a575bb4e9778f2326, worker:a8a60954a4470cd79, worker:a41563aeb9f578ecb.
+- Leased items: 11: #11306719 (worker:b0w9tr1kq, d778be9d), #235d49d7 (worker:a8a60954a4470cd79, d778be9d), #55959f83 (worker:b0w9tr1kq, d778be9d), #61cbbe8d (worker:a41563aeb9f578ecb, d778be9d), #6e4bf502 (worker:b0w9tr1kq, d778be9d), #7a629da2 (worker:a20bd86ed94be0d53, d778be9d), #7b35ff7b (worker:b0w9tr1kq, d778be9d), #a1fadff8 (worker:b0w9tr1kq, d778be9d), #b0afd68b (worker:b0w9tr1kq, d778be9d), #d96e4aab (worker:a575bb4e9778f2326, d778be9d), #eb5c1323 (worker:b0w9tr1kq, d778be9d).
 - Next plan: agent/plans/PLAN-console-executor-multi-org.md, Promoted entry 18; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
@@ -209,12 +209,13 @@ Promoted: 15 of 44 plans done, 794 of 939 boxes done (84%).
 18. agent/plans/PLAN-product-domain-rename.md -- P1, proposed, not started
 19. agent/plans/PLAN-website-routing-and-mail.md -- P1, proposed, not started, dep-blocked
 20. agent/plans/PLAN-enterprise-isolation.md -- P1, proposed, not started, dep-blocked
-21. agent/plans/PLAN-first-release-checks.md -- P2, approved, not started
-22. agent/plans/PLAN-stop-hook-retro-20261101.md -- P2, ready, not started
-23. agent/plans/PLAN-lessons-registry-followups.md -- P3, draft, not started
-24. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
-25. agent/plans/PLAN-retire-bash-oracles.A0.md -- P3, executing, not started
-26. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
+21. agent/plans/PLAN-backup-multi-target.md -- P2, proposed, not started
+22. agent/plans/PLAN-first-release-checks.md -- P2, approved, not started
+23. agent/plans/PLAN-stop-hook-retro-20261101.md -- P2, ready, not started
+24. agent/plans/PLAN-lessons-registry-followups.md -- P3, draft, not started
+25. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
+26. agent/plans/PLAN-retire-bash-oracles.A0.md -- P3, executing, not started
+27. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
 
 ### Not queued
 
