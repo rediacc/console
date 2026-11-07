@@ -714,13 +714,19 @@ def _port_deploy_env(env: dict[str, str]) -> dict[str, str]:
     bound["BENCH_ROOT_PASSWORD"] = "bench-root-password-1"
     # PLAN-config-server-key K2: the port reads the bench-only key the deploy-bench profile binds; the retired bash never did, so its env (and every golden key) is unchanged. A fake value, never a real key.
     bound["ACCOUNT_CONFIG_SERVER_KEY"] = "fake-config-server-key-for-tests"
+    # The port also pushes the bench backup store KEK; the retired bash never held it. A fake value, never a real key.
+    bound["ACCOUNT_BACKUP_STORE_KEK"] = "fake-backup-store-kek-for-tests-0123456789"
     # PLAN-free-license F2 (2fc16b442): the port pushes the FREE licence HMAC key the account Worker reads; the retired bash never held it. A fake value, never a real key.
     bound["FREE_LICENSE_HMAC_KEY"] = "fake-free-license-hmac-key-for-tests"
     return bound
 
 
 # The secrets the port pushes and the retired bash never held: dropped from the compared body, each asserted present first in `test_deploy_bench_matches_bash`.
-PORT_ONLY_SECRETS = ("ACCOUNT_CONFIG_SERVER_KEY", "FREE_LICENSE_HMAC_KEY")
+PORT_ONLY_SECRETS = (
+    "ACCOUNT_CONFIG_SERVER_KEY",
+    "ACCOUNT_BACKUP_STORE_KEK",
+    "FREE_LICENSE_HMAC_KEY",
+)
 
 
 # DECLARED DELTA (27861278): the port seeds the ROOT_EMAIL user after the secrets push (deploy_bench docstring item 8), a POST the retired bash never sent. The route answers it as a fresh bench would, added AFTER the twin run so the golden's route key is unchanged; the call is removed from the compared shape and its two stderr lines from the compared step list, each asserted present first so the removal cannot go vacuous.
@@ -796,6 +802,7 @@ def test_deploy_bench_matches_bash(world: h.World) -> None:
     ]
     assert secrets["ACCOUNT_BACKUP_S3_BUCKET"] == "rediacc-backups-bench"
     assert secrets["ACCOUNT_CONFIG_SERVER_KEY"] == "fake-config-server-key-for-tests"
+    assert secrets["ACCOUNT_BACKUP_STORE_KEK"] == "fake-backup-store-kek-for-tests-0123456789"
     assert secrets["FREE_LICENSE_HMAC_KEY"] == "fake-free-license-hmac-key-for-tests"
     assert secrets["ACCOUNT_BACKUP_S3_ENDPOINT"] == "https://r2.example.invalid"
     # The bash's fallback fired: with only the R2 trio in its environment it pushed the trio as the backup credential. The port received the same values under the backup names (`_port_deploy_env`).

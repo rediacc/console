@@ -78,6 +78,7 @@ def test_the_secret_payload_reads_the_environment_and_never_logs_it(
         "ACCOUNT_JWT_SECRET",
         "FREE_LICENSE_HMAC_KEY",
         "ACCOUNT_CONFIG_SERVER_KEY",
+        "ACCOUNT_BACKUP_STORE_KEK",
     ):
         monkeypatch.setenv(name, "v-" + name)
     monkeypatch.setenv("ROOT_EMAIL", "root@example.invalid")
@@ -90,7 +91,7 @@ def test_the_secret_payload_reads_the_environment_and_never_logs_it(
     monkeypatch.setenv("OBS_OTLP_CREDENTIALS", json.dumps({"user": "u", "pass": "p"}))
     monkeypatch.delenv("ACCOUNT_BACKUP_S3_BUCKET", raising=False)
     payload = deploy_bench.secrets_payload()
-    assert len(payload) == 31
+    assert len(payload) == 32
     assert payload["ACCOUNT_BACKUP_S3_ENDPOINT"] == "https://r2.invalid"
     assert payload["ACCOUNT_BACKUP_S3_ACCESS_KEY_ID"] == "bench-id"
     assert payload["ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY"] == "bench-secret"
@@ -115,6 +116,7 @@ def test_deploy_bench_refuses_the_account_wide_r2_token_as_a_backup_credential(
         "ACCOUNT_JWT_SECRET",
         "FREE_LICENSE_HMAC_KEY",
         "ACCOUNT_CONFIG_SERVER_KEY",
+        "ACCOUNT_BACKUP_STORE_KEK",
     ):
         monkeypatch.setenv(name, "v-" + name)
     monkeypatch.setenv("ROOT_EMAIL", "root@example.invalid")

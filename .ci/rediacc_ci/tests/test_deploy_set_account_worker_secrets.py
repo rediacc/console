@@ -158,6 +158,7 @@ def _run(
 
 # THE ONE PLACE THE TWO SIDES ARE HANDED DIFFERENT ENVIRONMENTS, and it is a rename, not a value change. The twin read one unsuffixed backup key pair for every Worker; the port reads the run's own channel's pair (`ACCOUNT_BACKUP_S3_*_STABLE` on stable, `_EDGE` otherwise) and never reads the unsuffixed one (agent/plans/PLAN-backup-credential-isolation.md B2). So the port side receives the twin's values under its channel's names, after `drop_env`, and every golden key, which is built from the twin's arguments, is unchanged. The port-only cases below drive the raw names with `translate=False`.
 CONFIG_KEY = "ck"
+KEK_VALUE = "k" * 40
 RETIRED_PAIR = ("ACCOUNT_BACKUP_S3_ACCESS_KEY_ID", "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY")
 
 
@@ -173,12 +174,16 @@ def _as_port_env(env: dict[str, str]) -> dict[str, str]:
         out.setdefault(
             "%s_%s_%s" % (port.CONFIG_KEY_PREFIX, out["SUFFIX"], channel_name), CONFIG_KEY
         )
+        out.setdefault(
+            "%s_%s_%s" % (port.BACKUP_KEK_PREFIX, out["SUFFIX"], channel_name), KEK_VALUE
+        )
     return out
 
 
 def _without_config_key(calls: str) -> str:
     """The recorded call with the two document lines the twin never had removed (the config server key and the free-licence HMAC key)."""
     calls = calls.replace('  "FREE_LICENSE_HMAC_KEY": "hm",\n', "")
+    calls = calls.replace('  "ACCOUNT_BACKUP_STORE_KEK": "%s",\n' % KEK_VALUE, "")
     return calls.replace('  "ACCOUNT_CONFIG_SERVER_KEY": "%s",\n' % CONFIG_KEY, "")
 
 
@@ -426,8 +431,12 @@ def test_the_bucket_guard_precedes_every_value_guard(tmp_path: pathlib.Path) -> 
     _assert_agree(old, new, "bucket-first", old_calls, new_calls)
 
 
-# The two guards the twin never had; neither has a golden, and each has a port-only test.
-PORT_ONLY_GUARDS = ("ACCOUNT_CONFIG_SERVER_KEY", "FREE_LICENSE_HMAC_KEY")
+# The guards the twin never had; neither has a golden, and each has a port-only test.
+PORT_ONLY_GUARDS = (
+    "ACCOUNT_CONFIG_SERVER_KEY",
+    "ACCOUNT_BACKUP_STORE_KEK",
+    "FREE_LICENSE_HMAC_KEY",
+)
 
 
 def test_every_one_of_the_seventeen_guards_fires_with_its_own_name(
@@ -622,10 +631,10 @@ def test_a_non_ascii_secret_is_byte_identical_through_both(tmp_path: pathlib.Pat
 
 def test_the_three_sibling_scripts_are_not_the_same_script() -> None:
     """THE ASSUMPTION THAT WOULD PORT THIS ONE WRONG, refuted in one place. This is the only member of the family that decides anything, and every difference below is driven by a test above."""
-    assert len(port.KEYS) == 31
+    assert len(port.KEYS) == 32
     assert len(www.KEYS) == 24
     assert len(preview.KEYS) == 15
-    assert len(port.REQUIRED_NONEMPTY) == 17
+    assert len(port.REQUIRED_NONEMPTY) == 18
     assert len(port.REQUIRED_NONEMPTY_STABLE) == 2
     # Neither sibling has a conditional guard list, a channel, or a fan-in.
     assert not hasattr(www, "REQUIRED_NONEMPTY_STABLE")
@@ -636,7 +645,7 @@ def test_the_three_sibling_scripts_are_not_the_same_script() -> None:
     assert port.GUARD_EXPLANATION == www.GUARD_EXPLANATION
     assert port.GUARD_EXPLANATION != preview.GUARD_EXPLANATION
     # The four backup-plane keys are this script's alone.
-    backup = [key for key, _var, _source in port.KEYS if key.startswith("ACCOUNT_BACKUP_")]
+    backup = [key for key, _var, _source in port.KEYS if key.startswith("ACCOUNT_BACKUP_S3_")]
     assert len(backup) == 4
     assert not [key for key, _var in www.KEYS if key.startswith("ACCOUNT_BACKUP_")]
     # OBS_OTLP_CREDENTIALS too: neither sibling carries telemetry credentials.
@@ -827,6 +836,9 @@ def _port_raw(tmp_path: pathlib.Path, **extra: str):
     if not any(name.startswith(port.CONFIG_KEY_PREFIX + "_") for name in extra):
         channel = "STABLE" if extra.get("TARGET", FIXTURE_ENV["TARGET"]) == port.STABLE else "EDGE"
         extra = {"ACCOUNT_CONFIG_SERVER_KEY_EU_" + channel: CONFIG_KEY, **extra}
+    if not any(name.startswith(port.BACKUP_KEK_PREFIX + "_") for name in extra):
+        channel = "STABLE" if extra.get("TARGET", FIXTURE_ENV["TARGET"]) == port.STABLE else "EDGE"
+        extra = {"ACCOUNT_BACKUP_STORE_KEK_EU_" + channel: KEK_VALUE, **extra}
     return _run_env(PORT, tmp_path, "", drop, extra, translate=False)
 
 
@@ -927,6 +939,7 @@ def test_the_config_server_key_follows_the_region(tmp_path: pathlib.Path) -> Non
         STRIPE_WEBHOOK_SECRET_US="whsec_us",
         ACCOUNT_CONFIG_SERVER_KEY_US_STABLE="key-us",
         ACCOUNT_CONFIG_SERVER_KEY_EU_STABLE="key-eu",
+        ACCOUNT_BACKUP_STORE_KEK_US_STABLE=KEK_VALUE,
     )
     assert proc.returncode == 0, proc.stderr
     assert json.loads(document(calls))["ACCOUNT_CONFIG_SERVER_KEY"] == "key-us"
@@ -967,7 +980,80 @@ def test_an_empty_config_server_key_is_refused_by_its_worker_key(
     assert "ACCOUNT_CONFIG_SERVER_KEY is EMPTY for" in proc.stderr
     # The printed Worker key is not a store name, so the refusal names the store entry too.
     assert "Its store entry is %s." % name in proc.stderr
-    assert port.REQUIRED_NONEMPTY[-1] == "ACCOUNT_CONFIG_SERVER_KEY"
+    assert "ACCOUNT_CONFIG_SERVER_KEY" in port.REQUIRED_NONEMPTY
+
+
+KEK_STABLE = "ACCOUNT_BACKUP_STORE_KEK_EU_STABLE"
+KEK_EDGE = "ACCOUNT_BACKUP_STORE_KEK_EU_EDGE"
+
+
+def test_the_backup_store_kek_is_pushed_under_the_worker_name(tmp_path: pathlib.Path) -> None:
+    """The vault name carries region and channel; the Worker secret is `ACCOUNT_BACKUP_STORE_KEK` and nothing else."""
+    for target, name, other in (
+        ("stable", KEK_STABLE, KEK_EDGE),
+        ("edge", KEK_EDGE, KEK_STABLE),
+    ):
+        case = tmp_path / target
+        case.mkdir()
+        proc, calls = _port_raw(case, TARGET=target, **_pair_for(target), **{name: "kek-" + target})
+        assert proc.returncode == 0, proc.stderr
+        doc = json.loads(document(calls))
+        assert doc["ACCOUNT_BACKUP_STORE_KEK"] == "kek-" + target
+        assert other not in doc
+        assert name not in doc
+
+
+def test_the_backup_store_kek_follows_the_region(tmp_path: pathlib.Path) -> None:
+    """With SUFFIX=US the EU name is ignored and the US one is pushed."""
+    proc, calls = _port_raw(
+        tmp_path,
+        SUFFIX="US",
+        **STABLE_PAIR,
+        AWS_SES_ACCESS_KEY_ID_US="sk-us",
+        AWS_SES_SECRET_ACCESS_KEY_US="ss-us",
+        OBS_OTLP_CREDENTIALS_US='{"user":"u","pass":"p"}',
+        STRIPE_WEBHOOK_SECRET_US="whsec_us",
+        ACCOUNT_CONFIG_SERVER_KEY_US_STABLE="key-us",
+        ACCOUNT_BACKUP_STORE_KEK_US_STABLE="kek-us",
+        ACCOUNT_BACKUP_STORE_KEK_EU_STABLE="kek-eu",
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert json.loads(document(calls))["ACCOUNT_BACKUP_STORE_KEK"] == "kek-us"
+
+
+@pytest.mark.parametrize(
+    ("target", "own", "stray"),
+    [("stable", KEK_STABLE, KEK_EDGE), ("edge", KEK_EDGE, KEK_STABLE)],
+)
+def test_the_other_channels_backup_store_kek_is_refused(
+    tmp_path: pathlib.Path, target: str, own: str, stray: str
+) -> None:
+    proc, calls = _port_raw(
+        tmp_path, TARGET=target, **_pair_for(target), **{own: "own-value", stray: "stray-value"}
+    )
+    assert proc.returncode == 1
+    assert calls == ""
+    first = proc.stderr.splitlines()[0]
+    assert first.startswith(
+        "%s: TARGET=%s takes its backup store KEK from %s only" % (port.SELF, target, own)
+    )
+    assert first.endswith("%s is also set." % stray)
+    for value in ("own-value", "stray-value"):
+        assert value not in proc.stderr
+        assert value not in proc.stdout
+
+
+@pytest.mark.parametrize("target", ["stable", "edge"])
+def test_an_empty_backup_store_kek_is_refused_by_its_worker_key(
+    tmp_path: pathlib.Path, target: str
+) -> None:
+    name = KEK_STABLE if target == "stable" else KEK_EDGE
+    proc, calls = _port_raw(tmp_path, TARGET=target, **_pair_for(target), **{name: ""})
+    assert proc.returncode == 1
+    assert calls == ""
+    assert "ACCOUNT_BACKUP_STORE_KEK is EMPTY for" in proc.stderr
+    assert "Its store entry is %s." % name in proc.stderr
+    assert port.REQUIRED_NONEMPTY[-1] == "ACCOUNT_BACKUP_STORE_KEK"
 
 
 def test_the_free_license_hmac_key_is_pushed_and_demanded(tmp_path: pathlib.Path) -> None:

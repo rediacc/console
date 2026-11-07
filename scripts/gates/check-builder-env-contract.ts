@@ -122,7 +122,7 @@ interface Pair {
  *
  * Region-and-channel fan-ins (`SUFFIXED_CHANNEL_PREFIXES`), counted when channelFanInFloor was
  * added: 1/0/0, one prefix (`ACCOUNT_CONFIG_SERVER_KEY`) in the account builder and none in the
- * other two.
+ * other two. `ACCOUNT_BACKUP_STORE_KEK` raised the account builder to 2.
  */
 const PAIRS: Pair[] = [
   {
@@ -131,7 +131,7 @@ const PAIRS: Pair[] = [
     exportFloor: 35,
     readFloor: 25,
     fanInFloor: 4,
-    channelFanInFloor: 1,
+    channelFanInFloor: 2,
   },
   {
     workflow: '.github/workflows/cd-deploy-worker.yml',

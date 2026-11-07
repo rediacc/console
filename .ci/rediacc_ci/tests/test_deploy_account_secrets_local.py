@@ -112,6 +112,9 @@ def test_every_region_and_channel_has_a_profile_binding_its_suffix():
             assert [n for n in names if n.startswith("ACCOUNT_CONFIG_SERVER_KEY")] == [
                 "ACCOUNT_CONFIG_SERVER_KEY_%s_%s" % (suffix, own)
             ]
+            assert [n for n in names if n.startswith("ACCOUNT_BACKUP_STORE_KEK")] == [
+                "ACCOUNT_BACKUP_STORE_KEK_%s_%s" % (suffix, own)
+            ]
 
 
 def test_profile_binds_every_variable_the_push_reads():
@@ -126,15 +129,16 @@ def test_profile_binds_every_variable_the_push_reads():
 
 
 @pytest.mark.parametrize("target", ["stable", "edge"])
-def test_dry_run_prints_the_31_names_and_no_value(target, capsys, monkeypatch):
+def test_dry_run_prints_the_32_names_and_no_value(target, capsys, monkeypatch):
     # The pin reads workers/account/node_modules, which the quality-pytest job does not install; this case is about the names, and the refusal has its own case.
     monkeypatch.setattr(local.wrangler_pin, "check", lambda _root: (0, []))
     rc = local.run(["--region", "eu", "--target", target, "--dry-run"])
     out = capsys.readouterr().out
     assert rc == 0
-    # 31 since PLAN-free-license F2 (2fc16b442) added FREE_LICENSE_HMAC_KEY, which the account Worker reads.
-    assert "31 Worker key(s) pushed:" in out
+    # 31 since PLAN-free-license F2 (2fc16b442) added FREE_LICENSE_HMAC_KEY, which the account Worker reads; 32 with ACCOUNT_BACKUP_STORE_KEK.
+    assert "32 Worker key(s) pushed:" in out
     assert "  ACCOUNT_CONFIG_SERVER_KEY\n" in out
+    assert "  ACCOUNT_BACKUP_STORE_KEK\n" in out
     assert "  FREE_LICENSE_HMAC_KEY\n" in out
     for key, _v, _s in pusher.KEYS:
         assert "  %s\n" % key in out

@@ -159,8 +159,12 @@ BACKUP_PAIR_EDGE = (
 )
 
 # The region-and-channel fan-ins, `<PREFIX>_<SUFFIX>_<CHANNEL>`: one vault name per region and channel, none shared. `read_env` reads both channels of this run's region so `config_server_key` can refuse the other one. A tuple, as `SUFFIXED_PREFIXES` is, because `check:ci-builder-env-contract` reads the prefixes from it and expands each over the three regions and both channels to meet the six names cd-deploy-account.yml exports.
-SUFFIXED_CHANNEL_PREFIXES: tuple[str, ...] = ("ACCOUNT_CONFIG_SERVER_KEY",)
+SUFFIXED_CHANNEL_PREFIXES: tuple[str, ...] = (
+    "ACCOUNT_CONFIG_SERVER_KEY",
+    "ACCOUNT_BACKUP_STORE_KEK",
+)
 CONFIG_KEY_PREFIX = SUFFIXED_CHANNEL_PREFIXES[0]
+BACKUP_KEK_PREFIX = SUFFIXED_CHANNEL_PREFIXES[1]
 CHANNEL_STABLE = "STABLE"
 CHANNEL_EDGE = "EDGE"
 
@@ -202,6 +206,7 @@ KEYS: tuple[tuple[str, str, str], ...] = (
     ("ACCOUNT_JWT_SECRET", "jwt", "ACCOUNT_JWT_SECRET"),
     ("FREE_LICENSE_HMAC_KEY", "free_license_hmac", "FREE_LICENSE_HMAC_KEY"),
     ("ACCOUNT_CONFIG_SERVER_KEY", "config_server_key", ""),
+    ("ACCOUNT_BACKUP_STORE_KEK", "backup_store_kek", ""),
     ("STRIPE_SECRET_KEY", "stripe", ""),
     ("STRIPE_WEBHOOK_SECRET", "stripe_wh", ""),
     ("ROOT_EMAIL", "admin", "ROOT_EMAIL"),
@@ -252,6 +257,7 @@ REQUIRED_NONEMPTY: tuple[str, ...] = (
     "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID",
     "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY",
     "ACCOUNT_CONFIG_SERVER_KEY",
+    "ACCOUNT_BACKUP_STORE_KEK",
 )
 
 # The two demanded on the stable channel only (:213-216). On edge the twin has already blanked both, so demanding them there would refuse every edge deploy.
@@ -289,7 +295,7 @@ class ScriptRefusalError(Exception):
 
 
 class GuardError(ScriptRefusalError):
-    """One `_require_nonempty` firing (:185-193): three stderr lines, exit 1; four for ACCOUNT_CONFIG_SERVER_KEY, whose fourth line names its per-region, per-channel store entry."""
+    """One `_require_nonempty` firing (:185-193): three stderr lines, exit 1; four for ACCOUNT_CONFIG_SERVER_KEY and ACCOUNT_BACKUP_STORE_KEK, whose fourth line names its per-region, per-channel store entry."""
 
     def __init__(self, name: str, worker: str, target: str, suffix: str) -> None:
         self.name = name
@@ -298,10 +304,14 @@ class GuardError(ScriptRefusalError):
             % (SELF, name, worker, target, suffix),
             *GUARD_EXPLANATION,
         ]
-        if name == "ACCOUNT_CONFIG_SERVER_KEY":
+        store_prefix = {
+            "ACCOUNT_CONFIG_SERVER_KEY": CONFIG_KEY_PREFIX,
+            "ACCOUNT_BACKUP_STORE_KEK": BACKUP_KEK_PREFIX,
+        }.get(name)
+        if store_prefix:
             # The Worker key is fed from a per-region, per-channel store entry, so the name above is not one the store holds.
             channel = CHANNEL_STABLE if target == STABLE else CHANNEL_EDGE
-            lines.append("  Its store entry is %s_%s_%s." % (CONFIG_KEY_PREFIX, suffix, channel))
+            lines.append("  Its store entry is %s_%s_%s." % (store_prefix, suffix, channel))
         super().__init__(*lines)
 
 
@@ -425,15 +435,24 @@ def config_server_key(env: dict[str, str], target: str, suffix: str) -> str:
 
     Raises `ScriptRefusalError` when the other channel's name for this region carries a value. An EMPTY own name is not refused here: `check_nonempty` names the Worker key, in its turn.
     """
+    return _channel_key(env, CONFIG_KEY_PREFIX, "config server key", target, suffix)
+
+
+def backup_store_kek(env: dict[str, str], target: str, suffix: str) -> str:
+    """The ACCOUNT_BACKUP_STORE_KEK for TARGET's channel and SUFFIX's region, resolved exactly as `config_server_key` is: `ACCOUNT_BACKUP_STORE_KEK_<SUFFIX>_STABLE` on stable, `_EDGE` otherwise, and a refusal when the other channel's name is also set."""
+    return _channel_key(env, BACKUP_KEK_PREFIX, "backup store KEK", target, suffix)
+
+
+def _channel_key(env: dict[str, str], prefix: str, label: str, target: str, suffix: str) -> str:
     own_channel, other_channel = (
         (CHANNEL_STABLE, CHANNEL_EDGE) if target == STABLE else (CHANNEL_EDGE, CHANNEL_STABLE)
     )
-    own = "%s_%s_%s" % (CONFIG_KEY_PREFIX, suffix, own_channel)
-    other = "%s_%s_%s" % (CONFIG_KEY_PREFIX, suffix, other_channel)
+    own = "%s_%s_%s" % (prefix, suffix, own_channel)
+    other = "%s_%s_%s" % (prefix, suffix, other_channel)
     if env.get(other, ""):
         raise ScriptRefusalError(
-            "%s: TARGET=%s takes its config server key from %s only, and %s is also set."
-            % (SELF, target, own, other),
+            "%s: TARGET=%s takes its %s from %s only, and %s is also set."
+            % (SELF, target, label, own, other),
             "  Each channel and region has its own key (the deploy workflow fetches one name",
             "  per run). Refusing to deploy with a key that belongs to another environment.",
         )
@@ -478,6 +497,7 @@ def resolve(env: dict[str, str]) -> dict[str, str]:
     backup_akid, backup_secret = backup_pair(env, target)
 
     config_key = config_server_key(env, target, suffix)
+    store_kek = backup_store_kek(env, target, suffix)
 
     backup_endpoint = apply_jurisdiction(
         env.get("ACCOUNT_BACKUP_S3_ENDPOINT", ""), env.get("R2_JURISDICTION", "")
@@ -496,6 +516,7 @@ def resolve(env: dict[str, str]) -> dict[str, str]:
             "backup_akid": backup_akid,
             "backup_secret": backup_secret,
             "config_server_key": config_key,
+            "backup_store_kek": store_kek,
         }
     )
     return values

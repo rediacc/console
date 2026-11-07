@@ -78,6 +78,7 @@ def test_deploy_secrets_never_push_the_switch(monkeypatch: pytest.MonkeyPatch) -
         "ACCOUNT_SERVER_API_KEY",
         "ACCOUNT_JWT_SECRET",
         "ACCOUNT_CONFIG_SERVER_KEY",
+        "ACCOUNT_BACKUP_STORE_KEK",
         "FREE_LICENSE_HMAC_KEY",
     ):
         monkeypatch.setenv(name, "v-" + name)

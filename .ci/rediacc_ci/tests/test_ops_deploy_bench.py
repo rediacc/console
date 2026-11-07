@@ -452,6 +452,7 @@ def _bench_env(monkeypatch, **overrides):
         "ACCOUNT_JWT_SECRET": "jw",
         "FREE_LICENSE_HMAC_KEY": "hm",
         "ACCOUNT_CONFIG_SERVER_KEY": "ck",
+        "ACCOUNT_BACKUP_STORE_KEK": "kk",
         "ROOT_EMAIL": "root@example.invalid",
         "AWS_SES_ACCESS_KEY_ID": "sk",
         "AWS_SES_SECRET_ACCESS_KEY": "ss",
@@ -471,6 +472,15 @@ def test_the_payload_carries_the_config_server_key(monkeypatch):
     payload = deploy_bench.secrets_payload()
     assert payload["ACCOUNT_CONFIG_SERVER_KEY"] == "ck"
     assert "CONFIG_SERVER_KEY" not in payload
+
+
+def test_the_payload_carries_the_backup_store_kek(monkeypatch):
+    """The bench KEK reaches the Worker under its Worker name, and an empty one refuses the push."""
+    _bench_env(monkeypatch)
+    assert deploy_bench.secrets_payload()["ACCOUNT_BACKUP_STORE_KEK"] == "kk"
+    _bench_env(monkeypatch, ACCOUNT_BACKUP_STORE_KEK="")
+    with pytest.raises(deploy_bench.DeployError, match="ACCOUNT_BACKUP_STORE_KEK"):
+        deploy_bench.secrets_payload()
 
 
 def test_the_payload_carries_the_free_license_hmac_key(monkeypatch):
