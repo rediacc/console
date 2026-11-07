@@ -55,7 +55,7 @@ PUBLIC_KEY_ENV = "ACCOUNT_ED25519_PUBLIC_KEY"
 PRIVATE_KEY_ENV = "ACCOUNT_ED25519_PRIVATE_KEY"
 # The binaries a local rebuild stages: the host one and the two the CLI pushes to a machine of either architecture.
 STAGED_RENETS = ("renet", "renet-linux-amd64", "renet-linux-arm64")
-# The directory `pin_renet` makes per run. The suite runs from it after this process execs, so it cannot be removed here; the next pin removes the ones a day old.
+# The directory `pin_renet` makes per run. The suite runs from it after this process execs, so it cannot be removed here; the next pin removes every such directory a day old, whichever run or job made it. That is safe only because no suite on the plane outlives a day: the longest holds a job ceiling of 120 minutes (playwright.backup-large-repo.config.ts), so a directory older than a day belongs to a finished run.
 PINNED_PREFIX = "renet-backup-plane-"
 PINNED_MAX_AGE_S = 24 * 60 * 60
 # The build-info reader is shared with the release gate (`rediacc_ci.release.renet_key_gate`).

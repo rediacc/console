@@ -616,11 +616,12 @@ def main(
     if not _usable_args(args, out):
         return EXIT_USAGE
 
+    # The budget runs from BEFORE the guard's remote reads: the guard clears RUN_BUDGET_S from the moment it reads the timers, so a deadline taken after window_clear returned would run late by those reads.
+    cleared_at = deps.clock()
     if not window_clear(deps, args, out):
         print("backup window: the snapshot was not started", file=out)
         _append_summary(args.summary, RunResult(args.repo, EXIT_WINDOW, None, None), out)
         return EXIT_WINDOW
-    cleared_at = deps.clock()
     baseload, start = take_baseline(deps, args.rdc, args.config, args.machine, out)
     if baseload is None or start is None:
         print("no baseline sample: the snapshot was not started", file=out)

@@ -230,7 +230,7 @@ def listener_pid(port: str) -> str:
 def reap_recorded(port: str, pid_file: pathlib.Path, wait_s: float = 10.0) -> bool:
     """Stop the server an earlier run of this tool left on `port`: only when `pid_file` names the pid that still listens there.
 
-    A successful run leaves its server running on purpose (the suite that follows needs it), so the next run is where it is stopped; a listener this tool did not record is never touched and the caller still refuses it. True once the port is free.
+    A successful run leaves its server running on purpose (the suite that follows needs it), so the next run is where it is stopped; a listener this tool did not record is never touched and the caller still refuses it. True once the port is free: `/health` no longer answers AND nothing listens there, since a server can stop answering while it still holds the socket, and the next server would fail to bind. A pid file names whichever run wrote it last, so two live runs on one port and one temp directory are not told apart; the second stops the first's server instead of being refused, which is why each CI job has its own runner and its own `RUNNER_TEMP`.
     """
     try:
         recorded = pid_file.read_text().strip()
@@ -244,7 +244,7 @@ def reap_recorded(port: str, pid_file: pathlib.Path, wait_s: float = 10.0) -> bo
         return False
     deadline = time.monotonic() + wait_s
     while time.monotonic() < deadline:
-        if not healthy(port):
+        if not healthy(port) and not listener_pid(port):
             pid_file.unlink(missing_ok=True)
             return True
         time.sleep(0.25)

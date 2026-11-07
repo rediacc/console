@@ -607,3 +607,53 @@ def _own_pids(token_of) -> set[int]:
 def test_the_own_pid_filter_selects_a_snapshot_outside_a_backup_unit_and_skips_one_inside() -> None:
     assert len(_own_pids(lambda _cgroup: "rediacc-backup-")) == 1
     assert _own_pids(lambda cgroup: cgroup[:3]) == set()
+
+
+def test_the_rerun_is_held_to_the_window_the_guard_cleared(tmp_path):
+    """The default snapshot timeout is hours; the guard before the rerun clears only RUN_BUDGET_S, so the rerun's own timeout is that budget."""
+    assert mod.SNAPSHOT_TIMEOUT_S > bw.RUN_BUDGET_S
+    w = seeded()
+    runner = w.runner
+    timeouts: list[float] = []
+
+    def recording(argv, timeout):
+        if "-o" in argv and "snapshot" in argv:
+            timeouts.append(timeout)
+        return runner(argv, timeout)
+
+    w.runner = recording
+    rc, text = run(w, tmp_path, *REPLAY)
+    assert rc == 0, text
+    assert timeouts == [bw.RUN_BUDGET_S]
+
+
+def test_a_pid_whose_cgroup_cannot_be_read_is_not_signalled(tmp_path):
+    """The fail-closed branch: an unreadable cgroup file is neither proof of a scheduled unit nor of this run's own snapshot, so the pid is skipped (a readable one without the unit token is selected)."""
+    child = subprocess.Popen(
+        [sys.executable, "-c", "import time; time.sleep(30)", "renet backup snapshot"]
+    )
+    try:
+        cgroup = tmp_path / str(child.pid) / "cgroup"
+        cgroup.parent.mkdir()
+        cgroup.write_text("0::/user.slice/run-own.scope\n", encoding="utf-8")
+
+        def selected() -> set[int]:
+            out = subprocess.run(
+                ["bash", "-c", mod.own_pids_command(proc=str(tmp_path))],
+                capture_output=True,
+                text=True,
+                check=False,
+            ).stdout.split()
+            return {child.pid} & {int(p) for p in out}
+
+        assert selected() == {child.pid}, "CONTROL: a readable cgroup without the unit token"
+        cgroup.chmod(0)
+        try:
+            cgroup.read_text()
+        except PermissionError:
+            assert selected() == set()
+        else:
+            pytest.skip("the file stays readable (running as root)")
+    finally:
+        child.kill()
+        child.wait()

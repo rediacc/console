@@ -62,11 +62,11 @@ PROC_PATTERN = "[r]enet backup snapshot"
 RUNNING_COMMAND = "pgrep -f '%s' >/dev/null && echo RUNNING || echo IDLE" % PROC_PATTERN
 
 
-def own_pids_command(unit_prefix: str = backup_window.UNIT_PREFIX) -> str:
+def own_pids_command(unit_prefix: str = backup_window.UNIT_PREFIX, proc: str = "/proc") -> str:
     """Shell that prints the pids of a renet snapshot whose cgroup is readable and is not a `unit_prefix` unit: this run's own, the only ones signalled. A cgroup that cannot be read fails CLOSED: the pid is not signalled."""
     return (
-        "for p in $(pgrep -f '%s'); do [ -r /proc/$p/cgroup ] && ! grep -q '%s' /proc/$p/cgroup || continue; echo $p; done"
-        % (PROC_PATTERN, unit_prefix)
+        "for p in $(pgrep -f '%s'); do [ -r %s/$p/cgroup ] && ! grep -q '%s' %s/$p/cgroup || continue; echo $p; done"
+        % (PROC_PATTERN, proc, unit_prefix, proc)
     )
 
 
@@ -522,8 +522,14 @@ def replay(rdc: Rdc, lister: Lister, a: ReplayArgs, report: Report) -> None:
 
     # The killed run is gone, so the timer window is judged again, running snapshot included, before the rerun.
     window_guard(rdc, a.machine, backup_window.RUN_BUDGET_S, check_running=True)
+    # The guard cleared RUN_BUDGET_S, so the rerun is held to it: a longer --snapshot-timeout would let the snapshot run into the timer window the guard just judged clear.
     rc, stdout, stderr = rdc.run(
-        "-o", "json", "backup", "snapshot", ref, timeout=a.snapshot_timeout
+        "-o",
+        "json",
+        "backup",
+        "snapshot",
+        ref,
+        timeout=min(a.snapshot_timeout, backup_window.RUN_BUDGET_S),
     )
     record = last_object(stdout) or {}
     if rc != 0:

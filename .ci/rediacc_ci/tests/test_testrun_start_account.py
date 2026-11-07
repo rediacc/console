@@ -330,7 +330,9 @@ def test_a_server_this_tool_recorded_is_stopped_and_the_run_goes_on(
         assert sa.healthy(port), "CONTROL: the stale listener never answered"
         pid_file = tmp_path / "account-for-e2e.pid"
         pid_file.write_text(f"{stale.pid}\n")
-        monkeypatch.setattr(sa, "listener_pid", lambda _port: str(stale.pid))
+        monkeypatch.setattr(
+            sa, "listener_pid", lambda _port: str(stale.pid) if stale.poll() is None else ""
+        )
         assert sa.reap_recorded(port, pid_file) is True
         stale.wait(timeout=5)
         assert not sa.healthy(port)
@@ -339,6 +341,52 @@ def test_a_server_this_tool_recorded_is_stopped_and_the_run_goes_on(
         if stale.poll() is None:
             stale.kill()
             stale.wait()
+
+
+def test_the_port_is_not_free_while_a_listener_still_holds_the_socket(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """/health has stopped answering but the socket is still held: the next server could not bind, so the port is not reported free."""
+    pid_file = tmp_path / "account-for-e2e.pid"
+    pid_file.write_text("4242\n")
+    monkeypatch.setattr(sa, "listener_pid", lambda _port: "4242")
+    monkeypatch.setattr(sa, "healthy", lambda _port: False)
+    monkeypatch.setattr(sa.os, "kill", lambda _pid, _sig: None)
+    assert sa.reap_recorded("4999", pid_file, wait_s=0.5) is False
+    assert pid_file.exists()
+
+
+def test_run_reaps_a_recorded_server_and_then_starts_its_own(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The wiring in run(): an occupied port whose listener the pid file names is reaped, and the run goes on to start a server instead of refusing."""
+    (tmp_path / "private" / "account").mkdir(parents=True)
+    (tmp_path / "private" / "account" / "package.json").write_text("{}")
+    monkeypatch.setattr(sa.paths, "repo_root", lambda: tmp_path)
+    monkeypatch.setenv("RUNNER_TEMP", str(tmp_path))
+    state = {"up": True, "started": 0}
+    monkeypatch.setattr(sa, "healthy", lambda _port: state["up"])
+    monkeypatch.setattr(sa, "server_keys", lambda _pair=False: {"edPub": "pub"})
+
+    def fake_reap(_port: str, _pid_file: pathlib.Path) -> bool:
+        state["up"] = False
+        return True
+
+    def fake_start(*_args: object) -> object:
+        state["started"] += 1
+        state["up"] = True
+        return object()
+
+    published: list[tuple] = []
+    monkeypatch.setattr(sa, "reap_recorded", fake_reap)
+    monkeypatch.setattr(sa, "start_server", fake_start)
+    monkeypatch.setattr(sa, "listener_pid", lambda _port: "")
+    monkeypatch.setattr(sa, "seed_and_mint", lambda _api, _opts: ("rdt_unit_token", "sub1"))
+    monkeypatch.setattr(sa, "publish", lambda *args: published.append(args))
+    monkeypatch.setattr(sa.time, "sleep", lambda _s: None)
+    assert sa.run(sa.parse([])) == 0
+    assert state["started"] == 1
+    assert published
 
 
 def test_a_listener_the_pid_file_does_not_name_is_left_alone(

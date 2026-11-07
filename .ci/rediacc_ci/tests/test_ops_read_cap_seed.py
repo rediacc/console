@@ -118,19 +118,30 @@ def test_only_a_transient_scope_counts_as_the_backup():
     """A process with the verb's name outside `run-*.scope` (a login session, init.scope) is not the backup."""
     holder = subprocess.Popen(["bash", "-c", 'exec -a "renet backup snapshot --repo x" sleep 15'])
     try:
+        # The unified-hierarchy line (`0::<path>`); cgroup v1 prints one line per controller and has none, so there the path-membership check below does not apply.
         with open("/proc/%d/cgroup" % holder.pid, encoding="utf-8") as fh:
-            holder_cgroup = fh.read().strip().removeprefix("0::")
+            unified = [
+                ln.removeprefix("0::") for ln in fh.read().splitlines() if ln.startswith("0::")
+            ]
+        holder_cgroup = unified[0] if unified else None
+        # CONTROL: the sampler's own pgrep sees the holder, so its absence from the scopes below is the scope filter's doing and not the holder being invisible.
+        seen = subprocess.run(
+            ["pgrep", "-f", "[r]enet backup snapshot"], capture_output=True, text=True, check=False
+        ).stdout.split()
         proc = subprocess.run(
             ["bash", "-c", rcs.SAMPLE_COMMAND], capture_output=True, text=True, check=False
         )
     finally:
         holder.kill()
         holder.wait()
+    assert str(holder.pid) in seen, "CONTROL: pgrep never matched the holder"
     assert proc.returncode == 0, proc.stderr
     parsed = rcs.parse_sample(proc.stdout)
     assert parsed is not None
     assert all("/run-" in path for path in parsed.scopes)
-    if not holder_cgroup.endswith(".scope") or "/run-" not in holder_cgroup:
+    if holder_cgroup is not None and (
+        not holder_cgroup.endswith(".scope") or "/run-" not in holder_cgroup
+    ):
         assert holder_cgroup not in parsed.scopes, "the holder outside run-*.scope was counted"
 
 
@@ -818,3 +829,25 @@ def test_the_peaks_and_rule_flags_read_the_measured_samples_only():
     assert " cpuover50x3=0 " in line
     assert " loadover8x3=0 " in line
     assert " peakwa=1.00 " in line
+
+
+def test_the_run_budget_counts_from_before_the_guard_reads_the_window(tmp_path, monkeypatch):
+    """The guard clears RUN_BUDGET_S from the moment it reads the timers; a deadline taken after its remote reads would run late by them."""
+    world = World(tmp_path, loads=[1.2, 1.3, 1.4])
+    runner = world.runner
+
+    def slow_window(argv, timeout):
+        if argv[-1] == bw.timers_script():
+            world.now += 100.0
+        return runner(argv, timeout)
+
+    world.runner = slow_window
+    seen: list[rcs._Watch] = []
+
+    def capture(_deps, _proc, _start, _baseload, _args, _out, watch):
+        seen.append(watch)
+        return 0
+
+    monkeypatch.setattr(rcs, "watch_snapshot", capture)
+    world.main()
+    assert [w.deadline for w in seen] == [bw.RUN_BUDGET_S]
