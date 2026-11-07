@@ -28,6 +28,12 @@ LISTING_OK = {
 }
 
 
+def _verb_args(argv):
+    """The rdc arguments after the program and any leading `--config <name>`."""
+    args = list(argv[1:])
+    return args[2:] if args[:1] == ["--config"] else args
+
+
 class Fleet:
     """A scripted rdc: answers per (config, verb) and records every call with its environment."""
 
@@ -49,7 +55,8 @@ class Fleet:
         if self.timeout_on and self.timeout_on in " ".join(args):
             return oh.Result(124, "", "", timed_out=True)
         if verb == "machine list":
-            names = self.machines.get(config, [])
+            # A config the scenario did not script (ENV's RDC_HEALTH_CONFIGS) lists the default machines.
+            names = self.machines.get(config, self.machines.get(None, []))
             return oh.Result(0, envelope([{"name": n} for n in names]))
         if verb == "machine health":
             rc, data = self.health
@@ -219,6 +226,7 @@ ENV = {
     "OPS_HEALTH_URL": "https://ops-health.example.test",
     "OPS_HEALTH_READ_TOKEN": "r",
     "OPS_HEALTH_INGEST_TOKEN": "i",
+    "RDC_HEALTH_CONFIGS": "prod",
 }
 
 
@@ -239,8 +247,10 @@ class Combined(Fleet):
         return super().__call__(argv, env, timeout)
 
 
-def run_refresh(root, runner, web, now=NOW, **kw):
-    return oh.refresh(root, runner=runner, fetch=web, hydrate=None, env=dict(ENV), now=now, **kw)
+def run_refresh(root, runner, web, now=NOW, env=None, **kw):
+    return oh.refresh(
+        root, runner=runner, fetch=web, hydrate=None, env=dict(env or ENV), now=now, **kw
+    )
 
 
 def ledger_rows(root):
@@ -271,6 +281,18 @@ def test_refresh_writes_cache_posts_ingest_and_runs_under_profiles(tmp_path):
     assert "--profile telemetry-probe" in " ".join(argv_by_mod["telemetry_delivery"])
     assert "--profile cf-usage-report" in " ".join(argv_by_mod["cf_usage_report"])
     assert "bws_env" not in " ".join(argv_by_mod["portal_captcha"])
+
+
+def test_refresh_without_named_configs_posts_no_machine_verdict(tmp_path):
+    # RDC_HEALTH_CONFIGS unset: the default config's machines (a dev box's VMs) are checked and cached, never sent to the production alerter.
+    web = Web(status_doc())
+    env = {k: v for k, v in ENV.items() if k != "RDC_HEALTH_CONFIGS"}
+    rc, doc = run_refresh(tmp_path, Combined(), web, env=env)
+    assert rc == 0, json.dumps(doc, indent=1)
+    posted = sorted(b["source"] for m, u, h, b in web.calls if m == "POST")
+    assert posted == ["local-cf-usage", "local-portal-captcha", "local-telemetry"]
+    cached = (tmp_path / oh.CACHE_DIR_REL / oh.STATE_NAME).read_text()
+    assert "m1" in cached
 
 
 def test_subprocess_exit_contract_is_kept():
@@ -500,10 +522,10 @@ class RepairFleet(Fleet):
         self.repaired = False
 
     def repair_calls(self):
-        return [a for a, _e in self.calls if a[1:3] == ["machine", "repair"]]
+        return [a for a, _e in self.calls if _verb_args(a)[:2] == ["machine", "repair"]]
 
     def __call__(self, argv, env, timeout):
-        args = list(argv[1:])
+        args = _verb_args(argv)
         if args[:2] == ["machine", "repair"]:
             if self.timeout_on and self.timeout_on in " ".join(args):
                 self.calls.append((list(argv), dict(env)))
@@ -552,7 +574,15 @@ def test_repair_auto_safe_finding_rechecks_green_posts_green_and_ledgers_one_act
     (rc, doc), web = refreshed(tmp_path, fleet)
     assert rc == 0, json.dumps(doc, indent=1)
     (call,) = fleet.repair_calls()
-    assert call[1:] == ["machine", "repair", "m1", "-o", "json", "--code", "datastore.usage.high"]
+    assert _verb_args(call) == [
+        "machine",
+        "repair",
+        "m1",
+        "-o",
+        "json",
+        "--code",
+        "datastore.usage.high",
+    ]
     posted = [(b["source"], b["state"]) for m, u, h, b in web.calls if m == "POST"]
     assert posted == [("local-machine-m1", "green")]
     repairs = [r for r in ledger_rows(tmp_path) if r["kind"] == "repair"]

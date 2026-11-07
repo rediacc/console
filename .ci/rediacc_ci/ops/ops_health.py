@@ -12,7 +12,7 @@ MACHINES (D-verdict). The configs come from RDC_HEALTH_CONFIGS (a comma list in 
   4. `backup_coverage` present for every autostart repo, and each covered repo younger than `backup_max_age_days`. The repositories and the coverage are read from the health JSON when it carries them, else from one `machine status <m> -o json`.
 A repo whose `health()` is absent (`level: none`) is reported as "no check", never as green and never as red. Exit 0 green, 1 red, 2 setup or unreadable (an empty machine list, an rdc call that timed out or printed no JSON). A red row wins over an unreadable one in the aggregate, so an unreachable machine cannot hide a red one.
 
-REFRESH (D-local). Runs the checks that are past their TTL (`--force` runs all): `machines`, then telemetry_delivery under bws profile `telemetry-probe`, portal_captcha, and cf_usage_report under profile `cf-usage-report`, each unchanged as a subprocess keeping its 0/1/2 contract; then the off-box read. It writes `.ci/cache/ops-health/state.json`, appends one row per state transition to agent/ledgers/ops-health.jsonl (an unchanged state appends nothing), and POSTs each fresh local verdict to the Worker's `/v1/ingest` (sources `local-machine-<name>` and `local-<check>`). A failed POST is recorded in the cache and never fails the refresh. The Stop hook (.claude/hooks/stop/wl_opshealth.py) spawns it detached, after taking `.ci/cache/ops-health/refresh.lock` with O_EXCL, and passes `--lock-held`; a hand run takes the same lock itself.
+REFRESH (D-local). Runs the checks that are past their TTL (`--force` runs all): `machines`, then telemetry_delivery under bws profile `telemetry-probe`, portal_captcha, and cf_usage_report under profile `cf-usage-report`, each unchanged as a subprocess keeping its 0/1/2 contract; then the off-box read. It writes `.ci/cache/ops-health/state.json`, appends one row per state transition to agent/ledgers/ops-health.jsonl (an unchanged state appends nothing), and POSTs each fresh local verdict to the Worker's `/v1/ingest` (sources `local-<check>`, and `local-machine-<name>` only when RDC_HEALTH_CONFIGS names the configs, so a default config's dev machines never reach the production alerter). A failed POST is recorded in the cache and never fails the refresh. The Stop hook (.claude/hooks/stop/wl_opshealth.py) spawns it detached, after taking `.ci/cache/ops-health/refresh.lock` with O_EXCL, and passes `--lock-held`; a hand run takes the same lock itself.
 
 OFFBOX AND GATE (D-record, D-gate). `GET <worker_url>/v1/status` with the bearer OPS_HEALTH_READ_TOKEN. Red when the verdict is red or `last_cron_at` is older than the stale limit; unreadable (exit 2) when the status cannot be read or its verdict is `unknown`. `offbox` also compares `targets_sha` with the sha256 of the `ops` repo's target file when OPS_HEALTH_TARGETS_REF is set (finding `ops.targets.drift`, red, naming the deploy command). `gate` is the CI gate's entry (.ci/scripts/quality/check_ops_health.py): the same judgement with no target comparison.
 
@@ -771,6 +771,13 @@ def is_due(entry: object, ttl: int, now: datetime.datetime) -> bool:
     return at is None or (now - at).total_seconds() >= ttl
 
 
+def postable_sources(sources: dict, env: dict) -> dict:
+    """The sources the production alerter receives. A machine verdict is posted only when RDC_HEALTH_CONFIGS names the configs: unset, the machines come from whatever default config this checkout holds (a dev box's VMs), and on 2026-11-07 two of those turned the production verdict red. The local cache and ledger keep every source either way."""
+    if (env.get(CONFIGS_ENV) or "").strip():
+        return sources
+    return {k: v for k, v in sources.items() if not k.startswith("local-machine-")}
+
+
 def sources_of(check: str, entry: dict) -> dict:
     """source -> (state, detail) for the ingest and the ledger."""
     if check == "machines":
@@ -988,7 +995,11 @@ def refresh(
         ledger_rows += repair_rows(fresh["machines"], now)
     ledger_error = append_ledger(root, ledger_rows)
     ingest = post_ingest(
-        worker_url(cfg, tenv), tenv.get(INGEST_CREDENTIAL_ENV) or "", new_sources, now, fetch
+        worker_url(cfg, tenv),
+        tenv.get(INGEST_CREDENTIAL_ENV) or "",
+        postable_sources(new_sources, env),
+        now,
+        fetch,
     )
     if token_error and ingest["errors"]:
         ingest["errors"].append(token_error)
