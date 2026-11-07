@@ -178,6 +178,16 @@ function isSessionRefusal(error: unknown): error is Error & { [REFUSED_FROM]: un
   return error instanceof Error && REFUSED_FROM in error;
 }
 
+/** The HTTP status an error carries: its own, else a numeric one on its `cause`. */
+function statusOf(error: unknown): number | undefined {
+  const own = (error as StatusError | null | undefined)?.status;
+  if (own !== undefined) return own;
+  const inherited = (
+    (error as { cause?: unknown } | null | undefined)?.cause as StatusError | null | undefined
+  )?.status;
+  return typeof inherited === 'number' ? inherited : undefined;
+}
+
 /**
  * What a thrown mint or fetch error says to the store-fault classifier: its HTTP status counts as text, and a mint the
  * store refused with a 403 that names no account-level code (retention, team scope, role) is that store's refused grant.
@@ -185,7 +195,8 @@ function isSessionRefusal(error: unknown): error is Error & { [REFUSED_FROM]: un
  */
 function failureOf(error: unknown): AttemptFailure {
   const original = isSessionRefusal(error) ? error[REFUSED_FROM] : error;
-  const { status, code } = (original ?? {}) as StatusError;
+  const { code } = (original ?? {}) as StatusError;
+  const status = statusOf(original);
   const message = original instanceof Error ? original.message : String(original);
   if (status === 403 && code === undefined) return { error: `grant refused (HTTP 403) ${message}` };
   return { error: status === undefined ? message : `HTTP ${status} ${message}`, errorCode: code };

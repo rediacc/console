@@ -113,10 +113,13 @@ const bodyKey = (key: string) => new RegExp(`[{,]\\s*${key}\\s*[:,}]`);
  * is read whole and a `{ storeId` elsewhere in the file is not.
  */
 function postBodyOf(call: string): (speaker: string) => string | null {
+  const escaped = call.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  // The route as a quoted string, then an options object holding `method: 'POST'`: an earlier mention is not the call.
+  const postCall = new RegExp(`${escaped}['"\`]\\s*,\\s*\\{[^{}]*?method:\\s*['"]POST['"]`);
   return (speaker) => {
-    const at = speaker.indexOf(call);
-    if (at === -1) return null;
-    const bodyAt = speaker.indexOf('body:', at);
+    const hit = postCall.exec(speaker);
+    if (hit === null) return null;
+    const bodyAt = speaker.indexOf('body:', hit.index);
     if (bodyAt === -1) return null;
     let depth = 0;
     for (let i = bodyAt + 'body:'.length; i < speaker.length; i++) {
@@ -587,8 +590,12 @@ function checkLegs(
         `    ${leg.path}\n      the request body is not found in ${speakerName}, so its keys are unchecked.`
       );
     }
-    for (const key of [...leg.requestKeys, ...leg.responseKeys]) {
-      const text = leg.requestKeys.includes(key) ? (requestText ?? '') : speaker;
+    // Independent checks: a key in both lists is looked for in the request slice AND in the whole speaker.
+    const keyChecks = [
+      ...leg.requestKeys.map((key) => ({ key, text: requestText ?? '' })),
+      ...leg.responseKeys.map((key) => ({ key, text: speaker })),
+    ];
+    for (const { key, text } of keyChecks) {
       const named = leg.keySpelling ? leg.keySpelling(key).test(text) : clientNames(text, key);
       if (!named) {
         problems.push(
@@ -845,7 +852,8 @@ if (!restoreLeg) {
   const both = schema('  lineageGuid: z.string(),\n  storeId: z.string().optional(),\n');
   const noStore = schema('  lineageGuid: z.string(),\n');
   const call = '/backups/restore-session';
-  const speak = (body: string) => ({ [RESTORE_SESSION_TS]: `${call} body: { ${body} }` });
+  const post = (options: string) => `fetch('${call}', { method: 'POST', ${options} })`;
+  const speak = (body: string) => ({ [RESTORE_SESSION_TS]: post(`body: { ${body} }`) });
   const run = (routeText: string, dtoText: string, body: string) =>
     checkLegs([restoreLeg], routeText, dtoText, '', speak(body));
   if (
@@ -854,15 +862,100 @@ if (!restoreLeg) {
     run(`${route}\n${both}`, '', 'lineageGuid').length === 0 ||
     // storeId named elsewhere in the speaker (another body) must not stand in for the restore-session body.
     checkLegs([restoreLeg], `${route}\n${both}`, '', '', {
-      [RESTORE_SESSION_TS]: `other: { storeId: x }\n${call} body: { lineageGuid }, headers: {}\nlater: { storeId: y }`,
+      [RESTORE_SESSION_TS]: `other: { storeId: x }\n${post('body: { lineageGuid }, headers: {}')}\nlater: { storeId: y }`,
     }).length === 0 ||
+    // an earlier mention of the route (comment, constant, a GET with its own body) must not anchor the body: the real POST body lacks storeId.
+    checkLegs([restoreLeg], `${route}\n${both}`, '', '', {
+      [RESTORE_SESSION_TS]: `// the ${call} route\nconst u = '${call}';\nget(u, { body: { storeId: x } });\n${post('body: { lineageGuid }')}`,
+    }).length === 0 ||
+    // the same earlier mention must not hide a real body that does name it.
+    checkLegs([restoreLeg], `${route}\n${both}`, '', '', {
+      [RESTORE_SESSION_TS]: `// the ${call} route\nget('${call}', { body: { x: 1 } });\n${post('body: { lineageGuid, storeId: s }')}`,
+    }).length !== 0 ||
     // the ternary of two literals the real client sends is read whole.
     checkLegs([restoreLeg], `${route}\n${both}`, '', '', {
-      [RESTORE_SESSION_TS]: `${call} body: s === undefined ? { lineageGuid } : { lineageGuid, storeId: s }, x: 1`,
+      [RESTORE_SESSION_TS]: post(
+        'body: s === undefined ? { lineageGuid } : { lineageGuid, storeId: s }, x: 1'
+      ),
     }).length !== 0 ||
     run(`${route}`, both, 'lineageGuid, storeId: store').length === 0
   ) {
     console.error('✗ restore-session control: storeId not pinned on both sides of the leg.');
+    process.exit(1);
+  }
+}
+
+/**
+ * Ninth control, the /session request slice (the sessionRequest struct): it must pass with every request key in
+ * the struct, and fail when the struct is missing, or lacks a key that another struct in the speaker names.
+ */
+const sessionLeg = LEGS.find((leg) => leg.path === '/session');
+if (!sessionLeg) {
+  console.error('✗ session-request control: the /session leg is gone.');
+  process.exit(1);
+}
+{
+  const lone: Leg = {
+    ...sessionLeg,
+    requestSchema: 'ctrl',
+    responseSchema: null,
+    responseKeys: [],
+  };
+  const accepts = `export const ctrl = z.object({\n${lone.requestKeys.map((key) => `  ${key}: z.string(),`).join('\n')}\n});`;
+  const field = (key: string) =>
+    `\t${key[0].toUpperCase()}${key.slice(1)} string \`json:"${key}"\``;
+  const struct = (name: string, keys: string[]) =>
+    `type ${name} struct {\n${keys.map(field).join('\n')}\n}\n`;
+  const run = (speaker: string) =>
+    checkLegs([lone], `'${lone.path}'`, accepts, `"${lone.path}"\n${speaker}`);
+  const all = struct('sessionRequest', lone.requestKeys);
+  const response = struct('sessionResponse', lone.requestKeys);
+  const dropped = lone.requestKeys.filter((key) => key !== 'storeId');
+  if (
+    run(all).length !== 0 ||
+    // the struct is gone, its keys named by another struct only.
+    run(response).length === 0 ||
+    // the struct is renamed (the slice anchor misses), keys named elsewhere.
+    run(`${struct('sessionBody', lone.requestKeys)}${response}`).length === 0 ||
+    // the struct lost storeId while a later struct still names it.
+    run(`${struct('sessionRequest', dropped)}${response}`).length === 0
+  ) {
+    console.error(
+      '✗ session-request control: a missing or mis-sliced sessionRequest struct went unreported.'
+    );
+    process.exit(1);
+  }
+}
+
+/**
+ * Tenth control, a key in both requestKeys and responseKeys of a requestScope leg: the request check reads the
+ * request slice and the response check reads the whole speaker, independently. A key named only outside the slice
+ * is one finding (the request's), not two.
+ */
+{
+  const both: Leg = {
+    path: '/control-both',
+    requestSchema: 'ctrl',
+    responseSchema: null,
+    requestKeys: ['shared'],
+    responseKeys: ['shared'],
+    requestScope: (speaker) => speaker.split('RESPONSE')[0],
+  };
+  const run = (speaker: string) =>
+    checkLegs(
+      [both],
+      `'/control-both'`,
+      'export const ctrl = z.object({ shared: z.string() });',
+      `"/control-both" ${speaker}`
+    );
+  if (
+    run('"shared" RESPONSE').length !== 0 ||
+    run('"other" RESPONSE "shared"').length !== 1 ||
+    run('"other" RESPONSE "other"').length !== 2
+  ) {
+    console.error(
+      '✗ key-scope control: a key in both request and response keys was not checked independently.'
+    );
     process.exit(1);
   }
 }

@@ -126,10 +126,12 @@ describe('backup download --store fallback', () => {
 });
 
 describe('failure classification', () => {
-  it('keeps the own classification of an unrelated error that carries a cause', async () => {
+  it('keeps the own status of an unrelated error that carries a cause with another', async () => {
     const d = deps({}, () =>
       Promise.reject(
-        Object.assign(new Error('renet spawn failed'), { cause: httpError(502, 'bad gateway') })
+        Object.assign(httpError(400, 'renet spawn failed'), {
+          cause: httpError(502, 'bad gateway'),
+        })
       )
     );
     await expect(runStoreFetch({ ref: 'r', dest: '/d' }, d.base)).rejects.toThrow(
@@ -137,6 +139,17 @@ describe('failure classification', () => {
     );
     expect(d.runRenet).toHaveBeenCalledTimes(1);
     expect(mockWarn).not.toHaveBeenCalled();
+  });
+
+  it('classifies an error whose status lives only in its cause by that status', async () => {
+    const d = deps({}, () =>
+      Promise.reject(
+        Object.assign(new Error('renet spawn failed'), { cause: httpError(502, 'bad gateway') })
+      )
+    );
+    await expect(runStoreFetch({ ref: 'r', dest: '/d' }, d.base)).rejects.toThrow();
+    expect(d.runRenet).toHaveBeenCalledTimes(2);
+    expect(mockWarn).toHaveBeenCalledWith(FALLBACK);
   });
 
   it('still reads the original of a refused session mint', async () => {
