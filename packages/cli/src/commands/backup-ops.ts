@@ -2,6 +2,10 @@ import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import type { SFTPClient } from '../remote/sftp/index.js';
 import { hasAccountToken, pushStrategyRetention } from '../services/backup/backup-retention.js';
+import {
+  ALERT_UNIT_SUFFIX,
+  VERIFY_UNIT_SUFFIX,
+} from '../services/backup/backup-schedule-verify.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
 import { setExitCode, writeStderr, writeStdout } from '../services/core/request-context.js';
@@ -43,19 +47,50 @@ async function strategyUnitNames(machineName: string, strategyName: string): Pro
   return units.length > 0 ? units : [strategyName];
 }
 
-/** Whether `rediacc-backup-<unit>.service` is installed on the machine. */
-async function isUnitDeployed(sftp: SFTPClient, unit: string): Promise<boolean> {
-  let checkOutput = '';
-  await sftp.execStreaming(`systemctl cat rediacc-backup-${unit}.service 2>/dev/null`, {
+const SYSTEMD_DIR = '/etc/systemd/system';
+const UNIT_PREFIX = 'rediacc-backup-';
+const UNIT_SUFFIX = '.service';
+
+/**
+ * Whether a unit name (after `rediacc-backup-`) is one of the strategy's scheduled units: the base unit, a `.ds.` or a
+ * `.repo.` unit. A verify or alert companion and the ad-hoc unit are not.
+ */
+function isStrategyUnit(strategyName: string, unit: string): boolean {
+  if (unit === strategyName) return true;
+  if (!unit.startsWith(`${strategyName}.ds.`) && !unit.startsWith(`${strategyName}.repo.`)) {
+    return false;
+  }
+  return !unit.endsWith(VERIFY_UNIT_SUFFIX) && !unit.endsWith(ALERT_UNIT_SUFFIX);
+}
+
+/**
+ * The strategy's scheduled units installed on the machine, read from the unit files `backup schedule` writes. The
+ * machine is the source of truth: a schedule applied through another config (or a binding this config lacks) is still
+ * found, and the check needs neither D-Bus nor an unprivileged `systemctl cat` (which printed nothing on a machine
+ * whose `backup status` read the same unit as scheduled). The config's expected units come first, in their order.
+ */
+async function deployedStrategyUnits(
+  sftp: SFTPClient,
+  strategyName: string,
+  expected: string[]
+): Promise<string[]> {
+  let listing = '';
+  await sftp.execStreaming(`sudo -n ls -1 ${shellQuote(SYSTEMD_DIR)} 2>/dev/null`, {
     onStdout: (data) => {
-      checkOutput += data;
+      listing += data;
     },
     onStderr: () => {},
   });
-  return checkOutput.length > 0;
+  const installed = listing
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((file) => file.startsWith(UNIT_PREFIX) && file.endsWith(UNIT_SUFFIX))
+    .map((file) => file.slice(UNIT_PREFIX.length, -UNIT_SUFFIX.length))
+    .filter((unit) => isStrategyUnit(strategyName, unit));
+  const found = new Set(installed);
+  const ordered = expected.filter((unit) => found.has(unit));
+  return [...ordered, ...installed.filter((unit) => !ordered.includes(unit)).sort()];
 }
-
-const SYSTEMD_DIR = '/etc/systemd/system';
 
 /**
  * Stage the ad-hoc service of a strategy with no deployed unit, so the backup-unit job can start it by name
@@ -222,12 +257,13 @@ async function runBackupNow(
 
   try {
     for (const { name, config } of strategies) {
-      const deployed: string[] = [];
-      for (const unit of await strategyUnitNames(machineName, name)) {
-        if (await isUnitDeployed(sftp, unit)) deployed.push(`rediacc-backup-${unit}`);
-      }
+      const deployed = await deployedStrategyUnits(
+        sftp,
+        name,
+        await strategyUnitNames(machineName, name)
+      );
       if (deployed.length > 0) {
-        units.push(...deployed);
+        units.push(...deployed.map((unit) => `${UNIT_PREFIX}${unit}`));
         continue;
       }
       const adhoc = await stageAdhocUnit(sftp, machineName, name, config, remoteRenetPath, debug);

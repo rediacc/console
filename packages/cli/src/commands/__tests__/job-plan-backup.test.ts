@@ -71,14 +71,23 @@ const machine = vi.hoisted(() => ({
   commands: [] as { command: string; stdin?: string }[],
   stageExit: 0,
 }));
-/** The machine: `systemctl cat` prints for a deployed unit, `show -p SubState` answers from `subState`. */
+/**
+ * The machine: listing the systemd directory names a `.service` and a `.timer` file per deployed unit, `systemctl cat`
+ * prints nothing (as an unprivileged `systemctl cat` did on the hostinger machine whose `backup status` read the unit as
+ * scheduled), and `show -p SubState` answers from `subState`.
+ */
 function fakeExecStreaming(
   cmd: string,
   opts: { stdin?: string; onStdout: (d: string) => void }
 ): Promise<number> {
   machine.commands.push({ command: cmd, stdin: opts.stdin });
-  const cat = /^systemctl cat rediacc-backup-(.+)\.service/.exec(cmd);
-  if (cat && machine.deployed.has(cat[1])) opts.onStdout('[Unit]\n');
+  if (cmd.startsWith("sudo -n ls -1 '/etc/systemd/system'")) {
+    const files = [...machine.deployed].flatMap((u) => [
+      `rediacc-backup-${u}.service`,
+      `rediacc-backup-${u}.timer`,
+    ]);
+    opts.onStdout(`chronyd.service\n${files.join('\n')}\n`);
+  }
   if (cmd.startsWith('systemctl show -p SubState')) opts.onStdout(`${machine.subState}\n`);
   return Promise.resolve(cmd.startsWith('sudo tee') ? machine.stageExit : 0);
 }
@@ -136,6 +145,7 @@ let answer: Record<string, unknown>;
 
 beforeEach(() => {
   vi.clearAllMocks();
+  schedule.units = ['nightly', 'nightly.ds.fast', 'nightly.repo.gitlab'];
   machine.deployed.clear();
   machine.commands.length = 0;
   machine.subState = 'dead';
@@ -242,6 +252,34 @@ describe('backup run on deployed units', () => {
 
     expect(executed).toHaveLength(1);
     expect(mockRenderFailure).toHaveBeenCalledTimes(1);
+  });
+
+  it('starts the deployed unit the config does not bind, as when the schedule was applied through another config', async () => {
+    // A config with no binding falls back to the bare strategy name; the machine holds a .ds. unit as well.
+    schedule.units = ['nightly'];
+    machine.deployed.add('nightly');
+    machine.deployed.add('nightly.ds.fast');
+
+    await rdcBackup('run', 'nightly', '-m', 'm1');
+
+    expect(executed).toHaveLength(1);
+    expect(executed[0].commandKind?.args?.units).toEqual([
+      'rediacc-backup-nightly',
+      'rediacc-backup-nightly.ds.fast',
+    ]);
+    expect(schedule.buildStrategyCommandsForMachine).not.toHaveBeenCalled();
+  });
+
+  it("control: verify, alert and ad-hoc companions and another strategy's units are not deployed units", async () => {
+    schedule.buildStrategyCommandsForMachine.mockResolvedValue(['/r/renet backup snapshot x']);
+    for (const unit of ['nightly.verify', 'nightly.ds.fast.alert', 'nightly-adhoc', 'nightly2']) {
+      machine.deployed.add(unit);
+    }
+
+    await rdcBackup('run', 'nightly', '-m', 'm1');
+
+    expect(executed).toHaveLength(1);
+    expect(executed[0].commandKind?.args?.units).toEqual(['rediacc-backup-nightly-adhoc']);
   });
 });
 

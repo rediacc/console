@@ -55,11 +55,12 @@ const machine = vi.hoisted(() => ({
   subState: 'dead',
   runExit: 0,
 }));
-/** The machine: `systemctl cat` prints for a deployed unit, `is-active` answers from `running`. */
+/** The machine: the systemd directory lists each deployed unit, `is-active` answers from `running`. */
 function fakeExecStreaming(cmd: string, opts: { onStdout: (d: string) => void }): Promise<number> {
   machine.commands.push(cmd);
-  const cat = /^systemctl cat rediacc-backup-(.+)\.service/.exec(cmd);
-  if (cat && machine.deployed.has(cat[1])) opts.onStdout('[Unit]\n');
+  if (cmd.startsWith('sudo -n ls -1')) {
+    opts.onStdout([...machine.deployed].map((u) => `rediacc-backup-${u}.service\n`).join(''));
+  }
   const active = /^systemctl is-active (\S+)/.exec(cmd);
   if (active) opts.onStdout(machine.running.has(active[1]) ? 'active\n' : 'inactive\n');
   if (cmd.startsWith('systemctl show -p SubState')) opts.onStdout(`${machine.subState}\n`);
