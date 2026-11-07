@@ -95,20 +95,35 @@ const SNAPSHOT_OWN =
  */
 const LOCAL_OWN = /NO_SUCH_PATH|NO_LISTING|ROLLED_BACK|ROLLBACK_INCOMPLETE/i;
 
-/** The store's faults: a server error, a refused grant or session, an endpoint that does not answer. */
-const STORE_SIDE =
-  /\b5\d\d\b|bad gateway|service unavailable|gateway timeout|grant[^\n]{0,40}(refused|denied|forbidden|failed)|session[^\n]{0,40}(refused|denied|invalid|failed)|BACKUP_SESSION_INVALID|EGRESS_UNREACHABLE|ECONNREFUSED|ECONNRESET|ETIMEDOUT|ENOTFOUND|EHOSTUNREACH|unreachable|timed out|connection (refused|reset)|store[^\n]{0,30}suspended|STORE_SUSPENDED/i;
+/**
+ * The account server answering for a store other than the one asked (renet's session.store_mismatch and
+ * session.store_not_confirmed): a server misconfiguration, never retried elsewhere, since a fallback would hide it.
+ */
+const SERVER_MISCONFIGURED =
+  /opened the backup session on store [^\n]*not the requested|did not confirm backup store/i;
 
 /**
- * Whether a failed attempt is the store's own fault. The snapshot's own faults win over a store word in the same
- * output, and anything unrecognised is NOT a store fault: an unknown failure is surfaced, never retried elsewhere.
+ * The store's faults: a server error, a refused grant or session, an endpoint that does not answer. Node's spellings
+ * and the ones renet prints, its own (pkg/i18n/locales/en.go session.*) and Go's net/http errors passed through: Go's
+ * timeouts and DNS failure, a session the server still refuses after a re-mint, and a grant or session answer that is
+ * not JSON (a proxy in front of the store answering an HTML error page).
+ */
+const STORE_SIDE =
+  /\b5\d\d\b|bad gateway|service unavailable|gateway timeout|grant[^\n]{0,40}(refused|denied|forbidden|failed)|session[^\n]{0,40}(refused|denied|invalid|failed)|BACKUP_SESSION_INVALID|EGRESS_UNREACHABLE|ECONNREFUSED|ECONNRESET|ETIMEDOUT|ENOTFOUND|EHOSTUNREACH|unreachable|timed out|connection (refused|reset)|store[^\n]{0,30}suspended|STORE_SUSPENDED|i\/o timeout|context deadline exceeded|Client\.Timeout exceeded|TLS handshake timeout|no such host|session was re-minted and the server still refuses|(read-)?grant response was not JSON|session response was not JSON/i;
+
+/**
+ * Whether a failed attempt is the store's own fault. The snapshot's own faults, the machine's, and a misconfigured server
+ * win over a store word in the same output, and anything unrecognised is NOT a store fault: an unknown failure is
+ * surfaced, never retried elsewhere.
  */
 export function isStoreFailure(failure: AttemptFailure): boolean {
   const text = [failure.errorCode, failure.error, failure.stderr, failure.stdout]
     .filter((s): s is string => typeof s === 'string')
     .join('\n');
   if (failure.exitCode === 18 || failure.exitCode === 19) return false;
-  if (SNAPSHOT_OWN.test(text) || LOCAL_OWN.test(text)) return false;
+  if (SNAPSHOT_OWN.test(text) || LOCAL_OWN.test(text) || SERVER_MISCONFIGURED.test(text)) {
+    return false;
+  }
   return STORE_SIDE.test(text);
 }
 

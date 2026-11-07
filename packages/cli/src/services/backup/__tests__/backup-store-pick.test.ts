@@ -146,6 +146,39 @@ describe('runWithFallback', () => {
   });
 });
 
+// The strings renet really prints (pkg/i18n/locales/en.go session.*) and Go net/http errors it passes through (#5eb1d4c7).
+describe('isStoreFailure on renet and Go error strings', () => {
+  it.each([
+    'Get "https://store.example/c/ab": dial tcp 10.0.0.9:443: i/o timeout',
+    'Get "https://store.example/c/ab": context deadline exceeded',
+    'Get "https://store.example/c/ab": net/http: request canceled (Client.Timeout exceeded while awaiting headers)',
+    'Get "https://store.example/c/ab": net/http: TLS handshake timeout',
+    'Get "https://store.example/c/ab": dial tcp: lookup store.example on 127.0.0.53:53: no such host',
+    'the storage session was re-minted and the server still refuses it',
+    'grant response was not JSON',
+    'read-grant response was not JSON',
+    'session response was not JSON',
+  ])('falls back on %s', (error) => {
+    expect(isStoreFailure({ error })).toBe(true);
+  });
+
+  it.each([
+    'the account server opened the backup session on store eu-west, not the requested office; nothing is sent to another store',
+    "the account server did not confirm backup store office; a server without stores serves only the home store, so the session is refused rather than filling home under another store's name",
+  ])('never falls back on a misconfigured server: %s', (error) => {
+    expect(isStoreFailure({ error })).toBe(false);
+  });
+
+  it.each([
+    'snapshot snap-1 not found in the manifest index: i/o timeout',
+    'chunk verification failed: context deadline exceeded',
+    '{"code":"ROLLED_BACK","message":"copy failed: no such host"}',
+    '{"code":"ROLLBACK_INCOMPLETE","message":"copy failed: TLS handshake timeout"}',
+  ])('keeps a snapshot or machine fault over a Go store word: %s', (error) => {
+    expect(isStoreFailure({ error })).toBe(false);
+  });
+});
+
 describe('isStoreFailure on a path restore', () => {
   it('is not a store failure when the path is absent, has no listing, or the copy-out rolled back', () => {
     expect(isStoreFailure({ exitCode: 19, error: 'HTTP 502 bad gateway' })).toBe(false);
