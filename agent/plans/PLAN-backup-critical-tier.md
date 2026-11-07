@@ -618,8 +618,9 @@ Control rule: every new test fails without its fix. Each tick note records the t
 
 ### Z: bench, after the merge and edge deploy (lead)
 
-- [ ] Z1: A short-target stream on `eu-bench`: `backup usage` shows the pair moving after a prune, a stopped machine produces one target alert within the sweep interval and a repeat inside 6 hours does not, a delayed delete is undone.
+- [x] Z1: A short-target stream on `eu-bench`: `backup usage` shows the pair moving after a prune, a stopped machine produces one target alert within the sweep interval and a repeat inside 6 hours does not, a delayed delete is undone.
   - Accept: `./rdc.sh --config eu-bench backup usage -o json` rc 0 shows `liveBytes` and `waitingBytes`, and the delivery and undelete are recorded here.
+    (ticked) 2026-11-07T01:31:46Z by d778be9d: commit:174f197f bench 2026-11-07 fresh lineage acdc4afd: backup usage rc 0 pair moved by 843055104 bytes after the 00:17 prune (= preview freedBytes); one target alert per miss window within the sweep (23:20:52Z, 00:17:53Z), no repeat inside 6h (01:17 sweep 0 rows); delayed delete rc 0 undone rc 0 (event_log 23:01:28/23:01:41); test repos deleted with --purge-backups (purgeAfter 2026-11-14); bench-only proof
 - [ ] Z2: The hourly cron runs maintenance on edge with the audit sweep still daily, and the report shows no phase starved over 24 hours.
   - Accept: the account's maintenance report or event log for the bench subscription, recorded here with its time span.
 
