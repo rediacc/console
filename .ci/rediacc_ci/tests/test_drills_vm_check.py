@@ -302,6 +302,8 @@ class World(vm_check.Host):
         self.worker_units: dict[int, str] = dict(over.pop("worker_units", {}))
         self.inventory_rc = over.pop("inventory_rc", 0)
         self.inventory_probes = 0
+        # Root disk bytes by VM ip for `PROBE_ROOT_DISK` (absent: 100 GiB; None: the probe fails).
+        self.disks: dict[str, int | None] = dict(over.pop("disks", {}))
         assert not over, over
         self.store = root / "remote-store"
         self.mnt = root / "mnt"
@@ -377,6 +379,11 @@ class World(vm_check.Host):
                 return vm_check.Result(0, HASH + "\n")
             if argv[-1] == vm_check.PROBE_OS_RELEASE:
                 return vm_check.Result(0, self.os_release + "\n")
+            if argv[-1] == vm_check.PROBE_ROOT_DISK:
+                size = self.disks.get(argv[-2].rsplit("@", 1)[-1], 100 * vm_check.GIB)
+                if size is None:
+                    return vm_check.Result(255, "", "ssh: connect to host: No route to host")
+                return vm_check.Result(0, "%d\n" % size)
             if argv[-1] == "sudo sh -c %s" % shlex.quote(vm_check.inventory_script()):
                 return self._inventory()
             if argv[-1].startswith("sudo install -d -o root -g root -m 755 "):
@@ -3778,6 +3785,112 @@ def test_a_fleet_recipe_owns_its_subnet_and_the_plain_recipe_the_rest() -> None:
     assert plans is not None
     assert vm_check.plan_ips(fleet, plans, 0) == ["192.168.111.1", "192.168.111.11"]
     assert vm_check.plan_ips(fleet, plans, 1) == ["192.168.112.5", "192.168.112.51"]
+
+
+def _disk_probes(world: World) -> list[str]:
+    return [
+        c[-2].rsplit("@", 1)[-1]
+        for c in world.calls
+        if c[0] == "ssh" and c[-1] == vm_check.PROBE_ROOT_DISK
+    ]
+
+
+def _sized_two_workers(monkeypatch: pytest.MonkeyPatch, up: str) -> None:
+    fleet = vm_check.trigger.Fleet("two-workers", tuple(TWO_WORKERS), up)
+    monkeypatch.setitem(vm_check.trigger.MAP.fleets, "two-workers", fleet)
+
+
+@pytest.mark.parametrize("size", [18 * vm_check.GIB, int(47.9 * vm_check.GIB)])
+def test_a_running_fleet_with_smaller_disks_than_its_vm_dsk_is_refused_with_the_commands(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch, size: int
+) -> None:
+    """Fleet run 12: worker .11 had been created at the default size, the leg's recipe asks VM_DSK=48, and the reuse ran suite 31 into `insufficient disk space`. A running VM is left alone by `ops up`, and like P3's fleet-os-mismatch nothing tears a running fleet down, so the leg is NOT_VERIFIED naming `ops down` and the recipe."""
+    _sized_two_workers(monkeypatch, "VM_DSK=48 ./rdc.sh ops up")
+    world = make_world(tmp_path, running=TWO_WORKERS, disks={WORKER: size})
+    rc, out, receipt = run_areas(tmp_path, monkeypatch, world, {"multi-vm"})
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    assert receipt["reason"]["class"] == "area-not-verified"
+    leg = _leg(receipt, "multi-vm", "multi-machine-11")
+    assert leg["status"] == "not-verified", leg
+    assert "fleet-disk-too-small" in leg["detail"]
+    assert "%s has %.1f GiB of VM_DSK=48" % (WORKER, size / vm_check.GIB) in leg["detail"]
+    assert NET + ".12 has" not in leg["detail"]
+    assert "`VM_DSK=48 ./rdc.sh ops down && VM_DSK=48 ./rdc.sh ops up`" in leg["detail"]
+    assert "never tears a running fleet down" in out
+    assert world.bash_cmds == []
+    assert not [c for c in world.rdc_calls() if c[:2] in (["ops", "up"], ["ops", "down"])]
+    assert sorted(_disk_probes(world)) == sorted([WORKER, NET + ".12"])
+
+
+def test_a_running_fleet_whose_disks_meet_vm_dsk_is_reused(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _sized_two_workers(monkeypatch, "VM_DSK=48 ./rdc.sh ops up")
+    world = make_world(
+        tmp_path,
+        running=TWO_WORKERS,
+        disks={WORKER: 48 * vm_check.GIB, NET + ".12": 48 * vm_check.GIB},
+    )
+    rc, out, receipt = run_areas(tmp_path, monkeypatch, world, {"multi-vm"})
+    assert rc == vm_check.EXIT_VERIFIED, out
+    assert _leg(receipt, "multi-vm", "multi-machine-11")["status"] == "ok"
+    assert "fleet two-workers reused" in out
+    assert not [c for c in world.rdc_calls() if c[:2] == ["ops", "up"]]
+    # One probe per worker; the bridge is not a worker.
+    assert sorted(_disk_probes(world)) == sorted([WORKER, NET + ".12"])
+
+
+def test_a_fleet_whose_recipe_sets_no_vm_dsk_is_reused_without_a_disk_probe(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    world = make_world(tmp_path, running=TWO_WORKERS, disks={WORKER: 18 * vm_check.GIB})
+    rc, out, receipt = run_areas(tmp_path, monkeypatch, world, {"multi-vm"})
+    assert rc == vm_check.EXIT_VERIFIED, out
+    assert _leg(receipt, "multi-vm", "multi-machine-11")["status"] == "ok"
+    assert _disk_probes(world) == []
+
+
+def test_an_unreadable_root_disk_is_not_taken_for_a_big_one(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _sized_two_workers(monkeypatch, "VM_DSK=48 ./rdc.sh ops up")
+    world = make_world(tmp_path, running=TWO_WORKERS, disks={WORKER: None})
+    rc, out, receipt = run_areas(tmp_path, monkeypatch, world, {"multi-vm"})
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    leg = _leg(receipt, "multi-vm", "multi-machine-11")
+    assert "fleet-disk-unreadable" in leg["detail"]
+    assert "No route to host" in leg["detail"]
+    assert world.bash_cmds == []
+
+
+@pytest.mark.parametrize(
+    ("out", "want"),
+    [
+        ("51539607552\n", 51539607552),
+        ("   51539607552 \n", 51539607552),
+        ("lsblk: /dev/vda: not a block device\n", None),
+        ("", None),
+    ],
+)
+def test_the_root_disk_probe_answer_is_read_as_bytes(out: str, want: int | None) -> None:
+    assert vm_check.disk_bytes(out) == want
+
+
+def test_disk_floors_cover_the_workers_of_each_vm_dsk_plan_only() -> None:
+    fleet = vm_check.trigger.Fleet(
+        "f",
+        ("192.168.111.1", "192.168.111.11", "192.168.112.5", "192.168.112.51"),
+        "./rdc.sh ops up --basic",
+        ("VM_DSK=64 VM_NET_BASE=192.168.112 VM_BRIDGE=5 ./rdc.sh ops up",),
+    )
+    plans = vm_check.fleet_up_plans(fleet)
+    assert plans is not None
+    assert vm_check.disk_floors(fleet, plans) == [("192.168.112.51", 64, 1)]
+    live = vm_check.fleet_up_plans(vm_check.trigger.MAP.fleets["worker"])
+    assert live is not None
+    assert vm_check.disk_floors(vm_check.trigger.MAP.fleets["worker"], live) == [
+        ("192.168.111.11", 48, 0)
+    ]
 
 
 @pytest.mark.parametrize("leg_id", ["k8s-15", "k8s-ceph-16", "k8s-multinode-17-24"])

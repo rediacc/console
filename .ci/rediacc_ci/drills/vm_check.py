@@ -4,7 +4,7 @@
     npm run vm:check -- [--changed] --dry-run [--paths <path>[,...]]
     ./run.sh drill vmcheck [same flags]
 
-AREAS. `.ci/config/proof-tiers.json` `tiers.vm.areas` (agent/plans/PLAN-renet-change-test-triggers.md Design item 3) splits the renet surface into license, functions, migrate, multi-vm, ceph, kube and backup. The areas a change touches are read from the same diff as the sides, with or without `--changed` (a full run cannot be the way past an area); an unresolved push base selects every area. A `vmcheck` leg names steps of this battery and runs on its worker fleet (the license area's A0 and A2.3 run even when the account side is not required). A `receipt` leg is judged by that receipt (the backup area by the backup-check receipt). An `external` leg (an e2e suite on a fleet of its own) runs after the base battery, under the same fleet lock, and only when the battery has no finding (`_external_legs`): this run's forks are torn down first, because an e2e global setup can recreate the VMs; the leg's fleet is reused when every ip runs, else brought up with its `up` recipe (`fleet_up_plan` admits only `[VAR=value ...] ./rdc.sh ops up [flags]`, so a prose recipe is NOT_VERIFIED, never skipped); A0 has already made sure the dev gateway answers, which the e2e setup licenses against through .account-state; the leg's commands run from the console root under the suites' scrubbed environment, the last judged by `classify_e2e` from its exit code and TextFileReporter's per-test lines, and the outcome is one `X.<leg id>` row (a failed test is a failed assertion, a fleet, setup or empty run is NOT_VERIFIED). Then XR proves the parent grand is still on the worker and recreates it when the e2e setup removed it. After the run each leg is judged (`judge_areas`, recorded as the receipt's `areas`), and any leg not proven turns a VERIFIED run into NOT_VERIFIED `area-not-verified`, naming the leg, its fleet and the exact commands. A renet path in no area gets the base battery alone.
+AREAS. `.ci/config/proof-tiers.json` `tiers.vm.areas` (agent/plans/PLAN-renet-change-test-triggers.md Design item 3) splits the renet surface into license, functions, migrate, multi-vm, ceph, kube and backup. The areas a change touches are read from the same diff as the sides, with or without `--changed` (a full run cannot be the way past an area); an unresolved push base selects every area. A `vmcheck` leg names steps of this battery and runs on its worker fleet (the license area's A0 and A2.3 run even when the account side is not required). A `receipt` leg is judged by that receipt (the backup area by the backup-check receipt). An `external` leg (an e2e suite on a fleet of its own) runs after the base battery, under the same fleet lock, and only when the battery has no finding (`_external_legs`): this run's forks are torn down first, because an e2e global setup can recreate the VMs; the leg's fleet is reused when every ip runs, else brought up with its `up` recipe (`fleet_up_plan` admits only `[VAR=value ...] ./rdc.sh ops up [flags]`, so a prose recipe is NOT_VERIFIED, never skipped); a running worker whose recipe sets VM_DSK=<N> must have a root disk of N GiB or more (`_undersized`, one ssh per VM), else the leg is NOT_VERIFIED `fleet-disk-too-small` naming `ops down` and the recipe, since `ops up` leaves a running VM alone and, like P3's `fleet-os-mismatch`, nothing here tears a running fleet down; A0 has already made sure the dev gateway answers, which the e2e setup licenses against through .account-state; the leg's commands run from the console root under the suites' scrubbed environment, the last judged by `classify_e2e` from its exit code and TextFileReporter's per-test lines, and the outcome is one `X.<leg id>` row (a failed test is a failed assertion, a fleet, setup or empty run is NOT_VERIFIED). Then XR proves the parent grand is still on the worker and recreates it when the e2e setup removed it. After the run each leg is judged (`judge_areas`, recorded as the receipt's `areas`), and any leg not proven turns a VERIFIED run into NOT_VERIFIED `area-not-verified`, naming the leg, its fleet and the exact commands. A renet path in no area gets the base battery alone.
 
 `--dry-run` prints the plan (the hits, the phases and their steps, each area's legs, suites and CI jobs, and the best verdict the run could reach) and touches nothing; `--paths` replaces the diff with the given console-relative paths, to ask what a change WOULD select.
 
@@ -137,6 +137,11 @@ SYNC_BIG_BYTES = 1024 * 1024
 # The raw probes: read-only, and the only ssh/sftp argv this module builds besides `sftp -b` below.
 PROBE_RENET_HASH = "renet hash"
 PROBE_OS_RELEASE = '. /etc/os-release && printf "%s %s\\n" "$ID" "$VERSION_ID"'
+# A VM's root disk in bytes: the virtio disk the ops VMs boot from, else the root filesystem's size (smaller than its disk, so the fallback can only under-report).
+PROBE_ROOT_DISK = (
+    "lsblk -b -d -n -o SIZE /dev/vda 2>/dev/null || df -B1 --output=size / | tail -n 1"
+)
+GIB = 1 << 30
 # No `-q`: an alias that does not resolve or a key ssh refuses must reach the row's evidence.
 SFTP_BATCH = ("sftp", "-o", "BatchMode=yes")
 # A refused sftp leg counts as confinement only when the server says so; a dropped connection or a missing path is not a refusal.
@@ -375,6 +380,34 @@ def recipe_plan(recipe: str) -> tuple[dict[str, str], list[str]] | None:
         elif flag not in OPS_UP_FLAGS:
             return None
     return env, args
+
+
+def disk_bytes(out: str) -> int | None:
+    """The byte count `PROBE_ROOT_DISK` printed (its last integer line), or None when it printed none."""
+    numbers = [line.strip() for line in out.splitlines() if line.strip().isdigit()]
+    return int(numbers[-1]) if numbers else None
+
+
+def disk_floors(
+    fleet: trigger.Fleet, plans: Sequence[tuple[dict[str, str], list[str]]]
+) -> list[tuple[str, int, int]]:
+    """(ip, GiB, plan index) for every worker VM whose plan sets VM_DSK=<GiB>: a fleet already running with smaller disks is not the fleet the recipe asks for. The bridge of each plan (`.1`, or `.<VM_BRIDGE>`) is not a worker."""
+    floors: list[tuple[str, int, int]] = []
+    for index, (env, _args) in enumerate(plans):
+        size = env.get("VM_DSK", "")
+        if not size.isdigit():
+            continue
+        bridge = env.get("VM_BRIDGE", BRIDGE_SUFFIX.lstrip("."))
+        floors += [
+            (ip, int(size), index)
+            for ip in plan_ips(fleet, plans, index)
+            if ip.rsplit(".", 1)[-1] != bridge
+        ]
+    return floors
+
+
+def spell_recipe(env: Mapping[str, str], args: Sequence[str]) -> str:
+    return " ".join(["%s=%s" % (k, shlex.quote(v)) for k, v in env.items()] + ["./rdc.sh", *args])
 
 
 def classify_e2e(res: Result) -> tuple[str, str, list[str]]:
@@ -2087,6 +2120,10 @@ class VmCheck:
             if status.rc != 0:
                 return "ops status rc=%d: %s" % (status.rc, rdc_failure(status)), ""
             running += lib.running_ips(status.out)
+        if plans is not None:
+            small = self._undersized(fleet, plans, running)
+            if small:
+                return small, ""
         if set(fleet.ips) <= set(running):
             self.ips = list(running) if plans is None else self._own_group(plans, running)
             return "", "fleet %s reused (%s running)" % (fleet.name, " ".join(fleet.ips))
@@ -2107,9 +2144,7 @@ class VmCheck:
             args = list(plan_args)
             if image and "--os" not in args:
                 args += ["--os", image]
-            spelled = " ".join(
-                ["%s=%s" % (k, shlex.quote(v)) for k, v in env.items()] + ["./rdc.sh", *args]
-            )
+            spelled = spell_recipe(env, args)
             spelled_all.append(spelled)
             self.say(
                 "        fleet %s: %s not running; %s" % (fleet.name, " ".join(missing), spelled)
@@ -2132,6 +2167,50 @@ class VmCheck:
             return "%s exited 0 but %s still do not run" % (spelled, " ".join(still)), ""
         self.ips = self._own_group(plans, running)
         return "", "fleet %s brought up with %s in %d s" % (fleet.name, spelled, total_ms // 1000)
+
+    def _undersized(
+        self,
+        fleet: trigger.Fleet,
+        plans: Sequence[tuple[dict[str, str], list[str]]],
+        running: Sequence[str],
+    ) -> str:
+        """Why a running fleet is not the one its recipe asks for, or "" when it is: each running worker whose plan sets VM_DSK=<N> must have a root disk of at least N GiB (one ssh per VM). `ops up` without `--force` leaves a running VM alone, so bringing the fleet up cannot grow it, and like P3's `fleet-os-mismatch` the check never tears a running fleet down: it refuses, naming the commands that recreate it."""
+        short: list[str] = []
+        down: list[int] = []
+        for ip, gib, index in disk_floors(fleet, plans):
+            if ip not in running:
+                continue
+            res = self.host.run(
+                vm_ssh.ssh_argv(self.ssh_user, self.ssh_key, ip, PROBE_ROOT_DISK),
+                env=self.environ,
+                timeout=60,
+            )
+            size = disk_bytes(res.out) if res.rc == 0 else None
+            if size is None:
+                return (
+                    "fleet-disk-unreadable: fleet %s asks VM_DSK=%d, and the root disk of %s is unreadable over ssh (rc=%d): %s"
+                    % (fleet.name, gib, ip, res.rc, last_lines(res.err or res.out))
+                )
+            if size < gib * GIB:
+                short.append("%s has %.1f GiB of VM_DSK=%d" % (ip, size / GIB, gib))
+                if index not in down:
+                    down.append(index)
+        if not short:
+            return ""
+        commands = []
+        for index in down:
+            env, args = plans[index]
+            commands += [spell_recipe(env, ["ops", "down"]), spell_recipe(env, args)]
+        # The row's evidence is clipped to EVIDENCE_MAX bytes, so the commands come first and the reasoning goes to the run's output.
+        self.say(
+            "        fleet %s is not reused: `ops up` leaves a running VM alone and vm:check never tears a running fleet down"
+            % fleet.name
+        )
+        return "fleet-disk-too-small: recreate fleet %s with `%s`: %s" % (
+            fleet.name,
+            " && ".join(commands),
+            "; ".join(short),
+        )
 
     @staticmethod
     def _own_group(
