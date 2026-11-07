@@ -18,16 +18,18 @@ All telemetry flows over OTLP HTTP to the Alloy collector, which fans out to the
 
 Runs on the hostinger machine under the `observability` repository (network ID `3136`).
 
+Since 2026-11-06 the stack runs in RAM mode: Prometheus, Loki, Tempo, Pyroscope and Alloy keep their data in an 8 GB RAM volume (renet `rdc repo policy set observability --memory-max 12G --ram-volume 8G`), and Grafana stays on disk. The `observability-ramctl` sidecar saves the RAM volume to disk every 10 minutes and on `repo down`, restores it on `repo up`, keeps the stores inside the RAM budget, and sheds low-priority ingest (info logs, non-error spans, profiles) first under pressure. A crash or power loss can lose up to 10 minutes. The operating details live in the observability repo's `CLAUDE.md` ("RAM mode").
+
 ### Stack Versions
 
 | Component  | Version | Role                |
 |------------|---------|---------------------|
-| Alloy      | 1.14.0  | OTLP collector/router |
-| Prometheus | 3.10.0  | Metrics storage     |
-| Grafana    | 12.4.1  | Dashboards/alerting |
-| Loki       | 3.6.7   | Log aggregation     |
-| Tempo      | 2.10.2  | Distributed tracing |
-| Pyroscope  | 1.19.0  | Continuous profiling |
+| Alloy      | 1.21.1  | OTLP collector/router |
+| Prometheus | 3.15.1  | Metrics storage     |
+| Grafana    | 13.2.4  | Dashboards/alerting |
+| Loki       | 3.7.9   | Log aggregation     |
+| Tempo      | 3.1.1   | Distributed tracing |
+| Pyroscope  | 2.4.1   | Continuous profiling |
 
 ## Authentication
 
@@ -40,6 +42,8 @@ OTLP endpoints use per-region Basic auth. Traefik's basicauth middleware on Allo
 | Account Server | Read from the `OTLP_CLIENT_CREDENTIALS` Worker secret on each regional deployment. |
 
 **Default-deny**: if the regional worker has no `OTLP_CLIENT_CREDENTIALS` secret, the fetch fails, or the CLI is running with `REDIACC_TELEMETRY_DISABLED=1` / `CI=...`, telemetry is completely disabled — no unauthenticated requests, no metadata leakage. When the user opts out via env var, the CLI skips the credential fetch AND injects `REDIACC_TELEMETRY_DISABLED=1` into the remote renet environment via SSH, so the remote renet process also takes its default-deny branch.
+
+**Edge limits** (Traefik on `otlp.rediacc.io` and `profiles.rediacc.io`, since 2026-11-06): basic auth runs first, then each credential gets 5 requests/s (burst 30), at most 8 concurrent requests, and a 2 MB body cap (8 MB for profiles). Excess requests get HTTP 429. Real traffic averages 0.08 requests/s across all credentials, so legitimate senders are far below the limits.
 
 ### Rotation
 
@@ -78,11 +82,14 @@ A silent sender is caught by the delivery check and a Grafana alert; see [runboo
 
 ## Retention
 
-| Signal  | Backend    | Retention          |
-|---------|------------|--------------------|
-| Traces  | Tempo      | 30 days            |
-| Metrics | Prometheus | 30 days / 50 GB    |
-| Logs    | Loki       | Per Loki config    |
+| Signal   | Backend    | Retention |
+|----------|------------|-----------|
+| Traces   | Tempo      | 7 days (tenant `default`); traces with an error are also kept 40 days (tenant `errors`) |
+| Metrics  | Prometheus | 2500 MB size cap (about 3 to 4 weeks at today's series count) |
+| Logs     | Loki       | info 14 days (tenant `fake`); warn, error and critical 40 days (tenant `errors`, its own ingest limit, so an info flood cannot crowd out errors) |
+| Profiles | Pyroscope  | 14 days |
+
+These are maxima. When the RAM volume fills, `observability-ramctl` shortens Loki, Tempo and Pyroscope retention and deletes the oldest info logs first; error logs and error traces go last.
 
 ## Opt-Out
 
