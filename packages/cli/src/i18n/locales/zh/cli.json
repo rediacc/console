@@ -1284,6 +1284,7 @@
         "none": "没有匹配的票据。",
         "invalidOlderThan": "--older-than 必须是类似 90m 或 24h 的时长（收到：\"{{value}}\"）",
         "needsTarget": "请至少指定一个作业 ID，或传入 --stale。",
+        "conflictingTargets": "请传入作业 ID，或传入 --stale（可附带 --older-than），不能同时使用；--older-than 必须与 --stale 一起使用。",
         "notFound": "此配置中没有 {{jobId}} 的票据。"
       }
     },
@@ -2600,6 +2601,8 @@
           "repoRenewed": "{{repositoryGuid}}：已续期",
           "repoNotDue": "{{repositoryGuid}}：尚未到期",
           "repoNeedsLogin": "{{repositoryGuid}}：已跳过，需要登录 ({{detail}})",
+          "repoFailed": "{{repositoryGuid}}：无法续期（{{detail}}）",
+          "failed": "有 {{count}} 个许可证无法续期，请查看上方各行。登录也无法解决此问题。",
           "paidNote": "未登录时只会续期可自行续期的许可证（FREE 许可证）；付费许可证需要先运行 \"rdc subscription login\"。"
         }
       },

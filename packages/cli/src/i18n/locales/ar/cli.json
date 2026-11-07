@@ -1284,6 +1284,7 @@
         "none": "لا توجد تذاكر مطابقة.",
         "invalidOlderThan": "يجب أن تكون قيمة --older-than مدة مثل 90m أو 24h (المستلمة: \"{{value}}\")",
         "needsTarget": "حدّد معرّف مهمة واحدًا على الأقل أو مرّر --stale.",
+        "conflictingTargets": "مرّر معرّفات المهام، أو --stale (مع --older-than اختياريًا)، وليس كليهما؛ ويتطلب --older-than وجود --stale.",
         "notFound": "لا توجد تذكرة لـ {{jobId}} في هذا الإعداد."
       }
     },
@@ -2600,6 +2601,8 @@
           "repoRenewed": "{{repositoryGuid}}: تم التجديد",
           "repoNotDue": "{{repositoryGuid}}: لم يحن موعد التجديد بعد",
           "repoNeedsLogin": "{{repositoryGuid}}: تم التخطي، تسجيل الدخول مطلوب ({{detail}})",
+          "repoFailed": "{{repositoryGuid}}: تعذّر التجديد ({{detail}})",
+          "failed": "تعذّر تجديد {{count}} ترخيص؛ راجع الأسطر أعلاه. تسجيل الدخول لا يغيّر ذلك.",
           "paidNote": "بدون تسجيل الدخول تُجدَّد فقط التراخيص التي تجدد نفسها (تراخيص FREE)؛ التراخيص المدفوعة تتطلب \"rdc subscription login\"."
         }
       },

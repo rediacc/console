@@ -1284,6 +1284,7 @@
         "none": "Sobivaid pileteid pole.",
         "invalidOlderThan": "--older-than peab olema kestus nagu 90m või 24h (saadud: \"{{value}}\")",
         "needsTarget": "Anna vähemalt üks töö-ID või lisa --stale.",
+        "conflictingTargets": "Anna kas töö-ID-d või --stale (soovi korral koos --older-than), mitte mõlemat; --older-than nõuab --stale.",
         "notFound": "Selles konfiguratsioonis pole {{jobId}} jaoks piletit."
       }
     },
@@ -2600,6 +2601,8 @@
           "repoRenewed": "{{repositoryGuid}}: uuendatud",
           "repoNotDue": "{{repositoryGuid}}: pole veel uuendamise aeg",
           "repoNeedsLogin": "{{repositoryGuid}}: vahele jäetud, vaja on sisselogimist ({{detail}})",
+          "repoFailed": "{{repositoryGuid}}: uuendamine ebaõnnestus ({{detail}})",
+          "failed": "{{count}} litsentsi uuendamine ebaõnnestus; vaata ülaltoodud ridu. Sisselogimine seda ei muuda.",
           "paidNote": "Ilma sisselogimiseta uuendatakse ainult litsentse, mis uuenevad ise (FREE litsentsid); tasulised litsentsid nõuavad käsku \"rdc subscription login\"."
         }
       },

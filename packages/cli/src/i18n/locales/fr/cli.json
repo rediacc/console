@@ -1284,6 +1284,7 @@
         "none": "Aucun ticket correspondant.",
         "invalidOlderThan": "--older-than doit être une durée comme 90m ou 24h (reçu : \"{{value}}\")",
         "needsTarget": "Indiquez au moins un identifiant de tâche, ou passez --stale.",
+        "conflictingTargets": "Indiquez des identifiants de tâche, ou --stale (avec --older-than en option), mais pas les deux ; --older-than exige --stale.",
         "notFound": "Aucun ticket pour {{jobId}} dans cette configuration."
       }
     },
@@ -2600,6 +2601,8 @@
           "repoRenewed": "{{repositoryGuid}} : renouvelée",
           "repoNotDue": "{{repositoryGuid}} : pas encore à renouveler",
           "repoNeedsLogin": "{{repositoryGuid}} : ignorée, connexion requise ({{detail}})",
+          "repoFailed": "{{repositoryGuid}} : renouvellement impossible ({{detail}})",
+          "failed": "{{count}} licence(s) n'ont pas pu être renouvelées ; voir les lignes ci-dessus. Se connecter n'y change rien.",
           "paidNote": "Sans connexion, seules les licences qui se renouvellent d'elles-mêmes le sont (licences FREE) ; les licences payantes nécessitent \"rdc subscription login\"."
         }
       },

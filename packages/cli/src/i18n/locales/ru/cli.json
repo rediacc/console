@@ -1284,6 +1284,7 @@
         "none": "Подходящих тикетов нет.",
         "invalidOlderThan": "--older-than должен быть длительностью вроде 90m или 24h (получено: \"{{value}}\")",
         "needsTarget": "Укажите хотя бы один ID задания или передайте --stale.",
+        "conflictingTargets": "Укажите ID заданий или --stale (при желании с --older-than), но не то и другое сразу; --older-than работает только с --stale.",
         "notFound": "В этой конфигурации нет тикета для {{jobId}}."
       }
     },
@@ -2600,6 +2601,8 @@
           "repoRenewed": "{{repositoryGuid}}: обновлена",
           "repoNotDue": "{{repositoryGuid}}: срок обновления ещё не наступил",
           "repoNeedsLogin": "{{repositoryGuid}}: пропущена, нужен вход ({{detail}})",
+          "repoFailed": "{{repositoryGuid}}: не удалось продлить ({{detail}})",
+          "failed": "Не удалось продлить лицензии ({{count}}); см. строки выше. Вход в систему этого не изменит.",
           "paidNote": "Без входа обновляются только лицензии, которые обновляются сами (лицензии FREE); для платных лицензий нужен \"rdc subscription login\"."
         }
       },

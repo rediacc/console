@@ -1284,6 +1284,7 @@
         "none": "Nenhum ticket correspondente.",
         "invalidOlderThan": "--older-than deve ser uma duração como 90m ou 24h (recebido: \"{{value}}\")",
         "needsTarget": "Informe ao menos um ID de job ou use --stale.",
+        "conflictingTargets": "Informe IDs de job ou --stale (com --older-than opcional), não ambos; --older-than exige --stale.",
         "notFound": "Nenhum ticket para {{jobId}} nesta configuração."
       }
     },
@@ -2600,6 +2601,8 @@
           "repoRenewed": "{{repositoryGuid}}: renovada",
           "repoNotDue": "{{repositoryGuid}}: ainda não vence",
           "repoNeedsLogin": "{{repositoryGuid}}: ignorada, requer login ({{detail}})",
+          "repoFailed": "{{repositoryGuid}}: não foi possível renovar ({{detail}})",
+          "failed": "Não foi possível renovar {{count}} licença(s); veja as linhas acima. Fazer login não muda isso.",
           "paidNote": "Sem login, só são renovadas as licenças que se renovam sozinhas (licenças FREE); as licenças pagas exigem \"rdc subscription login\"."
         }
       },

@@ -1284,6 +1284,7 @@
         "none": "該当するチケットはありません。",
         "invalidOlderThan": "--older-than は 90m や 24h のような期間で指定してください (指定値: \"{{value}}\")",
         "needsTarget": "ジョブ ID を 1 つ以上指定するか、--stale を付けてください。",
+        "conflictingTargets": "ジョブ ID か --stale (任意で --older-than を併用) のどちらか一方を指定してください。--older-than は --stale と一緒にのみ使えます。",
         "notFound": "この設定に {{jobId}} のチケットはありません。"
       }
     },
@@ -2600,6 +2601,8 @@
           "repoRenewed": "{{repositoryGuid}}: 更新しました",
           "repoNotDue": "{{repositoryGuid}}: 更新時期ではありません",
           "repoNeedsLogin": "{{repositoryGuid}}: スキップしました。ログインが必要です ({{detail}})",
+          "repoFailed": "{{repositoryGuid}}: 更新できませんでした ({{detail}})",
+          "failed": "{{count}} 件のライセンスを更新できませんでした。上の行を確認してください。ログインしても結果は変わりません。",
           "paidNote": "ログインなしで更新されるのは自己更新できるライセンス (FREE ライセンス) のみです。有料ライセンスには \"rdc subscription login\" が必要です。"
         }
       },

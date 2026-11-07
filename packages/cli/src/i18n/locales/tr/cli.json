@@ -1284,6 +1284,7 @@
         "none": "Eşleşen bilet yok.",
         "invalidOlderThan": "--older-than 90m veya 24h gibi bir süre olmalı (alınan: \"{{value}}\")",
         "needsTarget": "En az bir iş kimliği verin ya da --stale kullanın.",
+        "conflictingTargets": "İş kimliklerini ya da --stale seçeneğini (isteğe bağlı --older-than ile) verin, ikisini birden değil; --older-than için --stale gerekir.",
         "notFound": "Bu yapılandırmada {{jobId}} için bilet yok."
       }
     },
@@ -2600,6 +2601,8 @@
           "repoRenewed": "{{repositoryGuid}}: yenilendi",
           "repoNotDue": "{{repositoryGuid}}: henüz yenileme zamanı gelmedi",
           "repoNeedsLogin": "{{repositoryGuid}}: atlandı, oturum açmak gerekiyor ({{detail}})",
+          "repoFailed": "{{repositoryGuid}}: yenilenemedi ({{detail}})",
+          "failed": "{{count}} lisans yenilenemedi; yukarıdaki satırlara bakın. Oturum açmak bunu değiştirmez.",
           "paidNote": "Oturum açılmadan yalnızca kendi kendine yenilenen lisanslar (FREE lisanslar) yenilenir; ücretli lisanslar için \"rdc subscription login\" gerekir."
         }
       },

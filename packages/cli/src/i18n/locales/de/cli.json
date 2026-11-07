@@ -1284,6 +1284,7 @@
         "none": "Keine passenden Tickets.",
         "invalidOlderThan": "--older-than muss eine Dauer wie 90m oder 24h sein (erhalten: \"{{value}}\")",
         "needsTarget": "Mindestens eine Job-ID angeben oder --stale übergeben.",
+        "conflictingTargets": "Entweder Job-IDs oder --stale (optional mit --older-than) angeben, nicht beides; --older-than setzt --stale voraus.",
         "notFound": "Kein Ticket für {{jobId}} in dieser Konfiguration."
       }
     },
@@ -2600,6 +2601,8 @@
           "repoRenewed": "{{repositoryGuid}}: erneuert",
           "repoNotDue": "{{repositoryGuid}}: noch nicht fällig",
           "repoNeedsLogin": "{{repositoryGuid}}: übersprungen, Anmeldung erforderlich ({{detail}})",
+          "repoFailed": "{{repositoryGuid}}: konnte nicht erneuert werden ({{detail}})",
+          "failed": "{{count}} Lizenz(en) konnten nicht erneuert werden; siehe die Zeilen oben. Eine Anmeldung ändert daran nichts.",
           "paidNote": "Ohne Anmeldung werden nur Lizenzen erneuert, die sich selbst erneuern (FREE-Lizenzen); kostenpflichtige Lizenzen erfordern \"rdc subscription login\"."
         }
       },

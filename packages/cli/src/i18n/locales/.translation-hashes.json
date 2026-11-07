@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 2564,
-    "sourceCommit": "235b38c0225a1ee0e791bc6bf50165f829aa9dd5"
+    "keyCount": 2567,
+    "sourceCommit": "c486ae57f8c2b9858dafdaf2777834def1dd4442"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -926,6 +926,7 @@
     "commands.job.cancel.requested": "e11e5ddf",
     "commands.job.description": "127421a0",
     "commands.job.dismiss.confirm": "94d78aa2",
+    "commands.job.dismiss.conflictingTargets": "b30dafc8",
     "commands.job.dismiss.description": "1b8af198",
     "commands.job.dismiss.dismissed": "e843a1ab",
     "commands.job.dismiss.idArg": "27981210",
@@ -1964,10 +1965,12 @@
     "commands.subscription.refresh.account.refreshed": "ce330e1a",
     "commands.subscription.refresh.account.refreshing": "698e6fe1",
     "commands.subscription.refresh.description": "3f220309",
+    "commands.subscription.refresh.noLogin.failed": "0137969d",
     "commands.subscription.refresh.noLogin.none": "ec54b5d9",
     "commands.subscription.refresh.noLogin.paidNote": "762544a4",
     "commands.subscription.refresh.noLogin.renewed": "c18c37b3",
     "commands.subscription.refresh.noLogin.renewing": "af06b5c3",
+    "commands.subscription.refresh.noLogin.repoFailed": "c6c52b68",
     "commands.subscription.refresh.noLogin.repoNeedsLogin": "7bdd2f1d",
     "commands.subscription.refresh.noLogin.repoNotDue": "f7b96b39",
     "commands.subscription.refresh.noLogin.repoRenewed": "5363a627",
