@@ -202,7 +202,8 @@ export function applyStaleness(
     warn(
       `${binaries.length} renet process(es) run a replaced binary: ${binaries.map((p) => `${p.unit} (pid ${p.pid})`).join(', ')}`,
       'renet.binary.replaced',
-      binaries.map((p) => p.unit).join(', ')
+      // One unit runs several renet processes (dockerd's supervisor and its children), so the subject names each unit once.
+      [...new Set(binaries.map((p) => p.unit))].join(', ')
     );
   }
   const behindSchedule = extra.staleBackups.filter((b) => b.targetSeconds === undefined);

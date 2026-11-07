@@ -121,4 +121,18 @@ describe('machine health findings from the CLI producers (X1)', () => {
     const folded = applyStaleness(fromParser, { staleBinary: [], staleBackups: [] });
     expect(folded.findings.map((f) => f.code)).toEqual(['datastore.usage.high']);
   });
+
+  it('names each replaced-binary unit once however many processes it runs', () => {
+    const folded = applyStaleness(clean, {
+      staleBinary: [
+        { unit: 'rediacc-docker-5', pid: 41 },
+        { unit: 'rediacc-docker-5', pid: 42 },
+        { unit: 'rediacc-docker-12', pid: 43 },
+      ] as never,
+      staleBackups: [],
+    });
+    const replaced = folded.findings.find((f) => f.code === 'renet.binary.replaced');
+    expect(replaced?.subject).toBe('rediacc-docker-5, rediacc-docker-12');
+    expect(replaced?.detail).toContain('3 renet process(es)');
+  });
 });

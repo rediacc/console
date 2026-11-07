@@ -259,6 +259,12 @@ describe('repair helpers', () => {
     expect(supervisorNetworkIds('rediacc-docker-5, rediacc-router, rediacc-docker-12')).toEqual([
       5, 12,
     ]);
+    // A unit named once per renet process it runs is still restarted once.
+    expect(
+      supervisorNetworkIds(
+        'rediacc-docker-5, rediacc-docker-5, rediacc-docker-12, rediacc-docker-12'
+      )
+    ).toEqual([5, 12]);
     expect(
       repoRepairOutcome('{"ran":1,"failed":1,"files":[{"file":"Rediaccfile","result":"failed"}]}')
     ).toEqual({

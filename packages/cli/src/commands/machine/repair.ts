@@ -325,9 +325,9 @@ function callOutcome(result: ExecuteResult): { ok: boolean; detail?: string } {
   return { ok: false, detail: result.error ?? result.stderr?.trim() ?? `exit ${result.exitCode}` };
 }
 
-/** The network ids of the `rediacc-docker-N` units a renet.binary.replaced finding names. */
+/** The distinct network ids of the `rediacc-docker-N` units a renet.binary.replaced finding names, so a unit named twice is restarted once. */
 export function supervisorNetworkIds(subject: string): number[] {
-  return [...subject.matchAll(/rediacc-docker-(\d+)/g)].map((m) => Number(m[1]));
+  return [...new Set([...subject.matchAll(/rediacc-docker-(\d+)/g)].map((m) => Number(m[1])))];
 }
 
 /** The repository_repair answer as a fix outcome: failed when a repair() failed, its files named. */
