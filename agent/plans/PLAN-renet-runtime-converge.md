@@ -8,13 +8,31 @@ First-Seen: 2026-10-24
 Priority: P1 -- a machine upgraded without it keeps pre-isolation daemons that reach repos already moved to net-<N>/ (live 2026-10-23: from repo 2944 a writer read net-8576's daemon id and secrets)
 Concurrency: parallel -- batch R owns private/renet, batch C owns the console; C starts after R's pointer bump
 Owns: private/renet/pkg/daemon/runtime_epoch*.go, private/renet/pkg/daemon/start_foreground.go, private/renet/pkg/daemon/systemd.go, private/renet/pkg/daemon/testdata/**, private/renet/cmd/renet/runtime_*.go, private/renet/cmd/renet/main.go, private/renet/cmd/renet/repository_reconcile.go, private/renet/pkg/functions/commands/**, private/renet/pkg/functions/provider/vault_provider.go, private/renet/pkg/license/tiermap.go, packages/cli/src/services/renet/runtime-converge.ts, packages/cli/src/services/executor/**, packages/cli/src/commands/machine/register.ts, .ci/rediacc_ci/drills/upgrade_converge.py, .ci/rediacc_ci/drills/vm_check.py
+Revalidated: 2026-11-07 @ 1afbc7a24298
 Live-Proof: hostinger -- the runtime epoch, foreground start and runtime commands under private/renet/pkg/daemon and private/renet/cmd/renet are the renet surface, whose only live target is hostinger, and packages/cli/src/services/renet/runtime-converge.ts with the executor is the cli surface, which renet-live on hostinger covers too.
+
+<!-- preflight:begin -->
+```text
+preflight 2026-11-07 @ 1afbc7a24298
+open boxes: 0 (none)
+citations: 0 unresolved, 0 drifted, 0 relocated
+overlap since 5daeb5dcc847: 7 commit(s)
+  dca387616043 chore(ci): refresh lane durations, rebalance e2e workers, close two review findings
+  79bda2a23533 fix(backup): restore --path reaches its directory, and e2e tests follow the changed verbs
+  79a6b6a19e4a fix(backup): drill asserts the delayed-deletion wait, restores size a pending delete
+  68e6092ca09e feat(backup): declared targets, retention within, delayed deletion verbs, the usage pair and the chu
+  9a94544dfd63 fix(backup): the CLI classifies the three new renet functions, and suite 25 exercises them
+  5e12d5953349 fix(vm-check): vm:check runs its external area legs itself
+  8df618dfabd4 fix(e2e,vm-check): suite 11 fails at its create, and vm:check forgets an ambiguous stale grand
+dependencies: 0
+```
+<!-- preflight:end -->
 
 ## Why
 
-The cross-repo isolation moved each repo's runtime to `/var/run/rediacc/net-<N>/`, put a policy proxy in front of each repo dockerd, narrowed each daemon's sandbox to its own `net-<N>/`, and changed the router's discovery glob. A renet upgrade today only refreshes `rediacc-router` (packages/cli/src/services/renet/renet-provisioner.ts:79-85, on `binaryUpdated`). No repo daemon restarts, so every pre-isolation daemon keeps its old socket, its whole-`/var/run/rediacc` sandbox and no API gate until someone restarts it by hand. hostinger runs renet 7e6a8588 with 11 repos.
+The cross-repo isolation moved each repo's runtime to `/var/run/rediacc/net-<N>/`, put a policy proxy in front of each repo dockerd, narrowed each daemon's sandbox to its own `net-<N>/`, and changed the router's discovery glob. A renet upgrade today only refreshes `rediacc-router` (packages/cli/src/services/renet/renet-provisioner.ts:559-567, on `binaryUpdated`). No repo daemon restarts, so every pre-isolation daemon keeps its old socket, its whole-`/var/run/rediacc` sandbox and no API gate until someone restarts it by hand. hostinger runs renet 7e6a8588 with 11 repos.
 
-A renet-only restart cannot do it. Env-mode secrets (`REDIACC_SECRET_*`) exist only in the CLI process (packages/cli/src/services/state.ts:166-176), and `UpServices` without them recreates containers with empty values. So the CLI triggers, and renet plans and executes.
+A renet-only restart cannot do it. Env-mode secrets (`REDIACC_SECRET_*`) exist only in the CLI process (packages/cli/src/services/state.ts:142-150), and `UpServices` without them recreates containers with empty values. So the CLI triggers, and renet plans and executes.
 
 ## Decisions (taken by the lead under the operator's order to proceed autonomously; recorded for veto)
 
@@ -38,7 +56,7 @@ A renet-only restart cannot do it. Env-mode secrets (`REDIACC_SECRET_*`) exist o
 - [x] U1 [drill] .ci/rediacc_ci/drills/upgrade_converge.py + a U1 hook in vm_check.py: install the pre-isolation renet (0c3a88a^) on a worker, up two forks, show the old-layout breach, `rdc machine setup` with the new renet, assert both converged (new socket, legacy gone, stamp current, containers running), cross-reach gone, a second dry-run reports zero stale -- Accept: `npm run vm:check` VERIFIED with the U1 rows.
     (ticked) 2026-10-28T06:23:21Z by d778be9d: 2026-10-28 by d778be9d: npm run vm:check exit 0, VERIFIED (run vmc-10280549-dc77fb, receipt status VERIFIED at console HEAD c87456e6b with the private/renet pointer), 175 assertions 0 failed, every U1 row ok (36): old renet installed, forks up, breach shown, machine setup with the new renet, both converged, cross-reach gone, second dry-run zero stale
 - [x] H1 [operator window] `rdc machine converge hostinger --dry-run` lists 11 stale with observability last; then the real pass -- Accept: converge-last.json shows every repo converged or pending with a reason.
-    (ticked) 2026-10-24T22:30:09Z by d778be9d: hostinger /var/lib/rediacc/runtime/converge-last.json at 2026-10-24T21:50:10Z (renet branch build, rdc machine setup rc=0): 8 current, 2 inactive, 1 skipped (miscellaneous hub, manual), 0 failed, no error; the real move onto the per-repo layout happened in the 16:47Z incident pass and PLAN-converge-preflight-and-repo-recovery H1-H5 (agent/plans/PLAN-converge-preflight-and-repo-recovery.md:64) restored the three repos it broke. Deviation: the accept says converged or pending; the repos read current because they had already converged
+    (ticked) 2026-10-24T22:30:09Z by d778be9d: hostinger /var/lib/rediacc/runtime/converge-last.json at 2026-10-24T21:50:10Z (renet branch build, rdc machine setup rc=0): 8 current, 2 inactive, 1 skipped (miscellaneous hub, manual), 0 failed, no error; the real move onto the per-repo layout happened in the 16:47Z incident pass and PLAN-converge-preflight-and-repo-recovery H1-H5 (agent/plans/PLAN-converge-preflight-and-repo-recovery.md:72) restored the three repos it broke. Deviation: the accept says converged or pending; the repos read current because they had already converged
 - [x] LP-hostinger [live] Fresh hostinger receipt through --config eu-bench (PLAN-tested-on-bench ruling 3), after a VERIFIED npm run vm:check -- --changed on the same tree; ASK the operator first, because provisioning a branch renet restarts the router and daemons.
     (audit note 2026-11-04) The receipt proves the branch renet binary is live on hostinger at tree 50d35b9d. It does not exercise this plan's own behaviour, which rests on the plan's earlier boxes.
   - Accept: `live-proof hostinger renet-live`

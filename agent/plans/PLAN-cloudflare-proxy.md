@@ -20,9 +20,9 @@ Asked with AskUserQuestion on 2026-10-23; each answer is quoted, then what it or
 ## Tasks
 
 - [x] A1 [P0] Cost settings: `max_instances = 2` in `workers/proxy/wrangler.toml` and `sleepAfter = '2m'` in `workers/proxy/src/index.ts` -- acceptance: `grep -n 'max_instances = 2' workers/proxy/wrangler.toml` and `grep -n "sleepAfter = '2m'" workers/proxy/src/index.ts` both match
-    (ticked) 2026-10-23T08:27:53Z by d778be9d: commit:5f9a354ea max_instances = 2 at line 40 of workers/proxy/wrangler.toml, since renamed to wrangler.eu.toml (5f9a354ea) and sleepAfter = '2m' at workers/proxy/src/index.ts:63 (3b96d5133)
+    (ticked) 2026-10-23T08:27:53Z by d778be9d: commit:5f9a354ea max_instances = 2 at line 40 of workers/proxy/wrangler.toml, since renamed to wrangler.eu.toml (5f9a354ea) and sleepAfter = '2m' at workers/proxy/src/org-executor.ts:97 (3b96d5133)
 - [x] A2 [P0] B1: the Worker builds the container's `envVars` from its env (`REDIACC_TOKEN`, `REDIACC_ACCOUNT_SERVER`), drops the dead `REDIACC_EXECUTOR_MODE`, and gains its unit tests (missing test 1) -- acceptance: `cd workers/proxy && npm run test:unit` exits 0
-    (ticked) 2026-10-23T08:28:27Z by d778be9d: commit:3b96d5133 executorEnvVars builds the container envVars from the Worker env (workers/proxy/src/index.ts:44, used at workers/proxy/src/index.ts:66); workers/proxy npm run test:unit 16 passed
+    (ticked) 2026-10-23T08:28:27Z by d778be9d: commit:3b96d5133 executorEnvVars builds the container envVars from the Worker env (workers/proxy/src/org-executor-support.ts:126, used at workers/proxy/src/org-executor.ts:500); workers/proxy npm run test:unit 16 passed
 - [x] A3 [P1] B2: the image ships a version-matched renet at `/usr/local/bin/renet`, the deploy builds it, and an image-smoke gate covers it (missing test 4) -- acceptance: `npm run check:ci-proxy-image-smoke` exits 0
     (ticked) 2026-10-23T08:27:55Z by d778be9d: commit:3b96d5133 the image copies a version-matched renet to /usr/local/bin/renet (Dockerfile:54-56,90-91); the smoke gate check:ci-proxy-image-smoke landed in 0868e3a53 and ran green 2026-09-24
 - [x] A4 [P1] Post-deploy smoke in `deploy-proxy.sh` and `deploy_proxy.py` (`/v1/health` 200, unauthenticated `/v1/server-info` 401) with the differential test updated and the false dry-run header claim corrected (missing test 10) -- acceptance: `python3 -m pytest .ci/rediacc_ci/tests/test_deploy_deploy_proxy.py -q` exits 0
@@ -58,14 +58,14 @@ Asked with AskUserQuestion on 2026-10-23; each answer is quoted, then what it or
 - [x] B5 (account submodule, separate PR): CLI callers get `proxy:exec`, by a mint command or by the scope at login, with the account contract test pinning which token a CLI presents (missing test 8) -- acceptance: the account integration test for the chosen fix passes
     (ticked) 2026-10-24T04:12:40Z by d778be9d: commit:eff7c7dcd private/account/tests/integration/proxy-cli-token.test.ts:1; the B5a test meets this box per the plan's ruling; proxy-cli-token and console-session vitest 26 passed rc=0 on 2026-10-24; CLI half packages/cli/src/commands/subscription-proxy-token.ts
 - [x] Operator Phase 0: `/v1/health` 200, unauthenticated `/v1/server-info` 401, and `wrangler containers list` with no running instance -- acceptance: the three section 3 Phase 0 outputs recorded in this plan
-    (ticked) 2026-10-24T04:37:21Z by d778be9d: the three Phase 0 outputs recorded at agent/plans/PLAN-cloudflare-proxy.md:300 (health ok, 401, containers list 0 live instances), plus rollback handles; run 2026-10-24 on the tree at commit:2810805da
+    (ticked) 2026-10-24T04:37:21Z by d778be9d: the three Phase 0 outputs recorded at agent/plans/PLAN-cloudflare-proxy.md:348 (health ok, 401, containers list 0 live instances), plus rollback handles; run 2026-10-24 on the tree at commit:2810805da
 - [x] Operator Phase 1: the daemon tier on the dev box against hostinger, including `repo up` and `repo down` on `demo-stackoverflow:proxytrial` -- acceptance: the Phase 1 results section records rc 0 for every step
     (ticked) 2026-10-23T08:28:11Z by d778be9d: commit:bcb0f2d7e the Phase 1 results section records rc 0 for status, repo status, fork up and fork down against hostinger
 - [x] Operator: redeploy after A2, A3, B1, B2 and B3 with `EXECUTOR_TOKEN` (scopes `proxy:exec` and `audit:write`) set, then Phase 2 steps 1-4 against hostinger -- acceptance: `rdc --proxy https://proxy.eu.rediacc.com machine status hostinger` exits 0 with output matching the local run
     (audit note 2026-11-04) Not run: Phase 2 steps 1-4 on hostinger and this box's acceptance command. Accepted as superseded by the ruling ASKED:2026-11-04T07:38Z; the stable eu proof moves to PLAN-proxy-cd-six-targets L5, still open. ASKED:2026-10-25T19:08Z supersedes only the token.
     (ticked) 2026-11-04T07:39:15Z by d778be9d: fileline:agent/plans/PLAN-cloudflare-proxy.md:404 superseded by the ISSUER binding and CD. Accepted by operator ruling ASKED:2026-11-04T07:38Z
 - [x] Phase 2 step 5: measure container RSS and cold start, decide whether `lite` is viable, and record the numbers in this plan -- acceptance: the measurements recorded in this plan
-    (ticked) 2026-10-24T06:40:58Z by d778be9d: commit:f9aa1f413 measurements at agent/plans/PLAN-cloudflare-proxy.md:327 (basic, idle 237-242 MiB, cold 2.3-4.9 s, warm 487 ms; lite not viable, keep basic)
+    (ticked) 2026-10-24T06:40:58Z by d778be9d: commit:f9aa1f413 measurements at agent/plans/PLAN-cloudflare-proxy.md:344 (basic, idle 237-242 MiB, cold 2.3-4.9 s, warm 487 ms; lite not viable, keep basic)
 - [ ] Teardown per section 5 when the trial and improvement wave closes, or at once if the proxy is shelved -- acceptance: every section 5 step 7 check shows the proxy gone
 - [x] B5a [P1] (account submodule) `POST /proxy/cli-token`, the CLI twin of `/proxy/session-token` (`private/account/src/routes/proxy.ts:127`): authenticated by the CLI's device-code login token instead of a session cookie, it re-resolves org, subscription and team membership, and mints a token whose scope is exactly the literal `proxy:exec`, attributed to the login token's user and team, short-lived like `PROXY_SESSION_TOKEN_TTL_MS` (`:175`); the device-code scope list (`private/account/src/services/device-code.service.ts:345-356`) stays without `proxy:exec` (missing test 8) -- acceptance: a new `private/account/tests/integration/proxy-cli-token.test.ts` passes, proving a login token mints, the minted token introspects `active` with exactly `["proxy:exec"]` and the login token's user, a revoked or other-org login token is refused, and a device-code login still carries no `proxy:exec`
     (ticked) 2026-10-23T13:29:40Z by d778be9d: commit:bfe27e990 moves private/account to efed758 (B5a in bfb48c9); private/account/tests/integration/proxy-cli-token.test.ts 13/13 rc=0; account typecheck rc=0
@@ -82,12 +82,12 @@ Asked with AskUserQuestion on 2026-10-23; each answer is quoted, then what it or
 
 The existing boxes above are kept byte for byte, as the box ledger requires. Their state on 2026-10-23: A1-A4, B1-B3, F1, findings (a)-(c), the tsconfig comment, the Worker tests in CI and Operator Phase 1 are done on `origin/main` (commits 3b96d5133, 0868e3a53, 5f9a354ea, bcb0f2d7e), awaiting their ticks. Open: A5, A6, B4, `--region`, the image smoke in CI, B5 (with B5a and B5b), Phase 0, Phase 2 and its step 5, and teardown. Three readings of old boxes under the rulings:
 
-- **A1** names `workers/proxy/wrangler.toml` in its acceptance. K1 of PLAN-proxy-cd-six-targets renamed that file to `wrangler.eu.toml`, where `max_instances` now reads 3 (`workers/proxy/wrangler.eu.toml:55`), so the literal grep no longer matches any file. The cost bound is held by `check:ci-proxy-cost-guard` (box A5), and the `sleepAfter` half of the acceptance still matches.
+- **A1** names `workers/proxy/wrangler.toml` in its acceptance. K1 of PLAN-proxy-cd-six-targets renamed that file to `wrangler.eu.toml`, which carries no `max_instances` (`workers/proxy/wrangler.eu.toml:45-48`; the cap of 25 lives in `workers/proxy/src/capacity.ts:12`), so the literal grep no longer matches any file. The cost bound is held by `check:ci-proxy-cost-guard` (box A5), and the `sleepAfter` half of the acceptance still matches.
 - **A4** names `deploy-proxy.sh`. That bash twin was frozen to goldens and deleted in d6d87562e (2026-10-08); the smoke lives in `deploy_proxy.py` alone (`.ci/rediacc_ci/deploy/deploy_proxy.py:395`), and the test file named in the acceptance passes.
-- **`--region`** (the "Smaller defect: `deploy_proxy.py` stops ignoring `--region`" box) takes the refusal form: the proxy's region lives in `workers/proxy/wrangler.toml`, so any `--region` other than `eu` exits non-zero before any build. The value is still read and only printed (`.ci/rediacc_ci/deploy/deploy_proxy.py:462` reads it, `:468` refuses it, `:522` prints it).
+- **`--region`** (the "Smaller defect: `deploy_proxy.py` stops ignoring `--region`" box) takes the refusal form: the proxy's region lives in `workers/proxy/wrangler.toml`, so any `--region` other than `eu` exits non-zero before any build. The value is still read and only printed (`.ci/rediacc_ci/deploy/deploy_proxy.py:774` reads it and `:160-162` refuses an unsupported one).
 - **Teardown** runs only if the proxy is shelved. Under "Keep it and finish Phase 2" the trial wave closes with the proxy kept; that box then closes with the ruling as its evidence, and section 5 stays as the fallback.
 
-The image-smoke CI box needs a renet build ahead of its lane: the gate stages `workers/proxy/renet/renet-linux-amd64` into the build context and builds the whole image, which is why it is `local-only` today (`scripts/ci-runner/gates.lock.json:5886-5920`). The job runs after `build-renet` (`.github/workflows/ci.yml:839`) and takes the renet artifact, rather than joining a quality lane that runs before any renet exists.
+The image-smoke CI box needs a renet build ahead of its lane: the gate stages `workers/proxy/renet/renet-linux-amd64` into the build context and builds the whole image, which is why it is `local-only` today (`scripts/ci-runner/gates.lock.json:6171-6206`). The job runs after `build-renet` (`.github/workflows/ci.yml:903`) and takes the renet artifact, rather than joining a quality lane that runs before any renet exists.
 
 ## 0. Verdict (2026-10-23)
 
@@ -103,14 +103,14 @@ The cost is about $0 marginal while no caller wakes a container (section 4).
 
 ### 1.1 Request flow (current)
 
-1. **Client.** `rdc --proxy <url> <cmd>` or `REDIACC_PROXY_URL` (`packages/cli/src/cli.ts:201`, `:242`). The root preAction hook refuses a command that is not `proxyCapable`, then calls `runCommandThroughProxy` before the local action can run (`packages/cli/src/cli.ts:240-251`, `packages/cli/src/services/executor/proxy-command.ts:252`). The bearer is the stored subscription token, or `REDIACC_TOKEN` from the env (`packages/cli/src/services/account/subscription-auth.ts:8`, `:157`). 85 of the contract's commands are `proxyCapable` (`packages/shared/src/cli-contract/data/contract.json`). Before a command, `ProxyClient.ensureSession()` grants the sealed CEK to a `container` executor (`packages/cli/src/services/executor/proxy-client.ts:185`).
+1. **Client.** `rdc --proxy <url> <cmd>` or `REDIACC_PROXY_URL` (`packages/cli/src/cli.ts:217`, `:281`). The root preAction hook refuses a command that is not `proxyCapable`, then calls `runCommandThroughProxy` before the local action can run (`packages/cli/src/cli.ts:276-291`, `packages/cli/src/services/executor/proxy-command.ts:288`). The bearer is the stored subscription token, or `REDIACC_TOKEN` from the env (`packages/cli/src/services/account/subscription-auth.ts:8`, `:157`). 85 of the contract's commands are `proxyCapable` (`packages/shared/src/cli-contract/data/contract.json`). Before a command, `ProxyClient.ensureSession()` grants the sealed CEK to a `container` executor (`packages/cli/src/services/executor/proxy-client.ts:168`).
 2. **Worker** (`workers/proxy/src/index.ts`).
    - `/v1/health` is answered by the Worker itself, without the container (`:129-131`).
    - Every other path introspects the caller's token with the account server, authenticating with `EXECUTOR_TOKEN`. The call goes through the `ACCOUNT` service binding (`:109`, line 19-21 of `workers/proxy/wrangler.toml` (renamed to `wrangler.eu.toml` by PLAN-proxy-cd-six-targets K1)). It requires `active`, an `orgId` and scope `proxy:exec`; each refusal is logged as a reason code, never a token, by `refuse()` (`:88-119`).
    - It routes to a Durable-Object-backed container keyed `orgId:teamId|default` and forwards the request untouched (`:122`, `:142-143`).
    - The container's env is built from the Worker's: `REDIACC_TOKEN` is `EXECUTOR_TOKEN` and `REDIACC_ACCOUNT_SERVER` is `ACCOUNT_URL` (`executorEnvVars`, `:44-49`, `:66`).
-3. **Container.** `node cli-bundle.cjs serve --mode container --port 8080` (line 99 of `workers/proxy/Dockerfile` before PLAN-proxy-cd-six-targets A2 rewrote it), with a release renet at `/usr/local/bin/renet` whose version the bundle takes as its own (`workers/proxy/Dockerfile:54-56`, `:65`, `:90-91`). It serves the Hono app in `packages/cli/src/services/serve/server.ts`, with these routes (`packages/shared/src/cli-contract/wire.ts:207-217`):
-   - `/v1/health` (`packages/cli/src/services/serve/server.ts:83`)
+3. **Container.** `node cli-bundle.cjs serve --mode container --port 8080` (line 99 of `workers/proxy/Dockerfile` before PLAN-proxy-cd-six-targets A2 rewrote it), with a release renet at `/usr/local/bin/renet` whose version the bundle takes as its own (`workers/proxy/Dockerfile:52-55`). It serves the Hono app in `packages/cli/src/services/serve/server.ts`, with these routes (`packages/shared/src/cli-contract/wire.ts:349-362`):
+   - `/v1/health` (`packages/cli/src/services/serve/server.ts:104`)
    - `/v1/server-info` (`:85`)
    - `POST /v1/session`, which mints an X25519 keypair (`:99`)
    - `POST /v1/session/:id/cek`, the sealed CEK grant (`:115`)
@@ -132,10 +132,10 @@ The cost is about $0 marginal while no caller wakes a container (section 4).
 | Custom domain `proxy.eu.rediacc.com` | line 9-11 of `workers/proxy/wrangler.toml` (renamed to `wrangler.eu.toml` by PLAN-proxy-cd-six-targets K1) | live since 2026-09-24 |
 | `ACCOUNT_URL` var | line 14 of `workers/proxy/wrangler.toml` (renamed to `wrangler.eu.toml` by PLAN-proxy-cd-six-targets K1) | `https://eu.rediacc.com` |
 | `ACCOUNT` service binding to `rediacc-account-eu` | line 19-21 of `workers/proxy/wrangler.toml` (renamed to `wrangler.eu.toml` by PLAN-proxy-cd-six-targets K1) | in the tree; the deploy that carries it is unrecorded (box P2a) |
-| `EXECUTOR_TOKEN` secret: a portal API token with scopes `proxy:exec` and `audit:write`, IP binding `cloudflare`, in the org that owns hostinger's config | `workers/proxy/src/index.ts:143` | unrecorded (box P2a) |
-| Container receives its token | `executorEnvVars`, `workers/proxy/src/index.ts:47-50`; read at `packages/cli/src/commands/serve.ts:61-67` | fixed (B1) |
+| `EXECUTOR_TOKEN` secret: a portal API token with scopes `proxy:exec` and `audit:write`, IP binding `cloudflare`, in the org that owns hostinger's config | `workers/proxy/src/index.ts:61` | unrecorded (box P2a) |
+| Container receives its token | `executorEnvVars`, `workers/proxy/src/org-executor-support.ts:126-133`; read at `packages/cli/src/commands/serve.ts:64-70` | fixed (B1) |
 | Org has a remote config store holding hostinger | `packages/cli/src/services/serve/container-config.ts`, `private/account/src/routes/configs.ts:837` | operator confirms with `rdc config remote status` |
-| Caller token carries `proxy:exec` | `workers/proxy/src/index.ts:164` | CLI login token does not; boxes B5a and B5b |
+| Caller token carries `proxy:exec` | `workers/proxy/src/index.ts:294-301` | CLI login token does not; boxes B5a and B5b |
 
 The design is single-org: introspection answers `active:false` for a token of another org, so one `EXECUTOR_TOKEN` means one org.
 
@@ -143,26 +143,26 @@ The design is single-org: introspection answers `active:false` for a token of an
 
 This section records the first review's findings. None of them is open; the fixes are in 3b96d5133 (code and tests) and 0868e3a53 (gates and CI wiring).
 
-- **B1, the container never got its token.** The Worker passed only a dead `REDIACC_EXECUTOR_MODE`, and `rdc serve` refuses to start without `REDIACC_TOKEN`. Fixed by `executorEnvVars` (`workers/proxy/src/index.ts:47-50`); regression in `workers/proxy/src/__tests__/index.test.ts`.
-- **B2, the image had no renet.** Outside a SEA the CLI runs the renet on its path, so every machine command failed. Fixed: the image ships a release renet, version-matched to the bundle (`workers/proxy/Dockerfile:54-56`, `:90-91`), and a real deploy builds and stages it.
+- **B1, the container never got its token.** The Worker passed only a dead `REDIACC_EXECUTOR_MODE`, and `rdc serve` refuses to start without `REDIACC_TOKEN`. Fixed by `executorEnvVars` (`workers/proxy/src/org-executor-support.ts:126-133`); regression in `workers/proxy/src/__tests__/index.test.ts`.
+- **B2, the image had no renet.** Outside a SEA the CLI runs the renet on its path, so every machine command failed. Fixed: the image ships a release renet, version-matched to the bundle (`workers/proxy/Dockerfile:52-55`), and a real deploy builds and stages it.
 - **B3, the decrypted config reached policy only, not execution.** Fixed: `CommandRequestContext.config` carries a request-scoped config that `configService` and `configFileStorage` serve during a container dispatch and on re-attach (Writer B status below).
-- **B4, the CLI never opened a session or granted the CEK.** Fixed by `ProxyClient.ensureSession()` (`packages/cli/src/services/executor/proxy-client.ts:185`).
+- **B4, the CLI never opened a session or granted the CEK.** Fixed by `ProxyClient.ensureSession()` (`packages/cli/src/services/executor/proxy-client.ts:168`).
 - **B5, CLI login tokens lack `proxy:exec`.** Still true by design (`private/account/src/services/device-code.service.ts:345-356`); the 2026-10-23 ruling settles the fix as a mint command (boxes B5a, B5b). Until then the trial uses a portal token with `proxy:exec` in `REDIACC_TOKEN`.
 - **S1, the grand-repo guard did not apply through the proxy.** The CLI guard runs inside the local action and only for agents, and `--proxy` exits before the action. Fixed: the executor computes grand-ness itself and refuses a grand-repo mutation unless the policy document sets `allowGrandRepos`.
 - **Smaller defects.** The false "dry run does a docker build" claim is corrected. The `workers/proxy/tsconfig.json` comment now matches `src/__tests__` (`workers/proxy/tsconfig.json:8`). `--region` is still ignored (box above).
 
 ### 1.4 Design facts found after the first review
 
-- **The service binding.** The proxy Worker and the account worker share the `rediacc.com` zone, and a Worker's `fetch()` to a same-zone hostname never reaches another Worker. On the first Phase 2 deploy (2026-09-24) every introspection failed, and every caller got 401. Introspection now goes through `[[services]] ACCOUNT -> rediacc-account-eu` (line 17-21 of `workers/proxy/wrangler.toml` (renamed to `wrangler.eu.toml` by PLAN-proxy-cd-six-targets K1)), the path `workers/www` already uses; `fetch(ACCOUNT_URL)` remains only for a deploy without the binding (`workers/proxy/src/index.ts:35-37`, `:145`).
+- **The service binding.** The proxy Worker and the account worker share the `rediacc.com` zone, and a Worker's `fetch()` to a same-zone hostname never reaches another Worker. On the first Phase 2 deploy (2026-09-24) every introspection failed, and every caller got 401. Introspection now goes through `[[services]] ACCOUNT -> rediacc-account-eu` (line 17-21 of `workers/proxy/wrangler.toml` (renamed to `wrangler.eu.toml` by PLAN-proxy-cd-six-targets K1)), the path `workers/www` already uses; `fetch(ACCOUNT_URL)` remains only for a deploy without the binding (`workers/proxy/src/index.ts:64-67`).
 - **The same trap waits for the console.** `console.ts` reaches `EXECUTOR_URL` with a public `fetch` (`private/account/src/routes/console.ts:352`, `:407`, `:445`), and `eu.rediacc.com` and `proxy.eu.rediacc.com` share that zone. Setting `EXECUTOR_URL` alone would reproduce the 401 in the other direction, so box C1 (an `EXECUTOR` binding on the account worker) comes before box C2.
-- **Refusal logging.** `refuse()` logs why a caller was refused (`no-bearer`, `no-executor-token`, `introspect-http-<n>`, `inactive`, `no-org`, `no-proxy-exec-scope`) without logging the token (`workers/proxy/src/index.ts:125-164`), so a 401 in Phase 2 names its cause in the Worker logs.
+- **Refusal logging.** `refuse()` logs why a caller was refused (`no-bearer`, `no-executor-token`, `introspect-http-<n>`, `inactive`, `no-org`, `no-proxy-exec-scope`) without logging the token (`workers/proxy/src/index.ts:96-144`), so a 401 in Phase 2 names its cause in the Worker logs.
 - **IP-bound executor tokens.** A `proxy:exec` token can be bound to Cloudflare's published ranges (`private/account/src/types/api-token.ts:18`, `:22`), which is the binding `EXECUTOR_TOKEN` takes.
 
 ## 2. Test coverage (2026-10-23)
 
 | Test | Proves | Does not prove |
 |---|---|---|
-| `workers/proxy/src/__tests__/index.test.ts` (16 tests, run by `check:test-workers` in CI: `package.json:357`, `.github/workflows/ci-quality.yml:2203`) | health without the container, the 401 cases, tenant keys, the executor-token guard, the B1 envVars regression | a real container |
+| `workers/proxy/src/__tests__/index.test.ts` (16 tests, run by `check:test-workers` in CI: `package.json:372`, `.github/workflows/ci-quality.yml:2230`) | health without the container, the 401 cases, tenant keys, the executor-token guard, the B1 envVars regression | a real container |
 | `packages/cli/src/services/serve/__tests__/loopback.test.ts` | the real `rdc --proxy` Commander path to a real serve app over HTTP, with real X25519 | Worker, container, machine |
 | `.../container-config.test.ts` | container-mode decrypt, policy inside the ciphertext, execution and re-attach resolving the decrypted machine and SSH key (B3), the real CLI grant (B4 loopback) | a real machine |
 | `.../grand-repo-guard.test.ts` | the executor's grand-repo refusal (S1) and the audit capability (F1, `:304`) | - |
@@ -171,7 +171,7 @@ This section records the first review's findings. None of them is open; the fixe
 | `packages/cli/src/commands/__tests__/serve-daemon-config.test.ts`, `packages/cli/src/utils/__tests__/errors-proxied-json.test.ts`, `packages/cli/src/utils/__tests__/command-policy-grand-ref.test.ts` | findings (a), (b) and (c) | - |
 | `private/account/tests/integration/proxy-introspect.test.ts`, `proxy-session-token.test.ts`, `config-executor-token.test.ts`, `console-session.test.ts`, `exec-token-cache.test.ts` | introspection, console token minting, the executor config token, the console passthrough against a fake `EXECUTOR_URL`, token reuse | a CLI mint route (B5a); a bound executor (C1) |
 | `.ci/rediacc_ci/tests/test_deploy_deploy_proxy.py` (30 tests) | the deploy's argv, refusals and post-deploy smoke, with fake tools | anything about Cloudflare |
-| `check:ci-proxy-image-smoke` (`package.json:196`, `.ci/scripts/quality/check_proxy_image_smoke.py`) | the image builds, stays up, serves `mode: container` at the renet's version, runs `renet version`, and exits without `REDIACC_TOKEN` | runs only locally (`local-only`) |
+| `check:ci-proxy-image-smoke` (`package.json:201`, `.ci/scripts/quality/check_proxy_image_smoke.py`) | the image builds, stays up, serves `mode: container` at the renet's version, runs `renet version`, and exits without `REDIACC_TOKEN` | runs only locally (`local-only`) |
 
 No test sends a real request through the Worker to the container and back, and none reaches a machine through the container. (`private/renet/tests/integration/test_proxy_routes.py` and `.ci/rediacc_ci/tests/test_core_proxyx.py` are unrelated: Traefik routes, and CI "proxies".)
 
@@ -190,11 +190,11 @@ No test sends a real request through the Worker to the container and back, and n
 
 ## 3. Live trial against hostinger
 
-The CLI switch is `--proxy <url>` or `REDIACC_PROXY_URL` (`packages/cli/src/cli.ts:201`, `:242`). Phase 1 is done. Phase 2 is ordered by the 2026-10-23 ruling and no longer blocked by code.
+The CLI switch is `--proxy <url>` or `REDIACC_PROXY_URL` (`packages/cli/src/cli.ts:217`, `:281`). Phase 1 is done. Phase 2 is ordered by the 2026-10-23 ruling and no longer blocked by code.
 
 Target rules:
 - Never mutate a grand repo. `observability` is one, and so is any non-fork root, including `demo-stackoverflow`. The executor now refuses such a mutation itself (S1), and the trial keeps the rule anyway.
-- The operator creates the fork **with the normal local CLI, not through the proxy**: `rdc repo fork demo-stackoverflow@hostinger --tag proxytrial` (O(1); `docs/agent-reference/local-env.md:101-117`).
+- The operator creates the fork **with the normal local CLI, not through the proxy**: `rdc repo fork demo-stackoverflow@hostinger --tag proxytrial` (O(1); `docs/agent-reference/local-env.md:105-117`).
 - Every trial command names `demo-stackoverflow:proxytrial` or is read-only (`machine status`, `repo list`).
 
 ### Phase 0: what is live (no changes)
@@ -242,7 +242,7 @@ Sources: developers.cloudflare.com/containers/pricing, /durable-objects/platform
   - Image storage limit is 50 GB per account. Storage is not listed as billed.
 - **Durable Objects:** 1M requests and 400k GB-s included. SQLite: 5 GB, 25B row reads and 50M row writes included. Negligible here.
 - **Library behaviour:** `sleepAfter` defaults to `'10m'` in `@cloudflare/containers`. An open HTTP stream counts as in flight, and the idle timer restarts only when the stream ends, so a long `repo up` stream keeps the container awake correctly.
-- **Current settings:** `instance_type = "basic"` (1/4 vCPU, 1 GiB, 4 GB disk; line 37 of `workers/proxy/wrangler.toml` (renamed to `wrangler.eu.toml` by PLAN-proxy-cd-six-targets K1)), `max_instances = 2` (`:42`, since 5f9a354ea), `sleepAfter = '2m'` (`workers/proxy/src/index.ts:108`, since 3b96d5133).
+- **Current settings:** `instance_type = "basic"` (1/4 vCPU, 1 GiB, 4 GB disk; line 37 of `workers/proxy/wrangler.toml` (renamed to `wrangler.eu.toml` by PLAN-proxy-cd-six-targets K1)), `max_instances = 2` (`:42`, since 5f9a354ea), `sleepAfter = '2m'` (`workers/proxy/src/org-executor.ts:97`, since 3b96d5133).
 
 Per running `basic` instance-hour:
 - memory $0.0090
@@ -253,7 +253,7 @@ The allowances cover about 25 memory-hours and 50 disk-hours.
 
 | Scenario | Container hours/month | Estimate |
 |---|---|---|
-| No `EXECUTOR_TOKEN`, or no caller (the Worker 401s before `getContainer`, `workers/proxy/src/index.ts:172-187`) | 0 | **$0 marginal** |
+| No `EXECUTOR_TOKEN`, or no caller (the Worker 401s before `getContainer`, `workers/proxy/src/index.ts:285-302`) | 0 | **$0 marginal** |
 | Trial (30 sessions x 20 min + 2 min tail) | ~11 | **$0** (within allowances) |
 | One team, 8 h per working day | ~176 | about $1.36 memory + $0.13 disk + $0 CPU, about **$1.5/month** |
 | Runaway at the current cap: 2 instances pinned 24/7 | 1,460 | about $13 memory + $1.5 disk + CPU, about **$15/month** |
@@ -355,7 +355,7 @@ Instance type `basic` (0.25 vCPU, 1 GiB, 4 GB disk). The GraphQL `containersMetr
 
 Rollback handles, read with `wrangler deployments list`: live version 9c90605d-b963-4ccf-b952-fda0bab48958, previous upload 17b3164d-f07b-4755-8926-edfdc682bceb (2026-09-24T14:41:57Z). `wrangler secret list` shows an EXECUTOR_TOKEN set by the 2026-09-24T16:13:52Z "Secret Change" deployment. Cloudflare cannot show its scopes, and it may be the Phase 1 token without `audit:write`.
 
-Phase 2 is held on the token. `POST /account/api/v1/api-tokens` is the only route that mints `audit:write` with the `cloudflare` binding. It needs a portal session cookie of an org owner or admin (private/account/src/middleware/session.ts:10, private/account/src/routes/api-tokens.ts:59-72), so a password, a Turnstile captcha and possibly 2FA. The B5 mint grants only `proxy:exec` for 5 minutes. Phase 2 step 4 also cannot run as written while hostinger runs renet 7e6a8588: `repo up` and `repo down` go through `provision` access (packages/cli/src/services/executor/local-executor.ts:324-340), even through the proxy, and would install this branch's renet there (worklist #d0928775). Step 3 and the read-only half of step 4 (`machine status`, `repo status`, `repo list`) never upload renet.
+Phase 2 is held on the token. `POST /account/api/v1/api-tokens` is the only route that mints `audit:write` with the `cloudflare` binding. It needs a portal session cookie of an org owner or admin (private/account/src/middleware/session.ts:10, private/account/src/routes/api-tokens.ts:59-72), so a password, a Turnstile captcha and possibly 2FA. The B5 mint grants only `proxy:exec` for 5 minutes. Phase 2 step 4 also cannot run as written while hostinger runs renet 7e6a8588: `repo up` and `repo down` go through `provision` access (packages/cli/src/services/executor/local-executor.ts:307-340), even through the proxy, and would install this branch's renet there (worklist #d0928775). Step 3 and the read-only half of step 4 (`machine status`, `repo status`, `repo list`) never upload renet.
 
 ## Phase 1 results (2026-09-24, lead session d778be9d)
 
@@ -385,9 +385,9 @@ History; all of it is on `origin/main` in 3b96d5133.
 - **B3 fixed.** `CommandRequestContext.config` carries a request-scoped config. `configFileStorage` (load, save, update*, exists, list) and `configService` (getCurrent, getDecryptedConfig, getResourceState) serve it during a container dispatch and on the re-attach route. Writes stay in memory, and a spec write adds a WARNING to the result. Daemons keep their disk config. Test: `container-config.test.ts`, which no longer mocks `configService` at all. Execution resolves `10.9.9.9` and the decrypted SSH key (missing test 2), and re-attach resolves the machine the same way.
 - **B4 fixed.** `ProxyClient.ensureSession()` asks for server-info and grants only to a `container`. It seals the CEK from `RemoteConfigAdapter.unwrapCek()` (new) with `cekHandoffEncrypt` and grants once per process per executor and token; a failed grant is retried. Tests: `services/executor/__tests__/proxy-client-session.test.ts` (unit, missing test 3), and the loopback variant in `container-config.test.ts`, where a real `rdc --proxy` completes the grant.
 - Found, outside Writer B's files, and since fixed in 3b96d5133 with the tests named in section 2:
-  - (a) `commands/serve.ts` `loadDaemonConfig` returned `getLocalConfig()`, which has no `policy`, so a daemon never enforced a policy document. It now returns the decrypted config (`packages/cli/src/commands/serve.ts:136`).
+  - (a) `commands/serve.ts` `loadDaemonConfig` returned `getLocalConfig()`, which has no `policy`, so a daemon never enforced a policy document. It now returns the decrypted config (`packages/cli/src/commands/serve.ts:145`).
   - (b) `utils/errors.ts` `outputJsonError` wrote with `process.stdout.write` rather than `writeStdout`, so a dispatched command's JSON error went to the executor's stdout and the client saw only "The command exited with code 1".
-  - (c) `utils/command-policy.ts` passed `name:base` refs through `getRepository`, which missed the grand's `latest` key, so the local agent guard returned early (fail-open). It now resolves a bare or `:base` ref to the family's grand (`packages/cli/src/utils/command-policy.ts:246`).
+  - (c) `utils/command-policy.ts` passed `name:base` refs through `getRepository`, which missed the grand's `latest` key, so the local agent guard returned early (fail-open). It now resolves a bare or `:base` ref to the family's grand (`packages/cli/src/utils/command-policy.ts:253`).
 
 ## Writer A status (2026-09-24, session d778be9d)
 
@@ -398,7 +398,7 @@ History; the code is on `origin/main` in 3b96d5133 and the gate wiring in 0868e3
 - **B2 fixed.** The Dockerfile copies `workers/proxy/renet/renet-linux-amd64` to `/usr/local/bin/renet`, and the bundle takes its `CLI_VERSION` from that renet's own `renet version`, so the two cannot disagree. The deploy builds it on a real deploy at the current version. A real deploy refuses before any build without `ACCOUNT_ED25519_PUBLIC_KEY`, because the executor uploads its renet to machines.
 - **Missing test 10 added.** The deploy smoke-tests the host named by `wrangler.toml`'s route: `/v1/health` must answer 200 and an unauthenticated `/v1/server-info` must answer 401. The false "dry run does a docker build" header claim is corrected. The bash twin was deleted on 2026-10-08 (d6d87562e); `test_deploy_deploy_proxy.py` now pins the Python deploy alone.
 - **Missing test 4 added.** `check:ci-proxy-image-smoke` (slow, local-only) builds the image and runs it with a fake account server. It asserts the process stays up, `/v1/health`, `/v1/server-info` in `mode: container` with a `cliVersion` equal to the shipped renet, `/v1/session` introspected with the executor's own token, and `renet version`. As a control, the same image started without `REDIACC_TOKEN` must exit naming the variable. Green on the dev box on 2026-09-24.
-- **CI wiring, since 0868e3a53.** CI runs the Worker tests: `check:test-workers` covers `workers/www` and `workers/proxy` (`package.json:357`), and its ci-quality step installs both (`.github/workflows/ci-quality.yml:2203`). The image smoke is still `local-only`; the image-smoke box wires it.
+- **CI wiring, since 0868e3a53.** CI runs the Worker tests: `check:test-workers` covers `workers/www` and `workers/proxy` (`package.json:372`), and its ci-quality step installs both (`.github/workflows/ci-quality.yml:2230`). The image smoke is still `local-only`; the image-smoke box wires it.
 
 ## Relations
 
