@@ -68,7 +68,10 @@ export function withExpectedAccountServer(
 ): Record<string, unknown> {
   if (!isBackupSessionFunction(functionName)) return params;
   const origin = expectedAccountServerOrigin();
-  return origin ? { ...params, [EXPECT_ACCOUNT_SERVER_PARAM]: origin } : params;
+  if (origin) return { ...params, [EXPECT_ACCOUNT_SERVER_PARAM]: origin };
+  // No origin to hold the verb to: a caller-supplied expectation is dropped too, never passed through.
+  const { [EXPECT_ACCOUNT_SERVER_PARAM]: _dropped, ...rest } = params;
+  return rest;
 }
 
 /**

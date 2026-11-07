@@ -236,4 +236,14 @@ describe('withExpectedAccountServer', () => {
       repository: 'mail',
     });
   });
+
+  it('strips a caller-supplied expect_account_server when the config names no usable server', () => {
+    env.server = 'not a url';
+    expect(
+      withExpectedAccountServer('backup_snapshot', {
+        repository: 'mail',
+        expect_account_server: 'https://other.example.com',
+      })
+    ).toEqual({ repository: 'mail' });
+  });
 });
