@@ -55,7 +55,7 @@ describe('usageViolations', () => {
     expect(bad).toEqual(['waitingBytes is missing from the usage response']);
   });
 
-  it('does not report a sum mismatch for a missing waitingBytes when the server excluded waiting bytes', () => {
+  it('reports only the missing waitingBytes, not a sum mismatch, when usedBytes is otherwise consistent', () => {
     const withoutWaiting: Partial<BackupUsage> = healthyUsage({ usedBytes: 600 });
     delete withoutWaiting.waitingBytes;
     expect(usageViolations(withoutWaiting as BackupUsage)).toEqual([

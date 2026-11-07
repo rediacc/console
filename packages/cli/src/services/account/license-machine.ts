@@ -219,8 +219,10 @@ async function tryReplaceLock(path: string, lockPath: string): Promise<string | 
 
 /**
  * Replace a corrupt id file: the lock holder re-checks, then writes; a racer that lost the lock waits for what the
- * holder wrote. Only a stale lock (a holder that crashed) is removed, and the racer then contends for the lock again,
- * so a slow holder never has its file overwritten without the lock.
+ * holder wrote. A lock older than REPLACE_LOCK_STALE_MS is taken for a crashed holder's and removed, and the racer then
+ * contends for the lock again. The holder's critical section is one read and one write, so a holder stalled past that
+ * age is the accepted limit of an age-based lock; the write is still the holder's own id or a valid one a racer left,
+ * and the holder re-reads the file under the lock before it overwrites.
  */
 async function replaceCorruptInstallId(path: string, generated: string): Promise<string> {
   const fsp = await import('node:fs/promises');

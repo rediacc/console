@@ -79,7 +79,8 @@ function renderRootOwnedDryRun(
 ): void {
   const entries = (stdout ?? '')
     .split('\n')
-    .map((line) => line.trimEnd())
+    // Only a CR is dropped: a path may end in spaces, and the list must name the real file.
+    .map((line) => line.replace(/\r$/, ''))
     .filter((line) => line.length > 0);
   const format = getOutputFormat();
   if (format !== 'table') {

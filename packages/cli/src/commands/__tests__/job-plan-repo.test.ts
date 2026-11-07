@@ -647,6 +647,18 @@ describe('repo verbs outside J4: one job per machine, the follow-up as steps', (
         );
       });
 
+      it('keeps trailing spaces in a path and drops only a CR', async () => {
+        answer = { ...FINISHED, stdout: 'data/with space \r\ndata/plain\n' };
+        setOutputFormat('json');
+
+        await runVerb(extended, 'admin', 'ownership', 'shop:latest', '--root-owned', '--dry-run');
+
+        expect(mockPrint).toHaveBeenCalledWith(
+          expect.objectContaining({ entries: ['data/with space ', 'data/plain'] }),
+          'json'
+        );
+      });
+
       it('control: an empty dry run reports zero entries, and a real run captures nothing', async () => {
         answer = { ...FINISHED, stdout: '' };
         setOutputFormat('json');

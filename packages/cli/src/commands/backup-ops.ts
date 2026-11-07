@@ -67,7 +67,9 @@ function isStrategyUnit(strategyName: string, unit: string): boolean {
  * The strategy's scheduled units installed on the machine, read from the unit files `backup schedule` writes. The
  * machine is the source of truth: a schedule applied through another config (or a binding this config lacks) is still
  * found, and the check needs neither D-Bus nor an unprivileged `systemctl cat` (which printed nothing on a machine
- * whose `backup status` read the same unit as scheduled). The config's expected units come first, in their order.
+ * whose `backup status` read the same unit as scheduled). A unit file left on the machine after its binding was removed
+ * is still listed and started: the machine, not the config, says what is scheduled. The config's expected units come
+ * first, in their order.
  */
 async function deployedStrategyUnits(
   sftp: SFTPClient,
@@ -75,12 +77,21 @@ async function deployedStrategyUnits(
   expected: string[]
 ): Promise<string[]> {
   let listing = '';
-  await sftp.execStreaming(`sudo -n ls -1 ${shellQuote(SYSTEMD_DIR)} 2>/dev/null`, {
+  let listingError = '';
+  const exitCode = await sftp.execStreaming(`sudo -n ls -1 ${shellQuote(SYSTEMD_DIR)}`, {
     onStdout: (data) => {
       listing += data;
     },
-    onStderr: () => {},
+    onStderr: (data) => {
+      listingError += data;
+    },
   });
+  // A failed listing is not an empty one: an empty answer would stage an ad-hoc unit beside a deployed schedule.
+  if (exitCode !== 0) {
+    throw new Error(
+      `Could not list the installed backup units on the machine (exit ${exitCode}): ${listingError.trim() || 'no output'}`
+    );
+  }
   const installed = listing
     .split('\n')
     .map((line) => line.trim())

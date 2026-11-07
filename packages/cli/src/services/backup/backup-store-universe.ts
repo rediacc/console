@@ -72,7 +72,11 @@ function licenseLineOrigin(encoded: string): string | undefined {
     const payload = JSON.parse(Buffer.from(file.payload, 'base64').toString('utf8')) as {
       renewalUrl?: unknown;
     };
-    return typeof payload.renewalUrl === 'string' ? originOf(payload.renewalUrl) : undefined;
+    // A `renewalUrl` that does not parse stays in the listing as itself: it is never this config's origin, so the
+    // verb is refused rather than passed on a licence renet may still select.
+    return typeof payload.renewalUrl === 'string'
+      ? (originOf(payload.renewalUrl) ?? payload.renewalUrl)
+      : undefined;
   } catch {
     // Not a licence file renet could use either.
     return undefined;
@@ -107,7 +111,8 @@ async function readInstalledLicenseOrigins(
 
 /**
  * Refuse a backup-session verb whose repository holds a licence issued by another account server than this config's.
- * Nothing installed passes: the licence pre-flight or renet itself answers that case.
+ * Nothing installed passes when the listing could be read: the licence pre-flight or renet itself answers that case.
+ * An unreadable listing (sudo needs a password, or the completion marker is missing) refuses, installed or not.
  */
 export async function assertBackupStoreUniverse(
   functionName: string,
@@ -121,8 +126,9 @@ export async function assertBackupStoreUniverse(
   const repositoryGuid = (await configService.getRepository(repoName))?.repositoryGuid;
   if (!repositoryGuid || !GUID_PATTERN.test(repositoryGuid)) return;
 
-  const expected = originOf(getSubscriptionServerUrl());
-  if (!expected) return;
+  const serverUrl = getSubscriptionServerUrl();
+  // A server URL that does not parse still gates: it matches no licence origin, so any installed licence refuses.
+  const expected = originOf(serverUrl) ?? serverUrl;
   const installed = await readInstalledLicenseOrigins(sftp, repositoryGuid);
   if (installed === undefined) {
     throw new ValidationError(

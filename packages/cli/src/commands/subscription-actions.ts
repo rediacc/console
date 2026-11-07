@@ -568,7 +568,10 @@ async function executeTokenFreeMachineRefresh(machineName: string): Promise<void
   }
   const tally = { handled: 0, needsLogin: 0, failed: 0 };
   for (const r of results) reportTokenFreeRenewal(r, tally);
-  if (tally.needsLogin > 0) outputService.info(t('commands.subscription.refresh.noLogin.paidNote'));
+  // Not beside a failure: the failed error says a login does not change it, and the refused repos' own lines already name the login.
+  if (tally.needsLogin > 0 && tally.failed === 0) {
+    outputService.info(t('commands.subscription.refresh.noLogin.paidNote'));
+  }
   if (tally.failed > 0) {
     throw new ValidationError(
       t('commands.subscription.refresh.noLogin.failed', { count: tally.failed })

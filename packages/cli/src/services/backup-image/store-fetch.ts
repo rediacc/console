@@ -83,12 +83,13 @@ export function storeFetchJson(result: StoreFetchResult): Record<string, unknown
 }
 
 /**
- * The text-mode root-check line, or undefined when none is due. Only a verified root is worth a line: "absent" means the
- * snapshot's manifest predates the root, so nothing was compared, and printing that enum as "Snapshot root check: absent"
- * reads as a failed check. The JSON output keeps the raw outcome.
+ * The text-mode root-check line, or undefined when none is due. "absent" means the snapshot's manifest predates the
+ * root (renet's CellsRootAbsent), so nothing was compared, and printing that enum as "Snapshot root check: absent" reads
+ * as a failed check. Every other outcome is printed, so one renet adds later is not silently dropped. The JSON output
+ * keeps the raw outcome.
  */
 export function storeCellsRootLine(record: { cellsRoot?: string }): string | undefined {
-  return record.cellsRoot === 'verified'
+  return record.cellsRoot && record.cellsRoot !== 'absent'
     ? t('commands.backup.download.storeCellsRoot', { outcome: record.cellsRoot })
     : undefined;
 }

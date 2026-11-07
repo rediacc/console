@@ -20,24 +20,31 @@ afterEach(async () => {
   server = undefined;
 });
 
-async function collector(): Promise<{ endpoint: string; paths: string[] }> {
+async function collector(): Promise<{
+  endpoint: string;
+  paths: string[];
+  bodies: Map<string, string>;
+}> {
   const paths: string[] = [];
+  const bodies = new Map<string, string>();
   server = createServer((req, res) => {
-    req.resume();
+    const chunks: Buffer[] = [];
+    req.on('data', (chunk: Buffer) => chunks.push(chunk));
     req.on('end', () => {
       paths.push(req.url ?? '');
+      bodies.set(req.url ?? '', Buffer.concat(chunks).toString('latin1'));
       res.writeHead(200, { 'content-type': 'application/json' });
       res.end('{}');
     });
   });
   await new Promise<void>((resolve) => server?.listen(0, '127.0.0.1', resolve));
   const { port } = server.address() as AddressInfo;
-  return { endpoint: `http://127.0.0.1:${port}`, paths };
+  return { endpoint: `http://127.0.0.1:${port}`, paths, bodies };
 }
 
 describe('setupOtelSdk against a local collector', () => {
   it('delivers a span, a log record and a metric to the OTLP http endpoints', async () => {
-    const { endpoint, paths } = await collector();
+    const { endpoint, paths, bodies } = await collector();
     const setup = setupOtelSdk({
       endpoint,
       serviceName: 'rdc-test',
@@ -56,5 +63,8 @@ describe('setupOtelSdk against a local collector', () => {
     expect(paths).toContain('/v1/traces');
     expect(paths).toContain('/v1/logs');
     expect(paths).toContain('/v1/metrics');
+    // The payload carries what was emitted, so an empty or wrong body to a path still fails.
+    expect(bodies.get('/v1/logs')).toContain('smoke');
+    expect(bodies.get('/v1/traces')).toContain('smoke');
   });
 });

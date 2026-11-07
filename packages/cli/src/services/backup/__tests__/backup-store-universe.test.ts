@@ -141,6 +141,26 @@ describe('assertBackupStoreUniverse', () => {
     ).rejects.toThrow(/errors\.license\.backupStoreUnreadable/);
   });
 
+  it('refuses a licence whose renewalUrl does not parse, since renet may still select it', async () => {
+    const m = machineWith(licenseLine('not a url'));
+    const run = assertBackupStoreUniverse(
+      'backup_snapshot',
+      'hostinger',
+      { repository: 'mail' },
+      m.sftp
+    );
+    await expect(run).rejects.toThrow(/backupStoreMismatch/);
+    await expect(run).rejects.toThrow(/"installed":"not a url"/);
+  });
+
+  it('refuses when this config server URL does not parse, instead of switching the guard off', async () => {
+    env.server = 'not a url';
+    const m = machineWith(licenseLine(BENCH));
+    await expect(
+      assertBackupStoreUniverse('backup_snapshot', 'hostinger', { repository: 'mail' }, m.sftp)
+    ).rejects.toThrow(/backupStoreMismatch/);
+  });
+
   it('skips a repository the config does not track', async () => {
     const m = machineWith(licenseLine(EU));
     await expect(

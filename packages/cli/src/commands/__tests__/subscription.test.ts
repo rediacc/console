@@ -414,6 +414,26 @@ describe('subscription command helpers', () => {
       );
     });
 
+    it('prints no paid-licence note beside a failure whose error says a login does not change it', async () => {
+      mockRenewInstalledLicenses.mockResolvedValue({
+        renewed: 0,
+        results: [
+          { repositoryGuid: 'paid-1', outcome: 'refused', code: 'LOGIN_REQUIRED' },
+          { repositoryGuid: 'guid-e', outcome: 'error', message: 'connection reset' },
+        ],
+      });
+
+      const error = await executeMachineRefresh('hostinger').catch((e: unknown) => e);
+
+      expect((error as Error).message).toContain('commands.subscription.refresh.noLogin.failed');
+      expect(mockOutputWarn).toHaveBeenCalledWith(
+        'commands.subscription.refresh.noLogin.repoNeedsLogin:paid-1:LOGIN_REQUIRED'
+      );
+      expect(mockOutputInfo).not.toHaveBeenCalledWith(
+        'commands.subscription.refresh.noLogin.paidNote'
+      );
+    });
+
     it('with a token the batch refresh runs and the token-free renewal does not', async () => {
       mockGetSubscriptionTokenState.mockReturnValue({
         kind: 'ready',

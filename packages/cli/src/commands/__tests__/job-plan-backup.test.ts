@@ -70,11 +70,12 @@ const machine = vi.hoisted(() => ({
   subState: 'dead',
   commands: [] as { command: string; stdin?: string }[],
   stageExit: 0,
+  listExit: 0,
 }));
 /**
  * The machine: listing the systemd directory names a `.service` and a `.timer` file per deployed unit, `systemctl cat`
- * prints nothing (as an unprivileged `systemctl cat` did on the hostinger machine whose `backup status` read the unit as
- * scheduled), and `show -p SubState` answers from `subState`.
+ * prints nothing (the unprivileged read the listing path must not depend on, reported against the hostinger machine;
+ * that live cause was not re-run), and `show -p SubState` answers from `subState`.
  */
 function fakeExecStreaming(
   cmd: string,
@@ -82,6 +83,7 @@ function fakeExecStreaming(
 ): Promise<number> {
   machine.commands.push({ command: cmd, stdin: opts.stdin });
   if (cmd.startsWith("sudo -n ls -1 '/etc/systemd/system'")) {
+    if (machine.listExit !== 0) return Promise.resolve(machine.listExit);
     const files = [...machine.deployed].flatMap((u) => [
       `rediacc-backup-${u}.service`,
       `rediacc-backup-${u}.timer`,
@@ -150,6 +152,7 @@ beforeEach(() => {
   machine.commands.length = 0;
   machine.subState = 'dead';
   machine.stageExit = 0;
+  machine.listExit = 0;
   schedule.buildStrategyCommandsForMachine.mockReset();
   schedule.expectedStatusUnits.mockReset();
   schedule.renderBackupScheduleStatus.mockReset();
@@ -268,6 +271,29 @@ describe('backup run on deployed units', () => {
       'rediacc-backup-nightly.ds.fast',
     ]);
     expect(schedule.buildStrategyCommandsForMachine).not.toHaveBeenCalled();
+  });
+
+  it('starts a unit left on the machine after its binding was removed from the config', async () => {
+    schedule.units = ['nightly'];
+    machine.deployed.add('nightly.repo.removed');
+
+    await rdcBackup('run', 'nightly', '-m', 'm1');
+
+    expect(executed[0].commandKind?.args?.units).toEqual(['rediacc-backup-nightly.repo.removed']);
+    expect(schedule.buildStrategyCommandsForMachine).not.toHaveBeenCalled();
+  });
+
+  it('fails without a job or an ad-hoc unit when the unit listing itself fails', async () => {
+    machine.deployed.add('nightly');
+    machine.listExit = 1;
+    schedule.buildStrategyCommandsForMachine.mockResolvedValue(['/r/renet backup snapshot x']);
+
+    await expect(rdcBackup('run', 'nightly', '-m', 'm1')).rejects.toThrow(
+      /Could not list the installed backup units/
+    );
+
+    expect(machine.commands.some((c) => c.command.startsWith('sudo tee'))).toBe(false);
+    expect(executed).toHaveLength(0);
   });
 
   it("control: verify, alert and ad-hoc companions and another strategy's units are not deployed units", async () => {

@@ -232,4 +232,10 @@ describe('storeCellsRootLine', () => {
     expect(storeCellsRootLine({ cellsRoot: 'absent' })).toBeUndefined();
     expect(storeCellsRootLine({})).toBeUndefined();
   });
+
+  it('prints any other outcome, so a value renet adds later is not shown as nothing', () => {
+    expect(storeCellsRootLine({ cellsRoot: 'mismatch' })).toBe(
+      'commands.backup.download.storeCellsRoot {"outcome":"mismatch"}'
+    );
+  });
 });
