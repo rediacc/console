@@ -497,6 +497,11 @@ def test_a_real_follow_on_process_sees_the_variables_and_nothing_is_printed() ->
         f"p.exec_follow_on(['sh', '-c', {check!r}], {K!r})"
     )
     env = {k: v for k, v in os.environ.items() if not k.startswith("E2E_BACKUP_S3")}
+    # The child imports rediacc_ci, so the .ci directory this test sits under is put on its path itself, not inherited from whoever launched pytest.
+    env["PYTHONPATH"] = os.pathsep.join(
+        [os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))]
+        + ([env["PYTHONPATH"]] if env.get("PYTHONPATH") else [])
+    )
     result = subprocess.run(
         [sys.executable, "-c", code], env=env, capture_output=True, text=True, check=False
     )

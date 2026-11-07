@@ -168,6 +168,10 @@ class Fixture:
         # Exported suite-wide immediately after the scrub, for the reason the bash comment gave: every case passes `deadbeef` as its `<me>`, so one export arms the identity check for all of them.
         self.env: dict[str, str] = scrubbed_environ()
         self.env["WORKLIST_SESSION_ID"] = SID
+        # The sandbox copies the hooks without a `.ci` beside them, and wl_proc (the judge's `claude -p` launch) imports rediacc_ci for its process-group runner, so the real `.ci` is put on the hook's path here instead of being inherited from whoever launched pytest (it was lost under check:ci-pytest and in the ci:quick clone).
+        self.env["PYTHONPATH"] = os.pathsep.join(
+            [str(paths.ci_dir())] + ([self.env["PYTHONPATH"]] if self.env.get("PYTHONPATH") else [])
+        )
         self.bg = "[]"
         self.waker = True
         self.crons = json.dumps(DEFAULT_CRONS)
