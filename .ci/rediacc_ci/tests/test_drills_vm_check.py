@@ -4319,7 +4319,8 @@ def test_legs_whose_fleet_sizes_the_disk_run_before_the_resetting_legs() -> None
         for al in legs
         if "VM_DSK" in vm_check.recipe_env(vm_check.trigger.MAP.fleets[al[1].fleet])
     ]
-    assert [al for al in ordered if al in keep] == keep
+    expected = sorted(keep, key=lambda al: not vm_check.leg_skips_reset(al[1]))
+    assert [al for al in ordered if al in keep] == expected
 
 
 def test_a_leg_runs_under_its_fleet_recipe_environment() -> None:
@@ -4327,3 +4328,16 @@ def test_a_leg_runs_under_its_fleet_recipe_environment() -> None:
     fleets = vm_check.trigger.MAP.fleets
     assert vm_check.recipe_env(fleets["worker"]) == {"VM_DSK": "48"}
     assert vm_check.recipe_env(fleets["two-workers"]) == {}
+
+
+def test_a_sized_leg_that_skips_the_reset_runs_before_a_sized_leg_that_resets() -> None:
+    """Fleet run 14: k8s-15 (resets the worker) ran before backup-large-2g (BRIDGE_TEST_SKIP_RESET=1) and left the datastore 9.4 GB free of the 13.2 GB the 12G repository needs. Within the VM_DSK group the reuse legs now come first."""
+    ordered = [
+        leg for _, leg in vm_check.order_legs(vm_check.external_legs(vm_check.trigger.AREAS))
+    ]
+    ids = [leg.id for leg in ordered]
+    assert "backup-large-2g" in ids, ids
+    assert "k8s-15" in ids, ids
+    assert vm_check.leg_skips_reset(ordered[ids.index("backup-large-2g")])
+    assert not vm_check.leg_skips_reset(ordered[ids.index("k8s-15")])
+    assert ids.index("backup-large-2g") < ids.index("k8s-15"), ids

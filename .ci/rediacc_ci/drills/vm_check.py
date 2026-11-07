@@ -566,9 +566,23 @@ def recipe_env(fleet: trigger.Fleet) -> dict[str, str]:
     return dict(plan[0]) if plan is not None else {}
 
 
+SKIP_RESET_MARK = "BRIDGE_TEST_SKIP_RESET=1"
+
+
+def leg_skips_reset(leg: trigger.Leg) -> bool:
+    """Whether a leg runs its suite on the VMs as found (BRIDGE_TEST_SKIP_RESET=1) instead of recreating them first."""
+    return any(SKIP_RESET_MARK in line for line in leg.cmd)
+
+
 def order_legs(legs: Sequence[tuple[str, trigger.Leg]]) -> list[tuple[str, trigger.Leg]]:
-    """`legs` with those whose fleet recipe sizes the disk (VM_DSK) first, map order kept within each group: another leg's e2e setup resets every VM at the default disk, so a leg that reuses a sized VM without resetting it must run before any such reset."""
-    return sorted(legs, key=lambda al: "VM_DSK" not in recipe_env(trigger.MAP.fleets[al[1].fleet]))
+    """`legs` with those whose fleet recipe sizes the disk (VM_DSK) first, and within that group the legs that skip the VM reset before the legs that reset, map order kept otherwise. Another leg's e2e setup resets every VM at the default disk, so a leg that reuses a sized VM must run before any reset; and a resetting leg leaves its own data on the datastore (fleet run 14: k8s-15 left backup-large-2g 9.4 GB of the 13.2 GB its 12G repository needs), so the reuse legs also come before the resetting legs of their own group."""
+    return sorted(
+        legs,
+        key=lambda al: (
+            "VM_DSK" not in recipe_env(trigger.MAP.fleets[al[1].fleet]),
+            not leg_skips_reset(al[1]),
+        ),
+    )
 
 
 def judge_areas(
