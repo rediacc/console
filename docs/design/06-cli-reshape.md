@@ -50,7 +50,7 @@ rdc term:       connect
 rdc vscode:     connect list cleanup check serve {status stop}
 rdc ops:        up down status ssh setup check
 rdc subscription: login logout status refresh proxy-token
-rdc job:        list status logs cancel gc wait     (see §9)
+rdc job:        list status logs cancel gc wait dismiss   (see §9)
 rdc tools:      install list
 rdc doctor | credits | update | serve | mcp serve | run (hidden)
 ```
@@ -87,6 +87,7 @@ Twenty-six differences. The first six are deliberate and each is traceable to a 
 | `job {list,status,logs,cancel,gc}` | `job {list,status,logs,cancel,gc,wait}` | `job wait` resumes following a job from its ticket, acknowledges it and exits with the job's own exit code, so a script can follow a `--background` job without polling `job status`. |
 | no `tools` noun | `tools {install list}` | PLAN-cli-tofu-toolchain: `install` downloads the pinned OpenTofu release, checks its SHA-256 against the checksum built into the CLI and places the binary in the CLI's tools directory; `list` shows the provisioning engine the CLI would run and each OpenTofu version found, with its source. A tool is neither a machine, a repository nor a job, so the verbs get a noun of their own. |
 | `machine` and `repo` with no health repair verbs | `repo health`, `repo repair` + `machine repair` | PLAN-health-checks-local: `repo health` runs a repository's Rediaccfile `health()` checks and exits 0 (ok), 1 (warning) or 2 (error); `repo repair` runs the `repair()` functions their declared class allows and then `health()` again; `machine repair` runs the safe fixes for a machine's health findings and re-checks, and `--set-window` stores the machine's maintenance window. |
+| `job {list,status,logs,cancel,gc,wait}` | `job {list,status,logs,cancel,gc,wait,dismiss}` | PLAN-renet-restart-cycle-defects D4: `dismiss <id...>` or `dismiss --stale [--older-than]` gives up local job tickets (an `expired` event with reason dismissed), with no machine call, so a ticket whose job is gone stops printing "steps pending" on every command. Not drift: the verb landed with the ticket-expiry fix (e573d1e0d) after this transcript. |
 
 Four families were built by operator commits AFTER this tree was drawn. They exist in the live CLI today, so P4 recontracts them; it does not invent them. **All four were ruled on 2026-07-13** (spec/03 §9) and are folded into the §1 tree above:
 

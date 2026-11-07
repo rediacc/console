@@ -56,6 +56,12 @@
               "descriptionKey": "commands.job.list.machineOption",
               "mandatory": false,
               "defaultValue": null
+            },
+            {
+              "flags": "--all",
+              "descriptionKey": "commands.job.list.allOption",
+              "mandatory": false,
+              "defaultValue": null
             }
           ],
           "arguments": [],
@@ -170,6 +176,39 @@
               "name": "job-id",
               "required": true,
               "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "dismiss",
+          "descriptionKey": "commands.job.dismiss.description",
+          "options": [
+            {
+              "flags": "--stale",
+              "descriptionKey": "commands.job.dismiss.staleOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--older-than <duration>",
+              "descriptionKey": "commands.job.dismiss.olderThanOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "-y, --yes",
+              "descriptionKey": "options.yes",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "job-id",
+              "required": false,
+              "variadic": true,
               "defaultValue": null
             }
           ],
@@ -3348,6 +3387,24 @@
                 {
                   "flags": "--uid <uid>",
                   "descriptionKey": "commands.repo.admin.ownership.uidOption",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--root-owned",
+                  "descriptionKey": "commands.repo.admin.ownership.rootOwnedOption",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--dry-run",
+                  "descriptionKey": "commands.repo.admin.ownership.dryRunOption",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--undo",
+                  "descriptionKey": "commands.repo.admin.ownership.undoOption",
                   "mandatory": false,
                   "defaultValue": null
                 },
