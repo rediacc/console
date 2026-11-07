@@ -227,6 +227,30 @@ def listener_pid(port: str) -> str:
     return lines[0] if lines else ""
 
 
+def reap_recorded(port: str, pid_file: pathlib.Path, wait_s: float = 10.0) -> bool:
+    """Stop the server an earlier run of this tool left on `port`: only when `pid_file` names the pid that still listens there.
+
+    A successful run leaves its server running on purpose (the suite that follows needs it), so the next run is where it is stopped; a listener this tool did not record is never touched and the caller still refuses it. True once the port is free.
+    """
+    try:
+        recorded = pid_file.read_text().strip()
+    except OSError:
+        return False
+    if not recorded.isdigit() or listener_pid(port) != recorded:
+        return False
+    try:
+        os.kill(int(recorded), signal.SIGTERM)
+    except OSError:
+        return False
+    deadline = time.monotonic() + wait_s
+    while time.monotonic() < deadline:
+        if not healthy(port):
+            pid_file.unlink(missing_ok=True)
+            return True
+        time.sleep(0.25)
+    return False
+
+
 def tail(path: pathlib.Path, count: int = 40) -> str:
     try:
         return "\n".join(path.read_text(errors="replace").splitlines()[-count:])
@@ -286,7 +310,13 @@ def run(opts: Options) -> int:
 
     server: subprocess.Popen | None = None
     try:
-        if healthy(opts.port):
+        occupied = healthy(opts.port)
+        if occupied and reap_recorded(opts.port, pid_file):
+            log.info(
+                f"stopped the account server an earlier run left on port {opts.port} (pid recorded in {pid_file})"
+            )
+            occupied = False
+        if occupied:
             raise LegError(
                 f"Something already answers /health on port {opts.port}; refusing to seed a server this run did not start.",
                 show_log=False,

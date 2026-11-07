@@ -308,6 +308,52 @@ def test_delta_a_server_already_on_the_port_is_refused(tmp_path: pathlib.Path) -
         stale.wait()
 
 
+def test_a_server_this_tool_recorded_is_stopped_and_the_run_goes_on(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    port = str(free_port())
+    stale = subprocess.Popen(
+        [
+            "python3",
+            "-c",
+            "import http.server,sys\nclass H(http.server.BaseHTTPRequestHandler):\n  def do_GET(s):\n    s.send_response(200);s.end_headers();s.wfile.write(b'ok')\nhttp.server.HTTPServer(('127.0.0.1',int(sys.argv[1])),H).serve_forever()",
+            port,
+        ],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    try:
+        for _ in range(40):
+            if sa.healthy(port):
+                break
+            time.sleep(0.1)
+        assert sa.healthy(port), "CONTROL: the stale listener never answered"
+        pid_file = tmp_path / "account-for-e2e.pid"
+        pid_file.write_text(f"{stale.pid}\n")
+        monkeypatch.setattr(sa, "listener_pid", lambda _port: str(stale.pid))
+        assert sa.reap_recorded(port, pid_file) is True
+        stale.wait(timeout=5)
+        assert not sa.healthy(port)
+        assert not pid_file.exists()
+    finally:
+        if stale.poll() is None:
+            stale.kill()
+            stale.wait()
+
+
+def test_a_listener_the_pid_file_does_not_name_is_left_alone(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    pid_file = tmp_path / "account-for-e2e.pid"
+    pid_file.write_text("999999\n")
+    monkeypatch.setattr(sa, "listener_pid", lambda _port: "12345")
+    killed: list[int] = []
+    monkeypatch.setattr(sa.os, "kill", lambda pid, _sig: killed.append(pid))
+    assert sa.reap_recorded("4999", pid_file) is False
+    assert not killed
+    assert pid_file.exists()
+
+
 def test_delta_port_without_a_value_is_a_usage_error(tmp_path: pathlib.Path) -> None:
     old, _, _ = side(tmp_path, "bash", ["--port"])
     new, _, _ = side(tmp_path, "py", ["--port"])
