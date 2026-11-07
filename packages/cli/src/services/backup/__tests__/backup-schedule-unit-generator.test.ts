@@ -107,6 +107,32 @@ describe('--expect-account-server in scheduled units', () => {
   });
 });
 
+describe('the renet --store probe result reaches the scheduled unit', () => {
+  const twoDests: BackupStrategyDestination[] = [
+    { name: 'primary', kind: 'hosted-service' },
+    { name: 'west', kind: 'hosted-service', target: 'eu-west' },
+  ];
+  const spec: ScheduleUnitSpec = {
+    unitName: 'hourly',
+    strategyName: 'hourly',
+    strategy: { ...strategy, destinations: twoDests },
+    schedule: strategy.schedule,
+    datastore: { path: WK_DATASTORE_PATH } as ScheduleUnitSpec['datastore'],
+    scope,
+  };
+
+  it('writes --store for the non-home destination when the probe found the flag', () => {
+    const unit = computeDesiredUnits([spec], RENET, 4, undefined, true).get('hourly');
+    const exec = execLines(unit?.serviceContent ?? '').join('\n');
+    expect(exec).toContain('--store eu-west');
+    expect(exec).not.toContain('--store home');
+  });
+
+  it('refuses the unit when the probe did not find the flag, rather than writing west into home', () => {
+    expect(() => computeDesiredUnits([spec], RENET, 4, undefined, false)).toThrow(/--store/);
+  });
+});
+
 describe('one snapshot command per enabled destination', () => {
   const home: BackupStrategyDestination = { name: 'primary', kind: 'hosted-service' };
   const west: BackupStrategyDestination = {

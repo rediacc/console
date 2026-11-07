@@ -2,7 +2,7 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 2570,
+    "keyCount": 2571,
     "sourceCommit": "be7b8a312d93d3819ec51ae601f3bde3a55cf29a"
   },
   "hashes": {
@@ -340,6 +340,7 @@
     "commands.backup.strategy.set.retentionPushFailed": "282db790",
     "commands.backup.strategy.set.rpoInvalid": "49b9bd42",
     "commands.backup.strategy.set.saved": "d837b30f",
+    "commands.backup.strategy.set.targetNeedsDestination": "3929cbb2",
     "commands.backup.strategy.show.description": "4b9d342d",
     "commands.backup.strategy.show.notConfigured": "a13d88bf",
     "commands.backup.strategy.show.notFound": "df870398",

@@ -242,6 +242,7 @@
           "optionMode": "وضع النسخ الاحتياطي: \"hot\" يلتقط اللقطة والنظام يعمل بالكامل، \"cold\" يوقف الحاويات للحظة التقاط اللقطة",
           "optionReadBwlimit": "حدّ سرعة القراءة للقطات هذه الاستراتيجية: بنفس وحدات --bwlimit؛ none يزيله",
           "readBwlimitStrategyOnly": "يسري --read-bwlimit على الاستراتيجية كلها (القراءة تتم محليًا على الجهاز)؛ احذف --destination.",
+          "targetNeedsDestination": "يحدد --target مخزن وجهة واحدة؛ أضف --destination <name>.",
           "saved": "تم حفظ تكوين استراتيجية النسخ الاحتياطي",
           "optionRetention": "الاحتفاظ باللقطات، مثل last=7,daily=7,weekly=4,monthly=6 (القيمة \"none\" تزيله)",
           "retentionInvalid": "القيمة \"{{value}}\" لـ --retention ليست قائمة أزواج على شكل الاسم=العدد. الأسماء الصالحة هي last وhourly وdaily وweekly وmonthly وyearly، ويُستخدم كل منها مرة واحدة، وكل عدد صحيح، مثل last=7,daily=7.",

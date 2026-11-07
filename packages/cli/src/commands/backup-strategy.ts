@@ -92,6 +92,9 @@ export async function applyBackupStrategyOptions(
 ): Promise<RetentionFill | undefined> {
   const enabled = resolveEnabledFlag(options.enable, options.disable);
   const targetsDestination = Boolean(options.destination);
+  if (!targetsDestination && options.target !== undefined) {
+    throw new ValidationError(t('commands.backup.strategy.set.targetNeedsDestination'));
+  }
   if (targetsDestination && options.readBwlimit !== undefined) {
     throw new ValidationError(t('commands.backup.strategy.set.readBwlimitStrategyOnly'));
   }

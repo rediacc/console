@@ -332,6 +332,7 @@
   "commands.backup.strategy.set.retentionPushFailed": "策略“{{strategy}}”的保留设置已保存,但未能应用({{reason}})。服务器可访问后请重新运行此命令。",
   "commands.backup.strategy.set.rpoInvalid": "{{option}} \"{{value}}\" 无效:{{reason}}",
   "commands.backup.strategy.set.saved": "备份策略配置已保存",
+  "commands.backup.strategy.set.targetNeedsDestination": "--target 指定单个目标的存储库；请添加 --destination <name>。",
   "commands.backup.strategy.show.description": "显示备份策略详情",
   "commands.backup.strategy.show.notConfigured": "未配置备份策略",
   "commands.backup.strategy.show.notFound": "备份策略 \"{{name}}\" 未找到",

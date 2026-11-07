@@ -2139,6 +2139,7 @@
           "optionBwlimit": "Upload bandwidth limit in bytes per second, with an optional K/M/G suffix (e.g., \"6M\", \"500K\")",
           "optionReadBwlimit": "Read cap for this strategy's snapshots: same units as --bwlimit; none clears it",
           "readBwlimitStrategyOnly": "--read-bwlimit applies to the whole strategy (the read is local to the machine); drop --destination.",
+          "targetNeedsDestination": "--target names the store of one destination; add --destination <name>.",
           "optionCron": "Cron schedule (e.g., \"0 * * * *\" for hourly)",
           "optionDestination": "Destination name within the strategy. Creates a Rediacc chunk-store destination",
           "optionTarget": "Registered store id the destination writes to (default: home). Use with --destination",

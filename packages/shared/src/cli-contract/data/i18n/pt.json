@@ -332,6 +332,7 @@
   "commands.backup.strategy.set.retentionPushFailed": "A retenção da estratégia \"{{strategy}}\" está salva, mas não pôde ser aplicada ({{reason}}). Execute o comando de novo quando o servidor responder.",
   "commands.backup.strategy.set.rpoInvalid": "{{option}} inválido \"{{value}}\": {{reason}}",
   "commands.backup.strategy.set.saved": "Configuração da estratégia de cópia de segurança guardada",
+  "commands.backup.strategy.set.targetNeedsDestination": "--target indica o armazenamento de um destino específico; adicione --destination <name>.",
   "commands.backup.strategy.show.description": "Mostrar os detalhes de uma estratégia de cópia de segurança",
   "commands.backup.strategy.show.notConfigured": "Nenhuma estratégia de cópia de segurança configurada",
   "commands.backup.strategy.show.notFound": "Estratégia de cópia de segurança \"{{name}}\" não encontrada",

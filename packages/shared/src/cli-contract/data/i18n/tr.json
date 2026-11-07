@@ -332,6 +332,7 @@
   "commands.backup.strategy.set.retentionPushFailed": "\"{{strategy}}\" stratejisinin saklama kuralı kaydedildi, ancak uygulanamadı ({{reason}}). Sunucuya erişilebildiğinde komutu yeniden çalıştırın.",
   "commands.backup.strategy.set.rpoInvalid": "Geçersiz {{option}} \"{{value}}\": {{reason}}",
   "commands.backup.strategy.set.saved": "Yedekleme stratejisi yapılandırması kaydedildi",
+  "commands.backup.strategy.set.targetNeedsDestination": "--target tek bir hedefin deposunu belirtir; --destination <name> ekleyin.",
   "commands.backup.strategy.show.description": "Yedekleme stratejisi ayrıntılarını göster",
   "commands.backup.strategy.show.notConfigured": "Yapılandırılmış yedekleme stratejisi yok",
   "commands.backup.strategy.show.notFound": "Yedekleme stratejisi \"{{name}}\" bulunamadı",

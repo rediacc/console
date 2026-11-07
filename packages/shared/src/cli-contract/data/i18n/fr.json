@@ -332,6 +332,7 @@
   "commands.backup.strategy.set.retentionPushFailed": "La rétention de la stratégie « {{strategy}} » est enregistrée, mais n'a pas pu être appliquée ({{reason}}). Relancez la commande quand le serveur répond.",
   "commands.backup.strategy.set.rpoInvalid": "{{option}} invalide \"{{value}}\" : {{reason}}",
   "commands.backup.strategy.set.saved": "Configuration de la stratégie de sauvegarde enregistrée",
+  "commands.backup.strategy.set.targetNeedsDestination": "--target désigne le store d'une destination précise ; ajoutez --destination <name>.",
   "commands.backup.strategy.show.description": "Afficher les détails de la stratégie de sauvegarde",
   "commands.backup.strategy.show.notConfigured": "Aucune stratégie de sauvegarde configurée",
   "commands.backup.strategy.show.notFound": "Stratégie de sauvegarde \"{{name}}\" introuvable",

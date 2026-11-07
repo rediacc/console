@@ -242,6 +242,7 @@
           "optionMode": "Modo de respaldo: \"hot\" toma la instantánea con todo en marcha, \"cold\" detiene los contenedores durante el instante de la instantánea",
           "optionReadBwlimit": "Límite de lectura para los snapshots de esta estrategia: mismas unidades que --bwlimit; none lo quita",
           "readBwlimitStrategyOnly": "--read-bwlimit se aplica a toda la estrategia (la lectura es local a la máquina); quita --destination.",
+          "targetNeedsDestination": "--target indica el almacén de un destino concreto; añade --destination <name>.",
           "saved": "Configuración de estrategia de respaldo guardada",
           "optionRetention": "Retención de instantáneas, por ejemplo last=7,daily=7,weekly=4,monthly=6 (\"none\" la quita)",
           "retentionInvalid": "--retention \"{{value}}\" no es una lista de pares nombre=cantidad. Los nombres son last, hourly, daily, weekly, monthly y yearly, cada uno una sola vez, y cada cantidad es un número entero, por ejemplo last=7,daily=7.",

@@ -332,6 +332,7 @@
   "commands.backup.strategy.set.retentionPushFailed": "戦略「{{strategy}}」の保持設定は保存しましたが、適用できませんでした({{reason}})。サーバーに接続できるようになったらもう一度実行してください。",
   "commands.backup.strategy.set.rpoInvalid": "{{option}} \"{{value}}\" は無効です: {{reason}}",
   "commands.backup.strategy.set.saved": "バックアップ戦略の設定を保存しました",
+  "commands.backup.strategy.set.targetNeedsDestination": "--target は個々の宛先のストアを指定します。--destination <name> を追加してください。",
   "commands.backup.strategy.show.description": "バックアップ戦略の詳細を表示",
   "commands.backup.strategy.show.notConfigured": "バックアップ戦略が設定されていません",
   "commands.backup.strategy.show.notFound": "バックアップ戦略 \"{{name}}\" が見つかりません",

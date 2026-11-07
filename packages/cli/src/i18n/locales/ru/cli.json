@@ -242,6 +242,7 @@
           "optionMode": "Режим резервного копирования: \"hot\" делает снимок, пока всё продолжает работать, \"cold\" останавливает контейнеры на время снимка",
           "optionReadBwlimit": "Ограничение скорости чтения для снапшотов этой стратегии: единицы те же, что у --bwlimit; none снимает ограничение",
           "readBwlimitStrategyOnly": "--read-bwlimit действует на всю стратегию (чтение выполняется локально на машине); уберите --destination.",
+          "targetNeedsDestination": "--target задаёт хранилище одного назначения; добавьте --destination <name>.",
           "saved": "Конфигурация стратегии резервного копирования сохранена",
           "optionRetention": "Хранение снимков, например last=7,daily=7,weekly=4,monthly=6 («none» убирает его)",
           "retentionInvalid": "--retention «{{value}}» не похоже на список пар имя=число. Допустимые имена: last, hourly, daily, weekly, monthly и yearly, каждое один раз, а число должно быть целым, например last=7,daily=7.",

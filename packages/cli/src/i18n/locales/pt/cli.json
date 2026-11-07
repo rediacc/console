@@ -242,6 +242,7 @@
           "optionMode": "Modo de cópia de segurança: \"hot\" tira o snapshot com tudo em execução, \"cold\" para os contentores durante o momento do snapshot",
           "optionReadBwlimit": "Limite de leitura para os snapshots desta estratégia: mesmas unidades de --bwlimit; none remove o limite",
           "readBwlimitStrategyOnly": "--read-bwlimit vale para a estratégia inteira (a leitura é local à máquina); remova --destination.",
+          "targetNeedsDestination": "--target indica o armazenamento de um destino específico; adicione --destination <name>.",
           "saved": "Configuração da estratégia de cópia de segurança guardada",
           "optionRetention": "Retenção de snapshots, por exemplo last=7,daily=7,weekly=4,monthly=6 (\"none\" a remove)",
           "retentionInvalid": "--retention \"{{value}}\" não é uma lista de pares nome=quantidade. Os nomes são last, hourly, daily, weekly, monthly e yearly, cada um uma só vez, e cada quantidade é um número inteiro, por exemplo last=7,daily=7.",

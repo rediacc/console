@@ -332,6 +332,7 @@
   "commands.backup.strategy.set.retentionPushFailed": "Хранение стратегии «{{strategy}}» сохранено, но применить его не удалось ({{reason}}). Запустите команду снова, когда сервер станет доступен.",
   "commands.backup.strategy.set.rpoInvalid": "Недопустимое значение {{option}} \"{{value}}\": {{reason}}",
   "commands.backup.strategy.set.saved": "Конфигурация стратегии резервного копирования сохранена",
+  "commands.backup.strategy.set.targetNeedsDestination": "--target задаёт хранилище одного назначения; добавьте --destination <name>.",
   "commands.backup.strategy.show.description": "Показать детали стратегии резервного копирования",
   "commands.backup.strategy.show.notConfigured": "Стратегии резервного копирования не настроены",
   "commands.backup.strategy.show.notFound": "Стратегия резервного копирования \"{{name}}\" не найдена",

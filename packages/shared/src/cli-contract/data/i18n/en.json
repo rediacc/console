@@ -332,6 +332,7 @@
   "commands.backup.strategy.set.retentionPushFailed": "Retention is saved for strategy \"{{strategy}}\" but could not be applied ({{reason}}). Run this command again when the server is reachable.",
   "commands.backup.strategy.set.rpoInvalid": "Invalid {{option}} \"{{value}}\": {{reason}}",
   "commands.backup.strategy.set.saved": "Backup strategy configuration saved",
+  "commands.backup.strategy.set.targetNeedsDestination": "--target names the store of one destination; add --destination <name>.",
   "commands.backup.strategy.show.description": "Show backup strategy details",
   "commands.backup.strategy.show.notConfigured": "No backup strategies configured",
   "commands.backup.strategy.show.notFound": "Backup strategy \"{{name}}\" not found",

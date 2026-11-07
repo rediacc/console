@@ -332,6 +332,7 @@
   "commands.backup.strategy.set.retentionPushFailed": "La retención de la estrategia \"{{strategy}}\" está guardada, pero no se pudo aplicar ({{reason}}). Vuelva a ejecutar el comando cuando el servidor responda.",
   "commands.backup.strategy.set.rpoInvalid": "{{option}} no válido \"{{value}}\": {{reason}}",
   "commands.backup.strategy.set.saved": "Configuración de estrategia de respaldo guardada",
+  "commands.backup.strategy.set.targetNeedsDestination": "--target indica el almacén de un destino concreto; añade --destination <name>.",
   "commands.backup.strategy.show.description": "Mostrar detalles de la estrategia de respaldo",
   "commands.backup.strategy.show.notConfigured": "No hay estrategias de respaldo configuradas",
   "commands.backup.strategy.show.notFound": "Estrategia de respaldo \"{{name}}\" no encontrada",

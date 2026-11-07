@@ -71,3 +71,14 @@ describe('strategy set --retention push failures', () => {
     expect(out.warn).toHaveBeenCalledTimes(2);
   });
 });
+
+describe('strategy set --target', () => {
+  it('refuses --target without --destination instead of writing nothing and reporting success', async () => {
+    const backup = new Command('backup').exitOverride();
+    registerBackupStrategyCommands(backup);
+    await expect(
+      backup.parseAsync(['strategy', 'set', 's', '--target', 'offsite'], { from: 'user' })
+    ).rejects.toThrow('commands.backup.strategy.set.targetNeedsDestination');
+    expect(out.success).not.toHaveBeenCalled();
+  });
+});

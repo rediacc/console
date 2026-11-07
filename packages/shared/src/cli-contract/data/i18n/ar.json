@@ -332,6 +332,7 @@
   "commands.backup.strategy.set.retentionPushFailed": "حُفظت سياسة الاحتفاظ للاستراتيجية \"{{strategy}}\" لكن تعذّر تطبيقها ({{reason}}). أعد تشغيل الأمر عندما يصبح الخادم متاحًا.",
   "commands.backup.strategy.set.rpoInvalid": "{{option}} غير صالح \"{{value}}\": {{reason}}",
   "commands.backup.strategy.set.saved": "تم حفظ تكوين استراتيجية النسخ الاحتياطي",
+  "commands.backup.strategy.set.targetNeedsDestination": "يحدد --target مخزن وجهة واحدة؛ أضف --destination <name>.",
   "commands.backup.strategy.show.description": "عرض تفاصيل استراتيجية النسخ الاحتياطي",
   "commands.backup.strategy.show.notConfigured": "لم يتم تكوين أي استراتيجيات نسخ احتياطي",
   "commands.backup.strategy.show.notFound": "استراتيجية النسخ الاحتياطي \"{{name}}\" غير موجودة",

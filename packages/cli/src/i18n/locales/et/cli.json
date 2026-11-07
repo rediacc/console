@@ -242,6 +242,7 @@
           "optionMode": "Varundusrežiim: \"hot\" teeb hetktõmmise, kui kõik töötab edasi, \"cold\" peatab konteinerid hetktõmmise tegemise ajaks",
           "optionReadBwlimit": "Selle strateegia hetktõmmiste lugemispiir: samad ühikud mis --bwlimit; none eemaldab selle",
           "readBwlimitStrategyOnly": "--read-bwlimit kehtib kogu strateegiale (lugemine toimub masinas kohapeal); jäta --destination ära.",
+          "targetNeedsDestination": "--target määrab ühe sihtkoha hoidla; lisa --destination <name>.",
           "saved": "Varundussettrateegia konfiguratsioon salvestatud",
           "optionRetention": "Hetktõmmiste säilitus, näiteks last=7,daily=7,weekly=4,monthly=6 (\"none\" eemaldab selle)",
           "retentionInvalid": "--retention \"{{value}}\" ei ole nimi=arv paaride loend. Nimed on last, hourly, daily, weekly, monthly ja yearly, igaüks üks kord, ja iga arv on täisarv, näiteks last=7,daily=7.",

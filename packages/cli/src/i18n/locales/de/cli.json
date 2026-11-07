@@ -242,6 +242,7 @@
           "optionMode": "Backup-Modus: \"hot\" erstellt den Snapshot bei laufendem Betrieb, \"cold\" stoppt die Container für den Moment der Snapshot-Aufnahme",
           "optionReadBwlimit": "Lesegrenze für die Snapshots dieser Strategie: gleiche Einheiten wie --bwlimit; „none“ entfernt sie",
           "readBwlimitStrategyOnly": "--read-bwlimit gilt für die gesamte Strategie (das Lesen findet lokal auf der Maschine statt); --destination weglassen.",
+          "targetNeedsDestination": "--target benennt den Store eines einzelnen Ziels; ergänze --destination <name>.",
           "saved": "Backup-Strategie-Konfiguration gespeichert",
           "optionRetention": "Aufbewahrung der Snapshots, z. B. last=7,daily=7,weekly=4,monthly=6 („none“ entfernt sie)",
           "retentionInvalid": "--retention „{{value}}“ ist keine Liste aus name=anzahl-Paaren. Gültige Namen sind last, hourly, daily, weekly, monthly und yearly, jeweils einmal, und jede Anzahl ist eine ganze Zahl, z. B. last=7,daily=7.",

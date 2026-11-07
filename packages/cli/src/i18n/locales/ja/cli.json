@@ -242,6 +242,7 @@
           "optionMode": "バックアップモード: \"hot\" はすべてを稼働させたままスナップショットを取得し、\"cold\" はスナップショット取得の瞬間だけコンテナを停止します",
           "optionReadBwlimit": "この戦略のスナップショットの読み取り速度上限。単位は --bwlimit と同じで、none を指定すると解除します",
           "readBwlimitStrategyOnly": "--read-bwlimit は戦略全体に適用されます (読み取りはマシン上でローカルに行われます)。--destination を外してください。",
+          "targetNeedsDestination": "--target は個々の宛先のストアを指定します。--destination <name> を追加してください。",
           "saved": "バックアップ戦略の設定を保存しました",
           "optionRetention": "スナップショットの保持設定。例: last=7,daily=7,weekly=4,monthly=6(\"none\" で解除)",
           "retentionInvalid": "--retention \"{{value}}\" は 名前=件数 の組の一覧ではありません。名前は last、hourly、daily、weekly、monthly、yearly で、それぞれ 1 回だけ使え、件数は整数です。例: last=7,daily=7",

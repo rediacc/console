@@ -332,6 +332,7 @@
   "commands.backup.strategy.set.retentionPushFailed": "La conservazione della strategia \"{{strategy}}\" è salvata, ma non è stato possibile applicarla ({{reason}}). Esegui di nuovo il comando quando il server risponde.",
   "commands.backup.strategy.set.rpoInvalid": "{{option}} non valido \"{{value}}\": {{reason}}",
   "commands.backup.strategy.set.saved": "Configurazione della strategia di backup salvata",
+  "commands.backup.strategy.set.targetNeedsDestination": "--target indica lo store di una singola destinazione; aggiungi --destination <name>.",
   "commands.backup.strategy.show.description": "Mostra i dettagli della strategia di backup",
   "commands.backup.strategy.show.notConfigured": "Nessuna strategia di backup configurata",
   "commands.backup.strategy.show.notFound": "Strategia di backup \"{{name}}\" non trovata",

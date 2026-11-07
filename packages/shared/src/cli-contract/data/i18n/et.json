@@ -332,6 +332,7 @@
   "commands.backup.strategy.set.retentionPushFailed": "Strateegia \"{{strategy}}\" säilitus on salvestatud, kuid seda ei õnnestunud rakendada ({{reason}}). Käivita käsk uuesti, kui server on kättesaadav.",
   "commands.backup.strategy.set.rpoInvalid": "Kehtetu {{option}} \"{{value}}\": {{reason}}",
   "commands.backup.strategy.set.saved": "Varundussettrateegia konfiguratsioon salvestatud",
+  "commands.backup.strategy.set.targetNeedsDestination": "--target määrab ühe sihtkoha hoidla; lisa --destination <name>.",
   "commands.backup.strategy.show.description": "Kuva varundussettrateegia üksikasjad",
   "commands.backup.strategy.show.notConfigured": "Varundusstrateegiad ei ole seadistatud",
   "commands.backup.strategy.show.notFound": "Varundusstrateegiat \"{{name}}\" ei leitud",

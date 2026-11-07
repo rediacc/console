@@ -242,6 +242,7 @@
           "optionMode": "Mode de sauvegarde : \"hot\" prend le snapshot pendant que tout continue de tourner, \"cold\" arrête les conteneurs le temps de prendre le snapshot",
           "optionReadBwlimit": "Plafond de lecture pour les snapshots de cette stratégie : mêmes unités que --bwlimit ; none le supprime",
           "readBwlimitStrategyOnly": "--read-bwlimit s'applique à toute la stratégie (la lecture est locale à la machine) : retirez --destination.",
+          "targetNeedsDestination": "--target désigne le store d'une destination précise ; ajoutez --destination <name>.",
           "saved": "Configuration de la stratégie de sauvegarde enregistrée",
           "optionRetention": "Rétention des instantanés, par exemple last=7,daily=7,weekly=4,monthly=6 (« none » la retire)",
           "retentionInvalid": "--retention « {{value}} » n'est pas une liste de paires nom=nombre. Les noms valides sont last, hourly, daily, weekly, monthly et yearly, chacun une seule fois, et chaque nombre est un entier, par exemple last=7,daily=7.",
