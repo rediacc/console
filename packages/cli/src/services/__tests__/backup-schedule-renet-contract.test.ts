@@ -259,19 +259,51 @@ const MATRIX: Record<string, ScheduledStrategy> = {
       },
     },
   },
-  // No two-destination entry: the second destination needs a non-home `--store`, which the renet source this contract reads does not declare yet; the generator's own tests cover the multi-destination unit.
+  // One command per destination: the first on home (no `--store`), the second carrying `--store offsite`.
+  twoDestinations: {
+    schedule: '0 3 * * *',
+    destinations: [hosted, { kind: 'hosted-service', name: 'offsite', target: 'offsite' }],
+  },
 };
+
+/**
+ * The renet commands of one ExecStart. A unit with several destinations runs them in one isolating `sh -c`
+ * (isolateCommands: `rc=0; <cmd> || rc=1; ... exit $$rc`), and each command inside must parse like a bare one; a
+ * wrapper of any other shape throws, so a changed wrapper cannot hide its commands from this contract.
+ */
+function renetCommandsOf(execStart: string): string[] {
+  const wrapper = /^\/bin\/sh -c '(.*)'$/.exec(execStart);
+  if (!wrapper) return [execStart];
+  const parts = wrapper[1].split('; ');
+  const commands = parts.slice(1, -1);
+  if (
+    parts[0] !== 'rc=0' ||
+    parts.at(-1) !== 'exit $$rc' ||
+    commands.length < 2 ||
+    !commands.every((c) => c.endsWith(' || rc=1'))
+  ) {
+    throw new Error(`unrecognized isolating wrapper: ${execStart}`);
+  }
+  return commands.map((c) => c.slice(0, -' || rc=1'.length));
+}
 
 function generatedExecStarts(): string[] {
   const strategies = Object.entries(MATRIX).map(([name, cfg]) => ({ name, config: cfg }));
+  // renetHasStoreFlag: the renet this contract reads declares `--store`, so the generator emits it; a renet without it
+  // fails the parse below on `unknown flag: --store`.
   const units = computeDesiredUnits(
     machineUnitSpecs(strategies, config, 'm1'),
-    '/usr/lib/rediacc/renet/current/renet'
+    '/usr/lib/rediacc/renet/current/renet',
+    undefined,
+    undefined,
+    true
   );
   const lines: string[] = [];
   for (const unit of units.values()) {
     for (const line of unit.serviceContent.split('\n')) {
-      if (line.startsWith('ExecStart=')) lines.push(line.slice('ExecStart='.length));
+      if (line.startsWith('ExecStart=')) {
+        lines.push(...renetCommandsOf(line.slice('ExecStart='.length)));
+      }
     }
   }
   return lines;
@@ -292,6 +324,8 @@ describe('scheduled ExecStart lines parse against renet backup snapshot (G9)', (
     expect(set.snapshot.flags.get('hook-failure')).toBe('String');
     expect(set.snapshot.flags.get('index-every')).toBe('Duration');
     expect(set.snapshot.flags.get('cell-bytes')).toBe('Int64');
+    expect(set.snapshot.flags.get('store')).toBe('String');
+    expect(set.report.flags.get('store')).toBe('String');
     expect(set.snapshot.guidOnly.has('repo')).toBe(true);
     expect(set.verify.flags.get('level')).toBe('String');
     expect(set.verify.flags.get('next-due')).toBe('String');
@@ -348,6 +382,22 @@ describe('scheduled ExecStart lines parse against renet backup snapshot (G9)', (
     ]);
     expect(argvProblems('/r backup snapshot --cell-bytes 1M', set)).toEqual([
       'invalid argument "1M" for --cell-bytes: not an integer',
+    ]);
+  });
+
+  it('two destinations render one snapshot each, home without --store and the other with it', () => {
+    const snapshots = generatedExecStarts().filter(
+      (l) => l.split(' ')[2] === 'snapshot' && !l.includes(' --repo ')
+    );
+    const offsite = snapshots.find((l) => l.includes(' --store offsite'));
+    expect(offsite).toBeDefined();
+    // The home destination's command is the same line without the flag.
+    expect(snapshots).toContain(offsite?.replace(' --store offsite', ''));
+    expect(
+      snapshots.filter((l) => l.includes(' --store ')).every((l) => l.includes(' --store offsite'))
+    ).toBe(true);
+    expect(argvProblems('/r backup snapshot --store', set)).toEqual([
+      'flag needs an argument: --store',
     ]);
   });
 
