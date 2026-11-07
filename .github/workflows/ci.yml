@@ -2444,5 +2444,5 @@ jobs:
             cancelled) state=unknown ;;
             *) state=red ;;
           esac
-          PYTHONPATH=.ci python3 -m rediacc_ci.release.drift_job --post-state "$state" \
+          PYTHONPATH=.ci python3 -m rediacc_ci.release.ops_health_post --post-state "$state" \
             --source ci-weekly --detail "Console CI weekly: CI Complete ${CI_COMPLETE_RESULT:-none}, $WEEKLY_RUN_URL"

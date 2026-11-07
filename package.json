@@ -29,6 +29,7 @@
     "check:deps": "tsx scripts/gates/check-deps.ts --selftest && tsx scripts/gates/check-deps.ts",
     "check:ci-compose-env": ".ci/scripts/quality/check_compose_env.py",
     "check:ci-go-deps": ".ci/scripts/quality/check_go_deps.py",
+    "check:ci-ops-health": ".ci/scripts/quality/check_ops_health.py",
     "check:ci-go-module-sync": ".ci/scripts/quality/check_go_module_sync.py",
     "check:ci-renet-types": ".ci/scripts/quality/check_renet_types.py",
     "check:ci-renet-tiers": ".ci/scripts/quality/check_renet_tier_map.py",

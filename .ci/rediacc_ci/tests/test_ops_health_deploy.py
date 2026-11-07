@@ -14,6 +14,7 @@ from typing import Any, Self
 
 import pytest
 
+from rediacc_ci import well_known
 from rediacc_ci.ops import deploy_ops_health as d
 
 PROBES: list[dict[str, Any]] = [
@@ -259,7 +260,7 @@ def test_the_schema_counts_dnsbl_zones_as_probes():
 
 
 def test_the_status_url_comes_from_the_custom_domain_route():
-    assert d.status_url(d.paths.repo_root()) == "https://ops-health.rediacc.com/v1/status"
+    assert d.status_url(d.paths.repo_root()) == f"{well_known.OPS_HEALTH_ORIGIN}/v1/status"
 
 
 def test_the_digest_var_survives_wrangler_var_syntax():

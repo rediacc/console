@@ -2227,7 +2227,7 @@ jobs:
       # redirect-aliases.test.ts imports directly.
       - name: Worker unit tests (workers/www, workers/proxy)
         if: ${{ !cancelled() && steps.build-www.outcome == 'success' }}
-        run: npm ci --prefix workers/www && npm ci --prefix workers/proxy && npm run check:test-workers
+        run: npm ci --prefix workers/www && npm ci --prefix workers/proxy && npm ci --prefix workers/ops-health && npm run check:test-workers
 
   # ============================================================================
   # L9 SECURITY -- split three ways (PLAN-ci-time-budget.md T2.15, 2026-09-26).
@@ -2694,6 +2694,7 @@ jobs:
           secrets: |
             GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
             GITHUB_APP_ID > BWS_APP_ID
+            OPS_HEALTH_READ_TOKEN > BWS_OPS_HEALTH_READ_TOKEN
 
       - uses: ./.github/actions/app-token
         id: app-token
@@ -2771,6 +2772,15 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && inputs.external_quality != 'skip' }}
         run: npm run check:ci-go-deps
 
+      # Reads the off-box ops-health Worker's status (PLAN-health-checks-local
+      # D-gate): red on a red verdict or a stale cron, unreadable is exit 2.
+      # Hard on every cadence like the gates around it, held only by the label.
+      - name: Off-box ops health
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && inputs.external_quality != 'skip' }}
+        env:
+          OPS_HEALTH_READ_TOKEN: ${{ env.BWS_OPS_HEALTH_READ_TOKEN }}
+        run: npm run check:ci-ops-health
+
       # NOT behind external_quality: this reads only the local worktree, so
       # unlike go-deps it cannot be affected by an upstream registry being
       # unreachable, and skipping it would hide a defect we caused ourselves.
@@ -2846,7 +2856,7 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         env:
           GATE_SKIP_MODE: ${{ inputs.external_quality == 'skip' && 'skip' || 'hard' }}
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.announce_gate_skips no-external-quality check:ci-go-deps check:ci-embed-asset-freshness check:ci-devcontainer-pins check:ci-real-provider-pins
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.announce_gate_skips no-external-quality check:ci-go-deps check:ci-ops-health check:ci-embed-asset-freshness check:ci-devcontainer-pins check:ci-real-provider-pins
 
       # Freshness of the embedded-binary version pins vs upstream
       # (api.github.com and download.samba.org). GITHUB_TOKEN raises the API

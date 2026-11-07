@@ -619,16 +619,16 @@
       ],
       "notReaders": [
         {
-          "id": "check:ci-gate-manifest",
-          "reason": "Its dead-id oracle walks tracked files and drops every path starting with agent/ (scripts/gates/check-gate-manifest.ts deadIdCorpus), so the agent/ the derivation cites at :487 is an exclusion and no file under agent/ is read."
-        },
-        {
           "id": "check:actions",
           "reason": "It imports scripts/lib/pins/registry.ts for the pin ids its fix line names (scripts/lib/pins/remedy.ts); that cites .ci/config/pins.json, whose only agent/ glob is check:ci-pin-registry's literal-scan exclusion, and this gate reads no file under agent/."
         },
         {
           "id": "check:ci-ceph-image-pin",
           "reason": "It imports scripts/lib/pins/registry.ts for the pin ids its fix line names (scripts/lib/pins/remedy.ts); that cites .ci/config/pins.json, whose only agent/ glob is check:ci-pin-registry's literal-scan exclusion, and this gate reads no file under agent/."
+        },
+        {
+          "id": "check:ci-commit-citations",
+          "reason": "It names the record globs only to say it never reads them: its WHERE paragraph (.ci/scripts/quality/check_commit_citations.py:18) excludes agent/reviews/**, agent/worklist/** and agent/ledgers/** because those are records of a moment, and it scans git ls-files code, tests and agent/plans/**.md."
         },
         {
           "id": "check:ci-devcontainer-pins",
@@ -643,40 +643,12 @@
           "reason": "It imports scripts/lib/pins/registry.ts for its pin inventory; that cites .ci/config/pins.json, whose only agent/ glob is check:ci-pin-registry's literal-scan exclusion, and this gate reads no file under agent/."
         },
         {
-          "id": "check:ci-pin-freshness",
-          "reason": "It loads .ci/config/pins.json to choose the leaves it compares; the registry's only agent/ glob is check:ci-pin-registry's literal-scan exclusion, and this gate reads no file under agent/."
-        },
-        {
-          "id": "check:ci-pin-registry",
-          "reason": "Its one agent/ glob is the pin registry's literalExclude, an EXCLUSION: agent/** is dropped from the literal scan, and its scanners read only Dockerfile*, toolchain.env, *.sh, *.bash, *.yml, *.yaml, package-lock.json, go.mod, *.lock.json and .ceph-image-pin, none of which this record holds."
-        },
-        {
-          "id": "check:ci-real-provider-pins",
-          "reason": "It imports scripts/lib/pins/registry.ts for the pin ids its fix line names (scripts/lib/pins/remedy.ts); that cites .ci/config/pins.json, whose only agent/ glob is check:ci-pin-registry's literal-scan exclusion, and this gate reads no file under agent/."
-        },
-        {
-          "id": "check:ci-override-ranges",
-          "reason": "It imports scripts/lib/pins/registry.ts through parseRegistry to read .ci/config/pins.json, whose only agent/ glob is check:ci-pin-registry's literal-scan exclusion; the gate reads package manifests and lockfiles, no file under agent/."
-        },
-        {
-          "id": "check:ci-suppression-liveness",
-          "reason": "It imports scripts/lib/pins/registry.ts for its pin inventory; that cites .ci/config/pins.json, whose only agent/ glob is check:ci-pin-registry's literal-scan exclusion, and this gate reads no file under agent/."
-        },
-        {
-          "id": "check:deps",
-          "reason": "It imports scripts/lib/pins/registry.ts through the npm driver of `npm run pins`; that cites .ci/config/pins.json, whose only agent/ glob is check:ci-pin-registry's literal-scan exclusion, and this gate reads no file under agent/."
-        },
-        {
-          "id": "check:ci-commit-citations",
-          "reason": "It names the record globs only to say it never reads them: its WHERE paragraph (.ci/scripts/quality/check_commit_citations.py:18) excludes agent/reviews/**, agent/worklist/** and agent/ledgers/** because those are records of a moment, and it scans git ls-files code, tests and agent/plans/**.md."
-        },
-        {
-          "id": "check:ci-operator-rulings",
-          "reason": "Its ledger is agent/rulings/*.jsonl (.claude/hooks/stop/wl_ruling.py rulings_dir, RULINGS_DIR_NAME); the *.jsonl glob at wl_ruling.py:137 runs over that one directory, which is none of these record globs, and the only agent/ file it reads besides is agent/RULES.md."
-        },
-        {
           "id": "check:ci-embed-asset-versions",
           "reason": "It imports scripts/ci-runner/manifest.ts, whose only citation under agent/ledgers/ is the check:ci-plan-live-proof entry's comment naming agent/ledgers/live-proof.jsonl, a different ledger outside this glob; the manifest is data, and no file of this gate's closure reads agent/ledgers/."
+        },
+        {
+          "id": "check:ci-gate-manifest",
+          "reason": "Its dead-id oracle walks tracked files and drops every path starting with agent/ (scripts/gates/check-gate-manifest.ts deadIdCorpus), so the agent/ the derivation cites at :487 is an exclusion and no file under agent/ is read."
         },
         {
           "id": "check:ci-gates-lock",
@@ -685,6 +657,18 @@
         {
           "id": "check:ci-gen-manifest",
           "reason": "It imports scripts/ci-runner/manifest.ts, whose only citation under agent/ledgers/ is the check:ci-plan-live-proof entry's comment naming agent/ledgers/live-proof.jsonl, a different ledger outside this glob; the manifest is data, and no file of this gate's closure reads agent/ledgers/."
+        },
+        {
+          "id": "check:ci-operator-rulings",
+          "reason": "Its ledger is agent/rulings/*.jsonl (.claude/hooks/stop/wl_ruling.py rulings_dir, RULINGS_DIR_NAME); the *.jsonl glob at wl_ruling.py:137 runs over that one directory, which is none of these record globs, and the only agent/ file it reads besides is agent/RULES.md."
+        },
+        {
+          "id": "check:ci-ops-health",
+          "reason": "Its closure imports rediacc_ci.ops.ops_health, whose LEDGER_REL names agent/ledgers/ops-health.jsonl, but only the `refresh` verb appends to it; this gate runs gate_main, one GET of the Worker's /v1/status, and opens no file under agent/, and ops-health.jsonl is a different ledger outside this glob."
+        },
+        {
+          "id": "check:ci-override-ranges",
+          "reason": "It imports scripts/lib/pins/registry.ts through parseRegistry to read .ci/config/pins.json, whose only agent/ glob is check:ci-pin-registry's literal-scan exclusion; the gate reads package manifests and lockfiles, no file under agent/."
         },
         {
           "id": "check:ci-package-key-budget",
@@ -699,12 +683,32 @@
           "reason": "It imports scripts/ci-runner/manifest.ts, whose only citation under agent/ledgers/ is the check:ci-plan-live-proof entry's comment naming agent/ledgers/live-proof.jsonl, a different ledger outside this glob; the manifest is data, and no file of this gate's closure reads agent/ledgers/."
         },
         {
+          "id": "check:ci-pin-freshness",
+          "reason": "It loads .ci/config/pins.json to choose the leaves it compares; the registry's only agent/ glob is check:ci-pin-registry's literal-scan exclusion, and this gate reads no file under agent/."
+        },
+        {
+          "id": "check:ci-pin-registry",
+          "reason": "Its one agent/ glob is the pin registry's literalExclude, an EXCLUSION: agent/** is dropped from the literal scan, and its scanners read only Dockerfile*, toolchain.env, *.sh, *.bash, *.yml, *.yaml, package-lock.json, go.mod, *.lock.json and .ceph-image-pin, none of which this record holds."
+        },
+        {
+          "id": "check:ci-real-provider-pins",
+          "reason": "It imports scripts/lib/pins/registry.ts for the pin ids its fix line names (scripts/lib/pins/remedy.ts); that cites .ci/config/pins.json, whose only agent/ glob is check:ci-pin-registry's literal-scan exclusion, and this gate reads no file under agent/."
+        },
+        {
           "id": "check:ci-runner-selftest",
           "reason": "It imports scripts/ci-runner/manifest.ts, whose only citation under agent/ledgers/ is the check:ci-plan-live-proof entry's comment naming agent/ledgers/live-proof.jsonl, a different ledger outside this glob; the manifest is data, and no file of this gate's closure reads agent/ledgers/."
         },
         {
           "id": "check:ci-selftest-reachability",
           "reason": "It imports scripts/ci-runner/manifest.ts, whose only citation under agent/ledgers/ is the check:ci-plan-live-proof entry's comment naming agent/ledgers/live-proof.jsonl, a different ledger outside this glob; the manifest is data, and no file of this gate's closure reads agent/ledgers/."
+        },
+        {
+          "id": "check:ci-suppression-liveness",
+          "reason": "It imports scripts/lib/pins/registry.ts for its pin inventory; that cites .ci/config/pins.json, whose only agent/ glob is check:ci-pin-registry's literal-scan exclusion, and this gate reads no file under agent/."
+        },
+        {
+          "id": "check:deps",
+          "reason": "It imports scripts/lib/pins/registry.ts through the npm driver of `npm run pins`; that cites .ci/config/pins.json, whose only agent/ glob is check:ci-pin-registry's literal-scan exclusion, and this gate reads no file under agent/."
         },
         {
           "id": "check:types:incremental",

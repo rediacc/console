@@ -3992,6 +3992,22 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    id: 'check:ci-ops-health',
+    env: {
+      OPS_HEALTH_READ_TOKEN: '${{ env.BWS_OPS_HEALTH_READ_TOKEN }}',
+    },
+    run: 'npm run check:ci-ops-health',
+    gate: true,
+    // One GET of the ops-health Worker's /v1/status (PLAN-health-checks-local D-gate). It asks a host outside the repository, so it is one of UPSTREAM_GATES and runs under the no-external-quality hold.
+    leaves: ['.ci/scripts/quality/check_ops_health.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-go',
+      step: 'Off-box ops health',
+    },
+  },
+  {
     id: 'check:ci-renet-types',
     run: 'npm run check:ci-renet-types',
     // 1.4s measured. It shells out to `go build`, so a COLD Go build cache costs more than this -- but that is a once-per-tree cost, not the steady-state one the lane is sized against.

@@ -138,7 +138,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GITHUB_TOKEN: ${{ github.token }}
           DOCKERHUB_TOKEN: ${{ env.BWS_DOCKERHUB_TOKEN }}
-        run: npm run ci:drift -- --out drift-verdict.json
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.release.drift_job --out drift-verdict.json
 
       - name: Upload the verdict
         if: always()
@@ -150,7 +150,7 @@ jobs:
           retention-days: 3
 
       # Under `if: always()`: a red run, a cancelled run and a run that died
-      # before it wrote a verdict all reach the ingest. drift_job posts a
+      # before it wrote a verdict all reach the ingest. ops_health_post posts a
       # missing verdict as red.
       - name: Fetch secrets from Bitwarden (ingest)
         if: always()
@@ -164,4 +164,4 @@ jobs:
         if: always()
         env:
           OPS_HEALTH_INGEST_TOKEN: ${{ env.BWS_OPS_HEALTH_INGEST_TOKEN }}
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.release.drift_job --post drift-verdict.json --source drift
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.release.ops_health_post --post drift-verdict.json --source drift

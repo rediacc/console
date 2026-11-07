@@ -1021,6 +1021,7 @@ UPSTREAM_GATES = (
     "check:ci-external-links",
     "check:ci-dkim-notify",
     "check:ci-go-deps",
+    "check:ci-ops-health",
     "check:deps",
 )
 UPSTREAM_GATE_LABEL = "no-external-quality"

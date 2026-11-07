@@ -148,10 +148,6 @@
       "kind": "no-github-twin",
       "reason": "The ops-health alerter's recipients (PLAN-health-checks-local), bound only by `bws_env exec --profile ops-health` for the local rediacc_ci.ops.deploy_ops_health, which pushes it to the ops-health Worker as a secret. No workflow sends mail with it."
     },
-    "OPS_HEALTH_READ_TOKEN": {
-      "kind": "no-github-twin",
-      "reason": "The ops-health Worker's read bearer (PLAN-health-checks-local), bound only by `bws_env exec --profile ops-health` for the local deploy and for rediacc_ci.ops.ops_health offbox. Only the ingest token is requested by a workflow (ci-drift.yml)."
-    },
     "OTEL_ENDPOINT": {
       "kind": "no-github-twin",
       "reason": "A constant endpoint (the OTLP collector URL), seeded 2026-09-24 from private/account/.env for PLAN-env-to-bitwarden-v2 box 27 so local .env hydration reads the vault; no workflow sends telemetry through it, so no call site requests it."

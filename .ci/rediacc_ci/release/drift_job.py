@@ -1,19 +1,17 @@
-"""The daily drift job (PLAN-health-checks-local D1, design D-drift) and its POST to the ops-health ingest.
+"""The daily drift job (PLAN-health-checks-local D1, design D-drift).
 
 DRIFT is a check that goes red because something outside the tree moved (an advisory, a newer release, an upstream mirror, the calendar), not because the commit is wrong. The set is COMPUTED from `nightly_tested_edge.DRIFT_GATE_IDS` (every external gate plus the audit), `CLOCK_GATE_IDS` (the clock-based plan and image lookups, where not already in the drift set), and the two steps split out of mixed ones (`SPLIT_DRIFT_STEPS`). Nothing is listed twice: the waiver that reads a drift-red run and this job share one set.
 
 Exit codes: 0 every check green, 1 any check red (the verdict JSON names it), 2 the set could not be derived (a lock that cannot be read, or one missing a drift or clock id) or a bad argument. A set that cannot be derived runs nothing, since a smaller set that passes would read as a green.
 
-`--post <verdict.json> --source <name>` sends the verdict to the ops-health Worker (`POST /v1/ingest`, bearer OPS_HEALTH_INGEST_TOKEN). A missing or unreadable verdict file is posted as `red`, because the workflow runs this under `if: always()` and a job that died before it wrote anything must not read as silence. `--post-state <state> --detail <text>` posts without a file (the weekly fleet run's `report-schedule` job).
+The verdict is posted to the ops-health ingest by `rediacc_ci.release.ops_health_post`, a separate module so the step that only posts is not held to this job's check timers.
 
     PYTHONPATH=.ci python3 -m rediacc_ci.release.drift_job [--only <name>...] [--out FILE]
-    PYTHONPATH=.ci python3 -m rediacc_ci.release.drift_job --post FILE --source drift
 """
 
 from __future__ import annotations
 
 import argparse
-import http.client
 import json
 import os
 import pathlib
@@ -24,7 +22,6 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
-from urllib.parse import urlsplit
 
 from rediacc_ci.release import nightly_tested_edge
 from rediacc_ci.release.nightly_tested_edge import (
@@ -34,6 +31,7 @@ from rediacc_ci.release.nightly_tested_edge import (
     OBS_UPSTREAM_STEP,
     DriftSetError,
 )
+from rediacc_ci.release.ops_health_post import DETAIL_CHARS
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[3]
 
@@ -63,14 +61,8 @@ RUN_BUDGET_S = 25 * 60
 # The workflow's first step writes the job's start (epoch seconds) here; the time already spent before drift_job runs is taken off the budget, so the job timeout is held by the code and not by the setup steps being quick.
 STARTED_ENV = "DRIFT_JOB_STARTED_AT"
 TAIL_CHARS = 2000
-DETAIL_CHARS = 500
-POST_ATTEMPTS = 3
-POST_TIMEOUT_S = 20
-DEFAULT_INGEST_URL = "https://ops-health.rediacc.com"
-STATES = ("green", "red", "unknown")
 
 Runner = Callable[..., "subprocess.CompletedProcess[str]"]
-Connector = Callable[..., Any]
 
 
 @dataclass(frozen=True)
@@ -145,54 +137,6 @@ def build_verdict(results: Sequence[Mapping[str, Any]], now: datetime) -> dict[s
     }
 
 
-def _post(
-    *,
-    source: str,
-    state: str,
-    detail: str,
-    at: str,
-    env: Mapping[str, str],
-    connect: Connector,
-    sleep: Callable[[float], None],
-) -> int:
-    token = env.get("OPS_HEALTH_INGEST_TOKEN", "")
-    if not token:
-        print("drift_job: OPS_HEALTH_INGEST_TOKEN is not set", file=sys.stderr)
-        return 2
-    url = env.get("OPS_HEALTH_URL", "") or DEFAULT_INGEST_URL
-    parts = urlsplit(url.rstrip("/") + "/v1/ingest")
-    if parts.scheme != "https" or not parts.hostname:
-        print(f"drift_job: the ingest URL must be https, got {url!r}", file=sys.stderr)
-        return 2
-    body = json.dumps(
-        {"source": source, "state": state, "detail": detail[:DETAIL_CHARS], "at": at}
-    ).encode()
-    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
-    last = ""
-    attempt = 0
-    while attempt < POST_ATTEMPTS:
-        attempt += 1
-        conn = connect(parts.hostname, parts.port or 443, timeout=POST_TIMEOUT_S)
-        try:
-            conn.request("POST", parts.path, body=body, headers=headers)
-            status = int(conn.getresponse().status)
-        except (OSError, http.client.HTTPException) as exc:
-            last = str(exc)
-        else:
-            if 200 <= status < 300:
-                print(f"drift_job: posted {source}={state} to {url}")
-                return 0
-            last = f"HTTP {status}"
-            if 400 <= status < 500:
-                break
-        finally:
-            conn.close()
-        if attempt < POST_ATTEMPTS:
-            sleep(2.0 * attempt)
-    print(f"drift_job: the ingest POST failed after {attempt} attempt(s): {last}", file=sys.stderr)
-    return 1
-
-
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="drift_job", description="The daily drift job.")
     parser.add_argument("--lock", type=pathlib.Path, default=GATES_LOCK)
@@ -201,23 +145,7 @@ def _parser() -> argparse.ArgumentParser:
         "--only", action="append", default=[], help="run only this check (repeatable)"
     )
     parser.add_argument("--list", action="store_true", help="print the computed set and exit")
-    parser.add_argument("--post", type=pathlib.Path, help="POST this verdict file to the ingest")
-    parser.add_argument("--post-state", choices=STATES, help="POST this state without a file")
-    parser.add_argument("--detail", default="")
-    parser.add_argument("--source", default="drift")
     return parser
-
-
-def _read_verdict(path: pathlib.Path, now: datetime) -> tuple[str, str, str]:
-    stamp = now.strftime("%Y-%m-%dT%H:%M:%SZ")
-    try:
-        verdict = json.loads(path.read_text(encoding="utf-8"))
-        state = str(verdict["state"])
-        if state not in STATES:
-            raise ValueError(state)
-        return state, str(verdict.get("detail", "")), str(verdict["at"])
-    except (OSError, ValueError, KeyError, TypeError):
-        return "red", f"no verdict was written ({path}): the job died before it finished", stamp
 
 
 def _spent_before_main_s(environment: Mapping[str, str], now: datetime) -> float:
@@ -234,28 +162,11 @@ def main(
     *,
     runner: Runner | None = None,
     env: Mapping[str, str] | None = None,
-    connect: Connector | None = None,
-    sleep: Callable[[float], None] | None = None,
     clock: Callable[[], float] | None = None,
 ) -> int:
     args = _parser().parse_args(list(argv) if argv is not None else None)
     environment = os.environ if env is None else env
     now = datetime.now(UTC)
-
-    if args.post or args.post_state:
-        if args.post:
-            state, detail, at = _read_verdict(args.post, now)
-        else:
-            state, detail, at = args.post_state, args.detail, now.strftime("%Y-%m-%dT%H:%M:%SZ")
-        return _post(
-            source=args.source,
-            state=state,
-            detail=detail,
-            at=at,
-            env=environment,
-            connect=connect or http.client.HTTPSConnection,
-            sleep=sleep or time.sleep,
-        )
 
     try:
         checks = drift_set(args.lock)

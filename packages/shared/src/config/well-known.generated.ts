@@ -8,6 +8,7 @@ export const WK_MEDIA_ORIGIN = 'https://media.rediacc.com';
 export const WK_BENCH_ORIGIN = 'https://bench.rediacc.com';
 export const WK_SANDBOX_ORIGIN = 'https://sandbox.rediacc.com';
 export const WK_PROFILING_ORIGIN = 'https://profiles.rediacc.io';
+export const WK_OPS_HEALTH_ORIGIN = 'https://ops-health.rediacc.com';
 export const WK_ACCOUNT_DEFAULT_ORIGIN = 'https://eu.rediacc.com';
 export const WK_CONSOLE_ORIGIN = 'https://console.rediacc.com';
 export const WK_CLOUD_ORIGIN = 'https://cloud.rediacc.io';
