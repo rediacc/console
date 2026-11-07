@@ -342,10 +342,11 @@ jobs:
             ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_EDGE > BWS_ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_EDGE
             ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_EDGE > BWS_ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_EDGE
 
-      # The config server key (layer 3 of the config store) is per REGION and
-      # CHANNEL: one name per Worker, none shared. A run fetches only its own
-      # name, so a stable eu deploy never holds the edge or another region's
-      # key; set_account_worker_secrets refuses the other channel's name if it
+      # The config server key (layer 3 of the config store) and the backup
+      # store key (ACCOUNT_BACKUP_STORE_KEK, which seals customer store
+      # credentials) are per REGION and CHANNEL: two names per Worker, none
+      # shared. A run fetches only its own pair, so a stable eu deploy never
+      # holds the edge or another region's keys; set_account_worker_secrets refuses the other channel's name if it
       # is ever set (agent/plans/PLAN-config-server-key.md K2). The names are
       # literal, one step per Worker, so the bws map gate sees each of them.
       - name: Fetch the eu stable config server key and backup store key from Bitwarden
