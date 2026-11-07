@@ -518,7 +518,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-fix-in-session-rule.md` | compacted | 55 | 0 | 0 | 3577 |
 | `agent/plans/PLAN-fix-tutorial-player-debug-hook-attachment.md` | compacted | 37 | 0 | 0 | 3148 |
 | `agent/plans/PLAN-fix-upgrade-drills-flat-daemon-bringup.md` | executing | 34 | 2 | 0 | 4647 |
-| `agent/plans/PLAN-free-license.md` | approved | 118 | 6 | 7 | 27962 |
+| `agent/plans/PLAN-free-license.md` | approved | 119 | 5 | 8 | 28628 |
 | `agent/plans/PLAN-gh-swallow-gates-audit.md` | compacted | 49 | 0 | 6 | 4454 |
 | `agent/plans/PLAN-git-history-media-rewrite.md` | compacted | 37 | 0 | 0 | 2958 |
 | `agent/plans/PLAN-git-ignore-aware-discover.md` | compacted | 57 | 0 | 10 | 4730 |
