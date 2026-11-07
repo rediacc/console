@@ -350,7 +350,8 @@ def test_the_map_file_is_the_one_surfaces_reads() -> None:
 
 
 PLANE = re.compile(r"rediacc_ci\.testrun\.start_backup_plane\b")
-CHAIN = re.compile(r"&&|\|\||;|\|")
+# A lone `&` backgrounds the command before it, so it chains too; the lookarounds keep `&&`, `2>&1`, `&>` and `|&` out of it.
+CHAIN = re.compile(r"&&|\|\||;|\||(?<![&<>|])&(?![&>])")
 
 
 QUOTED = re.compile("'[^']*'|\"[^\"]*\"")
@@ -373,6 +374,15 @@ def plane_misuse(cmd: str) -> bool:
         if not sep or CHAIN.search(own_args) or CHAIN.search(QUOTED.sub("", follow_on)):
             return True
     return False
+
+
+def test_plane_misuse_sees_a_backgrounded_command_after_the_follow_on() -> None:
+    """Review 0b6b9918.1: `&` backgrounds the command before it, so `evil` here runs outside the plane's environment and must be flagged, while a `2>&1` redirection in a follow-on is no chain."""
+    plane = "python3 -m rediacc_ci.testrun.start_backup_plane"
+    assert plane_misuse(f"{plane} -- suite && evil & {plane} -- x")
+    assert plane_misuse(f"{plane} -- suite & evil")
+    assert not plane_misuse(f"{plane} -- suite 2>&1")
+    assert not plane_misuse(f"{plane} -- suite &>/tmp/log")
 
 
 def test_plane_misuse_judges_only_the_planes_own_arguments_and_its_whole_follow_on() -> None:
