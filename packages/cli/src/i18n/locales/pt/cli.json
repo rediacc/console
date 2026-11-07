@@ -232,6 +232,14 @@
           "removed": "Estratégia de cópia de segurança removida",
           "unboundWarn": "Estratégia \"{{strategy}}\" removida e desassociada de: {{machines}}. Os temporizadores já implementados nessas máquinas permanecem até \"rdc backup schedule\" ser executado nelas."
         },
+        "replication": {
+          "registered": "Replicação: {{count}} regra(s) registada(s) no servidor de conta",
+          "removed": "Replicação: {{count}} regra(s) removida(s) do servidor de conta",
+          "unsupported": "O servidor de conta não tem regras de replicação (HTTP 404), por isso nenhuma cópia será feita. A estratégia foi guardada; atualize o servidor de conta e volte a associá-la.",
+          "notPushed": "As regras de replicação não foram enviadas: não há token de conta. Inicie sessão e volte a associar a estratégia.",
+          "failed": "A regra de replicação da linhagem {{lineage}} para o armazenamento {{target}} foi recusada: {{reason}}",
+          "syncFailed": "Não foi possível sincronizar as regras de replicação: {{reason}}"
+        },
         "set": {
           "description": "Criar ou actualizar uma estratégia de cópia de segurança",
           "examples": {
@@ -242,6 +250,8 @@
           "optionCron": "Agendamento cron (por ex., \"0 * * * *\" para de hora em hora)",
           "optionDestination": "Nome do destino dentro da estratégia. Cria um destino de armazenamento fragmentado da Rediacc",
           "optionTarget": "ID do armazenamento registado em que o destino escreve (predefinição: home). Usar com --destination",
+          "optionReplicateFrom": "Transforma o destino numa réplica: o servidor de conta copia este armazenamento para o armazenamento de destino, por isso a máquina não envia nada para ele. Usar com --destination e --target",
+          "replicateFromNeedsDestination": "--replicate-from indica a origem de um único destino; adicione --destination <name>.",
           "optionDisable": "Desactivar a estratégia ou destino",
           "optionEnable": "Activar a estratégia ou destino",
           "optionExclude": "Excluir estes repositórios da cópia de segurança (nomes separados por vírgula)",

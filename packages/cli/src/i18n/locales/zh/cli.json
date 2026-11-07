@@ -232,6 +232,14 @@
           "removed": "备份策略已删除",
           "unboundWarn": "已删除策略 \"{{strategy}}\"，并解除了它与以下机器的绑定：{{machines}}。这些机器上已部署的定时器会保留，直到在该机器上运行 \"rdc backup schedule\"。"
         },
+        "replication": {
+          "registered": "复制：已向账户服务器注册 {{count}} 条规则",
+          "removed": "复制：已从账户服务器移除 {{count}} 条规则",
+          "unsupported": "账户服务器没有复制规则 (HTTP 404)，因此不会执行复制。策略已保存；请更新账户服务器，然后重新绑定。",
+          "notPushed": "复制规则未发送：没有账户令牌。请登录，然后重新绑定策略。",
+          "failed": "谱系 {{lineage}} 到存储库 {{target}} 的复制规则被拒绝：{{reason}}",
+          "syncFailed": "无法同步复制规则：{{reason}}"
+        },
         "set": {
           "description": "创建或更新备份策略",
           "examples": {
@@ -242,6 +250,8 @@
           "optionCron": "Cron 调度（例如 \"0 * * * *\" 表示每小时）",
           "optionDestination": "策略内的目标名称。会创建一个 Rediacc 分块存储目标",
           "optionTarget": "目标写入的已注册存储库 ID(默认值:home)。与 --destination 配合使用",
+          "optionReplicateFrom": "将目标设为副本：账户服务器会把此存储库复制到该目标的目标存储库，因此机器不会向其上传任何内容。与 --destination 和 --target 配合使用",
+          "replicateFromNeedsDestination": "--replicate-from 指定单个目标的来源；请添加 --destination <name>。",
           "optionDisable": "禁用策略或目标",
           "optionEnable": "启用策略或目标",
           "optionExclude": "从备份中排除这些仓库（逗号分隔的名称）",

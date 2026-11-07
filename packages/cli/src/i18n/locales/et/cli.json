@@ -232,6 +232,14 @@
           "removed": "Varundusstrateegia eemaldatud",
           "unboundWarn": "Strateegia \"{{strategy}}\" eemaldati ja lahutati masinatest: {{machines}}. Nendele masinatele juba paigaldatud taimerid jäävad alles, kuni seal käivitatakse \"rdc backup schedule\"."
         },
+        "replication": {
+          "registered": "Replikatsioon: {{count}} reeglit registreeritud kontoserveris",
+          "removed": "Replikatsioon: {{count}} reeglit eemaldatud kontoserverist",
+          "unsupported": "Kontoserveris pole replikatsioonireegleid (HTTP 404), seega ühtegi koopiat ei tehta. Strateegia on salvestatud; uuenda kontoserverit ja seo see siis uuesti.",
+          "notPushed": "Replikatsioonireegleid ei saadetud: kontotõend puudub. Logi sisse ja seo strateegia siis uuesti.",
+          "failed": "Liini {{lineage}} replikatsioonireegel hoidlasse {{target}} lükati tagasi: {{reason}}",
+          "syncFailed": "Replikatsioonireegleid ei õnnestunud sünkroonida: {{reason}}"
+        },
         "set": {
           "description": "Loo või uuenda varundusstrateegiat",
           "examples": {
@@ -242,6 +250,8 @@
           "optionCron": "Cron-ajakava (nt \"0 * * * *\" tunni kaupa)",
           "optionDestination": "Sihtkoha nimi strateegia sees. Loob Rediacc chunk-hoidla sihtkoha",
           "optionTarget": "Registreeritud hoidla ID, kuhu sihtkoht kirjutab (vaikimisi: home). Kasuta koos valikuga --destination",
+          "optionReplicateFrom": "Muuda sihtkoht koopiaks: kontoserver kopeerib selle hoidla sihtkoha sihthoidlasse, nii et masin ei lae sinna midagi üles. Kasuta koos valikutega --destination ja --target",
+          "replicateFromNeedsDestination": "--replicate-from nimetab ühe sihtkoha allika; lisa --destination <name>.",
           "optionDisable": "Keela strateegia või sihtkoht",
           "optionEnable": "Luba strateegia või sihtkoht",
           "optionExclude": "Jäta need hoidlad varundusest välja (komaga eraldatud nimed)",

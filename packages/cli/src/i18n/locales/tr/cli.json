@@ -232,6 +232,14 @@
           "removed": "Yedekleme stratejisi kaldırıldı",
           "unboundWarn": "\"{{strategy}}\" stratejisi kaldırıldı ve şu makinelerle bağlantısı koparıldı: {{machines}}. Bu makinelere zaten dağıtılmış zamanlayıcılar, orada \"rdc backup schedule\" çalıştırılana kadar kalır."
         },
+        "replication": {
+          "registered": "Çoğaltma: {{count}} kural hesap sunucusuna kaydedildi",
+          "removed": "Çoğaltma: {{count}} kural hesap sunucusundan kaldırıldı",
+          "unsupported": "Hesap sunucusunda çoğaltma kuralı yok (HTTP 404), bu yüzden kopyalama çalışmayacak. Strateji kaydedildi; hesap sunucusunu güncelleyin, sonra yeniden bağlayın.",
+          "notPushed": "Çoğaltma kuralları gönderilmedi: hesap belirteci yok. Oturum açın, sonra stratejiyi yeniden bağlayın.",
+          "failed": "Soy {{lineage}} için {{target}} deposuna yönelik çoğaltma kuralı reddedildi: {{reason}}",
+          "syncFailed": "Çoğaltma kuralları senkronize edilemedi: {{reason}}"
+        },
         "set": {
           "description": "Yedekleme stratejisi oluştur veya güncelle",
           "examples": {
@@ -242,6 +250,8 @@
           "optionCron": "Cron zamanlaması (ör. \"0 * * * *\" saatlik için)",
           "optionDestination": "Strateji içindeki hedef adı. Bir Rediacc parça depolama hedefi oluşturur",
           "optionTarget": "Hedefin yazdığı kayıtlı depo kimliği (varsayılan: home). --destination ile birlikte kullanılır",
+          "optionReplicateFrom": "Hedefi bir kopya yapar: hesap sunucusu bu depoyu hedefin depo kimliğine kopyalar, bu yüzden makine ona hiçbir şey yüklemez. --destination ve --target ile birlikte kullanılır",
+          "replicateFromNeedsDestination": "--replicate-from tek bir hedefin kaynağını belirtir; --destination <name> ekleyin.",
           "optionDisable": "Stratejiyi veya hedefi devre dışı bırak",
           "optionEnable": "Stratejiyi veya hedefi etkinleştir",
           "optionExclude": "Bu depoları yedeklemeden hariç tut (virgülle ayrılmış adlar)",

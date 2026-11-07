@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 2580,
-    "sourceCommit": "7743dea4408981c6d0530dd43139c56d85c284dc"
+    "keyCount": 2588,
+    "sourceCommit": "1a7b124fc16c4f7e39a5d8df270bbe7ce005e29f"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -307,6 +307,12 @@
     "commands.backup.strategy.remove.optionUnbind": "ee705dd6",
     "commands.backup.strategy.remove.removed": "7aa351fc",
     "commands.backup.strategy.remove.unboundWarn": "672bcc01",
+    "commands.backup.strategy.replication.failed": "d8c1f1e5",
+    "commands.backup.strategy.replication.notPushed": "6b8bff66",
+    "commands.backup.strategy.replication.registered": "22d3321a",
+    "commands.backup.strategy.replication.removed": "595b9243",
+    "commands.backup.strategy.replication.syncFailed": "a09b7843",
+    "commands.backup.strategy.replication.unsupported": "0a0aa5b7",
     "commands.backup.strategy.set.cadence.daily": "8e9dab6a",
     "commands.backup.strategy.set.cadence.monthly": "eaa5c698",
     "commands.backup.strategy.set.cadence.weekly": "5edcaa24",
@@ -329,12 +335,14 @@
     "commands.backup.strategy.set.optionMode": "96fa84ee",
     "commands.backup.strategy.set.optionNoEstimate": "89363503",
     "commands.backup.strategy.set.optionReadBwlimit": "6ad37fc1",
+    "commands.backup.strategy.set.optionReplicateFrom": "43604776",
     "commands.backup.strategy.set.optionRepoCellSize": "c162bf37",
     "commands.backup.strategy.set.optionRepoRpo": "733bcf00",
     "commands.backup.strategy.set.optionRetention": "d88da710",
     "commands.backup.strategy.set.optionRpo": "db47eb58",
     "commands.backup.strategy.set.optionTarget": "cf176c72",
     "commands.backup.strategy.set.readBwlimitStrategyOnly": "2eb6af31",
+    "commands.backup.strategy.set.replicateFromNeedsDestination": "9ed86c64",
     "commands.backup.strategy.set.repoCellSizeNeedsTarget": "9da4719d",
     "commands.backup.strategy.set.repoOptionInvalid": "ce597aa3",
     "commands.backup.strategy.set.reseedWarning": "4f2ce1ab",

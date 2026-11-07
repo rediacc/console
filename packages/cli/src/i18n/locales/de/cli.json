@@ -232,6 +232,14 @@
           "removed": "Backup-Strategie entfernt",
           "unboundWarn": "Strategie \"{{strategy}}\" entfernt und von diesen Maschinen gelöst: {{machines}}. Die dort bereits bereitgestellten Timer bleiben bestehen, bis dort \"rdc backup schedule\" ausgeführt wird."
         },
+        "replication": {
+          "registered": "Replikation: {{count}} Regel(n) beim Kontoserver registriert",
+          "removed": "Replikation: {{count}} Regel(n) vom Kontoserver entfernt",
+          "unsupported": "Der Kontoserver kennt keine Replikationsregeln (HTTP 404), daher läuft keine Kopie. Die Strategie ist gespeichert; aktualisiere den Kontoserver und binde sie dann erneut.",
+          "notPushed": "Replikationsregeln wurden nicht gesendet: kein Konto-Token. Melde dich an und binde die Strategie dann erneut.",
+          "failed": "Die Replikationsregel für Linie {{lineage}} in Store {{target}} wurde abgelehnt: {{reason}}",
+          "syncFailed": "Replikationsregeln konnten nicht synchronisiert werden: {{reason}}"
+        },
         "set": {
           "description": "Backup-Strategie erstellen oder aktualisieren",
           "examples": {
@@ -242,6 +250,8 @@
           "optionCron": "Cron-Zeitplan (z.B. \"0 * * * *\" für stündlich)",
           "optionDestination": "Zielname innerhalb der Strategie. Erstellt ein Rediacc-Chunk-Store-Ziel",
           "optionTarget": "Registrierte Store-ID, in die das Ziel schreibt (Standard: home). Zusammen mit --destination verwenden",
+          "optionReplicateFrom": "Das Ziel zum Replikat machen: Der Kontoserver kopiert diesen Store in das Ziel-Store des Ziels, die Maschine lädt also nichts dorthin hoch. Zusammen mit --destination und --target verwenden",
+          "replicateFromNeedsDestination": "--replicate-from benennt die Quelle eines einzelnen Ziels; ergänze --destination <name>.",
           "optionDisable": "Strategie oder Ziel deaktivieren",
           "optionEnable": "Strategie oder Ziel aktivieren",
           "optionExclude": "Diese Repos vom Backup ausschließen (kommagetrennte Namen)",

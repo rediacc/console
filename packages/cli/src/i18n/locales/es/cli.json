@@ -232,6 +232,14 @@
           "removed": "Estrategia de respaldo eliminada",
           "unboundWarn": "Estrategia \"{{strategy}}\" eliminada y desvinculada de: {{machines}}. Los temporizadores ya desplegados en esas máquinas permanecen hasta que se ejecute \"rdc backup schedule\" allí."
         },
+        "replication": {
+          "registered": "Replicación: {{count}} regla(s) registrada(s) en el servidor de cuenta",
+          "removed": "Replicación: {{count}} regla(s) eliminada(s) del servidor de cuenta",
+          "unsupported": "El servidor de cuenta no admite reglas de replicación (HTTP 404), así que no se hará ninguna copia. La estrategia se guardó; actualiza el servidor de cuenta y vuelve a vincularla.",
+          "notPushed": "No se enviaron las reglas de replicación: no hay token de cuenta. Inicia sesión y vuelve a vincular la estrategia.",
+          "failed": "Se rechazó la regla de replicación del linaje {{lineage}} hacia el almacén {{target}}: {{reason}}",
+          "syncFailed": "No se pudieron sincronizar las reglas de replicación: {{reason}}"
+        },
         "set": {
           "description": "Crear o actualizar una estrategia de respaldo",
           "examples": {
@@ -242,6 +250,8 @@
           "optionCron": "Programación cron (ej. \"0 * * * *\" para cada hora)",
           "optionDestination": "Nombre del destino dentro de la estrategia. Crea un destino de almacenamiento fragmentado de Rediacc",
           "optionTarget": "ID del almacén registrado en el que escribe el destino (predeterminado: home). Se usa junto con --destination",
+          "optionReplicateFrom": "Convierte el destino en una réplica: el servidor de cuenta copia este almacén en el almacén de destino, así que la máquina no sube nada a él. Se usa junto con --destination y --target",
+          "replicateFromNeedsDestination": "--replicate-from indica el origen de un solo destino; añade --destination <name>.",
           "optionDisable": "Deshabilitar la estrategia o destino",
           "optionEnable": "Habilitar la estrategia o destino",
           "optionExclude": "Excluir estos repos del respaldo (nombres separados por comas)",

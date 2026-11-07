@@ -359,7 +359,12 @@ function reportReplication(result: ReplicationSyncResult, verb: 'registered' | '
     return;
   }
   if (result.done > 0) {
-    outputService.info(t(`commands.backup.strategy.replication.${verb}`, { count: result.done }));
+    const count = { count: result.done };
+    outputService.info(
+      verb === 'registered'
+        ? t('commands.backup.strategy.replication.registered', count)
+        : t('commands.backup.strategy.replication.removed', count)
+    );
   }
   for (const failure of result.failures) {
     outputService.warn(

@@ -232,6 +232,14 @@
           "removed": "Strategia di backup rimossa",
           "unboundWarn": "Strategia \"{{strategy}}\" rimossa e dissociata da: {{machines}}. I timer già distribuiti su quei macchinari restano finché non viene eseguito \"rdc backup schedule\" su ciascuno."
         },
+        "replication": {
+          "registered": "Replica: {{count}} regola/regole registrata/e sul server account",
+          "removed": "Replica: {{count}} regola/regole rimossa/e dal server account",
+          "unsupported": "Il server account non ha regole di replica (HTTP 404), quindi non verrà eseguita alcuna copia. La strategia è salvata; aggiorna il server account, poi associala di nuovo.",
+          "notPushed": "Le regole di replica non sono state inviate: nessun token account. Accedi, poi associa di nuovo la strategia.",
+          "failed": "La regola di replica per la linea {{lineage}} verso lo store {{target}} è stata rifiutata: {{reason}}",
+          "syncFailed": "Impossibile sincronizzare le regole di replica: {{reason}}"
+        },
         "set": {
           "description": "Crea o aggiorna una strategia di backup",
           "examples": {
@@ -242,6 +250,8 @@
           "optionCron": "Pianificazione cron (es. \"0 * * * *\" per ogni ora)",
           "optionDestination": "Nome della destinazione all'interno della strategia. Crea una destinazione storage a chunk di Rediacc",
           "optionTarget": "ID dello store registrato su cui scrive la destinazione (predefinito: home). Da usare con --destination",
+          "optionReplicateFrom": "Rendi la destinazione una replica: il server account copia questo store nello store di destinazione, quindi il macchinario non vi carica nulla. Da usare con --destination e --target",
+          "replicateFromNeedsDestination": "--replicate-from indica l'origine di una sola destinazione; aggiungi --destination <name>.",
           "optionDisable": "Disabilita la strategia o la destinazione",
           "optionEnable": "Abilita la strategia o la destinazione",
           "optionExclude": "Escludi questi repo dal backup (nomi separati da virgola)",

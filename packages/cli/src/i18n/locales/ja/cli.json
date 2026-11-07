@@ -232,6 +232,14 @@
           "removed": "バックアップ戦略を削除しました",
           "unboundWarn": "戦略 \"{{strategy}}\" を削除し、次のマシンからバインドを解除しました: {{machines}}。これらのマシンにすでにデプロイ済みのタイマーは、そこで \"rdc backup schedule\" を実行するまで残ります。"
         },
+        "replication": {
+          "registered": "レプリケーション: {{count}} 件のルールをアカウントサーバーに登録しました",
+          "removed": "レプリケーション: {{count}} 件のルールをアカウントサーバーから削除しました",
+          "unsupported": "アカウントサーバーにレプリケーションルールがない (HTTP 404) ため、コピーは実行されません。ストラテジーは保存済みです。アカウントサーバーを更新してから、もう一度バインドしてください。",
+          "notPushed": "レプリケーションルールは送信されませんでした: アカウントトークンがありません。ログインしてから、ストラテジーをもう一度バインドしてください。",
+          "failed": "系列 {{lineage}} からストア {{target}} へのレプリケーションルールは拒否されました: {{reason}}",
+          "syncFailed": "レプリケーションルールを同期できませんでした: {{reason}}"
+        },
         "set": {
           "description": "バックアップ戦略を作成または更新",
           "examples": {
@@ -242,6 +250,8 @@
           "optionCron": "cronスケジュール（例: \"0 * * * *\" で毎時実行）",
           "optionDestination": "戦略内の宛先名。Rediacc チャンクストア宛先が作成されます",
           "optionTarget": "宛先の書き込み先となる登録済みストアID(デフォルト: home)。--destination と併用します",
+          "optionReplicateFrom": "宛先をレプリカにします。アカウントサーバーがこのストアを宛先のターゲットへコピーするため、マシンからは何もアップロードされません。--destination と --target と併用します",
+          "replicateFromNeedsDestination": "--replicate-from は 1 つの宛先のコピー元を指定します。--destination <name> を追加してください。",
           "optionDisable": "戦略または宛先を無効にする",
           "optionEnable": "戦略または宛先を有効にする",
           "optionExclude": "これらのリポジトリをバックアップから除外（カンマ区切りの名前）",
