@@ -7,7 +7,48 @@ Updated: 2026-10-23
 Priority: P1 -- the operator kept the deployed proxy and ordered Phase 2 and the console wiring; a live Worker whose state no record describes is the open risk
 Concurrency: parallel -- writers take disjoint per-box file sets (Worker and deploy, CLI executor, account route and console, e2e); Owns: decides overlaps
 Owns: workers/proxy/src/**, workers/proxy/wrangler.toml, workers/proxy/Dockerfile, workers/proxy/tsconfig.json, workers/proxy/package.json, .ci/rediacc_ci/deploy/deploy_proxy.py, .ci/rediacc_ci/tests/test_deploy_deploy_proxy.py, .ci/scripts/quality/check_proxy_image_smoke.py, .ci/scripts/quality/check_proxy_cost_guard.py, scripts/ci-runner/manifest.ts, scripts/ci-runner/gates.lock.json, package.json, .github/workflows/ci-quality.yml, .github/workflows/ci.yml, packages/cli/src/cli.ts, packages/cli/src/commands/serve.ts, packages/cli/src/commands/subscription*.ts, packages/cli/src/services/serve/**, packages/cli/src/services/executor/**, packages/cli/src/i18n/locales/**, packages/shared/src/cli-contract/**, packages/e2e-tests/**, private/account/src/routes/proxy.ts, private/account/src/routes/console.ts, private/account/src/types/env.ts, private/account/tests/integration/proxy-*.test.ts, private/account/tests/integration/console-session.test.ts, workers/account/wrangler.eu.toml, workers/account/src/index.ts, agent/plans/PLAN-cloudflare-proxy.md, .github/workflows/ci-build-renet.yml, .ci/rediacc_ci/quality/proxy_image_smoke.py
+Revalidated: 2026-11-07 @ 1afbc7a24298
 Live-Proof: bench -- the proxy and console routes under private/account/src (account), workers/account (account-worker) and workers/proxy (proxy) are live on bench only, and the serve and executor code under packages/cli/src is the cli surface, which bench admits too.
+
+<!-- preflight:begin -->
+```text
+preflight 2026-11-07 @ 1afbc7a24298
+open boxes: 2 (absent 1, partial 1)
+citations: 0 unresolved, 6 drifted, 0 relocated
+overlap since 5daeb5dcc847: 37 commit(s) (first 30 shown)
+  27730ecda4c5 chore(pins): bump npm trees oxc-parser 0.156.0 to oxc-parser 0.157.0 with 10 in-range package(s) (ma
+  b234fef0ddcb test(proxy): the longest successful start includes the lease
+  2097e3adfa8d fix(proxy): the start bound names the lease, and the smoke tests join the deploy_proxy file
+  d7b60c01165c fix(proxy): a stalled container call ends in a named start failure
+  da7cd35a41df fix(e2e): an empty Ceph version override names itself
+  ae40c840a13b fix(plans,e2e): the PR review's findings on the plan sweep and the Ceph pin
+  0cd111de85b7 fix(ci): the smoke seed installs its wrangler and names a failed list
+  dca387616043 chore(ci): refresh lane durations, rebalance e2e workers, close two review findings
+  79bda2a23533 fix(backup): restore --path reaches its directory, and e2e tests follow the changed verbs
+  9492511f63cd ci(quality): the account gates get their own lane
+  d37e85f284a2 fix(e2e): the Ceph host version check reads the per-distro pin
+  af2be8fadfd9 ci(quality): the Branch lane leaves ubuntu-slim
+  1593aa79364d feat(ci): npm run ci:quick judges HEAD in a kept clean clone
+  79a6b6a19e4a fix(backup): drill asserts the delayed-deletion wait, restores size a pending delete
+  68e6092ca09e feat(backup): declared targets, retention within, delayed deletion verbs, the usage pair and the chu
+  fa21440892ec chore(ci): refresh the lane durations again, after the failed runs moved the pytest fixed cost
+  8dedb5f8241c fix(e2e): suites 10 and 14 license their repositories and refuse a licence refusal
+  ecee80ac9e3e fix(ci): the pytest gate knows the lane has five legs, and ci:quick runs it when the shard file move
+  0929d310d411 chore(docs): the design tree, CLI hashes and search index follow the new backup verbs
+  29c70f4c7806 fix(cli): the backup verbs pass the source, lint, audit and contract gates
+  f5bc56d803f6 feat(backup): the CLI verbs for verify verdicts, restore proofs, repair, check and the TOC key
+  a9f58030c940 chore(ci): refresh the lane durations, and quality-pytest takes a fifth leg
+  9a94544dfd63 fix(backup): the CLI classifies the three new renet functions, and suite 25 exercises them
+  c677037453ca fix(tests): answers to the review findings on the CI fixes
+  79559b4c613c fix(e2e): suites 30 and 17 license their repositories, and suite 24 asks for table output
+  a9fcebf3b5fd chore(ci): refresh lane durations, rebalance quality-pytest, and mark check:ci-renet-test-map slow
+  951458c039a0 fix(e2e,review): a failed Ceph licence evicts only its own attempt, and the prefetch pathspec is tes
+  133778d119cf fix(e2e,tests): the Ceph licence is not cached on failure, and the plan prefetch cannot error the fi
+  983bcc4372ff fix(e2e): the Ceph suites call licensed functions with a licensed repository
+  64de9df72655 fix(hooks): a stale fixture takes only its own child, read before anything dies
+dependencies: 0
+```
+<!-- preflight:end -->
 
 ## Operator rulings (2026-10-23)
 
@@ -38,6 +79,7 @@ Asked with AskUserQuestion on 2026-10-23; each answer is quoted, then what it or
 - [x] B3 [P1] B4: `ProxyClient.ensureSession()` opens a session and grants the sealed CEK once per process (missing test 3) -- acceptance: `packages/cli/src/services/executor/__tests__/proxy-client-session.test.ts` and the loopback variant in `container-config.test.ts` pass
     (ticked) 2026-10-23T08:28:01Z by d778be9d: commit:3b96d5133 ProxyClient.ensureSession opens a session and grants the sealed CEK once per session; proxy-client-session.test.ts passes
 - [ ] B4 [P2] e2e against a VM in `packages/e2e-tests` (nightly): `rdc --proxy <local serve> repo status <fork>`, then `repo up` and `repo down` on a fork (missing test 6) -- acceptance: the nightly e2e job passes the proxy spec
+    (preflight) 2026-11-07 partial: Suite 29 exists and passed live twice (4/4), but the box's own correction notes it was not on main and no scheduled nightly pass is shown; owed: a nightly run id with the proxy spec green.
     (ticked) 2026-10-24T05:55:00Z by d778be9d: commit:c3b614302 packages/e2e-tests/tests/29-proxy-local-executor.test.ts:1; live rc=0 twice (4/4); shard leg 4 of the E2E Workers matrix that runs on the nightly schedule Correction 2026-10-26: the nightly pass is not yet shown, because suite 29 is not on main (git ls-tree main packages/e2e-tests/tests holds no 29-*) and the newest scheduled Console CI run, 40166548833, ran main without it; the first scheduled run after this branch merges is the acceptance proof, and a red proxy leg there reopens the box.
 - [x] F1: proxied commands are audited; the executor checks its own `audit:write` before a change and refuses with 503 when it cannot audit -- acceptance: the `audit capability (F1)` block of `grand-repo-guard.test.ts` passes
     (ticked) 2026-10-23T08:28:31Z by d778be9d: commit:3b96d5133 the executor checks canWriteAudit before a changing command (packages/cli/src/services/serve/server.ts:408); the F1 block in grand-repo-guard.test.ts passes

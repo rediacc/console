@@ -494,7 +494,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-citation-fragility.md` | compacted | 49 | 0 | 6 | 5254 |
 | `agent/plans/PLAN-cli-em-dash-lint-gate.md` | compacted | 57 | 0 | 0 | 4340 |
 | `agent/plans/PLAN-cli-tofu-toolchain.md` | approved | 55 | 0 | 10 | 11354 |
-| `agent/plans/PLAN-cloudflare-proxy.md` | approved | 407 | 2 | 27 | 60494 |
+| `agent/plans/PLAN-cloudflare-proxy.md` | approved | 449 | 2 | 27 | 63875 |
 | `agent/plans/PLAN-cloudflare-spend-guard.md` | approved | 115 | 0 | 10 | 41138 |
 | `agent/plans/PLAN-cold-path.md` | compacted | 52 | 0 | 0 | 4022 |
 | `agent/plans/PLAN-completion-strategy.md` | compacted | 39 | 0 | 0 | 3939 |
@@ -571,7 +571,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-retired-terms-submodule-scan.md` | executing | 73 | 0 | 14 | 14263 |
 | `agent/plans/PLAN-review-red-stop-hook-check.md` | compacted | 39 | 0 | 0 | 2909 |
 | `agent/plans/PLAN-runtime-caller-identity.md` | compacted | 39 | 0 | 0 | 2546 |
-| `agent/plans/PLAN-sandbox-tenant-separation.md` | approved | 108 | 2 | 6 | 24314 |
+| `agent/plans/PLAN-sandbox-tenant-separation.md` | approved | 122 | 2 | 6 | 24897 |
 | `agent/plans/PLAN-scope-bws-signing-key-to-consuming-step.md` | executing | 128 | 2 | 8 | 11207 |
 | `agent/plans/PLAN-scope-gate-sort-collation.md` | compacted | 38 | 0 | 0 | 2784 |
 | `agent/plans/PLAN-scope-gates-split.md` | compacted | 38 | 0 | 0 | 2608 |
@@ -629,7 +629,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-ci-watch-enforcement.md` | superseded | 226 | 6 | 0 | 21235 |
 | `agent/plans/_done/PLAN-clean-review-ledger.md` | done | 209 | 0 | 18 | 24391 |
 | `agent/plans/_done/PLAN-commit-as-you-go.md` | superseded | 384 | 0 | 12 | 35925 |
-| `agent/plans/_done/PLAN-config-handoff-relay-only.md` | done | 442 | 0 | 11 | 42371 |
+| `agent/plans/_done/PLAN-config-handoff-relay-only.md` | done | 483 | 0 | 11 | 46181 |
 | `agent/plans/_done/PLAN-config-networkid-sync.md` | superseded | 279 | 8 | 0 | 30733 |
 | `agent/plans/_done/PLAN-config-passkey-optional.md` | done | 133 | 0 | 4 | 15565 |
 | `agent/plans/_done/PLAN-config-server-key.md` | done | 78 | 0 | 7 | 10681 |

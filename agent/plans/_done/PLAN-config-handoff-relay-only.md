@@ -7,15 +7,56 @@ Depends-On: PLAN-app-wide-org-selection.md -- its uncommitted working-tree edits
 Priority: P1 -- proposed by AI. The operator is blocked: `rdc config remote enable` from WSL with a Windows browser ends in "Setup failed / Failed to fetch".
 Concurrency: parallel -- the 2026-09-26 run-alone ruling (limited token budget) is lifted: operator 2026-10-04 asked for parallel turbo with writer_cap 10; Owns: decides overlaps
 Owns: private/account/src/routes/device-codes.ts, private/account/src/services/device-code.service.ts, private/account/src/dto/device-code.dto.ts, private/account/src/db/schema.ts (device_codes block only), private/account/drizzle/0053_*.sql, private/account/drizzle/meta/**, private/account/src/constants.ts (DEVICE_CODE_* only), private/account/tests/integration/config-remote.test.ts, private/account/tests/integration/device-code-handoff.test.ts, private/account/web/src/pages/{ConfigRemote,ConfigSetup,DeviceConfigSetup}.tsx, private/account/web/src/lib/{config-handoff,cli-handoff-request}.ts, private/account/web/src/lib/__tests__/**, private/account/web/src/pages/__tests__/config-remote*.test.tsx, private/account/web/src/router.tsx (config routes only), private/account/web/src/auth/ProtectedRoute.tsx (the redirect line only), private/account/web/src/i18n/locales/*/configStorage.json, private/account/e2e/src/utils/config-store-helpers.ts, private/account/e2e/tests/20-config-storage/{20-03,20-11}-*.test.ts, packages/cli/src/commands/config-remote*.ts, packages/cli/src/commands/__tests__/config-remote-*.test.ts, packages/cli/src/i18n/locales/*/cli.json, packages/cli/src/config/command-planes.ts (one comment), packages/shared/src/config-crypto/handoff.ts, packages/shared/src/config-crypto/__tests__/handoff-pairing.test.ts, packages/shared/src/cli-contract/data/**, packages/www/src/content/docs/*/{config-storage,account-security,cli-application}.md, docs/DESIGN-CONFIG-STORAGE.md, docs/design/spec/03-cli-contracts.md, .claude/skills/rdc/config-storage.md
-Revalidated: 2026-10-24 @ 8640655646b7
+Revalidated: 2026-11-07 @ 1afbc7a24298
 Worklist: (lead adds this with `worklist.py --add`)
 
 <!-- preflight:begin -->
 ```text
-preflight 2026-10-24 @ daab83af1f31
+preflight 2026-11-07 @ 1afbc7a24298
 open boxes: 0 (none)
-citations: 0 unresolved, 0 drifted, 0 relocated
-overlap since none: 0 commit(s)
+citations: 1 unresolved, 5 drifted, 5 relocated
+  relocated plan line 32: docs/DESIGN-CONFIG-STORAGE.md line 299 -> 309
+  relocated plan line 32: docs/design/spec/03-cli-contracts.md line 611 -> 610
+  relocated plan line 119: packages/cli/src/commands/config-remote-enable.ts line 85-122 -> 92-129
+  relocated plan line 232: packages/cli/src/commands/config-remote-enable.ts line 42-53 -> 49-60
+  relocated plan line 245: packages/cli/src/config/command-planes.ts line 119 -> 128
+overlap since 8640655646b7: 237 commit(s) (first 30 shown)
+  e6450f7b555c chore(submodules): bump pointers to merged main commits
+  5a1ea129e485 chore(pins): bump Bitwarden browser extension (real-provider spec) 2026.10.1 to 2026.10.2
+  27730ecda4c5 chore(pins): bump npm trees oxc-parser 0.156.0 to oxc-parser 0.157.0 with 10 in-range package(s) (ma
+  b234fef0ddcb test(proxy): the longest successful start includes the lease
+  2097e3adfa8d fix(proxy): the start bound names the lease, and the smoke tests join the deploy_proxy file
+  447ca258084d chore(submodules): point account at the executor start failure fix
+  063441ba9c19 chore(pins): bump 5 pins (bottom, agent-browser, wrangler (global install in CD), Ceph host packages
+  1000e54379fa chore(pins): bump npm trees @hookform/resolvers 6.0.2 to @hookform/resolvers 7.0.1 with 3 in-range p
+  79a6b6a19e4a fix(backup): drill asserts the delayed-deletion wait, restores size a pending delete
+  34cbc98f5eca chore(plans): M lands in the pointer, boxes M1 to M8 and M10 ticked
+    plan agent/plans/PLAN-backup-critical-tier.md
+  68e6092ca09e feat(backup): declared targets, retention within, delayed deletion verbs, the usage pair and the chu
+  49819ccdf844 chore(plans): U, W and Q land in the pointers, boxes ticked, and the 2026-11-02 rulings
+    plan agent/plans/PLAN-backup-critical-tier.md
+  ebd89f8604f9 fix(backup): answers to the review findings on the CLI, the drill and the gates
+  29c70f4c7806 fix(cli): the backup verbs pass the source, lint, audit and contract gates
+  f5bc56d803f6 feat(backup): the CLI verbs for verify verdicts, restore proofs, repair, check and the TOC key
+  ad4c4bc11ab1 chore(deps): take the freshness bumps, ora 10 included
+  075c90af3bcc feat(drills): backup drills follow the new wire and add legs p to s, and the renet contract regenera
+  f9ab74a3135b chore(submodules): account takes the wedge fixture check
+  4f83f2d18782 chore(plans): integrity G and V, critical-tier X1, the release leg, and the submodule pointers
+    plan agent/plans/PLAN-backup-critical-tier.md
+    plan agent/plans/PLAN-backup-integrity.md
+  cc2b822d5d2c chore(plans): integrity boxes A, K and L, the commit keys in the protocol gate, and the retro prose
+    plan agent/plans/PLAN-backup-integrity.md
+    plan agent/plans/PLAN-stop-hook-retro-20261101.md
+  023827b04797 chore(pins): awscli 2.39.3, alpine 3.24 for the native CLI image, cuda held, and the submodule point
+  4384004ed7ed chore(submodules): point renet and account at their 1023-1 proof commits
+  23214cd292ea chore(submodules): renet and account pointers to their scrubbed tips
+  bed2bd5976c3 chore(pins): bump Bitwarden browser extension (real-provider spec) 2026.10.0 to 2026.10.1
+  396d1f9f33fc fix(i18n): the translated backup summaries fit the 60-character help column
+  b9beaaa0869a feat(cli,i18n): short help summaries for backup download, upload and purge; tools install says "this
+  0c8c49ad6d4e chore(gates): audit, e2e-coverage, source-rules and unused-export fixes in shared, e2e, proxy and ww
+  e8733372ca90 chore(submodules): account pointer to the COMMUNITY-only Free License card
+  1e759d75b68e chore(pins): bump npm trees 3 majors (glob@14, minimatch@11, oxc-parser@0.156) to 3 majors with 4 in
+  8ddc8d63314b fix: the freshness gate fails on a tracked image file missing from the tree; two test assertions say
 dependencies: 1
   ok PLAN-app-wide-org-selection.md -- Status done
 ```
@@ -29,7 +70,7 @@ Landed, not yet ticked here (tick each with `worklist.py --plan-investigate` the
 - T8-T10 (CLI + shared + i18n/docs, writer C): `packages/cli/src/commands/config-remote-relay.ts`, the loopback server / `--headless` / `headlessRemoteUrl` deletion, `handoffKeyHash` / `handoffPairingCode` in `packages/shared/src/config-crypto/handoff.ts` with the known-answer vector, 13 CLI locales, and the CLI contract regen -- console `15da8633f`.
 
 Still open (T11, lead closure):
-- The removal sweep (section 9) is not clean yet: three stale references remain outside `agent/` and `docs/archive` -- `.claude/skills/rdc/config-storage.md:11`, `docs/design/spec/03-cli-contracts.md:611`, and `docs/DESIGN-CONFIG-STORAGE.md:299,912` (the sequence-diagram `callback=localhost:PORT` line and a `--headless` mention). The other `--headless` hits the same sweep found are `repo replicate`'s own unrelated flag and are not in scope.
+- The removal sweep (section 9) is not clean yet: three stale references remain outside `agent/` and `docs/archive` -- `.claude/skills/rdc/config-storage.md:11`, `docs/design/spec/03-cli-contracts.md:610`, and `docs/DESIGN-CONFIG-STORAGE.md:309,912` (the sequence-diagram `callback=localhost:PORT` line and a `--headless` mention). The other `--headless` hits the same sweep found are `repo replicate`'s own unrelated flag and are not in scope.
 - The account server (eu) has not been redeployed with this code, and T11 requires that deploy before the CLI release.
 - The live smoke (CLI in WSL, browser on Windows, a fresh store and an existing store, plus `config rotate-cek`) has not been run.
 - This closure step was `BLOCKED_BY:#a2a8491c` (the Cloudflare-proxy trial's own eu account deploy, tracked on `PLAN-cloudflare-proxy.md`): that deferral's decision window closed 2026-09-25 with its DEFAULT executed (keep the trial parked, re-ask at the next report), so the eu deploy this plan also needs is still not scheduled.
@@ -116,7 +157,7 @@ The brief's context holds, with these additions and corrections:
 7. **The CLI hides every polling error.** `pollOnce` treats any non-ValidationError as "pending": network down, 404 on an unknown route, 429 or 5xx. The operator waits the full 10 minutes (`DEVICE_CODE_TTL_MS`, `private/account/src/constants.ts:53`) with no signal.
 8. **The login redirect drops the URL hash.** `private/account/web/src/auth/ProtectedRoute.tsx:31` stores `from: location.pathname + location.search`. The fragment design in section 4 needs `+ location.hash`.
 9. **A factual error in `agent/plans/_done/PLAN-app-wide-org-selection.md:145`.** It says the `config-handoff` fetches "have no auth by design (`private/account/src/routes/device-codes.ts:34`)". Line 34 uses `auth` (`sessionAuth`), so they do require auth. That plan's `ORG_SCOPED_PREFIXES` will add `X-Org-Id` to the new `/device-codes/*` calls, which is harmless. Tell that plan's owner.
-10. **The prerequisite check stays.** `checkEnablePrerequisites` (`packages/cli/src/commands/config-remote-enable.ts:85-122`, route `/configs/enable-requirements` at `private/account/src/routes/configs.ts:438-458`) is kept. Its no-token branch (:88-95) becomes a refusal (decision D1).
+10. **The prerequisite check stays.** `checkEnablePrerequisites` (`packages/cli/src/commands/config-remote-enable.ts:92-129`, route `/configs/enable-requirements` at `private/account/src/routes/configs.ts:438-458`) is kept. Its no-token branch (:88-95) becomes a refusal (decision D1).
 
 ## 1. Target flow (one transport)
 
@@ -229,7 +270,7 @@ Everything sits in the **fragment**. Browsers never send it to the server or in 
 
 **`config-remote-handoff.ts`:** `HandoffPayload` (:22-31) gains `handoffNonce: string`. `decryptHandoff` stays. The relay module checks the nonce with a constant-time compare. On a mismatch or a missing nonce it throws a new `handoffNotForThisRun` error and writes nothing. Rewrite the comment at :51, which names the callback. The mirror fixture rule at :7-9 still binds: update the portal fixture textually as well.
 
-**`packages/cli/src/commands/config-remote-enable.ts:42-53`:** with no login token for `apiUrl`, refuse with `loginRequired` ("run `rdc subscription login` first"). This is decision D1. Also fix the header comment at :2-3.
+**`packages/cli/src/commands/config-remote-enable.ts:49-60`:** with no login token for `apiUrl`, refuse with `loginRequired` ("run `rdc subscription login` first"). This is decision D1. Also fix the header comment at :2-3.
 
 **What the CLI prints** (non-TTY prints the same lines without a spinner):
 ```
@@ -242,7 +283,7 @@ Waiting for the browser... expires 14:32. Press Ctrl+C to cancel.
 
 **`tryOpenBrowser` (:30-38):** stays best-effort. Optional sub-step: under WSL (`WSL_DISTRO_NAME` set), try `wslview` when it is on PATH. Do not use `cmd.exe start`, which can mangle `&` and `#`. Verify during the T11 smoke that the fragment survives.
 
-**`packages/cli/src/config/command-planes.ts:119`:** the comment becomes "blocks polling the server relay". Keep `interactive: true`.
+**`packages/cli/src/config/command-planes.ts:128`:** the comment becomes "blocks polling the server relay". Keep `interactive: true`.
 
 **`packages/cli/src/commands/serve.ts:8`:** the comment that names `--headless` changes to the plain command.
 
@@ -397,7 +438,7 @@ Regenerate `packages/shared/src/cli-contract/data/{contract.json,contract.genera
 - `*/cli-application.md` (13): the generated `--headless` row (en:219) goes away via the docs generator (`scripts/gates/check-cli-docs.ts`).
 - Design and agent docs:
   - `docs/DESIGN-CONFIG-STORAGE.md:228-284`: redraw the sequence diagram; remove "directly from browser to CLI via localhost" (:284);
-  - `docs/DESIGN-CONFIG-STORAGE.md:863` and `docs/design/spec/03-cli-contracts.md:611`: drop `--headless`;
+  - `docs/DESIGN-CONFIG-STORAGE.md` (its `--headless` mention was dropped in d0b87a518) and `docs/design/spec/03-cli-contracts.md:611`: drop `--headless`;
   - `.claude/skills/rdc/config-storage.md:11`: drop `--headless`;
   - `private/account/CLAUDE.md`: fix the relay mention if it names the callback.
 - The www search indexes (`packages/www/public/search-index*.json`) are generated. Rebuild, do not hand-edit.
