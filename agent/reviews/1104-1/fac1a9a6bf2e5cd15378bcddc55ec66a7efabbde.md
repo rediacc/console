@@ -21,7 +21,7 @@ Body-Sig: 9dbf82d17d0e191a
 ### fac1a9a6.1 [high] packages/cli/src/services/__tests__/backup-schedule-renet-contract.test.ts:262
 Anchor: in-diff
 Claim: Removing the twoDestinations matrix entry means the renet-contract gate can no longer fail for multi-destination strategies, while the chunkstore test in this same commit expects the generator to emit `--store offsite` for a non-home target that the renet source is said not to declare; a generator/renet mismatch on that flag now reaches production with no CI failure.
-Resolution: open
+Resolution: fixed 391d97188e96c85b11531e0e03ee10f878bb07a9 | d778be9d 2026-11-07T14:35:32Z
 
 ### fac1a9a6.2 [medium] packages/cli/src/services/__tests__/backup-schedule-chunkstore.test.ts:126
 Anchor: in-diff
