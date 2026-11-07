@@ -37,9 +37,9 @@ describe('accountServerForRenet', () => {
     await expect(accountServerForRenet(sftp, RENET, ORIGIN)).resolves.toBeUndefined();
   });
 
-  it('omits the origin when the probe itself fails', async () => {
+  it('refuses when the probe itself fails, rather than dropping the licence check', async () => {
     const { sftp } = machineWith('renet: not found', 127);
-    await expect(accountServerForRenet(sftp, RENET, ORIGIN)).resolves.toBeUndefined();
+    await expect(accountServerForRenet(sftp, RENET, ORIGIN)).rejects.toThrow(/exit 127/);
   });
 
   it('does not probe when the config has no account server', async () => {
