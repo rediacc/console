@@ -1,23 +1,22 @@
-## SESSION d778be9d 2026-11-07T10:14:13Z
+## SESSION d778be9d 2026-11-07T10:32:57Z
 
-# STATE d778be9d (2026-11-07T10:10Z, branch 1104-1, about 1040 commits unpushed)
+# STATE d778be9d (2026-11-07T10:35Z, branch 1104-1, ~1042 commits unpushed, no PR)
 
 ## Big pieces
-PLAN-health-checks-local (hostinger H2, H9, H12, H14, H15 and receipts open) and PLAN-backup-program (live and post-merge boxes); both ride the hostinger runner and the bench receipts.
+PLAN-health-checks-local and PLAN-backup-program: remaining boxes are hostinger receipts (need a VERIFIED vm:check), Accept corrections (H9, H14, H15, L5, Q11) and post-merge proof.
 
 ## Owed ticks
-- PLAN-free-license.md#a543ecc2 (L2) live-owed: server clauses proved (raw HTTP), FREE licence from a clean no-login config proved (rdc repo create on vm12), renewal clause owed: a due FREE blob or L3's forced expiry; config fl-clean-11070932b; vm12 was rebuilt by fleet run 12.
+- PLAN-free-license.md#a543ecc2 (L2): renewal clause owed (fresh FREE blob is not due; no --force); closes on a due blob or L3 forced expiry (no expiry seam exists yet).
+- backup-program Q11 8c77d3e7 (#306b1176): seed done 09:58-10:29Z, all 13 repos stored; write a dated correction comparing per-lineage logicalBytes with image sizes, then tick.
 
 ## Delegated
-- task bflm16uei (background shell, /tmp/m/vmcheck13.log): items #11306719 #6e4bf502 #a1fadff8; owns the fleet VMs; chain ops down, VM_DSK=48 ops up --basic, drill backup, drill backup-onprem, vm:check --changed; accept: `vm:check VERIFIED` and `fleet13 rc=0` in the log.
-- agent a2e620ee17013b054 (hostinger live runner, main checkout, never commits): items #b0afd68b #eb5c1323 #55959f83 #7b35ff7b; owns hostinger live steps and plan tick lines via worklist.py; group B of /tmp/m/hostinger-queue.md under ruling ASKED:2026-11-07T08:27Z: H2, H15 (dry run first), H14, H9, fork proofs, restores to /tmp, free-license L3 on a throwaway FREE repo, Q11 and H12 through eu-remote, then LP-hostinger receipts; accept: each box ticked with command, rc and evidence.
+- task bflm16uei (/tmp/m/vmcheck13.log): fleet run 13 (ops down, VM_DSK=48 ops up --basic, drills, vm:check); items #11306719 #6e4bf502 #a1fadff8 #b0afd68b #eb5c1323 #55959f83 #7b35ff7b; accept `vm:check VERIFIED`.
+- agent aed47e5b2fb1501c0 (lease): defects #85407d3c (eu-bench snapshot writes to EU production store), #cea7894e (--root-owned --dry-run silent), #8390cf95 (ops-health lock ignores pid), #d391cd19 (backup run "no deployed unit"); one commit per defect; land with `./run.sh worktree land <id>` after fleet run 13, regenerate contract/hashes/cli-docs/command-tree/skill reference and check-design-tree.
 
 ## Next action
-1. Read `git diff agent/plans` for the hostinger runner's new ticks, regenerate (`npm run check:ci-plan-boxes -- --update`, `npm run check:ci-plan-record -- --rendered-only --update`) and commit them by path with PR-TASK 09b8bdfa.
-2. When fleet run 13 ends VERIFIED: bench LP receipts per plan (`worklist.py --live-proof d778be9d agent/plans/<PLAN>.md 11388dba --write --tick`, plus free-license b3d026b3, rediaccfile c90ef1b1, renet-down fe49cf98, health-checks c1e7ac95); ci:quick run 22 alone; push renet afc70f1, account, elite, then console with TURBO_PUSH_REASON='ci-cd: operator ordered /pr-babysit'; draft PRs; `worklist.py --phase d778be9d babysit`. Not VERIFIED: read the leg detail, fix, rerun.
+1. On the fixer's report: spot-check, land its commits, run check:i18n, tsc, vitest, check-design-tree, commit regen.
+2. Fleet run 13 VERIFIED: hostinger LP receipts (19, `worklist.py --live-proof d778be9d agent/plans/<PLAN>.md <sig> --write --tick`), bench LP receipts (11388dba per plan plus b3d026b3, c90ef1b1, fe49cf98, c1e7ac95); ci:quick run 22 alone; push renet afc70f1, account, elite, then console with TURBO_PUSH_REASON='ci-cd: operator ordered /pr-babysit'; draft PRs; `--phase d778be9d babysit`. Not VERIFIED: investigator diagnoses, writer in a lease fixes, rerun.
+3. Operator question open: are human authorized_keys lines exempt from backup-program Q2/D12 --guid (4 human keys, 1 console probe key)?
 
-## Done today
-D1-D5 restart-cycle fixes (renet c2637ac..afc70f1); hostinger renet installed and restarted (49a73d02e); cellsRoot; T9, D3, J22, download L2, free-license L1, jobs L1 ticked; no-login FREE renewal (86992ee91), orphan keys (41147acb7); undersized-fleet refusal (04581f01f); backup-large-2g follow-on (e93542744); start_account orphan reap (805ba787d).
-
-## Lessons
-Bench and hostinger runs never wait for a fleet run. After landing CLI verbs: generate-hashes, generate:cli-docs (md pages, command-tree.json, .claude/skills/rdc/reference.md), check-design-tree, JOB_PLANS, check:i18n orphans, before ci:quick. Never commit a redundant change in a lease; gc --discard-dirty exists.
+## State of hostinger
+renet afc70f1 installed, all repos restarted, machine health rc 0, stale_binary [], datastore 76% after H2 trim; window 00:00-01:00 set. Ticked today: H0 H2 H4 H5 H6 H12 Q15 L3 L5 read-cap L3.
