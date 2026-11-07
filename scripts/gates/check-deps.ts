@@ -3200,6 +3200,26 @@ async function selftest(): Promise<void> {
     })()
   );
   expect(
+    'guard: a nested-only line names where the copy sits, since no hoisted copy was held',
+    (() => {
+      const r = updateMismatches(nestedStep, nestedOnly('1.15.10'));
+      return (
+        r.length === 1 &&
+        r[0].line.includes('only nested, at node_modules/unstorage/node_modules/core')
+      );
+    })()
+  );
+  expect(
+    "guard: a sibling workspace's own copy is not the root override's target (review ecb260bd.1)",
+    (() => {
+      const r = updateMismatches(nestedStep, {
+        ...nestedOnly('1.15.11'),
+        'packages/app/node_modules/core': { version: '0.9.0' },
+      });
+      return r.length === 0;
+    })()
+  );
+  expect(
     'guard: CONTROL: no copy anywhere is still refused as not in package-lock.json',
     (() => {
       const r = updateMismatches(nestedStep, { 'node_modules/other': { version: '2.0.0' } });
