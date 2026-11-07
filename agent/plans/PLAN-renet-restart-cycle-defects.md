@@ -25,7 +25,8 @@ Worklist: #5e864374, PR-TASK 09b8bdfa
     (ticked) 2026-11-07T06:46:51Z by d778be9d: commit:d82ce6f6a rc=0 landed and tested on the combined line (go test cmd/renet rc 0; vitest 395 passed; tsc rc 0)
 - [x] D5 `renet version` ends in a newline (`versionLine`), with a test
     (ticked) 2026-11-07T06:46:52Z by d778be9d: commit:d82ce6f6a rc=0 landed and tested on the combined line (go test cmd/renet rc 0; vitest 395 passed; tsc rc 0)
-- [ ] D1 a one-time deep re-own (`ChownRootOwnedDeep`) descends directories owned by root or the target uid, skips other uids, writes an undo manifest, runs once behind `.rediacc/state/ownership-v2`; `renet repository ownership --root-owned [--dry-run|--undo]`; Go tests per the design
+- [x] D1 a one-time deep re-own (`ChownRootOwnedDeep`) descends directories owned by root or the target uid, skips other uids, writes an undo manifest, runs once behind `.rediacc/state/ownership-v2`; `renet repository ownership --root-owned [--dry-run|--undo]`; Go tests per the design
+    (ticked) 2026-11-07T06:48:55Z by d778be9d: commit:2a8ebbe20 rc=0 renet c189652 997c2b6 6f5c397 via d82ce6f6a; go test rc 0; sudo pytest tests/integration/test_repository_ownership.py -k root_owned rc=0 (1 passed) on renet afc70f1
 - [x] D3 `recoverRepoContainers` retries starts per current id, ignores "No such container", matches by compose labels then name, recomputes the deadline and extends it on progress, floor 5 minutes; Go tests per the design
     (ticked) 2026-11-07T06:46:53Z by d778be9d: commit:d82ce6f6a rc=0 landed and tested on the combined line (go test cmd/renet rc 0; vitest 395 passed; tsc rc 0)
 - [x] D4 tickets gain an `expired` event; starting tickets older than 10 minutes resolve through `renet job list --request-id`; finished tickets older than 7 days expire; `job claim` on a missing job exits 16; `rdc job dismiss <id...>|--stale`; vitest and Go tests per the design

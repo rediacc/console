@@ -195,7 +195,7 @@ Promoted: 15 of 44 plans done, 777 of 939 boxes done (82%).
 4. agent/plans/PLAN-drop-free-license-ip-prefix-hash.md -- P1, executing, in progress (4 of 6 boxes ticked)
 5. agent/plans/PLAN-haiku-model-routing.md -- P1, executing, in progress (11 of 20 boxes ticked)
 6. agent/plans/PLAN-renet-executor-tiered-license-check.md -- P1, executing, in progress (2 of 4 boxes ticked)
-7. agent/plans/PLAN-renet-restart-cycle-defects.md -- P1, approved, in progress (4 of 6 boxes ticked)
+7. agent/plans/PLAN-renet-restart-cycle-defects.md -- P1, approved, in progress (5 of 6 boxes ticked)
 8. agent/plans/PLAN-scope-bws-signing-key-to-consuming-step.md -- P1, executing, in progress (8 of 10 boxes ticked)
 9. agent/plans/PLAN-split-cli-files-over-512-line-budget.md -- P1, executing, in progress (5 of 7 boxes ticked)
 10. agent/plans/PLAN-stop-hook-refactor-enforcement.md -- P1, executing, in progress (16 of 17 boxes ticked)
