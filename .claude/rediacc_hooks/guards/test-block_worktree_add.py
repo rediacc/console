@@ -753,7 +753,8 @@ for label, pair, rows in (
             "            while i < n and text[i] not in JS_LINE_TERMINATORS:\n",
             '            while i < n and text[i] != "\\n":\n',
         ),
-        TERMINATOR_ROWS,
+        # The CR row stays refused under this plant: the script is read in text mode, which turns a bare CR into LF before the scanner sees it, so only U+2028 and U+2029 depend on the terminator set.
+        [row for row in TERMINATOR_ROWS if "a cr " not in row[0]],
     ),
     (
         "the quote-blind perl strip",
