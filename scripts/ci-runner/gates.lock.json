@@ -2419,6 +2419,7 @@
     },
     "run": "npm run check:ci-plan-live-proof",
     "gate": true,
+    "slow": true,
     "leaves": [
       ".ci/scripts/quality/check_plan_live_proof.py"
     ],

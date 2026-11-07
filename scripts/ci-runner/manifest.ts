@@ -2328,6 +2328,7 @@ export const GATES: readonly GateSpec[] = [
     },
     run: 'npm run check:ci-plan-live-proof',
     gate: true,
+    slow: true, // 69.3 s CI step p90 (lane-durations 2026-11-03, 83.2 s on 11-01); LP4 to LP6 walk every commit since the merge-base, so the one later CI sample, 3.0 s on a 23-commit PR (run 41769535457), says little about a long branch, and 1104-1 at 978 commits runs it in 9.0 s locally on 24 cores
     leaves: ['.ci/scripts/quality/check_plan_live_proof.py'],
     ci: {
       kind: 'step',

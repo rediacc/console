@@ -244,7 +244,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-plan-folders | quality-branch / Plan folders and retention | yes | yes |
 | check:ci-plan-housekeeping | quality-i18n / Plan file housekeeping | yes | yes |
 | check:ci-plan-implementation | quality-branch / Plan implementation clock | yes | yes |
-| check:ci-plan-live-proof | quality-branch / Plan live proof | yes | no |
+| check:ci-plan-live-proof | quality-branch / Plan live proof | yes | yes |
 | check:ci-plan-record | quality-branch / Plan records | yes | yes |
 | check:ci-plant-proofs | quality-static / Control plant proofs | yes | no |
 | check:ci-player-css-scope | quality-www-build / Player CSS scope | yes | yes |
