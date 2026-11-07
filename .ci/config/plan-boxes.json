@@ -2117,6 +2117,24 @@
         "a60505d7"
       ]
     },
+    "agent/plans/PLAN-renet-restart-cycle-defects.md": {
+      "status": "approved",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 2,
+      "done": 4,
+      "open_sigs": [
+        "ab52c8f5",
+        "b25b2351"
+      ],
+      "done_sigs": [
+        "46031ecb",
+        "62e2eb8d",
+        "88fd4c8e",
+        "ab184966"
+      ]
+    },
     "agent/plans/PLAN-renet-run-docker-sock-isolation.md": {
       "status": "draft",
       "owner": "5008cebe",

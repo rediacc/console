@@ -21,9 +21,13 @@ Worklist: #5e864374, PR-TASK 09b8bdfa
 
 ## Boxes
 
-- [ ] D2 list-all accepts hyphenated lowercase section names, with a table test of the CLI's sections string and injection-shaped values
-- [ ] D5 `renet version` ends in a newline (`versionLine`), with a test
+- [x] D2 list-all accepts hyphenated lowercase section names, with a table test of the CLI's sections string and injection-shaped values
+    (ticked) 2026-11-07T06:46:51Z by d778be9d: commit:d82ce6f6a rc=0 landed and tested on the combined line (go test cmd/renet rc 0; vitest 395 passed; tsc rc 0)
+- [x] D5 `renet version` ends in a newline (`versionLine`), with a test
+    (ticked) 2026-11-07T06:46:52Z by d778be9d: commit:d82ce6f6a rc=0 landed and tested on the combined line (go test cmd/renet rc 0; vitest 395 passed; tsc rc 0)
 - [ ] D1 a one-time deep re-own (`ChownRootOwnedDeep`) descends directories owned by root or the target uid, skips other uids, writes an undo manifest, runs once behind `.rediacc/state/ownership-v2`; `renet repository ownership --root-owned [--dry-run|--undo]`; Go tests per the design
-- [ ] D3 `recoverRepoContainers` retries starts per current id, ignores "No such container", matches by compose labels then name, recomputes the deadline and extends it on progress, floor 5 minutes; Go tests per the design
-- [ ] D4 tickets gain an `expired` event; starting tickets older than 10 minutes resolve through `renet job list --request-id`; finished tickets older than 7 days expire; `job claim` on a missing job exits 16; `rdc job dismiss <id...>|--stale`; vitest and Go tests per the design
+- [x] D3 `recoverRepoContainers` retries starts per current id, ignores "No such container", matches by compose labels then name, recomputes the deadline and extends it on progress, floor 5 minutes; Go tests per the design
+    (ticked) 2026-11-07T06:46:53Z by d778be9d: commit:d82ce6f6a rc=0 landed and tested on the combined line (go test cmd/renet rc 0; vitest 395 passed; tsc rc 0)
+- [x] D4 tickets gain an `expired` event; starting tickets older than 10 minutes resolve through `renet job list --request-id`; finished tickets older than 7 days expire; `job claim` on a missing job exits 16; `rdc job dismiss <id...>|--stale`; vitest and Go tests per the design
+    (ticked) 2026-11-07T06:46:54Z by d778be9d: commit:e573d1e0d rc=0 landed and tested on the combined line (go test cmd/renet rc 0; vitest 395 passed; tsc rc 0)
 - [ ] L1 hostinger: the remaining restart cycle runs on the landed renet and mautic's up() succeeds without a manual chown

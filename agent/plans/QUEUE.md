@@ -73,7 +73,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 11 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic c6b82e88, plan agent/plans/PLAN-settings-set-verb.md, outside the set, 2 commit(s) on the branch, 0 open item(s): settings set verb: one source for the ceilings
   - epic dbb7de07, plan agent/plans/PLAN-cloudflare-spend-guard.md, outside the set, 48 commit(s) on the branch, 0 open item(s): cloudflare spend guard closure
-  - epic 09b8bdfa, plan agent/plans/PLAN-detached-jobs.md, outside the set, 787 commit(s) on the branch, 0 open item(s): detached jobs: proxied poll follow and job kinds
+  - epic 09b8bdfa, plan agent/plans/PLAN-detached-jobs.md, outside the set, 789 commit(s) on the branch, 0 open item(s): detached jobs: proxied poll follow and job kinds
   - epic ec9ba176, plan agent/plans/PLAN-backup-integrity.md, outside the set, 2 commit(s) on the branch, 0 open item(s): backup integrity docs and closure
   - epic d6bb9963, plan agent/plans/PLAN-backup-critical-tier.md, outside the set, 7 commit(s) on the branch, 0 open item(s): backup critical tier proofs
   - epic b21ab2e2, plan agent/plans/PLAN-jobs-backup-real-machine-tests.md, outside the set, 2 commit(s) on the branch, 0 open item(s): real machine tests for jobs and backup
@@ -83,8 +83,8 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic 1d805023, plan agent/plans/PLAN-tick-tracking.md, outside the set, 26 commit(s) on the branch, 0 open item(s): tick tracking: plan-box trailer, landing prints the tick, box audit
   - epic f65726d5, plan agent/plans/PLAN-renet-down-before-kill.md, outside the set, 16 commit(s) on the branch, 0 open item(s): renet runs Rediaccfile down() before repo containers stop
   - epic 53c31db2, plan agent/plans/PLAN-repo-resource-limits.md, outside the set, 20 commit(s) on the branch, 0 open item(s): per-repo resource limits and a renet-managed RAM volume
-- Writers: 2 live of writer_cap 25 (session d778be9d): worker:a62fb175fb4ce12c1, worker:a50fb19bd109be776.
-- Leased items: 6: #11306719 (worker:bsb1620qd, d778be9d), #55959f83 (worker:bsb1620qd, d778be9d), #5e864374 (worker:a50fb19bd109be776, d778be9d), #9aa1be96 (worker:bsb1620qd, d778be9d), #e81cbfd2 (worker:bsb1620qd, d778be9d), #eb5c1323 (worker:bsb1620qd, d778be9d).
+- Writers: 0 live of writer_cap 25 (session d778be9d).
+- Leased items: 5: #11306719 (worker:bsb1620qd, d778be9d), #55959f83 (worker:bsb1620qd, d778be9d), #5e864374 (worker:bsb1620qd, d778be9d), #e81cbfd2 (worker:bsb1620qd, d778be9d), #eb5c1323 (worker:bsb1620qd, d778be9d).
 - Next plan: agent/plans/PLAN-console-executor-multi-org.md, Promoted entry 18; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
@@ -195,18 +195,18 @@ Promoted: 15 of 44 plans done, 777 of 939 boxes done (82%).
 4. agent/plans/PLAN-drop-free-license-ip-prefix-hash.md -- P1, executing, in progress (4 of 6 boxes ticked)
 5. agent/plans/PLAN-haiku-model-routing.md -- P1, executing, in progress (11 of 20 boxes ticked)
 6. agent/plans/PLAN-renet-executor-tiered-license-check.md -- P1, executing, in progress (2 of 4 boxes ticked)
-7. agent/plans/PLAN-scope-bws-signing-key-to-consuming-step.md -- P1, executing, in progress (8 of 10 boxes ticked)
-8. agent/plans/PLAN-split-cli-files-over-512-line-budget.md -- P1, executing, in progress (5 of 7 boxes ticked)
-9. agent/plans/PLAN-stop-hook-refactor-enforcement.md -- P1, executing, in progress (16 of 17 boxes ticked)
-10. agent/plans/PLAN-ci-quick-cpu-scheduling.md -- P2, active, in progress (2 of 5 boxes ticked)
-11. agent/plans/PLAN-renet-docker-running-semantics.md -- P2, executing, in progress (11 of 15 boxes ticked)
-12. agent/plans/PLAN-backup-toc-exact-opt-in.md -- P3, proposed, in progress (1 of 10 boxes ticked)
-13. agent/plans/PLAN-deletion-budget.md -- P3 (operator), draft, not started
-14. agent/plans/PLAN-fix-upgrade-drills-flat-daemon-bringup.md -- P1, executing, not started
-15. agent/plans/PLAN-hostinger-upgrade-followups.md -- P1, in-progress, not started
-16. agent/plans/PLAN-plan-compaction-bindings.md -- P1, approved, not started
-17. agent/plans/PLAN-product-domain-rename.md -- P1, proposed, not started
-18. agent/plans/PLAN-renet-restart-cycle-defects.md -- P1, approved, not started
+7. agent/plans/PLAN-renet-restart-cycle-defects.md -- P1, approved, in progress (4 of 6 boxes ticked)
+8. agent/plans/PLAN-scope-bws-signing-key-to-consuming-step.md -- P1, executing, in progress (8 of 10 boxes ticked)
+9. agent/plans/PLAN-split-cli-files-over-512-line-budget.md -- P1, executing, in progress (5 of 7 boxes ticked)
+10. agent/plans/PLAN-stop-hook-refactor-enforcement.md -- P1, executing, in progress (16 of 17 boxes ticked)
+11. agent/plans/PLAN-ci-quick-cpu-scheduling.md -- P2, active, in progress (2 of 5 boxes ticked)
+12. agent/plans/PLAN-renet-docker-running-semantics.md -- P2, executing, in progress (11 of 15 boxes ticked)
+13. agent/plans/PLAN-backup-toc-exact-opt-in.md -- P3, proposed, in progress (1 of 10 boxes ticked)
+14. agent/plans/PLAN-deletion-budget.md -- P3 (operator), draft, not started
+15. agent/plans/PLAN-fix-upgrade-drills-flat-daemon-bringup.md -- P1, executing, not started
+16. agent/plans/PLAN-hostinger-upgrade-followups.md -- P1, in-progress, not started
+17. agent/plans/PLAN-plan-compaction-bindings.md -- P1, approved, not started
+18. agent/plans/PLAN-product-domain-rename.md -- P1, proposed, not started
 19. agent/plans/PLAN-website-routing-and-mail.md -- P1, proposed, not started, dep-blocked
 20. agent/plans/PLAN-enterprise-isolation.md -- P1, proposed, not started, dep-blocked
 21. agent/plans/PLAN-first-release-checks.md -- P2, approved, not started
