@@ -20,6 +20,7 @@ import re
 import subprocess
 import sys
 import time
+import uuid
 
 import wl_core as C
 import wl_schedred
@@ -34,6 +35,8 @@ LOCK_STALE_S = 20 * 60
 RETRY_S = 5 * 60
 LAST_NAME = "refresh.last"
 GUARD_NAME = "refresh.guard"
+# The handoff token rides to the refresher in this variable; it stamps only the lock that carries it (rediacc_ci.ops.ops_health.stamp_lock).
+LOCK_HANDOFF_ENV = "OPS_HEALTH_LOCK_HANDOFF"
 # An item TRACKS the red only when its text opens with the tag the block's `--add` line prints, optionally behind the `(<session prefix>)` tag; a task that merely mentions ops-health tracks nothing (review 3fe50062.1).
 TRACK_RE = re.compile(r"^\s*(?:\([0-9a-f]{4,12}\)\s*)?ops-health(?![\w-]|\.\w)", re.IGNORECASE)
 CLAIM_RED = "opshealth"
@@ -94,53 +97,98 @@ def due(doc, now):
     return False
 
 
-def take_lock(root, now=None):
-    """Claim the refresh lock. The stale takeover (stat, unlink, create) runs under an flock on a guard file, so two stops that both see one stale lock take it in turn: the second finds the first's fresh lock and stands down instead of deleting it (review 3fe50062.2)."""
-    now = time.time() if now is None else now
+def _guarded(root, fn, default):
+    """fn() under the flock on the guard file, or `default` when the guard cannot be opened."""
     d = cache_dir(root)
     with contextlib.suppress(OSError):
         d.mkdir(parents=True, exist_ok=True)
     try:
         guard = os.open(str(d / GUARD_NAME), os.O_RDWR | os.O_CREAT, 0o644)
     except OSError:
-        return False
+        return default
     try:
         fcntl.flock(guard, fcntl.LOCK_EX)
-        return _take_lock_held(d / LOCK_NAME, now)
+        return fn()
     finally:
         os.close(guard)
 
 
-def pid_alive(pid):
-    """True when `pid` names a running process (a pid owned by another user counts as running)."""
+def take_lock(root, now=None, token=None):
+    """Claim the refresh lock. The stale takeover (stat, unlink, then the O_EXCL open) runs under an flock on a guard file, so two stops that both see one stale lock take it in turn: the second finds the first's fresh lock and stands down instead of deleting it (review 3fe50062.2)."""
+    now = time.time() if now is None else now
+    return _guarded(root, lambda: _take_lock_held(cache_dir(root) / LOCK_NAME, now, token), False)
+
+
+def _proc_stat(pid):
+    """(state, start ticks) from /proc/<pid>/stat, or None where there is no such file (no procfs, or no such pid)."""
+    try:
+        text = pathlib.Path("/proc/%d/stat" % pid).read_text(encoding="ascii", errors="replace")
+    except (OSError, ValueError):
+        return None
+    # The command name sits in parentheses and may hold spaces; the fields after the last ")" start at field 3 (state), and field 22 is the start time.
+    fields = text[text.rfind(")") + 2 :].split()
+    if len(fields) < 20:
+        return None
+    try:
+        return fields[0], int(fields[19])
+    except ValueError:
+        return None
+
+
+def process_start(pid):
+    """The process start time (clock ticks since boot), or None where procfs cannot tell."""
+    stat = _proc_stat(pid)
+    return stat[1] if stat else None
+
+
+def pid_alive(pid, start=None):
+    """True when `pid` names a running process: not a zombie, and when `start` is given, the same process that recorded it rather than a reused pid. A pid owned by another user counts as running."""
     try:
         os.kill(pid, 0)
     except PermissionError:
-        return True
+        pass
     except (OSError, OverflowError, ValueError):
         return False
-    return True
+    stat = _proc_stat(pid)
+    if stat is None:
+        return True
+    if stat[0] == "Z":
+        return False
+    return start is None or stat[1] == start
 
 
-def lock_holder(path):
-    """The pid a lock file records, or None when it records none (a lock mid-write, or a foreign one)."""
+def lock_record(path):
+    """The lock's JSON record, or None when it cannot be read (a lock mid-write, or a foreign one)."""
     try:
-        pid = json.loads(path.read_text(encoding="utf-8")).get("pid")
-    except (OSError, ValueError, AttributeError):
+        rec = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
         return None
-    return pid if isinstance(pid, int) and not isinstance(pid, bool) and pid > 0 else None
+    return rec if isinstance(rec, dict) else None
+
+
+def _int(value):
+    return value if isinstance(value, int) and not isinstance(value, bool) and value > 0 else None
 
 
 def lock_is_stale(path, now):
-    """A lock whose recorded pid is dead is stale at once; any lock older than LOCK_STALE_S is stale. Raises OSError when the lock vanished."""
+    """A lock whose recorded process is gone (dead, a zombie, or its pid reused by another process) is stale at once; any lock older than LOCK_STALE_S is stale. Raises OSError when the lock vanished."""
     age = now - path.stat().st_mtime
-    pid = lock_holder(path)
-    if pid is not None and not pid_alive(pid):
+    rec = lock_record(path)
+    pid = _int(rec.get("pid")) if rec else None
+    if pid is not None and not pid_alive(pid, _int(rec.get("start"))):
         return True
     return age >= LOCK_STALE_S
 
 
-def _take_lock_held(path, now):
+def lock_body(pid, now, token=None, **extra):
+    """The record a lock holds: the holder's pid and start time, so a reused pid is not taken for it, and the handoff token."""
+    body = {"pid": pid, "start": process_start(pid), "at": now, **extra}
+    if token:
+        body["token"] = token
+    return body
+
+
+def _take_lock_held(path, now, token=None):
     for _ in range(2):
         try:
             fd = os.open(str(path), os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o644)
@@ -157,9 +205,28 @@ def _take_lock_held(path, now):
         except OSError:
             return False
         with os.fdopen(fd, "w", encoding="utf-8") as fh:
-            json.dump({"pid": os.getpid(), "at": now, "by": "wl_opshealth"}, fh)
+            json.dump(lock_body(os.getpid(), now, token, by="wl_opshealth"), fh)
         return True
     return False
+
+
+def hand_over(root, token, child, now):
+    """Rewrite the lock with the refresher's pid, under the guard flock, and only while it still carries this hook's token: a refresher that already released it, or another hook that took it since, is left alone. True when handed over."""
+    path = cache_dir(root) / LOCK_NAME
+
+    def swap():
+        rec = lock_record(path)
+        if not rec or rec.get("token") != token:
+            return False
+        try:
+            path.write_text(
+                json.dumps(lock_body(child, now, token, by="wl_opshealth")), encoding="utf-8"
+            )
+        except OSError:
+            return False
+        return True
+
+    return _guarded(root, swap, False)
 
 
 def recent_attempt(root, now):
@@ -180,7 +247,8 @@ def spawn_refresh(root, popen=None, now=None):
         return False
     if recent_attempt(root, stamp):
         return False
-    if not take_lock(root, now=now):
+    token = uuid.uuid4().hex
+    if not take_lock(root, now=now, token=token):
         return False
     with contextlib.suppress(OSError):
         (cache_dir(root) / LAST_NAME).write_text(json.dumps({"at": stamp}), encoding="utf-8")
@@ -191,6 +259,7 @@ def spawn_refresh(root, popen=None, now=None):
     env["PYTHONPATH"] = os.pathsep.join(
         [str(root / ".ci"), *([env["PYTHONPATH"]] if env.get("PYTHONPATH") else [])]
     )
+    env[LOCK_HANDOFF_ENV] = token
     try:
         log_fd = os.open(
             str(cache_dir(root) / LOG_NAME), os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o644
@@ -218,10 +287,7 @@ def spawn_refresh(root, popen=None, now=None):
     # The lock names this hook's pid, which exits at once; hand it to the refresher so the next stop's liveness check sees a live holder.
     child = getattr(proc, "pid", None)
     if isinstance(child, int) and child > 0:
-        with contextlib.suppress(OSError):
-            (cache_dir(root) / LOCK_NAME).write_text(
-                json.dumps({"pid": child, "at": stamp, "by": "wl_opshealth"}), encoding="utf-8"
-            )
+        hand_over(root, token, child, stamp)
     return True
 
 

@@ -25,27 +25,29 @@ import argparse
 import contextlib
 import dataclasses
 import datetime
+import fcntl
 import hashlib
 import json
 import os
+import pathlib
 import subprocess
 import sys
 import time
 import urllib.error
 from collections.abc import Callable
-from typing import TYPE_CHECKING
 
 from rediacc_ci import well_known
 from rediacc_ci.core import bws_env, https, jsonl_append
 from rediacc_ci.core.common import repo_root
 
-if TYPE_CHECKING:
-    import pathlib
-
 CONFIG_REL = ".ci/config/ops-health.json"
 CACHE_DIR_REL = ".ci/cache/ops-health"
 STATE_NAME = "state.json"
 LOCK_NAME = "refresh.lock"
+# The Stop hook takes the lock and hands it to the refresher under an flock on this file (.claude/hooks/stop/wl_opshealth.py).
+GUARD_NAME = "refresh.guard"
+# The token of the lock the hook took for a `--lock-held` refresher; only that lock is stamped with the refresher's pid.
+LOCK_HANDOFF_ENV = "OPS_HEALTH_LOCK_HANDOFF"
 LEDGER_REL = "agent/ledgers/ops-health.jsonl"
 LEDGER_LOCK_NAME = "ledger.lock"
 # An older lock, or one whose recorded pid is dead, is a dead refresher's (D-local).
@@ -896,67 +898,134 @@ def post_ingest(url: str, token: str, sources: dict, now: datetime.datetime, fet
     return out
 
 
-def pid_alive(pid: int) -> bool:
-    """True when `pid` names a running process (a pid owned by another user counts as running)."""
+def _proc_stat(pid: int) -> tuple[str, int] | None:
+    """(state, start ticks) from /proc/<pid>/stat, or None where there is no such file (no procfs, or no such pid)."""
+    try:
+        text = pathlib.Path("/proc/%d/stat" % pid).read_text(encoding="ascii", errors="replace")
+    except (OSError, ValueError):
+        return None
+    # The command name sits in parentheses and may hold spaces; the fields after the last ")" start at field 3 (state), and field 22 is the start time.
+    fields = text[text.rfind(")") + 2 :].split()
+    if len(fields) < 20:
+        return None
+    try:
+        return fields[0], int(fields[19])
+    except ValueError:
+        return None
+
+
+def process_start(pid: int) -> int | None:
+    """The process start time (clock ticks since boot), or None where procfs cannot tell."""
+    stat = _proc_stat(pid)
+    return stat[1] if stat else None
+
+
+def pid_alive(pid: int, start: int | None = None) -> bool:
+    """True when `pid` names a running process: not a zombie, and when `start` is given, the same process that recorded it rather than a reused pid. A pid owned by another user counts as running."""
     try:
         os.kill(pid, 0)
     except PermissionError:
-        return True
+        pass
     except (OSError, OverflowError, ValueError):
         return False
-    return True
+    stat = _proc_stat(pid)
+    if stat is None:
+        return True
+    if stat[0] == "Z":
+        return False
+    return start is None or stat[1] == start
 
 
-def lock_holder(path: pathlib.Path) -> int | None:
-    """The pid a lock file records, or None when it records none (a lock mid-write, or a foreign one)."""
+def lock_record(path: pathlib.Path) -> dict | None:
+    """The lock's JSON record, or None when it cannot be read (a lock mid-write, or a foreign one)."""
     try:
-        pid = json.loads(path.read_text(encoding="utf-8")).get("pid")
-    except (OSError, ValueError, AttributeError):
+        rec = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
         return None
-    return pid if isinstance(pid, int) and not isinstance(pid, bool) and pid > 0 else None
+    return rec if isinstance(rec, dict) else None
+
+
+def _int(value) -> int | None:
+    return value if isinstance(value, int) and not isinstance(value, bool) and value > 0 else None
 
 
 def lock_is_stale(path: pathlib.Path, now: float) -> bool:
-    """A lock whose recorded pid is dead is stale at once; any lock older than LOCK_STALE_S is stale. Raises OSError when the lock vanished."""
+    """A lock whose recorded process is gone (dead, a zombie, or its pid reused by another process) is stale at once; any lock older than LOCK_STALE_S is stale. Raises OSError when the lock vanished."""
     age = now - path.stat().st_mtime
-    pid = lock_holder(path)
-    if pid is not None and not pid_alive(pid):
+    rec = lock_record(path)
+    pid = _int(rec.get("pid")) if rec else None
+    if pid is not None and not pid_alive(pid, _int(rec.get("start"))):
         return True
     return age >= LOCK_STALE_S
 
 
-def stamp_lock(root: pathlib.Path, now: float | None = None) -> None:
-    """Record this process as the lock's holder: a `--lock-held` refresher replaces the pid of the hook that took the lock for it."""
+def lock_body(pid: int, now: float, token: str | None = None, **extra) -> dict:
+    """The record a lock holds: the holder's pid and start time, so a reused pid is not taken for it, and the handoff token."""
+    body = {"pid": pid, "start": process_start(pid), "at": now, **extra}
+    if token:
+        body["token"] = token
+    return body
+
+
+def _guarded(root: pathlib.Path, fn):
+    """Run fn() under the flock on refresh.guard, the one the Stop hook takes its lock and hands it over under."""
+    d = cache_dir(root)
+    d.mkdir(parents=True, exist_ok=True)
+    guard = os.open(str(d / GUARD_NAME), os.O_RDWR | os.O_CREAT, 0o644)
+    try:
+        fcntl.flock(guard, fcntl.LOCK_EX)
+        return fn()
+    finally:
+        os.close(guard)
+
+
+def stamp_lock(root: pathlib.Path, token: str | None, now: float | None = None) -> bool:
+    """A `--lock-held` refresher records itself as the holder, but only on the lock the hook took FOR it: the record must carry the handoff token the hook passed in LOCK_HANDOFF_ENV. A manual `--lock-held` (no token), or a lock another hook or refresher now holds, is left as it is. True when stamped."""
+    if not token:
+        return False
     now = time.time() if now is None else now
-    with contextlib.suppress(OSError):
-        (cache_dir(root) / LOCK_NAME).write_text(
-            json.dumps({"pid": os.getpid(), "at": now}), encoding="utf-8"
+    path = cache_dir(root) / LOCK_NAME
+
+    def stamp() -> bool:
+        rec = lock_record(path)
+        if not rec or rec.get("token") != token:
+            return False
+        path.write_text(
+            json.dumps(lock_body(os.getpid(), now, token, by="refresher")), encoding="utf-8"
         )
+        return True
+
+    try:
+        return _guarded(root, stamp)
+    except OSError:
+        return False
 
 
 def take_lock(root: pathlib.Path, now: float | None = None) -> bool:
-    """O_EXCL on refresh.lock; a lock whose recorded pid is dead, or older than LOCK_STALE_S, is a dead refresher's and is taken over."""
+    """O_EXCL on refresh.lock, under the guard flock; a lock whose recorded process is gone, or older than LOCK_STALE_S, is a dead refresher's and is taken over."""
     now = time.time() if now is None else now
-    d = cache_dir(root)
-    d.mkdir(parents=True, exist_ok=True)
-    path = d / LOCK_NAME
-    for _ in range(2):
-        try:
-            fd = os.open(str(path), os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o644)
-        except FileExistsError:
+    path = cache_dir(root) / LOCK_NAME
+
+    def claim() -> bool:
+        for _ in range(2):
             try:
-                stale = lock_is_stale(path, now)
-            except OSError:
+                fd = os.open(str(path), os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o644)
+            except FileExistsError:
+                try:
+                    stale = lock_is_stale(path, now)
+                except OSError:
+                    continue
+                if not stale:
+                    return False
+                with contextlib.suppress(OSError):
+                    path.unlink()
                 continue
-            if not stale:
-                return False
-            with contextlib.suppress(OSError):
-                path.unlink()
-            continue
-        with os.fdopen(fd, "w", encoding="utf-8") as fh:
-            json.dump({"pid": os.getpid(), "at": now}, fh)
-        return True
-    return False
+            with os.fdopen(fd, "w", encoding="utf-8") as fh:
+                json.dump(lock_body(os.getpid(), now), fh)
+            return True
+        return False
+
+    return _guarded(root, claim)
 
 
 def release_lock(root: pathlib.Path) -> None:
@@ -1133,7 +1202,7 @@ def main(argv: list | None = None) -> int:
 
     # refresh
     if args.lock_held:
-        stamp_lock(root)
+        stamp_lock(root, os.environ.get(LOCK_HANDOFF_ENV))
     elif not take_lock(root):
         print(
             "ops_health refresh: %s/%s is held by a live refresher; nothing run."

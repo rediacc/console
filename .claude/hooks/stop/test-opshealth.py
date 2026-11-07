@@ -18,6 +18,7 @@ import shutil
 import subprocess
 import tempfile
 import threading
+import time
 
 import wl_opshealth as O
 
@@ -474,17 +475,83 @@ check(
 )
 
 
-class _Child:
-    pid = os.getpid()
+# --- the handoff names the refresher, a process distinct from this one (review 7acdec1f.1)
+_sleeper = subprocess.Popen(["sleep", "30"])
+atexit.register(_sleeper.kill)
+_seen_env = {}
 
 
-def _child_popen(_argv, **_kw):
-    return _Child()
+def _child_popen(_argv, **kw):
+    _seen_env.update(kw.get("env") or {})
+    return _sleeper
 
 
 root, wl = fixture(None)
 O.spawn_refresh(root, popen=_child_popen, now=NOW.timestamp())
 lock = root / ".ci" / "cache" / "ops-health" / "refresh.lock"
-check("spawn: the lock names the refresher's pid", json.loads(lock.read_text())["pid"], _Child.pid)
+held = json.loads(lock.read_text())
+check("spawn: the lock names the refresher's pid, not the hook's", held["pid"], _sleeper.pid)
+check("spawn twin: the refresher is not this process", held["pid"] != os.getpid(), True)
+check(
+    "spawn: the lock records the refresher's start time",
+    held["start"],
+    O.process_start(_sleeper.pid),
+)
+check(
+    "spawn: the refresher is passed the lock's handoff token",
+    _seen_env.get(O.LOCK_HANDOFF_ENV) == held["token"] and bool(held["token"]),
+    True,
+)
+
+# --- the handoff never rewrites a lock it no longer holds (review 7acdec1f.2)
+root, wl = fixture(None)
+lock = root / ".ci" / "cache" / "ops-health" / "refresh.lock"
+foreign = {"pid": os.getpid(), "at": NOW.timestamp(), "token": "other-hook"}
+
+
+def _taken_meanwhile(_argv, **_kw):
+    lock.write_text(json.dumps(foreign))
+    return _sleeper
+
+
+O.spawn_refresh(root, popen=_taken_meanwhile, now=NOW.timestamp())
+check("handoff: another hook's lock is left as it is", json.loads(lock.read_text()), foreign)
+
+
+def _released_meanwhile(_argv, **_kw):
+    lock.unlink()
+    return _sleeper
+
+
+root, wl = fixture(None)
+lock = root / ".ci" / "cache" / "ops-health" / "refresh.lock"
+O.spawn_refresh(root, popen=_released_meanwhile, now=NOW.timestamp())
+check("handoff: a lock the refresher already released is not planted again", lock.exists(), False)
+
+# --- a zombie or a reused pid is not a live holder (review 7acdec1f.4)
+_zombie = subprocess.Popen(["true"])
+for _ in range(200):
+    if (O._proc_stat(_zombie.pid) or ("?",))[0] == "Z":
+        break
+    time.sleep(0.01)
+check("zombie: an exited, unreaped child is not alive", O.pid_alive(_zombie.pid), False)
+_zombie.wait()
+check("zombie twin: a running process is alive", O.pid_alive(_sleeper.pid), True)
+_start = O.process_start(_sleeper.pid)
+check(
+    "reused pid: a different start time is not the recorded holder",
+    O.pid_alive(_sleeper.pid, _start + 1),
+    False,
+)
+check("reused pid twin: the recorded start time is", O.pid_alive(_sleeper.pid, _start), True)
+root, wl = fixture(None)
+lock = root / ".ci" / "cache" / "ops-health" / "refresh.lock"
+lock.write_text(json.dumps({"pid": _sleeper.pid, "start": _start + 1, "at": NOW.timestamp()}))
+os.utime(lock, (NOW.timestamp(), NOW.timestamp()))
+check(
+    "reused pid: a fresh lock of a reused pid is taken over",
+    O.take_lock(root, now=NOW.timestamp() + 1),
+    True,
+)
 
 T.exit()

@@ -8,6 +8,7 @@ import json
 import os
 import pathlib
 import subprocess
+import time
 
 import pytest
 
@@ -443,12 +444,49 @@ def test_lock_of_a_live_pid_holds_until_it_is_stale(tmp_path):
     assert not oh.take_lock(tmp_path, now=1001.0)
 
 
-def test_lock_held_refresher_stamps_its_own_pid(tmp_path):
+def test_lock_held_refresher_stamps_only_the_lock_taken_for_it(tmp_path):
     assert oh.take_lock(tmp_path, now=1000.0)
     lock = tmp_path / oh.CACHE_DIR_REL / oh.LOCK_NAME
-    lock.write_text(json.dumps({"pid": _dead_pid(), "at": 1000.0}), encoding="utf-8")
-    oh.stamp_lock(tmp_path, now=1002.0)
-    assert json.loads(lock.read_text(encoding="utf-8"))["pid"] == os.getpid()
+    lock.write_text(json.dumps({"pid": _dead_pid(), "at": 1000.0, "token": "t1"}), encoding="utf-8")
+    assert oh.stamp_lock(tmp_path, "t1", now=1002.0)
+    held = json.loads(lock.read_text(encoding="utf-8"))
+    assert held["pid"] == os.getpid()
+    assert held["start"] == oh.process_start(os.getpid())
+    assert held["token"] == "t1"
+
+
+def test_lock_held_never_stamps_over_another_holder(tmp_path):
+    """A manual `refresh --lock-held` carries no token, and a lock another hook took carries another one (review 7acdec1f.3)."""
+    assert oh.take_lock(tmp_path, now=1000.0)
+    lock = tmp_path / oh.CACHE_DIR_REL / oh.LOCK_NAME
+    other = {"pid": 1, "at": 1000.0, "token": "other"}
+    lock.write_text(json.dumps(other), encoding="utf-8")
+    assert not oh.stamp_lock(tmp_path, None, now=1002.0)
+    assert not oh.stamp_lock(tmp_path, "mine", now=1002.0)
+    assert json.loads(lock.read_text(encoding="utf-8")) == other
+
+
+def test_zombie_and_reused_pid_are_not_live_holders(tmp_path):
+    """os.kill(pid, 0) succeeds for both; /proc state and the recorded start time tell them apart (review 7acdec1f.4)."""
+    zombie = subprocess.Popen(["true"])
+    for _ in range(200):
+        stat = oh._proc_stat(zombie.pid)
+        if stat and stat[0] == "Z":
+            break
+        time.sleep(0.01)
+    try:
+        assert not oh.pid_alive(zombie.pid)
+    finally:
+        zombie.wait()
+    me = os.getpid()
+    start = oh.process_start(me)
+    assert oh.pid_alive(me, start)
+    assert not oh.pid_alive(me, start + 1)
+    lock = tmp_path / oh.CACHE_DIR_REL / oh.LOCK_NAME
+    lock.parent.mkdir(parents=True)
+    lock.write_text(json.dumps({"pid": me, "start": start + 1, "at": 1000.0}), encoding="utf-8")
+    os.utime(lock, (1000.0, 1000.0))
+    assert oh.take_lock(tmp_path, now=1001.0)
 
 
 # --------------------------------------------------------------------------- L4: the gate
