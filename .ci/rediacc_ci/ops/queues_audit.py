@@ -209,6 +209,11 @@ def main(argv: list[str] | None = None) -> int:
         try:
             report["created"] = ensure(account, token, report["missing"])
             report["rc"] = 0
+            # The rows were read before the create; ensure() confirmed every created queue on a re-list.
+            for row in report["queues"]:
+                if row["queue"] in report["created"]:
+                    row["status"] = "created"
+            report["missing"] = []
         except QueueCreateError as exc:
             report["create_error"] = str(exc)
     print(json.dumps(report, indent=2) if args.json else render(report))

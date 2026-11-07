@@ -126,3 +126,20 @@ def test_config_without_queues_makes_no_api_call(tmp_path: pathlib.Path) -> None
     rep = mod.audit(_config(tmp_path, 'name = "w"\n'), {}, fake.fetch)
     assert rep["rc"] == 0
     assert fake.gets == []
+
+
+def test_create_reports_created_not_the_stale_missing_rows(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    rows = [
+        {"queue": "q-main-dlq", "role": "dead-letter", "status": "MISSING"},
+        {"queue": "q-main", "role": "consumer", "status": "MISSING"},
+    ]
+    report = {"rc": 1, "error": None, "queues": rows, "missing": ["q-main-dlq", "q-main"]}
+    monkeypatch.setattr(mod, "audit", lambda *_args: report)
+    monkeypatch.setattr(mod, "credentials", lambda *_args: ("tok", "acct"))
+    monkeypatch.setattr(mod, "ensure", lambda _account, _token, missing: list(missing))
+    assert mod.main(["--config", "x.toml", "--create"]) == 0
+    out = capsys.readouterr().out
+    assert "MISSING" not in out.replace("0 MISSING", "")
+    assert out.count("created") == 2
