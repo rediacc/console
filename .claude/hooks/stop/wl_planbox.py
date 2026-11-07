@@ -402,7 +402,7 @@ def plan_rel_of(plan):
 
 
 def resolve_plan(root, plan, folder=""):
-    """`(rel, text)` of the plan a trailer basename names under `agent/plans/` (under `folder`, a plan folder, when the caller named one), a `Moved-To:` stub followed, or None when no such plan exists. Raises PlanBoxError for a stub chain longer than STUB_HOPS (review 214fe8a1.3: that read as "no plan" though the plan exists).
+    """`(rel, text)` of the plan a trailer basename names under `agent/plans/` (under `folder`, a plan folder, when the caller named one), a `Moved-To:` stub followed, or None when no such plan exists. Raises PlanBoxError for a stub chain of more than STUB_HOPS stubs (a chain of exactly STUB_HOPS stubs that ends at a real plan resolves; review 214fe8a1.3: that read as "no plan" though the plan exists).
 
     A stub target outside `agent/plans/` is no plan: `Moved-To: ../x` or an absolute path would read a file outside the checkout (review 214fe8a1.2)."""
     import posixpath
@@ -410,7 +410,8 @@ def resolve_plan(root, plan, folder=""):
     import wl_store as S
 
     rel = posixpath.join(folder, plan) if folder else plan_rel_of(plan)
-    for _hop in range(STUB_HOPS):
+    # STUB_HOPS stubs are followed, then one more read must land on a real plan.
+    for _hop in range(STUB_HOPS + 1):
         rel = posixpath.normpath(rel)
         if rel != "agent/plans" and not rel.startswith("agent/plans/"):
             return None

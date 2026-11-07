@@ -265,6 +265,16 @@ check(
     True,
 )
 
+# --- a clock stepped back inside RETRY_S keeps the backoff (review 368858a0.1)
+root, wl = fixture(None)
+check("clock step: the first stop spawns", assess(root, wl, A)["spawned"], True)
+(root / ".ci" / "cache" / "ops-health" / "refresh.lock").unlink()
+check(
+    "clock step: a stop 60 s BEFORE the stamp spawns nothing",
+    assess(root, wl, A, now=NOW - datetime.timedelta(seconds=60))["spawned"],
+    False,
+)
+
 # --- many stops that all see one stale lock spawn one refresher (review 3fe50062.2)
 root, wl = fixture(None)
 lock = root / ".ci" / "cache" / "ops-health" / "refresh.lock"
@@ -296,6 +306,14 @@ check(
     bool(assess(root, wl, A, items=chatter)["block"]),
     True,
 )
+for word in ("ops-health-docs cleanup", "ops-health.md tidy"):
+    check(
+        "tracking: %r is another word, not the tag" % word,
+        O.TRACK_RE.match(word) is None,
+        True,
+    )
+check("tracking twin: the tag then a colon", O.TRACK_RE.match("ops-health: red") is not None, True)
+check("tracking twin: the tag then a period", O.TRACK_RE.match("ops-health. red") is not None, True)
 tagged = [{"state": " ", "owner": "aaaa1111", "text": "(aaaa1111) ops-health red: machine m1"}]
 root, wl = fixture(red_doc())
 check(

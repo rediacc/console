@@ -168,8 +168,11 @@ def _index_since(rp, store, since):
         return []
     limit = rp.INDEX_READ_MAX_BYTES
     while True:
+        if not since:
+            # No merge-base: every report counts, so read the whole index (review d7a5dc68.1).
+            return rp.read_index(store, max_bytes=None)
         rows = rp.read_index(store, max_bytes=limit)
-        if not since or limit >= size:
+        if limit >= size:
             return rows
         if rows and str(rows[0].get("at") or "")[:19] < since:
             return rows
@@ -426,10 +429,13 @@ def inputs_stamp(root):
     root = pathlib.Path(root)
     paths = [PB.progress_path(root), root / "agent" / "ledgers" / "plan-investigation.jsonl"]
     # The live-proof and report imports sit inside the suppress: a failing one leaves its file out of the stamp, and the cached verdict is read as it always was, instead of the check raising (review 1a8431fd.2).
+    # A failing live-proof import still stamps the ledger by its known path, so a cached verdict misses when that ledger changes (review d7a5dc68.3).
+    ledger_rel = "agent/ledgers/live-proof.jsonl"
     with contextlib.suppress(Exception):
         import wl_liveproof as LP
 
-        paths.append(root / LP.LEDGER_REL)
+        ledger_rel = LP.LEDGER_REL
+    paths.append(root / ledger_rel)
     with contextlib.suppress(Exception):
         import wl_report as RP
 
@@ -530,6 +536,7 @@ def closed_links(root, base, shas):
     """
     import wl_planrec as R
 
+    shas = [g for g in shas if g]  # an empty token would prefix-match every sha (review 014e4b51.3)
     found: dict[str, list[tuple[str, str, str]]] = {g: [] for g in shas}
     for (plan, sig), landed in trailer_links(root, base).items():
         for sha, _clauses in landed:
@@ -537,6 +544,9 @@ def closed_links(root, base, shas):
                 if sha.lower().startswith(given.lower()):
                     found[given].append((plan, sig, "trailer %s" % sha[:12]))
     for row in R.read_investigations(root):
+        # An `absent` row asserts the cited work is NOT in the tree, so it is no evidence that a commit belongs to its box (review 014e4b51.1).
+        if str(row.get("verdict") or "").strip().lower() == "absent":
+            continue
         cited = [str(t) for k, t in row.get("pointers") or [] if k == "commit"]
         cited += [str(r[2]) for r in row.get("resolved") or [] if len(r) > 2 and r[0] == "commit"]
         for given in shas:

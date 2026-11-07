@@ -3136,7 +3136,16 @@ def _diff_lines(text):
 def move_search_note(repo, base, fix):
     """A refusal sentence when `moved_successors` could not read every commit of `base..fix` (it takes the newest MOVE_MAX_COMMITS), else "" (review 4bcec972.2: a move older than that was never seen and nothing said so)."""
     rc, out = git(repo, "rev-list", "--count", "--no-merges", "%s..%s" % (base, fix))
-    total = int(out.strip()) if rc == 0 and out.strip().isdigit() else 0
+    if rc != 0 or not out.strip().isdigit():
+        # An uncounted range may be longer than the search reads: say so instead of reading as complete (review 21ac17b2.1).
+        return (
+            " (the move search could not count the commits in %s..%s, so it may have read only part of them)"
+            % (
+                base[:12],
+                fix[:12],
+            )
+        )
+    total = int(out.strip())
     if total <= MOVE_MAX_COMMITS:
         return ""
     return " (the move search read only the newest %d of the %d commits in %s..%s)" % (

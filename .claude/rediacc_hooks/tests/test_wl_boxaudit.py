@@ -11,6 +11,7 @@ import ast
 import json
 import pathlib
 import subprocess
+import sys
 
 import pytest
 
@@ -18,6 +19,7 @@ from rediacc_hooks.tests import wlfix
 
 BA = wlfix.import_wl("wl_boxaudit")
 R = wlfix.import_wl("wl_planrec")
+REPORT = wlfix.import_wl("wl_report")
 ME = "deadbeef"
 BODIES = {
     "tick": "T1 the tickable box of the fixture plan",
@@ -268,6 +270,54 @@ def test_render_sha_names_the_closed_box_an_investigation_row_links(world):
     assert "untouched" not in text
 
 
+def test_closed_links_trailer_path_skips_absent_rows_and_empty_tokens(world):
+    """Reviews 014e4b51.1-.3: a Plan-Box trailer links its sha, an `absent` investigation row does not, and an empty token links nothing."""
+    _rows, _head, base = BA.audit(world.root, ME)
+    tick = world.shas["tick"]
+    closed = BA.closed_links(world.root, base, [tick[:10], ""])
+    assert [(sig, src) for _plan, sig, src in closed[tick[:10]]] == [
+        (SIG["tick"], "trailer %s" % tick[:12])
+    ]
+    assert "" not in closed
+    given = "feedface1"
+    inv = world.root / "agent" / "ledgers" / "plan-investigation.jsonl"
+    with inv.open("a", encoding="utf-8") as fh:
+        fh.write(
+            json.dumps(
+                {
+                    "at": "2026-11-07T07:00:00Z",
+                    "plan": "agent/plans/PLAN-closed.md",
+                    "sig": "afa91934",
+                    "verdict": "absent",
+                    "pointers": [["commit", given]],
+                }
+            )
+            + "\n"
+        )
+    assert BA.closed_links(world.root, base, [given]) == {given: []}
+
+
+def test_index_since_without_a_merge_base_reads_the_whole_index(world, monkeypatch):
+    """Review d7a5dc68.1: an empty `since` kept only the index tail."""
+    seen = []
+    real = REPORT.read_index
+
+    def spy(store, max_bytes=REPORT.INDEX_READ_MAX_BYTES):
+        seen.append(max_bytes)
+        return real(store, max_bytes=max_bytes)
+
+    monkeypatch.setattr(REPORT, "read_index", spy)
+    BA._index_since(REPORT, REPORT.store_root(world.root), "")
+    assert seen == [None]
+
+
+def test_inputs_stamp_keeps_the_live_proof_ledger_when_its_import_fails(world, monkeypatch):
+    """Review d7a5dc68.3."""
+    monkeypatch.setitem(sys.modules, "wl_liveproof", None)
+    names = [e[0] for e in BA.inputs_stamp(world.root)]
+    assert any(n.endswith("live-proof.jsonl") for n in names)
+
+
 def test_mixed_unsplit_lists_landed_boxes_with_no_map_and_exits_1(world):
     rows, head, base = BA.audit(world.root, ME)
     text, rc = BA.render(rows, head, base, mixed=True)
@@ -436,7 +486,7 @@ def test_the_audit_cache_misses_on_every_input_it_reads(world, monkeypatch, tmp_
 
 
 def test_report_rows_compare_the_merge_base_in_utc(world):
-    """Review ec1efb0e.5: the report at 2099-01-01T00:00:00Z is before a merge-base of 2099-01-01T00:30:00+01:00 only when the offset is applied (23:30Z the day before is EARLIER, so the report stays); a bare cut of the offset compared 00:30 with 00:00 and dropped it."""
+    """Review ec1efb0e.5: the report at 2099-01-01T00:00:00Z is AFTER a merge-base of 2099-01-01T00:30:00+01:00 once the offset is applied (that is 23:30Z the day before, so the report stays); a bare cut of the offset compared 00:30 with 00:00 and dropped it."""
     assert [rid for rid, _row in BA.report_rows(world.root, "2099-01-01T00:30:00+01:00")]
     assert not [rid for rid, _row in BA.report_rows(world.root, "2099-01-01T00:30:00+00:00")]
 

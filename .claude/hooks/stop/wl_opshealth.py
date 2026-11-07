@@ -35,7 +35,7 @@ RETRY_S = 5 * 60
 LAST_NAME = "refresh.last"
 GUARD_NAME = "refresh.guard"
 # An item TRACKS the red only when its text opens with the tag the block's `--add` line prints, optionally behind the `(<session prefix>)` tag; a task that merely mentions ops-health tracks nothing (review 3fe50062.1).
-TRACK_RE = re.compile(r"^\s*(?:\([0-9a-f]{4,12}\)\s*)?ops-health\b", re.IGNORECASE)
+TRACK_RE = re.compile(r"^\s*(?:\([0-9a-f]{4,12}\)\s*)?ops-health(?![\w-]|\.\w)", re.IGNORECASE)
 CLAIM_RED = "opshealth"
 CLAIM_OFFBOX = "opshealth-offbox"
 _OPEN_STATES = (" ", ">", "?")
@@ -139,7 +139,8 @@ def recent_attempt(root, now):
         at = float(json.loads((cache_dir(root) / LAST_NAME).read_text(encoding="utf-8"))["at"])
     except (OSError, ValueError, KeyError, TypeError):
         return False
-    return 0 <= now - at < RETRY_S
+    # A clock stepped back puts `at` ahead of `now`: the distance either way counts, so the backoff holds across a small step (review 368858a0.1).
+    return abs(now - at) < RETRY_S
 
 
 def spawn_refresh(root, popen=None, now=None):

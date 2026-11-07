@@ -296,11 +296,14 @@ def test_a_stub_pointing_outside_agent_plans_is_no_plan(tmp_path, target):
 def test_a_stub_chain_longer_than_the_hop_limit_is_named_not_missing(tmp_path):
     """Review 214fe8a1.3: a deep chain read as "no plan under agent/plans/"."""
     _plant(tmp_path)
-    names = ["PLAN-h%d.md" % i for i in range(P.STUB_HOPS)]
+    names = ["PLAN-h%d.md" % i for i in range(P.STUB_HOPS + 1)]
     for i, name in enumerate(names):
         _stub(
             tmp_path, name, "agent/plans/" + (names[i + 1] if i + 1 < len(names) else "PLAN-fx.md")
         )
+    # Review 0a17a1e3.1: a chain of exactly STUB_HOPS stubs that ends at a real plan resolves.
+    exact = names[1:]
+    assert P.resolve_plan(tmp_path, exact[0])[0] == "agent/plans/PLAN-fx.md"
     with pytest.raises(P.PlanBoxError, match="Moved-To chain"):
         P.resolve_plan(tmp_path, names[0])
     box = P.parse_plan_box("x\n\nPlan-Box: %s#%s clauses=all\n" % (names[0], OPEN_SIG)).boxes[0]
