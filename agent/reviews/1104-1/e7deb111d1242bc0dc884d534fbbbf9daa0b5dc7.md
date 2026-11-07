@@ -26,14 +26,14 @@ Resolution: not-a-bug | private/account/tests/integration/backup-storage.test.ts
 ### e7deb111.2 [high] src/services/backup-store-registry.ts:277
 Anchor: in-diff
 Claim: On re-registration (rotation) of an existing id, the upsert overwrites endpoint and bucket (and kind) with the request's values with no check against live manifests, so any snapshot tagged with that storeId is silently repointed to a different bucket and restores read the wrong store.
-Resolution: open
+Resolution: fixed d7adc45817c7c1b3589c2af77fad5cb2d04df11e | d778be9d 2026-11-07T14:28:29Z
 
 ### e7deb111.3 [high] src/services/backup-store-registry.ts:229
 Anchor: in-diff
 Claim: Registration sends HEAD/PUT/DELETE from the server to any https endpoint the caller names (the schema only checks the https:// prefix, no host allowlist), so a registrant can make the Worker or on-prem server issue requests to internal https hosts (SSRF).
-Resolution: open
+Resolution: fixed 3a80af334d9bbe976ac7b7be0aa554d8f2d7f8bf | d778be9d 2026-11-07T14:28:29Z
 
 ### e7deb111.4 [low] src/services/backup-storage.service.ts:521
 Anchor: in-diff
 Claim: requireSessionPlane falls back to this.requirePlane() (the home plane) when planeForSession returns null; planeForSession currently throws for every non-home store, so this is latent, but a future null return would silently send a customer-store session's bytes to home, contrary to the comment's guarantee.
-Resolution: open
+Resolution: fixed d59ad4780a4abff6f002a571c0c571f94b64c897 | d778be9d 2026-11-07T14:28:29Z
