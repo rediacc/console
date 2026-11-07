@@ -633,7 +633,9 @@ def test_the_proc_root_is_quoted_into_the_shell_command(tmp_path):
     root = tmp_path / "a b;touch pwned"
     command = mod.own_pids_command(proc=str(root))
     assert command.count(shlex.quote(str(root))) == 2
-    assert subprocess.run(["bash", "-c", command], capture_output=True, check=False).returncode == 0
+    # Run from tmp_path: an unquoted root would run `touch pwned` relative to the shell's cwd, which is where the file would appear.
+    done = subprocess.run(["bash", "-c", command], capture_output=True, check=False, cwd=tmp_path)
+    assert done.returncode == 0
     assert not (tmp_path / "pwned").exists()
 
 

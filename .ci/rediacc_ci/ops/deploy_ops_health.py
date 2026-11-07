@@ -29,6 +29,7 @@ import json
 import os
 import pathlib
 import re
+import socket
 import subprocess
 import sys
 import tempfile
@@ -348,7 +349,7 @@ def status_url(root: pathlib.Path) -> str:
 def fetch_deployed(url: str, token: str) -> Deployed | None:
     """The deployed state from `/v1/status`; None only when no Worker answers there (a first deploy).
 
-    A first deploy is a host that does not resolve or connect, or a 404. Any other HTTP status (a 401 from a rotated read token, a 5xx), a stall or malformed reply after the connection is made, or an unreadable body raises StatusUnreadableError: reading it as a first deploy would re-put every secret and run the create deploy over a Worker that exists.
+    A first deploy is a host that does not resolve or refuses the connection, or a 404. Any other HTTP status (a 401 from a rotated read token, a 5xx), a stall or malformed reply after the connection is made, or an unreadable body raises StatusUnreadableError: reading it as a first deploy would re-put every secret and run the create deploy over a Worker that exists.
     """
     request = https.build_request(url, headers={"Authorization": "Bearer %s" % token})
     try:
@@ -357,9 +358,11 @@ def fetch_deployed(url: str, token: str) -> Deployed | None:
         if exc.code == 404:
             return None
         raise StatusUnreadableError("%s answered HTTP %d" % (url, exc.code)) from exc
-    except urllib.error.URLError:
-        # urllib wraps a failure to resolve or connect in URLError; that is the only "no Worker answers" outcome.
-        return None
+    except urllib.error.URLError as exc:
+        # urllib wraps every OSError of h.request() in URLError, and that call also SENDS the request once connected, so a reset or a broken pipe arrives here too. Only a host that does not resolve or refuses the connection is "no Worker answers"; any other reason is a Worker that may exist.
+        if isinstance(exc.reason, (socket.gaierror, ConnectionRefusedError)):
+            return None
+        raise StatusUnreadableError("%s failed after the request began: %s" % (url, exc)) from exc
     except (TimeoutError, OSError, http.client.HTTPException) as exc:
         # urllib lets these escape only once the connection is made (a stall waiting for headers, a reset, a malformed reply): a Worker that exists and answers badly, never a first deploy.
         raise StatusUnreadableError("%s answered badly: %s" % (url, exc)) from exc

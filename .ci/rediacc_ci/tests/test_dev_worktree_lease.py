@@ -2405,8 +2405,10 @@ def test_gc_discard_dirty_removes_the_named_tree_and_prints_the_reason(repo):
     assert reason in done.stdout
 
 
-def test_gc_discard_dirty_prints_no_waiver_when_the_removal_did_not_finish(gc_repo, monkeypatch):
-    """Review 891cacd3.1: the WAIVE line audits a discard that happened, and a removal that left survivors discarded nothing completely."""
+def test_gc_discard_dirty_marks_the_waiver_incomplete_when_the_removal_did_not_finish(
+    gc_repo, monkeypatch
+):
+    """A removal that left survivors may still have discarded part of the dirty work, so the WAIVE line is printed and says the removal is incomplete."""
     repo = gc_repo
     tree = make_tree(repo, "wv")
     spike.write(tree / "scratch.txt", "work\n")
@@ -2415,7 +2417,10 @@ def test_gc_discard_dirty_prints_no_waiver_when_the_removal_did_not_finish(gc_re
     monkeypatch.setattr(lease, "_rollback", lambda *_args: [])
     code, lines = lease.run_gc(repo.root, write=True, only="wv", discard_dirty=reason)
     assert code == 1
-    assert not [ln for ln in lines if "WAIVE" in ln], lines
+    waived = [ln for ln in lines if "WAIVE" in ln]
+    assert len(waived) == 1, lines
+    assert "removal incomplete" in waived[0]
+    assert reason in waived[0]
     assert "1 not fully removed" in lines[-1]
 
 

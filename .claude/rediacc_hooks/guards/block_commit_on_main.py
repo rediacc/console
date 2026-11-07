@@ -345,7 +345,7 @@ def _file_writer(run):
     return " ".join([name, *run.argv][:4])
 
 
-# The writer verbs' options that take the NEXT word as their value: that word is a message, a path or a name, never a flag (`git merge -m --quit other`). `-s` and `-x` are values only where the verb says so (`merge`, `rebase` and `pull` take `-s <strategy>`, `rebase` takes `-x <cmd>`); for `cherry-pick`, `revert` and `am` they are the boolean `--signoff` and `--edit`/`-x` record, which consume nothing. `-S` takes its key id attached (`-S<keyid>`), never as the next word.
+# The writer verbs' options that take the NEXT word as their value: that word is a message, a path or a name, never a flag (`git merge -m --quit other`). `-s` and `-x` are values only where the verb says so (`merge`, `rebase` and `pull` take `-s <strategy>`, `rebase` takes `-x <cmd>`); for `cherry-pick`, `revert` and `am` `-s` is the boolean `--signoff` and `-x` (on `cherry-pick`, record the origin commit) is a boolean too, so neither consumes a word. `-S` takes its key id attached (`-S<keyid>`), never as the next word.
 VALUE_FLAGS = frozenset(
     (
         "-m",

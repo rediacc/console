@@ -118,6 +118,19 @@ function cosignBinaryCases(): ControlCase[] {
     }
     fs.chmodSync(cached, 0o755);
     const executable = cosignBinary({}, root);
+    // Broken again after the repair: the same file warns a second time.
+    fs.chmodSync(cached, 0o644);
+    const warnedAgain: string[] = [];
+    process.stderr.write = ((chunk: string | Uint8Array) => {
+      warnedAgain.push(String(chunk));
+      return true;
+    }) as typeof process.stderr.write;
+    try {
+      cosignBinary({}, root);
+    } finally {
+      process.stderr.write = realWrite;
+    }
+    fs.chmodSync(cached, 0o755);
     const explicit = cosignBinary({ PINS_COSIGN: '/x/cosign' }, root);
     fs.mkdirSync(path.join(dir, '1.0.0'), { recursive: true });
     fs.writeFileSync(path.join(dir, '1.0.0', 'cosign'), '#!/bin/sh\n', { mode: 0o755 });
@@ -143,6 +156,11 @@ function cosignBinaryCases(): ControlCase[] {
         name: 'cosignBinary: the not-executable warning names the file once however many checks call it',
         ok: warned.length === 1 && warned[0].includes(cached),
         detail: `${warned.length} warning(s)`,
+      },
+      {
+        name: 'cosignBinary: a file repaired and broken again warns again',
+        ok: warnedAgain.length === 1 && warnedAgain[0].includes(cached),
+        detail: `${warnedAgain.length} warning(s)`,
       },
       {
         name: 'CONTROL: no cache, and a cache at another version, both fall through to PATH',

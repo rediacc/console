@@ -567,22 +567,30 @@ def recipe_env(fleet: trigger.Fleet) -> dict[str, str]:
 
 
 SKIP_RESET_MARK = "BRIDGE_TEST_SKIP_RESET=1"
+_SEGMENT_SPLIT = re.compile(r"&&|\|\||[;|&]")
+_ENV_WORD = re.compile(r"[A-Za-z_][A-Za-z0-9_]*=\S*$")
 
 
 def leg_skips_reset(leg: trigger.Leg) -> bool:
-    """Whether a leg runs its suite on the VMs as found (BRIDGE_TEST_SKIP_RESET=1) instead of recreating them first."""
-    return any(SKIP_RESET_MARK in line for line in leg.cmd)
+    """Whether a leg runs its suite on the VMs as found (BRIDGE_TEST_SKIP_RESET=1) instead of recreating them first. The mark counts only as a whole word in the leading `VAR=value` prefix of one command, so an echo, a comment or `BRIDGE_TEST_SKIP_RESET=10` does not classify a leg as reuse."""
+    for line in leg.cmd:
+        for segment in _SEGMENT_SPLIT.split(line):
+            for word in segment.split():
+                if not _ENV_WORD.match(word):
+                    break
+                if word == SKIP_RESET_MARK:
+                    return True
+    return False
 
 
 def order_legs(legs: Sequence[tuple[str, trigger.Leg]]) -> list[tuple[str, trigger.Leg]]:
-    """`legs` with those whose fleet recipe sizes the disk (VM_DSK) first, and within that group the legs that skip the VM reset before the legs that reset, map order kept otherwise. Another leg's e2e setup resets every VM at the default disk, so a leg that reuses a sized VM must run before any reset; and a resetting leg leaves its own data on the datastore (fleet run 14: k8s-15 left backup-large-2g 9.4 GB of the 13.2 GB its 12G repository needs), so the reuse legs also come before the resetting legs of their own group."""
-    return sorted(
-        legs,
-        key=lambda al: (
-            "VM_DSK" not in recipe_env(trigger.MAP.fleets[al[1].fleet]),
-            not leg_skips_reset(al[1]),
-        ),
-    )
+    """`legs` with those whose fleet recipe sizes the disk (VM_DSK) first, and within that group only the legs that skip the VM reset before the legs that reset, map order kept otherwise. Another leg's e2e setup resets every VM at the default disk, so a leg that reuses a sized VM must run before any reset; and a resetting leg leaves its own data on the datastore (fleet run 14: k8s-15 left backup-large-2g 9.4 GB of the 13.2 GB its 12G repository needs), so the reuse legs of the sized group also come before its resetting legs. The legs outside the sized group keep map order."""
+
+    def key(al: tuple[str, trigger.Leg]) -> tuple[bool, bool]:
+        sized = "VM_DSK" in recipe_env(trigger.MAP.fleets[al[1].fleet])
+        return (not sized, sized and not leg_skips_reset(al[1]))
+
+    return sorted(legs, key=key)
 
 
 def judge_areas(

@@ -58,8 +58,9 @@ NO_COMMIT_LANDING = [
     # Review d412dae6.1: a word consumed by a value-taking option is that option's value.
     ("merge", "merge -m --quit other"),
     ("cherry-pick", "cherry-pick -m --abort 0123abc"),
-    # `-s` and `-x` take a value on merge and rebase only.
+    # `-s` takes a value on merge, rebase and pull; `-x` takes one on rebase only.
     ("merge", "merge -s --quit other"),
+    ("pull", "pull -s --quit origin"),
     ("rebase", "rebase -x --abort main"),
 ]
 # `commit` was refused before the fix too, so its rows are the unchanged baseline beside the new verbs.

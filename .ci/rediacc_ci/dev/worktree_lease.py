@@ -1512,9 +1512,12 @@ def run_gc(root, *, write=False, only="", discard_dirty=""):
                 lines.append("  %-6s  %-24s %s" % ("KEEP", row.lease_id, "; ".join(row.why)))
                 continue
             survived = _remove_row(world, row) if write else []
-            # A removal that left survivors discarded nothing completely, so it carries no audit line.
-            if waive_line and not survived:
-                lines.append(waive_line)
+            # A removal that left survivors may still have removed part of the dirty work, so it is audited too, marked incomplete.
+            if waive_line:
+                lines.append(
+                    waive_line
+                    + ("; removal incomplete, part of the tree may be gone" if survived else "")
+                )
             lines.append("  %-6s  %-24s every rule holds" % ("DELETE", row.lease_id))
             if survived:
                 failed += 1

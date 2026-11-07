@@ -4354,6 +4354,33 @@ def test_a_sized_leg_that_skips_the_reset_runs_before_a_sized_leg_that_resets() 
     assert ids.index("backup-large-2g") < ids.index("k8s-15"), ids
 
 
+def _fake_leg(leg_id: str, *cmd: str) -> Any:
+    return SimpleNamespace(id=leg_id, fleet="worker", cmd=list(cmd))
+
+
+def test_the_skip_reset_mark_counts_only_as_a_leading_env_assignment() -> None:
+    """A leg that merely mentions BRIDGE_TEST_SKIP_RESET=1, or sets =10, is not a reuse leg; a `cd x &&` prefix and other env words before the mark still are."""
+    assert vm_check.leg_skips_reset(_fake_leg("a", "BRIDGE_TEST_SKIP_RESET=1 npx playwright test"))
+    assert vm_check.leg_skips_reset(
+        _fake_leg("a", "cd e2e && VM_DSK=48 BRIDGE_TEST_SKIP_RESET=1 npx x")
+    )
+    assert not vm_check.leg_skips_reset(_fake_leg("a", "echo BRIDGE_TEST_SKIP_RESET=1 is unset"))
+    assert not vm_check.leg_skips_reset(_fake_leg("a", "npx x # BRIDGE_TEST_SKIP_RESET=1"))
+    assert not vm_check.leg_skips_reset(_fake_leg("a", "BRIDGE_TEST_SKIP_RESET=10 npx x"))
+    assert not vm_check.leg_skips_reset(_fake_leg("a", "npx x"))
+
+
+def test_reuse_legs_outside_the_sized_group_keep_map_order(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Only the VM_DSK group puts reuse legs first; elsewhere a reuse leg does not jump ahead of resetting legs."""
+    monkeypatch.setattr(vm_check, "recipe_env", lambda _fleet: {})
+    monkeypatch.setattr(vm_check.trigger, "MAP", SimpleNamespace(fleets={"worker": object()}))
+    legs = [
+        ("x", _fake_leg("a", "npx a")),
+        ("y", _fake_leg("b", "BRIDGE_TEST_SKIP_RESET=1 npx b")),
+    ]
+    assert [al[1].id for al in vm_check.order_legs(cast("Any", legs))] == ["a", "b"]
+
+
 def test_an_external_leg_command_runs_under_its_fleet_recipe_environment(
     tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

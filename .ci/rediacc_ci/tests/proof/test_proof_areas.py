@@ -350,15 +350,16 @@ def test_the_map_file_is_the_one_surfaces_reads() -> None:
 
 
 PLANE = re.compile(r"rediacc_ci\.testrun\.start_backup_plane\b")
-# A lone `&` backgrounds the command before it, so it chains too; the lookarounds keep `&&`, `2>&1`, `&>` and `|&` out of it.
+# A lone `&` backgrounds the command before it, so it chains too; the lookarounds keep `&&`, `2>&1` and `&>` out of the lone-`&` alternative, and `|&` is a chain through the `|` alternative.
 CHAIN = re.compile(r"&&|\|\||;|\||(?<![&<>|])&(?![&>])")
 
 
-QUOTED = re.compile("'[^']*'|\"[^\"]*\"")
+# A backslash-escaped character is consumed as a unit first, so an escaped quote neither opens nor closes a span.
+QUOTED = re.compile(r"\\.|'[^']*'|" r'"(?:\\.|[^"\\])*"')
 
 
 def plane_misuse(cmd: str) -> bool:
-    """True when some `start_backup_plane` in `cmd` neither hands its follow-on the environment (`-- <cmd>`) nor is a bare `--verify-renet` check. Each occurrence is judged over its own span, up to the next one: a second plane start chained after a valid follow-on is judged too. Only the plane's own arguments (before ` -- `, up to the first chain operator) can carry `--verify-renet`, and a chain operator inside the follow-on (outside quotes) starts a command the environment never reaches."""
+    """True when some `start_backup_plane` in `cmd` neither hands its follow-on the environment (`-- <cmd>`) nor is a bare `--verify-renet` check (one with no ` -- ` follow-on). Each occurrence is judged over its own span, up to the next one: a second plane start chained after a valid follow-on is judged too. Only the plane's own arguments (before ` -- `, up to the first chain operator) can carry `--verify-renet`, and a chain operator inside the follow-on (outside quotes) starts a command the environment never reaches."""
     starts = list(PLANE.finditer(cmd))
     for n, m in enumerate(starts):
         last = n + 1 == len(starts)
@@ -369,7 +370,7 @@ def plane_misuse(cmd: str) -> bool:
             ops = list(CHAIN.finditer(tail))
             tail = tail[: ops[-1].start()] if ops else tail
         own_args, sep, follow_on = tail.partition(" -- ")
-        if "--verify-renet" in CHAIN.split(own_args, maxsplit=1)[0]:
+        if not sep and "--verify-renet" in CHAIN.split(own_args, maxsplit=1)[0]:
             continue
         if not sep or CHAIN.search(own_args) or CHAIN.search(QUOTED.sub("", follow_on)):
             return True
@@ -377,7 +378,7 @@ def plane_misuse(cmd: str) -> bool:
 
 
 def test_plane_misuse_sees_a_backgrounded_command_after_the_follow_on() -> None:
-    """Review 0b6b9918.1: `&` backgrounds the command before it, so `evil` here runs outside the plane's environment and must be flagged, while a `2>&1` redirection in a follow-on is no chain."""
+    """`&` backgrounds the command before it, so `evil` here runs outside the plane's environment and must be flagged, while a `2>&1` redirection in a follow-on is no chain."""
     plane = "python3 -m rediacc_ci.testrun.start_backup_plane"
     assert plane_misuse(f"{plane} -- suite && evil & {plane} -- x")
     assert plane_misuse(f"{plane} -- suite & evil")
@@ -386,7 +387,7 @@ def test_plane_misuse_sees_a_backgrounded_command_after_the_follow_on() -> None:
 
 
 def test_plane_misuse_judges_only_the_planes_own_arguments_and_its_whole_follow_on() -> None:
-    """CONTROL for review 677a9b42.1 and .2: each spelling below runs a command outside the plane's environment."""
+    """CONTROL: a `--verify-renet` after the plane's own arguments, or a chain operator in the follow-on, each run a command outside the plane's environment."""
     plane = "python3 -m rediacc_ci.testrun.start_backup_plane"
     assert not plane_misuse("%s --verify-renet" % plane)
     assert not plane_misuse("%s --verify-renet && echo done" % plane)
@@ -396,6 +397,9 @@ def test_plane_misuse_judges_only_the_planes_own_arguments_and_its_whole_follow_
     assert plane_misuse("%s -- python3 -m suite --verify-renet && python3 -m other" % plane)
     assert plane_misuse("%s -- python3 -m suite && python3 -m other" % plane)
     assert plane_misuse("%s && python3 -m suite" % plane)
+    assert plane_misuse("%s --verify-renet -- suite && other" % plane)
+    assert plane_misuse('%s -- echo \\" && evil "x"' % plane)
+    assert not plane_misuse('%s -- echo \\" "a && b"' % plane)
 
 
 def test_a_leg_that_starts_the_backup_plane_runs_the_suite_as_its_follow_on() -> None:

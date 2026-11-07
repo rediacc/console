@@ -148,7 +148,11 @@ export const cosignBinary = (
   if (v) {
     const cached = path.join(root, '.ci', 'cache', 'toolchain', 'cosign', v, 'cosign');
     // An unexecutable file is no rung: spawning it would fail with EACCES, which reads as a broken check and not as the missing binary the install hint answers.
-    if (isExecutableFile(cached)) return cached;
+    if (isExecutableFile(cached)) {
+      // Repaired: a later break of the same file warns again.
+      warnedUnexecutable.delete(cached);
+      return cached;
+    }
     // Said aloud: the PATH rung below may be any cosign version, not the pinned one this file was proven with.
     if (fs.existsSync(cached) && !warnedUnexecutable.has(cached)) {
       warnedUnexecutable.add(cached);

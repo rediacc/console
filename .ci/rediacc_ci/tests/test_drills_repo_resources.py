@@ -230,36 +230,59 @@ def test_k3_compose_body_names_a_service() -> None:
     assert r.COMPOSE_FILE == "docker-compose.yml"
 
 
-def test_k3_records_no_skip_row_that_would_void_the_renet_phase() -> None:
-    """vm_check.phase_ran counts a phase only when every row is ok, so a recorded K3.6 skip row made every fleet run NOT_VERIFIED phase-not-run (run of 2026-11-06, 278 assertions, 0 failed)."""
-    src = inspect.getsource(r._Live.k3)
-    assert "record(" not in src.split("k3_5_unmount", 1)[1]
-    # By the syntax tree: a K3.6 reference anywhere inside a `record(...)` call (the literal, the K3_6_NOTE constant, a nested call), or a name an assignment bound to one (`note = r.K3_6_NOTE`; `record(note)`).
+def _k3_6_skip_records(src: str) -> list[str]:
+    """Every `record(...)` call in `src` that holds a K3.6 reference: the literal, the K3_6_NOTE constant, a nested call, or a name or attribute that an assignment (plain, annotated, or onto an attribute such as `self.note = r.K3_6_NOTE`) bound to one."""
     tree = ast.parse(textwrap.dedent(src))
 
     def mentions(node: ast.AST, aliases: set[str]) -> bool:
         return any(
             (isinstance(n, ast.Constant) and isinstance(n.value, str) and "K3.6" in n.value)
             or (isinstance(n, ast.Name | ast.Attribute) and "K3_6" in ast.unparse(n))
-            or (isinstance(n, ast.Name) and n.id in aliases)
+            or (isinstance(n, ast.Name | ast.Attribute) and ast.unparse(n) in aliases)
             for n in ast.walk(node)
         )
+
+    def bindings() -> list[tuple[ast.expr, ast.expr]]:
+        pairs: list[tuple[ast.expr, ast.expr]] = []
+        for a in ast.walk(tree):
+            if isinstance(a, ast.Assign):
+                pairs += [(t, a.value) for t in a.targets]
+            elif isinstance(a, ast.AnnAssign) and a.value is not None:
+                pairs.append((a.target, a.value))
+        return pairs
 
     aliases: set[str] = set()
     for _ in range(3):  # an alias of an alias
         aliases |= {
-            t.id
-            for a in ast.walk(tree)
-            if isinstance(a, ast.Assign) and mentions(a.value, aliases)
-            for t in a.targets
-            if isinstance(t, ast.Name)
+            ast.unparse(t)
+            for t, value in bindings()
+            if isinstance(t, ast.Name | ast.Attribute) and mentions(value, aliases)
         }
-    skips = [
+    return [
         ast.unparse(call)
         for call in ast.walk(tree)
         if isinstance(call, ast.Call)
         and (getattr(call.func, "attr", "") == "record" or getattr(call.func, "id", "") == "record")
         and mentions(call, aliases)
     ]
+
+
+def test_the_k3_6_skip_scan_follows_annotated_and_attribute_bindings() -> None:
+    """CONTROL: each binding shape below carries the K3.6 skip into a later record(...), and an unrelated record is not flagged."""
+    for src in (
+        "note = r.K3_6_NOTE\nrecord(note)",
+        "note: str = r.K3_6_NOTE\nrecord(note)",
+        "self.note = r.K3_6_NOTE\nrecord(self.note)",
+        "a = r.K3_6_NOTE\nb: str = a\nrecord(b)",
+    ):
+        assert _k3_6_skip_records(src), src
+    assert not _k3_6_skip_records("note: str = 'other'\nrecord(note)")
+
+
+def test_k3_records_no_skip_row_that_would_void_the_renet_phase() -> None:
+    """vm_check.phase_ran counts a phase only when every row is ok, so a recorded K3.6 skip row made every fleet run NOT_VERIFIED phase-not-run (run of 2026-11-06, 278 assertions, 0 failed)."""
+    src = inspect.getsource(r._Live.k3)
+    assert "record(" not in src.split("k3_5_unmount", 1)[1]
+    skips = _k3_6_skip_records(src)
     assert not skips, "no row anywhere in k3 may record the K3.6 skip: %s" % skips
     assert "K3.6" in r.K3_6_NOTE

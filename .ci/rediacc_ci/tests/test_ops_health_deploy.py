@@ -9,9 +9,10 @@ import email.message
 import http.client
 import json
 import pathlib
+import socket
 import subprocess
 import urllib.error
-from typing import Any, Self
+from typing import Any, Self, cast
 
 import pytest
 
@@ -309,7 +310,21 @@ def test_control_a_refused_or_failing_status_raises_rather_than_reading_as_first
 
 def test_a_404_or_an_unreachable_host_is_a_first_deploy(monkeypatch: pytest.MonkeyPatch) -> None:
     assert _fetch_with(monkeypatch, _http_error(404)) is None
-    assert _fetch_with(monkeypatch, urllib.error.URLError("Name or service not known")) is None
+    gone = urllib.error.URLError(socket.gaierror(-2, "Name or service not known"))
+    assert _fetch_with(monkeypatch, gone) is None
+    refused = urllib.error.URLError(ConnectionRefusedError(111, "Connection refused"))
+    assert _fetch_with(monkeypatch, refused) is None
+
+
+@pytest.mark.parametrize(
+    "reason",
+    [ConnectionResetError(104, "reset"), BrokenPipeError(32, "broken pipe"), "unknown"],
+)
+def test_a_urlerror_from_the_send_after_connecting_is_unreadable_not_a_first_deploy(
+    monkeypatch: pytest.MonkeyPatch, reason: object
+) -> None:
+    with pytest.raises(d.StatusUnreadableError, match="after the request began"):
+        _fetch_with(monkeypatch, urllib.error.URLError(cast("Any", reason)))
 
 
 def test_a_non_json_status_body_raises(monkeypatch: pytest.MonkeyPatch) -> None:
