@@ -57,16 +57,6 @@
       "pinVersion": "^0.301.0"
     },
     {
-      "label": "Pin the OpenTelemetry api-logs line (no 0.300 release yet)",
-      "packages": [
-        "**"
-      ],
-      "dependencies": [
-        "@opentelemetry/api-logs"
-      ],
-      "pinVersion": "^0.223.0"
-    },
-    {
       "label": "Pin the OpenTelemetry 3.x line in lockstep",
       "packages": [
         "**"
