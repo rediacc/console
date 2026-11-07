@@ -14,7 +14,7 @@ const execAsync = promisify(exec);
 const DEFAULT_DISKS_PATH = path.resolve(__dirname, '..', '..', '..', '..', 'ops', 'disks');
 
 /**
- * OS Image configuration matching pkg/infra/config/images.go
+ * OS Image configuration matching pkg/infra/opsconfig/images.go (GetKVMImages)
  */
 export interface OSImage {
   name: string;
@@ -48,7 +48,7 @@ export interface ValidationResult {
 }
 
 /**
- * All configured OS images matching pkg/infra/config/images.go
+ * All configured OS images matching pkg/infra/opsconfig/images.go (GetKVMImages)
  */
 export const CONFIGURED_IMAGES: OSImage[] = [
   // Debian family
@@ -60,21 +60,14 @@ export const CONFIGURED_IMAGES: OSImage[] = [
     family: 'debian',
   },
   {
-    name: 'debian-12',
-    url: 'https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-genericcloud-amd64.qcow2',
+    name: 'debian-13',
+    url: 'https://cloud.debian.org/images/cloud/trixie/latest/debian-13-genericcloud-amd64.qcow2',
     distro: 'debian',
-    variant: 'debian12',
+    variant: 'debian13',
     family: 'debian',
   },
 
   // RHEL family
-  {
-    name: 'centos-10-stream',
-    url: 'https://cloud.centos.org/centos/10-stream/x86_64/images/CentOS-Stream-GenericCloud-x86_64-10-latest.x86_64.qcow2',
-    distro: 'centos',
-    variant: 'centos-stream9',
-    family: 'rhel',
-  },
   {
     name: 'fedora-43',
     url: 'https://download.fedoraproject.org/pub/fedora/linux/releases/43/Cloud/x86_64/images/Fedora-Cloud-Base-Generic-43-1.6.x86_64.qcow2',
@@ -83,45 +76,17 @@ export const CONFIGURED_IMAGES: OSImage[] = [
     family: 'rhel',
   },
   {
-    name: 'fedora-41',
-    url: 'https://download.fedoraproject.org/pub/fedora/linux/releases/41/Cloud/x86_64/images/Fedora-Cloud-Base-Generic-41-1.4.x86_64.qcow2',
-    distro: 'fedora',
-    variant: 'fedora-unknown',
-    family: 'rhel',
-  },
-  {
-    name: 'oracle-9',
-    url: 'https://yum.oracle.com/templates/OracleLinux/OL9/u6/x86_64/OL9U6_x86_64-kvm-b265.qcow2',
+    name: 'oracle-10',
+    url: 'https://yum.oracle.com/templates/OracleLinux/OL10/u1/x86_64/OL10U1_x86_64-kvm-b270.qcow2',
     distro: 'oracle',
-    variant: 'ol9.0',
-    family: 'rhel',
-  },
-  {
-    name: 'oracle-8',
-    url: 'https://yum.oracle.com/templates/OracleLinux/OL8/u10/x86_64/OL8U10_x86_64-kvm-b258.qcow2',
-    distro: 'oracle',
-    variant: 'ol8.0',
-    family: 'rhel',
-  },
-  {
-    name: 'rocky-9',
-    url: 'https://dl.rockylinux.org/pub/rocky/9/images/x86_64/Rocky-9-GenericCloud-Base.latest.x86_64.qcow2',
-    distro: 'rocky',
-    variant: 'rocky9-unknown',
+    variant: 'ol9.4',
     family: 'rhel',
   },
 
   // SUSE family
   {
-    name: 'opensuse-15.6',
-    url: 'https://download.opensuse.org/repositories/Cloud:/Images:/Leap_15.6/images/openSUSE-Leap-15.6.x86_64-NoCloud.qcow2',
-    distro: 'suse',
-    variant: 'opensuse15.5',
-    family: 'suse',
-  },
-  {
-    name: 'opensuse-15.5',
-    url: 'https://download.opensuse.org/repositories/Cloud:/Images:/Leap_15.5/images/openSUSE-Leap-15.5.x86_64-NoCloud.qcow2',
+    name: 'opensuse-16.0',
+    url: 'https://download.opensuse.org/distribution/leap/16.0/appliances/Leap-16.0-Minimal-VM.x86_64-Cloud.qcow2',
     distro: 'suse',
     variant: 'opensuse15.5',
     family: 'suse',
@@ -188,10 +153,9 @@ export class ImageTestHelper {
    * Build a single custom image
    *
    * @param imageName - The image name (e.g., 'ubuntu-24.04')
-   * @param force - Force rebuild even if image exists
    * @returns Build result with success status and output
    */
-  async buildImage(imageName: string, force = false): Promise<BuildResult> {
+  async buildImage(imageName: string): Promise<BuildResult> {
     const image = this.getImageByName(imageName);
     if (!image) {
       return {
@@ -205,8 +169,8 @@ export class ImageTestHelper {
     }
 
     const startTime = Date.now();
-    const forceFlag = force ? '--force' : '';
-    const cmd = `${this.renetBin} ops image build "${image.url}" ${forceFlag}`.trim();
+    // renet requires --output; the helper reads the built image back from the same disks path.
+    const cmd = `${this.renetBin} ops image build --os ${image.name} --output "${this.disksPath}"`;
 
     try {
       const { stdout, stderr } = await execAsync(cmd, {
@@ -242,15 +206,14 @@ export class ImageTestHelper {
   /**
    * Build all configured images sequentially
    *
-   * @param force - Force rebuild even if images exist
    * @returns Map of image name to build result
    */
-  async buildAllImages(force = false): Promise<Map<string, BuildResult>> {
+  async buildAllImages(): Promise<Map<string, BuildResult>> {
     const results = new Map<string, BuildResult>();
 
     for (const image of CONFIGURED_IMAGES) {
       log(`Building image: ${image.name}...`);
-      const result = await this.buildImage(image.name, force);
+      const result = await this.buildImage(image.name);
       results.set(image.name, result);
 
       if (result.success) {
@@ -274,19 +237,20 @@ export class ImageTestHelper {
   /**
    * Get the full path to a custom image
    *
-   * Custom images are named: rediacc-<base-filename>
+   * renet writes the image into --output under the base filename of the
+   * source URL (opsconfig.OSImage.GetFilename), with no prefix.
    */
   getCustomImagePath(imageName: string): string {
     const image = this.getImageByName(imageName);
     if (!image) {
-      return path.join(this.disksPath, `rediacc-custom-${imageName}-amd64.qcow2`);
+      return path.join(this.disksPath, `${imageName}.qcow2`);
     }
 
     // Extract base filename from URL
     const urlPath = new URL(image.url).pathname;
     const baseFilename = path.basename(urlPath);
 
-    return path.join(this.disksPath, `rediacc-${baseFilename}`);
+    return path.join(this.disksPath, baseFilename);
   }
 
   /**
@@ -388,9 +352,7 @@ export class ImageTestHelper {
   listCustomImages(): string[] {
     try {
       const files = fs.readdirSync(this.disksPath);
-      return files.filter(
-        (f) => f.startsWith('rediacc-') && (f.endsWith('.qcow2') || f.endsWith('.img'))
-      );
+      return files.filter((f) => f.endsWith('.qcow2') || f.endsWith('.img'));
     } catch {
       return [];
     }
