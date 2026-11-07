@@ -21,4 +21,4 @@ Body-Sig: 1b62183ca6790e3a
 ### 9d264add.1 [low] .ci/rediacc_ci/ci/budget_report.py:2473
 Anchor: in-diff
 Claim: kept_on_thin now collects one 'lane/variant' string per thin variant instead of one per lane, so any stderr summary that counts 'variantCosts entr(ies)' reports variants, and no test asserts that count for a lane with two thin variants.
-Resolution: open
+Resolution: fixed 05c7b78a0933008a1e65eee05d19d2cfc7889e5e | d778be9d 2026-11-07T13:01:05Z

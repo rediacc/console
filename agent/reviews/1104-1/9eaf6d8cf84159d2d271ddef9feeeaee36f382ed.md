@@ -21,19 +21,19 @@ Body-Sig: fc490bd649cdb41b
 ### 9eaf6d8c.1 [medium] .ci/rediacc_ci/ops/deploy_ops_health.py:360
 Anchor: in-diff
 Claim: fetch_deployed still returns None (first deploy) for any TimeoutError or OSError raised inside https.urlopen, which includes a stall after TCP/TLS connect while the Worker is waiting to send headers; the docstring says a stall is never a first deploy, so a hung live Worker gets every secret re-put and a create deploy run over it.
-Resolution: open
+Resolution: fixed 8a0c77d5249910e79dac29053887f85d15cca990 | d778be9d 2026-11-07T13:01:05Z
 
 ### 9eaf6d8c.2 [low] .ci/rediacc_ci/ops/deploy_ops_health.py:355
 Anchor: in-diff
 Claim: An http.client.HTTPException such as BadStatusLine raised by https.urlopen on a live but malformed reply is not caught (it is not an OSError or URLError), so it escapes as a raw traceback instead of StatusUnreadableError, contrary to the 'any other answer ... stops the run' contract the docstring states.
-Resolution: open
+Resolution: fixed 8a0c77d5249910e79dac29053887f85d15cca990 | d778be9d 2026-11-07T13:01:05Z
 
 ### 9eaf6d8c.3 [medium] .ci/rediacc_ci/tests/test_ops_health.py:819
 Anchor: in-diff
 Claim: test_two_pairs_that_spell_one_source_name_keep_both_verdicts uses machines b-c and c that are each held by only one config, so machine_sources never joins or hashes them; the names are local-machine-b-c and local-machine-c, so the test passes with the collision handling removed and does not pin the behaviour its name claims.
-Resolution: open
+Resolution: fixed 8a0c77d5249910e79dac29053887f85d15cca990 | d778be9d 2026-11-07T13:01:05Z
 
 ### 9eaf6d8c.4 [low] .ci/rediacc_ci/tests/test_ops_health_deploy.py:343
 Anchor: in-diff
 Claim: test_a_body_of_invalid_utf8 sends b'\xff\xfe{', which json.loads reads as a UTF-16 BOM and fails on odd length, not as invalid UTF-8, so the test name overstates what it covers (a body such as b'{\xff' would be the real UTF-8 case).
-Resolution: open
+Resolution: fixed 8a0c77d5249910e79dac29053887f85d15cca990 | d778be9d 2026-11-07T13:01:05Z
