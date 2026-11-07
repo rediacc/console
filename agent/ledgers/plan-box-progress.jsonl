@@ -30,3 +30,4 @@
 {"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-backup-program.md","sig":"5d379672","clause":"C5","state":"live-owed","ref":"released #abd56226","at":"2026-11-06T22:28:08Z"}
 {"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-ssh-key-source-ranges.md","sig":"7692f2db","clause":"C2","state":"live-owed","ref":"released #658c04e3","at":"2026-11-07T02:46:52Z"}
 {"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-ssh-key-source-ranges.md","sig":"7692f2db","clause":"C3","state":"live-owed","ref":"released #658c04e3","at":"2026-11-07T02:46:52Z"}
+{"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-free-license.md","sig":"a543ecc2","clause":"all","state":"live-owed","ref":"released #a1fadff8","at":"2026-11-07T14:12:40Z"}
