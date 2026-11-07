@@ -44,7 +44,7 @@ from typing import TYPE_CHECKING
 
 from rediacc_ci import log, paths
 from rediacc_ci.core import wrangler
-from rediacc_ci.deploy import deploy_record
+from rediacc_ci.deploy import deploy_account, deploy_record
 from rediacc_ci.ops import bench_access, bench_preflight, cf_auth, push_backup_credentials
 from rediacc_ci.proof import receipt
 from rediacc_ci.well_known import BENCH_ORIGIN
@@ -732,6 +732,13 @@ def _deploy(auth: cf_auth.Auth, root) -> None:
             raise DeployError("preflight failed")
     finally:
         os.chdir(cwd)
+
+    log.step("Preflight: every queue bound in %s exists (missing ones are created)" % CONFIG)
+    try:
+        for name in deploy_account.check_queues(worker_dir / CONFIG, os.environ):
+            log.info("Created queue %s" % name)
+    except deploy_account.QueuePreflightError as exc:
+        raise DeployError(str(exc)) from None
 
     log.step("Building account portal SPA (captcha disabled on bench: no Turnstile sitekey)")
     refusal = bench_assets_refusal(worker_dir)

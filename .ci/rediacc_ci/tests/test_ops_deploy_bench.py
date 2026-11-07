@@ -592,3 +592,20 @@ def test_a_bench_config_on_production_assets_stops_before_any_build_or_write(mon
     with pytest.raises(deploy_bench.DeployError, match=r"not \./bench/dist"):
         deploy_bench._deploy(deploy_bench.cf_auth.Auth(token="t"), tmp_path)
     assert events == []
+
+
+def test_a_queue_preflight_failure_refuses_before_any_build_or_write(monkeypatch, tmp_path):
+    """The replicate queues the bench Worker binds are checked (and created) before the build, the migrations and the deploy."""
+    events: list[list[str]] = []
+    _deploy_world(monkeypatch, tmp_path, BENCH_ASSETS_TOML, events)
+    seen: list[str] = []
+
+    def refuse(config, _env):
+        seen.append(config.name)
+        raise deploy_bench.deploy_account.QueuePreflightError("queue create failed")
+
+    monkeypatch.setattr(deploy_bench.deploy_account, "check_queues", refuse)
+    with pytest.raises(deploy_bench.DeployError, match="queue create failed"):
+        deploy_bench._deploy(deploy_bench.cf_auth.Auth(token="t"), tmp_path)
+    assert seen == [deploy_bench.CONFIG]
+    assert events == []

@@ -64,7 +64,7 @@ import typing
 from rediacc_ci import log
 from rediacc_ci.core import common
 from rediacc_ci.core import wrangler as wrangler_cmd
-from rediacc_ci.ops import portal_captcha, service_bindings_audit
+from rediacc_ci.ops import portal_captcha, queues_audit, service_bindings_audit
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -273,6 +273,38 @@ def check_services(
         )
 
 
+class QueuePreflightError(Exception):
+    """A queue the config binds could not be confirmed or created. Nothing has been migrated when this is raised."""
+
+
+def check_queues(
+    config_path: pathlib.Path,
+    env: typing.Mapping[str, str],
+    fetch: queues_audit.Fetch = queues_audit._get,
+    post: queues_audit.Post = queues_audit._post,
+    *,
+    dry_run: bool = False,
+) -> list[str]:
+    """Before any migration, make every queue the config binds (producer, consumer, dead-letter) exist on the account; returns the names created (or, under `dry_run`, the names that would be created, with nothing written).
+
+    NOT PART OF THE TWIN. wrangler refuses a Worker bound to a missing queue only at `wrangler deploy`, after the migrations (commit 0c133e047f bound `BACKUP_REPLICATE_QUEUE` and its dead-letter queue in every account config). The missing ones are created through `rediacc_ci.ops.queues_audit.ensure`, dead-letter queues first; creation is idempotent and nothing is deleted. A failed create, or an audit with no verdict (rc 77, an unparseable config included), raises QueuePreflightError. A config with no queues makes no API call.
+    """
+    report = queues_audit.audit(config_path, env, fetch)
+    if report["rc"] == queues_audit.EX_UNAVAILABLE:
+        raise QueuePreflightError(
+            "The queues audit gave no verdict for %s (%s); no migration was applied"
+            % (config_path.name, report["error"])
+        )
+    missing = list(report["missing"])
+    if not missing or dry_run:
+        return missing
+    token, account = queues_audit.credentials(env)
+    try:
+        return queues_audit.ensure(account, token, missing, fetch, post)
+    except queues_audit.QueueCreateError as exc:
+        raise QueuePreflightError("%s; no migration was applied" % exc) from None
+
+
 def migrations_argv(db_name: str, config: str) -> list[str]:
     """`npx wrangler d1 migrations apply "$DB_NAME" --remote --config "$CONFIG"` (:60)."""
     return [
@@ -290,6 +322,22 @@ def migrations_argv(db_name: str, config: str) -> list[str]:
 def deploy_argv(config: str) -> list[str]:
     """`npx wrangler deploy --config "$CONFIG"` (:64)."""
     return [*wrangler_cmd.ARGV, "deploy", "--config", config]
+
+
+def _parses(path: pathlib.Path) -> bool:
+    try:
+        queues_audit.config_queues(path)
+    except queues_audit.QueueAuditError:
+        return False
+    return True
+
+
+def _has_credentials(env: typing.Mapping[str, str]) -> bool:
+    try:
+        queues_audit.credentials(env)
+    except queues_audit.QueueAuditError:
+        return False
+    return True
 
 
 # Every `ARG_*` key `main` reads. Anything else is refused by `common.parse_args` before a side effect; `--dry-run` is real (see `main`).
@@ -333,6 +381,23 @@ def main(argv: list[str]) -> int:
             log.error("Could not read database_name from %s" % config)
             return 1
         log.step("DRY RUN: %s %s (%s); no command is run" % (target, region, config))
+        bound = (
+            queues_audit.config_queues(worker_dir / config) if _parses(worker_dir / config) else []
+        )
+        if bound and not _has_credentials(os.environ):
+            print(
+                "queues not checked (no Cloudflare credentials): %s"
+                % ", ".join(q.name for q in bound),
+                flush=True,
+            )
+        elif bound:
+            try:
+                would = check_queues(worker_dir / config, os.environ, dry_run=True)
+            except QueuePreflightError as exc:
+                log.error(str(exc))
+                return 1
+            for name in would:
+                print("would create queue: %s" % name, flush=True)
         print("would run: %s" % " ".join(migrations_argv(db_preview, config)), flush=True)
         print("would run: %s" % " ".join(deploy_argv(config)), flush=True)
         return 0
@@ -368,6 +433,12 @@ def main(argv: list[str]) -> int:
     try:
         check_services(common.repo_root(), "/".join((*WORKER_SUBDIR, config)), os.environ)
     except ServiceBindingError as exc:
+        log.error(str(exc))
+        return 1
+    try:
+        for name in check_queues(worker_dir / config, os.environ):
+            log.info("Created queue %s" % name)
+    except QueuePreflightError as exc:
         log.error(str(exc))
         return 1
     log.step("Applying migrations to %s..." % db_name)
