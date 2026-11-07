@@ -10,6 +10,7 @@ import { t } from '../i18n/index.js';
 import {
   executeWithStoreFallback,
   pickStores,
+  type ResolveInStore,
   storeParam,
 } from '../services/backup/backup-store-pick.js';
 import { configService } from '../services/config/config-resources.js';
@@ -139,9 +140,10 @@ const NO_LISTING_MESSAGES: Record<string, string> = {
 const NO_LISTING_FALLBACK = 'commands.backup.restore.pathNoListing';
 
 /**
- * Run `backup_restore_path` for `repoKey` on `machineName`. `resolveSnapshot` maps the
- * `--at` value to a snapshot id; it is a parameter, not an import, because backup.ts owns
- * the resolver and the stream scope and a static import back would close a cycle.
+ * Run `backup_restore_path` for `repoKey` on `machineName`. `resolveSnapshot` returns the
+ * resolver that maps the `--at` value to a snapshot id inside one store; it is a parameter,
+ * not an import, because backup.ts owns the resolver and the stream scope and a static
+ * import back would close a cycle.
  */
 export async function runRestorePath(args: {
   repoKey: string;
@@ -152,7 +154,7 @@ export async function runRestorePath(args: {
   /** `--from <storeId>`: the backup store to read; without it the account's best-ranked store. */
   from?: string;
   debug?: boolean;
-  resolveSnapshot: (lineage: string, at: string) => Promise<string>;
+  resolveSnapshot: (lineage: string, at: string) => Promise<ResolveInStore>;
 }): Promise<void> {
   const { repoKey, machineName, at, path, to, debug, resolveSnapshot } = args;
   const repo = await configService.getRepository(repoKey);
@@ -163,13 +165,14 @@ export async function runRestorePath(args: {
     throw new ValidationError(t('commands.backup.restore.pathNeedsCredential', { name: repoKey }));
   }
   const lineage = lineageOf(repo);
-  const snapshotId = await resolveSnapshot(lineage, at);
-  // A store that fails for its own reasons (a 5xx, a refused grant) hands the read to the next ranked one. renet fetches into a staging file and places under --to only afterwards, rolling back what it placed on failure, so a failed attempt leaves nothing under --to for the next one to meet.
+  const resolveIn = await resolveSnapshot(lineage, at);
+  // Each store tried resolves the time inside itself, so a fallback reads the snapshot that store holds. A store that fails for its own reasons (a 5xx, a refused grant) hands the read to the next ranked one. renet fetches into a staging file and places under --to only afterwards, rolling back what it placed on failure, so a failed attempt leaves nothing under --to for the next one to meet.
   const pick = await pickStores(lineage, args.from);
   const failedMessage = t('commands.backup.restore.pathFailed', { name: repoKey });
   await executeWithStoreFallback(
     pick,
-    (store) =>
+    resolveIn,
+    (store, snapshotId) =>
       executeRepoFunction(
         'backup_restore_path',
         repoKey,

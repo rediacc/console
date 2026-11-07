@@ -429,9 +429,9 @@ export async function realUploadDeps(
 export function realStoreFetchDeps(): StoreFetchDeps {
   return {
     resolveLineage,
-    resolveSnapshot: async (lineage, at) => {
+    resolveSnapshot: async (lineage, at, store) => {
       const { resolveSnapshotAt } = await import('./backup.js');
-      return resolveSnapshotAt(lineage, at);
+      return resolveSnapshotAt(lineage, at, undefined, { store });
     },
     mintSession: (lineageGuid, store) =>
       accountServerFetch<RestoreSession>('/account/api/v1/backups/restore-session', {

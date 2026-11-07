@@ -4,6 +4,8 @@
  * The ranking route is declared wire (`GET /backups/stores/lineage/:lineageGuid`), so the pick is tested against both
  * its answer and its absence: an older account server answers 404, which means `home` alone and says nothing.
  */
+import { existsSync, readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mockFetch = vi.hoisted(() => vi.fn());
@@ -20,8 +22,14 @@ vi.mock('../../../i18n/index.js', () => ({
     params ? `${key} ${JSON.stringify(params)}` : key,
 }));
 
-const { executeWithStoreFallback, isStoreFailure, pickStores, runWithFallback, storeParam } =
-  await import('../backup-store-pick.js');
+const {
+  executeWithStoreFallback,
+  isStoreFailure,
+  pickStores,
+  runWithFallback,
+  runWithFallbackAt,
+  storeParam,
+} = await import('../backup-store-pick.js');
 
 const row = (storeId: string, newestSnapshotId: string | null = 's') => ({
   storeId,
@@ -159,6 +167,148 @@ describe('isStoreFailure on a coded rollback', () => {
   );
 });
 
+/** renet's restore-path codes, read from its source so the CLI's classifier cannot drift from what renet prints. */
+const PLAN_GO = fileURLToPath(
+  new URL('../../../../../../private/renet/pkg/restorepath/plan.go', import.meta.url)
+);
+const RENET_ABSENT = !existsSync(PLAN_GO);
+
+describe('isStoreFailure against renet restorepath codes (parity)', () => {
+  it.skipIf(RENET_ABSENT)(
+    RENET_ABSENT
+      ? 'SKIPPED: private/renet/pkg/restorepath/plan.go is absent (the renet submodule is not checked out), so parity with renet codes is unproven'
+      : 'reads each copy-out and path code from private/renet/pkg/restorepath/plan.go',
+    () => {
+      const source = readFileSync(PLAN_GO, 'utf8');
+      for (const name of [
+        'CodeRolledBack',
+        'CodeRollbackIncomplete',
+        'CodeNoSuchPath',
+        'CodeNoListing',
+      ]) {
+        const value = new RegExp(`\\b${name}\\s*=\\s*"([A-Z_]+)"`).exec(source)?.[1];
+        expect(value, `${name} is declared in plan.go`).toBeDefined();
+        // A store word in the same line would move the restore on, unless the code is recognised as the machine's own.
+        const line = JSON.stringify({ code: value, message: 'copy failed: HTTP 502 bad gateway' });
+        expect(isStoreFailure({ stdout: line }), `${name}=${value}`).toBe(false);
+      }
+      // Control: the same line without a recognised code is a store failure.
+      expect(
+        isStoreFailure({
+          stdout: JSON.stringify({ code: 'X', message: 'copy failed: HTTP 502 bad gateway' }),
+        })
+      ).toBe(true);
+    }
+  );
+});
+
+describe('runWithFallbackAt', () => {
+  const fail = (error: string) => ({ ok: false as const, failure: { error } });
+  const IN: Record<string, string> = { a: 'snap-a', b: 'snap-b', c: 'snap-c' };
+  const resolveIn = (missing: string[] = []) =>
+    vi.fn((store: string) =>
+      missing.includes(store)
+        ? Promise.reject(new Error(`no snapshot in ${store}`))
+        : Promise.resolve(IN[store])
+    );
+
+  it('resolves only the first store when it serves', async () => {
+    const resolve = resolveIn();
+    const attempt = vi.fn(async () => ({ ok: true as const, value: 'done' }));
+    const result = await runWithFallbackAt(
+      { stores: ['a', 'b'], explicit: false },
+      resolve,
+      attempt
+    );
+    expect(result).toEqual({ ok: true, store: 'a', value: 'done', snapshotId: 'snap-a' });
+    expect(resolve.mock.calls).toEqual([['a']]);
+  });
+
+  it('resolves the time again inside the store a failure falls back to', async () => {
+    const resolve = resolveIn();
+    const attempt = vi
+      .fn()
+      .mockResolvedValueOnce(fail('HTTP 503'))
+      .mockResolvedValueOnce({ ok: true, value: 'done' });
+    const onFallback = vi.fn();
+    const result = await runWithFallbackAt(
+      { stores: ['a', 'b'], explicit: false },
+      resolve,
+      attempt,
+      onFallback
+    );
+    expect(attempt.mock.calls.map((c) => [c[0], c[1]])).toEqual([
+      ['a', 'snap-a'],
+      ['b', 'snap-b'],
+    ]);
+    expect(result).toMatchObject({ ok: true, store: 'b', snapshotId: 'snap-b' });
+    expect(onFallback).toHaveBeenCalledWith('a', 'b', { error: 'HTTP 503' });
+  });
+
+  it('passes over a store holding no snapshot, both first and on a fallback', async () => {
+    const resolve = resolveIn(['a', 'b']);
+    const attempt = vi.fn(async () => ({ ok: true as const, value: 'done' }));
+    const result = await runWithFallbackAt(
+      { stores: ['a', 'b', 'c'], explicit: false },
+      resolve,
+      attempt
+    );
+    expect(result).toMatchObject({ ok: true, store: 'c', snapshotId: 'snap-c' });
+
+    const fallback = vi.fn();
+    const twice = vi
+      .fn()
+      .mockResolvedValueOnce(fail('HTTP 503'))
+      .mockResolvedValueOnce({ ok: true, value: 'done' });
+    const moved = await runWithFallbackAt(
+      { stores: ['a', 'b', 'c'], explicit: false },
+      resolveIn(['b']),
+      twice,
+      fallback
+    );
+    expect(moved).toMatchObject({ ok: true, store: 'c', snapshotId: 'snap-c' });
+    expect(fallback).toHaveBeenCalledWith('a', 'c', { error: 'HTTP 503' });
+  });
+
+  it('ends on a store failure when no later store resolves, telling the attempt it does not move on', async () => {
+    let said: boolean | undefined;
+    const attempt = vi.fn(async (_s: string, _id: string, movesOn) => {
+      said = await movesOn({ error: 'HTTP 503' });
+      return fail('HTTP 503');
+    });
+    const result = await runWithFallbackAt(
+      { stores: ['a', 'b'], explicit: false },
+      resolveIn(['b']),
+      attempt
+    );
+    expect(said).toBe(false);
+    expect(result).toMatchObject({ ok: false, store: 'a', snapshotId: 'snap-a' });
+    expect(attempt).toHaveBeenCalledTimes(1);
+  });
+
+  it('throws the first store refusal when no store resolves', async () => {
+    await expect(
+      runWithFallbackAt({ stores: ['a', 'b'], explicit: false }, resolveIn(['a', 'b']), vi.fn())
+    ).rejects.toThrow('no snapshot in a');
+  });
+
+  it('resolves an explicit store alone and throws its refusal as is', async () => {
+    const resolve = resolveIn(['a']);
+    await expect(
+      runWithFallbackAt({ stores: ['a'], explicit: true }, resolve, vi.fn())
+    ).rejects.toThrow('no snapshot in a');
+    expect(resolve).toHaveBeenCalledTimes(1);
+  });
+
+  it('throws an account error from the first resolve rather than passing the store over', async () => {
+    const resolve = vi.fn(() => Promise.reject(Object.assign(new Error('boom'), { status: 500 })));
+    await expect(
+      runWithFallbackAt({ stores: ['a', 'b'], explicit: false }, resolve, vi.fn())
+    ).rejects.toThrow('boom');
+    expect(resolve).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe('executeWithStoreFallback', () => {
   const ok = { success: true, exitCode: 0, durationMs: 1 };
   const bad = (error: string) => ({ success: false, exitCode: 1, error, durationMs: 1 });
@@ -167,6 +317,7 @@ describe('executeWithStoreFallback', () => {
     const run = vi.fn(async () => ok);
     const out = await executeWithStoreFallback(
       { stores: ['eu-west'], explicit: true },
+      async () => 'snap',
       run,
       'failed'
     );
@@ -176,7 +327,12 @@ describe('executeWithStoreFallback', () => {
   });
 
   it('says nothing for home alone served first, as before stores existed', async () => {
-    await executeWithStoreFallback({ stores: ['home'], explicit: false }, async () => ok, 'failed');
+    await executeWithStoreFallback(
+      { stores: ['home'], explicit: false },
+      async () => 'snap',
+      async () => ok,
+      'failed'
+    );
     expect(mockInfo).not.toHaveBeenCalled();
   });
 
@@ -184,11 +340,17 @@ describe('executeWithStoreFallback', () => {
     const run = vi.fn(async () => bad('HTTP 502 bad gateway'));
     const out = await executeWithStoreFallback(
       { stores: ['a', 'b'], explicit: false },
+      async (store) => `snap-${store}`,
       run,
       'failed'
     );
     expect(run).toHaveBeenCalledTimes(2);
     expect(out.store).toBe('b');
+    expect(out.snapshotId).toBe('snap-b');
+    expect(run.mock.calls).toEqual([
+      ['a', 'snap-a'],
+      ['b', 'snap-b'],
+    ]);
     expect(mockRender).toHaveBeenCalledTimes(1);
     expect(mockRender.mock.calls[0][1]).toBe('HTTP 502 bad gateway');
   });

@@ -4,8 +4,8 @@ import { accountServerFetch } from '../services/account/account-client.js';
 import { DEFAULT_DATASTORE } from '../services/account/license-machine.js';
 import {
   type AttemptFailure,
-  isStoreFailure,
-  runWithFallback,
+  type ResolveInStore,
+  runWithFallbackAt,
   type StorePick,
 } from '../services/backup/backup-store-pick.js';
 import { namedDatastoreMount } from '../services/cluster/cluster-target.js';
@@ -104,28 +104,30 @@ export async function lineageHasSnapshots(lineage: string, name: string): Promis
 
 /**
  * Place a whole-image chunk restore from the lineage's stores: `--from`'s store alone, or the account's ranking with
- * a fallback to the next store when one fails for its own reasons (5xx, refused grant, unreachable). A store that is
- * not the last of the pick hands its failure back unrendered when it is the store's; every other failure, and the
- * last store's, is rendered by the attempt itself. Says which store served.
+ * a fallback to the next store when one fails for its own reasons (5xx, refused grant, unreachable). The requested
+ * point is resolved inside each store before that store's attempt, so a fallback restores the snapshot the next store
+ * holds rather than one only the failed store had; a store holding none at or before the point is passed over. An
+ * attempt hands its failure back unrendered only when that failure moves the run on to another store; every other
+ * failure, the last store's included, is rendered by the attempt itself. Says which store served.
  */
 export async function restoreFromStores(args: {
   /** Chosen before the target is registered, so a refused ranking leaves nothing to roll back. */
   pick: StorePick;
-  /** One attempt against `store`: register the target, run the restore, and defer a failure `deferIf` accepts. */
+  /** The snapshot the requested point names inside `store`; its refusal is thrown before anything is registered. */
+  resolve: ResolveInStore;
+  /** One attempt against `store`: register the target, restore `snapshotId`, and defer a failure `deferIf` accepts. */
   attempt: (
     store: string,
-    deferIf: ((failure: AttemptFailure) => boolean) | undefined
+    snapshotId: string,
+    deferIf: ((failure: AttemptFailure) => Promise<boolean>) | undefined
   ) => Promise<ChunkRestoreResult>;
 }): Promise<void> {
   const { pick } = args;
-  const last = pick.stores.at(-1);
-  const result = await runWithFallback(
+  const result = await runWithFallbackAt(
     pick,
-    async (store) => {
-      const outcome = await args.attempt(
-        store,
-        pick.explicit || store === last ? undefined : isStoreFailure
-      );
+    args.resolve,
+    async (store, snapshotId, movesOn) => {
+      const outcome = await args.attempt(store, snapshotId, pick.explicit ? undefined : movesOn);
       return outcome.ok ? { ok: true, value: undefined } : { ok: false, failure: outcome.failure };
     },
     (failed, next) => {

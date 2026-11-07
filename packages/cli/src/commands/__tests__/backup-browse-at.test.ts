@@ -121,7 +121,7 @@ async function run(argv: string[]): Promise<void> {
 const SNAPSHOT = '01J0000000000000000000SNAP';
 // Browse reads a stored listing, so it asks for the nearest indexed snapshot (D-listing).
 const ANY = { anyStream: true };
-const INDEXED = { indexed: true };
+const INDEXED = { indexed: true, store: 'home' };
 
 const listingStdout = JSON.stringify({
   source: 'snapshot',
@@ -368,5 +368,71 @@ describe('backup browse --at store fallback', () => {
     expect(stores()).toEqual(['eu-west']);
     expect(mockWarn).not.toHaveBeenCalled();
     expect(mockRenderFailure).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('backup browse --at resolves the time inside each store (item #acd03b8a)', () => {
+  const AT = '2026-08-16T00:00:00Z';
+  const RANKED = { stores: ['eu-west', 'home'], explicit: false };
+  const IN_STORE: Record<string, string> = { 'eu-west': 'snap-eu', home: 'snap-home' };
+  const resolvedIn = () => mockResolveSnapshotAt.mock.calls.map((c) => c[3].store);
+  const browsed = () => mockExecuteRepoFunction.mock.calls.map((c) => [c[3].store, c[3].at]);
+
+  beforeEach(() => {
+    mockResolveSnapshotAt.mockImplementation(
+      (_lineage: string, _at: string, _scope: unknown, options: { store: string }) =>
+        Promise.resolve(IN_STORE[options.store])
+    );
+  });
+
+  it('with --from, resolves inside that store only', async () => {
+    await run(['browse', 'shop', '--at', AT, '--from', 'eu-west']);
+
+    expect(resolvedIn()).toEqual(['eu-west']);
+    expect(browsed()).toEqual([['eu-west', 'snap-eu']]);
+  });
+
+  it('on a fallback, resolves the time again inside the next store', async () => {
+    mockPick.mockResolvedValue(RANKED);
+    let i = 0;
+    mockExecuteRepoFunction.mockImplementation(() =>
+      Promise.resolve(
+        i++ === 0
+          ? { success: false, exitCode: 1, error: 'HTTP 502 bad gateway', stdout: '' }
+          : { success: true, exitCode: 0, stdout: listingStdout }
+      )
+    );
+
+    await run(['browse', 'shop', '--at', AT]);
+
+    expect(resolvedIn()).toEqual(['eu-west', 'home']);
+    expect(browsed()).toEqual([
+      ['eu-west', 'snap-eu'],
+      [undefined, 'snap-home'],
+    ]);
+  });
+
+  it('passes over a store holding no snapshot at that time, without a fallback warning', async () => {
+    mockPick.mockResolvedValue(RANKED);
+    mockResolveSnapshotAt.mockImplementation(
+      (_lineage: string, _at: string, _scope: unknown, options: { store: string }) =>
+        options.store === 'eu-west'
+          ? Promise.reject(new ValidationError('no snapshot at or before'))
+          : Promise.resolve('snap-home')
+    );
+
+    await run(['browse', 'shop', '--at', AT]);
+
+    expect(browsed()).toEqual([[undefined, 'snap-home']]);
+    expect(mockWarn).not.toHaveBeenCalled();
+  });
+
+  it('throws the refusal of an explicit --from store that holds none, browsing nothing', async () => {
+    mockResolveSnapshotAt.mockRejectedValue(new ValidationError('no snapshot at or before'));
+
+    await expect(run(['browse', 'shop', '--at', AT, '--from', 'eu-west'])).rejects.toBeInstanceOf(
+      ValidationError
+    );
+    expect(mockExecuteRepoFunction).not.toHaveBeenCalled();
   });
 });

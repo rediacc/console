@@ -140,25 +140,122 @@ export async function runWithFallback<T>(
   return { ok: false, ...last };
 }
 
+/** Turns the requested point (`--at`) into the snapshot id it names INSIDE one store. */
+export type ResolveInStore = (store: string) => Promise<string>;
+
+/** Whether a resolve refusal is the account's answer (it carries an HTTP status), which every store would give alike. */
+function isAccountError(error: unknown): boolean {
+  return typeof (error as { status?: unknown } | null)?.status === 'number';
+}
+
+interface Candidate {
+  index: number;
+  store: string;
+  snapshotId: string;
+}
+
+/**
+ * The first store of the pick, from `start` on, where the point resolves. A refusal the resolver makes itself passes
+ * over the store and is kept in `refusals`; an account error is thrown from the first pass (`first`) and ends the
+ * search on a later one; an explicit pick throws whatever its one store answers.
+ */
+async function resolveFrom(
+  pick: StorePick,
+  resolve: ResolveInStore,
+  start: number,
+  first: boolean,
+  refusals: unknown[]
+): Promise<Candidate | undefined> {
+  for (let index = start; index < pick.stores.length; index++) {
+    const store = pick.stores[index];
+    const answer = await resolve(store).then(
+      (snapshotId) => ({ snapshotId }),
+      (error: unknown) => ({ error })
+    );
+    if ('snapshotId' in answer) return { index, store, snapshotId: answer.snapshotId };
+    const account = isAccountError(answer.error);
+    if (pick.explicit || (first && account)) throw answer.error;
+    if (account) return undefined;
+    refusals.push(answer.error);
+  }
+  return undefined;
+}
+
+/**
+ * {@link runWithFallback} with the requested point resolved again inside each store, because a time names a different
+ * snapshot in each store (each holds its own runs) and a snapshot one store holds can be absent from the next. A store
+ * is resolved when it is reached: the first before any attempt, the next only once a store failure would move on to it.
+ *
+ * In a ranked pick a store where the point resolves to nothing (the resolver's own refusal, which carries no HTTP
+ * status) is passed over silently; when no store resolves, the first store's refusal is thrown. An explicit `--from`
+ * resolves in its store alone and throws its refusal as is. A refusal with an HTTP status (the account itself
+ * failed) is thrown at once from the first resolve, and ends the fallback when it comes from a later one.
+ *
+ * `attempt` gets `movesOn(failure)`, which answers whether that failure would hand the run to another store, so a
+ * caller that must decide inside the attempt whether to render (a whole-image restore) decides by the same rule.
+ */
+export async function runWithFallbackAt<T>(
+  pick: StorePick,
+  resolve: ResolveInStore,
+  attempt: (
+    store: string,
+    snapshotId: string,
+    movesOn: (failure: AttemptFailure) => Promise<boolean>
+  ) => Promise<Attempt<T>>,
+  onFallback?: (failed: string, next: string, failure: AttemptFailure) => void
+): Promise<FallbackResult<T> & { snapshotId: string }> {
+  const refusals: unknown[] = [];
+  let current = await resolveFrom(pick, resolve, 0, true, refusals);
+  if (current === undefined) throw refusals[0];
+  for (;;) {
+    const here: Candidate = current;
+    let next: Promise<Candidate | undefined> | undefined;
+    const following = () => {
+      next ??= resolveFrom(pick, resolve, here.index + 1, false, refusals);
+      return next;
+    };
+    const movesOn = async (failure: AttemptFailure) =>
+      !pick.explicit && isStoreFailure(failure) && (await following()) !== undefined;
+    const outcome = await attempt(here.store, here.snapshotId, movesOn);
+    if (outcome.ok) {
+      return { ok: true, store: here.store, value: outcome.value, snapshotId: here.snapshotId };
+    }
+    if (!(await movesOn(outcome.failure))) {
+      return {
+        ok: false,
+        store: here.store,
+        failure: outcome.failure,
+        snapshotId: here.snapshotId,
+      };
+    }
+    const to = (await following()) as Candidate;
+    onFallback?.(here.store, to.store, outcome.failure);
+    current = to;
+  }
+}
+
 /**
  * Run a renet verb through `executeRepoFunction` once per store until one serves it. The verb must be called with
  * `failureIsAnswer: true`, because a failure that rendered would exit the process before the next store was tried.
  * The failure that ends the run (a snapshot's own, an explicit `--from`, the last store) is rendered here, exactly as
  * `executeRepoFunction` would have. A job still running past the attach window counts as served. The store that
- * served is announced when it is not home alone, which is what every read did before stores existed.
+ * served is announced when it is not home alone, which is what every read did before stores existed. `resolve` names
+ * the snapshot inside each store tried ({@link runWithFallbackAt}), and the result carries the one that was read.
  */
 export async function executeWithStoreFallback(
   pick: StorePick,
-  run: (store: string) => Promise<ExecuteResult>,
+  resolve: ResolveInStore,
+  run: (store: string, snapshotId: string) => Promise<ExecuteResult>,
   failedMessage: string
-): Promise<{ result: ExecuteResult; store: string }> {
+): Promise<{ result: ExecuteResult; store: string; snapshotId: string }> {
   // The result of the latest attempt: when no store serves, it is the one to render.
   let latest: ExecuteResult | undefined;
   let fellBack = false;
-  const served = await runWithFallback(
+  const served = await runWithFallbackAt(
     pick,
-    async (store) => {
-      const result = await run(store);
+    resolve,
+    async (store, snapshotId) => {
+      const result = await run(store, snapshotId);
       latest = result;
       if (result.success || result.state === 'running') return { ok: true as const, value: result };
       const { exitCode, error, errorCode, stdout, stderr } = result;
@@ -173,11 +270,11 @@ export async function executeWithStoreFallback(
     if (served.store !== HOME_STORE || pick.explicit || fellBack) {
       outputService.info(t('commands.backup.restore.storeServed', { store: served.store }));
     }
-    return { result: served.value, store: served.store };
+    return { result: served.value, store: served.store, snapshotId: served.snapshotId };
   }
   const result = latest as ExecuteResult;
   renderLocalExecutionFailure(result, result.error ?? failedMessage);
-  return { result, store: served.store };
+  return { result, store: served.store, snapshotId: served.snapshotId };
 }
 
 /** What `backup status` says about one store, summed over the streams the machine's repositories write to it. */

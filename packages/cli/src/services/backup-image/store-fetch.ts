@@ -12,7 +12,7 @@ import { ValidationError } from '../../utils/errors.js';
 import {
   type AttemptFailure,
   HOME_STORE,
-  runWithFallback,
+  runWithFallbackAt,
   type StorePick,
 } from '../backup/backup-store-pick.js';
 import { outputService } from '../core/output.js';
@@ -50,7 +50,8 @@ export interface RenetRun {
 
 export interface StoreFetchDeps {
   resolveLineage(ref: string): Promise<string>;
-  resolveSnapshot(lineage: string, at: string): Promise<string>;
+  /** The snapshot `at` names inside `store` (a snapshot id is answered as is). */
+  resolveSnapshot(lineage: string, at: string, store: string): Promise<string>;
   /** `store` is absent for `home`. */
   mintSession(lineage: string, store?: string): Promise<RestoreSession>;
   /** The stores to try, ranked by the account; absent means `home` alone. */
@@ -153,18 +154,12 @@ function parseFetchRecord(stdout: string): FetchImageRecord | null {
 }
 
 /**
- * The lineage and snapshot to fetch. Both reads take backup:read, so a token
- * with only backup:restore is refused here first, and the refusal names both
- * scopes. No --at means the newest snapshot: a time of now resolves to it.
+ * The lineage and snapshot reads take backup:read, so a token with only backup:restore is
+ * refused at the first of them, and the refusal names both scopes.
  */
-async function resolveTarget(
-  req: StoreFetchRequest,
-  deps: StoreFetchDeps
-): Promise<{ lineage: string; snapshotId: string }> {
+async function refusingScope<T>(read: () => Promise<T>): Promise<T> {
   try {
-    const lineage = await deps.resolveLineage(req.ref);
-    const snapshotId = await deps.resolveSnapshot(lineage, req.at ?? deps.now().toISOString());
-    return { lineage, snapshotId };
+    return await read();
   } catch (error) {
     if ((error as StatusError | null)?.status === 403) throw describeSessionRefusal(error);
     throw error;
@@ -178,24 +173,38 @@ function isSessionRefusal(error: unknown): error is Error & { [REFUSED_FROM]: un
   return error instanceof Error && REFUSED_FROM in error;
 }
 
+/** The `cause` an error carries, read as a status error. */
+function causeOf(error: unknown): StatusError | null | undefined {
+  return (error as { cause?: unknown } | null | undefined)?.cause as StatusError | null | undefined;
+}
+
 /** The HTTP status an error carries: its own, else a numeric one on its `cause`. */
 function statusOf(error: unknown): number | undefined {
   const own = (error as StatusError | null | undefined)?.status;
   if (own !== undefined) return own;
-  const inherited = (
-    (error as { cause?: unknown } | null | undefined)?.cause as StatusError | null | undefined
-  )?.status;
+  const inherited = causeOf(error)?.status;
   return typeof inherited === 'number' ? inherited : undefined;
 }
 
+/** The account error code an error carries: its own, else a string one on its `cause`, read like {@link statusOf}. */
+function codeOf(error: unknown): string | undefined {
+  const own = (error as StatusError | null | undefined)?.code;
+  if (own !== undefined) return own;
+  const inherited = causeOf(error)?.code;
+  return typeof inherited === 'string' ? inherited : undefined;
+}
+
 /**
- * What a thrown mint or fetch error says to the store-fault classifier: its HTTP status counts as text, and a mint the
- * store refused with a 403 that names no account-level code (retention, team scope, role) is that store's refused grant.
- * A session refusal was rewritten into a message for the operator, so the original error rides marked under `REFUSED_FROM`; any other error is read as it is, whatever `cause` it carries.
+ * What a thrown mint or fetch error says to the store-fault classifier: its HTTP status counts as text, and a 403 that
+ * names no account-level code (retention, team scope, role) is that store's refused grant, so the run falls back.
+ * A session refusal was rewritten into a message for the operator, so the original error rides marked under
+ * `REFUSED_FROM` and is the one read. The status and the code are each the error's own, else the one its `cause`
+ * carries ({@link statusOf}, {@link codeOf}): a 403 only the cause carries is read as a 403, and a code only the cause
+ * carries keeps an account-level 403 from reading as the store's.
  */
 function failureOf(error: unknown): AttemptFailure {
   const original = isSessionRefusal(error) ? error[REFUSED_FROM] : error;
-  const { code } = (original ?? {}) as StatusError;
+  const code = codeOf(original);
   const status = statusOf(original);
   const message = original instanceof Error ? original.message : String(original);
   if (status === 403 && code === undefined) return { error: `grant refused (HTTP 403) ${message}` };
@@ -242,7 +251,9 @@ export async function runStoreFetch(
   req: StoreFetchRequest,
   deps: StoreFetchDeps
 ): Promise<StoreFetchResult> {
-  const { lineage, snapshotId } = await resolveTarget(req, deps);
+  const lineage = await refusingScope(() => deps.resolveLineage(req.ref));
+  // No --at means the newest snapshot: a time of now resolves to it, inside each store tried.
+  const at = req.at ?? deps.now().toISOString();
 
   const pick: StorePick =
     req.store === undefined
@@ -250,20 +261,23 @@ export async function runStoreFetch(
       : { stores: [req.store], explicit: true };
   // The error a failed attempt raised, rethrown as is when no store served.
   let raised: Error | undefined;
-  const served = await runWithFallback(
-    pick,
-    async (store) => {
-      try {
-        const record = await fetchFromStore(req, deps, lineage, snapshotId, store);
-        return { ok: true as const, value: record };
-      } catch (error) {
-        raised = error instanceof Error ? error : new Error(String(error));
-        return { ok: false as const, failure: failureOf(error) };
+  const served = await refusingScope(() =>
+    runWithFallbackAt(
+      pick,
+      (store) => deps.resolveSnapshot(lineage, at, store),
+      async (store, snapshotId) => {
+        try {
+          const record = await fetchFromStore(req, deps, lineage, snapshotId, store);
+          return { ok: true as const, value: record };
+        } catch (error) {
+          raised = error instanceof Error ? error : new Error(String(error));
+          return { ok: false as const, failure: failureOf(error) };
+        }
+      },
+      (failed, next) => {
+        outputService.warn(t('commands.backup.restore.storeFallback', { failed, next }));
       }
-    },
-    (failed, next) => {
-      outputService.warn(t('commands.backup.restore.storeFallback', { failed, next }));
-    }
+    )
   );
   if (!served.ok) {
     throw raised ?? new Error(t('errors.backupImage.storeFetchFailed', { reason: 'unknown' }));
@@ -273,5 +287,5 @@ export async function runStoreFetch(
   if (head.length < LUKS_MAGIC.length || !head.subarray(0, LUKS_MAGIC.length).equals(LUKS_MAGIC)) {
     throw new Error(t('errors.backupImage.storeNoLuksHeader', { image: req.dest }));
   }
-  return { snapshotId, dest: req.dest, record, store: served.store };
+  return { snapshotId: served.snapshotId, dest: req.dest, record, store: served.store };
 }

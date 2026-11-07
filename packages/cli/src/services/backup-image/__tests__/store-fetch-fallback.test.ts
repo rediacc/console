@@ -157,4 +157,71 @@ describe('failure classification', () => {
     await runStoreFetch({ ref: 'r', dest: '/d' }, d.base);
     expect(minted(d)).toEqual(['eu-west', undefined]);
   });
+
+  // A refused grant from the store is the store's fault, so a 403 the error carries only on its cause falls back too.
+  it('reads a cause-only 403 with no code as a refused grant, and falls back', async () => {
+    const d = deps({
+      'eu-west': Object.assign(new Error('mint failed'), { cause: { status: 403 } }),
+    });
+    const result = await runStoreFetch({ ref: 'r', dest: '/d' }, d.base);
+    expect(minted(d)).toEqual(['eu-west', undefined]);
+    expect(result.store).toBe('home');
+    expect(mockWarn).toHaveBeenCalledWith(FALLBACK);
+  });
+
+  // An account-level 403 (team scope, role, retention) is the same answer from every store.
+  it('does not read a cause-only 403 carrying an account code as a store fault', async () => {
+    const d = deps({
+      'eu-west': Object.assign(new Error('mint failed'), {
+        cause: { status: 403, code: 'TEAM_SCOPE_REQUIRED' },
+      }),
+    });
+    await expect(runStoreFetch({ ref: 'r', dest: '/d' }, d.base)).rejects.toThrow();
+    expect(minted(d)).toEqual(['eu-west']);
+    expect(mockWarn).not.toHaveBeenCalled();
+  });
+});
+
+describe('backup download --store resolves the time inside each store (item #acd03b8a)', () => {
+  const AT = '2026-08-10T00:00:00Z';
+  const IN_STORE: Record<string, string> = {
+    'eu-west': '20260809T000000Z-aaaaaaaaaaaaaaaa',
+    home: '20260808T000000Z-bbbbbbbbbbbbbbbb',
+  };
+  const snapshots = (d: { runRenet: ReturnType<typeof vi.fn> }) =>
+    d.runRenet.mock.calls.map(
+      (c) => (c[1] as string[])[(c[1] as string[]).indexOf('--snapshot') + 1]
+    );
+
+  it('with --store, resolves inside that store only', async () => {
+    const d = deps({});
+    const resolveSnapshot = vi.fn(
+      async (_l: string, _at: string, store: string) => IN_STORE[store]
+    );
+    d.base.resolveSnapshot = resolveSnapshot;
+    const result = await runStoreFetch({ ref: 'r', dest: '/d', at: AT, store: 'eu-west' }, d.base);
+    expect(resolveSnapshot.mock.calls).toEqual([[LINEAGE, AT, 'eu-west']]);
+    expect(result.snapshotId).toBe(IN_STORE['eu-west']);
+  });
+
+  it('on a fallback, fetches the snapshot the next store resolves, and reports it', async () => {
+    const d = deps({ 'eu-west': httpError(502, 'bad gateway') });
+    const resolveSnapshot = vi.fn(
+      async (_l: string, _at: string, store: string) => IN_STORE[store]
+    );
+    d.base.resolveSnapshot = resolveSnapshot;
+    const result = await runStoreFetch({ ref: 'r', dest: '/d', at: AT }, d.base);
+    expect(resolveSnapshot.mock.calls.map((c) => c[2])).toEqual(['eu-west', 'home']);
+    expect(snapshots(d)).toEqual([IN_STORE.home]);
+    expect(result).toMatchObject({ store: 'home', snapshotId: IN_STORE.home });
+  });
+
+  it('keeps the backup:read refusal of a 403 from the resolve', async () => {
+    const d = deps({});
+    d.base.resolveSnapshot = async () => Promise.reject(httpError(403, 'forbidden'));
+    await expect(runStoreFetch({ ref: 'r', dest: '/d', at: AT }, d.base)).rejects.toThrow(
+      'errors.backupImage.storeNoScope'
+    );
+    expect(d.runRenet).not.toHaveBeenCalled();
+  });
 });

@@ -486,4 +486,49 @@ describe('backup restore --path store fallback', () => {
     expect(mockWarn).not.toHaveBeenCalled();
     expect(mockRenderFailure).toHaveBeenCalledTimes(1);
   });
+
+  it('resolves a time inside each store tried: --from alone, and again on a fallback (item #acd03b8a)', async () => {
+    const IN_STORE: Record<string, string> = {
+      'eu-west': '20260814T110000Z-eeeeeeeeeeeeeeee',
+      home: '20260814T100000Z-hhhhhhhhhhhhhhhh',
+    };
+    const storeOf = (path: string) => new URL(path, 'https://x').searchParams.get('storeId');
+    mockAccountServerFetch.mockImplementation((path: string) => {
+      if (path.includes('/stores/lineage/')) {
+        return Promise.resolve({
+          stores: ['eu-west', 'home'].map((storeId) => ({
+            storeId,
+            newestSnapshotId: IN_STORE[storeId],
+            newestSnapshotAt: null,
+            lastVerifyOk: true,
+          })),
+        });
+      }
+      const snapshotId = IN_STORE[storeOf(path) ?? ''];
+      return Promise.resolve({ snapshotId, streamId: 's', hasIndex: true, createdAt: 'x' });
+    });
+    const restorePathCalls = () =>
+      mockExecuteRepoFunction.mock.calls.filter((c) => c[0] === 'backup_restore_path');
+    let i = 0;
+    mockExecuteRepoFunction.mockImplementation((fn: string) =>
+      Promise.resolve(fn !== 'backup_restore_path' || i++ > 0 ? ok : failed('HTTP 502 bad gateway'))
+    );
+    const time = ['r@m1', '--at', '2026-08-14T12:00:00Z', '--path', '/a', '--any-stream'];
+
+    await run(time);
+    expect(restorePathCalls().map((c) => [c[3].store, c[3].at])).toEqual([
+      ['eu-west', IN_STORE['eu-west']],
+      [undefined, IN_STORE.home],
+    ]);
+
+    mockExecuteRepoFunction.mockClear();
+    mockAccountServerFetch.mockClear();
+    await run([...time, '--from', 'home']);
+    const resolved = mockAccountServerFetch.mock.calls
+      .map((c) => c[0] as string)
+      .filter((p) => p.includes('/snapshots/resolve'))
+      .map(storeOf);
+    expect(resolved).toEqual(['home']);
+    expect(restorePathCalls().map((c) => c[3].at)).toEqual([IN_STORE.home]);
+  });
 });

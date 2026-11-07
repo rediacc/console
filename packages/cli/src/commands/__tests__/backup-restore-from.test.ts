@@ -287,3 +287,70 @@ describe('backup restore default pick', () => {
     expect(stores()).toEqual(['eu-west', undefined]);
   });
 });
+
+describe('backup restore --at <time> resolves inside each store (item #acd03b8a)', () => {
+  const AT = '2026-11-04T00:00:00Z';
+  const IN_STORE: Record<string, string | undefined> = {
+    'eu-west': 'snap-eu',
+    home: 'snap-home',
+  };
+  const storeOf = (path: string) => new URL(path, 'https://x').searchParams.get('storeId');
+  const resolvedIn = () =>
+    mockFetch.mock.calls
+      .map((c) => c[0] as string)
+      .filter((p) => p.includes('/snapshots/resolve'))
+      .map(storeOf);
+  const restored = () => calls('backup_restore').map((c) => c[0].params.at);
+
+  function holding(table: Record<string, string | undefined>): void {
+    mockFetch.mockImplementation((path: string) => {
+      if (!path.includes('/snapshots/resolve')) return Promise.resolve({ manifests: [] });
+      const snapshotId = table[storeOf(path) ?? ''];
+      return snapshotId
+        ? Promise.resolve({ snapshotId, streamId: 's', createdAt: '2026-11-03T00:00:00.000Z' })
+        : Promise.reject(Object.assign(new Error('not found'), { status: 404 }));
+    });
+  }
+
+  it('with --from, resolves inside that store only', async () => {
+    holding(IN_STORE);
+    restoreAnswers.push(OK);
+    await run([...ARGS, '--at', AT, '--from', 'eu-west']);
+    expect(resolvedIn()).toEqual(['eu-west']);
+    expect(restored()).toEqual(['snap-eu']);
+  });
+
+  it('on a fallback, restores the snapshot the next store resolves the time to', async () => {
+    holding(IN_STORE);
+    restoreAnswers.push(failed('HTTP 502 bad gateway'), OK);
+    await run([...ARGS, '--at', AT]);
+    expect(resolvedIn()).toEqual(['eu-west', 'home']);
+    expect(restored()).toEqual(['snap-eu', 'snap-home']);
+  });
+
+  it('passes over a store holding nothing at that time, registering nothing for it', async () => {
+    holding({ home: 'snap-home' });
+    restoreAnswers.push(OK);
+    await run([...ARGS, '--at', AT]);
+    expect(stores()).toEqual([undefined]);
+    expect(restored()).toEqual(['snap-home']);
+    expect(mockAddRepository).toHaveBeenCalledTimes(1);
+  });
+
+  it('refuses a --from store holding nothing at that time before registering anything', async () => {
+    holding({ home: 'snap-home' });
+    await expect(run([...ARGS, '--at', AT, '--from', 'eu-west'])).rejects.toThrow(
+      'commands.backup.restore.atNoSnapshot'
+    );
+    expect(mockAddRepository).not.toHaveBeenCalled();
+    expect(calls('backup_restore')).toHaveLength(0);
+  });
+
+  it('renders a store failure when no later store holds the time, rather than deferring it', async () => {
+    holding({ 'eu-west': 'snap-eu' });
+    restoreAnswers.push(failed('HTTP 502 bad gateway'));
+    await expect(run([...ARGS, '--at', AT])).rejects.toThrow('process exited');
+    expect(stores()).toEqual(['eu-west']);
+    expect(mockRenderFailure).toHaveBeenCalled();
+  });
+});

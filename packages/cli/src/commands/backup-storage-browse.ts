@@ -40,8 +40,8 @@ export async function resolveLineage(repoRef: string): Promise<string> {
 
 /**
  * `backup browse --at`: list a stored snapshot from the chunk store instead of the
- * mounted image. Resolves the time or snapshot id to a snapshot id first, then runs
- * the renet `backup_browse_at` verb, which reads the snapshot's listing object.
+ * mounted image. Resolves the time or snapshot id to a snapshot id inside each store it
+ * tries, then runs the renet `backup_browse_at` verb, which reads that listing object.
  */
 export async function runBrowseAt(
   repoKey: string,
@@ -59,14 +59,14 @@ export async function runBrowseAt(
   const lineage = lineageOf(repo);
   // Dynamic: backup.ts statically imports backup-storage.ts, which imports this file, so a static import back would close a cycle.
   const { resolveSnapshotAt } = await import('./backup.js');
-  // A listing is read from the snapshot, so a time with no listing falls back to the nearest one that has it.
-  const snapshotId = await resolveSnapshotAt(lineage, at, { anyStream: true }, { indexed: true });
-  // A store that fails for its own reasons (a 5xx, a refused grant) hands the listing to the next ranked one.
+  // A store that fails for its own reasons (a 5xx, a refused grant) hands the listing to the next ranked one, and each store tried resolves the time inside itself.
   const pick = await pickStores(lineage, options.from);
   const failedMessage = t('commands.backup.browse.failed', { name: repoKey });
-  const { result } = await executeWithStoreFallback(
+  const { result, snapshotId } = await executeWithStoreFallback(
     pick,
-    (store) =>
+    // A listing is read from the snapshot, so a time with no listing falls back to the nearest one that has it.
+    (store) => resolveSnapshotAt(lineage, at, { anyStream: true }, { indexed: true, store }),
+    (store, snapshotId) =>
       executeRepoFunction(
         'backup_browse_at',
         repoKey,

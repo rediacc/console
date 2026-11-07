@@ -88,6 +88,8 @@ function parseAtTime(at: string, scope: StreamScope): Date {
 export interface ResolveOptions {
   /** Prefer a snapshot with a stored listing: the nearest one at or before the time, with the gap stated. */
   indexed?: boolean;
+  /** Resolve inside this backup store only, so the snapshot answered is one it holds; absent searches every store. */
+  store?: string;
 }
 
 /**
@@ -113,9 +115,11 @@ export async function resolveSnapshotAt(
 
   // Resolving a time reads the hosted snapshot index, which a Free License (or no login) does not have.
   assertHostedBackupAccount();
-  const stream = scope.anyStream
-    ? { anyStream: '1' }
-    : { anchorSnapshotId: scope.anchorSnapshotId };
+  // The store rides every lookup below, the refusal's probe and the indexed fallback included.
+  const stream = {
+    ...(scope.anyStream ? { anyStream: '1' } : { anchorSnapshotId: scope.anchorSnapshotId }),
+    storeId: options.store,
+  };
   const whenIso = when.toISOString();
   const chosen = await fetchResolved(lineage, { ...stream, at: whenIso });
   if (!chosen) return refuseNoSnapshot(lineage, scope, stream, at);
@@ -243,19 +247,21 @@ export async function streamScopeFor(args: {
 }
 
 /**
- * The snapshot a whole-image chunk restore places: the stream scope (the source machine's anchor,
- * unless `--any-stream` or an explicit snapshot id) and the index lookup. Run before the target is
- * registered, so every refusal here leaves nothing to roll back.
+ * The resolver of the snapshot a whole-image chunk restore places, one store at a time: the stream
+ * scope (the source machine's anchor, unless `--any-stream` or an explicit snapshot id) is read once,
+ * here, and each store the restore tries resolves the time inside itself. Called before the target
+ * is registered, so the probe's refusal leaves nothing to roll back, and the store fallback resolves
+ * each store before that store's attempt registers anything.
  */
-export async function resolveChunkSnapshot(args: {
+export async function chunkSnapshotResolver(args: {
   lineage: string;
   at: string;
   anyStream: boolean;
   source: { repoName: string; machine: string };
   debug?: boolean;
-}): Promise<string> {
+}): Promise<(store: string) => Promise<string>> {
   const scope = await streamScopeFor(args);
-  return resolveSnapshotAt(args.lineage, args.at, scope);
+  return (store) => resolveSnapshotAt(args.lineage, args.at, scope, { store });
 }
 
 /** A chunk restore's outcome: a failure is returned only when the caller's `deferIf` accepted it. */
@@ -273,7 +279,7 @@ export async function runChunkRestore(args: {
   targetMachine: string;
   datastore: string | undefined;
   lineage: string;
-  /** Resolved by {@link resolveChunkSnapshot} before the target was registered. */
+  /** Resolved inside `store` by {@link chunkSnapshotResolver} before the target was registered. */
   snapshotId: string;
   noSeed: boolean;
   /** Place an image the repository passphrase did not open (renet keeps the staged copy otherwise). */
@@ -283,7 +289,7 @@ export async function runChunkRestore(args: {
   /** The backup store to read from; absent or `home` is the home store. */
   store?: string;
   /** A failed outcome this accepts is returned instead of rendered, so the caller can try another store. */
-  deferIf?: (failure: AttemptFailure) => boolean;
+  deferIf?: (failure: AttemptFailure) => boolean | Promise<boolean>;
   debug?: boolean;
   after: PlannedStep[];
 }): Promise<ChunkRestoreResult> {
@@ -328,7 +334,7 @@ export async function runChunkRestore(args: {
   if (outcome.kind === 'finished' && !outcome.result.success) {
     const { exitCode, error, errorCode, stdout, stderr } = outcome.result;
     const failure = { exitCode, error, errorCode, stdout, stderr };
-    if (args.deferIf?.(failure)) return { ok: false, failure, rendered: false };
+    if (await args.deferIf?.(failure)) return { ok: false, failure, rendered: false };
     settleRestore(outcome, targetName, targetMachine);
     return { ok: false, failure, rendered: true };
   }

@@ -52,6 +52,7 @@ const REPORT_FIELDS_GO = 'private/renet/cmd/renet/backup_snapshot_report.go';
 const RESTORE_SIZE_TS = 'packages/cli/src/services/executor/repo-license-context.ts';
 const RESTORE_TEST_TS = 'packages/cli/src/commands/backup-restore-test.ts';
 const RESTORE_SESSION_TS = 'packages/cli/src/commands/backup-image-deps.ts';
+const RESOLVE_AT_TS = 'packages/cli/src/commands/backup-restore-chunk.ts';
 
 interface Leg {
   /** Route path as mounted in the account's backups router. */
@@ -108,29 +109,95 @@ interface Leg {
 const bodyKey = (key: string) => new RegExp(`[{,]\\s*${key}\\s*[:,}]`);
 
 /**
- * The expression the CLI passes as `body:` to the POST to `call`: from the first `body:` after the route to the
- * property's end (a top-level comma or the closing brace of the options object), so a ternary of two object literals
- * is read whole and a `{ storeId` elsewhere in the file is not.
+ * The index just past the bracket that closes the one at `open` (`{`, `(` or `[`), with quoted text skipped so a brace
+ * inside a string does not count; -1 when it never closes.
+ */
+function closeOf(text: string, open: number): number {
+  let depth = 0;
+  for (let i = open; i < text.length; i++) {
+    const ch = text[i];
+    if (ch === "'" || ch === '"' || ch === '`') {
+      const close = text.indexOf(ch, i + 1);
+      if (close === -1) return -1;
+      i = close;
+    } else if (ch === '{' || ch === '(' || ch === '[') depth++;
+    else if (ch === '}' || ch === ')' || ch === ']') {
+      depth--;
+      if (depth === 0) return i + 1;
+    }
+  }
+  return -1;
+}
+
+/** The top-level properties of an object literal `{...}`: name to value text, a shorthand's value being its name. */
+function topLevelProps(object: string): Map<string, string> {
+  const props = new Map<string, string>();
+  const inner = object.slice(1, -1);
+  const segments: string[] = [];
+  let from = 0;
+  for (let i = 0; i < inner.length; i++) {
+    const ch = inner[i];
+    if (ch === "'" || ch === '"' || ch === '`' || ch === '{' || ch === '(' || ch === '[') {
+      const close =
+        ch === '{' || ch === '(' || ch === '[' ? closeOf(inner, i) : inner.indexOf(ch, i + 1) + 1;
+      if (close <= 0) break;
+      i = close - 1;
+    } else if (ch === ',') {
+      segments.push(inner.slice(from, i));
+      from = i + 1;
+    }
+  }
+  segments.push(inner.slice(from));
+  for (const segment of segments) {
+    const m = /^\s*([A-Za-z_$][\w$]*)\s*(?::([\s\S]*))?$/.exec(segment);
+    if (m) props.set(m[1], m[2] ?? m[1]);
+  }
+  return props;
+}
+
+/**
+ * The expression the CLI passes as `body:` to the POST to `call`: the route as a quoted string, then an options object
+ * read with balanced brackets (so a nested object before `method:` still matches), whose top-level `method` is `'POST'`.
+ * The body is that object's own top-level `body` property, so a ternary of two object literals is read whole, and a
+ * `body:` of a later call, or a `{ storeId` elsewhere in the file, is never read for a POST that sends none.
  */
 function postBodyOf(call: string): (speaker: string) => string | null {
   const escaped = call.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  // The route as a quoted string, then an options object holding `method: 'POST'`: an earlier mention is not the call.
-  const postCall = new RegExp(`${escaped}['"\`]\\s*,\\s*\\{[^{}]*?method:\\s*['"]POST['"]`);
   return (speaker) => {
-    const hit = postCall.exec(speaker);
-    if (hit === null) return null;
-    const bodyAt = speaker.indexOf('body:', hit.index);
-    if (bodyAt === -1) return null;
-    let depth = 0;
-    for (let i = bodyAt + 'body:'.length; i < speaker.length; i++) {
-      const ch = speaker[i];
-      if (ch === '{' || ch === '(' || ch === '[') depth++;
-      else if (ch === '}' || ch === ')' || ch === ']') {
-        depth--;
-        if (depth < 0) return speaker.slice(bodyAt, i);
-      } else if (ch === ',' && depth === 0) return speaker.slice(bodyAt, i);
+    // An earlier mention of the route (a comment, a constant, a GET) is passed over: only a POST's options count.
+    for (const hit of speaker.matchAll(new RegExp(`${escaped}['"\`]\\s*,\\s*\\{`, 'g'))) {
+      const open = hit.index + hit[0].length - 1;
+      const close = closeOf(speaker, open);
+      if (close === -1) continue;
+      const props = topLevelProps(speaker.slice(open, close));
+      if (!/^\s*['"]POST['"]\s*$/.test(props.get('method') ?? '')) continue;
+      const body = props.get('body');
+      return body === undefined ? null : `body: ${body}`;
     }
-    return speaker.slice(bodyAt);
+    return null;
+  };
+}
+
+/**
+ * The bodies of the named top-level TypeScript functions, joined: the slice of a speaker that builds one query, so a key
+ * named elsewhere in the file cannot stand in for it. Null when any of them is not defined.
+ */
+function tsFunctionBodies(...names: string[]): (speaker: string) => string | null {
+  return (speaker) => {
+    const bodies: string[] = [];
+    for (const name of names) {
+      const head = new RegExp(`^(?:export\\s+)?(?:async\\s+)?function\\s+${name}\\s*\\(`, 'm').exec(
+        speaker
+      );
+      if (!head) return null;
+      const paramsEnd = closeOf(speaker, head.index + head[0].length - 1);
+      if (paramsEnd === -1) return null;
+      const open = speaker.indexOf('{', paramsEnd);
+      const close = open === -1 ? -1 : closeOf(speaker, open);
+      if (close === -1) return null;
+      bodies.push(speaker.slice(open, close));
+    }
+    return bodies.join('\n');
   };
 }
 
@@ -306,6 +373,18 @@ const LEGS: Leg[] = [
     clientFiles: [RESTORE_SESSION_TS],
     keySpelling: bodyKey,
     requestScope: postBodyOf('/backups/restore-session'),
+  },
+  // A time resolves inside the store a restore reads (PLAN-backup-multi-target C3 follow-up, item #acd03b8a): `storeId` rides the query resolveSnapshotAt builds, so a snapshot only another store holds is never handed to this one. A spelling the query schema does not accept is stripped silently and the resolve spans every store again, with no error.
+  {
+    path: '/snapshots/resolve',
+    requestSchema: 'backupSnapshotResolveQuery',
+    responseSchema: 'backupSnapshotResolveResponse',
+    requestKeys: ['lineage', 'storeId'],
+    responseKeys: [],
+    clientCall: /RESOLVE_ROUTE = '\/account\/api\/v1\/backups\/snapshots\/resolve'/,
+    clientFiles: [RESOLVE_AT_TS],
+    keySpelling: bodyKey,
+    requestScope: tsFunctionBodies('fetchResolved', 'resolveSnapshotAt'),
   },
   // A delayed delete still restores until its time, and the resolve route hides it unless asked. The two by-id size reads ask: without it a restore of one is licensed at the minimum size, and a restore test refuses it for an unknown size.
   ...[RESTORE_SIZE_TS, RESTORE_TEST_TS].map(
@@ -805,7 +884,9 @@ if (clientCalls(releaseLeg, `// ${releaseSend}`) || clientCalls(releaseLeg, 'log
  * session.go text here so a leg falling back to that file reads as a blind arm.
  */
 const reportLeg = LEGS.find((leg) => leg.path === '/reports');
-const resolveLegs = LEGS.filter((leg) => leg.path === '/snapshots/resolve');
+const resolveLegs = LEGS.filter(
+  (leg) => leg.path === '/snapshots/resolve' && leg.requestKeys.includes('includeDeleted')
+);
 if (!reportLeg || resolveLegs.length !== 2) {
   console.error('✗ speaker control: the /reports leg or a /snapshots/resolve leg is gone.');
   process.exit(1);
@@ -878,6 +959,14 @@ if (!restoreLeg) {
         'body: s === undefined ? { lineageGuid } : { lineageGuid, storeId: s }, x: 1'
       ),
     }).length !== 0 ||
+    // a nested object before `method:` must not hide the POST (1a0788d8.4).
+    checkLegs([restoreLeg], `${route}\n${both}`, '', '', {
+      [RESTORE_SESSION_TS]: `fetch('${call}', { headers: { a: '{' }, method: 'POST', body: { lineageGuid, storeId: s } })`,
+    }).length !== 0 ||
+    // a POST with no body must not borrow the body of a later, unrelated call (1a0788d8.3).
+    checkLegs([restoreLeg], `${route}\n${both}`, '', '', {
+      [RESTORE_SESSION_TS]: `${post('headers: {}')}\nother('/x', { method: 'POST', body: { lineageGuid, storeId: s } });`,
+    }).length === 0 ||
     run(`${route}`, both, 'lineageGuid, storeId: store').length === 0
   ) {
     console.error('✗ restore-session control: storeId not pinned on both sides of the leg.');
@@ -960,6 +1049,49 @@ if (!sessionLeg) {
   }
 }
 
+/**
+ * Eleventh control, the store a time resolves in: the leg must pass with `storeId` in the query resolveSnapshotAt
+ * builds, and fail when the query schema drops it, when the speaker names it only outside the two functions that build
+ * the query, and when either function is gone.
+ */
+{
+  const leg = LEGS.find(
+    (l) => l.path === '/snapshots/resolve' && (l.clientFiles ?? []).includes(RESOLVE_AT_TS)
+  );
+  if (!leg) {
+    console.error('✗ resolve-store control: the /snapshots/resolve storeId leg is gone.');
+    process.exit(1);
+  }
+  const route = "'/snapshots/resolve'";
+  const query = (keys: string) =>
+    `export const backupSnapshotResolveQuery = z.object({\n${keys}});`;
+  const accepts = query('  lineage: guidSchema,\n  storeId: backupStoreIdSchema.optional(),\n');
+  const constant = "const RESOLVE_ROUTE = '/account/api/v1/backups/snapshots/resolve';";
+  const fetcher =
+    'async function fetchResolved(lineage: string, q: Q): Promise<E> {\n  const params = new URLSearchParams({ lineage });\n}';
+  const resolver = (stream: string) =>
+    `export async function resolveSnapshotAt(\n  lineage: string,\n  options: O = {}\n): Promise<string> {\n  const stream = { ${stream} };\n  return fetchResolved(lineage, stream);\n}`;
+  const speak = (text: string) => ({ [RESOLVE_AT_TS]: `${constant}\n${text}` });
+  const check = (dtoText: string, text: string) =>
+    checkLegs([{ ...leg, responseSchema: null }], route, dtoText, '', speak(text));
+  if (
+    check(accepts, `${fetcher}\n${resolver("anyStream: '1', storeId: options.store")}`).length !==
+      0 ||
+    check(
+      query('  lineage: guidSchema,\n'),
+      `${fetcher}\n${resolver("anyStream: '1', storeId: options.store")}`
+    ).length === 0 ||
+    check(accepts, `${fetcher}\n${resolver("anyStream: '1'")}\nconst other = { storeId: x };`)
+      .length === 0 ||
+    check(accepts, `${resolver("anyStream: '1', storeId: options.store")}`).length === 0
+  ) {
+    console.error(
+      '✗ resolve-store control: storeId on the resolve query is not pinned on both sides.'
+    );
+    process.exit(1);
+  }
+}
+
 // ── Real run ────────────────────────────────────────────────────────────────
 const routes = read(ROUTES_TS);
 const dto = read(DTO_TS);
@@ -977,6 +1109,7 @@ const problems = checkLegs(LEGS, routes, dto, client, {
   [RESTORE_SIZE_TS]: read(RESTORE_SIZE_TS),
   [RESTORE_TEST_TS]: read(RESTORE_TEST_TS),
   [RESTORE_SESSION_TS]: read(RESTORE_SESSION_TS),
+  [RESOLVE_AT_TS]: read(RESOLVE_AT_TS),
 });
 
 if (!routes.includes(`'${SESSION_HEADER}'`)) {

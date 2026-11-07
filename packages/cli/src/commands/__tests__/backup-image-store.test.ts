@@ -80,10 +80,14 @@ describe('runStoreFetch', () => {
   it('resolves --at through the shared resolver, and the newest snapshot without it', async () => {
     const a = deps();
     await runStoreFetch({ ref: 'mail', dest: '/d/x.img', at: '2026-08-01T00:00:00Z' }, a.base);
-    expect(a.base.resolveSnapshot).toHaveBeenCalledWith(LINEAGE, '2026-08-01T00:00:00Z');
+    expect(a.base.resolveSnapshot).toHaveBeenCalledWith(LINEAGE, '2026-08-01T00:00:00Z', 'home');
     const b = deps();
     await runStoreFetch({ ref: 'mail', dest: '/d/x.img' }, b.base);
-    expect(b.base.resolveSnapshot).toHaveBeenCalledWith(LINEAGE, '2026-08-14T12:00:00.000Z');
+    expect(b.base.resolveSnapshot).toHaveBeenCalledWith(
+      LINEAGE,
+      '2026-08-14T12:00:00.000Z',
+      'home'
+    );
   });
 
   it('turns a 403 without a recognised code into the backup:restore message', async () => {

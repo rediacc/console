@@ -32,7 +32,7 @@ import { registerBackupImageCommands } from './backup-image.js';
 import { registerBackupOpsCommands } from './backup-ops.js';
 import { registerBackupPurge } from './backup-purge.js';
 import {
-  resolveChunkSnapshot,
+  chunkSnapshotResolver,
   resolveSnapshotAt,
   runChunkRestore,
   settleRestore,
@@ -224,10 +224,10 @@ function registerBackupRestore(backup: Command): void {
 
         // Refuse a bad target name before allocateNetworkId persists anything.
         assertResourceName(targetName);
-        // The snapshot is chosen BEFORE the target is registered: the stream probe and the index lookup are where a chunk restore is refused, and a refusal after the registration left a config entry with no image behind it (live 2026-11-05).
+        // The snapshot is chosen BEFORE the target is registered: the stream probe and the index lookup are where a chunk restore is refused, and a refusal after the registration left a config entry with no image behind it (live 2026-11-05). The probe runs here; the index lookup runs per store inside restoreFromStores, before that store's attempt registers the target.
         const chunk = restoreAt
           ? {
-              snapshotId: await resolveChunkSnapshot({
+              resolve: await chunkSnapshotResolver({
                 lineage,
                 at: restoreAt,
                 anyStream: options.anyStream ?? false,
@@ -238,7 +238,7 @@ function registerBackupRestore(backup: Command): void {
           : undefined;
         // Ranked before the target is registered, like the snapshot: a refused ranking leaves nothing to roll back.
         const storePick = chunk ? await pickStores(lineage, options.from) : undefined;
-        // One registration per attempt: a failed attempt's rollback step removes it, and the next store registers it again.
+        // One registration per chunk attempt, after its store resolved the snapshot: a failed attempt's rollback step removes it, and the next store registers it again.
         const registerTarget = async (): Promise<void> => {
           const networkId = await configService.allocateNetworkId({
             floor: await targetFloor({ machine: targetMachine }),
@@ -252,7 +252,7 @@ function registerBackupRestore(backup: Command): void {
             placement,
           });
         };
-        await registerTarget();
+        if (!chunk) await registerTarget();
 
         // DR nudge: a restore into a config with no config-storage enrollment cannot recover the repo credential (the LUKS passphrase) on a fresh host, warn, never block (spec/02 decision 14).
         await warnIfConfigStorageUnenrolled();
@@ -262,19 +262,18 @@ function registerBackupRestore(backup: Command): void {
         // The run record, the stats report, the registration rollback, the unit re-render (G4) and the `--up` deploy ride the job's ticket (PLAN-detached-jobs J4), so a backgrounded restore records nothing until it finishes and deploys only a restore that succeeded.
         const after = restoreTailSteps(targetName, targetMachine, datastore, options);
         if (chunk && storePick) {
-          let firstAttempt = true;
           await restoreFromStores({
             pick: storePick,
-            attempt: async (store, deferIf) => {
-              // The first attempt reuses the registration made above; a later one follows a rollback.
-              if (!firstAttempt) await registerTarget();
-              firstAttempt = false;
+            resolve: chunk.resolve,
+            attempt: async (store, snapshotId, deferIf) => {
+              // Registered only once the store resolved a snapshot; a later attempt follows the previous one's rollback.
+              await registerTarget();
               return runChunkRestore({
                 targetName,
                 targetMachine,
                 datastore,
                 lineage,
-                snapshotId: chunk.snapshotId,
+                snapshotId,
                 noSeed: options.seed === false,
                 allowUnopenable: options.allowUnopenable,
                 salvage: options.salvage,
@@ -345,19 +344,17 @@ async function restorePathRoute(
     to: options.to,
     from: options.from,
     debug: options.debug,
-    resolveSnapshot: async (lineage, at) =>
-      resolveSnapshotAt(
-        lineage,
+    resolveSnapshot: async (lineage, at) => {
+      // The source machine's stream is probed once; each store tried resolves the time inside itself.
+      const scope = await streamScopeFor({
         at,
-        await streamScopeFor({
-          at,
-          anyStream: options.anyStream ?? false,
-          source: { repoName: repoKey, machine: sourceMachine },
-          debug: options.debug,
-        }),
-        // A path is read from the snapshot's listing, so a time with no listing falls back to the nearest one that has it.
-        { indexed: true }
-      ),
+        anyStream: options.anyStream ?? false,
+        source: { repoName: repoKey, machine: sourceMachine },
+        debug: options.debug,
+      });
+      // A path is read from the snapshot's listing, so a time with no listing falls back to the nearest one that has it.
+      return (store) => resolveSnapshotAt(lineage, at, scope, { indexed: true, store });
+    },
   });
 }
 
