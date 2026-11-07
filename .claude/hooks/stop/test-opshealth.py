@@ -101,6 +101,9 @@ def fixture(doc=None, raw=None):
     atexit.register(shutil.rmtree, tmp, ignore_errors=True)
     d = tmp / ".ci" / "cache" / "ops-health"
     d.mkdir(parents=True)
+    # The refresher module spawn_refresh requires in the root it spawns for (an empty stand-in: popen is a recorder).
+    (tmp / O.REFRESHER_REL).parent.mkdir(parents=True)
+    (tmp / O.REFRESHER_REL).write_text("")
     if raw is not None:
         (d / "state.json").write_text(raw)
     elif doc is not None:
@@ -161,6 +164,19 @@ s2 = assess(root, wl, B, popen=sp)
 check("stale: the first stop spawns the refresher", s1["spawned"], True)
 check("stale: the second stop finds the lock and spawns none", s2["spawned"], False)
 check("stale: exactly one spawn recorded", len(sp.calls), 1)
+
+# A root without its own refresher module (a hook-test sandbox) spawns nothing, since the refresher would write another tree's ledger.
+bare_root, bare_wl = fixture(
+    dict(green_doc(), checks=dict(green_doc()["checks"], machines=entry(age_min=31)))
+)
+(bare_root / O.REFRESHER_REL).unlink()
+bare_sp = Spawns()
+check(
+    "no refresher module: a stale cache spawns nothing",
+    assess(bare_root, bare_wl, A, popen=bare_sp)["spawned"],
+    False,
+)
+check("no refresher module: nothing recorded", len(bare_sp.calls), 0)
 argv, kw = sp.calls[0]
 check(
     "stale: the refresher is `ops_health refresh --lock-held`",

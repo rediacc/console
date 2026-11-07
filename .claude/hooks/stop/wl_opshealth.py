@@ -40,6 +40,8 @@ CLAIM_RED = "opshealth"
 CLAIM_OFFBOX = "opshealth-offbox"
 _OPEN_STATES = (" ", ">", "?")
 _REFRESH_ARGV = ("-m", "rediacc_ci.ops.ops_health", "refresh", "--lock-held")
+# The module _REFRESH_ARGV runs, relative to the root it is spawned for.
+REFRESHER_REL = ".ci/rediacc_ci/ops/ops_health.py"
 _ROW_LINES = 14
 CLAIMED, TRACKED_HERE, PEER = "claimed", "tracked-here", "peer"
 
@@ -143,6 +145,9 @@ def recent_attempt(root, now):
 def spawn_refresh(root, popen=None, now=None):
     """Take the lock and start ONE detached refresher. True when this call started it. At most one attempt per RETRY_S."""
     stamp = time.time() if now is None else now
+    # The refresher runs as `-m rediacc_ci.ops.ops_health` with <root>/.ci first on its path, and writes the ledger of whichever tree that module lives in. A root without its own copy (a hook-test sandbox) would run another tree's module and write that tree's agent/ledgers/ops-health.jsonl, which is how ci:quick run 18's pytest tripwire failed 20 tests.
+    if not (pathlib.Path(root) / REFRESHER_REL).is_file():
+        return False
     if recent_attempt(root, stamp):
         return False
     if not take_lock(root, now=now):
