@@ -426,9 +426,19 @@ def test_gate_unreadable_status_exits_2():
     assert gate(Web(status_doc(verdict="unknown"))) == 2
 
 
-def test_gate_without_origin_is_2(monkeypatch):
+def test_gate_with_no_env_or_config_origin_reads_the_registered_origin(monkeypatch):
     env = {k: v for k, v in ENV.items() if k != "OPS_HEALTH_URL"}
     monkeypatch.setattr(oh, "load_config", lambda _root: {})
+    monkeypatch.setattr(oh.well_known, "OPS_HEALTH_ORIGIN", "https://registered.example.test")
+    web = Web(status_doc())
+    assert gate(web, env=env) == 0
+    assert web.calls[0][1] == "https://registered.example.test/v1/status"
+
+
+def test_gate_without_any_origin_is_2(monkeypatch):
+    env = {k: v for k, v in ENV.items() if k != "OPS_HEALTH_URL"}
+    monkeypatch.setattr(oh, "load_config", lambda _root: {})
+    monkeypatch.setattr(oh.well_known, "OPS_HEALTH_ORIGIN", "")
     assert gate(Web(status_doc()), env=env) == 2
 
 

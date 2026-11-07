@@ -16,7 +16,7 @@ REFRESH (D-local). Runs the checks that are past their TTL (`--force` runs all):
 
 OFFBOX AND GATE (D-record, D-gate). `GET <worker_url>/v1/status` with the bearer OPS_HEALTH_READ_TOKEN. Red when the verdict is red or `last_cron_at` is older than the stale limit; unreadable (exit 2) when the status cannot be read or its verdict is `unknown`. `offbox` also compares `targets_sha` with the sha256 of the `ops` repo's target file when OPS_HEALTH_TARGETS_REF is set (finding `ops.targets.drift`, red, naming the deploy command). `gate` is the CI gate's entry (.ci/scripts/quality/check_ops_health.py): the same judgement with no target comparison.
 
-CONFIG. .ci/config/ops-health.json (D-config) holds the thresholds. `DEFAULTS` below carries the same values for a key the file does not have, so a tree without the file still runs; the file wins wherever it speaks. The Worker's origin is `worker_url` there, or OPS_HEALTH_URL, and is never typed in this source.
+CONFIG. .ci/config/ops-health.json (D-config) holds the thresholds. `DEFAULTS` below carries the same values for a key the file does not have, so a tree without the file still runs; the file wins wherever it speaks. The Worker's origin is OPS_HEALTH_URL, else `worker_url` there, else the registered WK_OPS_HEALTH_ORIGIN, and is never typed in this source.
 """
 
 from __future__ import annotations
@@ -35,6 +35,7 @@ import urllib.error
 from collections.abc import Callable
 from typing import TYPE_CHECKING
 
+from rediacc_ci import well_known
 from rediacc_ci.core import bws_env, https, jsonl_append
 from rediacc_ci.core.common import repo_root
 
@@ -173,7 +174,10 @@ def stale_min(cfg: dict) -> float:
 
 
 def worker_url(cfg: dict, env: dict) -> str:
-    return (env.get(URL_ENV) or str(cfg.get("worker_url") or "")).rstrip("/")
+    """OPS_HEALTH_URL, then the config's worker_url, then the registered origin (WK_OPS_HEALTH_ORIGIN), so the gate reads the deployed Worker with no host typed here."""
+    return (
+        env.get(URL_ENV) or str(cfg.get("worker_url") or "") or well_known.OPS_HEALTH_ORIGIN
+    ).rstrip("/")
 
 
 # --------------------------------------------------------------------------- subprocesses

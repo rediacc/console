@@ -67,6 +67,15 @@ def test_build_request_carries_data_headers_and_method_after_the_check():
         https.build_request("file:///etc/passwd")
 
 
+def test_build_request_names_a_user_agent_unless_the_caller_does():
+    # Cloudflare answers urllib's default Python-urllib agent with error 1010 (403).
+    assert https.build_request("https://example.com/x").get_header("User-agent") == https.USER_AGENT
+    own = https.build_request("https://example.com/x", headers={"user-agent": "own/2"})
+    assert own.get_header("User-agent") == "own/2"
+    assert https.USER_AGENT
+    assert not https.USER_AGENT.startswith("Python-urllib")
+
+
 def test_urlopen_reads_a_loopback_server_only_when_the_mode_allows_it():
     class Handler(http.server.BaseHTTPRequestHandler):
         def do_GET(self):

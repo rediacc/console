@@ -19,6 +19,8 @@ if TYPE_CHECKING:
     from collections.abc import Mapping
 
 LOOPBACK_HOSTS = frozenset({"127.0.0.1", "localhost", "::1"})
+# Sent by build_request when the caller names no User-Agent of its own.
+USER_AGENT = "rediacc-ci/1"
 
 
 def check_url(url: str, *, http: str = "never") -> str:
@@ -42,11 +44,14 @@ def build_request(
     method: str | None = None,
     http: str = "never",
 ) -> urllib.request.Request:
-    """A `Request` for `url` after the scheme check."""
+    """A `Request` for `url` after the scheme check, with a named User-Agent unless the caller sets one: Cloudflare answers urllib's default `Python-urllib/3.x` with error 1010 (403), measured on the ops-health Worker 2026-11-07."""
+    sent = dict(headers or {})
+    if not any(k.lower() == "user-agent" for k in sent):
+        sent["User-Agent"] = USER_AGENT
     return urllib.request.Request(
         check_url(url, http=http),
         data=data,
-        headers=dict(headers or {}),
+        headers=sent,
         method=method,
     )
 
@@ -80,6 +85,7 @@ def build_opener(
 
 def urlopen(target: str | urllib.request.Request, *, timeout: float, http: str = "never") -> Any:
     """`urllib.request.urlopen(target, timeout=...)` after the scheme check, through an opener whose redirects pass the same check; the response is a context manager."""
-    url = target if isinstance(target, str) else target.full_url
-    check_url(url, http=http)
+    if isinstance(target, str):
+        target = build_request(target, http=http)
+    check_url(target.full_url, http=http)
     return build_opener(http=http).open(target, timeout=timeout)
