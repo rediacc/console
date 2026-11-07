@@ -91,7 +91,8 @@
     "--rebalance refuses one it cannot satisfy.",
     "Every value that used to be SEEDED here was first MEASURED by the 2026-10-22 refresh (budget_report --refresh --branch 1020-1, 10 sampled runs, after green PR run 39742633342); later refreshes re-measure them, as refreshed_at records:",
     "the vm_bake_key/vm_bake_image and renet_pkg_matrix pytest units, the renet pkg/infra aptretry, pkgset and cephpkg go units, 'Renet pkg scope', 'Renet pkg matrix (<distro>)' and 'E2E Ceph Workers non-apt (<distro>)' (seeded 2026-09-29, PLAN-renet-ceph-gpu-non-apt P6),",
-    "and 'E2E Backup Browse-At' (seeded 9.0 at PLAN-e2e-browse-at-ci B6, 2026-10-21; measured 7.0, job 119710934780 at 7m00s). The seed derivations are in git history before commit 9c568c99e."
+    "and 'E2E Backup Browse-At' (seeded 9.0 at PLAN-e2e-browse-at-ci B6, 2026-10-21; measured 7.0, job 119710934780 at 7m00s). The seed derivations are in git history before commit 9c568c99e.",
+    "'Report schedule' (ci.yml report-schedule, 2026-11-07) is SEEDED 1.0, not measured: it runs only on the weekly schedule event, so no sampled pull_request run holds it, and it has never run. It is two steps (a secrets fetch and one ingest POST of at most 3 attempts at 20 s) under timeout-minutes 5. Replace the seed with the p90 of the first scheduled run when a refresh that samples the schedule class has one."
   ],
   "refreshed_at": "2026-11-03T10:13:26Z",
   "concurrency": 20,
@@ -1513,6 +1514,7 @@
     "OPS Tests / OPS Provision (linux-amd64, 3/5)": 11.5,
     "OPS Tests / OPS Provision (linux-amd64, 5/5)": 9.4,
     "Review Complete": 0.0,
+    "Report schedule": 1.0,
     "Duplicate Run Check": 0.4,
     "Quality / Gate tests": 0.8,
     "CD Preflight": 1.1,
