@@ -156,9 +156,6 @@ export default {
     return withSecurityHeaders(new Response('Not Found', { status: 404 }));
   },
 
-  // Cron entrypoint. Every deployed region reaches the account app's scheduled work through here, so forgetting this re-export silently disables it: the nightly event_log retention sweep never ran in any region until this line existed, because this module used to export `fetch` alone while the handler sat unreachable in private/account/src/entry/cloudflare.ts. The [triggers]
-  // block in every wrangler.*.toml is the other half; both are gated by
-  // private/account/tests/integration/cron-wiring.test.ts.
   // Replicate-mode queue consumer ([[queues.consumers]] in every wrangler.*.toml): the account app
   // reads each message's rules and this hands every target to its BackupReplicator, whose alarm runs
   // the copy. Gated with the bindings by private/account/tests/integration/replicate-wiring.test.ts.
@@ -168,6 +165,9 @@ export default {
     );
   },
 
+  // Cron entrypoint. Every deployed region reaches the account app's scheduled work through here, so forgetting this re-export silently disables it: the nightly event_log retention sweep never ran in any region until this line existed, because this module used to export `fetch` alone while the handler sat unreachable in private/account/src/entry/cloudflare.ts. The [triggers]
+  // block in every wrangler.*.toml is the other half; both are gated by
+  // private/account/tests/integration/cron-wiring.test.ts.
   scheduled(controller: ScheduledController, env: Env, ctx: ExecutionContext): void {
     // No `as never` here: the Hono entry declares `env: CloudflareEnv` and this worker's Env satisfies it, so the cast was load-bearing for nothing and
     // @typescript-eslint/no-unnecessary-type-assertion said so as soon as
