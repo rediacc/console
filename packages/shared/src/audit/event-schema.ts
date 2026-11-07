@@ -24,6 +24,8 @@ const machineEventTypes = [
   'cli.network_prune',
   // Emitted by the network-id discovery read (packages/cli/src/services/config/network-id-discovery.ts), renet's read-only `network_used` function.
   'cli.network_used',
+  // Emitted by `machine repair` (packages/cli/src/commands/machine/repair.ts) for the ACME anchor fix and its Traefik restart; renet's `proxy_acme_fix` takes the fall-through name.
+  'cli.proxy_acme_fix',
   'cli.machine.match',
   'cli.machine.mismatch',
   'cli.machine.ping',
@@ -56,6 +58,8 @@ const repoEventTypes = [
   'cli.repo.fsck',
   'cli.repo.gc',
   'cli.repo.guid',
+  // `repo health` (repo-health.ts) and `repo repair` / `machine repair` (repo-repair.ts, machine/repair.ts) dispatch repository_health and repository_repair.
+  'cli.repo.health',
   'cli.repo.limits_set',
   'cli.repo.list',
   'cli.repo.log',
@@ -68,6 +72,7 @@ const repoEventTypes = [
   'cli.repo.policy_set',
   'cli.repo.promote',
   'cli.repo.prune',
+  'cli.repo.repair',
   'cli.repo.resize',
   'cli.repo.status',
   'cli.repo.template_apply',
@@ -90,6 +95,8 @@ const backupEventTypes = [
   // `backup_restore` is the chunk-store restore verb. It is deliberately TierNone while `backup_pull` is TierRepoLicenseFull, but the tier says nothing about auditability: it mutates a repo, so it records like the rest.
   'cli.backup.restore',
   'cli.backup.restore_path',
+  // `backup snapshot` (the chunk-store snapshot verb): it writes a snapshot into the store, so it records.
+  'cli.backup.snapshot',
 ] as const;
 
 // Every datastore verb `packages/cli/src/commands/datastore.ts` dispatches. It goes through a `dispatch(functionName, …)` helper rather than a `functionName: '…'` literal, so check_audit_coverage.py — which greps for the literal — cannot see most of them: it only ever flagged `fork` and `volumes_close`. The rest were emitting event types absent from this union, which makes
@@ -114,7 +121,11 @@ const datastoreEventTypes = [
 ] as const;
 
 // `repo logs` / `repo exec` (repo-container.ts, new in P4). Dotted, like every other group — the fall-through would have produced `cli.container_exec`.
-const containerEventTypes = ['cli.container.exec', 'cli.container.logs'] as const;
+const containerEventTypes = [
+  'cli.container.exec',
+  'cli.container.logs',
+  'cli.container.restart',
+] as const;
 
 const explicitEventTypes = ['cli.sync.upload', 'cli.sync.download', 'cli.term.session'] as const;
 
