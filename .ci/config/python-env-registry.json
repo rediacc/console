@@ -785,6 +785,9 @@
       "CF_GLOBAL_API_KEY",
       "CF_MANAGEMENT_TOKEN"
     ],
+    ".ci/rediacc_ci/ops/ops_health.py": [
+      "OPS_HEALTH_LOCK_HANDOFF"
+    ],
     ".ci/rediacc_ci/ops/prune_worker_secrets.py": [
       "CLOUDFLARE_ACCOUNT_ID",
       "CLOUDFLARE_API_TOKEN"

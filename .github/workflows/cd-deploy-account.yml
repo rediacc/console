@@ -348,53 +348,59 @@ jobs:
       # key; set_account_worker_secrets refuses the other channel's name if it
       # is ever set (agent/plans/PLAN-config-server-key.md K2). The names are
       # literal, one step per Worker, so the bws map gate sees each of them.
-      - name: Fetch the eu stable config server key from Bitwarden
+      - name: Fetch the eu stable config server key and backup store key from Bitwarden
         if: matrix.secretSuffix == 'EU' && inputs.target == 'stable'
         uses: ./.github/actions/bws-secrets
         with:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
             ACCOUNT_CONFIG_SERVER_KEY_EU_STABLE > BWS_ACCOUNT_CONFIG_SERVER_KEY_EU_STABLE
+            ACCOUNT_BACKUP_STORE_KEK_EU_STABLE > BWS_ACCOUNT_BACKUP_STORE_KEK_EU_STABLE
 
-      - name: Fetch the eu edge config server key from Bitwarden
+      - name: Fetch the eu edge config server key and backup store key from Bitwarden
         if: matrix.secretSuffix == 'EU' && inputs.target != 'stable'
         uses: ./.github/actions/bws-secrets
         with:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
             ACCOUNT_CONFIG_SERVER_KEY_EU_EDGE > BWS_ACCOUNT_CONFIG_SERVER_KEY_EU_EDGE
+            ACCOUNT_BACKUP_STORE_KEK_EU_EDGE > BWS_ACCOUNT_BACKUP_STORE_KEK_EU_EDGE
 
-      - name: Fetch the us stable config server key from Bitwarden
+      - name: Fetch the us stable config server key and backup store key from Bitwarden
         if: matrix.secretSuffix == 'US' && inputs.target == 'stable'
         uses: ./.github/actions/bws-secrets
         with:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
             ACCOUNT_CONFIG_SERVER_KEY_US_STABLE > BWS_ACCOUNT_CONFIG_SERVER_KEY_US_STABLE
+            ACCOUNT_BACKUP_STORE_KEK_US_STABLE > BWS_ACCOUNT_BACKUP_STORE_KEK_US_STABLE
 
-      - name: Fetch the us edge config server key from Bitwarden
+      - name: Fetch the us edge config server key and backup store key from Bitwarden
         if: matrix.secretSuffix == 'US' && inputs.target != 'stable'
         uses: ./.github/actions/bws-secrets
         with:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
             ACCOUNT_CONFIG_SERVER_KEY_US_EDGE > BWS_ACCOUNT_CONFIG_SERVER_KEY_US_EDGE
+            ACCOUNT_BACKUP_STORE_KEK_US_EDGE > BWS_ACCOUNT_BACKUP_STORE_KEK_US_EDGE
 
-      - name: Fetch the asia stable config server key from Bitwarden
+      - name: Fetch the asia stable config server key and backup store key from Bitwarden
         if: matrix.secretSuffix == 'ASIA' && inputs.target == 'stable'
         uses: ./.github/actions/bws-secrets
         with:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
             ACCOUNT_CONFIG_SERVER_KEY_ASIA_STABLE > BWS_ACCOUNT_CONFIG_SERVER_KEY_ASIA_STABLE
+            ACCOUNT_BACKUP_STORE_KEK_ASIA_STABLE > BWS_ACCOUNT_BACKUP_STORE_KEK_ASIA_STABLE
 
-      - name: Fetch the asia edge config server key from Bitwarden
+      - name: Fetch the asia edge config server key and backup store key from Bitwarden
         if: matrix.secretSuffix == 'ASIA' && inputs.target != 'stable'
         uses: ./.github/actions/bws-secrets
         with:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
             ACCOUNT_CONFIG_SERVER_KEY_ASIA_EDGE > BWS_ACCOUNT_CONFIG_SERVER_KEY_ASIA_EDGE
+            ACCOUNT_BACKUP_STORE_KEK_ASIA_EDGE > BWS_ACCOUNT_BACKUP_STORE_KEK_ASIA_EDGE
 
       - uses: ./.github/actions/app-token
         id: app-token
@@ -606,6 +612,12 @@ jobs:
           ACCOUNT_CONFIG_SERVER_KEY_US_EDGE: ${{ env.BWS_ACCOUNT_CONFIG_SERVER_KEY_US_EDGE }}
           ACCOUNT_CONFIG_SERVER_KEY_ASIA_STABLE: ${{ env.BWS_ACCOUNT_CONFIG_SERVER_KEY_ASIA_STABLE }}
           ACCOUNT_CONFIG_SERVER_KEY_ASIA_EDGE: ${{ env.BWS_ACCOUNT_CONFIG_SERVER_KEY_ASIA_EDGE }}
+          ACCOUNT_BACKUP_STORE_KEK_EU_STABLE: ${{ env.BWS_ACCOUNT_BACKUP_STORE_KEK_EU_STABLE }}
+          ACCOUNT_BACKUP_STORE_KEK_EU_EDGE: ${{ env.BWS_ACCOUNT_BACKUP_STORE_KEK_EU_EDGE }}
+          ACCOUNT_BACKUP_STORE_KEK_US_STABLE: ${{ env.BWS_ACCOUNT_BACKUP_STORE_KEK_US_STABLE }}
+          ACCOUNT_BACKUP_STORE_KEK_US_EDGE: ${{ env.BWS_ACCOUNT_BACKUP_STORE_KEK_US_EDGE }}
+          ACCOUNT_BACKUP_STORE_KEK_ASIA_STABLE: ${{ env.BWS_ACCOUNT_BACKUP_STORE_KEK_ASIA_STABLE }}
+          ACCOUNT_BACKUP_STORE_KEK_ASIA_EDGE: ${{ env.BWS_ACCOUNT_BACKUP_STORE_KEK_ASIA_EDGE }}
           ACCOUNT_SERVER_API_KEY: ${{ env.BWS_ACCOUNT_SERVER_API_KEY }}
           ACCOUNT_X25519_PRIVATE_KEY: ${{ env.BWS_ACCOUNT_X25519_PRIVATE_KEY }}
           ACCOUNT_X25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_X25519_PUBLIC_KEY }}
