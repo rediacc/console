@@ -210,19 +210,18 @@ pathlib.Path(FIXTURE_DIR, "ambiguous.js").write_text(
     encoding="utf-8",
 )
 # Review d4393918.1: a JS line comment ends at CR, U+2028 and U+2029 too, so the code after one is code, never comment.
-TERMINATOR_ROWS = []
+TERMINATOR_ROW = {}
 for _tag, _term in (("cr", "\r"), ("ls", "\u2028"), ("ps", "\u2029")):
     pathlib.Path(FIXTURE_DIR, "term_%s.js" % _tag).write_text(
         'const { execSync } = require("child_process");\n'
         "x = 1; // note" + _term + "execSync('git -c alias.wt=worktree wt add /p');\n",
         encoding="utf-8",
     )
-    TERMINATOR_ROWS.append(
-        (
-            "an alias after a %s that ends a // comment" % _tag,
-            "node %s/term_%s.js" % (FIXTURE_DIR, _tag),
-        )
+    TERMINATOR_ROW[_tag] = (
+        "an alias after a %s that ends a // comment" % _tag,
+        "node %s/term_%s.js" % (FIXTURE_DIR, _tag),
     )
+TERMINATOR_ROWS = list(TERMINATOR_ROW.values())
 DEPS_LIKE_ROW = (
     "a TS comment saying worktree warning",
     "npx tsx %s/deps_like.ts --selftest" % FIXTURE_DIR,
@@ -754,7 +753,7 @@ for label, pair, rows in (
             '            while i < n and text[i] != "\\n":\n',
         ),
         # The CR row stays refused under this plant: the script is read in text mode, which turns a bare CR into LF before the scanner sees it, so only U+2028 and U+2029 depend on the terminator set.
-        [row for row in TERMINATOR_ROWS if "a cr " not in row[0]],
+        [TERMINATOR_ROW["ls"], TERMINATOR_ROW["ps"]],
     ),
     (
         "the quote-blind perl strip",
