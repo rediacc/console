@@ -187,7 +187,7 @@ Run the safe fixes for a machine's health findings, then re-check (exit 0 nothin
 **Options:**
 
 - `--dry-run`: List the fixes that would run without running them
-- `--code <code>`: Only fix this finding code (repeatable) (default: )
+- `--code <code>`: Only fix this finding code (repeatable)
 - `--with-backup`: Allow auto-with-backup fixes, each after a successful snapshot of its repository
 - `--window-override`: Run window-only fixes outside the maintenance window
 - `--set-window <window>`: Store the machine's maintenance window (HH:MM-HH:MM, UTC) or clear it with off, then exit
@@ -434,8 +434,8 @@ Create or update a backup strategy
 - `--exclude <repos>`: Exclude these repos from backup (comma-separated names)
 - `--retention <spec>`: Snapshot retention, for example last=7,daily=7,weekly=4,monthly=6 ("none" removes it)
 - `--rpo <duration>`: Declared protection target, for example 15m (at least 5m; none clears it)
-- `--repo-rpo <ref=duration>`: Per-repo target as <ref>=<duration>, repeatable (none removes it); name:* is the family (default: )
-- `--repo-cell-size <ref=size>`: Per-repository cell size as <ref>=<size>, repeatable. A change re-seeds the repository (default: )
+- `--repo-rpo <ref=duration>`: Per-repo target as <ref>=<duration>, repeatable (none removes it); name:* is the family
+- `--repo-cell-size <ref=size>`: Per-repository cell size as <ref>=<size>, repeatable. A change re-seeds the repository
 - `--no-estimate`: Skip the churn and cost estimate
 - `--dry-run`: Show what would change and write nothing
 - `--enable`: Enable the strategy or destination
