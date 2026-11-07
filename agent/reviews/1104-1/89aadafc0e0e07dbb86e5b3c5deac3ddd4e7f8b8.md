@@ -21,9 +21,9 @@ Body-Sig: 849383937b3b888b
 ### 89aadafc.1 [low] agent/plans/PLAN-health-checks-local.md:590
 Anchor: in-diff
 Claim: The S5 tick says 'The diff is recorded here', but the box holds only a prose summary of the changes, not the script text. The S5 accept check was only `bash -n` rc 0, so the source that lives only on hostinger is not preserved in the repo.
-Resolution: open
+Resolution: fixed 5c4ce24a983cf7543574ff2849ea6b1bce621378 | d778be9d 2026-11-07T11:01:51Z
 
 ### 89aadafc.2 [low] agent/plans/PLAN-health-checks-local.md:596
 Anchor: in-diff
 Claim: The S6 tick reports the pipeline.py import as a plain step, but the ledger says the image was built from a Dockerfile-only context because stack/pgadmin-data breaks the build context. The box does not mention that workaround or #dcbe1452, so the record reads as the unmodified test.
-Resolution: open
+Resolution: fixed 5c4ce24a983cf7543574ff2849ea6b1bce621378 | d778be9d 2026-11-07T11:01:52Z
