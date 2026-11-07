@@ -166,6 +166,11 @@ FRAGMENTS: dict[tuple[str, str], str] = {
         "BLOCKER: a `${}`, `#{}`, `$name` or `@name` interpolation inside a literal found in program text, replaced by "
         "`.sub()` with the unknown marker that `_filled` completes; it rewrites a literal and never reads the command."
     ),
+    ("block_worktree_add.py", "SLASH_WORD"): (
+        "BLOCKER: an identifier run (`[A-Za-z0-9_$...]+`) the JS comment scanner `_slash_code_text` matches to tell a "
+        "keyword such as `return` from a value before an ambiguous `/`; it reads script text the guard already loaded, "
+        "never the command, has no literal word for a sentence to mention, and never decides a refusal on its own."
+    ),
     ("block_blanket_git_add.py", "BARE_DDASH"): (
         "BLOCKER: an optional ` -- ` concatenated between GIT_ADD's anchored prefix and END; it is a piece of the composed "
         "BLANKET_* patterns, never searched on its own."
