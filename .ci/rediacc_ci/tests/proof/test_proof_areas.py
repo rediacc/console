@@ -347,3 +347,18 @@ def test_the_dry_run_names_its_own_flag_in_the_usage_line() -> None:
 
 def test_the_map_file_is_the_one_surfaces_reads() -> None:
     assert pathlib.Path(S.MAP_PATH) == ROOT / ".ci" / "config" / "proof-tiers.json"
+
+
+def test_a_leg_that_starts_the_backup_plane_runs_the_suite_as_its_follow_on() -> None:
+    """start_backup_plane sets RENET_BINARY_PATH (the pinned, plane-keyed renet), the account server, its token and the S3 credentials in-process only; a command chained with && or ; never sees them and falls back to the shared bin/renet from .env, which another ./rdc.sh can rebuild mid-deploy (vm:check run 11, 2026-11-07: MD5 mismatch after deploy). Only `start_backup_plane -- <cmd>` hands them on."""
+    offenders = []
+    for area, spec in _raw()["tiers"]["vm"]["areas"].items():
+        for leg in spec["legs"]:
+            for cmd in leg.get("cmd", []):
+                m = re.search(r"rediacc_ci\.testrun\.start_backup_plane\b(.*)", cmd)
+                if not m or "--verify-renet" in m.group(1):
+                    continue
+                tail = m.group(1)
+                if " -- " not in tail or re.search(r"&&|\|\||;|\|", tail.split(" -- ", 1)[0]):
+                    offenders.append(f"{area}/{leg['id']}: {cmd}")
+    assert not offenders, offenders

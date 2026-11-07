@@ -342,7 +342,7 @@
               "what": "suite 31 at a 2 GiB seed: the incremental byte, no-rehash and proportional time budget, and the anchor-deleted control that must breach it (VM_DSK=48 in the fleet's up keeps FREE_GIB_NEEDED=17 true for a fleet this run brings up; a fleet already running with a smaller disk fails the suite's free-space assertion, which names VM_DSK, rather than running weaker, so `./rdc.sh ops down` first. The disks are thin, the preflight counts a fill ratio of the virtual size)",
               "cmd": [
                 "PYTHONPATH=.ci python3 -m rediacc_ci.env.create_e2e_env --renet-path \"$PWD/private/renet/bin/renet\" --output packages/e2e-tests/.env --vm-workers \"11\"",
-                "PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_backup_plane && K10_SEED_GB=2 BACKUP_LARGE_REPO_SUITE=1 BRIDGE_TEST_SKIP_RESET=1 PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --test 31-backup-large-repo --fail-on-skip"
+                "K10_SEED_GB=2 BACKUP_LARGE_REPO_SUITE=1 BRIDGE_TEST_SKIP_RESET=1 PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_backup_plane -- python3 -m rediacc_ci.testrun.e2e --workers 1 --test 31-backup-large-repo --fail-on-skip"
               ]
             }
           ],
