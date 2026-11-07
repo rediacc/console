@@ -51,6 +51,7 @@ const REPORT_GO = 'private/renet/cmd/renet/backup_report.go';
 const REPORT_FIELDS_GO = 'private/renet/cmd/renet/backup_snapshot_report.go';
 const RESTORE_SIZE_TS = 'packages/cli/src/services/executor/repo-license-context.ts';
 const RESTORE_TEST_TS = 'packages/cli/src/commands/backup-restore-test.ts';
+const RESTORE_SESSION_TS = 'packages/cli/src/commands/backup-image-deps.ts';
 
 interface Leg {
   /** Route path as mounted in the account's backups router. */
@@ -90,9 +91,14 @@ interface Leg {
    * leg names its own file, so the keys of one leg cannot be satisfied by another's speaker.
    */
   clientFiles?: string[];
+  /** The request schema is declared in the routes file, not backup.dto.ts (the restore-session body is route-local). */
+  requestInRoutes?: boolean;
   /** How the speaker spells a key, for one that is no Go JSON tag. Absent means clientNames. */
   keySpelling?: (key: string) => RegExp;
 }
+
+/** A key of a TypeScript object literal the CLI sends as a JSON body. */
+const bodyKey = (key: string) => new RegExp(`[{,]\\s*${key}\\s*[:,}]`);
 
 /** A key of a query string the CLI composes. */
 const queryKey = (key: string) => new RegExp(`[?&]${key}=`);
@@ -244,6 +250,18 @@ const LEGS: Leg[] = [
     clientCall: /\.APIBase\(\)\s*\+\s*"\/reports"/,
     clientFiles: [REPORT_GO, REPORT_FIELDS_GO],
   },
+  // PLAN-backup-multi-target A3: the restore session names its store. The CLI sends `storeId` only on `download --store --from <id>`; a spelling the schema does not accept is stripped silently and the download reads `home` whatever the operator chose. The body schema is route-local, and the CLI does not read the echoed storeId, so no response key is pinned.
+  {
+    path: '/restore-session',
+    requestSchema: 'backupRestoreSessionRequest',
+    requestInRoutes: true,
+    responseSchema: null,
+    requestKeys: ['lineageGuid', 'storeId'],
+    responseKeys: [],
+    clientCall: /\/backups\/restore-session/,
+    clientFiles: [RESTORE_SESSION_TS],
+    keySpelling: bodyKey,
+  },
   // A delayed delete still restores until its time, and the resolve route hides it unless asked. The two by-id size reads ask: without it a restore of one is licensed at the minimum size, and a restore test refuses it for an unknown size.
   ...[RESTORE_SIZE_TS, RESTORE_TEST_TS].map(
     (file): Leg => ({
@@ -331,7 +349,7 @@ function read(rel: string): string {
  * the walk below still starts at the object literal and ignores the refinement.
  */
 function zodKeys(source: string, schema: string): string[] | null {
-  const decl = new RegExp(`export const ${schema} = z\\s*\\.object\\(\\{`).exec(source);
+  const decl = new RegExp(`(?:export\\s+)?const ${schema} = z\\s*\\.object\\(\\{`).exec(source);
   if (!decl) return null;
   // Walk braces from the opening of the object literal so nested objects and unions do not truncate the scan early.
   // The opener is the match's last character: searching for the literal `z.object(` again would skip a split chain and land in the NEXT schema.
@@ -481,7 +499,10 @@ function checkLegs(
           'so nothing sends this request.'
       );
     }
-    const accepted = leg.requestSchema === null ? [] : zodKeys(dto, leg.requestSchema);
+    const accepted =
+      leg.requestSchema === null
+        ? []
+        : zodKeys(leg.requestInRoutes ? routes : dto, leg.requestSchema);
     if (accepted === null) {
       problems.push(
         `    ${leg.path}\n      request schema ${leg.requestSchema} not found in ${DTO_TS}.`
@@ -760,6 +781,36 @@ for (const [leg, key, spell] of [
   }
 }
 
+/**
+ * Eighth control, the restore-session body: its schema is route-local, so a scan of
+ * backup.dto.ts alone finds nothing. It must pass with the key in both the route schema and
+ * the CLI body, and fail when either side drops it.
+ */
+const restoreLeg = LEGS.find((leg) => leg.path === '/restore-session');
+if (!restoreLeg) {
+  console.error('✗ restore-session control: the /restore-session leg is gone.');
+  process.exit(1);
+}
+{
+  const route = "'/restore-session'";
+  const schema = (keys: string) => `const ${restoreLeg.requestSchema} = z.object({\n${keys}});`;
+  const both = schema('  lineageGuid: z.string(),\n  storeId: z.string().optional(),\n');
+  const noStore = schema('  lineageGuid: z.string(),\n');
+  const call = '/backups/restore-session';
+  const speak = (body: string) => ({ [RESTORE_SESSION_TS]: `${call} body: { ${body} }` });
+  const run = (routeText: string, dtoText: string, body: string) =>
+    checkLegs([restoreLeg], routeText, dtoText, '', speak(body));
+  if (
+    run(`${route}\n${both}`, '', 'lineageGuid, storeId: store').length !== 0 ||
+    run(`${route}\n${noStore}`, '', 'lineageGuid, storeId: store').length === 0 ||
+    run(`${route}\n${both}`, '', 'lineageGuid').length === 0 ||
+    run(`${route}`, both, 'lineageGuid, storeId: store').length === 0
+  ) {
+    console.error('✗ restore-session control: storeId not pinned on both sides of the leg.');
+    process.exit(1);
+  }
+}
+
 // ── Real run ────────────────────────────────────────────────────────────────
 const routes = read(ROUTES_TS);
 const dto = read(DTO_TS);
@@ -776,6 +827,7 @@ const problems = checkLegs(LEGS, routes, dto, client, {
   [REPORT_FIELDS_GO]: read(REPORT_FIELDS_GO),
   [RESTORE_SIZE_TS]: read(RESTORE_SIZE_TS),
   [RESTORE_TEST_TS]: read(RESTORE_TEST_TS),
+  [RESTORE_SESSION_TS]: read(RESTORE_SESSION_TS),
 });
 
 if (!routes.includes(`'${SESSION_HEADER}'`)) {
