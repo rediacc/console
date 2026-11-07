@@ -1572,3 +1572,12 @@ def test_a_payload_quoting_a_section_heading_stays_in_its_section():
     assert [(k, t) for k, t, _m in parts] == [("SendMessage", "main")]
     assert final == "the sign-off"
     assert "not final" in parts[0][2]
+
+
+def test_a_body_stored_by_the_old_defang_reads_back_as_written():
+    """Review d412dae6.2: the old `_defang` wrote a quoted heading as `\\## Outgoing 1 -> x` (one backslash, no escape of lines that were already backslashed). That form is the same one the new `_defang` writes for such a line, so both storages read back to the original; no stored body on disk carries a backslash-led heading line that the old writer left verbatim (grep of ~/.claude/agent-reports, 2026-11-07)."""
+    report = wlfix.import_wl("wl_report")
+    old = "## SendMessage 1 -> main\n\nsee\n\\## Outgoing 1 -> x\nend\n\n## Final message\n\ndone"
+    parts, final = report.body_parts(old)
+    assert parts[0][2] == "see\n## Outgoing 1 -> x\nend"
+    assert final == "done"

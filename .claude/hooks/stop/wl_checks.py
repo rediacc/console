@@ -2599,6 +2599,10 @@ RUNNER_VALUE_OPTS = frozenset(
 )
 
 
+# The launchers that take a `run` subcommand before the script. The repo itself launches the two scripts through `tsx <script>` (package.json `ci:quick`) and `python3 -m rediacc_ci.drills.vm_check` (`vm:check`), and a lock records the interpreter's own pid, so these two are for a direct run.
+RUNNER_SUBCOMMAND_RUN = frozenset(("bun", "deno"))
+
+
 def argv_runs(words, targets):
     """True when `words` is an interpreter run (RUNNER_ARGV0) whose SCRIPT, the first operand (or the module after `-m`), IS one of `targets` or ends with it after a `/`.
 
@@ -2607,13 +2611,20 @@ def argv_runs(words, targets):
     if not words or not RUNNER_ARGV0.match(os.path.basename(words[0])):
         return False
     rest = iter(words[1:])
+    launcher = os.path.basename(words[0])
     for word in rest:
+        if word == "-":
+            # A lone `-` is the stdin program (`python3 - x.py`): the words after it are its arguments, not a script (review b4a8c573.1).
+            return False
         if word in RUNNER_VALUE_OPTS:
             next(rest, None)
             continue
-        if word != "-m" and word.startswith("-"):
+        if word not in ("-m", "--") and word.startswith("-"):
             continue
-        script = next(rest, "") if word == "-m" else word
+        if word == "run" and launcher in RUNNER_SUBCOMMAND_RUN:
+            # `bun run x.ts` and `deno run x.ts` name the script after the subcommand (review b4a8c573.2).
+            continue
+        script = next(rest, "") if word in ("-m", "--") else word
         return any(script == t or script.endswith("/" + t) for t in targets)
     return False
 
@@ -2658,7 +2669,8 @@ def vm_check_running(path=None):
 
 
 # The argv word that names a ci:quick run: `npm run ci:quick` runs `tsx scripts/ci-runner/quick-clone.ts`, and the pid `acquireLock` writes is the node process whose argv carries that script path as its own word (measured 2026-11-06 under tsx: `node --require .../preflight.cjs --import .../loader.mjs <script>`).
-CI_QUICK_ARGV = "ci-runner/quick-clone.ts"
+# The whole repo-relative path, so a leading directory glued on (`xscripts/ci-runner/quick-clone.ts`) is no match: `argv_runs` accepts the word itself or one ending with `/` plus this (review 2dc5d5a9.1).
+CI_QUICK_ARGV = "scripts/ci-runner/quick-clone.ts"
 
 
 def ci_quick_lock_path(root, environ=None):

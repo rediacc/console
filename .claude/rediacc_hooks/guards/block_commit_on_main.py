@@ -345,9 +345,45 @@ def _file_writer(run):
     return " ".join([name, *run.argv][:4])
 
 
-def _is_no_commit_flag(arg):
-    """Whether `arg` is a NO_COMMIT_FLAGS flag. Only `--show-current-patch` takes an `=<format>` value (`git am`); `--quit=1` or `--abort=x` is no such flag, so a message or option value spelled that way exempts nothing (review ad958d5a.1)."""
-    return arg in NO_COMMIT_FLAGS or arg.startswith("--show-current-patch=")
+# The writer verbs' options that take the NEXT word as their value: that word is a message, a path or a name, never a flag (`git merge -m --quit other`).
+VALUE_FLAGS = frozenset(
+    (
+        "-m",
+        "-F",
+        "-C",
+        "-c",
+        "-s",
+        "-X",
+        "-S",
+        "-t",
+        "-O",
+        "-x",
+        "--message",
+        "--file",
+        "--strategy",
+        "--strategy-option",
+        "--into-name",
+        "--cleanup",
+        "--onto",
+        "--exec",
+        "--reuse-message",
+        "--reedit-message",
+        "--template",
+    )
+)
+
+
+def _has_no_commit_flag(args):
+    """Whether `args` holds a NO_COMMIT_FLAGS flag as a FLAG. Only `--show-current-patch` takes an `=<format>` value (`git am`), so `--quit=1` or `--abort=x` is no such flag (review ad958d5a.1), and a word that follows an option taking a value (`-m --quit`) is that option's value and exempts nothing (review d412dae6.1)."""
+    value_of = False
+    for arg in args:
+        if value_of:
+            value_of = False
+            continue
+        if arg in NO_COMMIT_FLAGS or arg.startswith("--show-current-patch="):
+            return True
+        value_of = arg in VALUE_FLAGS
+    return False
 
 
 def writer_runs(cmd, base, created=frozenset()):
@@ -385,7 +421,7 @@ def writer_runs(cmd, base, created=frozenset()):
             continue
         if write.verb not in WRITER_VERBS:
             continue
-        if write.verb != "commit" and any(_is_no_commit_flag(a) for a in write.args):
+        if write.verb != "commit" and _has_no_commit_flag(write.args):
             continue
         found.append(write)
     return found

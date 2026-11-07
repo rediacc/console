@@ -306,6 +306,9 @@ def test_l6_the_queue_switch_turns_the_stop_path_off_and_only_it(wl):
     texts = [e.get("text") or "" for e in (state.get("outq") or {}).get("items", [])]
     # At high `open-items` still blocks, so the advisory waits in the queue behind the block: this pins the QUEUED path alone (review b4ce975b.2; at low it is delivered on the allowed stop instead and the queue stays empty).
     assert got.rc == 0, (got.rc, got.err[:300])
+    assert '"decision": "block"' in got.out, got.out[
+        :300
+    ]  # open-items blocks at high, so the advisory queued
     assert any("SETTINGS PROBLEM" in t and "turbo: expected on|off" in t for t in texts), texts
 
 
