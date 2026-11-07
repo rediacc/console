@@ -3,7 +3,6 @@ import { BACKUP_DEFAULTS } from '@rediacc/shared/config';
 import { type Command, Option } from 'commander';
 import { t } from '../i18n/index.js';
 import {
-  type ReplicationSyncResult,
   registerStrategyReplication,
   removeReplicationRulesFor,
   replicateDestinations,
@@ -28,18 +27,24 @@ import {
 import { configService } from '../services/config/config-resources.js';
 import {
   bindBackupStrategy,
-  machinesBoundToStrategy,
   removeStrategyChecked,
   unbindBackupStrategy,
 } from '../services/config/config-strategy-binding.js';
 import { outputService } from '../services/core/output.js';
-import type { BackupStrategyConfig, BackupStrategyDestination } from '../types/index.js';
+import type { BackupStrategyConfig } from '../types/index.js';
 import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
 import {
   buildStrategyUpdate,
   resolveEnabledFlag,
   upsertBackupDestination,
 } from './backup-strategy-options.js';
+import {
+  dropReplicationForMachine,
+  reportReplication,
+  syncReplicationRules,
+  withReplication,
+} from './backup-strategy-replication.js';
+import { strategyBindings, strategyRow } from './backup-strategy-rows.js';
 
 /**
  * Refuse repo names the active config does not know. A typo in --include would otherwise schedule a backup of nothing (or, for exclude, of everything), and surface only as a missing snapshot. Every unknown name is reported at once, and the check runs before anything is written.
@@ -295,135 +300,9 @@ async function applyRetentionNow(name: string): Promise<void> {
   }
 }
 
-/** strategy name -> machines binding it, for reporting deployment reach. */
-async function strategyBindings(): Promise<Map<string, string[]>> {
-  const machines = await configService.listMachines();
-  const bindings = new Map<string, string[]>();
-  for (const { name, config } of machines) {
-    for (const strategy of config.backupStrategies ?? []) {
-      const list = bindings.get(strategy);
-      if (list) list.push(name);
-      else bindings.set(strategy, [name]);
-    }
-  }
-  return bindings;
-}
-
-function formatRetention(retention: NonNullable<BackupStrategyConfig['retention']>): string {
-  const parts: [string, number | undefined][] = [
-    ['last', retention.keepLast],
-    ['within', retention.keepWithinSeconds],
-    ['hourly', retention.keepHourly],
-    ['daily', retention.keepDaily],
-    ['weekly', retention.keepWeekly],
-    ['monthly', retention.keepMonthly],
-    ['yearly', retention.keepYearly],
-  ];
-  return parts
-    .filter(([, n]) => n !== undefined)
-    .map(([name, n]) => `${name}=${n}`)
-    .join(',');
-}
-
-/** One destination as a cell: its name, with a marker when it is switched off. */
-function destinationCell(dest: BackupStrategyDestination): string {
-  return dest.enabled === false ? `${dest.name} (disabled)` : dest.name;
-}
-
-/** One strategy as a row of `show`: the same fields in every format, so a script and a person read one document. */
-function strategyRow(name: string, strategy: BackupStrategyConfig): Record<string, unknown> {
-  return {
-    name,
-    schedule: strategy.schedule,
-    mode: strategy.mode ?? BACKUP_DEFAULTS.MODE,
-    enabled: strategy.enabled !== false,
-    bandwidthLimit: strategy.bandwidthLimit ?? '-',
-    readBandwidthLimit: strategy.readBandwidthLimit ?? '-',
-    cpuLimit: strategy.cpuLimit ?? '-',
-    include: strategy.include?.join(',') ?? '-',
-    exclude: strategy.exclude?.join(',') ?? '-',
-    retention: strategy.retention ? formatRetention(strategy.retention) : '-',
-    destinations: strategy.destinations.map(destinationCell).join(', ') || '-',
-  };
-}
-
 /** Commander accumulator for a repeatable option. */
 function collectRepeated(value: string, previous: string[]): string[] {
   return [...previous, value];
-}
-
-/** Say what a replication-rule sync did. Never throws: the config change it follows has already been written. */
-function reportReplication(result: ReplicationSyncResult, verb: 'registered' | 'removed'): void {
-  if (result.unsupported) {
-    outputService.warn(t('commands.backup.strategy.replication.unsupported'));
-    return;
-  }
-  if (result.done > 0) {
-    const count = { count: result.done };
-    outputService.info(
-      verb === 'registered'
-        ? t('commands.backup.strategy.replication.registered', count)
-        : t('commands.backup.strategy.replication.removed', count)
-    );
-  }
-  for (const failure of result.failures) {
-    outputService.warn(
-      t('commands.backup.strategy.replication.failed', {
-        lineage: failure.lineageGuid,
-        target: failure.target,
-        reason: failure.reason,
-      })
-    );
-  }
-}
-
-/** Run a rule sync when the strategy has replicate destinations and an account token exists to authenticate it. */
-async function withReplication(
-  strategy: Pick<BackupStrategyConfig, 'include' | 'exclude' | 'destinations'> | undefined,
-  run: (
-    strategy: Pick<BackupStrategyConfig, 'include' | 'exclude' | 'destinations'>
-  ) => Promise<void>
-): Promise<void> {
-  if (!strategy || replicateDestinations(strategy, false).length === 0) return;
-  if (!hasAccountToken()) {
-    outputService.warn(t('commands.backup.strategy.replication.notPushed'));
-    return;
-  }
-  try {
-    await run(strategy);
-  } catch (error) {
-    outputService.warn(
-      t('commands.backup.strategy.replication.syncFailed', {
-        reason: error instanceof Error ? error.message : String(error),
-      })
-    );
-  }
-}
-
-/**
- * Bring the server's rules in line with one strategy's replicate destinations after a destination changed: a disabled
- * one loses its rules, an enabled one is registered for every machine the strategy is bound to.
- */
-async function syncReplicationRules(name: string): Promise<void> {
-  const strategy = await configService.getBackupStrategy(name);
-  await withReplication(strategy, async (found) => {
-    const disabled = replicateDestinations(found, false).filter((d) => d.enabled === false);
-    reportReplication(await removeReplicationRulesFor(found, disabled), 'removed');
-    for (const machine of await machinesBoundToStrategy(name)) {
-      reportReplication(await registerStrategyReplication(found, machine), 'registered');
-    }
-  });
-}
-
-/** Drop every replicate destination's rules for the lineages a strategy covers on one machine (an unbind). */
-async function dropReplicationForMachine(
-  strategy: BackupStrategyConfig | undefined,
-  machine: string
-): Promise<void> {
-  await withReplication(strategy, async (found) => {
-    const all = replicateDestinations(found, false);
-    reportReplication(await removeReplicationRulesFor(found, all, machine), 'removed');
-  });
 }
 
 /** Register the `backup strategy` subgroup (named backup strategy records). */

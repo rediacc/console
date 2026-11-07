@@ -3,15 +3,15 @@ import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
-import { writeStdout } from '../services/core/request-context.js';
 import { runCommandJob } from '../services/jobs/command-job.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
-import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
+import { handleError, ValidationError } from '../utils/errors.js';
 import { executeRepoFunction } from '../utils/repo-executor.js';
 import { resolveRepoRef } from '../utils/repo-target.js';
 import { assertMachineExists } from './_validate.js';
 import { type AutostartListOptions, handleAutostartList } from './repo-autostart-list.js';
 import { settleRepoJob } from './repo-job-outcome.js';
+import { ownershipParams, renderRootOwnedDryRun } from './repo-ownership-params.js';
 import { registerRepoPolicyCommand } from './repo-policy.js';
 import { registerRepoPromoteCommand } from './repo-promote.js';
 import { registerRepoPruneCommand } from './repo-prune.js';
@@ -41,63 +41,6 @@ function requireMachine(machine: string | undefined): string {
     throw new ValidationError(t('errors.machineRequiredLocal'));
   }
   return machine;
-}
-
-/**
- * The repository_ownership params. --dry-run and --undo only qualify --root-owned and
- * exclude each other; renet refuses the same, and refusing here saves a job.
- */
-function ownershipParams(options: {
-  uid?: string;
-  rootOwned?: boolean;
-  dryRun?: boolean;
-  undo?: boolean;
-}): Record<string, unknown> {
-  if (
-    ((options.dryRun || options.undo) && !options.rootOwned) ||
-    (options.dryRun && options.undo)
-  ) {
-    throw new ValidationError(t('commands.repo.admin.ownership.rootOwnedQualifiers'));
-  }
-  const params: Record<string, unknown> = {};
-  if (options.uid) params.owner_uid = options.uid;
-  if (options.rootOwned) params.root_owned = true;
-  if (options.dryRun) params.dry_run = true;
-  if (options.undo) params.undo = true;
-  return params;
-}
-
-/**
- * The `--root-owned --dry-run` answer: renet prints each entry it would hand over, one path per line relative to the
- * mount (cmd/renet/repository_ownership.go runRootOwnedOwnership). JSON and YAML get the object, the table the list and
- * its count.
- */
-function renderRootOwnedDryRun(
-  repository: string,
-  machine: string,
-  stdout: string | undefined
-): void {
-  const entries = (stdout ?? '')
-    .split('\n')
-    // Only a CR is dropped: a path may end in spaces, and the list must name the real file.
-    .map((line) => line.replace(/\r$/, ''))
-    .filter((line) => line.length > 0);
-  const format = getOutputFormat();
-  if (format !== 'table') {
-    outputService.print(
-      { repository, machine, dryRun: true, count: entries.length, entries },
-      format
-    );
-    return;
-  }
-  if (entries.length > 0) writeStdout(`${entries.join('\n')}\n`);
-  outputService.info(
-    t('commands.repo.admin.ownership.rootOwnedDryRunSummary', {
-      count: entries.length,
-      repository,
-      machine,
-    })
-  );
 }
 
 /** Execute a machine-level function (no repository context needed). */

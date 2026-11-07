@@ -9,13 +9,12 @@ import { localExecutorService } from '../../executor/local-executor.js';
 import {
   __setHealthGateClock,
   __setHealthGateDelay,
-  describeMigrateAttachFailure,
-  describeRollback,
   forkCluster,
   migrateCluster,
   rehearseCluster,
 } from '../cluster-fork.js';
 import { installK8s } from '../cluster-kube.js';
+import { describeMigrateAttachFailure, describeRollback } from '../cluster-migrate-messages.js';
 
 // A 2-node k8s cluster: server on prod-cp-1, agent on prod-w-1.
 const k8sCluster: ClusterConfig = {
