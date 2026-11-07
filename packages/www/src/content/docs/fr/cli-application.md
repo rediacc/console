@@ -7,7 +7,7 @@ order: 2
 language: fr
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/fr/cli.json
-sourceHash: "c85a345167235f35"
+sourceHash: "ddb7c607e4b17eb8"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -2215,6 +2215,9 @@ rdc repo admin ownership <ref> [options]
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
 | `--uid <uid>` | {{t:cli.commands.repo.admin.ownership.uidOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--root-owned` | {{t:cli.commands.repo.admin.ownership.rootOwnedOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--dry-run` | {{t:cli.commands.repo.admin.ownership.dryRunOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--undo` | {{t:cli.commands.repo.admin.ownership.undoOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
 
@@ -2457,6 +2460,7 @@ rdc job list [options]
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
 | `-m, --machine <name>` | {{t:cli.commands.job.list.machineOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--all` | {{t:cli.commands.job.list.allOption}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 <a id="cli-local-job-status"></a>
@@ -2534,6 +2538,22 @@ rdc job wait <job-id> [options]
 |------|-------------|----------|---------|
 | `-m, --machine <name>` | {{t:cli.commands.job.ticketMachineOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--timeout <duration>` | {{t:cli.commands.job.wait.timeoutOption}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-job-dismiss"></a>
+### 7.7 dismiss
+
+{{t:cli.commands.job.dismiss.description}}
+
+```bash
+rdc job dismiss [job-id...] [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--stale` | {{t:cli.commands.job.dismiss.staleOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--older-than <duration>` | {{t:cli.commands.job.dismiss.olderThanOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `-y, --yes` | {{t:cli.options.yes}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 ---
