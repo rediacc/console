@@ -82,6 +82,17 @@ export function storeFetchJson(result: StoreFetchResult): Record<string, unknown
   };
 }
 
+/**
+ * The text-mode root-check line, or undefined when none is due. Only a verified root is worth a line: "absent" means the
+ * snapshot's manifest predates the root, so nothing was compared, and printing that enum as "Snapshot root check: absent"
+ * reads as a failed check. The JSON output keeps the raw outcome.
+ */
+export function storeCellsRootLine(record: { cellsRoot?: string }): string | undefined {
+  return record.cellsRoot === 'verified'
+    ? t('commands.backup.download.storeCellsRoot', { outcome: record.cellsRoot })
+    : undefined;
+}
+
 /** "LUKS" followed by 0xBA 0xBE: the first six bytes of every LUKS1 and LUKS2 volume. */
 export const LUKS_MAGIC = Buffer.from([0x4c, 0x55, 0x4b, 0x53, 0xba, 0xbe]);
 

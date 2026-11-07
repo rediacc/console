@@ -12,6 +12,7 @@ import {
   type RenetRun,
   runStoreFetch,
   type StoreFetchDeps,
+  storeCellsRootLine,
   storeFetchJson,
 } from '../../services/backup-image/store-fetch.js';
 
@@ -217,5 +218,18 @@ describe('storeFetchJson', () => {
     const out = storeFetchJson({ snapshotId: SNAP, dest: '/d.img', record: { status: 'fetched' } });
     expect(out).not.toHaveProperty('cellsRoot');
     expect(out).not.toHaveProperty('cellsRootValue');
+  });
+});
+
+describe('storeCellsRootLine', () => {
+  it('names a verified root check', () => {
+    expect(storeCellsRootLine({ cellsRoot: 'verified' })).toBe(
+      'commands.backup.download.storeCellsRoot {"outcome":"verified"}'
+    );
+  });
+
+  it('prints nothing when no root was compared, rather than an "absent" check', () => {
+    expect(storeCellsRootLine({ cellsRoot: 'absent' })).toBeUndefined();
+    expect(storeCellsRootLine({})).toBeUndefined();
   });
 });

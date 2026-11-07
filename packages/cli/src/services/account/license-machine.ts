@@ -140,20 +140,24 @@ export async function readLinuxClientMachineId(
   // (and a test that mocks node:fs/promises with readFile alone) never touches them.
   const fsp = await import('node:fs/promises');
   const { readFile } = fsp;
+  let unreadable: CliExitError | undefined;
   for (const path of sources.hostPaths) {
     const id = await readFile(path, 'utf-8').then(
       (v) => v.trim(),
       (error: unknown) => {
-        // Only an absent file means "no host id". An unreadable one (EACCES, EISDIR) would make the same host report a different client id from one run to the next.
-        if ((error as NodeJS.ErrnoException).code === 'ENOENT') return '';
-        throw new CliExitError(
-          ERROR_CODES.PRECONDITION_MISMATCH,
-          `Cannot read the client machine id at ${path} (${error instanceof Error ? error.message : String(error)}).`
-        );
+        // Only an absent file means "no host id". An unreadable one (EACCES, EISDIR) is remembered and reported once no later candidate yields an id, since falling back to the generated id would make this host report an id other than its real one.
+        if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+          unreadable ??= new CliExitError(
+            ERROR_CODES.PRECONDITION_MISMATCH,
+            `Cannot read the client machine id at ${path} (${error instanceof Error ? error.message : String(error)}).`
+          );
+        }
+        return '';
       }
     );
     if (id) return id;
   }
+  if (unreadable) throw unreadable;
   const existing = await readFile(sources.installIdPath, 'utf-8').then(
     (v) => v.trim(),
     () => ''
@@ -188,19 +192,43 @@ async function persistInstallId(path: string, generated: string): Promise<string
   }
 }
 
-/** Replace a corrupt id file: the lock holder re-checks, then writes; a racer that lost the lock reads what the holder wrote. */
+/** How long a replace lock may stand before it is taken for a crashed holder's. */
+const REPLACE_LOCK_STALE_MS = 5000;
+
+/**
+ * One attempt at the replace lock. Undefined when the lock is now held; otherwise the id the holder persisted while
+ * this run waited, or '' when the holder has not written one (a lock past REPLACE_LOCK_STALE_MS is then removed as a
+ * crashed holder's, so the caller contends again).
+ */
+async function tryReplaceLock(path: string, lockPath: string): Promise<string | undefined> {
+  const fsp = await import('node:fs/promises');
+  try {
+    await fsp.writeFile(lockPath, '', { mode: 0o600, flag: 'wx' });
+    return undefined;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
+  }
+  const persisted = await readRacedInstallId(path);
+  if (persisted) return persisted;
+  const lock = await fsp.stat(lockPath).catch(() => undefined);
+  if (lock && Date.now() - lock.mtimeMs > REPLACE_LOCK_STALE_MS) {
+    await fsp.rm(lockPath, { force: true });
+  }
+  return '';
+}
+
+/**
+ * Replace a corrupt id file: the lock holder re-checks, then writes; a racer that lost the lock waits for what the
+ * holder wrote. Only a stale lock (a holder that crashed) is removed, and the racer then contends for the lock again,
+ * so a slow holder never has its file overwritten without the lock.
+ */
 async function replaceCorruptInstallId(path: string, generated: string): Promise<string> {
   const fsp = await import('node:fs/promises');
   const lockPath = `${path}.replace`;
-  try {
-    await fsp.writeFile(lockPath, '', { mode: 0o600, flag: 'wx' });
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
-    // Another run holds the lock: wait for its write. A holder that died leaves the lock behind, so after the wait the file is replaced anyway.
-    const persisted = await readRacedInstallId(path);
-    if (persisted) return persisted;
-    await fsp.writeFile(path, `${generated}\n`, { mode: 0o600 });
-    return generated;
+  for (;;) {
+    const outcome = await tryReplaceLock(path, lockPath);
+    if (outcome === undefined) break;
+    if (outcome) return outcome;
   }
   try {
     const current = (await fsp.readFile(path, 'utf-8').catch(() => '')).trim();

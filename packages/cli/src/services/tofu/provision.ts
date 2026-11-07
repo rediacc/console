@@ -121,9 +121,9 @@ async function provisionTailSteps(
 
 /** The message of a failed setup job. A failure that carries no exit code (a failed step after a clean exit) is named for what it is, not as "code 0". */
 export function setupFailureMessage(result: { exitCode: number; error?: string }): string {
-  return result.exitCode > 0
-    ? `Machine setup exited with code ${result.exitCode}`
-    : `Machine setup failed${result.error ? `: ${result.error}` : ''}`;
+  return result.exitCode === 0
+    ? `Machine setup failed${result.error ? `: ${result.error}` : ''}`
+    : `Machine setup exited with code ${result.exitCode}`;
 }
 
 /** The bootstrap upload stays outside the job (renet must be on the machine first), then one `setup` job. */

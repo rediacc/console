@@ -8,6 +8,7 @@ import {
   displayName,
   formatSkippedWarning,
   parseSkippedEntries,
+  SKIP_SCAN_MAX_LINE,
   SKIPPED_NAMES_SHOWN,
   summarizeSkipped,
 } from '../rsync-skipped.js';
@@ -102,6 +103,14 @@ describe('createSkipLineScan', () => {
     const scan = createSkipLineScan();
     for (let i = 0; i < 1000; i++) scan.push(`${i} 100% progress\n`);
     expect(scan.text()).toBe('');
+  });
+
+  it('drops an overlong line that never ends, and reads the skip line after it', () => {
+    const scan = createSkipLineScan();
+    for (let i = 0; i < 20; i++) scan.push('x'.repeat(SKIP_SCAN_MAX_LINE / 2));
+    scan.push('tail of the overlong line\nskipping non-regular file "after"\n');
+    expect(parseSkippedEntries(scan.text())).toEqual(['after']);
+    expect(scan.text()).not.toContain('xxxx');
   });
 });
 

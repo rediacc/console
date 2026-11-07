@@ -6,6 +6,10 @@ describe('setupFailureMessage', () => {
     expect(setupFailureMessage({ exitCode: 4 })).toBe('Machine setup exited with code 4');
   });
 
+  it('keeps a negative exit code in the message', () => {
+    expect(setupFailureMessage({ exitCode: -1 })).toBe('Machine setup exited with code -1');
+  });
+
   it('does not call a failure with no exit code "code 0"', () => {
     expect(setupFailureMessage({ exitCode: 0, error: 'step failed' })).toBe(
       'Machine setup failed: step failed'

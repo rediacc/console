@@ -84,6 +84,36 @@ describe('readLinuxClientMachineId without a host machine id', () => {
     expect((err as Error).message).toContain(hostPath);
   });
 
+  it('reads a later host id path when an earlier one is unreadable', async () => {
+    const dir = tmp();
+    const unreadable = join(dir, 'machine-id');
+    mkdirSync(unreadable);
+    writeFileSync(join(dir, 'dbus-id'), 'dbus123\n');
+    const id = await readLinuxClientMachineId({
+      hostPaths: [unreadable, join(dir, 'dbus-id')],
+      installIdPath: join(dir, 'x'),
+    });
+    expect(id).toBe('dbus123');
+  });
+
+  it('does not overwrite a corrupt file under a fresh replace lock held by a slow run', async () => {
+    const dir = tmp();
+    const installIdPath = join(dir, 'client-machine-id');
+    writeFileSync(installIdPath, 'garbage\n');
+    writeFileSync(`${installIdPath}.replace`, '');
+    const holderId = 'a'.repeat(64);
+    // The slow holder finishes its write after the racer started waiting.
+    setTimeout(() => {
+      writeFileSync(installIdPath, `${holderId}\n`);
+      rmSync(`${installIdPath}.replace`, { force: true });
+    }, 300);
+    const id = await readLinuxClientMachineId({
+      hostPaths: [join(dir, 'missing')],
+      installIdPath,
+    });
+    expect(id).toBe(holderId);
+  });
+
   it('prefers the host id when present', async () => {
     const dir = tmp();
     writeFileSync(join(dir, 'machine-id'), 'abc123\n');

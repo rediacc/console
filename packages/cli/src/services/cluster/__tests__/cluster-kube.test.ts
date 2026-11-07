@@ -9,6 +9,7 @@ import { localExecutorService } from '../../executor/local-executor.js';
 import {
   __setHealthGateClock,
   __setHealthGateDelay,
+  describeMigrateAttachFailure,
   describeRollback,
   forkCluster,
   migrateCluster,
@@ -521,7 +522,7 @@ describe('migrateCluster (P3 in-Ceph fenced remap, zero-copy)', () => {
 });
 
 describe('describeRollback', () => {
-  it('says a still-running rollback is running, and advises no manual command beside it', () => {
+  it('says a still-running rollback is running', () => {
     const running = describeRollback('running', 'prod-cp-1');
     expect(running).toMatch(/STILL RUNNING/);
     expect(running).not.toMatch(/did NOT finish/);
@@ -530,6 +531,32 @@ describe('describeRollback', () => {
     expect(describeRollback('failed', 'prod-cp-1')).toMatch(/did NOT finish/);
     expect(describeRollback('rolled-back', 'prod-cp-1')).toMatch(/ROLLED BACK/);
   });
+});
+
+describe('describeMigrateAttachFailure', () => {
+  const base = {
+    clusterName: 'prod',
+    controlName: 'prod-cp-1',
+    controlDs: 'ds1',
+    controlDsMount: '/mnt/ds1',
+    controlIp: '10.0.0.5',
+    original: 'boom',
+  };
+  it('advises no manual command beside a still-running rollback', () => {
+    const msg = describeMigrateAttachFailure({ ...base, rollback: 'running' });
+    expect(msg).toMatch(/STILL RUNNING/);
+    expect(msg).not.toMatch(/renet datastore attach/);
+    expect(msg).not.toMatch(/identity-rewrite/);
+    expect(msg).toMatch(/Original error: boom/);
+  });
+  it.each(['failed', 'rolled-back'] as const)(
+    'keeps the manual recovery commands for %s',
+    (rollback) => {
+      const msg = describeMigrateAttachFailure({ ...base, rollback });
+      expect(msg).toMatch(/renet datastore attach --name ds1 --force/);
+      expect(msg).toMatch(/--new-node-ip 10\.0\.0\.5/);
+    }
+  );
 });
 
 describe('rehearseCluster (P3 ephemeral throwaway fork → gate → discard)', () => {
