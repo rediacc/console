@@ -52,6 +52,9 @@ NO_COMMIT_LANDING = [
     ("revert", "revert --no-commit HEAD"),
     ("merge", "merge --squash other"),
     ("merge", "merge --no-commit other"),
+    # Review ad958d5a.1: a message or option value spelled like a flag with an `=` exempts nothing; only `am --show-current-patch=<format>` takes a value.
+    ("merge", 'merge -m "--quit=1" other'),
+    ("cherry-pick", "cherry-pick --abort=1 0123abc"),
 ]
 # `commit` was refused before the fix too, so its rows are the unchanged baseline beside the new verbs.
 ALL_VERBS = [*LANDING, ("commit", "commit -m 'feat: x' -- a.txt")]

@@ -536,12 +536,12 @@ def body_parts(body):
     cut = text.rfind(_FINAL_HEAD)
     final = ""
     if cut >= 0 and (cut == 0 or text[cut - 1] == "\n"):
-        final, text = text[cut + len(_FINAL_HEAD) :], text[:cut]
+        final, text = _refang(text[cut + len(_FINAL_HEAD) :]), text[:cut]
     heads = list(_SEND_HEAD.finditer(text))
     sends = []
     for i, m in enumerate(heads):
         end = heads[i + 1].start() if i + 1 < len(heads) else len(text)
-        sends.append((m.group(1), m.group(2), text[m.end() : end].strip()))
+        sends.append((m.group(1), m.group(2), _refang(text[m.end() : end]).strip()))
     return sends, final
 
 
@@ -1184,14 +1184,24 @@ def harvest_transcript(jsonl):
     return sends, final, rec, others
 
 
-_SECTION_LINE = re.compile(
-    r"^(?=## (?:(?:SendMessage|Outgoing) \d+ -> |Final message$))", re.MULTILINE
-)
+_SECTION_HEADS = r"## (?:(?:SendMessage|Outgoing) \d+ -> |Final message$)"
+_SECTION_LINE = re.compile(r"^(?=\\*" + _SECTION_HEADS + ")", re.MULTILINE)
+_DEFANGED_LINE = re.compile(r"^\\(?=\\*" + _SECTION_HEADS + ")", re.MULTILINE)
 
 
 def _defang(text):
-    """`text` with a line that spells a body section heading backslash-escaped, so a payload that quotes this file's own format stays inside its section (review 862dd224.3)."""
+    """`text` with a line that spells a body section heading (or such a heading already behind backslashes) backslash-escaped, so a payload that quotes this file's own format stays inside its section (review 862dd224.3). `_refang` takes exactly one backslash back off on read, so the round trip is exact."""
     return _SECTION_LINE.sub(lambda _m: "\\", str(text or ""))
+
+
+def _refang(text):
+    """The payload `_defang` escaped, as it was written."""
+    return _DEFANGED_LINE.sub("", str(text or ""))
+
+
+def _one_line(text):
+    """`text` on one line: a newline in a header field would start a line of its own and could spell a section heading (review c2b9c8a5.1)."""
+    return " ".join(str(text or "").split())
 
 
 def assemble_body(sends, final, others=()):
@@ -1199,11 +1209,11 @@ def assemble_body(sends, final, others=()):
     parts = []
     for word, group in ((LEAD_SECTION, sends), (OUTGOING_SECTION, others)):
         for i, s in enumerate(group, 1):
-            head = "## %s %d -> %s" % (word, i, s["to"])
+            head = "## %s %d -> %s" % (word, i, _one_line(s["to"]))
             if s.get("at"):
-                head += "  (%s)" % s["at"]
-            if s.get("summary"):
-                head += "\n_%s_" % s["summary"]
+                head += "  (%s)" % _one_line(s["at"])
+            if _one_line(s.get("summary")):
+                head += "\n_%s_" % _one_line(s["summary"])
             parts.append("%s\n\n%s" % (head, _defang(s["message"])))
     if str(final or "").strip():
         parts.append("## Final message\n\n%s" % _defang(final))

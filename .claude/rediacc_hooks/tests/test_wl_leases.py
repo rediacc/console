@@ -298,14 +298,14 @@ def test_l6_the_queue_switch_turns_the_stop_path_off_and_only_it(wl):
     assert "OPEN worklist item" not in got.out
     assert wl.cli("--list", "--open", wlfix.ME).rc == 0  # verbs unaffected
     # A settings problem rides the stop as an advisory, at every level that advises it.
-    queue_with(wl, "effort: low\nturbo: onn")
+    queue_with(wl, "effort: high\nturbo: onn")
     wl.newturn()
     wl.say("working\n\n## Remaining\n- the item")
     got = wl.run()
     state = json.loads(wl.wl.with_suffix(".state-%s.json" % wlfix.ME).read_text(encoding="utf-8"))
     texts = [e.get("text") or "" for e in (state.get("outq") or {}).get("items", [])]
-    # At low `open-items` only advises since 35afbb54e (tuner e8), so the stop allows and the advisory is delivered on it instead of waiting in the queue behind a block: either way it rides the stop.
-    texts.append(got.out.replace("\\n", "\n"))
+    # At high `open-items` still blocks, so the advisory waits in the queue behind the block: this pins the QUEUED path alone (review b4ce975b.2; at low it is delivered on the allowed stop instead and the queue stays empty).
+    assert got.rc == 0, (got.rc, got.err[:300])
     assert any("SETTINGS PROBLEM" in t and "turbo: expected on|off" in t for t in texts), texts
 
 

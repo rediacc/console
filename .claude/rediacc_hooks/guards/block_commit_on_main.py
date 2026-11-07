@@ -345,6 +345,11 @@ def _file_writer(run):
     return " ".join([name, *run.argv][:4])
 
 
+def _is_no_commit_flag(arg):
+    """Whether `arg` is a NO_COMMIT_FLAGS flag. Only `--show-current-patch` takes an `=<format>` value (`git am`); `--quit=1` or `--abort=x` is no such flag, so a message or option value spelled that way exempts nothing (review ad958d5a.1)."""
+    return arg in NO_COMMIT_FLAGS or arg.startswith("--show-current-patch=")
+
+
 def writer_runs(cmd, base, created=frozenset()):
     """Every git invocation in `cmd` that creates a commit (`WRITER_VERBS`, through any alias), minus a sequencer's `--abort`/`--quit`/`--show-current-patch`, plus every one `resolve` cannot read."""
     found = []
@@ -380,9 +385,7 @@ def writer_runs(cmd, base, created=frozenset()):
             continue
         if write.verb not in WRITER_VERBS:
             continue
-        if write.verb != "commit" and any(
-            a.partition("=")[0] in NO_COMMIT_FLAGS for a in write.args
-        ):
+        if write.verb != "commit" and any(_is_no_commit_flag(a) for a in write.args):
             continue
         found.append(write)
     return found

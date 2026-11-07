@@ -568,6 +568,13 @@ def test_stopcheck_a_failing_audit_is_reported_not_swallowed():
     handler = tries[0].handlers[0]
     assert not all(isinstance(stmt, ast.Pass) for stmt in handler.body)
     assert "plan-box-owed" in ast.unparse(ast.Module(handler.body, []))
+    # Review 7301f987.1/.2: the second vadd argument is `always` (the tier), not pass/fail; the failure report rides the key's own tier, so it is False and the call still adds a violation.
+    call = next(
+        n
+        for n in ast.walk(ast.Module(handler.body, []))
+        if isinstance(n, ast.Call) and getattr(n.func, "id", "") == "vadd"
+    )
+    assert [ast.literal_eval(a) for a in call.args[:2]] == ["plan-box-owed", False]
 
 
 def test_stopcheck_the_key_is_in_the_effort_table_and_off_at_quiet():
