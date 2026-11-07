@@ -184,6 +184,38 @@ COMMENTED_ROWS = [
     for name, (runner, _text) in COMMENTED.items()
 ]
 REFUSED += list(QUOTED_ROWS.values())
+
+# #1ecd3fec: an edited scripts/gates/check-deps.ts was refused for a comment ("see CLAUDE.md's worktree warning") beside a `.add(` call, because the JS scanner gave up at the first backtick or `/`, and the text reading then filled a `${...}` hole with the verb. DEPS_LIKE has the same shape: a template literal with a hole, a regex, a division and the comment, and is allowed; DEPS_INVOKE adds the invocation and is refused. AMBIGUOUS hides its alias behind `//` inside a regex after `)`, which only the both-ways reading of an ambiguous `/` keeps as code.
+DEPS_LIKE = (
+    "// A sibling repo (see CLAUDE.md's worktree warning) is never scanned.\n"
+    "const seen = new Set<string>();\n"
+    'const name = process.argv[2] ?? "x";\n'
+    "const lock: Record<string, string> = {};\n"
+    "if (typeof name === 'string' && /^\\d+\\.\\d+$/.test(name)) lock[`node_modules/${name}`] = name;\n"
+    "seen.add(name);\n"
+    "const ratio = (seen.size - 1) / 2;\n"
+    "console.log(`${ratio} ok`);\n"
+)
+pathlib.Path(FIXTURE_DIR, "deps_like.ts").write_text(DEPS_LIKE, encoding="utf-8")
+pathlib.Path(FIXTURE_DIR, "deps_invoke.ts").write_text(
+    DEPS_LIKE
+    + 'import { execSync } from "node:child_process";\nexecSync("git worktree add /tmp/x");\n',
+    encoding="utf-8",
+)
+pathlib.Path(FIXTURE_DIR, "ambiguous.js").write_text(
+    'const { execSync } = require("child_process");\n'
+    "if (process.argv) /[//]/.test('x'); execSync('git -c alias.wt=worktree wt add /p');\n",
+    encoding="utf-8",
+)
+DEPS_LIKE_ROW = (
+    "a TS comment saying worktree warning",
+    "npx tsx %s/deps_like.ts --selftest" % FIXTURE_DIR,
+)
+AMBIGUOUS_ROW = ("an alias behind a regex after )", "node %s/ambiguous.js" % FIXTURE_DIR)
+REFUSED += [
+    ("a TS script running the invocation", "npx tsx %s/deps_invoke.ts --selftest" % FIXTURE_DIR),
+    AMBIGUOUS_ROW,
+]
 # The JS helper is also caught by the text reading (`_text_verdict` folds the concatenation), so only the shell rows depend on the script arm alone.
 SCRIPT_ARM_ROWS = [row for row in APART_ROWS if row[1].startswith("bash ")]
 FALSE_POSITIVES = [
@@ -353,6 +385,7 @@ ALLOWED = [
     ("a git status inside", "git -C .claude/worktrees/x status"),
     *FALSE_POSITIVES,
     *COMMENTED_ROWS,
+    DEPS_LIKE_ROW,
 ]
 
 # (family, text, does the comment-stripped text still name the phrase): the scanners on their own, both directions, and the raw-text fallback for a construct they do not read.
@@ -376,6 +409,17 @@ CODE_TEXT = [
     ("ruby", "# a worktree note\nsystem('git add -A')\n", True),
     ("ruby", 'puts "a #{1} #"; system("git -c alias.wt=worktree wt add /p")\n', True),
     ("python", "# a worktree note\ng('add', '-A')\n", False),
+    # #1ecd3fec: template literals, regex literals and division are read, so a real script's comments drop; every construct that hides code from one reading still keeps it.
+    ("tsx", DEPS_LIKE, False),
+    ("node", "f(`${ {a: 1}.a }`); // the worktree\ng.add(1)\n", False),
+    ("node", "const r = /'/; f('git -c alias.wt=worktree wt add /p');\n", True),
+    ("node", "const r = /[//]/; f('git -c alias.wt=worktree wt add /p');\n", True),
+    ("node", "if (a) /[//]/.test(s); f('git -c alias.wt=worktree wt add /p');\n", True),
+    ("node", "f(`${a}// `); f('git -c alias.wt=worktree wt add /p');\n", True),
+    ("node", "f(`${'`'} // `); f('git -c alias.wt=worktree wt add /p');\n", True),
+    ("node", "f(`\n// the worktree\ng('add');\n", True),
+    ("node", "x = /abc\n// the worktree\ng.add(1)\n", True),
+    ("node", "return <a href='//x'>don't</a>; // the worktree\ng.add(1)\n", True),
 ]
 
 # (operand, directory, trees on disk, does it name a lease)
@@ -612,6 +656,20 @@ REVERSE = [
         ('    return "".join(out)\n', "    return text\n"),
         COMMENTED_ROWS[1],
     ),
+    # #1ecd3fec: the JS scanner giving up at a construct again, or a comment licensing the hole fill again, refuses the check-deps-shaped row again, so it is allowed BY those two lines.
+    (
+        "the JS scanner gives up",
+        (
+            "    if as_division is None or as_regex is None:\n        return text\n",
+            "    return text\n",
+        ),
+        DEPS_LIKE_ROW,
+    ),
+    (
+        "a comment licenses the JS hole fill",
+        ('"worktree" in _slash_code_text(_mask_file_names(code))', "None"),
+        DEPS_LIKE_ROW,
+    ),
 ]
 for label, pair, (row_name, row_command) in REVERSE:
     if run_guard(row_command, defect=pair)[0] != 2:
@@ -662,6 +720,15 @@ for label, pair, rows in (
             '        return re.sub(r"(?:^|(?<=\\s))(?:/\\*.*?\\*/|//[^\\n]*)", "", text, flags=re.M | re.S)\n',
         ),
         [QUOTED_ROWS["quoted.js"]],
+    ),
+    # #1ecd3fec: an ambiguous `/` read one way only (division) admits the alias hidden behind `//` in a regex after `)`, so that row is refused BY the both-ways reading.
+    (
+        "the JS scanner reads an ambiguous slash one way",
+        (
+            '    return as_division if as_division == as_regex else as_division + "\\n" + as_regex\n',
+            "    return as_division\n",
+        ),
+        [AMBIGUOUS_ROW],
     ),
     (
         "the quote-blind perl strip",

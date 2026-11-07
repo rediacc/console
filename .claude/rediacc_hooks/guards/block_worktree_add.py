@@ -1241,9 +1241,10 @@ TEXT_JOIN_BEFORE = re.compile(r"(?:\+|(?<![\w.])\.|<<)\s*$")
 TEXT_INTERPOLATION = re.compile(r"\$\{[^{}]*\}|#\{[^{}]*\}|[$@]\w+")
 
 
-def _text_literals(code):
-    """Every literal the regex reading finds, a built one also as the commands `_filled` reads it to spell."""
-    mentions = "worktree" in code
+def _text_literals(code, mentions=None):
+    """Every literal the regex reading finds, a built one also as the commands `_filled` reads it to spell. `mentions` says whether the code names `worktree` outside a comment, the license to fill an unknown piece with the verb; None reads the raw text, comments included."""
+    if mentions is None:
+        mentions = "worktree" in code
     for m in itertools.chain(LITERAL.finditer(code), QUOTE_LIKE.finditer(code)):
         literal = " ".join(next(g for g in m.groups() if g is not None).split())
         yield literal
@@ -1256,9 +1257,9 @@ def _text_literals(code):
             yield from _filled(UNKNOWN + built, mentions)
 
 
-def _text_verdict(code, depth):
-    """The arm a program text trips, read by regex: for a node/perl/ruby program, and for Python that `ast` cannot parse."""
-    for literal in _text_literals(code):
+def _text_verdict(code, depth, mentions=None):
+    """The arm a program text trips, read by regex: for a node/perl/ruby program, and for Python that `ast` cannot parse. `mentions` is `_text_literals`'s."""
+    for literal in _text_literals(code, mentions):
         verdict = shell_verdict(literal, depth)
         if verdict:
             return verdict
@@ -1293,12 +1294,15 @@ def _code_verdict(family, code, depth):
     if family == "shell":
         # `bun exec "<command line>"` runs its operand through Bun's shell, and a program fed to an evaluator on stdin may be one too: either is read as a command line.
         return shell_verdict(code, depth)
+    if family in SLASH_FAMILIES:
+        # A comment does not license filling a built string's hole with the verb, as `_code_mentions` reads it for Python (#1ecd3fec: check-deps.ts's comment `worktree` filled a `${name}` hole into `worktree add`).
+        return _text_verdict(code, depth, "worktree" in _slash_code_text(_mask_file_names(code)))
     return _text_verdict(code, depth)
 
 
 # A COMMENT RUNS NOTHING, AND IT IS ALL THE NARROWING DROPS (#a904d9f4, design review of dd6898eb0). Adjacency alone let a script keep the two words apart and still run the verb: a shell wrapper `wt(){ git worktree "$@"; }; wt add p`, an alias `git -c alias.wt=worktree wt add p`, the `GIT_CONFIG_KEY_0=alias.wt` form, a JS verb helper. So a script is still refused for naming the phrase ANYWHERE in its code, and only its comments are dropped first.
 # A COMMENT MARKER INSIDE A STRING IS NOT A COMMENT (review ba934aef.1). A quote-blind strip of `#...` after whitespace turned `echo " #"; git -c alias.wt=worktree wt add /p` into `echo "`, and the script was admitted; the JS `//` and `/* */` strip and the perl/ruby `#` strip lost code inside a string literal the same way. So comments are found by a scanner that tracks the quoting, and ANY construct the scanner does not model exactly returns the raw text: a parse that loses its place inside a string can only over-read (refuse), never strip code.
-# Python drops tokenize's COMMENT tokens (exact). A shell script (`_shell_code_text`) models `'...'`, `"..."`, backslash escapes and `#` at a word start after an unescaped space or tab; command and parameter substitution, backquotes, `$'...'`, arithmetic and heredocs keep the raw text. A JS-family script (`_slash_code_text`) models `'...'`, `"..."` and the two comment forms; a template literal, a lone `/` (regex or division), a `<` that may open JSX, and a string that meets a bare newline keep the raw text. Perl and ruby (`q{}`, `qw()`, `%w[]`, `m#..#`, regex literals, heredocs) have no exact cheap reading, so their raw text is read, comments included: the over-reading direction, paid only by an untracked or edited script.
+# Python drops tokenize's COMMENT tokens (exact). A shell script (`_shell_code_text`) models `'...'`, `"..."`, backslash escapes and `#` at a word start after an unescaped space or tab; command and parameter substitution, backquotes, `$'...'`, arithmetic and heredocs keep the raw text. A JS-family script (`_slash_code_text`) models `'...'`, `"..."`, template literals with nested `${...}`, regex literals and the two comment forms; a `<` that may open JSX, a string or regex that meets a bare newline, and anything left open at the end keep the raw text. Perl and ruby (`q{}`, `qw()`, `%w[]`, `m#..#`, regex literals, heredocs) have no exact cheap reading, so their raw text is read, comments included: the over-reading direction, paid only by an untracked or edited script.
 SLASH_FAMILIES = ("node", "deno", "bun", "tsx")
 
 
@@ -1353,12 +1357,73 @@ def _shell_code_text(text):
     return "".join(out)
 
 
-def _slash_code_text(text):
-    """A JS-family script's text with its `//` and `/* */` comments removed, or the raw text when it holds a construct this scanner does not read exactly."""
+# EVERY REAL TYPESCRIPT FILE KEPT ITS COMMENTS (#1ecd3fec). The first cut of the JS scanner returned the raw text at the first backtick or `/`, and a real script holds both (a template literal, a regex, a division), so for node/tsx the comment drop above never happened: an edited scripts/gates/check-deps.ts, whose only `worktree` is the prose "see CLAUDE.md's worktree warning" in a comment and whose code calls `.add(`, was refused as naming the phrase (measured 2026-11-07, `npx tsx scripts/gates/check-deps.ts --selftest`, rc 2; rc 0 with the file unedited). So the scanner now reads a template literal (its `${...}` holes as code, nested), and a regex literal by the token before it, and keeps both in the code it returns.
+# A `/` WHOSE MEANING THE TOKEN BEFORE IT DOES NOT SETTLE (after `)`, `}`, `++` or `--`: `(a) / 2` is division, `if (a) /re/.test(s)` a regex) is read BOTH ways, and the code either reading leaves is kept, so a misread can only over-read. A `<` that may open JSX in an expression position, a string or regex meeting a bare newline, and anything left open at the end still return the raw text.
+SLASH_REGEX_AFTER = frozenset("(,=:[!&|?{};+-*%<>~^")
+SLASH_AMBIGUOUS_AFTER = frozenset((")", "}", "++", "--"))
+SLASH_KEYWORDS = frozenset(
+    (
+        "return",
+        "typeof",
+        "case",
+        "do",
+        "else",
+        "in",
+        "of",
+        "new",
+        "delete",
+        "void",
+        "throw",
+        "instanceof",
+        "yield",
+        "await",
+    )
+)
+SLASH_WORD = re.compile(r"[A-Za-z0-9_$\x80-\U0010ffff]+")
+
+
+def _slash_scan(text, ambiguous_regex):
+    """One reading of a JS-family text with its comments removed, an ambiguous `/` read as a regex when `ambiguous_regex`; None when the text holds a construct this reading does not place exactly."""
     out: list[str] = []
     i, n = 0, len(text)
+    # One brace depth per open code frame: the top level, then each `${` hole of a template literal.
+    frames = [0]
+    prev = ""
+    if text.startswith("#!"):
+        i = text.find("\n")
+        if i < 0:
+            return ""
+
+    def expression_start():
+        """Does the token before the scan point leave an expression to begin, where `/` opens a regex and `<` may open JSX? An ambiguous token answers `ambiguous_regex`."""
+        return (
+            prev == ""
+            or prev in SLASH_REGEX_AFTER
+            or prev in SLASH_KEYWORDS
+            or (prev in SLASH_AMBIGUOUS_AFTER and ambiguous_regex)
+        )
+
+    def template(at):
+        """Read template text from `at`: (index after it, True) at a `${` hole, (index after the closing backtick, False) at its end, None when it never ends."""
+        j = at
+        while j < n:
+            ch = text[j]
+            if ch == "\\":
+                j += 2
+                continue
+            if ch == "`":
+                return j + 1, False
+            if text.startswith("${", j):
+                return j + 2, True
+            j += 1
+        return None
+
     while i < n:
         c = text[i]
+        if c in " \t\r\n":
+            out.append(c)
+            i += 1
+            continue
         if text.startswith("//", i):
             while i < n and text[i] != "\n":
                 i += 1
@@ -1366,7 +1431,7 @@ def _slash_code_text(text):
         if text.startswith("/*", i):
             end = text.find("*/", i + 2)
             if end < 0:
-                return text
+                return None
             out.append(" ")
             i = end + 2
             continue
@@ -1377,20 +1442,94 @@ def _slash_code_text(text):
                     j += 2
                     continue
                 if text[j] == "\n":
-                    return text
+                    return None
                 j += 1
             if j >= n:
-                return text
+                return None
             out.append(text[i : j + 1])
             i = j + 1
+            prev = "lit"
             continue
-        if c in "`/":
-            return text
-        if c == "<" and re.match(r"[A-Za-z/>!]", text[i + 1 : i + 2]):
-            return text
+        if c == "`" or (c == "}" and frames[-1] == 0 and len(frames) > 1):
+            if c == "}":
+                frames.pop()
+            read = template(i + 1)
+            if read is None:
+                return None
+            j, hole = read
+            out.append(text[i:j])
+            i = j
+            if hole:
+                frames.append(0)
+                prev = "{"
+            else:
+                prev = "lit"
+            continue
+        if c == "/":
+            regex = expression_start()
+            j, in_class = (i + 1, False) if regex else (n, False)
+            while j < n:
+                ch = text[j]
+                if ch == "\\":
+                    j += 2
+                    continue
+                if ch == "\n":
+                    break
+                if in_class:
+                    in_class = ch != "]"
+                elif ch == "[":
+                    in_class = True
+                elif ch == "/":
+                    break
+                j += 1
+            if j >= n or text[j] != "/":
+                # A regex literal cannot meet a newline: an ambiguous `/` with no close on its line is division, the only reading left; one the token before settled as a regex is a construct this reading does not place.
+                if regex and prev not in SLASH_AMBIGUOUS_AFTER:
+                    return None
+                out.append(c)
+                i += 1
+                prev = c
+                continue
+            j += 1
+            while j < n and text[j].isalpha():
+                j += 1
+            out.append(text[i:j])
+            i = j
+            prev = "lit"
+            continue
+        if c == "<" and re.match(r"[A-Za-z/>!]", text[i + 1 : i + 2]) and expression_start():
+            return None
+        word = SLASH_WORD.match(text, i)
+        if word:
+            out.append(word.group(0))
+            after_dot = prev == "."
+            i = word.end()
+            prev = word.group(0) if word.group(0) in SLASH_KEYWORDS and not after_dot else "lit"
+            continue
+        if c in "+-" and text.startswith(c * 2, i):
+            out.append(c * 2)
+            i += 2
+            prev = c * 2
+            continue
+        if c == "{":
+            frames[-1] += 1
+        elif c == "}":
+            frames[-1] -= 1
         out.append(c)
         i += 1
+        prev = c
+    if len(frames) > 1:
+        return None
     return "".join(out)
+
+
+def _slash_code_text(text):
+    """A JS-family script's text with its `//` and `/* */` comments removed, or the raw text when it holds a construct this scanner does not read exactly. An ambiguous `/` is read both ways and the code of both readings is kept."""
+    as_division = _slash_scan(text, False)
+    as_regex = _slash_scan(text, True)
+    if as_division is None or as_regex is None:
+        return text
+    return as_division if as_division == as_regex else as_division + "\n" + as_regex
 
 
 def _code_text(family, text):
