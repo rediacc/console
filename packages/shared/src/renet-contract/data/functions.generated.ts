@@ -28,6 +28,8 @@ export interface BackupBrowseAtParams {
   depth?: string;
   /** Maximum entries to return (0 = unlimited) */
   limit?: string;
+  /** Refuse unless the repository licence names this account-server origin (scheme://host[:port]). Empty = no check */
+  expectAccountServer?: string;
 }
 
 /** Measure a repository's block churn since the last probe, projected at each cell size */
@@ -134,6 +136,8 @@ export interface BackupRepairParams {
   readBwlimit?: string;
   /** Hard CPU ceiling as a percent of all cores, 1-100; 100 = no ceiling. Empty = one core. Enforced by a systemd scope CPUQuota */
   cpuLimit?: number;
+  /** Refuse unless the repository licence names this account-server origin (scheme://host[:port]). Empty = no check */
+  expectAccountServer?: string;
 }
 
 /** Restore a repository image from a chunk-store snapshot */
@@ -150,6 +154,8 @@ export interface BackupRestoreParams {
   allowUnopenable?: boolean;
   /** Continue past a chunk the store lost or holds wrong: its cells stay holes, reported by byte range, with status restored-damaged. Only for a target with no image */
   salvage?: boolean;
+  /** Refuse unless the repository licence names this account-server origin (scheme://host[:port]). Empty = no check */
+  expectAccountServer?: string;
 }
 
 /** Restore one file or directory from a chunk-store snapshot, without restoring the whole image */
@@ -162,6 +168,8 @@ export interface BackupRestorePathParams {
   path: string;
   /** Directory the path is placed under (empty = <datastore>/restores/<snapshot-id>) */
   to?: string;
+  /** Refuse unless the repository licence names this account-server origin (scheme://host[:port]). Empty = no check */
+  expectAccountServer?: string;
 }
 
 /** Upload a chunk-store snapshot: full inventory first, changed cells after */
@@ -198,6 +206,8 @@ export interface BackupSnapshotParams {
   cellBytes?: number;
   /** Let cell_bytes replace the recorded grid. Re-seeds the repository: every cell uploads again and is charged */
   acceptGridChange?: boolean;
+  /** Refuse unless the repository licence names this account-server origin (scheme://host[:port]). Empty = no check */
+  expectAccountServer?: string;
 }
 
 /** Inspect or install a repository's browse-listing public key */
@@ -1884,6 +1894,10 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
         default: '10000',
         help: 'Maximum entries to return (0 = unlimited)',
       },
+      expectAccountServer: {
+        type: 'string',
+        help: 'Refuse unless the repository licence names this account-server origin (scheme://host[:port]). Empty = no check',
+      },
     },
   },
   'backup_churn_probe': {
@@ -2153,6 +2167,10 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
         type: 'int',
         help: 'Hard CPU ceiling as a percent of all cores, 1-100; 100 = no ceiling. Empty = one core. Enforced by a systemd scope CPUQuota',
       },
+      expectAccountServer: {
+        type: 'string',
+        help: 'Refuse unless the repository licence names this account-server origin (scheme://host[:port]). Empty = no check',
+      },
     },
   },
   'backup_restore': {
@@ -2193,6 +2211,10 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
         default: 'false',
         help: 'Continue past a chunk the store lost or holds wrong: its cells stay holes, reported by byte range, with status restored-damaged. Only for a target with no image',
       },
+      expectAccountServer: {
+        type: 'string',
+        help: 'Refuse unless the repository licence names this account-server origin (scheme://host[:port]). Empty = no check',
+      },
     },
   },
   'backup_restore_path': {
@@ -2222,6 +2244,10 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
       to: {
         type: 'string',
         help: 'Directory the path is placed under (empty = <datastore>/restores/<snapshot-id>)',
+      },
+      expectAccountServer: {
+        type: 'string',
+        help: 'Refuse unless the repository licence names this account-server origin (scheme://host[:port]). Empty = no check',
       },
     },
   },
@@ -2302,6 +2328,10 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
         type: 'bool',
         default: 'false',
         help: 'Let cell_bytes replace the recorded grid. Re-seeds the repository: every cell uploads again and is charged',
+      },
+      expectAccountServer: {
+        type: 'string',
+        help: 'Refuse unless the repository licence names this account-server origin (scheme://host[:port]). Empty = no check',
       },
     },
   },

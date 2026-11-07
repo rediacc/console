@@ -148,6 +148,7 @@ async function fullDesired() {
   const { computeDesiredUnits } = await import('../backup/backup-schedule-reconcile.js');
   const { machineUnitSpecs } = await import('../backup/backup-schedule-targets.js');
   const { sha256Hex } = await import('../backup/backup-schedule-unit-generator.js');
+  const { expectedAccountServerOrigin } = await import('../backup/backup-store-universe.js');
   const units = computeDesiredUnits(
     machineUnitSpecs(
       [{ name: 'hourly-hot', config: DEFAULT_STRATEGY as never }],
@@ -155,7 +156,8 @@ async function fullDesired() {
       'hostinger'
     ),
     '/usr/bin/renet',
-    8
+    8,
+    expectedAccountServerOrigin()
   );
   const dir = '/etc/systemd/system';
   const files: { path: string; hash: string; unit: string; kind: 'service' | 'timer' }[] = [];

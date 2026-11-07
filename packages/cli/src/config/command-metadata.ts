@@ -71,6 +71,10 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   'job gc': {
     mcp: { destructive: true, idempotent: true, timeout: 'write', appendArgs: ['--yes'] },
   },
+  // Dismissing drops this config's local ticket records (it never touches the machine's spool), so it is destructive to that record only and auto-confirms like gc.
+  'job dismiss': {
+    mcp: { destructive: true, idempotent: true, timeout: 'write', appendArgs: ['--yes'] },
+  },
 
   'machine status': {
     mcp: {

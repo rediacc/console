@@ -144,8 +144,10 @@ describe('command plane coverage', () => {
     // 206 -> 207, machine 112 -> 113: `repo health` (PLAN-health-checks-local G3) runs the repositories' health() on a machine.
     //
     // 207 -> 209, machine 113 -> 115: `repo repair` and `machine repair` (PLAN-health-checks-local X2, X4) run renet functions on the machine.
-    expect(COMMANDS.length).toBe(209);
-    expect(counts).toEqual({ config: 57, machine: 115, other: 37 });
+    //
+    // 209 -> 210, machine 115 -> 116: `job dismiss` (PLAN-renet-restart-cycle-defects D4) forgets local job tickets; it carries the machine plane of the job domain.
+    expect(COMMANDS.length).toBe(210);
+    expect(counts).toEqual({ config: 57, machine: 116, other: 37 });
   });
 
   it('records the interactive commands', () => {
@@ -201,7 +203,8 @@ describe('command plane coverage', () => {
     // 105 -> 108: the three `repo permission` leaves are machine-plane and non-interactive.
     // 108 -> 109: `repo health` is machine-plane and non-interactive.
     // 109 -> 111: `repo repair` and `machine repair` are machine-plane and non-interactive.
-    expect(machineNonInteractive.length).toBe(111);
+    // 111 -> 112: `job dismiss` is machine-plane and non-interactive (it confirms only without --yes).
+    expect(machineNonInteractive.length).toBe(112);
   });
 
   it('plane and interactive entries all point at real commands', () => {

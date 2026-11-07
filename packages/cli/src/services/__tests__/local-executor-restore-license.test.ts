@@ -21,6 +21,7 @@
 import { WK_ACCOUNT_DEV_PORT } from '@rediacc/shared/config/well-known.generated';
 import type { MockInstance } from 'vitest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { LISTING_COMPLETE_MARKER } from '../backup/backup-store-universe.js';
 
 const {
   mockConnect,
@@ -102,6 +103,8 @@ vi.mock('../account/license-refresh-state.js', () => ({
 
 vi.mock('../account/subscription-auth.js', () => ({
   getSubscriptionTokenState: mockGetSubscriptionTokenState,
+  // The backup-session verbs carry the config's account-server origin to renet (--expect-account-server).
+  getSubscriptionServerUrl: () => 'https://bench.rediacc.com',
 }));
 
 vi.mock('../account/subscription-device-auth.js', () => ({
@@ -184,6 +187,9 @@ function installedLicence(repositoryGuid: string, datastoreId?: string) {
  */
 function storeReports(licensed: ReturnType<typeof installedLicence>[]) {
   mockExec.mockImplementation((command: string) => {
+    // The backup store pre-flight's licence listing: complete, with no licence installed.
+    if (command.includes(LISTING_COMPLETE_MARKER))
+      return Promise.resolve(`${LISTING_COMPLETE_MARKER}\n`);
     if (command.includes('datastore list --json')) {
       return Promise.resolve(JSON.stringify([{ name: 'tier1', datastoreId: DATASTORE_ID }]));
     }
@@ -237,6 +243,9 @@ describe('backup restore: licensing the target machine', () => {
     );
     mockExecStreaming.mockResolvedValue(0);
     mockExec.mockImplementation((command: string) => {
+      // The backup store pre-flight's licence listing: complete, with no licence installed.
+      if (command.includes(LISTING_COMPLETE_MARKER))
+        return Promise.resolve(`${LISTING_COMPLETE_MARKER}\n`);
       if (command.includes('datastore list --json')) {
         return Promise.resolve(JSON.stringify([{ name: 'tier1', datastoreId: DATASTORE_ID }]));
       }
@@ -436,6 +445,9 @@ describe('backup restore: licensing the target machine', () => {
   // T5f, an older renet that does not know `--repo` fails the probe, and a probe that cannot answer means "issue", never "refuse".
   it('issues when the store probe fails', async () => {
     mockExec.mockImplementation((command: string) => {
+      // The backup store pre-flight's licence listing: complete, with no licence installed.
+      if (command.includes(LISTING_COMPLETE_MARKER))
+        return Promise.resolve(`${LISTING_COMPLETE_MARKER}\n`);
       if (command.includes('datastore list --json')) {
         return Promise.resolve(JSON.stringify([{ name: 'tier1', datastoreId: DATASTORE_ID }]));
       }

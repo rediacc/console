@@ -23,6 +23,7 @@ export const BackupBrowseAtParamsSchema = z.object({
   path: z.string().optional().describe('Limit the listing to this subtree'),
   depth: z.string().default('0').optional().describe('Limit descent to N levels (0 = unlimited)'),
   limit: z.string().default('10000').optional().describe('Maximum entries to return (0 = unlimited)'),
+  expectAccountServer: z.string().optional().describe('Refuse unless the repository licence names this account-server origin (scheme://host[:port]). Empty = no check'),
 });
 
 /** Measure a repository's block churn since the last probe, projected at each cell size */
@@ -110,6 +111,7 @@ export const BackupRepairParamsSchema = z.object({
   bwlimit: z.string().optional().describe('Upload cap, same units as backup_snapshot\'s bwlimit. Empty = unlimited'),
   readBwlimit: z.string().optional().describe('Anchor read cap, same units as backup_snapshot\'s bwlimit. Empty = the verb default (50M); 0 = unlimited'),
   cpuLimit: z.number().int().optional().describe('Hard CPU ceiling as a percent of all cores, 1-100; 100 = no ceiling. Empty = one core. Enforced by a systemd scope CPUQuota'),
+  expectAccountServer: z.string().optional().describe('Refuse unless the repository licence names this account-server origin (scheme://host[:port]). Empty = no check'),
 });
 
 /** Restore a repository image from a chunk-store snapshot */
@@ -120,6 +122,7 @@ export const BackupRestoreParamsSchema = z.object({
   noSeed: z.boolean().default(false).optional().describe('Fetch every chunk from the store instead of reusing local anchors or images'),
   allowUnopenable: z.boolean().default(false).optional().describe('Place the image even though the repository passphrase did not open it: a snapshot taken before a passphrase change opens only with the old one'),
   salvage: z.boolean().default(false).optional().describe('Continue past a chunk the store lost or holds wrong: its cells stay holes, reported by byte range, with status restored-damaged. Only for a target with no image'),
+  expectAccountServer: z.string().optional().describe('Refuse unless the repository licence names this account-server origin (scheme://host[:port]). Empty = no check'),
 });
 
 /** Restore one file or directory from a chunk-store snapshot, without restoring the whole image */
@@ -128,6 +131,7 @@ export const BackupRestorePathParamsSchema = z.object({
   at: z.string().min(1).describe('Snapshot id to restore from (a TIME is resolved by the CLI, never here)'),
   path: z.string().min(1).describe('File or directory to restore, relative to the repository root'),
   to: z.string().optional().describe('Directory the path is placed under (empty = <datastore>/restores/<snapshot-id>)'),
+  expectAccountServer: z.string().optional().describe('Refuse unless the repository licence names this account-server origin (scheme://host[:port]). Empty = no check'),
 });
 
 /** Upload a chunk-store snapshot: full inventory first, changed cells after */
@@ -148,6 +152,7 @@ export const BackupSnapshotParamsSchema = z.object({
   indexEvery: z.string().optional().describe('Seal the browse index only this often, as a duration. Empty = every run, or 1h with a target'),
   cellBytes: z.number().int().optional().describe('Grid cell size in bytes. Empty keeps the repository\'s recorded grid, else 4 MiB. A different value needs accept_grid_change'),
   acceptGridChange: z.boolean().default(false).optional().describe('Let cell_bytes replace the recorded grid. Re-seeds the repository: every cell uploads again and is charged'),
+  expectAccountServer: z.string().optional().describe('Refuse unless the repository licence names this account-server origin (scheme://host[:port]). Empty = no check'),
 });
 
 /** Inspect or install a repository's browse-listing public key */

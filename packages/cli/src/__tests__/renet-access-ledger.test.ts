@@ -50,6 +50,9 @@ const LEDGER: Record<string, string[]> = {
     'provision',
   ],
   'commands/subscription-actions.ts::<module>::resolveMachineContext': ['read-only'],
+  'commands/subscription-actions.ts::executeTokenFreeMachineRefresh::resolveMachineContext': [
+    'provision',
+  ],
   'commands/term.ts::connectTerminal::acquireRemoteRenet': ['read-only'],
   'commands/vscode-browser.ts::prepareBrowserConnection::acquireRemoteRenet': ['read-only'],
   'commands/vscode.ts::prepareRemote::acquireRemoteRenet': ['read-only'],

@@ -95,6 +95,8 @@ vi.mock('../../account/subscription-device-auth.js', () => ({
 
 vi.mock('../../account/subscription-auth.js', () => ({
   getSubscriptionTokenState: mockGetSubscriptionTokenState,
+  // The backup-session verbs carry the config's account-server origin to renet (--expect-account-server).
+  getSubscriptionServerUrl: () => 'https://bench.rediacc.com',
 }));
 
 vi.mock('../../../utils/agent-guard.js', () => ({
