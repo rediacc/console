@@ -85,11 +85,24 @@ function statusOf(error: unknown): number | undefined {
   return typeof status === 'number' ? status : undefined;
 }
 
+/** The code the account server puts on a refusal, when it sends one. */
+function codeOf(error: unknown): string | undefined {
+  const code = (error as { code?: unknown } | null)?.code;
+  return typeof code === 'string' ? code : undefined;
+}
+
+/** The server's answer to a DELETE for a rule it does not hold: nothing to drop, and the route exists. */
+const RULE_UNKNOWN = 'BACKUP_REPLICATE_RULE_UNKNOWN';
+
 function reasonOf(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-/** Run one request per item, folding a 404 into `unsupported` (and stopping: every later call would 404 too) and any other failure into `failures`. */
+/**
+ * Run one request per item. A 404 carrying BACKUP_REPLICATE_RULE_UNKNOWN is a rule the server does not hold, which a
+ * drop counts as done and moves past. Any other 404 is a server without the replication routes: it folds into
+ * `unsupported` and stops, since every later call would 404 too. Any other failure goes into `failures`.
+ */
 async function applyAll(
   items: { lineageGuid: string; target: string; call: () => Promise<unknown> }[]
 ): Promise<ReplicationSyncResult> {
@@ -99,6 +112,10 @@ async function applyAll(
       await item.call();
       result.done++;
     } catch (error) {
+      if (statusOf(error) === 404 && codeOf(error) === RULE_UNKNOWN) {
+        result.done++;
+        continue;
+      }
       if (statusOf(error) === 404) {
         result.unsupported = true;
         return result;
@@ -128,7 +145,7 @@ export function pushReplicationRules(rules: ReplicationRule[]): Promise<Replicat
   );
 }
 
-/** Drop the rule of each (lineage, target) pair. A rule the server does not hold is not a failure of ours: the server answers 200 or 404, and a 404 here reads as an older server, which has no rule to drop either. */
+/** Drop the rule of each (lineage, target) pair. A rule the server does not hold (404 BACKUP_REPLICATE_RULE_UNKNOWN) is not a failure and never stops the drops after it; a 404 without that code reads as an older server, which has no rule to drop either. */
 export function dropReplicationRules(
   pairs: { lineageGuid: string; targetId: string }[]
 ): Promise<ReplicationSyncResult> {

@@ -97,6 +97,23 @@ describe('server answers', () => {
     );
   });
 
+  it('drops past a rule the server does not hold, so one missing rule never strands the rest', async () => {
+    fetchMock
+      .mockRejectedValueOnce(
+        Object.assign(new Error('no such rule'), {
+          status: 404,
+          code: 'BACKUP_REPLICATE_RULE_UNKNOWN',
+        })
+      )
+      .mockResolvedValueOnce({});
+    const result = await dropReplicationRules([
+      { lineageGuid: 'G1', targetId: 'eu-west' },
+      { lineageGuid: 'G2', targetId: 'eu-west' },
+    ]);
+    expect(result).toEqual({ done: 2, unsupported: false, failures: [] });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
   it('collects a refusal per rule and goes on with the next', async () => {
     fetchMock
       .mockRejectedValueOnce(Object.assign(new Error('source store retired'), { status: 400 }))
