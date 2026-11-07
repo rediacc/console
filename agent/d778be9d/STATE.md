@@ -1,25 +1,31 @@
-## SESSION d778be9d 2026-11-07T00:12:19Z
+## SESSION d778be9d 2026-11-07T03:53:09Z
 
-# STATE d778be9d (2026-11-07 ~00:10Z UTC, branch 1104-1, unpushed)
-
-Operator orders (2026-11-06): finish ALL remaining jobs, production changes allowed, /pr-babysit, promote finished plans, run Promoted plans in parallel. Effort smart. Public repo: never Claude-Session / Co-Authored-By / "Generated with" / claude.ai links. This machine is UTC+1; write times as UTC.
+# d778be9d STATE (2026-11-07T03:58Z, branch 1104-1, HEAD 416c6eeb8)
 
 ## Big pieces
-- ci:quick run 17 (log /tmp/m/ciquick17.log) RED on 24 gates from today's landings (+2 carried: external-links ppc.go.jp, P-A1). TS/CLI/account half landed (6d4a86bfd, account pointer); renet overlong-line fix pointer committed (7d05ba3). Python/CI half in a lease, plus three forwarded edits (ci-drift.yml drift_job call since the ci:drift script was removed, ci-quality.yml `npm ci --prefix workers/ops-health`, ops-health.rediacc.com in well-known.env). Then run 18, fleet run 10, push.
-- PLAN-health-checks-local 47/81; N2 tickable after the push (#3093b53a); L4 patch at agent/d778be9d/l4-gate-wiring.patch (after W5); hostinger steps in agent/d778be9d/hostinger-runbook.md. Note: the PLAN text cites `npm run ci:drift` (removed); D1's record should name `python3 -m rediacc_ci.release.drift_job`.
+- PLAN-health-checks-local (S7, H4-H7, H9/H10 receipts, H14, H15, L4 wiring, R1-R3 open; W5, S4, S5, S6 ticked today)
+- PLAN-backup-integrity / PLAN-backup-critical-tier (B1 after H4; Z1 ticked)
+- PLAN-backup-program (no local code left; CI-run, fleet and bench boxes)
 
 ## Owed ticks
-- PLAN-backup-download-from-store.md#0128b879 (L2): reopened; needs an image digest recorded independently of the run.
-- PLAN-tick-tracking.md#3b2fb3e3 (T9): reopened; closes when T13 links ec099603d.
+- PLAN-backup-download-from-store.md#0128b879 (L2): the audit says tickable-now, but it was reopened (review b16944c4.3) for lacking an independent image-hash record; it needs an eu-store read, which waits on the eu-remote rebind #66d17658. Not tickable until then.
+- PLAN-tick-tracking.md#3b2fb3e3: live-owed; a live clause remains (box-audit lists it).
 
-## Delegated
-- ad61ab8f3efdfe635 (#138b3b80; also holds #11306719 #eb5c1323): run-17 reds Python/CI + the three forwarded edits; owns .ci/**, .claude/hooks/**, .claude/rediacc_hooks/**, scripts/**, .github/workflows/**; accept: each gate rc=0, check:ci-test-scripts-reachable and check:ci-literal-sources rc=0.
-- a7211dfeabaa68ca7 (Plan, read-only): run-17 root causes -> /tmp/m/rf/run17-design.md; spot-check yardstick.
-- aa127d0782bfcb0d8 (#84e99893): bench B1 and Z1; edits nothing.
-- task b2h0vztj1 (#56b520e8): S4 stream; OK/MISMATCH per file.
+## Where things stand
+- No push yet. ci:quick run 19 rc=1; fixed since: ops-health (eee6fcc88, Worker retracted), override-ranges (1de447177), gate-manifest (2aaa5732f, under audit), embed assets rebuilt. Carried: external-links (ppc.go.jp 503), P-A1 (merge-time). checkout-cone cannot run on Docker Desktop.
+- Landed: renet --test --repo, grant leak, --no-docker socket, dangling grant refs + gate restart; account pending-purge sweep silence (live on bench 02:17Z); freshness batch incl. 9 majors (b7108cf94); pins guard (ecb260bdd, 06ca86a92); worktree guard JS comment scanner (d43939188..416c6eeb8).
+- Ticked: Z1, W5, S4, S5, S6, T9.
+
+## Delegated (live)
+- abf49d1f1cb58e072 (opus, lease): #dd787801 audit of the bf9ea6efc duration refresh; whether 2aaa5732f stands; check:ci-lane-budget (e2e-workers leg 4 12.1m/12m, build-renet 16.0m vs 15m cap #23e93715). Accept: gate-manifest, lane-budget, budget-freshness, gate-bind, gates-lock, doc-region-parity, parity rc 0.
+
+## Operator questions (DEFAULT at 120 min)
+- #66d17658 eu-remote rebind. DEFAULT: runbook via eu-bench (already routed); L2 0128b879 and #22854bf1 wait.
+- #86d58f37 S7 archive deletion. DEFAULT: yes (S6 passed).
 
 ## Next action
-1. When ad61ab8f3efdfe635 reports: spot-check against run17-design.md, land its picks, re-run its gates and the two forwarded ones on HEAD, gc, tick #138b3b80.
-2. ci:quick run 18 with the machine quiet; red only on the 2 carried keys passes.
-3. vm:check --changed (fleet run 10); push renet, account, elite, then console (TURBO_PUSH_REASON='ci-cd: operator ordered /pr-babysit'); draft PRs; `--phase babysit`; tick N2.
-4. After VERIFIED fleet run 10: hostinger runbook; 07:54Z roundcube cert (#cb61605a).
+1. Fix #dcbe1452 on hostinger via eu-bench: the demo-stackoverflow pipeline image build fails on stack/pgadmin-data; build from a context without it (repo-local change on hostinger, recorded under PLAN-health-checks-local S5b).
+2. When abf49d1f1cb58e072 reports: spot-check against CI run ids, land, re-run its gates, gc, tick #dd787801.
+3. ci:quick run 20 alone; then npm run vm:check -- --changed (fleet run 10).
+4. Push renet, account, elite, then console with TURBO_PUSH_REASON='ci-cd: operator ordered /pr-babysit'; draft PRs; --phase babysit; tick N2.
+5. Hostinger runbook via eu-bench from the 00:00Z window: H4 (also J18 control, then B1), H5-H7, H14, H15; S7 per #86d58f37.
