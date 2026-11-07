@@ -21,9 +21,9 @@ Body-Sig: 4b509529a2f44ca6
 ### c2b9c8a5.1 [medium] .claude/hooks/stop/wl_report.py:1206
 Anchor: in-diff
 Claim: assemble_body escapes only the payload message and the final text, but writes s["summary"] unescaped into the section head (`head += "\n_%s_" % s["summary"]`), so a summary containing a newline followed by a `## Outgoing N -> x` or `## Final message` line still splits the section on read-back.
-Resolution: open
+Resolution: fixed d412dae66816f950977c53a9f0274d03511247b7 | d778be9d 2026-11-07T11:07:35Z
 
 ### c2b9c8a5.2 [low] .claude/hooks/stop/wl_report.py:1194
 Anchor: in-diff
 Claim: _defang prepends a backslash to each heading-like line, and nothing in the diff reverses it on read; the new test only checks that "not final" survives, so a payload line `## Outgoing 1 -> x` is returned as `\## Outgoing 1 -> x` with no test pinning the round-trip text (unless body_parts, which is not in this diff, strips it).
-Resolution: open
+Resolution: fixed d412dae66816f950977c53a9f0274d03511247b7 | d778be9d 2026-11-07T11:07:35Z
