@@ -1769,7 +1769,11 @@
           "descriptionShort": "تغيير UID مالك دليل المستودع",
           "failed": "فشل تحديث الملكية",
           "starting": "جارٍ تعيين ملكية \"{{repository}}\" على \"{{machine}}\"...",
-          "uidOption": "معرّف المالك UID (افتراضي: 7111)"
+          "uidOption": "معرّف المالك UID (افتراضي: 7111)",
+          "rootOwnedOption": "تسليم الملفات المملوكة لـ root الموجودة تحت أدلة يملكها root أو هذا UID إلى UID المالك، مع تسجيل كل منها في بيان تراجع",
+          "dryRunOption": "مع --root-owned: عرض الملفات التي ستتغير دون تغيير أي شيء",
+          "undoOption": "مع --root-owned: إعادة ملفات بيان التراجع التي لا يزال UID المالك يملكها إلى root",
+          "rootOwnedQualifiers": "لا يُستخدم --dry-run و--undo إلا مع --root-owned، ولا يمكن الجمع بينهما"
         },
         "template": {
           "apply": {

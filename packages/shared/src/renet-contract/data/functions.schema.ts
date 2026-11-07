@@ -633,6 +633,9 @@ export const RepositoryMountParamsSchema = z.object({
 export const RepositoryOwnershipParamsSchema = z.object({
   ownerUid: z.string().optional().describe('New owner user ID'),
   force: z.string().optional().describe('Skip Docker volume detection (true/false)'),
+  rootOwned: z.boolean().default(false).optional().describe('Hand root-owned files to the owner UID below directories owned by root or that UID, recording each in an undo manifest'),
+  dryRun: z.boolean().default(false).optional().describe('With root_owned: list the files that would change, and change nothing'),
+  undo: z.boolean().default(false).optional().describe('With root_owned: return the files in the undo manifest that the owner UID still owns to root'),
 });
 
 /** Widen what the repository's Rediaccfile up() and down() may reach: a path, or root */

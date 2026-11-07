@@ -1769,7 +1769,11 @@
           "descriptionShort": "Cambiar UID de propiedad del directorio del repositorio",
           "failed": "Error al actualizar la propiedad",
           "starting": "Estableciendo propiedad de \"{{repository}}\" en \"{{machine}}\"...",
-          "uidOption": "UID del propietario (predeterminado: 7111)"
+          "uidOption": "UID del propietario (predeterminado: 7111)",
+          "rootOwnedOption": "Entregar al UID propietario los archivos de root que estén bajo directorios de root o de ese UID, registrando cada uno en un manifiesto para deshacer",
+          "dryRunOption": "Con --root-owned: listar los archivos que cambiarían, sin cambiar nada",
+          "undoOption": "Con --root-owned: devolver a root los archivos del manifiesto para deshacer que aún pertenecen al UID propietario",
+          "rootOwnedQualifiers": "--dry-run y --undo solo se aplican junto con --root-owned y no se pueden combinar"
         },
         "template": {
           "apply": {

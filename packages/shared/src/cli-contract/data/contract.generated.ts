@@ -9530,6 +9530,39 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Owner UID (default: 7111)"
         },
         {
+          "flags": "--root-owned",
+          "long": "root-owned",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.repo.admin.ownership.rootOwnedOption",
+          "label": "Hand root-owned files to the owner UID below directories owned by root or that UID, recording each in an undo manifest"
+        },
+        {
+          "flags": "--dry-run",
+          "long": "dry-run",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.repo.admin.ownership.dryRunOption",
+          "label": "With --root-owned: list the files that would change, and change nothing"
+        },
+        {
+          "flags": "--undo",
+          "long": "undo",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.repo.admin.ownership.undoOption",
+          "label": "With --root-owned: return the files in the undo manifest that the owner UID still owns to root"
+        },
+        {
           "flags": "--debug",
           "long": "debug",
           "valueTaking": false,

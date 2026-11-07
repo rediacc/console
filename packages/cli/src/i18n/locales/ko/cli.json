@@ -1769,7 +1769,11 @@
           "descriptionShort": "저장소 디렉터리 소유권 UID를 변경합니다",
           "failed": "소유권 업데이트 실패",
           "starting": "\"{{machine}}\"에서 \"{{repository}}\"의 소유권을 설정하는 중...",
-          "uidOption": "소유자 UID (기본값: 7111)"
+          "uidOption": "소유자 UID (기본값: 7111)",
+          "rootOwnedOption": "root 또는 해당 UID가 소유한 디렉터리 아래의 root 소유 파일을 소유자 UID에게 넘기고, 각각을 되돌리기 매니페스트에 기록합니다",
+          "dryRunOption": "--root-owned와 함께: 변경될 파일을 나열하고 아무것도 변경하지 않습니다",
+          "undoOption": "--root-owned와 함께: 되돌리기 매니페스트에 있는 파일 중 아직 소유자 UID가 소유한 파일을 root에게 돌려줍니다",
+          "rootOwnedQualifiers": "--dry-run과 --undo는 --root-owned와 함께 쓸 때만 적용되며 서로 함께 사용할 수 없습니다"
         },
         "template": {
           "apply": {

@@ -866,6 +866,12 @@ export interface RepositoryOwnershipParams {
   ownerUid?: string;
   /** Skip Docker volume detection (true/false) */
   force?: string;
+  /** Hand root-owned files to the owner UID below directories owned by root or that UID, recording each in an undo manifest */
+  rootOwned?: boolean;
+  /** With root_owned: list the files that would change, and change nothing */
+  dryRun?: boolean;
+  /** With root_owned: return the files in the undo manifest that the owner UID still owns to root */
+  undo?: boolean;
 }
 
 /** Widen what the repository's Rediaccfile up() and down() may reach: a path, or root */
@@ -1131,7 +1137,7 @@ export const RENET_FUNCTIONS = [
   'setup',
 ] as const;
 
-export const RENET_FUNCTIONS_VERSION = 'v3.0.0-190-g82badac';
+export const RENET_FUNCTIONS_VERSION = 'v3.0.0-200-gd85a3ca';
 
 export type RenetFunctionName = (typeof RENET_FUNCTIONS)[number];
 
@@ -3821,6 +3827,21 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
       force: {
         type: 'string',
         help: 'Skip Docker volume detection (true/false)',
+      },
+      rootOwned: {
+        type: 'bool',
+        default: 'false',
+        help: 'Hand root-owned files to the owner UID below directories owned by root or that UID, recording each in an undo manifest',
+      },
+      dryRun: {
+        type: 'bool',
+        default: 'false',
+        help: 'With root_owned: list the files that would change, and change nothing',
+      },
+      undo: {
+        type: 'bool',
+        default: 'false',
+        help: 'With root_owned: return the files in the undo manifest that the owner UID still owns to root',
       },
     },
   },

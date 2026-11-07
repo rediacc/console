@@ -1769,7 +1769,11 @@
           "descriptionShort": "リポジトリディレクトリの所有者 UID を変更する",
           "failed": "所有権の更新に失敗しました",
           "starting": "\"{{machine}}\" で \"{{repository}}\" の所有権を設定中...",
-          "uidOption": "所有者UID（デフォルト: 7111）"
+          "uidOption": "所有者UID（デフォルト: 7111）",
+          "rootOwnedOption": "root またはその UID が所有するディレクトリ配下にある root 所有のファイルを所有者 UID に引き渡し、それぞれを取り消し用マニフェストに記録します",
+          "dryRunOption": "--root-owned と併用: 変更されるファイルを一覧表示し、何も変更しません",
+          "undoOption": "--root-owned と併用: 取り消し用マニフェストのうち、まだ所有者 UID が所有するファイルを root に戻します",
+          "rootOwnedQualifiers": "--dry-run と --undo は --root-owned と併用した場合にのみ有効で、同時には指定できません"
         },
         "template": {
           "apply": {

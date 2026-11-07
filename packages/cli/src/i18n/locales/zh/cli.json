@@ -1769,7 +1769,11 @@
           "descriptionShort": "更改仓库目录的所有权 UID",
           "failed": "所有权更新失败",
           "starting": "正在 \"{{machine}}\" 上设置 \"{{repository}}\" 的所有权...",
-          "uidOption": "所有者 UID（默认: 7111）"
+          "uidOption": "所有者 UID（默认: 7111）",
+          "rootOwnedOption": "将位于 root 或该 UID 所有目录下的 root 所有文件交给所有者 UID，并把每一项记录到撤销清单中",
+          "dryRunOption": "与 --root-owned 一起使用：列出将会变更的文件，不做任何更改",
+          "undoOption": "与 --root-owned 一起使用：把撤销清单中仍归所有者 UID 所有的文件交还给 root",
+          "rootOwnedQualifiers": "--dry-run 和 --undo 只能与 --root-owned 一起使用，且不能同时使用"
         },
         "template": {
           "apply": {

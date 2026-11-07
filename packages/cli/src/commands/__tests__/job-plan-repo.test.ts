@@ -586,6 +586,32 @@ describe('repo verbs outside J4: one job per machine, the follow-up as steps', (
       expect(typeof executed[0].params?.tmpl).toBe('string');
     });
 
+    it.each([
+      [['--root-owned'], { root_owned: true }],
+      [['--root-owned', '--dry-run'], { root_owned: true, dry_run: true }],
+      [
+        ['--root-owned', '--undo', '--uid', '1000'],
+        { owner_uid: '1000', root_owned: true, undo: true },
+      ],
+    ])('repo admin ownership %j carries the root-owned params', async (flags, params) => {
+      await runVerb(extended, 'admin', 'ownership', 'shop:latest', ...flags);
+
+      expect(executed.map((o) => o.functionName)).toEqual(['repository_ownership']);
+      expect(executed[0].params).toEqual({ repository: 'shop:latest', ...params });
+    });
+
+    it.each([[['--dry-run']], [['--undo']], [['--root-owned', '--dry-run', '--undo']]])(
+      'repo admin ownership %j is refused before any job',
+      async (flags) => {
+        await expect(
+          runVerb(extended, 'admin', 'ownership', 'shop:latest', ...flags)
+        ).rejects.toThrow('commands.repo.admin.ownership.rootOwnedQualifiers');
+
+        expect(executed).toEqual([]);
+        expect(plain.calls).toEqual([]);
+      }
+    );
+
     it('the -m form of autostart enable is one machine job over the _all function', async () => {
       const program = new Command();
       program.exitOverride();

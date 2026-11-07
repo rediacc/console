@@ -42,6 +42,30 @@ function requireMachine(machine: string | undefined): string {
   return machine;
 }
 
+/**
+ * The repository_ownership params. --dry-run and --undo only qualify --root-owned and
+ * exclude each other; renet refuses the same, and refusing here saves a job.
+ */
+function ownershipParams(options: {
+  uid?: string;
+  rootOwned?: boolean;
+  dryRun?: boolean;
+  undo?: boolean;
+}): Record<string, unknown> {
+  if (
+    ((options.dryRun || options.undo) && !options.rootOwned) ||
+    (options.dryRun && options.undo)
+  ) {
+    throw new ValidationError(t('commands.repo.admin.ownership.rootOwnedQualifiers'));
+  }
+  const params: Record<string, unknown> = {};
+  if (options.uid) params.owner_uid = options.uid;
+  if (options.rootOwned) params.root_owned = true;
+  if (options.dryRun) params.dry_run = true;
+  if (options.undo) params.undo = true;
+  return params;
+}
+
 /** Execute a machine-level function (no repository context needed). */
 async function executeMachineFunction(
   verb: string,
@@ -364,6 +388,9 @@ export function registerExtendedRepoCommands(repo: Command, admin: Command): voi
     .description(t('commands.repo.admin.ownership.description'))
     .argument('<ref>', t('options.repoRef'))
     .option('--uid <uid>', t('commands.repo.admin.ownership.uidOption'))
+    .option('--root-owned', t('commands.repo.admin.ownership.rootOwnedOption'))
+    .option('--dry-run', t('commands.repo.admin.ownership.dryRunOption'))
+    .option('--undo', t('commands.repo.admin.ownership.undoOption'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
     .action(
@@ -371,15 +398,17 @@ export function registerExtendedRepoCommands(repo: Command, admin: Command): voi
         ref: string,
         options: {
           uid?: string;
+          rootOwned?: boolean;
+          dryRun?: boolean;
+          undo?: boolean;
           debug?: boolean;
           skipRouterRestart?: boolean;
         }
       ) => {
         try {
+          const params = ownershipParams(options);
           const { repoKey, machineName, kubeCluster } = await resolveRepoRef(ref);
           await assertCommandPolicy(CMD.REPO_ADMIN_OWNERSHIP, repoKey);
-          const params: Record<string, unknown> = {};
-          if (options.uid) params.owner_uid = options.uid;
 
           await executeRepoFunction(
             'repository_ownership',

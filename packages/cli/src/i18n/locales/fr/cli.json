@@ -1769,7 +1769,11 @@
           "descriptionShort": "Changer l'UID du propriétaire du répertoire du dépôt",
           "failed": "Échec de la mise à jour de la propriété",
           "starting": "Définition de la propriété de \"{{repository}}\" sur \"{{machine}}\"...",
-          "uidOption": "UID du propriétaire (par défaut : 7111)"
+          "uidOption": "UID du propriétaire (par défaut : 7111)",
+          "rootOwnedOption": "Confier à l'UID propriétaire les fichiers appartenant à root situés sous des répertoires de root ou de cet UID, en consignant chacun dans un manifeste d'annulation",
+          "dryRunOption": "Avec --root-owned : lister les fichiers qui changeraient, sans rien modifier",
+          "undoOption": "Avec --root-owned : rendre à root les fichiers du manifeste d'annulation que l'UID propriétaire possède encore",
+          "rootOwnedQualifiers": "--dry-run et --undo ne s'utilisent qu'avec --root-owned et ne peuvent pas être combinés"
         },
         "template": {
           "apply": {

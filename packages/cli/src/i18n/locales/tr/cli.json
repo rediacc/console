@@ -1769,7 +1769,11 @@
           "descriptionShort": "Depo dizininin sahiplik UID değerini değiştir",
           "failed": "Sahiplik güncelleme başarısız",
           "starting": "\"{{machine}}\" üzerinde \"{{repository}}\" sahipliği ayarlanıyor...",
-          "uidOption": "Sahip UID'si (varsayılan: 7111)"
+          "uidOption": "Sahip UID'si (varsayılan: 7111)",
+          "rootOwnedOption": "root'a ya da bu UID'ye ait dizinlerin altındaki root dosyalarını sahip UID'ye devret ve her birini geri alma manifestine kaydet",
+          "dryRunOption": "--root-owned ile: değişecek dosyaları listele, hiçbir şeyi değiştirme",
+          "undoOption": "--root-owned ile: geri alma manifestindeki, hâlâ sahip UID'ye ait dosyaları root'a geri ver",
+          "rootOwnedQualifiers": "--dry-run ve --undo yalnızca --root-owned ile birlikte geçerlidir ve birlikte kullanılamaz"
         },
         "template": {
           "apply": {

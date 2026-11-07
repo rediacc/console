@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 2535,
-    "sourceCommit": "be22c5b36aad7180c2f629bfcf70a7963e7ee25d"
+    "keyCount": 2539,
+    "sourceCommit": "729eb77c2bb552c1363f9496ec31ed7a8f24ba11"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -1350,9 +1350,13 @@
     "commands.repo.admin.ownership.completed": "cb3c7a24",
     "commands.repo.admin.ownership.description": "2165559b",
     "commands.repo.admin.ownership.descriptionShort": "8e6660f7",
+    "commands.repo.admin.ownership.dryRunOption": "336433c8",
     "commands.repo.admin.ownership.failed": "269773eb",
+    "commands.repo.admin.ownership.rootOwnedOption": "81e54617",
+    "commands.repo.admin.ownership.rootOwnedQualifiers": "0275b89a",
     "commands.repo.admin.ownership.starting": "ab12fb02",
     "commands.repo.admin.ownership.uidOption": "ec98584d",
+    "commands.repo.admin.ownership.undoOption": "4228fba7",
     "commands.repo.admin.template.apply.description": "44dd7da2",
     "commands.repo.admin.template.apply.descriptionShort": "f0489688",
     "commands.repo.admin.template.apply.notFound": "30a984e2",

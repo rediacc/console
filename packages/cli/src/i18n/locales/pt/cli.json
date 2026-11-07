@@ -1769,7 +1769,11 @@
           "descriptionShort": "Alterar o UID de proprietário da directoria do repositório",
           "failed": "Falha na actualização da propriedade",
           "starting": "A definir a propriedade de \"{{repository}}\" em \"{{machine}}\"...",
-          "uidOption": "UID do proprietário (por omissão: 7111)"
+          "uidOption": "UID do proprietário (por omissão: 7111)",
+          "rootOwnedOption": "Entregar ao UID proprietário os ficheiros de root que estejam sob diretórios de root ou desse UID, registando cada um num manifesto para desfazer",
+          "dryRunOption": "Com --root-owned: listar os ficheiros que mudariam, sem alterar nada",
+          "undoOption": "Com --root-owned: devolver a root os ficheiros do manifesto para desfazer que ainda pertencem ao UID proprietário",
+          "rootOwnedQualifiers": "--dry-run e --undo só se aplicam com --root-owned e não podem ser combinados"
         },
         "template": {
           "apply": {

@@ -1769,7 +1769,11 @@
           "descriptionShort": "Muuda hoidla kataloogi omaniku UID-i",
           "failed": "Omandiõiguse uuendamine ebaõnnestus",
           "starting": "Hoidla \"{{repository}}\" omandiõiguse seadistamine masinal \"{{machine}}\"...",
-          "uidOption": "Omaniku UID (vaikimisi: 7111)"
+          "uidOption": "Omaniku UID (vaikimisi: 7111)",
+          "rootOwnedOption": "Anna root-kasutajale kuuluvad failid, mis asuvad root-i või selle UID kataloogide all, omaniku UID-le ja salvesta igaüks tagasivõtmise manifesti",
+          "dryRunOption": "Koos --root-owned-iga: loetle failid, mis muutuksid, midagi muutmata",
+          "undoOption": "Koos --root-owned-iga: tagasta root-ile tagasivõtmise manifesti failid, mis kuuluvad endiselt omaniku UID-le",
+          "rootOwnedQualifiers": "--dry-run ja --undo kehtivad ainult koos --root-owned-iga ning neid ei saa koos kasutada"
         },
         "template": {
           "apply": {

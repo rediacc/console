@@ -1774,6 +1774,10 @@
           "description": "Change repository directory ownership UID on the mounted volume (default: 7111). Use when containers need a specific UID to access repo files",
           "descriptionShort": "Change repository directory ownership UID",
           "uidOption": "Owner UID (default: 7111)",
+          "rootOwnedOption": "Hand root-owned files to the owner UID below directories owned by root or that UID, recording each in an undo manifest",
+          "dryRunOption": "With --root-owned: list the files that would change, and change nothing",
+          "undoOption": "With --root-owned: return the files in the undo manifest that the owner UID still owns to root",
+          "rootOwnedQualifiers": "--dry-run and --undo each apply only with --root-owned, and cannot be combined",
           "starting": "Setting ownership of \"{{repository}}\" on \"{{machine}}\"...",
           "completed": "Ownership updated",
           "failed": "Ownership update failed"

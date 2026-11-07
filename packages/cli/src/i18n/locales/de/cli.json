@@ -1769,7 +1769,11 @@
           "descriptionShort": "UID des Repository-Verzeichnisbesitzers ändern",
           "failed": "Besitz-Aktualisierung fehlgeschlagen",
           "starting": "Besitz von \"{{repository}}\" wird auf \"{{machine}}\" gesetzt...",
-          "uidOption": "Besitzer-UID (Standard: 7111)"
+          "uidOption": "Besitzer-UID (Standard: 7111)",
+          "rootOwnedOption": "Root-eigene Dateien unterhalb von Verzeichnissen, die root oder dieser UID gehören, an die Eigentümer-UID übergeben und jede in einem Rückgängig-Manifest festhalten",
+          "dryRunOption": "Mit --root-owned: die Dateien auflisten, die sich ändern würden, ohne etwas zu ändern",
+          "undoOption": "Mit --root-owned: die Dateien aus dem Rückgängig-Manifest, die noch der Eigentümer-UID gehören, an root zurückgeben",
+          "rootOwnedQualifiers": "--dry-run und --undo gelten jeweils nur zusammen mit --root-owned und lassen sich nicht kombinieren"
         },
         "template": {
           "apply": {
