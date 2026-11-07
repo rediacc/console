@@ -26,9 +26,9 @@ Resolution: open
 ### fac1a9a6.2 [medium] packages/cli/src/services/__tests__/backup-schedule-chunkstore.test.ts:126
 Anchor: in-diff
 Claim: The test title still says the destination cap is 'the tightest one winning', but the body now only asserts per-destination caps (12500000 for a, 6000000 for b); no assertion checks that the tighter cap wins on a single command, so that behaviour is untested and the title misstates what is checked.
-Resolution: open
+Resolution: fixed 64a48c21d5e943effda8e630055dc194840b8707 | d778be9d 2026-11-07T14:19:57Z
 
 ### fac1a9a6.3 [low] packages/cli/src/services/__tests__/backup-schedule-chunkstore.test.ts:163
 Anchor: outside-diff
 Claim: The test titled 'takes one snapshot per enabled destination' never sets or checks an enabled flag; it only passes two destinations with distinct targets, so the word 'enabled' describes behaviour the test does not exercise.
-Resolution: open
+Resolution: fixed 64a48c21d5e943effda8e630055dc194840b8707 | d778be9d 2026-11-07T14:19:57Z

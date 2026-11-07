@@ -21,7 +21,7 @@ Body-Sig: c47e532d774e9114
 ### e7deb111.1 [high] src/dto/backup.dto.ts:389
 Anchor: in-diff
 Claim: backupSessionResponse now requires storeId (z.string()), and the commit's own run leaves three existing backup- tests red (exact-key assertions in backup-storage.test.ts and backup-restore-session.test.ts), so the backup test gate fails at this commit.
-Resolution: open
+Resolution: not-a-bug | private/account/tests/integration/backup-storage.test.ts:1066 the three exact-key assertions gained storeId in account 0033710, landed with e7deb11 in gitlink c2422a15f; npx vitest run tests/integration/backup- 1002 passed on that tree, so no landed tree has the red | d778be9d 2026-11-07T14:20:59Z
 
 ### e7deb111.2 [high] src/services/backup-store-registry.ts:277
 Anchor: in-diff
