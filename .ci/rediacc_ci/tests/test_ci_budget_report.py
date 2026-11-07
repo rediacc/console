@@ -2973,6 +2973,38 @@ def test_a_refresh_moves_a_priced_variant_lane_only_on_two_runs(tmp_path, capsys
         assert ("1 variantCosts entr(ies)" in err) is (runs == 1)
 
 
+def test_a_refresh_counts_variant_evidence_per_variant_not_per_lane(tmp_path):
+    """One lane, two variants: ubuntu-24.04 priced from two runs moves, fedora-43 priced from one run keeps its committed value."""
+    prior = {
+        "test-e2e-workers": {
+            "ubuntu-24.04": {"fixedMinutes": 5.4, "units": {}},
+            "fedora-43": {"fixedMinutes": 6.0, "units": {}},
+        }
+    }
+    measured = {
+        "test-e2e-workers": {
+            "ubuntu-24.04": {"fixedMinutes": 4.37, "units": {}},
+            "fedora-43": {"fixedMinutes": 3.0, "units": {}},
+        }
+    }
+    path = tmp_path / "lane-durations.json"
+    path.write_text(json.dumps({"concurrency": 20, "jobs": {}, "units": {}, "variantCosts": prior}))
+    compute = _fake_compute(
+        variant_costs=measured,
+        measured_runs={
+            "variant_costs": {"test-e2e-workers": 2},
+            "variant_entries": {
+                "test-e2e-workers/ubuntu-24.04": 2,
+                "test-e2e-workers/fedora-43": 1,
+            },
+        },
+    )
+    assert br.refresh_lane_durations(path, limit=10, compute=compute) == 0
+    written = json.loads(path.read_text())["variantCosts"]["test-e2e-workers"]
+    assert written["ubuntu-24.04"]["fixedMinutes"] == 4.37
+    assert written["fedora-43"]["fixedMinutes"] == 6.0
+
+
 def test_cached_variant_log_fetches_once_and_caches_only_the_filtered_lines(tmp_path):
     calls = []
 

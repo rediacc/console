@@ -1451,8 +1451,9 @@ def collect_variant_costs(
     cache_dir: Path | None = None,
     max_jobs: int = VARIANT_LOG_MAX_JOBS,
     runs: dict[str, int] | None = None,
+    variant_runs: dict[str, int] | None = None,
 ) -> tuple[dict[str, dict[str, dict[str, Any]]], dict[str, int]]:
-    """`(variantCosts measured from `jobs_by_run`'s success legs, {lane: legs priced})`. A leg whose log cannot be fetched or parsed is skipped with a warning; a lane that prices no leg is simply absent, which `merge_variant_costs` turns into "kept the prior value" rather than a dropped one. `runs`, when given, is filled with `{lane: how many sampled runs its priced legs came from}`, the evidence the refresh keeps a committed lane on."""
+    """`(variantCosts measured from `jobs_by_run`'s success legs, {lane: legs priced})`. A leg whose log cannot be fetched or parsed is skipped with a warning; a lane that prices no leg is simply absent, which `merge_variant_costs` turns into "kept the prior value" rather than a dropped one. `runs`, when given, is filled with `{lane: how many sampled runs its priced legs came from}`, the evidence the refresh keeps a committed lane on. `variant_runs`, when given, is filled the same way per `<lane>/<variant>`, since a lane's legs can price one variant from two runs and another from one."""
     manifest_ids = _manifest_unit_ids(root, VARIANT_E2E_LANE)
     candidates: list[tuple[str, dict[str, Any]]] = []
     run_of: dict[int, int] = {}
@@ -1493,6 +1494,7 @@ def collect_variant_costs(
 
     measurements: dict[str, list[dict[str, Any]]] = {}
     priced_runs: dict[str, set[int]] = {}
+    priced_variant_runs: dict[str, set[int]] = {}
     unpriced = 0
     for lane, job, text in results:
         if text is None:
@@ -1507,8 +1509,13 @@ def collect_variant_costs(
             continue
         measurements.setdefault(lane, []).append(row)
         priced_runs.setdefault(lane, set()).add(run_of.get(id(job), -1))
+        priced_variant_runs.setdefault("%s/%s" % (lane, row["variant"]), set()).add(
+            run_of.get(id(job), -1)
+        )
     if runs is not None:
         runs.update({lane: len(indexes) for lane, indexes in priced_runs.items()})
+    if variant_runs is not None:
+        variant_runs.update({key: len(indexes) for key, indexes in priced_variant_runs.items()})
     if unpriced:
         log.warn(
             "budget_report: %d variant leg log(s) carried no parseable timing; skipped" % unpriced
@@ -1645,6 +1652,7 @@ def compute_lane_durations(
         "job_p90_minutes": {},
         "gate_step_p90_seconds": {},
         "variant_costs": {},
+        "variant_entries": {},
     }
     jobs_minutes: dict[str, float] = {}
     for lane, pattern in patterns.items():
@@ -1729,6 +1737,7 @@ def compute_lane_durations(
             if log_cache_dir is not None
             else tree_root / VARIANT_LOG_CACHE_REL_PATH,
             runs=measured_runs["variant_costs"],
+            variant_runs=measured_runs["variant_entries"],
         )
     units_ms: dict[str, float] = {}
     unit_stats: dict[str, dict[str, float]] = {}
@@ -2447,14 +2456,23 @@ def refresh_lane_durations(
     if "rebalanceConstraints" in existing:
         updated["rebalanceConstraints"] = existing["rebalanceConstraints"]
     # variantCosts is MEASURED (collect_variant_costs) and merged so nothing the sample missed is dropped: an unmeasured lane, variant, leg extra or unit keeps its prior value, and every such keep is printed.
-    # A lane the table already prices moves only on `MIN_DRIFT_RUNS` runs of leg logs, the rule the other measured sections follow: one run's legs all ran on one day's runners. Held back here, `merge_variant_costs` keeps the lane and names it.
+    # A variant the table already prices moves only on `MIN_DRIFT_RUNS` runs of leg logs, the rule the other measured sections follow: one run's legs all ran on one day's runners. The count is per variant (`variant_entries`): a lane whose legs price ubuntu-24.04 from two runs and fedora-43 from one moves the first and keeps the second, which `merge_variant_costs` names. A variant the table does not price yet is written from one run.
     existing_variants = existing.get("variantCosts") or {}
     variant_runs = evidence.get("variant_costs") or {}
-    measured_variants = dict(computed.get("variant_costs") or {})
+    entry_runs = evidence.get("variant_entries") or {}
+    measured_variants = {lane: dict(v) for lane, v in (computed.get("variant_costs") or {}).items()}
     for lane in sorted(measured_variants):
-        if lane in existing_variants and variant_runs.get(lane, 0) < MIN_DRIFT_RUNS:
+        if lane not in existing_variants:
+            continue
+        for variant in sorted(measured_variants[lane]):
+            if variant not in (existing_variants[lane] or {}):
+                continue
+            seen = entry_runs.get("%s/%s" % (lane, variant), variant_runs.get(lane, 0))
+            if seen < MIN_DRIFT_RUNS:
+                del measured_variants[lane][variant]
+                kept_on_thin.setdefault("variantCosts", []).append("%s/%s" % (lane, variant))
+        if not measured_variants[lane]:
             del measured_variants[lane]
-            kept_on_thin.setdefault("variantCosts", []).append(lane)
     variant_costs, variant_notes = merge_variant_costs(existing_variants, measured_variants)
     for note in variant_notes:
         log.warn("budget_report --refresh: %s" % note)

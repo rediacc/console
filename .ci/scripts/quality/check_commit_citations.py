@@ -195,7 +195,7 @@ def reachable(root, base_ref: str) -> Topology:
         )
     sets = []
     for rng in (base_ref, "%s..HEAD" % base_ref):
-        # The ids come from `rev-list`, which reads no message body; only the commits whose message holds a `cherry picked from` line are printed in full, so memory follows the picks and not the whole history.
+        # The ids come from `rev-list`, which reads no message body; only the commits whose message holds the exact text `(cherry picked from commit ` (the line the -x option of cherry-pick writes; another wording is not a citation here) are printed in full, so memory follows the picks and not the whole history.
         listed = _git(root, "rev-list", rng, "--")
         if listed.returncode:
             raise RuntimeError("git rev-list %s failed: %s" % (rng, listed.stderr.strip()[:200]))

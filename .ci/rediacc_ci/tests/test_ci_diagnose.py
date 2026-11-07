@@ -1286,6 +1286,17 @@ def test_a_line_with_a_pass_mark_and_a_failure_mark_is_still_read():
     assert D.classify([line]) == ("code-likely", "audit-finding")
 
 
+def test_the_pass_part_of_a_mixed_line_is_not_read_but_its_failure_part_is():
+    """A pass mark followed by a failure mark reads from the failure mark: the 520 count in the pass part is no Bitwarden 5xx, the stale allowlist entry after it is the finding."""
+    line = (
+        "2026-11-06T10:38:42.0Z \u2713 bws map: 520 env.BWS_* read(s) each supplied "
+        "\u2717 Stale allowlist entry: 1 is stale"
+    )
+    assert D.classify([line]) == ("code-likely", "audit-finding")
+    count_only = "2026-11-06T10:38:42.0Z \u2713 bws map: 520 env.BWS_* read(s) \u2717 failed"
+    assert D._sig_hit(count_only) is None
+
+
 def test_a_real_bitwarden_5xx_still_reads_infra_beside_the_audit_lines():
     """Control for the other direction: a genuine Bitwarden failure is still infrastructure, and still outranks the audit finding."""
     lines = [

@@ -800,9 +800,11 @@ def _sig_hit(line):
     if RETRY_NOTE_RE.search(body):
         return None
     # A line a gate marks as a pass is no failure signature: `\u2713 bws map: ..., 520 env.BWS_* read(s)` matched the Bitwarden 5xx row on its COUNT.
-    # A line that carries a failure mark after its pass mark is still read.
-    if body.lstrip().startswith("\u2713") and "\u2717" not in body:
-        return None
+    # A line that carries a failure mark after its pass mark is read from that mark on: the pass part (and any count in it) is no signature, the failure part is.
+    if body.lstrip().startswith("\u2713"):
+        if "\u2717" not in body:
+            return None
+        body = body[body.index("\u2717") :]
     for sid, cat, rx, label, min_s in SIGNATURES:
         m = rx.search(body)
         if not m:

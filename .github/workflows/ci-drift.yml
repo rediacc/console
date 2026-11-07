@@ -44,7 +44,8 @@ jobs:
       contents: read
     steps:
       # drift_job subtracts the setup time from its run budget, so the verdict is
-      # written before the job timeout however long the steps below take.
+      # written before the job timeout unless the setup steps alone outlast the
+      # 40-minute timeout.
       - name: Record job start
         run: echo "DRIFT_JOB_STARTED_AT=$(date +%s)" >> "$GITHUB_ENV"
 
