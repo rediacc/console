@@ -21,4 +21,4 @@ Body-Sig: 93133907b69a7d21
 ### b1f81b96.1 [low] tests/integration/backup-lineage-stores.test.ts:264
 Anchor: in-diff
 Claim: The new case checks only a foreign lineage (404) and an in-team lineage (200). Nothing asserts that a team-scoped token gets the same 404 for a lineage unknown to the subscription, although the helper comment and commit message say the 404 is the reply an unknown lineage gets. The diff does not show listLineageStores' reply for an unknown lineage, so that parity is unverified.
-Resolution: open
+Resolution: not-a-bug | private/account/tests/integration/backup-store-replicate.test.ts:1 the team-token 404 for a lineage the subscription does not know is asserted in the replicate test file (f4b0ad7), since the lineage-stores test file was outside that writer files | d778be9d 2026-11-07T17:27:16Z
