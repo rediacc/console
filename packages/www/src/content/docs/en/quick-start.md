@@ -221,7 +221,7 @@ rdc backup usage
 
 Snapshots upload to the chunk store, which needs an account server and a licensed repository. Only changed data is stored, so a second snapshot of the same repository costs the difference rather than the whole image.
 
-Backups have one destination kind, the hosted-service chunk store, and `--to` on `repo push` names a machine only. Retention is declared per repository lineage with `rdc backup retention set`, and scheduled runs come from `rdc backup strategy set` plus `rdc backup schedule`. See [Backup & Restore](/en/docs/backup-restore).
+Backups go to registered stores: `home`, the hosted store every subscription has, plus any second hosted region or customer bucket, each named by a destination's `--target` (see [Backup destinations](/en/docs/backup-destinations)). `--to` on `repo push` names a machine only. Retention is declared per repository lineage with `rdc backup retention set`, and scheduled runs come from `rdc backup strategy set` plus `rdc backup schedule`. See [Backup & Restore](/en/docs/backup-restore).
 
 ### 4. Pull from Remote
 
