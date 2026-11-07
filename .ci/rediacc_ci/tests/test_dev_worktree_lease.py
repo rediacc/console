@@ -2473,7 +2473,10 @@ def test_a_handler_installed_outside_python_restores_as_the_default_and_the_rest
     try:
         for signum in SIGNUMS:
             signal.signal(signum, signal.SIG_IGN)
-        keep = lambda *_a: None  # noqa: E731
+
+        def keep(*_a: object) -> None:
+            return None
+
         lease._restore_signal_handlers(
             {signal.SIGINT: None, signal.SIGTERM: keep, signal.SIGHUP: signal.SIG_DFL}
         )

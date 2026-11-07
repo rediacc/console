@@ -2150,6 +2150,9 @@
       "SHAPE_PROBE_CACHE",
       "WORKLIST_STORE_DIR"
     ],
+    ".claude/hooks/stop/test-opshealth.py": [
+      "PYTHONPATH"
+    ],
     ".claude/hooks/stop/test-planrec.py": [
       "HOME",
       "PATH"
@@ -2422,6 +2425,7 @@
       "REDIACC_PID_WAIT_PROCFS"
     ],
     ".claude/rediacc_hooks/guards/block_worktree_add.py": [
+      "CLAUDE_PROJECT_DIR",
       "REDIACC_WORKTREE_STDIN_PROCFS"
     ],
     ".claude/rediacc_hooks/guards/test-block_admin_merge.py": [

@@ -1460,10 +1460,15 @@ def _with_assigned_values(run_, word):
 SESSION_VARIABLES = ("CLAUDE_PROJECT_DIR",)
 
 
+def _session_value(name):
+    """The hook's own value of a SESSION_VARIABLES name. The read is spelled out by name, not `os.environ.get(name)`, so the env registry sees which variable this module takes in."""
+    return os.environ.get("CLAUDE_PROJECT_DIR") if name == "CLAUDE_PROJECT_DIR" else None
+
+
 def _with_session_values(cmd, word):
     """`word` with each SESSION_VARIABLES expansion the command does not reassign put back from the hook's own environment."""
     for name in SESSION_VARIABLES:
-        held = os.environ.get(name)
+        held = _session_value(name)
         if not held or "$" in held or len(re.findall(r"\$\{?%s\b" % name, cmd)) != cmd.count(name):
             continue
         word = held.join(re.split(r"\$(?:\{%s\}|%s\b)" % (name, name), word))

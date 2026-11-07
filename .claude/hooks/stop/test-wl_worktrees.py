@@ -1136,7 +1136,7 @@ def control_real_hook(tmp):
 
 def control_probes(tmp):
     """The lock-owner readers, called directly over a fake /proc: the argv must be an interpreter run of the script (a `tail` or `grep` that carries the path is not one), an `Infinity` pid reads False, and a host with no /proc reads False (reviews a90d9cb2.1, d640b348.1 to .3)."""
-    sys.path.insert(0, str(SOURCE / "hooks/stop"))
+    _by_file("paths").on_sys_path(SOURCE / "hooks/stop")
     import wl_checks
 
     fake = tmp / "fakeproc"
