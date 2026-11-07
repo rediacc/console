@@ -38,11 +38,18 @@ const SEEDED_FILES = ['.ci/cache/gate-durations.json'];
 /**
  * Ignored build output a gate reads and no gate in its lane builds, hard-link copied when the live directory moves. The go build behind `private/renet/bin` is a prerequisite only of slow gates, while check:ci-no-rclone-embedded refuses an empty scan and check:ci-proxy-ops-host-check exits 77 without the binary, and check:ci-proxy-image-smoke stages `private/bin` (all measured in clone runs). The live tree's own run reads this same output, so the clone is no staler than it. A gate that rebuilds one replaces the clone's name, not the shared inode.
  */
-const SEEDED_BUILDS = [
-  'private/renet/bin',
-  'private/bin',
+export interface SeededBuild {
+  path: string;
+  /** Hard links by default; `false` seeds a real copy, for output a rebuild may rewrite in place (a rewrite through a shared inode would reach the live tree). */
+  link?: boolean;
+}
+const SEEDED_BUILDS: readonly SeededBuild[] = [
+  // Hard-linked: the go build and the stage step behind these write a new file and replace the name, which leaves the shared inode alone.
+  { path: 'private/renet/bin' },
+  { path: 'private/bin' },
   // The staged renet embed assets (rsync, zot, k3s ...): gitignored, built by `./build.sh embed_assets`, read by check:ci-embed-asset-versions. A kept clone held its first copy for weeks after the pins moved, so the gate judged stale versions the live tree no longer had.
-  'private/renet/pkg/embed/assets',
+  // A real copy: a rebuild of the assets may rewrite a file in place, and through a hard link that write would corrupt the live tree's copy.
+  { path: 'private/renet/pkg/embed/assets', link: false },
 ];
 /** Flags a whole-lane run in the clone keeps; every other flag names a narrowed or hand-made run. */
 const PASS_THROUGH_FLAGS = new Set(['--verbose', '--merge-output']);
@@ -498,7 +505,7 @@ function syncCaches(clone: string, live: string): void {
   }
 }
 
-/** Path, size and mtime of every entry under a directory (stat only, no content read): what a rebuild moves. A rebuild that rewrites a file in place leaves the parent directory's mtime alone, so a top-level listing would miss it. Recorded apart from the copy, because a file in the copy is the same inode as the live one, so an in-place write there would compare equal to itself. */
+/** Path, size and mtime of every entry under a directory (stat only, no content read): what a rebuild moves. Each directory contributes its own relative name, so an added or removed empty subdirectory moves it too. A rebuild that rewrites a file in place leaves the parent directory's mtime alone, so a top-level listing would miss it. Recorded apart from the copy, because a file in the copy is the same inode as the live one, so an in-place write there would compare equal to itself. */
 export function fingerprint(dir: string, prefix = ''): string {
   return fs
     .readdirSync(dir)
@@ -506,7 +513,10 @@ export function fingerprint(dir: string, prefix = ''): string {
     .map((name) => {
       const full = path.join(dir, name);
       const stat = fs.lstatSync(full);
-      if (stat.isDirectory()) return fingerprint(full, `${prefix}${name}/`);
+      if (stat.isDirectory()) {
+        const inner = fingerprint(full, `${prefix}${name}/`);
+        return inner === '' ? `${prefix}${name}/` : `${prefix}${name}/\n${inner}`;
+      }
       return `${prefix}${name}:${stat.size}:${stat.mtimeMs}`;
     })
     .join('\n');
@@ -516,7 +526,7 @@ export function fingerprint(dir: string, prefix = ''): string {
 export function syncBuilds(
   clone: string,
   live: string,
-  builds: readonly string[] = SEEDED_BUILDS
+  builds: readonly SeededBuild[] = SEEDED_BUILDS
 ): void {
   const recordPath = `${clone}.builds.json`;
   let record: Record<string, string> = {};
@@ -525,7 +535,7 @@ export function syncBuilds(
   } catch {
     record = {};
   }
-  for (const build of builds) {
+  for (const { path: build, link = true } of builds) {
     const source = path.join(live, build);
     if (!fs.existsSync(source)) continue;
     const dest = path.join(clone, build);
@@ -533,7 +543,7 @@ export function syncBuilds(
     if (fs.existsSync(dest) && record[build] === seen) continue;
     cloneFs.remove(dest);
     cloneFs.ensureDir(path.dirname(dest));
-    sh('cp', ['-al', source, dest], live);
+    sh('cp', [link ? '-al' : '-a', source, dest], live);
     record[build] = seen;
   }
   cloneFs.putState(recordPath, `${JSON.stringify(record, null, 2)}\n`);
@@ -1331,7 +1341,7 @@ export async function quickCloneSelftest(
     );
 
     // A SEEDED BUILD: copied once, kept while the stamp holds, and never a shared name.
-    const buildSpec = ['out/bin'];
+    const buildSpec: SeededBuild[] = [{ path: 'out/bin' }];
     const buildLive = path.join(root, 'build-live');
     const buildClone = path.join(root, 'build-clone');
     write(path.join(buildLive, 'out', 'bin', 'tool'), 'v1\n');
@@ -1363,14 +1373,14 @@ export async function quickCloneSelftest(
 
     // EMBED ASSETS: a clone holding stale staged assets is refreshed from the live copy, in place-rewritten nested files included; a live tree with none leaves the clone as it is.
     check(
-      SEEDED_BUILDS.includes('private/renet/pkg/embed/assets'),
-      'the renet embed assets must be a seeded build'
+      SEEDED_BUILDS.some((b) => b.path === 'private/renet/pkg/embed/assets' && b.link === false),
+      'the renet embed assets must be a seeded real copy, never hard links'
     );
-    const assetSpec = ['private/renet/pkg/embed/assets'];
+    const assetSpec: SeededBuild[] = [{ path: 'private/renet/pkg/embed/assets', link: false }];
     const assetLive = path.join(root, 'asset-live');
     const assetClone = path.join(root, 'asset-clone');
     const assetFile = (tree: string): string =>
-      path.join(tree, assetSpec[0], 'amd64', 'base', 'rsync');
+      path.join(tree, assetSpec[0].path, 'amd64', 'base', 'rsync');
     write(assetFile(assetClone), 'rsync 3.5.1\n');
     fs.mkdirSync(assetLive, { recursive: true });
     syncBuilds(assetClone, assetLive, assetSpec);
@@ -1384,13 +1394,44 @@ export async function quickCloneSelftest(
       fs.readFileSync(assetFile(assetClone), 'utf8') === 'rsync 3.5.2\n',
       'stale embed assets in the clone must be refreshed from the live tree'
     );
-    // A fresh inode, as a rebuild writes it: only the nested directory's mtime moves, never the top level's.
+    // A fresh inode, as a rebuild that replaces the name writes it: only the nested directory's mtime moves, never the top level's.
     fs.rmSync(assetFile(assetLive));
-    write(assetFile(assetLive), 'rsync 3.5.3 rewritten in place\n');
+    write(assetFile(assetLive), 'rsync 3.5.3 replaced\n');
     syncBuilds(assetClone, assetLive, assetSpec);
     check(
-      fs.readFileSync(assetFile(assetClone), 'utf8') === 'rsync 3.5.3 rewritten in place\n',
-      'a nested asset rewritten under an unmoved top level must refresh the clone'
+      fs.readFileSync(assetFile(assetClone), 'utf8') === 'rsync 3.5.3 replaced\n',
+      'a nested asset replaced under an unmoved top level must refresh the clone'
+    );
+    // The same inode rewritten in place: size and mtime move, so the fingerprint does, and the copy shares no inode with the live file.
+    const beforeInPlace = fingerprint(path.join(assetLive, assetSpec[0].path));
+    fs.writeFileSync(assetFile(assetLive), 'rsync 3.5.4 in place, longer\n');
+    check(
+      fingerprint(path.join(assetLive, assetSpec[0].path)) !== beforeInPlace,
+      'a same-inode in-place rewrite must move the fingerprint'
+    );
+    syncBuilds(assetClone, assetLive, assetSpec);
+    check(
+      fs.readFileSync(assetFile(assetClone), 'utf8') === 'rsync 3.5.4 in place, longer\n',
+      'an in-place rewrite of a live asset must refresh the clone'
+    );
+    fs.writeFileSync(assetFile(assetClone), 'clobbered in the clone\n');
+    check(
+      fs.readFileSync(assetFile(assetLive), 'utf8') === 'rsync 3.5.4 in place, longer\n',
+      'an in-place write to the clone copy must leave the live asset unchanged'
+    );
+    // An empty directory moves the fingerprint.
+    const emptyBefore = fingerprint(path.join(assetLive, assetSpec[0].path));
+    fs.mkdirSync(path.join(assetLive, assetSpec[0].path, 'empty-dir'));
+    check(
+      fingerprint(path.join(assetLive, assetSpec[0].path)) !== emptyBefore,
+      'an added empty subdirectory must move the fingerprint'
+    );
+    // An empty directory nested in an empty directory: the old listing returned '' for both shapes.
+    const nestedBefore = fingerprint(path.join(assetLive, assetSpec[0].path));
+    fs.mkdirSync(path.join(assetLive, assetSpec[0].path, 'empty-dir', 'deeper'));
+    check(
+      fingerprint(path.join(assetLive, assetSpec[0].path)) !== nestedBefore,
+      'an empty subdirectory added inside an empty directory must move the fingerprint'
     );
 
     // THE CLONE MAY NOT BE THE CHECKOUT IT JUDGES, or sit inside it: its setup discards tracked edits.
