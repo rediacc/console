@@ -11,6 +11,12 @@ vi.mock('../../services/account/account-client.js', () => ({
   accountServerFetch: mockAccountServerFetch,
 }));
 
+vi.mock('../../services/backup/backup-store-pick.js', async () => ({
+  ...(await vi.importActual<object>('../../services/backup/backup-store-pick.js')),
+  pickStores: (_lineage: string, from?: string) =>
+    Promise.resolve({ stores: [from ?? 'home'], explicit: from !== undefined }),
+}));
+
 const mockExecuteRepoFunction = vi.hoisted(() => vi.fn());
 vi.mock('../../utils/repo-executor.js', () => ({
   executeRepoFunction: mockExecuteRepoFunction,

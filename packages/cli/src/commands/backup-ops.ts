@@ -6,6 +6,7 @@ import {
   ALERT_UNIT_SUFFIX,
   VERIFY_UNIT_SUFFIX,
 } from '../services/backup/backup-schedule-verify.js';
+import { readStoreStatuses, type StatusTargets } from '../services/backup/backup-store-pick.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
 import { setExitCode, writeStderr, writeStdout } from '../services/core/request-context.js';
@@ -398,6 +399,33 @@ async function cancelBackup(
 }
 
 /**
+ * The destination stores of each strategy and what each store reports for the machine's repositories: the data
+ * behind the per-store rows. Read before the job so the step renders what was planned; a listing that cannot be read
+ * leaves its columns `-`, never a failed status.
+ */
+async function readStatusTargets(
+  machineName: string,
+  strategies: string[]
+): Promise<StatusTargets> {
+  const byStrategy: Record<string, string[]> = {};
+  const bound = await configService.listBackupStrategies();
+  for (const name of new Set(strategies)) {
+    const destinations = bound[name]?.destinations ?? [];
+    byStrategy[name] = [
+      ...new Set(destinations.filter((d) => d.enabled !== false).map((d) => d.target ?? 'home')),
+    ];
+  }
+  const repos = await configService.listRepositories();
+  const lineages = new Set(
+    repos
+      .filter(({ config }) => config.placement && 'machine' in config.placement)
+      .filter(({ config }) => (config.placement as { machine: string }).machine === machineName)
+      .map(({ config }) => config.grandGuid ?? config.repositoryGuid)
+  );
+  return { byStrategy, stores: await readStoreStatuses([...lineages]) };
+}
+
+/**
  * `backup status`: one row per scheduled unit (base, `.ds.`, `.repo.`) with timer presence, last run
  * and result, next run and a missed-run verdict, then the recent journal of a named strategy's units.
  */
@@ -428,7 +456,18 @@ async function showBackupStatus(
       captureOutput: true,
     },
     // The step renders the unit list the job read, not a recomputation from a config that may have changed since.
-    [planStep('renderBackupStatus', { machine: machineName, expected: JSON.stringify(expected) })]
+    [
+      planStep('renderBackupStatus', {
+        machine: machineName,
+        expected: JSON.stringify(expected),
+        targets: JSON.stringify(
+          await readStatusTargets(
+            machineName,
+            expected.map((u) => u.strategyName)
+          )
+        ),
+      }),
+    ]
   );
   if (outcome.kind === 'pending') {
     const code = pendingExitCode(outcome);
@@ -483,7 +522,13 @@ bindStepHandler('renderBackupStatus', async ({ machine, output, params }) => {
   // The job's own plan always sets `expected`; its absence is a corrupt step, not a schedule with no units.
   const expected: unknown = JSON.parse(str(params, 'expected'));
   if (!Array.isArray(expected)) throw new Error('step param "expected" is not a JSON array');
-  renderBackupScheduleStatus(machine, expected, output ?? '');
+  const targets = typeof params.targets === 'string' ? params.targets : undefined;
+  renderBackupScheduleStatus(
+    machine,
+    expected,
+    output ?? '',
+    targets === undefined ? undefined : (JSON.parse(targets) as StatusTargets)
+  );
 });
 
 /** Register the machine-scoped backup ops: schedule, run, status, cancel. */

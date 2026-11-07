@@ -7,6 +7,7 @@
  */
 
 import { t } from '../i18n/index.js';
+import { HOME_STORE, pickStores, storeParam } from '../services/backup/backup-store-pick.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
 import { setExitCode } from '../services/core/request-context.js';
@@ -144,6 +145,8 @@ export async function runRestorePath(args: {
   at: string;
   path: string;
   to?: string;
+  /** `--from <storeId>`: the backup store to read; without it the account's best-ranked store. */
+  from?: string;
   debug?: boolean;
   resolveSnapshot: (lineage: string, at: string) => Promise<string>;
 }): Promise<void> {
@@ -157,12 +160,20 @@ export async function runRestorePath(args: {
   }
   const lineage = lineageOf(repo);
   const snapshotId = await resolveSnapshot(lineage, at);
+  // A single-path read is one attempt, so it takes the first store of the pick; the whole-image restore is the verb that falls back.
+  const {
+    stores: [store],
+  } = await pickStores(lineage, args.from);
+  // Home alone is what every read did before stores existed, so only another store, or a named one, is announced.
+  if (store !== HOME_STORE || args.from !== undefined) {
+    outputService.info(t('commands.backup.restore.storeServed', { store }));
+  }
 
   await executeRepoFunction(
     'backup_restore_path',
     repoKey,
     machineName,
-    { lineage, at: snapshotId, path, to: to ?? '' },
+    { lineage, at: snapshotId, path, to: to ?? '', ...storeParam(store) },
     {
       debug,
       captureOutput: true,

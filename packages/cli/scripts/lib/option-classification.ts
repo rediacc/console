@@ -108,6 +108,18 @@ export const OPTION_KIND_OVERRIDES: Readonly<Record<string, OptionKindOverride>>
     waived:
       'a local directory or external drive on the operator machine that receives the image, not a repository, machine or other contract resource',
   },
+  'backup restore --from': {
+    waived:
+      'a backup store id registered on the account server (such as eu-west), not a repository, machine or other contract resource',
+  },
+  'backup browse --from': {
+    waived:
+      'a backup store id registered on the account server (such as eu-west), not a repository, machine or other contract resource',
+  },
+  'backup download --from': {
+    waived:
+      'a backup store id registered on the account server (such as eu-west), not a repository, machine or other contract resource',
+  },
   'repo merge --base': {
     waived:
       'a common-ancestor commit GUID for the three-way merge, not a repository ref, so FORMAT_OVERRIDES gives it format "guid" instead',

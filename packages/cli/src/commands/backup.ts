@@ -8,6 +8,7 @@ import { issueRepoLicense } from '../services/account/license.js';
 import { DEFAULT_DATASTORE, measureRepoSizeGb } from '../services/account/license-machine.js';
 import { authorizeSubscriptionViaDeviceCode } from '../services/account/subscription-device-auth.js';
 import { parseRef } from '../services/addressing/ref-parser.js';
+import { pickStores } from '../services/backup/backup-store-pick.js';
 import { warnIfConfigStorageUnenrolled } from '../services/backup/dr-nudge.js';
 import { namedDatastoreMount } from '../services/cluster/cluster-target.js';
 import { configService } from '../services/config/config-resources.js';
@@ -38,7 +39,11 @@ import {
   streamScopeFor,
 } from './backup-restore-chunk.js';
 import { assertRestorePathFlags, isPathRoute, runRestorePath } from './backup-restore-path.js';
-import { lineageHasSnapshots, sourceImageOnMachine } from './backup-restore-route.js';
+import {
+  lineageHasSnapshots,
+  restoreFromStores,
+  sourceImageOnMachine,
+} from './backup-restore-route.js';
 import { registerBackupStorageCommands } from './backup-storage.js';
 import { registerBackupStrategyCommands } from './backup-strategy.js';
 import { listBackups } from './repo-backup-list.js';
@@ -95,6 +100,8 @@ export interface RestoreOptions {
   machine?: string;
   datastore?: string;
   at?: string;
+  /** The backup store to read from (`--from <storeId>`); never falls back when given. */
+  from?: string;
   path?: string;
   to?: string;
   anyStream?: boolean;
@@ -156,6 +163,7 @@ function registerBackupRestore(backup: Command): void {
     .option('-m, --machine <name>', t('options.machine'))
     .option('--datastore <name>', t('commands.backup.restore.optionDatastore'))
     .option('--at <time>', t('commands.backup.restore.optionAt'))
+    .option('--from <storeId>', t('commands.backup.restore.optionFrom'))
     .option('--any-stream', t('commands.backup.restore.optionAnyStream'))
     .option('--no-seed', t('commands.backup.restore.optionNoSeed'))
     .option('--allow-unopenable', t('commands.backup.restore.optionAllowUnopenable'))
@@ -199,6 +207,9 @@ function registerBackupRestore(backup: Command): void {
         if (options.seed === false && !restoreAt) {
           throw new ValidationError(t('commands.backup.restore.noSeedNeedsSnapshot'));
         }
+        if (options.from !== undefined && !restoreAt) {
+          throw new ValidationError(t('commands.backup.restore.fromNeedsSnapshot'));
+        }
         // Salvage is a chunk-store behaviour: the pull route has no chunks to lose.
         if (options.salvage && !restoreAt) {
           throw new ValidationError(t('commands.backup.restore.salvageNeedsSnapshot'));
@@ -225,17 +236,23 @@ function registerBackupRestore(backup: Command): void {
               }),
             }
           : undefined;
-        const networkId = await configService.allocateNetworkId({
-          floor: await targetFloor({ machine: targetMachine }),
-        });
-        await configService.addRepository(compositeKey(targetName, 'latest'), {
-          ...restoredIdentity(lineage),
-          tag: 'latest',
-          // The image bytes are the source's ciphertext, so the restored repo unlocks with the source's passphrase whatever GUID it lands under. Inherit, exactly as `repo fork` does; under a fresh GUID this is a NEW credential map entry (the map is keyed by GUID), not a second claim on the source's slot.
-          credential: source.credential,
-          networkId,
-          placement,
-        });
+        // Ranked before the target is registered, like the snapshot: a refused ranking leaves nothing to roll back.
+        const storePick = chunk ? await pickStores(lineage, options.from) : undefined;
+        // One registration per attempt: a failed attempt's rollback step removes it, and the next store registers it again.
+        const registerTarget = async (): Promise<void> => {
+          const networkId = await configService.allocateNetworkId({
+            floor: await targetFloor({ machine: targetMachine }),
+          });
+          await configService.addRepository(compositeKey(targetName, 'latest'), {
+            ...restoredIdentity(lineage),
+            tag: 'latest',
+            // The image bytes are the source's ciphertext, so the restored repo unlocks with the source's passphrase whatever GUID it lands under. Inherit, exactly as `repo fork` does; under a fresh GUID this is a NEW credential map entry (the map is keyed by GUID), not a second claim on the source's slot.
+            credential: source.credential,
+            networkId,
+            placement,
+          });
+        };
+        await registerTarget();
 
         // DR nudge: a restore into a config with no config-storage enrollment cannot recover the repo credential (the LUKS passphrase) on a fresh host, warn, never block (spec/02 decision 14).
         await warnIfConfigStorageUnenrolled();
@@ -244,18 +261,29 @@ function registerBackupRestore(backup: Command): void {
         // two verbs that mean the same thing.
         // The run record, the stats report, the registration rollback, the unit re-render (G4) and the `--up` deploy ride the job's ticket (PLAN-detached-jobs J4), so a backgrounded restore records nothing until it finishes and deploys only a restore that succeeded.
         const after = restoreTailSteps(targetName, targetMachine, datastore, options);
-        if (chunk) {
-          await runChunkRestore({
-            targetName,
-            targetMachine,
-            datastore,
-            lineage,
-            snapshotId: chunk.snapshotId,
-            noSeed: options.seed === false,
-            allowUnopenable: options.allowUnopenable,
-            salvage: options.salvage,
-            debug: options.debug,
-            after,
+        if (chunk && storePick) {
+          let firstAttempt = true;
+          await restoreFromStores({
+            pick: storePick,
+            attempt: async (store, deferIf) => {
+              // The first attempt reuses the registration made above; a later one follows a rollback.
+              if (!firstAttempt) await registerTarget();
+              firstAttempt = false;
+              return runChunkRestore({
+                targetName,
+                targetMachine,
+                datastore,
+                lineage,
+                snapshotId: chunk.snapshotId,
+                noSeed: options.seed === false,
+                allowUnopenable: options.allowUnopenable,
+                salvage: options.salvage,
+                store,
+                deferIf,
+                debug: options.debug,
+                after: restoreTailSteps(targetName, targetMachine, datastore, options),
+              });
+            },
           });
         } else {
           await runRestorePull({
@@ -315,6 +343,7 @@ async function restorePathRoute(
     at: options.at,
     path: options.path,
     to: options.to,
+    from: options.from,
     debug: options.debug,
     resolveSnapshot: async (lineage, at) =>
       resolveSnapshotAt(

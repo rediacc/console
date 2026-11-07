@@ -2,10 +2,17 @@ import type { Placement } from '@rediacc/shared/config-schema';
 import { t } from '../i18n/index.js';
 import { accountServerFetch } from '../services/account/account-client.js';
 import { DEFAULT_DATASTORE } from '../services/account/license-machine.js';
+import {
+  type AttemptFailure,
+  isStoreFailure,
+  runWithFallback,
+  type StorePick,
+} from '../services/backup/backup-store-pick.js';
 import { namedDatastoreMount } from '../services/cluster/cluster-target.js';
 import { outputService } from '../services/core/output.js';
 import { machineConnections } from '../services/machine/machine-connection.js';
 import { shellQuote } from '../utils/shell-quote.js';
+import type { ChunkRestoreResult } from './backup-restore-chunk.js';
 import type { BackupManifestsResponse } from './backup-storage.js';
 
 const GUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -93,4 +100,38 @@ export async function lineageHasSnapshots(lineage: string, name: string): Promis
     );
     return false;
   }
+}
+
+/**
+ * Place a whole-image chunk restore from the lineage's stores: `--from`'s store alone, or the account's ranking with
+ * a fallback to the next store when one fails for its own reasons (5xx, refused grant, unreachable). A store that is
+ * not the last of the pick hands its failure back unrendered when it is the store's; every other failure, and the
+ * last store's, is rendered by the attempt itself. Says which store served.
+ */
+export async function restoreFromStores(args: {
+  /** Chosen before the target is registered, so a refused ranking leaves nothing to roll back. */
+  pick: StorePick;
+  /** One attempt against `store`: register the target, run the restore, and defer a failure `deferIf` accepts. */
+  attempt: (
+    store: string,
+    deferIf: ((failure: AttemptFailure) => boolean) | undefined
+  ) => Promise<ChunkRestoreResult>;
+}): Promise<void> {
+  const { pick } = args;
+  const last = pick.stores.at(-1);
+  const result = await runWithFallback(
+    pick,
+    async (store) => {
+      const outcome = await args.attempt(
+        store,
+        pick.explicit || store === last ? undefined : isStoreFailure
+      );
+      return outcome.ok ? { ok: true, value: undefined } : { ok: false, failure: outcome.failure };
+    },
+    (failed, next) => {
+      outputService.warn(t('commands.backup.restore.storeFallback', { failed, next }));
+    }
+  );
+  if (result.ok)
+    outputService.info(t('commands.backup.restore.storeServed', { store: result.store }));
 }

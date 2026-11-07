@@ -9,6 +9,13 @@
 
 import { t } from '../../i18n/index.js';
 import { ValidationError } from '../../utils/errors.js';
+import {
+  type AttemptFailure,
+  HOME_STORE,
+  runWithFallback,
+  type StorePick,
+} from '../backup/backup-store-pick.js';
+import { outputService } from '../core/output.js';
 
 /** The account's restore-session response. */
 export interface RestoreSession {
@@ -44,7 +51,10 @@ export interface RenetRun {
 export interface StoreFetchDeps {
   resolveLineage(ref: string): Promise<string>;
   resolveSnapshot(lineage: string, at: string): Promise<string>;
-  mintSession(lineage: string): Promise<RestoreSession>;
+  /** `store` is absent for `home`. */
+  mintSession(lineage: string, store?: string): Promise<RestoreSession>;
+  /** The stores to try, ranked by the account; absent means `home` alone. */
+  pickStores?(lineage: string): Promise<StorePick>;
   /** `<account>/account/api/v1/backups`, the route group renet's read grant hangs off. */
   apiBase(): string;
   renetPath(): Promise<string>;
@@ -60,6 +70,8 @@ export interface StoreFetchRequest {
   /** Destination file (the resume file). */
   dest: string;
   at?: string;
+  /** `--from <storeId>`: read this store alone, no fallback. */
+  store?: string;
   signal?: AbortSignal;
 }
 
@@ -67,6 +79,8 @@ export interface StoreFetchResult {
   snapshotId: string;
   dest: string;
   record: FetchImageRecord;
+  /** The backup store that served the image. */
+  store: string;
 }
 
 /** The JSON `rdc backup download --store` prints: the fetch result plus the engine's own root check. */
@@ -157,15 +171,26 @@ async function resolveTarget(
   }
 }
 
-export async function runStoreFetch(
-  req: StoreFetchRequest,
-  deps: StoreFetchDeps
-): Promise<StoreFetchResult> {
-  const { lineage, snapshotId } = await resolveTarget(req, deps);
+/** What a thrown mint or fetch error says to the store-fault classifier: its HTTP status counts as text. */
+function failureOf(error: unknown): AttemptFailure {
+  const status = (error as StatusError | null)?.status;
+  const message = error instanceof Error ? error.message : String(error);
+  return { error: status === undefined ? message : `HTTP ${status} ${message}` };
+}
 
+/** One store's attempt: mint its session, run renet's fetch, return the record. Throws what went wrong. */
+async function fetchFromStore(
+  req: StoreFetchRequest,
+  deps: StoreFetchDeps,
+  lineage: string,
+  snapshotId: string,
+  store: string
+): Promise<{ record: FetchImageRecord; run: RenetRun }> {
   let session: RestoreSession;
   try {
-    session = await deps.mintSession(lineage);
+    session = await (store === HOME_STORE
+      ? deps.mintSession(lineage)
+      : deps.mintSession(lineage, store));
   } catch (error) {
     throw describeSessionRefusal(error);
   }
@@ -186,10 +211,43 @@ export async function runStoreFetch(
       : '';
     throw new Error(`${t('errors.backupImage.storeFetchFailed', { reason })}${partial}`);
   }
+  return { record, run };
+}
 
+export async function runStoreFetch(
+  req: StoreFetchRequest,
+  deps: StoreFetchDeps
+): Promise<StoreFetchResult> {
+  const { lineage, snapshotId } = await resolveTarget(req, deps);
+
+  const pick: StorePick =
+    req.store === undefined
+      ? ((await deps.pickStores?.(lineage)) ?? { stores: [HOME_STORE], explicit: false })
+      : { stores: [req.store], explicit: true };
+  // The error a failed attempt raised, rethrown as is when no store served.
+  let raised: Error | undefined;
+  const served = await runWithFallback(
+    pick,
+    async (store) => {
+      try {
+        const record = await fetchFromStore(req, deps, lineage, snapshotId, store);
+        return { ok: true as const, value: record };
+      } catch (error) {
+        raised = error instanceof Error ? error : new Error(String(error));
+        return { ok: false as const, failure: failureOf(error) };
+      }
+    },
+    (failed, next) => {
+      outputService.warn(t('commands.backup.restore.storeFallback', { failed, next }));
+    }
+  );
+  if (!served.ok) {
+    throw raised ?? new Error(t('errors.backupImage.storeFetchFailed', { reason: 'unknown' }));
+  }
+  const { record } = served.value;
   const head = await deps.readHead(req.dest, LUKS_MAGIC.length);
   if (head.length < LUKS_MAGIC.length || !head.subarray(0, LUKS_MAGIC.length).equals(LUKS_MAGIC)) {
     throw new Error(t('errors.backupImage.storeNoLuksHeader', { image: req.dest }));
   }
-  return { snapshotId, dest: req.dest, record };
+  return { snapshotId, dest: req.dest, record, store: served.store };
 }

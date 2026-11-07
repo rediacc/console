@@ -1,6 +1,11 @@
 import { t } from '../i18n/index.js';
 import { accountServerFetch } from '../services/account/account-client.js';
 import { assertHostedBackupAccount } from '../services/account/free-license.js';
+import {
+  type AttemptFailure,
+  HOME_STORE,
+  storeParam,
+} from '../services/backup/backup-store-pick.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
 import { setExitCode } from '../services/core/request-context.js';
@@ -253,6 +258,11 @@ export async function resolveChunkSnapshot(args: {
   return resolveSnapshotAt(args.lineage, args.at, scope);
 }
 
+/** A chunk restore's outcome: a failure is returned only when the caller's `deferIf` accepted it. */
+export type ChunkRestoreResult =
+  | { ok: true }
+  | { ok: false; failure: AttemptFailure; rendered: boolean };
+
 /**
  * Run `backup_restore` for a point-in-time restore from the chunk store, and
  * unwind the just-registered record on failure exactly as the pull path does,
@@ -270,9 +280,13 @@ export async function runChunkRestore(args: {
   allowUnopenable?: boolean;
   /** Continue past lost or corrupt chunks, leaving their cells as holes; only into a new name. */
   salvage?: boolean;
+  /** The backup store to read from; absent or `home` is the home store. */
+  store?: string;
+  /** A failed outcome this accepts is returned instead of rendered, so the caller can try another store. */
+  deferIf?: (failure: AttemptFailure) => boolean;
   debug?: boolean;
   after: PlannedStep[];
-}): Promise<void> {
+}): Promise<ChunkRestoreResult> {
   const { targetName, targetMachine, datastore, lineage, snapshotId, noSeed, debug } = args;
 
   outputService.info(
@@ -299,6 +313,7 @@ export async function runChunkRestore(args: {
         no_seed: noSeed,
         ...(args.allowUnopenable ? { allow_unopenable: true } : {}),
         ...(args.salvage ? { salvage: true } : {}),
+        ...storeParam(args.store ?? HOME_STORE),
       },
       debug,
       // The record on stdout carries the restore's measurements; without capture they are dropped.
@@ -310,7 +325,15 @@ export async function runChunkRestore(args: {
       ...args.after,
     ]
   );
+  if (outcome.kind === 'finished' && !outcome.result.success) {
+    const { exitCode, error, errorCode, stdout, stderr } = outcome.result;
+    const failure = { exitCode, error, errorCode, stdout, stderr };
+    if (args.deferIf?.(failure)) return { ok: false, failure, rendered: false };
+    settleRestore(outcome, targetName, targetMachine);
+    return { ok: false, failure, rendered: true };
+  }
   settleRestore(outcome, targetName, targetMachine);
+  return { ok: true };
 }
 
 /**

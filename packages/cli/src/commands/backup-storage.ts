@@ -322,6 +322,7 @@ function registerBackupBrowse(backup: Command): void {
     .option('--depth <n>', t('commands.backup.browse.optionDepth'))
     .option('--limit <n>', t('commands.backup.browse.optionLimit'))
     .option('--at <time|snapshot>', t('commands.backup.browse.optionAt'))
+    .option('--from <storeId>', t('commands.backup.browse.optionFrom'))
     .option('--debug', t('options.debug'))
     .action(
       async (
@@ -331,10 +332,14 @@ function registerBackupBrowse(backup: Command): void {
           depth?: string;
           limit?: string;
           at?: string;
+          from?: string;
           debug?: boolean;
         }
       ) => {
         try {
+          if (options.from !== undefined && !options.at) {
+            throw new ValidationError(t('commands.backup.browse.fromNeedsAt'));
+          }
           const { repoKey, machineName } = await resolveRepoRef(repoRef);
           let snapshotId = '';
           let result: Awaited<ReturnType<typeof executeRepoFunction>>;

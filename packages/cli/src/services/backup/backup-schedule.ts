@@ -83,6 +83,7 @@ import {
   sanitizeBackupOutput,
   sha256Hex,
 } from './backup-schedule-unit-generator.js';
+import { expandStatusRows, type StatusTargets } from './backup-store-pick.js';
 import { expectedAccountServerOrigin, storeFlagForRenet } from './backup-store-universe.js';
 
 type PushScheduleOptions = ReconcileOptions & {
@@ -356,7 +357,8 @@ export async function expectedStatusUnits(
 export function renderBackupScheduleStatus(
   machineName: string,
   expected: ExpectedScheduleUnit[],
-  showOutput: string
+  showOutput: string,
+  targets?: StatusTargets
 ): ScheduleStatusRow[] {
   const unreadCause = showOutput.trim() === '' ? 'the read returned no output' : undefined;
   const rows = buildScheduleStatusRows(
@@ -372,16 +374,20 @@ export function renderBackupScheduleStatus(
     setExitCode(1);
     return rows;
   }
+  // One row per destination store of each unit's strategy: the store, its newest snapshot, last verify and clean-up state ride beside the unit's own columns.
   outputService.print(
-    rows.map((r) => ({
-      strategy: r.strategy,
-      unit: r.unit,
-      status: statusLabel(r),
-      lastRun: r.lastRun,
-      result: r.result,
-      nextRun: r.nextRun,
-      missed: r.missed ? (r.reason ?? BACKUP_DEFAULTS.MISSED_REASON_FALLBACK) : '-',
-    })),
+    expandStatusRows(
+      rows.map((r) => ({
+        strategy: r.strategy,
+        unit: r.unit,
+        status: statusLabel(r),
+        lastRun: r.lastRun,
+        result: r.result,
+        nextRun: r.nextRun,
+        missed: r.missed ? (r.reason ?? BACKUP_DEFAULTS.MISSED_REASON_FALLBACK) : '-',
+      })),
+      targets
+    ),
     getOutputFormat()
   );
   const unread = rows.filter((r) => r.unread);

@@ -25,6 +25,7 @@ vi.mock('../../services/config/config-resources.js', () => ({
         ssh: { privateKeyPath: '/k' },
       }),
     listBackupStrategies: () => Promise.resolve({ nightly: STRATEGY }),
+    listRepositories: () => Promise.resolve([]),
   },
 }));
 

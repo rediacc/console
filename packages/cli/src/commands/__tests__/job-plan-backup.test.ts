@@ -22,6 +22,9 @@ const STRATEGY = vi.hoisted(() => ({
   destinations: [{ kind: 'hosted-service', name: 'd' }],
 }));
 
+/** The store columns of a unit with no destination data: one home row. */
+const HOME_COLUMNS = { store: 'home', newestSnapshot: '-', verify: '-', cleanup: 'enabled' };
+
 vi.mock('../../services/config/config-resources.js', () => ({
   configService: {
     getLocalConfig: () =>
@@ -31,6 +34,7 @@ vi.mock('../../services/config/config-resources.js', () => ({
         ssh: { privateKeyPath: '/k' },
       }),
     listBackupStrategies: () => Promise.resolve({ nightly: STRATEGY }),
+    listRepositories: () => Promise.resolve([]),
   },
 }));
 
@@ -424,7 +428,12 @@ describe('backup status', () => {
 
     await rdcBackup('status', '-m', 'm1');
 
-    expect(schedule.renderBackupScheduleStatus).toHaveBeenCalledWith('m1', EXPECTED, SHOW);
+    expect(schedule.renderBackupScheduleStatus).toHaveBeenCalledWith(
+      'm1',
+      EXPECTED,
+      SHOW,
+      undefined
+    );
   });
 
   it('renders the units the job read, though the bindings changed after it started', async () => {
@@ -433,7 +442,12 @@ describe('backup status', () => {
 
     await rdcBackup('status', '-m', 'm1');
 
-    expect(schedule.renderBackupScheduleStatus).toHaveBeenCalledWith('m1', EXPECTED, SHOW);
+    expect(schedule.renderBackupScheduleStatus).toHaveBeenCalledWith(
+      'm1',
+      EXPECTED,
+      SHOW,
+      undefined
+    );
   });
 
   it('hands the ticket back past the attach window and renders nothing yet', async () => {
@@ -507,7 +521,7 @@ describe('backup status', () => {
     );
     expect(schedule.renderBackupScheduleStatus).not.toHaveBeenCalled();
     await handler({ ...ctx, params: { expected: '[]' } } as never);
-    expect(schedule.renderBackupScheduleStatus).toHaveBeenCalledWith('m1', [], SHOW);
+    expect(schedule.renderBackupScheduleStatus).toHaveBeenCalledWith('m1', [], SHOW, undefined);
   });
 
   it('reads the strategy journal through a second backup-journal job, with no client SSH command', async () => {
@@ -563,6 +577,7 @@ describe('backup status with the real renderer', () => {
           result: '-',
           nextRun: '-',
           missed: '-',
+          ...HOME_COLUMNS,
         },
         {
           strategy: 'nightly',
@@ -572,6 +587,7 @@ describe('backup status with the real renderer', () => {
           result: '-',
           nextRun: '-',
           missed: 'not scheduled: no timer on the machine (run: rdc backup schedule)',
+          ...HOME_COLUMNS,
         },
       ],
       'table'

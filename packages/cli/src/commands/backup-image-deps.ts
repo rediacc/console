@@ -24,6 +24,7 @@ import {
   getSubscriptionServerUrl,
   getSubscriptionTokenState,
 } from '../services/account/subscription-auth.js';
+import { pickStores } from '../services/backup/backup-store-pick.js';
 import { bandwidthToBytesPerSecond } from '../services/backup/backup-strategy-validate.js';
 import { warnIfConfigStorageUnenrolled } from '../services/backup/dr-nudge.js';
 import { reconcileBackupSchedules } from '../services/backup/repo-change-hook.js';
@@ -432,11 +433,12 @@ export function realStoreFetchDeps(): StoreFetchDeps {
       const { resolveSnapshotAt } = await import('./backup.js');
       return resolveSnapshotAt(lineage, at);
     },
-    mintSession: (lineageGuid) =>
+    mintSession: (lineageGuid, store) =>
       accountServerFetch<RestoreSession>('/account/api/v1/backups/restore-session', {
         method: 'POST',
-        body: { lineageGuid },
+        body: store === undefined ? { lineageGuid } : { lineageGuid, storeId: store },
       }),
+    pickStores: (lineageGuid) => pickStores(lineageGuid),
     apiBase: () => {
       const state = getSubscriptionTokenState();
       const server = state.kind === 'ready' ? state.serverUrl : getSubscriptionServerUrl();

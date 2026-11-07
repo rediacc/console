@@ -82,6 +82,17 @@ export const CLI_CONTRACT: CliContract = {
           "label": "List the snapshot taken at or before this time, or this snapshot id (reads the chunk store)"
         },
         {
+          "flags": "--from <storeId>",
+          "long": "from",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.browse.optionFrom",
+          "label": "With --at, read the snapshot from this backup store instead of the best-ranked one"
+        },
+        {
           "flags": "--debug",
           "long": "debug",
           "valueTaking": false,
@@ -442,6 +453,17 @@ export const CLI_CONTRACT: CliContract = {
           "tier": "advanced",
           "descriptionKey": "commands.backup.download.optionAt",
           "label": "With --store, the snapshot to fetch: a time (ISO 8601) or a snapshot id (default: the newest)"
+        },
+        {
+          "flags": "--from <storeId>",
+          "long": "from",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.download.optionFrom",
+          "label": "With --store, read from this backup store instead of the best-ranked one; it never falls back to another store"
         }
       ],
       "positionals": [
@@ -956,6 +978,17 @@ export const CLI_CONTRACT: CliContract = {
           "tier": "advanced",
           "descriptionKey": "commands.backup.restore.optionAt",
           "label": "Restore a point-in-time: a snapshot id or an RFC3339 time (chunk-store restore)"
+        },
+        {
+          "flags": "--from <storeId>",
+          "long": "from",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.restore.optionFrom",
+          "label": "Read the snapshot from this backup store (default: the store with the newest verified snapshot, falling back to the next on a store failure)"
         },
         {
           "flags": "--any-stream",
