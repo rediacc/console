@@ -50,7 +50,7 @@ GUARD_NAME = "refresh.guard"
 LOCK_HANDOFF_ENV = "OPS_HEALTH_LOCK_HANDOFF"
 LEDGER_REL = "agent/ledgers/ops-health.jsonl"
 LEDGER_LOCK_NAME = "ledger.lock"
-# An older lock, or one whose recorded pid is dead, is a dead refresher's (D-local).
+# An older lock, or one whose recorded pid is dead, a zombie or reused (start time mismatch), is a dead refresher's (D-local).
 LOCK_STALE_S = 20 * 60
 
 NO_PROVISION_ENV = "REDIACC_NO_PROVISION"
