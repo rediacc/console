@@ -36,7 +36,7 @@ const LINKED_CACHES = ['.ci/cache/toolchain', '.ci/cache/bin', '.venv'];
 /** Copied once, when the clone has none: seeds its own measurement history. */
 const SEEDED_FILES = ['.ci/cache/gate-durations.json'];
 /**
- * Ignored build output a gate reads and no gate in its lane builds, hard-link copied when the live directory moves. The go build behind `private/renet/bin` is a prerequisite only of slow gates, while check:ci-no-rclone-embedded refuses an empty scan and check:ci-proxy-ops-host-check exits 77 without the binary, and check:ci-proxy-image-smoke stages `private/bin` (all measured in clone runs). The live tree's own run reads this same output, so the clone is no staler than it. A gate that rebuilds one replaces the clone's name, not the shared inode.
+ * Ignored build output a gate reads and no gate in its lane builds, re-seeded when the live directory moves: hard-link copied by default, or copied for real where an entry sets `link: false` (the renet embed assets). The go build behind `private/renet/bin` is a prerequisite only of slow gates, while check:ci-no-rclone-embedded refuses an empty scan and check:ci-proxy-ops-host-check exits 77 without the binary, and check:ci-proxy-image-smoke stages `private/bin` (all measured in clone runs). The live tree's own run reads this same output, so the clone is no staler than it. A hard-linked entry relies on a rebuild replacing the clone's name, not the shared inode; an entry whose rebuild may rewrite in place is copied instead.
  */
 export interface SeededBuild {
   path: string;
