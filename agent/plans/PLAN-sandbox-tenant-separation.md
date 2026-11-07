@@ -88,7 +88,7 @@ Live QA on .11 (2026-10-24, renet binary identical to 230dea5, repos isoa/isob/i
   (corrected ASKED:2026-11-05T07:06Z) One eu-bench machine with a renet carrying D1-D5, with no release and no operator window: `rdc --config eu-bench machine converge <m> --dry-run` lists every repo stale (epoch 2), then the real pass. The Accept stands on that machine, and the tick states that the proof is bench-only.
 - [ ] LP-hostinger [live] Fresh hostinger receipt through --config eu-bench (PLAN-tested-on-bench ruling 3), after a VERIFIED npm run vm:check -- --changed on the same tree; ASK the operator first, because provisioning a branch renet restarts the router and daemons.
   - Accept: `live-proof hostinger renet-live`
-    (preflight) 2026-11-07 partial: Code landed; only the fresh hostinger receipt is open, recorded next by this same run.
+    (preflight) 2026-11-07: open. No investigation row records this box, so no partial verdict is claimed for it; the receipt `live-proof hostinger renet-live` named in Accept is the evidence still owed.
 
 RB and RC's sudo acceptance lines (`TestPrivateRepoViewLinux`, the `ebpf_e2e` tests) run on an ops VM through the drill harness's sanctioned path (vm_check's own helpers), never by hand-copying test binaries: a pre-bash guard refuses scp/ssh deployment of binaries. RB and RC stay open until those lines and I1 pass.
 

@@ -438,7 +438,7 @@ Regenerate `packages/shared/src/cli-contract/data/{contract.json,contract.genera
 - `*/cli-application.md` (13): the generated `--headless` row (en:219) goes away via the docs generator (`scripts/gates/check-cli-docs.ts`).
 - Design and agent docs:
   - `docs/DESIGN-CONFIG-STORAGE.md:228-284`: redraw the sequence diagram; remove "directly from browser to CLI via localhost" (:284);
-  - `docs/DESIGN-CONFIG-STORAGE.md` (its `--headless` mention was dropped in d0b87a518) and `docs/design/spec/03-cli-contracts.md:611`: drop `--headless`;
+  - `docs/DESIGN-CONFIG-STORAGE.md` (its `--headless` mention was dropped in d0b87a518) and `docs/design/spec/03-cli-contracts.md:610`: drop `--headless`;
   - `.claude/skills/rdc/config-storage.md:11`: drop `--headless`;
   - `private/account/CLAUDE.md`: fix the relay mention if it names the callback.
 - The www search indexes (`packages/www/public/search-index*.json`) are generated. Rebuild, do not hand-edit.
