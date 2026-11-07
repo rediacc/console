@@ -3171,6 +3171,41 @@ async function selftest(): Promise<void> {
       { ...pinLock, 'node_modules/core': { version: '2.13.0' } }
     ).every((m) => !m.held)
   );
+  const nestedStep = {
+    cwd: '/x',
+    args: ['update', 'core'],
+    label: 'root (override range)',
+    packages: [{ name: 'core', current: '1.0.0', latest: '1.15.11' }],
+  };
+  const nestedOnly = (version: string): Record<string, LockEntry> => ({
+    'node_modules/other': { version: '2.0.0' },
+    'node_modules/unstorage/node_modules/core': { version },
+  });
+  expect(
+    'guard: an override target installed only nested (no hoisted copy) at the judged version passes',
+    updateMismatches(nestedStep, nestedOnly('1.15.11')).length === 0
+  );
+  expect(
+    'guard: CONTROL: a nested-only copy below the judged version is still refused, as held back',
+    (() => {
+      const r = updateMismatches(nestedStep, nestedOnly('1.15.10'));
+      return r.length === 1 && r[0].held && r[0].line.includes('installed 1.15.10');
+    })()
+  );
+  expect(
+    'guard: CONTROL: a nested-only copy above the judged version is a breach',
+    (() => {
+      const r = updateMismatches(nestedStep, nestedOnly('1.16.0'));
+      return r.length === 1 && !r[0].held;
+    })()
+  );
+  expect(
+    'guard: CONTROL: no copy anywhere is still refused as not in package-lock.json',
+    (() => {
+      const r = updateMismatches(nestedStep, { 'node_modules/other': { version: '2.0.0' } });
+      return r.length === 1 && !r[0].held && r[0].line.includes('<not in package-lock.json>');
+    })()
+  );
   const realUpd: NodeJS.ProcessEnv = { ...process.env, CHECK_DEPS_MUTANT: 'update-first' };
   delete realUpd.CHECK_DEPS_ROOT;
   delete realUpd.CHECK_DEPS_FORCE_PROBE_FAILURE;

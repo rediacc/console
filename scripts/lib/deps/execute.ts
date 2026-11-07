@@ -90,6 +90,15 @@ export function pinningHolders(
   return [...new Set(out)];
 }
 
+/** The versions of every nested lockfile copy of `name` (`node_modules/<dependent>/node_modules/<name>`), in lockfile order; empty when there is none. */
+function nestedCopies(lock: Record<string, LockEntry> | null, name: string): string[] {
+  const out: string[] = [];
+  for (const [key, entry] of Object.entries(lock ?? {}))
+    if (key.endsWith(`/node_modules/${name}`) && entry.version !== undefined)
+      out.push(entry.version);
+  return out;
+}
+
 /**
  * Every checked package of an `(update)` step that did not resolve to its judged version, split by what that means. `held` is a package npm left on an OLDER version than judged: nothing unjudged landed, the update simply could not move it, and `holders` names the installed copies whose declared range pins it (pinningHolders). Anything else (a newer version, or a package missing from the lockfile) is a freshness-window breach.
  */
@@ -103,24 +112,30 @@ export function updateMismatches(
     step.checks ?? step.packages.map((p) => ({ pkg: p }));
   for (const { pkg, workspace } of checks) {
     const nested = workspace ? lock?.[`${workspace}/node_modules/${pkg.name}`] : undefined;
-    const resolved = (nested ?? lock?.[`node_modules/${pkg.name}`])?.version;
-    if (resolved === pkg.latest) continue;
-    const held =
-      resolved !== undefined &&
-      parseVersion(resolved) !== null &&
-      parseVersion(pkg.latest) !== null &&
-      compareVersions(resolved, pkg.latest) < 0;
-    const holders = held ? pinningHolders(lock, pkg.name, resolved, pkg.latest) : [];
-    const line =
-      `${pkg.name}: judged ${pkg.latest}, installed ${resolved ?? '<not in package-lock.json>'}${nested ? ` (nested in ${workspace})` : ''}` +
-      (held
-        ? holders.length > 0
-          ? `; held back by ${holders.join(', ')}`
-          : "; held back, and no installed copy in package-lock.json pins it, so npm's own output above is the reason"
-        : '');
-    if (seen.has(line)) continue;
-    seen.add(line);
-    out.push({ line, held });
+    const top = (nested ?? lock?.[`node_modules/${pkg.name}`])?.version;
+    // npm may install the copy an override governs only nested (`node_modules/<dependent>/node_modules/<name>`) when another dependent holds the top-level slot with a different line, so a missing hoisted entry is judged against every nested copy before it counts as missing.
+    const copies: Array<string | undefined> =
+      top === undefined ? nestedCopies(lock, pkg.name) : [top];
+    if (copies.length === 0) copies.push(undefined);
+    for (const resolved of copies) {
+      if (resolved === pkg.latest) continue;
+      const held =
+        resolved !== undefined &&
+        parseVersion(resolved) !== null &&
+        parseVersion(pkg.latest) !== null &&
+        compareVersions(resolved, pkg.latest) < 0;
+      const holders = held ? pinningHolders(lock, pkg.name, resolved, pkg.latest) : [];
+      const line =
+        `${pkg.name}: judged ${pkg.latest}, installed ${resolved ?? '<not in package-lock.json>'}${nested ? ` (nested in ${workspace})` : ''}` +
+        (held
+          ? holders.length > 0
+            ? `; held back by ${holders.join(', ')}`
+            : "; held back, and no installed copy in package-lock.json pins it, so npm's own output above is the reason"
+          : '');
+      if (seen.has(line)) continue;
+      seen.add(line);
+      out.push({ line, held });
+    }
   }
   return out;
 }
