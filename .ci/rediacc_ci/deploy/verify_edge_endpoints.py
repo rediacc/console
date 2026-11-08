@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/deploy/verify-edge-endpoints.sh`.
 
-Post-deploy smoke test for the edge environment. The twin's own header carries the WHY for every assertion; this docstring records only what the PORT had to decide, because everything else is a line-for-line transcription.
+Post-deploy smoke test for the edge release. The site it probes is the one `www` Worker (www.rediacc.com, built from edge): the separate edge site is gone, and the regional hosts are the shared `<region>.rediacc.cloud` ones. The twin's own header carries the WHY for every assertion; this docstring records only what the PORT had to decide, because everything else is a line-for-line transcription.
 
 CURL IS SHELLED OUT TO, NOT REPLACED BY `urllib`. Its sibling `wait_for_preview_worker.py` went the other way and said so: `curl` is a generic HTTP client with no credential of its own, so faking the BINARY there would have reimplemented `urllib.request` under another name. THIS script is different in the one way that matters. Every URL in it is a hard-coded production hostname
-(`edge.rediacc.com`, `releases.rediacc.com`) with no override knob anywhere, so the only way to drive either implementation without touching production is to put a fake `curl` on `PATH`. A port that used `urllib` could not be driven through that fake, which means it could not be compared against the twin at all, which means it could never be shown equivalent. The argv is therefore
+(`www.rediacc.com`, `releases.rediacc.com`) with no override knob anywhere, so the only way to drive either implementation without touching production is to put a fake `curl` on `PATH`. A port that used `urllib` could not be driven through that fake, which means it could not be compared against the twin at all, which means it could never be shown equivalent. The argv is therefore
 byte-identical to the twin's on every one of the eleven call sites, and the differential asserts the recorded call log matches.
 
 `jq` IS ALSO SHELLED OUT TO, for the same reason plus one more: the twin reads `jq -re '.version'`'s three distinct exit codes (0 with a value, 1 on a JSON `null`, 4 on empty input -- all three driven, not assumed), and jq's stderr is NOT redirected on that call site, so a parse error reaches the script's stderr. Reproducing that from `json.loads` would be a re-derivation of jq's
@@ -39,11 +39,10 @@ from typing import TYPE_CHECKING
 
 from rediacc_ci import paths
 from rediacc_ci.core import common
-from rediacc_ci.well_known import EDGE_ORIGIN, RELEASES_ORIGIN
-from rediacc_ci.well_known import EDGE_ORIGIN as WK_EDGE_ORIGIN
+from rediacc_ci.well_known import RELEASES_ORIGIN, SITE_ORIGIN
 from rediacc_ci.well_known import RELEASES_ORIGIN as WK_RELEASES_ORIGIN
 
-EDGE_HOST = WK_EDGE_ORIGIN.removeprefix("https://")
+EDGE_HOST = SITE_ORIGIN.removeprefix("https://")
 RELEASES_HOST = WK_RELEASES_ORIGIN.removeprefix("https://")
 
 if TYPE_CHECKING:
@@ -52,7 +51,7 @@ if TYPE_CHECKING:
 SELF = "rediacc_ci.deploy.verify_edge_endpoints"
 
 # The twin's hard-coded hosts. Named constants so a reader can see at a glance that this program has no configurable target, which is the fact that decided the fake-`curl` design above.
-EDGE = EDGE_ORIGIN
+EDGE = SITE_ORIGIN
 RELEASES = RELEASES_ORIGIN
 
 DEVNULL = subprocess.DEVNULL
@@ -390,11 +389,11 @@ NOSNIFF = re.compile(r"^x-content-type-options: *nosniff", re.IGNORECASE)
 
 
 def _region_domains() -> list[str]:
-    """`done < <(jq -r '.regions[] | .edgeDomain' regions.json)`.
+    """`done < <(jq -r '.regions[] | .domain' regions.json)`.
 
     A FAILING jq PRODUCES ZERO DOMAINS AND NO ERROR, because a process substitution's exit status is not the loop's and `set -e` never sees it. Carried unchanged; see FINDING 1 in the differential, where it is reproduced rather than fixed.
     """
-    _rc, out = jq_run(["-r", ".regions[] | .edgeDomain", "regions.json"])
+    _rc, out = jq_run(["-r", ".regions[] | .domain", "regions.json"])
     # `read -r domain` strips leading and trailing IFS whitespace.
     return [line.strip(" \t") for line in out.split("\n")[:-1]]
 

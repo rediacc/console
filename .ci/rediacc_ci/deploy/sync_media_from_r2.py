@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/deploy/sync-media-from-r2.sh`.
 
-The DOWNLOAD direction of the media sync: three `aws s3 sync` calls that pull `tutorials/video/`, `videos/` and `tutorials/audio/` out of the R2 bucket `rediacc-www-media` into `packages/www/public/assets/`. Its upload counterpart is `sync-media-to-r2.sh`, ported beside this file as `rediacc_ci.deploy.sync_media_to_r2`. The two are twins in the campaign's sense and in the tree's:
+The DOWNLOAD direction of the media sync: three `aws s3 sync` calls that pull `tutorials/video/`, `videos/` and `tutorials/audio/` out of the R2 bucket `media` into `packages/www/public/assets/`. Its upload counterpart is `sync-media-to-r2.sh`, ported beside this file as `rediacc_ci.deploy.sync_media_to_r2`. The two are twins in the campaign's sense and in the tree's:
 same bucket, same three prefixes, same flag vocabulary, and the differences between them are exactly the differences between reading a bucket and writing one.
 
 WHY A CHECKOUT NEEDS THIS AT ALL, carried over from the twin's header because it is the reason the audio prefix is here beside two video prefixes. Most `npm run dev` browsing does NOT need any of it: the URL builders read the manifest and point at media.rediacc.com, so the site fetches videos from the CDN exactly as production does. `tutorials/audio/` is different. It is a
@@ -80,8 +80,8 @@ import sys
 from rediacc_ci import log
 from rediacc_ci.core import awscli, common
 
-# `BUCKET="rediacc-www-media"` (twin :48). Hard-coded there, hard-coded here.
-BUCKET = "rediacc-www-media"
+# `BUCKET="media"` (twin :48). Hard-coded there, hard-coded here.
+BUCKET = "media"
 
 # The three legs, in the twin's order (twin :110-120), as (remote_prefix, local_path_relative_to_repo_root). ORDER IS OBSERVABLE: it is the order of the step lines and the order of the `aws` calls, and a reordered tuple is a different program even though the same bytes end up on disk. Every local path keeps its TRAILING SLASH because the twin's does, and `aws` is handed the string
 # as written.

@@ -39,9 +39,9 @@ from rediacc_ci import paths
 from rediacc_ci.core import bash_dialect
 from rediacc_ci.deploy import verify_edge_endpoints as port
 from rediacc_ci.tests import differential as diff
-from rediacc_ci.well_known import EDGE_ORIGIN, RELEASES_ORIGIN
+from rediacc_ci.well_known import RELEASES_ORIGIN, SITE_ORIGIN
 
-EDGE_HOST = EDGE_ORIGIN.removeprefix("https://")
+EDGE_HOST = SITE_ORIGIN.removeprefix("https://")
 RELEASES_HOST = RELEASES_ORIGIN.removeprefix("https://")
 
 if typing.TYPE_CHECKING:
@@ -115,7 +115,7 @@ def slug_for(url: str) -> str:
     return re.sub(r"[^A-Za-z0-9._-]", "_", base)
 
 
-def region_domains(field: str = "edgeDomain") -> list[str]:
+def region_domains(field: str = "domain") -> list[str]:
     """Read `regions.json` the same way the subject does, so the fixture cannot go stale when a region is added."""
     proc = subprocess.run(
         ["jq", "-r", ".regions[] | .%s" % field, str(REGIONS)],
@@ -167,6 +167,13 @@ def healthy_fixture(target: pathlib.Path, version: str = "1.2.3") -> None:
 def normalise_log(text: str) -> str:
     """Mask ONLY the cache-buster digits. See the module docstring."""
     return re.sub(r"cb=\d+", "cb=N", text)
+
+
+def golden_hosts(text: str) -> str:
+    """The twin golden's hosts written in the hosts the port probes now (PLAN-product-domain-rename): `edge-<r>.rediacc.com` and `<r>.rediacc.com` became `<r>.rediacc.cloud`, and the edge site became the one `www` site. Every OTHER byte of the golden is still compared."""
+    text = re.sub(r"edge-(eu|us|asia)\.rediacc\.com", r"\1.rediacc.cloud", text)
+    text = re.sub(r"(?<![\w.-])(eu|us|asia)\.rediacc\.com", r"\1.rediacc.cloud", text)
+    return text.replace("edge.rediacc.com", "www.rediacc.com")
 
 
 class Run:
@@ -235,7 +242,7 @@ def drive(
                 ),
                 work=(tmp_path,),
             )
-            runs.append(Run(rc, out, err, curl_log))
+            runs.append(Run(rc, golden_hosts(out), golden_hosts(err), golden_hosts(curl_log)))
             continue
         rc, out, err = diff.bash_streams(command, env=env, timeout=60)
         runs.append(Run(rc, out, err, log.read_text(encoding="utf-8")))

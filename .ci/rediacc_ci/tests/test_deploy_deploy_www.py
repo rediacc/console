@@ -206,9 +206,11 @@ def fixture(
         (worker / "node_modules").mkdir(exist_ok=True)
 
     for side in ("old", "new"):
-        (root / f"{side}-d1.json").write_text(
-            json.dumps({} if databases is None else databases), encoding="utf-8"
-        )
+        # The twin's golden names its databases `account-db-pr-<n>`; the port's are `account-pr-<n>` (PLAN-product-domain-rename), so the port's side starts from the same state under its own names.
+        named = {} if databases is None else databases
+        if side == "new":
+            named = {_new_name(k): v for k, v in named.items()}
+        (root / f"{side}-d1.json").write_text(json.dumps(named), encoding="utf-8")
     return root
 
 
@@ -296,10 +298,24 @@ def run_both(tmp_path: pathlib.Path, *args: str, fixture_kw: dict | None = None,
     return root, old, new
 
 
+def _new_name(text: str) -> str:
+    """The twin's database name in the port's spelling."""
+    return text.replace("account-db-pr-", "account-pr-")
+
+
+def _golden(text: str) -> str:
+    """The port's database name written back in the twin's spelling, so every OTHER byte is still compared."""
+    return text.replace("account-pr-", "account-db-pr-")
+
+
 def _agree(old, new, label: str) -> None:
     """THE THREE STREAMS SEPARATELY, plus the call log and the generated config."""
     old_proc, old_calls, old_config = old
     new_proc, new_calls, new_config = new
+    new_proc = subprocess.CompletedProcess(
+        new_proc.args, new_proc.returncode, _golden(new_proc.stdout), _golden(new_proc.stderr)
+    )
+    new_calls, new_config = _golden(new_calls), _golden(new_config)
     assert new_proc.returncode == old_proc.returncode, (
         f"{label}: exit diverged: {old_proc.returncode!r} vs {new_proc.returncode!r}\n"
         f"old stderr: {old_proc.stderr!r}\nnew stderr: {as_twin(new_proc.stderr)!r}"
@@ -457,15 +473,17 @@ def test_fact_a_non_pr_name_is_accepted_verbatim(tmp_path) -> None:
 def test_fact_the_production_database_guard_cannot_fire() -> None:
     """THE REFUSAL AT twin :69-72 IS UNREACHABLE, and both halves are asserted.
 
-    The guard itself works (`is_protected` says yes to both names); no output `db_name_for` can produce ever reaches it, because the template carries a literal `-pr-` for every input including the empty string.
+    The guard itself works (`is_protected` says yes to every shared database); no output `db_name_for` can produce ever reaches it, because the template carries a literal `-pr-` for every input including the empty string.
     """
     assert port.PRODUCTION_GUARD_IS_UNREACHABLE is True
-    assert port.is_protected("account-db") is True
-    assert port.is_protected("edge-account-db") is True
-    for name in ("", "pr-", "pr-1", "account-db", "edge-account-db", "pr-account-db"):
+    shared = ("account-eu", "account-us", "account-asia", "account-bench")
+    for name in shared:
+        assert port.is_protected(name) is True, name
+    assert not port.is_protected("account-db"), "the retired bare name guards nothing"
+    for name in ("", "pr-", "pr-1", "account-eu", "pr-account-eu", "account-bench"):
         assert not port.is_protected(port.db_name_for(name)), name
-    assert port.db_name_for("") == "account-db-pr-"
-    assert port.db_name_for("pr-account-db") == "account-db-pr-account-db"
+    assert port.db_name_for("") == "account-pr-"
+    assert port.db_name_for("pr-account-eu") == "account-pr-account-eu"
 
 
 # --------------------------------------------------------------------------- Refusals ---------------------------------------------------------------------------
@@ -639,10 +657,10 @@ def test_planted_defect_is_caught_by_the_call_log(tmp_path) -> None:
     new_calls = call_log.read_text(encoding="utf-8")
 
     assert new_proc.returncode == old_proc.returncode, "the plant changed the exit code"
-    assert new_proc.stdout == old_proc.stdout, "the plant changed stdout; wrong plant"
-    assert new_proc.stderr == old_proc.stderr, "the plant changed stderr; wrong plant"
-    assert new_calls != old_calls, "THE CALL LOG DID NOT SEE IT: this gate cannot fail"
-    assert "npx --no-install wrangler d1 create account-db-pr-3\n" in new_calls
+    assert _golden(new_proc.stdout) == old_proc.stdout, "the plant changed stdout; wrong plant"
+    assert _golden(new_proc.stderr) == old_proc.stderr, "the plant changed stderr; wrong plant"
+    assert _golden(new_calls) != old_calls, "THE CALL LOG DID NOT SEE IT: this gate cannot fail"
+    assert "npx --no-install wrangler d1 create account-pr-3\n" in new_calls
 
 
 # --------------------------------------------------------------------------- Pure helpers, exercised directly ---------------------------------------------------------------------------

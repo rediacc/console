@@ -180,6 +180,11 @@ def _exec(
     return proc, calls
 
 
+# THE TWIN'S GOLDEN NAMES THE OLD BUCKET (`media`); the bucket is `media` now (PLAN-product-domain-rename), and `_renamed` writes the golden's text in the new name so every OTHER byte is still compared with the twin's.
+def _renamed(text: str) -> str:
+    return text.replace("rediacc-www-media", "media")
+
+
 def _run(subject: str, tree: pathlib.Path, args: list[str], **kw):
     """`_exec`, except the bash twin is answered from its frozen golden (and recorded from the real file under `regolden.py --source bash`)."""
     if subject != TWIN_REL:
@@ -198,8 +203,8 @@ def _run(subject: str, tree: pathlib.Path, args: list[str], **kw):
         extras={"calls": lambda: "\n".join(box["calls"])},
         work=(tree.parent,),
     )
-    calls = [line for line in live["calls"].split("\n") if line]
-    return types.SimpleNamespace(returncode=rc, stdout=out, stderr=err), calls
+    calls = [_renamed(line) for line in live["calls"].split("\n") if line]
+    return types.SimpleNamespace(returncode=rc, stdout=_renamed(out), stderr=_renamed(err)), calls
 
 
 def run_both(tmp_path: pathlib.Path, args: list[str], *, dirs: tuple[str, ...] = ALL_DIRS, **kw):
@@ -229,7 +234,7 @@ def _assert_agree(old, new, label: str, old_calls=None, new_calls=None) -> None:
 
 CLOSING = (
     "✓ Sync complete. Verify with:\n"
-    "✓   aws s3 sync --dryrun <local-dir> s3://rediacc-www-media/<prefix>/ "
+    "✓   aws s3 sync --dryrun <local-dir> s3://media/<prefix>/ "
     "--endpoint-url $CLOUDFLARE_R2_MEDIA_ENDPOINT\n"
     "✓   curl -sI " + MEDIA_ORIGIN + "/<path>\n"
 )
@@ -243,27 +248,27 @@ def test_the_default_run_uploads_three_prefixes_in_order(tmp_path: pathlib.Path)
     assert old_calls == [
         (
             f"aws\ts3\tsync\t{tree}/packages/www/public/assets/tutorials/video/\t"
-            "s3://rediacc-www-media/tutorials/video/\t"
+            "s3://media/tutorials/video/\t"
             f"--endpoint-url\t{ENDPOINT}\t"
             "--cache-control\tpublic, max-age=31536000\t--no-progress"
         ),
         (
             f"aws\ts3\tsync\t{tree}/packages/www/public/assets/videos/\t"
-            "s3://rediacc-www-media/videos/\t"
+            "s3://media/videos/\t"
             f"--endpoint-url\t{ENDPOINT}\t"
             "--cache-control\tpublic, max-age=31536000\t--no-progress"
         ),
         (
             f"aws\ts3\tsync\t{tree}/packages/www/public/assets/tutorials/audio/\t"
-            "s3://rediacc-www-media/tutorials/audio/\t"
+            "s3://media/tutorials/audio/\t"
             f"--endpoint-url\t{ENDPOINT}\t"
             "--cache-control\tpublic, max-age=31536000\t--no-progress"
         ),
     ]
     assert old.stderr == (
-        f"→ Syncing {tree}/packages/www/public/assets/tutorials/video/ -> s3://rediacc-www-media/tutorials/video/\n"
-        f"→ Syncing {tree}/packages/www/public/assets/videos/ -> s3://rediacc-www-media/videos/\n"
-        f"→ Syncing {tree}/packages/www/public/assets/tutorials/audio/ -> s3://rediacc-www-media/tutorials/audio/\n"
+        f"→ Syncing {tree}/packages/www/public/assets/tutorials/video/ -> s3://media/tutorials/video/\n"
+        f"→ Syncing {tree}/packages/www/public/assets/videos/ -> s3://media/videos/\n"
+        f"→ Syncing {tree}/packages/www/public/assets/tutorials/audio/ -> s3://media/tutorials/audio/\n"
         + CLOSING
     )
     _assert_agree(old, new, "default", old_calls, new_calls)
@@ -316,21 +321,21 @@ def test_dry_run_and_delete_keep_their_order_in_both_the_log_and_the_argv(
 def test_tutorials_only_uploads_one_prefix(tmp_path: pathlib.Path) -> None:
     old, new, old_calls, new_calls = run_both(tmp_path, ["--tutorials-only"])
     assert len(old_calls) == 1
-    assert "s3://rediacc-www-media/tutorials/video/" in old_calls[0]
+    assert "s3://media/tutorials/video/" in old_calls[0]
     _assert_agree(old, new, "tutorials-only", old_calls, new_calls)
 
 
 def test_solutions_only_uploads_one_prefix(tmp_path: pathlib.Path) -> None:
     old, new, old_calls, new_calls = run_both(tmp_path, ["--solutions-only"])
     assert len(old_calls) == 1
-    assert "s3://rediacc-www-media/videos/" in old_calls[0]
+    assert "s3://media/videos/" in old_calls[0]
     _assert_agree(old, new, "solutions-only", old_calls, new_calls)
 
 
 def test_audio_only_uploads_one_prefix(tmp_path: pathlib.Path) -> None:
     old, new, old_calls, new_calls = run_both(tmp_path, ["--audio-only"])
     assert len(old_calls) == 1
-    assert "s3://rediacc-www-media/tutorials/audio/" in old_calls[0]
+    assert "s3://media/tutorials/audio/" in old_calls[0]
     _assert_agree(old, new, "audio-only", old_calls, new_calls)
 
 
@@ -338,7 +343,7 @@ def test_the_only_flags_are_not_additive_and_the_last_one_wins(tmp_path: pathlib
     """Each `--*-only` arm assigns ALL THREE booleans, so the flags overwrite rather than accumulate. A port that OR-ed them would upload two prefixes where the twin uploads one, and would still print a plausible log."""
     old, new, old_calls, new_calls = run_both(tmp_path, ["--audio-only", "--solutions-only"])
     assert len(old_calls) == 1, "the two flags accumulated instead of overwriting"
-    assert "s3://rediacc-www-media/videos/" in old_calls[0]
+    assert "s3://media/videos/" in old_calls[0]
     _assert_agree(old, new, "last-only-wins", old_calls, new_calls)
 
 
@@ -480,7 +485,7 @@ def test_a_missing_directory_is_a_warning_and_the_other_legs_still_run(
     assert old.returncode == 0
     assert len(old_calls) == 2
     assert f"⚠ Skipping {tree}/{SOLUTIONS_DIR}/ (not present locally)\n" in old.stderr
-    assert all("s3://rediacc-www-media/videos/" not in c for c in old_calls)
+    assert all("s3://media/videos/" not in c for c in old_calls)
     _assert_agree(old, new, "one-missing-leg", old_calls, new_calls)
 
 
@@ -532,12 +537,12 @@ def test_a_symlink_to_a_directory_is_synced_not_skipped(tmp_path: pathlib.Path) 
         proc, calls = _run(subject, tree, ["--solutions-only"])
         assert proc.returncode == 0
         assert len(calls) == 1, "a symlinked media directory was skipped"
-        assert "s3://rediacc-www-media/videos/" in calls[0]
+        assert "s3://media/videos/" in calls[0]
 
 
 def test_pure_helpers() -> None:
     """The exported helpers, driven directly. Both directions on the parse loop: something that must be refused, and flag combinations that must NOT be."""
-    assert port.BUCKET == "rediacc-www-media"
+    assert port.BUCKET == "media"
     assert port.CACHE_CONTROL == "public, max-age=31536000"
     assert port.TUTORIALS == ("packages/www/public/assets/tutorials/video/", "tutorials/video/")
     assert port.SOLUTIONS == ("packages/www/public/assets/videos/", "videos/")
@@ -573,7 +578,7 @@ def test_pure_helpers() -> None:
         "s3",
         "sync",
         "/x/y/",
-        "s3://rediacc-www-media/videos/",
+        "s3://media/videos/",
         "--no-progress",
     ]
 

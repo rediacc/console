@@ -3,7 +3,7 @@
 
 The UPLOAD direction of the media sync: three `aws s3 sync` calls that push
 `packages/www/public/assets/{tutorials/video,videos,tutorials/audio}` into the
-R2 bucket `rediacc-www-media`. Its download counterpart is `sync-media-from-r2.sh`, ported beside this file as `rediacc_ci.deploy.sync_media_from_r2`. Same bucket, same three prefixes, same flag vocabulary; the differences between the two ports are exactly the differences between reading a bucket and writing one, and they are named where they occur rather than factored into a
+R2 bucket `media`. Its download counterpart is `sync-media-from-r2.sh`, ported beside this file as `rediacc_ci.deploy.sync_media_from_r2`. Same bucket, same three prefixes, same flag vocabulary; the differences between the two ports are exactly the differences between reading a bucket and writing one, and they are named where they occur rather than factored into a
 shared helper (see the last section).
 
 INCREMENTAL BY DESIGN, which is the twin's own headline and the reason there is no "changed files" logic to port: `aws s3 sync` uploads only what is new or whose size/mtime differs, so re-running after re-recording a handful of tutorials pushes those and not the whole 5GB+ tree.
@@ -89,8 +89,8 @@ from rediacc_ci import log
 from rediacc_ci.core import awscli, common
 from rediacc_ci.well_known import MEDIA_ORIGIN
 
-# `BUCKET="rediacc-www-media"` (twin :36). Hard-coded there, hard-coded here.
-BUCKET = "rediacc-www-media"
+# `BUCKET="media"` (twin :36). Hard-coded there, hard-coded here.
+BUCKET = "media"
 
 # `CACHE_CONTROL="public, max-age=31536000"` (twin :37). ONE ARGV ELEMENT
 # CONTAINING A SPACE, which is why the differential records argv with a quoting join rather than a plain space: `--cache-control 'public,

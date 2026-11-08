@@ -1,6 +1,6 @@
 """A deploy module refuses a flag it does not handle, and its `--dry-run` runs nothing.
 
-The defect this pins: `common.parse_args` turned `--dry-run` into `ARG_DRY_RUN=true`, `deploy_account.main` never read it, and under production credentials the run applied the D1 migrations and executed `wrangler deploy`. `deploy_edge` discarded every argument. The fake runner here replaces each module's `_run`, the single door to a child process, so a call it records is a side effect that would have happened.
+The defect this pins: `common.parse_args` turned `--dry-run` into `ARG_DRY_RUN=true`, `deploy_account.main` never read it, and under production credentials the run applied the D1 migrations and executed `wrangler deploy`. The fake runner here replaces each module's `_run`, the single door to a child process, so a call it records is a side effect that would have happened.
 """
 
 from __future__ import annotations
@@ -12,7 +12,7 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.core import common
-from rediacc_ci.deploy import deploy_account, deploy_edge, deploy_www
+from rediacc_ci.deploy import deploy_account, deploy_www
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -42,8 +42,7 @@ def tree(tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch) -> pathlib.Pat
     (account / "wrangler.eu.toml").write_text(FIXTURE_TOML, encoding="utf-8")
     www = tmp_path / "workers" / "www"
     www.mkdir(parents=True)
-    (www / deploy_edge.CONFIG).write_text('name = "rediacc-www-edge"\n', encoding="utf-8")
-    (www / "wrangler.toml").write_text('name = "rediacc-www"\n', encoding="utf-8")
+    (www / "wrangler.toml").write_text('name = "www"\n', encoding="utf-8")
     monkeypatch.setenv("REDIACC_CI_ROOT", str(tmp_path))
     monkeypatch.setenv("CLOUDFLARE_API_TOKEN", "tok")
     monkeypatch.setenv("CLOUDFLARE_ACCOUNT_ID", "acct")
@@ -86,23 +85,12 @@ def test_account_dry_run_needs_no_credentials(
 
 
 @pytest.mark.usefixtures("tree")
-def test_edge_dry_run_runs_no_child_and_prints_the_plan(
-    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
-) -> None:
-    fake = _fake(monkeypatch, deploy_edge)
-    assert deploy_edge.main(["--dry-run"]) == 0
-    assert fake.calls == []
-    assert "deploy --config wrangler.edge.toml" in capsys.readouterr().out
-
-
-@pytest.mark.usefixtures("tree")
 @pytest.mark.parametrize(
     ("module", "argv", "flag"),
     [
         (deploy_account, ["--region", "eu", "--bogus"], "--bogus"),
         (deploy_account, ["--region", "eu", "--dryrun"], "--dryrun"),
-        (deploy_edge, ["--region", "eu"], "--region"),
-        (deploy_edge, ["--bogus"], "--bogus"),
+        (deploy_account, ["--region", "eu", "--target", "edge"], "--target"),
         (deploy_www, ["--dry-run"], "--dry-run"),
     ],
 )
@@ -126,7 +114,6 @@ def test_an_unknown_flag_is_refused_before_any_call(
     ("module", "argv"),
     [
         (deploy_account, ["--region", "eu", "--bogus"]),
-        (deploy_edge, ["--bogus"]),
     ],
 )
 def test_control_without_the_check_the_fake_runner_sees_a_deploy_call(
@@ -200,8 +187,6 @@ def test_no_deploy_main_discards_its_argv() -> None:
     [
         (deploy_account, ["--region", "eu", "--dry-run", ""]),
         (deploy_account, ["--region", "eu", "--dry-run=false"]),
-        (deploy_edge, ["--dry-run", ""]),
-        (deploy_edge, ["--dry-run=false"]),
     ],
 )
 def test_a_dry_run_flag_with_an_empty_or_false_value_still_runs_nothing(
@@ -228,7 +213,6 @@ def test_a_dry_run_over_an_unreadable_database_name_refuses_like_the_real_run(
     ("module", "argv"),
     [
         (deploy_account, ["--region", "eu"]),
-        (deploy_edge, []),
     ],
 )
 def test_a_run_without_the_dry_run_flag_still_reaches_the_deploy(

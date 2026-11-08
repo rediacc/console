@@ -1,6 +1,6 @@
 """Ported from `.ci/scripts/deploy/resolve-www-deploy-target.sh`, which W7 P5 batch B5 retired once `.ci/shadow/w7p5a-resolve-www-deploy-target.observations.jsonl` asserted equivalence over five distinct trees.
 
-Picks the deploy-script name / Worker name / domain / sandbox flag for the www Worker and emits them as GitHub Actions step outputs. Pure computation, same shape as `rediacc_ci.deploy.resolve_account_deploy_config`: no network, no subprocess, one file write to `$GITHUB_OUTPUT`.
+Picks the deploy-script name / Worker name / domain / sandbox flag for the www Worker and emits them as GitHub Actions step outputs. There is ONE www Worker (`www`, on www.rediacc.com, built from edge) and one script that deploys it, so the answer no longer depends on a target and the `TARGET` variable is not read. Pure computation, same shape as `rediacc_ci.deploy.resolve_account_deploy_config`: no network, no subprocess, one file write to `$GITHUB_OUTPUT`.
 
 REWORDED, NOT BYTE-IDENTICAL, same reasoning as that sibling: the bash twin's
 `${VAR:?msg}` diagnostic carries a bash line number that is not worth
@@ -15,9 +15,8 @@ import os
 import sys
 
 from rediacc_ci.core import common
-from rediacc_ci.well_known import EDGE_ORIGIN, SITE_ORIGIN
+from rediacc_ci.well_known import SITE_ORIGIN
 
-EDGE_HOST = EDGE_ORIGIN.removeprefix("https://")
 SITE_HOST = SITE_ORIGIN.removeprefix("https://")
 
 SELF = "rediacc_ci.deploy.resolve_www_deploy_target"
@@ -35,19 +34,12 @@ def main(argv: list[str]) -> int:
     refused = common.refuse_arguments(argv)
     if refused is not None:
         return refused
-    target = _require("TARGET")
     output_path = _require("GITHUB_OUTPUT")
 
-    if target == "stable":
-        script = "deploy_www"
-        worker = "rediacc-www"
-        domain = SITE_HOST
-        sandbox = ""
-    else:
-        script = "deploy_edge"
-        worker = "edge-rediacc-www"
-        domain = EDGE_HOST
-        sandbox = "--sandbox"
+    script = "deploy_www"
+    worker = "www"
+    domain = SITE_HOST
+    sandbox = ""
 
     with open(output_path, "a", encoding="utf-8") as fh:
         fh.write(f"script={script}\n")

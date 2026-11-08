@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/deploy/test-d1-migrations.sh`.
 
-Validates that the account D1 migrations apply cleanly against a CLONE of every regional production database, edge clones first. A migration that works on an empty schema can still fail on real data (a NOT NULL added to a populated column, a unique index over existing duplicates), and cloning is what surfaces that before a release touches production. Every clone is ephemeral and
+Validates that the account D1 migrations apply cleanly against a CLONE of every regional production database. A migration that works on an empty schema can still fail on real data (a NOT NULL added to a populated column, a unique index over existing duplicates), and cloning is what surfaces that before a release touches production. Every clone is ephemeral and
 deleted by an EXIT trap, including on failure; no worker is deployed and no public URL is created.
 
 NOTHING HERE REACHES CLOUDFLARE IN A TEST. `npx` (wrangler) is the only tool that carries a credential, so the differential (`.ci/rediacc_ci/tests/test_deploy_test_d1_migrations.py`) puts a RECORDING FAKE
@@ -25,7 +25,7 @@ FOUR FACTS ABOUT THE TWIN THAT LOOK LIKE MISTAKES. ALL FOUR ARE REPRODUCED
      SUBSTITUTION, whose exit status neither `set -e` nor `pipefail` can see. A
      missing or malformed `regions.json` therefore leaves both arrays empty, the
      per-region loop runs zero times, and the run ends with
-     `All 0 regional migration tests passed (0 edge + 0 stable)` and exit 0,
+     `All 0 regional migration tests passed` and exit 0,
      with jq's own complaint the only trace. Driven 2026-09-13 against the twin
      with `regions.json` deleted: exit 0, that exact line.
      `AN_EMPTY_REGION_LIST_IS_A_GREEN_RUN` names it. This is the anti-vacuity
@@ -75,6 +75,7 @@ K=5 LEDGER: `.ci/shadow/w7p6-test-d1-migrations.observations.jsonl`.
 from __future__ import annotations
 
 import contextlib
+import json
 import os
 import subprocess
 import sys
@@ -86,26 +87,17 @@ from rediacc_ci.deploy import clone_d1
 # This module's own dotted name, the prefix of every diagnostic it prints (the same name `python3 -m` runs it by). A literal, because `__name__` is `__main__` under `-m`.
 SELF = "rediacc_ci.deploy.test_d1_migrations"
 
-# `jq -r '.regions[].edgeD1.name' regions.json` and `.regions[].d1.name` (twin :55, :59). EDGE FIRST: edge is the release soak environment, so a regression should surface there before it can reach stable on the next promotion. The order is observable in the call log and is the twin's design.
+# `jq -r '.regions[].d1.name' regions.json` (twin :59). The twin tested the edge databases first (`.regions[].edgeD1.name`, the release soak environment) and then the stable ones; the shared set of one database per region replaced both lists (PLAN-product-domain-rename), so only this list remains.
 REGIONS_FILE = "regions.json"
-EDGE_JQ = ".regions[].edgeD1.name"
-STABLE_JQ = ".regions[].d1.name"
+D1_JQ = ".regions[].d1.name"
 
-# `REGION_ID="${SOURCE_DB#account-db-}"; REGION_ID="${REGION_ID#edge-account-db-}"`
-# (twin :90-91), in that order. Both are `#` expansions, so each strips only when its prefix is actually there.
-STABLE_PREFIX = "account-db-"
-EDGE_PREFIX = "edge-account-db-"
+# `REGION_ID="${SOURCE_DB#account-}"`: the database name is `account-<region>`, and the id is what is left of it. A `#` expansion, so it strips only when the prefix is actually there.
+DB_PREFIX = "account-"
 
-# `if [[ "$SOURCE_DB" == edge-account-db-* ]]` (twin :94).
-EDGE_TAG = "edge"
-STABLE_TAG = "stable"
+# `DB_NAME="migration-test-${REGION_ID}-${RUN_ID}-${RUN_ATTEMPT}"` (twin :99, minus the channel tag the two lists needed).
+DB_NAME_TEMPLATE = "migration-test-%s-%s-%s"
 
-# `DB_NAME="migration-test-${CHANNEL_TAG}-${REGION_ID}-${RUN_ID}-${RUN_ATTEMPT}"`
-# (twin :99).
-DB_NAME_TEMPLATE = "migration-test-%s-%s-%s-%s"
-
-# `--location eeur` (twin :104), hard-coded exactly as in `deploy-www.sh`.
-D1_LOCATION = "eeur"
+# The twin created every test database `--location eeur`, hard-coded as in `deploy-www.sh`. The location is now the region's own `d1.location` from regions.json, because a clone is only a faithful test of a region whose database lives where that region's does. A region that names none is refused: a silent default would be the old hard-coded value under a new name.
 
 # `TMPCONFIG="workers/www/wrangler-migration-test.toml"` (twin :116), RELATIVE
 # to the current directory, which is fact 2 in the module docstring.
@@ -183,27 +175,35 @@ def repo_root() -> str:
 
 
 def region_id(source_db: str) -> str:
-    """`${SOURCE_DB#account-db-}` then `${REGION_ID#edge-account-db-}` (twin :90-91).
-
-    THE ORDER IS LOAD-BEARING AND IS ALSO WHY BOTH WORK. `edge-account-db-eu` does not start with `account-db-`, so the first strip is a no-op and the second one does the work; `account-db-eu` is the mirror image. A single combined pattern would have to be written carefully to get both.
-    """
-    return source_db.removeprefix(STABLE_PREFIX).removeprefix(EDGE_PREFIX)
-
-
-def channel_tag(source_db: str) -> str:
-    """`[[ "$SOURCE_DB" == edge-account-db-* ]]` (twin :94). A GLOB, so the name
-    must both start with the prefix and have something after it."""
-    return EDGE_TAG if source_db.startswith(EDGE_PREFIX) else STABLE_TAG
+    """`${SOURCE_DB#account-}`: `account-eu` is region `eu`. A name without the prefix is passed through whole, which is what a regions.json naming its databases anything else would produce."""
+    return source_db.removeprefix(DB_PREFIX)
 
 
 def test_db_name(source_db: str, run_id: str, run_attempt: str) -> str:
-    """`migration-test-<tag>-<region>-<run>-<attempt>` (twin :99)."""
-    return DB_NAME_TEMPLATE % (
-        channel_tag(source_db),
-        region_id(source_db),
-        run_id,
-        run_attempt,
-    )
+    """`migration-test-<region>-<run>-<attempt>` (twin :99, minus the channel tag)."""
+    return DB_NAME_TEMPLATE % (region_id(source_db), run_id, run_attempt)
+
+
+def d1_location(root: str, source_db: str) -> str:
+    """The `d1.location` regions.json names for the region whose database is `source_db`.
+
+    Read with a real JSON parse, and refused (BashExitError after a printed reason) when regions.json cannot be read, names no such database, or names it without a location: a test database created in a guessed location would test the wrong thing.
+    """
+    try:
+        with open(os.path.join(root, REGIONS_FILE), encoding="utf-8") as handle:
+            regions = json.load(handle)["regions"]
+        for region in regions:
+            d1 = region["d1"]
+            if d1["name"] == source_db:
+                location = str(d1.get("location") or "")
+                if location:
+                    return location
+                break
+    except (OSError, ValueError, LookupError, TypeError) as exc:
+        log.error("cannot read the D1 location of %s from %s: %s" % (source_db, REGIONS_FILE, exc))
+        raise BashExitError(1) from None
+    log.error("%s names no d1.location for %s" % (REGIONS_FILE, source_db))
+    raise BashExitError(1)
 
 
 def read_names(text: str) -> list[str]:
@@ -243,9 +243,9 @@ def jq_names(program: str, cwd: str) -> str:
     return proc.stdout.decode("utf-8", "surrogateescape")
 
 
-def create_argv(db_name: str) -> list[str]:
-    """`npx wrangler d1 create "$DB_NAME" --location eeur` (twin :104)."""
-    return [*wrangler.ARGV, "d1", "create", db_name, "--location", D1_LOCATION]
+def create_argv(db_name: str, location: str) -> list[str]:
+    """`npx wrangler d1 create "$DB_NAME" --location <region location>` (twin :104, with the location read from regions.json)."""
+    return [*wrangler.ARGV, "d1", "create", db_name, "--location", location]
 
 
 def info_argv(db_name: str) -> list[str]:
@@ -380,6 +380,7 @@ def _chdir(target: str) -> None:
 
 
 def _one_region(
+    root: str,
     source_db: str,
     workspace: str,
     run_id: str,
@@ -387,15 +388,15 @@ def _one_region(
     cleanup_dbs: list[str],
 ) -> None:
     """One iteration of `for SOURCE_DB in "${ALL_DBS[@]}"` (twin :88-136)."""
-    tag = channel_tag(source_db)
     region = region_id(source_db)
     db_name = test_db_name(source_db, run_id, run_attempt)
+    location = d1_location(root, source_db)
     # APPENDED BEFORE THE CREATE, so a create that half-succeeded is still attempted by the trap.
     cleanup_dbs.append(db_name)
 
-    print("::group::Test migrations against %s (%s/%s)" % (source_db, tag, region))
+    print("::group::Test migrations against %s (%s)" % (source_db, region))
 
-    status = _run(create_argv(db_name))
+    status = _run(create_argv(db_name, location))
     if status:
         raise BashExitError(status)
 
@@ -429,7 +430,7 @@ def _one_region(
         os.unlink(TMPCONFIG_BASENAME)
     _chdir(workspace)
 
-    print("  %s (%s/%s): migrations applied successfully" % (source_db, tag, region))
+    print("  %s (%s): migrations applied successfully" % (source_db, region))
     print("::endgroup::")
 
 
@@ -463,23 +464,18 @@ def main(argv: list[str]) -> int:
     run_attempt = os.environ.get("GITHUB_RUN_ATTEMPT") or DEFAULT_RUN_ATTEMPT
     workspace = os.environ.get("GITHUB_WORKSPACE") or root
 
-    edge_dbs = read_names(jq_names(EDGE_JQ, root))
-    stable_dbs = read_names(jq_names(STABLE_JQ, root))
-    all_dbs = edge_dbs + stable_dbs
+    all_dbs = read_names(jq_names(D1_JQ, root))
 
     cleanup_dbs: list[str] = []
     code = 0
     try:
         for source_db in all_dbs:
-            _one_region(source_db, workspace, run_id, run_attempt, cleanup_dbs)
+            _one_region(root, source_db, workspace, run_id, run_attempt, cleanup_dbs)
     except BashExitError as exc:
         code = exc.code
     else:
         # FACT 1: with an empty `all_dbs` this line says 0 and the run is green.
-        log.info(
-            "All %d regional migration tests passed (%d edge + %d stable)"
-            % (len(all_dbs), len(edge_dbs), len(stable_dbs))
-        )
+        log.info("All %d regional migration tests passed" % len(all_dbs))
     # `trap cleanup EXIT`, installed at twin :86 and therefore reached by every exit from here on, including the `set -e` ones. It does not change the status.
     cleanup(cleanup_dbs)
     return code

@@ -5,8 +5,8 @@ Deploys the www marketing Worker to Cloudflare. Two lanes, chosen by whether `--
 
   * PRODUCTION (no `--name`): one `npx wrangler deploy` against
     `workers/www/wrangler.toml` as it stands. No D1 is involved; the account API
-    on www.rediacc.com is served by the regional `rediacc-account-*` workers.
-  * PREVIEW (`--name pr-379`): mint a per-PR D1 database `account-db-pr-379`,
+    on www.rediacc.com is served by the regional `account-<region>` workers.
+  * PREVIEW (`--name pr-379`): mint a per-PR D1 database `account-pr-379`,
     DELETING any existing one first for a clean slate, write a generated
     `wrangler.preview.toml` naming that database, apply the account migrations
     to it, deploy, and remove the generated config.
@@ -110,13 +110,13 @@ PREVIEW_CONFIG = "wrangler.preview.toml"
 # `PR_NUM="${ARG_NAME#pr-}"` and `DB_NAME="account-db-pr-${PR_NUM}"`
 # (twin :64-65). The prefix strip is a `#` expansion, so it removes `pr-` only when the name actually starts with it (fact 3 in the module docstring).
 NAME_PREFIX = "pr-"
-DB_NAME_TEMPLATE = "account-db-pr-%s"
+DB_NAME_TEMPLATE = "account-pr-%s"
 
 # `--location eeur` (twin :82). Hard-coded in the twin; every preview database lands in the same region.
 D1_LOCATION = "eeur"
 
 # The two names twin :69 refuses to delete. Unreachable, which is fact 1.
-PROTECTED_DATABASES = ("account-db", "edge-account-db")
+PROTECTED_DATABASES = ("account-eu", "account-us", "account-asia", "account-bench")
 
 # The `sed` address at twin :52 and the `jq` program at twin :57, verbatim.
 JSON_START_SED = "/^[[:space:]]*[{[]/,$p"
@@ -198,7 +198,7 @@ def strip_newlines(token: str) -> str:
 
 
 def db_name_for(worker_name: str) -> str:
-    """`PR_NUM="${ARG_NAME#pr-}"; DB_NAME="account-db-pr-${PR_NUM}"` (twin :64-65).
+    """`PR_NUM="${ARG_NAME#pr-}"; DB_NAME="account-pr-${PR_NUM}"` (twin :64-65, renamed from `account-db-pr-`).
 
     `removeprefix` IS the `#` expansion: it strips only when the prefix is present and leaves everything else alone. That is fact 3 in the module docstring, and it is why `--name staging` is accepted.
     """
@@ -206,9 +206,9 @@ def db_name_for(worker_name: str) -> str:
 
 
 def is_protected(db_name: str) -> bool:
-    """`[[ "$DB_NAME" == "account-db" || "$DB_NAME" == "edge-account-db" ]]` (twin :69).
+    """`[[ "$DB_NAME" == "account-db" || "$DB_NAME" == "edge-account-db" ]]` (twin :69), over the shared databases that replaced those two names.
 
-    Exact string comparison against two literals. Unreachable from `db_name_for`, which is fact 1; exported so the differential can assert both halves rather than assert the sentence.
+    Exact string comparison against the literals. Unreachable from `db_name_for`, which is fact 1; exported so the differential can assert both halves rather than assert the sentence.
     """
     return db_name in PROTECTED_DATABASES
 

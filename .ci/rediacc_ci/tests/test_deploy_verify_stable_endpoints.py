@@ -10,8 +10,8 @@ WHAT THIS FILE HAS TO PROVE THAT THE EDGE ONE DOES NOT, because the two scripts 
     to fail anyway, which is the direct opposite of the edge case with the same
     fixture.
   * REGION HEALTH ONLY WARNS. `::warning::`, exit still 0.
-  * `.domain`, NOT `.edgeDomain`. One jq field, and getting it wrong would probe
-    three real production hosts that are not the ones intended.
+  * `.domain`. One jq field, and getting it wrong would probe
+    names that are not the hosts intended.
   * FINDING 4: `set -e` IS OBSERVABLE HERE. Every fetch is a TOP-LEVEL
     `VAR=$(curl ...)`, so a transport failure kills the script with curl's own
     exit code and NO `::error::` annotation. The edge twin cannot do this,
@@ -102,13 +102,15 @@ def test_healthy_deployment_agrees_byte_for_byte(tmp_path: pathlib.Path) -> None
 
 
 def test_the_region_field_is_domain_not_edgedomain(tmp_path: pathlib.Path) -> None:
-    """One jq field is the entire difference between this loop and the edge twin's, and getting it wrong would silently probe the WRONG production hosts while still printing three OK lines."""
+    """One jq field decides which hosts are probed, and getting it wrong would silently probe the WRONG production hosts while still printing three OK lines."""
     old, new = drive(tmp_path)
     assert old.rc == 0
     for domain in region_domains("domain"):
         assert "https://%s/account" % domain in old.log
-    for edge_domain in region_domains("edgeDomain"):
-        assert edge_domain not in old.log, "the stable script must not probe edge hosts"
+    for worker in region_domains("workerName"):
+        assert "https://%s/" % worker not in old.log, (
+            "the script must probe domains, not Worker names"
+        )
     assert_same(old, new)
 
 
@@ -394,16 +396,16 @@ def test_the_script_takes_no_environment_input(tmp_path: pathlib.Path) -> None:
 
 
 def test_planted_defect_is_caught_by_this_differential(tmp_path: pathlib.Path) -> None:
-    """Swap `.domain` for `.edgeDomain` in a COPY of the port.
+    """Swap `.domain` for `.workerName` in a COPY of the port.
 
-    This is the single most dangerous one-character-class error available here: the run still exits 0, still prints three `health: OK` lines, and the only trace is WHICH hosts were contacted. On a real run it would report the edge fleet's health as the stable fleet's.
+    This is the single most dangerous one-field error available here: the run still exits 0, and the only trace is WHICH hosts were contacted. On a real run it would probe names that are not hosts and report nothing about the fleet.
     """
     source = PORT_FILE.read_text(encoding="utf-8")
     anchor = 'edge.jq_run(["-r", ".regions[] | .domain", "regions.json"])'
     assert source.count(anchor) == 1, "the plant's anchor moved"
     broken = tmp_path / "verify_stable_endpoints_broken.py"
     broken.write_text(
-        source.replace(anchor, 'edge.jq_run(["-r", ".regions[] | .edgeDomain", "regions.json"])'),
+        source.replace(anchor, 'edge.jq_run(["-r", ".regions[] | .workerName", "regions.json"])'),
         encoding="utf-8",
     )
 

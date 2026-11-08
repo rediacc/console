@@ -189,7 +189,7 @@ def _verify() -> int:
 def _region_domains() -> list[str]:
     """`done < <(jq -r '.regions[] | .domain' regions.json)`.
 
-    `.domain`, NOT `.edgeDomain`: that one field is the entire difference between this loop and the edge twin's. A failing jq yields zero domains and no error, exactly as in the edge port; see FINDING 1 in the differential.
+    `.domain`, the shared host of each region (the edge twin's loop reads the same field now that the edge hosts are gone). A failing jq yields zero domains and no error, exactly as in the edge port; see FINDING 1 in the differential.
     """
     _rc, out = edge.jq_run(["-r", ".regions[] | .domain", "regions.json"])
     return [line.strip(" \t") for line in out.split("\n")[:-1]]

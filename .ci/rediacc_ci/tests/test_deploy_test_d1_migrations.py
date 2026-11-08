@@ -1,16 +1,10 @@
-"""Differential: `rediacc_ci.deploy.test_d1_migrations` against the bytes its twin `.ci/scripts/deploy/test-d1-migrations.sh` printed.
+"""`rediacc_ci.deploy.test_d1_migrations`: the migration test against a clone of every region's database.
 
-THE TWIN'S SIDE IS FROZEN (operator ruling D5, PLAN-retire-bash-oracles B3). Every `"old"` run goes through `differential.twin_run`, so its exit code, both streams and call log come from `goldens/twins/deploy.test-d1-migrations.jsonl` and the `.sh` is never read once it is deleted. A `regolden --source bash` run drives the live bash while it exists, which is why the fixture copies the twin, `clone-d1.sh` and `common.sh` only when they are on disk. The port calls `clone_d1.main` in process, where the twin spawned `clone-d1.sh`; the frozen run is the bash clone's, so the comparison is also the proof that the Python clone is a drop-in.
+PORT ONLY. The bash twin tested the edge databases first and then the stable ones, created every clone `--location eeur`, and named them `migration-test-<edge|stable>-<region>-...`. One shared database per region replaced both lists, and the clone is created where the region's own `d1.location` in regions.json says, so the frozen twin golden (`goldens/twins/deploy.test-d1-migrations.jsonl`) no longer describes this module and this file pins the port's own behaviour. The golden file is orphaned by this change; pruning it is `regolden`'s job (named in the box report).
 
-A RECORDING FAKE FOR `npx` ON A SCRATCH PATH, INSIDE A FIXTURE REPO. Nothing here reaches Cloudflare; every case pins a fixture token, account and D1 state file. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger is a separate, achievable piece of work. This is that piece.
+A RECORDING FAKE FOR `npx` ON A SCRATCH PATH, INSIDE A FIXTURE REPO. Nothing here reaches Cloudflare; every case pins a fixture token, account and D1 state file. THE CLONE IS NOT STUBBED: the port runs the real `clone_d1`, which reaches `npx --no-install wrangler d1 export` and `d1 execute` (modelled below), so the call log covers the callers and the clone together.
 
-THE CLONE IS NOT STUBBED. The twin ran the real `clone-d1.sh` and the port runs the real `clone_d1`, so the comparison is about the callers and about the clone together. It reaches `npx --no-install wrangler d1 export` and `d1 execute`, which the same fake `npx` models: an export writes a small SQL
-file, an execute reports success, and `PRAGMA foreign_key_check` answers with an
-empty result set. Its own output is therefore part of what the two sides are compared on.
-
-THE CALL LOG AND THE GENERATED CONFIG ARE THE EVIDENCE, for the reason the module under test spells out: what the run PRINTS is `::group::` directives and one summary line, while the observable effect is the ordered `npx --no-install wrangler d1` invocations, one clone per region, and the bytes of the generated `wrangler-migration-test.toml`.
-
-BOTH SIDES GET THEIR OWN D1 STATE FILE, because a run creates and deletes databases in it.
+THE CALL LOG AND THE GENERATED CONFIG ARE THE EVIDENCE, because what a run PRINTS is `::group::` directives and one summary line, while the observable effect is the ordered `npx --no-install wrangler d1` invocations.
 """
 
 from __future__ import annotations
@@ -18,7 +12,6 @@ from __future__ import annotations
 import inspect
 import json
 import os
-import re
 import shutil
 import subprocess
 import sys
@@ -28,18 +21,12 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.deploy import test_d1_migrations as port
-from rediacc_ci.tests import differential as diff
-from rediacc_ci.tests.twin_names import as_twin
 
 if typing.TYPE_CHECKING:
     import pathlib
 
 ROOT = paths.repo_root()
-TWIN_REL = ".ci/scripts/deploy/test-d1-migrations.sh"
-TWIN = ROOT / TWIN_REL
-CLONE = ROOT / ".ci" / "scripts" / "deploy" / "clone-d1.sh"
 PORT_FILE = ROOT / ".ci" / "rediacc_ci" / "deploy" / "test_d1_migrations.py"
-BASH = shutil.which("bash") or "/bin/bash"
 
 BASE_ENV = {
     "CLOUDFLARE_API_TOKEN": "tok-fixture",
@@ -48,15 +35,15 @@ BASE_ENV = {
     "GITHUB_RUN_ATTEMPT": "2",
 }
 
-# Two regions rather than the tree's three, so the "edge first, then stable" ordering is four entries long and a port that interleaved them would be visible rather than merely differently sorted.
+# Two regions with DIFFERENT locations, so a port that hard-coded one location (the retired `eeur`) is visible rather than coincidentally right.
 DEFAULT_REGIONS = {
     "regions": [
-        {"id": "eu", "d1": {"name": "account-db-eu"}, "edgeD1": {"name": "edge-account-db-eu"}},
-        {"id": "us", "d1": {"name": "account-db-us"}, "edgeD1": {"name": "edge-account-db-us"}},
+        {"id": "eu", "d1": {"name": "account-eu", "location": "eeur"}},
+        {"id": "us", "d1": {"name": "account-us", "location": "enam"}},
     ]
 }
 
-# A MODEL of `wrangler d1`, not wrangler. It has to serve `clone-d1.sh` as well as the script under test, so `d1 export` and `d1 execute` are modelled too.
+# A MODEL of `wrangler d1`, not wrangler. It has to serve `clone_d1` as well as the script under test, so `d1 export` and `d1 execute` are modelled too.
 FAKE_NPX = r'''#!/usr/bin/python3
 """Recording fake for `npx`. See the test module docstring."""
 import json
@@ -211,16 +198,13 @@ def fixture(
     regions: dict | None = DEFAULT_REGIONS,
     worker_dir: bool = True,
 ) -> pathlib.Path:
-    """A throwaway repository holding the twin, clone-d1.sh, common.sh and regions.json.
+    """A throwaway repository holding common.sh and regions.json.
 
     `regions=None` REMOVES regions.json entirely, which is the input for fact 1.
     """
     root = tmp_path / "repo"
     (root / ".ci" / "scripts" / "deploy").mkdir(parents=True, exist_ok=True)
     (root / ".ci" / "scripts" / "lib").mkdir(parents=True, exist_ok=True)
-    if TWIN.is_file():  # only a `regolden --source bash` run still reads the bash
-        shutil.copy2(TWIN, root / ".ci" / "scripts" / "deploy" / TWIN.name)
-        shutil.copy2(CLONE, root / ".ci" / "scripts" / "deploy" / CLONE.name)
     (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
     shutil.copy2(
         ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"
@@ -237,22 +221,21 @@ def fixture(
 
     for side in ("old", "new"):
         (root / f"{side}-d1.json").write_text(
-            json.dumps({"account-db-eu": "u1", "account-db-us": "u2"}), encoding="utf-8"
+            json.dumps({"account-eu": "u1", "account-us": "u2"}), encoding="utf-8"
         )
     return root
 
 
-def _run_live(
+def _run(
     root: pathlib.Path,
-    side: str,
     *,
     drop: str = "",
     drop_env: tuple[str, ...] = (),
     **extra: str,
 ):
-    call_log = root / f"{side}-calls.log"
+    """`(CompletedProcess, call log)` of one live run of the port."""
+    call_log = root / "new-calls.log"
     call_log.write_text("", encoding="utf-8")
-
     env = {
         "PATH": _bin(root, drop=drop),
         "HOME": os.environ.get("HOME", "/tmp"),
@@ -262,22 +245,15 @@ def _run_live(
         "PYTHONDONTWRITEBYTECODE": "1",
         "REDIACC_CI_ROOT": str(root),
         "FAKE_CALL_LOG": str(call_log),
-        "FAKE_D1_STATE": str(root / f"{side}-d1.json"),
+        "FAKE_D1_STATE": str(root / "new-d1.json"),
         **BASE_ENV,
     }
     env.update(extra)
     for name in drop_env:
         env.pop(name, None)
-
-    if side == "old":
-        argv = [BASH, str(root / ".ci" / "scripts" / "deploy" / TWIN.name)]
-    else:
-        argv = [sys.executable, str(PORT_FILE)]
     proc = subprocess.run(
-        argv,
-        # cwd IS DELIBERATELY NOT THE FIXTURE ROOT. Both sides derive the root
-        # from their own location (bash) or from $REDIACC_CI_ROOT (the port) and
-        # then `cd` to it; starting elsewhere proves they actually do.
+        [sys.executable, str(PORT_FILE)],
+        # cwd IS DELIBERATELY NOT THE FIXTURE ROOT: the port derives the root from $REDIACC_CI_ROOT and then `cd`s to it.
         cwd=str(root.parent),
         capture_output=True,
         text=True,
@@ -289,91 +265,12 @@ def _run_live(
     return proc, call_log.read_text(encoding="utf-8")
 
 
-def _run(
-    root: pathlib.Path,
-    side: str,
-    *,
-    drop: str = "",
-    drop_env: tuple[str, ...] = (),
-    **extra: str,
-):
-    """`(CompletedProcess, call log)`. The `"old"` side is the bash twin's frozen answer."""
-    if side != "old":
-        return _run_live(root, side, drop=drop, drop_env=drop_env, **extra)
-    held: dict[str, str] = {}
-
-    def bash():
-        proc, calls = _run_live(root, "old", drop=drop, drop_env=drop_env, **extra)
-        held["calls"] = calls
-        return proc.returncode, proc.stdout, proc.stderr
-
-    state = (root / "old-d1.json").read_text(encoding="utf-8")
-    rc, out, err, frozen = diff.twin_run(
-        TWIN_REL,
-        [drop, repr(drop_env), repr(sorted(extra.items())), state, repr(sorted(_tree(root)))],
-        bash,
-        extras={"calls": lambda: held["calls"]},
-        work=(root.parent, *diff.pytest_tmp_roots(*extra.values())),
-    )
-    return subprocess.CompletedProcess([], rc, out, err), frozen["calls"]
-
-
-def _tree(root: pathlib.Path) -> list[str]:
-    """The fixture's non-code files, so a case with no `regions.json` or no worker dir gets its own golden key."""
-    return [
-        str(p.relative_to(root))
-        for p in root.rglob("*")
-        if p.is_file()
-        and p.relative_to(root).parts[0] not in (".ci", "fixture-bin")
-        and not p.name.endswith(("-calls.log", "-d1.json"))
-    ] + [str(p.relative_to(root)) for p in root.rglob("*") if p.is_dir() and p.name == "www"]
-
-
-def run_both(tmp_path: pathlib.Path, *, fixture_kw: dict | None = None, **kw):
-    root = fixture(tmp_path, **(fixture_kw or {}))
-    old = _run(root, "old", **kw)
-    new = _run(root, "new", **kw)
-    return root, old, new
-
-
-# `clone-d1.sh` RUNS `mktemp -d`, so its scratch directory has a fresh random suffix on every invocation and appears in both the call log (as
-# `--output=/tmp/tmp.XXXXXXXXXX/export.sql`) and in nothing else. That is the
-# ONE thing in this comparison that cannot be equal between two runs of the SAME implementation, so it is masked rather than compared.
-#
-# THE MASK IS DELIBERATELY NARROW: it matches `mktemp -d`'s own shape, ten alphanumerics after `/tmp/tmp.`, and stops at the word boundary. So the `/export.sql` and `/import.sql` tails, and every other `/tmp/...` path a different implementation might invent, are still compared verbatim. `test_the_mktemp_mask_hides_only_the_random_suffix` asserts both halves rather than leaving the
-# claim as a comment.
-MKTEMP_DIR = re.compile(r"/tmp/tmp\.[A-Za-z0-9]{10}\b")
-
-
-def _mask(text: str) -> str:
-    return MKTEMP_DIR.sub("/tmp/tmp.<MKTEMP>", text)
-
-
-def _agree(old, new, label: str) -> None:
-    """THE THREE STREAMS SEPARATELY, plus the call log, all mktemp-masked."""
-    old_proc, old_calls = old
-    new_proc, new_calls = new
-    assert new_proc.returncode == old_proc.returncode, (
-        f"{label}: exit diverged: {old_proc.returncode!r} vs {new_proc.returncode!r}\n"
-        f"old stderr: {old_proc.stderr!r}\nnew stderr: {as_twin(new_proc.stderr)!r}"
-    )
-    assert _mask(as_twin(new_proc.stdout)) == _mask(old_proc.stdout), (
-        f"{label}: stdout diverged:\n{old_proc.stdout!r}\n{as_twin(new_proc.stdout)!r}"
-    )
-    assert _mask(as_twin(new_proc.stderr)) == _mask(old_proc.stderr), (
-        f"{label}: stderr diverged:\n{old_proc.stderr!r}\n{as_twin(new_proc.stderr)!r}"
-    )
-    assert _mask(new_calls) == _mask(old_calls), (
-        f"{label}: call log diverged:\n{old_calls}\n---\n{new_calls}"
-    )
-
-
 def _calls(log: str) -> list[str]:
     return [line[len("call: ") :] for line in log.splitlines() if line.startswith("call: ")]
 
 
 def _wrangler_verbs(log: str) -> list[str]:
-    """The `d1 <verb> <name>` triples, which is the shape of the whole run."""
+    """The `d1 <verb>` pairs, which is the shape of the whole run."""
     out = []
     for line in _calls(log):
         fields = line.split()
@@ -382,57 +279,62 @@ def _wrangler_verbs(log: str) -> list[str]:
     return out
 
 
-# --------------------------------------------------------------------------- The happy path and the ORDER, which is this script's whole design ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- The happy path ---------------------------------------------------------------------------
 
 
-def test_happy_path_agrees_on_both_streams_and_every_call(tmp_path) -> None:
-    _root, old, new = run_both(tmp_path)
-    _agree(old, new, "happy")
-
-    proc, calls = old
+def test_happy_path_runs_every_region_then_the_cleanup(tmp_path) -> None:
+    root = fixture(tmp_path)
+    proc, calls = _run(root)
     assert proc.returncode == 0, proc.stderr
-
-    # PRINT THE SHAPE: four regions, each contributing create, info, the clone's export plus two executes, and one migrations apply. Then four deletes from the trap. A collapse in any of those numbers is what a "both printed the same groups" comparison would miss.
+    # Two regions, each: create, info, the clone's export plus two executes, one migrations apply. Then two deletes from the trap.
     assert _wrangler_verbs(calls) == (
-        ["d1 create", "d1 info", "d1 export", "d1 execute", "d1 execute", "d1 migrations"] * 4
-        + ["d1 delete"] * 4
+        ["d1 create", "d1 info", "d1 export", "d1 execute", "d1 execute", "d1 migrations"] * 2
+        + ["d1 delete"] * 2
     ), _wrangler_verbs(calls)
-    assert "All 4 regional migration tests passed (2 edge + 2 stable)" in proc.stderr
+    assert "All 2 regional migration tests passed" in proc.stderr
+    assert "edge" not in proc.stderr
+    assert "stable" not in proc.stderr
 
 
-def test_edge_databases_are_tested_before_stable_ones(tmp_path) -> None:
-    """THE ORDERING IS THE TWIN'S HEADER'S WHOLE POINT: edge is the soak environment, so a regression must surface there before it can propagate to stable on the next promotion. A port that concatenated the two lists the other way round would print the same four groups and exit 0."""
-    _root, old, new = run_both(tmp_path)
-    _agree(old, new, "edge-first")
-
-    proc, calls = old
+def test_the_clone_is_named_by_region_and_the_group_names_the_source(tmp_path) -> None:
+    root = fixture(tmp_path)
+    proc, calls = _run(root)
     created = [
         line.split()[5]
         for line in _calls(calls)
         if line.startswith("npx --no-install wrangler d1 create ")
     ]
-    assert created == [
-        "migration-test-edge-eu-777-2",
-        "migration-test-edge-us-777-2",
-        "migration-test-stable-eu-777-2",
-        "migration-test-stable-us-777-2",
-    ], created
-    # AND THE GROUP HEADERS NAME THE SOURCE, so a reader of the log can see it.
+    assert created == ["migration-test-eu-777-2", "migration-test-us-777-2"], created
     groups = [line for line in proc.stdout.splitlines() if line.startswith("::group::Test")]
     assert groups == [
-        "::group::Test migrations against edge-account-db-eu (edge/eu)",
-        "::group::Test migrations against edge-account-db-us (edge/us)",
-        "::group::Test migrations against account-db-eu (stable/eu)",
-        "::group::Test migrations against account-db-us (stable/us)",
+        "::group::Test migrations against account-eu (eu)",
+        "::group::Test migrations against account-us (us)",
     ], groups
 
 
-def test_the_generated_config_is_byte_identical_and_removed_after_each_region(
-    tmp_path,
-) -> None:
-    """The file is written, used and removed inside one iteration, so nothing survives a successful run. `clone-d1.sh` is what makes this checkable: it runs BETWEEN the write and the apply, and a port that wrote the file later would change the order of the calls around it."""
-    root, old, new = run_both(tmp_path)
-    _agree(old, new, "generated-config")
+def test_each_clone_is_created_in_its_regions_own_location(tmp_path) -> None:
+    """The retired hard-coded `--location eeur` would put the us clone in eeur too."""
+    root = fixture(tmp_path)
+    _proc, calls = _run(root)
+    creates = [c for c in _calls(calls) if c.startswith("npx --no-install wrangler d1 create ")]
+    assert [c.split()[-2:] for c in creates] == [["--location", "eeur"], ["--location", "enam"]]
+    assert port.create_argv("d", "apac")[-2:] == ["--location", "apac"]
+
+
+def test_a_region_without_a_location_is_refused_before_anything_is_created(tmp_path) -> None:
+    regions = {"regions": [{"id": "eu", "d1": {"name": "account-eu"}}]}
+    root = fixture(tmp_path, regions=regions)
+    proc, calls = _run(root)
+    assert proc.returncode == 1
+    assert "regions.json names no d1.location for account-eu" in proc.stderr
+    assert "d1 create" not in calls, "a guessed location must never create a database"
+
+
+def test_the_generated_config_is_written_and_removed_after_each_region(tmp_path) -> None:
+    """The file is written, used and removed inside one iteration, so nothing survives a successful run."""
+    root = fixture(tmp_path)
+    proc, _calls_text = _run(root)
+    assert proc.returncode == 0, proc.stderr
     assert not (root / "workers" / "www" / port.TMPCONFIG_BASENAME).exists()
     assert port.migration_test_toml("d", "u") == (
         'name = "migration-test"\n'
@@ -448,117 +350,75 @@ def test_the_generated_config_is_byte_identical_and_removed_after_each_region(
 
 
 def test_the_cleanup_trap_deletes_every_clone_and_says_so(tmp_path) -> None:
-    _root, old, new = run_both(tmp_path)
-    _agree(old, new, "cleanup")
-
-    proc, _calls_text = old
-    tail = proc.stdout.splitlines()[-6:]
-    assert tail == [
+    root = fixture(tmp_path)
+    proc, _calls_text = _run(root)
+    assert proc.stdout.splitlines()[-4:] == [
         "::group::Cleanup: deleting test databases",
-        "  Deleted migration-test-edge-eu-777-2",
-        "  Deleted migration-test-edge-us-777-2",
-        "  Deleted migration-test-stable-eu-777-2",
-        "  Deleted migration-test-stable-us-777-2",
+        "  Deleted migration-test-eu-777-2",
+        "  Deleted migration-test-us-777-2",
         "::endgroup::",
-    ], tail
+    ], proc.stdout
 
 
 def test_a_delete_that_fails_is_reported_as_failed_not_as_deleted(tmp_path) -> None:
-    """THE TWIN'S OWN COMMENT CALLS THIS A REPAIR: the old form swallowed stderr, ignored the status and printed `Deleted $db` unconditionally, so a clone left behind announced itself as cleaned up. The warning's WORDING is part of it, and is asserted whole."""
-    _root, old, new = run_both(tmp_path, FAKE_D1_DELETE_FAILS="1")
-    _agree(old, new, "delete-fails")
-
-    proc, _calls_text = old
-    assert proc.returncode == 0, "a failed cleanup must not change the run's status"
-    assert (port.CLEANUP_WARNING % "migration-test-edge-eu-777-2") in proc.stdout
-    assert "  Deleted migration-test-edge-eu-777-2" not in proc.stdout
-    assert "needs manual removal" not in proc.stdout
+    """The old form swallowed stderr, ignored the status and printed `Deleted $db` unconditionally, so a clone left behind announced itself as cleaned up. The warning's WORDING is part of it."""
+    root = fixture(tmp_path)
+    proc, _calls_text = _run(root, FAKE_D1_DELETE_FAILS="1")
+    assert (port.CLEANUP_WARNING % "migration-test-eu-777-2") in proc.stdout
+    assert "  Deleted migration-test-eu-777-2" not in proc.stdout
 
 
-# --------------------------------------------------------------------------- The four named facts ---------------------------------------------------------------------------
-
-
-def test_fact_an_unreadable_regions_json_is_a_green_run_that_tested_nothing(
-    tmp_path,
-) -> None:
-    """THE VACUITY DEFECT, and it is the reason this port carries a named constant for it.
-
-    `< <(jq ...)` is a PROCESS SUBSTITUTION, so neither `set -e` nor `pipefail` can see jq's failure. With `regions.json` gone both lists are empty, the loop runs zero times, and the run reports success. Reproduced, not repaired: adding a floor changes what the release pipeline accepts, which is a cutover-box decision.
-    """
+def test_fact_an_unreadable_regions_json_is_a_green_run_that_tested_nothing(tmp_path) -> None:
+    """THE VACUITY DEFECT, reproduced rather than repaired: `< <(jq ...)` is a process substitution, so with `regions.json` gone the list is empty, the loop runs zero times, and the run reports success."""
     assert port.AN_EMPTY_REGION_LIST_IS_A_GREEN_RUN is True
-
-    _root, old, new = run_both(tmp_path, fixture_kw={"regions": None})
-    _agree(old, new, "no-regions")
-
-    proc, calls = old
+    root = fixture(tmp_path, regions=None)
+    proc, calls = _run(root)
     assert proc.returncode == 0, proc.stderr
-    assert "All 0 regional migration tests passed (0 edge + 0 stable)" in proc.stderr
+    assert "All 0 regional migration tests passed" in proc.stderr
     assert calls == "", "a run that tested nothing still called wrangler"
     assert proc.stdout.splitlines() == [
         "::group::Cleanup: deleting test databases",
         "::endgroup::",
     ], proc.stdout
-    # jq's own complaint is the only trace, and it IS on stderr on both sides.
     assert "regions.json" in proc.stderr
 
 
 def test_fact_the_workspace_takes_over_after_the_first_region(tmp_path) -> None:
-    """ITERATION 1 RESOLVES AGAINST THE REPO ROOT AND 2..N AGAINST
-    `$GITHUB_WORKSPACE`.
-
-    The loop `cd workers/www` relatively and then `cd "$WORKSPACE"`, so a workspace that is NOT the repository root splits the run in two. Driven with a second tree that has its own `workers/www`: the first region's config lands under the repo root and every later one under the workspace.
-    """
+    """ITERATION 1 RESOLVES AGAINST THE REPO ROOT AND 2..N AGAINST `$GITHUB_WORKSPACE`: the loop `cd workers/www` relatively and then `cd "$WORKSPACE"`."""
     assert port.THE_WORKSPACE_TAKES_OVER_AFTER_THE_FIRST_REGION is True
-
     root = fixture(tmp_path)
     elsewhere = tmp_path / "elsewhere"
     (elsewhere / "workers" / "www").mkdir(parents=True)
-
-    old = _run(root, "old", GITHUB_WORKSPACE=str(elsewhere))
-    new = _run(root, "new", GITHUB_WORKSPACE=str(elsewhere))
-    _agree(old, new, "workspace-split")
-
-    proc, calls = old
-    # THE RUN STILL SUCCEEDS, which is what makes this quiet: four regions, four applies, and nothing says the later three used a different tree.
+    proc, calls = _run(root, GITHUB_WORKSPACE=str(elsewhere))
     assert proc.returncode == 0, proc.stderr
-    assert len([c for c in _calls(calls) if "migrations apply" in c]) == 4
-    # And the workspace tree really was used: its worker directory is where the last three configs were written and removed, so it exists and is empty of the generated file on both sides.
+    assert len([c for c in _calls(calls) if "migrations apply" in c]) == 2
     assert not (elsewhere / "workers" / "www" / port.TMPCONFIG_BASENAME).exists()
     assert not (root / "workers" / "www" / port.TMPCONFIG_BASENAME).exists()
 
 
 def test_fact_the_uuid_guard_only_fires_for_valid_json_without_a_uuid(tmp_path) -> None:
-    """TWO INPUTS, TWO DIFFERENT ENDINGS, and only one of them reaches the guard's own sentence.
-
-    With `FAKE_D1_INFO_HAS_NO_UUID` the JSON parses and has no `uuid`, so jq prints nothing, all three stages exit 0, and `Failed to get UUID` is printed. With a `d1 info` that EXITS NON-ZERO the pipeline fails under `pipefail`, the assignment fails, and `set -e` ends the run with wrangler's status and no message from this script at all.
-    """
+    """With `FAKE_D1_INFO_HAS_NO_UUID` the JSON parses and has no `uuid`, so `Failed to get UUID` is printed. With a `d1 info` that EXITS NON-ZERO the pipeline fails under `pipefail`, the assignment fails, and `set -e` ends the run with no message from this script."""
     assert port.THE_UUID_GUARD_IS_ONLY_FOR_VALID_JSON_WITHOUT_A_UUID is True
-
-    _root, old, new = run_both(tmp_path / "a", FAKE_D1_INFO_HAS_NO_UUID="1")
-    _agree(old, new, "no-uuid-key")
-    proc, calls = old
+    root = fixture(tmp_path / "a")
+    proc, calls = _run(root, FAKE_D1_INFO_HAS_NO_UUID="1")
     assert proc.returncode == 1
-    assert "✗ Failed to get UUID for migration-test-edge-eu-777-2" in proc.stderr
+    assert "✗ Failed to get UUID for migration-test-eu-777-2" in proc.stderr
     assert _wrangler_verbs(calls) == ["d1 create", "d1 info", "d1 delete"], _wrangler_verbs(calls)
 
-    # Call 2 is the first `d1 info`. The guard's sentence never appears.
-    _root2, old2, new2 = run_both(tmp_path / "b", FAKE_NPX_FAIL_ON_CALL="2")
-    _agree(old2, new2, "info-exits-nonzero")
-    proc2, _calls2 = old2
+    root2 = fixture(tmp_path / "b")
+    proc2, _calls2 = _run(root2, FAKE_NPX_FAIL_ON_CALL="2")
     assert proc2.returncode == 1
     assert "Failed to get UUID" not in proc2.stderr, proc2.stderr
-    # AND THE TRAP STILL RAN, which is the half a `set -e` exit could have lost.
     assert "::group::Cleanup: deleting test databases" in proc2.stdout
 
 
 def test_fact_the_generated_config_survives_a_failed_apply(tmp_path) -> None:
     """`rm -f` IS AFTER THE APPLY, so a failed apply leaves the file behind."""
     assert port.THE_GENERATED_CONFIG_SURVIVES_A_FAILED_APPLY is True
-
     # Call 6 is the first region's `migrations apply`: create, info, export, execute, execute, apply.
-    root, old, new = run_both(tmp_path, FAKE_NPX_FAIL_ON_CALL="6")
-    _agree(old, new, "apply-fails")
-    assert old[0].returncode == 1
+    root = fixture(tmp_path)
+    proc, _calls_text = _run(root, FAKE_NPX_FAIL_ON_CALL="6")
+    assert proc.returncode == 1
     assert (root / "workers" / "www" / port.TMPCONFIG_BASENAME).is_file()
 
 
@@ -567,169 +427,85 @@ def test_fact_the_generated_config_survives_a_failed_apply(tmp_path) -> None:
 
 @pytest.mark.parametrize("missing", ["CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID"])
 def test_each_required_variable_refuses_before_the_trap_is_installed(tmp_path, missing) -> None:
-    """THE ONE NAMED DIVERGENCE, and the half that is NOT a divergence: the cleanup block does not print, because `trap cleanup EXIT` is installed after these guards."""
+    """The cleanup block does not print, because `trap cleanup EXIT` is installed after these guards."""
     root = fixture(tmp_path)
-    old_proc, old_calls = _run(root, "old", drop_env=(missing,))
-    new_proc, new_calls = _run(root, "new", drop_env=(missing,))
-
-    assert old_proc.returncode == 1, old_proc.stderr
-    assert new_proc.returncode == 1, new_proc.stderr
-    assert old_proc.stdout == ""
-    assert new_proc.stdout == ""
-    assert old_calls == ""
-    assert new_calls == ""
-    tail = "%s: %s is required\n" % (missing, missing)
-    assert old_proc.stderr.endswith(tail), repr(old_proc.stderr)
-    assert new_proc.stderr == tail, repr(new_proc.stderr)
+    proc, calls = _run(root, drop_env=(missing,))
+    assert proc.returncode == 1, proc.stderr
+    assert proc.stdout == ""
+    assert calls == ""
+    assert proc.stderr == "%s: %s is required\n" % (missing, missing), repr(proc.stderr)
 
 
 def test_an_empty_variable_refuses_exactly_as_an_absent_one_does(tmp_path) -> None:
     """`:?` IS AN UNSET-OR-EMPTY TEST."""
     root = fixture(tmp_path)
-    old_proc, _ = _run(root, "old", CLOUDFLARE_ACCOUNT_ID="")
-    new_proc, _ = _run(root, "new", CLOUDFLARE_ACCOUNT_ID="")
-    assert old_proc.returncode == 1
-    assert new_proc.returncode == 1
-    tail = "CLOUDFLARE_ACCOUNT_ID: CLOUDFLARE_ACCOUNT_ID is required\n"
-    assert old_proc.stderr.endswith(tail)
-    assert new_proc.stderr == tail
+    proc, _calls_text = _run(root, CLOUDFLARE_ACCOUNT_ID="")
+    assert proc.returncode == 1
+    assert proc.stderr == "CLOUDFLARE_ACCOUNT_ID: CLOUDFLARE_ACCOUNT_ID is required\n"
 
 
 @pytest.mark.parametrize("tool", ["jq", "npx"])
-def test_a_missing_tool_refuses_with_the_same_bytes(tmp_path, tool) -> None:
-    """ORDER: `require_cmd jq` then `require_cmd npx`, both BEFORE the two variables, so a run with neither jq nor a token names jq."""
-    _root, old, new = run_both(tmp_path, drop=tool, drop_env=tuple(BASE_ENV))
-    _agree(old, new, "no-" + tool)
-    assert old[0].returncode == 1
-    assert old[0].stderr == "✗ Required command '%s' is not available\n" % tool, repr(old[0].stderr)
-
-
-# --------------------------------------------------------------------------- The planted defect ---------------------------------------------------------------------------
-
-
-def test_planted_defect_is_caught_by_the_call_log(tmp_path) -> None:
-    """PROVE THE DIFFERENTIAL CAN FIRE, and prove WHICH assertion fires.
-
-    The plant reverses the concatenation so stable clones are tested before edge ones. That is the ONE ordering the twin's header argues for, and it changes NOTHING about the exit code: the same four regions are tested, the same four databases are cleaned up, and the summary line is identical. Only the call log and the group headers see it.
-    """
+def test_a_missing_tool_refuses_before_the_variables(tmp_path, tool) -> None:
+    """ORDER: `require_cmd jq` then `require_cmd npx`, both BEFORE the two variables, so a run with neither jq nor a token names the tool."""
     root = fixture(tmp_path)
-    old_proc, old_calls = _run(root, "old")
-
-    planted_file = root / "planted_test_d1_migrations.py"
-    source = PORT_FILE.read_text(encoding="utf-8")
-    mutant = source.replace(
-        "    all_dbs = edge_dbs + stable_dbs",
-        "    all_dbs = stable_dbs + edge_dbs",
-    )
-    assert mutant != source, "the plant did not apply; the control is broken, not the gate"
-    planted_file.write_text(mutant, encoding="utf-8")
-
-    call_log = root / "planted-calls.log"
-    call_log.write_text("", encoding="utf-8")
-    env = {
-        "PATH": _bin(root),
-        "HOME": os.environ.get("HOME", "/tmp"),
-        "LC_ALL": "C.UTF-8",
-        "LANG": "C.UTF-8",
-        "PYTHONPATH": str(ROOT / ".ci"),
-        "PYTHONDONTWRITEBYTECODE": "1",
-        "REDIACC_CI_ROOT": str(root),
-        "FAKE_CALL_LOG": str(call_log),
-        "FAKE_D1_STATE": str(root / "new-d1.json"),
-        **BASE_ENV,
-    }
-    new_proc = subprocess.run(
-        [sys.executable, str(planted_file)],
-        cwd=str(root.parent),
-        capture_output=True,
-        text=True,
-        env=env,
-        check=False,
-        timeout=180,
-        input="",
-    )
-    new_calls = call_log.read_text(encoding="utf-8")
-
-    assert new_proc.returncode == old_proc.returncode, "the plant changed the exit code"
-    # THE SUMMARY LINE IS UNCHANGED, which is the part that makes this quiet: the run still reports four regions, two edge and two stable. Only the ORDER moved, and only the call log and the group headers carry it.
-    assert "All 4 regional migration tests passed (2 edge + 2 stable)" in new_proc.stderr
-    assert _mask(new_calls) != _mask(old_calls), (
-        "THE CALL LOG DID NOT SEE IT: this gate cannot fail"
-    )
-    assert new_proc.stdout != old_proc.stdout, "the group headers did not see it either"
-    first_created = next(
-        line.split()[5]
-        for line in _calls(new_calls)
-        if line.startswith("npx --no-install wrangler d1 create ")
-    )
-    assert first_created == "migration-test-stable-eu-777-2"
+    proc, _calls_text = _run(root, drop=tool, drop_env=tuple(BASE_ENV))
+    assert proc.returncode == 1
+    assert proc.stderr == "✗ Required command '%s' is not available\n" % tool, repr(proc.stderr)
 
 
 # --------------------------------------------------------------------------- Pure helpers, exercised directly ---------------------------------------------------------------------------
 
 
-def test_region_id_strips_the_right_prefix_in_the_right_order() -> None:
-    """BOTH SPELLINGS WORK BECAUSE OF THE ORDER, not in spite of it."""
-    assert port.region_id("account-db-eu") == "eu"
-    assert port.region_id("edge-account-db-eu") == "eu"
-    assert port.region_id("account-db-") == ""
-    # A NAME MATCHING NEITHER PREFIX IS PASSED THROUGH WHOLE, which is what a regions.json naming its databases anything else would produce.
-    assert port.region_id("weird-db") == "weird-db"
+def test_region_id_strips_the_account_prefix_only_when_it_is_there() -> None:
+    assert port.region_id("account-eu") == "eu"
+    assert port.region_id("account-asia") == "asia"
+    # A NAME WITHOUT THE PREFIX IS PASSED THROUGH WHOLE, which is what a regions.json naming its databases anything else would produce.
+    assert port.region_id("eu-db") == "eu-db"
 
 
-def test_channel_tag_is_a_glob_on_the_edge_prefix() -> None:
-    assert port.channel_tag("edge-account-db-eu") == "edge"
-    assert port.channel_tag("account-db-eu") == "stable"
-    assert port.channel_tag("edge-account-db-") == "edge"
-    assert port.channel_tag("weird-db") == "stable"
+def test_test_db_name_has_no_channel_tag() -> None:
+    assert port.test_db_name("account-eu", "777", "2") == "migration-test-eu-777-2"
+    assert port.test_db_name("account-asia", "local", "1") == "migration-test-asia-local-1"
 
 
-def test_test_db_name_matches_the_twins_template() -> None:
-    assert port.test_db_name("edge-account-db-eu", "777", "2") == "migration-test-edge-eu-777-2"
-    assert port.test_db_name("account-db-us", "local", "1") == "migration-test-stable-us-local-1"
+def test_d1_location_reads_the_regions_own_entry(tmp_path) -> None:
+    (tmp_path / "regions.json").write_text(json.dumps(DEFAULT_REGIONS), encoding="utf-8")
+    assert port.d1_location(str(tmp_path), "account-eu") == "eeur"
+    assert port.d1_location(str(tmp_path), "account-us") == "enam"
+    with pytest.raises(port.BashExitError):
+        port.d1_location(str(tmp_path), "account-asia")
+
+
+def test_the_retired_edge_surface_is_gone() -> None:
+    for name in ("EDGE_JQ", "STABLE_JQ", "EDGE_PREFIX", "STABLE_PREFIX", "EDGE_TAG", "channel_tag"):
+        assert not hasattr(port, name), name
+    assert not hasattr(port, "D1_LOCATION"), "the fixed location is read per region now"
 
 
 def test_read_names_follows_bash_rather_than_python() -> None:
+    # A FINAL LINE WITH NO NEWLINE IS DROPPED and an empty line is skipped.
     assert port.read_names("a\nb\n") == ["a", "b"]
-    assert port.read_names("a\nb") == ["a"], "a final line without a newline is dropped"
-    assert port.read_names("a\n\nb\n") == ["a", "b"], "an empty line is skipped, not fatal"
+    assert port.read_names("a\nb") == ["a"]
+    assert port.read_names("a\n\nb\n") == ["a", "b"]
     assert port.read_names("") == []
 
 
 def test_the_argv_builders_match_the_twins_words() -> None:
-    assert port.create_argv("d")[-2:] == ["--location", "eeur"]
-    assert port.info_argv("d") == ["npx", "--no-install", "wrangler", "d1", "info", "d", "--json"]
-    assert port.delete_argv("d")[-1] == "--skip-confirmation"
-    assert port.migrations_argv("d")[-2:] == ["--config", "wrangler-migration-test.toml"]
-    assert port.clone_args("src", "dst") == ["--source", "src", "--target", "dst"]
-
-
-def test_the_mktemp_mask_hides_only_the_random_suffix() -> None:
-    """A MASK THAT SWALLOWED MORE THAN THE SUFFIX WOULD MAKE `_agree` VACUOUS.
-
-    Both halves, because either alone is satisfiable by a broken pattern: the mask DOES collapse two different `mktemp -d` directories to one string, and it does NOT touch the filename after it, a `/tmp` path of any other shape, or
-    the `--output=` flag that carries it.
-    """
-    a = "call: npx --no-install wrangler d1 export db --remote --output=/tmp/tmp.KSwRwsYJRr/export.sql"
-    b = "call: npx --no-install wrangler d1 export db --remote --output=/tmp/tmp.JTIJi7lgUF/export.sql"
-    assert _mask(a) == _mask(b)
-    assert _mask(a).endswith("--output=/tmp/tmp.<MKTEMP>/export.sql")
-
-    # A DIFFERENT FILENAME UNDER THE SAME MASK IS STILL A DIFFERENCE.
-    c = "call: npx --no-install wrangler d1 export db --remote --output=/tmp/tmp.KSwRwsYJRr/dump.sql"
-    assert _mask(a) != _mask(c)
-    # AND A TEMPORARY PATH OF ANY OTHER SHAPE IS NOT MASKED AT ALL.
-    assert _mask("/tmp/somewhere/else") == "/tmp/somewhere/else"
-    assert _mask("/tmp/tmp.short") == "/tmp/tmp.short"
+    assert port.info_argv("d")[-3:] == ["info", "d", "--json"]
+    assert port.delete_argv("d")[-3:] == ["delete", "d", "--skip-confirmation"]
+    assert port.migrations_argv("d")[-6:] == [
+        "migrations",
+        "apply",
+        "d",
+        "--remote",
+        "--config",
+        port.TMPCONFIG_BASENAME,
+    ]
+    assert port.clone_args("s", "t") == ["--source", "s", "--target", "t"]
 
 
 def test_the_guard_table_and_the_literal_reads_cannot_drift() -> None:
-    """`require_env` READS `os.environ` WITH LITERAL KEYS so the env-registry scanner can see them, and `REQUIRED_ENV` is the table it must agree with.
-
-    Two claims, because either one alone is satisfiable by a broken file: the table names exactly the two variables the twin guards, IN ORDER, and the
-    function's SOURCE contains a literal `os.environ.get("<name>"` for each of
-    them. A future edit that folds the reads back into a loop over the table passes the first assertion and fails the second, which is the whole point.
-    """
+    """`require_env` READS `os.environ` WITH LITERAL KEYS so the env-registry scanner can see them, and `REQUIRED_ENV` is the table it must agree with."""
     assert [name for name, _ in port.REQUIRED_ENV] == [
         "CLOUDFLARE_API_TOKEN",
         "CLOUDFLARE_ACCOUNT_ID",
@@ -740,6 +516,5 @@ def test_the_guard_table_and_the_literal_reads_cannot_drift() -> None:
 
 
 def test_diagnostics_are_prefixed_with_the_module_name() -> None:
-    """The twin's `.sh` is deleted, so the prefix names the module a reader can run and find."""
     assert port.SELF == "rediacc_ci.deploy.test_d1_migrations"
     assert port.__name__ == port.SELF
