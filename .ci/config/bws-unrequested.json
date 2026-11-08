@@ -112,6 +112,18 @@
       "kind": "no-github-twin",
       "reason": "Admin credential seeded 2026-09-24 on the operator's choice to keep it in ci-shared (agent/plans/PLAN-account-env-to-bws.md Q2). Read only by the local secret-rotation tool, never by a workflow."
     },
+    "CLOUDFLARE_R2_MIGRATION_ACCESS_KEY_ID": {
+      "kind": "no-github-twin",
+      "reason": "The key id of the account-wide R2 migration token minted at L1 of agent/plans/PLAN-product-domain-rename.md, bound only by `bws_env exec --profile r2-migration` for rediacc_ci.ops.r2_bucket_copy and the other bucket moves. No workflow moves buckets, and the token is deleted at L11."
+    },
+    "CLOUDFLARE_R2_MIGRATION_API_TOKEN": {
+      "kind": "no-github-twin",
+      "reason": "The account-wide R2 migration token itself (agent/plans/PLAN-product-domain-rename.md L1), bound only by `bws_env exec --profile r2-migration` for `wrangler r2 bucket list` and the bucket moves. No workflow moves buckets, and the token is deleted at L11."
+    },
+    "CLOUDFLARE_R2_MIGRATION_SECRET_ACCESS_KEY": {
+      "kind": "no-github-twin",
+      "reason": "The secret half of the R2 migration key pair (agent/plans/PLAN-product-domain-rename.md L1), bound only by `bws_env exec --profile r2-migration`. No workflow moves buckets, and the token is deleted at L11."
+    },
     "CLOUDFLARE_TURNSTILE_SECRET_KEY_BENCH": {
       "kind": "no-github-twin",
       "reason": "A bench-only credential, seeded 2026-09-24 from the retired bench env file with read-back MATCH (agent/plans/PLAN-account-env-to-bws.md T13). Bound only by `bws_env exec --profile deploy-bench` for the local rediacc_ci.ops.deploy_bench; bench is deliberately not deployed by any workflow."
