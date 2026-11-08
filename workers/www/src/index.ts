@@ -235,7 +235,7 @@ function handleAccountApi(request: Request, env: Env, url: URL): Response | Prom
   return new Response(
     JSON.stringify({
       error: 'gone',
-      message: 'Account API is served by regional workers (eu/us/asia.rediacc.com).',
+      message: 'Account API is served by regional workers (eu/us/asia.rediacc.cloud).',
     }),
     { status: 410, headers: { 'content-type': 'application/json; charset=utf-8' } }
   );

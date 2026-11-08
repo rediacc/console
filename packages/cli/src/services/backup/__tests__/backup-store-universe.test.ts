@@ -3,7 +3,10 @@
  * active config's, because renet derives the backup store from that licence (hostinger runner finding D-a: a
  * `backup snapshot ...@hostinger --config eu-bench` wrote to the eu production store).
  */
-import { WK_BENCH_ORIGIN } from '@rediacc/shared/config/well-known.generated';
+import {
+  WK_ACCOUNT_DEFAULT_ORIGIN,
+  WK_BENCH_ORIGIN,
+} from '@rediacc/shared/config/well-known.generated';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../../../i18n/index.js', () => ({
@@ -57,7 +60,7 @@ function machineWith(...lines: string[]) {
   };
 }
 
-const EU = 'https://eu.rediacc.com/account/api/v1/licenses/renew';
+const EU = `${WK_ACCOUNT_DEFAULT_ORIGIN}/account/api/v1/licenses/renew`;
 const BENCH = `${WK_BENCH_ORIGIN}/account/api/v1/licenses/renew`;
 
 beforeEach(() => {
@@ -77,7 +80,7 @@ describe('assertBackupStoreUniverse', () => {
     );
 
     await expect(run).rejects.toThrow(/errors\.license\.backupStoreMismatch/);
-    await expect(run).rejects.toThrow(/"installed":"https:\/\/eu\.rediacc\.com"/);
+    await expect(run).rejects.toThrow(`"installed":"${WK_ACCOUNT_DEFAULT_ORIGIN}"`);
     await expect(run).rejects.toThrow(`"expected":"${WK_BENCH_ORIGIN}"`);
     await expect(run).rejects.toThrow(/"config":"eu-bench"/);
     expect(m.commands[0]).toContain(`/var/lib/rediacc/license/repos/${GUID}/*.json`);
@@ -101,7 +104,7 @@ describe('assertBackupStoreUniverse', () => {
   });
 
   it('control: the same machine passes through the config whose server issued the licence', async () => {
-    env.server = 'https://eu.rediacc.com/';
+    env.server = `${WK_ACCOUNT_DEFAULT_ORIGIN}/`;
     env.config = 'eu-remote';
     const m = machineWith(licenseLine(EU));
 
@@ -194,7 +197,7 @@ describe('licenseOriginsFromListing', () => {
     ].join('');
     expect(licenseOriginsFromListing(listing)).toEqual([
       WK_BENCH_ORIGIN,
-      'https://eu.rediacc.com',
+      WK_ACCOUNT_DEFAULT_ORIGIN,
     ]);
   });
 });
