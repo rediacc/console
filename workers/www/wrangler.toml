@@ -1,4 +1,4 @@
-name = "rediacc-www"
+name = "www"
 main = "src/index.ts"
 compatibility_date = "2026-01-20"
 compatibility_flags = ["nodejs_compat"]
@@ -7,6 +7,9 @@ upload_source_maps = true
 routes = [
   { pattern = "www.rediacc.com", custom_domain = true }
 ]
+
+[vars]
+ENVIRONMENT = "edge"
 
 # Operator ruling 2026-10-23: Cloudflare keeps no copy of Workers logs or traces.
 # This Worker has no OTLP destination yet, so persist = false would export
@@ -27,28 +30,27 @@ persist = false
 directory = "./dist"
 binding = "ASSETS"
 not_found_handling = "404-page"
-# Serve /foo directly from /foo/index.html without a 307 to /foo/.
-# Matches Astro's `trailingSlash: 'never'` config and our Worker-side
-# normalizePath() which strips trailing slashes. Without this, ASSETS
-# would 307 to the trailing-slash variant and the Worker would 301
-# back, creating an infinite loop on every live page.
 html_handling = "drop-trailing-slash"
 run_worker_first = ["/*"]
 
-# No D1 or R2 bindings. Account API + config storage on www.rediacc.com
-# are served by the regional workers (eu/us/asia.rediacc.com ->
-# rediacc-account-{eu,us,asia}); this worker serves marketing + static
-# assets only. PR previews get their own DB via deploy-www.sh ->
-# wrangler.preview.toml.
+# No D1 or R2 bindings. The account API and config storage are served by the regional Workers
+# (eu, us and asia .rediacc.cloud -> account-<r>); this Worker serves marketing and static assets
+# only. PR previews get their own DB via deploy-www.sh -> wrangler.preview.toml.
 
-# Service binding to the EU regional account worker. The marketing site
-# posts contact/newsletter submissions to /account/api/v1/{contact,newsletter}
-# from the browser; without this binding those requests hit a DB-less worker
-# and 410. Authenticated SPA traffic still 410s here so the region picker
-# can route it to the user's nearest regional worker.
+# Service binding to the EU regional account Worker. The marketing site posts contact and
+# newsletter submissions to /account/api/v1/{contact,newsletter} from the browser; without this
+# binding those requests hit a DB-less Worker and 410. Authenticated SPA traffic still 410s here
+# so the region picker can route it to the user's nearest regional Worker.
 [[services]]
 binding = "ACCOUNT"
-service = "rediacc-account-eu"
+service = "account-eu"
+
+# The enterprise company lookup (PLAN-enterprise-isolation.md): an empty namespace created by
+# PLAN-product-domain-rename.md L3, bound here so the Worker can route an Enterprise company's
+# hostname.
+[[kv_namespaces]]
+binding = "ENTERPRISE_LOOKUP"
+id = "7bbf3025c29349f5b4f833c1d47d8eb5"
 
 # All account env vars set via `wrangler secret put` in CI.
 # See org secrets: ACCOUNT_*, AWS_SES_*, STRIPE_*

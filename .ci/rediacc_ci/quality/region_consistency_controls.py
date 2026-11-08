@@ -89,11 +89,11 @@ def offline_plants() -> list[
 
     def dup_id(i: g.Inputs, found):
         _set(
-            i.account["stable-us"],
+            i.account["us"],
             "d1_databases",
             "DB",
             "database_id",
-            i.account["stable-eu"]["d1_databases"][0]["database_id"],
+            i.account["eu"]["d1_databases"][0]["database_id"],
         )
         return found
 
@@ -102,93 +102,87 @@ def offline_plants() -> list[
         return found
 
     def drop_profile(i: g.Inputs, found):
-        del i.consumers["account-secrets-asia-edge"]
+        del i.consumers["account-secrets-asia-stable"]
         return found
 
     def reorder(i: g.Inputs, found):
-        i.account["stable-eu"]["r2_buckets"].reverse()
+        i.account["eu"]["r2_buckets"].reverse()
         return found
 
     def extra_consumer(i: g.Inputs, found):
         i.consumers["unrelated-probe"] = {
-            "required": ["ACCOUNT_CONFIG_SERVER_KEY_EU_EDGE"],
+            "required": ["ACCOUNT_CONFIG_SERVER_KEY_EU_STABLE"],
             "optional": [],
         }
         return found
 
     return [
         (
-            "regions: an off-pattern edge backup bucket",
-            ("edge-us", "regions"),
-            regions("edgeBackupR2", "us", "edge-rediacc-backup-us"),
+            "regions: an off-pattern backup bucket",
+            ("us", "regions"),
+            regions("backupR2", "us", "backup-us"),
         ),
         (
             "regions: an absent r2Jurisdiction key",
-            ("stable-asia", "regions"),
+            ("asia", "regions"),
             regions("r2Jurisdiction", "asia", None),
         ),
         (
             "regions: a wrong secretSuffix",
-            ("stable-us", "regions"),
+            ("us", "regions"),
             regions("secretSuffix", "us", "USA"),
         ),
         (
             "account: another target's config bucket",
-            ("stable-asia", "account"),
+            ("asia", "account"),
             acc(
-                "stable-asia",
-                lambda d: _set(
-                    d, "r2_buckets", "CONFIG_BUCKET", "bucket_name", "rediacc-configs-eu"
-                ),
+                "asia",
+                lambda d: _set(d, "r2_buckets", "CONFIG_BUCKET", "bucket_name", "configs-eu"),
             ),
         ),
         (
             "account: a dropped EU jurisdiction",
-            ("edge-eu", "account"),
-            acc("edge-eu", lambda d: _set(d, "r2_buckets", "BACKUP_BUCKET", "jurisdiction", None)),
+            ("eu", "account"),
+            acc("eu", lambda d: _set(d, "r2_buckets", "BACKUP_BUCKET", "jurisdiction", None)),
         ),
         (
             "account: a jurisdiction where regions.json has none",
             ("bench", "account"),
             acc("bench", lambda d: _set(d, "r2_buckets", "CONFIG_BUCKET", "jurisdiction", "eu")),
         ),
-        ("account: a shared D1 database_id", ("stable-us", "account"), dup_id),
+        ("account: a shared D1 database_id", ("us", "account"), dup_id),
         (
             "account: a dropped cron (shape)",
-            ("edge-asia", "account"),
-            acc("edge-asia", lambda d: d.pop("triggers")),
+            ("asia", "account"),
+            acc("asia", lambda d: d.pop("triggers")),
         ),
         (
-            "account: a bench-only var on stable",
-            ("stable-eu", "account"),
-            acc("stable-eu", lambda d: d["vars"].__setitem__("EMAIL_CAPTURE_D1", "true")),
+            "account: a bench-only var on a shared region",
+            ("eu", "account"),
+            acc("eu", lambda d: d["vars"].__setitem__("EMAIL_CAPTURE_D1", "true")),
         ),
         (
-            "account: edge EXECUTOR bound to the stable proxy",
-            ("edge-us", "account"),
-            acc(
-                "edge-us", lambda d: _set(d, "services", "EXECUTOR", "service", "rediacc-proxy-us")
-            ),
+            "account: EXECUTOR bound to another region's proxy",
+            ("us", "account"),
+            acc("us", lambda d: _set(d, "services", "EXECUTOR", "service", "proxy-eu")),
         ),
         (
             "account: another region's telemetry destination",
-            ("stable-asia", "account"),
+            ("asia", "account"),
             acc(
-                "stable-asia",
+                "asia",
                 lambda d: d["observability"]["logs"].__setitem__("destinations", ["otlp-eu-logs"]),
             ),
         ),
         (
             "account: the bench assets exemption is per-target",
-            ("stable-us", "account"),
-            acc("stable-us", lambda d: d["assets"].__setitem__("directory", "./bench/dist")),
+            ("us", "account"),
+            acc("us", lambda d: d["assets"].__setitem__("directory", "./bench/dist")),
         ),
         (
-            "proxy: edge ACCOUNT bound to the stable account Worker",
-            ("edge-eu", "proxy"),
-            prx(
-                "edge-eu", lambda d: _set(d, "services", "ACCOUNT", "service", "rediacc-account-eu")
-            ),
+            "proxy: ACCOUNT bound to another region's account Worker",
+            ("eu", "proxy"),
+            prx("eu", lambda d: _set(d, "services", "ACCOUNT", "service", "account-us")),
         ),
         (
             "proxy: a bench proxy claiming ENVIRONMENT=edge",
@@ -196,8 +190,8 @@ def offline_plants() -> list[
             prx("bench", lambda d: d["vars"].__setitem__("ENVIRONMENT", "edge")),
         ),
         (
-            "profile: a missing stable backup key id",
-            ("stable-us", "profile"),
+            "profile: a missing backup key id",
+            ("us", "profile"),
             prof(
                 "account-secrets-us-stable",
                 lambda p: p["required"].remove("ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_STABLE"),
@@ -205,24 +199,31 @@ def offline_plants() -> list[
         ),
         (
             "profile: another region's config server key",
-            ("edge-us", "profile"),
+            ("us", "profile"),
             prof(
-                "account-secrets-us-edge",
+                "account-secrets-us-stable",
                 lambda p: swap(
                     p["required"],
-                    "ACCOUNT_CONFIG_SERVER_KEY_US_EDGE",
-                    "ACCOUNT_CONFIG_SERVER_KEY_EU_EDGE",
+                    "ACCOUNT_CONFIG_SERVER_KEY_US_STABLE",
+                    "ACCOUNT_CONFIG_SERVER_KEY_EU_STABLE",
                 ),
             ),
         ),
         (
-            "profile: Stripe bound on edge",
-            ("edge-eu", "profile"),
-            prof("account-secrets-eu-edge", lambda p: p["required"].append("STRIPE_SECRET_KEY")),
+            "profile: another region's backup store KEK",
+            ("eu", "profile"),
+            prof(
+                "account-secrets-eu-stable",
+                lambda p: swap(
+                    p["required"],
+                    "ACCOUNT_BACKUP_STORE_KEK_EU_STABLE",
+                    "ACCOUNT_BACKUP_STORE_KEK_US_STABLE",
+                ),
+            ),
         ),
         (
             "profile: the asia SES borrow removed",
-            ("stable-asia", "profile"),
+            ("asia", "profile"),
             prof(
                 "account-secrets-asia-stable",
                 lambda p: p["required"].remove("AWS_SES_ACCESS_KEY_ID_EU"),
@@ -253,14 +254,14 @@ def offline_plants() -> list[
             ),
         ),
         ("profile: a key the bench payload stops pushing", ("bench", "profile"), bench_payload),
-        ("profile: a deleted regional profile", ("edge-asia", "profile"), drop_profile),
+        ("profile: a deleted regional profile", ("asia", "profile"), drop_profile),
         ("benign: reordered R2 blocks", None, reorder),
         ("benign: an unrelated consumer profile", None, extra_consumer),
         (
             "benign: a fresh unique D1 id",
             None,
             acc(
-                "edge-us",
+                "us",
                 lambda d: _set(
                     d, "d1_databases", "DB", "database_id", "00000000-0000-4000-8000-000000000000"
                 ),
@@ -269,7 +270,7 @@ def offline_plants() -> list[
         (
             "benign: an unrelated var on the proxy",
             None,
-            prx("stable-us", lambda d: d["vars"].__setitem__("EXECUTOR_CAP", "24")),
+            prx("us", lambda d: d["vars"].__setitem__("EXECUTOR_CAP", "24")),
         ),
     ]
 
@@ -291,7 +292,7 @@ def fake_get(
         secrets = {
             t.account_worker: pushed
             + ["__ARCHIVE_API_KEY"]
-            + (["EXECUTOR_MODE"] if t.channel != g.STABLE else [])
+            + ["EXECUTOR_MODE"]
             for t in targets
         }
         secrets.update({t.proxy_worker: [] for t in targets})
@@ -349,10 +350,10 @@ def live_plants(inputs: g.Inputs, targets: list[g.Target]):
     for t in targets:
         for b in inputs.account[t.id]["r2_buckets"]:
             moved.setdefault(b.get("jurisdiction"), []).append(b["bucket_name"])
-    moved[None].remove("rediacc-backups-us")
-    moved["eu"].append("rediacc-backups-us")
+    moved[None].remove("backups-us")
+    moved["eu"].append("backups-us")
     gone = copy.deepcopy(moved)
-    gone["eu"].remove("rediacc-backups-us")
+    gone["eu"].remove("backups-us")
     dbs = [
         {"name": b["database_name"], "uuid": b["database_id"]}
         for t in targets
@@ -363,46 +364,44 @@ def live_plants(inputs: g.Inputs, targets: list[g.Target]):
         w
         for t in targets
         for w in (t.account_worker, t.proxy_worker)
-        if w != "edge-rediacc-proxy-asia"
+        if w != "proxy-asia"
     ]
     return [
         ("live: a clean account is clean", base, set(), set()),
         (
-            "live: a pushed key missing on edge-us",
-            secrets_with(
-                "edge-rediacc-account-us", [n for n in pushed if n != "ACCOUNT_JWT_SECRET"]
-            ),
-            {("edge-us", "secrets")},
+            "live: a pushed key missing on us",
+            secrets_with("account-us", [n for n in pushed if n != "ACCOUNT_JWT_SECRET"]),
+            {("us", "secrets")},
             set(),
         ),
         (
             "live: a legacy name on bench",
-            secrets_with("rediacc-account-bench", [*pushed, "JWT_SECRET"]),
+            secrets_with("account-bench", [*pushed, "JWT_SECRET"]),
             {("bench", "secrets")},
             set(),
         ),
         (
             "live: archives and EXECUTOR_MODE are not extras",
-            secrets_with("rediacc-account-eu", [*pushed, "__ARCHIVE_JWT_SECRET", "EXECUTOR_MODE"]),
+            secrets_with("account-eu", [*pushed, "__ARCHIVE_JWT_SECRET", "EXECUTOR_MODE"]),
             set(),
             set(),
         ),
         (
             "live: a secret on a proxy Worker",
-            secrets_with("rediacc-proxy-asia", ["EXECUTOR_TOKEN"]),
-            {("stable-asia", "secrets")},
+            secrets_with("proxy-asia", ["EXECUTOR_TOKEN"]),
+            {("asia", "secrets")},
             set(),
         ),
         (
             "live: a bucket in the wrong jurisdiction",
             fake_get(inputs, targets, buckets=moved),
-            {("stable-us", "r2")},
+            {("us", "r2")},
             set(),
         ),
         (
             "live: a bucket that does not exist",
             fake_get(inputs, targets, buckets=gone),
-            {("stable-us", "r2")},
+            {("us", "r2")},
             set(),
         ),
         (
@@ -414,7 +413,7 @@ def live_plants(inputs: g.Inputs, targets: list[g.Target]):
         (
             "live: an undeployed proxy Worker",
             fake_get(inputs, targets, workers=workers),
-            {("edge-asia", "workers")},
+            {("asia", "workers")},
             set(),
         ),
         (
@@ -439,14 +438,14 @@ def run() -> int:
     base = g.offline(base_inputs, targets, base_found)
 
     ctl.check(
-        "seven targets",
+        "four targets",
         [t.id for t in targets],
-        ["stable-eu", "edge-eu", "stable-us", "edge-us", "stable-asia", "edge-asia", "bench"],
+        ["eu", "us", "asia", "bench"],
     )
     ctl.check(
         "DERIVED_NAMES is derive()'s key set",
         set(g.DERIVED_NAMES),
-        set(local_push.derive("eu", "stable", root)),
+        set(local_push.derive("eu", g.PUSHER_CHANNEL, root)),
     )
     ctl.truthy("pusher_reads() found at least 20 literal reads", len(g.pusher_reads()) >= 20)
     ctl.check(
@@ -461,15 +460,15 @@ def run() -> int:
         g.bench_payload_keys("def other():\n    return {}\n"),
         [],
     )
-    edge_us = next(t for t in targets if t.id == "edge-us")
+    us = next(t for t in targets if t.id == "us")
     ctl.check(
         "normalize strips region and channel",
-        g.normalize("ACCOUNT_CONFIG_SERVER_KEY_US_EDGE", edge_us),
+        g.normalize("ACCOUNT_CONFIG_SERVER_KEY_US_STABLE", us),
         "ACCOUNT_CONFIG_SERVER_KEY_{R}_{C}",
     )
     ctl.check(
         "normalize leaves a foreign suffix alone",
-        g.normalize("AWS_SES_ACCESS_KEY_ID_EU", edge_us),
+        g.normalize("AWS_SES_ACCESS_KEY_ID_EU", us),
         "AWS_SES_ACCESS_KEY_ID_EU",
     )
     ctl.raises(

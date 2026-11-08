@@ -19,7 +19,7 @@ EXECUTOR_CAP = "@@EXECUTOR_CAP@@"
 EXECUTOR_HEAVY_CAP = "@@EXECUTOR_HEAVY_CAP@@"
 
 # Introspection goes through this binding, not a public fetch: this Worker and the account
-# Worker share the rediacc.com zone, and a same-zone subrequest never reaches another Worker
+# Worker share the rediacc.cloud zone, and a same-zone subrequest never reaches another Worker
 # (every caller got 401 on the first Phase 2 deploy, 2026-09-24). Same binding as workers/www.
 # The named entrypoint is one only a service binding can reach: it marks the request as
 # Cloudflare-internal (private/account src/utils/request.ts markServiceBindingEnv).

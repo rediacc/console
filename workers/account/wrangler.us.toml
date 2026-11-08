@@ -1,17 +1,18 @@
-name = "rediacc-account-us"
+name = "account-us"
 main = "src/index.ts"
 compatibility_date = "2026-01-20"
 compatibility_flags = ["nodejs_compat"]
 upload_source_maps = true
 
 routes = [
-  { pattern = "us.rediacc.com", custom_domain = true }
+  { pattern = "us.rediacc.cloud", custom_domain = true }
 ]
 
 [vars]
 REGION = "us"
-WEBAUTHN_RP_ID = "us.rediacc.com"
-WEBAUTHN_ORIGIN = "https://us.rediacc.com"
+ENVIRONMENT = "edge"
+WEBAUTHN_RP_ID = "us.rediacc.cloud"
+WEBAUTHN_ORIGIN = "https://us.rediacc.cloud"
 
 # Nightly maintenance at 03:00 UTC (off-peak): audit retention sweep + backup GC.
 # Handled by `scheduled` in src/index.ts, which forwards to the account app in
@@ -46,45 +47,45 @@ run_worker_first = ["/*"]
 
 [[d1_databases]]
 binding = "DB"
-database_name = "account-db-us"
-database_id = "073d69a9-fcac-4991-bde2-ce9139570b1a"
+database_name = "account-us"
+database_id = "62b71ebb-4dd2-4710-93b3-a719fad87252"
 migrations_dir = "../../private/account/drizzle"
 
 # US: location hint ENAM (no US jurisdiction available in R2, data is zero-knowledge encrypted)
 [[r2_buckets]]
 binding = "CONFIG_BUCKET"
-bucket_name = "rediacc-configs-us"
+bucket_name = "configs-us"
 
 # Backup chunk store (content-addressed backup storage). The bucket is an
 # operator/provision step: create it before deploying with this binding.
 [[r2_buckets]]
 binding = "BACKUP_BUCKET"
-bucket_name = "rediacc-backups-us"
+bucket_name = "backups-us"
 
 # The web console reaches the executor proxy through this binding, not a public fetch: both Workers
-# share the rediacc.com zone, and a same-zone subrequest never reaches another Worker. CD sets
-# EXECUTOR_MODE as a secret only after rediacc-proxy-us passes its smoke (agent/plans/PLAN-proxy-cd-six-targets.md
+# share the rediacc.cloud zone, and a same-zone subrequest never reaches another Worker. CD sets
+# EXECUTOR_MODE as a secret only after proxy-us passes its smoke (agent/plans/PLAN-proxy-cd-six-targets.md
 # Design item 2). wrangler refuses a deploy whose binding names a Worker that does not exist yet, so the
 # first deploy of a target bootstraps the proxy (workers/proxy/wrangler.us.toml) before this Worker.
 [[services]]
 binding = "EXECUTOR"
-service = "rediacc-proxy-us"
+service = "proxy-us"
 
 # Replicate mode (private/account/src/services/backup-replicate.service.ts): a new snapshot, a new
 # rule and the hourly sweep send a message here; `queue` in src/index.ts kicks one BackupReplicator
 # per (subscription, lineage, target store), whose alarm runs the copy. DEPLOY ORDER: both queues
 # are a provision step and must exist before the first deploy of this block
-# (`wrangler queues create rediacc-backup-replicate-us` and `wrangler queues create rediacc-backup-replicate-us-dlq`).
+# (`wrangler queues create backup-replicate-us` and `wrangler queues create backup-replicate-us-dlq`).
 # Gated by private/account/tests/integration/replicate-wiring.test.ts.
 [[queues.producers]]
 binding = "BACKUP_REPLICATE_QUEUE"
-queue = "rediacc-backup-replicate-us"
+queue = "backup-replicate-us"
 
 [[queues.consumers]]
-queue = "rediacc-backup-replicate-us"
+queue = "backup-replicate-us"
 max_batch_size = 10
 max_retries = 5
-dead_letter_queue = "rediacc-backup-replicate-us-dlq"
+dead_letter_queue = "backup-replicate-us-dlq"
 
 [[durable_objects.bindings]]
 name = "BACKUP_REPLICATOR"

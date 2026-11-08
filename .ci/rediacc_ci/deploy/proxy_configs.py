@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""The proxy Worker's wrangler configs: six generated from one template, two hand-written, all held to one shape.
+"""The proxy Worker's wrangler configs: three generated from one template, two hand-written, all held to one shape.
 
-WHAT IT GENERATES. `workers/proxy/wrangler.template.toml` plus `regions.json` give `wrangler.<target>.toml` for the six deployable targets, `eu`, `us`, `asia` (production) and `edge-eu`, `edge-us`, `edge-asia` (edge). Each names `rediacc-proxy-<r>` or `edge-rediacc-proxy-<r>` (regions.json `proxyWorkerName` / `edgeProxyWorkerName`), routes the custom domain `proxy.<domain>` or `proxy.<edgeDomain>` (the WK_PROXY_*_HOST values of .ci/config/well-known.env), and binds both ACCOUNT (entrypoint CloudflareInternal) and ISSUER (entrypoint ExecutorIssuer) to the same target's account Worker (agent/plans/PLAN-proxy-cd-six-targets.md Design item 7).
+WHAT IT GENERATES. `workers/proxy/wrangler.template.toml` plus `regions.json` give `wrangler.<target>.toml` for the three shared regions, `eu`, `us` and `asia`: one Worker set per region, with no stable and edge pair since the product moved to rediacc.cloud (PLAN-product-domain-rename.md). Each names `proxy-<r>` (regions.json `proxyWorkerName`), routes the custom domain `proxy.<domain>` (the WK_PROXY_*_HOST values of .ci/config/well-known.env), carries `ENVIRONMENT = "edge"` like the account Workers (it picks the CLI's update channel), and binds both ACCOUNT (entrypoint CloudflareInternal) and ISSUER (entrypoint ExecutorIssuer) to the same target's account Worker (agent/plans/PLAN-proxy-cd-six-targets.md Design item 7).
 
 WHAT IT REFUSES. `config_refusals(text, target)` is the generalization of `deploy_proxy.bench_refusals` to every target, the bench and dev configs included: the exact name, routes, `[vars]`, service bindings and their entrypoints, container blocks (the one `OrgExecutor` entry of the `durable_object` scheduling policy, which carries no `max_instances` or `instance_type`), the Durable Object bindings (`ORG_EXECUTOR`, `EXECUTOR_CAPACITY`), the migration list v1, v2, v3 (v3 deletes the retired `ExecutorContainer` class), the `EXECUTOR_CAP` / `EXECUTOR_HEAVY_CAP` vars (caps at most 25 and 5; an `EXECUTOR_BACKEND` var is refused as one no config may carry, and `EGRESS_DRILL_PROBE` as one only bench may carry), telemetry destinations with `persist = false`, the top-level key allowlist, no `[env.*]` table, no EXECUTOR_TOKEN anywhere in the text, and a name, route, service or destination naming another region or channel refused by name (a us config can never carry an eu binding). `--check` runs it over every file, refuses a generated file that differs from what the template generates, a `wrangler*.toml` that is no known target, a WK_PROXY_*_HOST that disagrees with regions.json, and a workers/account config whose EXECUTOR binding is not the same target's proxy.
 
 USAGE.
-    PYTHONPATH=.ci python3 -m rediacc_ci.deploy.proxy_configs [generate]   write the six configs
+    PYTHONPATH=.ci python3 -m rediacc_ci.deploy.proxy_configs [generate]   write the three configs
     PYTHONPATH=.ci python3 -m rediacc_ci.deploy.proxy_configs --check      exit 1 with every refusal, else 0
 """
 
@@ -25,9 +25,6 @@ from rediacc_ci.well_known import (
     BENCH_ORIGIN,
     PROXY_ASIA_HOST,
     PROXY_BENCH_HOST,
-    PROXY_EDGE_ASIA_HOST,
-    PROXY_EDGE_EU_HOST,
-    PROXY_EDGE_US_HOST,
     PROXY_EU_HOST,
     PROXY_US_HOST,
 )
@@ -42,9 +39,8 @@ BENCH_CONFIG = "wrangler.bench.toml"
 DEV_CONFIG = "wrangler.dev.toml"
 CONFIG_GLOB = "wrangler*.toml"
 
-PRODUCTION = "production"
-EDGE = "edge"
-CHANNELS = (PRODUCTION, EDGE)
+# The shared Workers keep ENVIRONMENT=edge: it picks the CLI's update channel (private/account/src/app.ts:234), and the account Workers carry the same value.
+SHARED_ENVIRONMENT = "edge"
 
 MAIN = "src/index.ts"
 VERSION_BINDING = "CF_VERSION_METADATA"
@@ -65,7 +61,7 @@ ACCOUNT_BINDING = ("ACCOUNT", "CloudflareInternal")
 ISSUER_BINDING = ("ISSUER", "ExecutorIssuer")
 FORBIDDEN_TEXT = "EXECUTOR_TOKEN"
 # Per target, the two vars that bound the executor (PLAN-executor-durable-object-policy.md Design item 2): the caps are decimal strings the Worker parses.
-TARGET_KEYS = ("eu", "us", "asia", "edge-eu", "edge-us", "edge-asia", "bench", "dev")
+TARGET_KEYS = ("eu", "us", "asia", "bench", "dev")
 CAP_BY_TARGET: dict[str, str] = dict.fromkeys(TARGET_KEYS, "25")
 HEAVY_CAP_BY_TARGET: dict[str, str] = dict.fromkeys(TARGET_KEYS, "5")
 EXECUTOR_VARS = ("EXECUTOR_CAP", "EXECUTOR_HEAVY_CAP")
@@ -76,14 +72,11 @@ DRILL_SIDE = r"(?:\[[0-9a-fA-F:.]+\]|[^\s:\[\]=]+):\d{1,5}"
 DRILL_PROBE_RE = re.compile(r"^%s=%s$" % (DRILL_SIDE, DRILL_SIDE))
 PLACEHOLDER_RE = re.compile(r"@@[A-Z_]+@@")
 
-# The WK_PROXY_*_HOST value for each (region, channel); --check holds each equal to proxy.<domain> from regions.json.
-HOSTS: dict[tuple[str, str], str] = {
-    ("eu", PRODUCTION): PROXY_EU_HOST,
-    ("us", PRODUCTION): PROXY_US_HOST,
-    ("asia", PRODUCTION): PROXY_ASIA_HOST,
-    ("eu", EDGE): PROXY_EDGE_EU_HOST,
-    ("us", EDGE): PROXY_EDGE_US_HOST,
-    ("asia", EDGE): PROXY_EDGE_ASIA_HOST,
+# The WK_PROXY_*_HOST value for each region; --check holds each equal to proxy.<domain> from regions.json.
+HOSTS: dict[str, str] = {
+    "eu": PROXY_EU_HOST,
+    "us": PROXY_US_HOST,
+    "asia": PROXY_ASIA_HOST,
 }
 
 # Tokens of a name, route, service or destination (split on `.`, `-`, `_`) that name a region or a channel. A target owns some of them; any other is foreign and refused by name.
@@ -163,55 +156,52 @@ def executor_vars(key: str) -> tuple[tuple[str, str], ...]:
 
 
 def targets(regions: list[dict]) -> dict[str, Target]:
-    """Every proxy config target, keyed by its config suffix: the six generated ones, bench and dev."""
+    """Every proxy config target, keyed by its config suffix: the three generated ones, bench and dev."""
     out: dict[str, Target] = {}
     for region in regions:
         rid = str(region["id"])
-        for channel in CHANNELS:
-            edge = channel == EDGE
-            key = "%s-%s" % (EDGE, rid) if edge else rid
-            domain = str(region["edgeDomain"] if edge else region["domain"])
-            account = str(region["edgeWorkerName"] if edge else region["workerName"])
-            name = region.get("edgeProxyWorkerName" if edge else "proxyWorkerName")
-            if not name:
-                raise ConfigError(
-                    "%s region %s names no %s"
-                    % (REGIONS_REL, rid, "edgeProxyWorkerName" if edge else "proxyWorkerName")
-                )
-            host = HOSTS.get((rid, channel))
-            if host is None:
-                raise ConfigError(
-                    "region %s has no WK_PROXY_*_HOST for %s in .ci/config/well-known.env"
-                    % (rid, channel)
-                )
-            account_url = "https://" + domain
-            out[key] = Target(
-                key=key,
-                config="wrangler.%s.toml" % key,
-                name=str(name),
-                routes=(host,),
-                account_url=account_url,
-                variables=(("ACCOUNT_URL", account_url), ("REGION", rid), ("ENVIRONMENT", channel)),
-                services=(
-                    (ACCOUNT_BINDING[0], account, ACCOUNT_BINDING[1]),
-                    (ISSUER_BINDING[0], account, ISSUER_BINDING[1]),
-                ),
-                destinations=("otlp-%s-logs" % rid, "otlp-%s-traces" % rid),
-                version_metadata=True,
-                generated=True,
-                own_tokens=frozenset({rid, EDGE} if edge else {rid}),
-                executor_vars=executor_vars(key),
+        domain = str(region["domain"])
+        account = str(region["workerName"])
+        name = region.get("proxyWorkerName")
+        if not name:
+            raise ConfigError("%s region %s names no proxyWorkerName" % (REGIONS_REL, rid))
+        host = HOSTS.get(rid)
+        if host is None:
+            raise ConfigError(
+                "region %s has no WK_PROXY_*_HOST in .ci/config/well-known.env" % rid
             )
+        account_url = "https://" + domain
+        out[rid] = Target(
+            key=rid,
+            config="wrangler.%s.toml" % rid,
+            name=str(name),
+            routes=(host,),
+            account_url=account_url,
+            variables=(
+                ("ACCOUNT_URL", account_url),
+                ("REGION", rid),
+                ("ENVIRONMENT", SHARED_ENVIRONMENT),
+            ),
+            services=(
+                (ACCOUNT_BINDING[0], account, ACCOUNT_BINDING[1]),
+                (ISSUER_BINDING[0], account, ISSUER_BINDING[1]),
+            ),
+            destinations=("otlp-%s-logs" % rid, "otlp-%s-traces" % rid),
+            version_metadata=True,
+            generated=True,
+            own_tokens=frozenset({rid}),
+            executor_vars=executor_vars(rid),
+        )
     out["bench"] = Target(
         key="bench",
         config=BENCH_CONFIG,
-        name="rediacc-proxy-bench",
+        name="proxy-bench",
         routes=(PROXY_BENCH_HOST,),
         account_url=BENCH_ORIGIN,
         variables=(("ACCOUNT_URL", BENCH_ORIGIN), ("REGION", "eu"), ("ENVIRONMENT", "bench")),
         services=(
-            (ACCOUNT_BINDING[0], "rediacc-account-bench", ACCOUNT_BINDING[1]),
-            (ISSUER_BINDING[0], "rediacc-account-bench", ISSUER_BINDING[1]),
+            (ACCOUNT_BINDING[0], "account-bench", ACCOUNT_BINDING[1]),
+            (ISSUER_BINDING[0], "account-bench", ISSUER_BINDING[1]),
         ),
         destinations=("otlp-bench-logs", "otlp-bench-traces"),
         version_metadata=True,
@@ -517,7 +507,7 @@ def account_refusals(
 
 
 def generate(root: pathlib.Path) -> dict[str, str]:
-    """`{config file name: text}` for the six generated targets."""
+    """`{config file name: text}` for the three generated targets."""
     template = (root.joinpath(*PROXY_REL) / TEMPLATE).read_text(encoding="utf-8")
     return {
         t.config: render(template, t) for t in targets(load_regions(root)).values() if t.generated
@@ -538,14 +528,12 @@ def check(root: pathlib.Path) -> list[str]:
     rel = "/".join(PROXY_REL)
 
     for region in regions:
-        for channel in CHANNELS:
-            domain = region["edgeDomain" if channel == EDGE else "domain"]
-            host = HOSTS[(str(region["id"]), channel)]
-            if host != "proxy." + domain:
-                out.append(
-                    ".ci/config/well-known.env: the %s %s proxy host is %r, not %r"
-                    % (region["id"], channel, host, "proxy." + domain)
-                )
+        host = HOSTS[str(region["id"])]
+        if host != "proxy." + region["domain"]:
+            out.append(
+                ".ci/config/well-known.env: the %s proxy host is %r, not %r"
+                % (region["id"], host, "proxy." + region["domain"])
+            )
 
     known = {TEMPLATE} | {t.config for t in all_targets.values()}
     out.extend(

@@ -1,31 +1,30 @@
-# bench.rediacc.com — internal-only "real Cloudflare D1" environment for the
-# dev team to validate changes against actual D1/R2 before promoting to edge or
-# production. This environment is intentionally NOT wired into ci.yml or
-# cd-v2.yml — deploys are local-only via `PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench` and
+# bench.rediacc.cloud — internal-only "real Cloudflare D1" environment for the
+# dev team to validate changes against actual D1/R2 before the shared regions take a change. Not
+# wired into ci.yml or cd-release-edge.yml: deploys are local-only via `PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench` and
 # resets via `PYTHONPATH=.ci python3 -m rediacc_ci.ops.reset_bench`.
 #
-# Differences from edge-eu:
+# Differences from account-eu:
 #   - Single non-regional environment (no us / asia siblings)
 #   - No EU jurisdiction lock on R2 (this is internal test data, not customer)
 #   - Reuses prod EU SES credentials at deploy time (set by rediacc_ci.ops.deploy_bench)
 #   - ENVIRONMENT = "bench" (requires schema bump in env.ts)
 
-name = "rediacc-account-bench"
+name = "account-bench"
 main = "src/index.ts"
 compatibility_date = "2026-01-20"
 compatibility_flags = ["nodejs_compat"]
 upload_source_maps = true
 
 routes = [
-  { pattern = "bench.rediacc.com", custom_domain = true }
+  { pattern = "bench.rediacc.cloud", custom_domain = true }
 ]
 
 [vars]
 REGION = "eu"
 ENVIRONMENT = "bench"
 ALLOWED_EMAIL_DOMAINS = "rediacc.com,rediacc.io"
-WEBAUTHN_RP_ID = "bench.rediacc.com"
-WEBAUTHN_ORIGIN = "https://bench.rediacc.com"
+WEBAUTHN_RP_ID = "bench.rediacc.cloud"
+WEBAUTHN_ORIGIN = "https://bench.rediacc.cloud"
 # Bench is test-only: no captcha for agents or humans (operator ruling 2026-10-13). Pairs with the
 # empty VITE_TURNSTILE_SITE_KEY in rediacc_ci/ops/deploy_bench.py. Never add to a production config.
 TURNSTILE_ENABLED = "false"
@@ -60,8 +59,8 @@ head_sampling_rate = 1
 destinations = ["otlp-bench-traces"]
 persist = false
 
-# The keyless bench portal (no Turnstile site key) is built into ./bench/dist, never ./dist: every production and
-# edge config uploads ./dist, and a bench build left there shipped a widgetless login to stable on 2026-10-28.
+# The keyless bench portal (no Turnstile site key) is built into ./bench/dist, never ./dist: every shared-region config
+# uploads ./dist, and a bench build left there shipped a widgetless login to stable on 2026-10-28.
 # rediacc_ci.ops.deploy_bench refuses to build when this directory changes (bench_assets_refusal).
 [assets]
 directory = "./bench/dist"
@@ -71,46 +70,46 @@ run_worker_first = ["/*"]
 
 [[d1_databases]]
 binding = "DB"
-database_name = "account-db-bench"
-database_id = "ac45c2de-053b-404c-bc47-9ad9cbd2bb15"
+database_name = "account-bench"
+database_id = "8c260075-db26-4787-b700-b657f21a5f61"
 migrations_dir = "../../private/account/drizzle"
 
 # No jurisdiction lock — bench is not bound to GDPR data residency since it
 # only holds test data created by the dev team.
 [[r2_buckets]]
 binding = "CONFIG_BUCKET"
-bucket_name = "rediacc-configs-bench"
+bucket_name = "configs-bench"
 
 # Backup chunk store (content-addressed backup storage). The bucket is an
 # operator/provision step: create it before deploying with this binding.
 [[r2_buckets]]
 binding = "BACKUP_BUCKET"
-bucket_name = "rediacc-backups-bench"
+bucket_name = "backups-bench"
 
 # The web console reaches the executor proxy through this binding, not a public fetch: both Workers
-# share the rediacc.com zone, and a same-zone subrequest never reaches another Worker. CD sets
-# EXECUTOR_MODE as a secret only after rediacc-proxy-bench passes its smoke (agent/plans/PLAN-proxy-cd-six-targets.md
+# share the rediacc.cloud zone, and a same-zone subrequest never reaches another Worker. CD sets
+# EXECUTOR_MODE as a secret only after proxy-bench passes its smoke (agent/plans/PLAN-proxy-cd-six-targets.md
 # Design item 2). wrangler refuses a deploy whose binding names a Worker that does not exist yet, so the
 # first deploy of a target bootstraps the proxy (workers/proxy/wrangler.bench.toml) before this Worker.
 [[services]]
 binding = "EXECUTOR"
-service = "rediacc-proxy-bench"
+service = "proxy-bench"
 
 # Replicate mode (private/account/src/services/backup-replicate.service.ts): a new snapshot, a new
 # rule and the hourly sweep send a message here; `queue` in src/index.ts kicks one BackupReplicator
 # per (subscription, lineage, target store), whose alarm runs the copy. DEPLOY ORDER: both queues
 # are a provision step and must exist before the first deploy of this block
-# (`wrangler queues create rediacc-backup-replicate-bench` and `wrangler queues create rediacc-backup-replicate-bench-dlq`).
+# (`wrangler queues create backup-replicate-bench` and `wrangler queues create backup-replicate-bench-dlq`).
 # Gated by private/account/tests/integration/replicate-wiring.test.ts.
 [[queues.producers]]
 binding = "BACKUP_REPLICATE_QUEUE"
-queue = "rediacc-backup-replicate-bench"
+queue = "backup-replicate-bench"
 
 [[queues.consumers]]
-queue = "rediacc-backup-replicate-bench"
+queue = "backup-replicate-bench"
 max_batch_size = 10
 max_retries = 5
-dead_letter_queue = "rediacc-backup-replicate-bench-dlq"
+dead_letter_queue = "backup-replicate-bench-dlq"
 
 [[durable_objects.bindings]]
 name = "BACKUP_REPLICATOR"
