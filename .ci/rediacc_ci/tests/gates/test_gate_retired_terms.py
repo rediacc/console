@@ -307,6 +307,110 @@ def test_write_baseline_refuses_a_foreign_tree_or_config(tmp_path):
     assert "does not combine with --root, --owner or --config" in result.err
 
 
+# --------------------------------------------------------------------------- plan_exempt
+
+EXEMPT_BLOCKER = (
+    "BLOCKER: this fixture plan records the zorp rename itself, so the old name is its subject"
+)
+SECOND = {
+    "id": "quux",
+    "pattern": "quux",
+    "case_sensitive": False,
+    "retired": "2026-01-01",
+    "reason": "the quux feature is removed completely in the fixture",
+    "retired_by": ["agent/plans/PLAN-retire-zorp.md"],
+    "must_match": ["install quux"],
+    "must_not_match": ["install zap"],
+}
+
+
+def _exempt_term(glob: str = "agent/plans/PLAN-other.md", blocker: str = EXEMPT_BLOCKER) -> dict:
+    return dict(TERM, plan_exempt=[{"glob": glob, "blocker": blocker}])
+
+
+def test_a_plan_under_an_exempt_glob_is_not_refused_and_is_printed(tmp_path):
+    root, config = _tree(tmp_path, other_plan="- [ ] bake zorp into the image", term=_exempt_term())
+    result = _gate(root, config)
+    assert result.rc == 0, result.combined
+    assert "1 plan pair(s) exempt by 1 plan_exempt entr(ies)" in result.err
+    assert "EXEMPT plan agent/plans/PLAN-other.md names 'zorp'" in result.err
+    assert "NEW plan" not in result.err
+
+
+def test_the_same_plan_is_still_refused_for_a_term_without_the_exemption(tmp_path):
+    root, config = _tree(
+        tmp_path, other_plan="- [ ] bake zorp and quux into the image", term=_exempt_term()
+    )
+    doc = json.loads(config.read_text(encoding="utf-8"))
+    doc["terms"].append(SECOND)
+    config.write_text(json.dumps(doc), encoding="utf-8")
+    result = _gate(root, config)
+    assert result.rc == 1, result.combined
+    assert "NEW plan agent/plans/PLAN-other.md names retired term 'quux'" in result.err
+    assert "NEW plan agent/plans/PLAN-other.md names retired term 'zorp'" not in result.err
+    assert "EXEMPT plan agent/plans/PLAN-other.md names 'zorp'" in result.err
+
+
+def test_an_exempt_glob_matching_no_live_plan_cannot_run(tmp_path):
+    root, config = _tree(tmp_path, term=_exempt_term(glob="agent/plans/PLAN-nowhere*.md"))
+    result = _gate(root, config)
+    assert result.rc == 2, result.combined
+    assert "plan_exempt 'agent/plans/PLAN-nowhere*.md' matches no live plan" in result.err
+
+
+def test_an_exempt_glob_matching_only_a_session_folder_cannot_run(tmp_path):
+    """A session-notes folder is never a plan subject, so an exemption there excuses nothing and is refused."""
+    root, config = _tree(tmp_path, term=_exempt_term(glob="agent/d778be9d/**"))
+    _write(root, "agent/d778be9d/notes.md", "zorp was renamed\n")
+    result = _gate(root, config)
+    assert result.rc == 2, result.combined
+    assert "matches no live plan" in result.err
+
+
+@pytest.mark.parametrize("blocker", ["", "later", "BLOCKER: tbd"])
+def test_an_exemption_without_a_reason_cannot_run(tmp_path, blocker):
+    root, config = _tree(
+        tmp_path, other_plan="- [ ] bake zorp into the image", term=_exempt_term(blocker=blocker)
+    )
+    result = _gate(root, config)
+    assert result.rc == 2, result.combined
+    assert "plan_exempt agent/plans/PLAN-other.md" in result.err
+
+
+def test_a_glob_wider_than_the_plans_it_excuses_is_refused(tmp_path):
+    root, config = _tree(
+        tmp_path,
+        other_plan="- [ ] bake zorp into the image",
+        term=_exempt_term(glob="agent/plans/**"),
+    )
+    result = _gate(root, config)
+    assert result.rc == 1, result.combined
+    assert (
+        "WIDE term 'zorp': plan_exempt 'agent/plans/**' covers agent/plans/PLAN-retire-zorp.md"
+        in result.err
+    )
+
+
+def test_an_exemption_left_behind_by_a_rewritten_plan_is_refused(tmp_path):
+    root, config = _tree(tmp_path, other_plan="nothing retired here", term=_exempt_term())
+    result = _gate(root, config)
+    assert result.rc == 1, result.combined
+    assert "WIDE term 'zorp': plan_exempt 'agent/plans/PLAN-other.md' covers" in result.err
+
+
+def test_an_exemption_leaves_submodule_files_unaffected(tmp_path):
+    root, config = _tree(
+        tmp_path,
+        other_plan="- [ ] bake zorp into the image",
+        term=_exempt_term(),
+        files={"doc.md": "install zorp here\n"},
+    )
+    result = _gate(root, config)
+    assert result.rc == 1, result.combined
+    assert "NEW file sub/a/doc.md names retired term 'zorp'" in result.err
+    assert "NEW plan" not in result.err
+
+
 # --------------------------------------------------------------------------- the file subject
 
 

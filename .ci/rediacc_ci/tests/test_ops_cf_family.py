@@ -730,6 +730,10 @@ PORT_ONLY_SECRETS = (
     "FREE_LICENSE_HMAC_KEY",
 )
 
+# The bench sender the retired bash golden recorded, and the one the port defaults to since 71f25f3e8f.
+RETIRED_BENCH_SENDER = "noreply@notify.rediacc.com"
+BENCH_SENDER = "noreply@notify.rediacc.cloud"
+
 
 # DECLARED DELTA (27861278): the port seeds the ROOT_EMAIL user after the secrets push (deploy_bench docstring item 8), a POST the retired bash never sent. The route answers it as a fresh bench would, added AFTER the twin run so the golden's route key is unchanged; the call is removed from the compared shape and its two stderr lines from the compared step list, each asserted present first so the removal cannot go vacuous.
 SEED_PATH = "/account/api/v1/auth/register"
@@ -767,6 +771,9 @@ def _deploy_shape(calls: list[dict]) -> list[dict]:
         # DECLARED DELTA (PLAN-config-server-key K2, PLAN-free-license F2): the port pushes PORT_ONLY_SECRETS, which the retired bash never held. Dropped from the compared body; `test_deploy_bench_matches_bash` asserts each present first.
         if isinstance(call.get("stdin"), dict):
             call["stdin"] = {k: v for k, v in call["stdin"].items() if k not in PORT_ONLY_SECRETS}
+            # DECLARED DELTA (71f25f3e8f): the port's bench sender default moved to notify.rediacc.cloud; the retired bash golden records the old sender, mapped forward so every other stdin key still compares verbatim.
+            if call["stdin"].get("AWS_SES_FROM") == RETIRED_BENCH_SENDER:
+                call["stdin"] = {**call["stdin"], "AWS_SES_FROM": BENCH_SENDER}
         kept = [n for n in call.get("cf_env") or () if n not in R2_TO_BACKUP]
         out.append({**call, "cf_env": kept} if call.get("cf_env") else call)
     return out

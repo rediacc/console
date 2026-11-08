@@ -105,7 +105,7 @@
       "pattern": "(?<![A-Za-z0-9-])edge-rediacc-configs(?![A-Za-z0-9_]|-[A-Za-z0-9<{$])",
       "case_sensitive": true,
       "retired": "2026-10-15",
-      "reason": "the bare R2 bucket edge-rediacc-configs is deleted; the regional buckets edge-rediacc-configs-<region> are live and are not this term.",
+      "reason": "the bare R2 bucket edge-rediacc-configs is deleted; the regional buckets edge-rediacc-configs-<region> were renamed configs-<region> and are the pre-rename-worker-bucket-names term, not this one.",
       "retired_by": [
         "#9b35d60c",
         "#1201d7b9",
@@ -142,6 +142,73 @@
       "must_not_match": [
         "rediacc-backups-eu",
         "rediacc-backups-probe-2"
+      ]
+    },
+    {
+      "id": "pre-rename-worker-bucket-names",
+      "pattern": "(?<![A-Za-z0-9-])(?:edge-)?rediacc-(?:account|proxy|configs|backups)-(?:eu|us|asia|bench|dev|staging)(?![A-Za-z0-9_-])",
+      "case_sensitive": true,
+      "retired": "2026-11-08",
+      "reason": "the account and proxy Workers and the config and backup buckets are renamed account-<r>, proxy-<r>, configs-<r> and backups-<r>, with the edge and stable pairs collapsed into one shared set (PLAN-product-domain-rename Names table).",
+      "retired_by": [
+        "agent/plans/PLAN-product-domain-rename.md"
+      ],
+      "must_match": [
+        "deploy rediacc-account-eu",
+        "edge-rediacc-proxy-asia",
+        "bucket rediacc-backups-bench",
+        "rediacc-configs-us"
+      ],
+      "must_not_match": [
+        "account-eu",
+        "backups-bench",
+        "rediacc-account-server",
+        "rediacc-proxy-executor",
+        "rediacc-backups-probe",
+        "rediacc-proxy"
+      ]
+    },
+    {
+      "id": "pre-rename-d1-names",
+      "pattern": "(?<![A-Za-z0-9-])(?:edge-)?account-db-(?:eu|us|asia|bench|pr-[0-9]+)(?![A-Za-z0-9_-])",
+      "case_sensitive": true,
+      "retired": "2026-11-08",
+      "reason": "the D1 databases are renamed account-<r>, account-bench and account-pr-<n> (PLAN-product-domain-rename Names table).",
+      "retired_by": [
+        "agent/plans/PLAN-product-domain-rename.md"
+      ],
+      "must_match": [
+        "wrangler d1 export account-db-eu",
+        "edge-account-db-us",
+        "account-db-bench",
+        "account-db-pr-12"
+      ],
+      "must_not_match": [
+        "account-eu",
+        "account-pr-12",
+        "account-db-production-ish"
+      ]
+    },
+    {
+      "id": "pre-rename-product-hosts",
+      "pattern": "(?<![A-Za-z0-9-])(?:edge-(?:eu|us|asia)|eu|us|asia|bench)\\.rediacc\\.com(?![A-Za-z0-9-])",
+      "case_sensitive": true,
+      "retired": "2026-11-08",
+      "reason": "the account host is <r>.rediacc.cloud and bench is bench.rediacc.cloud; rediacc.com keeps the website, releases, media and mta-sts hosts (PLAN-product-domain-rename Names table).",
+      "retired_by": [
+        "agent/plans/PLAN-product-domain-rename.md"
+      ],
+      "must_match": [
+        "https://eu.rediacc.com/api",
+        "edge-us.rediacc.com",
+        "proxy.asia.rediacc.com",
+        "bench.rediacc.com"
+      ],
+      "must_not_match": [
+        "eu.rediacc.cloud",
+        "www.rediacc.com",
+        "releases.rediacc.com",
+        "bench.rediacc.cloud"
       ]
     }
   ],

@@ -320,7 +320,9 @@ class World:
             },
             work=(str(self.root.parent),),
         )
-        if diff.regolden_mode(script) != "bash":  # a port re-record answered from a replay too, so the log and files are written back
+        if (
+            diff.regolden_mode(script) != "bash"
+        ):  # a port re-record answered from a replay too, so the log and files are written back
             with self.log.open("a") as fh:
                 fh.write(got["log"])
             for rel, (mode, text) in json.loads(got["files"]).items():
