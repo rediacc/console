@@ -8,8 +8,8 @@ tags:
 subcategory: platform
 order: 3
 language: et
-sourceHash: "c03afe9324e59b45"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "c73d7300b75b57c4"
+sourceCommit: "c69b28b08afd5e7602afd1e8efe90785e6e36938"
 ---
 
 Rediacci konto loomisel valite andmeregiooni. Kõik teie andmed jäävad sellesse regiooni. See valik on püsiv ega ole pärast registreerumist muudetav. Migratsiooniviis puudub. Valige regioon selle alusel, kus teie andmed seaduslikult asuda peavad, mitte kus teie serverid täna asuvad.
@@ -18,11 +18,13 @@ Rediacci konto loomisel valite andmeregiooni. Kõik teie andmed jäävad selless
 
 | Regioon | Asukoht | Domeen |
 |---|---|---|
-| **Euroopa (EU)** | Frankfurt, Saksamaa | `eu.rediacc.com` |
-| **Ameerika Ühendriigid (US)** | Virginia, USA | `us.rediacc.com` |
-| **Aasia ja Vaikse ookeani piirkond** | Tõkio, Jaapan | `asia.rediacc.com` |
+| **Euroopa (EU)** | Frankfurt, Saksamaa | `eu.rediacc.cloud` |
+| **Ameerika Ühendriigid (US)** | Virginia, USA | `us.rediacc.cloud` |
+| **Aasia ja Vaikse ookeani piirkond** | Tõkio, Jaapan | `asia.rediacc.cloud` |
 
-Teie regioon tuvastatakse automaatselt teie ajavööndi järgi registreerimisel. Saate regiooni valijas soovituse üle kirjutada.
+Toode töötab nendel `rediacc.cloud` domeenidel. Kogu dokumentatsioon ja turundusveebisait asuvad aadressil `www.rediacc.com`, mis suunab sind regioonivalija kaudu õigesse regiooni.
+
+Registreerimisel pakub valija sinu asukoha põhjal regiooni, mille saad kinnitada või muuta. Sisselogimisel suunab see sind pärast lühikest tagasiloendust, mille saad tühistada või muuta, sinu regiooni. Kui sinu ettevõttel on oma juurutus, viib valija valik „Enterprise'i klient?“ sind sinna ettevõtte e-posti domeeni alusel. Saadetakse ainult domeen, mitte kunagi täielik aadress.
 
 ## Mis jääb teie regiooni
 
@@ -38,7 +40,7 @@ Järgmist tüüpi andmeid salvestatakse ja töödeldakse ainult teie valitud reg
 Need ei ole regioonispetsiifilised:
 
 - **CLI väljalaskeartefaktid**: avalikud binaarfailid globaalsel CDN-il
-- **Turundusveebisait**: teenindatakse globaalselt servavasukohtadest
+- **Turundusveebisait ja dokumentatsioon**: `www.rediacc.com`, teenindatakse globaalselt servavasukohtadest
 - **Stripe'i maksete töötlemine**: haldab Stripe'i enda infrastruktuur nende andmetöötluslepingu alusel
 
 ## Regionaalne infrastruktuur

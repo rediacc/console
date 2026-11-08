@@ -8,8 +8,8 @@ tags:
 subcategory: platform
 order: 3
 language: tr
-sourceHash: "c03afe9324e59b45"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "c73d7300b75b57c4"
+sourceCommit: "c69b28b08afd5e7602afd1e8efe90785e6e36938"
 ---
 
 Bir Rediacc hesabı oluşturduğunuzda bir veri bölgesi seçersiniz. Tüm verileriniz o bölgede kalır. Bu seçim kalıcıdır ve kayıt sonrasında değiştirilemez. Geçiş yolu yoktur. Verilerinizin yasal olarak nerede bulunması gerektiğine göre seçin, bugün sunucularınızın nerede olduğuna göre değil.
@@ -18,11 +18,13 @@ Bir Rediacc hesabı oluşturduğunuzda bir veri bölgesi seçersiniz. Tüm veril
 
 | Bölge | Konum | Alan Adı |
 |---|---|---|
-| **Avrupa (EU)** | Frankfurt, Almanya | `eu.rediacc.com` |
-| **Amerika Birleşik Devletleri (US)** | Virginia, ABD | `us.rediacc.com` |
-| **Asya Pasifik** | Tokyo, Japonya | `asia.rediacc.com` |
+| **Avrupa (EU)** | Frankfurt, Almanya | `eu.rediacc.cloud` |
+| **Amerika Birleşik Devletleri (US)** | Virginia, ABD | `us.rediacc.cloud` |
+| **Asya Pasifik** | Tokyo, Japonya | `asia.rediacc.cloud` |
 
-Bölgeniz kayıt sırasında saat diliminizden otomatik olarak algılanır. Bölge seçicisinde öneriyi geçersiz kılabilirsiniz.
+Ürün bu `rediacc.cloud` etki alanlarında çalışır. Tüm dokümantasyon ve pazarlama sitesi `www.rediacc.com` üzerindedir; site, bölge seçicisiyle sizi doğru bölgeye yönlendirir.
+
+Kayıt sırasında seçici, konumunuza göre bir bölge önerir; onaylayabilir veya değiştirebilirsiniz. Girişte ise iptal edebileceğiniz ya da değiştirebileceğiniz kısa bir geri sayımın ardından sizi bölgenize yönlendirir. Şirketinizin kendi dağıtımı varsa seçicideki "Enterprise müşterisi misiniz?" seçeneği sizi şirketinizin e-posta etki alanından yola çıkarak oraya götürür. Yalnızca etki alanı gönderilir, tam adresiniz asla gönderilmez.
 
 ## Bölgenizde Kalan Veriler
 
@@ -38,7 +40,7 @@ Bu veri türleri yalnızca seçtiğiniz bölgede depolanır ve işlenir:
 Bunlar bölgeye özgü değildir:
 
 - **CLI sürüm artefaktları**: global CDN üzerinde barındırılan genel ikili dosyalar
-- **Pazarlama sitesi**: edge konumlarından global olarak sunulur
+- **Pazarlama sitesi ve dokümantasyon**: `www.rediacc.com`, edge konumlarından global olarak sunulur
 - **Stripe ödeme işleme**: Stripe'ın kendi veri işleme anlaşması kapsamındaki altyapısı tarafından yönetilir
 
 ## Bölgesel Altyapı

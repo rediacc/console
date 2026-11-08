@@ -8,8 +8,8 @@ tags:
 subcategory: platform
 order: 3
 language: it
-sourceHash: "c03afe9324e59b45"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "c73d7300b75b57c4"
+sourceCommit: "c69b28b08afd5e7602afd1e8efe90785e6e36938"
 ---
 
 Quando crei un account Rediacc, scegli una regione dei dati. Tutti i tuoi dati rimangono in quella regione. Questa scelta è permanente e non può essere modificata dopo la registrazione. Non esiste un percorso di migrazione. Scegli in base a dove i tuoi dati devono risiedere legalmente, non dove si trovano i tuoi server oggi.
@@ -18,11 +18,13 @@ Quando crei un account Rediacc, scegli una regione dei dati. Tutti i tuoi dati r
 
 | Regione | Posizione | Dominio |
 |---|---|---|
-| **Europa (EU)** | Francoforte, Germania | `eu.rediacc.com` |
-| **Stati Uniti (US)** | Virginia, USA | `us.rediacc.com` |
-| **Asia Pacifico** | Tokyo, Giappone | `asia.rediacc.com` |
+| **Europa (EU)** | Francoforte, Germania | `eu.rediacc.cloud` |
+| **Stati Uniti (US)** | Virginia, USA | `us.rediacc.cloud` |
+| **Asia Pacifico** | Tokyo, Giappone | `asia.rediacc.cloud` |
 
-La tua regione viene rilevata automaticamente dal tuo fuso orario durante la registrazione. Puoi ignorare il suggerimento nel selettore di regione.
+Il prodotto funziona su questi domini `rediacc.cloud`. Tutta la documentazione e il sito di marketing si trovano su `www.rediacc.com`, che ti indirizza alla regione giusta dal suo selettore di regione.
+
+Alla registrazione il selettore suggerisce una regione in base alla tua posizione, che puoi confermare o cambiare. Al login ti reindirizza alla tua regione dopo un breve conto alla rovescia che puoi annullare o modificare. Se la tua azienda ha un proprio deployment, l'opzione «Cliente Enterprise?» ti ci porta partendo dal dominio email aziendale. Viene inviato solo il dominio, mai l'indirizzo completo.
 
 ## Cosa Rimane nella Tua Regione
 
@@ -38,7 +40,7 @@ Questi tipi di dati vengono archiviati ed elaborati esclusivamente nella regione
 Questi elementi non sono specifici per regione:
 
 - **Artefatti di rilascio della CLI**: binari pubblici ospitati su una CDN globale
-- **Sito web di marketing**: servito globalmente dai nodi edge
+- **Sito web di marketing e documentazione**: `www.rediacc.com`, servito globalmente dai nodi edge
 - **Elaborazione dei pagamenti Stripe**: gestita dall'infrastruttura propria di Stripe nell'ambito del loro accordo per il trattamento dei dati
 
 ## Infrastruttura Regionale

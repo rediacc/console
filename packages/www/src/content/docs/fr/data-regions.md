@@ -8,8 +8,8 @@ tags:
 subcategory: platform
 order: 3
 language: fr
-sourceHash: "c03afe9324e59b45"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "c73d7300b75b57c4"
+sourceCommit: "c69b28b08afd5e7602afd1e8efe90785e6e36938"
 ---
 
 Lorsque vous créez un compte Rediacc, vous choisissez une région de données. Toutes vos données restent dans cette région. Ce choix est permanent et ne peut pas être modifié après l'inscription. Aucune migration n'est possible. Choisissez votre région en fonction de l'endroit où vos données doivent résider légalement, et non en fonction de l'emplacement actuel de vos serveurs.
@@ -18,11 +18,13 @@ Lorsque vous créez un compte Rediacc, vous choisissez une région de données. 
 
 | Région | Emplacement | Domaine |
 |---|---|---|
-| **Europe (EU)** | Francfort, Allemagne | `eu.rediacc.com` |
-| **États-Unis (US)** | Virginie, États-Unis | `us.rediacc.com` |
-| **Asie-Pacifique** | Tokyo, Japon | `asia.rediacc.com` |
+| **Europe (EU)** | Francfort, Allemagne | `eu.rediacc.cloud` |
+| **États-Unis (US)** | Virginie, États-Unis | `us.rediacc.cloud` |
+| **Asie-Pacifique** | Tokyo, Japon | `asia.rediacc.cloud` |
 
-Votre région est détectée automatiquement d'après votre fuseau horaire lors de l'inscription. Vous pouvez modifier la suggestion dans le sélecteur de région.
+Le produit fonctionne sur ces domaines `rediacc.cloud`. Toute la documentation et le site marketing se trouvent sur `www.rediacc.com`, qui vous dirige vers la bonne région depuis son sélecteur de région.
+
+À l'inscription, le sélecteur propose une région d'après votre localisation, que vous confirmez ou modifiez. À la connexion, il vous redirige vers votre région après un court compte à rebours que vous pouvez annuler ou modifier. Si votre entreprise dispose de son propre déploiement, l'option « Client Enterprise ? » vous y conduit à partir du domaine de messagerie de votre entreprise. Seul le domaine est envoyé, jamais votre adresse complète.
 
 ## Ce qui reste dans votre région
 
@@ -38,7 +40,7 @@ Ces types de données sont stockés et traités exclusivement dans votre région
 Ces éléments ne sont pas spécifiques à une région :
 
 - **Artefacts de publication de la CLI** : binaires publics hébergés sur un CDN mondial
-- **Site web marketing** : servi mondialement depuis des emplacements edge
+- **Site web marketing et documentation** : `www.rediacc.com`, servi mondialement depuis des emplacements edge
 - **Traitement des paiements Stripe** : géré par la propre infrastructure de Stripe dans le cadre de leur accord de traitement des données
 
 ## Infrastructure régionale

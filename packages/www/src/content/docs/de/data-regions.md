@@ -8,8 +8,8 @@ tags:
 subcategory: platform
 order: 3
 language: de
-sourceHash: "c03afe9324e59b45"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "c73d7300b75b57c4"
+sourceCommit: "c69b28b08afd5e7602afd1e8efe90785e6e36938"
 ---
 
 Bei der Anmeldung für Rediacc wählen Sie eine Datenregion. Alle Daten verbleiben in dieser Region. Diese Entscheidung ist dauerhaft und kann nach der Registrierung nicht mehr geändert werden. Es gibt keinen Migrationspfad. Wählen Sie die Region basierend darauf, wo Ihre Daten rechtlich ansässig sein müssen, nicht wo Ihre Server heute sind.
@@ -18,11 +18,13 @@ Bei der Anmeldung für Rediacc wählen Sie eine Datenregion. Alle Daten verbleib
 
 | Region | Standort | Domain |
 |---|---|---|
-| **Europa (EU)** | Frankfurt, Deutschland | `eu.rediacc.com` |
-| **Vereinigte Staaten (US)** | Virginia, USA | `us.rediacc.com` |
-| **Asien-Pazifik** | Tokio, Japan | `asia.rediacc.com` |
+| **Europa (EU)** | Frankfurt, Deutschland | `eu.rediacc.cloud` |
+| **Vereinigte Staaten (US)** | Virginia, USA | `us.rediacc.cloud` |
+| **Asien-Pazifik** | Tokio, Japan | `asia.rediacc.cloud` |
 
-Die Region wird bei der Registrierung automatisch anhand der Zeitzone erkannt. Der Vorschlag kann im Regionenauswahlfeld überschrieben werden.
+Das Produkt läuft auf diesen `rediacc.cloud`-Domains. Die gesamte Dokumentation und die Marketing-Website liegen auf `www.rediacc.com`, das Sie über die Regionsauswahl zur passenden Region weiterleitet.
+
+Bei der Registrierung schlägt die Auswahl anhand Ihres Standorts eine Region vor, die Sie bestätigen oder ändern. Beim Login leitet sie Sie nach einem kurzen Countdown, den Sie abbrechen oder ändern können, in Ihre Region weiter. Hat Ihr Unternehmen eine eigene Bereitstellung, führt die Option „Enterprise-Kunde?“ Sie anhand der E-Mail-Domain Ihres Unternehmens dorthin. Übertragen wird nur die Domain, nie Ihre vollständige Adresse.
 
 ## Was in der Region verbleibt
 
@@ -38,7 +40,7 @@ Diese Datentypen werden ausschließlich in der gewählten Region gespeichert und
 Folgendes ist nicht regionsspezifisch:
 
 - **CLI-Release-Artefakte**: Öffentliche Binärdateien, gehostet auf einem globalen CDN
-- **Marketing-Website**: Global von Edge-Standorten bereitgestellt
+- **Marketing-Website und Dokumentation**: `www.rediacc.com`, global von Edge-Standorten bereitgestellt
 - **Stripe-Zahlungsabwicklung**: Von Stripes eigener Infrastruktur im Rahmen ihrer Datenverarbeitungsvereinbarung abgewickelt
 
 ## Regionale Infrastruktur

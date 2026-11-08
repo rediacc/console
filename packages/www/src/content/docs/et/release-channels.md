@@ -8,30 +8,31 @@ tags:
 subcategory: platform
 order: 2
 language: et
-sourceHash: "0cc32d712c02538f"
-sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
+sourceHash: "bb653747883615f5"
+sourceCommit: "c69b28b08afd5e7602afd1e8efe90785e6e36938"
 ---
 
-Rediacc saadab uuendusi kahe kanali kaudu: **Stable** ja **Edge**. Need töötavad eraldi infrastruktuuril ja toovad kaasa erinevad kompromissid.
+Rediacc toimetab CLI uuendused kahe kanali kaudu: **Stable** ja **Edge**. Mõlemad ühenduvad sama tootega, seega on konto, plaan ja piirangud mõlemal kanalil samad. Kanalid erinevad ainult selle poolest, kui kiiresti väljalase sinuni jõuab.
 
 ## Stable kanal
 
 Stable on vaikimisi. Väljalase jõuab sellele alles pärast seda, kui on 7 päeva Edge'il istunud ilma teatatud probleemideta.
 
-- Soovitatav, kui eelistad konservatiivset uuendussagedust ja soovid juurdepääsu tasuliste plaanidele
+- Soovitatav, kui eelistad konservatiivset uuendussagedust
 - Juurutatakse pärast 7 päeva testimist Edge'il
 - Kriitilised paigad saab otse lükata, kui vajalik
-- Domeenid: `eu.rediacc.com`, `us.rediacc.com`, `asia.rediacc.com`
 
 ## Edge kanal
 
 Edge saab iga muudatuse kohe pärast seda, kui see ühineb põhaharuga. See on tarkvara viimane versioon, pidevalt juurutatav.
 
-- Pidevalt juurutatav tootmine, väljastatuna iga ühendamisega põhiharuga
-- 2X Community plaani piirangud (vt allolevat tabelit)
-- Edge'il pole tasulisi plaane; kontod töötavad Community plaanil.
-- Eraldi kontod Stable'ist. Andmed ei liiku kanalite vahel.
-- Domeenid: `edge-eu.rediacc.com`, `edge-us.rediacc.com`, `edge-asia.rediacc.com`
+- Avaldatakse iga põhiharuga ühendamise järel
+- Samad kontod, plaanid ja piirangud mis Stable'il
+- Sobib uute funktsioonide varakult proovimiseks
+
+## Üks toode, kaks kanalit
+
+Sinu konto asub sinu andmeregioonis aadressil `eu.rediacc.cloud`, `us.rediacc.cloud` või `asia.rediacc.cloud`, olenemata kanalist. Kanali vahetamine ei mõjuta kontot, andmeid ega tellimust. Regioonide kohta vaata lehte [Andmeregioonid](/et/docs/data-regions).
 
 ## Võrdlus
 
@@ -39,26 +40,9 @@ Edge saab iga muudatuse kohe pärast seda, kui see ühineb põhaharuga. See on t
 |---|---|---|
 | **Juurutamise sagedus** | Pärast 7-päevast leotust | Iga ühendamine põhiharuga |
 | **Stabiilsus** | Testitud 7 päeva | Tootmine, pidevalt juurutatav |
-| **Community plaani piirangud** | 10 GB hoidlad, 100 seadistust/kuu, 1 masin | 20 GB hoidlad, 200 seadistust/kuu, 2 masinat |
-| **Tasulised plaanid** | Saadaval (Professional, Business, Enterprise) | Pole saadaval |
-| **Kontod** | Sõltumatud | Sõltumatud (eraldi Stable'ist) |
-| **Parim kasutus** | Tootmine, tasulised töökoormustered | Tootmine, kõrvaalprojektid, varajane juurdepääs |
-
-## Edge 2X piirangud
-
-Kui käitad Edge't Community plaanil, kahekordistuvad su ressursipiirangud:
-
-| Ressurss | Stable Community | Edge Community |
-|---|---|---|
-| Hoidla suurus | 10 GB | 20 GB |
-| Litsentsi väljastamisi kuus | 100 | 200 |
-| Masina aktiveerimisi | 1 | 2 |
-
-Kui vajad kõrgemaid piiranguid või tasulise plaani funktsioone, loo konto Stable kanalil ja uuenda seal.
-
-## Eraldi kontod
-
-Edge ja Stable töötavad eraldi infrastruktuuril eraldi andmebaasidega. Edge'il loodud konto ei eksisteeri Stable'is ja vastupidi. Kanalite vahel pole migreerimisteed. Kui alustad Edge'ist ja soovid hiljem tasulist plaani, pead looma uue konto Stable'is.
+| **Plaanid ja piirangud** | Samad | Samad |
+| **Konto ja andmed** | Ühised | Ühised |
+| **Sobib** | Tootmiseks, tasulistele töökoormustele | Varajaseks ligipääsuks, hindamiseks |
 
 ## Kuidas edendamine toimib
 
@@ -72,13 +56,11 @@ See tähendab, et Stable on alati kõige rohkem 7 päeva Edge'ist maas. Leotuspe
 
 **Vali Stable, kui:**
 - Eelistad konservatiivset uuendussagedust 7-päevase leotusaknaga
-- Vajad tasulisi plaane (Professional, Business, Enterprise)
 - Eelistad maksimaalset töökindlust uusimate funktsioonide ees
 
 **Vali Edge, kui:**
 - Soovid proovida uusi funktsioone varakult
 - Hindad platvormi
-- Soovid щедraid tasuta piiranguid kõrvaalprojektide jaoks
 - Oled mugav uuema, vähem testitud koodiga
 
 ## Paigaldamine
@@ -87,11 +69,9 @@ Mõlemalt kanalilt paigaldamiseks mõeldud käskude kohta, sealhulgas paketihald
 
 ## CLI kanali haldamine
 
-CLI kasutab automaatselt paigaldamise või sisselogimise ajal seadistatud kanalit. Kanalite vahel lülitumiseks:
+CLI kasutab paigaldamisel seadistatud kanalit. Kanali vahetamiseks:
 
 ```bash
 rdc update --channel edge      # Lülitu Edge'ile
 rdc update --channel stable    # Lülitu Stable'ile
 ```
-
-Kui käivitad `rdc subscription login` ja valid Edge'i piirkonna, seadistab CLI automaatselt Edge'i uuenduskanali. Käsitsi `--channel` lippu pole vaja.

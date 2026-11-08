@@ -8,30 +8,31 @@ tags:
 subcategory: platform
 order: 2
 language: it
-sourceHash: "0cc32d712c02538f"
-sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
+sourceHash: "bb653747883615f5"
+sourceCommit: "c69b28b08afd5e7602afd1e8efe90785e6e36938"
 ---
 
-Rediacc distribuisce gli aggiornamenti attraverso due canali: **Stable** ed **Edge**. Operano su infrastrutture separate e comportano compromessi diversi.
+Rediacc distribuisce gli aggiornamenti della CLI attraverso due canali: **Stable** ed **Edge**. Entrambi si collegano allo stesso prodotto, quindi account, piano e limiti sono identici su ciascuno. I canali differiscono solo per la rapidità con cui una versione ti raggiunge.
 
 ## Canale Stable
 
 Stable è il predefinito. Una versione lo raggiunge solo dopo essere rimasta su Edge per 7 giorni senza problemi segnalati.
 
-- Consigliato quando si preferisce una cadenza di aggiornamento conservativa e si desidera accesso ai piani a pagamento
+- Consigliato quando si preferisce una cadenza di aggiornamento conservativa
 - Distribuito dopo 7 giorni di test su Edge
 - Gli hotfix possono essere distribuiti direttamente quando critico
-- Domini: `eu.rediacc.com`, `us.rediacc.com`, `asia.rediacc.com`
 
 ## Canale Edge
 
 Edge riceve ogni modifica nel momento in cui viene mergiata nel ramo main. È la versione live del software, distribuita continuamente.
 
-- Produzione continuamente distribuita, rilasciata ad ogni merge nel main
-- Limiti del piano Community 2X (vedi tabella di seguito)
-- Nessun piano a pagamento è disponibile su Edge; gli account operano sul piano Community.
-- Account separati da Stable. I dati non si trasferiscono tra i canali.
-- Domini: `edge-eu.rediacc.com`, `edge-us.rediacc.com`, `edge-asia.rediacc.com`
+- Rilasciato ad ogni merge nel main
+- Stessi account, piani e limiti di Stable
+- Ideale per provare in anticipo le novità
+
+## Un prodotto, due canali
+
+Il tuo account risiede nella tua regione dei dati, su `eu.rediacc.cloud`, `us.rediacc.cloud` o `asia.rediacc.cloud`, qualunque canale tu usi. Cambiare canale non tocca il tuo account, i tuoi dati né il tuo abbonamento. Per le regioni, vedi [Regioni dei Dati](/it/docs/data-regions).
 
 ## Confronto
 
@@ -39,26 +40,9 @@ Edge riceve ogni modifica nel momento in cui viene mergiata nel ramo main. È la
 |---|---|---|
 | **Cadenza di distribuzione** | Dopo maturazione di 7 giorni | Ad ogni merge nel main |
 | **Stabilità** | Testato per 7 giorni | Produzione, distribuito continuamente |
-| **Limiti piano Community** | Repository da 10 GB, 100 configurazioni/mese, 1 macchina | Repository da 20 GB, 200 configurazioni/mese, 2 macchine |
-| **Piani a pagamento** | Disponibili (Professional, Business, Enterprise) | Non disponibili |
-| **Account** | Indipendenti | Indipendenti (separati da Stable) |
-| **Ideale per** | Produzione, carichi di lavoro a pagamento | Produzione, progetti secondari, accesso anticipato |
-
-## Limiti 2X di Edge
-
-Esegui Edge con il piano Community e i tuoi limiti di risorse raddoppiano:
-
-| Risorsa | Stable Community | Edge Community |
-|---|---|---|
-| Dimensione repository | 10 GB | 20 GB |
-| Emissioni di licenze al mese | 100 | 200 |
-| Attivazioni macchina | 1 | 2 |
-
-Hai bisogno di limiti più alti o funzionalità a pagamento? Crea il tuo account su Stable e aggiorna da lì.
-
-## Account Separati
-
-Edge e Stable operano su infrastrutture separate con database separati. Un account sull'uno non esiste sull'altro, e non c'è percorso di migrazione. Inizia su Edge, poi decidi di volere un piano a pagamento, e dovrai creare un account nuovo su Stable da zero.
+| **Piani e limiti** | Uguali | Uguali |
+| **Account e dati** | Condivisi | Condivisi |
+| **Ideale per** | Produzione, carichi di lavoro a pagamento | Accesso anticipato, valutazione |
 
 ## Come Funzionano le Promozioni
 
@@ -72,13 +56,11 @@ Quindi Stable è al massimo 7 giorni indietro rispetto a Edge. La finestra di ma
 
 **Scegli Stable se:**
 - Preferisci una cadenza di aggiornamento conservativa con una finestra di maturazione di 7 giorni
-- Hai bisogno di piani a pagamento (Professional, Business, Enterprise)
 - Preferisci la massima affidabilità rispetto alle ultime funzionalità
 
 **Scegli Edge se:**
 - Vuoi provare le nuove funzionalità in anticipo
 - Stai valutando la piattaforma
-- Vuoi limiti gratuiti generosi per i progetti secondari
 - Sei a tuo agio con codice più recente e meno testato
 
 ## Installazione
@@ -87,11 +69,9 @@ Vedi [Installation](/it/docs/installation) per i comandi di installazione, la co
 
 ## Gestione del Canale CLI
 
-La CLI usa il canale che hai configurato all'installazione o al login. Per cambiare:
+La CLI usa il canale che hai configurato all'installazione. Per cambiare:
 
 ```bash
 rdc update --channel edge      # Passa a Edge
 rdc update --channel stable    # Passa a Stable
 ```
-
-Esegui `rdc subscription login` e scegli una regione Edge, e la CLI imposta il canale di aggiornamento Edge per te. Nessun flag `--channel` richiesto.

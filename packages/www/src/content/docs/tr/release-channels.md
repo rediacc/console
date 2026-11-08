@@ -8,30 +8,31 @@ tags:
 subcategory: platform
 order: 2
 language: tr
-sourceHash: "0cc32d712c02538f"
-sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
+sourceHash: "bb653747883615f5"
+sourceCommit: "c69b28b08afd5e7602afd1e8efe90785e6e36938"
 ---
 
-Rediacc güncellemeleri iki sürüm kanalı üzerinden yayınlar: **Stable** ve **Edge**. Her kanal farklı bir kitleye hizmet eder ve farklı dengeler sunar.
+Rediacc, CLI güncellemelerini iki kanal üzerinden yayınlar: **Stable** ve **Edge**. İkisi de aynı ürüne bağlanır, bu yüzden hesap, plan ve limitler her iki kanalda da aynıdır. Kanallar yalnızca bir sürümün size ne kadar çabuk ulaştığı konusunda ayrılır.
 
 ## Stable Kanal
 
 Stable, tüm kullanıcılar için varsayılan kanaldır. Sürümler, bildirilen sorun olmaksızın 7 günlük bir bekleme süresinin ardından Edge'den terfi ettirilir.
 
-- Muhafazakar bir yükseltme temposu tercih ediyorsanız ve ücretli planlara erişmek istiyorsanız önerilir
+- Muhafazakar bir yükseltme temposu tercih ediyorsanız önerilir
 - Edge'de 7 günlük test sonrasında dağıtılır
 - Kritik durumlarda düzeltmeler doğrudan iletilebilir
-- Etki alanları: `eu.rediacc.com`, `us.rediacc.com`, `asia.rediacc.com`
 
 ## Edge Kanal
 
 Edge, her değişikliği main'e merge edildiği anda alır. Sürekli olarak dağıtılan yazılımın en güncel sürümüdür.
 
-- En yeni özellikler ve düzeltmeler, her merge'de dağıtılır
-- 2X Community plan limitleri (aşağıdaki tabloya bakın)
-- Edge'de ücretli plan mevcut değildir; hesaplar Community planında çalışır.
-- Stable'dan ayrı hesaplar. Veriler kanallar arasında aktarılmaz.
-- Etki alanları: `edge-eu.rediacc.com`, `edge-us.rediacc.com`, `edge-asia.rediacc.com`
+- Main'e her merge'de yayınlanır
+- Stable ile aynı hesaplar, planlar ve limitler
+- Yeni özellikleri erken denemek için en uygunu
+
+## Tek Ürün, İki Kanal
+
+Hesabınız, hangi kanalı kullanırsanız kullanın, veri bölgenizde `eu.rediacc.cloud`, `us.rediacc.cloud` veya `asia.rediacc.cloud` üzerinde durur. Kanal değiştirmek hesabınıza, verilerinize ve aboneliğinize dokunmaz. Bölgeler için [Veri Bölgeleri](/tr/docs/data-regions) sayfasına bakın.
 
 ## Karşılaştırma
 
@@ -39,26 +40,9 @@ Edge, her değişikliği main'e merge edildiği anda alır. Sürekli olarak dağ
 |---|---|---|
 | **Dağıtım sıklığı** | 7 günlük bekleme sonrası | Main'e her merge'de |
 | **Kararlılık** | 7 gün test edildi | En güncel kod, daha az bekleme süresi |
-| **Community plan limitleri** | 10 GB depolar, 100 kurulum/ay, 1 makine | 20 GB depolar, 200 kurulum/ay, 2 makine |
-| **Ücretli planlar** | Mevcut (Professional, Business, Enterprise) | Mevcut değil |
-| **Hesaplar** | Bağımsız | Bağımsız (Stable'dan ayrı) |
-| **En iyi kullanım** | Üretim, ücretli iş yükleri | Test, değerlendirme, yan projeler, erken erişim |
-
-## Edge 2X Limitleri
-
-Community planında Edge çalıştırdığınızda kaynak limitleriniz iki katına çıkar:
-
-| Kaynak | Stable Community | Edge Community |
-|---|---|---|
-| Depo boyutu | 10 GB | 20 GB |
-| Ay başına lisans düzenlemesi | 100 | 200 |
-| Makine aktivasyonları | 1 | 2 |
-
-Daha yüksek limitlere veya ücretli plan özelliklerine ihtiyaç duyuyorsanız, Stable kanalında hesap oluşturun ve oradan yükseltin.
-
-## Ayrı Hesaplar
-
-Edge ve Stable, ayrı veritabanlarıyla ayrı altyapılar üzerinde çalışır. Edge'de oluşturulan bir hesap Stable'da mevcut değildir ve tam tersi de geçerlidir. Kanallar arasında geçiş yolu yoktur. Edge'de başlarsanız ve ileride ücretli bir plan istiyorsanız, Stable'da yeni bir hesap oluşturmanız gerekecektir.
+| **Planlar ve limitler** | Aynı | Aynı |
+| **Hesap ve veriler** | Ortak | Ortak |
+| **En uygun olduğu durum** | Üretim, ücretli iş yükleri | Erken erişim, değerlendirme |
 
 ## Terfiler Nasıl Çalışır
 
@@ -72,13 +56,11 @@ Bu, Stable'ın her zaman Edge'in en fazla 7 gün gerisinde olduğu anlamına gel
 
 **Stable'ı seçin:**
 - 7 günlük bekleme penceresiyle muhafazakar bir yükseltme temposu tercih ediyorsanız
-- Ücretli planlara ihtiyaç duyuyorsanız (Professional, Business, Enterprise)
 - En yeni özelliklerden çok maksimum güvenilirliği tercih ediyorsanız
 
 **Edge'i seçin:**
 - Yeni özellikleri erken denemek istiyorsanız
 - Platformu değerlendiriyorsanız
-- Yan projeler için cömert ücretsiz limitler istiyorsanız
 - Daha yeni, daha az test edilmiş kodla rahat çalışabiliyorsanız
 
 ## Kurulum
@@ -87,11 +69,9 @@ Her iki kanaldan kurulum komutları, paket yöneticisi yapılandırması ve Dock
 
 ## CLI Kanal Yönetimi
 
-CLI, kurulum veya giriş sırasında yapılandırılan kanalı otomatik olarak kullanır. Kanal değiştirmek için:
+CLI, kurulum sırasında yapılandırdığınız kanalı kullanır. Kanal değiştirmek için:
 
 ```bash
 rdc update --channel edge      # Edge'e geç
 rdc update --channel stable    # Stable'a geç
 ```
-
-`rdc subscription login` komutunu çalıştırıp bir Edge bölgesi seçtiğinizde, CLI otomatik olarak Edge güncelleme kanalını yapılandırır. Manuel `--channel` bayrağına gerek yoktur.

@@ -8,8 +8,8 @@ tags:
 subcategory: platform
 order: 3
 language: es
-sourceHash: "c03afe9324e59b45"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "c73d7300b75b57c4"
+sourceCommit: "c69b28b08afd5e7602afd1e8efe90785e6e36938"
 ---
 
 Al crear una cuenta en Rediacc, eliges una región de datos. Todos tus datos permanecen en esa región. Esta elección es permanente: no puedes cambiarla después del registro. No existe una ruta de migración. Elige según dónde tus datos deben residir legalmente, no según dónde estén tus servidores hoy.
@@ -18,11 +18,13 @@ Al crear una cuenta en Rediacc, eliges una región de datos. Todos tus datos per
 
 | Región | Ubicación | Dominio |
 |---|---|---|
-| **Europa (EU)** | Frankfurt, Alemania | `eu.rediacc.com` |
-| **Estados Unidos (US)** | Virginia, EE.UU. | `us.rediacc.com` |
-| **Asia Pacífico** | Tokio, Japón | `asia.rediacc.com` |
+| **Europa (EU)** | Frankfurt, Alemania | `eu.rediacc.cloud` |
+| **Estados Unidos (US)** | Virginia, EE.UU. | `us.rediacc.cloud` |
+| **Asia Pacífico** | Tokio, Japón | `asia.rediacc.cloud` |
 
-Tu región se detecta automáticamente por tu zona horaria durante el registro. Puedes anular la sugerencia en el selector de región.
+El producto funciona en estos dominios `rediacc.cloud`. Toda la documentación y el sitio de marketing están en `www.rediacc.com`, que te lleva a la región correcta desde su selector de región.
+
+Al registrarte, el selector sugiere una región según tu ubicación y puedes confirmarla o cambiarla. Al iniciar sesión, te redirige a tu región tras una breve cuenta atrás que puedes cancelar o cambiar. Si tu empresa tiene su propio despliegue, la opción «¿Cliente Enterprise?» te lleva allí a partir del dominio de correo de tu empresa. Solo se envía el dominio, nunca tu dirección completa.
 
 ## Qué Permanece en tu Región
 
@@ -38,7 +40,7 @@ Estos tipos de datos se almacenan y procesan exclusivamente en tu región elegid
 Estos elementos no son específicos de una región:
 
 - **Artefactos de release del CLI**: binarios públicos alojados en una CDN global
-- **Sitio web de marketing**: servido globalmente desde ubicaciones edge
+- **Sitio web de marketing y documentación**: `www.rediacc.com`, servido globalmente desde ubicaciones edge
 - **Procesamiento de pagos con Stripe**: gestionado por la propia infraestructura de Stripe bajo su acuerdo de procesamiento de datos
 
 ## Infraestructura Regional
