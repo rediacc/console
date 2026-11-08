@@ -1,8 +1,8 @@
 """Port of `scripts/ops/backup-d1.sh` (148 lines): export the account D1 databases to `.backups/`.
 
-    PYTHONPATH=.ci python3 -m rediacc_ci.ops.backup_d1 [--dry-run] [--self-destruct] [production|edge]
+    PYTHONPATH=.ci python3 -m rediacc_ci.ops.backup_d1 [--dry-run] [--self-destruct] [shared|bench|production|edge]
 
-Writes `.backups/production/account-db-<region>-<UTC stamp>.sql` and `.backups/edge/edge-account-db-<region>-<UTC stamp>.sql`, one `wrangler d1 export --remote` per region. One timestamp covers the whole run so a regional set groups as a unit. Auth is `cf_auth` (a ready `CF_MANAGEMENT_TOKEN`, or the Global API Key pair from which a scoped token is minted).
+Writes `.backups/shared/account-<region>-<UTC stamp>.sql` (the default: the one shared database of each region), `.backups/bench/account-bench-<UTC stamp>.sql` (`bench`), and, for archiving the databases the rename retired before they are deleted, `.backups/production/account-db-<region>-<UTC stamp>.sql` (`production`) and `.backups/edge/edge-account-db-<region>-<UTC stamp>.sql` (`edge`), one `wrangler d1 export --remote` per region. One timestamp covers the whole run so a regional set groups as a unit. Auth is `cf_auth` (a ready `CF_MANAGEMENT_TOKEN`, or the Global API Key pair from which a scoped token is minted).
 
 RULE T: WHERE THIS DELIBERATELY DIFFERS FROM THE BASH (each pinned by a test in `tests/test_ops_backup_d1.py` that fails on the bash behaviour).
 
@@ -27,9 +27,12 @@ from rediacc_ci.ops import cf_auth
 
 ACCOUNT_ID = cf_auth.DEFAULT_ACCOUNT_ID
 REGIONS = ("eu", "us", "asia")
+# The shared set and bench are the live databases; the production and edge prefixes name the databases the rename retired, kept only so each can be archived before it is deleted.
+SHARED_DB_PREFIX = "account"
+BENCH_DB = "account-bench"
 PROD_DB_PREFIX = "account-db"
 EDGE_DB_PREFIX = "edge-account-db"
-USAGE = "Usage: PYTHONPATH=.ci python3 -m rediacc_ci.ops.backup_d1 [--dry-run] [--self-destruct] [production|edge]"
+USAGE = "Usage: PYTHONPATH=.ci python3 -m rediacc_ci.ops.backup_d1 [--dry-run] [--self-destruct] [shared|bench|production|edge]"
 FILTERED = ("r2.cloudflarestorage.com", "valid for one hour")
 
 
@@ -91,6 +94,10 @@ def main(argv: list[str]) -> int:
             dry_run = True
         elif arg == "--self-destruct":
             self_destruct = True
+        elif arg == "shared":
+            target = "shared"
+        elif arg == "bench":
+            target = "bench"
         elif arg in ("production", "prod"):
             target = "production"
         elif arg == "edge":
@@ -126,9 +133,13 @@ def main(argv: list[str]) -> int:
         if dry_run:
             log.warn("DRY-RUN mode: no exports will be performed")
         plan = []
-        if target in ("", "production"):
+        if target in ("", "shared"):
+            plan += [("shared", "%s-%s" % (SHARED_DB_PREFIX, r)) for r in REGIONS]
+        if target == "bench":
+            plan.append(("bench", BENCH_DB))
+        if target == "production":
             plan += [("production", "%s-%s" % (PROD_DB_PREFIX, r)) for r in REGIONS]
-        if target in ("", "edge"):
+        if target == "edge":
             plan += [("edge", "%s-%s" % (EDGE_DB_PREFIX, r)) for r in REGIONS]
         for env_name, db_name in plan:
             if not _backup_database(env, backup_dir, stamp, env_name, db_name, dry_run):

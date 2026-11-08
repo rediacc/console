@@ -319,7 +319,9 @@ def test_backup_d1_unknown_argument_matches_bash(world: h.World) -> None:
     usage_bash = "Usage: backup-d1.sh "
     usage_port = "Usage: PYTHONPATH=.ci python3 -m rediacc_ci.ops.backup_d1 "
     assert usage_bash in h.strip(err_b), err_b
-    assert h.strip(err_b).replace(usage_bash, usage_port) == h.strip(err_p)
+    assert h.strip(err_b).replace(usage_bash, usage_port).replace(
+        "[production|edge]", "[shared|bench|production|edge]"
+    ) == h.strip(err_p)
 
 
 def test_delta_a_minted_token_is_always_destroyed(world: h.World) -> None:

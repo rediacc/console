@@ -108,7 +108,7 @@ class World:
         if self.move_on_list == self.list_calls:
             self.add_chunks(LIN, 1)
         q = dict(urllib.parse.parse_qsl(urllib.parse.urlsplit(url).query))
-        assert urllib.parse.urlsplit(url).path.startswith("/rediacc-backups-bench")
+        assert urllib.parse.urlsplit(url).path.startswith("/backups-bench")
         keys = sorted(k for k in self.objects if k.startswith(q["prefix"]))
         start = int(q.get("continuation-token", "0"))
         page = keys[start : start + PAGE]

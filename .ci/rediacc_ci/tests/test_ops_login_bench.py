@@ -6,7 +6,7 @@ import json
 import pytest
 
 from rediacc_ci.ops import login_bench, totp
-from rediacc_ci.well_known import BENCH_ORIGIN, EDGE_ORIGIN, SITE_ORIGIN
+from rediacc_ci.well_known import ACCOUNT_DEFAULT_ORIGIN, BENCH_ORIGIN, SITE_ORIGIN
 
 SEED = base64.b32encode(b"bench-seed-0123456789").decode().rstrip("=")
 VALUES = {
@@ -70,9 +70,9 @@ def _secrets(env) -> list[str]:
     "argv",
     [
         ["--server", SITE_ORIGIN],
-        ["--server=" + EDGE_ORIGIN],
+        ["--server=" + ACCOUNT_DEFAULT_ORIGIN],
         ["--server", BENCH_ORIGIN.replace("https:", "http:")],
-        ["--server", "https://bench.rediacc.com.evil.invalid"],
+        ["--server", BENCH_ORIGIN + ".evil.invalid"],
     ],
 )
 def test_another_server_is_refused_with_rc_2_before_any_child(argv, capsys):

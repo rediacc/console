@@ -246,7 +246,7 @@ def account_env(k: dict[str, str], bridge: str) -> dict[str, str]:
 
 def start_storage(k: dict[str, str]) -> None:
     """RustFS plus the probe bucket; both must be there afterwards."""
-    if k["PROBE_BUCKET"] == backup_local_plane.PRODUCTION_BUCKET:
+    if backup_local_plane.is_production_bucket(k["PROBE_BUCKET"]):
         raise PlaneError(f"PROBE_BUCKET is the production bucket name {k['PROBE_BUCKET']!r}")
     account_lifecycle.start_rustfs()
     if not account.rustfs_alive(int(k["RUSTFS_PORT"])):

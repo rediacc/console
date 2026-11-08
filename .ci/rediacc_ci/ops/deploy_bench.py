@@ -1,4 +1,4 @@
-"""Port of `scripts/ops/deploy-bench.sh` (293 lines): deploy the account worker to bench.rediacc.com.
+"""Port of `scripts/ops/deploy-bench.sh` (293 lines): deploy the account worker to bench.rediacc.cloud.
 
     PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench
 
@@ -6,7 +6,7 @@ Bench is the internal "real Cloudflare D1" environment, deliberately NOT wired i
 
 THE ROTATION CHECK ALWAYS COMPARES, AND ANYTHING BUT "IN SYNC" REFUSES THE PUSH (operator ruling 2026-10-13). The check reads the observability host's OTLP basicauth user names over plain OpenSSH, through `private/account/scripts/rotation/lib/observability-reader.ts`, with the three `OBS_READER_SSH_*` values this profile binds: the base64 of the machine's existing private key, the pinned known_hosts lines and `user@host[:port]`. No `rdc` login is involved. Exit 1 is drift; exit 2 is a credential that could not be read, which is reported as such with its cause and refuses the push as well, because an unread value is an uncompared one.
 
-Resources: D1 `account-db-bench`, R2 `rediacc-configs-bench`, worker `rediacc-account-bench`, domain `bench.rediacc.com`. The cleanup of the Cloudflare token runs on every way out, a supplied `CF_MANAGEMENT_TOKEN` included, as in the bash.
+Resources: D1 `account-bench`, R2 `configs-bench`, worker `account-bench`, domain `bench.rediacc.cloud`. The cleanup of the Cloudflare token runs on every way out, a supplied `CF_MANAGEMENT_TOKEN` included, as in the bash.
 
 RULE T: WHERE THIS DELIBERATELY DIFFERS FROM THE BASH (each pinned by a test in `tests/test_ops_deploy_bench.py` that fails on the bash behaviour).
 
@@ -56,9 +56,9 @@ if TYPE_CHECKING:
 BENCH_HOST = BENCH_ORIGIN.removeprefix("https://")
 
 ACCOUNT_ID = cf_auth.DEFAULT_ACCOUNT_ID
-WORKER_NAME = "rediacc-account-bench"
+WORKER_NAME = "account-bench"
 CONFIG = "wrangler.bench.toml"
-DB_NAME = "account-db-bench"
+DB_NAME = "account-bench"
 DOMAIN = BENCH_HOST
 # Bench is test-only (operator ruling 2026-10-13): the portal is built with NO site key, so the
 # widget never renders, and wrangler.bench.toml sets TURNSTILE_ENABLED=false for the API.
@@ -577,7 +577,7 @@ def _sql_literal(value: str) -> str:
 
 
 def _d1_rows(sql: str) -> list[dict]:
-    """`wrangler d1 execute account-db-bench --remote --json --command SQL` from the worker dir, authenticated with the Global API Key pair, and the result rows. The stdout is never printed: it holds live links."""
+    """`wrangler d1 execute account-bench --remote --json --command SQL` from the worker dir, authenticated with the Global API Key pair, and the result rows. The stdout is never printed: it holds live links."""
     key, mail = os.environ.get("CF_GLOBAL_API_KEY"), os.environ.get("CF_EMAIL")
     if not (key and mail):
         raise SeedError("CF_GLOBAL_API_KEY and CF_EMAIL are required to read the captured email")
@@ -798,7 +798,7 @@ def _deploy(auth: cf_auth.Auth, root) -> None:
     print()
     log.info("bench is live: https://%s" % DOMAIN)
     print("  D1:     %s (ac45c2de-053b-404c-bc47-9ad9cbd2bb15)" % DB_NAME)
-    print("  R2:     rediacc-configs-bench")
+    print("  R2:     configs-bench")
     print("  Worker: %s" % WORKER_NAME)
     print()
     print("Test it:")

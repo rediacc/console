@@ -2,7 +2,7 @@
 
     PYTHONPATH=.ci python3 -m rediacc_ci.ops.reset_bench [--yes] [--d1-only] [--r2-only]
 
-DESTRUCTIVE. It drops every table of the bench D1 database (`account-db-bench`) and re-applies migrations, then deletes every object in the bench R2 bucket (`rediacc-configs-bench`). The worker code and DNS are untouched; `deploy_bench` redeploys code. Without `--yes` one confirmation is asked: type `wipe bench`.
+DESTRUCTIVE. It drops every table of the bench D1 database (`account-bench`) and re-applies migrations, then deletes every object in the bench R2 bucket (`configs-bench`). The worker code and DNS are untouched; `deploy_bench` redeploys code. Without `--yes` one confirmation is asked: type `wipe bench`.
 
 Auth is `cf_auth`. As in the bash, the credential is destroyed on the way out whether the run succeeded or not, a pre-supplied `CF_MANAGEMENT_TOKEN` included (the scoped token is treated as single-use for this script).
 
@@ -35,8 +35,8 @@ from rediacc_ci.ops import cf_auth
 
 ACCOUNT_ID = cf_auth.DEFAULT_ACCOUNT_ID
 DB_UUID = "ac45c2de-053b-404c-bc47-9ad9cbd2bb15"
-DB_NAME = "account-db-bench"
-BUCKET = "rediacc-configs-bench"
+DB_NAME = "account-bench"
+BUCKET = "configs-bench"
 CONFIRMATION = "wipe bench"
 # The Bitwarden profile this re-executes under (.ci/config/secret-supply.json): the R2 S3-API trio the wipe signs with, and the Cloudflare global key that `cf_auth` mints a management token from. The trio left the deploy-bench profile (agent/plans/PLAN-backup-credential-isolation.md B2), so a deploy no longer carries a key that reaches every bucket.
 PROFILE = "reset-bench"
@@ -53,7 +53,7 @@ Usage:
   --d1-only   skip the R2 wipe
   --r2-only   skip the D1 wipe
 
-Resources: D1 account-db-bench, R2 rediacc-configs-bench. The worker code and
+Resources: D1 account-bench, R2 configs-bench. The worker code and
 DNS are not touched; rediacc_ci.ops.deploy_bench redeploys them.
 """
 

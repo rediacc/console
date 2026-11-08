@@ -25,6 +25,7 @@ import subprocess
 import sys
 
 from rediacc_ci import log, paths
+from rediacc_ci.drills import backup_local_plane
 
 GRANT_PARENT_VAR = "ACCOUNT_BACKUP_R2_GRANT_PARENT_SECRET"
 
@@ -164,9 +165,12 @@ def check_store(pf: Preflight) -> None:
             "nobody reached. Supply them, or accept that this run does not clear the cutover.",
         )
         return
-    if bucket == "rediacc-backups":
+    if backup_local_plane.is_production_bucket(bucket):
+        # The bash twin refused only the bare `rediacc-backups`, in these words; every other production name (`backups`, `backups-eu`, the retired `rediacc-backups-eu` and `edge-rediacc-backups-eu`) is refused as well, in words that name it.
         pf.failed(
-            "ACCOUNT_BACKUP_S3_BUCKET is the bare production name 'rediacc-backups'",
+            "ACCOUNT_BACKUP_S3_BUCKET is the bare production name 'rediacc-backups'"
+            if bucket == backup_local_plane.PRODUCTION_BUCKET
+            else "ACCOUNT_BACKUP_S3_BUCKET is the production bucket name %r" % bucket,
             "Test targets must be named distinctly (e.g. example-backups-test) so no "
             "misconfiguration can cross test and production backups.",
         )
