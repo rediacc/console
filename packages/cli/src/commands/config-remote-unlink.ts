@@ -86,10 +86,7 @@ export function closedServerPath(
   remote: RemoteConfig
 ): ValidationError | undefined {
   if (isStoreCopyGone(error)) return storeCopyGone(configName, remote);
-  // A config whose stored server moved: its pull cannot even seal a request, because server-info of
-  // the old host answers 401, 403 or 404 and the config holds no key for it. That is a closed path (the host
-  // refuses or no longer knows this store), not a transient outage, so it names `--local`. Disable
-  // stays server-only by ruling: a stale-cache write is never done implicitly.
+  // A config whose stored server moved: its pull cannot even seal a request, because server-info of the old host answers 401, 403 or 404 and the config holds no key for it. That is a closed path (the host refuses or no longer knows this store), not a transient outage, so it names `--local`. Disable stays server-only by ruling: a stale-cache write is never done implicitly.
   if (isServerGone(error)) {
     return new ValidationError(
       t('commands.config.remote.disable.accessLost', { name: configName, error: error.message })

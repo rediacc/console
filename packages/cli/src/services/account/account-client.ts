@@ -43,14 +43,6 @@ type ServerKeyMaterial = {
   keyId: string;
 };
 
-/**
- * No E2E key is known for the server a request goes to: the active config saved none for it, and
- * its server-info either could not be read (`unreachable`, `cause` keeps the failure, so a network
- * error still classifies as unreachable) or was read and advertised no key (`no-key`). Raised
- * instead of sealing with the baked-in key, which only the production regions hold: against any
- * other server that request fails as a bare "Decryption failed" naming nothing (vm:check license
- * drill, 2026-10-21).
- */
 /** A server-info read that answered a non-2xx status; `status` lets callers classify it without reading the message. */
 export class ServerInfoStatusError extends Error {
   constructor(public readonly status: number) {
@@ -59,6 +51,14 @@ export class ServerInfoStatusError extends Error {
   }
 }
 
+/**
+ * No E2E key is known for the server a request goes to: the active config saved none for it, and
+ * its server-info either could not be read (`unreachable`, `cause` keeps the failure, so a network
+ * error still classifies as unreachable) or was read and advertised no key (`no-key`). Raised
+ * instead of sealing with the baked-in key, which only the production regions hold: against any
+ * other server that request fails as a bare "Decryption failed" naming nothing (vm:check license
+ * drill, 2026-10-21).
+ */
 export class ServerE2eKeyUnavailableError extends Error {
   readonly serverUrl: string;
   readonly reason: 'unreachable' | 'no-key';
