@@ -2418,6 +2418,7 @@ jobs:
           sparse-checkout: |
             .ci/rediacc_ci
             .ci/config/bws-secret-map.json
+            .ci/config/well-known.env
             .github/actions/bws-secrets
             .github/actions/profiler
           sparse-checkout-cone-mode: false
