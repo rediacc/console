@@ -20,7 +20,7 @@ SERVICE_LABELS = frozenset(
     {
         "account", "accounts", "admin", "api", "app", "asia", "auth", "backups", "bench", "cdn", "configs",
         "console", "control", "dashboard", "dev", "docs", "edge", "enterprise", "executor", "ftp", "git",
-        "help", "imap", "login", "mail", "media", "mta-sts", "ns", "ops", "ops-health", "portal", "proxy",
+        "help", "imap", "login", "mail", "media", "mta-sts", "notify", "ns", "ops", "ops-health", "portal", "proxy",
         "registry", "releases", "signer", "smtp", "stable", "static", "status", "support", "test", "www",
     }
 )  # fmt: skip
