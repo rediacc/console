@@ -1,28 +1,28 @@
 #!/usr/bin/env python3
-"""Mirror one remote config store from a stable account database into its edge twin or into bench, at the database level: same CEK, same password and recovery slots (worklist #046d4339, operator ruling ASKED:2026-10-27T09:45Z; bench, PR-TASK 9f92c43e, 2026-10-27).
+"""Mirror one remote config store from a stable account database into bench, at the database level: same CEK, same password and recovery slots (worklist #046d4339, operator ruling ASKED:2026-10-27T09:45Z; bench, PR-TASK 9f92c43e, 2026-10-27).
 
-    PYTHONPATH=.ci python3 -m rediacc_ci.ops.mirror_config_store --from eu-stable --to eu-edge --list-stores
-    PYTHONPATH=.ci python3 -m rediacc_ci.ops.mirror_config_store --from eu-stable --to eu-edge --store <id> [--dry-run]
-    PYTHONPATH=.ci python3 -m rediacc_ci.ops.mirror_config_store --from eu-stable --to eu-edge --store <id> --apply --i-understand-edge-write
-    PYTHONPATH=.ci python3 -m rediacc_ci.ops.mirror_config_store --from eu-stable --to bench --store <id> [--dry-run | --apply --i-understand-edge-write]
+    PYTHONPATH=.ci python3 -m rediacc_ci.ops.mirror_config_store --from eu --to bench --list-stores
+    PYTHONPATH=.ci python3 -m rediacc_ci.ops.mirror_config_store --from eu --to bench --store <id> [--dry-run]
+    PYTHONPATH=.ci python3 -m rediacc_ci.ops.mirror_config_store --from eu --to bench --store <id> --apply --i-understand-bench-write
+    PYTHONPATH=.ci python3 -m rediacc_ci.ops.mirror_config_store --from eu --to bench --store <id> [--dry-run | --apply --i-understand-bench-write]
 
-THE TARGET. `<region>-edge` of the source's region, or `bench` (bench.rediacc.com): its D1, CONFIG_BUCKET, Worker name, REGION and WebAuthn RP ID are read from workers/account/wrangler.bench.toml, since regions.json does not list it, and its REGION must be the source's. Everything below that says "edge" holds for bench too, and the output names the target by its channel (`edge` or `bench`). `--i-understand-edge-write` acknowledges a write to either.
+THE TARGET. `bench` (bench.rediacc.cloud): its D1, CONFIG_BUCKET, Worker name, REGION and WebAuthn RP ID are read from workers/account/wrangler.bench.toml, since regions.json does not list it, and its REGION must be the source's. The output names the target by its channel, `bench`. `--i-understand-bench-write` acknowledges the write.
 
-WHY IT WORKS. A key slot wraps the CEK under `deriveWrappingKey(slotSecret, serverSecret)` (packages/shared/src/config-crypto/cek.ts, slots.ts), and `serverSecret` is the store's own `config_stores.server_secret`. Copying the store row and the slot rows byte for byte therefore lets the same master password or recovery code unlock the edge copy. The blobs are copied by their recorded `r2_key`, and the envelope v3 AAD binds `(storeId, configId, teamId, version, sdkEpoch)`, so those ids are kept; the operator's user id may be remapped.
+WHY IT WORKS. A key slot wraps the CEK under `deriveWrappingKey(slotSecret, serverSecret)` (packages/shared/src/config-crypto/cek.ts, slots.ts), and `serverSecret` is the store's own `config_stores.server_secret`. Copying the store row and the slot rows byte for byte therefore lets the same master password or recovery code unlock the bench copy. The blobs are copied by their recorded `r2_key`, and the envelope v3 AAD binds `(storeId, configId, teamId, version, sdkEpoch)`, so those ids are kept; the operator's user id may be remapped.
 
 THE MIRROR IS A FORK. Nothing syncs afterwards: a push to either side diverges them.
 
-WHAT IS COPIED. Verbatim: `config_stores` (but `require_passkey` is written 0 on edge, operator answer ASKED:2026-10-27T10:35Z), `config_entries` and `config_versions`. Filtered: the operator's `config_key_slots` of method password and recovery, and the operator's `config_user_identities` with every passkey column cleared. PASSKEYS DO NOT CARRY OVER: the WebAuthn RP ID is each end's own host (`WEBAUTHN_RP_ID` of its wrangler config: the stable host, the edge host, bench.rediacc.com), so a stable passkey can never sign in on the target; the plan prints both RP IDs. Identity rows: the organization, its live subscriptions (status active, grace or inactive and not expired), the operator's org membership, the teams the entries use and the operator's memberships of them. The OPERATOR is the org owner; no other member's user row, slots or identity is copied, and the plan names them by count only. Never copied: `config_tokens`, `config_executor_grants`, `config_cek_handoffs`, `config_cek_rotations`. A `config_versions.created_by_user_id` that names another member is written NULL.
+WHAT IS COPIED. Verbatim: `config_stores` (but `require_passkey` is written 0 on bench, operator answer ASKED:2026-10-27T10:35Z), `config_entries` and `config_versions`. Filtered: the operator's `config_key_slots` of method password and recovery, and the operator's `config_user_identities` with every passkey column cleared. PASSKEYS DO NOT CARRY OVER: the WebAuthn RP ID is each end's own host (`WEBAUTHN_RP_ID` of its wrangler config: the stable host, the bench host, bench.rediacc.com), so a stable passkey can never sign in on the target; the plan prints both RP IDs. Identity rows: the organization, its live subscriptions (status active, grace or inactive and not expired), the operator's org membership, the teams the entries use and the operator's memberships of them. The OPERATOR is the org owner; no other member's user row, slots or identity is copied, and the plan names them by count only. Never copied: `config_tokens`, `config_executor_grants`, `config_cek_handoffs`, `config_cek_rotations`. A `config_versions.created_by_user_id` that names another member is written NULL.
 
-IDENTITY. Case A: no edge user has the operator's `email_hash`, so the user row is copied with the same id. Case B: edge user X has it, so the operator's id is rewritten to X in `config_key_slots.user_id`, `config_user_identities.user_id`, `config_versions.created_by_user_id`, `org_memberships.user_id`, `team_memberships.user_id` and `organizations.owner_user_id`.
+IDENTITY. Case A: no bench user has the operator's `email_hash`, so the user row is copied with the same id. Case B: bench user X has it, so the operator's id is rewritten to X in `config_key_slots.user_id`, `config_user_identities.user_id`, `config_versions.created_by_user_id`, `org_memberships.user_id`, `team_memberships.user_id` and `organizations.owner_user_id`.
 
-REUSE ON MATCH, REFUSE ON CONFLICT (the identity tables). An edge D1 once cloned from stable already holds the operator's org, subscription and memberships under the same ids. An edge row of `organizations`, `subscriptions`, `org_memberships`, `teams`, `team_memberships` or `users` with the plan's id is REUSED, never updated, when its identity columns match (`IDENTITY_MATCH`; user ids compared after the case-B remap; a user matches on `email_hash`), and the run refuses, naming the table and column, when one differs. A unique key (`IDENTITY_UNIQUE`) held under another id refuses too. A reused subscription that is not live on edge is printed as a note. `customer_id` is never compared: it is a per-environment Stripe id (edge bills through a separate Stripe account and bench runs with Stripe disabled), so a reused org carrying its own is printed as a note and an inserted org keeps the stable id as an inert label. The store's own rows (`config_stores`, `config_entries`, `config_versions`, `config_key_slots`, `config_user_identities`) refuse on any collision.
+REUSE ON MATCH, REFUSE ON CONFLICT (the identity tables). A bench D1 once cloned from stable already holds the operator's org, subscription and memberships under the same ids. A bench row of `organizations`, `subscriptions`, `org_memberships`, `teams`, `team_memberships` or `users` with the plan's id is REUSED, never updated, when its identity columns match (`IDENTITY_MATCH`; user ids compared after the case-B remap; a user matches on `email_hash`), and the run refuses, naming the table and column, when one differs. A unique key (`IDENTITY_UNIQUE`) held under another id refuses too. A reused subscription that is not live on bench is printed as a note. `customer_id` is never compared: it is a per-environment Stripe id (bench bills through a separate Stripe account and bench runs with Stripe disabled), so a reused org carrying its own is printed as a note and an inserted org keeps the stable id as an inert label. The store's own rows (`config_stores`, `config_entries`, `config_versions`, `config_key_slots`, `config_user_identities`) refuse on any collision.
 
-PRE-CHECKS, each one refusing the run: a pending CEK rotation; an operator with no password or recovery slot at the store's current CEK generation; a `CONFIG_SERVER_KEY` or `ACCOUNT_CONFIG_SERVER_KEY` secret present on one Worker and absent on the other (the first is what the code before PLAN-config-server-key K1 reads, falling back to a constant; the second is K1's, which seals `server_recoverable_org_passphrase` as `csk1.<kid>.`; the check reads secret NAMES from the Workers secrets listing); once both Workers hold `ACCOUNT_CONFIG_SERVER_KEY`, an untagged row or a `csk1` row whose kid is not the EDGE key's (computed from `ACCOUNT_CONFIG_SERVER_KEY_<SUFFIX>_EDGE`, or `ACCOUNT_CONFIG_SERVER_KEY_BENCH` for bench, by `config_server_key_id`; each channel holds its own key, so a row rewrapped under the stable key refuses here); a stable `d1_migrations` entry edge lacks, a stable column edge lacks, or an edge-only NOT NULL column with no default; an edge row already holding the store id, a store for the org, or an entry, version, slot or identity id; an identity row that conflicts as above, or the operator's id under another email hash; a write target that is a stable database or bucket.
+PRE-CHECKS, each one refusing the run: a pending CEK rotation; an operator with no password or recovery slot at the store's current CEK generation; a `CONFIG_SERVER_KEY` or `ACCOUNT_CONFIG_SERVER_KEY` secret present on one Worker and absent on the other (the first is what the code before PLAN-config-server-key K1 reads, falling back to a constant; the second is K1's, which seals `server_recoverable_org_passphrase` as `csk1.<kid>.`; the check reads secret NAMES from the Workers secrets listing); once both Workers hold `ACCOUNT_CONFIG_SERVER_KEY`, an untagged row or a `csk1` row whose kid is not the bench key's (computed from `ACCOUNT_CONFIG_SERVER_KEY_BENCH`, by `config_server_key_id`; each channel holds its own key, so a row rewrapped under the stable key refuses here); a stable `d1_migrations` entry bench lacks, a stable column bench lacks, or a bench-only NOT NULL column with no default; a bench row already holding the store id, a store for the org, or an entry, version, slot or identity id; an identity row that conflicts as above, or the operator's id under another email hash; a write target that is a stable database or bucket.
 
-THE APPLY, in order: the pre-checks; the edge D1 bookmark (`wrangler d1 time-travel info`, parsed by `deploy_record.parse_bookmark`; no bookmark, no write); the rollback files written to `--out-dir` and their paths printed with the time-travel restore command; the R2 copy, each object fetched to a temp dir, put, read back and compared by sha256; one `wrangler d1 execute --file` of plain INSERTs (never OR REPLACE) ending with an `event_log` row `config.store.mirrored`; then a re-read of every inserted row compared column by column with the plan, and `PRAGMA foreign_key_check` on every touched table compared with the check taken before the write.
+THE APPLY, in order: the pre-checks; the bench D1 bookmark (`wrangler d1 time-travel info`, parsed by `deploy_record.parse_bookmark`; no bookmark, no write); the rollback files written to `--out-dir` and their paths printed with the time-travel restore command; the R2 copy, each object fetched to a temp dir, put, read back and compared by sha256; one `wrangler d1 execute --file` of plain INSERTs (never OR REPLACE) ending with an `event_log` row `config.store.mirrored`; then a re-read of every inserted row compared column by column with the plan, and `PRAGMA foreign_key_check` on every touched table compared with the check taken before the write.
 
-ROLLBACK. `rollback.sql` deletes the store (cascading identities, slots, entries and versions) and then, by id, exactly the identity rows and the audit row this run inserted; a reused edge row is never deleted. `rollback.sh` runs it and deletes each copied R2 object. The D1 time-travel restore to the printed bookmark is the full undo.
+ROLLBACK. `rollback.sql` deletes the store (cascading identities, slots, entries and versions) and then, by id, exactly the identity rows and the audit row this run inserted; a reused bench row is never deleted. `rollback.sh` runs it and deletes each copied R2 object. The D1 time-travel restore to the printed bookmark is the full undo.
 
 OUTPUT. Names, counts and 8-character id prefixes only. No `wrapped_cek`, `server_secret`, `sdk_master`, passphrase, email or email hash is ever printed; the rollback files carry full ids and are written mode 0600.
 
@@ -73,11 +73,11 @@ EVENT_SOURCE = "ops-mirror-config-store"
 
 STORE_ID = re.compile(r"^[A-Za-z0-9_-]{8,64}\Z")
 SQL_ID = re.compile(r"^[A-Za-z0-9_.:-]{1,128}\Z")
-END_NAME = re.compile(r"^([a-z]+)-(stable|edge)\Z")
-# bench.rediacc.com: one non-regional target, named by itself; its region is the REGION var of its wrangler config.
+END_NAME = re.compile(r"^([a-z]+)\Z")
+# bench.rediacc.cloud: one non-regional target, named by itself; its region is the REGION var of its wrangler config.
 BENCH_END = "bench"
 # The channels a mirror may write; the label each one carries in the output is the channel itself.
-TARGET_CHANNELS = ("edge", target_mod.BENCH_TARGET)
+TARGET_CHANNELS = (target_mod.BENCH_TARGET,)
 R2_KEY = re.compile(r"^[A-Za-z0-9_.=:@+-]+(/[A-Za-z0-9_.=:@+-]+)*\Z")
 
 LIVE_STATUSES = ("active", "grace", "inactive")
@@ -105,8 +105,8 @@ TABLE_ORDER = (
     "config_versions",
     "event_log",
 )
-# Identity tables: an edge row with the same id is REUSED when these columns match (user ids compared after the case-B remap) and refused when one differs; never updated. The store's own rows refuse on any collision.
-# customer_id is a billing id per environment (edge bills through a separate Stripe account), so the same org legitimately carries a different customer_id on edge; it identifies nothing across environments and is not compared. A subscription is matched on the org it belongs to (`org_id`), which is the same id on both sides.
+# Identity tables: a bench row with the same id is REUSED when these columns match (user ids compared after the case-B remap) and refused when one differs; never updated. The store's own rows refuse on any collision.
+# customer_id is a billing id per environment (bench bills through a separate Stripe account), so the same org legitimately carries a different customer_id on bench; it identifies nothing across environments and is not compared. A subscription is matched on the org it belongs to (`org_id`), which is the same id on both sides.
 IDENTITY_MATCH = {
     "organizations": ("owner_user_id",),
     "subscriptions": ("org_id",),
@@ -114,7 +114,7 @@ IDENTITY_MATCH = {
     "teams": ("org_id", "slug"),
     "team_memberships": ("team_id", "user_id"),
 }
-# Unique keys of the identity tables beside the id: an edge row holding the key under another id refuses.
+# Unique keys of the identity tables beside the id: a bench row holding the key under another id refuses.
 IDENTITY_UNIQUE = {
     "organizations": ("customer_id",),
     "org_memberships": ("org_id", "user_id"),
@@ -238,7 +238,7 @@ def _account_doc(path: pathlib.Path) -> tuple[dict, str, dict]:
 
 
 def resolve_end(root: pathlib.Path, name: str) -> End:
-    """One end: `<region>-stable` or `<region>-edge` from regions.json and the region's wrangler config, or `bench`, whose Worker name and region come from wrangler.bench.toml itself (regions.json does not list it)."""
+    """One end: `<region>` (the shared set of that region, channel stable) from regions.json and the region's wrangler config, or `bench`, whose Worker name and region come from wrangler.bench.toml itself (regions.json does not list it)."""
     if name == BENCH_END:
         config = target_mod.account_config(target_mod.BENCH_TARGET, "")
         path = root.joinpath(*target_mod.ACCOUNT_SUBDIR, config)
@@ -264,16 +264,14 @@ def resolve_end(root: pathlib.Path, name: str) -> End:
     if match:
         region_doc = next((r for r in _regions(root) if r.get("id") == match.group(1)), None)
     if not match or region_doc is None:
-        raise RefusedError(
-            "%s is not <region>-stable, <region>-edge for a known region, or bench" % name
-        )
-    region, channel = match.group(1), match.group(2)
+        raise RefusedError("%s is not a known region id or bench" % name)
+    region, channel = match.group(1), "stable"
     config = target_mod.account_config(channel, region)
     path = root.joinpath(*target_mod.ACCOUNT_SUBDIR, config)
     doc, database, bucket = _account_doc(path)
     raw_vars = doc.get("vars")
     variables = raw_vars if isinstance(raw_vars, dict) else {}
-    worker = region_doc.get("edgeWorkerName" if channel == "edge" else "workerName")
+    worker = region_doc.get("workerName")
     return End(
         name=name,
         channel=channel,
@@ -288,11 +286,11 @@ def resolve_end(root: pathlib.Path, name: str) -> End:
 
 
 def check_ends(root: pathlib.Path, src: End, dst: End) -> None:
-    """The source is a stable end, the target an edge end of the same region or bench (whose REGION must be the source's), and no stable name is a write target."""
+    """The source is a stable end, the target bench (whose REGION must be the source's), and no stable name is a write target."""
     if src.channel != "stable":
         raise RefusedError("--from %s: the source must be a stable end" % src.name)
     if dst.channel not in TARGET_CHANNELS:
-        raise RefusedError("--to %s: the target must be an edge end or bench" % dst.name)
+        raise RefusedError("--to %s: the target must be bench" % dst.name)
     if not dst.worker:
         raise RefusedError("--to %s: the target names no Worker" % dst.name)
     if src.region != dst.region:
@@ -725,7 +723,7 @@ def read_source(src: Reader, store_id: str, now: str) -> dict:
     }
 
 
-# The store's own rows: any edge row holding one of these ids refuses the run.
+# The store's own rows: any bench row holding one of these ids refuses the run.
 def _collision_probes(source: dict) -> list[tuple[str, str, str, list[str]]]:
     """(label, table, column, values)."""
     org, store = source["org"], source["store"]
@@ -740,8 +738,8 @@ def _collision_probes(source: dict) -> list[tuple[str, str, str, list[str]]]:
     return [p for p in probes if p[3]]
 
 
-def _edge_identity_rows(dst: Reader, source: dict) -> dict[str, list[dict]]:
-    """The edge rows of each identity table that share an id or a unique key with the plan's rows: the identity columns, the id and (subscriptions) the status only, never a secret column."""
+def _target_identity_rows(dst: Reader, source: dict) -> dict[str, list[dict]]:
+    """The bench rows of each identity table that share an id or a unique key with the plan's rows: the identity columns, the id and (subscriptions) the status only, never a secret column."""
     org = source["org"]
     team_ids = [str(t["id"]) for t in source["teams"]]
     wanted = {
@@ -779,7 +777,7 @@ def _edge_identity_rows(dst: Reader, source: dict) -> dict[str, list[dict]]:
 
 
 def read_target(dst: Reader, source: dict) -> dict:
-    """What the edge database already holds of the ids the plan would write."""
+    """What the bench database already holds of the ids the plan would write."""
     operator = source["operator"]
     collisions: list[str] = []
     for label, table, column, values in _collision_probes(source):
@@ -799,7 +797,7 @@ def read_target(dst: Reader, source: dict) -> dict:
     by_id = dst.query(q("SELECT id, email_hash FROM users WHERE id = @ID@", id=lit(operator["id"])))
     return {
         "collisions": collisions,
-        "identity": _edge_identity_rows(dst, source),
+        "identity": _target_identity_rows(dst, source),
         "user_by_hash": str(by_hash[0]["id"]) if by_hash else None,
         "user_id_taken": bool(by_id) and by_id[0].get("email_hash") != operator["email_hash"],
     }
@@ -807,17 +805,17 @@ def read_target(dst: Reader, source: dict) -> dict:
 
 def resolve_identity(
     planned: list[tuple[str, dict]],
-    edge: dict[str, list[dict]],
+    target_rows: dict[str, list[dict]],
     org_id: str,
     customer_id: str,
-    label: str = "edge",
+    label: str = "bench",
 ) -> tuple[list[tuple[str, dict]], list[tuple[str, dict]], list[str]]:
-    """(rows to insert, rows reused as (table, target row), conflicts) for the identity tables. A conflict names the table and column(s) and an id prefix, never a value; `label` names the target (its channel, edge or bench)."""
+    """(rows to insert, rows reused as (table, target row), conflicts) for the identity tables. A conflict names the table and column(s) and an id prefix, never a value; `label` names the target (its channel, bench)."""
     insert: list[tuple[str, dict]] = []
     reused: list[tuple[str, dict]] = []
     conflicts: list[str] = []
     for table, row in planned:
-        rows = edge.get(table, [])
+        rows = target_rows.get(table, [])
         same = next((r for r in rows if str(r.get("id")) == str(row["id"])), None)
         if same is not None:
             differ = [c for c in IDENTITY_MATCH[table] if same.get(c) != row.get(c)]
@@ -840,7 +838,7 @@ def resolve_identity(
     planned_subs = {str(r["id"]) for t, r in planned if t == "subscriptions"}
     stranger = [
         r
-        for r in edge.get("subscriptions", [])
+        for r in target_rows.get("subscriptions", [])
         if r.get("customer_id") == customer_id and str(r.get("id")) not in planned_subs
     ]
     if stranger and not org_reused:
@@ -854,7 +852,7 @@ def resolve_identity(
 # ---- schema parity -----------------------------------------------------------
 
 
-def schema_parity(src: Reader, dst: Reader, label: str = "edge") -> list[str]:
+def schema_parity(src: Reader, dst: Reader, label: str = "bench") -> list[str]:
     """Refuses drift the copy cannot carry; returns the summary lines. `label` names the target (its channel)."""
     src_m = {str(r.get("name")) for r in src.query("SELECT name FROM d1_migrations")}
     dst_m = {str(r.get("name")) for r in dst.query("SELECT name FROM d1_migrations")}
@@ -926,7 +924,7 @@ KEY_NAME_PREFIX = "ACCOUNT_CONFIG_SERVER_KEY_"
 
 
 def key_env_name(root: pathlib.Path, target: str, region: str) -> str:
-    """The bws name of one Worker's own key: `ACCOUNT_CONFIG_SERVER_KEY_<SUFFIX>_<STABLE|EDGE>` (`SUFFIX` is the region's `secretSuffix` in regions.json) or `ACCOUNT_CONFIG_SERVER_KEY_BENCH`."""
+    """The bws name of one Worker's own key: `ACCOUNT_CONFIG_SERVER_KEY_<SUFFIX>_STABLE` (`SUFFIX` is the region's `secretSuffix` in regions.json) or `ACCOUNT_CONFIG_SERVER_KEY_BENCH`."""
     if target == target_mod.BENCH_TARGET:
         return KEY_NAME_PREFIX + "BENCH"
     try:
@@ -963,9 +961,9 @@ def check_server_key(
     value: object,
     target_kid: Callable[[], tuple[str, str | None]],
 ) -> str:
-    """Whether the store's `server_recoverable_org_passphrase` will open on the target (edge or bench); refuses when it would not. Messages name the target by its channel.
+    """Whether the store's `server_recoverable_org_passphrase` will open on the target (bench); refuses when it would not. Messages name the target by its channel.
 
-    `CONFIG_SERVER_KEY` (the pre-K1 name) must still match on both Workers, so a Worker that kept the old name is caught. An untagged row refuses: PLAN-config-server-key K6 removed the legacy path, so no account server opens one any more. A `csk1.<kid>.` row opens only under the key that sealed it, so the target must hold `ACCOUNT_CONFIG_SERVER_KEY` and its kid must match (`target_kid`, computed from the target's own key in the environment, `ACCOUNT_CONFIG_SERVER_KEY_<SUFFIX>_EDGE` or `ACCOUNT_CONFIG_SERVER_KEY_BENCH`, since Worker secrets are write-only). Each channel has its own key (K2), so a row sealed under the stable key refuses: there is no reseal step yet (worklist #fc0490ad).
+    `CONFIG_SERVER_KEY` (the pre-K1 name) must still match on both Workers, so a Worker that kept the old name is caught. An untagged row refuses: PLAN-config-server-key K6 removed the legacy path, so no account server opens one any more. A `csk1.<kid>.` row opens only under the key that sealed it, so the target must hold `ACCOUNT_CONFIG_SERVER_KEY` and its kid must match (`target_kid`, computed from the target's own key in the environment, `ACCOUNT_CONFIG_SERVER_KEY_<SUFFIX>` or `ACCOUNT_CONFIG_SERVER_KEY_BENCH`, since Worker secrets are write-only). Each channel has its own key (K2), so a row sealed under the stable key refuses: there is no reseal step yet (worklist #fc0490ad).
     """
     a, b = names.get(src.worker), names.get(dst.worker)
     if a is None or b is None:
@@ -1018,7 +1016,7 @@ class Plan:
     org_id: str
     customer_id: str
     operator_id: str
-    edge_user_id: str
+    target_user_id: str
     case: str
     inserts: list[tuple[str, dict]]
     reused: list[tuple[str, str]]
@@ -1084,10 +1082,10 @@ def build_plan(source: dict, target: dict, src: End, dst: End, now: str, event_i
         raise RefusedError("%d entry team id(s) name no team on the source" % len(stray))
 
     case = "A" if target["user_by_hash"] is None else "B"
-    edge_user = op if case == "A" else str(target["user_by_hash"])
+    target_user = op if case == "A" else str(target["user_by_hash"])
 
     def remap(uid: object) -> object:
-        return edge_user if uid == op else uid
+        return target_user if uid == op else uid
 
     gen = int(store.get("cek_generation") or 1)
     op_slots = [s for s in source["slots"] if s.get("user_id") == op]
@@ -1128,16 +1126,16 @@ def build_plan(source: dict, target: dict, src: End, dst: End, now: str, event_i
     if case == "A":
         inserts.append(("users", dict(operator)))
     else:
-        reused.append(("users", edge_user))
+        reused.append(("users", target_user))
     inserts += identity_rows
     reused += [(t, str(r["id"])) for t, r in reused_rows]
     reset = bool(int(store.get("require_passkey") or 0))
     inserts.append(("config_stores", {**store, "require_passkey": 0} if reset else dict(store)))
     inserts += [
-        ("config_user_identities", {**i, **PASSKEY_CLEARED, "user_id": edge_user})
+        ("config_user_identities", {**i, **PASSKEY_CLEARED, "user_id": target_user})
         for i in op_identities
     ]
-    inserts += [("config_key_slots", {**s, "user_id": edge_user}) for s in kept_slots]
+    inserts += [("config_key_slots", {**s, "user_id": target_user}) for s in kept_slots]
     inserts += [("config_entries", dict(e)) for e in source["entries"]]
     nulled = 0
     for v in source["versions"]:
@@ -1156,7 +1154,7 @@ def build_plan(source: dict, target: dict, src: End, dst: End, now: str, event_i
                 "actor_role": "root",
                 "org_id": org["id"],
                 "customer_id": org["customer_id"],
-                "user_id": edge_user,
+                "user_id": target_user,
                 "data": json.dumps(
                     {
                         "from": src.name,
@@ -1192,7 +1190,7 @@ def build_plan(source: dict, target: dict, src: End, dst: End, now: str, event_i
             "identity: case A, operator %s copied with the same id" % prefix(op)
             if case == "A"
             else "identity: case B, operator %s remapped to %s user %s"
-            % (prefix(op), dst.channel, prefix(edge_user))
+            % (prefix(op), dst.channel, prefix(target_user))
         ),
         "copy: "
         + ", ".join(
@@ -1267,7 +1265,7 @@ def build_plan(source: dict, target: dict, src: End, dst: End, now: str, event_i
         org_id=str(org["id"]),
         customer_id=str(org["customer_id"]),
         operator_id=op,
-        edge_user_id=edge_user,
+        target_user_id=target_user,
         case=case,
         inserts=inserts,
         reused=reused,
@@ -1278,7 +1276,7 @@ def build_plan(source: dict, target: dict, src: End, dst: End, now: str, event_i
 
 
 def plan_sql(plan: Plan) -> str:
-    """The plan as plain INSERT statements in foreign key order; never OR REPLACE, so a row edge already holds aborts the batch."""
+    """The plan as plain INSERT statements in foreign key order; never OR REPLACE, so a row bench already holds aborts the batch."""
     out = []
     for table in TABLE_ORDER:
         for row in plan.rows(table):
@@ -1307,7 +1305,7 @@ ROLLBACK_ORDER = (
 
 
 def rollback_sql(plan: Plan) -> str:
-    """Deletes exactly the rows this run inserted, by id; a reused edge row is never named."""
+    """Deletes exactly the rows this run inserted, by id; a reused bench row is never named."""
     stmts = [q("DELETE FROM config_stores WHERE id = @ID@;", id=lit(plan.store_id))]
     for table in ROLLBACK_ORDER:
         ids = [str(r["id"]) for r in plan.rows(table)]
@@ -1354,8 +1352,8 @@ def _sha256(path: pathlib.Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def edge_objects_absent(keys: list[str], dst: R2) -> str:
-    """Refuses when the edge bucket already holds any object this copy would put, so no pre-existing object is overwritten or later deleted by the rollback; a read-only probe, run on a dry run too."""
+def target_objects_absent(keys: list[str], dst: R2) -> str:
+    """Refuses when the bench bucket already holds any object this copy would put, so no pre-existing object is overwritten or later deleted by the rollback; a read-only probe, run on a dry run too."""
     with tempfile.TemporaryDirectory(prefix="mirror-config-store-probe-") as tmp:
         held = sum(
             dst.exists(key, pathlib.Path(tmp) / ("%d.probe" % n)) for n, key in enumerate(keys)
@@ -1386,7 +1384,7 @@ def copy_r2(keys: list[str], src: R2, dst: R2) -> None:
 
 
 def verify(plan: Plan, dst: Reader, fk_before: set[tuple]) -> None:
-    """Every inserted row re-read from edge and compared column by column; no new foreign key violation."""
+    """Every inserted row re-read from bench and compared column by column; no new foreign key violation."""
     for table in TABLE_ORDER:
         rows = plan.rows(table)
         if not rows:
@@ -1458,21 +1456,21 @@ def _now() -> str:
 
 def _parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog=SELF, description=(__doc__ or "").splitlines()[0])
-    p.add_argument("--from", dest="src", required=True, help="source end, e.g. eu-stable")
-    p.add_argument("--to", dest="dst", required=True, help="target end: eu-edge, or bench")
+    p.add_argument("--from", dest="src", required=True, help="source end: a region id, e.g. eu")
+    p.add_argument("--to", dest="dst", required=True, help="target end: bench")
     p.add_argument("--store", default=None, help="full config store id")
     p.add_argument(
         "--list-stores", action="store_true", help="list the source's stores (read-only)"
     )
     p.add_argument("--dry-run", action="store_true", help="plan only (the default)")
     p.add_argument(
-        "--apply", action="store_true", help="write the target; needs --i-understand-edge-write"
+        "--apply", action="store_true", help="write the target; needs --i-understand-bench-write"
     )
     p.add_argument(
-        "--i-understand-edge-write",
+        "--i-understand-bench-write",
         dest="ack",
         action="store_true",
-        help="acknowledges a write to the target (edge or bench)",
+        help="acknowledges a write to the target (bench)",
     )
     p.add_argument("--out-dir", default=None, help="where the rollback files go")
     return p
@@ -1501,7 +1499,7 @@ def run(
         return 2
     if args.apply and not args.ack:
         log.error(
-            "--apply writes the %s database and bucket: add --i-understand-edge-write" % args.dst
+            "--apply writes the %s database and bucket: add --i-understand-bench-write" % args.dst
         )
         return 2
     if not args.list_stores and not args.store:
@@ -1570,11 +1568,11 @@ def _work(
     target = read_target(dst, source)
     plan = build_plan(source, target, src_end, dst_end, now, uuid.uuid4().hex)
     fk_before = fk_violations(dst)
-    lines.append(edge_objects_absent(plan.r2_keys, R2(wrangler, dst_end)))
+    lines.append(target_objects_absent(plan.r2_keys, R2(wrangler, dst_end)))
     for line in plan.lines + lines:
         log.info(line)
     if not args.apply:
-        log.info("dry run: nothing written; re-run with --apply --i-understand-edge-write")
+        log.info("dry run: nothing written; re-run with --apply --i-understand-bench-write")
         return 0
     stamp = now.replace(":", "").replace("-", "")[:15]
     out_dir = (

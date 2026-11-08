@@ -3,9 +3,9 @@
     PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile deploy-workers -- \\
         env PYTHONPATH=.ci python3 -m rediacc_ci.ops.service_bindings_audit [--json]
 
-WHY. `deploy_account --target edge` once applied D1 migrations 0060-0066 and only then died on wrangler's `Service binding 'EXECUTOR' references Worker 'edge-rediacc-proxy-eu' which was not found [code: 10143]` (2026-10-27). A binding to a Worker that is not deployed is knowable up front.
+WHY. `deploy_account` for the edge target (retired by the rename) once applied D1 migrations 0060-0066 and only then died on wrangler's `Service binding 'EXECUTOR' references Worker 'edge-rediacc-proxy-eu' which was not found [code: 10143]` (2026-10-27). A binding to a Worker that is not deployed is knowable up front.
 
-WHAT IT DOES. Parses every `workers/*/wrangler*.toml` (a template carrying `@@` placeholders is skipped), takes the config's worker name, its side (bench, edge, stable, dev) and region from the file name, and its `[[services]]` bindings. It lists the account's Workers read-only (`GET /accounts/<id>/workers/scripts`) and prints one row per binding, `present` or `MISSING`. A config whose own Worker is not deployed is an advisory (`NOT-DEPLOYED`), never a failure. Nothing is deployed or written.
+WHAT IT DOES. Parses every `workers/*/wrangler*.toml` (a template carrying `@@` placeholders is skipped), takes the config's worker name, its side (bench, shared, dev) and region from the file name, and its `[[services]]` bindings. It lists the account's Workers read-only (`GET /accounts/<id>/workers/scripts`) and prints one row per binding, `present` or `MISSING`. A config whose own Worker is not deployed is an advisory (`NOT-DEPLOYED`), never a failure. Nothing is deployed or written.
 
 EXIT. 0 nothing missing; 1 a binding target is missing; 77 the account could not be read (unset credentials, API error, empty list): never green on no data.
 
@@ -61,7 +61,7 @@ LOCAL_SIDES = frozenset({"dev"})
 
 
 def side_region(rel: pathlib.PurePosixPath) -> tuple[str, str]:
-    """(side, region) from the wrangler file name: `wrangler.edge-eu.toml` -> edge/eu."""
+    """(side, region) from the wrangler file name: `wrangler.eu.toml` -> shared/eu."""
     stem = rel.name.removeprefix("wrangler.").removesuffix(".toml")
     if rel.name == "wrangler.toml":
         stem = ""
@@ -69,11 +69,7 @@ def side_region(rel: pathlib.PurePosixPath) -> tuple[str, str]:
         return "bench", "-"
     if stem == "dev":
         return "dev", "-"
-    if stem == "edge":
-        return "edge", "-"
-    if stem.startswith("edge-"):
-        return "edge", stem[len("edge-") :]
-    return "stable", stem or "-"
+    return "shared", stem or "-"
 
 
 def load_configs(root: pathlib.Path, only: str | None = None) -> tuple[list[Config], list[Binding]]:

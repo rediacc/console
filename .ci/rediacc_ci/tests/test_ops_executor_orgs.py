@@ -121,7 +121,7 @@ def test_primary_subscription_is_the_best_ranked_live_one() -> None:
 
 
 def test_list_prints_prefixes_only(fake, capsys) -> None:
-    assert _run("list", "--target", "edge", "--region", "eu") == 0
+    assert _run("list", "--target", "stable", "--region", "eu") == 0
     out = capsys.readouterr()
     text = out.out + out.err
     assert mod.prefix(ORG_A) in text
@@ -131,7 +131,7 @@ def test_list_prints_prefixes_only(fake, capsys) -> None:
     assert ORG_B not in text
     assert "2 of 5 orgs entitled" in text
     (call,) = _calls(fake)
-    assert call[:6] == ["npx", "--no-install", "wrangler", "d1", "execute", "edge-account-db-eu"]
+    assert call[:6] == ["npx", "--no-install", "wrangler", "d1", "execute", "account-eu"]
     assert "--remote" in call
     assert "--json" in call
     assert "server_recoverable_org_passphrase IS NOT NULL" in " ".join(call)
@@ -139,7 +139,9 @@ def test_list_prints_prefixes_only(fake, capsys) -> None:
 
 @pytest.mark.usefixtures("fake")
 def test_verify_passes_for_two_entitled_orgs(capsys) -> None:
-    assert _run("verify", "--target", "edge", "--region", "eu", "--org", ORG_A, "--org", ORG_B) == 0
+    assert (
+        _run("verify", "--target", "stable", "--region", "eu", "--org", ORG_A, "--org", ORG_B) == 0
+    )
     text = capsys.readouterr()
     assert ORG_A not in text.out + text.err
 
@@ -147,7 +149,7 @@ def test_verify_passes_for_two_entitled_orgs(capsys) -> None:
 @pytest.mark.usefixtures("fake")
 def test_verify_fails_when_one_org_is_not_entitled(capsys) -> None:
     rc = _run(
-        "verify", "--target", "edge", "--region", "eu", "--org", mod.prefix(ORG_A), "--org", ORG_D
+        "verify", "--target", "stable", "--region", "eu", "--org", mod.prefix(ORG_A), "--org", ORG_D
     )
     assert rc == 1
     text = capsys.readouterr()
@@ -156,15 +158,21 @@ def test_verify_fails_when_one_org_is_not_entitled(capsys) -> None:
 
 @pytest.mark.usefixtures("fake")
 def test_verify_refuses_one_org_and_duplicates() -> None:
-    assert _run("verify", "--target", "edge", "--region", "eu", "--org", ORG_A) == 1
-    assert _run("verify", "--target", "edge", "--region", "eu", "--org", ORG_A, "--org", ORG_A) == 1
+    assert _run("verify", "--target", "stable", "--region", "eu", "--org", ORG_A) == 1
+    assert (
+        _run("verify", "--target", "stable", "--region", "eu", "--org", ORG_A, "--org", ORG_A) == 1
+    )
 
 
 @pytest.mark.usefixtures("fake")
 def test_short_or_unknown_prefix_is_refused() -> None:
-    assert _run("verify", "--target", "edge", "--region", "eu", "--org", "org", "--org", ORG_B) == 1
     assert (
-        _run("verify", "--target", "edge", "--region", "eu", "--org", "nomatch-xyz", "--org", ORG_B)
+        _run("verify", "--target", "stable", "--region", "eu", "--org", "org", "--org", ORG_B) == 1
+    )
+    assert (
+        _run(
+            "verify", "--target", "stable", "--region", "eu", "--org", "nomatch-xyz", "--org", ORG_B
+        )
         == 1
     )
 
@@ -183,7 +191,7 @@ def _sequence(monkeypatch, *outputs: str) -> None:
 
 def test_block_writes_through_d1_and_confirms_with_a_reread(fake, monkeypatch, capsys) -> None:
     _sequence(monkeypatch, _ok(ROWS), _ok(), _after(ORG_A, True))
-    assert _run("block", "--target", "edge", "--region", "eu", "--org", mod.prefix(ORG_A)) == 0
+    assert _run("block", "--target", "stable", "--region", "eu", "--org", mod.prefix(ORG_A)) == 0
     read, write, reread = _calls(fake)
     assert read[:5] == write[:5] == reread[:5]
     assert "--remote" in write
@@ -203,7 +211,7 @@ def test_block_writes_through_d1_and_confirms_with_a_reread(fake, monkeypatch, c
 
 def test_unblock_writes_the_clear_and_the_audit_row(fake, monkeypatch) -> None:
     _sequence(monkeypatch, _ok(ROWS), _ok(), _after(ORG_D, False))
-    assert _run("unblock", "--target", "edge", "--region", "eu", "--org", ORG_D) == 0
+    assert _run("unblock", "--target", "stable", "--region", "eu", "--org", ORG_D) == 0
     command = _calls(fake)[1][_calls(fake)[1].index("--command") + 1]
     assert "console_executor_blocked_at = NULL" in command
     assert "'console_executor.unblocked'" in command
@@ -212,7 +220,7 @@ def test_unblock_writes_the_clear_and_the_audit_row(fake, monkeypatch) -> None:
 
 def test_block_that_a_reread_does_not_show_is_unverified(monkeypatch, fake, capsys) -> None:
     _sequence(monkeypatch, _ok(ROWS), _ok(), _after(ORG_A, False))
-    assert _run("block", "--target", "edge", "--region", "eu", "--org", ORG_A) == 1
+    assert _run("block", "--target", "stable", "--region", "eu", "--org", ORG_A) == 1
     text = capsys.readouterr()
     assert "UNVERIFIED" in text.out + text.err
     assert len(_calls(fake)) == 3
@@ -220,12 +228,12 @@ def test_block_that_a_reread_does_not_show_is_unverified(monkeypatch, fake, caps
 
 def test_failed_write_statement_is_refused(monkeypatch, fake) -> None:
     _sequence(monkeypatch, _ok(ROWS), json.dumps([{"success": False, "results": []}]))
-    assert _run("block", "--target", "edge", "--region", "eu", "--org", ORG_A) == 1
+    assert _run("block", "--target", "stable", "--region", "eu", "--org", ORG_A) == 1
     assert len(_calls(fake)) == 2
 
 
 def test_block_of_an_unknown_org_writes_nothing(fake) -> None:
-    assert _run("block", "--target", "edge", "--region", "eu", "--org", "nomatch-xyz") == 1
+    assert _run("block", "--target", "stable", "--region", "eu", "--org", "nomatch-xyz") == 1
     assert len(_calls(fake)) == 1
 
 
@@ -240,7 +248,7 @@ def test_statements_refuse_an_org_id_that_is_unsafe_in_sql() -> None:
 @pytest.mark.usefixtures("fake")
 def test_unreadable_wrangler_output_is_unverified(monkeypatch, capsys) -> None:
     monkeypatch.setenv("FAKE_NPX_OUT", "not json")
-    assert _run("list", "--target", "edge", "--region", "eu") == 1
+    assert _run("list", "--target", "stable", "--region", "eu") == 1
     text = capsys.readouterr()
     assert "UNVERIFIED" in text.out + text.err
 
@@ -258,20 +266,20 @@ def test_bad_target_is_refused_before_any_call(fake) -> None:
 
 def test_bench_reads_the_bench_database(fake) -> None:
     assert _run("list", "--target", "bench") == 0
-    assert _calls(fake)[0][5] == "account-db-bench"
+    assert _calls(fake)[0][5] == "account-bench"
 
 
 def test_reexec_runs_this_module_under_the_profile() -> None:
-    argv = mod.reexec_argv("deploy-proxy", ["list", "--target", "edge"])
+    argv = mod.reexec_argv("deploy-proxy", ["list", "--target", "stable"])
     assert argv[argv.index("--profile") + 1] == "deploy-proxy"
     assert argv[argv.index("-m", 3) + 1] == mod.SELF
-    assert argv[-3:] == ["list", "--target", "edge"]
+    assert argv[-3:] == ["list", "--target", "stable"]
 
 
 def test_missing_cloudflare_env_with_a_bound_profile_is_an_error(fake, monkeypatch) -> None:
     monkeypatch.delenv("CLOUDFLARE_API_TOKEN")
     monkeypatch.setenv("REDIACC_BWS_PROFILES", "deploy-proxy")
-    assert _run("list", "--target", "edge", "--region", "eu") == 1
+    assert _run("list", "--target", "stable", "--region", "eu") == 1
     assert _calls(fake) == []
 
 
@@ -325,7 +333,7 @@ def test_a_non_zero_wrangler_exit_on_the_write_is_refused_and_stderr_is_cut(
         return proc
 
     monkeypatch.setattr(mod.subprocess, "run", run)
-    assert _run("block", "--target", "edge", "--region", "eu", "--org", ORG_A) == 1
+    assert _run("block", "--target", "stable", "--region", "eu", "--org", ORG_A) == 1
     shown = capsys.readouterr()
     assert ORG_A not in shown.out + shown.err
     assert mod.prefix(ORG_A) in shown.err
@@ -333,5 +341,5 @@ def test_a_non_zero_wrangler_exit_on_the_write_is_refused_and_stderr_is_cut(
 
 
 def test_unblock_of_an_unknown_org_writes_nothing(fake) -> None:
-    assert _run("unblock", "--target", "edge", "--region", "eu", "--org", "nomatch-xyz") == 1
+    assert _run("unblock", "--target", "stable", "--region", "eu", "--org", "nomatch-xyz") == 1
     assert len(_calls(fake)) == 1

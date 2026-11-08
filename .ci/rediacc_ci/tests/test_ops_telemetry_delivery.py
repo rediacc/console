@@ -177,15 +177,15 @@ def test_main_never_echoes_token_even_when_hosts_fail(monkeypatch, capsys):
     assert TOKEN not in cap.out + cap.err
 
 
-def test_all_hosts_is_stable_edge_and_bench():
+def test_all_hosts_is_the_shared_hosts_and_bench():
     regions = [
-        {"id": "eu", "domain": "eu.d", "edgeDomain": "edge-eu.d"},
-        {"id": "us", "domain": "us.d", "edgeDomain": "edge-us.d"},
+        {"id": "eu", "domain": "eu.d"},
+        {"id": "us", "domain": "us.d"},
     ]
     hosts = td.all_hosts(regions)
-    assert hosts[:4] == ["eu.d", "us.d", "edge-eu.d", "edge-us.d"]
-    assert len(hosts) == 5
-    assert hosts[4].startswith("bench")
+    assert hosts[:2] == ["eu.d", "us.d"]
+    assert len(hosts) == 3
+    assert hosts[2].startswith("bench")
 
 
 def test_loki_and_tempo_need_real_results():

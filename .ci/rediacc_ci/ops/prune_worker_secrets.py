@@ -12,11 +12,11 @@ WHICH BWS KEY HOLDS A LEGACY NAME (`LEGACY_BWS`, mapped explicitly; found by com
 
 The PUT is an unmeasured step for the ASSETS binding (only the DELETE was measured, 2026-10-15): check the Worker's static assets after the first archive run.
 
-Run: `PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile deploy-workers -- python3 -m rediacc_ci.ops.prune_worker_secrets --region eu --target stable`
+Run: `PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile deploy-workers -- python3 -m rediacc_ci.ops.prune_worker_secrets --region eu`
 
 BENCH. `--region bench` selects the bench account Worker (its name read from `workers/account/wrangler.bench.toml`, the file `deploy_bench` deploys with). Its expected set is the key set of `deploy_bench.secrets_payload()`, read with the region-consistency gate's own extractor, and its legacy names map through `BENCH_LEGACY_BWS`, because bench binds the six unsuffixed production signing and session names and the `_BENCH` Turnstile secret (`.ci/config/secret-supply.json`, `deploy-bench`). Bench is never part of `--region all`: it is chosen by name. Profile for a bench run: `deploy-workers` (Cloudflare token, account id) plus the bws store read the archive needs.
 
-Options: `--region eu|us|asia|bench|all` (default all; `all` excludes bench), `--target stable|edge|all` (default all), `--archive` (archive then delete; needs an explicit `--region`; prefer it to a bare `--delete`), `--dry-run` (with `--archive`: report which names have a bws value, write nothing), `--delete` (needs an explicit `--region`; prints each deleted name, keeps no copy), `--json` (one JSON object on stdout, for `check:ci-worker-secret-names`).
+Options: `--region eu|us|asia|bench|all` (default all; `all` excludes bench), `--archive` (archive then delete; needs an explicit `--region`; prefer it to a bare `--delete`), `--dry-run` (with `--archive`: report which names have a bws value, write nothing), `--delete` (needs an explicit `--region`; prints each deleted name, keeps no copy), `--json` (one JSON object on stdout, for `check:ci-worker-secret-names`).
 
 Exit codes: 0 no extras, 1 extras listed (or a delete failed), 2 no verdict (missing credential, API failure, unknown option, `--archive` or `--delete` without an explicit `--region`, `--delete` combined with `--dry-run`).
 """
@@ -106,7 +106,6 @@ class Row:
 @dataclasses.dataclass
 class Options:
     region: str = "all"
-    target: str = "all"
     delete: bool = False
     archive: bool = False
     dry_run: bool = False
@@ -176,12 +175,12 @@ def _regions(base: pathlib.Path, *fields: str) -> list[dict[str, str]]:
 
 
 def load_workers(root: pathlib.Path | None = None, *, bench: bool = False) -> list[Row]:
-    """Every (region, channel, worker) of `regions.json`, plus the bench Worker when `bench`."""
+    """Every (region, worker) of `regions.json`, plus the bench Worker when `bench`. A region has one shared Worker, so there is no channel to choose."""
     base = paths.repo_root() if root is None else root
-    rows: list[Row] = []
-    for region in _regions(base, "id", "workerName", "edgeWorkerName"):
-        rows.append(Row(region["id"], "stable", region["workerName"]))
-        rows.append(Row(region["id"], "edge", region["edgeWorkerName"]))
+    rows: list[Row] = [
+        Row(region["id"], "shared", region["workerName"])
+        for region in _regions(base, "id", "workerName")
+    ]
     if bench:
         rows.append(Row(BENCH, BENCH, bench_worker(base)))
     return rows
@@ -411,9 +410,6 @@ def parse(argv: list[str]) -> Options | None:
         elif arg == "--region" and i + 1 < len(argv):
             opts.region = argv[i + 1]
             i += 1
-        elif arg == "--target" and i + 1 < len(argv):
-            opts.target = argv[i + 1]
-            i += 1
         else:
             return None
         i += 1
@@ -449,14 +445,14 @@ def run(
         chosen = [
             w
             for w in load_workers(root, bench=opts.region == BENCH)
-            if opts.region in ("all", w.region) and opts.target in ("all", w.target)
+            if opts.region in ("all", w.region)
         ]
     except (ApiError, OSError, ValueError, tomllib.TOMLDecodeError) as exc:
         return 2, ["%s: %s; failing closed, no verdict" % (SELF, exc)], []
     if not chosen:
         return (
             2,
-            ["%s: no Worker matches --region %s --target %s" % (SELF, opts.region, opts.target)],
+            ["%s: no Worker matches --region %s" % (SELF, opts.region)],
             [],
         )
     try:

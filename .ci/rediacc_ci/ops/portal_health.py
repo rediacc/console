@@ -1,6 +1,6 @@
 """Is the account portal of one environment up: the login page, every asset it references, and the API health route.
 
-    PYTHONPATH=.ci python3 -m rediacc_ci.ops.portal_health --target stable|edge|bench [--region eu|us|asia]
+    PYTHONPATH=.ci python3 -m rediacc_ci.ops.portal_health --target stable|bench [--region eu|us|asia]
 
 WHY IT EXISTS. A secret push to an account Worker mints a new Worker version, and on an assets-bound Worker a bad version can strand the static assets the last deploy uploaded (the reason `set_account_worker_secrets` pushes in ONE bulk call). `push_backup_credentials` rotates the backup key pair on a live Worker outside a release, so it needs a before-and-after verdict that covers the three ways a portal breaks: the SPA shell, the bundle it loads, and the API behind it (agent/plans/PLAN-backup-credential-isolation.md B3 and B6).
 
@@ -10,7 +10,7 @@ THE THREE PROBES, per host, all GET, nothing written:
   2. Every `/account/assets/*.js` and `/account/assets/*.css` that page references answers 200. A login page that references NO asset is RED, not vacuously green: the shell that loads the portal always references its bundle, so zero means the page is not the portal.
   3. `https://<host>/account/api/v1/health` answers 200 with a JSON body whose `status` is `ok` (private/account/src/routes/index.ts).
 
-HOSTS come from regions.json (`domain` for stable, `edgeDomain` for edge, every region or the one `--region` names) and, for bench, from `well_known.BENCH_ORIGIN`, the origin deploy_bench deploys to.
+HOSTS come from regions.json (`domain` for stable (the shared host of each region), every region or the one `--region` names) and, for bench, from `well_known.BENCH_ORIGIN`, the origin deploy_bench deploys to.
 
 OUTPUT IS A URL AND A STATUS PER LINE, and nothing else from a response: no body, no header value. A summary line gives the shape (hosts, URLs, red count) so a collapse to zero is visible. Exit 0 when every probe is green, 1 on any red, 2 on a usage error. A probe that cannot connect is red with the error's class name, never skipped.
 """
@@ -29,7 +29,7 @@ from rediacc_ci import paths
 from rediacc_ci.core import https
 from rediacc_ci.well_known import BENCH_ORIGIN, GH_ORIGIN, GH_REPO
 
-TARGETS = ("stable", "edge", "bench")
+TARGETS = ("stable", "bench")
 LOGIN_PATH = "/account/login"
 HEALTH_PATH = "/account/api/v1/health"
 # Every asset reference the login shell carries, as a root-relative or absolute URL path. The class excludes quotes, whitespace, `<`, `>` and `?`/`#` (a query or fragment is not part of the file).
@@ -83,14 +83,13 @@ def hosts(target: str, region: str | None, regions: list[dict] | None = None) ->
             raise ValueError("bench has one host and no regions; drop --region")
         return [BENCH_ORIGIN.removeprefix("https://").rstrip("/")]
     regions = load_regions() if regions is None else regions
-    field = "domain" if target == "stable" else "edgeDomain"
     chosen = [r for r in regions if region is None or r["id"] == region]
     if not chosen:
         raise ValueError(
             "unknown region %r (regions.json has %s)"
             % (region, ", ".join(r["id"] for r in regions))
         )
-    return [r[field] for r in chosen]
+    return [r["domain"] for r in chosen]
 
 
 def asset_paths(html: str) -> list[str]:
@@ -191,7 +190,7 @@ def build_parser() -> argparse.ArgumentParser:
         description=(__doc__ or "").splitlines()[0],
     )
     parser.add_argument("--target", required=True, choices=TARGETS)
-    parser.add_argument("--region", default=None, help="one regions.json id (stable and edge only)")
+    parser.add_argument("--region", default=None, help="one regions.json id (stable only)")
     return parser
 
 

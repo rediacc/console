@@ -134,7 +134,7 @@ def test_run_region_bench_lists_the_extras_and_never_all() -> None:
     assert code == 1, lines
     assert [r.region for r in rows] == ["bench"]
     assert rows[0].extras == ["API_KEY"]
-    assert all("rediacc-account-bench" in c for c in calls)
+    assert all("account-bench" in c for c in calls)
     _c, _l, all_rows = verb.run([], ENV, lambda *_a, **_k: [])
     assert all(r.region != "bench" for r in all_rows)
 
@@ -169,13 +169,13 @@ def test_an_unknown_region_suffix_is_a_named_refusal() -> None:
 @pytest.mark.parametrize(
     "doc",
     [
-        {"regions": [{"id": "eu", "workerName": "w"}]},
-        {"regions": [{"id": "eu", "edgeWorkerName": "e"}]},
+        {"regions": [{"id": "eu"}]},
+        {"regions": [{"workerName": "w"}]},
         {"regions": "eu"},
         {},
         [],
     ],
-    ids=["no-edge-worker", "no-worker", "regions-not-a-list", "no-regions", "not-an-object"],
+    ids=["no-worker", "no-id", "regions-not-a-list", "no-regions", "not-an-object"],
 )
 def test_run_on_a_malformed_regions_file_fails_closed(tmp_path, doc) -> None:
     """Review d1b6575d.1/.2: a regions.json missing a field `run` reads is exit 2 with the "failing closed, no verdict" line, through `run` itself, never a KeyError traceback. Nothing is fetched."""
@@ -192,7 +192,7 @@ def test_run_on_a_malformed_regions_file_fails_closed(tmp_path, doc) -> None:
 
 def test_archive_with_a_regions_file_lacking_a_suffix_fails_closed(tmp_path) -> None:
     """The archive path reads `secretSuffix` after the survey; a region without one is exit 2, nothing archived."""
-    doc = {"regions": [{"id": "eu", "workerName": "w", "edgeWorkerName": "e"}]}
+    doc = {"regions": [{"id": "eu", "workerName": "w"}]}
     (tmp_path / verb.REGIONS_REL).write_text(json.dumps(doc), encoding="utf-8")
     live = [{"name": "STALE_ONE", "type": "secret_text"}]
     code, lines, _rows = verb.run(

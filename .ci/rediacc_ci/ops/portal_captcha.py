@@ -12,7 +12,7 @@ THE CHECK, per host, read-only except one refused login:
 
 UNKNOWN IS RED. A host that cannot be reached, a login page without an index bundle, or a bundle that does not answer 200 is a verdict nobody could check, never folded into OK.
 
-HOSTS default to every stable and edge host in regions.json (`portal_health.hosts`), so a new region is probed without editing this file. Exit 0 when every host is OK, 1 when any is BROKEN or UNKNOWN (each red line names the host and the fix command), 2 on a usage error. Output never carries a response body or the site key itself.
+HOSTS default to every shared host in regions.json (`portal_health.hosts`), so a new region is probed without editing this file. Exit 0 when every host is OK, 1 when any is BROKEN or UNKNOWN (each red line names the host and the fix command), 2 on a usage error. Output never carries a response body or the site key itself.
 
 `rediacc_ci.deploy.deploy_account` runs the same check after each deploy (`portal_smoke`), with the key it deployed and a short retry for propagation.
 """
@@ -152,12 +152,10 @@ def check_with_retry(
 
 
 def target_of(host: str, regions: list[dict] | None = None) -> tuple[str, str] | None:
-    """(`stable`|`edge`, region id) for a regions.json host, else None."""
+    """(`stable`, region id) for a regions.json host (the one shared host of the region), else None."""
     for region in portal_health.load_regions() if regions is None else regions:
         if region.get("domain") == host:
             return "stable", region["id"]
-        if region.get("edgeDomain") == host:
-            return "edge", region["id"]
     return None
 
 
@@ -175,31 +173,26 @@ def fix_command(host: str, regions: list[dict] | None = None) -> str:
             "rebuild the portal with VITE_TURNSTILE_SITE_KEY bound from TURNSTILE_SITE_KEY and redeploy %s"
             % host
         )
-    target, region = where
-    config = "wrangler.%s.toml" % (region if target == "stable" else "edge-" + region)
+    _target, region = where
+    config = "wrangler.%s.toml" % region
     rollback = (
         "or roll back: cd workers/account && npx wrangler deployments list --config %s, then "
         "npx wrangler rollback <last good version id> --config %s -y (deploy-workers profile)"
         % (config, config)
     )
-    if target == "edge":
-        return "npm run release:local -- --channel edge --workers-only --regions %s; %s" % (
-            region,
-            rollback,
-        )
     # The inner script is quoted once, for the outer shell (`shlex.quote`): inside its single quotes REBUILD's double quotes reach `sh -c` as quotes, so the key is bound bare. Escaping them as `\"` there handed the inner shell literal quote characters, and the rebuilt portal carried a key wrapped in them (review 760ca2d1.1).
     inner = "%s && PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_account --region %s" % (
         REBUILD,
         region,
     )
     return (
-        "PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile account-secrets-%s-stable -- "
+        "PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile account-secrets-%s -- "
         "sh -c %s; %s" % (region, shlex.quote(inner), rollback)
     )
 
 
 def default_hosts() -> list[str]:
-    return [h for target in ("stable", "edge") for h in portal_health.hosts(target, None)]
+    return portal_health.hosts("stable", None)
 
 
 def run(hosts: list[str], fetch: Http = http, out=None) -> int:

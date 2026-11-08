@@ -10,7 +10,7 @@ from urllib.parse import urlparse
 import pytest
 
 from rediacc_ci.ops import portal_captcha as pc
-from rediacc_ci.well_known import ACCOUNT_DEFAULT_ORIGIN, APEX_DOMAIN, BENCH_ORIGIN
+from rediacc_ci.well_known import ACCOUNT_DEFAULT_ORIGIN, BENCH_ORIGIN, PRODUCT_DOMAIN
 
 REGIONS = pc.portal_health.load_regions()
 _BY_ID = {region["id"]: region for region in REGIONS}
@@ -18,12 +18,11 @@ EU = urlparse(ACCOUNT_DEFAULT_ORIGIN).netloc
 BENCH = urlparse(BENCH_ORIGIN).netloc
 # Read with .get so a regions.json without `us` fails the cases that use it, not the collection of every case in this module (review 599bb20a.1).
 US = _BY_ID.get("us", {}).get("domain", "")
-EDGE_US = _BY_ID.get("us", {}).get("edgeDomain", "")
 
 
 def _need_us():
-    if not (US and EDGE_US):
-        pytest.fail("regions.json has no `us` region with a domain and an edgeDomain")
+    if not US:
+        pytest.fail("regions.json has no `us` region with a domain")
 
 
 KEY = "0x4AAAAAACfixtureKey0001"
@@ -122,15 +121,16 @@ def test_retry_stops_at_the_first_ok_and_sleeps_between():
 
 def test_fix_commands_name_the_redeploy_and_the_rollback():
     _need_us()
-    edge = pc.fix_command(EDGE_US, REGIONS)
-    assert "release:local -- --channel edge --workers-only --regions us" in edge
-    assert "wrangler rollback" in edge
-    assert "wrangler.edge-us.toml" in edge
-    stable = pc.fix_command(EU, REGIONS)
-    assert "--profile account-secrets-eu-stable" in stable
-    assert "VITE_TURNSTILE_SITE_KEY" in stable
-    assert "deploy_account --region eu" in stable
-    assert "wrangler.eu.toml" in stable
+    us = pc.fix_command(US, REGIONS)
+    assert "wrangler rollback" in us
+    assert "wrangler.us.toml" in us
+    assert "release:local" not in us, "no edge-only redeploy path remains"
+    shared = pc.fix_command(EU, REGIONS)
+    assert "--profile account-secrets-eu " in shared
+    assert "-stable" not in shared
+    assert "VITE_TURNSTILE_SITE_KEY" in shared
+    assert "deploy_account --region eu" in shared
+    assert "wrangler.eu.toml" in shared
     assert "redeploy other.example" in pc.fix_command("other.example", REGIONS)
 
 
@@ -150,7 +150,7 @@ def test_run_names_each_red_host_and_its_fix(monkeypatch):
     assert rc == 1
     assert "BROKEN  " + US in text
     assert "fix: " in text
-    assert "account-secrets-us-stable" in text
+    assert "account-secrets-us " in text
     assert "RED, 2 host(s), 1 red" in text
     assert KEY not in text
     out = io.StringIO()
@@ -163,11 +163,9 @@ def test_zero_hosts_is_red():
     assert pc.run([], site(""), out) == 1
 
 
-def test_the_default_hosts_are_the_six_stable_and_edge_hosts():
+def test_the_default_hosts_are_the_three_shared_hosts():
     assert sorted(pc.default_hosts()) == sorted(
-        "%s%s.%s" % (prefix, region, APEX_DOMAIN)
-        for prefix in ("", "edge-")
-        for region in ("eu", "us", "asia")
+        "%s.%s" % (region, PRODUCT_DOMAIN) for region in ("eu", "us", "asia")
     )
 
 
