@@ -3,10 +3,12 @@ import { createApp } from '../../../private/account/src/app.js';
 import type { Database } from '../../../private/account/src/db/index.js';
 import * as schema from '../../../private/account/src/db/schema.js';
 import { envSchema } from '../../../private/account/src/types/env.js';
+import { handleEnterpriseLookup, type LookupEnv } from './enterprise-lookup';
+import { handleGeo } from './geo';
 import { applyRedirect } from './redirect-aliases';
 import { findSmartRedirect } from './smart-redirect';
 
-interface Env {
+interface Env extends LookupEnv {
   ASSETS: Fetcher;
   // Only bound in PR previews (deploy-www.sh mints account-db-pr-N and injects the binding via wrangler.preview.toml). On stable / edge, /account/api/* is served by the regional workers, so DB is absent here and the branch below 410s.
   DB?: D1Database;
@@ -356,6 +358,14 @@ export default {
 
     if (url.pathname === '/robots.txt' && isPreview) {
       return Promise.resolve(buildDisallowRobots());
+    }
+
+    if (url.pathname === '/api/geo' && request.method === 'GET') {
+      return Promise.resolve(handleGeo(request));
+    }
+
+    if (url.pathname === '/api/enterprise-lookup') {
+      return handleEnterpriseLookup(request, env);
     }
 
     if (isAccountApiPath(url.pathname)) {
