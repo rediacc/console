@@ -94,6 +94,7 @@ import {
   openLedger,
   outcomeOf,
 } from './ledger';
+import { localWarnSelftest, softenLocalWarn, warnedFor } from './local-warn';
 import { GATES, type GateSpec } from './manifest';
 import {
   buildGraph,
@@ -2386,6 +2387,9 @@ async function selftest(): Promise<number> {
   // --quick DIFF SELECTION (quick-select.ts). The pure half: touch, import closure, npm script change, the mutant matcher, the budget, the base fallback.
   const qs = quickSelectSelftest(os.tmpdir(), matchesAny);
   for (const f of qs.failures) require_(false, `quick-select: ${f}`);
+  // THE LOCAL ADVISORY GATE (local-warn.ts): warning in the quick lane, still blocking in CI, read from the real manifest and workflow.
+  const lw = localWarnSelftest(REPO_ROOT, GATES);
+  for (const f of lw.failures) require_(false, `local-warn: ${f}`);
   // END TO END THROUGH select() ITSELF, so the lane wiring is under test and not only the helper: a touched slow gate is selected, an untouched one deferred, the fast gate kept. The leaves are real files with no relative imports, so neither can reach the other's closure.
   {
     // Each fixture DECLARES paths that match nothing in the diff: a slow gate without paths is selected by any change (quick-select rule 4), which would hide whether the leaf rule selected it.
@@ -3131,6 +3135,8 @@ interface ReceiptGate extends PriorGate {
   filesHash: string;
   inputs: { globs: string[]; files: string[]; scripts: string[] };
   verdict: 'ok' | 'fail' | 'blocked' | 'deferred' | 'ciOnly';
+  /** Set on a gate the local quick lane downgraded from red (local-warn.ts): verdict stays `ok`, which is all the push guard admits, and this names what failed. */
+  warned?: string;
 }
 
 function gitOut(args: readonly string[]): string {
@@ -3492,6 +3498,7 @@ function receiptGates(input: {
         findings: verdict === 'fail' ? (input.findings[spec.id] ?? null) : null,
         judgedTree: input.tree,
         carriedFrom: null,
+        ...(warnedFor(spec.id) === undefined ? {} : { warned: warnedFor(spec.id) }),
       };
     } else if (spec.gate) {
       out[spec.id] = {
@@ -4094,14 +4101,18 @@ async function runGraph(
       // A width someone chose (--jobs) or a grant this runner was launched under is a ceiling on this run, not a figure to improve on: only a run sized to the machine may spend the machine's idle.
       idleCoreMs:
         opts.jobs === undefined && grantFromEnv() === undefined ? cpuSampler.idleCoreMs : undefined,
-      exec: (spec, grant: Grant) =>
-        execGate(spec, {
-          cwd: REPO_ROOT,
-          mergeOutput: opts.mergeOutput,
-          ...PROFILE_OPTS,
-          grant,
-          timeoutMs: limits.get(spec.id),
-        }),
+      exec: async (spec, grant: Grant) =>
+        softenLocalWarn(
+          spec,
+          opts.quick && opts.lane === undefined,
+          await execGate(spec, {
+            cwd: REPO_ROOT,
+            mergeOutput: opts.mergeOutput,
+            ...PROFILE_OPTS,
+            grant,
+            timeoutMs: limits.get(spec.id),
+          })
+        ),
       // Start lines under --json too, where they go to stderr: a serial capture otherwise shows nothing between the plan and the end, and a hang cannot be told from a slow gate.
       onStart:
         opts.verbose || opts.json
