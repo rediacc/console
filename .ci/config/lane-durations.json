@@ -572,7 +572,6 @@
     "pytest:.ci/rediacc_ci/tests/test_core_toolchain.py": 8646.0,
     "pytest:.ci/rediacc_ci/tests/test_deploy_clone_d1.py": 3926.5,
     "pytest:.ci/rediacc_ci/tests/test_deploy_deploy_account.py": 6049.2,
-    "pytest:.ci/rediacc_ci/tests/test_deploy_deploy_edge.py": 2263.5,
     "pytest:.ci/rediacc_ci/tests/test_deploy_deploy_proxy.py": 23795.2,
     "pytest:.ci/rediacc_ci/tests/test_deploy_deploy_www.py": 5129.5,
     "pytest:.ci/rediacc_ci/tests/test_deploy_resolve_account_deploy_config.py": 101.0,

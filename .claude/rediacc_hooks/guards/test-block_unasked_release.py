@@ -581,11 +581,10 @@ CASES = [
     ("docker pull", "docker pull %s/renet:1.2.3" % IMAGE_REGISTRY, None, A, ""),
     ("buildx imagetools inspect", "docker buildx imagetools inspect ghcr.io/x:1", None, A, ""),
     # ------------------------------------------------------------- publish modules: every Worker deploy free, the CLI's stable promote asked, entry steps refused
-    ("deploy_edge is free", "%s rediacc_ci.deploy.deploy_edge" % PY, None, A, "!BLOCKED"),
     (
         "the skill's www deploy in the devbox",
         "%s env %s bash -c 'npm run build:packages && "
-        "PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_edge'" % (DEVBOX, BWS),
+        "PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_www'" % (DEVBOX, BWS),
         None,
         A,
         "",
