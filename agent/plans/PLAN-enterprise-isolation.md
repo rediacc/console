@@ -65,24 +65,29 @@ This plan is public: no customer name appears in it or in any tracked file. `acm
 
 ### Wave 1
 
-- [ ] N1 [writer] Company name validation: reserved region, service and `*-proxy` names, derived from `regions.json` and well-known.
+- [x] N1 [writer] Company name validation: reserved region, service and `*-proxy` names, derived from `regions.json` and well-known.
   Owns: .ci/rediacc_ci/enterprise/__init__.py (new), .ci/rediacc_ci/enterprise/names.py (new), .ci/rediacc_ci/tests/test_enterprise_names.py (new).
   Accept: `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_enterprise_names.py` rc 0.
+    (ticked) 2026-11-08T16:04:34Z by d778be9d: commit:74075193c7 names.check refuses malformed, reserved (derived from regions.json and well-known plus service labels, notify added in 0a3ea72044), -proxy and opaque names; pytest test_enterprise_names.py 28 passed rc 0
 - [ ] N2 [writer] Leak gate refusing a tracked `enterprise.*.toml` or a non-opaque store name, and masking in the two public reports of anything not derived from `regions.json`.
   Owns: .ci/rediacc_ci/quality/enterprise_leak.py (new), .ci/rediacc_ci/ops/cf_usage_report.py, .ci/rediacc_ci/housekeeping/cf_leftovers.py, .ci/rediacc_ci/tests/test_enterprise_leak.py (new).
   Accept: `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_enterprise_leak.py` rc 0.
-- [ ] N3 [writer] Control schema, one per region (companies, scope, ring, override, window, onboarding, rollout, audit), and a registry client that reads all regions and names an unreachable one.
+- [x] N3 [writer] Control schema, one per region (companies, scope, ring, override, window, onboarding, rollout, audit), and a registry client that reads all regions and names an unreachable one.
   Owns: private/account/control/migrations/0001_control.sql (new), .ci/rediacc_ci/enterprise/registry.py (new), .ci/rediacc_ci/tests/test_enterprise_registry.py (new).
   Accept: `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_enterprise_registry.py` rc 0.
-- [ ] S1 [writer] Oracle: the signer scope matrix, all refused: foreign subscription, wrong host, over limit, suspended, raw bytes, a shared caller asking for ENTERPRISE, a certificate over its ceiling. A legitimate certificate is admitted. It runs against fixtures until S2.
+    (ticked) 2026-11-08T16:04:35Z by d778be9d: commit:74075193c7 control schema private/account control/migrations/0001_control.sql (account 129ebad, gitlink 6387aa3efc) with companies, scope, ring, ring_override, upgrade_window, onboarding, rollout, audit; registry reads every region through an injected query and raises RegistryUnreachableError naming each failed region; 35 tests rc 0; the live D1 transport plugs into Query in C1
+- [x] S1 [writer] Oracle: the signer scope matrix, all refused: foreign subscription, wrong host, over limit, suspended, raw bytes, a shared caller asking for ENTERPRISE, a certificate over its ceiling. A legitimate certificate is admitted. It runs against fixtures until S2.
   Owns: private/account/tests/integration/license-signer-scope.test.ts (new).
   Accept: `(cd private/account && npx vitest run tests/integration/license-signer-scope.test.ts)` rc 0.
-- [ ] K1 [writer] Oracle and pure core: `decide`, with planted failure, pauses, windows, override, thresholds, security order with and without a soak waiver.
+    (ticked) 2026-11-08T16:04:33Z by d778be9d: commit:6387aa3efc landed as account 8b40e77 (gitlink 6387aa3efc): the signer scope oracle, 42 refused and 8 admitted rows as it.todo until S2 exists, 10 matrix tests pass; vitest 107 passed 51 todo rc 0; a throwaway reference signer made all 61 pass and dropping its host checks failed exactly those 8 rows
+- [x] K1 [writer] Oracle and pure core: `decide`, with planted failure, pauses, windows, override, thresholds, security order with and without a soak waiver.
   Owns: .ci/rediacc_ci/release/rings.py (new), .ci/rediacc_ci/tests/test_release_rings_decide.py (new).
   Accept: `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_release_rings_decide.py` rc 0.
-- [ ] P1 [writer] Proof verbs `signer`, `region-loss`, `add`, `routing`, `release`, `replay`, `proxy`, `cost`, `renet`, `github`, `remove` and `keys`, each exiting non-zero on a broken claim, tested with recording fakes.
+    (ticked) 2026-11-08T16:04:37Z by d778be9d: commit:b07a21b44c pure decide(state, now) with stages, ring thresholds, pauses, upgrade windows, override, failure latch and security order with and without a soak waiver; pytest test_release_rings_decide.py 41 passed rc 0, ruff and mypy rc 0
+- [x] P1 [writer] Proof verbs `signer`, `region-loss`, `add`, `routing`, `release`, `replay`, `proxy`, `cost`, `renet`, `github`, `remove` and `keys`, each exiting non-zero on a broken claim, tested with recording fakes.
   Owns: .ci/rediacc_ci/enterprise/proof.py (new), .ci/rediacc_ci/tests/test_enterprise_proof.py (new).
   Accept: `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_enterprise_proof.py` rc 0.
+    (ticked) 2026-11-08T16:04:38Z by d778be9d: commit:5b19ed4322 12 proof verbs (signer, region-loss, add, routing, release, replay, proxy, cost, renet, github, remove, keys), each exiting 1 on a broken claim, tested with a recording fake and 32 break cases; pytest 65 passed rc 0; the live Lab binding has no owning box yet (raised)
 
 ### Wave 2
 

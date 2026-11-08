@@ -1102,8 +1102,8 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 34,
-      "done": 0,
+      "open": 29,
+      "done": 5,
       "open_sigs": [
         "096ada29",
         "0a5bd9a8",
@@ -1112,26 +1112,21 @@
         "130d250c",
         "15f5537a",
         "17a0e356",
-        "19bcfe4a",
         "2636f3ec",
         "2706988f",
         "2878e08d",
         "3c1ed10a",
         "3fec96a0",
-        "4fecf68e",
         "532e82c9",
         "6041744e",
-        "6296754b",
         "6f74d0b7",
         "73aa9973",
         "79026bfa",
         "80516a88",
-        "859c4aee",
         "8dc87613",
         "a8892e0c",
         "b2fa5c1a",
         "b343464b",
-        "bb7fdaa6",
         "bf97a640",
         "cc2cb507",
         "cc583290",
@@ -1140,7 +1135,13 @@
         "e8b5ad6f",
         "f4b49503"
       ],
-      "done_sigs": []
+      "done_sigs": [
+        "19bcfe4a",
+        "4fecf68e",
+        "6296754b",
+        "859c4aee",
+        "bb7fdaa6"
+      ]
     },
     "agent/plans/PLAN-executor-durable-object-policy.md": {
       "status": "approved",
@@ -2874,13 +2875,12 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 20,
-      "done": 0,
+      "open": 18,
+      "done": 2,
       "open_sigs": [
         "02e7480f",
         "08056aeb",
         "18e590ce",
-        "1fa6d9e0",
         "21e3ffd0",
         "3285fb52",
         "34398e26",
@@ -2889,7 +2889,6 @@
         "42818efa",
         "44171e9c",
         "6b24c6fa",
-        "7ce47951",
         "83842948",
         "87da6b72",
         "976bf9ae",
@@ -2898,7 +2897,10 @@
         "c470810e",
         "ed44b490"
       ],
-      "done_sigs": []
+      "done_sigs": [
+        "1fa6d9e0",
+        "7ce47951"
+      ]
     },
     "agent/plans/PLAN-wire-account-vitest-ci.md": {
       "status": "compacted",

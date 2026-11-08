@@ -40,9 +40,10 @@ The zone is on Cloudflare with null MX, `v=spf1 -all` and `_dmarc` reject with s
 
 ### Zone
 
-- [ ] W0 [writer] `apply_cf_redirect_rules` takes a zone and a rule list, with the rediacc.com apex rule unchanged and the two new rules added.
+- [x] W0 [writer] `apply_cf_redirect_rules` takes a zone and a rule list, with the rediacc.com apex rule unchanged and the two new rules added.
   Owns: .ci/rediacc_ci/ops/apply_cf_redirect_rules.py, .ci/rediacc_ci/tests/test_ops_apply_cf_redirect_rules.py.
   Accept: `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_ops_apply_cf_redirect_rules.py` rc 0.
+    (ticked) 2026-11-08T16:04:40Z by d778be9d: commit:0b7598ae43 apply_cf_redirect_rules takes --zone rediacc.com or rediacc.cloud; rediacc.com keeps its apex rule and gains edge.rediacc.com to www; rediacc.cloud apex and www 301 to www.rediacc.com; a zone with no redirect ruleset gets one; pytest 21 passed rc 0
 - [ ] Z1 [live] Apply the three rules with the placeholder records. PLAN-product-domain-rename.md L11 waits on the `edge.rediacc.com` one.
   Accept: `curl -sI https://rediacc.cloud | grep -qi 'location: https://www.rediacc.com'` rc 0, the same for `https://www.rediacc.cloud` and `https://edge.rediacc.com`.
 - [ ] Z2 [live] Read the list's current guidelines and the registration term, open the `publicsuffix/list` PR for `rediacc.cloud`, publish `_psl.rediacc.cloud` with the PR URL, and record the URL here. The box closes on submission; browser adoption takes months.
@@ -73,9 +74,10 @@ The zone is on Cloudflare with null MX, `v=spf1 -all` and `_dmarc` reject with s
 - [ ] W7 [writer] Mail docs for `.cloud` under `private/account/docs`, leaving `incidents/` as history. They state that the `rediacc.cloud` apex sends nothing and human mail stays on `rediacc.com`.
   Owns: private/account/docs/** except incidents.
   Accept: `! grep -rn 'notify\.rediacc\.\(com\|io\)\|ses\.rediacc\.io' private/account/docs --include=*.md --exclude-dir=incidents` rc 0.
-- [ ] W8 [writer] Close the magic-link leak: always the generic body, `hasPassword` gone from the response, the portal client offering both options. Tests: the 423 path for an unknown address, and the session cookie carrying no `Domain` attribute.
+- [x] W8 [writer] Close the magic-link leak: always the generic body, `hasPassword` gone from the response, the portal client offering both options. Tests: the 423 path for an unknown address, and the session cookie carrying no `Domain` attribute.
   Owns: private/account/src/routes/auth.ts, private/account/src/types/user.ts, private/account/web/src/api/endpoints.ts, private/account/web/src/auth/AuthContext.tsx, private/account/tests/integration/auth-no-existence-leak.test.ts (new).
   Accept: `(cd private/account && npx vitest run tests/integration/auth-no-existence-leak.test.ts)` rc 0.
+    (ticked) 2026-11-08T16:04:41Z by d778be9d: commit:6387aa3efc account 9fd7659 and acb392e (gitlink 6387aa3efc): the magic-link route always sends the link and returns one body, hasPassword and skipIfHasPassword removed, Login follows; auth-no-existence-leak.test.ts (generic body, 423 for an unknown address, no Domain on session cookies) failed before and passes; auth vitest rc 0, account and web tsc rc 0
 - [ ] W9 [writer] Host literals left outside `packages/www`: two under the CLI's `services/serve`, `workers/proxy/src/index.ts`, the account's certificate PDF and `types/env.ts`, and the CLI contract regenerated from them.
   Owns: packages/cli/src/services/serve/auth.ts, packages/cli/src/services/serve/container-config.ts, workers/proxy/src/index.ts, private/account/src/services/pdf/certificate-pdf.ts, private/account/src/types/env.ts, packages/shared/src/cli-contract/data/**.
   Accept: `! git grep -nE '(edge-)?(eu|us|asia)\.rediacc\.com' -- packages/cli/src packages/shared/src workers/proxy/src workers/www/src` rc 0, the same grep under `private/account/src`, and `npx tsc --noEmit --project packages/cli/tsconfig.json` rc 0.
