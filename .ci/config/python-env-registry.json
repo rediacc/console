@@ -2176,6 +2176,9 @@
       "WORKLIST_AGENT_HINT_MIN_SCORE",
       "WORKLIST_AGENT_HINT_REFRESH_MIN"
     ],
+    ".claude/hooks/stop/wl_away.py": [
+      "WL_AWAY_STATE"
+    ],
     ".claude/hooks/stop/wl_bgsweep.py": [
       "CLAUDE_PID",
       "WORKLIST_BGSWEEP_AGE_MIN",
@@ -2221,6 +2224,8 @@
       "WORKLIST_UNREAD_ROTATE_MIN"
     ],
     ".claude/hooks/stop/wl_ci.py": [
+      "CI",
+      "REDIACC_GATE_LEDGER_DIR",
       "WORKLIST_CI_CACHE_FINAL_S",
       "WORKLIST_CI_CACHE_LIVE_S",
       "WORKLIST_CI_MAX_BLOCKS",
@@ -2228,7 +2233,8 @@
       "WORKLIST_CI_QUEUE_DEPTH",
       "WORKLIST_CI_QUEUE_MIN",
       "WORKLIST_CI_RETRY_PATTERNS",
-      "WORKLIST_PUBLISH_REF"
+      "WORKLIST_PUBLISH_REF",
+      "XDG_STATE_HOME"
     ],
     ".claude/hooks/stop/wl_claimcheck.py": [
       "TMPDIR"
