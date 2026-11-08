@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """check:ci-proxy-deploy-dry-run -- every proxy deploy target compiles, with fake credentials and no image build.
 
-WHY THIS EXISTS. The proxy has six CD targets (edge and stable, in each region of regions.json) and bench, and each deploys through `deploy_proxy --target T --region R`. Nothing in CI ran that path: a renamed config, a refusal that fired on a real config, or a wrangler key the pinned wrangler rejects surfaced on the first real deploy. `--dry-run` runs the config refusals and `wrangler deploy --dry-run --containers-rollout none`, which compiles the Worker without building or updating a container and needs no credentials, no fetch and no staged artifacts. The image itself is built and booted by check:ci-proxy-image-smoke.
+WHY THIS EXISTS. The proxy has four CD targets (the one shared `stable` set in each region of regions.json) and bench, and each deploys through `deploy_proxy --target T --region R`. Nothing in CI ran that path: a renamed config, a refusal that fired on a real config, or a wrangler key the pinned wrangler rejects surfaced on the first real deploy. `--dry-run` runs the config refusals and `wrangler deploy --dry-run --containers-rollout none`, which compiles the Worker without building or updating a container and needs no credentials, no fetch and no staged artifacts. The image itself is built and booted by check:ci-proxy-image-smoke.
 
-THE TARGETS ARE DERIVED, NOT LISTED. `regions.json` gives the regions; each region contributes `stable` and `edge`, and bench is the seventh. A region added there is dry-run here with no edit. The expected config per target (`wrangler.<region>.toml`, `wrangler.edge-<region>.toml`, `wrangler.bench.toml`) is checked against the `(config: ...)` the run printed, so a target that compiled the wrong file is a finding, not a pass.
+THE TARGETS ARE DERIVED, NOT LISTED. `regions.json` gives the regions; each region contributes `stable`, and bench is the extra one. A region added there is dry-run here with no edit. The expected config per target (`wrangler.<region>.toml`, `wrangler.bench.toml`) is checked against the `(config: ...)` the run printed, so a target that compiled the wrong file is a finding, not a pass.
 
 FAKE CREDENTIALS. Every `CLOUDFLARE_*` and `ACCOUNT_*` variable of the caller is dropped and `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` are set to obvious fakes, so the run proves a dry run needs none, and a dry run that starts asking for a secret fails here instead of in a lane that holds one.
 
@@ -34,12 +34,11 @@ WRANGLER_FIX = "npm ci --prefix workers/proxy"
 
 
 def targets_from_regions(regions: list[dict]) -> list[tuple[str, str | None]]:
-    """`(target, region)` pairs: stable and edge per region, then bench (no region flag)."""
+    """`(target, region)` pairs: stable per region, then bench (no region flag)."""
     out: list[tuple[str, str | None]] = []
     for region in regions:
         rid = str(region["id"])
         out.append(("stable", rid))
-        out.append(("edge", rid))
     out.append(("bench", None))
     return out
 
@@ -47,8 +46,6 @@ def targets_from_regions(regions: list[dict]) -> list[tuple[str, str | None]]:
 def expected_config(target: str, region: str | None) -> str:
     if target == "bench":
         return "wrangler.bench.toml"
-    if target == "edge":
-        return "wrangler.edge-%s.toml" % region
     return "wrangler.%s.toml" % region
 
 
@@ -187,16 +184,16 @@ def selftest() -> bool:
     regions = [{"id": "eu"}, {"id": "us"}, {"id": "asia"}]
     pairs = targets_from_regions(regions)
     control(
-        "three regions give six CD targets and bench",
-        len(pairs) == 7 and pairs[-1] == ("bench", None),
+        "three regions give three CD targets and bench",
+        len(pairs) == 4 and pairs[-1] == ("bench", None),
     )
     control(
         "stable maps to wrangler.<region>.toml",
         expected_config("stable", "us") == "wrangler.us.toml",
     )
     control(
-        "edge maps to wrangler.edge-<region>.toml",
-        expected_config("edge", "asia") == "wrangler.edge-asia.toml",
+        "asia maps to wrangler.asia.toml",
+        expected_config("stable", "asia") == "wrangler.asia.toml",
     )
     control(
         "bench maps to wrangler.bench.toml", expected_config("bench", None) == "wrangler.bench.toml"
@@ -204,7 +201,7 @@ def selftest() -> bool:
     control("bench takes no --region", "--region" not in argv_for(None, "bench", None))
     control(
         "a region target passes --region <id> before --dry-run",
-        argv_for(None, "edge", "eu")[-3:] == ["--region", "eu", "--dry-run"],
+        argv_for(None, "stable", "eu")[-3:] == ["--region", "eu", "--dry-run"],
     )
     env = fake_env(
         {
@@ -228,7 +225,7 @@ def selftest() -> bool:
     control("a run naming its config and passing is clean", not judge("stable", "us", 0, good))
     control("a non-zero exit fires", len(judge("stable", "us", 1, "boom")) == 1)
     control("rc 0 with no output fires twice (silent pass)", len(judge("stable", "us", 0, "")) == 2)
-    control("rc 0 naming the wrong config fires", len(judge("edge", "us", 0, good)) == 1)
+    control("rc 0 naming the wrong config fires", len(judge("stable", "eu", 0, good)) == 1)
     return ok
 
 

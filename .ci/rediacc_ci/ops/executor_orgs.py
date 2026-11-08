@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Console executor orgs of one account target: list, verify, block, unblock (agent/plans/PLAN-console-executor-multi-org.md, Design items 2 and 4, box T1).
 
-    PYTHONPATH=.ci python3 -m rediacc_ci.ops.executor_orgs list    --target edge|stable|bench [--region eu|us|asia]
+    PYTHONPATH=.ci python3 -m rediacc_ci.ops.executor_orgs list    --target stable|bench [--region eu|us|asia]
     PYTHONPATH=.ci python3 -m rediacc_ci.ops.executor_orgs verify  --target T [--region R] --org A --org B
     PYTHONPATH=.ci python3 -m rediacc_ci.ops.executor_orgs block   --target T [--region R] --org A
     PYTHONPATH=.ci python3 -m rediacc_ci.ops.executor_orgs unblock --target T [--region R] --org A
@@ -373,7 +373,7 @@ def _act(
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog=SELF, description=(__doc__ or "").splitlines()[0])
     parser.add_argument("action", choices=ACTIONS)
-    parser.add_argument("--target", required=True, help="edge, stable or bench")
+    parser.add_argument("--target", required=True, help="stable or bench")
     parser.add_argument("--region", default=None, help="eu, us or asia (bench: eu only)")
     parser.add_argument(
         "--org", action="append", default=None, help="org id or 8+ character prefix"

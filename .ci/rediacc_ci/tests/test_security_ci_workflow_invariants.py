@@ -2773,7 +2773,7 @@ def _local_table() -> list[_Row]:
             can_fail=False,
         ),
         _Row("tag-submodules", (*py, "rediacc_ci.release.tag_submodules")),
-        _Row("account-deploy", (*py, "rediacc_ci.deploy.deploy_account", "--target", "edge")),
+        _Row("account-deploy", (*py, "rediacc_ci.deploy.deploy_account", "--region", "eu")),
     ]
 
 
@@ -2812,6 +2812,14 @@ def test_local_order_refuses_a_stable_row_and_a_vacuous_table() -> None:
     assert _kinds(stable) == ["local-order-stable-step"]
     env_stable = [rows[0]._replace(env=(("CHANNEL", "stable"),)), *rows[1:]]
     assert _kinds(env_stable) == ["local-order-stable-step"]
+    # `--target stable` is the shared Worker set's module target, admitted; CHANNEL=stable on the same row still refuses.
+    target_row = _Row(
+        "proxy-deploy", ("python3", "-m", "rediacc_ci.deploy.deploy_proxy", "--target", "stable")
+    )
+    assert _kinds([*rows, target_row]) == []
+    assert _kinds([*rows, target_row._replace(env=(("CHANNEL", "stable"),))]) == [
+        "local-order-stable-step"
+    ]
     assert set(_kinds([])) == {
         "local-order-no-seal",
         "local-order-no-tag",

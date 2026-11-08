@@ -623,6 +623,8 @@ LOCAL_TAG_RECORD_KIND = "tag-record"
 LOCAL_CLI_UPLOAD = "rediacc_ci.deploy.upload_to_r2"
 LOCAL_ACCOUNT_DEPLOY = "rediacc_ci.deploy.deploy_account"
 # A stable step: the channel or Docker tag named stable, or a stable-only publisher. Stable is CI/CD only (ruling ASKED:2026-10-27T09:45Z).
+# `--target stable` is the module target name of the one shared Worker set per region (deploy_proxy, console_executor, deploy_record), not the CLI channel, so that argv pair is admitted; `CHANNEL=stable` and every other spelling still refuse.
+_STABLE_TARGET_RE = re.compile(r"--target\s+stable\b")
 _STABLE_RE = re.compile(
     r"\bstable\b|promote_r2_to_stable|promote_docker_to_stable|verify_stable_endpoints|mark_production",
     re.IGNORECASE,
@@ -653,7 +655,7 @@ def analyse_local_steps(steps: object) -> tuple[list[tuple[str, str]], dict[str,
     tags = [i for i, r in enumerate(rows) if _is_tag_row(r)]
     cli = [i for i, r in enumerate(rows) if LOCAL_CLI_UPLOAD in _row_text(r)]
     accounts = [i for i, r in enumerate(rows) if LOCAL_ACCOUNT_DEPLOY in _row_text(r)]
-    stable = [ident[i] for i, r in enumerate(rows) if _STABLE_RE.search(_row_text(r))]
+    stable = [ident[i] for i, r in enumerate(rows) if _STABLE_RE.search(_STABLE_TARGET_RE.sub("", _row_text(r)))]
     shape: dict[str, object] = {
         "rows": len(rows),
         "seal": ident[seals[-1]] if seals else "",

@@ -117,11 +117,11 @@ PLANTS = [
         'service = "account-eu"\nentrypoint = "ExecutorIssuer"',
         "asia        proxy",
     ),
-    # The us profile is the one place its backup KEK sits directly above FREE_LICENSE_HMAC_KEY (W10 renames the store names).
+    # The us profile is the one place its backup KEK sits directly above FREE_LICENSE_HMAC_KEY (its vault entry is the _EDGE one, bound under the _STABLE local name).
     (
         "profile",
         ".ci/config/secret-supply.json",
-        '        "ACCOUNT_BACKUP_STORE_KEK_US_STABLE",\n        "FREE_LICENSE_HMAC_KEY"\n',
+        '        "ACCOUNT_BACKUP_STORE_KEK_US_EDGE > ACCOUNT_BACKUP_STORE_KEK_US_STABLE",\n        "FREE_LICENSE_HMAC_KEY"\n',
         '        "ACCOUNT_BACKUP_STORE_KEK_EU_STABLE",\n        "FREE_LICENSE_HMAC_KEY"\n',
         "us          profile",
     ),

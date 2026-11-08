@@ -85,7 +85,9 @@ def offline_plants() -> list[
         return m
 
     def swap(names: list[str], old: str, new: str) -> None:
-        names[names.index(old)] = new
+        # A spec is `store` or `store > local`: match the whole spec, else the store name.
+        stores = [n.split(">")[0].strip() for n in names]
+        names[names.index(old) if old in names else stores.index(old)] = new
 
     def dup_id(i: g.Inputs, found):
         _set(
@@ -102,7 +104,7 @@ def offline_plants() -> list[
         return found
 
     def drop_profile(i: g.Inputs, found):
-        del i.consumers["account-secrets-asia-stable"]
+        del i.consumers["account-secrets-asia"]
         return found
 
     def reorder(i: g.Inputs, found):
@@ -193,7 +195,7 @@ def offline_plants() -> list[
             "profile: a missing backup key id",
             ("us", "profile"),
             prof(
-                "account-secrets-us-stable",
+                "account-secrets-us",
                 lambda p: p["required"].remove("ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_STABLE"),
             ),
         ),
@@ -201,10 +203,10 @@ def offline_plants() -> list[
             "profile: another region's config server key",
             ("us", "profile"),
             prof(
-                "account-secrets-us-stable",
+                "account-secrets-us",
                 lambda p: swap(
                     p["required"],
-                    "ACCOUNT_CONFIG_SERVER_KEY_US_STABLE",
+                    "ACCOUNT_CONFIG_SERVER_KEY_US_EDGE",
                     "ACCOUNT_CONFIG_SERVER_KEY_EU_STABLE",
                 ),
             ),
@@ -213,7 +215,7 @@ def offline_plants() -> list[
             "profile: another region's backup store KEK",
             ("eu", "profile"),
             prof(
-                "account-secrets-eu-stable",
+                "account-secrets-eu",
                 lambda p: swap(
                     p["required"],
                     "ACCOUNT_BACKUP_STORE_KEK_EU_STABLE",
@@ -225,7 +227,7 @@ def offline_plants() -> list[
             "profile: the asia SES borrow removed",
             ("asia", "profile"),
             prof(
-                "account-secrets-asia-stable",
+                "account-secrets-asia",
                 lambda p: p["required"].remove("AWS_SES_ACCESS_KEY_ID_EU"),
             ),
         ),
@@ -290,10 +292,7 @@ def fake_get(
         workers = [w for t in targets for w in (t.account_worker, t.proxy_worker)]
     if secrets is None:
         secrets = {
-            t.account_worker: pushed
-            + ["__ARCHIVE_API_KEY"]
-            + ["EXECUTOR_MODE"]
-            for t in targets
+            t.account_worker: [*pushed, "__ARCHIVE_API_KEY", "EXECUTOR_MODE"] for t in targets
         }
         secrets.update({t.proxy_worker: [] for t in targets})
     if buckets is None:
@@ -360,12 +359,7 @@ def live_plants(inputs: g.Inputs, targets: list[g.Target]):
         for b in inputs.account[t.id]["d1_databases"]
     ]
     dbs[0] = dict(dbs[0], uuid="ffffffff-0000-4000-8000-000000000000")
-    workers = [
-        w
-        for t in targets
-        for w in (t.account_worker, t.proxy_worker)
-        if w != "proxy-asia"
-    ]
+    workers = [w for t in targets for w in (t.account_worker, t.proxy_worker) if w != "proxy-asia"]
     return [
         ("live: a clean account is clean", base, set(), set()),
         (
@@ -445,7 +439,7 @@ def run() -> int:
     ctl.check(
         "DERIVED_NAMES is derive()'s key set",
         set(g.DERIVED_NAMES),
-        set(local_push.derive("eu", g.PUSHER_CHANNEL, root)),
+        set(local_push.derive("eu", root)),
     )
     ctl.truthy("pusher_reads() found at least 20 literal reads", len(g.pusher_reads()) >= 20)
     ctl.check(

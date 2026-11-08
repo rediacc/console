@@ -10,7 +10,7 @@
 
 WHO RUNS IT. An operator or an AI session whose bench request answers Cloudflare's own 403 page (the rule carries no custom body; deploy_bench prints HINT on that 403). The caller's IP changes (it rotates nightly), so the fix is this one command; no ticket and no operator step.
 
-THE MECHANISM: a zone WAF custom rule (Cloudflare Rulesets API, phase `http_request_firewall_custom`, action `block`). The rediacc.com zone is on the Free plan (read live 2026-10-26: `plan.name` is `Free Website`), and Cloudflare's WAF custom rules page lists, for Free: "Number of rules 5 ... Supported actions All except Log" (https://developers.cloudflare.com/waf/custom-rules/), so a Free zone has a block action and room for the one rule this script owns. A custom block response is NOT available on Free: the first live write on 2026-10-26 was refused with `not entitled to use a custom response`, so a blocked request gets Cloudflare's own 403 page, and the fix is named by the tooling instead (this script's HINT, printed by deploy_bench on a 403, and the bench notes in .claude/agents/account-dev.md and docs/agent-reference/local-env.md). The rule is found by its description, so other custom rules on the zone are never touched. IP Access Rules were rejected: they match the whole account or zone, not two hostnames.
+THE MECHANISM: a zone WAF custom rule (Cloudflare Rulesets API, phase `http_request_firewall_custom`, action `block`). The bench hosts live in the rediacc.cloud product zone; the plan was read live on 2026-10-26 on the rediacc.com zone, where `plan.name` was `Free Website`, and a Free-plan zone is the assumption here, and Cloudflare's WAF custom rules page lists, for Free: "Number of rules 5 ... Supported actions All except Log" (https://developers.cloudflare.com/waf/custom-rules/), so a Free zone has a block action and room for the one rule this script owns. A custom block response is NOT available on Free: the first live write on 2026-10-26 was refused with `not entitled to use a custom response`, so a blocked request gets Cloudflare's own 403 page, and the fix is named by the tooling instead (this script's HINT, printed by deploy_bench on a 403, and the bench notes in .claude/agents/account-dev.md and docs/agent-reference/local-env.md). The rule is found by its description, so other custom rules on the zone are never touched. IP Access Rules were rejected: they match the whole account or zone, not two hostnames.
 
 WHAT THE RULE BLOCKS. Every request to a bench host (the route patterns of `workers/*/wrangler.bench.toml`: bench.rediacc.cloud and proxy.bench.rediacc.cloud) whose source IP is not in the list, EXCEPT `GET` of the two health paths (`/account/api/v1/health`, `/v1/health`). The exemption is what keeps the automated callers working: `ops-telemetry-probe.yml` (six-hourly, GitHub runner egress, a different IP every run) probes exactly those two paths, and a health answer discloses nothing but liveness. The proxy Worker's own calls to the account Worker are service bindings (`workers/proxy/wrangler.bench.toml` ACCOUNT and ISSUER), which never pass the zone's edge rules. Every other caller (deploy_bench, deploy_proxy's smoke past /v1/health, console_executor, the CLI against `--config bench`, the portal in a browser) is an operator or an AI session on its own machine and runs `add-current` first.
 
@@ -22,7 +22,7 @@ PREFLIGHT. `preflight` is the step ci:quick runs first (the `ci:quick` npm scrip
 
 THE LIST. At most `MAX_IPS` (5) entries (single addresses or IPv6 /64 prefixes), oldest first in the rule's expression, which is the record: `add-current` appends the caller's address (re-adding one moves it to the end) and evicts from the front when the list is full. With no rule yet, the first `add` creates it holding the caller's own address, so the first enforcement cannot lock the caller out. `add-current` asks Cloudflare's own trace endpoint for the IPv4 and the IPv6 address it sees (one family may be unreachable and is then skipped), so a dual-stack host is allowed in whichever family curl or node picks.
 
-AUTH. `cf_auth.resolve_scoped("bench-access", zone_id=ZONE_ID)`: a supplied `CF_MANAGEMENT_TOKEN`, or a token minted from the Global API Key with `Zone WAF Write` on the rediacc.com zone only (plus the user-scoped API Tokens pair its self-destruct needs), deleted at the end of the run. The script re-runs itself under the `bench-access` Bitwarden profile (`CF_GLOBAL_API_KEY`, `CF_EMAIL`) when neither is in the environment. The credential reaches curl on its stdin (`rediacc_ci.core.curl_stdin`), never on argv, and is never printed.
+AUTH. `cf_auth.resolve_scoped("bench-access", zone_id=ZONE_ID)`: a supplied `CF_MANAGEMENT_TOKEN`, or a token minted from the Global API Key with `Zone WAF Write` on the rediacc.cloud zone only (plus the user-scoped API Tokens pair its self-destruct needs), deleted at the end of the run. The script re-runs itself under the `bench-access` Bitwarden profile (`CF_GLOBAL_API_KEY`, `CF_EMAIL`) when neither is in the environment. The credential reaches curl on its stdin (`rediacc_ci.core.curl_stdin`), never on argv, and is never printed.
 """
 
 from __future__ import annotations
@@ -44,9 +44,9 @@ import urllib.request
 from rediacc_ci import log, paths
 from rediacc_ci.core import https
 from rediacc_ci.ops import apply_cf_redirect_rules, cf_auth
-from rediacc_ci.well_known import BENCH_ORIGIN
+from rediacc_ci.well_known import BENCH_ORIGIN, PRODUCT_DOMAIN
 
-ZONE_ID = apply_cf_redirect_rules.ZONE_ID
+ZONE_ID = apply_cf_redirect_rules.ZONE_IDS[PRODUCT_DOMAIN]
 PHASE = "http_request_firewall_custom"
 PROFILE = "bench-access"
 MAX_IPS = 5

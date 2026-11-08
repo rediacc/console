@@ -1,7 +1,7 @@
 """Prove one channel's backup key pair is scoped to its own regional backup buckets and nothing else.
 
     PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile backup-push-<channel> -- \\
-      PYTHONPATH=.ci python3 -m rediacc_ci.ops.backup_bucket_scope_probe --channel stable|edge|bench [--region eu|us|asia ...]
+      PYTHONPATH=.ci python3 -m rediacc_ci.ops.backup_bucket_scope_probe --channel stable|bench [--region eu|us|asia ...]
 
 WHY IT EXISTS. Each channel's Workers presign backup grants with a key pair minted as Object Read and Write on that channel's backup buckets only (agent/plans/_done/PLAN-backup-credential-isolation.md B5-B8). Nothing proved the scope after minting: a pair minted account-wide would serve every backup flow identically and pass every functional check. This probe asks R2 itself (agent/plans/PLAN-backup-plane-shared-bucket-hardening.md C1).
 
@@ -10,7 +10,7 @@ THE LEGS, PER REGION OF THE CHANNEL (bench has one bucket and no region):
   1. PUT a small random object under `probe/scope-<utc stamp>-<random>/` in the region's own backup bucket. A 2xx passes; anything else contradicts the scope (the pair must write there).
   2. GET it back and compare the bytes. A 2xx with identical bytes passes; a refusal or different bytes contradict the scope.
   3. DELETE it. A 2xx passes. A 403 is reported, not failed, with what a read-only GET ?lifecycle on the bucket answers: the backup buckets carry no lifecycle by design (`r2_lifecycle.PROTECTED_PATTERNS`, the Worker's chunk GC is authoritative), so a refused DELETE leaves the probe object behind.
-  4. LIST (ListObjectsV2, max-keys=1) the same channel's config bucket of the region, and the same region's backup bucket of another channel (bench: the stable us backup bucket). Each MUST answer 403; a 2xx is the headline failure (the pair reaches a bucket it was never meant to), and any other status is no verdict.
+  4. LIST (ListObjectsV2, max-keys=1) the same channel's config bucket of the region, and the backup bucket of another region (bench: the stable us backup bucket). Each MUST answer 403; a 2xx is the headline failure (the pair reaches a bucket it was never meant to), and any other status is no verdict.
 
 Bucket names and jurisdictions come from `push_backup_credentials.plan` (regions.json, cross-checked against each Worker's wrangler config) and the endpoint per bucket from `set_account_worker_secrets.apply_jurisdiction`; requests are signed by `drills.wire.sigv4_headers`. Nothing here restates a naming rule.
 
@@ -37,8 +37,7 @@ from rediacc_ci.drills import wire
 from rediacc_ci.ops import push_backup_credentials as pbc
 
 CHANNELS = pbc.TARGETS
-# The other channel whose same-region backup bucket a channel's pair must be refused. Bench has no region, so its foreign backup bucket is the stable one of FOREIGN_BENCH_REGION.
-OTHER_CHANNEL = {"stable": "edge", "edge": "stable", "bench": "stable"}
+# Bench has no region, so its foreign backup bucket is the stable one of FOREIGN_BENCH_REGION; a regional pair is refused the backup bucket of the first other region.
 FOREIGN_BENCH_REGION = "us"
 SIGV4_REGION = "auto"
 PREFIX = "probe/scope-"
@@ -108,7 +107,6 @@ def targets(channel: str, regions: list[str] | None, root=None) -> list[Target]:
     """The probe targets of one channel. ConfigError on --region with bench, an unknown region, or a tree whose regions.json and wrangler configs disagree."""
     root = paths.repo_root() if root is None else root
     known = _regions(root)
-    other = OTHER_CHANNEL[channel]
     if channel == "bench":
         if regions:
             raise ConfigError("bench has one backup bucket and no regions; drop --region")
@@ -116,7 +114,7 @@ def targets(channel: str, regions: list[str] | None, root=None) -> list[Target]:
             Target(
                 "bench",
                 _own("bench", None, root),
-                (_bench_config_bucket(root), _own(other, FOREIGN_BENCH_REGION, root)),
+                (_bench_config_bucket(root), _own("stable", FOREIGN_BENCH_REGION, root)),
             )
         ]
     chosen = list(regions) if regions else list(known)
@@ -128,18 +126,15 @@ def targets(channel: str, regions: list[str] | None, root=None) -> list[Target]:
     out = []
     for region in chosen:
         entry = known[region]
-        field = "r2" if channel == "stable" else "edgeR2"
-        config = entry.get(field)
+        config = entry.get("r2")
         if not isinstance(config, dict) or not config.get("name"):
-            raise ConfigError("regions.json region %s has no %s.name" % (region, field))
+            raise ConfigError("regions.json region %s has no r2.name" % region)
         jurisdiction = entry.get("r2Jurisdiction") or ""
-        out.append(
-            Target(
-                region,
-                _own(channel, region, root),
-                (Bucket(config["name"], jurisdiction), _own(other, region, root)),
-            )
-        )
+        others = [r for r in known if r != region]
+        foreign = [Bucket(config["name"], jurisdiction)]
+        if others:
+            foreign.append(_own(channel, others[0], root))
+        out.append(Target(region, _own(channel, region, root), tuple(foreign)))
     return out
 
 
@@ -336,7 +331,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--region",
         action="append",
         default=None,
-        help="a regions.json id (repeatable; stable and edge)",
+        help="a regions.json id (repeatable; stable)",
     )
     return parser
 

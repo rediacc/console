@@ -64,7 +64,7 @@ import tempfile
 import time
 
 from rediacc_ci import paths, runtmp
-from rediacc_ci.well_known import EDGE_ORIGIN, SITE_ORIGIN
+from rediacc_ci.well_known import SITE_ORIGIN
 
 INSTALL_SH_REL = "packages/www/public/install.sh"
 
@@ -279,10 +279,10 @@ def main(_argv: list[str]) -> int:
             (
                 "worker_full",
                 "edge",
-                EDGE_ORIGIN,
+                SITE_ORIGIN,
                 "yes",
                 "edge",
-                EDGE_ORIGIN,
+                SITE_ORIGIN,
             ),
             # worker_channel_only: fail-safe recovery path (the gap we closed)
             ("worker_channel_only", "edge", "", "yes", "edge", SITE_ORIGIN),

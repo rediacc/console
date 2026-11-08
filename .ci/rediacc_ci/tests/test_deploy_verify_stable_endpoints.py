@@ -54,8 +54,6 @@ def healthy_fixture(target: pathlib.Path) -> None:
     """A fixture set on which every one of the stable twin's assertions passes."""
     target.mkdir(parents=True, exist_ok=True)
     write = {
-        (SITE_HOST + "/install.sh"): ("body", 'REDIACC_CHANNEL="${REDIACC_CHANNEL:-stable}"\n'),
-        (SITE_HOST + "/install.ps1"): ("body", '$Channel = if ($e) { $e } else { "stable" }\n'),
         (SITE_HOST + "/about"): ("code", "410"),
         (SITE_HOST + "/en"): ("code", "200"),
         (SITE_HOST + "/fonts/inter/Inter-Regular.woff2"): ("code", "200"),
@@ -94,8 +92,8 @@ def test_healthy_deployment_agrees_byte_for_byte(tmp_path: pathlib.Path) -> None
     assert old.out.endswith("Stable verification complete\n")
     for domain in region_domains("domain"):
         assert "  %s health: OK (security headers verified)" % domain in old.out
-    # 7 fixed fetches (2 marketing bodies, 3 fingerprints, 2 R2 bodies) plus two per region. There is NO footer fetch and NO latest.json fetch here; the edge twin has both, and a port that copied them in would be caught by this number alone.
-    assert old.log.count("curl ") == 7 + 2 * len(region_domains("domain")), old.log
+    # 5 fixed fetches (3 fingerprints, 2 R2 bodies) plus two per region. There is no marketing install.sh/.ps1 fetch: www serves the edge-baked installer (operator ruling 2026-11-08). There is NO footer fetch and NO latest.json fetch here; the edge twin has both, and a port that copied them in would be caught by this number alone.
+    assert old.log.count("curl ") == 5 + 2 * len(region_domains("domain")), old.log
     assert "latest.json" not in old.log
     assert "footer" not in old.out
     assert_same(old, new)
@@ -117,25 +115,13 @@ def test_the_region_field_is_domain_not_edgedomain(tmp_path: pathlib.Path) -> No
 # --------------------------------------------------------------------------- The channel-bake assertions ---------------------------------------------------------------------------
 
 
-def test_install_sh_baked_to_the_wrong_channel(tmp_path: pathlib.Path) -> None:
-    def mutate(d: pathlib.Path) -> None:
-        _put(d, (SITE_HOST + "/install.sh"), "body", 'REDIACC_CHANNEL="${X:-edge}"\n')
-
-    old, new = drive(tmp_path, mutate=mutate)
-    assert old.rc == 1
-    assert ("::error::" + SITE_HOST + "/install.sh is not baked to channel=stable") in old.out
-    assert 'REDIACC_CHANNEL="${X:-edge}"' in old.out
-    assert_same(old, new)
-
-
-def test_install_ps1_baked_to_the_wrong_channel(tmp_path: pathlib.Path) -> None:
-    def mutate(d: pathlib.Path) -> None:
-        _put(d, (SITE_HOST + "/install.ps1"), "body", '} else { "edge" }\n$Channel = 1\n')
-
-    old, new = drive(tmp_path, mutate=mutate)
-    assert old.rc == 1
-    assert ("::error::" + SITE_HOST + "/install.ps1 is not baked to channel=stable") in old.out
-    assert "$Channel = 1" in old.out
+def test_the_marketing_installers_are_not_fetched(tmp_path: pathlib.Path) -> None:
+    """www is baked channel=edge, so the stable verify never reads its install.sh or install.ps1."""
+    old, new = drive(tmp_path)
+    assert old.rc == 0, old.err
+    assert SITE_HOST + "/install.sh" not in old.log
+    assert SITE_HOST + "/install.ps1" not in old.log
+    assert "marketing (install" not in old.out
     assert_same(old, new)
 
 
@@ -207,21 +193,19 @@ def test_asset_path_guard_fingerprint(tmp_path: pathlib.Path) -> None:
 # --------------------------------------------------------------------------- FINDING 4: `set -e` on a top-level command substitution ---------------------------------------------------------------------------
 
 
-def test_a_404_on_install_sh_exits_22_with_no_annotation(tmp_path: pathlib.Path) -> None:
+def test_a_404_on_the_r2_install_sh_exits_22_with_no_annotation(tmp_path: pathlib.Path) -> None:
     """FINDING 4, REPRODUCED NOT FIXED.
 
-    `INSTALL_SH=$(curl -fsSL https://www.rediacc.com/install.sh)` is a top-level
-    assignment under `set -e`. When curl's `-f` turns a 404 into exit 22, the script dies THERE: the `::error::www.rediacc.com/install.sh is not baked to
-    channel=stable` branch two lines below is never reached, so the CI job shows
+    `INSTALL_SH=$(curl -fsSL https://releases.rediacc.com/cli/stable/install.sh)` is a top-level
+    assignment under `set -e`. When curl's `-f` turns a 404 into exit 22, the script dies THERE: the `::error::` branch below it is never reached, so the CI job shows
     a bare non-zero step with curl's own one-line diagnostic and no annotation. The exit code is 22, which nothing in the pipeline maps to anything.
     """
 
     def mutate(d: pathlib.Path) -> None:
-        (d / ("%s.body" % slug_for(SITE_HOST + "/install.sh"))).unlink()
+        (d / ("%s.body" % slug_for(RELEASES_HOST + "/cli/stable/install.sh"))).unlink()
 
     old, new = drive(tmp_path, mutate=mutate)
     assert old.rc == 22, "curl's own status, not 1"
-    assert old.out == "Verifying stable deployment...\n"
     assert "::error::" not in old.out, "the annotation branch is never reached"
     assert old.err == "curl: (22) The requested URL returned error: 404\n"
     assert_same(old, new)

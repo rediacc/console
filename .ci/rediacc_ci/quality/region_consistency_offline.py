@@ -41,8 +41,6 @@ BENCH_DEPLOY_REL = ".ci/rediacc_ci/ops/deploy_bench.py"
 BENCH = "bench"
 BENCH_DOMAIN = BENCH_ORIGIN.removeprefix("https://")
 SHARED = "shared"
-# The secret machinery (set_account_worker_secrets, account_secrets_local and the `account-secrets-<r>-<c>` profiles) still names the shared tier by its old stable channel until PLAN-product-domain-rename.md W10 moves it; this is the one place that translation is spelled.
-PUSHER_CHANNEL = "stable"
 BENCH_PROFILE = "deploy-bench"
 CLASSES = ("regions", "account", "proxy", "profile")
 
@@ -122,7 +120,7 @@ class Target:
     def profile(self) -> str:
         if self.channel == BENCH:
             return BENCH_PROFILE
-        return local_push.profile_name(self.region, PUSHER_CHANNEL)
+        return local_push.profile_name(self.region)
 
 
 @dataclasses.dataclass(frozen=True)
@@ -374,7 +372,8 @@ def pusher_reads() -> frozenset[str]:
 
 def expected_store_names(t: Target, reads: frozenset[str], suffixes: set[str]) -> set[str]:
     """What the profile of a regional target must bind: what the pusher reads for it, minus what regions.json derives."""
-    derived = DERIVED_NAMES
+    # The pusher still reads BACKUP_BUCKET_EDGE as a public bucket variable; the shared Worker never gets one, and it is no vault entry.
+    derived = DERIVED_NAMES | {pusher.BUCKET_VAR_EDGE}
     own = pusher.BACKUP_PAIR_STABLE
     other = pusher.BACKUP_PAIR_EDGE
     names = set(reads) - derived - set(other)
@@ -400,7 +399,6 @@ DERIVED_NAMES = frozenset(
         "SUFFIX",
         "AWS_SES_REGION",
         "BACKUP_BUCKET_STABLE",
-        "BACKUP_BUCKET_EDGE",
         "R2_JURISDICTION",
     }
 )
@@ -408,7 +406,8 @@ DERIVED_NAMES = frozenset(
 
 def _store_names(profile: dict) -> list[str]:
     specs = list(profile.get("required", [])) + list(profile.get("optional", []))
-    return [s.split(">")[0].strip() for s in specs]
+    # `store > local`: the pusher reads the local name, and us and asia bind their `_EDGE` vault entries under the `_STABLE` local name.
+    return [s.split(">")[-1].strip() for s in specs]
 
 
 def normalize(name: str, t: Target) -> str:

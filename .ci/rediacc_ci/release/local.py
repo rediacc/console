@@ -884,8 +884,6 @@ def _table() -> tuple[Step, ...]:
                 "rediacc_ci.deploy.account_secrets_local",
                 "--region",
                 "{region}",
-                "--target",
-                "edge",
             ),
             per_region=True,
             **w,

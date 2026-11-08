@@ -26,7 +26,7 @@ import os, sys
 args = sys.argv[1:]
 target = args[args.index("--target") + 1]
 region = args[args.index("--region") + 1] if "--region" in args else "eu"
-key = "bench" if target == "bench" else ("edge-" + region if target == "edge" else region)
+key = "bench" if target == "bench" else region
 label = target + "/" + region
 mode = os.environ.get("FAKE_MODE", "")
 if os.environ.get("CLOUDFLARE_API_TOKEN") == os.environ.get("REAL_SENTINEL", "never"):
@@ -75,12 +75,12 @@ def test_the_selftest_passes_on_its_own() -> None:
     assert "FAIL" not in proc.stderr
 
 
-def test_the_unplanted_run_passes_over_seven_targets(tmp_path: pathlib.Path) -> None:
+def test_the_unplanted_run_passes_over_four_targets(tmp_path: pathlib.Path) -> None:
     root, entry = _tree(tmp_path)
     proc = _run(root, entry)
     assert proc.returncode == 0, proc.stderr
-    assert "7 target(s) compiled" in proc.stdout
-    for name in ("wrangler.edge-asia.toml", "wrangler.bench.toml", "wrangler.eu.toml"):
+    assert "4 target(s) compiled" in proc.stdout
+    for name in ("wrangler.asia.toml", "wrangler.bench.toml", "wrangler.eu.toml"):
         assert name in proc.stdout
 
 
@@ -94,11 +94,11 @@ def test_a_real_credential_in_the_caller_env_never_reaches_the_entry(
 
 def test_a_failing_target_is_a_finding(tmp_path: pathlib.Path) -> None:
     root, entry = _tree(tmp_path)
-    proc = _run(root, entry, FAKE_MODE="fail:edge/us")
+    proc = _run(root, entry, FAKE_MODE="fail:stable/us")
     assert proc.returncode == 1
-    assert "edge/us: deploy_proxy --dry-run exited 1" in proc.stderr
+    assert "stable/us: deploy_proxy --dry-run exited 1" in proc.stderr
     assert "wrangler: unknown key" in proc.stderr
-    assert "stable/us:" not in proc.stderr.replace("PASS  stable/us", "")
+    assert "stable/eu:" not in proc.stderr.replace("PASS  stable/eu", "")
 
 
 def test_a_silent_zero_exit_is_a_finding(tmp_path: pathlib.Path) -> None:
@@ -110,9 +110,9 @@ def test_a_silent_zero_exit_is_a_finding(tmp_path: pathlib.Path) -> None:
 
 def test_a_target_compiling_the_wrong_config_is_a_finding(tmp_path: pathlib.Path) -> None:
     root, entry = _tree(tmp_path)
-    proc = _run(root, entry, FAKE_MODE="wrongconfig:edge/asia")
+    proc = _run(root, entry, FAKE_MODE="wrongconfig:stable/asia")
     assert proc.returncode == 1
-    assert "edge/asia: the run did not name `(config: wrangler.edge-asia.toml)`" in proc.stderr
+    assert "stable/asia: the run did not name `(config: wrangler.asia.toml)`" in proc.stderr
 
 
 def test_a_new_region_is_dry_run_without_an_edit(tmp_path: pathlib.Path) -> None:
@@ -122,8 +122,8 @@ def test_a_new_region_is_dry_run_without_an_edit(tmp_path: pathlib.Path) -> None
     (root / "regions.json").write_text(json.dumps(doc), encoding="utf-8")
     proc = _run(root, entry)
     assert proc.returncode == 0, proc.stderr
-    assert "9 target(s) compiled" in proc.stdout
-    assert "wrangler.edge-mars.toml" in proc.stdout
+    assert "5 target(s) compiled" in proc.stdout
+    assert "wrangler.mars.toml" in proc.stdout
 
 
 def test_a_missing_regions_json_is_no_verdict(tmp_path: pathlib.Path) -> None:

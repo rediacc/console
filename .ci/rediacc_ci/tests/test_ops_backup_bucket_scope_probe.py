@@ -75,22 +75,21 @@ def _own_name():
 
 def test_targets_bench_resolves_own_and_two_foreign_buckets():
     (t,) = _bench_targets()
-    assert t.own.name == "rediacc-backups-bench"
+    assert t.own.name == "backups-bench"
     names = [b.name for b in t.foreign]
-    assert "rediacc-configs-bench" in names
+    assert "configs-bench" in names
     assert len(names) == 2
     assert t.own.name not in names
 
 
-def test_targets_stable_each_region_has_foreign_config_and_edge_backup():
+def test_targets_stable_each_region_has_foreign_config_and_other_region_backup():
     found = probe_mod.targets("stable", None)
     assert [t.region for t in found] == ["eu", "us", "asia"]
     for t in found:
-        assert t.own.name.startswith("rediacc-backups-")
-        assert {b.name for b in t.foreign} == {
-            "rediacc-configs-%s" % t.region,
-            "edge-rediacc-backups-%s" % t.region,
-        }
+        assert t.own.name.startswith("backups-")
+        other = next(o for o in found if o.region != t.region)
+        assert {b.name for b in t.foreign} == {"configs-%s" % t.region, other.own.name}
+        assert t.own.name not in {b.name for b in t.foreign}
     assert found[0].own.jurisdiction == "eu"
 
 
@@ -194,12 +193,15 @@ def test_sigv4_uses_jurisdiction_endpoint_for_eu():
 
     def transport(_method, url, body, _headers):
         urls.append(url)
-        return (403, b"") if "configs" in url or "edge-" in url else (200, body)
+        return (403, b"") if "configs" in url or "backups-us" in url else (200, body)
 
     out = io.StringIO()
     probe_mod.probe("stable", found, ENV, transport, out=out, now=NOW)
     assert urls
-    assert all(".eu.r2.cloudflarestorage.com/" in u for u in urls)
+    own_urls = [u for u in urls if "backups-us" not in u]
+    assert own_urls
+    assert all(".eu.r2.cloudflarestorage.com/" in u for u in own_urls)
+    assert not any(".eu.r2.cloudflarestorage.com/" in u for u in urls if "backups-us" in u)
 
 
 def test_lifecycle_transport_error_does_not_change_the_exit():
@@ -225,15 +227,10 @@ def test_unreadable_regions_json_is_a_config_error(tmp_path):
         probe_mod.targets("stable", None, root=tmp_path / "absent")
 
 
-@pytest.mark.parametrize("channel", ["stable", "edge"])
-def test_region_without_bucket_entry_is_a_config_error(tmp_path, channel):
-    (tmp_path / "regions.json").write_text(
-        '{"regions": [{"id": "eu", "r2": {"name": "a"}}]}', encoding="utf-8"
-    )
-    if channel == "stable":
-        (tmp_path / "regions.json").write_text('{"regions": [{"id": "eu"}]}', encoding="utf-8")
+def test_region_without_bucket_entry_is_a_config_error(tmp_path):
+    (tmp_path / "regions.json").write_text('{"regions": [{"id": "eu"}]}', encoding="utf-8")
     with pytest.raises(probe_mod.ConfigError):
-        probe_mod.targets(channel, ["eu"], root=tmp_path)
+        probe_mod.targets("stable", ["eu"], root=tmp_path)
 
 
 def test_main_maps_config_errors_to_exit_2(monkeypatch):

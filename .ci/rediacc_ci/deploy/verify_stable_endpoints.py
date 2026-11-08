@@ -15,7 +15,7 @@ WHY `curl` AND `jq` ARE SHELLED OUT TO rather than replaced by `urllib` and `jso
 never be compared against the twin at all.
 
 THE ONE PLACE `set -e` IS OBSERVABLE, and it is a real defect rather than a
-port decision. `INSTALL_SH=$(curl -fsSL https://www.rediacc.com/install.sh)` is
+port decision. `INSTALL_SH=$(curl -fsSL https://releases.rediacc.com/cli/stable/install.sh)` is
 a TOP-LEVEL assignment under `set -e`, so a transport failure kills the script
 with curl's own exit code and NO `::error::` annotation at all. Driven:
 `bash -c 'set -eu; S=$(curl -sI -o /dev/null -w "%{http_code}"
@@ -113,19 +113,7 @@ def main(argv: list[str]) -> int:
 
 
 def _verify() -> int:
-    install_sh = _body_or_die("%s/install.sh" % WWW)
-    if "REDIACC_CHANNEL:-stable" not in install_sh:
-        print(("::error::" + SITE_HOST + "/install.sh is not baked to channel=stable"), flush=True)
-        edge.grep_e(install_sh, "REDIACC_CHANNEL")
-        return 1
-    print("  marketing (install.sh): OK (channel=stable)", flush=True)
-
-    install_ps1 = _body_or_die("%s/install.ps1" % WWW)
-    if '} else { "stable" }' not in install_ps1:
-        print(("::error::" + SITE_HOST + "/install.ps1 is not baked to channel=stable"), flush=True)
-        edge.grep_f(install_ps1, "$Channel")
-        return 1
-    print("  marketing (install.ps1): OK (channel=stable)", flush=True)
+    # No marketing install.sh/.ps1 bake check: www serves the one edge-baked installer (operator ruling 2026-11-08), so only the R2 cli/stable installers are held to channel=stable below.
 
     # Worker fingerprints. `$RANDOM$RANDOM` cache-busters; see the edge port's docstring for why this is `secrets` and not `random`.
     rnda = "%d%d" % (secrets.randbelow(32768), secrets.randbelow(32768))
