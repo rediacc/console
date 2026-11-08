@@ -12,7 +12,7 @@ NOT PROVEN HERE, said plainly: by default no machine runs `renet backup snapshot
 
 THE OFFLINE CONTROL is `private/account/tests/integration/backup-lifecycle.test.ts`, the VM-less twin: if a leg fails here and its twin passes there, the difference is the environment.
 
-TIER B: `DRILL_STORE_ENDPOINT` plus `DRILL_STORE_BUCKET`/`DRILL_STORE_KEY`/`DRILL_STORE_SECRET` points the whole drill at a real S3/R2 bucket. A run deletes under its own tenant prefix, so a bucket not named *probe*/*test*/*scratch*/*bench* (and the bare `rediacc-backups`) is refused.
+TIER B: `DRILL_STORE_ENDPOINT` plus `DRILL_STORE_BUCKET`/`DRILL_STORE_KEY`/`DRILL_STORE_SECRET` points the whole drill at a real S3/R2 bucket. A run deletes under its own tenant prefix, so a bucket not named *probe*/*test*/*scratch*/*bench* is refused, and so is a production name (`backup_local_plane.is_production_bucket`: `backups`, `backups-<region>` and the `rediacc-` names they replace).
 
 RULE T: WHERE THIS DELIBERATELY DIFFERS FROM THE BASH (each pinned by a test in `tests/test_drills_backup_license.py`).
 
@@ -46,6 +46,7 @@ from typing import TYPE_CHECKING
 from rediacc_ci import log
 from rediacc_ci.drills import (
     backup_check_trigger,
+    backup_local_plane,
     backup_renet,
     backup_roundtrip,
     lib,
@@ -391,9 +392,11 @@ def disposable_store_error(opts: Options) -> list[str]:
     """The refusal lines for a tier-B bucket that is not marked disposable (empty when fine)."""
     if not opts.using_real_store():
         return []
-    if opts.store_bucket == "rediacc-backups":
+    if backup_local_plane.is_production_bucket(opts.store_bucket):
+        kind = "bare" if opts.store_bucket.endswith("backups") else "per-region"
         return [
-            "refusing the bare production bucket name 'rediacc-backups': this drill writes and deletes."
+            "refusing the %s production bucket name '%s': this drill writes and deletes."
+            % (kind, opts.store_bucket)
         ]
     if not re.search(r"(probe|test|scratch|bench)", opts.store_bucket):
         return [

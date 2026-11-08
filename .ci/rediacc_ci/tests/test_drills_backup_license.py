@@ -1578,6 +1578,24 @@ def test_the_port_still_lists_legs_n_and_o() -> None:
         assert opt_in not in backup.DEFAULT_LEGS.split(",")
 
 
+@pytest.mark.parametrize("bucket", ["backups", "backups-eu", "backups-us", "backups-asia"])
+def test_delta_a_shared_production_bucket_is_refused_by_name(bucket: str) -> None:
+    """PLAN-product-domain-rename W6: the shared names carry no `rediacc-` prefix; each is refused as production, not merely as a name that does not look disposable."""
+    opts = backup.Options()
+    opts.store_endpoint = "http://store.invalid"
+    opts.store_bucket = bucket
+    problems = backup.disposable_store_error(opts)
+    assert len(problems) == 1
+    assert "production bucket name '%s'" % bucket in problems[0]
+
+
+def test_delta_a_disposable_shared_name_still_runs() -> None:
+    opts = backup.Options()
+    opts.store_endpoint = "http://store.invalid"
+    opts.store_bucket = "backups-bench"
+    assert backup.disposable_store_error(opts) == []
+
+
 def test_the_local_bucket_default_is_marked_disposable() -> None:
     assert backup.LOCAL_BUCKET != "rediacc-backups"
     assert re.search(r"(probe|test|scratch|bench)", backup.LOCAL_BUCKET)

@@ -7,7 +7,7 @@ Ported from `programs/backup-storage/start-local-plane.sh` (PLAN-retire-bash-ora
 
 Two processes, both local, neither touching anything remote:
 
-  1. RustFS (already running for `./run.sh account dev` config blobs) gains a second bucket, `rediacc-backups-probe`. NEVER `rediacc-backups`: that is the production name, and a local bucket wearing it is one env-var typo away from a test writing where production backups live.
+  1. RustFS (already running for `./run.sh account dev` config blobs) gains a second bucket, `rediacc-backups-probe`. NEVER a production name (`is_production_bucket`: `backups`, `backups-<region>`, and the `rediacc-` names they replace): a local bucket wearing one is one env-var typo away from a test writing where production backups live.
   2. The account dev gateway on :4800, bound 0.0.0.0 so the worker VMs can reach it, carrying ACCOUNT_BACKUP_S3_* so `createBackupPlane` selects the S3 presign minter (the minter the operator chose for production).
 
 THE HOST HEADER IS LOAD-BEARING. `renewalUrlFor` (routes/license.ts:36) derives the licence's renewalUrl from `envConfig.baseUrl`, which is `env.PUBLIC_SITE_URL ?? \\`${url.protocol}//${url.host}\\`` (app.ts:534). renet derives the backup SESSION url from that renewalUrl by suffix swap (backup_snapshot.go:540). So a licence issued over http://localhost:4800 stamps a renewalUrl no VM can reach, and the snapshot fails at session mint. Every account API call in this program therefore uses 192.168.111.254:4800.
@@ -28,16 +28,27 @@ from __future__ import annotations
 import argparse
 import os
 import pathlib
+import re
 import subprocess
 import sys
 
 from rediacc_ci import paths, well_known
 from rediacc_ci.core import bws_env, env
 
+# The bare `rediacc-` name, still read by `testrun/start_backup_plane.py`; `is_production_bucket` is the whole refusal.
 PRODUCTION_BUCKET = "rediacc-backups"
+# The production backup bucket names: the bare and per-region shared names (`backups`, `backups-eu`, PLAN-product-domain-rename W6) and the `rediacc-` and `edge-rediacc-` names they replace, live until that plan deletes them (L11).
+_PRODUCTION_BACKUP_BUCKET = re.compile(r"\A(?:(?:edge-)?rediacc-)?backups(?:-[a-z]+)?\Z")
+# A name marked disposable is not production: `backups-bench`, `backups-probe` and `backups-test` stay usable.
+_DISPOSABLE = re.compile(r"probe|test|scratch|bench")
 ALREADY_THERE = ("BucketAlreadyOwnedByYou", "BucketAlreadyExists")
 PROFILE = "backup-plane"
 GATEWAY_COMMAND = ["npx", "--no-install", "tsx", "src/entry/dev-gateway.ts"]
+
+
+def is_production_bucket(name: str) -> bool:
+    """Is `name` a production backup bucket name, which no drill or local plane may wear?"""
+    return bool(_PRODUCTION_BACKUP_BUCKET.match(name)) and not _DISPOSABLE.search(name)
 
 
 def knobs(environ: dict[str, str]) -> dict[str, str]:
@@ -144,9 +155,11 @@ def main(argv: list[str] | None = None) -> int:
     # --help exits 0 and an unknown argument exits 2, both before any side effect.
     build_parser().parse_args(argv)
     k = knobs(dict(os.environ))
-    if k["PROBE_BUCKET"] == PRODUCTION_BUCKET:
+    if is_production_bucket(k["PROBE_BUCKET"]):
         # The drill carries the same guard for the same reason: a harness that CAN point at production eventually will.
-        print("REFUSING bucket 'rediacc-backups': that is the production name.", file=sys.stderr)
+        print(
+            "REFUSING bucket '%s': that is a production name." % k["PROBE_BUCKET"], file=sys.stderr
+        )
         return 1
     pathlib.Path(k["LOG_DIR"]).mkdir(parents=True, exist_ok=True)
 

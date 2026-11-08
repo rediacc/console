@@ -177,6 +177,11 @@ def test_a_red_check_counts_only_the_rules_that_match(capsys):
         "edge-rediacc-backups-us",
         "rediacc-configs-bench",
         "rediacc-www-media",
+        "backups-eu",
+        "configs-eu",
+        "backups-bench",
+        "configs-staging",
+        "media",
     ],
 )
 def test_protected_and_unlisted_buckets_are_refused_before_any_call(bucket):
@@ -208,6 +213,30 @@ def test_planted_rule_on_a_backup_bucket_is_reported():
     r2.run_mode(w, "apply")
     assert r2.run_mode(w, "check") == 1
     assert w.mutations()[-1][3] == r2.RELEASES_BUCKET  # reported, never removed
+
+
+# PLAN-product-domain-rename W6: the shared names carry no `rediacc-` prefix, so `*-backups-*` and `rediacc-backups*` never matched them, and a planted lifecycle rule on `backups-eu` read as a clean bucket.
+@pytest.mark.parametrize(
+    "bucket",
+    ["backups-eu", "backups-us", "backups-asia", "backups-bench", "configs-eu", "configs-staging"],
+)
+def test_the_shared_backup_and_config_names_are_protected(bucket):
+    assert r2.is_protected(bucket)
+    with pytest.raises(r2.RefusedBucketError, match="never get lifecycle rules"):
+        r2.require_writable(bucket)
+
+
+def test_a_planted_rule_on_a_shared_backup_bucket_is_reported():
+    planted = {"backups-eu": [r2.Rule("evil", "chunks/", expire_days=1)]}
+    w = FakeWrangler([r2.RELEASES_BUCKET, "backups-eu"], planted)
+    r2.run_mode(w, "apply")
+    assert r2.run_mode(w, "check") == 1
+    assert not [c for c in w.mutations() if c[3] == "backups-eu"]
+
+
+def test_the_releases_and_media_buckets_are_not_protected():
+    assert not r2.is_protected(r2.RELEASES_BUCKET)
+    assert not r2.is_protected("media")
 
 
 def test_staging_bucket_gets_rules_only_when_listed():

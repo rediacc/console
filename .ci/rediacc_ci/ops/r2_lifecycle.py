@@ -4,7 +4,7 @@ The application decides first: `housekeeping/cleanup_versions.py` Phase 8 delete
 
 Modes: `apply` (default; idempotent, a rule whose name and values already match is skipped, a drifted one is removed and re-added), `list` (print the rules), `check` / `--check` (exit 1 on a missing or drifted rule, or on a planted rule on a protected bucket).
 
-Safety: only buckets in `ALLOWED_BUCKETS` are ever written. A name matching `PROTECTED_PATTERNS` (backups, configs) is refused before any call, because the account Worker's chunk GC is authoritative there and a lifecycle expiry would delete a chunk the index still references. `list` and `check` read the rules of every protected bucket (read-only) and report anything beyond the platform default as PLANTED.
+Safety: only buckets in `ALLOWED_BUCKETS` are ever written. A name matching `PROTECTED_PATTERNS` (any name holding `backups` or `configs`) is refused before any call, because the account Worker's chunk GC is authoritative there and a lifecycle expiry would delete a chunk the index still references. `list` and `check` read the rules of every protected bucket (read-only) and report anything beyond the platform default as PLANTED.
 
 Auth is `cf_auth.resolve` (a ready `CF_MANAGEMENT_TOKEN`, or the Global API Key pair, from which a token carrying Workers R2 Storage Write is minted and self-destructed). The token reaches wrangler only through its environment, never argv.
 """
@@ -24,10 +24,11 @@ from rediacc_ci.core import wrangler
 from rediacc_ci.ops import cf_auth
 from rediacc_ci.well_known import RELEASES_BUCKET
 
-STAGING_BUCKET = "rediacc-staging"
+STAGING_BUCKET = "staging"
 # Written only when the live listing shows them.
 ALLOWED_BUCKETS = (RELEASES_BUCKET, STAGING_BUCKET)
-PROTECTED_PATTERNS = ("rediacc-backups*", "*-backups-*", "rediacc-configs*", "*-configs-*")
+# Any name holding `backups` or `configs`: the shared names (`backups-eu`, `configs-bench`, PLAN-product-domain-rename) and the `rediacc-` ones they replace, which stay live until that plan deletes them, alike.
+PROTECTED_PATTERNS = ("*backups*", "*configs*")
 # Mirrors `R2_FORMAT_DIRS` in housekeeping/cleanup_versions.py.
 FORMAT_DIRS = ("cli", "npm", "apt", "rpm", "apk", "archlinux")
 PR_EXPIRE_DAYS = 14

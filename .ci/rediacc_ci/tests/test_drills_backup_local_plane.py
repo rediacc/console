@@ -54,9 +54,41 @@ def test_the_production_bucket_name_is_refused(
     monkeypatch.setenv("PROBE_BUCKET", "rediacc-backups")
     assert plane.main([]) == 1
     assert (
-        "REFUSING bucket 'rediacc-backups': that is the production name." in capsys.readouterr().err
+        "REFUSING bucket 'rediacc-backups': that is a production name." in capsys.readouterr().err
     )
     assert not docker.exists()
+
+
+@pytest.mark.parametrize("bucket", ["backups", "backups-eu", "backups-asia", "rediacc-backups-us"])
+def test_a_shared_production_bucket_name_is_refused(
+    docker: pathlib.Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    bucket: str,
+) -> None:
+    """PLAN-product-domain-rename W6: the shared names carry no `rediacc-` prefix, so an equality with `rediacc-backups` let `backups-eu` through to a gateway that writes and deletes."""
+    monkeypatch.setenv("PROBE_BUCKET", bucket)
+    assert plane.main([]) == 1
+    assert "REFUSING bucket '%s': that is a production name." % bucket in capsys.readouterr().err
+    assert not docker.exists()
+
+
+@pytest.mark.parametrize(
+    ("bucket", "production"),
+    [
+        ("backups", True),
+        ("backups-eu", True),
+        ("edge-rediacc-backups-eu", True),
+        ("rediacc-backups", True),
+        ("backups-bench", False),
+        ("backups-probe", False),
+        ("rediacc-backups-probe", False),
+        ("example-backups-test", False),
+        ("configs-eu", False),
+    ],
+)
+def test_is_production_bucket(bucket: str, production: bool) -> None:
+    assert plane.is_production_bucket(bucket) is production
 
 
 def test_the_bucket_command_targets_the_local_rustfs_only() -> None:
