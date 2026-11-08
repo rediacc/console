@@ -32,6 +32,8 @@ export function normalizeDomain(input: unknown): string | null {
   if (d.endsWith('.')) d = d.slice(0, -1);
   // A unicode name is punycoded, as the writer's normalize_domain does (review 11ccb9e8.2).
   if (/[^\x00-\x7f]/.test(d)) {
+    // Only a bare host may reach the parser, which would drop a path, port or userinfo (review b81e7519.1).
+    if (/[/:@?#\\\s]/.test(d)) return null;
     try {
       d = new URL(`http://${d}`).hostname;
     } catch {

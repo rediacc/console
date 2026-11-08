@@ -72,6 +72,15 @@ describe('normalizeDomain', () => {
   });
   test('punycodes a unicode name like the writer does', () => {
     expect(normalizeDomain('Bücher.example')).toBe('xn--bcher-kva.example');
+    for (const shaped of [
+      'bücher.example/x',
+      'bücher.example:8080',
+      'u@bücher.example',
+      'bücher.example?q',
+      'bü cher.example',
+    ]) {
+      expect(normalizeDomain(shaped)).toBeNull();
+    }
   });
 });
 
