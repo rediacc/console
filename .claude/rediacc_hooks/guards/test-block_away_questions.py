@@ -149,6 +149,18 @@ def main():
                 "sibling: the operator's word to another session left the flag standing (rc=%d)"
                 % proc.returncode
             )
+        d = root / "sibling-busy"
+        d.mkdir()
+        filler = [
+            _user([{"type": "tool_result", "tool_use_id": "t", "content": "x" * 4096}])
+            for _ in range(1300)
+        ]
+        proc, state = _run(d, [], sibling=[_user("answered in the other session"), *filler])
+        if proc.returncode != 0 or state.exists():
+            fails.append(
+                "sibling-busy: a reply followed by 5 MB of the sibling's records was missed (rc=%d)"
+                % proc.returncode
+            )
         d = root / "sibling-quiet"
         d.mkdir()
         proc, state = _run(d, [], sibling=[_user("<task-notification> x")])
@@ -157,7 +169,7 @@ def main():
                 "sibling-quiet: a notification in another session ended the mode (rc=%d)"
                 % proc.returncode
             )
-    total = len(STILL_AWAY) + len(BACK) + 4
+    total = len(STILL_AWAY) + len(BACK) + 5
     for f in fails:
         print("FAIL " + f)
     print("%d of %d case(s) passed" % (total - len(fails), total))

@@ -27,7 +27,7 @@ def state_path() -> pathlib.Path:
     return path / "away.json" if path.is_dir() else path
 
 
-# A night of work writes far more than the 3 MB other readers keep, and a sibling session may write a lot after the operator answered it; records before the flag's `since` are skipped. Every transcript gets the full tail: the read runs only when a question is asked, which away mode makes rare.
+# A night of work writes far more than the 3 MB other readers keep, and a sibling session may write a lot after the operator answered it; records before the flag's `since` are skipped. Every transcript, the asking one and each sibling, is read with the same 64 MB tail: the read runs only when a question is asked, which away mode makes rare.
 TAIL_BYTES = 64 * 1024 * 1024
 AWK_COMMAND = "<command-name>/awk</command-name>"
 
