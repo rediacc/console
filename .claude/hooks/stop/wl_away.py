@@ -27,10 +27,8 @@ def state_path() -> pathlib.Path:
     return path / "away.json" if path.is_dir() else path
 
 
-# A night of work writes far more than the 3 MB other readers keep; records before the flag's `since` are skipped, so the larger tail costs a parse, not a decision.
+# A night of work writes far more than the 3 MB other readers keep, and a sibling session may write a lot after the operator answered it; records before the flag's `since` are skipped. Every transcript gets the full tail: the read runs only when a question is asked, which away mode makes rare.
 TAIL_BYTES = 64 * 1024 * 1024
-# A sibling session is read only for a message after the flag, which sits near its end; a smaller tail keeps the cost flat as sessions multiply.
-SIBLING_TAIL_BYTES = 4 * 1024 * 1024
 AWK_COMMAND = "<command-name>/awk</command-name>"
 
 
@@ -170,11 +168,8 @@ def away(transcript_path: str, state: pathlib.Path | None = None) -> dict | None
     doc = read(state)
     if doc is None:
         return None
-    for i, path in enumerate(_transcripts(transcript_path, doc["since"])):
-        if (
-            operator_since(path, doc["since"], TAIL_BYTES if i == 0 else SIBLING_TAIL_BYTES)
-            is not None
-        ):
+    for path in _transcripts(transcript_path, doc["since"]):
+        if operator_since(path, doc["since"], TAIL_BYTES) is not None:
             clear(state)
             return None
     return doc
