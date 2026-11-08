@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import datetime
 import json
+import os
 import re
 import subprocess
 import sys
@@ -713,6 +714,41 @@ def test_silent_when_a_green_narrow_run_came_after_the_red_receipt(world):
     write_ledger(ledger, narrow_rows("r-ok", "2026-11-07T05:10:00.000Z", 0))
     assert wl_ci.narrow_passed_since(ledger, FINISHED_EPOCH)
     assert wl_ci.ciquick_on_red(root, FULL, ledger_dir=ledger) is None
+
+
+def test_a_green_narrow_run_in_an_older_segment_is_found(world):
+    """The ledger rotates by month; a pass three segments back still counts (542a677c.1). The last-two read missed it."""
+    root, ledger = world
+    write_receipt(root, 1)
+    ledger.mkdir(parents=True)
+    passed = narrow_rows("r-ok", "2026-11-07T05:10:00.000Z", 0)
+    (ledger / "outcomes-2026-08.jsonl").write_text(
+        "".join(json.dumps(r) + "\n" for r in passed), encoding="utf-8"
+    )
+    for name in ("2026-09", "2026-10", "2026-11"):
+        (ledger / ("outcomes-%s.jsonl" % name)).write_text(
+            "".join(
+                json.dumps(r) + "\n"
+                for r in narrow_rows("r-" + name, "2026-11-07T05:11:00.000Z", 1)
+            ),
+            encoding="utf-8",
+        )
+    assert wl_ci.narrow_passed_since(ledger, FINISHED_EPOCH)
+    assert wl_ci.ciquick_on_red(root, FULL, ledger_dir=ledger) is None
+
+
+def test_a_segment_written_before_the_receipt_is_not_read(world):
+    """CONTROL: a segment whose mtime precedes the receipt cannot hold a later run, so a pass recorded there does not silence the red."""
+    root, ledger = world
+    write_receipt(root, 1)
+    ledger.mkdir(parents=True)
+    old = ledger / "outcomes-2026-08.jsonl"
+    old.write_text(
+        "".join(json.dumps(r) + "\n" for r in narrow_rows("r-ok", "2026-11-07T05:10:00.000Z", 0)),
+        encoding="utf-8",
+    )
+    os.utime(old, (FINISHED_EPOCH - 3600, FINISHED_EPOCH - 3600))
+    assert not wl_ci.narrow_passed_since(ledger, FINISHED_EPOCH)
 
 
 def test_silent_for_a_green_receipt(world):

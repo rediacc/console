@@ -1241,13 +1241,21 @@ def _iso_epoch(stamp):
         return None
 
 
+#: The most outcomes-*.jsonl segments `narrow_passed_since` reads, newest first.
+NARROW_SEGMENT_CAP = 64
+
+
 def narrow_passed_since(ledger_dir, since):
     """True when the gate ledger holds a `--narrow` run that started at or after epoch `since` and ended with exit 0. A narrow run writes no receipt, so its run row (`narrowed_by` naming --narrow) and its end row are the only record."""
     if ledger_dir is None or not pathlib.Path(ledger_dir).is_dir():
         return False
     starts, ends = {}, set()
-    for seg in sorted(pathlib.Path(ledger_dir).glob("outcomes-*.jsonl"))[-2:]:
+    # Newest segment first, bounded by NARROW_SEGMENT_CAP. A segment last written before `since` cannot hold a run that started at or after it, nor that run's end row (both land in the same or a later segment), so it is skipped unread; every other segment is read, which covers a pass in an older segment and a run whose rows straddle a rotation.
+    segments = sorted(pathlib.Path(ledger_dir).glob("outcomes-*.jsonl"), reverse=True)
+    for seg in segments[:NARROW_SEGMENT_CAP]:
         try:
+            if seg.stat().st_mtime < since:
+                continue
             text = seg.read_text(encoding="utf-8")
         except OSError:
             continue

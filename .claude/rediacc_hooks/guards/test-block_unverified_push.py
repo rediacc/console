@@ -1170,11 +1170,11 @@ w, t0, t1 = carry_world(
     carry_doc(keyed(K1), keyed(K2, gate=OTHER_GATE)),
 )
 CARRY_WORLDS.append(("G3: an added carry entry is refused", 2, w))
+added_out = drive(w, ADV_PUSH)[1]
 cases.append(
     (
         True,
-        "WIDENS" in drive(w, ADV_PUSH)[1]
-        and "adds a carry for %s" % OTHER_GATE in drive(w, ADV_PUSH)[1],
+        "WIDENS" in added_out and "adds a carry for %s" % OTHER_GATE in added_out,
         "G3: the added-entry refusal says WIDENS and names the gate",
     )
 )
@@ -1282,10 +1282,32 @@ body["advances"][0]["gates"] = {}
 (w / ".ci" / "cache" / "prepush-receipt.json").write_text(json.dumps(body), encoding="utf-8")
 CARRY_WORLDS.append(("G3: a removal whose carry reader did not re-run is refused", 2, w))
 
+# G3-12. REFUSED: the carry file at HEAD is not valid UTF-8. The guard must name it, not raise out of git's decode.
+w, t0 = adv_world("carry-not-utf8", carry_doc(keyed(K1, K2)), policy=CARRY_POLICY)
+(w / GM.CARRIED_REL).write_bytes(b'{"version": 2, "carried": [\xff\xfe]}')
+t1 = _commit_all(w)
+adv_receipt(
+    w,
+    t0,
+    [step(t0, t1, CARRY_READER, paths=(GM.CARRIED_REL,))],
+    exitCode=1,
+    failed=[TRAILERS],
+    findings={TRAILERS: [K1]},
+)
+CARRY_WORLDS.append(("G3: a carry file that is not valid UTF-8 is refused", 2, w))
+utf8_run = drive(w, ADV_PUSH)
+cases.append(
+    (
+        True,
+        "not valid UTF-8" in utf8_run[1] and "Traceback" not in utf8_run[1],
+        "G3: the non-UTF-8 refusal names the cause and does not traceback",
+    )
+)
+
 ADV_WORLDS.extend(CARRY_WORLDS)
 
 
-# G3 PLANT: with carried_widening and removed_still_red forced to [] and the one-file test bypassed, every widening world must flip to admitted (so the step rule, not carried_verdict, is what refused them), and the admitted and still-red worlds must hold (the still-red ones because carried_verdict refuses them anyway: two locks on one door).
+# G3 PLANT: carried_shrink_refusal alone is replaced by a function returning None (its one-file test, carried_widening and removed_still_red go with it). Every world in SHRINK_FLIPS must flip to admitted, so the step rule, not carried_verdict, is what refused them; the SHRINK_HOLDS worlds must keep their verdict (the still-red and reader-missing ones because carried_verdict and the record readers refuse them anyway: two locks on one door).
 def drive_shrink_off(where, cmd):
     runner = (
         "import sys; sys.path.insert(0, %r)\n"

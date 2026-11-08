@@ -1122,15 +1122,19 @@ def _carried_at_tree(root, tree):
         proc = subprocess.run(
             ["git", "-C", root, "show", "%s:%s" % (tree, CARRIED_REL)],
             capture_output=True,
-            text=True,
             check=False,
         )
     except OSError as exc:
         return None, "git could not read %s at %s (%s)" % (CARRIED_REL, tree[:12], exc)
     if proc.returncode != 0:
         return None, "tree %s has no %s" % (tree[:12], CARRIED_REL)
+    # Bytes, decoded here: a blob that is not valid UTF-8 is a why naming it, never a UnicodeDecodeError out of the guard.
     try:
-        doc = json.loads(proc.stdout)
+        text = proc.stdout.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        return None, "%s at tree %s is not valid UTF-8 (%s)" % (CARRIED_REL, tree[:12], exc)
+    try:
+        doc = json.loads(text)
     except ValueError as exc:
         doc = {UNPARSEABLE: str(exc)}
     carried, error = parse_carried(doc)
