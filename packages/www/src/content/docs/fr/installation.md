@@ -177,10 +177,10 @@ rdc update --channel edge      # Passer au canal edge
 rdc update --channel stable    # Revenir au canal stable
 ```
 
-Installer directement depuis le canal edge :
+Les installateurs en une ligne de www.rediacc.com installent le canal edge. Pour installer le canal stable, définissez `REDIACC_CHANNEL` :
 
 ```bash
-REDIACC_CHANNEL=edge curl -fsSL https://www.rediacc.com/install.sh | bash
+REDIACC_CHANNEL=stable curl -fsSL https://www.rediacc.com/install.sh | bash
 ```
 
 Pour les gestionnaires de paquets, remplacez `stable` par `edge` dans l'URL du dépôt :
@@ -197,7 +197,7 @@ docker pull ghcr.io/rediacc/rdc:edge
 
 Le canal s'applique uniformément à toutes les méthodes de distribution :
 
-- **Scripts d'installation** : La variable d'environnement `REDIACC_CHANNEL` sélectionne le canal
+- **Scripts d'installation** : les installateurs en une ligne de www utilisent `edge` par défaut ; la variable d'environnement `REDIACC_CHANNEL` sélectionne un autre canal
 - **Dépôts de paquets** : `releases.rediacc.com/{format}/{canal}/`
 - **Tags Docker** : `ghcr.io/rediacc/rdc:{canal}`
 - **Mises à jour CLI** : `rdc update` vérifie le canal configuré lors de l'installation

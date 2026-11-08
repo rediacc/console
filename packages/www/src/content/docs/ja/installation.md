@@ -177,10 +177,10 @@ rdc update --channel edge      # エッジチャンネルに切り替え
 rdc update --channel stable    # 安定版チャンネルに戻る
 ```
 
-エッジチャンネルから直接インストール:
+www.rediacc.com のワンライナーインストーラーは edge チャンネルをインストールします。stable チャンネルをインストールするには `REDIACC_CHANNEL` を設定します:
 
 ```bash
-REDIACC_CHANNEL=edge curl -fsSL https://www.rediacc.com/install.sh | bash
+REDIACC_CHANNEL=stable curl -fsSL https://www.rediacc.com/install.sh | bash
 ```
 
 パッケージマネージャーの場合、リポジトリURLの `stable` を `edge` に置き換えてください:
@@ -197,7 +197,7 @@ docker pull ghcr.io/rediacc/rdc:edge
 
 チャンネルはすべての配信方法に統一的に適用されます:
 
-- **インストールスクリプト**: 環境変数 `REDIACC_CHANNEL` でチャンネルを選択
+- **インストールスクリプト**: www のワンライナーインストーラーは既定で `edge` を使用し、環境変数 `REDIACC_CHANNEL` で別のチャンネルを選択
 - **パッケージリポジトリ**: `releases.rediacc.com/{フォーマット}/{チャンネル}/`
 - **Dockerタグ**: `ghcr.io/rediacc/rdc:{チャンネル}`
 - **CLIアップデート**: `rdc update` はインストール時に設定されたチャンネルを確認

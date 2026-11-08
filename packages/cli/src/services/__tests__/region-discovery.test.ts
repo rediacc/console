@@ -84,14 +84,12 @@ describe('detectLikelyRegion', () => {
       id: 'eu',
       label: 'Europe',
       domain: regionOf('eu').domain,
-      edgeDomain: regionOf('eu').edgeDomain,
       default: true,
     },
     {
       id: 'us',
       label: 'United States',
       domain: regionOf('us').domain,
-      edgeDomain: regionOf('us').edgeDomain,
       default: false,
     },
   ];
@@ -107,7 +105,6 @@ describe('detectLikelyRegion', () => {
         id: 'eu',
         label: 'Europe',
         domain: regionOf('eu').domain,
-        edgeDomain: regionOf('eu').edgeDomain,
         default: true,
       },
     ];

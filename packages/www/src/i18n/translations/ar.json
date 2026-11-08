@@ -1816,11 +1816,6 @@
           }
         ]
       },
-      "edgeChannel": {
-        "cta": "استكشف قناة edge",
-        "description": "تُطلق قناة edge أحدث ميزاتنا أولًا، وتعمل بضعف حدود قناة stable المستقرة.",
-        "heading": "جرب قناة Edge"
-      },
       "faq": {
         "heading": "الأسئلة المتداولة",
         "items": [

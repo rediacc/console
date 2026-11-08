@@ -1831,11 +1831,6 @@
           }
         ]
       },
-      "edgeChannel": {
-        "cta": "Esplora il canale Edge",
-        "description": "Il canale edge rilascia per primo le nostre funzionalità più recenti e gira con il doppio dei limiti del canale stable.",
-        "heading": "Prova il canale Edge"
-      },
       "faq": {
         "heading": "Domande frequenti",
         "items": [

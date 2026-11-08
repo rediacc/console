@@ -714,11 +714,6 @@
           }
         ]
       },
-      "edgeChannel": {
-        "heading": "Try the Edge Channel",
-        "description": "The edge channel ships our newest features first and runs with double the limits of the stable channel.",
-        "cta": "Explore the edge channel"
-      },
       "roiCta": {
         "heading": "Not sure which plan fits?",
         "description": "Use the interactive ROI calculator to see what Rediacc saves."

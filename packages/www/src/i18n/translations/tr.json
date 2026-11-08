@@ -1822,11 +1822,6 @@
           }
         ]
       },
-      "edgeChannel": {
-        "cta": "Edge kanalını keşfedin",
-        "description": "Edge kanalı en yeni özellikleri önce sunar ve stable kanalının iki katı limitle çalışır.",
-        "heading": "Edge Kanalını Deneyin"
-      },
       "faq": {
         "heading": "Sıkça Sorulan Sorular",
         "items": [

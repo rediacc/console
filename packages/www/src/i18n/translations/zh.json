@@ -1814,11 +1814,6 @@
           }
         ]
       },
-      "edgeChannel": {
-        "cta": "探索 Edge 渠道",
-        "description": "Edge 渠道率先推送最新功能，额度是 Stable 渠道的两倍。",
-        "heading": "试试 Edge 频道"
-      },
       "faq": {
         "heading": "常见问题",
         "items": [

@@ -177,10 +177,10 @@ rdc update --channel edge      # edge 채널로 전환
 rdc update --channel stable    # stable 채널로 복귀
 ```
 
-edge 채널에서 직접 설치:
+www.rediacc.com의 한 줄 설치 스크립트는 edge 채널을 설치합니다. stable 채널을 설치하려면 `REDIACC_CHANNEL`을 설정하세요:
 
 ```bash
-REDIACC_CHANNEL=edge curl -fsSL https://www.rediacc.com/install.sh | bash
+REDIACC_CHANNEL=stable curl -fsSL https://www.rediacc.com/install.sh | bash
 ```
 
 패키지 매니저의 경우 리포지토리 URL에서 `stable`을 `edge`로 교체하십시오.
@@ -197,7 +197,7 @@ docker pull ghcr.io/rediacc/rdc:edge
 
 채널은 모든 전달 방법에 균일하게 적용됩니다.
 
-- **설치 스크립트**: `REDIACC_CHANNEL` 환경 변수로 채널 선택
+- **설치 스크립트**: www의 한 줄 설치 스크립트는 기본적으로 `edge`를 사용하며, `REDIACC_CHANNEL` 환경 변수로 다른 채널 선택
 - **패키지 리포지토리**: `releases.rediacc.com/{format}/{channel}/`
 - **Docker 태그**: `ghcr.io/rediacc/rdc:{channel}`
 - **CLI 업데이트**: `rdc update`는 설치 시 구성된 채널을 확인합니다.

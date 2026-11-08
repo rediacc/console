@@ -1822,11 +1822,6 @@
           }
         ]
       },
-      "edgeChannel": {
-        "cta": "無料で始める",
-        "description": "最新機能をいち早く提供。制限値はstableチャンネルの2倍です。",
-        "heading": "Edgeチャンネルを試す"
-      },
       "faq": {
         "heading": "よくある質問",
         "items": [

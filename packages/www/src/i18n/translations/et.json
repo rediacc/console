@@ -1829,11 +1829,6 @@
           }
         ]
       },
-      "edgeChannel": {
-        "cta": "Uuri Edge kanalit",
-        "description": "Edge kanal saab uued funktsioonid esimesena ja pakub kaks korda suuremaid piire kui stabiilne kanal.",
-        "heading": "Proovi Edge versioon"
-      },
       "faq": {
         "heading": "Korduma kippuvad küsimused",
         "items": [

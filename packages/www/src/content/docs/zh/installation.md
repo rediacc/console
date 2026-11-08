@@ -177,10 +177,10 @@ rdc update --channel edge      # 切换到 edge 渠道
 rdc update --channel stable    # 切换回 stable 渠道
 ```
 
-直接从 edge 渠道安装：
+www.rediacc.com 的一行安装脚本安装 edge 渠道。要安装 stable 渠道，请设置 `REDIACC_CHANNEL`：
 
 ```bash
-REDIACC_CHANNEL=edge curl -fsSL https://www.rediacc.com/install.sh | bash
+REDIACC_CHANNEL=stable curl -fsSL https://www.rediacc.com/install.sh | bash
 ```
 
 对于包管理器，将仓库 URL 中的 `stable` 替换为 `edge`：
@@ -197,7 +197,7 @@ docker pull ghcr.io/rediacc/rdc:edge
 
 渠道统一应用于所有分发方式：
 
-- **安装脚本**：`REDIACC_CHANNEL` 环境变量选择渠道
+- **安装脚本**：www 的一行安装脚本默认使用 `edge`；`REDIACC_CHANNEL` 环境变量选择其他渠道
 - **包仓库**：`releases.rediacc.com/{格式}/{渠道}/`
 - **Docker 标签**：`ghcr.io/rediacc/rdc:{渠道}`
 - **CLI 更新**：`rdc update` 检查安装时配置的渠道

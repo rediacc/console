@@ -1835,11 +1835,6 @@
           }
         ]
       },
-      "edgeChannel": {
-        "cta": "Explorar o canal edge",
-        "description": "O canal edge lança as funcionalidades mais novas em primeiro lugar e funciona com o dobro dos limites do canal estável.",
-        "heading": "Experimenta o Canal Edge"
-      },
       "faq": {
         "heading": "Perguntas Frequentes",
         "items": [

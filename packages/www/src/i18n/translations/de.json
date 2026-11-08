@@ -1827,11 +1827,6 @@
           }
         ]
       },
-      "edgeChannel": {
-        "cta": "Edge-Kanal entdecken",
-        "description": "Der Edge-Kanal liefert unsere neuesten Funktionen zuerst und läuft mit doppelt so hohen Limits wie der Stable-Kanal.",
-        "heading": "Edge-Kanal testen"
-      },
       "faq": {
         "heading": "Häufig gestellte Fragen",
         "items": [

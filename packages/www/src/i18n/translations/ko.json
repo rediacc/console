@@ -1826,11 +1826,6 @@
           }
         ]
       },
-      "edgeChannel": {
-        "cta": "Edge 채널 살펴보기",
-        "description": "Edge 채널은 최신 기능을 가장 먼저 제공하며, Stable 채널의 2배 한도로 작동합니다.",
-        "heading": "Edge 채널 체험하기"
-      },
       "faq": {
         "heading": "자주 묻는 질문",
         "items": [

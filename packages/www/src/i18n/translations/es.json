@@ -1827,11 +1827,6 @@
           }
         ]
       },
-      "edgeChannel": {
-        "cta": "Explorar el canal edge",
-        "description": "El canal edge envía nuestras funciones más nuevas primero y se ejecuta con el doble de límites del canal estable.",
-        "heading": "Prueba Edge"
-      },
       "faq": {
         "heading": "Preguntas frecuentes",
         "items": [

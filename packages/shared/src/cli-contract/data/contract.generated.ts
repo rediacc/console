@@ -4463,10 +4463,10 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Create a named configuration profile."
         },
         {
-          "command": "rdc config init staging --server https://eu.rediacc.com",
+          "command": "rdc config init staging --server https://eu.rediacc.cloud",
           "values": {
             "name": "staging",
-            "server": "https://eu.rediacc.com"
+            "server": "https://eu.rediacc.cloud"
           },
           "descriptionKey": "commands.config.init.examples.withServer",
           "label": "Create a profile pointed at a specific account server."

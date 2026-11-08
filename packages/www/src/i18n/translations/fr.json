@@ -1829,11 +1829,6 @@
           }
         ]
       },
-      "edgeChannel": {
-        "cta": "Commencer gratuitement",
-        "description": "Le canal edge livre nos toutes dernières fonctionnalités en premier et fonctionne avec le double des limites du canal stable.",
-        "heading": "Essayer le canal Edge"
-      },
       "faq": {
         "heading": "Foire aux questions",
         "items": [

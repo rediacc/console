@@ -177,10 +177,10 @@ rdc update --channel edge      # Edge kanalına geç
 rdc update --channel stable    # Stable kanalına geri dön
 ```
 
-Doğrudan edge kanalından kurulum yapın:
+www.rediacc.com üzerindeki tek satırlık kurulum betikleri edge kanalını kurar. Stable kanalını kurmak için `REDIACC_CHANNEL` ayarlanır:
 
 ```bash
-REDIACC_CHANNEL=edge curl -fsSL https://www.rediacc.com/install.sh | bash
+REDIACC_CHANNEL=stable curl -fsSL https://www.rediacc.com/install.sh | bash
 ```
 
 Paket yöneticileri için depo URL'sindeki `stable` ifadesini `edge` ile değiştirin:
@@ -197,7 +197,7 @@ docker pull ghcr.io/rediacc/rdc:edge
 
 Kanal, tüm dağıtım yöntemlerinde aynı şekilde uygulanır:
 
-- **Kurulum betikleri**: `REDIACC_CHANNEL` ortam değişkeni kanalı seçer
+- **Kurulum betikleri**: www'daki tek satırlık kurulum betikleri varsayılan olarak `edge` kullanır; `REDIACC_CHANNEL` ortam değişkeni başka bir kanalı seçer
 - **Paket depoları**: `releases.rediacc.com/{format}/{kanal}/`
 - **Docker etiketleri**: `ghcr.io/rediacc/rdc:{kanal}`
 - **CLI güncellemeleri**: `rdc update` kurulum sırasında yapılandırılan kanalı kontrol eder
