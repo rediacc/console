@@ -53,7 +53,7 @@ export interface Env {
   /** The coordinator's cap and heavy sub-cap, decimal strings (src/capacity.ts `capFrom`). */
   EXECUTOR_CAP?: string;
   EXECUTOR_HEAVY_CAP?: string;
-  /** Account server base URL, e.g. https://eu.rediacc.com */
+  /** Account server base URL, e.g. https://eu.rediacc.cloud */
   ACCOUNT_URL: string;
   /**
    * Service binding to the regional account Worker's `ExecutorIssuer` entrypoint: `route(bearer)` names the caller's org and its executor placement, `issue(orgId)` mints that org's short-lived account token (`proxy:exec` and `audit:write`), and `relocate(orgId, fromPlacement)` is called only by OrgExecutor when its container keeps failing to reach a machine. src/issued-token.ts caches the tokens per org. The container never sees one: it holds a placeholder that src/egress.ts swaps on the way out.
@@ -62,7 +62,7 @@ export interface Env {
   /** The `[version_metadata]` binding: `/v1/ready` answers its `id` as `workerVersion`, so a deploy smoke can tell the new version from one still rolling out. */
   CF_VERSION_METADATA?: WorkerVersionMetadata;
   /**
-   * Service binding to the regional account worker. `proxy.eu.rediacc.com` and `eu.rediacc.com` share a zone, and a Worker's `fetch()` to a same-zone hostname does not reach another Worker on that zone, so on the first Phase 2 deploy (2026-09-24) every introspection failed and every caller got 401. The binding is the path the www worker already uses (workers/www/wrangler.toml `[[services]]`); `fetch(ACCOUNT_URL)` remains only for a deploy without it.
+   * Service binding to the regional account worker. `proxy-eu.rediacc.cloud` and `eu.rediacc.cloud` share a zone, and a Worker's `fetch()` to a same-zone hostname does not reach another Worker on that zone, so on the first Phase 2 deploy (2026-09-24) every introspection failed and every caller got 401. The binding is the path the www worker already uses (workers/www/wrangler.toml `[[services]]`); `fetch(ACCOUNT_URL)` remains only for a deploy without it.
    */
   ACCOUNT?: Fetcher;
   /** Region label for telemetry (`rediacc.region`, and `REDIACC_REGION` for the executor); `eu` when unset or empty. */
