@@ -772,7 +772,7 @@ WORKLIST = "agent/worklist/abcd1234.jsonl"
 BOTH_REVIEW_READERS = {R_PLAN: 0, R_ARCH: 0}
 
 
-def adv_world(name, carried_doc=None):
+def adv_world(name, carried_doc=None, policy=None):
     """A repo whose base commit carries the record policy (and optionally carried-reds.json); returns (root, base tree)."""
     root = pathlib.Path(tempfile.mkdtemp(dir=RUN_TMP)) / name
     root.mkdir()
@@ -781,7 +781,7 @@ def adv_world(name, carried_doc=None):
     g(root, "config", "user.name", "p")
     (root / ".ci" / "policy").mkdir(parents=True)
     (root / ".ci" / "policy" / "record-paths.json").write_text(
-        json.dumps(ADV_POLICY), encoding="utf-8"
+        json.dumps(ADV_POLICY if policy is None else policy), encoding="utf-8"
     )
     (root / "code.txt").write_text("code\n", encoding="utf-8")
     GM._write_fixture_lock(root)
@@ -1089,6 +1089,297 @@ adv_receipt(
     droppedVerified=passed_at(t0),
 )
 ADV_WORLDS.append(("ADVANCE: a --only pass at the receipt tree carries along the chain", 0, w))
+
+# --- G3 (agent/plans/PLAN-ciquick-green-then-batch.md): a commit that only SHRINKS carried-reds.json advances; an added or widened carry still voids. The carry file is a record with its own reader here, as in the real policy. Every refusal world below is built so that carried_verdict at HEAD would ADMIT it, which makes the step rule the only thing refusing; the plant at the end proves that by flipping them.
+R_CARRY = "check:fixture-carry-reader"
+CARRY_POLICY = dict(
+    ADV_POLICY,
+    records=ADV_POLICY["records"]
+    + [
+        {
+            "glob": GM.CARRIED_REL,
+            "except": [],
+            "readers": [{"id": R_CARRY, "evidence": "fixture:4"}],
+        }
+    ],
+)
+CARRY_READER = {R_CARRY: 0}
+OTHER_GATE = "check:fixture-other-carried"
+
+
+def carry_doc(*entries):
+    return {"version": 2, "carried": list(entries)}
+
+
+def carry_commit(root, doc, *also):
+    """Rewrite carried-reds.json to `doc` (plus one appended line per path in `also`), commit, return HEAD^{tree}."""
+    (root / GM.CARRIED_REL).write_text(json.dumps(doc), encoding="utf-8")
+    return adv_commit(root, *also) if also else _commit_all(root)
+
+
+def _commit_all(root):
+    g(root, "add", "-A")
+    g(root, "commit", "-qm", "carry edit")
+    return g(root, "rev-parse", "HEAD^{tree}")
+
+
+def carry_world(name, base, receipt_findings, new_doc, also=(), readers=None):
+    """A world whose base carries `base`, whose receipt (at the base tree) is red on exactly the gates in `receipt_findings` with those keys, and whose HEAD rewrites the carry to `new_doc` behind one advance with its readers green. Returns (root, base tree, head tree)."""
+    root, t0 = adv_world(name, carried_doc=base, policy=CARRY_POLICY)
+    t1 = carry_commit(root, new_doc, *also)
+    gates = dict(CARRY_READER, **(readers or {}))
+    adv_receipt(
+        root,
+        t0,
+        [step(t0, t1, gates, paths=(GM.CARRIED_REL, *also))],
+        exitCode=1,
+        failed=sorted(receipt_findings),
+        findings={k: None if v is None else list(v) for k, v in receipt_findings.items()},
+    )
+    return root, t0, t1
+
+
+CARRY_WORLDS = []
+# G3-1. ADMITTED: a stale key removed, K1 still red and still carried. At the base the push was refused (K2 carried, no longer emitted); after the shrink it is admitted through the advance.
+w, t0, t1 = carry_world(
+    "carry-remove-stale-key",
+    carry_doc(keyed(K1, K2)),
+    {TRAILERS: [K1]},
+    carry_doc(keyed(K1)),
+)
+CARRY_WORLDS.append(("G3: a removal-only carry commit advances the receipt", 0, w))
+# Its control: the same receipt at the base tree, before the shrink, is refused as stale. Without this the admitted world could be admitted for a reason that has nothing to do with the advance.
+w, t0 = adv_world("carry-remove-stale-key-base", carry_doc(keyed(K1, K2)), policy=CARRY_POLICY)
+adv_receipt(w, t0, None, exitCode=1, failed=[TRAILERS], findings={TRAILERS: [K1]})
+CARRY_WORLDS.append(("G3 CONTROL: the same receipt before the shrink is refused (stale K2)", 2, w))
+
+# G3-2. ADMITTED: a whole entry removed for a gate that is not red in the receipt.
+w, t0, t1 = carry_world(
+    "carry-remove-whole-entry",
+    carry_doc(keyed(K1), keyed(K2, gate=OTHER_GATE)),
+    {TRAILERS: [K1]},
+    carry_doc(keyed(K1)),
+)
+CARRY_WORLDS.append(("G3: removing a whole entry whose gate is not red advances", 0, w))
+
+# G3-3. REFUSED: an ADDED entry. The receipt is red on OTHER_GATE with K2 and the base does not carry it; the commit adds exactly that carry, so carried_verdict at HEAD would pass. Laundering a red through a record path is what the rule stops.
+w, t0, t1 = carry_world(
+    "carry-add-entry",
+    carry_doc(keyed(K1)),
+    {TRAILERS: [K1], OTHER_GATE: [K2]},
+    carry_doc(keyed(K1), keyed(K2, gate=OTHER_GATE)),
+)
+CARRY_WORLDS.append(("G3: an added carry entry is refused", 2, w))
+cases.append(
+    (
+        True,
+        "WIDENS" in drive(w, ADV_PUSH)[1]
+        and "adds a carry for %s" % OTHER_GATE in drive(w, ADV_PUSH)[1],
+        "G3: the added-entry refusal says WIDENS and names the gate",
+    )
+)
+
+# G3-4. REFUSED: a WIDENED entry, K2 added to the TRAILERS keys while the receipt emits K1 and K2.
+w, t0, t1 = carry_world(
+    "carry-widen-keys",
+    carry_doc(keyed(K1)),
+    {TRAILERS: [K1, K2]},
+    carry_doc(keyed(K1, K2)),
+)
+CARRY_WORLDS.append(("G3: a widened carry entry (a key added) is refused", 2, w))
+cases.append(
+    (
+        True,
+        "adds key(s) to %s: %s" % (TRAILERS, K2) in drive(w, ADV_PUSH)[1],
+        "G3: the widened-entry refusal names the added key",
+    )
+)
+
+# G3-5. REFUSED: keys widened to "*", the whole gate.
+w, t0, t1 = carry_world(
+    "carry-widen-star",
+    carry_doc(keyed(K1, gate=OTHER_GATE)),
+    {OTHER_GATE: None},
+    carry_doc(keyed("*", gate=OTHER_GATE, reason=STAR_REASON)),
+)
+CARRY_WORLDS.append(('G3: keys widened to "*" are refused', 2, w))
+
+# G3-6. REFUSED: a reason lengthened past the bar. The entry existed but carried nothing, so making it carry is an addition.
+w, t0, t1 = carry_world(
+    "carry-reason-past-bar",
+    carry_doc(keyed(K1), keyed(K2, gate=OTHER_GATE, reason="too short to carry")),
+    {TRAILERS: [K1], OTHER_GATE: [K2]},
+    carry_doc(keyed(K1), keyed(K2, gate=OTHER_GATE)),
+)
+CARRY_WORLDS.append(("G3: a reason lengthened past the bar is refused as an addition", 2, w))
+
+# G3-7. REFUSED: a removal-only carry edit COMBINED with a record path whose readers are green too. Each half would advance alone.
+w, t0, t1 = carry_world(
+    "carry-remove-plus-review",
+    carry_doc(keyed(K1, K2)),
+    {TRAILERS: [K1]},
+    carry_doc(keyed(K1)),
+    also=(REVIEW,),
+    readers=BOTH_REVIEW_READERS,
+)
+CARRY_WORLDS.append(("G3: a carry removal combined with another path is refused", 2, w))
+cases.append(
+    (
+        True,
+        "must touch that file alone" in drive(w, ADV_PUSH)[1] and REVIEW in drive(w, ADV_PUSH)[1],
+        "G3: the combined refusal names the other path",
+    )
+)
+
+# G3-8. REFUSED: K2 removed while the receipt still emits it. carried_verdict would refuse too (a NEW finding); the message proves the step rule named it first.
+w, t0, t1 = carry_world(
+    "carry-remove-still-red",
+    carry_doc(keyed(K1, K2)),
+    {TRAILERS: [K1, K2]},
+    carry_doc(keyed(K1)),
+)
+CARRY_WORLDS.append(("G3: removing an excuse whose finding is still red is refused", 2, w))
+cases.append(
+    (
+        True,
+        "still cover reds in the receipt: %s: %s" % (TRAILERS, K2) in drive(w, ADV_PUSH)[1],
+        "G3: the still-red refusal comes from the step rule and names the key",
+    )
+)
+
+# G3-9. REFUSED: a whole-gate carry removed while the gate is red with no keys.
+w, t0, t1 = carry_world(
+    "carry-remove-star-still-red",
+    carry_doc(keyed(K1), keyed("*", gate=OTHER_GATE, reason=STAR_REASON)),
+    {TRAILERS: [K1], OTHER_GATE: None},
+    carry_doc(keyed(K1)),
+)
+CARRY_WORLDS.append(("G3: removing a whole-gate carry whose gate is still red is refused", 2, w))
+
+# G3-10. REFUSED: the carry file CREATED by the step. An absent file is not an empty set to shrink from.
+w, t0 = adv_world("carry-created", policy=CARRY_POLICY)
+(w / ".ci" / "config").mkdir(parents=True)
+t1 = carry_commit(w, carry_doc(keyed(K1)))
+adv_receipt(
+    w,
+    t0,
+    [step(t0, t1, CARRY_READER, paths=(GM.CARRIED_REL,))],
+    exitCode=1,
+    failed=[TRAILERS],
+    findings={TRAILERS: [K1]},
+)
+CARRY_WORLDS.append(("G3: a step that creates the carry file is refused", 2, w))
+
+# G3-11. REFUSED: a removal-only commit whose carry reader was NOT re-run. The shrink rule does not replace the record readers.
+w, t0, t1 = carry_world(
+    "carry-remove-reader-missing",
+    carry_doc(keyed(K1, K2)),
+    {TRAILERS: [K1]},
+    carry_doc(keyed(K1)),
+)
+body = json.loads((w / ".ci" / "cache" / "prepush-receipt.json").read_text(encoding="utf-8"))
+body["advances"][0]["gates"] = {}
+(w / ".ci" / "cache" / "prepush-receipt.json").write_text(json.dumps(body), encoding="utf-8")
+CARRY_WORLDS.append(("G3: a removal whose carry reader did not re-run is refused", 2, w))
+
+ADV_WORLDS.extend(CARRY_WORLDS)
+
+
+# G3 PLANT: with carried_widening and removed_still_red forced to [] and the one-file test bypassed, every widening world must flip to admitted (so the step rule, not carried_verdict, is what refused them), and the admitted and still-red worlds must hold (the still-red ones because carried_verdict refuses them anyway: two locks on one door).
+def drive_shrink_off(where, cmd):
+    runner = (
+        "import sys; sys.path.insert(0, %r)\n"
+        "from rediacc_hooks import hookio\n"
+        "src = open(%r, encoding='utf-8').read()\n"
+        "ns = {'__name__': 'broken', '__file__': %r}\n"
+        "exec(compile(src, 'broken', 'exec'), ns)\n"
+        "ns['carried_shrink_refusal'] = lambda *a, **k: None\n"
+        "ev = hookio.Event(sys.stdin.read())\n"
+        "sys.exit(ns['run'](ev))\n"
+    ) % (str(GUARD.parents[2]), str(GUARD), str(GUARD))
+    proc = subprocess.run(
+        [sys.executable, "-c", runner],
+        input=json.dumps({"tool_input": {"command": cmd}}),
+        capture_output=True,
+        text=True,
+        cwd=str(where),
+        env=dict(os.environ, CLAUDE_PROJECT_DIR=str(where)),
+        check=False,
+    )
+    return proc.returncode
+
+
+SHRINK_FLIPS = {
+    "G3: an added carry entry is refused",
+    "G3: a widened carry entry (a key added) is refused",
+    'G3: keys widened to "*" are refused',
+    "G3: a reason lengthened past the bar is refused as an addition",
+    "G3: a carry removal combined with another path is refused",
+}
+SHRINK_HOLDS = {
+    "G3: a removal-only carry commit advances the receipt",
+    "G3: removing a whole entry whose gate is not red advances",
+    "G3: removing an excuse whose finding is still red is refused",
+    "G3: removing a whole-gate carry whose gate is still red is refused",
+    "G3: a removal whose carry reader did not re-run is refused",
+}
+for label, want, root in CARRY_WORLDS:
+    if label in SHRINK_FLIPS:
+        cases.append((0, drive_shrink_off(root, ADV_PUSH), "G3 PLANT flips: " + label))
+    elif label in SHRINK_HOLDS:
+        cases.append((want, drive_shrink_off(root, ADV_PUSH), "G3 PLANT holds: " + label))
+cases.append(
+    (
+        True,
+        len([lab for lab, _, _ in CARRY_WORLDS if lab in SHRINK_FLIPS | SHRINK_HOLDS])
+        == len(SHRINK_FLIPS | SHRINK_HOLDS),
+        "G3 PLANT: every named world exists, so the plant cannot shrink to nothing",
+    )
+)
+
+# G3 PURE: the two judgements over parse_carried maps, both directions.
+_old = {TRAILERS: {K1, K2}, OTHER_GATE: "*"}
+cases.append(
+    (True, GM.carried_widening(_old, {TRAILERS: {K1}}) == [], "G3 PURE: a subset widens nothing")
+)
+cases.append(
+    (True, GM.carried_widening(_old, dict(_old)) == [], "G3 PURE: an equal map widens nothing")
+)
+cases.append(
+    (True, GM.carried_widening(_old, {TRAILERS: {K1, "new"}}) != [], "G3 PURE: an added key widens")
+)
+cases.append(
+    (
+        True,
+        GM.carried_widening(_old, {OTHER_GATE: {K1}}) != [],
+        'G3 PURE: "*" to keys is a rewrite, refused',
+    )
+)
+_judged = {"failed": {TRAILERS}, "findings": {TRAILERS: [K1]}}
+cases.append(
+    (
+        True,
+        GM.removed_still_red({TRAILERS: {K1, K2}}, {TRAILERS: {K1}}, _judged) == [],
+        "G3 PURE: a stale key removal is clean",
+    )
+)
+cases.append(
+    (
+        True,
+        GM.removed_still_red({TRAILERS: {K1, K2}}, {TRAILERS: {K2}}, _judged) != [],
+        "G3 PURE: removing an emitted key is still red",
+    )
+)
+cases.append(
+    (
+        True,
+        GM.removed_still_red(
+            {TRAILERS: {K1}}, {}, {"failed": {TRAILERS}, "findings": {TRAILERS: None}}
+        )
+        != [],
+        "G3 PURE: unknown findings cannot show a removed key gone",
+    )
+)
 
 for label, want, root in ADV_WORLDS:
     cases.append((want, drive(root, ADV_PUSH)[0], label))
