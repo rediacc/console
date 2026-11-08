@@ -156,7 +156,7 @@ def run_case(
     env["HOME"] = str(tmp_home)
     env["XDG_CONFIG_HOME"] = str(tmp_home / ".config")
     # install.sh reads these at top level, then write_install_config uses the CHANNEL/SERVER_URL globals that result.
-    if channel and channel != "stable":
+    if channel:
         env["REDIACC_CHANNEL"] = channel
     else:
         env.pop("REDIACC_CHANNEL", None)
@@ -285,19 +285,19 @@ def main(_argv: list[str]) -> int:
                 SITE_ORIGIN,
             ),
             # worker_channel_only: fail-safe recovery path (the gap we closed)
-            ("worker_channel_only", "edge", "", "yes", "edge", SITE_ORIGIN),
-            # worker_none: neither rewrite landed -- install.sh can't infer origin, leaves no config so rdc update falls back to default stable.
-            ("worker_none", "stable", "", "no", "", ""),
+            ("worker_channel_only", "stable", "", "yes", "stable", SITE_ORIGIN),
+            # worker_none: neither rewrite landed -- install.sh can't infer origin, leaves no config so rdc update falls back to the default edge.
+            ("worker_none", "", "", "no", "", ""),
             # worker_server_only: SERVER_URL rewritten but CHANNEL not.
             (
                 "worker_server_only",
-                "stable",
+                "",
                 "https://unreachable-server.invalid",
                 "yes",
-                "stable",
+                "edge",
                 "https://unreachable-server.invalid",
             ),
-            # worker_full_with_server_info: both baked + a real server-info responding with `updateChannel: stable`. The baked edge channel must NOT be overridden.
+            # worker_full_with_server_info: both baked + a real server-info responding with `updateChannel: stable`. The baked channel (edge) must NOT be overridden.
             ("worker_full_with_server_info", "edge", server.url, "yes", "edge", server.url),
         )
         for name, channel, server_url, expect_file, expect_channel, expect_account in cases:
