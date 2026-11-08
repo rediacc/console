@@ -1,34 +1,131 @@
+import { Turnstile } from '@marsidev/react-turnstile';
+import { WK_PRODUCT_DOMAIN } from '@rediacc/shared/config/well-known.generated';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { REGIONS, type Region } from '../config/regions';
+import { useCaptchaGuard } from '../hooks/useCaptchaGuard';
 import { useLanguage } from '../hooks/useLanguage';
 import { useTranslation } from '../i18n/react';
 import type { Language } from '../i18n/types';
-import { buildPortalRedirectUrl, getHostKind } from '../utils/marketing-host';
+import { buildPortalRedirectUrl } from '../utils/marketing-host';
 import Overlay from './Overlay';
 
 const DEFAULT_TARGET_PATH = '/account/';
+const COUNTDOWN_SECONDS = 5;
+const GEO_TIMEOUT_MS = 1500;
+
+const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? '';
+const ciMode =
+  String(import.meta.env.PUBLIC_CI_MODE ?? '').toLowerCase() === 'true' ||
+  String(import.meta.env.PUBLIC_CI_MODE ?? '') === '1';
+const captchaEnabled = !!turnstileSiteKey && !ciMode;
+
+export type PickerMode = 'login' | 'signup';
+
+/**
+ * Mode comes from the target path, since every caller passes only a path. A checkout
+ * deep link and the sign-up routes create an account, so the region decides where its
+ * data lives and the visitor must choose. Any other /account/* path is a login.
+ */
+export function modeFromPath(path: string): PickerMode {
+  const lower = path.toLowerCase();
+  if (lower.includes('checkout=') || /\/(signup|sign-up|register)(\/|\?|$)/.test(lower)) {
+    return 'signup';
+  }
+  return 'login';
+}
+
+const EU_COUNTRIES = new Set(
+  (
+    'AD AL AT AX BA BE BG BY CH CY CZ DE DK EE ES FI FO FR GB GG GI GR HR HU IE IM IS IT JE LI LT LU LV MC MD ME MK MT NL NO PL PT RO RS RU SE SI SJ SK SM UA VA XK ' +
+    'AE BH EG IL IQ IR JO KW LB OM PS QA SA SY TR YE ' +
+    'DZ AO BF BI BJ BW CD CF CG CI CM CV DJ ER ET GA GH GM GN GQ GW KE KM LR LS LY MA MG ML MR MU MW MZ NA NE NG RE RW SC SD SL SN SO SS ST SZ TD TG TN TZ UG ZA ZM ZW'
+  ).split(' ')
+);
+const ASIA_COUNTRIES = new Set(
+  'AF AU BD BN BT CC CK CN CX FJ FM GU HK ID IN JP KG KH KI KP KR KZ LA LK MH MM MN MO MV MY NC NP NR NU NZ PF PG PH PK PW SB SG TH TJ TL TM TO TV TW UZ VN VU WF WS'.split(
+    ' '
+  )
+);
+
+/** Region for an ISO country code, or null when the code is unknown or empty. */
+export function regionForCountry(
+  regions: Region[],
+  country: string | null | undefined
+): Region | null {
+  const code = (country ?? '').toUpperCase();
+  if (code.length !== 2) return null;
+  let id = 'us';
+  if (EU_COUNTRIES.has(code)) id = 'eu';
+  else if (ASIA_COUNTRIES.has(code)) id = 'asia';
+  return regions.find((r) => r.id === id) ?? null;
+}
+
+const TZ_PREFIX_REGION: [string[], string][] = [
+  [['Europe/', 'Africa/'], 'eu'],
+  [['America/'], 'us'],
+  [['Asia/', 'Pacific/', 'Australia/', 'Indian/'], 'asia'],
+];
+
+/** Time-zone guess, the fallback when /api/geo does not answer. */
+export function regionForTimeZone(regions: Region[], tz: string): Region {
+  for (const [prefixes, id] of TZ_PREFIX_REGION) {
+    if (prefixes.some((p) => tz.startsWith(p))) {
+      return regions.find((r) => r.id === id) ?? regions[0];
+    }
+  }
+  return regions.find((r) => r.default) ?? regions[0];
+}
 
 function detectLikelyRegion(regions: Region[]): Region {
   try {
-    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    if (tz.startsWith('Europe/') || tz.startsWith('Africa/')) {
-      return regions.find((r) => r.id === 'eu') ?? regions[0];
-    }
-    if (tz.startsWith('America/')) {
-      return regions.find((r) => r.id === 'us') ?? regions[0];
-    }
-    if (
-      tz.startsWith('Asia/') ||
-      tz.startsWith('Pacific/') ||
-      tz.startsWith('Australia/') ||
-      tz.startsWith('Indian/')
-    ) {
-      return regions.find((r) => r.id === 'asia') ?? regions[0];
-    }
+    return regionForTimeZone(regions, Intl.DateTimeFormat().resolvedOptions().timeZone);
   } catch {
-    // Fallback to default
+    return regions.find((r) => r.default) ?? regions[0];
   }
-  return regions.find((r) => r.default) ?? regions[0];
+}
+
+/**
+ * Country from the www Worker's /api/geo (request.cf.country, no third party).
+ * Resolves to null on any failure or timeout so the caller falls back to the time zone.
+ */
+async function fetchGeoRegion(regions: Region[]): Promise<Region | null> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), GEO_TIMEOUT_MS);
+  try {
+    const res = await fetch('/api/geo', { cache: 'no-store', signal: controller.signal });
+    if (!res.ok) return null;
+    const body = (await res.json()) as { country?: string | null };
+    return regionForCountry(regions, body.country);
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/**
+ * The domain part of what the visitor typed, or null when it is not a domain. Only this
+ * part ever leaves the browser: an address never does.
+ */
+export function extractDomain(input: string): string | null {
+  const raw = input.trim().toLowerCase();
+  const domain = raw.includes('@') ? raw.slice(raw.lastIndexOf('@') + 1) : raw;
+  return /^(?=.{3,253}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/.test(domain)
+    ? domain
+    : null;
+}
+
+/**
+ * The company host from a lookup answer, or null for a miss. A host outside the product
+ * domain counts as a miss, so a bad answer can never send a visitor off-site.
+ */
+export function parseLookupHost(body: unknown): string | null {
+  const host = (body as { host?: unknown } | null)?.host;
+  if (typeof host !== 'string') return null;
+  const lower = host.toLowerCase();
+  return /^[a-z0-9-]+(\.[a-z0-9-]+)*$/.test(lower) && lower.endsWith(`.${WK_PRODUCT_DOMAIN}`)
+    ? lower
+    : null;
 }
 
 const REGION_META: Partial<Record<string, { flagSrc: string; flagAlt: string; location: string }>> =
@@ -48,14 +145,14 @@ const REGION_META: Partial<Record<string, { flagSrc: string; flagAlt: string; lo
 
 const REGION_STORAGE_KEY = 'rediacc_region';
 
-function getStoredRegion(): { region: string; timestamp: number } | null {
+function getStoredRegion(): Region | null {
   if (typeof window === 'undefined') return null;
   try {
     const raw = window.localStorage.getItem(REGION_STORAGE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
-    if (parsed && typeof parsed.region === 'string' && typeof parsed.timestamp === 'number') {
-      return parsed;
+    if (parsed && typeof parsed.region === 'string') {
+      return REGIONS.find((r) => r.id === parsed.region) ?? null;
     }
   } catch {
     /* corrupted data */
@@ -63,34 +160,190 @@ function getStoredRegion(): { region: string; timestamp: number } | null {
   return null;
 }
 
-/** Release channel implied by the current host (stable only on www). */
-function hostChannel(): 'stable' | 'edge' {
-  return getHostKind(window.location.hostname) === 'marketing-stable' ? 'stable' : 'edge';
-}
-
 /** Captured utm_* params from the behavioral tracker, if it has any. */
 function capturedUtm(): Record<string, string> {
   return window.__pa_get_utm?.() ?? {};
 }
 
-/**
- * Cross-origin handoff to the regional portal. The channel is derived from
- * the current host (www → stable domains, edge/localhost → edge domains) and
- * captured utm_* params ride along so attribution survives the hop.
- */
-function forwardToPortal(region: Region, targetPath: string): void {
-  window.location.href = buildPortalRedirectUrl(
-    window.location.hostname,
-    region,
-    targetPath,
-    capturedUtm()
-  );
+/** Cross-origin handoff to a portal host; captured utm_* params ride along. */
+function forwardToHost(host: string, targetPath: string): void {
+  window.location.href = buildPortalRedirectUrl(host, targetPath, capturedUtm());
 }
+
+/** Whole seconds left, ticking once a second while `active`; calls `onDone` at zero. */
+function useCountdown(active: boolean, onDone: () => void): number {
+  const [remaining, setRemaining] = useState(COUNTDOWN_SECONDS);
+  const doneRef = useRef(onDone);
+  useEffect(() => {
+    doneRef.current = onDone;
+  }, [onDone]);
+
+  useEffect(() => {
+    if (!active) return;
+    let left = COUNTDOWN_SECONDS;
+    setRemaining(left);
+    const id = setInterval(() => {
+      left -= 1;
+      setRemaining(left);
+      if (left <= 0) {
+        clearInterval(id);
+        doneRef.current();
+      }
+    }, 1000);
+    return () => clearInterval(id);
+  }, [active]);
+
+  return remaining;
+}
+
+/** POST the domain (never an address) to the www Worker; the company host, or null for a miss. Throws on a failed request. */
+async function lookupCompanyHost(
+  domain: string,
+  turnstileToken: string | null
+): Promise<string | null> {
+  const res = await fetch('/api/enterprise-lookup', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ domain, turnstileToken }),
+  });
+  if (!res.ok) throw new Error(String(res.status));
+  return parseLookupHost(await res.json());
+}
+
+type Translate = ReturnType<typeof useTranslation>['t'];
+type LookupStatus = 'idle' | 'loading' | 'invalid' | 'captcha' | 'miss' | 'error';
+
+interface LookupFormProps {
+  t: Translate;
+  targetPath: string;
+  onBack: () => void;
+}
+
+const LOOKUP_MESSAGE_KEY: Partial<Record<LookupStatus, string>> = {
+  invalid: 'regionPicker.lookup.invalid',
+  captcha: 'captchaRequired',
+  miss: 'regionPicker.lookup.miss',
+  error: 'regionPicker.lookup.error',
+};
+
+/** Company-domain form. The answer is a host or a neutral miss, the same for every address at a domain. */
+const LookupForm: React.FC<LookupFormProps> = ({ t, targetPath, onBack }) => {
+  const [value, setValue] = useState('');
+  const [status, setStatus] = useState<LookupStatus>('idle');
+  const captcha = useCaptchaGuard();
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const domain = extractDomain(value);
+    if (!domain) return setStatus('invalid');
+    if (captchaEnabled && !captcha.token) return setStatus('captcha');
+    setStatus('loading');
+    try {
+      const host = await lookupCompanyHost(domain, captcha.token);
+      if (host) {
+        window.plausible?.('region_selected', {
+          props: { region: 'enterprise', source: 'lookup' },
+        });
+        return forwardToHost(host, targetPath);
+      }
+      setStatus('miss');
+    } catch {
+      setStatus('error');
+    }
+    captcha.reset();
+  };
+
+  const messageKey = LOOKUP_MESSAGE_KEY[status];
+
+  return (
+    <form className="region-picker-lookup" onSubmit={submit} noValidate>
+      <p className="region-picker-subtitle">{t('regionPicker.lookup.description')}</p>
+      <label htmlFor="region-picker-domain" className="form-label">
+        {t('regionPicker.lookup.label')}
+      </label>
+      <input
+        id="region-picker-domain"
+        className="form-input"
+        type="text"
+        inputMode="url"
+        autoComplete="off"
+        autoCapitalize="none"
+        spellCheck={false}
+        placeholder={t('regionPicker.lookup.placeholder')}
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        disabled={status === 'loading'}
+      />
+      <p className="region-picker-footer-note">{t('regionPicker.lookup.privacy')}</p>
+      {messageKey && (
+        <p className="form-error" role="alert">
+          {t(messageKey)}
+        </p>
+      )}
+      {captchaEnabled && (
+        <Turnstile
+          key={captcha.nonce}
+          siteKey={turnstileSiteKey}
+          options={{ action: 'enterprise_lookup' }}
+          onSuccess={captcha.onSuccess}
+          onExpire={captcha.onExpire}
+          onError={captcha.onError}
+        />
+      )}
+      <div className="region-picker-actions">
+        <button type="submit" className="btn btn--primary" disabled={status === 'loading'}>
+          {status === 'loading'
+            ? t('regionPicker.lookup.checking')
+            : t('regionPicker.lookup.submit')}
+        </button>
+        <button type="button" className="btn btn--secondary" onClick={onBack}>
+          {t('regionPicker.lookup.back')}
+        </button>
+      </div>
+    </form>
+  );
+};
+
+interface CountdownBarProps {
+  t: Translate;
+  region: Region;
+  remaining: number;
+  onCancel: () => void;
+  onChange: () => void;
+}
+
+/** Visible countdown with Cancel and Change. Screen readers hear one stable message, not a tick per second. */
+const CountdownBar: React.FC<CountdownBarProps> = ({
+  t,
+  region,
+  remaining,
+  onCancel,
+  onChange,
+}) => (
+  <div className="region-picker-countdown">
+    <p className="sr-only" role="status" aria-live="polite">
+      {t('regionPicker.countdownAnnounce', { region: region.label, seconds: COUNTDOWN_SECONDS })}
+    </p>
+    <p className="region-picker-subtitle" aria-hidden="true">
+      {t('regionPicker.countdown', { region: region.label, seconds: remaining })}
+    </p>
+    <div className="region-picker-actions">
+      <button type="button" className="btn btn--secondary" onClick={onCancel}>
+        {t('regionPicker.cancel')}
+      </button>
+      <button type="button" className="btn btn--primary" onClick={onChange}>
+        {t('regionPicker.change')}
+      </button>
+    </div>
+  </div>
+);
 
 interface RegionPickerModalProps {
   /** Locale from BaseLayout; authoritative on the server. See the note above. */
   lang?: Language;
 }
+
+type Phase = 'resolving' | 'counting' | 'choosing';
 
 /**
  * `lang` is passed by BaseLayout and is AUTHORITATIVE on the server.
@@ -100,50 +353,90 @@ interface RegionPickerModalProps {
  * twelve non-English locales: crawlers and no-JS visitors saw an English nav, and everyone
  * else got a flash of English until hydration corrected it. Astro knows the locale, so it
  * hands it down; the hook stays as the fallback for any mount that does not.
+ *
+ * Flow. Login: the region comes from a stored choice, else /api/geo, else the time zone,
+ * and a visible 5-second countdown (Cancel, Change) runs before the forward. Sign-up:
+ * the region is only preselected, because it decides where the account's data lives.
  */
 const RegionPickerModal: React.FC<RegionPickerModalProps> = ({ lang }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [targetPath, setTargetPath] = useState('/account/');
+  const [targetPath, setTargetPath] = useState(DEFAULT_TARGET_PATH);
+  const [mode, setMode] = useState<PickerMode>('login');
+  const [phase, setPhase] = useState<Phase>('choosing');
+  const [view, setView] = useState<'regions' | 'lookup'>('regions');
   const [selected, setSelected] = useState<string | null>(null);
+  const [countdownRegion, setCountdownRegion] = useState<Region | null>(null);
   const detectedLang = useLanguage();
   const currentLang = lang ?? detectedLang;
   const { t } = useTranslation(currentLang);
 
   const firstCardRef = useRef<HTMLButtonElement>(null);
+  // Bumped on every open, close and stop, so a late /api/geo answer cannot restart a countdown the visitor ended.
+  const runRef = useRef(0);
 
-  const forceOpen = useCallback((path?: string) => {
-    setTargetPath(path ?? DEFAULT_TARGET_PATH);
-    setSelected(detectLikelyRegion(REGIONS).id);
+  const begin = useCallback((path?: string) => {
+    const target = path ?? DEFAULT_TARGET_PATH;
+    const nextMode = modeFromPath(target);
+    const run = ++runRef.current;
+    const stored = getStoredRegion();
+    const guess = stored ?? detectLikelyRegion(REGIONS);
+    setTargetPath(target);
+    setMode(nextMode);
+    setView('regions');
+    setSelected(guess.id);
+    setCountdownRegion(null);
     setIsOpen(true);
     window.plausible?.('region_picker_open', {
-      props: { source: path?.includes('checkout') ? 'checkout' : 'nav' },
+      props: { source: target.includes('checkout') ? 'checkout' : 'nav', mode: nextMode },
     });
+    if (nextMode === 'signup') {
+      setPhase('choosing');
+      return;
+    }
+    setPhase('resolving');
+    const settle = (region: Region) => {
+      if (runRef.current !== run) return;
+      setSelected(region.id);
+      setCountdownRegion(region);
+      setPhase('counting');
+    };
+    if (stored) {
+      settle(stored);
+      return;
+    }
+    void fetchGeoRegion(REGIONS).then((geo) => settle(geo ?? guess));
   }, []);
 
-  const open = useCallback(
-    (path?: string) => {
-      const stored = getStoredRegion();
-      if (stored) {
-        const region = REGIONS.find((r) => r.id === stored.region);
-        if (region) {
-          window.plausible?.('region_selected', {
-            props: { region: region.id, channel: hostChannel(), source: 'stored' },
-          });
-          forwardToPortal(region, path ?? DEFAULT_TARGET_PATH);
-          return;
-        }
-      }
-      forceOpen(path);
-    },
-    [forceOpen]
-  );
-
   const close = useCallback(() => {
+    runRef.current += 1;
     setIsOpen(false);
   }, []);
 
+  const change = useCallback(() => {
+    runRef.current += 1;
+    setPhase('choosing');
+    requestAnimationFrame(() => firstCardRef.current?.focus());
+  }, []);
+
+  const openLookup = useCallback(() => {
+    runRef.current += 1;
+    setPhase('choosing');
+    setView('lookup');
+  }, []);
+
+  const finishCountdown = useCallback(() => {
+    if (!countdownRegion) return;
+    window.plausible?.('region_selected', {
+      props: { region: countdownRegion.id, source: 'countdown' },
+    });
+    forwardToHost(countdownRegion.domain, targetPath);
+  }, [countdownRegion, targetPath]);
+
+  const remaining = useCountdown(isOpen && phase === 'counting', finishCountdown);
+
   const handleSelect = useCallback(
     (region: Region) => {
+      runRef.current += 1;
       try {
         window.localStorage.setItem(
           REGION_STORAGE_KEY,
@@ -152,23 +445,23 @@ const RegionPickerModal: React.FC<RegionPickerModalProps> = ({ lang }) => {
       } catch {
         /* quota exceeded or private mode */
       }
-      window.plausible?.('region_selected', {
-        props: { region: region.id, channel: hostChannel() },
-      });
-      forwardToPortal(region, targetPath);
+      window.plausible?.('region_selected', { props: { region: region.id, source: 'card' } });
+      forwardToHost(region.domain, targetPath);
     },
     [targetPath]
   );
 
-  // Expose global functions
+  // Expose global functions. Both open the picker; a stored region preselects and never forwards silently.
   useEffect(() => {
-    window.openRegionPicker = open;
-    window.forceOpenRegionPicker = forceOpen;
+    window.openRegionPicker = begin;
+    window.forceOpenRegionPicker = begin;
     return () => {
       delete window.openRegionPicker;
       delete window.forceOpenRegionPicker;
     };
-  }, [open, forceOpen]);
+  }, [begin]);
+
+  const showCountdown = view === 'regions' && phase === 'counting' && countdownRegion;
 
   return (
     <Overlay
@@ -183,40 +476,68 @@ const RegionPickerModal: React.FC<RegionPickerModalProps> = ({ lang }) => {
       initialFocusRef={firstCardRef}
     >
       <div className="overlay-body region-picker">
-        <p className="region-picker-subtitle">{t('regionPicker.subtitle')}</p>
-        <p className="region-picker-reassurance">{t('regionPicker.reassurance')}</p>
+        {view === 'lookup' ? (
+          <LookupForm t={t} targetPath={targetPath} onBack={() => setView('regions')} />
+        ) : (
+          <>
+            {showCountdown ? (
+              <CountdownBar
+                t={t}
+                region={countdownRegion}
+                remaining={remaining}
+                onCancel={close}
+                onChange={change}
+              />
+            ) : (
+              <p className="region-picker-subtitle">
+                {phase === 'resolving' ? t('regionPicker.resolving') : t('regionPicker.subtitle')}
+              </p>
+            )}
+            <p className="region-picker-reassurance">{t('regionPicker.reassurance')}</p>
 
-        <div className="region-picker-cards">
-          {REGIONS.map((region, index) => (
+            <div className="region-picker-cards">
+              {REGIONS.map((region, index) => (
+                <button
+                  key={region.id}
+                  type="button"
+                  ref={index === 0 ? firstCardRef : undefined}
+                  className={`card region-picker-card ${selected === region.id ? 'card--raised' : ''}`}
+                  onClick={() => handleSelect(region)}
+                  onMouseEnter={() => setSelected(region.id)}
+                  onFocus={() => setSelected(region.id)}
+                  data-track="region_select"
+                  data-track-label={region.id}
+                >
+                  <div className="region-picker-card-flag">
+                    <img
+                      src={REGION_META[region.id]?.flagSrc}
+                      alt={REGION_META[region.id]?.flagAlt ?? ''}
+                      width="32"
+                      height="32"
+                    />
+                  </div>
+                  <div className="region-picker-card-label">{region.label}</div>
+                  <div className="region-picker-card-location">
+                    {REGION_META[region.id]?.location ?? region.domain}
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            <p className="region-picker-footer">{t('regionPicker.footer')}</p>
+            {mode === 'signup' && (
+              <p className="region-picker-footer-note">{t('regionPicker.footerNote')}</p>
+            )}
             <button
-              key={region.id}
               type="button"
-              ref={index === 0 ? firstCardRef : undefined}
-              className={`card region-picker-card ${selected === region.id ? 'card--raised' : ''}`}
-              onClick={() => handleSelect(region)}
-              onMouseEnter={() => setSelected(region.id)}
-              onFocus={() => setSelected(region.id)}
-              data-track="region_select"
-              data-track-label={region.id}
+              className="btn btn--ghost"
+              onClick={openLookup}
+              data-track="region_enterprise_lookup"
             >
-              <div className="region-picker-card-flag">
-                <img
-                  src={REGION_META[region.id]?.flagSrc}
-                  alt={REGION_META[region.id]?.flagAlt ?? ''}
-                  width="32"
-                  height="32"
-                />
-              </div>
-              <div className="region-picker-card-label">{region.label}</div>
-              <div className="region-picker-card-location">
-                {REGION_META[region.id]?.location ?? region.domain}
-              </div>
+              {t('regionPicker.enterprise')}
             </button>
-          ))}
-        </div>
-
-        <p className="region-picker-footer">{t('regionPicker.footer')}</p>
-        <p className="region-picker-footer-note">{t('regionPicker.footerNote')}</p>
+          </>
+        )}
       </div>
     </Overlay>
   );

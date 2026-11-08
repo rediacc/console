@@ -260,7 +260,25 @@
     "subtitle": "Your account, billing, and configurations stay in the region you choose.",
     "reassurance": "Your server data and backups stay on your own infrastructure.",
     "footer": "Pick the region closest to you, or where your organization requires.",
-    "footerNote": "This can't be changed after sign-up."
+    "footerNote": "This can't be changed after sign-up.",
+    "resolving": "Finding your region...",
+    "countdown": "Taking you to {{region}} in {{seconds}} seconds.",
+    "countdownAnnounce": "Taking you to {{region}} in {{seconds}} seconds. Choose Cancel to stay here, or Change region to pick another.",
+    "cancel": "Cancel",
+    "change": "Change region",
+    "enterprise": "Enterprise customer?",
+    "lookup": {
+      "description": "Enter your company's email domain to find your organization's sign-in.",
+      "label": "Company email domain",
+      "placeholder": "company.com",
+      "privacy": "Only the domain is sent, never an email address.",
+      "submit": "Continue",
+      "checking": "Checking...",
+      "back": "Back to regions",
+      "invalid": "Enter a company domain, such as company.com.",
+      "miss": "No company sign-in was found for that domain. Choose a region instead.",
+      "error": "The lookup is unavailable right now. Choose a region instead."
+    }
   },
   "contactModal": {
     "title": "Get in Touch",
@@ -1536,6 +1554,12 @@
               "content": [
                 "<strong>Name:</strong> <code>rediacc_lang</code><br><strong>Type:</strong> First-party, strictly necessary<br><strong>Duration:</strong> 1 year<br><strong>Purpose:</strong> Stores your preferred language (e.g., \"en\", \"de\", \"fr\") so the website displays in your chosen language on return visits.",
                 "This cookie is classified as \"strictly necessary\" under the EU ePrivacy Directive because it is essential for the website to function as you have requested. No consent banner is required for this cookie."
+              ]
+            },
+            "regionStorage": {
+              "title": "3.2 Region Preference (Local Storage)",
+              "content": [
+                "<strong>Name:</strong> <code>rediacc_region</code><br><strong>Type:</strong> First-party browser local storage, not a cookie, strictly necessary<br><strong>Duration:</strong> Until you clear your browser data<br><strong>Purpose:</strong> Remembers the account region you chose (Europe, United States or Asia Pacific) so the sign-in page can preselect it. It stays in your browser and is never sent to our servers by the website."
               ]
             }
           }
