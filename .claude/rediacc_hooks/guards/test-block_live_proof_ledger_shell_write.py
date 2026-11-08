@@ -168,6 +168,101 @@ def review_cases():
     ]
 
 
+# The shape of `check_plan_citations._ledger_receipt_ids` that was refused while the script was changed in the main checkout (#9efac135): the ledger's rows read into `out` in one function, and `out.append(...)` growing a list of the same name in another, since bindings are read without scope.
+CITES_SCRIPT = (
+    "import json, pathlib\n"
+    "def ids():\n"
+    "    lines = (pathlib.Path('.') / 'agent' / 'ledgers' / 'live-proof.jsonl').read_text(encoding='utf-8')\n"
+    "    out = [json.loads(line)['id'] for line in lines.splitlines()]\n"
+    "    return out\n"
+    "def plan_lines(rel):\n"
+    "    out = []\n"
+    "    for lineno, text in enumerate(pathlib.Path(rel).read_text().splitlines(), 1):\n"
+    "        out.append((rel, lineno, text))\n"
+    "    return out\n"
+    "print(len(ids()))\n"
+)
+
+
+def read_is_not_write_cases(world, ledger):
+    """#9efac135: a READ of the ledger binds its rows, never its path, and a PLAN heredoc beside another heredoc is judged by its own tree. `(name, command, refused?)`."""
+    script = world / "check_cites.py"
+    script.write_text(CITES_SCRIPT, encoding="utf-8")
+    plan = "agent/plans/PLAN-x.md"
+    msg = "cat > /tmp/msg <<'EOF'\nchore(plans): it's the receipt in %s\nEOF\n" % ledger
+    return [
+        # The false positives of 2026-11-08: each must be ALLOWED.
+        ("python runs a changed script that reads the ledger", "python3 check_cites.py", False),
+        (
+            "sed -i a PLAN, then run that script",
+            "sed -i 's|- \\[ \\] V1|- [x] V1|' %s && python3 check_cites.py" % plan,
+            False,
+        ),
+        (
+            "python heredoc reads receipt ids and edits a PLAN",
+            _py(
+                "import json, pathlib\nrows = open('%s').read().splitlines()\n"
+                "out = [json.loads(r)['id'] for r in rows]\nout.append('lp-x')\n"
+                "p = pathlib.Path('%s')\np.write_text(p.read_text() + ' '.join(out))"
+                % (ledger, plan)
+            ),
+            False,
+        ),
+        (
+            "python heredoc iterates a read-only handle on the ledger",
+            _py(
+                "import pathlib\nfh = open('%s')\nseen = list(fh)\nseen.append('end')\n"
+                "pathlib.Path('%s').write_text(str(len(seen)))" % (ledger, plan)
+            ),
+            False,
+        ),
+        (
+            "a message heredoc beside a PLAN heredoc naming the ledger",
+            msg
+            + _py(
+                "import pathlib\np = pathlib.Path('%s')\n"
+                "p.write_text(p.read_text() + 'rows land in %s\\n')" % (plan, ledger)
+            ),
+            False,
+        ),
+        # The writes stay refused, read first or not, beside another heredoc or not.
+        (
+            "python reads the ledger then rewrites it",
+            _py("s = open('%s').read()\nopen('%s', 'w').write(s + '{}')" % (ledger, ledger)),
+            True,
+        ),
+        (
+            "python appends through a with-handle",
+            _py("with open('%s', 'a') as fh:\n    fh.write('{}')" % ledger),
+            True,
+        ),
+        (
+            "python opens the ledger with a mode in a variable",
+            _py("m = input()\nfh = open('%s', m)\nfh.write('{}')" % ledger),
+            True,
+        ),
+        (
+            "python Path.open in append mode",
+            _py("import pathlib\npathlib.Path('%s').open('a').write('{}')" % ledger),
+            True,
+        ),
+        (
+            "a message heredoc beside a heredoc appending to the ledger",
+            msg + _py("open('%s', 'a').write('{}')" % ledger),
+            True,
+        ),
+        (
+            "a message heredoc beside a heredoc that reads then rewrites the ledger",
+            msg
+            + _py(
+                "import pathlib\np = pathlib.Path('%s')\np.write_text(p.read_text() + '{}')"
+                % ledger
+            ),
+            True,
+        ),
+    ]
+
+
 def main():
     spec = importlib.util.spec_from_file_location("test_live_proof_ledger_shared", SHARED)
     if spec is None or spec.loader is None:
@@ -176,6 +271,7 @@ def main():
     spec.loader.exec_module(shared)
     shared.SHELL_CASES.extend(searched_text_cases(shared.L))
     shared.SHELL_CASES.extend(review_cases())
+    shared.SHELL_CASES.extend(read_is_not_write_cases(shared.WORLD, shared.L))
     return shared.main(("block_live_proof_ledger_shell_write",))
 
 

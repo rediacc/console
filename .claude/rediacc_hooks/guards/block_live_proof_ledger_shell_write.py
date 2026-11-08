@@ -14,6 +14,8 @@ WHERE A WORD LANDS is read on disk as well as in text: each word is joined to th
 
 SEARCHED TEXT IS NOT A PATH (worklist #4e20f8c5, 2026-10-28). A heredoc that read `agent/plans/PLAN-backup-program.md`, replaced an Owns line naming the ledger and wrote the PLAN back was refused: the replaced string ended in the ledger's name, so `s = s.replace(old, new)` bound `s` to "the ledger", and the next `s.replace(...)` read as a write into it. Two readings changed. The text a call SEARCHES FOR (`str.replace`'s first argument, `removeprefix`/`removesuffix`'s, `re.sub`'s pattern) is removed from the result, so it never makes a name the ledger; the replacement and the receiver still do, so `Path(t.replace('X', '<ledger>')).write_text(...)` is refused. And `str.replace(old, new)`, `removeprefix` and `removesuffix` are string methods, not file writes, so their receiver is not a write target (Path's one-argument `replace` still is).
 
+A READ IS NOT A PATH (worklist #9efac135, 2026-11-08). Bindings are read without scope, so `lines = Path(<ledger>).read_text()` in one function marked `lines` as the ledger, every name built from it followed, and an `out.append(...)` growing an unrelated list of the same name in another function read as a ledger write: every command running a changed `check_plan_citations.py` (its receipt-id read) was refused, `sed -i` on a PLAN chained before it included. A read's value (`read_text`, `read`, `readlines`, `json.load`, `exists`, a read-only `open`) now carries the rows, never the path; an `open` in a write mode, or with a mode in a variable, still carries it. And a stdin program is every heredoc body of the command joined (`shellscan.interpreter_program`), so a `cat > msg <<'EOF'` beside a Python heredoc never parsed and fell to the line reading: a PLAN write whose content named the ledger was refused, and a heredoc writing the ledger through a name bound on an earlier line was allowed. When the joined text does not parse, each body is judged on its own (`_programs`).
+
 THIS GUARD HAS NO BASH TWIN (`OWN_SUITE = True`), so it is judged against `test-block_live_proof_ledger_shell_write.py` beside it and against its own DEFECT, never against a golden.
 """
 
@@ -157,12 +159,67 @@ def _searched_text(node):
     return ()
 
 
+# Calls whose value is what a file HOLDS, or a fact about it, never a handle that writes it (#9efac135).
+_READ_CALLS = frozenset(
+    (
+        "read_text",
+        "read_bytes",
+        "read",
+        "readline",
+        "readlines",
+        "exists",
+        "is_file",
+        "is_dir",
+        "stat",
+        "getsize",
+        "load",
+        "loads",
+    )
+)
+
+
+def _read_only_open(call):
+    """An `open` (builtin, `io.open`, `Path.open`) whose mode is a constant naming no write (`w`, `a`, `x`, `+`), or absent. `os.open(path, flags)` and a mode held in a variable are not."""
+    func = call.func
+    if _call_name(func) != "open":
+        return False
+    if (
+        isinstance(func, ast.Attribute)
+        and isinstance(func.value, ast.Name)
+        and func.value.id == "os"
+    ):
+        return False
+    path_method = isinstance(func, ast.Attribute) and not (
+        isinstance(func.value, ast.Name) and func.value.id in ("io", "builtins", "codecs")
+    )
+    position = 0 if path_method else 1
+    mode = next((k.value for k in call.keywords if k.arg == "mode"), None)
+    if mode is None and len(call.args) > position:
+        mode = call.args[position]
+    if mode is None:
+        return True
+    return (
+        isinstance(mode, ast.Constant)
+        and isinstance(mode.value, str)
+        and not set(mode.value) & set("wax+")
+    )
+
+
+def _read_value(node):
+    """Is `node` a call whose value is content read from a file (`_READ_CALLS`, a read-only `open`)? Its path stays behind: `lines = Path(<ledger>).read_text()` binds `lines` to the rows, so `out.append(line)` later is a list growing, not a ledger write (#9efac135: every command running a changed `check_plan_citations.py` was refused for its receipt-id read)."""
+    return isinstance(node, ast.Call) and (
+        _call_name(node.func) in _READ_CALLS or _read_only_open(node)
+    )
+
+
 def _flow(expr):
-    """`ast.walk`, minus the subtrees a call searches for (`_searched_text`): text that cannot reach the expression's value."""
+    """`ast.walk`, minus the subtrees a call searches for (`_searched_text`) and the path inside a read (`_read_value`): text that cannot reach the expression's value as a path."""
     stack = [expr]
     while stack:
         node = stack.pop()
         yield node
+        if _read_value(node):
+            continue
         skip = _searched_text(node)
         stack.extend(c for c in ast.iter_child_nodes(node) if not any(c is s for s in skip))
 
@@ -396,14 +453,31 @@ def _offending(cmd, cwd):
             if LEDGER_NAME in body or "ledger" in cmd:
                 return "%s code this hook cannot read (%s)" % (name, shellscan.UNJUDGEABLE_REASON)
             continue
-        code = " ".join(argv)
-        if kind in ("stdin", "file"):
-            code += "\n" + (text or "")
-        program = text if kind is not None and re.match(r"^python[0-9.]*$", name) else None
-        what = _code_writes_ledger(code, program)
-        if what:
-            return "%s %s" % (name, what)
+        python = kind is not None and re.match(r"^python[0-9.]*$", name)
+        for body in _programs(cmd, text, kind, python):
+            code = " ".join(argv)
+            if kind in ("stdin", "file"):
+                code += "\n" + (body or "")
+            what = _code_writes_ledger(code, body if python else None)
+            if what:
+                return "%s %s" % (name, what)
     return ""
+
+
+def _parses(text):
+    try:
+        ast.parse(text)
+    except (SyntaxError, ValueError, RecursionError, MemoryError):
+        return False
+    return True
+
+
+def _programs(cmd, text, kind, python):
+    """The program text(s) to judge for one interpreter run. `interpreter_program` hands a stdin run EVERY heredoc body of the command joined, so a Python heredoc beside a `cat > msg <<'EOF'` body never parses and fell to the line reading, which refused a PLAN write whose CONTENT named the ledger (#9efac135). When the joined text does not parse, each body is judged on its own: one that parses by its tree, one that does not by its lines."""
+    if kind != "stdin" or not python or text is None or _parses(text):
+        return [text]
+    bodies = shellscan.heredoc_bodies(cmd)
+    return bodies if len(bodies) > 1 else [text]
 
 
 def run(ev):
