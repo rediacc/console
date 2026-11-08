@@ -49,3 +49,17 @@ The product-domain rename lands as ONE batch: W3 removes EDGE_ORIGIN and the edg
 - Create queues backup-replicate-{eu,us,asia,bench} and their -dlq (8).
 - L4: mint an R2 backup pair scoped to backups-<r> and rebind it.
 - Then W11 (tests and retired terms, byte-identical transform proof).
+
+## Operator rulings, /ask 2026-11-08
+
+1. Worker deploys stay free (W7 aafa930f00 kept whole): deploy_account, deploy_proxy, console_executor and deploy_www need no RELEASE_ASKED for the shared set; only the CLI stable channel and promote ask.
+2. Shared proxies advertise ENVIRONMENT=edge (W3/W4 kept).
+3. www serves the edge stamp: install.sh/install.ps1 on www.rediacc.com are baked channel=edge. Drop verify_stable's marketing bake check (keep verify_edge's), and change the docs that say the one-line installer gives stable; the stable CLI stays at releases.rediacc.com/cli/stable/.
+4. Rename and enterprise plans stay Concurrency: parallel.
+
+## Landing design (Plan agent, 2026-11-08; a proposal, the tree decides)
+
+Order: account A1 1538619, A2 81fa7d4, A3 98329c9, A4 27a1a42, then one account commit for edits 7 and 8 and docs/secrets/rotation.md:118; console C1 b04309503c, C2 f53c8bfc65, C3 c13d23017d, C4 15a3c7d350, C5 d65c2a2fe1, C6 b6ea593055, C7 747ec3e021, C8 404dbdf47e, C9 7cf1a1e1a3, C10 aafa930f00, C11 6efd68a6cf, C12 634929306f, C13 b81cbf4a43, C14 c69b28b08a, C15 9171872cb9, C16 N2 staged in agent-a744220535e6c9fe0 (git diff --cached | git apply --index; msg /tmp/n2ctx/msg.txt), C17 lead git rm of deploy_edge.py, its test and goldens deploy.deploy-edge.jsonl and deploy.test-d1-migrations.jsonl, C18 0fe71cfe5d, C19 4cae1a627d, C20 W13's final commits last.
+Expected conflicts: block_unasked_release.py:7 (take W7, reapply cd-release-stable), deploy SKILL.md:41,93 (take W7, substitute names), bench_access.py:15 (merge both). The enterprise N1/N3 row above is stale: already landed (74075193c7, 6387aa3efc).
+Edits 1, 4, 9, 10 are done by the picks; 11 and 15 are keep decisions. Still needed: 2, 3, 5, 6, 7, 8, 12, 13, 14, plus: 2b-a install_sh_config_check.py:67 EDGE_ORIGIN import; 2b-b check_proxy_deploy_dry_run.py edge targets; 2b-c CLI region-prompt.ts and three tests; 2b-d ci_workflow_invariants _STABLE_RE against --target stable; 2b-e deploy_edge registry fallout; 2b-f bench_access ZONE_ID to the rediacc.cloud zone; 2b-g scope_probe edgeR2, executor_orgs help, mirror _EDGE names, set_account_worker_secrets message, bake checks per ruling 3; 2b-h env-manifest well-known shard; 2b-i telemetry LOKI selector after reading service.name; 2b-j workflows after W13; 2b-k the CD account path in cd-deploy-account.yml with backup_credential_isolation.py (largest gap: one follow-up writer after W13's picks).
+Regenerate after all picks and edits: build:packages, shard:place, python-env-registry baseline (--allow-new per named read), gen-docs, i18n hashes and client i18n, search index, cli contract if red, gen-docs again, plan record. Known-red after the one gate run: check:i18n completeness until website W3, the W11-scope goldens.
