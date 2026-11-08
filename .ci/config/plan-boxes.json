@@ -1791,8 +1791,8 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 22,
-      "done": 6,
+      "open": 15,
+      "done": 13,
       "open_sigs": [
         "01a216f3",
         "062294e2",
@@ -1801,10 +1801,6 @@
         "4e39aac7",
         "58b6398f",
         "5d01ed3d",
-        "63337671",
-        "8c532722",
-        "9b7cf5fc",
-        "a6b330c2",
         "a9d7e631",
         "ae60bb69",
         "b999da0c",
@@ -1812,18 +1808,22 @@
         "bf61703a",
         "c39666ea",
         "c418d185",
-        "cfa4c5c0",
-        "e6d20a1c",
-        "f6e0cfd1",
-        "f70ece24"
+        "cfa4c5c0"
       ],
       "done_sigs": [
         "108e6833",
+        "63337671",
         "7e578ed5",
         "82f203f4",
+        "8c532722",
         "95c01063",
         "9ad4c9f5",
-        "a4963d94"
+        "9b7cf5fc",
+        "a4963d94",
+        "a6b330c2",
+        "e6d20a1c",
+        "f6e0cfd1",
+        "f70ece24"
       ]
     },
     "agent/plans/PLAN-production-key-only.md": {
