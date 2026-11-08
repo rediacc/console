@@ -435,7 +435,7 @@ BREAKS: list[tuple[str, FakeLab, str]] = [
     ("signer", FakeLab(stopped_error_names_signer=False), "a stopped signer is named"),
     ("region-loss", FakeLab(licence_survives=False), "current licence works with eu cut"),
     ("add", FakeLab(rerun_changes=("d1",)), "a rerun changes nothing"),
-    ("add", FakeLab(unlisted_hits=True), "proof-unlisted: the lookup misses"),
+    ("add", FakeLab(unlisted_hits=True), "unlisted company: the lookup misses"),
     ("add", FakeLab(free_mail_admitted=True), "free-mail lookup domain is refused"),
     ("routing", FakeLab(wrong_worker="proof-route-a-proxy"), "proxy host reaches its Worker"),
     ("routing", FakeLab(logged_host=f"proof-route-b.{DOMAIN}"), "absent from certificate logs"),
@@ -622,3 +622,145 @@ def test_main_names_the_missing_lab(
 def test_main_usage_errors_exit_two() -> None:
     assert proof.main(["no-such-verb"]) == 2
     assert proof.main([]) == 2
+
+
+# -- review 5b19ed43: names, startup, scans, side effects -------------------------
+
+REAL_NAME = "Acme Holdings"
+REAL_HOST = "acme-holdings.customer.example"
+
+
+@dataclasses.dataclass
+class RealNamedRecords(FakeLab):
+    def deploy_records(self, *, bench: bool) -> list[dict[str, object]]:
+        del bench
+        return [{"company": REAL_NAME, "duration_s": 5.0, "host": REAL_HOST}]
+
+
+@dataclasses.dataclass
+class LeakyAdd(FakeLab):
+    def add(
+        self, label: str, *, owner: str, unlisted: bool, lookup_domain: str, kill_after: str = ""
+    ) -> AddResult:
+        res = super().add(
+            label,
+            owner=owner,
+            unlisted=unlisted,
+            lookup_domain=lookup_domain,
+            kill_after=kill_after,
+        )
+        if res.rc:
+            return dataclasses.replace(res, error=f"{label} at {label}.{DOMAIN} failed")
+        return res
+
+    def lookup(self, domain: str) -> str | None:
+        return f"{domain}.elsewhere.example"
+
+
+@dataclasses.dataclass
+class FailingExport(FakeLab):
+    exported_for: list[str] = dataclasses.field(default_factory=list)
+
+    def export(self, company: str) -> int:
+        self.exported_for.append(company)
+        return 1
+
+
+@dataclasses.dataclass
+class KeptExportFails(FakeLab):
+    def export(self, company: str) -> int:
+        super().export(company)
+        return 1 if self.companies[company][0].endswith("-ci") else 0
+
+
+def test_cost_masks_a_company_that_is_not_an_opaque_id() -> None:
+    rc, lines = run("cost", RealNamedRecords())
+    text = "\n".join(lines)
+    assert rc == 1
+    assert any("record #0" in line for line in broken(lines)), broken(lines)
+    assert REAL_NAME.lower() not in text.lower()
+    assert REAL_HOST not in text
+
+
+def test_add_keeps_labels_hosts_and_domains_out_of_the_output() -> None:
+    rc, lines = run("add", LeakyAdd(unlisted_hits=True))
+    text = "\n".join(lines).lower()
+    assert rc == 1
+    assert broken(lines)
+    for word in ("proof-listed", "proof-unlisted", "proof-freemail", "elsewhere.example"):
+        assert word not in text, word
+
+
+def test_add_prints_no_label_on_a_healthy_run() -> None:
+    rc, lines = run("add", FakeLab())
+    assert rc == 0
+    assert "proof-" not in "\n".join(lines)
+
+
+def test_main_exits_two_when_the_live_lab_fails_to_build(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    class Broken:
+        @staticmethod
+        def build(*, bench: bool) -> None:
+            del bench
+            msg = "no bench credentials"
+            raise LabError(msg)
+
+    monkeypatch.setattr(proof.importlib, "import_module", lambda _name: Broken)
+    assert proof.main(["signer", "--bench"]) == 2
+    err = capsys.readouterr().err
+    assert "could not start" in err
+    assert "no bench credentials" in err
+
+
+def test_workflow_scan_joins_backslash_continuations(tmp_path: pathlib.Path) -> None:
+    wf = tmp_path / ".github" / "workflows"
+    wf.mkdir(parents=True)
+    (wf / "a.yml").write_text(
+        "steps:\n  - run: ./run.sh enterprise \\\n      remove cabc\n  - run: echo hi\n",
+        encoding="utf-8",
+    )
+    assert proof.workflow_remove_calls(tmp_path) == ["a.yml:2"]
+
+
+def test_workflow_scan_reads_composite_actions(tmp_path: pathlib.Path) -> None:
+    act = tmp_path / ".github" / "actions" / "tidy"
+    act.mkdir(parents=True)
+    (act / "action.yml").write_text(
+        "runs:\n  steps:\n    - run: ./run.sh enterprise remove c1\n", encoding="utf-8"
+    )
+    (tmp_path / ".github" / "workflows").mkdir()
+    assert proof.workflow_remove_calls(tmp_path) == ["actions/tidy/action.yml:3"]
+    p = proof.Proof()
+    proof.verb_remove(cast("proof.Lab", FakeLab()), p, bench=True, root=tmp_path)
+    assert any(o.claim == "no workflow calls enterprise remove" and not o.ok for o in p.outcomes)
+
+
+def test_remove_reports_which_export_failed() -> None:
+    _, lines = run("remove", KeptExportFails())
+    assert any("export failed for ['kept company']" in line for line in broken(lines)), lines
+
+
+def test_remove_calls_both_exports_even_when_the_first_fails() -> None:
+    lab = FailingExport()
+    _, lines = run("remove", lab)
+    assert len(lab.exported_for) == 2
+    assert any("removed company" in line and "kept company" in line for line in broken(lines))
+
+
+def test_keys_mints_no_licence_in_production() -> None:
+    lab = FakeLab()
+    rc, lines = run("keys", lab, bench=False)
+    assert rc == 0
+    assert "issue:licence" not in lab.calls
+    assert any(line.startswith("skipped") and "bench-only" in line for line in lines)
+    assert "skipped" in lines[-1]
+
+
+def test_keys_issues_licences_on_bench() -> None:
+    lab = FakeLab()
+    rc, lines = run("keys", lab, bench=True)
+    assert rc == 0
+    assert "issue:licence" in lab.calls
+    assert not any(line.startswith("skipped") for line in lines)

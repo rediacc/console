@@ -8,7 +8,7 @@ WHAT IS BROKEN IS PUT BACK. `signer` stops a signer, `region-loss` cuts a region
 
 A LAB ERROR IS A BROKEN CLAIM, NOT A TRACEBACK. A lab raises `LabError` (or an OS, value, lookup or timeout error) when a live step fails; the verb records it as broken under the claim it was serving and still restores. Any other exception is a defect in the proof or the lab and propagates.
 
-NAMES STAY OUT OF THE OUTPUT. Companies are printed by their opaque `c<hex>` id. `github` compares the run's logs and API answers against the fake company's name and hosts and, on a hit, prints the surface and the word's position in the list, never the word.
+NAMES STAY OUT OF THE OUTPUT. Companies are printed by their opaque `c<hex>` id, and every claim and detail passes `Proof.hide`, which masks the labels, owner domains and hosts a verb registered; a record whose company is not an opaque id is printed by its position, never its value. `github` compares the run's logs and API answers against the fake company's name and hosts and, on a hit, prints the surface and the word's position in the list, never the word.
 
 THE LAB. `Lab` is the protocol the verbs need. The live binding is `rediacc_ci.enterprise.lab.build(bench=...)`, built over the add, lifecycle, deploy and ring modules (boxes C1, C2, D1, K2, S2); until that module exists, `main` exits 2 and names it rather than claiming anything. The tests drive every verb through a recording fake.
 
@@ -57,6 +57,7 @@ NOT_PROVEN_ON_BENCH: tuple[str, ...] = (
     "a failure of Cloudflare's control plane",
 )
 WORKFLOW_REMOVE = re.compile(r"enterprise\s+remove\b|enterprise\.lifecycle\b[^\n]*\bremove\b")
+MASK = "***"
 FREE_MAIL_DOMAIN = "gmail.com"
 
 
@@ -65,6 +66,8 @@ class LabError(RuntimeError):
 
 
 LAB_ERRORS: tuple[type[Exception], ...] = (LabError, OSError, ValueError, LookupError, TimeoutError)
+# What building the live lab may raise, including an ImportError from inside the lab module.
+START_ERRORS: tuple[type[Exception], ...] = (*LAB_ERRORS, ImportError, AttributeError, TypeError)
 
 
 @dataclasses.dataclass(frozen=True)
@@ -187,6 +190,7 @@ class Outcome:
     claim: str
     ok: bool
     detail: str = ""
+    skipped: bool = False
 
 
 @dataclasses.dataclass
@@ -195,11 +199,25 @@ class Proof:
 
     outcomes: list[Outcome] = dataclasses.field(default_factory=list)
     notes: list[str] = dataclasses.field(default_factory=list)
+    hidden: list[str] = dataclasses.field(default_factory=list)
+
+    def hide(self, *words: str) -> None:
+        """Mask each word (case-insensitively) in every claim and detail recorded from now on."""
+        self.hidden.extend(w for w in words if w)
+
+    def masked(self, text: str) -> str:
+        for word in sorted(set(self.hidden), key=len, reverse=True):
+            text = re.sub(re.escape(word), MASK, text, flags=re.IGNORECASE)
+        return text
 
     def check(self, claim: str, *, ok: object, detail: str = "") -> bool:
         held = bool(ok)
-        self.outcomes.append(Outcome(claim, held, "" if held else detail))
+        self.outcomes.append(Outcome(self.masked(claim), held, "" if held else self.masked(detail)))
         return held
+
+    def skip(self, claim: str, reason: str) -> None:
+        """Record a claim deliberately not checked, with why. It is neither held nor broken."""
+        self.outcomes.append(Outcome(self.masked(claim), True, self.masked(reason), skipped=True))
 
     def admitted(self, claim: str, answer: Answer) -> bool:
         return self.check(claim, ok=answer.ok, detail=f"refused: {answer.error or '(no error)'}")
@@ -309,29 +327,42 @@ def verb_add(lab: Lab, p: Proof, *, bench: bool) -> None:
     """V3: a killed add resumes, a rerun changes nothing, owner mail is captured, the lookup hits a listed company and misses an unlisted one, a free-mail domain is refused."""
     del bench
     cases = (
-        ("proof-listed", "owner@proof-listed.example", False, "proof-listed.example"),
-        ("proof-unlisted", "owner@proof-unlisted.example", True, "proof-unlisted.example"),
+        ("listed", "proof-listed", "owner@proof-listed.example", False, "proof-listed.example"),
+        (
+            "unlisted",
+            "proof-unlisted",
+            "owner@proof-unlisted.example",
+            True,
+            "proof-unlisted.example",
+        ),
     )
-    for label, owner, unlisted, domain in cases:
+    for role, label, owner, unlisted, domain in cases:
+        p.hide(label, owner, domain)
+        who = f"{role} company"
         killed = lab.add(
             label, owner=owner, unlisted=unlisted, lookup_domain=domain, kill_after="d1"
         )
-        p.check(f"{label}: a killed add exits non-zero", ok=killed.rc != 0, detail="rc 0")
+        p.check(f"{who}: a killed add exits non-zero", ok=killed.rc != 0, detail="rc 0")
         resumed = lab.add(label, owner=owner, unlisted=unlisted, lookup_domain=domain)
-        p.check(f"{label}: the add resumes", ok=resumed.rc == 0, detail=resumed.error)
+        p.check(f"{who}: the add resumes", ok=resumed.rc == 0, detail=resumed.error)
         again = lab.add(label, owner=owner, unlisted=unlisted, lookup_domain=domain)
         p.check(
-            f"{label}: a rerun changes nothing",
+            f"{who}: a rerun changes nothing",
             ok=again.rc == 0 and not again.changed,
             detail=f"rc {again.rc}, changed {list(again.changed)}",
         )
-        p.check(f"{label}: owner mail is captured", ok=lab.captured_mail(owner), detail="no mail")
+        p.check(f"{who}: owner mail is captured", ok=lab.captured_mail(owner), detail="no mail")
         hit = lab.lookup(domain)
+        if hit:
+            p.hide(hit)
         if unlisted:
-            p.check(f"{label}: the lookup misses", ok=hit is None, detail="lookup answered")
+            p.check(f"{who}: the lookup misses", ok=hit is None, detail="lookup answered")
         else:
             host = lab.company_hosts(resumed.company)[0] if resumed.company else ""
-            p.check(f"{label}: the lookup hits", ok=bool(host) and hit == host, detail=f"{hit!r}")
+            p.hide(host)
+            detail = "lookup gave no host" if hit is None else "lookup gave another host"
+            p.check(f"{who}: the lookup hits", ok=bool(host) and hit == host, detail=detail)
+    p.hide(FREE_MAIL_DOMAIN, "proof-freemail")
     free = lab.add(
         "proof-freemail",
         owner=f"owner@{FREE_MAIL_DOMAIN}",
@@ -522,11 +553,21 @@ def verb_cost(lab: Lab, p: Proof, *, bench: bool) -> None:
     records = lab.deploy_records(bench=bench)
     p.check("deploy records exist", ok=records, detail="no record")
     seconds: dict[str, float] = {}
-    for r in records:
+    for i, r in enumerate(records):
         cid, dur = str(r.get("company", "")), r.get("duration_s")
-        ok = bool(OPAQUE_ID.match(cid)) and isinstance(dur, (int, float)) and dur > 0
-        p.check(f"record {cid or '?'} has an opaque id and a duration", ok=ok, detail=f"{r}")
-        if ok and isinstance(dur, (int, float)):
+        opaque = bool(OPAQUE_ID.match(cid))
+        timed = isinstance(dur, (int, float)) and dur > 0
+        if not opaque:
+            p.hide(cid)
+        why = ("" if opaque else "company is not an opaque id; ") + (
+            "" if timed else "duration is missing or not positive"
+        )
+        p.check(
+            f"record {cid if opaque else f'#{i}'} has an opaque id and a duration",
+            ok=opaque and timed,
+            detail=why,
+        )
+        if opaque and timed and isinstance(dur, (int, float)):
             seconds[cid] = seconds.get(cid, 0.0) + float(dur)
     usage = {str(u.get("company", "")) for u in lab.usage_rows(bench=bench)}
     for cid in sorted(seconds):
@@ -597,13 +638,39 @@ def verb_github(lab: Lab, p: Proof, *, bench: bool) -> None:
     p.check("no surface carries the name or a host", ok=not hits, detail="; ".join(hits))
 
 
+def _logical_lines(text: str) -> list[tuple[int, str]]:
+    """`(first line number, line)` with each backslash continuation joined into one line."""
+    out: list[tuple[int, str]] = []
+    start = 0
+    parts: list[str] = []
+    for n, line in enumerate(text.splitlines(), 1):
+        if not parts:
+            start = n
+        if line.rstrip().endswith("\\"):
+            parts.append(line.rstrip()[:-1])
+            continue
+        parts.append(line)
+        out.append((start, " ".join(parts)))
+        parts = []
+    if parts:
+        out.append((start, " ".join(parts)))
+    return out
+
+
+def workflow_files(root: pathlib.Path) -> list[pathlib.Path]:
+    """Workflows and composite actions: `.github/workflows/*.y*ml` and `.github/actions/**/action.y*ml`."""
+    gh = root / ".github"
+    return sorted([*(gh / "workflows").glob("*.y*ml"), *(gh / "actions").glob("**/action.y*ml")])
+
+
 def workflow_remove_calls(root: pathlib.Path) -> list[str]:
-    """Each `<workflow>:<line>` under `.github/workflows` that calls `enterprise remove`."""
+    """Each `<file>:<line>` in a workflow or composite action calling `enterprise remove`; a continued command counts at its first line."""
     out: list[str] = []
-    for path in sorted((root / ".github" / "workflows").glob("*.y*ml")):
-        for n, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+    for path in workflow_files(root):
+        rel = path.name if path.parent.name == "workflows" else path.relative_to(root / ".github")
+        for n, line in _logical_lines(path.read_text(encoding="utf-8")):
             if WORKFLOW_REMOVE.search(line):
-                out.append(f"{path.name}:{n}")
+                out.append(f"{rel}:{n}")
     return out
 
 
@@ -621,9 +688,9 @@ def verb_remove(lab: Lab, p: Proof, *, bench: bool, root: pathlib.Path | None = 
         ok=lab.remove(gone, delete_data=True, github_actions=False) != 0,
         detail="rc 0",
     )
-    p.check(
-        "the export completes", ok=lab.export(gone) == 0 and lab.export(kept) == 0, detail="rc != 0"
-    )
+    exports = {"removed company": lab.export(gone), "kept company": lab.export(kept)}
+    failed = [who for who, rc in exports.items() if rc != 0]
+    p.check("the export completes", ok=not failed, detail=f"export failed for {failed}")
     p.check(
         "remove refuses under GITHUB_ACTIONS",
         ok=lab.remove(kept, delete_data=True, github_actions=True) != 0,
@@ -638,19 +705,22 @@ def verb_remove(lab: Lab, p: Proof, *, bench: bool, root: pathlib.Path | None = 
     left = lab.leftovers(gone)
     p.check("the removed company leaves nothing", ok=not left, detail=f"{left}")
     base = root or _repo_root()
-    workflows = list((base / ".github" / "workflows").glob("*.y*ml"))
-    p.check("workflows were scanned", ok=workflows, detail="no workflow file found")
+    p.check("workflows were scanned", ok=workflow_files(base), detail="no workflow file found")
     calls = workflow_remove_calls(base)
     p.check("no workflow calls enterprise remove", ok=not calls, detail=", ".join(calls))
 
 
 def verb_keys(lab: Lab, p: Proof, *, bench: bool) -> None:
-    """X1: no account Worker holds the private key, every signer does, and every region issues a licence."""
+    """X1: no account Worker holds the private key and every signer does; a licence is issued per caller on bench only, because a proof must not mint production licences (production records a skipped claim)."""
     _no_key_on_account(lab, p, bench=bench)
     callers = lab.callers(bench=bench)
     p.check("signer callers are listed", ok=callers, detail="no caller found")
     for caller in callers:
-        p.admitted(f"{caller}: a licence is issued", lab.issue(caller, "licence"))
+        claim = f"{caller}: a licence is issued"
+        if bench:
+            p.admitted(claim, lab.issue(caller, "licence"))
+        else:
+            p.skip(claim, "bench-only: a proof does not mint production licences")
 
 
 VERBS: dict[str, Callable[..., None]] = {
@@ -679,14 +749,19 @@ def run_verb(verb: str, lab: Lab, *, bench: bool, out: Callable[[str], None] = p
     except LAB_ERRORS as exc:
         p.check(f"{verb} ran to the end", ok=False, detail=f"{type(exc).__name__}: {exc}")
     for o in p.outcomes:
-        out(f"ok      {o.claim}" if o.ok else f"BROKEN  {o.claim}: {o.detail}")
+        if o.skipped:
+            out(f"skipped {o.claim}: {o.detail}")
+        else:
+            out(f"ok      {o.claim}" if o.ok else f"BROKEN  {o.claim}: {o.detail}")
     for note in p.notes:
         out(f"note    {note}")
     if not p.outcomes:
         out(f"proof {verb}: no claim was recorded")
         return 1
     broken = len(p.broken)
-    out(f"proof {verb}: {len(p.outcomes)} claim(s), {broken} broken")
+    skipped = sum(o.skipped for o in p.outcomes)
+    tail = f", {skipped} skipped" if skipped else ""
+    out(f"proof {verb}: {len(p.outcomes)} claim(s), {broken} broken{tail}")
     return 1 if broken else 0
 
 
@@ -721,7 +796,11 @@ def main(argv: Sequence[str], *, lab: Lab | None = None) -> int:
             file=sys.stderr,
         )
         return 2
-    bound = lab if lab is not None else load_lab(bench=args.bench)
+    try:
+        bound = lab if lab is not None else load_lab(bench=args.bench)
+    except START_ERRORS as exc:
+        print(f"{SELF}: could not start: {type(exc).__name__}: {exc}", file=sys.stderr)
+        return 2
     if bound is None:
         print(
             f"{SELF}: no live lab: {LAB_MODULE} is not built yet; it binds the add, lifecycle, "
