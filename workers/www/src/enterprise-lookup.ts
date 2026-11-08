@@ -89,8 +89,8 @@ async function refusal(
     const verdict = await env.LOOKUP_RATE_LIMIT.limit({ key: ip ?? 'unknown' });
     if (!verdict.success) return json({ error: 'rate_limited' }, 429);
   }
-  const secret = env.CLOUDFLARE_TURNSTILE_SECRET_KEY;
-  if (secret && !(await turnstileOk(secret, payload.turnstileToken, ip))) {
+  const secret = env.CLOUDFLARE_TURNSTILE_SECRET_KEY ?? '';
+  if (!(await turnstileOk(secret, payload.turnstileToken, ip))) {
     return json({ error: 'turnstile_failed' }, 403);
   }
   return null;
@@ -104,7 +104,11 @@ export async function handleEnterpriseLookup(request: Request, env: LookupEnv): 
     });
   }
   const { ENTERPRISE_LOOKUP: kv, ENTERPRISE_LOOKUP_PEPPER: pepper } = env;
-  if (!kv || !pepper) return json({ error: 'unavailable' }, 503);
+  // Fail closed: without the Turnstile secret the route would answer anonymous
+  // lookups, so a deploy missing it is unavailable rather than open.
+  if (!kv || !pepper || !env.CLOUDFLARE_TURNSTILE_SECRET_KEY) {
+    return json({ error: 'unavailable' }, 503);
+  }
 
   const payload = await readPayload(request);
   if (!payload) return json({ error: 'bad_request' }, 400);

@@ -80,49 +80,58 @@ describe('lookupKey', () => {
 });
 
 describe('POST /api/enterprise-lookup', () => {
+  // Siteverify answers success for the token 'good' only; every lookup env carries the secret.
+  const SECRET = { CLOUDFLARE_TURNSTILE_SECRET_KEY: 's' };
+  const siteverify = () =>
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((_url: string, init: RequestInit) => {
+        const ok = (init.body as FormData).get('response') === 'good';
+        return Promise.resolve(new Response(JSON.stringify({ success: ok })));
+      })
+    );
+
   test('a hit answers the host and a miss answers the same shape', async () => {
+    siteverify();
     const key = await lookupKey(PEPPER, 'acme.example');
     const e = env({
       ENTERPRISE_LOOKUP: kv({ [key]: 'acme.rediacc.cloud' }),
       ENTERPRISE_LOOKUP_PEPPER: PEPPER,
+      ...SECRET,
     });
-    const hit = await lookup({ domain: 'ACME.example' }, e);
+    const hit = await lookup({ domain: 'ACME.example', turnstileToken: 'good' }, e);
     expect(hit.headers.get('cache-control')).toBe('no-store');
     expect(await hit.json()).toEqual({ host: 'acme.rediacc.cloud' });
-    const miss = await lookup({ domain: 'unknown.example' }, e);
+    const miss = await lookup({ domain: 'unknown.example', turnstileToken: 'good' }, e);
     expect(await miss.json()).toEqual({ host: null });
-    const bad = await lookup({ domain: 'not a domain' }, e);
+    const bad = await lookup({ domain: 'not a domain', turnstileToken: 'good' }, e);
     expect(bad.status).toBe(200);
     expect(await bad.json()).toEqual({ host: null });
   });
 
   test('refuses other methods and bodies that are not JSON objects', async () => {
-    const e = env({ ENTERPRISE_LOOKUP: kv({}), ENTERPRISE_LOOKUP_PEPPER: PEPPER });
+    const e = env({ ENTERPRISE_LOOKUP: kv({}), ENTERPRISE_LOOKUP_PEPPER: PEPPER, ...SECRET });
     expect((await lookup(null, e, 'GET')).status).toBe(405);
     expect((await lookup('{nope', e)).status).toBe(400);
     expect((await lookup('null', e)).status).toBe(400);
     expect((await lookup('x'.repeat(5000), e)).status).toBe(400);
   });
 
-  test('is unavailable without the binding or the pepper', async () => {
-    expect((await lookup({ domain: 'a.example' }, env())).status).toBe(503);
-    expect((await lookup({ domain: 'a.example' }, env({ ENTERPRISE_LOOKUP: kv({}) }))).status).toBe(
+  test('is unavailable without the binding, the pepper or the Turnstile secret', async () => {
+    expect((await lookup({ domain: 'a.example' }, env(SECRET))).status).toBe(503);
+    expect(
+      (await lookup({ domain: 'a.example' }, env({ ENTERPRISE_LOOKUP: kv({}), ...SECRET }))).status
+    ).toBe(503);
+    // Review 11ccb9e8.1: no secret means no anonymous lookups, not an open route.
+    const noSecret = env({ ENTERPRISE_LOOKUP: kv({}), ENTERPRISE_LOOKUP_PEPPER: PEPPER });
+    expect((await lookup({ domain: 'a.example', turnstileToken: 'good' }, noSecret)).status).toBe(
       503
     );
   });
 
-  test('checks Turnstile when a secret is configured', async () => {
-    const siteverify = vi.fn((_url: string, init: RequestInit) => {
-      const form = init.body as FormData;
-      const ok = form.get('response') === 'good';
-      return Promise.resolve(new Response(JSON.stringify({ success: ok })));
-    });
-    vi.stubGlobal('fetch', siteverify);
-    const e = env({
-      ENTERPRISE_LOOKUP: kv({}),
-      ENTERPRISE_LOOKUP_PEPPER: PEPPER,
-      CLOUDFLARE_TURNSTILE_SECRET_KEY: 's',
-    });
+  test('checks Turnstile on every lookup', async () => {
+    siteverify();
+    const e = env({ ENTERPRISE_LOOKUP: kv({}), ENTERPRISE_LOOKUP_PEPPER: PEPPER, ...SECRET });
     expect((await lookup({ domain: 'a.example' }, e)).status).toBe(403);
     expect((await lookup({ domain: 'a.example', turnstileToken: 'bad' }, e)).status).toBe(403);
     const ok = await lookup({ domain: 'a.example', turnstileToken: 'good' }, e);
@@ -134,6 +143,7 @@ describe('POST /api/enterprise-lookup', () => {
     const e = env({
       ENTERPRISE_LOOKUP: kv({}),
       ENTERPRISE_LOOKUP_PEPPER: PEPPER,
+      ...SECRET,
       LOOKUP_RATE_LIMIT: { limit: () => Promise.resolve({ success: false }) },
     });
     expect((await lookup({ domain: 'a.example' }, e)).status).toBe(429);
