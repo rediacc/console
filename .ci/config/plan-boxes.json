@@ -678,18 +678,19 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 7,
-      "done": 0,
+      "open": 6,
+      "done": 1,
       "open_sigs": [
         "077a2336",
         "378b8de3",
         "cac02478",
-        "d67360df",
         "d7b25ec9",
         "d8663881",
         "fd445926"
       ],
-      "done_sigs": []
+      "done_sigs": [
+        "d67360df"
+      ]
     },
     "agent/plans/PLAN-ciquick-reds-1023-1.md": {
       "status": "executing",
