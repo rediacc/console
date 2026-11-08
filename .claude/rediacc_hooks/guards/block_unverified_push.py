@@ -634,15 +634,15 @@ def _carried_at_head(root):
         proc = subprocess.run(
             ["git", "-C", root, "show", "HEAD:%s" % CARRIED_REL],
             capture_output=True,
-            text=True,
             check=False,
         )
     except OSError:
         return None
     if proc.returncode != 0:
         return None
+    # UnicodeDecodeError is a ValueError, so a non-UTF-8 blob is the corrupt-file case below.
     try:
-        return json.loads(proc.stdout)
+        return json.loads(proc.stdout.decode("utf-8"))
     except ValueError as exc:
         return {UNPARSEABLE: str(exc)[:120]}
 
@@ -1021,7 +1021,6 @@ def _record_policy_at(root, tree):
         proc = subprocess.run(
             ["git", "-C", root, "show", "%s:%s" % (tree, RECORD_POLICY_REL)],
             capture_output=True,
-            text=True,
             check=False,
         )
     except OSError as exc:
@@ -1029,7 +1028,7 @@ def _record_policy_at(root, tree):
     if proc.returncode != 0:
         return [], "the pushed tree has no %s" % RECORD_POLICY_REL
     try:
-        doc = json.loads(proc.stdout)
+        doc = json.loads(proc.stdout.decode("utf-8"))
     except ValueError:
         return [], "%s in the pushed tree does not parse" % RECORD_POLICY_REL
     return parse_record_policy(doc)
