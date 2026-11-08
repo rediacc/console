@@ -214,6 +214,20 @@ def render(rows, scope, session_id, named=None):
     return "\n".join(lines)
 
 
+# A deferral that holds the whole plan set. When every open box of the PR's set waits on one operator decision (a run the harness reserved for the operator, a purchase), the block re-fired every stop with nothing to act on (2026-11-08, ten stops on #1b86eb2f). A `[?]` of this session whose question carries this token turns the block into an advisory naming it; the deferral's own DEFAULT window still closes, and once it is ticked the block returns.
+GATE_TAG = "GATES: pr-plan-set"
+
+
+def gating_deferral(items, session_id, owned_by_me):
+    """The id of this session's open `[?]` whose question carries GATE_TAG, or "" when none does."""
+    for r in items or ():
+        if r.get("state") != "?" or not owned_by_me(r.get("owner"), session_id):
+            continue
+        if any(GATE_TAG in str(r.get(k) or "") for k in ("lastnote", "text", "line")):
+            return str(r.get("id") or "")
+    return ""
+
+
 def evaluate(root, scope, session_id, live=False, read_text=None):
     """(state, text, detail) for one stop: `block` while a plan of `scope` has an open box and `live` is False, `advisory` for the same with a background task of this session running, `silent` otherwise.
 

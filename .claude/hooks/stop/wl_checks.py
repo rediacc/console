@@ -4679,9 +4679,20 @@ def run_stop(event, event_ok, worklist, hook_file):
     # ---- THE PR'S PLAN SET IS NOT FINISHED (wl_planenforce). The only BLOCKING plan push: `plan-tasks` asks whether a plan's boxes are TRACKED, `plan-backlog` names what comes NEXT, and this asks whether the PR's own plans are DONE. Scoped to the loop state's set, prerequisites first, with no ceiling (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 5); off the loop the scope is empty and it is silent.
     # A BACKGROUND TASK OF THIS SESSION TURNS IT INTO AN ADVISORY: a writer on the box or a `ci-trace --wait` is the work happening, and the box count of one plan is the exit.
     try:
+        # A [?] of this session declaring GATES: pr-plan-set holds the set: the block stands down to the advisory, naming the deferral (wl_planenforce.GATE_TAG).
+        _pe_gate = wl_planenforce.gating_deferral(fold.items, session_id, C.owned_by_me)
         _pe_state, _pe_text, _pe_detail = wl_planenforce.evaluate(
-            root, _loop_plans, session_id, live=bool(live_bg)
+            root, _loop_plans, session_id, live=bool(live_bg) or bool(_pe_gate)
         )
+        if _pe_gate and _pe_text:
+            _pe_text = (
+                "HELD BY #%s (%s): the operator's answer to that deferral, or its DEFAULT, moves this set.\n%s"
+                % (
+                    _pe_gate,
+                    wl_planenforce.GATE_TAG,
+                    _pe_text,
+                )
+            )
         if _pe_state == wl_planenforce.BLOCK and _pe_text:
             vadd("plan-unimplemented", False, M.V_PLAN_UNIMPLEMENTED % {"body": _pe_text})
         elif _pe_state == wl_planenforce.ADVISORY and _pe_text and not _focus:

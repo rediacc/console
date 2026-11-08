@@ -780,6 +780,45 @@ def scope_controls():
 # --------------------------------------------------------------------------- 5. CLAUSE 3, WARN-FIRST (agent/plans/PLAN-plan-preflight.md PF5, Design 3b). The stale-plan check warns and lets every tick through; each warning case is paired with a silent one.
 
 
+def _same_owner(owner, session_id):
+    return owner == session_id
+
+
+def gate_controls():
+    """A [?] of this session carrying GATES: pr-plan-set holds the set; nothing else does."""
+    pe = E
+    tok = pe.GATE_TAG
+    cases = [
+        (
+            "an open [?] of mine with the token holds the set",
+            {"id": "g1", "state": "?", "owner": "me", "lastnote": "q " + tok},
+            "g1",
+        ),
+        (
+            "an open [ ] with the token does not",
+            {"id": "g2", "state": " ", "owner": "me", "lastnote": tok},
+            "",
+        ),
+        (
+            "a peer's [?] with the token does not",
+            {"id": "g3", "state": "?", "owner": "peer", "lastnote": tok},
+            "",
+        ),
+        (
+            "my [?] without the token does not",
+            {"id": "g4", "state": "?", "owner": "me", "lastnote": "a plain question"},
+            "",
+        ),
+        (
+            "a ticked item with the token does not",
+            {"id": "g5", "state": "x", "owner": "me", "text": tok},
+            "",
+        ),
+    ]
+    for label, item, want in cases:
+        control("gate: " + label, pe.gating_deferral([item], "me", _same_owner), want)
+
+
 def _preflight_tree(tmp, stamp=True, origin=True):
     """(root, rel, sig, c1, evidence): `make_tree` on branch `work`, with the plan citing `seed.txt` and, when `stamp`, a `Revalidated:` header at c1, the commit `origin/main` names when `origin`. Branch `work` keeps git's `main` fallback out of reach, so removing origin/main really leaves the merge base unresolvable."""
     root, rel, sigs, _c0 = make_tree(tmp)
@@ -889,6 +928,7 @@ def main():
     neighbour_controls()
     wiring_controls()
     scope_controls()
+    gate_controls()
     preflight_warn_controls()
     print("\n%d control(s) ran, %d failed" % (Tally.count, Tally.fails))
     return 1 if Tally.fails else 0
