@@ -1,6 +1,6 @@
 """`check:ci-region-consistency`, driven as a process over a fixture root copied from the real tree's own inputs.
 
-WHAT THIS ADDS TO `--selftest`. The controls plant into parsed dicts; here the entry point reads real files through `--root`, so the TOML and JSON parsing, the file discovery for all fourteen tomls, the matrix and the exit codes are proven on the bytes the tree really has. The fixture starts from a copy and is made consistent first (`_clean`), so each plant below is judged against a green run, not against whatever the real tree currently carries.
+WHAT THIS ADDS TO `--selftest`. The controls plant into parsed dicts; here the entry point reads real files through `--root`, so the TOML and JSON parsing, the file discovery for all eight tomls, the matrix and the exit codes are proven on the bytes the tree really has. The fixture starts from a copy and is made consistent first (`_clean`), so each plant below is judged against a green run, not against whatever the real tree currently carries.
 """
 
 import pathlib
@@ -14,7 +14,7 @@ from rediacc_ci.tests.gates import harness
 
 ROOT = paths.repo_root()
 GATE = paths.from_root(".ci", "scripts", "quality", "check_region_consistency.py")
-STEMS = ("eu", "us", "asia", "edge-eu", "edge-us", "edge-asia", "bench")
+STEMS = ("eu", "us", "asia", "bench")
 COPIED = (
     "regions.json",
     ".ci/config/secret-supply.json",
@@ -57,26 +57,18 @@ def test_selftest_passes():
     assert "control(s) passed" in result.out
 
 
-def test_the_real_tree_is_judged_over_all_seven_targets():
+def test_the_real_tree_is_judged_over_all_four_targets():
     result = _gate()
     assert result.rc in (0, 1), result.combined
-    assert "7 target(s), 7 account + 7 proxy toml(s), 7 profile(s)" in result.combined
-    for target in (
-        "stable-eu",
-        "edge-eu",
-        "stable-us",
-        "edge-us",
-        "stable-asia",
-        "edge-asia",
-        "bench",
-    ):
+    assert "4 target(s), 4 account + 4 proxy toml(s), 4 profile(s)" in result.combined
+    for target in ("eu", "us", "asia", "bench"):
         assert "\n  %s " % target in result.out, result.out
 
 
 def test_a_consistent_fixture_is_green_and_prints_its_shape(tmp_path):
     result = _gate("--root", str(_clean(tmp_path)))
     assert result.rc == 0, result.combined
-    assert "consistent: 7 target(s)" in result.out
+    assert "consistent: 4 target(s)" in result.out
     assert "exempt bench assets.directory" in result.out, (
         "an exemption must stay visible on a green run"
     )
@@ -86,52 +78,52 @@ PLANTS = [
     (
         "regions",
         "regions.json",
-        '"edgeBackupR2": { "name": "edge-rediacc-backups-us" }',
-        '"edgeBackupR2": { "name": "edge-rediacc-backup-us" }',
-        "edge-us     regions",
+        '"backupR2": { "name": "backups-us" }',
+        '"backupR2": { "name": "backup-us" }',
+        "us          regions",
     ),
     (
         "account-bucket",
         "workers/account/wrangler.asia.toml",
-        'bucket_name = "rediacc-configs-asia"',
-        'bucket_name = "rediacc-configs-us"',
-        "stable-asia account",
+        'bucket_name = "configs-asia"',
+        'bucket_name = "configs-us"',
+        "asia        account",
     ),
     (
         "account-jurisdiction",
-        "workers/account/wrangler.edge-eu.toml",
-        'bucket_name = "edge-rediacc-backups-eu"\njurisdiction = "eu"',
-        'bucket_name = "edge-rediacc-backups-eu"',
-        "edge-eu     account",
+        "workers/account/wrangler.eu.toml",
+        'bucket_name = "backups-eu"\njurisdiction = "eu"',
+        'bucket_name = "backups-eu"',
+        "eu          account",
     ),
     (
         "account-executor",
-        "workers/account/wrangler.edge-us.toml",
-        'service = "edge-rediacc-proxy-us"',
-        'service = "rediacc-proxy-us"',
-        "edge-us     account",
+        "workers/account/wrangler.us.toml",
+        'service = "proxy-us"',
+        'service = "proxy-eu"',
+        "us          account",
     ),
     (
         "account-shape",
         "workers/account/wrangler.us.toml",
         'crons = ["17 * * * *", "0 3 * * *"]',
         'crons = ["17 * * * *", "0 4 * * *"]',
-        "stable-us   account",
+        "us          account",
     ),
     (
         "proxy",
-        "workers/proxy/wrangler.edge-asia.toml",
-        'service = "edge-rediacc-account-asia"\nentrypoint = "ExecutorIssuer"',
-        'service = "rediacc-account-asia"\nentrypoint = "ExecutorIssuer"',
-        "edge-asia   proxy",
+        "workers/proxy/wrangler.asia.toml",
+        'service = "account-asia"\nentrypoint = "ExecutorIssuer"',
+        'service = "account-eu"\nentrypoint = "ExecutorIssuer"',
+        "asia        proxy",
     ),
-    # The us-edge profile is the one place its config server key sits directly above FREE_LICENSE_HMAC_KEY.
+    # The us profile is the one place its backup KEK sits directly above FREE_LICENSE_HMAC_KEY (W10 renames the store names).
     (
         "profile",
         ".ci/config/secret-supply.json",
-        '        "ACCOUNT_CONFIG_SERVER_KEY_US_EDGE",\n        "FREE_LICENSE_HMAC_KEY"\n',
-        '        "ACCOUNT_CONFIG_SERVER_KEY_EU_EDGE",\n        "FREE_LICENSE_HMAC_KEY"\n',
-        "edge-us     profile",
+        '        "ACCOUNT_BACKUP_STORE_KEK_US_STABLE",\n        "FREE_LICENSE_HMAC_KEY"\n',
+        '        "ACCOUNT_BACKUP_STORE_KEK_EU_STABLE",\n        "FREE_LICENSE_HMAC_KEY"\n',
+        "us          profile",
     ),
     (
         "bench-jwt-aliased",
@@ -161,11 +153,11 @@ def test_one_plant_per_class_turns_the_run_red(tmp_path, rule, rel, old, new, li
 
 def test_a_missing_toml_is_no_verdict(tmp_path):
     root = _clean(tmp_path)
-    (root / "workers/proxy/wrangler.edge-us.toml").unlink()
+    (root / "workers/proxy/wrangler.us.toml").unlink()
     result = _gate("--root", str(root))
     assert result.rc == 2, result.combined
     assert "NO VERDICT" in result.err
-    assert "wrangler.edge-us.toml" in result.err
+    assert "wrangler.us.toml" in result.err
 
 
 def test_live_without_a_credential_is_unchecked_not_green(tmp_path, monkeypatch):

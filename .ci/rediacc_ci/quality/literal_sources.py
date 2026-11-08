@@ -144,7 +144,7 @@ def entry_for(key: str, value: str) -> Entry:
 def region_entries(regions: dict[str, Any]) -> list[Entry]:
     out = []
     for region in regions.get("regions", []):
-        for field in ("domain", "edgeDomain"):
+        for field in ("domain",):
             host = str(region.get(field) or "").lower()
             if host:
                 out.append(
@@ -1638,13 +1638,11 @@ _FX_REGIONS = json.dumps(
             {
                 "id": "eu",
                 "domain": "eu.fixtureco.com",
-                "edgeDomain": "edge-eu.fixtureco.com",
                 "default": True,
             },
             {
                 "id": "us",
                 "domain": "us.fixtureco.com",
-                "edgeDomain": "edge-us.fixtureco.com",
                 "default": False,
             },
         ]
