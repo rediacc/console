@@ -110,7 +110,7 @@ class World:
     def set(
         self, *, account: str | None, proxy: str | None, time_travel: dict | None = None
     ) -> None:
-        """The scenario the wrangler fake answers. Deployments are keyed on the cwd (`account` or `proxy`), because both Workers' configs are named wrangler.edge-eu.toml."""
+        """The scenario the wrangler fake answers. Deployments are keyed on the cwd (`account` or `proxy`), because both Workers' configs are named wrangler.eu.toml."""
         default_tt = {
             "rc": 0,
             "out": json.dumps({"bookmark": BOOKMARK, "timestamp": "2026-10-26T00:00:00Z"}),
@@ -131,7 +131,7 @@ class World:
         path.write_text(json.dumps({"version": version, "git_sha": "deadbeef", "files": files}))
 
     def pointer(self, release: str) -> None:
-        path = self.bucket / dr.pointer_key("edge", "eu")
+        path = self.bucket / dr.pointer_key("stable", "eu")
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps({"release_version": release, "version_id": PROXY_OLD}))
 
@@ -142,7 +142,7 @@ class World:
 @pytest.fixture
 def world(tmp_path, monkeypatch):
     log = install_fake_npx(tmp_path, monkeypatch)
-    # The wrangler fake keys deployments on --config; both Workers' files are named wrangler.edge-eu.toml, so this wrapper rewrites the key to the cwd (account or proxy).
+    # The wrangler fake keys deployments on --config; both Workers' files are named wrangler.eu.toml, so this wrapper rewrites the key to the cwd (account or proxy).
     npx = tmp_path / "fake-bin" / "npx"
     keyed_on_config = 'answer(scenario.get("deployments", {}).get(opt("--config")'
     assert keyed_on_config in npx.read_text()
@@ -178,7 +178,7 @@ def run_before(world: World) -> int:
         [
             "before",
             "--target",
-            "edge",
+            "stable",
             "--region",
             "eu",
             "--version",
@@ -223,38 +223,40 @@ def test_before_records_every_handle_and_the_rollback_commands(world):
     assert run_before(world) == 0
     rec = json.loads(world.before().read_text())
     assert rec["account"] == {
-        "worker": "edge-rediacc-account-eu",
-        "config": "workers/account/wrangler.edge-eu.toml",
+        "worker": "account-eu",
+        "config": "workers/account/wrangler.eu.toml",
         "version_before": ACCOUNT_OLD,
     }
-    assert rec["d1"] == {"database": "edge-account-db-eu", "bookmark": BOOKMARK}
-    assert rec["proxy"]["worker"] == "edge-rediacc-proxy-eu"
+    assert rec["d1"] == {"database": "account-eu", "bookmark": BOOKMARK}
+    assert rec["proxy"]["worker"] == "proxy-eu"
     assert rec["proxy"]["existed"] is True
     assert rec["proxy"]["version_before"] == PROXY_OLD
     assert rec["proxy"]["release_before"] == PREV_RELEASE
     assert rec["executor_manifest"]["sha256"] == SHA
     rb = rec["rollback"]
     assert sorted(rb) == ["1_console_executor", "2_proxy", "3_account", "4_d1"]
-    assert rb["1_console_executor"].endswith("console_executor --disable --target edge --region eu")
+    assert rb["1_console_executor"].endswith(
+        "console_executor --disable --target stable --region eu"
+    )
     assert rb["2_proxy"].endswith(
-        "deploy_proxy --target edge --region eu --version %s" % PREV_RELEASE
+        "deploy_proxy --target stable --region eu --version %s" % PREV_RELEASE
     )
     assert (
         rb["3_account"]
-        == "cd workers/account && npx --no-install wrangler rollback %s --config wrangler.edge-eu.toml"
+        == "cd workers/account && npx --no-install wrangler rollback %s --config wrangler.eu.toml"
         % ACCOUNT_OLD
     )
     assert rb["4_d1"] == (
-        "cd workers/account && npx --no-install wrangler d1 time-travel restore edge-account-db-eu --bookmark=%s --config wrangler.edge-eu.toml"
+        "cd workers/account && npx --no-install wrangler d1 time-travel restore account-eu --bookmark=%s --config wrangler.eu.toml"
         % BOOKMARK
     )
     assert (world.tmp / "github_output").read_text() == "proxy_exists=true\n"
     tt = [c for c in calls(world.log) if c["argv"][2:5] == ["d1", "time-travel", "info"]]
     assert tt[0]["argv"][5:] == [
-        "edge-account-db-eu",
+        "account-eu",
         "--json",
         "--config",
-        "wrangler.edge-eu.toml",
+        "wrangler.eu.toml",
     ]
     assert tt[0]["cwd"] == "account"
 
@@ -327,7 +329,7 @@ def test_before_refuses_every_unknown_and_writes_nothing(world, monkeypatch, cas
             [
                 "before",
                 "--target",
-                "edge",
+                "stable",
                 "--region",
                 "eu",
                 "--version",
@@ -351,7 +353,7 @@ def run_account_before(world: World) -> int:
         [
             "before",
             "--target",
-            "edge",
+            "stable",
             "--region",
             "eu",
             "--account-only",
@@ -370,15 +372,15 @@ def test_account_only_before_needs_no_staged_executor_and_no_proxy(world, capsys
     assert rec["account_only"] is True
     assert rec["version"] is None
     assert rec["account"] == {
-        "worker": "edge-rediacc-account-eu",
-        "config": "workers/account/wrangler.edge-eu.toml",
+        "worker": "account-eu",
+        "config": "workers/account/wrangler.eu.toml",
         "version_before": ACCOUNT_OLD,
     }
-    assert rec["d1"] == {"database": "edge-account-db-eu", "bookmark": BOOKMARK}
+    assert rec["d1"] == {"database": "account-eu", "bookmark": BOOKMARK}
     assert rec["rollback"] == {
-        "3_account": "cd workers/account && npx --no-install wrangler rollback %s --config wrangler.edge-eu.toml"
+        "3_account": "cd workers/account && npx --no-install wrangler rollback %s --config wrangler.eu.toml"
         % ACCOUNT_OLD,
-        "4_d1": "cd workers/account && npx --no-install wrangler d1 time-travel restore edge-account-db-eu --bookmark=%s --config wrangler.edge-eu.toml"
+        "4_d1": "cd workers/account && npx --no-install wrangler d1 time-travel restore account-eu --bookmark=%s --config wrangler.eu.toml"
         % BOOKMARK,
     }
     assert "proxy" not in rec
@@ -388,7 +390,7 @@ def test_account_only_before_needs_no_staged_executor_and_no_proxy(world, capsys
     assert not [c for c in seen if c["cwd"] == "proxy"], "the proxy Worker is not looked up"
     out = capsys.readouterr().out
     assert (
-        "restore D1: cd workers/account && npx --no-install wrangler d1 time-travel restore edge-account-db-eu"
+        "restore D1: cd workers/account && npx --no-install wrangler d1 time-travel restore account-eu"
         in out
     )
 
@@ -400,7 +402,7 @@ def test_account_only_before_still_refuses_a_missing_bookmark(world):
 
 
 def test_before_without_account_only_still_needs_a_version(world):
-    rc = dr.main(["before", "--target", "edge", "--region", "eu", "--out", str(world.before())])
+    rc = dr.main(["before", "--target", "stable", "--region", "eu", "--out", str(world.before())])
     assert rc == 1
     assert not world.before().exists()
 
@@ -471,7 +473,7 @@ def test_bootstrap_runs_deploy_proxy_with_the_target_and_version(world):
         [
             "deploy_proxy",
             "--target",
-            "edge",
+            "stable",
             "--region",
             "eu",
             "--version",
@@ -526,7 +528,7 @@ def test_rollback_closes_the_executor_first_then_redeploys_the_previous_release(
     assert rollback(world) == 0
     assert actions(world) == [
         "secret delete EXECUTOR_MODE",
-        "deploy_proxy --target edge --region eu --version %s" % PREV_RELEASE,
+        "deploy_proxy --target stable --region eu --version %s" % PREV_RELEASE,
     ]
     out = capsys.readouterr().out
     account_at, d1_at = (
@@ -616,13 +618,13 @@ def after(
             "--rollback-outcome",
             rollback_outcome,
             "--out",
-            str(world.dir / "deploy-record-edge-eu.json"),
+            str(world.dir / "deploy-record-stable-eu.json"),
         ]
     )
 
 
 def pointer(world: World) -> dict | None:
-    path = world.bucket / dr.pointer_key("edge", "eu")
+    path = world.bucket / dr.pointer_key("stable", "eu")
     return json.loads(path.read_text()) if path.is_file() else None
 
 
@@ -630,7 +632,7 @@ def test_after_writes_the_full_record_the_summary_and_the_pointer(world):
     assert run_before(world) == 0
     world.set(account=ACCOUNT_NEW, proxy=PROXY_NEW)
     assert after(world) == 0
-    rec = json.loads((world.dir / "deploy-record-edge-eu.json").read_text())
+    rec = json.loads((world.dir / "deploy-record-stable-eu.json").read_text())
     assert rec["good"] is True
     assert rec["account"]["version_before"] == ACCOUNT_OLD
     assert rec["account"]["version_after"] == ACCOUNT_NEW
@@ -638,16 +640,16 @@ def test_after_writes_the_full_record_the_summary_and_the_pointer(world):
     assert rec["smoke_rc"] == 0
     assert rec["executor_manifest"]["fetched_sha256"] == SHA
     summary = (world.tmp / "summary.md").read_text()
-    assert "Deploy record: edge eu (v%s)" % VERSION in summary
+    assert "Deploy record: stable eu (v%s)" % VERSION in summary
     assert BOOKMARK in summary
     assert "NOT GOOD" not in summary
     assert pointer(world) == {
         "release_version": VERSION,
         "version_id": PROXY_NEW,
-        "worker": "edge-rediacc-proxy-eu",
+        "worker": "proxy-eu",
         "recorded_at": rec["recorded_at"],
     }
-    cache = (world.bucket / (dr.pointer_key("edge", "eu") + ".cache-control")).read_text()
+    cache = (world.bucket / (dr.pointer_key("stable", "eu") + ".cache-control")).read_text()
     assert cache == "no-store"
 
 
@@ -666,7 +668,7 @@ def test_after_of_a_deploy_that_is_not_good_records_it_and_writes_no_pointer(
     world.pointer(PREV_RELEASE)
     assert run_before(world) == 0
     assert after(world, smoke=smoke, enable=enable, rollback_outcome=rollback_outcome) == 0
-    rec = json.loads((world.dir / "deploy-record-edge-eu.json").read_text())
+    rec = json.loads((world.dir / "deploy-record-stable-eu.json").read_text())
     assert rec["good"] is False
     assert "NOT GOOD" in (world.tmp / "summary.md").read_text()
     kept = pointer(world)
@@ -686,7 +688,7 @@ def test_after_with_an_unknown_account_version_fails_but_still_writes_the_record
     data["deployments"]["account"] = {"rc": 1, "err": "X [ERROR] rate limited [code: 971]"}
     world.scenario.write_text(json.dumps(data))
     assert after(world) == 1
-    rec = json.loads((world.dir / "deploy-record-edge-eu.json").read_text())
+    rec = json.loads((world.dir / "deploy-record-stable-eu.json").read_text())
     assert rec["account"]["version_after"] == "UNKNOWN"
     assert pointer(world) is None
 
@@ -737,7 +739,7 @@ def sink_after(world: World) -> int:
             "--channel",
             "edge",
             "--out",
-            str(world.dir / "deploy-record-edge-eu.json"),
+            str(world.dir / "deploy-record-stable-eu.json"),
         ]
     )
 
@@ -748,7 +750,7 @@ def test_after_sink_r2_writes_the_record_once_at_the_documented_key(world, monke
     world.set(account=ACCOUNT_NEW, proxy=PROXY_NEW)
     assert after(world) == 0  # writes proxy.json and stage-manifest.json
     assert sink_after(world) == 0
-    key = "release-records/v%s/edge/deploy-record-edge-eu.json" % VERSION
+    key = "release-records/v%s/edge/deploy-record-stable-eu.json" % VERSION
     assert record_keys(world) == [key]
     stored = json.loads((world.bucket / key).read_text())
     assert stored["account"]["smoke_rc"] == 0
@@ -763,7 +765,7 @@ def test_after_sink_r2_refuses_to_overwrite_an_existing_record(world, capsys):
     world.set(account=ACCOUNT_NEW, proxy=PROXY_NEW)
     assert after(world) == 0
     assert sink_after(world) == 0
-    key = world.bucket / ("release-records/v%s/edge/deploy-record-edge-eu.json" % VERSION)
+    key = world.bucket / ("release-records/v%s/edge/deploy-record-stable-eu.json" % VERSION)
     first = key.read_bytes()
     assert sink_after(world) == 1
     assert key.read_bytes() == first
@@ -797,7 +799,7 @@ def test_the_account_record_carries_the_account_smoke_rc_and_no_secret(world, mo
     assert run_before(world) == 0
     world.set(account=ACCOUNT_NEW, proxy=PROXY_NEW)
     assert after(world) == 0
-    rec = json.loads((world.dir / "deploy-record-edge-eu.json").read_text())
+    rec = json.loads((world.dir / "deploy-record-stable-eu.json").read_text())
     assert "smoke_rc" in rec["account"]
     assert "CANARY-secret-value-123" not in json.dumps(rec)
     assert "account smoke rc" in (world.tmp / "summary.md").read_text()
@@ -898,7 +900,7 @@ def test_after_with_a_secret_in_the_record_emits_nothing(world, monkeypatch, cap
     assert run_before(world) == 0
     world.set(account=ACCOUNT_NEW, proxy=PROXY_NEW)
     monkeypatch.setenv("SOME_API_TOKEN", ACCOUNT_NEW)
-    out = world.dir / "deploy-record-edge-eu.json"
+    out = world.dir / "deploy-record-stable-eu.json"
     out.unlink(missing_ok=True)
     (world.tmp / "summary.md").unlink(missing_ok=True)
     capsys.readouterr()
@@ -1030,7 +1032,7 @@ def test_missing_credentials_reexec_under_the_deploy_proxy_profile_when_unbound(
     monkeypatch.delenv("CLOUDFLARE_API_TOKEN")
     monkeypatch.delenv("REDIACC_BWS_PROFILES", raising=False)
     seen = _recording_run(monkeypatch, 7)
-    args = ["before", "--target", "edge", "--region", "eu", "--account-only", "--out", "x.json"]
+    args = ["before", "--target", "stable", "--region", "eu", "--account-only", "--out", "x.json"]
     assert dr.main(args) == 7
     assert seen[0][1:7] == [
         "-m",
@@ -1074,7 +1076,7 @@ def test_a_bound_profile_with_missing_credentials_does_not_reexec_again(monkeypa
     monkeypatch.setattr(dr.subprocess, "run", lambda *_a, **_k: pytest.fail("re-exec"))
     monkeypatch.setitem(dr.VERBS, "before", lambda _args, _root: 3)
     assert (
-        dr.main(["before", "--target", "edge", "--region", "eu", "--account-only", "--out", "x"])
+        dr.main(["before", "--target", "stable", "--region", "eu", "--account-only", "--out", "x"])
         == 3
     )
 
@@ -1084,6 +1086,6 @@ def test_credentials_present_run_in_process_with_no_reexec(monkeypatch):
     monkeypatch.setattr(dr.subprocess, "run", lambda *_a, **_k: pytest.fail("re-exec"))
     monkeypatch.setitem(dr.VERBS, "before", lambda _args, _root: 0)
     assert (
-        dr.main(["before", "--target", "edge", "--region", "eu", "--account-only", "--out", "x"])
+        dr.main(["before", "--target", "stable", "--region", "eu", "--account-only", "--out", "x"])
         == 0
     )

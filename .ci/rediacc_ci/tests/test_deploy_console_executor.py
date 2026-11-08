@@ -117,7 +117,7 @@ def fake(tmp_path, monkeypatch):
     ("target", "region", "config"),
     [
         ("stable", "us", "wrangler.us.toml"),
-        ("edge", "asia", "wrangler.edge-asia.toml"),
+        ("stable", "asia", "wrangler.asia.toml"),
         ("bench", "eu", "wrangler.bench.toml"),
     ],
 )
@@ -132,7 +132,7 @@ def test_bench_refuses_another_region_and_an_unknown_target_is_refused():
     with pytest.raises(ce.RefusedError, match="not one of"):
         ce.resolve_target(ROOT, "production", "eu")
     with pytest.raises(ce.RefusedError, match="--region mars"):
-        ce.resolve_target(ROOT, "edge", "mars")
+        ce.resolve_target(ROOT, "stable", "mars")
 
 
 def test_secret_names_reads_past_a_banner_and_refuses_other_shapes():
@@ -147,7 +147,7 @@ def test_secret_names_reads_past_a_banner_and_refuses_other_shapes():
 
 
 def test_enable_puts_the_value_on_stdin_never_on_argv_and_reads_it_back(fake, tmp_path):
-    assert ce.main(["--enable", "--target", "edge", "--region", "us"]) == 0
+    assert ce.main(["--enable", "--target", "stable", "--region", "us"]) == 0
     log = calls(fake)
     put = log[0]
     assert put["argv"] == [
@@ -157,9 +157,9 @@ def test_enable_puts_the_value_on_stdin_never_on_argv_and_reads_it_back(fake, tm
         "put",
         "EXECUTOR_MODE",
         "--name",
-        "edge-rediacc-account-us",
+        "account-us",
         "--config",
-        "wrangler.edge-us.toml",
+        "wrangler.us.toml",
     ]
     assert put["stdin"] == "proxy"
     assert put["cwd"] == "account"
@@ -190,7 +190,7 @@ def test_enable_whose_put_fails_stops_before_the_read_back(fake, monkeypatch):
 def test_missing_credentials_refuse_before_any_wrangler_call(fake, monkeypatch):
     monkeypatch.delenv("CLOUDFLARE_API_TOKEN")
     monkeypatch.setenv("REDIACC_BWS_PROFILES", "deploy-proxy")
-    assert ce.main(["--enable", "--target", "edge", "--region", "eu"]) == 1
+    assert ce.main(["--enable", "--target", "stable", "--region", "eu"]) == 1
     assert calls(fake) == []
 
 
@@ -249,7 +249,7 @@ def test_a_profile_list_with_spaces_still_reports_the_profile_bound(fake, monkey
 
 def test_disable_deletes_the_secret_with_no_stdin_and_confirms_it_is_gone(fake, tmp_path):
     (tmp_path / "store.json").write_text(json.dumps(["EXECUTOR_MODE", "OTHER"]))
-    assert ce.main(["--disable", "--target", "edge", "--region", "eu"]) == 0
+    assert ce.main(["--disable", "--target", "stable", "--region", "eu"]) == 0
     log = calls(fake)
     assert log[0]["argv"][:5] == ["--no-install", "wrangler", "secret", "delete", "EXECUTOR_MODE"]
     assert log[0]["stdin"] == ""
@@ -280,13 +280,13 @@ def test_bench_disable_names_the_bench_worker(fake):
     assert ce.main(["--disable", "--target", "bench"]) == 0
     assert calls(fake)[0]["argv"][5:9] == [
         "--name",
-        "rediacc-account-bench",
+        "account-bench",
         "--config",
         "wrangler.bench.toml",
     ]
 
 
 def test_enable_and_disable_are_mutually_exclusive_and_one_is_required(fake):
-    assert ce.main(["--enable", "--disable", "--target", "edge", "--region", "eu"]) == 2
-    assert ce.main(["--target", "edge", "--region", "eu"]) == 2
+    assert ce.main(["--enable", "--disable", "--target", "stable", "--region", "eu"]) == 2
+    assert ce.main(["--target", "stable", "--region", "eu"]) == 2
     assert calls(fake) == []

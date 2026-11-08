@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Switch one target's console executor on or off: the account Worker's EXECUTOR_MODE secret (agent/plans/PLAN-proxy-cd-six-targets.md, Design item 2, box D2).
 
-    PYTHONPATH=.ci python3 -m rediacc_ci.deploy.console_executor --enable --target edge|stable --region eu|us|asia
-    PYTHONPATH=.ci python3 -m rediacc_ci.deploy.console_executor --disable --target edge|stable|bench [--region eu]
+    PYTHONPATH=.ci python3 -m rediacc_ci.deploy.console_executor --enable --target stable --region eu|us|asia
+    PYTHONPATH=.ci python3 -m rediacc_ci.deploy.console_executor --disable --target stable|bench [--region eu]
 
 THE SWITCH. EXECUTOR_MODE is never a `[vars]` entry (the account wrangler-config gate refuses one): CD owns it as a Worker secret. `--enable` runs `wrangler secret put EXECUTOR_MODE` with the value `proxy` on wrangler's STDIN, never on argv. `--disable` runs `wrangler secret delete EXECUTOR_MODE`, after which the Worker falls back to its default mode, which a deployed Worker refuses with the coded `CONSOLE_EXECUTION_UNAVAILABLE` 503. A secret survives later account deploys, so a region stays open across releases once its proxy smoke has passed, and CD's rollback step closes it again.
 
@@ -10,7 +10,7 @@ CD runs `--enable` only after that target's proxy smoke passes (operator ruling 
 
 EVERY SWITCH IS READ BACK. A put or delete that exits 0 is not taken as the answer: `wrangler secret list --format json` must then name EXECUTOR_MODE after an enable and must not name it after a disable. A listing that fails or does not parse is UNKNOWN, and unknown exits 1, because "the region is closed" is a claim this module only makes after reading it. A delete of a secret that was never set fails in wrangler, and the read-back turns that into "already closed" (exit 0), so a disable is idempotent.
 
-THE TARGET. `--target` and `--region` name one account config, `workers/account/wrangler.<region>.toml` for stable, `wrangler.edge-<region>.toml` for edge and `wrangler.bench.toml` for bench (eu only); the Worker name is read from that file's `name` and passed to wrangler as `--name` next to `--config`, so the call names its Worker twice and cannot land on another.
+THE TARGET. `--target` and `--region` name one account config, `workers/account/wrangler.<region>.toml` for stable (the one shared Worker set of a region) and `wrangler.bench.toml` for bench (eu only); the Worker name is read from that file's `name` and passed to wrangler as `--name` next to `--config`, so the call names its Worker twice and cannot land on another.
 
 ENVIRONMENT. `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`, from CD's Bitwarden step. A bare local call needs the `deploy-proxy` bws profile (bench: `deploy-proxy-bench`): when either variable is unset and that profile is not bound, the run re-executes itself under `bws_env exec --profile <profile>`, so no wrapper is typed.
 """
@@ -36,10 +36,9 @@ SELF = "rediacc_ci.deploy.console_executor"
 MODE_KEY = "EXECUTOR_MODE"
 MODE_VALUE = "proxy"
 
-EDGE_TARGET = "edge"
 STABLE_TARGET = "stable"
 BENCH_TARGET = "bench"
-TARGETS = (EDGE_TARGET, STABLE_TARGET, BENCH_TARGET)
+TARGETS = (STABLE_TARGET, BENCH_TARGET)
 BENCH_REGION = "eu"
 
 ACCOUNT_SUBDIR = ("workers", "account")
@@ -102,8 +101,6 @@ def account_config(target: str, region: str) -> str:
     """The account wrangler config file name for one target."""
     if target == BENCH_TARGET:
         return "wrangler.bench.toml"
-    if target == EDGE_TARGET:
-        return "wrangler.edge-%s.toml" % region
     return "wrangler.%s.toml" % region
 
 
@@ -294,7 +291,7 @@ def _parser() -> argparse.ArgumentParser:
     switch = parser.add_mutually_exclusive_group(required=True)
     switch.add_argument("--enable", action="store_true", help="put EXECUTOR_MODE=proxy")
     switch.add_argument("--disable", action="store_true", help="delete EXECUTOR_MODE")
-    parser.add_argument("--target", required=True, help="edge, stable or bench")
+    parser.add_argument("--target", required=True, help="stable or bench")
     parser.add_argument("--region", default=None, help="eu, us or asia (bench: eu only)")
     return parser
 
