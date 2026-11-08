@@ -161,7 +161,7 @@ USAGE = "Usage: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.clone_d1 --source <d
 #
 # `--drop-tables a,b` EMPTIES those tables' ROWS in the target inside the same import (a `DELETE FROM` after the dump, under the FK pragmas), and leaves their schema: the seed of a new region keeps its migrations aligned and drops the rows that would claim objects the new bucket does not hold. Each name must be a plain SQL identifier, because it is interpolated into the import file.
 #
-# `--row-parity` compares per-table row counts of source and target after the import (`PARITY_TABLES_SQL`, then one `UNION ALL` count over every table), and fails the run on any difference. A table named by `--drop-tables` is expected to hold 0 rows in the target. This reads rows rather than trusting the FK check, which cannot see a table that arrived short.
+# `--row-parity` compares per-table row counts of source and target after the import (`PARITY_TABLES_SQL`, then `UNION ALL` counts of PARITY_CHUNK tables per query), and fails the run on any difference. A table named by `--drop-tables` is expected to hold 0 rows in the target. This reads rows rather than trusting the FK check, which cannot see a table that arrived short.
 TABLE_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 # D1 refuses a long compound SELECT (`too many terms in compound SELECT: SQLITE_ERROR [code: 7500]`, measured 2026-11-08 at 15 arms on the 84-table bench database while 4 passed), so the count query runs PARITY_CHUNK tables at a time.
 PARITY_CHUNK = 4

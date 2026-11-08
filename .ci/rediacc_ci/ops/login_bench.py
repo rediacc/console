@@ -1,17 +1,17 @@
-"""Headless login of the eu-bench config into https://bench.rediacc.com with the operator's own bench account.
+"""Headless login of the eu-bench config into the bench origin (`BENCH_ORIGIN`) with the operator's own bench account.
 
     npm run login:bench
     PYTHONPATH=.ci python3 -m rediacc_ci.ops.login_bench [--server URL] [--config NAME]
 
-BENCH ONLY (operator order 2026-10-27). The run refuses, with a named error and exit 2, any server other than https://bench.rediacc.com and any rdc config other than eu-bench, before it reads a credential. Edge and stable keep human login; no profile binds an account for them.
+BENCH ONLY (operator order 2026-10-27). The run refuses, with a named error and exit 2, any server other than the bench origin (`BENCH_ORIGIN`) and any rdc config other than eu-bench, before it reads a credential. Edge and stable keep human login; no profile binds an account for them.
 
 THE STEPS, in order:
 
   1. Re-execute under the `bench-login` Bitwarden profile (`rediacc_ci.core.bws_env exec`), unless it is already bound. The profile binds REDIACC_BENCH_EMAIL, REDIACC_BENCH_PASSWORD, REDIACC_BENCH_TOTP_SEED and REDIACC_BENCH_MASTER_PASSWORD.
   2. Refuse a value that is unset or still the placeholder `PLACEHOLDER-operator-fills`, naming its Bitwarden entry, before anything else runs.
   3. Refresh the bench IP allowlist (`rediacc_ci.ops.bench_access add-current`, which binds its own `bench-access` profile). The four bench values are removed from that child's environment.
-  4. Compute the six-digit TOTP code in memory (`rediacc_ci.ops.totp`), waiting for the next 30 s window when fewer than `MIN_WINDOW_LEFT` seconds remain, then run `./rdc.sh --config eu-bench subscription login --server https://bench.rediacc.com` with REDIACC_LOGIN_EMAIL, REDIACC_LOGIN_PASSWORD and REDIACC_LOGIN_TOTP in the child environment.
-  5. Run `./rdc.sh --config eu-bench config remote enable --master-password --config-id <CONFIG_ID> --api-url https://bench.rediacc.com` with REDIACC_STORE_MASTER_PASSWORD in the child environment, unless `config remote status` already reports the config connected to CONFIG_ID on bench: enable refuses a linked config ("nothing to enable", exit 2, measured 2026-10-27 on the first live run), so a second run skips the step instead of failing on it.
+  4. Compute the six-digit TOTP code in memory (`rediacc_ci.ops.totp`), waiting for the next 30 s window when fewer than `MIN_WINDOW_LEFT` seconds remain, then run `./rdc.sh --config eu-bench subscription login --server <BENCH_ORIGIN>` with REDIACC_LOGIN_EMAIL, REDIACC_LOGIN_PASSWORD and REDIACC_LOGIN_TOTP in the child environment.
+  5. Run `./rdc.sh --config eu-bench config remote enable --master-password --config-id <CONFIG_ID> --api-url <BENCH_ORIGIN>` with REDIACC_STORE_MASTER_PASSWORD in the child environment, unless `config remote status` already reports the config connected to CONFIG_ID on bench: enable refuses a linked config ("nothing to enable", exit 2, measured 2026-10-27 on the first live run), so a second run skips the step instead of failing on it.
   6. Print `./rdc.sh --config eu-bench config remote status`.
 
 WHOSE STEP IT IS. Running this is an agent's own step, never an operator one: when an eu-bench command answers that its login is "tied to another network address", that the IP address changed, or "Not logged in", the remedy is `npm run login:bench` and a rerun, not a request for an authenticator code. `rediacc_ci.ops.live_proof` does that itself (`login_needed`, `targets_config`, `REMEDY_ARGV`).

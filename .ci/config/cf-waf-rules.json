@@ -9,7 +9,8 @@
     "free-license-rate is agent/plans/PLAN-free-license.md R10 and F8: the D1 counter",
     "(8 new FREE licences per IP key per 72 h) is the real bound, and this rule stops a",
     "flood before it reaches D1.",
-    "A zone is named by its zoneId; its display name is the apex domain (WK_APEX_DOMAIN) unless `domain` says `product` (WK_PRODUCT_DOMAIN) or a `name` is given. The applier refuses a zone whose name does not cover every account host: the account routes moved to the product zone in the product-domain rename."
+    "A zone is named by its zoneId; its display name is the apex domain (WK_APEX_DOMAIN) unless `domain` says `product` (WK_PRODUCT_DOMAIN) or a `name` is given. The applier refuses a zone whose name does not cover every account host: the account routes moved to the product zone in the product-domain rename.",
+    "The product zone's current Cloudflare plan refuses this rule's 600 s period (\"can only use a period among [10]\", measured 2026-11-08), so the rule is not live there yet; the zone plan or the numbers are the operator's call, and the D1 counter remains the bound meanwhile."
   ],
   "zones": [
     {
