@@ -558,8 +558,9 @@ def test_lf2_a_ready_local_batch_blocks_with_the_batch_open_sequence(lrepo):
     text, blocking = wl_checks.loop_next_text(st, lrepo, {}, False, me="d778be9d")
     assert blocking is True, text
     assert text.startswith("LOOP NEXT: the turbo batch on %s is complete" % BRANCH), text
+    # PLAN-ciquick-green-then-batch G4: the batch opens with ci:quick alone; the duplicate `npm run ci` step is gone.
+    assert "npm run ci   " not in text, text
     order = [
-        "npm run ci   ",
         "npm run ci:quick",
         "droppedTouched",
         "rediacc_ci.testrun.e2e --workers 1",
