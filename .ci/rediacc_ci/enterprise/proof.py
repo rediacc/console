@@ -12,7 +12,7 @@ NAMES STAY OUT OF THE OUTPUT. Companies are printed by their opaque `c<hex>` id,
 
 THE LAB. `Lab` is the protocol the verbs need. The live binding is `rediacc_ci.enterprise.lab.build(bench=...)`, built over the add, lifecycle, deploy and ring modules (boxes C1, C2, D1, K2, S2); until that module exists, `main` exits 2 and names it rather than claiming anything. The tests drive every verb through a recording fake.
 
-EXIT CODES. 0 every claim holds; 1 a claim is broken or none was recorded; 2 the proof could not start (usage, a verb run off bench, no live lab).
+EXIT CODES. 0 at least one claim held and none is broken (a skipped claim is reported and counted, and is neither held nor broken); 1 a claim is broken, or none held (none recorded, or every one skipped); 2 the proof could not start (usage, a verb run off bench, no live lab).
 """
 
 from __future__ import annotations
@@ -244,6 +244,10 @@ class Proof:
     @property
     def broken(self) -> list[Outcome]:
         return [o for o in self.outcomes if not o.ok]
+
+    @property
+    def held(self) -> list[Outcome]:
+        return [o for o in self.outcomes if o.ok and not o.skipped]
 
 
 # -- the verbs --------------------------------------------------------------------
@@ -667,7 +671,7 @@ def workflow_remove_calls(root: pathlib.Path) -> list[str]:
     """Each `<file>:<line>` in a workflow or composite action calling `enterprise remove`; a continued command counts at its first line."""
     out: list[str] = []
     for path in workflow_files(root):
-        rel = path.name if path.parent.name == "workflows" else path.relative_to(root / ".github")
+        rel = path.relative_to(root / ".github")
         for n, line in _logical_lines(path.read_text(encoding="utf-8")):
             if WORKFLOW_REMOVE.search(line):
                 out.append(f"{rel}:{n}")
@@ -705,7 +709,11 @@ def verb_remove(lab: Lab, p: Proof, *, bench: bool, root: pathlib.Path | None = 
     left = lab.leftovers(gone)
     p.check("the removed company leaves nothing", ok=not left, detail=f"{left}")
     base = root or _repo_root()
-    p.check("workflows were scanned", ok=workflow_files(base), detail="no workflow file found")
+    p.check(
+        "workflows were scanned",
+        ok=list((base / ".github" / "workflows").glob("*.y*ml")),
+        detail="no .github/workflows file found",
+    )
     calls = workflow_remove_calls(base)
     p.check("no workflow calls enterprise remove", ok=not calls, detail=", ".join(calls))
 
@@ -742,7 +750,7 @@ PRODUCTION_VERBS: frozenset[str] = frozenset({"keys"})
 
 
 def run_verb(verb: str, lab: Lab, *, bench: bool, out: Callable[[str], None] = print) -> int:
-    """Run one verb and print its claims. 0 all hold, 1 any broken or none recorded."""
+    """Run one verb and print its claims. 0 at least one held and none broken, 1 any broken or none held."""
     p = Proof()
     try:
         VERBS[verb](lab, p, bench=bench)
@@ -762,7 +770,9 @@ def run_verb(verb: str, lab: Lab, *, bench: bool, out: Callable[[str], None] = p
     skipped = sum(o.skipped for o in p.outcomes)
     tail = f", {skipped} skipped" if skipped else ""
     out(f"proof {verb}: {len(p.outcomes)} claim(s), {broken} broken{tail}")
-    return 1 if broken else 0
+    if not p.held and not broken:
+        out(f"proof {verb}: no claim held, every claim was skipped")
+    return 0 if p.held and not broken else 1
 
 
 def load_lab(*, bench: bool) -> Lab | None:

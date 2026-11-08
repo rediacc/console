@@ -576,7 +576,7 @@ def test_workflow_scan_finds_a_remove_call(tmp_path: pathlib.Path) -> None:
         "steps:\n  - run: ./run.sh enterprise remove cabc\n", encoding="utf-8"
     )
     (wf / "b.yaml").write_text("steps:\n  - run: ./run.sh enterprise release\n", encoding="utf-8")
-    assert proof.workflow_remove_calls(tmp_path) == ["a.yml:2"]
+    assert proof.workflow_remove_calls(tmp_path) == ["workflows/a.yml:2"]
 
 
 def test_no_workflow_in_this_tree_calls_enterprise_remove() -> None:
@@ -721,7 +721,7 @@ def test_workflow_scan_joins_backslash_continuations(tmp_path: pathlib.Path) -> 
         "steps:\n  - run: ./run.sh enterprise \\\n      remove cabc\n  - run: echo hi\n",
         encoding="utf-8",
     )
-    assert proof.workflow_remove_calls(tmp_path) == ["a.yml:2"]
+    assert proof.workflow_remove_calls(tmp_path) == ["workflows/a.yml:2"]
 
 
 def test_workflow_scan_reads_composite_actions(tmp_path: pathlib.Path) -> None:
@@ -764,3 +764,46 @@ def test_keys_issues_licences_on_bench() -> None:
     assert rc == 0
     assert "issue:licence" in lab.calls
     assert not any(line.startswith("skipped") for line in lines)
+
+
+def test_a_run_of_only_skipped_claims_does_not_exit_zero() -> None:
+    def only_skips(lab: object, p: proof.Proof, *, bench: bool) -> None:
+        del lab, bench
+        p.skip("a: licence", "bench-only")
+
+    proof.VERBS["only-skips-for-test"] = only_skips
+    try:
+        lines: list[str] = []
+        lab = cast("proof.Lab", FakeLab())
+        rc = proof.run_verb("only-skips-for-test", lab, bench=False, out=lines.append)
+    finally:
+        del proof.VERBS["only-skips-for-test"]
+    assert rc == 1
+    assert "1 skipped" in lines[-2]
+    assert "no claim held" in lines[-1]
+
+
+def test_a_production_keys_run_counts_its_held_claims_apart_from_skips() -> None:
+    p = proof.Proof()
+    proof.verb_keys(cast("proof.Lab", FakeLab()), p, bench=False)
+    assert p.held
+    assert all(o.skipped for o in p.outcomes if "licence is issued" in o.claim)
+    assert not any(o.skipped for o in p.held)
+
+
+def test_remove_fails_when_only_composite_actions_exist(tmp_path: pathlib.Path) -> None:
+    act = tmp_path / ".github" / "actions" / "tidy"
+    act.mkdir(parents=True)
+    (act / "action.yml").write_text("runs:\n  steps:\n    - run: echo hi\n", encoding="utf-8")
+    p = proof.Proof()
+    proof.verb_remove(cast("proof.Lab", FakeLab()), p, bench=True, root=tmp_path)
+    assert any(o.claim == "workflows were scanned" and not o.ok for o in p.outcomes)
+
+
+def test_a_composite_action_named_workflows_keeps_its_path(tmp_path: pathlib.Path) -> None:
+    act = tmp_path / ".github" / "actions" / "workflows"
+    act.mkdir(parents=True)
+    (act / "action.yml").write_text(
+        "runs:\n  steps:\n    - run: ./run.sh enterprise remove c1\n", encoding="utf-8"
+    )
+    assert proof.workflow_remove_calls(tmp_path) == ["actions/workflows/action.yml:3"]
