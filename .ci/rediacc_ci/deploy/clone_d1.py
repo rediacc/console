@@ -111,6 +111,7 @@ A FOURTH, SMALLER ONE, STATED RATHER THAN HIDDEN: `$CONFIG_FLAG` unquoted is sub
 from __future__ import annotations
 
 import contextlib
+import json
 import os
 import re
 import shutil
@@ -154,7 +155,18 @@ FK_RESULTS_JQ = ".[0].results"
 FK_COMMAND = "PRAGMA foreign_key_check"
 
 # The usage line (twin :50), which is also the only place `--wrangler-config` is documented. `--sanitize` is absent from it; see DEFECT D. `PYTHONPATH=.ci` is part of the command: run from the repository root without it, `python3 -m` cannot find `rediacc_ci` (review finding 08928e86.2).
-USAGE = "Usage: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.clone_d1 --source <db-name> --target <db-name> [--wrangler-config <path>]"
+USAGE = "Usage: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.clone_d1 --source <db-name> --target <db-name> [--wrangler-config <path>] [--drop-tables <t1,t2,...>] [--row-parity]"
+
+# THE TWO OPT-IN ADDITIONS (PLAN-product-domain-rename W2), both absent from the twin and off unless asked, so a run without them is byte-identical to the frozen twin.
+#
+# `--drop-tables a,b` EMPTIES those tables' ROWS in the target inside the same import (a `DELETE FROM` after the dump, under the FK pragmas), and leaves their schema: the seed of a new region keeps its migrations aligned and drops the rows that would claim objects the new bucket does not hold. Each name must be a plain SQL identifier, because it is interpolated into the import file.
+#
+# `--row-parity` compares per-table row counts of source and target after the import (`PARITY_TABLES_SQL`, then one `UNION ALL` count over every table), and fails the run on any difference. A table named by `--drop-tables` is expected to hold 0 rows in the target. This reads rows rather than trusting the FK check, which cannot see a table that arrived short.
+TABLE_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+PARITY_TABLES_SQL = (
+    "SELECT name FROM sqlite_master WHERE type = 'table' "
+    "AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '\\_cf\\_%' ESCAPE '\\' ORDER BY name"
+)
 
 # The one variable `require_var` demands (twin :54). The header claims two; see
 # DEFECT C.
@@ -181,10 +193,10 @@ class BashExitError(Exception):
         self.code = code
 
 
-def parse_argv(argv: list[str]) -> tuple[str, str, str, bool]:
+def parse_argv(argv: list[str]) -> tuple[str, str, str, bool, list[str], bool]:
     """The `while [[ $# -gt 0 ]]` loop (twin :24-47).
 
-    Returns `(source, target, wrangler_config, sanitize)`.
+    Returns `(source, target, wrangler_config, sanitize, drop_tables, row_parity)`.
 
     LAST FLAG WINS, because each arm assigns rather than appends: `--source a --source b` clones `b`. That is bash's behaviour here and it is reproduced rather than turned into an error.
 
@@ -194,11 +206,13 @@ def parse_argv(argv: list[str]) -> tuple[str, str, str, bool]:
     target_db = ""
     wrangler_config = ""
     sanitize = False
+    drop_tables: list[str] = []
+    row_parity = False
 
     index = 0
     while index < len(argv):
         flag = argv[index]
-        if flag in ("--source", "--target", "--wrangler-config"):
+        if flag in ("--source", "--target", "--wrangler-config", "--drop-tables"):
             if index + 1 >= len(argv):
                 print(
                     "%s: %s: $2: unbound variable" % (SELF, flag),
@@ -211,16 +225,27 @@ def parse_argv(argv: list[str]) -> tuple[str, str, str, bool]:
                 source_db = value
             elif flag == "--target":
                 target_db = value
+            elif flag == "--drop-tables":
+                drop_tables = [name for name in value.split(",") if name]
+                bad = [name for name in drop_tables if not TABLE_NAME.match(name)]
+                if bad:
+                    log.error(
+                        "--drop-tables names a table that is not a plain identifier: %s" % bad[0]
+                    )
+                    raise BashExitError(1)
             else:
                 wrangler_config = value
             index += 2
+        elif flag == "--row-parity":
+            row_parity = True
+            index += 1
         elif flag == "--sanitize":
             sanitize = True
             index += 1
         else:
             log.error("Unknown argument: %s" % flag)
             raise BashExitError(1)
-    return source_db, target_db, wrangler_config, sanitize
+    return source_db, target_db, wrangler_config, sanitize, drop_tables, row_parity
 
 
 def config_flag_words(wrangler_config: str) -> list[str]:
@@ -410,7 +435,22 @@ def sanitize(tmpdir: str, root: str) -> None:
     log.info("Sanitized (%s lines)" % wc_lines(export_sql))
 
 
-def build_import_sql(tmpdir: str) -> None:
+def quoted(name: str) -> str:
+    """A table name as a quoted SQL identifier. Only a name that passed `TABLE_NAME` reaches here, so there is nothing to escape."""
+    return f'"{name}"'
+
+
+def delete_rows_statement(name: str) -> str:
+    """The `--drop-tables` statement for one table: its rows only, never the table."""
+    return "".join(("DELETE FROM ", quoted(name), ";\n"))
+
+
+def count_select(name: str) -> str:
+    """One arm of the per-table count query: the table's name as data and its row count."""
+    return "".join(("SELECT '", name, "' AS t, COUNT(*) AS n FROM ", quoted(name)))
+
+
+def build_import_sql(tmpdir: str, drop_tables: list[str] | None = None) -> None:
     """Steps 2 and 3 (twin :126-138).
 
     The strip is IN PLACE on `export.sql` and runs whether or not `--sanitize` was asked for. The DROP statements are generated FROM the stripped file, so a table the strip removed cannot be dropped, and the dump is then appended whole. Order inside `import.sql` is: two pragmas, every DROP, the dump, one
@@ -431,6 +471,8 @@ def build_import_sql(tmpdir: str) -> None:
         out.flush()
         _run(["cat", export_sql], stdout=out)
         out.flush()
+        # `--drop-tables`: rows only, after the dump, still under the FK pragmas of the header.
+        out.writelines(delete_rows_statement(name).encode("utf-8") for name in drop_tables or [])
         out.writelines(("%s\n" % line).encode("utf-8") for line in IMPORT_FOOTER)
 
 
@@ -539,11 +581,96 @@ def bash_arithmetic_gt_zero(text: str) -> bool:
     return False
 
 
+def query_argv(db: str, config_words: list[str], sql: str) -> list[str]:
+    """`wrangler d1 execute <db> --remote [--config ..] --command=<sql> --json`."""
+    return [
+        *wrangler.ARGV,
+        "d1",
+        "execute",
+        db,
+        "--remote",
+        *config_words,
+        "--command=%s" % sql,
+        "--json",
+    ]
+
+
+def _query_rows(db: str, config_words: list[str], sql: str) -> list[dict]:
+    """The result rows of one read-only query; a failed wrangler or unreadable answer raises BashExitError(1) with the reason, never an empty answer."""
+    status, out = _capture(query_argv(db, config_words, sql), stderr=subprocess.DEVNULL)
+    if status:
+        log.error("row parity: wrangler d1 execute %s failed (exit %d)" % (db, status))
+        raise BashExitError(1)
+    try:
+        return list(json.loads(out)[0]["results"])
+    except (ValueError, LookupError, TypeError):
+        log.error("row parity: the answer for %s is not a D1 result set" % db)
+        raise BashExitError(1) from None
+
+
+def table_counts(db: str, config_words: list[str]) -> dict[str, int]:
+    """Row count of every user table of `db`."""
+    tables = [str(row["name"]) for row in _query_rows(db, config_words, PARITY_TABLES_SQL)]
+    if not tables:
+        return {}
+    for name in tables:
+        if not TABLE_NAME.match(name):
+            log.error(
+                "row parity: %s holds a table whose name is not a plain identifier: %s" % (db, name)
+            )
+            raise BashExitError(1)
+    union = " UNION ALL ".join(count_select(name) for name in tables)
+    return {str(row["t"]): int(row["n"]) for row in _query_rows(db, config_words, union)}
+
+
+def parity_differences(
+    source: dict[str, int], target: dict[str, int], dropped: list[str]
+) -> list[str]:
+    """One line per table whose target count is not the source count (0 for a dropped table), and per table present on one side only."""
+    lines: list[str] = []
+    for name in sorted(set(source) | set(target)):
+        if name not in target:
+            lines.append("%s: missing in the target (source %d rows)" % (name, source[name]))
+            continue
+        if name not in source:
+            lines.append("%s: only in the target (%d rows)" % (name, target[name]))
+            continue
+        want = 0 if name in dropped else source[name]
+        if target[name] != want:
+            lines.append(
+                "%s: source %d, target %d, expected %d" % (name, source[name], target[name], want)
+            )
+    return lines
+
+
+def verify_row_parity(
+    source_db: str, target_db: str, config_words: list[str], dropped: list[str]
+) -> None:
+    """`--row-parity`: raise BashExitError(1) listing every table whose rows differ."""
+    log.step("Verifying per-table row parity: %s -> %s" % (source_db, target_db))
+    source = table_counts(source_db, [])
+    target = table_counts(target_db, config_words)
+    unknown = [name for name in dropped if name not in source]
+    if unknown:
+        log.error("--drop-tables names a table the source does not have: %s" % ", ".join(unknown))
+        raise BashExitError(1)
+    lines = parity_differences(source, target, dropped)
+    if lines:
+        for line in lines:
+            log.error("row parity: %s" % line)
+        raise BashExitError(1)
+    log.info(
+        "Row parity holds: %d tables, %d rows in the source" % (len(source), sum(source.values()))
+    )
+
+
 def main(argv: list[str]) -> int:
     root = str(common.repo_root())
 
     try:
-        source_db, target_db, wrangler_config, wants_sanitize = parse_argv(argv)
+        source_db, target_db, wrangler_config, wants_sanitize, drop_tables, row_parity = parse_argv(
+            argv
+        )
     except BashExitError as exc:
         return exc.code
 
@@ -586,7 +713,7 @@ def main(argv: list[str]) -> int:
             sanitize(tmpdir, root)
 
         # --- Steps 2 and 3: strip, then wrap -------------------------------
-        build_import_sql(tmpdir)
+        build_import_sql(tmpdir, drop_tables)
 
         # --- Step 4: import ------------------------------------------------
         log.step("Importing into D1 database: %s" % target_db)
@@ -599,6 +726,10 @@ def main(argv: list[str]) -> int:
 
         # --- Step 5: verify ------------------------------------------------
         verify_fk(target_db, config_words)
+
+        # --- Step 6: row parity (opt-in) -----------------------------------
+        if row_parity:
+            verify_row_parity(source_db, target_db, config_words, drop_tables)
     except BashExitError as exc:
         return exc.code
     finally:

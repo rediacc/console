@@ -14,6 +14,7 @@ wrong answer, because a `tomllib` port would produce a different one and that is
 from __future__ import annotations
 
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -27,7 +28,7 @@ from rediacc_ci.deploy import deploy_account as port
 from rediacc_ci.ops import portal_captcha as pc
 from rediacc_ci.tests import differential as diff
 from rediacc_ci.tests.twin_names import as_twin
-from rediacc_ci.well_known import ACCOUNT_DEFAULT_ORIGIN, APEX_DOMAIN
+from rediacc_ci.well_known import ACCOUNT_DEFAULT_ORIGIN, PRODUCT_DOMAIN
 
 EU_HOST = urlparse(ACCOUNT_DEFAULT_ORIGIN).netloc
 
@@ -50,6 +51,7 @@ PATH_MINIMUM = ("grep", "head", "sed", "tr", "uname", "dirname")
 
 FAKE_NPX = """#!/usr/bin/python3
 import os
+import re
 import sys
 
 log = os.environ["FAKE_CALL_LOG"]
@@ -67,6 +69,7 @@ sys.stdout.write("Total Upload: 1.00 KiB\\n")
 
 FAKE_NPM = """#!/usr/bin/python3
 import os
+import re
 import sys
 
 log = os.environ["FAKE_CALL_LOG"]
@@ -235,6 +238,19 @@ def run_both(tmp_path: pathlib.Path, root: pathlib.Path, *args: str, **kw):
     return old, new, old_calls, new_calls
 
 
+# THE DIVERGENCES FROM THE FROZEN GOLDEN, on purpose (PLAN-product-domain-rename W2): the twin said `production <region>` because it had a target, and one shared Worker set per region removed the target; its missing-region text listed two regions. `_golden` writes the port's text back into the twin's wording so every OTHER byte is still compared.
+_TARGET_LINES = (
+    (re.compile(r"(Deploying account worker: )(\S+)( \()"), r"\1production \2\3"),
+    (re.compile(r"(Account worker deployed: )(\S+)$", re.MULTILINE), r"\1production \2"),
+)
+
+
+def _golden(text: str) -> str:
+    for pattern, replacement in _TARGET_LINES:
+        text = pattern.sub(replacement, text)
+    return text.replace("--region is required (eu, us, asia)", "--region is required (eu, us)")
+
+
 def _assert_agree(old, new, label: str, old_calls=None, new_calls=None) -> None:
     assert new.returncode == old.returncode, (
         f"{label}: exit diverged: {old.returncode!r} vs {new.returncode!r}"
@@ -242,8 +258,8 @@ def _assert_agree(old, new, label: str, old_calls=None, new_calls=None) -> None:
     assert as_twin(new.stdout) == old.stdout, (
         f"{label}: stdout diverged:\nold: {old.stdout!r}\nnew: {as_twin(new.stdout)!r}"
     )
-    assert as_twin(new.stderr) == old.stderr, (
-        f"{label}: stderr diverged:\nold: {old.stderr!r}\nnew: {as_twin(new.stderr)!r}"
+    assert _golden(as_twin(new.stderr)) == old.stderr, (
+        f"{label}: stderr diverged:\nold: {old.stderr!r}\nnew: {_golden(as_twin(new.stderr))!r}"
     )
     if old_calls is not None:
         assert new_calls == old_calls, (
@@ -320,25 +336,18 @@ def test_the_two_wrangler_calls_are_pinned_in_full(tmp_path: pathlib.Path) -> No
     _assert_agree(old, new, "happy-path", old_calls, new_calls)
 
 
-def test_the_edge_target_selects_the_edge_config(tmp_path: pathlib.Path) -> None:
-    """`--target edge` composes `wrangler.edge-<region>.toml` (:25-26), and the target string is echoed into the two log lines."""
-    root = _fixture_root(tmp_path, configs={"wrangler.edge-eu.toml": FIXTURE_TOML})
-    old, new, old_calls, new_calls = run_both(tmp_path, root, "--region", "eu", "--target", "edge")
-    assert old.returncode == 0, old.stderr
-    assert "--config\twrangler.edge-eu.toml" in old_calls
-    assert "Deploying account worker: edge eu (wrangler.edge-eu.toml)" in old.stderr
-    _assert_agree(old, new, "edge-target", old_calls, new_calls)
-
-
-def test_an_unknown_target_is_silently_production(tmp_path: pathlib.Path) -> None:
-    """THE COMPARISON IS AGAINST THE LITERAL `edge` AND NOTHING ELSE (:25), so a typo deploys the production config while printing the typo."""
+def test_the_target_flag_is_gone(tmp_path: pathlib.Path) -> None:
+    """One shared Worker set per region replaced the production/edge pair, so `--target` is refused like any unknown flag and nothing runs."""
     root = _fixture_root(tmp_path)
-    old, new, old_calls, new_calls = run_both(tmp_path, root, "--region", "eu", "--target", "Edge")
-    assert old.returncode == 0, old.stderr
-    assert "--config\twrangler.eu.toml" in old_calls
-    assert "Deploying account worker: Edge eu (wrangler.eu.toml)" in old.stderr
-    assert port.config_name("eu", "Edge") == "wrangler.eu.toml"
-    _assert_agree(old, new, "unknown-target", old_calls, new_calls)
+    new, calls = _run(PORT, tmp_path, root, ("--region", "eu", "--target", "edge"))
+    assert new.returncode == 2, new.stderr
+    assert "ARG_TARGET" in new.stderr or "--target" in new.stderr, new.stderr
+    assert calls == "", "a refused flag must run nothing"
+
+
+def test_config_name_is_the_region_file_and_nothing_else() -> None:
+    assert port.config_name("eu") == "wrangler.eu.toml"
+    assert port.config_name("asia") == "wrangler.asia.toml"
 
 
 def test_the_token_is_stripped_of_carriage_returns_before_the_child_sees_it(
@@ -380,7 +389,7 @@ def test_a_missing_region_refuses_and_the_divergence_is_bash_only(tmp_path: path
     old, new, old_calls, new_calls = run_both(tmp_path, root)
     assert old.returncode == 1
     assert new.returncode == 1
-    assert old.stderr.endswith(port.MISSING_REGION + "\n")
+    assert old.stderr.endswith(_golden(port.MISSING_REGION) + "\n")
     assert old.stderr != new.stderr
     assert ": line 21: " in old.stderr
     assert new.stderr == port.MISSING_REGION + "\n"
@@ -393,7 +402,7 @@ def test_an_empty_region_refuses_exactly_as_an_absent_one_does(tmp_path: pathlib
     root = _fixture_root(tmp_path)
     old, new, _, _ = run_both(tmp_path, root, "--region=")
     assert old.returncode == new.returncode == 1
-    assert old.stderr.endswith(port.MISSING_REGION + "\n")
+    assert old.stderr.endswith(_golden(port.MISSING_REGION) + "\n")
     assert new.stderr == port.MISSING_REGION + "\n"
 
 
@@ -589,15 +598,16 @@ def test_diagnostics_are_prefixed_with_the_module_name() -> None:
 # --------------------------------------------------------------------------- The services preflight (port only: the twin had none) ---------------------------------------------------------------------------
 
 SERVICES_TOML = (
-    'name = "edge-rediacc-account-eu"\n'
+    'name = "account-eu"\n'
     + FIXTURE_TOML
-    + '\n[[services]]\nbinding = "EXECUTOR"\nservice = "edge-rediacc-proxy-eu"\n'
+    + '\n[[services]]\nbinding = "EXECUTOR"\nservice = "proxy-eu"\n'
 )
 
 # The Cloudflare Workers listing `service_bindings_audit` reads, answered from FAKE_CF_WORKERS (comma list); FAKE_CF_FAIL makes the API refuse. It logs the URL, never a header.
 FAKE_CURL = """#!/usr/bin/python3
 import json
 import os
+import re
 import sys
 
 with open(os.environ["FAKE_CALL_LOG"], "a") as fh:
@@ -619,7 +629,7 @@ def _run_with_curl(tmp_path: pathlib.Path, root: pathlib.Path, **extra: typing.A
         PORT,
         tmp_path,
         root,
-        ("--region", "eu", "--target", "edge"),
+        ("--region", "eu"),
         with_wrangler=True,
         **extra,
     )
@@ -627,31 +637,29 @@ def _run_with_curl(tmp_path: pathlib.Path, root: pathlib.Path, **extra: typing.A
 
 def test_a_missing_service_worker_refuses_before_any_migration(tmp_path: pathlib.Path) -> None:
     """The 2026-10-27 eu edge run: the twin applied 0060-0066, then wrangler refused the deploy with code 10143 because EXECUTOR named a proxy Worker that did not exist. The preflight refuses first, and no migration runs."""
-    root = _fixture_root(tmp_path, configs={"wrangler.edge-eu.toml": SERVICES_TOML})
-    new, calls = _run_with_curl(tmp_path, root, FAKE_CF_WORKERS="edge-rediacc-account-eu")
+    root = _fixture_root(tmp_path, configs={"wrangler.eu.toml": SERVICES_TOML})
+    new, calls = _run_with_curl(tmp_path, root, FAKE_CF_WORKERS="account-eu")
     assert new.returncode == 1, new.stderr
     assert "curl\thttps://api.cloudflare.com/client/v4/accounts/acct/workers/scripts" in calls
     assert "npx" not in calls, "wrangler ran before the refusal"
-    assert "names Worker edge-rediacc-proxy-eu, which does not exist" in new.stderr
-    assert "deploy edge-rediacc-proxy-eu first" in new.stderr
+    assert "names Worker proxy-eu, which does not exist" in new.stderr
+    assert "deploy proxy-eu first" in new.stderr
     assert "no migration was applied" in new.stderr
     assert "Applying migrations" not in new.stderr
 
 
 def test_an_audit_with_no_verdict_refuses_too(tmp_path: pathlib.Path) -> None:
     """rc 77: an account listing that answers nothing confirms nothing, so it refuses as a missing Worker does."""
-    root = _fixture_root(tmp_path, configs={"wrangler.edge-eu.toml": SERVICES_TOML})
+    root = _fixture_root(tmp_path, configs={"wrangler.eu.toml": SERVICES_TOML})
     new, calls = _run_with_curl(tmp_path, root, FAKE_CF_FAIL="1")
     assert new.returncode == 1
     assert "npx" not in calls
-    assert "gave no verdict for workers/account/wrangler.edge-eu.toml" in new.stderr
+    assert "gave no verdict for workers/account/wrangler.eu.toml" in new.stderr
 
 
 def test_an_existing_service_worker_lets_the_deploy_run(tmp_path: pathlib.Path) -> None:
-    root = _fixture_root(tmp_path, configs={"wrangler.edge-eu.toml": SERVICES_TOML})
-    new, calls = _run_with_curl(
-        tmp_path, root, FAKE_CF_WORKERS="edge-rediacc-account-eu,edge-rediacc-proxy-eu"
-    )
+    root = _fixture_root(tmp_path, configs={"wrangler.eu.toml": SERVICES_TOML})
+    new, calls = _run_with_curl(tmp_path, root, FAKE_CF_WORKERS="account-eu,proxy-eu")
     assert new.returncode == 0, new.stderr
     order = [line.split("\t")[0:4] for line in calls.splitlines() if not line.startswith("  ")]
     assert [o[0] for o in order] == ["curl", "npx", "npx"]
@@ -666,8 +674,8 @@ def test_an_unreadable_sibling_config_does_not_block_a_deploy_without_services(
     root = _fixture_root(
         tmp_path,
         configs={
-            "wrangler.edge-eu.toml": 'name = "edge-rediacc-account-eu"\n' + FIXTURE_TOML,
-            "wrangler.eu.toml": "this = is = not toml\n",
+            "wrangler.eu.toml": 'name = "account-eu"\n' + FIXTURE_TOML,
+            "wrangler.us.toml": "this = is = not toml\n",
         },
     )
     new, calls = _run_with_curl(tmp_path, root)
@@ -682,13 +690,11 @@ def test_an_unreadable_sibling_config_does_not_block_a_deploy_with_services(
     root = _fixture_root(
         tmp_path,
         configs={
-            "wrangler.edge-eu.toml": SERVICES_TOML,
-            "wrangler.eu.toml": "this = is = not toml\n",
+            "wrangler.eu.toml": SERVICES_TOML,
+            "wrangler.us.toml": "this = is = not toml\n",
         },
     )
-    new, calls = _run_with_curl(
-        tmp_path, root, FAKE_CF_WORKERS="edge-rediacc-account-eu,edge-rediacc-proxy-eu"
-    )
+    new, calls = _run_with_curl(tmp_path, root, FAKE_CF_WORKERS="account-eu,proxy-eu")
     assert new.returncode == 0, new.stderr
     assert "curl" in calls
 
@@ -696,7 +702,7 @@ def test_an_unreadable_sibling_config_does_not_block_a_deploy_with_services(
 def test_an_unreadable_own_config_still_refuses(tmp_path: pathlib.Path) -> None:
     root = _fixture_root(
         tmp_path,
-        configs={"wrangler.edge-eu.toml": 'database_name = "db"\nthis = is = not toml\n'},
+        configs={"wrangler.eu.toml": 'database_name = "db"\nthis = is = not toml\n'},
     )
     new, calls = _run_with_curl(tmp_path, root)
     assert new.returncode == 1
@@ -709,15 +715,15 @@ def test_an_unreadable_sibling_config_never_blocks_a_config_without_bindings(
 ) -> None:
     acc = tmp_path / "workers" / "account"
     acc.mkdir(parents=True)
-    (acc / "wrangler.edge-eu.toml").write_text('name = "edge-rediacc-account-eu"\n')
-    (acc / "wrangler.edge-us.toml").write_text("not = = toml\n")
+    (acc / "wrangler.eu.toml").write_text('name = "account-eu"\n')
+    (acc / "wrangler.us.toml").write_text("not = = toml\n")
 
     def no_api(_url: str, _token: str) -> dict:
         raise AssertionError("a config with no [[services]] makes no API call")
 
-    port.check_services(tmp_path, "workers/account/wrangler.edge-eu.toml", {}, no_api)
+    port.check_services(tmp_path, "workers/account/wrangler.eu.toml", {}, no_api)
     with pytest.raises(port.ServiceBindingError, match="cannot read the Worker configs"):
-        port.check_services(tmp_path, "workers/account/wrangler.edge-us.toml", {}, no_api)
+        port.check_services(tmp_path, "workers/account/wrangler.us.toml", {}, no_api)
 
 
 def test_a_portal_without_the_sitekey_refuses_before_any_write(tmp_path: pathlib.Path) -> None:
@@ -873,16 +879,11 @@ def test_a_config_without_a_route_is_not_smoked(tmp_path: pathlib.Path) -> None:
     assert port.portal_smoke(config, {}, never, lambda _s: None) is None
 
 
-def test_every_production_and_edge_config_has_a_route_to_smoke() -> None:
+def test_every_region_config_has_a_route_to_smoke() -> None:
     worker = ROOT / "workers" / "account"
     for region in ("eu", "us", "asia"):
-        for target in ("production", "edge"):
-            name = port.config_name(region, target)
-            assert port.route_host(worker / name) == (
-                "%s.%s" % (region, APEX_DOMAIN)
-                if target == "production"
-                else "edge-%s.%s" % (region, APEX_DOMAIN)
-            ), name
+        name = port.config_name(region)
+        assert port.route_host(worker / name) == "%s.%s" % (region, PRODUCT_DOMAIN), name
 
 
 def test_main_fails_a_deploy_whose_served_portal_is_broken(
@@ -921,6 +922,83 @@ def test_the_live_run_removes_only_what_it_planted(tmp_path: pathlib.Path) -> No
     keep = root / "workers" / "account" / "dist" / "other.txt"
     keep.parent.mkdir(parents=True, exist_ok=True)
     keep.write_text("keep", encoding="utf-8")
-    _run(PORT, tmp_path, root, ("--region", "eu", "--target", "edge"))
+    _run(PORT, tmp_path, root, ("--region", "eu"))
     assert keep.read_text(encoding="utf-8") == "keep"
     assert not (root / "workers" / "account" / "dist" / "account").exists()
+
+
+# --------------------------------------------------------------------------- The stub bootstrap (port only: the twin had none) ---------------------------------------------------------------------------
+
+STUB_TOML = 'name = "account-eu"\ncompatibility_date = "2026-01-20"\n' + FIXTURE_TOML
+
+
+def _run_stub(tmp_path: pathlib.Path, root: pathlib.Path, *args: str, **extra: typing.Any):
+    curl = tmp_path / "new-bin" / "curl"
+    curl.parent.mkdir(parents=True, exist_ok=True)
+    curl.write_text(FAKE_CURL, encoding="utf-8")
+    curl.chmod(0o755)
+    return _run(
+        PORT, tmp_path, root, ("--region", "eu", "--stub", *args), with_wrangler=True, **extra
+    )
+
+
+def test_the_stub_uploads_a_routeless_worker_under_the_configs_name(tmp_path: pathlib.Path) -> None:
+    root = _fixture_root(tmp_path, configs={"wrangler.eu.toml": STUB_TOML})
+    new, calls = _run_stub(tmp_path, root, FAKE_CF_WORKERS="proxy-eu")
+    assert new.returncode == 0, new.stderr
+    npx = [line for line in calls.splitlines() if line.startswith("npx\t")]
+    assert len(npx) == 1, calls
+    argv = npx[0].split("\t")
+    assert argv[1:5] == ["--no-install", "wrangler", "deploy", "--config"], argv
+    assert argv[5].endswith("/wrangler.toml")
+    assert "wrangler.eu.toml" not in argv[5]
+    assert "d1" not in calls, "a stub runs no migration"
+    assert "Account stub deployed: account-eu" in new.stderr
+
+
+def test_the_stub_refuses_to_replace_a_live_worker(tmp_path: pathlib.Path) -> None:
+    root = _fixture_root(tmp_path, configs={"wrangler.eu.toml": STUB_TOML})
+    new, calls = _run_stub(tmp_path, root, FAKE_CF_WORKERS="account-eu,proxy-eu")
+    assert new.returncode == 1
+    assert "Worker account-eu already exists on the account" in new.stderr
+    assert "npx" not in calls, "the stub must not reach wrangler over a live Worker"
+
+
+def test_the_stub_refuses_when_the_account_cannot_be_read(tmp_path: pathlib.Path) -> None:
+    root = _fixture_root(tmp_path, configs={"wrangler.eu.toml": STUB_TOML})
+    new, calls = _run_stub(tmp_path, root, FAKE_CF_FAIL="1")
+    assert new.returncode == 1
+    assert "cannot list the account's Workers" in new.stderr
+    assert "npx" not in calls
+
+
+def test_the_stub_dry_run_prints_the_command_and_reaches_nothing(tmp_path: pathlib.Path) -> None:
+    root = _fixture_root(tmp_path, configs={"wrangler.eu.toml": STUB_TOML})
+    new, calls = _run(PORT, tmp_path, root, ("--region", "eu", "--stub", "--dry-run"))
+    assert new.returncode == 0, new.stderr
+    assert calls == ""
+    assert "would run: npx --no-install wrangler deploy --config " in new.stdout
+    assert "DRY RUN: stub account-eu (wrangler.eu.toml)" in new.stderr
+
+
+def test_the_stub_config_carries_only_name_main_and_date() -> None:
+    text = port.stub_config_text("account-eu", "2026-01-20")
+    assert text == 'name = "account-eu"\nmain = "index.js"\ncompatibility_date = "2026-01-20"\n'
+    for forbidden in ("routes", "services", "d1_databases", "triggers", "migrations", "vars"):
+        assert forbidden not in text
+
+
+def test_the_stub_source_exports_both_entrypoints_and_answers_503() -> None:
+    assert "export class CloudflareInternal extends WorkerEntrypoint" in port.STUB_SOURCE
+    assert "export class ExecutorIssuer extends WorkerEntrypoint" in port.STUB_SOURCE
+    assert "status: 503" in port.STUB_SOURCE
+
+
+def test_the_stub_needs_a_name_and_a_compatibility_date(tmp_path: pathlib.Path) -> None:
+    config = tmp_path / "c.toml"
+    config.write_text('name = "x"\n', encoding="utf-8")
+    with pytest.raises(port.StubError, match="no name or compatibility_date"):
+        port.read_worker_identity(config)
+    config.write_text("not = = toml\n", encoding="utf-8")
+    with pytest.raises(port.StubError, match="cannot read"):
+        port.read_worker_identity(config)

@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import hashlib
 import inspect
+import json
 import os
 import re
 import shutil
@@ -147,6 +148,16 @@ if rest[:2] == ["d1", "execute"]:
     if os.environ.get("FAKE_EXECUTE_FAILS_ON") == str(call_index):
         sys.stderr.write("wrangler: execute refused (fixture)\n")
         sys.exit(3)
+    commands = [a.split("=", 1)[1] for a in rest if a.startswith("--command=")]
+    if commands and commands[0].startswith("SELECT"):
+        # The `--row-parity` reads. FAKE_COUNTS maps a database name to {table: rows}.
+        counts = json.loads(os.environ.get("FAKE_COUNTS", "{}")).get(rest[2], {})
+        if commands[0].startswith("SELECT name FROM sqlite_master"):
+            rows = [{"name": name} for name in sorted(counts)]
+        else:
+            rows = [{"t": name, "n": n} for name, n in sorted(counts.items())]
+        sys.stdout.write(json.dumps([{"results": rows}]) + "\n")
+        sys.exit(0)
     if "--json" in rest:
         mode = os.environ.get("FAKE_FK", "clean")
         if mode == "silent":
@@ -469,14 +480,22 @@ def test_the_generated_import_sql_is_byte_identical(tmp_path) -> None:
 # --------------------------------------------------------------------------- Argument handling ---------------------------------------------------------------------------
 
 
+# The twin's usage line, which the frozen golden holds: the port's own adds the two opt-in options.
+TWIN_USAGE = port.USAGE.replace(" [--drop-tables <t1,t2,...>] [--row-parity]", "")
+
+
 def test_a_missing_source_or_target_is_the_usage_line_and_exit_1(tmp_path) -> None:
     for args in (("--source", "a"), ("--target", "b"), ()):
         _root, old, new = run_both(tmp_path, args=args)
-        _agree(old, new, f"usage-{args}")
-        proc, calls = old
-        assert proc.returncode == 1
-        assert proc.stderr == "✗ %s\n" % as_twin(port.USAGE)
-        assert _calls(calls) == [], "nothing may run before the arguments are known"
+        old_proc, old_calls = old
+        new_proc, new_calls = new
+        assert old_proc.returncode == new_proc.returncode == 1
+        assert old_proc.stdout == new_proc.stdout
+        assert old_proc.stderr == "✗ %s\n" % as_twin(TWIN_USAGE)
+        assert new_proc.stderr == "✗ %s\n" % port.USAGE
+        assert _calls(old_calls) == _calls(new_calls) == [], (
+            "nothing may run before the arguments are known"
+        )
 
 
 def test_an_unknown_argument_names_itself_and_exits_1(tmp_path) -> None:
@@ -814,3 +833,113 @@ def test_the_usage_line_runs_as_printed_from_the_repository_root() -> None:
     )
     assert proc.returncode == 1, proc.stderr
     assert proc.stderr == "✗ %s\n" % port.USAGE
+
+
+# --------------------------------------------------------------------------- The two opt-in additions: --drop-tables and --row-parity ---------------------------------------------------------------------------
+
+SEED_ARGS = ("--source", "account-eu-src", "--target", "account-eu")
+
+
+def _port_only(tmp_path, *, args, **extra):
+    """The port alone: these options do not exist in the twin, so there is no golden to agree with."""
+    root = fixture(tmp_path)
+    proc, calls = _run_live(root, "new", args=args, **extra)
+    return root, proc, calls
+
+
+def test_drop_tables_empties_those_rows_after_the_dump_and_keeps_the_schema(tmp_path) -> None:
+    _root, proc, _calls_log = _port_only(
+        tmp_path,
+        args=(*SEED_ARGS, "--drop-tables", "sessions,users"),
+        FAKE_STASH_FILE=str(tmp_path / "import.sql"),
+    )
+    assert proc.returncode == 0, proc.stderr
+    sql = (tmp_path / "import.sql").read_text(encoding="utf-8")
+    assert sql.endswith(
+        'DELETE FROM "sessions";\nDELETE FROM "users";\nPRAGMA foreign_keys=ON;\n'
+    ), sql
+    # Rows go, the schema stays: the CREATE statements are untouched and no extra DROP is generated.
+    assert sql.count("DROP TABLE IF EXISTS") == 2
+    assert "CREATE TABLE `sessions`" in sql
+
+
+def test_without_drop_tables_the_import_has_no_delete(tmp_path) -> None:
+    _root, proc, _calls_log = _port_only(
+        tmp_path, args=SEED_ARGS, FAKE_STASH_FILE=str(tmp_path / "import.sql")
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert "DELETE FROM" not in (tmp_path / "import.sql").read_text(encoding="utf-8")
+
+
+def test_drop_tables_refuses_a_name_that_is_not_an_identifier(tmp_path) -> None:
+    _root, proc, calls = _port_only(
+        tmp_path, args=(*SEED_ARGS, "--drop-tables", 'a";DROP TABLE x;--')
+    )
+    assert proc.returncode == 1
+    assert "not a plain identifier" in proc.stderr
+    assert _calls(calls) == [], "the refusal comes before anything runs"
+
+
+def test_row_parity_passes_when_every_table_matches(tmp_path) -> None:
+    counts = json.dumps(
+        {"account-eu-src": {"users": 3, "sessions": 5}, "account-eu": {"users": 3, "sessions": 5}}
+    )
+    _root, proc, calls = _port_only(tmp_path, args=(*SEED_ARGS, "--row-parity"), FAKE_COUNTS=counts)
+    assert proc.returncode == 0, proc.stderr
+    assert "Row parity holds: 2 tables, 8 rows in the source" in proc.stderr
+    reads = [c for c in _calls(calls) if "--command=SELECT" in c]
+    assert len(reads) == 4, reads  # table list and counts, source then target
+
+
+def test_row_parity_names_the_table_that_arrived_short(tmp_path) -> None:
+    counts = json.dumps(
+        {"account-eu-src": {"users": 3, "sessions": 5}, "account-eu": {"users": 3, "sessions": 4}}
+    )
+    _root, proc, _calls_log = _port_only(
+        tmp_path, args=(*SEED_ARGS, "--row-parity"), FAKE_COUNTS=counts
+    )
+    assert proc.returncode == 1
+    assert "row parity: sessions: source 5, target 4, expected 5" in proc.stderr
+    assert "users" not in proc.stderr.replace("account-eu", "")
+
+
+def test_row_parity_expects_zero_rows_for_a_dropped_table(tmp_path) -> None:
+    counts = json.dumps(
+        {"account-eu-src": {"users": 3, "sessions": 5}, "account-eu": {"users": 3, "sessions": 0}}
+    )
+    _root, proc, _calls_log = _port_only(
+        tmp_path, args=(*SEED_ARGS, "--drop-tables", "sessions", "--row-parity"), FAKE_COUNTS=counts
+    )
+    assert proc.returncode == 0, proc.stderr
+    # Control: the same counts without the drop are a parity failure, so the pass above is the drop's doing.
+    _root2, control, _calls2 = _port_only(
+        tmp_path / "control", args=(*SEED_ARGS, "--row-parity"), FAKE_COUNTS=counts
+    )
+    assert control.returncode == 1
+
+
+def test_row_parity_refuses_a_table_missing_from_the_target(tmp_path) -> None:
+    counts = json.dumps({"account-eu-src": {"users": 3, "sessions": 5}, "account-eu": {"users": 3}})
+    _root, proc, _calls_log = _port_only(
+        tmp_path, args=(*SEED_ARGS, "--row-parity"), FAKE_COUNTS=counts
+    )
+    assert proc.returncode == 1
+    assert "sessions: missing in the target (source 5 rows)" in proc.stderr
+
+
+def test_drop_tables_naming_a_table_the_source_lacks_fails_the_parity_run(tmp_path) -> None:
+    counts = json.dumps({"account-eu-src": {"users": 3}, "account-eu": {"users": 3}})
+    _root, proc, _calls_log = _port_only(
+        tmp_path, args=(*SEED_ARGS, "--drop-tables", "nope", "--row-parity"), FAKE_COUNTS=counts
+    )
+    assert proc.returncode == 1
+    assert "names a table the source does not have: nope" in proc.stderr
+
+
+def test_parity_differences_is_pure() -> None:
+    assert port.parity_differences({"a": 1}, {"a": 1}, []) == []
+    assert port.parity_differences({"a": 1}, {"a": 0}, ["a"]) == []
+    assert port.parity_differences({"a": 1, "b": 2}, {"a": 1, "c": 1}, []) == [
+        "b: missing in the target (source 2 rows)",
+        "c: only in the target (1 rows)",
+    ]

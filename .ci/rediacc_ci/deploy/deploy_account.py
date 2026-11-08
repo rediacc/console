@@ -3,7 +3,7 @@
 
 Deploys ONE region of the account Worker to Cloudflare: apply the D1 migrations
 for that region's database, then `wrangler deploy` against that region's config.
-Region and target select a wrangler config file by NAME (`wrangler.<region>.toml`, or `wrangler.edge-<region>.toml` when `--target edge`), and everything else the deploy needs -- the D1 database, the R2 bucket, the routes -- lives inside that file rather than in this script.
+The region selects a wrangler config file by NAME (`wrangler.<region>.toml`: one shared Worker set per region, so there is no target to pick), and everything else the deploy needs -- the D1 database, the R2 bucket, the routes -- lives inside that file rather than in this script.
 
 NOTHING HERE REACHES CLOUDFLARE IN A TEST. `npx` (and `npm`, on the install branch) are the only external tools, so the differential (`.ci/rediacc_ci/tests/test_deploy_deploy_account.py`) puts RECORDING FAKES for both on a scratch PATH and points both sides at a fixture repo root. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and
 says in as many words that the mocked parity ledger is a separate, achievable piece of work. This is that piece.
@@ -41,6 +41,8 @@ this campaign has ruled on before (`deploy/set_www_worker_secrets.py`, `deploy/w
 
 ONE DIVERGENCE IN BEHAVIOUR, ON PURPOSE: THE SERVICES PREFLIGHT. Before any migration, each `[[services]]` target of the config must be a Worker on the account, as `rediacc_ci.ops.service_bindings_audit` lists them; a MISSING target, or an audit with no verdict (rc 77, an unparseable config included), refuses with exit 1 and nothing is migrated (`check_services`). The twin migrated first and let `wrangler deploy` fail on code 10143 afterwards. A config with no `[[services]]` runs exactly as the twin did.
 
+A STUB BOOTSTRAP (`--stub`), because account binds proxy and proxy binds account. wrangler refuses a service binding to a Worker that does not exist, and `check_services` refuses before any migration, so the first deploy of a new region cannot start from either side. `--stub` uploads a placeholder Worker under the config's own name, route-less and answering 503, that exports the two entrypoints the proxy binds (`CloudflareInternal`, `ExecutorIssuer`); the proxy then deploys against it and the real deploy replaces it. It refuses when a Worker of that name already exists, so it can never overwrite a live one, and it runs no migration, preflight or portal check.
+
 TWO MORE DIVERGENCES, ON PURPOSE: THE PORTAL CHECKS (2026-10-28, stable served a keyless portal while its Worker enforced captcha). Before any write, the dist on disk must carry the bound TURNSTILE_SITE_KEY (`portal_sitekey_refusal`). After `wrangler deploy`, the host of the config's route must SERVE a portal that renders the captcha its Worker enforces (`portal_smoke`, `rediacc_ci.ops.portal_captcha`), retried briefly for propagation; a red names the rebuild command and the rollback, and exits 1. A config with no route skips the smoke silently, which keeps the twin differential's fixture runs byte-identical.
 
 `:?` IS AN UNSET-OR-EMPTY TEST, so `--region=` refuses exactly as an absent
@@ -57,6 +59,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 import tomllib
 import typing
@@ -66,20 +69,14 @@ from rediacc_ci.core import common
 from rediacc_ci.core import wrangler as wrangler_cmd
 from rediacc_ci.ops import portal_captcha, queues_audit, service_bindings_audit
 
-if typing.TYPE_CHECKING:
-    import pathlib
-
 # This module's own dotted name, the prefix of every diagnostic it prints (the same name `python3 -m` runs it by). A literal, because `__name__` is `__main__` under `-m`.
 SELF = "rediacc_ci.deploy.deploy_account"
 
 # The `${ARG_REGION:?...}` stand-in named in the docstring. The twin's own text
 # after the `VAR: ` prefix bash adds; kept verbatim, because that is the text.
-MISSING_REGION = "ARG_REGION: --region is required (eu, us)"
+MISSING_REGION = "ARG_REGION: --region is required (eu, us, asia)"
 
-# `TARGET="${ARG_TARGET:-production}"` (:22) and the one value that branches
-# (:25). ANY OTHER VALUE IS PRODUCTION: there is no validation in the twin, so `--target edg` deploys the production config for the region without comment.
-DEFAULT_TARGET = "production"
-EDGE_TARGET = "edge"
+# The twin's `--target` (:22-29) picked between the production and the edge config. One shared Worker set per region replaced both, so the flag is gone and `--target` is refused like any unknown flag.
 
 # `$REPO_ROOT/workers/account` (:20), relative to the repo root `common.sh`'s own location resolves to. NOT cwd: the twin can be invoked from anywhere.
 WORKER_SUBDIR = ("workers", "account")
@@ -109,7 +106,7 @@ PORTAL_ASSETS = ("dist", "account", "assets")
 REBUILD_HINT = (
     'rebuild the portal with the key: (cd private/account/web && VITE_TURNSTILE_SITE_KEY="$TURNSTILE_SITE_KEY" '
     "VITE_CI_MODE=false npx vite build --outDir ../../../workers/account/dist/account), under the "
-    "account-secrets-<region>-<stable|edge> profile"
+    "account-secrets-<region> profile"
 )
 
 
@@ -118,7 +115,7 @@ def portal_sitekey_refusal(worker_dir: pathlib.Path, env: typing.Mapping[str, st
     # TURNSTILE_SITE_KEY only: the refusal below names that binding, and every caller binds it (the deploy-workers profile, the CD step). A `VITE_` fallback let a run with only the build-time name pass a check that says the deploy name must be bound (review a43d7f08.1).
     key = (env.get("TURNSTILE_SITE_KEY") or "").strip()
     if not key:
-        return "TURNSTILE_SITE_KEY is not bound, so the portal cannot be checked for the captcha widget; run under the account-secrets-<region>-<stable|edge> profile"
+        return "TURNSTILE_SITE_KEY is not bound, so the portal cannot be checked for the captcha widget; run under the account-secrets-<region> profile"
     if not SITEKEY_SHAPE.match(key):
         return "TURNSTILE_SITE_KEY does not look like a Turnstile sitekey (0x...)"
     assets = worker_dir.joinpath(*PORTAL_ASSETS)
@@ -174,13 +171,8 @@ def portal_smoke(
     )
 
 
-def config_name(region: str, target: str) -> str:
-    """`wrangler.edge-<region>.toml` or `wrangler.<region>.toml` (:24-29).
-
-    The comparison is against the literal `edge` and nothing else, so every other target string -- including `Edge`, `edge ` and a typo -- selects the PRODUCTION config. That is the twin's behaviour and it is not guarded there.
-    """
-    if target == EDGE_TARGET:
-        return "wrangler.edge-%s.toml" % region
+def config_name(region: str) -> str:
+    """`wrangler.<region>.toml` (:24-29, minus the edge branch the rename removed)."""
     return "wrangler.%s.toml" % region
 
 
@@ -341,7 +333,7 @@ def _has_credentials(env: typing.Mapping[str, str]) -> bool:
 
 
 # Every `ARG_*` key `main` reads. Anything else is refused by `common.parse_args` before a side effect; `--dry-run` is real (see `main`).
-ACCEPTED_ARGS = frozenset({"ARG_REGION", "ARG_TARGET", "ARG_DRY_RUN"})
+ACCEPTED_ARGS = frozenset({"ARG_REGION", "ARG_DRY_RUN", "ARG_STUB"})
 
 
 def _run(argv: list[str]) -> int:
@@ -350,6 +342,107 @@ def _run(argv: list[str]) -> int:
     wrangler's own output is the entire visible result of a good run, and capturing it would move it out of the workflow log.
     """
     return subprocess.run(argv, check=False).returncode
+
+
+# The placeholder `--stub` uploads. It binds nothing and answers 503, and exports the two entrypoints other Workers bind (`ACCOUNT` -> CloudflareInternal, `ISSUER` -> ExecutorIssuer, workers/account/src/index.ts), so a binding that names an entrypoint resolves too.
+STUB_SOURCE = """import { WorkerEntrypoint } from 'cloudflare:workers';
+
+export class CloudflareInternal extends WorkerEntrypoint {}
+export class ExecutorIssuer extends WorkerEntrypoint {}
+
+export default {
+  fetch() {
+    return new Response('stub: the account Worker is not deployed yet', { status: 503 });
+  },
+};
+"""
+STUB_ENTRY = "index.js"
+
+
+class StubError(Exception):
+    """The stub cannot be uploaded; nothing has been written to Cloudflare when this is raised."""
+
+
+def stub_config_text(name: str, compatibility_date: str) -> str:
+    """The route-less wrangler config of the stub: the real config's name and compatibility date, no routes, bindings, vars, crons or migrations."""
+    return 'name = "%s"\nmain = "%s"\ncompatibility_date = "%s"\n' % (
+        name,
+        STUB_ENTRY,
+        compatibility_date,
+    )
+
+
+def read_worker_identity(config: pathlib.Path) -> tuple[str, str]:
+    """(name, compatibility_date) of a wrangler config, via a real TOML parse."""
+    try:
+        with open(config, "rb") as fh:
+            data = tomllib.load(fh)
+    except (OSError, tomllib.TOMLDecodeError) as exc:
+        raise StubError("cannot read %s: %s" % (config.name, exc)) from None
+    name = str(data.get("name") or "")
+    date = str(data.get("compatibility_date") or "")
+    if not name or not date:
+        raise StubError("%s carries no name or compatibility_date" % config.name)
+    return name, date
+
+
+def refuse_existing_worker(
+    name: str,
+    env: typing.Mapping[str, str],
+    fetch: service_bindings_audit.Fetch = service_bindings_audit._get,
+) -> None:
+    """Raise StubError when a Worker called `name` is already on the account, or when the account cannot be read: a stub must never replace a live Worker."""
+    token = env.get("CLOUDFLARE_API_TOKEN", "")
+    account = env.get("CLOUDFLARE_ACCOUNT_ID", "")
+    try:
+        existing = service_bindings_audit.list_workers(account, token, fetch)
+    except service_bindings_audit.AuditError as exc:
+        raise StubError(
+            "cannot list the account's Workers (%s); no stub was uploaded" % exc
+        ) from None
+    if name in existing:
+        raise StubError(
+            "Worker %s already exists on the account; the stub would replace it, so nothing was uploaded"
+            % name
+        )
+
+
+def stub_main(worker_dir: pathlib.Path, config: str, *, dry_run: bool) -> int:
+    """`--stub`: upload the placeholder Worker named by the region's config, so the proxy (which binds this Worker) can deploy before the real account Worker does."""
+    try:
+        name, date = read_worker_identity(worker_dir / config)
+    except StubError as exc:
+        log.error(str(exc))
+        return 1
+    with tempfile.TemporaryDirectory(prefix="account-stub-") as tmp:
+        tmp_path = pathlib.Path(tmp)
+        stub_config = tmp_path / "wrangler.toml"
+        argv = deploy_argv(str(stub_config))
+        if dry_run:
+            log.step("DRY RUN: stub %s (%s); no command is run" % (name, config))
+            print("would run: %s" % " ".join(argv), flush=True)
+            return 0
+        os.chdir(worker_dir)
+        for var in ("CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID"):
+            try:
+                common.require_var(var)
+            except common.RefusalError as exc:
+                exc.report()
+                return exc.code
+        os.environ["CLOUDFLARE_API_TOKEN"] = strip_newlines(os.environ["CLOUDFLARE_API_TOKEN"])
+        try:
+            refuse_existing_worker(name, os.environ)
+        except StubError as exc:
+            log.error(str(exc))
+            return 1
+        (tmp_path / STUB_ENTRY).write_text(STUB_SOURCE, encoding="utf-8")
+        stub_config.write_text(stub_config_text(name, date), encoding="utf-8")
+        log.step("Deploying the account stub: %s" % name)
+        status = _run(argv)
+        if status != 0:
+            return status
+    log.info("Account stub deployed: %s" % name)
+    return 0
 
 
 def main(argv: list[str]) -> int:
@@ -366,12 +459,14 @@ def main(argv: list[str]) -> int:
         # THE DIVERGENCE: bash prefixes this with `<script>: line 21: `.
         print(MISSING_REGION, file=sys.stderr, flush=True)
         return 1
-    target = args.get("ARG_TARGET") or DEFAULT_TARGET
 
-    config = config_name(region, target)
+    config = config_name(region)
     if not (worker_dir / config).is_file():
         log.error("Wrangler config not found: %s/%s" % (worker_dir, config))
         return 1
+
+    if "ARG_STUB" in args:
+        return stub_main(worker_dir, config, dry_run="ARG_DRY_RUN" in args)
 
     if "ARG_DRY_RUN" in args:
         # Stops before npm install, the services audit, migrations and the deploy: nothing here reaches Cloudflare or the network.
@@ -380,7 +475,7 @@ def main(argv: list[str]) -> int:
             # The real run refuses here too; a preview naming a placeholder database would misstate the plan.
             log.error("Could not read database_name from %s" % config)
             return 1
-        log.step("DRY RUN: %s %s (%s); no command is run" % (target, region, config))
+        log.step("DRY RUN: %s (%s); no command is run" % (region, config))
         bound = (
             queues_audit.config_queues(worker_dir / config) if _parses(worker_dir / config) else []
         )
@@ -429,7 +524,7 @@ def main(argv: list[str]) -> int:
         log.error(refusal)
         return 1
 
-    log.step("Deploying account worker: %s %s (%s)" % (target, region, config))
+    log.step("Deploying account worker: %s (%s)" % (region, config))
     try:
         check_services(common.repo_root(), "/".join((*WORKER_SUBDIR, config)), os.environ)
     except ServiceBindingError as exc:
@@ -450,7 +545,7 @@ def main(argv: list[str]) -> int:
     status = _run(deploy_argv(config))
     if status != 0:
         return status  # `set -e`
-    log.info("Account worker deployed: %s %s" % (target, region))
+    log.info("Account worker deployed: %s" % region)
     smoke = portal_smoke(worker_dir / config, os.environ)
     if smoke:
         log.error(smoke)
