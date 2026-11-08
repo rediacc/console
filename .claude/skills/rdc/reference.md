@@ -69,6 +69,8 @@ Give up on job tickets locally: their owed steps are dropped and the ticket stop
 - `--older-than <duration>`: With --stale, the minimum ticket age, e.g. 90m, 24h (default: 24h)
 - `-y, --yes`: Skip confirmation prompt
 
+> MCP tool
+
 ### rdc job gc
 
 Remove finished jobs and their logs
@@ -425,6 +427,8 @@ Create or update a backup strategy
 **Options:**
 
 - `--destination <name>`: Destination name within the strategy. Creates a Rediacc chunk-store destination
+- `--target <storeId>`: Registered store id the destination writes to (default: home). Use with --destination
+- `--replicate-from <storeId>`: Make the destination a replica: the account server copies this store into the destination's target, so the machine uploads nothing to it. Use with --destination and --target
 - `--cron <expression>`: Cron schedule (e.g., "0 * * * *" for hourly)
 - `--mode <mode>`: Backup mode: "hot" snapshots while everything keeps running, "cold" stops the containers for the moment the snapshot is taken
 - `--bwlimit <limit>`: Upload bandwidth limit in bytes per second, with an optional K/M/G suffix (e.g., "6M", "500K")
@@ -574,6 +578,7 @@ List the files a repository contains. By default this is a local read-only walk 
 - `--depth <n>`: Limit descent to N levels (0 for unlimited)
 - `--limit <n>`: Maximum entries to return (0 for unlimited)
 - `--at <time|snapshot>`: List the snapshot taken at or before this time, or this snapshot id (reads the chunk store)
+- `--from <storeId>`: With --at, read the snapshot from this backup store instead of the best-ranked one
 - `--debug`: Enable debug output
 
 > MCP tool
@@ -739,6 +744,7 @@ Copy repository images from a machine to a local directory or an external drive.
 - `--skip-space-check`: Warn instead of refusing when the target may not have enough free space
 - `--store`: Rebuild the encrypted image straight from the backup store, with no machine. Needs an API token with the backup:read and backup:restore scopes in REDIACC_TOKEN
 - `--at <time|snapshot>`: With --store, the snapshot to fetch: a time (ISO 8601) or a snapshot id (default: the newest)
+- `--from <storeId>`: With --store, read from this backup store instead of the best-ranked one; it never falls back to another store
 
 > agent: fork-only | MCP excluded: Requires local filesystem paths on the MCP host. Run it from the CLI.
 
@@ -770,6 +776,7 @@ Turn a backup artifact into a live repository. Placement is stated here.
 - `-m, --machine <name>`: Machine name
 - `--datastore <name>`: Restore into this named datastore (its attached machine hosts it)
 - `--at <time>`: Restore a point-in-time: a snapshot id or an RFC3339 time (chunk-store restore)
+- `--from <storeId>`: Read the snapshot from this backup store (default: the store with the newest verified snapshot, falling back to the next on a store failure)
 - `--any-stream`: With --at, also consider snapshots written by other machines and forks of this lineage (default: only this repo on its source machine)
 - `--no-seed`: Fetch every chunk from the store instead of reusing local anchors or repository images (proves the store is readable)
 - `--allow-unopenable`: Place the image even if the repository passphrase does not open it (a snapshot from before a passphrase change)
