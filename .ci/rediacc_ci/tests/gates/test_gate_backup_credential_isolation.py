@@ -169,8 +169,10 @@ PLANTS = [
         "rotation-scopes",
         SCOPES_REL,
         '"tokens": {',
-        '"tokens": {"cf-r2-backup-edge": {"environment": "edge", "buckets": [], '
-        '"bitwardenSecretNames": ["ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_EDGE"]}, ',
+        (
+            '"tokens": {"cf-r2-backup-edge": {"environment": "edge", "buckets": [], '
+            '"bitwardenSecretNames": ["ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_EDGE"]}, '
+        ),
     ),
 ]
 PLANT_IDS = ["%s-%d" % (p[0], i) for i, p in enumerate(PLANTS)]
