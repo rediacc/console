@@ -485,6 +485,12 @@
                 "Bu çerez, AB eGizlilik Direktifi kapsamında \"kesinlikle gerekli\" olarak sınıflandırılır çünkü web sitesinin talep ettiğiniz şekilde çalışması için gereklidir. Bu çerez için onay bildirimi gerekmez."
               ],
               "title": "3.1 Dil Tercihi Çerezi"
+            },
+            "regionStorage": {
+              "content": [
+                "<strong>Ad:</strong> <code>rediacc_region</code><br><strong>Tür:</strong> Birinci taraf tarayıcı yerel depolaması, çerez değil, kesinlikle gerekli<br><strong>Süre:</strong> Tarayıcı verilerinizi silene kadar<br><strong>Amaç:</strong> Seçtiğiniz hesap bölgesini (Avrupa, Amerika Birleşik Devletleri veya Asya Pasifik) hatırlar; böylece giriş sayfası onu önceden seçebilir. Tarayıcınızda kalır ve web sitesi tarafından sunucularımıza asla gönderilmez."
+              ],
+              "title": "3.2 Bölge Tercihi (Yerel Depolama)"
             }
           },
           "title": "3. Kullandığımız Çerezler"
@@ -9798,9 +9804,27 @@
     }
   },
   "regionPicker": {
+    "cancel": "İptal",
+    "change": "Bölgeyi değiştir",
+    "countdown": "{{seconds}} saniye içinde {{region}} bölgesine yönlendiriliyorsunuz.",
+    "countdownAnnounce": "{{seconds}} saniye içinde {{region}} bölgesine yönlendiriliyorsunuz. Burada kalmak için İptal, başka bir bölge seçmek için Bölgeyi değiştir seçeneğini seçin.",
+    "enterprise": "Kurumsal müşteri misiniz?",
     "footer": "Size en yakın bölgeyi veya kuruluşunuzun gerektirdiği bölgeyi seçin.",
     "footerNote": "Kayıt sonrası değiştirilemez.",
+    "lookup": {
+      "back": "Bölgelere geri dön",
+      "checking": "Kontrol ediliyor...",
+      "description": "Kuruluşunuzun oturum açma sayfasını bulmak için şirketinizin e-posta alan adını girin.",
+      "error": "Arama şu anda kullanılamıyor. Bunun yerine bir bölge seçin.",
+      "invalid": "company.com gibi bir şirket alan adı girin.",
+      "label": "Şirket e-posta alan adı",
+      "miss": "Bu alan adı için şirket girişi bulunamadı. Bunun yerine bir bölge seçin.",
+      "placeholder": "company.com",
+      "privacy": "Yalnızca alan adı gönderilir, e-posta adresi asla gönderilmez.",
+      "submit": "Devam"
+    },
     "reassurance": "Sunucu verileriniz ve yedekleriniz kendi altyapınızda kalır.",
+    "resolving": "Bölgeniz bulunuyor...",
     "subtitle": "Hesabınız, faturalandırmanız ve yapılandırmalarınız seçtiğiniz bölgede kalır.",
     "title": "Hesap bölgenizi seçin"
   },

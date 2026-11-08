@@ -489,6 +489,12 @@
                 "Questo cookie è classificato come \"strettamente necessario\" ai sensi della Direttiva ePrivacy dell'UE, in quanto è indispensabile per il corretto funzionamento del sito secondo le preferenze dell'utente. Per questo cookie non è richiesto alcun banner di consenso."
               ],
               "title": "3.1 Cookie per la Preferenza della Lingua"
+            },
+            "regionStorage": {
+              "content": [
+                "<strong>Nome:</strong> <code>rediacc_region</code><br><strong>Tipo:</strong> Local storage del browser di prima parte, non un cookie, strettamente necessario<br><strong>Durata:</strong> Fino alla cancellazione dei dati del browser<br><strong>Finalità:</strong> Memorizza la regione dell'account scelta (Europa, Stati Uniti o Asia-Pacifico) in modo che la pagina di accesso possa preselezionarla. Resta nel browser e non viene mai inviata ai nostri server dal sito web."
+              ],
+              "title": "3.2 Preferenza della regione (Local Storage)"
             }
           },
           "title": "3. Cookie che Utilizziamo"
@@ -9825,9 +9831,27 @@
     }
   },
   "regionPicker": {
+    "cancel": "Annulla",
+    "change": "Cambia regione",
+    "countdown": "Ti portiamo su {{region}} tra {{seconds}} secondi.",
+    "countdownAnnounce": "Ti portiamo su {{region}} tra {{seconds}} secondi. Scegli Annulla per restare qui, oppure Cambia regione per sceglierne un'altra.",
+    "enterprise": "Sei un cliente enterprise?",
     "footer": "Scegli la regione più vicina a te o quella richiesta dalla tua organizzazione. Non può essere cambiata dopo la registrazione.",
     "footerNote": "Non è modificabile dopo la registrazione.",
+    "lookup": {
+      "back": "Torna alle regioni",
+      "checking": "Verifica in corso...",
+      "description": "Inserisci il dominio email della tua azienda per trovare l'accesso della tua organizzazione.",
+      "error": "La ricerca non è disponibile al momento. Scegli invece una regione.",
+      "invalid": "Inserisci un dominio aziendale, ad esempio company.com.",
+      "label": "Dominio email aziendale",
+      "miss": "Nessun accesso aziendale trovato per questo dominio. Scegli invece una regione.",
+      "placeholder": "company.com",
+      "privacy": "Viene inviato solo il dominio, mai un indirizzo email.",
+      "submit": "Continua"
+    },
     "reassurance": "I dati dei tuoi server e i backup restano sulla tua infrastruttura.",
+    "resolving": "Sto cercando la tua regione...",
     "subtitle": "Il tuo account, la fatturazione e le configurazioni rimangono nella regione che scegli. Non la lasciano mai.",
     "title": "Dove vuoi archiviare i tuoi dati?"
   },

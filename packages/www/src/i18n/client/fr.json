@@ -331,7 +331,25 @@
     "subtitle": "Votre compte, facturation et configurations restent dans la région que vous choisissez.",
     "reassurance": "Les données de vos serveurs et sauvegardes restent sur votre propre infrastructure.",
     "footer": "Choisissez la région la plus proche de vous ou celle exigée par votre organisation.",
-    "footerNote": "Ce choix ne peut pas être modifié après l'inscription."
+    "footerNote": "Ce choix ne peut pas être modifié après l'inscription.",
+    "resolving": "Recherche de votre région...",
+    "countdown": "Redirection vers {{region}} dans {{seconds}} secondes.",
+    "countdownAnnounce": "Redirection vers {{region}} dans {{seconds}} secondes. Choisissez Annuler pour rester ici, ou Changer de région pour en choisir une autre.",
+    "cancel": "Annuler",
+    "change": "Changer de région",
+    "enterprise": "Client entreprise ?",
+    "lookup": {
+      "description": "Saisissez le domaine e-mail de votre entreprise pour retrouver la connexion de votre organisation.",
+      "label": "Domaine e-mail de l'entreprise",
+      "placeholder": "company.com",
+      "privacy": "Seul le domaine est envoyé, jamais une adresse e-mail.",
+      "submit": "Continuer",
+      "checking": "Vérification...",
+      "back": "Retour aux régions",
+      "invalid": "Saisissez un domaine d'entreprise, par exemple company.com.",
+      "miss": "Aucune connexion d'entreprise n'a été trouvée pour ce domaine. Choisissez plutôt une région.",
+      "error": "La recherche est indisponible pour le moment. Choisissez plutôt une région."
+    }
   },
   "solutions": {
     "categories": {

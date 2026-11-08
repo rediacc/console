@@ -331,7 +331,25 @@
     "subtitle": "Hesabınız, faturalandırmanız ve yapılandırmalarınız seçtiğiniz bölgede kalır.",
     "reassurance": "Sunucu verileriniz ve yedekleriniz kendi altyapınızda kalır.",
     "footer": "Size en yakın bölgeyi veya kuruluşunuzun gerektirdiği bölgeyi seçin.",
-    "footerNote": "Kayıt sonrası değiştirilemez."
+    "footerNote": "Kayıt sonrası değiştirilemez.",
+    "resolving": "Bölgeniz bulunuyor...",
+    "countdown": "{{seconds}} saniye içinde {{region}} bölgesine yönlendiriliyorsunuz.",
+    "countdownAnnounce": "{{seconds}} saniye içinde {{region}} bölgesine yönlendiriliyorsunuz. Burada kalmak için İptal, başka bir bölge seçmek için Bölgeyi değiştir seçeneğini seçin.",
+    "cancel": "İptal",
+    "change": "Bölgeyi değiştir",
+    "enterprise": "Kurumsal müşteri misiniz?",
+    "lookup": {
+      "description": "Kuruluşunuzun oturum açma sayfasını bulmak için şirketinizin e-posta alan adını girin.",
+      "label": "Şirket e-posta alan adı",
+      "placeholder": "company.com",
+      "privacy": "Yalnızca alan adı gönderilir, e-posta adresi asla gönderilmez.",
+      "submit": "Devam",
+      "checking": "Kontrol ediliyor...",
+      "back": "Bölgelere geri dön",
+      "invalid": "company.com gibi bir şirket alan adı girin.",
+      "miss": "Bu alan adı için şirket girişi bulunamadı. Bunun yerine bir bölge seçin.",
+      "error": "Arama şu anda kullanılamıyor. Bunun yerine bir bölge seçin."
+    }
   },
   "solutions": {
     "categories": {

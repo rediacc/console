@@ -485,6 +485,12 @@
                 "根据《欧盟电子隐私指令》，此 Cookie 被归类为\"严格必要\"类别，因为它对于网站按您的请求正常运行不可或缺。此 Cookie 无需征求同意。"
               ],
               "title": "3.1 语言偏好Cookie"
+            },
+            "regionStorage": {
+              "content": [
+                "<strong>名称：</strong><code>rediacc_region</code><br><strong>类型：</strong>第一方浏览器本地存储，不是 Cookie，严格必要<br><strong>有效期：</strong>直到您清除浏览器数据<br><strong>用途：</strong>记住您选择的账户区域（欧洲、美国或亚太），以便登录页面预先选中。它保存在您的浏览器中，网站不会将其发送到我们的服务器。"
+              ],
+              "title": "3.2 区域偏好（本地存储）"
             }
           },
           "title": "3. 我们使用的Cookie"
@@ -9755,9 +9761,27 @@
     }
   },
   "regionPicker": {
+    "cancel": "取消",
+    "change": "更改区域",
+    "countdown": "将在 {{seconds}} 秒后带您前往 {{region}}。",
+    "countdownAnnounce": "将在 {{seconds}} 秒后带您前往 {{region}}。选择“取消”可留在此页，选择“更改区域”可改选其他区域。",
+    "enterprise": "企业客户？",
     "footer": "选择离您最近的区域，或您的组织所要求的区域。",
     "footerNote": "注册后无法更改。",
+    "lookup": {
+      "back": "返回区域选择",
+      "checking": "正在检查...",
+      "description": "输入贵公司的邮箱域名，即可找到贵组织的登录入口。",
+      "error": "查询暂时不可用，请改为选择区域。",
+      "invalid": "请输入公司域名，例如 company.com。",
+      "label": "公司邮箱域名",
+      "miss": "未找到该域名对应的公司登录入口，请改为选择区域。",
+      "placeholder": "company.com",
+      "privacy": "仅发送域名，绝不发送邮箱地址。",
+      "submit": "继续"
+    },
     "reassurance": "您的服务器数据和备份保留在您自己的基础设施中。",
+    "resolving": "正在确定您所在的区域...",
     "subtitle": "您的账户、账单和配置保留在您选择的区域中，",
     "title": "选择您的账户区域"
   },

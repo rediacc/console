@@ -331,7 +331,25 @@
     "subtitle": "Ihr Konto, Ihre Abrechnung und Konfigurationen bleiben in der von Ihnen gewählten Region.",
     "reassurance": "Ihre Serverdaten und Backups verbleiben auf Ihrer eigenen Infrastruktur.",
     "footer": "Wählen Sie die Region, die Ihnen am nächsten liegt, oder die Ihre Organisation erfordert.",
-    "footerNote": "Dies kann nach der Registrierung nicht mehr geändert werden."
+    "footerNote": "Dies kann nach der Registrierung nicht mehr geändert werden.",
+    "resolving": "Ihre Region wird ermittelt...",
+    "countdown": "Weiterleitung nach {{region}} in {{seconds}} Sekunden.",
+    "countdownAnnounce": "Weiterleitung nach {{region}} in {{seconds}} Sekunden. Wählen Sie „Abbrechen“, um hier zu bleiben, oder „Region ändern“, um eine andere zu wählen.",
+    "cancel": "Abbrechen",
+    "change": "Region ändern",
+    "enterprise": "Unternehmenskunde?",
+    "lookup": {
+      "description": "Geben Sie die E-Mail-Domain Ihres Unternehmens ein, um den Login Ihrer Organisation zu finden.",
+      "label": "E-Mail-Domain des Unternehmens",
+      "placeholder": "company.com",
+      "privacy": "Es wird nur die Domain gesendet, nie eine E-Mail-Adresse.",
+      "submit": "Weiter",
+      "checking": "Wird geprüft...",
+      "back": "Zurück zu den Regionen",
+      "invalid": "Geben Sie eine Unternehmensdomain ein, z. B. company.com.",
+      "miss": "Für diese Domain wurde kein Unternehmens-Login gefunden. Wählen Sie stattdessen eine Region.",
+      "error": "Die Suche ist gerade nicht verfügbar. Wählen Sie stattdessen eine Region."
+    }
   },
   "solutions": {
     "categories": {

@@ -487,6 +487,12 @@
                 "Seda küpsist käsitletakse ELi ePrivacy direktiivi kohaselt \"hädavajalikuna\", kuna see on hädavajalik veebisaidi toimimiseks vastavalt teie soovile. Selle küpsise jaoks ei ole nõusolekuribal vaja kuvada."
               ],
               "title": "3.1 Keele-eelistuse küpsis"
+            },
+            "regionStorage": {
+              "content": [
+                "<strong>Nimi:</strong> <code>rediacc_region</code><br><strong>Tüüp:</strong> Esimese osapoole brauseri kohalik salvestusruum, mitte küpsis, hädavajalik<br><strong>Kestus:</strong> Kuni teie brauseriandmete kustutamiseni<br><strong>Eesmärk:</strong> Jätab meelde teie valitud konto piirkonna (Euroopa, Ameerika Ühendriigid või Aasia ja Vaikse ookeani piirkond), et sisselogimislehel saaks selle eelvalida. See jääb teie brauserisse ja veebisait ei saada seda kunagi meie serveritesse."
+              ],
+              "title": "3.2 Piirkonna eelistus (kohalik salvestusruum)"
             }
           },
           "title": "3. Meie kasutatavad küpsised"
@@ -9819,9 +9825,27 @@
     }
   },
   "regionPicker": {
+    "cancel": "Tühista",
+    "change": "Muuda piirkonda",
+    "countdown": "Suuname sind piirkonda {{region}} {{seconds}} sekundi pärast.",
+    "countdownAnnounce": "Suuname sind piirkonda {{region}} {{seconds}} sekundi pärast. Vali Tühista, et siia jääda, või Muuda piirkonda, et valida mõni teine.",
+    "enterprise": "Ettevõttekunde?",
     "footer": "Vali endale lähim piirkond või see, mida sinu organisatsioon nõuab.",
     "footerNote": "Pärast registreerumist ei saa seda muuta.",
+    "lookup": {
+      "back": "Tagasi piirkondade juurde",
+      "checking": "Kontrollin...",
+      "description": "Sisesta oma ettevõtte e-posti domeen, et leida oma organisatsiooni sisselogimine.",
+      "error": "Otsing pole praegu saadaval. Vali hoopis piirkond.",
+      "invalid": "Sisesta ettevõtte domeen, näiteks company.com.",
+      "label": "Ettevõtte e-posti domeen",
+      "miss": "Selle domeeni jaoks ei leitud ettevõtte sisselogimist. Vali hoopis piirkond.",
+      "placeholder": "company.com",
+      "privacy": "Saadetakse ainult domeen, mitte kunagi e-posti aadressi.",
+      "submit": "Jätka"
+    },
     "reassurance": "Sinu serverite andmed ja varukoopiad jäävad sinu enda infrastruktuuri.",
+    "resolving": "Otsime sinu piirkonda...",
     "subtitle": "Sinu konto, arveldus ja konfiguratsioonid jäävad valitud piirkonda.",
     "title": "Vali oma konto piirkond"
   },

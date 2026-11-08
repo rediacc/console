@@ -331,7 +331,25 @@
     "subtitle": "A sua conta, facturação e configurações ficam na região que escolher.",
     "reassurance": "Os dados dos seus servidores e backups permanecem na sua própria infraestrutura.",
     "footer": "Escolha a região mais próxima de si ou onde a sua organização o exige.",
-    "footerNote": "Não pode ser alterada após o registo."
+    "footerNote": "Não pode ser alterada após o registo.",
+    "resolving": "A procurar a sua região...",
+    "countdown": "A redirecioná-lo para {{region}} dentro de {{seconds}} segundos.",
+    "countdownAnnounce": "A redirecioná-lo para {{region}} dentro de {{seconds}} segundos. Escolha Cancelar para ficar aqui ou Alterar região para escolher outra.",
+    "cancel": "Cancelar",
+    "change": "Alterar região",
+    "enterprise": "É cliente empresarial?",
+    "lookup": {
+      "description": "Introduza o domínio de e-mail da sua empresa para encontrar o início de sessão da sua organização.",
+      "label": "Domínio de e-mail da empresa",
+      "placeholder": "company.com",
+      "privacy": "Só o domínio é enviado, nunca um endereço de e-mail.",
+      "submit": "Continuar",
+      "checking": "A verificar...",
+      "back": "Voltar às regiões",
+      "invalid": "Introduza um domínio de empresa, como company.com.",
+      "miss": "Não foi encontrado nenhum início de sessão de empresa para esse domínio. Escolha antes uma região.",
+      "error": "A pesquisa não está disponível neste momento. Escolha antes uma região."
+    }
   },
   "solutions": {
     "categories": {

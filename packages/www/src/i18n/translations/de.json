@@ -485,6 +485,12 @@
                 "Dieses Cookie wird gemäß der EU-ePrivacy-Richtlinie als \"unbedingt erforderlich\" eingestuft, da es für die von Ihnen angeforderte Funktionalität der Website unerlässlich ist. Für dieses Cookie ist kein Einwilligungsbanner erforderlich."
               ],
               "title": "3.1 Spracheinstellungs-Cookie"
+            },
+            "regionStorage": {
+              "content": [
+                "<strong>Name:</strong> <code>rediacc_region</code><br><strong>Typ:</strong> Erstanbieter, Local Storage des Browsers, kein Cookie, unbedingt erforderlich<br><strong>Dauer:</strong> Bis Sie Ihre Browserdaten löschen<br><strong>Zweck:</strong> Merkt sich die gewählte Konto-Region (Europa, USA oder Asien-Pazifik), damit die Anmeldeseite sie vorauswählen kann. Sie bleibt in Ihrem Browser und wird von der Website nie an unsere Server gesendet."
+              ],
+              "title": "3.2 Regionseinstellung (Local Storage)"
             }
           },
           "title": "3. Von uns verwendete Cookies"
@@ -9809,9 +9815,27 @@
     }
   },
   "regionPicker": {
+    "cancel": "Abbrechen",
+    "change": "Region ändern",
+    "countdown": "Weiterleitung nach {{region}} in {{seconds}} Sekunden.",
+    "countdownAnnounce": "Weiterleitung nach {{region}} in {{seconds}} Sekunden. Wählen Sie „Abbrechen“, um hier zu bleiben, oder „Region ändern“, um eine andere zu wählen.",
+    "enterprise": "Unternehmenskunde?",
     "footer": "Wählen Sie die Region, die Ihnen am nächsten liegt, oder die Ihre Organisation erfordert.",
     "footerNote": "Dies kann nach der Registrierung nicht mehr geändert werden.",
+    "lookup": {
+      "back": "Zurück zu den Regionen",
+      "checking": "Wird geprüft...",
+      "description": "Geben Sie die E-Mail-Domain Ihres Unternehmens ein, um den Login Ihrer Organisation zu finden.",
+      "error": "Die Suche ist gerade nicht verfügbar. Wählen Sie stattdessen eine Region.",
+      "invalid": "Geben Sie eine Unternehmensdomain ein, z. B. company.com.",
+      "label": "E-Mail-Domain des Unternehmens",
+      "miss": "Für diese Domain wurde kein Unternehmens-Login gefunden. Wählen Sie stattdessen eine Region.",
+      "placeholder": "company.com",
+      "privacy": "Es wird nur die Domain gesendet, nie eine E-Mail-Adresse.",
+      "submit": "Weiter"
+    },
     "reassurance": "Ihre Serverdaten und Backups verbleiben auf Ihrer eigenen Infrastruktur.",
+    "resolving": "Ihre Region wird ermittelt...",
     "subtitle": "Ihr Konto, Ihre Abrechnung und Konfigurationen bleiben in der von Ihnen gewählten Region.",
     "title": "Wählen Sie Ihre Konto-Region"
   },

@@ -487,6 +487,12 @@
                 "Ce cookie est classé comme « strictement nécessaire » en vertu de la Directive ePrivacy de l'UE car il est essentiel au fonctionnement du site web tel que vous l'avez demandé. Aucune bannière de consentement n'est requise pour ce cookie."
               ],
               "title": "3.1 Cookie de préférence linguistique"
+            },
+            "regionStorage": {
+              "content": [
+                "<strong>Nom :</strong> <code>rediacc_region</code><br><strong>Type :</strong> Stockage local du navigateur de première partie, pas un cookie, strictement nécessaire<br><strong>Durée :</strong> Jusqu'à ce que vous effaciez les données de votre navigateur<br><strong>Objectif :</strong> Mémorise la région de compte que vous avez choisie (Europe, États-Unis ou Asie-Pacifique) afin que la page de connexion puisse la présélectionner. Elle reste dans votre navigateur et n'est jamais envoyée à nos serveurs par le site web."
+              ],
+              "title": "3.2 Préférence de région (stockage local)"
             }
           },
           "title": "3. Cookies que nous utilisons"
@@ -9811,9 +9817,27 @@
     }
   },
   "regionPicker": {
+    "cancel": "Annuler",
+    "change": "Changer de région",
+    "countdown": "Redirection vers {{region}} dans {{seconds}} secondes.",
+    "countdownAnnounce": "Redirection vers {{region}} dans {{seconds}} secondes. Choisissez Annuler pour rester ici, ou Changer de région pour en choisir une autre.",
+    "enterprise": "Client entreprise ?",
     "footer": "Choisissez la région la plus proche de vous ou celle exigée par votre organisation.",
     "footerNote": "Ce choix ne peut pas être modifié après l'inscription.",
+    "lookup": {
+      "back": "Retour aux régions",
+      "checking": "Vérification...",
+      "description": "Saisissez le domaine e-mail de votre entreprise pour retrouver la connexion de votre organisation.",
+      "error": "La recherche est indisponible pour le moment. Choisissez plutôt une région.",
+      "invalid": "Saisissez un domaine d'entreprise, par exemple company.com.",
+      "label": "Domaine e-mail de l'entreprise",
+      "miss": "Aucune connexion d'entreprise n'a été trouvée pour ce domaine. Choisissez plutôt une région.",
+      "placeholder": "company.com",
+      "privacy": "Seul le domaine est envoyé, jamais une adresse e-mail.",
+      "submit": "Continuer"
+    },
     "reassurance": "Les données de vos serveurs et sauvegardes restent sur votre propre infrastructure.",
+    "resolving": "Recherche de votre région...",
     "subtitle": "Votre compte, facturation et configurations restent dans la région que vous choisissez.",
     "title": "Choisissez la région de votre compte"
   },

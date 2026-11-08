@@ -331,7 +331,25 @@
     "subtitle": "Il tuo account, la fatturazione e le configurazioni rimangono nella regione che scegli. Non la lasciano mai.",
     "reassurance": "I dati dei tuoi server e i backup restano sulla tua infrastruttura.",
     "footer": "Scegli la regione più vicina a te o quella richiesta dalla tua organizzazione. Non può essere cambiata dopo la registrazione.",
-    "footerNote": "Non è modificabile dopo la registrazione."
+    "footerNote": "Non è modificabile dopo la registrazione.",
+    "resolving": "Sto cercando la tua regione...",
+    "countdown": "Ti portiamo su {{region}} tra {{seconds}} secondi.",
+    "countdownAnnounce": "Ti portiamo su {{region}} tra {{seconds}} secondi. Scegli Annulla per restare qui, oppure Cambia regione per sceglierne un'altra.",
+    "cancel": "Annulla",
+    "change": "Cambia regione",
+    "enterprise": "Sei un cliente enterprise?",
+    "lookup": {
+      "description": "Inserisci il dominio email della tua azienda per trovare l'accesso della tua organizzazione.",
+      "label": "Dominio email aziendale",
+      "placeholder": "company.com",
+      "privacy": "Viene inviato solo il dominio, mai un indirizzo email.",
+      "submit": "Continua",
+      "checking": "Verifica in corso...",
+      "back": "Torna alle regioni",
+      "invalid": "Inserisci un dominio aziendale, ad esempio company.com.",
+      "miss": "Nessun accesso aziendale trovato per questo dominio. Scegli invece una regione.",
+      "error": "La ricerca non è disponibile al momento. Scegli invece una regione."
+    }
   },
   "solutions": {
     "categories": {

@@ -331,7 +331,25 @@
     "subtitle": "您的账户、账单和配置保留在您选择的区域中，",
     "reassurance": "您的服务器数据和备份保留在您自己的基础设施中。",
     "footer": "选择离您最近的区域，或您的组织所要求的区域。",
-    "footerNote": "注册后无法更改。"
+    "footerNote": "注册后无法更改。",
+    "resolving": "正在确定您所在的区域...",
+    "countdown": "将在 {{seconds}} 秒后带您前往 {{region}}。",
+    "countdownAnnounce": "将在 {{seconds}} 秒后带您前往 {{region}}。选择“取消”可留在此页，选择“更改区域”可改选其他区域。",
+    "cancel": "取消",
+    "change": "更改区域",
+    "enterprise": "企业客户？",
+    "lookup": {
+      "description": "输入贵公司的邮箱域名，即可找到贵组织的登录入口。",
+      "label": "公司邮箱域名",
+      "placeholder": "company.com",
+      "privacy": "仅发送域名，绝不发送邮箱地址。",
+      "submit": "继续",
+      "checking": "正在检查...",
+      "back": "返回区域选择",
+      "invalid": "请输入公司域名，例如 company.com。",
+      "miss": "未找到该域名对应的公司登录入口，请改为选择区域。",
+      "error": "查询暂时不可用，请改为选择区域。"
+    }
   },
   "solutions": {
     "categories": {

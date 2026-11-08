@@ -331,7 +331,25 @@
     "subtitle": "Sinu konto, arveldus ja konfiguratsioonid jäävad valitud piirkonda.",
     "reassurance": "Sinu serverite andmed ja varukoopiad jäävad sinu enda infrastruktuuri.",
     "footer": "Vali endale lähim piirkond või see, mida sinu organisatsioon nõuab.",
-    "footerNote": "Pärast registreerumist ei saa seda muuta."
+    "footerNote": "Pärast registreerumist ei saa seda muuta.",
+    "resolving": "Otsime sinu piirkonda...",
+    "countdown": "Suuname sind piirkonda {{region}} {{seconds}} sekundi pärast.",
+    "countdownAnnounce": "Suuname sind piirkonda {{region}} {{seconds}} sekundi pärast. Vali Tühista, et siia jääda, või Muuda piirkonda, et valida mõni teine.",
+    "cancel": "Tühista",
+    "change": "Muuda piirkonda",
+    "enterprise": "Ettevõttekunde?",
+    "lookup": {
+      "description": "Sisesta oma ettevõtte e-posti domeen, et leida oma organisatsiooni sisselogimine.",
+      "label": "Ettevõtte e-posti domeen",
+      "placeholder": "company.com",
+      "privacy": "Saadetakse ainult domeen, mitte kunagi e-posti aadressi.",
+      "submit": "Jätka",
+      "checking": "Kontrollin...",
+      "back": "Tagasi piirkondade juurde",
+      "invalid": "Sisesta ettevõtte domeen, näiteks company.com.",
+      "miss": "Selle domeeni jaoks ei leitud ettevõtte sisselogimist. Vali hoopis piirkond.",
+      "error": "Otsing pole praegu saadaval. Vali hoopis piirkond."
+    }
   },
   "solutions": {
     "categories": {

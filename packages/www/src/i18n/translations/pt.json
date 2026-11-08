@@ -487,6 +487,12 @@
                 "Este cookie é classificado como \"estritamente necessário\" ao abrigo da Diretiva ePrivacy da UE, por ser essencial para o funcionamento do sítio web conforme solicitado. Este cookie não requer banner de consentimento."
               ],
               "title": "3.1 Cookie de Preferência de Idioma"
+            },
+            "regionStorage": {
+              "content": [
+                "<strong>Nome:</strong> <code>rediacc_region</code><br><strong>Tipo:</strong> Armazenamento local do navegador de primeira parte, não é um cookie, estritamente necessário<br><strong>Duração:</strong> Até limpar os dados do navegador<br><strong>Finalidade:</strong> Memoriza a região da conta que escolheu (Europa, Estados Unidos ou Ásia-Pacífico) para que a página de início de sessão a possa pré-selecionar. Permanece no seu navegador e nunca é enviada pelo sítio web para os nossos servidores."
+              ],
+              "title": "3.2 Preferência de região (armazenamento local)"
             }
           },
           "title": "3. Cookies que Utilizamos"
@@ -9827,9 +9833,27 @@
     }
   },
   "regionPicker": {
+    "cancel": "Cancelar",
+    "change": "Alterar região",
+    "countdown": "A redirecioná-lo para {{region}} dentro de {{seconds}} segundos.",
+    "countdownAnnounce": "A redirecioná-lo para {{region}} dentro de {{seconds}} segundos. Escolha Cancelar para ficar aqui ou Alterar região para escolher outra.",
+    "enterprise": "É cliente empresarial?",
     "footer": "Escolha a região mais próxima de si ou onde a sua organização o exige.",
     "footerNote": "Não pode ser alterada após o registo.",
+    "lookup": {
+      "back": "Voltar às regiões",
+      "checking": "A verificar...",
+      "description": "Introduza o domínio de e-mail da sua empresa para encontrar o início de sessão da sua organização.",
+      "error": "A pesquisa não está disponível neste momento. Escolha antes uma região.",
+      "invalid": "Introduza um domínio de empresa, como company.com.",
+      "label": "Domínio de e-mail da empresa",
+      "miss": "Não foi encontrado nenhum início de sessão de empresa para esse domínio. Escolha antes uma região.",
+      "placeholder": "company.com",
+      "privacy": "Só o domínio é enviado, nunca um endereço de e-mail.",
+      "submit": "Continuar"
+    },
     "reassurance": "Os dados dos seus servidores e backups permanecem na sua própria infraestrutura.",
+    "resolving": "A procurar a sua região...",
     "subtitle": "A sua conta, facturação e configurações ficam na região que escolher.",
     "title": "Escolha a região da sua conta"
   },

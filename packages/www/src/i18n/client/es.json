@@ -331,7 +331,25 @@
     "subtitle": "Tu cuenta, facturación y configuraciones permanecen en la región que elijas.",
     "reassurance": "Los datos de tus servidores y copias de seguridad permanecen en tu propia infraestructura.",
     "footer": "Elige la región más cercana a ti o la que requiera tu organización.",
-    "footerNote": "No se puede cambiar después del registro."
+    "footerNote": "No se puede cambiar después del registro.",
+    "resolving": "Buscando tu región...",
+    "countdown": "Te llevamos a {{region}} en {{seconds}} segundos.",
+    "countdownAnnounce": "Te llevamos a {{region}} en {{seconds}} segundos. Elige Cancelar para quedarte aquí o Cambiar región para elegir otra.",
+    "cancel": "Cancelar",
+    "change": "Cambiar región",
+    "enterprise": "¿Eres cliente empresarial?",
+    "lookup": {
+      "description": "Introduce el dominio de correo de tu empresa para encontrar el inicio de sesión de tu organización.",
+      "label": "Dominio de correo de la empresa",
+      "placeholder": "company.com",
+      "privacy": "Solo se envía el dominio, nunca una dirección de correo.",
+      "submit": "Continuar",
+      "checking": "Comprobando...",
+      "back": "Volver a las regiones",
+      "invalid": "Introduce un dominio de empresa, como company.com.",
+      "miss": "No se encontró un inicio de sesión de empresa para ese dominio. Elige una región.",
+      "error": "La búsqueda no está disponible ahora mismo. Elige una región."
+    }
   },
   "solutions": {
     "categories": {
