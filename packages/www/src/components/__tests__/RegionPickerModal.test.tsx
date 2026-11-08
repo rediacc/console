@@ -1,3 +1,4 @@
+import { BAKED_IN_REGIONS } from '@rediacc/shared/regions';
 import { describe, expect, it } from 'vitest';
 import type { Region } from '../../config/regions';
 import {
@@ -8,11 +9,7 @@ import {
   regionForTimeZone,
 } from '../RegionPickerModal';
 
-const regions: Region[] = [
-  { id: 'eu', label: 'Europe', domain: 'eu.rediacc.cloud', default: true },
-  { id: 'us', label: 'United States', domain: 'us.rediacc.cloud', default: false },
-  { id: 'asia', label: 'Asia Pacific', domain: 'asia.rediacc.cloud', default: false },
-];
+const regions: Region[] = BAKED_IN_REGIONS;
 
 describe('modeFromPath', () => {
   it.each([

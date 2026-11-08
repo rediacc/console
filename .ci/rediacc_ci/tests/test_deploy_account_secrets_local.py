@@ -125,9 +125,7 @@ def test_every_region_has_a_profile_binding_its_suffix_and_stripe():
         # One backup pair, and the old edge pair is never bound.
         assert "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_STABLE" in names
         assert "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_EDGE" not in names
-        # One config server key and one KEK per region. EU takes the EU_STABLE value, because the
-        # seeded config objects were encrypted under it; US and ASIA seed from edge, so they take
-        # their edge value, bound under the `_STABLE` local name the pusher reads.
+        # One config server key and one KEK per region. EU takes the EU_STABLE value, because the seeded config objects were encrypted under it; US and ASIA seed from edge, so they take their edge value, bound under the `_STABLE` local name the pusher reads.
         keys = [n for n in names if n.startswith("ACCOUNT_CONFIG_SERVER_KEY")]
         keks = [n for n in names if n.startswith("ACCOUNT_BACKUP_STORE_KEK")]
         if key_value == "STABLE":

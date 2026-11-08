@@ -3,6 +3,7 @@
  * active config's, because renet derives the backup store from that licence (hostinger runner finding D-a: a
  * `backup snapshot ...@hostinger --config eu-bench` wrote to the eu production store).
  */
+import { WK_BENCH_ORIGIN } from '@rediacc/shared/config/well-known.generated';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../../../i18n/index.js', () => ({
@@ -10,7 +11,7 @@ vi.mock('../../../i18n/index.js', () => ({
     params ? `${key}:${JSON.stringify(params)}` : key,
 }));
 
-const env = vi.hoisted(() => ({ server: 'https://bench.rediacc.com', config: 'eu-bench' }));
+const env = vi.hoisted(() => ({ server: '', config: 'eu-bench' }));
 vi.mock('../../account/subscription-auth.js', () => ({
   getSubscriptionServerUrl: () => env.server,
 }));
@@ -57,10 +58,10 @@ function machineWith(...lines: string[]) {
 }
 
 const EU = 'https://eu.rediacc.com/account/api/v1/licenses/renew';
-const BENCH = 'https://bench.rediacc.com/account/api/v1/licenses/renew';
+const BENCH = `${WK_BENCH_ORIGIN}/account/api/v1/licenses/renew`;
 
 beforeEach(() => {
-  env.server = 'https://bench.rediacc.com';
+  env.server = WK_BENCH_ORIGIN;
   env.config = 'eu-bench';
 });
 
@@ -77,7 +78,7 @@ describe('assertBackupStoreUniverse', () => {
 
     await expect(run).rejects.toThrow(/errors\.license\.backupStoreMismatch/);
     await expect(run).rejects.toThrow(/"installed":"https:\/\/eu\.rediacc\.com"/);
-    await expect(run).rejects.toThrow(/"expected":"https:\/\/bench\.rediacc\.com"/);
+    await expect(run).rejects.toThrow(`"expected":"${WK_BENCH_ORIGIN}"`);
     await expect(run).rejects.toThrow(/"config":"eu-bench"/);
     expect(m.commands[0]).toContain(`/var/lib/rediacc/license/repos/${GUID}/*.json`);
     expect(m.commands[0]).toContain(`/var/lib/rediacc/license/datastores/*/repos/${GUID}/*.json`);
@@ -192,7 +193,7 @@ describe('licenseOriginsFromListing', () => {
       licenseLine(BENCH),
     ].join('');
     expect(licenseOriginsFromListing(listing)).toEqual([
-      'https://bench.rediacc.com',
+      WK_BENCH_ORIGIN,
       'https://eu.rediacc.com',
     ]);
   });
@@ -208,10 +209,10 @@ describe('withExpectedAccountServer', () => {
     'backup_browse_at',
     'backup_repair',
   ])('adds the config origin to %s', (fn) => {
-    env.server = 'https://bench.rediacc.com/account/';
+    env.server = `${WK_BENCH_ORIGIN}/account/`;
     expect(withExpectedAccountServer(fn, { repository: 'mail' })).toEqual({
       repository: 'mail',
-      expect_account_server: 'https://bench.rediacc.com',
+      expect_account_server: WK_BENCH_ORIGIN,
     });
   });
 
@@ -221,7 +222,7 @@ describe('withExpectedAccountServer', () => {
         repository: 'mail',
         expect_account_server: 'https://other.example.com',
       })
-    ).toEqual({ repository: 'mail', expect_account_server: 'https://bench.rediacc.com' });
+    ).toEqual({ repository: 'mail', expect_account_server: WK_BENCH_ORIGIN });
   });
 
   it('leaves every other function untouched', () => {

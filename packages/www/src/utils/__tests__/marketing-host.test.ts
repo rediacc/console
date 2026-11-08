@@ -3,6 +3,7 @@ import {
   WK_BENCH_ORIGIN,
   WK_SITE_ORIGIN,
 } from '@rediacc/shared/config/well-known.generated';
+import { BAKED_IN_REGIONS } from '@rediacc/shared/regions';
 import { describe, expect, it } from 'vitest';
 import { buildPortalRedirectUrl, getHostKind, isMarketingHost } from '../marketing-host';
 
@@ -17,8 +18,7 @@ describe('getHostKind', () => {
     ['anything.rediacc.workers.dev', 'preview'],
     ['localhost', 'localhost'],
     [EU_HOST, 'portal'],
-    ['us.rediacc.cloud', 'portal'],
-    ['asia.rediacc.cloud', 'portal'],
+    ...BAKED_IN_REGIONS.map((r) => [r.domain, 'portal'] as const),
     [BENCH_HOST, 'portal'],
     ['intranet.customer.example', 'portal'],
   ] as const)('%s -> %s', (hostname, kind) => {

@@ -37,10 +37,7 @@ from rediacc_ci.drills import wire
 from rediacc_ci.ops import push_backup_credentials as pbc
 
 CHANNELS = pbc.TARGETS
-# The isolation the probe proves is between CHANNELS: one cf-r2-backup-stable token scopes all three regional backup buckets
-# (private/account/scripts/rotation/r2-backup-tokens.json), so a regional pair reaching another region's backup bucket is
-# by design. Bench has no region, so its foreign backup bucket is the stable one of FOREIGN_BENCH_REGION, and a regional
-# pair's foreign backup bucket is bench's.
+# The isolation the probe proves is between CHANNELS: one cf-r2-backup-stable token scopes all three regional backup buckets (private/account/scripts/rotation/r2-backup-tokens.json), so a regional pair reaching another region's backup bucket is by design. Bench has no region, so its foreign backup bucket is the stable one of FOREIGN_BENCH_REGION, and a regional pair's foreign backup bucket is bench's.
 FOREIGN_BENCH_REGION = "us"
 SIGV4_REGION = "auto"
 PREFIX = "probe/scope-"

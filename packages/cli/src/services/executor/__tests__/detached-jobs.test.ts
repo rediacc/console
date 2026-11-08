@@ -10,6 +10,7 @@
  *     exit 10 means renet refused before doing any work.
  */
 
+import { WK_BENCH_ORIGIN } from '@rediacc/shared/config/well-known.generated';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { parseRenetLicenseFailure } from '../../renet/renet-license-contract.js';
 import {
@@ -96,7 +97,7 @@ vi.mock('../../account/subscription-device-auth.js', () => ({
 vi.mock('../../account/subscription-auth.js', () => ({
   getSubscriptionTokenState: mockGetSubscriptionTokenState,
   // The backup-session verbs carry the config's account-server origin to renet (--expect-account-server).
-  getSubscriptionServerUrl: () => 'https://bench.rediacc.com',
+  getSubscriptionServerUrl: () => WK_BENCH_ORIGIN,
 }));
 
 vi.mock('../../../utils/agent-guard.js', () => ({

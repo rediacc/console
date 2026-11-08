@@ -4,7 +4,7 @@
  * command and on the failure report, both of which mint a session from the repository licence.
  */
 import { spawnSync } from 'node:child_process';
-import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
+import { WK_BENCH_ORIGIN, WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { describe, expect, it } from 'vitest';
 import type { BackupStrategyConfig, BackupStrategyDestination } from '../../../types/index.js';
 import { computeDesiredUnits } from '../backup-schedule-reconcile.js';
@@ -18,7 +18,7 @@ import {
 } from '../backup-schedule-unit-generator.js';
 
 const RENET = '/usr/bin/renet';
-const ORIGIN = 'https://bench.rediacc.com';
+const ORIGIN = WK_BENCH_ORIGIN;
 const hosted: BackupStrategyDestination = { name: 'chunks', kind: 'hosted-service' };
 const strategy: BackupStrategyConfig = { destinations: [hosted], schedule: '0 * * * *' };
 const scope = { exclude: [] };

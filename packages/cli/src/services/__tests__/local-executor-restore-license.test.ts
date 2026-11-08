@@ -18,7 +18,7 @@
  * that the CLI's recovery framework watches for.
  */
 
-import { WK_ACCOUNT_DEV_PORT } from '@rediacc/shared/config/well-known.generated';
+import { WK_ACCOUNT_DEV_PORT, WK_BENCH_ORIGIN } from '@rediacc/shared/config/well-known.generated';
 import type { MockInstance } from 'vitest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { LISTING_COMPLETE_MARKER } from '../backup/backup-store-universe.js';
@@ -104,7 +104,7 @@ vi.mock('../account/license-refresh-state.js', () => ({
 vi.mock('../account/subscription-auth.js', () => ({
   getSubscriptionTokenState: mockGetSubscriptionTokenState,
   // The backup-session verbs carry the config's account-server origin to renet (--expect-account-server).
-  getSubscriptionServerUrl: () => 'https://bench.rediacc.com',
+  getSubscriptionServerUrl: () => WK_BENCH_ORIGIN,
 }));
 
 vi.mock('../account/subscription-device-auth.js', () => ({

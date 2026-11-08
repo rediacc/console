@@ -156,9 +156,7 @@ export default {
     return withSecurityHeaders(new Response('Not Found', { status: 404 }));
   },
 
-  // Replicate-mode queue consumer ([[queues.consumers]] in every wrangler.*.toml): the account app
-  // reads each message's rules and this hands every target to its BackupReplicator, whose alarm runs
-  // the copy. Gated with the bindings by private/account/tests/integration/replicate-wiring.test.ts.
+  // Replicate-mode queue consumer ([[queues.consumers]] in every wrangler.*.toml): the account app reads each message's rules and this hands every target to its BackupReplicator, whose alarm runs the copy. Gated with the bindings by private/account/tests/integration/replicate-wiring.test.ts.
   async queue(batch: MessageBatch<unknown>, env: Env): Promise<void> {
     await accountApp.consumeReplicationBatch(batch, env, (key) =>
       replicatorStub(env, key).kick(key)
