@@ -408,13 +408,21 @@ def pointer_writes(records: list[dict[str, typing.Any]]) -> list[tuple[str, str,
 PLANT_BULK_THROUGH_THE_RUNNER = (
     (
         "            status = self._retried(\n"
-        '                copy_argv(pair[0], pair[1], self.endpoint), "copy of %s" % pair[0]\n'
+        "                copy_argv(\n"
+        "                    pair[0],\n"
+        "                    pair[1],\n"
+        "                    self.endpoint,\n"
+        "                    bucket=self.bucket,\n"
+        "                    src_bucket=self.src_bucket,\n"
+        "                    preserve_metadata=self.preserve_metadata,\n"
+        "                ),\n"
+        '                "copy of %s" % pair[0],\n'
         "            )\n"
     ),
     (
         "            local = os.path.join(os.environ['FAKE_S3_ROOT'], '..', pair[0].replace('/', '_'))\n"
-        '            status = self._retried(get_argv(pair[0], local, self.endpoint), "get") or self._retried(\n'
-        '                put_argv(local, pair[1], self.endpoint), "put"\n'
+        '            status = self._retried(get_argv(pair[0], local, self.endpoint, self.bucket), "get") or self._retried(\n'
+        '                put_argv(local, pair[1], self.endpoint, self.bucket), "put"\n'
         "            )\n"
     ),
 )

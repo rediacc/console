@@ -118,14 +118,14 @@ def pointers(dir_name: str) -> tuple[str, ...]:
     return tuple(name for name, _ in channel_stamp.REWRITES.get(dir_name, ()))
 
 
-def list_argv(prefix: str, endpoint: str) -> list[str]:
-    """`aws s3api list-objects-v2`: exact keys (no whitespace re-splitting), sizes and LastModified; aws-cli follows the pagination itself."""
+def list_argv(prefix: str, endpoint: str, bucket: str = BUCKET) -> list[str]:
+    """`aws s3api list-objects-v2`: exact keys (no whitespace re-splitting), sizes and LastModified; aws-cli follows the pagination itself. `bucket` defaults to the releases bucket."""
     return [
         awscli.AWS,
         "s3api",
         "list-objects-v2",
         "--bucket",
-        BUCKET,
+        bucket,
         "--prefix",
         prefix,
         *endpoint_args(endpoint),
@@ -134,50 +134,59 @@ def list_argv(prefix: str, endpoint: str) -> list[str]:
     ]
 
 
-def copy_argv(src_key: str, dst_key: str, endpoint: str) -> list[str]:
-    """One server-side `aws s3api copy-object`. No `--tagging-directive`: see the module docstring."""
+def copy_argv(
+    src_key: str,
+    dst_key: str,
+    endpoint: str,
+    *,
+    bucket: str = BUCKET,
+    src_bucket: str | None = None,
+    preserve_metadata: bool = False,
+) -> list[str]:
+    """One server-side `aws s3api copy-object`. No `--tagging-directive`: see the module docstring.
+
+    By default the metadata is REPLACEd with the promotes' own (`no-cache`, a guessed content type). `preserve_metadata` is the cross-bucket copy's form (`ops/r2_bucket_copy`): `--metadata-directive COPY` and no `--cache-control` or `--content-type`, so every header and user-metadata pair of the source object travels with it. `src_bucket` defaults to `bucket` (the same-bucket promote)."""
     argv = [
         awscli.AWS,
         "s3api",
         "copy-object",
         "--bucket",
-        BUCKET,
+        bucket,
         "--key",
         dst_key,
         "--copy-source",
-        "%s/%s" % (BUCKET, src_key),
-        "--metadata-directive",
-        "REPLACE",
-        "--cache-control",
-        CC_MUTABLE,
+        "%s/%s" % (bucket if src_bucket is None else src_bucket, src_key),
     ]
+    if preserve_metadata:
+        return [*argv, "--metadata-directive", "COPY", *endpoint_args(endpoint)]
+    argv += ["--metadata-directive", "REPLACE", "--cache-control", CC_MUTABLE]
     content_type = mimetypes.guess_type(dst_key)[0]
     if content_type:
         argv += ["--content-type", content_type]
     return [*argv, *endpoint_args(endpoint)]
 
 
-def get_argv(key: str, target: str, endpoint: str) -> list[str]:
+def get_argv(key: str, target: str, endpoint: str, bucket: str = BUCKET) -> list[str]:
     """Fetch ONE object to the runner. Used for the channel pointers only."""
     return [
         awscli.AWS,
         "s3",
         "cp",
-        "s3://%s/%s" % (BUCKET, key),
+        "s3://%s/%s" % (bucket, key),
         target,
         *endpoint_args(endpoint),
         "--only-show-errors",
     ]
 
 
-def put_argv(source: str, key: str, endpoint: str) -> list[str]:
+def put_argv(source: str, key: str, endpoint: str, bucket: str = BUCKET) -> list[str]:
     """Upload ONE stamped pointer, `no-cache` like everything under a channel path."""
     return [
         awscli.AWS,
         "s3",
         "cp",
         source,
-        "s3://%s/%s" % (BUCKET, key),
+        "s3://%s/%s" % (bucket, key),
         *endpoint_args(endpoint),
         "--only-show-errors",
         "--cache-control",
@@ -185,7 +194,7 @@ def put_argv(source: str, key: str, endpoint: str) -> list[str]:
     ]
 
 
-def delete_argv(keys: list[str], endpoint: str) -> list[str]:
+def delete_argv(keys: list[str], endpoint: str, bucket: str = BUCKET) -> list[str]:
     """One `aws s3api delete-objects` for up to `DELETE_BATCH` keys, `Quiet` so the reply names only the keys that failed."""
     payload = json.dumps({"Objects": [{"Key": key} for key in keys], "Quiet": True})
     return [
@@ -193,7 +202,7 @@ def delete_argv(keys: list[str], endpoint: str) -> list[str]:
         "s3api",
         "delete-objects",
         "--bucket",
-        BUCKET,
+        bucket,
         "--delete",
         payload,
         *endpoint_args(endpoint),
@@ -256,10 +265,23 @@ def _run_quiet(argv: list[str]) -> tuple[int, str]:
 class Transfers:
     """The retried aws calls of one run, carrying the caller's name for messages and its retry delay."""
 
-    def __init__(self, self_name: str, endpoint: str, delay_s: float) -> None:
+    def __init__(
+        self,
+        self_name: str,
+        endpoint: str,
+        delay_s: float,
+        *,
+        bucket: str = BUCKET,
+        src_bucket: str | None = None,
+        preserve_metadata: bool = False,
+    ) -> None:
         self.self_name = self_name
         self.endpoint = endpoint
         self.delay_s = delay_s
+        # The bucket every listing and write of this run targets; `src_bucket` is the copy source when it differs (a cross-bucket copy).
+        self.bucket = bucket
+        self.src_bucket = src_bucket
+        self.preserve_metadata = preserve_metadata
 
     def _retried(self, argv: list[str], what: str) -> int:
         sys.stdout.flush()
@@ -271,7 +293,7 @@ class Transfers:
         out: list[bytes] = []
 
         def run() -> tuple[int, str]:
-            proc = awscli.run(list_argv(prefix, self.endpoint), capture_output=True)
+            proc = awscli.run(list_argv(prefix, self.endpoint, self.bucket), capture_output=True)
             if proc.stderr:
                 sys.stderr.buffer.write(proc.stderr)
                 sys.stderr.flush()
@@ -286,12 +308,14 @@ class Transfers:
         return parse_listing(out[0].decode("utf-8") if out else "", prefix)
 
     def get(self, key: str, target: str) -> None:
-        status = self._retried(get_argv(key, target, self.endpoint), "fetch of %s" % key)
+        status = self._retried(
+            get_argv(key, target, self.endpoint, self.bucket), "fetch of %s" % key
+        )
         if status:
             raise PromoteError(status)
 
     def put(self, source: str, key: str) -> None:
-        status = self._retried(put_argv(source, key, self.endpoint), "put of %s" % key)
+        status = self._retried(put_argv(source, key, self.endpoint, self.bucket), "put of %s" % key)
         if status:
             raise PromoteError(status)
 
@@ -304,7 +328,7 @@ class Transfers:
         out: list[bytes] = []
 
         def run() -> tuple[int, str]:
-            proc = awscli.run(delete_argv(batch, self.endpoint), capture_output=True)
+            proc = awscli.run(delete_argv(batch, self.endpoint, self.bucket), capture_output=True)
             if proc.stderr:
                 sys.stderr.buffer.write(proc.stderr)
                 sys.stderr.flush()
@@ -338,7 +362,15 @@ class Transfers:
                 if failed:
                     return
             status = self._retried(
-                copy_argv(pair[0], pair[1], self.endpoint), "copy of %s" % pair[0]
+                copy_argv(
+                    pair[0],
+                    pair[1],
+                    self.endpoint,
+                    bucket=self.bucket,
+                    src_bucket=self.src_bucket,
+                    preserve_metadata=self.preserve_metadata,
+                ),
+                "copy of %s" % pair[0],
             )
             if status:
                 with lock:
