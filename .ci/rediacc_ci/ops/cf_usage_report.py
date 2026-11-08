@@ -15,6 +15,8 @@ CEILINGS come only from the `report` object of `.ci/config/cf-spend-guard.json` 
 
 THE LOG LINE is counted over seven days in Loki (through the Grafana datasource proxy, `OBS_GRAFANA_READ_TOKEN`); when Loki cannot answer, the Workers Observability telemetry query counts it instead. When neither answers the run is exit 2, because a guard that cannot look has not passed.
 
+MASKING (agent/plans/PLAN-enterprise-isolation.md, N2). The run log and the step summary are public, and an Enterprise company's Workers and buckets carry its name (`account-<company>`, `configs-<company>`). Every bucket and Worker name prints through `rediacc_ci.quality.enterprise_leak.Masker`, which keeps every name derivable from regions.json, the tracked worker tomls and well-known, and turns a company label into `<company-N>`. D1 ids and Containers application ids carry no name and print as read. `--unmasked` prints the real names for a local run and is refused under `GITHUB_ACTIONS`. A masker that cannot be built (regions.json unreadable, git unable to list the tree) is exit 2, because a report that cannot mask must not print.
+
 OUTPUT. One line per item: `OK` or `OVER`, the item, the value and its ceiling. Then `ALERT maintenance ...` when the line was logged. Exit 0 when nothing is over and the line is absent, 1 on any `OVER` or `ALERT`, 2 when a read of zero buckets, databases or Workers came back, a GraphQL read failed, or the log count could not be read. No secret reaches argv or output.
 """
 
@@ -28,6 +30,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from rediacc_ci.ops import observability_volume as ov
+from rediacc_ci.quality import enterprise_leak as leak
 from rediacc_ci.well_known import CF_API_BASE
 
 if TYPE_CHECKING:
@@ -247,9 +250,15 @@ def run(
     now: datetime | None = None,
     ceilings: Mapping[str, float] | None = None,
     out=None,
+    masker: leak.Masker | None = None,
 ) -> int:
     out = out or sys.stdout
     err = sys.stderr
+    try:
+        masker = masker if masker is not None else leak.Masker.for_tree()
+    except leak.LeakSetupError as exc:
+        print("cf_usage_report: names cannot be masked: %s" % exc, file=err)
+        return 2
     now = now or datetime.now(UTC)
     try:
         ceilings = dict(ceilings if ceilings is not None else load_ceilings())
@@ -333,7 +342,7 @@ def run(
 
     for name in sorted(buckets):
         emit(
-            "r2.bucket.%s.bytes" % name,
+            "r2.bucket.%s.bytes" % masker.mask(name),
             buckets[name]["bytes"],
             None,
             " objects=%d" % buckets[name]["objects"],
@@ -346,7 +355,7 @@ def run(
     emit("d1.storage.total.bytes", sum(s for _, s in databases.values()), "d1_storage_bytes")
     for name in sorted(scripts):
         emit(
-            "workers.%s.requests" % name,
+            "workers.%s.requests" % masker.mask(name),
             scripts[name]["requests"],
             None,
             " cpu_ms=%d" % scripts[name]["cpu_ms"],
@@ -411,19 +420,33 @@ def run(
     else:
         print("OK   maintenance line absent for %d days (%s)" % (LOOKBACK_DAYS, source), file=out)
     print(
-        "%d buckets, %d databases, %d Workers, %d container apps read; %d over"
-        % (len(buckets), len(databases), len(scripts), len(apps), over),
+        "%d buckets, %d databases, %d Workers, %d container apps read; %d over; "
+        "%d company label(s) masked%s"
+        % (
+            len(buckets),
+            len(databases),
+            len(scripts),
+            len(apps),
+            over,
+            masker.masked,
+            "" if masker.enabled else " (--unmasked: names shown)",
+        ),
         file=out,
     )
     return 1 if over else 0
 
 
 def main(argv: list[str] | None = None) -> int:
-    if argv:
-        print("cf_usage_report takes no arguments", file=sys.stderr)
+    try:
+        masker, refusal = leak.report_masker(list(argv or []), os.environ, "cf_usage_report")
+    except leak.LeakSetupError as exc:
+        print("cf_usage_report: names cannot be masked: %s" % exc, file=sys.stderr)
         return 2
-    return run(os.environ, ov.real_transport)
+    if masker is None:
+        print(refusal, file=sys.stderr)
+        return 2
+    return run(os.environ, ov.real_transport, masker=masker)
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    raise SystemExit(main(sys.argv[1:]))

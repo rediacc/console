@@ -7,6 +7,8 @@ PLAN-cloudflare-spend-guard T7. Four listings, all read with GET, nothing delete
   route   a Workers route in any zone whose script is absent from the account, or that names no script
   domain  a Workers custom domain whose service is absent from the account
 
+Masking (agent/plans/PLAN-enterprise-isolation.md, N2): the housekeeping log is public, and an Enterprise company's Workers, routes and hosts carry its name and are named by no tracked config, so every one of them would print here as a leftover. Each printed line goes through `rediacc_ci.quality.enterprise_leak.Masker`, which turns a company label into `<company-N>` and leaves every public name as it is; a company-shaped leftover says so in its line, since the control database, not a wrangler config, accounts for it. `--unmasked` prints real names for a local run and is refused under `GITHUB_ACTIONS`; a masker that cannot be built is exit 1, the same as an unreadable listing.
+
 Exit status: 0 whatever was found (a finding is a report line, never a failure). 1 when a listing could not be read or the environment is incomplete: an unreadable listing printed as "nothing found" is the vacuity this report must not have.
 
 Usage: PYTHONPATH=.ci python3 -m rediacc_ci.housekeeping.cf_leftovers
@@ -25,6 +27,7 @@ import urllib.error
 
 from rediacc_ci import paths
 from rediacc_ci.core import https
+from rediacc_ci.quality import enterprise_leak as leak
 from rediacc_ci.well_known import CF_API_BASE
 
 PR_SCRIPT_RE = re.compile(r"^pr-[0-9]+$")
@@ -177,11 +180,19 @@ def find_leftovers(
     return out
 
 
-def main(_argv: list[str], get=fetch) -> int:
+def main(argv: list[str], get=fetch) -> int:
     token = os.environ.get("CLOUDFLARE_API_TOKEN", "")
     account = os.environ.get("CLOUDFLARE_ACCOUNT_ID", "")
     if not token or not account:
         print("CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID are required", file=sys.stderr)
+        return 1
+    try:
+        masker, refusal = leak.report_masker(list(argv), os.environ, "cf_leftovers")
+    except leak.LeakSetupError as exc:
+        print("cf_leftovers: names cannot be masked: %s" % exc, file=sys.stderr)
+        return 1
+    if masker is None:
+        print(refusal, file=sys.stderr)
         return 1
     try:
         scanned: dict = {}
@@ -190,9 +201,18 @@ def main(_argv: list[str], get=fetch) -> int:
         print("cf_leftovers: cannot read: %s" % exc, file=sys.stderr)
         return 1
     for kind, name, detail in found:
-        print("LEFTOVER %-6s %s  (%s)" % (kind, name, detail))
+        shown = masker.mask(name)
+        why = (
+            detail
+            if shown == name
+            else detail + "; company-shaped, the control database accounts for it"
+        )
+        print("LEFTOVER %-6s %s  (%s)" % (kind, shown, masker.mask(why)))
     print("cf_leftovers: scanned %s" % ", ".join("%d %s" % (v, k) for k, v in scanned.items()))
-    print("cf_leftovers: %d leftover(s); report only, nothing deleted" % len(found))
+    print(
+        "cf_leftovers: %d leftover(s); report only, nothing deleted; %d company label(s) masked%s"
+        % (len(found), masker.masked, "" if masker.enabled else " (--unmasked: names shown)")
+    )
     return 0
 
 
