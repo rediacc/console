@@ -101,7 +101,12 @@ def _tree(tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch) -> list[list[
     monkeypatch.setattr(port.common, "repo_root", lambda: tmp_path)
     monkeypatch.setattr(port, "portal_sitekey_refusal", lambda *_a: None)
     monkeypatch.setattr(port, "check_services", lambda *_a: None)
-    monkeypatch.setattr(port, "_run", lambda argv: ran.append(argv) or 0)
+
+    def run(argv: list[str]) -> int:
+        ran.append(argv)
+        return 0
+
+    monkeypatch.setattr(port, "_run", run)
     monkeypatch.setenv("CLOUDFLARE_API_TOKEN", "tok")
     monkeypatch.setenv("CLOUDFLARE_ACCOUNT_ID", "acct")
     monkeypatch.chdir(tmp_path)
@@ -126,8 +131,17 @@ def test_main_runs_the_queue_preflight_before_the_migration(
 ) -> None:
     ran = _tree(tmp_path, monkeypatch)
     order: list[str] = []
-    monkeypatch.setattr(port, "check_queues", lambda *_a, **_k: order.append("queues") or [])
-    monkeypatch.setattr(port, "_run", lambda argv: order.append(argv[-3]) or 0)
+
+    def check_queues(*_a: object, **_k: object) -> list[str]:
+        order.append("queues")
+        return []
+
+    def run(argv: list[str]) -> int:
+        order.append(argv[-3])
+        return 0
+
+    monkeypatch.setattr(port, "check_queues", check_queues)
+    monkeypatch.setattr(port, "_run", run)
     monkeypatch.setattr(port, "portal_smoke", lambda *_a: None)
     assert port.main(["--region", "eu"]) == 0
     assert order[0] == "queues"

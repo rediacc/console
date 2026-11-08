@@ -478,7 +478,7 @@ check(
 # --- the handoff names the refresher, a process distinct from this one (review 7acdec1f.1)
 _sleeper = subprocess.Popen(["sleep", "30"])
 atexit.register(_sleeper.kill)
-_seen_env = {}
+_seen_env: dict[str, str] = {}
 
 
 def _child_popen(_argv, **kw):
