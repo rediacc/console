@@ -789,6 +789,14 @@ def test_deploy_bench_matches_bash(world: h.World) -> None:
     port_calls = world.calls()
     assert rc_b == rc_p == 0, (err_b, err_p)
     assert any(_is_seed_call(c) for c in port_calls)
+    # The sender delta in `_deploy_shape` maps only the golden's side: every port push carries the new sender, asserted before the remap can hide a port regression.
+    port_senders = [
+        c["stdin"]["AWS_SES_FROM"]
+        for c in h.normalise_calls(port_calls)
+        if isinstance(c.get("stdin"), dict) and "AWS_SES_FROM" in c["stdin"]
+    ]
+    assert port_senders
+    assert set(port_senders) == {BENCH_SENDER}, port_senders
     # DECLARED DELTA (b8601cfde): the port captures `wrangler deploy` to record its version and echoes that output to stdout; the bash's fake printed nothing there.
     version_line = "Current Version ID: 0b1f2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d\n"
     assert out_p.count(version_line) == 1
