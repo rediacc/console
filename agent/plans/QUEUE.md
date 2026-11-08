@@ -39,7 +39,7 @@ The overrides (each level's bundle value in brackets for `high`):
 A ` -- solo` note on a Promoted entry keeps that plan alone in its PR under turbo.
 
 ```stop-hook
-effort: ultra -- operator 2026-11-08 ("make queue.md to ultra and try to start again")
+effort: smart -- operator 2026-11-08 ("now switch to smart")
 turbo: on
 batch_size: 3 -- operator 2026-10-04: go in parallel as much as possible
 plan_concurrency: 5 -- operator 2026-10-04: plan limit 5
@@ -54,7 +54,7 @@ backup_push_h: 4 -- operator 2026-10-08: backup push valve, no PR
 What the loop is working on now, rendered between the markers by `.claude/hooks/stop/wl_planqueue.py` (`refresh_inflight`) on every stop and on every `worklist.py --queue-set` or `--phase`. It is runtime state: rewritten only when it changes, never compared by `npm run check:ci-plan-record`, and a committed copy is a snapshot from its commit.
 
 <!-- queue:inflight:begin -->
-- Mode: effort ultra; turbo on; turbo_push batch-end; batch_size 3; plan_concurrency 5; writer_cap 25; commit_remind_min 15; backup_push_h 4; judge full; cadence on; agent_hint on; agent_pushback on.
+- Mode: effort smart; turbo on; turbo_push batch-end; batch_size 3; plan_concurrency 5; writer_cap 25; commit_remind_min 15; backup_push_h 4; judge core; cadence on; agent_hint on; agent_pushback on.
 - Phase: merge on PR #602 (branch 1023-1, session 45048a90, since 2026-11-03T09:46:12Z, past its 24-hour limit).
 - Branch: 1104-1, no PR yet.
 - Plans on the PR (11):
@@ -73,7 +73,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 12 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic c6b82e88, plan agent/plans/PLAN-settings-set-verb.md, outside the set, 2 commit(s) on the branch, 0 open item(s): settings set verb: one source for the ceilings
   - epic dbb7de07, plan agent/plans/PLAN-cloudflare-spend-guard.md, outside the set, 48 commit(s) on the branch, 0 open item(s): cloudflare spend guard closure
-  - epic 09b8bdfa, plan agent/plans/PLAN-detached-jobs.md, outside the set, 1044 commit(s) on the branch, 0 open item(s): detached jobs: proxied poll follow and job kinds
+  - epic 09b8bdfa, plan agent/plans/PLAN-detached-jobs.md, outside the set, 1068 commit(s) on the branch, 0 open item(s): detached jobs: proxied poll follow and job kinds
   - epic ec9ba176, plan agent/plans/PLAN-backup-integrity.md, outside the set, 2 commit(s) on the branch, 0 open item(s): backup integrity docs and closure
   - epic d6bb9963, plan agent/plans/PLAN-backup-critical-tier.md, outside the set, 7 commit(s) on the branch, 0 open item(s): backup critical tier proofs
   - epic b21ab2e2, plan agent/plans/PLAN-jobs-backup-real-machine-tests.md, outside the set, 2 commit(s) on the branch, 0 open item(s): real machine tests for jobs and backup
@@ -83,8 +83,8 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic 1d805023, plan agent/plans/PLAN-tick-tracking.md, outside the set, 26 commit(s) on the branch, 0 open item(s): tick tracking: plan-box trailer, landing prints the tick, box audit
   - epic f65726d5, plan agent/plans/PLAN-renet-down-before-kill.md, outside the set, 16 commit(s) on the branch, 0 open item(s): renet runs Rediaccfile down() before repo containers stop
   - epic 53c31db2, plan agent/plans/PLAN-repo-resource-limits.md, outside the set, 20 commit(s) on the branch, 0 open item(s): per-repo resource limits and a renet-managed RAM volume
-- Writers: 7 live of writer_cap 25 (session d778be9d): worker:a59959f292c0a5040, worker:a7b0975d66f625de3, worker:a744220535e6c9fe0, worker:a581b3330cc88354b, worker:a59d01fee4694f887, worker:a0240c7162e96c61b, worker:a6251e517c2a58fb0.
-- Leased items: 18: #11306719 (worker:bv70h26bi, d778be9d), #169b3bfb (worker:af9cfe648a8f5cf89, d778be9d), #4a56425d (worker:a4c47819a5fdb8a6e, d778be9d), #4d7eb93a (worker:a744220535e6c9fe0, d778be9d), #4de1a2fa (worker:a55d2bb79742406c8, d778be9d), #56373a53 (worker:a7b0975d66f625de3, d778be9d), #58c1ccd1 (worker:a6251e517c2a58fb0, d778be9d), #6e48cbf2 (worker:a59d01fee4694f887, d778be9d), #73ea094c (worker:aa25dd4994ff76966, d778be9d), #8285b484 (worker:aac6a997ad1a616f1, d778be9d), #92df8582 (worker:a0240c7162e96c61b, d778be9d), #9471444a (worker:af7ce4ba85f3bdc11, d778be9d), and 6 more.
+- Writers: 1 live of writer_cap 25 (session d778be9d): worker:a59959f292c0a5040.
+- Leased items: 2: #b7654245 (worker:a59959f292c0a5040, d778be9d), #ddaf62ba (worker:a59959f292c0a5040, d778be9d).
 - Next plan: agent/plans/PLAN-console-executor-multi-org.md, Promoted entry 18; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
