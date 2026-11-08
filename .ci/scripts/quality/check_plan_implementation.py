@@ -284,35 +284,55 @@ CONTEXT_PUSH = "push"
 CONTEXT_MERGE = "merge"
 
 
-def pr_event_ready(event_path=None):
-    """True when the Actions event payload is a pull_request that is NOT a draft, else False.
+def pr_event_state(event_path=None, event_name=""):
+    """(state, why): how the Actions event reads, one of "ready", "draft", "other" or "unreadable".
 
-    `draft` must be the boolean False to count as ready: a payload with no `draft` field, an unreadable file or a non-pull_request event is a push, never a merge, because reading a missing field as "ready" would turn every unparsable payload into the stricter context by accident and every parsable one into the laxer by accident on the day the field moves.
+    FAIL CLOSED. "ready" is a pull_request payload whose `draft` is the boolean False; "draft" is one whose `draft` is True; "other" is a readable payload that is not a pull_request (a push or cron event). "unreadable" is every pull_request event whose payload cannot be judged: the file is missing, is not JSON, or its `pull_request` object has no boolean `draft` (a payload that moved its field must not turn a ready PR into a push). A path that cannot be read is a pull_request event only when `event_name` (GITHUB_EVENT_NAME) says so; a push event with a broken payload stays "other".
     """
     path = event_path if event_path is not None else os.environ.get("GITHUB_EVENT_PATH", "")
+    is_pr_name = str(event_name or "").startswith("pull_request")
     if not path:
-        return False
+        return "other", "no event payload path"
     try:
         with open(path, encoding="utf-8") as fh:
             event = json.load(fh)
-    except (OSError, ValueError):
-        return False
+    except (OSError, ValueError) as err:
+        kind = type(err).__name__
+        if is_pr_name:
+            return "unreadable", "the pull_request event payload cannot be read (%s)" % kind
+        return "other", "the event payload cannot be read (%s), not a pull_request" % kind
     pr = event.get("pull_request") if isinstance(event, dict) else None
-    return isinstance(pr, dict) and pr.get("draft") is False
+    if isinstance(pr, dict):
+        draft = pr.get("draft")
+        if draft is False:
+            return "ready", ""
+        if draft is True:
+            return "draft", ""
+        return "unreadable", "the pull_request payload has no boolean `draft` field"
+    if is_pr_name:
+        return "unreadable", "the pull_request event payload has no `pull_request` object"
+    return "other", ""
 
 
 def run_context(argv, environ=None):
     """(context, why): CONTEXT_MERGE when this run is the finish-line check, else CONTEXT_PUSH, and one line saying which signal decided.
 
-    MERGE when `--merge` is on the command line (the explicit door a merge path passes), or when the CI event is a pull_request that is ready for review: the loop opens every PR with `gh pr create --draft` and flips it ready only at the finish line (.claude/commands/pr-merge.md, `gh pr ready`), so a CI run on a ready PR is the run `gh pr merge --auto` waits on. Everything else is a PUSH: a draft PR's run, a push or cron event, and every local run, which is `npm run ci:quick`'s pre-push receipt.
+    MERGE when `--merge` is on the command line (the explicit door a merge path passes), or when the CI event is a pull_request that is ready for review or whose payload cannot be judged (`pr_event_state` fails closed): the loop opens every PR with `gh pr create --draft` and flips it ready only at the finish line (.claude/commands/pr-merge.md, `gh pr ready`), so a CI run on a ready PR is the run `gh pr merge --auto` waits on. Everything else is a PUSH: a draft PR's run, a push or cron event, and every local run, which is `npm run ci:quick`'s pre-push receipt.
     """
     env = os.environ if environ is None else environ
     if "--merge" in (argv or ()):
         return CONTEXT_MERGE, "--merge on the command line"
-    if pr_event_ready(env.get("GITHUB_EVENT_PATH", "")):
+    state, detail = pr_event_state(
+        env.get("GITHUB_EVENT_PATH", ""), env.get("GITHUB_EVENT_NAME", "")
+    )
+    if state == "ready":
         return CONTEXT_MERGE, "the CI event is a pull_request that is ready for review"
+    if state == "unreadable":
+        return CONTEXT_MERGE, "%s: judged as the merge, the stricter context (fail closed)" % detail
     if env.get("GITHUB_EVENT_PATH"):
-        return CONTEXT_PUSH, "the CI event is a draft PR or not a pull_request"
+        if state == "draft":
+            return CONTEXT_PUSH, "the CI event is a draft pull_request"
+        return CONTEXT_PUSH, "the CI event is not a pull_request"
     return CONTEXT_PUSH, "a local run (the pre-push receipt); pass --merge to judge the finish line"
 
 
@@ -1210,10 +1230,10 @@ def controls_fired(enforce, planfile, planrec=None, preflight=None):
     with tempfile.TemporaryDirectory() as tmp:
         ev = os.path.join(tmp, "event.json")
 
-        def ctx(payload, argv=()):
+        def ctx(payload, argv=(), name=""):
             with open(ev, "w", encoding="utf-8") as fh:
                 json.dump(payload, fh)
-            return run_context(list(argv), {"GITHUB_EVENT_PATH": ev})[0]
+            return run_context(list(argv), {"GITHUB_EVENT_PATH": ev, "GITHUB_EVENT_NAME": name})[0]
 
         caught(
             "C16e: a ready pull_request payload was not read as the merge context",
@@ -1222,12 +1242,37 @@ def controls_fired(enforce, planfile, planrec=None, preflight=None):
         caught(
             "C16f: CONTROL: a draft PR, a payload with no draft field, or a push event was read as the merge",
             ctx({"pull_request": {"draft": True}}) == CONTEXT_PUSH
-            and ctx({"pull_request": {}}) == CONTEXT_PUSH
             and ctx({"ref": "refs/heads/main"}) == CONTEXT_PUSH,
         )
         caught(
             "C16g: --merge did not select the merge context",
             ctx({"pull_request": {"draft": True}}, ["--merge"]) == CONTEXT_MERGE,
+        )
+        caught(
+            "C16i: a pull_request payload with no draft field was not judged as the merge (fail closed)",
+            ctx({"pull_request": {}}, name="pull_request") == CONTEXT_MERGE,
+        )
+        caught(
+            "C16j: an unreadable pull_request payload was not judged as the merge (fail closed)",
+            run_context(
+                [],
+                {
+                    "GITHUB_EVENT_PATH": os.path.join(tmp, "absent.json"),
+                    "GITHUB_EVENT_NAME": "pull_request",
+                },
+            )[0]
+            == CONTEXT_MERGE,
+        )
+        caught(
+            "C16k: CONTROL: an unreadable push payload was read as the merge",
+            run_context(
+                [],
+                {
+                    "GITHUB_EVENT_PATH": os.path.join(tmp, "absent.json"),
+                    "GITHUB_EVENT_NAME": "push",
+                },
+            )[0]
+            == CONTEXT_PUSH,
         )
     caught(
         "C16h: CONTROL: a local run with no payload was not the push context",

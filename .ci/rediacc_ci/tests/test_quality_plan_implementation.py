@@ -226,7 +226,6 @@ def test_a_scope_problem_refuses_a_push(gate):
     [
         ({"pull_request": {"draft": False}}, [], "merge"),
         ({"pull_request": {"draft": True}}, [], "push"),
-        ({"pull_request": {}}, [], "push"),
         ({"ref": "refs/heads/main"}, [], "push"),
         ({"pull_request": {"draft": True}}, ["--merge"], "merge"),
     ],
@@ -237,6 +236,60 @@ def test_the_context_is_read_from_the_event_or_the_flag(gate, tmp_path, payload,
     context, why = gate.run_context(argv, {"GITHUB_EVENT_PATH": str(event)})
     assert context == expected, why
     assert why
+
+
+@pytest.mark.parametrize(
+    "payload", [{"pull_request": {}}, {"pull_request": {"draft": "no"}}, {"ref": "x"}]
+)
+def test_a_pull_request_payload_that_cannot_be_judged_is_the_merge(gate, tmp_path, payload):
+    """Fail closed (e8304e45.1): a pull_request event whose payload lacks a boolean `draft` is the stricter context, with the real reason."""
+    event = tmp_path / "event.json"
+    event.write_text(json.dumps(payload), encoding="utf-8")
+    env = {"GITHUB_EVENT_PATH": str(event), "GITHUB_EVENT_NAME": "pull_request"}
+    context, why = gate.run_context([], env)
+    assert context == gate.CONTEXT_MERGE, why
+    assert "fail closed" in why
+    assert "draft PR or not a pull_request" not in why
+
+
+@pytest.mark.parametrize("content", [None, "{not json"])
+def test_an_unreadable_pull_request_payload_is_the_merge_but_a_push_payload_is_not(
+    gate, tmp_path, content
+):
+    event = tmp_path / "event.json"
+    if content is not None:
+        event.write_text(content, encoding="utf-8")
+    pr_env = {"GITHUB_EVENT_PATH": str(event), "GITHUB_EVENT_NAME": "pull_request"}
+    context, why = gate.run_context([], pr_env)
+    assert context == gate.CONTEXT_MERGE, why
+    assert "cannot be read" in why
+    push_context, push_why = gate.run_context([], dict(pr_env, GITHUB_EVENT_NAME="push"))
+    assert push_context == gate.CONTEXT_PUSH, push_why
+
+
+def _drive_main(gate, monkeypatch, capsys, argv):
+    """main() on the real tree's config and ledger, with the controls, the scope and the open-box set stood in: one plan on the clock with two open boxes."""
+    monkeypatch.delenv("GITHUB_EVENT_PATH", raising=False)
+    monkeypatch.delenv("GITHUB_EVENT_NAME", raising=False)
+    monkeypatch.setattr(gate, "controls_fired", lambda *_a, **_k: ([], gate.MIN_CONTROLS))
+    monkeypatch.setattr(gate, "prefetch_partial_clone", lambda _root: "")
+    monkeypatch.setattr(gate, "open_offenders", lambda _plans, _fin: [(HEAD, 2)])
+    monkeypatch.setattr(gate, "load_plan_gate", lambda: (_plan_gate(HEAD), ""))
+    monkeypatch.setattr(gate, "pr_body_for", lambda _o, _r=None: (None, ""))
+    monkeypatch.setattr(gate, "clock_scope", lambda *_a, **_k: ({HEAD: "queue head"}, [], ""))
+    gate.main(argv)
+    out = capsys.readouterr()
+    return out.out + out.err
+
+
+def test_main_with_merge_refuses_an_open_box_and_without_it_does_not(gate, monkeypatch, capsys):
+    merged = _drive_main(gate, monkeypatch, capsys, ["--merge"])
+    assert "P-A1 context: merge" in merged
+    assert "P-A1:" + HEAD in merged, merged
+    pushed = _drive_main(gate, monkeypatch, capsys, [])
+    assert "P-A1 context: push" in pushed
+    assert "P-A1:" + HEAD not in pushed, pushed
+    assert "P-A1 BACKLOG" in pushed
 
 
 def test_a_local_run_is_the_push_context(gate):
