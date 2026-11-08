@@ -1472,7 +1472,7 @@ export const GATES: readonly GateSpec[] = [
       GH_TOKEN: '${{ github.token }}',
     },
     run: 'npm run check:ci-budget-freshness',
-    slow: true, // network: reads ci.yml and housekeeping.yml runs and artifacts
+    slow: true, // network: reads ci.yml and ops-housekeeping.yml runs and artifacts
     gate: true,
     leaves: ['.ci/rediacc_ci/ci/freshness.py'],
     paths: [
@@ -2171,7 +2171,7 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
-    // Operator ask 2026-10-29 ("a CI job to check consistency between regions (2*3+1)"). The seven account targets (stable and edge in eu, us, asia, plus bench) must be one shape across regions.json, both wrangler tomls per target and the secret-supply profiles that feed each push, modulo the per-target differences the gate names; a target missing what the other six have, or naming another target's bucket, key or Worker, fails here. The `--live` half runs nightly in housekeeping.yml's cf-leftovers job against Cloudflare. NO `paths:`: an entry without paths is always selected.
+    // Operator ask 2026-10-29 ("a CI job to check consistency between regions (2*3+1)"). The seven account targets (stable and edge in eu, us, asia, plus bench) must be one shape across regions.json, both wrangler tomls per target and the secret-supply profiles that feed each push, modulo the per-target differences the gate names; a target missing what the other six have, or naming another target's bucket, key or Worker, fails here. The `--live` half runs nightly in ops-housekeeping.yml's cf-leftovers job against Cloudflare. NO `paths:`: an entry without paths is always selected.
     id: 'check:ci-region-consistency',
     run: 'npm run check:ci-region-consistency',
     gate: true,

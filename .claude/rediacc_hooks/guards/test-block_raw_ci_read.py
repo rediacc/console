@@ -59,7 +59,7 @@ CASES = [
     ),
     (
         "run list --event=schedule of housekeeping",
-        G + " run list --workflow housekeeping.yml --event=schedule",
+        G + " run list --workflow ops-housekeeping.yml --event=schedule",
         T + " --scheduled",
     ),
     ("run view --job --log", G + " run view --job 104569 --log", T + " --job 104569 --errors"),
@@ -117,7 +117,7 @@ CASES = [
     ("cancel", G + " run cancel 5", None),
     ("download", G + " run download 5 -n bridge-logs", None),
     ("delete", G + " run delete 5", None),
-    ("run list of another workflow", G + ' run list --workflow "Release to Edge" --limit 3', None),
+    ("run list of another workflow", G + ' run list --workflow "CD - Release to Edge" --limit 3', None),
     ("api POST rerun", G + " api -X POST %s/actions/runs/5/rerun" % REPO, None),
     ("api -XPOST glued", G + " api -XPOST %s/actions/jobs/5/rerun" % REPO, None),
     ("api PATCH check-run", G + " api -X PATCH %s/check-runs/9 -f status=completed" % REPO, None),

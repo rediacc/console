@@ -1683,7 +1683,7 @@ def test_fetch_runs_query_bound_and_age_check_agree_at_the_edge(monkeypatch, cap
 
     monkeypatch.setattr(br.gh_retry, "api_json", server)
     now = br._iso_to_epoch("2026-10-07T10:50:00Z")
-    result = br.fetch_runs("o/r", "housekeeping.yml", "schedule", "main", "completed", 10, now=now)
+    result = br.fetch_runs("o/r", "ops-housekeeping.yml", "schedule", "main", "completed", 10, now=now)
     assert [r["id"] for r in result] == [2]
     assert "sample limit" not in capsys.readouterr().err
 

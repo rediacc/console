@@ -30,7 +30,7 @@ WORKFLOWS = [
     {"stem": "ci", "file": "ci.yml", "name": "Console CI", "crons": ["0 2 * * *"]},
     {
         "stem": "housekeeping",
-        "file": "housekeeping.yml",
+        "file": "ops-housekeeping.yml",
         "name": "Housekeeping",
         "crons": ["0 4 * * *"],
     },
@@ -192,7 +192,7 @@ def test_json_shape(ct, install, capsys):
 
 @pytest.mark.parametrize(
     "name",
-    ["housekeeping", "housekeeping.yml", "Housekeeping", ".github/workflows/housekeeping.yml"],
+    ["housekeeping", "ops-housekeeping.yml", "Housekeeping", ".github/workflows/ops-housekeeping.yml"],
 )
 def test_workflow_resolves_stem_file_and_name(ct, install, capsys, name):
     runs = [

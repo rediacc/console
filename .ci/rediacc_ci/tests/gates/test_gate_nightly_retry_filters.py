@@ -2,7 +2,7 @@
 
 The nightly retry's FILTERS are the whole feature, so they are what this tests.
 
-Measured baseline, three days of rediacc/console runs: 589 success, 230 skipped, 117 cancelled, 64 failure -- and 63 of the 64 are watchdog-monitor.yml failing BY DESIGN (it cancels the run it monitors, then core.setFailed()s to signal that). Exactly ONE genuine failure. A sweeper without these filters retries 63 deliberate failures, and if it also accepted `cancelled` it would
+Measured baseline, three days of rediacc/console runs: 589 success, 230 skipped, 117 cancelled, 64 failure -- and 63 of the 64 are ops-watchdog-monitor.yml failing BY DESIGN (it cancels the run it monitors, then core.setFailed()s to signal that). Exactly ONE genuine failure. A sweeper without these filters retries 63 deliberate failures, and if it also accepted `cancelled` it would
 revive 117 superseded pipelines.
 
 So every assertion below is a MEASURED false positive, not a hypothetical:
@@ -134,7 +134,7 @@ def test_watchdog_is_excluded_by_path(gate, tmp_path):
             run_record(
                 1,
                 "Watchdog: run 999 (gen 3)",
-                ".github/workflows/watchdog-monitor.yml",
+                ".github/workflows/ops-watchdog-monitor.yml",
                 LIVE_SHA,
                 1,
                 now_iso(),
@@ -150,7 +150,7 @@ def test_watchdog_is_excluded_by_path(gate, tmp_path):
 def test_name_match_would_not_have_worked(gate):
     """Exclusion must key on PATH, because the display name is generated."""
     text = source(gate)
-    if "watchdog-monitor.yml" not in text:
+    if "ops-watchdog-monitor.yml" not in text:
         gate.log_fail("the watchdog path is not excluded at all")
     # A name-based exclusion is unwritable: the name carries a run id and a generation number, so no literal can match it.
     if "EXCLUDED_PATHS" not in text and "is_excluded" not in text:
@@ -165,7 +165,7 @@ def test_genuine_failure_on_live_head_is_retried(gate, tmp_path):
             run_record(
                 42,
                 "Cleanup PR Preview",
-                ".github/workflows/cleanup-preview.yml",
+                ".github/workflows/ops-cleanup-preview.yml",
                 LIVE_SHA,
                 1,
                 now_iso(),
@@ -235,7 +235,7 @@ def test_summary_always_reports(gate, tmp_path):
             run_record(
                 1,
                 "Watchdog: run 9 (gen 1)",
-                ".github/workflows/watchdog-monitor.yml",
+                ".github/workflows/ops-watchdog-monitor.yml",
                 LIVE_SHA,
                 1,
                 now_iso(),
@@ -276,7 +276,7 @@ def test_control_removing_the_watchdog_filter_is_caught(gate, tmp_path):
             run_record(
                 1,
                 "Watchdog: run 9 (gen 1)",
-                ".github/workflows/watchdog-monitor.yml",
+                ".github/workflows/ops-watchdog-monitor.yml",
                 LIVE_SHA,
                 1,
                 now_iso(),

@@ -31,7 +31,7 @@ PR594_BODY = (
     "That is an INFRASTRUCTURE-class failure, not a verdict on the code, so it does not\n"
     "close this head's budget yet: attempt 1 of 3.\n"
     "Re-run it on the same head, no push required:\n"
-    "`gh workflow run claude-review.yml --ref <this PR's branch> -f pr_number=594`"
+    "`gh workflow run ops-claude-review.yml --ref <this PR's branch> -f pr_number=594`"
 )
 
 
@@ -90,7 +90,7 @@ def test_pr594_comment_gives_the_rerun_with_the_branch_filled_in():
     assert len(sigs) == 1
     sig = sigs[0]
     assert (sig["kind"], sig["cls"], sig["attempts"]) == ("attempt", "error_max_turns", 1)
-    assert sig["action"] == "gh workflow run claude-review.yml --ref 1004-1 -f pr_number=594"
+    assert sig["action"] == "gh workflow run ops-claude-review.yml --ref 1004-1 -f pr_number=594"
     block = S.render(sigs, PR, HEAD)
     assert block.splitlines()[0] == "PR SIGNALS (#594 @ 4d3b950c)"
     assert "error_max_turns" in block
@@ -100,7 +100,7 @@ def test_pr594_comment_gives_the_rerun_with_the_branch_filled_in():
 @pytest.mark.parametrize(
     ("attempts", "cls", "disposition", "needle"),
     [
-        (1, "error_max_turns", S.RERUN_FREE, "gh workflow run claude-review.yml --ref 1004-1"),
+        (1, "error_max_turns", S.RERUN_FREE, "gh workflow run ops-claude-review.yml --ref 1004-1"),
         (2, "error_during_execution", S.RERUN_FREE, "-f pr_number=594"),
         (3, "error_max_turns", S.PUSH, "push a change"),
         (1, "api_error_529", S.EXCUSED, "excused"),

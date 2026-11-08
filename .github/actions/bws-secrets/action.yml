@@ -77,7 +77,7 @@ runs:
       run: |
         set -euo pipefail
         [[ -f "$MAP" ]] || { echo "::error::bws-secret-map.json not found at $MAP"; exit 1; }
-        # ubuntu-slim does not ship jq (backfill-release-sentinel.yml and ci.yml both
+        # ubuntu-slim does not ship jq (ops-backfill-release-sentinel.yml and ci.yml both
         # install it for that reason), and 11 slim jobs run this action. Install it
         # here rather than in every caller; macOS and Windows runner images carry it.
         if ! command -v jq >/dev/null 2>&1; then

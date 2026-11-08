@@ -21,15 +21,15 @@ breakpoint.yml:preflight
 breakpoint.yml:session
 
 # BLOCKER: these are the profiler probe's own experiment arms and adding a direct profiler step would destroy the measurement. facts-slim/facts-latest run the sampler in --probe form only, on purpose: they answer what a job inside the ubuntu-slim container can read from /sys/fs/cgroup, and a second sampler in the same job would contend with the one being measured. post-nested-slim/post-nested-latest are the TREATMENT arm of the nesting question (does a JavaScript action's post: hook fire when nested inside a composite?); giving them a direct uses: as well would make a panel appear whether or not nesting works, which is precisely the thing the probe exists to distinguish.
-profiler-probe.yml:facts-latest
-profiler-probe.yml:facts-slim
-profiler-probe.yml:post-nested-latest
-profiler-probe.yml:post-nested-slim
+ops-profiler-probe.yml:facts-latest
+ops-profiler-probe.yml:facts-slim
+ops-profiler-probe.yml:post-nested-latest
+ops-profiler-probe.yml:post-nested-slim
 
-# BLOCKER: rollout ledger for the runner profiler, which landed 2026-08-05 with one live job (profiler-probe.yml:post-direct-latest) and 90 jobs still unwired. Enumerated rather than waived so the gate is BLOCKING for every job added from today on, and so the burn-down is a visible diff instead of a habit: each line is deleted by the commit that adds the profiler step to that job, and the gate rejects the line the moment the job is covered, so a forgotten deletion is a build failure rather than dead weight. Phase 1 landed 2026-08-08 and burned 25 of these lines at once: profiler-probe.yml run 31252148469 proved on real runners that a JavaScript action's post: hook DOES fire from inside a composite, so one uses: in .github/actions/setup-workspace plus one verified wrapper in the gate covered every job that already calls it. What remains here is the jobs that do NOT call setup-workspace -- they set up their own toolchain, or run nothing that needs node -- and each of those still needs its own edit.
+# BLOCKER: rollout ledger for the runner profiler, which landed 2026-08-05 with one live job (ops-profiler-probe.yml:post-direct-latest) and 90 jobs still unwired. Enumerated rather than waived so the gate is BLOCKING for every job added from today on, and so the burn-down is a visible diff instead of a habit: each line is deleted by the commit that adds the profiler step to that job, and the gate rejects the line the moment the job is covered, so a forgotten deletion is a build failure rather than dead weight. Phase 1 landed 2026-08-08 and burned 25 of these lines at once: ops-profiler-probe.yml run 31252148469 proved on real runners that a JavaScript action's post: hook DOES fire from inside a composite, so one uses: in .github/actions/setup-workspace plus one verified wrapper in the gate covered every job that already calls it. What remains here is the jobs that do NOT call setup-workspace -- they set up their own toolchain, or run nothing that needs node -- and each of those still needs its own edit.
 #
-# backfill-release-sentinel.yml
-backfill-release-sentinel.yml:backfill
+# ops-backfill-release-sentinel.yml
+ops-backfill-release-sentinel.yml:backfill
 #
 # cd-deploy-account.yml
 cd-deploy-account.yml:build
@@ -86,11 +86,11 @@ ci.yml:smoke-test-preview
 ci.yml:stripe-sandbox
 ci.yml:validate-promote
 #
-# cleanup-preview.yml
-cleanup-preview.yml:cleanup
+# ops-cleanup-preview.yml
+ops-cleanup-preview.yml:cleanup
 #
-# cleanup-r2-staging.yml
-cleanup-r2-staging.yml:cleanup
+# ops-cleanup-r2-staging.yml
+ops-cleanup-r2-staging.yml:cleanup
 #
 # ct-install-methods.yml
 ct-install-methods.yml:install-methods-complete
@@ -104,16 +104,16 @@ ct-tests.yml:test-license-enforcement
 # ct-update-flow.yml
 ct-update-flow.yml:test-linux-x64
 #
-# housekeeping.yml
-housekeeping.yml:cleanup
-housekeeping.yml:stripe-cleanup
+# ops-housekeeping.yml
+ops-housekeeping.yml:cleanup
+ops-housekeeping.yml:stripe-cleanup
 #
-# nightly-status.yml
-nightly-status.yml:report
+# ops-nightly-status.yml
+ops-nightly-status.yml:report
 #
 # cd-release-stable.yml
 cd-release-stable.yml:promote
 cd-release-stable.yml:verify-stable
 #
-# watchdog-monitor.yml
-watchdog-monitor.yml:monitor
+# ops-watchdog-monitor.yml
+ops-watchdog-monitor.yml:monitor

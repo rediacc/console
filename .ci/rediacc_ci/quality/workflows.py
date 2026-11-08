@@ -65,7 +65,7 @@ variables with no context equivalent.
 
 NOTE THE EXPLICIT BOUNDARY CLASS rather than `\b`: in awk regex `\b` is a BACKSPACE, not a word boundary. The first version of this rule used it and matched nothing -- permanently vacuous, and green. Caught only by planting a violation. The class also stops $HOMEBREW_PREFIX reading as $HOME.
 
-Comment lines are prose, not values -- housekeeping.yml:72 documents
+Comment lines are prose, not values -- ops-housekeeping.yml:72 documents
 `${IN_FLIGHT_VERSION:-}` inside an env: block and must not read as a violation.
 
 ANY shell-style variable, not a list of six. The six-name form (RUNNER_TEMP|RUNNER_OS|GITHUB_WORKSPACE|GITHUB_SHA|HOME|PWD) let `SECRET_X: $SOME_VAR` through -- the exact idiom a job-start secret fetch invites, and one that ships an EMPTY string because GitHub never expands it. Widened 2026-09-02.
@@ -942,7 +942,7 @@ def selftest() -> int:
         0,
     )
     ctl.check(
-        "MIRROR: a COMMENT inside an env: block is prose (housekeeping.yml:72)",
+        "MIRROR: a COMMENT inside an env: block is prose (ops-housekeeping.yml:72)",
         len(env_shell_hits(["    env:", "      # documents ${IN_FLIGHT_VERSION:-}"])),
         0,
     )

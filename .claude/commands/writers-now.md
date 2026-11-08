@@ -25,7 +25,7 @@ The round is every Promoted plan whose row is not `done`, in table order, narrow
 |---|---|---|
 | G1 bench-rewordable | names edge or stable only as where it runs | a recorded correction to bench, then the live queue |
 | G2 run now | a live run that can start today | the live queue (step 7) |
-| G3 pipeline | proves CD, promote-stable, a nightly or a merge itself | nobody yet; named in the report |
+| G3 pipeline | proves CD, cd-release-stable, a nightly or a merge itself | nobody yet; named in the report |
 | G4 time | needs a soak or a data window | nobody yet; named in the report |
 | G5 code | real code or tests still to write | writers (step 2) |
 | G6 operator | a decision or access only the operator has | the batched ask (step 7) |

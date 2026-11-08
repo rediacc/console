@@ -2265,7 +2265,7 @@ jobs:
     # links) held only to avoid the anonymous rate limit.
     permissions:
       contents: read
-      actions: read # CI time budget freshness reads ci.yml and housekeeping.yml runs, jobs and artifacts
+      actions: read # CI time budget freshness reads ci.yml and ops-housekeeping.yml runs, jobs and artifacts
     # No label opt-out at JOB level any more: that guard skipped fully OFFLINE
     # gates (overrides/syncpack reasons, suppression liveness) along with the
     # one external step it aimed at.

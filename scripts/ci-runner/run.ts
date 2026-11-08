@@ -777,7 +777,7 @@ function slowClosure(specs: readonly GateSpec[]): Set<string> {
 const ROTATION_UNPRICED_MS = 60_000;
 
 /**
- * THE SLOW ROTATION (housekeeping.yml's gate-cost capture). `--quick` runs a slow gate only when the day's diff touches it, so a nightly capture of the quick lane measured 3 of 69 slow gates (capture 37294996911) and most went unmeasured for weeks. Bucket i of N is that night's share: the slow gates sorted by cost (CI step p90, else ROTATION_UNPRICED_MS) and dealt longest first onto the lightest bucket (LPT), so N consecutive nights measure every one and no night carries two of the longest. Deterministic for a given lane-durations.json, which is what lets a rotation index taken from the date mean anything.
+ * THE SLOW ROTATION (ops-housekeeping.yml's gate-cost capture). `--quick` runs a slow gate only when the day's diff touches it, so a nightly capture of the quick lane measured 3 of 69 slow gates (capture 37294996911) and most went unmeasured for weeks. Bucket i of N is that night's share: the slow gates sorted by cost (CI step p90, else ROTATION_UNPRICED_MS) and dealt longest first onto the lightest bucket (LPT), so N consecutive nights measure every one and no night carries two of the longest. Deterministic for a given lane-durations.json, which is what lets a rotation index taken from the date mean anything.
  */
 export function rotationBucket(
   ids: readonly string[],

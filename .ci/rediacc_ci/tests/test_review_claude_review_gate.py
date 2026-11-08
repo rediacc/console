@@ -772,8 +772,8 @@ def test_no_arm_writes_the_label_ledger(env):
 
 
 def _claude_review_job_timeout() -> int | None:
-    """`timeout-minutes` of the `Claude Review` job in .github/workflows/claude-review.yml, read from the job block that names it."""
-    text = (common.repo_root() / ".github" / "workflows" / "claude-review.yml").read_text("utf-8")
+    """`timeout-minutes` of the `Claude Review` job in .github/workflows/ops-claude-review.yml, read from the job block that names it."""
+    text = (common.repo_root() / ".github" / "workflows" / "ops-claude-review.yml").read_text("utf-8")
     in_job = False
     for line in text.splitlines():
         if (
@@ -792,7 +792,7 @@ def test_the_job_timeout_covers_the_turn_budget_it_grants():
     """A 140-turn review ran out the job's fixed 30 minutes at 1,782 s (run 37348162326); the workflow carries the derived value."""
     assert G.review_job_timeout_minutes() * 60 >= G.MAX_TURNS * G.SECONDS_PER_TURN_WORST
     assert _claude_review_job_timeout() == G.review_job_timeout_minutes(), (
-        "claude-review.yml's Claude Review timeout-minutes must equal review_job_timeout_minutes() (%d)"
+        "ops-claude-review.yml's Claude Review timeout-minutes must equal review_job_timeout_minutes() (%d)"
         % G.review_job_timeout_minutes()
     )
 

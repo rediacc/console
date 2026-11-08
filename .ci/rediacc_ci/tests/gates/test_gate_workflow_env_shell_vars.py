@@ -93,7 +93,7 @@ def test_arbitrary_variable_is_flagged(gate):
 
 def test_comment_line_in_env_block_is_ignored(gate):
     gate.log_test("CONTROL: a comment inside an env: mapping is prose, not a value")
-    # housekeeping.yml documents `${IN_FLIGHT_VERSION:-}` this way and must not
+    # ops-housekeeping.yml documents `${IN_FLIGHT_VERSION:-}` this way and must not
     # read as a hit.
     with harness.temp_dir() as d:
         workflow_rule.write_step_env(

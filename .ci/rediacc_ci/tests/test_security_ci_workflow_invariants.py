@@ -1489,7 +1489,7 @@ def test_every_preflight_kind_has_a_message() -> None:
     assert ci_workflow_invariants.preflight_message_for("invented", "j", files) is None
 
 
-REAL_HK = ROOT / ".github/workflows/housekeeping.yml"
+REAL_HK = ROOT / ".github/workflows/ops-housekeeping.yml"
 
 
 def test_a_push_only_preflight_on_the_real_ci_is_refused(tmp_path: pathlib.Path) -> None:
@@ -1834,7 +1834,7 @@ def test_a_pins_soaked_workflow_that_could_write_or_report_nothing_is_refused(mu
 
 
 def test_a_missing_pins_soaked_file_is_an_error_never_a_pass() -> None:
-    errors, info = ci_workflow_invariants._pins_soaked_phase("/nonexistent/pins-soaked.yml")
+    errors, info = ci_workflow_invariants._pins_soaked_phase("/nonexistent/ops-pins-soaked.yml")
     assert len(errors) == 1
     assert "nothing to check cannot pass" in errors[0]
     assert info == []
@@ -1848,7 +1848,7 @@ PINNED_CHECKOUT = "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1"
 
 
 def token_triple() -> list[dict]:
-    """The read-only checkout token the 2026-10-23 ruling admits, step for step as pins-soaked.yml wires it."""
+    """The read-only checkout token the 2026-10-23 ruling admits, step for step as ops-pins-soaked.yml wires it."""
     return [
         {
             "name": "Fetch secrets from Bitwarden",
@@ -2263,7 +2263,7 @@ def test_an_admitted_shape_in_another_case_is_refused_not_admitted(mutate) -> No
 
 # ---- the workflow-estate pins (2026-10-23; asked for by the Stop hook's regression judge) ----
 #
-# Two fixes landed that day that no check could catch. `pipe-no-pipefail` (commit 41437ea6f): cf-usage-report.yml piped its report into `tee` under GitHub's implicit `bash -e {0}`, which has no pipefail, so a failing report passed green. `dispatch-write-off-default-branch` (commit f8d184807): obs-ceph-autobump.yml's cd-token job could be dispatched from any branch. Each rule below is driven in both directions over literal documents, over the two pre-fix files read from git history, and over the real tree in the real invocation.
+# Two fixes landed that day that no check could catch. `pipe-no-pipefail` (commit 41437ea6f): ops-cf-usage-report.yml piped its report into `tee` under GitHub's implicit `bash -e {0}`, which has no pipefail, so a failing report passed green. `dispatch-write-off-default-branch` (commit f8d184807): ops-obs-ceph-autobump.yml's cd-token job could be dispatched from any branch. Each rule below is driven in both directions over literal documents, over the two pre-fix files read from git history, and over the real tree in the real invocation.
 
 PIPEFAIL_FIX = "41437ea6fec97878060164859b01984c1108d32a"
 DISPATCH_FIX = "f8d184807ca93051f04bd554b68adfddd5dd81d5"
@@ -2701,11 +2701,11 @@ def test_the_real_workflow_estate_holds() -> None:
 def test_planted_violations_in_a_copy_of_the_real_tree_go_red(tmp_path) -> None:
     """THE CONTROL ON THE REAL INVOCATION: the port's main over a copy of the real .github, with the two 2026-10-23 fixes reverted in place, names both files; the unplanted copy is the real tree's own verdict."""
     shutil.copytree(ROOT / ".github", tmp_path / ".github")
-    cf = tmp_path / ".github/workflows/cf-usage-report.yml"
+    cf = tmp_path / ".github/workflows/ops-cf-usage-report.yml"
     cf.write_text(
         cut_once(cf.read_text(encoding="utf-8"), "        shell: bash\n", ""), encoding="utf-8"
     )
-    obs = tmp_path / ".github/workflows/obs-ceph-autobump.yml"
+    obs = tmp_path / ".github/workflows/ops-obs-ceph-autobump.yml"
     obs.write_text(
         cut_once(
             obs.read_text(encoding="utf-8"),
@@ -2724,9 +2724,9 @@ def test_planted_violations_in_a_copy_of_the_real_tree_go_red(tmp_path) -> None:
         timeout=120,
     )
     assert proc.returncode == 1, proc.stderr
-    assert "pipe-no-pipefail: .github/workflows/cf-usage-report.yml: report step" in proc.stderr
+    assert "pipe-no-pipefail: .github/workflows/ops-cf-usage-report.yml: report step" in proc.stderr
     assert (
-        "dispatch-write-off-default-branch: .github/workflows/obs-ceph-autobump.yml: job land ("
+        "dispatch-write-off-default-branch: .github/workflows/ops-obs-ceph-autobump.yml: job land ("
         in proc.stderr
     )
 

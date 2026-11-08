@@ -22,7 +22,7 @@ from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
 WATCHDOG = paths.from_root(".ci", "scripts", "ci", "watchdog-monitor.cjs")
-WORKFLOW = paths.from_root(".github", "workflows", "watchdog-monitor.yml")
+WORKFLOW = paths.from_root(".github", "workflows", "ops-watchdog-monitor.yml")
 LANE_BUDGET = paths.from_root("scripts", "gates", "check-lane-budget.ts")
 CT_TESTS = paths.from_root(".github", "workflows", "ct-tests.yml")
 
@@ -903,13 +903,13 @@ def test_watchdog_workflow_wires_the_p4_budget_env(gate):
     gate.assert_contains(text, "WATCHDOG_JOB_BUDGET_MIN: '15'", "the per-job budget is 15")
     gate.assert_contains(text, "WATCHDOG_RUN_BUDGET_MIN: '35'", "D-W1: the pipeline target is 35")
     gate.assert_contains(text, "STUCK_THRESHOLD_MIN: '15'", "T4.3: the stuck threshold is 15")
-    gate.log_pass("watchdog-monitor.yml wires per-job enforce, run-level report at 35, stuck 15")
+    gate.log_pass("ops-watchdog-monitor.yml wires per-job enforce, run-level report at 35, stuck 15")
 
 
 _WATCHDOG_DISPATCH_RE = re.compile(
     r"rediacc_ci\.ci\.dispatch_watchdog\s+--run-id\s+\"\$(\w+)\"", re.MULTILINE
 )
-HOUSEKEEPING = paths.from_root(".github", "workflows", "housekeeping.yml")
+HOUSEKEEPING = paths.from_root(".github", "workflows", "ops-housekeeping.yml")
 
 
 def _watchdog_targets(text: str) -> list[str]:
@@ -919,8 +919,8 @@ def _watchdog_targets(text: str) -> list[str]:
 
 def test_the_watchdog_never_watches_housekeeping(gate):
     """Housekeeping's gate-costs-capture job is allowed 50 minutes (18d2dc9ab: bounded quick phase 12 + slow-gate rotation 32; operator ruling 2026-10-07, "Keep 50 min + rotation"), far over the 15-minute per-job budget.
-    It needs no JOB_BUDGET_CAPS entry ONLY because the watchdog never monitors a housekeeping run: the chain is started by ci.yml's CI Watchdog job on ci.yml's own run ($GITHUB_RUN_ID) and re-dispatched by watchdog-monitor.yml on the same target ($TARGET_RUN_ID), and `monitor()` reads and cancels jobs of that target run alone.
-    If anything starts the chain from another workflow, or ci.yml calls housekeeping.yml as a reusable workflow (its jobs would then sit inside the monitored run), the 50-minute job falls under the 15-minute budget and this reds."""
+    It needs no JOB_BUDGET_CAPS entry ONLY because the watchdog never monitors a housekeeping run: the chain is started by ci.yml's CI Watchdog job on ci.yml's own run ($GITHUB_RUN_ID) and re-dispatched by ops-watchdog-monitor.yml on the same target ($TARGET_RUN_ID), and `monitor()` reads and cancels jobs of that target run alone.
+    If anything starts the chain from another workflow, or ci.yml calls ops-housekeeping.yml as a reusable workflow (its jobs would then sit inside the monitored run), the 50-minute job falls under the 15-minute budget and this reds."""
     gate.assert_eq(
         _watchdog_targets(
             '  PYTHONPATH=.ci python3 -m rediacc_ci.ci.dispatch_watchdog --run-id "$X" \\\n'
@@ -935,17 +935,17 @@ def test_the_watchdog_never_watches_housekeeping(gate):
             starters[wf.name] = found
     gate.assert_eq(
         starters,
-        {"ci.yml": ["GITHUB_RUN_ID"], "watchdog-monitor.yml": ["TARGET_RUN_ID"]},
+        {"ci.yml": ["GITHUB_RUN_ID"], "ops-watchdog-monitor.yml": ["TARGET_RUN_ID"]},
         "the watchdog chain starts only on ci.yml's own run and re-targets only that run",
     )
     ci_text = paths.from_root(".github", "workflows", "ci.yml").read_text(encoding="utf-8")
     gate.assert_eq(
-        "housekeeping.yml" in "".join(re.findall(r"^\s*uses:\s*(\S+)", ci_text, re.MULTILINE)),
+        "ops-housekeeping.yml" in "".join(re.findall(r"^\s*uses:\s*(\S+)", ci_text, re.MULTILINE)),
         False,
-        "ci.yml does not call housekeeping.yml as a reusable workflow",
+        "ci.yml does not call ops-housekeeping.yml as a reusable workflow",
     )
     hk = HOUSEKEEPING.read_text(encoding="utf-8")
-    gate.assert_eq(_watchdog_targets(hk), [], "housekeeping.yml does not start the watchdog chain")
+    gate.assert_eq(_watchdog_targets(hk), [], "ops-housekeeping.yml does not start the watchdog chain")
     timeout = re.search(
         r"^  gate-costs-capture:\n(?:    .*\n|\s*\n)*?    timeout-minutes: (\d+)", hk, re.MULTILINE
     )

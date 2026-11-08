@@ -8,7 +8,7 @@ Usage: cleanup_versions.py [--days N] [--versions N] [--dry-run]
 -----------------------------------------------------------------------------
 THIS PORT IS WHAT RUNS NIGHTLY; THE BASH TWIN IS THE PARITY REFERENCE.
 -----------------------------------------------------------------------------
-`.github/workflows/housekeeping.yml` runs `python3 -m rediacc_ci.housekeeping.cleanup_versions`. The bash twin `cleanup-versions.sh` is kept for the differential test below, which pins this port's behaviour against it.
+`.github/workflows/ops-housekeeping.yml` runs `python3 -m rediacc_ci.housekeeping.cleanup_versions`. The bash twin `cleanup-versions.sh` is kept for the differential test below, which pins this port's behaviour against it.
 
     differential: `.ci/rediacc_ci/tests/test_housekeeping_cleanup_versions.py`
     K=5 ledger:   `.ci/shadow/w7p6-cleanup-versions.observations.jsonl`
@@ -163,7 +163,7 @@ _R2_CHANNEL_POINTER_DIR = "cli"
 GH_RUNS_KEEP_PER_WORKFLOW = 100
 GH_RUNS_RETENTION_DAYS = 30
 GH_RUNS_RETENTION_DAYS_WATCHDOG = 7
-WATCHDOG_PATH = ".github/workflows/watchdog-monitor.yml"
+WATCHDOG_PATH = ".github/workflows/ops-watchdog-monitor.yml"
 GH_RUNS_MAX_PAGES_PER_WORKFLOW = 10
 
 # A workflow stays in the Actions sidebar until it has ZERO runs, so the keep-newest floor above would hold a REMOVED workflow (its file no longer on the default branch) there forever. Phase 10 drops the floor for one and keeps only GH_RUNS_RETENTION_DAYS. A workflow is removed only when its path lies under this directory and the default branch's listing of it was read and does not hold that exact path.
@@ -3401,7 +3401,7 @@ class Housekeeping:
     def cleanup_workflow_runs(self) -> None:
         """`cleanup_workflow_runs` (:1673-1813).
 
-        THE VACUOUS-GREEN CHECK at the end is the reason this phase is worth reading twice. It deleted nothing for `watchdog-monitor.yml` for months and reported success, because the scan window (MAX_PAGES x 100 runs) never reached back as far as the retention threshold. The warning fires only when the LISTING was truncated (all GH_RUNS_MAX_PAGES_PER_WORKFLOW pages came back full) and even the oldest run it holds is inside retention, so a young low-volume workflow with nothing to reap stays quiet, and so does a window whose old runs failed to delete or ran into the budget.
+        THE VACUOUS-GREEN CHECK at the end is the reason this phase is worth reading twice. It deleted nothing for `ops-watchdog-monitor.yml` for months and reported success, because the scan window (MAX_PAGES x 100 runs) never reached back as far as the retention threshold. The warning fires only when the LISTING was truncated (all GH_RUNS_MAX_PAGES_PER_WORKFLOW pages came back full) and even the oldest run it holds is inside retention, so a young low-volume workflow with nothing to reap stays quiet, and so does a window whose old runs failed to delete or ran into the budget.
 
         LIST FIRST, THEN DELETE (intentional delta, Rule T). The runs listing is offset-paged, and the twin deleted each page's reapable runs before reading the next page, so every delete moved a later run onto a page already read and it went unseen until a later night. `_list_runs` reads the whole capped window before the first delete, as Phases 3 and 5 do; the cap is unchanged, so a night still reads at most 1,000 runs of a workflow, and the listing of the workflow whose deletes exhaust the budget is the only one read in full without being worked through. A spent budget lists nothing.
 

@@ -267,7 +267,7 @@ if a[:2] == ["api", "graphql"]:
         nodes = [ctx]
         extra = os.environ.get("FX_EXTRA", "")
         if extra:
-            # A failing context no workflow on the head defines, as main's retired review-status.yml posted on #591.
+            # A failing context no workflow on the head defines, as main's retired ops-review-status.yml posted on #591.
             nodes.append({"__typename": "StatusContext", "context": extra, "state": "FAILURE", "targetUrl": ""})
         commit = {
             "oid": head,

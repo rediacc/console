@@ -850,7 +850,7 @@ def attempt_body(head_sha: str, attempts: int, why: str, pr: str) -> str:
             "That is an INFRASTRUCTURE-class failure, not a verdict on the code, so it "
             "does not\nclose this head's budget yet: attempt %d of %d.\n"
             "Re-run it on the same head, no push required:\n"
-            "`gh workflow run claude-review.yml --ref <this PR's branch> -f pr_number=%s`"
+            "`gh workflow run ops-claude-review.yml --ref <this PR's branch> -f pr_number=%s`"
             % (attempts, review_budget.REVIEW_MAX_ATTEMPTS_PER_HEAD, pr)
         )
     else:

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """A workflow may not reference a secret its repository cannot read.
 
-WHY THIS EXISTS. On 2026-08-07 it turned out that `Claude Review` had NEVER succeeded in rediacc/account or rediacc/renet -- every run since at least 2026-07-28 failed, including runs on `main`. Both repos carry a `claude-review.yml` that references `secrets.ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN`. That
+WHY THIS EXISTS. On 2026-08-07 it turned out that `Claude Review` had NEVER succeeded in rediacc/account or rediacc/renet -- every run since at least 2026-07-28 failed, including runs on `main`. Both repos carry a `ops-claude-review.yml` that references `secrets.ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN`. That
 secret is an ORGANISATION secret with `visibility=selected`, and its
 selected-repositories list contains exactly one entry: `console`. So in those two repos the reference resolved to an empty string and the action aborted on environment validation.
 
@@ -125,7 +125,7 @@ def references(repo_root):
     for path in files:
         text = path.read_text(encoding="utf-8", errors="replace")
         declared = declared_secrets(text)
-        # A `#` COMMENT IS NOT A REFERENCE. Scanning raw text made the two the same thing, so a comment RECORDING that some `secrets.X` was removed reported as a live read of it -- the removal tripping the gate the removal satisfied. Measured 2026-09-09 on watchdog-monitor.yml: every real reference was repointed at Bitwarden and the gate still named CLAUDE_CODE_OAUTH_TOKEN, from
+        # A `#` COMMENT IS NOT A REFERENCE. Scanning raw text made the two the same thing, so a comment RECORDING that some `secrets.X` was removed reported as a live read of it -- the removal tripping the gate the removal satisfied. Measured 2026-09-09 on ops-watchdog-monitor.yml: every real reference was repointed at Bitwarden and the gate still named CLAUDE_CODE_OAUTH_TOKEN, from
         # the comment explaining why.
         #
         # The pressure that creates is the harm: the cheapest way to green is to delete the explanation, and then nobody knows why the credential went. Its sibling `scripts/gates/check-secret-scope.ts` carries the identical filter, added the same day

@@ -57,7 +57,7 @@ runs:
     # failure.
     #
     # NESTING IS PROVEN, NOT ASSUMED. A JavaScript action's `post:` hook firing
-    # from inside a composite is what profiler-probe.yml was dispatched to
+    # from inside a composite is what ops-profiler-probe.yml was dispatched to
     # settle: run 31252148469 saw the panel appear on BOTH ubuntu-slim and
     # ubuntu-latest through a composite wrapper.
     #

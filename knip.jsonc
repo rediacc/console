@@ -83,7 +83,7 @@
       "ignoreExportsUsedInFile": true,
       "project": ["scripts/**/*.ts"],
       "ignoreBinaries": [
-        // BLOCKER: .github/workflows/cleanup-preview.yml runs `npx --no-install wrangler` against a global install it makes itself at the toolchain pin (WRANGLER_VERSION, --before the release-age window); the root workspace deliberately carries no wrangler dependency, since the Worker directories are not root workspaces
+        // BLOCKER: .github/workflows/ops-cleanup-preview.yml runs `npx --no-install wrangler` against a global install it makes itself at the toolchain pin (WRANGLER_VERSION, --before the release-age window); the root workspace deliberately carries no wrangler dependency, since the Worker directories are not root workspaces
         "wrangler"
       ]
     },

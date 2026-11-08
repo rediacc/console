@@ -176,7 +176,7 @@ CI_READ_VERBS = [
     },
     {
         "name": "gh-run-list-schedule",
-        # Scheduled runs of ANY workflow (the nightly, housekeeping, promote-stable): before 2026-10-04 this read had no sanctioned verb, so the guard refused it and pointed at `--runs`, which lists only Console CI, and a five-night nightly red stayed invisible to every session. First-wins order puts this row before `gh-run-list`.
+        # Scheduled runs of ANY workflow (the nightly, housekeeping, cd-release-stable): before 2026-10-04 this read had no sanctioned verb, so the guard refused it and pointed at `--runs`, which lists only Console CI, and a five-night nightly red stayed invisible to every session. First-wins order puts this row before `gh-run-list`.
         "match": r"^run list\b.*\s--event[= ]schedule\b",
         "use": "%s --scheduled" % CI_TRACE,
         "why": (
@@ -184,11 +184,11 @@ CI_READ_VERBS = [
             "with its verdict and failed jobs (`--workflow <name>` for one workflow's history)"
         ),
         "example": "gh run list --event schedule --branch main",
-        "counter": 'gh run list --workflow "Release to Edge" --limit 3',
+        "counter": 'gh run list --workflow "CD - Release to Edge" --limit 3',
     },
     {
         "name": "gh-run-list",
-        # Console CI only: with no `--workflow`/`-w`, or one naming Console CI. Another workflow's runs are not refused here (the guard's own suite pins `gh run list --workflow "Release to Edge"` as admitted), though since 2026-10-23 `--runs --workflow <name>` lists them too and the `why` line says so.
+        # Console CI only: with no `--workflow`/`-w`, or one naming Console CI. Another workflow's runs are not refused here (the guard's own suite pins `gh run list --workflow "CD - Release to Edge"` as admitted), though since 2026-10-23 `--runs --workflow <name>` lists them too and the `why` line says so.
         "match": (
             r"^run list\b(?:(?!.*\s(?:--workflow|-w)[= ]).*"
             r"|.*\s(?:--workflow|-w)[= ](?:Console CI|ci\.yml)(?:\s.*)?)$"
@@ -201,7 +201,7 @@ CI_READ_VERBS = [
             "merged; nightly and other scheduled runs: `--scheduled`"
         ),
         "example": 'gh run list --branch main --workflow "Console CI" --limit 3',
-        "counter": 'gh run list --workflow "Release to Edge" --limit 3',
+        "counter": 'gh run list --workflow "CD - Release to Edge" --limit 3',
         # `--runs` takes `--ref <branch>` for a branch other than the current one (`--runs --ref main` after a merge).
     },
     {
@@ -318,7 +318,7 @@ CI_READ_VERBS = [
         "use": "%s --runs --ref <branch> --workflow <stem|file|name>" % CI_TRACE,
         "why": (
             "the runs list mixes every workflow and every branch; `--runs --workflow <name>` lists one "
-            'workflow\'s runs on the branch, every event merged (`--ref main --workflow "Release to Edge"` '
+            'workflow\'s runs on the branch, every event merged (`--ref main --workflow "CD - Release to Edge"` '
             "after a merge; no --workflow means Console CI), `--watchdog` the watchdog generations, and "
             "scheduled runs of every workflow: `--scheduled`"
         ),

@@ -499,7 +499,7 @@ V_PR_REVIEW_FAILED_RUN = (
     "a failed run is a defect to investigate and fix, not to wait out. The Review Complete "
     "title carries the reason; read the Claude Review run's log, fix the cause, then "
     "re-dispatch:\n"
-    "    gh workflow run claude-review.yml -f pr_number=%(pr)s"
+    "    gh workflow run ops-claude-review.yml -f pr_number=%(pr)s"
 )
 
 N_PR_REVIEW_UNREADABLE = (

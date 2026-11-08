@@ -1,4 +1,4 @@
-"""`rediacc_ci.infra.obs_ceph_autobump`: the plan and land jobs of obs-ceph-autobump.yml.
+"""`rediacc_ci.infra.obs_ceph_autobump`: the plan and land jobs of ops-obs-ceph-autobump.yml.
 
 Nothing here runs npm, gh or git, or touches the network: every command goes through a fake runner that answers from a dict and records what it was asked, and a clone is a directory the fake writes. The site regexes are the real ones from .ci/config/pins.json, so a registry edit that breaks the rewrite reds here. The verdicts that carry the design, each with its control:
 

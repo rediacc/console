@@ -16,7 +16,7 @@ THE LOCK HOLDS THROUGH THE RUN. The gates judge it once; a concurrent CD edge re
 
 THE TAG IS THREE ROWS, ONE UNIT. The git-level pre-push hook admits the tag push only by the exact object id the release-run record lists, and an annotated tag's object id does not exist until the tag is made. So `tag-create` makes the local tag in the clone (`rediacc_ci.release.tag --create-only`, whose only stdout line is the oid), `tag-record` re-writes the release-run record (same run id and path, so REDIACC_RELEASE_RUN is unchanged) with `(clone, origin, refs/tags/v<V>, oid)`, and `tag-push` pushes `refs/tags/v<V>` only while it is still that oid (`--push-oid`). The record is first written with no push at all.
 
-THE ASSIST (local-release-assist.yml, THE R2 CONTRACT in its header). As soon as the keyed renet set exists, `assist-stage-in` empties `staging/local-release/v<V>/` in WK_RELEASES_BUCKET (a stale `.complete` of an earlier attempt must never be read as this run's) and uploads `private-bin/` with `checksums.sha256`, every embedded renet checked against it first; then `assist-dispatch` starts the workflow while the other builds run. `assist-fetch` waits for `cli/.complete`, takes its run id only when the marker names this sha exactly and `gh run view` shows that id is this workflow on this sha, stops early when a dispatch of this sha created since the dispatch completed red, fetches the four SEAs into dist/cli (so SHA256SUMS covers them) and checks each against its `.sha256`. `assist-clean` removes the prefix at the end of stage, and `assist-clean-on-stop` (an `on_failure` row armed by `assist-stage-in`) removes it when the run stops anywhere after the stage-in, after `assist-cancel-on-stop` (armed by `assist-dispatch`) has cancelled this attempt's assist if it is still in flight. A marker whose run was created before this attempt's dispatch is an earlier attempt's, and `assist-fetch` waits past it.
+THE ASSIST (ops-local-release-assist.yml, THE R2 CONTRACT in its header). As soon as the keyed renet set exists, `assist-stage-in` empties `staging/local-release/v<V>/` in WK_RELEASES_BUCKET (a stale `.complete` of an earlier attempt must never be read as this run's) and uploads `private-bin/` with `checksums.sha256`, every embedded renet checked against it first; then `assist-dispatch` starts the workflow while the other builds run. `assist-fetch` waits for `cli/.complete`, takes its run id only when the marker names this sha exactly and `gh run view` shows that id is this workflow on this sha, stops early when a dispatch of this sha created since the dispatch completed red, fetches the four SEAs into dist/cli (so SHA256SUMS covers them) and checks each against its `.sha256`. `assist-clean` removes the prefix at the end of stage, and `assist-clean-on-stop` (an `on_failure` row armed by `assist-stage-in`) removes it when the run stops anywhere after the stage-in, after `assist-cancel-on-stop` (armed by `assist-dispatch`) has cancelled this attempt's assist if it is still in flight. A marker whose run was created before this attempt's dispatch is an earlier attempt's, and `assist-fetch` waits past it.
 
 PROVENANCE (plan decision 6). Sigstore needs the GitHub OIDC identity, so `provenance` writes `dist/cli/SHA256SUMS` over every Release asset (`create_github_release.release_assets`: `dist/cli/**` and `dist/packages/**`) and its armoured detached signature `dist/cli/SHA256SUMS.asc`, made with the release GPG key of the `release-local` profile in a throwaway GNUPGHOME. Both ride the GitHub Release, whose asset set is `dist/cli/**`.
 
@@ -78,9 +78,9 @@ RETRIES_NO_FAIL = 3
 # Seconds slept before the 2nd and 3rd attempt of a `can_fail=False` row: a transient remote or R2 error gets time to clear.
 RETRY_BACKOFF = (5.0, 20.0)
 RECORD_PREFIX = "release-records/v%s/edge"
-ASSIST_WORKFLOW = "local-release-assist.yml"
+ASSIST_WORKFLOW = "ops-local-release-assist.yml"
 ASSIST_NAME = "Local Release Assist"
-# local-release-assist.yml THE R2 CONTRACT: one prefix in WK_RELEASES_BUCKET, private-bin/ in, cli/ out, cli/.complete last.
+# ops-local-release-assist.yml THE R2 CONTRACT: one prefix in WK_RELEASES_BUCKET, private-bin/ in, cli/ out, cli/.complete last.
 ASSIST_PREFIX = "staging/local-release/v%s"
 ASSIST_SEAS = ("rdc-mac-arm64", "rdc-mac-x64", "rdc-win-x64.exe", "rdc-win-arm64.exe")
 # The file list of ci-build-renet.yml's `renet-binaries-<sha>` artifact, which the assist's SEA builds read.
@@ -268,7 +268,7 @@ def _table() -> tuple[Step, ...]:
             ),
             profiles=("release-local",),
         ),
-        # The assist starts as soon as the keyed renet set exists (local-release-assist.yml THE R2 CONTRACT): stage it, then dispatch.
+        # The assist starts as soon as the keyed renet set exists (ops-local-release-assist.yml THE R2 CONTRACT): stage it, then dispatch.
         Step(
             "assist-stage-in",
             "builds",
@@ -2197,7 +2197,7 @@ def assist_clean(version: str, clone: pathlib.Path) -> str:
 
 
 def assist_main(argv: list[str]) -> int:
-    """`_assist stage-in|fetch|cancel|clean --version V [--sha S --since ISO]`: the local half of local-release-assist.yml's R2 contract, run in the release clone (`stage-in`, `fetch` and `clean` inside an r2-artifacts child). `fetch` prints the assist run id as its last stdout line; `cancel` stops this attempt's in-flight assist on a stop."""
+    """`_assist stage-in|fetch|cancel|clean --version V [--sha S --since ISO]`: the local half of ops-local-release-assist.yml's R2 contract, run in the release clone (`stage-in`, `fetch` and `clean` inside an r2-artifacts child). `fetch` prints the assist run id as its last stdout line; `cancel` stops this attempt's in-flight assist on a stop."""
     parser = argparse.ArgumentParser(prog="%s _assist" % SELF)
     parser.add_argument("verb", choices=("stage-in", "fetch", "cancel", "clean"))
     parser.add_argument("--version", required=True)

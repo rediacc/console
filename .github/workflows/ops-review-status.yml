@@ -38,7 +38,7 @@ on:
   # a dispatch-sourced completion and silently no-ops. Verified live
   # 2026-08-01 on PR #550: the review genuinely completed and the marker
   # comment updated, but no Review Complete check-run appeared until
-  # nudged by hand. claude-review.yml now hands the resolved PR number over
+  # nudged by hand. ops-claude-review.yml now hands the resolved PR number over
   # as the `review-target` artifact; this trigger stays the manual re-run.
   workflow_dispatch:
     inputs:

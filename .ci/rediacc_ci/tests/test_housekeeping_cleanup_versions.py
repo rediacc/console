@@ -2242,7 +2242,7 @@ def _widgets(*rows: tuple[str, str]) -> dict:
 
 
 def test_phase_7b_holds_a_widget_inside_the_24h_grace_and_reaps_an_older_one() -> None:
-    """The grace window exists so `cleanup-preview.yml` always wins the race. The hold line rounds the remaining hours UP, in integer arithmetic."""
+    """The grace window exists so `ops-cleanup-preview.yml` always wins the race. The hold line rounds the remaining hours UP, in integer arithmetic."""
     result = sides(
         "cleanup_orphan_turnstile_widgets",
         fixture={
@@ -3285,7 +3285,7 @@ def test_delta_phase_10_the_watchdog_line_names_its_own_7d_retention() -> None:
     page = [*_runs(100), {"id": 9001, "created_at": ago(10.5), "conclusion": "success"}]
     fixture = _p10_fixture(
         [
-            _workflow(21, "Watchdog: run 123 (gen 4)", ".github/workflows/watchdog-monitor.yml"),
+            _workflow(21, "Watchdog: run 123 (gen 4)", ".github/workflows/ops-watchdog-monitor.yml"),
             # A DECOY whose NAME contains "Watchdog" and whose PATH is a different file. Without it a port that matched on the name would behave identically here and this case would prove nothing; a planted name-match defect stayed green until this row was added.
             _workflow(22, "Watchdog dispatcher", ".github/workflows/dispatch-watchdog.yml"),
         ],
@@ -3360,7 +3360,7 @@ def test_phase_10_stops_a_workflow_after_five_consecutive_delete_failures() -> N
 # --- REMOVED WORKFLOWS (intentional delta, Rule T). The twin keeps the newest 100 runs of every workflow, so a workflow whose file is gone from the default branch never reaches zero runs and never leaves the Actions sidebar. Each case below runs the twin as the CONTROL: it shows the old behaviour, so the case would be red on it.
 
 GONE = ".github/workflows/autopilot.yml"
-HOUSEKEEPING = ".github/workflows/housekeeping.yml"
+HOUSEKEEPING = ".github/workflows/ops-housekeeping.yml"
 
 
 def _old_tail(count: int, *, start: int = 0, age: float = 400.5) -> list:
@@ -3371,7 +3371,7 @@ def _old_tail(count: int, *, start: int = 0, age: float = 400.5) -> list:
 
 
 def _gone_world(page: list, *extra_workflows: dict, files: dict | None = None, rules=()) -> dict:
-    """Autopilot (id 61) is removed. Housekeeping (id 60, no runs) is present, as the workflow running this always is: a listing that held none of the listed paths would be refused as a wrong tree. The default branch holds housekeeping.yml and every extra workflow's file unless `files` says otherwise."""
+    """Autopilot (id 61) is removed. Housekeeping (id 60, no runs) is present, as the workflow running this always is: a listing that held none of the listed paths would be refused as a wrong tree. The default branch holds ops-housekeeping.yml and every extra workflow's file unless `files` says otherwise."""
     if files is None:
         files = _files(
             HOUSEKEEPING,

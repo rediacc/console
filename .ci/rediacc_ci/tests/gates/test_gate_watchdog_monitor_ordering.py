@@ -21,7 +21,7 @@ from rediacc_ci.security import workflow_gates
 from rediacc_ci.tests.gates import harness
 
 GATE = paths.from_root(".ci", "rediacc_ci", "security", "workflow_gates.py")
-WORKFLOW = paths.from_root(".github", "workflows", "watchdog-monitor.yml")
+WORKFLOW = paths.from_root(".github", "workflows", "ops-watchdog-monitor.yml")
 
 MONITOR_STEP = "      - name: Monitor jobs and cancel on failure"
 ANCHOR = "Monitor jobs and cancel on failure"
@@ -55,7 +55,7 @@ def run_check(gate, tmp_path, workflow_text: str) -> harness.RunResult:
     script.write_text(RUNNER % str(paths.from_root(".ci")), encoding="utf-8")
     root = tmp_path / "root"
     (root / ".github" / "workflows").mkdir(parents=True, exist_ok=True)
-    (root / ".github" / "workflows" / "watchdog-monitor.yml").write_text(
+    (root / ".github" / "workflows" / "ops-watchdog-monitor.yml").write_text(
         workflow_text, encoding="utf-8"
     )
     python3 = harness.require_tool(
@@ -77,7 +77,7 @@ def run_check(gate, tmp_path, workflow_text: str) -> harness.RunResult:
 
 def real_workflow(gate) -> str:
     if not WORKFLOW.is_file():
-        gate.log_fail("the real watchdog-monitor.yml is missing")
+        gate.log_fail("the real ops-watchdog-monitor.yml is missing")
     return WORKFLOW.read_text(encoding="utf-8")
 
 
@@ -91,7 +91,7 @@ def plant(gate, *extra: str) -> str:
     index = next((i for i, ln in enumerate(lines) if ln.startswith(MONITOR_STEP)), None)
     if index is None:
         gate.log_fail(
-            "the monitor step %r is not in watchdog-monitor.yml, so nothing could be "
+            "the monitor step %r is not in ops-watchdog-monitor.yml, so nothing could be "
             "planted ahead of it and every refusal below would prove nothing" % MONITOR_STEP
         )
     lines[index:index] = [*step, ""]
@@ -109,7 +109,7 @@ def expect(gate, tmp_path, want: int, label: str, workflow_text: str) -> harness
 
 def test_check6_is_extracted_from_the_live_gate(gate):
     body = check6_source(gate)
-    gate.assert_contains(body, "watchdog-monitor.yml", "CHECK 6 must read the watchdog workflow")
+    gate.assert_contains(body, "ops-watchdog-monitor.yml", "CHECK 6 must read the watchdog workflow")
     gate.log_pass("CHECK 6 found in the live gate (%d lines)" % len(body.splitlines()))
 
 
@@ -132,7 +132,7 @@ def test_the_plant_lands_ahead_of_the_monitor(gate):
 
 
 def test_the_real_workflow_passes(gate, tmp_path):
-    expect(gate, tmp_path, 0, "the real watchdog-monitor.yml passes", real_workflow(gate))
+    expect(gate, tmp_path, 0, "the real ops-watchdog-monitor.yml passes", real_workflow(gate))
 
 
 def test_a_can_fail_step_is_refused(gate, tmp_path):

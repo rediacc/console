@@ -1,6 +1,6 @@
 """check:ci-gh-retry-reads, shell half -- every GitHub READ made from SHELL retries a transient fault.
 
-WHY THIS EXISTS. The Python half (`rediacc_ci.quality.gh_retry_reads`) scans only Python, so the live orphan reaper `.ci/breakpoint/scripts/reap-breakpoint-orphans.sh` (run by housekeeping.yml) kept a one-shot `curl ... api.github.com` read nobody flagged until commit ec583bbda gave it `--retry 2 --retry-delay 5`. Writing this half found a worse one: CI's release decision, `rediacc_ci.ci.initialize` (ci.yml and cd-v2.yml), still EXECUTES the bash
+WHY THIS EXISTS. The Python half (`rediacc_ci.quality.gh_retry_reads`) scans only Python, so the live orphan reaper `.ci/breakpoint/scripts/reap-breakpoint-orphans.sh` (run by ops-housekeeping.yml) kept a one-shot `curl ... api.github.com` read nobody flagged until commit ec583bbda gave it `--retry 2 --retry-delay 5`. Writing this half found a worse one: CI's release decision, `rediacc_ci.ci.initialize` (ci.yml and cd-v2.yml), still EXECUTES the bash
 `dispatch-release.sh` and `detect-bump-type.sh`, whose one-shot `gh api .../commits/<sha>/pulls` reads are the wrong-release-on-a-5xx class PLAN-gh-retry fixed only in their Python twins. They were frozen in SHELL_DEBT until initialize cut over to the retried Python ports (2026-10-07); both bash scripts are dead twins now, and SHELL_DEBT is empty.
 
 WHAT IS SCANNED.

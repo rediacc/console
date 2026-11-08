@@ -6,7 +6,7 @@ WHAT BROKE. The failure classifier returns HTTP 402, so classifyFailure falls
 back to `{ classification: 'transient', confidence: 0 }` on EVERY failure. The
 retry branch only refused to retry on a CONFIDENT code-change verdict, so a confidence-0 fallback always landed in the retry path. Net effect: every failure in the repo, of every kind, was auto-retried on a judgment nobody made. That is only defensible while somebody reads the log afterwards, and nobody does, because the retry itself destroys it.
 
-WHY A UNIT TEST AND NOT A MIRROR. This calls the exported decision and reads WATCHDOG_RETRY_ALLOWLIST_PATTERNS out of the REAL watchdog-monitor.yml, so a rename of a pattern or a quiet widening of the list fails here.
+WHY A UNIT TEST AND NOT A MIRROR. This calls the exported decision and reads WATCHDOG_RETRY_ALLOWLIST_PATTERNS out of the REAL ops-watchdog-monitor.yml, so a rename of a pattern or a quiet widening of the list fails here.
 
 WHERE THE ALLOWLIST READER DIFFERS FROM THE TWIN, AND WHY THEY AGREE. The twin runs `sed -n "s/^ *WATCHDOG_RETRY_ALLOWLIST_PATTERNS: *'\\(.*\\)'$/\\1/p"`, which prints the capture of EVERY matching line; this module runs the same pattern as a MULTILINE Python regex and takes the first match. The two answers are the same string exactly while the workflow carries one such assignment,
 so this module also asserts that the count is one rather than assuming it: a second assignment would give the twin a two-line `$ALLOWLIST` (and therefore a broken `--patterns` argument) while this side quietly used the first, and a divergence that only shows up as a weird verdict is the kind this port exists not to introduce.
@@ -23,7 +23,7 @@ from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
 WATCHDOG = paths.from_root(".ci", "scripts", "ci", "watchdog-monitor.cjs")
-CI_WORKFLOW = paths.from_root(".github", "workflows", "watchdog-monitor.yml")
+CI_WORKFLOW = paths.from_root(".github", "workflows", "ops-watchdog-monitor.yml")
 
 ALLOWLIST_RE = re.compile(
     r"^ *WATCHDOG_RETRY_ALLOWLIST_PATTERNS: *'(.*)'$",
@@ -161,18 +161,18 @@ def test_allowlist_is_real(gate):
     # Anti-vacuity: if the list stopped covering the VM legs, the "flaky jobs still retry" cases below would pass for the wrong reason.
     policy = Policy(gate)
     gate.assert_contains(
-        policy.allowlist, "E2E", "watchdog-monitor.yml still allowlists the E2E legs"
+        policy.allowlist, "E2E", "ops-watchdog-monitor.yml still allowlists the E2E legs"
     )
     gate.assert_contains(
-        policy.allowlist, "OPS", "watchdog-monitor.yml still allowlists the OPS legs"
+        policy.allowlist, "OPS", "ops-watchdog-monitor.yml still allowlists the OPS legs"
     )
     gate.assert_contains(
         policy.allowlist,
         "Migration Test",
-        "watchdog-monitor.yml still allowlists Migration Test",
+        "ops-watchdog-monitor.yml still allowlists Migration Test",
     )
     gate.log_pass(
-        "reading the real WATCHDOG_RETRY_ALLOWLIST_PATTERNS from watchdog-monitor.yml (%s)"
+        "reading the real WATCHDOG_RETRY_ALLOWLIST_PATTERNS from ops-watchdog-monitor.yml (%s)"
         % policy.allowlist
     )
 

@@ -165,7 +165,7 @@ _NAMED_RUN = re.compile(r"\brun:(\d{6,})")
 def _newer_than_named(run_id, text):
     """True when `run_id` is the newest of every `run:<id>` the item names, or newer (or it names none). EQUAL counts: a re-attempt keeps its run id, so the named red turning green on attempt 2 is that run's own green.
 
-    ONLY A NEWER GREEN ENDS A RED (operator ruling 2026-10-04). GitHub run ids only grow, so this needs no extra read. On 2026-10-06 at 13:48Z GitHub answered the newest-completed-scheduled-run query for housekeeping.yml with run 29228880755, a green of 2026-07-13, while its real newest run 37446403488 was red, and the hook offered that July green as the tick evidence for #5f43e8c8 (`run:37111522524`).
+    ONLY A NEWER GREEN ENDS A RED (operator ruling 2026-10-04). GitHub run ids only grow, so this needs no extra read. On 2026-10-06 at 13:48Z GitHub answered the newest-completed-scheduled-run query for ops-housekeeping.yml with run 29228880755, a green of 2026-07-13, while its real newest run 37446403488 was red, and the hook offered that July green as the tick evidence for #5f43e8c8 (`run:37111522524`).
     """
     named = [int(m) for m in _NAMED_RUN.findall(text or "")]
     rid = _int_or_none(run_id)
@@ -307,7 +307,7 @@ def _fetch(root, owner, name, workflows, jobs_cache):
             else:
                 absent = False
             if absent:
-                # A scheduled workflow added on the live branch is not registered on main yet, so it has no scheduled run there; one such file must not blind the whole read (2026-10-24, cf-usage-report.yml hid five red Console CI nightlies).
+                # A scheduled workflow added on the live branch is not registered on main yet, so it has no scheduled run there; one such file must not blind the whole read (2026-10-24, ops-cf-usage-report.yml hid five red Console CI nightlies).
                 row = _run_row(wf, None, False)
                 row["not_on_main"] = True
                 rows.append(row)

@@ -206,14 +206,14 @@ def test_discovery_pins_this_repos_scheduled_workflows():
     stems = {w["stem"] for w in SR.scheduled_workflows(root)}
     assert stems == {
         "ci",
-        "housekeeping",
-        "promote-stable",
+        "ops-housekeeping",
+        "cd-release-stable",
         "ci-obs-mirror",
         "ci-vm-bake",
         "ct-backup-perf",
-        "pins-soaked",
-        "cf-usage-report",
-        "telemetry-probe",
+        "ops-pins-soaked",
+        "ops-cf-usage-report",
+        "ops-telemetry-probe",
         # Added by bc59d04d2, the weekly drift run that took over ci.yml's old schedule.
         "ci-drift",
     }
@@ -318,7 +318,7 @@ REGISTERED = [
 def test_a_workflow_not_yet_on_main_is_a_row_without_a_run_not_an_unreadable_verdict(
     repo, tmp_path, gh
 ):
-    # A scheduled workflow added on the live branch is not registered on main, so its per-workflow fallback answers HTTP 404. On 2026-10-24 that 404 (cf-usage-report.yml) made the whole `ci-trace.py --scheduled` read unreadable, hiding five red Console CI nightlies.
+    # A scheduled workflow added on the live branch is not registered on main, so its per-workflow fallback answers HTTP 404. On 2026-10-24 that 404 (ops-cf-usage-report.yml) made the whole `ci-trace.py --scheduled` read unreadable, hiding five red Console CI nightlies.
     (repo / ".github" / "workflows" / "branchonly.yml").write_text(
         HK_YML.replace("Housekeeping", "Branch Only"), encoding="utf-8"
     )

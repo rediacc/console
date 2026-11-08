@@ -467,7 +467,7 @@ def test_declared_wrapper_counts_as_coverage(gate):
 
 
 def test_setup_workspace_is_builtin_coverage(gate):
-    """THE PHASE-1 INVARIANT. profiler-probe.yml run 31252148469 proved a nested post: hook fires, so ./.github/actions/setup-workspace carries the profiler and every job calling it is covered. Driven with NO wrapper seam at all here:
+    """THE PHASE-1 INVARIANT. ops-profiler-probe.yml run 31252148469 proved a nested post: hook fires, so ./.github/actions/setup-workspace carries the profiler and every job calling it is covered. Driven with NO wrapper seam at all here:
     if somebody reverts the built-in wrapper list to empty, or deletes the
     profiler step out of setup-workspace, this case goes red -- which is the only thing standing between that edit and ~26 jobs that report as profiled while profiling nothing."""
     with harness.temp_dir() as d:

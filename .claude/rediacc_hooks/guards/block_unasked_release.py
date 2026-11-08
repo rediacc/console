@@ -4,7 +4,7 @@ WHY. agent/plans/PLAN-local-release.md moves the edge release to one local entry
 
   1. EVERY WORKER DEPLOY IS FREE, with no question. PLAN-product-domain-rename (box W7) collapses the stable and edge Worker pairs into one shared set per region (`account-<r>`, `proxy-<r>`, `www`, plus bench), and its operator ruling 4 of 2026-11-05 lets the session deploy them without asking, so no stable Worker remains: `npm run release:local -- --channel edge` (with or without `--dry-run`), and every run of the Worker modules (`deploy_account`, `deploy_proxy`, `console_executor`, `account_secrets_local`, `deploy_www`, `deploy_bench`, `set_account_worker_secrets`, `set_www_worker_secrets`) whatever target it names, and `wrangler deploy|rollback|publish|versions deploy` on a shared region Worker's `wrangler.<region>.toml`, the region ids read from `regions.json` at the project root.
   2. THE CLI'S STABLE CHANNEL NEEDS A PROVEN ASK: the promote verbs (`promote_r2_to_stable`, its hotfix twin, `promote_docker_to_stable_hotfix`, `mark_production`), and a `wrangler deploy|rollback` on a config that is neither a shared region Worker's nor a bench or preview one (`wrangler.toml` of `workers/mta-sts`, `workers/ops-health` or `workers/www` raw, `wrangler.dev.toml`). Each is admitted only when the command carries `RELEASE_ASKED=ASKED:<YYYY-MM-DDTHH:MM>Z` and that minute matches an AskUserQuestion answer in the payload's transcript within 300 s. The proof is `wl_checks._asked_in_transcript`, imported, the same check `block_vm_unverified_push` and `block_backup_unverified_push` use.
-  3. `release:local --channel stable` IS REFUSED OUTRIGHT, dry run included, and RELEASE_ASKED does not admit it: stable is promoted by `.github/workflows/promote-stable.yml` only. A run of the entry naming no channel is refused too, and each launcher is told its own reason: npm hands the script only the words after `--` (`npm run release:local --channel edge` reaches the script with no channel at all), while `python3 -m rediacc_ci.release.local` sees every word and simply names none.
+  3. `release:local --channel stable` IS REFUSED OUTRIGHT, dry run included, and RELEASE_ASKED does not admit it: stable is promoted by `.github/workflows/cd-release-stable.yml` only. A run of the entry naming no channel is refused too, and each launcher is told its own reason: npm hands the script only the words after `--` (`npm run release:local --channel edge` reaches the script with no channel at all), while `python3 -m rediacc_ci.release.local` sees every word and simply names none.
   4. THE RAW PUBLISH VERBS STAY REFUSED, with no escape: `gh release create|upload|edit|delete`, a `git push` of a `v*` tag (`refs/tags/v*`, `--tags`, `--mirror`, and `--follow-tags` on any push but the GitLab mirror push of `main`), `docker push` (and `image push`, `manifest push`, `compose push|publish`, `compose build --push`), a `docker build`/`buildx build` with `--push` or a registry output (`-o` attached or bundled too), `docker buildx imagetools create`, `wrangler pages deploy|publish`, a `wrangler deploy|rollback|publish|versions deploy` on a bench or preview config (judged on the config's file name, never the directories above it; `deploy_bench` and `deploy_proxy --target bench` are its path), and `-m` on the release entry's own steps (`upload_to_r2`, `upload_repos_to_r2`, `write_release_sentinel`, `create_github_release`, `tag_submodules`, `update_homebrew_tap`), which the entry runs in order with its gates and record.
 
 A SHELL-WRITE TWIN rides the same module: an agent write under `.ci/cache/release/` (a redirect, `tee`, `sed -i`, a copy or move onto it, `rm`, `mkdir`, `touch`, `chmod`, a mutating `git` inside the release clone, an interpreter program writing there) is refused. Decision 1 of the plan judges cleanliness on a fresh clone of HEAD at `.ci/cache/release/<tree>/`; a clone a session can edit by hand proves nothing. Only the entry and its gates module write there. The Edit and Write tools are NOT judged here: that half is a pre-edit guard this module cannot be (one module, one chain).
@@ -138,7 +138,7 @@ STEP_MODULES = (
 PUBLISH_MODULES = (*WORKER_MODULES, *STABLE_MODULES, *STEP_MODULES)
 STABLE_CHANNEL_REFUSAL = (
     "release:local --channel stable: stable is promoted through CI/CD only "
-    "(.github/workflows/promote-stable.yml, operator ruling 2026-10-27T09:45Z); "
+    "(.github/workflows/cd-release-stable.yml, operator ruling 2026-10-27T09:45Z); "
     "RELEASE_ASKED does not admit it"
 )
 NO_CHANNEL_REFUSAL = (
@@ -276,7 +276,7 @@ an AskUserQuestion answer in this session's transcript (within 300 s):
 
     RELEASE_ASKED=ASKED:<YYYY-MM-DDTHH:MM>Z <the command>
 
-`release:local --channel stable` is refused even then: promote-stable.yml promotes stable. A raw
+`release:local --channel stable` is refused even then: cd-release-stable.yml promotes stable. A raw
 gh release, v* tag push, docker push or release step is never admitted here; the entry runs them
 behind its gates and records each one.
 """

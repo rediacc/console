@@ -283,7 +283,7 @@ CD (auto on CI success): promote Docker -> git tag -> GitHub Release -> R2 -> de
 npm run release:local -- --channel edge [--dry-run] [--workers-only --regions <list>]
 ```
 
-The mac and win SEAs and install legs of a local release run in the dispatched `local-release-assist.yml`.
+The mac and win SEAs and install legs of a local release run in the dispatched `ops-local-release-assist.yml`.
 
 **[docs/agent-reference/release-process.md](docs/agent-reference/release-process.md)** carries `release_mode`'s semantics (GitHub itself rejects anything but `patch`/`retry`), the hotfix and workers-only dispatch inputs, the 7-day soak / `force` behavior on the production promote, and the local entry's gates, order check, deploy records and rollback.
 

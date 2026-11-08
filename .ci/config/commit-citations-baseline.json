@@ -446,7 +446,7 @@
       "sha": "1fb9eefe7"
     },
     "d14465604a658539": {
-      "path": ".github/workflows/housekeeping.yml",
+      "path": ".github/workflows/ops-housekeeping.yml",
       "sha": "9384e046c"
     },
     "d19274a1f8e5e787": {

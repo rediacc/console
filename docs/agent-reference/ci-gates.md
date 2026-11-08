@@ -246,7 +246,7 @@ Two design points worth knowing before you edit a workflow:
 - **It fails CLOSED on what it cannot resolve.** `runs-on: ${{ inputs.runner }}`
 has no static answer, so the job counts as REQUIRING coverage. "We could not tell" costs an allowlist line with a reason; it is never silently exempt.
 - **Coverage counts `setup-workspace` as a wrapper.** The open question this
-bullet used to carry — does a JavaScript action's `post:` hook fire when nested inside a composite? — was ANSWERED YES on 2026-08-08 by dispatching `profiler-probe.yml` (run 31252148469: `Post Run ./.github/actions/profiler/ nest-probe: success` on both ubuntu-slim and ubuntu-latest). The profiler is therefore wired as one early step in `.github/actions/setup-workspace`, that
+bullet used to carry — does a JavaScript action's `post:` hook fire when nested inside a composite? — was ANSWERED YES on 2026-08-08 by dispatching `ops-profiler-probe.yml` (run 31252148469: `Post Run ./.github/actions/profiler/ nest-probe: success` on both ubuntu-slim and ubuntu-latest). The profiler is therefore wired as one early step in `.github/actions/setup-workspace`, that
 composite is the gate's built-in wrapper default (`WRAPPER_DIRS`, still extendable via `PROFILER_COVERAGE_WRAPPER_DIRS`), and the 25 ledger lines for jobs covered that way are burned. The same probe settled the container facts: GitHub's slim is cgroup **v1** (the sampler's v1 fallback resolves cpu+memory), host views are container-scoped there (`nproc`=1, MemTotal≈4.8 GiB), `awk`
 and `node` are present, and a sample costs ~742µs.
 
@@ -268,14 +268,14 @@ The gate's runs-on/runner-label agreement check is authoring-time defence-in-dep
 `Linux` for slim and latest alike), so the label can only be threaded by hand: either each job passes it through the wrapper, which is most of the edits the nesting was meant to avoid, or the guard needs a different signal. Settle that first, then extend the config relation to the wrapper's call sites in the same change.
 
 **The allowlist can only shrink.** `.profiler-coverage-allowlist` takes `<workflow>.yml:<job>` entries under the usual `# BLOCKER:` convention (`docs/agent-reference/suppressions.md`). It currently carries the rollout ledger: 90 jobs unwired as of 2026-08-05, plus `breakpoint.yml` (frozen in `.ci/breakpoint/MANIFEST.sha256`, so a console-only step would fail the drift gate) and
-`profiler-probe.yml`'s own experiment arms. Delete a job's line in the commit that profiles it: the gate re-derives its oracle every run and rejects an entry whose job no longer exists, is now profiled, is a caller, or does not run on Linux, so a forgotten deletion is a build failure rather than dead weight. That is the liveness half of the BLOCKER convention, enforced inside the
+`ops-profiler-probe.yml`'s own experiment arms. Delete a job's line in the commit that profiles it: the gate re-derives its oracle every run and rejects an entry whose job no longer exists, is now profiled, is a caller, or does not run on Linux, so a forgotten deletion is a build failure rather than dead weight. That is the liveness half of the BLOCKER convention, enforced inside the
 gate rather than by a probe in `scripts/gates/check-suppression-liveness.ts`, because the oracle IS the parse the gate already performs.
 
 ### CI watchdog and auto-retry
 
 The CI has a watchdog (`watchdog-monitor.cjs`) and cancellation script (`cancel-older-runs.sh`) that manage run lifecycle.
 
-The watchdog runs OUTSIDE the CI run, as a chain of short ubuntu-slim generations in the separate "Watchdog Monitor" workflow (`watchdog-monitor.yml`): the 1-vCPU runner's 15-minute job cap is a hard platform limit, so each generation polls ~8 minutes and dispatches the next via `dispatch-watchdog.sh`. The in-run `CI Watchdog` job is only a bootstrap (cancel older runs + dispatch
+The watchdog runs OUTSIDE the CI run, as a chain of short ubuntu-slim generations in the separate "Watchdog Monitor" workflow (`ops-watchdog-monitor.yml`): the 1-vCPU runner's 15-minute job cap is a hard platform limit, so each generation polls ~8 minutes and dispatches the next via `dispatch-watchdog.sh`. The in-run `CI Watchdog` job is only a bootstrap (cancel older runs + dispatch
 generation 1). The retry path lives in the SAME chain: a transient verdict sets a `pending_rerun` flag carried through generations; when the run completes, the chain reruns the failed jobs itself (with `check-rerun-attempt.sh` as a separate deterministic attempt-cap pre-step) and keeps monitoring attempt 2. Consequences when triaging: watchdog verdicts, cancellation annotations,
 and retry decisions appear on `Watchdog Monitor` runs, not inside the CI run's own job list. A lost dispatch fails open -- the run finishes unwatched, and `ci-complete` still gates.
 
@@ -412,7 +412,7 @@ Re-running (`gh run rerun`) is only appropriate for transient errors (network, f
 
 ### The nightly is reported, not just run
 
-A red nightly opens (or comments on) a single rolling `nightly-red` issue, labelled `bug` + `automated`, naming the failed jobs with log links; it closes itself on the next green nightly. One rolling issue rather than one per night, because the observed failure mode is a long unbroken streak and a wall of identical issues is its own kind of invisible. Driven by `nightly-status.yml`
+A red nightly opens (or comments on) a single rolling `nightly-red` issue, labelled `bug` + `automated`, naming the failed jobs with log links; it closes itself on the next green nightly. One rolling issue rather than one per night, because the observed failure mode is a long unbroken streak and a wall of identical issues is its own kind of invisible. Driven by `ops-nightly-status.yml`
 (`workflow_run` on Console CI, filtered to `event == 'schedule'`) calling `report-nightly-status.cjs`.
 
 **A scheduled run can also be rehearsed on demand**: `ci.yml` accepts `workflow_dispatch` on `main` (guarded; a dispatch on any other ref fails loudly). It is schedule-equivalent by construction -- `full_suite` is `event != 'push'` and the channel resolves to empty for anything that is not push or pull_request -- so it exercises the nightly path without waiting a day. That matters
@@ -462,7 +462,7 @@ allowed only when the required `CI Complete` check is SUCCESS on the PR's curren
 
 ### Review Complete: the PR review is a required check
 
-`Review Complete` is a required check beside `CI Complete` (operator ruling 2026-10-03, agent/plans/PLAN-github-pr-review-restore.md Design 6). `claude-review.yml` runs the whole-PR Claude review after Console CI, and `review-status.yml` posts the `Review Complete` check-run on the head, its title starting with one fixed token:
+`Review Complete` is a required check beside `CI Complete` (operator ruling 2026-10-03, agent/plans/PLAN-github-pr-review-restore.md Design 6). `ops-claude-review.yml` runs the whole-PR Claude review after Console CI, and `ops-review-status.yml` posts the `Review Complete` check-run on the head, its title starting with one fixed token:
 
 | Token | Conclusion | Meaning |
 |---|---|---|
@@ -475,7 +475,7 @@ allowed only when the required `CI Complete` check is SUCCESS on the PR's curren
 | `failed-run` | failure | the head is unreviewed and the review run concluded `failure` or `timed_out` for a reason other than an outage; the summary starts "investigate and fix:" |
 | `hygiene` | failure | reviewed, and a hygiene script failed: an unanswered summary or an open finding thread |
 
-**The outage is the only excused failure.** A `failed-run` is a defect in the review run to investigate and fix, then re-dispatch with `gh workflow run claude-review.yml -f pr_number=<n>`; a `hygiene` is answered with `python3 .claude/hooks/stop/wl_prreview.py` (`--draft`, then `--answer` before the fix is pushed, because a push over an unanswered summary fails `Review Gate`). A timeout of `wl_prreview.py --wait` is never a pass, and nothing merges on it. A summary answered with a deferral ("deferred to worklist item #<id>") is not an answer: `review_comments` reads it as the `deferred` verdict and fails `Review Gate`. `Review Complete` blocks the CI verdict in `wl_ci` and `ci_diagnose`; `Review Status` and `Claude Review` report through it and never block on their own, and all three stay out of the watchdog and the timing lists, since the review observes a Console CI run rather than belonging to it. `/pr-merge` step 3 carries the wait, triage and answer sequence. The ruleset context is added by box GR12 once both workflows are on `main`, because a required context no workflow posts would wedge every PR; until then `gh api repos/rediacc/console/rules/branches/main` lists `CI Complete` alone, and the loop treats `Review Complete` as required regardless.
+**The outage is the only excused failure.** A `failed-run` is a defect in the review run to investigate and fix, then re-dispatch with `gh workflow run ops-claude-review.yml -f pr_number=<n>`; a `hygiene` is answered with `python3 .claude/hooks/stop/wl_prreview.py` (`--draft`, then `--answer` before the fix is pushed, because a push over an unanswered summary fails `Review Gate`). A timeout of `wl_prreview.py --wait` is never a pass, and nothing merges on it. A summary answered with a deferral ("deferred to worklist item #<id>") is not an answer: `review_comments` reads it as the `deferred` verdict and fails `Review Gate`. `Review Complete` blocks the CI verdict in `wl_ci` and `ci_diagnose`; `Review Status` and `Claude Review` report through it and never block on their own, and all three stay out of the watchdog and the timing lists, since the review observes a Console CI run rather than belonging to it. `/pr-merge` step 3 carries the wait, triage and answer sequence. The ruleset context is added by box GR12 once both workflows are on `main`, because a required context no workflow posts would wedge every PR; until then `gh api repos/rediacc/console/rules/branches/main` lists `CI Complete` alone, and the loop treats `Review Complete` as required regardless.
 
 ### Pointer-bump fast path
 

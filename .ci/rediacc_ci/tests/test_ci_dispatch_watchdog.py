@@ -82,8 +82,8 @@ TOOLS_WITHOUT_GH = (
 BASE = {"GITHUB_REPOSITORY": GH_REPO}
 
 BOOTSTRAP_TEXTS = (
-    "workflow watchdog-monitor.yml not found on the default branch",
-    "could not create workflow dispatch event: HTTP 404: Not Found (watchdog-monitor.yml)",
+    "workflow ops-watchdog-monitor.yml not found on the default branch",
+    "could not create workflow dispatch event: HTTP 404: Not Found (ops-watchdog-monitor.yml)",
 )
 
 
@@ -424,7 +424,7 @@ def test_the_pre_merge_bootstrap_404_fails_open(name: str) -> None:
     returncode, _, stderr = recorded(name)
     assert returncode == 0
     assert (
-        "⚠ watchdog-monitor.yml is not registered on the default branch yet "
+        "⚠ ops-watchdog-monitor.yml is not registered on the default branch yet "
         "(pre-merge bootstrap) - run 1 continues UNWATCHED\n" in stderr
     )
 
@@ -439,7 +439,7 @@ def test_a_404_for_some_other_workflow_is_not_the_bootstrap_case() -> None:
 def test_the_404_pattern_is_matched_per_line_as_grep_matches_it() -> None:
     """`.` never crosses a newline in grep, and must not here either."""
     assert port.is_bootstrap_404("HTTP 404: x\nwatchdog-monitor is elsewhere") is False
-    assert port.is_bootstrap_404("nope\nHTTP 404 for watchdog-monitor.yml\nnope") is True
+    assert port.is_bootstrap_404("nope\nHTTP 404 for ops-watchdog-monitor.yml\nnope") is True
     returncode, _, stderr = recorded("a-404-split-across-two-lines")
     assert returncode == 1
     assert "✗ Failed to dispatch" in stderr

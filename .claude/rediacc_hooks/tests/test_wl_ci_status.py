@@ -344,7 +344,7 @@ def test_123_a_cancelled_run_hiding_one_real_failure_still_fires(wl):
 
 
 def test_124_control_a_failing_e2e_leg_with_a_watchdog_retry_pending_does_not_block(wl):
-    """WATCHDOG_RETRY_ALLOWLIST_PATTERNS in .github/workflows/watchdog-monitor.yml. That night an opensuse E2E leg died on a Docker Hub CDN reset, was retried onto the same run, and the run finished green at 95 jobs."""
+    """WATCHDOG_RETRY_ALLOWLIST_PATTERNS in .github/workflows/ops-watchdog-monitor.yml. That night an opensuse E2E leg died on a Docker Hub CDN reset, was retried onto the same run, and the run finished green at 95 jobs."""
     ci_setup(wl)
     ci_rollup(
         wl,

@@ -1,6 +1,6 @@
 """ci-trace.py reads the runs of ANY workflow, not only Console CI (worklist #ff7812f9).
 
-After a merge `/pr-merge` step 5 must find the CD - Release to Edge dispatch run for the merged SHA, and the read guard refuses the raw runs list while `--runs` listed Console CI only. A pins-soaked workflow_dispatch run (39902213758, PLAN-pins-command.md T11) was invisible to `--scheduled`, and `--scheduled --workflow pins-soaked --run 39902213758 --wait` dropped `--run` and `--wait` without a word. Every case here drives the real `main()` with the GitHub reads faked: `_fetcher` for the runs listings, `_run_snapshot` for one run, and a recording `wl_schedred` in `sys.modules`.
+After a merge `/pr-merge` step 5 must find the CD - Release to Edge dispatch run for the merged SHA, and the read guard refuses the raw runs list while `--runs` listed Console CI only. A pins-soaked workflow_dispatch run (39902213758, PLAN-pins-command.md T11) was invisible to `--scheduled`, and `--scheduled --workflow ops-pins-soaked --run 39902213758 --wait` dropped `--run` and `--wait` without a word. Every case here drives the real `main()` with the GitHub reads faked: `_fetcher` for the runs listings, `_run_snapshot` for one run, and a recording `wl_schedred` in `sys.modules`.
 """
 
 import importlib.util
@@ -132,7 +132,7 @@ def test_runs_unknown_workflow_rc2_names_the_known_and_reads_nothing(ct, monkeyp
     err = capsys.readouterr().err
     assert "'nope' names no workflow" in err
     assert "cd-release-edge (cd-release-edge.yml, CD - Release to Edge)" in err
-    assert "pins-soaked (pins-soaked.yml, Pins Soaked)" in err
+    assert "ops-pins-soaked (ops-pins-soaked.yml, Pins Soaked)" in err
     assert fetch.paths == []
 
 
@@ -149,8 +149,8 @@ def test_runs_workflow_empty_and_unreadable_rc2(ct, monkeypatch, capsys):
 
 SCHED = [
     {
-        "stem": "pins-soaked",
-        "file": "pins-soaked.yml",
+        "stem": "ops-pins-soaked",
+        "file": "ops-pins-soaked.yml",
         "name": "Pins Soaked",
         "crons": ["30 0 * * *"],
     },
@@ -210,7 +210,7 @@ def test_scheduled_workflow_run_wait_follows_the_run_to_its_verdict(
     fake = FakeSchedred()
     monkeypatch.setitem(sys.modules, "wl_schedred", fake)
     seen = snapshots(ct, monkeypatch, [IN_FLIGHT, IN_FLIGHT, final])
-    argv = ["--scheduled", "--workflow", "pins-soaked", "--run", "39902213758", "--wait"]
+    argv = ["--scheduled", "--workflow", "ops-pins-soaked", "--run", "39902213758", "--wait"]
     assert ct.main(argv) == rc
     out = capsys.readouterr().out
     assert word in out
@@ -224,7 +224,7 @@ def test_scheduled_run_without_wait_is_no_verdict_while_in_flight(ct, monkeypatc
     """CONTROL for the wait: the same run read once is in flight, exit 2, one read."""
     monkeypatch.setitem(sys.modules, "wl_schedred", FakeSchedred())
     seen = snapshots(ct, monkeypatch, [IN_FLIGHT, RED])
-    assert ct.main(["--scheduled", "--workflow", "pins-soaked", "--run", "39902213758"]) == 2
+    assert ct.main(["--scheduled", "--workflow", "ops-pins-soaked", "--run", "39902213758"]) == 2
     assert "still in_progress" in capsys.readouterr().err
     assert seen == ["39902213758"]
 
@@ -233,7 +233,7 @@ def test_scheduled_run_without_wait_is_no_verdict_while_in_flight(ct, monkeypatc
 def test_scheduled_run_of_another_workflow_is_refused(ct, monkeypatch, capsys):
     monkeypatch.setitem(sys.modules, "wl_schedred", FakeSchedred())
     snapshots(ct, monkeypatch, [GREEN], workflow="CD - Release to Edge")
-    assert ct.main(["--scheduled", "--workflow", "pins-soaked", "--run", "39902042581"]) == 2
+    assert ct.main(["--scheduled", "--workflow", "ops-pins-soaked", "--run", "39902042581"]) == 2
     assert "is a 'CD - Release to Edge' run, not 'Pins Soaked'" in capsys.readouterr().err
 
 
@@ -246,8 +246,8 @@ def test_scheduled_run_without_workflow_judges_any_run(ct, monkeypatch):
 
 def test_scheduled_workflow_shows_dispatch_runs_without_counting_them(ct, monkeypatch, capsys):
     green_sched = {
-        "stem": "pins-soaked",
-        "file": "pins-soaked.yml",
+        "stem": "ops-pins-soaked",
+        "file": "ops-pins-soaked.yml",
         "name": "Pins Soaked",
         "run_id": 10,
         "attempt": 1,
@@ -275,13 +275,13 @@ def test_scheduled_workflow_shows_dispatch_runs_without_counting_them(ct, monkey
         ),
     )
     # A red dispatch beside a green scheduled run: shown, labelled, and the exit code stays the scheduled verdict.
-    assert ct.main(["--scheduled", "--workflow", "pins-soaked"]) == 0
+    assert ct.main(["--scheduled", "--workflow", "ops-pins-soaked"]) == 0
     out = capsys.readouterr().out
     assert "workflow_dispatch runs on main (shown, not counted in the exit code):" in out
     assert "RED    run 39902213758 attempt 1  failure @ daab83af  dispatch" in out
-    assert "--scheduled --workflow pins-soaked --run 39902213758" in out
+    assert "--scheduled --workflow ops-pins-soaked --run 39902213758" in out
     assert fetch.paths == [
-        "actions/workflows/pins-soaked.yml/runs?branch=main&per_page=3&event=workflow_dispatch"
+        "actions/workflows/ops-pins-soaked.yml/runs?branch=main&per_page=3&event=workflow_dispatch"
     ]
 
 
@@ -328,7 +328,7 @@ def test_all_workflows_scheduled_verdict_reads_no_dispatch_run(ct, monkeypatch, 
     ("argv", "needle"),
     [
         (["--scheduled", "--wait"], "--scheduled --wait needs --run"),
-        (["--scheduled", "--workflow", "pins-soaked", "--wait"], "--scheduled --wait needs --run"),
+        (["--scheduled", "--workflow", "ops-pins-soaked", "--wait"], "--scheduled --wait needs --run"),
         (["--runs", "--wait"], "--wait does not combine with --runs"),
         (["--why", "--wait", "--run", "1"], "--wait does not combine with --why"),
         (["--run", "1", "--jobs", "--wait"], "--wait does not combine with --jobs"),
@@ -364,7 +364,7 @@ def test_a_crash_in_the_run_path_names_the_run_reader(ct, monkeypatch, capsys):
         raise RuntimeError("no such run")
 
     monkeypatch.setattr(ct, "_verb_scheduled_run", boom)
-    rc = ct.verb_scheduled(str(paths.repo_root()), "pins-soaked", False, run_id="1")
+    rc = ct.verb_scheduled(str(paths.repo_root()), "ops-pins-soaked", False, run_id="1")
     err = capsys.readouterr().err
     assert rc == ct.EXIT_NO_VERDICT
     assert "the run reader failed: RuntimeError: no such run" in err
@@ -376,7 +376,7 @@ def test_an_unread_workflow_name_is_no_verdict_not_a_match(ct, monkeypatch, caps
     """Review finding 1: a run whose workflow name came back empty is not judged as the named workflow's run."""
     monkeypatch.setitem(sys.modules, "wl_schedred", FakeSchedred())
     snapshots(ct, monkeypatch, [GREEN], workflow="")
-    assert ct.main(["--scheduled", "--workflow", "pins-soaked", "--run", "39902213758"]) == 2
+    assert ct.main(["--scheduled", "--workflow", "ops-pins-soaked", "--run", "39902213758"]) == 2
     assert "the workflow of run 39902213758 could not be read" in capsys.readouterr().err
 
 

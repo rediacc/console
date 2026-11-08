@@ -266,7 +266,7 @@ jobs:
   budget-check:
     name: CI time budget check
     # T3.3 (PLAN-ci-time-budget). No app-token: none of the housekeeping presets
-    # (readonly, housekeeping, cd) grant `issues`, the same reason nightly-status.yml
+    # (readonly, housekeeping, cd) grant `issues`, the same reason ops-nightly-status.yml
     # gives for using its own job-scoped `github.token` instead of the App -- it cannot
     # bypass the branch-protection ruleset and creates no further workflow runs, so it
     # is the smaller grant for the same read (Actions API) plus post (an issue comment)

@@ -11,7 +11,7 @@ run-name: "Nightly status: run ${{ github.event.workflow_run.id }} (${{ github.e
 # PR, and blocks nothing. Measured 2026-07-27: twelve consecutive `cancelled`
 # nightlies, zero successes, back to 2026-07-16, entirely unnoticed.
 #
-# WHY A SEPARATE WORKFLOW rather than a branch inside watchdog-monitor.yml:
+# WHY A SEPARATE WORKFLOW rather than a branch inside ops-watchdog-monitor.yml:
 #   - Opening an issue needs `issues: write`. The watchdog runs on EVERY CI run
 #     (many times per PR); this runs once a night. Granting the write here keeps
 #     it off the hot path.

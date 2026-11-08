@@ -5,7 +5,7 @@ The no-retry force-cancel decision in `.ci/scripts/ci/watchdog-monitor.cjs`: WHI
 HISTORY. The twin was `test-watchdog-cancel-label.sh` and existed for the `no-cancel-failure` label, which suppressed the force-cancel so a run could finish and report every red at once. The label was removed 2026-08-05: holding a known-red run open makes every CI iteration wait out the expensive legs (E2E, OPS) for information the drain already delivers for the deterministic
 lanes. What remains under test is the part that outlived it -- the branch ordering and the drain.
 
-WHY A UNIT TEST AND NOT A MIRROR. It would be easy to re-implement the boolean here and assert on the copy; that proves nothing about the watchdog. This calls the EXPORTED decision and reads `WATCHDOG_NO_RETRY_PATTERNS` out of the REAL `watchdog-monitor.yml`, so a renamed pattern or a reordered branch fails here.
+WHY A UNIT TEST AND NOT A MIRROR. It would be easy to re-implement the boolean here and assert on the copy; that proves nothing about the watchdog. This calls the EXPORTED decision and reads `WATCHDOG_NO_RETRY_PATTERNS` out of the REAL `ops-watchdog-monitor.yml`, so a renamed pattern or a reordered branch fails here.
 
 Both directions matter:
   - Too quiet: a deterministic Quality failure stops killing the run, and one lint
@@ -29,8 +29,8 @@ from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
 WATCHDOG = paths.from_root(".ci", "scripts", "ci", "watchdog-monitor.cjs")
-# The WATCHDOG_* env block lives with the monitor step, which moved from ci.yml to the chained watchdog-monitor.yml (ubuntu-slim generations).
-CI_WORKFLOW = paths.from_root(".github", "workflows", "watchdog-monitor.yml")
+# The WATCHDOG_* env block lives with the monitor step, which moved from ci.yml to the chained ops-watchdog-monitor.yml (ubuntu-slim generations).
+CI_WORKFLOW = paths.from_root(".github", "workflows", "ops-watchdog-monitor.yml")
 
 PATTERN_LINE = re.compile(r"^ *WATCHDOG_NO_RETRY_PATTERNS: *'(.*)'$", re.MULTILINE)
 
@@ -132,13 +132,13 @@ def test_patterns_are_real(gate):
     """ANTI-VACUITY. If the pattern list stopped covering Quality, every case below would pass for the wrong reason."""
     patterns = no_retry_patterns(gate)
     gate.assert_contains(
-        patterns, "Quality", "watchdog-monitor.yml still lists Quality as no-retry"
+        patterns, "Quality", "ops-watchdog-monitor.yml still lists Quality as no-retry"
     )
     gate.assert_contains(
-        patterns, "Review Gate", "watchdog-monitor.yml still lists Review Gate as no-retry"
+        patterns, "Review Gate", "ops-watchdog-monitor.yml still lists Review Gate as no-retry"
     )
     gate.log_pass(
-        "reading the real WATCHDOG_NO_RETRY_PATTERNS from watchdog-monitor.yml (%s)" % patterns
+        "reading the real WATCHDOG_NO_RETRY_PATTERNS from ops-watchdog-monitor.yml (%s)" % patterns
     )
 
 

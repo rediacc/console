@@ -151,7 +151,7 @@ MAX_MAP_AGE_DAYS = 45
 
 # The two population floors are env-overridable ONLY so the gate-test can judge a small fixture tree. Lowering them against the REAL tree would be suppressing a finding, which is why the defaults live here and the test sets them explicitly.
 MIN_MAP_ENTRIES = int(os.environ.get("BWS_MIN_MAP_ENTRIES", "30"))
-# 19 since 2026-09-05, down from 20: watchdog-monitor.yml's fetch was REMOVED on purpose. It existed solely to feed the shadow comparator, and that comparator is gone -- the org
+# 19 since 2026-09-05, down from 20: ops-watchdog-monitor.yml's fetch was REMOVED on purpose. It existed solely to feed the shadow comparator, and that comparator is gone -- the org
 # secrets it compared against were deleted, so every comparison read "EMPTY (github=unset)
 # -- nothing was compared" and took all of CI down with it. That job's own read stays on GitHub deliberately (CLAUDE_CODE_OAUTH_TOKEN is repo-scoped and survives), so nothing consumed the fetch any more.
 #

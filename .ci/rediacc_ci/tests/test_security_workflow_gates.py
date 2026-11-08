@@ -157,7 +157,7 @@ def build_fixture(tmp_path: pathlib.Path) -> pathlib.Path:
         dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(ROOT / rel, dest)
     (fx / ".github" / "workflows").mkdir(parents=True, exist_ok=True)
-    wf(fx, "watchdog-monitor.yml", WATCHDOG)  # CHECK 6's anchor
+    wf(fx, "ops-watchdog-monitor.yml", WATCHDOG)  # CHECK 6's anchor
     wf(fx, "bws.yml", BWS_JOB % ".ci/config")  # CHECK 5's non-vacuous input
     wf(fx, "slim.yml", SLIM_OK)  # CHECK 3's coverage
     wf(fx, "callee.yml", CALLEE)  # CHECK 2's contract
@@ -813,7 +813,7 @@ def test_check6_an_optional_step_before_the_monitor(tmp_path: pathlib.Path) -> N
     fx = build_fixture(tmp_path)
     wf(
         fx,
-        "watchdog-monitor.yml",
+        "ops-watchdog-monitor.yml",
         WATCHDOG.replace(
             "      - name: Monitor",
             "      - name: Shadow-secret compare\n        run: echo\n      - name: Monitor",
@@ -829,7 +829,7 @@ def test_check6_prereqs_and_harmless_steps_are_allowed(tmp_path: pathlib.Path) -
     fx = build_fixture(tmp_path)
     wf(
         fx,
-        "watchdog-monitor.yml",
+        "ops-watchdog-monitor.yml",
         WATCHDOG.replace(
             "      - name: Monitor",
             "      - name: Fetch secrets from Bitwarden\n        run: echo\n"
@@ -849,7 +849,7 @@ def test_check6_continue_on_error_alone_is_not_enough(tmp_path: pathlib.Path) ->
     fx = build_fixture(tmp_path)
     wf(
         fx,
-        "watchdog-monitor.yml",
+        "ops-watchdog-monitor.yml",
         WATCHDOG.replace(
             "      - name: Monitor",
             "      - name: Slow thing\n        continue-on-error: true\n        run: echo\n"
@@ -865,7 +865,7 @@ def test_check6_a_named_checkout_is_exempt(tmp_path: pathlib.Path) -> None:
     """FIXED 2026-09-10 in BOTH SIDES. This test used to pin the defect.
 
     The exemption used to read the step's NAME: the name list was built as `step.get("name") or str(step.get("uses"))`, so a checkout step lost the exemption the moment it carried a `name:` that did not itself contain the string `actions/checkout`. Measured on the real tree at the time: of the 144 `actions/checkout` steps under `.github/workflows`, 139 are unnamed (exempt by the
-    `uses:` fallback) and 5 are named (not exempt). `watchdog-monitor.yml`'s own checkout is one of the 139, which is the only reason the gate was green: a single ordinary edit (`name: Checkout`) turned this registered gate red on the one workflow it exists to guard, with a message telling the author to move the checkout AFTER the monitor, which would leave the monitor's own
+    `uses:` fallback) and 5 are named (not exempt). `ops-watchdog-monitor.yml`'s own checkout is one of the 139, which is the only reason the gate was green: a single ordinary edit (`name: Checkout`) turned this registered gate red on the one workflow it exists to guard, with a message telling the author to move the checkout AFTER the monitor, which would leave the monitor's own
     scripts off disk.
 
     Both sides now decide on `uses:` and nothing else, so the named form passes.
@@ -873,7 +873,7 @@ def test_check6_a_named_checkout_is_exempt(tmp_path: pathlib.Path) -> None:
     fx = build_fixture(tmp_path)
     wf(
         fx,
-        "watchdog-monitor.yml",
+        "ops-watchdog-monitor.yml",
         WATCHDOG.replace(
             "      - uses: actions/checkout@v4",
             "      - name: Checkout\n        uses: actions/checkout@v4",
@@ -903,7 +903,7 @@ def test_check6_a_name_that_merely_says_checkout_is_not_exempt(
     fx = build_fixture(tmp_path)
     wf(
         fx,
-        "watchdog-monitor.yml",
+        "ops-watchdog-monitor.yml",
         WATCHDOG.replace(
             "      - name: Monitor",
             "      - name: actions/checkout\n        run: echo not really\n      - name: Monitor",
@@ -920,7 +920,7 @@ def test_check6_a_non_checkout_uses_is_not_exempt(tmp_path: pathlib.Path) -> Non
     fx = build_fixture(tmp_path)
     wf(
         fx,
-        "watchdog-monitor.yml",
+        "ops-watchdog-monitor.yml",
         WATCHDOG.replace(
             "      - name: Monitor",
             "      - uses: ./.github/actions/bws-secrets\n      - name: Monitor",
@@ -940,7 +940,7 @@ def test_check6_a_non_string_step_name(tmp_path: pathlib.Path) -> None:
     fx = build_fixture(tmp_path)
     wf(
         fx,
-        "watchdog-monitor.yml",
+        "ops-watchdog-monitor.yml",
         WATCHDOG.replace(
             "      - name: Monitor",
             "      - name: 5\n        run: echo\n      - name: Monitor",
@@ -959,10 +959,10 @@ def test_check2_a_workflow_that_is_not_a_mapping(tmp_path: pathlib.Path) -> None
     CHECK 2's (b)/(c) loop guarded with `(doc or {})`, which covers an EMPTY file and
     not one whose YAML parses to a scalar. The twin died with `AttributeError: 'str' object has no attribute 'get'` and then printed "Reusable-workflow contract violations (see above)" about a crash; the port already carried an `isinstance` guard and passed. Two implementations, two different answers, and no case in this file exercised it. The twin now carries the same guard.
 
-    CHECK 6 still fails the run, because watchdog-monitor.yml is the file being mangled; the subject here is that CHECK 2 agrees and neither side tracebacks.
+    CHECK 6 still fails the run, because ops-watchdog-monitor.yml is the file being mangled; the subject here is that CHECK 2 agrees and neither side tracebacks.
     """
     fx = build_fixture(tmp_path)
-    wf(fx, "watchdog-monitor.yml", "not a mapping")
+    wf(fx, "ops-watchdog-monitor.yml", "not a mapping")
     old, new = run_both(fx)
     assert "Reusable-workflow secret/input contracts hold" in old[1]
     assert "Traceback" not in old[2], "the twin still crashes on a scalar workflow doc"
@@ -989,7 +989,7 @@ def test_check6_an_unparseable_watchdog_says_so_instead_of_crashing(
         ("jobs: [\n", "is not parseable YAML (while parsing a flow node"),
     ]
     for body, expected in shapes:
-        wf(fx, "watchdog-monitor.yml", body)
+        wf(fx, "ops-watchdog-monitor.yml", body)
         old, new = run_both(fx)
         assert old[0] == 1, "shape %r stopped being a failure" % body
         assert expected in old[2], "shape %r said:\n%s" % (body, old[2])
@@ -1003,7 +1003,7 @@ def test_check6_a_renamed_monitor_does_reach_the_vacuity_message(
 ) -> None:
     """The two-of-five case that works, so the finding above is exact."""
     fx = build_fixture(tmp_path)
-    wf(fx, "watchdog-monitor.yml", WATCHDOG.replace("Monitor jobs and cancel on failure", "Watch"))
+    wf(fx, "ops-watchdog-monitor.yml", WATCHDOG.replace("Monitor jobs and cancel on failure", "Watch"))
     old, new = run_both(fx)
     assert "the watchdog lost its monitor" in old[2]
     assert_same(old, new)
@@ -1126,7 +1126,7 @@ def test_a_planted_regression_of_the_checkout_exemption_is_caught(
     fx = build_fixture(tmp_path)
     wf(
         fx,
-        "watchdog-monitor.yml",
+        "ops-watchdog-monitor.yml",
         WATCHDOG.replace(
             "      - uses: actions/checkout@v4",
             "      - name: Checkout\n        uses: actions/checkout@v4",

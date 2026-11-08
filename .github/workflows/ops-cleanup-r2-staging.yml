@@ -20,7 +20,7 @@ jobs:
     # no GitHub API call in this job.
     permissions:
       contents: read
-    # Same fork guard as cleanup-preview.yml. This job holds R2 delete
+    # Same fork guard as ops-cleanup-preview.yml. This job holds R2 delete
     # credentials for the releases bucket; a fork PR has empty secrets, so the
     # step would fail into `|| true` and log a confusing no-op. Fork PRs are
     # unsupported (see .github/CONTRIBUTING.md).

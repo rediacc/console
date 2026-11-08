@@ -26,7 +26,7 @@ When the request is ambiguous about regions or components, settle it from the ta
 | proxy (bench) | `proxy-bench` | `proxy.bench.rediacc.cloud` | `workers/proxy/wrangler.bench.toml` | none |
 | www | `www` | `www.rediacc.com`, built from edge | `workers/www/wrangler.toml` | none |
 
-Regions, hosts and bucket names (`configs-<region>`, `backups-<region>`) live in `regions.json`. The proxy Workers deploy through `release:local` (`deploy_proxy` with `workers/proxy/wrangler.<target>.toml`); section 4a covers the per-region steps. The bench proxy stays manual. The CLI release channels (R2 `edge/` and `stable/`) are published by CD and `release:local`, and promoted to stable by `promote-stable.yml`, not by this skill.
+Regions, hosts and bucket names (`configs-<region>`, `backups-<region>`) live in `regions.json`. The proxy Workers deploy through `release:local` (`deploy_proxy` with `workers/proxy/wrangler.<target>.toml`); section 4a covers the per-region steps. The bench proxy stays manual. The CLI release channels (R2 `edge/` and `stable/`) are published by CD and `release:local`, and promoted to stable by `cd-release-stable.yml`, not by this skill.
 
 ## 2. Paths: locally or by CD
 
@@ -42,7 +42,7 @@ npm run release:local -- --channel edge --workers-only --regions eu,us
 **The CLI's stable channel (asked).** `release:local --channel stable` is refused outright; stable is promoted through CI/CD after the 7-day soak, and the dispatch needs `RELEASE_ASKED` naming the operator's answer:
 
 ```bash
-RELEASE_ASKED=ASKED:<YYYY-MM-DDTHH:MM>Z gh workflow run "Release to Production"
+RELEASE_ASKED=ASKED:<YYYY-MM-DDTHH:MM>Z gh workflow run "CD - Release to Stable"
 ```
 
 Watch a run with the ci-watch skill (`.ci/scripts/ci/ci-trace.py --wait --run <id>`), never a hand-rolled poll.

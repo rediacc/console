@@ -550,13 +550,13 @@ jobs:
           GITHUB_REPOSITORY: ${{ github.repository }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.ci.cancel_older_runs --timeout 60 --poll-interval 10
 
-      # The monitor itself lives in watchdog-monitor.yml as a chain of short
+      # The monitor itself lives in ops-watchdog-monitor.yml as a chain of short
       # ubuntu-slim generations: the 1-vCPU runner's 15-minute job cap is a
       # hard platform limit, so the old single 3-hour monitor job (which held
       # a standard runner for the whole run) cannot run there. This bootstrap
       # only dispatches generation 1; each generation re-dispatches the next
       # until the run completes or a terminal verdict fires. The WATCHDOG_*
-      # pattern env vars moved to watchdog-monitor.yml with the monitor step.
+      # pattern env vars moved to ops-watchdog-monitor.yml with the monitor step.
       - name: Start watchdog monitor chain
         env:
           GH_TOKEN: ${{ github.token }}
@@ -2362,7 +2362,7 @@ jobs:
   # pull_request-only dep is `skipped` on push-to-main.
   #
   # (Housekeeping was moved out of the release pipeline to a nightly schedule —
-  # see .github/workflows/housekeeping.yml — so version/R2 cleanup can no longer
+  # see .github/workflows/ops-housekeeping.yml — so version/R2 cleanup can no longer
   # race a live release. It is no longer asserted here.)
   #
   # finalize-release-sentinel has its own `if:` guards; this sentinel is the

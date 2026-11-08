@@ -135,7 +135,7 @@ def test_the_rule_blocks_without_a_custom_response():
     expr = rule["expression"]
     for host in HOSTS:
         assert '"%s"' % host in expr
-    # The exemption that keeps telemetry-probe.yml working, and nothing wider.
+    # The exemption that keeps ops-telemetry-probe.yml working, and nothing wider.
     assert 'http.request.method eq "GET"' in expr
     assert '"/account/api/v1/health" "/v1/health"' in expr
 

@@ -14,7 +14,7 @@ last; `sed -n s///p` prints the remainder of every matching line and the Python 
 while there is one match, and the harness JSON-encodes the body onto ONE line
 precisely so that stays true.
 
-NO `xdist_group`. Every case writes only into pytest's own `tmp_path`, reads `.ci/scripts/ci/report-nightly-status.cjs` and `.github/workflows/nightly-status.yml` without writing either, binds no port and mutates no module global. Two copies of this file running at once would not collide.
+NO `xdist_group`. Every case writes only into pytest's own `tmp_path`, reads `.ci/scripts/ci/report-nightly-status.cjs` and `.github/workflows/ops-nightly-status.yml` without writing either, binds no port and mutates no module global. Two copies of this file running at once would not collide.
 """
 
 import json
@@ -27,7 +27,7 @@ from rediacc_ci.well_known import GH_ORIGIN, GH_REPO
 REPORTER = paths.from_root(".ci", "scripts", "ci", "report-nightly-status.cjs")
 BUDGET_REPORTER = paths.from_root("scripts", "ci", "report-budget-check.cjs")
 ALERTS_CONFIG = paths.from_root(".ci", "config", "ci-alerts.json")
-WORKFLOW = paths.from_root(".github", "workflows", "nightly-status.yml")
+WORKFLOW = paths.from_root(".github", "workflows", "ops-nightly-status.yml")
 
 RUN_ID = "30237524399"
 RUN_URL = (GH_ORIGIN + "/") + GH_REPO + "/actions/runs/30237524399"
@@ -314,7 +314,7 @@ def test_workflow_is_wired_to_schedule_runs_only(gate):
     )
     gate.assert_contains(text, "issues: write", "the job grants itself issues:write")
     gate.assert_contains(text, "report-nightly-status.cjs", "the workflow calls this module")
-    gate.log_pass("nightly-status.yml is wired to scheduled runs with the right grant")
+    gate.log_pass("ops-nightly-status.yml is wired to scheduled runs with the right grant")
 
 
 def test_a_rerun_of_the_same_night_does_not_double_comment(gate, tmp_path):

@@ -119,7 +119,7 @@ def pr_body_freshness(root, ref=None):
 #     `Quality / Static` = failure; run 30513152662 was `cancelled` with none).
 # * A RUN THAT IS STILL GROWING IS NOT FINAL. Job count climbed 18 -> 37 -> 79 -> 92 -> 95 inside one run. So nothing here ever concludes GREEN from a partial list. It only ever speaks about jobs that have ALREADY COMPLETED
 #     with a failing conclusion, which is a fact no later job can retract.
-# * THE WATCHDOG MAY ALREADY BE FIXING IT. Jobs matching WATCHDOG_RETRY_ALLOWLIST_PATTERNS (.github/workflows/watchdog-monitor.yml) are auto-retried onto the SAME run as a later attempt. Telling the session
+# * THE WATCHDOG MAY ALREADY BE FIXING IT. Jobs matching WATCHDOG_RETRY_ALLOWLIST_PATTERNS (.github/workflows/ops-watchdog-monitor.yml) are auto-retried onto the SAME run as a later attempt. Telling the session
 #     to investigate a leg that is about to be rerun burns a whole round; that
 # night an opensuse E2E leg failed on a Docker Hub CDN reset, was retried, and the run went green at 95 jobs. Those failures are REPORTED, never blocked on, until the run is final and they are still red.
 #

@@ -6,7 +6,7 @@ Lookup material for the guards from `agent/plans/PLAN-cloudflare-spend-guard.md`
 |---|---|---|---|
 | Usage notifications | `.ci/rediacc_ci/ops/cf_notifications.py` | `notifications.products` | a product Cloudflare refuses (exit 1) |
 | R2 lifecycle backstops | `.ci/rediacc_ci/ops/r2_lifecycle.py` | rules in code | a missing, drifted or planted rule (`--check`, exit 1) |
-| Weekly usage report | `.ci/rediacc_ci/ops/cf_usage_report.py`, `.github/workflows/cf-usage-report.yml` | `report` | an item over a ceiling or the maintenance log line (exit 1), an unreadable source (exit 2) |
+| Weekly usage report | `.ci/rediacc_ci/ops/cf_usage_report.py`, `.github/workflows/ops-cf-usage-report.yml` | `report` | an item over a ceiling or the maintenance log line (exit 1), an unreadable source (exit 2) |
 | Sampling gate | `.ci/scripts/quality/check_worker_observability_budget.py` | `worker_observability` | a Worker over the ceiling or with no explicit rate (exit 1) |
 | Leftovers report | `.ci/rediacc_ci/housekeeping/cf_leftovers.py` | none | an unreadable listing or a missing `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` |
 
@@ -73,12 +73,12 @@ Auth is `cf_auth.resolve`: a ready `CF_MANAGEMENT_TOKEN`, or the Global API Key 
 
 ## Weekly usage report
 
-`.github/workflows/cf-usage-report.yml` runs `cf_usage_report` Mondays 06:23 UTC and on `workflow_dispatch`, appending the output to the step summary. It is read-only (GraphQL Analytics reads and one log count). Run locally under the `cf-usage-report` bws profile:
+`.github/workflows/ops-cf-usage-report.yml` runs `cf_usage_report` Mondays 06:23 UTC and on `workflow_dispatch`, appending the output to the step summary. It is read-only (GraphQL Analytics reads and one log count). Run locally under the `cf-usage-report` bws profile:
 
 ```bash
 PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile cf-usage-report -- \
     env PYTHONPATH=.ci python3 -m rediacc_ci.ops.cf_usage_report
-gh workflow run cf-usage-report.yml
+gh workflow run ops-cf-usage-report.yml
 ```
 
 Each line is `OK` or `OVER` with the value and its ceiling. Ceilings come only from the `report` object of the JSON, and a missing key is an error: `workers_requests_month`, `workers_cpu_ms_month`, `r2_storage_bytes`, `r2_class_a_month`, `r2_class_b_month`, `d1_storage_bytes`. Each is compared with the account total.
@@ -106,7 +106,7 @@ Exit 1 on findings, 2 when a control fails or no verdict is possible (zero confi
 
 ## Leftovers report
 
-`cf_leftovers` lists, with GET only, what no PR cleanup owns: Workers scripts named by no wrangler config (PR previews `pr-<n>` excluded), D1 databases matching `edge-*` or `*-bench` that no config binds, Workers routes whose script is absent, and custom domains whose service is absent. It deletes nothing. A finding is a report line and exits 0, so only an unreadable listing or an incomplete environment exits 1. The `cf-leftovers` job of `.github/workflows/housekeeping.yml` runs it daily at 03:00 UTC.
+`cf_leftovers` lists, with GET only, what no PR cleanup owns: Workers scripts named by no wrangler config (PR previews `pr-<n>` excluded), D1 databases matching `edge-*` or `*-bench` that no config binds, Workers routes whose script is absent, and custom domains whose service is absent. It deletes nothing. A finding is a report line and exits 0, so only an unreadable listing or an incomplete environment exits 1. The `cf-leftovers` job of `.github/workflows/ops-housekeeping.yml` runs it daily at 03:00 UTC.
 
 ```bash
 PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile cf-usage-report -- \

@@ -126,7 +126,7 @@ ENV_FIXTURES = [
     "    env:\n      SSH_KEY: $RUNNER_TEMP/renet/.ssh/id_rsa\n",  # run 29830623794
     "    env:\n      SECRET_X: $SOME_VAR\n",  # widened 2026-09-02
     "    env:\n      T: ${{ runner.temp }}\n",  # the correct form
-    "    env:\n      # documents ${IN_FLIGHT_VERSION:-}\n",  # housekeeping.yml:72
+    "    env:\n      # documents ${IN_FLIGHT_VERSION:-}\n",  # ops-housekeeping.yml:72
     "    env:\n      A: 1\n    run: echo $HOME\n",  # dedented out of the mapping
     "    run: echo $HOME\n",  # no env: block
     "    env:\n\n      A: $B\n",  # a blank line inside the mapping

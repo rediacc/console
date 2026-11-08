@@ -3,4 +3,4 @@ exit: 0
 --- stdout ---
 --- stderr ---
 call: gh api repos/rediacc/console --jq .default_branch
-⚠ watchdog-monitor.yml is not registered on the default branch yet (pre-merge bootstrap) - run 1 continues UNWATCHED
+⚠ ops-watchdog-monitor.yml is not registered on the default branch yet (pre-merge bootstrap) - run 1 continues UNWATCHED

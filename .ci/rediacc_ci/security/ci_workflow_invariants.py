@@ -54,7 +54,7 @@ CD run 37749637824 is the case: the tag lived in `tag-and-release`, behind post-
 
 THE LOCAL RELEASE ORDER (PLAN-local-release W3-B, as amended by the operator rulings of 2026-10-27T09:45Z: cd-release-edge.yml keeps releasing edge on merge, `npm run release:local -- --channel edge` is a second edge path, stable stays CI/CD only). The release-order rules above, applied to the local entry's declarative table `rediacc_ci.release.local.STEPS`, imported rather than parsed, so the phase reads exactly the rows the entry runs. `analyse_local_steps` finds rows by the module their argv runs, never by id, and refuses (`LOCAL_KINDS`): a table with no sentinel seal, no tag, no CLI upload or no account deploy (vacuity); a seal not immediately followed by the tag rows; tag rows that are not contiguous or do not end in the push; any row from the seal through the tag push with `can_fail=True`; an account deploy before the CLI upload, the seal or the tag push; and any stable row. `local_stable_admitted` also calls the entry's `main(["--channel", "stable"])`, which must refuse with rc 2 naming cd-release-stable.yml before reading anything. An import failure is a finding, never a pass.
 
-THE CD-PREFLIGHT PINS (PLAN-cd-errors-in-ci W4) ride the same phase and read a fourth file, `housekeeping.yml` (`HOUSEKEEPING_WORKFLOW_FILE` overrides it). `rediacc_ci.release.cd_preflight` must run at three sites, each with at least the checks `PREFLIGHT_REQUIRED_CHECKS` names (`cd-preflight-narrowed` otherwise):
+THE CD-PREFLIGHT PINS (PLAN-cd-errors-in-ci W4) ride the same phase and read a fourth file, `ops-housekeeping.yml` (`HOUSEKEEPING_WORKFLOW_FILE` overrides it). `rediacc_ci.release.cd_preflight` must run at three sites, each with at least the checks `PREFLIGHT_REQUIRED_CHECKS` names (`cd-preflight-narrowed` otherwise):
 
   * `cd-preflight-no-pr-job` / `cd-preflight-not-on-pr` -- a ci.yml job runs
     `--phase pr`, and its `if:` admits pull_request. A push-only preflight is the
@@ -900,7 +900,7 @@ def analyse_preflight(
 ) -> tuple[list[tuple[str, str]], list[str]]:
     """(findings, shape lines) for the three preflight sites. Pure; the tests drive it with literal dicts.
 
-    ci.yml: a job runs `--phase pr` and its `if:` admits pull_request (a push-only job is the main-only blind spot that let the 10-07 drift reach main). cd-release-edge.yml: a `--phase cd` step sits in the version tag step's job, AFTER it. housekeeping.yml: a preflight step precedes every cleanup_versions step in the same job, and that cleanup step carries no status function that would run it past a red preflight.
+    ci.yml: a job runs `--phase pr` and its `if:` admits pull_request (a push-only job is the main-only blind spot that let the 10-07 drift reach main). cd-release-edge.yml: a `--phase cd` step sits in the version tag step's job, AFTER it. ops-housekeeping.yml: a preflight step precedes every cleanup_versions step in the same job, and that cleanup step carries no status function that would run it past a red preflight.
     """
     out: list[tuple[str, str]] = []
     shape: list[str] = []
@@ -1265,7 +1265,7 @@ def _release_phase(ci_file: str, cd_file: str, action_file: str) -> tuple[list[s
     ]
 
 
-# THE PINS-SOAKED PINS (PLAN-pins-command T11). `pins-soaked.yml` reports soaked pins as an artifact and opens nothing: no pull request, no push, no token beyond `contents: read`, the one minted token being the read-only checkout token of the 2026-10-23 ruling (`_pins_checkout_token`). The phase reads that file and refuses any shape that could write, or that no longer runs the verb or uploads its output.
+# THE PINS-SOAKED PINS (PLAN-pins-command T11). `ops-pins-soaked.yml` reports soaked pins as an artifact and opens nothing: no pull request, no push, no token beyond `contents: read`, the one minted token being the read-only checkout token of the 2026-10-23 ruling (`_pins_checkout_token`). The phase reads that file and refuses any shape that could write, or that no longer runs the verb or uploads its output.
 PINS_SOAKED_KINDS = (
     "pins-soaked-triggers",
     "pins-soaked-permissions",
@@ -1589,7 +1589,7 @@ def _pins_checkout_token(doc: dict, jname: str, job: dict) -> tuple[set[int], di
 
 
 def analyse_pins_soaked(doc: object) -> tuple[list[tuple[str, str]], list[str]]:
-    """(findings, shape) for pins-soaked.yml. A non-mapping document is every kind of failure at once."""
+    """(findings, shape) for ops-pins-soaked.yml. A non-mapping document is every kind of failure at once."""
     out: list[tuple[str, str]] = []
     if not isinstance(doc, dict):
         return [("pins-soaked-triggers", "<not a mapping>")], []
@@ -2214,10 +2214,10 @@ def main(argv: list[str]) -> int:
         root_dir, ".github", "actions", "app-token", "action.yml"
     )
     hk_file = os.environ.get("HOUSEKEEPING_WORKFLOW_FILE") or os.path.join(
-        root_dir, ".github", "workflows", "housekeeping.yml"
+        root_dir, ".github", "workflows", "ops-housekeeping.yml"
     )
     pins_file = os.environ.get("PINS_SOAKED_WORKFLOW_FILE") or os.path.join(
-        root_dir, ".github", "workflows", "pins-soaked.yml"
+        root_dir, ".github", "workflows", "ops-pins-soaked.yml"
     )
     quality_file = os.environ.get("QUALITY_WORKFLOW_FILE") or os.path.join(
         root_dir, ".github", "workflows", "ci-quality.yml"

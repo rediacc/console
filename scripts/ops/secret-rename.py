@@ -127,7 +127,7 @@ KEEP_LINES: dict[str, tuple[str, ...]] = {
     ),
     ".github/actions/bws-secrets/action.yml": ("STRIPE_SECRET_KEY > STRIPE_SECRET_KEY_EU",),
     ".github/workflows/cd-deploy-worker.yml": ("HEAD's STRIPE_SECRET_KEY_EU",),
-    ".github/workflows/watchdog-monitor.yml": (
+    ".github/workflows/ops-watchdog-monitor.yml": (
         "-> BREAKPOINT_TUNNEL_TOKEN, BWS_ACCESS_TOKEN",
         "# CLAUDE_CODE_OAUTH_TOKEN is repo-scoped",
     ),

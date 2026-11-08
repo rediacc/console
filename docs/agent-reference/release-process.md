@@ -80,7 +80,7 @@ What can still split the pair: `init` failing before its tag step, or the dispat
 
 - `ci.yml` job `cd-preflight` (CD Preflight), on same-repo PRs and on pushes to `main`, with `--phase pr --release-version <initialize next_version> --checks a,b,c,d,promotion`. Fork PRs skip it (no secrets). `homebrew` is deselected because its dry run needs the private tap submodule and real checksums. CI Complete aggregates it in the soft tier.
 - `cd-v2.yml` `init`, step `CD preflight`, with `--phase cd --checks a,c,d`, AFTER `Create version tag`: before that step v<V> is sealed and untagged, so an earlier preflight would red every release.
-- `housekeeping.yml` `cleanup`, step `Release-state preflight`, with `--checks a,c`, after the retry step and before `cleanup_versions`, which has no status function and is skipped when the preflight is red.
+- `ops-housekeeping.yml` `cleanup`, step `Release-state preflight`, with `--checks a,c`, after the retry step and before `cleanup_versions`, which has no status function and is skipped when the preflight is red.
 
 `check:ci-workflow-invariants` pins all three sites, their check lists, the PR arm of the job's `if:` and the step order. Locally: `PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile r2-artifacts -- python3 -m rediacc_ci.release.cd_preflight --phase pr --release-version X.Y.Z`, with the `aws` CLI on `PATH`.
 
@@ -115,7 +115,7 @@ The version comes from `resolve_version --bump-type` inside the entry, from the 
 
 1. **Gates** (below), all refusing before any build.
 2. **Builds**, in the release clone, each step timed: renet under the `release-local` bws profile (the production `ACCOUNT_ED25519_PUBLIC_KEY`) followed by the signing-key gate, the CLI bundle and npm tarball, the Linux SEAs (linux-x64, both musl targets, linux-arm64 in a `linux/arm64` node container) and the Docker renet, rdc and server images through buildx.
-3. **Assist dispatch**, started at minute zero: `local-release-assist.yml` builds the mac and win SEAs and runs the mac and win install legs against the staged bytes. The entry awaits it before stage.
+3. **Assist dispatch**, started at minute zero: `ops-local-release-assist.yml` builds the mac and win SEAs and runs the mac and win install legs against the staged bytes. The entry awaits it before stage.
 4. **Stage**: signed packages, manifest, pages, package repos, the `:edge` Docker retag, validation and the R2 upload.
 5. **Seal and tag**: `write_release_sentinel` seals `cli/v<V>/.released`, and `rediacc_ci.release.tag` creates `v<V>` at once. The pair is one unit, held by the `STEPS` invariant test: the tag follows the seal at once, and precedes every later step that can fail. A failure before the seal (builds, assist, stage) leaves no sentinel and no tag, so the version stays free. Stage may already have uploaded R2 objects and moved the `:edge` Docker tags; a re-run overwrites both before it seals.
 6. **Publish**: promote to `:V` and `:latest`, the Stripe sync and webhook verify, cleanup of the channel tags.

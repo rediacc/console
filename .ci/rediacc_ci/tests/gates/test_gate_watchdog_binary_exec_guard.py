@@ -5,7 +5,7 @@ The binary-exec override in `.ci/scripts/ci/watchdog-monitor.cjs`.
 The classifier prompt allows a non-executable downloaded binary to be called transient (CDN flake). The guard exists so a genuinely corrupt cross-platform build cannot be auto-retried away: when EVERY install-validation job in the run failed that way, the AI verdict is overridden to code-change. While the matrix is still running the guard DEFERS, so the first platform to fail
 cannot spend the run's one retry before the other platforms report.
 
-THE PATTERNS UNDER TEST ARE THE ONES CI ACTUALLY SETS, not a copy. A guard that works on invented job names while the real config never matches is the exact failure this gate exists to catch, so `WATCHDOG_INSTALL_VALIDATION_PATTERNS` is read out of watchdog-monitor.yml -- the workflow the monitor step moved to from ci.yml with the ubuntu-slim generations -- and a missing value is a
+THE PATTERNS UNDER TEST ARE THE ONES CI ACTUALLY SETS, not a copy. A guard that works on invented job names while the real config never matches is the exact failure this gate exists to catch, so `WATCHDOG_INSTALL_VALIDATION_PATTERNS` is read out of ops-watchdog-monitor.yml -- the workflow the monitor step moved to from ci.yml with the ubuntu-slim generations -- and a missing value is a
 REFUSAL rather than an empty list.
 
 WHAT THE PORT REIMPLEMENTS, and it is the one place the two languages had to say the same thing differently. The twin extracts the patterns with
@@ -26,7 +26,7 @@ from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
 WATCHDOG = paths.from_root(".ci", "scripts", "ci", "watchdog-monitor.cjs")
-CI_WORKFLOW = paths.from_root(".github", "workflows", "watchdog-monitor.yml")
+CI_WORKFLOW = paths.from_root(".github", "workflows", "ops-watchdog-monitor.yml")
 
 PATTERNS_KEY = "WATCHDOG_INSTALL_VALIDATION_PATTERNS:"
 PATTERNS_RE = re.compile(r"^ *WATCHDOG_INSTALL_VALIDATION_PATTERNS: *'(.*)'$", re.MULTILINE)
@@ -103,7 +103,7 @@ SKIPPED_SIBLING = [
 
 def install_patterns(gate) -> str:
     if not CI_WORKFLOW.is_file():
-        gate.log_fail("watchdog-monitor.yml is missing at %s" % paths.relative_to_root(CI_WORKFLOW))
+        gate.log_fail("ops-watchdog-monitor.yml is missing at %s" % paths.relative_to_root(CI_WORKFLOW))
     match = PATTERNS_RE.search(CI_WORKFLOW.read_text(encoding="utf-8"))
     if not match or not match.group(1):
         gate.log_fail(
@@ -253,13 +253,13 @@ def test_other_failure_signature_is_ignored(gate):
 def test_workflow_sets_the_required_env_var(gate):
     gate.log_test("the wiring: the watchdog THROWS without this variable")
     if not CI_WORKFLOW.is_file():
-        gate.log_fail("watchdog-monitor.yml is missing at %s" % paths.relative_to_root(CI_WORKFLOW))
+        gate.log_fail("ops-watchdog-monitor.yml is missing at %s" % paths.relative_to_root(CI_WORKFLOW))
     if PATTERNS_KEY not in CI_WORKFLOW.read_text(encoding="utf-8"):
         gate.log_fail(
-            "watchdog-monitor.yml must set WATCHDOG_INSTALL_VALIDATION_PATTERNS "
+            "ops-watchdog-monitor.yml must set WATCHDOG_INSTALL_VALIDATION_PATTERNS "
             "(the watchdog throws without it)"
         )
-    gate.log_pass("watchdog-monitor.yml wires WATCHDOG_INSTALL_VALIDATION_PATTERNS")
+    gate.log_pass("ops-watchdog-monitor.yml wires WATCHDOG_INSTALL_VALIDATION_PATTERNS")
 
 
 def test_roster_lists_every_failed_job(gate):

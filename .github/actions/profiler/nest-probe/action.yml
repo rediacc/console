@@ -1,7 +1,7 @@
 name: Profiler Nest Probe
 description: >
   A composite action whose ONLY job is to wrap the profiler JS action, so a
-  dispatch of profiler-probe.yml can answer the question nobody can answer by
+  dispatch of ops-profiler-probe.yml can answer the question nobody can answer by
   reading the docs: does a JavaScript action's `post:` hook still fire when the
   action is used from INSIDE a composite action?
 

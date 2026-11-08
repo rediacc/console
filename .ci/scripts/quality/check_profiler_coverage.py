@@ -47,7 +47,7 @@ THE CONTROL WAS PROVED BEFORE THE PLANT RAN: an UNMODIFIED copy of the allowlist
 
 A PORT GAP WAS FOUND DOING THIS AND FIXED IN `profiler_coverage.py`, and it is the one that would have mattered most in CI. On the first red run the two sides had the same exit code and the same words in a DIFFERENT STREAM and a DIFFERENT FORM: the twin put
 
-    ::error::Allowlist <file>: entry watchdog-monitor.yml:monitor is missing a
+    ::error::Allowlist <file>: entry ops-watchdog-monitor.yml:monitor is missing a
     '# BLOCKER: <reason>' comment above it
 
 on STDOUT, and the port put `✗ Allowlist ...` on STDERR. The twin reaches that line through `blocker-validator.sh:229`, which calls `ci_error` (`emit-advisory.sh:136`), and `ci_error` switches to the GitHub Actions
