@@ -91,7 +91,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 15 of 54 plans done, 857 of 1097 boxes done (78%).
+Promoted: 15 of 54 plans done, 860 of 1097 boxes done (78%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -146,7 +146,7 @@ Promoted: 15 of 54 plans done, 857 of 1097 boxes done (78%).
 | 49 | PLAN-scope-bws-signing-key-to-consuming-step.md | 8/10 | 2 open |
 | 50 | PLAN-split-cli-files-over-512-line-budget.md | 5/7 | 2 open |
 | 51 | PLAN-renet-docker-running-semantics.md | 11/15 | 4 open |
-| 52 | PLAN-product-domain-rename.md | 0/28 | 28 open |
+| 52 | PLAN-product-domain-rename.md | 3/28 | 25 open |
 | 53 | PLAN-website-routing-and-mail.md | 0/20 | 20 open |
 | 54 | PLAN-enterprise-isolation.md | 0/34 | 34 open |
 <!-- queue:progress:end -->
@@ -218,16 +218,10 @@ Promoted: 15 of 54 plans done, 857 of 1097 boxes done (78%).
 7. agent/plans/PLAN-backup-toc-exact-opt-in.md -- P3, proposed, in progress (1 of 10 boxes ticked)
 8. agent/plans/PLAN-deletion-budget.md -- P3 (operator), draft, not started
 9. agent/plans/PLAN-fix-upgrade-drills-flat-daemon-bringup.md -- P1, executing, not started
-10. agent/plans/PLAN-hostinger-upgrade-followups.md -- P1, in-progress, not started
-11. agent/plans/PLAN-plan-compaction-bindings.md -- P1, approved, not started
-12. agent/plans/PLAN-first-release-checks.md -- P2, approved, not started
-13. agent/plans/PLAN-stop-hook-retro-20261101.md -- P2, ready, not started
-14. agent/plans/PLAN-lessons-registry-followups.md -- P3, draft, not started
-15. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
-16. agent/plans/PLAN-retire-bash-oracles.A0.md -- P3, executing, not started
-17. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
-
-### Not queued
-
-- agent/plans/PLAN-retired-terms-submodule-scan.md -- all boxes ticked: close it
+10. agent/plans/PLAN-plan-compaction-bindings.md -- P1, approved, not started
+11. agent/plans/PLAN-first-release-checks.md -- P2, approved, not started
+12. agent/plans/PLAN-stop-hook-retro-20261101.md -- P2, ready, not started
+13. agent/plans/PLAN-lessons-registry-followups.md -- P3, draft, not started
+14. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
+15. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
 <!-- queue:generated:end -->

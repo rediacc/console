@@ -138,3 +138,8 @@ One order carries over: multi-org ML5 reaches the three stable targets before du
   - Accept: `rdc --config eu-bench backup restore mail --at <minute> --as mail-rt -m hostinger` rc 0, then `repo list -m hostinger` shows `mail` with its GUID unchanged and no copy after cleanup.
 - [ ] J6: Seven days at 5 minutes: `waitingBytes` stabilizes near the formula, the first reap ran, and the churn cap state is known.
   - Accept: `rdc --config eu-bench backup usage -o json` rc 0 on day 8, with the series recorded here.
+
+## Moved from PLAN-hostinger-upgrade-followups.md
+
+- [ ] LP-hostinger [live] Fresh hostinger receipt through --config eu-bench (PLAN-tested-on-bench ruling 3), after a VERIFIED npm run vm:check -- --changed on the same tree; ASK the operator first, because provisioning a branch renet restarts the router and daemons.
+  - Accept: `live-proof hostinger renet-live`

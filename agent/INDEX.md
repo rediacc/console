@@ -513,7 +513,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-enterprise-isolation.md` | executing | 180 | 34 | 0 | 31699 |
 | `agent/plans/PLAN-executor-durable-object-policy.md` | approved | 482 | 3 | 15 | 64578 |
 | `agent/plans/PLAN-extension-shaped-matchers.md` | compacted | 37 | 0 | 0 | 3104 |
-| `agent/plans/PLAN-first-release-checks.md` | approved | 140 | 30 | 0 | 16517 |
+| `agent/plans/PLAN-first-release-checks.md` | approved | 145 | 31 | 0 | 16882 |
 | `agent/plans/PLAN-fix-ci-contention-aware-timeouts.md` | compacted | 38 | 0 | 0 | 3425 |
 | `agent/plans/PLAN-fix-german-translation-artifacts.md` | compacted | 50 | 0 | 0 | 3117 |
 | `agent/plans/PLAN-fix-in-session-rule.md` | compacted | 55 | 0 | 0 | 3577 |
@@ -528,7 +528,6 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-greenlight-verify-at-read.md` | compacted | 44 | 0 | 0 | 3606 |
 | `agent/plans/PLAN-haiku-model-routing.md` | executing | 249 | 9 | 11 | 30400 |
 | `agent/plans/PLAN-health-checks-local.md` | approved | 700 | 22 | 59 | 129478 |
-| `agent/plans/PLAN-hostinger-upgrade-followups.md` | in-progress | 36 | 4 | 0 | 3965 |
 | `agent/plans/PLAN-jobs-backup-real-machine-tests.md` | approved | 54 | 2 | 9 | 12543 |
 | `agent/plans/PLAN-judge-gate-worthiness-and-surface-scope.md` | compacted | 39 | 0 | 0 | 3232 |
 | `agent/plans/PLAN-judge-prompt-trap-conflation.md` | compacted | 54 | 0 | 8 | 3828 |
@@ -544,7 +543,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-plan-preflight.md` | approved | 190 | 0 | 8 | 29710 |
 | `agent/plans/PLAN-plan-verbs.md` | draft | 35 | 3 | 0 | 3779 |
 | `agent/plans/PLAN-printf-echo-pipefail-sweep.md` | compacted | 103 | 0 | 33 | 10281 |
-| `agent/plans/PLAN-product-domain-rename.md` | executing | 179 | 28 | 0 | 25722 |
+| `agent/plans/PLAN-product-domain-rename.md` | executing | 185 | 25 | 3 | 29231 |
 | `agent/plans/PLAN-production-key-only.md` | approved | 346 | 5 | 12 | 51197 |
 | `agent/plans/PLAN-promote-mutation-runner.md` | compacted | 39 | 0 | 0 | 2977 |
 | `agent/plans/PLAN-proxy-cd-six-targets.md` | approved | 411 | 4 | 27 | 69330 |
@@ -567,8 +566,6 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-resprofile-wave2.md` | compacted | 39 | 0 | 0 | 3076 |
 | `agent/plans/PLAN-rest-graphql-guard-parity.md` | compacted | 54 | 0 | 8 | 4010 |
 | `agent/plans/PLAN-resumable-rebase-executor.md` | compacted | 36 | 0 | 0 | 2212 |
-| `agent/plans/PLAN-retire-bash-oracles.A0.md` | executing | 271 | 7 | 0 | 30668 |
-| `agent/plans/PLAN-retired-terms-submodule-scan.md` | executing | 73 | 0 | 14 | 14263 |
 | `agent/plans/PLAN-review-red-stop-hook-check.md` | compacted | 39 | 0 | 0 | 2909 |
 | `agent/plans/PLAN-runtime-caller-identity.md` | compacted | 39 | 0 | 0 | 2546 |
 | `agent/plans/PLAN-sandbox-tenant-separation.md` | approved | 122 | 2 | 6 | 24978 |
@@ -644,6 +641,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-gate-scheduling-learned.md` | done | 292 | 0 | 12 | 22988 |
 | `agent/plans/_done/PLAN-gh-retry.md` | done | 52 | 0 | 14 | 8376 |
 | `agent/plans/_done/PLAN-github-pr-review-restore.md` | done | 129 | 0 | 13 | 36107 |
+| `agent/plans/_done/PLAN-hostinger-upgrade-followups.md` | done | 38 | 0 | 3 | 4280 |
 | `agent/plans/_done/PLAN-inline-suppressions.md` | done | 319 | 0 | 11 | 42100 |
 | `agent/plans/_done/PLAN-k3s-137-and-pr-conditions.md` | done | 112 | 0 | 5 | 9257 |
 | `agent/plans/_done/PLAN-lessons-registry.md` | done | 186 | 0 | 9 | 21416 |
@@ -669,7 +667,9 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-renet-fetch-hardening.md` | superseded | 147 | 7 | 1 | 12505 |
 | `agent/plans/_done/PLAN-renet-obs-mirror.md` | closed | 104 | 3 | 2 | 14962 |
 | `agent/plans/_done/PLAN-repair-prose-style-findings.md` | done | 53 | 0 | 6 | 6070 |
+| `agent/plans/_done/PLAN-retire-bash-oracles.A0.md` | done | 279 | 0 | 7 | 32197 |
 | `agent/plans/_done/PLAN-retire-bash-oracles.md` | done | 935 | 0 | 15 | 108469 |
+| `agent/plans/_done/PLAN-retired-terms-submodule-scan.md` | done | 74 | 0 | 14 | 14281 |
 | `agent/plans/_done/PLAN-scheduled-red-detector.md` | done | 191 | 0 | 15 | 14544 |
 | `agent/plans/_done/PLAN-scope-mirrors.md` | done | 272 | 0 | 11 | 31109 |
 | `agent/plans/_done/PLAN-secret-namespace-migration.md` | done | 1780 | 0 | 34 | 198853 |

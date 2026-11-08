@@ -1187,7 +1187,7 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 30,
+      "open": 31,
       "done": 0,
       "open_sigs": [
         "03025314",
@@ -1204,6 +1204,7 @@
         "60a18836",
         "6175025c",
         "61fe2fa7",
+        "7692f2db",
         "7bdbed10",
         "7eda06b1",
         "87837610",
@@ -1520,21 +1521,6 @@
         "f895ccf3"
       ]
     },
-    "agent/plans/PLAN-hostinger-upgrade-followups.md": {
-      "status": "in-progress",
-      "owner": "5008cebe",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 4,
-      "done": 0,
-      "open_sigs": [
-        "11844466",
-        "7692f2db",
-        "a0d1f61a",
-        "d5b8bc98"
-      ],
-      "done_sigs": []
-    },
     "agent/plans/PLAN-jobs-backup-real-machine-tests.md": {
       "status": "approved",
       "owner": "d778be9d",
@@ -1804,8 +1790,8 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 28,
-      "done": 0,
+      "open": 25,
+      "done": 3,
       "open_sigs": [
         "01a216f3",
         "062294e2",
@@ -1817,10 +1803,7 @@
         "5d01ed3d",
         "63337671",
         "7e578ed5",
-        "82f203f4",
         "8c532722",
-        "95c01063",
-        "9ad4c9f5",
         "9b7cf5fc",
         "a4963d94",
         "a6b330c2",
@@ -1836,7 +1819,11 @@
         "f6e0cfd1",
         "f70ece24"
       ],
-      "done_sigs": []
+      "done_sigs": [
+        "82f203f4",
+        "95c01063",
+        "9ad4c9f5"
+      ]
     },
     "agent/plans/PLAN-production-key-only.md": {
       "status": "approved",
@@ -2296,49 +2283,6 @@
       "done": 0,
       "open_sigs": [],
       "done_sigs": []
-    },
-    "agent/plans/PLAN-retire-bash-oracles.A0.md": {
-      "status": "executing",
-      "owner": "unowned",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 7,
-      "done": 0,
-      "open_sigs": [
-        "02f9e10c",
-        "095f8490",
-        "0aedd9a2",
-        "b06a1879",
-        "d570ec12",
-        "dd69ccb9",
-        "f200beed"
-      ],
-      "done_sigs": []
-    },
-    "agent/plans/PLAN-retired-terms-submodule-scan.md": {
-      "status": "executing",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 0,
-      "done": 14,
-      "open_sigs": [],
-      "done_sigs": [
-        "2bc15350",
-        "2e19492c",
-        "49363baa",
-        "7692f2db",
-        "7e0a8d81",
-        "83d612e9",
-        "8c14799e",
-        "a3cd5e26",
-        "ae588429",
-        "b00bc9df",
-        "c0f68823",
-        "c47feeb9",
-        "c7185323",
-        "edfd4e34"
-      ]
     },
     "agent/plans/PLAN-review-red-stop-hook-check.md": {
       "status": "compacted",
@@ -3812,6 +3756,20 @@
         "f4812e6c"
       ]
     },
+    "agent/plans/_done/PLAN-hostinger-upgrade-followups.md": {
+      "status": "done",
+      "owner": "5008cebe",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-11-08",
+      "open": 0,
+      "done": 3,
+      "open_sigs": [],
+      "done_sigs": [
+        "11844466",
+        "a0d1f61a",
+        "d5b8bc98"
+      ]
+    },
     "agent/plans/_done/PLAN-inline-suppressions.md": {
       "status": "done",
       "owner": "d778be9d",
@@ -4373,6 +4331,24 @@
         "d2157a79"
       ]
     },
+    "agent/plans/_done/PLAN-retire-bash-oracles.A0.md": {
+      "status": "done",
+      "owner": "unowned",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-11-08",
+      "open": 0,
+      "done": 7,
+      "open_sigs": [],
+      "done_sigs": [
+        "02f9e10c",
+        "095f8490",
+        "0aedd9a2",
+        "b06a1879",
+        "d570ec12",
+        "dd69ccb9",
+        "f200beed"
+      ]
+    },
     "agent/plans/_done/PLAN-retire-bash-oracles.md": {
       "status": "done",
       "owner": "d778be9d",
@@ -4397,6 +4373,31 @@
         "e8e6ee5e",
         "f16cdba4",
         "f2c1e8d4"
+      ]
+    },
+    "agent/plans/_done/PLAN-retired-terms-submodule-scan.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-11-08",
+      "open": 0,
+      "done": 14,
+      "open_sigs": [],
+      "done_sigs": [
+        "2bc15350",
+        "2e19492c",
+        "49363baa",
+        "7692f2db",
+        "7e0a8d81",
+        "83d612e9",
+        "8c14799e",
+        "a3cd5e26",
+        "ae588429",
+        "b00bc9df",
+        "c0f68823",
+        "c47feeb9",
+        "c7185323",
+        "edfd4e34"
       ]
     },
     "agent/plans/_done/PLAN-scheduled-red-detector.md": {
