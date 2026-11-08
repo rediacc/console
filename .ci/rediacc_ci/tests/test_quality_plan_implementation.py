@@ -9,6 +9,7 @@ EVERY CASE GOES THROUGH THE PATH `main()` TAKES: `open_offenders`, `clock_scope`
 
 import importlib.util
 import io
+import json
 import pathlib
 
 import pytest
@@ -182,3 +183,110 @@ def test_github_actions_never_attempts_the_local_lookup(gate, tmp_path):
     assert calls == []
     assert body is None
     assert note == ""
+
+
+# ---- PUSH VERSUS MERGE (agent/plans/PLAN-ciquick-green-then-batch.md G1). Open boxes are backlog at push and a finding at the merge; a ticked box whose evidence does not resolve is red at push all the same. Every case runs the functions main() runs: clock_scope, split_by_scope, run_context, clock_verdict, tick_findings, key_of.
+
+
+def _verdict_keys(gate, context, base, head_rows, admitted=False):
+    scope, _notes, problem = gate.clock_scope(_plan_gate(HEAD), "/nonexistent", base, head_rows)
+    on, _off = gate.split_by_scope(gate.open_offenders(head_rows, FINISHED), scope)
+    findings, info = gate.clock_verdict(context, problem, on, admitted)
+    return {gate.key_of(f) for f in findings}, info
+
+
+def test_open_boxes_alone_do_not_refuse_a_push_and_stay_visible(gate):
+    keys, info = _verdict_keys(gate, gate.CONTEXT_PUSH, BASE, TWO)
+    assert keys == set(), "open boxes alone refused a push: %r" % keys
+    assert len(info) == 1, info
+    assert "P-A1 BACKLOG" in info[0]
+    assert HEAD + " (3)" in info[0]
+    assert SIDE + " (2)" in info[0]
+
+
+def test_open_boxes_still_refuse_in_the_merge_context(gate):
+    keys, info = _verdict_keys(gate, gate.CONTEXT_MERGE, BASE, TWO)
+    assert keys == TWO_KEYS
+    assert info == []
+
+
+def test_an_operational_reason_admits_at_the_merge(gate):
+    keys, info = _verdict_keys(gate, gate.CONTEXT_MERGE, BASE, TWO, admitted=True)
+    assert keys == set()
+    assert "Operational-Reason" in info[0]
+
+
+def test_a_scope_problem_refuses_a_push(gate):
+    findings, _info = gate.clock_verdict(gate.CONTEXT_PUSH, "a planted Depends-On cycle", [], False)
+    assert [f.split(":", 1)[0] for f in findings] == ["P-A1 NO SCOPE"]
+
+
+@pytest.mark.parametrize(
+    ("payload", "argv", "expected"),
+    [
+        ({"pull_request": {"draft": False}}, [], "merge"),
+        ({"pull_request": {"draft": True}}, [], "push"),
+        ({"pull_request": {}}, [], "push"),
+        ({"ref": "refs/heads/main"}, [], "push"),
+        ({"pull_request": {"draft": True}}, ["--merge"], "merge"),
+    ],
+)
+def test_the_context_is_read_from_the_event_or_the_flag(gate, tmp_path, payload, argv, expected):
+    event = tmp_path / "event.json"
+    event.write_text(json.dumps(payload), encoding="utf-8")
+    context, why = gate.run_context(argv, {"GITHUB_EVENT_PATH": str(event)})
+    assert context == expected, why
+    assert why
+
+
+def test_a_local_run_is_the_push_context(gate):
+    assert gate.run_context([], {})[0] == gate.CONTEXT_PUSH
+    assert gate.run_context(["--merge"], {})[0] == gate.CONTEXT_MERGE
+
+
+#: One box of SIDE moved open -> done on the branch, ticked after the baseline; one box of SIDE stays open.
+TICK_BASE = {SIDE: _row(["s1", "s2"])}
+TICK_HEAD = {SIDE: _row(["s2"], ["s1"])}
+TICK_ROW = {
+    "plan": SIDE,
+    "sig": "s1",
+    "head": "H0",
+    "verdict": "present",
+    "pointers": [["commit", "deadbeefcafe"]],
+}
+
+
+def _tick_keys(gate, evidence, row, resolves):
+    return {
+        gate.key_of(f)
+        for f in gate.tick_findings(
+            gate.moved_to_done(TICK_BASE, TICK_HEAD),
+            lambda _r, _s: evidence,
+            lambda _r, _s: row,
+            lambda _k, _t: (resolves, "ok" if resolves else "no such commit"),
+            lambda _r, _s: "C1",
+            lambda _c: "2026-11-08",
+            lambda _a, _b: True,
+            "2026-01-01",
+            lambda _c: None,
+            lambda _c: "",
+        )
+    }
+
+
+def test_a_ticked_box_whose_evidence_does_not_resolve_still_refuses_at_push(gate):
+    """In the push context P-A1 is silent on the box left open in SIDE, and the tick's own evidence is still judged: a pointer that does not resolve, a missing row and a missing evidence line each red."""
+    context, _why = gate.run_context([], {})
+    assert context == gate.CONTEXT_PUSH
+    pa1_keys, _info = _verdict_keys(gate, context, TICK_BASE, TICK_HEAD)
+    assert pa1_keys == set()
+    assert _tick_keys(gate, "ran the gate, exit 0", TICK_ROW, True) == set(), (
+        "CONTROL: a healthy tick was reported"
+    )
+    assert _tick_keys(gate, "ran the gate, exit 0", TICK_ROW, False) == {
+        gate.box_key("P-A3", SIDE, "s1", "commit:deadbeefcafe")
+    }
+    assert _tick_keys(gate, "ran the gate, exit 0", None, True) == {
+        gate.box_key("P-A2:no-row", SIDE, "s1")
+    }
+    assert _tick_keys(gate, "", TICK_ROW, True) == {gate.box_key("P-A2:no-evidence", SIDE, "s1")}

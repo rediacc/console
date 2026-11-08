@@ -11,6 +11,11 @@ THE ASYMMETRY WITH THE STOP HOOK IS DELIBERATE AND STATED. `wl_planenforce` know
 compares the WHOLE in-scope count with no ownership term at all. A branch whose peers are all idle owes all of it. What is in scope is the operator's ruling of 2026-10-02 ("Clock the PR's plan only", worklist #508defc2): the live PR's plan (the queue head) and the plans this
 branch ticked, plus every unfinished prerequisite of the PR's plans (ruling 7 of PLAN-stop-hook-one-plan-scope, 2026-10-03); plans queued for later PRs are reported as one informational line, never a finding (see clock_scope).
 
+P-A1 IS A MERGE-TIME FINDING, NOT A PUSH-TIME ONE (agent/plans/PLAN-ciquick-green-then-batch.md G1, 2026-11-08). Open boxes are work remaining, not a defect a push introduced. Measured on 1104-1: all 34 ci:quick receipts were red on this gate, every one on P-A1 alone plus one real P-A2, with 18 `P-A1:<plan>` keys carried in .ci/config/carried-reds.json; each tick that changed the set edited that file, which voids the receipt and
+forces another 19-minute run. So `run_context` splits the run in two. MERGE is `--merge` on the command line, or a CI run whose event is a pull_request that is ready for review (the loop opens every PR as a draft and flips it ready only at the finish line, so a ready PR's run is the one `gh pr merge --auto` waits on); there the no-threshold rule holds unchanged. PUSH is everything else (a draft PR's run, a push
+event, every local run, which is the pre-push receipt); there the open boxes on the clock are one INFO backlog line. The intent the asymmetry paragraph above protects, that open boxes are never silently forgotten, is kept by three readers: this gate's merge context, `plan_gate.plan_merge_refusal`, which `block_admin_merge` and `block_push_to_protected_branch` run at the merge itself over the same `pr_plan_set`, and the Stop hook, which blocks
+on the PR plan set every stop. What a push CAN act on stays red at push: P-A1 NO SCOPE (an unreadable plan_gate, a Depends-On cycle), P-A2..P-A4 (a tick with no evidence line, no investigation row, a pointer that does not resolve here, an investigation after the work), P-A5 (a box deleted rather than ticked), P-A6 and P-A8. Controls C16a..C16h pin both directions.
+
 FORWARD-ONLY, AND THE CUT IS ONE COMMITTED DATE. Measured corpus-wide before this was written: 13 `    (ticked) ` evidence lines across all four plan folders, all of them in ONE file, against 589 done boxes. About 2% of the boxes `--plan-tick` was written for went through it; the rest were flipped with the Edit tool and carry nothing to re-check, ever. So P-A2..P-A4 judge a box
 only when the commit that ticked it is dated STRICTLY AFTER `baseline_at`, the landing date in `.ci/config/plan-implementation.json`. On the landing commit that set is empty by construction and this gate is silent, which is the point: nobody is punished for a tick that predates the rule, and the very next day's ticks are bound. A control pins both sides of that cut, because a
 date comparison that always answers "exempt" is a gate that cannot fail.
@@ -272,6 +277,73 @@ def pr_admits_open_boxes(gate, body):
         return False
     check = getattr(gate, "has_operational_reason", None)
     return bool(check(body)) if callable(check) else False
+
+
+#: The two contexts P-A1 is judged in (agent/plans/PLAN-ciquick-green-then-batch.md G1). See `run_context`.
+CONTEXT_PUSH = "push"
+CONTEXT_MERGE = "merge"
+
+
+def pr_event_ready(event_path=None):
+    """True when the Actions event payload is a pull_request that is NOT a draft, else False.
+
+    `draft` must be the boolean False to count as ready: a payload with no `draft` field, an unreadable file or a non-pull_request event is a push, never a merge, because reading a missing field as "ready" would turn every unparsable payload into the stricter context by accident and every parsable one into the laxer by accident on the day the field moves.
+    """
+    path = event_path if event_path is not None else os.environ.get("GITHUB_EVENT_PATH", "")
+    if not path:
+        return False
+    try:
+        with open(path, encoding="utf-8") as fh:
+            event = json.load(fh)
+    except (OSError, ValueError):
+        return False
+    pr = event.get("pull_request") if isinstance(event, dict) else None
+    return isinstance(pr, dict) and pr.get("draft") is False
+
+
+def run_context(argv, environ=None):
+    """(context, why): CONTEXT_MERGE when this run is the finish-line check, else CONTEXT_PUSH, and one line saying which signal decided.
+
+    MERGE when `--merge` is on the command line (the explicit door a merge path passes), or when the CI event is a pull_request that is ready for review: the loop opens every PR with `gh pr create --draft` and flips it ready only at the finish line (.claude/commands/pr-merge.md, `gh pr ready`), so a CI run on a ready PR is the run `gh pr merge --auto` waits on. Everything else is a PUSH: a draft PR's run, a push or cron event, and every local run, which is `npm run ci:quick`'s pre-push receipt.
+    """
+    env = os.environ if environ is None else environ
+    if "--merge" in (argv or ()):
+        return CONTEXT_MERGE, "--merge on the command line"
+    if pr_event_ready(env.get("GITHUB_EVENT_PATH", "")):
+        return CONTEXT_MERGE, "the CI event is a pull_request that is ready for review"
+    if env.get("GITHUB_EVENT_PATH"):
+        return CONTEXT_PUSH, "the CI event is a draft PR or not a pull_request"
+    return CONTEXT_PUSH, "a local run (the pre-push receipt); pass --merge to judge the finish line"
+
+
+def clock_verdict(context, scope_problem, on_clock, admitted):
+    """(findings, info): what P-A1 reports for `on_clock` [(rel, open)] in `context`.
+
+    THE SPLIT (agent/plans/PLAN-ciquick-green-then-batch.md G1, 2026-11-08). Open boxes are WORK REMAINING, not a defect a push introduced: on 1104-1 every one of 34 ci:quick receipts was red on P-A1 alone, one carried key per plan in .ci/config/carried-reds.json, and each tick that changed the set edited that file and voided the receipt. So in CONTEXT_PUSH the open boxes are one INFO line (the backlog stays visible on every run, and the Stop hook still blocks on the PR plan set every stop), never a finding. In CONTEXT_MERGE the 2026-09-26 rule holds unchanged: no threshold, every open box on the clock is a finding unless the PR body's `Operational-Reason:` admits it (`admitted`).
+
+    WHAT STAYS RED AT PUSH, in both contexts: `scope_problem` (an unreadable plan_gate, a Depends-On cycle or a dangling prerequisite is a defect the push can fix), and everything outside P-A1: P-A2..P-A4 (a box ticked with no evidence line, no investigation row, a pointer that does not resolve here, an investigation written after the work), P-A5 (a box that vanished instead of being ticked), P-A6 and P-A8.
+    """
+    if scope_problem:
+        return [
+            "P-A1 NO SCOPE: %s. Refusing to judge nothing: restore .claude/rediacc_hooks/plan_gate.py "
+            "(queue_head, pr_plan_set) or agent/plans/QUEUE.md's reader, or fix the named "
+            "Depends-On problem, before this gate can tell the PR's plans from the queued ones."
+            % scope_problem
+        ], []
+    if not on_clock:
+        return [], []
+    listed = ", ".join("%s (%d)" % (rel, n) for rel, n in on_clock)
+    if context != CONTEXT_MERGE:
+        return [], [
+            "INFO: P-A1 BACKLOG, not a finding at push (judged at the merge: a ready PR's CI run, "
+            "`--merge`, and plan_gate.plan_merge_refusal at `gh pr merge`): %s" % listed
+        ]
+    if admitted:
+        return [], [
+            "INFO: P-A1 admitted by the PR body's `Operational-Reason:` line, the same admission "
+            "plan_gate.plan_merge_refusal grants the merge: %s" % listed
+        ]
+    return clock_findings(on_clock), []
 
 
 def default_plans(head):
@@ -1110,6 +1182,56 @@ def controls_fired(enforce, planfile, planrec=None, preflight=None):
     caught(
         "C13d: an unloadable plan_gate admitted the open boxes",
         not pr_admits_open_boxes(None, reason_body),
+    )
+
+    # C16 -- PUSH VERSUS MERGE (agent/plans/PLAN-ciquick-green-then-batch.md G1). Open boxes alone are backlog at push and a finding at the merge; a scope problem is a finding in both. Each direction has a plant that must fire the other way.
+    c16_on = [("agent/plans/PLAN-a.md", 2)]
+    push_f, push_i = clock_verdict(CONTEXT_PUSH, "", c16_on, False)
+    caught(
+        "C16a: open boxes alone refused a push, or the backlog line went missing",
+        not push_f and any("P-A1 BACKLOG" in line and "PLAN-a.md (2)" in line for line in push_i),
+    )
+    merge_f, _merge_i = clock_verdict(CONTEXT_MERGE, "", c16_on, False)
+    caught(
+        "C16b: CONTROL: open boxes did not refuse in the merge context",
+        [key_of(f) for f in merge_f] == ["P-A1:agent/plans/PLAN-a.md"],
+    )
+    caught(
+        "C16c: an Operational-Reason did not admit open boxes at the merge",
+        clock_verdict(CONTEXT_MERGE, "", c16_on, True)[0] == [],
+    )
+    caught(
+        "C16d: a scope problem was not a finding at push",
+        any(
+            f.startswith("P-A1 NO SCOPE")
+            for f in clock_verdict(CONTEXT_PUSH, "planted cycle", [], False)[0]
+        ),
+    )
+    with tempfile.TemporaryDirectory() as tmp:
+        ev = os.path.join(tmp, "event.json")
+
+        def ctx(payload, argv=()):
+            with open(ev, "w", encoding="utf-8") as fh:
+                json.dump(payload, fh)
+            return run_context(list(argv), {"GITHUB_EVENT_PATH": ev})[0]
+
+        caught(
+            "C16e: a ready pull_request payload was not read as the merge context",
+            ctx({"pull_request": {"draft": False}}) == CONTEXT_MERGE,
+        )
+        caught(
+            "C16f: CONTROL: a draft PR, a payload with no draft field, or a push event was read as the merge",
+            ctx({"pull_request": {"draft": True}}) == CONTEXT_PUSH
+            and ctx({"pull_request": {}}) == CONTEXT_PUSH
+            and ctx({"ref": "refs/heads/main"}) == CONTEXT_PUSH,
+        )
+        caught(
+            "C16g: --merge did not select the merge context",
+            ctx({"pull_request": {"draft": True}}, ["--merge"]) == CONTEXT_MERGE,
+        )
+    caught(
+        "C16h: CONTROL: a local run with no payload was not the push context",
+        run_context([], {})[0] == CONTEXT_PUSH,
     )
 
     # C1 -- THE INVESTIGATION-LESS TICK, the CI third of it. A box that moved open -> done carrying evidence but NO row must red on P-A2.
@@ -1985,21 +2107,17 @@ def main(argv=None) -> int:
     )
     scope_problem = gate_problem or scope_problem
     on_clock, off_clock = split_by_scope(all_offenders, scope)
-    if scope_problem:
-        findings.append(
-            "P-A1 NO SCOPE: %s. Refusing to judge nothing: restore .claude/rediacc_hooks/plan_gate.py "
-            "(queue_head, pr_plan_set) or agent/plans/QUEUE.md's reader, or fix the named "
-            "Depends-On problem, before this gate can tell the PR's plans from the queued ones."
-            % scope_problem
-        )
-    elif on_clock and pr_admits_open_boxes(gate, run_body):
-        print(
-            "  INFO: P-A1 admitted by the PR body's `Operational-Reason:` line, the same admission "
-            "plan_gate.plan_merge_refusal grants the merge: %s"
-            % ", ".join("%s (%d)" % (rel, n) for rel, n in on_clock)
-        )
-    else:
-        findings.extend(clock_findings(on_clock))
+    context, context_why = run_context(argv)
+    print(f"  P-A1 context: {context} ({context_why})")
+    pa1_findings, pa1_info = clock_verdict(
+        context,
+        scope_problem,
+        on_clock,
+        bool(on_clock) and pr_admits_open_boxes(gate, run_body),
+    )
+    findings.extend(pa1_findings)
+    for line in pa1_info:
+        print("  " + line)
     findings.extend(new_held_findings(head_plans))
 
     # ---- P-A2/P-A3/P-A4: the forward-only proof over what this branch actually closed.
@@ -2087,8 +2205,15 @@ def main(argv=None) -> int:
         return 1
 
     print(
-        f"{GREEN}v{NC} plan implementation: no open box on the PR's clock; {n_open} open box(es) across "
-        f"{n_plans} unfinished plan(s) corpus-wide, no threshold"
+        f"{GREEN}v{NC} plan implementation ({context} context): "
+        + (
+            "no open box on the PR's clock"
+            if not on_clock
+            else f"{sum(n for _r, n in on_clock)} open box(es) on the PR's clock admitted by its `Operational-Reason:`"
+            if context == CONTEXT_MERGE
+            else f"{sum(n for _r, n in on_clock)} open box(es) on the PR's clock are backlog at push, judged at the merge"
+        )
+        + f"; {n_open} open box(es) across {n_plans} unfinished plan(s) corpus-wide, no threshold"
     )
     print(
         f"  {raw_rows} plan(s) and {total_boxes} checkbox(es) in {LEDGER_REL}, "
