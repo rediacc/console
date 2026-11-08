@@ -105,6 +105,8 @@ NEEDS_SCRIPT = (
     # The executor artifact stage and the deploy record both run `aws s3` from inside the module (cd-deploy-account.yml runs them as `python3 -m`), and the coverage scan in test-block_host_toolchain_run.py found them without a row.
     ("rediacc_ci.deploy.executor_artifacts", "aws"),
     ("rediacc_ci.deploy.deploy_record", "aws"),
+    # PLAN-product-domain-rename W1 (865c2f7f23): the R2 inventory and cross-bucket copy run `aws s3api` through `awscli` from the module; the coverage scan found it without a row.
+    ("rediacc_ci.ops.r2_bucket_copy", "aws"),
 )
 
 # CREDENTIALS THAT LIVE IN A FILE, NOT IN YOUR SHELL. Measured 2026-08-28.
