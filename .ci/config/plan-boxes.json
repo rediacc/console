@@ -678,17 +678,17 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 6,
-      "done": 1,
+      "open": 4,
+      "done": 3,
       "open_sigs": [
-        "077a2336",
         "378b8de3",
-        "cac02478",
         "d7b25ec9",
         "d8663881",
         "fd445926"
       ],
       "done_sigs": [
+        "077a2336",
+        "cac02478",
         "d67360df"
       ]
     },
