@@ -33,7 +33,8 @@ AWK_COMMAND = "<command-name>/awk</command-name>"
 
 
 def _now() -> str:
-    return datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+    """Millisecond precision, the transcript's own form: a record stamped in the flag's millisecond compares equal and is skipped, never later."""
+    return datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
 
 
 def read(state: pathlib.Path | None = None) -> dict | None:
@@ -69,7 +70,8 @@ def _is_awk(text: str) -> bool:
 
 
 def _text(rec: dict) -> str:
-    content = (rec.get("message") or {}).get("content")
+    message = rec.get("message")
+    content = message.get("content") if isinstance(message, dict) else None
     if isinstance(content, str):
         return content
     if isinstance(content, list):
@@ -86,8 +88,8 @@ def operator_message(rec: dict) -> str | None:
     import wl_admit
 
     if rec.get("type") == "attachment":
-        att = rec.get("attachment") or {}
-        if att.get("type") != "queued_command":
+        att = rec.get("attachment")
+        if not isinstance(att, dict) or att.get("type") != "queued_command":
             return None
         prompt = str(att.get("prompt") or "")
         if (
@@ -97,7 +99,7 @@ def operator_message(rec: dict) -> str | None:
         ):
             return None
         return prompt
-    if not wl_admit._is_operator_turn(rec):
+    if not isinstance(rec.get("message", {}), dict) or not wl_admit._is_operator_turn(rec):
         return None
     text = _text(rec)
     return None if _is_awk(text) else (text or "(operator turn)")
@@ -120,7 +122,8 @@ def operator_since(transcript_path: str, since: str) -> str | None:
             rec = json.loads(raw)
         except ValueError:
             continue
-        if not isinstance(rec, dict) or str(rec.get("timestamp") or "") <= since:
+        # Both sides cut to the millisecond (`YYYY-MM-DDTHH:MM:SS.mmm`): a flag written with microseconds and a record from its millisecond compare equal and the record is skipped.
+        if not isinstance(rec, dict) or str(rec.get("timestamp") or "")[:23] <= since[:23]:
             continue
         text = operator_message(rec)
         if text is not None:
@@ -128,15 +131,47 @@ def operator_since(transcript_path: str, since: str) -> str | None:
     return None
 
 
+def _since_epoch(since: str) -> float:
+    try:
+        return (
+            datetime.datetime.strptime(since, "%Y-%m-%dT%H:%M:%S.%fZ")
+            .replace(tzinfo=datetime.UTC)
+            .timestamp()
+        )
+    except ValueError:
+        return 0.0
+
+
+def _transcripts(transcript_path: str, since: str) -> list[str]:
+    """The asking session's transcript first, then every other transcript of this project written after the flag. The operator may answer a different session than the one that asks, and the flag is per checkout, so a word to any of them ends it."""
+    if not transcript_path:
+        return []
+    paths = [transcript_path]
+    here = pathlib.Path(transcript_path)
+    floor = _since_epoch(since)
+    try:
+        siblings = sorted(here.parent.glob("*.jsonl"))
+    except OSError:
+        return paths
+    for sib in siblings:
+        try:
+            if sib != here and sib.stat().st_mtime >= floor:
+                paths.append(str(sib))
+        except OSError:
+            continue
+    return paths
+
+
 def away(transcript_path: str, state: pathlib.Path | None = None) -> dict | None:
-    """The live flag when the operator is still away for this transcript, else None. A flag the operator has spoken after is cleared here."""
+    """The live flag when the operator is still away, else None. A flag the operator has spoken after, in this session or any sibling session of this project, is cleared here."""
     state = state or state_path()
     doc = read(state)
     if doc is None:
         return None
-    if operator_since(transcript_path, doc["since"]) is not None:
-        clear(state)
-        return None
+    for path in _transcripts(transcript_path, doc["since"]):
+        if operator_since(path, doc["since"]) is not None:
+            clear(state)
+            return None
     return doc
 
 

@@ -37,12 +37,14 @@ def _queued(prompt, ts=AFTER):
     }
 
 
-def _run(tmp_path, records, flag=True):
+def _run(tmp_path, records, flag=True, sibling=None):
     state = tmp_path / "away.json"
     if flag:
         state.write_text(json.dumps({"since": SINCE, "note": "test"}))
     transcript = tmp_path / "t.jsonl"
     transcript.write_text("".join(json.dumps(r) + "\n" for r in records))
+    if sibling is not None:
+        (tmp_path / "sibling.jsonl").write_text("".join(json.dumps(r) + "\n" for r in sibling))
     payload = {
         "transcript_path": str(transcript),
         "tool_input": {
@@ -64,7 +66,15 @@ def _run(tmp_path, records, flag=True):
     return proc, state
 
 
+SAME_MS = "2026-11-08T20:00:00.000Z"
+
 STILL_AWAY = [
+    ("a record in the flag's own millisecond", [_user("go on", ts=SAME_MS)]),
+    (
+        "a malformed attachment",
+        [{"type": "attachment", "timestamp": AFTER, "attachment": "queued_command"}],
+    ),
+    ("a malformed message", [{"type": "user", "timestamp": AFTER, "message": "hello"}]),
     ("no record after the flag", [_user("go on", ts=BEFORE)]),
     (
         "the /awk invocation itself",
@@ -131,7 +141,23 @@ def main():
         proc, _ = _run(d, [], flag=False)
         if proc.returncode != 0:
             fails.append("unparseable flag: refused (rc=%d)" % proc.returncode)
-    total = len(STILL_AWAY) + len(BACK) + 2
+        d = root / "sibling"
+        d.mkdir()
+        proc, state = _run(d, [], sibling=[_user("answered in the other session")])
+        if proc.returncode != 0 or state.exists():
+            fails.append(
+                "sibling: the operator's word to another session left the flag standing (rc=%d)"
+                % proc.returncode
+            )
+        d = root / "sibling-quiet"
+        d.mkdir()
+        proc, state = _run(d, [], sibling=[_user("<task-notification> x")])
+        if proc.returncode == 0 or not state.exists():
+            fails.append(
+                "sibling-quiet: a notification in another session ended the mode (rc=%d)"
+                % proc.returncode
+            )
+    total = len(STILL_AWAY) + len(BACK) + 4
     for f in fails:
         print("FAIL " + f)
     print("%d of %d case(s) passed" % (total - len(fails), total))

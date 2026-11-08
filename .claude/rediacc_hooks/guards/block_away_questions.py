@@ -70,7 +70,15 @@ def run(ev):
     transcript = ev.field("transcript_path")
     if transcript in ("", "null"):
         transcript = ""
-    doc = wl_away.away(transcript)
+    try:
+        doc = wl_away.away(transcript)
+    except (
+        Exception
+    ) as exc:  # A transcript this reader cannot parse fails open, like a missing flag.
+        ev.warn(
+            "block_away_questions: away check failed (%s); the question passes unexamined" % exc
+        )
+        return hookio.ALLOW
     if doc is None:
         return hookio.ALLOW
     ev.warn_raw(MESSAGE % doc["since"])
