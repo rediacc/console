@@ -81,9 +81,10 @@ The zone is on Cloudflare with null MX, `v=spf1 -all` and `_dmarc` reject with s
   Owns: private/account/src/routes/auth.ts, private/account/src/types/user.ts, private/account/web/src/api/endpoints.ts, private/account/web/src/auth/AuthContext.tsx, private/account/tests/integration/auth-no-existence-leak.test.ts (new).
   Accept: `(cd private/account && npx vitest run tests/integration/auth-no-existence-leak.test.ts)` rc 0.
     (ticked) 2026-11-08T16:04:41Z by d778be9d: commit:6387aa3efc account 9fd7659 and acb392e (gitlink 6387aa3efc): the magic-link route always sends the link and returns one body, hasPassword and skipIfHasPassword removed, Login follows; auth-no-existence-leak.test.ts (generic body, 423 for an unknown address, no Domain on session cookies) failed before and passes; auth vitest rc 0, account and web tsc rc 0
-- [ ] W9 [writer] Host literals left outside `packages/www`: two under the CLI's `services/serve`, `workers/proxy/src/index.ts`, the account's certificate PDF and `types/env.ts`, and the CLI contract regenerated from them.
+- [x] W9 [writer] Host literals left outside `packages/www`: two under the CLI's `services/serve`, `workers/proxy/src/index.ts`, the account's certificate PDF and `types/env.ts`, and the CLI contract regenerated from them.
   Owns: packages/cli/src/services/serve/auth.ts, packages/cli/src/services/serve/container-config.ts, workers/proxy/src/index.ts, private/account/src/services/pdf/certificate-pdf.ts, private/account/src/types/env.ts, packages/shared/src/cli-contract/data/**.
   Accept: `! git grep -nE '(edge-)?(eu|us|asia)\.rediacc\.com' -- packages/cli/src packages/shared/src workers/proxy/src workers/www/src` rc 0, the same grep under `private/account/src`, and `npx tsc --noEmit --project packages/cli/tsconfig.json` rc 0.
+    (ticked) 2026-11-08T18:51:13Z by d778be9d: commit:1fe5bac440 W9: no <region>.rediacc.com product host left in the CLI, shared, proxy, www worker or account sources (both accept greps 0 hits); npx tsc --noEmit -p packages/cli/tsconfig.json rc 0
 
 ### Mail, live
 

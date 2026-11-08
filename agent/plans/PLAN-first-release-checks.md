@@ -30,6 +30,7 @@ One order carries over: multi-org ML5 reaches the three stable targets before du
 
 - [ ] Q0: Before the cutover, set the four ACCOUNT_BACKUP_S3_* secrets on the eu stable Worker (names only, through the M1 path) and add the bucket-scoped cf-r2-backup rotation slug to the rotation profile in .ci/config/secret-supply.json; carried from CHECKLIST w8. Accept: the Worker settings list all four names; the rotation dry run lists the slug; the rollback version id is recorded. (corrected 2026-11-04: the slugs exist as cf-r2-backup-stable, -edge and -bench in private/account/rotation-manifest.json:136, and the rotation profile in .ci/config/secret-supply.json has no slug concept, so that clause needs no change there; what remains is the live push and dry run, which wait on the operator's hold on stable.)
 - [ ] Q1: Merge the program's PR through the loop (CD deploys edge). Deploy stable EU locally per .claude/skills/deploy/SKILL.md: `./run.sh devbox exec -- env PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile deploy-workers -- bash -c 'npm run build:packages && PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_account --region eu --target stable'` (with the portal build step the skill names), then the M1 secrets path for eu stable. Record the rollback version id and the D1 bookmark. Accept: https://eu.rediacc.com/account/api/v1/health answers 200 and the portal assets load.
+  Note: the old Worker, bucket, D1 and host names in this box predate the rename in PLAN-product-domain-rename.md.
 - [ ] Q12: The next 02:00 timer run completes on its own and uploads only changed cells. Accept: backup status shows the timer run; usage grows by a small delta.
 - [ ] Q13: After a few runs, `./rdc.sh backup retention preview mail --config eu-remote`. Accept: nothing beyond the policy is listed, and the floor is kept.
   (note) Runs through `eu-bench`, not `eu-remote`: PLAN-tested-on-bench ruling 1 as extended on 2026-11-04. The text above keeps the old name because a box's first 120 characters are its identity.
@@ -37,10 +38,12 @@ One order carries over: multi-org ML5 reaches the three stable targets before du
 ## Moved from PLAN-cloudflare-proxy.md
 
 - [ ] C2 [P1] After Phase 2 is green and C1 lands: `EXECUTOR_MODE = "proxy"` and `EXECUTOR_URL = "https://proxy.eu.rediacc.com"` in `workers/account/wrangler.eu.toml` `[vars]`, an eu deploy, and one console command (`machine status hostinger`) run from the portal console end to end; us and asia stay `mock` -- acceptance: this plan records the deploy version, the console run's output matching the local run, and the audit event naming the user
+  Note: the old Worker, bucket, D1 and host names in this box predate the rename in PLAN-product-domain-rename.md.
 
 ## Moved from PLAN-telemetry-export.md
 
 - [ ] T15 [ops] Live proxy acceptance, after `PLAN-cloudflare-proxy.md#P2a` and T13 and T14 deployed by that plan's Phase 2 redeploy: one `rdc --proxy https://proxy.eu.rediacc.com machine status hostinger` and one Worker probe -- Owns: agent/plans/PLAN-telemetry-export.md (a "Proxy results" section). Accept: Tempo lists `rediacc-proxy` and `rediacc-proxy-executor`, both spanmetrics series are above 0, and a `renet-execute` span from hostinger falls in the same minute; outputs recorded here.
+  Note: the old Worker, bucket, D1 and host names in this box predate the rename in PLAN-product-domain-rename.md.
 
 ## Moved from PLAN-stop-hook-one-plan-scope.md
 
@@ -66,6 +69,7 @@ One order carries over: multi-org ML5 reaches the three stable targets before du
 ## Moved from PLAN-proxy-cd-six-targets.md
 
 - [ ] L5 [live, post-merge] stable-eu through promote-stable (soak or nightly waiver). Delete rediacc-proxy-eu's `EXECUTOR_TOKEN` secret and revoke its token. -- Owns: agent/plans/PLAN-proxy-cd-six-targets.md. Accept: the stable-eu record matches L4's manifest sha256s for the same version, smoke rc is 0, E1 against `https://eu.rediacc.com` exits 0 with the audit event naming the user (this also closes PLAN-cloudflare-proxy C2), and no unrevoked 'cloudflare' token remains in the eu D1.
+  Note: the old Worker, bucket, D1 and host names in this box predate the rename in PLAN-product-domain-rename.md.
 - [ ] L6 [live, post-merge] stable-us, as L5. -- Owns: agent/plans/PLAN-proxy-cd-six-targets.md. Accept: as L5 for us.
 - [ ] L7 [live, post-merge] stable-asia, as L5. -- Owns: agent/plans/PLAN-proxy-cd-six-targets.md. Accept: as L5 for asia.
 - [ ] L8 [ops, post-merge] Telemetry acceptance, which folds in PLAN-telemetry-export T15.
@@ -79,6 +83,7 @@ One order carries over: multi-org ML5 reaches the three stable targets before du
 
 - [ ] ML4 [live, post-merge] The first CD edge run after merge. Its three job records, plus E1 per edge region. -- Owns: agent/plans/PLAN-console-executor-multi-org.md. Accept: three deploy jobs succeed with smoke rc 0, and E1 exits 0 for each edge origin.
 - [ ] ML5 [live, post-merge] stable-eu, stable-us and stable-asia through promote-stable. -- Owns: agent/plans/PLAN-console-executor-multi-org.md. Accept: each stable row has smoke rc 0, and E1 against `https://eu.rediacc.com`, `https://us.rediacc.com` and `https://asia.rediacc.com` exits 0 with two org ids each.
+  Note: the old Worker, bucket, D1 and host names in this box predate the rename in PLAN-product-domain-rename.md.
 - [ ] ML6 [ops, post-merge] Capacity watch. A Grafana query of the per-target count of `rediacc.proxy.outcome=capacity` over 14 days goes to the Live records, and the decision on raising max_instances goes to the operator with that number. -- Owns: agent/plans/PLAN-console-executor-multi-org.md. Accept: the Live records carry the 14-day count for each of the six targets and the ASKED line or the "no capacity refusals" record.
 
 ## Moved from PLAN-executor-durable-object-policy.md
@@ -88,7 +93,7 @@ One order carries over: multi-org ML5 reaches the three stable targets before du
   - Phase 1 rides the merged release through promote-stable.
   - Phase 2 is the release that flips `BACKEND_BY_TARGET` for the three stable targets.
 
-  -- Owns: agent/plans/PLAN-executor-durable-object-policy.md. Accept: each stable target has a forward-only Phase 1 row and a Phase 2 row with smoke rc 0, and E1 against `https://eu.rediacc.com`, `https://us.rediacc.com` and `https://asia.rediacc.com` exits 0 on `durable` with two org ids each.
+  -- Owns: agent/plans/PLAN-executor-durable-object-policy.md. Accept: each stable target has a forward-only Phase 1 row and a Phase 2 row with smoke rc 0, and E1 against `https://eu.rediacc.cloud`, `https://us.rediacc.cloud` and `https://asia.rediacc.cloud` exits 0 on `durable` with two org ids each.
 - [ ] L7 [live, post-merge] Phase 3 per target, after C1.
   - Deploy the C1 release (forward-only) to bench, the three edge targets and the three stable targets.
   - Then run `npx wrangler containers delete <old application id>` per target, with the id read from `wrangler containers list` and recorded by its first 8 characters.

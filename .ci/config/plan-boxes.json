@@ -2875,8 +2875,8 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 15,
-      "done": 5,
+      "open": 14,
+      "done": 6,
       "open_sigs": [
         "02e7480f",
         "08056aeb",
@@ -2890,7 +2890,6 @@
         "87da6b72",
         "976bf9ae",
         "9a01d32a",
-        "bbca8d16",
         "c470810e",
         "ed44b490"
       ],
@@ -2899,7 +2898,8 @@
         "21e3ffd0",
         "35ec72c0",
         "7ce47951",
-        "83842948"
+        "83842948",
+        "bbca8d16"
       ]
     },
     "agent/plans/PLAN-wire-account-vitest-ci.md": {

@@ -683,6 +683,7 @@ Amended by section 15: an MCP tool waits up to the attach window and returns the
   Owns: .ci/rediacc_ci/ops/job_latency.py (new), .ci/rediacc_ci/tests/test_ops_job_latency.py (new). Accept: `PYTHONPATH=.ci python3 -m pytest .ci/rediacc_ci/tests/test_ops_job_latency.py` rc 0.
 
 - [ ] L0 [live] Baseline before any bench deploy of this branch: one `rdc --proxy <bench proxy origin> repo up <fork>` and one `backup verify <fork>` through the bench proxy on the current protocol, then the Durable Object request wall time, request count and container seconds for `rediacc-proxy-bench` over that window, read with the J12 module (or by hand with the same GraphQL query if J12 has not landed, recorded verbatim).
+  Note: the old Worker, bucket, D1 and host names in this box predate the rename in PLAN-product-domain-rename.md.
   Owns: agent/plans/PLAN-detached-jobs.md. Accept: the run's timings and the three metrics recorded under "Live records" with the UTC window, and both commands rc 0.
 
 - [ ] L3a [live] Latency baseline before any deploy of this branch, on the main CLI and renet: J23 with 20 runs each of `repo list -m <machine>`, `repo status <fork>`, `machine status <machine>` and `repo create`/`repo delete` of a scratch repo. Each runs on hostinger direct through `--config eu-bench`, and each through the bench proxy.
@@ -718,7 +719,8 @@ Amended by section 15: an MCP tool waits up to the attach window and returns the
     (ticked) 2026-11-06T00:25:59Z by d778be9d: commit:f07996f4f; vitest proxy-client-background, serve job-background, mcp job-background 13 passed rc=0; shared command-request-background 3 passed rc=0; tsc rc=0
 
 - [ ] L2 [live] Cost after: the L0 commands again on the deployed branch, and the same three metrics over the new window with `PYTHONPATH=.ci python3 -m rediacc_ci.ops.proxy_job_cost --script rediacc-proxy-bench --from <ISO> --to <ISO>`. The expected result is Durable Object wall time per run falling from the run length to the sum of poll durations; the measured before and after go into "Live records" with the ratio.
-  Owns: agent/plans/PLAN-detached-jobs.md. Accept: `PYTHONPATH=.ci python3 -m rediacc_ci.ops.proxy_job_cost --script rediacc-proxy-bench --from <ISO> --to <ISO>` rc 0 for both windows, with both readings recorded.
+  Note: the old Worker, bucket, D1 and host names in this box predate the rename in PLAN-product-domain-rename.md.
+  Owns: agent/plans/PLAN-detached-jobs.md. Accept: `PYTHONPATH=.ci python3 -m rediacc_ci.ops.proxy_job_cost --script proxy-bench --from <ISO> --to <ISO>` rc 0 for both windows, with both readings recorded.
 
 - [ ] L3b [live] Latency after: the L3a commands again on the deployed branch and the branch renet, same paths and run counts, then `job_latency --compare`. The added p50 and p95 per command are checked against the section 23 budget (p50 plus 500 ms, p95 plus 1 s), and the share of short commands over 20 s against the section 15 rule (10 %).
   Owns: agent/plans/PLAN-detached-jobs.md. Accept: `PYTHONPATH=.ci python3 -m rediacc_ci.ops.job_latency --compare <before> <after>` rc 0, with the deltas recorded under "Live records". A breach of either budget is recorded and asked under J24, not silently accepted.

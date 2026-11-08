@@ -1,4 +1,4 @@
-# PLAN: Cloudflare executor proxy (rediacc-proxy-eu): status, tests, live trial, cost, teardown
+# PLAN: Cloudflare executor proxy (proxy-eu): status, tests, live trial, cost, teardown
 
 Status: approved -- operator rulings 2026-10-23 (AskUserQuestion): "Keep it and finish Phase 2", B5 "A mint command", console "Wire it after Phase 2"; quoted in "Operator rulings (2026-10-23)" below
 Depends-On: no-dep -- cites no other plan; the account-side boxes ride the private/account submodule's own branch
@@ -104,6 +104,7 @@ Asked with AskUserQuestion on 2026-10-23; each answer is quoted, then what it or
 - [x] Operator Phase 1: the daemon tier on the dev box against hostinger, including `repo up` and `repo down` on `demo-stackoverflow:proxytrial` -- acceptance: the Phase 1 results section records rc 0 for every step
     (ticked) 2026-10-23T08:28:11Z by d778be9d: commit:bcb0f2d7e the Phase 1 results section records rc 0 for status, repo status, fork up and fork down against hostinger
 - [x] Operator: redeploy after A2, A3, B1, B2 and B3 with `EXECUTOR_TOKEN` (scopes `proxy:exec` and `audit:write`) set, then Phase 2 steps 1-4 against hostinger -- acceptance: `rdc --proxy https://proxy.eu.rediacc.com machine status hostinger` exits 0 with output matching the local run
+  Note: the old Worker, bucket, D1 and host names in this box predate the rename in PLAN-product-domain-rename.md.
     (audit note 2026-11-04) Not run: Phase 2 steps 1-4 on hostinger and this box's acceptance command. Accepted as superseded by the ruling ASKED:2026-11-04T07:38Z; the stable eu proof moves to PLAN-proxy-cd-six-targets L5, still open. ASKED:2026-10-25T19:08Z supersedes only the token.
     (ticked) 2026-11-04T07:39:15Z by d778be9d: fileline:agent/plans/PLAN-cloudflare-proxy.md:404 superseded by the ISSUER binding and CD. Accepted by operator ruling ASKED:2026-11-04T07:38Z
 - [x] Phase 2 step 5: measure container RSS and cold start, decide whether `lite` is viable, and record the numbers in this plan -- acceptance: the measurements recorded in this plan
@@ -114,7 +115,8 @@ Asked with AskUserQuestion on 2026-10-23; each answer is quoted, then what it or
 - [x] B5b [P1] An explicit `rdc` command (working name `rdc subscription proxy-token`) that calls B5a with the stored login token and writes only the minted token to stdout (`--json` adds `expiresAt`), registered in the CLI contract as not `proxyCapable`, with its strings in every CLI locale, so a caller runs `REDIACC_TOKEN=$(rdc subscription proxy-token) rdc --proxy <url> ...` -- acceptance: a CLI test drives the command against a fake account server and asserts stdout carries the token and nothing else, and `npx tsc --noEmit --project packages/cli/tsconfig.json` exits 0
     (ticked) 2026-10-23T13:29:42Z by d778be9d: commit:eff7c7dcd packages/cli/src/commands/subscription-proxy-token.ts and packages/cli/src/commands/__tests__/subscription-proxy-token.test.ts rc=0; npx tsc --noEmit --project packages/cli/tsconfig.json rc=0
 - [x] C1 [P1] The account worker reaches the proxy through a service binding, not a public fetch: `console.ts` sends its three executor calls (`private/account/src/routes/console.ts:352`, `:407`, `:445`) through an `EXECUTOR` Fetcher when bound, and `workers/account/wrangler.eu.toml` binds `rediacc-proxy-eu`; `fetch(EXECUTOR_URL)` stays for a local executor in dev -- acceptance: a `console-session.test.ts` case where a bound Fetcher receives the command and the global `fetch` is never called, and `grep -n 'rediacc-proxy-eu' workers/account/wrangler.eu.toml` matches
-    (ticked) 2026-10-24T04:12:42Z by d778be9d: commit:a386af032 workers/account/wrangler.eu.toml:70; console.ts picks the bound EXECUTOR Fetcher first (private/account/src/routes/console.ts:59), the eu worker binds rediacc-proxy-eu, console-session tests pass (26 with proxy-cli-token); not yet deployed, the binding ships with this branch
+  Note: the old Worker, bucket, D1 and host names in this box predate the rename in PLAN-product-domain-rename.md.
+    (ticked) 2026-10-24T04:12:42Z by d778be9d: commit:a386af032 workers/account/wrangler.eu.toml:70; console.ts picks the bound EXECUTOR Fetcher first (private/account/src/routes/console.ts:59), the eu worker binds proxy-eu, console-session tests pass (26 with proxy-cli-token); not yet deployed, the binding ships with this branch
 (moved ASKED:2026-11-05T07:06Z to agent/plans/PLAN-first-release-checks.md) C2
 - [x] P2a [P1] Phase 2 results recorded: the deploy version that carries the service binding, the `EXECUTOR_TOKEN` scopes (`proxy:exec`, `audit:write`) and its IP binding (`cloudflare`, `private/account/src/types/api-token.ts:18,22`), and the rc of every Phase 2 step 1-4 -- acceptance: a "Phase 2 results" section in this plan with those values
     (ticked) 2026-10-24T07:18:38Z by d778be9d: commit:6ce1c3429 Phase 2 results at agent/plans/PLAN-cloudflare-proxy.md:303 (versions with the binding, token 5375a8fe proxy:exec+audit:write bound cloudflare, steps 1-3 rc=0, step 4 fails only at SSH after the fixes)
@@ -133,7 +135,7 @@ The image-smoke CI box needs a renet build ahead of its lane: the gate stages `w
 
 ## 0. Verdict (2026-10-23)
 
-The proxy is deployed and kept. The 2026-09-24 production deploy created the Worker `rediacc-proxy-eu`, the custom domain `proxy.eu.rediacc.com`, and the container application `rediacc-proxy-eu-executorcontainer`, by a manual run of `.ci/rediacc_ci/deploy/deploy_proxy.py`. It has never been torn down.
+The proxy is deployed and kept. The 2026-09-24 production deploy created the Worker `proxy-eu`, the custom domain `proxy.eu.rediacc.cloud`, and the container application `rediacc-proxy-eu-executorcontainer`, by a manual run of `.ci/rediacc_ci/deploy/deploy_proxy.py`. It has never been torn down.
 
 Every code blocker the first review found (B1-B4, S1, F1, findings (a)-(c)) is fixed on `origin/main` and tested (section 1.3). The daemon tier ran a real `repo up` and `repo down` against hostinger (Phase 1 results). The service binding to the account worker fixed the 401 every caller got on the first Phase 2 deploy (section 1.4).
 
@@ -171,9 +173,9 @@ The cost is about $0 marginal while no caller wakes a container (section 4).
 
 | Item | Where | State (2026-10-23) |
 |---|---|---|
-| Custom domain `proxy.eu.rediacc.com` | line 9-11 of `workers/proxy/wrangler.toml` (renamed to `wrangler.eu.toml` by PLAN-proxy-cd-six-targets K1) | live since 2026-09-24 |
-| `ACCOUNT_URL` var | line 14 of `workers/proxy/wrangler.toml` (renamed to `wrangler.eu.toml` by PLAN-proxy-cd-six-targets K1) | `https://eu.rediacc.com` |
-| `ACCOUNT` service binding to `rediacc-account-eu` | line 19-21 of `workers/proxy/wrangler.toml` (renamed to `wrangler.eu.toml` by PLAN-proxy-cd-six-targets K1) | in the tree; the deploy that carries it is unrecorded (box P2a) |
+| Custom domain `proxy.eu.rediacc.cloud` | line 9-11 of `workers/proxy/wrangler.toml` (renamed to `wrangler.eu.toml` by PLAN-proxy-cd-six-targets K1) | live since 2026-09-24 |
+| `ACCOUNT_URL` var | line 14 of `workers/proxy/wrangler.toml` (renamed to `wrangler.eu.toml` by PLAN-proxy-cd-six-targets K1) | `https://eu.rediacc.cloud` |
+| `ACCOUNT` service binding to `account-eu` | line 19-21 of `workers/proxy/wrangler.toml` (renamed to `wrangler.eu.toml` by PLAN-proxy-cd-six-targets K1) | in the tree; the deploy that carries it is unrecorded (box P2a) |
 | `EXECUTOR_TOKEN` secret: a portal API token with scopes `proxy:exec` and `audit:write`, IP binding `cloudflare`, in the org that owns hostinger's config | `workers/proxy/src/index.ts:61` | unrecorded (box P2a) |
 | Container receives its token | `executorEnvVars`, `workers/proxy/src/org-executor-support.ts:126-133`; read at `packages/cli/src/commands/serve.ts:64-70` | fixed (B1) |
 | Org has a remote config store holding hostinger | `packages/cli/src/services/serve/container-config.ts`, `private/account/src/routes/configs.ts:837` | operator confirms with `rdc config remote status` |
@@ -195,8 +197,8 @@ This section records the first review's findings. None of them is open; the fixe
 
 ### 1.4 Design facts found after the first review
 
-- **The service binding.** The proxy Worker and the account worker share the `rediacc.com` zone, and a Worker's `fetch()` to a same-zone hostname never reaches another Worker. On the first Phase 2 deploy (2026-09-24) every introspection failed, and every caller got 401. Introspection now goes through `[[services]] ACCOUNT -> rediacc-account-eu` (line 17-21 of `workers/proxy/wrangler.toml` (renamed to `wrangler.eu.toml` by PLAN-proxy-cd-six-targets K1)), the path `workers/www` already uses; `fetch(ACCOUNT_URL)` remains only for a deploy without the binding (`workers/proxy/src/index.ts:64-67`).
-- **The same trap waits for the console.** `console.ts` reaches `EXECUTOR_URL` with a public `fetch` (`private/account/src/routes/console.ts:352`, `:407`, `:445`), and `eu.rediacc.com` and `proxy.eu.rediacc.com` share that zone. Setting `EXECUTOR_URL` alone would reproduce the 401 in the other direction, so box C1 (an `EXECUTOR` binding on the account worker) comes before box C2.
+- **The service binding.** The proxy Worker and the account worker share the `rediacc.com` zone, and a Worker's `fetch()` to a same-zone hostname never reaches another Worker. On the first Phase 2 deploy (2026-09-24) every introspection failed, and every caller got 401. Introspection now goes through `[[services]] ACCOUNT -> account-eu` (line 17-21 of `workers/proxy/wrangler.toml` (renamed to `wrangler.eu.toml` by PLAN-proxy-cd-six-targets K1)), the path `workers/www` already uses; `fetch(ACCOUNT_URL)` remains only for a deploy without the binding (`workers/proxy/src/index.ts:64-67`).
+- **The same trap waits for the console.** `console.ts` reaches `EXECUTOR_URL` with a public `fetch` (`private/account/src/routes/console.ts:352`, `:407`, `:445`), and `eu.rediacc.cloud` and `proxy.eu.rediacc.cloud` share that zone. Setting `EXECUTOR_URL` alone would reproduce the 401 in the other direction, so box C1 (an `EXECUTOR` binding on the account worker) comes before box C2.
 - **Refusal logging.** `refuse()` logs why a caller was refused (`no-bearer`, `no-executor-token`, `introspect-http-<n>`, `inactive`, `no-org`, `no-proxy-exec-scope`) without logging the token (`workers/proxy/src/index.ts:96-144`), so a 401 in Phase 2 names its cause in the Worker logs.
 - **IP-bound executor tokens.** A `proxy:exec` token can be bound to Cloudflare's published ranges (`private/account/src/types/api-token.ts:18`, `:22`), which is the binding `EXECUTOR_TOKEN` takes.
 
@@ -243,8 +245,8 @@ Target rules:
 
 | Step | Proves | Verify | Rollback |
 |---|---|---|---|
-| `curl -s https://proxy.eu.rediacc.com/v1/health` | Worker and custom domain are live | `{"ok":true}` | none |
-| `curl -s -o /dev/null -w '%{http_code}' https://proxy.eu.rediacc.com/v1/server-info` | Auth gate, no container started | `401` | none |
+| `curl -s https://proxy.eu.rediacc.cloud/v1/health` | Worker and custom domain are live | `{"ok":true}` | none |
+| `curl -s -o /dev/null -w '%{http_code}' https://proxy.eu.rediacc.cloud/v1/server-info` | Auth gate, no container started | `401` | none |
 | `npx wrangler containers list` / `info <id>` (cwd `workers/proxy`) | App exists, 0 running instances | instance list empty | none |
 
 ### Phase 1: daemon tier on the dev box against hostinger (done 2026-09-24)
@@ -252,7 +254,7 @@ Target rules:
 The steps are kept as run; results are in "Phase 1 results" below.
 
 1. The operator creates a portal API token with scope `proxy:exec` in the org, used for both the executor and the caller.
-2. Terminal A: `REDIACC_ACCOUNT_SERVER=https://eu.rediacc.com REDIACC_TOKEN=<tok> ./rdc.sh serve --mode daemon --host 127.0.0.1 --port 8080`. Pin the account server to the one that issued the token (Phase 1 results).
+2. Terminal A: `REDIACC_ACCOUNT_SERVER=https://eu.rediacc.cloud REDIACC_TOKEN=<tok> ./rdc.sh serve --mode daemon --host 127.0.0.1 --port 8080`. Pin the account server to the one that issued the token (Phase 1 results).
 3. `REDIACC_TOKEN=<tok> ./rdc.sh --proxy http://127.0.0.1:8080 machine status hostinger`, matching `./rdc.sh machine status hostinger`.
 4. `... --proxy http://127.0.0.1:8080 repo status demo-stackoverflow:proxytrial`.
 5. `... --proxy ... repo up demo-stackoverflow:proxytrial`, then `repo down` the same ref. Rollback: `rdc repo delete demo-stackoverflow:proxytrial` (operator, locally).
@@ -262,7 +264,7 @@ The steps are kept as run; results are in "Phase 1 results" below.
 0. Redeploy with `PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_proxy`, so the live Worker carries the `ACCOUNT` service binding, `max_instances = 2`, `sleepAfter = '2m'` and the image with renet. Record the version (box P2a).
 1. `npx wrangler secret put EXECUTOR_TOKEN --config workers/proxy/wrangler.toml`, with a token carrying `proxy:exec` and `audit:write` and IP binding `cloudflare`. Verify: `/v1/server-info` with the caller token gives 200 and `mode: "container"` (the first container start). A 401 names its cause in the Worker logs (`refuse()`). Rollback: `npx wrangler secret delete EXECUTOR_TOKEN --config workers/proxy/wrangler.toml`, which returns to 401-only and zero container cost.
 2. `wrangler containers info <id>` and Worker logs. Verify: the instance starts, then stops after `sleepAfter`.
-3. `REDIACC_TOKEN=<caller tok> rdc --proxy https://proxy.eu.rediacc.com machine status hostinger`. Proves the full chain: CLI, Worker, container, config pull and decrypt, SSH to hostinger. Verify: output matches the local run, and the audit event names the user. Once B5b lands, the caller token comes from the mint command.
+3. `REDIACC_TOKEN=<caller tok> rdc --proxy https://proxy.eu.rediacc.cloud machine status hostinger`. Proves the full chain: CLI, Worker, container, config pull and decrypt, SSH to hostinger. Verify: output matches the local run, and the audit event names the user. Once B5b lands, the caller token comes from the mint command.
 4. `repo status`, `repo up` and `repo down` on `demo-stackoverflow:proxytrial`, as in Phase 1. Proves egress, streaming, detach and re-attach through the Worker. Rollback: operator `repo delete` of the fork.
 5. Measure container RSS and cold start (Worker logs, `containers info`), decide whether `lite` is viable, and record both numbers here.
 
@@ -316,15 +318,15 @@ Under the 2026-10-23 ruling the proxy is kept. Run this only if the operator she
 
 1. `npx wrangler containers list`: record the id of `rediacc-proxy-eu-executorcontainer`.
 2. `npx wrangler containers images list`: record the `rediacc-proxy-eu-executorcontainer:<tag>` entries.
-3. `npx wrangler delete --name rediacc-proxy-eu` (add `--force` if wrangler asks). This removes the script, its versions, its secrets (`EXECUTOR_TOKEN`), the `proxy.eu.rediacc.com` custom domain, and the DO namespace it owns.
+3. `npx wrangler delete --name proxy-eu` (add `--force` if wrangler asks). This removes the script, its versions, its secrets (`EXECUTOR_TOKEN`), the `proxy.eu.rediacc.cloud` custom domain, and the DO namespace it owns.
 4. `npx wrangler containers delete <id>` if step 1's app is still listed.
 5. `npx wrangler containers images delete rediacc-proxy-eu-executorcontainer:<tag>` for every tag from step 2.
 6. Revoke the `proxy:exec` portal token(s) created for `EXECUTOR_TOKEN` and for callers.
 7. Verify:
-   - `npx wrangler deployments list --name rediacc-proxy-eu` fails (not found)
-   - `curl -sS https://proxy.eu.rediacc.com/v1/health` fails to resolve or connect
+   - `npx wrangler deployments list --name proxy-eu` fails (not found)
+   - `curl -sS https://proxy.eu.rediacc.cloud/v1/health` fails to resolve or connect
    - `containers list` and `containers images list` show nothing for the proxy
-   - Dashboard > Workers & Pages shows no `rediacc-proxy-eu`
+   - Dashboard > Workers & Pages shows no `proxy-eu`
    - Dashboard > Billing > Billable usage shows Containers memory, vCPU and disk flat from the next day, and the next invoice has $0 in Containers lines
 8. Do **not** downgrade Workers Paid. Other production Workers depend on it.
 9. If C2 has landed, set eu's `EXECUTOR_MODE` back to `mock` and drop the C1 binding before step 3, or the account worker loses a bound service.
@@ -357,8 +359,8 @@ Run on bench under the operator's bench-only bypass order (2026-10-24), not agai
 
 | | Before | After | Rollback |
 |---|---|---|---|
-| Account worker `rediacc-account-bench` (carries the CloudflareInternal entrypoint, account 9fb73f0) | 9acd4c8d | dfe865fb-974c-4c6d-bda1-031ee48aa40e, then secret change 10818332-b24c-44a8-9230-820f35c140c3 | `wrangler rollback 9acd4c8d` (a secret change is a version of its own, so rolling back to the Before version also drops the secret change; confirm with `wrangler deployments list` after rolling back); D1 bookmark `000000bd-00000000-0000510e-7231ac96b7367046489c2029f87ccdfc` |
-| Proxy worker `rediacc-proxy-bench` (ACCOUNT binding with `entrypoint = "CloudflareInternal"`) | 89b9e1f2 | 358bb286, then secret changes to eecfe3c1-f798-4a9d-989a-d3ecfb28bc5f | `wrangler rollback 89b9e1f2` (same: the Before version predates the secret changes) |
+| Account worker `account-bench` (carries the CloudflareInternal entrypoint, account 9fb73f0) | 9acd4c8d | dfe865fb-974c-4c6d-bda1-031ee48aa40e, then secret change 10818332-b24c-44a8-9230-820f35c140c3 | `wrangler rollback 9acd4c8d` (a secret change is a version of its own, so rolling back to the Before version also drops the secret change; confirm with `wrangler deployments list` after rolling back); D1 bookmark `000000bd-00000000-0000510e-7231ac96b7367046489c2029f87ccdfc` |
+| Proxy worker `proxy-bench` (ACCOUNT binding with `entrypoint = "CloudflareInternal"`) | 89b9e1f2 | 358bb286, then secret changes to eecfe3c1-f798-4a9d-989a-d3ecfb28bc5f | `wrangler rollback 89b9e1f2` (same: the Before version predates the secret changes) |
 
 `EXECUTOR_TOKEN` is token 5375a8fe: scopes `proxy:exec` and `audit:write`, IP binding `cloudflare` (`private/account/src/types/api-token.ts:18,22`), owned by a fresh bench org owner.
 
@@ -367,7 +369,7 @@ Run on bench under the operator's bench-only bypass order (2026-10-24), not agai
 | 1. `PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench` | 0 | account deployed |
 | 2. `PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_proxy --target bench` | 0 | the DoH pin answered past a cached NXDOMAIN; `/v1/health` 200, unauthenticated `/v1/server-info` 401 |
 | 3. `/v1/server-info` with a fresh owner's caller token | 0 | 200 `{"cliVersion":"2.4.0","contractVersion":"dev","mode":"container"}`, 3.07 s cold, 0.56 s warm; the account tail shows `entrypoint CloudflareInternal ... /proxy/introspect 200` |
-| 4. `rdc --proxy https://proxy.bench.rediacc.com machine status vm12` | 1 | "The executor could not verify this token with the account server (403)": the container's own account calls went out its public egress and met the `cloudflare` binding |
+| 4. `rdc --proxy https://proxy.bench.rediacc.cloud machine status vm12` | 1 | "The executor could not verify this token with the account server (403)": the container's own account calls went out its public egress and met the `cloudflare` binding |
 
 Step 4 findings and their fixes:
 - Container account egress refused with 403: fixed in e6711e340 (the container addresses `http://account.internal`, intercepted by `ExecutorContainer.outboundByHost` and forwarded over the ACCOUNT binding). A bounded diagnostic with an `unbound` token (since revoked) showed every container call answering 200 once the binding question is out of the way, and the config decrypting.
@@ -375,11 +377,11 @@ Step 4 findings and their fixes:
 - A Cloudflare container cannot reach the ops VMs (192.168.111.0/24 is private to the dev box), so `machine status`, fork, `repo up` and `repo down` end-to-end need a publicly reachable test machine. hostinger is excluded until H1.
 - A new secret reaches a container only after its Durable Object idles out (`sleepAfter = 2m`): a container started a minute after `secret put` still ran the previous script version.
 
-Re-run after the fixes (bench, 2026-10-24 07:05-07:13Z): proxy `rediacc-proxy-bench` 0432aa69-c448-4940-b38b-65eaad70d7bb (carries e6711e340, ba026d316, 3fa2d33ea; rollback 4fb58b44), account `rediacc-account-bench` 83e0c016-40c6-4447-8ead-723e42f1fa6c (carries 889309f2a; rollback 10818332, D1 bookmark `000000c5-00000000-0000510e-1d0a055499205be40954a9fca240beda`).
+Re-run after the fixes (bench, 2026-10-24 07:05-07:13Z): proxy `proxy-bench` 0432aa69-c448-4940-b38b-65eaad70d7bb (carries e6711e340, ba026d316, 3fa2d33ea; rollback 4fb58b44), account `account-bench` 83e0c016-40c6-4447-8ead-723e42f1fa6c (carries 889309f2a; rollback 10818332, D1 bookmark `000000c5-00000000-0000510e-1d0a055499205be40954a9fca240beda`).
 
 | Step | rc | Result |
 |---|---|---|
-| 4. `rdc --proxy https://proxy.bench.rediacc.com machine status vm12` (three runs, one from cold) | 1 | fails only at SSH, `Timed out while waiting for handshake` (vm12 is private to the dev box); the account tail shows the container's `.well-known/server-info`, `proxy/introspect`, `configs/executor-token`, the config pull and `licenses/audit-events` all 200 via the CloudflareInternal entrypoint |
+| 4. `rdc --proxy https://proxy.bench.rediacc.cloud machine status vm12` (three runs, one from cold) | 1 | fails only at SSH, `Timed out while waiting for handshake` (vm12 is private to the dev box); the account tail shows the container's `.well-known/server-info`, `proxy/introspect`, `configs/executor-token`, the config pull and `licenses/audit-events` all 200 via the CloudflareInternal entrypoint |
 
 event_log gained rows 9577d702-88d4-48e6-ad8d-4a5058a3c2ea and 75d402ca-c849-40f3-96ce-143277e1518c, both `type=cli.command`, attributed to the caller's proxy token through `onBehalfOfTokenId`. One earlier run right after a deploy ended with a client-side `fetch failed` that two cold runs did not reproduce; the proxy client calls `fetch` with no timeout and drops the error cause (worklist item).
 
@@ -391,8 +393,8 @@ Instance type `basic` (0.25 vCPU, 1 GiB, 4 GB disk). The GraphQL `containersMetr
 
 | Check | rc | Output |
 |---|---|---|
-| `curl -sS https://proxy.eu.rediacc.com/v1/health` | 0 | `{"ok":true}` |
-| `curl -sS -o /dev/null -w '%{http_code}' https://proxy.eu.rediacc.com/v1/server-info` | 0 | `401` |
+| `curl -sS https://proxy.eu.rediacc.cloud/v1/health` | 0 | `{"ok":true}` |
+| `curl -sS -o /dev/null -w '%{http_code}' https://proxy.eu.rediacc.cloud/v1/server-info` | 0 | `401` |
 | `npx wrangler containers list` in workers/proxy, through `bws_env exec --profile deploy-workers` | 0 | one app, `rediacc-proxy-eu-executorcontainer` (a030433c-f7b8-40aa-adea-d39ed0c87fb3), state `ready`, live instances 0, last modified 2026-09-24T14:26:21Z |
 
 Rollback handles, read with `wrangler deployments list`: live version 9c90605d-b963-4ccf-b952-fda0bab48958, previous upload 17b3164d-f07b-4755-8926-edfdc682bceb (2026-09-24T14:41:57Z). `wrangler secret list` shows an EXECUTOR_TOKEN set by the 2026-09-24T16:13:52Z "Secret Change" deployment. Cloudflare cannot show its scopes, and it may be the Phase 1 token without `audit:write`.
@@ -403,13 +405,13 @@ Phase 2 is held on the token. `POST /account/api/v1/api-tokens` is the only rout
 
 History. Run on the dev box with an operator-created portal token (scope `proxy:exec`; kept in a mode-600 scratch file, never in the repo).
 
-- **Daemon up.** `REDIACC_ACCOUNT_SERVER=https://eu.rediacc.com REDIACC_TOKEN=<token> ./rdc.sh serve --mode daemon --host 127.0.0.1 --port 18080` printed `Executor listening on http://127.0.0.1:18080 (mode: daemon)`, and `/v1/health` returned `{"ok":true}`.
+- **Daemon up.** `REDIACC_ACCOUNT_SERVER=https://eu.rediacc.cloud REDIACC_TOKEN=<token> ./rdc.sh serve --mode daemon --host 127.0.0.1 --port 18080` printed `Executor listening on http://127.0.0.1:18080 (mode: daemon)`, and `/v1/health` returned `{"ok":true}`.
 - **`machine status hostinger` through the proxy: rc 0**, with live data (31.3G memory, datastore 85% used, scrub last run 2026-09-20). This covers the whole daemon path: CLI, daemon, token introspection, policy, dispatch, and a real SSH to hostinger.
 - **`repo status demo-stackoverflow@hostinger` through the proxy: rc 0.** It returned the repo's real record (guid `db315abd-...`, created 2026-03-17T08:41:15Z). This was read-only on a grand repo, which S1 allows.
-- **The first attempt failed with 401.** The active config's account pointer is `https://edge-eu.rediacc.com`. The edge account server has its own database, so a production token is unknown there (`Invalid or expired API token`, 401), while the same token introspects `active: true` on `eu.rediacc.com`. The daemon takes the introspection URL from the CLI config, so a trial must pin `REDIACC_ACCOUNT_SERVER` to the server that issued the token.
+- **The first attempt failed with 401.** The active config's account pointer is `https://eu.rediacc.cloud`. The edge account server has its own database, so a production token is unknown there (`Invalid or expired API token`, 401), while the same token introspects `active: true` on `eu.rediacc.cloud`. The daemon takes the introspection URL from the CLI config, so a trial must pin `REDIACC_ACCOUNT_SERVER` to the server that issued the token.
 - **Found, F1: proxied commands are not audited.** The daemon logged `Ran "repo status" for muhammed@rediacc.com but could not record it: The account server rejected the audit event (403)`. The executor posts the audit event with a token that lacks `audit:write` (its scopes: license:activate, license:read, subscription:read, proxy:exec, backup:read, config:enroll, proxy:admin). The command still runs, so an audit gap is silent apart from a log line.
 - **Not run: the fork steps (Phase 1 steps 4-5).** `rdc repo fork demo-stackoverflow@hostinger --tag proxytrial` failed before creating anything with `Token is bound to a different IP address`: the CLI's stored subscription token (used to license the fork) was minted from another IP. The CLI rolled its config back. The steps need an operator re-login of the CLI on this machine.
-- **Fork steps PASSED after the operator's CLI re-login.** The re-login went against edge-eu.rediacc.com, the active config's account pointer. Its subscription token licenses the fork, while the proxy token came from eu.rediacc.com.
+- **Fork steps PASSED after the operator's CLI re-login.** The re-login went against eu.rediacc.cloud, the active config's account pointer. Its subscription token licenses the fork, while the proxy token came from eu.rediacc.cloud.
   - `rdc repo fork demo-stackoverflow@hostinger --tag proxytrial` created the fork, with a local CLI licence activation and repo key deploy.
   - Through `rdc --proxy http://127.0.0.1:18080`, each rc 0:
     - `repo status demo-stackoverflow:proxytrial@hostinger`

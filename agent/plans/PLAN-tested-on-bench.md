@@ -107,7 +107,7 @@ Worklist: pending -- filed at promotion
   - There are no free arguments, no generic `rdc` or `npm` entry, and no allowlist.
   - A plan that needs a behaviour-specific check adds a named entry in its own Owns.
   - Initial entries:
-    - `account-smoke` (bench; account, account-worker): `/health` and `.well-known/server-info` on `bench.rediacc.com`.
+    - `account-smoke` (bench; account, account-worker): `/health` and `.well-known/server-info` on `bench.rediacc.cloud`.
     - `proxy-ready` (bench; proxy): `rediacc_ci.deploy.deploy_proxy --smoke-only` against bench.
     - `www-smoke` (bench; www): the bench www root answers 200. V5 names the URL; LP7 refuses a surface with no check.
     - `cli-bench` (bench; cli): `./rdc.sh --config eu-bench subscription status`.
