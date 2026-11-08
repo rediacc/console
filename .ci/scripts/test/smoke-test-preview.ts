@@ -411,12 +411,12 @@ async function checkInstallSh(expectedChannel: string): Promise<void> {
     if (!body.includes(`REDIACC_CHANNEL:-${expectedChannel}`)) {
       throw new Error(`install.sh default channel is not ${expectedChannel}`);
     }
-    // Belt-and-suspenders: the rewrite must REPLACE :-stable, not merely add
+    // Belt-and-suspenders: the rewrite must REPLACE :-edge, not merely add
     // a second line. If both remain, a user who sets REDIACC_CHANNEL before
     // piping to bash would be safe, but the default path silently picks
-    // stable again.
-    if (body.includes('REDIACC_CHANNEL:-stable')) {
-      throw new Error('install.sh still contains REDIACC_CHANNEL:-stable; rewrite is partial');
+    // edge again.
+    if (body.includes('REDIACC_CHANNEL:-edge')) {
+      throw new Error('install.sh still contains REDIACC_CHANNEL:-edge; rewrite is partial');
     }
     if (!body.includes(`REDIACC_SERVER_URL:-${PREVIEW_URL}}`)) {
       throw new Error(`install.sh default server URL is not ${PREVIEW_URL}`);

@@ -330,8 +330,8 @@ REPOS_TREE = {
     "dist/repos/rpm/repodata/repomd.xml": "repomd\n",
     "dist/repos/rpm/repodata/repomd.xml.asc": "repomd signature\n",
     "dist/repos/rpm/rediacc.repo": "[rediacc]\n",
-    "dist/pages/install.sh": '#!/bin/sh\n: "${REDIACC_CHANNEL:-stable}"\n',
-    "dist/pages/install.ps1": '$c = if ($e) { "edge" } else { "stable" }\n',
+    "dist/pages/install.sh": '#!/bin/sh\n: "${REDIACC_CHANNEL:-edge}"\n',
+    "dist/pages/install.ps1": '$c = if ($e) { "edge" } else { "edge" }\n',
 }
 
 CLI_PART = {

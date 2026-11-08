@@ -10,7 +10,7 @@ Covers:
   - write_install_config edge cases
   - cleanup_legacy_state migration
   - bin layout structure (no versions/ dir, staged-update cleared)
-  - channel resolution (env > rediacc.json::account.updateChannel > 'stable')
+  - channel resolution (env > rediacc.json::account.updateChannel > 'edge')
 
 REGISTERED CI GATE: `test:install-script`, step "Install-script tests" in `.github/workflows/ci-quality.yml`, job `quality-static`. THIS FILE IS THE GATE'S RUN TARGET, so it carries the `---- gate ----` header the twin used to carry; the header moved here in the same change that deleted the twin, because a bare-path gate whose declarer is gone emits no step at all.
 
@@ -90,17 +90,17 @@ PRESENT_CONFIG = (
     '"encryption":{"mode":"plaintext"},"machines":{"keep":"yes"},"account":{}}'
 )
 
-CONFIG_WITH_EDGE = (
+CONFIG_WITH_STABLE = (
     '{"schemaVersion":3,"id":"11111111-1111-4111-a111-111111111111","version":1,'
     '"encryption":{"mode":"plaintext"},"account":{"accountServer":"'
     + ACCOUNT_DEFAULT_ORIGIN
     + '",'
-    + '"updateChannel":"edge"}}\n'
+    + '"updateChannel":"stable"}}\n'
 )
 
-CONFIG_EDGE_NO_SERVER = (
+CONFIG_STABLE_NO_SERVER = (
     '{"schemaVersion":3,"id":"11111111-1111-4111-a111-111111111111","version":1,'
-    '"encryption":{"mode":"plaintext"},"account":{"updateChannel":"edge"}}\n'
+    '"encryption":{"mode":"plaintext"},"account":{"updateChannel":"stable"}}\n'
 )
 
 CONFIG_NO_CHANNEL = (
@@ -156,7 +156,7 @@ class Shell:
         """`source_install "$home"` then `body`; returns the body's stdout.
 
         `prelude` holds the assignments the twin makes BEFORE the source
-        (`unset REDIACC_CHANNEL`, `REDIACC_CHANNEL=stable`), which is where they
+        (`unset REDIACC_CHANNEL`, `REDIACC_CHANNEL=edge`), which is where they
         have to be: `install.sh:40` reads the variable at source time.
         """
         script = (
@@ -216,7 +216,7 @@ def test_write_install_config_default_noop(sh: Shell) -> None:
     sh.run(
         home,
         (
-            "CHANNEL=stable SERVER_URL='' RELEASES_URL="
+            "CHANNEL=edge SERVER_URL='' RELEASES_URL="
             + RELEASES_ORIGIN
             + " "
             + "write_install_config >/dev/null 2>&1 || true\n"
@@ -241,7 +241,7 @@ def test_write_install_config_channel_only(sh: Shell) -> None:
     sh.run(
         home,
         (
-            "CHANNEL=edge SERVER_URL='' RELEASES_URL="
+            "CHANNEL=stable SERVER_URL='' RELEASES_URL="
             + RELEASES_ORIGIN
             + " "
             + "write_install_config >/dev/null 2>&1\n"
@@ -249,10 +249,10 @@ def test_write_install_config_channel_only(sh: Shell) -> None:
     )
     config = _config(home)
     if not config.is_file():
-        log_fail("write_install_config should write rediacc.json when channel != stable")
+        log_fail("write_install_config should write rediacc.json when channel != edge")
     body = config.read_text(encoding="utf-8").rstrip("\n")
-    if '"updateChannel":"edge"' not in body:
-        log_fail("updateChannel field not edge: %s" % body)
+    if '"updateChannel":"stable"' not in body:
+        log_fail("updateChannel field not stable: %s" % body)
     if ('"accountServer":"' + SITE_ORIGIN + '"') not in body:
         log_fail("accountServer should default to production: %s" % body)
     # The absent-file branch must produce a valid minimal v3 config, not a bare account blob -- the CLI parses this file directly.
@@ -270,7 +270,7 @@ def test_write_install_config_custom_releases(sh: Shell) -> None:
     home = sh.fresh_home()
     sh.run(
         home,
-        "CHANNEL=stable SERVER_URL=https://custom.example RELEASES_URL=https://my.r2.example "
+        "CHANNEL=edge SERVER_URL=https://custom.example RELEASES_URL=https://my.r2.example "
         "write_install_config >/dev/null 2>&1 || true\n",
     )
     config = _config(home)
@@ -307,7 +307,7 @@ def test_write_install_config_present_no_jq_untouched(sh: Shell) -> None:
     out = sh.run(
         home,
         (
-            'out="$(PATH="%s" CHANNEL=edge SERVER_URL="" '
+            'out="$(PATH="%s" CHANNEL=stable SERVER_URL="" '
             "RELEASES_URL="
             + RELEASES_ORIGIN
             + ' write_install_config 2>&1 || true)"\n'
@@ -320,7 +320,7 @@ def test_write_install_config_present_no_jq_untouched(sh: Shell) -> None:
         log_fail(
             "no-jq path must not modify the live config (before=%s after=%s)" % (before, after)
         )
-    if "rdc update --channel edge" not in out:
+    if "rdc update --channel stable" not in out:
         log_fail("no-jq path must print the follow-up command: %s" % out)
     log_pass("present config + no jq -> untouched, prints follow-up command")
 
@@ -365,41 +365,41 @@ def test_no_versions_constant(sh: Shell) -> None:
     log_pass("legacy VERSIONS_DIR / MAX_VERSIONS constants removed")
 
 
-# Channel resolution (env > rediacc.json::account.updateChannel > 'stable'). Asymmetry between install.sh defaulting to stable and `rdc update` reading the config caused a real user-visible bug: stable install followed by an immediate "update" jumping to edge. These four cases pin the unified contract.
+# Channel resolution (env > rediacc.json::account.updateChannel > 'edge'). Asymmetry between install.sh defaulting to one channel and `rdc update` reading the config caused a real user-visible bug: an install followed by an immediate "update" jumping to the other channel. These four cases pin the unified contract.
 
 
 def _channel(sh: Shell, home: pathlib.Path, prelude: str) -> str:
     return sh.run(home, "printf '%s\\n' \"$CHANNEL\"\n", prelude=prelude).rstrip("\n")
 
 
-def test_channel_default_stable_when_unset(sh: Shell) -> None:
+def test_channel_default_edge_when_unset(sh: Shell) -> None:
     home = sh.fresh_home()
     channel = _channel(sh, home, "unset REDIACC_CHANNEL\n")
-    if channel != "stable":
-        log_fail("no env, no config -> CHANNEL must be stable, got: %s" % channel)
-    log_pass("no env, no config -> stable")
+    if channel != "edge":
+        log_fail("no env, no config -> CHANNEL must be edge, got: %s" % channel)
+    log_pass("no env, no config -> edge")
 
 
 def test_channel_inherits_from_config(sh: Shell) -> None:
     home = sh.fresh_home()
     config = _config(home)
     config.parent.mkdir(parents=True, exist_ok=True)
-    config.write_text(CONFIG_WITH_EDGE, encoding="utf-8")
+    config.write_text(CONFIG_WITH_STABLE, encoding="utf-8")
     channel = _channel(sh, home, "unset REDIACC_CHANNEL\n")
-    if channel != "edge":
-        log_fail("config account.updateChannel=edge must be inherited, got: %s" % channel)
-    log_pass("no env + config account.updateChannel=edge -> edge")
+    if channel != "stable":
+        log_fail("config account.updateChannel=stable must be inherited, got: %s" % channel)
+    log_pass("no env + config account.updateChannel=stable -> stable")
 
 
 def test_channel_env_overrides_config(sh: Shell) -> None:
     home = sh.fresh_home()
     config = _config(home)
     config.parent.mkdir(parents=True, exist_ok=True)
-    config.write_text(CONFIG_EDGE_NO_SERVER, encoding="utf-8")
-    channel = _channel(sh, home, "REDIACC_CHANNEL=stable\n")
-    if channel != "stable":
-        log_fail("REDIACC_CHANNEL=stable must override config edge, got: %s" % channel)
-    log_pass("env REDIACC_CHANNEL=stable overrides config edge")
+    config.write_text(CONFIG_STABLE_NO_SERVER, encoding="utf-8")
+    channel = _channel(sh, home, "REDIACC_CHANNEL=edge\n")
+    if channel != "edge":
+        log_fail("REDIACC_CHANNEL=edge must override config stable, got: %s" % channel)
+    log_pass("env REDIACC_CHANNEL=edge overrides config stable")
 
 
 def test_channel_malformed_config_falls_back(sh: Shell) -> None:
@@ -408,9 +408,9 @@ def test_channel_malformed_config_falls_back(sh: Shell) -> None:
     config.parent.mkdir(parents=True, exist_ok=True)
     config.write_text("not even valid json {{{", encoding="utf-8")
     channel = _channel(sh, home, "unset REDIACC_CHANNEL\n")
-    if channel != "stable":
-        log_fail("malformed config must fall back to stable, got: %s" % channel)
-    log_pass("malformed config -> stable fallback")
+    if channel != "edge":
+        log_fail("malformed config must fall back to edge, got: %s" % channel)
+    log_pass("malformed config -> edge fallback")
 
 
 def test_channel_config_without_update_channel(sh: Shell) -> None:
@@ -419,9 +419,9 @@ def test_channel_config_without_update_channel(sh: Shell) -> None:
     config.parent.mkdir(parents=True, exist_ok=True)
     config.write_text(CONFIG_NO_CHANNEL, encoding="utf-8")
     channel = _channel(sh, home, "unset REDIACC_CHANNEL\n")
-    if channel != "stable":
-        log_fail("config without updateChannel must default to stable, got: %s" % channel)
-    log_pass("config without updateChannel -> stable")
+    if channel != "edge":
+        log_fail("config without updateChannel must default to edge, got: %s" % channel)
+    log_pass("config without updateChannel -> edge")
 
 
 CASES = (
@@ -434,7 +434,7 @@ CASES = (
     test_cleanup_legacy_state_removes_versions_dir,
     test_cleanup_legacy_state_removes_staged_update,
     test_no_versions_constant,
-    test_channel_default_stable_when_unset,
+    test_channel_default_edge_when_unset,
     test_channel_inherits_from_config,
     test_channel_env_overrides_config,
     test_channel_malformed_config_falls_back,

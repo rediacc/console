@@ -24,9 +24,9 @@ SERVER_URL="${REDIACC_SERVER_URL:-}"
 #   1. REDIACC_CHANNEL env var (explicit caller intent — wins).
 #   2. Existing rediacc.json::account.updateChannel (the channel `rdc update`
 #      uses — one CLI config is one universe: server, E2E key, update channel).
-#   3. Default 'stable'.
+#   3. Default 'edge'.
 # Reading the config on a re-install avoids the trap where install.sh picks
-# `stable` while `rdc update` reads account.updateChannel=edge and jumps the
+# `edge` while `rdc update` reads account.updateChannel=stable and jumps the
 # binary on the very next invocation. Both paths now agree by default.
 case "$(uname -s)" in
     Darwin) CONFIG_JSON="$HOME/Library/Application Support/rediacc/rediacc.json" ;;
@@ -37,14 +37,14 @@ if [[ -z "${REDIACC_CHANNEL:-}" && -f "$CONFIG_JSON" ]]; then
     # anywhere in the config (the account section is always plaintext).
     # Trailing `|| true` keeps a no-match (most users, who never set a channel)
     # from tripping `set -o pipefail`. Empty result falls through to the
-    # 'stable' default below.
+    # 'edge' default below.
     EXISTING_CHANNEL=$({ grep -oE '"updateChannel"[[:space:]]*:[[:space:]]*"[^"]+"' "$CONFIG_JSON" 2>/dev/null |
         sed -E 's/.*"([^"]+)"$/\1/' | head -1; } || true)
     if [[ -n "${EXISTING_CHANNEL:-}" ]]; then
         REDIACC_CHANNEL="$EXISTING_CHANNEL"
     fi
 fi
-CHANNEL="${REDIACC_CHANNEL:-stable}"
+CHANNEL="${REDIACC_CHANNEL:-edge}"
 
 # Install layout: single binary at ${INSTALL_PREFIX}/bin/rdc, symlinked from
 # ${BIN_DIR}/rdc so ${BIN_DIR} on $PATH reaches it. rdc update replaces the
@@ -187,7 +187,7 @@ cleanup_legacy_state() {
 # `rdc update` honors the channel this install came from. We write when EITHER a
 # specific server was requested OR the channel differs from the default. Writing
 # on channel-alone is the fail-safe for a preview host that rewrites CHANNEL but
-# not SERVER_URL -- without it, `rdc update` would drift back to stable.
+# not SERVER_URL -- without it, `rdc update` would drift back to the default.
 #
 # The config file is USER DATA (one config = one universe: server, E2E key,
 # update channel, machines). So we never wholesale-overwrite it:
@@ -199,7 +199,7 @@ cleanup_legacy_state() {
 # Reads: CHANNEL, SERVER_URL, RELEASES_URL, REDIACC_CHANNEL, HOME, XDG_CONFIG_HOME
 # Writes: ${config_dir}/rediacc.json (account section only)
 write_install_config() {
-    local default_channel="stable"
+    local default_channel="edge"
     if [[ -z "${SERVER_URL:-}" && "${CHANNEL:-$default_channel}" == "$default_channel" ]]; then
         return 0
     fi

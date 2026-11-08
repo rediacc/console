@@ -275,16 +275,16 @@ def cp_argv(source: str, channel: str, name: str, endpoint: str) -> list[str]:
 def sed_argv(channel: str, source: str) -> list[str]:
     """The two channel substitutions (:145-147).
 
-    The first rewrites the shell default (`REDIACC_CHANNEL:-stable`), the second
-    the PowerShell one (`} else { "stable" }`), so a copy under `cli/<channel>/`
+    The first rewrites the shell default (`REDIACC_CHANNEL:-edge`), the second
+    the PowerShell one (`} else { "edge" }`), the forms the www installers ship, so a copy under `cli/<channel>/`
     installs from `<channel>` unless the caller says otherwise.
     """
     return [
         "sed",
         "-e",
-        "s|REDIACC_CHANNEL:-stable|REDIACC_CHANNEL:-%s|g" % channel,
+        "s|REDIACC_CHANNEL:-edge|REDIACC_CHANNEL:-%s|g" % channel,
         "-e",
-        's|} else { "stable" }|} else { "%s" }|g' % channel,
+        's|} else { "edge" }|} else { "%s" }|g' % channel,
         source,
     ]
 

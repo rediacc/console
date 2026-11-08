@@ -69,10 +69,10 @@ export async function rewriteOrigin(
   }
 
   // Rewrite install script defaults so CLI uses the preview channel and auto-connects to the preview account server.
-  // Bash: ${REDIACC_CHANNEL:-stable}  PowerShell: } else { "stable" }
-  body = body.replaceAll('REDIACC_CHANNEL:-stable', `REDIACC_CHANNEL:-${channel}`);
+  // Bash: ${REDIACC_CHANNEL:-edge}  PowerShell: } else { "edge" }
+  body = body.replaceAll('REDIACC_CHANNEL:-edge', `REDIACC_CHANNEL:-${channel}`);
   body = body.replaceAll('REDIACC_SERVER_URL:-}', `REDIACC_SERVER_URL:-${origin}}`);
-  body = body.replaceAll('} else { "stable" }', `} else { "${channel}" }`);
+  body = body.replaceAll('} else { "edge" }', `} else { "${channel}" }`);
 
   // Rewrite channel references in website HTML (install commands baked at build time)
   for (const format of ['apt', 'rpm', 'apk', 'archlinux', 'cli', 'npm']) {
