@@ -7,7 +7,6 @@ import { createTranslator } from '../../i18n/utils';
 import { getLanguagePaths } from '../../i18n/language-utils';
 import type { Language } from '../../i18n/types';
 import { EXTERNAL_LINKS } from '../../config/constants';
-import { WK_EDGE_ORIGIN } from '@rediacc/shared/config/well-known.generated';
 import LlmsInlineScript from '../../components/LlmsInlineScript.astro';
 import StructuredData from '../../components/StructuredData.astro';
 import PricingTrustSection from '../../components/PricingTrustSection.astro';
@@ -118,25 +117,6 @@ const faqSchema = faqItems ? {
           </div>
           <a href={`/${lang}/roi-calculator`} class="btn btn-primary">
             {t('navigation.roiCalculator')} &rarr;
-          </a>
-        </div>
-      </div>
-    </section>
-
-    <!-- Edge Channel -->
-    <section class="edge-channel-section section-light">
-      <div class="container">
-        <div class="edge-channel-banner">
-          <div class="edge-channel-text">
-            <h3>{t(`${ns}.edgeChannel.heading`, 'Try the Edge Channel')}</h3>
-            <p>{t(`${ns}.edgeChannel.description`, 'The edge channel ships our newest features first and runs with double the limits of the stable channel.')}</p>
-          </div>
-          {/* The channel is host-determined: edge.rediacc.com is the front
-              door for the edge universe (its /account/* CTAs forward to
-              edge-* portals), so this banner links there instead of opening
-              the region picker. */}
-          <a href={`${WK_EDGE_ORIGIN}/${lang}/pricing`} class="btn btn-secondary" data-track="cta_click" data-track-label="pricing-edge-channel">
-            {t(`${ns}.edgeChannel.cta`, 'Explore the edge channel')} &rarr;
           </a>
         </div>
       </div>
