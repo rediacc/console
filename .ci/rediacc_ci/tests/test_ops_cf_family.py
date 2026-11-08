@@ -30,7 +30,7 @@ def world(tmp_path: pathlib.Path) -> h.World:
     config = scratch.root / "workers/account/wrangler.bench.toml"
     config.write_text(
         config.read_text()
-        + '\n[[r2_buckets]]\nbinding = "BACKUP_BUCKET"\nbucket_name = "rediacc-backups-bench"\n'
+        + '\n[[r2_buckets]]\nbinding = "BACKUP_BUCKET"\nbucket_name = "backups-bench"\n'
     )
     return scratch
 
@@ -401,8 +401,8 @@ S3_XML = (
     "<IsTruncated>false</IsTruncated><Contents><Key>a/b c.json</Key></Contents><Contents><Key>d.json</Key></Contents>"
     "</ListBucketResult>"
 )
-S3_LIST = {"method": "GET", "match": "rediacc-configs-bench?list-type=2", "raw": S3_XML}
-S3_DELETE = {"method": "DELETE", "match": "rediacc-configs-bench/", "raw": "", "status": 204}
+S3_LIST = {"method": "GET", "match": "configs-bench?list-type=2", "raw": S3_XML}
+S3_DELETE = {"method": "DELETE", "match": "configs-bench/", "raw": "", "status": 204}
 R2_ENV = {
     "CLOUDFLARE_R2_ENDPOINT": "https://acct.r2.example.invalid",
     "CLOUDFLARE_R2_ACCESS_KEY_ID": "r2-id",
@@ -511,9 +511,9 @@ def test_reset_bench_r2_half_uses_the_s3_api(world: h.World) -> None:
     assert rc == 0, err
     curls = [c for c in world.calls() if c["tool"] == "curl" and "r2.example.invalid" in c["url"]]
     assert [(c["method"], c["url"].split("invalid/")[1]) for c in curls] == [
-        ("GET", "rediacc-configs-bench?list-type=2&max-keys=1000"),
-        ("DELETE", "rediacc-configs-bench/a/b%20c.json"),
-        ("DELETE", "rediacc-configs-bench/d.json"),
+        ("GET", "configs-bench?list-type=2&max-keys=1000"),
+        ("DELETE", "configs-bench/a/b%20c.json"),
+        ("DELETE", "configs-bench/d.json"),
     ]
     assert all(c["sigv4"] and c["creds_on_stdin"] and not c["creds_on_argv"] for c in curls)
     assert "r2-secret" not in json.dumps(world.calls())
@@ -545,7 +545,7 @@ def test_delta_a_failed_r2_listing_is_not_an_empty_bucket(world: h.World) -> Non
     }
     s3_denied = {
         "method": "GET",
-        "match": "rediacc-configs-bench?list-type=2",
+        "match": "configs-bench?list-type=2",
         "raw": "<Error>AccessDenied</Error>",
         "status": 403,
     }
@@ -591,7 +591,7 @@ def test_delta_table_names_are_quoted_as_data(world: h.World) -> None:
 def test_delta_a_failed_object_delete_names_the_count(world: h.World) -> None:
     refused = {
         "method": "DELETE",
-        "match": "rediacc-configs-bench/",
+        "match": "configs-bench/",
         "raw": "<Error>no</Error>",
         "status": 403,
     }
@@ -802,7 +802,7 @@ def test_deploy_bench_matches_bash(world: h.World) -> None:
         "ACCOUNT_ED25519_PUBLIC_KEY",
         "ACCOUNT_X25519_PRIVATE_KEY",
     ]
-    assert secrets["ACCOUNT_BACKUP_S3_BUCKET"] == "rediacc-backups-bench"
+    assert secrets["ACCOUNT_BACKUP_S3_BUCKET"] == "backups-bench"
     assert secrets["ACCOUNT_CONFIG_SERVER_KEY"] == "fake-config-server-key-for-tests"
     assert secrets["ACCOUNT_BACKUP_STORE_KEK"] == "fake-backup-store-kek-for-tests-0123456789"
     assert secrets["FREE_LICENSE_HMAC_KEY"] == "fake-free-license-hmac-key-for-tests"
@@ -995,7 +995,7 @@ def _bench_repo(monkeypatch: pytest.MonkeyPatch, tmp_path, toml_text: str) -> No
 
 
 BENCH_TOML = (
-    'name = "rediacc-account-bench"\n\n'
+    'name = "account-bench"\n\n'
     "[[r2_buckets]]\n"
     'binding = "BACKUP_BUCKET"\n'
     'bucket_name = "bound-backups-bench"\n'
@@ -1020,7 +1020,7 @@ def test_deploy_bench_refuses_an_env_bucket_that_differs_from_the_binding(
 
 
 def test_deploy_bench_refuses_a_config_with_no_backup_binding(monkeypatch, tmp_path) -> None:
-    _bench_repo(monkeypatch, tmp_path, 'name = "rediacc-account-bench"\n')
+    _bench_repo(monkeypatch, tmp_path, 'name = "account-bench"\n')
     monkeypatch.delenv("ACCOUNT_BACKUP_S3_BUCKET", raising=False)
     with pytest.raises(deploy_bench.DeployError, match="BACKUP_BUCKET"):
         deploy_bench.bench_bucket()

@@ -40,8 +40,8 @@ def fake_api(scripts, d1, routes, domains=(), calls=None):
     return get
 
 
-CONFIGURED = "rediacc-account-eu"  # workers/account/wrangler.eu.toml
-BOUND_DB = "edge-account-db-eu"  # workers/account/wrangler.edge-eu.toml
+CONFIGURED = "account-eu"  # workers/account/wrangler.eu.toml
+BOUND_DB = "account-bench"  # workers/account/wrangler.bench.toml
 
 
 def run(scripts, d1, routes, domains=()):
@@ -58,7 +58,7 @@ def test_unknown_script_listed_configured_and_pr_not():
 
 
 def test_unbound_bench_and_edge_databases_listed_bound_and_other_not():
-    found = run([], [BOUND_DB, "old-bench", "edge-forgotten", "account-db-pr-5"], [])
+    found = run([], [BOUND_DB, "old-bench", "edge-forgotten", "account-pr-5"], [])
     assert kinds(found) == {("d1", "old-bench"), ("d1", "edge-forgotten")}
 
 

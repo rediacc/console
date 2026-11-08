@@ -108,8 +108,8 @@ if argv[:2] == ["wrangler", "deploy"]:
 if argv[:3] == ["wrangler", "deployments", "list"]:
     print(json.dumps([{{"created_on": "2026-10-28T00:00:00Z", "versions": [{{"version_id": "bb3e1ba3-0000-4000-8000-000000000000", "percentage": 100}}]}}]))
 if argv[:4] == ["wrangler", "r2", "bucket", "list"]:
-    print("name:           rediacc-configs-bench")
-    print("name:           rediacc-backups-bench")
+    print("name:           configs-bench")
+    print("name:           backups-bench")
 fail = os.environ.get("FAKE_NPX_FAIL")
 if fail and " ".join(argv).startswith(fail):
     sys.exit(int(os.environ.get("FAKE_NPX_RC", "1")))
@@ -217,7 +217,7 @@ class World:
         (self.root / "workers/account/node_modules").mkdir(parents=True)
         (self.root / "workers/account/wrangler.bench.toml").write_text(
             # The [assets] line deploy_bench.bench_assets_refusal requires: the keyless bench portal builds outside ./dist.
-            '[assets]\ndirectory = "./bench/dist"\n\n[[r2_buckets]]\nbucket_name = "rediacc-configs-bench"\n'
+            '[assets]\ndirectory = "./bench/dist"\n\n[[r2_buckets]]\nbucket_name = "configs-bench"\n'
         )
         (self.root / "private/account/web/node_modules").mkdir(parents=True)
         (self.root / "private/account").mkdir(parents=True, exist_ok=True)
@@ -320,7 +320,7 @@ class World:
             },
             work=(str(self.root.parent),),
         )
-        if diff.regolden_mode(script) is None:
+        if diff.regolden_mode(script) != "bash":  # a port re-record answered from a replay too, so the log and files are written back
             with self.log.open("a") as fh:
                 fh.write(got["log"])
             for rel, (mode, text) in json.loads(got["files"]).items():
