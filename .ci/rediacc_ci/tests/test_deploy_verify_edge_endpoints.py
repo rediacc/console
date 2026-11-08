@@ -173,7 +173,7 @@ def golden_hosts(text: str) -> str:
     """The twin golden's hosts written in the hosts the port probes now (PLAN-product-domain-rename): `edge-<r>.rediacc.com` and `<r>.rediacc.com` became `<r>.rediacc.cloud`, and the edge site became the one `www` site. Every OTHER byte of the golden is still compared."""
     text = re.sub(r"edge-(eu|us|asia)\.rediacc\.com", r"\1.rediacc.cloud", text)
     text = re.sub(r"(?<![\w.-])(eu|us|asia)\.rediacc\.com", r"\1.rediacc.cloud", text)
-    return text.replace("edge.rediacc.com", "www.rediacc.com")
+    return text.replace("edge.rediacc.com", EDGE_HOST)
 
 
 class Run:

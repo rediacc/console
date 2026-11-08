@@ -12,7 +12,7 @@ import pytest
 
 from rediacc_ci.ops import apply_cf_redirect_rules as mod
 from rediacc_ci.tests import ops_cf_harness as h
-from rediacc_ci.well_known import APEX_DOMAIN, SITE_ORIGIN
+from rediacc_ci.well_known import APEX_DOMAIN, PRODUCT_DOMAIN, SITE_ORIGIN
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -205,14 +205,15 @@ CLOUD_ZONE = "30f0c9cf60109cd4e10eb2d0a285b0db"
 
 
 def test_zone_rules_are_the_two_cloud_redirects_to_www() -> None:
-    cloud = mod.RULE_SETS["rediacc.cloud"]
+    cloud = mod.RULE_SETS[PRODUCT_DOMAIN]
     assert [r.label for r in cloud] == ["cloud-apex", "cloud-www"]
     payloads = [mod.rule_payload(r) for r in cloud]
     assert (
-        payloads[0]["expression"] == '(http.request.full_uri wildcard r"https://rediacc.cloud/*")'
+        payloads[0]["expression"]
+        == '(http.request.full_uri wildcard r"https://' + PRODUCT_DOMAIN + '/*")'
     )
     assert payloads[1]["expression"] == (
-        '(http.request.full_uri wildcard r"https://www.rediacc.cloud/*")'
+        '(http.request.full_uri wildcard r"https://www.' + PRODUCT_DOMAIN + '/*")'
     )
     for payload in payloads:
         value = payload["action_parameters"]["from_value"]
@@ -235,14 +236,14 @@ def test_zone_without_a_redirect_ruleset_gets_one_created(world: h.World) -> Non
     world.set_routes([empty, created])
     env = world.env(**ENV)
     rc, out, _ = world.port(
-        "rediacc_ci.ops.apply_cf_redirect_rules", ["--zone", "rediacc.cloud", "--dry-run"], env
+        "rediacc_ci.ops.apply_cf_redirect_rules", ["--zone", PRODUCT_DOMAIN, "--dry-run"], env
     )
     assert rc == 0
     assert "no http_request_dynamic_redirect ruleset" in out
     assert all(m == "GET" for m, _ in _urls(world))
     world.reset_log()
     rc, out, _ = world.port(
-        "rediacc_ci.ops.apply_cf_redirect_rules", ["--zone", "rediacc.cloud"], env
+        "rediacc_ci.ops.apply_cf_redirect_rules", ["--zone", PRODUCT_DOMAIN], env
     )
     assert rc == 0
     assert "created ruleset NEW-RS with 2 rule(s)" in out
@@ -255,7 +256,7 @@ def test_zone_without_a_redirect_ruleset_gets_one_created(world: h.World) -> Non
 
 
 def test_zone_adds_only_the_missing_rule(world: h.World) -> None:
-    apex = mod.RULE_SETS["rediacc.cloud"][0]
+    apex = mod.RULE_SETS[PRODUCT_DOMAIN][0]
     present = {
         "id": "have-apex",
         "expression": apex.expression,
@@ -270,7 +271,7 @@ def test_zone_adds_only_the_missing_rule(world: h.World) -> None:
     world.set_routes(routes([present], (appended,)))
     rc, out, _ = world.port(
         "rediacc_ci.ops.apply_cf_redirect_rules",
-        ["--zone", "rediacc.cloud"],
+        ["--zone", PRODUCT_DOMAIN],
         world.env(**ENV),
     )
     assert rc == 0
@@ -278,7 +279,7 @@ def test_zone_adds_only_the_missing_rule(world: h.World) -> None:
     assert "created cloud-www redirect rule id=new-www" in out
     posts = [c for c in world.calls() if c["method"] == "POST"]
     assert len(posts) == 1
-    assert json.loads(posts[0]["body"])["expression"].endswith('www.rediacc.cloud/*")')
+    assert json.loads(posts[0]["body"])["expression"].endswith("www." + PRODUCT_DOMAIN + '/*")')
 
 
 def test_unknown_zone_is_a_usage_error(world: h.World) -> None:

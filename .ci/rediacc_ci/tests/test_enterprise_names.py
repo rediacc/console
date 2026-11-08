@@ -8,6 +8,7 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.enterprise import names
+from rediacc_ci.well_known import PRODUCT_DOMAIN
 
 
 def test_valid_names_pass():
@@ -83,9 +84,9 @@ def test_opaque_store_id_shape_refused():
 
 
 def test_hosts_under_product_domain():
-    assert names.hosts("acme", "rediacc.cloud") == (
-        "acme.rediacc.cloud",
-        "acme-proxy.rediacc.cloud",
+    assert names.hosts("acme", PRODUCT_DOMAIN) == (
+        f"acme.{PRODUCT_DOMAIN}",
+        f"acme-proxy.{PRODUCT_DOMAIN}",
     )
     with pytest.raises(names.CompanyNameError):
-        names.hosts("eu", "rediacc.cloud")
+        names.hosts("eu", PRODUCT_DOMAIN)

@@ -29,13 +29,13 @@ import subprocess
 import sys
 
 from rediacc_ci.core import curl_stdin
-from rediacc_ci.well_known import APEX_DOMAIN, CF_API_BASE, SITE_ORIGIN
+from rediacc_ci.well_known import APEX_DOMAIN, CF_API_BASE, PRODUCT_DOMAIN, SITE_ORIGIN
 
 ZONE_ID = "9e802649c143c9cefd811d8fd671d31c"  # rediacc.com
 # Zone ids by name. rediacc.cloud: created by rename L3 (PLAN-product-domain-rename.md), the product zone.
 ZONE_IDS = {
     APEX_DOMAIN: ZONE_ID,
-    "rediacc.cloud": "30f0c9cf60109cd4e10eb2d0a285b0db",
+    PRODUCT_DOMAIN: "30f0c9cf60109cd4e10eb2d0a285b0db",
 }
 REDIRECT_PHASE = "http_request_dynamic_redirect"
 API = CF_API_BASE
@@ -106,21 +106,21 @@ RULE_SETS: dict[str, tuple[Rule, ...]] = {
             "edge",
             "edge." + APEX_DOMAIN,
             SITE_ORIGIN,
-            "edge host moves to www (product hosts are on rediacc.cloud)",
+            f"edge host moves to www (product hosts are on {PRODUCT_DOMAIN})",
             keep_path=True,
         ),
     ),
-    "rediacc.cloud": (
+    PRODUCT_DOMAIN: (
         _host_rule(
             "cloud-apex",
-            "rediacc.cloud",
+            PRODUCT_DOMAIN,
             SITE_ORIGIN,
             "Product-domain apex sends people to the marketing site",
             keep_path=False,
         ),
         _host_rule(
             "cloud-www",
-            "www.rediacc.cloud",
+            "www." + PRODUCT_DOMAIN,
             SITE_ORIGIN,
             "www on the product domain sends people to the marketing site",
             keep_path=False,
