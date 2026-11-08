@@ -90,6 +90,12 @@
       "GITHUB_STEP_SUMMARY",
       "VERSION"
     ],
+    ".ci/rediacc_ci/ci/backup_changed.py": [
+      "BASE_SHA",
+      "BEFORE_SHA",
+      "EVENT_NAME",
+      "GITHUB_OUTPUT"
+    ],
     ".ci/rediacc_ci/ci/cancel_older_runs.py": [
       "GH_TOKEN",
       "GITHUB_REPOSITORY",

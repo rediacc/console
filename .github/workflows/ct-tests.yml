@@ -104,6 +104,15 @@ on:
         type: string
         required: false
         default: 'false'
+      # J6 (PLAN-backup-program): 'true' when a push or pull request changed a backup path
+      # (rediacc_ci.ci.backup_changed, decided by ci.yml's initialize job) and on the
+      # nightly (ct-backup-nightly.yml). It runs test-e2e-backup-browse-at, which holds
+      # suite 26 (BACKUP_STORAGE_SUITE=1), even without `full_suite`. Any other value
+      # leaves that job following `full_suite` and `run_e2e_backup_browse_at` as before.
+      backup_changed:
+        type: string
+        required: false
+        default: 'false'
       run_license_enforcement:
         type: string
         required: false
@@ -277,9 +286,10 @@ jobs:
     # and Docker Hub pulls for the staging build. No ghcr, no GitHub API.
     permissions:
       contents: read
-    # A superset of every dependent's own `if:` (each also requires full_suite),
-    # so no dependent is ever skipped because this job was.
-    if: inputs.full_suite == 'true'
+    # A superset of every dependent's own `if:` (each requires full_suite, or for
+    # test-e2e-backup-browse-at backup_changed), so no dependent is ever skipped
+    # because this job was.
+    if: inputs.full_suite == 'true' || inputs.backup_changed == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -1986,7 +1996,7 @@ jobs:
       contents: read
       packages: read
     needs: [renet-embed-assets]
-    if: inputs.full_suite == 'true' && inputs.run_e2e_backup_browse_at != 'false'
+    if: (inputs.full_suite == 'true' && inputs.run_e2e_backup_browse_at != 'false') || inputs.backup_changed == 'true'
     runs-on: ubuntu-latest
     # 45: suite 26 (J6) runs after suite 27 on the same fleet and plane, and its tiers
     # are long (a 30 minute per-test ceiling, see playwright.backup-storage.config.ts).

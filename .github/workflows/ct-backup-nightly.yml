@@ -1,0 +1,57 @@
+name: CT Backup Nightly
+
+# Suite 26 nightly (box J6 of agent/plans/PLAN-backup-program.md): calls ct-tests.yml for its
+# one job, test-e2e-backup-browse-at ("E2E Backup Browse-At"), which runs suite 27 and then
+# suite 26 (BACKUP_STORAGE_SUITE=1) against the account gateway start_backup_plane stands up
+# on the VM fleet runner. The same job also runs on any push or pull request that changes a
+# backup path (ci.yml's initialize job exports backup_changed) and on the weekly full suite.
+#
+# HOW IT SELECTS ONE JOB: `backup_changed: 'true'` opens test-e2e-backup-browse-at and its one
+# dependency renet-embed-assets. `full_suite: 'false'` keeps every other job off, and
+# `pointer_bump_only: 'true'` keeps migration-test off (it has no full_suite gate). The other
+# inputs stay at their defaults.
+
+on:
+  schedule:
+    - cron: '30 3 * * *'
+  workflow_dispatch:
+
+# The called workflow's jobs declare their own permissions, and a reusable callee cannot add a
+# scope its caller did not pass, so the caller job below carries the pair ct-tests.yml needs
+# (ghcr pull) and this default stays empty.
+permissions: {}
+
+concurrency:
+  group: ct-backup-nightly-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # A dispatch on a feature branch would run the nightly against code that is not what the
+  # schedule runs; fail loudly rather than skipping.
+  guard:
+    name: Guard the dispatch to main
+    if: github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions: {}
+    steps:
+      - name: Refuse a dispatch off main
+        env:
+          DISPATCH_REF: ${{ github.ref }}
+        run: |
+          echo "::error::CT Backup Nightly may only be dispatched on main (got: $DISPATCH_REF)."
+          exit 1
+
+  backup-storage:
+    name: Backup Storage (suite 26)
+    if: github.event_name == 'schedule' || github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      packages: read
+    uses: ./.github/workflows/ct-tests.yml
+    with:
+      full_suite: ${{ 'false' }}
+      pointer_bump_only: ${{ 'true' }}
+      backup_changed: ${{ 'true' }}
+    secrets:
+      BWS_ACCESS_TOKEN: ${{ secrets.BWS_ACCESS_TOKEN }}

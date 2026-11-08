@@ -213,6 +213,7 @@
         "pytest:.ci/rediacc_ci/tests/test_build_cli_executables.py",
         "pytest:.ci/rediacc_ci/tests/test_build_extract_renet_from_image.py",
         "pytest:.ci/rediacc_ci/tests/test_check_pytest_jobs.py",
+        "pytest:.ci/rediacc_ci/tests/test_ci_backup_changed.py",
         "pytest:.ci/rediacc_ci/tests/test_ci_capture_gate_costs.py",
         "pytest:.ci/rediacc_ci/tests/test_ci_derive_image_tag.py",
         "pytest:.ci/rediacc_ci/tests/test_ci_gate_costs.py",

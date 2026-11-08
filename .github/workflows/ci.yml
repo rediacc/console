@@ -264,6 +264,7 @@ jobs:
       run_renet: ${{ steps.scope.outputs.run_renet }}
       # J9: 'true' when this push moved the private/renet pointer; see the step below.
       renet_changed: ${{ steps.renet-push.outputs.changed }}
+      backup_changed: ${{ steps.backup-push.outputs.changed }}
       run_license_enforcement: ${{ steps.scope.outputs.run_license_enforcement }}
       run_account_e2e: ${{ steps.scope.outputs.run_account_e2e }}
       run_drills: ${{ steps.scope.outputs.run_drills }}
@@ -357,6 +358,19 @@ jobs:
           BEFORE_SHA: ${{ github.event.before }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.ci.renet_changed
+
+      # J6 (PLAN-backup-program): suite 26 (test-e2e-backup-browse-at) used to run only under
+      # `full_suite`. rediacc_ci.ci.backup_changed decides whether a backup path moved (the
+      # `backup` area of the proof tier map: its renet globs and its suite files),
+      # over the same range as the step above. Fail open like it: 'true' on anything it cannot
+      # decide, 'false' on every other event.
+      - name: Decide whether a backup path changed
+        id: backup-push
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BEFORE_SHA: ${{ github.event.before }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.ci.backup_changed
 
       # Run consolidated initialization script
       - name: Initialize CI
@@ -1281,6 +1295,7 @@ jobs:
       run_fork_isolation: ${{ needs.initialize.outputs.run_fork_isolation }}
       run_renet: ${{ needs.initialize.outputs.run_renet }}
       renet_changed: ${{ needs.initialize.outputs.renet_changed }}
+      backup_changed: ${{ needs.initialize.outputs.backup_changed }}
       run_license_enforcement: ${{ needs.initialize.outputs.run_license_enforcement }}
       run_account_e2e: ${{ needs.initialize.outputs.run_account_e2e }}
       run_drills: ${{ needs.initialize.outputs.run_drills }}
