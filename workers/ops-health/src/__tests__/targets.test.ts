@@ -79,9 +79,9 @@ describe('parseTargetFile refusals', () => {
 });
 
 describe('regionEndpoints', () => {
-  it('builds the account and proxy health endpoint of every stable and edge region', () => {
+  it('builds the account and proxy health endpoint of every region', () => {
     const endpoints = regionEndpoints([
-      { id: 'eu', domain: 'eu.example.test', edgeDomain: 'edge-eu.example.test' },
+      { id: 'eu', domain: 'eu.example.test' },
     ]);
     expect(endpoints).toEqual([
       {
@@ -96,24 +96,12 @@ describe('regionEndpoints', () => {
         host: 'proxy.eu.example.test',
         path: '/v1/health',
       },
-      {
-        id: 'health:account-edge-eu',
-        kind: 'health-endpoint',
-        host: 'edge-eu.example.test',
-        path: '/account/api/v1/health',
-      },
-      {
-        id: 'health:proxy-edge-eu',
-        kind: 'health-endpoint',
-        host: 'proxy.edge-eu.example.test',
-        path: '/v1/health',
-      },
     ]);
   });
 
-  it('covers all of regions.json, four endpoints per region', () => {
+  it('covers all of regions.json, two endpoints per region', () => {
     const endpoints = regionEndpoints();
-    expect(endpoints.length).toBeGreaterThanOrEqual(12);
-    expect(endpoints.length % 4).toBe(0);
+    expect(endpoints.length).toBeGreaterThanOrEqual(6);
+    expect(endpoints.length % 2).toBe(0);
   });
 });

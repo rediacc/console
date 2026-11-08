@@ -141,7 +141,7 @@ describe('D-mail dedupe through real cron runs', () => {
       'unknown'
     );
     expect(ids).toContain('health:account-eu');
-    expect(ids).toContain('health:proxy-edge-eu');
+    expect(ids).toContain('health:proxy-eu');
   });
 });
 

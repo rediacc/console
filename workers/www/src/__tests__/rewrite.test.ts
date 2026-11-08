@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
   WK_APEX_DOMAIN,
-  WK_EDGE_ORIGIN,
   WK_IMAGE_REGISTRY,
   WK_RELEASES_ORIGIN,
   WK_SITE_ORIGIN,
@@ -9,7 +8,9 @@ import {
 import { buildDisallowRobots, getChannel, rewriteOrigin, shouldRewrite } from '../index';
 
 const RELEASES_HOST = new URL(WK_RELEASES_ORIGIN).host;
-const EDGE_HOST = new URL(WK_EDGE_ORIGIN).host;
+// No edge host is served any more (one shared www Worker); the rewrite still maps an `edge.` subdomain to the edge channel, so the cases keep a host built from the apex.
+const EDGE_HOST = `edge.${WK_APEX_DOMAIN}`;
+const EDGE_ORIGIN = `https://${EDGE_HOST}`;
 const SITE_HOST = new URL(WK_SITE_ORIGIN).host;
 
 describe('getChannel', () => {
@@ -157,7 +158,7 @@ describe('rewriteOrigin', () => {
 // behavior that model depends on. ---------------------------------------------------------------------------
 
 describe('host→channel contract (www → portal handoff)', () => {
-  it('edge marketing host maps to the edge channel', () => {
+  it('an edge subdomain maps to the edge channel', () => {
     expect(getChannel(EDGE_HOST)).toBe('edge');
   });
 
@@ -174,7 +175,7 @@ describe('host→channel contract (www → portal handoff)', () => {
   });
 
   it('edge host rewrites the install-script channel default to edge', async () => {
-    const edgeUrl = new URL(`${WK_EDGE_ORIGIN}/install.sh`);
+    const edgeUrl = new URL(`${EDGE_ORIGIN}/install.sh`);
     const body = 'CHANNEL="${REDIACC_CHANNEL:-stable}"';
     const out = await rewriteOrigin(makeResponse(body, 'application/x-sh'), edgeUrl, 'edge');
     const text = await out.text();
@@ -186,7 +187,7 @@ describe('host→channel contract (www → portal handoff)', () => {
     const body = `${WK_RELEASES_ORIGIN}/cli/stable/rdc-linux-x64`;
     const out = await rewriteOrigin(
       makeResponse(body, 'text/html'),
-      new URL(`${WK_EDGE_ORIGIN}/en/downloads`),
+      new URL(`${EDGE_ORIGIN}/en/downloads`),
       'edge'
     );
     expect(await out.text()).toContain(`${RELEASES_HOST}/cli/edge`);

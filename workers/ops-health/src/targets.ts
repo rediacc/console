@@ -178,32 +178,26 @@ export function loadTargets(secret: string | undefined): TargetsLoad {
 interface RegionRow {
   id: string;
   domain: string;
-  edgeDomain: string;
 }
 
 /**
- * The only build-time targets: the account and proxy `/health` endpoints of every stable and edge region in regions.json, which are public already.
+ * The only build-time targets: the account and proxy `/health` endpoints of every region in regions.json, which are public already.
  */
 export function regionEndpoints(rows: RegionRow[] = regions.regions): ProbeTarget[] {
   const out: ProbeTarget[] = [];
   for (const row of rows) {
-    for (const [channel, domain] of [
-      ['', row.domain],
-      ['edge-', row.edgeDomain],
-    ] as const) {
-      out.push({
-        id: `health:account-${channel}${row.id}`,
-        kind: 'health-endpoint',
-        host: domain,
-        path: '/account/api/v1/health',
-      });
-      out.push({
-        id: `health:proxy-${channel}${row.id}`,
-        kind: 'health-endpoint',
-        host: `proxy.${domain}`,
-        path: '/v1/health',
-      });
-    }
+    out.push({
+      id: `health:account-${row.id}`,
+      kind: 'health-endpoint',
+      host: row.domain,
+      path: '/account/api/v1/health',
+    });
+    out.push({
+      id: `health:proxy-${row.id}`,
+      kind: 'health-endpoint',
+      host: `proxy.${row.domain}`,
+      path: '/v1/health',
+    });
   }
   return out;
 }
