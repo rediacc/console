@@ -601,7 +601,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-tick-tracking.md` | approved | 269 | 2 | 13 | 37957 |
 | `agent/plans/PLAN-token-ip-rebind.md` | draft | 426 | 0 | 11 | 41897 |
 | `agent/plans/PLAN-unify-trap-corpus.md` | compacted | 39 | 0 | 0 | 2772 |
-| `agent/plans/PLAN-vmcheck-incremental.md` | approved | 20 | 3 | 0 | 2440 |
+| `agent/plans/PLAN-vmcheck-incremental.md` | approved | 20 | 3 | 0 | 2487 |
 | `agent/plans/PLAN-w7p4w-docker-cutover.md` | compacted | 62 | 0 | 12 | 4758 |
 | `agent/plans/PLAN-w7p5a-deploy-release-port.md` | compacted | 53 | 0 | 8 | 3914 |
 | `agent/plans/PLAN-website-routing-and-mail.md` | executing | 117 | 14 | 6 | 18614 |

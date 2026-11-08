@@ -68,6 +68,6 @@ Regenerate after all picks and edits: build:packages, shard:place, python-env-re
 
 "Yes, once fleet run 17 passes": after a VERIFIED vm:check on the final tree, install the branch renet on hostinger through eu-bench and run the hostinger receipts (proof plans, LP-hostinger boxes, rename L9 outside 01:45-03:00Z) without asking again; compare repo list and backup usage before and after each step; never delete production data.
 
-## Operator ruling, Stripe on edge (2026-11-08T19:1xZ /ask)
+## Operator ruling, Stripe on edge (ASKED:2026-11-08T19:12Z /ask)
 
 "Pass the live key." and "edge becomes a paid environment like the (old) stable." The edge www deploy's Stripe webhook step stays and is fed the live Stripe key.
