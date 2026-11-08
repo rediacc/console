@@ -117,14 +117,14 @@ async function readPayload(request: Request): Promise<Payload | null> {
 async function refusal(
   request: Request,
   env: LookupEnv,
-  payload: Payload
+  payload: Payload,
+  secret: string
 ): Promise<Response | null> {
   const ip = request.headers.get('cf-connecting-ip');
   if (env.LOOKUP_RATE_LIMIT) {
     const verdict = await env.LOOKUP_RATE_LIMIT.limit({ key: ip ?? 'unknown' });
     if (!verdict.success) return json({ error: 'rate_limited' }, 429);
   }
-  const secret = env.CLOUDFLARE_TURNSTILE_SECRET_KEY ?? '';
   if (!(await turnstileOk(secret, payload.turnstileToken, ip))) {
     return json({ error: 'turnstile_failed' }, 403);
   }
@@ -141,13 +141,14 @@ export async function handleEnterpriseLookup(request: Request, env: LookupEnv): 
   const { ENTERPRISE_LOOKUP: kv, ENTERPRISE_LOOKUP_PEPPER: pepper } = env;
   // Fail closed: without the Turnstile secret the route would answer anonymous
   // lookups, so a deploy missing it is unavailable rather than open.
-  if (!kv || !pepper || !env.CLOUDFLARE_TURNSTILE_SECRET_KEY) {
+  const secret = env.CLOUDFLARE_TURNSTILE_SECRET_KEY;
+  if (!kv || !pepper || !secret) {
     return json({ error: 'unavailable' }, 503);
   }
 
   const payload = await readPayload(request);
   if (!payload) return json({ error: 'bad_request' }, 400);
-  const refused = await refusal(request, env, payload);
+  const refused = await refusal(request, env, payload, secret);
   if (refused) return refused;
 
   // A malformed domain answers like a miss: the shape never depends on the input.
