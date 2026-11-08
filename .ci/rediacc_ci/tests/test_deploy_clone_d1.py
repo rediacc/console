@@ -76,6 +76,7 @@ FAKE_NPX = r'''#!/usr/bin/python3
 """Recording fake for `npx --no-install wrangler d1`. See the test module docstring."""
 import json
 import os
+import re
 import sys
 
 argv = sys.argv[1:]
@@ -155,7 +156,12 @@ if rest[:2] == ["d1", "execute"]:
         if commands[0].startswith("SELECT name FROM sqlite_master"):
             rows = [{"name": name} for name in sorted(counts)]
         else:
-            rows = [{"t": name, "n": n} for name, n in sorted(counts.items())]
+            # Like D1: answer only the tables the query names, and refuse a compound SELECT past its limit.
+            named = re.findall(r"SELECT '([A-Za-z_][A-Za-z0-9_]*)' AS t", commands[0])
+            if len(named) > int(os.environ.get("FAKE_COMPOUND_LIMIT", "5")):
+                sys.stderr.write("too many terms in compound SELECT: SQLITE_ERROR [code: 7500]\n")
+                sys.exit(1)
+            rows = [{"t": name, "n": counts[name]} for name in named if name in counts]
         sys.stdout.write(json.dumps([{"results": rows}]) + "\n")
         sys.exit(0)
     if "--json" in rest:
@@ -934,6 +940,18 @@ def test_drop_tables_naming_a_table_the_source_lacks_fails_the_parity_run(tmp_pa
     )
     assert proc.returncode == 1
     assert "names a table the source does not have: nope" in proc.stderr
+
+
+def test_row_parity_counts_in_chunks_d1_accepts(tmp_path) -> None:
+    """D1 refuses a long compound SELECT; the fake refuses past FAKE_COMPOUND_LIMIT (5), so nine tables pass only when the count query is chunked."""
+    tables = {"t%d" % i: i for i in range(9)}
+    counts = json.dumps({"account-eu-src": tables, "account-eu": tables})
+    _root, proc, calls = _port_only(tmp_path, args=(*SEED_ARGS, "--row-parity"), FAKE_COUNTS=counts)
+    assert proc.returncode == 0, proc.stderr
+    assert "Row parity holds: 9 tables, 36 rows in the source" in proc.stderr
+    reads = [c for c in _calls(calls) if "--command=SELECT" in c]
+    # Per side: the table list, then ceil(9 / PARITY_CHUNK) count queries.
+    assert len(reads) == 2 * (1 + 3), reads
 
 
 def test_parity_differences_is_pure() -> None:

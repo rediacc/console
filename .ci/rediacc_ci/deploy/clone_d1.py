@@ -163,6 +163,9 @@ USAGE = "Usage: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.clone_d1 --source <d
 #
 # `--row-parity` compares per-table row counts of source and target after the import (`PARITY_TABLES_SQL`, then one `UNION ALL` count over every table), and fails the run on any difference. A table named by `--drop-tables` is expected to hold 0 rows in the target. This reads rows rather than trusting the FK check, which cannot see a table that arrived short.
 TABLE_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+# D1 refuses a long compound SELECT (`too many terms in compound SELECT: SQLITE_ERROR [code: 7500]`, measured 2026-11-08 at 15 arms on the 84-table bench database while 4 passed), so the count query runs PARITY_CHUNK tables at a time.
+PARITY_CHUNK = 4
+
 PARITY_TABLES_SQL = (
     "SELECT name FROM sqlite_master WHERE type = 'table' "
     "AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '\\_cf\\_%' ESCAPE '\\' ORDER BY name"
@@ -619,8 +622,15 @@ def table_counts(db: str, config_words: list[str]) -> dict[str, int]:
                 "row parity: %s holds a table whose name is not a plain identifier: %s" % (db, name)
             )
             raise BashExitError(1)
-    union = " UNION ALL ".join(count_select(name) for name in tables)
-    return {str(row["t"]): int(row["n"]) for row in _query_rows(db, config_words, union)}
+    counts: dict[str, int] = {}
+    for start in range(0, len(tables), PARITY_CHUNK):
+        union = " UNION ALL ".join(
+            count_select(name) for name in tables[start : start + PARITY_CHUNK]
+        )
+        counts.update(
+            {str(row["t"]): int(row["n"]) for row in _query_rows(db, config_words, union)}
+        )
+    return counts
 
 
 def parity_differences(
