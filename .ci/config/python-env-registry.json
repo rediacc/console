@@ -344,9 +344,6 @@
     ".ci/rediacc_ci/deploy/deploy_account.py": [
       "CLOUDFLARE_API_TOKEN"
     ],
-    ".ci/rediacc_ci/deploy/deploy_edge.py": [
-      "CLOUDFLARE_API_TOKEN"
-    ],
     ".ci/rediacc_ci/deploy/deploy_proxy.py": [
       "ACCOUNT_ED25519_PUBLIC_KEY",
       "CLOUDFLARE_API_TOKEN",
@@ -386,8 +383,6 @@
     ".ci/rediacc_ci/deploy/resolve_account_deploy_config.py": [
       "*name",
       "MATRIX_DOMAIN",
-      "MATRIX_EDGE_DOMAIN",
-      "MATRIX_EDGE_WORKER_NAME",
       "MATRIX_WORKER_NAME"
     ],
     ".ci/rediacc_ci/deploy/resolve_www_deploy_target.py": [
@@ -761,6 +756,9 @@
     ".ci/rediacc_ci/ops/derive_shadow_pass_list.py": [
       "BRANCH"
     ],
+    ".ci/rediacc_ci/ops/enterprise_lookup.py": [
+      "ENTERPRISE_LOOKUP_PEPPER"
+    ],
     ".ci/rediacc_ci/ops/linode_cluster_validation.py": [
       "CLUSTER_NAME",
       "CLUSTER_POOLS",
@@ -798,6 +796,9 @@
       "ACCOUNT_BACKUP_S3_ENDPOINT",
       "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY",
       "REDIACC_BWS_PROFILES"
+    ],
+    ".ci/rediacc_ci/ops/r2_bucket_copy.py": [
+      "CLOUDFLARE_R2_ENDPOINT"
     ],
     ".ci/rediacc_ci/ops/reset_bench.py": [
       "CLOUDFLARE_R2_ACCESS_KEY_ID",
@@ -1699,9 +1700,6 @@
       "HOME"
     ],
     ".ci/rediacc_ci/tests/test_deploy_deploy_account.py": [
-      "HOME"
-    ],
-    ".ci/rediacc_ci/tests/test_deploy_deploy_edge.py": [
       "HOME"
     ],
     ".ci/rediacc_ci/tests/test_deploy_deploy_proxy.py": [
