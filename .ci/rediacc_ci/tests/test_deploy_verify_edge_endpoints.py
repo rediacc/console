@@ -186,6 +186,20 @@ class Run:
         self.log = normalise_log(log)
 
 
+def _port_answer(env: dict[str, str], log: pathlib.Path, tree, module: str):
+    """The re-record seam (`regolden --source port`): the real module's `(rc, out, err, curl_log)` over the OLD side's fixture and log, once the twin is deleted. A planted `port_file` is the NEW side's subject only and is never recorded."""
+    port_env = dict(env)
+    port_env["PYTHONPATH"] = str(ROOT / ".ci")
+    port_env["PYTHONDONTWRITEBYTECODE"] = "1"
+    if tree is not None:
+        port_env["REDIACC_CI_ROOT"] = str(tree)
+    command = "python3 -m %s" % module
+    return (
+        *diff.bash_streams(command, env=port_env, timeout=60),
+        log.read_text(encoding="utf-8"),
+    )
+
+
 def drive(
     tmp_path: pathlib.Path,
     *,
@@ -240,6 +254,7 @@ def drive(
                     *diff.bash_streams(command, env=env, timeout=60),
                     log.read_text(encoding="utf-8"),
                 ),
+                port=lambda log=log, env=env: _port_answer(env, log, tree, module),
                 work=(tmp_path,),
             )
             runs.append(Run(rc, golden_hosts(out), golden_hosts(err), golden_hosts(curl_log)))
