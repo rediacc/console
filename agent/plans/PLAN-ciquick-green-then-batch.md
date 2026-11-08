@@ -1,0 +1,26 @@
+# PLAN: ci:quick goes green and stays green, then runs once per batch
+Status: approved -- operator /ask ASKED:2026-11-08T19:20Z "Green first, then batch (Recommended)", after an opus validation of the measurements
+Depends-On: no-dep -- every change is to the runner, the guards, the Stop hook and their docs in this tree
+Owner: d778be9d
+Updated: 2026-11-08
+Priority: P1 -- all 34 ci:quick receipts on 1104-1 exit 1 (13.8 h), so every run feeds a fix-and-rerun loop, and a local release refuses without a green receipt (`.ci/rediacc_ci/release/local_gates.py:8`)
+Concurrency: parallel -- the boxes own disjoint files; G7 runs on the tip after the others land
+Live-Proof: none -- tooling and docs only, no deployable surface; G7's ci:quick on the tip is the proof (operator ruling closed as #a09952dc)
+Owns: agent/plans/PLAN-ciquick-green-then-batch.md, .ci/rediacc_ci/quality/plan_implementation*.py, .ci/scripts/quality/check_plan_implementation.py, .ci/rediacc_ci/tests/**, .ci/config/carried-reds.json, scripts/ci-runner/**, .claude/rediacc_hooks/guards/block_unverified_push.py, .claude/hooks/stop/worklist_messages.py, .claude/hooks/stop/wl_ci.py, .claude/hooks/stop/test-*.py, CLAUDE.md, .claude/commands/writers-now.md, .claude/agents/pr-babysitter.md, docs/agent-reference/ci-gates.md
+
+## Context (measured 2026-11-08 on 1104-1)
+- 34 archived receipts in `.ci/cache/receipts/`, every one `exitCode` 1, 13.8 h of wall; 2 of them were used for a push. Latest receipt: wall 1124 s, `check:ci-pytest` 898 s on the critical path, CPU floor about 12.5 min.
+- Failing gates across the 34: `check:ci-plan-implementation` 34/34, `check:ci-pytest` 17/34, `check:ci-external-links` 13/34 (network; latest finding `link:www.ppc.go.jp`), `source-rules` 10, `types` 9. The latest receipt also fails `check:ci-checkout-cone` and `check:ci-ops-health`.
+- plan-implementation's red is P-A1, one key per Promoted plan with open boxes: it reports the backlog, not a defect. The keys are carried in `.ci/config/carried-reds.json`, whose stale-excuse rules make every tick that changes the set an edit of that file; the file is not a record path, so the edit voids the receipt and forces another full run.
+- The batch-end message orders `npm run ci` then `npm run ci:quick` back to back (`.claude/hooks/stop/worklist_messages.py:3222-3223`); the first runs in the checkout, where nothing carries (`scripts/ci-runner/run.ts` ~3376).
+- `check:ci-pytest` is carry-exempt (`.ci/policy/carry-exempt.json:25`), so splitting it per file reuses nothing today; that work is deferred until receipts are green and carry can be measured.
+- No guard demands ci:quick per commit: `block_unverified_push` reads the receipt only at `git push`, keyed on `HEAD^{tree}`, so one green receipt at the tip already covers every commit below it.
+
+## Boxes
+- [ ] G1 plan-implementation at its root: P-A1 stops reading the Promoted backlog as a push-time failure. It judges what a push can act on (the live PR's plan set, or a box claimed done with no evidence), and the backlog view moves to the merge-time and Stop-hook reports. The 12 carried P-A1 keys leave `carried-reds.json`. Accept: `npm run check:ci-plan-implementation` rc 0 on the tip with no carried P-A1 key, and its test module rc 0 with a control that still refuses a ticked box whose evidence does not resolve.
+- [ ] G2 `check:ci-external-links` is a warning in the local ci:quick lane and stays blocking in CI. Accept: a ci:quick run with the network unreachable records the gate as a warning, not a failure, and the CI lane config still lists it blocking (a runner test asserts both).
+- [ ] G3 a commit that only removes entries from `.ci/config/carried-reds.json` advances a receipt instead of voiding it, by the record-paths advance (the readers of that file re-run). An added or widened entry still voids it. Accept: `block_unverified_push` test cases for a removal-only diff (admitted) and an addition (refused).
+- [ ] G4 the batch-end message (`.claude/hooks/stop/worklist_messages.py:3222`) drops step 1, `npm run ci`, and the backup-push message (`.claude/hooks/stop/worklist_messages.py:3247-3251`) uses the same one-green-receipt-per-batch wording. Accept: the Stop-hook test that renders both messages, rc 0.
+- [ ] G5 a Stop-hook advisory fires when a full `ci:quick` starts while the newest receipt is red and no `npm run ci -- --narrow` run has passed since. Accept: a Stop-hook test with a red receipt plus a running ci:quick (fires) and with a green narrow run in between (silent).
+- [ ] G6 CLAUDE.md rule 1, `.claude/commands/writers-now.md`, `.claude/agents/pr-babysitter.md` and `docs/agent-reference/ci-gates.md` say it once: a unit's acceptance is a named test or `npm run ci -- --narrow`, and the full ci:quick and vm:check pair runs once per batch, after the plan and tick commits, right before the push. Accept: `npm run check:ci-prose-style` and `npm run check:ci-doc-region-parity` rc 0.
+- [ ] G7 the remaining tip reds (`check:ci-checkout-cone`, `check:ci-ops-health`, and whatever `check:ci-pytest`, `source-rules` or `types` show) are fixed, and one ci:quick on the tip exits 0. Accept: `.ci/cache/prepush-receipt.json` at the tip with `exitCode` 0.

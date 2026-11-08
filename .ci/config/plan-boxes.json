@@ -673,6 +673,24 @@
       "open_sigs": [],
       "done_sigs": []
     },
+    "agent/plans/PLAN-ciquick-green-then-batch.md": {
+      "status": "approved",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 7,
+      "done": 0,
+      "open_sigs": [
+        "077a2336",
+        "378b8de3",
+        "cac02478",
+        "d67360df",
+        "d7b25ec9",
+        "d8663881",
+        "fd445926"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-ciquick-reds-1023-1.md": {
       "status": "executing",
       "owner": "d778be9d",
@@ -2826,6 +2844,20 @@
       "open": 0,
       "done": 0,
       "open_sigs": [],
+      "done_sigs": []
+    },
+    "agent/plans/PLAN-vmcheck-incremental.md": {
+      "status": "approved",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 3,
+      "done": 0,
+      "open_sigs": [
+        "0f19515b",
+        "1a460b23",
+        "233a92c3"
+      ],
       "done_sigs": []
     },
     "agent/plans/PLAN-w7p4w-docker-cutover.md": {

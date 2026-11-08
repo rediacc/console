@@ -91,7 +91,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 15 of 58 plans done, 896 of 1120 boxes done (80%).
+Promoted: 15 of 60 plans done, 896 of 1130 boxes done (79%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -153,6 +153,8 @@ Promoted: 15 of 58 plans done, 896 of 1120 boxes done (80%).
 | 56 | PLAN-drop-free-license-ip-prefix-hash.md | 4/6 | 2 open |
 | 57 | PLAN-stop-hook-retro-20261101.md | 0/4 | 4 open |
 | 58 | PLAN-plan-compaction-bindings.md | 0/7 | 7 open |
+| 59 | PLAN-ciquick-green-then-batch.md | 0/7 | 7 open |
+| 60 | PLAN-vmcheck-incremental.md | 0/3 | 3 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-backup-program.md -- operator 2026-10-20 ("move agent/plans/PLAN-backup-program.md to the promoted"): one backup program across renet, account, CLI and shared, ending in a live hostinger to eu R2 backup; P1; Depends-On PLAN-shell-sandbox-readonly-view.md and PLAN-account-vm-check.md (done 2026-10-20); released to writers by operator /ask ASKED:2026-10-20T15:14Z ("edit writers to go NOW")
@@ -213,6 +215,8 @@ Promoted: 15 of 58 plans done, 896 of 1120 boxes done (80%).
 56. agent/plans/PLAN-drop-free-license-ip-prefix-hash.md -- operator 2026-11-08 ("promote from the Generated review"): code merged in #602, the bench proof is open
 57. agent/plans/PLAN-stop-hook-retro-20261101.md -- operator 2026-11-08 ("promote from the Generated review")
 58. agent/plans/PLAN-plan-compaction-bindings.md -- operator 2026-11-08 ("promote from the Generated review"): refresh its Current state section against the tree first; 8 _done plans have open boxes now, not 7
+59. agent/plans/PLAN-ciquick-green-then-batch.md -- operator /ask ASKED:2026-11-08T19:20Z ("Green first, then batch (Recommended)")
+60. agent/plans/PLAN-vmcheck-incremental.md -- operator /ask ASKED:2026-11-08T19:20Z ("Green first, then batch (Recommended)"), the vm:check half
 
 ## Generated
 
