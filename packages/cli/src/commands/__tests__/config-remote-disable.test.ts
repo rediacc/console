@@ -58,6 +58,17 @@ vi.mock('../../services/core/output.js', () => ({
   outputService: { success: vi.fn(), info: vi.fn(), warn: vi.fn() },
 }));
 
+// A refused command reaches the test as the error it raised, not as a process exit.
+vi.mock('../../utils/errors.js', async (importOriginal) => {
+  const original = await importOriginal<typeof import('../../utils/errors.js')>();
+  return {
+    ...original,
+    handleError: (error: unknown) => {
+      throw error;
+    },
+  };
+});
+
 const { registerRemoteCommands } = await import('../config-remote.js');
 
 function localCache(): RdcConfig {
@@ -130,5 +141,21 @@ describe('config remote disable', () => {
     await runDisable();
     expect(tokenDelete).toHaveBeenCalledWith('rediacc');
     expect(secureDelete).not.toHaveBeenCalled();
+  });
+
+  it('names --local and changes nothing when the stored server answers 403 to server-info', async () => {
+    const { ServerE2eKeyUnavailableError } = await import(
+      '../../services/account/account-client.js'
+    );
+    const before = structuredClone(fileState.current);
+    mockPull.mockRejectedValue(
+      new ServerE2eKeyUnavailableError('https://old.test', 'unreachable', {
+        cause: new Error('server-info returned 403'),
+      })
+    );
+    await expect(runDisable()).rejects.toThrow(/disable --local/);
+    await expect(runDisable()).rejects.toThrow(/https:\/\/old\.test/);
+    expect(fileState.current).toEqual(before);
+    expect(tokenDelete).not.toHaveBeenCalled();
   });
 });

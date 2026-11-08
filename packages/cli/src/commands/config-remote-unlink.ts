@@ -27,6 +27,7 @@
  */
 
 import { t } from '../i18n/index.js';
+import { ServerE2eKeyUnavailableError } from '../services/account/account-client.js';
 import { ConfigServerError } from '../services/config/config-server-client.js';
 import { RemoteTokenRefreshError } from '../services/config/device-token-refresh.js';
 import { outputService } from '../services/core/output.js';
@@ -55,6 +56,15 @@ export function storeCopyGone(configName: string, remote: RemoteConfig): Validat
   );
 }
 
+/** The server-info of the stored server answered 401, 403 or 404, so no key can be learned from it. */
+function isServerGone(error: unknown): error is ServerE2eKeyUnavailableError {
+  if (!(error instanceof ServerE2eKeyUnavailableError) || error.reason !== 'unreachable') {
+    return false;
+  }
+  const cause = error.cause;
+  return cause instanceof Error && /server-info returned (401|403|404)\b/.test(cause.message);
+}
+
 /** Renewal refusals that say this device's account is no longer in the store. */
 const ACCOUNT_LEFT_STORE: ReadonlySet<string> = new Set(['not_store_member', 'store_mismatch']);
 
@@ -70,6 +80,15 @@ export function closedServerPath(
   remote: RemoteConfig
 ): ValidationError | undefined {
   if (isStoreCopyGone(error)) return storeCopyGone(configName, remote);
+  // A config whose stored server moved: its pull cannot even seal a request, because server-info of
+  // the old host answers 4xx and the config holds no key for it. That is a closed path (the host
+  // refuses or no longer knows this store), not a transient outage, so it names `--local`. Disable
+  // stays server-only by ruling: a stale-cache write is never done implicitly.
+  if (isServerGone(error)) {
+    return new ValidationError(
+      t('commands.config.remote.disable.accessLost', { name: configName, error: error.message })
+    );
+  }
   const refused =
     (error instanceof ConfigServerError && error.status === 403) ||
     (error instanceof RemoteTokenRefreshError && ACCOUNT_LEFT_STORE.has(error.code));
