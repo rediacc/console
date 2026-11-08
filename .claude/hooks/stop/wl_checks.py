@@ -4679,7 +4679,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     # ---- THE PR'S PLAN SET IS NOT FINISHED (wl_planenforce). The only BLOCKING plan push: `plan-tasks` asks whether a plan's boxes are TRACKED, `plan-backlog` names what comes NEXT, and this asks whether the PR's own plans are DONE. Scoped to the loop state's set, prerequisites first, with no ceiling (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 5); off the loop the scope is empty and it is silent.
     # A BACKGROUND TASK OF THIS SESSION TURNS IT INTO AN ADVISORY: a writer on the box or a `ci-trace --wait` is the work happening, and the box count of one plan is the exit.
     try:
-        # A [?] of this session declaring GATES: pr-plan-set holds the set: the block stands down to the advisory, naming the deferral (wl_planenforce.GATE_TAG).
+        # A [?] of this session declaring GATES: pr-plan-set holds the set while deferral_holds admits it (a DEFAULT, a recorded WHY, inside S.DEFER_WINDOW_MIN): the block stands down to the advisory, naming the deferral (wl_planenforce.GATE_TAG).
         def _pe_holds(r):
             return wl_planenforce.deferral_holds(
                 r,

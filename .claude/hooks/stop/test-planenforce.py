@@ -789,8 +789,15 @@ def _same_owner(owner, session_id):
     return owner == session_id
 
 
+def _always(_r):
+    return True
+
+
 def _has_default(line):
-    return "DEFAULT:" in line
+    # Production's own matcher, so the hold controls exercise the regex the hook uses.
+    import wl_core
+
+    return wl_core.DEFAULT_TOKEN.search(line)
 
 
 def gate_controls():
@@ -825,7 +832,7 @@ def gate_controls():
         ),
     ]
     for label, item, want in cases:
-        control("gate: " + label, pe.gating_deferral([item], "me", _same_owner), want)
+        control("gate: " + label, pe.gating_deferral([item], "me", _same_owner, _always), want)
     ok = {
         "id": "h1",
         "state": "?",
@@ -862,7 +869,11 @@ def gate_controls():
         ),
         "",
     )
-    src = (HERE / "wl_checks.py").read_text(encoding="utf-8")
+    src = "\n".join(
+        ln
+        for ln in (HERE / "wl_checks.py").read_text(encoding="utf-8").splitlines()
+        if not ln.lstrip().startswith("#")
+    )
     truthy(
         "gate wiring: wl_checks binds the hold to the deferral window",
         "S.DEFER_WINDOW_MIN" in src and "deferral_holds(" in src,

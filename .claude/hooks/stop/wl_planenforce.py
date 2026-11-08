@@ -214,7 +214,7 @@ def render(rows, scope, session_id, named=None):
     return "\n".join(lines)
 
 
-# A deferral that holds the whole plan set. When every open box of the PR's set waits on one operator decision (a run the harness reserved for the operator, a purchase), the block re-fired every stop with nothing to act on (2026-11-08, ten stops on #1b86eb2f). A `[?]` of this session whose question carries this token turns the block into an advisory naming it; the deferral's own DEFAULT window still closes, and once it is ticked the block returns.
+# A deferral that holds the whole plan set. When every open box of the PR's set waits on one operator decision (a run the harness reserved for the operator, a purchase), the block re-fired every stop with nothing to act on (2026-11-08, ten stops on #1b86eb2f). A `[?]` of this session whose question carries this tag turns the block into an advisory naming it, but only while `deferral_holds` admits it: a DEFAULT and a recorded WHY, inside its window. Past the window the hook orders the DEFAULT executed, and the block returns.
 GATE_TAG = "GATES: pr-plan-set"
 
 
@@ -229,14 +229,14 @@ def deferral_holds(r, age_min, window_min, has_default):
     )
 
 
-def gating_deferral(items, session_id, owned_by_me, holds=None):
+def gating_deferral(items, session_id, owned_by_me, holds):
     """The id of this session's open `[?]` whose question carries GATE_TAG and that `holds` admits (deferral_holds, bound by the caller to the clock and the window), or "" when none does."""
     for r in items or ():
         if r.get("state") != "?" or not owned_by_me(r.get("owner"), session_id):
             continue
         if not any(GATE_TAG in str(r.get(k) or "") for k in ("lastnote", "text", "line")):
             continue
-        if holds is None or holds(r):
+        if holds(r):
             return str(r.get("id") or "")
     return ""
 
