@@ -21,7 +21,7 @@ Body-Sig: a7da6ea58080d467
 ### f6cf1731.1 [high] .ci/rediacc_ci/release/local.py:900
 Anchor: in-diff
 Claim: The commit's own message says test_release_local.py now fails (ci_workflow_invariants still treats every --target stable row as a stable step), so any CI run of that suite is red for this commit; the failing gate is left in place rather than fixed or split out.
-Resolution: open
+Resolution: not-a-bug | .ci/rediacc_ci/security/ci_workflow_invariants.py:626 _STABLE_TARGET_RE admits --target stable rows since 3397bcb37a (X1), with a plant that CHANNEL=stable still refuses; check:ci-workflow-invariants rc 0 on the batch tip | d778be9d 2026-11-08T17:26:03Z
 
 ### f6cf1731.2 [medium] .ci/rediacc_ci/deploy/deploy_proxy.py:8
 Anchor: in-diff
