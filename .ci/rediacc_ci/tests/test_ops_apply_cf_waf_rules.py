@@ -168,6 +168,21 @@ def test_a_config_with_duplicate_refs_is_refused(tmp_path: pathlib.Path) -> None
         w.load_config(tmp_path)
 
 
+def test_a_zone_that_does_not_hold_the_account_hosts_is_refused() -> None:
+    """The 2026-11-08 shape: the apex zone named while every account route is on the product domain."""
+    hosts = ["bench." + PRODUCT_DOMAIN, "eu." + PRODUCT_DOMAIN]
+    with pytest.raises(w.ApplyError, match="does not hold the account hosts"):
+        w.refuse_foreign_hosts({"zoneId": "z", "domain": "apex"}, hosts)
+    w.refuse_foreign_hosts({"zoneId": "z", "domain": "product"}, [*hosts, PRODUCT_DOMAIN])
+    with pytest.raises(w.ApplyError, match="unknown domain"):
+        w.zone_name({"zoneId": "z", "domain": "nope"})
+
+
+def test_the_shipped_zone_holds_every_account_host() -> None:
+    for zone in CONFIG["zones"]:
+        w.refuse_foreign_hosts(zone, w.account_hosts(ROOT))
+
+
 def test_no_worker_config_is_refused(tmp_path: pathlib.Path) -> None:
     (tmp_path / "workers" / "account").mkdir(parents=True)
     with pytest.raises(w.ApplyError, match="no account hostnames"):
