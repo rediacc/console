@@ -218,12 +218,25 @@ def render(rows, scope, session_id, named=None):
 GATE_TAG = "GATES: pr-plan-set"
 
 
-def gating_deferral(items, session_id, owned_by_me):
-    """The id of this session's open `[?]` whose question carries GATE_TAG, or "" when none does."""
+def deferral_holds(r, age_min, window_min, has_default):
+    """True while a tagged deferral may hold the set: it carries a DEFAULT and a recorded WHY, and its window is still open. Past the window the hook already orders the DEFAULT executed, so the hold ends with it; a [?] with no DEFAULT or WHY never holds, so a bare tagged question cannot silence the block."""
+    just = r.get("just") if isinstance(r.get("just"), dict) else {}
+    return (
+        bool(has_default(str(r.get("line") or "")))
+        and bool(just.get("why"))
+        and age_min is not None
+        and age_min < window_min
+    )
+
+
+def gating_deferral(items, session_id, owned_by_me, holds=None):
+    """The id of this session's open `[?]` whose question carries GATE_TAG and that `holds` admits (deferral_holds, bound by the caller to the clock and the window), or "" when none does."""
     for r in items or ():
         if r.get("state") != "?" or not owned_by_me(r.get("owner"), session_id):
             continue
-        if any(GATE_TAG in str(r.get(k) or "") for k in ("lastnote", "text", "line")):
+        if not any(GATE_TAG in str(r.get(k) or "") for k in ("lastnote", "text", "line")):
+            continue
+        if holds is None or holds(r):
             return str(r.get("id") or "")
     return ""
 

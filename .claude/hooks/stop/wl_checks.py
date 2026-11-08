@@ -4680,7 +4680,15 @@ def run_stop(event, event_ok, worklist, hook_file):
     # A BACKGROUND TASK OF THIS SESSION TURNS IT INTO AN ADVISORY: a writer on the box or a `ci-trace --wait` is the work happening, and the box count of one plan is the exit.
     try:
         # A [?] of this session declaring GATES: pr-plan-set holds the set: the block stands down to the advisory, naming the deferral (wl_planenforce.GATE_TAG).
-        _pe_gate = wl_planenforce.gating_deferral(fold.items, session_id, C.owned_by_me)
+        def _pe_holds(r):
+            return wl_planenforce.deferral_holds(
+                r,
+                C.stamp_age_min(r.get("upd", "")),
+                S.DEFER_WINDOW_MIN,
+                C.DEFAULT_TOKEN.search,
+            )
+
+        _pe_gate = wl_planenforce.gating_deferral(fold.items, session_id, C.owned_by_me, _pe_holds)
         _pe_state, _pe_text, _pe_detail = wl_planenforce.evaluate(
             root, _loop_plans, session_id, live=bool(live_bg) or bool(_pe_gate)
         )

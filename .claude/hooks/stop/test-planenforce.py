@@ -780,8 +780,17 @@ def scope_controls():
 # --------------------------------------------------------------------------- 5. CLAUSE 3, WARN-FIRST (agent/plans/PLAN-plan-preflight.md PF5, Design 3b). The stale-plan check warns and lets every tick through; each warning case is paired with a silent one.
 
 
+# ---------------------------------------------------------------------------
+# 6. THE GATE: a GATES: pr-plan-set deferral holds the PR plan-set block while its window is open.
+# ---------------------------------------------------------------------------
+
+
 def _same_owner(owner, session_id):
     return owner == session_id
+
+
+def _has_default(line):
+    return "DEFAULT:" in line
 
 
 def gate_controls():
@@ -817,6 +826,51 @@ def gate_controls():
     ]
     for label, item, want in cases:
         control("gate: " + label, pe.gating_deferral([item], "me", _same_owner), want)
+    ok = {
+        "id": "h1",
+        "state": "?",
+        "owner": "me",
+        "lastnote": tok,
+        "line": "- [?] q DEFAULT: wait",
+        "just": {"why": "w"},
+    }
+    control(
+        "hold: a justified deferral inside its window holds",
+        pe.deferral_holds(ok, 30, 120, _has_default),
+        True,
+    )
+    control(
+        "hold: past its window it does not", pe.deferral_holds(ok, 121, 120, _has_default), False
+    )
+    control(
+        "hold: with no DEFAULT it does not",
+        pe.deferral_holds(dict(ok, line="- [?] q"), 30, 120, _has_default),
+        False,
+    )
+    control(
+        "hold: with no WHY it does not",
+        pe.deferral_holds(dict(ok, just={}), 30, 120, _has_default),
+        False,
+    )
+    control(
+        "hold: an unreadable age does not", pe.deferral_holds(ok, None, 120, _has_default), False
+    )
+    control(
+        "gate: an expired tagged deferral does not hold the set",
+        pe.gating_deferral(
+            [ok], "me", _same_owner, lambda r: pe.deferral_holds(r, 500, 120, _has_default)
+        ),
+        "",
+    )
+    src = (HERE / "wl_checks.py").read_text(encoding="utf-8")
+    truthy(
+        "gate wiring: wl_checks binds the hold to the deferral window",
+        "S.DEFER_WINDOW_MIN" in src and "deferral_holds(" in src,
+    )
+    truthy(
+        "gate wiring: the gate makes the plan-set evaluation live",
+        "live=bool(live_bg) or bool(_pe_gate)" in src,
+    )
 
 
 def _preflight_tree(tmp, stamp=True, origin=True):
