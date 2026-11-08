@@ -1790,8 +1790,8 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 24,
-      "done": 4,
+      "open": 23,
+      "done": 5,
       "open_sigs": [
         "01a216f3",
         "062294e2",
@@ -1804,7 +1804,6 @@
         "63337671",
         "8c532722",
         "9b7cf5fc",
-        "a4963d94",
         "a6b330c2",
         "a9d7e631",
         "ae60bb69",
@@ -1822,7 +1821,8 @@
         "7e578ed5",
         "82f203f4",
         "95c01063",
-        "9ad4c9f5"
+        "9ad4c9f5",
+        "a4963d94"
       ]
     },
     "agent/plans/PLAN-production-key-only.md": {
