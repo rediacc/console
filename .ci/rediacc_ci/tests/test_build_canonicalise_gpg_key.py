@@ -17,6 +17,7 @@ K=5 LEDGER: `.ci/shadow/w7p6-canonicalise-gpg-key.observations.jsonl`.
 
 from __future__ import annotations
 
+import contextlib
 import os
 import pathlib
 import shutil
@@ -46,12 +47,14 @@ _HOMES: set[str] = set()
 def _kill_agents():
     yield
     for home in sorted(_HOMES):
-        subprocess.run(
-            ["gpgconf", "--homedir", home, "--kill", "gpg-agent"],
-            capture_output=True,
-            check=False,
-            timeout=30,
-        )
+        # One hung gpgconf must not keep the remaining homes' agents alive.
+        with contextlib.suppress(subprocess.TimeoutExpired, OSError):
+            subprocess.run(
+                ["gpgconf", "--homedir", home, "--kill", "gpg-agent"],
+                capture_output=True,
+                check=False,
+                timeout=30,
+            )
     _HOMES.clear()
 
 
