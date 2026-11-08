@@ -773,7 +773,9 @@ def test_no_arm_writes_the_label_ledger(env):
 
 def _claude_review_job_timeout() -> int | None:
     """`timeout-minutes` of the `Claude Review` job in .github/workflows/ops-claude-review.yml, read from the job block that names it."""
-    text = (common.repo_root() / ".github" / "workflows" / "ops-claude-review.yml").read_text("utf-8")
+    text = (common.repo_root() / ".github" / "workflows" / "ops-claude-review.yml").read_text(
+        "utf-8"
+    )
     in_job = False
     for line in text.splitlines():
         if (

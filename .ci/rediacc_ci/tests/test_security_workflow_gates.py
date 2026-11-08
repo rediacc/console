@@ -1003,7 +1003,11 @@ def test_check6_a_renamed_monitor_does_reach_the_vacuity_message(
 ) -> None:
     """The two-of-five case that works, so the finding above is exact."""
     fx = build_fixture(tmp_path)
-    wf(fx, "ops-watchdog-monitor.yml", WATCHDOG.replace("Monitor jobs and cancel on failure", "Watch"))
+    wf(
+        fx,
+        "ops-watchdog-monitor.yml",
+        WATCHDOG.replace("Monitor jobs and cancel on failure", "Watch"),
+    )
     old, new = run_both(fx)
     assert "the watchdog lost its monitor" in old[2]
     assert_same(old, new)

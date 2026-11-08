@@ -655,7 +655,11 @@ def analyse_local_steps(steps: object) -> tuple[list[tuple[str, str]], dict[str,
     tags = [i for i, r in enumerate(rows) if _is_tag_row(r)]
     cli = [i for i, r in enumerate(rows) if LOCAL_CLI_UPLOAD in _row_text(r)]
     accounts = [i for i, r in enumerate(rows) if LOCAL_ACCOUNT_DEPLOY in _row_text(r)]
-    stable = [ident[i] for i, r in enumerate(rows) if _STABLE_RE.search(_STABLE_TARGET_RE.sub("", _row_text(r)))]
+    stable = [
+        ident[i]
+        for i, r in enumerate(rows)
+        if _STABLE_RE.search(_STABLE_TARGET_RE.sub("", _row_text(r)))
+    ]
     shape: dict[str, object] = {
         "rows": len(rows),
         "seal": ident[seals[-1]] if seals else "",
@@ -929,7 +933,9 @@ def analyse_preflight(
         if not after:
             out.append(("cd-preflight-before-tag", _step_label(job, i, st)))
         else:
-            shape.append("cd-release-edge %s step %d after the tag step %d" % (job, i + 1, after[0][1] + 1))
+            shape.append(
+                "cd-release-edge %s step %d after the tag step %d" % (job, i + 1, after[0][1] + 1)
+            )
         out += _narrowed("cd", _step_label(job, i, st), st)
 
     hk_jobs = hk_doc.get("jobs") if isinstance(hk_doc, dict) else None

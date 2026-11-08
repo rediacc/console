@@ -83,7 +83,13 @@ MIXED = {
 
 
 @pytest.mark.parametrize(
-    "name", ["CD - Release to Edge", "cd-release-edge", "cd-release-edge.yml", ".github/workflows/cd-release-edge.yml"]
+    "name",
+    [
+        "CD - Release to Edge",
+        "cd-release-edge",
+        "cd-release-edge.yml",
+        ".github/workflows/cd-release-edge.yml",
+    ],
 )
 def test_runs_workflow_lists_that_workflows_runs_every_event_merged(ct, monkeypatch, capsys, name):
     fetch = install_fetch(ct, monkeypatch, Fetch(MIXED))
@@ -99,7 +105,9 @@ def test_runs_workflow_lists_that_workflows_runs_every_event_merged(ct, monkeypa
     assert "failure" in out[3]
     # The workflow's own file, on the bare branch name, read once per RUNS_EVENTS spelling.
     assert len(fetch.paths) == len(ct.RUNS_EVENTS)
-    assert all(p.startswith("actions/workflows/cd-release-edge.yml/runs?branch=main&") for p in fetch.paths)
+    assert all(
+        p.startswith("actions/workflows/cd-release-edge.yml/runs?branch=main&") for p in fetch.paths
+    )
 
 
 def test_runs_without_workflow_still_reads_console_ci(ct, monkeypatch, capsys):
@@ -328,7 +336,10 @@ def test_all_workflows_scheduled_verdict_reads_no_dispatch_run(ct, monkeypatch, 
     ("argv", "needle"),
     [
         (["--scheduled", "--wait"], "--scheduled --wait needs --run"),
-        (["--scheduled", "--workflow", "ops-pins-soaked", "--wait"], "--scheduled --wait needs --run"),
+        (
+            ["--scheduled", "--workflow", "ops-pins-soaked", "--wait"],
+            "--scheduled --wait needs --run",
+        ),
         (["--runs", "--wait"], "--wait does not combine with --runs"),
         (["--why", "--wait", "--run", "1"], "--wait does not combine with --why"),
         (["--run", "1", "--jobs", "--wait"], "--wait does not combine with --jobs"),

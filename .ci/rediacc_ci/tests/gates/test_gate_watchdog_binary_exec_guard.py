@@ -103,7 +103,9 @@ SKIPPED_SIBLING = [
 
 def install_patterns(gate) -> str:
     if not CI_WORKFLOW.is_file():
-        gate.log_fail("ops-watchdog-monitor.yml is missing at %s" % paths.relative_to_root(CI_WORKFLOW))
+        gate.log_fail(
+            "ops-watchdog-monitor.yml is missing at %s" % paths.relative_to_root(CI_WORKFLOW)
+        )
     match = PATTERNS_RE.search(CI_WORKFLOW.read_text(encoding="utf-8"))
     if not match or not match.group(1):
         gate.log_fail(
@@ -253,7 +255,9 @@ def test_other_failure_signature_is_ignored(gate):
 def test_workflow_sets_the_required_env_var(gate):
     gate.log_test("the wiring: the watchdog THROWS without this variable")
     if not CI_WORKFLOW.is_file():
-        gate.log_fail("ops-watchdog-monitor.yml is missing at %s" % paths.relative_to_root(CI_WORKFLOW))
+        gate.log_fail(
+            "ops-watchdog-monitor.yml is missing at %s" % paths.relative_to_root(CI_WORKFLOW)
+        )
     if PATTERNS_KEY not in CI_WORKFLOW.read_text(encoding="utf-8"):
         gate.log_fail(
             "ops-watchdog-monitor.yml must set WATCHDOG_INSTALL_VALIDATION_PATTERNS "

@@ -109,7 +109,9 @@ def expect(gate, tmp_path, want: int, label: str, workflow_text: str) -> harness
 
 def test_check6_is_extracted_from_the_live_gate(gate):
     body = check6_source(gate)
-    gate.assert_contains(body, "ops-watchdog-monitor.yml", "CHECK 6 must read the watchdog workflow")
+    gate.assert_contains(
+        body, "ops-watchdog-monitor.yml", "CHECK 6 must read the watchdog workflow"
+    )
     gate.log_pass("CHECK 6 found in the live gate (%d lines)" % len(body.splitlines()))
 
 

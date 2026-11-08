@@ -267,7 +267,9 @@ def test_only_the_edge_release_calls_the_account_deploy_and_passes_version():
 
 # ---- one shared Worker set ---------------------------------------------------
 
-MODULE_RE = re.compile(r"python3 -m rediacc_ci\.deploy\.(deploy_record|deploy_proxy|console_executor|set_account_worker_secrets|resolve_account_deploy_config)\b")
+MODULE_RE = re.compile(
+    r"python3 -m rediacc_ci\.deploy\.(deploy_record|deploy_proxy|console_executor|set_account_worker_secrets|resolve_account_deploy_config)\b"
+)
 
 
 def target_problems(stps: list[dict]) -> list[str]:
@@ -302,8 +304,13 @@ def test_no_edge_field_or_edge_secret_reaches_the_deploy_job(account):
     matrix_step = account["jobs"]["read-regions"]["steps"][-1]["run"]
     for field in ("edgeDomain", "edgeWorkerName", "edgeBackupR2", "edgeBackupBucket"):
         assert field not in matrix_step, field
-    assert account["jobs"]["deploy"]["environment"]["url"] == "${{ format('https://{0}', matrix.domain) }}"
-    assert account["jobs"]["deploy"]["environment"]["name"] == "${{ inputs.target }}-${{ matrix.id }}"
+    assert (
+        account["jobs"]["deploy"]["environment"]["url"]
+        == "${{ format('https://{0}', matrix.domain) }}"
+    )
+    assert (
+        account["jobs"]["deploy"]["environment"]["name"] == "${{ inputs.target }}-${{ matrix.id }}"
+    )
     for s in account["jobs"]["deploy"]["steps"]:
         for key, value in (s.get("env") or {}).items():
             assert not str(key).endswith("_EDGE"), (base_name(s), key)

@@ -167,9 +167,7 @@ def targets(regions: list[dict]) -> dict[str, Target]:
             raise ConfigError("%s region %s names no proxyWorkerName" % (REGIONS_REL, rid))
         host = HOSTS.get(rid)
         if host is None:
-            raise ConfigError(
-                "region %s has no WK_PROXY_*_HOST in .ci/config/well-known.env" % rid
-            )
+            raise ConfigError("region %s has no WK_PROXY_*_HOST in .ci/config/well-known.env" % rid)
         account_url = "https://" + domain
         out[rid] = Target(
             key=rid,

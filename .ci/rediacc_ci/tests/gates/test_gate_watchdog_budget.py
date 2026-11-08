@@ -903,7 +903,9 @@ def test_watchdog_workflow_wires_the_p4_budget_env(gate):
     gate.assert_contains(text, "WATCHDOG_JOB_BUDGET_MIN: '15'", "the per-job budget is 15")
     gate.assert_contains(text, "WATCHDOG_RUN_BUDGET_MIN: '35'", "D-W1: the pipeline target is 35")
     gate.assert_contains(text, "STUCK_THRESHOLD_MIN: '15'", "T4.3: the stuck threshold is 15")
-    gate.log_pass("ops-watchdog-monitor.yml wires per-job enforce, run-level report at 35, stuck 15")
+    gate.log_pass(
+        "ops-watchdog-monitor.yml wires per-job enforce, run-level report at 35, stuck 15"
+    )
 
 
 _WATCHDOG_DISPATCH_RE = re.compile(
@@ -945,7 +947,9 @@ def test_the_watchdog_never_watches_housekeeping(gate):
         "ci.yml does not call ops-housekeeping.yml as a reusable workflow",
     )
     hk = HOUSEKEEPING.read_text(encoding="utf-8")
-    gate.assert_eq(_watchdog_targets(hk), [], "ops-housekeeping.yml does not start the watchdog chain")
+    gate.assert_eq(
+        _watchdog_targets(hk), [], "ops-housekeeping.yml does not start the watchdog chain"
+    )
     timeout = re.search(
         r"^  gate-costs-capture:\n(?:    .*\n|\s*\n)*?    timeout-minutes: (\d+)", hk, re.MULTILINE
     )

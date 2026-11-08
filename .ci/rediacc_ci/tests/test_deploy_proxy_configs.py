@@ -121,9 +121,7 @@ def test_an_eu_account_service_in_the_us_config_is_refused() -> None:
         'binding = "ACCOUNT"\nservice = "account-eu"',
     )
     out = refusals(text, "us")
-    assert any(
-        "ACCOUNT service 'account-eu' names eu, which is not us" in r for r in out
-    ), out
+    assert any("ACCOUNT service 'account-eu' names eu, which is not us" in r for r in out), out
 
 
 def test_a_prefixed_service_in_a_shared_config_is_refused() -> None:
@@ -379,9 +377,7 @@ def test_a_wrong_entrypoint_is_refused() -> None:
 def test_a_production_word_in_the_bench_name_is_refused() -> None:
     text = plant(real("bench"), 'name = "proxy-bench"', 'name = "proxy-bench-prod"')
     out = refusals(text, "bench")
-    assert any(
-        "name 'proxy-bench-prod' names prod, which is not bench" in r for r in out
-    ), out
+    assert any("name 'proxy-bench-prod' names prod, which is not bench" in r for r in out), out
 
 
 def test_a_stale_generated_file_is_refused(tmp_path: pathlib.Path) -> None:
@@ -429,13 +425,10 @@ def test_an_account_config_bound_to_another_regions_proxy_is_refused(
     )
     out = pc.check(root)
     assert any(
-        "workers/account/wrangler.us.toml: the EXECUTOR service binding is ['proxy-eu']"
-        in r
+        "workers/account/wrangler.us.toml: the EXECUTOR service binding is ['proxy-eu']" in r
         for r in out
     ), out
-    assert any("EXECUTOR service 'proxy-eu' names eu, which is not us" in r for r in out), (
-        out
-    )
+    assert any("EXECUTOR service 'proxy-eu' names eu, which is not us" in r for r in out), out
 
 
 def test_a_well_known_host_disagreeing_with_regions_json_is_refused(tmp_path: pathlib.Path) -> None:
@@ -449,6 +442,5 @@ def test_a_well_known_host_disagreeing_with_regions_json_is_refused(tmp_path: pa
     )
     out = pc.check(root)
     assert any(
-        f"the us proxy host is '{PROXY_US_HOST}', not 'proxy.usa.rediacc.cloud'" in r
-        for r in out
+        f"the us proxy host is '{PROXY_US_HOST}', not 'proxy.usa.rediacc.cloud'" in r for r in out
     ), out

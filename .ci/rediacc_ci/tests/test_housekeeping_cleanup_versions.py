@@ -3285,7 +3285,9 @@ def test_delta_phase_10_the_watchdog_line_names_its_own_7d_retention() -> None:
     page = [*_runs(100), {"id": 9001, "created_at": ago(10.5), "conclusion": "success"}]
     fixture = _p10_fixture(
         [
-            _workflow(21, "Watchdog: run 123 (gen 4)", ".github/workflows/ops-watchdog-monitor.yml"),
+            _workflow(
+                21, "Watchdog: run 123 (gen 4)", ".github/workflows/ops-watchdog-monitor.yml"
+            ),
             # A DECOY whose NAME contains "Watchdog" and whose PATH is a different file. Without it a port that matched on the name would behave identically here and this case would prove nothing; a planted name-match defect stayed green until this row was added.
             _workflow(22, "Watchdog dispatcher", ".github/workflows/dispatch-watchdog.yml"),
         ],

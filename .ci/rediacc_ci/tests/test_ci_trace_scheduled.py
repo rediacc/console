@@ -192,7 +192,12 @@ def test_json_shape(ct, install, capsys):
 
 @pytest.mark.parametrize(
     "name",
-    ["housekeeping", "ops-housekeeping.yml", "Housekeeping", ".github/workflows/ops-housekeeping.yml"],
+    [
+        "housekeeping",
+        "ops-housekeeping.yml",
+        "Housekeeping",
+        ".github/workflows/ops-housekeeping.yml",
+    ],
 )
 def test_workflow_resolves_stem_file_and_name(ct, install, capsys, name):
     runs = [
