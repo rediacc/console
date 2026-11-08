@@ -16,11 +16,13 @@ When you sign up for Rediacc, you pick a data region. All your data stays there.
 
 | Region | Location | Domain |
 |---|---|---|
-| **Europe (EU)** | Frankfurt, Germany | `eu.rediacc.com` |
-| **United States (US)** | Virginia, USA | `us.rediacc.com` |
-| **Asia Pacific** | Tokyo, Japan | `asia.rediacc.com` |
+| **Europe (EU)** | Frankfurt, Germany | `eu.rediacc.cloud` |
+| **United States (US)** | Virginia, USA | `us.rediacc.cloud` |
+| **Asia Pacific** | Tokyo, Japan | `asia.rediacc.cloud` |
 
-Your region is auto-detected from your timezone at sign-up. You can override the suggestion in the region picker.
+The product runs on these `rediacc.cloud` domains. All documentation and the marketing site live on `www.rediacc.com`, which sends you to the right region from its region picker.
+
+At sign-up, the picker suggests a region from your location and you confirm or change it. At login, it forwards you to your region after a short countdown that you can cancel or change. If your company has its own deployment, the picker's "Enterprise customer?" option takes you there from your company's email domain. Only the domain is sent, never your full address.
 
 ## What Stays in Your Region
 
@@ -36,7 +38,7 @@ These data types are stored and processed exclusively in your chosen region:
 These are not region-specific:
 
 - **CLI release artifacts**: public binaries hosted on a global CDN
-- **Marketing website**: served globally from edge locations
+- **Marketing website and documentation**: `www.rediacc.com`, served globally from edge locations
 - **Stripe payment processing**: handled by Stripe's own infrastructure under their data processing agreement
 
 ## Regional Infrastructure
