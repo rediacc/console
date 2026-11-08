@@ -8,8 +8,8 @@ tags:
 subcategory: platform
 order: 2
 language: ru
-sourceHash: "bb653747883615f5"
-sourceCommit: "c69b28b08afd5e7602afd1e8efe90785e6e36938"
+sourceHash: "29d62173c5cf044a"
+sourceCommit: "abc292b1b7ca5096423e098c12a9b23bdabda16b"
 ---
 
 Rediacc поставляет обновления CLI через два канала: **Stable** и **Edge**. Оба работают с одним и тем же продуктом, поэтому аккаунт, план и лимиты на них одинаковы. Каналы различаются только тем, как быстро релиз доходит до вас.

@@ -8,8 +8,8 @@ tags:
 subcategory: platform
 order: 3
 language: pt
-sourceHash: "c73d7300b75b57c4"
-sourceCommit: "c69b28b08afd5e7602afd1e8efe90785e6e36938"
+sourceHash: "271ee8a4a502eb02"
+sourceCommit: "abc292b1b7ca5096423e098c12a9b23bdabda16b"
 ---
 
 Quando cria uma conta Rediacc, escolhe uma região de dados. Todos os seus dados permanecem nessa região. Esta escolha é permanente e não pode ser alterada após o registo. Nenhum caminho de migração existe. Escolha com base em onde os seus dados precisam residir legalmente, não em onde estão os seus servidores atualmente.

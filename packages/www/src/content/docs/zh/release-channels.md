@@ -8,8 +8,8 @@ tags:
 subcategory: platform
 order: 2
 language: zh
-sourceHash: "bb653747883615f5"
-sourceCommit: "c69b28b08afd5e7602afd1e8efe90785e6e36938"
+sourceHash: "29d62173c5cf044a"
+sourceCommit: "abc292b1b7ca5096423e098c12a9b23bdabda16b"
 ---
 
 Rediacc 通过两个通道发布 CLI 更新：**Stable** 和 **Edge**。两个通道连接的是同一个产品，因此账户、计划和限制在两者上完全一致。区别只在于新版本多快到达您手上。

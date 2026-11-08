@@ -8,8 +8,8 @@ tags:
 subcategory: platform
 order: 2
 language: ko
-sourceHash: "bb653747883615f5"
-sourceCommit: "c69b28b08afd5e7602afd1e8efe90785e6e36938"
+sourceHash: "29d62173c5cf044a"
+sourceCommit: "abc292b1b7ca5096423e098c12a9b23bdabda16b"
 ---
 
 Rediacc는 CLI 업데이트를 두 가지 채널로 배포합니다: **Stable**과 **Edge**. 두 채널 모두 같은 제품에 연결되므로 계정, 플랜, 제한이 어느 채널에서나 동일합니다. 채널의 차이는 릴리스가 얼마나 빨리 도착하느냐뿐입니다.

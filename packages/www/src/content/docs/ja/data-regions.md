@@ -8,8 +8,8 @@ tags:
 subcategory: platform
 order: 3
 language: ja
-sourceHash: "c73d7300b75b57c4"
-sourceCommit: "c69b28b08afd5e7602afd1e8efe90785e6e36938"
+sourceHash: "271ee8a4a502eb02"
+sourceCommit: "abc292b1b7ca5096423e098c12a9b23bdabda16b"
 ---
 
 Rediaccのアカウントを作成するとき、データリージョンを選択します。全データはそのリージョンに保存されます。この選択は恒久的であり、登録後に変更することはできません。移行パスはありません。サーバーが現在どこにあるかではなく、データが法的にどこに保存される必要があるかに基づいて選択してください。
