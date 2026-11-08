@@ -787,7 +787,9 @@ def test_a_production_keys_run_counts_its_held_claims_apart_from_skips() -> None
     p = proof.Proof()
     proof.verb_keys(cast("proof.Lab", FakeLab()), p, bench=False)
     assert p.held
-    assert all(o.skipped for o in p.outcomes if "licence is issued" in o.claim)
+    licence = [o for o in p.outcomes if "licence is issued" in o.claim]
+    assert licence, "the licence claims were not recorded at all"
+    assert all(o.skipped for o in licence)
     assert not any(o.skipped for o in p.held)
 
 

@@ -141,7 +141,9 @@ def test_only_a_transient_scope_counts_as_the_backup():
     assert all("/run-" in path for path in parsed.scopes)
     if holder_cgroup is None:
         pytest.skip("cgroup v1: no unified path to compare, so the scope filter is not exercised")
-    assert holder_cgroup is not None  # pytest.skip is untyped here, so mypy does not narrow past it
+    # check:ci-python-types flagged the line below with the skip already in place: the
+    # gate's mypy resolves pytest without its stubs, so skip() does not narrow.
+    assert holder_cgroup is not None
     if not holder_cgroup.endswith(".scope") or "/run-" not in holder_cgroup:
         assert holder_cgroup not in parsed.scopes, "the holder outside run-*.scope was counted"
 
