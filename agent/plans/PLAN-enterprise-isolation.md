@@ -1,6 +1,6 @@
 # PLAN-enterprise-isolation: every Enterprise company gets its own Workers, database and buckets, and no production account Worker holds the licence signing key
 
-Status: proposed -- design settled in the operator talk of 2026-11-05, plan not yet reviewed (own Workers per company, one signer per region, release rings, manual removal, deploys both local and from GitHub)
+Status: executing -- promoted by operator 2026-11-08; design settled in the operator talk of 2026-11-05 (own Workers per company, one signer per region, release rings, manual removal, deploys both local and from GitHub)
 Depends-On: PLAN-product-domain-rename.md, PLAN-website-routing-and-mail.md#W1, PLAN-website-routing-and-mail.md#W8, PLAN-website-routing-and-mail.md#M3 -- company hosts and shared Workers come from the rename; W1 is the lookup writer `enterprise add` calls, W8 is the other edit of auth.ts, and M3 is the sender of the owner invitation
 Owner: d778be9d
 Priority: P1 -- the Enterprise offer does not exist without it, and the signing key leaves every account Worker here

@@ -1,6 +1,6 @@
 # PLAN-website-routing-and-mail: www.rediacc.com routes people to the right product host, and product mail sends from notify.rediacc.cloud
 
-Status: proposed -- design settled in the operator talk of 2026-11-05, plan not yet reviewed (region popup with a 5-second login forward, company lookup by email domain, apex 301, Public Suffix List, product mail on .cloud)
+Status: executing -- promoted by operator 2026-11-08; design settled in the operator talk of 2026-11-05 (region popup with a 5-second login forward, company lookup by email domain, apex 301, Public Suffix List, product mail on .cloud)
 Depends-On: PLAN-product-domain-rename.md#W3, PLAN-product-domain-rename.md#W4, PLAN-product-domain-rename.md#L5, PLAN-product-domain-rename.md#L6, PLAN-product-domain-rename.md#L8 -- W3 and W4 own the hosts in regions.json, well-known.env and every Wrangler config; L5, L6 and L8 put those hosts on Cloudflare
 Owner: d778be9d
 Priority: P1 -- every login reaches the product through this routing, and the mail sender moves off rediacc.com

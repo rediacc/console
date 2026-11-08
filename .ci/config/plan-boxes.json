@@ -1098,7 +1098,7 @@
       "done_sigs": []
     },
     "agent/plans/PLAN-enterprise-isolation.md": {
-      "status": "proposed",
+      "status": "executing",
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
@@ -1800,7 +1800,7 @@
       ]
     },
     "agent/plans/PLAN-product-domain-rename.md": {
-      "status": "proposed",
+      "status": "executing",
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
@@ -2926,7 +2926,7 @@
       ]
     },
     "agent/plans/PLAN-website-routing-and-mail.md": {
-      "status": "proposed",
+      "status": "executing",
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",

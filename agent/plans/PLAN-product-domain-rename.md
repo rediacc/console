@@ -1,6 +1,6 @@
 # PLAN-product-domain-rename: the product moves to rediacc.cloud, rediacc.com keeps the website, and Cloudflare and GitHub names drop their prefixes
 
-Status: proposed -- design settled in the operator talk of 2026-11-05, plan not yet reviewed (marketing on rediacc.com, product on rediacc.cloud, one shared Worker set per region, prefixes gone)
+Status: executing -- promoted by operator 2026-11-08; design settled in the operator talk of 2026-11-05 (marketing on rediacc.com, product on rediacc.cloud, one shared Worker set per region, prefixes gone)
 Depends-On: no-dep -- the first of three plans; PLAN-website-routing-and-mail.md and PLAN-enterprise-isolation.md build on its hosts and names
 Owner: d778be9d
 Priority: P1 -- every later plan builds on these hosts and names, and billing opens on the result
