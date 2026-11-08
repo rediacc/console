@@ -82,14 +82,16 @@ def test_targets_bench_resolves_own_and_two_foreign_buckets():
     assert t.own.name not in names
 
 
-def test_targets_stable_each_region_has_foreign_config_and_other_region_backup():
+def test_targets_stable_each_region_has_foreign_config_and_bench_backup():
+    # One cf-r2-backup-stable token scopes all three regional backup buckets, so the foreign
+    # backup bucket of a regional pair is the other channel's (bench), not another region's.
     found = probe_mod.targets("stable", None)
+    bench = probe_mod.targets("bench", None)[0].own.name
     assert [t.region for t in found] == ["eu", "us", "asia"]
     for t in found:
         assert t.own.name.startswith("backups-")
-        other = next(o for o in found if o.region != t.region)
-        assert {b.name for b in t.foreign} == {"configs-%s" % t.region, other.own.name}
-        assert t.own.name not in {b.name for b in t.foreign}
+        assert {b.name for b in t.foreign} == {"configs-%s" % t.region, bench}
+        assert not any(b.name == o.own.name for b in t.foreign for o in found)
     assert found[0].own.jurisdiction == "eu"
 
 
@@ -193,15 +195,15 @@ def test_sigv4_uses_jurisdiction_endpoint_for_eu():
 
     def transport(_method, url, body, _headers):
         urls.append(url)
-        return (403, b"") if "configs" in url or "backups-us" in url else (200, body)
+        return (403, b"") if "configs" in url or "backups-bench" in url else (200, body)
 
     out = io.StringIO()
     probe_mod.probe("stable", found, ENV, transport, out=out, now=NOW)
     assert urls
-    own_urls = [u for u in urls if "backups-us" not in u]
+    own_urls = [u for u in urls if "backups-bench" not in u]
     assert own_urls
     assert all(".eu.r2.cloudflarestorage.com/" in u for u in own_urls)
-    assert not any(".eu.r2.cloudflarestorage.com/" in u for u in urls if "backups-us" in u)
+    assert not any(".eu.r2.cloudflarestorage.com/" in u for u in urls if "backups-bench" in u)
 
 
 def test_lifecycle_transport_error_does_not_change_the_exit():

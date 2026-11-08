@@ -37,7 +37,10 @@ from rediacc_ci.drills import wire
 from rediacc_ci.ops import push_backup_credentials as pbc
 
 CHANNELS = pbc.TARGETS
-# Bench has no region, so its foreign backup bucket is the stable one of FOREIGN_BENCH_REGION; a regional pair is refused the backup bucket of the first other region.
+# The isolation the probe proves is between CHANNELS: one cf-r2-backup-stable token scopes all three regional backup buckets
+# (private/account/scripts/rotation/r2-backup-tokens.json), so a regional pair reaching another region's backup bucket is
+# by design. Bench has no region, so its foreign backup bucket is the stable one of FOREIGN_BENCH_REGION, and a regional
+# pair's foreign backup bucket is bench's.
 FOREIGN_BENCH_REGION = "us"
 SIGV4_REGION = "auto"
 PREFIX = "probe/scope-"
@@ -130,10 +133,7 @@ def targets(channel: str, regions: list[str] | None, root=None) -> list[Target]:
         if not isinstance(config, dict) or not config.get("name"):
             raise ConfigError("regions.json region %s has no r2.name" % region)
         jurisdiction = entry.get("r2Jurisdiction") or ""
-        others = [r for r in known if r != region]
-        foreign = [Bucket(config["name"], jurisdiction)]
-        if others:
-            foreign.append(_own(channel, others[0], root))
+        foreign = [Bucket(config["name"], jurisdiction), _own("bench", None, root)]
         out.append(Target(region, _own(channel, region, root), tuple(foreign)))
     return out
 
