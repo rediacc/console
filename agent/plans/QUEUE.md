@@ -91,7 +91,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 15 of 54 plans done, 860 of 1097 boxes done (78%).
+Promoted: 15 of 58 plans done, 869 of 1120 boxes done (77%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -149,6 +149,10 @@ Promoted: 15 of 54 plans done, 860 of 1097 boxes done (78%).
 | 52 | PLAN-product-domain-rename.md | 3/28 | 25 open |
 | 53 | PLAN-website-routing-and-mail.md | 0/20 | 20 open |
 | 54 | PLAN-enterprise-isolation.md | 0/34 | 34 open |
+| 55 | PLAN-renet-restart-cycle-defects.md | 5/6 | 1 open |
+| 56 | PLAN-drop-free-license-ip-prefix-hash.md | 4/6 | 2 open |
+| 57 | PLAN-stop-hook-retro-20261101.md | 0/4 | 4 open |
+| 58 | PLAN-plan-compaction-bindings.md | 0/7 | 7 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-backup-program.md -- operator 2026-10-20 ("move agent/plans/PLAN-backup-program.md to the promoted"): one backup program across renet, account, CLI and shared, ending in a live hostinger to eu R2 backup; P1; Depends-On PLAN-shell-sandbox-readonly-view.md and PLAN-account-vm-check.md (done 2026-10-20); released to writers by operator /ask ASKED:2026-10-20T15:14Z ("edit writers to go NOW")
@@ -205,23 +209,23 @@ Promoted: 15 of 54 plans done, 860 of 1097 boxes done (78%).
 52. agent/plans/PLAN-product-domain-rename.md -- operator 2026-11-08 ("let us also promote the three tiers plans" then /writers-now): approves the 2026-11-05 tiers design for execution
 53. agent/plans/PLAN-website-routing-and-mail.md -- operator 2026-11-08 ("let us also promote the three tiers plans" then /writers-now): approves the 2026-11-05 tiers design for execution
 54. agent/plans/PLAN-enterprise-isolation.md -- operator 2026-11-08 ("let us also promote the three tiers plans" then /writers-now): approves the 2026-11-05 tiers design for execution
+55. agent/plans/PLAN-renet-restart-cycle-defects.md -- operator 2026-11-08 ("promote from the Generated review"): code done, only hostinger L1 is open
+56. agent/plans/PLAN-drop-free-license-ip-prefix-hash.md -- operator 2026-11-08 ("promote from the Generated review"): code merged in #602, the bench proof is open
+57. agent/plans/PLAN-stop-hook-retro-20261101.md -- operator 2026-11-08 ("promote from the Generated review")
+58. agent/plans/PLAN-plan-compaction-bindings.md -- operator 2026-11-08 ("promote from the Generated review"): refresh its Current state section against the tree first; 8 _done plans have open boxes now, not 7
 
 ## Generated
 
 <!-- queue:generated:begin -->
 1. agent/plans/PLAN-agent-tree-lifecycle.md -- P1, mostly-done, in progress (6 of 7 boxes ticked)
-2. agent/plans/PLAN-drop-free-license-ip-prefix-hash.md -- P1, executing, in progress (4 of 6 boxes ticked)
-3. agent/plans/PLAN-haiku-model-routing.md -- P1, executing, in progress (11 of 20 boxes ticked)
-4. agent/plans/PLAN-renet-restart-cycle-defects.md -- P1, approved, in progress (5 of 6 boxes ticked)
-5. agent/plans/PLAN-stop-hook-refactor-enforcement.md -- P1, executing, in progress (16 of 17 boxes ticked)
-6. agent/plans/PLAN-ci-quick-cpu-scheduling.md -- P2, active, in progress (2 of 5 boxes ticked)
-7. agent/plans/PLAN-backup-toc-exact-opt-in.md -- P3, proposed, in progress (1 of 10 boxes ticked)
-8. agent/plans/PLAN-deletion-budget.md -- P3 (operator), draft, not started
-9. agent/plans/PLAN-fix-upgrade-drills-flat-daemon-bringup.md -- P1, executing, not started
-10. agent/plans/PLAN-plan-compaction-bindings.md -- P1, approved, not started
-11. agent/plans/PLAN-first-release-checks.md -- P2, approved, not started
-12. agent/plans/PLAN-stop-hook-retro-20261101.md -- P2, ready, not started
-13. agent/plans/PLAN-lessons-registry-followups.md -- P3, draft, not started
-14. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
-15. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
+2. agent/plans/PLAN-haiku-model-routing.md -- P1, executing, in progress (11 of 20 boxes ticked)
+3. agent/plans/PLAN-stop-hook-refactor-enforcement.md -- P1, executing, in progress (16 of 17 boxes ticked)
+4. agent/plans/PLAN-ci-quick-cpu-scheduling.md -- P2, active, in progress (2 of 5 boxes ticked)
+5. agent/plans/PLAN-backup-toc-exact-opt-in.md -- P3, proposed, in progress (1 of 10 boxes ticked)
+6. agent/plans/PLAN-deletion-budget.md -- P3 (operator), draft, not started
+7. agent/plans/PLAN-fix-upgrade-drills-flat-daemon-bringup.md -- P1, executing, not started
+8. agent/plans/PLAN-first-release-checks.md -- P2, approved, not started
+9. agent/plans/PLAN-lessons-registry-followups.md -- P3, draft, not started
+10. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
+11. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
 <!-- queue:generated:end -->

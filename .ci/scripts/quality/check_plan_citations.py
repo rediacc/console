@@ -815,15 +815,58 @@ def absent_submodules(root):
     return sorted(out)
 
 
+#: THE TICKED-BOX CORRECTION. A ticked box's text is signed by `check:ci-plan-boxes` and cannot be reworded, yet the code it cites moves on (a file split, a deletion the box's own work made) and a gate it named can turn out to carry another name. Ticking flips the bracket, which makes the line an addition again, so the gate judged a pointer that was true when written. The plans' own correction convention already answers this: a continuation line `(corrected <date>, <who>) <token> now at <replacement>` beneath the box. The gate honours exactly that form, and only on a TICKED box line, only for the token named, and only when the replacement itself resolves, so a correction cannot excuse anything the gate would not accept as a citation.
+CORRECTION_RE = re.compile(r"\(corrected\b[^)]*\)[^\n]*?(\S+) now at (\S+)")
+_TICKED_BOX_RE = re.compile(r"^\s*[-*+] \[[xX]\]")
+
+
+def _bare(tok):
+    """A correction token without the markdown and sentence punctuation around it."""
+    return tok.strip("`'\".,;:()")
+
+
+def corrections_for(lines, idx):
+    """{old token: replacement} from the `(corrected ...) X now at Y` lines beneath the TICKED box at 0-based `idx`, else {}."""
+    if idx >= len(lines) or not _TICKED_BOX_RE.match(lines[idx]):
+        return {}
+    box_indent = _indent(lines[idx])
+    out = {}
+    for raw in lines[idx + 1 :]:
+        if raw.strip() and _indent(raw) <= box_indent:
+            break
+        for m in CORRECTION_RE.finditer(raw):
+            out[_bare(m.group(1))] = _bare(m.group(2))
+    return out
+
+
+def corrected(root, kind, token, fixes):
+    """True when a correction line re-points `token` at a replacement of the same kind that resolves today."""
+    new = fixes.get(token)
+    if not new:
+        return False
+    return any(k == kind and not unresolved(root, k, t)[0] for k, t in citations(new)) and any(
+        k == kind for k, _t in citations(new)
+    )
+
+
 def problems_for(root, rows, skip_prefixes=()):
     """[str] -- one finding per unresolvable citation on an added line."""
-    out, fences = [], {}
+    out, fences, texts = [], {}, {}
     for rel, lineno, text in rows:
         if rel not in fences:
             fences[rel] = fenced_lines(root, rel)
+            try:
+                texts[rel] = (pathlib.Path(root) / rel).read_text(encoding="utf-8").split("\n")
+            except OSError:
+                texts[rel] = []
         if lineno in fences[rel]:
             continue
+        fixes = corrections_for(texts[rel], lineno - 1)
+        # The correction line is itself an added line that names the old token; it is excused by the same replacement test.
+        fixes.update({_bare(a): _bare(b) for a, b in CORRECTION_RE.findall(text)})
         for kind, token in citations(text):
+            if fixes and corrected(root, kind, token, fixes):
+                continue
             # Only a PATH citation can point into a submodule. An object or gate token that happens to start with those characters is not excused.
             if kind in ("fileline", "plan") and any(
                 token.startswith(p + "/") for p in skip_prefixes
@@ -1135,6 +1178,77 @@ def selftest(root, drift=False):
         "CONTROL: a file:line on an open box is still judged",
         any(k == "fileline" for k, _t in citations("- [ ] T1: see package.json:1 first")),
     )
+    # THE TICKED-BOX CORRECTION, both directions. See CORRECTION_RE. A fixture root, so the controls do not depend on what the live plans say.
+
+    with tempfile.TemporaryDirectory() as fxd:
+        fx = pathlib.Path(fxd)
+        (fx / "package.json").write_text(
+            json.dumps({"scripts": {"check:ci-real-zzz": "true"}}), encoding="utf-8"
+        )
+        (fx / "lib.txt").write_text("a\nb\n", encoding="utf-8")
+
+        def fx_problems(plan_lines):
+            (fx / "agent" / "plans").mkdir(parents=True, exist_ok=True)
+            (fx / "agent" / "plans" / "PLAN-fx.md").write_text(
+                "\n".join(plan_lines) + "\n", encoding="utf-8"
+            )
+            return problems_for(fx, [("agent/plans/PLAN-fx.md", 1, plan_lines[0])])
+
+        tick = "- [x] T1: run `check:ci-gone-zzz` and see lib.txt:99"
+        gone_fix = "    (corrected 2026-11-08, fx) check:ci-gone-zzz now at check:ci-real-zzz"
+        line_fix = "    (corrected 2026-11-08, fx) lib.txt:99 now at lib.txt:2"
+        ck(
+            "a dead gate and a dead file:line on a ticked box are judged with no correction",
+            len(fx_problems([tick])) == 2,
+        )
+        ck(
+            "a `(corrected ...) X now at Y` line beneath a TICKED box excuses X when Y resolves",
+            fx_problems([tick, gone_fix, line_fix]) == [],
+        )
+        ck(
+            "CONTROL: a correction whose replacement does NOT resolve excuses nothing",
+            len(
+                fx_problems(
+                    [tick, "    (corrected 2026-11-08, fx) check:ci-gone-zzz now at check:ci-nope-zzz"]
+                )
+            )
+            == 2,
+        )
+        ck(
+            "CONTROL: a correction names one token and excuses ONLY that token",
+            len(fx_problems([tick, gone_fix])) == 1,
+        )
+        ck(
+            "CONTROL: the same correction beneath an OPEN box or a prose line excuses nothing",
+            len(fx_problems(["- [ ] T1: see lib.txt:99", line_fix])) == 1
+            and len(fx_problems(["prose sees lib.txt:99", line_fix])) == 1,
+        )
+        ck(
+            "the correction line itself, as an added row, is silent when its replacement resolves",
+            fx_problems([gone_fix.strip()]) == [],
+        )
+        ck(
+            "CONTROL: the correction line itself is judged (old token and dead replacement both) when its replacement does not resolve",
+            len(
+                fx_problems(
+                    ["(corrected 2026-11-08, fx) check:ci-gone-zzz now at check:ci-nope-zzz"]
+                )
+            )
+            == 2,
+        )
+        ck(
+            "CONTROL: a correction line excuses only the token it names, not another dead one beside it",
+            len(
+                fx_problems(
+                    ["(corrected 2026-11-08, fx) check:ci-gone-zzz now at check:ci-real-zzz, lib.txt:99"]
+                )
+            )
+            == 1,
+        )
+        ck(
+            "CONTROL: a line without the `(corrected` marker is not a correction",
+            len(fx_problems([tick, "    note: check:ci-gone-zzz now at check:ci-real-zzz"])) == 2,
+        )
     # THE FINGERPRINT EXEMPTION, both directions: the marker is what licenses it, so the same token without the marker must still be judged. See FINGERPRINT_RE.
     ck(
         "a hex run behind a `fingerprint:` marker is NOT treated as an object",

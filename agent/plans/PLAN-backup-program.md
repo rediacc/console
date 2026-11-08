@@ -60,7 +60,7 @@ Every live claim in this plan (bucket contents, worker bindings, token scopes, p
 
 | Defect | Evidence | Box |
 |---|---|---|
-| A restore reuses the source GUID and renames over an unmounted source image | private/renet/cmd/renet/backup_restore.go:259-305, packages/cli/src/commands/backup.ts:606-620 | E1, K5 |
+| A restore reuses the source GUID and renames over an unmounted source image | private/renet/cmd/renet/backup_restore.go:259-305, packages/cli/src/commands/backup.ts:355-368 | E1, K5 |
 | Retention keep set and newest-kept floor are per lineage, so forks or a second machine prune another stream | backup-gc.service.ts retentionKeepSet | E2, K3 |
 | Commit accepts a missing or foreign parent; restore fails later | backup-storage.service.ts commitManifest | E3 |
 | `restore --at` picks another fork's or machine's snapshot | the unscoped lineage pick in packages/cli/src/commands/backup.ts before 23808fbd5 (E4); E4 scoped it to the stream at packages/cli/src/commands/backup-restore-chunk.ts:225-238 | E4 |
@@ -309,6 +309,7 @@ Every live claim in this plan (bucket contents, worker bindings, token scopes, p
     (ticked) 2026-10-25T11:07:12Z by d778be9d: commit:c6e5863aa1a03e (renet 606d9c5c, 6e3d13da): H7 per the renet follow-up writer; renet build linux/windows/darwin rc=0, go vet rc=0, go test ./cmd/renet/... ./pkg/... with no failure (lead rerun)
 - [x] H8: renet RustFS workers without rclone: replace ensureRclone/renderEnsureRclone/ConfigureWorker(s) (private/renet/pkg/infra/docker/service.go:386-752), pkgset.Rclone (private/renet/pkg/infra/pkgset/pkgset.go:348-353), ops rustfs configure-worker(s) (private/renet/cmd/renet/ops_rustfs.go:147-172) and the image-bake hook (private/renet/cmd/renet/image_build_command.go:113, private/renet/pkg/infra/image/one_shot_builder.go:84) with an S3 client path or delete them; update .ci/rediacc_ci/infra/vm_bake_key.py:93-95. Accept: RustFS e2e suites 15/19/20 green.
     (corrected 2026-11-07, preflight) the cited configure-worker(s) lines of ops_rustfs.go no longer exist; configure-worker(s) was removed in f52520576, and the cited vm_bake_key.py lines are now at .ci/rediacc_ci/infra/vm_bake_key.py:101
+    (corrected 2026-11-08, citations) private/renet/cmd/renet/ops_rustfs.go:147-172 now at private/renet/cmd/renet/ops_rustfs.go:146
     (ticked) 2026-11-07T17:45:19Z by d778be9d: commit:9386fdfba6 RustFS suites 19 (18/18), 15 (9/9) and 20 (ubuntu build 2/2) green on the local fleet
 - [x] H9: renet dead code: GeneralSettings RCLONE_* and the Storage struct (private/renet/pkg/config/config.go:255-284), ValidateStorage/GetRcloneConfigString/GetRcloneEnvVars (all in private/renet/pkg/config/config.go, since removed), PathTypeRclone (private/renet/pkg/toolexec/ssh.go:89-150), rclone progress filtering (private/renet/pkg/functions/executor_local.go:810-839), the VAULT_PARSING.md section. Accept: deadcode gate rc=0.
     (ticked) 2026-10-25T11:07:14Z by d778be9d: commit:c6e5863aa1a03e (renet 606d9c5c, 6e3d13da): H9 per the renet follow-up writer; renet build linux/windows/darwin rc=0, go vet rc=0, go test ./cmd/renet/... ./pkg/... with no failure (lead rerun)

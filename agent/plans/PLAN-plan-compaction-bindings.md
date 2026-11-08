@@ -4,7 +4,7 @@ Status: approved -- operator 2026-10-03: "The planning tools/system should not a
 Updated: 2026-11-05 -- reread by d778be9d: still queued, no box changed
 Depends-On: no-dep -- reuses wl_plandeps.Graph and the worklist store; no plan prerequisite
 Owner: d778be9d
-Priority: P1 -- seven plans already sit compacted in _done/ with open boxes, and their worklist items surfaced as unowned questions to the operator on 2026-10-03
+Priority: P1 -- eight plans already sit compacted in _done/ with open boxes, and their worklist items surfaced as unowned questions to the operator on 2026-10-03
 Concurrency: parallel -- disjoint file ownership per box
 Owns: .claude/hooks/stop/wl_planbind.py, .claude/hooks/stop/wl_planrec.py, .ci/scripts/quality/check_plan_folders.py, .ci/scripts/quality/check_plan_bindings.py, .claude/rediacc_hooks/tests/test_wl_planbind.py, .claude/hooks/stop/worklist_messages.py, package.json, scripts/ci-runner/manifest.ts, scripts/ci-runner/gates.lock.json, .github/workflows/ci-quality.yml, CLAUDE.md, docs/agent-reference/TRAPS.md
 
@@ -17,11 +17,11 @@ A plan cannot be compacted (`--plan-compact`, with or without `--park`), moved t
 3. an unfinished plan that depends on it (`Depends-On:` or a task ref, through `wl_plandeps.Graph`);
 4. an open box in another plan that cites one of its boxes.
 
-## Current state (verified 2026-10-03 on 1003-1)
+## Current state (verified 2026-11-08 on 1104-1)
 
-- `wl_planrec.compact` (`.claude/hooks/stop/wl_planrec.py:1550`) refuses a dirty path, an existing record, and open boxes unless `--park`; it reads nothing outside the file.
-- `check_plan_folders.move` (`.ci/scripts/quality/check_plan_folders.py:459`) refuses a stub, a non-file and a terminal folder without a ledger row; `sweep` (`:399`) deletes past retention. Neither reads bindings.
-- Seven `_done/` plans carry open boxes (`.ci/config/plan-boxes.json`): PLAN-ci-prebaked-vm-images (3 open), PLAN-ci-time-budget (2), PLAN-fix-console-ci-5day-failure (13, cited 58 times in agent/worklist/d778be9d.jsonl), PLAN-plan-file-lifecycle (1), PLAN-renet-ceph-gpu-non-apt (1), PLAN-renet-obs-mirror (3), PLAN-stop-hook-plan-agent-check-declined (5). On 2026-10-03 the worklist items bound to three of them reached the operator as "no live box: keep or drop?".
+- `wl_planrec.compact` (`.claude/hooks/stop/wl_planrec.py:1718`) refuses a dirty path, an existing record, and open boxes unless `--park`; it reads nothing outside the file.
+- `check_plan_folders.move` (`.ci/scripts/quality/check_plan_folders.py:788`) refuses a stub, a non-file and a terminal folder without a ledger row; `sweep` (`:560`) deletes past retention. Neither reads bindings.
+- Eight `_done/` plans carry open boxes (box parser `wl_planrec.open_boxes`, 2026-11-08): PLAN-breakpoint-secret-shape (2 open), PLAN-ci-prebaked-vm-images (3), PLAN-ci-time-budget (2), PLAN-ci-watch-enforcement (6), PLAN-config-networkid-sync (8), PLAN-renet-ceph-gpu-non-apt (1), PLAN-renet-fetch-hardening (7), PLAN-renet-obs-mirror (3). Of the 2026-10-03 seven, PLAN-fix-console-ci-5day-failure, PLAN-plan-file-lifecycle and PLAN-stop-hook-plan-agent-check-declined are gone (swept past retention, 3fd6671165), and four others joined. `agent/worklist/d778be9d.jsonl` still cites them (breakpoint-secret-shape 3 lines, ci-watch-enforcement 3, config-networkid-sync 3, renet-fetch-hardening 5, ci-prebaked-vm-images 17, ci-time-budget 22, renet-ceph-gpu-non-apt 12, renet-obs-mirror 11). On 2026-10-03 the worklist items bound to three of the earlier seven reached the operator as "no live box: keep or drop?".
 
 ## Design
 
