@@ -247,6 +247,36 @@ def read_is_not_write_cases(world, ledger):
             True,
         ),
         (
+            "review 9d3a7308.1: a write-mode open nested under a read call",
+            _py("open('%s', 'a').read()" % ledger),
+            True,
+        ),
+        (
+            "review 9d3a7308.1: a write-mode open as the argument of a read call",
+            _py("import json\njson.load(open('%s', 'a+'))" % ledger),
+            True,
+        ),
+        (
+            "review 9d3a7308.1: a named ledger path truncated through a nested open",
+            _py("p = '%s'\ndata = open(p, 'w+').read()" % ledger),
+            True,
+        ),
+        (
+            "review 9d3a7308.1: a named ledger path truncated inside json.load",
+            _py("import json\np = '%s'\nrows = json.load(open(p, 'w'))" % ledger),
+            True,
+        ),
+        (
+            "review 9d3a7308.2: the mode passed through a dict unpacking",
+            _py("fh = open('%s', **{'mode': 'a'})\nfh.write('{}')" % ledger),
+            True,
+        ),
+        (
+            "review 9d3a7308.2: the mode passed through **kwargs",
+            _py("kw = {'mode': 'a'}\nopen('%s', **kw).write('{}')" % ledger),
+            True,
+        ),
+        (
             "a message heredoc beside a heredoc appending to the ledger",
             msg + _py("open('%s', 'a').write('{}')" % ledger),
             True,

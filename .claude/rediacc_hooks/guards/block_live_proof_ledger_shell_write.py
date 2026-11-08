@@ -193,6 +193,8 @@ def _read_only_open(call):
         isinstance(func.value, ast.Name) and func.value.id in ("io", "builtins", "codecs")
     )
     position = 0 if path_method else 1
+    if any(k.arg is None for k in call.keywords):
+        return False  # `**kwargs` may carry a write mode (review 9d3a7308.2)
     mode = next((k.value for k in call.keywords if k.arg == "mode"), None)
     if mode is None and len(call.args) > position:
         mode = call.args[position]
@@ -219,6 +221,16 @@ def _flow(expr):
         node = stack.pop()
         yield node
         if _read_value(node):
+            # The path inside a read stays behind, but a write-capable open nested in it,
+            # as in `open(<ledger>, 'a').read()`, is still walked (review 9d3a7308.1).
+            stack.extend(
+                c
+                for c in ast.walk(node)
+                if c is not node
+                and isinstance(c, ast.Call)
+                and _call_name(c.func) == "open"
+                and not _read_only_open(c)
+            )
             continue
         skip = _searched_text(node)
         stack.extend(c for c in ast.iter_child_nodes(node) if not any(c is s for s in skip))
