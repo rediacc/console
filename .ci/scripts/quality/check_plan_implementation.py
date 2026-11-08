@@ -287,7 +287,7 @@ CONTEXT_MERGE = "merge"
 def pr_event_state(event_path=None, event_name=""):
     """(state, why): how the Actions event reads, one of "ready", "draft", "other" or "unreadable".
 
-    FAIL CLOSED. "ready" is a pull_request payload whose `draft` is the boolean False; "draft" is one whose `draft` is True; "other" is a readable payload that is not a pull_request (a push or cron event). "unreadable" is every pull_request event whose payload cannot be judged: the file is missing, is not JSON, or its `pull_request` object has no boolean `draft` (a payload that moved its field must not turn a ready PR into a push). A path that cannot be read is a pull_request event only when `event_name` (GITHUB_EVENT_NAME) says so; a push event with a broken payload stays "other".
+    FAIL CLOSED. "ready" is a pull_request payload whose `draft` is the boolean False; "draft" is one whose `draft` is True; "other" is a readable payload that is not a pull_request (a push or cron event). "unreadable" is every pull_request event whose payload cannot be judged: no payload path, a file that is missing or not JSON, a payload with no `pull_request` object, or a `pull_request` object with no boolean `draft` (a payload that moved its field must not turn a ready PR into a push). Each of those is a pull_request event only when `event_name` (GITHUB_EVENT_NAME) says so, or, for the no-`draft` case, when no event name is given; a named push or cron event, and a local run with no path and no name, stay "other".
     """
     path = event_path if event_path is not None else os.environ.get("GITHUB_EVENT_PATH", "")
     is_pr_name = str(event_name or "").startswith("pull_request")
