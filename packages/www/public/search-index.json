@@ -2341,7 +2341,7 @@
   {
     "id": "search-4457",
     "content": "Fork-only mode (default)",
-    "body": "By default, the server runs in fork-only mode: write tools (repo_up, repo_down, repo_delete, backup_push, backup_pull, term_exec) can only operate on fork repositories. Agents cannot touch grand (original) repositories. By design. Per-repo secrets are CLI-only by design. repo_secret_set and repo_secret_unset are intentionally not exposed as MCP tools. Writes require a --current <previous-value> precondition (or --rotate-secret to acknowledge an unverified rotation), and that ceremony needs human eyes-on. Agents that need to suggest a secret rotation should call repo_secret_get to confirm the digest, then relay the operator-facing CLI command to the user via the structured next.options[].run field in the JSON error envelope. See AI Agent Safety for the full pattern, and Repositories § Secrets for the user-facing how-to. To allow an agent to modify grand repos, export REDIACC_ALLOW_GRAND_REPO in your terminal before starting the agent that hosts the MCP server: # or 'repo1,repo2,repo3' (whitespace around entries is ignored), or '*' for all repos claude # or cursor, gemini, etc. The override is verified against the process ancestry: it only counts when it was already present in the environment of the agent process itself, which means you exported it before the agent (and the MCP server it spawned) started. An agent cannot grant itself access by setting the variable mid-session. There is deliberately no server flag for this: a flag in the MCP server arguments carries no proof of who put it there, while the ancestry check does. Machine-level access (such as term connect -m <machine> without a repo) still requires *; a list of repo names does not unlock it.",
+    "body": "By default, the server runs in fork-only mode: write tools (repo_up, repo_down, repo_delete, backup_push, backup_pull, term_exec) can only operate on fork repositories. Agents cannot touch grand (original) repositories. By design. Per-repo secrets are CLI-only by design. repo_secret_set and repo_secret_unset are intentionally not exposed as MCP tools. Writes require a --current <previous-value> precondition (or --rotate-secret to acknowledge an unverified rotation), and that ceremony needs human eyes-on. Agents that need to suggest a secret rotation should call repo_secret_get to confirm the digest, then relay the operator-facing CLI command to the user via the structured next.options[].run field in the JSON error envelope. See AI Agent Safety for the full pattern, and Repositories § Secrets for the user-facing how-to. To allow an agent to modify grand repos, export REDIACC_ALLOW_GRAND_REPO in your terminal before starting the agent that hosts the MCP server: # or 'repo1,repo2,repo3' (whitespace around entries is ignored), or '*' for all repos claude # or cursor, gemini, etc. The override is verified against the process ancestry: it only counts when it was already present in the environment of the agent process itself, which means you exported it before the agent (and the MCP server it spawned) started. An agent cannot grant itself access by setting the variable mid-session. There is deliberately no server flag for this: a flag in the MCP server arguments carries no proof of who put it there, while the ancestry check does. Machine-level access (such as term connect <machine> without a repo) still requires *; a list of repo names does not unlock it.",
     "excerpt": "By default, the server runs in fork-only mode: write tools (repo_up, repo_down, repo_delete, backup_push, backup_pull, term_exec) can only operate on...",
     "category": "Documentation",
     "page": "/en/docs/ai-agents-mcp",
@@ -6701,7 +6701,7 @@
   {
     "id": "search-4829",
     "content": "Available Regions",
-    "body": "| Region | Location | Domain | |---|---|---| | Europe (EU) | Frankfurt, Germany | eu.rediacc.cloud | | United States (US) | Virginia, USA | us.rediacc.cloud | | Asia Pacific | Tokyo, Japan | asia.rediacc.cloud | The product runs on these rediacc.cloud domains. All documentation and the marketing site live on www.rediacc.com, which sends you to the right region from its region picker. At sign-up, the picker suggests a region from your location and you confirm or change it. At login, it forwards you to your region after a short countdown that you can cancel or change. If your company has its own deployment, the picker's \"Enterprise customer?\" option takes you there from your company's email domain. Only the domain is sent, never your full address.",
+    "body": "| Region | Location | Domain | |---|---|---| | Europe (EU) | Frankfurt, Germany | eu.rediacc.cloud | | United States (US) | Virginia, USA | us.rediacc.cloud | | Asia Pacific | Tokyo, Japan | asia.rediacc.cloud | The product runs on these rediacc.cloud domains. All documentation and the marketing site live on www.rediacc.com, which sends visitors to the right region from its region picker. At sign-up, the picker suggests a region from the visitor's location, which can be confirmed or changed. At login, it forwards the visitor to the right region after a short countdown that can be cancelled or changed. If a company has its own deployment, the picker's \"Enterprise customer?\" option leads there from the company's email domain. Only the domain is sent, never the full address.",
     "excerpt": "| Region | Location | Domain | |---|---|---| | Europe (EU) | Frankfurt, Germany | eu.rediacc.cloud | | United States (US) | Virginia, USA | us.rediacc...",
     "category": "Documentation",
     "page": "/en/docs/data-regions",
@@ -12649,7 +12649,7 @@
   {
     "id": "search-5345",
     "content": "Release Channels",
-    "body": "Rediacc ships CLI updates through two channels: Stable and Edge. Both connect to the same product, so an account, its plan and its limits are identical on either one. The channels differ only in how soon a release reaches you.",
+    "body": "Rediacc ships CLI updates through two channels: Stable and Edge. Both connect to the same product, so an account, its plan and its limits are identical on either one. The channels differ only in how soon a release reaches an installation.",
     "excerpt": "Rediacc ships CLI updates through two channels: Stable and Edge. Both connect to the same product, so an account, its plan and its limits are identica...",
     "category": "Documentation",
     "page": "/en/docs/release-channels",
@@ -12660,8 +12660,8 @@
   {
     "id": "search-5346",
     "content": "Stable Channel",
-    "body": "Stable is the default. A release reaches it only after sitting on Edge for 7 days with no reported issues. Recommended when you prefer a conservative upgrade cadence Deployed after 7 days of testing on Edge Hotfixes can be pushed directly when critical",
-    "excerpt": "Stable is the default. A release reaches it only after sitting on Edge for 7 days with no reported issues. Recommended when you prefer a conservative...",
+    "body": "Stable is the default. A release reaches it only after sitting on Edge for 7 days with no reported issues. Recommended when a conservative upgrade cadence is preferred Deployed after 7 days of testing on Edge Hotfixes can be pushed directly when critical",
+    "excerpt": "Stable is the default. A release reaches it only after sitting on Edge for 7 days with no reported issues. Recommended when a conservative upgrade cad...",
     "category": "Documentation",
     "page": "/en/docs/release-channels",
     "fragment": "stable-channel",
@@ -12684,8 +12684,8 @@
   {
     "id": "search-5348",
     "content": "One Product, Two Channels",
-    "body": "Your account lives in your data region on eu.rediacc.cloud, us.rediacc.cloud or asia.rediacc.cloud, whichever channel you run. Switching channels never touches your account, your data or your subscription. For regions, see Data Regions.",
-    "excerpt": "Your account lives in your data region on eu.rediacc.cloud, us.rediacc.cloud or asia.rediacc.cloud, whichever channel you run. Switching channels neve...",
+    "body": "An account lives in its data region on eu.rediacc.cloud, us.rediacc.cloud or asia.rediacc.cloud, whichever channel runs. Switching channels never touches the account, its data or its subscription. For regions, see Data Regions.",
+    "excerpt": "An account lives in its data region on eu.rediacc.cloud, us.rediacc.cloud or asia.rediacc.cloud, whichever channel runs. Switching channels never touc...",
     "category": "Documentation",
     "page": "/en/docs/release-channels",
     "fragment": "one-product-two-channels",
@@ -12744,8 +12744,8 @@
   {
     "id": "search-5353",
     "content": "CLI Channel Management",
-    "body": "The CLI uses whichever channel you configured at install. To switch: rdc update --channel edge # Switch to Edge rdc update --channel stable # Switch to Stable",
-    "excerpt": "The CLI uses whichever channel you configured at install. To switch: rdc update --channel edge # Switch to Edge rdc update --channel stable # Switch t...",
+    "body": "The CLI uses whichever channel was configured at install. To switch: rdc update --channel edge # Switch to Edge rdc update --channel stable # Switch to Stable",
+    "excerpt": "The CLI uses whichever channel was configured at install. To switch: rdc update --channel edge # Switch to Edge rdc update --channel stable # Switch t...",
     "category": "Documentation",
     "page": "/en/docs/release-channels",
     "fragment": "cli-channel-management",
