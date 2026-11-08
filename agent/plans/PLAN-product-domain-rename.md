@@ -154,8 +154,9 @@ M1 merges with these boxes open, so the PR body carries `Operational-Reason: hos
 
 ### Bench
 
-- [ ] L5 [live] Bench on the new names: clone `account-db-bench`, copy `rediacc-configs-bench` and `rediacc-backups-bench` to rehearse the tool, deploy stub, proxy, account on `bench.rediacc.cloud`, re-apply bench WAF, edit the bench configs. Proves the binding cycle, the Durable Object replay, the container app and a custom domain on the new zone. Old bench objects go last.
+- [x] L5 [live] Bench on the new names: clone `account-db-bench`, copy `rediacc-configs-bench` and `rediacc-backups-bench` to rehearse the tool, deploy stub, proxy, account on `bench.rediacc.cloud`, re-apply bench WAF, edit the bench configs. Proves the binding cycle, the Durable Object replay, the container app and a custom domain on the new zone. Old bench objects go last.
   Accept: `PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_proxy --target bench --smoke-only` rc 0 and `./rdc.sh --config eu-bench subscription status` rc 0.
+    (ticked) 2026-11-08T21:57:21Z by d778be9d: commit:1a984268fa bench config on bench.rediacc.cloud; live 2026-11-08: deploy_proxy --target bench --smoke-only rc 0 (health 200, server-info 401, ready 200 on 7c0935d6), ./rdc.sh --config eu-bench subscription status rc 0 (BUSINESS active), npm run login:bench rc 0 with remote connected; D1 clone 8850/8850 rows; configs-bench 79 objects and backups-bench 1398 objects verified; old bench objects untouched
 - [ ] LP-bench [live] Fresh bench receipts after L5. This lifts the edge and stable hold of ruling 4.
   Accept: live-proof bench account-smoke
 
