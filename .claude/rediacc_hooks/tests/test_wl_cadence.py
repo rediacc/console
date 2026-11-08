@@ -132,6 +132,20 @@ assert not wl_admit._is_operator_turn(
 )
 assert not wl_admit._is_operator_turn({"type": "user", "isMeta": True, "message": {"content": "hi"}})
 assert wl_admit._is_operator_turn({"type": "user", "message": {"content": "go"}})
+# A background task's notice and a compaction summary are the harness, in a string or in text blocks.
+assert not wl_admit._is_operator_turn(
+    {"type": "user", "message": {"content": "<task-notification>\\n<task-id>b1</task-id>"}}
+)
+assert not wl_admit._is_operator_turn(
+    {"type": "user", "message": {"content": [{"type": "text", "text": "<task-notification> x"}]}}
+)
+assert not wl_admit._is_operator_turn(
+    {"type": "user", "message": {"content": "This session is being continued from a previous conversation that ran out"}}
+)
+assert wl_admit._is_operator_turn(
+    {"type": "user", "message": {"content": [{"type": "text", "text": "[Request interrupted by user]"}]}}
+)
+assert wl_admit._is_operator_turn({"type": "user", "message": {"content": "what is a <task-notification>?"}})
 print("OK")
 """
 

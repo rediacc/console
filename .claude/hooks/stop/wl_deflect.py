@@ -59,12 +59,10 @@ _CORROBORATION_RE = re.compile(
 
 
 def _is_operator_turn(rec):
-    """True for a record that is the OPERATOR speaking, and nothing else. Mirrors wl_admit._is_operator_turn."""
-    if rec.get("type") != "user":
-        return False
-    content = (rec.get("message") or {}).get("content")
-    blocks = content if isinstance(content, list) else []
-    return not any(isinstance(b, dict) and b.get("type") == "tool_result" for b in blocks)
+    """True for a record that is the OPERATOR speaking, and nothing else: wl_admit's one definition. The copy that stood here also counted hook feedback (`isMeta`), task notifications and the compaction summary as the operator."""
+    import wl_admit
+
+    return wl_admit._is_operator_turn(rec)
 
 
 def _turn_text_and_commands(path):
