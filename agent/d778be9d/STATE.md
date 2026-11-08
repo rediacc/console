@@ -1,24 +1,24 @@
-## SESSION d778be9d 2026-11-08T17:29:58Z
+## SESSION d778be9d 2026-11-08T17:52:06Z
 
-# STATE d778be9d (2026-11-08T17:35Z, branch 1104-1, effort smart)
+# STATE d778be9d (2026-11-08T18:55Z, branch 1104-1, effort smart)
 
 ## Big pieces
-- PLAN-product-domain-rename.md: batch landed (picks, X1 3397bcb37a, X2 990a3d9f28 + 8197bd2f + b5caf6b8dc, X3 9900c15aae, C17 09fc0a504e); residue writer running; then regenerate, one gate run, box ticks, W11, L4.
-- PLAN-website-routing-and-mail.md: W0 W1 W2 W4 W5 W8 W9 landed, W3 f0576ec7a4; W6 W7 to write.
-- PLAN-enterprise-isolation.md: wave 1 landed incl. N2 1cddd943e2; waves 2-4 next.
+- PLAN-product-domain-rename.md: batch fully landed incl. residue (bae1c24631..0026454083) and L4 (309bd420dd); six gates red (below); then box ticks W2-W13, W11, fleet run 17.
+- PLAN-website-routing-and-mail.md: W0 W1 W2 W3 W4 W5 W8 W9 landed; W6 W7 to write.
+- PLAN-enterprise-isolation.md: wave 1 landed incl. N2; waves 2-4 next.
 - PLAN-backup-program.md and PLAN-health-checks-local.md: live boxes behind fleet run 17.
 
 ## Owed ticks
 - PLAN-health-checks-local.md#85f55665 live-owed: after fleet run 17 (#cf60e85a)
 - PLAN-free-license.md#a543ecc2 live-owed: bench free-license L2 (#a1fadff8), after fleet run 17
 
-## In flight
-- Writer ad504622221fcf714 (#a0cb4a10): www installers default edge (ruling 3) with install_script_check, upload_repos_to_r2, channel_stamp; install_sh_config_check and verify-stable goldens; set_account_worker_secrets message; env-manifest six names; edgeSeparator CLI key.
-
-## Operator rulings 2026-11-08
-Worker deploys free; proxies ENVIRONMENT=edge; www installers baked edge; plans parallel; hostinger provisioned without asking once fleet run 17 is VERIFIED; edge EU archived then dropped. All in agent/d778be9d/rename-integration.md.
+## Gate state on the batch tip (18:50Z)
+Green: regions-sync, region-consistency, proxy-configs, proxy-deploy-dry-run, backup-bucket-conformance, backup-credential-isolation, bws-map, env-manifest, python-env-registry, shard coverage, workflows, workflow-gates, workflow-invariants, doc-region-parity, cli-contract, client-i18n, tutorial-casts, parity, plan-record, plan-boxes, install-sh-config, check:i18n (after cfb05f06e8).
+Red, handed to a writer: literal-sources (rediacc.cloud and www literals in apply_cf_redirect_rules.py, test_deploy_verify_edge_endpoints.py, test_enterprise_names.py), plan-citations (3), prose-style, python-lint (1), search-index (14 stale: regenerate), secret-supply (ENTERPRISE_LOOKUP_PEPPER has no vault entry).
 
 ## Next action
-1. When #a0cb4a10 reports: land it, then regenerate (cd packages/shared && npm run build; python-env-registry --write-baseline with --allow-new per named read incl. r2_bucket_copy CLOUDFLARE_R2_ENDPOINT; check_prose_style --drain; gen-docs; i18n hashes; client i18n; search index), then the one gate run in rename-integration.md section 4, then tick rename W2 W3 W4 W5 W6 W7 W8 W9 W10 W12 W13, website W2 W3 W4 W5 W9, enterprise N2 (#37e8f216).
-2. Spawn W11 (#8218df95); L4 (#7ed3ee72).
-3. Fleet run 17 (#cf60e85a), then hostinger + bench live queue, ci:quick alone, push submodules then console, PRs with Operational-Reason.
+1. Land the gate-fix writer, re-run those six gates plus pytest over .ci/rediacc_ci/tests and the vitest suites per rename-integration.md section 4.
+2. Tick rename W2 W3 W4 W5 W6 W7 W8 W9 W10 W12 W13, website W2 W3 W4 W5 W9 (W1 after the pepper push), enterprise N2 (#37e8f216); close review findings.
+3. Spawn W11 (#8218df95).
+4. Fleet run 17 (#cf60e85a), then hostinger (approved) and bench live queue, ci:quick alone, push, PRs.
+Open operator question: www deploy Stripe webhook step on edge (drop it, or pass the live key).
