@@ -10,13 +10,13 @@ order: 2
 language: en
 ---
 
-Rediacc ships CLI updates through two channels: **Stable** and **Edge**. Both connect to the same product, so an account, its plan and its limits are identical on either one. The channels differ only in how soon a release reaches you.
+Rediacc ships CLI updates through two channels: **Stable** and **Edge**. Both connect to the same product, so an account, its plan and its limits are identical on either one. The channels differ only in how soon a release reaches an installation.
 
 ## Stable Channel
 
 Stable is the default. A release reaches it only after sitting on Edge for 7 days with no reported issues.
 
-- Recommended when you prefer a conservative upgrade cadence
+- Recommended when a conservative upgrade cadence is preferred
 - Deployed after 7 days of testing on Edge
 - Hotfixes can be pushed directly when critical
 
@@ -30,7 +30,7 @@ Edge picks up every change the moment it merges to main. It is the live version 
 
 ## One Product, Two Channels
 
-Your account lives in your data region on `eu.rediacc.cloud`, `us.rediacc.cloud` or `asia.rediacc.cloud`, whichever channel you run. Switching channels never touches your account, your data or your subscription. For regions, see [Data Regions](/en/docs/data-regions).
+An account lives in its data region on `eu.rediacc.cloud`, `us.rediacc.cloud` or `asia.rediacc.cloud`, whichever channel runs. Switching channels never touches the account, its data or its subscription. For regions, see [Data Regions](/en/docs/data-regions).
 
 ## Comparison
 
@@ -67,7 +67,7 @@ See [Installation](/en/docs/installation) for the install commands, package mana
 
 ## CLI Channel Management
 
-The CLI uses whichever channel you configured at install. To switch:
+The CLI uses whichever channel was configured at install. To switch:
 
 ```bash
 rdc update --channel edge      # Switch to Edge

@@ -20,9 +20,9 @@ When you sign up for Rediacc, you pick a data region. All your data stays there.
 | **United States (US)** | Virginia, USA | `us.rediacc.cloud` |
 | **Asia Pacific** | Tokyo, Japan | `asia.rediacc.cloud` |
 
-The product runs on these `rediacc.cloud` domains. All documentation and the marketing site live on `www.rediacc.com`, which sends you to the right region from its region picker.
+The product runs on these `rediacc.cloud` domains. All documentation and the marketing site live on `www.rediacc.com`, which sends visitors to the right region from its region picker.
 
-At sign-up, the picker suggests a region from your location and you confirm or change it. At login, it forwards you to your region after a short countdown that you can cancel or change. If your company has its own deployment, the picker's "Enterprise customer?" option takes you there from your company's email domain. Only the domain is sent, never your full address.
+At sign-up, the picker suggests a region from the visitor's location, which can be confirmed or changed. At login, it forwards the visitor to the right region after a short countdown that can be cancelled or changed. If a company has its own deployment, the picker's "Enterprise customer?" option leads there from the company's email domain. Only the domain is sent, never the full address.
 
 ## What Stays in Your Region
 

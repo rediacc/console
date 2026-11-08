@@ -8,8 +8,8 @@ tags:
 subcategory: platform
 order: 3
 language: de
-sourceHash: "c73d7300b75b57c4"
-sourceCommit: "c69b28b08afd5e7602afd1e8efe90785e6e36938"
+sourceHash: "271ee8a4a502eb02"
+sourceCommit: "abc292b1b7ca5096423e098c12a9b23bdabda16b"
 ---
 
 Bei der Anmeldung für Rediacc wählen Sie eine Datenregion. Alle Daten verbleiben in dieser Region. Diese Entscheidung ist dauerhaft und kann nach der Registrierung nicht mehr geändert werden. Es gibt keinen Migrationspfad. Wählen Sie die Region basierend darauf, wo Ihre Daten rechtlich ansässig sein müssen, nicht wo Ihre Server heute sind.

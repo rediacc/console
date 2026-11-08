@@ -8,8 +8,8 @@ tags:
 subcategory: platform
 order: 2
 language: es
-sourceHash: "bb653747883615f5"
-sourceCommit: "c69b28b08afd5e7602afd1e8efe90785e6e36938"
+sourceHash: "29d62173c5cf044a"
+sourceCommit: "abc292b1b7ca5096423e098c12a9b23bdabda16b"
 ---
 
 Rediacc distribuye las actualizaciones del CLI a través de dos canales: **Stable** y **Edge**. Ambos se conectan al mismo producto, así que la cuenta, el plan y los límites son idénticos en cualquiera de los dos. Los canales solo se diferencian en lo pronto que te llega una versión.

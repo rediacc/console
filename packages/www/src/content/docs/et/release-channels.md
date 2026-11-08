@@ -8,8 +8,8 @@ tags:
 subcategory: platform
 order: 2
 language: et
-sourceHash: "bb653747883615f5"
-sourceCommit: "c69b28b08afd5e7602afd1e8efe90785e6e36938"
+sourceHash: "29d62173c5cf044a"
+sourceCommit: "abc292b1b7ca5096423e098c12a9b23bdabda16b"
 ---
 
 Rediacc toimetab CLI uuendused kahe kanali kaudu: **Stable** ja **Edge**. Mõlemad ühenduvad sama tootega, seega on konto, plaan ja piirangud mõlemal kanalil samad. Kanalid erinevad ainult selle poolest, kui kiiresti väljalase sinuni jõuab.
