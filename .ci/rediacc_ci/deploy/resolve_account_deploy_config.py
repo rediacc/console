@@ -10,6 +10,8 @@ allowed to change WHICH things it objects to") is what the ledger checks, via
 `--finding-re 'must be set|^(region|worker|domain|sandbox)='`, which extracts
 the SUBSTANCE both sides agree on (which variable is missing, or which values were resolved) and ignores the bash-diagnostic wrapper around it.
 
+ONE TARGET SINCE THE PRODUCT-DOMAIN RENAME (agent/plans/PLAN-product-domain-rename.md). Each region runs one shared account Worker (`account-<region>` on `<region>.rediacc.cloud`), and cd-deploy-account.yml passes `TARGET=stable` whatever GitHub environment it deploys under, so the edge branch (MATRIX_EDGE_WORKER_NAME, MATRIX_EDGE_DOMAIN, `--sandbox`) is gone. Any other TARGET is refused with exit 1, never guessed into the stable answer; the twin's recorded edge case no longer applies.
+
 `MATRIX_SECRET_SUFFIX` is read (and required) but not re-emitted, matching the twin's header note: it fed a Stripe-key indirection that collapsed to one key, so the bash file kept reading it without a consumer to avoid re-deriving the caller's env contract.
 """
 
@@ -40,14 +42,15 @@ def main(argv: list[str]) -> int:
     _require("MATRIX_SECRET_SUFFIX")
     output_path = _require("GITHUB_OUTPUT")
 
-    if target == "stable":
-        worker = os.environ.get("MATRIX_WORKER_NAME", "")
-        domain = os.environ.get("MATRIX_DOMAIN", "")
-        sandbox = ""
-    else:
-        worker = os.environ.get("MATRIX_EDGE_WORKER_NAME", "")
-        domain = os.environ.get("MATRIX_EDGE_DOMAIN", "")
-        sandbox = "--sandbox"
+    if target != "stable":
+        print(
+            f"{SELF}: TARGET={target} is not a deploy target; the one shared Worker set per region is TARGET=stable",
+            file=sys.stderr,
+        )
+        return 1
+    worker = os.environ.get("MATRIX_WORKER_NAME", "")
+    domain = os.environ.get("MATRIX_DOMAIN", "")
+    sandbox = ""
 
     with open(output_path, "a", encoding="utf-8") as fh:
         fh.write(f"region={region}\n")

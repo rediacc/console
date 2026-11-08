@@ -7,8 +7,13 @@ name: Deploy Account Workers
 on:
   workflow_call:
     inputs:
+      # The release lane that called (edge). It names the GitHub environment
+      # (edge-<region>), the artifact and the stage-executor gate only: every
+      # region runs ONE shared account and proxy Worker set since the
+      # product-domain rename, and the deploy modules always take TARGET=stable,
+      # their name for that set (agent/plans/PLAN-product-domain-rename.md).
       target:
-        description: 'Deploy channel: edge or stable'
+        description: 'Calling release lane (edge); names the GitHub environment, not the Worker set'
         required: true
         type: string
       ref:
@@ -16,9 +21,7 @@ on:
         required: true
         type: string
       # The release whose executor artifacts (executor/v<version>/ in the releases
-      # bucket) the proxy image is built from. Edge passes next_version, stable
-      # the promoted version, so a stable proxy is byte-identical to the edge one
-      # (agent/plans/PLAN-proxy-cd-six-targets.md, ruling "Ride promote-stable").
+      # bucket) the proxy image is built from: the edge lane's next_version.
       version:
         description: 'Release version X.Y.Z the proxy executor image is built from'
         required: true
@@ -40,9 +43,9 @@ on:
       # them fixed that; fetching them from Bitwarden 2026-09-05 fixed it again,
       # because the org secret the callers passed had been deleted and the whole
       # chain was carrying "" a second time.
-      # The chunk-store backup plane's key pair is no input: the job fetches its
-      # own channel's pair from Bitwarden (see "Fetch the stable/edge backup key
-      # pair"), and set_account_worker_secrets refuses an empty value, so a
+      # The chunk-store backup plane's key pair is no input: the job fetches the
+      # shared set's pair from Bitwarden (see "Fetch the backup key pair"), and
+      # set_account_worker_secrets refuses an empty value, so a
       # missing pair is a loud deploy error, not a Worker whose backup endpoints
       # answer 503 (the shape of the OTLP bug above).
 # Every job below declares its own permissions, so this workflow-level default
@@ -71,12 +74,12 @@ jobs:
 
       - id: regions
         run: |
-          # backupBucket/edgeBackupBucket/r2Jurisdiction are read by the "Set Worker
-          # secrets" step below and were NEVER in this projection -- all three
-          # resolved empty and set-account-worker-secrets.sh:150-156 exited 1, so
-          # every account deploy hard-failed. regions.json NESTS two of them under
-          # backupR2.name / edgeBackupR2.name, so this maps as well as selects.
-          echo "matrix=$(jq -c '{include: [.regions[] | {id, domain, edgeDomain, secretSuffix, sesRegion, workerName, edgeWorkerName, backupBucket: .backupR2.name, edgeBackupBucket: .edgeBackupR2.name, r2Jurisdiction}]}' regions.json)" >> "$GITHUB_OUTPUT"
+          # backupBucket/r2Jurisdiction are read by the "Set Worker secrets" step
+          # below and were once NOT in this projection -- they resolved empty and
+          # the secrets step exited 1, so every account deploy hard-failed.
+          # regions.json NESTS the bucket under backupR2.name, so this maps as
+          # well as selects. One shared Worker set per region: no edge fields.
+          echo "matrix=$(jq -c '{include: [.regions[] | {id, domain, secretSuffix, sesRegion, workerName, backupBucket: .backupR2.name, r2Jurisdiction}]}' regions.json)" >> "$GITHUB_OUTPUT"
 
   # Build SPA once (shared across all regions)
   build:
@@ -253,7 +256,7 @@ jobs:
       fail-fast: false
     environment:
       name: ${{ inputs.target }}-${{ matrix.id }}
-      url: ${{ inputs.target == 'stable' && format('https://{0}', matrix.domain) || format('https://{0}', matrix.edgeDomain) }}
+      url: ${{ format('https://{0}', matrix.domain) }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -291,7 +294,6 @@ jobs:
             CLOUDFLARE_API_TOKEN > BWS_CLOUDFLARE_API_TOKEN
             CLOUDFLARE_TURNSTILE_SECRET_KEY > BWS_CLOUDFLARE_TURNSTILE_SECRET_KEY
             GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
-            STRIPE_SANDBOX_SECRET_KEY > BWS_STRIPE_SANDBOX_SECRET_KEY
             STRIPE_SECRET_KEY > BWS_STRIPE_SECRET_KEY
             STRIPE_WEBHOOK_SECRET_ASIA > BWS_STRIPE_WEBHOOK_SECRET_ASIA
             STRIPE_WEBHOOK_SECRET_EU > BWS_STRIPE_WEBHOOK_SECRET_EU
@@ -318,14 +320,15 @@ jobs:
             SELLER_VAT_NUMBER > BWS_SELLER_VAT_NUMBER
             TURNSTILE_SITE_KEY > BWS_TURNSTILE_SITE_KEY
 
-      # The backup key pair is per CHANNEL: two bucket-scoped tokens, each limited
-      # to object read and write on its own channel's three backup buckets
-      # (agent/plans/PLAN-backup-credential-isolation.md). A run fetches ONLY its
-      # own channel's pair, so a stable deploy never holds edge's key and the
-      # other way round; set_account_worker_secrets refuses the other pair if it
-      # is ever set. check:ci-backup-credential-isolation pins both conditions.
-      - name: Fetch the stable backup key pair from Bitwarden
-        if: inputs.target == 'stable'
+      # The backup key pair belongs to the one shared Worker set: one
+      # bucket-scoped token, limited to object read and write on the shared
+      # set's backup buckets (agent/plans/PLAN-backup-credential-isolation.md,
+      # agent/plans/PLAN-product-domain-rename.md). Every run serves that set,
+      # so the fetch carries no `if:`: a run that skipped it would push an
+      # empty key, which set_account_worker_secrets refuses.
+      # check:ci-backup-credential-isolation pins the unconditional _STABLE
+      # fetch and refuses any other environment's pair.
+      - name: Fetch the backup key pair from Bitwarden
         uses: ./.github/actions/bws-secrets
         with:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
@@ -333,24 +336,20 @@ jobs:
             ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_STABLE > BWS_ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_STABLE
             ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_STABLE > BWS_ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_STABLE
 
-      - name: Fetch the edge backup key pair from Bitwarden
-        if: inputs.target != 'stable'
-        uses: ./.github/actions/bws-secrets
-        with:
-          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
-          secrets: |
-            ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_EDGE > BWS_ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_EDGE
-            ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_EDGE > BWS_ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_EDGE
-
       # The config server key (layer 3 of the config store) and the backup
       # store key (ACCOUNT_BACKUP_STORE_KEK, which seals customer store
-      # credentials) are per REGION and CHANNEL: two names per Worker, none
-      # shared. A run fetches only its own pair, so a stable eu deploy never
-      # holds the edge or another region's keys; set_account_worker_secrets refuses the other channel's name if it
-      # is ever set (agent/plans/PLAN-config-server-key.md K2). The names are
-      # literal, one step per Worker, so the bws map gate sees each of them.
-      - name: Fetch the eu stable config server key and backup store key from Bitwarden
-        if: matrix.secretSuffix == 'EU' && inputs.target == 'stable'
+      # credentials) are per REGION: two names per Worker, none shared. A run
+      # fetches only its own region's pair, so the eu deploy never holds another
+      # region's keys (agent/plans/PLAN-config-server-key.md K2). The secrets
+      # step reads them under the `_STABLE` local names. EU takes its EU_STABLE
+      # values; US and ASIA take their US_EDGE / ASIA_EDGE values, because the
+      # shared us and asia Workers were seeded from the edge database and config
+      # bucket, whose objects were sealed under those keys (W10, the same
+      # mapping the account-secrets-<region> profiles in secret-supply.json
+      # bind). The names are literal, one step per region, so the bws map gate
+      # sees each of them.
+      - name: Fetch the eu config server key and backup store key from Bitwarden
+        if: matrix.secretSuffix == 'EU'
         uses: ./.github/actions/bws-secrets
         with:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
@@ -358,50 +357,23 @@ jobs:
             ACCOUNT_CONFIG_SERVER_KEY_EU_STABLE > BWS_ACCOUNT_CONFIG_SERVER_KEY_EU_STABLE
             ACCOUNT_BACKUP_STORE_KEK_EU_STABLE > BWS_ACCOUNT_BACKUP_STORE_KEK_EU_STABLE
 
-      - name: Fetch the eu edge config server key and backup store key from Bitwarden
-        if: matrix.secretSuffix == 'EU' && inputs.target != 'stable'
+      - name: Fetch the us config server key and backup store key from Bitwarden
+        if: matrix.secretSuffix == 'US'
         uses: ./.github/actions/bws-secrets
         with:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
-            ACCOUNT_CONFIG_SERVER_KEY_EU_EDGE > BWS_ACCOUNT_CONFIG_SERVER_KEY_EU_EDGE
-            ACCOUNT_BACKUP_STORE_KEK_EU_EDGE > BWS_ACCOUNT_BACKUP_STORE_KEK_EU_EDGE
+            ACCOUNT_CONFIG_SERVER_KEY_US_EDGE > BWS_ACCOUNT_CONFIG_SERVER_KEY_US_STABLE
+            ACCOUNT_BACKUP_STORE_KEK_US_EDGE > BWS_ACCOUNT_BACKUP_STORE_KEK_US_STABLE
 
-      - name: Fetch the us stable config server key and backup store key from Bitwarden
-        if: matrix.secretSuffix == 'US' && inputs.target == 'stable'
+      - name: Fetch the asia config server key and backup store key from Bitwarden
+        if: matrix.secretSuffix == 'ASIA'
         uses: ./.github/actions/bws-secrets
         with:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
-            ACCOUNT_CONFIG_SERVER_KEY_US_STABLE > BWS_ACCOUNT_CONFIG_SERVER_KEY_US_STABLE
-            ACCOUNT_BACKUP_STORE_KEK_US_STABLE > BWS_ACCOUNT_BACKUP_STORE_KEK_US_STABLE
-
-      - name: Fetch the us edge config server key and backup store key from Bitwarden
-        if: matrix.secretSuffix == 'US' && inputs.target != 'stable'
-        uses: ./.github/actions/bws-secrets
-        with:
-          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
-          secrets: |
-            ACCOUNT_CONFIG_SERVER_KEY_US_EDGE > BWS_ACCOUNT_CONFIG_SERVER_KEY_US_EDGE
-            ACCOUNT_BACKUP_STORE_KEK_US_EDGE > BWS_ACCOUNT_BACKUP_STORE_KEK_US_EDGE
-
-      - name: Fetch the asia stable config server key and backup store key from Bitwarden
-        if: matrix.secretSuffix == 'ASIA' && inputs.target == 'stable'
-        uses: ./.github/actions/bws-secrets
-        with:
-          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
-          secrets: |
-            ACCOUNT_CONFIG_SERVER_KEY_ASIA_STABLE > BWS_ACCOUNT_CONFIG_SERVER_KEY_ASIA_STABLE
-            ACCOUNT_BACKUP_STORE_KEK_ASIA_STABLE > BWS_ACCOUNT_BACKUP_STORE_KEK_ASIA_STABLE
-
-      - name: Fetch the asia edge config server key and backup store key from Bitwarden
-        if: matrix.secretSuffix == 'ASIA' && inputs.target != 'stable'
-        uses: ./.github/actions/bws-secrets
-        with:
-          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
-          secrets: |
-            ACCOUNT_CONFIG_SERVER_KEY_ASIA_EDGE > BWS_ACCOUNT_CONFIG_SERVER_KEY_ASIA_EDGE
-            ACCOUNT_BACKUP_STORE_KEK_ASIA_EDGE > BWS_ACCOUNT_BACKUP_STORE_KEK_ASIA_EDGE
+            ACCOUNT_CONFIG_SERVER_KEY_ASIA_EDGE > BWS_ACCOUNT_CONFIG_SERVER_KEY_ASIA_STABLE
+            ACCOUNT_BACKUP_STORE_KEK_ASIA_EDGE > BWS_ACCOUNT_BACKUP_STORE_KEK_ASIA_STABLE
 
       - uses: ./.github/actions/app-token
         id: app-token
@@ -446,13 +418,11 @@ jobs:
       - name: Resolve deploy config
         id: config
         env:
-          TARGET: ${{ inputs.target }}
+          TARGET: stable
           MATRIX_ID: ${{ matrix.id }}
           MATRIX_SECRET_SUFFIX: ${{ matrix.secretSuffix }}
           MATRIX_WORKER_NAME: ${{ matrix.workerName }}
           MATRIX_DOMAIN: ${{ matrix.domain }}
-          MATRIX_EDGE_WORKER_NAME: ${{ matrix.edgeWorkerName }}
-          MATRIX_EDGE_DOMAIN: ${{ matrix.edgeDomain }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.resolve_account_deploy_config
 
       # Preflight: the secret this job is about to push must be the one the live
@@ -481,10 +451,9 @@ jobs:
           # that resolve-account-deploy-config.sh no longer emits, so it was empty
           # and the lookup silently found nothing. Deleted rather than repaired:
           # the indirection had no remaining purpose, and it was one of the runtime
-          # -constructed names that no static scan can see.
-          STRIPE_SECRET_KEY: ${{ inputs.target == 'stable'
-            && env.BWS_STRIPE_SECRET_KEY
-            || env.BWS_STRIPE_SANDBOX_SECRET_KEY }}
+          # -constructed names that no static scan can see. The shared Worker set
+          # takes live billing, so the check reads the live key, never the sandbox.
+          STRIPE_SECRET_KEY: ${{ env.BWS_STRIPE_SECRET_KEY }}
         run: npx tsx scripts/check-live-prices.ts
 
       # ---- Proxy Worker and console executor (agent/plans/PLAN-proxy-cd-six-targets.md
@@ -529,7 +498,7 @@ jobs:
           CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
           AWS_ACCESS_KEY_ID: ${{ env.BWS_CLOUDFLARE_R2_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ env.BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
-          TARGET: ${{ inputs.target }}
+          TARGET: stable
           REGION: ${{ matrix.id }}
           VERSION: ${{ inputs.version }}
         run: >-
@@ -550,7 +519,7 @@ jobs:
           CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
           AWS_ACCESS_KEY_ID: ${{ env.BWS_CLOUDFLARE_R2_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ env.BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
-          TARGET: ${{ inputs.target }}
+          TARGET: stable
           REGION: ${{ matrix.id }}
           VERSION: ${{ inputs.version }}
         run: >-
@@ -559,7 +528,7 @@ jobs:
           --record "$RUNNER_TEMP/deploy-record/proxy-bootstrap.json"
 
       - name: Deploy account Worker (${{ matrix.id }})
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_account --region ${{ steps.config.outputs.region }} --target ${{ inputs.target }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_account --region ${{ steps.config.outputs.region }}
         env:
           CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
@@ -580,24 +549,21 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
-          # Region-aware secrets: resolved via bash indirection from SUFFIX
-          # No STRIPE_SANDBOX_*: set-account-worker-secrets.sh blanks Stripe on
-          # edge (billing disabled) and uses the regional key on stable, so the
-          # sandbox pair was wired in but never read. The sandbox key is still
-          # used by the "Verify Stripe prices" step above.
+          # Region-aware secrets: resolved via indirection from SUFFIX. TARGET is
+          # `stable`, the script's name for the shared Worker set, which takes
+          # the live Stripe key and the region's webhook secret, the _STABLE
+          # backup pair and bucket, and the region's _STABLE config server key
+          # and KEK (US and ASIA carry their edge values under that name, see
+          # the fetch above).
           SUFFIX: ${{ matrix.secretSuffix }}
-          TARGET: ${{ inputs.target }}
+          TARGET: stable
           # Chunk-store backup plane. The ENDPOINT is shared (it is not a
           # credential; the script splices the region's jurisdiction label into
-          # it). The KEY PAIR is per channel and not per region: one token per
-          # channel, scoped to object read and write on that channel's three
-          # buckets. Only this run's channel was fetched above, so the other
-          # channel's two names arrive empty, which the script requires.
+          # it). The KEY PAIR is one token for the shared set, scoped to object
+          # read and write on its backup buckets.
           ACCOUNT_BACKUP_S3_ENDPOINT: ${{ env.BWS_ACCOUNT_BACKUP_S3_ENDPOINT }}
           ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_STABLE: ${{ env.BWS_ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_STABLE }}
           ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_STABLE: ${{ env.BWS_ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_STABLE }}
-          ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_EDGE: ${{ env.BWS_ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_EDGE }}
-          ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_EDGE: ${{ env.BWS_ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_EDGE }}
           WORKER_NAME: ${{ steps.config.outputs.worker }}
           # Restored 2026-09-02 from the Bitwarden map, which is the naming
           # authority: every name below that the store holds is exported under
@@ -608,17 +574,11 @@ jobs:
           ACCOUNT_JWT_SECRET: ${{ env.BWS_ACCOUNT_JWT_SECRET }}
           FREE_LICENSE_HMAC_KEY: ${{ env.BWS_FREE_LICENSE_HMAC_KEY }}
           ACCOUNT_CONFIG_SERVER_KEY_EU_STABLE: ${{ env.BWS_ACCOUNT_CONFIG_SERVER_KEY_EU_STABLE }}
-          ACCOUNT_CONFIG_SERVER_KEY_EU_EDGE: ${{ env.BWS_ACCOUNT_CONFIG_SERVER_KEY_EU_EDGE }}
           ACCOUNT_CONFIG_SERVER_KEY_US_STABLE: ${{ env.BWS_ACCOUNT_CONFIG_SERVER_KEY_US_STABLE }}
-          ACCOUNT_CONFIG_SERVER_KEY_US_EDGE: ${{ env.BWS_ACCOUNT_CONFIG_SERVER_KEY_US_EDGE }}
           ACCOUNT_CONFIG_SERVER_KEY_ASIA_STABLE: ${{ env.BWS_ACCOUNT_CONFIG_SERVER_KEY_ASIA_STABLE }}
-          ACCOUNT_CONFIG_SERVER_KEY_ASIA_EDGE: ${{ env.BWS_ACCOUNT_CONFIG_SERVER_KEY_ASIA_EDGE }}
           ACCOUNT_BACKUP_STORE_KEK_EU_STABLE: ${{ env.BWS_ACCOUNT_BACKUP_STORE_KEK_EU_STABLE }}
-          ACCOUNT_BACKUP_STORE_KEK_EU_EDGE: ${{ env.BWS_ACCOUNT_BACKUP_STORE_KEK_EU_EDGE }}
           ACCOUNT_BACKUP_STORE_KEK_US_STABLE: ${{ env.BWS_ACCOUNT_BACKUP_STORE_KEK_US_STABLE }}
-          ACCOUNT_BACKUP_STORE_KEK_US_EDGE: ${{ env.BWS_ACCOUNT_BACKUP_STORE_KEK_US_EDGE }}
           ACCOUNT_BACKUP_STORE_KEK_ASIA_STABLE: ${{ env.BWS_ACCOUNT_BACKUP_STORE_KEK_ASIA_STABLE }}
-          ACCOUNT_BACKUP_STORE_KEK_ASIA_EDGE: ${{ env.BWS_ACCOUNT_BACKUP_STORE_KEK_ASIA_EDGE }}
           ACCOUNT_SERVER_API_KEY: ${{ env.BWS_ACCOUNT_SERVER_API_KEY }}
           ACCOUNT_X25519_PRIVATE_KEY: ${{ env.BWS_ACCOUNT_X25519_PRIVATE_KEY }}
           ACCOUNT_X25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_X25519_PUBLIC_KEY }}
@@ -631,7 +591,6 @@ jobs:
           AWS_SES_SECRET_ACCESS_KEY_ASIA: ${{ env.BWS_AWS_SES_SECRET_ACCESS_KEY_ASIA }}
           AWS_SES_SECRET_ACCESS_KEY_EU: ${{ env.BWS_AWS_SES_SECRET_ACCESS_KEY_EU }}
           AWS_SES_SECRET_ACCESS_KEY_US: ${{ env.BWS_AWS_SES_SECRET_ACCESS_KEY_US }}
-          BACKUP_BUCKET_EDGE: ${{ matrix.edgeBackupBucket }}
           BACKUP_BUCKET_STABLE: ${{ matrix.backupBucket }}
           CLOUDFLARE_TURNSTILE_SECRET_KEY: ${{ env.BWS_CLOUDFLARE_TURNSTILE_SECRET_KEY }}
           OBS_OTLP_CREDENTIALS_ASIA: ${{ env.BWS_OBS_OTLP_CREDENTIALS_ASIA }}
@@ -671,7 +630,7 @@ jobs:
           CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
           AWS_ACCESS_KEY_ID: ${{ env.BWS_CLOUDFLARE_R2_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ env.BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
-          TARGET: ${{ inputs.target }}
+          TARGET: stable
           REGION: ${{ matrix.id }}
           VERSION: ${{ inputs.version }}
         run: >-
@@ -692,7 +651,7 @@ jobs:
           CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
           AWS_ACCESS_KEY_ID: ${{ env.BWS_CLOUDFLARE_R2_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ env.BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
-          TARGET: ${{ inputs.target }}
+          TARGET: stable
           REGION: ${{ matrix.id }}
           VERSION: ${{ inputs.version }}
         run: >-
@@ -712,7 +671,7 @@ jobs:
           CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
           AWS_ACCESS_KEY_ID: ${{ env.BWS_CLOUDFLARE_R2_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ env.BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
-          TARGET: ${{ inputs.target }}
+          TARGET: stable
           REGION: ${{ matrix.id }}
           VERSION: ${{ inputs.version }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.console_executor --enable --target "$TARGET" --region "$REGION"
@@ -730,7 +689,7 @@ jobs:
           CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
           AWS_ACCESS_KEY_ID: ${{ env.BWS_CLOUDFLARE_R2_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ env.BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
-          TARGET: ${{ inputs.target }}
+          TARGET: stable
           REGION: ${{ matrix.id }}
           VERSION: ${{ inputs.version }}
         run: >-
@@ -746,7 +705,7 @@ jobs:
           CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
           AWS_ACCESS_KEY_ID: ${{ env.BWS_CLOUDFLARE_R2_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ env.BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
-          TARGET: ${{ inputs.target }}
+          TARGET: stable
           REGION: ${{ matrix.id }}
           VERSION: ${{ inputs.version }}
           ENABLE_OUTCOME: ${{ steps.enable.outcome }}

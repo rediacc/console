@@ -7,6 +7,7 @@ import json
 import pathlib
 import shutil
 import sys
+import tomllib
 
 import pytest
 
@@ -28,6 +29,12 @@ ITEM_PERMS = ["Workers R2 Storage Bucket Item Read", "Workers R2 Storage Bucket 
 
 def _scopes() -> dict:
     regions = json.loads((ROOT / "regions.json").read_text(encoding="utf-8"))["regions"]
+    bench_toml = tomllib.loads(
+        (ROOT / "workers" / "account" / "wrangler.bench.toml").read_text(encoding="utf-8")
+    )
+    bench_bucket = next(
+        b["bucket_name"] for b in bench_toml["r2_buckets"] if b["binding"] == "BACKUP_BUCKET"
+    )
 
     def buckets(field: str) -> list[dict]:
         out = []
@@ -44,7 +51,7 @@ def _scopes() -> dict:
             "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_" + env,
         ]
 
-    # The shape B1 writes (private/account/scripts/rotation/r2-backup-tokens.json): one shared permission list and a `tokens` table with camelCase name lists.
+    # The shape B1 writes (private/account/scripts/rotation/r2-backup-tokens.json): one shared permission list and a `tokens` table with camelCase name lists. Two tokens since the product-domain rename: the shared set's (stable) and bench.
     return {
         "$comment": "fixture",
         "permissions": ITEM_PERMS,
@@ -54,14 +61,9 @@ def _scopes() -> dict:
                 "buckets": buckets("backupR2"),
                 "bitwardenSecretNames": names("STABLE"),
             },
-            "cf-r2-backup-edge": {
-                "environment": "edge",
-                "buckets": buckets("edgeBackupR2"),
-                "bitwardenSecretNames": names("EDGE"),
-            },
             "cf-r2-backup-bench": {
                 "environment": "bench",
-                "buckets": [{"name": "rediacc-backups-bench"}],
+                "buckets": [{"name": bench_bucket}],
                 "bitwardenSecretNames": names("BENCH"),
             },
         },
@@ -101,13 +103,14 @@ def test_selftest_passes():
 def test_the_real_tree_is_clean():
     result = harness.run([sys.executable, str(GATE)], cwd=ROOT)
     assert result.rc == 0, result.combined
-    assert "1 stable fetches, 1 edge fetches" in result.err
+    assert "1 stable fetches" in result.err
+    assert "edge fetches" not in result.err
 
 
 def test_a_fixture_of_the_real_inputs_is_clean_and_compares_the_scopes(tmp_path):
     result = _gate(_root(tmp_path))
     assert result.rc == 0, result.combined
-    assert "3 token scopes" in result.err
+    assert "2 token scopes" in result.err
     assert "SKIP" not in result.combined
 
 
@@ -141,8 +144,14 @@ PLANTS = [
     (
         "workflow-pair",
         ".github/workflows/cd-deploy-account.yml",
-        "if: inputs.target != 'stable'",
-        "if: inputs.target == 'stable'",
+        "      - name: Fetch the backup key pair from Bitwarden\n",
+        "      - name: Fetch the backup key pair from Bitwarden\n        if: inputs.target == 'stable'\n",
+    ),
+    (
+        "workflow-pair",
+        ".github/workflows/cd-deploy-account.yml",
+        "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_STABLE > BWS_ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_STABLE",
+        "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_EDGE > BWS_ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_EDGE",
     ),
     (
         "workflow-source",
@@ -156,10 +165,18 @@ PLANTS = [
         '"ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_BENCH"',
         '"ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_EDGE"',
     ),
+    (
+        "rotation-scopes",
+        SCOPES_REL,
+        '"tokens": {',
+        '"tokens": {"cf-r2-backup-edge": {"environment": "edge", "buckets": [], '
+        '"bitwardenSecretNames": ["ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_EDGE"]}, ',
+    ),
 ]
+PLANT_IDS = ["%s-%d" % (p[0], i) for i, p in enumerate(PLANTS)]
 
 
-@pytest.mark.parametrize(("rule", "rel", "old", "new"), PLANTS, ids=[p[0] for p in PLANTS])
+@pytest.mark.parametrize(("rule", "rel", "old", "new"), PLANTS, ids=PLANT_IDS)
 def test_one_plant_per_rule_turns_the_run_red(tmp_path, rule, rel, old, new):
     root = _root(tmp_path)
     _plant(root, rel, old, new)

@@ -7,7 +7,8 @@ What this pins, read structurally through `rediacc_ci.workflows` (the repo's one
   - the presence refusal: a release older than the proxy CD steps fails on every target instead of skipping the proxy steps;
   - the record written `always()` and uploaded;
   - the edge-only stage job with `actions: read`, which the deploy job waits on;
-  - cd-release-edge.yml (edge and hotfix) and cd-release-stable.yml passing `version`, edge also `ci_run_id`;
+  - cd-release-edge.yml the only caller, passing `version` and `ci_run_id` (one shared Worker set per region since the product-domain rename, so neither a stable hotfix job nor cd-release-stable.yml calls it);
+  - every deploy module step taking `TARGET: stable`, the modules' name for the shared set, whatever the GitHub environment is called, and `deploy_account` called without `--target`;
   - no step in the three workflows echoing a secret value: a secret reaches a step only through `env:`, never as `${{ secrets.* }}` or `${{ env.BWS_* }}` inside `run:`, and no `echo`/`printf` line in a `run:` names a variable that carries one.
 Each check carries a control that plants the violation in a copy of the parsed document and asserts the check sees it, so a check that cannot fail does not pass.
 """
@@ -251,20 +252,66 @@ def callers(doc: dict) -> dict[str, dict]:
     }
 
 
-def test_cd_v2_edge_and_hotfix_and_promote_stable_pass_version():
+def test_only_the_edge_release_calls_the_account_deploy_and_passes_version():
     cd, promote = callers(load(CD)), callers(load(PROMOTE))
-    assert sorted(cd) == ["deploy-account-edge", "deploy-account-stable"]
-    # One shared Worker set: the stable workflow promotes R2 and Docker and deploys no Worker.
+    # One shared Worker set: no stable hotfix job, and the stable workflow promotes R2 and Docker and deploys no Worker.
+    assert sorted(cd) == ["deploy-account-edge"]
     assert promote == {}
+    assert cd["deploy-account-edge"]["with"]["target"] == "edge"
     assert cd["deploy-account-edge"]["with"]["version"] == "${{ needs.init.outputs.next_version }}"
-    assert (
-        cd["deploy-account-stable"]["with"]["version"] == "${{ needs.init.outputs.next_version }}"
-    )
     assert "ci_run_id" in cd["deploy-account-edge"]["with"]
     assert "workers_only" in cd["deploy-account-edge"]["with"]["ci_run_id"]
-    assert "ci_run_id" not in cd["deploy-account-stable"]["with"]
-    for job in [*cd.values(), *promote.values()]:
+    for job in cd.values():
         assert job["permissions"].get("actions") == "read"
+
+
+# ---- one shared Worker set ---------------------------------------------------
+
+MODULE_RE = re.compile(r"python3 -m rediacc_ci\.deploy\.(deploy_record|deploy_proxy|console_executor|set_account_worker_secrets|resolve_account_deploy_config)\b")
+
+
+def target_problems(stps: list[dict]) -> list[str]:
+    """Every deploy module step whose TARGET is not the literal `stable`, and a deploy_account call still passing --target."""
+    out = []
+    for s in stps:
+        run = str(s.get("run") or "")
+        if MODULE_RE.search(run) and (s.get("env") or {}).get("TARGET") != "stable":
+            out.append("%s takes TARGET=%r" % (base_name(s), (s.get("env") or {}).get("TARGET")))
+        if "deploy.deploy_account" in run and "--target" in run:
+            out.append("%s passes --target to deploy_account" % base_name(s))
+    return out
+
+
+def test_every_deploy_module_step_takes_the_shared_stable_target(deploy):
+    assert target_problems(deploy) == []
+    # The census: the eight module steps and the resolver are all seen.
+    assert sum(1 for s in deploy if MODULE_RE.search(str(s.get("run") or ""))) == 9
+
+
+def test_target_control_an_inputs_target_and_a_target_flag_are_seen(deploy):
+    planted = copy.deepcopy(deploy)
+    by_name(planted, "Proxy smoke")["env"]["TARGET"] = "${{ inputs.target }}"
+    dep = by_name(planted, "Deploy account Worker")
+    dep["run"] = dep["run"] + " --target edge"
+    found = target_problems(planted)
+    assert len(found) == 2, found
+
+
+def test_no_edge_field_or_edge_secret_reaches_the_deploy_job(account):
+    """The matrix carries no edge field, the environment url is the shared host, and no step env feeds an `_EDGE` local name (the US/ASIA config keys are fetched from their _EDGE store names INTO _STABLE locals)."""
+    matrix_step = account["jobs"]["read-regions"]["steps"][-1]["run"]
+    for field in ("edgeDomain", "edgeWorkerName", "edgeBackupR2", "edgeBackupBucket"):
+        assert field not in matrix_step, field
+    assert account["jobs"]["deploy"]["environment"]["url"] == "${{ format('https://{0}', matrix.domain) }}"
+    assert account["jobs"]["deploy"]["environment"]["name"] == "${{ inputs.target }}-${{ matrix.id }}"
+    for s in account["jobs"]["deploy"]["steps"]:
+        for key, value in (s.get("env") or {}).items():
+            assert not str(key).endswith("_EDGE"), (base_name(s), key)
+            assert "MATRIX_EDGE" not in str(key), (base_name(s), key)
+            assert "edge" not in str(value).lower() or key == "TARGET", (base_name(s), key, value)
+        for line in str((s.get("with") or {}).get("secrets") or "").splitlines():
+            if ">" in line:
+                assert not line.split(">")[1].strip().endswith("_EDGE"), line
 
 
 # ---- no secret echoed -------------------------------------------------------
