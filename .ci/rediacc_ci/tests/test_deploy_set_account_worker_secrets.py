@@ -132,6 +132,17 @@ def _bin(tmp_path: pathlib.Path, name: str, *, drop: str = "") -> str:
     return str(stub)
 
 
+def _as_twin_result(result):
+    """The port's answer in the twin's spelling (`as_twin`), the form the goldens hold: the re-record seam (`regolden --source port`)."""
+    proc, *rest = result
+    return (
+        subprocess.CompletedProcess(
+            proc.args, proc.returncode, as_twin(proc.stdout), as_twin(proc.stderr)
+        ),
+        *rest,
+    )
+
+
 def _run(
     subject: pathlib.Path,
     tmp_path: pathlib.Path,
@@ -152,6 +163,9 @@ def _run(
         TWIN_REL,
         parts,
         lambda: _run_live(subject, tmp_path, drop=drop, drop_env=drop_env, **extra),
+        port=lambda: _as_twin_result(
+            _run_live(PORT, tmp_path, drop=drop, drop_env=drop_env, **extra)
+        ),
         work=(tmp_path,),
     )
 
@@ -414,7 +428,7 @@ def test_an_empty_bucket_is_refused_on_both_channels(tmp_path: pathlib.Path) -> 
         assert old.stderr == (
             f"set-account-worker-secrets.sh: no backup bucket for TARGET={target}.\n"
             "  Expected BACKUP_BUCKET_STABLE / BACKUP_BUCKET_EDGE from the deploy\n"
-            "  matrix (regions.json backupR2/edgeBackupR2). Refusing to deploy a\n"
+            "  matrix (regions.json backupR2). Refusing to deploy a\n"
             "  Worker that would presign against an empty bucket name.\n"
         )
         assert old_calls == "", f"{target}: a refused run still called wrangler"

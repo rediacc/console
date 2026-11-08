@@ -178,7 +178,7 @@ BACKUP_PAIR_REFUSAL: tuple[str, ...] = (
 # The four lines of the bucket refusal (:151-154). The first is dynamic; the other three are byte for byte, including their two-space indent.
 BUCKET_REFUSAL: tuple[str, ...] = (
     "  Expected BACKUP_BUCKET_STABLE / BACKUP_BUCKET_EDGE from the deploy",
-    "  matrix (regions.json backupR2/edgeBackupR2). Refusing to deploy a",
+    "  matrix (regions.json backupR2). Refusing to deploy a",
     "  Worker that would presign against an empty bucket name.",
 )
 
