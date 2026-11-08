@@ -1209,7 +1209,10 @@ def selftest(root, drift=False):
             "CONTROL: a correction whose replacement does NOT resolve excuses nothing",
             len(
                 fx_problems(
-                    [tick, "    (corrected 2026-11-08, fx) check:ci-gone-zzz now at check:ci-nope-zzz"]
+                    [
+                        tick,
+                        "    (corrected 2026-11-08, fx) check:ci-gone-zzz now at check:ci-nope-zzz",
+                    ]
                 )
             )
             == 2,
@@ -1240,7 +1243,9 @@ def selftest(root, drift=False):
             "CONTROL: a correction line excuses only the token it names, not another dead one beside it",
             len(
                 fx_problems(
-                    ["(corrected 2026-11-08, fx) check:ci-gone-zzz now at check:ci-real-zzz, lib.txt:99"]
+                    [
+                        "(corrected 2026-11-08, fx) check:ci-gone-zzz now at check:ci-real-zzz, lib.txt:99"
+                    ]
                 )
             )
             == 1,
