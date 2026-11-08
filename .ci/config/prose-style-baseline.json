@@ -15,11 +15,11 @@
   "that shrank by 29 can still hide one brand-new violation. Comparing sizes is not",
   "the same claim as diffing the sets."
  ],
- "count": 2744,
+ "count": 2732,
  "files": 670,
  "by_rule": {
-  "R1": 1498,
-  "R11": 142,
+  "R1": 1489,
+  "R11": 139,
   "R14": 1,
   "R18": 12,
   "R19": 55,
@@ -4938,7 +4938,6 @@
     "4f0c86af04973a10",
     "9202b83322fb025e",
     "b24b485d89ec1c3f",
-    "b7aee6d4054e42be",
     "dc44459a6b5477c2",
     "e364386b5001ae72"
    ]
@@ -4990,7 +4989,6 @@
     "1b8b017ab13f42eb",
     "909e05611db780ff",
     "9260ad13e2b5ef7c",
-    "b623b75a36725cb2",
     "e11704f8ad964147",
     "e16761c3b155fbfa",
     "e5e969d60f14f091"
@@ -5276,22 +5274,10 @@
   "packages/www/src/content/docs/en/release-channels.md": {
    "R1": [
     "06686cc53be21229",
-    "1c24d17e657cebec",
     "3f2f046e4a16c420",
     "5967d233746092a8",
-    "620c7c8391604af0",
-    "67f5526ce267051d",
-    "6c6b9e0185def516",
-    "744dfd8c4630cae8",
-    "a4dfdfb2372bd35b",
-    "acf9a58fa87b3cc7",
-    "b6c5049ff5ea2337",
     "cc239d2f0da2f1e4",
     "f2495cd702a708cf"
-   ],
-   "R11": [
-    "e7e2afa218392914",
-    "ed2fd9a74fd6bf7e"
    ]
   },
   "packages/www/src/content/docs/en/repo-branching.md": {
