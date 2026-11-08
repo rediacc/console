@@ -143,9 +143,10 @@ M1 merges with these boxes open, so the PR body carries `Operational-Reason: hos
 - [x] L4 [live] Write the new bws names with their values, ahead of any deploy. Old names stay until L11.
   Accept: `PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile account-secrets-eu -- true` rc 0.
     (ticked) 2026-11-08T17:46:44Z by d778be9d: live 2026-11-08: no new bws names needed (landed profiles resolve: account-secrets-eu, -us, -asia, deploy-bench rc 0); both backup tokens rotated in place onto backups-<region> and backups-bench (60b2af14, 042add71; account 84f9967 via 49a0a1ae1f); scope probes rc 0 every leg; old stable token held until L11 so the hostinger nightly keeps working
-- [ ] W11 [writer] Sweep tests and goldens by a transform with a byte-identical proof, since goldens read by 62 tests can only be rewritten. Add the old names to retired terms.
+- [x] W11 [writer] Sweep tests and goldens by a transform with a byte-identical proof, since goldens read by 62 tests can only be rewritten. Add the old names to retired terms.
   Owns: .ci/rediacc_ci/tests/**, .ci/config/retired-terms.json.
   Accept: `npm run check:ci-retired-terms` rc 0 and `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests -k "deploy or ops"` rc 0.
+    (ticked) 2026-11-08T19:18:19Z by d778be9d: commit:bb0bcb3fbb tests and goldens on the renamed resources; commit:eb599db210 old names in retired-terms (pre-rename-* terms); check:ci-retired-terms rc 0; PYTHONPATH=.ci pytest -q .ci/rediacc_ci/tests -k "deploy or ops" 2648 passed rc 0
 - [x] W12 [writer] Sweep docs outside `packages/www`, which belongs to PLAN-website-routing-and-mail.md W5.
   Owns: docs/**, CLAUDE.md, .ci/docs/**.
   Accept: `npm run check:ci-literal-sources && npm run check:ci-doc-region-parity` rc 0.
