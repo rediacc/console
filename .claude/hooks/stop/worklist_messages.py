@@ -1542,6 +1542,13 @@ N_RECEIPT_BEHIND = (
     "one receipt per push: build it when a push is due, not before."
 )
 
+# N_CIQUICK_ON_RED: a full ci:quick started while the newest receipt is red and no --narrow run has passed since. Key: the receipt's short head.
+N_CIQUICK_ON_RED = (
+    "A full ci:quick is running while the newest receipt (head %s) is red and no `npm run ci -- "
+    "--narrow` run has passed since. Run the narrow set first: it re-runs the failing gates and "
+    "the ones the fix touched in minutes, and the whole lane is built once, green, per batch."
+)
+
 N_CI_HOLD = (
     "Console CI is running on %s; hold these %d local commit(s) until it settles. "
     "A red with a fix in hand pushes at once."
@@ -3219,13 +3226,13 @@ V_LOOP_NEXT_BATCH_OPEN = (
     "LOOP NEXT: the turbo batch on %(branch)s is complete (%(finished)d/%(batch)d finished: "
     "%(plans)s) and %(ahead)d commit(s) are held locally. Verify it, push it and open its PR "
     "once, in this order:\n"
-    "    1. npm run ci   (the whole lane, with incremental carry)\n"
-    "    2. npm run ci:quick   (the receipt block_unverified_push reads), then the `--only` "
-    "command of every entry in the receipt's droppedTouched (.ci/cache/prepush-receipt.json)\n"
-    "    3. the e2e-local recipe for every touched E2E lane: "
+    "    1. npm run ci:quick   (the one green receipt per batch, which block_unverified_push "
+    "reads), then the `--only` command of every entry in the receipt's droppedTouched "
+    "(.ci/cache/prepush-receipt.json)\n"
+    "    2. the e2e-local recipe for every touched E2E lane: "
     "PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --test <suite>\n"
-    "    4. git push -u origin %(branch)s\n"
-    '    5. f=$(mktemp) && python3 .claude/hooks/stop/worklist.py --batch-body %(me)s > "$f" '
+    "    3. git push -u origin %(branch)s\n"
+    '    4. f=$(mktemp) && python3 .claude/hooks/stop/worklist.py --batch-body %(me)s > "$f" '
     '&& gh pr create --draft --base main --head %(branch)s --body-file "$f"\n'
     "The body carries the batch's full Plan: line at creation: refresh_pr_body never runs on "
     "gh pr create, and P-A1 reads the body at the opened event."
@@ -3247,8 +3254,9 @@ V_TURBO_NEXT_LOCAL = (
 N_BACKUP_PUSH = (
     "BACKUP PUSH DUE: the oldest of %(n)d unpushed commit(s) on %(branch)s is %(age).1f h old "
     "(backup_push_h %(hours)d in agent/plans/QUEUE.md `## Settings`). Back up with "
-    "`git push -u origin %(branch)s` (no PR, so no CI run; the push still needs its ci:quick "
-    "receipt); never `gh pr create` before the batch completes."
+    "`git push -u origin %(branch)s` (no PR, so no CI run; the push needs the batch's one green "
+    "ci:quick receipt, built once per batch and not per commit); never `gh pr create` before "
+    "the batch completes."
 )
 # The judge paragraph (D6), appended to JUDGE_PROMPT only while a local batch is incomplete. Keys: finished, batch.
 JUDGE_LOCAL_BATCH = """

@@ -394,6 +394,9 @@
     "backup-push": {
       "advise": "low"
     },
+    "ciquick-on-red": {
+      "advise": "low"
+    },
     "main-push-unreadable": {
       "advise": "low"
     },

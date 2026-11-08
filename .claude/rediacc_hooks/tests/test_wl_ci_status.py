@@ -8,10 +8,17 @@ touched; `gh` is a shim serving JSON from files.
 
 from __future__ import annotations
 
+import datetime
 import json
+import re
 import subprocess
 import sys
 import time
+
+import pytest
+import wl_ci
+import wl_standdown
+import worklist_messages as M
 
 from rediacc_hooks.tests import wlfix
 
@@ -601,3 +608,159 @@ def test_130b_a_cached_string_info_is_not_a_lookup_failure(wl):
         encoding="utf-8",
     )
     cichk(wl, "a cached string info reads as the cached state", "no", "PR CI-status lookup failed")
+
+
+# ---- One green ci:quick per batch (agent/plans/PLAN-ciquick-green-then-batch.md, G4 and G5) ----
+
+STOP_DIR = wlfix.STOP_DIR
+
+FINISHED = "2026-11-07T04:49:45.449Z"
+FINISHED_EPOCH = datetime.datetime(2026, 11, 7, 4, 49, 45, tzinfo=datetime.UTC).timestamp()
+
+
+# ---- G4: the two messages ---------------------------------------------------------------------
+
+
+def test_batch_end_message_drops_the_whole_lane_step_and_renumbers():
+    text = M.V_LOOP_NEXT_BATCH_OPEN % {
+        "branch": "1108-1",
+        "finished": 3,
+        "batch": 3,
+        "plans": "a, b, c",
+        "ahead": 7,
+        "me": "abc12345",
+    }
+    assert "npm run ci   " not in text, text
+    assert "incremental carry" not in text, text
+    steps = re.findall(r"^\s+(\d+)\. (.*)$", text, flags=re.MULTILINE)
+    assert [n for n, _ in steps] == ["1", "2", "3", "4"], text
+    assert steps[0][1].startswith("npm run ci:quick"), steps
+    assert "one green receipt per batch" in steps[0][1], steps
+    assert steps[2][1] == "git push -u origin 1108-1", steps
+    assert "--batch-body abc12345" in steps[3][1], steps
+
+
+def test_backup_push_message_uses_the_one_receipt_per_batch_wording():
+    text = M.N_BACKUP_PUSH % {"n": 2, "branch": "topic", "age": 5.0, "hours": 4}
+    assert "one green ci:quick receipt" in text, text
+    assert "per batch" in text, text
+    assert "git push -u origin topic" in text, text
+    assert "never `gh pr create`" in text, text
+
+
+# ---- G5: the advisory --------------------------------------------------------------------------
+
+
+def write_receipt(root, exit_code, head="a" * 40):
+    path = root / ".ci" / "cache" / "prepush-receipt.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps({"exitCode": exit_code, "finishedAt": FINISHED, "head": head, "whole": True}),
+        encoding="utf-8",
+    )
+
+
+def write_ledger(ledger, rows):
+    ledger.mkdir(parents=True, exist_ok=True)
+    (ledger / "outcomes-2026-11.jsonl").write_text(
+        "".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8"
+    )
+
+
+def narrow_rows(run_id, at, exit_code):
+    return [
+        {"t": "run", "id": run_id, "src": "quick", "at": at, "narrowed_by": ["--narrow"]},
+        {"t": "end", "run": run_id, "wall_ms": 1000, "exit": exit_code, "cut": False},
+    ]
+
+
+def running(command):
+    return [{"id": "b1", "status": "running", "command": command}]
+
+
+FULL = running("npm run ci:quick")
+
+
+@pytest.fixture
+def world(tmp_path):
+    root = tmp_path / "repo"
+    root.mkdir()
+    return root, tmp_path / "ledger"
+
+
+def test_fires_for_a_red_receipt_and_a_running_full_ciquick(world):
+    root, ledger = world
+    write_receipt(root, 1)
+    assert wl_ci.ciquick_on_red(root, FULL, ledger_dir=ledger) == "aaaaaaaa"
+    text = M.N_CIQUICK_ON_RED % "aaaaaaaa"
+    assert "npm run ci -- --narrow" in text, text
+
+
+def test_fires_when_the_only_narrow_runs_failed_or_predate_the_receipt(world):
+    root, ledger = world
+    write_receipt(root, 1)
+    write_ledger(
+        ledger,
+        narrow_rows("r-red", "2026-11-07T05:10:00.000Z", 1)
+        + narrow_rows("r-old", "2026-11-07T04:00:00.000Z", 0),
+    )
+    assert wl_ci.ciquick_on_red(root, FULL, ledger_dir=ledger) == "aaaaaaaa"
+
+
+def test_silent_when_a_green_narrow_run_came_after_the_red_receipt(world):
+    root, ledger = world
+    write_receipt(root, 1)
+    write_ledger(ledger, narrow_rows("r-ok", "2026-11-07T05:10:00.000Z", 0))
+    assert wl_ci.narrow_passed_since(ledger, FINISHED_EPOCH)
+    assert wl_ci.ciquick_on_red(root, FULL, ledger_dir=ledger) is None
+
+
+def test_silent_for_a_green_receipt(world):
+    root, ledger = world
+    write_receipt(root, 0)
+    assert wl_ci.ciquick_on_red(root, FULL, ledger_dir=ledger) is None
+
+
+def test_silent_with_no_receipt(world):
+    root, ledger = world
+    assert wl_ci.ciquick_on_red(root, FULL, ledger_dir=ledger) is None
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "npm run ci:quick -- --narrow",
+        "npm run ci:quick -- --only check:x",
+        "npm run ci -- --narrow",
+        "grep 'npm run ci:quick' notes.txt",
+        "sleep 60",
+    ],
+)
+def test_silent_when_no_full_ciquick_is_running(world, command):
+    root, ledger = world
+    write_receipt(root, 1)
+    assert wl_ci.ciquick_on_red(root, running(command), ledger_dir=ledger) is None
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "npm run ci:quick",
+        "FOO=1 npm run ci:quick",
+        "cd x && npm run ci:quick 2>&1 | tail -5",
+        "npx tsx scripts/ci-runner/run.ts --quick",
+    ],
+)
+def test_fires_for_each_spelling_of_a_full_ciquick(world, command):
+    root, ledger = world
+    write_receipt(root, 1)
+    assert wl_ci.ciquick_on_red(root, running(command), ledger_dir=ledger) == "aaaaaaaa"
+
+
+def test_the_advisory_rides_the_allow_queue_and_the_effort_table():
+    source = (STOP_DIR / "wl_checks.py").read_text(encoding="utf-8")
+    assert 'vadd("ciquick-on-red"' not in source
+    assert re.search(r'"ciquick-on-red",\s*M\.N_CIQUICK_ON_RED %', source)
+    table = json.loads((STOP_DIR.parent.parent / "config" / "effort.json").read_text("utf-8"))
+    assert table["checks"]["ciquick-on-red"] == {"advise": "low"}
+    assert "ciquick-on-red" not in wl_standdown.CORE

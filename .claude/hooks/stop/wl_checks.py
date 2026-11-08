@@ -5004,6 +5004,22 @@ def run_stop(event, event_ok, worklist, hook_file):
             )
     except Exception:
         pass
+    #   ciquick-on-red  a full ci:quick is running while the newest receipt is red and no --narrow run has passed since (agent/plans/PLAN-ciquick-green-then-batch.md G5).
+    try:
+        _cr = wl_ci.ciquick_on_red(root, live_bg)
+        if _cr:
+            outq_add(
+                worklist,
+                session_id,
+                state_doc,
+                "ciquick-on-red",
+                M.N_CIQUICK_ON_RED % _cr,
+                1,
+                refresh_min=30,
+                on_change=False,
+            )
+    except Exception:
+        pass
     try:
         _rb = None if _lb_open else wl_loopspeed.receipt_behind(root)
         if _rb:

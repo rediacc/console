@@ -1142,12 +1142,17 @@ def _git_subcommand(seg):
     return k, elsewhere
 
 
-def _segment_pipeline(seg, ref):
-    """True when this one segment runs the gates, or pushes `ref`. A push with no refspec (or HEAD) pushes the checked-out branch, which fix_in_flight already requires to be `ref`, unless -C or --git-dir points git at another repository."""
+def _segment_body(seg):
+    """The segment without its leading shell keywords and VAR=value assignments."""
     k = 0
     while k < len(seg) and (seg[k] in _PIPE_KEYWORDS or _ENV_ASSIGN_RE.match(seg[k])):
         k += 1
-    seg = seg[k:]
+    return seg[k:]
+
+
+def _segment_pipeline(seg, ref):
+    """True when this one segment runs the gates, or pushes `ref`. A push with no refspec (or HEAD) pushes the checked-out branch, which fix_in_flight already requires to be `ref`, unless -C or --git-dir points git at another repository."""
+    seg = _segment_body(seg)
     if not seg:
         return False
     head = seg[0]
@@ -1180,6 +1185,113 @@ def _segment_pipeline(seg, ref):
 def runs_push_pipeline(command, ref):
     """True when the background `command` runs a push pipeline for `ref` (see _segment_pipeline)."""
     return any(_segment_pipeline(seg, ref) for seg in _command_segments(str(command or "")))
+
+
+# Flags that make a ci:quick run less than the whole lane: such a run is not a full ci:quick start.
+_NARROWING_FLAGS = ("--narrow", "--only", "--skip", "--changed", "--print", "--list", "--lane")
+
+
+def _segment_full_ciquick(seg):
+    """True when this one segment starts a FULL `npm run ci:quick` (or the runner with --quick) with no narrowing flag. Same segment reading as _segment_pipeline, so the two cannot disagree about what a gate run is."""
+    seg = _segment_body(seg)
+    if not seg:
+        return False
+    if seg[0] == "npm" and len(seg) >= 3 and seg[1] == "run" and seg[2] == "ci:quick":
+        rest = seg[3:]
+    elif seg[0].endswith(_PIPE_RUNNER) or (
+        seg[0] in _PIPE_LAUNCHERS and any(t.endswith(_PIPE_RUNNER) for t in seg[1:3])
+    ):
+        rest = seg[1:]
+        if "--quick" not in rest:
+            return False
+    else:
+        return False
+    return not any(t == f or t.startswith(f + "=") for t in rest for f in _NARROWING_FLAGS)
+
+
+def runs_full_ciquick(command):
+    """True when the background `command` starts a full ci:quick."""
+    return any(_segment_full_ciquick(seg) for seg in _command_segments(str(command or "")))
+
+
+def _ledger_dir(root):
+    """The gate ledger directory, as rediacc_ci.ci.gate_ledger.ledger_dir spells it, or None when the ledger is off. Restated here because this directory takes no `.ci` path hop."""
+    override = os.environ.get("REDIACC_GATE_LEDGER_DIR", "")
+    if override:
+        return pathlib.Path(override)
+    if os.environ.get("CI") == "true":
+        return None
+    url = str(C._git(root, "remote", "get-url", "origin") or "").strip()
+    if url:
+        tail = re.sub(r"\.git$", "", url.rstrip("/"))
+        parts = [p for p in re.split(r"[/:]", tail) if p]
+        slug = "-".join(parts[-2:]) if len(parts) >= 2 else parts[-1]
+        slug = re.sub(r"[^A-Za-z0-9_.-]", "_", slug)
+    else:
+        where = str(pathlib.Path(root).resolve())
+        slug = "local-" + hashlib.sha256(where.encode("utf-8")).hexdigest()[:12]
+    base = os.environ.get("XDG_STATE_HOME") or str(pathlib.Path.home() / ".local" / "state")
+    return pathlib.Path(base) / "rediacc-gate-ledger" / slug
+
+
+def _iso_epoch(stamp):
+    try:
+        return datetime.datetime.fromisoformat(str(stamp)).timestamp()
+    except ValueError:
+        return None
+
+
+def narrow_passed_since(ledger_dir, since):
+    """True when the gate ledger holds a `--narrow` run that started at or after epoch `since` and ended with exit 0. A narrow run writes no receipt, so its run row (`narrowed_by` naming --narrow) and its end row are the only record."""
+    if ledger_dir is None or not pathlib.Path(ledger_dir).is_dir():
+        return False
+    starts, ends = {}, set()
+    for seg in sorted(pathlib.Path(ledger_dir).glob("outcomes-*.jsonl"))[-2:]:
+        try:
+            text = seg.read_text(encoding="utf-8")
+        except OSError:
+            continue
+        for line in text.splitlines():
+            if '"run"' not in line and '"end"' not in line:
+                continue
+            try:
+                row = json.loads(line)
+            except ValueError:
+                continue
+            if not isinstance(row, dict):
+                continue
+            if row.get("t") == "run" and "--narrow" in (row.get("narrowed_by") or []):
+                at = _iso_epoch(row.get("at"))
+                if at is not None and at >= since:
+                    starts[row.get("id")] = at
+            elif row.get("t") == "end" and row.get("exit") == 0 and not row.get("cut"):
+                ends.add(row.get("run"))
+    return any(rid in ends for rid in starts)
+
+
+def ciquick_on_red(root, live_bg, ledger_dir=None):
+    """The receipt's short head when a full ci:quick is running while the newest receipt is red and no `--narrow` run has passed since it finished, else None.
+
+    A red receipt wants the narrow re-run first (`npm run ci -- --narrow`): the whole lane again costs the full wall time to learn what the failing gates alone would say."""
+    if not any(runs_full_ciquick(b.get("command")) for b in live_bg or []):
+        return None
+    try:
+        text = (pathlib.Path(root) / ".ci" / "cache" / "prepush-receipt.json").read_text(
+            encoding="utf-8"
+        )
+        receipt = json.loads(text)
+    except (OSError, ValueError):
+        return None
+    if not isinstance(receipt, dict) or receipt.get("exitCode") in (0, None):
+        return None
+    finished = _iso_epoch(receipt.get("finishedAt"))
+    if finished is None:
+        return None
+    if ledger_dir is None:
+        ledger_dir = _ledger_dir(root)
+    if narrow_passed_since(ledger_dir, finished):
+        return None
+    return str(receipt.get("head") or "")[:8] or "?"
 
 
 # Paths whose change is the loop's own paperwork (records, ledgers, plans, STATE.md), not a fix. Unpushed commits touching only these are no reason to stand a red down.
