@@ -28,6 +28,7 @@ import re
 import time
 from typing import Any
 
+import wl_admit
 import wl_common
 
 TAIL_BYTES = 2 * 1024 * 1024
@@ -60,8 +61,6 @@ _CORROBORATION_RE = re.compile(
 
 def _is_operator_turn(rec):
     """True for a record that is the OPERATOR speaking, and nothing else: wl_admit's one definition. The copy that stood here also counted hook feedback (`isMeta`), task notifications and the compaction summary as the operator."""
-    import wl_admit
-
     return wl_admit._is_operator_turn(rec)
 
 

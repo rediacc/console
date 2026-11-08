@@ -146,6 +146,12 @@ assert wl_admit._is_operator_turn(
     {"type": "user", "message": {"content": [{"type": "text", "text": "[Request interrupted by user]"}]}}
 )
 assert wl_admit._is_operator_turn({"type": "user", "message": {"content": "what is a <task-notification>?"}})
+# wl_deflect reads the same definition: hook feedback and a notification are not the operator there either.
+import wl_deflect
+
+assert not wl_deflect._is_operator_turn({"type": "user", "isMeta": True, "message": {"content": "hi"}})
+assert not wl_deflect._is_operator_turn({"type": "user", "message": {"content": "<task-notification> x"}})
+assert wl_deflect._is_operator_turn({"type": "user", "message": {"content": "go"}})
 print("OK")
 """
 
