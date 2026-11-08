@@ -269,7 +269,7 @@ Two channels, both production-quality: **edge** (released by CD on every merge t
 
 ## Media Assets (tutorial/solution videos + tutorial-narration audio)
 
-Tutorial and solution videos and the tutorial-narration audio cache live in Cloudflare R2 (bucket `rediacc-www-media`, served at `media.rediacc.com`), not in git. A fresh checkout has none of them and does not need them for `npm run dev`: the site fetches from the CDN at runtime and the two CI gates check the manifest, not the filesystem.
+Tutorial and solution videos and the tutorial-narration audio cache live in Cloudflare R2 (bucket `media`, served at `media.rediacc.com`), not in git. A fresh checkout has none of them and does not need them for `npm run dev`: the site fetches from the CDN at runtime and the two CI gates check the manifest, not the filesystem.
 
 **[docs/agent-reference/media-assets.md](docs/agent-reference/media-assets.md)** carries the four prefixes, the pre-publish completeness gate that must never leave `publish-solutions.sh`, the audio-cache exception to the Cache Rule, the sync scripts, and both consequences of the 2026-08-23 history rewrite that changed every commit SHA in the repository.
 

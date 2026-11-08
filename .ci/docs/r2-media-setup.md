@@ -5,7 +5,7 @@ use case.
 
 ## 1. R2 Bucket
 
-- **Bucket name:** `rediacc-www-media`
+- **Bucket name:** `media`
 - **Region:** EEUR
 - **Created:** 2026-07-01
 
@@ -15,7 +15,7 @@ Domain: `media.rediacc.com` (not `videos.rediacc.com` — poster images/subtitle
 live here too, `media` is the more durable name as scope grows).
 
 Dashboard steps (or via API, see below):
-1. Go to R2 → `rediacc-www-media` → Settings
+1. Go to R2 → `media` → Settings
 2. Under **Custom Domains**, click **Add**
 3. Enter `media.rediacc.com`, click **Continue**
 4. Confirm the CNAME record, click **Connect Domain**
@@ -23,7 +23,7 @@ Dashboard steps (or via API, see below):
 
 API equivalent (Global API Key or a token with R2 + Zone edit permissions):
 ```bash
-curl -sS -X POST "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/r2/buckets/rediacc-www-media/domains/custom" \
+curl -sS -X POST "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/r2/buckets/media/domains/custom" \
   -H "X-Auth-Email: $CF_EMAIL" -H "X-Auth-Key: $CF_GLOBAL_API_KEY" -H "Content-Type: application/json" \
   -d '{"domain": "media.rediacc.com", "zoneId": "9e802649c143c9cefd811d8fd671d31c", "enabled": true, "minTLS": "1.0"}'
 ```
@@ -34,7 +34,7 @@ Dashboard steps:
 1. Go to R2 → **Manage R2 API Tokens** → **Create API Token**
 2. Token name: `ci-www-media-rw`
 3. Permissions: **Object Read & Write**
-4. Specify bucket: `rediacc-www-media` only (not account-wide — least privilege,
+4. Specify bucket: `media` only (not account-wide — least privilege,
 a compromised www-media credential can't touch release binaries)
 5. TTL: No expiration
 6. Click **Create API Token**
@@ -48,7 +48,7 @@ CLOUDFLARE_R2_MEDIA_ENDPOINT=https://fa51e4a18d553c30e1633288e9733d04.r2.cloudfl
 ```
 
 Note: if creating the token via the Cloudflare API (`/user/tokens`) instead of
-the dashboard, the S3-compatible credentials are **derived**, not returned directly: `Access Key ID = token.id`, `Secret Access Key = sha256_hex(token.value)`. Permission groups needed: "Workers R2 Storage Bucket Item Read" + "Workers R2 Storage Bucket Item Write", scoped via resource key `com.cloudflare.edge.r2.bucket.<account_id>_default_rediacc-www-media`.
+the dashboard, the S3-compatible credentials are **derived**, not returned directly: `Access Key ID = token.id`, `Secret Access Key = sha256_hex(token.value)`. Permission groups needed: "Workers R2 Storage Bucket Item Read" + "Workers R2 Storage Bucket Item Write", scoped via resource key `com.cloudflare.edge.r2.bucket.<account_id>_default_media`.
 
 ## 4. GitHub Org Secrets
 
@@ -114,7 +114,7 @@ curl -sI -r 0-99 https://media.rediacc.com/<some-path>.mp4   # expect HTTP 206
 S3-compatible API — the scoped `ci-www-media-rw` token's Object Read & Write permission doesn't cover it; use a Global API Key / account-admin token instead):
 
 ```bash
-curl -X PUT "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/r2/buckets/rediacc-www-media/cors" \
+curl -X PUT "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/r2/buckets/media/cors" \
   -H "X-Auth-Key: $CF_GLOBAL_API_KEY" -H "X-Auth-Email: $CF_EMAIL" -H "Content-Type: application/json" \
   --data '{
     "rules": [{
@@ -213,8 +213,8 @@ pages, since the site fetches videos straight from `media.rediacc.com` over the 
 ## 8. Verification
 
 ```bash
-aws s3 ls s3://rediacc-www-media/ --endpoint-url https://fa51e4a18d553c30e1633288e9733d04.r2.cloudflarestorage.com
-aws s3 sync --dryrun packages/www/public/assets/tutorials/video/ s3://rediacc-www-media/tutorials/video/ \
+aws s3 ls s3://media/ --endpoint-url https://fa51e4a18d553c30e1633288e9733d04.r2.cloudflarestorage.com
+aws s3 sync --dryrun packages/www/public/assets/tutorials/video/ s3://media/tutorials/video/ \
   --endpoint-url https://fa51e4a18d553c30e1633288e9733d04.r2.cloudflarestorage.com
 ```
 A clean dry-run (no pending uploads) confirms R2 has every current local byte.
@@ -226,7 +226,7 @@ uses. This document said "Qwen3-TTS" flatly until 2026-09-06, which mattered mor
 
 Unlike `tutorials/video/` and `videos/solutions/`, this is **not** a runtime-served asset — nothing in the browser player ever fetches a `.mp3`. `generate-tutorial-video.ts` / `scripts/lib/ffmpeg-video.ts` mux these files into the final tutorial `.mp4` at build time, then they're done; the mp4 already has audio embedded.
 
-It's synced to the same `rediacc-www-media` bucket under `tutorials/audio/` purely as a **build-time cache** — regenerating narration costs real TTS GPU/electricity, so losing the local copy on a fresh checkout shouldn't mean paying that cost again. It is not covered by the Cache Rule in §5 (no reason to CDN-cache something nothing fetches over HTTP) and is only reachable via the
+It's synced to the same `media` bucket under `tutorials/audio/` purely as a **build-time cache** — regenerating narration costs real TTS GPU/electricity, so losing the local copy on a fresh checkout shouldn't mean paying that cost again. It is not covered by the Cache Rule in §5 (no reason to CDN-cache something nothing fetches over HTTP) and is only reachable via the
 S3 API (`rediacc_ci.deploy.sync_media_to_r2` / `rediacc_ci.deploy.sync_media_from_r2 --audio-only`), never via `media.rediacc.com`.
 
 Restore/upload for this cache is wired into the tutorial pipeline directly. `www_tutorial_audio_restore` and `www_tutorial_audio_upload` are defined in `.ci/media/r2.sh`, and `.ci/media/tutorials.sh` calls them from `www_tutorials_generate` and `www_tutorials_video`. Both are best-effort, so local iteration without `R2_MEDIA_*` set still works, just without the cache (narration

@@ -2,7 +2,7 @@
 
 ## 1. R2 Bucket
 
-- **Bucket name:** `rediacc-releases`
+- **Bucket name:** `releases`
 - **Region:** ENAM
 - **Created:** 2026-02-24
 
@@ -11,7 +11,7 @@
 Domain: `releases.rediacc.com`
 
 Dashboard steps:
-1. Go to R2 → `rediacc-releases` → Settings
+1. Go to R2 → `releases` → Settings
 2. Under **Custom Domains**, click **Add**
 3. Enter `releases.rediacc.com`, click **Continue**
 4. Confirm the CNAME record, click **Connect Domain**
@@ -23,7 +23,7 @@ Dashboard steps:
 1. Go to R2 → **Manage R2 API Tokens** → **Create API Token**
 2. Token name: `ci-releases-rw`
 3. Permissions: **Object Read & Write**
-4. Specify bucket: `rediacc-releases`
+4. Specify bucket: `releases`
 5. TTL: No expiration (or set a long TTL)
 6. Click **Create API Token**
 
@@ -110,6 +110,6 @@ After setup, verify with:
 ```bash
 AWS_ACCESS_KEY_ID=<key> \
 AWS_SECRET_ACCESS_KEY=<secret> \
-aws s3 ls s3://rediacc-releases/ \
+aws s3 ls s3://releases/ \
   --endpoint-url https://fa51e4a18d553c30e1633288e9733d04.r2.cloudflarestorage.com
 ```

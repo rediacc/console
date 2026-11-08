@@ -189,7 +189,7 @@ rdc run -f container_restart -m <machine> --param repository=<repo> --param cont
 
 | Script | Purpose |
 |--------|---------|
-| `python3 -m rediacc_ci.ops.deploy_bench` (run with `PYTHONPATH=.ci`) | Deploy account worker to `bench.rediacc.com` (internal-only D1 testing env) |
+| `python3 -m rediacc_ci.ops.deploy_bench` (run with `PYTHONPATH=.ci`) | Deploy account worker to `bench.rediacc.cloud` (internal-only D1 testing env) |
 | `python3 -m rediacc_ci.ops.reset_bench` (run with `PYTHONPATH=.ci`) | Wipe bench D1 + R2 + worker secrets |
 | `python3 -m rediacc_ci.ops.backup_d1` (run with `PYTHONPATH=.ci`) | Export production/edge D1 databases to `.backups/` |
 | `python3 -m rediacc_ci.ops.bench_access add-current\|list\|add\|remove\|clear\|disable` (run with `PYTHONPATH=.ci`) | Bench IP allowlist: one zone WAF rule, 5 IPs at most, oldest evicted, each IP expires 7 days after it was added (stamp kept in the rule description, refreshed by re-adding); IPv6 is stored as the /64 prefix (a hand CIDR only /64 to /128), and under WSL `add-current` also asks the Windows host for its egress addresses; a 403 from a bench host means run `add-current` (the two health paths stay open for `telemetry-probe.yml`). `npm run ci:quick` runs `preflight` first: it probes bench from here and from the Windows host and runs `add-current` only on a 403, skips under `CI=true`, and never fails the run |
@@ -213,7 +213,7 @@ Secret rotation lives in `private/account/scripts/rotation/` (private submodule)
 
 Slugs: `ses-eu`, `ses-us`, `ses-asia`, `ses-bench`, `cf-cd`, `cf-r2`, `cf-r2-media`, `cf-breakpoint`, `turnstile`, `turnstile-bench`, `otlp-eu`, `otlp-us`, `otlp-asia`, `otlp-bench`, `dkim-notify`.
 
-`cf-r2-media` is bucket-scoped (`rediacc-www-media` only, not account-wide like `cf-r2`) — least-privilege token for the www video-media pipeline, see `.ci/docs/r2-media-setup.md`.
+`cf-r2-media` is bucket-scoped (`media` only, not account-wide like `cf-r2`) — least-privilege token for the www video-media pipeline, see `.ci/docs/r2-media-setup.md`.
 
 `cf-breakpoint` (secret `CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN`) is the on-demand debug box's Cloudflare token: Tunnel edit + Access apps/policies edit at the account level, DNS edit scoped to the **`rediacc.io` zone only**, and nothing else — no Workers, D1, R2 or Pages. It is deliberately NOT `cf-cd`: a breakpoint session's whole purpose is to put a human on a shell, so anything in
 that job's environment is readable by that human, and `cf-cd` would make one debug session equivalent to production Worker-deploy and D1-delete rights. See `.ci/breakpoint/README.md`.

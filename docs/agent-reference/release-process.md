@@ -16,11 +16,11 @@ Install validation runs pre-publish against R2 staging artifacts. Docker is vali
 Two channels, both production-quality:
 
 - **edge** -- released by CD on every merge to main, or by `release:local --channel edge`, downloaded from
-`releases.rediacc.com/cli/edge/` (R2 bucket `rediacc-releases`), serving `edge.rediacc.com`.
+`releases.rediacc.com/cli/edge/` (R2 bucket `releases`), serving `edge.rediacc.com`.
 - **stable** -- the default, promoted from edge by `promote-stable.yml` (see Release to Production below),
 downloaded from `releases.rediacc.com/cli/stable/`, serving `www.rediacc.com`.
 
-R2 layout: `rediacc-releases/cli/{edge,stable}/{manifest.json,latest.json,rdc-*}`.
+R2 layout: `releases/cli/{edge,stable}/{manifest.json,latest.json,rdc-*}`.
 
 **CORRECTION to a claim that was in CLAUDE.md: edge's D1 is NOT cloned from production daily.** `.github/workflows/edge-clone-d1.yml`'s own header says otherwise: *"Edge D1 databases are now persistent for the beta channel. Daily cloning from production is disabled; use workflow_dispatch for manual runs."* The workflow still exists for a manual, on-demand clone -- it is not
 scheduled.

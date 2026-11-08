@@ -50,7 +50,7 @@ No rate goes below 1 while that ruling stands; lowering one needs a new operator
 
 ## R2 lifecycle backstops
 
-`r2_lifecycle` writes lifecycle rules to `rediacc-releases` (and `rediacc-staging` when the listing shows it). The application decides first (`housekeeping/cleanup_versions.py` Phase 8 deletes `<fmt>/dryrun-*` past 7 days and `<fmt>/pr-N` past 3 days); the rules catch only what it missed:
+`r2_lifecycle` writes lifecycle rules to `releases` (and `staging` when the listing shows it). The application decides first (`housekeeping/cleanup_versions.py` Phase 8 deletes `<fmt>/dryrun-*` past 7 days and `<fmt>/pr-N` past 3 days); the rules catch only what it missed:
 
 - `spend-guard-pr-<fmt>` expires `<fmt>/pr-` at 14 days;
 - `spend-guard-dryrun-<fmt>` expires `<fmt>/dryrun-` at 21 days;
