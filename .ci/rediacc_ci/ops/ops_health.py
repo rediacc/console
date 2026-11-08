@@ -969,8 +969,8 @@ def lock_is_stale(path: pathlib.Path, now: float) -> bool:
     """A lock whose recorded process is gone (dead, a zombie, or its pid reused by another process) is stale at once; any lock older than LOCK_STALE_S is stale. Raises OSError when the lock vanished."""
     age = now - path.stat().st_mtime
     rec = lock_record(path)
-    pid = _int(rec.get("pid")) if rec else None
-    if pid is not None and not pid_alive(pid, _int(rec.get("start"))):
+    pid = _int(rec.get("pid")) if rec is not None else None
+    if rec is not None and pid is not None and not pid_alive(pid, _int(rec.get("start"))):
         return True
     return age >= LOCK_STALE_S
 

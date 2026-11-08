@@ -626,7 +626,7 @@ def test_every_caller_handles_the_no_pr_state(gate):
 
 def imports_wl_ci(text):
     """Whether the Python source `text` imports `wl_ci`, read from its syntax tree: a parenthesized `from pkg import (` with `wl_ci,` on a line of its own is one statement over several lines, which a line-by-line match misses."""
-    imported = set()
+    imported: set[str] = set()
     for node in ast.walk(ast.parse(text)):
         if isinstance(node, ast.Import):
             imported.update(part for a in node.names for part in a.name.split("."))

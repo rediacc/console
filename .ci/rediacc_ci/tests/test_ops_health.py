@@ -9,6 +9,7 @@ import os
 import pathlib
 import subprocess
 import time
+from typing import Any
 
 import pytest
 
@@ -480,6 +481,7 @@ def test_zombie_and_reused_pid_are_not_live_holders(tmp_path):
         zombie.wait()
     me = os.getpid()
     start = oh.process_start(me)
+    assert start is not None
     assert oh.pid_alive(me, start)
     assert not oh.pid_alive(me, start + 1)
     lock = tmp_path / oh.CACHE_DIR_REL / oh.LOCK_NAME
@@ -836,7 +838,7 @@ def test_two_pairs_that_spell_one_source_name_keep_both_verdicts():
 def test_repair_ledger_rows_use_the_source_of_the_machines_verdict():
     """Two configs share machine m1: each config's repair row names the same source its verdict does."""
     action = {"code": "a.b", "action": "act", "class": "auto-safe", "result": "ok"}
-    rows = [
+    rows: list[dict[str, Any]] = [
         {
             "config": cfg,
             "machine": "m1",

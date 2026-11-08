@@ -123,7 +123,7 @@ def test_only_a_transient_scope_counts_as_the_backup():
             unified = [
                 ln.removeprefix("0::") for ln in fh.read().splitlines() if ln.startswith("0::")
             ]
-        holder_cgroup = unified[0] if unified else None
+        holder_cgroup: str | None = unified[0] if unified else None
         # CONTROL: the sampler's own pgrep sees the holder, so its absence from the scopes below is the scope filter's doing and not the holder being invisible.
         seen = subprocess.run(
             ["pgrep", "-f", "[r]enet backup snapshot"], capture_output=True, text=True, check=False
@@ -141,6 +141,7 @@ def test_only_a_transient_scope_counts_as_the_backup():
     assert all("/run-" in path for path in parsed.scopes)
     if holder_cgroup is None:
         pytest.skip("cgroup v1: no unified path to compare, so the scope filter is not exercised")
+    assert holder_cgroup is not None  # pytest.skip is untyped here, so mypy does not narrow past it
     if not holder_cgroup.endswith(".scope") or "/run-" not in holder_cgroup:
         assert holder_cgroup not in parsed.scopes, "the holder outside run-*.scope was counted"
 
@@ -841,7 +842,7 @@ def test_the_run_budget_counts_from_before_the_guard_reads_the_window(tmp_path, 
             world.now += 100.0
         return runner(argv, timeout)
 
-    world.runner = slow_window
+    monkeypatch.setattr(world, "runner", slow_window)
     seen: list[rcs._Watch] = []
 
     def capture(_deps, _proc, _start, _baseload, _args, _out, watch):

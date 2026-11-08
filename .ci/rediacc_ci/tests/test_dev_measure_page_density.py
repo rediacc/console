@@ -10,7 +10,7 @@ import socket
 import stat
 import subprocess
 import sys
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
@@ -306,7 +306,7 @@ def test_a_server_that_survives_sigkill_is_named_on_stderr(
     started: list[subprocess.Popen[bytes]] = []
 
     class Stubborn:
-        def __init__(self, argv: list[str], **kwargs: int) -> None:
+        def __init__(self, argv: list[str], **kwargs: Any) -> None:
             self.real = real_popen(argv, **kwargs)
             started.append(self.real)
             self.pid = self.real.pid
@@ -323,7 +323,7 @@ def test_a_server_that_survives_sigkill_is_named_on_stderr(
         def wait(self, timeout: float | None = None) -> int:
             raise subprocess.TimeoutExpired("server", timeout or 0)
 
-    def popen(argv: list[str], **kwargs: int) -> object:
+    def popen(argv: list[str], **kwargs: Any) -> object:
         # `subprocess` is one module for the whole process: only the preview server is stubborn.
         return Stubborn(argv, **kwargs) if "http.server" in argv else real_popen(argv, **kwargs)
 
