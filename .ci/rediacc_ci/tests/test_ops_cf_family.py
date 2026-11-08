@@ -833,6 +833,10 @@ def test_deploy_bench_matches_bash(world: h.World) -> None:
     recorded = "✓ Bench version recorded in .ci/cache/live-deploys/bench.json"
     assert port_lines.count(recorded) == 1
     port_lines.remove(recorded)
+    # DECLARED DELTA (a304cb5a9c): the port checks that every queue bound in wrangler.bench.toml exists before the deploy, creating a missing one; asserted once, then dropped.
+    queue_step = "→ Preflight: every queue bound in wrangler.bench.toml exists (missing ones are created)"
+    assert port_lines.count(queue_step) == 1
+    port_lines.remove(queue_step)
     # DECLARED DELTA (2026-10-28): the build line names bench/dist/account, where the bash named dist/account.
     port_lines = [
         ln.replace("/workers/account/bench/dist/", "/workers/account/dist/") for ln in port_lines
