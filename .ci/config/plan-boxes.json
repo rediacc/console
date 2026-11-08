@@ -1102,11 +1102,10 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 29,
-      "done": 5,
+      "open": 28,
+      "done": 6,
       "open_sigs": [
         "096ada29",
-        "0a5bd9a8",
         "0a6e5712",
         "0fbd62dc",
         "130d250c",
@@ -1136,6 +1135,7 @@
         "f4b49503"
       ],
       "done_sigs": [
+        "0a5bd9a8",
         "19bcfe4a",
         "4fecf68e",
         "6296754b",
@@ -1791,27 +1791,26 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 15,
-      "done": 13,
+      "open": 11,
+      "done": 17,
       "open_sigs": [
         "01a216f3",
         "062294e2",
-        "1e8a7bfc",
         "3981294e",
         "4e39aac7",
-        "58b6398f",
-        "5d01ed3d",
         "a9d7e631",
         "ae60bb69",
         "b999da0c",
         "bd0c8a21",
         "bf61703a",
         "c39666ea",
-        "c418d185",
         "cfa4c5c0"
       ],
       "done_sigs": [
         "108e6833",
+        "1e8a7bfc",
+        "58b6398f",
+        "5d01ed3d",
         "63337671",
         "7e578ed5",
         "82f203f4",
@@ -1821,6 +1820,7 @@
         "9b7cf5fc",
         "a4963d94",
         "a6b330c2",
+        "c418d185",
         "e6d20a1c",
         "f6e0cfd1",
         "f70ece24"
@@ -2875,21 +2875,18 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 18,
-      "done": 2,
+      "open": 15,
+      "done": 5,
       "open_sigs": [
         "02e7480f",
         "08056aeb",
         "18e590ce",
-        "21e3ffd0",
         "3285fb52",
         "34398e26",
-        "35ec72c0",
         "37212ea1",
         "42818efa",
         "44171e9c",
         "6b24c6fa",
-        "83842948",
         "87da6b72",
         "976bf9ae",
         "9a01d32a",
@@ -2899,7 +2896,10 @@
       ],
       "done_sigs": [
         "1fa6d9e0",
-        "7ce47951"
+        "21e3ffd0",
+        "35ec72c0",
+        "7ce47951",
+        "83842948"
       ]
     },
     "agent/plans/PLAN-wire-account-vitest-ci.md": {

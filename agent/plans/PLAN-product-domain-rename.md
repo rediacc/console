@@ -107,16 +107,18 @@ M1 merges with these boxes open, so the PR body carries `Operational-Reason: hos
 
 ### Names, one batch
 
-- [ ] W3 [writer] Host source. `regions.json` and its twin lose the stable and edge pairs. `well-known.env` gains `WK_PRODUCT_DOMAIN`, because `WK_APEX_DOMAIN` means both products today, sets the `.cloud` hosts and default origin `https://eu.rediacc.cloud`, and drops `WK_EDGE_ORIGIN` and the edge proxy hosts. Regenerate the well-known outputs.
+- [x] W3 [writer] Host source. `regions.json` and its twin lose the stable and edge pairs. `well-known.env` gains `WK_PRODUCT_DOMAIN`, because `WK_APEX_DOMAIN` means both products today, sets the `.cloud` hosts and default origin `https://eu.rediacc.cloud`, and drops `WK_EDGE_ORIGIN` and the edge proxy hosts. Regenerate the well-known outputs.
   Owns: regions.json, packages/shared/src/regions/data.json, .ci/config/well-known.env, .ci/config/well-known.generated.sh, packages/shared/src/config/well-known.generated.ts, scripts/data/literal-sources.json, .ci/rediacc_ci/quality/region_consistency_offline.py, .ci/rediacc_ci/quality/literal_sources.py, .ci/rediacc_ci/quality/regions_sync.py.
   Accept: `npm run check:ci-regions-sync && npm run check:ci-literal-sources && npm run check:ci-region-consistency` rc 0.
+    (ticked) 2026-11-08T18:46:33Z by d778be9d: commit:116d34faaa W3 landed 116d34faaa; accept regions-sync, literal-sources, region-consistency rc 0 on the batch tip (read 2026-11-08 19:0xZ)
 - [x] W4 [writer] Every Wrangler config, in one owner. Rename to `wrangler.<r>.toml` and `wrangler.bench.toml`, delete the stable and edge files, render the proxies, set routes and `WEBAUTHN_RP_ID` and `WEBAUTHN_ORIGIN` to the new hosts, set the new D1 ids, rename the www Worker to `www` on `www.rediacc.com`, delete `workers/www/wrangler.edge.toml`, and bind KV `ENTERPRISE_LOOKUP` on `www`.
   Owns: workers/account/wrangler*.toml, workers/proxy/wrangler*.toml, workers/www/wrangler*.toml, .ci/rediacc_ci/deploy/proxy_configs.py.
   Accept: `npm run check:ci-proxy-configs && npm run check:ci-proxy-deploy-dry-run` rc 0.
     (ticked) 2026-11-08T18:02:42Z by d778be9d: commit:1a984268fa W4 landed in 1a984268fa: one wrangler config per region and bench on the shared names and L3 ids; accept check:ci-proxy-configs rc 0 and check:ci-proxy-deploy-dry-run rc 0 on the batch tip
-- [ ] W5 [writer] Deploy and ops code follows: `deploy_account`, `deploy_proxy` (and its stale claim of a DEV key at .ci/rediacc_ci/deploy/deploy_proxy.py:12, since bench binds the production key per .ci/rediacc_ci/ops/deploy_bench.py:25), `deploy_bench`, `reset_bench`, `backup_d1`, `test_d1_migrations`, `console_executor`, `service_bindings_audit`, `prune_worker_secrets`, `push_backup_credentials`, `mirror_config_store`, `portal_health`, `portal_captcha`, `resolve_www_deploy_target`, `deploy_www`, `release/local.py`, `sync_media_*`, `verify_*`, and `bench_access` on the new zone.
+- [x] W5 [writer] Deploy and ops code follows: `deploy_account`, `deploy_proxy` (and its stale claim of a DEV key at .ci/rediacc_ci/deploy/deploy_proxy.py:12, since bench binds the production key per .ci/rediacc_ci/ops/deploy_bench.py:25), `deploy_bench`, `reset_bench`, `backup_d1`, `test_d1_migrations`, `console_executor`, `service_bindings_audit`, `prune_worker_secrets`, `push_backup_credentials`, `mirror_config_store`, `portal_health`, `portal_captcha`, `resolve_www_deploy_target`, `deploy_www`, `release/local.py`, `sync_media_*`, `verify_*`, and `bench_access` on the new zone.
   Owns: the modules named, under .ci/rediacc_ci/deploy/**, .ci/rediacc_ci/ops/** and .ci/rediacc_ci/release/local.py.
   Accept: `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_ops_service_bindings_audit.py .ci/rediacc_ci/tests/test_ops_mirror_config_store.py .ci/rediacc_ci/tests/test_deploy_account_secrets_local.py .ci/rediacc_ci/tests/test_ops_deploy_bench.py` rc 0.
+    (ticked) 2026-11-08T18:46:34Z by d778be9d: commit:bb8321d86f W5 landed (f6cf1731aa, 2db29acc1e, 69369e9a6e, bb8321d86f); accept pytest service_bindings_audit, mirror_config_store, account_secrets_local, deploy_bench rc 0 on the batch tip
 - [x] W6 [writer] Move every silent refusal in the Design to the new names, with a plant for each that fails on the old pattern.
   Owns: .ci/rediacc_ci/ops/r2_lifecycle.py, .ci/rediacc_ci/drills/backup*.py, scripts/gates/check-backup-bucket-conformance.ts, the `probe-s3-delete-semantics.ts` line in private/account.
   Accept: `npm run check:ci-backup-bucket-conformance` rc 0 and `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_ops_r2_lifecycle.py` rc 0.
@@ -133,19 +135,21 @@ M1 merges with these boxes open, so the PR body carries `Operational-Reason: hos
   Owns: private/account/src/routes/portal.ts, private/account/src/types/subscription.ts, private/account/web/src/auth/**, private/account/web/src/components/**, private/account/tests/integration/billing-open-on-shared-tier.test.ts (new).
   Accept: `(cd private/account && npx vitest run tests/integration/billing-open-on-shared-tier.test.ts tests/integration/proxy-binding-wiring.test.ts)` rc 0 and `npm run check:ci-cli-contract` rc 0.
     (ticked) 2026-11-08T18:02:47Z by d778be9d: commit:9900c15aae W9 landed as account 3813ba5 with 6a379a0: billing opens on the shared tier, isEdge gone; accept vitest billing-open-on-shared-tier and proxy-binding-wiring rc 0 (67 passed with W8) and check:ci-cli-contract rc 0 on the batch tip
-- [ ] W10 [writer] Secrets to the one pattern. `account-secrets-<r>` profiles take the set that carries Stripe, and `ACCOUNT_CONFIG_SERVER_KEY_EU` takes the EU_STABLE value because the seeded config objects need it.
+- [x] W10 [writer] Secrets to the one pattern. `account-secrets-<r>` profiles take the set that carries Stripe, and `ACCOUNT_CONFIG_SERVER_KEY_EU` takes the EU_STABLE value because the seeded config objects need it.
   Owns: .ci/config/secret-supply.json, .ci/config/bws-unrequested.json, .ci/rediacc_ci/deploy/set_account_worker_secrets.py, .ci/rediacc_ci/deploy/account_secrets_local.py.
   Accept: `npm run check:ci-secret-supply && npm run check:ci-backup-credential-isolation` rc 0.
   (result 2026-11-08) No new bws names: the landed profiles already bind every name the shared Workers need (W10 kept the _STABLE names and maps the US/ASIA _EDGE config keys and KEKs under _STABLE local names). Both backup tokens rotated in place: cf-r2-backup-stable to rediacc-backup-stable-20261108T174312Z (60b2af14) scoped to backups-eu, backups-us, backups-asia; cf-r2-backup-bench to rediacc-backup-bench-20261108T174350Z (042add71) scoped to backups-bench. The old stable token b38b0881 stays in grace with no eligibility date, because the live old eu Worker still serves the hostinger nightly backup; L11 deletes it with `rotation deactivate cf-r2-backup-stable` after L9 and L10, and the old bench token 6773e436 if L5 has not.
+    (ticked) 2026-11-08T18:46:35Z by d778be9d: commit:73879fe606 W10 landed 73879fe606 with 990a3d9f28 and b5caf6b8dc; accept check:ci-secret-supply and check:ci-backup-credential-isolation rc 0 on the batch tip
 - [x] L4 [live] Write the new bws names with their values, ahead of any deploy. Old names stay until L11.
   Accept: `PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile account-secrets-eu -- true` rc 0.
     (ticked) 2026-11-08T17:46:44Z by d778be9d: live 2026-11-08: no new bws names needed (landed profiles resolve: account-secrets-eu, -us, -asia, deploy-bench rc 0); both backup tokens rotated in place onto backups-<region> and backups-bench (60b2af14, 042add71; account 84f9967 via 49a0a1ae1f); scope probes rc 0 every leg; old stable token held until L11 so the hostinger nightly keeps working
 - [ ] W11 [writer] Sweep tests and goldens by a transform with a byte-identical proof, since goldens read by 62 tests can only be rewritten. Add the old names to retired terms.
   Owns: .ci/rediacc_ci/tests/**, .ci/config/retired-terms.json.
   Accept: `npm run check:ci-retired-terms` rc 0 and `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests -k "deploy or ops"` rc 0.
-- [ ] W12 [writer] Sweep docs outside `packages/www`, which belongs to PLAN-website-routing-and-mail.md W5.
+- [x] W12 [writer] Sweep docs outside `packages/www`, which belongs to PLAN-website-routing-and-mail.md W5.
   Owns: docs/**, CLAUDE.md, .ci/docs/**.
   Accept: `npm run check:ci-literal-sources && npm run check:ci-doc-region-parity` rc 0.
+    (ticked) 2026-11-08T18:46:36Z by d778be9d: commit:0070982315c W12 landed 0070982315; accept check:ci-literal-sources and check:ci-doc-region-parity rc 0 on the batch tip
 
 ### Bench
 

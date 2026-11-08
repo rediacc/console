@@ -69,9 +69,10 @@ This plan is public: no customer name appears in it or in any tracked file. `acm
   Owns: .ci/rediacc_ci/enterprise/__init__.py (new), .ci/rediacc_ci/enterprise/names.py (new), .ci/rediacc_ci/tests/test_enterprise_names.py (new).
   Accept: `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_enterprise_names.py` rc 0.
     (ticked) 2026-11-08T16:04:34Z by d778be9d: commit:74075193c7 names.check refuses malformed, reserved (derived from regions.json and well-known plus service labels, notify added in 0a3ea72044), -proxy and opaque names; pytest test_enterprise_names.py 28 passed rc 0
-- [ ] N2 [writer] Leak gate refusing a tracked `enterprise.*.toml` or a non-opaque store name, and masking in the two public reports of anything not derived from `regions.json`.
+- [x] N2 [writer] Leak gate refusing a tracked `enterprise.*.toml` or a non-opaque store name, and masking in the two public reports of anything not derived from `regions.json`.
   Owns: .ci/rediacc_ci/quality/enterprise_leak.py (new), .ci/rediacc_ci/ops/cf_usage_report.py, .ci/rediacc_ci/housekeeping/cf_leftovers.py, .ci/rediacc_ci/tests/test_enterprise_leak.py (new).
   Accept: `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_enterprise_leak.py` rc 0.
+    (ticked) 2026-11-08T18:46:43Z by d778be9d: commit:1cddd943e2 N2 landed 1cddd943e2; accept pytest test_enterprise_leak.py rc 0 on the batch tip
 - [x] N3 [writer] Control schema, one per region (companies, scope, ring, override, window, onboarding, rollout, audit), and a registry client that reads all regions and names an unreachable one.
   Owns: private/account/control/migrations/0001_control.sql (new), .ci/rediacc_ci/enterprise/registry.py (new), .ci/rediacc_ci/tests/test_enterprise_registry.py (new).
   Accept: `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_enterprise_registry.py` rc 0.

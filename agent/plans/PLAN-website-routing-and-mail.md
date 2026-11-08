@@ -56,15 +56,18 @@ The zone is on Cloudflare with null MX, `v=spf1 -all` and `_dmarc` reject with s
 - [ ] W1 [writer] The www Worker gains `GET /api/geo` and `POST /api/enterprise-lookup`. `ops/enterprise_lookup.py` gains put, delete and the free-mail refusal, and `deploy_www` pushes the pepper.
   Owns: workers/www/src/index.ts, workers/www/src/geo.ts (new), workers/www/src/enterprise-lookup.ts (new), workers/www/src/__tests__/**, .ci/rediacc_ci/ops/enterprise_lookup.py (new), .ci/config/free-mail-domains.json (new), .ci/rediacc_ci/tests/test_ops_enterprise_lookup.py (new), .ci/rediacc_ci/deploy/deploy_www.py.
   Accept: `(cd workers/www && npm run test:unit)` rc 0 and `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_ops_enterprise_lookup.py` rc 0.
-- [ ] W2 [writer] The popup per the Design. `marketing-host.ts` collapses the stable and edge split to one mapping, and the inline copy in `BaseLayout.astro` follows. An English privacy row names `rediacc_region` and the new English keys land, then the hashes are regenerated. `packages/www/scripts/probe-region-picker.ts` drives the popup in a real browser and exits non-zero on a failed step.
+- [x] W2 [writer] The popup per the Design. `marketing-host.ts` collapses the stable and edge split to one mapping, and the inline copy in `BaseLayout.astro` follows. An English privacy row names `rediacc_region` and the new English keys land, then the hashes are regenerated. `packages/www/scripts/probe-region-picker.ts` drives the popup in a real browser and exits non-zero on a failed step.
   Owns: packages/www/src/components/RegionPickerModal.tsx, packages/www/src/components/__tests__/RegionPickerModal.test.tsx (new), packages/www/src/utils/marketing-host.ts, packages/www/src/utils/__tests__/marketing-host.test.ts, packages/www/src/layouts/BaseLayout.astro, packages/www/src/types/globals.d.ts, packages/www/src/config/regions.ts, packages/www/src/i18n/translations/en.json, packages/www/src/i18n/translations/.translation-hashes.json, packages/www/scripts/probe-region-picker.ts (new).
   Accept: `(cd packages/www && npx vitest run src/components/__tests__/RegionPickerModal.test.tsx src/utils/__tests__/marketing-host.test.ts)` rc 0 and `npm run check:i18n` rc 0.
-- [ ] W3 [writer] Translations of W2's keys in 12 locales, delta only, on sonnet.
+    (ticked) 2026-11-08T18:46:39Z by d778be9d: commit:f9d8fabab4 W2 landed f9d8fabab4; accept vitest RegionPickerModal and marketing-host rc 0 and check:i18n rc 0 on the batch tip
+- [x] W3 [writer] Translations of W2's keys in 12 locales, delta only, on sonnet.
   Owns: packages/www/src/i18n/translations/{ar,de,es,et,fr,it,ja,ko,pt,ru,tr,zh}.json, packages/www/src/i18n/translations/.naturalized-hashes.json.
   Accept: `npm run check:i18n` rc 0.
-- [ ] W4 [writer] Rewrite `data-regions.md` and `release-channels.md` for the new hosts and the one-site model in English, then the 12 locales.
+    (ticked) 2026-11-08T18:46:40Z by d778be9d: commit:f0576ec7a4 W3 landed f0576ec7a4; accept check:i18n rc 0 on the batch tip
+- [x] W4 [writer] Rewrite `data-regions.md` and `release-channels.md` for the new hosts and the one-site model in English, then the 12 locales.
   Owns: packages/www/src/content/docs/*/data-regions.md, packages/www/src/content/docs/*/release-channels.md.
   Accept: `npm run check:i18n` rc 0 and `! grep -rl 'edge-eu\.rediacc\.com' packages/www/src/content/docs/*/data-regions.md` rc 0.
+    (ticked) 2026-11-08T18:46:41Z by d778be9d: commit:abc292b1b7 W4 landed abc292b1b7; accept check:i18n rc 0 and no edge-eu.rediacc.com in data-regions pages on the batch tip
 - [ ] W5 [writer] The rest of the `packages/www` host sweep: 84 lines in 43 source files and 77 under `public`, counted by the rename survey, with `edge.rediacc.com` and every `edge-<r>` and bare `<r>.rediacc.com` account host moved to `.cloud`.
   Owns: packages/www/src/** except W2's and W4's files, packages/www/public/**.
   Accept: `! git grep -nE '(edge-)?(eu|us|asia)\.rediacc\.com|edge\.rediacc\.com' -- packages/www/src packages/www/public` rc 0 and `(cd packages/www && npm run build)` rc 0.
