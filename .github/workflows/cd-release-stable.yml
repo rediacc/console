@@ -1,4 +1,4 @@
-name: Release to Production
+name: CD - Release to Stable
 
 on:
   schedule:
@@ -29,7 +29,7 @@ on:
 # promote at the same time. Queued, never cancelled: a cancelled promotion
 # half-way through the R2/Docker writes is worse than a late one.
 concurrency:
-  group: promote-stable
+  group: cd-release-stable
   cancel-in-progress: false
 
 # Every job below declares its own permissions, so this workflow-level default
@@ -42,7 +42,7 @@ env:
 
 jobs:
   promote:
-    name: Release to Production
+    name: Release to Stable
     runs-on: ubuntu-latest
     # workflow_run fires on EVERY CI - Drift completion on main (red or green);
     # only a scheduled drift run that concluded success or failure may proceed
@@ -262,42 +262,6 @@ jobs:
             echo "- R2: CLI, APT, RPM, APK, Archlinux promoted; Docker: all images retagged :${{ steps.soak.outputs.version }} -> :stable"
           } >> "$GITHUB_STEP_SUMMARY"
 
-  # Deploy stable Workers from the exact tagged version
-  deploy-marketing-stable:
-    name: Deploy stable Marketing
-    # The callee needs only checkout.
-    permissions:
-      contents: read
-    needs: [promote]
-    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && needs.promote.outputs.promoted == 'true'
-    uses: ./.github/workflows/cd-deploy-worker.yml
-    with:
-      target: stable
-      ref: v${{ needs.promote.outputs.version }}
-      version: ${{ needs.promote.outputs.version }}
-    secrets:
-      BWS_ACCESS_TOKEN: ${{ secrets.BWS_ACCESS_TOKEN }}
-
-  deploy-account-stable:
-    name: Deploy stable Account (all regions)
-    # The callee needs checkout. actions: read is the called workflow's
-    # stage-executor job, skipped on stable, but GitHub checks a callee's
-    # permissions against its caller at startup whatever its jobs' `if:`.
-    permissions:
-      contents: read
-      actions: read
-    needs: [promote]
-    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && needs.promote.outputs.promoted == 'true'
-    uses: ./.github/workflows/cd-deploy-account.yml
-    with:
-      target: stable
-      ref: v${{ needs.promote.outputs.version }}
-      # The proxy is built from executor/v<version>/, staged when this version
-      # deployed to edge, so stable runs the edge executor's exact bytes.
-      version: ${{ needs.promote.outputs.version }}
-    secrets:
-      BWS_ACCESS_TOKEN: ${{ secrets.BWS_ACCESS_TOKEN }}
-
   # Verify stable endpoints after deployment
   verify-stable:
     name: Verify stable
@@ -312,7 +276,7 @@ jobs:
     # tag move or the release edit.
     permissions:
       contents: write
-    needs: [promote, deploy-marketing-stable, deploy-account-stable]
+    needs: [promote]
     if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && needs.promote.outputs.promoted == 'true'
     runs-on: ubuntu-slim
     timeout-minutes: 10
@@ -341,7 +305,7 @@ jobs:
       # (v1.8.0) and 38556650310 (v2.1.0) failed here with "Resource not
       # accessible by integration (HTTP 403)" after the endpoints verified.
       # The App token's `cd` preset carries workflows:write for the same
-      # reason on cd-v2's tag push (.github/actions/app-token/action.yml).
+      # reason on cd-release-edge's tag push (.github/actions/app-token/action.yml).
       - name: Fetch secrets from Bitwarden
         uses: ./.github/actions/bws-secrets
         with:

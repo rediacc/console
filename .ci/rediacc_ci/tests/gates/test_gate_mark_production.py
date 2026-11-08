@@ -10,7 +10,7 @@ The failure this guards is not "it wrote the wrong sha". It is the softer one th
 
 HERMETIC: `gh` is shimmed, so this never touches GitHub and cannot move a real tag. A gate that needs the network is a gate that gets skipped on somebody else's outage.
 
-WHAT THIS CANNOT SEE: it does not prove promote-stable.yml actually RUNS the script, nor that it runs AFTER endpoint verification. That wiring is check-ci-workflow-invariants.sh's kind of subject, not this file's.
+WHAT THIS CANNOT SEE: it does not prove cd-release-stable.yml actually RUNS the script, nor that it runs AFTER endpoint verification. That wiring is check-ci-workflow-invariants.sh's kind of subject, not this file's.
 """
 
 import os

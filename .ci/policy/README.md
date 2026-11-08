@@ -304,10 +304,10 @@ git blame --line-porcelain -- <file> \
 | 42 | `cd-deploy-account.yml:deploy` | 2026-08-05 | 31 |
 | 43 | `cd-deploy-account.yml:read-regions` | 2026-08-05 | 31 |
 | 46 | `cd-deploy-worker.yml:deploy` | 2026-08-05 | 31 |
-| 49 | `cd-v2.yml:init` | 2026-08-05 | 31 |
-| 50 | `cd-v2.yml:publish` | 2026-08-05 | 31 |
-| 51 | `cd-v2.yml:smoke-test` | 2026-08-05 | 31 |
-| 52 | `cd-v2.yml:tag-and-release` | 2026-08-05 | 31 |
+| 49 | `cd-release-edge.yml:init` | 2026-08-05 | 31 |
+| 50 | `cd-release-edge.yml:publish` | 2026-08-05 | 31 |
+| 51 | `cd-release-edge.yml:smoke-test` | 2026-08-05 | 31 |
+| 52 | `cd-release-edge.yml:tag-and-release` | 2026-08-05 | 31 |
 | 55 | `ci-build-docker.yml:build-cli-docker` | 2026-08-05 | 31 |
 | 56 | `ci-build-docker.yml:build-cli-docker-skip` | 2026-08-05 | 31 |
 | 57 | `ci-build-docker.yml:build-devcontainer-amd64` | 2026-08-05 | 31 |
@@ -355,8 +355,8 @@ git blame --line-porcelain -- <file> \
 | 124 | `housekeeping.yml:cleanup` | 2026-08-05 | 31 |
 | 125 | `housekeeping.yml:stripe-cleanup` | 2026-08-05 | 31 |
 | 128 | `nightly-status.yml:report` | 2026-08-05 | 31 |
-| 131 | `promote-stable.yml:promote` | 2026-08-05 | 31 |
-| 132 | `promote-stable.yml:verify-stable` | 2026-08-05 | 31 |
+| 131 | `cd-release-stable.yml:promote` | 2026-08-05 | 31 |
+| 132 | `cd-release-stable.yml:verify-stable` | 2026-08-05 | 31 |
 | 138 | `watchdog-monitor.yml:monitor` | 2026-08-05 | 31 |
 
 #### `.unverified-download-allowlist`

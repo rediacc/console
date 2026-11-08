@@ -1,4 +1,4 @@
-name: Console CT - Install Methods
+name: CT - Install Methods
 
 # Reusable workflow to test all documented installation methods
 # Called after successful release to validate published artifacts

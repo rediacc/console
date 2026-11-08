@@ -2,7 +2,7 @@
 
 Behavioural test for `.ci/scripts/quality/check_label_inventory.py`.
 
-WHAT IT GUARDS. The gate reconciles `.github/labels.yml` against the labels that actually exist on the repo, in BOTH directions, and the direction that bit was declared-but-absent: `rollback` was declared and referenced and did not exist, and `promote-stable.yml` searches `label:rollback`. A GitHub search for a nonexistent label returns zero PRs rather than an error, so the
+WHAT IT GUARDS. The gate reconciles `.github/labels.yml` against the labels that actually exist on the repo, in BOTH directions, and the direction that bit was declared-but-absent: `rollback` was declared and referenced and did not exist, and `cd-release-stable.yml` searches `label:rollback`. A GitHub search for a nonexistent label returns zero PRs rather than an error, so the
 promotion block never fired. Nothing said so. That is the class this gate catches.
 
 Every case carries its control: a firing direction is only meaningful next to the matching clean case, and a refusal is only meaningful next to a read that succeeds.

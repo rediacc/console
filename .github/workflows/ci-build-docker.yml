@@ -1,4 +1,4 @@
-name: Console CI - Build (Docker)
+name: CI - Build (Docker)
 
 on:
   workflow_call:

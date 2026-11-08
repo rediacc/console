@@ -1,4 +1,4 @@
-name: Console CT - Tests
+name: CT - Tests
 
 # Which suites run in which job is driven by the playwright.*.config.ts files.
 # Suites deliberately left OUT of CI (concurrent multi-cluster, cluster rehearse,

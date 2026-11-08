@@ -342,7 +342,7 @@ def test_stable_is_refused_locally(argv: list[str], capsys: pytest.CaptureFixtur
     rc = local.main(argv, runner=runner, gates=_gates([]))
     err = capsys.readouterr().err
     assert rc == 2
-    assert "promote-stable.yml" in err
+    assert "cd-release-stable.yml" in err
     assert "ASKED:2026-10-27T09:45Z" in err
     assert runner.calls == []
 

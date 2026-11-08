@@ -669,9 +669,9 @@ def test_unconditional_ancestors_and_conditional_descendants_pass():
 
 # ---- the release-order phase (PLAN-cd-errors-in-ci W5 + W4 pins; added after the twin, no differential) ----------
 #
-# CD run 37749637824 (v2.2.0): ci.yml sealed cli/v2.2.0/.released, cd-v2's post-publish install validation went red on a Rocky 9 DNF stall, and `tag-and-release`, the only job that created the git tag, was skipped. The pure cases below drive `analyse_release` over literal dicts in both directions; the subprocess cases drive the REAL files, including the real pre-fix cd-v2.yml.
+# CD run 37749637824 (v2.2.0): ci.yml sealed cli/v2.2.0/.released, cd-release-edge's post-publish install validation went red on a Rocky 9 DNF stall, and `tag-and-release`, the only job that created the git tag, was skipped. The pure cases below drive `analyse_release` over literal dicts in both directions; the subprocess cases drive the REAL files, including the real pre-fix cd-release-edge.yml.
 
-# The last commit whose cd-v2.yml carried the tag inside `tag-and-release`, behind validate-install-published and gated off on retry_mode. A full sha so it cannot become ambiguous.
+# The last commit whose cd-release-edge.yml carried the tag inside `tag-and-release`, behind validate-install-published and gated off on retry_mode. A full sha so it cannot become ambiguous.
 PRE_FIX_CD_COMMIT = "0e6af2d1cb918135c79c057ee9d29b5dfb276af1"
 
 TAG_RUN = 'git -c user.name="$N" tag -a "v${VERSION}" -m "v${VERSION}" "$CI_SHA"\ngit push origin "v${VERSION}"\n'
@@ -947,13 +947,13 @@ def cut_once(source: str, before: str, after: str) -> str:
     return source.replace(before, after)
 
 
-REAL_CD = ROOT / ".github/workflows/cd-v2.yml"
+REAL_CD = ROOT / ".github/workflows/cd-release-edge.yml"
 REAL_CI = ROOT / ".github/workflows/ci.yml"
 REAL_ACTION = ROOT / ".github/actions/app-token/action.yml"
 
 
 def test_the_real_pre_fix_cd_workflow_is_refused(tmp_path: pathlib.Path) -> None:
-    """THE HISTORICAL CONTROL: the cd-v2.yml that stranded v2.2.0's sentinel must be red, for both of its defects.
+    """THE HISTORICAL CONTROL: the cd-release-edge.yml that stranded v2.2.0's sentinel must be red, for both of its defects.
 
     Skipped, loudly, when the commit is unreachable (a shallow clone): a missing object is not evidence of a working gate.
     """
@@ -1025,11 +1025,11 @@ def test_the_real_init_checkout_losing_the_app_token_is_refused(tmp_path: pathli
 def test_a_real_dispatch_guard_that_differs_from_the_seal_is_refused(
     tmp_path: pathlib.Path,
 ) -> None:
-    """ci.yml side. CD_WORKFLOW_FILE is set to the real cd-v2 so the phase runs over the mutated ci.yml copy."""
+    """ci.yml side. CD_WORKFLOW_FILE is set to the real cd-release-edge so the phase runs over the mutated ci.yml copy."""
     text = cut_once(
         REAL_CI.read_text(encoding="utf-8"),
-        "      - name: Dispatch cd-v2 release\n        if: needs.initialize.outputs.skip_release != 'true'\n",
-        "      - name: Dispatch cd-v2 release\n        if: always()\n",
+        "      - name: Dispatch cd-release-edge release\n        if: needs.initialize.outputs.skip_release != 'true'\n",
+        "      - name: Dispatch cd-release-edge release\n        if: always()\n",
     )
     proc = run_real(
         tmp_path, WORKFLOW_FILE=text, CD_WORKFLOW_FILE=REAL_CD.read_text(encoding="utf-8")
@@ -1351,7 +1351,7 @@ def test_a_conformant_preflight_trio_is_clean_and_reports_its_shape() -> None:
     assert findings == []
     assert shape == [
         "ci.yml job cd-preflight runs it on pull_request",
-        "cd-v2 init step 3 after the tag step 2",
+        "cd-release-edge init step 3 after the tag step 2",
         "housekeeping cleanup step 2 before cleanup step 3",
     ]
 
@@ -2833,7 +2833,7 @@ def test_local_stable_admitted_needs_a_named_refusal() -> None:
         @staticmethod
         def main(argv, root=None):
             del argv, root
-            sys.stderr.write("refused: promote-stable.yml\n")
+            sys.stderr.write("refused: cd-release-stable.yml\n")
             return 2
 
     class Admits(Refuses):

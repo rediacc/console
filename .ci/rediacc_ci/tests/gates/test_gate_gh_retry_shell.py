@@ -183,11 +183,11 @@ def test_reaper_without_retry_reds_through_the_driver(gate, tmp_path):
 
 def test_a_one_shot_read_in_a_workflow_run_block_reds(gate, tmp_path):
     root = _copy(tmp_path / "tree")
-    wf = root / ".github/workflows/promote-stable.yml"
+    wf = root / ".github/workflows/cd-release-stable.yml"
     clean = wf.read_text(encoding="utf-8")
     needle = '          echo "No rollback labels found"\n'
     assert clean.count(needle) == 1, (
-        "promote-stable.yml no longer has the rollback step's last line"
+        "cd-release-stable.yml no longer has the rollback step's last line"
     )
     wf.write_text(
         clean.replace(
@@ -200,7 +200,7 @@ def test_a_one_shot_read_in_a_workflow_run_block_reds(gate, tmp_path):
     gate.assert_exit(1, red, "a one-shot gh api read planted into a workflow run: block")
     gate.assert_contains(
         red.err,
-        ".github/workflows/promote-stable.yml:%d: promote/Check for rollback labels: a one-shot gh api GET (no retry)"
+        ".github/workflows/cd-release-stable.yml:%d: promote/Check for rollback labels: a one-shot gh api GET (no retry)"
         % line,
     )
     gate.ok("a one-shot read in a run: block reds on its YAML line, named by job and step")
@@ -224,7 +224,7 @@ def test_wiring_a_dead_twin_makes_its_reads_findings(gate, tmp_path):
     gate.assert_contains(green.out, "  TWIN   %s:" % TWIN)
     gate.ok("%s is reported as an unjudged dead twin on the clean copy" % TWIN)
 
-    wf = root / ".github/workflows/promote-stable.yml"
+    wf = root / ".github/workflows/cd-release-stable.yml"
     clean = wf.read_text(encoding="utf-8")
     needle = '          echo "No rollback labels found"\n'
     wf.write_text(

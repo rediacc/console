@@ -11,7 +11,7 @@ run-name: "Pins soaked: ${{ github.event_name }}"
 # `contents: read` (operator ruling: artifact only). A session applies the result by
 # re-running `apply-soaked` on its own branch against the live tree.
 #
-# Triggers: daily at 00:30 UTC (clear of the CI, housekeeping and promote-stable
+# Triggers: daily at 00:30 UTC (clear of the CI, housekeeping and cd-release-stable
 # windows), on demand, and when CI - OBS Mirror completes, so a mirrored Leap build
 # is reflected within hours.
 # Green means nothing is soaked, or every soaked bump passes its gates. Red means a
@@ -24,7 +24,7 @@ run-name: "Pins soaked: ${{ github.event_name }}"
 
 on:
   schedule:
-    - cron: '30 0 * * *' # Daily at 00:30 UTC (clear of CI '0 1', housekeeping '0 3' and promote-stable '0 6')
+    - cron: '30 0 * * *' # Daily at 00:30 UTC (clear of CI '0 1', housekeeping '0 3' and cd-release-stable '0 6')
   workflow_dispatch:
     inputs:
       fixture_fail:

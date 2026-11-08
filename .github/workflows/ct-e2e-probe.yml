@@ -1,4 +1,4 @@
-name: Console CT - E2E Dependency Probe
+name: CT - E2E Dependency Probe
 
 # T2.12 (PLAN-ci-time-budget). The E2E Workers shard wiring (ct-tests.yml's
 # `test-e2e-workers` job, T2.10's committed shard manifest) assumes every

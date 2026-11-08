@@ -1,4 +1,4 @@
-name: Release to Edge
+name: CD - Release to Edge
 
 # Publish workflow -- dispatched from CI's finalize-release-sentinel job
 # (right after the sentinel is sealed), or manually. Creates the version git
@@ -320,7 +320,6 @@ jobs:
       success()
     environment:
       name: edge
-      url: https://edge.rediacc.com
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: needs.init.outputs.workers_only != 'true'
@@ -487,7 +486,7 @@ jobs:
           CHANNEL: ${{ needs.init.outputs.channel }}
 
       # Stable promotion (CLI, repos, Docker :stable) is handled by
-      # promote-stable.yml after 7-day soak. CD only publishes to edge.
+      # cd-release-stable.yml after 7-day soak. CD only publishes to edge.
 
       # -----------------------------------------------------------------------
       # Final summary
@@ -723,7 +722,7 @@ jobs:
     # One credential for the whole job means the failure mode is now all-or-
     # nothing rather than partial, which is the property that matters for a
     # release: a run that cannot authenticate produces no tag AND no Release,
-    # and promote-stable's assert-edge-tag-exists.sh then refuses to promote.
+    # and cd-release-stable's assert-edge-tag-exists.sh then refuses to promote.
     #
     # actions: read is for the cross-run download-artifact.
     permissions:

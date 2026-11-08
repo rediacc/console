@@ -14,7 +14,7 @@ run-name: "CI - Drift: ${{ github.event_name }}"
 # red reaches the operator by mail between sessions, and a job that died before
 # it wrote a verdict is posted as red rather than read as silence.
 #
-# promote-stable.yml fires on this workflow's completion (a run that concluded
+# cd-release-stable.yml fires on this workflow's completion (a run that concluded
 # success or failure qualifies; every step here is drift by construction, so a
 # red keeps the soak waiver). wl_schedred watches it by discovery.
 #
@@ -24,7 +24,7 @@ run-name: "CI - Drift: ${{ github.event_name }}"
 
 on:
   schedule:
-    - cron: '15 2 * * *' # Daily at 02:15 UTC (clear of CI '0 1 * * 0', pins-soaked '30 0', housekeeping '0 3', promote-stable '0 6')
+    - cron: '15 2 * * *' # Daily at 02:15 UTC (clear of CI '0 1 * * 0', pins-soaked '30 0', housekeeping '0 3', cd-release-stable '0 6')
   workflow_dispatch:
 
 permissions:

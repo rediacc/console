@@ -272,7 +272,7 @@ jobs:
         #
         # Also skipped for a bump-none commit: the `:edge` moving tag is a
         # channel pointer of the same family as cli/edge/manifest.json, and it
-        # is what promote-stable retags into `:stable`. Unlike the R2 uploads
+        # is what cd-release-stable retags into `:stable`. Unlike the R2 uploads
         # above, no script owns this policy, so the `if:` is the right home.
         if: inputs.channel != '' && inputs.skip_release != 'true'
         run: |
@@ -323,7 +323,7 @@ jobs:
             dist/packages/
           retention-days: 1
 
-      # The manifest ALONE, ~1 KB, under the exact name cd-v2.yml's
+      # The manifest ALONE, ~1 KB, under the exact name cd-release-edge.yml's
       # assert-artifact-version.sh looks for.
       #
       # That guard has been dead since it was written. It downloads an artifact
@@ -358,7 +358,7 @@ jobs:
       # agent/plans/PLAN-skip-release-gates-r2-manifest.md section 3.
       # SNAPSHOT_VERSION (edge only): both upload steps also write the version's
       # channel snapshot, snapshots/v<version>/, the signed channel metadata
-      # promote-stable reads when it promotes an edge release older than the
+      # cd-release-stable reads when it promotes an edge release older than the
       # newest one (rediacc_ci.deploy.channel_snapshot).
       - name: Upload artifacts to R2 channel
         if: inputs.channel != ''

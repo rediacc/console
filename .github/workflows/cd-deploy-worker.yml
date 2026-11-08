@@ -2,9 +2,8 @@ name: Deploy WWW Worker
 
 # Reusable workflow for deploying the www Worker (marketing site + embedded
 # account portal) to the edge or stable channel.
-# Both channels are production-quality; "stable" serves www.rediacc.com, "edge"
-# serves edge.rediacc.com. Called by Release workflow (edge, and stable for
-# hotfixes) and promote-stable.yml (stable, after soak).
+# One shared www Worker serves www.rediacc.com, built from edge. Called by Release workflow (edge, and stable for
+# hotfixes) and cd-release-stable.yml (stable, after soak).
 # Builds pages + account portal from source at the specified git ref, then deploys.
 
 on:
@@ -46,7 +45,7 @@ jobs:
       contents: read
     environment:
       name: ${{ inputs.target }}
-      url: ${{ inputs.target == 'stable' && 'https://www.rediacc.com' || 'https://edge.rediacc.com' }}
+      url: https://www.rediacc.com
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

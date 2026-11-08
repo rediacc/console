@@ -1,4 +1,4 @@
-name: Console CI - Build (Renet)
+name: CI - Build (Renet)
 
 on:
   workflow_call:

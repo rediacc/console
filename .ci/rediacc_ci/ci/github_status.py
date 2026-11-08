@@ -13,7 +13,7 @@ WHICH COMPONENTS COUNT (`RELEVANT_COMPONENTS`), each with the evidence that this
 - Pull Requests: one PR per branch is the unit of work; the rollup ci-trace reads is a PR's.
 - Webhooks: every workflow trigger (push, pull_request, `workflow_run` in ci-verdict.yml) is a webhook delivery.
 - Issues: PR comments are issue comments (wl_prreview.py answers the review summary through them), and nightly-status.yml opens the rolling nightly-red issue.
-- Packages: ghcr.io carries the CI images in ten workflows (ci.yml, cd-v2.yml, ci-vm-bake.yml, ...).
+- Packages: ghcr.io carries the CI images in ten workflows (ci.yml, cd-release-edge.yml, ci-vm-bake.yml, ...).
 
 LEFT OUT on purpose: Pages (the "pages" in cd-deploy-worker.yml are the www site's, deployed to Cloudflare, not GitHub Pages), Codespaces (only a `customizations.codespaces` block in .devcontainer/devcontainer.json; sessions run in the devbox), Copilot and its model providers (nothing here calls them). A degraded component outside the list reads `ok`: the page's own indicator goes minor for a Copilot incident, and that is not a reason to doubt a CI verdict.
 

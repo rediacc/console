@@ -3,7 +3,7 @@
 
 The first job of every CI run: validate the app token, decide whether the push came from a bot, initialise the private submodules, mint the three image tags, resolve the next version from the tag list, and ask the registry which of the three images already exist. Everything downstream reads its outputs, so a wrong answer here is a wrong answer everywhere.
 
-LIVE. `.github/workflows/ci.yml` and `cd-v2.yml` run this module. `.ci/rediacc_ci/tests/gates/test_gate_releaseversion_tag_fetch.py` drives its tag-fetch block, `fetch_latest_tag`, directly.
+LIVE. `.github/workflows/ci.yml` and `cd-release-edge.yml` run this module. `.ci/rediacc_ci/tests/gates/test_gate_releaseversion_tag_fetch.py` drives its tag-fetch block, `fetch_latest_tag`, directly.
 
 Ledger: `.ci/shadow/w7p6-initialize.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-initialize --assert --k 5`).
 

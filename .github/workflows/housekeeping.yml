@@ -23,7 +23,7 @@ name: Housekeeping
 
 on:
   schedule:
-    - cron: '0 3 * * *' # Daily at 03:00 UTC (clear of CI '0 1' and promote-stable '0 6')
+    - cron: '0 3 * * *' # Daily at 03:00 UTC (clear of CI '0 1' and cd-release-stable '0 6')
   workflow_dispatch:
     inputs:
       dry_run:

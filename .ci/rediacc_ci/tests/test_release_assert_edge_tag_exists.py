@@ -337,7 +337,7 @@ def test_a_403_is_could_not_tell_and_gets_the_opposite_advice(
 
 
 def test_nocredentials_from_aws_gets_the_aws_specific_hint(tmp_path: pathlib.Path) -> None:
-    """The line naming CLOUDFLARE_R2_ACCESS_KEY_ID exists because this exact failure broke promote-stable for 7 consecutive runs from 2026-08-27."""
+    """The line naming CLOUDFLARE_R2_ACCESS_KEY_ID exists because this exact failure broke cd-release-stable for 7 consecutive runs from 2026-08-27."""
     old, new, old_calls, new_calls = run_both(
         tmp_path,
         ["1.3.0"],

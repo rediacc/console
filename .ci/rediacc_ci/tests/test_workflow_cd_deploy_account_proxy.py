@@ -7,7 +7,7 @@ What this pins, read structurally through `rediacc_ci.workflows` (the repo's one
   - the presence refusal: a release older than the proxy CD steps fails on every target instead of skipping the proxy steps;
   - the record written `always()` and uploaded;
   - the edge-only stage job with `actions: read`, which the deploy job waits on;
-  - cd-v2.yml (edge and hotfix) and promote-stable.yml passing `version`, edge also `ci_run_id`;
+  - cd-release-edge.yml (edge and hotfix) and cd-release-stable.yml passing `version`, edge also `ci_run_id`;
   - no step in the three workflows echoing a secret value: a secret reaches a step only through `env:`, never as `${{ secrets.* }}` or `${{ env.BWS_* }}` inside `run:`, and no `echo`/`printf` line in a `run:` names a variable that carries one.
 Each check carries a control that plants the violation in a copy of the parsed document and asserts the check sees it, so a check that cannot fail does not pass.
 """
@@ -25,8 +25,8 @@ from rediacc_ci import paths, workflows
 
 WF = paths.from_root(".github", "workflows")
 ACCOUNT = WF / "cd-deploy-account.yml"
-CD = WF / "cd-v2.yml"
-PROMOTE = WF / "promote-stable.yml"
+CD = WF / "cd-release-edge.yml"
+PROMOTE = WF / "cd-release-stable.yml"
 
 FORWARD = [
     "Record before",
@@ -254,14 +254,11 @@ def callers(doc: dict) -> dict[str, dict]:
 def test_cd_v2_edge_and_hotfix_and_promote_stable_pass_version():
     cd, promote = callers(load(CD)), callers(load(PROMOTE))
     assert sorted(cd) == ["deploy-account-edge", "deploy-account-stable"]
-    assert sorted(promote) == ["deploy-account-stable"]
+    # One shared Worker set: the stable workflow promotes R2 and Docker and deploys no Worker.
+    assert promote == {}
     assert cd["deploy-account-edge"]["with"]["version"] == "${{ needs.init.outputs.next_version }}"
     assert (
         cd["deploy-account-stable"]["with"]["version"] == "${{ needs.init.outputs.next_version }}"
-    )
-    assert (
-        promote["deploy-account-stable"]["with"]["version"]
-        == "${{ needs.promote.outputs.version }}"
     )
     assert "ci_run_id" in cd["deploy-account-edge"]["with"]
     assert "workers_only" in cd["deploy-account-edge"]["with"]["ci_run_id"]

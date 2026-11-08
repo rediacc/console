@@ -22,7 +22,7 @@
       "sha": "e2a16724"
     },
     "0a37244ce74b1731": {
-      "path": ".github/workflows/cd-v2.yml",
+      "path": ".github/workflows/cd-release-edge.yml",
       "sha": "c608e29a8"
     },
     "0a8794dd9e8f9d17": {

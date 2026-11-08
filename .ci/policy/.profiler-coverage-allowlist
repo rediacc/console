@@ -39,11 +39,11 @@ cd-deploy-account.yml:read-regions
 # cd-deploy-worker.yml
 cd-deploy-worker.yml:deploy
 #
-# cd-v2.yml
-cd-v2.yml:init
-cd-v2.yml:publish
-cd-v2.yml:smoke-test
-cd-v2.yml:tag-and-release
+# cd-release-edge.yml
+cd-release-edge.yml:init
+cd-release-edge.yml:publish
+cd-release-edge.yml:smoke-test
+cd-release-edge.yml:tag-and-release
 #
 # ci-build-docker.yml
 ci-build-docker.yml:build-cli-docker
@@ -111,9 +111,9 @@ housekeeping.yml:stripe-cleanup
 # nightly-status.yml
 nightly-status.yml:report
 #
-# promote-stable.yml
-promote-stable.yml:promote
-promote-stable.yml:verify-stable
+# cd-release-stable.yml
+cd-release-stable.yml:promote
+cd-release-stable.yml:verify-stable
 #
 # watchdog-monitor.yml
 watchdog-monitor.yml:monitor

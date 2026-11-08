@@ -30,12 +30,12 @@ THE SIX INVARIANTS, all read from the PARSED document rather than grepped, so a 
      green. PR #597's run 37465283674 (2026-10-06): `duplicate-run` ran on
      push only, skipped on the PR, and `run-sh-tests` skipped with it.
 
-THE RELEASE-ORDER PHASE (added 2026-10-08, PLAN-cd-errors-in-ci W5 + the W4 pins), also after the twin, also with no differential. It reads three files, `ci.yml`, `cd-v2.yml` and `.github/actions/app-token/action.yml`, and refuses any job graph in which ci.yml's finalize-release-sentinel has sealed `cli/v<V>/.released` and cd-v2's version-tag step can still be skipped by a failure or by retry_mode.
+THE RELEASE-ORDER PHASE (added 2026-10-08, PLAN-cd-errors-in-ci W5 + the W4 pins), also after the twin, also with no differential. It reads three files, `ci.yml`, `cd-release-edge.yml` and `.github/actions/app-token/action.yml`, and refuses any job graph in which ci.yml's finalize-release-sentinel has sealed `cli/v<V>/.released` and cd-release-edge's version-tag step can still be skipped by a failure or by retry_mode.
 CD run 37749637824 is the case: the tag lived in `tag-and-release`, behind post-publish install validation, a Rocky 9 DNF stall reddened that validation, and the sealed v2.2.0 sentinel was left with no tag. Its kinds are `RELEASE_KINDS`:
 
   * `release-order-no-sentinel-writer` / `release-order-no-tag-step` -- the
     premise is gone (no sealing step in ci.yml, or no `git tag -a` + `git push
-    origin v...` step in cd-v2.yml), so the phase checked nothing. Vacuity is red.
+    origin v...` step in cd-release-edge.yml), so the phase checked nothing. Vacuity is red.
   * `release-order-dispatch-split` -- the dispatch step does not IMMEDIATELY
     follow the seal under the identical `if:`.
   * `release-order-tag-behind-job` -- the job holding the tag step has a
@@ -43,23 +43,23 @@ CD run 37749637824 is the case: the tag lived in `tag-and-release`, behind post-
     or skip after the seal).
   * `release-order-tag-skipped-on-retry` -- that job's or step's `if:` reads
     `retry_mode`.
-  * `cd-contents-write` -- any cd-v2 job, or the workflow, holds `contents:
+  * `cd-contents-write` -- any cd-release-edge job, or the workflow, holds `contents:
     write`; every write rides the cd App token instead.
-  * `cd-push-not-app-token` -- a cd-v2 `git push` whose job mints no cd-preset
+  * `cd-push-not-app-token` -- a cd-release-edge `git push` whose job mints no cd-preset
     App token before it, or whose last checkout before it carries another token.
   * `cd-preset-no-workflows` -- app-token's `cd` preset no longer requests
     `workflows: write`, or the mint no longer passes `permission-workflows`. A
     tag over a range that touches .github/workflows is then refused (v1.3.11,
     v1.3.8).
 
-THE LOCAL RELEASE ORDER (PLAN-local-release W3-B, as amended by the operator rulings of 2026-10-27T09:45Z: cd-v2.yml keeps releasing edge on merge, `npm run release:local -- --channel edge` is a second edge path, stable stays CI/CD only). The release-order rules above, applied to the local entry's declarative table `rediacc_ci.release.local.STEPS`, imported rather than parsed, so the phase reads exactly the rows the entry runs. `analyse_local_steps` finds rows by the module their argv runs, never by id, and refuses (`LOCAL_KINDS`): a table with no sentinel seal, no tag, no CLI upload or no account deploy (vacuity); a seal not immediately followed by the tag rows; tag rows that are not contiguous or do not end in the push; any row from the seal through the tag push with `can_fail=True`; an account deploy before the CLI upload, the seal or the tag push; and any stable row. `local_stable_admitted` also calls the entry's `main(["--channel", "stable"])`, which must refuse with rc 2 naming promote-stable.yml before reading anything. An import failure is a finding, never a pass.
+THE LOCAL RELEASE ORDER (PLAN-local-release W3-B, as amended by the operator rulings of 2026-10-27T09:45Z: cd-release-edge.yml keeps releasing edge on merge, `npm run release:local -- --channel edge` is a second edge path, stable stays CI/CD only). The release-order rules above, applied to the local entry's declarative table `rediacc_ci.release.local.STEPS`, imported rather than parsed, so the phase reads exactly the rows the entry runs. `analyse_local_steps` finds rows by the module their argv runs, never by id, and refuses (`LOCAL_KINDS`): a table with no sentinel seal, no tag, no CLI upload or no account deploy (vacuity); a seal not immediately followed by the tag rows; tag rows that are not contiguous or do not end in the push; any row from the seal through the tag push with `can_fail=True`; an account deploy before the CLI upload, the seal or the tag push; and any stable row. `local_stable_admitted` also calls the entry's `main(["--channel", "stable"])`, which must refuse with rc 2 naming cd-release-stable.yml before reading anything. An import failure is a finding, never a pass.
 
 THE CD-PREFLIGHT PINS (PLAN-cd-errors-in-ci W4) ride the same phase and read a fourth file, `housekeeping.yml` (`HOUSEKEEPING_WORKFLOW_FILE` overrides it). `rediacc_ci.release.cd_preflight` must run at three sites, each with at least the checks `PREFLIGHT_REQUIRED_CHECKS` names (`cd-preflight-narrowed` otherwise):
 
   * `cd-preflight-no-pr-job` / `cd-preflight-not-on-pr` -- a ci.yml job runs
     `--phase pr`, and its `if:` admits pull_request. A push-only preflight is the
     main-only blind spot that let the 10-07 drift reach main.
-  * `cd-preflight-no-cd-step` / `cd-preflight-before-tag` -- a cd-v2 step runs
+  * `cd-preflight-no-cd-step` / `cd-preflight-before-tag` -- a cd-release-edge step runs
     `--phase cd` in the version tag step's job, AFTER it: v<V> is sealed and
     untagged until that step, so a preflight before it reds every release.
   * `cd-preflight-no-housekeeping-step` / `cd-preflight-housekeeping-bypassed` --
@@ -71,7 +71,7 @@ THE EXTERNAL-GATE PINS (operator rulings 2026-10-13, "Everything fails closed, n
 
 THE WORKFLOW-ESTATE PINS (2026-10-23) ride the same phase and read EVERY workflow and composite action (`estate_files`, the set `check:ci-workflows` walks): `pipe-no-pipefail` refuses a `run:` that pipes with no pipefail in force (commit 2f3035966), and `dispatch-write-off-default-branch` refuses a write-capable job in a `workflow_dispatch` workflow without `DEFAULT_BRANCH_GUARD` as a top-level `&&` conjunct of its `if:` (commit b0bf0b164). Zero files or zero run steps is red. The comment block above `PIPEFAIL_KINDS` carries the rules.
 
-WHEN IT RUNS. Only when the ci.yml under test IS the real one, or when `CD_WORKFLOW_FILE` is set explicitly. The recorded fixture cases point `WORKFLOW_FILE` at a synthetic ci.yml; judging the live cd-v2.yml beside a synthetic ci.yml would mix two worlds, and adding bytes to those runs would falsify the twin's goldens. `npm run check:ci-workflow-invariants` and the gate test both drive the real ci.yml, so both run this phase,
+WHEN IT RUNS. Only when the ci.yml under test IS the real one, or when `CD_WORKFLOW_FILE` is set explicitly. The recorded fixture cases point `WORKFLOW_FILE` at a synthetic ci.yml; judging the live cd-release-edge.yml beside a synthetic ci.yml would mix two worlds, and adding bytes to those runs would falsify the twin's goldens. `npm run check:ci-workflow-invariants` and the gate test both drive the real ci.yml, so both run this phase,
 and its success line prints the shape (tag job, its ancestors, job count, push count) so a collapse is visible.
 
 NO EXTERNAL PROCESS IS INVOLVED, ON EITHER SIDE. The twin shells out to exactly
@@ -373,7 +373,7 @@ RELEASE_KINDS = (
     "cd-preset-no-workflows",
 )
 
-# The ONLY job the version-tag step may sit behind. `init` resolves the version and runs two read-only guards (check-existing-release, assert-artifact-version); every other cd-v2 job publishes, deploys or validates, and each of those can fail or skip after the sentinel is sealed.
+# The ONLY job the version-tag step may sit behind. `init` resolves the version and runs two read-only guards (check-existing-release, assert-artifact-version); every other cd-release-edge job publishes, deploys or validates, and each of those can fail or skip after the sentinel is sealed.
 TAG_ALLOWED_ANCESTORS = frozenset({"init"})
 
 SENTINEL_JOB = "finalize-release-sentinel"
@@ -401,7 +401,7 @@ def _step_label(job: str, index: int, step: dict) -> str:
 
 
 def version_tag_steps(cd_doc: object) -> list[tuple[str, int, dict]]:
-    """Every (job, index, step) in cd-v2 whose `run:` both creates an annotated tag and pushes a `v$...` ref."""
+    """Every (job, index, step) in cd-release-edge whose `run:` both creates an annotated tag and pushes a `v$...` ref."""
     jobs = (cd_doc or {}).get("jobs") if isinstance(cd_doc, dict) else None
     if not isinstance(jobs, dict):
         return []
@@ -644,7 +644,7 @@ def _is_tag_row(step: object) -> bool:
 def analyse_local_steps(steps: object) -> tuple[list[tuple[str, str]], dict[str, object]]:
     """The release order of the local entry's `STEPS` table: (findings, shape). Pure; the selftest drives it with literal rows.
 
-    Every rule CD's phase holds for cd-v2.yml, read from the table rows themselves (module names in the argv, never step ids, so a renamed row cannot slip past): the sentinel seal is immediately followed by the tag unit (create, record, push, contiguous, ending in a push); no row from the seal through the tag push can fail; the CLI upload, the seal and the tag push all precede every account deploy; and no row is a stable step. A table with no seal, no tag, no CLI upload or no account deploy checked nothing and is a finding.
+    Every rule CD's phase holds for cd-release-edge.yml, read from the table rows themselves (module names in the argv, never step ids, so a renamed row cannot slip past): the sentinel seal is immediately followed by the tag unit (create, record, push, contiguous, ending in a push); no row from the seal through the tag push can fail; the CLI upload, the seal and the tag push all precede every account deploy; and no row is a stable step. A table with no seal, no tag, no CLI upload or no account deploy checked nothing and is a finding.
     """
     rows = list(steps) if isinstance(steps, (list, tuple)) else []
     out: list[tuple[str, str]] = []
@@ -715,8 +715,8 @@ def local_stable_admitted(module: object) -> str:
         return "main(['--channel', 'stable']) exited through SystemExit(%r)" % exc.code
     except Exception as exc:
         return "main(['--channel', 'stable']) raised %s: %s" % (type(exc).__name__, exc)
-    if rc != 2 or "promote-stable.yml" not in sink.getvalue():
-        return "main(['--channel', 'stable']) returned %r without naming promote-stable.yml" % rc
+    if rc != 2 or "cd-release-stable.yml" not in sink.getvalue():
+        return "main(['--channel', 'stable']) returned %r without naming cd-release-stable.yml" % rc
     return ""
 
 
@@ -762,7 +762,7 @@ LOCAL_MESSAGES = {
     + ", %s. The account Worker must reach a channel only after the CLI that speaks to it is published, sealed and tagged (R1, .ci/config/release-requires.json). Move the account rows after the tag.",
     "local-order-stable-step": "INVARIANT-FAIL: local-release-order: row %s of "
     + LOCAL_TABLE
-    + " is a stable step. Stable releases and stable deploys are CI/CD only (promote-stable.yml, ruling ASKED:2026-10-27T09:45Z); remove the row.",
+    + " is a stable step. Stable releases and stable deploys are CI/CD only (cd-release-stable.yml, ruling ASKED:2026-10-27T09:45Z); remove the row.",
     "local-order-stable-admitted": "INVARIANT-FAIL: local-release-order: "
     + LOCAL_MODULE
     + " does not refuse --channel stable (%s). Stable is CI/CD only; refuse it before anything is read.",
@@ -900,7 +900,7 @@ def analyse_preflight(
 ) -> tuple[list[tuple[str, str]], list[str]]:
     """(findings, shape lines) for the three preflight sites. Pure; the tests drive it with literal dicts.
 
-    ci.yml: a job runs `--phase pr` and its `if:` admits pull_request (a push-only job is the main-only blind spot that let the 10-07 drift reach main). cd-v2.yml: a `--phase cd` step sits in the version tag step's job, AFTER it. housekeeping.yml: a preflight step precedes every cleanup_versions step in the same job, and that cleanup step carries no status function that would run it past a red preflight.
+    ci.yml: a job runs `--phase pr` and its `if:` admits pull_request (a push-only job is the main-only blind spot that let the 10-07 drift reach main). cd-release-edge.yml: a `--phase cd` step sits in the version tag step's job, AFTER it. housekeeping.yml: a preflight step precedes every cleanup_versions step in the same job, and that cleanup step carries no status function that would run it past a red preflight.
     """
     out: list[tuple[str, str]] = []
     shape: list[str] = []
@@ -927,7 +927,7 @@ def analyse_preflight(
         if not after:
             out.append(("cd-preflight-before-tag", _step_label(job, i, st)))
         else:
-            shape.append("cd-v2 %s step %d after the tag step %d" % (job, i + 1, after[0][1] + 1))
+            shape.append("cd-release-edge %s step %d after the tag step %d" % (job, i + 1, after[0][1] + 1))
         out += _narrowed("cd", _step_label(job, i, st), st)
 
     hk_jobs = hk_doc.get("jobs") if isinstance(hk_doc, dict) else None
@@ -1254,7 +1254,7 @@ def _release_phase(ci_file: str, cd_file: str, action_file: str) -> tuple[list[s
     return [], [
         "release order holds: %s creates the version tag, not behind any job that can fail "
         "after the seal and not skipped on retry_mode; %s dispatches CD in the step right after "
-        "the seal under the same if:; %d cd-v2 jobs, none holding contents: write; %d `git "
+        "the seal under the same if:; %d cd-release-edge jobs, none holding contents: write; %d `git "
         "push` step(s), each on the cd App token; the cd preset requests workflows: write"
         % (
             tag,
@@ -2207,9 +2207,9 @@ def main(argv: list[str]) -> int:
     real_ci = os.path.join(root_dir, ".github", "workflows", "ci.yml")
     workflow_file = os.environ.get("WORKFLOW_FILE") or real_ci
     cd_file = os.environ.get("CD_WORKFLOW_FILE") or ""
-    # The release-order phase: on the real ci.yml, or when a cd-v2 file is named explicitly. See the module docstring for why a synthetic ci.yml fixture does not get it.
+    # The release-order phase: on the real ci.yml, or when a cd-release-edge file is named explicitly. See the module docstring for why a synthetic ci.yml fixture does not get it.
     release_phase = bool(cd_file) or os.path.realpath(workflow_file) == os.path.realpath(real_ci)
-    cd_file = cd_file or os.path.join(root_dir, ".github", "workflows", "cd-v2.yml")
+    cd_file = cd_file or os.path.join(root_dir, ".github", "workflows", "cd-release-edge.yml")
     action_file = os.environ.get("APP_TOKEN_ACTION_FILE") or os.path.join(
         root_dir, ".github", "actions", "app-token", "action.yml"
     )
@@ -2298,7 +2298,7 @@ def main(argv: list[str]) -> int:
         log.info(
             "  Blind spot: the release-order phase reads the job GRAPH. It cannot see a tag "
             "step that exits 0 without pushing, nor init failing before its tag step, "
-            "nor a push made inside a script a cd-v2 step runs; "
+            "nor a push made inside a script a cd-release-edge step runs; "
             "Check Release State covers the live state."
         )
     return 0

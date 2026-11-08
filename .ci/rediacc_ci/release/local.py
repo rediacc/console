@@ -4,7 +4,7 @@
 
 npm consumes a `--dry-run` placed before `--`, so the flag goes after it: `npm run release:local -- --channel edge --dry-run`.
 
-EDGE ONLY. Operator ruling ASKED:2026-10-27T09:45Z: "EU/ASIA/US stable should be asked! They're CI/CD only. BUT edge and bench could be released via agent or with CI/CD." `--channel stable` is refused here, with or without `--workers-only`, and names promote-stable.yml; stable is promoted only through CI/CD. cd-v2.yml keeps releasing edge on merge, so this entry is a second edge path, and the two share the release lock: the R2 sentinel `cli/v<V>/.released` and the tag/Release check of `check_existing_release`.
+EDGE ONLY. Operator ruling ASKED:2026-10-27T09:45Z: "EU/ASIA/US stable should be asked! They're CI/CD only. BUT edge and bench could be released via agent or with CI/CD." `--channel stable` is refused here, with or without `--workers-only`, and names cd-release-stable.yml; stable is promoted only through CI/CD. cd-release-edge.yml keeps releasing edge on merge, so this entry is a second edge path, and the two share the release lock: the R2 sentinel `cli/v<V>/.released` and the tag/Release check of `check_existing_release`.
 
 THE LAUNCH FORM. The npm script runs exactly the shape `release_run.entry_refusal` admits (.claude/rediacc_hooks/git/release_run.py, THE ENTRY INVOCATION): `PYTHONPATH="$PWD/.ci" PYTHONPYCACHEPREFIX=/dev/null /usr/bin/python3 -P -s -m rediacc_ci.release.local`. A real run refuses before anything else when this process is not that entry, because the release-run record it writes later would be refused anyway.
 
@@ -58,7 +58,7 @@ SELF = "rediacc_ci.release.local"
 CHANNEL = "edge"
 CHANNELS = ("edge", "stable")
 STABLE_REFUSAL = (
-    "--channel stable is promoted through CI/CD only (.github/workflows/promote-stable.yml); "
+    "--channel stable is promoted through CI/CD only (.github/workflows/cd-release-stable.yml); "
     "release:local publishes edge (operator ruling ASKED:2026-10-27T09:45Z)"
 )
 SECTIONS = (
@@ -1033,7 +1033,7 @@ def _table() -> tuple[Step, ...]:
             arm="record-before-{region}",
             **w,
         ),
-        # ---- 10. tag-and-release (cd-v2.yml tag-and-release); the version tag itself is the seal's twin above
+        # ---- 10. tag-and-release (cd-release-edge.yml tag-and-release); the version tag itself is the seal's twin above
         Step(
             "tag-submodules",
             "release",
@@ -2300,7 +2300,7 @@ def main(
     root = root or paths.repo_root()
     regions = resolve_regions(root, args.regions)
     ctx = base_context(root, regions, args.workers_only)
-    # The webhook check reads each region's production domain, as cd-v2.yml's per-region loop does.
+    # The webhook check reads each region's production domain, as cd-release-edge.yml's per-region loop does.
     domains = {r: d.get("domain") or "" for r, d in read_regions(root).items()}
     steps = [_with_domain(s, domains) for s in plan(regions, workers_only=args.workers_only)]
 

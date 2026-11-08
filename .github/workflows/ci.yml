@@ -71,7 +71,7 @@ permissions: {}
 #     commit supersedes an older one, which is the intended saving.
 #
 #   push (main)  -> keyed on 'ci-main', cancel-in-progress FALSE. Main is the
-#     release path: finalize-release-sentinel dispatches cd-v2, so cancelling a
+#     release path: finalize-release-sentinel dispatches cd-release-edge, so cancelling a
 #     main run mid-flight could interrupt a release. Queue instead.
 #
 #   everything else (schedule, workflow_dispatch) -> keyed on run_id, so they are
@@ -1215,7 +1215,7 @@ jobs:
       # A bump-none commit earns no tag and no GitHub release, so it must not
       # advance the R2 channel pointer either -- an edge manifest naming an
       # untagged version breaks `rdc` auto-update and, worse, feeds
-      # promote-stable a `ref: v<version>` that does not exist. See
+      # cd-release-stable a `ref: v<version>` that does not exist. See
       # agent/plans/PLAN-skip-release-gates-r2-manifest.md.
       skip_release: ${{ needs.initialize.outputs.skip_release }}
       renet_tag: ${{ needs.initialize.outputs.renet_tag }}
@@ -1917,7 +1917,7 @@ jobs:
     # The second cancellation blocked the 0804-1 release: validate-promote is
     # soft-required in assert_ci_complete.py, which forgives `skipped` but NOT
     # `cancelled`, so CI Complete and Pipeline Sentinel both failed and the
-    # finalize step never dispatched cd-v2.yml. Nothing was wrong with the code.
+    # finalize step never dispatched cd-release-edge.yml. Nothing was wrong with the code.
     #
     # A PR CANNOT CATCH THIS, which is why the fix lands directly on main. PR
     # runs promote the tiny per-PR channel (pr-551 finished in 7m19s on run
@@ -2226,7 +2226,7 @@ jobs:
     needs: [initialize, ci-complete]
     permissions:
       contents: read
-      actions: write   # for dispatching cd-v2.yml after sentinel write
+      actions: write   # for dispatching cd-release-edge.yml after sentinel write
     if: >-
       always() &&
       github.event_name == 'push' &&
@@ -2327,7 +2327,7 @@ jobs:
       # only appeared to have -- it put dispatch immediately after the seal to
       # survive a CANCELLATION, and was then broken by a path it had not
       # considered: a step that ran, succeeded, and chose not to release.
-      # Cancellation is still covered, because cd-v2 runs as its own
+      # Cancellation is still covered, because cd-release-edge runs as its own
       # workflow_dispatch run with an independent lifecycle.
       #
       # The dispatch lives in a script so the bump-none skip decision has
@@ -2340,7 +2340,7 @@ jobs:
       # The same lookup set publish_stable for a `release`-labelled PR; only an
       # exact 'true' adds `-f publish_stable=true` (edge AND stable, no soak),
       # so a missing output FAILS CLOSED to an edge-only release.
-      - name: Dispatch cd-v2 release
+      - name: Dispatch cd-release-edge release
         if: needs.initialize.outputs.skip_release != 'true'
         env:
           GH_TOKEN: ${{ github.token }}

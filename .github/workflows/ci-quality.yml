@@ -1,4 +1,4 @@
-name: Console CI - Quality
+name: CI - Quality
 
 # ==============================================================================
 # TEN LANES, NOT THIRTY-THREE JOBS
@@ -52,7 +52,7 @@ on:
       # `if: inputs.is_bot != 'true'` constant-true. Deleting them anyway
       # removes the second half of a release-LOOP breaker.
       #
-      # CD pushes bot commits straight to main: cd-v2.yml's contract-floor
+      # CD pushes bot commits straight to main: cd-release-edge.yml's contract-floor
       # ratchet and rediacc_ci.release.update_homebrew_tap both
       # `git push origin HEAD:main` with user.name = GIT_BOT_NAME (a Bitwarden
       # secret since it left the vars.GIT_BOT_NAME Actions variable), which
