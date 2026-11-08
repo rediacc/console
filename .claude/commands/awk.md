@@ -8,8 +8,9 @@ allowed-tools: Bash(python3 .claude/hooks/stop/wl_away.py:*), Bash(.claude/hooks
 
 - UTC now: !`date -u +%Y-%m-%dT%H:%MZ`
 - Branch: !`git branch --show-current`
-- Flag: !`python3 .claude/hooks/stop/wl_away.py set "$ARGUMENTS"`
-- Open worklist slice: !`{ .claude/hooks/stop/worklist.py --list --open 2>/dev/null || echo '(worklist unavailable)'; } | head -30`
+- Flag: !`python3 .claude/hooks/stop/wl_away.py set`
+- Note: $ARGUMENTS
+- Open worklist slice: !`.claude/hooks/stop/worklist.py --list --open 2>&1 | head -30`
 
 ## How to work while the operator is away
 

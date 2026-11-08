@@ -8,9 +8,9 @@ allowed-tools: Bash(.claude/hooks/stop/worklist.py:*), Bash(python3 .claude/hook
 
 - UTC now: !`date -u +%FT%H:%MZ`
 - Branch: !`git branch --show-current`
-- Open worklist slice (`[>]` lines name their `worker:`): !`{ .claude/hooks/stop/worklist.py --list --open 2>/dev/null || echo '(worklist unavailable)'; } | head -60`
+- Open worklist slice (`[>]` lines name their `worker:`): !`.claude/hooks/stop/worklist.py --list --open 2>&1 | head -60`
 - Uncommitted paths: !`git status --short | head -40`
-- Unpushed commits: !`{ git log --oneline @{u}..HEAD 2>/dev/null || echo '(no upstream)'; } | head -20`
+- Unpushed commits: !`git log --oneline @{u}..HEAD 2>&1 | head -20`
 
 ## Why
 

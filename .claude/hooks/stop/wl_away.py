@@ -29,6 +29,8 @@ def state_path() -> pathlib.Path:
 
 # A night of work writes far more than the 3 MB other readers keep; records before the flag's `since` are skipped, so the larger tail costs a parse, not a decision.
 TAIL_BYTES = 64 * 1024 * 1024
+# A sibling session is read only for a message after the flag, which sits near its end; a smaller tail keeps the cost flat as sessions multiply.
+SIBLING_TAIL_BYTES = 4 * 1024 * 1024
 AWK_COMMAND = "<command-name>/awk</command-name>"
 
 
@@ -105,7 +107,7 @@ def operator_message(rec: dict) -> str | None:
     return None if _is_awk(text) else (text or "(operator turn)")
 
 
-def operator_since(transcript_path: str, since: str) -> str | None:
+def operator_since(transcript_path: str, since: str, tail: int = TAIL_BYTES) -> str | None:
     """The first operator message in the transcript stamped after `since`, or None. ISO-8601 UTC stamps compare as strings."""
     if not transcript_path:
         return None
@@ -113,7 +115,7 @@ def operator_since(transcript_path: str, since: str) -> str | None:
         with open(transcript_path, "rb") as fh:
             fh.seek(0, 2)
             size = fh.tell()
-            fh.seek(max(0, size - TAIL_BYTES))
+            fh.seek(max(0, size - tail))
             chunk = fh.read()
     except OSError:
         return None
@@ -168,8 +170,11 @@ def away(transcript_path: str, state: pathlib.Path | None = None) -> dict | None
     doc = read(state)
     if doc is None:
         return None
-    for path in _transcripts(transcript_path, doc["since"]):
-        if operator_since(path, doc["since"]) is not None:
+    for i, path in enumerate(_transcripts(transcript_path, doc["since"])):
+        if (
+            operator_since(path, doc["since"], TAIL_BYTES if i == 0 else SIBLING_TAIL_BYTES)
+            is not None
+        ):
             clear(state)
             return None
     return doc

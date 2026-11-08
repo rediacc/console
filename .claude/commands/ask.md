@@ -8,8 +8,8 @@ allowed-tools: Bash(.claude/hooks/stop/worklist.py --list --open:*), Bash(git br
 
 - Branch: !`git branch --show-current`
 - UTC now: !`date -u +%Y-%m-%dT%H:%MZ`
-- Open worklist items (`[?]` = already parked for you, `[ ]` = open work): !`{ .claude/hooks/stop/worklist.py --list --open 2>/dev/null || echo '(worklist unavailable)'; } | head -40`
-- Round log with DECISIONS awaiting veto: !`{ ls -t ~/.claude/projects/$(pwd | sed 's/[^A-Za-z0-9]/-/g')/reports/pr-babysit-*.md 2>/dev/null || echo '(no active round log)'; } | head -1`
+- Open worklist items (`[?]` = already parked for you, `[ ]` = open work): !`.claude/hooks/stop/worklist.py --list --open 2>&1 | head -40`
+- Round log with DECISIONS awaiting veto: !`ls -t ~/.claude/projects/$(pwd | sed 's/[^A-Za-z0-9]/-/g')/reports/pr-babysit-*.md 2>&1 | head -1`
 - DECISIONS recorded in it: !`f=$(ls -t ~/.claude/projects/$(pwd | sed 's/[^A-Za-z0-9]/-/g')/reports/pr-babysit-*.md 2>/dev/null | head -1); [ -n "$f" ] && grep -cE '^- (DECISION|[0-9]{4}-[0-9]{2}-[0-9]{2} OPERATOR RULING)' "$f" 2>/dev/null || echo 0`
 
 ## What to do
