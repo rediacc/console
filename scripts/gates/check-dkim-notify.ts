@@ -10,13 +10,13 @@
  *
  * This specifically covers the failure mode that caused the incident this
  * migration addresses: AWS Easy DKIM advertised three selectors on
- * `notify.rediacc.com`, only one of which returned a real public key — two
+ * `notify.rediacc.cloud`, only one of which returned a real public key — two
  * were empty strings at `*.dkim.amazonses.com`. DMARC `p=reject; adkim=s`
  * rejected ~67% of mail silently. The BYODKIM rotation tool records the
  * selector + fingerprint; this check is the daily proof that the selector
  * it published still resolves to the key it expects.
  *
- * Additional sanity: resolves the `bounce-<region>.notify.rediacc.com` MX
+ * Additional sanity: resolves the `bounce-<region>.notify.rediacc.cloud` MX
  * records for every region declared active in the rotation config and
  * confirms each points at the matching `feedback-smtp.<region>.amazonses.com`.
  * A missing or drifted MAIL FROM record collapses SPF alignment (one of

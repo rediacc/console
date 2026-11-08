@@ -206,7 +206,7 @@ def secrets_payload() -> dict[str, str]:
         "AWS_SES_ACCESS_KEY_ID": os.environ.get("AWS_SES_ACCESS_KEY_ID") or "",
         "AWS_SES_SECRET_ACCESS_KEY": os.environ.get("AWS_SES_SECRET_ACCESS_KEY") or "",
         "AWS_SES_REGION": os.environ.get("AWS_SES_REGION") or "eu-central-1",
-        "AWS_SES_FROM": os.environ.get("AWS_SES_FROM") or "noreply@notify.rediacc.com",
+        "AWS_SES_FROM": os.environ.get("AWS_SES_FROM") or "noreply@notify.rediacc.cloud",
         "AWS_SES_CONFIGURATION_SET": os.environ.get("AWS_SES_CONFIGURATION_SET") or "",
         "CLOUDFLARE_TURNSTILE_SECRET_KEY": os.environ.get("CLOUDFLARE_TURNSTILE_SECRET_KEY") or "",
         "ACCOUNT_BACKUP_S3_ENDPOINT": endpoint,
