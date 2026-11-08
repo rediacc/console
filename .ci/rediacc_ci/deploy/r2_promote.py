@@ -85,6 +85,8 @@ class Obj:
     rel: str
     size: int
     modified: datetime.datetime
+    # The listing's ETag without quotes; empty when the reply carried none.
+    etag: str = ""
 
 
 @dataclass(frozen=True)
@@ -155,6 +157,7 @@ def copy_argv(
         "--key",
         dst_key,
         "--copy-source",
+        # Raw `bucket/key`: aws-cli (botocore `handle_copy_source_param`) percent-encodes the key itself, so encoding here would double-encode.
         "%s/%s" % (bucket if src_bucket is None else src_bucket, src_key),
     ]
     if preserve_metadata:
@@ -249,7 +252,8 @@ def parse_listing(text: str, prefix: str) -> list[Obj]:
         if not key.startswith(prefix) or key == prefix or key.endswith("/"):
             continue
         stamp = datetime.datetime.fromisoformat(entry["LastModified"])
-        objs.append(Obj(key[len(prefix) :], int(entry["Size"]), stamp))
+        etag = str(entry.get("ETag") or "").strip('"')
+        objs.append(Obj(key[len(prefix) :], int(entry["Size"]), stamp, etag))
     return sorted(objs, key=lambda obj: obj.rel)
 
 

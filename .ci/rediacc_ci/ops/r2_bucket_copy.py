@@ -6,9 +6,9 @@
 
 It reuses the `r2_promote` plumbing (listing, retried `aws s3api copy-object`, `check_sizes`) with the bucket made a parameter, so there is one copy path and no rclone.
 
-COPY. Every object moves with one server-side CopyObject and `--metadata-directive COPY`, so content type, cache control and user metadata arrive as the source had them. The run is re-runnable: a key whose destination has the same size and is not older than the source is skipped (`r2_promote.unchanged`), so a second run copies only the delta. Nothing is deleted from the destination. An object over `COPY_OBJECT_MAX_BYTES` (5 GiB) is refused for the whole run before anything is copied (`check_sizes`); `--inventory` lists each such object so the live inventory shows them first.
+COPY. Every object moves with one server-side CopyObject and `--metadata-directive COPY`, so content type, cache control and user metadata arrive as the source had them. The run is re-runnable: a key whose destination has the same size and is not older than the source is skipped (`r2_promote.unchanged`), so a second run copies only the delta. That rule sees new keys, size changes and newer sources; a metadata-only change on a source object (same size, same bytes) is NOT detected and is not re-copied. Nothing is deleted from the destination. An object over `COPY_OBJECT_MAX_BYTES` (5 GiB) is refused for the whole run before anything is copied (`check_sizes`); `--inventory` lists each such object so the live inventory shows them first.
 
-VERIFY. Exit 0 only when the destination holds the same key set, the same object count and the same total size as the source, and per key the same size. Any difference is printed and exits 1.
+VERIFY. Exit 0 only when the destination holds the same key set, the same object count and the same total size as the source, and per key the same size, plus the same ETag where both sides report a single-part one (no `-` in it), which catches same-size content drift. Any difference is printed and exits 1.
 
 JURISDICTION. R2 jurisdiction is set when a bucket is created and `.eu.` is the only endpoint that sees an EU bucket: without `--jurisdiction eu` a default-jurisdiction bucket of the same name appears with no error. The flag rewrites the endpoint host to `<account>.eu.r2.cloudflarestorage.com` and applies to BOTH buckets, because one CopyObject goes to one endpoint; a copy between jurisdictions is refused by construction.
 
@@ -37,6 +37,7 @@ SELF = "r2_bucket_copy"
 RETRY_DELAY_S = 5.0
 JURISDICTIONS = ("eu", "fedramp")
 BUCKET_RE = re.compile(r"^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$")
+VERSION_SUFFIX_RE = re.compile(r"\?versionId=\S+$")
 ENDPOINT_HOST_RE = re.compile(r"^(https://[0-9a-f]+)(\.[a-z]+)?(\.r2\.cloudflarestorage\.com.*)$")
 
 
@@ -75,7 +76,11 @@ def parse_buckets(text: str) -> list[str]:
     """The names of a `list-buckets` JSON reply, sorted."""
     if not text.strip():
         return []
-    return sorted(entry["Name"] for entry in json.loads(text).get("Buckets") or [])
+    try:
+        reply = json.loads(text)
+        return sorted(entry["Name"] for entry in reply.get("Buckets") or [])
+    except (ValueError, AttributeError, KeyError, TypeError) as exc:
+        raise CopyError("list-buckets returned an unreadable reply: %s" % exc) from exc
 
 
 def list_buckets(endpoint: str) -> list[str]:
@@ -124,6 +129,11 @@ def plan_copy(src: list[r2_promote.Obj], dst: list[r2_promote.Obj]) -> list[r2_p
     return [o for o in src if not r2_promote.unchanged(o, have.get(o.rel))]
 
 
+def _single_part(etag: str) -> bool:
+    """A non-empty ETag with no `-<parts>` suffix: the MD5 of the bytes, comparable across buckets."""
+    return bool(etag) and "-" not in etag
+
+
 def parity(src: list[r2_promote.Obj], dst: list[r2_promote.Obj]) -> list[str]:
     """Every difference between the two listings as one line each; empty means parity of count, total size and keys (with per-key size)."""
     problems = []
@@ -142,6 +152,13 @@ def parity(src: list[r2_promote.Obj], dst: list[r2_promote.Obj]) -> list[str]:
         "size differs: %s (source %d, destination %d)" % (k, s[k], d[k])
         for k in sorted(s.keys() & d.keys())
         if s[k] != d[k]
+    ]
+    se = {o.rel: o.etag for o in src}
+    de = {o.rel: o.etag for o in dst}
+    problems += [
+        "etag differs: %s (source %s, destination %s)" % (k, se[k], de[k])
+        for k in sorted(s.keys() & d.keys())
+        if s[k] == d[k] and _single_part(se[k]) and _single_part(de[k]) and se[k] != de[k]
     ]
     return problems
 
@@ -165,6 +182,12 @@ def copy(endpoint: str, src: str, dst: str, dry_run: bool = False) -> int:
             "VACUOUS: %s lists 0 objects; refusing to report a copy that moved nothing" % src
         )
     r2_promote.check_sizes("%s/" % src, source, SELF)
+    risky = [o.rel for o in source if VERSION_SUFFIX_RE.search(o.rel)]
+    if risky:
+        raise CopyError(
+            "key(s) ending in ?versionId=... would be read by aws-cli as a version id: %s"
+            % ", ".join(risky[:5])
+        )
     todo = plan_copy(source, writer.list_tree(""))
     print(
         "%s: %d of %d object(s) to copy, %d bytes"

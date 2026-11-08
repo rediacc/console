@@ -172,3 +172,54 @@ def test_main_inventory_with_jurisdiction(
 def test_main_needs_from_and_to() -> None:
     with pytest.raises(SystemExit):
         bc.main(["--copy", "--endpoint", BASE])
+
+
+def test_copy_source_carries_the_raw_key_for_aws_cli_to_encode() -> None:
+    """botocore percent-encodes a string CopySource key itself; pre-encoding here would double-encode (`%2520`)."""
+    for key in ("a+b.txt", "a%20b", "with space.txt", "café/日本.bin"):
+        argv = r2_promote.copy_argv(key, key, "https://x", bucket="d", src_bucket="s")
+        assert argv[argv.index("--copy-source") + 1] == "s/" + key
+        assert argv[argv.index("--key") + 1] == key
+
+
+def test_copy_refuses_a_key_that_aws_cli_would_read_as_a_version_id(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fake = FakeR2({"src": {"a?versionId=abc": (1, T)}, "dst": {}})
+    fake.install(monkeypatch)
+    with pytest.raises(bc.CopyError, match="versionId"):
+        bc.copy(BASE, "src", "dst")
+    assert fake.copies == []
+
+
+def test_parity_compares_single_part_etags_only() -> None:
+    def tagged(etag: str) -> list[r2_promote.Obj]:
+        return [r2_promote.Obj("a", 4, T, etag)]
+
+    assert bc.parity(tagged("aa"), tagged("aa")) == []
+    assert any("etag differs: a" in line for line in bc.parity(tagged("aa"), tagged("bb")))
+    assert bc.parity(tagged("aa-3"), tagged("bb-3")) == []
+    assert bc.parity(tagged(""), tagged("bb")) == []
+
+
+def test_plan_copy_does_not_see_a_metadata_only_change() -> None:
+    """The documented limit: same size and a newer destination is skipped."""
+    assert bc.plan_copy([obj("a", 4, T)], [obj("a", 4, T + HOUR)]) == []
+
+
+def test_parse_buckets_malformed_reply_is_a_copy_error() -> None:
+    for bad in ("{not json", "[1, 2]", '{"Buckets": [{"x": 1}]}'):
+        with pytest.raises(bc.CopyError, match="unreadable"):
+            bc.parse_buckets(bad)
+
+
+def test_main_logs_a_malformed_list_buckets_reply_and_exits_1(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class Proc:
+        returncode = 0
+        stdout = b"<html>"
+        stderr = b""
+
+    monkeypatch.setattr(bc.awscli, "run", lambda *_a, **_k: Proc())
+    assert bc.main(["--inventory", "--endpoint", BASE]) == 1
