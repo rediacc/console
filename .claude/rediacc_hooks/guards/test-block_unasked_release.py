@@ -91,6 +91,7 @@ CLONE = ".ci/cache/release/abc"
 BWS = "%s rediacc_ci.core.bws_env exec --profile deploy-workers --" % PY
 DEVBOX = "./run.sh devbox exec --"
 WWW = "%s rediacc_ci.deploy.deploy_www" % PY
+PROMOTE = "%s rediacc_ci.deploy.promote_r2_to_stable" % PY
 ACCT_SECRETS = "rediacc_ci.deploy.set_account_worker_secrets"
 
 B, A = True, False
@@ -156,81 +157,128 @@ CASES = [
         B,
         "promoted through CI/CD only",
     ),
-    # ------------------------------------------------------------- the ASKED proof, on a stable deploy
-    ("stable: proven ASKED", "%s %s" % (ASK, WWW), TR, A, "admitted by RELEASE_ASKED"),
-    ("stable: no ASKED", WWW, None, B, "carries no RELEASE_ASKED"),
+    # ------------------------------------------------------------- the ASKED proof, on a stable CLI promote
+    ("stable: proven ASKED", "%s %s" % (ASK, PROMOTE), TR, A, "admitted by RELEASE_ASKED"),
+    ("stable: no ASKED", PROMOTE, None, B, "carries no RELEASE_ASKED"),
     (
         "stable: ASKED with no transcript",
-        "%s %s" % (ASK, WWW),
+        "%s %s" % (ASK, PROMOTE),
         None,
         B,
         "matches no AskUserQuestion",
     ),
     (
         "stable: ASKED matching no answer",
-        "%s %s" % (ASK_ELSEWHERE, WWW),
+        "%s %s" % (ASK_ELSEWHERE, PROMOTE),
         TR,
         B,
         "matches no AskUserQuestion",
     ),
     (
         "stable: ASKED without the Z",
-        "RELEASE_ASKED=ASKED:2026-01-01T00:00 %s" % WWW,
+        "RELEASE_ASKED=ASKED:2026-01-01T00:00 %s" % PROMOTE,
         TR,
         B,
         "is not ASKED",
     ),
     (
         "stable: ASKED as prose, not the variable",
-        "%s # ASKED:2026-01-01T00:00Z" % WWW,
+        "%s # ASKED:2026-01-01T00:00Z" % PROMOTE,
         TR,
         B,
         "carries no RELEASE_ASKED",
     ),
-    ("stable: ASKED exported first", "export %s; %s" % (ASK, WWW), TR, A, "admitted"),
+    ("stable: ASKED exported first", "export %s; %s" % (ASK, PROMOTE), TR, A, "admitted"),
     (
         "stable: ASKED carried through the devbox",
-        "%s %s %s" % (ASK, DEVBOX, WWW),
+        "%s %s %s" % (ASK, DEVBOX, PROMOTE),
         TR,
         A,
         "admitted",
     ),
-    # ------------------------------------------------------------- wrangler: stable config asked, edge config refused for its module
-    ("wrangler deploy", "npx wrangler deploy", None, B, "on the stable config wrangler.toml"),
+    # ------------------------------------------------------------- wrangler: a shared region config free, bench refused for its module, any other config asked
     (
-        "wrangler deploy on a stable config, no ASKED",
+        "wrangler deploy",
+        "npx wrangler deploy",
+        None,
+        B,
+        "on wrangler.toml (no shared region Worker's config)",
+    ),
+    (
+        "wrangler deploy on a shared region config",
         "npx wrangler deploy --config wrangler.eu.toml",
+        None,
+        A,
+        "!BLOCKED",
+    ),
+    (
+        "wrangler deploy on a shared region config, with an ASKED",
+        "%s npx wrangler deploy --config wrangler.eu.toml" % ASK,
+        TR,
+        A,
+        "!admitted",
+    ),
+    (
+        "wrangler deploy on a proxy region config by path",
+        "npx wrangler deploy -c workers/proxy/wrangler.asia.toml",
+        None,
+        A,
+        "",
+    ),
+    (
+        "wrangler rollback on a shared region config",
+        "npx wrangler rollback -c wrangler.us.toml",
+        None,
+        A,
+        "",
+    ),
+    (
+        "wrangler deploy on a config outside the region set, no ASKED",
+        "npx wrangler deploy --config wrangler.dev.toml",
         None,
         B,
         "carries no RELEASE_ASKED",
     ),
     (
-        "wrangler deploy on a stable config, proven ASKED",
-        "%s npx wrangler deploy --config wrangler.eu.toml" % ASK,
+        "wrangler deploy on a config outside the region set, proven ASKED",
+        "%s npx wrangler deploy --config wrangler.dev.toml" % ASK,
         TR,
         A,
         "admitted by RELEASE_ASKED",
     ),
-    ("wrangler rollback on stable", "npx wrangler rollback -c wrangler.us.toml", None, B, "stable"),
+    (
+        "wrangler deploy on a region-shaped config of no region",
+        "npx wrangler deploy --config wrangler.mars.toml",
+        None,
+        B,
+        "carries no RELEASE_ASKED",
+    ),
+    (
+        "wrangler deploy on a retired edge config",
+        "npx wrangler --config wrangler.edge-eu.toml deploy",
+        None,
+        B,
+        "no shared region Worker's config",
+    ),
     ("wrangler publish", "npx wrangler publish", None, B, "wrangler publish"),
     ("wrangler versions deploy", "npx wrangler versions deploy", None, B, "versions deploy"),
     (
-        "wrangler deploy on an edge config",
-        "npx wrangler --config wrangler.edge.toml deploy",
+        "wrangler deploy on the bench config",
+        "npx wrangler deploy --config=wrangler.bench.toml",
         None,
         B,
         "deploys through its module",
     ),
     (
-        "wrangler deploy on an edge config, proven ASKED",
-        "%s npx wrangler deploy -c wrangler.edge-eu.toml" % ASK,
+        "wrangler deploy on the bench config, proven ASKED",
+        "%s npx wrangler deploy -c wrangler.bench.toml" % ASK,
         TR,
         B,
         "deploys through its module",
     ),
     (
-        "wrangler deploy on the bench config",
-        "npx wrangler deploy --config=wrangler.bench.toml",
+        "wrangler deploy on a preview config",
+        "npx wrangler deploy -c wrangler.preview-12.toml",
         None,
         B,
         "deploys through its module",
@@ -271,29 +319,22 @@ CASES = [
         "wrangler deploy",
     ),
     (
-        "wrangler deploy on a stable config under an edge-named dir",
-        "npx wrangler deploy --config /srv/edge-bench/wrangler.eu.toml",
+        "wrangler deploy on a region config under a bench-named dir",
+        "npx wrangler deploy --config /srv/bench-preview/wrangler.eu.toml",
         None,
-        B,
-        "carries no RELEASE_ASKED",
+        A,
+        "!BLOCKED",
     ),
     (
-        "wrangler deploy on a stable config under an edge-named dir, proven ASKED",
-        "%s npx wrangler deploy --config /srv/edge-bench/wrangler.eu.toml" % ASK,
+        "wrangler deploy on a config whose name holds bench inside a word",
+        "%s npx wrangler deploy -c wrangler.workbench.toml" % ASK,
         TR,
         A,
         "admitted by RELEASE_ASKED",
     ),
     (
-        "wrangler deploy on a config whose name holds edge inside a word",
-        "%s npx wrangler deploy -c wrangler.knowledge.toml" % ASK,
-        TR,
-        A,
-        "admitted by RELEASE_ASKED",
-    ),
-    (
-        "wrangler deploy on an edge config by full path",
-        "%s npx wrangler deploy -c /srv/x/workers/proxy/wrangler.edge-us.toml" % ASK,
+        "wrangler deploy on the bench config by full path",
+        "%s npx wrangler deploy -c /srv/x/workers/proxy/wrangler.bench.toml" % ASK,
         TR,
         B,
         "deploys through its module",
@@ -369,7 +410,7 @@ CASES = [
         "",
     ),
     ("npm run deploy at a root with no deploy", "cd %s && npm run deploy" % WS, None, A, ""),
-    ("wrangler tail", "npx wrangler tail edge-rediacc-www", None, A, ""),
+    ("wrangler tail", "npx wrangler tail www", None, A, ""),
     ("wrangler d1 migrations list", "npx wrangler d1 migrations list DB --remote", None, A, ""),
     ("wrangler deployments list", "npx wrangler deployments list", None, A, ""),
     # ------------------------------------------------------------- gh release
@@ -539,10 +580,10 @@ CASES = [
     ("buildx build --load", "docker buildx build --load -t x .", None, A, ""),
     ("docker pull", "docker pull %s/renet:1.2.3" % IMAGE_REGISTRY, None, A, ""),
     ("buildx imagetools inspect", "docker buildx imagetools inspect ghcr.io/x:1", None, A, ""),
-    # ------------------------------------------------------------- publish modules: edge and bench free, stable asked, entry steps refused
+    # ------------------------------------------------------------- publish modules: every Worker deploy free, the CLI's stable promote asked, entry steps refused
     ("deploy_edge is free", "%s rediacc_ci.deploy.deploy_edge" % PY, None, A, "!BLOCKED"),
     (
-        "the skill's edge www deploy in the devbox",
+        "the skill's www deploy in the devbox",
         "%s env %s bash -c 'npm run build:packages && "
         "PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_edge'" % (DEVBOX, BWS),
         None,
@@ -551,100 +592,37 @@ CASES = [
     ),
     ("deploy_bench is free", "%s rediacc_ci.ops.deploy_bench" % PY, None, A, ""),
     (
-        "deploy_account eu, default production",
+        "deploy_account eu",
         "%s rediacc_ci.deploy.deploy_account --region eu" % PY,
         None,
-        B,
-        "a stable target",
+        A,
+        "!BLOCKED",
     ),
     (
         "deploy_account eu --target production",
         "%s rediacc_ci.deploy.deploy_account --region eu --target production" % PY,
         None,
-        B,
-        "a stable target",
+        A,
+        "",
     ),
     (
         "deploy_account us --target stable",
         "%s rediacc_ci.deploy.deploy_account --region us --target stable" % PY,
         None,
-        B,
-        "a stable target",
+        A,
+        "",
     ),
     (
-        "deploy_account eu production, proven ASKED",
-        "%s %s rediacc_ci.deploy.deploy_account --region eu --target production" % (ASK, PY),
+        "deploy_account eu, with an ASKED it does not need",
+        "%s %s rediacc_ci.deploy.deploy_account --region eu" % (ASK, PY),
         TR,
         A,
-        "admitted by RELEASE_ASKED",
+        "!admitted",
     ),
+    ("deploy_www is free", WWW, None, A, "!BLOCKED"),
     (
-        "deploy_account asia --target edge",
-        "%s rediacc_ci.deploy.deploy_account --region asia --target edge" % PY,
-        None,
-        A,
-        "",
-    ),
-    (
-        "deploy_account edge, then --TARGET production",
-        "%s rediacc_ci.deploy.deploy_account --region eu --target edge --TARGET production" % PY,
-        None,
-        B,
-        "a stable target",
-    ),
-    (
-        "deploy_account edge, then a bare --target",
-        "%s rediacc_ci.deploy.deploy_account --region eu --target edge --target" % PY,
-        None,
-        B,
-        "a stable target",
-    ),
-    (
-        "deploy_account edge, then --target --region",
-        "%s rediacc_ci.deploy.deploy_account --target edge --target --region eu" % PY,
-        None,
-        B,
-        "a stable target",
-    ),
-    (
-        "deploy_account edge; --tar is another key to its parser",
-        "%s rediacc_ci.deploy.deploy_account --region eu --tar production --target edge" % PY,
-        None,
-        A,
-        "",
-    ),
-    (
-        "deploy_account eu --target=edge",
-        "%s rediacc_ci.deploy.deploy_account --region eu --target=edge" % PY,
-        None,
-        A,
-        "",
-    ),
-    ("deploy_www is stable", WWW, None, B, "(stable)"),
-    (
-        "account_secrets_local --target stable",
+        "account_secrets_local eu",
         "%s rediacc_ci.deploy.account_secrets_local --region eu --target stable" % PY,
-        None,
-        B,
-        "a stable target",
-    ),
-    (
-        "account_secrets_local --target stable, proven ASKED",
-        "%s %s rediacc_ci.deploy.account_secrets_local --region eu --target stable" % (ASK, PY),
-        TR,
-        A,
-        "admitted",
-    ),
-    (
-        "account_secrets_local --target edge",
-        "%s rediacc_ci.deploy.account_secrets_local --region us --target edge" % PY,
-        None,
-        A,
-        "",
-    ),
-    (
-        "account_secrets_local stable dry run",
-        "%s rediacc_ci.deploy.account_secrets_local --region eu --target stable --dry-run" % PY,
         None,
         A,
         "",
@@ -657,78 +635,29 @@ CASES = [
         "",
     ),
     (
-        "deploy_proxy --target=bench",
-        "%s rediacc_ci.deploy.deploy_proxy --target=bench" % PY,
-        None,
-        A,
-        "",
-    ),
-    (
-        "deploy_proxy bench, then an argparse prefix names eu",
-        "%s rediacc_ci.deploy.deploy_proxy --target=bench --tar eu" % PY,
-        None,
-        B,
-        "a stable target",
-    ),
-    (
-        "console_executor edge, then --targ=stable",
-        "%s rediacc_ci.deploy.console_executor --enable --target edge --targ=stable" % PY,
-        None,
-        B,
-        "a stable target",
-    ),
-    (
-        "deploy_proxy --tar bench",
-        "%s rediacc_ci.deploy.deploy_proxy --tar bench --region eu" % PY,
-        None,
-        A,
-        "",
-    ),
-    (
-        "deploy_proxy --target edge",
-        "%s rediacc_ci.deploy.deploy_proxy --target edge --region eu" % PY,
-        None,
-        A,
-        "",
-    ),
-    (
-        "deploy_proxy --target stable",
+        "deploy_proxy eu",
         "%s rediacc_ci.deploy.deploy_proxy --target stable --region eu" % PY,
         None,
-        B,
-        "a stable target",
+        A,
+        "",
     ),
     (
         "deploy_proxy with no target",
         "%s rediacc_ci.deploy.deploy_proxy --region eu" % PY,
         None,
-        B,
-        "a stable target",
+        A,
+        "",
     ),
     (
-        "console_executor --target edge",
-        "%s rediacc_ci.deploy.console_executor --enable --target edge --region eu" % PY,
+        "console_executor eu",
+        "%s rediacc_ci.deploy.console_executor --enable --target stable --region eu" % PY,
         None,
         A,
         "",
     ),
     (
-        "console_executor --target stable",
-        "%s rediacc_ci.deploy.console_executor --enable --target stable --region eu" % PY,
-        None,
-        B,
-        "a stable target",
-    ),
-    (
-        "account secrets for a stable Worker",
-        "TARGET=stable WORKER_NAME=rediacc-account-eu %s %s" % (PY, ACCT_SECRETS),
-        None,
-        B,
-        "a stable target",
-    ),
-    (
-        "account secrets for an edge Worker",
-        "TARGET=edge WORKER_NAME=edge-rediacc-account-eu %s %s" % (PY, ACCT_SECRETS),
+        "account secrets for a region Worker",
+        "WORKER_NAME=account-eu %s %s" % (PY, ACCT_SECRETS),
         None,
         A,
         "",
@@ -737,29 +666,15 @@ CASES = [
         "account secrets with no target on the line",
         "%s %s" % (PY, ACCT_SECRETS),
         None,
-        B,
-        "a stable target",
-    ),
-    (
-        "edge secrets aimed at a stable Worker",
-        "TARGET=edge WORKER_NAME=rediacc-account-eu %s %s" % (PY, ACCT_SECRETS),
-        None,
-        B,
-        "a stable target",
-    ),
-    (
-        "www secrets for the edge Worker",
-        "WORKER_NAME=edge-rediacc-www %s rediacc_ci.deploy.set_www_worker_secrets" % PY,
-        None,
         A,
         "",
     ),
     (
-        "www secrets for the stable Worker",
-        "WORKER_NAME=rediacc-www %s rediacc_ci.deploy.set_www_worker_secrets" % PY,
+        "www secrets",
+        "WORKER_NAME=www %s rediacc_ci.deploy.set_www_worker_secrets" % PY,
         None,
-        B,
-        "a stable target",
+        A,
+        "",
     ),
     (
         "preview secrets are never stable",
@@ -767,6 +682,13 @@ CASES = [
         None,
         A,
         "",
+    ),
+    (
+        "a Worker deploy beside an unasked stable promote",
+        "%s rediacc_ci.deploy.deploy_account --region eu && %s" % (PY, PROMOTE),
+        None,
+        B,
+        "promote_r2_to_stable (stable)",
     ),
     (
         "promote_r2_to_stable, proven ASKED",
@@ -827,11 +749,11 @@ CASES = [
         "(stable)",
     ),
     (
-        "--help on deploy_account, whose parser stores it as a key",
+        "--help on deploy_account, a free module whose parser stores it as a key",
         "%s rediacc_ci.deploy.deploy_account --region eu --help" % PY,
         None,
-        B,
-        "a stable target",
+        A,
+        "",
     ),
     (
         "--help on an argparse module",
@@ -969,13 +891,13 @@ def _declares_dry_run(module):
     return source.is_file() and '"--dry-run"' in source.read_text(encoding="utf-8")
 
 
-# --dry-run on a publish module passes when the module's own source declares it; otherwise the run is judged as if the flag were absent (an edge module is free either way, every other bare run is refused).
+# --dry-run on a publish module passes when the module's own source declares it; otherwise the run is judged as if the flag were absent (a Worker module is free either way, every other bare run is refused).
 CASES.extend(
     (
         "-m %s --dry-run (declared: %s)" % (module.rsplit(".", 1)[-1], _declares_dry_run(module)),
         "%s %s --dry-run" % (PY, module),
         None,
-        not _declares_dry_run(module) and module not in G.EDGE_MODULES,
+        not _declares_dry_run(module) and module not in G.WORKER_MODULES,
         "",
     )
     for module in G.PUBLISH_MODULES
@@ -1059,34 +981,6 @@ for name, command, tr, want, needle in CASES:
     if not ok:
         print("    needle %r; stderr: %s" % (needle, err.strip().splitlines()[:6]))
 
-# THE PREFIX READING HAS NO AMBIGUITY CHECK (review 7f22f490.1): `_prefix_option` reads every prefix from `--t` up as `--target`, which is exact only while no other long option of an argparse TARGET_MODULE starts with `--t`. Read each parser's `add_argument` lines and fail when one does; a module that lost its `--target` line means the scan is not seeing the parser.
-_LONG = __import__("re").compile(r"add_argument\(\s*\"(--[^\"]+)\"")
-argparse_seen = 0
-for module in G.TARGET_MODULES:
-    text = (
-        (REPO / ".ci" / pathlib.Path(*module.split(".")))
-        .with_suffix(".py")
-        .read_text(encoding="utf-8")
-    )
-    if "argparse.ArgumentParser(" not in text:
-        continue
-    argparse_seen += 1
-    longs = _LONG.findall(text)
-    clash = sorted(o for o in longs if o.startswith("--t") and o != "--target")
-    ok = "--target" in longs and not clash
-    fails += not ok
-    print(
-        "%-62s %s"
-        % (
-            "prefix pin %s: %d long option(s), --t clash %s"
-            % (module.rsplit(".", 1)[-1], len(longs), clash or "none"),
-            "ok" if ok else "*** FAIL *** a --t prefix is no longer unique to --target",
-        )
-    )
-if argparse_seen < 2:
-    fails += 1
-    print("*** FAIL *** the prefix pin saw %d argparse module(s), expected 2" % argparse_seen)
-
 print()
 CONTROLS = [("DEFECT", G.DEFECT), *sorted(G.MUTANTS.items())]
 # The case each control must flip, so a control cannot pass on an unrelated refusal.
@@ -1095,23 +989,19 @@ MUST_FLIP = {
     "asked-always-true": "stable: ASKED matching no answer",
     "channel-before-separator": "entry: channel before the separator",
     "any-channel-admitted": "entry: stable channel",
-    "account-target-ignored": "deploy_account eu, default production",
-    "proxy-target-ignored": "deploy_proxy --target stable",
-    "stable-config-unasked": "wrangler deploy on a stable config, no ASKED",
+    "unshared-config-unasked": "wrangler deploy on a config outside the region set, no ASKED",
+    "region-config-asked": "wrangler deploy on a shared region config",
+    "region-list-ignored": "wrangler deploy on a region-shaped config of no region",
+    "worker-module-asked": "deploy_account eu",
     "tag-push-ignored": "push a v tag",
     "release-dir-ignored": "rm in the clone",
     "module-no-channel-says-npm": "entry by module, no channel: the reason names no npm",
-    "config-path-judged-whole": (
-        "wrangler deploy on a stable config under an edge-named dir, proven ASKED"
-    ),
+    "config-path-judged-whole": "wrangler deploy on a region config under a bench-named dir",
     "follow-tags-ignored": "push a branch with --follow-tags",
-    "target-prefix-ignored": "deploy_proxy bench, then an argparse prefix names eu",
     "workspace-name-ignored": "npm run deploy -w by workspace name",
     "short-output-ignored": "buildx registry output, attached -o",
     "compose-push-ignored": "docker compose push",
     "pages-ignored": "wrangler pages deploy",
-    "account-target-case-folded": "deploy_account edge, then --TARGET production",
-    "account-bare-target-kept": "deploy_account edge, then a bare --target",
     "help-taken-as-value": "buildx --push, --help taken as the tag",
     "help-undeclared": "--help on a module that takes no argv",
     "workspace-glob-through-path": "npm run deploy -w by name under a glob-special project path",
