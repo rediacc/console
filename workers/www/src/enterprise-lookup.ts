@@ -30,6 +30,14 @@ export function normalizeDomain(input: unknown): string | null {
   if (typeof input !== 'string') return null;
   let d = input.trim().toLowerCase();
   if (d.endsWith('.')) d = d.slice(0, -1);
+  // A unicode name is punycoded, as the writer's normalize_domain does (review 11ccb9e8.2).
+  if (/[^\x00-\x7f]/.test(d)) {
+    try {
+      d = new URL(`http://${d}`).hostname;
+    } catch {
+      return null;
+    }
+  }
   if (d.length > 253 || !DOMAIN_RE.test(d)) return null;
   return d;
 }
@@ -67,9 +75,36 @@ interface Payload {
   turnstileToken?: unknown;
 }
 
+/** The body as text, or null past MAX_BODY bytes; reading stops at the cap (review 11ccb9e8.3). */
+async function readCapped(request: Request): Promise<string | null> {
+  const declared = Number(request.headers.get('content-length') ?? '0');
+  if (declared > MAX_BODY) return null;
+  if (!request.body) return '';
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    size += value.byteLength;
+    if (size > MAX_BODY) {
+      await reader.cancel();
+      return null;
+    }
+    chunks.push(value);
+  }
+  const all = new Uint8Array(size);
+  let at = 0;
+  for (const c of chunks) {
+    all.set(c, at);
+    at += c.byteLength;
+  }
+  return new TextDecoder().decode(all);
+}
+
 async function readPayload(request: Request): Promise<Payload | null> {
-  const text = await request.text();
-  if (text.length > MAX_BODY) return null;
+  const text = await readCapped(request);
+  if (text === null) return null;
   try {
     const parsed: unknown = JSON.parse(text);
     return parsed !== null && typeof parsed === 'object' ? (parsed as Payload) : null;

@@ -70,6 +70,9 @@ describe('normalizeDomain', () => {
     expect(normalizeDomain(42)).toBeNull();
     expect(normalizeDomain('-a.example')).toBeNull();
   });
+  test('punycodes a unicode name like the writer does', () => {
+    expect(normalizeDomain('Bücher.example')).toBe('xn--bcher-kva.example');
+  });
 });
 
 describe('lookupKey', () => {
@@ -115,6 +118,8 @@ describe('POST /api/enterprise-lookup', () => {
     expect((await lookup('{nope', e)).status).toBe(400);
     expect((await lookup('null', e)).status).toBe(400);
     expect((await lookup('x'.repeat(5000), e)).status).toBe(400);
+    // The cap counts bytes: 700 three-byte characters are 2100 bytes but 700 UTF-16 units.
+    expect((await lookup(JSON.stringify({ domain: '€'.repeat(700) }), e)).status).toBe(400);
   });
 
   test('is unavailable without the binding, the pepper or the Turnstile secret', async () => {

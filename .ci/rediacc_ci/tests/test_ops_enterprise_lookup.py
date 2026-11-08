@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import json
 
 import pytest
 
+from rediacc_ci import paths
 from rediacc_ci.ops import enterprise_lookup as el
 
 PEPPER = "pepper-for-tests"
@@ -97,6 +99,8 @@ def test_main_exit_codes(capsys: pytest.CaptureFixture[str]) -> None:
 
 
 def test_the_free_mail_list_is_lowercase_and_unique() -> None:
+    raw = json.loads((paths.repo_root() / el.FREE_MAIL).read_text(encoding="utf-8"))["domains"]
+    assert len(raw) == len(set(raw)), "duplicate domains in %s" % el.FREE_MAIL
     data = sorted(el.free_mail_domains())
     assert all(d == d.lower() and "." in d for d in data)
     assert "gmail.com" in data
