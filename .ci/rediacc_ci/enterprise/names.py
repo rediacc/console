@@ -87,8 +87,7 @@ def check(name: str) -> str:
     return name
 
 
-def hosts(name: str, domain: str | None = None) -> tuple[str, str]:
-    """(account host, proxy host) for a valid name under the product domain."""
+def hosts(name: str, domain: str) -> tuple[str, str]:
+    """(account host, proxy host) for a valid name under the product domain the caller names (well_known.PRODUCT_DOMAIN once the rename lands)."""
     check(name)
-    domain = domain or well_known.PRODUCT_DOMAIN
     return "%s.%s" % (name, domain), "%s%s.%s" % (name, PROXY_SUFFIX, domain)

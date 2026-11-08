@@ -23,7 +23,7 @@ def _db(rows: list[tuple[str, str, str, str]]) -> sqlite3.Connection:
     return conn
 
 
-def _transport(dbs: dict[str, sqlite3.Connection], down: set[str] = frozenset()):
+def _transport(dbs: dict[str, sqlite3.Connection], down: frozenset[str] = frozenset()):
     def query(database, sql, params):
         if database in down:
             raise ConnectionError("no route to %s" % database)
@@ -32,7 +32,7 @@ def _transport(dbs: dict[str, sqlite3.Connection], down: set[str] = frozenset())
     return query
 
 
-def _world(down: set[str] = frozenset()):
+def _world(down: frozenset[str] = frozenset()):
     dbs = {
         "control-eu": _db([("c0a1b2c3d4", "acme", "eu", "active")]),
         "control-us": _db(
@@ -87,7 +87,7 @@ def test_name_free_and_taken_across_regions():
 
 
 def test_unreachable_region_is_named_and_refuses_name_free():
-    reg = _world(down={"control-us"})
+    reg = _world(down=frozenset({"control-us"}))
     with pytest.raises(registry.RegistryUnreachableError) as err:
         reg.name_free("newco")
     assert err.value.regions == ["us"]
@@ -95,7 +95,7 @@ def test_unreachable_region_is_named_and_refuses_name_free():
 
 
 def test_every_unreachable_region_is_listed():
-    reg = _world(down={"control-us", "control-asia"})
+    reg = _world(down=frozenset({"control-us", "control-asia"}))
     with pytest.raises(registry.RegistryUnreachableError) as err:
         reg.companies()
     assert err.value.regions == ["asia", "us"]
