@@ -144,18 +144,31 @@ describe('config remote disable', () => {
   });
 
   it('names --local and changes nothing when the stored server answers 403 to server-info', async () => {
-    const { ServerE2eKeyUnavailableError } = await import(
+    const { ServerE2eKeyUnavailableError, ServerInfoStatusError } = await import(
       '../../services/account/account-client.js'
     );
     const before = structuredClone(fileState.current);
     mockPull.mockRejectedValue(
       new ServerE2eKeyUnavailableError('https://old.test', 'unreachable', {
-        cause: new Error('server-info returned 403'),
+        cause: new ServerInfoStatusError(403),
       })
     );
     await expect(runDisable()).rejects.toThrow(/disable --local/);
     await expect(runDisable()).rejects.toThrow(/https:\/\/old\.test/);
     expect(fileState.current).toEqual(before);
+    expect(tokenDelete).not.toHaveBeenCalled();
+  });
+
+  it('classifies by status, not wording: a 429 or a lookalike plain Error is raised as it came', async () => {
+    const { ServerE2eKeyUnavailableError, ServerInfoStatusError } = await import(
+      '../../services/account/account-client.js'
+    );
+    for (const cause of [new ServerInfoStatusError(429), new Error('server-info returned 403')]) {
+      mockPull.mockRejectedValue(
+        new ServerE2eKeyUnavailableError('https://old.test', 'unreachable', { cause })
+      );
+      await expect(runDisable()).rejects.not.toThrow(/disable --local/);
+    }
     expect(tokenDelete).not.toHaveBeenCalled();
   });
 });

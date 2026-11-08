@@ -51,6 +51,14 @@ type ServerKeyMaterial = {
  * other server that request fails as a bare "Decryption failed" naming nothing (vm:check license
  * drill, 2026-10-21).
  */
+/** A server-info read that answered a non-2xx status; `status` lets callers classify it without reading the message. */
+export class ServerInfoStatusError extends Error {
+  constructor(public readonly status: number) {
+    super(`server-info returned ${status}`);
+    this.name = 'ServerInfoStatusError';
+  }
+}
+
 export class ServerE2eKeyUnavailableError extends Error {
   readonly serverUrl: string;
   readonly reason: 'unreachable' | 'no-key';
@@ -161,7 +169,7 @@ async function discoverServerKey(
   const resp = await fetch(`${serverUrl}/account/api/v1/.well-known/server-info`, {
     signal: AbortSignal.timeout(5000),
   });
-  if (!resp.ok) throw new Error(`server-info returned ${resp.status}`);
+  if (!resp.ok) throw new ServerInfoStatusError(resp.status);
   const info = (await resp.json()) as {
     e2e?: { keys?: { keyId: string; publicKeySpki: string }[] };
   };
@@ -286,7 +294,7 @@ export async function fetchServerInfo(serverUrl: string): Promise<ServerInfo> {
     headers: { 'User-Agent': `rdc/${VERSION}` },
     signal: AbortSignal.timeout(5000),
   });
-  if (!res.ok) throw new Error(`server-info returned ${res.status}`);
+  if (!res.ok) throw new ServerInfoStatusError(res.status);
   return res.json() as Promise<ServerInfo>;
 }
 
