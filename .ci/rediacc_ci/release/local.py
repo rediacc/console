@@ -154,13 +154,13 @@ class Step:
         )
 
 
-# The store names the edge www Worker secrets read under another spelling (cd-deploy-worker.yml `Set Worker secrets`, target edge).
+# The store names the www Worker secrets read under another spelling (cd-deploy-worker.yml `Set Worker secrets`). The www Worker takes live billing: the live key and the live EU webhook secret, a pair that stays together.
 WWW_BINDS = (
     "AWS_SES_ACCESS_KEY_ID_EU > AWS_SES_ACCESS_KEY_ID",
     "AWS_SES_SECRET_ACCESS_KEY_EU > AWS_SES_SECRET_ACCESS_KEY",
     "AWS_SES_REGION_EU > AWS_SES_REGION",
-    "STRIPE_SANDBOX_SECRET_KEY > STRIPE_SECRET_KEY",
-    "STRIPE_SANDBOX_WEBHOOK_SECRET > STRIPE_WEBHOOK_SECRET",
+    "STRIPE_SECRET_KEY > STRIPE_SECRET_KEY",
+    "STRIPE_WEBHOOK_SECRET_EU > STRIPE_WEBHOOK_SECRET",
 )
 TURNSTILE = ("TURNSTILE_SITE_KEY > VITE_TURNSTILE_SITE_KEY",)
 LOCK_CHECK = (*PY, SELF, "_lock-check", "--version", "{version}")

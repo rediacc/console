@@ -68,8 +68,6 @@ jobs:
             CLOUDFLARE_API_TOKEN > BWS_CLOUDFLARE_API_TOKEN
             CLOUDFLARE_TURNSTILE_SECRET_KEY > BWS_CLOUDFLARE_TURNSTILE_SECRET_KEY
             GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
-            STRIPE_SANDBOX_SECRET_KEY > BWS_STRIPE_SANDBOX_SECRET_KEY
-            STRIPE_SANDBOX_WEBHOOK_SECRET > BWS_STRIPE_SANDBOX_WEBHOOK_SECRET
             STRIPE_SECRET_KEY > BWS_STRIPE_SECRET_KEY
             STRIPE_WEBHOOK_SECRET_EU > BWS_STRIPE_WEBHOOK_SECRET_EU
             GITHUB_APP_ID > BWS_APP_ID
@@ -230,25 +228,14 @@ jobs:
           SELLER_POSTAL_CODE: ${{ env.BWS_SELLER_POSTAL_CODE }}
           SELLER_REGISTRATION_NUMBER: ${{ env.BWS_SELLER_REGISTRATION_NUMBER }}
           SELLER_VAT_NUMBER: ${{ env.BWS_SELLER_VAT_NUMBER }}
-          # BOTH of these are per CHANNEL, not per region: stable gets the live EU
-          # credentials, edge the sandbox ones (set_www_worker_secrets.py). The
-          # unsuffixed store entries are pre-regional leftovers and are NOT the
-          # source here. Restoring the ternary on the KEY was a P1 fix: it
-          # had been rebuilt flat while the webhook kept its branch, so an EDGE
-          # deploy would have configured the www Worker with the LIVE Stripe key
-          # against a SANDBOX webhook secret -- fail-OPEN, and a pair no code path
-          # expects. The map names a secret; it never says which branch reads it.
-          #
-          # Post-rename spelling: the live key COLLAPSED to STRIPE_SECRET_KEY
-          # (one value served all three regions), so HEAD's STRIPE_SECRET_KEY_EU
-          # no longer exists. The WEBHOOK secrets did not collapse -- those are
-          # genuinely per region -- which is why only one side changed.
-          STRIPE_SECRET_KEY: ${{ inputs.target == 'stable'
-            && env.BWS_STRIPE_SECRET_KEY
-            || env.BWS_STRIPE_SANDBOX_SECRET_KEY }}
-          STRIPE_WEBHOOK_SECRET: ${{ inputs.target == 'stable'
-            && env.BWS_STRIPE_WEBHOOK_SECRET_EU
-            || env.BWS_STRIPE_SANDBOX_WEBHOOK_SECRET }}
+          # The one www Worker (www.rediacc.com) takes live billing on every
+          # target, so the live key and the live EU webhook secret are used
+          # unconditionally. The two are read as a pair from the same branch: a
+          # live key with a sandbox webhook secret would fail OPEN. The unsuffixed
+          # webhook store entry is a pre-regional leftover and is NOT the source.
+          # The sandbox pair stays for local dev and E2E, never here.
+          STRIPE_SECRET_KEY: ${{ env.BWS_STRIPE_SECRET_KEY }}
+          STRIPE_WEBHOOK_SECRET: ${{ env.BWS_STRIPE_WEBHOOK_SECRET_EU }}
         # workers/www holds the only node_modules/.bin/wrangler this job installs, and
         # `npx --no-install wrangler` resolves a local binary only, so the step runs
         # there (the same failure took Deploy Preview down in run 41348962671).
@@ -266,5 +253,4 @@ jobs:
         run: npx tsx scripts/verify-webhook.ts ${{ steps.target.outputs.sandbox }} --expected-url "https://${{ steps.target.outputs.domain }}/account/api/v1/webhooks/stripe"
         working-directory: private/account
         env:
-          STRIPE_SECRET_KEY: ${{ inputs.target == 'stable' && env.BWS_STRIPE_SECRET_KEY || '' }}
-          STRIPE_SANDBOX_SECRET_KEY: ${{ inputs.target != 'stable' && env.BWS_STRIPE_SANDBOX_SECRET_KEY || '' }}
+          STRIPE_SECRET_KEY: ${{ env.BWS_STRIPE_SECRET_KEY }}

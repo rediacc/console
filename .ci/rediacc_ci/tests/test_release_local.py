@@ -199,7 +199,8 @@ def test_the_www_secrets_bind_the_eu_ses_pair_under_the_unsuffixed_names() -> No
     step = next(s for s in EDGE if s.id == "www-secrets")
     assert "AWS_SES_ACCESS_KEY_ID_EU > AWS_SES_ACCESS_KEY_ID" in step.binds
     assert "AWS_SES_SECRET_ACCESS_KEY_EU > AWS_SES_SECRET_ACCESS_KEY" in step.binds
-    assert "STRIPE_SANDBOX_SECRET_KEY > STRIPE_SECRET_KEY" in step.binds
+    assert "STRIPE_WEBHOOK_SECRET_EU > STRIPE_WEBHOOK_SECRET" in step.binds
+    assert not [b for b in step.binds if "SANDBOX" in b]
 
 
 def test_every_push_uses_the_session_github_token() -> None:
@@ -750,8 +751,8 @@ def test_every_bind_is_declared_by_the_profiles_of_its_step() -> None:
 
 
 def test_bind_refusals_names_an_undeclared_or_empty_store() -> None:
-    env = {"REDIACC_BWS_PROFILES": "release-local", "STRIPE_SANDBOX_SECRET_KEY": "x"}
-    assert local.bind_refusals(["STRIPE_SANDBOX_SECRET_KEY > STRIPE_SECRET_KEY"], env) == []
+    env = {"REDIACC_BWS_PROFILES": "release-local", "STRIPE_SECRET_KEY": "x"}
+    assert local.bind_refusals(["STRIPE_SECRET_KEY > STRIPE_SECRET_KEY"], env) == []
     (empty,) = local.bind_refusals(["AWS_SES_REGION_EU > AWS_SES_REGION"], env)
     assert "AWS_SES_REGION_EU" in empty
     assert "empty" in empty

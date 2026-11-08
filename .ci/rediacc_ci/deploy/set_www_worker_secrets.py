@@ -3,7 +3,7 @@
 
 Pushes twenty-four runtime secrets into the www Worker (stable or edge) in ONE `wrangler secret bulk` call. The twin's own header carries the reason the call is bulk and not twenty-four `secret put`s: each `put` mints a new Worker version, and on an assets-bound Worker a new version disassociates the static assets the deploy just uploaded.
 
-THIS SCRIPT MARSHALS, IT DOES NOT DECIDE. Which Stripe and SES credentials land here is `cd-deploy-worker.yml`'s choice (sandbox on edge, live EU on stable), and the twin says so at :10-12 and again at :36-38: there is no region indirection anywhere in it. The port keeps that property, which is why there is no channel argument and no lookup table here either.
+THIS SCRIPT MARSHALS, IT DOES NOT DECIDE. Which Stripe and SES credentials land here is `cd-deploy-worker.yml`'s choice (the live Stripe pair and the EU SES pair, on every target), and the twin says so at :10-12 and again at :36-38: there is no region indirection anywhere in it. The port keeps that property, which is why there is no channel argument and no lookup table here either.
 
 SECRETS ARRIVE AS ENVIRONMENT VARIABLES AND NEVER TRAVEL AS ARGUMENTS. `argv` is visible in `ps` and in some log surfaces. A value travels env -> a `json.dumps` object on jq's STDIN -> jq's document on wrangler's STDIN. The twin passed each value as a `jq --arg` pair, on jq's argv; the port does not (worklist #a2d19f74), and `test_no_secret_value_reaches_any_child_argv` pins it.
 
@@ -85,7 +85,7 @@ KEYS: tuple[tuple[str, str], ...] = (
 # WHY THESE THIRTEEN, in the twin's own words (:56-76): the Worker schema marks several of them optional() and normalises "" to undefined, so an empty value deploys cleanly and SILENTLY turns the feature off; `required: true` on the GitHub side used to be the guard and a job-start Bitwarden fetch has no equivalent. The six env.ts declares NON-optional are demanded here too, because
 # zod does catch those, but only inside the deployed Worker as an EnvConfigError 500 on every request afterwards.
 #
-# STRIPE IS UNCONDITIONAL HERE and is not on the preview sibling's list: edge gets the sandbox key and stable the live one, so it is never legitimately empty for www.
+# STRIPE IS UNCONDITIONAL HERE and is not on the preview sibling's list: the one www Worker takes live billing, so it is never legitimately empty for www.
 REQUIRED_NONEMPTY: tuple[str, ...] = (
     "ACCOUNT_ED25519_PRIVATE_KEY",
     "ACCOUNT_ED25519_PUBLIC_KEY",
