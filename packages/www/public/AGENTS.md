@@ -61,7 +61,7 @@ rdc machine repos --name <machine> -o json              # List deployed reposito
 rdc machine health --name <machine> -o json             # Health check
 rdc repo up --name <repo> -m <machine> --yes     # Deploy a repository
 rdc repo down --name <repo> -m <machine> --yes   # Stop a repository
-rdc term connect -m <machine> -c "command"       # Run command via SSH
+rdc term connect <machine> -c "command"       # Run command via SSH
 rdc repo sync upload -m <machine> -r <repo>    # Upload files
 rdc repo sync download -m <machine> -r <repo>  # Download files
 rdc --help-all                            # List all commands (for discovery)

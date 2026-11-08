@@ -132,7 +132,7 @@ export REDIACC_ALLOW_GRAND_REPO='gitlab'   # un repositorio
 claude   # o cursor, gemini, etc.
 ```
 
-La anulación se verifica contra la ascendencia del proceso: solo cuenta cuando ya estaba presente en el entorno del propio proceso del agente, lo que significa que la exportaste antes de que el agente (y el servidor MCP que generó) iniciara. Un agente no puede concederse acceso a sí mismo configurando la variable a mitad de sesión. No hay intencionadamente ninguna flag de servidor para esto: una flag en los argumentos del servidor MCP no lleva prueba de quién la puso ahí, mientras que la verificación de ascendencia sí. El acceso a nivel de máquina (como `term connect -m <machine>` sin un repositorio) sigue requiriendo `*`; una lista de nombres de repositorios no lo desbloquea.
+La anulación se verifica contra la ascendencia del proceso: solo cuenta cuando ya estaba presente en el entorno del propio proceso del agente, lo que significa que la exportaste antes de que el agente (y el servidor MCP que generó) iniciara. Un agente no puede concederse acceso a sí mismo configurando la variable a mitad de sesión. No hay intencionadamente ninguna flag de servidor para esto: una flag en los argumentos del servidor MCP no lleva prueba de quién la puso ahí, mientras que la verificación de ascendencia sí. El acceso a nivel de máquina (como `term connect <machine>` sin un repositorio) sigue requiriendo `*`; una lista de nombres de repositorios no lo desbloquea.
 
 ### Claves SSH por repositorio y sandbox en el servidor
 

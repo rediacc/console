@@ -132,7 +132,7 @@ export REDIACC_ALLOW_GRAND_REPO='gitlab'   # bir depo
 claude   # ya da cursor, gemini, vb.
 ```
 
-Geçersiz kılma, işlem soy ağacına karşı doğrulanır: ajanın kendisinin ortamında zaten bulunması gereken zamanında sayılır, yani ajanı (ve ajanın başlattığı MCP sunucusunu) başlatmadan önce dışa aktarıldığı anlamına gelir. Ajan oturum ortasında değişkeni ayarlayarak kendisine erişim veremez. Bu amaçla kasıtlı olarak sunucu bayrağı yoktur: MCP sunucusu argümanlarındaki bayrak, onu oraya koyanı kanıtlamaz, oysa soy ağacı kontrolü kanıtlar. Makine düzeyinde erişim (örneğin `term connect -m <machine>` depo belirtmeden) hâlâ `*` gerektirir; repo adlarından oluşan bir liste bu erişimi açmaz.
+Geçersiz kılma, işlem soy ağacına karşı doğrulanır: ajanın kendisinin ortamında zaten bulunması gereken zamanında sayılır, yani ajanı (ve ajanın başlattığı MCP sunucusunu) başlatmadan önce dışa aktarıldığı anlamına gelir. Ajan oturum ortasında değişkeni ayarlayarak kendisine erişim veremez. Bu amaçla kasıtlı olarak sunucu bayrağı yoktur: MCP sunucusu argümanlarındaki bayrak, onu oraya koyanı kanıtlamaz, oysa soy ağacı kontrolü kanıtlar. Makine düzeyinde erişim (örneğin `term connect <machine>` depo belirtmeden) hâlâ `*` gerektirir; repo adlarından oluşan bir liste bu erişimi açmaz.
 
 ### Depo başına SSH anahtarları ve sunucu tarafı sandbox
 

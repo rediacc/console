@@ -132,7 +132,7 @@ export REDIACC_ALLOW_GRAND_REPO='gitlab'   # un seul dépôt
 claude   # ou cursor, gemini, etc.
 ```
 
-La substitution est vérifiée contre l'ascendance du processus : elle ne compte que lorsqu'elle était déjà présente dans l'environnement du processus agent lui-même, ce qui signifie que vous l'avez exportée avant que l'agent (et le serveur MCP qu'il a engendré) ne démarre. Un agent ne peut pas se conférer accès en définissant la variable en cours de session. Il n'existe pas intentionnellement de flag serveur pour cela : un flag dans les arguments du serveur MCP n'apporte aucune preuve de qui l'a mis là, tandis que la vérification d'ascendance en apporte. L'accès au niveau machine (comme `term connect -m <machine>` sans dépôt) nécessite toujours `*` ; une liste de noms de dépôts ne le débloque pas.
+La substitution est vérifiée contre l'ascendance du processus : elle ne compte que lorsqu'elle était déjà présente dans l'environnement du processus agent lui-même, ce qui signifie que vous l'avez exportée avant que l'agent (et le serveur MCP qu'il a engendré) ne démarre. Un agent ne peut pas se conférer accès en définissant la variable en cours de session. Il n'existe pas intentionnellement de flag serveur pour cela : un flag dans les arguments du serveur MCP n'apporte aucune preuve de qui l'a mis là, tandis que la vérification d'ascendance en apporte. L'accès au niveau machine (comme `term connect <machine>` sans dépôt) nécessite toujours `*` ; une liste de noms de dépôts ne le débloque pas.
 
 ### Clés SSH par dépôt et sandbox côté serveur
 

@@ -132,7 +132,7 @@ export REDIACC_ALLOW_GRAND_REPO='gitlab'   # üks repo
 claude   # või cursor, gemini jne.
 ```
 
-Ülekate kontrollitakse protsessi päritolu suhtes: see arvestatakse ainult siis, kui see oli juba agendi protsessi keskkonnas, mis tähendab, et sa eksportisid selle enne agendi (ja MCP serveri, mille see käivitas) käivitamist. Agent ei saa end juurdepääsu anda, seades muutuja seansi keskel. Tahtlikult pole serveriflagi: lipp MCP serveri argumentides ei näita, kes selle sinna pani, samal ajal kui päritolu kontroll näitab. Masinataseme juurdepääs (näiteks `term connect -m <machine>` ilma repota) nõuab siiski `*`; repo nimede loend seda ei ava.
+Ülekate kontrollitakse protsessi päritolu suhtes: see arvestatakse ainult siis, kui see oli juba agendi protsessi keskkonnas, mis tähendab, et sa eksportisid selle enne agendi (ja MCP serveri, mille see käivitas) käivitamist. Agent ei saa end juurdepääsu anda, seades muutuja seansi keskel. Tahtlikult pole serveriflagi: lipp MCP serveri argumentides ei näita, kes selle sinna pani, samal ajal kui päritolu kontroll näitab. Masinataseme juurdepääs (näiteks `term connect <machine>` ilma repota) nõuab siiski `*`; repo nimede loend seda ei ava.
 
 ### Repo-põhised SSH-võtmed ja serveripoolne liivakast
 
