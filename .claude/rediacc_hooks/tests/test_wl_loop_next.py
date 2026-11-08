@@ -10,6 +10,7 @@ from __future__ import annotations
 import datetime
 import json
 import pathlib
+import re
 import subprocess
 import types
 
@@ -559,7 +560,7 @@ def test_lf2_a_ready_local_batch_blocks_with_the_batch_open_sequence(lrepo):
     assert blocking is True, text
     assert text.startswith("LOOP NEXT: the turbo batch on %s is complete" % BRANCH), text
     # PLAN-ciquick-green-then-batch G4: the batch opens with ci:quick alone; the duplicate `npm run ci` step is gone.
-    assert "npm run ci   " not in text, text
+    assert not re.search(r"^\s*\d+\.\s+npm run ci(?![:\w-])", text, re.MULTILINE), text
     order = [
         "npm run ci:quick",
         "droppedTouched",
