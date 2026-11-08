@@ -1942,7 +1942,6 @@
   "commands.subscription.login.channelSynced": "Update channel set to {{channel}}.",
   "commands.subscription.login.description": "Authenticate via browser or API token",
   "commands.subscription.login.discoveringRegions": "Discovering available regions...",
-  "commands.subscription.login.edgeSeparator": "Edge Channel",
   "commands.subscription.login.emptyToken": "API token cannot be empty (stdin produced no token).",
   "commands.subscription.login.expired": "Authorization timed out. Please try again.",
   "commands.subscription.login.machines": "Machines: {{active}}/{{max}}",

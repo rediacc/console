@@ -2560,7 +2560,6 @@
         "channelSynced": "Update-Kanal auf {{channel}} gesetzt.",
         "description": "Mit einem API-Token aus dem Webportal authentifizieren",
         "discoveringRegions": "Verfügbare Regionen werden ermittelt...",
-        "edgeSeparator": "Edge-Kanal",
         "emptyToken": "Der API-Token darf nicht leer sein (stdin lieferte keinen Token).",
         "expired": "Autorisierung abgelaufen. Bitte versuchen Sie es erneut.",
         "machines": "Maschinen: {{active}}/{{max}}",

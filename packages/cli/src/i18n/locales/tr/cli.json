@@ -2560,7 +2560,6 @@
         "channelSynced": "Güncelleme kanalı {{channel}} olarak ayarlandı.",
         "description": "Web portaldan alınan API belirteci ile kimlik doğrulama",
         "discoveringRegions": "Kullanılabilir bölgeler keşfediliyor...",
-        "edgeSeparator": "Edge Kanalı",
         "emptyToken": "API belirteci boş olamaz (stdin'den belirteç gelmedi).",
         "expired": "Yetkilendirme zaman aşımına uğradı. Lütfen tekrar deneyin.",
         "machines": "Makineler: {{active}}/{{max}}",

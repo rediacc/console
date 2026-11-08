@@ -1942,7 +1942,6 @@
   "commands.subscription.login.channelSynced": "Uuenduskanal seatud väärtusele {{channel}}.",
   "commands.subscription.login.description": "Autentimine brauseri või API tokeni kaudu",
   "commands.subscription.login.discoveringRegions": "Saadaolevaid piirkondi tuvastatakse...",
-  "commands.subscription.login.edgeSeparator": "Edge kanal",
   "commands.subscription.login.emptyToken": "API-token ei tohi olla tühi (stdin ei andnud tokenit).",
   "commands.subscription.login.expired": "Autoriseerimine aegus. Palun proovi uuesti.",
   "commands.subscription.login.machines": "Masinad: {{active}}/{{max}}",

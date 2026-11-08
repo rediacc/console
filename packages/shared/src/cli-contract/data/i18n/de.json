@@ -1942,7 +1942,6 @@
   "commands.subscription.login.channelSynced": "Update-Kanal auf {{channel}} gesetzt.",
   "commands.subscription.login.description": "Mit einem API-Token aus dem Webportal authentifizieren",
   "commands.subscription.login.discoveringRegions": "Verfügbare Regionen werden ermittelt...",
-  "commands.subscription.login.edgeSeparator": "Edge-Kanal",
   "commands.subscription.login.emptyToken": "Der API-Token darf nicht leer sein (stdin lieferte keinen Token).",
   "commands.subscription.login.expired": "Autorisierung abgelaufen. Bitte versuchen Sie es erneut.",
   "commands.subscription.login.machines": "Maschinen: {{active}}/{{max}}",

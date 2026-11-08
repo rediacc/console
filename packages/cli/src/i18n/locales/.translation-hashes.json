@@ -2,7 +2,7 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 2588,
+    "keyCount": 2587,
     "sourceCommit": "1a7b124fc16c4f7e39a5d8df270bbe7ce005e29f"
   },
   "hashes": {
@@ -1950,7 +1950,6 @@
     "commands.subscription.login.channelSynced": "6bcee7f1",
     "commands.subscription.login.description": "7ce10966",
     "commands.subscription.login.discoveringRegions": "e205214f",
-    "commands.subscription.login.edgeSeparator": "1f893224",
     "commands.subscription.login.emptyToken": "116393f9",
     "commands.subscription.login.expired": "0a38444c",
     "commands.subscription.login.machines": "a9c86ee4",

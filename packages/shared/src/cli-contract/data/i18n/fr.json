@@ -1942,7 +1942,6 @@
   "commands.subscription.login.channelSynced": "Canal de mise à jour défini sur {{channel}}.",
   "commands.subscription.login.description": "S’authentifier avec un jeton API du portail web",
   "commands.subscription.login.discoveringRegions": "Recherche des régions disponibles...",
-  "commands.subscription.login.edgeSeparator": "Canal Edge",
   "commands.subscription.login.emptyToken": "Le jeton API ne peut pas être vide (stdin n'a fourni aucun jeton).",
   "commands.subscription.login.expired": "L’autorisation a expiré. Veuillez réessayer.",
   "commands.subscription.login.machines": "Machines : {{active}}/{{max}}",

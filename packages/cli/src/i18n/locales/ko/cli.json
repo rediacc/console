@@ -2560,7 +2560,6 @@
         "channelSynced": "업데이트 채널이 {{channel}}으로 설정되었습니다.",
         "description": "브라우저 또는 API 토큰으로 인증합니다",
         "discoveringRegions": "사용 가능한 지역 검색 중...",
-        "edgeSeparator": "Edge 채널",
         "emptyToken": "API 토큰은 비워 둘 수 없습니다 (stdin에서 토큰을 받지 못했습니다).",
         "expired": "인증 시간이 초과되었습니다. 다시 시도하세요.",
         "machines": "머신: {{active}}/{{max}}",

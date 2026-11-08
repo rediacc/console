@@ -2560,7 +2560,6 @@
         "channelSynced": "Canal de mise à jour défini sur {{channel}}.",
         "description": "S’authentifier avec un jeton API du portail web",
         "discoveringRegions": "Recherche des régions disponibles...",
-        "edgeSeparator": "Canal Edge",
         "emptyToken": "Le jeton API ne peut pas être vide (stdin n'a fourni aucun jeton).",
         "expired": "L’autorisation a expiré. Veuillez réessayer.",
         "machines": "Machines : {{active}}/{{max}}",

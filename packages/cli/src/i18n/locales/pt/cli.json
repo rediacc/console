@@ -2560,7 +2560,6 @@
         "channelSynced": "Canal de atualização definido para {{channel}}.",
         "description": "Autenticar via browser ou token de API",
         "discoveringRegions": "A descobrir regiões disponíveis...",
-        "edgeSeparator": "Canal Edge",
         "emptyToken": "O token de API não pode estar vazio (stdin não forneceu nenhum token).",
         "expired": "Autorização expirou. Tente novamente.",
         "machines": "Máquinas: {{active}}/{{max}}",

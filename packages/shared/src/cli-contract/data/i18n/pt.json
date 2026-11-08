@@ -1942,7 +1942,6 @@
   "commands.subscription.login.channelSynced": "Canal de atualização definido para {{channel}}.",
   "commands.subscription.login.description": "Autenticar via browser ou token de API",
   "commands.subscription.login.discoveringRegions": "A descobrir regiões disponíveis...",
-  "commands.subscription.login.edgeSeparator": "Canal Edge",
   "commands.subscription.login.emptyToken": "O token de API não pode estar vazio (stdin não forneceu nenhum token).",
   "commands.subscription.login.expired": "Autorização expirou. Tente novamente.",
   "commands.subscription.login.machines": "Máquinas: {{active}}/{{max}}",

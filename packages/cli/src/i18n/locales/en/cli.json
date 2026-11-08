@@ -2495,7 +2495,6 @@
         "regionPrompt": "Where should your data be stored?",
         "channelSynced": "Update channel set to {{channel}}.",
         "serverChanged": "Server changed. Previous session cleared.",
-        "edgeSeparator": "Edge Channel",
         "machinesOverLimit": "  {{count}} machine slot(s) are over the limit."
       },
       "logout": {

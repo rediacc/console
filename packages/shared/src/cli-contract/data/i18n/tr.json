@@ -1942,7 +1942,6 @@
   "commands.subscription.login.channelSynced": "Güncelleme kanalı {{channel}} olarak ayarlandı.",
   "commands.subscription.login.description": "Web portaldan alınan API belirteci ile kimlik doğrulama",
   "commands.subscription.login.discoveringRegions": "Kullanılabilir bölgeler keşfediliyor...",
-  "commands.subscription.login.edgeSeparator": "Edge Kanalı",
   "commands.subscription.login.emptyToken": "API belirteci boş olamaz (stdin'den belirteç gelmedi).",
   "commands.subscription.login.expired": "Yetkilendirme zaman aşımına uğradı. Lütfen tekrar deneyin.",
   "commands.subscription.login.machines": "Makineler: {{active}}/{{max}}",

@@ -1942,7 +1942,6 @@
   "commands.subscription.login.channelSynced": "Канал обновления установлен на {{channel}}.",
   "commands.subscription.login.description": "Аутентификация с помощью API-токена из веб-портала",
   "commands.subscription.login.discoveringRegions": "Обнаружение доступных регионов...",
-  "commands.subscription.login.edgeSeparator": "Канал Edge",
   "commands.subscription.login.emptyToken": "API-токен не может быть пустым (stdin не передал токен).",
   "commands.subscription.login.expired": "Время авторизации истекло. Пожалуйста, попробуйте снова.",
   "commands.subscription.login.machines": "Машины: {{active}}/{{max}}",

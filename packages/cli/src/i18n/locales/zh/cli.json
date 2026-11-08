@@ -2560,7 +2560,6 @@
         "channelSynced": "更新频道已设置为{{channel}}。",
         "description": "使用Web门户的API令牌进行认证",
         "discoveringRegions": "正在发现可用区域...",
-        "edgeSeparator": "Edge 频道",
         "emptyToken": "API令牌不能为空（stdin 未提供令牌）。",
         "expired": "授权已超时。请重试。",
         "machines": "机器: {{active}}/{{max}}",

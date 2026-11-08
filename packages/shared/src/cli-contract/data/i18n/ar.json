@@ -1942,7 +1942,6 @@
   "commands.subscription.login.channelSynced": "تم تعيين قناة التحديث إلى {{channel}}.",
   "commands.subscription.login.description": "المصادقة باستخدام رمز API من بوابة الويب",
   "commands.subscription.login.discoveringRegions": "جارٍ اكتشاف المناطق المتاحة...",
-  "commands.subscription.login.edgeSeparator": "قناة Edge",
   "commands.subscription.login.emptyToken": "لا يمكن أن يكون رمز API فارغًا (لم يقدّم stdin أي رمز).",
   "commands.subscription.login.expired": "انتهت مهلة التفويض. يرجى المحاولة مرة أخرى.",
   "commands.subscription.login.machines": "الأجهزة: {{active}}/{{max}}",
