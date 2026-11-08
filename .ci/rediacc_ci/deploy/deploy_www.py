@@ -308,6 +308,35 @@ def get_d1_uuid(db_name: str) -> str:
     return jq.stdout.decode("utf-8", "surrogateescape").rstrip("\n")
 
 
+PEPPER_ENV = "ENTERPRISE_LOOKUP_PEPPER"
+
+
+def pepper_put_argv() -> list[str]:
+    """`npx wrangler secret put ENTERPRISE_LOOKUP_PEPPER`: the value arrives on stdin, never on argv."""
+    return [*wrangler.ARGV, "secret", "put", PEPPER_ENV]
+
+
+def _push_pepper() -> int:
+    """Push the enterprise-lookup HMAC pepper as a Worker secret, when the run carries one.
+
+    The www Worker's enterprise-lookup route keys its KV records with this pepper (`workers/www/src/enterprise-lookup.ts`), and `rediacc_ci.ops.enterprise_lookup` holds the same value, so a Worker without it answers every lookup as unconfigured. The `deploy-workers` profile in `.ci/config/secret-supply.json` lists the name as required, so a release run that reaches this point always has it; a run without it (the twin's differential, a hand deploy) skips the push and says nothing, which keeps the twin's streams unchanged.
+    """
+    pepper = os.environ.get("ENTERPRISE_LOOKUP_PEPPER", "")
+    if not pepper:
+        return 0
+    log.step("Pushing the %s Worker secret" % PEPPER_ENV)
+    sys.stdout.flush()
+    sys.stderr.flush()
+    return subprocess.run(pepper_put_argv(), input=pepper.encode("utf-8"), check=False).returncode
+
+
+def _deploy_production() -> int:
+    status = _run(production_deploy_argv())
+    if status != 0:
+        return status
+    return _push_pepper()
+
+
 def _run(argv: list[str]) -> int:
     """One child with BOTH streams inherited, as the twin leaves them.
 
@@ -423,7 +452,7 @@ def main(argv: list[str]) -> int:
 
     log.step("Deploying www production worker...")
     return deploy_record.record_www_deploy(
-        worker_dir, PRODUCTION_CONFIG, "www-stable", lambda: _run(production_deploy_argv())
+        worker_dir, PRODUCTION_CONFIG, "www-stable", _deploy_production
     )
 
 

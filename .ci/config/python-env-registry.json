@@ -359,7 +359,8 @@
     ],
     ".ci/rediacc_ci/deploy/deploy_www.py": [
       "CLOUDFLARE_ACCOUNT_ID",
-      "CLOUDFLARE_API_TOKEN"
+      "CLOUDFLARE_API_TOKEN",
+      "ENTERPRISE_LOOKUP_PEPPER"
     ],
     ".ci/rediacc_ci/deploy/executor_artifacts.py": [
       "ACCOUNT_ED25519_PUBLIC_KEY",

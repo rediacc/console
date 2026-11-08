@@ -145,6 +145,11 @@ if rest[:1] == ["deploy"]:
     sys.stdout.write("Deployed worker\n")
     sys.exit(0)
 
+if rest[:2] == ["secret", "put"]:
+    emit("secret-put-name: %s\n" % rest[2])
+    emit("secret-put-stdin: %s\n" % sys.stdin.read())
+    sys.exit(0)
+
 sys.stderr.write("fake wrangler: unmodelled subcommand %r\n" % (rest,))
 sys.exit(127)
 '''
@@ -349,6 +354,36 @@ def test_production_deploys_with_no_config_flag_and_never_touches_d1(tmp_path) -
     assert config == "", "the production lane generated a config file"
     assert proc.stdout == "Deployed worker\n", repr(proc.stdout)
     assert "Deploying www production worker..." in proc.stderr
+
+
+def test_the_pepper_is_pushed_as_a_worker_secret_on_stdin_after_the_deploy(tmp_path) -> None:
+    root = fixture(tmp_path)
+    proc, calls, _config = _run_live(root, "new", ENTERPRISE_LOOKUP_PEPPER="pepper-fixture-value")
+    assert proc.returncode == 0, proc.stderr
+    assert _calls(calls) == [
+        "npx --no-install wrangler deploy",
+        "npx --no-install wrangler secret put ENTERPRISE_LOOKUP_PEPPER",
+    ], calls
+    assert "secret-put-stdin: pepper-fixture-value\n" in calls
+    assert "pepper-fixture-value" not in " ".join(_calls(calls)), "the value rode argv"
+    assert "pepper-fixture-value" not in proc.stdout + proc.stderr
+
+
+def test_a_failed_deploy_pushes_no_pepper(tmp_path) -> None:
+    root = fixture(tmp_path)
+    proc, calls, _config = _run_live(
+        root, "new", ENTERPRISE_LOOKUP_PEPPER="x", FAKE_NPX_FAIL_ON_CALL="1"
+    )
+    assert proc.returncode != 0
+    assert not any("secret put" in c for c in _calls(calls)), calls
+
+
+def test_a_failed_pepper_push_fails_the_run(tmp_path) -> None:
+    root = fixture(tmp_path)
+    proc, _calls_log, _config = _run_live(
+        root, "new", ENTERPRISE_LOOKUP_PEPPER="x", FAKE_NPX_FAIL_ON_CALL="2"
+    )
+    assert proc.returncode != 0
 
 
 def test_preview_mints_a_database_and_the_generated_toml_is_byte_identical(tmp_path) -> None:
