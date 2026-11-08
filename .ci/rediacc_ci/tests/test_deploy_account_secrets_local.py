@@ -434,9 +434,7 @@ def test_prune_archive_waits_for_a_listing_that_lags_the_put(monkeypatch):
                 Lagging.gets += 1
                 if Lagging.gets < 3:
                     return [
-                        r
-                        for r in self.live["account-eu"]
-                        if not r["name"].startswith("__ARCHIVE_")
+                        r for r in self.live["account-eu"] if not r["name"].startswith("__ARCHIVE_")
                     ]
             return super().__call__(method, path, token, body)
 
