@@ -7,7 +7,8 @@
     "list differs from the derivation. The derivation over-counts on purpose: a false reader costs one gate at an advance, a missed one lets an",
     "unjudged record change through. A flagged gate that reads nothing goes in notReaders with its reason, by name, and the gate prints it every run.",
     "Globs use only ** and *: the gate, the guard and run.ts globToRegExp read those three alike and differ on ? and braces.",
-    "agent/worklist/epics.jsonl stays out: check:ci-pr-task-trailers reads it, and its verdict is a commit-range judgement."
+    "agent/worklist/epics.jsonl stays out: check:ci-pr-task-trailers reads it, and its verdict is a commit-range judgement.",
+    "carried-reds.json is a record ONLY for a shrinking commit: block_unverified_push admits a step touching it when the step touches nothing else, both blobs parse, every carry at the new tree is carried at the old one (a set of keys may only lose keys), and no removed excuse covers a finding still red in the receipt. An added or widened entry voids the receipt, whatever this record says."
   ],
   "version": 1,
   "records": [
@@ -715,6 +716,112 @@
           "reason": "It imports scripts/ci-runner/manifest.ts, whose only citation under agent/ledgers/ is the check:ci-plan-live-proof entry's comment naming agent/ledgers/live-proof.jsonl, a different ledger outside this glob; the manifest is data, and no file of this gate's closure reads agent/ledgers/."
         }
       ]
+    },
+    {
+      "glob": ".ci/config/carried-reds.json",
+      "except": [],
+      "probes": [
+        ".ci/config/carried-reds.json"
+      ],
+      "readers": [
+        {
+          "id": "check:ci-agent-hint-liveness",
+          "evidence": ".claude/hooks/stop/wl_checks.py:4894 (cite) .ci/config/carried-reds.json"
+        },
+        {
+          "id": "check:ci-agent-session-archival",
+          "evidence": ".claude/hooks/stop/wl_checks.py:4894 (cite) .ci/config/carried-reds.json"
+        },
+        {
+          "id": "check:ci-allowlist-key-matching",
+          "evidence": ".ci/scripts/quality/check_allowlist_key_matching.py:77 (root) .ci/config/"
+        },
+        {
+          "id": "check:ci-cli-contract",
+          "evidence": ".ci/rediacc_ci/quality/cli_contract.py:106 (glob) *.json"
+        },
+        {
+          "id": "check:ci-decision-ids",
+          "evidence": ".claude/hooks/stop/wl_checks.py:4894 (cite) .ci/config/carried-reds.json"
+        },
+        {
+          "id": "check:ci-doc-region-parity",
+          "evidence": "scripts/lib/doc-providers.ts:1760 (root) .ci/config/"
+        },
+        {
+          "id": "check:ci-docker-image-freshness",
+          "evidence": "scripts/ci-runner/findings.ts:4 (cite) .ci/config/carried-reds.json"
+        },
+        {
+          "id": "check:ci-external-links",
+          "evidence": "scripts/ci-runner/findings.ts:4 (cite) .ci/config/carried-reds.json"
+        },
+        {
+          "id": "check:ci-gate-reachability-coverage",
+          "evidence": ".claude/hooks/stop/wl_checks.py:4894 (cite) .ci/config/carried-reds.json"
+        },
+        {
+          "id": "check:ci-hint-corpus",
+          "evidence": ".claude/hooks/stop/wl_checks.py:4894 (cite) .ci/config/carried-reds.json"
+        },
+        {
+          "id": "check:ci-i18n-cli-key-usage",
+          "evidence": "scripts/gates/check-cli-i18n-key-usage.ts:100 (glob) **/*.{md,mdx,astro,ts,tsx,json}"
+        },
+        {
+          "id": "check:ci-i18n-value-types",
+          "evidence": ".ci/scripts/quality/check_i18n_value_types.py:73 (glob) *.json"
+        },
+        {
+          "id": "check:ci-inner-timeout-reachable",
+          "evidence": ".ci/scripts/quality/check_inner_timeout_reachable.py:358 (root) .ci/"
+        },
+        {
+          "id": "check:ci-paths-origin",
+          "evidence": "scripts/ci-runner/findings.ts:4 (cite) .ci/config/carried-reds.json"
+        },
+        {
+          "id": "check:ci-plan-boxes",
+          "evidence": ".claude/hooks/stop/wl_checks.py:4894 (cite) .ci/config/carried-reds.json"
+        },
+        {
+          "id": "check:ci-plan-citations",
+          "evidence": ".claude/hooks/stop/wl_checks.py:4894 (cite) .ci/config/carried-reds.json"
+        },
+        {
+          "id": "check:ci-plan-deps",
+          "evidence": ".claude/hooks/stop/wl_checks.py:4894 (cite) .ci/config/carried-reds.json"
+        },
+        {
+          "id": "check:ci-plan-implementation",
+          "evidence": ".claude/hooks/stop/wl_checks.py:4894 (cite) .ci/config/carried-reds.json"
+        },
+        {
+          "id": "check:ci-plan-live-proof",
+          "evidence": ".claude/hooks/stop/wl_checks.py:4894 (cite) .ci/config/carried-reds.json"
+        },
+        {
+          "id": "check:ci-plan-record",
+          "evidence": ".claude/hooks/stop/wl_checks.py:4894 (cite) .ci/config/carried-reds.json"
+        },
+        {
+          "id": "check:ci-portal-sitekey-guard",
+          "evidence": ".ci/rediacc_ci/drills/backup_check_trigger.py:570 (glob) *.json"
+        },
+        {
+          "id": "check:ci-runner-selftest",
+          "evidence": "scripts/ci-runner/findings.ts:4 (cite) .ci/config/carried-reds.json"
+        },
+        {
+          "id": "check:ci-script-exec-bit",
+          "evidence": ".ci/rediacc_ci/quality/script_exec_bit.py:114 (glob) *.json"
+        },
+        {
+          "id": "check:ci-tree-shape",
+          "evidence": ".claude/hooks/stop/wl_checks.py:4894 (cite) .ci/config/carried-reds.json"
+        }
+      ],
+      "notReaders": []
     }
   ]
 }

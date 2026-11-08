@@ -96,8 +96,10 @@ def glob_re(glob: str) -> re.Pattern[str]:
 
 
 def literal_prefix(glob: str) -> str:
-    """The directory part before the first wildcard: `agent/worklist/*.jsonl` -> `agent/worklist`."""
+    """The directory part before the first wildcard: `agent/worklist/*.jsonl` -> `agent/worklist`. A glob with no wildcard names one file, and that path is its own prefix (`.ci/config/carried-reds.json`): cut back to its directory it would cite every file beside it, and measured 2026-11-08 that made 213 of 377 gates readers of the carry file."""
     head = re.split(r"[*?\[{]", glob, maxsplit=1)[0]
+    if head == glob:
+        return glob
     return head.rsplit("/", 1)[0] if "/" in head else head
 
 
@@ -897,6 +899,36 @@ def selftest() -> int:
     )
     tally.truthy("glob **/ matches zero directories", glob_re("**/x.md").match("x.md"))
     tally.check("literal prefix", literal_prefix("agent/worklist/*.jsonl"), "agent/worklist")
+    tally.check(
+        "a wildcard-free glob is its own prefix, not its directory",
+        literal_prefix(".ci/config/carried-reds.json"),
+        ".ci/config/carried-reds.json",
+    )
+    with tempfile.TemporaryDirectory(prefix="record-paths-literal-") as td:
+        lit = pathlib.Path(td)
+        _write(lit, "cites_file.py", 'P = ".ci/config/carried-reds.json"\n')
+        _write(lit, "cites_sibling.py", 'P = ".ci/config/release-age.json"\n')
+        lit_policy = {
+            "version": POLICY_VERSION,
+            "records": [
+                {
+                    "glob": ".ci/config/carried-reds.json",
+                    "except": [],
+                    "probes": [".ci/config/carried-reds.json"],
+                    "readers": [],
+                }
+            ],
+        }
+        lit_derived = _derive_one(lit, ["cites_file.py"], lit_policy)
+        tally.truthy(
+            "a literal record: a gate citing the file reads it",
+            lit_derived[".ci/config/carried-reds.json"],
+        )
+        lit_derived = _derive_one(lit, ["cites_sibling.py"], lit_policy)
+        tally.falsy(
+            "a literal record MIRROR: a gate citing only a sibling file does not read it",
+            lit_derived[".ci/config/carried-reds.json"],
+        )
     tally.truthy("basename config glob", config_glob_matches("*.md", "agent/reviews/a/b.md"))
     tally.falsy("basename config glob MIRROR", config_glob_matches("*.py", "agent/reviews/a/b.md"))
 
