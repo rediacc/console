@@ -38,9 +38,27 @@ PASSPHRASE = "test-pass-w7p6"
 WRONG_PASSPHRASE = "not-the-right-one"
 
 
+# Every GNUPGHOME `_gpg` used. gpg starts a gpg-agent per home and the agent outlives the call; pytest keeps the temp homes, so without a kill each run left agents alive (three found on 2026-11-08 while the host ran out of memory).
+_HOMES: set[str] = set()
+
+
+@pytest.fixture(scope="module", autouse=True)
+def _kill_agents():
+    yield
+    for home in sorted(_HOMES):
+        subprocess.run(
+            ["gpgconf", "--homedir", home, "--kill", "gpg-agent"],
+            capture_output=True,
+            check=False,
+            timeout=30,
+        )
+    _HOMES.clear()
+
+
 def _gpg(
     gnupghome: pathlib.Path, *args: str, input_text: str | None = None
 ) -> subprocess.CompletedProcess[str]:
+    _HOMES.add(str(gnupghome))
     env = dict(os.environ)
     env["GNUPGHOME"] = str(gnupghome)
     return subprocess.run(
