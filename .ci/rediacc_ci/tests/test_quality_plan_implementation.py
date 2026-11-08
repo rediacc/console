@@ -267,6 +267,31 @@ def test_an_unreadable_pull_request_payload_is_the_merge_but_a_push_payload_is_n
     assert push_context == gate.CONTEXT_PUSH, push_why
 
 
+def test_a_pull_request_run_with_no_payload_path_is_the_merge(gate):
+    """Review 0911a576.1: an empty GITHUB_EVENT_PATH on a pull_request run fails closed; on a push or a local run it is a push."""
+    context, why = gate.run_context(
+        [], {"GITHUB_EVENT_PATH": "", "GITHUB_EVENT_NAME": "pull_request"}
+    )
+    assert context == gate.CONTEXT_MERGE, why
+    assert (
+        gate.run_context([], {"GITHUB_EVENT_PATH": "", "GITHUB_EVENT_NAME": "push"})[0]
+        == gate.CONTEXT_PUSH
+    )
+    assert gate.run_context([], {})[0] == gate.CONTEXT_PUSH
+
+
+def test_a_push_event_carrying_a_pull_request_object_without_draft_stays_a_push(gate, tmp_path):
+    """Review 0911a576.2: the no-boolean-draft branch fails closed only for a pull_request event."""
+    event = tmp_path / "event.json"
+    event.write_text('{"pull_request": {"number": 7}}', encoding="utf-8")
+    push = gate.run_context([], {"GITHUB_EVENT_PATH": str(event), "GITHUB_EVENT_NAME": "push"})
+    assert push[0] == gate.CONTEXT_PUSH, push[1]
+    pr = gate.run_context(
+        [], {"GITHUB_EVENT_PATH": str(event), "GITHUB_EVENT_NAME": "pull_request"}
+    )
+    assert pr[0] == gate.CONTEXT_MERGE, pr[1]
+
+
 def _drive_main(gate, monkeypatch, capsys, argv):
     """main() on the real tree's config and ledger, with the controls, the scope and the open-box set stood in: one plan on the clock with two open boxes."""
     monkeypatch.delenv("GITHUB_EVENT_PATH", raising=False)

@@ -1250,7 +1250,7 @@ def narrow_passed_since(ledger_dir, since):
     if ledger_dir is None or not pathlib.Path(ledger_dir).is_dir():
         return False
     starts, ends = {}, set()
-    # Newest segment first, bounded by NARROW_SEGMENT_CAP. A segment last written before `since` cannot hold a run that started at or after it, nor that run's end row (both land in the same or a later segment), so it is skipped unread; every other segment is read, which covers a pass in an older segment and a run whose rows straddle a rotation.
+    # Newest segment first, bounded by NARROW_SEGMENT_CAP. A segment last written before `since` cannot hold a run that started at or after it, nor that run's end row (both land in the same or a later segment), so it is skipped unread; every other segment among the NARROW_SEGMENT_CAP newest is read, which covers a pass in an older segment and a run whose rows straddle a rotation. A pass beyond the cap is missed, which costs only an extra advisory line. The mtime test assumes the ledger is never restored with old timestamps: it is machine-local state under ~/.local/state, written only by the runner.
     segments = sorted(pathlib.Path(ledger_dir).glob("outcomes-*.jsonl"), reverse=True)
     for seg in segments[:NARROW_SEGMENT_CAP]:
         try:

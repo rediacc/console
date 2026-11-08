@@ -292,6 +292,8 @@ def pr_event_state(event_path=None, event_name=""):
     path = event_path if event_path is not None else os.environ.get("GITHUB_EVENT_PATH", "")
     is_pr_name = str(event_name or "").startswith("pull_request")
     if not path:
+        if is_pr_name:
+            return "unreadable", "the pull_request event names no payload path"
         return "other", "no event payload path"
     try:
         with open(path, encoding="utf-8") as fh:
@@ -308,6 +310,9 @@ def pr_event_state(event_path=None, event_name=""):
             return "ready", ""
         if draft is True:
             return "draft", ""
+        # A named non-pull_request event (a push carrying a stray `pull_request` object) stays "other"; with no event name the payload's own shape decides.
+        if event_name and not is_pr_name:
+            return "other", "a %s event, not a pull_request" % event_name
         return "unreadable", "the pull_request payload has no boolean `draft` field"
     if is_pr_name:
         return "unreadable", "the pull_request event payload has no `pull_request` object"
