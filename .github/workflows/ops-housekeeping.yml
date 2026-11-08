@@ -11,7 +11,8 @@ name: Housekeeping
 #   cleanup            - rediacc_ci.housekeeping.cleanup_versions (releases, tags,
 #                        GHCR, deployments, CF Pages, envs, D1, Turnstile, R2 orphans,
 #                        branches, workflow runs/artifacts/cache).
-#   stripe-cleanup     - Stripe sandbox orphan sweep + per-region webhook verification.
+#   stripe-cleanup     - Stripe sandbox orphan sweep. No sandbox webhook is verified: the
+#                        edge hosts it pointed at are gone with the product-domain rename.
 #   cf-leftovers       - rediacc_ci.housekeeping.cf_leftovers: a report-only listing of Workers
 #                        scripts, edge/bench D1 databases, routes and custom domains no
 #                        wrangler config accounts for. Deletes nothing; findings never fail it.
@@ -214,15 +215,6 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
           GH_TOKEN: ${{ github.token }}
 
-      - name: Verify Stripe sandbox webhook endpoints (per-region)
-        shell: bash
-        run: |
-          jq -r '.regions[] | .edgeDomain' regions.json | while read -r domain; do
-            echo "Verifying sandbox webhook for ${domain}..."
-            npx tsx private/account/scripts/verify-webhook.ts --sandbox --expected-url "https://${domain}/account/api/v1/webhooks/stripe"
-          done
-        env:
-          STRIPE_SANDBOX_SECRET_KEY: ${{ env.BWS_STRIPE_SANDBOX_SECRET_KEY }}
 
   cf-leftovers:
     name: Cloudflare leftovers report

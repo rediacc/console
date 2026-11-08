@@ -2,8 +2,8 @@ name: Deploy WWW Worker
 
 # Reusable workflow for deploying the www Worker (marketing site + embedded
 # account portal) to the edge or stable channel.
-# One shared www Worker serves www.rediacc.com, built from edge. Called by Release workflow (edge, and stable for
-# hotfixes) and cd-release-stable.yml (stable, after soak).
+# One shared www Worker serves www.rediacc.com, built from edge. Called by the edge release
+# workflow (cd-release-edge.yml) only.
 # Builds pages + account portal from source at the specified git ref, then deploys.
 
 on:
@@ -177,13 +177,12 @@ jobs:
 
       - name: Deploy Worker
         # Each module is spelled out so check:ci-inner-timeout-reachable can
-        # read both modules' timers; a `-m rediacc_ci.deploy.${{ ... }}` hid
-        # which one runs. The two names are resolve_www_deploy_target's only
-        # outputs, and anything else is refused rather than guessed.
+        # read the module's timers; a `-m rediacc_ci.deploy.${{ ... }}` hid
+        # which one runs. deploy_www is resolve_www_deploy_target's only
+        # output, and anything else is refused rather than guessed.
         run: |
           case "$DEPLOY_SCRIPT" in
             deploy_www) PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_www ;;
-            deploy_edge) PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_edge ;;
             *) echo "::error::unknown deploy script '$DEPLOY_SCRIPT'"; exit 1 ;;
           esac
         env:

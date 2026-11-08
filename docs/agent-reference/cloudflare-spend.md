@@ -69,7 +69,7 @@ PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile rotation -- \
 
 Auth is `cf_auth.resolve`: a ready `CF_MANAGEMENT_TOKEN`, or the Global API Key pair (bws profile `rotation`), which mints a token with Workers R2 Storage Write and destroys it afterwards. To change a window, edit `PR_EXPIRE_DAYS`, `DRYRUN_EXPIRE_DAYS` or `MULTIPART_ABORT_DAYS` in the module and run `apply`.
 
-**Backup-bucket exclusion.** A bucket matching `PROTECTED_PATTERNS` (`rediacc-backups*`, `*-backups-*`, `rediacc-configs*`, `*-configs-*`) is refused before any call, and only `ALLOWED_BUCKETS` are ever written. The account Worker's chunk GC is authoritative for backups, and a lifecycle expiry would delete a chunk the index still references. `list` and `--check` read the protected buckets and report any rule beyond the platform default as `PLANTED`.
+**Backup-bucket exclusion.** A bucket matching `PROTECTED_PATTERNS` (`*backups*`, `*configs*`: any name holding `backups` or `configs`, so `backups-<region>` and `configs-<region>` are covered) is refused before any call, and only `ALLOWED_BUCKETS` are ever written. The account Worker's chunk GC is authoritative for backups, and a lifecycle expiry would delete a chunk the index still references. `list` and `--check` read the protected buckets and report any rule beyond the platform default as `PLANTED`.
 
 ## Weekly usage report
 
