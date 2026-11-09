@@ -793,6 +793,7 @@
         "pkg/ps",
         "pkg/ramvolume",
         "pkg/rbd",
+        "pkg/rediaccfile",
         "pkg/repodiff",
         "pkg/repolimits",
         "pkg/reporuntime",
