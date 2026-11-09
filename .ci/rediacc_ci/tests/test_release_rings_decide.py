@@ -290,6 +290,16 @@ def test_done_when_every_company_runs_the_version() -> None:
 # -- input refusals -------------------------------------------------------------
 
 
+def test_a_window_refuses_a_naive_datetime() -> None:
+    w = Window(frozenset({2}), 22 * 60, 2 * 60)
+    naive = NOW.replace(tzinfo=None)
+    with pytest.raises(ValueError, match="timezone-aware"):
+        w.holds(naive)
+    with pytest.raises(ValueError, match="timezone-aware"):
+        w.next_open(naive)
+    assert w.next_open(NOW) > NOW
+
+
 def test_naive_times_are_refused() -> None:
     with pytest.raises(ValueError, match="timezone-aware"):
         decide(soaked(), NOW.replace(tzinfo=None))

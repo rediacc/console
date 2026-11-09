@@ -55,7 +55,7 @@ class Window:
     end: int
 
     def holds(self, now: datetime.datetime) -> bool:
-        now = now.astimezone(datetime.UTC)
+        now = _utc(now)
         length = (self.end - self.start) % _MINUTES_PER_DAY or _MINUTES_PER_DAY
         for back in (0, 1):
             day = (now - datetime.timedelta(days=back)).date()
@@ -67,7 +67,7 @@ class Window:
 
     def next_open(self, now: datetime.datetime) -> datetime.datetime:
         """The first opening strictly after `now`."""
-        now = now.astimezone(datetime.UTC)
+        now = _utc(now)
         for ahead in range(8):
             day = (now + datetime.timedelta(days=ahead)).date()
             begin = _at(day, self.start)
@@ -75,6 +75,14 @@ class Window:
                 return begin
         msg = f"window has no weekday: {self!r}"
         raise ValueError(msg)
+
+
+def _utc(now: datetime.datetime) -> datetime.datetime:
+    """`now` in UTC; a naive datetime is refused, because `astimezone` would read it as local time."""
+    if now.tzinfo is None:
+        msg = "a window needs a timezone-aware datetime, got a naive one"
+        raise ValueError(msg)
+    return now.astimezone(datetime.UTC)
 
 
 def _at(day: datetime.date, minute: int) -> datetime.datetime:
