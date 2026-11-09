@@ -38,7 +38,9 @@ DETAIL_CHARS = 100
 
 _PLAN_NAME_RE = re.compile(r"PLAN-[A-Za-z0-9._-]+?\.md")
 # A plan named with or without its `.md`, as items write both (`PLAN-docker-pin-digest proof: ...`).
-_PLAN_STEM_RE = re.compile(r"(PLAN-[A-Za-z0-9_-]*[A-Za-z0-9])(?:\.md)?(?![A-Za-z0-9_-])")
+_PLAN_STEM_RE = re.compile(
+    r"(PLAN-[A-Za-z0-9_-]*[A-Za-z0-9])(?:\.md(?![A-Za-z0-9_-])|(?![A-Za-z0-9_-])(?!\.[A-Za-z0-9]))"
+)
 _ITEM_REF_RE = re.compile(r"#([0-9a-f]{12}|[0-9a-f]{8})\b")
 
 
@@ -121,10 +123,15 @@ def _clip(text: str) -> str:
     return one if len(one) <= DETAIL_CHARS else one[: DETAIL_CHARS - 3] + "..."
 
 
-def _plan_sigs(text: str) -> list[str]:
+@functools.lru_cache(maxsize=1024)
+def _plan_sigs_cached(text: str) -> tuple[str, ...]:
     import wl_planrec as R
 
-    return [b[3] for b in R.open_boxes(text)] + [b[3] for b in R.done_boxes(text)]
+    return tuple(b[3] for b in R.open_boxes(text)) + tuple(b[3] for b in R.done_boxes(text))
+
+
+def _plan_sigs(text: str) -> list[str]:
+    return list(_plan_sigs_cached(text))
 
 
 def _box_home(text: str, index: int, body: str) -> list[str]:
@@ -229,15 +236,23 @@ def bindings(
 
     # 2. Open items of any session that cite the plan or one of its box signatures.
     plan_pat = D._base_re(base)
-    sig_pat = _sig_re(_plan_sigs(own))
+    own_sigs = set(_plan_sigs(own))
+    sig_pat = _sig_re(own_sigs)
+    # A signature other plans also carry (identical box lines, such as every `LP-hostinger [live]` box) cannot say which plan an item means, so it binds only an item that names this plan (CB5: #658c04e3 bound PLAN-retired-terms-submodule-scan through 7692f2db, shared by 12 plans).
+    shared = {
+        sig for other, t in texts.items() if other != rel for sig in _plan_sigs_cached(t)
+    } & own_sigs
     for rec in sorted(items, key=lambda r: str(r.get("id"))):
         if rec.get("state") not in OPEN_ITEM_STATES:
             continue
         text = str(rec.get("text") or "")
         # A signature is shared by identical box lines in different plans (every `LP-bench [live]` box hashes alike), so a signature binds only an item that names no plan or names this one.
         named = {m.group(1) for m in _PLAN_STEM_RE.finditer(text)}
-        sig_hit = sig_pat is not None and sig_pat.search(text) and (not named or base[:-3] in named)
-        if plan_pat.search(text) or sig_hit:
+        names_me = base[:-3] in named
+        hits = set(sig_pat.findall(text)) if sig_pat is not None else set()
+        sig_hit = bool(hits) and (names_me or (not named and bool(hits - shared)))
+        # A plan named without its `.md` ("PLAN-ci-prebaked-vm-images B5") names it all the same.
+        if plan_pat.search(text) or names_me or sig_hit:
             out.append(
                 Binding(
                     KIND_ITEM,

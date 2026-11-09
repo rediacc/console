@@ -312,3 +312,24 @@ def test_a_reused_graph_gives_the_same_verdict_and_a_stale_one_is_refused():
 def test_the_open_box_memo_returns_the_parser_result():
     text = plan(boxes=("[ ] T1 open work here", "[x] T2 done"))
     assert list(B._open_boxes(text)) == list(R.open_boxes(text))
+
+
+def test_a_signature_shared_with_another_plan_does_not_bind_an_item_naming_no_plan():
+    """CB5: #658c04e3 cited 7692f2db, the LP-hostinger signature 12 plans share, named no plan, and bound one of them at random."""
+    box = "[ ] T1 open work here"
+    texts = {TARGET: plan(boxes=(box,)), OTHER: other_plan(boxes=(box,))}
+    sig = sig_of(texts[TARGET])
+    found = [
+        b for b in run(texts, [item("aa11bb22", " ", "proof: box %s" % sig)]) if b.kind == "item"
+    ]
+    assert found == []
+    # CONTROL: a signature this plan alone carries still binds an item naming no plan.
+    alone = {TARGET: plan(boxes=(box,))}
+    assert "item" in kinds(run(alone, [item("cc33dd44", " ", "proof: box %s" % sig)]))
+
+
+def test_a_plan_named_without_its_md_binds():
+    """CB5: "PLAN-ci-prebaked-vm-images B5" named the plan and was not seen."""
+    found = run({TARGET: plan()}, [item("aa11bb22", " ", "finish PLAN-x B5 next")])
+    assert "item" in kinds(found)
+    assert run({TARGET: plan()}, [item("bb22cc33", " ", "see PLAN-xy B5")]) == []
