@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 5,
-  "generatedAt": "2026-11-08T17:05:18.238Z",
+  "generatedAt": "2026-11-09T04:01:45.082Z",
   "legs": [
     {
       "index": 1,
@@ -89,6 +89,7 @@
         "pytest:.ci/rediacc_ci/tests/test_drills_backup_swap_order.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_converge_preflight.py",
         "pytest:.ci/rediacc_ci/tests/test_enterprise_leak.py",
+        "pytest:.ci/rediacc_ci/tests/test_enterprise_secrets.py",
         "pytest:.ci/rediacc_ci/tests/test_env_create_e2e_env.py",
         "pytest:.ci/rediacc_ci/tests/test_gate_model.py",
         "pytest:.ci/rediacc_ci/tests/test_gate_model_replay.py",
@@ -507,7 +508,8 @@
         "pytest:.claude/rediacc_hooks/tests/test_wl_soakedpins.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_stuck_and_blockers.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_waiter_controls.py",
-        "pytest:.ci/rediacc_ci/tests/test_enterprise_proof.py"
+        "pytest:.ci/rediacc_ci/tests/test_enterprise_proof.py",
+        "pytest:.ci/rediacc_ci/tests/test_deploy_company_target.py"
       ]
     },
     {
@@ -594,6 +596,7 @@
         "pytest:.ci/rediacc_ci/tests/test_drills_repo_resources.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_universe_transfer.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_vm_check.py",
+        "pytest:.ci/rediacc_ci/tests/test_enterprise_configs.py",
         "pytest:.ci/rediacc_ci/tests/test_enterprise_registry.py",
         "pytest:.ci/rediacc_ci/tests/test_housekeeping_cleanup_github_deployments.py",
         "pytest:.ci/rediacc_ci/tests/test_infra_build_renet.py",
@@ -847,7 +850,8 @@
         "pytest:.claude/rediacc_hooks/tests/test_wl_triage_and_plans.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_wake.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_wisdom.py",
-        "pytest:.ci/rediacc_ci/tests/test_release_rings_decide.py"
+        "pytest:.ci/rediacc_ci/tests/test_release_rings_decide.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_planbind.py"
       ]
     }
   ]
