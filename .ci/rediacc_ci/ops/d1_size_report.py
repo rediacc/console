@@ -405,28 +405,38 @@ def alert_marker(document: Mapping[str, object]) -> str:
     return "<!-- d1-size-alerts: %s -->" % ",".join(alerting)
 
 
-def sync_alert_issue(
-    document: Mapping[str, object], report_md: str, gh: Callable[..., str]
-) -> list[str]:
-    """Create the alert issue, or edit its body to the latest report and comment only when the alerting regions changed. `gh(*args)` returns stdout. Returns the gh verbs run, in order."""
-    marker = alert_marker(document)
-    body = "%s\n%s\n" % (report_md.rstrip("\n"), marker)
+def _find_alert_issues(gh: Callable[..., str]) -> list[Mapping[str, object]]:
+    """The open alert issues by title. A plain listing, not `--search`: the search index lags a fresh issue, the listing does not."""
     listing = json.loads(
         gh(
             "issue",
             "list",
             "--state",
             "open",
-            "--search",
-            '"%s" in:title' % ISSUE_TITLE,
+            "--limit",
+            "1000",
             "--json",
             "number,title,body,comments",
         )
         or "[]"
     )
-    found = [i for i in listing if i.get("title") == ISSUE_TITLE]
+    return [i for i in listing if i.get("title") == ISSUE_TITLE]
+
+
+def sync_alert_issue(
+    document: Mapping[str, object], report_md: str, gh: Callable[..., str]
+) -> list[str]:
+    """Create the alert issue, or edit its body to the latest report and comment only when the alerting regions changed. `gh(*args)` returns stdout. Returns the gh verbs run, in order."""
+    marker = alert_marker(document)
+    body = "%s\n%s\n" % (report_md.rstrip("\n"), marker)
+    found = _find_alert_issues(gh)
     if not found:
-        gh("issue", "create", "--title", ISSUE_TITLE, "--body", body)
+        try:
+            gh("issue", "create", "--title", ISSUE_TITLE, "--body", body)
+        except Exception:
+            # `issue create` runs once, so a 502 after the POST was accepted is looked up again in this run; only a missing issue is a failure.
+            if not _find_alert_issues(gh):
+                raise
         return ["create"]
     number = str(found[0]["number"])
     if marker in str(found[0].get("body") or ""):

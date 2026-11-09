@@ -241,7 +241,8 @@ def test_the_summed_sql_returns_the_byte_count_of_the_values():
     run(fake)
     sums = [b["sql"] for m, _u, b in fake.calls if m == "POST" and "sum(length" in b["sql"]]
     assert sums
-    sql = next(q for q in sums if q.rsplit("FROM ", 1)[1].strip('"') == "event_log")
+    sql = next((q for q in sums if q.rsplit("FROM ", 1)[1].strip('"') == "event_log"), None)
+    assert sql is not None, "no event_log sum query among %r" % sums
     conn = sqlite3.connect(":memory:")
     conn.execute('CREATE TABLE "event_log" ("id", "data")')
     conn.execute('INSERT INTO "event_log" VALUES (?, ?)', ("héllo", b"\x00\x01\x02"))
@@ -305,6 +306,47 @@ def _doc(*alerting: str) -> dict:
 def test_the_alert_issue_is_created_when_none_is_open():
     gh = _FakeGh([])
     assert sr.sync_alert_issue(_doc("eu"), "report", gh) == ["create"]
+
+
+def test_the_alert_lookup_is_a_listing_not_a_search():
+    seen: list[tuple[str, ...]] = []
+
+    class Spy(_FakeGh):
+        def __call__(self, *args: str) -> str:
+            seen.append(args)
+            return super().__call__(*args)
+
+    sr.sync_alert_issue(_doc("eu"), "report", Spy([]))
+    assert "--search" not in seen[0]
+
+
+def test_a_create_that_fails_after_the_post_was_accepted_is_not_a_failure():
+    found = {"number": 9, "title": sr.ISSUE_TITLE, "body": ""}
+
+    class Flaky(_FakeGh):
+        def __call__(self, *args: str) -> str:
+            # The lookup after the failed create finds the issue the POST made.
+            if args[1] == "list" and "create" in self.verbs:
+                self.issues = [found]
+            out = super().__call__(*args)
+            if args[1] == "create":
+                raise RuntimeError("502")
+            return out
+
+    gh = Flaky([])
+    assert sr.sync_alert_issue(_doc("eu"), "report", gh) == ["create"]
+    assert gh.verbs == ["list", "create", "list"]
+
+
+def test_a_create_that_fails_and_leaves_no_issue_still_raises():
+    class Failing(_FakeGh):
+        def __call__(self, *args: str) -> str:
+            if args[1] == "create":
+                raise RuntimeError("502")
+            return super().__call__(*args)
+
+    with pytest.raises(RuntimeError):
+        sr.sync_alert_issue(_doc("eu"), "report", Failing([]))
 
 
 def test_the_same_alert_set_edits_the_body_without_a_new_comment():
