@@ -1348,15 +1348,17 @@ def _hook_path():
     return "python3 %s" % pathlib.Path(__file__).resolve()
 
 
+USAGE = (
+    "usage: wl_report.py --subagent-stop | --session-start | --post-compact"
+    " | --list [--unread|--all] [--as <me>] | --show <id>"
+    " | --read <me> <id>... | --scan | --retire-phantoms [--dry-run]"
+)
+
+
 def main(argv):
     if not argv:
         print(__doc__.strip().splitlines()[0], file=sys.stderr)
-        print(
-            "usage: wl_report.py --subagent-stop | --session-start | --post-compact"
-            " | --list [--unread|--all] [--as <me>] | --show <id>"
-            " | --read <me> <id>... | --scan | --retire-phantoms [--dry-run]",
-            file=sys.stderr,
-        )
+        print(USAGE, file=sys.stderr)
         return 2
     mode = argv[0]
 
@@ -1556,7 +1558,7 @@ def main(argv):
             print("nothing to index (%s)" % index_path(store))
         return 0
 
-    print("unknown mode %s" % mode, file=sys.stderr)
+    print("unknown mode %s\n%s" % (mode, USAGE), file=sys.stderr)
     return 2
 
 

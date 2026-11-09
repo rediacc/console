@@ -646,9 +646,13 @@ N_UNREAD_REPORTS = (
     "at SubagentStop and survive a restart and a compaction. A [SILENT] one said "
     "nothing at all, which is the case that used to be indistinguishable from a "
     "substantive report.\n%s\n"
+    "    list unread: .claude/hooks/stop/worklist.py --reports\n"
     "    read one:  python3 %s --show <id>\n"
     "    mark read: python3 %s --read %s <id> [<id>...]"
 )
+
+# The row above the newest ten, naming the verb that lists the rest (R20261101.4).
+N_UNREAD_OLDER = "    (%d older not shown; .claude/hooks/stop/worklist.py --reports lists all unread)\n%s"
 
 CLI_REASSIGN_USAGE = (
     "usage: --reassign <my-prefix> <phantom-prefix>\n"

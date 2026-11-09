@@ -5517,7 +5517,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 for e in _unread[-10:]
             )
             if len(_unread) > 10:
-                _rows = "    (%d older not shown)\n%s" % (len(_unread) - 10, _rows)
+                _rows = M.N_UNREAD_OLDER % (len(_unread) - 10, _rows)
             _ur_text = M.N_UNREAD_REPORTS % (
                 len(_unread),
                 agent_branch or "?",
