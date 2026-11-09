@@ -63,7 +63,8 @@ jobs:
         shell: bash
         run: |
           title="D1 size alert"
-          number=$(gh issue list --state open --search "\"$title\" in:title" --json number,title --jq "[.[] | select(.title == \"$title\")][0].number // empty")
+          # The lookup goes through rediacc_ci.core.gh_retry so one GitHub 5xx retries instead of failing the alert; a failure that persists ends the step under bash -e.
+          number=$(PYTHONPATH=.ci python3 -m rediacc_ci.core.gh_retry "alert issue lookup" -- issue list --state open --search "\"$title\" in:title" --json number,title --jq "[.[] | select(.title == \"$title\")][0].number // empty")
           if [ -n "$number" ]; then
             gh issue comment "$number" --body-file d1-size.md
           else
