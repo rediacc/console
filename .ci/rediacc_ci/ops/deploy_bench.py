@@ -104,6 +104,7 @@ BACKUP_NAMES: tuple[str, ...] = (
 # The sender the bench Worker mails from when AWS_SES_FROM is unset: the notify host of the product zone.
 DEFAULT_SES_FROM = "noreply@notify.%s" % PRODUCT_DOMAIN
 
+
 def _backup_values() -> tuple[str, str, str]:
     """The endpoint, key id and secret for the bench backup bucket. Raises DeployError naming the first one that is missing or empty."""
     endpoint = os.environ.get("ACCOUNT_BACKUP_S3_ENDPOINT") or ""
