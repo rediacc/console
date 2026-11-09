@@ -73,16 +73,18 @@ def _regions_row(region):
 
 
 @pytest.mark.parametrize(
-    ("region", "suffix", "ses", "jur"),
+    ("region", "suffix", "ses", "jur", "worker"),
     [
-        ("eu", "EU", "eu-central-1", "eu"),
-        ("us", "US", "us-east-1", ""),
-        ("asia", "ASIA", "eu-central-1", ""),
+        ("eu", "EU", "eu-central-1", "eu", "account-eu"),
+        ("us", "US", "us-east-1", "", "account-us"),
+        ("asia", "ASIA", "eu-central-1", "", "account-asia"),
     ],
 )
-def test_derive_reads_regions_json(region, suffix, ses, jur):
+def test_derive_reads_regions_json(region, suffix, ses, jur, worker):
     d = local.derive(region)
     row = _regions_row(region)
+    # The Worker name is pinned literally as well as against the row, so a wrong workerName in regions.json fails here.
+    assert d["WORKER_NAME"] == worker
     assert d["WORKER_NAME"] == row["workerName"]
     assert d["SUFFIX"] == suffix
     assert d["AWS_SES_REGION"] == ses
@@ -136,9 +138,10 @@ def test_every_region_has_a_profile_binding_its_suffix_and_stripe():
             assert keks == ["ACCOUNT_BACKUP_STORE_KEK_%s_EDGE" % suffix]
 
 
-def test_profile_binds_every_variable_the_push_reads():
+@pytest.mark.parametrize("region", ["eu", "us", "asia"])
+def test_profile_binds_every_variable_the_push_reads(region):
     """Every non-computed source the push reads, plus the fan-ins, is bound by the profile."""
-    names = set(local.profile_store_names(local.profile_name("eu")))
+    names = set(local.profile_store_names(local.profile_name(region)))
     read = {source for _k, _v, source in pusher.KEYS if source}
     read.discard("AWS_SES_REGION")  # from regions.json, not the store
     assert read <= names, sorted(read - names)

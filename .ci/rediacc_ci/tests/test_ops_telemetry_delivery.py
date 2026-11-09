@@ -307,3 +307,21 @@ def test_proxy_route_without_a_pattern_is_an_error(tmp_path):
     (tmp_path / "w.toml").write_text("[[routes]]\ncustom_domain = true\n")
     with pytest.raises(ValueError, match="without a pattern"):
         td.proxy_hosts(("w.toml",), root=tmp_path)
+
+
+def test_loki_selector_matches_every_deployed_worker_name():
+    """The Loki service_name label is the Worker's name, so the selector must admit every account and proxy Worker the wrangler configs declare."""
+    import pathlib
+    import re
+
+    root = pathlib.Path(__file__).resolve().parents[3]
+    pattern = re.compile(re.search(r'=~"([^"]+)"', td.LOKI_SELECTOR).group(1))
+    names = []
+    for kind in ("account", "proxy"):
+        for region in ("eu", "us", "asia", "bench"):
+            config = root / "workers" / kind / f"wrangler.{region}.toml"
+            found = re.search(r'^name = "([^"]+)"', config.read_text(), re.M)
+            assert found, config
+            names.append(found.group(1))
+    assert len(names) == 8
+    assert all(pattern.fullmatch(n) for n in names), names
