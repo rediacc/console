@@ -105,6 +105,13 @@ DOMAIN_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*(?:\.[a-z0-9]+(?:-[a-z0-9]+)*)
 PROXY_SUBDIR = ("workers", "proxy")
 
 
+def mask_label(text: str, name: str, company_id: str) -> str:
+    """`text` with the company label replaced by its opaque id, wherever the label stands as a whole token (a Worker, config or host name built from it). Log lines go through this, so only the id reaches a console."""
+    return re.sub(
+        r"(?<![a-z0-9])%s(?![a-z0-9])" % re.escape(name), company_id, text, flags=re.IGNORECASE
+    )
+
+
 @dataclasses.dataclass(frozen=True)
 class CompanyTarget:
     """One Enterprise company as a deploy target: identity and config paths, all parameters.
@@ -119,6 +126,10 @@ class CompanyTarget:
     account_config: pathlib.Path | None = None
     proxy_config: pathlib.Path | None = None
     bench: bool = False
+
+    def mask(self, text: str) -> str:
+        """`text` for a log line: the label becomes the opaque id."""
+        return mask_label(text, self.name, self.company_id)
 
     @property
     def account_worker(self) -> str:
@@ -185,17 +196,25 @@ def company_target(
         raise RefusedError("--region %s is not one of %s" % (region or "(none)", ", ".join(known)))
     if not isinstance(domain, str) or not DOMAIN_RE.fullmatch(domain):
         raise RefusedError("--company-domain %r is not a host domain" % (domain,))
+    if bench and region != BENCH_REGION:
+        raise RefusedError(
+            "--company-bench refuses --region %s (bench is %s only)" % (region, BENCH_REGION)
+        )
+    try:
+        account_path = _company_config(
+            account_config, ACCOUNT_SUBDIR, "account-%s" % name, name, repo_root
+        )
+        proxy_path = _company_config(proxy_config, PROXY_SUBDIR, "proxy-%s" % name, name, repo_root)
+    except RefusedError as exc:
+        # A refusal names the config it read, and the config name carries the label.
+        raise RefusedError(mask_label(str(exc), name, company_id)) from None
     return CompanyTarget(
         name=name,
         company_id=company_id,
         region=region,
         domain=domain,
-        account_config=_company_config(
-            account_config, ACCOUNT_SUBDIR, "account-%s" % name, name, repo_root
-        ),
-        proxy_config=_company_config(
-            proxy_config, PROXY_SUBDIR, "proxy-%s" % name, name, repo_root
-        ),
+        account_config=account_path,
+        proxy_config=proxy_path,
         bench=bench,
     )
 
@@ -402,7 +421,7 @@ def run(
             worker_dir = root.joinpath(*ACCOUNT_SUBDIR)
             worker = worker_name(worker_dir / config)
     except RefusedError as exc:
-        log.error(str(exc))
+        log.error(company.mask(str(exc)) if company is not None else str(exc))
         return 1
     missing = missing_env()
     if missing:
@@ -417,27 +436,29 @@ def run(
         )
         return 1
 
+    # Log lines call a company's Worker by its id: the Worker name carries the label.
+    shown = company.mask(worker) if company is not None else worker
     if company is not None:
-        where = "%s (company %s, %s)" % (worker, company.company_id, region)
+        where = "%s (company %s, %s)" % (shown, company.company_id, region)
     else:
         where = "%s (%s %s, %s/%s)" % (worker, target, region, ACCOUNT_REL, config)
     if action == "enable":
         log.step("Opening the console executor on %s: %s=%s..." % (where, MODE_KEY, MODE_VALUE))
         status = _run(put_argv(worker, config), worker_dir, MODE_VALUE)
         if status != 0:
-            log.error("wrangler secret put %s exited %d on %s" % (MODE_KEY, status, worker))
+            log.error("wrangler secret put %s exited %d on %s" % (MODE_KEY, status, shown))
             return status
         names = _list(worker, config, worker_dir)
         if names is None:
             log.error(
                 "UNVERIFIED: wrangler secret list on %s failed or did not parse, so %s cannot be read back"
-                % (worker, MODE_KEY)
+                % (shown, MODE_KEY)
             )
             return 1
         if MODE_KEY not in names:
             log.error(
                 "wrangler secret put exited 0 but %s does not list %s (%d secrets listed)"
-                % (worker, MODE_KEY, len(names))
+                % (shown, MODE_KEY, len(names))
             )
             return 1
         log.info(
@@ -452,17 +473,17 @@ def run(
     if names is None:
         log.error(
             "UNVERIFIED: wrangler secret list on %s failed or did not parse, so the region is not known to be closed"
-            % worker
+            % shown
         )
         return 1
     if MODE_KEY in names:
         log.error(
             "%s still lists %s after wrangler secret delete (exit %d): the region is OPEN"
-            % (worker, MODE_KEY, status)
+            % (shown, MODE_KEY, status)
         )
         return 1
     if status != 0:
-        log.info("%s was not set on %s; the region was already closed." % (MODE_KEY, worker))
+        log.info("%s was not set on %s; the region was already closed." % (MODE_KEY, shown))
     log.info(
         "Console executor CLOSED on %s: %s absent among %d secrets." % (where, MODE_KEY, len(names))
     )

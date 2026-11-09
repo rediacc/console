@@ -121,7 +121,7 @@ def test_a_company_target_refuses_a_shared_tier_config(root):
 
 def test_a_company_target_refuses_another_companys_worker_name(root):
     account_cfg(root).write_text(ACCOUNT_TOML % ("othercorp", "othercorp"))
-    with pytest.raises(ce.RefusedError, match="account-acmecorp"):
+    with pytest.raises(ce.RefusedError, match="account-%s" % COMPANY_ID):
         target(root)
 
 
@@ -221,8 +221,10 @@ def test_account_dry_run_plans_the_companys_own_config(root, monkeypatch, capsys
     monkeypatch.setattr(common, "repo_root", lambda: root)
     assert da.main(account_args(root, "--dry-run")) == 0
     out = capsys.readouterr()
-    assert "--config enterprise.acmecorp.toml" in out.out
-    assert "account-acmecorp" in out.out
+    # The plan lines name the opaque id too: the label never reaches a console.
+    assert "--config enterprise.%s.toml" % COMPANY_ID in out.out
+    assert "account-%s" % COMPANY_ID in out.out
+    assert NAME not in out.out
     assert "wrangler.eu.toml" not in out.out
     # A log line names the opaque id, never the label.
     assert COMPANY_ID in out.err
@@ -691,3 +693,309 @@ def test_a_company_record_picks_the_credentials_profile_of_its_bench_flag(root, 
     assert dr.record_target(ns) == "bench"
     live = dr._parser().parse_args(["before", *account_args(root), "--company-bench", "--out", "x"])
     assert dr.record_target(live) == "bench"
+
+
+# ---- the label never reaches stdout or stderr ---------------------------------------------
+
+LABEL = "zorkmidlabel"
+LABEL_ID = "c9f8e7d6c5b4a392"
+
+
+@pytest.fixture
+def lroot(tmp_path: pathlib.Path) -> pathlib.Path:
+    """A scratch repo root whose company carries a distinctive label."""
+    shutil.copy(paths.repo_root() / "regions.json", tmp_path / "regions.json")
+    for kind, text in (
+        ("account", ACCOUNT_TOML % (LABEL, LABEL)),
+        ("proxy", PROXY_TOML % (LABEL, LABEL, DOMAIN, DOMAIN)),
+    ):
+        folder = tmp_path / "workers" / kind
+        folder.mkdir(parents=True)
+        (folder / ("enterprise.%s.toml" % LABEL)).write_text(text)
+    return tmp_path
+
+
+def ltarget(root: pathlib.Path, **over) -> ce.CompanyTarget:
+    args = {
+        "name": LABEL,
+        "company_id": LABEL_ID,
+        "region": "eu",
+        "domain": DOMAIN,
+        "account_config": root / "workers" / "account" / ("enterprise.%s.toml" % LABEL),
+        "proxy_config": root / "workers" / "proxy" / ("enterprise.%s.toml" % LABEL),
+    }
+    args.update(over)
+    return ce.company_target(root, **args)
+
+
+def lflags(root: pathlib.Path, kind: str) -> list[str]:
+    return [
+        "--company",
+        LABEL,
+        "--company-id",
+        LABEL_ID,
+        "--region",
+        "eu",
+        "--company-domain",
+        DOMAIN,
+        "--%s-config" % kind,
+        str(root / "workers" / kind / ("enterprise.%s.toml" % LABEL)),
+    ]
+
+
+def assert_label_free(capsys) -> None:
+    out = capsys.readouterr()
+    assert LABEL not in out.out
+    assert LABEL not in out.err
+
+
+@pytest.mark.parametrize("action", ["enable", "disable"])
+@pytest.mark.parametrize("shape", ["ok", "put-fails", "list-fails", "still-open"])
+def test_the_executor_switch_logs_no_label_on_any_path(lroot, monkeypatch, capsys, action, shape):
+    monkeypatch.setenv("CLOUDFLARE_API_TOKEN", "tok")
+    monkeypatch.setenv("CLOUDFLARE_ACCOUNT_ID", "acct")
+    monkeypatch.setattr(ce, "_run", lambda *_unused: 1 if shape == "put-fails" else 0)
+    listed = {
+        "ok": {ce.MODE_KEY} if action == "enable" else set(),
+        "put-fails": {ce.MODE_KEY},
+        "list-fails": None,
+        "still-open": set() if action == "enable" else {ce.MODE_KEY},
+    }[shape]
+    monkeypatch.setattr(ce, "_list", lambda *_unused: listed)
+    ce.run(action, "", None, lroot, company=ltarget(lroot))
+    assert_label_free(capsys)
+
+
+def test_the_executor_switch_names_the_opaque_id_in_its_log_lines(lroot, monkeypatch, capsys):
+    monkeypatch.setenv("CLOUDFLARE_API_TOKEN", "tok")
+    monkeypatch.setenv("CLOUDFLARE_ACCOUNT_ID", "acct")
+    monkeypatch.setattr(ce, "_run", lambda *_unused: 0)
+    monkeypatch.setattr(ce, "_list", lambda *_unused: {ce.MODE_KEY})
+    assert ce.run("enable", "", None, lroot, company=ltarget(lroot)) == 0
+    assert LABEL_ID in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("file_name", ["wrangler.eu.toml", "enterprise.other.toml"])
+def test_a_company_config_refusal_names_no_label(lroot, file_name):
+    wrong = lroot / "workers" / "account" / file_name
+    wrong.write_text(ACCOUNT_TOML % (LABEL, LABEL))
+    with pytest.raises(ce.RefusedError) as caught:
+        ltarget(lroot, account_config=wrong)
+    assert LABEL not in str(caught.value)
+
+
+def test_a_company_config_naming_another_worker_refuses_without_the_label(lroot):
+    cfg = lroot / "workers" / "account" / ("enterprise.%s.toml" % LABEL)
+    cfg.write_text(ACCOUNT_TOML % ("someoneelse", "someoneelse"))
+    with pytest.raises(ce.RefusedError) as caught:
+        ltarget(lroot)
+    assert LABEL not in str(caught.value)
+
+
+def test_the_account_deploy_logs_no_label_in_a_dry_run(lroot, monkeypatch, capsys):
+    monkeypatch.setattr(common, "repo_root", lambda: lroot)
+    assert da.main([*lflags(lroot, "account"), "--dry-run"]) == 0
+    first = capsys.readouterr()
+    assert LABEL_ID in first.err
+    assert LABEL not in first.out + first.err
+    cfg = lroot / "workers" / "account" / ("enterprise.%s.toml" % LABEL)
+    cfg.write_text('compatibility_date = "2026-01-01"\n' + cfg.read_text())
+    assert da.main([*lflags(lroot, "account"), "--dry-run", "--stub"]) == 0
+    assert_label_free(capsys)
+
+
+def test_the_account_deploy_logs_no_label_on_a_refusal(lroot, monkeypatch, capsys):
+    monkeypatch.setattr(common, "repo_root", lambda: lroot)
+    args = lflags(lroot, "account")
+    shared = lroot / "workers" / "account" / "wrangler.eu.toml"
+    shared.write_text(ACCOUNT_TOML % (LABEL, LABEL))
+    args[args.index("--account-config") + 1] = str(shared)
+    assert da.main([*args, "--dry-run"]) == 1
+    assert_label_free(capsys)
+
+
+def test_the_account_deploy_logs_no_label_when_its_config_is_missing(lroot, monkeypatch, capsys):
+    monkeypatch.setattr(common, "repo_root", lambda: lroot)
+    company = ltarget(lroot)
+    company.account_config.unlink()
+    monkeypatch.setattr(da, "company_from_args", lambda *_unused: company)
+    assert da.main([*lflags(lroot, "account"), "--dry-run"]) == 1
+    err = capsys.readouterr().err
+    assert "not found" in err
+    assert LABEL not in err
+
+
+@pytest.fixture
+def account_fakes(lroot, monkeypatch):
+    monkeypatch.setattr(common, "repo_root", lambda: lroot)
+    monkeypatch.chdir(lroot)
+    monkeypatch.setenv("CLOUDFLARE_API_TOKEN", "tok")
+    monkeypatch.setenv("CLOUDFLARE_ACCOUNT_ID", "acct")
+    monkeypatch.setattr(da, "_run", lambda _argv, **_unused: 0)
+    monkeypatch.setattr(da, "needs_npm_install", lambda *_unused: False)
+    monkeypatch.setattr(da, "portal_sitekey_refusal", lambda *_unused: None)
+    monkeypatch.setattr(da, "check_services", lambda *_unused: None)
+    monkeypatch.setattr(da, "check_queues", lambda *_unused, **_kw: [])
+    monkeypatch.setattr(da, "portal_smoke", lambda *_unused: None)
+
+
+@pytest.mark.usefixtures("account_fakes")
+def test_the_account_deploy_logs_no_label_on_success(lroot, capsys):
+    assert da.main(lflags(lroot, "account")) == 0
+    out = capsys.readouterr()
+    assert LABEL_ID in out.err
+    assert LABEL not in out.out + out.err
+
+
+@pytest.mark.usefixtures("account_fakes")
+def test_the_account_deploy_logs_no_label_when_a_check_refuses(lroot, monkeypatch, capsys):
+    def refuse(*_unused):
+        raise da.ServiceBindingError("binding of enterprise.%s.toml is missing" % LABEL)
+
+    monkeypatch.setattr(da, "check_services", refuse)
+    assert da.main(lflags(lroot, "account")) == 1
+    assert_label_free(capsys)
+    monkeypatch.setattr(da, "check_services", lambda *_unused: None)
+    monkeypatch.setattr(da, "portal_smoke", lambda *_unused: "the portal of %s is keyless" % LABEL)
+    assert da.main(lflags(lroot, "account")) == 1
+    assert_label_free(capsys)
+
+
+class FakeFetcher:
+    pin = None
+
+    def __init__(self, _host):
+        pass
+
+    def code(self, url):
+        return "401" if url.endswith("/v1/server-info") else "200"
+
+
+@pytest.fixture
+def proxy_fakes(lroot, monkeypatch):
+    """Everything under deploy_proxy that would reach wrangler, the network or the image build."""
+    monkeypatch.setattr(common, "repo_root", lambda: lroot)
+    monkeypatch.chdir(lroot)
+    monkeypatch.setenv("CLOUDFLARE_API_TOKEN", "tok")
+    monkeypatch.setattr(dp, "_run", lambda _argv, **_unused: 0)
+    monkeypatch.setattr(
+        dp, "_run_tee", lambda _argv, **_unused: (0, "Current Version ID: %s\n" % PROXY_LIVE)
+    )
+    monkeypatch.setattr(dp, "deployed_version", lambda *_unused: PROXY_LIVE)
+    monkeypatch.setattr(dp, "stage_release", lambda *_unused: 0)
+    monkeypatch.setattr(dp, "forward_only_state", lambda *_a, **_kw: (False, None))
+    monkeypatch.setattr(dp, "_Fetcher", FakeFetcher)
+    ready = json.dumps({"ready": True, "workerVersion": PROXY_LIVE})
+    monkeypatch.setattr(dp, "_curl_body", lambda *_unused: (ready, "200"))
+
+
+@pytest.mark.usefixtures("proxy_fakes")
+def test_the_proxy_deploy_logs_no_label_in_a_dry_run(lroot, capsys):
+    assert dp.main([*lflags(lroot, "proxy"), "--dry-run"]) == 0
+    out = capsys.readouterr()
+    assert LABEL_ID in out.err
+    assert LABEL not in out.out + out.err
+
+
+@pytest.mark.usefixtures("proxy_fakes")
+def test_the_proxy_deploy_logs_no_label_on_success(lroot, capsys):
+    assert dp.main([*lflags(lroot, "proxy"), "--version", VERSION]) == 0
+    out = capsys.readouterr()
+    assert LABEL_ID in out.err
+    assert LABEL not in out.out + out.err
+
+
+@pytest.mark.usefixtures("proxy_fakes")
+def test_the_proxy_deploy_logs_no_label_on_a_failed_listing(lroot, monkeypatch, capsys):
+    other = "dddddddd-0000-4000-8000-000000000009"
+    monkeypatch.setattr(dp, "deployed_version", lambda *_unused: other)
+    assert dp.main([*lflags(lroot, "proxy"), "--version", VERSION]) == 1
+    assert_label_free(capsys)
+
+
+@pytest.mark.usefixtures("proxy_fakes")
+def test_the_proxy_rollback_logs_no_label(lroot, capsys):
+    assert dp.main([*lflags(lroot, "proxy"), "--rollback", PROXY_LIVE]) == 0
+    out = capsys.readouterr()
+    assert LABEL_ID in out.err
+    assert LABEL not in out.out + out.err
+
+
+@pytest.mark.usefixtures("proxy_fakes")
+def test_the_proxy_deploy_logs_no_label_on_a_refusal(lroot, capsys):
+    cfg = lroot / "workers" / "proxy" / ("enterprise.%s.toml" % LABEL)
+    cfg.write_text(PROXY_TOML % (LABEL, "intruder", DOMAIN, DOMAIN))
+    assert dp.main([*lflags(lroot, "proxy"), "--dry-run"]) == 1
+    err = capsys.readouterr().err
+    assert "routes are" in err
+    assert LABEL not in err
+
+
+@pytest.mark.usefixtures("proxy_fakes")
+def test_the_proxy_deploy_logs_no_label_on_a_var_refusal(lroot, capsys):
+    assert dp.main([*lflags(lroot, "proxy"), "--dry-run", "--var", "A=b"]) == 1
+    assert_label_free(capsys)
+
+
+@pytest.mark.usefixtures("fakes")
+def test_the_record_steps_log_no_label(lroot, tmp_path, capsys):
+    out = tmp_path / "before.json"
+    ns = dr._parser().parse_args(
+        [
+            "before",
+            *lflags(lroot, "account"),
+            "--proxy-config",
+            str(lroot / "workers" / "proxy" / ("enterprise.%s.toml" % LABEL)),
+            "--version",
+            VERSION,
+            "--out",
+            str(out),
+        ]
+    )
+    assert dr.cmd_before(ns, lroot) == 0
+    assert_label_free(capsys)
+    after = after_args(out, tmp_path, "--sink", "control", "--ring", "canary")
+    assert dr.cmd_after(after, lroot) == 0
+    assert_label_free(capsys)
+
+
+# ---- findings 0f1d42ca.3 and .4 ------------------------------------------------------------
+
+
+def shared_before_fakes(monkeypatch, pointer):
+    monkeypatch.setattr(dr, "read_toml", lambda _p: {"name": "account-x"})
+    monkeypatch.setattr(dr, "database_name", lambda *_unused: "db")
+    monkeypatch.setattr(dr, "worker_name", lambda doc, _p: str(doc["name"]))
+    monkeypatch.setattr(
+        dr,
+        "read_json_object",
+        lambda key: pointer if key.startswith(dr.POINTER_PREFIX) else {"manifest": True},
+    )
+
+
+@pytest.mark.usefixtures("fakes")
+def test_a_shared_before_drops_an_unvalidated_previous_release_when_the_pointer_names_one(
+    monkeypatch,
+):
+    shared_before_fakes(monkeypatch, {"release_version": "1.2.3"})
+    record = dr.take_before(paths.repo_root(), "stable", "eu", VERSION, None, "not;a version")
+    assert record["proxy"]["release_before"] == "1.2.3"
+    assert "not;a version" not in json.dumps(record)
+
+
+@pytest.mark.usefixtures("fakes")
+def test_a_shared_before_without_a_pointer_has_no_previous_release(monkeypatch):
+    shared_before_fakes(monkeypatch, None)
+    record = dr.take_before(paths.repo_root(), "stable", "eu", VERSION, None, "not;a version")
+    assert record["proxy"]["release_before"] is None
+    assert "not;a version" not in json.dumps(record)
+
+
+@pytest.mark.parametrize("region", ["us", "asia"])
+def test_a_bench_company_is_refused_outside_the_bench_region(root, region):
+    with pytest.raises(ce.RefusedError, match="bench"):
+        target(root, region=region, bench=True)
+
+
+def test_a_bench_company_is_accepted_in_the_bench_region(root):
+    assert target(root, region=ce.BENCH_REGION, bench=True).bench is True

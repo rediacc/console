@@ -704,6 +704,8 @@ def take_before(
         proxy_dir, pcfg = company.proxy_config.parent, company.proxy_config.name
     else:
         check_target(target, region)
+        # `--previous-release` is company only: a shared target's previous release is its pointer's, read below.
+        previous_release = None
         account_dir = repo_root.joinpath(*ACCOUNT_SUBDIR)
         proxy_dir = repo_root.joinpath(*PROXY_SUBDIR)
         acfg = account_config(target, region)
@@ -849,20 +851,24 @@ def company_from_args(
 
 def cmd_before(args: argparse.Namespace, repo_root: pathlib.Path) -> int:
     company = company_from_args(args, repo_root)
+    # A company's Worker, database and config names carry its label; a log line shows the opaque id (the record file keeps the runnable names).
+    shown = company.mask if company is not None else str
     if args.account_only:
         record = take_account_before(repo_root, args.target, args.region, company)
         write_json(pathlib.Path(args.out), record)
         log.info(
-            "Before (account only): account %s at %s; D1 %s bookmark %s."
-            % (
-                record["account"]["worker"],
-                record["account"]["version_before"] or "(never deployed)",
-                record["d1"]["database"],
-                record["d1"]["bookmark"],
+            shown(
+                "Before (account only): account %s at %s; D1 %s bookmark %s."
+                % (
+                    record["account"]["worker"],
+                    record["account"]["version_before"] or "(never deployed)",
+                    record["d1"]["database"],
+                    record["d1"]["bookmark"],
+                )
             )
         )
-        print("  roll back the Worker: %s" % record["rollback"]["3_account"])
-        print("  restore D1: %s" % record["rollback"]["4_d1"])
+        print("  roll back the Worker: %s" % shown(record["rollback"]["3_account"]))
+        print("  restore D1: %s" % shown(record["rollback"]["4_d1"]))
         return 0
     if not args.version:
         raise RecordError("--version is required unless --account-only")
@@ -874,22 +880,24 @@ def cmd_before(args: argparse.Namespace, repo_root: pathlib.Path) -> int:
     github_output({"proxy_exists": exists})
     proxy = record["proxy"]
     log.info(
-        "Before: account %s at %s; D1 %s bookmark %s; proxy %s %s; last good proxy release %s; executor v%s staged (%d files)."
-        % (
-            record["account"]["worker"],
-            record["account"]["version_before"] or "(never deployed)",
-            record["d1"]["database"],
-            record["d1"]["bookmark"],
-            proxy["worker"],
-            "at %s" % proxy["version_before"]
-            if proxy["existed"]
-            else "DOES NOT EXIST (bootstrap deploy follows)",
-            proxy["release_before"] or "(none on record)",
-            record["version"],
-            len(record["executor_manifest"]["sha256"]),
+        shown(
+            "Before: account %s at %s; D1 %s bookmark %s; proxy %s %s; last good proxy release %s; executor v%s staged (%d files)."
+            % (
+                record["account"]["worker"],
+                record["account"]["version_before"] or "(never deployed)",
+                record["d1"]["database"],
+                record["d1"]["bookmark"],
+                proxy["worker"],
+                "at %s" % proxy["version_before"]
+                if proxy["existed"]
+                else "DOES NOT EXIST (bootstrap deploy follows)",
+                proxy["release_before"] or "(none on record)",
+                record["version"],
+                len(record["executor_manifest"]["sha256"]),
+            )
         )
     )
-    print("  restore D1: %s" % record["rollback"]["4_d1"])
+    print("  restore D1: %s" % shown(record["rollback"]["4_d1"]))
     return 0
 
 
@@ -960,14 +968,16 @@ def cmd_bootstrap(args: argparse.Namespace, repo_root: pathlib.Path) -> int:
 
 def cmd_rollback(args: argparse.Namespace, repo_root: pathlib.Path) -> int:
     before = read_json(pathlib.Path(args.before), "the before record")
+    company = company_from_record(repo_root, before)
+    # A company's names carry its label: a console shows the opaque id, and the runnable commands stay in the before record's `rollback` field.
+    shown = company.mask if company is not None else str
     if before.get("account_only"):
         # No executor or proxy was touched: only the two human-run commands remain, printed as step 3 always is.
         log.step("Rollback (account only): nothing is run; the account and D1 commands follow.")
-        print("  roll back the Worker: %s" % before["rollback"]["3_account"])
-        print("  restore D1: %s" % before["rollback"]["4_d1"])
+        print("  roll back the Worker: %s" % shown(before["rollback"]["3_account"]))
+        print("  restore D1: %s" % shown(before["rollback"]["4_d1"]))
         return 0
     target, region = before["target"], before["region"]
-    company = company_from_record(repo_root, before)
     failures = []
 
     label = "company %s" % company.company_id if company else "%s %s" % (target, region)
@@ -975,13 +985,13 @@ def cmd_rollback(args: argparse.Namespace, repo_root: pathlib.Path) -> int:
     if console_executor.run("disable", target, region, repo_root, company=company) != 0:
         failures.append("the console executor could not be confirmed closed")
 
-    log.step("Rollback 2/4: the proxy Worker %s..." % before["proxy"]["worker"])
+    log.step("Rollback 2/4: the proxy Worker %s..." % shown(before["proxy"]["worker"]))
     pcfg = before["proxy"]["config"].rsplit("/", 1)[-1]
     try:
         _, live = worker_version(repo_root.joinpath(*PROXY_SUBDIR), pcfg, before["proxy"]["worker"])
     except RecordError as exc:
         live = None
-        failures.append("the live proxy version is unknown: %s" % exc)
+        failures.append("the live proxy version is unknown: %s" % shown(str(exc)))
     else:
         prior = before["proxy"]["version_before"]
         release = before["proxy"]["release_before"]
@@ -1008,14 +1018,14 @@ def cmd_rollback(args: argparse.Namespace, repo_root: pathlib.Path) -> int:
         else:
             log.warn(
                 "The proxy moved from %s to %s and no release is on record for %s, so its image cannot be rebuilt from artifacts. Worker-only rollback, for a human: %s"
-                % (prior, live, prior, before["rollback"]["2_proxy"])
+                % (prior, live, prior, shown(before["rollback"]["2_proxy"]))
             )
 
     log.step("Rollback 3/4 and 4/4, printed and NOT run (destructive, human decisions):")
-    print("  account Worker: %s" % before["rollback"]["3_account"])
-    print("  D1 restore:     %s" % before["rollback"]["4_d1"])
+    print("  account Worker: %s" % shown(before["rollback"]["3_account"]))
+    print("  D1 restore:     %s" % shown(before["rollback"]["4_d1"]))
     for failure in failures:
-        log.error("Rollback incomplete: %s" % failure)
+        log.error("Rollback incomplete: %s" % shown(failure))
     return 1 if failures else 0
 
 
@@ -1127,6 +1137,7 @@ def cmd_after(args: argparse.Namespace, repo_root: pathlib.Path) -> int:
     before = read_json(pathlib.Path(args.before), "the before record")
     refuse_account_only(before, "after")
     company = company_from_record(repo_root, before)
+    shown = company.mask if company is not None else str
     if company is not None and args.sink != CONTROL_SINK:
         raise RecordError(
             "a company record goes to the control database: pass --sink control --ring <ring>, never --sink r2"
@@ -1171,7 +1182,7 @@ def cmd_after(args: argparse.Namespace, repo_root: pathlib.Path) -> int:
     try:
         refuse_secret_values(record)
     except RecordError as exc:
-        log.error("%s after: %s" % (SELF, exc))
+        log.error(shown("%s after: %s" % (SELF, exc)))
         return 1
     write_json(pathlib.Path(args.out), record)
     if company is not None:
@@ -1185,7 +1196,7 @@ def cmd_after(args: argparse.Namespace, repo_root: pathlib.Path) -> int:
             sink_record(record, args.sink, args.channel, before["target"], before["region"])
         except RecordError as exc:
             problems.append("the record was not written to %s: %s" % (args.sink, exc))
-    text = summary_markdown(record)
+    text = shown(summary_markdown(record))
     print(text)
     summary = os.environ.get("GITHUB_STEP_SUMMARY")
     if summary:
@@ -1211,7 +1222,7 @@ def cmd_after(args: argparse.Namespace, repo_root: pathlib.Path) -> int:
         except (RecordError, executor_artifacts.ArtifactError) as exc:
             problems.append("the last-good pointer was not written: %s" % exc)
     for problem in problems:
-        log.error(problem)
+        log.error(shown(problem))
     return 1 if problems else 0
 
 

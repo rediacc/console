@@ -151,6 +151,7 @@ def portal_smoke(
     env: typing.Mapping[str, str],
     fetch: portal_captcha.Http = portal_captcha.http,
     sleep: typing.Callable[[float], None] = time.sleep,
+    shown: typing.Callable[[str], str] = str,
 ) -> str | None:
     """After the deploy: None when the served portal renders the captcha its Worker enforces, else the refusal line.
 
@@ -162,7 +163,7 @@ def portal_smoke(
     key = (env.get("TURNSTILE_SITE_KEY") or "").strip() or None
     verdict = portal_captcha.check_with_retry(host, fetch, key, sleep=sleep)
     if verdict.state == portal_captcha.OK:
-        log.info("Portal smoke: %s %s" % (host, verdict.why))
+        log.info("Portal smoke: %s %s" % (shown(host), shown(verdict.why)))
         return None
     return "Portal smoke %s on https://%s/account/login: %s. Fix: %s" % (
         verdict.state,
@@ -439,19 +440,25 @@ def refuse_existing_worker(
         )
 
 
-def stub_main(worker_dir: pathlib.Path, config: str, *, dry_run: bool) -> int:
+def stub_main(
+    worker_dir: pathlib.Path,
+    config: str,
+    *,
+    dry_run: bool,
+    shown: typing.Callable[[str], str] = str,
+) -> int:
     """`--stub`: upload the placeholder Worker named by the region's config, so the proxy (which binds this Worker) can deploy before the real account Worker does."""
     try:
         name, date = read_worker_identity(worker_dir / config)
     except StubError as exc:
-        log.error(str(exc))
+        log.error(shown(str(exc)))
         return 1
     with tempfile.TemporaryDirectory(prefix="account-stub-") as tmp:
         tmp_path = pathlib.Path(tmp)
         stub_config = tmp_path / "wrangler.toml"
         argv = deploy_argv(str(stub_config))
         if dry_run:
-            log.step("DRY RUN: stub %s (%s); no command is run" % (name, config))
+            log.step("DRY RUN: stub %s (%s); no command is run" % (shown(name), shown(config)))
             print("would run: %s" % " ".join(argv), flush=True)
             return 0
         os.chdir(worker_dir)
@@ -465,15 +472,15 @@ def stub_main(worker_dir: pathlib.Path, config: str, *, dry_run: bool) -> int:
         try:
             refuse_existing_worker(name, os.environ)
         except StubError as exc:
-            log.error(str(exc))
+            log.error(shown(str(exc)))
             return 1
         (tmp_path / STUB_ENTRY).write_text(STUB_SOURCE, encoding="utf-8")
         stub_config.write_text(stub_config_text(name, date), encoding="utf-8")
-        log.step("Deploying the account stub: %s" % name)
+        log.step("Deploying the account stub: %s" % shown(name))
         status = _run(argv)
         if status != 0:
             return status
-    log.info("Account stub deployed: %s" % name)
+    log.info("Account stub deployed: %s" % shown(name))
     return 0
 
 
@@ -502,22 +509,24 @@ def main(argv: list[str]) -> int:
         config = company.account_config.name
         # What a log line may call the target: a company's config name carries its label, so only the opaque id is printed.
         label = "company %s" % company.company_id
+        shown = company.mask
     else:
         config = config_name(region)
         label = "%s (%s)" % (region, config)
+        shown = str
     if not (worker_dir / config).is_file():
-        log.error("Wrangler config not found: %s/%s" % (worker_dir, config))
+        log.error("Wrangler config not found: %s/%s" % (shown(str(worker_dir)), shown(config)))
         return 1
 
     if "ARG_STUB" in args:
-        return stub_main(worker_dir, config, dry_run="ARG_DRY_RUN" in args)
+        return stub_main(worker_dir, config, dry_run="ARG_DRY_RUN" in args, shown=shown)
 
     if "ARG_DRY_RUN" in args:
         # Stops before npm install, the services audit, migrations and the deploy: nothing here reaches Cloudflare or the network.
         db_preview = database_name(str(worker_dir / config))
         if not db_preview:
             # The real run refuses here too; a preview naming a placeholder database would misstate the plan.
-            log.error("Could not read database_name from %s" % config)
+            log.error("Could not read database_name from %s" % shown(config))
             return 1
         log.step("DRY RUN: %s; no command is run" % label)
         bound = (
@@ -533,12 +542,12 @@ def main(argv: list[str]) -> int:
             try:
                 would = check_queues(worker_dir / config, os.environ, dry_run=True)
             except QueuePreflightError as exc:
-                log.error(str(exc))
+                log.error(shown(str(exc)))
                 return 1
             for name in would:
-                print("would create queue: %s" % name, flush=True)
-        print("would run: %s" % " ".join(migrations_argv(db_preview, config)), flush=True)
-        print("would run: %s" % " ".join(deploy_argv(config)), flush=True)
+                print("would create queue: %s" % shown(name), flush=True)
+        print("would run: %s" % shown(" ".join(migrations_argv(db_preview, config))), flush=True)
+        print("would run: %s" % shown(" ".join(deploy_argv(config))), flush=True)
         return 0
 
     os.chdir(worker_dir)
@@ -560,39 +569,39 @@ def main(argv: list[str]) -> int:
 
     db_name = database_name(config)
     if not db_name:
-        log.error("Could not read database_name from %s" % config)
+        log.error("Could not read database_name from %s" % shown(config))
         return 1
 
     refusal = portal_sitekey_refusal(worker_dir, os.environ)
     if refusal:
-        log.error(refusal)
+        log.error(shown(refusal))
         return 1
 
     log.step("Deploying account worker: %s" % label)
     try:
         check_services(common.repo_root(), "/".join((*WORKER_SUBDIR, config)), os.environ)
     except ServiceBindingError as exc:
-        log.error(str(exc))
+        log.error(shown(str(exc)))
         return 1
     try:
         for name in check_queues(worker_dir / config, os.environ):
-            log.info("Created queue %s" % name)
+            log.info("Created queue %s" % shown(name))
     except QueuePreflightError as exc:
-        log.error(str(exc))
+        log.error(shown(str(exc)))
         return 1
-    log.step("Applying migrations to %s..." % db_name)
+    log.step("Applying migrations to %s..." % shown(db_name))
     status = _run(migrations_argv(db_name, config))
     if status != 0:
         return status  # `set -e`
-    log.info("Migrations applied to %s" % db_name)
+    log.info("Migrations applied to %s" % shown(db_name))
 
     status = _run(deploy_argv(config))
     if status != 0:
         return status  # `set -e`
     log.info("Account worker deployed: %s" % (region if company is None else label))
-    smoke = portal_smoke(worker_dir / config, os.environ)
+    smoke = portal_smoke(worker_dir / config, os.environ, portal_captcha.http, time.sleep, shown)
     if smoke:
-        log.error(smoke)
+        log.error(shown(smoke))
         return 1
     return 0
 

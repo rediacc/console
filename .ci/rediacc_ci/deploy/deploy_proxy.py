@@ -36,6 +36,7 @@ import subprocess
 import sys
 import time
 import tomllib
+import typing
 import urllib.parse
 
 from rediacc_ci import log
@@ -657,10 +658,15 @@ def wait_ready(
         _sleep(READY_INTERVAL_S)
 
 
-def smoke(host: str, version_id: str, timing: dict[str, int] | None = None) -> int:
+def smoke(
+    host: str,
+    version_id: str,
+    timing: dict[str, int] | None = None,
+    shown: typing.Callable[[str], str] = str,
+) -> int:
     """The post-deploy smoke: /v1/health 200, an unauthenticated /v1/server-info 401, then /v1/ready on the deployed version."""
     url = "https://" + host
-    log.step("Smoke-testing %s..." % url)
+    log.step("Smoke-testing %s..." % shown(url))
     fetch = _Fetcher(host)
     health = fetch.code(url + "/v1/health")
     if health != "200":
@@ -783,7 +789,7 @@ def company_refusals(text: str, company: console_executor.CompanyTarget) -> list
             % proxy_configs.FORBIDDEN_TEXT
         )
     if config.get("name") != company.proxy_worker:
-        out.append("name is %r, not %r" % (config.get("name"), company.proxy_worker))
+        out.append(company.mask("name is %r, not %r" % (config.get("name"), company.proxy_worker)))
     if "env" in config:
         out.append("an [env.*] table can rename the Worker or its routes; a config carries none")
     if config.get("main") != proxy_configs.MAIN:
@@ -936,6 +942,7 @@ def run_rollback(
     version_id: str,
     record_path: pathlib.Path | None,
     company_id: str | None = None,
+    shown: typing.Callable[[str], str] = str,
 ) -> int:
     """`wrangler rollback <id>`, the deployments cross-check, the smoke on that id, and the record. The id is lowercased first, as `wrangler deployments list` and `/v1/ready` print it, so wrangler, the smoke and the record all name one spelling."""
     config = spec.config
@@ -946,7 +953,7 @@ def run_rollback(
     if not bench and live_release is None:
         log.warn(
             "no record names the release of the live %s version (`artifacts_version`), so the forward-only check reads the newest release tag"
-            % spec.name
+            % shown(spec.name)
         )
     forward_only, current_tag = forward_only_state(
         repo_root,
@@ -963,7 +970,7 @@ def run_rollback(
     previous = deployed_version(config)
     log.step(
         "Rolling %s back to version %s (config: %s, live: %s)..."
-        % (spec.name, version_id, config, previous or "none")
+        % (shown(spec.name), version_id, shown(config), previous or "none")
     )
     status, _output = _run_tee(wrangler_rollback_argv(config, version_id))
     if status != 0:
@@ -1000,7 +1007,7 @@ def run_rollback(
             "wrangler rollback to %s returned, but `wrangler deployments list` names %s at 100%%"
             % (version_id, listed or "no version")
         )
-        log.error(failure)
+        log.error(shown(failure))
         # `version_id` is what is live, never the unconfirmed target: a later `--smoke-only` reads it first. Lowercased like every id this run writes (review 941e1bff.2).
         record(
             live=listed.lower() if listed else None,
@@ -1010,13 +1017,13 @@ def run_rollback(
         )
         return 1
     timing: dict[str, int] = {}
-    smoke_rc = smoke(spec.routes[0], version_id, timing)
+    smoke_rc = smoke(spec.routes[0], version_id, timing, shown)
     record(smoke_rc=smoke_rc, cold_start_ms=timing.get("cold_start_ms"))
     if smoke_rc != 0:
-        log.error("Rollback: %s" % revert)
+        log.error("Rollback: %s" % shown(revert))
         return smoke_rc
     for line in closing_lines(spec.name, version_id, revert, rolled_back=True):
-        log.info(line)
+        log.info(shown(line))
     return 0
 
 
@@ -1033,6 +1040,9 @@ def main(argv: list[str]) -> int:
     worker_dir = repo_root.joinpath(*WORKER_SUBDIR)
     target = args.target
     record_path = pathlib.Path(args.record).resolve() if args.record else None
+    company = None
+    # Log lines call a company's Worker, config and host by its opaque id: the names carry the label.
+    shown: typing.Callable[[str], str] = str
 
     try:
         company = console_executor.company_from_values(repo_root, vars(args), args.region)
@@ -1045,6 +1055,7 @@ def main(argv: list[str]) -> int:
             worker_dir = company.proxy_config.parent
             spec, text = select_company(repo_root, company)
             region = company.region
+            shown = company.mask
         else:
             spec, text = select(repo_root, target, args.region)
             region = args.region or BENCH_REGION
@@ -1075,7 +1086,7 @@ def main(argv: list[str]) -> int:
                 raise RefusedError("--version %r is not a release version (X.Y.Z)" % args.version)
     except (RefusedError, console_executor.RefusedError) as exc:
         for line in getattr(exc, "lines", None) or (str(exc),):
-            log.error(line)
+            log.error(shown(line))
         return 1
     config = spec.config
     host = spec.routes[0]
@@ -1085,7 +1096,7 @@ def main(argv: list[str]) -> int:
         os.chdir(worker_dir)
         log.step(
             "Dry run: compiling the %s worker without deploying (config: %s)..."
-            % (spec.name, config)
+            % (shown(spec.name), shown(config))
         )
         status = _run(dry_run_argv(config, overrides))
         if status != 0:
@@ -1104,7 +1115,15 @@ def main(argv: list[str]) -> int:
 
     if args.rollback is not None:
         return run_rollback(
-            spec, repo_root, worker_dir, target, region, args.rollback, record_path, company_id
+            spec,
+            repo_root,
+            worker_dir,
+            target,
+            region,
+            args.rollback,
+            record_path,
+            company_id,
+            shown,
         )
 
     if args.smoke_only:
@@ -1113,10 +1132,10 @@ def main(argv: list[str]) -> int:
         if not version_id:
             log.error(
                 "--smoke-only: no deployed version of %s to smoke (no record, no deployment)"
-                % spec.name
+                % shown(spec.name)
             )
             return 1
-        status = smoke(host, version_id)
+        status = smoke(host, version_id, None, shown)
         if record_path is not None:
             record = {}
             if record_path.is_file():
@@ -1144,7 +1163,9 @@ def main(argv: list[str]) -> int:
     )
     os.chdir(worker_dir)
     previous = deployed_version(config)
-    log.step("Deploying %s and its container image (config: %s)..." % (spec.name, config))
+    log.step(
+        "Deploying %s and its container image (config: %s)..." % (shown(spec.name), shown(config))
+    )
     status, output = _run_tee(deploy_argv(config, overrides))
     if status != 0:
         return status
@@ -1163,7 +1184,7 @@ def main(argv: list[str]) -> int:
         return 1
 
     timing: dict[str, int] = {}
-    smoke_rc = smoke(host, version_id, timing)
+    smoke_rc = smoke(host, version_id, timing, shown)
     rollback = revert_line(config, previous, forward_only, current_tag)
     if record_path is not None:
         # Read before the write replaces it: the earlier record knows the release of the version a later rollback may return to (`release_map`).
@@ -1191,10 +1212,10 @@ def main(argv: list[str]) -> int:
             },
         )
     if smoke_rc != 0:
-        log.error("Rollback: %s" % rollback)
+        log.error("Rollback: %s" % shown(rollback))
         return smoke_rc
     for line in closing_lines(spec.name, version_id, rollback):
-        log.info(line)
+        log.info(shown(line))
     return 0
 
 
