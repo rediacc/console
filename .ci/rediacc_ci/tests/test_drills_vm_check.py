@@ -4367,6 +4367,10 @@ def test_the_skip_reset_mark_counts_only_as_a_leading_env_assignment() -> None:
     assert not vm_check.leg_skips_reset(_fake_leg("a", "echo BRIDGE_TEST_SKIP_RESET=1 is unset"))
     assert not vm_check.leg_skips_reset(_fake_leg("a", "npx x # BRIDGE_TEST_SKIP_RESET=1"))
     assert not vm_check.leg_skips_reset(_fake_leg("a", "BRIDGE_TEST_SKIP_RESET=10 npx x"))
+    # A `#` inside a word is no comment: the mark after it still counts.
+    assert vm_check.leg_skips_reset(
+        _fake_leg("a", "URL=http://h/#x BRIDGE_TEST_SKIP_RESET=1 npx x")
+    )
     assert not vm_check.leg_skips_reset(_fake_leg("a", "npx x"))
 
 

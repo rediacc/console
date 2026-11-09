@@ -600,7 +600,8 @@ def _command_tokens(line: str) -> list[str] | None:
         elif ch in "\"'":
             quote = ch
             word.append(ch)
-        elif ch == "#":
+        elif ch == "#" and (not word or set(word) <= _OPERATOR_CHARS):
+            # A comment starts only at the start of a word (or right after an operator), so `URL=http://h/#x` keeps its tail.
             break
         elif ch.isspace():
             flush()

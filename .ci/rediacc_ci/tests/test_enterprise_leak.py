@@ -440,3 +440,11 @@ def test_a_hash_inside_a_quoted_string_does_not_hide_a_placeholder():
     assert leak._has_placeholder("url = 'a#@@X@@'\n[")
     assert not leak._has_placeholder('url = "a" # @@X@@\n[')
     assert not leak._has_placeholder('url = "a\\"" # @@X@@\n[')
+
+
+def test_a_multi_line_string_is_scanned_as_string_content():
+    """Review 77febcf6.2: a `#` on a line of a TOML multi-line string is string content however the line's quotes pair up, while a comment after the string closes stays a comment."""
+    assert leak._has_placeholder('s = """\nuse "x" # @@X@@\n"""\n')
+    assert leak._has_placeholder('s = """\ndon\'t # @@X@@\n"""\n')
+    assert not leak._has_placeholder('s = """\nplain\n"""\nk = 1 # @@Y@@\n')
+    assert not leak._has_placeholder('s = """\ndon\'t\n"""\nk = 1 # @@Y@@\n')
