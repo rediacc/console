@@ -455,7 +455,8 @@ def test_a_listing_that_never_ends_is_refused_not_walked_forever(monkeypatch):
     rig.cf.ignore_page = True
     with pytest.raises(lifecycle.LifecycleError, match="did not end"):
         rig.teardown.revoke_tokens(_company())
-    assert len([c for c in rig.cf.calls if c[0] == "GET"]) == 3
+    # Pages 1 to MAX_LIST_PAGES are followed while full, and the full page MAX_LIST_PAGES + 1 is the refusal.
+    assert len([c for c in rig.cf.calls if c[0] == "GET"]) == 4
 
 
 def test_delete_bucket_empties_it_then_deletes_it_with_the_jurisdiction_header(monkeypatch):
