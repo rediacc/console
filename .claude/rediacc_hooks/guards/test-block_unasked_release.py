@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Control harness for block_unasked_release: the release entry only when asked, no raw publish verb, no hand write into the release clone.
+"""Control harness for block_unasked_release: the release entry only when asked, a real Enterprise company's release only when asked, no raw publish verb, no hand write into the release clone.
 
 BOTH DIRECTIONS, through the real dispatcher. Every refusal has an admission twin that differs by one planted fact: `--dry-run` after `--` against before it, a proven `RELEASE_ASKED` minute against an unproven, malformed or missing one, `--target bench` against another target, `--region eu` against another region, a branch push against a `v*` tag push, a build against a push, a read of the release clone against a write.
 
@@ -858,6 +858,107 @@ CASES = [
     ("a sibling cache dir", "echo x > .ci/cache/releases-old/a", None, A, ""),
 ]
 
+RINGS = "%s rediacc_ci.release.rings_run --version 1.2.3" % PY
+COMPANY = "--company acme --company-id c0000abcd --region eu --company-domain example.test"
+# The Enterprise ring runner and a real company's Worker (box K2 of agent/plans/PLAN-enterprise-isolation.md): bench, dry run and help are free, a real company's release needs the proven ask.
+CASES.extend(
+    [
+        ("rings: real company, no ASKED", RINGS, None, B, "a real Enterprise company's release"),
+        (
+            "rings: real company, proven ASKED",
+            "%s %s" % (ASK, RINGS),
+            TR,
+            A,
+            "admitted by RELEASE_ASKED",
+        ),
+        (
+            "rings: real company, ASKED matching no answer",
+            "%s %s" % (ASK_ELSEWHERE, RINGS),
+            TR,
+            B,
+            "matches no AskUserQuestion",
+        ),
+        ("rings: bench run", RINGS + " --bench", None, A, "!BLOCKED"),
+        (
+            "rings: bench run with a planted failure",
+            RINGS + " --bench --plant-failure c0000abcd --pause-minutes 1",
+            None,
+            A,
+            "",
+        ),
+        ("rings: dry run of a real release", RINGS + " --dry-run", None, A, ""),
+        ("rings: help", "%s rediacc_ci.release.rings_run --help" % PY, None, A, ""),
+        (
+            "rings: resume of a real company",
+            RINGS + " --resume 1.2.3 --company c0000abcd",
+            None,
+            B,
+            "real Enterprise company's release",
+        ),
+        ("rings: --bench after the separator", RINGS + " -- --bench", None, B, "real Enterprise"),
+        ("rings: --bench=false", RINGS + " --bench=false", None, B, "real Enterprise"),
+        ("rings: real release under bws_env", "%s %s" % (BWS, RINGS), None, B, "real Enterprise"),
+        ("rings: bench under bws_env", "%s %s --bench" % (BWS, RINGS), None, A, ""),
+        (
+            "rings: run.sh enterprise release, real",
+            "./run.sh enterprise release --version 1.2.3",
+            None,
+            B,
+            "real Enterprise company's release",
+        ),
+        (
+            "rings: run.sh enterprise release --bench",
+            "./run.sh enterprise release --version 1.2.3 --bench",
+            None,
+            A,
+            "",
+        ),
+        ("rings: run.sh enterprise list", "./run.sh enterprise list", None, A, ""),
+        (
+            "rings: package enterprise release, real",
+            "%s rediacc_ci enterprise release --version 1.2.3" % PY,
+            None,
+            B,
+            "real Enterprise company's release",
+        ),
+        (
+            "rings: package enterprise release --bench",
+            "%s rediacc_ci enterprise release --version 1.2.3 --bench" % PY,
+            None,
+            A,
+            "",
+        ),
+        (
+            "company: deploy_account for a real company, no ASKED",
+            "%s rediacc_ci.deploy.deploy_account %s --account-config x" % (PY, COMPANY),
+            None,
+            B,
+            "a real Enterprise company's Worker",
+        ),
+        (
+            "company: deploy_account for a bench company",
+            "%s rediacc_ci.deploy.deploy_account %s --company-bench" % (PY, COMPANY),
+            None,
+            A,
+            "!BLOCKED",
+        ),
+        (
+            "company: deploy_proxy --company= spelling",
+            "%s rediacc_ci.deploy.deploy_proxy --company=acme --region eu" % PY,
+            None,
+            B,
+            "--company",
+        ),
+        (
+            "company: console_executor for a real company, proven ASKED",
+            "%s %s rediacc_ci.deploy.console_executor --enable %s" % (ASK, PY, COMPANY),
+            TR,
+            A,
+            "admitted by RELEASE_ASKED",
+        ),
+    ]
+)
+
 # Generated from the guard's own tables, so a module added there is covered here without an edit: every entry step is refused bare, every stable module needs the ask and is admitted with a proven one.
 CASES.extend(
     (
@@ -1004,6 +1105,12 @@ MUST_FLIP = {
     "help-taken-as-value": "buildx --push, --help taken as the tag",
     "help-undeclared": "--help on a module that takes no argv",
     "workspace-glob-through-path": "npm run deploy -w by name under a glob-special project path",
+    "rings-bench-asked": "rings: bench run",
+    "rings-real-free": "rings: real company, no ASKED",
+    "company-worker-free": "company: deploy_account for a real company, no ASKED",
+    "company-bench-ignored": "company: deploy_account for a bench company",
+    "run-sh-enterprise-ignored": "rings: run.sh enterprise release, real",
+    "package-enterprise-ignored": "rings: package enterprise release, real",
 }
 # A control passes when the planted copy breaks its case's verdict: the refusal flips to allowed, the admission to refused, or the named reason goes missing.
 for label, mutant in CONTROLS:

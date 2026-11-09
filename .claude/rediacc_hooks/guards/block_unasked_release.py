@@ -5,7 +5,8 @@ WHY. agent/plans/PLAN-local-release.md moves the edge release to one local entry
   1. EVERY WORKER DEPLOY IS FREE, with no question. PLAN-product-domain-rename (box W7) collapses the stable and edge Worker pairs into one shared set per region (`account-<r>`, `proxy-<r>`, `www`, plus bench), and its operator ruling 4 of 2026-11-05 lets the session deploy them without asking, so no stable Worker remains: `npm run release:local -- --channel edge` (with or without `--dry-run`), and every run of the Worker modules (`deploy_account`, `deploy_proxy`, `console_executor`, `account_secrets_local`, `deploy_www`, `deploy_bench`, `set_account_worker_secrets`, `set_www_worker_secrets`) whatever target it names, and `wrangler deploy|rollback|publish|versions deploy` on a shared region Worker's `wrangler.<region>.toml`, the region ids read from `regions.json` at the project root.
   2. THE CLI'S STABLE CHANNEL NEEDS A PROVEN ASK: the promote verbs (`promote_r2_to_stable`, its hotfix twin, `promote_docker_to_stable_hotfix`, `mark_production`), and a `wrangler deploy|rollback` on a config that is neither a shared region Worker's nor a bench or preview one (`wrangler.toml` of `workers/mta-sts`, `workers/ops-health` or `workers/www` raw, `wrangler.dev.toml`). Each is admitted only when the command carries `RELEASE_ASKED=ASKED:<YYYY-MM-DDTHH:MM>Z` and that minute matches an AskUserQuestion answer in the payload's transcript within 300 s. The proof is `wl_checks._asked_in_transcript`, imported, the same check `block_vm_unverified_push` and `block_backup_unverified_push` use.
   3. `release:local --channel stable` IS REFUSED OUTRIGHT, dry run included, and RELEASE_ASKED does not admit it: stable is promoted by `.github/workflows/cd-release-stable.yml` only. A run of the entry naming no channel is refused too, and each launcher is told its own reason: npm hands the script only the words after `--` (`npm run release:local --channel edge` reaches the script with no channel at all), while `python3 -m rediacc_ci.release.local` sees every word and simply names none.
-  4. THE RAW PUBLISH VERBS STAY REFUSED, with no escape: `gh release create|upload|edit|delete`, a `git push` of a `v*` tag (`refs/tags/v*`, `--tags`, `--mirror`, and `--follow-tags` on any push but the GitLab mirror push of `main`), `docker push` (and `image push`, `manifest push`, `compose push|publish`, `compose build --push`), a `docker build`/`buildx build` with `--push` or a registry output (`-o` attached or bundled too), `docker buildx imagetools create`, `wrangler pages deploy|publish`, a `wrangler deploy|rollback|publish|versions deploy` on a bench or preview config (judged on the config's file name, never the directories above it; `deploy_bench` and `deploy_proxy --target bench` are its path), and `-m` on the release entry's own steps (`upload_to_r2`, `upload_repos_to_r2`, `write_release_sentinel`, `create_github_release`, `tag_submodules`, `update_homebrew_tap`), which the entry runs in order with its gates and record.
+  4. AN ENTERPRISE COMPANY'S RELEASE NEEDS A PROVEN ASK, because company Workers carry the stable channel (agent/plans/PLAN-enterprise-isolation.md box K2): the ring runner `python3 -m rediacc_ci.release.rings_run`, spelled also `./run.sh enterprise release` and `python3 -m rediacc_ci enterprise release`, is admitted freely with `--bench` (fake companies on bench), `--dry-run` or `--help`, and otherwise only with a proven RELEASE_ASKED. A Worker module run naming `--company` without `--company-bench` deploys one real company's Worker outside the runner, so it needs the same ask; the shared Worker sets of rule 1 stay free.
+  5. THE RAW PUBLISH VERBS STAY REFUSED, with no escape: `gh release create|upload|edit|delete`, a `git push` of a `v*` tag (`refs/tags/v*`, `--tags`, `--mirror`, and `--follow-tags` on any push but the GitLab mirror push of `main`), `docker push` (and `image push`, `manifest push`, `compose push|publish`, `compose build --push`), a `docker build`/`buildx build` with `--push` or a registry output (`-o` attached or bundled too), `docker buildx imagetools create`, `wrangler pages deploy|publish`, a `wrangler deploy|rollback|publish|versions deploy` on a bench or preview config (judged on the config's file name, never the directories above it; `deploy_bench` and `deploy_proxy --target bench` are its path), and `-m` on the release entry's own steps (`upload_to_r2`, `upload_repos_to_r2`, `write_release_sentinel`, `create_github_release`, `tag_submodules`, `update_homebrew_tap`), which the entry runs in order with its gates and record.
 
 A SHELL-WRITE TWIN rides the same module: an agent write under `.ci/cache/release/` (a redirect, `tee`, `sed -i`, a copy or move onto it, `rm`, `mkdir`, `touch`, `chmod`, a mutating `git` inside the release clone, an interpreter program writing there) is refused. Decision 1 of the plan judges cleanliness on a fresh clone of HEAD at `.ci/cache/release/<tree>/`; a clone a session can edit by hand proves nothing. Only the entry and its gates module write there. The Edit and Write tools are NOT judged here: that half is a pre-edit guard this module cannot be (one module, one chain).
 
@@ -60,8 +61,32 @@ MUTANTS = {
         'if name.startswith("wrangler.") and name.endswith(".toml"):',
     ),
     "worker-module-asked": (
-        '    if module in WORKER_MODULES:\n        return "", "", ""\n',
-        '    if module in WORKER_MODULES:\n        return "ask", module, ""\n',
+        "        return _company_verdict(module, rest)\n",
+        '        return "ask", module, ""\n',
+    ),
+    "rings-bench-asked": (
+        '    if _bool_on(rest, "--bench"):\n        return "", "", ""\n',
+        '    if False:\n        return "", "", ""\n',
+    ),
+    "rings-real-free": (
+        'return "ask", "%s (a real Enterprise company\'s release)"',
+        'return "", "%s (a real Enterprise company\'s release)"',
+    ),
+    "company-worker-free": (
+        'return "ask", "python3 -m %s --company (a real',
+        'return "", "python3 -m %s --company (a real',
+    ),
+    "company-bench-ignored": (
+        'and not _bool_on(head, "--company-bench")',
+        "and True",
+    ),
+    "run-sh-enterprise-ignored": (
+        'if name == "run.sh" and args[:2] == RINGS_VERB:',
+        "if False:",
+    ),
+    "package-enterprise-ignored": (
+        "if package and _module_args(run)[:2] == RINGS_VERB:",
+        "if False:",
     ),
     "tag-push-ignored": ("    return _TAG_REF.match(ref) is not None", "    return False"),
     "release-dir-ignored": (
@@ -105,6 +130,10 @@ ASK_ENV = "RELEASE_ASKED"
 ASK_VALUE = re.compile(r"\AASKED:\d{4}-\d{2}-\d{2}T\d{2}:\d{2}Z\Z")
 RELEASE_SCRIPT = "release:local"
 RELEASE_MODULE = "rediacc_ci.release.local"
+# The Enterprise ring runner (box K2) and the `./run.sh enterprise release` / `python3 -m rediacc_ci enterprise release` spellings of it.
+RINGS_MODULE = "rediacc_ci.release.rings_run"
+RINGS_VERB = ["enterprise", "release"]
+PACKAGE = "rediacc_ci"
 # The writers of the release clone: the entry and the gates module it calls (box W2-A).
 CLONE_WRITERS = (RELEASE_MODULE, "rediacc_ci.release.local_gates")
 
@@ -275,6 +304,9 @@ outside the shared region set, needs the operator's answer first, and the ASKED 
 an AskUserQuestion answer in this session's transcript (within 300 s):
 
     RELEASE_ASKED=ASKED:<YYYY-MM-DDTHH:MM>Z <the command>
+
+An Enterprise company's release (`rings_run` or `./run.sh enterprise release` without `--bench`
+or `--dry-run`), or a Worker module run naming a real `--company`, needs the same proven ask.
 
 `release:local --channel stable` is refused even then: cd-release-stable.yml promotes stable. A raw
 gh release, v* tag push, docker push or release step is never admitted here; the entry runs them
@@ -603,8 +635,27 @@ def _module_publish(module, rest, root):
     if module in STEP_MODULES:
         return "refuse", "python3 -m %s (a step of the release entry)" % module, ""
     if module in WORKER_MODULES:
-        return "", "", ""
+        return _company_verdict(module, rest)
     return "ask", "python3 -m %s (stable)" % module, ""
+
+
+def _company_verdict(module, rest):
+    """`(kind, what, note)` for a Worker module run: free for a shared Worker set or a bench company, an ask for a real company's own Worker (`--company` without `--company-bench`)."""
+    head = rest[: rest.index("--")] if "--" in rest else rest
+    if _option(head, "--company") and not _bool_on(head, "--company-bench"):
+        return "ask", "python3 -m %s --company (a real Enterprise company's Worker)" % module, ""
+    return "", "", ""
+
+
+def _rings_verdict(rest, root):
+    """`(kind, what, note)` for a run of the ring runner with arguments `rest`: `--bench`, `--dry-run` and `--help` are free, a real company's release needs a proven ask."""
+    if _asks_help(rest, ("--help", "-h")) and _declares_help(root, RINGS_MODULE):
+        return "", "", ""
+    if _bool_on(rest, "--dry-run") and _declares_dry_run(root, RINGS_MODULE):
+        return "", "", ""
+    if _bool_on(rest, "--bench"):
+        return "", "", ""
+    return "ask", "%s (a real Enterprise company's release)" % RINGS_MODULE, ""
 
 
 def _region_ids(root):
@@ -740,6 +791,13 @@ def _publish(run, where, root):
     module = _module(run, where)
     if module == RELEASE_MODULE:
         return _entry_verdict(_channel(_module_args(run), npm=False), npm=False)
+    if module == RINGS_MODULE:
+        return _rings_verdict(_module_args(run), root)
+    if name == "run.sh" and args[:2] == RINGS_VERB:
+        return _rings_verdict(args[2:], root)
+    package = _base(run.name).startswith("python") and _python_target(args) == PACKAGE
+    if package and _module_args(run)[:2] == RINGS_VERB:
+        return _rings_verdict(_module_args(run)[2:], root)
     if _asks_help(args) and (name.startswith("wrangler") or name in ("gh", *DOCKER_NAMES)):
         return "", "", ""
     if name.startswith("wrangler"):
