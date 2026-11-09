@@ -81,6 +81,9 @@ def load_configs(root: pathlib.Path, only: str | None = None) -> tuple[list[Conf
         if only is not None and str(rel) != only:
             continue
         if ".template." in path.name:
+            if only is not None:
+                # Naming the template is not an audit of a config: skipping it would pass vacuously.
+                raise AuditError("%s is a template, not a Worker config; there is nothing to audit" % rel)
             continue  # a template carries bare @@ placeholders (a route entry in an array) and is not TOML until rendered
         try:
             data = tomllib.loads(path.read_text(encoding="utf-8"))

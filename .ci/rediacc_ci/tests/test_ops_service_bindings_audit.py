@@ -5,13 +5,13 @@ from __future__ import annotations
 import json
 import typing
 
+import pytest
+
 from rediacc_ci import paths
 from rediacc_ci.ops import service_bindings_audit as mod
 
 if typing.TYPE_CHECKING:
     import pathlib
-
-    import pytest
 
 ENV = {"CLOUDFLARE_API_TOKEN": "tok", "CLOUDFLARE_ACCOUNT_ID": "acct"}
 
@@ -112,6 +112,15 @@ def test_the_local_dev_config_is_not_audited(tmp_path: pathlib.Path) -> None:
     assert rep["rc"] == 0
     assert rep["bindings"] == []
     assert rep["not_deployed"] == []
+
+
+def test_only_naming_a_template_is_refused_not_passed_vacuously(tmp_path: pathlib.Path) -> None:
+    _tree(tmp_path)
+    (tmp_path / "workers" / "proxy" / "wrangler.template.toml").write_text('name = "@@NAME@@"\n')
+    with pytest.raises(mod.AuditError, match="template"):
+        mod.load_configs(tmp_path, "workers/proxy/wrangler.template.toml")
+    configs, _ = mod.load_configs(tmp_path)
+    assert all("template" not in c.config for c in configs)
 
 
 def test_only_reads_just_the_named_config(tmp_path: pathlib.Path) -> None:
