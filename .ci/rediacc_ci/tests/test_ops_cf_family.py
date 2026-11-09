@@ -737,6 +737,8 @@ def _port_deploy_env(env: dict[str, str]) -> dict[str, str]:
     bound["ACCOUNT_BACKUP_STORE_KEK"] = "fake-backup-store-kek-for-tests-0123456789"
     # PLAN-free-license F2 (2fc16b442): the port pushes the FREE licence HMAC key the account Worker reads; the retired bash never held it. A fake value, never a real key.
     bound["FREE_LICENSE_HMAC_KEY"] = "fake-free-license-hmac-key-for-tests"
+    # PLAN-d1-scaling W2: the port pushes the Analytics Engine read token; the retired bash never held it. A fake value.
+    bound["ACCOUNT_AE_READ_TOKEN"] = "fake-ae-read-token-for-tests"
     return bound
 
 
@@ -745,6 +747,8 @@ PORT_ONLY_SECRETS = (
     "ACCOUNT_CONFIG_SERVER_KEY",
     "ACCOUNT_BACKUP_STORE_KEK",
     "FREE_LICENSE_HMAC_KEY",
+    "ACCOUNT_AE_READ_TOKEN",
+    "CLOUDFLARE_ACCOUNT_ID",
 )
 
 # The bench sender the retired bash golden recorded, and the one the port defaults to since 71f25f3e8f.
@@ -788,6 +792,10 @@ def _deploy_shape(calls: list[dict]) -> list[dict]:
         # DECLARED DELTA (PLAN-config-server-key K2, PLAN-free-license F2): the port pushes PORT_ONLY_SECRETS, which the retired bash never held. Dropped from the compared body; `test_deploy_bench_matches_bash` asserts each present first.
         if isinstance(call.get("stdin"), dict):
             call["stdin"] = {k: v for k, v in call["stdin"].items() if k not in PORT_ONLY_SECRETS}
+            # DECLARED DELTA (PLAN-enterprise-isolation S4): the account Worker signs through LICENSE_SIGNER and holds no licence private key, so the port stopped pushing ACCOUNT_ED25519_PRIVATE_KEY; the retired bash golden still records it.
+            call["stdin"] = {
+                k: v for k, v in call["stdin"].items() if k != "ACCOUNT_ED25519_PRIVATE_KEY"
+            }
             # DECLARED DELTA (71f25f3e8f): the port's bench sender default moved to notify.rediacc.cloud; the retired bash golden records the old sender, mapped forward so every other stdin key still compares verbatim.
             if call["stdin"].get("AWS_SES_FROM") == RETIRED_BENCH_SENDER:
                 call["stdin"] = {**call["stdin"], "AWS_SES_FROM": BENCH_SENDER}
@@ -829,10 +837,12 @@ def test_deploy_bench_matches_bash(world: h.World) -> None:
     assert out_b == out_mapped
     assert _deploy_shape(bash_calls) == _deploy_shape(port_calls)
     secrets = next(c["stdin"] for c in port_calls if c["tool"] == "npx" and c["stdin"])
+    # Since PLAN-enterprise-isolation S4 the payload opens with the public key: no licence private key reaches the account Worker.
+    assert "ACCOUNT_ED25519_PRIVATE_KEY" not in secrets
     assert list(secrets)[:3] == [
-        "ACCOUNT_ED25519_PRIVATE_KEY",
         "ACCOUNT_ED25519_PUBLIC_KEY",
         "ACCOUNT_X25519_PRIVATE_KEY",
+        "ACCOUNT_X25519_PUBLIC_KEY",
     ]
     assert secrets["ACCOUNT_BACKUP_S3_BUCKET"] == "backups-bench"
     assert secrets["ACCOUNT_CONFIG_SERVER_KEY"] == "fake-config-server-key-for-tests"
@@ -958,7 +968,7 @@ def test_delta_the_account_wide_r2_trio_alone_is_refused_before_any_remote_write
     assert _port_deploy_env(env)["ACCOUNT_BACKUP_S3_ENDPOINT"] == env["CLOUDFLARE_R2_ENDPOINT"]
     # Only the R2 trio stays untranslated: the port-only secrets are the port's own, so neither may be what refuses.
     bound = _port_deploy_env(env)
-    keyed = {**env, **{name: bound[name] for name in PORT_ONLY_SECRETS}}
+    keyed = {**env, **{name: bound[name] for name in PORT_ONLY_SECRETS if name in bound}}
     rc_p, _, err_p = world.port("rediacc_ci.ops.deploy_bench", [], keyed)
     assert rc_p == 1
     assert "ACCOUNT_BACKUP_S3_ENDPOINT is EMPTY for bench" in h.strip(err_p)
