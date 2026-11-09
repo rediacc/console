@@ -81,19 +81,22 @@ Two resume paths keep the invariant "every exists answer the commit relies on wa
 
 ### Wave 1b (parallel, 4 writers, after 1a lands)
 
-- [ ] K1 [writer] Review item 11 and the Stripe trim. `updateLastUsed` and `bindIp`'s stamp become `UPDATE ... WHERE id = ? AND (last_used_at IS NULL OR last_used_at < now - 1 h)`. Stored Stripe `invoice.*` events keep only ids, amounts, currency, status and period. The writer finds the log call in webhook.service.ts. Old rows age out. Tests: two calls within the hour write once, a call after an hour writes; a stored invoice event carries no line items or customer address.
+- [x] K1 [writer] Review item 11 and the Stripe trim. `updateLastUsed` and `bindIp`'s stamp become `UPDATE ... WHERE id = ? AND (last_used_at IS NULL OR last_used_at < now - 1 h)`. Stored Stripe `invoice.*` events keep only ids, amounts, currency, status and period. The writer finds the log call in webhook.service.ts. Old rows age out. Tests: two calls within the hour write once, a call after an hour writes; a stored invoice event carries no line items or customer address.
   Depends on: none.
   Owns: private/account/src/services/api-token.service.ts, private/account/src/services/webhook.service.ts, private/account/tests/integration/api-token-last-used.test.ts (new), private/account/tests/integration/stripe-event-trim.test.ts (new).
   Accept: `cd private/account && npx vitest run api-token-last-used stripe-event-trim` rc 0.
-- [ ] Z1 [writer] Size report per Z7: module, test with a recorded-response fake (alert at 25,000 tenants, at 5 GB, none below either, a region that cannot be reached is named and exits 2), and the daily workflow.
+    (ticked) 2026-11-09T14:15:35Z by d778be9d: commit:466cf786 account suite 3917 passed rc=0; d1 size report 13 passed; check:ci-workflows and prose rc=0
+- [x] Z1 [writer] Size report per Z7: module, test with a recorded-response fake (alert at 25,000 tenants, at 5 GB, none below either, a region that cannot be reached is named and exits 2), and the daily workflow.
   Depends on: none.
   Owns: .ci/rediacc_ci/ops/d1_size_report.py (new), .ci/rediacc_ci/tests/test_d1_size_report.py (new), .github/workflows/ops-d1-size-report.yml (new).
   Accept: `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_d1_size_report.py` rc 0 and `npm run check:ci-workflows` rc 0.
   (corrected 2026-11-09, d778be9d) The module also takes `--region <r>` (one region, used by H5) and `--compare-telemetry --days <n>` (the AE-versus-D1 telemetry count LA1 reads, exit 0 within 2%); the test covers both.
-- [ ] H1 [writer] The shard router per Z8: `subscription_shards` table (migration), src/db/shard-router.ts with `dbFor` and `forEachShard`, and the global or tenant split written as a typed map checked against scope-registry.ts. Tests: N = 1 gives the identity; a directory row wins over the hash; every table in schema.ts and config-schema.ts falls in exactly one class.
+    (ticked) 2026-11-09T14:15:36Z by d778be9d: commit:6e17e6ed account suite 3917 passed rc=0; d1 size report 13 passed; check:ci-workflows and prose rc=0
+- [x] H1 [writer] The shard router per Z8: `subscription_shards` table (migration), src/db/shard-router.ts with `dbFor` and `forEachShard`, and the global or tenant split written as a typed map checked against scope-registry.ts. Tests: N = 1 gives the identity; a directory row wins over the hash; every table in schema.ts and config-schema.ts falls in exactly one class.
   Depends on: P1 (schema.ts and drizzle journal).
   Owns: private/account/src/db/shard-router.ts (new), private/account/src/db/scope-registry.ts, private/account/src/db/schema.ts, private/account/drizzle/** (its migration only), private/account/tests/integration/shard-router.test.ts (new).
   Accept: `cd private/account && npx vitest run shard-router` rc 0.
+    (ticked) 2026-11-09T14:36:33Z by d778be9d: commit:394b679b account suite 251 files 3928 passed rc=0; tsc rc=0
 - [ ] H2 [writer] Move tooling per Z8: export by scope, import, verify counts and hashes, flip, delete source. Dry run by default; refuses on a live lease or session. Tested on two local SQLite files built from the drizzle migrations.
   Depends on: H1.
   Owns: .ci/rediacc_ci/ops/d1_shard_move.py (new), .ci/rediacc_ci/tests/test_d1_shard_move.py (new).
@@ -101,19 +104,21 @@ Two resume paths keep the invariant "every exists answer the commit relies on wa
 
 ### Wave 2 (code; the boxes touching enterprise-owned files wait for S3, S4)
 
-- [ ] A1 [writer] Telemetry sink and dual-write per Z3 step 1: `TELEMETRY_TYPES`, `telemetry-sink.service.ts` (AE writer and SQL API reader behind injected interfaces), and `EventLogService.log` writing telemetry types to D1 and AE. Retention per Z3: 90-day default, `RETAINED_STATE_TYPES` at 400 days, purge by type class. Tests: a `cli.repo.list` event lands in both; an `auth.login` event lands in D1 only; the purge deletes a 100-day-old `config.pull` but keeps a 100-day-old `repo_license_issued`; the coverage test over state-deriving readers.
+- [x] A1 [writer] Telemetry sink and dual-write per Z3 step 1: `TELEMETRY_TYPES`, `telemetry-sink.service.ts` (AE writer and SQL API reader behind injected interfaces), and `EventLogService.log` writing telemetry types to D1 and AE. Retention per Z3: 90-day default, `RETAINED_STATE_TYPES` at 400 days, purge by type class. Tests: a `cli.repo.list` event lands in both; an `auth.login` event lands in D1 only; the purge deletes a 100-day-old `config.pull` but keeps a 100-day-old `repo_license_issued`; the coverage test over state-deriving readers.
   Depends on: none.
   Owns: private/account/src/services/event-log.service.ts, private/account/src/services/telemetry-sink.service.ts (new), private/account/src/services/billing.service.ts (only to import the retained list), private/account/tests/integration/telemetry-sink.test.ts (new), private/account/tests/integration/event-log-retention.test.ts (new).
   Accept: `cd private/account && npx vitest run telemetry-sink event-log-retention` rc 0.
   (corrected 2026-11-09, d778be9d) The 90-day purge of telemetry types applies from A3 on, not at A1: until A2 moves the portal and config-history reads to Analytics Engine, every type keeps the 400-day window, so A1 lands the type-class purge with telemetry at 400 days and A3 lowers it to 90.
+    (ticked) 2026-11-09T14:15:34Z by d778be9d: commit:466cf786 account suite 3917 passed rc=0; d1 size report 13 passed; check:ci-workflows and prose rc=0
 - [ ] C1 [writer] Config envelopes per Z4: migration adding `config_versions.envelope_key`, archive through R2, read through the pointer with the column as fallback, the 100-or-9-months retention, `BlobStorageService.list` in three implementations, and `backfillVersionEnvelopes(limit)` and `sweepOrphanEnvelopes(limit)` exported for W1. Tests: push 120 versions over a fake 10-month clock and keep exactly the union rule; read an old version from a backfilled row and from an unbackfilled one; an orphan older than 24 h goes, one younger stays; a crash between put and insert leaves only a sweepable orphan.
   Depends on: H1 (drizzle journal order).
   Owns: private/account/src/services/config.service.ts, private/account/src/services/blob-storage.service.ts, private/account/src/db/config-schema.ts, private/account/drizzle/** (its migration only), private/account/tests/integration/config-version-envelopes.test.ts (new).
   Accept: `cd private/account && npx vitest run config-version-envelopes config` rc 0.
-- [ ] G1 [writer] Tenant write caps per Z6: the middleware, applied to the CLI audit ingest and the config routes. Tests with a fake binding: the 61st config request in the window is answered 429 with the coded body and `Retry-After`, another tenant is unaffected, and with no binding there is no cap.
+- [x] G1 [writer] Tenant write caps per Z6: the middleware, applied to the CLI audit ingest and the config routes. Tests with a fake binding: the 61st config request in the window is answered 429 with the coded body and `Retry-After`, another tenant is unaffected, and with no binding there is no cap.
   Depends on: none.
   Owns: private/account/src/middleware/tenant-write-cap.ts (new), private/account/src/routes/license.ts, private/account/src/routes/configs.ts, private/account/tests/integration/tenant-write-cap.test.ts (new).
   Accept: `cd private/account && npx vitest run tenant-write-cap` rc 0.
+    (ticked) 2026-11-09T14:15:37Z by d778be9d: commit:2a1f0189 account suite 3917 passed rc=0; d1 size report 13 passed; check:ci-workflows and prose rc=0
 - [ ] W1 [writer] Worker wiring: `runRetentionSweeps` gains T1, C1's backfill and orphan sweep, each bounded. The env gains the AE dataset binding, the AE read token and the two rate-limit bindings. `entry/cloudflare.ts` passes them to A1 and G1. The four `wrangler.{eu,us,asia,bench}.toml` declare the `analytics_engine_datasets` binding and the `ratelimits` bindings with Z6's limits (the writer checks the binding syntax against the pinned wrangler). Test: the cron runs all sweeps and one failure does not stop the others.
   Depends on: PLAN-enterprise-isolation.md#S3, PLAN-enterprise-isolation.md#S4, T1, A1, C1, G1.
   Owns: private/account/src/entry/cloudflare.ts, private/account/src/types/env.ts, private/account/src/app.ts, workers/account/wrangler.eu.toml, workers/account/wrangler.us.toml, workers/account/wrangler.asia.toml, workers/account/wrangler.bench.toml, private/account/tests/integration/retention-cron.test.ts (new).
@@ -134,10 +139,11 @@ Two resume paths keep the invariant "every exists answer the commit relies on wa
   Depends on: P1, P3, C1 (backup-gc.service.ts, schema.ts, drizzle order).
   Owns: private/account/src/services/backup-gc.service.ts, private/account/src/db/schema.ts, private/account/drizzle/** (its migration only), private/account/tests/integration/backup-waiting-compact.test.ts (new).
   Accept: `cd private/account && npx vitest run backup-gc backup-waiting-compact` rc 0.
-- [ ] L1 [writer] Guardrail doc in private/account/CLAUDE.md, and docs/d1-scaling-review.md Phase B statuses updated to point at this plan's boxes.
+- [x] L1 [writer] Guardrail doc in private/account/CLAUDE.md, and docs/d1-scaling-review.md Phase B statuses updated to point at this plan's boxes.
   Depends on: PLAN-enterprise-isolation.md#L1.
   Owns: private/account/CLAUDE.md, docs/d1-scaling-review.md.
   Accept: `npm run -s check:ci-prose-style` rc 0.
+    (ticked) 2026-11-09T14:15:38Z by d778be9d: commit:3ed990c6 account suite 3917 passed rc=0; d1 size report 13 passed; check:ci-workflows and prose rc=0
 
 ### Wave 3 (code that follows a live step)
 
