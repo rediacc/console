@@ -3062,8 +3062,6 @@ def _waive(finding_id, args, items, asked_ok):
 
 
 # A claim that a test is MISSING, not one that merely mentions a test: "no test covers this", "untested", "lacks coverage". A claim about a wrong or flaky test is anchored at the test file, so the plain touch rule already closes it.
-# The refusal names the escape a test-only fix needs: a claim worded without "untested" or "no test" (a red suite, a missing control) is still closed by a test, when the mark names it.
-TEST_OPTION_HINT = "; when the fix is a test, name it: `--review-mark <me> <id> fixed <sha> --test <repo-relative test path>`"
 TEST_CLAIM_RE = re.compile(
     r"\b(?:untested|uncovered|unverified)\b"
     r"|\bnot (?:covered|tested|exercised|driven|asserted)\b"
@@ -3071,6 +3069,8 @@ TEST_CLAIM_RE = re.compile(
     r"|\b(?:tests?|coverage)\b[^.;]{0,40}?\b(?:missing|absent|lacks?)\b",
     re.IGNORECASE,
 )
+# The refusal names the escape a test-only fix needs: a claim worded without "untested" or "no test" (a red suite, a missing control) is still closed by a test, when the mark names it.
+TEST_OPTION_HINT = "; when the fix is a test, name it: `--review-mark <me> <id> fixed <sha> --test <repo-relative test path>`"
 # `*-selftest.ts` / `*_selftest.py` are this repo's standalone selftests (scripts/gates/check-standalone-selftests.ts runs them), tests by definition.
 _TEST_PATH_RE = re.compile(
     r"(^|/)(tests?|__tests__)/|(^|/)test[_-][^/]*$|[_.-]tests?\.[A-Za-z]+$|\.(test|spec)\.[A-Za-z]+$|[_.-]selftest\.[A-Za-z]+$"
