@@ -1715,18 +1715,18 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 6,
-      "done": 1,
+      "open": 4,
+      "done": 3,
       "open_sigs": [
-        "000bcda3",
         "9b7feb0e",
         "9cd30874",
-        "d12cc4ab",
         "d1f30da7",
         "e6863976"
       ],
       "done_sigs": [
-        "5be9e42b"
+        "000bcda3",
+        "5be9e42b",
+        "d12cc4ab"
       ]
     },
     "agent/plans/PLAN-plan-preflight.md": {

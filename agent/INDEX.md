@@ -540,7 +540,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-nightly-retry-and-watchdog-noise.md` | compacted | 39 | 0 | 0 | 2744 |
 | `agent/plans/PLAN-npm-ci-parallel-parity.md` | compacted | 40 | 0 | 0 | 3252 |
 | `agent/plans/PLAN-org-executor-connect-timeout-relocate.md` | executing | 356 | 1 | 16 | 54693 |
-| `agent/plans/PLAN-plan-compaction-bindings.md` | approved | 52 | 6 | 1 | 8513 |
+| `agent/plans/PLAN-plan-compaction-bindings.md` | approved | 54 | 4 | 3 | 8965 |
 | `agent/plans/PLAN-plan-preflight.md` | approved | 190 | 0 | 8 | 29710 |
 | `agent/plans/PLAN-plan-verbs.md` | draft | 35 | 3 | 0 | 3779 |
 | `agent/plans/PLAN-printf-echo-pipefail-sweep.md` | compacted | 103 | 0 | 33 | 10281 |
