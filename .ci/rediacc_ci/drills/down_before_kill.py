@@ -40,7 +40,8 @@ STOP_HOOK = "daemon stop-hook"
 STOP_TIMEOUT_S = 17 * 60
 # Decision 7: the stop budget has to fit reboot.target's job timeout.
 MIN_JOB_TIMEOUT_S = 30 * 60
-REBOOT_WAIT_S = 900
+# K1.7 waits out the whole stop budget plus a boot: a shutdown that uses its 17 minutes is not a failed reboot.
+REBOOT_WAIT_S = STOP_TIMEOUT_S + 5 * 60
 BACK_UP_WAIT_S = 600
 POLL_S = 10
 # The renet commit the console's main branch points at; K1.6 builds and installs it.
