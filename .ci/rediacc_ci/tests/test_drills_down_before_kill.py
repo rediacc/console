@@ -6,8 +6,10 @@ import os
 import pathlib
 import re
 import shlex
+import shutil
 import socket
 import subprocess
+import tempfile
 from typing import Any
 
 import pytest
@@ -813,9 +815,11 @@ def test_skew_sockets_follow_the_runtime_layout() -> None:
     assert k.legacy_socket(NID_A) == "%s/docker-%d.sock" % (k.RUNTIME_DIR, NID_A)
 
 
-def test_plant_skew_script_moves_the_live_socket_to_the_old_path(tmp_path: pathlib.Path) -> None:
+def test_plant_skew_script_moves_the_live_socket_to_the_old_path() -> None:
     """The plant run against a real listening unix socket in a scratch runtime dir: it moves to the old-layout path, still answers there, and nothing is left at the current path."""
-    runtime = tmp_path / "run"
+    # A short scratch root, not tmp_path: an xdist worker's tmp_path is deep enough that the socket path passes the 107-byte AF_UNIX limit.
+    scratch = pathlib.Path(tempfile.mkdtemp(prefix="pk-"))
+    runtime = scratch / "run"
     (runtime / ("net-%d" % NID_A)).mkdir(parents=True)
     script = k.plant_skew_script(NID_A).replace(k.RUNTIME_DIR, str(runtime))
     cur = runtime / ("net-%d" % NID_A) / ("docker-%d.sock" % NID_A)
@@ -834,6 +838,7 @@ def test_plant_skew_script_moves_the_live_socket_to_the_old_path(tmp_path: pathl
         cli.close()
     finally:
         srv.close()
+        shutil.rmtree(scratch, ignore_errors=True)
 
 
 def _k1_6(
