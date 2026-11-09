@@ -682,3 +682,74 @@ def test_an_lp_prefixed_sha_that_no_ledger_row_carries_is_still_judged(gate):
     if ("object", "abcdef012345") not in citations("live-proof lp-abcdef012345 bench smoke rc=0"):
         gate.log_fail("a live-proof line naming an id the ledger lacks must still be judged")
     gate.log_pass("an lp- prefix exempts only ids the live-proof ledger carries")
+
+
+def _problems_for_fn():
+    spec = importlib.util.spec_from_file_location("_plan_citations_problems_test", GATE)
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    already = str(GATE.parent.resolve()) in sys.path
+    added = paths.on_sys_path(GATE.parent)
+    try:
+        spec.loader.exec_module(module)
+    finally:
+        if not already:
+            sys.path.remove(added)
+    return module.problems_for
+
+
+def _correction_plan(tmp_path, lines):
+    root = _init(tmp_path)
+    _write(root, "lib/new.py", "x = 1\n")
+    rel = "agent/PLAN-widget.md"
+    _write(root, rel, "\n".join(lines) + "\n")
+    _commit(root, "plan")
+    index = next(
+        i for i, text in enumerate(lines) if "lib/old.py" in text and "corrected" not in text
+    )
+    # The added line is the one that still names the dead token; the correction sits elsewhere beneath the box.
+    return root, [(rel, index + 1, lines[index])]
+
+
+_CORRECTION = "(corrected) `lib/old.py:1` now at `lib/new.py:1`"
+
+
+def test_a_correction_beneath_a_ticked_box_is_found_through_a_plain_sub_bullet(gate, tmp_path):
+    """Review d1ef558a.1: the correction line sits under a plain sub-bullet of the ticked box; the nearest ticked-box ancestor still owns it."""
+    problems_for = _problems_for_fn()
+    root, rows = _correction_plan(
+        tmp_path,
+        [
+            "- [x] T1 done",
+            "    - see `lib/old.py:1`",
+            "        " + _CORRECTION,
+        ],
+    )
+    got = problems_for(root, rows)
+    if got:
+        gate.log_fail("a nested correction under a ticked box must excuse the token: %s" % got)
+    gate.log_pass("the nearest ticked-box ancestor supplies the correction")
+
+
+def test_a_correction_under_an_open_box_or_a_prose_line_excuses_nothing(gate, tmp_path):
+    problems_for = _problems_for_fn()
+    for label, lines in (
+        ("open box", ["- [ ] T1 open", "    - see `lib/old.py:1`", "        " + _CORRECTION]),
+        (
+            "open box inside a ticked one",
+            [
+                "- [x] T0 done",
+                "    - [ ] T1 open",
+                "        - see `lib/old.py:1`",
+                "            " + _CORRECTION,
+            ],
+        ),
+        ("prose", ["Notes", "    - see `lib/old.py:1`", "        " + _CORRECTION]),
+    ):
+        case = tmp_path / label.replace(" ", "-")
+        case.mkdir()
+        root, rows = _correction_plan(case, lines)
+        if not problems_for(root, rows):
+            gate.log_fail("%s: a correction there must not excuse the dead token" % label)
+    gate.log_pass("only a ticked box owns a correction")

@@ -818,6 +818,7 @@ def absent_submodules(root):
 #: THE TICKED-BOX CORRECTION. A ticked box's text is signed by `check:ci-plan-boxes` and cannot be reworded, yet the code it cites moves on (a file split, a deletion the box's own work made) and a gate it named can turn out to carry another name. Ticking flips the bracket, which makes the line an addition again, so the gate judged a pointer that was true when written. The plans' own correction convention already answers this: a continuation line `(corrected <date>, <who>) <token> now at <replacement>` beneath the box. The gate honours exactly that form, and only on a TICKED box line, only for the token named, and only when the replacement itself resolves, so a correction cannot excuse anything the gate would not accept as a citation.
 CORRECTION_RE = re.compile(r"\(corrected\b[^)]*\)[^\n]*?(\S+) now at (\S+)")
 _TICKED_BOX_RE = re.compile(r"^\s*[-*+] \[[xX]\]")
+_BOX_RE = re.compile(r"^\s*[-*+] \[[ xX?>]\]")
 
 
 def _bare(tok):
@@ -873,10 +874,15 @@ def problems_for(root, rows, skip_prefixes=()):
         if lineno in fences[rel]:
             continue
         fixes = corrections_for(texts[rel], lineno - 1)
-        # A correction line is itself an added line that names the old token. It is excused by the same replacement test, but only beneath a TICKED box: a correction under an open box, a prose line or nothing excuses nothing.
+        # A correction line is itself an added line that names the old token. Only the corrections beneath a ticked box count (corrections_for returns {} for any other line), and the box is the nearest ticked ancestor, so a plain sub-bullet between the box and the correction does not hide it, while an open box in between stops the search.
         parent = _parent_line(texts[rel], lineno - 1)
-        if parent is not None:
-            fixes.update(corrections_for(texts[rel], parent))
+        while parent is not None:
+            if _TICKED_BOX_RE.match(texts[rel][parent]):
+                fixes.update(corrections_for(texts[rel], parent))
+                break
+            if _BOX_RE.match(texts[rel][parent]):
+                break
+            parent = _parent_line(texts[rel], parent)
         for kind, token in citations(text):
             if fixes and corrected(root, kind, token, fixes):
                 continue
