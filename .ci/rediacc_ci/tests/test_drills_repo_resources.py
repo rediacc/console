@@ -242,11 +242,22 @@ def _k3_6_skip_records(src: str) -> list[str]:
             for n in ast.walk(node)
         )
 
+    def _unpacked(t: ast.expr, value: ast.expr) -> list[tuple[ast.expr, ast.expr]]:
+        """A tuple target pairs element by element with a tuple value of the same length, else every element with the whole value."""
+        if not isinstance(t, ast.Tuple | ast.List):
+            return [(t, value)]
+        if isinstance(value, ast.Tuple | ast.List) and len(value.elts) == len(t.elts):
+            out = [_unpacked(e, v) for e, v in zip(t.elts, value.elts, strict=True)]
+        else:
+            out = [_unpacked(e, value) for e in t.elts]
+        return [pair for group in out for pair in group]
+
     def bindings() -> list[tuple[ast.expr, ast.expr]]:
         pairs: list[tuple[ast.expr, ast.expr]] = []
         for a in ast.walk(tree):
             if isinstance(a, ast.Assign):
-                pairs += [(t, a.value) for t in a.targets]
+                for t in a.targets:
+                    pairs += _unpacked(t, a.value)
             elif isinstance(a, ast.AnnAssign) and a.value is not None:
                 pairs.append((a.target, a.value))
         return pairs
@@ -274,9 +285,12 @@ def test_the_k3_6_skip_scan_follows_annotated_and_attribute_bindings() -> None:
         "note: str = r.K3_6_NOTE\nrecord(note)",
         "self.note = r.K3_6_NOTE\nrecord(self.note)",
         "a = r.K3_6_NOTE\nb: str = a\nrecord(b)",
+        "a, self.note = 1, r.K3_6_NOTE\nrecord(self.note)",
+        "a, note = r.K3_6_NOTES\nrecord(note)",
     ):
         assert _k3_6_skip_records(src), src
     assert not _k3_6_skip_records("note: str = 'other'\nrecord(note)")
+    assert not _k3_6_skip_records("a, note = r.K3_6_NOTE, 1\nrecord(note)")
 
 
 def test_k3_records_no_skip_row_that_would_void_the_renet_phase() -> None:
