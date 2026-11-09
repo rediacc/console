@@ -182,7 +182,9 @@ export function localWarnSelftest(
     'step reader: a comment or an if: line must not count as the step running the gate'
   );
   check(
-    realStep !== null && realStep.runText.includes('fixture-gate') && !/continue-on-error/.test(realStep.body + realStep.jobHead),
+    realStep !== null &&
+      realStep.runText.includes('fixture-gate') &&
+      !/continue-on-error/.test(realStep.body + realStep.jobHead),
     'step reader: the real run line counts and a later job continue-on-error is not attributed to an earlier step'
   );
   check(

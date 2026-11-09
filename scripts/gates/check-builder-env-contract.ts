@@ -743,7 +743,10 @@ export function stepEnvNames(yamlText: string, builder: string): StepEnv | null 
   );
   const spelled = ['"stable" # note', 'stable # note', "'stable'"].map((spelling) =>
     stepEnvNames(
-      wfFixture.replace('          WORKER_NAME:', `          TARGET: ${spelling}\n          WORKER_NAME:`),
+      wfFixture.replace(
+        '          WORKER_NAME:',
+        `          TARGET: ${spelling}\n          WORKER_NAME:`
+      ),
       '.ci/rediacc_ci/deploy/set_fixture_secrets.py'
     )?.values.get('TARGET')
   );

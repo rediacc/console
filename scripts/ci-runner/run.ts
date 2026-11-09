@@ -94,12 +94,7 @@ import {
   openLedger,
   outcomeOf,
 } from './ledger';
-import {
-  localWarnSelftest,
-  softenLocalWarn,
-  warnedExitCodeFor,
-  warnedFor,
-} from './local-warn';
+import { localWarnSelftest, softenLocalWarn, warnedExitCodeFor, warnedFor } from './local-warn';
 import { GATES, type GateSpec } from './manifest';
 import {
   buildGraph,
