@@ -59,7 +59,7 @@ ARCHIVE_PREFIX = "__ARCHIVE_"
 # CD owns the console switch (EXECUTOR_MODE): it is set after the proxy smoke and deleted by the rollback, so it is never an extra.
 # Deleting it would close a target's console executor.
 CD_OWNED = frozenset({console_executor.MODE_KEY})
-# The licence private key under both of its Worker spellings. After PLAN-enterprise-isolation S4 no account Worker holds it (the signer Worker does, its value lives in the deploy-signer bws profile), so `--archive` DELETES it without a copy: a `__ARCHIVE_` PUT would keep the key on the account Worker under another name.
+# The licence private key under both of its Worker spellings. After PLAN-enterprise-isolation S4 no account Worker holds it (the signer Worker does, its value lives in the deploy-signer bws profile), so `--archive` DELETES it without a Worker copy (a `__ARCHIVE_` PUT would keep the key on the account Worker under another name), and only when bws holds NO_ARCHIVE_BWS; with no store copy it is left in place like any unrecoverable extra.
 NO_ARCHIVE = frozenset({"ED25519_PRIVATE_KEY", "ACCOUNT_ED25519_PRIVATE_KEY"})
 # The bws key that must hold a NO_ARCHIVE name's value before the Worker copy is deleted: the deploy-signer profile's copy is the recoverable one, so a name whose store copy is absent is left in place like any unrecoverable extra.
 NO_ARCHIVE_BWS = "ACCOUNT_ED25519_PRIVATE_KEY"

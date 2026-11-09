@@ -290,7 +290,7 @@ def test_archive_keeps_archiving_the_other_legacy_names() -> None:
         ["--region", "eu", "--archive"],
         ENV,
         fetch,
-        values=lambda _k: {"ACCOUNT_JWT_SECRET": "v"},
+        values=lambda _k: {"ACCOUNT_JWT_SECRET": "jwt-store-value-7f3a"},
     )
     assert code == 0, lines
     assert len(puts) == 1
@@ -298,5 +298,5 @@ def test_archive_keeps_archiving_the_other_legacy_names() -> None:
     assert len(put_paths) == 1, put_paths
     assert put_paths[0].endswith("/secrets"), put_paths
     assert "__ARCHIVE_JWT_SECRET" in str(puts[0]), puts
-    assert "v" in str(puts[0]), puts
+    assert "jwt-store-value-7f3a" in str(puts[0]), puts
     assert not any(m == "DELETE" and "ED25519" in p for m, p in calls), calls
