@@ -816,7 +816,13 @@ def _with_ruling_drops(text: str, rel: str, ruling: str, root: pathlib.Path):
             "--ruling #%s is still [%s]: an open or deferred item is a question, not a decision"
             % (iid, state)
         )
-    out = text if pf.ruling_line(text) else PL._insert_under_status(text, "Ruling: #%s" % iid)
+    header = pf.ruling_line(text)
+    if header and iid not in pf.ruling_refs(header)[0]:
+        return None, (
+            "--ruling #%s differs from the plan's own `Ruling: %s`: the dropped-by lines would cite a ruling the header does not name"
+            % (iid, header)
+        )
+    out = text if header else PL._insert_under_status(text, "Ruling: #%s" % iid)
     ok, why = pf.resolve_ruling(root, rel, out, states)
     if not ok:
         return None, "the plan's Ruling: does not resolve (%s)" % why

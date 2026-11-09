@@ -1116,6 +1116,20 @@ def test_archive_with_an_open_ruling_item_is_refused(gate, tmp_path):
     gate.log_pass("--archive --ruling refuses an item that is not closed")
 
 
+def test_archive_refuses_a_ruling_the_plan_header_does_not_name(gate, tmp_path):
+    root = _stale_pair(tmp_path)
+    _ruling_item(root, "abcdef12", "x")
+    other = _IDLE.replace("\n\n", "\nRuling: #fedcba98\n\n", 1)
+    _write(root, _IDLE_REL, other)
+    result = _gate(
+        root, "--archive", _IDLE_REL, "--asked", "2026-10-28T10:58Z", "--ruling", "#abcdef12"
+    )
+    gate.assert_exit(2, result, "a --ruling that differs from the header's is refused")
+    gate.assert_contains(result.err, "differs from the plan's own", "the refusal names the clash")
+    gate.assert_eq((root / _IDLE_REL).read_text(encoding="utf-8"), other, "nothing was written")
+    gate.log_pass("--archive --ruling refuses an id the header Ruling: does not name")
+
+
 def test_both_answer_verbs_refuse_without_a_well_formed_asked(gate, tmp_path):
     root = _seed(tmp_path, {_IDLE_REL: _IDLE, "agent/plans/PLAN-live.md": CLEAN_LIVE})
     _ledger(root, {_IDLE_REL: {"status": "draft", "open": 1, "done": 0}})
