@@ -43,7 +43,7 @@ OTLP endpoints use per-region Basic auth. Traefik's basicauth middleware on Allo
 
 **Default-deny**: if the regional worker has no `OTLP_CLIENT_CREDENTIALS` secret, the fetch fails, or the CLI is running with `REDIACC_TELEMETRY_DISABLED=1` / `CI=...`, telemetry is completely disabled — no unauthenticated requests, no metadata leakage. When the user opts out via env var, the CLI skips the credential fetch AND injects `REDIACC_TELEMETRY_DISABLED=1` into the remote renet environment via SSH, so the remote renet process also takes its default-deny branch.
 
-**Edge limits** (Traefik on `otlp.rediacc.io` and `profiles.rediacc.io`, since 2026-11-06): basic auth runs first, then each credential gets 5 requests/s (burst 30), at most 8 concurrent requests, and a 2 MB body cap (8 MB for profiles). Excess requests get HTTP 429. Real traffic averages 0.08 requests/s across all credentials, so legitimate senders are far below the limits.
+**Edge limits** (Traefik on `otlp.rediacc.io` and `profiles.rediacc.io`, since 2026-11-06): basic auth runs first (a request that fails it is rejected before any limit counts it, so failed logins are not throttled here), then each credential gets 5 requests/s (burst 30), at most 8 concurrent requests, and a 2 MB body cap (8 MB for profiles). Excess requests get HTTP 429. Real traffic averages 0.08 requests/s across all credentials, so legitimate senders are far below the limits.
 
 ### Rotation
 
@@ -89,7 +89,7 @@ A silent sender is caught by the delivery check and a Grafana alert; see [runboo
 | Logs     | Loki       | info 14 days (tenant `fake`); warn, error and critical 40 days (tenant `errors`, its own ingest limit, so an info flood cannot crowd out errors) |
 | Profiles | Pyroscope  | 14 days |
 
-These are maxima. When the RAM volume fills, `observability-ramctl` shortens Loki, Tempo and Pyroscope retention and deletes the oldest info logs first; error logs and error traces go last.
+These are maxima. When the RAM volume fills, `observability-ramctl` shortens Loki, Tempo and Pyroscope retention and deletes the oldest info logs first; error logs and error traces go last. Prometheus keeps its 2500 MB size cap; under pressure ramctl drops OTLP metric ingest instead, and past 95% of the volume all external ingest, to protect the Prometheus WAL.
 
 ## Opt-Out
 

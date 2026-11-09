@@ -214,9 +214,9 @@ def test_discovery_pins_this_repos_scheduled_workflows():
         "ops-pins-soaked",
         "ops-cf-usage-report",
         "ops-telemetry-probe",
-        # Added by bc59d04d2, the weekly drift run that took over ci.yml's old schedule.
+        # The weekly drift run, which took over ci.yml's old schedule.
         "ci-drift",
-        # Added by e6f20ff35d, the nightly run of suite 26 (box J6 of PLAN-backup-program.md).
+        # The nightly backup suite run.
         "ct-backup-nightly",
     }
 
