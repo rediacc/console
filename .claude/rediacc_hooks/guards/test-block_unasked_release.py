@@ -212,6 +212,13 @@ CASES = [
         "!BLOCKED",
     ),
     (
+        "review 01df8032.2: wrangler deploy on ./wrangler.eu.toml is the bare name",
+        "npx wrangler deploy --config ./wrangler.eu.toml",
+        None,
+        A,
+        "!BLOCKED",
+    ),
+    (
         "wrangler deploy on a shared region config, with an ASKED",
         "%s npx wrangler deploy --config wrangler.eu.toml" % ASK,
         TR,
@@ -934,6 +941,20 @@ CASES.extend(
             None,
             B,
             "real Enterprise company's release",
+        ),
+        (
+            "review 01df8032.1: bash -o pipefail ./run.sh enterprise release, real",
+            "bash -o pipefail ./run.sh enterprise release --version 1.2.3",
+            None,
+            B,
+            "real Enterprise company's release",
+        ),
+        (
+            "review 01df8032.1 control: bash -o pipefail ./run.sh enterprise release --bench",
+            "bash -o pipefail ./run.sh enterprise release --version 1.2.3 --bench",
+            None,
+            A,
+            "",
         ),
         (
             "rings: bash -x ./run.sh enterprise release --bench",

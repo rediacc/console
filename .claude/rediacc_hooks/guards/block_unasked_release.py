@@ -688,6 +688,8 @@ def _shared_config_dir(config):
     if not folder:
         return True
     folder = os.path.normpath(folder).replace("\\", "/")
+    if folder == ".":
+        return True  # `./wrangler.eu.toml` is the same bare name (review 01df8032.2)
     return any(folder == d or folder.endswith("/" + d) for d in SHARED_CONFIG_DIRS)
 
 
@@ -802,6 +804,23 @@ def _docker_publish(name, args):
     return "", "", ""
 
 
+SHELL_VALUE_OPTIONS = ("-o", "+o", "-O", "+O", "--rcfile", "--init-file")
+
+
+def _shell_script_index(args):
+    """Index of the script a shell runs: the first word that is no option, skipping the value of an option that takes one (`bash -o pipefail ./run.sh ...`, review 01df8032.1)."""
+    k = 0
+    while k < len(args):
+        word = args[k]
+        if word in SHELL_VALUE_OPTIONS:
+            k += 2
+            continue
+        if not word.startswith(("-", "+")) or word in ("-", "+"):
+            return k
+        k += 1
+    return None
+
+
 def _publish(run, where, root):
     """`(kind, what, note)` for one run: kind "refuse", "ask" (needs a proven RELEASE_ASKED), or "" (free, or not a publish)."""
     name = _base(run.name)
@@ -818,7 +837,7 @@ def _publish(run, where, root):
         return _rings_verdict(args[2:], root)
     if name in ("sh", "bash", "zsh", "dash"):
         # `bash ./run.sh enterprise release` runs the same entry through an interpreter (review fcf8830e.5): the script is the first word that is no option.
-        script = next((k for k, w in enumerate(args) if not w.startswith("-")), None)
+        script = _shell_script_index(args)
         if (
             script is not None
             and _base(args[script]) == "run.sh"

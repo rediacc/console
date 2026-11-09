@@ -225,6 +225,14 @@ def read_is_not_write_cases(world, ledger):
             False,
         ),
         (
+            "review 68fffbc7.1: Path.open('rb', +1) is a read, its positive buffering is not a mode",
+            _py(
+                "import pathlib\nfh = pathlib.Path('%s').open('rb', +1)\nseen = list(fh)\nseen.append('end')\n"
+                "pathlib.Path('%s').write_text(str(len(seen)))" % (ledger, plan)
+            ),
+            False,
+        ),
+        (
             "a message heredoc beside a PLAN heredoc naming the ledger",
             msg
             + _py(
@@ -292,6 +300,11 @@ def read_is_not_write_cases(world, ledger):
         (
             "review 634e1ef5.1 control: Path.open('w', -1) is still a write",
             _py("import pathlib\npathlib.Path('%s').open('w', -1).write('{}')" % ledger),
+            True,
+        ),
+        (
+            "review 68fffbc7.1 control: Path.open('w', +1) is still a write",
+            _py("import pathlib\npathlib.Path('%s').open('w', +1).write('{}')" % ledger),
             True,
         ),
         (

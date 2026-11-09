@@ -181,7 +181,7 @@ _READ_CALLS = frozenset(
 
 
 def _read_only_open(call):
-    """An `open` whose mode is a constant naming no write (`w`, `a`, `x`, `+`), or absent: the builtin, `io.open` and `codecs.open` (mode second), and any `X.open` method call. For a method call the mode is the second argument when that argument is not a number (`gzip.open(path, mode)`: path first), and the first argument otherwise (`Path.open(mode, buffering)`, so a numeric or negative-numeric buffering second leaves the first as the mode). `os.open(path, flags)`, a mode held in a variable and any `**` unpacking are not read-only."""
+    """An `open` whose mode is a constant naming no write (`w`, `a`, `x`, `+`), or absent: the builtin, `io.open` and `codecs.open` (mode second), and any `X.open` method call. For a method call the mode is the second argument when that argument is not a number (`gzip.open(path, mode)`: path first), and the first argument otherwise (`Path.open(mode, buffering)`, so a numeric, signed-numeric (`-1`, `+1`) buffering second leaves the first as the mode). `os.open(path, flags)`, a mode held in a variable and any `**` unpacking are not read-only."""
     func = call.func
     if _call_name(func) != "open":
         return False
@@ -202,7 +202,7 @@ def _read_only_open(call):
         second = call.args[1] if len(call.args) > 1 else None
         numeric = (isinstance(second, ast.Constant) and isinstance(second.value, int)) or (
             isinstance(second, ast.UnaryOp)
-            and isinstance(second.op, ast.USub)
+            and isinstance(second.op, (ast.USub, ast.UAdd))
             and isinstance(second.operand, ast.Constant)
             and isinstance(second.operand.value, int)
         )
