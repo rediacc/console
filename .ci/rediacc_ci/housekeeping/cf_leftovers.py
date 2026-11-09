@@ -110,6 +110,8 @@ def configured(root) -> tuple[set, set]:
     if not files:
         raise CfError("no wrangler config found under %s" % root)
     for path in files:
+        if ".template." in path.name:
+            continue  # a template carries bare @@ placeholders and is not TOML until rendered
         try:
             data = tomllib.loads(path.read_text(encoding="utf-8"))
         except (tomllib.TOMLDecodeError, OSError) as exc:

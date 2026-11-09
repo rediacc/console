@@ -80,6 +80,8 @@ def load_configs(root: pathlib.Path, only: str | None = None) -> tuple[list[Conf
         rel = pathlib.PurePosixPath(path.relative_to(root).as_posix())
         if only is not None and str(rel) != only:
             continue
+        if ".template." in path.name:
+            continue  # a template carries bare @@ placeholders (a route entry in an array) and is not TOML until rendered
         try:
             data = tomllib.loads(path.read_text(encoding="utf-8"))
         except (OSError, tomllib.TOMLDecodeError) as exc:
