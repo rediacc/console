@@ -96,6 +96,20 @@ def test_item_citing_box_sig_binds():
     assert "item" in kinds(found)
 
 
+def test_item_citing_a_shared_sig_under_another_plan_does_not_bind():
+    """Identical box lines in two plans share a signature (every `LP-bench [live]` box); an item that names the other plan beside the signature is that plan's, not this one's (CB7 real run, PLAN-snapshot-read-io-cap.md)."""
+    text = plan(boxes=("[ ] T1 open work here",))
+    sig = sig_of(text)
+    other_item = item("aa11bb22", " ", "PLAN-y.md proof: box %s" % sig)
+    found = [b for b in run({TARGET: text}, [other_item]) if b.kind == "item"]
+    assert found == []
+    bare = item("ee55ff66", " ", "PLAN-y proof: box %s" % sig)
+    assert [b for b in run({TARGET: text}, [bare]) if b.kind == "item"] == []
+    # CONTROL: the same signature beside this plan's own name binds.
+    own_item = item("cc33dd44", " ", "PLAN-x.md proof: box %s" % sig)
+    assert "item" in kinds(run({TARGET: text}, [own_item]))
+
+
 def test_item_citing_other_sig_does_not_bind():
     text = plan(boxes=("[x] T1 finished work",))
     assert run({TARGET: text}, [item("aa11bb22", " ", "unrelated deadbeef")]) == []

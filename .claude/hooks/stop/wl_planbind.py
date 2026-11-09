@@ -36,6 +36,8 @@ HOME_LINES = 4
 DETAIL_CHARS = 100
 
 _PLAN_NAME_RE = re.compile(r"PLAN-[A-Za-z0-9._-]+?\.md")
+# A plan named with or without its `.md`, as items write both (`PLAN-docker-pin-digest proof: ...`).
+_PLAN_STEM_RE = re.compile(r"(PLAN-[A-Za-z0-9_-]*[A-Za-z0-9])(?:\.md)?(?![A-Za-z0-9_-])")
 _ITEM_REF_RE = re.compile(r"#([0-9a-f]{12}|[0-9a-f]{8})\b")
 
 
@@ -218,7 +220,10 @@ def bindings(
         if rec.get("state") not in OPEN_ITEM_STATES:
             continue
         text = str(rec.get("text") or "")
-        if plan_pat.search(text) or (sig_pat is not None and sig_pat.search(text)):
+        # A signature is shared by identical box lines in different plans (every `LP-bench [live]` box hashes alike), so a signature binds only an item that names no plan or names this one.
+        named = {m.group(1) for m in _PLAN_STEM_RE.finditer(text)}
+        sig_hit = sig_pat is not None and sig_pat.search(text) and (not named or base[:-3] in named)
+        if plan_pat.search(text) or sig_hit:
             out.append(
                 Binding(
                     KIND_ITEM,
