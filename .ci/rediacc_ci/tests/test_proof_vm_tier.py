@@ -1068,8 +1068,11 @@ def test_a_base_tree_already_in_the_chain_is_chain_loop(tmp_path: pathlib.Path) 
 
 def test_chain_for_resolves_a_heads_tree(tmp_path: pathlib.Path) -> None:
     """The production chain carries the tree check, and it resolves a real commit's tree (review 2665cf79.3)."""
+    # No global or system git config (review 37e7e808.1): a developer's commit signing or hooks must not reach this scratch repo.
     env = {
         **os.environ,
+        "GIT_CONFIG_GLOBAL": os.devnull,
+        "GIT_CONFIG_NOSYSTEM": "1",
         "GIT_AUTHOR_NAME": "t",
         "GIT_AUTHOR_EMAIL": "t@t",
         "GIT_COMMITTER_NAME": "t",
