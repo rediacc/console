@@ -217,7 +217,11 @@ def test_an_empty_region_list_is_not_a_green_empty_report(capsys):
 def test_value_bytes_are_summed_over_the_blob_cast():
     fake = FakeD1({"eu": region(1, 1), "us": region(1, 1)})
     run(fake)
-    sums = [body["sql"] for _, _, body in fake.calls if body and "sum(length" in body["sql"]]
+    sums = [
+        str(body["sql"])
+        for _, _, body in fake.calls
+        if isinstance(body, dict) and "sum(length" in str(body["sql"])
+    ]
     assert sums
     assert all("length(CAST(" in sql and "AS BLOB)" in sql for sql in sums)
 
