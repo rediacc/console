@@ -67,6 +67,7 @@ import typing
 from rediacc_ci import log
 from rediacc_ci.core import common
 from rediacc_ci.core import wrangler as wrangler_cmd
+from rediacc_ci.deploy import console_executor
 from rediacc_ci.ops import portal_captcha, queues_audit, service_bindings_audit
 
 # This module's own dotted name, the prefix of every diagnostic it prints (the same name `python3 -m` runs it by). A literal, because `__name__` is `__main__` under `-m`.
@@ -333,7 +334,38 @@ def _has_credentials(env: typing.Mapping[str, str]) -> bool:
 
 
 # Every `ARG_*` key `main` reads. Anything else is refused by `common.parse_args` before a side effect; `--dry-run` is real (see `main`).
-ACCEPTED_ARGS = frozenset({"ARG_REGION", "ARG_DRY_RUN", "ARG_STUB"})
+ACCEPTED_ARGS = frozenset(
+    {
+        "ARG_REGION",
+        "ARG_DRY_RUN",
+        "ARG_STUB",
+        "ARG_COMPANY",
+        "ARG_COMPANY_ID",
+        "ARG_COMPANY_DOMAIN",
+        "ARG_ACCOUNT_CONFIG",
+        "ARG_COMPANY_BENCH",
+    }
+)
+
+# `--company NAME` deploys one Enterprise company's own account Worker from the config path `--account-config` names (with `--company-id`, `--company-domain` and `--region`), instead of the region's shared `wrangler.<region>.toml`. `console_executor.company_target` validates the lot before anything runs.
+COMPANY_ARG_KEYS = {
+    "company": "ARG_COMPANY",
+    "company_id": "ARG_COMPANY_ID",
+    "company_domain": "ARG_COMPANY_DOMAIN",
+    "account_config": "ARG_ACCOUNT_CONFIG",
+    "company_bench": "ARG_COMPANY_BENCH",
+}
+
+
+def company_from_args(
+    root: pathlib.Path, args: typing.Mapping[str, str]
+) -> console_executor.CompanyTarget | None:
+    """The company the `ARG_COMPANY*` keys name, None without `--company`; raises `console_executor.RefusedError`."""
+    values = {key: args.get(arg) for key, arg in COMPANY_ARG_KEYS.items()}
+    company = console_executor.company_from_values(root, values, args.get("ARG_REGION"))
+    if company is not None and company.account_config is None:
+        raise console_executor.RefusedError("--company needs --account-config")
+    return company
 
 
 def _run(argv: list[str]) -> int:
@@ -460,7 +492,19 @@ def main(argv: list[str]) -> int:
         print(MISSING_REGION, file=sys.stderr, flush=True)
         return 1
 
-    config = config_name(region)
+    try:
+        company = company_from_args(common.repo_root(), args)
+    except console_executor.RefusedError as exc:
+        log.error(str(exc))
+        return 1
+    if company is not None and company.account_config is not None:
+        worker_dir = company.account_config.parent
+        config = company.account_config.name
+        # What a log line may call the target: a company's config name carries its label, so only the opaque id is printed.
+        label = "company %s" % company.company_id
+    else:
+        config = config_name(region)
+        label = "%s (%s)" % (region, config)
     if not (worker_dir / config).is_file():
         log.error("Wrangler config not found: %s/%s" % (worker_dir, config))
         return 1
@@ -475,7 +519,7 @@ def main(argv: list[str]) -> int:
             # The real run refuses here too; a preview naming a placeholder database would misstate the plan.
             log.error("Could not read database_name from %s" % config)
             return 1
-        log.step("DRY RUN: %s (%s); no command is run" % (region, config))
+        log.step("DRY RUN: %s; no command is run" % label)
         bound = (
             queues_audit.config_queues(worker_dir / config) if _parses(worker_dir / config) else []
         )
@@ -524,7 +568,7 @@ def main(argv: list[str]) -> int:
         log.error(refusal)
         return 1
 
-    log.step("Deploying account worker: %s (%s)" % (region, config))
+    log.step("Deploying account worker: %s" % label)
     try:
         check_services(common.repo_root(), "/".join((*WORKER_SUBDIR, config)), os.environ)
     except ServiceBindingError as exc:
@@ -545,7 +589,7 @@ def main(argv: list[str]) -> int:
     status = _run(deploy_argv(config))
     if status != 0:
         return status  # `set -e`
-    log.info("Account worker deployed: %s" % region)
+    log.info("Account worker deployed: %s" % (region if company is None else label))
     smoke = portal_smoke(worker_dir / config, os.environ)
     if smoke:
         log.error(smoke)

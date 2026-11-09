@@ -30,6 +30,8 @@ DURABLE SINK (`after --sink r2 --channel edge|stable`, plan local-release W2-D).
 
 WWW RECORD (`www-after`). `deploy_www` takes the version id before and after through `take_www_before` / `build_www_record` when `DEPLOY_RECORD_OUT` names a file (the record carries `smoke_rc: null`); `www-after --record F --smoke-rc N [--sink r2 --channel C]` fills the smoke rc, and writes the same key family with target `www-<channel>` and region `global`. No record holds a secret value: `refuse_secret_values` checks the serialized record against the secret-named variables of the environment before it is written.
 
+A COMPANY RECORD (`before --company NAME --company-id ID --region R --company-domain D --account-config P --proxy-config P`, then `after --sink control --ring RING`) is the same record for one Enterprise company, and its durable sink is the region's CONTROL DATABASE (`control-<region>`, `control-bench-<region>` for a bench company): one `rollout` row and one `audit` row carrying the record, written once (the rollout key is the primary key, so a second write refuses). A company record never touches the releases bucket, which sits behind a public origin: `after` refuses `--sink r2` for it, writes no `executor-deployments/` pointer, and `before` has no pointer to read, so the proxy's previous release comes from `--previous-release` (the runner reads it from the control database's last deployed `rollout.version`). The config paths and identity are parameters: the company config generator (box N4) is not imported.
+
 ENVIRONMENT. `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, and for R2 `CLOUDFLARE_R2_ENDPOINT` plus `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`: the names of the `deploy-proxy` profile in .ci/config/secret-supply.json. A bare local call re-executes itself under `bws_env exec --profile deploy-proxy` (bench: `deploy-proxy-bench`) when either Cloudflare variable is unset and that profile is not bound, as `console_executor` does; the target is `--target`, or the `target` of the `--before` file the verb reads (`www-after`: its `--record` file).
 """
 
@@ -51,6 +53,7 @@ from rediacc_ci import log, paths
 from rediacc_ci.core import awscli
 from rediacc_ci.core import wrangler as wrangler_cmd
 from rediacc_ci.deploy import console_executor, deploy_proxy, executor_artifacts
+from rediacc_ci.enterprise import registry
 
 SELF = "rediacc_ci.deploy.deploy_record"
 SCHEMA = 1
@@ -88,6 +91,42 @@ def check_target(target: str, region: str) -> None:
         )
     if target == console_executor.BENCH_TARGET and region != console_executor.BENCH_REGION:
         raise RecordError("--target bench refuses --region %s" % region)
+
+
+COMPANY_TARGET = "company"
+
+
+def company_from_record(
+    repo_root: pathlib.Path, record: dict
+) -> console_executor.CompanyTarget | None:
+    """The company a before record names (revalidated against the tree), None for a shared target."""
+    raw = record.get("company")
+    if record.get("target") != COMPANY_TARGET or not isinstance(raw, dict):
+        return None
+    try:
+        return console_executor.company_target(
+            repo_root,
+            name=raw["name"],
+            company_id=raw["id"],
+            region=record["region"],
+            domain=raw["domain"],
+            account_config=pathlib.Path(raw["account_config"]),
+            proxy_config=pathlib.Path(raw["proxy_config"]),
+            bench=bool(raw.get("bench")),
+        )
+    except (console_executor.RefusedError, KeyError, TypeError) as exc:
+        raise RecordError("the before record's company is not valid here: %s" % exc) from None
+
+
+def company_record_part(company: console_executor.CompanyTarget) -> dict:
+    return {
+        "name": company.name,
+        "id": company.company_id,
+        "domain": company.domain,
+        "bench": company.bench,
+        "account_config": str(company.account_config),
+        "proxy_config": str(company.proxy_config),
+    }
 
 
 def account_config(target: str, region: str) -> str:
@@ -236,21 +275,29 @@ def worker_rollback_command(version_id: str | None, rel: str, config: str) -> st
     )
 
 
-def proxy_redeploy_command(target: str, region: str, release: str) -> str:
-    return "PYTHONPATH=.ci python3 -m %s --target %s --region %s --version %s" % (
-        deploy_proxy.SELF,
-        target,
-        region,
-        release,
+def proxy_redeploy_command(
+    target: str,
+    region: str,
+    release: str,
+    company: console_executor.CompanyTarget | None = None,
+) -> str:
+    where = (
+        " ".join(console_executor.company_argv(company))
+        if company
+        else "--target %s --region %s" % (target, region)
     )
+    return "PYTHONPATH=.ci python3 -m %s %s --version %s" % (deploy_proxy.SELF, where, release)
 
 
-def executor_off_command(target: str, region: str) -> str:
-    return "PYTHONPATH=.ci python3 -m %s --disable --target %s --region %s" % (
-        console_executor.SELF,
-        target,
-        region,
+def executor_off_command(
+    target: str, region: str, company: console_executor.CompanyTarget | None = None
+) -> str:
+    where = (
+        " ".join(console_executor.company_argv(company))
+        if company
+        else "--target %s --region %s" % (target, region)
     )
+    return "PYTHONPATH=.ci python3 -m %s --disable %s" % (console_executor.SELF, where)
 
 
 # ---- R2 ---------------------------------------------------------------------
@@ -314,6 +361,8 @@ def write_pointer(target: str, region: str, pointer: dict) -> None:
 RECORD_PREFIX = "release-records/"
 CHANNELS = ("edge", "stable")
 SINKS = ("r2",)
+CONTROL_SINK = "control"
+RINGS = ("canary", "small", "medium", "large")
 WWW_REGION = "global"
 SECRET_NAME_RE = re.compile(
     r"TOKEN|SECRET|PASSWORD|PASSPHRASE|PRIVATE|ACCESS_KEY|_KEY$", re.IGNORECASE
@@ -394,7 +443,91 @@ def write_record_once(record: dict, key: str) -> None:
     log.info("Deploy record written once to %s." % key)
 
 
+def sql_text(value: str) -> str:
+    """A SQL string literal: single quotes doubled, nothing else interpreted."""
+    return "'%s'" % value.replace("'", "''")
+
+
+def control_statements(
+    record: dict, company_id: str, ring: str, release_id: str, actor: str = "deploy_record"
+) -> str:
+    """The two inserts of one company deploy record: its `rollout` row (the primary key makes the write once) and the `audit` row carrying the whole record."""
+    stamp = record.get("recorded_at") or now()
+    status = "deployed" if record.get("good") else "failed"
+    detail = json.dumps(record, sort_keys=True)
+    rollout = {
+        "release_id": release_id,
+        "company_id": company_id,
+        "ring": ring,
+        "status": status,
+        "version": str(record.get("version") or ""),
+        "finished_at": stamp,
+    }
+    audit = {
+        "at": stamp,
+        "company_id": company_id,
+        "actor": actor,
+        "action": "deploy-record",
+        "detail": detail,
+    }
+    return " ".join((insert_statement("rollout", rollout), insert_statement("audit", audit)))
+
+
+def insert_statement(table: str, row: dict[str, str]) -> str:
+    """One `INSERT` with every value a quoted literal (`sql_text`)."""
+    columns = ", ".join(row)
+    values = ", ".join(sql_text(v) for v in row.values())
+    return " ".join(("INSERT INTO", table, "(%s)" % columns, "VALUES", "(%s);" % values))
+
+
+def control_execute_argv(database: str, sql: str) -> list[str]:
+    return [*wrangler_cmd.ARGV, "d1", "execute", database, "--remote", "--json", "--command", sql]
+
+
+def wrangler_control_write(database: str, sql: str) -> None:
+    """The production transport: `wrangler d1 execute <database> --remote` from a neutral directory, so no worker config is picked up. Raises RecordError; the swap point of the tests."""
+    with tempfile.TemporaryDirectory(prefix="deploy-record-") as tmp:
+        try:
+            proc = subprocess.run(
+                control_execute_argv(database, sql),
+                cwd=tmp,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+        except OSError as exc:
+            raise RecordError(
+                "wrangler d1 execute %s could not run: %s" % (database, exc)
+            ) from None
+    if proc.returncode != 0:
+        err = (proc.stderr or proc.stdout).strip()
+        if "UNIQUE constraint failed" in err:
+            raise RecordError(
+                "the rollout row already exists in %s: a deploy record is written once" % database
+            )
+        raise RecordError(
+            "wrangler d1 execute %s failed (rc %d): %s" % (database, proc.returncode, err)
+        )
+
+
+control_write: typing.Callable[[str, str], None] = wrangler_control_write
+
+
+def sink_control(
+    record: dict, company: console_executor.CompanyTarget, ring: str, release_id: str
+) -> None:
+    """Write a company's record to its region's control database, once."""
+    refuse_secret_values(record)
+    database = registry.control_database(company.region, company.bench)
+    control_write(database, control_statements(record, company.company_id, ring, release_id))
+    log.info("Deploy record written once to %s." % database)
+
+
 def sink_record(record: dict, sink: str, channel: str, target: str, region: str) -> None:
+    if target == COMPANY_TARGET:
+        raise RecordError(
+            "a company record goes to the control database (--sink control), never the releases bucket"
+        )
     if sink != "r2":
         raise RecordError("--sink %s is not one of %s" % (sink, ", ".join(SINKS)))
     if channel not in CHANNELS:
@@ -485,11 +618,22 @@ def manifest_sha256s(manifest: dict, version: str) -> dict[str, str]:
 # ---- before -----------------------------------------------------------------
 
 
-def take_account_before(repo_root: pathlib.Path, target: str, region: str) -> dict:
+def take_account_before(
+    repo_root: pathlib.Path,
+    target: str,
+    region: str,
+    company: console_executor.CompanyTarget | None = None,
+) -> dict:
     """The ACCOUNT-ONLY before record (`before --account-only`): the account Worker's version, the D1 bookmark and their two rollback commands, for an account deploy that touches no proxy, so no executor manifest is read. Raises RecordError on any unknown, as `take_before` does."""
-    check_target(target, region)
-    account_dir = repo_root.joinpath(*ACCOUNT_SUBDIR)
-    acfg = account_config(target, region)
+    if company is not None:
+        if company.account_config is None:
+            raise RecordError("--company needs --account-config")
+        target, region = COMPANY_TARGET, company.region
+        account_dir, acfg = company.account_config.parent, company.account_config.name
+    else:
+        check_target(target, region)
+        account_dir = repo_root.joinpath(*ACCOUNT_SUBDIR)
+        acfg = account_config(target, region)
     adoc = read_toml(account_dir / acfg)
     account = worker_name(adoc, account_dir / acfg)
     database = database_name(adoc, account_dir / acfg)
@@ -503,6 +647,7 @@ def take_account_before(repo_root: pathlib.Path, target: str, region: str) -> di
         "target": target,
         "region": region,
         "version": None,
+        **({"company": company_record_part_account(company)} if company else {}),
         "account": {
             "worker": account,
             "config": "%s/%s" % (ACCOUNT_REL, acfg),
@@ -516,6 +661,17 @@ def take_account_before(repo_root: pathlib.Path, target: str, region: str) -> di
     }
 
 
+def company_record_part_account(company: console_executor.CompanyTarget) -> dict:
+    """An account-only record names no proxy config, so only the account half of the company."""
+    return {
+        "name": company.name,
+        "id": company.company_id,
+        "domain": company.domain,
+        "bench": company.bench,
+        "account_config": str(company.account_config),
+    }
+
+
 def refuse_account_only(before: dict, verb: str) -> None:
     """`bootstrap` and `after` need the proxy half an account-only record does not carry."""
     if before.get("account_only"):
@@ -525,15 +681,33 @@ def refuse_account_only(before: dict, verb: str) -> None:
         )
 
 
-def take_before(repo_root: pathlib.Path, target: str, region: str, version: str) -> dict:
-    """The record taken before anything is deployed. Raises RecordError on any unknown."""
-    check_target(target, region)
+def take_before(
+    repo_root: pathlib.Path,
+    target: str,
+    region: str,
+    version: str,
+    company: console_executor.CompanyTarget | None = None,
+    previous_release: str | None = None,
+) -> dict:
+    """The record taken before anything is deployed. Raises RecordError on any unknown.
+
+    A `company` replaces `target` and `region`: its own two configs are read, and its previous proxy release is `previous_release` (the releases bucket holds no pointer for a company)."""
     if not VERSION_RE.match(version):
         raise RecordError("--version %r is not a release version (X.Y.Z)" % version)
-    account_dir = repo_root.joinpath(*ACCOUNT_SUBDIR)
-    proxy_dir = repo_root.joinpath(*PROXY_SUBDIR)
-    acfg = account_config(target, region)
-    pcfg = proxy_config(target, region)
+    if company is not None:
+        if company.account_config is None or company.proxy_config is None:
+            raise RecordError("--company needs --account-config and --proxy-config")
+        if previous_release is not None and not VERSION_RE.match(previous_release):
+            raise RecordError("--previous-release %r is not a release version" % previous_release)
+        target, region = COMPANY_TARGET, company.region
+        account_dir, acfg = company.account_config.parent, company.account_config.name
+        proxy_dir, pcfg = company.proxy_config.parent, company.proxy_config.name
+    else:
+        check_target(target, region)
+        account_dir = repo_root.joinpath(*ACCOUNT_SUBDIR)
+        proxy_dir = repo_root.joinpath(*PROXY_SUBDIR)
+        acfg = account_config(target, region)
+        pcfg = proxy_config(target, region)
     adoc = read_toml(account_dir / acfg)
     pdoc = read_toml(proxy_dir / pcfg)
     account = worker_name(adoc, account_dir / acfg)
@@ -545,7 +719,7 @@ def take_before(repo_root: pathlib.Path, target: str, region: str, version: str)
     proxy_exists, proxy_version = worker_version(proxy_dir, pcfg, proxy)
 
     try:
-        pointer = read_json_object(pointer_key(target, region))
+        pointer = None if company is not None else read_json_object(pointer_key(target, region))
         manifest = read_json_object(
             executor_artifacts.key_for(version, executor_artifacts.MANIFEST)
         )
@@ -557,7 +731,6 @@ def take_before(repo_root: pathlib.Path, target: str, region: str, version: str)
         sha256s = manifest_sha256s(manifest, version)
     except executor_artifacts.ArtifactError as exc:
         raise RecordError(str(exc)) from None
-    previous_release = None
     if pointer is not None:
         previous_release = pointer.get("release_version")
         if not isinstance(previous_release, str) or not VERSION_RE.match(previous_release):
@@ -572,6 +745,7 @@ def take_before(repo_root: pathlib.Path, target: str, region: str, version: str)
         "target": target,
         "region": region,
         "version": version,
+        **({"company": company_record_part(company)} if company else {}),
         "account": {
             "worker": account,
             "config": "%s/%s" % (ACCOUNT_REL, acfg),
@@ -596,6 +770,7 @@ def take_before(repo_root: pathlib.Path, target: str, region: str, version: str)
             bookmark,
             proxy_version,
             previous_release,
+            company,
         ),
     }
 
@@ -610,18 +785,19 @@ def rollback_commands(
     bookmark: str,
     proxy_version: str | None,
     previous_release: str | None,
+    company: console_executor.CompanyTarget | None = None,
 ) -> dict[str, str]:
     """Every rollback command, in the order a rollback runs them."""
     if not proxy_version:
         proxy_cmd = "none: the proxy Worker did not exist before this deploy"
     elif previous_release:
-        proxy_cmd = proxy_redeploy_command(target, region, previous_release)
+        proxy_cmd = proxy_redeploy_command(target, region, previous_release, company)
     else:
         proxy_cmd = worker_rollback_command(proxy_version, PROXY_REL, pcfg) + (
             "  (Worker script only: no release is on record for this proxy, so its image cannot be rebuilt from artifacts)"
         )
     return {
-        "1_console_executor": executor_off_command(target, region),
+        "1_console_executor": executor_off_command(target, region, company),
         "2_proxy": proxy_cmd,
         "3_account": worker_rollback_command(account_version, ACCOUNT_REL, acfg),
         "4_d1": restore_command(database, bookmark, acfg),
@@ -657,9 +833,24 @@ def github_output(pairs: dict[str, str]) -> None:
         fh.writelines("%s=%s\n" % (key, value) for key, value in pairs.items())
 
 
+def company_from_args(
+    args: argparse.Namespace, repo_root: pathlib.Path
+) -> console_executor.CompanyTarget | None:
+    try:
+        company = console_executor.company_from_values(repo_root, vars(args), args.region)
+    except console_executor.RefusedError as exc:
+        raise RecordError(str(exc)) from None
+    if company is not None and args.target:
+        raise RecordError("--company replaces --target; give one")
+    if company is None and not args.target:
+        raise RecordError("--target is required (or --company)")
+    return company
+
+
 def cmd_before(args: argparse.Namespace, repo_root: pathlib.Path) -> int:
+    company = company_from_args(args, repo_root)
     if args.account_only:
-        record = take_account_before(repo_root, args.target, args.region)
+        record = take_account_before(repo_root, args.target, args.region, company)
         write_json(pathlib.Path(args.out), record)
         log.info(
             "Before (account only): account %s at %s; D1 %s bookmark %s."
@@ -675,7 +866,9 @@ def cmd_before(args: argparse.Namespace, repo_root: pathlib.Path) -> int:
         return 0
     if not args.version:
         raise RecordError("--version is required unless --account-only")
-    record = take_before(repo_root, args.target, args.region, args.version)
+    record = take_before(
+        repo_root, args.target, args.region, args.version, company, args.previous_release
+    )
     write_json(pathlib.Path(args.out), record)
     exists = "true" if record["proxy"]["existed"] else "false"
     github_output({"proxy_exists": exists})
@@ -712,8 +905,15 @@ def _run_child(argv: list[str]) -> int:
     return subprocess.run(argv, env=deploy_proxy.package_env(), check=False).returncode
 
 
+def target_argv(before: dict, repo_root: pathlib.Path) -> list[str]:
+    """The flags that name the record's target in a child deploy command."""
+    company = company_from_record(repo_root, before)
+    if company is not None:
+        return console_executor.company_argv(company)
+    return ["--target", before["target"], "--region", before["region"]]
+
+
 def cmd_bootstrap(args: argparse.Namespace, repo_root: pathlib.Path) -> int:
-    del repo_root
     before = read_json(pathlib.Path(args.before), "the before record")
     refuse_account_only(before, "bootstrap")
     if before["proxy"]["existed"]:
@@ -731,10 +931,7 @@ def cmd_bootstrap(args: argparse.Namespace, repo_root: pathlib.Path) -> int:
     )
     status = _run_child(
         deploy_proxy_argv(
-            "--target",
-            before["target"],
-            "--region",
-            before["region"],
+            *target_argv(before, repo_root),
             "--version",
             before["version"],
             "--record",
@@ -770,10 +967,12 @@ def cmd_rollback(args: argparse.Namespace, repo_root: pathlib.Path) -> int:
         print("  restore D1: %s" % before["rollback"]["4_d1"])
         return 0
     target, region = before["target"], before["region"]
+    company = company_from_record(repo_root, before)
     failures = []
 
-    log.step("Rollback 1/4: closing the console executor of %s %s..." % (target, region))
-    if console_executor.run("disable", target, region, repo_root) != 0:
+    label = "company %s" % company.company_id if company else "%s %s" % (target, region)
+    log.step("Rollback 1/4: closing the console executor of %s..." % label)
+    if console_executor.run("disable", target, region, repo_root, company=company) != 0:
         failures.append("the console executor could not be confirmed closed")
 
     log.step("Rollback 2/4: the proxy Worker %s..." % before["proxy"]["worker"])
@@ -802,7 +1001,7 @@ def cmd_rollback(args: argparse.Namespace, repo_root: pathlib.Path) -> int:
                 % (prior, live, release)
             )
             status = _run_child(
-                deploy_proxy_argv("--target", target, "--region", region, "--version", release)
+                deploy_proxy_argv(*target_argv(before, repo_root), "--version", release)
             )
             if status != 0:
                 failures.append("the redeploy of proxy release v%s exited %d" % (release, status))
@@ -927,6 +1126,15 @@ def summary_markdown(record: dict) -> str:
 def cmd_after(args: argparse.Namespace, repo_root: pathlib.Path) -> int:
     before = read_json(pathlib.Path(args.before), "the before record")
     refuse_account_only(before, "after")
+    company = company_from_record(repo_root, before)
+    if company is not None and args.sink != CONTROL_SINK:
+        raise RecordError(
+            "a company record goes to the control database: pass --sink control --ring <ring>, never --sink r2"
+        )
+    if company is None and args.sink == CONTROL_SINK:
+        raise RecordError("--sink control is for a company record; a shared target uses --sink r2")
+    if company is not None and not args.ring:
+        raise RecordError("--sink control needs --ring")
     proxy_path = pathlib.Path(args.proxy_record)
     proxy_record = read_json(proxy_path, "the proxy record") if proxy_path.is_file() else None
     manifest_path = pathlib.Path(args.manifest)
@@ -966,7 +1174,13 @@ def cmd_after(args: argparse.Namespace, repo_root: pathlib.Path) -> int:
         log.error("%s after: %s" % (SELF, exc))
         return 1
     write_json(pathlib.Path(args.out), record)
-    if args.sink:
+    if company is not None:
+        try:
+            release = args.release_id or "v%s" % record["version"]
+            sink_control(record, company, args.ring, release)
+        except RecordError as exc:
+            problems.append("the record was not written to the control database: %s" % exc)
+    elif args.sink:
         try:
             sink_record(record, args.sink, args.channel, before["target"], before["region"])
         except RecordError as exc:
@@ -978,7 +1192,7 @@ def cmd_after(args: argparse.Namespace, repo_root: pathlib.Path) -> int:
         with open(summary, "a", encoding="utf-8") as fh:
             fh.write(text + "\n")
 
-    if record["good"] and not problems:
+    if record["good"] and not problems and company is None:
         try:
             write_pointer(
                 before["target"],
@@ -1035,8 +1249,14 @@ def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog=SELF, description=(__doc__ or "").splitlines()[0])
     sub = parser.add_subparsers(dest="verb", required=True)
     be = sub.add_parser("before", help="the record taken before the migrations")
-    be.add_argument("--target", required=True)
-    be.add_argument("--region", required=True)
+    be.add_argument("--target", default=None)
+    be.add_argument("--region", default=None)
+    console_executor.add_company_arguments(be)
+    be.add_argument(
+        "--previous-release",
+        default=None,
+        help="company only: the proxy release last deployed (read from the control database)",
+    )
     be.add_argument("--version", default="", help="required unless --account-only")
     be.add_argument("--out", required=True)
     be.add_argument(
@@ -1057,8 +1277,10 @@ def _parser() -> argparse.ArgumentParser:
     af.add_argument("--rollback-outcome", default="", choices=OUTCOMES)
     af.add_argument("--out", required=True)
     af.add_argument("--account-smoke-rc", type=int, default=None)
-    af.add_argument("--sink", default="", choices=("", *SINKS))
+    af.add_argument("--sink", default="", choices=("", *SINKS, CONTROL_SINK))
     af.add_argument("--channel", default="", choices=("", *CHANNELS))
+    af.add_argument("--ring", default="", choices=("", *RINGS), help="company: its release ring")
+    af.add_argument("--release-id", default="", help="company: the rollout release id")
     wa = sub.add_parser("www-after", help="add the smoke rc to a www record and sink it")
     wa.add_argument("--record", required=True)
     wa.add_argument("--smoke-rc", required=True, type=int)
@@ -1079,6 +1301,10 @@ VERBS = {
 
 def record_target(args: argparse.Namespace) -> str:
     """The target a verb acts on: `--target`, else the `target` of the record file it reads (`--before`, or `www-after`'s `--record`); empty when unreadable."""
+    if getattr(args, "company", None):
+        return (
+            console_executor.BENCH_TARGET if args.company_bench else console_executor.STABLE_TARGET
+        )
     target = getattr(args, "target", None)
     if target:
         return str(target)
@@ -1089,7 +1315,13 @@ def record_target(args: argparse.Namespace) -> str:
         doc = json.loads(pathlib.Path(source).read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return ""
-    return str(doc.get("target") or "") if isinstance(doc, dict) else ""
+    if not isinstance(doc, dict):
+        return ""
+    if doc.get("target") == COMPANY_TARGET:
+        company = doc.get("company")
+        bench = isinstance(company, dict) and company.get("bench")
+        return console_executor.BENCH_TARGET if bench else console_executor.STABLE_TARGET
+    return str(doc.get("target") or "")
 
 
 def main(argv: list[str]) -> int:

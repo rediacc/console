@@ -40,7 +40,7 @@ import urllib.parse
 
 from rediacc_ci import log
 from rediacc_ci.core import common, https, wrangler
-from rediacc_ci.deploy import proxy_configs
+from rediacc_ci.deploy import console_executor, proxy_configs
 from rediacc_ci.version import resolve_version
 
 # This module's own dotted name, the prefix of every diagnostic it prints (the same name `python3 -m` runs it by). A literal, because `__name__` is `__main__` under `-m`.
@@ -767,10 +767,83 @@ def closing_lines(
 # ---- main -------------------------------------------------------------------
 
 
+def company_refusals(text: str, company: console_executor.CompanyTarget) -> list[str]:
+    """Why this text must not stand as `company`'s proxy config; empty when it may.
+
+    The shared-tier gate (`proxy_configs.config_refusals`) pins custom-domain routes, which a company does not use (it routes through Worker Routes), so a company gets the checks that hold for any proxy config: its own Worker name and exactly its proxy host as the route, no `[env.*]` table, the proxy's own entry point, and no executor token. A caller holding the company generator's own `proxy_configs.Target` (box N4) passes it to `select_company`, which then applies the full gate instead.
+    """
+    try:
+        config = tomllib.loads(text)
+    except tomllib.TOMLDecodeError as exc:
+        return ["does not parse as TOML: %s" % exc]
+    out: list[str] = []
+    if proxy_configs.FORBIDDEN_TEXT in text:
+        out.append(
+            "the text names %s; the token comes from the ISSUER binding"
+            % proxy_configs.FORBIDDEN_TEXT
+        )
+    if config.get("name") != company.proxy_worker:
+        out.append("name is %r, not %r" % (config.get("name"), company.proxy_worker))
+    if "env" in config:
+        out.append("an [env.*] table can rename the Worker or its routes; a config carries none")
+    if config.get("main") != proxy_configs.MAIN:
+        out.append("main is %r, not %r" % (config.get("main"), proxy_configs.MAIN))
+    raw = config.get("routes")
+    entries = list(raw) if isinstance(raw, list) else []
+    if "route" in config:
+        entries.append(config["route"])
+    patterns = [str(e.get("pattern", "")) if isinstance(e, dict) else str(e) for e in entries]
+    host = company.hosts[1]
+    if [p.removesuffix("/*") for p in patterns] != [host]:
+        out.append("routes are %r, not exactly the company's proxy host" % patterns)
+    return out
+
+
+def select_company(
+    repo_root: pathlib.Path,
+    company: console_executor.CompanyTarget,
+    spec: proxy_configs.Target | None = None,
+) -> tuple[proxy_configs.Target, str]:
+    """`select` for a company: its own proxy config, read from the path the caller named, refused before anything else runs.
+
+    `spec` is the company generator's own `Target`; without it the structural `company_refusals` apply."""
+    if company.proxy_config is None:
+        raise RefusedError("--company needs --proxy-config")
+    try:
+        text = company.proxy_config.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise RefusedError(
+            "--company refused: its proxy config cannot be read: %s" % (exc.strerror or exc)
+        ) from None
+    if spec is not None:
+        regions = proxy_configs.load_regions(repo_root)
+        known = frozenset(str(r.get("id", "")).lower() for r in regions)
+        reasons = proxy_configs.config_refusals(text, spec, known)
+    else:
+        reasons = company_refusals(text, company)
+        spec = proxy_configs.Target(
+            key=company.company_id,
+            config=company.proxy_config.name,
+            name=company.proxy_worker,
+            routes=(company.hosts[1],),
+            account_url="https://%s" % company.hosts[0],
+            variables=(),
+            services=(),
+            destinations=None,
+            version_metadata=False,
+            generated=True,
+            own_tokens=frozenset({company.region}),
+        )
+    if reasons:
+        raise RefusedError(*("--company %s refused: %s" % (company.company_id, r) for r in reasons))
+    return spec, text
+
+
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog=SELF, description=(__doc__ or "").splitlines()[0])
-    parser.add_argument("--target", required=True, help="stable or bench")
+    parser.add_argument("--target", default=None, help="stable or bench")
     parser.add_argument("--region", default=None, help="eu, us or asia (bench: eu only)")
+    console_executor.add_company_arguments(parser)
     parser.add_argument(
         "--version",
         default=None,
@@ -862,6 +935,7 @@ def run_rollback(
     region: str,
     version_id: str,
     record_path: pathlib.Path | None,
+    company_id: str | None = None,
 ) -> int:
     """`wrangler rollback <id>`, the deployments cross-check, the smoke on that id, and the record. The id is lowercased first, as `wrangler deployments list` and `/v1/ready` print it, so wrangler, the smoke and the record all name one spelling."""
     config = spec.config
@@ -914,6 +988,7 @@ def run_rollback(
             "rollback": revert,
             "migration_tag": recorded_tag,
             "var_overrides": {},
+            **({"company_id": company_id} if company_id else {}),
             **fields,
         }
         if releases:
@@ -946,24 +1021,42 @@ def run_rollback(
 
 
 def main(argv: list[str]) -> int:
+    parser = _parser()
     try:
-        args = _parser().parse_args(argv)
+        args = parser.parse_args(argv)
+        if args.company is None and args.target is None:
+            parser.error("the following arguments are required: --target")
     except SystemExit as exc:
         return int(exc.code or 0)
 
     repo_root = common.repo_root()
     worker_dir = repo_root.joinpath(*WORKER_SUBDIR)
     target = args.target
-    bench = target == BENCH_TARGET
     record_path = pathlib.Path(args.record).resolve() if args.record else None
 
     try:
-        spec, text = select(repo_root, target, args.region)
-        region = args.region or BENCH_REGION
+        company = console_executor.company_from_values(repo_root, vars(args), args.region)
+        if company is not None:
+            if args.target is not None:
+                raise RefusedError("--company replaces --target; give one")
+            if company.proxy_config is None:
+                raise RefusedError("--company needs --proxy-config")
+            target = company.profile_target
+            worker_dir = company.proxy_config.parent
+            spec, text = select_company(repo_root, company)
+            region = company.region
+        else:
+            spec, text = select(repo_root, target, args.region)
+            region = args.region or BENCH_REGION
+        bench = target == BENCH_TARGET
         if args.rollback is not None:
             reasons = rollback_refusals(args)
             if reasons:
                 raise RefusedError(*reasons)
+        if args.var and company is not None:
+            raise RefusedError(
+                "--var is refused with --company: a company deploys what its config says"
+            )
         if args.var and not bench:
             raise RefusedError(
                 "--var is refused on --target %s: a [vars] override is a bench drill tool, and "
@@ -980,12 +1073,13 @@ def main(argv: list[str]) -> int:
                 raise RefusedError(MISSING_VERSION % target)
             if not VERSION_RE.match(args.version):
                 raise RefusedError("--version %r is not a release version (X.Y.Z)" % args.version)
-    except RefusedError as exc:
-        for line in exc.lines:
+    except (RefusedError, console_executor.RefusedError) as exc:
+        for line in getattr(exc, "lines", None) or (str(exc),):
             log.error(line)
         return 1
     config = spec.config
     host = spec.routes[0]
+    company_id = company.company_id if company is not None else None
 
     if args.dry_run:
         os.chdir(worker_dir)
@@ -1009,7 +1103,9 @@ def main(argv: list[str]) -> int:
         return 1
 
     if args.rollback is not None:
-        return run_rollback(spec, repo_root, worker_dir, target, region, args.rollback, record_path)
+        return run_rollback(
+            spec, repo_root, worker_dir, target, region, args.rollback, record_path, company_id
+        )
 
     if args.smoke_only:
         os.chdir(worker_dir)
@@ -1091,6 +1187,7 @@ def main(argv: list[str]) -> int:
                 "migration_tag": current_tag,
                 "cold_start_ms": timing.get("cold_start_ms"),
                 "var_overrides": overrides,
+                **({"company_id": company_id} if company_id else {}),
             },
         )
     if smoke_rc != 0:
