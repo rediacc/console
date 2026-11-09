@@ -2,6 +2,7 @@ import { BAKED_IN_REGIONS } from '@rediacc/shared/regions';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Region } from '../../config/regions';
 import {
+  createPickTracker,
   extractDomain,
   modeFromPath,
   openPhase,
@@ -155,5 +156,40 @@ describe('preselectFromGeo', () => {
     preselectFromGeo(true, () => true, select);
     await settle();
     expect(select).not.toHaveBeenCalled();
+  });
+});
+
+describe('createPickTracker', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('is free until a card is picked, selects the picked card, and is free again after reset', () => {
+    const tracker = createPickTracker();
+    const select = vi.fn();
+    expect(tracker.isFree()).toBe(true);
+    tracker.pick('us', select);
+    expect(select).toHaveBeenCalledWith('us');
+    expect(tracker.isFree()).toBe(false);
+    tracker.reset();
+    expect(tracker.isFree()).toBe(true);
+  });
+
+  it('keeps a late /api/geo answer off a card the visitor picked, until the next open', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({ ok: true, json: async () => ({ country: 'DE' }) }))
+    );
+    const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
+    const tracker = createPickTracker();
+    const select = vi.fn();
+    preselectFromGeo(true, () => tracker.isFree(), select);
+    tracker.pick('us', () => {});
+    await settle();
+    expect(select).not.toHaveBeenCalled();
+    tracker.reset();
+    preselectFromGeo(true, () => tracker.isFree(), select);
+    await settle();
+    expect(select).toHaveBeenCalledWith('eu');
   });
 });

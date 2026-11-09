@@ -279,11 +279,7 @@ function renetCommandsOf(execStart: string): string[] {
   if (!wrapper) {
     // Anything else must be a bare renet command; a shell or env wrapper of another shape would otherwise pass unparsed.
     // A shell separator, redirection or command substitution after the renet path would hide a second command or a changed stream from the flag check.
-    if (!execStart.startsWith(`${RENET_PATH} `) || /[;&|<>`\n]|\$\(/.test(execStart)) {
-      throw new Error(
-        `unrecognized ExecStart (neither a bare renet command nor the isolating wrapper): ${execStart}`
-      );
-    }
+    assertBareRenetCommand(execStart);
     return [execStart];
   }
   const parts = wrapper[1].split('; ');
@@ -296,7 +292,18 @@ function renetCommandsOf(execStart: string): string[] {
   ) {
     throw new Error(`unrecognized isolating wrapper: ${execStart}`);
   }
-  return commands.map((c) => c.slice(0, -' || rc=1'.length));
+  const bare = commands.map((c) => c.slice(0, -' || rc=1'.length));
+  // A command inside the wrapper is held to the same shape as a bare one: a redirection or substitution there would change a stream or hide a command from the flag check just the same.
+  for (const c of bare) assertBareRenetCommand(c);
+  return bare;
+}
+
+function assertBareRenetCommand(command: string): void {
+  if (!command.startsWith(`${RENET_PATH} `) || /[;&|<>`\n]|\$\(/.test(command)) {
+    throw new Error(
+      `unrecognized ExecStart (neither a bare renet command nor the isolating wrapper): ${command}`
+    );
+  }
 }
 
 function generatedExecStarts(): string[] {
@@ -429,6 +436,15 @@ describe('scheduled ExecStart lines parse against renet backup snapshot (G9)', (
       ).toThrow(/unrecognized ExecStart/);
     }
     expect(renetCommandsOf(`${RENET_PATH} backup snapshot --datastore /d`)).toHaveLength(1);
+  });
+
+  it('a redirection or substitution inside the isolating wrapper is refused (control)', () => {
+    const ok = `${RENET_PATH} backup snapshot --datastore /d`;
+    const wrap = (a: string) => `/bin/sh -c 'rc=0; ${a} || rc=1; ${ok} || rc=1; exit $$rc'`;
+    expect(renetCommandsOf(wrap(ok))).toHaveLength(2);
+    for (const bad of ['> /tmp/x', '< /tmp/x', '$(id)', '`id`', '&& evil']) {
+      expect(() => renetCommandsOf(wrap(`${ok} ${bad}`))).toThrow(/unrecognized ExecStart/);
+    }
   });
 
   it('an ambiguous bandwidth limit, a non-integer parallelism and an unknown flag are refused (control)', () => {

@@ -104,6 +104,26 @@ async function fetchGeoRegion(regions: Region[]): Promise<Region | null> {
   }
 }
 
+/**
+ * Whether the visitor has chosen a card in the current open. `pick` records the choice and selects the card, `reset`
+ * starts a new open, and `isFree` is what a late /api/geo answer asks before it may move the highlight.
+ */
+export function createPickTracker() {
+  let picked = false;
+  return {
+    pick(id: string, select: (id: string) => void): void {
+      picked = true;
+      select(id);
+    },
+    reset(): void {
+      picked = false;
+    },
+    isFree(): boolean {
+      return !picked;
+    },
+  };
+}
+
 /** Preselects the /api/geo region while the cards show, when `needed` (no stored region), unless the lookup failed or `live` is false when the answer arrives (the run ended, or the visitor already pointed at a card). */
 export function preselectFromGeo(
   needed: boolean,
@@ -433,17 +453,17 @@ const RegionPickerModal: React.FC<RegionPickerModalProps> = ({ lang }) => {
   // Bumped on every open, close and stop, so a late /api/geo answer cannot restart a countdown the visitor ended.
   const runRef = useRef(0);
   // Set once the visitor points at or focuses a card, so a slow /api/geo answer never moves a highlight they chose.
-  const pickedRef = useRef(false);
-  const pick = useCallback((id: string) => {
-    pickedRef.current = true;
-    setSelected(id);
-  }, []);
+  const pickTracker = useRef(createPickTracker()).current;
+  const pick = useCallback(
+    (id: string) => pickTracker.pick(id, setSelected),
+    [pickTracker]
+  );
 
   const begin = useCallback((path?: string, force = false) => {
     const target = path ?? DEFAULT_TARGET_PATH;
     const nextMode = modeFromPath(target);
     const run = ++runRef.current;
-    pickedRef.current = false;
+    pickTracker.reset();
     const stored = getStoredRegion();
     const guess = stored ?? detectLikelyRegion(REGIONS);
     setTargetPath(target);
@@ -462,7 +482,7 @@ const RegionPickerModal: React.FC<RegionPickerModalProps> = ({ lang }) => {
       // No stored region: refine the time-zone guess with /api/geo, preselecting only (no countdown).
       preselectFromGeo(
         stored === null,
-        () => runRef.current === run && !pickedRef.current,
+        () => runRef.current === run && pickTracker.isFree(),
         setSelected
       );
       return;
@@ -479,7 +499,7 @@ const RegionPickerModal: React.FC<RegionPickerModalProps> = ({ lang }) => {
       return;
     }
     void fetchGeoRegion(REGIONS).then((geo) => settle(geo ?? guess));
-  }, []);
+  }, [pickTracker]);
 
   const close = useCallback(() => {
     runRef.current += 1;
