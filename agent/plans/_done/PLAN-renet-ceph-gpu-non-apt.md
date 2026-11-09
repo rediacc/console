@@ -224,6 +224,7 @@ Every host installs exactly `host-version` (19.2.3), and the cluster image stays
   - no leg exceeds its cap.
     (ticked) 2026-09-29T18:17:00Z by d778be9d: run 36604984398 all 5 matrix legs and all 3 non-apt Ceph Workers legs green, .ci/rediacc_ci/infra/renet_pkg_matrix.py:1, commit ea665925f
 - [ ] P7 Measure after: 5 nightly runs. Owned: this plan. Verification: section 4 rewritten with run ids; a p90 over 13 on any new leg returns D6 to the operator.
+    dropped by ruling #73c67ea4: the operator did not keep the P7 measurement on 2026-10-03 (ASKED:2026-10-03T11:58Z)
 
 ## 6. Risks
 

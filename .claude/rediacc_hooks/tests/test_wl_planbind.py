@@ -199,6 +199,44 @@ def test_box_rehomed_to_open_item_bound_to_live_plan(tmp_path):
     ) == ["box"]
 
 
+def test_box_dropped_by_a_closed_ruling_item_is_released(tmp_path):
+    """A box the operator dropped names the closed ruling item on a line under it (CB5)."""
+    base = plan(status="done", boxes=("[ ] T1 open work here",), extra=ruled(tmp_path))
+    dropped = base + "  dropped by ruling #aa11bb22: the operator took neither option\n"
+    texts = {TARGET: dropped}
+    assert run(texts, [item("aa11bb22", "x", "operator ruling: drop T1")], tmp_path) == []
+
+
+def test_dropped_line_controls_keep_the_box_bound(tmp_path):
+    base = plan(status="done", boxes=("[ ] T1 open work here",), extra=ruled(tmp_path))
+    dropped = base + "  dropped by ruling #aa11bb22\n"
+    # the ruling item is still open: a question, not a decision
+    assert kinds(run({TARGET: dropped}, [item("aa11bb22", " ", "drop T1?")], tmp_path)) == ["box"]
+    # the ruling item is deferred
+    assert kinds(run({TARGET: dropped}, [item("aa11bb22", "?", "drop T1?")], tmp_path)) == ["box"]
+    # the ruling item was tombstoned, not closed
+    assert kinds(run({TARGET: dropped}, [item("aa11bb22", "~", "drop T1")], tmp_path)) == ["box"]
+    # the ruling item does not exist
+    assert kinds(run({TARGET: dropped}, [], tmp_path)) == ["box"]
+    # the line names an item but not as a drop
+    noted = base + "  see #aa11bb22\n"
+    assert kinds(run({TARGET: noted}, [item("aa11bb22", "x", "drop T1")], tmp_path)) == ["box"]
+    # the drop sits on the box line itself, not under it
+    inline = plan(
+        status="done",
+        boxes=("[ ] T1 open work here, dropped by ruling #aa11bb22",),
+        extra=ruled(tmp_path),
+    )
+    assert kinds(run({TARGET: inline}, [item("aa11bb22", "x", "drop T1")], tmp_path)) == ["box"]
+
+
+def test_dropped_line_without_a_resolving_ruling_keeps_the_box_bound(tmp_path):
+    dropped = (
+        plan(status="done", boxes=("[ ] T1 open work here",)) + "  dropped by ruling #aa11bb22\n"
+    )
+    assert kinds(run({TARGET: dropped}, [item("aa11bb22", "x", "drop T1")], tmp_path)) == ["box"]
+
+
 def test_render_lists_every_binding_and_the_next_commands():
     text = plan(boxes=("[ ] T1 open work here",))
     found = run({TARGET: text}, [item("aa11bb22", " ", "finish PLAN-x.md")])

@@ -102,5 +102,6 @@ D2 as ruled covers CI only: a private GHCR artifact is unreachable from a custom
 - [x] P3 renet_pkg_matrix `--obs-mirror` and `check_upstream`; ct-tests matrix login + flag; E2E fetch/serve/env; one full-ci run
     (ticked) 2026-11-09T04:58:03Z by d778be9d: already in the tree: check_upstream at .ci/rediacc_ci/infra/renet_pkg_matrix.py:411, --obs-mirror wired at .github/workflows/ct-tests.yml:1168; commits ccc28cca0 and 195c64e8ba; worklist #fa2cc13d done
 - [ ] P4 rehearsal dispatch with OBS blocked, recorded in the round log
+    dropped by ruling #86c8d01c: the operator did not keep the P4 rehearsal on 2026-10-03 (ASKED:2026-10-03T11:58Z)
 - [x] P5 docs (www ceph install: the mirror file), .ceph-image-pin comment, D2 moved to done in the parent plan's risk table
     (ticked) 2026-11-09T04:58:04Z by d778be9d: already in the tree: packages/www/src/content/docs/en/server-reference.md:256, private/renet/.ceph-image-pin:47, agent/plans/_done/PLAN-renet-ceph-gpu-non-apt.md:233; commit 195c64e8ba; worklist #5d9e37e5 done

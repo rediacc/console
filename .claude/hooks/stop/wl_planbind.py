@@ -4,7 +4,7 @@ ONE FUNCTION DECIDES. `bindings(root, rel)` returns every live binding of the pl
 
 THE FOUR KINDS (operator ruling 2026-10-03):
 
-- `box`: an open box of the plan itself. It binds unless the header carries a `Ruling:` that re-resolves (`wl_planfile.resolve_ruling`) AND the box names its new home: another live plan (`PLAN-y.md`) or an open worklist item (`#<id>`) whose own text cites a live plan. The home may sit on the box line or on the few lines beneath it, up to the next box.
+- `box`: an open box of the plan itself. It binds unless the header carries a `Ruling:` that re-resolves (`wl_planfile.resolve_ruling`) AND the box names its new home: another live plan (`PLAN-y.md`) or an open worklist item (`#<id>`) whose own text cites a live plan. The home may sit on the box line or on the few lines beneath it, up to the next box. A box the operator DROPPED is released the same way when, under a resolving `Ruling:`, a line beneath it (never the box line itself, which keeps its signature) reads `dropped by ruling #<id>` and that item is closed `[x]` in the store: an open, deferred, tombstoned or unknown item is a question or nothing, not a decision.
 - `item`: an open, in-flight or deferred worklist item of ANY session whose text cites the plan (`PLAN-x.md`) or one of its box signatures. A done or dropped item never binds.
 - `dependent`: an unfinished plan whose `Depends-On:` reaches the plan (`wl_plandeps.Graph.dependents`). A finished dependent never binds.
 - `citing-box`: an open box of another unfinished plan that cites one of this plan's boxes: `PLAN-x.md#<ref>`, `PLAN-x.md [<sig>]`, or a bare box signature. Naming the plan with no box reference is not a citation of a box.
@@ -42,6 +42,10 @@ _PLAN_STEM_RE = re.compile(
     r"(PLAN-[A-Za-z0-9_-]*[A-Za-z0-9])(?:\.md(?![A-Za-z0-9_-])|(?![A-Za-z0-9_-])(?!\.[A-Za-z0-9]))"
 )
 _ITEM_REF_RE = re.compile(r"#([0-9a-f]{12}|[0-9a-f]{8})\b")
+# `dropped by ruling #<id>` under a box: the operator ruling item that dropped its work.
+_DROPPED_RE = re.compile(r"\bdropped by ruling #([0-9a-f]{12}|[0-9a-f]{8})\b", re.IGNORECASE)
+# The one item state that makes a ruling a decision.
+DROP_CLOSED_STATE = "x"
 
 
 @dataclasses.dataclass(frozen=True)
@@ -171,6 +175,15 @@ def _rehomed(graph: D.Graph, own_rel: str, chunk: list[str], item_by_id: dict[st
     return ""
 
 
+def _dropped(chunk: list[str], states: dict[str, str]) -> str:
+    """`dropped by ruling #<id>` when a line UNDER the box (chunk[1:]) names a closed `[x]` ruling item, else ""."""
+    for line in chunk[1:]:
+        for iid in _DROPPED_RE.findall(line):
+            if states.get(iid, "").lower() == DROP_CLOSED_STATE:
+                return "dropped by ruling #%s" % iid
+    return ""
+
+
 # --------------------------------------------------------------------------- The decision.
 
 
@@ -224,7 +237,8 @@ def bindings(
                     )
                 )
                 continue
-            home = _rehomed(graph, rel, _box_home(own, index, body), item_by_id)
+            chunk = _box_home(own, index, body)
+            home = _rehomed(graph, rel, chunk, item_by_id) or _dropped(chunk, states)
             if not home:
                 out.append(
                     Binding(
@@ -308,7 +322,8 @@ def render(rel: str, found: list[Binding]) -> str:
     if KIND_BOX in kinds:
         lines.append(
             "  box: tick it, or add a `Ruling:` header line and name the live plan or item "
-            "that took the work over under the box"
+            "that took the work over under the box (or, for work the operator dropped, "
+            "`dropped by ruling #<closed item>` on a line under it)"
         )
     if KIND_DEPENDENT in kinds:
         lines.append("  dependent: finish that plan, or drop this plan from its `Depends-On:`")

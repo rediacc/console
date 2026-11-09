@@ -616,7 +616,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-backup-credential-isolation.md` | done | 55 | 0 | 8 | 12190 |
 | `agent/plans/_done/PLAN-backup-presign-bucket-require-and-wrangler-vars.md` | done | 50 | 0 | 7 | 7369 |
 | `agent/plans/_done/PLAN-biome-only-lint.md` | done | 317 | 0 | 29 | 54095 |
-| `agent/plans/_done/PLAN-breakpoint-secret-shape.md` | done | 61 | 2 | 2 | 5448 |
+| `agent/plans/_done/PLAN-breakpoint-secret-shape.md` | done | 63 | 2 | 2 | 5712 |
 | `agent/plans/_done/PLAN-carried-red-finding-keys.md` | done | 103 | 0 | 7 | 12046 |
 | `agent/plans/_done/PLAN-cd-errors-in-ci.md` | done | 86 | 0 | 6 | 8862 |
 | `agent/plans/_done/PLAN-chunk-store-browse-toc-and-remote.md` | done | 172 | 0 | 11 | 35651 |
@@ -625,11 +625,11 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-ci-prebaked-vm-images.md` | closed | 160 | 2 | 6 | 21136 |
 | `agent/plans/_done/PLAN-ci-time-budget.md` | closed | 383 | 0 | 32 | 48587 |
 | `agent/plans/_done/PLAN-ci-verdict.md` | done | 76 | 0 | 7 | 17515 |
-| `agent/plans/_done/PLAN-ci-watch-enforcement.md` | superseded | 226 | 6 | 0 | 21235 |
+| `agent/plans/_done/PLAN-ci-watch-enforcement.md` | superseded | 232 | 6 | 0 | 21751 |
 | `agent/plans/_done/PLAN-clean-review-ledger.md` | done | 209 | 0 | 18 | 24391 |
 | `agent/plans/_done/PLAN-commit-as-you-go.md` | superseded | 384 | 0 | 12 | 35925 |
 | `agent/plans/_done/PLAN-config-handoff-relay-only.md` | done | 483 | 0 | 11 | 46181 |
-| `agent/plans/_done/PLAN-config-networkid-sync.md` | superseded | 287 | 0 | 8 | 32891 |
+| `agent/plans/_done/PLAN-config-networkid-sync.md` | superseded | 288 | 0 | 8 | 33021 |
 | `agent/plans/_done/PLAN-config-passkey-optional.md` | done | 133 | 0 | 4 | 15565 |
 | `agent/plans/_done/PLAN-config-server-key.md` | done | 78 | 0 | 7 | 10681 |
 | `agent/plans/_done/PLAN-config-sync-hardening.md` | done | 483 | 0 | 20 | 60520 |
@@ -663,11 +663,11 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-program-state-in-repo.md` | done | 48 | 0 | 5 | 7159 |
 | `agent/plans/_done/PLAN-rdc-readonly-mode.md` | done | 228 | 0 | 23 | 31216 |
 | `agent/plans/_done/PLAN-remove-cross-session-messaging.md` | done | 379 | 0 | 13 | 42487 |
-| `agent/plans/_done/PLAN-renet-ceph-gpu-non-apt.md` | closed | 252 | 1 | 7 | 30113 |
+| `agent/plans/_done/PLAN-renet-ceph-gpu-non-apt.md` | closed | 253 | 1 | 7 | 30231 |
 | `agent/plans/_done/PLAN-renet-change-test-triggers.md` | done | 46 | 0 | 7 | 7939 |
 | `agent/plans/_done/PLAN-renet-cross-repo-isolation.md` | done | 166 | 0 | 11 | 44631 |
 | `agent/plans/_done/PLAN-renet-fetch-hardening.md` | superseded | 154 | 0 | 8 | 14481 |
-| `agent/plans/_done/PLAN-renet-obs-mirror.md` | closed | 106 | 1 | 4 | 15468 |
+| `agent/plans/_done/PLAN-renet-obs-mirror.md` | closed | 107 | 1 | 4 | 15584 |
 | `agent/plans/_done/PLAN-repair-prose-style-findings.md` | done | 53 | 0 | 6 | 6070 |
 | `agent/plans/_done/PLAN-retire-bash-oracles.A0.md` | done | 279 | 0 | 7 | 32197 |
 | `agent/plans/_done/PLAN-retire-bash-oracles.md` | done | 935 | 0 | 15 | 108469 |
@@ -681,7 +681,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-stop-hook-effort.md` | done | 45 | 0 | 7 | 7833 |
 | `agent/plans/_done/PLAN-stop-hook-focus-mode.md` | done | 354 | 0 | 8 | 36786 |
 | `agent/plans/_done/PLAN-stop-hook-overhaul.md` | done | 116 | 0 | 9 | 12544 |
-| `agent/plans/_done/PLAN-stop-hook-retro-20260924.md` | done | 617 | 0 | 23 | 67079 |
+| `agent/plans/_done/PLAN-stop-hook-retro-20260924.md` | done | 619 | 0 | 23 | 67980 |
 | `agent/plans/_done/PLAN-stop-hook-retro-20260925.md` | done | 259 | 0 | 10 | 25162 |
 | `agent/plans/_done/PLAN-stop-hook-rulings-campaign.md` | done | 132 | 0 | 17 | 14083 |
 | `agent/plans/_done/PLAN-stop-hook-turbo.md` | done | 191 | 0 | 23 | 31391 |
