@@ -77,6 +77,7 @@ from rediacc_ci.quality import proxy_image_smoke
 from rediacc_ci.well_known import (
     ACCOUNT_DEFAULT_ORIGIN,
     APEX_DOMAIN,
+    PRODUCT_DOMAIN,
     PROXY_EU_HOST,
 )
 
@@ -165,7 +166,8 @@ def dev_config_findings(dev: dict, deploy: dict) -> list[str]:
         if dev.get(key) != deploy.get(key)
     )
     account = str(dev.get("vars", {}).get("ACCOUNT_URL", ""))
-    if APEX_DOMAIN in account:
+    # The account hosts moved to the product zone in the product-domain rename, so the apex alone no longer names production.
+    if APEX_DOMAIN in account or PRODUCT_DOMAIN in account:
         out.append(
             "%s vars.ACCOUNT_URL is %r; a hand-run `wrangler dev` would introspect against "
             "production. Point it at loopback" % (DEV_CONFIG, account)
@@ -728,6 +730,14 @@ def selftest() -> bool:
         (
             "a production ACCOUNT_URL is a finding",
             {"vars": {"ACCOUNT_URL": ACCOUNT_DEFAULT_ORIGIN}},
+        ),
+        (
+            "an ACCOUNT_URL on the product domain is a finding",
+            {"vars": {"ACCOUNT_URL": "https://eu.%s" % PRODUCT_DOMAIN}},
+        ),
+        (
+            "an ACCOUNT_URL on the apex domain is a finding",
+            {"vars": {"ACCOUNT_URL": "https://eu.%s" % APEX_DOMAIN}},
         ),
     ):
         check(label, len(dev_config_findings({**dev, **patch}, deploy)) == 1)
