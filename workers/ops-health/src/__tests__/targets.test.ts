@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import regions from '../../../../regions.json';
 import { loadTargets, parseTargetFile, regionEndpoints } from '../targets';
 
 const valid = {
@@ -99,7 +100,11 @@ describe('regionEndpoints', () => {
 
   it('covers all of regions.json, two endpoints per region', () => {
     const endpoints = regionEndpoints();
-    expect(endpoints.length).toBeGreaterThanOrEqual(6);
-    expect(endpoints.length % 2).toBe(0);
+    expect(endpoints.length).toBe(regions.regions.length * 2);
+    for (const row of regions.regions) {
+      expect(endpoints.map((e) => e.id)).toEqual(
+        expect.arrayContaining([`health:account-${row.id}`, `health:proxy-${row.id}`])
+      );
+    }
   });
 });

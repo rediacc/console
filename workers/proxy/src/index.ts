@@ -63,7 +63,7 @@ export interface Env {
   /** The `[version_metadata]` binding: `/v1/ready` answers its `id` as `workerVersion`, so a deploy smoke can tell the new version from one still rolling out. */
   CF_VERSION_METADATA?: WorkerVersionMetadata;
   /**
-   * Service binding to the regional account worker. `proxy-eu.rediacc.cloud` and `eu.rediacc.cloud` share a zone, and a Worker's `fetch()` to a same-zone hostname does not reach another Worker on that zone, so on the first Phase 2 deploy (2026-09-24) every introspection failed and every caller got 401. The binding is the path the www worker already uses (workers/www/wrangler.toml `[[services]]`); `fetch(ACCOUNT_URL)` remains only for a deploy without it.
+   * Service binding to the regional account worker. `proxy.eu.rediacc.cloud` and `eu.rediacc.cloud` share a zone, and a Worker's `fetch()` to a same-zone hostname does not reach another Worker on that zone, so on the first Phase 2 deploy (2026-09-24) every introspection failed and every caller got 401. The binding is the path the www worker already uses (workers/www/wrangler.toml `[[services]]`); `fetch(ACCOUNT_URL)` remains only for a deploy without it.
    */
   ACCOUNT?: Fetcher;
   /** Opt-in IP allowlist: comma-separated addresses or IPv4 ranges (src/ip-allowlist.ts). Unset or empty means off. */
