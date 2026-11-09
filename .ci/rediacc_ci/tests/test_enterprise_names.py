@@ -111,7 +111,27 @@ def test_xn_prefix_is_refused_by_its_own_rule():
         names.check("xn--acme")
 
 
-@pytest.mark.parametrize("domain", [None, "", " ", ".", "\t", "\n", " .\t\r\n. "])
+@pytest.mark.parametrize(
+    "domain",
+    [
+        None,
+        "",
+        " ",
+        ".",
+        "\t",
+        "\n",
+        " .\t\r\n. ",
+        "\x0b",
+        "\x0c",
+        "\u00a0",
+        "example.com\n",
+        "example.com\t",
+        "exa\tmple.com",
+        "example..com",
+        "example.com.",
+        "-example.com",
+    ],
+)
 def test_hosts_refuses_a_missing_domain(domain: typing.Any):
     with pytest.raises(names.CompanyNameError, match="not a domain"):
         names.hosts("acme", domain)

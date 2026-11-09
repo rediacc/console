@@ -361,7 +361,20 @@ def test_company_unknown_is_refused(
     assert r.kids.calls == []
 
 
-@pytest.mark.parametrize("bad", ["", "1.2", "1.2.3/../x", "1.2.3 -o x", "v1.2.3", "1.2.3?a=b"])
+@pytest.mark.parametrize(
+    "bad",
+    [
+        "",
+        "1.2",
+        "1.2.3/../x",
+        "1.2.3 -o x",
+        "v1.2.3",
+        "1.2.3?a=b",
+        "\u0661.\u0662.\u0663",
+        "1.2.3-",
+        "1.2.3+",
+    ],
+)
 def test_a_version_that_is_not_semver_is_refused_before_anything(
     tmp_path: pathlib.Path, capsys: pytest.CaptureFixture[str], bad: str
 ) -> None:

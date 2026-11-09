@@ -88,13 +88,19 @@ def check(name: str) -> str:
     return name
 
 
+# `fullmatch` with explicit classes: `$` would admit a trailing newline and `\s` would admit more than the ASCII blanks.
+DOMAIN_RE = re.compile(
+    r"[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?)*"
+)
+
+
 def hosts(name: str, domain: str) -> tuple[str, str]:
     """(account host, proxy host) for a valid name under the product domain the caller names (`well_known.PRODUCT_DOMAIN`).
 
     The domain has no default.
-    An empty, whitespace-only, dots-only or non-string domain is refused, rather than formatted into a host like `acme.` or `acme.None`.
+    A domain that is not a plain dotted hostname (ASCII letters, digits and inner hyphens in each label; no empty label, no whitespace or control character, no trailing dot) is refused, rather than formatted into a host like `acme.`, `acme.None` or `acme.example.com\n`.
     """
     check(name)
-    if not isinstance(domain, str) or not domain.strip(". \t\r\n"):
+    if not isinstance(domain, str) or not DOMAIN_RE.fullmatch(domain):
         raise CompanyNameError("%r is not a domain to host %r under" % (domain, name))
     return "%s.%s" % (name, domain), "%s%s.%s" % (name, PROXY_SUFFIX, domain)

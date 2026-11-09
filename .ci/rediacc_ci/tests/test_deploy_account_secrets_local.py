@@ -147,14 +147,14 @@ def test_profile_binds_every_variable_the_push_reads(region):
     assert read <= names, sorted(read - names)
 
 
-def test_dry_run_prints_the_32_names_and_no_value(capsys, monkeypatch):
+def test_dry_run_prints_every_pushed_name_and_no_value(capsys, monkeypatch):
     # The pin reads workers/account/node_modules, which the quality-pytest job does not install; this case is about the names, and the refusal has its own case.
     monkeypatch.setattr(local.wrangler_pin, "check", lambda _root: (0, []))
     rc = local.run(["--region", "eu", "--dry-run"])
     out = capsys.readouterr().out
     assert rc == 0
-    # 31 since PLAN-free-license F2 (2fc16b442) added FREE_LICENSE_HMAC_KEY, which the account Worker reads; 32 with ACCOUNT_BACKUP_STORE_KEK.
-    assert "32 Worker key(s) pushed:" in out
+    # The count follows the pusher's own list (a hard-coded one went stale when ACCOUNT_AE_READ_TOKEN and CLOUDFLARE_ACCOUNT_ID joined it).
+    assert "%d Worker key(s) pushed:" % len(pusher.KEYS) in out
     assert "  ACCOUNT_CONFIG_SERVER_KEY\n" in out
     assert "  ACCOUNT_BACKUP_STORE_KEK\n" in out
     assert "  FREE_LICENSE_HMAC_KEY\n" in out
