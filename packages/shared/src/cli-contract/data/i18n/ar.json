@@ -947,6 +947,7 @@
   "commands.job.dismiss.notFound": "لا توجد تذكرة لـ {{jobId}} في هذا الإعداد.",
   "commands.job.dismiss.olderThanOption": "مع --stale، الحد الأدنى لعمر التذكرة، مثل 90m أو 24h (الافتراضي: 24h)",
   "commands.job.dismiss.staleOption": "تجاهل كل التذاكر المعلقة الأقدم من --older-than (الافتراضي 24h)",
+  "commands.job.dismiss.summary": "التخلي عن تذاكر المهام محليًا دون أي استدعاء للجهاز",
   "commands.job.finished.other": "المهمة {{jobId}} {{state}}. {{error}}",
   "commands.job.finished.succeeded": "اكتملت المهمة {{jobId}} بنجاح.",
   "commands.job.gc.confirm": "هل تريد إزالة المهام على {{machine}} التي انتهت منذ أكثر من {{hours}} ساعة؟ سيتم حذف سجلاتها.",

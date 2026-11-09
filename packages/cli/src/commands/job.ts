@@ -257,6 +257,7 @@ export function registerJobCommands(program: Command): void {
 
   job
     .command('dismiss')
+    .summary(t('commands.job.dismiss.summary'))
     .description(t('commands.job.dismiss.description'))
     .argument('[job-id...]', t('commands.job.dismiss.idArg'))
     .option('--stale', t('commands.job.dismiss.staleOption'))

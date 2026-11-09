@@ -947,6 +947,7 @@
   "commands.job.dismiss.notFound": "No ticket for {{jobId}} in this config.",
   "commands.job.dismiss.olderThanOption": "With --stale, the minimum ticket age, e.g. 90m, 24h (default: 24h)",
   "commands.job.dismiss.staleOption": "Dismiss every pending ticket older than --older-than (default 24h)",
+  "commands.job.dismiss.summary": "Give up on job tickets locally, with no machine call",
   "commands.job.finished.other": "Job {{jobId}} {{state}}. {{error}}",
   "commands.job.finished.succeeded": "Job {{jobId}} succeeded.",
   "commands.job.gc.confirm": "Remove jobs on {{machine}} that finished more than {{hours}}h ago? Their logs are deleted.",

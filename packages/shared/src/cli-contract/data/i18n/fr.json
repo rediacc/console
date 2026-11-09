@@ -947,6 +947,7 @@
   "commands.job.dismiss.notFound": "Aucun ticket pour {{jobId}} dans cette configuration.",
   "commands.job.dismiss.olderThanOption": "Avec --stale, l'âge minimal du ticket, p. ex. 90m, 24h (24h par défaut)",
   "commands.job.dismiss.staleOption": "Écarter tous les tickets en attente plus anciens que --older-than (24h par défaut)",
+  "commands.job.dismiss.summary": "Abandonner des tickets de job en local, sans appel machine",
   "commands.job.finished.other": "Le job {{jobId}} {{state}}. {{error}}",
   "commands.job.finished.succeeded": "Le job {{jobId}} a réussi.",
   "commands.job.gc.confirm": "Supprimer les jobs sur {{machine}} terminés il y a plus de {{hours}}h ? Leurs journaux seront supprimés.",

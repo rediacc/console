@@ -947,6 +947,7 @@
   "commands.job.dismiss.notFound": "Nessun ticket per {{jobId}} in questa configurazione.",
   "commands.job.dismiss.olderThanOption": "Con --stale, l'età minima del ticket, ad es. 90m, 24h (predefinito: 24h)",
   "commands.job.dismiss.staleOption": "Scarta tutti i ticket in sospeso più vecchi di --older-than (predefinito 24h)",
+  "commands.job.dismiss.summary": "Abbandona i ticket dei job in locale, senza chiamare la macchina",
   "commands.job.finished.other": "Il job {{jobId}} {{state}}. {{error}}",
   "commands.job.finished.succeeded": "Il job {{jobId}} è riuscito.",
   "commands.job.gc.confirm": "Rimuovere i job su {{machine}} terminati da più di {{hours}}h fa? I relativi log verranno eliminati.",

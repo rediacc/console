@@ -947,6 +947,7 @@
   "commands.job.dismiss.notFound": "Bu yapılandırmada {{jobId}} için bilet yok.",
   "commands.job.dismiss.olderThanOption": "--stale ile biletin asgari yaşı, örn. 90m, 24h (varsayılan: 24h)",
   "commands.job.dismiss.staleOption": "--older-than süresinden eski tüm bekleyen biletleri reddet (varsayılan 24h)",
+  "commands.job.dismiss.summary": "İş biletlerini yerelde bırak, makine çağrısı yapmadan",
   "commands.job.finished.other": "{{jobId}} görevi {{state}}. {{error}}",
   "commands.job.finished.succeeded": "{{jobId}} görevi başarıyla tamamlandı.",
   "commands.job.gc.confirm": "{{machine}} üzerinde {{hours}} saatten daha önce tamamlanmış görevler kaldırılsın mı? Günlükleri de silinecek.",

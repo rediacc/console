@@ -947,6 +947,7 @@
   "commands.job.dismiss.notFound": "В этой конфигурации нет тикета для {{jobId}}.",
   "commands.job.dismiss.olderThanOption": "С --stale: минимальный возраст тикета, например 90m, 24h (по умолчанию 24h)",
   "commands.job.dismiss.staleOption": "Отклонить все ожидающие тикеты старше --older-than (по умолчанию 24h)",
+  "commands.job.dismiss.summary": "Отказаться от тикетов заданий локально, без обращения к машине",
   "commands.job.finished.other": "Задача {{jobId}} {{state}}. {{error}}",
   "commands.job.finished.succeeded": "Задача {{jobId}} успешно завершена.",
   "commands.job.gc.confirm": "Удалить на {{machine}} задачи, завершённые более {{hours}} ч назад? Их журналы будут удалены.",

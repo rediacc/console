@@ -1297,6 +1297,7 @@
       },
       "dismiss": {
         "description": "İş biletlerini yerelde bırak: bekleyen adımlar atılır ve bilet artık görünmez. Makineye bağlanmaz, işin kendisine dokunmaz.",
+        "summary": "İş biletlerini yerelde bırak, makine çağrısı yapmadan",
         "idArg": "Reddedilecek biletlerin iş kimlikleri veya istek kimlikleri",
         "staleOption": "--older-than süresinden eski tüm bekleyen biletleri reddet (varsayılan 24h)",
         "olderThanOption": "--stale ile biletin asgari yaşı, örn. 90m, 24h (varsayılan: 24h)",

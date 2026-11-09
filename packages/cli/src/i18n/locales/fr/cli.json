@@ -1297,6 +1297,7 @@
       },
       "dismiss": {
         "description": "Abandonner des tickets de tâche en local : leurs étapes dues sont supprimées et le ticket n'apparaît plus. Aucun appel à la machine, la tâche n'est pas modifiée.",
+        "summary": "Abandonner des tickets de job en local, sans appel machine",
         "idArg": "Identifiants de tâche ou de requête des tickets à écarter",
         "staleOption": "Écarter tous les tickets en attente plus anciens que --older-than (24h par défaut)",
         "olderThanOption": "Avec --stale, l'âge minimal du ticket, p. ex. 90m, 24h (24h par défaut)",

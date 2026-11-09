@@ -1297,6 +1297,7 @@
       },
       "dismiss": {
         "description": "Abandonar tickets de trabajo en local: se descartan sus pasos pendientes y el ticket deja de mostrarse. No contacta con la máquina ni toca el trabajo.",
+        "summary": "Descartar tickets de trabajo localmente, sin llamar a la máquina",
         "idArg": "Ids de trabajo o de solicitud de los tickets a descartar",
         "staleOption": "Descartar todos los tickets pendientes más antiguos que --older-than (por defecto 24h)",
         "olderThanOption": "Con --stale, la antigüedad mínima del ticket, p. ej. 90m, 24h (por defecto: 24h)",

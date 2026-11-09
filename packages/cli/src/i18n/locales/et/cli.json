@@ -1297,6 +1297,7 @@
       },
       "dismiss": {
         "description": "Loobu tööpiletitest kohalikult: ootel sammud visatakse ära ja pilet ei ilmu enam. Masinaga ei ühenduta ja tööd ennast ei puututa.",
+        "summary": "Loobu tööde piletitest kohalikult, masinat kutsumata",
         "idArg": "Hüljatavate piletite töö- või päringu-ID-d",
         "staleOption": "Hülga kõik ootel piletid, mis on vanemad kui --older-than (vaikimisi 24h)",
         "olderThanOption": "Koos --stale'iga pileti minimaalne vanus, nt 90m, 24h (vaikimisi: 24h)",
@@ -1813,9 +1814,9 @@
           "starting": "Hoidla \"{{repository}}\" omandiõiguse seadistamine masinal \"{{machine}}\"...",
           "uidOption": "Omaniku UID (vaikimisi: 7111)",
           "rootOwnedOption": "Anna root-kasutajale kuuluvad failid, mis asuvad root-i või selle UID kataloogide all, omaniku UID-le ja salvesta igaüks tagasivõtmise manifesti",
-          "dryRunOption": "Koos --root-owned-iga: loetle failid, mis muutuksid, midagi muutmata",
-          "undoOption": "Koos --root-owned-iga: tagasta root-ile tagasivõtmise manifesti failid, mis kuuluvad endiselt omaniku UID-le",
-          "rootOwnedQualifiers": "--dry-run ja --undo kehtivad ainult koos --root-owned-iga ning neid ei saa koos kasutada",
+          "dryRunOption": "Koos lipuga --root-owned: loetle failid, mis muutuksid, midagi muutmata",
+          "undoOption": "Koos lipuga --root-owned: tagasta root-ile tagasivõtmise manifesti failid, mis kuuluvad endiselt omaniku UID-le",
+          "rootOwnedQualifiers": "--dry-run ja --undo kehtivad ainult koos lipuga --root-owned ning neid ei saa koos kasutada",
           "rootOwnedDryRunSummary": "{{count}} root'i omanduses kirjet asukohas {{repository}} masinas {{machine}} antaks omaniku UID-le üle; midagi ei muudetud."
         },
         "template": {

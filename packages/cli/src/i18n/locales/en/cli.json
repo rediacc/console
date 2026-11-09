@@ -2830,6 +2830,7 @@
       },
       "dismiss": {
         "description": "Give up on job tickets locally: their owed steps are dropped and the ticket stops showing up. Makes no machine call and does not touch the job itself.",
+        "summary": "Give up on job tickets locally, with no machine call",
         "idArg": "Job ids or request ids of the tickets to dismiss",
         "staleOption": "Dismiss every pending ticket older than --older-than (default 24h)",
         "olderThanOption": "With --stale, the minimum ticket age, e.g. 90m, 24h (default: 24h)",

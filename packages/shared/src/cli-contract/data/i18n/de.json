@@ -947,6 +947,7 @@
   "commands.job.dismiss.notFound": "Kein Ticket für {{jobId}} in dieser Konfiguration.",
   "commands.job.dismiss.olderThanOption": "Mit --stale das Mindestalter eines Tickets, z. B. 90m, 24h (Standard: 24h)",
   "commands.job.dismiss.staleOption": "Alle offenen Tickets verwerfen, die älter als --older-than sind (Standard: 24h)",
+  "commands.job.dismiss.summary": "Job-Tickets lokal aufgeben, ohne Maschinenaufruf",
   "commands.job.finished.other": "Der Job {{jobId}} {{state}}. {{error}}",
   "commands.job.finished.succeeded": "Job {{jobId}} war erfolgreich.",
   "commands.job.gc.confirm": "Jobs auf {{machine}} entfernen, deren Abschluss mehr als {{hours}}h zurückliegt? Ihre Protokolle werden gelöscht.",

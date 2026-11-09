@@ -947,6 +947,7 @@
   "commands.job.dismiss.notFound": "此配置中没有 {{jobId}} 的票据。",
   "commands.job.dismiss.olderThanOption": "与 --stale 一起使用时票据的最短存在时间，例如 90m、24h（默认：24h）",
   "commands.job.dismiss.staleOption": "忽略所有早于 --older-than 的待处理票据（默认 24h）",
+  "commands.job.dismiss.summary": "在本地放弃作业工单，不调用机器",
   "commands.job.finished.other": "任务 {{jobId}} {{state}}。{{error}}",
   "commands.job.finished.succeeded": "任务 {{jobId}} 已成功完成。",
   "commands.job.gc.confirm": "确定要删除 {{machine}} 上完成时间超过 {{hours}} 小时的任务吗?其日志也将被删除。",

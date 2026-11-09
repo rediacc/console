@@ -1297,6 +1297,7 @@
       },
       "dismiss": {
         "description": "Abandonar tickets de job localmente: as etapas pendentes são descartadas e o ticket deixa de aparecer. Não contata a máquina nem altera o job.",
+        "summary": "Abandonar tickets de job localmente, sem chamar a máquina",
         "idArg": "IDs de job ou de requisição dos tickets a descartar",
         "staleOption": "Descartar todos os tickets pendentes mais antigos que --older-than (padrão 24h)",
         "olderThanOption": "Com --stale, a idade mínima do ticket, por ex. 90m, 24h (padrão: 24h)",

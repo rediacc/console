@@ -947,6 +947,7 @@
   "commands.job.dismiss.notFound": "이 구성에 {{jobId}}의 티켓이 없습니다.",
   "commands.job.dismiss.olderThanOption": "--stale과 함께 쓰는 티켓 최소 경과 시간, 예: 90m, 24h (기본값: 24h)",
   "commands.job.dismiss.staleOption": "--older-than보다 오래된 대기 중 티켓을 모두 해제 (기본값 24h)",
+  "commands.job.dismiss.summary": "작업 티켓을 로컬에서 포기합니다(머신 호출 없음)",
   "commands.job.finished.other": "작업 {{jobId}}이(가) {{state}} 상태입니다. {{error}}",
   "commands.job.finished.succeeded": "작업 {{jobId}}이(가) 성공적으로 완료되었습니다.",
   "commands.job.gc.confirm": "{{machine}}에서 {{hours}}시간 이전에 완료된 작업을 삭제하시겠습니까? 로그도 함께 삭제됩니다.",

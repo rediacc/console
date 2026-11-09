@@ -1297,6 +1297,7 @@
       },
       "dismiss": {
         "description": "Abbandona i ticket dei job in locale: i passaggi dovuti vengono eliminati e il ticket non compare più. Nessuna chiamata alla macchina, il job non viene toccato.",
+        "summary": "Abbandona i ticket dei job in locale, senza chiamare la macchina",
         "idArg": "ID di job o di richiesta dei ticket da scartare",
         "staleOption": "Scarta tutti i ticket in sospeso più vecchi di --older-than (predefinito 24h)",
         "olderThanOption": "Con --stale, l'età minima del ticket, ad es. 90m, 24h (predefinito: 24h)",

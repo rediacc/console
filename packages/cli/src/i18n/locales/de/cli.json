@@ -1297,6 +1297,7 @@
       },
       "dismiss": {
         "description": "Job-Tickets lokal aufgeben: ausstehende Schritte entfallen und das Ticket erscheint nicht mehr. Es erfolgt kein Maschinenaufruf, der Job selbst bleibt unberührt.",
+        "summary": "Job-Tickets lokal aufgeben, ohne Maschinenaufruf",
         "idArg": "Job-IDs oder Request-IDs der zu verwerfenden Tickets",
         "staleOption": "Alle offenen Tickets verwerfen, die älter als --older-than sind (Standard: 24h)",
         "olderThanOption": "Mit --stale das Mindestalter eines Tickets, z. B. 90m, 24h (Standard: 24h)",

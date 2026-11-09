@@ -1297,6 +1297,7 @@
       },
       "dismiss": {
         "description": "在本地放弃作业票据：待执行的步骤将被丢弃，票据不再显示。不会连接机器，也不会改动作业本身。",
+        "summary": "在本地放弃作业工单，不调用机器",
         "idArg": "要忽略的票据的作业 ID 或请求 ID",
         "staleOption": "忽略所有早于 --older-than 的待处理票据（默认 24h）",
         "olderThanOption": "与 --stale 一起使用时票据的最短存在时间，例如 90m、24h（默认：24h）",
