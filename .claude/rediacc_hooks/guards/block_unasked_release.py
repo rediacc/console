@@ -807,12 +807,23 @@ def _docker_publish(name, args):
 SHELL_VALUE_OPTIONS = ("-o", "+o", "-O", "+O", "--rcfile", "--init-file")
 
 
+def _short_cluster_takes_value(word):
+    """A short-option cluster whose last letter is `o` or `O` (`-eo pipefail`, `-euo pipefail`, `+eo`): that letter consumes the next word (review d36a2709.1)."""
+    return (
+        len(word) > 2
+        and word[0] in "-+"
+        and word[1] != "-"
+        and word[1:].isalpha()
+        and word[-1] in "oO"
+    )
+
+
 def _shell_script_index(args):
     """Index of the script a shell runs: the first word that is no option, skipping the value of an option that takes one (`bash -o pipefail ./run.sh ...`, review 01df8032.1)."""
     k = 0
     while k < len(args):
         word = args[k]
-        if word in SHELL_VALUE_OPTIONS:
+        if word in SHELL_VALUE_OPTIONS or _short_cluster_takes_value(word):
             k += 2
             continue
         if not word.startswith(("-", "+")) or word in ("-", "+"):

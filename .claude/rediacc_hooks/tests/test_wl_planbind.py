@@ -231,6 +231,20 @@ def test_item_that_only_mentions_a_ruling_in_passing_keeps_the_box_bound(tmp_pat
     )
 
 
+def test_ruling_declaration_forms(tmp_path):
+    """Reviews ff5c3c4a.1/.2: a colon after a passing mention is no ruling; hyphenated and parenthesised declarations are."""
+    base = plan(status="done", boxes=("[ ] T1 open work here",), extra=ruled(tmp_path))
+    dropped = base + "  dropped by ruling #aa11bb22\n"
+    for text in ("close the ruling: doc gap", "note the ruling: doc gap, not a decision"):
+        assert kinds(run({TARGET: dropped}, [item("aa11bb22", "x", text)], tmp_path)) == ["box"]
+    for text in (
+        "operator-ruling 2026-11-09: drop T1",
+        "Decision recorded (ruling): drop T1",
+        "Ruling: drop T1",
+    ):
+        assert run({TARGET: dropped}, [item("aa11bb22", "x", text)], tmp_path) == []
+
+
 def test_dropped_line_naming_an_unrelated_closed_item_keeps_the_box_bound(tmp_path):
     """Review 8e5c269d.1: a closed item that is no ruling does not release the box; the same line with a ruling item does (control)."""
     base = plan(status="done", boxes=("[ ] T1 open work here",), extra=ruled(tmp_path))

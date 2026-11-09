@@ -1,7 +1,7 @@
 ---
 description: Pause the session for an operator break (a restart, an update, a trip): switch the Stop hook to quiet, start nothing new, let running sub-agents finish and record what they left, cancel the session's crons, and write a resume point. Resuming restores the effort level and continues from STATE.md.
-argument-hint: "[resume-effort] [note]  (resume-effort is quiet|low|smart|high|ultra, the level to restore on resume; default: the level in force now)"
-allowed-tools: Bash(date:*), Bash(git branch --show-current), Bash(grep:*), Bash(head:*), Bash(git status:*)
+argument-hint: "[resume-effort] [note]  (resume-effort is quiet|low|smart|high|ultra, the level to restore on resume; default: the level in force now, or the one an earlier pause recorded when the hook is already quiet)"
+allowed-tools: Bash(date:*), Bash(git branch --show-current), Bash(grep:*), Bash(head:*), Bash(git status:*), Bash(git add:*), Bash(git commit:*), Bash(git log:*), Bash(cp:*), Bash(mkdir:*), Bash(.claude/hooks/stop/worklist.py:*), Bash(python3 .claude/hooks/stop/worklist.py:*), Bash(python3 .claude/hooks/stop/wl_wake.py:*), Bash(./rdc.sh ops status), Bash(docker version), CronList, CronDelete
 ---
 
 ## Current state
@@ -15,7 +15,7 @@ allowed-tools: Bash(date:*), Bash(git branch --show-current), Bash(grep:*), Bash
 
 The operator invoked `/pause $ARGUMENTS`. The machine may restart, Docker or WSL may be updated, or the operator is simply away: anything not on disk or in git may be gone afterwards, `/tmp` included.
 
-1. **Quiet the hook.** Note the effort level in force above, then `worklist.py --queue-set <me> effort=quiet`. The resume level is the first argument when it names a level, otherwise the noted one.
+1. **Quiet the hook.** Note the effort level in force above, then `worklist.py --queue-set <me> effort=quiet`. The resume level is the first argument when it names a level. Otherwise it is the noted level, except when that is already `quiet`: an earlier pause set it, so keep the resume level that pause recorded in STATE.md's pause line and never overwrite it with `quiet` (a second `/pause` would otherwise resume the session still quiet). With no recorded level, use `smart`.
 2. **Cancel the session's crons** (`CronList`, then `CronDelete` each): a continue-loop or heartbeat would restart work the operator asked to stop. Keep each cancelled cron's schedule and prompt for the resume point.
 3. **Start nothing new.** No sub-agent, workflow, writer wave, live run or background job from here on, and no fix of a finding the hook raises beyond recording it.
 4. **Let running sub-agents finish.** Keep the wake timer armed (`wl_wake.py <me>` as its own background call, timeout 2400000) only while one is still running. As each finishes, record what it left without landing it: its worktree path, its commit shas per repo, its verdicts or report file, and any diff it handed back. Copy any result file it wrote under `/tmp` to `.ci/cache/pause/<me>/` (a restart empties `/tmp`). Put the record on its worklist item with `--update`, then `--lease <me> <id> release` so the hook does not chase a finished worker. Background shells keep running unless they only exist to wake the session.
