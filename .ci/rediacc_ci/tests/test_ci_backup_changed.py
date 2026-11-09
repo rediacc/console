@@ -126,7 +126,9 @@ def test_a_failed_submodule_range_fails_open(
 ) -> None:
     base = _commit(repo, "a.txt", "1")
     _commit(repo, "b.txt", "2")
-    unknown = backup_changed.surfaces.Changed(hits=(), unknown=("private/renet x: not checked out",))
+    unknown = backup_changed.surfaces.Changed(
+        hits=(), unknown=("private/renet x: not checked out",)
+    )
     monkeypatch.setattr(backup_changed.surfaces, "changed_paths", lambda *_a, **_k: unknown)
     assert backup_changed.decide("push", base, "") is True
 
