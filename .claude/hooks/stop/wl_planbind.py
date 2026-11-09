@@ -44,8 +44,10 @@ _PLAN_STEM_RE = re.compile(
 _ITEM_REF_RE = re.compile(r"#([0-9a-f]{12}|[0-9a-f]{8})\b")
 # `dropped by ruling #<id>` under a box: the operator ruling item that dropped its work.
 _DROPPED_RE = re.compile(r"\bdropped by ruling #([0-9a-f]{12}|[0-9a-f]{8})\b", re.IGNORECASE)
-# The word a ruling item's text carries ("operator ruling: ...").
-_RULING_WORD_RE = re.compile(r"\bruling\b", re.IGNORECASE)
+# How a ruling item's text declares itself: "operator ruling ...", "ruling: ..." or a text that opens with the word. A text that only mentions a ruling in passing ("close the ruling doc gap") is no ruling (review f06eb96b.1).
+_RULING_WORD_RE = re.compile(
+    r"\boperator\s+ruling\b|\bruling\s*:|\A\W*(?:\([^)]*\)\s*)?ruling\b", re.IGNORECASE
+)
 # The one item state that makes a ruling a decision.
 DROP_CLOSED_STATE = "x"
 

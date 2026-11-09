@@ -218,6 +218,19 @@ def test_box_dropped_by_a_closed_ruling_item_is_released(tmp_path):
     assert run(texts, [item("aa11bb22", "x", "operator ruling: drop T1")], tmp_path) == []
 
 
+def test_item_that_only_mentions_a_ruling_in_passing_keeps_the_box_bound(tmp_path):
+    """Review f06eb96b.1: the word `ruling` inside an unrelated item's text is no ruling; a text opening with it is (control)."""
+    base = plan(status="done", boxes=("[ ] T1 open work here",), extra=ruled(tmp_path))
+    dropped = base + "  dropped by ruling #aa11bb22\n"
+    assert kinds(
+        run({TARGET: dropped}, [item("aa11bb22", "x", "close the ruling doc gap")], tmp_path)
+    ) == ["box"]
+    assert (
+        run({TARGET: dropped}, [item("aa11bb22", "x", "Ruling 2026-11-09: drop T1")], tmp_path)
+        == []
+    )
+
+
 def test_dropped_line_naming_an_unrelated_closed_item_keeps_the_box_bound(tmp_path):
     """Review 8e5c269d.1: a closed item that is no ruling does not release the box; the same line with a ruling item does (control)."""
     base = plan(status="done", boxes=("[ ] T1 open work here",), extra=ruled(tmp_path))
