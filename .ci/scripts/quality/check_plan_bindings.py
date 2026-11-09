@@ -100,7 +100,7 @@ def evaluate(
         if not judged(graph, rel):
             continue
         n_judged += 1
-        got = B.bindings(root, rel, texts=texts, items=items, index_text=index_text)
+        got = B.bindings(root, rel, texts=texts, items=items, index_text=index_text, graph=graph)
         if got:
             found[rel] = got
     return found, {"plans": len(texts), "judged": n_judged, "items": len(items)}

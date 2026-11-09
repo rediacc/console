@@ -17,6 +17,7 @@ NEVER RAISES ON THE READ PATH. An unreadable plan or store file is skipped; the 
 from __future__ import annotations
 
 import dataclasses
+import functools
 import os
 import pathlib
 import re
@@ -107,6 +108,14 @@ def _cite_box_re(base: str) -> re.Pattern[str]:
     return re.compile(r"(?<![A-Za-z0-9._-])%s(?:#[A-Za-z0-9]|\s*\[[0-9a-f]{8}\])" % re.escape(base))
 
 
+@functools.lru_cache(maxsize=1024)
+def _open_boxes(text: str) -> tuple:
+    """`wl_planrec.open_boxes`, memoised on the text: step 4 reads every other plan's open boxes once per judged plan."""
+    import wl_planrec as R
+
+    return tuple(R.open_boxes(text))
+
+
 def _clip(text: str) -> str:
     one = " ".join(str(text or "").split())
     return one if len(one) <= DETAIL_CHARS else one[: DETAIL_CHARS - 3] + "..."
@@ -165,10 +174,11 @@ def bindings(
     texts: dict[str, str] | None = None,
     items: list[dict] | None = None,
     index_text: str | None = None,
+    graph: D.Graph | None = None,
 ) -> list[Binding]:
     """Every live binding of plan `rel`, in kind order (box, item, dependent, citing-box). [] means nothing holds it.
 
-    `rel` is a path under agent/plans. `texts`, `items` and `index_text` replace the reads from `root` (the tests' door)."""
+    `rel` is a path under agent/plans. `texts`, `items` and `index_text` replace the reads from `root` (the tests' door). `graph`, built once over the same `texts`, is reused across calls by a caller judging many plans (the plan-bindings gate): rebuilding it per call threw its caches away and cost about 50 s on the real tree."""
     import wl_planfile as PF
     import wl_planrec as R
 
@@ -186,7 +196,8 @@ def bindings(
     if own is None:
         return []
     base = rel.rsplit("/", 1)[-1]
-    graph = D.Graph(texts, index_text, root)
+    if graph is None:
+        graph = D.Graph(texts, index_text, root)
     item_by_id = {str(r.get("id")): r for r in items}
     out: list[Binding] = []
 
@@ -248,7 +259,7 @@ def bindings(
             continue
         if info.header.status in graph.finished() or info.header.status == D.REMOVED_STATUS:
             continue
-        for index, _raw, body, sig in R.open_boxes(text):
+        for index, _raw, body, sig in _open_boxes(text):
             if cite.search(body) or (sig_pat is not None and sig_pat.search(body)):
                 out.append(
                     Binding(
