@@ -26,4 +26,4 @@ Resolution: not-a-bug | .ci/rediacc_ci/deploy/deploy_www.py:187 wrangler refuses
 ### 6ef3eced.2 [low] .ci/rediacc_ci/tests/test_deploy_deploy_www.py:759
 Anchor: in-diff
 Claim: The absence check asserts only that the literal string "ED25519_PRIVATE_KEY" is missing from the TOML; if the account Worker's real private-key variable has another name, the assertion passes vacuously and does not guard the 'no private key' claim it is named for.
-Resolution: open
+Resolution: not-a-bug | .ci/rediacc_ci/tests/test_deploy_deploy_www.py:759 the check is the substring ED25519_PRIVATE_KEY, which matches the real ACCOUNT_ED25519_PRIVATE_KEY name (the name BENCH_FORBIDDEN lists at region_consistency_offline.py:68), so the absence is not vacuous | d778be9d 2026-11-09T19:57:55Z
