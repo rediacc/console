@@ -25,7 +25,7 @@ THE MOVE, in order (`--write`; without it the run stops after the plan and write
   6. flip: `subscription_shards.shard` = target, `moved_at` = now.
   7. the source is re-hashed; a row written between the export and the flip makes it differ, and the source is then kept (exit 4) for the operator to reconcile. Otherwise the source rows are deleted, children first, and the delete is counted back to zero.
 
-EXIT CODES. 0 planned (dry run) or moved; 1 usage; 2 refused by a pre-check, nothing moved; 3 verification failed, target rolled back, no flip; 4 flipped, source kept because it changed.
+EXIT CODES. 0 planned (dry run) or moved; 1 usage; 2 refused by a pre-check, nothing moved; 3 verification failed, target rolled back, no flip; 4 flipped, source kept because it changed or its cleanup failed (also a flip whose outcome is unknown: both copies kept).
 
 DATABASES are `<shard>=d1:<database name>` (the D1 REST query API, with CLOUDFLARE_API_TOKEN or the Global API Key pair and CLOUDFLARE_ACCOUNT_ID, as the other ops modules read them) or `<shard>=sqlite:<path>`. Shard 0 must be given: it is the directory. No secret reaches argv or output.
 """
@@ -328,9 +328,19 @@ def fetch(db: Executor, table: str, where: str | None) -> list[dict]:
             return rows
 
 
+def _canonical(value: object) -> object:
+    """json.dumps fallback: a BLOB value (bytes) hashes as its hex under a tag, so it differs from a TEXT of the same digits."""
+    if isinstance(value, bytes):
+        return {"blob": value.hex()}
+    raise TypeError("cannot hash a %s value" % type(value).__name__)
+
+
 def digest(rows: list[dict], columns: list[str]) -> str:
     cols = sorted(columns)
-    lines = sorted(json.dumps([r.get(c) for c in cols], separators=(",", ":")) for r in rows)
+    lines = sorted(
+        json.dumps([r.get(c) for c in cols], separators=(",", ":"), default=_canonical)
+        for r in rows
+    )
     return hashlib.sha256("\n".join(lines).encode()).hexdigest()
 
 
@@ -574,7 +584,7 @@ def move(
     try:
         tenant = tenant if tenant is not None else load_tenant_tables()
         plan, schema = build_plan(dbs, subscriptions, target, tenant, clock())
-    except MoveError as exc:
+    except (MoveError, sqlite3.Error) as exc:
         print("d1_shard_move: refused: %s" % exc, file=err)
         return EXIT_REFUSED
     print_plan(plan, out)
@@ -600,7 +610,11 @@ def move(
         live = live_rows(src, plan.subscriptions, clock())
     except (MoveError, sqlite3.Error) as exc:
         delete_rows(dst, plan.tables)
-        print("d1_shard_move: import failed, target rolled back, no flip: %s" % exc, file=err)
+        print(
+            "d1_shard_move: import failed, target rows rolled back (copied parent rows stay, inert), no flip: %s"
+            % exc,
+            file=err,
+        )
         return EXIT_VERIFY
     if off or live:
         delete_rows(dst, plan.tables)
@@ -608,17 +622,63 @@ def move(
             print("d1_shard_move: mismatch %s" % line, file=err)
         for line in live:
             print("d1_shard_move: live on the source since the plan: %s" % line, file=err)
-        print("d1_shard_move: target rolled back, no flip", file=err)
+        print(
+            "d1_shard_move: target rows rolled back (copied parent rows stay, inert), no flip",
+            file=err,
+        )
         return EXIT_VERIFY if off else EXIT_REFUSED
     stamp = clock()
-    directory.batch(
-        [
-            sql("UPDATE subscription_shards SET shard = ", lit(str(plan.target)))
-            + sql(", moved_at = ", lit(stamp), " WHERE subscription_id = ", lit(sub))
-            for sub in plan.subscriptions
-        ]
-    )
+    try:
+        directory.batch(
+            [
+                sql("UPDATE subscription_shards SET shard = ", lit(str(plan.target)))
+                + sql(", moved_at = ", lit(stamp), " WHERE subscription_id = ", lit(sub))
+                for sub in plan.subscriptions
+            ]
+        )
+    except (MoveError, sqlite3.Error) as exc:
+        return _flip_failed(directory, dst, plan, exc, err)
     print("d1_shard_move: flipped to shard %d at %s" % (plan.target, stamp), file=out)
+    try:
+        return _finish(src, plan, schema, out, err)
+    except (MoveError, sqlite3.Error) as exc:
+        print(
+            "d1_shard_move: flipped, but the source cleanup failed: %s; source rows kept on shard %d, reconcile them by hand"
+            % (exc, plan.source),
+            file=err,
+        )
+        return EXIT_SOURCE_CHANGED
+
+
+def _flip_failed(directory: Executor, dst: Executor, plan: Plan, exc: Exception, err) -> int:
+    """The flip raised: roll the target back only when the directory provably still names the source."""
+    try:
+        rows = directory.query(
+            sql("SELECT shard FROM subscription_shards WHERE subscription_id IN ")
+            + in_list(plan.subscriptions)
+        )
+        still_source = len(rows) == len(plan.subscriptions) and all(
+            str(r["shard"]) == str(plan.source) for r in rows
+        )
+        if still_source:
+            delete_rows(dst, plan.tables)
+            print(
+                "d1_shard_move: flip failed, directory still on shard %d, target rows rolled back: %s"
+                % (plan.source, exc),
+                file=err,
+            )
+            return EXIT_VERIFY
+    except (MoveError, sqlite3.Error):
+        pass
+    print(
+        "d1_shard_move: flip failed and the directory state is unknown: %s; rows kept on shards %d and %d, reconcile by hand"
+        % (exc, plan.source, plan.target),
+        file=err,
+    )
+    return EXIT_SOURCE_CHANGED
+
+
+def _finish(src: Executor, plan: Plan, schema: Schema, out, err) -> int:
     changed = mismatches(src, plan.tables, schema)
     if changed:
         for line in changed:

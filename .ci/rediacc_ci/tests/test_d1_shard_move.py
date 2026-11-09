@@ -377,3 +377,79 @@ def test_cli_dry_run_on_sqlite_files(shards, tmp_path: pathlib.Path, capsys) -> 
     assert rc == 0
     assert "dry run" in capsys.readouterr().out
     assert mod.main(["--db", "0=ftp:x", "--to", "1", S1], env={}) == mod.EXIT_USAGE
+
+
+class FailingDirectory:
+    """The directory with one injected failure: on the flip (before or after it applies), or on reads once flipped."""
+
+    def __init__(self, inner: mod.SqliteExecutor, mode: str) -> None:
+        self.inner = inner
+        self.mode = mode
+        self.flipped = False
+
+    def query(self, sql: str) -> list[dict]:
+        if self.mode == "after-reads" and self.flipped:
+            raise mod.MoveError("transport down")
+        return self.inner.query(sql)
+
+    def batch(self, statements: list[str]) -> None:
+        if statements and statements[0].startswith("UPDATE subscription_shards"):
+            if self.mode == "flip-before":
+                raise mod.MoveError("flip refused")
+            self.inner.batch(statements)
+            self.flipped = True
+            if self.mode == "flip-after":
+                raise mod.MoveError("answer lost")
+            return
+        self.inner.batch(statements)
+
+
+def test_flip_failure_before_it_applies_rolls_the_target_back(shards) -> None:
+    wrapped = {0: FailingDirectory(shards[0], "flip-before"), 1: shards[1]}
+    rc, _, err = run(wrapped, [S1, S2], write=True)
+    assert rc == mod.EXIT_VERIFY
+    assert "flip failed, directory still on shard 0" in err
+    assert counts(shards[1], (S1, S2)) == {}
+    assert counts(shards[0], (S1, S2))
+
+
+def test_flip_failure_with_unknown_state_keeps_both_copies(shards) -> None:
+    wrapped = {0: FailingDirectory(shards[0], "flip-after"), 1: shards[1]}
+    rc, _, err = run(wrapped, [S1, S2], write=True)
+    assert rc == mod.EXIT_SOURCE_CHANGED
+    assert "state is unknown" in err
+    assert counts(shards[1], (S1, S2))
+    assert counts(shards[0], (S1, S2))
+
+
+def test_source_cleanup_failure_after_the_flip_is_reported_not_raised(shards) -> None:
+    wrapped = {0: FailingDirectory(shards[0], "after-reads"), 1: shards[1]}
+    rc, _, err = run(wrapped, [S1, S2], write=True)
+    assert rc == mod.EXIT_SOURCE_CHANGED
+    assert "source cleanup failed" in err
+    assert counts(shards[0], (S1, S2))
+
+
+class BrokenPrecheck(mod.SqliteExecutor):
+    def query(self, sql: str) -> list[dict]:
+        if "PRAGMA table_info" in sql:
+            raise sqlite3.OperationalError("database is locked")
+        return super().query(sql)
+
+
+def test_sqlite_error_in_the_pre_check_refuses(shards, tmp_path: pathlib.Path) -> None:
+    broken = BrokenPrecheck(tmp_path / "shard1.db")
+    try:
+        rc, _, err = run({0: shards[0], 1: broken}, [S1, S2], write=True)
+    finally:
+        broken.close()
+    assert rc == mod.EXIT_REFUSED
+    assert "database is locked" in err
+
+
+def test_digest_hashes_blob_values() -> None:
+    rows = [{"id": "a", "payload": b"\x00\x01"}]
+    same = mod.digest(rows, ["id", "payload"])
+    assert same == mod.digest([{"id": "a", "payload": b"\x00\x01"}], ["id", "payload"])
+    assert same != mod.digest([{"id": "a", "payload": b"\x00\x02"}], ["id", "payload"])
+    assert same != mod.digest([{"id": "a", "payload": "0001"}], ["id", "payload"])
