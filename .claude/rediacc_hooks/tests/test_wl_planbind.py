@@ -354,8 +354,12 @@ def test_a_reused_graph_gives_the_same_verdict_and_a_stale_one_is_refused():
     assert alone == shared
     assert alone
     stale = deps.Graph({TARGET: texts[TARGET]}, "", None)
-    with pytest.raises(ValueError, match="different plan set"):
+    with pytest.raises(ValueError, match="different plan texts"):
         B.bindings("/nonexistent", TARGET, texts=texts, items=items, index_text="", graph=stale)
+    # Review c018f50e.1: the same paths with edited text is also a stale graph.
+    edited = dict(texts, **{OTHER: texts[OTHER] + "\nedited\n"})
+    with pytest.raises(ValueError, match="different plan texts"):
+        B.bindings("/nonexistent", TARGET, texts=edited, items=items, index_text="", graph=graph)
 
 
 def test_the_open_box_memo_returns_the_parser_result():
@@ -382,3 +386,43 @@ def test_a_plan_named_without_its_md_binds():
     found = run({TARGET: plan()}, [item("aa11bb22", " ", "finish PLAN-x B5 next")])
     assert "item" in kinds(found)
     assert run({TARGET: plan()}, [item("bb22cc33", " ", "see PLAN-xy B5")]) == []
+
+
+def _stems(text):
+    return [m.group(1) for m in B._PLAN_STEM_RE.finditer(text)]
+
+
+def test_a_longer_extension_or_a_dotted_plan_name_is_not_cut_short():
+    """Reviews e2ee8226.1, bd655948.1, 42b8a518.2: `PLAN-y.mdx` is not `PLAN-y.md`, and `PLAN-v1.2-thing.md` is not `PLAN-v1`."""
+    assert B._PLAN_NAME_RE.findall("moved to PLAN-y.mdx") == []
+    assert B._PLAN_NAME_RE.findall("moved to PLAN-y.md.") == ["PLAN-y.md"]
+    assert _stems("see PLAN-v1.2-thing.md now") == ["PLAN-v1.2-thing"]
+    assert _stems("see PLAN-v1.2-thing now") == ["PLAN-v1.2-thing"]
+    assert _stems("see PLAN-x. Next") == ["PLAN-x"]
+    assert _stems("see PLAN-x.md, and PLAN-z") == ["PLAN-x", "PLAN-z"]
+    assert _stems("PLAN-x.5") == ["PLAN-x.5"]
+    dotted = "agent/plans/PLAN-v1.2-thing.md"
+    body = plan(name="PLAN-v1.2-thing", boxes=("[ ] T1 open work here",))
+    sig = sig_of(body)
+    found = B.bindings(
+        "/nonexistent",
+        dotted,
+        texts={dotted: body},
+        items=[item("aa11bb22", " ", "PLAN-v1.2-thing proof %s" % sig)],
+        index_text="",
+    )
+    assert "item" in kinds(found)
+
+
+def test_a_non_numeric_ns_in_a_store_file_does_not_raise(tmp_path):
+    """Review e2ee8226.3: the read path never raises."""
+    store = tmp_path / "agent" / "worklist"
+    store.mkdir(parents=True)
+    rows = [
+        {"ev": "add", "id": "aa11bb22", "at": _at(0), "by": "s1", "text": "x", "ns": "abc"},
+        {"ev": "add", "id": "bb22cc33", "at": _at(1), "by": "s1", "text": "y", "ns": None},
+    ]
+    (store / "s1.jsonl").write_text(
+        "\n".join(json.dumps(r) for r in rows) + "\n", encoding="utf-8"
+    )
+    assert sorted(r["id"] for r in B.store_items(tmp_path)) == ["aa11bb22", "bb22cc33"]

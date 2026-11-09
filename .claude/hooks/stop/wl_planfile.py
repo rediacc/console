@@ -493,7 +493,7 @@ def store_item_states(root):
             events.extend(S._parse_events(f.read_text(encoding="utf-8", errors="replace")))
         except OSError:
             continue
-    events.sort(key=lambda e: (str(e.get("at") or ""), int(e.get("ns") or 0)))
+    events.sort(key=lambda e: S.event_order(e))
     records = S._fold_events(events)[0]
     return {rid: str(r.get("state") or " ") for rid, r in records.items() if r.get("state") != "~"}
 

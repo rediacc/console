@@ -3349,7 +3349,7 @@ def focus_resolve(root, worklist, session_id, me8, fold, state_doc):
             # Ended by the verb (or replaced by a newer on-event): the newest owned event says why.
             newest: dict[str, Any] = max(
                 (e for o, e in (fold.phase or {}).items() if o and owned(o)),
-                key=lambda e: (str(e.get("at") or ""), int(e.get("ns") or 0)),
+                key=lambda e: S.event_order(e),
                 default={},
             )
             why = (

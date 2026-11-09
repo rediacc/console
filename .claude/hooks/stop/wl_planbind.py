@@ -9,7 +9,7 @@ THE FOUR KINDS (operator ruling 2026-10-03):
 - `dependent`: an unfinished plan whose `Depends-On:` reaches the plan (`wl_plandeps.Graph.dependents`). A finished dependent never binds.
 - `citing-box`: an open box of another unfinished plan that cites one of this plan's boxes: `PLAN-x.md#<ref>`, `PLAN-x.md [<sig>]`, or a bare box signature. Naming the plan with no box reference is not a citation of a box.
 
-PURE OVER ITS INPUTS. `texts` ({rel: full text}), `items` (records with `id`, `state`, `text`) and `index_text` are injectable, so the tests need no tree; left as None they are read from `root` (every plan in full, every tracked `agent/worklist/*.jsonl` through the store's own fold, so the answer cannot disagree with the Stop hook about what a state means).
+PURE OVER ITS INPUTS. `texts` ({rel: full text}), `items` (records with `id`, `state`, `text`) and `index_text` are injectable, so the tests need no tree; left as None they are read from `root` (every plan in full, every `agent/worklist/*.jsonl` in the working tree, tracked or not, through the store's own fold, so the answer cannot disagree with the Stop hook about what a state means).
 
 NEVER RAISES ON THE READ PATH. An unreadable plan or store file is skipped; the gate's vacuity floor (CB4) is what notices a corpus that stopped loading.
 """
@@ -36,10 +36,10 @@ OPEN_ITEM_STATES = D._OPEN_ITEM_STATES
 HOME_LINES = 4
 DETAIL_CHARS = 100
 
-_PLAN_NAME_RE = re.compile(r"PLAN-[A-Za-z0-9._-]+?\.md")
+_PLAN_NAME_RE = re.compile(r"PLAN-[A-Za-z0-9._-]+?\.md(?![A-Za-z0-9_-])")
 # A plan named with or without its `.md`, as items write both (`PLAN-docker-pin-digest proof: ...`).
 _PLAN_STEM_RE = re.compile(
-    r"(PLAN-[A-Za-z0-9_-]*[A-Za-z0-9])(?:\.md(?![A-Za-z0-9_-])|(?![A-Za-z0-9_-])(?!\.[A-Za-z0-9]))"
+    r"(PLAN-[A-Za-z0-9._-]*?[A-Za-z0-9_-])(?:\.md(?![A-Za-z0-9_-])|(?![A-Za-z0-9_-])(?!\.[A-Za-z0-9]))"
 )
 _ITEM_REF_RE = re.compile(r"#([0-9a-f]{12}|[0-9a-f]{8})\b")
 # `dropped by ruling #<id>` under a box: the operator ruling item that dropped its work.
@@ -85,7 +85,7 @@ def load_texts(root) -> dict[str, str]:
 
 
 def store_items(root) -> list[dict]:
-    """The folded records of every committed writer file under `<root>/agent/worklist/`, tombstoned ones dropped. The fold is `wl_store._fold_events`, as `wl_planfile.store_item_states` reads it."""
+    """The folded records of every writer file in the working tree under `<root>/agent/worklist/`, tombstoned ones dropped. The fold is `wl_store._fold_events`, as `wl_planfile.store_item_states` reads it."""
     import wl_store as S
 
     events: list[dict] = []
@@ -94,7 +94,7 @@ def store_items(root) -> list[dict]:
             events.extend(S._parse_events(f.read_text(encoding="utf-8", errors="replace")))
         except OSError:
             continue
-    events.sort(key=lambda e: (str(e.get("at") or ""), int(e.get("ns") or 0)))
+    events.sort(key=lambda e: S.event_order(e))
     records = S._fold_events(events)[0]
     return [dict(r, id=rid) for rid, r in records.items() if r.get("state") != "~"]
 
@@ -218,9 +218,9 @@ def bindings(
     base = rel.rsplit("/", 1)[-1]
     if graph is None:
         graph = D.Graph(texts, index_text, root)
-    elif graph.texts.keys() != texts.keys():
+    elif graph.texts != texts:
         # A graph built over another plan set would answer dependents from that set (review 7aa999c1.1).
-        raise ValueError("bindings: graph was built over a different plan set than texts")
+        raise ValueError("bindings: graph was built over different plan texts than `texts`")
     item_by_id = {str(r.get("id")): r for r in items}
     out: list[Binding] = []
 
@@ -260,7 +260,7 @@ def bindings(
         if rec.get("state") not in OPEN_ITEM_STATES:
             continue
         text = str(rec.get("text") or "")
-        # A signature is shared by identical box lines in different plans (every `LP-bench [live]` box hashes alike), so a signature binds only an item that names no plan or names this one.
+        # A signature binds an item that names this plan, or one that names no plan and cites at least one signature that is not `shared` (identical box lines in different plans, such as every `LP-bench [live]` box, hash alike).
         named = {m.group(1) for m in _PLAN_STEM_RE.finditer(text)}
         names_me = base[:-3] in named
         hits = set(sig_pat.findall(text)) if sig_pat is not None else set()
