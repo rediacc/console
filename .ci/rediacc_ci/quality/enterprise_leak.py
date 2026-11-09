@@ -1,7 +1,9 @@
 """No Enterprise company name reaches a public surface of this repository.
 
-    .ci/scripts/quality/check_enterprise_leak.py              controls, then the verdict
-    .ci/scripts/quality/check_enterprise_leak.py --selftest   controls only
+    PYTHONPATH=.ci python3 -m rediacc_ci.quality.enterprise_leak              controls, then the verdict
+    PYTHONPATH=.ci python3 -m rediacc_ci.quality.enterprise_leak --selftest   controls only
+
+NOT YET A CI GATE: no `.ci/scripts/quality/` entry point, package.json script or workflow step runs it, because a run over the tracked tree still reports findings in files outside the quality tooling (test fixtures naming `usa.<domain>`, `1.<domain>`, a `proxy-eu.<domain>` comment). Those are fixed, and the three-point registration follows, before it can gate.
 
 WHY IT EXISTS (agent/plans/PLAN-enterprise-isolation.md, N2). This repository is public, and so is every CI log it produces. A company's name lives in the per-region control database and in gitignored generated configs, never in a tracked file. Four ways it could still escape are checked here, and the two public reports that read live Cloudflare names mask them through `Masker` below.
 
@@ -83,12 +85,13 @@ class Shape:
     host_files: int = 0
     labels: int = 0
     label_sources: str = ""
+    skipped: int = 0
 
     def render(self) -> str:
         return (
             "%d tracked files, %d tracked company toml(s) (the template is allowed), "
             "%d store names in %d public records, %d product host(s) in %d file(s), "
-            "%d company label(s) known locally%s"
+            "%d company label(s) known locally%s; %d tracked file(s) not scanned (over 4 MiB, binary or unreadable)"
             % (
                 self.tracked,
                 self.generated_tracked,
@@ -98,6 +101,7 @@ class Shape:
                 self.host_files,
                 self.labels,
                 " (%s)" % self.label_sources if self.label_sources else " (none generated here)",
+                self.skipped,
             )
         )
 
@@ -231,11 +235,15 @@ def store_findings(root: pathlib.Path, pairs: list[tuple[str, str]]) -> list[Fin
 
 
 def host_re(domain: str) -> re.Pattern[str]:
-    """`<label>.<domain>` with the label directly under the domain; a dot before the label is allowed (`proxy.eu.<domain>` yields `eu`)."""
+    """`<labels>.<domain>`: group 1 is the whole dotted prefix (`host_labels` splits it), every label of which is judged (`proxy.eu.<domain>` gives `proxy.eu`, and `globex.eu.<domain>` gives `globex.eu`, so a company label is not hidden behind a public one). The prefix is one linear character class, not nested label groups, so a long run of host characters cannot backtrack badly."""
     return re.compile(
-        r"(?<![A-Za-z0-9_-])([a-z0-9](?:[a-z0-9-]*[a-z0-9])?)\.%s(?![A-Za-z0-9-])"
-        % re.escape(domain)
+        r"(?<![A-Za-z0-9_-])([a-z0-9][a-z0-9.-]*)\.%s(?![A-Za-z0-9-])" % re.escape(domain)
     )
+
+
+def host_labels(prefix: str) -> list[str]:
+    """The well-formed labels of a dotted prefix; an empty or hyphen-edged piece is no label and is left out."""
+    return [part for part in prefix.split(".") if _LABEL.fullmatch(part)]
 
 
 def label_is_public(label: str, public: frozenset[str]) -> bool:
@@ -243,15 +251,20 @@ def label_is_public(label: str, public: frozenset[str]) -> bool:
     return label in public or base in public or base in FAKE_LABELS
 
 
-def _read_text(root: pathlib.Path, rel: str) -> str | None:
+def _read_text(root: pathlib.Path, rel: str, shape: Shape | None = None) -> str | None:
+    """The file's text, or None for a directory entry, a missing file, one over MAX_SCAN_BYTES, an unreadable one or one with a NUL in its first 8 KiB; every None but the first two counts in `shape.skipped`, so a skip is visible in the verdict."""
     path = root / rel
     try:
-        if not path.is_file() or path.stat().st_size > MAX_SCAN_BYTES:
+        if not path.is_file():
             return None
+        if path.stat().st_size > MAX_SCAN_BYTES:
+            raise ValueError("over the size limit")
         raw = path.read_bytes()
-    except OSError:
-        return None
-    if b"\0" in raw[:8192]:
+        if b"\0" in raw[:8192]:
+            raise ValueError("binary")
+    except (OSError, ValueError):
+        if shape is not None:
+            shape.skipped += 1
         return None
     return raw.decode("utf-8", "replace")
 
@@ -263,29 +276,71 @@ def host_findings(
     pattern = host_re(domain)
     out = []
     for rel in files:
-        text = _read_text(root, rel)
+        text = _read_text(root, rel, shape)
         if text is None or domain not in text:
             continue
         hits = 0
         for m in pattern.finditer(text):
             hits += 1
-            label = m.group(1)
-            if label_is_public(label, public):
+            for label in host_labels(m.group(1)):
+                if label_is_public(label, public):
+                    continue
+                out.append(
+                    Finding(
+                        rel,
+                        text.count("\n", 0, m.start()) + 1,
+                        "product-host",
+                        "%s names label %r, which is no region or service, so it reads as a company host"
+                        % (m.group(0), label),
+                        "write the fake `acme` or the placeholder `<company>` instead; when the label is a "
+                        "service, reserve it in .ci/rediacc_ci/enterprise/names.py SERVICE_LABELS",
+                    )
+                )
+        if hits:
+            shape.hosts += hits
+            shape.host_files += 1
+    return out
+
+
+_WORKER_RESOURCE = re.compile(r"(%s)-([a-z0-9]+(?:-[a-z0-9]+)*)" % "|".join(RESOURCE_PREFIXES))
+
+
+def worker_name_findings(
+    root: pathlib.Path, files: list[str], public: frozenset[str]
+) -> list[Finding]:
+    """A finding per string of a tracked `workers/**/*.toml` that is a company-shaped resource name (`account-<c>`, `proxy-<c>`, ...) whose rest is no public label. `Masker.for_tree` treats every string of those files as public, so this is the check that keeps a company Worker name from becoming public by being typed into one."""
+    out: list[Finding] = []
+    for rel in files:
+        if not (
+            rel.startswith("workers/") and rel.endswith(".toml") and not GENERATED_TOML.search(rel)
+        ):
+            continue
+        text = _read_text(root, rel)
+        if text is None:
+            continue
+        try:
+            doc = tomllib.loads(text)
+        except tomllib.TOMLDecodeError:
+            continue  # a template with @@ placeholders is not TOML
+        strings: set[str] = set()
+        _strings(doc, strings)
+        for value in sorted(strings):
+            m = _WORKER_RESOURCE.fullmatch(value)
+            if not m:
+                continue
+            rest = m.group(2)
+            if rest in public or all(t in public for t in rest.split("-")):
                 continue
             out.append(
                 Finding(
                     rel,
-                    text.count("\n", 0, m.start()) + 1,
-                    "product-host",
-                    "%s names label %r, which is no region or service, so it reads as a company host"
-                    % (m.group(0), label),
-                    "write the fake `acme` or the placeholder `<company>` instead; when the label is a "
-                    "service, reserve it in .ci/rediacc_ci/enterprise/names.py SERVICE_LABELS",
+                    _line_of(text, value),
+                    "worker-name",
+                    "%r reads as a company resource name" % value,
+                    "a company's Worker config is generated and kept out of the repository; write the fake `acme` "
+                    "or reserve the label in .ci/rediacc_ci/enterprise/names.py SERVICE_LABELS",
                 )
             )
-        if hits:
-            shape.hosts += hits
-            shape.host_files += 1
     return out
 
 
@@ -399,6 +454,7 @@ def scan(
         )
     findings += store_findings(root, pairs)
     findings += host_findings(root, files, public, domain, shape)
+    findings += worker_name_findings(root, files, public)
     labels, sources = known_labels(root, env)
     shape.labels, shape.label_sources = len(labels), sources
     findings += label_findings(root, files, labels, domain)
@@ -483,13 +539,16 @@ class Masker:
         if not self.enabled or not text:
             return text
 
-        def host(m: re.Match[str]) -> str:
-            label = m.group(1)
+        def one(label: str) -> str:
             if label_is_public(label, self.public_labels):
-                return m.group(0)
+                return label
             proxy = label.endswith(PROXY_SUFFIX)
             base = label.removesuffix(PROXY_SUFFIX)
-            return "%s%s.%s" % (self._token(base), PROXY_SUFFIX if proxy else "", self.domain)
+            return "%s%s" % (self._token(base), PROXY_SUFFIX if proxy else "")
+
+        def host(m: re.Match[str]) -> str:
+            parts = [one(p) if _LABEL.fullmatch(p) else p for p in m.group(1).split(".")]
+            return "%s.%s" % (".".join(parts), self.domain)
 
         def resource(m: re.Match[str]) -> str:
             whole, prefix, rest = m.group(0), m.group(1), m.group(2)

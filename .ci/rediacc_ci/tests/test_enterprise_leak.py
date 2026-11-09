@@ -136,8 +136,41 @@ def test_label_grammar_and_proxy_suffix():
     assert not leak.label_is_public(CO, PUBLIC)
     assert not leak.label_is_public(CO + "-proxy", PUBLIC)
     pat = leak.host_re(PRODUCT_DOMAIN)
-    assert [m.group(1) for m in pat.finditer("proxy.eu.%s" % PRODUCT_DOMAIN)] == ["eu"]
+    assert [m.group(1) for m in pat.finditer("proxy.eu.%s" % PRODUCT_DOMAIN)] == ["proxy.eu"]
     assert not list(pat.finditer("<company>.%s and _psl.%s" % (PRODUCT_DOMAIN, PRODUCT_DOMAIN)))
+
+
+def test_a_company_label_behind_a_public_one_is_found_and_masked(tmp_path):
+    (tmp_path / "doc.md").write_text("see %s.eu.%s here\n" % (CO, PRODUCT_DOMAIN))
+    shape = leak.Shape()
+    found = leak.host_findings(tmp_path, ["doc.md"], PUBLIC, PRODUCT_DOMAIN, shape)
+    assert [f.what for f in found] and "'%s'" % CO in found[0].what
+    masked = leak.Masker(PUBLIC, frozenset(), PRODUCT_DOMAIN).mask(
+        "%s.eu.%s and proxy.eu.%s" % (CO, PRODUCT_DOMAIN, PRODUCT_DOMAIN)
+    )
+    assert CO not in masked
+    assert masked == "<company-1>.eu.%s and proxy.eu.%s" % (PRODUCT_DOMAIN, PRODUCT_DOMAIN)
+
+
+def test_an_oversized_or_binary_file_is_counted_as_not_scanned(tmp_path, monkeypatch):
+    monkeypatch.setattr(leak, "MAX_SCAN_BYTES", 16)
+    (tmp_path / "big.txt").write_text("x" * 64)
+    (tmp_path / "bin.dat").write_bytes(b"a\0b")
+    (tmp_path / "ok.txt").write_text("fine")
+    shape = leak.Shape()
+    leak.host_findings(tmp_path, ["big.txt", "bin.dat", "ok.txt", "gone.txt"], PUBLIC, PRODUCT_DOMAIN, shape)
+    assert shape.skipped == 2
+    assert "2 tracked file(s) not scanned" in shape.render()
+
+
+def test_a_company_worker_name_in_a_tracked_worker_toml_fires_and_a_public_one_does_not(tmp_path):
+    (tmp_path / "workers" / "account").mkdir(parents=True)
+    toml = tmp_path / "workers" / "account" / "wrangler.eu.toml"
+    toml.write_text('name = "account-eu"\n[[services]]\nservice = "proxy-%s"\n' % CO)
+    found = leak.worker_name_findings(tmp_path, ["workers/account/wrangler.eu.toml"], PUBLIC)
+    assert [f.rule for f in found] == ["worker-name"]
+    assert "proxy-%s" % CO in found[0].what
+    assert found[0].line == 3
 
 
 def test_known_labels_come_from_generated_tomls_and_the_env(tree):
