@@ -92,9 +92,10 @@ This plan is public: no customer name appears in it or in any tracked file. `acm
 
 ### Wave 2
 
-- [ ] N4 [writer] Account template, proxy route placeholder, and a generator using `config_refusals` for a company target.
+- [x] N4 [writer] Account template, proxy route placeholder, and a generator using `config_refusals` for a company target.
   Owns: workers/account/enterprise.template.toml (new), workers/proxy/wrangler.template.toml, workers/account/.gitignore, workers/proxy/.gitignore, .ci/rediacc_ci/deploy/proxy_configs.py, .ci/rediacc_ci/enterprise/configs.py (new), .ci/rediacc_ci/tests/test_enterprise_configs.py (new).
   Accept: `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_enterprise_configs.py` rc 0 and `npm run check:ci-proxy-configs` rc 0.
+    (ticked) 2026-11-09T03:16:09Z by d778be9d: commit:cbbb88a368; pytest test_enterprise_configs.py + test_deploy_proxy_configs.py 83 passed rc 0; npm run check:ci-proxy-configs rc 0 (5 proxy configs hold)
 - [ ] S2 [writer] Signer service and Worker with no route, modelled on `ExecutorIssuer`, with typed methods, a `probe()` and its deploy module.
   Owns: private/account/src/services/license-signer.service.ts (new), workers/signer/** (new), .ci/rediacc_ci/deploy/deploy_signer.py (new), .ci/rediacc_ci/tests/test_deploy_signer.py (new).
   Accept: `(cd private/account && npx vitest run tests/integration/license-signer-scope.test.ts)` rc 0 and `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_deploy_signer.py` rc 0.
