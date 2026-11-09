@@ -864,9 +864,13 @@ def _plantick_dep_gate(planrec, root, rel, selector, evidence):
     if reason:
         return
     sig = None
-    with contextlib.suppress(OSError, planrec.RecordError):
+    with contextlib.suppress(OSError):
         text = (pathlib.Path(root) / rel).read_text(encoding="utf-8", errors="replace")
-        sig = planrec.select_box(planrec.open_boxes(text), selector)[3]
+        try:
+            sig = planrec.select_box(planrec.open_boxes(text), selector)[3]
+        except planrec.RecordError:
+            # No open box matches (already ticked, or a bad selector): the tick path names that exactly, where a dependency refusal would send the reader after the wrong cause.
+            return
     if sig is not None:
         row = planrec.investigation_for(root, rel, sig)
         if (

@@ -409,6 +409,25 @@ check(
     "allowed",
 )
 
+
+def stub_planrec_no_open_box():
+    def select_box(_boxes, _sel):
+        raise StubRecordError("no open box matches T1")
+
+    return types.SimpleNamespace(
+        RecordError=StubRecordError,
+        open_boxes=lambda _text: [],
+        select_box=select_box,
+        investigation_for=lambda _root, _rel, _sig: None,
+    )
+
+
+check(
+    "plan-tick gate: a box that is not open passes to the tick path, which names it",
+    gate_result(stub_planrec_no_open_box()),
+    "allowed",
+)
+
 # ---- the messages exist and take their substitutions.
 check(
     "messages: UNBLOCKED_PLAN formats",
