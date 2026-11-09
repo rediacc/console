@@ -476,6 +476,21 @@ def test_control_a_same_stem_import_from_another_directory_is_refused(tmp_path):
     R.mark(repo, BRANCH, fid, "fixed", [fix, "--test", test], ME)
 
 
+def test_a_bare_identifier_on_an_import_line_is_no_module(tmp_path):
+    """Review a27ac34b.1: `import { index } from '../other/thing'` names the identifier `index`, not the module `src/foo/index.ts`; `from index import x` and `'index'` are modules (control)."""
+    anchored = "src/foo/index.ts"
+    repo, fid = _import_world(tmp_path, anchored)
+    test = "tests/other-thing.test.ts"
+    key = test.replace("/", "__").replace(".", "_dot_")
+    fix = _commit(repo, "test: other", **{key: "import { index } from '../other/thing';\n"})
+    with pytest.raises(ValueError, match="does not touch"):
+        R.mark(repo, BRANCH, fid, "fixed", [fix, "--test", test], ME)
+    (tmp_path / "ok").mkdir()
+    repo, fid = _import_world(tmp_path / "ok", anchored)
+    fix = _commit(repo, "test: foo", **{key: "vi.mock('index');\n"})
+    R.mark(repo, BRANCH, fid, "fixed", [fix, "--test", test], ME)
+
+
 def test_control_an_importing_test_without_the_test_flag_is_refused(tmp_path):
     """The import relation serves a named test only; a fix that touches an importing test unnamed stays refused."""
     repo, fid = _import_world(tmp_path, "src/onboarding.py")

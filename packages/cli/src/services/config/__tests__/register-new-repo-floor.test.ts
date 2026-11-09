@@ -29,7 +29,11 @@ vi.mock('../config-base.js', () => ({
   },
 }));
 
-const h = vi.hoisted(() => ({ usedIds: [] as number[] }));
+const h = vi.hoisted(() => ({
+  usedIds: [] as number[],
+  repository: undefined as unknown,
+  liveGrand: undefined as unknown,
+}));
 
 vi.mock('../../executor/executor-factory.js', () => ({
   getExecutor: () => ({
@@ -57,11 +61,9 @@ vi.mock('../config-resources.js', async (orig) => {
   return {
     ...real,
     configService: Object.assign(Object.create(real.configService), {
-      getRepository: () => Promise.resolve(undefined),
-      // The create's duplicate check reads the live grand; these tests drive it through getRepository.
-      getLiveGrand(this: { getRepository: (n: string) => Promise<unknown> }, name: string) {
-        return this.getRepository(name);
-      },
+      // getRepository lands on a fork through the grand pointer; getLiveGrand is the create's duplicate check and is set apart so a revert to the old lookup shows.
+      getRepository: () => Promise.resolve(h.repository),
+      getLiveGrand: () => Promise.resolve(h.liveGrand),
       addRepository: (...args: unknown[]) => {
         addRepository(...args);
         return Promise.resolve();
@@ -74,6 +76,8 @@ describe('registerNewRepo allocation floor', () => {
   beforeEach(() => {
     mockConfig = {};
     h.usedIds = [];
+    h.repository = undefined;
+    h.liveGrand = undefined;
     addRepository.mockClear();
   });
 
@@ -89,5 +93,24 @@ describe('registerNewRepo allocation floor', () => {
       'shop:latest',
       expect.objectContaining({ networkId })
     );
+  });
+
+  it('registers over a family holding only forks of a forgotten grand', async () => {
+    // getRepository would land on the fork and call the name taken; the live-grand lookup finds none.
+    h.repository = { repositoryGuid: 'fork-guid', grandGuid: 'gone-guid', tag: 'f1' };
+    h.liveGrand = undefined;
+    const { registerNewRepo } = await import('../../../commands/repo-create-delete.js');
+    await registerNewRepo('shop', { machine: 'm1' }, {}, { machine: 'm1' });
+    expect(addRepository).toHaveBeenCalledWith('shop:latest', expect.anything());
+  });
+
+  it('refuses a name whose live grand exists (control)', async () => {
+    h.liveGrand = { repositoryGuid: 'grand-guid' };
+    h.repository = h.liveGrand;
+    const { registerNewRepo } = await import('../../../commands/repo-create-delete.js');
+    await expect(
+      registerNewRepo('shop', { machine: 'm1' }, {}, { machine: 'm1' })
+    ).rejects.toThrow();
+    expect(addRepository).not.toHaveBeenCalled();
   });
 });

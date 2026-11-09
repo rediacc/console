@@ -264,7 +264,7 @@ export function resolveDestructiveTargetFromRepos(
   }
 
   const resolved = repos[resolvedKey];
-  if (isBare && isForkConfig(resolved) && !isRestoredRecord(repos, baseName, resolvedKey)) {
+  if (isForkNotLive(repos, baseName, resolvedKey, isBare)) {
     throw new ForkUnderBareRefError(repoRef, resolvedKey, grandKeyOf(repos, resolved));
   }
   return { key: resolvedKey, config: resolved };
@@ -287,10 +287,20 @@ export function resolveLiveGrandKey(
   if (key === undefined) return undefined;
   const isBare = grandRefBase(ref) !== undefined;
   const baseName = parseRepoRef(ref).name;
-  if (isBare && isForkConfig(repos[key]) && !isRestoredRecord(repos, baseName, key)) {
+  if (isForkNotLive(repos, baseName, key, isBare)) {
     return undefined;
   }
   return key;
+}
+
+/** The one definition both verbs share: a bare name that landed on a fork that is no restored record is no live grand. */
+function isForkNotLive(
+  repos: Record<string, RepositoryConfig>,
+  baseName: string,
+  key: string,
+  isBare: boolean
+): boolean {
+  return isBare && isForkConfig(repos[key]) && !isRestoredRecord(repos, baseName, key);
 }
 
 /**
