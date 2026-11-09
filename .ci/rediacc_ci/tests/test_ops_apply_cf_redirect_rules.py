@@ -218,12 +218,34 @@ def test_zone_rules_are_the_two_cloud_redirects_to_www() -> None:
     for payload in payloads:
         value = payload["action_parameters"]["from_value"]
         assert value["status_code"] == 301
-        assert value["target_url"]["expression"] == '"' + SITE_ORIGIN + '/"'
+        # A fixed URL is a `value`; Cloudflare refuses a quoted string as an `expression`.
+        assert value["target_url"] == {"value": SITE_ORIGIN + "/"}
     edge = mod.RULE_SETS[APEX_DOMAIN][1]
     assert edge.expression == (
         '(http.request.full_uri wildcard r"https://edge.' + APEX_DOMAIN + '/*")'
     )
     assert mod.RULE_SETS[APEX_DOMAIN][0] is mod.APEX_RULE
+
+
+def test_fixed_target_rule_sends_a_value_and_keep_path_rule_an_expression() -> None:
+    # Cloudflare parses `target_url.expression` as a ruleset expression: a quoted URL there was
+    # refused live on 2026-11-09 with "Filter parsing error (1:1) ... expected identifier character".
+    fixed = mod.rule_payload(
+        mod._host_rule("f", "a." + PRODUCT_DOMAIN, SITE_ORIGIN, "fixed", keep_path=False)
+    )
+    target = fixed["action_parameters"]["from_value"]["target_url"]
+    assert target == {"value": SITE_ORIGIN + "/"}
+    assert "expression" not in target
+    kept = mod.rule_payload(
+        mod._host_rule("k", "edge." + APEX_DOMAIN, SITE_ORIGIN, "kept", keep_path=True)
+    )
+    kept_target = kept["action_parameters"]["from_value"]["target_url"]
+    assert set(kept_target) == {"expression"}
+    assert kept_target["expression"].startswith("wildcard_replace(http.request.full_uri, ")
+    assert kept["action_parameters"]["from_value"]["preserve_query_string"] is True
+    assert mod.rule_payload(mod.APEX_RULE)["action_parameters"]["from_value"]["target_url"] == {
+        "expression": mod.APEX_TARGET_EXPR
+    }
 
 
 def test_zone_without_a_redirect_ruleset_gets_one_created(world: h.World) -> None:

@@ -62,6 +62,8 @@ class Rule:
     smoke_url: str
     ok_text: str
     preserve_query_string: bool = True
+    # A fixed target URL goes in `target_url.value`. Cloudflare parses `target_url.expression` as a ruleset expression, and a bare quoted string there is refused with "Filter parsing error (1:1) ... expected identifier character" (live, 2026-11-09).
+    target_value: str = ""
 
 
 APEX_RULE = Rule(
@@ -86,11 +88,12 @@ def _host_rule(label: str, host: str, target: str, description: str, keep_path: 
             + '/${1}")'
         )
     else:
-        target_expression = '"' + target + '/"'
+        target_expression = ""
     return Rule(
         label=label,
         expression=expression,
         target_expression=target_expression,
+        target_value="" if keep_path else target + "/",
         description=description,
         smoke_url="https://" + host + "/",
         ok_text="[OK]   %s/* -> %s (live, 301)" % (host, target),
@@ -209,7 +212,11 @@ def rule_payload(rule: Rule) -> dict:
             "from_value": {
                 "status_code": 301,
                 "preserve_query_string": rule.preserve_query_string,
-                "target_url": {"expression": rule.target_expression},
+                "target_url": (
+                    {"value": rule.target_value}
+                    if rule.target_value
+                    else {"expression": rule.target_expression}
+                ),
             }
         },
         "description": rule.description,
