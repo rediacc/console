@@ -26,7 +26,7 @@ Resolution: not-a-bug | .ci/rediacc_ci/release/local.py:900 -- no six-targets or
 ### f6cf1731.2 [medium] .ci/rediacc_ci/deploy/deploy_proxy.py:8
 Anchor: in-diff
 Claim: The docstring still says CD runs this module 'for each of the six targets' and that 'deploys to all seven are allowed without asking'; after this commit there are four targets (three stable regions plus bench), so the comment states the wrong behaviour.
-Resolution: open
+Resolution: not-a-bug | .ci/rediacc_ci/deploy/deploy_proxy.py:8 the docstring says CD runs the module for each of the three stable regions, with bench a separate target; no six-target or seven-target wording remains | d778be9d 2026-11-09T20:09:20Z
 
 ### f6cf1731.3 [medium] .ci/rediacc_ci/release/local.py:817
 Anchor: in-diff
