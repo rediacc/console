@@ -15,11 +15,13 @@ interface SentencesProps {
 const Sentences: React.FC<SentencesProps> = ({ text, lang }) => {
   const parts = splitSentences(text, lang);
   if (parts.length < 2) return <>{text}</>;
+  // One catalog value may repeat a sentence ('Done. Done.'), so a key carries its position too.
+  const keyed = parts.map((sentence, n) => ({ id: `${n}:${sentence}`, sentence, first: n === 0 }));
   return (
     <>
-      {parts.map((sentence, i) => (
-        <React.Fragment key={sentence}>
-          {i > 0 && ' '}
+      {keyed.map(({ id, sentence, first }) => (
+        <React.Fragment key={id}>
+          {!first && ' '}
           <span className="sentence">{sentence}</span>
         </React.Fragment>
       ))}

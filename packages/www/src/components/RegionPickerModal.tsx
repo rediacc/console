@@ -279,9 +279,9 @@ const LookupForm: React.FC<LookupFormProps> = ({ t, targetPath, onBack }) => {
         disabled={loading}
       />
       <p className="region-picker-footer-note">{t('regionPicker.lookup.privacy')}</p>
-      {messageKey && (
+      {messageKey && !(lookupError === 'captcha' && captcha.failed) && (
         <p className="form-error" role="alert">
-          {lookupError === 'captcha' && captcha.failed ? t('captchaUnavailable') : t(messageKey)}
+          {t(messageKey)}
         </p>
       )}
       {captchaEnabled && (
