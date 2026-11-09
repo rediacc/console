@@ -71,29 +71,32 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-proxy-cd-six-targets.md -- 27 of 31 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-backup-restore-path.md -- 7 of 10 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-tested-on-bench.md -- 16 of 20 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
-- Work outside the PR's plans (13 epic(s)):
-  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 12 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
+- Work outside the PR's plans (16 epic(s)):
+  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 14 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic c6b82e88, plan agent/plans/PLAN-settings-set-verb.md, outside the set, 2 commit(s) on the branch, 0 open item(s): settings set verb: one source for the ceilings
   - epic dbb7de07, plan agent/plans/PLAN-cloudflare-spend-guard.md, outside the set, 48 commit(s) on the branch, 0 open item(s): cloudflare spend guard closure
-  - epic 09b8bdfa, plan agent/plans/PLAN-detached-jobs.md, outside the set, 1362 commit(s) on the branch, 0 open item(s): detached jobs: proxied poll follow and job kinds
+  - epic 09b8bdfa, plan agent/plans/PLAN-detached-jobs.md, outside the set, 1370 commit(s) on the branch, 0 open item(s): detached jobs: proxied poll follow and job kinds
   - epic ec9ba176, plan agent/plans/PLAN-backup-integrity.md, outside the set, 2 commit(s) on the branch, 0 open item(s): backup integrity docs and closure
   - epic d6bb9963, plan agent/plans/PLAN-backup-critical-tier.md, outside the set, 7 commit(s) on the branch, 0 open item(s): backup critical tier proofs
   - epic b21ab2e2, plan agent/plans/PLAN-jobs-backup-real-machine-tests.md, outside the set, 2 commit(s) on the branch, 0 open item(s): real machine tests for jobs and backup
   - epic 92df2f69, plan agent/plans/PLAN-free-license.md, outside the set, 5 commit(s) on the branch, 0 open item(s): free license ladder F6
   - epic 1f877343, plan agent/plans/PLAN-worktree-lease.md, outside the set, 55 commit(s) on the branch, 0 open item(s): guided detached worktree leases
   - epic 2e0e531f, plan agent/plans/PLAN-rediaccfile-unprivileged.md, outside the set, 19 commit(s) on the branch, 0 open item(s): Rediaccfile lifecycle runs unprivileged
+  - epic 783185d2, plan agent/plans/PLAN-enterprise-isolation.md, outside the set, 16 commit(s) on the branch, 0 open item(s): Enterprise per-company isolation, regional signers and release rings
   - epic 1d805023, plan agent/plans/PLAN-tick-tracking.md, outside the set, 26 commit(s) on the branch, 0 open item(s): tick tracking: plan-box trailer, landing prints the tick, box audit
   - epic f65726d5, plan agent/plans/PLAN-renet-down-before-kill.md, outside the set, 16 commit(s) on the branch, 0 open item(s): renet runs Rediaccfile down() before repo containers stop
   - epic 53c31db2, plan agent/plans/PLAN-repo-resource-limits.md, outside the set, 20 commit(s) on the branch, 0 open item(s): per-repo resource limits and a renet-managed RAM volume
-- Writers: 2 live of writer_cap 25 (session d778be9d): worker:a8c491d9b5395eab5, worker:a4da1c1361269c0f9.
-- Leased items: 2: #5bcea441 (worker:a8c491d9b5395eab5, d778be9d), #a8fa84d5 (worker:a4da1c1361269c0f9, d778be9d).
+  - epic a86f5622, plan agent/plans/PLAN-production-key-only.md, outside the set, 4 commit(s) on the branch, 0 open item(s): Production key only: every leg licensed from its own plane
+  - epic 79b7e92e, no plan, 21 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+- Writers: 8 live of writer_cap 25 (session d778be9d): worker:ad33fab5b357b6572, worker:a86fe82342d859044, worker:aa9e0824b613cfe31, worker:af62f2718b6b3b3a0, worker:ab8fea14d87180e23, worker:a9b1c1cad789b177b, worker:a97ca00edfc633a40, worker:a6fdef2be01bbb713.
+- Leased items: 7: #2c0d960b (worker:a97ca00edfc633a40, d778be9d), #5bcea441 (worker:a8c491d9b5395eab5, d778be9d), #8fd21e2e (worker:a23587e4257a59529, d778be9d), #a8fa84d5 (worker:a4da1c1361269c0f9, d778be9d), #b829f3c1 (worker:a223a27a9db2fce35, d778be9d), #f1d1bc8a (worker:ad33fab5b357b6572, d778be9d), #f8721571 (worker:a6fdef2be01bbb713, d778be9d).
 - Next plan: agent/plans/PLAN-console-executor-multi-org.md, Promoted entry 18; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 17 of 63 plans done, 957 of 1168 boxes done (81%).
+Promoted: 17 of 63 plans done, 959 of 1168 boxes done (82%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -159,7 +162,7 @@ Promoted: 17 of 63 plans done, 957 of 1168 boxes done (81%).
 | 60 | PLAN-vmcheck-incremental.md | 2/3 | 1 open |
 | 61 | PLAN-ci-vm-image-followups.md | 0/2 | 2 open |
 | 62 | PLAN-idle-writer-capacity.md | 5/5 | done |
-| 63 | PLAN-d1-scaling.md | 12/31 | 19 open |
+| 63 | PLAN-d1-scaling.md | 14/31 | 17 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-backup-program.md -- operator 2026-10-20 ("move agent/plans/PLAN-backup-program.md to the promoted"): one backup program across renet, account, CLI and shared, ending in a live hostinger to eu R2 backup; P1; Depends-On PLAN-shell-sandbox-readonly-view.md and PLAN-account-vm-check.md (done 2026-10-20); released to writers by operator /ask ASKED:2026-10-20T15:14Z ("edit writers to go NOW")

@@ -121,14 +121,16 @@ Two resume paths keep the invariant "every exists answer the commit relies on wa
   Owns: private/account/src/middleware/tenant-write-cap.ts (new), private/account/src/routes/license.ts, private/account/src/routes/configs.ts, private/account/tests/integration/tenant-write-cap.test.ts (new).
   Accept: `cd private/account && npx vitest run tenant-write-cap` rc 0.
     (ticked) 2026-11-09T14:15:37Z by d778be9d: commit:2a1f0189 account suite 3917 passed rc=0; d1 size report 13 passed; check:ci-workflows and prose rc=0
-- [ ] W1 [writer] Worker wiring: `runRetentionSweeps` gains T1, C1's backfill and orphan sweep, each bounded. The env gains the AE dataset binding, the AE read token and the two rate-limit bindings. `entry/cloudflare.ts` passes them to A1 and G1. The four `wrangler.{eu,us,asia,bench}.toml` declare the `analytics_engine_datasets` binding and the `ratelimits` bindings with Z6's limits (the writer checks the binding syntax against the pinned wrangler). Test: the cron runs all sweeps and one failure does not stop the others.
+- [x] W1 [writer] Worker wiring: `runRetentionSweeps` gains T1, C1's backfill and orphan sweep, each bounded. The env gains the AE dataset binding, the AE read token and the two rate-limit bindings. `entry/cloudflare.ts` passes them to A1 and G1. The four `wrangler.{eu,us,asia,bench}.toml` declare the `analytics_engine_datasets` binding and the `ratelimits` bindings with Z6's limits (the writer checks the binding syntax against the pinned wrangler). Test: the cron runs all sweeps and one failure does not stop the others.
   Depends on: PLAN-enterprise-isolation.md#S3, PLAN-enterprise-isolation.md#S4, T1, A1, C1, G1.
   Owns: private/account/src/entry/cloudflare.ts, private/account/src/types/env.ts, private/account/src/app.ts, workers/account/wrangler.eu.toml, workers/account/wrangler.us.toml, workers/account/wrangler.asia.toml, workers/account/wrangler.bench.toml, private/account/tests/integration/retention-cron.test.ts (new).
   Accept: `cd private/account && npx vitest run retention-cron` rc 0, `npx tsc --noEmit -p private/account` rc 0, and `python3 .ci/scripts/quality/check_region_consistency.py` rc 0.
-- [ ] W2 [writer] The AE read token in the secret supply: `ACCOUNT_AE_READ_TOKEN` in secret-supply.json and the pusher's required list for shared regions and bench.
+    (ticked) 2026-11-09T16:26:09Z by d778be9d: commit:533385d3 commit:f9d6a76c account suite 255 files 3948 passed rc=0; check_region_consistency rc=0
+- [x] W2 [writer] The AE read token in the secret supply: `ACCOUNT_AE_READ_TOKEN` in secret-supply.json and the pusher's required list for shared regions and bench.
   Depends on: PLAN-enterprise-isolation.md#S4.
   Owns: .ci/rediacc_ci/deploy/set_account_worker_secrets.py, .ci/config/secret-supply.json.
   Accept: `npm run check:ci-secret-supply` rc 0.
+    (ticked) 2026-11-09T16:26:11Z by d778be9d: commit:a3adea22 check:ci-secret-supply and check:ci-bws-map rc=0; pusher and bench tests 180 passed
 - [ ] A2 [writer] Portal and config history read telemetry from AE (Z3 step 2): `listFiltered` and `countFiltered` split by type class and merge by timestamp; the config history merges `config.pull` and `config.version.read` from AE with D1's `config.push`. Test with a fake AE reader: a mixed page orders correctly and counts add up.
   Depends on: A1, G1 (routes/configs.ts), W1.
   Owns: private/account/src/routes/portal.ts, private/account/src/routes/configs.ts, private/account/tests/integration/portal-telemetry-read.test.ts (new).
