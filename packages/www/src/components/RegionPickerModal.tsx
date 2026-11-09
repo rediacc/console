@@ -8,6 +8,7 @@ import { useTranslation } from '../i18n/react';
 import type { Language } from '../i18n/types';
 import { buildPortalRedirectUrl } from '../utils/marketing-host';
 import Overlay from './Overlay';
+import Sentences from './Sentences';
 
 const DEFAULT_TARGET_PATH = '/account/';
 const COUNTDOWN_SECONDS = 5;
@@ -211,7 +212,7 @@ async function lookupCompanyHost(
 }
 
 type Translate = ReturnType<typeof useTranslation>['t'];
-type LookupStatus = 'idle' | 'loading' | 'invalid' | 'captcha' | 'miss' | 'error';
+type LookupError = 'invalid' | 'captcha' | 'miss' | 'error';
 
 interface LookupFormProps {
   t: Translate;
@@ -219,7 +220,7 @@ interface LookupFormProps {
   onBack: () => void;
 }
 
-const LOOKUP_MESSAGE_KEY: Partial<Record<LookupStatus, string>> = {
+const LOOKUP_MESSAGE_KEY: Record<LookupError, string> = {
   invalid: 'regionPicker.lookup.invalid',
   captcha: 'captchaRequired',
   miss: 'regionPicker.lookup.miss',
@@ -228,16 +229,18 @@ const LOOKUP_MESSAGE_KEY: Partial<Record<LookupStatus, string>> = {
 
 /** Company-domain form. The answer is a host or a neutral miss, the same for every address at a domain. */
 const LookupForm: React.FC<LookupFormProps> = ({ t, targetPath, onBack }) => {
-  const [value, setValue] = useState('');
-  const [status, setStatus] = useState<LookupStatus>('idle');
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [loading, setLoading] = useState(false);
+  const [lookupError, setLookupError] = useState<LookupError | null>(null);
   const captcha = useCaptchaGuard();
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const domain = extractDomain(value);
-    if (!domain) return setStatus('invalid');
-    if (captchaEnabled && !captcha.token) return setStatus('captcha');
-    setStatus('loading');
+    const domain = extractDomain(inputRef.current?.value ?? '');
+    if (!domain) return setLookupError('invalid');
+    if (captchaEnabled && !captcha.token) return setLookupError('captcha');
+    setLookupError(null);
+    setLoading(true);
     try {
       const host = await lookupCompanyHost(domain, captcha.token);
       if (host) {
@@ -246,14 +249,16 @@ const LookupForm: React.FC<LookupFormProps> = ({ t, targetPath, onBack }) => {
         });
         return forwardToHost(host, targetPath);
       }
-      setStatus('miss');
+      setLookupError('miss');
     } catch {
-      setStatus('error');
+      setLookupError('error');
     }
+    setLoading(false);
     captcha.reset();
   };
 
-  const messageKey = LOOKUP_MESSAGE_KEY[status];
+  // A widget that failed to load is told apart from one that is merely unsolved, so the visitor is never asked to complete a captcha that is not on screen.
+  const messageKey = lookupError && LOOKUP_MESSAGE_KEY[lookupError];
 
   return (
     <form className="region-picker-lookup" onSubmit={submit} noValidate>
@@ -270,14 +275,13 @@ const LookupForm: React.FC<LookupFormProps> = ({ t, targetPath, onBack }) => {
         autoCapitalize="none"
         spellCheck={false}
         placeholder={t('regionPicker.lookup.placeholder')}
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        disabled={status === 'loading'}
+        ref={inputRef}
+        disabled={loading}
       />
       <p className="region-picker-footer-note">{t('regionPicker.lookup.privacy')}</p>
       {messageKey && (
         <p className="form-error" role="alert">
-          {t(messageKey)}
+          {lookupError === 'captcha' && captcha.failed ? t('captchaUnavailable') : t(messageKey)}
         </p>
       )}
       {captchaEnabled && (
@@ -290,13 +294,29 @@ const LookupForm: React.FC<LookupFormProps> = ({ t, targetPath, onBack }) => {
           onError={captcha.onError}
         />
       )}
+      {captchaEnabled && captcha.failed && (
+        <p className="form-error" role="status">
+          {t('captchaUnavailable')}{' '}
+          <button
+            type="button"
+            className="form-inline-action"
+            onClick={captcha.retry}
+            data-track="captcha_retry"
+          >
+            {t('captchaRetry')}
+          </button>
+        </p>
+      )}
       <div className="region-picker-actions">
-        <button type="submit" className="btn btn--primary" disabled={status === 'loading'}>
-          {status === 'loading'
-            ? t('regionPicker.lookup.checking')
-            : t('regionPicker.lookup.submit')}
+        <button type="submit" className="btn btn--primary" disabled={loading}>
+          {loading ? t('regionPicker.lookup.checking') : t('regionPicker.lookup.submit')}
         </button>
-        <button type="button" className="btn btn--secondary" onClick={onBack}>
+        <button
+          type="button"
+          className="btn btn--secondary"
+          onClick={onBack}
+          data-track="region_lookup_back"
+        >
           {t('regionPicker.lookup.back')}
         </button>
       </div>
@@ -306,6 +326,7 @@ const LookupForm: React.FC<LookupFormProps> = ({ t, targetPath, onBack }) => {
 
 interface CountdownBarProps {
   t: Translate;
+  lang: Language;
   region: Region;
   remaining: number;
   onCancel: () => void;
@@ -315,6 +336,7 @@ interface CountdownBarProps {
 /** Visible countdown with Cancel and Change. Screen readers hear one stable message, not a tick per second. */
 const CountdownBar: React.FC<CountdownBarProps> = ({
   t,
+  lang,
   region,
   remaining,
   onCancel,
@@ -322,16 +344,32 @@ const CountdownBar: React.FC<CountdownBarProps> = ({
 }) => (
   <div className="region-picker-countdown">
     <p className="sr-only" role="status" aria-live="polite">
-      {t('regionPicker.countdownAnnounce', { region: region.label, seconds: COUNTDOWN_SECONDS })}
+      <Sentences
+        text={t('regionPicker.countdownAnnounce', {
+          region: region.label,
+          seconds: COUNTDOWN_SECONDS,
+        })}
+        lang={lang}
+      />
     </p>
     <p className="region-picker-subtitle" aria-hidden="true">
       {t('regionPicker.countdown', { region: region.label, seconds: remaining })}
     </p>
     <div className="region-picker-actions">
-      <button type="button" className="btn btn--secondary" onClick={onCancel}>
+      <button
+        type="button"
+        className="btn btn--secondary"
+        onClick={onCancel}
+        data-track="region_countdown_cancel"
+      >
         {t('regionPicker.cancel')}
       </button>
-      <button type="button" className="btn btn--primary" onClick={onChange}>
+      <button
+        type="button"
+        className="btn btn--primary"
+        onClick={onChange}
+        data-track="region_countdown_change"
+      >
         {t('regionPicker.change')}
       </button>
     </div>
@@ -483,6 +521,7 @@ const RegionPickerModal: React.FC<RegionPickerModalProps> = ({ lang }) => {
             {showCountdown ? (
               <CountdownBar
                 t={t}
+                lang={currentLang}
                 region={countdownRegion}
                 remaining={remaining}
                 onCancel={close}
