@@ -162,3 +162,35 @@ def test_item_deps_honours_a_resolved_own_line(tmp_path):
     held2 = D.item_deps(g2, "do PLAN-x.md [%s] now" % sig3b, [])
     assert held2 is not None
     assert held2.roots == ("PLAN-y.md",)
+
+
+def test_item_deps_frees_a_writer_box_whose_prerequisite_holds_only_live_work(tmp_path):
+    """Ruling KEEP: a `[writer]` box of a plan whose prerequisite has only live boxes left is free for --lease and --plan-tick, the verdict IDLE CAPACITY reads; an untagged box of the same plan, and a writer box whose prerequisite still holds writer work, stay held."""
+    folder = tmp_path / "agent" / "plans"
+    folder.mkdir(parents=True)
+    x = _plan("- [ ] S3 [writer] the client\n- [ ] S5 untagged\n", depends="PLAN-y.md")
+    (folder / "PLAN-x.md").write_text(x, encoding="utf-8")
+    (folder / "PLAN-y.md").write_text(_plan("- [ ] Y1 [live] deploy\n", name="y"), encoding="utf-8")
+    g = D.Graph.load(tmp_path)
+    sig3 = next(b.sig for b in D.plan_boxes(x) if b.id == "S3")
+    sig5 = next(b.sig for b in D.plan_boxes(x) if b.id == "S5")
+    assert g.writer_box_free("agent/plans/PLAN-x.md", sig3) is True
+    assert D.item_deps(g, "do PLAN-x.md [%s] now" % sig3, []) is None
+    # CONTROL: an untagged box keeps the plan-level verdict.
+    held = D.item_deps(g, "do PLAN-x.md [%s] now" % sig5, [])
+    assert held is not None
+    assert held.roots == ("PLAN-y.md",)
+    # CONTROL: a prerequisite that still holds writer work holds the writer box.
+    (folder / "PLAN-y.md").write_text(
+        _plan("- [ ] Y1 [live] deploy\n- [ ] Y2 [writer] code\n", name="y"), encoding="utf-8"
+    )
+    g2 = D.Graph.load(tmp_path)
+    assert g2.writer_box_free("agent/plans/PLAN-x.md", sig3) is False
+    assert D.item_deps(g2, "do PLAN-x.md [%s] now" % sig3, []) is not None
+
+
+def test_writer_box_free_is_false_without_a_root():
+    x = _plan("- [ ] S3 [writer] the client\n", depends="PLAN-y.md")
+    g = _graph({"PLAN-x.md": x, "PLAN-y.md": _plan("- [ ] Y1 [live] deploy\n", name="y")})
+    sig3 = next(b.sig for b in D.plan_boxes(x) if b.id == "S3")
+    assert g.writer_box_free("agent/plans/PLAN-x.md", sig3) is False

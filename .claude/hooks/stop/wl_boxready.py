@@ -174,7 +174,7 @@ def _open_boxes(rel: str, text: str) -> list[_Box]:
     return out
 
 
-def _writer_clear(root):
+def writer_clear(root):
     """The predicate `box_blockers` consults for a LIVE plan-level edge of a writer box: True when the prerequisite holds no writer work, i.e. every remaining open box of it (or the one box a task edge names) is non-writer or post-merge."""
     import wl_plandeps as D
 
@@ -241,7 +241,7 @@ def ready_boxes(root, plans=None, live_plans=(), items=(), graph=None):
         owns = graph.plans[found].header.owns if found else None
         if owns is not None and not owns.none:
             busy.append(("%s (a live writer's plan)" % base, tuple(owns.globs)))
-    clear = _writer_clear(root)
+    clear = writer_clear(root)
     ready: list[ReadyBox] = []
     skipped: list[Skip] = []
     for rel, boxes in per_plan:

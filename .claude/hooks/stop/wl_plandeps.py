@@ -1145,6 +1145,20 @@ class Graph:
         block = box_block(text, box.line)
         return box_depends(block) is not None and not self.box_blockers(rel, block)
 
+    def writer_box_free(self, rel: str, sig: str) -> bool:
+        """True when the open box of `rel` with signature `sig` is explicitly `[writer]`-tagged, not post-merge, and `box_blockers` under `wl_boxready`'s writer-clear predicate finds nothing: a prerequisite whose remaining work is all live, operator or post-merge does not hold a writer box (operator ruling KEEP of 2026-11-09). This is the readiness rule the IDLE CAPACITY block applies, so the verbs that start the work (`--lease`, `--plan-tick`) read the same verdict and a box the block names is never refused. False without a root (the predicate reads plan files) or a matching open box."""
+        if self.root is None:
+            return False
+        text = self._full_text(rel)
+        box = next((b for b in plan_boxes(text) if b.sig == sig and not b.done), None)
+        if box is None:
+            return False
+        block = box_block(text, box.line)
+        ready = importlib.import_module("wl_boxready")
+        if not ready.writer_tagged(box.body) or ready.post_merge(block):
+            return False
+        return not self.box_blockers(rel, block, clear=ready.writer_clear(self.root))
+
     # ---- edges
 
     def edges(self, rel: str) -> tuple[Edge, ...]:
@@ -1404,9 +1418,11 @@ def item_deps(graph: Graph | None, text: str, fold: Any = ()) -> ItemDeps | None
         if graph.plans[target.rel].header.status in graph.finished():
             return None
         rel = target.rel
-        # A linked box that states its own resolved `Depends on:` line is free whatever its plan waits on (operator ruling R4 of 2026-11-09); any other box keeps the plan-level verdict.
+        # A linked box that states its own resolved `Depends on:` line is free whatever its plan waits on (operator ruling R4 of 2026-11-09), and so is a ready `[writer]` box whose prerequisites hold only non-writer work (ruling KEEP); any other box keeps the plan-level verdict.
         link = LINK_RE.search(text or "")
-        if link and graph.own_line_free(rel, link.group(2)):
+        if link and (
+            graph.own_line_free(rel, link.group(2)) or graph.writer_box_free(rel, link.group(2))
+        ):
             return None
         root_list, tasks = graph.roots_with_tasks(rel)
         roots = tuple(root_list)

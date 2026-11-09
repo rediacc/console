@@ -871,6 +871,9 @@ def _plantick_dep_gate(planrec, root, rel, selector, evidence):
         except planrec.RecordError:
             # No open box matches (already ticked, or a bad selector): the tick path names that exactly, where a dependency refusal would send the reader after the wrong cause.
             return
+    if sig is not None and graph.writer_box_free(rel, sig):
+        # A ready `[writer]` box: its prerequisites hold only non-writer work (ruling KEEP), the verdict IDLE CAPACITY and --lease read.
+        return
     if sig is not None:
         row = planrec.investigation_for(root, rel, sig)
         if (
