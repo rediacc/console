@@ -349,7 +349,7 @@ def status_url(root: pathlib.Path) -> str:
 def fetch_deployed(url: str, token: str) -> Deployed | None:
     """The deployed state from `/v1/status`; None only when no Worker answers there (a first deploy).
 
-    A first deploy is a host that does not resolve or refuses the connection, or a 404; a connect-phase timeout is neither, so it raises too (a Worker behind a slow path is not a missing one). Any other HTTP status (a 401 from a rotated read token, a 5xx), a stall or malformed reply after the connection is made, or an unreadable body raises StatusUnreadableError: reading it as a first deploy would re-put every secret and run the create deploy over a Worker that exists.
+    A first deploy is a host that does not resolve or refuses the connection, or a 404; a connect or send timeout is neither, so it raises too (a Worker behind a slow path is not a missing one). Any other HTTP status (a 401 from a rotated read token, a 5xx), a stall or malformed reply after the connection is made, or an unreadable body raises StatusUnreadableError: reading it as a first deploy would re-put every secret and run the create deploy over a Worker that exists.
     """
     request = https.build_request(url, headers={"Authorization": "Bearer %s" % token})
     try:
@@ -363,7 +363,7 @@ def fetch_deployed(url: str, token: str) -> Deployed | None:
         if isinstance(exc.reason, (socket.gaierror, ConnectionRefusedError)):
             return None
         if isinstance(exc.reason, TimeoutError):
-            raise StatusUnreadableError("%s timed out while connecting: %s" % (url, exc)) from exc
+            raise StatusUnreadableError("%s timed out while connecting or sending: %s" % (url, exc)) from exc
         raise StatusUnreadableError("%s failed after the request began: %s" % (url, exc)) from exc
     except (TimeoutError, OSError, http.client.HTTPException) as exc:
         # urllib lets these escape only once the connection is made (a stall waiting for headers, a reset, a malformed reply): a Worker that exists and answers badly, never a first deploy.

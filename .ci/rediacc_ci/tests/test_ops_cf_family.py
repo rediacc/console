@@ -742,7 +742,7 @@ def _port_deploy_env(env: dict[str, str]) -> dict[str, str]:
     return bound
 
 
-# The secrets the port pushes and the retired bash never held: dropped from the compared body, each asserted present first in `test_deploy_bench_matches_bash`.
+# The secrets the port pushes and the retired bash never held: dropped from the compared body, each asserted present first in `test_deploy_bench_matches_bash`. CLOUDFLARE_ACCOUNT_ID is a pushed constant of the port (`ACCOUNT_ID`), not an environment secret, so `_port_deploy_env` never binds it.
 PORT_ONLY_SECRETS = (
     "ACCOUNT_CONFIG_SERVER_KEY",
     "ACCOUNT_BACKUP_STORE_KEK",
@@ -791,11 +791,9 @@ def _deploy_shape(calls: list[dict]) -> list[dict]:
             call["argv"] = call["argv"][1:]
         # DECLARED DELTA (PLAN-config-server-key K2, PLAN-free-license F2): the port pushes PORT_ONLY_SECRETS, which the retired bash never held. Dropped from the compared body; `test_deploy_bench_matches_bash` asserts each present first.
         if isinstance(call.get("stdin"), dict):
-            call["stdin"] = {k: v for k, v in call["stdin"].items() if k not in PORT_ONLY_SECRETS}
             # DECLARED DELTA (PLAN-enterprise-isolation S4): the account Worker signs through LICENSE_SIGNER and holds no licence private key, so the port stopped pushing ACCOUNT_ED25519_PRIVATE_KEY; the retired bash golden still records it.
-            call["stdin"] = {
-                k: v for k, v in call["stdin"].items() if k != "ACCOUNT_ED25519_PRIVATE_KEY"
-            }
+            dropped = {*PORT_ONLY_SECRETS, "ACCOUNT_ED25519_PRIVATE_KEY"}
+            call["stdin"] = {k: v for k, v in call["stdin"].items() if k not in dropped}
             # DECLARED DELTA (71f25f3e8f): the port's bench sender default moved to notify.rediacc.cloud; the retired bash golden records the old sender, mapped forward so every other stdin key still compares verbatim.
             if call["stdin"].get("AWS_SES_FROM") == RETIRED_BENCH_SENDER:
                 call["stdin"] = {**call["stdin"], "AWS_SES_FROM": BENCH_SENDER}
@@ -848,6 +846,9 @@ def test_deploy_bench_matches_bash(world: h.World) -> None:
     assert secrets["ACCOUNT_CONFIG_SERVER_KEY"] == "fake-config-server-key-for-tests"
     assert secrets["ACCOUNT_BACKUP_STORE_KEK"] == "fake-backup-store-kek-for-tests-0123456789"
     assert secrets["FREE_LICENSE_HMAC_KEY"] == "fake-free-license-hmac-key-for-tests"
+    assert secrets["ACCOUNT_AE_READ_TOKEN"] == "fake-ae-read-token-for-tests"
+    # The port-only set is compared away above, so every name must be present in the port's push first.
+    assert all(name in secrets for name in PORT_ONLY_SECRETS), sorted(secrets)
     assert secrets["ACCOUNT_BACKUP_S3_ENDPOINT"] == "https://r2.example.invalid"
     # The bash's fallback fired: with only the R2 trio in its environment it pushed the trio as the backup credential. The port received the same values under the backup names (`_port_deploy_env`).
     bash_secrets = next(c["stdin"] for c in bash_calls if c["tool"] == "npx" and c["stdin"])
@@ -968,7 +969,11 @@ def test_delta_the_account_wide_r2_trio_alone_is_refused_before_any_remote_write
     assert _port_deploy_env(env)["ACCOUNT_BACKUP_S3_ENDPOINT"] == env["CLOUDFLARE_R2_ENDPOINT"]
     # Only the R2 trio stays untranslated: the port-only secrets are the port's own, so neither may be what refuses.
     bound = _port_deploy_env(env)
-    keyed = {**env, **{name: bound[name] for name in PORT_ONLY_SECRETS if name in bound}}
+    # CLOUDFLARE_ACCOUNT_ID is a constant the port pushes, never an environment value, so it is not in `bound`.
+    keyed = {
+        **env,
+        **{name: bound[name] for name in PORT_ONLY_SECRETS if name != "CLOUDFLARE_ACCOUNT_ID"},
+    }
     rc_p, _, err_p = world.port("rediacc_ci.ops.deploy_bench", [], keyed)
     assert rc_p == 1
     assert "ACCOUNT_BACKUP_S3_ENDPOINT is EMPTY for bench" in h.strip(err_p)

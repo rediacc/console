@@ -14,6 +14,7 @@ from typing import Any
 import pytest
 
 from rediacc_ci.deploy import set_account_worker_secrets
+from rediacc_ci.enterprise import lifecycle_adapters as la
 from rediacc_ci.enterprise import secrets as es
 from rediacc_ci.quality import enterprise_leak
 
@@ -901,3 +902,11 @@ def test_iam_minter_names_the_get_user_ambiguity_when_create_user_fails():
     assert err.value.__context__ is None
     after = [c[2] for c in iam.calls[[c[2] for c in iam.calls].index("create-user") + 1 :]]
     assert not {"put-user-policy", "create-access-key", "list-access-keys"} & set(after)
+
+
+def test_listing_without_result_info_follows_a_full_last_allowed_page() -> None:
+    last = la.MAX_LIST_PAGES
+    assert la._pages({}, [0] * 10, 10, last) == last + 1
+    assert la._pages({}, [0], 10, last + 1) == last + 1
+    with pytest.raises(la.LifecycleError, match="did not end"):
+        la._pages({}, [0] * 10, 10, last + 1)

@@ -337,7 +337,7 @@ def test_a_connect_phase_timeout_is_unreadable_not_a_first_deploy(
     # Review 2d871417.1: a connect-phase timeout is named as such, not as a failure after the request began.
     with pytest.raises(
         d.StatusUnreadableError,
-        match=r"ops-health\.example\.test/v1/status timed out while connecting",
+        match=r"ops-health\.example\.test/v1/status timed out while connecting or sending",
     ):
         _fetch_with(monkeypatch, urllib.error.URLError(TimeoutError("timed out")))
 
