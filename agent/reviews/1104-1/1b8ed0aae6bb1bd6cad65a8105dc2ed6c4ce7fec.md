@@ -21,4 +21,4 @@ Body-Sig: 1cea7661af8f32c5
 ### 1b8ed0aa.1 [low] agent/d778be9d/STATE.md:15
 Anchor: in-diff
 Claim: The rewrite drops the blocker note '(needs a terminal bound plan)' from the CB7 owed tick, so a future session reading this recovery document could tick CB7 without the bound plan it still needs.
-Resolution: open
+Resolution: not-a-bug | agent/d778be9d/STATE.md:1 -- session-owned recovery doc; the CB7 bound-plan requirement is carried by the item and plan, which the tick verbs enforce | d778be9d 2026-11-09T16:26:40Z

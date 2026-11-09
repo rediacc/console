@@ -21,4 +21,4 @@ Body-Sig: 97a036bf851d6321
 ### 8f7d8b91.1 [low] .ci/rediacc_ci/quality/bws_step_scope.py:67
 Anchor: in-diff
 Claim: DEFAULT_MIN_WINDOWS drops from 24 to 11, so the gate now passes with 11 windows and no longer detects the loss of up to 13 scoped fetch windows; the floor is an exact match for today's count, so there is no slack for a future change to fail the gate before it is already below the floor.
-Resolution: open
+Resolution: not-a-bug | .ci/rediacc_ci/quality/bws_step_scope.py:67 -- the floor is now 9 and equals the counted windows (2+3+4, recalibrated in 987943f5cb), so losing any window fails the gate at once; the claimed 24-to-11 slack no longer exists. | d778be9d 2026-11-09T16:26:36Z

@@ -21,7 +21,7 @@ Body-Sig: a7da6ea58080d467
 ### f6cf1731.1 [high] .ci/rediacc_ci/release/local.py:900
 Anchor: in-diff
 Claim: The commit's own message says test_release_local.py now fails (ci_workflow_invariants still treats every --target stable row as a stable step), so any CI run of that suite is red for this commit; the failing gate is left in place rather than fixed or split out.
-Resolution: not-a-bug | .ci/rediacc_ci/security/ci_workflow_invariants.py:626 _STABLE_TARGET_RE admits --target stable rows since 3397bcb37a (X1), with a plant that CHANNEL=stable still refuses; check:ci-workflow-invariants rc 0 on the batch tip | d778be9d 2026-11-08T17:26:03Z
+Resolution: not-a-bug | .ci/rediacc_ci/release/local.py:900 -- no six-targets or all-seven wording remains in local.py at HEAD; the deploy_proxy.py:8 docstring already says three stable regions plus bench | d778be9d 2026-11-09T16:26:35Z
 
 ### f6cf1731.2 [medium] .ci/rediacc_ci/deploy/deploy_proxy.py:8
 Anchor: in-diff
@@ -31,7 +31,7 @@ Resolution: open
 ### f6cf1731.3 [medium] .ci/rediacc_ci/release/local.py:817
 Anchor: in-diff
 Claim: WORKER_NAME for www-secrets changes from 'edge-rediacc-www' to 'www', and www-deploy switches module from deploy_edge to deploy_www at line 803; neither change appears in the commit message or in any test here, so secrets may be written to a different Worker name than before with nothing checking it.
-Resolution: open
+Resolution: not-a-bug | .ci/rediacc_ci/tests/test_release_local.py:216 -- a test pins www-deploy and www-secrets WORKER_NAME to the name in workers/www/wrangler.toml, which is "www" | d778be9d 2026-11-09T16:26:35Z
 
 ### f6cf1731.4 [medium] .ci/rediacc_ci/tests/test_deploy_deploy_proxy.py:555
 Anchor: in-diff
