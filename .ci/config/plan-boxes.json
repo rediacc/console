@@ -2852,14 +2852,15 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 3,
-      "done": 0,
+      "open": 1,
+      "done": 2,
       "open_sigs": [
-        "0f19515b",
+        "0f19515b"
+      ],
+      "done_sigs": [
         "1a460b23",
         "233a92c3"
-      ],
-      "done_sigs": []
+      ]
     },
     "agent/plans/PLAN-w7p4w-docker-cutover.md": {
       "status": "compacted",
