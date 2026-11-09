@@ -212,7 +212,8 @@ export async function registerNewRepo(
   // Validate before ANY write: allocateNetworkId persists, and a refused name must leave the config untouched.
   const { assertResourceName, compositeKey } = await import('../utils/config-schema.js');
   assertResourceName(name);
-  const existing = await configService.getRepository(name);
+  // A family left with only forks of a forgotten grand is not a live repo of this name: `repo delete` refuses it, so the create must not call the name taken.
+  const existing = await configService.getLiveGrand(name);
   // A POST retried with the same body id, placement and size finds the record its first attempt registered (the guid derives from all three): attach to it, so the create job dedupes on the request id instead of the retry failing as a duplicate. The same id asking for another placement or size is a different request and meets the duplicate error.
   const servedGuid = servedRecordGuid(`create:${name}:${JSON.stringify(placement)}:${size ?? ''}`);
   if (existing && servedGuid !== undefined && existing.repositoryGuid === servedGuid) {

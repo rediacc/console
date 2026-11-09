@@ -27,6 +27,10 @@ const mockSetRepositoryPlacement = vi.hoisted(() => vi.fn().mockResolvedValue(un
 vi.mock('../../services/config/config-resources.js', () => ({
   configService: {
     getRepository: mockGetRepository,
+    // The create's duplicate check reads the live grand; these tests drive it through getRepository.
+    getLiveGrand(this: { getRepository: (n: string) => Promise<unknown> }, name: string) {
+      return this.getRepository(name);
+    },
     addRepository: mockAddRepository,
     allocateNetworkId: vi.fn().mockResolvedValue(99999),
     removeRepository: vi.fn(),

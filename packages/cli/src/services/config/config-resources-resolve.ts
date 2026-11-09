@@ -271,6 +271,29 @@ export function resolveDestructiveTargetFromRepos(
 }
 
 /**
+ * The record a bare name means as a LIVE repo of that name: the family's grand,
+ * or a restored record. A family holding only forks of a grand that is no longer
+ * in the config (the grand was forgotten, its forks stayed) has no such record:
+ * `resolveRepoKey` still lands on a fork through the grand pointer, but a bare
+ * name targets a grand, so `repo delete` refuses that fork and `repo create`
+ * must not call the name taken either (the two verbs disagreed, vm:check 2026-11-09).
+ */
+export function resolveLiveGrandKey(
+  repos: Record<string, RepositoryConfig>,
+  ref: string,
+  grandTags: Readonly<Record<string, string>> = {}
+): string | undefined {
+  const key = resolveRepoKey(repos, ref, grandTags);
+  if (key === undefined) return undefined;
+  const isBare = grandRefBase(ref) !== undefined;
+  const baseName = parseRepoRef(ref).name;
+  if (isBare && isForkConfig(repos[key]) && !isRestoredRecord(repos, baseName, key)) {
+    return undefined;
+  }
+  return key;
+}
+
+/**
  * True for a restored repository: `backup restore` registers it under
  * `<name>:latest` with a fresh GUID and the snapshot's lineage as grandGuid,
  * so it looks like a fork whose grand is not in this config. It is the

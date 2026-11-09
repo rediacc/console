@@ -22,6 +22,10 @@ vi.mock('../../services/config/config-resources.js', () => ({
   configService: {
     getCurrent: vi.fn().mockResolvedValue({ resources: { machines: {}, datastores: {} } }),
     getRepository: vi.fn().mockResolvedValue(undefined),
+    // The create's duplicate check reads the live grand; these tests drive it through getRepository.
+    getLiveGrand(this: { getRepository: (n: string) => Promise<unknown> }, name: string) {
+      return this.getRepository(name);
+    },
     getRepositoryKey: (ref: string) => Promise.resolve(`${ref}:latest`),
     allocateNetworkId: vi.fn(),
     addRepository: mockAddRepository,

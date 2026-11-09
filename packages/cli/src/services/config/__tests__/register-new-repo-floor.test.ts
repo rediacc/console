@@ -58,6 +58,10 @@ vi.mock('../config-resources.js', async (orig) => {
     ...real,
     configService: Object.assign(Object.create(real.configService), {
       getRepository: () => Promise.resolve(undefined),
+      // The create's duplicate check reads the live grand; these tests drive it through getRepository.
+      getLiveGrand(this: { getRepository: (n: string) => Promise<unknown> }, name: string) {
+        return this.getRepository(name);
+      },
       addRepository: (...args: unknown[]) => {
         addRepository(...args);
         return Promise.resolve();

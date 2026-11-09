@@ -30,6 +30,10 @@ vi.mock('../../services/executor/executor-factory.js', () => ({
 vi.mock('../../services/config/config-resources.js', () => ({
   configService: {
     getRepository: vi.fn(() => Promise.resolve(undefined)),
+    // The create's duplicate check reads the live grand; these tests drive it through getRepository.
+    getLiveGrand(this: { getRepository: (n: string) => Promise<unknown> }, name: string) {
+      return this.getRepository(name);
+    },
     allocateNetworkId: vi.fn(() => Promise.resolve(42)),
     removeRepository: vi.fn(() => Promise.resolve()),
     getCurrent: () => getCurrent(),

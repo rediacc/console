@@ -53,6 +53,7 @@ import {
   buildGuidMap,
   grandTagsOf,
   resolveDestructiveTargetFromRepos,
+  resolveLiveGrandKey,
   resolveRepoKey,
   restoreArchivedRecord,
   withGpuDevices,
@@ -407,6 +408,18 @@ class ConfigService extends ConfigAccessService {
     const state = await this.getResourceState();
     const repos = state.getRepositories();
     const key = resolveRepoKey(repos, repoRef, grandTagsOf(config.resources?.repositories));
+    return key ? repos[key] : undefined;
+  }
+
+  /**
+   * The live grand a bare name means, for a create's duplicate check: unlike
+   * `getRepository`, a family holding only forks of an absent grand has none.
+   */
+  async getLiveGrand(name: string): Promise<RepositoryConfig | undefined> {
+    const config = await this.getCurrent();
+    if (!config) return undefined;
+    const repos = (await this.getResourceState()).getRepositories();
+    const key = resolveLiveGrandKey(repos, name, grandTagsOf(config.resources?.repositories));
     return key ? repos[key] : undefined;
   }
 
