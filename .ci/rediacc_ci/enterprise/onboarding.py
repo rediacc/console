@@ -378,7 +378,7 @@ AccountPost = Callable[[str, str, dict], tuple[int, dict]]
 
 
 def account_post(url: str, api_key: str, body: dict) -> tuple[int, dict]:
-    """(status, JSON body) of an authenticated POST to the company's account Worker through `core.https`; (0, {}) when nothing answered."""
+    """(status, JSON body) of an authenticated POST to the company's account Worker through `core.https`; (0, {}) when nothing answered, and the real status with {} when the answer's body was cut off."""
     request = https.build_request(
         url,
         data=json.dumps(body).encode(),
@@ -387,7 +387,12 @@ def account_post(url: str, api_key: str, body: dict) -> tuple[int, dict]:
     )
     try:
         with https.urlopen(request, timeout=60) as reply:
-            return int(reply.status), _json_body(reply.read())
+            status = int(reply.status)
+            try:
+                return status, _json_body(reply.read())
+            except (OSError, http.client.HTTPException):
+                # The server answered and the body was cut off: the status is real, so the call is not "no answer" (review 9bfbbb2f.1).
+                return status, {}
     except urllib.error.HTTPError as exc:
         try:
             raw = exc.read()

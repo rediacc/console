@@ -57,8 +57,8 @@ DRY_RUN_DB_ID = "00000000-0000-0000-0000-000000000000"
 TOKEN_RE = re.compile(r"@[A-Z_]+@")
 VERSION_ID_RE = re.compile(r"Current Version ID:\s*([0-9A-Za-z][0-9A-Za-z-]*)")
 REDACTED = "[redacted]"
-# What `wrangler deployments list` prints for a Worker that has never been deployed.
-NO_WORKER_RE = re.compile(r"10007|does not exist|no such worker|not found", re.IGNORECASE)
+# What `wrangler deployments list` prints for a Worker that has never been deployed ("This Worker does not exist on your account. [code: 10007]"). The phrases name the Worker or the code: a bare "not found" or "does not exist" also appears in unrelated failures (a missing config, a missing binary) and must not read as a first deploy (review 759876e3.1).
+NO_WORKER_RE = re.compile(r"\b10007\b|worker does not exist|no such worker", re.IGNORECASE)
 
 
 class RefusedError(Exception):
@@ -254,11 +254,13 @@ def newest_version(run: Runner, cwd: pathlib.Path, config: pathlib.Path) -> str 
         raise DeploymentsUnreadableError from None
     if not isinstance(rows, list):
         raise DeploymentsUnreadableError
+    if not all(isinstance(d, dict) for d in rows):
+        raise DeploymentsUnreadableError
     if not rows:
         return None
     newest = max(rows, key=lambda d: str(d.get("created_on", "")))
     for v in newest.get("versions", []):
-        if v.get("percentage") == 100:
+        if isinstance(v, dict) and v.get("percentage") == 100:
             return str(v.get("version_id"))
     return None
 

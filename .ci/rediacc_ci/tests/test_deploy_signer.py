@@ -358,7 +358,14 @@ def test_first_deploy_has_no_rollback(repo):
 
 @pytest.mark.parametrize(
     "answer",
-    [ds.Result(1, "", "network down"), ds.Result(0, "not json", ""), ds.Result(0, '{"a": 1}', "")],
+    [
+        ds.Result(1, "", "network down"),
+        ds.Result(0, "not json", ""),
+        ds.Result(0, '{"a": 1}', ""),
+        ds.Result(0, "[1]", ""),
+        ds.Result(1, "", "wrangler.toml not found in the working directory"),
+        ds.Result(1, "", "the account does not exist"),
+    ],
 )
 def test_an_unreadable_deployments_list_is_not_claimed_as_a_first_deploy(repo, answer):
     class Unreadable(FakeWrangler):

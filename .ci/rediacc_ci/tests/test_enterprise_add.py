@@ -583,7 +583,9 @@ def test_account_post_survives_an_incomplete_read_of_the_error_body(monkeypatch)
     assert onboarding.account_post("https://h/x", "k", {}) == (502, {})
 
 
-def test_account_post_survives_an_incomplete_read_of_a_success_body(monkeypatch):
+def test_account_post_keeps_the_status_of_a_success_whose_body_was_cut_off(monkeypatch):
+    """Review 9bfbbb2f.1: the server answered 200, so the call is not "no answer" (0)."""
+
     class Reply:
         status = 200
 
@@ -597,7 +599,7 @@ def test_account_post_survives_an_incomplete_read_of_a_success_body(monkeypatch)
             raise http.client.IncompleteRead(b"par", 10)
 
     monkeypatch.setattr(onboarding.https, "urlopen", lambda *_a, **_k: Reply())
-    assert onboarding.account_post("https://h/x", "k", {}) == (0, {})
+    assert onboarding.account_post("https://h/x", "k", {}) == (200, {})
 
 
 def test_live_account_call_with_no_answer_refuses():
