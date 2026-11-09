@@ -27,6 +27,7 @@ import json
 import keyword
 import os
 import pathlib
+import posixpath
 import re
 import shutil
 import subprocess
@@ -3246,14 +3247,41 @@ def imports_anchored_module(repo, fix, test_path, anchored):
     if rc != 0:
         return False
     variants = {stem, stem.replace("-", "_"), stem.replace("_", "-")}
+    parent = pathlib.PurePosixPath(anchored).parent.name.lower()
+    parents = {parent, parent.replace("-", "_"), parent.replace("_", "-")} if parent else set()
+    anchored_low = anchored.lower()
+    anchored_bare = str(pathlib.PurePosixPath(anchored_low).with_suffix(""))
+    test_dir = pathlib.PurePosixPath(test_path.lower()).parent
     for line in text.splitlines():
         if not line.startswith("+") or line.startswith("+++") or not _IMPORT_LINE_RE.search(line):
             continue
-        low = line[1:].lower()
-        if any(
-            re.search(r"(?<![a-z0-9_-])%s(?![a-z0-9_-])" % re.escape(v), low) for v in variants
-        ):
-            return True
+        for token in re.findall(r"[a-z0-9_.@~/-]+", line[1:].lower()):
+            if _token_names_anchored(token, variants, parents, test_dir, anchored_low, anchored_bare):
+                return True
+    return False
+
+
+_MODULE_SUFFIXES = {"ts", "tsx", "js", "jsx", "mjs", "cjs", "py", "go", "rs"}
+
+
+def _token_names_anchored(token, variants, parents, test_dir, anchored, anchored_bare):
+    """One import-line token against the anchored file: a relative path is resolved from the test's directory and must equal the anchored path, and any other path or dotted module must carry the anchored stem with the anchored parent directory just before it (or be the bare stem), so `../other/index` is no match for `src/foo/index.ts` (review fc93df02.1)."""
+    if token.startswith(".") and "/" in token:
+        resolved = posixpath.normpath(str(test_dir / token))
+        head, _, tail = resolved.rpartition(".")
+        if tail in _MODULE_SUFFIXES:
+            resolved = head
+        return resolved in (anchored, anchored_bare)
+    parts = [p for p in re.split(r"[/.]", token) if p]
+    if len(parts) > 1 and parts[-1] in _MODULE_SUFFIXES:
+        parts = parts[:-1]
+    for v in variants:
+        vparts = [p for p in re.split(r"[/.]", v) if p]
+        for i in range(len(parts) - len(vparts) + 1):
+            if parts[i : i + len(vparts)] == vparts and (
+                i == 0 or not parents or parts[i - 1] in parents
+            ):
+                return True
     return False
 
 

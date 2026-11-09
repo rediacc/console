@@ -461,6 +461,21 @@ def test_control_an_unrelated_test_is_still_refused(tmp_path, anchored, test, bo
         R.mark(repo, BRANCH, fid, "fixed", [fix, "--test", test], ME)
 
 
+def test_control_a_same_stem_import_from_another_directory_is_refused(tmp_path):
+    """Review fc93df02.1: `../other/index` shares the bare stem `index` with `src/foo/index.ts` and is another module; `../src/foo/index` is the anchored one (control)."""
+    anchored = "src/foo/index.ts"
+    repo, fid = _import_world(tmp_path, anchored)
+    test = "tests/other-thing.test.ts"
+    key = test.replace("/", "__").replace(".", "_dot_")
+    fix = _commit(repo, "test: other", **{key: "import { x } from '../src/other/index';\n"})
+    with pytest.raises(ValueError, match="does not touch"):
+        R.mark(repo, BRANCH, fid, "fixed", [fix, "--test", test], ME)
+    (tmp_path / "ok").mkdir()
+    repo, fid = _import_world(tmp_path / "ok", anchored)
+    fix = _commit(repo, "test: foo", **{key: "import { x } from '../src/foo/index';\n"})
+    R.mark(repo, BRANCH, fid, "fixed", [fix, "--test", test], ME)
+
+
 def test_control_an_importing_test_without_the_test_flag_is_refused(tmp_path):
     """The import relation serves a named test only; a fix that touches an importing test unnamed stays refused."""
     repo, fid = _import_world(tmp_path, "src/onboarding.py")

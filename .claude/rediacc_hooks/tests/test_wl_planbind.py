@@ -239,6 +239,8 @@ def test_ruling_declaration_forms(tmp_path):
         "close the ruling: doc gap",
         "note the ruling: doc gap, not a decision",
         "close the (ruling): doc gap",  # review 77c5fd2a.2
+        # review fc93df02.2: same shape as the line above, so no rule tells them apart; the conservative rule keeps both as mentions
+        "Decision recorded (ruling): drop T1",
     ):
         assert kinds(run({TARGET: dropped}, [item("aa11bb22", "x", text)], tmp_path)) == ["box"]
     for text in (
@@ -246,6 +248,8 @@ def test_ruling_declaration_forms(tmp_path):
         "Decision recorded, (ruling): drop T1",
         "Decision recorded, ruling: drop T1",  # review 77c5fd2a.3
         "Decision recorded - ruling: drop T1",
+        "Decision recorded--ruling: drop T1",  # review fc93df02.4
+        "Decision recorded\u2014ruling: drop T1",
         "Ruling: drop T1",
     ):
         assert run({TARGET: dropped}, [item("aa11bb22", "x", text)], tmp_path) == []
