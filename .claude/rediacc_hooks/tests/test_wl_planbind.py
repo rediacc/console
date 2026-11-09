@@ -10,17 +10,21 @@ import importlib
 import json
 import pathlib
 import subprocess
-import sys
 
 import pytest
+from rediacc_ci import paths
 
 STOP = pathlib.Path(__file__).resolve().parents[2] / "hooks" / "stop"
-if str(STOP) not in sys.path:
-    sys.path.insert(0, str(STOP))
+paths.on_sys_path(STOP)
+
 
 def _at(seconds=0):
     """A store timestamp derived from now (a minute back, plus `seconds`), never a literal date: the reader sorts by it before folding."""
-    when = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=1) + datetime.timedelta(seconds=seconds)
+    when = (
+        datetime.datetime.now(datetime.UTC)
+        - datetime.timedelta(minutes=1)
+        + datetime.timedelta(seconds=seconds)
+    )
     return when.strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
