@@ -96,6 +96,7 @@ class FakeCloudflare:
         self.calls: list[tuple] = []
         self.fail: set[tuple[str, str]] = set()
         self.token_page = 2
+        self.d1_page = 100
 
     def __call__(self, method, path, _body=None, headers=()):
         self.calls.append((method, path, tuple(headers)))
@@ -111,10 +112,15 @@ class FakeCloudflare:
             self.workers.discard(name)
             return {"success": True, "result": None}
         if method == "GET" and path.startswith(base + "/d1/database?"):
-            wanted = urllib.parse.parse_qs(path.split("?", 1)[1])["name"][0]
+            args = urllib.parse.parse_qs(path.split("?", 1)[1])
+            wanted = args["name"][0]
+            page = int(args.get("page", ["1"])[0])
             # Cloudflare's name filter is a substring match, so the adapter must check equality.
             rows = [{"uuid": u, "name": n} for n, u in self.d1.items() if wanted in n]
-            return {"success": True, "result": rows}
+            per = self.d1_page
+            pages = max(1, -(-len(rows) // per))
+            result = rows[(page - 1) * per : page * per]
+            return {"success": True, "result": result, "result_info": {"total_pages": pages}}
         if method == "DELETE" and path.startswith(base + "/d1/database/"):
             uuid = path.rsplit("/", 1)[1]
             self.d1 = {n: u for n, u in self.d1.items() if u != uuid}
@@ -448,6 +454,20 @@ def test_delete_d1_matches_the_exact_name_and_deletes_by_uuid(monkeypatch):
     assert rig.teardown.done[-1] == "delete d1 (already gone)"
 
 
+def test_delete_d1_pages_through_the_listing_before_deciding(monkeypatch):
+    rig = Rig(monkeypatch)
+    rig.cf.d1 = {"account-acme-%02d" % i: "u%02d" % i for i in range(3)} | {
+        "account-acme": "1111-uuid"
+    }
+    rig.cf.d1_page = 1
+    rig.teardown.delete_d1(_company())
+    assert "account-acme" not in rig.cf.d1
+    assert len(rig.cf.d1) == 3
+    assert rig.teardown.done[-1] == "delete d1"
+    pages = [c[1] for c in rig.cf.calls if c[0] == "GET" and "/d1/database?" in c[1]]
+    assert len(pages) == 4
+
+
 def test_delete_secret_deletes_only_rows_in_the_enterprise_project(monkeypatch):
     rig = Rig(monkeypatch)
     name = rig.bws.rows[0]["key"]
@@ -631,6 +651,20 @@ def test_r2_s3_puts_credentials_on_stdin_and_splits_status_from_a_binary_body():
     assert "KEYID" not in " ".join(seen["argv"])
     assert SECRET_VALUE.encode() in seen["input"]
     assert seen["argv"][-1] == "https://acct.eu.r2.cloudflarestorage.com/configs-acme/x"
+
+
+def test_r2_s3_escapes_quote_and_backslash_in_the_config_line_and_refuses_a_newline():
+    seen = {}
+
+    def runner(argv, **kw):
+        seen["input"] = kw["input"]
+        return subprocess.CompletedProcess(argv, 0, stdout=b"\n200", stderr=b"")
+
+    s3 = la.r2_s3("https://e", 'k"id', "s\\e", runner=runner)
+    s3("GET", "b")
+    assert seen["input"] == b'user = "k\\"id:s\\\\e"\n'
+    with pytest.raises(lifecycle.LifecycleError, match="line break"):
+        la.r2_s3("https://e", "k", "s\nuser = x", runner=runner)
 
 
 def test_r2_s3_curl_failure_withholds_stderr():
