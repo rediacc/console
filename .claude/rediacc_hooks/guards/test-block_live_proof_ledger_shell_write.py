@@ -401,6 +401,85 @@ def scope_cases(world, ledger):
     ]
 
 
+# Review 53e8d8aa.1: a left-nested `+` chain parses (the parser loops over it) while the scope walk recurses about two frames per level, so 2000 terms overflow the walk and not the parse.
+DEEP_TERMS = 2000
+
+
+def _deep(tail):
+    return _py("x = " + "+".join(["'a'"] * DEEP_TERMS) + "\n" + tail)
+
+
+def review_53e8d8aa_cases(ledger):
+    """Review 53e8d8aa: a program nested past the scope walk's recursion is judged by its lines, refused when it names the ledger and admitted when it does not (.1); a `match` capture binds in its scope, to the subject, the way an assignment target does (.2). `(name, command, refused?)`."""
+    return [
+        (
+            "53e8d8aa.1: a deeply nested program appends to the ledger",
+            _deep("open('%s', 'a').write(x)" % ledger),
+            True,
+        ),
+        (
+            "53e8d8aa.1: a deeply nested program writes elsewhere",
+            _deep("open('/tmp/out.txt', 'a').write(x)"),
+            False,
+        ),
+        (
+            "53e8d8aa.2: a bare match capture of the ledger path is written",
+            _py(
+                "from pathlib import Path\nroot = '.'\nLEDGER = '%s'\n"
+                "match Path(root) / LEDGER:\n    case p:\n        open(p, 'a').write('{}')" % ledger
+            ),
+            True,
+        ),
+        (
+            "53e8d8aa.2: a star capture in a sequence pattern is written",
+            _py(
+                "def go():\n    match ['%s']:\n        case [*rest]:\n"
+                "            open(rest[0], 'a').write('{}')\ngo()" % ledger
+            ),
+            True,
+        ),
+        (
+            "53e8d8aa.2: a mapping rest capture is written",
+            _py(
+                "def go():\n    match {'p': '%s'}:\n        case {**rest}:\n"
+                "            open(rest['p'], 'a').write('{}')\ngo()" % ledger
+            ),
+            True,
+        ),
+        (
+            "53e8d8aa.2: a match capture shadows a module ledger name",
+            _py(
+                "path = '%s'\ndef go(s):\n    match s:\n        case path:\n"
+                "            open(path, 'a').write('{}')\ngo('/tmp/out.txt')" % ledger
+            ),
+            False,
+        ),
+        (
+            "53e8d8aa.2: a class-pattern capture shadows a module ledger name",
+            _py(
+                "import types\npath = '%s'\ndef go(s):\n"
+                "    match s:\n        case types.SimpleNamespace(dest=path):\n"
+                "            open(path, 'a').write('{}')\n"
+                "go(types.SimpleNamespace(dest='/tmp/out.txt'))" % ledger
+            ),
+            False,
+        ),
+    ]
+
+
+def no_traceback(shared):
+    """Each 53e8d8aa.1 case answers through the guard, never through a traceback the dispatcher caught."""
+    fails = 0
+    for name, command, _refused in review_53e8d8aa_cases(shared.L)[:2]:
+        payload = {"tool_name": "Bash", "tool_input": {"command": command}, "cwd": shared.CWD}
+        _rc, text = shared.via_dispatch("block_live_proof_ledger_shell_write", payload)
+        if "Traceback" in text or "RecursionError" in text:
+            print("*** FAIL *** %s raised: %s" % (name, text[-300:]))
+            fails += 1
+    print("53e8d8aa.1 tracebacks: %d" % fails)
+    return fails
+
+
 def main():
     spec = importlib.util.spec_from_file_location("test_live_proof_ledger_shared", SHARED)
     if spec is None or spec.loader is None:
@@ -411,7 +490,9 @@ def main():
     shared.SHELL_CASES.extend(review_cases())
     shared.SHELL_CASES.extend(read_is_not_write_cases(shared.WORLD, shared.L))
     shared.SHELL_CASES.extend(scope_cases(shared.WORLD, shared.L))
-    return shared.main(("block_live_proof_ledger_shell_write",))
+    shared.SHELL_CASES.extend(review_53e8d8aa_cases(shared.L))
+    rc = shared.main(("block_live_proof_ledger_shell_write",))
+    return 1 if no_traceback(shared) else rc
 
 
 if __name__ == "__main__":

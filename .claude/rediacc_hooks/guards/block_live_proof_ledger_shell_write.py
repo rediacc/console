@@ -282,6 +282,7 @@ class _Scopes:
         self.scope_of: dict = {}
         self.bindings: list = []  # (scope, identifier, value expression or None)
         self._next = 1
+        self._subject = None  # the subject of the innermost `match` being walked
         self._visit(tree, 0)
 
     def _new(self, parent, is_class=False, is_comp=False):
@@ -308,6 +309,23 @@ class _Scopes:
             else:
                 self.bindings.append((None, n, value))
         self._visit_children(target, scope, skip_names=True)
+
+    def _pattern(self, pattern, scope, subject):
+        """A `match` capture (`case p`, `case [*p]`, `case {**p}`, `case C(x=p)`, `... as p`) binds in the enclosing scope, to the whole subject, as an unpacking target binds each name to the whole value (review 53e8d8aa.2); the value and class expressions a pattern holds are read where the `match` stands."""
+        for sub in ast.walk(pattern):
+            name = None
+            if isinstance(sub, (ast.MatchAs, ast.MatchStar)):
+                name = sub.name
+            elif isinstance(sub, ast.MatchMapping):
+                name = sub.rest
+                for k in sub.keys:
+                    self._visit(k, scope)
+            elif isinstance(sub, ast.MatchValue):
+                self._visit(sub.value, scope)
+            elif isinstance(sub, ast.MatchClass):
+                self._visit(sub.cls, scope)
+            if name:
+                self._bind(scope, name, subject)
 
     def _visit_children(self, node, scope, skip_names=False):
         for child in ast.iter_child_nodes(node):
@@ -409,6 +427,18 @@ class _Scopes:
             for a in node.names:
                 if a.name != "*":
                     self._bind(scope, (a.asname or a.name).split(".")[0], None)
+        elif isinstance(node, ast.match_case):
+            self._pattern(node.pattern, scope, self._subject)
+            if node.guard is not None:
+                self._visit(node.guard, scope)
+            for stmt in node.body:
+                self._visit(stmt, scope)
+        elif isinstance(node, ast.Match):
+            self._visit(node.subject, scope)
+            outer, self._subject = self._subject, node.subject
+            for case in node.cases:
+                self._visit(case, scope)
+            self._subject = outer
         elif isinstance(node, ast.Global):
             self.globals[scope].update(node.names)
         elif isinstance(node, ast.Nonlocal):
@@ -539,6 +569,14 @@ def _python_writes_ledger(program):
         tree = ast.parse(program)
     except (SyntaxError, ValueError, RecursionError, MemoryError):
         return None
+    # A tree the parser loops over can still be deep enough to overflow the recursive walks below (a 2000-term `+` chain, review 53e8d8aa.1); it is answered like a program that does not parse, so the line reading refuses one naming the ledger beside write code.
+    try:
+        return _tree_writes_ledger(tree)
+    except (RecursionError, MemoryError):
+        return None
+
+
+def _tree_writes_ledger(tree):
     # Bindings are read per scope (#b4bb4a4e): `path` bound to the ledger in one function is a different name from `path` written in another, while a closure, a module binding read in a function, a `global` and a `nonlocal` still reach it.
     scopes = _Scopes(tree)
     key = scopes.key
