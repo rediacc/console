@@ -91,7 +91,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 16 of 60 plans done, 916 of 1130 boxes done (81%).
+Promoted: 16 of 60 plans done, 917 of 1130 boxes done (81%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -152,7 +152,7 @@ Promoted: 16 of 60 plans done, 916 of 1130 boxes done (81%).
 | 55 | PLAN-renet-restart-cycle-defects.md | 5/6 | 1 open |
 | 56 | PLAN-drop-free-license-ip-prefix-hash.md | 4/6 | 2 open |
 | 57 | PLAN-stop-hook-retro-20261101.md | 4/4 | done |
-| 58 | PLAN-plan-compaction-bindings.md | 0/7 | 7 open |
+| 58 | PLAN-plan-compaction-bindings.md | 1/7 | 6 open |
 | 59 | PLAN-ciquick-green-then-batch.md | 6/7 | 1 open |
 | 60 | PLAN-vmcheck-incremental.md | 2/3 | 1 open |
 <!-- queue:progress:end -->
