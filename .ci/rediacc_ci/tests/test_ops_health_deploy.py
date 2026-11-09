@@ -321,7 +321,6 @@ def test_a_404_or_an_unreachable_host_is_a_first_deploy(monkeypatch: pytest.Monk
     [
         ConnectionResetError(104, "reset"),
         BrokenPipeError(32, "broken pipe"),
-        TimeoutError("timed out"),
         "unknown",
     ],
 )
@@ -330,6 +329,14 @@ def test_a_urlerror_from_the_send_after_connecting_is_unreadable_not_a_first_dep
 ) -> None:
     with pytest.raises(d.StatusUnreadableError, match="after the request began"):
         _fetch_with(monkeypatch, urllib.error.URLError(cast("Any", reason)))
+
+
+def test_a_connect_phase_timeout_is_unreadable_not_a_first_deploy(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # The branch message still reads "failed after the request began" for a connect-phase timeout; only the exception type and the URL are pinned until deploy_ops_health.py words it apart.
+    with pytest.raises(d.StatusUnreadableError, match="ops-health.example.test"):
+        _fetch_with(monkeypatch, urllib.error.URLError(TimeoutError("timed out")))
 
 
 def test_a_non_json_status_body_raises(monkeypatch: pytest.MonkeyPatch) -> None:

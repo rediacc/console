@@ -20,7 +20,7 @@ import yaml
 
 WORKFLOWS = pathlib.Path(__file__).resolve().parents[3] / ".github" / "workflows"
 KEY = "ACCOUNT_ED25519_PRIVATE_KEY"
-KEY_RE = re.compile(rf"\b{KEY}\b")
+KEY_RE = re.compile(rf"(?<![A-Za-z0-9]){KEY}(?![A-Za-z0-9])")
 START = "rediacc_ci.testrun.start_account"
 BUILD = "rediacc_ci.infra.build_renet"
 SHARED_RENET = "renet-test-binary"
@@ -243,3 +243,11 @@ def test_control_a_runtime_key_leg_may_not_touch_a_binary() -> None:
         runtime_key=True,
     )
     assert found == ["j: listed as a runtime-key leg but touches a renet binary"]
+
+
+def test_control_the_bws_prefixed_alias_is_found() -> None:
+    aliased = CLEAN.replace(
+        "ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY",
+        "OTHER > BWS_ACCOUNT_ED25519_PRIVATE_KEY",
+    )
+    assert key_holders(aliased) == ["leg"]
