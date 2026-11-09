@@ -273,7 +273,7 @@ Order matters. The cheap cuts come first, because each one lowers every later sh
 
 ### P3: the lane-duration gate
 
-- [ ] T3.1 [B] **`scripts/gates/check-lane-budget.ts`** (registered as `ci-lane-budget`, quality-code lane, once T3.1 lands). In TypeScript because it re-runs `shardPlan`. For every lane (quality-* plus the test lanes) and every job in ci.yml and its callees:
+- [x] T3.1 [B] **`scripts/gates/check-lane-budget.ts`** (registered as `ci-lane-budget`, quality-code lane, once T3.1 lands). In TypeScript because it re-runs `shardPlan`. For every lane (quality-* plus the test lanes) and every job in ci.yml and its callees:
   1. **Per-leg estimate:** the job's fixed cost p90 plus the sum of the leg's unit p90s, with the LPT plan recomputed from the committed manifest. Red if over **12 min**, naming lane, leg and top 3 units.
   2. **Unsharded job:** its job-level p90 at 12 or under.
   3. **Single unit:** a unit whose p90 plus the fixed cost exceeds 12 is red and marked "indivisible: split the unit, or record an approved exemption". The exemption list is empty, and each entry is operator-approved (D-W3).
@@ -282,6 +282,7 @@ Order matters. The cheap cuts come first, because each one lowers every later sh
   6. **Pipeline:** critical-path estimate plus `max(0, runnerMinutes / concurrency - critical path)` at 20 or under. Advisory until D-W1 is decided, then red.
   7. **After P4:** every job declares `timeout-minutes` of 15 or less.
   - Selftest controls: 12.1 fails and 11.9 passes; stale fails and fresh passes; a planted unestimated file fails, and the same file with `defaultUnitMs` passes; quality-code's plan is unchanged. Offline and deterministic, like the headroom gate.
+    (ticked) 2026-11-09T04:28:29Z by d778be9d: already in the tree: scripts/gates/check-lane-budget.ts registered as check:ci-lane-budget gate:true in quality-code (scripts/ci-runner/manifest.ts:5402, step Lane budget); check 7 enforced in 3bf6182bc4; worklist #eaddeba0 done
 - [x] T3.2 [A] **Where the estimates come from.** `budget_report.py --refresh` rewrites `.ci/config/lane-durations.json`:
   - per job: fixed cost p90, meaning setup steps up to the runner step, taken from the step API;
   - per unit: p90 from the T1.6 unit-duration artifacts of the last 10 completed full PR runs (success-only jobs; #32e66d3b);
@@ -305,7 +306,8 @@ Entry: P2 exit met, plus 5 consecutive full green runs with zero report-only vio
     (ticked) 2026-09-30T10:46:35Z by d778be9d: 1d29c3ffb: WATCHDOG_BUDGET_MODE=enforce per job via forceCancel with the CI BUDGET VIOLATION annotation; new WATCHDOG_RUN_BUDGET_MODE=report keeps the run-level cancel report-only (#a631eaf1); 126 watchdog tests pass with HEAD controls
 - [x] T4.3 [A] `STUCK_THRESHOLD_MIN` (`:1045`, default 60) becomes 15. A leg killed by its timeout is then classified as a budget violation and not auto-retried (today a 15-min timeout counts as a "normal cancellation", which is retryable).
     (ticked) 2026-09-30T10:46:59Z by d778be9d: 1d29c3ffb: STUCK_THRESHOLD_MIN 60 -> 15 (capped jobs use their cap); a leg killed at its 15-minute timeout is not retried (control: HEAD retried it); 126 watchdog tests pass
-- [ ] T4.4 [B] Turn on T3.1 check 7 (timeout of 15 or less on every job).
+- [x] T4.4 [B] Turn on T3.1 check 7 (timeout of 15 or less on every job).
+    (ticked) 2026-11-09T04:31:46Z by d778be9d: already in the tree: check 7 on at scripts/gates/check-lane-budget.ts:158 (selftest pins it), enforced in 3bf6182bc4; npm run check:ci-lane-budget runs in quality-code; worklist #74abe7ef done
 - **Rollback:** one env value back to `report`. Timeouts stay.
 
 ## 5. Required-check names and branch protection

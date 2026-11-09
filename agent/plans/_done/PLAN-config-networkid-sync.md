@@ -26,31 +26,39 @@ Writers:
 
 The renet submodule PR (R) merges first. The account submodule PR (C) comes next. The console PR (B, the regenerated contract, and the pointer bumps) follows both.
 
-- [ ] T0 [lead] Get the operator's answers to D1-D6 (section 5). Freeze the contract that T2 and T3 share:
+- [x] T0 [lead] Get the operator's answers to D1-D6 (section 5). Freeze the contract that T2 and T3 share:
   - the renet error code `network_id_in_use`, with the JSON body `{network_id, holder: {kind, name, datastore}}`;
   - the function name `network_used` and its JSON shape: `[{network_id, kind: "repo"|"daemon"|"loopback"|"k3s", name?, datastore?}]`;
   - the CLI error class names.
-- [ ] T1 [C] Add the fake machine (`harness/machine.ts`) and the scenarios N1-N7 (section 4.2) in `network-id.test.ts`. Every scenario that reproduces F20 starts as `it.fails('F20 N<k> ...')` and uses the `arrange`/`isSymptom` guards from `harness/guard.ts`. The `device.process()` hook that injects the fake executor is a small edit to `harness/device.ts`, reviewed by the hardening plan's C.
-- [ ] T2 [R] renet side:
+    (ticked) 2026-11-09T04:37:18Z by d778be9d: already in the tree: D1-D6 were answered (D1(b) shipped, D2, D3(a), D4(a), D5(a), D6(a)) and recorded in PLAN-config-networkid-discovery's Rulings; the contract network_id_in_use is the frozen renet error, ruling #0c1cbd0d (private/renet/cmd/renet/netid_guard.go:35)
+- [x] T1 [C] Add the fake machine (`harness/machine.ts`) and the scenarios N1-N7 (section 4.2) in `network-id.test.ts`. Every scenario that reproduces F20 starts as `it.fails('F20 N<k> ...')` and uses the `arrange`/`isSymptom` guards from `harness/guard.ts`. The `device.process()` hook that injects the fake executor is a small edit to `harness/device.ts`, reviewed by the hardening plan's C.
+    (ticked) 2026-11-09T04:37:20Z by d778be9d: already in the tree: fake machine and scenarios N1a-N7 landed in account c59d691 (network-id.test.ts) as PLAN-config-networkid-discovery box T1 (private/account/tests/integration/config-sync/harness/device.ts:294)
+- [x] T2 [R] renet side:
   - (a) Pin the existing `network_id` field of `renet list repositories --json` with a test in `pkg/list/repositories_test.go`.
   - (b) Add `repository.NetworkIDHolder(ctx, networkID, selfName)` in `pkg/repository/netid_guard.go`. It scans every registered datastore's `.interim/state/*` mirror, the running per-network daemons (`/var/run/rediacc/docker-<id>.sock` and the unit's data root), the configured loopback /26 aliases, and the k3s units.
   - (c) Call it in `repository create`, `repository up` and fork start. The call goes after the ID is resolved and before `CreateOrchestrator`, so `SafeStartup` never reaches `RemoveForeignProjectContainers` for a foreign ID. A hit returns `network_id_in_use`, which is a returned error, not `log.Fatal`, because the repo lock is held.
   - (d) Add `renet network used --json` and the `network_used` function, then regenerate `functions.generated.ts`.
   - (e) Add i18n keys.
-- [ ] T3 [B] Discovery before allocation:
+    (ticked) 2026-11-09T04:37:21Z by d778be9d: already in the tree: the network_id pin, NetworkIDHolder guard, network_used function and i18n keys are in renet (discovery plan Already done), and create/fork start are pinned by discovery box R1 (renet 82cb5dba) (private/renet/cmd/renet/repository_up.go:210)
+- [x] T3 [B] Discovery before allocation:
   - (a) `probeRepoPresent` (`packages/cli/src/services/repo/repo-mount-check.ts:99`) returns `{present, networkId}` from the `repository_list` output it already fetches, so discovery costs no extra SSH round trip.
   - (b) Add the new module `network-id-discovery.ts` with `discoverNetworkId({repoGuid, machine, datastore})` and `machineUsedNetworkIds(machine)`.
   - (c) `ensureRepositoryNetworkId(repoRef, target)` takes the resolved machine and datastore. When the local ID is missing it asks the machine first, records the answer with `updateState`, and allocates only when the machine positively reports that it does not have the repo. If the machine is unreachable, it fails closed per D6.
   - (d) `allocateNetworkIdInStore(configName, {floor})`: `next = max(local next, max(machine used) + 64)`, keeping the forward-only counter. `registerNewRepo`, `registerFork`, backup restore and the cluster-kube allocators pass the target machine's used set.
   - (e) On `network_id_in_use` from create, fork or restore, advance past the holder and retry once. On `up`/`mount` of an existing repo, never re-allocate: surface the error, which names the holder and points to `rdc config reconcile`.
-- [ ] T4 [B] Remove the `docker-undefined.sock` path in `packages/cli/src/services/state.ts:206-207`. When the local ID is missing, the connection vault resolves the ID through `ensureRepositoryNetworkId` (discovery) or throws a typed error. It never interpolates `undefined`.
-- [ ] T5 [B] `config reconcile` rebuilds `state.repos[*][*].networkId` from `renet list all --json` by GUID match (spec 04 §4.2), and handles divergence per D4. Delete the stale comment at `packages/cli/src/services/config/config-reconcile.ts:241`, because the renet field has landed (`private/renet/pkg/list/types.go:212-216`). Correct the claim at `packages/cli/src/services/cluster/cluster-kube.ts:274` ("no id is ever handed out twice"), which is false across devices. Update spec 04 §1.3 and §4.2 to describe the machine-authoritative rule.
-- [ ] T6 [B] i18n: add the new CLI errors (`networkIdInUse`, `networkIdUndiscoverable`, `networkIdDiverged`) to all `packages/cli/src/i18n/locales/*/cli.json`, after the hardening plan's i18n commits.
-- [ ] T7 [lead] Closure:
+    (ticked) 2026-11-09T04:37:22Z by d778be9d: already in the tree: discovery before allocation landed in commit c6e5863aa1 as PLAN-config-networkid-discovery box T3 (packages/cli/src/services/config/network-id-discovery.ts:45)
+- [x] T4 [B] Remove the `docker-undefined.sock` path in `packages/cli/src/services/state.ts:206-207`. When the local ID is missing, the connection vault resolves the ID through `ensureRepositoryNetworkId` (discovery) or throws a typed error. It never interpolates `undefined`.
+    (ticked) 2026-11-09T04:37:23Z by d778be9d: already in the tree: the socket is set only when repoConfig.networkId is defined, no docker-undefined.sock path; commit c4e733969, PLAN-config-networkid-discovery box T4 (packages/cli/src/services/state.ts:136)
+- [x] T5 [B] `config reconcile` rebuilds `state.repos[*][*].networkId` from `renet list all --json` by GUID match (spec 04 §4.2), and handles divergence per D4. Delete the stale comment at `packages/cli/src/services/config/config-reconcile.ts:241`, because the renet field has landed (`private/renet/pkg/list/types.go:212-216`). Correct the claim at `packages/cli/src/services/cluster/cluster-kube.ts:274` ("no id is ever handed out twice"), which is false across devices. Update spec 04 §1.3 and §4.2 to describe the machine-authoritative rule.
+    (ticked) 2026-11-09T04:37:25Z by d778be9d: already in the tree: config reconcile rebuilds missing networkIds from the machine by GUID; commit c6e5863aa1, PLAN-config-networkid-discovery box T5 (packages/cli/src/services/config/config-reconcile.ts:82)
+- [x] T6 [B] i18n: add the new CLI errors (`networkIdInUse`, `networkIdUndiscoverable`, `networkIdDiverged`) to all `packages/cli/src/i18n/locales/*/cli.json`, after the hardening plan's i18n commits.
+    (ticked) 2026-11-09T04:37:26Z by d778be9d: already in the tree: networkIdInUse, networkIdUndiscoverable and networkIdDiverged are in every cli.json; commit c6e5863aa1, PLAN-config-networkid-discovery box T6 (packages/cli/src/i18n/locales/en/cli.json:3072)
+- [x] T7 [lead] Closure:
   - Run the mutation controls in section 4.4 by hand; each must turn its test red.
   - Confirm that the account integration lane log lists `config-sync/network-id.test.ts`, and that the renet unit lane runs `netid_guard_test.go`.
   - Flip N1-N6 from `it.fails` to `it` (T3, T4 and T5 each flip their own), and delete their guards.
   - Record the outcome of D1-D6 in the hardening plan's F20 entry.
+    (ticked) 2026-11-09T04:37:27Z by d778be9d: already in the tree: the nine section 4.4 mutation controls ran red and N1-N6 flipped to plain it in commit 3ae849065, PLAN-config-networkid-discovery box T7 (private/account/tests/integration/config-sync/network-id.test.ts:1)
 
 ## 1. What happens today
 

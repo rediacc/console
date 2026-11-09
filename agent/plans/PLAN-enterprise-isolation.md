@@ -115,12 +115,14 @@ This plan is public: no customer name appears in it or in any tracked file. `acm
   Owns: workers/account/src/index.ts, workers/proxy/src/index.ts, workers/proxy/src/__tests__/allowlist.test.ts (new).
   Accept: `(cd workers/proxy && npx vitest run src/__tests__/allowlist.test.ts)` rc 0.
     (ticked) 2026-11-09T02:42:59Z by d778be9d: commit:16f57d6db9 commit:1dfcd7f371 commit:b0a6e261a7; vitest workers/proxy ip-allowlist + index 38 passed rc 0, private/account worker-allowlist 3 passed rc 0, tsc -p workers/proxy and -p workers/account rc 0; the accept file is named ip-allowlist.test.ts, not allowlist.test.ts
-- [ ] D1 [writer] `--company` on the deploy modules, with the record sink at the control database, never the releases bucket.
+- [x] D1 [writer] `--company` on the deploy modules, with the record sink at the control database, never the releases bucket.
   Owns: .ci/rediacc_ci/deploy/deploy_account.py, .ci/rediacc_ci/deploy/deploy_proxy.py, .ci/rediacc_ci/deploy/deploy_record.py, .ci/rediacc_ci/deploy/console_executor.py, .ci/rediacc_ci/tests/test_deploy_company_target.py (new).
   Accept: `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_deploy_company_target.py` rc 0.
-- [ ] D2 [writer] Company secrets: generate, store under opaque names, mint the R2 token and IAM user, push through `wrangler_argv`, with the company's own required list.
+    (ticked) 2026-11-09T03:59:02Z by d778be9d: commit:0f1d42cac3; pytest test_deploy_company_target.py 50 passed rc 0 on the landed tree (with test_enterprise_secrets 104 passed); writer ran 632 neighbour tests rc 0
+- [x] D2 [writer] Company secrets: generate, store under opaque names, mint the R2 token and IAM user, push through `wrangler_argv`, with the company's own required list.
   Owns: .ci/rediacc_ci/enterprise/secrets.py (new), .ci/rediacc_ci/tests/test_enterprise_secrets.py (new).
   Accept: `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_enterprise_secrets.py` rc 0.
+    (ticked) 2026-11-09T03:59:03Z by d778be9d: commit:57f7d3fa12; pytest test_enterprise_secrets.py 54 passed rc 0, red-first (ImportError rc 2 before the module)
 
 ### Wave 4
 

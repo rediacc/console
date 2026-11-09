@@ -1,7 +1,7 @@
 # PLAN: opt-in exact browse listing (sealed TOC) for password-mounted, non-autostart repositories
 
 Status: proposed -- filed for later; the operator accepted the live-mount listing (renet fb9cf01) as near-exact on 2026-10-21, asked for a plan to make it exact, and ruled the same day that the mechanism must be OPTIONAL, OFF by default, and switched on per repository from rdc
-Depends-On: PLAN-chunk-store-browse-toc-and-remote.md
+Depends-On: no-dep -- PLAN-chunk-store-browse-toc-and-remote.md is finished (11 of 11 boxes ticked, merged with PR #601 on 2026-10-23)
 First-Seen: 2026-10-21
 Owner: d778be9d
 Priority: P3 -- low: restore never reads the index, so restored bytes are already right; only browse-at fidelity improves, and only for repositories whose operator opts in

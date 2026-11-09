@@ -1,7 +1,7 @@
 # PLAN: one backup program: S3/R2 chunk store only, safe restores and retention, GUID-only repo identity, clean renet daemons, an offline plane, gated tests, and a live cutover of hostinger to backups-eu
 
 Status: approved -- operator 2026-10-15 ("make a new plan file with boxes", "last steps should be real backup from hostinger to eu R2"); in ## Generated, promoted later by the operator
-Depends-On: PLAN-shell-sandbox-readonly-view.md, PLAN-account-vm-check.md
+Depends-On: no-dep -- PLAN-shell-sandbox-readonly-view.md and PLAN-account-vm-check.md are finished, every box of each ticked (the last on 2026-10-22 and 2026-10-20)
 Supersedes: agent/plans/PLAN-rclone-decommission.md, agent/plans/PLAN-cold-path.md, agent/plans/PLAN-backup-quota-delta-gc.md, agent/plans/PLAN-add-chunkstore-backup-verb.md, agent/plans/PLAN-backup-restore-target-license.md, agent/plans/PLAN-testing-surface-audit.md, agent/plans/PLAN-chunk-store-browse-toc-and-remote.md
 Priority: P1 -- hostinger has had no backup since 2026-08-14, and a restore can overwrite its own source
 Concurrency: parallel -- operator /ask 2026-10-23 ("Parallel, per-phase Owns"): writers take disjoint per-phase Owns declared on their spawn (account backup services; renet chunkstore and restore; renet daemons; CLI backup), which is why this plan's own Owns line no longer lists private/renet, private/account, .ci or hook trees, and phases touching files other live plans hold (account types/env.ts, drizzle/meta, CLI locales, gates.lock, renet pkg/i18n) wait for those plans
