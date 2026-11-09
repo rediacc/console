@@ -126,3 +126,5 @@
 {"at":"2026-11-05T21:04:23Z","by":"d778be9d","id":"1d805023","title":"tick tracking: plan-box trailer, landing prints the tick, box audit","covers":[],"order":null,"plan":"agent/plans/PLAN-tick-tracking.md"}
 {"at":"2026-11-05T21:30:52Z","by":"d778be9d","id":"f65726d5","title":"renet runs Rediaccfile down() before repo containers stop","covers":[],"order":null,"plan":"agent/plans/PLAN-renet-down-before-kill.md"}
 {"at":"2026-11-05T22:10:14Z","by":"d778be9d","id":"53c31db2","title":"per-repo resource limits and a renet-managed RAM volume","covers":[],"order":null,"plan":"agent/plans/PLAN-repo-resource-limits.md"}
+{"at":"2026-11-09T11:23:22Z","by":"d778be9d","id":"a86f5622","title":"Production key only: every leg licensed from its own plane","covers":[],"order":null,"plan":"agent/plans/PLAN-production-key-only.md"}
+{"at":"2026-11-09T11:23:22Z","by":"d778be9d","id":"79b7e92e","title":"D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention","covers":[],"order":null}
