@@ -1157,8 +1157,8 @@ class Backup:
             len(unique) - 1,
             "every unchanged cell is already held: exactly one hash is new",
         )
-        # An exists ANSWER is a promise to skip those chunks, so it must pin them for 24h; without the pin, GC can delete a skipped chunk between the answer and the commit that references it.
-        self.at("pinExpiresAt", "string", "the skip promise is pinned")
+        # An exists ANSWER is a promise to skip those chunks. Since account a5dd75c the reaper protects the lineage while this backup session is live, so the answer carries no per-chunk pin.
+        self.aj("pinExpiresAt", "", "the skip promise rides the live session, not a pin")
 
         held = set(existing)
         missing = [h for h in unique if h not in held]
