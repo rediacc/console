@@ -3062,6 +3062,8 @@ def _waive(finding_id, args, items, asked_ok):
 
 
 # A claim that a test is MISSING, not one that merely mentions a test: "no test covers this", "untested", "lacks coverage". A claim about a wrong or flaky test is anchored at the test file, so the plain touch rule already closes it.
+# The refusal names the escape a test-only fix needs: a claim worded without "untested" or "no test" (a red suite, a missing control) is still closed by a test, when the mark names it.
+TEST_OPTION_HINT = "; when the fix is a test, name it: `--review-mark <me> <id> fixed <sha> --test <repo-relative test path>`"
 TEST_CLAIM_RE = re.compile(
     r"\b(?:untested|uncovered|unverified)\b"
     r"|\bnot (?:covered|tested|exercised|driven|asserted)\b"
@@ -3320,12 +3322,13 @@ def mark(root, branch, finding_id, kind, args, me, items=None, now=None, asked_o
             )
         if not followed:
             raise ValueError(
-                "%s does not touch %s, nor a file its code moved to, nor a test whose name carries `%s`%s"
+                "%s does not touch %s, nor a file its code moved to, nor a test whose name carries `%s`%s%s"
                 % (
                     fix[:12],
                     finding.file,
                     _norm_stem(finding.file),
                     move_search_note(repo, review.sha, fix),
+                    "" if test_path else TEST_OPTION_HINT,
                 )
             )
         resolution = "fixed %s | %s" % (fix, stamp)

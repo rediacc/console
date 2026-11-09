@@ -118,6 +118,30 @@ def test_control_a_fix_of_an_unrelated_file_is_refused(tmp_path):
         R.mark(repo, BRANCH, fid, "fixed", [fix], ME)
 
 
+def test_a_refusal_without_the_test_flag_names_it_and_a_red_suite_claim_closes_with_it(tmp_path):
+    """#634a1e11: a claim about a red suite matches no missing-test wording, so a test-only fix of config.py's test was refused with no word of `--test`. The refusal now names the flag, and the flag closes the finding through the test's name. CONTROL: a refusal that already carries --test does not repeat the hint."""
+    repo, reviewed = _moved_world(tmp_path)
+    fid = _record(repo, reviewed, "config.py", "the commit lands with the integration suite red")
+    fix = _commit(repo, "test: fix the fixture", tests__test_config_pins_dot_py="x = 1\n")
+    with pytest.raises(ValueError, match=r"does not touch config\.py") as plain:
+        R.mark(repo, BRANCH, fid, "fixed", [fix], ME)
+    assert "--test <repo-relative test path>" in str(plain.value)
+    R.mark(repo, BRANCH, fid, "fixed", [fix, "--test", "tests/test_config_pins.py"], ME)
+    assert (
+        "fixed %s" % fix
+        in R.read_review(R.review_path(repo, BRANCH, reviewed))[0].findings[0].resolution
+    )
+
+
+def test_control_a_refusal_that_names_a_test_does_not_repeat_the_hint(tmp_path):
+    repo, reviewed = _moved_world(tmp_path)
+    fid = _record(repo, reviewed, "config.py", "the commit lands with the integration suite red")
+    fix = _commit(repo, "test: unrelated", tests__test_other_dot_py="x = 1\n")
+    with pytest.raises(ValueError, match="does not") as named:
+        R.mark(repo, BRANCH, fid, "fixed", [fix, "--test", "tests/test_other.py"], ME)
+    assert "--test <repo-relative test path>" not in str(named.value)
+
+
 def test_a_refusal_says_when_the_move_search_was_cut_short(tmp_path, monkeypatch):
     """Review 4bcec972.2: with more commits in base..fix than the search reads, the refusal names the cut. CONTROL: a range inside the cap carries no such sentence."""
     repo, reviewed = _moved_world(tmp_path)
