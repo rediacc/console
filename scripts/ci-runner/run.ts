@@ -2402,7 +2402,7 @@ async function selftest(): Promise<number> {
       codes.set(spec.id, 7);
       const input = {
         specs: [spec],
-        results: [{ id: spec.id, status: 'ok', exitCode: 0 }],
+        results: [{ id: spec.id, status: 'ok', exitCode: 7 }],
         carry: new Map<string, PriorGate>(),
         hashes: new Map<string, GateHash>(),
         findings: {},
@@ -2419,6 +2419,18 @@ async function selftest(): Promise<number> {
           warnedEntry.warned === `${spec.id} exited 7; fixture` &&
           warnedEntry.warnedExitCode === 7,
         `local-warn receipt: a softened gate's entry must keep verdict ok and exitCode 0 and carry warned and warnedExitCode 7, got ${JSON.stringify(warnedEntry)}`
+      );
+      // A gate killed by a signal has no exit code: the entry carries null, never 0.
+      const killedEntry = receiptGates({
+        ...input,
+        warned: soft,
+        warnedCodes: new Map<string, number | null>([[spec.id, null]]),
+      })[spec.id];
+      require_(
+        killedEntry?.verdict === 'ok' &&
+          killedEntry.exitCode === 0 &&
+          killedEntry.warnedExitCode === null,
+        `local-warn receipt: a softened gate killed by a signal must carry warnedExitCode null, got ${JSON.stringify(killedEntry)}`
       );
       require_(
         plainEntry !== undefined &&
@@ -3537,7 +3549,9 @@ function receiptGates(input: {
       out[spec.id] = {
         ...base,
         verdict,
-        exitCode: ran.exitCode,
+        // A softened gate is ok with exit code 0; the real code rides in warnedExitCode.
+        exitCode:
+          verdict === 'ok' && warnedFor(spec.id, input.warned) !== undefined ? 0 : ran.exitCode,
         findings: verdict === 'fail' ? (input.findings[spec.id] ?? null) : null,
         judgedTree: input.tree,
         carriedFrom: null,

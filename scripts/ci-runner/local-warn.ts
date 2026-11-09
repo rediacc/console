@@ -79,16 +79,16 @@ const CHECK_OUT = (outcome: Partial<ExecOutcome>): ExecOutcome => ({
 });
 
 /**
- * The named step of a workflow file: its text up to the next step or job (so the last step of a job never runs on into a later job), the `run:` part of it with comment and `if:` lines dropped, and the head of its job (the keys before `steps:`), where a job-level `continue-on-error` lives.
+ * The named step of a workflow file: its text up to the next step or job (so the last step of a job never runs on into a later job), the `run:` part of it with comment and `if:` lines dropped, and the head of its job (the keys before `steps:` and any 4-space job-level keys after the steps), where a job-level `continue-on-error` lives, and `live`, the step's text with comment and `if:` lines dropped.
  */
 export function ciStepBlock(
   text: string,
   stepName: string
-): { body: string; runText: string; jobHead: string } | null {
+): { body: string; live: string; runText: string; jobHead: string } | null {
   const at = text.indexOf(`- name: ${stepName}\n`);
   if (at < 0) return null;
   const rest = text.slice(at + 1);
-  const next = rest.search(/\n {6}- name: |\n {0,2}[A-Za-z_][\w-]*:/);
+  const next = rest.search(/\n {6}- (?:name|run|uses): |\n {0,2}[A-Za-z_][\w-]*:/);
   const body = next < 0 ? rest : rest.slice(0, next);
   const live = body
     .split('\n')
@@ -101,12 +101,19 @@ export function ciStepBlock(
     jobStart = m.index ?? 0;
   }
   const stepsAt = text.indexOf('\n    steps:', jobStart);
-  const jobHead = text
-    .slice(jobStart, stepsAt < 0 || stepsAt > at ? at : stepsAt)
+  const headText = text.slice(jobStart, stepsAt < 0 || stepsAt > at ? at : stepsAt);
+  // Job-level keys after the steps (a 4-space key such as `continue-on-error`) up to the next job or top-level key.
+  const afterSteps = text.slice(at);
+  const jobEnd = afterSteps.search(/\n {0,2}[A-Za-z_][\w-]*:/);
+  const tailKeys = (jobEnd < 0 ? afterSteps : afterSteps.slice(0, jobEnd))
+    .split('\n')
+    .filter((l) => /^ {4}[A-Za-z_][\w-]*:/.test(l));
+  const jobHead = [headText, ...tailKeys]
+    .join('\n')
     .split('\n')
     .filter((l) => !/^\s*#/.test(l))
     .join('\n');
-  return { body, runText, jobHead };
+  return { body, live, runText, jobHead };
 }
 
 /**
@@ -147,7 +154,7 @@ export function localWarnSelftest(
       `${id}: the CI step "${spec.ci.step}" does not run the gate`
     );
     check(
-      !/continue-on-error/.test(block.body),
+      !/continue-on-error/.test(block.live),
       `${id}: the CI step "${spec.ci.step}" has continue-on-error, so CI would not block`
     );
     check(
@@ -166,12 +173,20 @@ export function localWarnSelftest(
     '        if: always() && inputs.fixture-gate',
     '        run: npm run other',
     '      - name: Real step',
+    '        # continue-on-error: true  (a comment is no setting)',
     '        run: npm run fixture-gate',
     '  second:',
     '    continue-on-error: true',
     '    steps:',
     '      - name: Later step',
     '        run: npm run later',
+    '  third:',
+    '    steps:',
+    '      - name: Tail step',
+    '        run: npm run tail',
+    '      - run: npm run unnamed',
+    '        continue-on-error: true',
+    '    continue-on-error: true',
     '',
   ].join('\n');
   const gateStep = ciStepBlock(fixture, 'Gate step');
@@ -184,12 +199,19 @@ export function localWarnSelftest(
   check(
     realStep !== null &&
       realStep.runText.includes('fixture-gate') &&
-      !/continue-on-error/.test(realStep.body + realStep.jobHead),
+      !/continue-on-error/.test(realStep.live + realStep.jobHead),
     'step reader: the real run line counts and a later job continue-on-error is not attributed to an earlier step'
   );
   check(
     laterStep !== null && /continue-on-error/.test(laterStep.jobHead),
     'step reader: a job-level continue-on-error is found for a step in that job'
+  );
+  const tailStep = ciStepBlock(fixture, 'Tail step');
+  check(
+    tailStep !== null &&
+      !/continue-on-error/.test(tailStep.live) &&
+      /continue-on-error/.test(tailStep.jobHead),
+    'step reader: an unnamed `- run:` item ends the step body, and a job-level key after steps: is part of the job head'
   );
   // LOCAL QUICK LANE: a failing listed gate is a warning with exit 0, the real code named, and recorded.
   const id = Object.keys(LOCAL_WARN)[0] ?? '';
