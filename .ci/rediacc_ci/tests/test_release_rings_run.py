@@ -351,10 +351,106 @@ def test_company_restricts_the_deploy(tmp_path: pathlib.Path) -> None:
     assert r.kids.deployed() == ["c00000002"]
 
 
-def test_company_unknown_is_refused(tmp_path: pathlib.Path) -> None:
+def test_company_unknown_is_refused(
+    tmp_path: pathlib.Path, capsys: pytest.CaptureFixture[str]
+) -> None:
     r = rig(tmp_path)
     r.plane.add("c00000001", 3)
     assert r.run("--company", "c0000beef") == 2
+    assert "no active company c0000beef" in capsys.readouterr().err
+    assert r.kids.calls == []
+
+
+@pytest.mark.parametrize("bad", ["", "1.2", "1.2.3/../x", "1.2.3 -o x", "v1.2.3", "1.2.3?a=b"])
+def test_a_version_that_is_not_semver_is_refused_before_anything(
+    tmp_path: pathlib.Path, capsys: pytest.CaptureFixture[str], bad: str
+) -> None:
+    r = rig(tmp_path)
+    r.plane.add("c00000001", 3)
+    assert rings_run.main(["--version", bad], world=r.world) == 2
+    assert "not a semantic version" in capsys.readouterr().err
+    assert r.plane.sent == []
+
+
+@pytest.mark.parametrize("good", ["0.9.1", "1.0.0-rc.1", "2.3.4+build.5"])
+def test_semver_forms_are_admitted(good: str) -> None:
+    assert rings_run.VERSION_RE.fullmatch(good)
+
+
+def test_a_company_target_refusal_prints_the_id_not_the_label(
+    tmp_path: pathlib.Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    r = rig(tmp_path)
+    r.plane.add("c00000001", 3)
+
+    def refuse(row: rings_run.CompanyRow) -> console_executor.CompanyTarget:
+        msg = "name %s is not allowed" % row.name
+        raise console_executor.RefusedError(msg)
+
+    r.world.target = refuse
+    assert r.run() == 1
+    err = capsys.readouterr().err
+    assert "acme0001" not in err
+    assert "company c00000001 cannot be targeted: name c00000001 is not allowed" in err
+
+
+def test_a_failed_high_water_write_keeps_the_stored_mark_and_names_the_region(
+    tmp_path: pathlib.Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    r = rig(tmp_path)
+    r.plane.add("c00000001", 3, stored=20)
+    inner = r.world.query
+
+    def query(database: str, sql: str, params: list) -> list[dict]:
+        if sql == rings_run.HIGH_WATER_SQL:
+            msg = "fake: write refused"
+            raise RuntimeError(msg)
+        return inner(database, sql, params)
+
+    r.world.query = query
+    assert r.run() == 0
+    err = capsys.readouterr().err
+    assert "region eu: the machine mark of company c00000001 could not be stored" in err
+    after = next(a for c, s, a in r.kids.calls if s == "record-after")
+    assert after[after.index("--ring") + 1] == "medium"
+
+
+def test_a_never_sampled_company_whose_mark_cannot_be_stored_is_refused(
+    tmp_path: pathlib.Path,
+) -> None:
+    r = rig(tmp_path)
+    r.plane.add("c00000001", 3, sampled=False)
+    inner = r.world.query
+
+    def query(database: str, sql: str, params: list) -> list[dict]:
+        if sql == rings_run.HIGH_WATER_SQL:
+            msg = "fake: write refused"
+            raise RuntimeError(msg)
+        return inner(database, sql, params)
+
+    r.world.query = query
+    assert r.run() == 1
+    assert r.kids.calls == []
+
+
+def test_a_stop_that_cannot_be_persisted_still_exits_1_naming_the_company(
+    tmp_path: pathlib.Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    r = rig(tmp_path)
+    r.plane.add("c00000001", 3)
+    r.kids.fail.add(("c00000001", "proxy-deploy"))
+    inner = r.world.query
+
+    def query(database: str, sql: str, params: list) -> list[dict]:
+        if sql == rings_run.ROLLOUT_INSERT:
+            msg = "fake: write refused"
+            raise RuntimeError(msg)
+        return inner(database, sql, params)
+
+    r.world.query = query
+    assert r.run() == 1
+    err = capsys.readouterr().err
+    assert "company c00000001 failed on %s, but the stop could not be persisted" % V in err
 
 
 def test_no_name_or_host_is_printed(

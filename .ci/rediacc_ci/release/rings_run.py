@@ -23,7 +23,7 @@ BENCH ONLY. `--plant-failure <id>` fails that company's run right after `record-
 
 THE GUARD. `block_unasked_release` admits a `--bench` or `--dry-run` run freely and asks for a proven `RELEASE_ASKED` before a real company's release: company Workers carry the stable channel.
 
-EXIT CODES. 0 the run ended on `wait`, `window` or `done`; 1 a company failed, a stop is latched, a sample could not be read, or a region was unreachable; 2 the flags were refused before anything was read.
+EXIT CODES. 0 the run ended on `wait`, `window` or `done`; 1 a company failed, a stop is latched, a sample could not be read, or a region was unreachable; 2 the flags were refused before anything was read (a malformed `--version` or `--company` included), or a `--company` names no active company of the reachable regions (found only after the regions were read).
 """
 
 from __future__ import annotations
@@ -33,6 +33,7 @@ import dataclasses
 import datetime
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -59,6 +60,8 @@ EDGE_RECORD = "%s/release-records/v%s/edge.json"
 OUT_REL = ".ci/cache/rings"
 BENCH_PAUSE_ORDER = "bench-pause"
 MAX_ROUNDS = 64
+# The version reaches a curl URL and rollout keys, so only a plain semantic version is admitted.
+VERSION_RE = re.compile(r"\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?")
 # The failures a D1 transport raises (the same set `registry.Registry.read_all` names): the region or company database is what matters.
 TRANSPORT_ERRORS = (OSError, RuntimeError, ValueError, LookupError)
 SAMPLE_SQL = "SELECT COUNT(DISTINCT machine_id) AS n FROM subscription_activations"
@@ -217,7 +220,17 @@ def read_world(
                 continue
             machines = rings.high_water(stored, got if got is not None else 0)
             if write and got is not None:
-                world.query(database, HIGH_WATER_SQL, [row["id"], machines, _stamp(now)])
+                try:
+                    world.query(database, HIGH_WATER_SQL, [row["id"], machines, _stamp(now)])
+                except TRANSPORT_ERRORS as exc:
+                    _say(
+                        "region %s: the machine mark of company %s could not be stored (%s); the stored mark stays"
+                        % (region, row["id"], type(exc).__name__)
+                    )
+                    if not row.get("sampled_at"):
+                        unsampled.append(row["id"])
+                        continue
+                    machines, got = stored, None
             rows[row["id"]] = CompanyRow(
                 id=row["id"],
                 name=row["name"],
@@ -424,7 +437,15 @@ def _database(row: CompanyRow) -> str:
 def _mark_failed(world: World, read: Read, row: CompanyRow, version: str) -> None:
     rid = _release_id(version, read.rollouts.get(row.id, []), "f")
     now = _stamp(world.now())
-    world.query(_database(row), ROLLOUT_INSERT, [rid, row.id, _ring(row), "failed", version, now])
+    try:
+        world.query(
+            _database(row), ROLLOUT_INSERT, [rid, row.id, _ring(row), "failed", version, now]
+        )
+    except TRANSPORT_ERRORS as exc:
+        _say(
+            "company %s failed on %s, but the stop could not be persisted (%s); a rerun will not know it"
+            % (row.id, version, type(exc).__name__)
+        )
 
 
 def _run(world: World, version: str, row: CompanyRow, steps: Sequence[local.Step], rid: str) -> int:
@@ -437,7 +458,10 @@ def _target(world: World, row: CompanyRow) -> console_executor.CompanyTarget | N
     try:
         return world.target(row)
     except console_executor.RefusedError as exc:
-        _say("company %s cannot be targeted: %s" % (row.id, exc))
+        _say(
+            "company %s cannot be targeted: %s"
+            % (row.id, console_executor.mask_label(str(exc), row.name, row.id))
+        )
         return None
 
 
@@ -553,6 +577,11 @@ def parse(argv: list[str]) -> argparse.Namespace:
 
 def refusals(args: argparse.Namespace) -> list[str]:
     out = rings.order_refusals(args.order, skip_pauses=args.skip_pauses, waive_soak=args.waive_soak)
+    if not VERSION_RE.fullmatch(args.version):
+        out.append(
+            "--version %r is not a semantic version (N.N.N, optional -pre and +build)"
+            % args.version
+        )
     if any(not console_executor.COMPANY_ID_RE.fullmatch(c) for c in args.company):
         out.append(
             "--company takes the opaque id (c followed by 8 or more hex digits), never a name"
