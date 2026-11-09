@@ -424,10 +424,66 @@ def selftest() -> int:
         "abc000000",
     )
 
+    # B. A bound plan is never moved or swept (agent/plans/PLAN-plan-compaction-bindings.md, CB3). Red first: an open item citing the plan is refused and named; the twin with the item ticked, and a plan nothing cites, pass.
+    bound_rel = "agent/plans/_done/PLAN-closed.md"
+    other_rel = "agent/plans/_done/PLAN-other.md"
+    nowhere = pathlib.Path("/nonexistent-root")
+    bound_texts = {bound_rel: CLEAN_DONE}
+    open_item = {"id": "aa11bb22", "state": " ", "text": "finish PLAN-closed.md"}
+    refusal = _binding_refusal(nowhere, bound_rel, bound_texts, [open_item])
+    tally.check(
+        "B1 an open item citing the plan refuses and names it",
+        "#aa11bb22" in refusal and "PLAN-closed.md" in refusal,
+        True,
+    )
+    tally.check(
+        "B2 the same item ticked releases the plan",
+        _binding_refusal(nowhere, bound_rel, bound_texts, [dict(open_item, state="x")]),
+        "",
+    )
+    tally.check(
+        "B3 a plan nothing cites is not bound",
+        _binding_refusal(nowhere, bound_rel, bound_texts, []),
+        "",
+    )
+    free, held = _split_bound(
+        nowhere,
+        [bound_rel, other_rel],
+        dict(bound_texts, **{other_rel: CLEAN_DONE}),
+        [open_item],
+    )
+    tally.check(
+        "B4 sweep keeps the bound plan out of the due list and keeps the free one",
+        (free, held),
+        ([other_rel], [bound_rel]),
+    )
+
     return 0 if tally.report() else 1
 
 
 # --------------------------------------------------------------------------- The tree-reading half.
+
+
+def _planbind():
+    """`wl_planbind`, the one decision of what still binds to a plan, imported by name at call time like `_dependents`."""
+    paths.on_sys_path(paths.hooks_stop_dir())
+    return importlib.import_module("wl_planbind")
+
+
+def _binding_refusal(root: pathlib.Path, rel: str, texts=None, items=None) -> str:
+    """The refusal text naming every binding of `rel`, or "" when nothing holds it. `texts` and `items` replace the tree reads (the selftest's door)."""
+    pb = _planbind()
+    index_text = None if texts is None else ""
+    return pb.render(rel, pb.bindings(root, rel, texts=texts, items=items, index_text=index_text))
+
+
+def _split_bound(root: pathlib.Path, rels: list[str], texts=None, items=None):
+    """(free, bound): `rels` split by whether anything still binds to each."""
+    free: list[str] = []
+    bound: list[str] = []
+    for rel in rels:
+        (bound if _binding_refusal(root, rel, texts, items) else free).append(rel)
+    return free, bound
 
 
 def _gather(root: pathlib.Path):
@@ -568,6 +624,13 @@ def sweep(root: pathlib.Path, config: dict, *, write: bool) -> int:
         )
         _print_question(plans, config, today)
         return 0
+    free, held = _split_bound(root, [plan.rel for plan in due])
+    for rel in held:
+        print("✗ %s is not swept:\n%s" % (rel, _binding_refusal(root, rel)), file=sys.stderr)
+    due = [plan for plan in due if plan.rel in free]
+    if not due:
+        print("✗ sweep: every expired plan is still bound, so nothing was deleted", file=sys.stderr)
+        return 1
     for plan in due:
         print("  %s (%s)" % (plan.rel, PL.classify(plan)))
     if not write:
@@ -798,6 +861,10 @@ def move(root: pathlib.Path, rel: str, config: dict) -> int:
         return 1
     target_dir = PL.folder_for(PL.classify(plan))
     new_rel = "%s/%s" % (target_dir, rel.rsplit("/", 1)[-1])
+    bound = _binding_refusal(root, rel) if new_rel != rel else ""
+    if bound:
+        print("✗ %s\nNothing was moved." % bound, file=sys.stderr)
+        return 1
     if new_rel == rel:
         print("✓ %s is already in %s/" % (rel, target_dir))
         return 0

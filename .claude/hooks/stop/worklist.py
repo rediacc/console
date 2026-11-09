@@ -666,6 +666,9 @@ def _planrec_cli(argv):
         was = (pathlib.Path(root) / rel).stat().st_size
     try:
         text, notes = R.compact(root, rel, me, why=why, park=park)
+    except R.BoundError as exc:
+        die(M.CLI_PLANREC_BOUND % (exc, me, rel))
+        return
     except R.RecordError as exc:
         die(M.CLI_PLANREC_REFUSED % exc)
         return

@@ -8,6 +8,7 @@ from __future__ import annotations
 import importlib
 import json
 import pathlib
+import subprocess
 import sys
 
 import pytest
@@ -226,3 +227,52 @@ def test_store_items_reads_the_fold_and_drops_tombstones(tmp_path):
     ids = {r["id"] for r in B.store_items(tmp_path)}
     assert "aa11bb22" in ids
     assert "bb22cc33" not in ids
+
+
+# --------------------------------------------------------------------------- CB2: wl_planrec.compact asks bindings first.
+
+
+def _sh(root, *args):
+    subprocess.run(args, cwd=root, check=True, capture_output=True)
+
+
+def _compact_tree(tmp_path, item_state):
+    """A committed repo holding one plan with a finished box and one worklist item citing it in `item_state`."""
+    plans = tmp_path / "agent" / "plans"
+    plans.mkdir(parents=True)
+    # Padded past the record-size floor (`BLOB_RATIO`), so the control can actually compact.
+    body = plan(status="done", extra="Why this plan exists. " * 400)
+    (plans / "PLAN-x.md").write_text(body, encoding="utf-8")
+    store = tmp_path / "agent" / "worklist"
+    store.mkdir()
+    row = {"id": "aa11bb22", "by": "s1", "ev": "add", "at": "2026-11-01T00:00:00Z", "ns": 1}
+    rows = [dict(row, s=item_state, o="s1", t="finish PLAN-x.md")]
+    (store / "s1.jsonl").write_text("\n".join(json.dumps(r) for r in rows) + "\n", encoding="utf-8")
+    ident = ("-c", "user.name=t", "-c", "user.email=t@t")
+    _sh(tmp_path, "git", "init", "-q")
+    _sh(tmp_path, "git", "add", "-A")
+    _sh(tmp_path, "git", *ident, "commit", "-qm", "fixture")
+    return tmp_path
+
+
+@pytest.mark.parametrize("park", [False, True])
+def test_compact_refuses_while_an_open_item_cites_the_plan(tmp_path, park):
+    root = _compact_tree(tmp_path, " ")
+    with pytest.raises(R.BoundError) as exc:
+        R.compact(root, TARGET, "deadbeef", why="auto", park=park)
+    assert "#aa11bb22" in str(exc.value)
+    assert "--plan-revive" in str(exc.value)
+
+
+def test_compact_proceeds_once_the_item_is_ticked(tmp_path):
+    root = _compact_tree(tmp_path, "x")
+    assert B.bindings(root, TARGET) == []
+    text, _notes = R.compact(root, TARGET, "deadbeef", why="auto")
+    assert R.parse(text) is not None
+
+
+def test_bound_refusal_message_is_catalogued():
+    msgs = importlib.import_module("worklist_messages")
+    out = msgs.CLI_PLANREC_BOUND % ("bound text", "abc12345", TARGET)
+    assert "bound text" in out
+    assert "--plan-compact abc12345 " + TARGET in out

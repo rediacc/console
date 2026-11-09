@@ -264,6 +264,10 @@ class RecordError(Exception):
     """A refusal with a reason a session can act on. Never a traceback."""
 
 
+class BoundError(RecordError):
+    """The plan is still held by something (`wl_planbind.bindings`); the text lists every binding and the commands that release it."""
+
+
 # --------------------------------------------------------------------------- git, with a return code. `wl_core._git` collapses "failed" and "succeeded with no output" into the same empty string, which is exactly wrong for `merge-base --is-ancestor`, whose success output IS empty.
 
 
@@ -1754,6 +1758,13 @@ def compact(root, rel, me, why="author", park=False, now=None):
             "dirty file would leave the text in no commit and no working tree. Commit or "
             "revert the path first (never `git checkout`: that discards work)." % rel
         )
+
+    # BOUND PLANS ARE NEVER COMPACTED, parked or not (agent/plans/PLAN-plan-compaction-bindings.md, CB2; operator ruling 2026-10-03). `wl_planbind.bindings` is the one decision; this path asks it after the argument and dirty-path refusals and before anything is derived, so a held plan answers with every binding rather than with a box count.
+    import wl_planbind as PB
+
+    found = PB.bindings(root, rel)
+    if found:
+        raise BoundError(PB.render(rel, found))
 
     d = derive(root, rel, text)
     if d.get("problems"):

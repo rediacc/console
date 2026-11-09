@@ -2668,6 +2668,11 @@ CLI_PLANREC_USAGE = (
 
 CLI_PLANREC_REFUSED = "%s\n\nNothing was written."
 
+CLI_PLANREC_BOUND = (
+    "%s\n\nNothing was written. Once every binding above is released, compact again: "
+    "worklist.py --plan-compact %s %s [--park] --write"
+)
+
 CLI_PLANREC_WROTE = (
     "wrote %(rel)s as a %(status)s record (%(bytes)d bytes, was %(was)d)\n"
     "  Full-Text-Blob: %(blob)s\n"
