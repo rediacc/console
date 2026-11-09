@@ -1,7 +1,7 @@
 import { WorkerEntrypoint } from 'cloudflare:workers';
 import accountApp from '../../../private/account/src/entry/cloudflare.js';
-import { BackupReplicator, replicatorStub } from './backup-replicator.js';
 import { allowlistRefusal } from '../../proxy/src/ip-allowlist.js';
+import { BackupReplicator, replicatorStub } from './backup-replicator.js';
 
 // The replicate-mode Durable Object class; wrangler.*.toml binds it as BACKUP_REPLICATOR.
 export { BackupReplicator };
@@ -125,7 +125,7 @@ export class ExecutorIssuer extends WorkerEntrypoint<Env> {
 
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
-    const refused = allowlistRefusal(request, env.ALLOW_IPS);
+    const refused = allowlistRefusal(request, env.ALLOW_IPS, 'account');
     if (refused) return withSecurityHeaders(refused);
     const url = new URL(request.url);
 

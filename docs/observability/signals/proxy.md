@@ -110,6 +110,7 @@ proxy: org executor egress unreachable 2/3 at p0
 proxy: org executor relocated p0->p1
 proxy: org executor relocate refused: budget
 proxy: caller refused: route-placement-missing
+proxy: caller refused: ip-not-allowed
 ```
 
 The operator reads a placement with `wrangler d1 execute <database> --remote --command "SELECT executor_placement, executor_relocated_at FROM organizations WHERE id = '<org>'"`.

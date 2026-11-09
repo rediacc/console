@@ -25,10 +25,10 @@ function matches(ip: string, entry: string): boolean {
   const base = ipv4ToInt(entry.slice(0, slash));
   const addr = ipv4ToInt(ip);
   const prefix = entry.slice(slash + 1);
-  // A strict decimal prefix only: Number('') and Number('0x0') are 0, which would match every address.
-  if (!/^\d{1,2}$/.test(prefix)) return false;
+  // A strict decimal prefix of 1 to 32 only: Number('') and Number('0x0') are 0, and a /0 range matches every address, so a typo would open the allowlist.
+  if (!/^([1-9]|[12]\d|3[0-2])$/.test(prefix)) return false;
   const bits = Number(prefix);
-  if (base === undefined || addr === undefined || bits > 32) return false;
+  if (base === undefined || addr === undefined) return false;
   const size = 2 ** (32 - bits);
   return Math.floor(base / size) === Math.floor(addr / size);
 }
@@ -36,7 +36,8 @@ function matches(ip: string, entry: string): boolean {
 /** The refusal for a request the allowlist turns away, or undefined when it may proceed. */
 export function allowlistRefusal(
   request: Request,
-  allowIps: string | undefined
+  allowIps: string | undefined,
+  worker: 'proxy' | 'account' = 'proxy'
 ): Response | undefined {
   const entries = (allowIps ?? '')
     .split(',')
@@ -48,6 +49,6 @@ export function allowlistRefusal(
   }
   const ip = request.headers.get('cf-connecting-ip')?.trim();
   if (ip && entries.some((entry) => matches(ip, entry))) return undefined;
-  console.warn('worker: caller refused: ip-not-allowed');
+  console.warn(`${worker}: caller refused: ip-not-allowed`);
   return Response.json({ error: 'This address is not on the allowlist.' }, { status: 403 });
 }

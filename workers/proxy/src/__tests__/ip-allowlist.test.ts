@@ -31,7 +31,14 @@ describe('allowlistRefusal', () => {
   });
 
   it('refuses through a malformed range rather than matching every address', () => {
-    for (const entry of ['203.0.113.0/', '203.0.113.0/0x0', '203.0.113.0/ 8', '203.0.113.0/33']) {
+    for (const entry of [
+      '203.0.113.0/',
+      '203.0.113.0/0x0',
+      '203.0.113.0/ 8',
+      '203.0.113.0/33',
+      '203.0.113.0/0',
+      '203.0.113.0/00',
+    ]) {
       expect(allowlistRefusal(req('GET', '/x', OUTSIDE), entry)?.status).toBe(403);
     }
   });
