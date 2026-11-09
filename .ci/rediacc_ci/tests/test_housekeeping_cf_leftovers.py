@@ -62,6 +62,18 @@ def test_unbound_bench_and_edge_databases_listed_bound_and_other_not():
     assert kinds(found) == {("d1", "old-bench"), ("d1", "edge-forgotten")}
 
 
+def test_a_bound_edge_database_is_not_a_leftover(tmp_path):
+    """No checked-in config binds an edge-* database any more, so a scratch root binds one: the exclusion for the edge-* pattern is proven apart from the bench one."""
+    (tmp_path / "workers" / "account").mkdir(parents=True)
+    (tmp_path / "workers" / "account" / "wrangler.test.toml").write_text(
+        'name = "account-test"\n[[d1_databases]]\nbinding = "DB"\ndatabase_name = "edge-bound"\n'
+    )
+    found = cfl.find_leftovers(
+        tmp_path, "acct", TOKEN, fake_api(["account-test"], ["edge-bound", "edge-stray"], [])
+    )
+    assert kinds(found) == {("d1", "edge-stray")}
+
+
 def test_dangling_route_and_scriptless_route_listed():
     routes = [
         {"pattern": "gone.rediacc.com/*", "script": "deleted-worker"},

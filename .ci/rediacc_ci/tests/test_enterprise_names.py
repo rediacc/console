@@ -72,10 +72,17 @@ def test_proxy_suffix_refused_even_for_unreserved_stem():
 
 
 def test_region_host_labels_derive_from_regions_json():
-    # edge-eu is a host label in regions.json; the stripped form is reserved too.
+    """Each region's id and the leading label of its `domain` come from regions.json."""
     reserved = names.reserved()
-    assert {"eu", "us", "asia"} <= reserved
-    assert any(label.startswith("edge-") for label in reserved) or "edge" in reserved
+    rows = json.loads((paths.repo_root() / "regions.json").read_text())["regions"]
+    assert rows
+    for row in rows:
+        assert row["id"] in reserved
+        assert row["domain"].split(".")[0] in reserved
+    # Region ids that SERVICE_LABELS does not list (eu, us) can only be reserved because regions.json supplied them.
+    derived = {r["id"] for r in rows} - set(names.SERVICE_LABELS)
+    assert derived
+    assert derived <= reserved
 
 
 def test_opaque_store_id_shape_refused():
