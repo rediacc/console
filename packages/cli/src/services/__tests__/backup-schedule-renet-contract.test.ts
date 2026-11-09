@@ -278,8 +278,8 @@ function renetCommandsOf(execStart: string): string[] {
   const wrapper = /^\/bin\/sh -c '(.*)'$/.exec(execStart);
   if (!wrapper) {
     // Anything else must be a bare renet command; a shell or env wrapper of another shape would otherwise pass unparsed.
-    // A shell separator after the renet path would hide a second command from the flag check.
-    if (!execStart.startsWith(`${RENET_PATH} `) || /[;&|\n]/.test(execStart)) {
+    // A shell separator, redirection or command substitution after the renet path would hide a second command or a changed stream from the flag check.
+    if (!execStart.startsWith(`${RENET_PATH} `) || /[;&|<>`\n]|\$\(/.test(execStart)) {
       throw new Error(
         `unrecognized ExecStart (neither a bare renet command nor the isolating wrapper): ${execStart}`
       );
@@ -422,8 +422,8 @@ describe('scheduled ExecStart lines parse against renet backup snapshot (G9)', (
     ).toEqual(['--repo takes repository GUIDs only, got "mail"']);
   });
 
-  it('an ExecStart with a shell separator after the renet path is refused, a bare & included (control)', () => {
-    for (const separator of [';', '&', '&&', '|', '\n']) {
+  it('an ExecStart with a shell separator, redirection or substitution after the renet path is refused (control)', () => {
+    for (const separator of [';', '&', '&&', '|', '||', '>', '<', '$(', '`', '\n']) {
       expect(() =>
         renetCommandsOf(`${RENET_PATH} backup snapshot --datastore /d ${separator} evil`)
       ).toThrow(/unrecognized ExecStart/);

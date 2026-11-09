@@ -2420,7 +2420,7 @@ async function selftest(): Promise<number> {
           warnedEntry.warnedExitCode === 7,
         `local-warn receipt: a softened gate's entry must keep verdict ok and exitCode 0 and carry warned and warnedExitCode 7, got ${JSON.stringify(warnedEntry)}`
       );
-      // A gate killed by a signal has no exit code: the entry carries null, never 0.
+      // A gate killed by a signal has no exit code: its warnedExitCode is null, never 0 (the entry's own exitCode stays 0, the verdict being ok).
       const killedEntry = receiptGates({
         ...input,
         warned: soft,

@@ -124,7 +124,7 @@ interface Pair {
 
 /** True for a name that belongs to the channel opposite `channel`: an `_EDGE` spelling when the step serves STABLE. */
 export function isOtherChannelName(name: string, channel: 'STABLE'): boolean {
-  return channel === 'STABLE' && /_EDGE$/.test(name);
+  return channel === 'STABLE' && name.endsWith('_EDGE');
 }
 
 /** The finding for a required guard on a name of the channel the step does not serve, or null. */
@@ -354,7 +354,7 @@ export function guardLabels(
   return out;
 }
 
-/** A YAML scalar as its value: a trailing ` # comment` and one pair of matching quotes removed, so `"stable"` and `stable # note` both read `stable`. A backslash escape inside double quotes (`\"`, `\\`) and a doubled quote inside single quotes (`''`) do not end the scalar. */
+/** A YAML scalar as its value: a trailing ` # comment` and one pair of matching quotes removed, so `"stable"` and `stable # note` both read `stable`. A backslash escape inside double quotes (`\"`, `\\`) and a doubled quote inside single quotes (`''`) do not end the scalar; only those two escapes are decoded, any other stays as written. */
 export function scalarValue(raw: string): string {
   const text = raw.trim();
   if (text.startsWith('"')) {
@@ -362,7 +362,9 @@ export function scalarValue(raw: string): string {
     for (let i = 1; i < text.length; i++) {
       const ch = text[i];
       if (ch === '\\' && i + 1 < text.length) {
-        value += text[++i];
+        const next = text[++i];
+        // Only `\"` and `\\` are decoded; any other escape (`\n`, `\t`) stays as written, so the value never reads as something the file did not say.
+        value += next === '"' || next === '\\' ? next : `\\${next}`;
       } else if (ch === '"') {
         return value;
       } else {
@@ -792,6 +794,8 @@ export function stepEnvNames(yamlText: string, builder: string): StepEnv | null 
   // Quoted scalars: an escaped quote or a doubled quote stays inside the value.
   const quoted: [string, string][] = [
     ['"a\\"b" # note', 'a"b'],
+    ['"a\\\\b"', 'a\\b'],
+    ['"a\\nb"', 'a\\nb'],
     ["'it''s' # note", "it's"],
     ['"stable"', 'stable'],
     ['stable # note', 'stable'],

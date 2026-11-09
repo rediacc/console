@@ -88,7 +88,7 @@ export function ciStepBlock(
   const at = text.indexOf(`- name: ${stepName}\n`);
   if (at < 0) return null;
   const rest = text.slice(at + 1);
-  const next = rest.search(/\n {6}- (?:name|run|uses): |\n {0,2}[A-Za-z_][\w-]*:/);
+  const next = rest.search(/\n {6}- [A-Za-z_][\w-]*:|\n {0,2}[A-Za-z_][\w-]*:/);
   const body = next < 0 ? rest : rest.slice(0, next);
   const live = body
     .split('\n')
@@ -175,6 +175,9 @@ export function localWarnSelftest(
     '      - name: Real step',
     '        # continue-on-error: true  (a comment is no setting)',
     '        run: npm run fixture-gate',
+    '      - id: opened-by-id',
+    '        continue-on-error: true',
+    '        run: npm run opened-by-id',
     '  second:',
     '    continue-on-error: true',
     '    steps:',
@@ -197,10 +200,16 @@ export function localWarnSelftest(
     'step reader: a comment or an if: line must not count as the step running the gate'
   );
   check(
-    realStep !== null &&
-      realStep.runText.includes('fixture-gate') &&
-      !/continue-on-error/.test(realStep.live + realStep.jobHead),
-    'step reader: the real run line counts and a later job continue-on-error is not attributed to an earlier step'
+    realStep?.runText.includes('fixture-gate') === true,
+    'step reader: the real run line counts as the step running the gate'
+  );
+  check(
+    realStep !== null && !/continue-on-error/.test(realStep.live + realStep.jobHead),
+    'step reader: a later job continue-on-error is not attributed to an earlier step'
+  );
+  check(
+    realStep !== null && !realStep.runText.includes('opened-by-id'),
+    'step reader: a step opened by `- id:` ends the step before it, so its run line is not attributed to it'
   );
   check(
     laterStep !== null && /continue-on-error/.test(laterStep.jobHead),
@@ -211,7 +220,7 @@ export function localWarnSelftest(
     tailStep !== null &&
       !/continue-on-error/.test(tailStep.live) &&
       /continue-on-error/.test(tailStep.jobHead),
-    'step reader: an unnamed `- run:` item ends the step body, and a job-level key after steps: is part of the job head'
+    'step reader: an unnamed `- run:` item ends the step body, and so does one opened by `- id:`, and a job-level key after steps: is part of the job head'
   );
   // LOCAL QUICK LANE: a failing listed gate is a warning with exit 0, the real code named, and recorded.
   const id = Object.keys(LOCAL_WARN)[0] ?? '';

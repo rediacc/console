@@ -104,7 +104,7 @@ async function fetchGeoRegion(regions: Region[]): Promise<Region | null> {
   }
 }
 
-/** Preselects the /api/geo region while the cards show, when `needed` (no stored region), unless the run ended (`live` false) or the lookup failed. */
+/** Preselects the /api/geo region while the cards show, when `needed` (no stored region), unless the lookup failed or `live` is false when the answer arrives (the run ended, or the visitor already pointed at a card). */
 export function preselectFromGeo(
   needed: boolean,
   live: () => boolean,
@@ -432,11 +432,18 @@ const RegionPickerModal: React.FC<RegionPickerModalProps> = ({ lang }) => {
   const firstCardRef = useRef<HTMLButtonElement>(null);
   // Bumped on every open, close and stop, so a late /api/geo answer cannot restart a countdown the visitor ended.
   const runRef = useRef(0);
+  // Set once the visitor points at or focuses a card, so a slow /api/geo answer never moves a highlight they chose.
+  const pickedRef = useRef(false);
+  const pick = useCallback((id: string) => {
+    pickedRef.current = true;
+    setSelected(id);
+  }, []);
 
   const begin = useCallback((path?: string, force = false) => {
     const target = path ?? DEFAULT_TARGET_PATH;
     const nextMode = modeFromPath(target);
     const run = ++runRef.current;
+    pickedRef.current = false;
     const stored = getStoredRegion();
     const guess = stored ?? detectLikelyRegion(REGIONS);
     setTargetPath(target);
@@ -453,7 +460,11 @@ const RegionPickerModal: React.FC<RegionPickerModalProps> = ({ lang }) => {
     if (phase === 'choosing') {
       setPhase(phase);
       // No stored region: refine the time-zone guess with /api/geo, preselecting only (no countdown).
-      preselectFromGeo(stored === null, () => runRef.current === run, setSelected);
+      preselectFromGeo(
+        stored === null,
+        () => runRef.current === run && !pickedRef.current,
+        setSelected
+      );
       return;
     }
     setPhase('resolving');
@@ -567,8 +578,8 @@ const RegionPickerModal: React.FC<RegionPickerModalProps> = ({ lang }) => {
                   ref={index === 0 ? firstCardRef : undefined}
                   className={`card region-picker-card ${selected === region.id ? 'card--raised' : ''}`}
                   onClick={() => handleSelect(region)}
-                  onMouseEnter={() => setSelected(region.id)}
-                  onFocus={() => setSelected(region.id)}
+                  onMouseEnter={() => pick(region.id)}
+                  onFocus={() => pick(region.id)}
                   data-track="region_select"
                   data-track-label={region.id}
                 >

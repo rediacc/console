@@ -134,6 +134,16 @@ describe('preselectFromGeo', () => {
     expect(select).toHaveBeenCalledWith('eu');
   });
 
+  it('asks live when the answer arrives, so a visitor who chose a card meanwhile keeps it', async () => {
+    stubGeo('DE');
+    const select = vi.fn();
+    let live = true;
+    preselectFromGeo(true, () => live, select);
+    live = false;
+    await settle();
+    expect(select).not.toHaveBeenCalled();
+  });
+
   it('selects nothing when a region is stored, the run ended, or the lookup failed', async () => {
     const select = vi.fn();
     stubGeo('DE');
