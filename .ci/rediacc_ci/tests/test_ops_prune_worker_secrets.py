@@ -295,6 +295,8 @@ def test_archive_keeps_archiving_the_other_legacy_names() -> None:
     assert code == 0, lines
     assert len(puts) == 1
     put_paths = [p for m, p in calls if m == "PUT"]
-    assert len(put_paths) == 1 and put_paths[0].endswith("/secrets"), put_paths
-    assert "__ARCHIVE_JWT_SECRET" in str(puts[0]) and "v" in str(puts[0]), puts
+    assert len(put_paths) == 1, put_paths
+    assert put_paths[0].endswith("/secrets"), put_paths
+    assert "__ARCHIVE_JWT_SECRET" in str(puts[0]), puts
+    assert "v" in str(puts[0]), puts
     assert not any(m == "DELETE" and "ED25519" in p for m, p in calls), calls
