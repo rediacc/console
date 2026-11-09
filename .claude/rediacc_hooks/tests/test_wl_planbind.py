@@ -1,0 +1,228 @@
+"""Red-first controls for `wl_planbind.bindings` (agent/plans/PLAN-plan-compaction-bindings.md, box CB1).
+
+Every refusal has a passing twin built from the same fixture with one fact changed, so a function that binds everything cannot pass the refusals and one that binds nothing cannot pass the controls.
+"""
+
+from __future__ import annotations
+
+import importlib
+import json
+import pathlib
+import sys
+
+import pytest
+
+STOP = pathlib.Path(__file__).resolve().parents[2] / "hooks" / "stop"
+if str(STOP) not in sys.path:
+    sys.path.insert(0, str(STOP))
+
+B = importlib.import_module("wl_planbind")
+R = importlib.import_module("wl_planrec")
+
+TARGET = "agent/plans/PLAN-x.md"
+OTHER = "agent/plans/PLAN-y.md"
+ALONE = "no-dep -- stands alone in this fixture"
+
+
+def plan(
+    status="approved", boxes=("[x] T1 finished work",), depends=ALONE, extra="", name="PLAN-x"
+):
+    lines = [
+        "# %s: fixture" % name,
+        "",
+        "Status: %s" % status,
+        "Owner: abc12345",
+        "Depends-On: %s" % depends,
+        "",
+        extra,
+        "## Tasks",
+        "",
+    ]
+    lines += ["- %s" % b for b in boxes]
+    return "\n".join(lines) + "\n"
+
+
+def other_plan(**kw):
+    return plan(name="PLAN-y", **kw)
+
+
+def sig_of(text, n=0):
+    return R.open_boxes(text)[n][3]
+
+
+def item(iid, state, text):
+    return {"id": iid, "state": state, "text": text}
+
+
+def kinds(found):
+    return sorted(b.kind for b in found)
+
+
+def run(texts, items=(), tmp=None):
+    return B.bindings(
+        tmp or "/nonexistent-root", TARGET, texts=texts, items=list(items), index_text=""
+    )
+
+
+def test_clean_plan_has_no_binding():
+    assert run({TARGET: plan()}) == []
+
+
+def test_missing_plan_has_no_binding():
+    gone = "agent/plans/PLAN-gone.md"
+    assert B.bindings("/nonexistent-root", gone, texts={}, items=[], index_text="") == []
+
+
+@pytest.mark.parametrize("state", [" ", ">", "?"])
+def test_open_item_citing_plan_binds(state):
+    found = run({TARGET: plan()}, [item("aa11bb22", state, "finish PLAN-x.md first")])
+    assert kinds(found) == ["item"]
+    assert found[0].where == "#aa11bb22"
+
+
+@pytest.mark.parametrize("state", ["x", "~"])
+def test_closed_item_does_not_bind(state):
+    assert run({TARGET: plan()}, [item("aa11bb22", state, "finish PLAN-x.md first")]) == []
+
+
+def test_item_naming_a_longer_plan_name_does_not_bind():
+    assert run({TARGET: plan()}, [item("aa11bb22", " ", "see PLAN-x.mdx and PLAN-xy.md")]) == []
+
+
+def test_item_citing_box_sig_binds():
+    text = plan(boxes=("[ ] T1 open work here",))
+    found = run({TARGET: text}, [item("aa11bb22", " ", "worklist twin of box %s" % sig_of(text))])
+    assert "item" in kinds(found)
+
+
+def test_item_citing_other_sig_does_not_bind():
+    text = plan(boxes=("[x] T1 finished work",))
+    assert run({TARGET: text}, [item("aa11bb22", " ", "unrelated deadbeef")]) == []
+
+
+def test_unfinished_dependent_binds_finished_does_not():
+    dep = other_plan(depends="PLAN-x.md")
+    found = run({TARGET: plan(), OTHER: dep})
+    assert kinds(found) == ["dependent"]
+    assert found[0].where == OTHER
+    done = other_plan(status="done", depends="PLAN-x.md")
+    assert run({TARGET: plan(), OTHER: done}) == []
+
+
+def test_open_box_elsewhere_citing_a_box_binds():
+    text = plan(boxes=("[ ] T1 open work here",))
+    sig = sig_of(text)
+    for cite in (
+        "after PLAN-x.md#T1 lands",
+        "after PLAN-x.md [%s] lands" % sig,
+        "after box %s lands" % sig,
+    ):
+        found = run({TARGET: text, OTHER: other_plan(boxes=("[ ] Q1 %s" % cite,))})
+        assert "citing-box" in kinds(found), cite
+
+
+def test_citing_box_controls():
+    text = plan(boxes=("[x] T1 finished work",))
+    # naming the plan with no box reference is not a citation of a box
+    background = other_plan(boxes=("[ ] Q1 read PLAN-x.md for background",))
+    assert run({TARGET: text, OTHER: background}) == []
+    # a ticked citing box does not bind
+    ticked = other_plan(boxes=("[x] Q1 after PLAN-x.md#T1 lands",))
+    assert run({TARGET: text, OTHER: ticked}) == []
+    # an open citing box in a finished plan does not bind
+    finished = other_plan(status="done", boxes=("[ ] Q1 after PLAN-x.md#T1 lands",))
+    assert run({TARGET: text, OTHER: finished}) == []
+
+
+def test_own_open_box_binds_without_ruling():
+    found = run({TARGET: plan(boxes=("[ ] T1 open work here",))})
+    assert kinds(found) == ["box"]
+    assert found[0].where.startswith(TARGET + ":")
+
+
+def ruled(tmp_path):
+    quote = "operator said fold it into the other plan"
+    (tmp_path / "ruling.txt").write_text(quote + "\n", encoding="utf-8")
+    return 'Ruling: "%s" in ruling.txt' % quote
+
+
+def test_own_open_box_released_by_ruling_and_home_plan(tmp_path):
+    base = plan(status="done", boxes=("[ ] T1 open work here",), extra=ruled(tmp_path))
+    # control: the ruling resolves, but the box names no home
+    found = run({TARGET: base, OTHER: other_plan()}, tmp=tmp_path)
+    assert kinds(found) == ["box"]
+    assert "no live home" in found[0].detail
+    # re-homed to a live plan on the line beneath the box
+    homed = base + "  moved to PLAN-y.md box Q1\n"
+    assert run({TARGET: homed, OTHER: other_plan()}, tmp=tmp_path) == []
+    # a home plan that is itself finished is no home
+    assert kinds(run({TARGET: homed, OTHER: other_plan(status="done")}, tmp=tmp_path)) == ["box"]
+
+
+def test_ruling_that_does_not_resolve_keeps_the_box_bound(tmp_path):
+    (tmp_path / "ruling.txt").write_text("something else\n", encoding="utf-8")
+    bad = 'Ruling: "quote that is in no file" in ruling.txt'
+    homed = (
+        plan(status="done", boxes=("[ ] T1 open work here",), extra=bad) + "  moved to PLAN-y.md\n"
+    )
+    assert kinds(run({TARGET: homed, OTHER: other_plan()}, tmp=tmp_path)) == ["box"]
+
+
+def test_box_rehomed_to_open_item_bound_to_live_plan(tmp_path):
+    texts = {
+        TARGET: plan(
+            status="done", boxes=("[ ] T1 open work here #cc33dd44",), extra=ruled(tmp_path)
+        ),
+        OTHER: other_plan(),
+    }
+    assert run(texts, [item("cc33dd44", " ", "carry the work under PLAN-y.md")], tmp_path) == []
+    assert kinds(run(texts, [item("cc33dd44", " ", "carry it somewhere vague")], tmp_path)) == [
+        "box"
+    ]
+    assert kinds(
+        run(texts, [item("cc33dd44", "x", "carry the work under PLAN-y.md")], tmp_path)
+    ) == ["box"]
+
+
+def test_render_lists_every_binding_and_the_next_commands():
+    text = plan(boxes=("[ ] T1 open work here",))
+    found = run({TARGET: text}, [item("aa11bb22", " ", "finish PLAN-x.md")])
+    out = B.render(TARGET, found)
+    for needle in ("#aa11bb22", "open box", "--tick", "--plan-revive"):
+        assert needle in out
+    assert B.render(TARGET, []) == ""
+
+
+def test_store_items_reads_the_fold_and_drops_tombstones(tmp_path):
+    store = tmp_path / "agent" / "worklist"
+    store.mkdir(parents=True)
+    rows = [
+        {
+            "ev": "add",
+            "id": "aa11bb22",
+            "at": "2026-11-01T00:00:00Z",
+            "by": "s1",
+            "text": "hold PLAN-x.md",
+            "ns": 1,
+        },
+        {
+            "ev": "add",
+            "id": "bb22cc33",
+            "at": "2026-11-01T00:00:01Z",
+            "by": "s2",
+            "text": "hold PLAN-x.md",
+            "ns": 2,
+        },
+        {
+            "ev": "tomb",
+            "id": "bb22cc33",
+            "at": "2026-11-01T00:00:02Z",
+            "by": "s2",
+            "why": "gone",
+            "ns": 3,
+        },
+    ]
+    (store / "s1.jsonl").write_text("\n".join(json.dumps(r) for r in rows) + "\n", encoding="utf-8")
+    ids = {r["id"] for r in B.store_items(tmp_path)}
+    assert "aa11bb22" in ids
+    assert "bb22cc33" not in ids
