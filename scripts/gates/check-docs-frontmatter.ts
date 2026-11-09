@@ -39,6 +39,7 @@ import { createRequire, registerHooks } from 'node:module';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { isEntryPoint } from '../lib/entry-point.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, '..', '..');
@@ -397,6 +398,6 @@ const main = async (): Promise<number> => {
 };
 
 // Run the gate only as the entry point, so importing this file for validateSource, scan or loadSchemas does not execute it and exit the importer.
-if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
+if (isEntryPoint(import.meta.filename)) {
   process.exit(await main());
 }
