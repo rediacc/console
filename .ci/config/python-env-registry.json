@@ -592,6 +592,10 @@
       "HOME",
       "VM_IMAGE"
     ],
+    ".ci/rediacc_ci/enterprise/onboarding.py": [
+      "AWS_SES_FROM",
+      "CF_MANAGEMENT_TOKEN"
+    ],
     ".ci/rediacc_ci/env/create_e2e_env.py": [
       "*name",
       "BRIDGE_TIMEOUT",

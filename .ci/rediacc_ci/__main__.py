@@ -4,7 +4,7 @@ WHAT THIS IS FOR. `./run.sh` is a router with two destinations: `.ci/media/media
 
     PYTHONPATH="$ROOT_DIR/.ci" exec python3 -m rediacc_ci "$@"
 
-so `run.sh` hands this file the WHOLE argv, verb included. The legacy bash dispatcher (`.ci/legacy/run-legacy.sh`) is gone: its last verbs moved here when its verb table emptied, and `rediacc_ci/core/run_verbs.py` holds the entry functions for service, account, rotation, worktree, devbox, drill, quality, fix, clean and help.
+so `run.sh` hands this file the WHOLE argv, verb included. The legacy bash dispatcher (`.ci/legacy/run-legacy.sh`) is gone: its last verbs moved here when its verb table emptied, and `rediacc_ci/core/run_verbs.py` holds the entry functions for service, account, rotation, worktree, devbox, drill, enterprise, quality, fix, clean and help.
 
 THE TABLE IS DATA, NOT CONTROL FLOW. The verb set has to be INTROSPECTABLE: `names()` is the accessor the gate test reads to prove every verb the help documents is served and every served verb is documented, in both directions. A dispatch written as a chain of `if verb == ...` has no such accessor.
 
@@ -91,6 +91,12 @@ VERBS: tuple[Verb, ...] = (
         summary="scripted walkthroughs: universe | transfer | license | backup",
         module="rediacc_ci.core.run_verbs",
         entry="drill_main",
+    ),
+    Verb(
+        name="enterprise",
+        summary="add | list | update | suspend | export | remove | release | proof | control",
+        module="rediacc_ci.core.run_verbs",
+        entry="enterprise_main",
     ),
     Verb(
         name="quality",

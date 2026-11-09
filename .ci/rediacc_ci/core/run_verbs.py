@@ -1,6 +1,6 @@
 """The verbs `./run.sh` used to serve from `.ci/legacy/run-legacy.sh`, one entry function each.
 
-WHAT THIS REPLACES. `.ci/legacy/run-legacy.sh` was the dispatcher for service, account, rotation, worktree, devbox, drill, quality, fix, clean and help. Each verb here is the same arm in Python, calling the ports that already existed (`core.service`, `core.account`, `core.account_lifecycle`, `core.devbox`, `core.local_common`, `core.toolchain`, `security.shellcheck`, `security.shfmt`,
+WHAT THIS REPLACES. `.ci/legacy/run-legacy.sh` was the dispatcher for service, account, rotation, worktree, devbox, drill, quality, fix, clean and help; `enterprise` was added here after it, and hands its whole tree to `rediacc_ci.enterprise.cli`. Each verb here is the same arm in Python, calling the ports that already existed (`core.service`, `core.account`, `core.account_lifecycle`, `core.devbox`, `core.local_common`, `core.toolchain`, `security.shellcheck`, `security.shfmt`,
 `quality.submodule_branches`) rather than a second copy of them. `rediacc_ci/__main__.py` names every entry below in its VERBS table; `./run.sh` forwards everything except the two media verbs to it.
 
 EVERY ENTRY TAKES THE VERB'S REMAINING ARGV (verb already removed) and RETURNS AN EXIT STATUS, which is what `__main__` expects. An entry that hands the terminal to a child (`devbox shell`) lets that child own the exit code and the signals, as `exec` did in the router.
@@ -239,6 +239,18 @@ DRILL COMMANDS (scripted walkthroughs; non-zero exit on any failed assertion):
   drill <name> --selftest
                       Plant one failing assertion; the run MUST exit non-zero
 
+ENTERPRISE COMMANDS (one company's own Workers, database and buckets):
+  enterprise add <company> --region <r> --owner <mail> --storage-gb <n>
+                      Onboard a company, resumable; --bench uses bench control and signers
+  enterprise list     List the companies of every region (--all includes removed)
+  enterprise update <company>   Change limits, the IP allowlist or the ring override
+  enterprise suspend <company>  Suspend a company (--resume clears it)
+  enterprise export <company>   Export its database, buckets and durable secrets
+  enterprise remove <company>   Undeploy after an export (--delete-data --confirm <company>)
+  enterprise release  Release the company Workers ring by ring
+  enterprise proof <verb> [--bench]  Run one live proof of PLAN-enterprise-isolation.md
+  enterprise control ensure     Create and migrate the regional control databases
+
 QUALITY COMMANDS:
   quality lint        Run linting (ESLint + Knip)
   quality format      Check code formatting (Biome)
@@ -379,6 +391,12 @@ def drill_main(argv: list[str]) -> int:
     print()
     print(usage_line("drill", DRILL_ARMS) + " [--selftest]")
     return 1
+
+
+def enterprise_main(argv: list[str]) -> int:
+    """`./run.sh enterprise <verb>`: the whole subcommand tree is `rediacc_ci.enterprise.cli`'s, as `worktree` is `dev.worktree`'s."""
+    _flush()
+    return importlib.import_module("rediacc_ci.enterprise.cli").main(argv)
 
 
 # --------------------------------------------------------------------------- devbox ---------------------------------------------------------------------------
