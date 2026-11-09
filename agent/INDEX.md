@@ -513,7 +513,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-drop-free-license-ip-prefix-hash.md` | executing | 35 | 2 | 4 | 5915 |
 | `agent/plans/PLAN-duplication-angle.md` | compacted | 37 | 0 | 0 | 2630 |
 | `agent/plans/PLAN-durable-reports-and-push-inbox.md` | compacted | 52 | 0 | 0 | 3692 |
-| `agent/plans/PLAN-enterprise-isolation.md` | executing | 197 | 20 | 14 | 36551 |
+| `agent/plans/PLAN-enterprise-isolation.md` | executing | 201 | 20 | 14 | 37559 |
 | `agent/plans/PLAN-executor-durable-object-policy.md` | approved | 483 | 3 | 15 | 64699 |
 | `agent/plans/PLAN-extension-shaped-matchers.md` | compacted | 37 | 0 | 0 | 3104 |
 | `agent/plans/PLAN-first-release-checks.md` | approved | 150 | 31 | 0 | 17463 |
@@ -531,7 +531,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-greenlight-verify-at-read.md` | compacted | 44 | 0 | 0 | 3606 |
 | `agent/plans/PLAN-haiku-model-routing.md` | executing | 249 | 9 | 11 | 30400 |
 | `agent/plans/PLAN-health-checks-local.md` | approved | 700 | 22 | 59 | 129478 |
-| `agent/plans/PLAN-idle-writer-capacity.md` | approved | 62 | 0 | 5 | 11912 |
+| `agent/plans/PLAN-idle-writer-capacity.md` | approved | 65 | 0 | 5 | 12586 |
 | `agent/plans/PLAN-jobs-backup-real-machine-tests.md` | approved | 54 | 2 | 9 | 12545 |
 | `agent/plans/PLAN-judge-gate-worthiness-and-surface-scope.md` | compacted | 39 | 0 | 0 | 3232 |
 | `agent/plans/PLAN-judge-prompt-trap-conflation.md` | compacted | 54 | 0 | 8 | 3828 |
