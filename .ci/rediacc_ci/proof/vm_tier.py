@@ -32,6 +32,7 @@ from __future__ import annotations
 import dataclasses
 import json
 import re
+import subprocess
 from typing import TYPE_CHECKING, Any
 
 from rediacc_ci.proof import receipt as R
@@ -459,6 +460,10 @@ class Chain:
     tip: str
     touched: Callable[[str, str], Collection[str]]
     digest: Callable[[str], str | None]
+    # The tree a commit names, so a receipt's claimed `verifiedBase.tree` is checked against its `head` rather than believed (review 3dd946ff.1). `chain_for`, the one production constructor, always sets it; only hand-built test chains leave it None.
+    tree_of: Callable[[str], str | None] | None = None
+    # Every tree the chain has already followed, so a cycle of any length reads as `chain-loop` (review 3dd946ff.3).
+    seen: frozenset[str] = frozenset()
 
 
 def chain_for(root: pathlib.Path, tip: str) -> Chain:
@@ -467,7 +472,25 @@ def chain_for(root: pathlib.Path, tip: str) -> Chain:
         tip,
         lambda old, new: frozenset(S.changed_paths(root, old, "push", new).sides),
         lambda tree: S.inputs(root, tree),
+        lambda head: _tree_of(root, head),
     )
+
+
+def _tree_of(root: pathlib.Path, head: str) -> str | None:
+    """`head^{tree}` in the checkout at `root`, or None when git cannot resolve it."""
+    try:
+        out = subprocess.run(
+            ["git", "-C", str(root), "rev-parse", "--verify", "--quiet", head + "^{tree}"],
+            capture_output=True,
+            text=True,
+            timeout=30,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if out.returncode != 0:
+        return None
+    return out.stdout.strip() or None
 
 
 def verified_base_admits(root: pathlib.Path, merge_base: str) -> Callable[[str, str], bool]:
@@ -593,11 +616,19 @@ def _chained(
             % (tree[:12], CHAIN_MAX),
             receipt,
         )
-    if base_tree in (tree, receipt.get("tree")):
+    if base_tree in (tree, receipt.get("tree")) or base_tree in chain.seen:
         return Verdict(
             False,
             "chain-loop",
-            "receipt %s names its own tree as its VERIFIED base" % run_id,
+            "receipt %s names a tree already in its VERIFIED chain as its base" % run_id,
+            receipt,
+        )
+    if chain.tree_of is not None and chain.tree_of(head) != base_tree:
+        return Verdict(
+            False,
+            "chain-broken",
+            "receipt %s names VERIFIED base %s with tree %s, but that commit's tree is %s"
+            % (run_id, head[:12], base_tree[:12], (chain.tree_of(head) or "unresolvable")[:12]),
             receipt,
         )
     moved = sorted(missing & frozenset(chain.touched(head, chain.tip)))
@@ -617,7 +648,7 @@ def _chained(
         base_tree,
         chain.digest(base_tree),
         missing,
-        Chain(head, chain.touched, chain.digest),
+        Chain(head, chain.touched, chain.digest, chain.tree_of, chain.seen | {tree}),
         depth + 1,
     )
     if not under.ok:

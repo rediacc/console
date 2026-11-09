@@ -4458,6 +4458,8 @@ def test_a_passing_only_of_the_failed_step_makes_the_failed_receipt_verified(
     rc, out = run_merge(tmp_path, world, "--only", "V1.2")
     assert rc == vm_check.EXIT_VERIFIED, out
     assert "--only V1.2 merged into the FAILED receipt" in out, out
+    # Review 3dd946ff.2: a merging run prints the merge verdict only, not its own narrowed NOT_VERIFIED summary first.
+    assert "NOT_VERIFIED" not in out, out
     after = archived(world)
     assert receipt_mod.validate(after) == []
     assert after["status"] == receipt_mod.VERIFIED

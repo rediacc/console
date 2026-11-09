@@ -6,6 +6,7 @@ Each case writes a real receipt file under a temporary root and judges it the wa
 from __future__ import annotations
 
 import copy
+import dataclasses
 import json
 import os
 from typing import TYPE_CHECKING, Any
@@ -978,7 +979,7 @@ def test_a_receipt_naming_its_own_tree_as_base_is_a_loop(tmp_path: pathlib.Path)
     assert got.code == "chain-loop"
 
 
-def test_two_receipts_naming_each_other_stop_at_the_chain_limit(tmp_path: pathlib.Path) -> None:
+def test_two_receipts_naming_each_other_read_as_a_chain_loop(tmp_path: pathlib.Path) -> None:
     rc.write(tmp_path, chained_tip())
     base = make(
         tree=BASE_TREE,
@@ -995,7 +996,9 @@ def test_two_receipts_naming_each_other_stop_at_the_chain_limit(tmp_path: pathli
     rc.write(tmp_path, base)
     got = rc.admit(tmp_path, TREE, DIGEST, BOTH, chain())
     assert not got.ok
-    assert "chain-too-long" in got.message, got.message
+    # Review 3dd946ff.3: a cycle of any length is a chain-loop, not a run to the depth limit.
+    assert "chain-loop" in got.message, got.message
+    assert "chain-too-long" not in got.message, got.message
 
 
 def test_a_two_link_chain_admits_when_every_link_holds(tmp_path: pathlib.Path) -> None:
@@ -1040,6 +1043,30 @@ def test_a_two_link_chain_admits_when_every_link_holds(tmp_path: pathlib.Path) -
     got = rc.admit(tmp_path, TREE, DIGEST, BOTH, links)
     assert got.ok, got.message
     assert seen == [(BASE_HEAD, TIP), (root_head, BASE_HEAD)]
+
+
+def test_a_base_tree_that_is_not_its_heads_tree_is_chain_broken(tmp_path: pathlib.Path) -> None:
+    """Review 3dd946ff.1: the claimed verifiedBase.tree is checked against the base head's real tree."""
+    rc.write(tmp_path, chained_tip())
+    honest = dataclasses.replace(chain(), tree_of={BASE_HEAD: BASE_TREE}.get)
+    lying = dataclasses.replace(chain(), tree_of={BASE_HEAD: "9" * 40}.get)
+    lied = rc.admit(tmp_path, TREE, DIGEST, BOTH, lying)
+    assert not lied.ok
+    assert "but that commit's tree is" in lied.message, lied.message
+    told = rc.admit(tmp_path, TREE, DIGEST, BOTH, honest)
+    assert "but that commit's tree is" not in told.message, told.message
+
+
+def test_a_base_tree_already_in_the_chain_is_chain_loop(tmp_path: pathlib.Path) -> None:
+    """Review 3dd946ff.3: a cycle longer than one link reads as chain-loop, not chain-too-long."""
+    rc.write(tmp_path, chained_tip())
+    looped = dataclasses.replace(chain(), seen=frozenset({BASE_TREE}))
+    assert rc.admit(tmp_path, TREE, DIGEST, BOTH, looped).code == "chain-loop"
+
+
+def test_chain_for_resolves_a_heads_tree(tmp_path: pathlib.Path) -> None:
+    """The production chain always carries the tree check."""
+    assert rc.chain_for(tmp_path, TIP).tree_of is not None
 
 
 def test_a_malformed_verified_base_makes_the_receipt_unreadable() -> None:

@@ -3839,11 +3839,12 @@ class VmCheck:
                         "detail": "HEAD^{tree} or the inputs digest is unreadable, so no receipt could be written",
                     },
                 )
-        self._summary(status, reason, path)
+        # A merge is tried before the summary: when it succeeds, its line is this run's verdict, and the narrowed run's own NOT_VERIFIED summary would contradict it (review 3dd946ff.2). A refused merge leaves the run's summary as the verdict.
         if record is not None and self.opts.only and not self.lock_lost:
             merged = self._merge_into_failed(record)
             if merged is not None:
                 return EXIT_CODES[merged]
+        self._summary(status, reason, path)
         return EXIT_CODES[status]
 
     def _merge_into_failed(self, run: dict[str, Any]) -> str | None:
