@@ -31,7 +31,7 @@ export class BackupReplicator extends DurableObject<ReplicatorEnv> {
   }
 
   override async alarm(): Promise<void> {
-    // The account app takes the Worker's env as an open record; the mapped copy of the type hands it over with no index signature on ReplicatorEnv, so a misspelled ReplicatorEnv property access elsewhere in this file still fails the type check.
+    // The account app takes the Worker's env as an open record. The mapped copy only exists to hand it an env that is assignable to an index-signature type, which the interface ReplicatorEnv is not.
     const env: { [K in keyof ReplicatorEnv]: ReplicatorEnv[K] } = this.env;
     await replicatorAlarm(
       this.ctx.storage,
