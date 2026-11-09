@@ -28,4 +28,4 @@
 @types/node  # BLOCKER: v25+ targets Node 25 APIs; our engines field and CI runners are on Node 24
 
 
-i18next  # BLOCKER: the 27.x major changes the runtime API under three i18n trees (packages/www, packages/cli, private/account/web) and their 13 locales; it moves as its own change with the i18n gates and a portal run, not inside the 1104-1 ci:quick red drain
+i18next  # BLOCKER: the 27.x major changes the runtime API under three i18n trees (packages/www, packages/cli, private/account/web) and their 13 locales; it moves as its own change, run against the i18n gates and a live portal session
