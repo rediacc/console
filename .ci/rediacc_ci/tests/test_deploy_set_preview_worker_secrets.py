@@ -93,6 +93,7 @@ def _run(
     *,
     drop: str = "",
     drop_env: tuple[str, ...] = (),
+    env_over: dict[str, str] | None = None,
     **extra: str,
 ):
     call_log = tmp_path / "calls.log"
@@ -107,6 +108,7 @@ def _run(
         "FAKE_CALL_LOG": str(call_log),
         **FIXTURE_ENV,
     }
+    env.update(env_over or {})
     env.update(extra)
     for name in drop_env:
         env.pop(name, None)
@@ -194,7 +196,7 @@ def test_stripe_is_deliberately_not_demanded(tmp_path: pathlib.Path) -> None:
 def test_a_present_stripe_key_reaches_the_document(tmp_path: pathlib.Path) -> None:
     # PASSED AS A DICT: ruff's S106 keys on the argument name.
     stripe = {"STRIPE_SECRET_KEY": "sk_test_x", "STRIPE_WEBHOOK_SECRET": "whsec_x"}
-    _proc, calls = _run(tmp_path, **stripe)
+    _proc, calls = _run(tmp_path, env_over=stripe)
     assert '"STRIPE_SECRET_KEY": "sk_test_x"' in document(calls)
     assert '"STRIPE_WEBHOOK_SECRET": "whsec_x"' in document(calls)
 
@@ -205,7 +207,7 @@ def test_every_one_of_the_ten_guards_fires_with_its_own_name(tmp_path: pathlib.P
     for name in port.REQUIRED_NONEMPTY:
         case = tmp_path / f"guard-{name}"
         case.mkdir()
-        proc, calls = _run(case, **{name: ""})
+        proc, calls = _run(case, env_over={name: ""})
         assert proc.returncode == 1, f"{name}: an empty value was accepted"
         assert proc.stdout == ""
         assert proc.stderr == guard_text(name)
@@ -221,7 +223,7 @@ def test_an_absent_value_refuses_exactly_as_an_empty_one_does(tmp_path: pathlib.
 def test_the_first_empty_guard_wins_and_the_rest_never_run(tmp_path: pathlib.Path) -> None:
     """ORDER IS OBSERVABLE: with every guarded value empty, the message names the first one only."""
     blanks = dict.fromkeys(port.REQUIRED_NONEMPTY, "")
-    proc, _calls = _run(tmp_path, **blanks)
+    proc, _calls = _run(tmp_path, env_over=blanks)
     assert proc.stderr.startswith(f"{port.SELF}: ACCOUNT_ED25519_PUBLIC_KEY is EMPTY")
     assert proc.stderr.count("is EMPTY") == 1
 
@@ -282,7 +284,7 @@ def test_the_document_carries_raw_utf8_the_way_jq_writes_it(tmp_path: pathlib.Pa
 
 def test_a_value_with_quotes_and_newlines_survives_intact(tmp_path: pathlib.Path) -> None:
     awkward = {"ACCOUNT_JWT_SECRET": 'a"b\nc\\d'}
-    _proc, calls = _run(tmp_path, **awkward)
+    _proc, calls = _run(tmp_path, env_over=awkward)
     assert '"ACCOUNT_JWT_SECRET": "a\\"b\\nc\\\\d"' in document(calls)
 
 

@@ -121,8 +121,8 @@ PLANTS = [
     (
         "profile",
         ".ci/config/secret-supply.json",
-        '        "ACCOUNT_BACKUP_STORE_KEK_US_EDGE > ACCOUNT_BACKUP_STORE_KEK_US_STABLE",\n        "FREE_LICENSE_HMAC_KEY"\n',
-        '        "ACCOUNT_BACKUP_STORE_KEK_EU_STABLE",\n        "FREE_LICENSE_HMAC_KEY"\n',
+        '        "ACCOUNT_BACKUP_STORE_KEK_US_EDGE > ACCOUNT_BACKUP_STORE_KEK_US_STABLE",\n        "FREE_LICENSE_HMAC_KEY",\n',
+        '        "ACCOUNT_BACKUP_STORE_KEK_EU_STABLE",\n        "FREE_LICENSE_HMAC_KEY",\n',
         "us          profile",
     ),
     (

@@ -211,7 +211,7 @@ def test_the_www_steps_deploy_and_bind_the_worker_the_wrangler_config_names() ->
     assert "rediacc_ci.deploy.deploy_www" in deploy.argv
     assert "rediacc_ci.deploy.set_www_worker_secrets" in secrets.argv
     config = (pathlib.Path(__file__).resolve().parents[3] / "workers/www/wrangler.toml").read_text()
-    name = re.search(r'^name = "([^"]+)"', config, re.M)
+    name = re.search(r'^name = "([^"]+)"', config, re.MULTILINE)
     assert name
     assert dict(secrets.env)["WORKER_NAME"] == name.group(1)
 

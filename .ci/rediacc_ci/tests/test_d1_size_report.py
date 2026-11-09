@@ -139,15 +139,20 @@ def test_names_come_only_from_regions_json():
     assert all(r["database"].startswith("account-") for r in names)
 
 
+class _AeClient:
+    """A fake AE SQL client recording each query."""
+
+    def __init__(self, value) -> None:
+        self.value = value
+        self.seen: list[str] = []
+
+    def __call__(self, _account, sql):
+        self.seen.append(sql)
+        return [{"n": self.value}]
+
+
 def ae_returning(value):
-    seen: list[str] = []
-
-    def client(_account, sql):
-        seen.append(sql)
-        return [{"n": value}]
-
-    client.seen = seen
-    return client
+    return _AeClient(value)
 
 
 def compare(fake, ae, **kwargs):

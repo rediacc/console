@@ -5,14 +5,13 @@ Nothing here reaches Cloudflare, AWS or bws. The fakes keep the state a real acc
 
 from __future__ import annotations
 
-from typing import Any
-
 import json
 import pathlib
 import sqlite3
 import stat
 import subprocess
 import urllib.parse
+from typing import Any
 
 import pytest
 

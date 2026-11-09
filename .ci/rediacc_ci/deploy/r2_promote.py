@@ -153,7 +153,10 @@ def copy_argv(
 
     By default the metadata is REPLACEd with the promotes' own (`no-cache`, a guessed content type). `preserve_metadata` is the cross-bucket copy's form (`ops/r2_bucket_copy`): `--metadata-directive COPY` and no `--cache-control` or `--content-type`, so every header and user-metadata pair of the source object travels with it. `src_bucket` defaults to `bucket` (the same-bucket promote)."""
     if VERSION_SUFFIX_RE.search(src_key):
-        raise ValueError("copy source key %r ends in ?versionId=..., which aws-cli reads as a version id" % src_key)
+        raise ValueError(
+            "copy source key %r ends in ?versionId=..., which aws-cli reads as a version id"
+            % src_key
+        )
     argv = [
         awscli.AWS,
         "s3api",

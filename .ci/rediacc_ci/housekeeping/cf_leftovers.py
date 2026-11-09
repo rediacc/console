@@ -203,11 +203,7 @@ def main(argv: list[str], get=fetch) -> int:
         return 1
     for kind, name, detail in found:
         shown = masker.mask(name)
-        why = (
-            detail
-            if shown == name
-            else detail + "; company-shaped name, masked"
-        )
+        why = detail if shown == name else detail + "; company-shaped name, masked"
         print("LEFTOVER %-6s %s  (%s)" % (kind, shown, masker.mask(why)))
     print("cf_leftovers: scanned %s" % ", ".join("%d %s" % (v, k) for k, v in scanned.items()))
     print(

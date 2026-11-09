@@ -661,7 +661,12 @@ def test_delta_8_emit_pair_prints_two_exports_and_starts_nothing(
 ) -> None:
     calls: list[str] = []
     monkeypatch.setattr(sa, "generate_keys", lambda: dict(FAKE_KEYS))
-    monkeypatch.setattr(sa, "run", lambda _opts: calls.append("run") or 0)
+
+    def fake_run(_opts) -> int:
+        calls.append("run")
+        return 0
+
+    monkeypatch.setattr(sa, "run", fake_run)
     assert sa.main(["--emit-pair"]) == 0
     assert calls == []
     out = capsys.readouterr().out

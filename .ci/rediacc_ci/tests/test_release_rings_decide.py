@@ -198,7 +198,16 @@ def test_window_holds_reads_a_non_utc_now_in_utc() -> None:
 
 
 @pytest.mark.parametrize(
-    "text", ["", "mon", "xyz 01:00-02:00", "mon 1:00-02:00", "mon 24:00-01:00", "mon- 01:00-02:00", "-mon 01:00-02:00"]
+    "text",
+    [
+        "",
+        "mon",
+        "xyz 01:00-02:00",
+        "mon 1:00-02:00",
+        "mon 24:00-01:00",
+        "mon- 01:00-02:00",
+        "-mon 01:00-02:00",
+    ],
 )
 def test_window_parse_refusals(text: str) -> None:
     with pytest.raises(ValueError, match="window"):

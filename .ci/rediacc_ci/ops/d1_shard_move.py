@@ -13,7 +13,8 @@ A tenant table no rule fits refuses the run: the registry grew a table this tool
 
 THE ORG RULE. The config tables carry no subscription id; they hang off the org's config store. So every subscription of a moved org moves in the same run, or the run refuses and names the ones left behind.
 
-FOREIGN KEYS. Tenant tables reference global tables (`subscriptions`, `users`, `teams`, `organizations`) and D1 enforces foreign keys with no off switch (reset_bench.py measured it). Every shard is built from the same drizzle migrations as the directory, so the shard schema keeps those references and the tool copies the parent rows: before the import it walks the references of the exported rows, transitively, reads each parent row from the directory and inserts it into the target with `ON CONFLICT DO NOTHING` (never REPLACE, which would cascade-delete children). The copies are inert: the router reads global tables only from the directory. Moving back to shard 0 copies nothing. References are read from each table's `CREATE` text, because D1 refuses `pragma_foreign_key_list`.
+FOREIGN KEYS. Tenant tables reference global tables (`subscriptions`, `users`, `teams`, `organizations`) and D1 enforces foreign keys with no off switch (reset_bench.py measured it). Every shard is built from the same drizzle migrations as the directory, so the shard schema keeps those references and the tool copies the parent rows: before the import it walks the references of the exported rows, transitively, reads each parent row from the directory and inserts it into the target with `ON CONFLICT DO NOTHING` (never REPLACE, which would cascade-delete children). The copies are inert: the router reads global tables only from the directory. Moving back to shard 0 copies nothing.
+References are read from each table's `CREATE` text, because D1 refuses `pragma_foreign_key_list`.
 
 THE MOVE, in order (`--write`; without it the run stops after the plan and writes nothing):
   1. pre-checks: the subscriptions exist, the org rule holds, they share one source shard that is not the target, source and target agree on every tenant table's columns, the target holds none of the rows and uses none of their single-column primary keys (`subscription_activations.id` is an AUTOINCREMENT integer assigned per database), and the source holds no live `backup_upload_leases` or `backup_sessions` row (`expires_at` after now).
@@ -267,8 +268,7 @@ def read_schema(db: Executor) -> Schema:
 def parents_first(tables: list[str], schema: Schema, *, strict: bool) -> list[str]:
     """Tables ordered so each comes after the tables of the set it references.
 
-    A cycle refuses when `strict` (the tenant set, whose delete order depends on it); among the
-    copied global parents (no cycle today) it falls back to name order.
+    A cycle refuses when `strict` (the tenant set, whose delete order depends on it); among the copied global parents (no cycle today) it falls back to name order.
     """
     inside = set(tables)
     deps = {t: {p for _, p, _ in schema.refs.get(t, []) if p in inside and p != t} for t in tables}
@@ -385,9 +385,7 @@ def _count(db: Executor, table: str, where: str) -> int:
 def key_collisions(dst: Executor, exported: list[TableExport], schema: Schema) -> list[str]:
     """Single-column primary keys of the moved rows that the target holds for another row.
 
-    `subscription_activations.id` is an AUTOINCREMENT integer, assigned per database, so a row
-    born on the directory can carry the id a shard already gave one of its own rows. A
-    composite key always includes `subscription_id`, which the occupied check already covers.
+    `subscription_activations.id` is an AUTOINCREMENT integer, assigned per database, so a row born on the directory can carry the id a shard already gave one of its own rows. A composite key always includes `subscription_id`, which the occupied check already covers.
     """
     taken: list[str] = []
     for t in exported:

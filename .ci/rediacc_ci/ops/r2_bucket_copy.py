@@ -130,9 +130,8 @@ def plan_copy(src: list[r2_promote.Obj], dst: list[r2_promote.Obj]) -> list[r2_p
 
 
 def _skippable(src: r2_promote.Obj, dst: r2_promote.Obj | None) -> bool:
-    if not r2_promote.unchanged(src, dst):
+    if dst is None or not r2_promote.unchanged(src, dst):
         return False
-    assert dst is not None
     return not (_single_part(src.etag) and _single_part(dst.etag) and src.etag != dst.etag)
 
 

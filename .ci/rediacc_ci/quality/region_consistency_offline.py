@@ -56,9 +56,8 @@ BENCH_FAMILIES = (
     "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY",
     "CLOUDFLARE_TURNSTILE_SECRET_KEY",
 )
-# The six signing and session store names every regional profile binds and bench binds the same way, unaliased (production key, operator 2026-10-29).
+# The signing and session store names every regional profile binds and bench binds the same way, unaliased (production key, operator 2026-10-29). The licence private key is not among them since PLAN-enterprise-isolation S4: account Workers sign through LICENSE_SIGNER and the deploy-signer profile carries the key.
 BENCH_UNALIASED = (
-    "ACCOUNT_ED25519_PRIVATE_KEY",
     "ACCOUNT_ED25519_PUBLIC_KEY",
     "ACCOUNT_X25519_PRIVATE_KEY",
     "ACCOUNT_X25519_PUBLIC_KEY",

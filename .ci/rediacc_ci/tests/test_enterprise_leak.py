@@ -144,7 +144,8 @@ def test_a_company_label_behind_a_public_one_is_found_and_masked(tmp_path):
     (tmp_path / "doc.md").write_text("see %s.eu.%s here\n" % (CO, PRODUCT_DOMAIN))
     shape = leak.Shape()
     found = leak.host_findings(tmp_path, ["doc.md"], PUBLIC, PRODUCT_DOMAIN, shape)
-    assert [f.what for f in found] and "'%s'" % CO in found[0].what
+    assert [f.what for f in found]
+    assert "'%s'" % CO in found[0].what
     masked = leak.Masker(PUBLIC, frozenset(), PRODUCT_DOMAIN).mask(
         "%s.eu.%s and proxy.eu.%s" % (CO, PRODUCT_DOMAIN, PRODUCT_DOMAIN)
     )
@@ -158,7 +159,9 @@ def test_an_oversized_or_binary_file_is_counted_as_not_scanned(tmp_path, monkeyp
     (tmp_path / "bin.dat").write_bytes(b"a\0b")
     (tmp_path / "ok.txt").write_text("fine")
     shape = leak.Shape()
-    leak.host_findings(tmp_path, ["big.txt", "bin.dat", "ok.txt", "gone.txt"], PUBLIC, PRODUCT_DOMAIN, shape)
+    leak.host_findings(
+        tmp_path, ["big.txt", "bin.dat", "ok.txt", "gone.txt"], PUBLIC, PRODUCT_DOMAIN, shape
+    )
     assert shape.skipped == 2
     assert "2 tracked file(s) not scanned" in shape.render()
 
