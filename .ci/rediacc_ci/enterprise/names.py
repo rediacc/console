@@ -89,8 +89,12 @@ def check(name: str) -> str:
 
 
 def hosts(name: str, domain: str) -> tuple[str, str]:
-    """(account host, proxy host) for a valid name under the product domain the caller names (`well_known.PRODUCT_DOMAIN`). The domain has no default, and an empty or non-string one is refused rather than formatted into a host like `acme.` or `acme.None`."""
+    """(account host, proxy host) for a valid name under the product domain the caller names (`well_known.PRODUCT_DOMAIN`).
+
+    The domain has no default.
+    An empty, whitespace-only, dots-only or non-string domain is refused, rather than formatted into a host like `acme.` or `acme.None`.
+    """
     check(name)
-    if not isinstance(domain, str) or not domain.strip(". "):
+    if not isinstance(domain, str) or not domain.strip(". \t\r\n"):
         raise CompanyNameError("%r is not a domain to host %r under" % (domain, name))
     return "%s.%s" % (name, domain), "%s%s.%s" % (name, PROXY_SUFFIX, domain)

@@ -39,6 +39,10 @@ def test_malformed_refused(bad):
         names.check(bad)
 
 
+def test_the_three_region_ids_are_reserved_by_literal():
+    assert {"eu", "us", "asia"} <= names.reserved()
+
+
 def test_every_region_id_is_reserved():
     ids = [r["id"] for r in json.loads((paths.repo_root() / "regions.json").read_text())["regions"]]
     assert ids
@@ -107,7 +111,7 @@ def test_xn_prefix_is_refused_by_its_own_rule():
         names.check("xn--acme")
 
 
-@pytest.mark.parametrize("domain", [None, "", " ", "."])
+@pytest.mark.parametrize("domain", [None, "", " ", ".", "\t", "\n", " .\t\r\n. "])
 def test_hosts_refuses_a_missing_domain(domain: typing.Any):
     with pytest.raises(names.CompanyNameError, match="not a domain"):
         names.hosts("acme", domain)
