@@ -2052,3 +2052,12 @@ Documented-In: doc:docs/agent-reference/bench-login.md#Whose step it is
 On 2026-10-30 `./rdc.sh --config eu-bench machine status hostinger` answered that the config token "could not be renewed because this device's login is tied to another network address" and told the reader to run a command in an interactive terminal and enter the code from an authenticator app. The text is right for a person at a terminal. A session read it as a step only the operator could take and asked the operator for the TOTP, though `npm run login:bench` derives that code from the vault and is agent-allowed for `eu-bench`.
 
 The CLI cannot carry the pointer itself: it is the shipped product and knows nothing of this repository's tooling. So the remedy sits where a session meets the text: the live-proof recorder runs `npm run login:bench` once and retries, a trapguard note names it after any `eu-bench` rdc call that printed the error, and `block_settled_questions` refuses the question. Before asking the operator for anything a CLI message tells a human to do, check whether a repository tool already does it.
+
+## A plan closed with live bindings orphans the work that cited it
+Trap-Id: plan-closed-with-live-bindings
+Enforced-By: gate:check:ci-plan-bindings, file:.claude/hooks/stop/wl_planbind.py
+Residue: a binding written only in prose (a plan named without its file name, a box described in words) is not seen; a box signature binds only an item that names no other plan, because identical box lines in different plans share one signature.
+Documented-In: doc:agent/plans/PLAN-plan-compaction-bindings.md#Operator ruling (2026-10-03), condensed
+
+On 2026-10-03 seven plans sat compacted in `_done/` with open boxes, and the worklist items that cited them reached the operator as "no live box: keep or drop?": the work had been closed by moving its document, not by finishing it. Compaction, `--move` and `--sweep` checked the plan's own status and nothing that pointed at it. `wl_planbind.bindings` now names every open box, open item, unfinished dependent and citing box, the three verbs refuse while it is non-empty, and the gate fails any closed plan that still has one.
+
