@@ -1,22 +1,23 @@
-## SESSION d778be9d 2026-11-09T09:51:09Z
+## SESSION d778be9d 2026-11-09T15:36:22Z
 
-Branch 1104-1, nothing pushed. Review backlog slices all landed; website runner done; enterprise C1 landed 85c3acf3a1, C2 adapters d3cfea58b4, K2 34e559f7ce + fcf8830e61. Operator rulings 2026-11-09: idle-writer fix = ceiling fix + IDLE CAPACITY block naming boxes, [writer] tags only, per-box Depends-on. The IDLE CAPACITY advisory now fires: 11 ready [writer] boxes, 20 free slots.
+# STATE d778be9d (2026-11-09T15:36Z)
+
+Branch 1104-1, no PR, nothing pushed. Continue-loop cron e6179299 (15 min). CLAUDE.md rule 4 now names the rolling-wave writer mode (ce1fc264).
 
 ## Big pieces
-PLAN-enterprise-isolation, PLAN-idle-writer-capacity, D1 scaling review, PLAN-product-domain-rename (waits on a VERIFIED vm:check).
-
-## Delegated
-- a685271cff7685843 #623937fa S2: DONE in lease (private/account e16ead1, console 196f918118); land submodule first, bump gitlink.
-- a63ff2fa63b1dcd83 #52a36392 idle-writer-capacity plan + hook code, main checkout, holds agent/plans/QUEUE.md; lead commits.
-- a4da1c1361269c0f9 #a8fa84d5 D1 scaling review -> docs/d1-scaling-review.md; relay Phase C questions.
+PLAN-enterprise-isolation (every [writer] box done; V/X/H live), PLAN-d1-scaling (T1 P1 P2 R1 K1 Z1 H1 H2 A1 G1 L1 C1 done; W1 running; then A2, H3, WC after P3; live LR1 LB1 LE1 ...), PLAN-backup-program, PLAN-backup-integrity, PLAN-health-checks-local, PLAN-deletion-budget, PLAN-first-release-checks.
 
 ## Owed ticks
-C1 3fec96a0 commit:85c3acf3a1 (#d98f70c0); C2 2706988f commit:d3cfea58b4; K2 80516a88 commit:34e559f7ce; S2 79026bfa after landing; CB7 move half.
+Live-owed: PLAN-backup-program.md#5d379672, #07955f58, #d7be9d49; PLAN-health-checks-local.md#85f55665; PLAN-production-key-only N5 (each leg green in CI).
+
+## Delegated
+- a97ca00edfc633a40 #2c0d960b: D1 W1 Worker wiring; accept retention-cron + suite + region consistency rc 0.
+- a6fdef2be01bbb713 #f8721571: gate reds (biome format, python-types, drop license_sequences 0082, secret-supply prose).
+- ad33fab5b357b6572 #f1d1bc8a: preview Worker LICENSE_SIGNER binding (987943f5.1 high).
+- Verdict agents (read-only) a86fe82342d859044 /tmp/verdicts_subm.txt, aa9e0824b613cfe31 /tmp/verdicts_ci0.txt, af62f2718b6b3b3a0 /tmp/verdicts_ci1.txt, ab8fea14d87180e23 /tmp/verdicts_hooks.txt, a9b1c1cad789b177b /tmp/verdicts_other.txt: 197 open review findings (inputs /tmp/open_*.tsv). Apply VERDICT lines with worklist.py --review-mark (script /tmp/apply_verdicts.py pattern); NEEDSFIX lines go to fix writers grouped by file.
 
 ## Next action
-1. Start writers for the 11 ready [writer] boxes the IDLE CAPACITY advisory lists (read it from the stop hook output), one lease writer per file-disjoint group, sonnet unless a box creates a gate or guard (opus).
-2. Land S2: git -C private/account cherry-pick -x e16ead1; commit gitlink; cherry-pick -x 196f918118 (regen gen-docs on doc conflicts); rerun its two accepts; tick.
-3. Tick C1, C2, K2 boxes with the shas above (plan-investigate then plan-tick); gc trees agent-a46ff53d3cac141b1, agent-a316129993a8aa9a6.
-4. When the idle-writer builder finishes: commit its work with QUEUE.md and the uncommitted plan lines (website, enterprise C1 note, rename LP-bench line, plan-boxes, plan-investigation, INDEX) after check:ci-plan-record --rendered-only --update.
-5. Review-mark VERDICT lines in /tmp/review-backlog/verdicts/*.txt (fixed shas must be the landed ones, mapped via -x lines), then --review-commit.
-6. Then #caa837d4: second ci:quick, ops up --basic, vm:check fleet run 17, one push, PRs.
+1. As each verdict file lands: apply its VERDICT lines, group NEEDSFIX by file and start fix writers.
+2. Land W1, gate-fix and preview writers (picks submodules first, suite, gitlink, tick, gc); then A2 and H3.
+3. W2: mint the AE read token, write bws ACCOUNT_AE_READ_TOKEN and its map entry (#396d049b), land the W2 lease edits.
+4. #caa837d4: second ci:quick, ops up --basic, vm:check fleet run 17, live-owed boxes, one batch push (submodules first), PRs.
