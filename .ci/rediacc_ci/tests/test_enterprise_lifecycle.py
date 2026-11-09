@@ -501,6 +501,25 @@ def test_a_resumed_delete_data_remove_is_not_judged_against_its_own_deletions(w)
     assert w.state("eu", ACME) == "removed"
 
 
+def test_a_remove_that_fails_before_deleting_data_leaves_no_mark_and_rechecks(w):
+    """Review e2c4a3a7.1: a failure before the first bucket deletion (here the undeploy) writes no mark, so a later change to the company is caught on the rerun."""
+    _exported(w)
+
+    def boom(_company):
+        raise OSError("undeploy refused")
+
+    ok = w.undeploy
+    w.undeploy = boom
+    with pytest.raises(lifecycle.LifecycleError, match="undeploy"):
+        lifecycle.remove(w.ctx, "acme", delete_data=True, confirm="acme")
+    assert not (w.ctx.export_root / ACME / lifecycle.CHECKED).exists()
+    w.undeploy = ok
+    w.dump_d1 = lambda _company: "-- a row written after the failed run\n"
+    with pytest.raises(lifecycle.LifecycleError, match=r"database of company .* changed since"):
+        lifecycle.remove(w.ctx, "acme", delete_data=True, confirm="acme")
+    assert ("delete_d1", ACME) not in w.calls
+
+
 def test_a_reexport_clears_the_stale_check_mark(w):
     _exported(w)
 

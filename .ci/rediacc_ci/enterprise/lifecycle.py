@@ -32,7 +32,7 @@ AUTO_RING = "auto"
 MANIFEST = "manifest.json"
 DUMP = "d1.sql"
 SECRETS_FILE = "secrets.json"
-# Written once a `delete_data` remove has passed its stale-export check, holding the export's `exported_at`: a resumed remove (its buckets or database already gone) is then not judged against data its own earlier run deleted. `export` removes it with the manifest.
+# Written immediately before a `delete_data` remove deletes its first bucket, holding the export's `exported_at`: a resumed remove (its buckets or database already gone) is then not judged against data its own earlier run deleted. A run that fails before that point leaves no mark, so its resume checks the still-intact data again. `export` removes it with the manifest.
 CHECKED = "remove-checked"
 # Kept in the export: losing the config server key loses layer 3 data, and the backup KEK opens the backups.
 DURABLE = ("ACCOUNT_CONFIG_SERVER_KEY", "ACCOUNT_BACKUP_STORE_KEK")
@@ -442,6 +442,12 @@ def _refuse_stale_export(ctx: Context, company: Target) -> None:
     }
     if now != held:
         raise LifecycleError("the buckets of company %s %s" % (company.id, again))
+
+
+def _record_stale_check(ctx: Context, company: Target) -> None:
+    """Mark the export checked, right before the first data deletion: from here on a resume must not re-judge data this run deletes."""
+    folder = ctx.export_root / company.id
+    exported_at = json.loads((folder / MANIFEST).read_text()).get("exported_at", "")
     _step("stale-export check: record", _write, folder / CHECKED, exported_at.encode())
 
 
@@ -472,6 +478,7 @@ def remove(
         run("drop lookup", ctx.teardown.drop_lookup, company)
     if delete_data:
         run("revoke tokens", ctx.teardown.revoke_tokens, company)
+        _record_stale_check(ctx, company)
         for bucket in company.buckets:
             run("delete bucket", ctx.teardown.delete_bucket, company, bucket)
         run("delete d1", ctx.teardown.delete_d1, company)
