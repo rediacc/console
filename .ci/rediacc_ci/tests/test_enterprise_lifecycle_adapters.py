@@ -97,6 +97,7 @@ class FakeCloudflare:
         self.fail: set[tuple[str, str]] = set()
         self.token_page = 2
         self.d1_page = 100
+        self.omit_info = False
 
     def __call__(self, method, path, _body=None, headers=()):
         self.calls.append((method, path, tuple(headers)))
@@ -120,6 +121,8 @@ class FakeCloudflare:
             per = self.d1_page
             pages = max(1, -(-len(rows) // per))
             result = rows[(page - 1) * per : page * per]
+            if self.omit_info:
+                return {"success": True, "result": result}
             return {"success": True, "result": result, "result_info": {"total_pages": pages}}
         if method == "DELETE" and path.startswith(base + "/d1/database/"):
             uuid = path.rsplit("/", 1)[1]
@@ -466,6 +469,18 @@ def test_delete_d1_pages_through_the_listing_before_deciding(monkeypatch):
     assert rig.teardown.done[-1] == "delete d1"
     pages = [c[1] for c in rig.cf.calls if c[0] == "GET" and "/d1/database?" in c[1]]
     assert len(pages) == 4
+
+
+def test_delete_d1_follows_a_full_page_when_the_answer_omits_result_info(monkeypatch):
+    """Review b2640774.1: a missing page count must not end the walk after page 1 while the page came back full."""
+    rig = Rig(monkeypatch)
+    rig.cf.d1 = {"account-acme-%03d" % i: "u%03d" % i for i in range(100)} | {
+        "account-acme": "1111-uuid"
+    }
+    rig.cf.omit_info = True
+    rig.teardown.delete_d1(_company())
+    assert "account-acme" not in rig.cf.d1
+    assert rig.teardown.done[-1] == "delete d1"
 
 
 def test_delete_secret_deletes_only_rows_in_the_enterprise_project(monkeypatch):

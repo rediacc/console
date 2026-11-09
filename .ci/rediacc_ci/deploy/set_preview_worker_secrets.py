@@ -90,7 +90,7 @@ KEYS: tuple[tuple[str, str], ...] = (
 
 # The ten `_require_nonempty` calls (:59-69), in order. The FIRST empty one ends the run, so the order is observable in the message a caller reads.
 #
-# WHY THESE ELEVEN AND NOT THE OTHER FOUR, in the twin's own words (:42-49): the SES pair, the SES region and Turnstile are optional() in the Worker schema and turn their feature off SILENTLY when empty, and the five ACCOUNT_* ones are non-optional and would make every request on the preview 500 with an EnvConfigError. Stripe is deliberately NOT demanded: ci.yml feeds the preview
+# WHY THESE TEN AND NOT THE OTHER FOUR, in the twin's own words (:42-49): ROOT_EMAIL, the SES pair, the SES region and Turnstile are optional() in the Worker schema and turn their feature off SILENTLY when empty, and the five ACCOUNT_* ones are non-optional and would make every request on the preview 500 with an EnvConfigError. Stripe is deliberately NOT demanded: ci.yml feeds the preview
 # the SANDBOX key, and a preview without billing is a legitimate state.
 REQUIRED_NONEMPTY: tuple[str, ...] = (
     "ACCOUNT_ED25519_PUBLIC_KEY",

@@ -2,7 +2,7 @@
 
 WHAT EACH CALL REACHES. `CloudflareExporter.dump_d1` runs `wrangler d1 export account-<company> --remote` (argv from `core.wrangler.ARGV`, the one spelling of a wrangler call) into a temporary file and returns its text; `bucket_keys` and `get_object` read the bucket over R2's S3 API, because the Cloudflare REST API serves no object listing (measured 2026-10-01, `ops/reset_bench.py` RULE T 1). `secrets.json` is written by `lifecycle.export` itself, at mode 0600, from the `Store` in the `Context` (the enterprise `BwsStore`), so the exporter holds no secret. `CloudflareTeardown` deletes the two Workers (`proxy-<company>` first, since it binds `account-<company>`) and the D1 database `account-<company>` through the Cloudflare API, the lookup entry through `ops.enterprise_lookup.delete` (the namespace's one writer; the KV key is the HMAC of the domain, so neither the domain nor the pepper reaches argv), the token `enterprise-<id>-backups` the `CloudflareMinter` created, each bucket (emptied over S3, then deleted through the API), and each store entry through `bws secret delete <id>`.
 
-EVERY STEP RESUMES. Each step but the lookup delete first reads whether its target still exists and skips it when it is gone (the lookup delete is repeated as such: a KV delete of an absent key is a no-op), so a rerun of `enterprise remove` after a failure repeats nothing destructive and continues at the failed step. The teardown keeps a journal (`done`), and a failing step raises a `LifecycleError` naming the step, the opaque company id, the steps completed this run and that a rerun resumes. `lifecycle.remove` runs the steps in order and stops at the first raise, so nothing after the failed step runs and the company is not marked removed.
+EVERY STEP RESUMES. Each step but the lookup delete first reads whether its target still exists and skips it when it is gone (the lookup delete is repeated as such: a KV delete of an absent key is a no-op), so a rerun of `enterprise remove` after a failure repeats nothing destructive but that one idempotent delete and continues at the failed step. The teardown keeps a journal (`done`), and a failing step raises a `LifecycleError` naming the step, the opaque company id, the steps completed this run and that a rerun resumes. `lifecycle.remove` runs the steps in order and stops at the first raise, so nothing after the failed step runs and the company is not marked removed.
 
 NO VALUE IN ARGV, A LOG LINE OR AN EXCEPTION. R2 credentials ride curl's stdin; Cloudflare auth headers ride curl's stdin through `cf_auth.curl_json`; the lookup pepper stays in the environment. No message carries a response body, a URL path, wrangler or curl output, or the company label: messages name the step, the opaque id, an HTTP status, a Cloudflare error code or an exception TYPE. Every translated exception is raised after its except block has closed, so it carries neither `__cause__` nor `__context__` (the secrets.py discipline).
 
@@ -79,6 +79,14 @@ def _rows(answer: Mapping[str, Any], what: str) -> list:
     if not isinstance(rows, list):
         raise LifecycleError("%s answered an unexpected shape" % what)
     return rows
+
+
+def _pages(answer: Mapping[str, Any], rows: list, per_page: int, page: int) -> int:
+    """How many pages the listing has: the answer's `total_pages`, or, when `result_info` is missing, one more than this page while the page came back full (a short page ends the listing). A missing count must not stop the walk after page 1 (review b2640774.1)."""
+    info = answer.get("result_info")
+    if isinstance(info, dict) and info.get("total_pages"):
+        return int(info["total_pages"])
+    return page + 1 if len(rows) >= per_page else page
 
 
 def list_keys(s3: S3, bucket: str) -> list[str] | None:
@@ -330,13 +338,13 @@ class CloudflareTeardown:
                 what = "the token listing"
                 path = "/user/tokens?page=%d&per_page=50" % page
                 answer = _ok(self._http("GET", path), what)
+                rows = _rows(answer, what)
                 stale += [
                     str(r["id"])
-                    for r in _rows(answer, what)
+                    for r in rows
                     if isinstance(r, dict) and r.get("name") == name and r.get("id")
                 ]
-                info = answer.get("result_info")
-                pages = int(info.get("total_pages") or 1) if isinstance(info, dict) else 1
+                pages = _pages(answer, rows, 50, page)
                 page += 1
             for token_id in stale:
                 _ok(self._http("DELETE", "/user/tokens/%s" % token_id), "the token delete")
@@ -383,14 +391,14 @@ class CloudflareTeardown:
             while page <= pages:
                 query = urllib.parse.urlencode({"name": name, "per_page": 100, "page": page})
                 answer = _ok(self._http("GET", self._account("/d1/database?%s" % query)), what)
+                rows = _rows(answer, what)
                 # The name filter matches substrings, so only an exact name is this company's database.
                 uuids += [
                     str(r["uuid"])
-                    for r in _rows(answer, what)
+                    for r in rows
                     if isinstance(r, dict) and r.get("name") == name and r.get("uuid")
                 ]
-                info = answer.get("result_info")
-                pages = int(info.get("total_pages") or 1) if isinstance(info, dict) else 1
+                pages = _pages(answer, rows, 100, page)
                 page += 1
             for uuid in uuids:
                 _ok(self._http("DELETE", self._account("/d1/database/%s" % uuid)), "the D1 delete")
