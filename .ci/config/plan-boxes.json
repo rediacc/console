@@ -1567,6 +1567,22 @@
         "f895ccf3"
       ]
     },
+    "agent/plans/PLAN-idle-writer-capacity.md": {
+      "status": "approved",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 5,
+      "done": 0,
+      "open_sigs": [
+        "2dea7f78",
+        "43415aed",
+        "7095ffb6",
+        "7fae57e7",
+        "d7fffd41"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-jobs-backup-real-machine-tests.md": {
       "status": "approved",
       "owner": "d778be9d",
@@ -2936,31 +2952,31 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 14,
-      "done": 6,
+      "open": 8,
+      "done": 12,
       "open_sigs": [
         "02e7480f",
         "08056aeb",
-        "18e590ce",
         "3285fb52",
-        "34398e26",
         "37212ea1",
         "42818efa",
-        "44171e9c",
         "6b24c6fa",
-        "87da6b72",
         "976bf9ae",
-        "9a01d32a",
-        "c470810e",
-        "ed44b490"
+        "9a01d32a"
       ],
       "done_sigs": [
+        "18e590ce",
         "1fa6d9e0",
         "21e3ffd0",
+        "34398e26",
         "35ec72c0",
+        "44171e9c",
         "7ce47951",
         "83842948",
-        "bbca8d16"
+        "87da6b72",
+        "bbca8d16",
+        "c470810e",
+        "ed44b490"
       ]
     },
     "agent/plans/PLAN-wire-account-vitest-ci.md": {

@@ -341,20 +341,28 @@ def _base(rel: str) -> str:
 
 
 # WRITER-STARTABLE (#faedaaf9). A box only the lead or the operator can do (a production query, a deploy, an operator's own walk, a commit in a sibling repo outside the console PR) names that in its first words, `T4 Lead: ...` / `Operator: ...`, or anywhere as `lead-only` / `operator-only`; a plan whose remaining work is all of that kind says so once in its header, `Writers: none -- <reason>`. A turbo pick is a writer slot, so a plan with no open box a writer can do is no pick.
+# THE BRACKET TAGS COUNT TOO (agent/plans/PLAN-idle-writer-capacity.md D1-D2): a box tagged `[live]`, `[operator window]`, `[hostinger rollout]`, `[fleet]` and the like, or waiting for the merge (`post-merge` in its tag, or a `Depends on:` clause naming a merge), is no writer's either. The tag grammar is `wl_boxready`'s, read here rather than copied. An untagged box stays startable, so an older plan with code boxes and no tags is still counted and picked.
 _LEAD_BOX = re.compile(
     r"^\s*[-*+]\s+\[[ ?>]\]\s+(?:\*\*)?(?:\S+\s+)?(?:lead|operator):|\b(?:lead|operator)-only\b",
     re.IGNORECASE,
 )
 _OPEN_BOX = re.compile(r"^\s*[-*+]\s+\[[ ?>]\]\s+\S")
-_NO_WRITERS = re.compile(r"^Writers:\s*none\b", re.IGNORECASE | re.MULTILINE)
+
+
+def _boxready():
+    syspath.on_sys_path(STOP_DIR)
+    import wl_boxready
+
+    return wl_boxready
 
 
 def writer_startable(text: str) -> bool:
-    """Whether a writer can do any open box of this plan text: False under a `Writers: none` header or when every open box is marked lead- or operator-only."""
-    if _NO_WRITERS.search(text or ""):
+    """Whether a writer can do any open box of this plan text before the merge: False under a `Writers: none` header, or when every open box is marked lead- or operator-only, carries a non-writer tag, or waits for the merge."""
+    br = _boxready()
+    if br.WRITERS_NONE_RE.search(text or ""):
         return False
     opened = [ln for ln in (text or "").splitlines() if _OPEN_BOX.match(ln)]
-    return any(not _LEAD_BOX.search(ln) for ln in opened)
+    return any(not _LEAD_BOX.search(ln) and br.startable(ln) for ln in opened)
 
 
 def next_turbo(
@@ -395,7 +403,12 @@ def next_turbo(
     live = {_base(p) for p in live_plans or ()}
     # THE PARALLELISM CEILING (`plan_concurrency`): the PR's own unfinished plans and the plans live writers serve already count against it, so a free writer slot is not by itself a reason to open another plan.
     if ceiling:
-        inflight = {_base(p) for p in taken if open_boxes(root, p, rev)[0] > 0} | live
+        # Only an in-set plan with an open box a writer can start before the merge holds a place (agent/plans/PLAN-idle-writer-capacity.md D2): on 2026-11-09 five in-set plans with live-only boxes took all five places for hours.
+        inflight = {
+            _base(p)
+            for p in taken
+            if open_boxes(root, p, rev)[0] > 0 and writer_startable(_read(root, p, rev) or "")
+        } | live
         slots = min(slots, plan_concurrency(settings) - len(inflight))
         if slots <= 0:
             return []

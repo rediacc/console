@@ -3259,6 +3259,21 @@ V_TURBO_NEXT_LOCAL = (
     "opens at %(batch)d, or sooner when the queue has no eligible plan left. Bugs and "
     "hook-integrity blocks come first."
 )
+# IDLE CAPACITY (agent/plans/PLAN-idle-writer-capacity.md D5, operator rulings R1-R3 of 2026-11-09): free writer slots and ready writer-tagged boxes meet. Keys: free, cap, n, boxes (IDLE_CAPACITY_BOX rows), spawn (IDLE_CAPACITY_SPAWN rows), who (the session prefix).
+V_IDLE_CAPACITY = (
+    "IDLE CAPACITY: %(free)d free writer slot(s) of %(cap)d, and %(n)d ready `[writer]` box(es): "
+    "no worklist item tracks them, their dependencies are met, and their Owns overlap no work in "
+    "flight (agent/plans/PLAN-idle-writer-capacity.md):\n"
+    "%(boxes)s\n"
+    "Start them on writers in leases, grouped by the files they touch:\n"
+    "%(spawn)s\n"
+    "The hook never spawns. A box no writer should take now leaves this list once an item tracks "
+    "it: `worklist.py --add %(who)s <plan stem> <box id> <sig> <why>`, deferred with a DEFAULT "
+    "when the operator decides."
+)
+IDLE_CAPACITY_BOX = "    %s#%s  %s"
+IDLE_CAPACITY_SPAWN = "    /writers-now %s"
+IDLE_CAPACITY_MORE = "    ... and %d more"
 # The backup valve (D4, wl_loopspeed.backup_push_due): the commits of a local batch live only on this disk. Keys: n, branch, age, hours.
 N_BACKUP_PUSH = (
     "BACKUP PUSH DUE: the oldest of %(n)d unpushed commit(s) on %(branch)s is %(age).1f h old "

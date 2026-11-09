@@ -57,7 +57,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 - Mode: effort smart; turbo on; turbo_push batch-end; batch_size 3; plan_concurrency 5; writer_cap 25; commit_remind_min 15; backup_push_h 4; judge core; cadence on; agent_hint on; agent_pushback on.
 - Phase: merge on PR #602 (branch 1023-1, session 45048a90, since 2026-11-03T09:46:12Z, past its 24-hour limit).
 - Branch: 1104-1, no PR yet.
-- Plans on the PR (11):
+- Plans on the PR (13):
   - agent/plans/PLAN-backup-program.md -- 181 of 192 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-cloudflare-proxy.md -- 27 of 29 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-sync-remote-file-ownership.md -- 7 of 7 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
@@ -69,11 +69,13 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-sandbox-tenant-separation.md -- 6 of 8 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-gpu-device-grants.md -- 12 of 14 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-proxy-cd-six-targets.md -- 27 of 31 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
+  - agent/plans/PLAN-backup-restore-path.md -- 7 of 10 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
+  - agent/plans/PLAN-tested-on-bench.md -- 16 of 20 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
 - Work outside the PR's plans (13 epic(s)):
   - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 12 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic c6b82e88, plan agent/plans/PLAN-settings-set-verb.md, outside the set, 2 commit(s) on the branch, 0 open item(s): settings set verb: one source for the ceilings
   - epic dbb7de07, plan agent/plans/PLAN-cloudflare-spend-guard.md, outside the set, 48 commit(s) on the branch, 0 open item(s): cloudflare spend guard closure
-  - epic 09b8bdfa, plan agent/plans/PLAN-detached-jobs.md, outside the set, 1310 commit(s) on the branch, 0 open item(s): detached jobs: proxied poll follow and job kinds
+  - epic 09b8bdfa, plan agent/plans/PLAN-detached-jobs.md, outside the set, 1362 commit(s) on the branch, 0 open item(s): detached jobs: proxied poll follow and job kinds
   - epic ec9ba176, plan agent/plans/PLAN-backup-integrity.md, outside the set, 2 commit(s) on the branch, 0 open item(s): backup integrity docs and closure
   - epic d6bb9963, plan agent/plans/PLAN-backup-critical-tier.md, outside the set, 7 commit(s) on the branch, 0 open item(s): backup critical tier proofs
   - epic b21ab2e2, plan agent/plans/PLAN-jobs-backup-real-machine-tests.md, outside the set, 2 commit(s) on the branch, 0 open item(s): real machine tests for jobs and backup
@@ -83,15 +85,15 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic 1d805023, plan agent/plans/PLAN-tick-tracking.md, outside the set, 26 commit(s) on the branch, 0 open item(s): tick tracking: plan-box trailer, landing prints the tick, box audit
   - epic f65726d5, plan agent/plans/PLAN-renet-down-before-kill.md, outside the set, 16 commit(s) on the branch, 0 open item(s): renet runs Rediaccfile down() before repo containers stop
   - epic 53c31db2, plan agent/plans/PLAN-repo-resource-limits.md, outside the set, 20 commit(s) on the branch, 0 open item(s): per-repo resource limits and a renet-managed RAM volume
-- Writers: 5 live of writer_cap 25 (session d778be9d): worker:ad0edc32f2b2c76c0, worker:afd2abf4d6c7718f4, worker:a88a13be927e0d5a7, worker:a801b07f78db4b58a, worker:ab2b38cdd3b288137.
-- Leased items: 9: #00244be0 (worker:afd2abf4d6c7718f4, d778be9d), #21cedeac (worker:a88a13be927e0d5a7, d778be9d), #6f93ebee (worker:ad0edc32f2b2c76c0, d778be9d), #86a94e05 (worker:ab2b38cdd3b288137, d778be9d), #895e8be0 (worker:ab2b38cdd3b288137, d778be9d), #90e05ca6 (worker:ab2b38cdd3b288137, d778be9d), #c8f185c8 (worker:ab2b38cdd3b288137, d778be9d), #e3ff174c (worker:ab2b38cdd3b288137, d778be9d), #f38b6838 (worker:a801b07f78db4b58a, d778be9d).
+- Writers: 2 live of writer_cap 25 (session d778be9d): worker:a8c491d9b5395eab5, worker:a4da1c1361269c0f9.
+- Leased items: 2: #5bcea441 (worker:a8c491d9b5395eab5, d778be9d), #a8fa84d5 (worker:a4da1c1361269c0f9, d778be9d).
 - Next plan: agent/plans/PLAN-console-executor-multi-org.md, Promoted entry 18; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 16 of 61 plans done, 925 of 1132 boxes done (81%).
+Promoted: 16 of 62 plans done, 931 of 1137 boxes done (81%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -147,7 +149,7 @@ Promoted: 16 of 61 plans done, 925 of 1132 boxes done (81%).
 | 50 | PLAN-split-cli-files-over-512-line-budget.md | 5/7 | 2 open |
 | 51 | PLAN-renet-docker-running-semantics.md | 11/15 | 4 open |
 | 52 | PLAN-product-domain-rename.md | 19/28 | 9 open |
-| 53 | PLAN-website-routing-and-mail.md | 6/20 | 14 open |
+| 53 | PLAN-website-routing-and-mail.md | 12/20 | 8 open |
 | 54 | PLAN-enterprise-isolation.md | 10/34 | 24 open |
 | 55 | PLAN-renet-restart-cycle-defects.md | 5/6 | 1 open |
 | 56 | PLAN-drop-free-license-ip-prefix-hash.md | 4/6 | 2 open |
@@ -156,6 +158,7 @@ Promoted: 16 of 61 plans done, 925 of 1132 boxes done (81%).
 | 59 | PLAN-ciquick-green-then-batch.md | 6/7 | 1 open |
 | 60 | PLAN-vmcheck-incremental.md | 2/3 | 1 open |
 | 61 | PLAN-ci-vm-image-followups.md | 0/2 | 2 open |
+| 62 | PLAN-idle-writer-capacity.md | 0/5 | 5 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-backup-program.md -- operator 2026-10-20 ("move agent/plans/PLAN-backup-program.md to the promoted"): one backup program across renet, account, CLI and shared, ending in a live hostinger to eu R2 backup; P1; Depends-On PLAN-shell-sandbox-readonly-view.md and PLAN-account-vm-check.md (done 2026-10-20); released to writers by operator /ask ASKED:2026-10-20T15:14Z ("edit writers to go NOW")
@@ -219,6 +222,7 @@ Promoted: 16 of 61 plans done, 925 of 1132 boxes done (81%).
 59. agent/plans/PLAN-ciquick-green-then-batch.md -- operator /ask ASKED:2026-11-08T19:20Z ("Green first, then batch (Recommended)")
 60. agent/plans/PLAN-vmcheck-incremental.md -- operator /ask ASKED:2026-11-08T19:20Z ("Green first, then batch (Recommended)"), the vm:check half
 61. agent/plans/PLAN-ci-vm-image-followups.md -- lead packaging 2026-11-09 (CB5 of PLAN-plan-compaction-bindings): the B5 live check and B7 measurement ruling #c3a46b36 moved out of PLAN-ci-prebaked-vm-images
+62. agent/plans/PLAN-idle-writer-capacity.md -- operator rulings ASKED 2026-11-09 via AskUserQuestion (R1 ceiling fix and IDLE CAPACITY block, R2 name boxes and the spawn command, R3 `[writer]` tag only, R4 per-box Depends-on): writer slots sat idle while writer-ready boxes waited
 
 ## Generated
 

@@ -131,6 +131,7 @@ This plan is public: no customer name appears in it or in any tracked file. `acm
 - [ ] C1 [writer] `./run.sh enterprise add`, resumable; `--bench` selects bench signers and control with `ENVIRONMENT=bench`, so mail capture works; it calls the lookup writer unless unlisted.
   Owns: .ci/rediacc_ci/__main__.py, .ci/rediacc_ci/core/run_verbs.py, .ci/rediacc_ci/enterprise/cli.py (new), .ci/rediacc_ci/enterprise/onboarding.py (new), .ci/rediacc_ci/tests/test_enterprise_add.py (new).
   Accept: `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_enterprise_add.py` rc 0.
+  (corrected 2026-11-09, d778be9d) The live runner found two owners missing (no box listed them): .ci/rediacc_ci/enterprise/lab.py, which proof.py's load_lab binds for every V box, and creating the control-<region> and control-bench-<region> D1 databases with control/migrations/0001_control.sql. Both join C1 (lab.py, control_db.py, test_enterprise_lab.py, test_enterprise_control_db.py); C1's accept adds those two test files and `./run.sh enterprise proof signer --bench` reaching the lab.
 - [ ] C2 [writer] `list`, `update`, `suspend`, `export`, `remove` per the Design.
   Owns: .ci/rediacc_ci/enterprise/lifecycle.py (new), .ci/rediacc_ci/tests/test_enterprise_lifecycle.py (new).
   Accept: `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_enterprise_lifecycle.py` rc 0.

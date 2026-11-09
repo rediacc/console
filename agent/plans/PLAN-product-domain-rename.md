@@ -169,6 +169,7 @@ M1 merges with these boxes open, so the PR body carries `Operational-Reason: hos
     (ticked) 2026-11-08T21:57:21Z by d778be9d: commit:1a984268fa bench config on bench.rediacc.cloud; live 2026-11-08: deploy_proxy --target bench --smoke-only rc 0 (health 200, server-info 401, ready 200 on 7c0935d6), ./rdc.sh --config eu-bench subscription status rc 0 (BUSINESS active), npm run login:bench rc 0 with remote connected; D1 clone 8850/8850 rows; configs-bench 79 objects and backups-bench 1398 objects verified; old bench objects untouched
 - [ ] LP-bench [live] Fresh bench receipts after L5. This lifts the edge and stable hold of ruling 4.
   Accept: live-proof bench account-smoke
+  (result 2026-11-09T08:27Z, d778be9d live runner) Blocked. `worklist.py --live-proof d778be9d <plan> 062294e2` was first refused checkout-mismatch (private/account 612778aa1faa against pointer 409aba794321, cleared by 4093bf923b). It is now refused at the ladder: "no VM receipt admits the head tree (failed: the last vm:check FAILED at K1: K1.7 the worker comes back after systemctl reboot (boot before=1794130621 after=0))", log .ci/cache/live-proof/lp-883e1d11a4f2.log. The last receipt is vmc-11071810-cc310c from 2026-11-07 on tree 05304c60cea4, and none of the six fleet VMs (192.168.111.1, .11, .12, .21, .22, .23) answers on port 22. Owed: `./rdc.sh ops up`, then a VERIFIED `npm run vm:check -- --changed` on the head tree (a fleet run, in the fleet queue), then a rerun of this box. L6, L7 and L8 wait on it.
 
 ### Shared regions
 

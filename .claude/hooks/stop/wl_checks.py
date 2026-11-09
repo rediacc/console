@@ -23,6 +23,7 @@ import wl_admit
 import wl_agents as A
 import wl_backlog
 import wl_bgsweep
+import wl_boxready
 import wl_checklist
 import wl_ci
 import wl_civerdict
@@ -2350,6 +2351,8 @@ PRIORITY_LADDER = (
                 "loop-next",
                 # Turbo (agent/plans/PLAN-stop-hook-turbo.md D5): a free writer slot and an eligible queued plan on the live PR.
                 "turbo-next",
+                # Free writer slots and ready `[writer]` boxes (agent/plans/PLAN-idle-writer-capacity.md D5): idle capacity beside asked-for work is the mission stalling, the failure of 2026-11-09.
+                "idle-capacity",
                 "defer-expired",
                 "undefaulted",
                 # agent/programs/<slug>/CHECKLIST.md -- deliverable and wave boxes, same four-state markdown the worklist uses.
@@ -3192,7 +3195,7 @@ def loop_next_text(state, root, state_doc, pr_finish_fired, me="<me>"):
 # `pr-finish` and `loop-next` are the merge offer: once the batch is ready a new plan would reopen the set the merge waits on.
 TURBO_OUTRANKED_BY = frozenset({"ci-red", "pr-review", "commit-review", "pr-finish", "loop-next"})
 # The turbo arm blocks under the PR-loop profile; wl_standdown.PR_LOOP's keep-list predates it, so the keep is added here, beside the arm. The cap wait and focus mode still park it: with no free slot, or in a wind-down, nothing new starts.
-TURBO_KEEPS = frozenset({"turbo-next"})
+TURBO_KEEPS = frozenset({"turbo-next", "idle-capacity"})
 # A lost commit is not hygiene, so no stand-down profile parks this (agent/plans/PLAN-worktree-lease.md Design 7). wl_standdown is sealed, and its keep-lists predate leases, so the keep sits here as TURBO_KEEPS does.
 WORKTREE_KEEPS = frozenset({"worktree-unlanded"})
 # The same design keeps the lease report out of a phase's advisory batching.
@@ -3349,7 +3352,7 @@ def focus_resolve(root, worklist, session_id, me8, fold, state_doc):
             # Ended by the verb (or replaced by a newer on-event): the newest owned event says why.
             newest: dict[str, Any] = max(
                 (e for o, e in (fold.phase or {}).items() if o and owned(o)),
-                key=lambda e: S.event_order(e),
+                key=S.event_order,
                 default={},
             )
             why = (
@@ -5330,6 +5333,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 % (type(exc).__name__, str(exc)[:120]),
             )
     # ---- TURBO NEXT (agent/plans/PLAN-stop-hook-turbo.md D5/D8): turbo on, a live PR, a free writer slot and an eligible queued plan. Names at most the free-slot count of plans, records them for refresh_pr_body (a plan joins the PR when the hook names it), and blocks; a bug, a red CI or a hook-integrity block outranks it, and then the text rides the advisory queue instead.
+    _tn_text = ""
     if _on_loop and _loop is not None and _loop.turbo:
         try:
             if _turbo_err:
@@ -5354,6 +5358,41 @@ def run_stop(event, event_ok, worklist, hook_file):
                 "loop-next",
                 True,
                 "THIS IS A HOOK BUG: the turbo-next check failed: %s: %s"
+                % (type(exc).__name__, str(exc)[:120]),
+            )
+    # ---- IDLE CAPACITY (agent/plans/PLAN-idle-writer-capacity.md D5, operator rulings R1-R3 of 2026-11-09): free writer slots and ready `[writer]` boxes meet. Names the boxes and the `/writers-now` line, never spawns. Stands down in a babysit or merge phase; the plans TURBO NEXT named this stop are left out and take their slots; outranked like TURBO NEXT, it rides the advisory queue. With turbo off it reads only the PR's plan set, one plan per PR. The subject latch keeps an unchanged set from holding every stop: it surfaces again after 30 minutes or when the set changes.
+    if _on_loop and _loop is not None and _roster is not None and not _roster.get("blind"):
+        try:
+            _ic_text = wl_boxready.idle_capacity_text(
+                root,
+                free=int(_writer_cap) - len(_roster.get("writers") or ()),
+                cap=int(_writer_cap),
+                phase=bool(_focus),
+                turbo_picks=tuple(_loop.turbo_picks or ()) if _tn_text else (),
+                plans=None if _loop.turbo else tuple(_loop.plans or ()),
+                live_plans=sorted((_roster.get("plan_holders") or {}).keys()),
+                items=fold.items,
+                me8=me8,
+            )
+            _ic_outranked = any(
+                k in TURBO_OUTRANKED_BY or a or str(t).startswith("THIS IS A HOOK BUG")
+                for k, a, t in violations
+            )
+            _ic_subject = re.findall(r"PLAN-[\w.-]+\.md#[0-9a-f]{8}", _ic_text)
+            if _ic_text and not _ic_outranked:
+                vadd("idle-capacity", False, _ic_text, subject=_ic_subject, latch_min=30)
+                outq_drop(state_doc, "idle-capacity")
+            elif _ic_text:
+                outq_add(
+                    worklist, session_id, state_doc, "idle-capacity", _ic_text, 0, refresh_min=0
+                )
+            else:
+                outq_drop(state_doc, "idle-capacity")
+        except Exception as exc:
+            vadd(
+                "loop-next",
+                True,
+                "THIS IS A HOOK BUG: the idle-capacity check failed: %s: %s"
                 % (type(exc).__name__, str(exc)[:120]),
             )
     if ci_report:

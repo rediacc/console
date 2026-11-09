@@ -121,6 +121,10 @@
       "block": "low",
       "advise": "low"
     },
+    "idle-capacity": {
+      "block": "smart",
+      "advise": "low"
+    },
     "loop-next": {
       "block": "low",
       "advise": "low"
