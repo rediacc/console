@@ -23,6 +23,7 @@
  */
 
 import type { ExecutorCapacity } from './capacity';
+import { allowlistRefusal } from './ip-allowlist';
 import { type ExecutorIssuerRpc, IssuerError } from './issued-token';
 import type { ExecutorRefusalCode, OrgExecutor, PinAnswer } from './org-executor';
 import { executorName, placementOf } from './placement';
@@ -65,6 +66,8 @@ export interface Env {
    * Service binding to the regional account worker. `proxy-eu.rediacc.cloud` and `eu.rediacc.cloud` share a zone, and a Worker's `fetch()` to a same-zone hostname does not reach another Worker on that zone, so on the first Phase 2 deploy (2026-09-24) every introspection failed and every caller got 401. The binding is the path the www worker already uses (workers/www/wrangler.toml `[[services]]`); `fetch(ACCOUNT_URL)` remains only for a deploy without it.
    */
   ACCOUNT?: Fetcher;
+  /** Opt-in IP allowlist: comma-separated addresses or IPv4 ranges (src/ip-allowlist.ts). Unset or empty means off. */
+  ALLOW_IPS?: string;
   /** Region label for telemetry (`rediacc.region`, and `REDIACC_REGION` for the executor); `eu` when unset or empty. */
   REGION?: string;
   /** Deployment environment for telemetry (`deployment.environment`); `production` when unset or empty. */
@@ -267,6 +270,12 @@ export default {
     const url = new URL(request.url);
     const span = activeSpan(ctx);
     tagRequest(span, request, env);
+
+    const denied = allowlistRefusal(request, env.ALLOW_IPS);
+    if (denied) {
+      span?.setAttribute('rediacc.proxy.outcome', 'refused:ip-not-allowed');
+      return denied;
+    }
 
     if (url.pathname === '/v1/health') {
       span?.setAttribute('rediacc.proxy.outcome', 'health');
