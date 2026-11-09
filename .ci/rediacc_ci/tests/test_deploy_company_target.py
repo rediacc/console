@@ -999,3 +999,42 @@ def test_a_bench_company_is_refused_outside_the_bench_region(root, region):
 
 def test_a_bench_company_is_accepted_in_the_bench_region(root):
     assert target(root, region=ce.BENCH_REGION, bench=True).bench is True
+
+
+@pytest.mark.usefixtures("fakes")
+def test_a_company_rollback_points_at_the_runnable_commands_instead_of_printing_masked_ones(
+    lroot, tmp_path, capsys
+):
+    """Review a55df887.1: a masked `wrangler rollback` line named `enterprise.<id>.toml`, a config that does not exist, so a copied command failed mid-incident. The human-run commands are pointed at in the before record, which keeps them runnable, and the label stays out of the console."""
+    out = tmp_path / "before.json"
+    ns = dr._parser().parse_args(
+        [
+            "before",
+            *lflags(lroot, "account"),
+            "--proxy-config",
+            str(lroot / "workers" / "proxy" / ("enterprise.%s.toml" % LABEL)),
+            "--version",
+            VERSION,
+            "--out",
+            str(out),
+        ]
+    )
+    assert dr.cmd_before(ns, lroot) == 0
+    capsys.readouterr()
+    record = json.loads(out.read_text())
+    assert LABEL in record["rollback"]["3_account"]
+    record["account_only"] = True
+    out.write_text(json.dumps(record))
+    assert dr.cmd_rollback(argparse.Namespace(before=str(out)), lroot) == 0
+    got = capsys.readouterr()
+    assert "rollback.3_account" in got.out
+    assert "rollback.4_d1" in got.out
+    assert "enterprise.%s.toml" % LABEL_ID not in got.out
+    assert LABEL not in got.out + got.err
+
+
+def test_mask_label_replaces_a_label_joined_to_a_suffix():
+    """Review a55df887.3: a whole-token match left `acmecorpdb` unmasked."""
+    assert ce.mask_label("acmecorpdb and account-AcmeCorp", "acmecorp", "c0123456789abcdef") == (
+        "c0123456789abcdefdb and account-c0123456789abcdef"
+    )

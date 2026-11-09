@@ -971,11 +971,21 @@ def cmd_rollback(args: argparse.Namespace, repo_root: pathlib.Path) -> int:
     company = company_from_record(repo_root, before)
     # A company's names carry its label: a console shows the opaque id, and the runnable commands stay in the before record's `rollback` field.
     shown = company.mask if company is not None else str
+
+    def runnable(key: str) -> str:
+        """A human-run command as it must be typed. A masked copy names a config that does not exist (review a55df887.1), so a company's command is pointed at in the before record, never printed masked."""
+        if company is None:
+            return before["rollback"][key]
+        return "run `rollback.%s` from %s (not printed: it names the company's config)" % (
+            key,
+            args.before,
+        )
+
     if before.get("account_only"):
         # No executor or proxy was touched: only the two human-run commands remain, printed as step 3 always is.
         log.step("Rollback (account only): nothing is run; the account and D1 commands follow.")
-        print("  roll back the Worker: %s" % shown(before["rollback"]["3_account"]))
-        print("  restore D1: %s" % shown(before["rollback"]["4_d1"]))
+        print("  roll back the Worker: %s" % runnable("3_account"))
+        print("  restore D1: %s" % runnable("4_d1"))
         return 0
     target, region = before["target"], before["region"]
     failures = []
@@ -1018,12 +1028,12 @@ def cmd_rollback(args: argparse.Namespace, repo_root: pathlib.Path) -> int:
         else:
             log.warn(
                 "The proxy moved from %s to %s and no release is on record for %s, so its image cannot be rebuilt from artifacts. Worker-only rollback, for a human: %s"
-                % (prior, live, prior, shown(before["rollback"]["2_proxy"]))
+                % (prior, live, prior, runnable("2_proxy"))
             )
 
     log.step("Rollback 3/4 and 4/4, printed and NOT run (destructive, human decisions):")
-    print("  account Worker: %s" % shown(before["rollback"]["3_account"]))
-    print("  D1 restore:     %s" % shown(before["rollback"]["4_d1"]))
+    print("  account Worker: %s" % runnable("3_account"))
+    print("  D1 restore:     %s" % runnable("4_d1"))
     for failure in failures:
         log.error("Rollback incomplete: %s" % shown(failure))
     return 1 if failures else 0

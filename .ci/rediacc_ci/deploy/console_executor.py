@@ -106,10 +106,8 @@ PROXY_SUBDIR = ("workers", "proxy")
 
 
 def mask_label(text: str, name: str, company_id: str) -> str:
-    """`text` with the company label replaced by its opaque id, wherever the label stands as a whole token (a Worker, config or host name built from it). Log lines go through this, so only the id reaches a console."""
-    return re.sub(
-        r"(?<![a-z0-9])%s(?![a-z0-9])" % re.escape(name), company_id, text, flags=re.IGNORECASE
-    )
+    """`text` with every occurrence of the company label replaced by its opaque id, joined to other characters or not (a Worker, config or host name built from it, `acmecorpdb` included: review a55df887.3). Log lines go through this, so only the id reaches a console; masking a few extra characters is harmless, leaking the label is not."""
+    return re.sub(re.escape(name), company_id, text, flags=re.IGNORECASE)
 
 
 @dataclasses.dataclass(frozen=True)
