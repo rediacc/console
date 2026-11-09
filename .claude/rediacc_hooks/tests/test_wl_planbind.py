@@ -5,6 +5,7 @@ Every refusal has a passing twin built from the same fixture with one fact chang
 
 from __future__ import annotations
 
+import datetime
 import importlib
 import json
 import pathlib
@@ -16,6 +17,12 @@ import pytest
 STOP = pathlib.Path(__file__).resolve().parents[2] / "hooks" / "stop"
 if str(STOP) not in sys.path:
     sys.path.insert(0, str(STOP))
+
+def _at(seconds=0):
+    """A store timestamp derived from now (a minute back, plus `seconds`), never a literal date: the reader sorts by it before folding."""
+    when = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=1) + datetime.timedelta(seconds=seconds)
+    return when.strftime("%Y-%m-%dT%H:%M:%SZ")
+
 
 B = importlib.import_module("wl_planbind")
 R = importlib.import_module("wl_planrec")
@@ -253,7 +260,7 @@ def test_store_items_reads_the_fold_and_drops_tombstones(tmp_path):
         {
             "ev": "add",
             "id": "aa11bb22",
-            "at": "2026-11-01T00:00:00Z",
+            "at": _at(0),
             "by": "s1",
             "text": "hold PLAN-x.md",
             "ns": 1,
@@ -261,7 +268,7 @@ def test_store_items_reads_the_fold_and_drops_tombstones(tmp_path):
         {
             "ev": "add",
             "id": "bb22cc33",
-            "at": "2026-11-01T00:00:01Z",
+            "at": _at(1),
             "by": "s2",
             "text": "hold PLAN-x.md",
             "ns": 2,
@@ -269,7 +276,7 @@ def test_store_items_reads_the_fold_and_drops_tombstones(tmp_path):
         {
             "ev": "tomb",
             "id": "bb22cc33",
-            "at": "2026-11-01T00:00:02Z",
+            "at": _at(2),
             "by": "s2",
             "why": "gone",
             "ns": 3,
@@ -297,7 +304,7 @@ def _compact_tree(tmp_path, item_state):
     (plans / "PLAN-x.md").write_text(body, encoding="utf-8")
     store = tmp_path / "agent" / "worklist"
     store.mkdir()
-    row = {"id": "aa11bb22", "by": "s1", "ev": "add", "at": "2026-11-01T00:00:00Z", "ns": 1}
+    row = {"id": "aa11bb22", "by": "s1", "ev": "add", "at": _at(0), "ns": 1}
     rows = [dict(row, s=item_state, o="s1", t="finish PLAN-x.md")]
     (store / "s1.jsonl").write_text("\n".join(json.dumps(r) for r in rows) + "\n", encoding="utf-8")
     ident = ("-c", "user.name=t", "-c", "user.email=t@t")
