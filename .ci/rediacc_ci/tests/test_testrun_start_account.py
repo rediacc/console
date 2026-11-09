@@ -609,70 +609,106 @@ def test_without_both_env_halves_the_keys_are_generated(
     ]
 
 
-def test_require_env_pair_is_a_valueless_flag() -> None:
-    assert sa.parse([]).require_env_pair is False
-    opts = sa.parse(["--require-env-pair", "--port", "4911"])
-    assert opts.require_env_pair is True
-    assert opts.port == "4911"
-    assert "--require-env-pair" in sa.USAGE
+def test_delta_8_require_env_pair_is_gone() -> None:
+    """Delta 8: the flag that demanded the production pair is a usage error, so no workflow can still ask for it and pass."""
+    with pytest.raises(ValueError, match="Unknown option: --require-env-pair"):
+        sa.parse(["--require-env-pair", "--port", "4911"])
+    assert "--require-env-pair" not in sa.USAGE
+    assert sa.main(["--require-env-pair"]) == 2
 
 
-@pytest.mark.parametrize(
-    ("present", "named"),
-    [
-        ((), "ACCOUNT_ED25519_PRIVATE_KEY and ACCOUNT_ED25519_PUBLIC_KEY"),
-        (("ACCOUNT_ED25519_PUBLIC_KEY",), "ACCOUNT_ED25519_PRIVATE_KEY not set"),
-        (("ACCOUNT_ED25519_PRIVATE_KEY",), "ACCOUNT_ED25519_PUBLIC_KEY not set"),
-    ],
-    ids=["none", "public-only", "private-only"],
-)
-def test_delta_require_env_pair_refuses_to_mint(
-    tmp_path: pathlib.Path,
-    monkeypatch: pytest.MonkeyPatch,
-    capsys,
-    present: tuple[str, ...],
-    named: str,
+def test_delta_8_a_leg_with_no_env_pair_mints_and_publishes_its_own(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch, capsys
 ) -> None:
-    """Delta 8: a CI leg that lost its Bitwarden mapping fails at the key step, by name, before a server starts or a key is generated."""
+    """The normal CI case: nothing in the environment, a minted pair, and its PUBLIC half in $GITHUB_ENV for the renet build that follows."""
     for name in ("ACCOUNT_ED25519_PRIVATE_KEY", "ACCOUNT_ED25519_PUBLIC_KEY"):
         monkeypatch.delenv(name, raising=False)
-    for name in present:
-        monkeypatch.setenv(name, "HALF-SENTINEL")
-    calls: list[str] = []
-
-    def fake_generate_keys() -> dict[str, str]:
-        calls.append("generate")
-        return dict(FAKE_KEYS)
-
-    def fake_start_server(*_a: object) -> None:
-        calls.append("start")
-
-    monkeypatch.setattr(sa, "generate_keys", fake_generate_keys)
-    monkeypatch.setattr(sa, "start_server", fake_start_server)
-    monkeypatch.setattr(sa, "healthy", lambda _port: False)
-    monkeypatch.setenv("RUNNER_TEMP", str(tmp_path))
-    gh_env = tmp_path / "env"
-    monkeypatch.setenv("GITHUB_ENV", str(gh_env))
-    assert sa.run(sa.parse(["--require-env-pair", "--port", "4911"])) == 1
-    assert calls == []
-    assert not gh_env.exists()
-    err = capsys.readouterr().err
-    assert "--require-env-pair" in err
-    assert named in err
-    assert "HALF-SENTINEL" not in err
+    seen, _ = drive_run(tmp_path, monkeypatch, github_env=False)
+    assert (seen["edPriv"], seen["edPub"]) == ("GEN-PRIV", "GEN-PUB")
+    out = capsys.readouterr()
+    assert "ACCOUNT_ED25519_PUBLIC_KEY=GEN-PUB\n" in out.out
+    assert "GEN-PRIV" not in out.out + out.err
 
 
-def test_require_env_pair_signs_with_the_env_pair(
+def test_an_env_pair_still_signs_when_both_halves_match(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """start_backup_plane hands its own pair in; a matching pair is used as given."""
     monkeypatch.setattr(sa, "generate_keys", lambda: dict(FAKE_KEYS))
     monkeypatch.setenv("ACCOUNT_ED25519_PRIVATE_KEY", "ENV-PRIVATE-SENTINEL")
     monkeypatch.setenv("ACCOUNT_ED25519_PUBLIC_KEY", "ENV-PUB")
     monkeypatch.setattr(sa, "derived_public_key", lambda: "ENV-PUB")
-    keys = sa.server_keys(require_env_pair=True)
+    keys = sa.server_keys()
     assert (keys["edPriv"], keys["edPub"]) == ("ENV-PRIVATE-SENTINEL", "ENV-PUB")
     # The x25519 pair is not the signing pair and still comes from the generator.
     assert (keys["xPriv"], keys["xPub"]) == ("GEN-XPRIV", "GEN-XPUB")
+
+
+def test_a_mismatched_env_pair_is_still_refused(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The one refusal kept: a private half whose public half is not the one published would sign licences no renet built with that key accepts."""
+    monkeypatch.setattr(sa, "generate_keys", lambda: dict(FAKE_KEYS))
+    monkeypatch.setenv("ACCOUNT_ED25519_PRIVATE_KEY", "ENV-PRIVATE-SENTINEL")
+    monkeypatch.setenv("ACCOUNT_ED25519_PUBLIC_KEY", "ENV-PUB")
+    monkeypatch.setattr(sa, "derived_public_key", lambda: "OTHER-PUB")
+    with pytest.raises(sa.LegError, match="not one pair"):
+        sa.server_keys()
+
+
+def test_delta_8_emit_pair_prints_two_exports_and_starts_nothing(
+    monkeypatch: pytest.MonkeyPatch, capsys
+) -> None:
+    calls: list[str] = []
+    monkeypatch.setattr(sa, "generate_keys", lambda: dict(FAKE_KEYS))
+    monkeypatch.setattr(sa, "run", lambda _opts: calls.append("run") or 0)
+    assert sa.main(["--emit-pair"]) == 0
+    assert calls == []
+    out = capsys.readouterr().out
+    assert out.splitlines() == [
+        "export ACCOUNT_ED25519_PRIVATE_KEY=GEN-PRIV",
+        "export ACCOUNT_ED25519_PUBLIC_KEY=GEN-PUB",
+    ]
+
+
+def test_delta_8_emit_pair_output_evaluates_to_a_real_pair_in_bash(tmp_path: pathlib.Path) -> None:
+    """The workflow form, run for real: the assignment, the eval, then the two variables are set and the public half is the private half's."""
+    script = (
+        "set -e\n"
+        'pair="$(python3 -m rediacc_ci.testrun.start_account --emit-pair)"\n'
+        'eval "$pair"\n'
+        'test -n "$ACCOUNT_ED25519_PRIVATE_KEY"\n'
+        'node -e \'const c=require("crypto");const k=c.createPrivateKey({key:Buffer.from(process.env.ACCOUNT_ED25519_PRIVATE_KEY,"base64"),format:"der",type:"pkcs8"});process.exit(c.createPublicKey(k).export({type:"spki",format:"der"}).toString("base64")===process.env.ACCOUNT_ED25519_PUBLIC_KEY?0:1)\'\n'
+    )
+    env = {**os.environ, "PYTHONPATH": str(pathlib.Path(sa.__file__).resolve().parents[2])}
+    done = subprocess.run(
+        ["bash", "-c", script], env=env, cwd=tmp_path, capture_output=True, text=True, check=False
+    )
+    assert done.returncode == 0, done.stderr
+
+
+def test_delta_8_a_failed_emit_pair_is_fatal_in_the_workflow_form(tmp_path: pathlib.Path) -> None:
+    """Control for the assignment form: a mint that exits 1 stops `bash -e` before the eval."""
+    fake = tmp_path / "bin"
+    fake.mkdir()
+    (fake / "node").write_text("#!/bin/sh\nexit 1\n")
+    (fake / "node").chmod(0o755)
+    script = (
+        "set -e\n"
+        'pair="$(python3 -m rediacc_ci.testrun.start_account --emit-pair)"\n'
+        'eval "$pair"\n'
+        "echo REACHED\n"
+    )
+    env = {
+        **os.environ,
+        "PATH": f"{fake}:{os.environ['PATH']}",
+        "PYTHONPATH": str(pathlib.Path(sa.__file__).resolve().parents[2]),
+    }
+    done = subprocess.run(
+        ["bash", "-c", script], env=env, cwd=tmp_path, capture_output=True, text=True, check=False
+    )
+    assert done.returncode != 0
+    assert "REACHED" not in done.stdout
 
 
 def _captured_server_env(monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path) -> dict[str, str]:

@@ -8,16 +8,19 @@ name: CT - Tests
 
 on:
   workflow_call:
-    # Every VM/E2E job here installs the run's ONE licence-enforcing renet,
-    # built once by Build (Renet) and uploaded as renet-test-linux-amd64-<sha>
-    # (.github/actions/renet-test-binary), and starts its account server with
-    # the production signing pair, so the licences it issues verify under that
-    # binary (agent/plans/PLAN-free-license.md R2, F2). The two jobs that still
-    # build renet on-runner (test-e2e-backup-browse-at, whose backup plane
-    # signs with its own pair, and test-drills, whose ./rdc.sh builds) share
-    # the embed-assets staging via the renet-embed-assets cache (same key as
-    # ci-build-renet.yml); only the renet-embed-assets job stages it on a
-    # miss, and every job that restores it needs that job.
+    # Every VM/E2E job here starts its own account server with a keypair minted
+    # for that run (start_account, or start_backup_plane in
+    # test-e2e-backup-browse-at), then builds its licence-enforcing renet
+    # on-runner with that run's public key, so the licences the server issues
+    # verify under the renet the job deploys
+    # (agent/plans/PLAN-production-key-only.md D6). The production private key
+    # never reaches a job in this file; test_ci_leg_keys.py fails on a mapping
+    # of it. test-renet-go's leg 1 starts a server too and builds no binary:
+    # its Go tests read the exported public key at run time. Every build
+    # shares the embed-assets staging via the renet-embed-assets cache (same
+    # key as ci-build-renet.yml); only the renet-embed-assets job stages it on
+    # a miss, and every job that restores it needs that job, so each build is
+    # the go build alone.
     inputs:
       # The expensive suites run on PR and nightly only. This used to gate the
       # CALLER (ci.yml's `tests:` job), which is why migration-test could not
@@ -32,9 +35,9 @@ on:
         type: string
         required: false
         default: 'false'
-      # 'false' when the caller's build-renet did not succeed, so no
-      # renet-test-linux-amd64-<sha> artifact exists: the jobs that install it
-      # skip instead of dying in the download (the OPS Tests precedent, run
+      # 'false' when the caller's build-renet did not succeed, so renet does
+      # not build at this commit: the jobs that build it skip instead of
+      # failing the same build once per leg (the OPS Tests precedent, run
       # 37633980671). Empty or 'true' means run; a failed build-renet still
       # reds CI Complete through build-cli.
       renet_built:
@@ -287,9 +290,9 @@ jobs:
     permissions:
       contents: read
     # A superset of every dependent's own `if:` (each requires full_suite, or for
-    # test-e2e-backup-browse-at backup_changed), so no dependent is ever skipped
-    # because this job was.
-    if: inputs.full_suite == 'true' || inputs.backup_changed == 'true'
+    # test-e2e-backup-browse-at backup_changed, or for test-renet-integration
+    # renet_changed), so no dependent is ever skipped because this job was.
+    if: inputs.full_suite == 'true' || inputs.backup_changed == 'true' || inputs.renet_changed == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -366,6 +369,7 @@ jobs:
     permissions:
       contents: read
       packages: read
+    needs: [renet-embed-assets]
     if: inputs.full_suite == 'true' && inputs.run_e2e_workers != 'false' && inputs.renet_built != 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 20 # budget cap, operator ruling #153aace7 (measured max 15.0)
@@ -444,7 +448,6 @@ jobs:
             DOCKERHUB_TOKEN > BWS_DOCKERHUB_TOKEN
             DOCKERHUB_USERNAME > BWS_DOCKERHUB_USERNAME
             GITHUB_APP_ID > BWS_APP_ID
-            ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY
       - uses: ./.github/actions/app-token
         id: app-token
         with:
@@ -492,35 +495,35 @@ jobs:
       - name: Install CLI Globally
         run: PYTHONPATH=.ci python3 -m rediacc_ci.setup.install_cli_global
 
-      # Step-scoped (.ci/config/bws-step-scoped.json, check:ci-bws-step-scope): this
-      # fetch serves the next step only, and the scrub after it blanks the key.
-      - name: Fetch the step-scoped signing key(s) for the next step only
-        uses: ./.github/actions/bws-secrets
-        with:
-          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
-          secrets: |
-            ACCOUNT_ED25519_PRIVATE_KEY > BWS_ACCOUNT_ED25519_PRIVATE_KEY
-      # The per-run account server, signing with the PRODUCTION ED25519 pair
-      # from Bitwarden (agent/plans/PLAN-free-license.md R2), so every licence
-      # it issues verifies under the run's one production-keyed renet, which
-      # the next step installs from Build (Renet) instead of building it here.
-      # It exports the public half as ACCOUNT_ED25519_PUBLIC_KEY, with
-      # REDIACC_ACCOUNT_SERVER and E2E_ACCOUNT_API_TOKEN, to $GITHUB_ENV; the
-      # private half reaches this step's environment only, and with
-      # --require-env-pair start_account refuses to mint a throwaway pair.
+      # The per-run account server (agent/plans/PLAN-production-key-only.md
+      # D6). It mints this run's ED25519 pair and exports the PUBLIC half as
+      # ACCOUNT_ED25519_PUBLIC_KEY, with REDIACC_ACCOUNT_SERVER and
+      # E2E_ACCOUNT_API_TOKEN, to $GITHUB_ENV; renet is built after it with that
+      # key, so every licence this server signs verifies under the renet the
+      # leg deploys. The production private key never reaches this job.
       - name: Start the per-run account server
-        env:
-          ACCOUNT_ED25519_PRIVATE_KEY: ${{ env.BWS_ACCOUNT_ED25519_PRIVATE_KEY }}
-          ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_account --port 4900 --require-env-pair
-      - name: Blank the step-scoped signing key(s) for the rest of the job
-        if: always()
-        uses: ./.github/actions/bws-scrub
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_account --port 4900
+      # This leg's renet, built AFTER the account server so it bakes the
+      # per-run public key start_account just exported to $GITHUB_ENV
+      # (agent/plans/PLAN-production-key-only.md D6); build_renet's key gate
+      # refuses a binary that does not bake it. The embed assets come from the
+      # renet-embed-assets cache this job needs, so the build is the go build
+      # alone; restore-only, the stager job is the one writer.
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: embed-cache
         with:
-          names: |
-            BWS_ACCOUNT_ED25519_PRIVATE_KEY
-      - name: Install the shared renet
-        uses: ./.github/actions/renet-test-binary
+          path: private/renet/pkg/embed/assets
+          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
+      # Pre-pulled only on a cache miss: a hit makes build_renet's embed_assets
+      # step a verified no-op, so these base images are never fetched.
+      - name: Pre-pull Docker base images (avoid buildx auth issues)
+        if: steps.embed-cache.outputs.cache-hit != 'true'
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.docker_prepull debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
+      - name: Build renet with the per-run key
+        id: build-renet
+        env:
+          RENET_EMBED_CACHE_HIT: ${{ steps.embed-cache.outputs.cache-hit }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet
       - name: Install renet
         run: sudo cp "$RENET_BINARY" /usr/bin/renet && sudo chmod +x /usr/bin/renet
 
@@ -667,6 +670,7 @@ jobs:
     permissions:
       contents: read
       packages: read
+    needs: [renet-embed-assets]
     if: inputs.full_suite == 'true' && inputs.run_e2e_ceph != 'false' && inputs.renet_built != 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -693,7 +697,6 @@ jobs:
             DOCKERHUB_TOKEN > BWS_DOCKERHUB_TOKEN
             DOCKERHUB_USERNAME > BWS_DOCKERHUB_USERNAME
             GITHUB_APP_ID > BWS_APP_ID
-            ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY
       - uses: ./.github/actions/app-token
         id: app-token
         with:
@@ -735,35 +738,35 @@ jobs:
       # The Ceph suites drive renet over SSH through RenetFunctionsTestRunner, and the only consumer of the CLI bundle or `rdc` on PATH is CliRunner, which no suite under tests/ceph imports.
       # The E2E Workers jobs keep both steps.
 
-      # Step-scoped (.ci/config/bws-step-scoped.json, check:ci-bws-step-scope): this
-      # fetch serves the next step only, and the scrub after it blanks the key.
-      - name: Fetch the step-scoped signing key(s) for the next step only
-        uses: ./.github/actions/bws-secrets
-        with:
-          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
-          secrets: |
-            ACCOUNT_ED25519_PRIVATE_KEY > BWS_ACCOUNT_ED25519_PRIVATE_KEY
-      # The per-run account server, signing with the PRODUCTION ED25519 pair
-      # from Bitwarden (agent/plans/PLAN-free-license.md R2), so every licence
-      # it issues verifies under the run's one production-keyed renet, which
-      # the next step installs from Build (Renet) instead of building it here.
-      # It exports the public half as ACCOUNT_ED25519_PUBLIC_KEY, with
-      # REDIACC_ACCOUNT_SERVER and E2E_ACCOUNT_API_TOKEN, to $GITHUB_ENV; the
-      # private half reaches this step's environment only, and with
-      # --require-env-pair start_account refuses to mint a throwaway pair.
+      # The per-run account server (agent/plans/PLAN-production-key-only.md
+      # D6). It mints this run's ED25519 pair and exports the PUBLIC half as
+      # ACCOUNT_ED25519_PUBLIC_KEY, with REDIACC_ACCOUNT_SERVER and
+      # E2E_ACCOUNT_API_TOKEN, to $GITHUB_ENV; renet is built after it with that
+      # key, so every licence this server signs verifies under the renet the
+      # leg deploys. The production private key never reaches this job.
       - name: Start the per-run account server
-        env:
-          ACCOUNT_ED25519_PRIVATE_KEY: ${{ env.BWS_ACCOUNT_ED25519_PRIVATE_KEY }}
-          ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_account --port 4900 --require-env-pair
-      - name: Blank the step-scoped signing key(s) for the rest of the job
-        if: always()
-        uses: ./.github/actions/bws-scrub
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_account --port 4900
+      # This leg's renet, built AFTER the account server so it bakes the
+      # per-run public key start_account just exported to $GITHUB_ENV
+      # (agent/plans/PLAN-production-key-only.md D6); build_renet's key gate
+      # refuses a binary that does not bake it. The embed assets come from the
+      # renet-embed-assets cache this job needs, so the build is the go build
+      # alone; restore-only, the stager job is the one writer.
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: embed-cache
         with:
-          names: |
-            BWS_ACCOUNT_ED25519_PRIVATE_KEY
-      - name: Install the shared renet
-        uses: ./.github/actions/renet-test-binary
+          path: private/renet/pkg/embed/assets
+          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
+      # Pre-pulled only on a cache miss: a hit makes build_renet's embed_assets
+      # step a verified no-op, so these base images are never fetched.
+      - name: Pre-pull Docker base images (avoid buildx auth issues)
+        if: steps.embed-cache.outputs.cache-hit != 'true'
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.docker_prepull debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
+      - name: Build renet with the per-run key
+        id: build-renet
+        env:
+          RENET_EMBED_CACHE_HIT: ${{ steps.embed-cache.outputs.cache-hit }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet
       - name: Install renet
         run: sudo cp "$RENET_BINARY" /usr/bin/renet && sudo chmod +x /usr/bin/renet
 
@@ -844,6 +847,7 @@ jobs:
     permissions:
       contents: read
       packages: read
+    needs: [renet-embed-assets]
     if: inputs.full_suite == 'true' && inputs.run_e2e_ceph_workers != 'false' && inputs.renet_built != 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 20 # budget cap, operator ruling #153aace7 (measured max 15.1)
@@ -873,7 +877,6 @@ jobs:
             DOCKERHUB_TOKEN > BWS_DOCKERHUB_TOKEN
             DOCKERHUB_USERNAME > BWS_DOCKERHUB_USERNAME
             GITHUB_APP_ID > BWS_APP_ID
-            ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY
       - uses: ./.github/actions/app-token
         id: app-token
         with:
@@ -915,35 +918,35 @@ jobs:
       - name: Install CLI Globally
         run: PYTHONPATH=.ci python3 -m rediacc_ci.setup.install_cli_global
 
-      # Step-scoped (.ci/config/bws-step-scoped.json, check:ci-bws-step-scope): this
-      # fetch serves the next step only, and the scrub after it blanks the key.
-      - name: Fetch the step-scoped signing key(s) for the next step only
-        uses: ./.github/actions/bws-secrets
-        with:
-          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
-          secrets: |
-            ACCOUNT_ED25519_PRIVATE_KEY > BWS_ACCOUNT_ED25519_PRIVATE_KEY
-      # The per-run account server, signing with the PRODUCTION ED25519 pair
-      # from Bitwarden (agent/plans/PLAN-free-license.md R2), so every licence
-      # it issues verifies under the run's one production-keyed renet, which
-      # the next step installs from Build (Renet) instead of building it here.
-      # It exports the public half as ACCOUNT_ED25519_PUBLIC_KEY, with
-      # REDIACC_ACCOUNT_SERVER and E2E_ACCOUNT_API_TOKEN, to $GITHUB_ENV; the
-      # private half reaches this step's environment only, and with
-      # --require-env-pair start_account refuses to mint a throwaway pair.
+      # The per-run account server (agent/plans/PLAN-production-key-only.md
+      # D6). It mints this run's ED25519 pair and exports the PUBLIC half as
+      # ACCOUNT_ED25519_PUBLIC_KEY, with REDIACC_ACCOUNT_SERVER and
+      # E2E_ACCOUNT_API_TOKEN, to $GITHUB_ENV; renet is built after it with that
+      # key, so every licence this server signs verifies under the renet the
+      # leg deploys. The production private key never reaches this job.
       - name: Start the per-run account server
-        env:
-          ACCOUNT_ED25519_PRIVATE_KEY: ${{ env.BWS_ACCOUNT_ED25519_PRIVATE_KEY }}
-          ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_account --port 4900 --require-env-pair
-      - name: Blank the step-scoped signing key(s) for the rest of the job
-        if: always()
-        uses: ./.github/actions/bws-scrub
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_account --port 4900
+      # This leg's renet, built AFTER the account server so it bakes the
+      # per-run public key start_account just exported to $GITHUB_ENV
+      # (agent/plans/PLAN-production-key-only.md D6); build_renet's key gate
+      # refuses a binary that does not bake it. The embed assets come from the
+      # renet-embed-assets cache this job needs, so the build is the go build
+      # alone; restore-only, the stager job is the one writer.
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: embed-cache
         with:
-          names: |
-            BWS_ACCOUNT_ED25519_PRIVATE_KEY
-      - name: Install the shared renet
-        uses: ./.github/actions/renet-test-binary
+          path: private/renet/pkg/embed/assets
+          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
+      # Pre-pulled only on a cache miss: a hit makes build_renet's embed_assets
+      # step a verified no-op, so these base images are never fetched.
+      - name: Pre-pull Docker base images (avoid buildx auth issues)
+        if: steps.embed-cache.outputs.cache-hit != 'true'
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.docker_prepull debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
+      - name: Build renet with the per-run key
+        id: build-renet
+        env:
+          RENET_EMBED_CACHE_HIT: ${{ steps.embed-cache.outputs.cache-hit }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet
       - name: Install renet
         run: sudo cp "$RENET_BINARY" /usr/bin/renet && sudo chmod +x /usr/bin/renet
 
@@ -1206,7 +1209,7 @@ jobs:
     permissions:
       contents: read
       packages: read
-    needs: [renet-pkg-scope]
+    needs: [renet-pkg-scope, renet-embed-assets]
     if: needs.renet-pkg-scope.outputs.hit == 'true' && inputs.renet_built != 'false'
     runs-on: ubuntu-latest
     # A named exemption from the 15-minute job budget, every matrix leg: p90 16
@@ -1245,7 +1248,6 @@ jobs:
             DOCKERHUB_TOKEN > BWS_DOCKERHUB_TOKEN
             DOCKERHUB_USERNAME > BWS_DOCKERHUB_USERNAME
             GITHUB_APP_ID > BWS_APP_ID
-            ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY
       - uses: ./.github/actions/app-token
         id: app-token
         with:
@@ -1283,35 +1285,35 @@ jobs:
       - run: PYTHONPATH=.ci python3 -m rediacc_ci.build.build_cli
       - name: Install CLI Globally
         run: PYTHONPATH=.ci python3 -m rediacc_ci.setup.install_cli_global
-      # Step-scoped (.ci/config/bws-step-scoped.json, check:ci-bws-step-scope): this
-      # fetch serves the next step only, and the scrub after it blanks the key.
-      - name: Fetch the step-scoped signing key(s) for the next step only
-        uses: ./.github/actions/bws-secrets
-        with:
-          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
-          secrets: |
-            ACCOUNT_ED25519_PRIVATE_KEY > BWS_ACCOUNT_ED25519_PRIVATE_KEY
-      # The per-run account server, signing with the PRODUCTION ED25519 pair
-      # from Bitwarden (agent/plans/PLAN-free-license.md R2), so every licence
-      # it issues verifies under the run's one production-keyed renet, which
-      # the next step installs from Build (Renet) instead of building it here.
-      # It exports the public half as ACCOUNT_ED25519_PUBLIC_KEY, with
-      # REDIACC_ACCOUNT_SERVER and E2E_ACCOUNT_API_TOKEN, to $GITHUB_ENV; the
-      # private half reaches this step's environment only, and with
-      # --require-env-pair start_account refuses to mint a throwaway pair.
+      # The per-run account server (agent/plans/PLAN-production-key-only.md
+      # D6). It mints this run's ED25519 pair and exports the PUBLIC half as
+      # ACCOUNT_ED25519_PUBLIC_KEY, with REDIACC_ACCOUNT_SERVER and
+      # E2E_ACCOUNT_API_TOKEN, to $GITHUB_ENV; renet is built after it with that
+      # key, so every licence this server signs verifies under the renet the
+      # leg deploys. The production private key never reaches this job.
       - name: Start the per-run account server
-        env:
-          ACCOUNT_ED25519_PRIVATE_KEY: ${{ env.BWS_ACCOUNT_ED25519_PRIVATE_KEY }}
-          ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_account --port 4900 --require-env-pair
-      - name: Blank the step-scoped signing key(s) for the rest of the job
-        if: always()
-        uses: ./.github/actions/bws-scrub
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_account --port 4900
+      # This leg's renet, built AFTER the account server so it bakes the
+      # per-run public key start_account just exported to $GITHUB_ENV
+      # (agent/plans/PLAN-production-key-only.md D6); build_renet's key gate
+      # refuses a binary that does not bake it. The embed assets come from the
+      # renet-embed-assets cache this job needs, so the build is the go build
+      # alone; restore-only, the stager job is the one writer.
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: embed-cache
         with:
-          names: |
-            BWS_ACCOUNT_ED25519_PRIVATE_KEY
-      - name: Install the shared renet
-        uses: ./.github/actions/renet-test-binary
+          path: private/renet/pkg/embed/assets
+          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
+      # Pre-pulled only on a cache miss: a hit makes build_renet's embed_assets
+      # step a verified no-op, so these base images are never fetched.
+      - name: Pre-pull Docker base images (avoid buildx auth issues)
+        if: steps.embed-cache.outputs.cache-hit != 'true'
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.docker_prepull debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
+      - name: Build renet with the per-run key
+        id: build-renet
+        env:
+          RENET_EMBED_CACHE_HIT: ${{ steps.embed-cache.outputs.cache-hit }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet
       - name: Install renet
         run: sudo cp "$RENET_BINARY" /usr/bin/renet && sudo chmod +x /usr/bin/renet
       # The stock image cache E2E Workers saves for this distro
@@ -1396,6 +1398,7 @@ jobs:
     permissions:
       contents: read
       packages: read
+    needs: [renet-embed-assets]
     if: inputs.full_suite == 'true' && inputs.run_e2e_k8s != 'false' && inputs.renet_built != 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -1423,7 +1426,6 @@ jobs:
             DOCKERHUB_TOKEN > BWS_DOCKERHUB_TOKEN
             DOCKERHUB_USERNAME > BWS_DOCKERHUB_USERNAME
             GITHUB_APP_ID > BWS_APP_ID
-            ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY
       - uses: ./.github/actions/app-token
         id: app-token
         with:
@@ -1465,35 +1467,35 @@ jobs:
       - name: Install CLI Globally
         run: PYTHONPATH=.ci python3 -m rediacc_ci.setup.install_cli_global
 
-      # Step-scoped (.ci/config/bws-step-scoped.json, check:ci-bws-step-scope): this
-      # fetch serves the next step only, and the scrub after it blanks the key.
-      - name: Fetch the step-scoped signing key(s) for the next step only
-        uses: ./.github/actions/bws-secrets
-        with:
-          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
-          secrets: |
-            ACCOUNT_ED25519_PRIVATE_KEY > BWS_ACCOUNT_ED25519_PRIVATE_KEY
-      # The per-run account server, signing with the PRODUCTION ED25519 pair
-      # from Bitwarden (agent/plans/PLAN-free-license.md R2), so every licence
-      # it issues verifies under the run's one production-keyed renet, which
-      # the next step installs from Build (Renet) instead of building it here.
-      # It exports the public half as ACCOUNT_ED25519_PUBLIC_KEY, with
-      # REDIACC_ACCOUNT_SERVER and E2E_ACCOUNT_API_TOKEN, to $GITHUB_ENV; the
-      # private half reaches this step's environment only, and with
-      # --require-env-pair start_account refuses to mint a throwaway pair.
+      # The per-run account server (agent/plans/PLAN-production-key-only.md
+      # D6). It mints this run's ED25519 pair and exports the PUBLIC half as
+      # ACCOUNT_ED25519_PUBLIC_KEY, with REDIACC_ACCOUNT_SERVER and
+      # E2E_ACCOUNT_API_TOKEN, to $GITHUB_ENV; renet is built after it with that
+      # key, so every licence this server signs verifies under the renet the
+      # leg deploys. The production private key never reaches this job.
       - name: Start the per-run account server
-        env:
-          ACCOUNT_ED25519_PRIVATE_KEY: ${{ env.BWS_ACCOUNT_ED25519_PRIVATE_KEY }}
-          ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_account --port 4900 --require-env-pair
-      - name: Blank the step-scoped signing key(s) for the rest of the job
-        if: always()
-        uses: ./.github/actions/bws-scrub
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_account --port 4900
+      # This leg's renet, built AFTER the account server so it bakes the
+      # per-run public key start_account just exported to $GITHUB_ENV
+      # (agent/plans/PLAN-production-key-only.md D6); build_renet's key gate
+      # refuses a binary that does not bake it. The embed assets come from the
+      # renet-embed-assets cache this job needs, so the build is the go build
+      # alone; restore-only, the stager job is the one writer.
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: embed-cache
         with:
-          names: |
-            BWS_ACCOUNT_ED25519_PRIVATE_KEY
-      - name: Install the shared renet
-        uses: ./.github/actions/renet-test-binary
+          path: private/renet/pkg/embed/assets
+          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
+      # Pre-pulled only on a cache miss: a hit makes build_renet's embed_assets
+      # step a verified no-op, so these base images are never fetched.
+      - name: Pre-pull Docker base images (avoid buildx auth issues)
+        if: steps.embed-cache.outputs.cache-hit != 'true'
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.docker_prepull debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
+      - name: Build renet with the per-run key
+        id: build-renet
+        env:
+          RENET_EMBED_CACHE_HIT: ${{ steps.embed-cache.outputs.cache-hit }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet
       - name: Install renet
         run: sudo cp "$RENET_BINARY" /usr/bin/renet && sudo chmod +x /usr/bin/renet
 
@@ -1573,6 +1575,7 @@ jobs:
     permissions:
       contents: read
       packages: read
+    needs: [renet-embed-assets]
     if: inputs.full_suite == 'true' && inputs.run_e2e_k8s_ceph != 'false' && inputs.renet_built != 'false'
     runs-on: ubuntu-latest
     # A named exemption from the 15-minute job budget: p90 20 / timeout-minutes
@@ -1605,7 +1608,6 @@ jobs:
             DOCKERHUB_TOKEN > BWS_DOCKERHUB_TOKEN
             DOCKERHUB_USERNAME > BWS_DOCKERHUB_USERNAME
             GITHUB_APP_ID > BWS_APP_ID
-            ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY
       - uses: ./.github/actions/app-token
         id: app-token
         with:
@@ -1647,35 +1649,35 @@ jobs:
       - name: Install CLI Globally
         run: PYTHONPATH=.ci python3 -m rediacc_ci.setup.install_cli_global
 
-      # Step-scoped (.ci/config/bws-step-scoped.json, check:ci-bws-step-scope): this
-      # fetch serves the next step only, and the scrub after it blanks the key.
-      - name: Fetch the step-scoped signing key(s) for the next step only
-        uses: ./.github/actions/bws-secrets
-        with:
-          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
-          secrets: |
-            ACCOUNT_ED25519_PRIVATE_KEY > BWS_ACCOUNT_ED25519_PRIVATE_KEY
-      # The per-run account server, signing with the PRODUCTION ED25519 pair
-      # from Bitwarden (agent/plans/PLAN-free-license.md R2), so every licence
-      # it issues verifies under the run's one production-keyed renet, which
-      # the next step installs from Build (Renet) instead of building it here.
-      # It exports the public half as ACCOUNT_ED25519_PUBLIC_KEY, with
-      # REDIACC_ACCOUNT_SERVER and E2E_ACCOUNT_API_TOKEN, to $GITHUB_ENV; the
-      # private half reaches this step's environment only, and with
-      # --require-env-pair start_account refuses to mint a throwaway pair.
+      # The per-run account server (agent/plans/PLAN-production-key-only.md
+      # D6). It mints this run's ED25519 pair and exports the PUBLIC half as
+      # ACCOUNT_ED25519_PUBLIC_KEY, with REDIACC_ACCOUNT_SERVER and
+      # E2E_ACCOUNT_API_TOKEN, to $GITHUB_ENV; renet is built after it with that
+      # key, so every licence this server signs verifies under the renet the
+      # leg deploys. The production private key never reaches this job.
       - name: Start the per-run account server
-        env:
-          ACCOUNT_ED25519_PRIVATE_KEY: ${{ env.BWS_ACCOUNT_ED25519_PRIVATE_KEY }}
-          ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_account --port 4900 --require-env-pair
-      - name: Blank the step-scoped signing key(s) for the rest of the job
-        if: always()
-        uses: ./.github/actions/bws-scrub
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_account --port 4900
+      # This leg's renet, built AFTER the account server so it bakes the
+      # per-run public key start_account just exported to $GITHUB_ENV
+      # (agent/plans/PLAN-production-key-only.md D6); build_renet's key gate
+      # refuses a binary that does not bake it. The embed assets come from the
+      # renet-embed-assets cache this job needs, so the build is the go build
+      # alone; restore-only, the stager job is the one writer.
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: embed-cache
         with:
-          names: |
-            BWS_ACCOUNT_ED25519_PRIVATE_KEY
-      - name: Install the shared renet
-        uses: ./.github/actions/renet-test-binary
+          path: private/renet/pkg/embed/assets
+          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
+      # Pre-pulled only on a cache miss: a hit makes build_renet's embed_assets
+      # step a verified no-op, so these base images are never fetched.
+      - name: Pre-pull Docker base images (avoid buildx auth issues)
+        if: steps.embed-cache.outputs.cache-hit != 'true'
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.docker_prepull debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
+      - name: Build renet with the per-run key
+        id: build-renet
+        env:
+          RENET_EMBED_CACHE_HIT: ${{ steps.embed-cache.outputs.cache-hit }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet
       - name: Install renet
         run: sudo cp "$RENET_BINARY" /usr/bin/renet && sudo chmod +x /usr/bin/renet
 
@@ -1759,6 +1761,7 @@ jobs:
     permissions:
       contents: read
       packages: read
+    needs: [renet-embed-assets]
     if: inputs.full_suite == 'true' && inputs.run_e2e_k8s_multinode != 'false' && inputs.renet_built != 'false'
     runs-on: ubuntu-latest
     # 100 -> 30: a named exemption from the 15-minute job budget, p90 25 /
@@ -1791,7 +1794,6 @@ jobs:
             DOCKERHUB_TOKEN > BWS_DOCKERHUB_TOKEN
             DOCKERHUB_USERNAME > BWS_DOCKERHUB_USERNAME
             GITHUB_APP_ID > BWS_APP_ID
-            ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY
       - uses: ./.github/actions/app-token
         id: app-token
         with:
@@ -1842,22 +1844,12 @@ jobs:
       - name: Install CLI Globally
         run: PYTHONPATH=.ci python3 -m rediacc_ci.setup.install_cli_global
 
-      # Step-scoped (.ci/config/bws-step-scoped.json, check:ci-bws-step-scope): this
-      # fetch serves the next step only, and the scrub after it blanks the key.
-      - name: Fetch the step-scoped signing key(s) for the next step only
-        uses: ./.github/actions/bws-secrets
-        with:
-          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
-          secrets: |
-            ACCOUNT_ED25519_PRIVATE_KEY > BWS_ACCOUNT_ED25519_PRIVATE_KEY
-      # The per-run account server, signing with the PRODUCTION ED25519 pair
-      # from Bitwarden (agent/plans/PLAN-free-license.md R2), so every licence
-      # it issues verifies under the run's one production-keyed renet, which
-      # the next step installs from Build (Renet) instead of building it here.
-      # It exports the public half as ACCOUNT_ED25519_PUBLIC_KEY, with
-      # REDIACC_ACCOUNT_SERVER and E2E_ACCOUNT_API_TOKEN, to $GITHUB_ENV; the
-      # private half reaches this step's environment only, and with
-      # --require-env-pair start_account refuses to mint a throwaway pair.
+      # The per-run account server (agent/plans/PLAN-production-key-only.md
+      # D6). It mints this run's ED25519 pair and exports the PUBLIC half as
+      # ACCOUNT_ED25519_PUBLIC_KEY, with REDIACC_ACCOUNT_SERVER and
+      # E2E_ACCOUNT_API_TOKEN, to $GITHUB_ENV; renet is built after it with that
+      # key, so every licence this server signs verifies under the renet the
+      # leg deploys. The production private key never reaches this job.
       #
       # It is also suite 24's ACCOUNT tier: an account server and a subscription
       # token, no VMs. Its assertions are all pre-flight refusals
@@ -1870,18 +1862,28 @@ jobs:
       # rather than a skip. There is no arrangement here where the tier silently
       # does not run.
       - name: Start account server for the cluster-licensing suite
-        env:
-          ACCOUNT_ED25519_PRIVATE_KEY: ${{ env.BWS_ACCOUNT_ED25519_PRIVATE_KEY }}
-          ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_account --port 4900 --require-env-pair
-      - name: Blank the step-scoped signing key(s) for the rest of the job
-        if: always()
-        uses: ./.github/actions/bws-scrub
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_account --port 4900
+      # This leg's renet, built AFTER the account server so it bakes the
+      # per-run public key start_account just exported to $GITHUB_ENV
+      # (agent/plans/PLAN-production-key-only.md D6); build_renet's key gate
+      # refuses a binary that does not bake it. The embed assets come from the
+      # renet-embed-assets cache this job needs, so the build is the go build
+      # alone; restore-only, the stager job is the one writer.
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: embed-cache
         with:
-          names: |
-            BWS_ACCOUNT_ED25519_PRIVATE_KEY
-      - name: Install the shared renet
-        uses: ./.github/actions/renet-test-binary
+          path: private/renet/pkg/embed/assets
+          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
+      # Pre-pulled only on a cache miss: a hit makes build_renet's embed_assets
+      # step a verified no-op, so these base images are never fetched.
+      - name: Pre-pull Docker base images (avoid buildx auth issues)
+        if: steps.embed-cache.outputs.cache-hit != 'true'
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.docker_prepull debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
+      - name: Build renet with the per-run key
+        id: build-renet
+        env:
+          RENET_EMBED_CACHE_HIT: ${{ steps.embed-cache.outputs.cache-hit }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet
       - name: Install renet
         run: sudo cp "$RENET_BINARY" /usr/bin/renet && sudo chmod +x /usr/bin/renet
 
@@ -2078,10 +2080,10 @@ jobs:
       # Staged embed-assets cache, shared with Build (Renet) via the same key
       # (see ci-build-renet.yml). On a hit, build.sh's content-based receipt
       # makes embed_assets a verified no-op, skipping the ~10-25 min Docker
-      # builder staging. The go build stays on-runner in this job alone: the
-      # backup plane signs with a pair of its own (start_backup_plane), so renet
-      # is rebuilt with that key after the plane starts, and the run's shared
-      # production-keyed renet (agent/plans/PLAN-free-license.md F2) cannot serve.
+      # builder staging. The backup plane signs with a pair of its own
+      # (start_backup_plane, agent/plans/PLAN-production-key-only.md D6), so
+      # renet is rebuilt with that key after the plane starts; the first build
+      # below exists only because the plane needs VMs and they need a renet.
       - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         id: embed-cache
         with:
@@ -2253,6 +2255,7 @@ jobs:
     permissions:
       contents: read
       packages: read
+    needs: [renet-embed-assets]
     if: inputs.full_suite == 'true' && inputs.run_e2e_migrate != 'false' && inputs.renet_built != 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -2288,7 +2291,6 @@ jobs:
             DOCKERHUB_TOKEN > BWS_DOCKERHUB_TOKEN
             DOCKERHUB_USERNAME > BWS_DOCKERHUB_USERNAME
             GITHUB_APP_ID > BWS_APP_ID
-            ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY
       - uses: ./.github/actions/app-token
         id: app-token
         with:
@@ -2330,35 +2332,35 @@ jobs:
       - name: Install CLI Globally
         run: PYTHONPATH=.ci python3 -m rediacc_ci.setup.install_cli_global
 
-      # Step-scoped (.ci/config/bws-step-scoped.json, check:ci-bws-step-scope): this
-      # fetch serves the next step only, and the scrub after it blanks the key.
-      - name: Fetch the step-scoped signing key(s) for the next step only
-        uses: ./.github/actions/bws-secrets
-        with:
-          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
-          secrets: |
-            ACCOUNT_ED25519_PRIVATE_KEY > BWS_ACCOUNT_ED25519_PRIVATE_KEY
-      # The per-run account server, signing with the PRODUCTION ED25519 pair
-      # from Bitwarden (agent/plans/PLAN-free-license.md R2), so every licence
-      # it issues verifies under the run's one production-keyed renet, which
-      # the next step installs from Build (Renet) instead of building it here.
-      # It exports the public half as ACCOUNT_ED25519_PUBLIC_KEY, with
-      # REDIACC_ACCOUNT_SERVER and E2E_ACCOUNT_API_TOKEN, to $GITHUB_ENV; the
-      # private half reaches this step's environment only, and with
-      # --require-env-pair start_account refuses to mint a throwaway pair.
+      # The per-run account server (agent/plans/PLAN-production-key-only.md
+      # D6). It mints this run's ED25519 pair and exports the PUBLIC half as
+      # ACCOUNT_ED25519_PUBLIC_KEY, with REDIACC_ACCOUNT_SERVER and
+      # E2E_ACCOUNT_API_TOKEN, to $GITHUB_ENV; renet is built after it with that
+      # key, so every licence this server signs verifies under the renet the
+      # leg deploys. The production private key never reaches this job.
       - name: Start the per-run account server
-        env:
-          ACCOUNT_ED25519_PRIVATE_KEY: ${{ env.BWS_ACCOUNT_ED25519_PRIVATE_KEY }}
-          ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_account --port 4900 --require-env-pair
-      - name: Blank the step-scoped signing key(s) for the rest of the job
-        if: always()
-        uses: ./.github/actions/bws-scrub
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_account --port 4900
+      # This leg's renet, built AFTER the account server so it bakes the
+      # per-run public key start_account just exported to $GITHUB_ENV
+      # (agent/plans/PLAN-production-key-only.md D6); build_renet's key gate
+      # refuses a binary that does not bake it. The embed assets come from the
+      # renet-embed-assets cache this job needs, so the build is the go build
+      # alone; restore-only, the stager job is the one writer.
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: embed-cache
         with:
-          names: |
-            BWS_ACCOUNT_ED25519_PRIVATE_KEY
-      - name: Install the shared renet
-        uses: ./.github/actions/renet-test-binary
+          path: private/renet/pkg/embed/assets
+          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
+      # Pre-pulled only on a cache miss: a hit makes build_renet's embed_assets
+      # step a verified no-op, so these base images are never fetched.
+      - name: Pre-pull Docker base images (avoid buildx auth issues)
+        if: steps.embed-cache.outputs.cache-hit != 'true'
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.docker_prepull debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
+      - name: Build renet with the per-run key
+        id: build-renet
+        env:
+          RENET_EMBED_CACHE_HIT: ${{ steps.embed-cache.outputs.cache-hit }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet
       - name: Install renet
         run: sudo cp "$RENET_BINARY" /usr/bin/renet && sudo chmod +x /usr/bin/renet
 
@@ -2458,6 +2460,7 @@ jobs:
     permissions:
       contents: read
       packages: read
+    needs: [renet-embed-assets]
     if: inputs.full_suite == 'true' && inputs.run_fork_isolation != 'false' && inputs.renet_built != 'false'
     runs-on: ubuntu-latest
     # 35 -> 15 (T4.1, PLAN-ci-time-budget): measured max 9.7 min since
@@ -2485,7 +2488,6 @@ jobs:
             DOCKERHUB_TOKEN > BWS_DOCKERHUB_TOKEN
             DOCKERHUB_USERNAME > BWS_DOCKERHUB_USERNAME
             GITHUB_APP_ID > BWS_APP_ID
-            ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY
       - uses: ./.github/actions/app-token
         id: app-token
         with:
@@ -2527,35 +2529,35 @@ jobs:
       - name: Install CLI Globally
         run: PYTHONPATH=.ci python3 -m rediacc_ci.setup.install_cli_global
 
-      # Step-scoped (.ci/config/bws-step-scoped.json, check:ci-bws-step-scope): this
-      # fetch serves the next step only, and the scrub after it blanks the key.
-      - name: Fetch the step-scoped signing key(s) for the next step only
-        uses: ./.github/actions/bws-secrets
-        with:
-          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
-          secrets: |
-            ACCOUNT_ED25519_PRIVATE_KEY > BWS_ACCOUNT_ED25519_PRIVATE_KEY
-      # The per-run account server, signing with the PRODUCTION ED25519 pair
-      # from Bitwarden (agent/plans/PLAN-free-license.md R2), so every licence
-      # it issues verifies under the run's one production-keyed renet, which
-      # the next step installs from Build (Renet) instead of building it here.
-      # It exports the public half as ACCOUNT_ED25519_PUBLIC_KEY, with
-      # REDIACC_ACCOUNT_SERVER and E2E_ACCOUNT_API_TOKEN, to $GITHUB_ENV; the
-      # private half reaches this step's environment only, and with
-      # --require-env-pair start_account refuses to mint a throwaway pair.
+      # The per-run account server (agent/plans/PLAN-production-key-only.md
+      # D6). It mints this run's ED25519 pair and exports the PUBLIC half as
+      # ACCOUNT_ED25519_PUBLIC_KEY, with REDIACC_ACCOUNT_SERVER and
+      # E2E_ACCOUNT_API_TOKEN, to $GITHUB_ENV; renet is built after it with that
+      # key, so every licence this server signs verifies under the renet the
+      # leg deploys. The production private key never reaches this job.
       - name: Start the per-run account server
-        env:
-          ACCOUNT_ED25519_PRIVATE_KEY: ${{ env.BWS_ACCOUNT_ED25519_PRIVATE_KEY }}
-          ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_account --port 4900 --require-env-pair
-      - name: Blank the step-scoped signing key(s) for the rest of the job
-        if: always()
-        uses: ./.github/actions/bws-scrub
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_account --port 4900
+      # This leg's renet, built AFTER the account server so it bakes the
+      # per-run public key start_account just exported to $GITHUB_ENV
+      # (agent/plans/PLAN-production-key-only.md D6); build_renet's key gate
+      # refuses a binary that does not bake it. The embed assets come from the
+      # renet-embed-assets cache this job needs, so the build is the go build
+      # alone; restore-only, the stager job is the one writer.
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: embed-cache
         with:
-          names: |
-            BWS_ACCOUNT_ED25519_PRIVATE_KEY
-      - name: Install the shared renet
-        uses: ./.github/actions/renet-test-binary
+          path: private/renet/pkg/embed/assets
+          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
+      # Pre-pulled only on a cache miss: a hit makes build_renet's embed_assets
+      # step a verified no-op, so these base images are never fetched.
+      - name: Pre-pull Docker base images (avoid buildx auth issues)
+        if: steps.embed-cache.outputs.cache-hit != 'true'
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.docker_prepull debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
+      - name: Build renet with the per-run key
+        id: build-renet
+        env:
+          RENET_EMBED_CACHE_HIT: ${{ steps.embed-cache.outputs.cache-hit }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet
       - name: Add renet to PATH
         run: sudo cp "$RENET_BINARY" /usr/bin/renet && sudo chmod +x /usr/bin/renet
 
@@ -2718,7 +2720,6 @@ jobs:
             DOCKERHUB_TOKEN > BWS_DOCKERHUB_TOKEN
             DOCKERHUB_USERNAME > BWS_DOCKERHUB_USERNAME
             GITHUB_APP_ID > BWS_APP_ID
-            ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY
       - uses: ./.github/actions/app-token
         id: app-token
         with:
@@ -2738,9 +2739,10 @@ jobs:
 
       # Leg 1 runs renet's subscription system tests (RENET_TEST_EXTRA_TIERS
       # below), the only Go tests that drive real issuance, so it starts the
-      # per-run account server the way every VM leg does: the PRODUCTION
-      # ED25519 pair from Bitwarden (agent/plans/PLAN-free-license.md R2, F2)
-      # and --require-env-pair. The tests also call the server's X-API-Key
+      # per-run account server the way every VM leg does, signing with the
+      # pair it mints (agent/plans/PLAN-production-key-only.md D6). No renet
+      # binary is built here: the subscription tests read the exported
+      # ACCOUNT_ED25519_PUBLIC_KEY at run time. The tests also call the server's X-API-Key
       # routes, so this job mints that key first and hands it to the server
       # through the environment; it is masked and never on argv.
       - uses: ./.github/actions/setup-workspace
@@ -2755,27 +2757,9 @@ jobs:
           key="$(openssl rand -hex 32)"
           echo "::add-mask::$key"
           echo "ACCOUNT_SERVER_API_KEY=$key" >> "$GITHUB_ENV"
-      # Step-scoped (.ci/config/bws-step-scoped.json, check:ci-bws-step-scope): this
-      # fetch serves the next step only, and the scrub after it blanks the key.
-      - name: Fetch the step-scoped signing key(s) for the next step only
-        if: ${{ matrix.shard == 1 }}
-        uses: ./.github/actions/bws-secrets
-        with:
-          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
-          secrets: |
-            ACCOUNT_ED25519_PRIVATE_KEY > BWS_ACCOUNT_ED25519_PRIVATE_KEY
       - name: Start the per-run account server
         if: ${{ matrix.shard == 1 }}
-        env:
-          ACCOUNT_ED25519_PRIVATE_KEY: ${{ env.BWS_ACCOUNT_ED25519_PRIVATE_KEY }}
-          ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_account --port 4900 --require-env-pair
-      - name: Blank the step-scoped signing key(s) for the rest of the job
-        if: always()
-        uses: ./.github/actions/bws-scrub
-        with:
-          names: |
-            BWS_ACCOUNT_ED25519_PRIVATE_KEY
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_account --port 4900
       - name: Point the subscription tests at the server root
         if: ${{ matrix.shard == 1 }}
         shell: bash
@@ -2884,6 +2868,7 @@ jobs:
     # scope. Submodules ride the readonly-preset App token.
     permissions:
       contents: read
+    needs: [renet-embed-assets]
     if: ((inputs.full_suite == 'true' && inputs.run_renet != 'false') || inputs.renet_changed == 'true') && inputs.renet_built != 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -2914,7 +2899,6 @@ jobs:
             DOCKERHUB_TOKEN > BWS_DOCKERHUB_TOKEN
             DOCKERHUB_USERNAME > BWS_DOCKERHUB_USERNAME
             GITHUB_APP_ID > BWS_APP_ID
-            ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY
       - uses: ./.github/actions/app-token
         id: app-token
         with:
@@ -2941,38 +2925,37 @@ jobs:
           account: 'true'
           build-packages: 'true'
 
-      # Step-scoped (.ci/config/bws-step-scoped.json, check:ci-bws-step-scope): this
-      # fetch serves the next step only, and the scrub after it blanks the key.
-      - name: Fetch the step-scoped signing key(s) for the next step only
-        uses: ./.github/actions/bws-secrets
-        with:
-          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
-          secrets: |
-            ACCOUNT_ED25519_PRIVATE_KEY > BWS_ACCOUNT_ED25519_PRIVATE_KEY
-      # The per-run account server, signing with the PRODUCTION ED25519 pair from
-      # Bitwarden, so every licence it issues verifies under the production-keyed
-      # renet installed below. It exports the public half as
+      # The per-run account server (agent/plans/PLAN-production-key-only.md
+      # D6). It mints this run's ED25519 pair and exports the PUBLIC half as
       # ACCOUNT_ED25519_PUBLIC_KEY, with REDIACC_ACCOUNT_SERVER and
-      # E2E_ACCOUNT_API_TOKEN, to $GITHUB_ENV; the private half reaches this
-      # step's environment only, and with --require-env-pair start_account
-      # refuses to mint a throwaway pair.
+      # E2E_ACCOUNT_API_TOKEN, to $GITHUB_ENV. The production private key never
+      # reaches this job.
       - name: Start the per-run account server
-        env:
-          ACCOUNT_ED25519_PRIVATE_KEY: ${{ env.BWS_ACCOUNT_ED25519_PRIVATE_KEY }}
-          ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_account --port 4900 --require-env-pair
-      - name: Blank the step-scoped signing key(s) for the rest of the job
-        if: always()
-        uses: ./.github/actions/bws-scrub
-        with:
-          names: |
-            BWS_ACCOUNT_ED25519_PRIVATE_KEY
-      # The run's one licence-enforcing renet from Build (Renet), key-gated, in
-      # place of the bare `go build` ci-test.sh used to do (that build baked no
-      # key and read every licence as missing). RENET_BINARY rides into
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_account --port 4900
+      # In place of the bare `go build` ci-test.sh used to do (that build baked
+      # no key and read every licence as missing): RENET_BINARY rides into
       # ci-test.sh, which installs it as the binary the tests drive.
-      - name: Install the shared renet
-        uses: ./.github/actions/renet-test-binary
+      # This leg's renet, built AFTER the account server so it bakes the
+      # per-run public key start_account just exported to $GITHUB_ENV
+      # (agent/plans/PLAN-production-key-only.md D6); build_renet's key gate
+      # refuses a binary that does not bake it. The embed assets come from the
+      # renet-embed-assets cache this job needs, so the build is the go build
+      # alone; restore-only, the stager job is the one writer.
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: embed-cache
+        with:
+          path: private/renet/pkg/embed/assets
+          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
+      # Pre-pulled only on a cache miss: a hit makes build_renet's embed_assets
+      # step a verified no-op, so these base images are never fetched.
+      - name: Pre-pull Docker base images (avoid buildx auth issues)
+        if: steps.embed-cache.outputs.cache-hit != 'true'
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.docker_prepull debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
+      - name: Build renet with the per-run key
+        id: build-renet
+        env:
+          RENET_EMBED_CACHE_HIT: ${{ steps.embed-cache.outputs.cache-hit }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet
 
       # Login to Docker Hub to avoid rate limiting
       - name: Login to Docker Hub
@@ -2999,7 +2982,7 @@ jobs:
             '.legs[] | select(.index == $idx) | .ids | map(sub("^renet-integration:"; "")) | join(" ")' \
             .ci/config/shards/test-renet-integration.json)
           echo "Shard ${{ matrix.shard }}/3 files: $FILES"
-          # sudo resets the environment, so the switches ride in explicitly. RENET_PYTEST_JUNIT=1 makes ci-test.sh write the --junit-xml the unit-durations and results uploads below read (before it, both found no file on every run). CI itself stays unset: under root it turns on LUKS/fstab Go integration tests this runner cannot pass. RENET_SKIP_GO_UNIT_TESTS=1: the Renet (go, i/2) legs already run ./pkg/..., so these legs do not repeat it. RENET_BINARY is the shared licence-enforcing renet that ci-test.sh installs instead of building. REDIACC_ACCOUNT_SERVER, E2E_ACCOUNT_API_TOKEN and ACCOUNT_ED25519_PUBLIC_KEY are what tests/conftest.py needs to license each repository a test creates.
+          # sudo resets the environment, so the switches ride in explicitly. RENET_PYTEST_JUNIT=1 makes ci-test.sh write the --junit-xml the unit-durations and results uploads below read (before it, both found no file on every run). CI itself stays unset: under root it turns on LUKS/fstab Go integration tests this runner cannot pass. RENET_SKIP_GO_UNIT_TESTS=1: the Renet (go, i/2) legs already run ./pkg/..., so these legs do not repeat it. RENET_BINARY is this leg's licence-enforcing renet, built above with the per-run key, which ci-test.sh installs instead of building. REDIACC_ACCOUNT_SERVER, E2E_ACCOUNT_API_TOKEN and ACCOUNT_ED25519_PUBLIC_KEY are what tests/conftest.py needs to license each repository a test creates.
           # The account token and keys ride through --preserve-env, never as VAR=value on the command line, so no secret reaches argv.
           sudo --preserve-env=RENET_BINARY,REDIACC_ACCOUNT_SERVER,E2E_ACCOUNT_API_TOKEN,ACCOUNT_ED25519_PUBLIC_KEY env PYTHONPATH=.ci "RENET_PYTEST_JUNIT=1" "RENET_SKIP_GO_UNIT_TESTS=1" "RENET_INTEGRATION_FILES=$FILES" python3 -m rediacc_ci.private.renet_integration --no-cleanup
 
@@ -3141,7 +3124,6 @@ jobs:
         with:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
-            ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY
             ACCOUNT_JWT_SECRET > BWS_ACCOUNT_JWT_SECRET
             ACCOUNT_SERVER_API_KEY > BWS_ACCOUNT_SERVER_API_KEY
             GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
@@ -3214,30 +3196,22 @@ jobs:
           sudo apt-get update -qq && sudo apt-get install -y -qq stripe=1.52.0
         env:
           STRIPE_SANDBOX_SECRET_KEY: ${{ env.BWS_STRIPE_SANDBOX_SECRET_KEY }}
-      # Step-scoped (.ci/config/bws-step-scoped.json, check:ci-bws-step-scope): this
-      # fetch serves the next step only, and the scrub after it blanks the key.
-      - name: Fetch the step-scoped signing key(s) for the next step only
-        uses: ./.github/actions/bws-secrets
-        with:
-          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
-          secrets: |
-            ACCOUNT_ED25519_PRIVATE_KEY > BWS_ACCOUNT_ED25519_PRIVATE_KEY
+      # The portal's backend signs with an ED25519 pair minted for this step
+      # alone (agent/plans/PLAN-production-key-only.md D6): no renet verifies
+      # what it signs, so the production private key has no business here.
+      # The assignment keeps a failed mint fatal under bash -e; the pair lives
+      # in this step's shell only.
       - name: Run Account Portal E2E tests
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.account_e2e --shard-manifest .ci/config/shards/test-account-e2e.json --shard "${{ matrix.shard }}/4"
+        run: |
+          pair="$(PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_account --emit-pair)"
+          eval "$pair"
+          PYTHONPATH=.ci python3 -m rediacc_ci.testrun.account_e2e --shard-manifest .ci/config/shards/test-account-e2e.json --shard "${{ matrix.shard }}/4"
         env:
-          ACCOUNT_ED25519_PRIVATE_KEY: ${{ env.BWS_ACCOUNT_ED25519_PRIVATE_KEY }}
-          ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
           ACCOUNT_SERVER_API_KEY: ${{ env.BWS_ACCOUNT_SERVER_API_KEY }}
           ACCOUNT_JWT_SECRET: ${{ env.BWS_ACCOUNT_JWT_SECRET }}
           ROOT_EMAIL: ${{ env.BWS_ROOT_EMAIL }}
           STRIPE_SANDBOX_SECRET_KEY: ${{ env.BWS_STRIPE_SANDBOX_SECRET_KEY }}
           STRIPE_SANDBOX_WEBHOOK_SECRET: ${{ env.BWS_STRIPE_SANDBOX_WEBHOOK_SECRET }}
-      - name: Blank the step-scoped signing key(s) for the rest of the job
-        if: always()
-        uses: ./.github/actions/bws-scrub
-        with:
-          names: |
-            BWS_ACCOUNT_ED25519_PRIVATE_KEY
       - name: Upload E2E report
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         if: failure()

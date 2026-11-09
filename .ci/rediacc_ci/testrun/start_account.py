@@ -11,7 +11,7 @@ Deliberate differences from the twin (Rule T), each with a test that fails on th
   5. The throwaway secrets come from `secrets.token_hex` instead of `openssl rand -hex 32`, whose silent failure left them empty in the retired `ci-env.sh` (see `infra/ci_env.py`). Same shape, 64 hex characters.
   6. The cookie jar lives in memory; the twin wrote and removed `account-for-e2e-cookies.txt`.
   7. The ED25519 signing pair is taken from the environment when BOTH `ACCOUNT_ED25519_PRIVATE_KEY` and `ACCOUNT_ED25519_PUBLIC_KEY` are set (the twin always minted its own), and the PUBLIC half is published as `ACCOUNT_ED25519_PUBLIC_KEY` next to `REDIACC_ACCOUNT_SERVER`. A renet build has to bake the signer's public key, or every licence this server signs is filed under a fingerprint renet never looks up (`start_backup_plane`). The private half is never printed or written.
-  8. `--require-env-pair` refuses to mint: without both halves in the environment the leg fails before anything starts. The CI legs pass it with the PRODUCTION pair mapped from Bitwarden, because they deploy the run's one production-keyed renet (agent/plans/PLAN-free-license.md R2, F2) and a throwaway pair would sign licences that renet refuses at the first repository create, long after this step reported success.
+  8. A CI leg signs with a pair minted here, per run (agent/plans/PLAN-production-key-only.md D6): the production private key never reaches a CI job. The leg builds renet AFTER this step, with the public half this step publishes, so every licence the server signs is filed under the fingerprint that renet looks up. `--require-env-pair`, which demanded the production pair from Bitwarden for the run's one shared production-keyed renet, is gone, and passing it is a usage error. `--emit-pair` mints a pair for a caller that starts its own server (rediacc_ci.testrun.account_e2e) and prints it as two `export` lines for that step's `eval`; nothing starts and nothing is written.
   9. `ACCOUNT_SERVER_API_KEY` is taken from the environment when set (the twin always minted it), so a caller that drives the server's X-API-Key routes, such as renet's subscription system tests, holds the key without this leg ever printing it.
   10. `ACCOUNT_CONFIG_SERVER_KEY` is taken from the environment when set, else minted like the JWT secret. The node entry refuses to boot when `CONFIG_R2_*` is set without it, and the backup plane's RustFS step exports `CONFIG_R2_*` into this server's environment.
 """
@@ -22,6 +22,7 @@ import json
 import os
 import pathlib
 import secrets
+import shlex
 import shutil
 import signal
 import subprocess
@@ -51,7 +52,7 @@ const priv = crypto.createPrivateKey({ key: Buffer.from(process.env.ACCOUNT_ED25
 process.stdout.write(crypto.createPublicKey(priv).export({ type: "spki", format: "der" }).toString("base64"));
 """
 SCOPES = ["license:read", "license:activate", "subscription:read"]
-USAGE = "usage: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_account [--port <n>] [--email <addr>] [--plan <code>] [--name <label>] [--scopes <a,b>] [--advertise-host <ip>] [--require-env-pair]"
+USAGE = "usage: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_account [--port <n>] [--email <addr>] [--plan <code>] [--name <label>] [--scopes <a,b>] [--advertise-host <ip>] | --emit-pair"
 
 
 class LegError(Exception):
@@ -71,8 +72,8 @@ class Options:
         self.scopes = ",".join(SCOPES)
         # The host the published account server URL names; the server itself is always probed and seeded on 127.0.0.1.
         self.advertise_host = "127.0.0.1"
-        # Delta 8: the ED25519 pair must come from the environment; nothing is minted.
-        self.require_env_pair = False
+        # Delta 8: print a freshly minted ED25519 pair as `export` lines and start nothing.
+        self.emit_pair = False
 
 
 def parse(argv: list[str]) -> Options:
@@ -88,8 +89,8 @@ def parse(argv: list[str]) -> Options:
     i = 0
     while i < len(argv):
         flag = argv[i]
-        if flag == "--require-env-pair":
-            opts.require_env_pair = True
+        if flag == "--emit-pair":
+            opts.emit_pair = True
             i += 1
             continue
         if flag not in names:
@@ -123,26 +124,13 @@ def generate_keys() -> dict[str, str]:
     return json.loads(done.stdout)
 
 
-def server_keys(require_env_pair: bool = False) -> dict[str, str]:
+def server_keys() -> dict[str, str]:
     """The throwaway key set, with the ED25519 signing pair taken from the environment when BOTH halves are there.
 
-    A caller that bakes the public half into a renet build (`start_backup_plane`) has to hold the pair before this server starts, or the licence blobs it signs are filed under a fingerprint that renet never looks up. Half a pair is ignored: a lone public key would sign nothing, and a lone private key has no matching public half to publish. With `require_env_pair` (delta 8) half a pair, or none, is a LegError naming both variables, so a CI leg never mints a pair its production-keyed renet refuses. The private half is passed to the server through its environment only, never printed or written.
+    The normal case, and every CI leg's (delta 8), is a pair minted here: the leg builds renet afterwards with the public half `publish` exports. A caller that bakes the public half into a renet build BEFORE this server starts (`start_backup_plane`) hands its own pair in through the environment instead, and a pair whose halves do not match is refused, because the server would sign licences that do not verify under the key the renet bakes. Half a pair is ignored: a lone public key would sign nothing, and a lone private key has no matching public half to publish. The private half is passed to the server through its environment only, never printed or written.
     """
     private = os.environ.get("ACCOUNT_ED25519_PRIVATE_KEY", "").strip()
     public = os.environ.get("ACCOUNT_ED25519_PUBLIC_KEY", "").strip()
-    if require_env_pair and not (private and public):
-        missing = [
-            name
-            for name, value in (
-                ("ACCOUNT_ED25519_PRIVATE_KEY", private),
-                ("ACCOUNT_ED25519_PUBLIC_KEY", public),
-            )
-            if not value
-        ]
-        raise LegError(
-            f"--require-env-pair: {' and '.join(missing)} not set; this leg signs with the production pair (map both from Bitwarden), and a minted pair would sign licences the production-keyed renet refuses",
-            show_log=False,
-        )
     keys = generate_keys()
     if private and public:
         if derived_public_key() != public:
@@ -322,7 +310,7 @@ def run(opts: Options) -> int:
                 show_log=False,
             )
         log.step("Generating throwaway server keys...")
-        keys = server_keys(opts.require_env_pair)
+        keys = server_keys()
         log.step(f"Starting account server on port {opts.port}...")
         db_path = pathlib.Path(temp) / f"e2e-account-{os.getpid()}.db"
         try:
@@ -457,6 +445,18 @@ def publish(server_url: str, token: str, public_key: str) -> None:
     print(f"E2E_ACCOUNT_API_TOKEN={token}", flush=True)
 
 
+def emit_pair() -> int:
+    """Delta 8: a fresh ED25519 pair as two shell `export` lines on stdout, for `pair="$(... --emit-pair)"` then `eval "$pair"` in the one step that starts its own server. The pair is throwaway and verifies nothing outside that step; the assignment form keeps a failed mint fatal under `bash -e`, where a bare `eval "$(...)"` would swallow it."""
+    try:
+        keys = generate_keys()
+    except LegError as exc:
+        log.error(str(exc))
+        return 1
+    print(f"export ACCOUNT_ED25519_PRIVATE_KEY={shlex.quote(keys['edPriv'])}")
+    print(f"export ACCOUNT_ED25519_PUBLIC_KEY={shlex.quote(keys['edPub'])}", flush=True)
+    return 0
+
+
 def main(argv: list[str]) -> int:
     try:
         opts = parse(argv)
@@ -464,6 +464,8 @@ def main(argv: list[str]) -> int:
         log.error(str(exc))
         print(USAGE, file=sys.stderr)
         return 2
+    if opts.emit_pair:
+        return emit_pair()
     return run(opts)
 
 
