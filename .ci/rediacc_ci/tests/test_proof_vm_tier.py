@@ -9,6 +9,7 @@ import copy
 import dataclasses
 import json
 import os
+import subprocess
 from typing import TYPE_CHECKING, Any
 
 import pytest
@@ -1047,6 +1048,7 @@ def test_a_two_link_chain_admits_when_every_link_holds(tmp_path: pathlib.Path) -
 
 def test_a_base_tree_that_is_not_its_heads_tree_is_chain_broken(tmp_path: pathlib.Path) -> None:
     """Review 3dd946ff.1: the claimed verifiedBase.tree is checked against the base head's real tree."""
+    rc.write(tmp_path, both_ran())
     rc.write(tmp_path, chained_tip())
     honest = dataclasses.replace(chain(), tree_of={BASE_HEAD: BASE_TREE}.get)
     lying = dataclasses.replace(chain(), tree_of={BASE_HEAD: "9" * 40}.get)
@@ -1054,7 +1056,7 @@ def test_a_base_tree_that_is_not_its_heads_tree_is_chain_broken(tmp_path: pathli
     assert not lied.ok
     assert "but that commit's tree is" in lied.message, lied.message
     told = rc.admit(tmp_path, TREE, DIGEST, BOTH, honest)
-    assert "but that commit's tree is" not in told.message, told.message
+    assert told.ok, told.message
 
 
 def test_a_base_tree_already_in_the_chain_is_chain_loop(tmp_path: pathlib.Path) -> None:
@@ -1065,8 +1067,34 @@ def test_a_base_tree_already_in_the_chain_is_chain_loop(tmp_path: pathlib.Path) 
 
 
 def test_chain_for_resolves_a_heads_tree(tmp_path: pathlib.Path) -> None:
-    """The production chain always carries the tree check."""
-    assert rc.chain_for(tmp_path, TIP).tree_of is not None
+    """The production chain carries the tree check, and it resolves a real commit's tree (review 2665cf79.3)."""
+    env = {
+        **os.environ,
+        "GIT_AUTHOR_NAME": "t",
+        "GIT_AUTHOR_EMAIL": "t@t",
+        "GIT_COMMITTER_NAME": "t",
+        "GIT_COMMITTER_EMAIL": "t@t",
+    }
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True, env=env)
+    (tmp_path / "f").write_text("x", encoding="utf-8")
+    subprocess.run(["git", "-C", str(tmp_path), "add", "f"], check=True, env=env)
+    subprocess.run(["git", "-C", str(tmp_path), "commit", "-q", "-m", "c"], check=True, env=env)
+    head = subprocess.run(
+        ["git", "-C", str(tmp_path), "rev-parse", "HEAD"],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.strip()
+    tree = subprocess.run(
+        ["git", "-C", str(tmp_path), "rev-parse", "HEAD^{tree}"],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.strip()
+    resolve = rc.chain_for(tmp_path, head).tree_of
+    assert resolve is not None
+    assert resolve(head) == tree
+    assert resolve("0" * 40) is None
 
 
 def test_a_malformed_verified_base_makes_the_receipt_unreadable() -> None:

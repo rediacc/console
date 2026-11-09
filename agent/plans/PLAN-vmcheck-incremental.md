@@ -11,7 +11,7 @@ Owns: agent/plans/PLAN-vmcheck-incremental.md, .ci/rediacc_ci/proof/**, .ci/redi
 ## Context (measured 2026-11-08 on 1104-1)
 - Receipts live in `.ci/cache/vm-check/<tree>.json`; a rerun at the same tree overwrites, so counts are a floor: 6 VERIFIED, 14 FAILED, 9 NOT_VERIFIED.
 - FAILED is step-failed in 14 runs over about 12 different steps; NOT_VERIFIED is area-not-verified 5, phase-not-run 2, receipt-first 1, and one of the 9 carries no classified reason.
-- An `--only` run never reaches VERIFIED (`.ci/rediacc_ci/drills/vm_check.py:1447`), and `--changed` diffs against the push base (`.ci/rediacc_ci/proof/surfaces.py:584`), so a larger batch pulls in more areas.
+- An `--only` run never reaches VERIFIED (`.ci/rediacc_ci/drills/vm_check.py:1447`), and `--changed` diffs against the push base (`.ci/rediacc_ci/proof/surfaces.py:584`), so a larger batch pulls in more areas. (Before V1 and V2; since 3dd946ffdf an `--only` rerun of a FAILED receipt's failed steps merges into it, and `--changed` diffs from the newest admitted VERIFIED commit.)
 - Both sides (renet and account) were required in 29 of 29 runs, so a per-side digest split pays almost nothing and is not part of this plan.
 
 ## Boxes

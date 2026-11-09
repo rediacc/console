@@ -4486,6 +4486,9 @@ def test_a_partial_only_leaves_the_receipt_failed_and_a_second_completes_it(
 
     rc, out = run_merge(tmp_path, make_world(tmp_path), "--only", "V1.2", fail=(k2,))
     assert rc == vm_check.EXIT_FAILED, out
+    # Review 2665cf79.1: a merge that stays FAILED names its result once, with no narrowed NOT_VERIFIED summary first.
+    assert "merged into the FAILED receipt" in out, out
+    assert "NOT_VERIFIED" not in out, out
     partial = archived(make_world(tmp_path))
     assert partial["status"] == receipt_mod.FAILED
     assert partial["reason"]["detail"].startswith(k2), partial["reason"]
