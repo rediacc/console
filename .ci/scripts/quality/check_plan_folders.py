@@ -37,7 +37,7 @@ THE VERBS.
     --keep P --asked <YYYY-MM-DDTHH:MMZ>
                the operator kept P: write `Kept: <today> ASKED:<minute>` under Status:,
                which restarts P's backlog clock from today
-    --archive P --asked <YYYY-MM-DDTHH:MMZ>
+    --archive P --asked <YYYY-MM-DDTHH:MMZ> [--ruling #<id>]
                the operator archived P: set `Status: removed` with a `Removed-Why:` naming
                the answer, then --move it into _removed/, where the terminal clock takes over
     --update   write the tombstone section of agent/INDEX.md
@@ -613,7 +613,8 @@ def _print_question(plans: list[PL.Plan], config: dict, today: dt.date) -> int:
         )
         print("    keep:    python3 %s --keep %s --asked <YYYY-MM-DDTHH:MMZ>" % (_SELF, plan.rel))
         print(
-            "    archive: python3 %s --archive %s --asked <YYYY-MM-DDTHH:MMZ>" % (_SELF, plan.rel)
+            "    archive: python3 %s --archive %s --asked <YYYY-MM-DDTHH:MMZ> [--ruling #<id>]"
+            % (_SELF, plan.rel)
         )
     print(
         "  <YYYY-MM-DDTHH:MMZ> is the UTC minute the operator answered. Keep writes `Kept:` and "
@@ -627,6 +628,13 @@ def _all_bound_exit(free: list[str], *, write: bool) -> int | None:
     if free:
         return None
     return 1 if write else 0
+
+
+def _differs_from_head(root: pathlib.Path, rel: str) -> bool:
+    """True when `rel` is untracked or its working or staged text differs from HEAD: hashing it then names a blob no commit holds."""
+    if not gitx.git(["ls-files", "--error-unmatch", "--", rel], root=root).ok:
+        return True
+    return bool(gitx.git(["status", "--porcelain", "--", rel], root=root).stdout.strip())
 
 
 def sweep(root: pathlib.Path, config: dict, *, write: bool) -> int:
@@ -643,10 +651,43 @@ def sweep(root: pathlib.Path, config: dict, *, write: bool) -> int:
     free, held = _split_bound(root, [plan.rel for plan in due])
     for rel in held:
         print("✗ %s is not swept:\n%s" % (rel, _binding_refusal(root, rel)), file=sys.stderr)
+    # THE TOMBSTONE BLOB MUST BE COMMITTED TEXT. It is `git hash-object` of the working file, so a plan edited since HEAD would be hashed into an object no commit holds and then deleted with its edit: F8 reds on that tombstone in every other clone. Such a plan waits for its commit.
+    dirty = [rel for rel in free if _differs_from_head(root, rel)]
+    # The sweep also deletes the live stub (agent/plans/<name>), so a stub carrying local edits holds its plan back for the same reason.
+    stub_dirty = []
+    for rel in free:
+        if rel in dirty:
+            continue
+        stub = "agent/plans/%s" % rel.rsplit("/", 1)[-1]
+        stub_path = root / stub
+        if (
+            stub != rel
+            and stub_path.is_file()
+            and PL.looks_like_stub(PL.read_probe(stub_path))
+            and _differs_from_head(root, stub)
+        ):
+            stub_dirty.append(rel)
+            print(
+                "✗ %s is not swept: its stub %s differs from HEAD (uncommitted edits), and the "
+                "sweep would delete them. Commit it, then sweep again." % (rel, stub),
+                file=sys.stderr,
+            )
+    dirty = dirty + stub_dirty
+    for rel in dirty[: len(dirty) - len(stub_dirty)]:
+        print(
+            "✗ %s is not swept: its text differs from HEAD (uncommitted or untracked), so its "
+            "tombstone blob would name text no commit holds. Commit it, then sweep again." % rel,
+            file=sys.stderr,
+        )
+    free = [rel for rel in free if rel not in dirty]
     due = [plan for plan in due if plan.rel in free]
     held_exit = _all_bound_exit(free, write=write)
     if held_exit is not None:
-        print("✗ sweep: every expired plan is still bound, so nothing was deleted", file=sys.stderr)
+        print(
+            "✗ sweep: nothing was deleted; %d plan(s) held by bindings, %d held by uncommitted text"
+            % (len(held), len(dirty)),
+            file=sys.stderr,
+        )
         return held_exit
     for plan in due:
         print("  %s (%s)" % (plan.rel, PL.classify(plan)))
@@ -698,7 +739,7 @@ def sweep(root: pathlib.Path, config: dict, *, write: bool) -> int:
         "  Regenerate the ledgers: npm run check:ci-plan-boxes -- --update && npm run check:ci-plan-record -- --update"
     )
     _print_question(plans, config, today)
-    return 0
+    return 1 if dirty and write else 0
 
 
 def _answer_target(root: pathlib.Path, rel: str, asked: str, verb: str):
@@ -760,7 +801,32 @@ def keep(root: pathlib.Path, rel: str, asked: str) -> int:
     return 0
 
 
-def archive(root: pathlib.Path, rel: str, asked: str, config: dict) -> int:
+def _with_ruling_drops(text: str, rel: str, ruling: str, root: pathlib.Path):
+    """(new_text, error): `text` with `Ruling: #<id>` in the header when missing and `    dropped by ruling #<id>` under each open box, or an error when the id is not a closed item."""
+    paths.on_sys_path(paths.hooks_stop_dir())
+    pf = importlib.import_module("wl_planfile")
+    pr = importlib.import_module("wl_planrec")
+    iid = ruling.lstrip("#").lower()
+    states = pf.store_item_states(root)
+    state = states.get(iid)
+    if state is None:
+        return None, "--ruling #%s is not an item in the worklist store" % iid
+    if state not in pf.RULING_CLOSED:
+        return None, (
+            "--ruling #%s is still [%s]: an open or deferred item is a question, not a decision"
+            % (iid, state)
+        )
+    out = text if pf.ruling_line(text) else PL._insert_under_status(text, "Ruling: #%s" % iid)
+    ok, why = pf.resolve_ruling(root, rel, out, states)
+    if not ok:
+        return None, "the plan's Ruling: does not resolve (%s)" % why
+    lines = out.splitlines(keepends=True)
+    for index, _raw, _body, _sig in sorted(pr.open_boxes(out), reverse=True):
+        lines.insert(index + 1, "    dropped by ruling #%s\n" % iid)
+    return "".join(lines), ""
+
+
+def archive(root: pathlib.Path, rel: str, asked: str, config: dict, ruling: str = "") -> int:
     """`--archive`: the operator archived a backlog plan, so it becomes `removed` and moves."""
     target = _answer_target(root, rel, asked, "--archive")
     if target is None:
@@ -770,7 +836,13 @@ def archive(root: pathlib.Path, rel: str, asked: str, config: dict) -> int:
         asked,
         plan.status,
     )
-    (root / rel).write_text(PL.with_archived(text, why), encoding="utf-8")
+    body = text
+    if ruling:
+        body, error = _with_ruling_drops(text, rel, ruling, root)
+        if body is None:
+            print("✗ %s; nothing was written" % error, file=sys.stderr)
+            return 2
+    (root / rel).write_text(PL.with_archived(body, why), encoding="utf-8")
     rc = move(root, rel, config)
     if rc != 0 and (root / rel).is_file() and not PL.looks_like_stub(PL.read_probe(root / rel)):
         # The move refused before touching the tree, so the plan goes back to the text it had.
@@ -1090,7 +1162,9 @@ def main(argv: list[str]) -> int:
             if not target:
                 print("✗ --archive needs a plan path", file=sys.stderr)
                 return 2
-            return archive(root, target, _flag_value(argv, "--asked"), config)
+            return archive(
+                root, target, _flag_value(argv, "--asked"), config, _flag_value(argv, "--ruling")
+            )
         if "--retire-promoted" in argv:
             return retire_promoted(root)
         if "--sweep" in argv:

@@ -19,6 +19,8 @@ A plan cannot be compacted (`--plan-compact`, with or without `--park`), moved t
 
 ## Current state (verified 2026-11-08 on 1104-1)
 
+PLAN-ci-time-budget and PLAN-renet-ceph-gpu-non-apt were swept 2026-11-09, with tombstones in agent/INDEX.md; the counts below predate that.
+
 - `wl_planrec.compact` (`.claude/hooks/stop/wl_planrec.py:1718`) refuses a dirty path, an existing record, and open boxes unless `--park`; it reads nothing outside the file.
 - `check_plan_folders.move` (`.ci/scripts/quality/check_plan_folders.py:788`) refuses a stub, a non-file and a terminal folder without a ledger row; `sweep` (`:560`) deletes past retention. Neither reads bindings.
 - Eight `_done/` plans carry open boxes (box parser `wl_planrec.open_boxes`, 2026-11-08): PLAN-breakpoint-secret-shape (2 open), PLAN-ci-prebaked-vm-images (3), PLAN-ci-time-budget (2), PLAN-ci-watch-enforcement (6), PLAN-config-networkid-sync (8), PLAN-renet-ceph-gpu-non-apt (1), PLAN-renet-fetch-hardening (7), PLAN-renet-obs-mirror (3). Of the 2026-10-03 seven, PLAN-fix-console-ci-5day-failure, PLAN-plan-file-lifecycle and PLAN-stop-hook-plan-agent-check-declined are gone (swept past retention, 3fd6671165), and four others joined. `agent/worklist/d778be9d.jsonl` still cites them (breakpoint-secret-shape 3 lines, ci-watch-enforcement 3, config-networkid-sync 3, renet-fetch-hardening 5, ci-prebaked-vm-images 17, ci-time-budget 22, renet-ceph-gpu-non-apt 12, renet-obs-mirror 11). On 2026-10-03 the worklist items bound to three of the earlier seven reached the operator as "no live box: keep or drop?".

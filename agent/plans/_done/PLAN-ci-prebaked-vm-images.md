@@ -1,6 +1,6 @@
 # PLAN: pre-baked per-distro VM images for the E2E Workers legs (spec W follow-on)
 
-Status: closed -- by operator ruling #c3a46b36 (2026-09-29): B0-B3 and B6 done, B4 and B5 code landed (a312694e9); their live checks and B7 need ci-vm-bake.yml on main and move to worklist items: B4 #2dc5873c, B5 #f8a3f7c8, B7 #173c5f08
+Status: closed -- by operator ruling #c3a46b36 (2026-09-29): B0-B3 and B6 done, B4 and B5 code landed (a312694e9); their live checks and B7 need ci-vm-bake.yml on main and move to worklist items: B4 #2dc5873c, B5 #f8a3f7c8, B7 #173c5f08; B5 and B7 moved 2026-11-09 to PLAN-ci-vm-image-followups.md V1 and V2 (#c8f185c8, #86a94e05)
 First-Seen: 2026-09-29
 Ruling: #c3a46b36
 Depends-On: PLAN-ci-time-budget.md -- both own .github/workflows/ct-tests.yml, so they run in sequence; the in-flight renet setup-speed edits land before B0
@@ -134,9 +134,11 @@ The setup_command.go lines move when those land, and B1 re-checks them.
 - [x] B4 console ci-vm-bake.yml (2a, D1). Verification: one workflow_dispatch publishes 5 artifacts named by key, a second exits at the key check within 1 min on every leg, and no leg exceeds 20 min.
     (ticked) 2026-11-09T04:58:16Z by d778be9d: already in the tree: .github/workflows/ci-vm-bake.yml:1; ci-vm-bake.yml landed in a312694e9d; main push run 36670172753 published the 5 keyed tags (legs 10-17 min) and dispatches 36678502680 and 36682382567 exited at the probe within seconds per leg, package private since 6803a61e4c; worklist #2dc5873c closed B4's live check
 - [ ] B5 console E2E Workers consumption, fallback, save guard and the shard-2 stock include (2b, 2c). Verification: one PR run where 35 legs report a baked hit and every worker logs `[setup] pkg-calls 0`, 5 shard-2 legs log full setup, and no baked leg saves the stock cache; control: a PR changing setup_command.go runs all 40 legs on stock.
+    moved 2026-11-09 to PLAN-ci-vm-image-followups.md box V1, under ruling #c3a46b36 (CB5 of the plan-compaction-bindings plan)
 - [x] B6 console harness baked-image assertion in bridge-global-setup.ts and InfrastructureManager.ts: with `BAKED_IMAGE_KEY` set, every VM's /var/lib/rediacc/baked-image must equal it or the leg fails naming the VM; the packages/e2e-tests/src/utils/infrastructure/InfrastructureManager.ts:477-482 comment names the second marker source. Verification: vitest with a mocked executeOnVM (match passes, mismatch or missing marker fails). Done 2026-09-29: InfrastructureManager.assertBakedImageOnVMs, called in bridge-global-setup before Step 2; 5 vitest cases with a disabled-comparison control.
     (ticked) 2026-09-29T08:24:47Z by d778be9d: 3f7108cad packages/e2e-tests/src/utils/infrastructure/InfrastructureManager.ts:502 vitest rc=0
 - [ ] B7 Measure after: 5 PR runs, per-distro leg duration and setup phases against B0, and section 4 rewritten from measurements. Verification: the table with run ids; under 20 runner-min net per run sets `vars.VM_BAKE=off` and reopens the plan.
+    moved 2026-11-09 to PLAN-ci-vm-image-followups.md box V2, under ruling #c3a46b36 (CB5 of the plan-compaction-bindings plan)
 
 ## 6. Risks
 

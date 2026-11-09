@@ -475,10 +475,10 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-backup-integrity.md` | approved | 496 | 13 | 43 | 77711 |
 | `agent/plans/PLAN-backup-list-executor-fix.md` | compacted | 55 | 0 | 0 | 5498 |
 | `agent/plans/PLAN-backup-local-image.md` | approved | 457 | 4 | 10 | 57906 |
-| `agent/plans/PLAN-backup-meter-orphaned-chunks.md` | approved | 271 | 2 | 6 | 36292 |
-| `agent/plans/PLAN-backup-multi-target.md` | approved | 105 | 3 | 16 | 30036 |
+| `agent/plans/PLAN-backup-meter-orphaned-chunks.md` | approved | 272 | 2 | 6 | 36562 |
+| `agent/plans/PLAN-backup-multi-target.md` | approved | 107 | 3 | 16 | 30874 |
 | `agent/plans/PLAN-backup-plane-shared-bucket-hardening.md` | approved | 41 | 3 | 4 | 6848 |
-| `agent/plans/PLAN-backup-program.md` | approved | 611 | 11 | 181 | 162314 |
+| `agent/plans/PLAN-backup-program.md` | approved | 611 | 11 | 181 | 162412 |
 | `agent/plans/PLAN-backup-quota-delta-gc.md` | compacted | 58 | 0 | 0 | 5584 |
 | `agent/plans/PLAN-backup-restore-path.md` | executing | 202 | 3 | 7 | 35762 |
 | `agent/plans/PLAN-backup-restore-target-license.md` | compacted | 56 | 0 | 0 | 5560 |
@@ -490,6 +490,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-chunkstore-restore.md` | compacted | 55 | 0 | 0 | 4230 |
 | `agent/plans/PLAN-ci-quick-cpu-scheduling.md` | active | 77 | 3 | 2 | 10413 |
 | `agent/plans/PLAN-ci-trace-no-pr-branch.md` | compacted | 38 | 0 | 0 | 2480 |
+| `agent/plans/PLAN-ci-vm-image-followups.md` | approved | 21 | 2 | 0 | 2533 |
 | `agent/plans/PLAN-ciquick-green-then-batch.md` | approved | 33 | 1 | 6 | 7384 |
 | `agent/plans/PLAN-ciquick-reds-1023-1.md` | executing | 45 | 3 | 9 | 10578 |
 | `agent/plans/PLAN-citation-fragility.md` | compacted | 49 | 0 | 6 | 5254 |
@@ -499,8 +500,9 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-cloudflare-spend-guard.md` | approved | 116 | 0 | 10 | 41221 |
 | `agent/plans/PLAN-cold-path.md` | compacted | 52 | 0 | 0 | 4022 |
 | `agent/plans/PLAN-completion-strategy.md` | compacted | 39 | 0 | 0 | 3939 |
+| `agent/plans/PLAN-config-mirror-reseal.md` | proposed | 22 | 2 | 0 | 2963 |
 | `agent/plans/PLAN-config-networkid-discovery.md` | approved | 190 | 0 | 8 | 26833 |
-| `agent/plans/PLAN-console-executor-multi-org.md` | approved | 376 | 1 | 17 | 66982 |
+| `agent/plans/PLAN-console-executor-multi-org.md` | approved | 377 | 1 | 17 | 67459 |
 | `agent/plans/PLAN-consolidation-pressure.md` | compacted | 60 | 0 | 10 | 5277 |
 | `agent/plans/PLAN-converge-preflight-and-repo-recovery.md` | executing | 94 | 0 | 19 | 34124 |
 | `agent/plans/PLAN-deletion-budget.md` | draft | 387 | 28 | 0 | 53262 |
@@ -511,7 +513,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-drop-free-license-ip-prefix-hash.md` | executing | 35 | 2 | 4 | 5915 |
 | `agent/plans/PLAN-duplication-angle.md` | compacted | 37 | 0 | 0 | 2630 |
 | `agent/plans/PLAN-durable-reports-and-push-inbox.md` | compacted | 52 | 0 | 0 | 3692 |
-| `agent/plans/PLAN-enterprise-isolation.md` | executing | 190 | 24 | 10 | 34668 |
+| `agent/plans/PLAN-enterprise-isolation.md` | executing | 192 | 24 | 10 | 35513 |
 | `agent/plans/PLAN-executor-durable-object-policy.md` | approved | 483 | 3 | 15 | 64699 |
 | `agent/plans/PLAN-extension-shaped-matchers.md` | compacted | 37 | 0 | 0 | 3104 |
 | `agent/plans/PLAN-first-release-checks.md` | approved | 150 | 31 | 0 | 17463 |
@@ -540,11 +542,11 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-nightly-retry-and-watchdog-noise.md` | compacted | 39 | 0 | 0 | 2744 |
 | `agent/plans/PLAN-npm-ci-parallel-parity.md` | compacted | 40 | 0 | 0 | 3252 |
 | `agent/plans/PLAN-org-executor-connect-timeout-relocate.md` | executing | 356 | 1 | 16 | 54693 |
-| `agent/plans/PLAN-plan-compaction-bindings.md` | approved | 55 | 3 | 4 | 9130 |
+| `agent/plans/PLAN-plan-compaction-bindings.md` | approved | 57 | 3 | 4 | 9272 |
 | `agent/plans/PLAN-plan-preflight.md` | approved | 190 | 0 | 8 | 29710 |
 | `agent/plans/PLAN-plan-verbs.md` | draft | 35 | 3 | 0 | 3779 |
 | `agent/plans/PLAN-printf-echo-pipefail-sweep.md` | compacted | 103 | 0 | 33 | 10281 |
-| `agent/plans/PLAN-product-domain-rename.md` | executing | 203 | 9 | 19 | 35626 |
+| `agent/plans/PLAN-product-domain-rename.md` | executing | 215 | 9 | 19 | 41008 |
 | `agent/plans/PLAN-production-key-only.md` | approved | 346 | 5 | 12 | 51197 |
 | `agent/plans/PLAN-promote-mutation-runner.md` | compacted | 39 | 0 | 0 | 2977 |
 | `agent/plans/PLAN-proxy-cd-six-targets.md` | approved | 412 | 4 | 27 | 69368 |
@@ -558,7 +560,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-renet-down-before-kill.md` | approved | 153 | 4 | 11 | 31852 |
 | `agent/plans/PLAN-renet-executor-tiered-license-check.md` | executing | 55 | 2 | 2 | 12295 |
 | `agent/plans/PLAN-renet-fetch-retries.md` | approved | 55 | 0 | 3 | 7190 |
-| `agent/plans/PLAN-renet-restart-cycle-defects.md` | approved | 36 | 1 | 5 | 5640 |
+| `agent/plans/PLAN-renet-restart-cycle-defects.md` | approved | 36 | 1 | 5 | 5686 |
 | `agent/plans/PLAN-renet-run-docker-sock-isolation.md` | draft | 101 | 0 | 4 | 11627 |
 | `agent/plans/PLAN-renet-runtime-converge.md` | approved | 63 | 0 | 5 | 10310 |
 | `agent/plans/PLAN-repo-docker-storage-prune.md` | executing | 137 | 3 | 11 | 34534 |
@@ -599,12 +601,12 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-tested-on-bench.md` | approved | 336 | 4 | 16 | 48532 |
 | `agent/plans/PLAN-testing-surface-audit.md` | compacted | 38 | 0 | 0 | 3684 |
 | `agent/plans/PLAN-tick-tracking.md` | approved | 269 | 2 | 13 | 37957 |
-| `agent/plans/PLAN-token-ip-rebind.md` | draft | 426 | 0 | 11 | 41942 |
+| `agent/plans/PLAN-token-ip-rebind.md` | draft | 426 | 0 | 11 | 41950 |
 | `agent/plans/PLAN-unify-trap-corpus.md` | compacted | 39 | 0 | 0 | 2772 |
 | `agent/plans/PLAN-vmcheck-incremental.md` | approved | 22 | 1 | 2 | 3470 |
 | `agent/plans/PLAN-w7p4w-docker-cutover.md` | compacted | 62 | 0 | 12 | 4758 |
 | `agent/plans/PLAN-w7p5a-deploy-release-port.md` | compacted | 53 | 0 | 8 | 3914 |
-| `agent/plans/PLAN-website-routing-and-mail.md` | executing | 117 | 14 | 6 | 18614 |
+| `agent/plans/PLAN-website-routing-and-mail.md` | executing | 118 | 14 | 6 | 19098 |
 | `agent/plans/PLAN-wire-account-vitest-ci.md` | compacted | 39 | 0 | 0 | 3063 |
 | `agent/plans/PLAN-wl-report-liveness-oracle.md` | compacted | 52 | 0 | 7 | 3665 |
 | `agent/plans/PLAN-worktree-lease.md` | approved | 357 | 1 | 15 | 59600 |
@@ -622,8 +624,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-chunk-store-browse-toc-and-remote.md` | done | 172 | 0 | 11 | 35651 |
 | `agent/plans/_done/PLAN-ci-consolidation.md` | done | 187 | 0 | 22 | 24553 |
 | `agent/plans/_done/PLAN-ci-gate-write-taint-scanners.md` | done | 338 | 0 | 19 | 51229 |
-| `agent/plans/_done/PLAN-ci-prebaked-vm-images.md` | closed | 160 | 2 | 6 | 21136 |
-| `agent/plans/_done/PLAN-ci-time-budget.md` | closed | 383 | 0 | 32 | 48587 |
+| `agent/plans/_done/PLAN-ci-prebaked-vm-images.md` | closed | 162 | 2 | 6 | 21486 |
 | `agent/plans/_done/PLAN-ci-verdict.md` | done | 76 | 0 | 7 | 17515 |
 | `agent/plans/_done/PLAN-ci-watch-enforcement.md` | superseded | 232 | 6 | 0 | 21751 |
 | `agent/plans/_done/PLAN-clean-review-ledger.md` | done | 209 | 0 | 18 | 24391 |
@@ -663,11 +664,10 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-program-state-in-repo.md` | done | 48 | 0 | 5 | 7159 |
 | `agent/plans/_done/PLAN-rdc-readonly-mode.md` | done | 228 | 0 | 23 | 31216 |
 | `agent/plans/_done/PLAN-remove-cross-session-messaging.md` | done | 379 | 0 | 13 | 42487 |
-| `agent/plans/_done/PLAN-renet-ceph-gpu-non-apt.md` | closed | 253 | 1 | 7 | 30231 |
 | `agent/plans/_done/PLAN-renet-change-test-triggers.md` | done | 46 | 0 | 7 | 7939 |
 | `agent/plans/_done/PLAN-renet-cross-repo-isolation.md` | done | 166 | 0 | 11 | 44631 |
 | `agent/plans/_done/PLAN-renet-fetch-hardening.md` | superseded | 154 | 0 | 8 | 14481 |
-| `agent/plans/_done/PLAN-renet-obs-mirror.md` | closed | 107 | 1 | 4 | 15584 |
+| `agent/plans/_done/PLAN-renet-obs-mirror.md` | closed | 107 | 1 | 4 | 15755 |
 | `agent/plans/_done/PLAN-repair-prose-style-findings.md` | done | 53 | 0 | 6 | 6070 |
 | `agent/plans/_done/PLAN-retire-bash-oracles.A0.md` | done | 279 | 0 | 7 | 32197 |
 | `agent/plans/_done/PLAN-retire-bash-oracles.md` | done | 935 | 0 | 15 | 108469 |
@@ -708,6 +708,7 @@ A plan whose retention ran out. The FILE is gone and the full text is the blob b
 | `agent/plans/_done/PLAN-bws-rotation-on-failure.md` | BWS rotation is triggered by the failure, not by a date | 2026-09-17 | 2026-11-03 | `3659929deabb46f462ace139b9ce506498e35bef` |
 | `agent/plans/_done/PLAN-calibrate-judge-rules-live.md` | PLAN: re-run live judge calibration for four drifted rubric prompts | 2026-09-23 | 2026-11-04 | `fedfa79a6ce76482df362c8c0613cde72760945c` |
 | `agent/plans/_done/PLAN-ci-pr-head-ref-trigger-resolution.md` | PLAN: widen check:ci-pr-head-ref-completeness from "a setter exists" to "the setter resolves on every trigger" | 2026-09-17 | 2026-11-03 | `51fa48d76dee38da1e63162dd88c6f8a60ea063e` |
+| `agent/plans/_done/PLAN-ci-time-budget.md` | PLAN: CI time budget. Every job finishes in 15 minutes or less, and the pipeline in 20 minutes or less (operator spec W) | 2026-09-25 | 2026-11-09 | `f1ba29d0ea6bee7870d994aa4557d431a83f3f48` |
 | `agent/plans/_done/PLAN-ci-vacuity-baseline-registry.md` | PLAN: Python control plants — make a vacuous mutant impossible, not merely reported | 2026-09-17 | 2026-11-03 | `03546fc570cd31fe34ef8f7f11b3374b23b08f13` |
 | `agent/plans/_done/PLAN-cleanup-context-state-files.md` | PLAN: Context state file cleanup — opportunistic TTL sweep on save | 2026-09-22 | 2026-11-03 | `1837de0891254cc1c1b8a6bb896a39c317537efc` |
 | `agent/plans/_done/PLAN-commit-author-identity.md` | PLAN: commits must be attributable to a GitHub account | 2026-09-17 | 2026-11-03 | `ec2825e9f8470585b3ea7bcc4328dfed43ea3c2a` |
@@ -735,6 +736,7 @@ A plan whose retention ran out. The FILE is gone and the full text is the blob b
 | `agent/plans/_done/PLAN-plyr-css-on-demand-loading.md` | PLAN: load the video player's CSS on demand, not on every page that carries the hydrator | 2026-09-17 | 2026-11-03 | `33a21e4ba9ef56d4ac97a34116dd40a76747c9c0` |
 | `agent/plans/_done/PLAN-popup-reminder.md` | PLAN: probabilistic "out of the blue" Stop-hook reminder | 2026-09-23 | 2026-11-03 | `164a6bdead9e7d1d2d3bf4551433602805af035a` |
 | `agent/plans/_done/PLAN-prose-style-under-wrap.md` | PLAN: prose-style under-wrap detection (R19) | 2026-09-17 | 2026-11-03 | `cbb8ca416d4af8672ee533e29be959cef88c0813` |
+| `agent/plans/_done/PLAN-renet-ceph-gpu-non-apt.md` | PLAN: port renet's apt-only Ceph, fork-dest and GPU flows to dnf and zypper | 2026-09-29 | 2026-11-09 | `7e1301a5eece90ff70ca3be94e16d3e5f56d8c1f` |
 | `agent/plans/_done/PLAN-rotation-gh-removal.md` | Removing `gh` from secret rotation | 2026-09-17 | 2026-11-04 | `ab1e9fdb4636aee6591e6cd38a7b94f53a1c0aa0` |
 | `agent/plans/_done/PLAN-session-onboarding-marker.md` | PLAN: what a session is told at its FIRST TOUCH, and how we would know it changed anything | 2026-09-17 | 2026-11-03 | `087188ce3923ae3e124a60a0de238dc16df28ffa` |
 | `agent/plans/_done/PLAN-stop-hook-behavioral-hints.md` | PLAN: a rotating behavioral-hint line on the stop report | 2026-09-22 | 2026-11-03 | `df0f7caf881ca9e7b75a9527bcba48620fc6b793` |
@@ -747,4 +749,4 @@ A plan whose retention ran out. The FILE is gone and the full text is the blob b
 | `agent/plans/_done/PLAN-w9p2-script-relocation.md` | PLAN: W9 P2 script relocation, remaining legs (scripts/gen, scripts/ops) | 2026-09-17 | 2026-11-04 | `03cc02f95dd3d0ea1dfb67a9275b929f561c80f3` |
 | `agent/plans/_done/PLAN-wl-wait-duplicate-listener.md` | PLAN: wl_wait duplicate listeners -- `--timeout 60` is SIXTY MINUTES and nothing refuses a second instance | 2026-09-23 | 2026-11-03 | `d95c15b4c60f39f75ab14f3e9e294745e280071a` |
 
-44 expired plan(s). The row is the receipt; the blob is the text.
+46 expired plan(s). The row is the receipt; the blob is the text.

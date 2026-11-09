@@ -5,7 +5,7 @@ Depends-On: no-dep -- the parent plan is closed and its bake store (D1) is live 
 Owner: d778be9d
 First-Seen: 2026-09-30
 Date: 2026-09-30
-Parent: agent/plans/_done/PLAN-renet-ceph-gpu-non-apt.md (D2, line 187; risk table line 233)
+Parent: PLAN-renet-ceph-gpu-non-apt.md (swept 2026-11-09; full text is blob 7e1301a5eece90ff70ca3be94e16d3e5f56d8c1f per its agent/INDEX.md tombstone; D2 and the risk table)
 Scope: design verified against renet 0699199. Worklist #3ee91218.
 Priority: P1 -- the captured build 2.97 disappears on the next OBS rebuild
 Concurrency: exclusive -- it edits the Leap install path and the pkg matrix every Ceph leg depends on
@@ -104,4 +104,4 @@ D2 as ruled covers CI only: a private GHCR artifact is unreachable from a custom
 - [ ] P4 rehearsal dispatch with OBS blocked, recorded in the round log
     dropped by ruling #86c8d01c: the operator did not keep the P4 rehearsal on 2026-10-03 (ASKED:2026-10-03T11:58Z)
 - [x] P5 docs (www ceph install: the mirror file), .ceph-image-pin comment, D2 moved to done in the parent plan's risk table
-    (ticked) 2026-11-09T04:58:04Z by d778be9d: already in the tree: packages/www/src/content/docs/en/server-reference.md:256, private/renet/.ceph-image-pin:47, agent/plans/_done/PLAN-renet-ceph-gpu-non-apt.md:233; commit 195c64e8ba; worklist #5d9e37e5 done
+    (ticked) 2026-11-09T04:58:04Z by d778be9d: already in the tree: packages/www/src/content/docs/en/server-reference.md:256, private/renet/.ceph-image-pin:47, the D2 row DONE in the parent plan's risk table (that plan was swept 2026-11-09; its full text is the blob its agent/INDEX.md tombstone names); commit 195c64e8ba; worklist #5d9e37e5 done
