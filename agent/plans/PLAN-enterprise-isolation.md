@@ -98,9 +98,10 @@ This plan is public: no customer name appears in it or in any tracked file. `acm
   Owns: workers/account/enterprise.template.toml (new), workers/proxy/wrangler.template.toml, workers/account/.gitignore, workers/proxy/.gitignore, .ci/rediacc_ci/deploy/proxy_configs.py, .ci/rediacc_ci/enterprise/configs.py (new), .ci/rediacc_ci/tests/test_enterprise_configs.py (new).
   Accept: `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_enterprise_configs.py` rc 0 and `npm run check:ci-proxy-configs` rc 0.
     (ticked) 2026-11-09T03:16:09Z by d778be9d: commit:cbbb88a368; pytest test_enterprise_configs.py + test_deploy_proxy_configs.py 83 passed rc 0; npm run check:ci-proxy-configs rc 0 (5 proxy configs hold)
-- [ ] S2 [writer] Signer service and Worker with no route, modelled on `ExecutorIssuer`, with typed methods, a `probe()` and its deploy module.
+- [x] S2 [writer] Signer service and Worker with no route, modelled on `ExecutorIssuer`, with typed methods, a `probe()` and its deploy module.
   Owns: private/account/src/services/license-signer.service.ts (new), workers/signer/** (new), .ci/rediacc_ci/deploy/deploy_signer.py (new), .ci/rediacc_ci/tests/test_deploy_signer.py (new).
   Accept: `(cd private/account && npx vitest run tests/integration/license-signer-scope.test.ts)` rc 0 and `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_deploy_signer.py` rc 0.
+    (ticked) 2026-11-09T10:47:22Z by d778be9d: commit:731ebb8f enterprise suites 508 passed rc=0; account signer suite 80 passed rc=0
 - [ ] S3 [writer] `LicenseSigner`: local `CryptoService` for the Node entries, or the binding client on Cloudflare, with the refusals in the Design. Every signing site moves, delegation included. `create` takes a given id.
   Owns: private/account/src/services/crypto.service.ts, private/account/src/services/subscription.service.ts, private/account/src/services/free-license.service.ts, private/account/src/services/delegation-cert.service.ts, private/account/src/services/reminder.service.ts, private/account/src/services/signer-client.ts (new), private/account/src/app.ts, private/account/src/types/env.ts, private/account/src/types/subscription.ts, private/account/src/entry/cloudflare.ts, private/account/tests/integration/signer-client.test.ts (new).
   Accept: `(cd private/account && npx vitest run tests/integration/signer-client.test.ts)` rc 0 and `npx tsc --noEmit -p private/account` rc 0.
@@ -128,16 +129,19 @@ This plan is public: no customer name appears in it or in any tracked file. `acm
 
 ### Wave 4
 
-- [ ] C1 [writer] `./run.sh enterprise add`, resumable; `--bench` selects bench signers and control with `ENVIRONMENT=bench`, so mail capture works; it calls the lookup writer unless unlisted.
+- [x] C1 [writer] `./run.sh enterprise add`, resumable; `--bench` selects bench signers and control with `ENVIRONMENT=bench`, so mail capture works; it calls the lookup writer unless unlisted.
   Owns: .ci/rediacc_ci/__main__.py, .ci/rediacc_ci/core/run_verbs.py, .ci/rediacc_ci/enterprise/cli.py (new), .ci/rediacc_ci/enterprise/onboarding.py (new), .ci/rediacc_ci/tests/test_enterprise_add.py (new).
   Accept: `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_enterprise_add.py` rc 0.
   (corrected 2026-11-09, d778be9d) The live runner found two owners missing (no box listed them): .ci/rediacc_ci/enterprise/lab.py, which proof.py's load_lab binds for every V box, and creating the control-<region> and control-bench-<region> D1 databases with control/migrations/0001_control.sql. Both join C1 (lab.py, control_db.py, test_enterprise_lab.py, test_enterprise_control_db.py); C1's accept adds those two test files and `./run.sh enterprise proof signer --bench` reaching the lab.
-- [ ] C2 [writer] `list`, `update`, `suspend`, `export`, `remove` per the Design.
+    (ticked) 2026-11-09T10:47:19Z by d778be9d: commit:85c3acf3a1 enterprise suites 508 passed rc=0; account signer suite 80 passed rc=0
+- [x] C2 [writer] `list`, `update`, `suspend`, `export`, `remove` per the Design.
   Owns: .ci/rediacc_ci/enterprise/lifecycle.py (new), .ci/rediacc_ci/tests/test_enterprise_lifecycle.py (new).
   Accept: `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_enterprise_lifecycle.py` rc 0.
-- [ ] K2 [writer] Ring runner over `Step` and `Run`, one `Run` per company, machine sampling, `--company` taking the opaque id. `block_unasked_release` keeps its ask for a real company's release and admits `--bench`.
+    (ticked) 2026-11-09T10:51:17Z by d778be9d: commit:817ef04945 (verbs 33f1b8d58c, adapters d3cfea58b4) enterprise suites 508 passed rc=0
+- [x] K2 [writer] Ring runner over `Step` and `Run`, one `Run` per company, machine sampling, `--company` taking the opaque id. `block_unasked_release` keeps its ask for a real company's release and admits `--bench`.
   Owns: .ci/rediacc_ci/release/rings_run.py (new), .ci/rediacc_ci/tests/test_release_rings_run.py (new), .claude/rediacc_hooks/guards/block_unasked_release.py, .claude/rediacc_hooks/guards/test-block_unasked_release.py.
   Accept: `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_release_rings_run.py` rc 0 and `python3 .claude/rediacc_hooks/guards/test-block_unasked_release.py` rc 0.
+    (ticked) 2026-11-09T10:47:21Z by d778be9d: commit:34e559f7ce enterprise suites 508 passed rc=0; account signer suite 80 passed rc=0
 - [ ] G1 [writer] `cd-enterprise-release.yml` per the Design, and a test that no workflow file calls `enterprise remove` and that the mask step comes first.
   Owns: .github/workflows/cd-enterprise-release.yml (new), .ci/rediacc_ci/tests/test_enterprise_workflow.py (new).
   Accept: `npm run check:ci-workflows` rc 0 and `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_enterprise_workflow.py` rc 0.
