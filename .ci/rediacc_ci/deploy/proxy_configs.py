@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import dataclasses
+import ipaddress
 import json
 import pathlib
 import re
@@ -67,6 +68,9 @@ HEAVY_CAP_BY_TARGET: dict[str, str] = dict.fromkeys(TARGET_KEYS, "5")
 EXECUTOR_VARS = ("EXECUTOR_CAP", "EXECUTOR_HEAVY_CAP")
 # The bench config alone may carry the reachability drill's probe redirect (PLAN-org-executor-connect-timeout-relocate box E15); any other target carrying it is refused as a var it may not carry.
 BENCH_OPTIONAL_VARS = frozenset({"EGRESS_DRILL_PROBE"})
+# A company config may carry the opt-in IP allowlist (workers/proxy/src/ip-allowlist.ts) and reports the stable channel (PLAN-enterprise-isolation.md ruling 12).
+COMPANY_OPTIONAL_VARS = frozenset({"ALLOW_IPS"})
+COMPANY_ENVIRONMENT = "stable"
 # The drill var's shape as workers/proxy/src/drill.ts reads it: `<host:port>=<host:port>`, a host bare or an IPv6 literal in brackets, a decimal port up to 65535. The Worker falls back silently on anything else, so a typo is refused here; whether an address is one the probe admits stays the Worker's own check.
 DRILL_SIDE = r"(?:\[[0-9a-fA-F:.]+\]|[^\s:\[\]=]+):\d{1,5}"
 DRILL_PROBE_RE = re.compile(r"^%s=%s$" % (DRILL_SIDE, DRILL_SIDE))
@@ -126,6 +130,8 @@ class Target:
     executor_vars: tuple[tuple[str, str], ...] = ()
     # Vars this target may carry but need not: the bench-only reachability drill seam (workers/proxy/src/drill.ts). Every other target leaves it empty, so the var is refused there by name.
     optional_variables: frozenset[str] = frozenset()
+    # A company target routes through a Worker Route in this zone (no certificate of its own, so no name in certificate logs); the shared targets leave it None and keep their custom domain.
+    zone: str | None = None
 
 
 class ConfigError(Exception):
@@ -225,15 +231,69 @@ def targets(regions: list[dict]) -> dict[str, Target]:
     return out
 
 
-def render(template: str, target: Target) -> str:
-    """The generated config text for one target."""
+def allow_ips_refusal(raw: object) -> str | None:
+    """Why `raw` is no ALLOW_IPS value the Worker reads (workers/proxy/src/ip-allowlist.ts), or None."""
+    if not isinstance(raw, str):
+        return "vars.ALLOW_IPS is %r, not a string" % (raw,)
+    for entry in (e.strip() for e in raw.split(",")):
+        base, slash, prefix = entry.partition("/")
+        try:
+            addr = ipaddress.ip_address(base)
+        except ValueError:
+            return "vars.ALLOW_IPS entry %r is not an address or a.b.c.d/n range" % entry
+        if slash and not (
+            addr.version == 4 and prefix.isascii() and prefix in {str(n) for n in range(1, 33)}
+        ):
+            return "vars.ALLOW_IPS entry %r is not an IPv4 range with a prefix of 1 to 32" % entry
+    return None
+
+
+def company_target(company: str, region_id: str, regions: list[dict], domain: str) -> Target:
+    """The proxy target of one Enterprise company: `proxy-<company>` on `<company>-proxy.<domain>`, bound to `account-<company>`, exporting to its region's destinations."""
+    region = next((r for r in regions if str(r.get("id")) == region_id), None)
+    if region is None:
+        raise ConfigError("no region %r in %s" % (region_id, REGIONS_REL))
+    account = "account-%s" % company
+    account_url = "https://%s.%s" % (company, domain)
+    return Target(
+        key=company,
+        config="enterprise.%s.toml" % company,
+        name="proxy-%s" % company,
+        routes=("%s-proxy.%s/*" % (company, domain),),
+        account_url=account_url,
+        variables=(
+            ("ACCOUNT_URL", account_url),
+            ("REGION", region_id),
+            ("ENVIRONMENT", COMPANY_ENVIRONMENT),
+        ),
+        services=(
+            (ACCOUNT_BINDING[0], account, ACCOUNT_BINDING[1]),
+            (ISSUER_BINDING[0], account, ISSUER_BINDING[1]),
+        ),
+        destinations=("otlp-%s-logs" % region_id, "otlp-%s-traces" % region_id),
+        version_metadata=True,
+        generated=True,
+        own_tokens=frozenset({region_id}),
+        executor_vars=(("EXECUTOR_CAP", "25"), ("EXECUTOR_HEAVY_CAP", "5")),
+        optional_variables=COMPANY_OPTIONAL_VARS,
+        zone=domain,
+    )
+
+
+def render(template: str, target: Target, extra_vars: tuple[tuple[str, str], ...] = ()) -> str:
+    """The generated config text for one target; `extra_vars` are appended to `[vars]` (a company's ALLOW_IPS)."""
     if not target.generated or target.destinations is None:
         raise ConfigError("%s is hand-written, not generated" % target.config)
     account = target.services[0][1]
+    if target.zone:
+        route = '{ pattern = "%s", zone_name = "%s" }' % (target.routes[0], target.zone)
+    else:
+        route = '{ pattern = "%s", custom_domain = true }' % target.routes[0]
     values = {
         "HEADER": HEADER,
         "NAME": target.name,
-        "ROUTE": target.routes[0],
+        "ROUTE_ENTRY": route,
+        "EXTRA_VARS": "".join('\n%s = "%s"' % kv for kv in extra_vars),
         "ACCOUNT_URL": target.account_url,
         "REGION": dict(target.variables)["REGION"],
         "ENVIRONMENT": dict(target.variables)["ENVIRONMENT"],
@@ -280,6 +340,10 @@ def _executor_var_refusals(variables: dict) -> list[str]:
 def _optional_var_refusals(variables: dict, optional: frozenset[str]) -> list[str]:
     out: list[str] = []
     raw = variables.get("EGRESS_DRILL_PROBE")
+    if "ALLOW_IPS" in optional and "ALLOW_IPS" in variables:
+        reason = allow_ips_refusal(variables["ALLOW_IPS"])
+        if reason:
+            out.append(reason)
     if "EGRESS_DRILL_PROBE" in optional and "EGRESS_DRILL_PROBE" in variables:
         valid = (
             isinstance(raw, str)
@@ -395,7 +459,18 @@ def config_refusals(text: str, target: Target, all_regions: frozenset[str]) -> l
     if patterns != list(target.routes):
         out.append("routes are %r, not exactly %r" % (patterns, list(target.routes)))
     for entry in routes:
-        if not (isinstance(entry, dict) and entry.get("custom_domain") is True):
+        if target.zone:
+            if not (
+                isinstance(entry, dict)
+                and entry.get("zone_name") == target.zone
+                and "custom_domain" not in entry
+                and set(entry) == {"pattern", "zone_name"}
+            ):
+                out.append(
+                    "route %r is not a Worker Route in zone %r (a custom domain issues a certificate that names the company)"
+                    % (entry, target.zone)
+                )
+        elif not (isinstance(entry, dict) and entry.get("custom_domain") is True):
             out.append("route %r is not a custom domain" % _pattern(entry))
         foreign_hits("route", _pattern(entry))
 

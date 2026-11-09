@@ -8,7 +8,7 @@ upload_source_maps = true
 # The executor is reached through the account origin's own subdomain, so a client needs no new
 # trust decision: it is the domain it already logs in to, with a proxy. prefix.
 routes = [
-  { pattern = "@@ROUTE@@", custom_domain = true }
+  @@ROUTE_ENTRY@@
 ]
 
 [vars]
@@ -16,7 +16,7 @@ ACCOUNT_URL = "@@ACCOUNT_URL@@"
 REGION = "@@REGION@@"
 ENVIRONMENT = "@@ENVIRONMENT@@"
 EXECUTOR_CAP = "@@EXECUTOR_CAP@@"
-EXECUTOR_HEAVY_CAP = "@@EXECUTOR_HEAVY_CAP@@"
+EXECUTOR_HEAVY_CAP = "@@EXECUTOR_HEAVY_CAP@@"@@EXTRA_VARS@@
 
 # Introspection goes through this binding, not a public fetch: this Worker and the account
 # Worker share the rediacc.cloud zone, and a same-zone subrequest never reaches another Worker

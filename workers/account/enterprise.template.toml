@@ -1,0 +1,81 @@
+# @@HEADER@@
+name = "@@NAME@@"
+main = "src/index.ts"
+compatibility_date = "2026-01-20"
+compatibility_flags = ["nodejs_compat"]
+upload_source_maps = true
+
+# A Worker Route, not a Custom Domain: a custom domain issues its own certificate, which would
+# publish the company name in certificate logs (PLAN-enterprise-isolation.md Routing).
+routes = [
+  @@ROUTE_ENTRY@@
+]
+
+[vars]
+REGION = "@@REGION@@"
+ENVIRONMENT = "@@ENVIRONMENT@@"
+WEBAUTHN_RP_ID = "@@HOST@@"
+WEBAUTHN_ORIGIN = "https://@@HOST@@"@@EXTRA_VARS@@
+
+# Nightly maintenance at 03:00 UTC plus the hourly backup sweep, as the shared account Workers.
+[triggers]
+crons = ["17 * * * *", "0 3 * * *"]
+
+[observability]
+enabled = true
+
+[observability.logs]
+enabled = true
+invocation_logs = false
+head_sampling_rate = 1
+destinations = ["@@OTLP_LOGS@@"]
+persist = false
+
+[observability.traces]
+enabled = true
+head_sampling_rate = 1
+destinations = ["@@OTLP_TRACES@@"]
+persist = false
+
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+not_found_handling = "404-page"
+run_worker_first = ["/*"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "account-@@COMPANY@@"
+database_id = "@@D1_ID@@"
+migrations_dir = "../../private/account/drizzle"
+
+[[r2_buckets]]
+binding = "CONFIG_BUCKET"
+bucket_name = "configs-@@COMPANY@@"@@R2_JURISDICTION@@
+
+[[r2_buckets]]
+binding = "BACKUP_BUCKET"
+bucket_name = "backups-@@COMPANY@@"@@R2_JURISDICTION@@
+
+# The company's own proxy Worker; the deploy bootstraps the pair through the binding cycle.
+[[services]]
+binding = "EXECUTOR"
+service = "proxy-@@COMPANY@@"
+
+[[queues.producers]]
+binding = "BACKUP_REPLICATE_QUEUE"
+queue = "backup-replicate-@@COMPANY@@"
+
+[[queues.consumers]]
+queue = "backup-replicate-@@COMPANY@@"
+max_batch_size = 10
+max_retries = 5
+dead_letter_queue = "backup-replicate-@@COMPANY@@-dlq"
+
+[[durable_objects.bindings]]
+name = "BACKUP_REPLICATOR"
+class_name = "BackupReplicator"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["BackupReplicator"]
