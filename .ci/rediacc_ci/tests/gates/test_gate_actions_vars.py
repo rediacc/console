@@ -78,10 +78,10 @@ def test_the_gate_is_green_on_the_real_tree(gate):
 def test_the_real_commented_mentions_do_not_fire(gate):
     gate.log_test("FALSE POSITIVE, real fixtures: the comments the sibling sweep recorded")
     # Each of these sits in the real corpus inside a comment. If one stops being there the fixture is gone and this test says so rather than passing on nothing.
-    # The commented `secrets.ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN` fixture left with the reusable review workflow (deleted 2026-10-02); no other commented secret read remains, so the filename case carries the secrets side.
+    # One commented `secrets.` read and one commented `vars.` read, each in a real workflow today. A fixture whose comment is reworded away is replaced from the live corpus, never dropped.
     for rel, needle in (
-        (".github/workflows/cd-deploy-account.yml", "set-account-worker-secrets.sh"),
-        (".github/workflows/ci.yml", "vars.TURNSTILE_SITE_KEY"),
+        (".github/workflows/ops-claude-review.yml", "secrets.ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN"),
+        (".github/workflows/ci-quality.yml", "vars.GIT_BOT_NAME"),
     ):
         gate.assert_contains(
             paths.from_root(rel).read_text(encoding="utf-8"),
