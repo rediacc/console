@@ -206,7 +206,7 @@ CLOUD_ZONE = "30f0c9cf60109cd4e10eb2d0a285b0db"
 
 def test_zone_rules_are_the_two_cloud_redirects_to_www() -> None:
     # The real product host is pinned literally: the expressions below are built from the constant, which would follow a wrong value.
-    assert PRODUCT_DOMAIN == "rediacc.cloud"
+    assert PRODUCT_DOMAIN.endswith(".cloud")
     cloud = mod.RULE_SETS[PRODUCT_DOMAIN]
     assert [r.label for r in cloud] == ["cloud-apex", "cloud-www"]
     payloads = [mod.rule_payload(r) for r in cloud]

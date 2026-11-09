@@ -11,6 +11,10 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.deploy import deploy_signer as ds
+from rediacc_ci.well_known import ACCOUNT_DEFAULT_ORIGIN, BENCH_ORIGIN
+
+ACCOUNT_HOST = ACCOUNT_DEFAULT_ORIGIN.removeprefix("https://")
+BENCH_HOST = BENCH_ORIGIN.removeprefix("https://")
 
 REPO = pathlib.Path(paths.repo_root())
 PRIVATE = "MC4CAQAwBQYDK2VwBCIEIPRIVATEKEYVALUEFORTHETESTONLY0000000000"
@@ -151,7 +155,7 @@ def test_every_target_renders_a_config_with_no_refusal(target):
 
 def test_shared_hosts_come_from_the_account_config():
     _, _, hosts = ds.shared_binding((REPO / "workers/account/wrangler.eu.toml").read_text(), "eu")
-    assert hosts == ["eu.rediacc.cloud"]
+    assert hosts == [ACCOUNT_HOST]
 
 
 def test_unknown_target_is_refused_before_any_call(repo):
@@ -170,7 +174,7 @@ def _good_text(spec: ds.Target) -> str:
         {
             "WORKER": spec.worker,
             "REGION": spec.region,
-            "SHARED_HOSTS": "eu.rediacc.cloud",
+            "SHARED_HOSTS": ACCOUNT_HOST,
             "CONTROL_DB": spec.control_db,
             "CONTROL_DB_ID": CONTROL_ID,
             "SHARED_DB": "account-eu",
@@ -262,7 +266,7 @@ def test_deploy_order_record_and_rollback(repo, tmp_path):
     assert json.loads(record.read_text()) == result
     assert "control-bench-eu" in rendered(repo, "bench-eu")
     assert CONTROL_ID in rendered(repo, "bench-eu")
-    assert 'SHARED_HOSTS = "bench.rediacc.cloud"' in rendered(repo, "bench-eu")
+    assert 'SHARED_HOSTS = "%s"' % BENCH_HOST in rendered(repo, "bench-eu")
     assert "Deployed signer-bench-eu version %s" % VERSION in out
 
 

@@ -753,7 +753,7 @@ PORT_ONLY_SECRETS = (
 
 # The bench sender the retired bash golden recorded, and the one the port defaults to since 71f25f3e8f.
 RETIRED_BENCH_SENDER = "noreply@notify.rediacc.com"
-BENCH_SENDER = "noreply@notify.rediacc.cloud"
+BENCH_SENDER = deploy_bench.DEFAULT_SES_FROM
 
 
 # DECLARED DELTA (27861278): the port seeds the ROOT_EMAIL user after the secrets push (deploy_bench docstring item 8), a POST the retired bash never sent. The route answers it as a fresh bench would, added AFTER the twin run so the golden's route key is unchanged; the call is removed from the compared shape and its two stderr lines from the compared step list, each asserted present first so the removal cannot go vacuous.

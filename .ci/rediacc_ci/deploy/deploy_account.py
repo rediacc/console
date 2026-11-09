@@ -551,7 +551,10 @@ def main(argv: list[str]) -> int:
             for name in would:
                 print("would create queue: %s" % shown(name), flush=True)
         print("would run: %s" % shown(" ".join(migrations_argv(db_preview, config))), flush=True)
-        print("would run: %s" % shown(" ".join(deploy_argv(config))), flush=True)
+        print(
+            "would run: %s" % " ".join([shown(part) for part in deploy_argv(config)]),
+            flush=True,
+        )
         return 0
 
     os.chdir(worker_dir)

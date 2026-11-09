@@ -47,7 +47,7 @@ from rediacc_ci.core import wrangler
 from rediacc_ci.deploy import deploy_account, deploy_record
 from rediacc_ci.ops import bench_access, bench_preflight, cf_auth, push_backup_credentials
 from rediacc_ci.proof import receipt
-from rediacc_ci.well_known import BENCH_ORIGIN
+from rediacc_ci.well_known import BENCH_ORIGIN, PRODUCT_DOMAIN
 
 if TYPE_CHECKING:
     import pathlib
@@ -100,6 +100,9 @@ BACKUP_NAMES: tuple[str, ...] = (
     "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY",
 )
 
+
+# The sender the bench Worker mails from when AWS_SES_FROM is unset: the notify host of the product zone.
+DEFAULT_SES_FROM = "noreply@notify.%s" % PRODUCT_DOMAIN
 
 def _backup_values() -> tuple[str, str, str]:
     """The endpoint, key id and secret for the bench backup bucket. Raises DeployError naming the first one that is missing or empty."""
@@ -209,7 +212,7 @@ def secrets_payload() -> dict[str, str]:
         "AWS_SES_ACCESS_KEY_ID": os.environ.get("AWS_SES_ACCESS_KEY_ID") or "",
         "AWS_SES_SECRET_ACCESS_KEY": os.environ.get("AWS_SES_SECRET_ACCESS_KEY") or "",
         "AWS_SES_REGION": os.environ.get("AWS_SES_REGION") or "eu-central-1",
-        "AWS_SES_FROM": os.environ.get("AWS_SES_FROM") or "noreply@notify.rediacc.cloud",
+        "AWS_SES_FROM": os.environ.get("AWS_SES_FROM") or DEFAULT_SES_FROM,
         "AWS_SES_CONFIGURATION_SET": os.environ.get("AWS_SES_CONFIGURATION_SET") or "",
         "CLOUDFLARE_TURNSTILE_SECRET_KEY": os.environ.get("CLOUDFLARE_TURNSTILE_SECRET_KEY") or "",
         "ACCOUNT_BACKUP_S3_ENDPOINT": endpoint,

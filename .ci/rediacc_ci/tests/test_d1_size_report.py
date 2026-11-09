@@ -239,7 +239,11 @@ def test_value_bytes_are_summed_over_the_blob_cast():
 def test_the_summed_sql_returns_the_byte_count_of_the_values():
     fake = FakeD1({"eu": region(1, 1), "us": region(1, 1)})
     run(fake)
-    sums = [b["sql"] for m, _u, b in fake.calls if m == "POST" and "sum(length" in b["sql"]]
+    sums = [
+        b["sql"]
+        for m, _u, b in fake.calls
+        if m == "POST" and isinstance(b, dict) and "sum(length" in b["sql"]
+    ]
     assert sums
     sql = next((q for q in sums if q.rsplit("FROM ", 1)[1].strip('"') == "event_log"), None)
     assert sql is not None, "no event_log sum query among %r" % sums
