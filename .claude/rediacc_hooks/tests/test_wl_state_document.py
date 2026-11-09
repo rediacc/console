@@ -680,3 +680,34 @@ def test_owed_control_without_the_owed_argument_the_first_case_reads_ok():
     store = wlfix.import_wl("wl_store")
     assert store.agent_state_shape(B_BODY_29F)[0] == "ok"
     assert store.agent_state_shape(B_BODY_29F, None)[0] == "ok"
+
+
+# ---- R20261101.3: every failing shape verdict in one refusal ------------------------------------
+
+
+def test_r3_problems_lists_every_failing_verdict_and_shape_keeps_the_first():
+    store = wlfix.import_wl("wl_store")
+    body = UNFOCUSED_BODY + "z" * (store.AGENT_STATE_MAX_CHARS + 20)
+    problems = store.agent_state_problems(body)
+    verdicts = [v for v, _d in problems]
+    assert verdicts == ["bloated", "unfocused"], problems
+    assert "over by" in problems[0][1], problems
+    assert store.agent_state_shape(body)[0] == "bloated"
+
+
+def test_r3_control_a_good_body_has_no_problems_and_a_thin_one_has_one():
+    store = wlfix.import_wl("wl_store")
+    assert store.agent_state_problems(wlfix.STATE_BODY) == []
+    assert [v for v, _d in store.agent_state_problems("wip")] == ["thin"]
+
+
+def test_r3_state_verb_names_every_problem_in_one_refusal(wl):
+    wl.hand_now()
+    good = wl.state_file().read_text(encoding="utf-8")
+    store = wlfix.import_wl("wl_store")
+    body = UNFOCUSED_BODY + "z" * (store.AGENT_STATE_MAX_CHARS + 20)
+    got = wl.python(["--state", wlfix.ME], stdin=body)
+    assert got.rc == 2, got.out + got.err
+    assert "STATE REFUSED (bloated+unfocused: 2 problems:" in got.err, got.err[:600]
+    assert "over by" in got.err and "Big pieces" in got.err, got.err[:600]
+    assert wl.state_file().read_text(encoding="utf-8") == good

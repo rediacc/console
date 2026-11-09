@@ -2949,18 +2949,30 @@ def main():
             sys.exit(2)
         # Refuse a section the Stop check would reject, with the SAME rule. Accept-then-reject leaves the one artifact designed to survive compaction broken while the session believes it is fine; refusing leaves the previous good document untouched.
         owed = _owed_for_state(root, prefix)
-        verdict, detail = S.agent_state_shape(body, owed)
-        if verdict == "waitled":
+        problems = S.agent_state_problems(body, owed)
+        verdict, detail = problems[0] if problems else ("ok", "")
+        if verdict == "waitled" and len(problems) == 1:
             # Its own message: the generic one talks about char limits, which says nothing about why leading with a watch is refused, and a refusal a session cannot act on is a refusal it routes around.
             _m = S.AGENT_NEXT_RE.search(body)
             _lead = S.agent_next_lead(body, _m.end())[1] if _m else ""
             sys.stderr.write(M.CLI_STATE_WAIT_LED % _lead[:120])
             sys.exit(2)
-        if verdict != "ok":
+        if problems:
+            # Every failing verdict at once (R20261101.3), so one attempt fixes them all.
+            if len(problems) > 1:
+                detail = "%d problems: %s" % (
+                    len(problems),
+                    "; ".join("%s: %s" % (v, d) for v, d in problems),
+                )
+                verdict = "+".join(v for v, _d in problems)
             sys.stderr.write(
                 M.CLI_STATE_REFUSED
                 % (verdict, detail, S.AGENT_STATE_MIN_CHARS, S.AGENT_STATE_MAX_CHARS)
             )
+            if any(v == "waitled" for v, _d in problems):
+                _m = S.AGENT_NEXT_RE.search(body)
+                _lead = S.agent_next_lead(body, _m.end())[1] if _m else ""
+                sys.stderr.write(M.CLI_STATE_WAIT_LED % _lead[:120])
             sys.exit(2)
         target = S.agent_state_path(root, prefix)
         # Session-scoped since the tree split: with one STATE.md per session a shared slot lets a PEER's write destroy the only copy of my replaced body. It used to carry the branch as well (findings 3688784930/3688787780, when the document itself was per branch); the branch left the document's path, so it left the slot's name with it.

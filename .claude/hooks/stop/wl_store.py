@@ -2592,34 +2592,61 @@ def agent_state_shape(body, owed=None):
 
     The subject is ONE SECTION, not the whole document, so the cap is flat again (see AGENT_STATE_MAX_CHARS).
     """
+    problems = agent_state_problems(body, owed)
+    return problems[0] if problems else ("ok", "%d chars" % len((body or "").strip()))
+
+
+def agent_state_problems(body, owed=None):
+    """EVERY failing shape verdict of a STATE.md body as [(verdict, detail)], in the order thin, bloated, aimless, waitled, unfocused, owing; [] when the body is fine (R20261101.3).
+
+    `agent_state_shape` returns the first of these, so the Stop check and the guard keep their one verdict. `--state` prints all of them: a body with two faults reported one per attempt, and four refusals in 20 s were spent while the context was nearly full. A thin body fails nothing else (too short to judge), and a body with no `## Next action` section cannot be `waitled`.
+    """
     text = (body or "").strip()
     if len(text) < AGENT_STATE_MIN_CHARS:
-        return "thin", "%d chars, minimum %d" % (len(text), AGENT_STATE_MIN_CHARS)
+        return [("thin", "%d chars, minimum %d" % (len(text), AGENT_STATE_MIN_CHARS))]
+    out = []
     if len(text) > AGENT_STATE_MAX_CHARS:
-        return "bloated", "%d chars, maximum %d" % (len(text), AGENT_STATE_MAX_CHARS)
-    m = AGENT_NEXT_RE.search(text)
-    if not m:
-        return "aimless", "no '## Next action' section; the next action IS the value"
-    lead, lead_text = agent_next_lead(text, m.end())
-    if lead == "wait":
-        return "waitled", "the first step is %r; a wait is a CONDITION, not a next action" % (
-            lead_text[:70],
-        )
-    if not AGENT_BIG_RE.search(text):
-        return "unfocused", (
-            "no '## Big pieces' section; name the census's big pieces (the plans marked "
-            "! BIG PIECE ! in the SessionStart plans block), or 'none' when no plan carries an open box"
-        )
-    if owed and not AGENT_OWED_RE.search(text):
-        return "owing", (
-            "no '## Owed ticks' section, and the box audit finds %d owed box(es) in plans this "
-            "session owns: %s. Name each (`worklist.py --box-audit <me>` prints the lines)"
-            % (
-                len(owed),
-                ", ".join("%s#%s %s" % (p.rsplit("/", 1)[-1], g, v) for p, g, v in owed[:6]),
+        out.append(
+            (
+                "bloated",
+                "%d chars, maximum %d, over by %d chars"
+                % (len(text), AGENT_STATE_MAX_CHARS, len(text) - AGENT_STATE_MAX_CHARS),
             )
         )
-    return "ok", "%d chars" % len(text)
+    m = AGENT_NEXT_RE.search(text)
+    if not m:
+        out.append(("aimless", "no '## Next action' section; the next action IS the value"))
+    else:
+        lead, lead_text = agent_next_lead(text, m.end())
+        if lead == "wait":
+            out.append(
+                (
+                    "waitled",
+                    "the first step is %r; a wait is a CONDITION, not a next action"
+                    % (lead_text[:70],),
+                )
+            )
+    if not AGENT_BIG_RE.search(text):
+        out.append(
+            (
+                "unfocused",
+                "no '## Big pieces' section; name the census's big pieces (the plans marked "
+                "! BIG PIECE ! in the SessionStart plans block), or 'none' when no plan carries an open box",
+            )
+        )
+    if owed and not AGENT_OWED_RE.search(text):
+        out.append(
+            (
+                "owing",
+                "no '## Owed ticks' section, and the box audit finds %d owed box(es) in plans this "
+                "session owns: %s. Name each (`worklist.py --box-audit <me>` prints the lines)"
+                % (
+                    len(owed),
+                    ", ".join("%s#%s %s" % (p.rsplit("/", 1)[-1], g, v) for p, g, v in owed[:6]),
+                ),
+            )
+        )
+    return out
 
 
 def agent_next_lead(text, start):
