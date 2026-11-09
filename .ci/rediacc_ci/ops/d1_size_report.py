@@ -24,6 +24,7 @@ import argparse
 import json
 import os
 import re
+import subprocess
 import sys
 import urllib.error
 from datetime import UTC, datetime, timedelta
@@ -394,14 +395,71 @@ def run_compare(
     return 0 if all(v["within"] for v in verdicts) else EXIT_COMPARE_OFF
 
 
+ISSUE_TITLE = "D1 size alert"
+
+
+def alert_marker(document: Mapping[str, object]) -> str:
+    """The body marker naming the alerting regions, so a later run can tell a changed alert set from the same one."""
+    regions = document.get("regions")
+    rows = regions if isinstance(regions, list) else []
+    alerting = sorted(str(r["region"]) for r in rows if r.get("alerts"))
+    return "<!-- d1-size-alerts: %s -->" % ",".join(alerting)
+
+
+def sync_alert_issue(
+    document: Mapping[str, object], report_md: str, gh: Callable[..., str]
+) -> list[str]:
+    """Create the alert issue, or edit its body to the latest report and comment only when the alerting regions changed. `gh(*args)` returns stdout. Returns the gh verbs run, in order."""
+    marker = alert_marker(document)
+    body = "%s\n%s\n" % (report_md.rstrip("\n"), marker)
+    listing = json.loads(
+        gh(
+            "issue",
+            "list",
+            "--state",
+            "open",
+            "--search",
+            '"%s" in:title' % ISSUE_TITLE,
+            "--json",
+            "number,title,body",
+        )
+        or "[]"
+    )
+    found = [i for i in listing if i.get("title") == ISSUE_TITLE]
+    if not found:
+        gh("issue", "create", "--title", ISSUE_TITLE, "--body", body)
+        return ["create"]
+    number = str(found[0]["number"])
+    gh("issue", "edit", number, "--body", body)
+    if marker in str(found[0].get("body") or ""):
+        return ["edit"]
+    gh("issue", "comment", number, "--body", body)
+    return ["edit", "comment"]
+
+
+def _real_gh(*args: str) -> str:
+    return subprocess.run(["gh", *args], check=True, capture_output=True, text=True).stdout
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="d1_size_report")
     parser.add_argument("--region", help="one regions.json id")
     parser.add_argument("--json-out", type=Path)
     parser.add_argument("--md-out", type=Path)
     parser.add_argument("--compare-telemetry", action="store_true")
+    parser.add_argument(
+        "--alert-issue",
+        action="store_true",
+        help="sync the alert issue from --json-out and --md-out files (needs GH_TOKEN and GH_REPO)",
+    )
     parser.add_argument("--days", type=int, default=7)
     args = parser.parse_args(argv)
+    if args.alert_issue:
+        if not (args.json_out and args.md_out):
+            print("d1_size_report: --alert-issue needs --json-out and --md-out", file=sys.stderr)
+            return EXIT_UNREACHABLE
+        sync_alert_issue(json.loads(args.json_out.read_text()), args.md_out.read_text(), _real_gh)
+        return 0
     if args.compare_telemetry:
         if args.days < 1:
             print("d1_size_report: --days must be at least 1", file=sys.stderr)

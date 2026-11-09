@@ -231,3 +231,37 @@ def test_a_dataset_name_that_is_not_an_identifier_is_refused_before_any_ae_query
     assert rc == 2
     assert ae.seen == []
     assert "not an identifier" in capsys.readouterr().err
+
+
+class _FakeGh:
+    def __init__(self, issues: list[dict]) -> None:
+        self.issues = issues
+        self.verbs: list[str] = []
+
+    def __call__(self, *args: str) -> str:
+        self.verbs.append(args[1])
+        return json.dumps(self.issues) if args[1] == "list" else ""
+
+
+def _doc(*alerting: str) -> dict:
+    return {
+        "regions": [{"region": r, "alerts": ["x"]} for r in alerting]
+        + [{"region": "ok", "alerts": []}]
+    }
+
+
+def test_the_alert_issue_is_created_when_none_is_open():
+    gh = _FakeGh([])
+    assert sr.sync_alert_issue(_doc("eu"), "report", gh) == ["create"]
+
+
+def test_the_same_alert_set_edits_the_body_without_a_new_comment():
+    marker = sr.alert_marker(_doc("eu"))
+    gh = _FakeGh([{"number": 7, "title": sr.ISSUE_TITLE, "body": "old\n" + marker}])
+    assert sr.sync_alert_issue(_doc("eu"), "report", gh) == ["edit"]
+    assert gh.verbs == ["list", "edit"]
+
+
+def test_a_changed_alert_set_edits_and_comments():
+    gh = _FakeGh([{"number": 7, "title": sr.ISSUE_TITLE, "body": sr.alert_marker(_doc("eu"))}])
+    assert sr.sync_alert_issue(_doc("eu", "us"), "report", gh) == ["edit", "comment"]
