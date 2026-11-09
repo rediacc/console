@@ -116,11 +116,15 @@ def test_the_local_dev_config_is_not_audited(tmp_path: pathlib.Path) -> None:
 
 def test_only_naming_a_template_is_refused_not_passed_vacuously(tmp_path: pathlib.Path) -> None:
     _tree(tmp_path)
-    (tmp_path / "workers" / "proxy" / "wrangler.template.toml").write_text('name = "@@NAME@@"\n')
+    # A valid worker name, so only the `.template.` skip keeps this file out of the audit: the `@@` name guard would not.
+    (tmp_path / "workers" / "proxy" / "wrangler.template.toml").write_text(
+        'name = "proxy-template"\n[[services]]\nbinding = "X"\nservice = "svc-template"\n'
+    )
     with pytest.raises(mod.AuditError, match="template"):
         mod.load_configs(tmp_path, "workers/proxy/wrangler.template.toml")
     configs, _ = mod.load_configs(tmp_path)
     assert all("template" not in c.config for c in configs)
+    assert "proxy-template" not in [c.worker for c in configs]
 
 
 def test_only_reads_just_the_named_config(tmp_path: pathlib.Path) -> None:

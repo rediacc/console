@@ -244,6 +244,8 @@ def _k3_6_skip_records(src: str) -> list[str]:
 
     def _unpacked(t: ast.expr, value: ast.expr) -> list[tuple[ast.expr, ast.expr]]:
         """A tuple target pairs element by element with a tuple value of the same length, else every element with the whole value."""
+        if isinstance(t, ast.Starred):
+            t = t.value
         if not isinstance(t, ast.Tuple | ast.List):
             return [(t, value)]
         if isinstance(value, ast.Tuple | ast.List) and len(value.elts) == len(t.elts):
@@ -287,6 +289,7 @@ def test_the_k3_6_skip_scan_follows_annotated_and_attribute_bindings() -> None:
         "a = r.K3_6_NOTE\nb: str = a\nrecord(b)",
         "a, self.note = 1, r.K3_6_NOTE\nrecord(self.note)",
         "a, note = r.K3_6_NOTES\nrecord(note)",
+        "first, *note = r.K3_6_NOTES\nrecord(note)",
     ):
         assert _k3_6_skip_records(src), src
     assert not _k3_6_skip_records("note: str = 'other'\nrecord(note)")

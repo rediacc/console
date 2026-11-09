@@ -82,6 +82,8 @@ def test_a_shared_production_bucket_name_is_refused(
         ("rediacc-backups", True),
         ("backups-us-east", True),
         ("backups-latest", True),
+        ("backups-test2", True),
+        ("backups-bench2", True),
         ("backups-eu-test", False),
         ("backups-bench", False),
         ("backups-probe", False),

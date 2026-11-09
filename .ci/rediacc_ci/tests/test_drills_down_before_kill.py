@@ -819,8 +819,9 @@ def test_plant_skew_script_moves_the_live_socket_to_the_old_path() -> None:
     """The plant run against a real listening unix socket in a scratch runtime dir: it moves to the old-layout path, still answers there, and nothing is left at the current path."""
     # A short scratch root, not tmp_path and not $TMPDIR: an xdist worker's tmp_path, or a deep TMPDIR on a runner, passes the 107-byte AF_UNIX limit. A fixed /tmp root caps the length.
     scratch = pathlib.Path(tempfile.mkdtemp(prefix="pk-", dir="/tmp"))
-    srv = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    srv: socket.socket | None = None
     try:
+        srv = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         runtime = scratch / "run"
         (runtime / ("net-%d" % NID_A)).mkdir(parents=True)
         script = k.plant_skew_script(NID_A).replace(k.RUNTIME_DIR, str(runtime))
@@ -837,7 +838,8 @@ def test_plant_skew_script_moves_the_live_socket_to_the_old_path() -> None:
         cli.connect(str(old))
         cli.close()
     finally:
-        srv.close()
+        if srv is not None:
+            srv.close()
         shutil.rmtree(scratch, ignore_errors=True)
 
 
