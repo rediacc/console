@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import dataclasses
 import importlib
+import sys
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Any
 
@@ -187,7 +188,8 @@ class LiveLab:
         return _seam_module("C2")
 
     def _context(self, lifecycle: types.ModuleType, *, github_actions: bool = False) -> Any:
-        env = {"GITHUB_ACTIONS": "true"} if github_actions else {}
+        # None lets the context inherit os.environ, as the CLI path does; the CI simulation sets only its variable.
+        env = {"GITHUB_ACTIONS": "true"} if github_actions else None
         return self._lifecycle_ctx(lifecycle, bench=self.bench, env=env)
 
     # -- companies (C1, C2) ------------------------------------------------------------
@@ -253,7 +255,8 @@ class LiveLab:
         name = str(self._row(company)["name"])
         try:
             lifecycle.export(self._context(lifecycle), name)
-        except lifecycle.LifecycleError:
+        except lifecycle.LifecycleError as exc:
+            print("enterprise export: %s" % exc, file=sys.stderr)
             return 1
         return 0
 
@@ -263,7 +266,8 @@ class LiveLab:
         ctx = self._context(lifecycle, github_actions=github_actions)
         try:
             lifecycle.remove(ctx, name, delete_data=delete_data, confirm=name)
-        except lifecycle.LifecycleError:
+        except lifecycle.LifecycleError as exc:
+            print("enterprise remove: %s" % exc, file=sys.stderr)
             return 1
         return 0
 

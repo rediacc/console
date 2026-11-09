@@ -201,7 +201,7 @@ class FakeLifecycle(types.SimpleNamespace):
 
     def _maybe(self, verb, ctx, name, **kw):
         self.calls.append((verb, ctx, name, kw))
-        if verb in self.refuse or ctx.env.get("GITHUB_ACTIONS"):
+        if verb in self.refuse or (ctx.env or {}).get("GITHUB_ACTIONS"):
             raise self.LifecycleError("%s refused" % verb)
 
     def export(self, ctx, name):
@@ -247,6 +247,25 @@ def test_a_lifecycle_refusal_is_a_non_zero_rc(monkeypatch):
     cid = built.ensure_company("proof-remove", "eu")
     assert built.export(cid) == 1
     assert built.remove(cid, delete_data=True, github_actions=False) == 1
+
+
+def test_a_lifecycle_refusal_is_printed_to_stderr(monkeypatch, capsys):
+    built, _adder = _with_lifecycle(monkeypatch, FakeLifecycle(refuse={"export", "remove"}))
+    cid = built.ensure_company("proof-remove", "eu")
+    assert built.export(cid) == 1
+    assert built.remove(cid, delete_data=True, github_actions=False) == 1
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert "enterprise export: export refused" in captured.err
+    assert "enterprise remove: remove refused" in captured.err
+
+
+def test_without_github_actions_the_context_inherits_the_environment(monkeypatch):
+    fake = FakeLifecycle()
+    built, _adder = _with_lifecycle(monkeypatch, fake)
+    cid = built.ensure_company("proof-remove", "eu")
+    assert built.export(cid) == 0
+    assert fake.calls[-1][1].env is None
 
 
 def test_remove_under_github_actions_carries_the_variable(monkeypatch):
