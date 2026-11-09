@@ -1006,7 +1006,7 @@ def test_a_company_rollback_points_at_the_runnable_commands_instead_of_printing_
     lroot, tmp_path, capsys
 ):
     """Review a55df887.1: a masked `wrangler rollback` line named `enterprise.<id>.toml`, a config that does not exist, so a copied command failed mid-incident. The human-run commands are pointed at in the before record, which keeps them runnable, and the label stays out of the console."""
-    out = tmp_path / "before.json"
+    out = tmp_path / ("before-%s.json" % LABEL)
     ns = dr._parser().parse_args(
         [
             "before",

@@ -978,7 +978,7 @@ def cmd_rollback(args: argparse.Namespace, repo_root: pathlib.Path) -> int:
             return before["rollback"][key]
         return "run `rollback.%s` from %s (not printed: it names the company's config)" % (
             key,
-            args.before,
+            shown(args.before),
         )
 
     if before.get("account_only"):
