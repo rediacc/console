@@ -736,6 +736,14 @@ def control_landed(tmp):
         {".": [sha2]},
     )
 
+    # CONTROL (review f474e87d.1): a trailer whose landed sha is no commit of the live tip records nothing.
+    commit_in(tmp, main, "e.txt", "e\n", "typo\n\nLease-Landed-As: %s %s" % (sha2, "0" * 40))
+    check(
+        "a Lease-Landed-As trailer naming no real commit leaves the lease unlanded",
+        read(tmp, main)["unlanded"][0]["commits"],
+        {".": [sha2]},
+    )
+
     main = lease_main_repo(tmp, "pinned")
     lease = new_lease(tmp, main, "w1")
     base = git(tmp, main, "rev-parse", "HEAD")

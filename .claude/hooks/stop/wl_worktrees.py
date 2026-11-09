@@ -267,9 +267,18 @@ def unlanded_commits(tree, head, pin, tip, base):
     text = _git(tree, "log", "-F", *greps, "--format=%B", "--branches", tip, *narrow)
     if text is None:
         return None
-    return [
-        sha for sha in found if PICKED_LINE % sha not in text and LANDED_AS_LINE % sha not in text
-    ]
+    recorded = {
+        pair[0]
+        for pair in (
+            ln.split()[1:]
+            for ln in text.splitlines()
+            if ln.startswith("Lease-Landed-As:")
+        )
+        if len(pair) >= 2
+        and tip
+        and _git(tree, "merge-base", "--is-ancestor", pair[1] + "^{commit}", tip) is not None
+    }
+    return [sha for sha in found if PICKED_LINE % sha not in text and sha not in recorded]
 
 
 def figures(repos, tips, pins, base):
