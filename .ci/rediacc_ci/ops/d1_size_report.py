@@ -4,7 +4,7 @@
     PYTHONPATH=.ci python3 -m rediacc_ci.ops.d1_size_report --compare-telemetry --days 7 [--region <id>]
 
 WHY IT EXISTS (agent/plans/PLAN-d1-scaling.md, Z7). One D1 database per region holds every tenant, and the sharding cutover (H5) waits on this report alerting for a region. It reads each region's database through the D1 REST query API, the way docs/d1-scaling-review.md measured it:
-  - the table list (`sqlite_master`), the row count and the value bytes per table as `sum(length(col))` over every column. D1 has no `dbstat`, so index and page bytes are an estimate: value bytes times the review's factor of 1.6.
+  - the table list (`sqlite_master`), the row count and the value bytes per table as `sum(length(CAST(col AS BLOB)))` over every column. D1 has no `dbstat`, so index and page bytes are an estimate: value bytes times the review's factor of 1.6.
   - the database file size (`meta.size_after` of the query answer) and the tenant count (`count(*)` of `subscriptions`).
 
 REGIONS come only from regions.json (`id`, `d1.name`), so the enterprise leak gate's masking rule holds: no company database is read or printed.
@@ -23,6 +23,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
 import urllib.error
 from datetime import UTC, datetime, timedelta
@@ -138,7 +139,8 @@ def read_region(reader: D1Reader) -> dict:
         table = str(row["name"])
         cols, _ = reader.query("PRAGMA table_info(%s)" % _quote(table))
         sums = "".join(
-            ", sum(length(%s)) AS c%d" % (_quote(c["name"]), i) for i, c in enumerate(cols)
+            ", sum(length(CAST(%s AS BLOB))) AS c%d" % (_quote(c["name"]), i)
+            for i, c in enumerate(cols)
         )
         stats, _ = reader.query(_sql("SELECT count(*) AS n", sums, " FROM ", _quote(table)))
         stat = stats[0] if stats else {}
@@ -194,6 +196,8 @@ def render_markdown(regions: list[dict], unreachable: list[str]) -> str:
 
 def _pick(regions: list[dict[str, str]], only: str | None) -> list[dict[str, str]]:
     if only is None:
+        if not regions:
+            raise RegionError("regions.json lists no region to read")
         return regions
     chosen = [r for r in regions if r["id"] == only]
     if not chosen:
@@ -325,6 +329,22 @@ def compare_region(
     }
 
 
+_DATASET_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
+
+
+def _dataset_name(template: str, region_id: str) -> str:
+    """The AE dataset of a region, checked as a plain identifier before it is spliced into SQL."""
+    try:
+        name = template.format(region=region_id)
+    except (KeyError, IndexError, ValueError) as exc:
+        raise RegionError(
+            "TELEMETRY_AE_DATASET %r is not a usable template: %s" % (template, exc)
+        ) from None
+    if not _DATASET_RE.fullmatch(name):
+        raise RegionError("%s: AE dataset name %r is not an identifier" % (region_id, name))
+    return name
+
+
 def run_compare(
     env: Mapping[str, str],
     transport: ov.Transport,
@@ -351,8 +371,8 @@ def run_compare(
     unreachable: list[str] = []
     for target in targets:
         reader = D1Reader(transport, headers, account, target["id"], target["database"])
-        dataset = template.format(region=target["id"])
         try:
+            dataset = _dataset_name(template, target["id"])
             verdicts.append(compare_region(reader, client, account, dataset, days, now))
         except RegionError as exc:
             print("d1_size_report: %s" % exc, file=sys.stderr)

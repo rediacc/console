@@ -204,3 +204,30 @@ def test_compare_ae_failure_is_named_and_exits_2(capsys):
     rc, _ = compare(fake, broken)
     assert rc == 2
     assert "eu: analytics engine answered 403" in capsys.readouterr().err
+
+
+def test_an_empty_region_list_is_not_a_green_empty_report(capsys):
+    rc = sr.run_report(ENV, FakeD1({}), regions=[], out=io.StringIO())
+    assert rc == 2
+    assert "no region" in capsys.readouterr().err
+    rc = sr.run_compare(ENV, FakeD1({}), ae_returning(0), days=7, regions=[], out=io.StringIO())
+    assert rc == 2
+
+
+def test_value_bytes_are_summed_over_the_blob_cast():
+    fake = FakeD1({"eu": region(1, 1), "us": region(1, 1)})
+    run(fake)
+    sums = [body["sql"] for _, _, body in fake.calls if body and "sum(length" in body["sql"]]
+    assert sums
+    assert all("length(CAST(" in sql and "AS BLOB)" in sql for sql in sums)
+
+
+def test_a_dataset_name_that_is_not_an_identifier_is_refused_before_any_ae_query(capsys):
+    fake = FakeD1({"eu": region(1, 1, telemetry=5), "us": region(1, 1, telemetry=5)})
+    ae = ae_returning(5)
+    env = {**ENV, "TELEMETRY_AE_DATASET": "t_{region}; DROP TABLE x"}
+    out = io.StringIO()
+    rc = sr.run_compare(env, fake, ae, days=7, regions=REGIONS, now=NOW, out=out)
+    assert rc == 2
+    assert ae.seen == []
+    assert "not an identifier" in capsys.readouterr().err
