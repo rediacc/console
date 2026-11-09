@@ -400,6 +400,8 @@ def _chained(path, base="VERIFIED", account_after=False):
     root = world(path, account_files=(ACCOUNT_SRC,))
     base_head = _git(root, "rev-parse", "HEAD")
     base_tree = _git(root, "rev-parse", "HEAD^{tree}")
+    if not base_head or not base_tree:
+        raise RuntimeError("fixture has no HEAD commit or tree to chain the receipt from")
     if base is not None:
         plant_receipt(root, base, ran=("renet", "account"))
     if account_after:
