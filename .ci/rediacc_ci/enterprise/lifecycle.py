@@ -21,6 +21,7 @@ from typing import TYPE_CHECKING, Any, Protocol
 
 from rediacc_ci.deploy import proxy_configs as pc
 from rediacc_ci.enterprise import registry, secrets
+from rediacc_ci.enterprise.registry import Query
 
 if TYPE_CHECKING:
     import pathlib
@@ -88,7 +89,7 @@ class Teardown(Protocol):
 @dataclass
 class Context:
     registry: registry.Registry
-    query: registry.Query
+    query: Query
     exporter: Exporter
     teardown: Teardown
     store: secrets.Store

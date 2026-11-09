@@ -5,6 +5,8 @@ Nothing here reaches Cloudflare, AWS or bws. The fakes keep the state a real acc
 
 from __future__ import annotations
 
+from typing import Any
+
 import json
 import pathlib
 import sqlite3
@@ -287,7 +289,7 @@ def _control_world(tmp_path, exporter, teardown, store, unlisted=False):
         (ACME, "sub", "acme.example", 10, 100, 30),
     )
     conn.commit()
-    empty = {}
+    empty: dict[str, Any] = {}
 
     def query(database, sql, params):
         target = conn if database == "control-eu" else empty.setdefault(database, _empty_db())
@@ -649,7 +651,7 @@ def test_r2_s3_from_env_refuses_missing_credentials():
 
 
 def test_live_wrangler_captures_output_and_runs_in_the_worker_dir(tmp_path):
-    seen = {}
+    seen: dict[str, Any] = {}
 
     def runner(argv, **kw):
         seen.update(kw, argv=argv)

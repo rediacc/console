@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 import inspect
 import json
 
@@ -88,7 +90,7 @@ def test_secret_names_failure_is_a_lab_error_not_an_empty_list():
 
 
 def settings(props: dict | None = None, service: str = "signer-bench-eu"):
-    binding = {"type": "service", "name": "LICENSE_SIGNER", "service": service}
+    binding: dict[str, Any] = {"type": "service", "name": "LICENSE_SIGNER", "service": service}
     if props is not None:
         binding["props"] = props
     other = {"type": "d1", "name": "DB"}
