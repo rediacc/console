@@ -4392,6 +4392,16 @@ def test_the_skip_reset_mark_is_not_read_from_quoted_or_option_prefixed_words() 
         _fake_leg("a", "2>/dev/null BRIDGE_TEST_SKIP_RESET=1 npx x")
     )
     assert not vm_check.leg_skips_reset(_fake_leg("a", "env -i BRIDGE_TEST_SKIP_RESET=1 npx x"))
+    # A control operator or the mark INSIDE a quoted value is part of that one word, never a second command.
+    assert not vm_check.leg_skips_reset(
+        _fake_leg("a", 'NOTE="a; BRIDGE_TEST_SKIP_RESET=1 b" npx x')
+    )
+    assert not vm_check.leg_skips_reset(
+        _fake_leg("a", "NOTE='a && BRIDGE_TEST_SKIP_RESET=1' npx x")
+    )
+    assert vm_check.leg_skips_reset(_fake_leg("a", 'NOTE="a;b" BRIDGE_TEST_SKIP_RESET=1 npx x'))
+    assert vm_check._command_tokens('NOTE="a; b" npx x') == ['NOTE="a; b"', "npx", "x"]
+    assert vm_check._command_tokens("a&&b | c;d") == ["a", "&&", "b", "|", "c", ";", "d"]
 
 
 def test_reuse_legs_outside_the_sized_group_keep_map_order(monkeypatch: pytest.MonkeyPatch) -> None:

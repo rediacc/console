@@ -363,7 +363,7 @@ def test_the_refresher_drops_parked_names_and_leaves_archives_to_their_own_split
 
 
 def test_the_refresher_names_a_missing_access_token_before_it_runs_bws(monkeypatch, capsys):
-    """Review eea61acd.1: with BWS_ACCESS_TOKEN unset the refresher exits 1 naming the variable, and never reaches the bws lookup or a listing."""
+    """With BWS_ACCESS_TOKEN unset the refresher exits 1 naming the variable, and never reaches the bws lookup or a listing."""
     src = paths.from_root("scripts", "ops", "bws-map-refresh.py")
     spec = importlib.util.spec_from_file_location("bws_map_refresh_token", src)
     assert spec is not None

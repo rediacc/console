@@ -77,17 +77,19 @@ def test_the_gate_is_green_on_the_real_tree(gate):
 
 def test_the_real_commented_mentions_do_not_fire(gate):
     gate.log_test("FALSE POSITIVE, real fixtures: the comments the sibling sweep recorded")
-    # Each of these sits in the real corpus inside a comment. If one stops being there the fixture is gone and this test says so rather than passing on nothing.
-    # The assertion below proves each needle is present in its file now, which is all the loop checks; the comment-only placement is the gate's own scan. A fixture whose comment is reworded away is replaced from the live corpus, never dropped.
+    # Each of these sits in the real corpus inside a comment. If one stops being there, or moves into live code, the fixture is gone and this test says so rather than passing on nothing.
     for rel, needle in (
         (".github/workflows/ops-claude-review.yml", "secrets.ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN"),
         (".github/workflows/ci-quality.yml", "vars.GIT_BOT_NAME"),
     ):
-        gate.assert_contains(
-            paths.from_root(rel).read_text(encoding="utf-8"),
-            needle,
-            "%s still carries %s" % (rel, needle),
-        )
+        text = paths.from_root(rel).read_text(encoding="utf-8")
+        gate.assert_contains(text, needle, "%s still carries %s" % (rel, needle))
+        live = [
+            line
+            for line in text.splitlines()
+            if needle in line and not line.lstrip().startswith("#")
+        ]
+        gate.assert_eq(live, [], "%s carries %s only inside comments" % (rel, needle))
     result = _run()
     gate.assert_exit(0, result, "the real tree stays green with them present")
     gate.assert_not_contains(

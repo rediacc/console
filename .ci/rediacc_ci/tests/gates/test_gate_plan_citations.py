@@ -732,6 +732,40 @@ def test_a_correction_beneath_a_ticked_box_is_found_through_a_plain_sub_bullet(g
     gate.log_pass("the nearest ticked-box ancestor supplies the correction")
 
 
+def test_the_walk_up_passes_a_plain_sub_bullet_and_a_prose_line_to_reach_the_ticked_box(
+    gate, tmp_path
+):
+    """The row sits two levels under the ticked box, so the parent walk passes a plain sub-bullet (and, in the second case, a prose line) before it finds the box that owns the correction; corrections are scoped to the box, whatever sits between."""
+    problems_for = _problems_for_fn()
+    for label, lines in (
+        (
+            "plain sub-bullet",
+            [
+                "- [x] T1 done",
+                "    - detail",
+                "        - see `lib/old.py:1`",
+                "    " + _CORRECTION,
+            ],
+        ),
+        (
+            "prose line",
+            [
+                "- [x] T1 done",
+                "  Notes for the box",
+                "    - see `lib/old.py:1`",
+                "    " + _CORRECTION,
+            ],
+        ),
+    ):
+        case = tmp_path / label.replace(" ", "-")
+        case.mkdir()
+        root, rows = _correction_plan(case, lines)
+        got = problems_for(root, rows)
+        if got:
+            gate.log_fail("%s: the box's correction must excuse the token: %s" % (label, got))
+    gate.log_pass("the walk-up reaches the ticked box through plain lines")
+
+
 def test_a_correction_under_an_open_box_or_a_prose_line_excuses_nothing(gate, tmp_path):
     problems_for = _problems_for_fn()
     for label, lines in (

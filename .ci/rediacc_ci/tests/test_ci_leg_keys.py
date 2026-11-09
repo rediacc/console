@@ -251,3 +251,17 @@ def test_control_the_bws_prefixed_alias_is_found() -> None:
         "OTHER > BWS_ACCOUNT_ED25519_PRIVATE_KEY",
     )
     assert key_holders(aliased) == ["leg"]
+
+
+def test_control_a_suffixed_key_name_is_found_and_a_longer_name_is_not() -> None:
+    """The lookahead refuses only a following letter or digit, so `ACCOUNT_ED25519_PRIVATE_KEY_DEV` still counts as the key while `ACCOUNT_ED25519_PRIVATE_KEYS` does not."""
+    suffixed = CLEAN.replace(
+        "ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY",
+        "ACCOUNT_ED25519_PRIVATE_KEY_DEV > BWS_X",
+    )
+    assert key_holders(suffixed) == ["leg"]
+    longer = CLEAN.replace(
+        "ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY",
+        "ACCOUNT_ED25519_PRIVATE_KEYS > BWS_X",
+    )
+    assert key_holders(longer) == []

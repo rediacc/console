@@ -220,9 +220,13 @@ def test_an_empty_region_list_is_not_a_green_empty_report(capsys):
 def test_value_bytes_are_summed_over_the_blob_cast():
     fake = FakeD1({"eu": region(1, 1), "us": region(1, 1)})
     run(fake)
-    bodies = [body for method, _, body in fake.calls if method == "POST"]
-    assert all(isinstance(b, dict) and isinstance(b["sql"], str) for b in bodies)
-    sums = [b["sql"] for b in bodies if "sum(length" in b["sql"]]
+    queries: list[str] = []
+    for method, _url, body in fake.calls:
+        if method == "POST":
+            assert isinstance(body, dict)
+            assert isinstance(body["sql"], str)
+            queries.append(body["sql"])
+    sums = [sql for sql in queries if "sum(length" in sql]
     assert sums
     # One sum per column of the PRAGMA answer (`id`, `data`), each over the blob cast.
     for sql in sums:

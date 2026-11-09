@@ -60,8 +60,8 @@
     "only the jobs that finished, which is how the 3-job partial harvests",
     "happened."
   ],
-  "refreshed_at": "2026-11-09T16:42:51Z",
-  "refreshed_from": "PROFILER_BASELINE_V1 annotations on up to 20 Console CI runs of branch main (check_runner_advice.py --refresh --branch main --runs 20), check-runs annotations API.",
+  "refreshed_at": "2026-11-09T19:44:39Z",
+  "refreshed_from": "PROFILER_BASELINE_V1 annotations on 20 Console CI run(s) of branch main, check-runs annotations API.",
   "jobs": {
     "ci-build-cli.yml:build-cli-executables": {
       "workflow": "ci-build-cli.yml",

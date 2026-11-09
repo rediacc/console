@@ -1091,7 +1091,7 @@ def test_the_free_license_hmac_key_is_pushed_and_demanded(tmp_path: pathlib.Path
 def test_the_analytics_engine_guards_are_pushed_and_demanded(
     tmp_path: pathlib.Path, name: str
 ) -> None:
-    """Port-only (review a3adea22.1): the value is pushed under its own name, and an empty one is refused with no wrangler call and no value in either stream."""
+    """Port-only (review a3adea22.1): the value is pushed under its own name, and an empty one is refused with no wrangler call, the name on stderr and nothing on stdout."""
     ok, calls = _port_raw(tmp_path, **_pair_for("stable"))
     assert ok.returncode == 0, ok.stderr
     assert json.loads(document(calls))[name]
@@ -1101,6 +1101,7 @@ def test_the_analytics_engine_guards_are_pushed_and_demanded(
     assert proc.returncode == 1
     assert calls == ""
     assert "%s is EMPTY for" % name in proc.stderr
+    assert proc.stdout == ""
     assert port.REQUIRED_NONEMPTY.count(name) == 1
 
 

@@ -567,20 +567,56 @@ def recipe_env(fleet: trigger.Fleet) -> dict[str, str]:
 
 
 SKIP_RESET_MARK = "BRIDGE_TEST_SKIP_RESET=1"
-_ENV_WORD = re.compile(r"""[A-Za-z_][A-Za-z0-9_]*=(?:"[^"]*"|'[^']*'|[^\s"'])*$""")
+_ENV_WORD = re.compile(r"""[A-Za-z_][A-Za-z0-9_]*=(?:"[^"\s]*"|'[^'\s]*'|[^\s"'])*$""")
+_OPERATOR_CHARS = frozenset("();<>|&")
 # Words that may precede the `VAR=value` words of a command without ending the prefix: `env A=1 cmd` and `export A=1`.
 _PREFIX_WORDS = frozenset({"env", "export"})
 
 
 def _command_tokens(line: str) -> list[str] | None:
-    """The shell tokens of one command line, quotes left on (posix=False) so a quoted word is told apart from a bare one, a `#` comment dropped, and the control operators (`&&`, `||`, `;`, `|`, `&`) separate tokens made only of operator characters. None when the line does not tokenize (an unterminated quote)."""
-    lexer = shlex.shlex(line, posix=False, punctuation_chars=True)
-    lexer.whitespace_split = True
-    lexer.commenters = "#"
-    try:
-        return list(lexer)
-    except ValueError:
+    """The shell tokens of one command line, quotes left on so a quoted word is told apart from a bare one and a quoted `;` or `#` stays inside its word, a `#` outside quotes dropping the rest of the line, and each run of control-operator characters (`&&`, `||`, `;`, `|`, `&`) a token of its own. None when the line does not tokenize (an unterminated quote)."""
+    tokens: list[str] = []
+    word: list[str] = []
+    quote = ""
+    i = 0
+
+    def flush() -> None:
+        if word:
+            tokens.append("".join(word))
+            word.clear()
+
+    while i < len(line):
+        ch = line[i]
+        if quote:
+            word.append(ch)
+            if ch == "\\" and quote == '"' and i + 1 < len(line):
+                i += 1
+                word.append(line[i])
+            elif ch == quote:
+                quote = ""
+        elif ch == "\\" and i + 1 < len(line):
+            word.extend((ch, line[i + 1]))
+            i += 1
+        elif ch in "\"'":
+            quote = ch
+            word.append(ch)
+        elif ch == "#":
+            break
+        elif ch.isspace():
+            flush()
+        elif ch in _OPERATOR_CHARS:
+            if not (word and set(word) <= _OPERATOR_CHARS):
+                flush()
+            word.append(ch)
+        else:
+            if word and set(word) <= _OPERATOR_CHARS:
+                flush()
+            word.append(ch)
+        i += 1
+    if quote:
         return None
+    flush()
+    return tokens
 
 
 def leg_skips_reset(leg: trigger.Leg) -> bool:

@@ -64,7 +64,7 @@ BENCH_UNALIASED = (
     "ACCOUNT_SERVER_API_KEY",
     "ACCOUNT_JWT_SECRET",
 )
-# The licence private key stays out of the bench profile in any spelling, aliased or not: the bench account Worker signs through LICENSE_SIGNER (review 9829ab50.1 pins the absence).
+# The licence private key stays out of the bench profile in any spelling, aliased or not: the bench account Worker signs through LICENSE_SIGNER (test_gate_region_consistency.py plants it bound and aliased).
 BENCH_FORBIDDEN = ("ACCOUNT_ED25519_PRIVATE_KEY",)
 # Vars each channel's account toml carries beyond REGION / WEBAUTHN_RP_ID / WEBAUTHN_ORIGIN, with the value where it is fixed.
 CHANNEL_VARS: dict[str, dict[str, str | None]] = {
