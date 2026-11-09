@@ -1273,6 +1273,12 @@
                   "defaultValue": null
                 },
                 {
+                  "flags": "--replicate-from <storeId>",
+                  "descriptionKey": "commands.backup.strategy.set.optionReplicateFrom",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
                   "flags": "--cron <expression>",
                   "descriptionKey": "commands.backup.strategy.set.optionCron",
                   "mandatory": false,
