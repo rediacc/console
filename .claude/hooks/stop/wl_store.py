@@ -954,10 +954,10 @@ def append_events(worklist, payloads, writer=None, root=None):
 
 
 def event_order(ev):
-    """The (stamp, ns) sort key of one event. A non-numeric `ns` in a store file sorts as 0 rather than raising."""
+    """The (stamp, ns) sort key of one event. A non-numeric or infinite `ns` in a store file sorts as 0 rather than raising."""
     try:
         ns = int(ev.get("ns") or 0)
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, OverflowError):
         ns = 0
     return (str(ev.get("at") or ""), ns)
 
@@ -990,7 +990,7 @@ def _read_events(worklist, root=None):
         with contextlib.suppress(OSError):
             out.extend(_parse_events(legacy.read_text(encoding="utf-8", errors="replace")))
     # (at, ns): the stamp orders across machines and the nanosecond counter orders within a second on this one. A missing ns sorts first inside its second, which is where an older event belongs.
-    out.sort(key=lambda e: event_order(e))
+    out.sort(key=event_order)
     return out
 
 
@@ -1011,7 +1011,7 @@ def phase_fold(worklist, root=None):
         out.extend(
             _parse_events("\n".join(ln for ln in text.splitlines() if _PHASE_LINE.search(ln)))
         )
-    out.sort(key=lambda e: event_order(e))
+    out.sort(key=event_order)
     phase: dict[Any, Any] = {}
     _records, _md, _cli, _h, lineage = _fold_events(out, phase=phase)
     return Fold([], "", lineage, phase=phase)

@@ -6,6 +6,7 @@ because the journal is deliberately off under $WORKLIST_STORE_DIR; one control p
 
 from __future__ import annotations
 
+import json
 import shutil
 import subprocess
 from typing import TYPE_CHECKING
@@ -148,3 +149,11 @@ def test_a_linked_checkout_journal_is_its_own(repo, tmp_path):
     jd = S.journal_dir(linked)
     assert jd == private.resolve() / S.JOURNAL_DIR_NAME
     assert S.journal_dir(repo) == repo / ".git" / S.JOURNAL_DIR_NAME
+
+
+def test_event_order_sorts_an_infinite_or_junk_ns_as_zero():
+    """json.loads accepts `Infinity`, and int(inf) raises OverflowError (review 51610e8b.1); the key must not raise. Control: a finite ns keeps its value."""
+    inf = json.loads('{"at": "2026-01-01T00:00:00Z", "ns": Infinity}')
+    assert S.event_order(inf) == ("2026-01-01T00:00:00Z", 0)
+    assert S.event_order({"at": "x", "ns": "abc"}) == ("x", 0)
+    assert S.event_order({"at": "x", "ns": 7}) == ("x", 7)
