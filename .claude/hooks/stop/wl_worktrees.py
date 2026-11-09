@@ -32,6 +32,8 @@ CONSOLE = "."
 GIT_TIMEOUT_S = 30
 SHA_SHOWN = 12
 PICKED_LINE = "(cherry picked from commit %s)"
+# A lease commit whose change already landed through another commit (a duplicate fix by a second writer, whose pick was skipped): the lead records it with this trailer on a branch commit, `Lease-Landed-As: <lease sha> <landed sha>`. Equivalence of two different patches cannot be read mechanically, so it is an explicit record, never inferred.
+LANDED_AS_LINE = "Lease-Landed-As: %s "
 # A gitlink row whose commit moved with nothing else changed: submodule-first landing leaves it behind, and the submodule is judged on its own.
 GITLINK_MOVED = "SC.."
 ORPHAN_TREE = "a tree with no record"
@@ -260,11 +262,14 @@ def unlanded_commits(tree, head, pin, tip, base):
     if not found:
         return []
     greps = ["--grep=" + PICKED_LINE % sha for sha in found]
+    greps += ["--grep=" + LANDED_AS_LINE % sha for sha in found]
     narrow = ["--not", base] if base else []
     text = _git(tree, "log", "-F", *greps, "--format=%B", "--branches", tip, *narrow)
     if text is None:
         return None
-    return [sha for sha in found if PICKED_LINE % sha not in text]
+    return [
+        sha for sha in found if PICKED_LINE % sha not in text and LANDED_AS_LINE % sha not in text
+    ]
 
 
 def figures(repos, tips, pins, base):

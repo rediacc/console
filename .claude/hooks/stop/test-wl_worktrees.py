@@ -716,6 +716,26 @@ def control_landed(tmp):
     )
     check("a resolved pick reads landed by its -x line", read(tmp, main)["unlanded"], [])
 
+    # A duplicate fix: the lease commit's change landed through a different commit, recorded by a Lease-Landed-As trailer.
+    main = lease_main_repo(tmp, "landed-as")
+    lease = new_lease(tmp, main, "w1")
+    sha = commit_in(tmp, lease, "a.txt", "lease wording\n")
+    other = commit_in(tmp, main, "a.txt", "landed wording\n")
+    check(
+        "an equivalent fix landed elsewhere still reads unlanded",
+        ids(read(tmp, main)["unlanded"]),
+        ["w1"],
+    )
+    commit_in(tmp, main, "c.txt", "c\n", "record\n\nLease-Landed-As: %s %s" % (sha, other))
+    check("a Lease-Landed-As trailer reads it landed", read(tmp, main)["unlanded"], [])
+    # CONTROL: the trailer names one lease commit, not every one.
+    sha2 = commit_in(tmp, lease, "d.txt", "d\n")
+    check(
+        "a second lease commit the trailer does not name stays unlanded",
+        read(tmp, main)["unlanded"][0]["commits"],
+        {".": [sha2]},
+    )
+
     main = lease_main_repo(tmp, "pinned")
     lease = new_lease(tmp, main, "w1")
     base = git(tmp, main, "rev-parse", "HEAD")
