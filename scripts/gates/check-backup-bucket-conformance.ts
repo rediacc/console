@@ -66,15 +66,15 @@
  * ---- end gate ----
  */
 
-import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
-import { fileURLToPath } from "node:url";
-import { joinReport } from "../lib/console.js";
+import { existsSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { joinReport } from '../lib/console.js';
 
-const ROOT = join(fileURLToPath(new URL(".", import.meta.url)), "..", "..");
+const ROOT = join(fileURLToPath(new URL('.', import.meta.url)), '..', '..');
 
 /** The binding whose bucket the presign signer must agree with. */
-const BINDING = "BACKUP_BUCKET";
+const BINDING = 'BACKUP_BUCKET';
 
 interface RegionRecord {
   id: string;
@@ -105,9 +105,9 @@ interface Deployment {
  */
 export function extractBinding(
   tomlText: string,
-  binding: string,
+  binding: string
 ): { bucket: string | null; jurisdiction: string | null } {
-  const lines = tomlText.split("\n");
+  const lines = tomlText.split('\n');
   let inBlock = false;
   let sawBinding = false;
   let bucket: string | null = null;
@@ -115,19 +115,19 @@ export function extractBinding(
 
   for (const raw of lines) {
     const line = raw.trim();
-    if (line.startsWith("[")) {
+    if (line.startsWith('[')) {
       // A new table ends the previous one. If it was ours, we are done.
       if (sawBinding) break;
-      inBlock = line === "[[r2_buckets]]";
+      inBlock = line === '[[r2_buckets]]';
       sawBinding = false;
       continue;
     }
     if (!inBlock) continue;
     const m = /^(\w+)\s*=\s*"([^"]*)"/.exec(line);
     if (!m) continue;
-    if (m[1] === "binding") sawBinding = m[2] === binding;
-    if (sawBinding && m[1] === "bucket_name") bucket = m[2];
-    if (sawBinding && m[1] === "jurisdiction") jurisdiction = m[2];
+    if (m[1] === 'binding') sawBinding = m[2] === binding;
+    if (sawBinding && m[1] === 'bucket_name') bucket = m[2];
+    if (sawBinding && m[1] === 'jurisdiction') jurisdiction = m[2];
   }
   return {
     bucket: sawBinding || bucket !== null ? bucket : null,
@@ -138,26 +138,26 @@ export function extractBinding(
 // ── Control: the extractor, both directions, before it is trusted ──────────
 {
   const fixture = [
-    "[[r2_buckets]]",
+    '[[r2_buckets]]',
     'binding = "CONFIG_BUCKET"',
     'bucket_name = "decoy-configs"',
     'jurisdiction = "eu"',
-    "",
-    "[[r2_buckets]]",
+    '',
+    '[[r2_buckets]]',
     `binding = "${BINDING}"`,
     'bucket_name = "real-backups"',
     'jurisdiction = "eu"',
-    "",
-    "[vars]",
+    '',
+    '[vars]',
     'bucket_name = "trailing-decoy"',
-  ].join("\n");
+  ].join('\n');
   const got = extractBinding(fixture, BINDING);
-  if (got.bucket !== "real-backups" || got.jurisdiction !== "eu") {
+  if (got.bucket !== 'real-backups' || got.jurisdiction !== 'eu') {
     console.error(
       `✗ instrument control: the extractor read ${JSON.stringify(got)} from a fixture whose\n` +
         `  ${BINDING} block says bucket_name="real-backups", jurisdiction="eu". It is either\n` +
         `  reading the neighbouring CONFIG_BUCKET block or running past the table. Every\n` +
-        `  comparison below would be meaningless.`,
+        `  comparison below would be meaningless.`
     );
     process.exit(1);
   }
@@ -170,42 +170,36 @@ export function extractBinding(
   if (jurHits !== 1) {
     console.error(
       `✗ instrument control: the fixture contains the jurisdiction needle ${jurHits} time(s), ` +
-        `expected exactly 1, so the mutant below would not differ from the clean fixture.`,
+        `expected exactly 1, so the mutant below would not differ from the clean fixture.`
     );
     process.exit(1);
   }
-  const noJur = extractBinding(
-    fixture.replace(JUR_NEEDLE, "\n[vars]"),
-    BINDING,
-  );
+  const noJur = extractBinding(fixture.replace(JUR_NEEDLE, '\n[vars]'), BINDING);
   if (noJur.jurisdiction !== null) {
-    console.error(
-      "✗ instrument control: an absent jurisdiction was reported as present.",
-    );
+    console.error('✗ instrument control: an absent jurisdiction was reported as present.');
     process.exit(1);
   }
-  if (extractBinding(fixture, "NO_SUCH_BINDING").bucket !== null) {
+  if (extractBinding(fixture, 'NO_SUCH_BINDING').bucket !== null) {
     console.error(
-      "✗ instrument control did not fire: a binding that is NOT in the fixture was\n" +
-        "  reported as found, so a green run below would mean nothing.",
+      '✗ instrument control did not fire: a binding that is NOT in the fixture was\n' +
+        '  reported as found, so a green run below would mean nothing.'
     );
     process.exit(1);
   }
 }
 
 // ── Source-shape and bench rows: pure checks, controlled both ways ─────────
-const STORE_SRC = "private/account/src/services/backup-chunk-store.ts";
-const BENCH_TOML = "workers/account/wrangler.bench.toml";
-const BENCH_DEPLOY = ".ci/rediacc_ci/ops/deploy_bench.py";
+const STORE_SRC = 'private/account/src/services/backup-chunk-store.ts';
+const BENCH_TOML = 'workers/account/wrangler.bench.toml';
+const BENCH_DEPLOY = '.ci/rediacc_ci/ops/deploy_bench.py';
 
 /** The text of createBackupPlane's Workers branch plus presignCredentials, or null when a marker is gone. */
 export function workersBranch(src: string): string | null {
-  const helper = src.indexOf("function presignCredentials");
-  const start = src.indexOf("export function createBackupPlane");
-  const open = src.indexOf("if (r2Binding) {", start);
-  const end = src.indexOf("return { store, grantMinter: null };", open);
-  if (helper < 0 || start < 0 || open < 0 || end < 0 || helper > start)
-    return null;
+  const helper = src.indexOf('function presignCredentials');
+  const start = src.indexOf('export function createBackupPlane');
+  const open = src.indexOf('if (r2Binding) {', start);
+  const end = src.indexOf('return { store, grantMinter: null };', open);
+  if (helper < 0 || start < 0 || open < 0 || end < 0 || helper > start) return null;
   return src.slice(helper, start) + src.slice(open, end);
 }
 
@@ -227,63 +221,59 @@ export function benchLiterals(py: string): string[] {
 
 {
   const clean = [
-    "function presignCredentials(env) { return null; }",
-    "export function createBackupPlane(env, r2Binding) {",
-    "  if (r2Binding) {",
-    "    const presign = presignCredentials(env);",
-    "    return { store, grantMinter: null };",
-    "  }",
+    'function presignCredentials(env) { return null; }',
+    'export function createBackupPlane(env, r2Binding) {',
+    '  if (r2Binding) {',
+    '    const presign = presignCredentials(env);',
+    '    return { store, grantMinter: null };',
+    '  }',
     "  accessKeyId: env.ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY ?? '',",
-    "}",
-  ].join("\n");
+    '}',
+  ].join('\n');
   const branch = workersBranch(clean);
   if (branch === null || emptyFallbacks(branch).length !== 0) {
     console.error(
-      "✗ source-shape control: a clean Workers branch was refused (or its markers were not\n" +
-        "  found). The Node branch below it carries a legal `?? ''` that must stay out of scope.",
+      '✗ source-shape control: a clean Workers branch was refused (or its markers were not\n' +
+        "  found). The Node branch below it carries a legal `?? ''` that must stay out of scope."
     );
     process.exit(1);
   }
   const planted = clean.replace(
-    "const presign = presignCredentials(env);",
-    "bucket: env.ACCOUNT_BACKUP_S3_BUCKET ?? '',",
+    'const presign = presignCredentials(env);',
+    "bucket: env.ACCOUNT_BACKUP_S3_BUCKET ?? '',"
   );
   const plantedBranch = workersBranch(planted);
   if (plantedBranch === null || emptyFallbacks(plantedBranch).length !== 1) {
     console.error(
       "✗ source-shape control did not fire: a planted `?? ''` bucket fallback in the Workers\n" +
-        "  branch was not reported.",
+        '  branch was not reported.'
     );
     process.exit(1);
   }
   const plantedOr = workersBranch(
     clean.replace(
-      "const presign = presignCredentials(env);",
-      "endpoint: env.ACCOUNT_BACKUP_S3_ENDPOINT || '',",
-    ),
+      'const presign = presignCredentials(env);',
+      "endpoint: env.ACCOUNT_BACKUP_S3_ENDPOINT || '',"
+    )
   );
   if (plantedOr === null || emptyFallbacks(plantedOr).length !== 1) {
     console.error(
       "✗ source-shape control did not fire: a planted `|| ''` endpoint fallback in the Workers\n" +
-        "  branch was not reported.",
+        '  branch was not reported.'
     );
     process.exit(1);
   }
-  if (workersBranch("nothing here") !== null) {
-    console.error(
-      "✗ source-shape control: a source without the markers was not refused.",
-    );
+  if (workersBranch('nothing here') !== null) {
+    console.error('✗ source-shape control: a source without the markers was not refused.');
     process.exit(1);
   }
   if (
     benchLiterals('x = "backups-bench"').length !== 1 ||
     benchLiterals('x = "rediacc-backups-bench"').length !== 1 ||
-    benchLiterals("x = 1").length ||
+    benchLiterals('x = 1').length ||
     benchLiterals('url = "/backups/usage"').length
   ) {
-    console.error(
-      "✗ bench control: the literal scan is wrong in one direction.",
-    );
+    console.error('✗ bench control: the literal scan is wrong in one direction.');
     process.exit(1);
   }
 }
@@ -292,28 +282,22 @@ const rowProblems: string[] = [];
 let benchRows = 0;
 {
   const storePath = join(ROOT, STORE_SRC);
-  const branch = existsSync(storePath)
-    ? workersBranch(readFileSync(storePath, "utf8"))
-    : null;
+  const branch = existsSync(storePath) ? workersBranch(readFileSync(storePath, 'utf8')) : null;
   if (branch === null) {
-    rowProblems.push(
-      `    source-shape: ${STORE_SRC} or the Workers-branch markers are missing`,
-    );
+    rowProblems.push(`    source-shape: ${STORE_SRC} or the Workers-branch markers are missing`);
   } else {
     for (const hit of emptyFallbacks(branch)) {
       rowProblems.push(
-        `    source-shape: ${STORE_SRC} Workers branch falls back to an empty value: ${hit}`,
+        `    source-shape: ${STORE_SRC} Workers branch falls back to an empty value: ${hit}`
       );
     }
   }
   const tomlPath = join(ROOT, BENCH_TOML);
   const bench = existsSync(tomlPath)
-    ? extractBinding(readFileSync(tomlPath, "utf8"), BINDING)
+    ? extractBinding(readFileSync(tomlPath, 'utf8'), BINDING)
     : null;
   if (!bench?.bucket) {
-    rowProblems.push(
-      `    bench: ${BENCH_TOML} declares no ${BINDING} binding with a bucket_name`,
-    );
+    rowProblems.push(`    bench: ${BENCH_TOML} declares no ${BINDING} binding with a bucket_name`);
   } else {
     benchRows++;
   }
@@ -321,28 +305,22 @@ let benchRows = 0;
   if (!existsSync(pyPath)) {
     rowProblems.push(`    bench: ${BENCH_DEPLOY} does not exist`);
   } else {
-    for (const lit of benchLiterals(readFileSync(pyPath, "utf8"))) {
+    for (const lit of benchLiterals(readFileSync(pyPath, 'utf8'))) {
       rowProblems.push(
-        `    bench: ${BENCH_DEPLOY} quotes the bucket "${lit}"; derive it from ${BENCH_TOML}`,
+        `    bench: ${BENCH_DEPLOY} quotes the bucket "${lit}"; derive it from ${BENCH_TOML}`
       );
     }
   }
 }
 
-const regionsPath = join(ROOT, "regions.json");
+const regionsPath = join(ROOT, 'regions.json');
 if (!existsSync(regionsPath)) {
-  console.error(
-    `✗ regions.json not found at ${regionsPath}; refusing to pass vacuously.`,
-  );
+  console.error(`✗ regions.json not found at ${regionsPath}; refusing to pass vacuously.`);
   process.exit(1);
 }
-const regions: RegionRecord[] = JSON.parse(
-  readFileSync(regionsPath, "utf8"),
-).regions;
+const regions: RegionRecord[] = JSON.parse(readFileSync(regionsPath, 'utf8')).regions;
 if (!Array.isArray(regions) || regions.length === 0) {
-  console.error(
-    "✗ regions.json parsed to zero regions; refusing to pass vacuously.",
-  );
+  console.error('✗ regions.json parsed to zero regions; refusing to pass vacuously.');
   process.exit(1);
 }
 
@@ -364,8 +342,8 @@ const EXPECTED = 3;
 if (deployments.length !== EXPECTED) {
   console.error(
     `✗ expected ${EXPECTED} deployments (3 regions, one shared Worker each), built ${deployments.length}.\n` +
-      "  Either regions.json changed shape or this gate is out of date. Refusing to\n" +
-      "  report a verdict over a set this gate does not recognise.",
+      '  Either regions.json changed shape or this gate is out of date. Refusing to\n' +
+      '  report a verdict over a set this gate does not recognise.'
   );
   process.exit(1);
 }
@@ -377,10 +355,7 @@ for (const d of deployments) {
     problems.push(`    ${d.label}: ${d.toml} does not exist`);
     continue;
   }
-  const { bucket, jurisdiction } = extractBinding(
-    readFileSync(path, "utf8"),
-    BINDING,
-  );
+  const { bucket, jurisdiction } = extractBinding(readFileSync(path, 'utf8'), BINDING);
   if (bucket === null) {
     problems.push(`    ${d.label}: ${d.toml} declares no ${BINDING} binding`);
     continue;
@@ -388,19 +363,17 @@ for (const d of deployments) {
   if (!d.declared) {
     problems.push(
       `    ${d.label}: regions.json names no backup bucket ` +
-        `(backupR2), but the binding says "${bucket}"`,
+        `(backupR2), but the binding says "${bucket}"`
     );
     continue;
   }
   if (d.declared !== bucket) {
-    problems.push(
-      `    ${d.label}: regions.json says "${d.declared}", ${d.toml} binds "${bucket}"`,
-    );
+    problems.push(`    ${d.label}: regions.json says "${d.declared}", ${d.toml} binds "${bucket}"`);
   }
   if ((jurisdiction ?? null) !== d.declaredJurisdiction) {
     problems.push(
       `    ${d.label}: regions.json r2Jurisdiction=${JSON.stringify(d.declaredJurisdiction)}, ` +
-        `${d.toml} jurisdiction=${JSON.stringify(jurisdiction ?? null)}`,
+        `${d.toml} jurisdiction=${JSON.stringify(jurisdiction ?? null)}`
     );
   }
 }
@@ -408,15 +381,15 @@ for (const d of deployments) {
 if (problems.length > 0) {
   console.error(
     joinReport(
-      `✗ backup bucket conformance broken (${problems.length} problem(s)):\n${problems.join("\n")}\n\n`,
-      "  regions.json is what the deploy hands the presign signer; the wrangler toml\n",
-      "  is what the Worker actually reads and GCs. When they disagree, clients upload\n",
-      "  chunks to one bucket while the sweep deletes from another, and nothing errors\n",
-      "  — the backup simply is not there when someone restores.\n\n",
-      "  Fix by making regions.json match the bindings (or the bindings match\n",
-      "  regions.json), then re-run. Do NOT reintroduce a global ACCOUNT_BACKUP_S3_BUCKET secret:\n",
-      "  one global name against per-region bindings is the defect this gate exists for.",
-    ),
+      `✗ backup bucket conformance broken (${problems.length} problem(s)):\n${problems.join('\n')}\n\n`,
+      '  regions.json is what the deploy hands the presign signer; the wrangler toml\n',
+      '  is what the Worker actually reads and GCs. When they disagree, clients upload\n',
+      '  chunks to one bucket while the sweep deletes from another, and nothing errors\n',
+      '  — the backup simply is not there when someone restores.\n\n',
+      '  Fix by making regions.json match the bindings (or the bindings match\n',
+      '  regions.json), then re-run. Do NOT reintroduce a global ACCOUNT_BACKUP_S3_BUCKET secret:\n',
+      '  one global name against per-region bindings is the defect this gate exists for.'
+    )
   );
   process.exit(1);
 }
@@ -424,10 +397,10 @@ if (problems.length > 0) {
 console.log(
   joinReport(
     `✓ backup bucket conformance: ${deployments.length + benchRows} deployment(s) (bench included), bucket and\n`,
-    "  jurisdiction agree between regions.json and every wrangler binding\n",
-    "  (extractor, source-shape and bench controls fired both ways).\n",
-    "  Blind spot, stated so a green is not read as more than it is: this proves the\n",
-    "  two DECLARATIONS agree. It does not prove either bucket exists in Cloudflare,\n",
-    "  nor that the R2 credential is scoped to reach it.",
-  ),
+    '  jurisdiction agree between regions.json and every wrangler binding\n',
+    '  (extractor, source-shape and bench controls fired both ways).\n',
+    '  Blind spot, stated so a green is not read as more than it is: this proves the\n',
+    '  two DECLARATIONS agree. It does not prove either bucket exists in Cloudflare,\n',
+    '  nor that the R2 credential is scoped to reach it.'
+  )
 );

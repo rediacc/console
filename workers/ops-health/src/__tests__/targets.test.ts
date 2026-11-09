@@ -80,9 +80,7 @@ describe('parseTargetFile refusals', () => {
 
 describe('regionEndpoints', () => {
   it('builds the account and proxy health endpoint of every region', () => {
-    const endpoints = regionEndpoints([
-      { id: 'eu', domain: 'eu.example.test' },
-    ]);
+    const endpoints = regionEndpoints([{ id: 'eu', domain: 'eu.example.test' }]);
     expect(endpoints).toEqual([
       {
         id: 'health:account-eu',
