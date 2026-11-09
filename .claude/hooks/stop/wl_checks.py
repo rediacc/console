@@ -5524,6 +5524,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 _rows,
                 _rp,
                 _rp,
+                _rp,
                 me8,
             )
             # OLDEST first, so the age is the age of the longest-ignored one.

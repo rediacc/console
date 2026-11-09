@@ -1586,20 +1586,19 @@ def test_a_body_stored_by_the_old_defang_reads_back_as_written():
 # ---- R20261101.4: the unread-reports block names the listing verb ------------------------------
 
 
-def test_r4_the_unread_block_and_its_older_row_name_the_reports_verb():
+def test_r4_the_unread_block_names_a_listing_verb_that_runs(sc):
+    """Reviews 58876982.1-.3: the listing line uses the same absolute wl_report.py path as its neighbours, the older-not-shown row points at it rather than repeating it, and the advertised command is run here, not only matched as text."""
     msgs = wlfix.import_wl("worklist_messages")
-    block = msgs.N_UNREAD_REPORTS % (
-        3,
-        "br",
-        "    row",
-        "/x/wl_report.py",
-        "/x/wl_report.py",
-        "aaaaaaaa",
-    )
-    assert "worklist.py --reports" in block, block
+    rp = "/x/wl_report.py"
+    block = msgs.N_UNREAD_REPORTS % (3, "br", "    row", rp, rp, rp, "aaaaaaaa")
+    line = next(ln for ln in block.splitlines() if "list unread:" in ln)
+    assert line.strip() == "list unread: python3 %s --list --unread" % rp, line
     older = msgs.N_UNREAD_OLDER % (4, "    row")
     assert "4 older not shown" in older, older
-    assert "worklist.py --reports" in older, older
+    assert "--list" not in older, older
+    got = sc.py("wl_report.py", "--list", "--unread")
+    assert got.rc == 0, got.err
+    assert "unknown mode" not in got.out + got.err
 
 
 def test_r4_an_unknown_mode_prints_the_usage_line(sc):
