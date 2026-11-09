@@ -567,19 +567,42 @@ def recipe_env(fleet: trigger.Fleet) -> dict[str, str]:
 
 
 SKIP_RESET_MARK = "BRIDGE_TEST_SKIP_RESET=1"
-_SEGMENT_SPLIT = re.compile(r"&&|\|\||[;|&]")
 _ENV_WORD = re.compile(r"[A-Za-z_][A-Za-z0-9_]*=\S*$")
+# Words that may precede the `VAR=value` words of a command without ending the prefix: `env A=1 cmd` and `export A=1`.
+_PREFIX_WORDS = frozenset({"env", "export"})
+
+
+def _command_tokens(line: str) -> list[str] | None:
+    """The shell tokens of one command line: quotes are kept inside their token, a `#` comment is dropped, and the control operators (`&&`, `||`, `;`, `|`, `&`) are separate tokens made only of operator characters. None when the line does not tokenize (an unterminated quote)."""
+    lexer = shlex.shlex(line, posix=True, punctuation_chars=True)
+    lexer.whitespace_split = True
+    lexer.commenters = "#"
+    try:
+        return list(lexer)
+    except ValueError:
+        return None
 
 
 def leg_skips_reset(leg: trigger.Leg) -> bool:
-    """Whether a leg runs its suite on the VMs as found (BRIDGE_TEST_SKIP_RESET=1) instead of recreating them first. The mark counts only as a whole word in the leading `VAR=value` prefix of one command, so an echo, a comment or `BRIDGE_TEST_SKIP_RESET=10` does not classify a leg as reuse."""
+    """Whether a leg runs its suite on the VMs as found (BRIDGE_TEST_SKIP_RESET=1) instead of recreating them first. The mark counts only as a whole word in the leading `VAR=value` prefix of one command, after an optional `env` or `export`, so an echo, a quoted string, a comment or `BRIDGE_TEST_SKIP_RESET=10` does not classify a leg as reuse."""
     for line in leg.cmd:
-        for segment in _SEGMENT_SPLIT.split(line):
-            for word in segment.split():
-                if not _ENV_WORD.match(word):
-                    break
-                if word == SKIP_RESET_MARK:
-                    return True
+        tokens = _command_tokens(line)
+        if tokens is None:
+            continue
+        in_prefix = True
+        for token in tokens:
+            if set(token) <= set("();<>|&"):
+                in_prefix = True
+                continue
+            if not in_prefix:
+                continue
+            if token in _PREFIX_WORDS:
+                continue
+            if not _ENV_WORD.match(token):
+                in_prefix = False
+                continue
+            if token == SKIP_RESET_MARK:
+                return True
     return False
 
 

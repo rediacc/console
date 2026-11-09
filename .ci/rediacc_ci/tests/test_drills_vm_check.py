@@ -4370,6 +4370,15 @@ def test_the_skip_reset_mark_counts_only_as_a_leading_env_assignment() -> None:
     assert not vm_check.leg_skips_reset(_fake_leg("a", "npx x"))
 
 
+def test_the_skip_reset_mark_ignores_quotes_and_comments_and_reads_env_and_export() -> None:
+    assert not vm_check.leg_skips_reset(_fake_leg("a", 'echo "x; BRIDGE_TEST_SKIP_RESET=1 y"'))
+    assert not vm_check.leg_skips_reset(_fake_leg("a", "# note; BRIDGE_TEST_SKIP_RESET=1 npx x"))
+    assert not vm_check.leg_skips_reset(_fake_leg("a", 'echo "unterminated'))
+    assert vm_check.leg_skips_reset(_fake_leg("a", "export BRIDGE_TEST_SKIP_RESET=1 && npx x"))
+    assert vm_check.leg_skips_reset(_fake_leg("a", "env BRIDGE_TEST_SKIP_RESET=1 npx x"))
+    assert vm_check.leg_skips_reset(_fake_leg("a", "npx a | cat; BRIDGE_TEST_SKIP_RESET=1 npx x"))
+
+
 def test_reuse_legs_outside_the_sized_group_keep_map_order(monkeypatch: pytest.MonkeyPatch) -> None:
     """Only the VM_DSK group puts reuse legs first; elsewhere a reuse leg does not jump ahead of resetting legs."""
     monkeypatch.setattr(vm_check, "recipe_env", lambda _fleet: {})
