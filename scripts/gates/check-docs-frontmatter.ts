@@ -31,12 +31,7 @@
  * control at scripts/__tests__/check-docs-frontmatter.control.ts uses it); the schema is
  * always the real one.
  *
- * ---- gate ----
- * step: Docs front matter matches the content schema
- * needs: node
- * selftest: true
- * lane: quality-content
- * ---- end gate ----
+ * WIRING. The workflow step "Docs front matter matches the content schema" (quality-content) is hand-registered, because the npm script runs two programs, this gate and its control; a `---- gate ----` header would make `gate:bind` generate a one-program step beside it.
  */
 
 import fs from 'node:fs';
