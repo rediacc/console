@@ -1,25 +1,21 @@
-## SESSION d778be9d 2026-11-09T01:30:16Z
+## SESSION d778be9d 2026-11-09T08:44:55Z
 
-# STATE d778be9d (2026-11-09T01:30Z, branch 1104-1, operator away: /awk since 2026-11-08T20:14Z)
+Branch 1104-1, nothing pushed. First ci:quick (G7 operator go, 2026-11-09) ended rc 1 with 35 reds; all drained by lease writers and landed. CB1-CB6 of plan-compaction-bindings ticked (CB4/CB5 9ea58bd900); bindings gate rc 0. Enterprise N4 D1 D2 A2 ticked; C2 verbs landed 50a40f8370 (partial). Review backlog #5bcea441 split into slices under /tmp/review-backlog; verdicts saved in /tmp/review-backlog/verdicts/{agent,ci-b}.txt, review-mark pass still owed for them and for the hooks/docs slice (37 VERDICT lines in its report). Operator rulings 2026-11-09 (AskUserQuestion): idle-writer fix = ceiling fix + IDLE CAPACITY block, block naming boxes (no auto-spawn), [writer]-tagged boxes only, per-box Depends-on when stated.
 
 ## Big pieces
-- PLAN-backup-program.md (P1-P4, P13 ticked tonight; P15 and live boxes left), PLAN-health-checks-local.md, PLAN-enterprise-isolation.md, PLAN-product-domain-rename.md (L5 done; L6+ live), PLAN-ciquick-green-then-batch.md (6 of 7; G7 left), PLAN-vmcheck-incremental.md (V1, V2 ticked; V3 live).
-
-## Owed ticks
-- PLAN-health-checks-local.md#85f55665: code landed 240bbddd2561, C2 live owed.
-- PLAN-free-license.md#a543ecc2: code landed 86992ee91a4a, C2 live owed.
-- PLAN-ciquick-green-then-batch.md G2: ticked; the receipt's warned field is read from G7's receipt.
+PLAN-enterprise-isolation (S2 C1 C2 K2 writers live), PLAN-website-routing-and-mail (live runner), PLAN-product-domain-rename (all live boxes wait on a VERIFIED vm:check), PLAN-idle-writer-capacity (being written and built).
 
 ## Delegated
-- a6580a6f91d8d3073 #b4bb4a4e: scope-aware block_live_proof_ledger_shell_write; owns the guard, test-block_live_proof_ledger_shell_write.py, its golden; accept that harness rc 0 (regression + 3 refused controls) and differential -k block_live_proof_ledger_shell_write rc 0.
+- a8e078f3534a83f2d #ab943efa website live runner (adds redirect test; uncommitted edits in apply_cf_redirect_rules.py, its test, the website plan).
+- a685271cff7685843 #623937fa S2 signer (lease). ac8bf5f3257a7343e #f5dae46d C1 + lab.py + control_db.py (lease). a316129993a8aa9a6 #872e789f K2 ring runner (lease). a46ff53d3cac141b1 #827e8676 C2 live adapters (lease).
+- ad0edc32f2b2c76c0 #6f93ebee product backlog, afd2abf4d6c7718f4 #00244be0 ci-a backlog (leases).
+- a63ff2fa63b1dcd83 #52a36392 idle-writer-capacity plan + hook code (main checkout, no commit).
 
-## Overnight
-- Landed: ciquick-green G1-G6 and G2 (af0a43befe), vmcheck-incremental V1/V2 3dd946ffdf + fixes, J6 e6f20ff35d, rename L5 9114cef40e (bench live on bench.rediacc.cloud), /awk ce79400b8d, live Stripe for edge www da9a042390, term connect doc sweep, P1-P4 dc4a6c226b, P13 8b899799e7 (DEFAULT of #c786ce9f).
-- DEFAULTs executed: #9c69eb59 (WAF rule stays unapplied), #c786ce9f (P13 accept corrected).
-- The harness reaped the tip ci:quick for memory at about 22:20Z; its restart is the operator's (#1b86eb2f).
+## Owed ticks
+CB7 9cd30874 move half (needs a terminal bound plan); C2 2706988f after adapters; enterprise C1/S2/K2 after landing.
 
 ## Next action
-1. Probe the two owed live halves (85f55665, a543ecc2): read each box's C2 and run it on bench (live now) if the live-proof ladder does not demand a VERIFIED vm:check; tick from the output, or record why it waits.
-2. When a6580a6f91d8d3073 reports: spot-check, ./run.sh worktree land agent-a6580a6f91d8d3073, cherry-pick reading rc, rerun its harness, gc, tick #b4bb4a4e.
-3. At the operator's next message (or #1b86eb2f's DEFAULT): ./rdc.sh ops down, npm run ci:quick (G7, read the warned field for G2), vm:check fleet run 17, then P15, bench LP, vmcheck V3, hostinger chain, push submodules then console, PRs with Operational-Reason.
-4. #864161ce: redeploy edge www and verify-webhook live with the next release:local.
+1. When the website runner reports: commit its plan lines, the redirect fix and test, then land /tmp/cibpicks-rest.txt (8 CI-b picks from b702260890) one by one, then commit the C1 note in PLAN-enterprise-isolation.md (uncommitted) with the plan renders.
+2. Land each lease writer as it reports (./run.sh worktree land <id>, cherry-pick -x one by one), rerun its accept, tick with the landed sha, gc the tree.
+3. Review-mark every VERDICT line in /tmp/review-backlog/verdicts/*.txt (fixed needs the landed sha), then worklist.py --review-commit.
+4. Then #caa837d4: second ci:quick, ops up --basic, vm:check fleet run 17, one push (submodules first), PRs.
