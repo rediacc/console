@@ -453,7 +453,7 @@ PORT_ONLY_GUARDS = (
 def test_every_one_of_the_seventeen_guards_fires_with_its_own_name(
     tmp_path: pathlib.Path,
 ) -> None:
-    """SEVENTEEN CASES ON STABLE, ONE PER GUARD, each driven EMPTY rather than absent, and each blanking the variable the value really comes from rather than the name the guard prints."""
+    """SIXTEEN CASES ON STABLE, ONE PER TWIN GUARD (the three port-only guards have their own tests; the function name keeps `seventeen` because the twin goldens are keyed on it), each driven EMPTY rather than absent, and each blanking the variable the value really comes from rather than the name the guard prints."""
     # The config server key is the port's own sixteenth guard; the twin has no golden for it, and `test_an_empty_config_server_key_is_refused_by_its_worker_key` drives it.
     demanded = tuple(
         name

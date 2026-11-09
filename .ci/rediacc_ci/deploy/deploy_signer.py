@@ -513,6 +513,11 @@ def issue(caller: str, kind: str, *, probe: Probe = _no_probe) -> proof.Answer:
     return probe(caller, "issue", kind)
 
 
+def _like_escape(text: str) -> str:
+    """`text` as a literal inside a LIKE pattern that declares `ESCAPE '\\'` (review c0ce889a.3)."""
+    return text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
 def certificate_audited(
     signer: str, certificate_id: str, *, run: control_db.Runner = control_db.run_wrangler
 ) -> bool:
@@ -523,8 +528,11 @@ def certificate_audited(
     try:
         rows = control_db.query(
             database,
-            "SELECT COUNT(*) AS n FROM audit WHERE action = ? AND detail LIKE ?",
-            ["delegation_cert.signed", '%%"subscriptionId":%s%%' % json.dumps(certificate_id)],
+            "SELECT COUNT(*) AS n FROM audit WHERE action = ? AND detail LIKE ? ESCAPE '\\'",
+            [
+                "delegation_cert.signed",
+                '%%"subscriptionId":%s%%' % _like_escape(json.dumps(certificate_id)),
+            ],
             runner=run,
         )
     except control_db.ControlDbError as exc:
@@ -540,10 +548,22 @@ def renew(caller: str, *, probe: Probe = _no_probe) -> proof.Answer:
     return probe(caller, "renew", "licence")
 
 
+def _bench_signer_names() -> set[str]:
+    return {"signer-bench-%s" % r for r in BENCH_REGIONS}
+
+
+def _require_bench_signer(signer: str) -> None:
+    """The lab drivers act on bench signers only: a production signer is never deleted or redeployed from here (review c0ce889a.1)."""
+    if signer not in _bench_signer_names():
+        raise proof.LabError(
+            "%r is not a bench signer Worker (one of %s); the lab never touches a production signer"
+            % (signer, ", ".join(sorted(_bench_signer_names())))
+        )
+
+
 def stop_signer(signer: str, *, run: Runner = run_process) -> None:
-    """Delete the signer Worker (`--force`, since callers bind it); `start_signer` redeploys it."""
-    if signer not in {t.worker for t in _all_targets().values()}:
-        raise proof.LabError("%r is not a signer Worker" % signer)
+    """Delete a bench signer Worker (`--force`, since callers bind it); `start_signer` redeploys it. Bench only."""
+    _require_bench_signer(signer)
     res = _wrangler(run, [*wrangler.ARGV, "delete", "--name", signer, "--force"])
     if res.rc != 0:
         raise proof.LabError("wrangler delete %s exited %d" % (signer, res.rc))
@@ -552,6 +572,7 @@ def stop_signer(signer: str, *, run: Runner = run_process) -> None:
 def start_signer(
     signer: str, *, run: Runner = run_process, env: typing.Mapping[str, str] | None = None
 ) -> None:
+    _require_bench_signer(signer)
     keys = [k for k, t in _all_targets().items() if t.worker == signer]
     if not keys:
         raise proof.LabError("%r is not a signer Worker" % signer)

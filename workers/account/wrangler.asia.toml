@@ -72,7 +72,7 @@ binding = "EXECUTOR"
 service = "proxy-asia"
 
 # The regional licence signer (agent/plans/PLAN-enterprise-isolation.md, Design "Signers"). This Worker holds no licence
-# private key: every signing call goes through this binding, whose deploy-time props carry the caller's identity.
+# private key: every signing call goes through this binding, whose props are fixed at deploy time (`tier` and `region`, the same for every caller of this Worker) and name the signing scope the signer applies.
 # wrangler refuses a deploy whose binding names a missing Worker, so signer-asia is deployed first
 # (rediacc_ci.deploy.deploy_signer --target asia).
 [[services]]

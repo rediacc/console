@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import email.message
+import io
 import shutil
 import sqlite3
 import types
+import urllib.error
 from typing import Any, NoReturn
 
 import pytest
@@ -532,6 +535,37 @@ def test_live_invite_posts_the_owner_mail_route():
     url, _key, body = fake.calls[0]
     assert url.endswith("/enterprise/owner-mail")
     assert set(body) == {"companyId", "ownerEmail"}
+
+
+@pytest.mark.parametrize("status", [202, 204])
+def test_live_account_call_accepts_any_2xx(status):
+    fake = FakeAccount(status)
+    _account_actions(fake)["bootstrap"](_ctx(World()))
+    assert len(fake.calls) == 1
+
+
+@pytest.mark.parametrize(
+    ("status", "payload", "tail"),
+    [(500, {}, ""), (302, {}, ""), (403, {"code": "NOPE"}, " (NOPE)")],
+)
+def test_live_account_call_refuses_a_non_2xx_with_or_without_a_code(status, payload, tail):
+    with pytest.raises(onboarding.OnboardingError) as caught:
+        _account_actions(FakeAccount(status, payload))["bootstrap"](_ctx(World()))
+    assert str(caught.value).endswith("refused with HTTP %d%s" % (status, tail))
+
+
+def test_account_post_names_the_status_when_the_error_body_cannot_be_read(monkeypatch):
+    class Broken(io.BytesIO):
+        def read(self, *_a):
+            raise OSError("reset")
+
+    def refuse(*_a, **_k):
+        raise urllib.error.HTTPError(
+            "https://h", 502, "bad gateway", email.message.Message(), Broken()
+        )
+
+    monkeypatch.setattr(onboarding.https, "urlopen", refuse)
+    assert onboarding.account_post("https://h/x", "k", {}) == (502, {})
 
 
 def test_live_account_call_with_no_answer_refuses():

@@ -157,7 +157,7 @@ class LiveSeams:
 
 
 class Lazy:
-    """An adapter built on first use for the region of the company a call names (one per region; a later call that names no company, such as a bucket or object read, goes to the adapter of the last company named), so a verb that never reaches it needs none of its credentials."""
+    """An adapter built on first use for the region of the company a call names (one per region; a later call that names no company, such as a bucket or object read, goes to the adapter of the last company named, and is refused when adapters of more than one region exist, since the last one named would be a guess), so a verb that never reaches it needs none of its credentials."""
 
     def __init__(self, error: type[Exception], build: Callable[[str], Any]):
         self._error = error
@@ -177,6 +177,11 @@ class Lazy:
                 self._current = self._inners[str(region)]
             if self._current is None:
                 raise self._error("the adapter was reached before a company was named")
+            if not region and len(self._inners) > 1:
+                raise self._error(
+                    "a call that names no company is ambiguous: adapters exist for %s"
+                    % ", ".join(sorted(self._inners))
+                )
             return getattr(self._current, attr)(*args, **kwargs)
 
         return call

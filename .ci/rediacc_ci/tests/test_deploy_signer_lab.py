@@ -162,6 +162,63 @@ def test_stop_signer_deletes_only_a_known_signer():
     assert len(run.calls) == 1
 
 
+@pytest.mark.parametrize("name", ["signer-eu", "signer-us", "signer-asia", "account-eu", "nope"])
+def test_stop_and_start_refuse_every_non_bench_signer(name):
+    run = FakeRun()
+    with pytest.raises(proof.LabError, match="bench signer"):
+        ds.stop_signer(name, run=run)
+    with pytest.raises(proof.LabError, match="bench signer"):
+        ds.start_signer(name, run=run)
+    assert run.calls == []
+
+
+def test_start_signer_redeploys_a_bench_signer_and_translates_refusals(monkeypatch):
+    seen: list[str] = []
+
+    def fake_deploy(_root, key, **_kw):
+        seen.append(key)
+
+    monkeypatch.setattr(ds, "deploy", fake_deploy)
+    ds.start_signer("signer-bench-us", run=FakeRun(), env={})
+    assert seen == ["bench-us"]
+
+    def refuse(*_a, **_k):
+        raise ds.RefusedError("no key", "second line")
+
+    monkeypatch.setattr(ds, "deploy", refuse)
+    with pytest.raises(proof.LabError, match="no key; second line"):
+        ds.start_signer("signer-bench-eu", run=FakeRun(), env={})
+
+    def missing(*_a, **_k):
+        raise ds.wrangler.WranglerNotInstalledError("wrangler absent")
+
+    monkeypatch.setattr(ds, "deploy", missing)
+    with pytest.raises(proof.LabError):
+        ds.start_signer("signer-bench-eu", run=FakeRun(), env={})
+
+
+def test_restore_region_redeploys_the_bench_signer_and_refuses_other_regions(monkeypatch):
+    seen: list[str] = []
+    monkeypatch.setattr(ds, "deploy", lambda _r, key, **_k: seen.append(key))
+    ds.restore_region("eu", run=FakeRun(), env={})
+    assert seen == ["bench-eu"]
+    with pytest.raises(proof.LabError):
+        ds.restore_region("asia", run=FakeRun(), env={})
+
+
+def test_certificate_audited_escapes_like_wildcards_in_the_id(monkeypatch):
+    seen: dict = {}
+
+    def query(_database, sql, params, **_kw):
+        seen.update(sql=sql, params=params)
+        return [{"n": 0}]
+
+    monkeypatch.setattr(ds.control_db, "query", query)
+    ds.certificate_audited("signer-eu", "a%b_c")
+    assert "ESCAPE '\\'" in seen["sql"]
+    assert "a\\%b\\_c" in seen["params"][1]
+
+
 def test_cut_region_stops_the_bench_signer_and_refuses_other_regions():
     run = FakeRun()
     ds.cut_region("eu", run=run)

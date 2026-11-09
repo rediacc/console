@@ -388,7 +388,11 @@ def account_post(url: str, api_key: str, body: dict) -> tuple[int, dict]:
         with https.urlopen(request, timeout=60) as reply:
             return int(reply.status), _json_body(reply.read())
     except urllib.error.HTTPError as exc:
-        return int(exc.code), _json_body(exc.read())
+        try:
+            raw = exc.read()
+        except OSError:
+            raw = b""
+        return int(exc.code), _json_body(raw)
     except OSError:
         return 0, {}
 
@@ -450,7 +454,7 @@ def live_actions(
             raise OnboardingError(
                 "company %s: the %s call got no answer" % (plan.company_id, route)
             )
-        if status not in (HTTP_OK, HTTP_CREATED):
+        if not HTTP_OK <= status < HTTP_OK + 100:
             code = str(payload.get("code") or "")
             raise OnboardingError(
                 "company %s: the %s call was refused with HTTP %d%s"

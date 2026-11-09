@@ -237,8 +237,48 @@ def test_lazy_refuses_a_call_with_no_company():
 def test_the_remove_usage_names_every_flag_the_parser_takes():
     remove = next(line for line in cli.__doc__.splitlines() if "enterprise remove" in line)
     block = cli.__doc__[cli.__doc__.index(remove) :].split("\n    ./run.sh enterprise release")[0]
+    parser = cli._lifecycle_parser("remove")
+    flags = {
+        opt for opt in parser._option_string_actions if opt.startswith("--") and opt != "--help"
+    }
+    # The parser must still take the flags the usage block promises, and name no flag the block omits.
     for flag in ("--lookup-domain", "--bws-project", "--export-root", "--delete-data", "--confirm"):
-        assert flag in block
+        assert flag in flags, flag
+    assert [f for f in sorted(flags) if f not in block and f not in ("--bench", "--resume")] == []
+
+
+def test_lazy_refuses_a_call_with_no_company_once_two_regions_are_built():
+    class Inner:
+        def read(self, key: str) -> str:
+            return key
+
+        def dump(self, _company: Any) -> str:
+            return "dump"
+
+    lazy = cli.Lazy(RuntimeError, lambda _r: Inner())
+    lazy.dump(_Region("eu"))
+    lazy.dump(_Region("us"))
+    with pytest.raises(RuntimeError, match="ambiguous"):
+        lazy.read("k")
+
+
+def test_bws_listing_refusal_names_the_first_line_of_the_reason(monkeypatch):
+    def refuse(*_a, **_k):
+        raise cli.bws_env.RefusalError(["first line", "second line"])
+
+    monkeypatch.setattr(cli.bws_env, "with_token", dict)
+    monkeypatch.setattr(cli.bws_env, "binary", lambda _env: "/bin/bws")
+    monkeypatch.setattr(cli.bws_env, "listing", refuse)
+    list_rows, _delete = cli._live_bws(RuntimeError, {})
+    with pytest.raises(RuntimeError, match=r"^bws secret list failed: first line$"):
+        list_rows()
+    monkeypatch.setattr(
+        cli.bws_env,
+        "listing",
+        lambda *_a, **_k: (_ for _ in ()).throw(cli.bws_env.RefusalError([""])),
+    )
+    with pytest.raises(RuntimeError, match=r"^bws secret list failed$"):
+        list_rows()
 
 
 def test_lazy_sends_a_call_without_a_company_to_the_last_named_adapter():
