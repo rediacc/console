@@ -18,6 +18,7 @@
     "workers/mta-sts/package.json": "BLOCKER: same -- an independently deployed Worker.",
     "workers/ops-health/package.json": "BLOCKER: same -- an independently deployed Worker.",
     "workers/proxy/package.json": "BLOCKER: same -- an independently deployed Worker.",
+    "workers/signer/package.json": "BLOCKER: same -- an independently deployed Worker.",
     "workers/www/package.json": "BLOCKER: same -- an independently deployed Worker."
   }
 }

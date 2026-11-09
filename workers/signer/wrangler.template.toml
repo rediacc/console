@@ -1,0 +1,35 @@
+# The regional licence signer (agent/plans/PLAN-enterprise-isolation.md, Design "Signers"), one Worker per region: signer-eu, signer-us, signer-asia, and on bench signer-bench-eu and signer-bench-us.
+# Rendered by .ci/rediacc_ci/deploy/deploy_signer.py into the gitignored .generated/wrangler.<target>.toml; every at-sign-delimited token is replaced and a token left over is refused. Never deployed from this file.
+#
+# NO ROUTE. There is no `routes` entry, no workers.dev host and no preview URL: the only way in is a service binding naming the LicenseSigner entrypoint, whose deploy-time props carry the caller's identity. The deploy module refuses a rendered config that grows a route.
+# The private key arrives as a secret through `wrangler secret bulk` on stdin, never in this file.
+
+name = "@WORKER@"
+main = "../src/index.ts"
+compatibility_date = "2026-01-20"
+compatibility_flags = ["nodejs_compat"]
+workers_dev = false
+preview_urls = false
+
+[vars]
+REGION = "@REGION@"
+SHARED_HOSTS = "@SHARED_HOSTS@"
+
+[observability]
+enabled = true
+
+[observability.logs]
+enabled = true
+invocation_logs = false
+
+# The region's control database: company scope, read; the certificate audit row, written.
+[[d1_databases]]
+binding = "CONTROL"
+database_name = "@CONTROL_DB@"
+database_id = "@CONTROL_DB_ID@"
+
+# The region's shared account database, read only by the signer's code.
+[[d1_databases]]
+binding = "SHARED"
+database_name = "@SHARED_DB@"
+database_id = "@SHARED_DB_ID@"

@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 5,
-  "generatedAt": "2026-11-09T04:01:45.082Z",
+  "generatedAt": "2026-11-09T09:38:24.453Z",
   "legs": [
     {
       "index": 1,
@@ -509,7 +509,8 @@
         "pytest:.claude/rediacc_hooks/tests/test_wl_stuck_and_blockers.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_waiter_controls.py",
         "pytest:.ci/rediacc_ci/tests/test_enterprise_proof.py",
-        "pytest:.ci/rediacc_ci/tests/test_deploy_company_target.py"
+        "pytest:.ci/rediacc_ci/tests/test_deploy_company_target.py",
+        "pytest:.ci/rediacc_ci/tests/test_deploy_signer.py"
       ]
     },
     {

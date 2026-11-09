@@ -881,7 +881,7 @@ Scans: every tracked non-source, non-prose file carrying a `BLOCKER:` line.
 | .ci/config/prose-style-rules.json | 9 | JSON value |
 | .ci/config/retired-terms.json | 10 | JSON value |
 | .ci/config/secret-supply.json | 2 | JSON value |
-| .ci/config/syncpack-source-exclusions.json | 9 | JSON value |
+| .ci/config/syncpack-source-exclusions.json | 10 | JSON value |
 | .ci/policy/.audit-allowlist | 3 | # comment |
 | .ci/policy/.audit-prod-allowlist | 2 | # comment |
 | .ci/policy/.ci-parity-exempt | 9 | # comment |
@@ -957,7 +957,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/ci | 34 | .py 34 |
 | .ci/rediacc_ci/ci_signal | 2 | .py 2 |
 | .ci/rediacc_ci/core | 44 | .py 44 |
-| .ci/rediacc_ci/deploy | 40 | .py 40 |
+| .ci/rediacc_ci/deploy | 41 | .py 41 |
 | .ci/rediacc_ci/dev | 9 | .py 9 |
 | .ci/rediacc_ci/diagnostics | 3 | .py 3 |
 | .ci/rediacc_ci/docker | 6 | .py 6 |
@@ -980,7 +980,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/setup | 13 | .py 13 |
 | .ci/rediacc_ci/spikes | 2 | .py 2 |
 | .ci/rediacc_ci/testrun | 12 | .py 12 |
-| .ci/rediacc_ci/tests | 519 | .py 519 |
+| .ci/rediacc_ci/tests | 520 | .py 520 |
 | .ci/rediacc_ci/tests/data | 2 | .json 1, .yml 1 |
 | .ci/rediacc_ci/tests/fixtures | 2 | .json 2 |
 | .ci/rediacc_ci/tests/fixtures/budget_drift | 1 | .json 1 |

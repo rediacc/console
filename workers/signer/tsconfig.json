@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    // ESNext for the same reason as workers/account/tsconfig.json: the account sources this Worker imports reach JSON imports with import attributes.
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022"],
+    "types": ["@cloudflare/workers-types"],
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true
+  },
+  "include": ["src", "../../private/account/src/types/*.d.ts"]
+}
