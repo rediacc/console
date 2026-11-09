@@ -293,6 +293,114 @@ def read_is_not_write_cases(world, ledger):
     ]
 
 
+# The shape of `test-block_vm_unverified_push.py` that was refused on 2026-11-09 (#b4bb4a4e): `transcript()` writes its own local `path`, and an unrelated function binds `path = ... / LEDGER` (a different ledger, but the guard reads the bare name `LEDGER` as this one) and only reads it.
+SCOPED_SCRIPT = (
+    "import json, pathlib\n"
+    'LEDGER = "agent/ledgers/vm-check-push-reasons.jsonl"\n'
+    "def transcript(records):\n"
+    "    path = pathlib.Path('/tmp') / 'transcript.jsonl'\n"
+    "    path.write_text(''.join(json.dumps(r) + '\\n' for r in records), encoding='utf-8')\n"
+    "    return path\n"
+    "def ledger_lines(root):\n"
+    "    path = pathlib.Path(root) / LEDGER\n"
+    "    return path.read_text(encoding='utf-8').splitlines() if path.is_file() else []\n"
+    "transcript([{}])\n"
+)
+
+
+def scope_cases(world, ledger):
+    """#b4bb4a4e: a name resolves to the binding of its own scope (module, function, lambda, comprehension), so a ledger path bound in one function never taints a same-named local in another; a write through the same scope's binding, a module binding, a closure's or a `global`'s still does. `(name, command, refused?)`."""
+    script = world / "check_scoped.py"
+    script.write_text(SCOPED_SCRIPT, encoding="utf-8")
+    return [
+        # The false positives: each must be ALLOWED.
+        ("python runs a script whose same-named locals differ", "python3 check_scoped.py", False),
+        (
+            "python heredoc: ledger bound in one function, same name written in another",
+            _py(
+                "import pathlib\n"
+                "def rows():\n    path = pathlib.Path('.') / '%s'\n    return path.read_text()\n"
+                "def save(text):\n    path = pathlib.Path('/tmp/out.txt')\n    path.write_text(text)\n"
+                "save(rows())" % ledger
+            ),
+            False,
+        ),
+        (
+            "python: a parameter shadows a module ledger binding",
+            _py(
+                "import pathlib\npath = '%s'\n"
+                "def save(path):\n    pathlib.Path(path).write_text('x')\n"
+                "save('/tmp/out.txt')" % ledger
+            ),
+            False,
+        ),
+        (
+            "python: a lambda parameter shadows a function's ledger binding",
+            _py(
+                "import pathlib\n"
+                "def go():\n    p = '%s'\n    n = len(open(p).read())\n"
+                "    w = lambda p: pathlib.Path(p).write_text(str(n))\n    w('/tmp/out.txt')\n"
+                "go()" % ledger
+            ),
+            False,
+        ),
+        # The writes stay refused.
+        (
+            "python writes through the same function's ledger binding",
+            _py(
+                "import pathlib\n"
+                "def go():\n    path = pathlib.Path('.') / '%s'\n    path.write_text('{}')\n"
+                "go()" % ledger
+            ),
+            True,
+        ),
+        (
+            "python writes a module ledger binding inside a function",
+            _py("path = '%s'\ndef go():\n    open(path, 'a').write('{}')\ngo()" % ledger),
+            True,
+        ),
+        (
+            "python closure writes the enclosing function's ledger binding",
+            _py(
+                "def outer():\n    path = '%s'\n"
+                "    def inner():\n        with open(path, 'a') as fh:\n            fh.write('{}')\n"
+                "    inner()\nouter()" % ledger
+            ),
+            True,
+        ),
+        (
+            "python lambda writes the enclosing function's ledger binding",
+            _py(
+                "def outer():\n    p = '%s'\n    w = lambda: open(p, 'a').write('{}')\n    w()\n"
+                "outer()" % ledger
+            ),
+            True,
+        ),
+        (
+            "python binds the ledger through a global declaration",
+            _py(
+                "def setup():\n    global path\n    path = '%s'\n"
+                "def go():\n    open(path, 'a').write('{}')\nsetup()\ngo()" % ledger
+            ),
+            True,
+        ),
+        (
+            "python binds the ledger through a nonlocal declaration",
+            _py(
+                "def outer():\n    path = '/tmp/x'\n"
+                "    def setup():\n        nonlocal path\n        path = '%s'\n"
+                "    setup()\n    open(path, 'a').write('{}')\nouter()" % ledger
+            ),
+            True,
+        ),
+        (
+            "python a parameter default names the ledger",
+            _py("def go(path='%s'):\n    open(path, 'a').write('{}')\ngo()" % ledger),
+            True,
+        ),
+    ]
+
+
 def main():
     spec = importlib.util.spec_from_file_location("test_live_proof_ledger_shared", SHARED)
     if spec is None or spec.loader is None:
@@ -302,6 +410,7 @@ def main():
     shared.SHELL_CASES.extend(searched_text_cases(shared.L))
     shared.SHELL_CASES.extend(review_cases())
     shared.SHELL_CASES.extend(read_is_not_write_cases(shared.WORLD, shared.L))
+    shared.SHELL_CASES.extend(scope_cases(shared.WORLD, shared.L))
     return shared.main(("block_live_proof_ledger_shell_write",))
 
 
