@@ -130,8 +130,15 @@ def test_xn_prefix_is_refused_by_its_own_rule():
         "example..com",
         "example.com.",
         "-example.com",
+        "%s.com" % ("a" * 64),
+        ".".join(["a" * 60] * 5),
     ],
 )
 def test_hosts_refuses_a_missing_domain(domain: typing.Any):
     with pytest.raises(names.CompanyNameError, match="not a domain"):
         names.hosts("acme", domain)
+
+
+def test_hosts_admits_the_longest_legal_labels():
+    domain = "%s.com" % ("a" * 63)
+    assert names.hosts("acme", domain)[0] == "acme.%s" % domain

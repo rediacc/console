@@ -61,7 +61,7 @@ OUT_REL = ".ci/cache/rings"
 BENCH_PAUSE_ORDER = "bench-pause"
 MAX_ROUNDS = 64
 # The version reaches a curl URL and rollout keys, so only a plain semantic version is admitted.
-# [0-9], not \d: in a str pattern \d also matches non-ASCII digits (review 616e65c5.1).
+# [0-9], not \d: in a str pattern \d also matches non-ASCII digits.
 VERSION_RE = re.compile(r"[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?")
 # The failures a D1 transport raises (the same set `registry.Registry.read_all` names): the region or company database is what matters.
 TRANSPORT_ERRORS = (OSError, RuntimeError, ValueError, LookupError)

@@ -602,6 +602,14 @@ def test_account_post_keeps_the_status_of_a_success_whose_body_was_cut_off(monke
     assert onboarding.account_post("https://h/x", "k", {}) == (200, {})
 
 
+def test_live_account_calls_accept_a_success_with_an_empty_body():
+    """Review f2446371.2: a cut-off 200 reads as (200, {}), which both callers take as success."""
+    assert _account_actions(FakeAccount(200, {}))["invite"](_ctx(World())) == ""
+    assert (
+        _account_actions(FakeAccount(200, {}))["bootstrap"](_ctx(World())) == "already bootstrapped"
+    )
+
+
 def test_live_account_call_with_no_answer_refuses():
     with pytest.raises(onboarding.OnboardingError, match="no answer"):
         _account_actions(FakeAccount(0))["invite"](_ctx(World()))

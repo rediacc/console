@@ -363,6 +363,8 @@ def test_first_deploy_has_no_rollback(repo):
         ds.Result(0, "not json", ""),
         ds.Result(0, '{"a": 1}', ""),
         ds.Result(0, "[1]", ""),
+        ds.Result(0, '[{"created_on": "x", "versions": [1]}]', ""),
+        ds.Result(0, '[{"created_on": "x", "versions": "no"}]', ""),
         ds.Result(1, "", "wrangler.toml not found in the working directory"),
         ds.Result(1, "", "the account does not exist"),
     ],

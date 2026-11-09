@@ -259,8 +259,11 @@ def newest_version(run: Runner, cwd: pathlib.Path, config: pathlib.Path) -> str 
     if not rows:
         return None
     newest = max(rows, key=lambda d: str(d.get("created_on", "")))
-    for v in newest.get("versions", []):
-        if isinstance(v, dict) and v.get("percentage") == 100:
+    versions = newest.get("versions", [])
+    if not isinstance(versions, list) or not all(isinstance(v, dict) for v in versions):
+        raise DeploymentsUnreadableError
+    for v in versions:
+        if v.get("percentage") == 100:
             return str(v.get("version_id"))
     return None
 

@@ -98,6 +98,7 @@ class FakeCloudflare:
         self.token_page = 2
         self.d1_page = 100
         self.omit_info = False
+        self.ignore_page = False
 
     def __call__(self, method, path, _body=None, headers=()):
         self.calls.append((method, path, tuple(headers)))
@@ -135,10 +136,12 @@ class FakeCloudflare:
             return {"success": True, "result": None}
         if method == "GET" and path.startswith("/user/tokens?"):
             args = urllib.parse.parse_qs(path.split("?", 1)[1])
-            page = int(args["page"][0])
+            page = 1 if self.ignore_page else int(args["page"][0])
             per = self.token_page
             rows = self.tokens[(page - 1) * per : page * per]
             pages = max(1, -(-len(self.tokens) // per))
+            if self.omit_info:
+                return {"success": True, "result": rows}
             return {"success": True, "result": rows, "result_info": {"total_pages": pages}}
         if method == "DELETE" and path.startswith("/user/tokens/"):
             tid = path.rsplit("/", 1)[1]
@@ -427,6 +430,32 @@ def test_revoke_tokens_deletes_only_this_companys_backup_token_across_pages(monk
     rig.teardown.revoke_tokens(_company())
     assert sorted(t["id"] for t in rig.cf.tokens) == ["t-mgmt", "t-other", "t-pad"]
     assert [c[1] for c in rig.cf.calls if c[0] == "DELETE"] == ["/user/tokens/t-own"]
+
+
+def test_revoke_tokens_follows_a_full_page_when_the_answer_omits_result_info(monkeypatch):
+    """Review 7b8701ca.2: the token walk keeps going past page 1 while the page came back full."""
+    rig = Rig(monkeypatch)
+    rig.cf.tokens = [{"id": "t-pad-%02d" % i, "name": "unrelated"} for i in range(50)] + [
+        {"id": "t-own", "name": "enterprise-%s-backups" % ACME}
+    ]
+    rig.cf.token_page = 50
+    rig.cf.omit_info = True
+    rig.teardown.revoke_tokens(_company())
+    assert [t["id"] for t in rig.cf.tokens if t["id"] == "t-own"] == []
+    assert [c[1] for c in rig.cf.calls if c[0] == "DELETE"] == ["/user/tokens/t-own"]
+
+
+def test_a_listing_that_never_ends_is_refused_not_walked_forever(monkeypatch):
+    """Review 7b8701ca.3: a listing that ignores the page parameter stops at the page cap."""
+    monkeypatch.setattr(la, "MAX_LIST_PAGES", 3)
+    rig = Rig(monkeypatch)
+    rig.cf.tokens = [{"id": "t-%02d" % i, "name": "unrelated"} for i in range(50)]
+    rig.cf.token_page = 50
+    rig.cf.omit_info = True
+    rig.cf.ignore_page = True
+    with pytest.raises(lifecycle.LifecycleError, match="did not end"):
+        rig.teardown.revoke_tokens(_company())
+    assert len([c for c in rig.cf.calls if c[0] == "GET"]) == 3
 
 
 def test_delete_bucket_empties_it_then_deletes_it_with_the_jurisdiction_header(monkeypatch):

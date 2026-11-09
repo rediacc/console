@@ -309,9 +309,28 @@ PLACEHOLDER = re.compile(r"@@?[A-Z][A-Z0-9_]*@@?")
 _WORKER_RESOURCE = re.compile(r"(%s)-([a-z0-9]+(?:-[a-z0-9]+)*)" % "|".join(RESOURCE_PREFIXES))
 
 
+def _uncommented(line: str) -> str:
+    """The line up to the first `#` that is not inside a quoted string, so `url = "a#@@X@@"` keeps its placeholder."""
+    quote = ""
+    i = 0
+    while i < len(line):
+        ch = line[i]
+        if quote:
+            if ch == "\\" and quote == '"':
+                i += 1
+            elif ch == quote:
+                quote = ""
+        elif ch in "\"'":
+            quote = ch
+        elif ch == "#":
+            return line[:i]
+        i += 1
+    return line
+
+
 def _has_placeholder(text: str) -> bool:
-    """Does a non-comment part of a line carry an `@X@` placeholder? A `# @TODO@` comment makes no file a template (review 7d4e4a4a.2)."""
-    return any(PLACEHOLDER.search(line.split("#", 1)[0]) for line in text.splitlines())
+    """Does a non-comment part of a line carry an `@X@` placeholder? A `# @TODO@` comment makes no file a template, and a `#` inside a quoted string is not a comment."""
+    return any(PLACEHOLDER.search(_uncommented(line)) for line in text.splitlines())
 
 
 def worker_name_findings(
@@ -330,7 +349,7 @@ def worker_name_findings(
         try:
             doc = tomllib.loads(text)
         except tomllib.TOMLDecodeError:
-            # A template with @-placeholders is not TOML and holds no company name; any other file that does not parse was not checked.
+            # A template whose placeholder sits outside a comment is not TOML and holds no company name; any other file that does not parse was not checked.
             if shape is not None and not _has_placeholder(text):
                 shape.skipped += 1
             continue
@@ -558,10 +577,15 @@ class Masker:
             base = label.removesuffix(PROXY_SUFFIX)
             return "%s%s" % (self._token(base), PROXY_SUFFIX if proxy else "")
 
+        def part(p: str) -> str:
+            low = p.lower()
+            if not _LABEL.fullmatch(low):
+                return p
+            masked = one(low)
+            return p if masked == low else masked
+
         def host(m: re.Match[str]) -> str:
-            parts = [
-                one(p.lower()) if _LABEL.fullmatch(p.lower()) else p for p in m.group(1).split(".")
-            ]
+            parts = [part(p) for p in m.group(1).split(".")]
             return "%s.%s" % (".".join(parts), self.domain)
 
         def resource(m: re.Match[str]) -> str:

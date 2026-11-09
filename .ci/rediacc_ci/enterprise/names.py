@@ -94,13 +94,26 @@ DOMAIN_RE = re.compile(
 )
 
 
+MAX_LABEL = 63
+MAX_DOMAIN = 253
+
+
+def _is_domain(domain: str) -> bool:
+    """A plain dotted hostname within the RFC 1035 limits: labels of at most 63 characters, 253 in all."""
+    return (
+        DOMAIN_RE.fullmatch(domain) is not None
+        and len(domain) <= MAX_DOMAIN
+        and all(len(label) <= MAX_LABEL for label in domain.split("."))
+    )
+
+
 def hosts(name: str, domain: str) -> tuple[str, str]:
     """(account host, proxy host) for a valid name under the product domain the caller names (`well_known.PRODUCT_DOMAIN`).
 
     The domain has no default.
-    A domain that is not a plain dotted hostname (ASCII letters, digits and inner hyphens in each label; no empty label, no whitespace or control character, no trailing dot) is refused, rather than formatted into a host like `acme.`, `acme.None` or `acme.example.com\n`.
+    A domain that is not a plain dotted hostname (ASCII letters, digits and inner hyphens in each label; no empty label, no whitespace or control character, no trailing dot, a label over 63 characters or a name over 253) is refused, rather than formatted into a host like `acme.`, `acme.None` or `acme.example.com\n`.
     """
     check(name)
-    if not isinstance(domain, str) or not DOMAIN_RE.fullmatch(domain):
+    if not isinstance(domain, str) or not _is_domain(domain):
         raise CompanyNameError("%r is not a domain to host %r under" % (domain, name))
     return "%s.%s" % (name, domain), "%s%s.%s" % (name, PROXY_SUFFIX, domain)

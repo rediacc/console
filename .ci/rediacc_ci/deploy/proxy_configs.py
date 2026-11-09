@@ -554,10 +554,10 @@ def config_refusals(text: str, target: Target, all_regions: frozenset[str]) -> l
     return out
 
 
-def _is_own_signer(value: str, key: str) -> bool:
-    """Is `value` the licence signer Worker this target signs through: `signer-<region>` for a shared region, `signer-bench-<region>` for bench (the bench signer is deployed per region, so its name carries a region token the bench target does not own)."""
+def _is_own_signer(value: str, key: str, region: object) -> bool:
+    """Is `value` the licence signer Worker this target signs through: `signer-<region>` for a shared region, and for bench `signer-bench-<region>` with the region the config itself serves (`[vars] REGION`), so bench cannot bind another region's bench signer."""
     if key == "bench":
-        return re.fullmatch(r"signer-bench-[a-z0-9]+", value) is not None
+        return isinstance(region, str) and bool(region) and value == "signer-bench-%s" % region
     return value == "signer-%s" % key
 
 
@@ -578,15 +578,23 @@ def account_refusals(
             % (executor, proxy_name)
         )
     foreign = (all_regions | CHANNEL_TOKENS) - own
+    variables = config.get("vars")
+    region = variables.get("REGION") if isinstance(variables, dict) else None
     for entry in services:
         value = str(entry.get("service", ""))
-        if entry.get("binding") == "LICENSE_SIGNER" and _is_own_signer(value, key):
+        signer = entry.get("binding") == "LICENSE_SIGNER"
+        if signer and _is_own_signer(value, key, region):
             continue
         hits = [t for t in NAME_TOKEN_SPLIT.split(value.lower()) if t in foreign]
         if hits:
             out.append(
                 "[[services]] %s service %r names %s, which is not %s"
                 % (entry.get("binding"), value, "/".join(hits), key)
+            )
+        elif signer:
+            out.append(
+                "[[services]] LICENSE_SIGNER service %r is not the signer of %s (REGION %r)"
+                % (value, key, region)
             )
     return out
 

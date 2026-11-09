@@ -448,6 +448,29 @@ def test_a_regions_license_signer_binding_is_judged_by_its_own_name(
     )
 
 
+def test_the_bench_config_binds_only_the_bench_signer_of_its_own_region(
+    tmp_path: pathlib.Path,
+) -> None:
+    """Review e882aaa3.1: `signer-bench-us` in the REGION eu bench config is refused, as is an unknown bench signer."""
+    root = copy_tree(tmp_path)
+    path = root.joinpath(*pc.ACCOUNT_REL) / "wrangler.bench.toml"
+    text = path.read_text(encoding="utf-8")
+    path.write_text(
+        plant(text, 'service = "signer-bench-eu"', 'service = "signer-bench-us"'), encoding="utf-8"
+    )
+    out = pc.check(root)
+    assert any(
+        "LICENSE_SIGNER service 'signer-bench-us' names us, which is not bench" in r for r in out
+    ), out
+    path.write_text(
+        plant(text, 'service = "signer-bench-eu"', 'service = "signer-bench-zz"'), encoding="utf-8"
+    )
+    out = pc.check(root)
+    assert any(
+        "LICENSE_SIGNER service 'signer-bench-zz' is not the signer of bench" in r for r in out
+    ), out
+
+
 def test_a_well_known_host_disagreeing_with_regions_json_is_refused(tmp_path: pathlib.Path) -> None:
     root = copy_tree(tmp_path)
     path = root / pc.REGIONS_REL

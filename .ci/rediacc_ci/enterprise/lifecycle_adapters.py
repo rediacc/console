@@ -74,6 +74,10 @@ def _ok(answer: object, what: str) -> Mapping[str, Any]:
     return answer
 
 
+# A listing without a page count walks at most this many full pages.
+MAX_LIST_PAGES = 1000
+
+
 def _rows(answer: Mapping[str, Any], what: str) -> list:
     rows = answer.get("result")
     if not isinstance(rows, list):
@@ -82,11 +86,15 @@ def _rows(answer: Mapping[str, Any], what: str) -> list:
 
 
 def _pages(answer: Mapping[str, Any], rows: list, per_page: int, page: int) -> int:
-    """How many pages the listing has: the answer's `total_pages`, or, when `result_info` is missing, one more than this page while the page came back full (a short page ends the listing). A missing count must not stop the walk after page 1 (review b2640774.1)."""
+    """How many pages the listing has: the answer's `total_pages`, or, when `result_info` is missing, one more than this page while the page came back full (a short page ends the listing). A missing count must not stop the walk after page 1, and a listing that keeps coming back full (one that ignores the page parameter) is refused at `MAX_LIST_PAGES` rather than walked forever."""
     info = answer.get("result_info")
     if isinstance(info, dict) and info.get("total_pages"):
         return int(info["total_pages"])
-    return page + 1 if len(rows) >= per_page else page
+    if len(rows) < per_page:
+        return page
+    if page >= MAX_LIST_PAGES:
+        raise LifecycleError("a Cloudflare listing did not end after %d pages" % MAX_LIST_PAGES)
+    return page + 1
 
 
 def list_keys(s3: S3, bucket: str) -> list[str] | None:

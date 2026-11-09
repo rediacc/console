@@ -426,3 +426,17 @@ def test_the_gate_source_names_no_product_host_literally():
         ".ci/rediacc_ci/tests/test_enterprise_leak.py",
     ):
         assert PRODUCT_DOMAIN not in pathlib.Path(paths.repo_root(), rel).read_text()
+
+
+def test_masker_keeps_the_case_of_a_public_label():
+    """Review e0a1b485.1: an uppercase public label is returned as written."""
+    m = leak.Masker(PUBLIC, frozenset(), PRODUCT_DOMAIN)
+    assert m.mask("see Eu.%s here" % PRODUCT_DOMAIN) == "see Eu.%s here" % PRODUCT_DOMAIN
+
+
+def test_a_hash_inside_a_quoted_string_does_not_hide_a_placeholder():
+    """Review e0a1b485.2: `url = "a#@@X@@"` marks a template; a real comment does not."""
+    assert leak._has_placeholder('url = "a#@@X@@"\n[')
+    assert leak._has_placeholder("url = 'a#@@X@@'\n[")
+    assert not leak._has_placeholder('url = "a" # @@X@@\n[')
+    assert not leak._has_placeholder('url = "a\\"" # @@X@@\n[')
