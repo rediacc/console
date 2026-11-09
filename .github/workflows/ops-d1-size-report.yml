@@ -1,0 +1,71 @@
+name: D1 Size Report
+
+# PLAN-d1-scaling Z7. Reads every region's account D1 through the D1 query API
+# (rediacc_ci.ops.d1_size_report): tables, rows, value bytes, file size and tenant
+# count. Exit 3 means an alert (tenants >= 25,000 or file >= 5 GB): the step
+# records it, opens or updates one issue, and the job then passes. Exit 2 (a
+# region cannot be read) and any other code fail the job. Read-only: nothing is
+# written to Cloudflare.
+
+on:
+  schedule:
+    - cron: '41 5 * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: d1-size-report
+  cancel-in-progress: false
+
+jobs:
+  report:
+    name: D1 Size Report
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write # open or update the rolling D1 size alert issue
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Fetch secrets from Bitwarden
+        # LIVE: read by the report step below.
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            CLOUDFLARE_API_TOKEN > BWS_CLOUDFLARE_API_TOKEN
+            CLOUDFLARE_ACCOUNT_ID > BWS_CLOUDFLARE_ACCOUNT_ID
+
+      - name: Read every region's D1
+        id: report
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
+        shell: bash
+        run: |
+          set +e
+          PYTHONPATH=.ci python3 -m rediacc_ci.ops.d1_size_report --json-out d1-size.json --md-out d1-size.md
+          rc=$?
+          set -e
+          echo "rc=$rc" >> "$GITHUB_OUTPUT"
+          if [ -f d1-size.md ]; then cat d1-size.md >> "$GITHUB_STEP_SUMMARY"; fi
+          if [ "$rc" -ne 0 ] && [ "$rc" -ne 3 ]; then exit "$rc"; fi
+
+      - name: Open or update the alert issue
+        if: steps.report.outputs.rc == '3'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          title="D1 size alert"
+          number=$(gh issue list --state open --search "\"$title\" in:title" --json number,title --jq "[.[] | select(.title == \"$title\")][0].number // empty")
+          if [ -n "$number" ]; then
+            gh issue comment "$number" --body-file d1-size.md
+          else
+            gh issue create --title "$title" --body-file d1-size.md
+          fi
