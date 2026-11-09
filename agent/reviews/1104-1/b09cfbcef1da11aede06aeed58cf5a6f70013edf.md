@@ -21,14 +21,14 @@ Body-Sig: d8e135e5592f4302
 ### b09cfbce.1 [medium] .ci/rediacc_ci/deploy/deploy_signer.py:354
 Anchor: in-diff
 Claim: When `wrangler deployments list` fails or prints unparsable output on a redeploy, newest_version returns None, so the record gets previous_version_id null and this line prints 'Rollback: none (first deploy)' even though a previous version exists.
-Resolution: open
+Resolution: fixed 759876e38b57f30d824629cc423a79b1e13fef41 | d778be9d 2026-11-09T17:30:55Z
 
 ### b09cfbce.2 [medium] .ci/rediacc_ci/deploy/deploy_signer.py:325
 Anchor: in-diff
 Claim: The new version is deployed at line 311 before `wrangler secret bulk`; if that bulk call fails here, the run raises and never writes the record or prints a rollback command, so the live new version has no recorded rollback target.
-Resolution: open
+Resolution: fixed 759876e38b57f30d824629cc423a79b1e13fef41 | d778be9d 2026-11-09T17:30:55Z
 
 ### b09cfbce.3 [medium] .ci/rediacc_ci/deploy/deploy_signer.py:151
 Anchor: in-diff
 Claim: The bindings dict comprehension keeps only the last d1 entry per binding name, so a rendered config with two CONTROL entries passes the CONTROL check whenever the last one names the right database, even if an earlier one names a different database.
-Resolution: open
+Resolution: fixed 759876e38b57f30d824629cc423a79b1e13fef41 | d778be9d 2026-11-09T17:30:55Z
