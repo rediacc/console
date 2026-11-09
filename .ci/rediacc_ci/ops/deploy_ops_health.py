@@ -362,6 +362,8 @@ def fetch_deployed(url: str, token: str) -> Deployed | None:
         # urllib wraps every OSError of h.request() in URLError, and that call also SENDS the request once connected, so a reset or a broken pipe arrives here too. Only a host that does not resolve or refuses the connection is "no Worker answers"; any other reason is a Worker that may exist.
         if isinstance(exc.reason, (socket.gaierror, ConnectionRefusedError)):
             return None
+        if isinstance(exc.reason, TimeoutError):
+            raise StatusUnreadableError("%s timed out while connecting: %s" % (url, exc)) from exc
         raise StatusUnreadableError("%s failed after the request began: %s" % (url, exc)) from exc
     except (TimeoutError, OSError, http.client.HTTPException) as exc:
         # urllib lets these escape only once the connection is made (a stall waiting for headers, a reset, a malformed reply): a Worker that exists and answers badly, never a first deploy.

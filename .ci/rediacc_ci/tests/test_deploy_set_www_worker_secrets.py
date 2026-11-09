@@ -366,9 +366,9 @@ def test_a_value_with_quotes_and_newlines_survives_intact(tmp_path: pathlib.Path
 def test_the_two_sibling_scripts_are_not_the_same_script() -> None:
     """THE ASSUMPTION THAT WOULD PORT THIS ONE WRONG, refuted in one place. Every difference below is load bearing, and each is driven by a test above."""
     assert len(port.KEYS) == 24
-    assert len(sibling.KEYS) == 15
+    assert len(sibling.KEYS) == 14
     assert len(port.REQUIRED_NONEMPTY) == 13
-    assert len(sibling.REQUIRED_NONEMPTY) == 11
+    assert len(sibling.REQUIRED_NONEMPTY) == 10
     assert port.GUARD_EXPLANATION != sibling.GUARD_EXPLANATION
     assert not hasattr(port, "WORKER_PREFIX"), "www takes its Worker name whole"
     assert sibling.WORKER_PREFIX == "pr-"

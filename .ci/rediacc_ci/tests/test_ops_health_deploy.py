@@ -334,8 +334,11 @@ def test_a_urlerror_from_the_send_after_connecting_is_unreadable_not_a_first_dep
 def test_a_connect_phase_timeout_is_unreadable_not_a_first_deploy(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    # The branch message still reads "failed after the request began" for a connect-phase timeout; only the exception type and the URL are pinned until deploy_ops_health.py words it apart.
-    with pytest.raises(d.StatusUnreadableError, match="ops-health.example.test"):
+    # Review 2d871417.1: a connect-phase timeout is named as such, not as a failure after the request began.
+    with pytest.raises(
+        d.StatusUnreadableError,
+        match=r"ops-health\.example\.test/v1/status timed out while connecting",
+    ):
         _fetch_with(monkeypatch, urllib.error.URLError(TimeoutError("timed out")))
 
 
