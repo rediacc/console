@@ -2630,8 +2630,10 @@ def agent_state_problems(body, owed=None):
         out.append(
             (
                 "unfocused",
-                "no '## Big pieces' section; name the census's big pieces (the plans marked "
-                "! BIG PIECE ! in the SessionStart plans block), or 'none' when no plan carries an open box",
+                (
+                    "no '## Big pieces' section; name the census's big pieces (the plans marked "
+                    "! BIG PIECE ! in the SessionStart plans block), or 'none' when no plan carries an open box"
+                ),
             )
         )
     if owed and not AGENT_OWED_RE.search(text):

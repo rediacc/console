@@ -1588,17 +1588,26 @@ def test_a_body_stored_by_the_old_defang_reads_back_as_written():
 
 def test_r4_the_unread_block_and_its_older_row_name_the_reports_verb():
     msgs = wlfix.import_wl("worklist_messages")
-    block = msgs.N_UNREAD_REPORTS % (3, "br", "    row", "/x/wl_report.py", "/x/wl_report.py", "aaaaaaaa")
+    block = msgs.N_UNREAD_REPORTS % (
+        3,
+        "br",
+        "    row",
+        "/x/wl_report.py",
+        "/x/wl_report.py",
+        "aaaaaaaa",
+    )
     assert "worklist.py --reports" in block, block
     older = msgs.N_UNREAD_OLDER % (4, "    row")
-    assert "4 older not shown" in older and "worklist.py --reports" in older, older
+    assert "4 older not shown" in older, older
+    assert "worklist.py --reports" in older, older
 
 
 def test_r4_an_unknown_mode_prints_the_usage_line(sc):
     got = sc.py("wl_report.py", "--unread")
     assert got.rc == 2, got.rc
     assert "unknown mode --unread" in got.err, got.err
-    assert "usage: wl_report.py --subagent-stop" in got.err and "--list [--unread|--all]" in got.err, got.err
+    assert "usage: wl_report.py --subagent-stop" in got.err, got.err
+    assert "--list [--unread|--all]" in got.err, got.err
     # CONTROL: a real mode does not print the unknown-mode line.
     ok = sc.py("wl_report.py", "--list", "--unread")
     assert "unknown mode" not in ok.out + ok.err

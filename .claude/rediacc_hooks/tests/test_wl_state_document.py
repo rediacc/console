@@ -709,5 +709,21 @@ def test_r3_state_verb_names_every_problem_in_one_refusal(wl):
     got = wl.python(["--state", wlfix.ME], stdin=body)
     assert got.rc == 2, got.out + got.err
     assert "STATE REFUSED (bloated+unfocused: 2 problems:" in got.err, got.err[:600]
-    assert "over by" in got.err and "Big pieces" in got.err, got.err[:600]
+    assert "over by" in got.err, got.err[:600]
+    assert "Big pieces" in got.err, got.err[:600]
+    assert wl.state_file().read_text(encoding="utf-8") == good
+
+
+def test_r3_a_waitled_body_with_another_fault_names_both_and_the_wait_lead(wl):
+    """Review 726d73cc.1: a wait-led body that also fails another verdict prints the combined refusal AND the wait-lead message, so the lead line still names the wait it must replace."""
+    wl.hand_now()
+    good = wl.state_file().read_text(encoding="utf-8")
+    body = "x" * 300 + "\n\n## Next action\n\n1. Await green, then review.\n"
+    store = wlfix.import_wl("wl_store")
+    assert [v for v, _d in store.agent_state_problems(body)] == ["waitled", "unfocused"]
+    got = wl.python(["--state", wlfix.ME], stdin=body)
+    assert got.rc == 2, got.out + got.err
+    assert "STATE REFUSED (waitled+unfocused: 2 problems:" in got.err, got.err[:600]
+    tail = got.err.split("2 problems:", 1)[1]
+    assert "Await green" in tail, got.err[:900]
     assert wl.state_file().read_text(encoding="utf-8") == good

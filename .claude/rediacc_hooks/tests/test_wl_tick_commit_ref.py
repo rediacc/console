@@ -227,9 +227,11 @@ def test_r1_a_bare_claim_is_refused_naming_both_gates_and_ends_with_both_forms(w
     assert "Also unmet: the evidence names no commit" in got.err, got.err[:600]
     assert "nocommit:read-only is not one of the three reasons" in got.err, got.err[:600]
     last = got.err.strip().splitlines()[-1]
-    assert "commit:<sha>" in last and "nocommit:no-tracked-change|research|operator-deferred" in last, last
+    assert "commit:<sha>" in last, last
+    assert "nocommit:no-tracked-change|research|operator-deferred" in last, last
     row = last_refusal(wl)
-    assert row["why"] == "no-evidence" and row["also"] == ["no-commit-ref"], row
+    assert row["why"] == "no-evidence", row
+    assert row["also"] == ["no-commit-ref"], row
     assert state_of(wl, item) == "open"
 
 
@@ -239,7 +241,9 @@ def test_r1_evidence_only_refusal_ends_with_both_forms_and_has_no_also(wl):
     got = wl.cli("--tick", wlfix.ME, item, "done, works nocommit:research")
     assert got.rc != 0, got.out[:300]
     assert "Also unmet" not in got.err, got.err[:600]
-    assert "nocommit:no-tracked-change|research|operator-deferred" in got.err.strip().splitlines()[-1]
+    assert (
+        "nocommit:no-tracked-change|research|operator-deferred" in got.err.strip().splitlines()[-1]
+    )
     assert "also" not in last_refusal(wl)
 
 
@@ -249,7 +253,8 @@ def test_r1_commit_only_refusal_ends_with_both_forms(wl):
     got = wl.cli("--tick", wlfix.ME, item, "pytest rc=0, 12 passed")
     assert got.rc != 0, got.out[:300]
     last = got.err.strip().splitlines()[-1]
-    assert "commit:<sha>" in last and "nocommit:no-tracked-change|research|operator-deferred" in last, last
+    assert "commit:<sha>" in last, last
+    assert "nocommit:no-tracked-change|research|operator-deferred" in last, last
 
 
 # ---- R20261101.2: a verified ASKED stands in for the commit reference ---------------------------
@@ -260,7 +265,9 @@ def test_r2_a_verified_asked_stands_in_for_the_commit_ref(wl):
     minute = time.strftime("%Y-%m-%dT%H:%MZ", time.gmtime(time.time() - 3600))
     plant_ask(wl, time.strftime("%Y-%m-%dT%H:%M:40.000Z", time.gmtime(time.time() - 3600)))
     item = added(wl)
-    got = wl.cli("--tick", wlfix.ME, item, "operator decided, work tracked elsewhere ASKED:%s" % minute)
+    got = wl.cli(
+        "--tick", wlfix.ME, item, "operator decided, work tracked elsewhere ASKED:%s" % minute
+    )
     assert got.rc == 0, got.err[:400]
     assert state_of(wl, item) == "closed"
 
@@ -283,3 +290,30 @@ def test_r2_inverse_a_verified_asked_does_not_excuse_a_bad_nocommit_word(wl):
     got = wl.cli("--tick", wlfix.ME, item, "nocommit:operator decided ASKED:%s" % minute)
     assert got.rc != 0, got.out[:300]
     assert "nocommit:operator is not one of the three reasons" in got.err, got.err[:400]
+
+
+def test_r1_an_issue_without_a_door_and_without_a_commit_names_both(wl):
+    """Review 7860756f.1: the door refusal fired before the commit gate ran, so an issue link with no door and no commit named only the door."""
+    wl.reg_repo()
+    item = added(wl)
+    got = wl.cli("--tick", wlfix.ME, item, "filed https://github.com/x/y/issues/9 for the rest")
+    assert got.rc != 0, got.out[:300]
+    assert "Also unmet: the evidence names no commit" in got.err, got.err[:600]
+    row = last_refusal(wl)
+    assert row["why"] == "issue-without-door", row
+    assert row["also"] == ["no-commit-ref"], row
+    assert state_of(wl, item) == "open"
+
+
+def test_r1_control_an_issue_beside_a_commit_ticks(wl):
+    """CONTROL: a commit makes the evidence more than an issue link, so neither gate refuses."""
+    wl.reg_repo()
+    item = added(wl)
+    got = wl.cli(
+        "--tick",
+        wlfix.ME,
+        item,
+        "filed https://github.com/x/y/issues/9 commit:%s" % head(wl.proj)[:10],
+    )
+    assert got.rc == 0, got.err[:400]
+    assert state_of(wl, item) == "closed"

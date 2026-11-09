@@ -652,7 +652,9 @@ N_UNREAD_REPORTS = (
 )
 
 # The row above the newest ten, naming the verb that lists the rest (R20261101.4).
-N_UNREAD_OLDER = "    (%d older not shown; .claude/hooks/stop/worklist.py --reports lists all unread)\n%s"
+N_UNREAD_OLDER = (
+    "    (%d older not shown; .claude/hooks/stop/worklist.py --reports lists all unread)\n%s"
+)
 
 CLI_REASSIGN_USAGE = (
     "usage: --reassign <my-prefix> <phantom-prefix>\n"

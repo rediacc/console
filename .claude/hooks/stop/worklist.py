@@ -1763,21 +1763,43 @@ def _item_cli(argv, worklist):
         evidence_ok = bool(rest) and CK.completion_evidence(root, rest, transcript)
         # v16 THE DOOR GATE. completion_evidence passes on ANY URL by shape, so a bare issue link closed a finding: filing WAS a resolution, in code, whatever the prose said. An issue now settles an item only when the tick names the last-resort door that made filing the right answer. Shape-only; whether the door is TRUE is the judge's question, and every tick already flows into
         # that path.
-        if evidence_ok and CK.issue_only_evidence(root, rest):
-            _log_tick_refusal(worklist, me, item_id, rest, "issue-without-door")
-            die(M.CLI_TICK_ISSUE_DOOR % item_id)
         bad = commit_ref_problem(root, rest, transcript)
+        if evidence_ok and CK.issue_only_evidence(root, rest):
+            _log_tick_refusal(
+                worklist,
+                me,
+                item_id,
+                rest,
+                "issue-without-door",
+                also=["no-commit-ref"] if bad else [],
+            )
+            text = M.CLI_TICK_ISSUE_DOOR % item_id
+            if bad is not None:
+                kind, token = bad
+                text += "\nAlso unmet: the evidence names no commit.%s" % (
+                    CLI_TICK_COMMIT_REF_DETAIL[kind] % token if token else ""
+                )
+            die(text)
         if not evidence_ok or bad is not None:
             kind, token = bad if bad is not None else ("", "")
             detail = CLI_TICK_COMMIT_REF_DETAIL[kind] % token if token else ""
             if not evidence_ok:
                 _log_tick_refusal(
-                    worklist, me, item_id, rest, "no-evidence", also=["no-commit-ref"] if bad else []
+                    worklist,
+                    me,
+                    item_id,
+                    rest,
+                    "no-evidence",
+                    also=["no-commit-ref"] if bad else [],
                 )
                 text = M.CLI_TICK_NO_EVIDENCE % (item_id, CK.tick_refusal_hint(transcript))
                 if bad is not None:
                     text += "\nAlso unmet: the evidence names no commit.%s" % detail
-                die(text + "\n    worklist.py --tick <me> %s %s" % (item_id, CLI_TICK_FORMS))
+                die(
+                    text
+                    + "\n    .claude/hooks/stop/worklist.py --tick <me> %s %s"
+                    % (item_id, CLI_TICK_FORMS)
+                )
             _log_tick_refusal(worklist, me, item_id, rest, "no-commit-ref")
             die(CLI_TICK_NO_COMMIT_REF % (item_id, detail, item_id, CLI_TICK_FORMS))
         rest = citable_tick_evidence(root, rest)
