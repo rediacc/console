@@ -13,6 +13,8 @@ THE FIXTURE IS A GIT REPOSITORY, and that is not scaffolding. The gate's corpus 
 import importlib.util
 import json
 
+import pytest
+
 from rediacc_ci import paths
 from rediacc_ci.core.bws_env import ARCHIVE_PATTERN, JSON_REQUIRED, PARKED_PATTERN
 from rediacc_ci.tests.gates import harness
@@ -358,3 +360,26 @@ def test_the_refresher_drops_parked_names_and_leaves_archives_to_their_own_split
     assert parked == ["__ALPHA_DEV"]
     assert [e["key"] for e in kept] == ["ALPHA", "__ALPHA__ROTATED_20260101T000000Z"]
     assert module.PARKED_RE.pattern == PARKED_PATTERN
+
+
+def test_the_refresher_names_a_missing_access_token_before_it_runs_bws(monkeypatch, capsys):
+    """Review eea61acd.1: with BWS_ACCESS_TOKEN unset the refresher exits 1 naming the variable, and never reaches the bws lookup or a listing."""
+    src = paths.from_root("scripts", "ops", "bws-map-refresh.py")
+    spec = importlib.util.spec_from_file_location("bws_map_refresh_token", src)
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    monkeypatch.delenv("BWS_ACCESS_TOKEN", raising=False)
+    monkeypatch.setattr(module.sys, "argv", ["bws-map-refresh.py", "--dry-run"])
+
+    def reached(*_args, **_kwargs):
+        raise AssertionError("the token guard must stop the run before bws is looked up")
+
+    monkeypatch.setattr(module.shutil, "which", reached)
+    monkeypatch.setattr(module, "list_live", reached)
+    with pytest.raises(SystemExit) as stop:
+        module.main()
+    assert stop.value.code == 1
+    err = capsys.readouterr().err
+    assert "BWS_ACCESS_TOKEN is not set" in err
