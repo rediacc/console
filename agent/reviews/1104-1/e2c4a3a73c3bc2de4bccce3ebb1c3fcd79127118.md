@@ -26,4 +26,4 @@ Resolution: fixed 0320431429a121eb32a03bcefa46c3c08fa37927 | d778be9d 2026-11-09
 ### e2c4a3a7.2 [medium] .ci/rediacc_ci/enterprise/lifecycle.py:9
 Anchor: in-diff
 Claim: The module docstring says every verb writes more than one row in separate statements, but list_companies and export write no rows at all, so the docstring states a wrong behaviour.
-Resolution: open
+Resolution: fixed 7b8701ca90205de9b69cdfd34917added052c49e | d778be9d 2026-11-09T19:50:40Z

@@ -21,7 +21,7 @@ Body-Sig: 8b2b80054e0c9b47
 ### 6ef3eced.1 [low] .ci/rediacc_ci/deploy/deploy_www.py:193
 Anchor: in-diff
 Claim: The new props line is the only LICENSE_SIGNER binding guard, and the commit does not order the deploy: if a PR preview deploys before signer-bench-eu exists, the Worker still deploys and every licence request fails at runtime, with no CI check that the service is present.
-Resolution: open
+Resolution: not-a-bug | .ci/rediacc_ci/deploy/deploy_www.py:187 wrangler refuses a deploy whose service binding names a missing Worker, so a preview cannot deploy before signer-bench-eu exists; the order is documented in the comment there | d778be9d 2026-11-09T19:50:38Z
 
 ### 6ef3eced.2 [low] .ci/rediacc_ci/tests/test_deploy_deploy_www.py:759
 Anchor: in-diff
