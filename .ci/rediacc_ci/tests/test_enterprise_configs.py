@@ -72,7 +72,14 @@ def test_allow_ips_is_the_opt_in_var_on_both_workers():
 
 def test_allow_ips_is_written_without_the_whitespace_it_was_checked_without():
     out = _gen(allow_ips=("10.0.0.1, 10.0.0.2", " 10.0.0.3 "))
-    assert tomllib.loads(out.proxy)["vars"]["ALLOW_IPS"] == "10.0.0.1,10.0.0.2,10.0.0.3"
+    for text in (out.proxy, out.account):
+        assert tomllib.loads(text)["vars"]["ALLOW_IPS"] == "10.0.0.1,10.0.0.2,10.0.0.3"
+
+
+def test_company_proxy_carries_the_executor_caps():
+    vars_ = tomllib.loads(_gen().proxy)["vars"]
+    assert vars_["EXECUTOR_CAP"] == "25"
+    assert vars_["EXECUTOR_HEAVY_CAP"] == "5"
 
 
 @pytest.mark.parametrize("bad", ["0.0.0.0/0", "10.0.0.0/33", "not-an-ip", ""])
