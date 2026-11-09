@@ -415,7 +415,7 @@ async function checkInstallSh(expectedChannel: string): Promise<void> {
     // a second line. If both remain, a user who sets REDIACC_CHANNEL before
     // piping to bash would be safe, but the default path silently picks
     // edge again.
-    if (body.includes('REDIACC_CHANNEL:-edge')) {
+    if (expectedChannel !== 'edge' && body.includes('REDIACC_CHANNEL:-edge')) {
       throw new Error('install.sh still contains REDIACC_CHANNEL:-edge; rewrite is partial');
     }
     if (!body.includes(`REDIACC_SERVER_URL:-${PREVIEW_URL}}`)) {

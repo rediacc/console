@@ -339,6 +339,16 @@ export function guardLabels(
   return out;
 }
 
+/** A YAML scalar as its value: a trailing ` # comment` and one pair of matching quotes removed, so `"stable"` and `stable # note` both read `stable`. */
+export function scalarValue(raw: string): string {
+  const text = raw.trim();
+  if (text.startsWith('"') || text.startsWith("'")) {
+    const close = text.indexOf(text[0], 1);
+    if (close > 0) return text.slice(1, close);
+  }
+  return text.replace(/\s+#.*$/, '').trim();
+}
+
 export interface StepEnv {
   stepName: string;
   stepLine: number;
@@ -435,7 +445,7 @@ export function stepEnvNames(yamlText: string, builder: string): StepEnv | null 
       const m = /^\s*([A-Za-z_][A-Za-z0-9_]*):\s(.*)$/.exec(raw);
       if (m && !names.has(m[1])) {
         names.set(m[1], from + k + 1);
-        values.set(m[1], m[2].trim());
+        values.set(m[1], scalarValue(m[2]));
       }
     }
     const nameIdx = block.findIndex((l) => /^\s*-?\s*name:/.test(l));
@@ -731,6 +741,18 @@ export function stepEnvNames(yamlText: string, builder: string): StepEnv | null 
     wfFixture.replace('          WORKER_NAME:', '          TARGET: stable\n          WORKER_NAME:'),
     '.ci/rediacc_ci/deploy/set_fixture_secrets.py'
   );
+  const spelled = ['"stable" # note', 'stable # note', "'stable'"].map((spelling) =>
+    stepEnvNames(
+      wfFixture.replace('          WORKER_NAME:', `          TARGET: ${spelling}\n          WORKER_NAME:`),
+      '.ci/rediacc_ci/deploy/set_fixture_secrets.py'
+    )?.values.get('TARGET')
+  );
+  if (spelled.some((v) => v !== 'stable')) {
+    console.error(
+      `x instrument control: stepEnvNames() read a quoted or commented TARGET: stable as ${JSON.stringify(spelled)}; a valid single-channel step would be refused as drift.`
+    );
+    process.exit(1);
+  }
   if (targetFixture?.values.get('TARGET') !== 'stable') {
     console.error(
       'x instrument control: stepEnvNames() did not read the literal value of TARGET; the single-channel check would reject every step or accept any.'
@@ -896,6 +918,12 @@ for (const pair of PAIRS) {
   for (const g of guardLabels(bText, reads, fanPrefixes)) {
     totalGuards += 1;
     if (g.varName === null) continue; // a fan-in RESULT; its label is the Worker key
+    if (pair.channel && isOtherChannelName(g.varName, pair.channel)) {
+      problems.push(
+        `    ${pair.builder}:${g.line}  guard demands "${g.label}", a name of the other channel, but ${pair.workflow}:${step.stepLine} serves only ${pair.channel} and never exports it.\n` +
+          `      The read-side skip for the other channel's names covers the cross-channel refusal reads only. A required guard on one would refuse every ${pair.channel} run.`
+      );
+    }
     if (g.label !== g.varName) {
       problems.push(
         `    ${pair.builder}:${g.line}  guard demands "${g.label}", but the port never reads that name from the environment.\n` +
