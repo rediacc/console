@@ -457,6 +457,15 @@ def selftest() -> int:
         (free, held),
         ([other_rel], [bound_rel]),
     )
+    tally.check(
+        "B5 every expired plan bound: a dry run exits 0, --write exits 1, a free plan defers",
+        (
+            _all_bound_exit([], write=False),
+            _all_bound_exit([], write=True),
+            _all_bound_exit([other_rel], write=True),
+        ),
+        (0, 1, None),
+    )
 
     return 0 if tally.report() else 1
 
@@ -613,6 +622,13 @@ def _print_question(plans: list[PL.Plan], config: dict, today: dt.date) -> int:
     return len(stale)
 
 
+def _all_bound_exit(free: list[str], *, write: bool) -> int | None:
+    """The sweep's exit when bindings hold every expired plan, else None. A dry run that finds nothing deletable exits 0 as it did before bindings existed; `--write`, which asked for a deletion it cannot make, exits 1 (review 17f03293.1)."""
+    if free:
+        return None
+    return 1 if write else 0
+
+
 def sweep(root: pathlib.Path, config: dict, *, write: bool) -> int:
     plans, _existing, stones = _gather(root)
     today = dt.datetime.now(dt.UTC).date()
@@ -628,9 +644,10 @@ def sweep(root: pathlib.Path, config: dict, *, write: bool) -> int:
     for rel in held:
         print("✗ %s is not swept:\n%s" % (rel, _binding_refusal(root, rel)), file=sys.stderr)
     due = [plan for plan in due if plan.rel in free]
-    if not due:
+    held_exit = _all_bound_exit(free, write=write)
+    if held_exit is not None:
         print("✗ sweep: every expired plan is still bound, so nothing was deleted", file=sys.stderr)
-        return 1
+        return held_exit
     for plan in due:
         print("  %s (%s)" % (plan.rel, PL.classify(plan)))
     if not write:
