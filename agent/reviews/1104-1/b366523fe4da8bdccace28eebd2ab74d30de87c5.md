@@ -21,9 +21,9 @@ Body-Sig: 8eb54860e426f613
 ### b366523f.1 [medium] web/src/pages/__tests__/login-cross-tab.test.tsx:130
 Anchor: in-diff
 Claim: The new assertion's regex /sent a sign-in link|passwordStepDescription/i also matches the raw i18n key name, so the test passes whenever any element containing that key text renders, even if the link-sent note is not shown. The test name also claims 'after every successful request' but the body exercises only one requestLink() call.
-Resolution: open
+Resolution: fixed 031e49e3789d7995beff3eb682ea2e43cd15f635 | d778be9d 2026-11-09T16:52:37Z
 
 ### b366523f.2 [low] web/src/pages/__tests__/login-cross-tab.test.tsx:128
 Anchor: in-diff
 Claim: The new test sits inside the describe block 'Login continues the CLI handoff tab after a sign-in elsewhere', which does not match what it checks (link-sent note), so a future reader may misjudge its scope.
-Resolution: open
+Resolution: fixed 031e49e3789d7995beff3eb682ea2e43cd15f635 | d778be9d 2026-11-09T16:52:38Z
