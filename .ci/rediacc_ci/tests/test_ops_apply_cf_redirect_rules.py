@@ -279,6 +279,25 @@ def test_zone_without_a_redirect_ruleset_gets_one_created(world: h.World) -> Non
     assert len(body["rules"]) == 2
 
 
+def test_default_run_without_a_redirect_ruleset_creates_it_with_the_apex_rule(
+    world: h.World,
+) -> None:
+    """The no-`--zone` run on a zone with no redirect ruleset used to fail; it now creates the ruleset with the one apex rule, the same create `--zone` makes."""
+    empty = {"method": "GET", "match": "/rulesets", "body": {"success": True, "result": []}}
+    created = {
+        "method": "POST",
+        "match": "/rulesets",
+        "body": {"success": True, "result": {"id": "NEW-RS"}},
+    }
+    world.set_routes([empty, created])
+    rc, out, _ = world.port("rediacc_ci.ops.apply_cf_redirect_rules", [], world.env(**ENV))
+    assert rc == 0
+    assert "created ruleset NEW-RS with 1 rule(s)" in out
+    post = next(c for c in world.calls() if c["method"] == "POST")
+    assert mod.ZONE_IDS[mod.APEX_DOMAIN] in post["url"]
+    assert len(json.loads(post["body"])["rules"]) == 1
+
+
 def test_zone_adds_only_the_missing_rule(world: h.World) -> None:
     apex = mod.RULE_SETS[PRODUCT_DOMAIN][0]
     present = {
