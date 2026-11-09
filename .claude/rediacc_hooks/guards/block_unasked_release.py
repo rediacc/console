@@ -807,15 +807,11 @@ def _docker_publish(name, args):
 SHELL_VALUE_OPTIONS = ("-o", "+o", "-O", "+O", "--rcfile", "--init-file")
 
 
-def _short_cluster_takes_value(word):
-    """A short-option cluster whose last letter is `o` or `O` (`-eo pipefail`, `-euo pipefail`, `+eo`): that letter consumes the next word (review d36a2709.1)."""
-    return (
-        len(word) > 2
-        and word[0] in "-+"
-        and word[1] != "-"
-        and word[1:].isalpha()
-        and word[-1] in "oO"
-    )
+def _short_cluster_values(word):
+    """How many following words a short-option cluster consumes: one per `o` or `O` in it, wherever it sits (`-eo pipefail`, `-oe pipefail`, `-ouo a b`; reviews d36a2709.1, 77c5fd2a.1). Bash's own rule: each `o` in a cluster takes the next word as its option name, in order."""
+    if len(word) > 2 and word[0] in "-+" and word[1] != "-" and word[1:].isalpha():
+        return sum(1 for ch in word[1:] if ch in "oO")
+    return 0
 
 
 def _shell_script_index(args):
@@ -823,8 +819,12 @@ def _shell_script_index(args):
     k = 0
     while k < len(args):
         word = args[k]
-        if word in SHELL_VALUE_OPTIONS or _short_cluster_takes_value(word):
+        if word in SHELL_VALUE_OPTIONS:
             k += 2
+            continue
+        consumed = _short_cluster_values(word)
+        if consumed:
+            k += 1 + consumed
             continue
         if not word.startswith(("-", "+")) or word in ("-", "+"):
             return k
