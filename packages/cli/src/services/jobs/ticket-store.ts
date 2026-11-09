@@ -58,7 +58,15 @@ export type TicketKind =
 /** Why a ticket was given up on: its job is gone, never started, too old, or dismissed by the operator. */
 export type ExpiredReason = 'gone' | 'never-started' | 'age' | 'dismissed';
 
-const EXPIRED_REASONS: readonly ExpiredReason[] = ['gone', 'never-started', 'age', 'dismissed'];
+const EXPIRED_REASONS = [
+  'gone',
+  'never-started',
+  'age',
+  'dismissed',
+] as const satisfies readonly ExpiredReason[];
+
+/** The reason an expiry event carries when it names none. */
+const DEFAULT_EXPIRED_REASON: ExpiredReason = 'age';
 
 export type TicketState = 'starting' | 'running' | 'succeeded' | 'failed' | 'cancelled' | 'unknown';
 
@@ -293,7 +301,7 @@ const KIND_EFFECTS: Partial<Record<TicketKind, (t: Ticket, e: TicketEvent) => vo
   },
   expired: (t, e) => {
     t.acknowledged = true;
-    t.expiredReason = e.reason ?? 'age';
+    t.expiredReason = e.reason ?? DEFAULT_EXPIRED_REASON;
   },
   announced: (t) => {
     t.announced = true;

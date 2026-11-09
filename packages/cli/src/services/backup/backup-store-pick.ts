@@ -18,6 +18,9 @@ import type { ExecuteResult } from '../executor/types.js';
 /** The store every subscription has from the first day; renet takes no `--store` for it. */
 export const HOME_STORE = 'home';
 
+/** The clean-up state a store carries unless the account says otherwise. */
+const CLEANUP_ENABLED = 'enabled';
+
 /** One row of the account's per-lineage store listing. */
 interface LineageStore {
   storeId: string;
@@ -367,7 +370,9 @@ export function summarizeStatus(
   response: StatusResponse,
   lineages: ReadonlySet<string>
 ): Record<string, StoreStatus> {
-  const cleanup = new Map((response.stores ?? []).map((s) => [s.storeId, s.cleanup ?? 'enabled']));
+  const cleanup = new Map(
+    (response.stores ?? []).map((s) => [s.storeId, s.cleanup ?? CLEANUP_ENABLED])
+  );
   const out: Record<string, StoreStatus> = {};
   for (const stream of response.streams.filter((s) => lineages.has(s.lineageGuid))) {
     const id = stream.storeId ?? HOME_STORE;
@@ -376,7 +381,7 @@ export function summarizeStatus(
       lastRunStatus: null,
       newestSnapshotAt: null,
       verify: '-',
-      cleanup: cleanup.get(id) ?? 'enabled',
+      cleanup: cleanup.get(id) ?? CLEANUP_ENABLED,
     };
     const newerRun = later(known.lastRunAt, stream.lastRunAt) === stream.lastRunAt;
     out[id] = {
@@ -440,7 +445,7 @@ export function expandStatusRows<R extends { strategy: string; unit: string }>(
         ...run,
         newestSnapshot: known?.newestSnapshotAt ?? '-',
         verify: known?.verify ?? '-',
-        cleanup: known?.cleanup ?? 'enabled',
+        cleanup: known?.cleanup ?? CLEANUP_ENABLED,
         copyLag: from === undefined ? '-' : copyLag(targets?.stores[from], known),
       };
     });

@@ -23,9 +23,11 @@ interface Options {
   lookupHost: string;
 }
 
+const DEFAULT_PROBE_URL = 'http://localhost:4321';
+
 function parseArgs(argv: string[]): Options {
   const opts: Options = {
-    url: process.env.PROBE_URL ?? 'http://localhost:4321',
+    url: process.env.PROBE_URL ?? DEFAULT_PROBE_URL,
     mock: false,
     lookupDomain: 'acme.example',
     lookupHost: `acme.eu.${WK_PRODUCT_DOMAIN}`,

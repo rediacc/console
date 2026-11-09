@@ -70,7 +70,8 @@ export function withExpectedAccountServer(
   const origin = expectedAccountServerOrigin();
   if (origin) return { ...params, [EXPECT_ACCOUNT_SERVER_PARAM]: origin };
   // No origin to hold the verb to: a caller-supplied expectation is dropped too, never passed through.
-  const { [EXPECT_ACCOUNT_SERVER_PARAM]: _dropped, ...rest } = params;
+  const rest = { ...params };
+  delete rest[EXPECT_ACCOUNT_SERVER_PARAM];
   return rest;
 }
 

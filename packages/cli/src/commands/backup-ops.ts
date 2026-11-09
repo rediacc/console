@@ -2,7 +2,11 @@ import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { replicateDestinations } from '../services/backup/backup-replication.js';
 import { hasAccountToken, pushStrategyRetention } from '../services/backup/backup-retention.js';
-import { readStoreStatuses, type StatusTargets } from '../services/backup/backup-store-pick.js';
+import {
+  HOME_STORE,
+  readStoreStatuses,
+  type StatusTargets,
+} from '../services/backup/backup-store-pick.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
 import { setExitCode, writeStdout } from '../services/core/request-context.js';
@@ -238,12 +242,12 @@ async function readStatusTargets(
   for (const name of new Set(strategies)) {
     const destinations = bound[name]?.destinations ?? [];
     const enabled = destinations.filter((d) => d.enabled !== false);
-    byStrategy[name] = [...new Set(enabled.map((d) => d.target ?? 'home'))];
+    byStrategy[name] = [...new Set(enabled.map((d) => d.target ?? HOME_STORE))];
     // A replicate destination's row shows its copy lag against the store it copies from.
     const copies = replicateDestinations({ destinations: enabled }, true).filter((d) => d.from);
     if (copies.length > 0) {
       replicas[name] = Object.fromEntries(
-        copies.map((d) => [d.target ?? 'home', d.from as string])
+        copies.map((d) => [d.target ?? HOME_STORE, d.from as string])
       );
     }
   }

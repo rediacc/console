@@ -77,9 +77,12 @@ interface Payload {
   turnstileToken?: unknown;
 }
 
+const NO_CONTENT_LENGTH = '0';
+const UNKNOWN_CLIENT = 'unknown';
+
 /** The body as text, or null past MAX_BODY bytes; reading stops at the cap (review 11ccb9e8.3). */
 async function readCapped(request: Request): Promise<string | null> {
-  const declared = Number(request.headers.get('content-length') ?? '0');
+  const declared = Number(request.headers.get('content-length') ?? NO_CONTENT_LENGTH);
   if (declared > MAX_BODY) return null;
   if (!request.body) return '';
   const reader = request.body.getReader();
@@ -124,7 +127,7 @@ async function refusal(
 ): Promise<Response | null> {
   const ip = request.headers.get('cf-connecting-ip');
   if (env.LOOKUP_RATE_LIMIT) {
-    const verdict = await env.LOOKUP_RATE_LIMIT.limit({ key: ip ?? 'unknown' });
+    const verdict = await env.LOOKUP_RATE_LIMIT.limit({ key: ip ?? UNKNOWN_CLIENT });
     if (!verdict.success) return json({ error: 'rate_limited' }, 429);
   }
   if (!(await turnstileOk(secret, payload.turnstileToken, ip))) {

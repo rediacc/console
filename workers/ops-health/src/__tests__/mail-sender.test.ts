@@ -19,7 +19,8 @@ describe('ops-health sender', () => {
   });
 
   it('names OPS_MAIL_FROM when it is missing', () => {
-    const { OPS_MAIL_FROM: _omit, ...rest } = SES_ENV;
+    const rest: Record<string, unknown> = { ...SES_ENV };
+    delete rest.OPS_MAIL_FROM;
     expect(mailerState(rest as unknown as Env)).toEqual({
       state: 'unknown',
       detail: 'missing OPS_MAIL_FROM',
