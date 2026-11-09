@@ -7,7 +7,7 @@ order: 2
 language: et
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/et/cli.json
-sourceHash: "518beefda78a69df"
+sourceHash: "7c7cf8e7441d6692"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -2796,6 +2796,7 @@ rdc backup strategy set <strategy> [options]
 |------|-------------|----------|---------|
 | `--destination <name>` | {{t:cli.commands.backup.strategy.set.optionDestination}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--target <storeId>` | {{t:cli.commands.backup.strategy.set.optionTarget}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--replicate-from <storeId>` | {{t:cli.commands.backup.strategy.set.optionReplicateFrom}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--cron <expression>` | {{t:cli.commands.backup.strategy.set.optionCron}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--mode <mode>` | {{t:cli.commands.backup.strategy.set.optionMode}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--bwlimit <limit>` | {{t:cli.commands.backup.strategy.set.optionBwlimit}} | {{t:cli.docs.optionLabels.no}} | - |
