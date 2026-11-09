@@ -188,8 +188,17 @@ def test_window_parse_and_holds() -> None:
     assert rings.parse_window("sat-mon 00:00-00:00").days == frozenset({5, 6, 0})
 
 
+def test_window_holds_reads_a_non_utc_now_in_utc() -> None:
+    w = rings.parse_window("thu 00:00-02:00")
+    wed_2000_utc_minus_5 = datetime.datetime(
+        2026, 11, 11, 20, 0, tzinfo=datetime.timezone(datetime.timedelta(hours=-5))
+    )
+    assert w.holds(wed_2000_utc_minus_5)
+    assert w.next_open(wed_2000_utc_minus_5) == datetime.datetime(2026, 11, 19, 0, 0, tzinfo=UTC)
+
+
 @pytest.mark.parametrize(
-    "text", ["", "mon", "xyz 01:00-02:00", "mon 1:00-02:00", "mon 24:00-01:00"]
+    "text", ["", "mon", "xyz 01:00-02:00", "mon 1:00-02:00", "mon 24:00-01:00", "mon- 01:00-02:00", "-mon 01:00-02:00"]
 )
 def test_window_parse_refusals(text: str) -> None:
     with pytest.raises(ValueError, match="window"):

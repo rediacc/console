@@ -55,6 +55,7 @@ class Window:
     end: int
 
     def holds(self, now: datetime.datetime) -> bool:
+        now = now.astimezone(datetime.UTC)
         length = (self.end - self.start) % _MINUTES_PER_DAY or _MINUTES_PER_DAY
         for back in (0, 1):
             day = (now - datetime.timedelta(days=back)).date()
@@ -66,6 +67,7 @@ class Window:
 
     def next_open(self, now: datetime.datetime) -> datetime.datetime:
         """The first opening strictly after `now`."""
+        now = now.astimezone(datetime.UTC)
         for ahead in range(8):
             day = (now + datetime.timedelta(days=ahead)).date()
             begin = _at(day, self.start)
@@ -97,8 +99,8 @@ def parse_window(text: str) -> Window:
         raise ValueError(msg)
     days: set[int] = set()
     for item in whole.group(1).split(","):
-        lo, _, hi = item.partition("-")
-        if lo not in _DAYS or (hi and hi not in _DAYS):
+        lo, dash, hi = item.partition("-")
+        if lo not in _DAYS or (dash and hi not in _DAYS):
             msg = f"window {text!r}: unknown day in {item!r}"
             raise ValueError(msg)
         first, last = _DAYS.index(lo), _DAYS.index(hi or lo)
