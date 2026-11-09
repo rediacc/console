@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 5,
-  "generatedAt": "2026-11-09T09:38:24.453Z",
+  "generatedAt": "2026-11-09T14:35:32.347Z",
   "legs": [
     {
       "index": 1,
@@ -69,6 +69,7 @@
         "pytest:.ci/rediacc_ci/tests/test_core_local_common.py",
         "pytest:.ci/rediacc_ci/tests/test_core_release_age.py",
         "pytest:.ci/rediacc_ci/tests/test_core_release_state_validator.py",
+        "pytest:.ci/rediacc_ci/tests/test_d1_size_report.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_console_executor.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_deploy_proxy.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_purge_media_cache.py",
@@ -88,6 +89,7 @@
         "pytest:.ci/rediacc_ci/tests/test_drills_backup_local_plane.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_backup_swap_order.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_converge_preflight.py",
+        "pytest:.ci/rediacc_ci/tests/test_enterprise_lab.py",
         "pytest:.ci/rediacc_ci/tests/test_enterprise_leak.py",
         "pytest:.ci/rediacc_ci/tests/test_enterprise_secrets.py",
         "pytest:.ci/rediacc_ci/tests/test_env_create_e2e_env.py",
@@ -130,6 +132,7 @@
         "pytest:.ci/rediacc_ci/tests/test_release_order.py",
         "pytest:.ci/rediacc_ci/tests/test_release_renet_key_gate.py",
         "pytest:.ci/rediacc_ci/tests/test_release_resolve_ci_run.py",
+        "pytest:.ci/rediacc_ci/tests/test_release_rings_run.py",
         "pytest:.ci/rediacc_ci/tests/test_release_validate_stage_artifacts.py",
         "pytest:.ci/rediacc_ci/tests/test_release_verify_artifact_attestation.py",
         "pytest:.ci/rediacc_ci/tests/test_release_verify_release_assets.py",
@@ -235,6 +238,7 @@
         "pytest:.ci/rediacc_ci/tests/test_deploy_delete_r2_channel.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_deploy_record.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_resolve_account_deploy_config.py",
+        "pytest:.ci/rediacc_ci/tests/test_deploy_signer_lab.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_sync_media_to_r2.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_transfer_retry.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_upload_media_to_r2.py",
@@ -249,6 +253,7 @@
         "pytest:.ci/rediacc_ci/tests/test_drills_backup_license.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_down_before_kill.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_gpu_grants.py",
+        "pytest:.ci/rediacc_ci/tests/test_enterprise_lifecycle_adapters.py",
         "pytest:.ci/rediacc_ci/tests/test_enterprise_names.py",
         "pytest:.ci/rediacc_ci/tests/test_housekeeping_cf_leftovers.py",
         "pytest:.ci/rediacc_ci/tests/test_housekeeping_cleanup_cf_preview.py",
@@ -324,6 +329,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_golden_drift.py",
         "pytest:.claude/rediacc_hooks/tests/test_guards_process_table.py",
         "pytest:.claude/rediacc_hooks/tests/test_hooks_procs.py",
+        "pytest:.claude/rediacc_hooks/tests/test_plan_gate_ceiling.py",
         "pytest:.claude/rediacc_hooks/tests/test_project_dir_containment.py",
         "pytest:.claude/rediacc_hooks/tests/test_review_commit_hook.py",
         "pytest:.claude/rediacc_hooks/tests/test_settings_collapse.py",
@@ -510,7 +516,10 @@
         "pytest:.claude/rediacc_hooks/tests/test_wl_waiter_controls.py",
         "pytest:.ci/rediacc_ci/tests/test_enterprise_proof.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_company_target.py",
-        "pytest:.ci/rediacc_ci/tests/test_deploy_signer.py"
+        "pytest:.ci/rediacc_ci/tests/test_deploy_signer.py",
+        "pytest:.ci/rediacc_ci/tests/test_enterprise_cli_wiring.py",
+        "pytest:.ci/rediacc_ci/tests/test_enterprise_no_key_on_account.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_plandeps_box_edges.py"
       ]
     },
     {
@@ -569,6 +578,7 @@
         "pytest:.ci/rediacc_ci/tests/test_ci_assert_ci_complete.py",
         "pytest:.ci/rediacc_ci/tests/test_ci_dispatch_release.py",
         "pytest:.ci/rediacc_ci/tests/test_ci_freshness.py",
+        "pytest:.ci/rediacc_ci/tests/test_ci_leg_keys.py",
         "pytest:.ci/rediacc_ci/tests/test_ci_list_e2e_probe_files.py",
         "pytest:.ci/rediacc_ci/tests/test_ci_profiler_control.py",
         "pytest:.ci/rediacc_ci/tests/test_ci_publish_verdict.py",
@@ -598,7 +608,9 @@
         "pytest:.ci/rediacc_ci/tests/test_drills_universe_transfer.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_vm_check.py",
         "pytest:.ci/rediacc_ci/tests/test_enterprise_configs.py",
+        "pytest:.ci/rediacc_ci/tests/test_enterprise_control_db.py",
         "pytest:.ci/rediacc_ci/tests/test_enterprise_registry.py",
+        "pytest:.ci/rediacc_ci/tests/test_enterprise_workflow.py",
         "pytest:.ci/rediacc_ci/tests/test_housekeeping_cleanup_github_deployments.py",
         "pytest:.ci/rediacc_ci/tests/test_infra_build_renet.py",
         "pytest:.ci/rediacc_ci/tests/test_infra_docker_prepull.py",
@@ -852,7 +864,10 @@
         "pytest:.claude/rediacc_hooks/tests/test_wl_wake.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_wisdom.py",
         "pytest:.ci/rediacc_ci/tests/test_release_rings_decide.py",
-        "pytest:.claude/rediacc_hooks/tests/test_wl_planbind.py"
+        "pytest:.claude/rediacc_hooks/tests/test_wl_planbind.py",
+        "pytest:.ci/rediacc_ci/tests/test_enterprise_add.py",
+        "pytest:.ci/rediacc_ci/tests/test_enterprise_lifecycle.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_boxready.py"
       ]
     }
   ]

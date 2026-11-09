@@ -62,8 +62,8 @@ SCRUB_ACTION = "./.github/actions/bws-scrub"
 WORKFLOW_DIR_ENV = "WORKFLOW_DIR"
 CONFIG_ENV = "BWS_STEP_SCOPED_CONFIG"
 MIN_WINDOWS_ENV = "BWS_STEP_SCOPE_MIN_WINDOWS"
-# Counted per exported variable: 17 ACCOUNT_ED25519_PRIVATE_KEY windows, 3 ACCOUNT_X25519_PRIVATE_KEY windows sharing the deploy jobs' fetch, and two cd-stage windows for each of the two GPG variables. Raise it when a job gains a scoped fetch.
-DEFAULT_MIN_WINDOWS = 24
+# Counted per exported variable: 4 ACCOUNT_ED25519_PRIVATE_KEY windows (ci.yml stripe-sandbox and deploy-preview, the two cd-deploy jobs; the CI legs mint their own pair since PLAN-production-key-only N5), 3 ACCOUNT_X25519_PRIVATE_KEY windows sharing the deploy jobs' fetch, and two cd-stage windows for each of the two GPG variables. Raise it when a job gains a scoped fetch.
+DEFAULT_MIN_WINDOWS = 11
 
 ALWAYS = "always()"
 MIN_CONTROLS = 20
