@@ -97,10 +97,11 @@ Two resume paths keep the invariant "every exists answer the commit relies on wa
   Owns: private/account/src/db/shard-router.ts (new), private/account/src/db/scope-registry.ts, private/account/src/db/schema.ts, private/account/drizzle/** (its migration only), private/account/tests/integration/shard-router.test.ts (new).
   Accept: `cd private/account && npx vitest run shard-router` rc 0.
     (ticked) 2026-11-09T14:36:33Z by d778be9d: commit:394b679b account suite 251 files 3928 passed rc=0; tsc rc=0
-- [ ] H2 [writer] Move tooling per Z8: export by scope, import, verify counts and hashes, flip, delete source. Dry run by default; refuses on a live lease or session. Tested on two local SQLite files built from the drizzle migrations.
+- [x] H2 [writer] Move tooling per Z8: export by scope, import, verify counts and hashes, flip, delete source. Dry run by default; refuses on a live lease or session. Tested on two local SQLite files built from the drizzle migrations.
   Depends on: H1.
   Owns: .ci/rediacc_ci/ops/d1_shard_move.py (new), .ci/rediacc_ci/tests/test_d1_shard_move.py (new).
   Accept: `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_d1_shard_move.py` rc 0.
+    (ticked) 2026-11-09T15:31:15Z by d778be9d: commit:7f74591a test_d1_shard_move 17 passed rc=0; check:ci-shard-manifest-coverage rc=0
 
 ### Wave 2 (code; the boxes touching enterprise-owned files wait for S3, S4)
 
@@ -110,10 +111,11 @@ Two resume paths keep the invariant "every exists answer the commit relies on wa
   Accept: `cd private/account && npx vitest run telemetry-sink event-log-retention` rc 0.
   (corrected 2026-11-09, d778be9d) The 90-day purge of telemetry types applies from A3 on, not at A1: until A2 moves the portal and config-history reads to Analytics Engine, every type keeps the 400-day window, so A1 lands the type-class purge with telemetry at 400 days and A3 lowers it to 90.
     (ticked) 2026-11-09T14:15:34Z by d778be9d: commit:466cf786 account suite 3917 passed rc=0; d1 size report 13 passed; check:ci-workflows and prose rc=0
-- [ ] C1 [writer] Config envelopes per Z4: migration adding `config_versions.envelope_key`, archive through R2, read through the pointer with the column as fallback, the 100-or-9-months retention, `BlobStorageService.list` in three implementations, and `backfillVersionEnvelopes(limit)` and `sweepOrphanEnvelopes(limit)` exported for W1. Tests: push 120 versions over a fake 10-month clock and keep exactly the union rule; read an old version from a backfilled row and from an unbackfilled one; an orphan older than 24 h goes, one younger stays; a crash between put and insert leaves only a sweepable orphan.
+- [x] C1 [writer] Config envelopes per Z4: migration adding `config_versions.envelope_key`, archive through R2, read through the pointer with the column as fallback, the 100-or-9-months retention, `BlobStorageService.list` in three implementations, and `backfillVersionEnvelopes(limit)` and `sweepOrphanEnvelopes(limit)` exported for W1. Tests: push 120 versions over a fake 10-month clock and keep exactly the union rule; read an old version from a backfilled row and from an unbackfilled one; an orphan older than 24 h goes, one younger stays; a crash between put and insert leaves only a sweepable orphan.
   Depends on: H1 (drizzle journal order).
   Owns: private/account/src/services/config.service.ts, private/account/src/services/blob-storage.service.ts, private/account/src/db/config-schema.ts, private/account/drizzle/** (its migration only), private/account/tests/integration/config-version-envelopes.test.ts (new).
   Accept: `cd private/account && npx vitest run config-version-envelopes config` rc 0.
+    (ticked) 2026-11-09T15:31:14Z by d778be9d: commit:f1296954 account suite 253 files 3944 passed rc=0; tsc rc=0
 - [x] G1 [writer] Tenant write caps per Z6: the middleware, applied to the CLI audit ingest and the config routes. Tests with a fake binding: the 61st config request in the window is answered 429 with the coded body and `Retry-After`, another tenant is unaffected, and with no binding there is no cap.
   Depends on: none.
   Owns: private/account/src/middleware/tenant-write-cap.ts (new), private/account/src/routes/license.ts, private/account/src/routes/configs.ts, private/account/tests/integration/tenant-write-cap.test.ts (new).
