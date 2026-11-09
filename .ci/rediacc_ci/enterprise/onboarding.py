@@ -1,6 +1,6 @@
 """`enterprise add`, resumable from the control database's `onboarding` table (agent/plans/PLAN-enterprise-isolation.md box C1, *Company lifecycle*).
 
-THE STEPS, in order: `control-row` (the `companies` row in the company's own region), `d1` (create `account-<company>`), `configs` (the two gitignored tomls, which need the D1 id), `migrate` (the account schema through the company's own config), `buckets` (both buckets and the backup queue pair the template binds), `secrets` (box D2's provisioner), `deploy` (box D1's `--company` deploy of the proxy, then the account Worker), `bootstrap` (the org and an active ENTERPRISE subscription with limits, box A1), `smoke` (both hosts answer), `lookup` (the www lookup entry through `ops.enterprise_lookup`, skipped and recorded for an unlisted company), `invite` (the owner invitation, sent by the company Worker through box A1) and `audit` (state `active` and one audit row). The Design lists `configs` after `buckets` and `secrets`; it runs straight after `d1` here because `migrate` reads the generated account config.
+THE STEPS, in order: `control-row` (the `companies` row in the company's own region), `d1` (create `account-<company>`), `configs` (the two gitignored tomls, which need the D1 id), `migrate` (the account schema through the company's own config), `buckets` (both buckets and the backup queue pair the template binds), `secrets` (box D2's provisioner), `deploy` (box D1's `--company` deploy of the proxy, then the account Worker), `bootstrap` (the org and an active ENTERPRISE subscription with limits: one POST to the company Worker under ACCOUNT_SERVER_API_KEY, a 200 rerun counting as success), `smoke` (both hosts answer), `lookup` (the www lookup entry through `ops.enterprise_lookup`, skipped and recorded for an unlisted company), `invite` (the owner invitation, sent by the company Worker through box A1) and `audit` (state `active` and one audit row). The Design lists `configs` after `buckets` and `secrets`; it runs straight after `d1` here because `migrate` reads the generated account config.
 
 VALIDATION RUNS EVERY TIME, before any step: the name (`names.check`), the region of the environment, the owner address, the storage, the allowlist (`proxy_configs.allow_ips_refusal`) and, unless unlisted, the lookup domain against the free-mail list (`enterprise_lookup.refuse_free_mail`). Then every region's control database is read through the registry; an unreachable region refuses the add by name, and a name held in another region is refused.
 
@@ -369,6 +369,38 @@ def http_status(url: str) -> int:
         return 0
 
 
+ACCOUNT_KEY_ENV = "ACCOUNT_SERVER_API_KEY"
+SUBSCRIPTIONS_PATH = "/account/api/v1/subscriptions/enterprise/"
+HTTP_OK = 200
+HTTP_CREATED = 201
+AccountPost = Callable[[str, str, dict], tuple[int, dict]]
+
+
+def account_post(url: str, api_key: str, body: dict) -> tuple[int, dict]:
+    """(status, JSON body) of an authenticated POST to the company's account Worker through `core.https`; (0, {}) when nothing answered."""
+    request = https.build_request(
+        url,
+        data=json.dumps(body).encode(),
+        headers={"X-API-Key": api_key, "Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        with https.urlopen(request, timeout=60) as reply:
+            return int(reply.status), _json_body(reply.read())
+    except urllib.error.HTTPError as exc:
+        return int(exc.code), _json_body(exc.read())
+    except OSError:
+        return 0, {}
+
+
+def _json_body(raw: bytes) -> dict:
+    try:
+        data = json.loads(raw or b"{}")
+    except ValueError:
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
 def region_entry(region: str, root: pathlib.Path | None = None) -> dict:
     data = json.loads(((root or paths.repo_root()) / "regions.json").read_text(encoding="utf-8"))
     for entry in data["regions"]:
@@ -393,6 +425,8 @@ def live_actions(
     provision: Callable[[secrets.Company], Any] | None = None,
     lookup_put: Callable[[str, str, str], int] | None = None,
     lookup_namespace: str = enterprise_lookup.NAMESPACE_ID,
+    post: AccountPost | None = None,
+    env: Mapping[str, str] | None = None,
 ) -> dict[str, Action]:
     """The production action of every step, each external call through the seam its argument names."""
     run_cmd = runner or run_captured
@@ -400,6 +434,41 @@ def live_actions(
     deploy_run = deploy or run_module
     get = fetch or http_status
     put = lookup_put or enterprise_lookup.put
+    send = post or account_post
+
+    def account_call(ctx: Context, route: str, body: dict) -> tuple[int, dict]:
+        """One authenticated call to the company's account host. The key is read here, so a step that never runs needs none."""
+        plan = ctx.plan
+        key = (os.environ if env is None else env).get(ACCOUNT_KEY_ENV, "")
+        if not key:
+            raise OnboardingError(
+                "company %s: the %s step needs %s" % (plan.company_id, route, ACCOUNT_KEY_ENV)
+            )
+        url = "https://%s%s%s" % (plan.hosts[0], SUBSCRIPTIONS_PATH, route)
+        status, payload = send(url, key, {"companyId": plan.company_id, **body})
+        if status == 0:
+            raise OnboardingError(
+                "company %s: the %s call got no answer" % (plan.company_id, route)
+            )
+        if status not in (HTTP_OK, HTTP_CREATED):
+            code = str(payload.get("code") or "")
+            raise OnboardingError(
+                "company %s: the %s call was refused with HTTP %d%s"
+                % (plan.company_id, route, status, " (%s)" % code if code else "")
+            )
+        return status, payload
+
+    def bootstrap(ctx: Context) -> str:
+        status, _payload = account_call(
+            ctx,
+            "bootstrap",
+            {"ownerEmail": ctx.plan.request.owner, "storageGb": ctx.plan.request.storage_gb},
+        )
+        return "created" if status == HTTP_CREATED else "already bootstrapped"
+
+    def invite(ctx: Context) -> str:
+        account_call(ctx, "owner-mail", {"ownerEmail": ctx.plan.request.owner})
+        return ""
 
     def base() -> pathlib.Path:
         return out_root if out_root is not None else paths.repo_root()
@@ -550,12 +619,10 @@ def live_actions(
         "buckets": buckets,
         "secrets": provision_secrets,
         "deploy": deploy_both,
-        "bootstrap": not_built(
-            "A1", "the company bootstrap of org, ENTERPRISE subscription and limits"
-        ),
+        "bootstrap": bootstrap,
         "smoke": smoke,
         "lookup": lookup,
-        "invite": not_built("A1", "the owner invitation the company Worker sends"),
+        "invite": invite,
         "audit": write_audit,
     }
 

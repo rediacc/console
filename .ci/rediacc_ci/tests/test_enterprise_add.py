@@ -480,11 +480,63 @@ def test_live_secrets_step_without_a_provisioner_refuses_by_name():
         onboarding.live_actions(runner=None)["secrets"](_ctx(World()))
 
 
-def test_live_bootstrap_and_invite_are_seams_naming_a1():
-    actions = onboarding.live_actions(runner=None)
+class FakeAccount:
+    def __init__(self, status: int = 201, payload: dict | None = None):
+        self.status = status
+        self.payload = payload or {}
+        self.calls: list[tuple[str, str, dict]] = []
+
+    def __call__(self, url, key, body):
+        self.calls.append((url, key, body))
+        return self.status, self.payload
+
+
+def _account_actions(fake, key="k-secret"):
+    env = {onboarding.ACCOUNT_KEY_ENV: key} if key else {}
+    return onboarding.live_actions(runner=None, post=fake, env=env)
+
+
+def test_live_bootstrap_creates_through_the_account_route():
+    fake = FakeAccount(201)
+    detail = _account_actions(fake)["bootstrap"](_ctx(World()))
+    url, key, body = fake.calls[0]
+    assert url.endswith("/account/api/v1/subscriptions/enterprise/bootstrap")
+    assert url.startswith("https://")
+    assert key == "k-secret"
+    assert body["companyId"] == "c0123456789abcdef"
+    assert set(body) == {"companyId", "ownerEmail", "storageGb"}
+    assert detail == "created"
+
+
+def test_live_bootstrap_rerun_is_success():
+    assert _account_actions(FakeAccount(200))["bootstrap"](_ctx(World())) == "already bootstrapped"
+
+
+def test_live_bootstrap_owner_change_refuses_with_its_status_and_code():
+    fake = FakeAccount(409, {"code": "OWNER_MISMATCH"})
+    with pytest.raises(onboarding.OnboardingError, match=r"HTTP 409 \(OWNER_MISMATCH\)"):
+        _account_actions(fake)["bootstrap"](_ctx(World()))
+
+
+def test_live_bootstrap_and_invite_refuse_naming_the_missing_key():
+    fake = FakeAccount()
     for step in ("bootstrap", "invite"):
-        with pytest.raises(onboarding.NotBuiltError, match="not built yet: A1"):
-            actions[step](_ctx(World()))
+        with pytest.raises(onboarding.OnboardingError, match=onboarding.ACCOUNT_KEY_ENV):
+            _account_actions(fake, key="")[step](_ctx(World()))
+    assert fake.calls == []
+
+
+def test_live_invite_posts_the_owner_mail_route():
+    fake = FakeAccount(200, {"sent": True})
+    _account_actions(fake)["invite"](_ctx(World()))
+    url, _key, body = fake.calls[0]
+    assert url.endswith("/enterprise/owner-mail")
+    assert set(body) == {"companyId", "ownerEmail"}
+
+
+def test_live_account_call_with_no_answer_refuses():
+    with pytest.raises(onboarding.OnboardingError, match="no answer"):
+        _account_actions(FakeAccount(0))["invite"](_ctx(World()))
 
 
 def test_live_actions_cover_every_step():
