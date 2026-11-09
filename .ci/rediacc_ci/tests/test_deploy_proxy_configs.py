@@ -431,6 +431,23 @@ def test_an_account_config_bound_to_another_regions_proxy_is_refused(
     assert any("EXECUTOR service 'proxy-eu' names eu, which is not us" in r for r in out), out
 
 
+def test_a_regions_license_signer_binding_is_judged_by_its_own_name(
+    tmp_path: pathlib.Path,
+) -> None:
+    """The bench config binds `signer-bench-eu` and passes; another region's signer in the us config is refused (controls in both directions)."""
+    assert pc.check(ROOT) == []
+    root = copy_tree(tmp_path)
+    path = root.joinpath(*pc.ACCOUNT_REL) / "wrangler.us.toml"
+    path.write_text(
+        plant(path.read_text(encoding="utf-8"), 'service = "signer-us"', 'service = "signer-eu"'),
+        encoding="utf-8",
+    )
+    out = pc.check(root)
+    assert any("LICENSE_SIGNER service 'signer-eu' names eu, which is not us" in r for r in out), (
+        out
+    )
+
+
 def test_a_well_known_host_disagreeing_with_regions_json_is_refused(tmp_path: pathlib.Path) -> None:
     root = copy_tree(tmp_path)
     path = root / pc.REGIONS_REL

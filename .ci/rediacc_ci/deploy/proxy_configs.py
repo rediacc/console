@@ -554,6 +554,13 @@ def config_refusals(text: str, target: Target, all_regions: frozenset[str]) -> l
     return out
 
 
+def _is_own_signer(value: str, key: str) -> bool:
+    """Is `value` the licence signer Worker this target signs through: `signer-<region>` for a shared region, `signer-bench-<region>` for bench (the bench signer is deployed per region, so its name carries a region token the bench target does not own)."""
+    if key == "bench":
+        return re.fullmatch(r"signer-bench-[a-z0-9]+", value) is not None
+    return value == "signer-%s" % key
+
+
 def account_refusals(
     text: str, proxy_name: str, key: str, all_regions: frozenset[str], own: frozenset[str]
 ) -> list[str]:
@@ -573,6 +580,8 @@ def account_refusals(
     foreign = (all_regions | CHANNEL_TOKENS) - own
     for entry in services:
         value = str(entry.get("service", ""))
+        if entry.get("binding") == "LICENSE_SIGNER" and _is_own_signer(value, key):
+            continue
         hits = [t for t in NAME_TOKEN_SPLIT.split(value.lower()) if t in foreign]
         if hits:
             out.append(

@@ -68,7 +68,8 @@ jurisdiction = "eu"
 # share the rediacc.cloud zone, and a same-zone subrequest never reaches another Worker. CD sets
 # EXECUTOR_MODE as a secret only after proxy-eu passes its smoke (agent/plans/PLAN-proxy-cd-six-targets.md
 # Design item 2). wrangler refuses a deploy whose binding names a Worker that does not exist yet, so the
-# first deploy of a target bootstraps the proxy (workers/proxy/wrangler.eu.toml) before this Worker.
+# first deploy of a target runs `deploy_account --stub` (a placeholder under this Worker's name, which the proxy
+# binds back to), then the proxy (workers/proxy/wrangler.eu.toml), then this Worker for real.
 [[services]]
 binding = "EXECUTOR"
 service = "proxy-eu"
@@ -116,7 +117,8 @@ binding = "TELEMETRY"
 dataset = "telemetry_eu"
 
 # Per-tenant write caps (PLAN-d1-scaling Z6; private/account/src/middleware/tenant-write-cap.ts reads
-# these binding names). Approximate per location: a false refusal costs a retry, never data.
+# these binding names). Approximate per location: a false refusal answers 429 with Retry-After, so a caller that
+# retries loses nothing and one that does not loses that write.
 [[ratelimits]]
 name = "AUDIT_WRITE_LIMIT"
 namespace_id = "1101"
