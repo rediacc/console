@@ -13,7 +13,7 @@
     ./run.sh enterprise proof <verb> [--bench]
     ./run.sh enterprise control ensure [--bench] [--region <r>]
 
-`add` (box C1) is `onboarding.run` over the live steps, after `control_db.ensure_all` has made sure every control database of the environment exists with its schema. `list`, `update`, `suspend`, `export` and `remove` are box C2's `lifecycle` verbs over one `lifecycle.Context`; the production Exporter and Teardown adapters over D1, R2, wrangler and bws are not written yet, so the context binds them to a seam that refuses naming what is missing. A verb whose module has not landed refuses with `not built yet: <box>` and exit 2, rather than claiming anything.
+`add` (box C1) is `onboarding.run` over the live steps, after `control_db.ensure_all` has made sure every control database of the environment exists with its schema. `list`, `update`, `suspend`, `export` and `remove` are box C2's `lifecycle` verbs over one `lifecycle.Context`; the context binds the production Exporter and Teardown (`lifecycle_adapters`) lazily, so `list`, `update` and `suspend` need no Cloudflare credentials, while `export` and `remove` read CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID (plus the R2 S3 pair, and `--bws-project` for `remove`) from the environment, as `bws_env exec --profile <p>` provides them, and refuse naming the one that is missing. A verb whose module has not landed refuses with `not built yet: <box>` and exit 2, rather than claiming anything.
 
 EXIT CODES. 0 done; 1 a refusal or a failed step; 2 usage, or a verb not built yet.
 """
@@ -21,14 +21,21 @@ EXIT CODES. 0 done; 1 a refusal or a failed step; 2 usage, or a verb not built y
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import importlib
 import os
 import pathlib
+import subprocess
 import sys
 from collections.abc import Callable, Mapping, Sequence
 from typing import TYPE_CHECKING, Any
 
+from rediacc_ci import paths
+from rediacc_ci.core import bws_env
+from rediacc_ci.core import wrangler as wrangler_mod
+from rediacc_ci.deploy import proxy_configs as pc
 from rediacc_ci.enterprise import control_db, onboarding, proof, registry, secrets
+from rediacc_ci.enterprise import lifecycle_adapters as la
 from rediacc_ci.ops import enterprise_lookup
 
 if TYPE_CHECKING:
@@ -39,10 +46,8 @@ LIFECYCLE = "rediacc_ci.enterprise.lifecycle"
 RINGS_RUN = "rediacc_ci.release.rings_run"
 LIFECYCLE_VERBS = ("list", "update", "suspend", "export", "remove")
 EXPORT_ROOT = pathlib.Path.home() / ".local" / "state" / "rediacc" / "enterprise-exports"
-ADAPTERS_MISSING = (
-    "not built yet: the production lifecycle %s over D1, R2, wrangler and bws "
-    "(lifecycle.py declares the protocol; no box has written the adapter)"
-)
+CF_API_ENV = "CLOUDFLARE_API_TOKEN"
+ACCOUNT_ENV = "CLOUDFLARE_ACCOUNT_ID"
 EXIT_USAGE = 2
 
 USAGE = (__doc__ or "").split("\n\n")[1]
@@ -139,6 +144,138 @@ class Unbound:
         return refuse
 
 
+@dataclasses.dataclass(frozen=True)
+class LiveSeams:
+    """The transports under the production adapters; None takes the live one from `lifecycle_adapters`."""
+
+    wrangler: Callable[..., Any] | None = None  # (cwd, env) -> Wrangler
+    s3: Callable[..., Any] | None = None  # (endpoint, env) -> S3
+    http: Callable[..., Any] | None = None  # (headers) -> Http
+    bws: Callable[..., Any] | None = None  # (project, env) -> (list_rows, delete)
+    lookup_run: Callable[..., Any] | None = None
+
+
+class Lazy:
+    """An adapter built on its first call, from the region of the company that call names, so a verb that never reaches it needs none of its credentials."""
+
+    def __init__(self, error: type[Exception], build: Callable[[str], Any]):
+        self._error = error
+        self._build = build
+        self._inner: Any = None
+
+    def __getattr__(self, attr: str) -> Callable[..., Any]:
+        if attr.startswith("_"):
+            raise AttributeError(attr)
+
+        def call(*args: Any, **kwargs: Any) -> Any:
+            if self._inner is None:
+                region = getattr(args[0], "region", None) if args else None
+                if not region:
+                    raise self._error("the adapter was reached before a company was named")
+                self._inner = self._build(str(region))
+            return getattr(self._inner, attr)(*args, **kwargs)
+
+        return call
+
+
+def _credentials(error: type[Exception], env: Mapping[str, str]) -> str:
+    """The Cloudflare token; a missing variable is refused by name."""
+    missing = [n for n in (CF_API_ENV, ACCOUNT_ENV) if not env.get(n)]
+    if missing:
+        raise error(
+            "missing Cloudflare credentials: set %s (`bws_env exec --profile <p>` provides them)"
+            % ", ".join(missing)
+        )
+    return env[CF_API_ENV]
+
+
+def _r2(
+    error: type[Exception], region: str, env: Mapping[str, str], seams: LiveSeams
+) -> tuple[Any, str | None]:
+    """(the R2 S3 transport for the region's jurisdiction, that jurisdiction)."""
+    try:
+        jurisdiction = onboarding.region_entry(region).get("r2Jurisdiction")
+    except (onboarding.OnboardingError, OSError, ValueError, KeyError) as exc:
+        raise error("the region %r cannot be read from regions.json: %s" % (region, exc)) from None
+    prefix = "%s." % jurisdiction if jurisdiction else ""
+    endpoint = "https://%s.%sr2.cloudflarestorage.com" % (env[ACCOUNT_ENV], prefix)
+    return (seams.s3 or la.r2_s3_from_env)(endpoint, env), jurisdiction
+
+
+def _live_exporter(error: type[Exception], env: Mapping[str, str], seams: LiveSeams) -> Lazy:
+    def build(region: str) -> Any:
+        _credentials(error, env)
+        s3, _ = _r2(error, region, env, seams)
+        cwd = paths.repo_root().joinpath(*pc.ACCOUNT_REL)
+        try:
+            run = (seams.wrangler or la.live_wrangler)(cwd, env)
+        except wrangler_mod.WranglerNotInstalledError as exc:
+            raise error(str(exc)) from None
+        return la.CloudflareExporter(wrangler=run, s3=s3)
+
+    return Lazy(error, build)
+
+
+def _live_bws(error: type[Exception], env: Mapping[str, str]) -> tuple[Any, Any]:
+    """(list_rows, delete) over the bws binary, the delete taking only the entry's uuid."""
+    try:
+        environ = bws_env.with_token(dict(env))
+    except bws_env.RefusalError:
+        raise error("no bws access token") from None
+    binary = bws_env.binary(environ)
+    if not binary:
+        raise error("no bws binary")
+
+    def list_rows() -> list[dict]:
+        try:
+            return bws_env.listing(binary, environ)
+        except bws_env.RefusalError:
+            pass
+        raise error("bws secret list failed")
+
+    def delete(secret_id: str) -> int:
+        proc = subprocess.run(
+            [binary, "secret", "delete", secret_id],
+            env=environ,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        return int(proc.returncode)
+
+    return list_rows, delete
+
+
+def _live_teardown(
+    error: type[Exception],
+    env: Mapping[str, str],
+    seams: LiveSeams,
+    bws_project: str,
+    lookup_domains: Sequence[str],
+) -> Lazy:
+    def build(region: str) -> Any:
+        token = _credentials(error, env)
+        if not bws_project:
+            raise error("--bws-project names the enterprise bws project whose entries are deleted")
+        s3, jurisdiction = _r2(error, region, env, seams)
+        list_rows, delete = (seams.bws or _live_bws_pair(error, env))(bws_project, env)
+        return la.CloudflareTeardown(
+            account_id=env[ACCOUNT_ENV],
+            http=(seams.http or la.cloudflare_http)(["-H", "Authorization: Bearer %s" % token]),
+            s3=s3,
+            secrets=la.BwsDeleter(bws_project, list_rows=list_rows, delete=delete),
+            lookup_domains=lambda _company: tuple(lookup_domains),
+            lookup_run=seams.lookup_run,
+            r2_jurisdiction=jurisdiction,
+        )
+
+    return Lazy(error, build)
+
+
+def _live_bws_pair(error: type[Exception], env: Mapping[str, str]) -> Callable[..., Any]:
+    return lambda _project, _env: _live_bws(error, env)
+
+
 def lifecycle_context(
     lifecycle: Any,
     *,
@@ -147,10 +284,14 @@ def lifecycle_context(
     bws_project: str = "",
     export_root: pathlib.Path | None = None,
     env: Mapping[str, str] | None = None,
+    lookup_domains: Sequence[str] = (),
+    seams: LiveSeams | None = None,
 ) -> Any:
-    """One `lifecycle.Context` over the control databases; the Exporter and Teardown stay unbound until their adapters exist, and the store needs `--bws-project`."""
+    """One `lifecycle.Context` over the control databases; the Exporter and Teardown are the live adapters, built on first use, and the store needs `--bws-project`."""
     q = query or control_db.transport()
     error = lifecycle.LifecycleError
+    environ = dict(os.environ if env is None else env)
+    live = seams or LiveSeams()
     store: Any
     if bws_project:
         try:
@@ -162,11 +303,11 @@ def lifecycle_context(
     return lifecycle.Context(
         registry=registry.Registry(q, bench=bench),
         query=q,
-        exporter=Unbound(error, ADAPTERS_MISSING % "Exporter"),
-        teardown=Unbound(error, ADAPTERS_MISSING % "Teardown"),
+        exporter=_live_exporter(error, environ, live),
+        teardown=_live_teardown(error, environ, live, bws_project, lookup_domains),
         store=store,
         export_root=export_root or EXPORT_ROOT,
-        env=dict(os.environ if env is None else env),
+        env=environ,
         now=onboarding.utc_now,
         actor="operator",
     )
@@ -195,6 +336,7 @@ def _lifecycle_parser(verb: str) -> argparse.ArgumentParser:
         if verb == "remove":
             ap.add_argument("--delete-data", action="store_true")
             ap.add_argument("--confirm", default=None)
+            ap.add_argument("--lookup-domain", action="append", default=None)
     return ap
 
 
@@ -213,6 +355,7 @@ def lifecycle_main(
         bench=args.bench,
         bws_project=getattr(args, "bws_project", ""),
         export_root=getattr(args, "export_root", None),
+        lookup_domains=tuple(getattr(args, "lookup_domain", None) or ()),
     )
     if verb == "list":
         return int(lifecycle.cmd_list(ctx, include_removed=args.all))

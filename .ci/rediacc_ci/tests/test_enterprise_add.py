@@ -645,16 +645,17 @@ def test_cli_lifecycle_bench_flag_reaches_the_context(monkeypatch):
     assert built[0]["bench"] is True
 
 
-def test_lifecycle_context_binds_the_registry_and_leaves_the_adapters_unbound(tmp_path):
+def test_lifecycle_context_binds_the_registry_and_the_live_adapters_lazily(tmp_path):
     fake = FakeLifecycle()
     ctx = cli.lifecycle_context(
         fake, bench=True, query=lambda _d, _s, _p: [], export_root=tmp_path, env={}
     )
     assert ctx.registry.bench is True
     assert ctx.export_root == tmp_path
+    company = types.SimpleNamespace(region="eu")
     for seam, call in ((ctx.exporter, "dump_d1"), (ctx.teardown, "undeploy")):
-        with pytest.raises(FakeLifecycle.LifecycleError, match="not built yet"):
-            getattr(seam, call)(object())
+        with pytest.raises(FakeLifecycle.LifecycleError, match="CLOUDFLARE_API_TOKEN"):
+            getattr(seam, call)(company)
     with pytest.raises(FakeLifecycle.LifecycleError, match="--bws-project"):
         ctx.store.read(["x"])
 
