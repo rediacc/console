@@ -44,7 +44,7 @@ const NOTICE_STEPS_BUDGET_MS = 20_000;
 /** A ticket still `starting` after this long is resolved through `job list --request-id`. */
 const STARTING_CHECK_AFTER_MS = 10 * 60_000;
 /** A ticket that owes something for this long is given up on: nothing resolved it in a week. */
-export const TICKET_EXPIRE_AFTER_MS = 7 * 24 * 3_600_000;
+const TICKET_EXPIRE_AFTER_MS = 7 * 24 * 3_600_000;
 
 /** What one status read learned about a ticket. */
 export interface TicketObservation {

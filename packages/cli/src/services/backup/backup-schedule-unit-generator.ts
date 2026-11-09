@@ -47,7 +47,7 @@ import {
 export const EXPECT_ACCOUNT_SERVER_FLAG = '--expect-account-server';
 
 /** renet's flag naming the registered store a session writes to (private/renet, box R2). */
-export const STORE_FLAG = '--store';
+const STORE_FLAG = '--store';
 
 /** SHA-256 hex digest for UTF-8 content, used by the reconciler for diff. */
 export function sha256Hex(content: string): string {

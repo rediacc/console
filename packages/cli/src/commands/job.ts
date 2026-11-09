@@ -475,7 +475,7 @@ function ticketsById(store: ReturnType<typeof openTicketStore>, ids: string[]): 
   });
 }
 
-export async function runJobDismiss(ids: string[], options: JobCommandOptions): Promise<void> {
+async function runJobDismiss(ids: string[], options: JobCommandOptions): Promise<void> {
   // --stale picks its own tickets and --older-than only narrows --stale; either alone with the other form would be ignored silently.
   if (options.stale ? ids.length > 0 : options.olderThan !== undefined) {
     throw new Error(t('commands.job.dismiss.conflictingTargets'));

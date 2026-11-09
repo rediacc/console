@@ -19,7 +19,7 @@ import type { ExecuteResult } from '../executor/types.js';
 export const HOME_STORE = 'home';
 
 /** One row of the account's per-lineage store listing. */
-export interface LineageStore {
+interface LineageStore {
   storeId: string;
   newestSnapshotId: string | null;
   newestSnapshotAt: string | null;
@@ -327,7 +327,7 @@ export function copyLag(source: StoreStatus | undefined, target: StoreStatus | u
 }
 
 /** One stream of `GET /backups/status`; a row without `storeId` is `home`. */
-export interface StatusStream {
+interface StatusStream {
   storeId?: string;
   lineageGuid: string;
   lastRunAt: string | null;

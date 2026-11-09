@@ -92,7 +92,7 @@ interface ClaimRequest {
 }
 
 /** `renet job claim` exits with this when the job is not in the spool: the steps it owes can never run. */
-export const JOB_NOT_FOUND_EXIT = 16;
+const JOB_NOT_FOUND_EXIT = 16;
 
 /** Each expiry reason's text, spelled as literal keys so the orphan check sees every one of them. */
 const REASON_TEXT: Record<ExpiredReason, () => string> = {

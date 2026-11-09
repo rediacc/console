@@ -34,7 +34,7 @@ const BACKUP_SESSION_FUNCTIONS: ReadonlySet<string> = new Set([
 const LICENSE_DIR = '/var/lib/rediacc/license';
 const GUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-export function isBackupSessionFunction(functionName: string): boolean {
+function isBackupSessionFunction(functionName: string): boolean {
   return BACKUP_SESSION_FUNCTIONS.has(functionName);
 }
 
@@ -48,7 +48,7 @@ function originOf(url: string): string | undefined {
 }
 
 /** The renet function param that holds a session verb to this config's account server (the verb's `--expect-account-server`). */
-export const EXPECT_ACCOUNT_SERVER_PARAM = 'expect_account_server';
+const EXPECT_ACCOUNT_SERVER_PARAM = 'expect_account_server';
 
 /** The active config's account-server origin, the one every licence a backup verb presents must name. */
 export function expectedAccountServerOrigin(): string | undefined {

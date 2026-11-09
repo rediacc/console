@@ -162,18 +162,6 @@ export function dropReplicationRules(
   );
 }
 
-/** The rules the server holds for one lineage; an unreadable route (older server, any failure) is an empty list. */
-export async function listReplicationRules(lineageGuid: string): Promise<ReplicationRule[]> {
-  try {
-    const response = await accountServerFetch<{ rules?: ReplicationRule[] } | undefined>(
-      `${STORES_PATH}/replication?lineage=${encodeURIComponent(lineageGuid)}`
-    );
-    return Array.isArray(response?.rules) ? response.rules : [];
-  } catch {
-    return [];
-  }
-}
-
 /** On bind: register a rule per (covered lineage on the machine, enabled replicate destination). */
 export async function registerStrategyReplication(
   strategy: StrategyLike,

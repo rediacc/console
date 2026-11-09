@@ -91,7 +91,7 @@ export async function followProxyTicket(
  * job, undefined when the machine could not be asked (unreachable, an older
  * renet without the flag, a proxy ticket).
  */
-export async function resolveStartingTicket(ticket: Ticket): Promise<string | null | undefined> {
+async function resolveStartingTicket(ticket: Ticket): Promise<string | null | undefined> {
   if (ticket.via?.kind === 'proxy' || !ticket.machine) return undefined;
   try {
     return await withConnection(ticket.machine, async (conn) => {
