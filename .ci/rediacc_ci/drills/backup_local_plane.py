@@ -37,10 +37,10 @@ from rediacc_ci.core import bws_env, env
 
 # The bare `rediacc-` name, still read by `testrun/start_backup_plane.py`; `is_production_bucket` is the whole refusal.
 PRODUCTION_BUCKET = "rediacc-backups"
-# The production backup bucket names: the bare and per-region shared names (`backups`, `backups-eu`, PLAN-product-domain-rename W6) and the `rediacc-` and `edge-rediacc-` names they replace, live until that plan deletes them (L11).
-_PRODUCTION_BACKUP_BUCKET = re.compile(r"\A(?:(?:edge-)?rediacc-)?backups(?:-[a-z]+)?\Z")
-# A name marked disposable is not production: `backups-bench`, `backups-probe` and `backups-test` stay usable.
-_DISPOSABLE = re.compile(r"probe|test|scratch|bench")
+# The production backup bucket names: the bare and per-region shared names (`backups`, `backups-eu`, `backups-us-east`, PLAN-product-domain-rename W6) and the `rediacc-` and `edge-rediacc-` names they replace, live until that plan deletes them (L11). A name is disposable, and so not production, only when a whole hyphen-delimited segment is `probe`, `test`, `scratch` or `bench` (`backups-bench`, `backups-eu-test`): a substring test would clear `backups-latest`.
+_PRODUCTION_BACKUP_BUCKET = re.compile(
+    r"\A(?:(?:edge-)?rediacc-)?backups(?:-(?!(?:probe|test|scratch|bench)(?:-|\Z))[a-z0-9]+)*\Z"
+)
 ALREADY_THERE = ("BucketAlreadyOwnedByYou", "BucketAlreadyExists")
 PROFILE = "backup-plane"
 GATEWAY_COMMAND = ["npx", "--no-install", "tsx", "src/entry/dev-gateway.ts"]
@@ -48,7 +48,7 @@ GATEWAY_COMMAND = ["npx", "--no-install", "tsx", "src/entry/dev-gateway.ts"]
 
 def is_production_bucket(name: str) -> bool:
     """Is `name` a production backup bucket name, which no drill or local plane may wear?"""
-    return bool(_PRODUCTION_BACKUP_BUCKET.match(name)) and not _DISPOSABLE.search(name)
+    return bool(_PRODUCTION_BACKUP_BUCKET.match(name))
 
 
 def knobs(environ: dict[str, str]) -> dict[str, str]:
