@@ -18,6 +18,7 @@ import pathlib
 import re
 import shutil
 import subprocess
+import sys
 import tempfile
 
 import pytest
@@ -169,7 +170,8 @@ _SHARED_TOOL_CACHE = re.compile(r"^(node-compile-cache|tsx-[0-9]+)$")
 def _run(relative: str, tail: list[str]) -> tuple[subprocess.CompletedProcess, list[str]]:
     """Run one suite under a private TMPDIR; return its result and the entries it left behind."""
     path = HOOKS / relative
-    argv = ["bash", str(path)] if path.suffix == ".sh" else ["python3", str(path), *tail]
+    # sys.executable, not a bare `python3`: a suite may import a pytest-based fixture module (test-wl_worktrees.py does), and the PATH python is not the toolchain interpreter that carries pytest.
+    argv = ["bash", str(path)] if path.suffix == ".sh" else [sys.executable, str(path), *tail]
     # Under one pid-stamped run dir, because the `finally` below does not run when pytest itself is killed on its timeout; the next run's sweep reclaims it then.
     scratch = tempfile.mkdtemp(prefix="suite-", dir=runtmp.shared("hook-suite-tmpdir-"))
     try:
