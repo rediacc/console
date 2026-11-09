@@ -1,7 +1,7 @@
 ---
 description: Pause the session for an operator break (a restart, an update, a trip): switch the Stop hook to quiet, start nothing new, let running sub-agents finish and record what they left, cancel the session's crons, and write a resume point. Resuming restores the effort level and continues from STATE.md.
 argument-hint: "[resume-effort] [note]  (resume-effort is quiet|low|smart|high|ultra, the level to restore on resume; default: the level in force now, or the one an earlier pause recorded when the hook is already quiet)"
-allowed-tools: Bash(date:*), Bash(git branch --show-current), Bash(grep:*), Bash(head:*), Bash(git status:*), Bash(git add:*), Bash(git commit:*), Bash(git log:*), Bash(cp:*), Bash(mkdir:*), Bash(.claude/hooks/stop/worklist.py:*), Bash(python3 .claude/hooks/stop/worklist.py:*), Bash(python3 .claude/hooks/stop/wl_wake.py:*), Bash(./rdc.sh ops status), Bash(docker version), CronList, CronDelete
+allowed-tools: Bash(date:*), Bash(git branch --show-current), Bash(grep:*), Bash(head:*), Bash(git status:*), Bash(git add -- *), Bash(git commit -F *), Bash(git log:*), Bash(cp /tmp/* .ci/cache/pause/*), Bash(mkdir -p .ci/cache/pause/*), Bash(.claude/hooks/stop/worklist.py:*), Bash(python3 .claude/hooks/stop/worklist.py:*), Bash(python3 .claude/hooks/stop/wl_wake.py:*), Bash(./rdc.sh ops status), Bash(docker version), CronList, CronDelete
 ---
 
 ## Current state

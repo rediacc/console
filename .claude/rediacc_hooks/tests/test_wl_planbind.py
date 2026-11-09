@@ -235,11 +235,17 @@ def test_ruling_declaration_forms(tmp_path):
     """Reviews ff5c3c4a.1/.2: a colon after a passing mention is no ruling; hyphenated and parenthesised declarations are."""
     base = plan(status="done", boxes=("[ ] T1 open work here",), extra=ruled(tmp_path))
     dropped = base + "  dropped by ruling #aa11bb22\n"
-    for text in ("close the ruling: doc gap", "note the ruling: doc gap, not a decision"):
+    for text in (
+        "close the ruling: doc gap",
+        "note the ruling: doc gap, not a decision",
+        "close the (ruling): doc gap",  # review 77c5fd2a.2
+    ):
         assert kinds(run({TARGET: dropped}, [item("aa11bb22", "x", text)], tmp_path)) == ["box"]
     for text in (
         "operator-ruling 2026-11-09: drop T1",
-        "Decision recorded (ruling): drop T1",
+        "Decision recorded, (ruling): drop T1",
+        "Decision recorded, ruling: drop T1",  # review 77c5fd2a.3
+        "Decision recorded - ruling: drop T1",
         "Ruling: drop T1",
     ):
         assert run({TARGET: dropped}, [item("aa11bb22", "x", text)], tmp_path) == []

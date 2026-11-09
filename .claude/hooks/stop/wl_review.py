@@ -3232,6 +3232,31 @@ def claim_exercised_by_test(repo, fix, test_path, claim):
     )
 
 
+_IMPORT_LINE_RE = re.compile(r"\b(?:import|require|from|importlib|load_module|patch|mock)\b", re.IGNORECASE)
+
+
+def imports_anchored_module(repo, fix, test_path, anchored):
+    """Whether the lines the fix ADDED to `test_path` import or patch the anchored module by name (`from x.onboarding import ...`, `import {a} from './blob-storage.service'`), so a test whose file name does not carry the stem (`blob-list.test.ts` for `blob-storage.service.ts`) still counts as the anchored file's test (#d8f3ba65). Only import-like lines count: a bare mention of a common stem in an unrelated test answers nothing."""
+    stem = pathlib.PurePosixPath(anchored).stem.lower()
+    if not stem:
+        return False
+    rc, text = git(
+        repo, "show", "--format=", "-U0", "--no-color", "--no-ext-diff", fix, "--", test_path
+    )
+    if rc != 0:
+        return False
+    variants = {stem, stem.replace("-", "_"), stem.replace("_", "-")}
+    for line in text.splitlines():
+        if not line.startswith("+") or line.startswith("+++") or not _IMPORT_LINE_RE.search(line):
+            continue
+        low = line[1:].lower()
+        if any(
+            re.search(r"(?<![a-z0-9_-])%s(?![a-z0-9_-])" % re.escape(v), low) for v in variants
+        ):
+            return True
+    return False
+
+
 def mark(root, branch, finding_id, kind, args, me, items=None, now=None, asked_ok=None):
     """Close one finding. Returns the path written; raises ValueError naming the failed check.
 
@@ -3298,6 +3323,8 @@ def mark(root, branch, finding_id, kind, args, me, items=None, now=None, asked_o
             or bool(moved and moved in touched)
             # A "no test for this change" finding is closed by a test elsewhere: the fix may touch a test file instead of the anchored one, named by --test or found among the paths the fix touches.
             or bool(test_path and related_test(test_path, finding.file))
+            # A test named by --test whose added lines import the anchored module tests it whatever its file is called (#d8f3ba65).
+            or bool(test_path and imports_anchored_module(repo, fix, test_path, finding.file))
             or (
                 test_claim
                 and any(is_test_path(t) and related_test(t, finding.file) for t in touched)

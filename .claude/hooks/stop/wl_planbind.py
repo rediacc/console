@@ -44,9 +44,12 @@ _PLAN_STEM_RE = re.compile(
 _ITEM_REF_RE = re.compile(r"#([0-9a-f]{12}|[0-9a-f]{8})\b")
 # `dropped by ruling #<id>` under a box: the operator ruling item that dropped its work.
 _DROPPED_RE = re.compile(r"\bdropped by ruling #([0-9a-f]{12}|[0-9a-f]{8})\b", re.IGNORECASE)
-# How a ruling item's text declares itself: "operator ruling ...", "operator-ruling ...", "(ruling): ..." or a text that opens with the word. A text that only mentions a ruling in passing ("close the ruling doc gap", "close the ruling: doc gap") is no ruling (reviews f06eb96b.1, ff5c3c4a.1, ff5c3c4a.2).
+# How a ruling item's text declares itself: "operator ruling ...", "operator-ruling ...", a text that opens with the word, or a `ruling:` / `(ruling):` label that starts a clause (after a comma, semicolon, period or dash: "Decision recorded, ruling: drop T1"). A text that only mentions a ruling in passing ("close the ruling doc gap", "close the ruling: doc gap", "close the (ruling): doc gap") is no ruling, since the label there follows ordinary words (reviews f06eb96b.1, ff5c3c4a.1, ff5c3c4a.2, 77c5fd2a.2, 77c5fd2a.3).
 _RULING_WORD_RE = re.compile(
-    r"\boperator[\s-]+ruling\b|\(ruling\)\s*:|\A\W*(?:\([^)]*\)\s*)?ruling\b", re.IGNORECASE
+    r"\boperator[\s-]+ruling\b"
+    r"|(?:[,;.]|\s[-\u2013\u2014]+)\s*(?:\(ruling\)|ruling)\s*:"
+    r"|\A\W*(?:\([^)]*\)\s*)?ruling\b",
+    re.IGNORECASE,
 )
 # The one item state that makes a ruling a decision.
 DROP_CLOSED_STATE = "x"

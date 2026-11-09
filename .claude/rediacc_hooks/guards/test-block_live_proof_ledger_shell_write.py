@@ -298,6 +298,31 @@ def read_is_not_write_cases(world, ledger):
             True,
         ),
         (
+            "review 9d3a7308.3: bz2.open(path, 'wb') classed by its second argument",
+            _py("import bz2\nbz2.open('%s', 'wb').write('{}')" % ledger),
+            True,
+        ),
+        (
+            "review 9d3a7308.3: lzma.open(path, 'at') classed by its second argument",
+            _py("import lzma\nlzma.open('%s', 'at').write('{}')" % ledger),
+            True,
+        ),
+        (
+            "review 9d3a7308.3: tarfile.open(path, 'w:gz') classed by its second argument",
+            _py("import tarfile\ntarfile.open('%s', 'w:gz').write('{}')" % ledger),
+            True,
+        ),
+        (
+            "review 9d3a7308.3: gzip.open(path, 'rt') classed by its second argument",
+            _py("import gzip\ngzip.open('%s', 'rt').write('{}')" % ledger),
+            False,
+        ),
+        (
+            "review 9d3a7308.3: bz2.open(path, 'rb') classed by its second argument",
+            _py("import bz2\nbz2.open('%s', 'rb').write('{}')" % ledger),
+            False,
+        ),
+        (
             "review 634e1ef5.1 control: Path.open('w', -1) is still a write",
             _py("import pathlib\npathlib.Path('%s').open('w', -1).write('{}')" % ledger),
             True,

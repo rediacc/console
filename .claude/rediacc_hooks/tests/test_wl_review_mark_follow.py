@@ -405,3 +405,69 @@ def test_diff_lines_files_a_removed_sql_comment_under_its_own_file():
     assert "SELECT name, total FROM orders_by_customer;" in removed["q.sql"]
     assert "-- the old reporting query comment" in removed["q.sql"]
     assert added == {"r.sql": ["SELECT name, total FROM orders_by_customer;"]}
+
+
+def _import_world(tmp_path, anchored, body="export const x = 1;\n"):
+    repo = _repo(tmp_path)
+    reviewed = _commit(repo, "feat", **{anchored.replace("/", "__").replace(".", "_dot_"): body})
+    fid = _record(repo, reviewed, anchored, "The size limit is read from the wrong header.")
+    return repo, fid
+
+
+@pytest.mark.parametrize(
+    "anchored, test, body",
+    [
+        (
+            "src/blob-storage.service.ts",
+            "tests/blob-list.test.ts",
+            "import { size } from '../src/blob-storage.service';\ntest('a', () => size());\n",
+        ),
+        (
+            "src/onboarding.py",
+            "tests/test_enterprise_add.py",
+            "from src.onboarding import add\n\n\ndef test_a():\n    add()\n",
+        ),
+    ],
+)
+def test_a_named_test_that_imports_the_anchored_module_closes_the_finding(
+    tmp_path, anchored, test, body
+):
+    """#d8f3ba65: the test's file name does not carry the anchored stem and the claim is no missing-test claim; the import in its added lines relates it."""
+    repo, fid = _import_world(tmp_path, anchored)
+    fix = _commit(repo, "test: cover it", **{test.replace("/", "__").replace(".", "_dot_"): body})
+    R.mark(repo, BRANCH, fid, "fixed", [fix, "--test", test], ME)
+
+
+@pytest.mark.parametrize(
+    "anchored, test, body",
+    [
+        (
+            "src/blob-storage.service.ts",
+            "tests/blob-list.test.ts",
+            "import { other } from '../src/other.service';\ntest('a', () => other());\n",
+        ),
+        (
+            "src/onboarding.py",
+            "tests/test_enterprise_add.py",
+            "from src.billing import add\n\n\ndef test_a():\n    add()  # unlike onboarding\n",
+        ),
+    ],
+)
+def test_control_an_unrelated_test_is_still_refused(tmp_path, anchored, test, body):
+    """The import must name the anchored module: another import, or a bare mention on a non-import line, relates nothing."""
+    repo, fid = _import_world(tmp_path, anchored)
+    fix = _commit(repo, "test: other", **{test.replace("/", "__").replace(".", "_dot_"): body})
+    with pytest.raises(ValueError, match="does not touch"):
+        R.mark(repo, BRANCH, fid, "fixed", [fix, "--test", test], ME)
+
+
+def test_control_an_importing_test_without_the_test_flag_is_refused(tmp_path):
+    """The import relation serves a named test only; a fix that touches an importing test unnamed stays refused."""
+    repo, fid = _import_world(tmp_path, "src/onboarding.py")
+    fix = _commit(
+        repo,
+        "test: cover it",
+        tests__test_enterprise_add_dot_py="from src.onboarding import add\n\n\ndef test_a():\n    add()\n",
+    )
+    with pytest.raises(ValueError, match="does not touch"):
+        R.mark(repo, BRANCH, fid, "fixed", [fix], ME)
