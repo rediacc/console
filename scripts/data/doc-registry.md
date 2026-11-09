@@ -527,7 +527,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/hooks/stop/wl_planorder.py | (none) | via .claude/hooks/stop/test-depgate.py | py |
 | .claude/hooks/stop/wl_planpreflight.py | (none) | via .claude/hooks/stop/wl_boxaudit.py | py |
 | .claude/hooks/stop/wl_planqueue.py | (none) | via .claude/hooks/stop/test-wl_worktrees.py | py |
-| .claude/hooks/stop/wl_planrec.py | (none) | via .claude/hooks/stop/test-planenforce.py | py |
+| .claude/hooks/stop/wl_planrec.py | (none) | via .claude/hooks/stop/test-depgate.py | py |
 | .claude/hooks/stop/wl_popup.py | (none) | via .claude/hooks/stop/test-popup.py | py |
 | .claude/hooks/stop/wl_proc.py | (none) | via .claude/hooks/stop/test-defer-settle.py | py |
 | .claude/hooks/stop/wl_profile.py | (none) | via .claude/hooks/stop/wl_checks.py | py |
@@ -984,7 +984,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/setup | 13 | .py 13 |
 | .ci/rediacc_ci/spikes | 2 | .py 2 |
 | .ci/rediacc_ci/testrun | 12 | .py 12 |
-| .ci/rediacc_ci/tests | 521 | .py 521 |
+| .ci/rediacc_ci/tests | 522 | .py 522 |
 | .ci/rediacc_ci/tests/data | 2 | .json 1, .yml 1 |
 | .ci/rediacc_ci/tests/fixtures | 2 | .json 2 |
 | .ci/rediacc_ci/tests/fixtures/budget_drift | 1 | .json 1 |

@@ -40,7 +40,7 @@ def _by_file(name):
 controls = _by_file("controls")
 runtmp = _by_file("runtmp")
 
-CONTROL_FLOOR = 57
+CONTROL_FLOOR = 60
 T = controls.Controls("depgate", floor=CONTROL_FLOOR)
 check = T.check
 
@@ -426,6 +426,47 @@ check(
     "plan-tick gate: a box that is not open passes to the tick path, which names it",
     gate_result(stub_planrec_no_open_box()),
     "allowed",
+)
+
+
+# ---- --plan-tick on a ready `[writer]` box: the KEEP rule frees it through Graph.writer_box_free, the verdict --lease and IDLE CAPACITY read.
+def writer_root(prereq_box):
+    root = pathlib.Path(runtmp.run_dir("depgate-writer-"))
+    folder = root / "agent" / "plans"
+    folder.mkdir(parents=True)
+    x = PLAN % {"name": "wx", "status": "in-progress", "ME": ME, "dep": "PLAN-wy.md"}
+    (folder / "PLAN-wx.md").write_text(
+        x.replace("- [ ] T1 the first box of wx", "- [ ] T1 [writer] the code of wx"),
+        encoding="utf-8",
+    )
+    y = PLAN % {"name": "wy", "status": "in-progress", "ME": ME, "dep": NOSIG}
+    (folder / "PLAN-wy.md").write_text(
+        y.replace("- [ ] T1 the first box of wy", prereq_box), encoding="utf-8"
+    )
+    return root
+
+
+def writer_gate(prereq_box):
+    import wl_planrec
+
+    root = writer_root(prereq_box)
+    with contextlib.redirect_stderr(io.StringIO()):
+        try:
+            W._plantick_dep_gate(wl_planrec, root, "agent/plans/PLAN-wx.md", "T1", "ran it rc 0")
+        except SystemExit as exc:
+            return exc.code
+    return "allowed"
+
+
+check(
+    "plan-tick gate: a [writer] box whose prerequisite holds only live work is allowed",
+    writer_gate("- [ ] Y1 [live] deploy wy"),
+    "allowed",
+)
+check(
+    "plan-tick gate: a [writer] box whose prerequisite still holds writer work is refused",
+    writer_gate("- [ ] Y1 [writer] more code of wy"),
+    2,
 )
 
 # ---- the messages exist and take their substitutions.

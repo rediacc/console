@@ -1146,7 +1146,7 @@ class Graph:
         return box_depends(block) is not None and not self.box_blockers(rel, block)
 
     def writer_box_free(self, rel: str, sig: str) -> bool:
-        """True when the open box of `rel` with signature `sig` is explicitly `[writer]`-tagged, not post-merge, and `box_blockers` under `wl_boxready`'s writer-clear predicate finds nothing: a prerequisite whose remaining work is all live, operator or post-merge does not hold a writer box (operator ruling KEEP of 2026-11-09). This is the readiness rule the IDLE CAPACITY block applies, so the verbs that start the work (`--lease`, `--plan-tick`) read the same verdict and a box the block names is never refused. False without a root (the predicate reads plan files) or a matching open box."""
+        """True when the open box of `rel` with signature `sig` is explicitly `[writer]`-tagged, not post-merge, and `box_blockers` under `wl_boxready`'s writer-clear predicate finds nothing: a prerequisite whose remaining work is all live, operator or post-merge does not hold a writer box (operator ruling KEEP of 2026-11-09). This is the dependency half of the readiness rule the IDLE CAPACITY block applies (ready_boxes also checks Owns overlaps and holding items, which do not gate a start), so the verbs that start the work (`--lease`, `--plan-tick`) read the same verdict and a box the block names is never refused. False without a root (the predicate reads plan files) or a matching open box."""
         if self.root is None:
             return False
         text = self._full_text(rel)
