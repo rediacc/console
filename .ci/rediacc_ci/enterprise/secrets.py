@@ -4,9 +4,9 @@ WHAT A COMPANY GETS. Generated per company: the X25519 pair (a shared one would 
 
 OPAQUE NAMES. A company is known outside its control row by `c<16 hex>`, drawn from the OS's randomness and never derived from the name: a hash of a guessable company name is reversed by a dictionary. Store entries are `<id>_<WORKER KEY>` in the separate enterprise bws project, the Cloudflare token is `enterprise-<id>-backups` and the IAM user `rediacc-ses-<id>`. The bucket and Worker names carry the label, as the Design's Shape fixes; they appear inside the Worker payload and in wrangler's `--name`, never in a store name.
 
-NO VALUE IN ARGV, A LOG LINE OR AN EXCEPTION. Values reach wrangler as one JSON document on its STDIN through `set_account_worker_secrets.wrangler_argv`, and wrangler's output is captured, not echoed, since it can name the Worker. The bws write goes through `bws_env.write_secret`, whose request rides stdin. Every refusal names keys and the opaque id only. A seam that raises is re-raised as `SecretsError` carrying the step and the exception's TYPE, `from None`, because an external error text may quote what it was handed; the production adapters translate their libraries' own errors the same way.
+NO VALUE IN ARGV, A LOG LINE OR AN EXCEPTION. Values reach wrangler as one JSON document on its STDIN through `set_account_worker_secrets.wrangler_argv`, and wrangler's output is captured, not echoed, since it can name the Worker. The bws write goes through `bws_env.write_secret`, whose request rides stdin. Every refusal names keys and the opaque id only. A seam that raises is re-raised as `SecretsError` carrying the step and the exception's TYPE, because an external error text may quote what it was handed. Every `SecretsError` that translates another exception is raised AFTER the except block has closed, so it carries neither `__cause__` nor `__context__`: `from None` inside the block only hides the original from the printed traceback, and the original stays reachable as `__context__`. The production adapters translate their libraries' own errors the same way.
 
-DURABLE BEFORE PUSHED, AND RESUMABLE. Each generated or minted value is written to the store before the push, and a rerun reuses whatever the store already holds, so `enterprise add` resumes without regenerating the config server key or minting a second token. Half a pair in the store (one X25519 half, one half of an S3 or SES pair) is refused rather than completed, because the missing half cannot be re-derived.
+DURABLE BEFORE PUSHED, AND RESUMABLE. Each generated or minted value is written to the store before the push, and a rerun reuses whatever the store already holds, so `enterprise add` resumes without regenerating the config server key or minting a second token. Each pair (X25519, SES, R2's S3 pair) is ONE store entry, `<id>_<PAIR>` holding a JSON object of both halves, so a crash between two writes cannot leave half a pair; an entry missing a half is refused, because the missing half cannot be re-derived. The minters resume too: the IAM minter continues from a user an earlier run created, and both minters revoke what an earlier run minted but never stored (the IAM user's access keys, the same-named Cloudflare token), because the store is the only place a minted secret can be recovered from and the minters run only when the store holds no pair. Every caller-supplied value, the OTLP credential's JSON shape included, is checked before the store is read, anything is minted or anything is written.
 
 EVERY EXTERNAL CALL IS A SEAM. `provision` takes a `Store`, a `Minter` and a `push` callable; the production adapters (`BwsStore`, `CloudflareMinter`, `IamMinter`, `wrangler_push`) take their transports as arguments too, so `tests/test_enterprise_secrets.py` drives all of it with fakes and nothing reaches bws, Cloudflare or AWS.
 """
@@ -51,7 +51,17 @@ X25519_PAIR = ("ACCOUNT_X25519_PRIVATE_KEY", "ACCOUNT_X25519_PUBLIC_KEY")
 SES_PAIR = ("AWS_SES_ACCESS_KEY_ID", "AWS_SES_SECRET_ACCESS_KEY")
 BACKUP_PAIR = ("ACCOUNT_BACKUP_S3_ACCESS_KEY_ID", "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY")
 MINTED: tuple[str, ...] = (*SES_PAIR, *BACKUP_PAIR)
-STORED: tuple[str, ...] = (*GENERATED, *MINTED)
+OWNED: tuple[str, ...] = (*GENERATED, *MINTED)
+
+# Each pair is one store entry holding both halves as a JSON object, so it is written atomically.
+PAIRS: dict[str, tuple[str, str]] = {
+    "ACCOUNT_X25519_KEYPAIR": X25519_PAIR,
+    "AWS_SES_KEYPAIR": SES_PAIR,
+    "ACCOUNT_BACKUP_S3_KEYPAIR": BACKUP_PAIR,
+}
+SINGLES: tuple[str, ...] = tuple(k for k in GENERATED if k not in X25519_PAIR)
+# The store entry keys: one per unpaired generated secret, one per pair.
+STORED: tuple[str, ...] = (*SINGLES, *PAIRS)
 
 # Shared values the caller hands in, already fanned in for the company's region.
 SHARED: tuple[str, ...] = (
@@ -139,8 +149,11 @@ class Company:
         _check_id(self.id)
         try:
             names.check(self.name)
+            usable = True
         except names.CompanyNameError:
-            raise SecretsError("company %s has an unusable name" % self.id) from None
+            usable = False
+        if not usable:
+            raise SecretsError("company %s has an unusable name" % self.id)
 
     @property
     def worker(self) -> str:
@@ -257,13 +270,14 @@ Push = Callable[[list[str], str], int]
 
 
 def _step(what: str, fn: Callable[..., Any], *args: Any) -> Any:
-    """Run one seam call; a failure keeps only its type, because its text may quote a value."""
+    """Run one seam call; a failure keeps only its type, because its text may quote a value. Raised outside the except block, so neither `__cause__` nor `__context__` holds the seam exception."""
     try:
         return fn(*args)
     except SecretsError:
         raise
     except SEAM_ERRORS as exc:
-        raise SecretsError("%s failed (%s)" % (what, type(exc).__name__)) from None
+        failed = type(exc).__name__
+    raise SecretsError("%s failed (%s)" % (what, failed))
 
 
 # --- provision -------------------------------------------------------------------
@@ -293,7 +307,7 @@ def check_shared(shared: Mapping[str, str]) -> None:
             "refused on a company Worker: %s (the signing key, FREE licences and billing stay off it)"
             % ", ".join(forbidden)
         )
-    owned = sorted(k for k in shared if k in STORED)
+    owned = sorted(k for k in shared if k in OWNED or k in STORED)
     if owned:
         raise SecretsError("generated or minted per company, not shared: %s" % ", ".join(owned))
     unknown = sorted(k for k in shared if k not in SHARED)
@@ -309,11 +323,10 @@ def _refuse_missing(payload: Mapping[str, str], keys: Sequence[str], company_id:
         )
 
 
-def check_required(payload: Mapping[str, str], company_id: str) -> None:
-    """Every COMPANY_REQUIRED key non-empty, and the OTLP credential in the shape the Worker parses."""
-    _refuse_missing(payload, COMPANY_REQUIRED, company_id)
+def check_otlp(value: str, company_id: str) -> None:
+    """The OTLP credential in the shape the Worker parses: a JSON object with string `user` and `pass`."""
     try:
-        otlp = json.loads(payload[OTLP_KEY])
+        otlp = json.loads(value)
         shaped = isinstance(otlp.get("user"), str) and isinstance(otlp.get("pass"), str)
     except (ValueError, AttributeError):
         shaped = False
@@ -323,14 +336,30 @@ def check_required(payload: Mapping[str, str], company_id: str) -> None:
         )
 
 
-def _check_pairs(existing: Mapping[str, str], company_id: str) -> None:
-    for pair in (X25519_PAIR, SES_PAIR, BACKUP_PAIR):
-        held = [k for k in pair if k in existing]
-        if len(held) == 1:
-            raise SecretsError(
-                "company %s: the store holds %s without its other half; it cannot be re-derived, so nothing is completed"
-                % (company_id, held[0])
-            )
+def check_required(payload: Mapping[str, str], company_id: str) -> None:
+    """Every COMPANY_REQUIRED key non-empty, and the OTLP credential in the shape the Worker parses."""
+    _refuse_missing(payload, COMPANY_REQUIRED, company_id)
+    check_otlp(payload[OTLP_KEY], company_id)
+
+
+def _unpack_pair(entry: str, raw: str, company_id: str) -> dict[str, str]:
+    """A pair entry's two halves, or a value-free refusal naming the entry."""
+    halves = PAIRS[entry]
+    try:
+        held = json.loads(raw)
+        whole = (
+            isinstance(held, dict)
+            and set(held) == set(halves)
+            and all(isinstance(held[k], str) and held[k] for k in halves)
+        )
+    except ValueError:
+        whole = False
+    if not whole:
+        raise SecretsError(
+            "company %s: the store entry %s is not both halves of its pair; the missing half cannot be re-derived, so nothing is completed"
+            % (company_id, entry)
+        )
+    return {k: held[k] for k in halves}
 
 
 def provision(
@@ -348,42 +377,49 @@ def provision(
     base = {k: shared.get(k, "") for k in SHARED}
     base["ACCOUNT_BACKUP_S3_ENDPOINT"] = company.backup_endpoint
     base["ACCOUNT_BACKUP_S3_BUCKET"] = company.backup_bucket
-    # The caller's half is checked before anything is written or minted.
+    # Every caller-supplied check runs before the store is read, anything is minted or anything is written.
     _refuse_missing(base, [k for k in COMPANY_REQUIRED if k in base], cid)
+    check_otlp(base[OTLP_KEY], cid)
 
-    by_key = {k: store_name(cid, k) for k in STORED}
-    held = _step("reading the store", store.read, list(by_key.values()))
-    existing = {k: held[n] for k, n in by_key.items() if held.get(n)}
-    _check_pairs(existing, cid)
+    by_entry = {k: store_name(cid, k) for k in STORED}
+    held = _step("reading the store", store.read, list(by_entry.values()))
+    existing = {k: held[n] for k, n in by_entry.items() if held.get(n)}
+    pairs = {k: _unpack_pair(k, existing[k], cid) for k in PAIRS if k in existing}
 
     report = Report(company_id=cid)
     values: dict[str, str] = {}
 
-    def keep(key: str, value: str) -> None:
-        _step("storing %s" % by_key[key], store.create, by_key[key], value)
-        values[key] = value
-        report.created.append(key)
+    def keep(entry: str, value: str | dict[str, str]) -> None:
+        """Store one entry; a pair goes in as one JSON object, so it is never half written."""
+        raw = json.dumps(value, sort_keys=True) if isinstance(value, dict) else value
+        _step("storing %s" % by_entry[entry], store.create, by_entry[entry], raw)
+        values.update(value if isinstance(value, dict) else {entry: value})
+        report.created.append(entry)
 
-    def reuse(keys: Sequence[str]) -> None:
-        values.update({k: existing[k] for k in keys})
-        report.reused.extend(keys)
+    def reuse(entry: str) -> None:
+        values.update(pairs[entry] if entry in PAIRS else {entry: existing[entry]})
+        report.reused.append(entry)
 
     fresh = generate(random_bytes)
-    for key in GENERATED:
-        if key in existing:
-            reuse([key])
+    for entry in SINGLES:
+        if entry in existing:
+            reuse(entry)
         else:
-            keep(key, fresh[key])
+            keep(entry, fresh[entry])
 
-    if all(k in existing for k in SES_PAIR):
-        reuse(SES_PAIR)
+    if "ACCOUNT_X25519_KEYPAIR" in pairs:
+        reuse("ACCOUNT_X25519_KEYPAIR")
+    else:
+        keep("ACCOUNT_X25519_KEYPAIR", {k: fresh[k] for k in X25519_PAIR})
+
+    if "AWS_SES_KEYPAIR" in pairs:
+        reuse("AWS_SES_KEYPAIR")
     else:
         key_id, secret = _step("minting the SES user", minter.ses_user, ses_user_name(company))
-        keep(SES_PAIR[0], key_id)
-        keep(SES_PAIR[1], secret)
+        keep("AWS_SES_KEYPAIR", dict(zip(SES_PAIR, (key_id, secret), strict=True)))
 
-    if all(k in existing for k in BACKUP_PAIR):
-        reuse(BACKUP_PAIR)
+    if "ACCOUNT_BACKUP_S3_KEYPAIR" in pairs:
+        reuse("ACCOUNT_BACKUP_S3_KEYPAIR")
     else:
         token_id, token_value = _step(
             "minting the backup token",
@@ -391,8 +427,10 @@ def provision(
             r2_token_name(company),
             company.bucket_resource,
         )
-        keep(BACKUP_PAIR[0], token_id)
-        keep(BACKUP_PAIR[1], hashlib.sha256(token_value.encode()).hexdigest())
+        secret_key = hashlib.sha256(token_value.encode()).hexdigest()
+        keep(
+            "ACCOUNT_BACKUP_S3_KEYPAIR", dict(zip(BACKUP_PAIR, (token_id, secret_key), strict=True))
+        )
 
     merged = {**values, **base}
     payload = {k: merged[k] for k in PAYLOAD_KEYS}
@@ -464,7 +502,9 @@ class BwsStore:
         try:
             environ = bws_env.with_token(env)
         except bws_env.RefusalError:
-            raise SecretsError("no bws access token") from None
+            environ = None
+        if environ is None:
+            raise SecretsError("no bws access token")
         binary = bws_env.binary(environ)
         if not binary:
             raise SecretsError("no bws binary")
@@ -474,7 +514,8 @@ class BwsStore:
             try:
                 return bws_env.listing(binary, environ)
             except bws_env.RefusalError:
-                raise SecretsError("bws secret list failed") from None
+                pass
+            raise SecretsError("bws secret list failed")
 
         return cls(
             project_id,
@@ -508,7 +549,26 @@ class CloudflareMinter:
             ids.append(hits[0])
         return ids
 
+    def _revoke_named(self, token_name: str) -> None:
+        """Delete every token already named `token_name`: one an earlier run minted but never stored, whose value is lost."""
+        stale: list[str] = []
+        page, pages = 1, 1
+        while page <= pages:
+            answer = self._http("GET", "/user/tokens?page=%d&per_page=50" % page)
+            rows = answer.get("result")
+            if not isinstance(rows, list):
+                raise SecretsError("listing tokens before minting %s failed" % token_name)
+            stale += [
+                str(r["id"]) for r in rows if isinstance(r, dict) and r.get("name") == token_name
+            ]
+            info = answer.get("result_info")
+            pages = int(info.get("total_pages") or 1) if isinstance(info, dict) else 1
+            page += 1
+        for token_id in stale:
+            self._http("DELETE", "/user/tokens/%s" % token_id)
+
     def r2_bucket_token(self, token_name: str, bucket_resource: str) -> tuple[str, str]:
+        self._revoke_named(token_name)
         payload = {
             "name": token_name,
             "policies": [
@@ -534,7 +594,8 @@ class CloudflareMinter:
             try:
                 return cf_auth.curl_json(method, cf_auth.CF_API_BASE + path, headers, body)
             except cf_auth.CfAuthError:
-                raise SecretsError("Cloudflare %s %s failed" % (method, path)) from None
+                pass
+            raise SecretsError("Cloudflare %s %s failed" % (method, path))
 
         return cls(http=http)
 
@@ -543,7 +604,10 @@ Aws = Callable[[list[str]], tuple[int, str]]
 
 
 class IamMinter:
-    """Creates a send-only IAM user on the shared SES sender. `aws(argv) -> (rc, stdout)`; no secret is ever an argument, and the secret key arrives on stdout."""
+    """Creates a send-only IAM user on the shared SES sender. `aws(argv) -> (rc, stdout)`; no secret is ever an argument, and the secret key arrives on stdout.
+
+    Resumable: a user an earlier run created is reused, the policy put is an overwrite, and every access key the user already holds is deleted before the new one is created. `provision` calls `ses_user` only when the store holds no SES pair, so any such key is one the store never received: its secret is lost, and leaving it live would leave an unrecoverable credential behind (and IAM's two-key limit would block the mint).
+    """
 
     def __init__(self, *, aws: Aws, ses_region: str, from_domain: str) -> None:
         self._aws = aws
@@ -574,21 +638,41 @@ class IamMinter:
             raise SecretsError("aws iam %s exited %d; its output is withheld" % (argv[2], rc))
         return out
 
+    def _exists(self, user: list[str]) -> bool:
+        rc, _out = self._aws([awscli.AWS, "iam", "get-user", *user, "--output", "json"])
+        return rc == 0
+
+    def _key_ids(self, user: list[str]) -> list[str]:
+        out = self._call([awscli.AWS, "iam", "list-access-keys", *user, "--output", "json"])
+        try:
+            ids = [str(k["AccessKeyId"]) for k in json.loads(out)["AccessKeyMetadata"]]
+        except (ValueError, KeyError, TypeError):
+            ids = None
+        if ids is None:
+            raise SecretsError("aws iam list-access-keys answered an unexpected shape")
+        return ids
+
     def ses_user(self, user_name: str) -> tuple[str, str]:
         user = ["--user-name", user_name]
-        self._call(["aws", "iam", "create-user", *user])
+        if not self._exists(user):
+            self._call([awscli.AWS, "iam", "create-user", *user])
         self._call(
             [
-                *("aws", "iam", "put-user-policy", *user),
+                *(awscli.AWS, "iam", "put-user-policy", *user),
                 *("--policy-name", "ses-send-only", "--policy-document", self.policy()),
             ]
         )
-        out = self._call(["aws", "iam", "create-access-key", *user, "--output", "json"])
+        for key_id in self._key_ids(user):
+            self._call([awscli.AWS, "iam", "delete-access-key", *user, "--access-key-id", key_id])
+        out = self._call([awscli.AWS, "iam", "create-access-key", *user, "--output", "json"])
         try:
             key = json.loads(out)["AccessKey"]
-            return str(key["AccessKeyId"]), str(key["SecretAccessKey"])
+            pair = (str(key["AccessKeyId"]), str(key["SecretAccessKey"]))
         except (ValueError, KeyError, TypeError):
-            raise SecretsError("aws iam create-access-key answered an unexpected shape") from None
+            pair = None
+        if pair is None:
+            raise SecretsError("aws iam create-access-key answered an unexpected shape")
+        return pair
 
     @staticmethod
     def live_aws(argv: list[str]) -> tuple[int, str]:

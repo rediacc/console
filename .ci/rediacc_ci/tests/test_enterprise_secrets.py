@@ -8,6 +8,7 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
+import traceback
 
 import pytest
 
@@ -334,19 +335,34 @@ def test_values_are_stored_before_the_push():
 
 
 @pytest.mark.parametrize(
-    "present",
+    ("entry", "raw"),
     [
-        ("ACCOUNT_X25519_PRIVATE_KEY",),
-        ("AWS_SES_ACCESS_KEY_ID",),
-        ("ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY",),
+        ("ACCOUNT_X25519_KEYPAIR", json.dumps({"ACCOUNT_X25519_PRIVATE_KEY": "half-VALUE"})),
+        (
+            "AWS_SES_KEYPAIR",
+            json.dumps({"AWS_SES_ACCESS_KEY_ID": "half-VALUE", "AWS_SES_SECRET_ACCESS_KEY": ""}),
+        ),
+        ("ACCOUNT_BACKUP_S3_KEYPAIR", "half-VALUE"),
     ],
 )
-def test_half_a_pair_in_the_store_is_refused(present):
-    store = FakeStore({es.store_name(CID, k): "half-VALUE" for k in present})
+def test_a_pair_entry_missing_a_half_is_refused_and_nothing_is_minted(entry, raw):
+    store, minter = FakeStore({es.store_name(CID, entry): raw}), FakeMinter()
     with pytest.raises(es.SecretsError) as err:
-        run(store=store)
-    assert "half-VALUE" not in str(err.value)
-    assert present[0] in str(err.value)
+        run(store=store, minter=minter)
+    assert "half-VALUE" not in _traceback_text(err.value)
+    assert entry in str(err.value)
+    assert store.created == []
+    assert minter.r2_calls == []
+    assert minter.ses_calls == []
+
+
+def test_each_pair_is_one_store_entry_holding_both_halves():
+    _r, store, _m, push = run()
+    doc = json.loads(push.calls[0][1])
+    for entry, halves in es.PAIRS.items():
+        assert json.loads(store.data[es.store_name(CID, entry)]) == {k: doc[k] for k in halves}
+        for half in halves:
+            assert es.store_name(CID, half) not in store.data
 
 
 # --- refusals -------------------------------------------------------------------
@@ -434,7 +450,7 @@ def test_a_failing_seam_does_not_leak_its_message():
     text = str(err.value)
     assert R2_TOKEN_VALUE not in text
     assert err.value.__cause__ is None
-    assert err.value.__suppress_context__
+    assert err.value.__context__ is None
 
 
 def test_a_failing_store_create_does_not_leak_the_value():
@@ -443,7 +459,7 @@ def test_a_failing_store_create_does_not_leak_the_value():
         run(store=store)
     assert "value was" not in str(err.value)
     assert err.value.__cause__ is None
-    assert err.value.__suppress_context__
+    assert err.value.__context__ is None
 
 
 # --- no value in argv or output -------------------------------------------------
@@ -575,6 +591,8 @@ def test_cloudflare_minter_builds_a_bucket_scoped_policy():
                     },
                 ]
             }
+        if method == "GET":
+            return {"success": True, "result": [], "result_info": {"total_pages": 1}}
         return {"success": True, "result": {"id": "tok-id", "value": "tok-VALUE"}}
 
     minter = es.CloudflareMinter(http=http)
@@ -596,7 +614,9 @@ def test_cloudflare_minter_builds_a_bucket_scoped_policy():
 
 
 def test_cloudflare_minter_failure_names_no_value():
-    def http(_method, path, _body=None):
+    def http(method, path, _body=None):
+        if method == "GET" and path.startswith("/user/tokens?"):
+            return {"success": True, "result": []}
         if path == "/user/tokens/permission_groups":
             return {
                 "result": [
@@ -619,23 +639,22 @@ def test_cloudflare_minter_failure_names_no_value():
 
 
 def test_iam_minter_creates_a_send_only_user_with_no_secret_in_argv():
-    calls: list[list[str]] = []
-
-    def aws(args):
-        calls.append(list(args))
-        if args[:3] == ["aws", "iam", "create-access-key"]:
-            return 0, json.dumps(
-                {"AccessKey": {"AccessKeyId": "AKIAX", "SecretAccessKey": "iam-secret-VALUE"}}
-            )
-        return 0, "{}"
-
-    minter = es.IamMinter(aws=aws, ses_region="eu-central-1", from_domain="notify.example")
-    assert minter.ses_user("rediacc-ses-%s" % CID) == ("AKIAX", "iam-secret-VALUE")
+    iam = FakeIam()
+    minter = es.IamMinter(aws=iam, ses_region="eu-central-1", from_domain="notify.example")
+    assert minter.ses_user("rediacc-ses-%s" % CID) == ("AKIA0001", "iam-secret-VALUE")
+    calls = iam.calls
     verbs = [c[2] for c in calls]
-    assert verbs == ["create-user", "put-user-policy", "create-access-key"]
+    assert verbs == [
+        "get-user",
+        "create-user",
+        "put-user-policy",
+        "list-access-keys",
+        "create-access-key",
+    ]
     for argv in calls:
         assert "iam-secret-VALUE" not in "\0".join(argv)
-    policy = json.loads(calls[1][calls[1].index("--policy-document") + 1])
+    put = calls[verbs.index("put-user-policy")]
+    policy = json.loads(put[put.index("--policy-document") + 1])
     stmt = policy["Statement"][0]
     assert stmt["Action"] == ["ses:SendEmail", "ses:SendRawEmail"]
     assert stmt["Condition"]["StringEquals"]["aws:RequestedRegion"] == "eu-central-1"
@@ -669,3 +688,203 @@ def test_wrangler_push_captures_output_and_keeps_payload_on_stdin():
     assert seen["input"] == '{"K":"v-VALUE"}'
     assert seen["capture_output"] is True
     assert "v-VALUE" not in "\0".join(seen["argv"])
+
+
+# --- review 57f7d3fa: findings 1-5 ----------------------------------------------
+
+
+def _traceback_text(exc):
+    return "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
+
+
+@pytest.mark.parametrize("where", ["minter", "store"])
+def test_a_failing_seam_leaves_no_cause_no_context_and_no_value_in_the_traceback(where):
+    # 57f7d3fa.1: `from None` inside the except block still keeps the seam exception as __context__.
+    if where == "minter":
+        kw = {"minter": FakeMinter(fail=True)}
+        leaked = R2_TOKEN_VALUE
+    else:
+        kw = {"store": FakeStore(fail_on=es.store_name(CID, "ACCOUNT_JWT_SECRET"))}
+        leaked = "value was"
+    with pytest.raises(es.SecretsError) as err:
+        run(**kw)
+    assert err.value.__cause__ is None
+    assert err.value.__context__ is None
+    assert leaked not in _traceback_text(err.value)
+
+
+class FakeIam:
+    """A stateful `aws iam` transport: users and their access keys survive between runs."""
+
+    def __init__(self, fail_verb=None):
+        self.users: dict[str, list[str]] = {}
+        self.calls: list[list[str]] = []
+        self.fail_verb = fail_verb
+        self.minted = 0
+
+    def __call__(self, args):
+        self.calls.append(list(args))
+        verb = args[2]
+        user = args[args.index("--user-name") + 1]
+        if verb == self.fail_verb:
+            return 254, "boom"
+        if verb == "get-user":
+            if user not in self.users:
+                return 254, "NoSuchEntity"
+            return 0, json.dumps({"User": {"UserName": user}})
+        if verb == "create-user":
+            if user in self.users:
+                return 254, "EntityAlreadyExists"
+            self.users[user] = []
+            return 0, "{}"
+        if verb == "put-user-policy":
+            return (0, "") if user in self.users else (254, "NoSuchEntity")
+        if verb == "list-access-keys":
+            keys = [{"AccessKeyId": k} for k in self.users[user]]
+            return 0, json.dumps({"AccessKeyMetadata": keys})
+        if verb == "delete-access-key":
+            self.users[user].remove(args[args.index("--access-key-id") + 1])
+            return 0, ""
+        if verb == "create-access-key":
+            if len(self.users[user]) >= 2:
+                return 254, "LimitExceeded"
+            self.minted += 1
+            key_id = "AKIA%04d" % self.minted
+            self.users[user].append(key_id)
+            return 0, json.dumps(
+                {"AccessKey": {"AccessKeyId": key_id, "SecretAccessKey": "iam-secret-VALUE"}}
+            )
+        raise AssertionError("unexpected aws verb %s" % verb)
+
+
+def test_iam_minter_resumes_after_create_user_succeeded_and_a_later_step_failed():
+    # 57f7d3fa.2: a rerun must continue from the user the first run created.
+    iam = FakeIam(fail_verb="create-access-key")
+    minter = es.IamMinter(aws=iam, ses_region="eu-central-1", from_domain="notify.example")
+    with pytest.raises(es.SecretsError):
+        minter.ses_user("rediacc-ses-%s" % CID)
+    assert "rediacc-ses-%s" % CID in iam.users
+    iam.fail_verb = None
+    key_id, secret = minter.ses_user("rediacc-ses-%s" % CID)
+    assert (key_id, secret) == ("AKIA0001", "iam-secret-VALUE")
+    assert [c[2] for c in iam.calls].count("create-user") == 1
+
+
+def test_iam_minter_deletes_an_orphaned_access_key_before_minting():
+    # A key the store never received is unrecoverable; it is revoked rather than left live.
+    iam = FakeIam()
+    user = "rediacc-ses-%s" % CID
+    iam.users[user] = ["AKIAORPHAN1", "AKIAORPHAN2"]
+    minter = es.IamMinter(aws=iam, ses_region="eu-central-1", from_domain="notify.example")
+    key_id, _secret = minter.ses_user(user)
+    assert iam.users[user] == [key_id]
+    for argv in iam.calls:
+        assert "iam-secret-VALUE" not in "\0".join(argv)
+
+
+class CrashingStore(FakeStore):
+    """Fails the `nth` create whose name contains `marker`, once."""
+
+    def __init__(self, marker, nth):
+        super().__init__()
+        self.marker = marker
+        self.nth = nth
+        self.seen = 0
+
+    def create(self, name, value):
+        if self.marker in name:
+            self.seen += 1
+            if self.seen == self.nth:
+                raise RuntimeError("crash while storing")
+        super().create(name, value)
+
+
+@pytest.mark.parametrize(
+    ("marker", "pair_key", "halves"),
+    [
+        ("SES", "AWS_SES_KEYPAIR", es.SES_PAIR),
+        ("BACKUP_S3", "ACCOUNT_BACKUP_S3_KEYPAIR", es.BACKUP_PAIR),
+        ("X25519", "ACCOUNT_X25519_KEYPAIR", es.X25519_PAIR),
+    ],
+)
+@pytest.mark.parametrize("nth", [1, 2])
+def test_a_crash_while_storing_a_pair_leaves_a_store_the_rerun_completes(
+    marker, pair_key, halves, nth
+):
+    # 57f7d3fa.3 and 57f7d3fa.4: two separate creates left a half pair every later run refused.
+    store = CrashingStore(marker, nth)
+    if nth == 1:
+        with pytest.raises(es.SecretsError):
+            run(store=store)
+    else:
+        run(store=store)  # one write per pair, so there is no second write to crash on
+    store.seen = -100  # the crash is spent; the rerun stores normally
+    _r, store, _m, push = run(store=store)
+    entry = es.store_name(CID, pair_key)
+    assert entry in store.data
+    held = json.loads(store.data[entry])
+    assert set(held) == set(halves)
+    assert all(held.values())
+    for half in halves:
+        assert es.store_name(CID, half) not in store.data
+    doc = json.loads(push.calls[0][1])
+    assert {k: doc[k] for k in halves} == held
+
+
+def test_cloudflare_minter_revokes_an_orphaned_same_named_token_before_minting():
+    calls: list[tuple[str, str, str | None]] = []
+    groups = [
+        {
+            "id": "g-read",
+            "name": "Workers R2 Storage Bucket Item Read",
+            "scopes": ["com.cloudflare.edge.r2.bucket"],
+        },
+        {
+            "id": "g-write",
+            "name": "Workers R2 Storage Bucket Item Write",
+            "scopes": ["com.cloudflare.edge.r2.bucket"],
+        },
+    ]
+    name = "enterprise-%s-backups" % CID
+
+    def http(method, path, body=None):
+        calls.append((method, path, body))
+        if path == "/user/tokens/permission_groups":
+            return {"result": groups}
+        if method == "GET" and path.startswith("/user/tokens"):
+            return {
+                "result": [
+                    {"id": "tok-orphan", "name": name},
+                    {"id": "tok-other", "name": "enterprise-c1111111111111111-backups"},
+                ],
+                "result_info": {"page": 1, "total_pages": 1},
+            }
+        if method == "DELETE":
+            return {"success": True, "result": {"id": path.rsplit("/", 1)[1]}}
+        return {"success": True, "result": {"id": "tok-new", "value": "tok-VALUE"}}
+
+    assert es.CloudflareMinter(http=http).r2_bucket_token(name, "res") == ("tok-new", "tok-VALUE")
+    deletes = [p for m, p, _b in calls if m == "DELETE"]
+    assert deletes == ["/user/tokens/tok-orphan"]
+    assert calls[-1][:2] == ("POST", "/user/tokens")
+
+
+@pytest.mark.parametrize(
+    "otlp",
+    [
+        "dXNlcjpwYXNz-VALUE",
+        json.dumps({"user": "u"}),
+        json.dumps(["user", "pass"]),
+        json.dumps({"user": 1, "pass": "p"}),
+    ],
+)
+def test_a_malformed_otlp_value_mints_and_writes_nothing(otlp):
+    # 57f7d3fa.5: the shape was checked only after the mint and the store writes.
+    store, minter, push = FakeStore(), FakeMinter(), FakePush()
+    with pytest.raises(es.SecretsError, match="OBS_OTLP_CREDENTIALS"):
+        run(shared=dict(SHARED, OBS_OTLP_CREDENTIALS=otlp), store=store, minter=minter, push=push)
+    assert store.created == []
+    assert store.reads == []
+    assert minter.r2_calls == []
+    assert minter.ses_calls == []
+    assert push.calls == []
