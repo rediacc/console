@@ -181,7 +181,7 @@ _READ_CALLS = frozenset(
 
 
 def _read_only_open(call):
-    """An `open` (builtin, `io.open`, `Path.open`) whose mode is a constant naming no write (`w`, `a`, `x`, `+`), or absent. `os.open(path, flags)` and a mode held in a variable are not."""
+    """An `open` whose mode is a constant naming no write (`w`, `a`, `x`, `+`), or absent: the builtin, `io.open` and `codecs.open` (mode second), `Path.open` (mode first), and any other `X.open` such as `gzip.open(path, mode)` (mode second when a second non-numeric argument is given, else first). `os.open(path, flags)`, a mode held in a variable and any `**` unpacking are not."""
     func = call.func
     if _call_name(func) != "open":
         return False
@@ -194,12 +194,16 @@ def _read_only_open(call):
     path_method = isinstance(func, ast.Attribute) and not (
         isinstance(func.value, ast.Name) and func.value.id in ("io", "builtins", "codecs")
     )
-    position = 0 if path_method else 1
     if any(k.arg is None for k in call.keywords):
         return False  # `**kwargs` may carry a write mode (review 9d3a7308.2)
     mode = next((k.value for k in call.keywords if k.arg == "mode"), None)
-    if mode is None and len(call.args) > position:
-        mode = call.args[position]
+    if mode is None and path_method and call.args:
+        # `Path.open(mode, buffering)` takes the mode first; `gzip.open(path, mode)` takes the path first, so a second argument that is not a number is the mode (review 9d3a7308.1: reading the path as the mode let `gzip.open('live-proof.jsonl', 'wt')` pass as a read).
+        second = call.args[1] if len(call.args) > 1 else None
+        numeric = isinstance(second, ast.Constant) and isinstance(second.value, int)
+        mode = second if second is not None and not numeric else call.args[0]
+    elif mode is None and len(call.args) > 1:
+        mode = call.args[1]
     if mode is None:
         return True
     return (

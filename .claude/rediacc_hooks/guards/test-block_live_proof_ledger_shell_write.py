@@ -277,6 +277,26 @@ def read_is_not_write_cases(world, ledger):
             True,
         ),
         (
+            "review 9d3a7308.1: gzip.open with the path first and a write mode second",
+            _py("import gzip\ngzip.open('%s', 'wt').write('{}')" % ledger),
+            True,
+        ),
+        (
+            "review 9d3a7308.4: the mode passed by keyword",
+            _py("open('%s', mode='a').write('{}')" % ledger),
+            True,
+        ),
+        (
+            "review 9d3a7308.4: Path.open with a keyword write mode",
+            _py("import pathlib\npathlib.Path('%s').open(mode='w').write('{}')" % ledger),
+            True,
+        ),
+        (
+            "review b326762a.1: any ** call is refused, mode in the mapping or not",
+            _py("fh = open('%s', **{'encoding': 'utf-8'})\nfh.write('{}')" % ledger),
+            True,
+        ),
+        (
             "a message heredoc beside a heredoc appending to the ledger",
             msg + _py("open('%s', 'a').write('{}')" % ledger),
             True,
