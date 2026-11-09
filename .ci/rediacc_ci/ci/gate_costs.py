@@ -52,6 +52,8 @@ from rediacc_ci.core import ghx
 GATE_COSTS_REL_PATH = ".ci/config/gate-costs.json"
 GATES_LOCK_REL_PATH = budget_report.GATES_LOCK_REL_PATH
 CAPTURE_WORKFLOW = "ops-housekeeping.yml"
+# The file names the capture workflow has had, newest first. A rename lands on a branch before main: GitHub lists runs by the default branch's file name and answers 404 for the new one until the merge, so the predecessor is read too (2d47c02363 renamed housekeeping.yml; ci:quick on 2655e28b23 failed `check:ci-budget-freshness` on that 404). A name GitHub answers 404 for is passed over; every name answering 404 is still a failure.
+CAPTURE_WORKFLOW_NAMES = (CAPTURE_WORKFLOW, "housekeeping.yml")
 CAPTURE_EVENTS = ("schedule", "workflow_dispatch")
 CAPTURE_RUNNER = "ubuntu-latest"
 ARTIFACT_PREFIX = "gate-costs-"
@@ -222,19 +224,40 @@ def collect_captures(
 ) -> tuple[list[Capture], list[dict[str, Any]], list[str]]:
     """The newest `limit` gate-costs captures across the capture workflow's scheduled and dispatched runs: (captures newest first, their run records, warnings). A run with no live `gate-costs-` artifact (its capture job failed, timed out or was cancelled) is passed over; so is a run or artifact GitHub answers 404 for (deleted after the list named it), named on stderr; an artifact that will not parse is warned about and passed over. Zero captures is still the caller's failure."""
     runs: dict[Any, dict[str, Any]] = {}
-    for event in CAPTURE_EVENTS:
-        for run in list_runs(
-            repo, CAPTURE_WORKFLOW, event, budget_report.DEFAULT_BRANCH, "completed", RUNS_LISTED
-        ):
-            runs.setdefault(run.get("id"), run)
+    answered = 0
+    missing: ghx.GhError | None = None
+    for name in CAPTURE_WORKFLOW_NAMES:
+        try:
+            for event in CAPTURE_EVENTS:
+                for run in list_runs(
+                    repo, name, event, budget_report.DEFAULT_BRANCH, "completed", RUNS_LISTED
+                ):
+                    runs.setdefault(run.get("id"), run)
+        except ghx.GhError as exc:
+            if not _is_not_found(exc):
+                raise
+            print(
+                "gate_costs: GitHub knows no workflow %s yet (404); passed over." % name,
+                file=sys.stderr,
+            )
+            missing = exc
+            continue
+        answered += 1
+    if not answered and missing is not None:
+        raise missing
     # A PR's own branch may carry the capture fix main lacks (2026-10-19: main's nightly capture outlived its 12m bound for three nights and the fix, 65a2b37ee, sat on the PR that this very check kept red).
     # A capture DISPATCHED on the PR head comes from the workflow and gate code that branch ships, which is no new trust: this check itself runs from the PR tree, so the PR could already rewrite it. It is read beside main's, never instead of it.
     head = _head_branch()
     if head and head != budget_report.DEFAULT_BRANCH:
-        for run in list_runs(
-            repo, CAPTURE_WORKFLOW, "workflow_dispatch", head, "completed", RUNS_LISTED
-        ):
-            runs.setdefault(run.get("id"), run)
+        for name in CAPTURE_WORKFLOW_NAMES:
+            try:
+                for run in list_runs(
+                    repo, name, "workflow_dispatch", head, "completed", RUNS_LISTED
+                ):
+                    runs.setdefault(run.get("id"), run)
+            except ghx.GhError as exc:
+                if not _is_not_found(exc):
+                    raise
     ordered = sorted(runs.values(), key=lambda r: r.get("created_at") or "", reverse=True)
     captures: list[Capture] = []
     sources: list[dict[str, Any]] = []
