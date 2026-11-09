@@ -753,7 +753,7 @@ PORT_ONLY_SECRETS = (
 
 # The bench sender the retired bash golden recorded, and the one the port defaults to since 71f25f3e8f.
 RETIRED_BENCH_SENDER = "noreply@notify.rediacc.com"
-BENCH_SENDER = deploy_bench.DEFAULT_SES_FROM
+BENCH_SENDER = "noreply@notify.rediacc.cloud"
 
 
 # DECLARED DELTA (27861278): the port seeds the ROOT_EMAIL user after the secrets push (deploy_bench docstring item 8), a POST the retired bash never sent. The route answers it as a fresh bench would, added AFTER the twin run so the golden's route key is unchanged; the call is removed from the compared shape and its two stderr lines from the compared step list, each asserted present first so the removal cannot go vacuous.
@@ -820,6 +820,7 @@ def test_deploy_bench_matches_bash(world: h.World) -> None:
     ]
     assert port_senders
     assert set(port_senders) == {BENCH_SENDER}, port_senders
+    assert deploy_bench.DEFAULT_SES_FROM == BENCH_SENDER
     # DECLARED DELTA (b8601cfde): the port captures `wrangler deploy` to record its version and echoes that output to stdout; the bash's fake printed nothing there.
     version_line = "Current Version ID: 0b1f2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d\n"
     assert out_p.count(version_line) == 1

@@ -1068,7 +1068,10 @@ def _ruling_item(root: pathlib.Path, iid: str, state: str) -> None:
             "by": "cafe0000",
             "s": " ",
             "o": "cafe0000",
-            "t": "(cafe0000) operator ruling 2026-10-01: drop the plan's open box",
+            # The dropping wording is what the bindings gate reads as a ruling over the plan's open box; it belongs only on an item that stands as a decision (closed), so an open one stays a plain question.
+            "t": "(cafe0000) operator ruling 2026-10-01: drop the plan's open box"
+            if state != " "
+            else "(cafe0000) a ruling",
             "ns": 1,
         },
     ]

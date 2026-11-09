@@ -1082,3 +1082,9 @@ def test_restart_row_passes_both_main_pids_to_the_verdict() -> None:
     assert "MainPID 11->22" in evidence
     assert "nothing restarted" not in evidence
     assert ok is False  # restarted, but no down() at or after the action
+
+
+def test_the_reboot_wait_outlasts_the_stop_budget() -> None:
+    """A shutdown that uses its whole stop budget is not a failed reboot, so the wait stays above the budget with room for a boot."""
+    assert k.REBOOT_WAIT_S > k.STOP_TIMEOUT_S
+    assert k.REBOOT_WAIT_S - k.STOP_TIMEOUT_S >= 5 * 60

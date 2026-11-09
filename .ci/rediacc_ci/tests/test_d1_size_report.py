@@ -324,6 +324,17 @@ def test_the_alert_lookup_is_a_listing_not_a_search():
     assert "--search" not in seen[0]
 
 
+def test_a_full_issue_listing_refuses_instead_of_creating_a_duplicate():
+    full = [
+        {"number": n, "title": "other", "body": "", "comments": []}
+        for n in range(sr.ISSUE_LIST_LIMIT)
+    ]
+    gh = _FakeGh(full)
+    with pytest.raises(sr.GhError, match="listing limit"):
+        sr.sync_alert_issue(_doc("eu"), "report", gh)
+    assert gh.verbs == ["list"]
+
+
 def test_a_create_that_fails_after_the_post_was_accepted_is_not_a_failure():
     found = {"number": 9, "title": sr.ISSUE_TITLE, "body": ""}
 

@@ -29,7 +29,7 @@ def _needs_account_tree(job: dict) -> bool:
 
 
 def _installs_account_tree(job: dict) -> bool:
-    """The install, via `setup-workspace` or an explicit `npm install` in private/account, must come before the first step that starts a server."""
+    """The install, via `setup-workspace` or an explicit `npm install` or `npm ci` in private/account, must come before the first step that starts a server."""
     for step in job["steps"]:
         if any(n in str(step.get("run", "")) for n in NEEDLES):
             return False

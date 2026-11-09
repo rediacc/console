@@ -395,6 +395,8 @@ def run_compare(
 
 
 ISSUE_TITLE = "D1 size alert"
+# `gh issue list` returns at most this many open issues; a full page may hide an older alert issue, so it is a refusal rather than a creation of a duplicate.
+ISSUE_LIST_LIMIT = 1000
 
 
 def alert_marker(document: Mapping[str, object]) -> str:
@@ -414,12 +416,17 @@ def _find_alert_issues(gh: Callable[..., str]) -> list[Mapping[str, object]]:
             "--state",
             "open",
             "--limit",
-            "1000",
+            str(ISSUE_LIST_LIMIT),
             "--json",
             "number,title,body,comments",
         )
         or "[]"
     )
+    if len(listing) >= ISSUE_LIST_LIMIT:
+        raise GhError(
+            "gh issue list returned %d open issues, the listing limit: an older '%s' issue may be past it, so no new one is created"
+            % (len(listing), ISSUE_TITLE)
+        )
     return [i for i in listing if i.get("title") == ISSUE_TITLE]
 
 

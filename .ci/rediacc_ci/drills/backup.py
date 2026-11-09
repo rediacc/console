@@ -1157,7 +1157,7 @@ class Backup:
             len(unique) - 1,
             "every unchanged cell is already held: exactly one hash is new",
         )
-        # An exists ANSWER is a promise to skip those chunks. Since account a5dd75c the reaper protects the lineage while this backup session is live, so the answer carries no per-chunk pin.
+        # An exists ANSWER is a promise to skip those chunks. Since account a5dd75c the exists answer carries no per-chunk pin (the account suite asserts the same in backup-commit-critical.test.ts and backup-storage.test.ts); this leg checks only that the field is absent, and the GC race itself is covered by leg l.
         self.aj("pinExpiresAt", "", "the skip promise rides the live session, not a pin")
 
         held = set(existing)

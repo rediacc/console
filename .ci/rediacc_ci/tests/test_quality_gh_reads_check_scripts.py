@@ -120,3 +120,10 @@ def test_secret_reachability_refresh_does_not_read_a_failed_listing_as_empty(
     _fake(monkeypatch, mod, [(1, "", "gh: Server Error (HTTP 500)")])
     assert mod.refresh(tmp_path, tmp_path / "b.json") == 1
     assert not (tmp_path / "b.json").exists()
+
+
+def test_secret_reachability_gitlink_names_is_none_outside_a_work_tree(tmp_path: Path) -> None:
+    """`refresh` must complete on an extracted archive: no git tree means no gitlink filter, not a CalledProcessError."""
+    mod = _load("check_secret_reachability")
+    (tmp_path / "private" / "sub").mkdir(parents=True)
+    assert mod.gitlink_names(tmp_path) is None
