@@ -162,7 +162,7 @@ Readings: the documented "1 per second" limit binds concurrent writers (47% 429s
 | 4 | Trim Stripe `invoice.*` / `checkout.*` event data to ids and amounts | ~4.5 KB per event | new events only; old rows age out | low / S | PLAN-d1-scaling K1 |
 | 5 | Wire `logWithinBudget` or a rate-limit binding on audit ingest and config requests | bounds the misconfigured tenant (105k writes/day) | flag, then enforce | medium / M | PLAN-d1-scaling G1 (Q6 ruled) |
 | 6 | Move telemetry types out of `event_log`; shorten audit window | 14 MB to ~0.3 MB per tenant; 1.4 TB to ~30 GB | dual-write one release, switch portal reads, stop D1 writes, let the purge drain | medium / M | PLAN-d1-scaling A1, W2, A2, A3 (Q2 ruled) |
-| 7 | Pins: design e), or c), replacing D1 rows | 66 KB-4.7 MB to 0 per tenant; 6.6 GB at 100k | flag, dual path one release, drop table (SQLite table drop, no rebuild needed) | medium / M | PLAN-d1-scaling P1, P2, R1, P3 (Q1 ruled: no pins) |
+| 7 | No pins: the reap skips lineages with a live lease or session, and the pin rows leave D1 | 66 KB-4.7 MB to 0 per tenant; 6.6 GB at 100k | flag, dual path one release, drop table (SQLite table drop, no rebuild needed) | medium / M | PLAN-d1-scaling P1, P2, R1, P3 (Q1 ruled: no pins) |
 | 8 | `config_versions.envelope_json` to R2 sidecar | 150 KB-2.2 MB to ~15 KB per tenant | dual-read (sidecar first, column fallback), backfill 121 rows, null the column, then drop via table rebuild | medium / M | PLAN-d1-scaling C1, C2 (Q4 ruled) |
 | 9 | `config_tokens` predecessor delete on first successor use | 111 KB to ~1 KB per tenant, one write fewer per request | ordinary deploy after 3 | medium / S-M | PLAN-d1-scaling T1 (Q3 ruled: sweep only, no predecessor delete) |
 | 10 | `backup_waiting_chunks` compaction | 560 KB to 200-300 KB (A) or ~5 KB (B/C) | table rebuild or new structure | medium / M-L | PLAN-d1-scaling WC (Q5 ruled) |
@@ -205,6 +205,8 @@ Even at ~200 KB/tenant a regional D1 holds ~50,000 tenants. Options, not designe
 The Phase C questions were answered, and PLAN-d1-scaling carries the work. Q1: no pins, the reap protects a lineage while a lease or session is in use. Q2: telemetry types move to Analytics Engine. Q3: the nightly sweep only, with no config-token predecessor delete. Q4: config envelopes go to R2 per version, keeping 9 months and at least 100 versions. Q5: compact `backup_waiting_chunks` rows. Q6: a rate-limit binding caps per-tenant writes. Q7: one D1 per region until the size report alerts. Q8: 10,000 new tenants a month.
 
 ## Phase C: questions
+
+The operator rulings above supersede the (rec) marks below; Q1-Q8 are answered.
 
 Scores: scalability 35%, risk 25% (10 = safest), cost 20% (10 = cheapest), effort 20% (10 = least). Total = weighted sum out of 10. Recommendation marked with **(rec)**. The weights fit; one note: with no customers yet, risk could weigh less (15%) and scalability more (45%), which would move Q1 and Q3 further toward the structural options, but no recommendation below flips.
 

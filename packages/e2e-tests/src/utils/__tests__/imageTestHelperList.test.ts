@@ -10,6 +10,17 @@ afterEach(() => {
 });
 
 describe('ImageTestHelper.listCustomImages', () => {
+  it('throws when a configured image url does not parse', () => {
+    const original = CONFIGURED_IMAGES[0].url;
+    CONFIGURED_IMAGES[0].url = 'not a url';
+    try {
+      const helper = new ImageTestHelper({ disksPath: os.tmpdir(), renetBin: process.execPath });
+      expect(() => helper.listCustomImages()).toThrow(/unparseable url/);
+    } finally {
+      CONFIGURED_IMAGES[0].url = original;
+    }
+  });
+
   it('lists the files named by the configured image urls and leaves other disks out', () => {
     const disks = fs.mkdtempSync(path.join(os.tmpdir(), 'image-list-'));
     dirs.push(disks);

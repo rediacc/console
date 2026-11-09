@@ -104,6 +104,18 @@ async function fetchGeoRegion(regions: Region[]): Promise<Region | null> {
   }
 }
 
+/** Preselects the /api/geo region while the cards show, when `needed` (no stored region), unless the run ended (`live` false) or the lookup failed. */
+function preselectFromGeo(
+  needed: boolean,
+  live: () => boolean,
+  select: (id: string) => void
+): void {
+  if (!needed) return;
+  void fetchGeoRegion(REGIONS).then((geo) => {
+    if (geo && live()) select(geo.id);
+  });
+}
+
 /**
  * The domain part of what the visitor typed, or null when it is not a domain. Only this
  * part ever leaves the browser: an address never does.
@@ -440,6 +452,8 @@ const RegionPickerModal: React.FC<RegionPickerModalProps> = ({ lang }) => {
     const phase = openPhase(nextMode, stored !== null, force);
     if (phase === 'choosing') {
       setPhase(phase);
+      // No stored region: refine the time-zone guess with /api/geo, preselecting only (no countdown).
+      preselectFromGeo(stored === null, () => runRef.current === run, setSelected);
       return;
     }
     setPhase('resolving');
@@ -500,7 +514,7 @@ const RegionPickerModal: React.FC<RegionPickerModalProps> = ({ lang }) => {
     [targetPath]
   );
 
-  // Expose global functions. openRegionPicker runs the login countdown (a stored region forwards after it unless cancelled); forceOpenRegionPicker only shows the cards.
+  // Expose global functions. the login countdown applies to login only, after the region resolves (a stored region at once, else /api/geo; a stored region forwards after it unless cancelled); sign-up and forceOpenRegionPicker only show the cards.
   useEffect(() => {
     window.openRegionPicker = begin;
     window.forceOpenRegionPicker = (path?: string) => begin(path, true);

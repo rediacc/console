@@ -83,12 +83,13 @@ export async function assertReplicaIsNotSelfCopy(
     (d) => d.name === o.destinationName
   );
   // Without --replicate-from the stored source stands, so a new --target is checked against it too.
-  const from = o.replicateFrom ?? (stored?.mode === 'replicate' ? stored.from : undefined);
+  const storedFrom = stored?.mode === 'replicate' ? stored.from : undefined;
+  const from = o.replicateFrom ?? storedFrom;
   if (from === undefined) return;
   const target = destinationTarget({ target: o.target ?? stored?.target });
   if (from === target) {
     throw new ValidationError(
-      `Backup destination "${o.destinationName}" would replicate "${from}" into itself; pass --target <storeId> naming a different store than --replicate-from.`
+      `Backup destination "${o.destinationName}" would replicate "${from}" into itself; pass --target <storeId> naming a different store than ${o.replicateFrom === undefined ? 'the stored source' : '--replicate-from'}.`
     );
   }
 }
