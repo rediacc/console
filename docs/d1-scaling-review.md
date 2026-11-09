@@ -157,17 +157,17 @@ Readings: the documented "1 per second" limit binds concurrent writers (47% 429s
 | # | Change | Saves (typical / total at 100k) | Rollout | Risk / effort | Status |
 |---|---|---|---|---|---|
 | 1 | Delete expired pins and config tokens by hand | 29.6 MB in `account-db-eu` today | done, bookmarks above | none / S | done already |
-| 2 | Fix `sweepExpired`: one `DELETE ... WHERE expires_at < ?` with `returning`, for pins, leases and sessions | keeps pins at 24 h (prevents unbounded growth) | ordinary deploy; regression test must count bound parameters, since local SQLite allows 32,766 | low / S | safe to do now |
-| 3 | Nightly sweep of expired `config_tokens`, `refresh_tokens`, `magic_links`, `elevated_sessions`, `two_factor_challenges`, `passkey_challenges`, `reauth_tokens`, `password_resets`, `config_cek_handoffs` in `runRetentionSweeps` | config_tokens otherwise unbounded; ~111 KB/tenant cap | ordinary deploy | low / S | safe to do now |
-| 4 | Trim Stripe `invoice.*` / `checkout.*` event data to ids and amounts | ~4.5 KB per event | new events only; old rows age out | low / S | safe to do now |
-| 5 | Wire `logWithinBudget` or a rate-limit binding on audit ingest and config requests | bounds the misconfigured tenant (105k writes/day) | flag, then enforce | medium / M | needs decision (Q6) |
-| 6 | Move telemetry types out of `event_log`; shorten audit window | 14 MB to ~0.3 MB per tenant; 1.4 TB to ~30 GB | dual-write one release, switch portal reads, stop D1 writes, let the purge drain | medium / M | needs decision (Q2) |
-| 7 | Pins: design e), or c), replacing D1 rows | 66 KB-4.7 MB to 0 per tenant; 6.6 GB at 100k | flag, dual path one release, drop table (SQLite table drop, no rebuild needed) | medium / M | needs decision (Q1) |
-| 8 | `config_versions.envelope_json` to R2 sidecar | 150 KB-2.2 MB to ~15 KB per tenant | dual-read (sidecar first, column fallback), backfill 121 rows, null the column, then drop via table rebuild | medium / M | needs decision (Q4) |
-| 9 | `config_tokens` predecessor delete on first successor use | 111 KB to ~1 KB per tenant, one write fewer per request | ordinary deploy after 3 | medium / S-M | needs decision (Q3) |
-| 10 | `backup_waiting_chunks` compaction | 560 KB to 200-300 KB (A) or ~5 KB (B/C) | table rebuild or new structure | medium / M-L | needs decision (Q5) |
-| 11 | Coarse `api_tokens.last_used_at` update (skip when under an hour old) | ~800 writes/week now, per executor | ordinary deploy | low / S | safe to do now |
-| 12 | Backup maintenance fan-out: per-subscription work through a Queue instead of one hourly invocation | removes the O(subscriptions) per-hour wall | Queue consumer, cursor kept | medium / M | safe to plan now |
+| 2 | Fix `sweepExpired`: one `DELETE ... WHERE expires_at < ?` with `returning`, for pins, leases and sessions | keeps pins at 24 h (prevents unbounded growth) | ordinary deploy; regression test must count bound parameters, since local SQLite allows 32,766 | low / S | done, 523fe43 |
+| 3 | Nightly sweep of expired `config_tokens`, `refresh_tokens`, `magic_links`, `elevated_sessions`, `two_factor_challenges`, `passkey_challenges`, `reauth_tokens`, `password_resets`, `config_cek_handoffs` in `runRetentionSweeps` | config_tokens otherwise unbounded; ~111 KB/tenant cap | ordinary deploy | low / S | PLAN-d1-scaling T1 (the sweep), W1 (cron wiring) |
+| 4 | Trim Stripe `invoice.*` / `checkout.*` event data to ids and amounts | ~4.5 KB per event | new events only; old rows age out | low / S | PLAN-d1-scaling K1 |
+| 5 | Wire `logWithinBudget` or a rate-limit binding on audit ingest and config requests | bounds the misconfigured tenant (105k writes/day) | flag, then enforce | medium / M | PLAN-d1-scaling G1 (Q6 ruled) |
+| 6 | Move telemetry types out of `event_log`; shorten audit window | 14 MB to ~0.3 MB per tenant; 1.4 TB to ~30 GB | dual-write one release, switch portal reads, stop D1 writes, let the purge drain | medium / M | PLAN-d1-scaling A1, W2, A2, A3 (Q2 ruled) |
+| 7 | Pins: design e), or c), replacing D1 rows | 66 KB-4.7 MB to 0 per tenant; 6.6 GB at 100k | flag, dual path one release, drop table (SQLite table drop, no rebuild needed) | medium / M | PLAN-d1-scaling P1, P2, R1, P3 (Q1 ruled: no pins) |
+| 8 | `config_versions.envelope_json` to R2 sidecar | 150 KB-2.2 MB to ~15 KB per tenant | dual-read (sidecar first, column fallback), backfill 121 rows, null the column, then drop via table rebuild | medium / M | PLAN-d1-scaling C1, C2 (Q4 ruled) |
+| 9 | `config_tokens` predecessor delete on first successor use | 111 KB to ~1 KB per tenant, one write fewer per request | ordinary deploy after 3 | medium / S-M | PLAN-d1-scaling T1 (Q3 ruled: sweep only, no predecessor delete) |
+| 10 | `backup_waiting_chunks` compaction | 560 KB to 200-300 KB (A) or ~5 KB (B/C) | table rebuild or new structure | medium / M-L | PLAN-d1-scaling WC (Q5 ruled) |
+| 11 | Coarse `api_tokens.last_used_at` update (skip when under an hour old) | ~800 writes/week now, per executor | ordinary deploy | low / S | PLAN-d1-scaling K1 |
+| 12 | Backup maintenance fan-out: per-subscription work through a Queue instead of one hourly invocation | removes the O(subscriptions) per-hour wall | Queue consumer, cursor kept | medium / M | out of scope of PLAN-d1-scaling, stays in this list |
 
 Exact diff for item 2 (`private/account/src/services/backup-gc.service.ts`, end of `sweepExpired`):
 
@@ -199,6 +199,10 @@ With items 2-11 done, a typical tenant lands near 200 KB (core 8 KB, manifests 8
 ### Sharding note
 
 Even at ~200 KB/tenant a regional D1 holds ~50,000 tenants. Options, not designed: (1) shard each region by subscription hash across N databases, with a small routing table and global tables (users, email lookup, billing) kept in one database; (2) a D1 per tenant for tenant-scoped tables (Cloudflare allows 1,000,000 databases per account on Workers Paid, the first 100,000 included), with the shared database holding identity and billing; (3) a DO per tenant for the hot, write-heavy state (pins, waiting chunks, config tokens) and D1 for the rest. (1) keeps SQL and migrations simple but needs cross-shard admin queries; (2) isolates noisy tenants completely but multiplies migrations; (3) solves write throughput first and storage second.
+
+## Operator rulings
+
+The Phase C questions were answered, and PLAN-d1-scaling carries the work. Q1: no pins, the reap protects a lineage while a lease or session is in use. Q2: telemetry types move to Analytics Engine. Q3: the nightly sweep only, with no config-token predecessor delete. Q4: config envelopes go to R2 per version, keeping 9 months and at least 100 versions. Q5: compact `backup_waiting_chunks` rows. Q6: a rate-limit binding caps per-tenant writes. Q7: one D1 per region until the size report alerts. Q8: 10,000 new tenants a month.
 
 ## Phase C: questions
 
