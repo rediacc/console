@@ -1409,9 +1409,11 @@ def _lead_transcript(me):
     return str(sub.parent.with_suffix(".jsonl")) if sub is not None else None
 
 
-def _log_tick_refusal(worklist, me, item_id, evidence, why):
+def _log_tick_refusal(worklist, me, item_id, evidence, why, also=()):
     """One row per refused `--tick` in `.tick-refusals-<me8>.jsonl`, so the next retro counts refusals without grepping a transcript (agent/plans/PLAN-stop-hook-retro-20260924.md R.8). A log that cannot be written never changes the refusal."""
     row = {"at": C.stamp_now(), "id": item_id, "why": why, "evidence": (evidence or "")[:300]}
+    if also:
+        row["also"] = list(also)
     log = worklist.with_suffix(".tick-refusals-%s.jsonl" % me[:8])
     with contextlib.suppress(OSError), log.open("a", encoding="utf-8") as fh:
         fh.write(json.dumps(row) + "\n")
@@ -1425,8 +1427,14 @@ CLI_TICK_NO_COMMIT_REF = (
     "REFUSED: the tick of #%s names no commit. Verified work is committed before its item is "
     "ticked (CLAUDE.md rule 1), so the evidence carries `commit:<sha>` (a commit reachable from "
     "HEAD in the console or a submodule) or `nocommit:<reason>` with the reason one of "
-    "no-tracked-change, research, operator-deferred (a named last-resort door also stands in).%s\n"
-    "    .claude/hooks/stop/worklist.py --tick <me> %s 'commit:<sha> <evidence>'"
+    "no-tracked-change, research, operator-deferred (a named last-resort door, or an ASKED: "
+    "the transcript confirms, also stands in).%s\n"
+    "    .claude/hooks/stop/worklist.py --tick <me> %s %s"
+)
+# The last line of both tick refusals: the two forms, so a refusal read through `tail -1` still names them.
+CLI_TICK_FORMS = (
+    "'<evidence> commit:<sha>'  or  "
+    "'<evidence> nocommit:no-tracked-change|research|operator-deferred'"
 )
 CLI_TICK_COMMIT_REF_DETAIL = {
     "unresolved": " commit:%s is not a commit reachable from HEAD in the console or any submodule.",
@@ -1434,17 +1442,21 @@ CLI_TICK_COMMIT_REF_DETAIL = {
 }
 
 
-def commit_ref_problem(root, text):
+def commit_ref_problem(root, text, transcript=None):
     """None when `text` carries a valid commit ref, else (kind, token): ("missing", "") for no ref at all, or a CLI_TICK_COMMIT_REF_DETAIL key and the offending token.
 
-    `commit:<sha>` must name a commit that `merge-base --is-ancestor <sha> HEAD` accepts in `root` or one of its submodules, so a fabricated or foreign sha is refused. `nocommit:<reason>` must use a reason from NOCOMMIT_REASONS, and a named door (`door:operator-only` and its siblings) stands in for one. Every ref in the text must pass: one real sha beside a fabricated one is still a fabricated claim."""
+    `commit:<sha>` must name a commit that `merge-base --is-ancestor <sha> HEAD` accepts in `root` or one of its submodules, so a fabricated or foreign sha is refused. `nocommit:<reason>` must use a reason from NOCOMMIT_REASONS, and a named door (`door:operator-only` and its siblings) stands in for one. Every ref in the text must pass: one real sha beside a fabricated one is still a fabricated claim.
+
+    An `ASKED:<minute>Z` that `CK._asked_in_transcript` verifies against `transcript` (the lead's) also stands in, the way a door does (R20261101.2): an operator ruling has no commit, and the answer is stronger evidence than an unrelated sha. A malformed or unmatched ASKED stands for nothing, and a `nocommit:` word outside the three reasons is still refused."""
     import wl_git
 
     shas = [m.group(1).lower() for m in COMMIT_REF_RE.finditer(text or "")]
     reasons = [m.group(1) for m in NOCOMMIT_RE.finditer(text or "")]
     if not shas and not reasons:
         # A named last-resort door (CK.DOOR_RE) already says why nothing was committed: the work was handed to the operator or lies outside this session's write access, and CLAUDE.md rule 2 closes such an item with the door alone.
-        return None if CK.DOOR_RE.search(text or "") else ("missing", "")
+        if CK.DOOR_RE.search(text or "") or CK._asked_in_transcript(text, transcript):
+            return None
+        return ("missing", "")
     for reason in reasons:
         if reason not in NOCOMMIT_REASONS:
             return ("reason", reason)
@@ -1746,20 +1758,28 @@ def _item_cli(argv, worklist):
     root = C.project_root(C.project_start())
     if mode == "--tick":
         _dep_gate(root, fold, rec, rest, "--tick")
-        if not rest or not CK.completion_evidence(root, rest, _lead_transcript(me)):
-            _log_tick_refusal(worklist, me, item_id, rest, "no-evidence")
-            die(M.CLI_TICK_NO_EVIDENCE % (item_id, CK.tick_refusal_hint(_lead_transcript(me))))
+        transcript = _lead_transcript(me)
+        # BOTH GATES ARE EVALUATED BEFORE EITHER REFUSES (R20261101.1): the evidence gate and the commit-reference gate used to answer one at a time, so a refusal named only the next requirement.
+        evidence_ok = bool(rest) and CK.completion_evidence(root, rest, transcript)
         # v16 THE DOOR GATE. completion_evidence passes on ANY URL by shape, so a bare issue link closed a finding: filing WAS a resolution, in code, whatever the prose said. An issue now settles an item only when the tick names the last-resort door that made filing the right answer. Shape-only; whether the door is TRUE is the judge's question, and every tick already flows into
         # that path.
-        if CK.issue_only_evidence(root, rest):
+        if evidence_ok and CK.issue_only_evidence(root, rest):
             _log_tick_refusal(worklist, me, item_id, rest, "issue-without-door")
             die(M.CLI_TICK_ISSUE_DOOR % item_id)
-        bad = commit_ref_problem(root, rest)
-        if bad is not None:
-            _log_tick_refusal(worklist, me, item_id, rest, "no-commit-ref")
-            kind, token = bad
+        bad = commit_ref_problem(root, rest, transcript)
+        if not evidence_ok or bad is not None:
+            kind, token = bad if bad is not None else ("", "")
             detail = CLI_TICK_COMMIT_REF_DETAIL[kind] % token if token else ""
-            die(CLI_TICK_NO_COMMIT_REF % (item_id, detail, item_id))
+            if not evidence_ok:
+                _log_tick_refusal(
+                    worklist, me, item_id, rest, "no-evidence", also=["no-commit-ref"] if bad else []
+                )
+                text = M.CLI_TICK_NO_EVIDENCE % (item_id, CK.tick_refusal_hint(transcript))
+                if bad is not None:
+                    text += "\nAlso unmet: the evidence names no commit.%s" % detail
+                die(text + "\n    worklist.py --tick <me> %s %s" % (item_id, CLI_TICK_FORMS))
+            _log_tick_refusal(worklist, me, item_id, rest, "no-commit-ref")
+            die(CLI_TICK_NO_COMMIT_REF % (item_id, detail, item_id, CLI_TICK_FORMS))
         rest = citable_tick_evidence(root, rest)
         S.set_state(worklist, me, item_id, "x", rest)
         print("ticked #%s (%s)" % (item_id, rest[:80]))

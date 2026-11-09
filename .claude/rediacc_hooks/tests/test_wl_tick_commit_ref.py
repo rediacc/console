@@ -9,8 +9,10 @@ import json
 import re
 import shutil
 import subprocess
+import time
 
 from rediacc_hooks.tests import wlfix
+from rediacc_hooks.tests.test_wl_tick_evidence_shapes import lead_transcript, plant_ask
 
 
 def added(fix, text: str = "(deadbeef) the commit-ref item") -> str:
@@ -153,7 +155,7 @@ def test_t6_mutation_accepting_bare_evidence_flips_the_refusal(wl):
     shutil.copytree(wlfix.STOP_DIR, hooks / "stop", ignore=shutil.ignore_patterns("__pycache__"))
     path = hooks / "stop" / "worklist.py"
     src = path.read_text(encoding="utf-8")
-    old = "        bad = commit_ref_problem(root, rest)\n"
+    old = "        bad = commit_ref_problem(root, rest, transcript)\n"
     assert src.count(old) == 1, "MUTATION FIXTURE BROKEN"
     path.write_text(src.replace(old, "        bad = None\n"), encoding="utf-8")
     wl.hook = path
@@ -210,3 +212,74 @@ def test_t6_a_letter_bearing_ref_is_recorded_as_typed(wl):
     got = wl.cli("--tick", wlfix.ME, item, "commit:%s pytest rc=0" % short)
     assert got.rc == 0, got.err[:400]
     assert "commit:%s pytest rc=0" % short in wl.wl_events()
+
+
+# ---- R20261101.1: both gates answer in one refusal ----------------------------------------------
+
+
+def test_r1_a_bare_claim_is_refused_naming_both_gates_and_ends_with_both_forms(wl):
+    """The 2026-11-01 shape: no evidence and no commit ref, refused one gate at a time. Now one refusal names both, and the LAST line carries the two forms."""
+    wl.reg_repo()
+    item = added(wl)
+    got = wl.cli("--tick", wlfix.ME, item, "nocommit:read-only cause found by journal")
+    assert got.rc != 0, got.out[:300]
+    assert "needs evidence in the line" in got.err, got.err[:600]
+    assert "Also unmet: the evidence names no commit" in got.err, got.err[:600]
+    assert "nocommit:read-only is not one of the three reasons" in got.err, got.err[:600]
+    last = got.err.strip().splitlines()[-1]
+    assert "commit:<sha>" in last and "nocommit:no-tracked-change|research|operator-deferred" in last, last
+    row = last_refusal(wl)
+    assert row["why"] == "no-evidence" and row["also"] == ["no-commit-ref"], row
+    assert state_of(wl, item) == "open"
+
+
+def test_r1_evidence_only_refusal_ends_with_both_forms_and_has_no_also(wl):
+    wl.reg_repo()
+    item = added(wl)
+    got = wl.cli("--tick", wlfix.ME, item, "done, works nocommit:research")
+    assert got.rc != 0, got.out[:300]
+    assert "Also unmet" not in got.err, got.err[:600]
+    assert "nocommit:no-tracked-change|research|operator-deferred" in got.err.strip().splitlines()[-1]
+    assert "also" not in last_refusal(wl)
+
+
+def test_r1_commit_only_refusal_ends_with_both_forms(wl):
+    wl.reg_repo()
+    item = added(wl)
+    got = wl.cli("--tick", wlfix.ME, item, "pytest rc=0, 12 passed")
+    assert got.rc != 0, got.out[:300]
+    last = got.err.strip().splitlines()[-1]
+    assert "commit:<sha>" in last and "nocommit:no-tracked-change|research|operator-deferred" in last, last
+
+
+# ---- R20261101.2: a verified ASKED stands in for the commit reference ---------------------------
+
+
+def test_r2_a_verified_asked_stands_in_for_the_commit_ref(wl):
+    wl.reg_repo()
+    minute = time.strftime("%Y-%m-%dT%H:%MZ", time.gmtime(time.time() - 3600))
+    plant_ask(wl, time.strftime("%Y-%m-%dT%H:%M:40.000Z", time.gmtime(time.time() - 3600)))
+    item = added(wl)
+    got = wl.cli("--tick", wlfix.ME, item, "operator decided, work tracked elsewhere ASKED:%s" % minute)
+    assert got.rc == 0, got.err[:400]
+    assert state_of(wl, item) == "closed"
+
+
+def test_r2_inverse_an_unmatched_asked_still_fails(wl):
+    wl.reg_repo()
+    lead_transcript(wl).write_text("", encoding="utf-8")
+    minute = time.strftime("%Y-%m-%dT%H:%MZ", time.gmtime(time.time() - 3600))
+    item = added(wl)
+    got = wl.cli("--tick", wlfix.ME, item, "operator decided ASKED:%s" % minute)
+    assert got.rc != 0, got.out[:300]
+    assert state_of(wl, item) == "open"
+
+
+def test_r2_inverse_a_verified_asked_does_not_excuse_a_bad_nocommit_word(wl):
+    wl.reg_repo()
+    minute = time.strftime("%Y-%m-%dT%H:%MZ", time.gmtime(time.time() - 3600))
+    plant_ask(wl, time.strftime("%Y-%m-%dT%H:%M:40.000Z", time.gmtime(time.time() - 3600)))
+    item = added(wl)
+    got = wl.cli("--tick", wlfix.ME, item, "nocommit:operator decided ASKED:%s" % minute)
+    assert got.rc != 0, got.out[:300]
+    assert "nocommit:operator is not one of the three reasons" in got.err, got.err[:400]
