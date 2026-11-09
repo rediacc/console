@@ -5,6 +5,25 @@ import type { Language } from '../types';
 
 const OTHER_LOCALES = NON_ENGLISH_LOCALES;
 
+describe('the locale set the store tests iterate', () => {
+  it('is pinned, so a shrunken export cannot quietly weaken the per-locale assertions', () => {
+    expect(OTHER_LOCALES.toSorted()).toEqual([
+      'ar',
+      'de',
+      'es',
+      'et',
+      'fr',
+      'it',
+      'ja',
+      'ko',
+      'pt',
+      'ru',
+      'tr',
+      'zh',
+    ]);
+  });
+});
+
 function loaders(overrides: Partial<Record<(typeof OTHER_LOCALES)[number], CatalogLoader>> = {}) {
   const calls: string[] = [];
   const map = Object.fromEntries(
