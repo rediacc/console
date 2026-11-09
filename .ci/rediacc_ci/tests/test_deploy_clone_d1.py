@@ -886,6 +886,13 @@ def test_drop_tables_refuses_a_name_that_is_not_an_identifier(tmp_path) -> None:
     assert _calls(calls) == [], "the refusal comes before anything runs"
 
 
+def test_drop_tables_refuses_a_name_with_a_trailing_newline(tmp_path) -> None:
+    _root, proc, calls = _port_only(tmp_path, args=(*SEED_ARGS, "--drop-tables", "sessions\n"))
+    assert proc.returncode == 1
+    assert "not a plain identifier" in proc.stderr
+    assert _calls(calls) == []
+
+
 def test_row_parity_passes_when_every_table_matches(tmp_path) -> None:
     counts = json.dumps(
         {"account-eu-src": {"users": 3, "sessions": 5}, "account-eu": {"users": 3, "sessions": 5}}

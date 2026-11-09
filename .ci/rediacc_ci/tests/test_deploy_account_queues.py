@@ -165,3 +165,15 @@ def test_main_dry_run_creates_nothing(
     out = capsys.readouterr().out
     assert "would create queue: q-main-dlq" in out
     assert "would create queue: q-main" in out
+
+
+def test_main_dry_run_refuses_a_malformed_queues_section(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The real run refuses an unreadable queues section; the preview refuses with the same verdict instead of printing `would run`."""
+    ran = _tree(tmp_path, monkeypatch)
+    (tmp_path / "workers" / "account" / "wrangler.eu.toml").write_text(
+        TOML.replace("[[queues.producers]]", "[queues]\nproducers = 3\n#")
+    )
+    assert port.main(["--region", "eu", "--dry-run"]) == 1
+    assert ran == []

@@ -318,14 +318,6 @@ def deploy_argv(config: str) -> list[str]:
     return [*wrangler_cmd.ARGV, "deploy", "--config", config]
 
 
-def _parses(path: pathlib.Path) -> bool:
-    try:
-        queues_audit.config_queues(path)
-    except queues_audit.QueueAuditError:
-        return False
-    return True
-
-
 def _has_credentials(env: typing.Mapping[str, str]) -> bool:
     try:
         queues_audit.credentials(env)
@@ -531,16 +523,19 @@ def main(argv: list[str]) -> int:
         return stub_main(worker_dir, config, dry_run="ARG_DRY_RUN" in args, shown=shown)
 
     if "ARG_DRY_RUN" in args:
-        # Stops before npm install, the services audit, migrations and the deploy: nothing here reaches Cloudflare or the network.
+        # Stops before npm install, the services audit, migrations and the deploy: nothing is written to Cloudflare. With credentials set, the queue check below lists the account's queues over the API (read-only).
         db_preview = database_name(str(worker_dir / config))
         if not db_preview:
             # The real run refuses here too; a preview naming a placeholder database would misstate the plan.
             log.error("Could not read database_name from %s" % shown(config))
             return 1
         log.step("DRY RUN: %s; no command is run" % label)
-        bound = (
-            queues_audit.config_queues(worker_dir / config) if _parses(worker_dir / config) else []
-        )
+        try:
+            bound = queues_audit.config_queues(worker_dir / config)
+        except queues_audit.QueueAuditError as exc:
+            # The real run refuses an unreadable queues section (check_queues, rc 77), so the preview refuses too.
+            log.error(shown(str(exc)))
+            return 1
         if bound and not _has_credentials(os.environ):
             print(
                 "queues not checked (no Cloudflare credentials): %s"
