@@ -329,7 +329,7 @@ def _uncommented(line: str) -> str:
 
 
 def _has_placeholder(text: str) -> bool:
-    """Does a non-comment part of the text carry an `@X@` placeholder? A `# @TODO@` comment makes no file a template, and a `#` inside a quoted string is not a comment. A TOML multi-line string (triple double or triple single quotes) is string content on every line, so an apostrophe in its prose cannot hide a following `#`."""
+    """Does a non-comment part of the text carry an `@X@` placeholder? A `# @TODO@` comment makes no file a template, and a `#` inside a quoted string is not a comment. A TOML multi-line string (triple double or triple single quotes) is string content on every line, so an apostrophe in its prose cannot hide a following `#`, and a backslash escapes the next character of a basic one. A triple quote that never closes falls back to the per-line scan."""
     live: list[str] = []
     quote = ""
     i, n = 0, len(text)
@@ -341,7 +341,7 @@ def _has_placeholder(text: str) -> bool:
                 live.append(text[i + 1 : i + 3])
                 i += 2
                 quote = ""
-            elif quote == '"' and ch == "\\":
+            elif quote in ('"', '"""') and ch == "\\":
                 live.append(text[i + 1 : i + 2])
                 i += 1
             elif len(quote) == 1 and ch in (quote, "\n"):
@@ -360,6 +360,9 @@ def _has_placeholder(text: str) -> bool:
         else:
             live.append(ch)
         i += 1
+    if len(quote) == 3:
+        # An unterminated triple quote (a non-TOML file, or invalid TOML) would turn the rest of the file into string content and hide every later placeholder, so the text is scanned line by line instead.
+        return any(PLACEHOLDER.search(_uncommented(line)) for line in text.splitlines())
     return bool(PLACEHOLDER.search("".join(live)))
 
 

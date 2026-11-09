@@ -448,3 +448,15 @@ def test_a_multi_line_string_is_scanned_as_string_content():
     assert leak._has_placeholder('s = """\ndon\'t # @@X@@\n"""\n')
     assert not leak._has_placeholder('s = """\nplain\n"""\nk = 1 # @@Y@@\n')
     assert not leak._has_placeholder('s = """\ndon\'t\n"""\nk = 1 # @@Y@@\n')
+
+
+def test_a_multi_line_basic_string_honours_a_backslash_escape():
+    """Review f2f70941.1: an escaped quote inside a triple-quoted basic string does not close it, so a following `#` is content."""
+    assert leak._has_placeholder('s = """a\\""" # @@X@@\n"""\n')
+
+
+def test_an_unterminated_triple_quote_does_not_hide_later_placeholders():
+    """Review f2f70941.2: an unclosed triple quote falls back to the per-line scan."""
+    assert leak._has_placeholder('a = """x\nk = @@X@@\n')
+    assert leak._has_placeholder("a = '''x\nk = @@X@@\n")
+    assert not leak._has_placeholder('a = """x\nk = 1 # @@X@@\n')

@@ -74,7 +74,8 @@ def _ok(answer: object, what: str) -> Mapping[str, Any]:
     return answer
 
 
-# A listing without a page count is walked until a short page; one still full on page MAX_LIST_PAGES + 1 is refused.
+# A listing without a page count is walked until a short page; one still full on page MAX_LIST_PAGES + 1 is refused,
+# so at most MAX_LIST_PAGES + 1 (1001) pages are fetched. The name is the last page that may be full and still be followed.
 MAX_LIST_PAGES = 1000
 
 
