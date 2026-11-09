@@ -655,7 +655,13 @@ class IamMinter:
     def ses_user(self, user_name: str) -> tuple[str, str]:
         user = ["--user-name", user_name]
         if not self._exists(user):
-            self._call([awscli.AWS, "iam", "create-user", *user])
+            rc, _out = self._aws([awscli.AWS, "iam", "create-user", *user])
+            if rc != 0:
+                # `get-user` exits non-zero for AccessDenied and throttling as well as NoSuchEntity, and stderr is dropped, so a user that exists reaches this create. Raised outside any except block, so the error carries no context.
+                raise SecretsError(
+                    "aws iam create-user exited %d after get-user found no user; get-user's non-zero exit also covers AccessDenied and throttling, so the user may already exist or the call may be denied; its output is withheld"
+                    % rc
+                )
         self._call(
             [
                 *(awscli.AWS, "iam", "put-user-policy", *user),

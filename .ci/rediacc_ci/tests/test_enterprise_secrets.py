@@ -891,3 +891,11 @@ def test_a_malformed_otlp_value_mints_and_writes_nothing(otlp):
     assert minter.r2_calls == []
     assert minter.ses_calls == []
     assert push.calls == []
+
+
+def test_iam_minter_names_the_get_user_ambiguity_when_create_user_fails():
+    iam = FakeIam(fail_verb="create-user")
+    minter = es.IamMinter(aws=iam, ses_region="eu-central-1", from_domain="notify.example")
+    with pytest.raises(es.SecretsError, match="AccessDenied and throttling") as err:
+        minter.ses_user("ses-acme")
+    assert err.value.__context__ is None
