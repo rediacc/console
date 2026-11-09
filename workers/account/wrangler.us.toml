@@ -71,6 +71,16 @@ bucket_name = "backups-us"
 binding = "EXECUTOR"
 service = "proxy-us"
 
+# The regional licence signer (agent/plans/PLAN-enterprise-isolation.md, Design "Signers"). This Worker holds no licence
+# private key: every signing call goes through this binding, whose deploy-time props carry the caller's identity.
+# wrangler refuses a deploy whose binding names a missing Worker, so signer-us is deployed first
+# (rediacc_ci.deploy.deploy_signer --target us).
+[[services]]
+binding = "LICENSE_SIGNER"
+service = "signer-us"
+entrypoint = "LicenseSigner"
+props = { tier = "shared", region = "us" }
+
 # Replicate mode (private/account/src/services/backup-replicate.service.ts): a new snapshot, a new
 # rule and the hourly sweep send a message here; `queue` in src/index.ts kicks one BackupReplicator
 # per (subscription, lineage, target store), whose alarm runs the copy. DEPLOY ORDER: both queues

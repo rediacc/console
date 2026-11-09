@@ -204,3 +204,15 @@ def test_archive_with_a_regions_file_lacking_a_suffix_fails_closed(tmp_path) -> 
     )
     assert code == 2, lines
     assert any("lacks secretSuffix" in line and "nothing archived" in line for line in lines), lines
+
+
+def test_the_licence_private_key_is_an_extra_on_every_account_worker_and_archivable() -> None:
+    """After PLAN-enterprise-isolation S4 no account Worker is pushed the licence private key, so a live copy is an extra, and the store copy makes it archivable."""
+    key = "ACCOUNT_ED25519_PRIVATE_KEY"
+    for row in verb.load_workers(bench=True):
+        want = verb.expected_for(row)
+        assert key not in want
+        assert "ACCOUNT_ED25519_PUBLIC_KEY" in want
+        live: list[dict[str, object]] = [{"name": n, "type": "secret_text"} for n in [*want, key]]
+        assert verb.extras(live, want) == [key]
+        assert verb.bws_key(key, "EU", row.region) == key

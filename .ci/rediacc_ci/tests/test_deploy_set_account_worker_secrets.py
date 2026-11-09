@@ -45,7 +45,6 @@ FIXTURE_ENV = {
     "WORKER_NAME": "rediacc-account-eu",
     "TARGET": "stable",
     "SUFFIX": "EU",
-    "ACCOUNT_ED25519_PRIVATE_KEY": "e1",
     "ACCOUNT_ED25519_PUBLIC_KEY": "e2",
     "ACCOUNT_X25519_PRIVATE_KEY": "x1",
     "ACCOUNT_X25519_PUBLIC_KEY": "x2",
@@ -71,7 +70,6 @@ FIXTURE_ENV = {
 # The variable to BLANK in order to make a given guard fire, under SUFFIX=EU.
 # For four of them it is not the name the guard prints; see the module docstring.
 GUARD_SOURCE = {
-    "ACCOUNT_ED25519_PRIVATE_KEY": "ACCOUNT_ED25519_PRIVATE_KEY",
     "ACCOUNT_ED25519_PUBLIC_KEY": "ACCOUNT_ED25519_PUBLIC_KEY",
     "ACCOUNT_X25519_PRIVATE_KEY": "ACCOUNT_X25519_PRIVATE_KEY",
     "ACCOUNT_X25519_PUBLIC_KEY": "ACCOUNT_X25519_PUBLIC_KEY",
@@ -295,7 +293,6 @@ def test_the_bulk_call_and_its_document_are_pinned_in_full(tmp_path: pathlib.Pat
     )
     assert document(old_calls) == (
         "{\n"
-        '  "ACCOUNT_ED25519_PRIVATE_KEY": "e1",\n'
         '  "ACCOUNT_ED25519_PUBLIC_KEY": "e2",\n'
         '  "ACCOUNT_X25519_PRIVATE_KEY": "x1",\n'
         '  "ACCOUNT_X25519_PUBLIC_KEY": "x2",\n'
@@ -438,7 +435,7 @@ def test_an_empty_bucket_is_refused_on_both_channels(tmp_path: pathlib.Path) -> 
 def test_the_bucket_guard_precedes_every_value_guard(tmp_path: pathlib.Path) -> None:
     """ORDER IS OBSERVABLE. With the bucket AND the first secret both empty, the message a caller reads is the bucket's."""
     old, new, old_calls, new_calls = run_both(
-        tmp_path, BACKUP_BUCKET_STABLE="", ACCOUNT_ED25519_PRIVATE_KEY=""
+        tmp_path, BACKUP_BUCKET_STABLE="", ACCOUNT_ED25519_PUBLIC_KEY=""
     )
     assert old.stderr.startswith("set-account-worker-secrets.sh: no backup bucket")
     assert "is EMPTY" not in old.stderr
@@ -463,7 +460,7 @@ def test_every_one_of_the_seventeen_guards_fires_with_its_own_name(
         for name in port.REQUIRED_NONEMPTY + port.REQUIRED_NONEMPTY_STABLE
         if name not in PORT_ONLY_GUARDS
     )
-    assert len(demanded) == 17
+    assert len(demanded) == 16
     for name in demanded:
         case = tmp_path / f"guard-{name}"
         case.mkdir()
@@ -503,7 +500,7 @@ def test_the_first_empty_guard_wins_and_the_rest_never_run(tmp_path: pathlib.Pat
     blanks = dict.fromkeys(GUARD_SOURCE.values(), "")
     old, new, old_calls, new_calls = run_both(tmp_path, **blanks)
     assert old.stderr.startswith(
-        "set-account-worker-secrets.sh: ACCOUNT_ED25519_PRIVATE_KEY is EMPTY"
+        "set-account-worker-secrets.sh: ACCOUNT_ED25519_PUBLIC_KEY is EMPTY"
     )
     assert old.stderr.count("is EMPTY") == 1
     _assert_agree(old, new, "first-guard-wins", old_calls, new_calls)
@@ -645,10 +642,10 @@ def test_a_non_ascii_secret_is_byte_identical_through_both(tmp_path: pathlib.Pat
 
 def test_the_three_sibling_scripts_are_not_the_same_script() -> None:
     """THE ASSUMPTION THAT WOULD PORT THIS ONE WRONG, refuted in one place. This is the only member of the family that decides anything, and every difference below is driven by a test above."""
-    assert len(port.KEYS) == 32
+    assert len(port.KEYS) == 31
     assert len(www.KEYS) == 24
     assert len(preview.KEYS) == 15
-    assert len(port.REQUIRED_NONEMPTY) == 18
+    assert len(port.REQUIRED_NONEMPTY) == 17
     assert len(port.REQUIRED_NONEMPTY_STABLE) == 2
     # Neither sibling has a conditional guard list, a channel, or a fan-in.
     assert not hasattr(www, "REQUIRED_NONEMPTY_STABLE")
@@ -700,12 +697,12 @@ def test_pure_helpers() -> None:
     argv = port.jq_argv()
     assert argv[0] == "jq"
     assert len(argv) == 2, "the program only; the values travel on stdin"
-    assert argv[-1].startswith("{ACCOUNT_ED25519_PRIVATE_KEY: .ed25519_priv")
+    assert argv[-1].startswith("{ACCOUNT_ED25519_PUBLIC_KEY: .ed25519_pub")
     assert argv[-1].endswith("SELLER_EMAIL: .seller_email}")
     document = json.loads(port.jq_input({"seller_city": "Delft"}))
     assert list(document) == [var for _key, var, _source in port.KEYS]
     assert document["seller_city"] == "Delft"
-    assert document["ed25519_priv"] == "", "an absent value is the empty string"
+    assert document["ed25519_pub"] == "", "an absent value is the empty string"
 
     assert port.wrangler_argv("rediacc-account-us") == [
         "npx",

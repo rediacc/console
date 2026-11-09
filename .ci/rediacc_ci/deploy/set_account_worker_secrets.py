@@ -198,7 +198,6 @@ GUARD_EXPLANATION: tuple[str, ...] = (
 #
 # (Worker key, jq variable, environment variable read for it). The third field is EMPTY for the ten values this script COMPUTES rather than reads, and those ten are the whole difference between this script and its two siblings: `resolve` is where each one is decided. ACCOUNT_BACKUP_S3_BUCKET and the backup key pair come from the channel, so none of the three is read under its own name; ACCOUNT_CONFIG_SERVER_KEY comes from the region and the channel.
 KEYS: tuple[tuple[str, str, str], ...] = (
-    ("ACCOUNT_ED25519_PRIVATE_KEY", "ed25519_priv", "ACCOUNT_ED25519_PRIVATE_KEY"),
     ("ACCOUNT_ED25519_PUBLIC_KEY", "ed25519_pub", "ACCOUNT_ED25519_PUBLIC_KEY"),
     ("ACCOUNT_X25519_PRIVATE_KEY", "x25519_priv", "ACCOUNT_X25519_PRIVATE_KEY"),
     ("ACCOUNT_X25519_PUBLIC_KEY", "x25519_pub", "ACCOUNT_X25519_PUBLIC_KEY"),
@@ -240,7 +239,6 @@ KEYS: tuple[tuple[str, str, str], ...] = (
 # THE NAME IN THE MESSAGE IS THE WORKER KEY, NOT ALWAYS THE VARIABLE TO GO LOOKING FOR. For the four fan-ins the store holds `<NAME>_<SUFFIX>`, so "Check the secret store for that name" is one suffix short of the truth on AWS_SES_ACCESS_KEY_ID, AWS_SES_SECRET_ACCESS_KEY, OBS_OTLP_CREDENTIALS and STRIPE_WEBHOOK_SECRET. Reproduced, and reported to the driver rather than repaired
 # here.
 REQUIRED_NONEMPTY: tuple[str, ...] = (
-    "ACCOUNT_ED25519_PRIVATE_KEY",
     "ACCOUNT_ED25519_PUBLIC_KEY",
     "ACCOUNT_X25519_PRIVATE_KEY",
     "ACCOUNT_X25519_PUBLIC_KEY",
@@ -335,7 +333,6 @@ def read_env() -> dict[str, str]:
         "BACKUP_BUCKET_STABLE": os.environ.get("BACKUP_BUCKET_STABLE", ""),
         "BACKUP_BUCKET_EDGE": os.environ.get("BACKUP_BUCKET_EDGE", ""),
         "R2_JURISDICTION": os.environ.get("R2_JURISDICTION", ""),
-        "ACCOUNT_ED25519_PRIVATE_KEY": os.environ.get("ACCOUNT_ED25519_PRIVATE_KEY", ""),
         "ACCOUNT_ED25519_PUBLIC_KEY": os.environ.get("ACCOUNT_ED25519_PUBLIC_KEY", ""),
         "ACCOUNT_X25519_PRIVATE_KEY": os.environ.get("ACCOUNT_X25519_PRIVATE_KEY", ""),
         "ACCOUNT_X25519_PUBLIC_KEY": os.environ.get("ACCOUNT_X25519_PUBLIC_KEY", ""),

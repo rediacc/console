@@ -444,7 +444,6 @@ def test_captured_run_feeds_stdin_to_a_child_that_reads_it(tmp_path):
 
 def _bench_env(monkeypatch, **overrides):
     values = {
-        "ACCOUNT_ED25519_PRIVATE_KEY": "e1",
         "ACCOUNT_ED25519_PUBLIC_KEY": "e2",
         "ACCOUNT_X25519_PRIVATE_KEY": "x1",
         "ACCOUNT_X25519_PUBLIC_KEY": "x2",
@@ -512,8 +511,7 @@ def _deploy_bench_profile() -> dict:
     return supply["consumers"]["deploy-bench"]
 
 
-SIX = (
-    "ACCOUNT_ED25519_PRIVATE_KEY",
+FIVE = (
     "ACCOUNT_ED25519_PUBLIC_KEY",
     "ACCOUNT_X25519_PRIVATE_KEY",
     "ACCOUNT_X25519_PUBLIC_KEY",
@@ -522,12 +520,13 @@ SIX = (
 )
 
 
-def test_bench_binds_the_six_unaliased_production_names():
-    """Operator rulings 2026-10-27 and 2026-10-29: bench binds the unsuffixed production signing and session names, never a `_DEV` one."""
+def test_bench_binds_the_five_unaliased_production_names():
+    """Operator rulings 2026-10-27 and 2026-10-29: bench binds the unsuffixed production session names and the ED25519 public key, never a `_DEV` one and never the ED25519 private key (the signers hold it)."""
     required = _deploy_bench_profile()["required"]
-    for name in SIX:
+    for name in FIVE:
         assert name in required
-    assert not any(line.startswith(SIX) and "_DEV" in line for line in required)
+    assert not any(line.startswith(FIVE) and "_DEV" in line for line in required)
+    assert "ACCOUNT_ED25519_PRIVATE_KEY" not in required
 
 
 # --------------------------------------------------------------------------- The keyless bench portal never lands where production uploads from (2026-10-28) ---------------------------------------------------------------------------
