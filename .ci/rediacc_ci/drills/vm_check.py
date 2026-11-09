@@ -1894,7 +1894,10 @@ class VmCheck:
         verified = None
         if not self.opts.base:
             base, verified = with_verified_base(self.root, git, base)
-        changed = trigger.changed_paths(self.root, base.merge_base, "worktree")
+        merge_base = base.merge_base
+        if merge_base is None:
+            raise RuntimeError("a verified base keeps the merge base it was built on")
+        changed = trigger.changed_paths(self.root, merge_base, "worktree")
         # A touched change always names a side (a hit carries its side, an unknown range its submodule's); none at all would be a trigger defect, so it costs both phases rather than none.
         sides = set(changed.sides) or set(trigger.SIDES)
         self.areas = changed.areas

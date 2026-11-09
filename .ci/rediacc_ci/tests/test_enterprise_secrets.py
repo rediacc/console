@@ -314,7 +314,7 @@ def test_the_config_server_key_is_never_regenerated():
     assert json.loads(push.calls[0][1])["ACCOUNT_CONFIG_SERVER_KEY"] == "k" * 40
 
 
-def test_values_are_stored_before_the_push():
+def test_values_are_stored_before_the_push(monkeypatch):
     order: list[str] = []
     store = FakeStore()
     real_create = store.create
@@ -323,7 +323,7 @@ def test_values_are_stored_before_the_push():
         order.append("store")
         real_create(name, value)
 
-    store.create = create
+    monkeypatch.setattr(store, "create", create)
 
     def push(*_call):
         order.append("push")
@@ -602,6 +602,7 @@ def test_cloudflare_minter_builds_a_bucket_scoped_policy():
     assert (token_id, value) == ("tok-id", "tok-VALUE")
     method, path, body = calls[-1]
     assert (method, path) == ("POST", "/user/tokens")
+    assert body is not None
     payload = json.loads(body)
     assert payload["name"] == "enterprise-%s-backups" % CID
     assert payload["policies"] == [

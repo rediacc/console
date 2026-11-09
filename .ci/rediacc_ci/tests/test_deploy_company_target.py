@@ -10,7 +10,7 @@ import dataclasses
 import json
 import shutil
 import subprocess
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
@@ -71,7 +71,7 @@ def proxy_cfg(root: pathlib.Path) -> pathlib.Path:
 
 
 def target(root: pathlib.Path, **over) -> ce.CompanyTarget:
-    args = {
+    args: dict[str, Any] = {
         "name": NAME,
         "company_id": COMPANY_ID,
         "region": "eu",
@@ -306,7 +306,12 @@ def test_proxy_company_dry_run_compiles_the_companys_config(root, monkeypatch):
     monkeypatch.setattr(common, "repo_root", lambda: root)
     monkeypatch.chdir(root)
     ran = []
-    monkeypatch.setattr(dp, "_run", lambda argv, **_unused: ran.append(argv) or 0)
+
+    def fake_run(argv, **_unused):
+        ran.append(argv)
+        return 0
+
+    monkeypatch.setattr(dp, "_run", fake_run)
     rc = dp.main(
         [
             "--company",
@@ -654,7 +659,12 @@ def test_bootstrap_and_rollback_name_the_company_in_their_children(root, tmp_pat
     before = tmp_path / "nb.json"
     before.write_text(json.dumps(record))
     children = []
-    monkeypatch.setattr(dr, "_run_child", lambda argv: children.append(argv) or 0)
+
+    def fake_child(argv):
+        children.append(argv)
+        return 0
+
+    monkeypatch.setattr(dr, "_run_child", fake_child)
     ns = argparse.Namespace(before=str(before), record=str(tmp_path / "pr.json"))
     assert dr.cmd_bootstrap(ns, root) == 0
     argv = children[0]
@@ -663,11 +673,12 @@ def test_bootstrap_and_rollback_name_the_company_in_their_children(root, tmp_pat
     assert "--target" not in argv
 
     closed = []
-    monkeypatch.setattr(
-        ce,
-        "run",
-        lambda action, *_unused, company=None, **_kw: closed.append((action, company)) or 0,
-    )
+
+    def fake_exec(action, *_unused, company=None, **_kw):
+        closed.append((action, company))
+        return 0
+
+    monkeypatch.setattr(ce, "run", fake_exec)
     live = json.loads(before.read_text())
     live["proxy"]["existed"] = True
     live["proxy"]["version_before"] = "old-version"

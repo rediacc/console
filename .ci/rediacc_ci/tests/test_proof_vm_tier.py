@@ -1038,9 +1038,12 @@ def test_a_two_link_chain_admits_when_every_link_holds(tmp_path: pathlib.Path) -
     rc.write(tmp_path, chained_tip())
     seen: list[tuple[str, str]] = []
     digests = {TREE: DIGEST, BASE_TREE: BASE_DIGEST, root_tree: "a" * 64}
-    links = rc.Chain(
-        TIP, lambda old, new: (seen.append((old, new)), frozenset({"renet"}))[1], digests.get
-    )
+
+    def record_link(old: str, new: str) -> frozenset[str]:
+        seen.append((old, new))
+        return frozenset({"renet"})
+
+    links = rc.Chain(TIP, record_link, digests.get)
     got = rc.admit(tmp_path, TREE, DIGEST, BOTH, links)
     assert got.ok, got.message
     assert seen == [(BASE_HEAD, TIP), (root_head, BASE_HEAD)]

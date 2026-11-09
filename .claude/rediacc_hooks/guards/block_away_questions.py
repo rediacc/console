@@ -37,7 +37,7 @@ def _empty_world(path):
 FIXTURES = {"away-flag-set": _flag_world, "away-flag-none": _empty_world}
 
 # Both worlds pin WL_AWAY_STATE: an unpinned one would read the live flag, and a session that ran `/awk` would flip every answer.
-ENVS = [
+ENVS: list[tuple[str, dict[str, str], dict[str, str]]] = [
     ("default", {"WL_AWAY_STATE": "{FIXTURE:away-flag-none}"}, {}),
     ("away", {"WL_AWAY_STATE": "{FIXTURE:away-flag-set}"}, {}),
 ]

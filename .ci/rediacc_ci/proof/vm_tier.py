@@ -217,7 +217,8 @@ def _merged_errors(receipt: dict[str, Any]) -> list[str]:
     status = receipt.get("status")
     if status not in (VERIFIED, FAILED):
         errors.append(f"a {status} receipt carries no merged steps")
-    rows = receipt.get("steps") if isinstance(receipt.get("steps"), list) else []
+    raw_steps = receipt.get("steps")
+    rows = raw_steps if isinstance(raw_steps, list) else []
     for n, entry in enumerate(merged):
         where = f"merged[{n}]"
         if not isinstance(entry, dict):

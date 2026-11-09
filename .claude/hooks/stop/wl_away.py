@@ -193,8 +193,8 @@ def main(argv: list[str]) -> int:
         print("cleared" if clear() else "not away")
         return 0
     transcript = argv[argv.index("--transcript") + 1] if "--transcript" in argv[:-1] else ""
-    doc = away(transcript) if transcript else read()
-    print("AWAY since %s" % doc["since"] if doc else "not away")
+    shown: dict | None = away(transcript) if transcript else read()
+    print("AWAY since %s" % shown["since"] if shown else "not away")
     return 0
 
 

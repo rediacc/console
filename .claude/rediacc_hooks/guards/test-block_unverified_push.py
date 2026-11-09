@@ -749,7 +749,7 @@ GUARD = pathlib.Path(__file__).resolve().parent / "block_unverified_push.py"
 R_PLAN = "check:fixture-plan-implementation"
 R_ARCH = "check:fixture-session-archival"
 R_TREE = "check:fixture-tree-shape"
-ADV_POLICY = {
+ADV_POLICY: dict[str, Any] = {
     "version": 1,
     "records": [
         {
