@@ -57,6 +57,10 @@ jobs:
         with:
           persist-credentials: false
 
+      - uses: ./.github/actions/profiler
+        with:
+          runner-label: ubuntu-latest
+
       - uses: ./.github/actions/setup-node-npm
 
       - name: Install dependencies

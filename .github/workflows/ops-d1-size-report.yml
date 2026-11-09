@@ -31,6 +31,10 @@ jobs:
         with:
           persist-credentials: false
 
+      - uses: ./.github/actions/profiler
+        with:
+          runner-label: ubuntu-latest
+
       - name: Fetch secrets from Bitwarden
         # LIVE: read by the report step below.
         uses: ./.github/actions/bws-secrets

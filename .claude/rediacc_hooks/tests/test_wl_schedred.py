@@ -214,6 +214,7 @@ def test_discovery_pins_this_repos_scheduled_workflows():
         "ops-pins-soaked",
         "ops-cf-usage-report",
         "ops-telemetry-probe",
+        "ops-d1-size-report",
         # The weekly drift run, which took over ci.yml's old schedule.
         "ci-drift",
         # The nightly backup suite run.
