@@ -6,7 +6,7 @@ The rules of PLAN-enterprise-isolation.md (Design, *Company lifecycle*; ruling 1
 
 - `remove` needs a completed export whose files still hash to the manifest, keeps every byte unless `delete_data` is set with `confirm` equal to the company name, has no timer, and refuses whenever `GITHUB_ACTIONS` is set. No workflow calls it; the leak and proof gates check that.
 - `list`, `export` and `remove` print or write company labels, so they refuse under GitHub Actions as well, where the log is public.
-- Nothing destructive happens before every check has passed. The control row turns `removed` and its audit row is written only after the last destructive step succeeded, so a failed remove can be repeated.
+- Nothing destructive happens before every check has passed, and with `delete_data` the checks include a fresh D1 dump and bucket listing compared with the export (a company that changed since the export is refused; object contents are not re-read). After the last destructive step succeeded the audit row is written first and the control row turns `removed` second, so a failure between them leaves a remove that can be repeated (it then writes a second audit row) rather than a removed company with no audit. Every verb writes more than one row in separate statements, so a failure mid-way is recovered by repeating the verb, not rolled back.
 - A region that cannot be read stops the verb (`RegistryUnreachableError` names it): a name that cannot be proven absent everywhere is never guessed.
 """
 
@@ -32,6 +32,8 @@ AUTO_RING = "auto"
 MANIFEST = "manifest.json"
 DUMP = "d1.sql"
 SECRETS_FILE = "secrets.json"
+# Written once a `delete_data` remove has passed its stale-export check, holding the export's `exported_at`: a resumed remove (its buckets or database already gone) is then not judged against data its own earlier run deleted. `export` removes it with the manifest.
+CHECKED = "remove-checked"
 # Kept in the export: losing the config server key loses layer 3 data, and the backup KEK opens the backups.
 DURABLE = ("ACCOUNT_CONFIG_SERVER_KEY", "ACCOUNT_BACKUP_STORE_KEK")
 CI_VAR = "GITHUB_ACTIONS"
@@ -210,8 +212,8 @@ def suspend(ctx: Context, name: str, *, resume: bool = False) -> Target:
         raise LifecycleError(
             "company %s is still onboarding; finish or resume `enterprise add` first" % company.id
         )
-    _touch(ctx, company, "active" if resume else "suspended")
     _audit(ctx, company, "resume" if resume else "suspend")
+    _touch(ctx, company, "active" if resume else "suspended")
     return company
 
 
@@ -268,13 +270,18 @@ def update(
         raise LifecycleError("nothing to update")
     company = load_company(ctx, name)
     database = _db(ctx, company)
+    changes = dict(sets)
+    if ring is not None:
+        if ring != AUTO_RING:
+            changes["ring_reason"] = ring_reason
+        changes["ring"] = ring
+    _audit(ctx, company, "update", changes)
     for column, value in sets.items():
         ctx.query(
             database,
             SCOPE_UPDATES[column],
             [json.dumps(value) if column == "allow_ips" else value, company.id],
         )
-    changes = dict(sets)
     if ring is not None:
         if ring == AUTO_RING:
             ctx.query(database, "DELETE FROM ring_override WHERE company_id = ?", [company.id])
@@ -284,9 +291,6 @@ def update(
                 "INSERT OR REPLACE INTO ring_override (company_id, ring, reason, set_at) VALUES (?, ?, ?, ?)",
                 [company.id, ring, ring_reason, ctx.now()],
             )
-            changes["ring_reason"] = ring_reason
-        changes["ring"] = ring
-    _audit(ctx, company, "update", changes)
     return UpdateResult(changes=changes, redeploy_needed="allow_ips" in sets)
 
 
@@ -297,12 +301,21 @@ def _sha(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
-def _write(path: pathlib.Path, data: bytes, mode: int = 0o644) -> None:
+def _write(
+    path: pathlib.Path, data: bytes, mode: int = 0o600, root: pathlib.Path | None = None
+) -> None:
+    """Write `path` at `mode` (an export holds company data, so the default is owner-only); every directory from its parent up to `root` is made 0700."""
     path.parent.mkdir(parents=True, exist_ok=True)
     fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, mode)
     with os.fdopen(fd, "wb") as handle:
         handle.write(data)
     os.chmod(path, mode)
+    folder = path.parent
+    while True:
+        os.chmod(folder, 0o700)
+        if root is None or folder in (root, folder.parent):
+            break
+        folder = folder.parent
 
 
 def export(ctx: Context, name: str) -> pathlib.Path:
@@ -311,13 +324,14 @@ def export(ctx: Context, name: str) -> pathlib.Path:
     company = load_company(ctx, name)
     target = ctx.export_root / company.id
     manifest_path = target / MANIFEST
-    manifest_path.unlink(
-        missing_ok=True
-    )  # an older export must not vouch for a half-written new one
+    failed = ""
     try:
+        # An older export must not vouch for a half-written new one.
+        manifest_path.unlink(missing_ok=True)
+        (target / CHECKED).unlink(missing_ok=True)
         files: dict[str, str] = {}
         dump = _step("export failed: d1 dump", ctx.exporter.dump_d1, company).encode()
-        _write(target / DUMP, dump)
+        _write(target / DUMP, dump, root=target)
         files[DUMP] = _sha(dump)
         objects: list[dict[str, str]] = []
         for bucket in company.buckets:
@@ -326,7 +340,7 @@ def export(ctx: Context, name: str) -> pathlib.Path:
             ):
                 data = _step("export failed: get object", ctx.exporter.get_object, bucket, key)
                 rel = "objects/%s/%d" % (bucket, index)
-                _write(target / rel, data)
+                _write(target / rel, data, root=target)
                 files[rel] = _sha(data)
                 objects.append({"bucket": bucket, "key": key, "file": rel})
         wanted = {secrets.store_name(company.id, k): k for k in DURABLE}
@@ -335,7 +349,7 @@ def export(ctx: Context, name: str) -> pathlib.Path:
             raise LifecycleError("export failed: the config server key is not in the store")
         kept = {wanted[n]: v for n, v in held.items()}
         blob = json.dumps(kept, sort_keys=True).encode()
-        _write(target / SECRETS_FILE, blob, 0o600)
+        _write(target / SECRETS_FILE, blob, 0o600, root=target)
         files[SECRETS_FILE] = _sha(blob)
         manifest = {
             "company_id": company.id,
@@ -347,12 +361,16 @@ def export(ctx: Context, name: str) -> pathlib.Path:
             "secret_names": sorted(kept),
         }
         manifest_tmp = target / (MANIFEST + ".tmp")
-        _write(manifest_tmp, json.dumps(manifest, indent=2, sort_keys=True).encode())
+        _write(manifest_tmp, json.dumps(manifest, indent=2, sort_keys=True).encode(), root=target)
         os.replace(manifest_tmp, manifest_path)
     except LifecycleError as exc:
         if str(exc).startswith("export failed"):
             raise
         raise LifecycleError("export failed: %s" % exc) from None
+    except OSError as exc:
+        failed = type(exc).__name__
+    if failed:
+        raise LifecycleError("export failed: %s" % failed)
     return target
 
 
@@ -378,6 +396,15 @@ def verify_export(ctx: Context, company: Target) -> str:
         raise LifecycleError(
             "the export manifest lists no database dump; run `enterprise export` again"
         )
+    if SECRETS_FILE not in files:
+        raise LifecycleError(
+            "the export manifest lists no secrets file; run `enterprise export` again"
+        )
+    for entry in manifest.get("objects") or []:
+        if not isinstance(entry, dict) or entry.get("file") not in files:
+            raise LifecycleError(
+                "the export manifest names an object file it does not hash; run `enterprise export` again"
+            )
     for rel, digest in sorted(files.items()):
         try:
             data = (target / rel).read_bytes()
@@ -391,6 +418,31 @@ def verify_export(ctx: Context, company: Target) -> str:
 
 
 # --- remove --------------------------------------------------------------------------
+
+
+def _refuse_stale_export(ctx: Context, company: Target) -> None:
+    """Refuse `delete_data` when the company's database or bucket listing no longer matches its verified export: what changed since would be deleted unexported. Object contents are not re-read; their keys are."""
+    folder = ctx.export_root / company.id
+    manifest = json.loads((folder / MANIFEST).read_text())
+    exported_at = manifest.get("exported_at", "")
+    try:
+        if (folder / CHECKED).read_text() == exported_at:
+            return
+    except OSError:
+        pass
+    again = "changed since the export of %s; run `enterprise export` again" % exported_at
+    fresh = _step("stale-export check: d1 dump", ctx.exporter.dump_d1, company).encode()
+    if _sha(fresh) != manifest["files"][DUMP]:
+        raise LifecycleError("the database of company %s %s" % (company.id, again))
+    held = {(o.get("bucket"), o.get("key")) for o in manifest.get("objects") or []}
+    now = {
+        (bucket, key)
+        for bucket in company.buckets
+        for key in _step("stale-export check: list bucket", ctx.exporter.bucket_keys, bucket)
+    }
+    if now != held:
+        raise LifecycleError("the buckets of company %s %s" % (company.id, again))
+    _step("stale-export check: record", _write, folder / CHECKED, exported_at.encode())
 
 
 def _secret_names(company: Target) -> list[str]:
@@ -407,6 +459,8 @@ def remove(
     if delete_data and confirm != company.name:
         raise LifecycleError("--delete-data needs --confirm <company> with the exact company name")
     verify_export(ctx, company)
+    if delete_data:
+        _refuse_stale_export(ctx, company)
     steps: list[str] = []
 
     def run(what: str, fn: Callable[..., Any], *args: Any) -> None:
@@ -423,8 +477,8 @@ def remove(
         run("delete d1", ctx.teardown.delete_d1, company)
         for secret in _secret_names(company):
             run("delete secret", ctx.teardown.delete_secret, secret)
-    _touch(ctx, company, "removed")
     _audit(ctx, company, "remove", {"data_deleted": delete_data, "steps": len(steps)})
+    _touch(ctx, company, "removed")
     return RemoveResult(company_id=company.id, data_deleted=delete_data, steps=steps)
 
 

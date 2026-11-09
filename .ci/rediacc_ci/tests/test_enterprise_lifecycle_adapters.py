@@ -624,7 +624,7 @@ def test_a_failing_step_stops_the_rest_names_what_ran_and_a_rerun_resumes(tmp_pa
 def test_a_failing_bucket_step_stops_before_d1_and_secrets(tmp_path, monkeypatch):
     rig = Rig(monkeypatch)
     ctx, _conn = _remove_ctx(tmp_path, rig)
-    rig.s3.fail.add(("GET", "backups-acme"))
+    rig.s3.fail.add(("DELETE", "backups-acme"))
     with pytest.raises(lifecycle.LifecycleError) as caught:
         lifecycle.remove(ctx, "acme", delete_data=True, confirm="acme")
     assert "delete backups bucket failed" in str(caught.value)

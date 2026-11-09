@@ -459,6 +459,113 @@ def test_remove_with_delete_data_deletes_everything_after_undeploy(w):
     assert json.loads(w.audit("eu")[-1]["detail"])["data_deleted"] is True
 
 
+def test_delete_data_refuses_a_database_that_changed_since_the_export(w):
+    _exported(w)
+    w.dump_d1 = lambda _company: "-- a row written after the export\n"
+    with pytest.raises(lifecycle.LifecycleError, match=r"database of company .* changed since"):
+        lifecycle.remove(w.ctx, "acme", delete_data=True, confirm="acme")
+    assert w.mutating() == []
+    assert w.state("eu", ACME) == "active"
+
+
+def test_delete_data_refuses_a_bucket_listing_that_changed_since_the_export(w):
+    _exported(w)
+    w.buckets["configs-acme"]["new"] = b"added after the export"
+    with pytest.raises(lifecycle.LifecycleError, match=r"buckets of company .* changed since"):
+        lifecycle.remove(w.ctx, "acme", delete_data=True, confirm="acme")
+    assert w.mutating() == []
+
+
+def test_a_stale_export_is_harmless_without_delete_data(w):
+    _exported(w)
+    w.dump_d1 = lambda _company: "-- changed\n"
+    lifecycle.remove(w.ctx, "acme", delete_data=False)
+    assert w.state("eu", ACME) == "removed"
+
+
+def test_a_resumed_delete_data_remove_is_not_judged_against_its_own_deletions(w):
+    _exported(w)
+
+    def boom(_company):
+        raise OSError("d1 refused")
+
+    ok = w.delete_d1
+    w.delete_d1 = boom
+    with pytest.raises(lifecycle.LifecycleError, match="delete d1"):
+        lifecycle.remove(w.ctx, "acme", delete_data=True, confirm="acme")
+    w.delete_d1 = ok
+    w.buckets.clear()  # the first run already emptied and deleted them
+    w.dump_d1 = lambda _company: "-- gone\n"
+    w.bucket_keys = lambda _bucket: []
+    lifecycle.remove(w.ctx, "acme", delete_data=True, confirm="acme")
+    assert w.state("eu", ACME) == "removed"
+
+
+def test_a_reexport_clears_the_stale_check_mark(w):
+    _exported(w)
+
+    def boom(_company):
+        raise OSError("d1 refused")
+
+    w.delete_d1 = boom
+    with pytest.raises(lifecycle.LifecycleError, match="delete d1"):
+        lifecycle.remove(w.ctx, "acme", delete_data=True, confirm="acme")
+    folder = w.ctx.export_root / ACME
+    assert (folder / lifecycle.CHECKED).exists()
+    lifecycle.export(w.ctx, "acme")
+    assert not (folder / lifecycle.CHECKED).exists()
+
+
+def test_export_files_are_owner_only(w):
+    path = lifecycle.export(w.ctx, "acme")
+    for f in (path / "d1.sql", path / "manifest.json", *path.glob("objects/*/*")):
+        assert (f.stat().st_mode & 0o777) == 0o600, f
+    for d in (path, path / "objects", *path.glob("objects/*")):
+        assert (d.stat().st_mode & 0o777) == 0o700, d
+
+
+def test_an_os_error_while_writing_the_export_is_a_lifecycle_error_naming_only_its_type(w):
+    w.ctx.export_root.write_text("a file where the export directory should be")
+    with pytest.raises(lifecycle.LifecycleError) as caught:
+        lifecycle.export(w.ctx, "acme")
+    assert str(caught.value) == "export failed: NotADirectoryError"
+    assert caught.value.__cause__ is None
+    assert caught.value.__context__ is None
+
+
+@pytest.mark.parametrize("drop", ["secrets", "object-file"])
+def test_remove_refuses_a_manifest_missing_the_secrets_file_or_an_object_hash(w, drop):
+    _exported(w)
+    p = w.ctx.export_root / ACME / "manifest.json"
+    m = json.loads(p.read_text())
+    if drop == "secrets":
+        del m["files"]["secrets.json"]
+    else:
+        del m["files"][m["objects"][0]["file"]]
+    p.write_text(json.dumps(m))
+    with pytest.raises(lifecycle.LifecycleError, match="export manifest"):
+        lifecycle.remove(w.ctx, "acme", delete_data=False)
+    assert w.mutating() == []
+
+
+def test_a_failed_audit_write_leaves_the_state_untouched_and_the_remove_repeatable(w):
+    _exported(w)
+    orig = w.query
+
+    def spy(database, sql, params):
+        if "INSERT INTO audit" in sql:
+            raise OSError("d1 down")
+        return orig(database, sql, params)
+
+    w.ctx.query = spy
+    with pytest.raises(OSError, match="d1 down"):
+        lifecycle.remove(w.ctx, "acme", delete_data=False)
+    assert w.state("eu", ACME) == "active"
+    w.ctx.query = orig
+    lifecycle.remove(w.ctx, "acme", delete_data=False)
+    assert w.state("eu", ACME) == "removed"
+
+
 def test_delete_data_secret_names_cover_every_owned_key_and_pair(w):
     _exported(w)
     lifecycle.remove(w.ctx, "acme", delete_data=True, confirm="acme")
