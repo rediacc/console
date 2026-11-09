@@ -193,9 +193,8 @@ def test_list_refuses_under_github_actions(tmp_path):
 # --- suspend -----------------------------------------------------------------------
 
 
-def test_suspend_sets_scope_and_state_and_audits(w):
+def test_suspend_sets_state_and_audits(w):
     lifecycle.suspend(w.ctx, "acme")
-    assert w.scope("eu", ACME)["suspended"] == 1
     assert w.state("eu", ACME) == "suspended"
     assert [(a["action"], a["company_id"], a["actor"]) for a in w.audit("eu")] == [
         ("suspend", ACME, "op")
@@ -204,7 +203,6 @@ def test_suspend_sets_scope_and_state_and_audits(w):
 
 def test_resume_reverses_suspend(w):
     lifecycle.suspend(w.ctx, "globex", resume=True)
-    assert w.scope("us", GLOBEX)["suspended"] == 0
     assert w.state("us", GLOBEX) == "active"
     assert w.audit("us")[0]["action"] == "resume"
 
@@ -235,7 +233,7 @@ def test_suspend_with_a_region_down_refuses_rather_than_guess(tmp_path):
     w = World(tmp_path, down={"control-us"})
     with pytest.raises(registry.RegistryUnreachableError):
         lifecycle.suspend(w.ctx, "acme")
-    assert w.scope("eu", ACME)["suspended"] == 0
+    assert w.state("eu", ACME) == "active"
 
 
 # --- update ------------------------------------------------------------------------
@@ -444,7 +442,6 @@ def test_remove_without_delete_data_keeps_every_byte(w):
     assert result.data_deleted is False
     assert w.mutating() == [("undeploy", ACME), ("drop_lookup", ACME)]
     assert w.state("eu", ACME) == "removed"
-    assert w.scope("eu", ACME)["suspended"] == 1
     assert w.audit("eu")[-1]["action"] == "remove"
     assert len(w.secrets) == 2
 

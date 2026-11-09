@@ -183,7 +183,7 @@ def _touch(ctx: Context, company: Target, state: str) -> None:
 
 LIST_SQL = (
     "SELECT c.id, c.name, c.region, c.state, c.unlisted, s.max_machines, s.max_storage_gb, "
-    "s.max_expiry_days, s.suspended, r.machines_high_water "
+    "s.max_expiry_days, r.machines_high_water "
     "FROM companies c LEFT JOIN scope s ON s.company_id = c.id LEFT JOIN ring r ON r.company_id = c.id "
     "ORDER BY c.name"
 )
@@ -202,18 +202,12 @@ def list_companies(ctx: Context, *, include_removed: bool = False) -> list[dict]
 
 
 def suspend(ctx: Context, name: str, *, resume: bool = False) -> Target:
-    """Set or clear the signer's `suspended` flag; the company's state follows. Repeating it is harmless."""
+    """Suspend or resume a company. The signer reads suspension from `companies.state` alone (control/migrations/0001_control.sql), so the state is the one write. Repeating it is harmless."""
     company = load_company(ctx, name)
     if company.state == "onboarding":
         raise LifecycleError(
             "company %s is still onboarding; finish or resume `enterprise add` first" % company.id
         )
-    database = _db(ctx, company)
-    ctx.query(
-        database,
-        "UPDATE scope SET suspended = ? WHERE company_id = ?",
-        [0 if resume else 1, company.id],
-    )
     _touch(ctx, company, "active" if resume else "suspended")
     _audit(ctx, company, "resume" if resume else "suspend")
     return company
@@ -427,9 +421,6 @@ def remove(
         run("delete d1", ctx.teardown.delete_d1, company)
         for secret in _secret_names(company):
             run("delete secret", ctx.teardown.delete_secret, secret)
-    ctx.query(
-        _db(ctx, company), "UPDATE scope SET suspended = 1 WHERE company_id = ?", [company.id]
-    )
     _touch(ctx, company, "removed")
     _audit(ctx, company, "remove", {"data_deleted": delete_data, "steps": len(steps)})
     return RemoveResult(company_id=company.id, data_deleted=delete_data, steps=steps)
@@ -448,7 +439,7 @@ def cmd_list(ctx: Context, *, include_removed: bool = False, out: Out = print) -
         return 1
     for r in rows:
         out(
-            "%-20s %-5s %-10s machines<=%s storage<=%sGB%s%s"
+            "%-20s %-5s %-10s machines<=%s storage<=%sGB%s"
             % (
                 r["name"],
                 r["region"],
@@ -456,7 +447,6 @@ def cmd_list(ctx: Context, *, include_removed: bool = False, out: Out = print) -
                 r.get("max_machines", "?"),
                 r.get("max_storage_gb", "?"),
                 " unlisted" if r.get("unlisted") else "",
-                " suspended" if r.get("suspended") else "",
             )
         )
     return 0
