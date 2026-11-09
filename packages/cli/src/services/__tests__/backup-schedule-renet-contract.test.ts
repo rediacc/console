@@ -422,6 +422,15 @@ describe('scheduled ExecStart lines parse against renet backup snapshot (G9)', (
     ).toEqual(['--repo takes repository GUIDs only, got "mail"']);
   });
 
+  it('an ExecStart with a shell separator after the renet path is refused, a bare & included (control)', () => {
+    for (const separator of [';', '&', '&&', '|', '\n']) {
+      expect(() =>
+        renetCommandsOf(`${RENET_PATH} backup snapshot --datastore /d ${separator} evil`)
+      ).toThrow(/unrecognized ExecStart/);
+    }
+    expect(renetCommandsOf(`${RENET_PATH} backup snapshot --datastore /d`)).toHaveLength(1);
+  });
+
   it('an ambiguous bandwidth limit, a non-integer parallelism and an unknown flag are refused (control)', () => {
     expect(
       argvProblems('/r backup snapshot --bwlimit 100Mb --parallelism two --mode=hot', set)

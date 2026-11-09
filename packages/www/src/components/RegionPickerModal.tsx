@@ -105,7 +105,7 @@ async function fetchGeoRegion(regions: Region[]): Promise<Region | null> {
 }
 
 /** Preselects the /api/geo region while the cards show, when `needed` (no stored region), unless the run ended (`live` false) or the lookup failed. */
-function preselectFromGeo(
+export function preselectFromGeo(
   needed: boolean,
   live: () => boolean,
   select: (id: string) => void

@@ -1,11 +1,12 @@
 import { BAKED_IN_REGIONS } from '@rediacc/shared/regions';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Region } from '../../config/regions';
 import {
   extractDomain,
   modeFromPath,
   openPhase,
   parseLookupHost,
+  preselectFromGeo,
   regionForCountry,
   regionForTimeZone,
 } from '../RegionPickerModal';
@@ -109,5 +110,40 @@ describe('openPhase', () => {
   it('shows the cards for a forced open, so a stored region never forwards on its own', () => {
     expect(openPhase('login', true, true)).toBe('choosing');
     expect(openPhase('login', false, true)).toBe('choosing');
+  });
+});
+
+describe('preselectFromGeo', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  const stubGeo = (country: string | null, ok = true) => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({ ok, json: async () => ({ country }) }))
+    );
+  };
+  const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+  it('selects the geo region when none is stored and the run is current', async () => {
+    stubGeo('DE');
+    const select = vi.fn();
+    preselectFromGeo(true, () => true, select);
+    await settle();
+    expect(select).toHaveBeenCalledWith('eu');
+  });
+
+  it('selects nothing when a region is stored, the run ended, or the lookup failed', async () => {
+    const select = vi.fn();
+    stubGeo('DE');
+    preselectFromGeo(false, () => true, select);
+    preselectFromGeo(true, () => false, select);
+    stubGeo(null);
+    preselectFromGeo(true, () => true, select);
+    stubGeo('DE', false);
+    preselectFromGeo(true, () => true, select);
+    await settle();
+    expect(select).not.toHaveBeenCalled();
   });
 });
