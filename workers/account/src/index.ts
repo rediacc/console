@@ -1,6 +1,7 @@
 import { WorkerEntrypoint } from 'cloudflare:workers';
 import accountApp from '../../../private/account/src/entry/cloudflare.js';
 import { BackupReplicator, replicatorStub } from './backup-replicator.js';
+import { allowlistRefusal } from '../../proxy/src/ip-allowlist.js';
 
 // The replicate-mode Durable Object class; wrangler.*.toml binds it as BACKUP_REPLICATOR.
 export { BackupReplicator };
@@ -14,6 +15,8 @@ interface Env {
   BACKUP_REPLICATE_QUEUE?: Queue;
   BACKUP_REPLICATOR?: DurableObjectNamespace<BackupReplicator>;
   REGION?: string;
+  /** A company's opt-in IP allowlist (comma-separated addresses or IPv4 ranges); unset means off. */
+  ALLOW_IPS?: string;
   [key: string]: unknown;
 }
 
@@ -122,6 +125,8 @@ export class ExecutorIssuer extends WorkerEntrypoint<Env> {
 
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+    const refused = allowlistRefusal(request, env.ALLOW_IPS);
+    if (refused) return withSecurityHeaders(refused);
     const url = new URL(request.url);
 
     // Account portals (eu/us/asia/bench + edge variants) are logged-in apps, not public content — keep them out of every search index.

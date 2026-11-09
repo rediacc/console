@@ -1,5 +1,5 @@
 /**
- * The opt-in IP allowlist for a company's proxy Worker, applied at the top of the default fetch handler.
+ * The opt-in IP allowlist for a company's proxy and account Workers, applied at the top of each default fetch handler (workers/proxy/src/index.ts, workers/account/src/index.ts).
  *
  * Off when `ALLOW_IPS` is unset or empty. When set, a request from an address outside the list is refused with 403, and the one exemption is `POST` on the licence renew path: a machine outside the list would otherwise lose renewal, and the licence blob is that call's bearer proof. `GET` on the renew path, and `POST` to any other path, stay refused. It reduces exposure and replaces nothing: the token check still applies.
  */
@@ -24,9 +24,11 @@ function matches(ip: string, entry: string): boolean {
   if (slash === -1) return ip.toLowerCase() === entry.toLowerCase();
   const base = ipv4ToInt(entry.slice(0, slash));
   const addr = ipv4ToInt(ip);
-  const bits = Number(entry.slice(slash + 1));
-  if (base === undefined || addr === undefined || !Number.isInteger(bits) || bits < 0 || bits > 32)
-    return false;
+  const prefix = entry.slice(slash + 1);
+  // A strict decimal prefix only: Number('') and Number('0x0') are 0, which would match every address.
+  if (!/^\d{1,2}$/.test(prefix)) return false;
+  const bits = Number(prefix);
+  if (base === undefined || addr === undefined || bits > 32) return false;
   const size = 2 ** (32 - bits);
   return Math.floor(base / size) === Math.floor(addr / size);
 }
@@ -46,6 +48,6 @@ export function allowlistRefusal(
   }
   const ip = request.headers.get('cf-connecting-ip')?.trim();
   if (ip && entries.some((entry) => matches(ip, entry))) return undefined;
-  console.warn('proxy: caller refused: ip-not-allowed');
+  console.warn('worker: caller refused: ip-not-allowed');
   return Response.json({ error: 'This address is not on the allowlist.' }, { status: 403 });
 }

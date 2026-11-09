@@ -30,6 +30,12 @@ describe('allowlistRefusal', () => {
     expect(allowlistRefusal(req('GET', '/x'), LISTED)?.status).toBe(403);
   });
 
+  it('refuses through a malformed range rather than matching every address', () => {
+    for (const entry of ['203.0.113.0/', '203.0.113.0/0x0', '203.0.113.0/ 8', '203.0.113.0/33']) {
+      expect(allowlistRefusal(req('GET', '/x', OUTSIDE), entry)?.status).toBe(403);
+    }
+  });
+
   it('exempts POST on the renew path only', () => {
     expect(allowlistRefusal(req('POST', LICENSE_RENEW_PATH, OUTSIDE), LISTED)).toBeUndefined();
     expect(allowlistRefusal(req('GET', LICENSE_RENEW_PATH, OUTSIDE), LISTED)?.status).toBe(403);
