@@ -363,7 +363,9 @@ def fetch_deployed(url: str, token: str) -> Deployed | None:
         if isinstance(exc.reason, (socket.gaierror, ConnectionRefusedError)):
             return None
         if isinstance(exc.reason, TimeoutError):
-            raise StatusUnreadableError("%s timed out while connecting or sending: %s" % (url, exc)) from exc
+            raise StatusUnreadableError(
+                "%s timed out while connecting or sending: %s" % (url, exc)
+            ) from exc
         raise StatusUnreadableError("%s failed after the request began: %s" % (url, exc)) from exc
     except (TimeoutError, OSError, http.client.HTTPException) as exc:
         # urllib lets these escape only once the connection is made (a stall waiting for headers, a reset, a malformed reply): a Worker that exists and answers badly, never a first deploy.

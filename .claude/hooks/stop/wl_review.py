@@ -3233,7 +3233,9 @@ def claim_exercised_by_test(repo, fix, test_path, claim):
     )
 
 
-_IMPORT_LINE_RE = re.compile(r"\b(?:import|require|from|importlib|load_module|patch|mock)\b", re.IGNORECASE)
+_IMPORT_LINE_RE = re.compile(
+    r"\b(?:import|require|from|importlib|load_module|patch|mock)\b", re.IGNORECASE
+)
 
 
 def imports_anchored_module(repo, fix, test_path, anchored):
@@ -3256,7 +3258,9 @@ def imports_anchored_module(repo, fix, test_path, anchored):
         if not line.startswith("+") or line.startswith("+++") or not _IMPORT_LINE_RE.search(line):
             continue
         for token in re.findall(r"[a-z0-9_.@~/-]+", line[1:].lower()):
-            if _token_names_anchored(token, variants, parents, test_dir, anchored_low, anchored_bare):
+            if _token_names_anchored(
+                token, variants, parents, test_dir, anchored_low, anchored_bare
+            ):
                 return True
     return False
 

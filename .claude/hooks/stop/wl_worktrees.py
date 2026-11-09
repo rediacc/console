@@ -270,9 +270,7 @@ def unlanded_commits(tree, head, pin, tip, base):
     recorded = {
         pair[0]
         for pair in (
-            ln.split()[1:]
-            for ln in text.splitlines()
-            if ln.startswith("Lease-Landed-As:")
+            ln.split()[1:] for ln in text.splitlines() if ln.startswith("Lease-Landed-As:")
         )
         if len(pair) >= 2
         and tip
