@@ -21,4 +21,4 @@ Body-Sig: 35f48cf1f891c6a9
 ### 4cbeb3ff.1 [medium] packages/cli/src/services/backup/backup-store-pick.ts:177
 Anchor: in-diff
 Claim: In resolveFrom, any resolve error with a numeric HTTP status (isAccountError) is thrown on the first store, so a 5xx from the first store's resolve aborts the restore without trying the next ranked store, although the same 5xx from an attempt (isStoreFailure) does fall back to the next store.
-Resolution: open
+Resolution: not-a-bug | packages/cli/src/services/backup/backup-store-pick.ts:195 -- the doc states an account error is the account's own answer, which every store would give alike, so it is thrown from the first resolve by design | d778be9d 2026-11-09T15:21:08Z

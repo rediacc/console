@@ -36,4 +36,4 @@ Resolution: open
 ### f6cf1731.4 [medium] .ci/rediacc_ci/tests/test_deploy_deploy_proxy.py:555
 Anchor: in-diff
 Claim: test_the_us_dry_run_is_pinned drops run_golden and now asserts only one substring of the calls plus the final stderr line, so the stable us dry run is no longer byte-compared against the golden record, contrary to the commit's claim that every other byte is still compared.
-Resolution: open
+Resolution: not-a-bug | .ci/rediacc_ci/tests/test_deploy_deploy_proxy.py:528 -- the parametrised dry-run test includes the us config and compares the whole call log byte for byte, so only the extra us-only test is looser | d778be9d 2026-11-09T15:20:59Z

@@ -21,4 +21,4 @@ Body-Sig: 219655866417549a
 ### 4538bc0e.1 [medium] packages/cli/src/services/backup/backup-replication.ts:115
 Anchor: in-diff
 Claim: The RULE_UNKNOWN 404 exemption lives in the shared applyAll, so pushReplicationRules (a PUT) also counts a 404 with that code as done instead of failure or unsupported; no test covers this push-path change, and the commit message only describes drops.
-Resolution: open
+Resolution: fixed 0b57095cfa60385df7474ebd456edcc73c9eeab1 | d778be9d 2026-11-09T15:21:08Z
