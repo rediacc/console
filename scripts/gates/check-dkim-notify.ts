@@ -10,7 +10,7 @@
  *
  * This specifically covers the failure mode that caused the incident this
  * migration addresses: AWS Easy DKIM advertised three selectors on
- * `notify.rediacc.cloud`, only one of which returned a real public key — two
+ * `notify.rediacc.com` (the sending domain then; it is `notify.rediacc.cloud` since the product-domain rename), only one of which returned a real public key — two
  * were empty strings at `*.dkim.amazonses.com`. DMARC `p=reject; adkim=s`
  * rejected ~67% of mail silently. The BYODKIM rotation tool records the
  * selector + fingerprint; this check is the daily proof that the selector

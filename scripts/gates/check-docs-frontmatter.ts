@@ -109,7 +109,7 @@ export const validateSource = (code: string, schema: Schema, parse: ParseFrontma
   }
   const res = schema.safeParse(fm);
   if (res.success) return [];
-  const raw = /^\uFEFF?\s*---\n([\s\S]*?\n)---/.exec(code)?.[1] ?? '';
+  const raw = /^\uFEFF?\s*---\r?\n([\s\S]*?\r?\n)---/.exec(code)?.[1] ?? '';
   return (res.error?.issues ?? []).map((i) => {
     const key = i.path.map(String).join('.') || '(root)';
     const top = String(i.path[0] ?? '');
@@ -396,4 +396,7 @@ const main = async (): Promise<number> => {
   return report.length === 0 ? 0 : 1;
 };
 
-process.exit(await main());
+// Run the gate only as the entry point, so importing this file for validateSource, scan or loadSchemas does not execute it and exit the importer.
+if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
+  process.exit(await main());
+}
