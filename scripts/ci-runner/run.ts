@@ -94,7 +94,12 @@ import {
   openLedger,
   outcomeOf,
 } from './ledger';
-import { localWarnSelftest, softenLocalWarn, warnedFor } from './local-warn';
+import {
+  localWarnSelftest,
+  softenLocalWarn,
+  warnedExitCodeFor,
+  warnedFor,
+} from './local-warn';
 import { GATES, type GateSpec } from './manifest';
 import {
   buildGraph,
@@ -2390,6 +2395,44 @@ async function selftest(): Promise<number> {
   // THE LOCAL ADVISORY GATE (local-warn.ts): warning in the quick lane, still blocking in CI, read from the real manifest and workflow.
   const lw = localWarnSelftest(REPO_ROOT, GATES);
   for (const f of lw.failures) require_(false, `local-warn: ${f}`);
+  // THE RECEIPT CARRIES THE SOFTENED RUN: `warned` and the real exit code reach the gate's receipt entry, the verdict stays ok with exitCode 0, and an unsoftened gate carries neither.
+  {
+    const spec = GATES.find((g) => g.gate);
+    if (spec === undefined) {
+      require_(false, 'local-warn receipt: the manifest has no gate to build a receipt entry from');
+    } else {
+      const soft = new Map<string, string>();
+      const codes = new Map<string, number | null>();
+      soft.set(spec.id, `${spec.id} exited 7; fixture`);
+      codes.set(spec.id, 7);
+      const input = {
+        specs: [spec],
+        results: [{ id: spec.id, status: 'ok', exitCode: 0 }],
+        carry: new Map<string, PriorGate>(),
+        hashes: new Map<string, GateHash>(),
+        findings: {},
+        tree: 'fixture',
+        disposable: false,
+      };
+      const warnedEntry = receiptGates({ ...input, warned: soft, warnedCodes: codes })[spec.id];
+      const plainEntry = receiptGates({ ...input, warned: new Map(), warnedCodes: new Map() })[
+        spec.id
+      ];
+      require_(
+        warnedEntry?.verdict === 'ok' &&
+          warnedEntry.exitCode === 0 &&
+          warnedEntry.warned === `${spec.id} exited 7; fixture` &&
+          warnedEntry.warnedExitCode === 7,
+        `local-warn receipt: a softened gate's entry must keep verdict ok and exitCode 0 and carry warned and warnedExitCode 7, got ${JSON.stringify(warnedEntry)}`
+      );
+      require_(
+        plainEntry !== undefined &&
+          plainEntry.warned === undefined &&
+          plainEntry.warnedExitCode === undefined,
+        `local-warn receipt: an unsoftened gate carries neither field, got ${JSON.stringify(plainEntry)}`
+      );
+    }
+  }
   // END TO END THROUGH select() ITSELF, so the lane wiring is under test and not only the helper: a touched slow gate is selected, an untouched one deferred, the fast gate kept. The leaves are real files with no relative imports, so neither can reach the other's closure.
   {
     // Each fixture DECLARES paths that match nothing in the diff: a slow gate without paths is selected by any change (quick-select rule 4), which would hide whether the leaf rule selected it.
@@ -3137,6 +3180,8 @@ interface ReceiptGate extends PriorGate {
   verdict: 'ok' | 'fail' | 'blocked' | 'deferred' | 'ciOnly';
   /** Set on a gate the local quick lane downgraded from red (local-warn.ts): verdict stays `ok`, which is all the push guard admits, and this names what failed. */
   warned?: string;
+  /** With `warned`: the real exit code of the softened run (null when killed), since `exitCode` reads 0 there. */
+  warnedExitCode?: number | null;
 }
 
 function gitOut(args: readonly string[]): string {
@@ -3467,6 +3512,9 @@ function receiptGates(input: {
   tree: string;
   /** Only a disposable clone's hashes are a statement about the judged bytes; elsewhere inputHash is null. */
   disposable: boolean;
+  /** The local-warn records to read; this run's by default. A selftest passes its own. */
+  warned?: ReadonlyMap<string, string>;
+  warnedCodes?: ReadonlyMap<string, number | null>;
 }): Record<string, ReceiptGate> {
   const out: Record<string, ReceiptGate> = {};
   const byResult = new Map(input.results.map((r) => [r.id, r]));
@@ -3498,7 +3546,12 @@ function receiptGates(input: {
         findings: verdict === 'fail' ? (input.findings[spec.id] ?? null) : null,
         judgedTree: input.tree,
         carriedFrom: null,
-        ...(warnedFor(spec.id) === undefined ? {} : { warned: warnedFor(spec.id) }),
+        ...(warnedFor(spec.id, input.warned) === undefined
+          ? {}
+          : {
+              warned: warnedFor(spec.id, input.warned),
+              warnedExitCode: warnedExitCodeFor(spec.id, input.warnedCodes),
+            }),
       };
     } else if (spec.gate) {
       out[spec.id] = {
