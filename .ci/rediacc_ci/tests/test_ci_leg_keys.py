@@ -28,13 +28,9 @@ SHARED_RENET = "renet-test-binary"
 # (workflow file, job id) -> why the job may hold the production key.
 WORKER_SECRET_PUSHERS: dict[tuple[str, str], str] = {
     (
-        "cd-deploy-account.yml",
-        "deploy",
-    ): "pushes the account Worker's secrets for a production region; the Worker is the key's one consumer",
-    (
         "cd-deploy-worker.yml",
         "deploy",
-    ): "pushes the account Worker's secrets for a production region; the Worker is the key's one consumer",
+    ): "pushes the www Worker's secrets, which still read the key; account Workers sign through LICENSE_SIGNER since PLAN-enterprise-isolation S4",
 }
 
 # (workflow file, job id) -> the CI leg outside this box's files that still maps the key. Shrink-only.

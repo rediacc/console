@@ -450,6 +450,7 @@ def _bench_env(monkeypatch, **overrides):
         "ACCOUNT_SERVER_API_KEY": "ak",
         "ACCOUNT_JWT_SECRET": "jw",
         "FREE_LICENSE_HMAC_KEY": "hm",
+        "ACCOUNT_AE_READ_TOKEN": "ae-read",
         "ACCOUNT_CONFIG_SERVER_KEY": "ck",
         "ACCOUNT_BACKUP_STORE_KEK": "kk",
         "ROOT_EMAIL": "root@example.invalid",
@@ -488,6 +489,15 @@ def test_the_payload_carries_the_backup_store_kek(monkeypatch):
     assert deploy_bench.secrets_payload()["ACCOUNT_BACKUP_STORE_KEK"] == "kk"
     _bench_env(monkeypatch, ACCOUNT_BACKUP_STORE_KEK="")
     with pytest.raises(deploy_bench.DeployError, match="ACCOUNT_BACKUP_STORE_KEK"):
+        deploy_bench.secrets_payload()
+
+
+def test_the_payload_carries_the_ae_read_token(monkeypatch):
+    """PLAN-d1-scaling W2: the bench Worker gets the Analytics Engine read token; an empty one refuses the push."""
+    _bench_env(monkeypatch)
+    assert deploy_bench.secrets_payload()["ACCOUNT_AE_READ_TOKEN"] == "ae-read"
+    _bench_env(monkeypatch, ACCOUNT_AE_READ_TOKEN="")
+    with pytest.raises(deploy_bench.DeployError, match="ACCOUNT_AE_READ_TOKEN"):
         deploy_bench.secrets_payload()
 
 

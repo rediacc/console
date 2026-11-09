@@ -283,6 +283,7 @@ jobs:
             ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY
             ACCOUNT_JWT_SECRET > BWS_ACCOUNT_JWT_SECRET
             FREE_LICENSE_HMAC_KEY > BWS_FREE_LICENSE_HMAC_KEY
+            ACCOUNT_AE_READ_TOKEN > BWS_ACCOUNT_AE_READ_TOKEN
             ACCOUNT_SERVER_API_KEY > BWS_ACCOUNT_SERVER_API_KEY
             ACCOUNT_X25519_PUBLIC_KEY > BWS_ACCOUNT_X25519_PUBLIC_KEY
             AWS_SES_ACCESS_KEY_ID_ASIA > BWS_AWS_SES_ACCESS_KEY_ID_ASIA
@@ -543,7 +544,6 @@ jobs:
         with:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
-            ACCOUNT_ED25519_PRIVATE_KEY > BWS_ACCOUNT_ED25519_PRIVATE_KEY
             ACCOUNT_X25519_PRIVATE_KEY > BWS_ACCOUNT_X25519_PRIVATE_KEY
       - name: Set Worker secrets (${{ matrix.id }})
         env:
@@ -569,10 +569,10 @@ jobs:
           # authority: every name below that the store holds is exported under
           # EXACTLY the stored spelling. HEAD carried an older contract
           # (SECRET_ED25519_*, STRIPE_KEY_EU) that the deploy script no longer reads.
-          ACCOUNT_ED25519_PRIVATE_KEY: ${{ env.BWS_ACCOUNT_ED25519_PRIVATE_KEY }}
           ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
           ACCOUNT_JWT_SECRET: ${{ env.BWS_ACCOUNT_JWT_SECRET }}
           FREE_LICENSE_HMAC_KEY: ${{ env.BWS_FREE_LICENSE_HMAC_KEY }}
+          ACCOUNT_AE_READ_TOKEN: ${{ env.BWS_ACCOUNT_AE_READ_TOKEN }}
           ACCOUNT_CONFIG_SERVER_KEY_EU_STABLE: ${{ env.BWS_ACCOUNT_CONFIG_SERVER_KEY_EU_STABLE }}
           ACCOUNT_CONFIG_SERVER_KEY_US_STABLE: ${{ env.BWS_ACCOUNT_CONFIG_SERVER_KEY_US_STABLE }}
           ACCOUNT_CONFIG_SERVER_KEY_ASIA_STABLE: ${{ env.BWS_ACCOUNT_CONFIG_SERVER_KEY_ASIA_STABLE }}
@@ -617,7 +617,6 @@ jobs:
         uses: ./.github/actions/bws-scrub
         with:
           names: |
-            BWS_ACCOUNT_ED25519_PRIVATE_KEY
             BWS_ACCOUNT_X25519_PRIVATE_KEY
 
       - name: Deploy proxy Worker (${{ matrix.id }})
