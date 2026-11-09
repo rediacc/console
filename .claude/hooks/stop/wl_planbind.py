@@ -44,6 +44,8 @@ _PLAN_STEM_RE = re.compile(
 _ITEM_REF_RE = re.compile(r"#([0-9a-f]{12}|[0-9a-f]{8})\b")
 # `dropped by ruling #<id>` under a box: the operator ruling item that dropped its work.
 _DROPPED_RE = re.compile(r"\bdropped by ruling #([0-9a-f]{12}|[0-9a-f]{8})\b", re.IGNORECASE)
+# The word a ruling item's text carries ("operator ruling: ...").
+_RULING_WORD_RE = re.compile(r"\bruling\b", re.IGNORECASE)
 # The one item state that makes a ruling a decision.
 DROP_CLOSED_STATE = "x"
 
@@ -94,7 +96,7 @@ def store_items(root) -> list[dict]:
             events.extend(S._parse_events(f.read_text(encoding="utf-8", errors="replace")))
         except OSError:
             continue
-    events.sort(key=lambda e: S.event_order(e))
+    events.sort(key=S.event_order)
     records = S._fold_events(events)[0]
     return [dict(r, id=rid) for rid, r in records.items() if r.get("state") != "~"]
 
@@ -175,11 +177,13 @@ def _rehomed(graph: D.Graph, own_rel: str, chunk: list[str], item_by_id: dict[st
     return ""
 
 
-def _dropped(chunk: list[str], states: dict[str, str]) -> str:
-    """`dropped by ruling #<id>` when a line UNDER the box (chunk[1:]) names a closed `[x]` ruling item, else ""."""
+def _dropped(chunk: list[str], states: dict[str, str], item_by_id: dict[str, dict]) -> str:
+    """`dropped by ruling #<id>` when a line UNDER the box (chunk[1:]) names a closed `[x]` item whose text says it is a ruling, else "". A closed item of any other kind does not release a box (review 8e5c269d.1)."""
     for line in chunk[1:]:
         for iid in _DROPPED_RE.findall(line):
-            if states.get(iid, "").lower() == DROP_CLOSED_STATE:
+            if states.get(iid, "").lower() != DROP_CLOSED_STATE:
+                continue
+            if _RULING_WORD_RE.search(str((item_by_id.get(iid) or {}).get("text") or "")):
                 return "dropped by ruling #%s" % iid
     return ""
 
@@ -238,7 +242,7 @@ def bindings(
                 )
                 continue
             chunk = _box_home(own, index, body)
-            home = _rehomed(graph, rel, chunk, item_by_id) or _dropped(chunk, states)
+            home = _rehomed(graph, rel, chunk, item_by_id) or _dropped(chunk, states, item_by_id)
             if not home:
                 out.append(
                     Binding(

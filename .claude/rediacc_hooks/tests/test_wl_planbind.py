@@ -218,6 +218,18 @@ def test_box_dropped_by_a_closed_ruling_item_is_released(tmp_path):
     assert run(texts, [item("aa11bb22", "x", "operator ruling: drop T1")], tmp_path) == []
 
 
+def test_dropped_line_naming_an_unrelated_closed_item_keeps_the_box_bound(tmp_path):
+    """Review 8e5c269d.1: a closed item that is no ruling does not release the box; the same line with a ruling item does (control)."""
+    base = plan(status="done", boxes=("[ ] T1 open work here",), extra=ruled(tmp_path))
+    dropped = base + "  dropped by ruling #aa11bb22\n"
+    assert kinds(
+        run({TARGET: dropped}, [item("aa11bb22", "x", "fix the typo in README")], tmp_path)
+    ) == ["box"]
+    assert (
+        run({TARGET: dropped}, [item("aa11bb22", "x", "operator ruling: drop T1")], tmp_path) == []
+    )
+
+
 def test_dropped_line_controls_keep_the_box_bound(tmp_path):
     base = plan(status="done", boxes=("[ ] T1 open work here",), extra=ruled(tmp_path))
     dropped = base + "  dropped by ruling #aa11bb22\n"
@@ -422,7 +434,5 @@ def test_a_non_numeric_ns_in_a_store_file_does_not_raise(tmp_path):
         {"ev": "add", "id": "aa11bb22", "at": _at(0), "by": "s1", "text": "x", "ns": "abc"},
         {"ev": "add", "id": "bb22cc33", "at": _at(1), "by": "s1", "text": "y", "ns": None},
     ]
-    (store / "s1.jsonl").write_text(
-        "\n".join(json.dumps(r) for r in rows) + "\n", encoding="utf-8"
-    )
+    (store / "s1.jsonl").write_text("\n".join(json.dumps(r) for r in rows) + "\n", encoding="utf-8")
     assert sorted(r["id"] for r in B.store_items(tmp_path)) == ["aa11bb22", "bb22cc33"]
