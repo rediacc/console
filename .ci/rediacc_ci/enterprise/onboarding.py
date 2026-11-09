@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import dataclasses
 import datetime
+import http.client
 import json
 import os
 import re
@@ -390,10 +391,10 @@ def account_post(url: str, api_key: str, body: dict) -> tuple[int, dict]:
     except urllib.error.HTTPError as exc:
         try:
             raw = exc.read()
-        except OSError:
+        except (OSError, http.client.HTTPException):
             raw = b""
         return int(exc.code), _json_body(raw)
-    except OSError:
+    except (OSError, http.client.HTTPException):
         return 0, {}
 
 

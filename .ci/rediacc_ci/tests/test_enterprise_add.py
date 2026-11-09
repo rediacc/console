@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import email.message
+import http.client
 import io
 import shutil
 import sqlite3
@@ -566,6 +567,37 @@ def test_account_post_names_the_status_when_the_error_body_cannot_be_read(monkey
 
     monkeypatch.setattr(onboarding.https, "urlopen", refuse)
     assert onboarding.account_post("https://h/x", "k", {}) == (502, {})
+
+
+def test_account_post_survives_an_incomplete_read_of_the_error_body(monkeypatch):
+    class Cut(io.BytesIO):
+        def read(self, *_a):
+            raise http.client.IncompleteRead(b"par", 10)
+
+    def refuse(*_a, **_k):
+        raise urllib.error.HTTPError(
+            "https://h", 502, "bad gateway", email.message.Message(), Cut()
+        )
+
+    monkeypatch.setattr(onboarding.https, "urlopen", refuse)
+    assert onboarding.account_post("https://h/x", "k", {}) == (502, {})
+
+
+def test_account_post_survives_an_incomplete_read_of_a_success_body(monkeypatch):
+    class Reply:
+        status = 200
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_a):
+            return False
+
+        def read(self):
+            raise http.client.IncompleteRead(b"par", 10)
+
+    monkeypatch.setattr(onboarding.https, "urlopen", lambda *_a, **_k: Reply())
+    assert onboarding.account_post("https://h/x", "k", {}) == (0, {})
 
 
 def test_live_account_call_with_no_answer_refuses():

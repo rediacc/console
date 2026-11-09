@@ -899,3 +899,5 @@ def test_iam_minter_names_the_get_user_ambiguity_when_create_user_fails():
     with pytest.raises(es.SecretsError, match="AccessDenied and throttling") as err:
         minter.ses_user("ses-acme")
     assert err.value.__context__ is None
+    after = [c[2] for c in iam.calls[[c[2] for c in iam.calls].index("create-user") + 1 :]]
+    assert not {"put-user-policy", "create-access-key", "list-access-keys"} & set(after)
