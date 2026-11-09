@@ -319,8 +319,22 @@ CASES = [
         "wrangler deploy",
     ),
     (
-        "wrangler deploy on a region config under a bench-named dir",
+        "wrangler deploy on a region config in an arbitrary dir, no ASKED",
         "npx wrangler deploy --config /srv/bench-preview/wrangler.eu.toml",
+        None,
+        B,
+        "no shared region Worker's config",
+    ),
+    (
+        "wrangler deploy on a region config in an arbitrary dir, with an ASKED",
+        "%s npx wrangler deploy --config /srv/bench-preview/wrangler.eu.toml" % ASK,
+        TR,
+        A,
+        "admitted by RELEASE_ASKED",
+    ),
+    (
+        "wrangler deploy on a region config under a bench-named dir",
+        "npx wrangler deploy --config /srv/bench-preview/workers/account/wrangler.eu.toml",
         None,
         A,
         "!BLOCKED",
@@ -915,6 +929,21 @@ CASES.extend(
         ),
         ("rings: run.sh enterprise list", "./run.sh enterprise list", None, A, ""),
         (
+            "rings: bash ./run.sh enterprise release, real",
+            "bash ./run.sh enterprise release --version 1.2.3",
+            None,
+            B,
+            "real Enterprise company's release",
+        ),
+        (
+            "rings: bash -x ./run.sh enterprise release --bench",
+            "bash -x ./run.sh enterprise release --version 1.2.3 --bench",
+            None,
+            A,
+            "",
+        ),
+        ("rings: bash ./run.sh enterprise list", "bash ./run.sh enterprise list", None, A, ""),
+        (
             "rings: package enterprise release, real",
             "%s rediacc_ci enterprise release --version 1.2.3" % PY,
             None,
@@ -1110,6 +1139,8 @@ MUST_FLIP = {
     "company-worker-free": "company: deploy_account for a real company, no ASKED",
     "company-bench-ignored": "company: deploy_account for a bench company",
     "run-sh-enterprise-ignored": "rings: run.sh enterprise release, real",
+    "interpreter-run-sh-ignored": "rings: bash ./run.sh enterprise release, real",
+    "region-dir-ignored": "wrangler deploy on a region config in an arbitrary dir, no ASKED",
     "package-enterprise-ignored": "rings: package enterprise release, real",
 }
 # A control passes when the planted copy breaks its case's verdict: the refusal flips to allowed, the admission to refused, or the named reason goes missing.

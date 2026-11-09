@@ -1,8 +1,8 @@
-"""Refuse a stable CLI release from agent Bash unless the operator asked for it, refuse the raw publish verbs a release is made of, and leave every Worker deploy free.
+"""Refuse a stable CLI release from agent Bash unless the operator asked for it, refuse the raw publish verbs a release is made of, and leave the shared Worker deploys free (a real `--company` Worker run asks).
 
 WHY. agent/plans/PLAN-local-release.md moves the edge release to one local entry, `npm run release:local -- --channel edge [--dry-run]` (`rediacc_ci.release.local`, box W2-B). The operator ruling of 2026-10-27T09:45Z sets the line this guard (box W2-C) holds: "EU/ASIA/US stable should be asked! They're CI/CD only. BUT edge and bench could be released via agent or with CI/CD." agent/plans/PLAN-product-domain-rename.md then retires the stable Worker set (box W7): the edge and stable pairs become one shared Worker set per region, which the session deploys without asking. So:
 
-  1. EVERY WORKER DEPLOY IS FREE, with no question. PLAN-product-domain-rename (box W7) collapses the stable and edge Worker pairs into one shared set per region (`account-<r>`, `proxy-<r>`, `www`, plus bench), and its operator ruling 4 of 2026-11-05 lets the session deploy them without asking, so no stable Worker remains: `npm run release:local -- --channel edge` (with or without `--dry-run`), and every run of the Worker modules (`deploy_account`, `deploy_proxy`, `console_executor`, `account_secrets_local`, `deploy_www`, `deploy_bench`, `set_account_worker_secrets`, `set_www_worker_secrets`) whatever target it names, and `wrangler deploy|rollback|publish|versions deploy` on a shared region Worker's `wrangler.<region>.toml`, the region ids read from `regions.json` at the project root.
+  1. EVERY SHARED WORKER DEPLOY IS FREE, with no question (the one exception is a Worker module run naming `--company` without `--company-bench`, which rule 4 asks for). PLAN-product-domain-rename (box W7) collapses the stable and edge Worker pairs into one shared set per region (`account-<r>`, `proxy-<r>`, `www`, plus bench), and its operator ruling 4 of 2026-11-05 lets the session deploy them without asking, so no stable Worker remains: `npm run release:local -- --channel edge` (with or without `--dry-run`), and every run of the Worker modules (`deploy_account`, `deploy_proxy`, `console_executor`, `account_secrets_local`, `deploy_www`, `deploy_bench`, `set_account_worker_secrets`, `set_www_worker_secrets`) whatever shared target it names, and `wrangler deploy|rollback|publish|versions deploy` on a shared region Worker's `wrangler.<region>.toml` (the region ids read from `regions.json` at the project root) kept in `workers/account` or `workers/proxy`, or named bare so it resolves in the working directory.
   2. THE CLI'S STABLE CHANNEL NEEDS A PROVEN ASK: the promote verbs (`promote_r2_to_stable`, its hotfix twin, `promote_docker_to_stable_hotfix`, `mark_production`), and a `wrangler deploy|rollback` on a config that is neither a shared region Worker's nor a bench or preview one (`wrangler.toml` of `workers/mta-sts`, `workers/ops-health` or `workers/www` raw, `wrangler.dev.toml`). Each is admitted only when the command carries `RELEASE_ASKED=ASKED:<YYYY-MM-DDTHH:MM>Z` and that minute matches an AskUserQuestion answer in the payload's transcript within 300 s. The proof is `wl_checks._asked_in_transcript`, imported, the same check `block_vm_unverified_push` and `block_backup_unverified_push` use.
   3. `release:local --channel stable` IS REFUSED OUTRIGHT, dry run included, and RELEASE_ASKED does not admit it: stable is promoted by `.github/workflows/cd-release-stable.yml` only. A run of the entry naming no channel is refused too, and each launcher is told its own reason: npm hands the script only the words after `--` (`npm run release:local --channel edge` reaches the script with no channel at all), while `python3 -m rediacc_ci.release.local` sees every word and simply names none.
   4. AN ENTERPRISE COMPANY'S RELEASE NEEDS A PROVEN ASK, because company Workers carry the stable channel (agent/plans/PLAN-enterprise-isolation.md box K2): the ring runner `python3 -m rediacc_ci.release.rings_run`, spelled also `./run.sh enterprise release` and `python3 -m rediacc_ci enterprise release`, is admitted freely with `--bench` (fake companies on bench), `--dry-run` or `--help`, and otherwise only with a proven RELEASE_ASKED. A Worker module run naming `--company` without `--company-bench` deploys one real company's Worker outside the runner, so it needs the same ask; the shared Worker sets of rule 1 stay free.
@@ -57,8 +57,12 @@ MUTANTS = {
         '        return "ask", "region", ""\n    return "ask", "wrangler',
     ),
     "region-list-ignored": (
-        'if name in ["wrangler.%s.toml" % r for r in _region_ids(root)]:',
-        'if name.startswith("wrangler.") and name.endswith(".toml"):',
+        'if name in ["wrangler.%s.toml" % r for r in _region_ids(root)] and',
+        'if name.startswith("wrangler.") and name.endswith(".toml") and',
+    ),
+    "region-dir-ignored": (
+        "and _shared_config_dir(config):",
+        "and True:",
     ),
     "worker-module-asked": (
         "        return _company_verdict(module, rest)\n",
@@ -79,6 +83,10 @@ MUTANTS = {
     "company-bench-ignored": (
         'and not _bool_on(head, "--company-bench")',
         "and True",
+    ),
+    "interpreter-run-sh-ignored": (
+        '    if name in ("sh", "bash", "zsh", "dash"):\n',
+        "    if False:\n",
     ),
     "run-sh-enterprise-ignored": (
         'if name == "run.sh" and args[:2] == RINGS_VERB:',
@@ -137,7 +145,7 @@ PACKAGE = "rediacc_ci"
 # The writers of the release clone: the entry and the gates module it calls (box W2-A).
 CLONE_WRITERS = (RELEASE_MODULE, "rediacc_ci.release.local_gates")
 
-# The Worker deploy modules. PLAN-product-domain-rename (box W7) collapses the stable and edge Worker pairs into one shared set per region, so no stable Worker remains: every target of these is free, whatever `--target`, `TARGET` or `WORKER_NAME` names (operator ruling 4 of 2026-11-05, "the session deploys new shared regions without asking").
+# The Worker deploy modules. PLAN-product-domain-rename (box W7) collapses the stable and edge Worker pairs into one shared set per region, so no stable Worker remains: every shared target of these is free, whatever `--target`, `TARGET` or `WORKER_NAME` names (operator ruling 4 of 2026-11-05, "the session deploys new shared regions without asking"). The exception is a real `--company` run (without `--company-bench`), which `_company_verdict` asks for.
 WORKER_MODULES = (
     "rediacc_ci.deploy.deploy_account",
     "rediacc_ci.deploy.deploy_proxy",
@@ -670,6 +678,19 @@ def _region_ids(root):
     return tuple(r["id"] for r in regions if isinstance(r, dict) and isinstance(r.get("id"), str))
 
 
+# Where the shared region Workers' `wrangler.<region>.toml` files live.
+SHARED_CONFIG_DIRS = ("workers/account", "workers/proxy")
+
+
+def _shared_config_dir(config):
+    """Is `config` named bare (it resolves in the working directory) or kept in a shared region Worker's directory? A region-shaped file in an arbitrary directory is no shared Worker's config (review 12dc57a0.1)."""
+    folder = os.path.dirname(config.replace("\\", "/"))
+    if not folder:
+        return True
+    folder = os.path.normpath(folder).replace("\\", "/")
+    return any(folder == d or folder.endswith("/" + d) for d in SHARED_CONFIG_DIRS)
+
+
 def _wrangler_publish(args, root):
     """`(kind, what, note)` for a `wrangler` run: a publish on a shared region Worker's `wrangler.<region>.toml` is free, one on a bench or preview config is refused for its module, and one on any other config needs a proven ask."""
     words = _positionals(args, WRANGLER_VALUE_OPTIONS)
@@ -689,7 +710,7 @@ def _wrangler_publish(args, root):
             % (verb, config),
             "",
         )
-    if name in ["wrangler.%s.toml" % r for r in _region_ids(root)]:
+    if name in ["wrangler.%s.toml" % r for r in _region_ids(root)] and _shared_config_dir(config):
         return "", "", ""
     return "ask", "wrangler %s on %s (no shared region Worker's config)" % (verb, config), ""
 
@@ -795,6 +816,15 @@ def _publish(run, where, root):
         return _rings_verdict(_module_args(run), root)
     if name == "run.sh" and args[:2] == RINGS_VERB:
         return _rings_verdict(args[2:], root)
+    if name in ("sh", "bash", "zsh", "dash"):
+        # `bash ./run.sh enterprise release` runs the same entry through an interpreter (review fcf8830e.5): the script is the first word that is no option.
+        script = next((k for k, w in enumerate(args) if not w.startswith("-")), None)
+        if (
+            script is not None
+            and _base(args[script]) == "run.sh"
+            and args[script + 1 : script + 3] == RINGS_VERB
+        ):
+            return _rings_verdict(args[script + 3 :], root)
     package = _base(run.name).startswith("python") and _python_target(args) == PACKAGE
     if package and _module_args(run)[:2] == RINGS_VERB:
         return _rings_verdict(_module_args(run)[2:], root)
