@@ -1,0 +1,89 @@
+name: Enterprise Release
+
+# PLAN-enterprise-isolation G1. Releases the company Workers ring by ring through
+# the same module as `./run.sh enterprise release` (rediacc_ci.release.rings_run).
+# workflow_dispatch only. This is a public repository, where dispatch inputs can
+# be visible, so the one company input is the opaque c<hex> id, never a name, and
+# the first step masks it. The runner prints company ids only; names and hosts
+# reach child argv, never a log line. There is no delete input and no step here
+# removes a company.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version X.Y.Z already released on edge'
+        required: true
+        type: string
+      company:
+        description: 'Opaque company id (c<hex>) to restrict the release to; empty releases every due company'
+        required: false
+        type: string
+        default: ''
+      resume:
+        description: 'Version whose latched stop is cleared for the company above (needs company)'
+        required: false
+        type: string
+        default: ''
+      dry_run:
+        description: 'Decide and print; deploy nothing'
+        required: false
+        type: boolean
+        default: true
+
+permissions: {}
+
+concurrency:
+  group: enterprise-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Enterprise release
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      contents: read
+    steps:
+      - name: Mask the company input
+        env:
+          COMPANY: ${{ inputs.company }}
+        run: |
+          if [ -n "$COMPANY" ]; then
+            echo "::add-mask::$COMPANY"
+          fi
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup-node-npm
+
+      - name: Install dependencies
+        run: npm ci && npm run install:natives
+
+      - name: Fetch secrets from Bitwarden
+        # LIVE: read by the release step below.
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            CLOUDFLARE_API_TOKEN > BWS_CLOUDFLARE_API_TOKEN
+            CLOUDFLARE_ACCOUNT_ID > BWS_CLOUDFLARE_ACCOUNT_ID
+
+      - name: Release the rings
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
+          VERSION: ${{ inputs.version }}
+          COMPANY: ${{ inputs.company }}
+          RESUME: ${{ inputs.resume }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        # Explicit bash keeps pipefail, so the runner's exit code (1 on a failed company or a latched stop) survives the `tee`.
+        shell: bash
+        run: |
+          args=(--version "$VERSION")
+          [ -n "$COMPANY" ] && args+=(--company "$COMPANY")
+          [ -n "$RESUME" ] && args+=(--resume "$RESUME")
+          [ "$DRY_RUN" = "true" ] && args+=(--dry-run)
+          PYTHONPATH=.ci python3 -m rediacc_ci.release.rings_run "${args[@]}" | tee -a "$GITHUB_STEP_SUMMARY"
