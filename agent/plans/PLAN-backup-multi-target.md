@@ -105,3 +105,8 @@ What exists today for several destinations, each checked against the tree at fbe
 - [x] P2: replicate mode, CLI and status. The validator admits a replicate destination only with a registered source that is itself an enabled upload destination, the generator emits no command for it, and status shows its copy lag. Accept: `cd packages/cli && npx vitest run src/services/backup/__tests__/backup-strategy-validate.test.ts src/commands/__tests__/backup-status-targets.test.ts` rc 0.
     (ticked) 2026-11-07T17:02:20Z by d778be9d: commit:025a04bb72 P2 landed; box tests passed on HEAD
 - [ ] P3: replicate mode live proof on bench: one upload destination and one replicate destination, the copy committed after the source commit, a restore from the replica byte-identical by image hash. Accept: the run log under agent/ with the commands and exit codes and a `live_proof record` receipt for bench.
+
+- [ ] LP-bench [live] Fresh bench receipt (PLAN-tested-on-bench ruling 3): deploy this branch to bench with deploy_bench, then record and tick through worklist.py --live-proof.
+  - Accept: `live-proof bench account-smoke`
+- [ ] LP-hostinger [live] Fresh hostinger receipt through --config eu-bench (PLAN-tested-on-bench ruling 3), after a VERIFIED npm run vm:check -- --changed on the same tree.
+  - Accept: `live-proof hostinger renet-live`

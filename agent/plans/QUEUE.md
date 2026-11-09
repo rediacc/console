@@ -57,34 +57,38 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 - Mode: effort smart; turbo on; turbo_push batch-end; batch_size 3; plan_concurrency 5; writer_cap 25; commit_remind_min 15; backup_push_h 4; judge core; cadence on; agent_hint on; agent_pushback on.
 - Phase: merge on PR #602 (branch 1023-1, session 45048a90, since 2026-11-03T09:46:12Z, past its 24-hour limit).
 - Branch: 1104-1, no PR yet.
-- Plans on the PR (1):
+- Plans on the PR (5):
   - agent/plans/PLAN-backup-program.md -- 181 of 192 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
+  - agent/plans/PLAN-cloudflare-proxy.md -- 27 of 29 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
+  - agent/plans/PLAN-backup-plane-shared-bucket-hardening.md -- 4 of 7 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
+  - agent/plans/PLAN-renet-executor-tiered-license-check.md -- 2 of 4 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
+  - agent/plans/PLAN-renet-docker-running-semantics.md -- 11 of 15 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
 - Work outside the PR's plans (16 epic(s)):
-  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 22 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
+  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 26 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic c6b82e88, plan agent/plans/PLAN-settings-set-verb.md, outside the set, 2 commit(s) on the branch, 0 open item(s): settings set verb: one source for the ceilings
   - epic dbb7de07, plan agent/plans/PLAN-cloudflare-spend-guard.md, outside the set, 48 commit(s) on the branch, 0 open item(s): cloudflare spend guard closure
-  - epic 09b8bdfa, plan agent/plans/PLAN-detached-jobs.md, outside the set, 1370 commit(s) on the branch, 0 open item(s): detached jobs: proxied poll follow and job kinds
+  - epic 09b8bdfa, plan agent/plans/PLAN-detached-jobs.md, outside the set, 1372 commit(s) on the branch, 0 open item(s): detached jobs: proxied poll follow and job kinds
   - epic ec9ba176, plan agent/plans/PLAN-backup-integrity.md, outside the set, 2 commit(s) on the branch, 0 open item(s): backup integrity docs and closure
   - epic d6bb9963, plan agent/plans/PLAN-backup-critical-tier.md, outside the set, 7 commit(s) on the branch, 0 open item(s): backup critical tier proofs
   - epic b21ab2e2, plan agent/plans/PLAN-jobs-backup-real-machine-tests.md, outside the set, 2 commit(s) on the branch, 0 open item(s): real machine tests for jobs and backup
   - epic 92df2f69, plan agent/plans/PLAN-free-license.md, outside the set, 5 commit(s) on the branch, 0 open item(s): free license ladder F6
   - epic 1f877343, plan agent/plans/PLAN-worktree-lease.md, outside the set, 55 commit(s) on the branch, 0 open item(s): guided detached worktree leases
   - epic 2e0e531f, plan agent/plans/PLAN-rediaccfile-unprivileged.md, outside the set, 19 commit(s) on the branch, 0 open item(s): Rediaccfile lifecycle runs unprivileged
-  - epic 783185d2, plan agent/plans/PLAN-enterprise-isolation.md, outside the set, 30 commit(s) on the branch, 0 open item(s): Enterprise per-company isolation, regional signers and release rings
+  - epic 783185d2, plan agent/plans/PLAN-enterprise-isolation.md, outside the set, 32 commit(s) on the branch, 0 open item(s): Enterprise per-company isolation, regional signers and release rings
   - epic 1d805023, plan agent/plans/PLAN-tick-tracking.md, outside the set, 26 commit(s) on the branch, 0 open item(s): tick tracking: plan-box trailer, landing prints the tick, box audit
   - epic f65726d5, plan agent/plans/PLAN-renet-down-before-kill.md, outside the set, 16 commit(s) on the branch, 0 open item(s): renet runs Rediaccfile down() before repo containers stop
   - epic 53c31db2, plan agent/plans/PLAN-repo-resource-limits.md, outside the set, 20 commit(s) on the branch, 0 open item(s): per-repo resource limits and a renet-managed RAM volume
   - epic a86f5622, plan agent/plans/PLAN-production-key-only.md, outside the set, 4 commit(s) on the branch, 0 open item(s): Production key only: every leg licensed from its own plane
-  - epic 79b7e92e, no plan, 56 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
-- Writers: 0 live of writer_cap 25 (session d778be9d).
-- Leased items: 3: #5bcea441 (worker:a8c491d9b5395eab5, d778be9d), #8fd21e2e (worker:a23587e4257a59529, d778be9d), #a8fa84d5 (worker:a4da1c1361269c0f9, d778be9d).
-- Next plan: agent/plans/PLAN-cloudflare-proxy.md, Promoted entry 2; starts after this branch's PR merges.
+  - epic 79b7e92e, no plan, 99 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+- Writers: 1 live of writer_cap 25 (session d778be9d): worker:a8e6533efaf1a4a25.
+- Leased items: 3: #12cc0cd4 (worker:a8e6533efaf1a4a25, d778be9d), #caa837d4 (worker:a2e6b01b085fdd45a, d778be9d), #d5b06adb (worker:a35c32b73c2edf8f8, d778be9d).
+- Next plan: agent/plans/PLAN-sandbox-tenant-separation.md, Promoted entry 14; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 17 of 63 plans done, 961 of 1168 boxes done (82%).
+Promoted: 17 of 63 plans done, 961 of 1171 boxes done (82%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -132,7 +136,7 @@ Promoted: 17 of 63 plans done, 961 of 1168 boxes done (82%).
 | 42 | PLAN-renet-down-before-kill.md | 11/15 | 4 open |
 | 43 | PLAN-repo-resource-limits.md | 9/13 | 4 open |
 | 44 | PLAN-health-checks-local.md | 59/81 | 22 open |
-| 45 | PLAN-backup-multi-target.md | 16/19 | 3 open |
+| 45 | PLAN-backup-multi-target.md | 16/21 | 5 open |
 | 46 | PLAN-ciquick-reds-1023-1.md | 9/12 | 3 open |
 | 47 | PLAN-docker-pin-digest.md | 8/9 | 1 open |
 | 48 | PLAN-renet-executor-tiered-license-check.md | 2/4 | 2 open |
@@ -142,7 +146,7 @@ Promoted: 17 of 63 plans done, 961 of 1168 boxes done (82%).
 | 52 | PLAN-product-domain-rename.md | 19/28 | 9 open |
 | 53 | PLAN-website-routing-and-mail.md | 12/20 | 8 open |
 | 54 | PLAN-enterprise-isolation.md | 19/34 | 15 open |
-| 55 | PLAN-renet-restart-cycle-defects.md | 5/6 | 1 open |
+| 55 | PLAN-renet-restart-cycle-defects.md | 5/7 | 2 open |
 | 56 | PLAN-drop-free-license-ip-prefix-hash.md | 4/6 | 2 open |
 | 57 | PLAN-stop-hook-retro-20261101.md | 4/4 | done |
 | 58 | PLAN-plan-compaction-bindings.md | 6/7 | 1 open |

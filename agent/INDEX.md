@@ -475,8 +475,8 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-backup-integrity.md` | approved | 496 | 13 | 43 | 77711 |
 | `agent/plans/PLAN-backup-list-executor-fix.md` | compacted | 55 | 0 | 0 | 5498 |
 | `agent/plans/PLAN-backup-local-image.md` | approved | 457 | 4 | 10 | 57906 |
-| `agent/plans/PLAN-backup-meter-orphaned-chunks.md` | approved | 272 | 2 | 6 | 36562 |
-| `agent/plans/PLAN-backup-multi-target.md` | approved | 107 | 3 | 16 | 30874 |
+| `agent/plans/PLAN-backup-meter-orphaned-chunks.md` | approved | 272 | 2 | 6 | 36609 |
+| `agent/plans/PLAN-backup-multi-target.md` | approved | 112 | 5 | 16 | 31317 |
 | `agent/plans/PLAN-backup-plane-shared-bucket-hardening.md` | approved | 41 | 3 | 4 | 6848 |
 | `agent/plans/PLAN-backup-program.md` | approved | 611 | 11 | 181 | 162412 |
 | `agent/plans/PLAN-backup-quota-delta-gc.md` | compacted | 58 | 0 | 0 | 5584 |
@@ -490,7 +490,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-chunkstore-restore.md` | compacted | 55 | 0 | 0 | 4230 |
 | `agent/plans/PLAN-ci-quick-cpu-scheduling.md` | active | 77 | 3 | 2 | 10413 |
 | `agent/plans/PLAN-ci-trace-no-pr-branch.md` | compacted | 38 | 0 | 0 | 2480 |
-| `agent/plans/PLAN-ci-vm-image-followups.md` | approved | 21 | 2 | 0 | 2533 |
+| `agent/plans/PLAN-ci-vm-image-followups.md` | approved | 22 | 2 | 0 | 2878 |
 | `agent/plans/PLAN-ciquick-green-then-batch.md` | approved | 33 | 1 | 6 | 7384 |
 | `agent/plans/PLAN-ciquick-reds-1023-1.md` | executing | 45 | 3 | 9 | 10578 |
 | `agent/plans/PLAN-citation-fragility.md` | compacted | 49 | 0 | 6 | 5254 |
@@ -562,7 +562,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-renet-down-before-kill.md` | approved | 153 | 4 | 11 | 31852 |
 | `agent/plans/PLAN-renet-executor-tiered-license-check.md` | executing | 55 | 2 | 2 | 12295 |
 | `agent/plans/PLAN-renet-fetch-retries.md` | approved | 55 | 0 | 3 | 7190 |
-| `agent/plans/PLAN-renet-restart-cycle-defects.md` | approved | 36 | 1 | 5 | 5686 |
+| `agent/plans/PLAN-renet-restart-cycle-defects.md` | approved | 39 | 2 | 5 | 5907 |
 | `agent/plans/PLAN-renet-run-docker-sock-isolation.md` | draft | 101 | 0 | 4 | 11627 |
 | `agent/plans/PLAN-renet-runtime-converge.md` | approved | 63 | 0 | 5 | 10310 |
 | `agent/plans/PLAN-repo-docker-storage-prune.md` | executing | 137 | 3 | 11 | 34534 |
@@ -668,7 +668,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-renet-change-test-triggers.md` | done | 46 | 0 | 7 | 7939 |
 | `agent/plans/_done/PLAN-renet-cross-repo-isolation.md` | done | 166 | 0 | 11 | 44631 |
 | `agent/plans/_done/PLAN-renet-fetch-hardening.md` | superseded | 154 | 0 | 8 | 14481 |
-| `agent/plans/_done/PLAN-renet-obs-mirror.md` | closed | 107 | 1 | 4 | 15755 |
+| `agent/plans/_done/PLAN-renet-obs-mirror.md` | closed | 108 | 1 | 4 | 15886 |
 | `agent/plans/_done/PLAN-repair-prose-style-findings.md` | done | 53 | 0 | 6 | 6070 |
 | `agent/plans/_done/PLAN-retire-bash-oracles.A0.md` | done | 279 | 0 | 7 | 32197 |
 | `agent/plans/_done/PLAN-retire-bash-oracles.md` | done | 935 | 0 | 15 | 108469 |

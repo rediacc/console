@@ -1068,7 +1068,7 @@ def _ruling_item(root: pathlib.Path, iid: str, state: str) -> None:
             "by": "cafe0000",
             "s": " ",
             "o": "cafe0000",
-            "t": "(cafe0000) a ruling",
+            "t": "(cafe0000) operator ruling 2026-10-01: drop the plan's open box",
             "ns": 1,
         },
     ]
