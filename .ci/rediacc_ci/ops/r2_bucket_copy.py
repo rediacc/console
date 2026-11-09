@@ -6,7 +6,7 @@
 
 It reuses the `r2_promote` plumbing (listing, retried `aws s3api copy-object`, `check_sizes`) with the bucket made a parameter, so there is one copy path and no rclone.
 
-COPY. Every object moves with one server-side CopyObject and `--metadata-directive COPY`, so content type, cache control and user metadata arrive as the source had them. The run is re-runnable: a key whose destination has the same size and is not older than the source is skipped (`r2_promote.unchanged`), so a second run copies only the delta. That rule sees new keys, size changes and newer sources; a metadata-only change on a source object (same size, same bytes) is NOT detected and is not re-copied. Nothing is deleted from the destination. An object over `COPY_OBJECT_MAX_BYTES` (5 GiB) is refused for the whole run before anything is copied (`check_sizes`); `--inventory` lists each such object so the live inventory shows them first.
+COPY. Every object moves with one server-side CopyObject and `--metadata-directive COPY`, so content type, cache control and user metadata arrive as the source had them. The run is re-runnable: a key whose destination has the same size and is not older than the source is skipped (`r2_promote.unchanged`), so a second run copies only the delta. That rule sees new keys, size changes and newer sources; a metadata-only change on a source object (same size, same bytes) is NOT detected and is not re-copied. A same-size change of the bytes under an older mtime is caught by the single-part ETag comparison and re-copied. Nothing is deleted from the destination. An object over `COPY_OBJECT_MAX_BYTES` (5 GiB) is refused for the whole run before anything is copied (`check_sizes`); `--inventory` lists each such object so the live inventory shows them first.
 
 VERIFY. Exit 0 only when the destination holds the same key set, the same object count and the same total size as the source, and per key the same size, plus the same ETag where both sides report a single-part one (no `-` in it), which catches same-size content drift. Any difference is printed and exits 1.
 
@@ -37,7 +37,7 @@ SELF = "r2_bucket_copy"
 RETRY_DELAY_S = 5.0
 JURISDICTIONS = ("eu", "fedramp")
 BUCKET_RE = re.compile(r"^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$")
-VERSION_SUFFIX_RE = re.compile(r"\?versionId=\S+$")
+VERSION_SUFFIX_RE = r2_promote.VERSION_SUFFIX_RE
 ENDPOINT_HOST_RE = re.compile(r"^(https://[0-9a-f]+)(\.[a-z]+)?(\.r2\.cloudflarestorage\.com.*)$")
 
 
@@ -124,9 +124,16 @@ def inventory(endpoint: str, buckets: Sequence[str] | None) -> list[dict[str, ob
 
 
 def plan_copy(src: list[r2_promote.Obj], dst: list[r2_promote.Obj]) -> list[r2_promote.Obj]:
-    """The source objects the destination lacks or holds stale (the sync skip rule): the delta."""
+    """The source objects the destination lacks or holds stale: the delta. The sync skip rule decides, and a key it would skip is still copied when both sides report a single-part ETag and the two differ, so a same-size content change under an older mtime is repaired by a re-run, as VERIFY reports it."""
     have = {o.rel: o for o in dst}
-    return [o for o in src if not r2_promote.unchanged(o, have.get(o.rel))]
+    return [o for o in src if not _skippable(o, have.get(o.rel))]
+
+
+def _skippable(src: r2_promote.Obj, dst: r2_promote.Obj | None) -> bool:
+    if not r2_promote.unchanged(src, dst):
+        return False
+    assert dst is not None
+    return not (_single_part(src.etag) and _single_part(dst.etag) and src.etag != dst.etag)
 
 
 def _single_part(etag: str) -> bool:
@@ -135,7 +142,7 @@ def _single_part(etag: str) -> bool:
 
 
 def parity(src: list[r2_promote.Obj], dst: list[r2_promote.Obj]) -> list[str]:
-    """Every difference between the two listings as one line each; empty means parity of count, total size and keys (with per-key size)."""
+    """Every difference between the two listings as one line each; empty means parity of count, total size, keys, per-key size and, where both sides report a single-part ETag, that ETag."""
     problems = []
     if len(src) != len(dst):
         problems.append("object count: source %d, destination %d" % (len(src), len(dst)))

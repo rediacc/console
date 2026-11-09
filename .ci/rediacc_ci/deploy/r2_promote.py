@@ -136,6 +136,10 @@ def list_argv(prefix: str, endpoint: str, bucket: str = BUCKET) -> list[str]:
     ]
 
 
+# aws-cli reads a `?versionId=<id>` ending of a copy source as a version id, so such a key would copy another object than the one named.
+VERSION_SUFFIX_RE = re.compile(r"\?versionId=\S+$")
+
+
 def copy_argv(
     src_key: str,
     dst_key: str,
@@ -148,6 +152,8 @@ def copy_argv(
     """One server-side `aws s3api copy-object`. No `--tagging-directive`: see the module docstring.
 
     By default the metadata is REPLACEd with the promotes' own (`no-cache`, a guessed content type). `preserve_metadata` is the cross-bucket copy's form (`ops/r2_bucket_copy`): `--metadata-directive COPY` and no `--cache-control` or `--content-type`, so every header and user-metadata pair of the source object travels with it. `src_bucket` defaults to `bucket` (the same-bucket promote)."""
+    if VERSION_SUFFIX_RE.search(src_key):
+        raise ValueError("copy source key %r ends in ?versionId=..., which aws-cli reads as a version id" % src_key)
     argv = [
         awscli.AWS,
         "s3api",

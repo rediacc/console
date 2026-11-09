@@ -207,6 +207,19 @@ def test_plan_copy_does_not_see_a_metadata_only_change() -> None:
     assert bc.plan_copy([obj("a", 4, T)], [obj("a", 4, T + HOUR)]) == []
 
 
+def test_plan_copy_recopies_a_same_size_change_with_a_different_single_part_etag() -> None:
+    def pair(rel: str, src_tag: str, dst_tag: str) -> tuple[r2_promote.Obj, r2_promote.Obj]:
+        return r2_promote.Obj(rel, 4, T, src_tag), r2_promote.Obj(rel, 4, T + HOUR, dst_tag)
+
+    pairs = [pair("a", "aa", "bb"), pair("b", "aa-3", "bb-3"), pair("c", "aa", "aa")]
+    assert [o.rel for o in bc.plan_copy([p[0] for p in pairs], [p[1] for p in pairs])] == ["a"]
+
+
+def test_copy_argv_refuses_a_key_that_aws_cli_would_read_as_a_version_id() -> None:
+    with pytest.raises(ValueError, match="versionId"):
+        r2_promote.copy_argv("cli/x?versionId=abc", "cli/y", "https://e")
+
+
 def test_parse_buckets_malformed_reply_is_a_copy_error() -> None:
     for bad in ("{not json", "[1, 2]", '{"Buckets": [{"x": 1}]}'):
         with pytest.raises(bc.CopyError, match="unreadable"):
