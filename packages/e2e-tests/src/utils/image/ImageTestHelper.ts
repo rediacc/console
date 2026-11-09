@@ -350,11 +350,18 @@ export class ImageTestHelper {
    * List all custom images in the disks directory
    */
   listCustomImages(): string[] {
+    // Only the files renet writes for the configured images, never other disks in the directory. An image
+    // URL that does not parse is a configuration error and throws here, not an empty listing.
+    const built = new Set(
+      CONFIGURED_IMAGES.map((image) => {
+        try {
+          return path.basename(new URL(image.url).pathname);
+        } catch {
+          throw new Error(`Configured image ${image.name} has an unparseable url: ${image.url}`);
+        }
+      })
+    );
     try {
-      // Only the files renet writes for the configured images, never other disks in the directory.
-      const built = new Set(
-        CONFIGURED_IMAGES.map((image) => path.basename(new URL(image.url).pathname))
-      );
       return fs.readdirSync(this.disksPath).filter((f) => built.has(f));
     } catch {
       return [];
