@@ -103,18 +103,21 @@ This plan is public: no customer name appears in it or in any tracked file. `acm
   Accept: `(cd private/account && npx vitest run tests/integration/license-signer-scope.test.ts)` rc 0 and `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_deploy_signer.py` rc 0.
   (corrected 2026-11-09, d778be9d) The box accept ran by name: `(cd private/account && npx vitest run tests/integration/license-signer-scope.test.ts)` 80 passed rc 0 at private/account 55a27b1.
     (ticked) 2026-11-09T10:47:22Z by d778be9d: commit:731ebb8f enterprise suites 508 passed rc=0; account signer suite 80 passed rc=0
-- [ ] S3 [writer] `LicenseSigner`: local `CryptoService` for the Node entries, or the binding client on Cloudflare, with the refusals in the Design. Every signing site moves, delegation included. `create` takes a given id.
+- [x] S3 [writer] `LicenseSigner`: local `CryptoService` for the Node entries, or the binding client on Cloudflare, with the refusals in the Design. Every signing site moves, delegation included. `create` takes a given id.
   Owns: private/account/src/services/crypto.service.ts, private/account/src/services/subscription.service.ts, private/account/src/services/free-license.service.ts, private/account/src/services/delegation-cert.service.ts, private/account/src/services/reminder.service.ts, private/account/src/services/signer-client.ts (new), private/account/src/app.ts, private/account/src/types/env.ts, private/account/src/types/subscription.ts, private/account/src/entry/cloudflare.ts, private/account/tests/integration/signer-client.test.ts (new).
   Accept: `(cd private/account && npx vitest run tests/integration/signer-client.test.ts)` rc 0 and `npx tsc --noEmit -p private/account` rc 0.
+    (ticked) 2026-11-09T13:49:22Z by d778be9d: commit:da9e0db9 account suite 3893 passed rc=0; enterprise and deploy tests 677 passed rc=0; check:ci-workflows and secret-supply rc=0
 
 ### Wave 3
 
-- [ ] S4 [writer] The shared tier moves: `wrangler.<r>.toml` and `wrangler.bench.toml` bind their signer, the pusher and profile drop the private key, a signer profile carries it, and rotation's consumers point at the signers. A test refuses the key name in any account Worker's secret list.
+- [x] S4 [writer] The shared tier moves: `wrangler.<r>.toml` and `wrangler.bench.toml` bind their signer, the pusher and profile drop the private key, a signer profile carries it, and rotation's consumers point at the signers. A test refuses the key name in any account Worker's secret list.
   Owns: workers/account/wrangler.*.toml, .ci/rediacc_ci/deploy/set_account_worker_secrets.py, .ci/rediacc_ci/ops/deploy_bench.py, .ci/config/secret-supply.json, private/account/rotation-manifest.json, private/account/scripts/rotation/**, .ci/rediacc_ci/tests/test_enterprise_no_key_on_account.py (new).
   Accept: `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_enterprise_no_key_on_account.py .ci/rediacc_ci/tests/test_ops_deploy_bench.py` rc 0, `npm run check:ci-secret-supply` rc 0, and `(cd private/account && npx vitest run tests/integration/rotation-worker-consumer.test.ts)` rc 0.
-- [ ] A1 [writer] Company mode: API-key bootstrap creating org, active ENTERPRISE subscription, limits and owner mail, idempotently; `/register` closed except to invited addresses. The invitation path for a person with no account is untraced, so the test covers it.
+    (ticked) 2026-11-09T13:49:23Z by d778be9d: commit:7307ba75 account suite 3893 passed rc=0; enterprise and deploy tests 677 passed rc=0; check:ci-workflows and secret-supply rc=0
+- [x] A1 [writer] Company mode: API-key bootstrap creating org, active ENTERPRISE subscription, limits and owner mail, idempotently; `/register` closed except to invited addresses. The invitation path for a person with no account is untraced, so the test covers it.
   Owns: private/account/src/routes/subscriptions.ts, private/account/src/routes/auth.ts, private/account/src/services/auth.service.ts, private/account/src/services/enterprise-bootstrap.service.ts (new), private/account/tests/integration/enterprise-bootstrap.test.ts (new).
   Accept: `(cd private/account && npx vitest run tests/integration/enterprise-bootstrap.test.ts)` rc 0.
+    (ticked) 2026-11-09T13:49:24Z by d778be9d: commit:da9e0db9 account suite 3893 passed rc=0; enterprise and deploy tests 677 passed rc=0; check:ci-workflows and secret-supply rc=0
 - [x] A2 [writer] The opt-in allowlist on both Workers' default fetch, exempting only `POST` on the renew path, with `POST` to any other path and `GET` on the renew path refused in the test.
   Owns: workers/account/src/index.ts, workers/proxy/src/index.ts, workers/proxy/src/__tests__/allowlist.test.ts (new).
   Accept: `(cd workers/proxy && npx vitest run src/__tests__/allowlist.test.ts)` rc 0.
@@ -146,9 +149,10 @@ This plan is public: no customer name appears in it or in any tracked file. `acm
   Accept: `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_release_rings_run.py` rc 0 and `python3 .claude/rediacc_hooks/guards/test-block_unasked_release.py` rc 0.
   (corrected 2026-11-09, d778be9d) The second accept ran: `python3 .claude/rediacc_hooks/guards/test-block_unasked_release.py` FAILURES 0 (248 cases, 26 controls), rc 0.
     (ticked) 2026-11-09T10:47:21Z by d778be9d: commit:34e559f7ce enterprise suites 508 passed rc=0; account signer suite 80 passed rc=0
-- [ ] G1 [writer] `cd-enterprise-release.yml` per the Design, and a test that no workflow file calls `enterprise remove` and that the mask step comes first.
+- [x] G1 [writer] `cd-enterprise-release.yml` per the Design, and a test that no workflow file calls `enterprise remove` and that the mask step comes first.
   Owns: .github/workflows/cd-enterprise-release.yml (new), .ci/rediacc_ci/tests/test_enterprise_workflow.py (new).
   Accept: `npm run check:ci-workflows` rc 0 and `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_enterprise_workflow.py` rc 0.
+    (ticked) 2026-11-09T13:49:25Z by d778be9d: commit:447cc05d account suite 3893 passed rc=0; enterprise and deploy tests 677 passed rc=0; check:ci-workflows and secret-supply rc=0
 
 ### Bench, one sequential runner, fake companies only
 
@@ -185,9 +189,10 @@ This plan is public: no customer name appears in it or in any tracked file. `acm
   Accept: `./rdc.sh --config eu-remote machine status hostinger` rc 0 with a licence renewed after X1 recorded here.
 - [ ] X2 [live] Create the internal canary company through `enterprise add`, unlisted, and run one release to it through the local path and one through GitHub.
   Accept: `./run.sh enterprise list` rc 0, naming the canary as healthy on both paths' last release.
-- [ ] L1 [writer] Operator runbook, the X25519 line corrected in `private/account/CLAUDE.md` (it does the request tunnel, not config storage), and the signer's limits and the certificate limit written down.
+- [x] L1 [writer] Operator runbook, the X25519 line corrected in `private/account/CLAUDE.md` (it does the request tunnel, not config storage), and the signer's limits and the certificate limit written down.
   Owns: private/account/docs/enterprise.md (new), private/account/CLAUDE.md.
   Accept: `test -s private/account/docs/enterprise.md` rc 0 and `npm run -s check:ci-prose-style` rc 0.
+    (ticked) 2026-11-09T13:49:26Z by d778be9d: commit:c682f568 account suite 3893 passed rc=0; enterprise and deploy tests 677 passed rc=0; check:ci-workflows and secret-supply rc=0
 
 ## Not verified
 

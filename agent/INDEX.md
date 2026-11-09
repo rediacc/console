@@ -505,7 +505,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-console-executor-multi-org.md` | approved | 377 | 1 | 17 | 67459 |
 | `agent/plans/PLAN-consolidation-pressure.md` | compacted | 60 | 0 | 10 | 5277 |
 | `agent/plans/PLAN-converge-preflight-and-repo-recovery.md` | executing | 94 | 0 | 19 | 34124 |
-| `agent/plans/PLAN-d1-scaling.md` | approved | 193 | 31 | 0 | 40676 |
+| `agent/plans/PLAN-d1-scaling.md` | approved | 201 | 27 | 4 | 42527 |
 | `agent/plans/PLAN-deletion-budget.md` | draft | 387 | 28 | 0 | 53262 |
 | `agent/plans/PLAN-detached-jobs.md` | approved | 1062 | 9 | 31 | 194268 |
 | `agent/plans/PLAN-devbox-uid-derived-image.md` | compacted | 36 | 0 | 0 | 2750 |
@@ -514,7 +514,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-drop-free-license-ip-prefix-hash.md` | executing | 35 | 2 | 4 | 5915 |
 | `agent/plans/PLAN-duplication-angle.md` | compacted | 37 | 0 | 0 | 2630 |
 | `agent/plans/PLAN-durable-reports-and-push-inbox.md` | compacted | 52 | 0 | 0 | 3692 |
-| `agent/plans/PLAN-enterprise-isolation.md` | executing | 201 | 20 | 14 | 37559 |
+| `agent/plans/PLAN-enterprise-isolation.md` | executing | 206 | 15 | 19 | 38469 |
 | `agent/plans/PLAN-executor-durable-object-policy.md` | approved | 483 | 3 | 15 | 64699 |
 | `agent/plans/PLAN-extension-shaped-matchers.md` | compacted | 37 | 0 | 0 | 3104 |
 | `agent/plans/PLAN-first-release-checks.md` | approved | 150 | 31 | 0 | 17463 |
