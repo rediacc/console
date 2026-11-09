@@ -61,6 +61,8 @@ ARCHIVE_PREFIX = "__ARCHIVE_"
 CD_OWNED = frozenset({console_executor.MODE_KEY})
 # The licence private key under both of its Worker spellings. After PLAN-enterprise-isolation S4 no account Worker holds it (the signer Worker does, its value lives in the deploy-signer bws profile), so `--archive` DELETES it without a copy: a `__ARCHIVE_` PUT would keep the key on the account Worker under another name.
 NO_ARCHIVE = frozenset({"ED25519_PRIVATE_KEY", "ACCOUNT_ED25519_PRIVATE_KEY"})
+# The bws key that must hold a NO_ARCHIVE name's value before the Worker copy is deleted: the deploy-signer profile's copy is the recoverable one, so a name whose store copy is absent is left in place like any unrecoverable extra.
+NO_ARCHIVE_BWS = "ACCOUNT_ED25519_PRIVATE_KEY"
 # Legacy Worker secret name -> the bws key that holds its successor. `{SUFFIX}` is the region's `secretSuffix`.
 LEGACY_BWS: dict[str, str] = {
     "API_KEY": "ACCOUNT_SERVER_API_KEY",
@@ -343,11 +345,20 @@ def archive_extras(
             wanted[(row.worker, name)] = bws_key(
                 name, region_suffix(suffixes, row.region), row.region
             )
-    keys = sorted({k for k in wanted.values() if k})
-    have = values(keys) if keys else {}
+    keys = {k for k in wanted.values() if k}
+    if any(name in NO_ARCHIVE for row in rows for name in row.extras):
+        keys.add(NO_ARCHIVE_BWS)
+    have = values(sorted(keys)) if keys else {}
     for row in rows:
         for name in row.extras:
             if name in NO_ARCHIVE:
+                if not have.get(NO_ARCHIVE_BWS):
+                    lines.append(
+                        "no recoverable copy, left in place: %s: %s (bws key: %s is empty or absent)"
+                        % (row.worker, name, NO_ARCHIVE_BWS)
+                    )
+                    left += 1
+                    continue
                 if dry_run:
                     lines.append(
                         "would delete without an archive %s: %s (the licence private key is not copied back onto a Worker)"

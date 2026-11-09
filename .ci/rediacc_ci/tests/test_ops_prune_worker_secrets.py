@@ -240,10 +240,11 @@ def _licence_key_run(extra_args: list[str], values) -> tuple[int, list[str], lis
 
 
 def test_archive_deletes_the_licence_key_and_puts_no_archive_copy() -> None:
-    def no_bws(_keys: list[str]) -> dict[str, str]:
-        raise AssertionError("the store is not read for a key that is never archived")
+    def bws_holds_it(keys: list[str]) -> dict[str, str]:
+        assert verb.NO_ARCHIVE_BWS in keys
+        return {verb.NO_ARCHIVE_BWS: "pem"}
 
-    code, lines, calls = _licence_key_run([], no_bws)
+    code, lines, calls = _licence_key_run([], bws_holds_it)
     assert code == 0, lines
     methods = [m for m, _p in calls]
     assert "PUT" not in methods
@@ -252,13 +253,19 @@ def test_archive_deletes_the_licence_key_and_puts_no_archive_copy() -> None:
     assert all(
         p.endswith(("/ACCOUNT_ED25519_PRIVATE_KEY", "/ED25519_PRIVATE_KEY")) for p in deleted
     )
-    assert not any(
-        "__ARCHIVE_" in line and "ED25519" in line for line in lines if "archived" in line
-    )
+    assert not any("__ARCHIVE_" in line for line in lines), lines
+    assert not any("__ARCHIVE_" in p for _m, p in calls), calls
+
+
+def test_archive_leaves_the_licence_key_when_bws_holds_no_copy() -> None:
+    code, lines, calls = _licence_key_run([], lambda _k: {})
+    assert code == 1, lines
+    assert [m for m, _p in calls] == ["GET"], calls
+    assert sum("no recoverable copy, left in place" in line for line in lines) == 2, lines
 
 
 def test_archive_dry_run_names_the_licence_key_as_delete_without_archive() -> None:
-    code, lines, calls = _licence_key_run(["--dry-run"], lambda _k: {})
+    code, lines, calls = _licence_key_run(["--dry-run"], lambda _k: {verb.NO_ARCHIVE_BWS: "pem"})
     assert code == 1, lines
     assert [m for m, _p in calls] == ["GET"]
     assert any("would delete without an archive" in line for line in lines), lines
@@ -266,8 +273,10 @@ def test_archive_dry_run_names_the_licence_key_as_delete_without_archive() -> No
 
 def test_archive_keeps_archiving_the_other_legacy_names() -> None:
     puts: list[object] = []
+    calls: list[tuple[str, str]] = []
 
-    def fetch(method: str, _path: str, _token: str, body=None):
+    def fetch(method: str, path: str, _token: str, body=None):
+        calls.append((method, path))
         if method == "PUT":
             puts.append(body)
         if method == "GET":
@@ -285,3 +294,7 @@ def test_archive_keeps_archiving_the_other_legacy_names() -> None:
     )
     assert code == 0, lines
     assert len(puts) == 1
+    put_paths = [p for m, p in calls if m == "PUT"]
+    assert len(put_paths) == 1 and put_paths[0].endswith("/secrets"), put_paths
+    assert "__ARCHIVE_JWT_SECRET" in str(puts[0]) and "v" in str(puts[0]), puts
+    assert not any(m == "DELETE" and "ED25519" in p for m, p in calls), calls
