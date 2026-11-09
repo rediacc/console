@@ -970,9 +970,12 @@ def test_delta_the_account_wide_r2_trio_alone_is_refused_before_any_remote_write
     # Only the R2 trio stays untranslated: the port-only secrets are the port's own, so neither may be what refuses.
     bound = _port_deploy_env(env)
     # CLOUDFLARE_ACCOUNT_ID is a constant the port pushes, never an environment value, so it is not in `bound`.
+    needed = [name for name in PORT_ONLY_SECRETS if name != "CLOUDFLARE_ACCOUNT_ID"]
+    missing = [name for name in needed if name not in bound]
+    assert not missing, f"_port_deploy_env dropped port-only secrets: {missing}"
     keyed = {
         **env,
-        **{name: bound[name] for name in PORT_ONLY_SECRETS if name != "CLOUDFLARE_ACCOUNT_ID"},
+        **{name: bound[name] for name in needed},
     }
     rc_p, _, err_p = world.port("rediacc_ci.ops.deploy_bench", [], keyed)
     assert rc_p == 1

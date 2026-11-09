@@ -453,7 +453,7 @@ const RegionPickerModal: React.FC<RegionPickerModalProps> = ({ lang }) => {
   // Bumped on every open, close and stop, so a late /api/geo answer cannot restart a countdown the visitor ended.
   const runRef = useRef(0);
   // Set once the visitor points at or focuses a card, so a slow /api/geo answer never moves a highlight they chose.
-  const pickTracker = useRef(createPickTracker()).current;
+  const [pickTracker] = useState(() => createPickTracker());
   const pick = useCallback(
     (id: string) => pickTracker.pick(id, setSelected),
     [pickTracker]
