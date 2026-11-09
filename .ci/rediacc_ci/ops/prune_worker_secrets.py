@@ -59,11 +59,11 @@ ARCHIVE_PREFIX = "__ARCHIVE_"
 # CD owns the console switch (EXECUTOR_MODE): it is set after the proxy smoke and deleted by the rollback, so it is never an extra.
 # Deleting it would close a target's console executor.
 CD_OWNED = frozenset({console_executor.MODE_KEY})
+# The licence private key under both of its Worker spellings. After PLAN-enterprise-isolation S4 no account Worker holds it (the signer Worker does, its value lives in the deploy-signer bws profile), so `--archive` DELETES it without a copy: a `__ARCHIVE_` PUT would keep the key on the account Worker under another name.
+NO_ARCHIVE = frozenset({"ED25519_PRIVATE_KEY", "ACCOUNT_ED25519_PRIVATE_KEY"})
 # Legacy Worker secret name -> the bws key that holds its successor. `{SUFFIX}` is the region's `secretSuffix`.
 LEGACY_BWS: dict[str, str] = {
     "API_KEY": "ACCOUNT_SERVER_API_KEY",
-    "ED25519_PRIVATE_KEY": "ACCOUNT_ED25519_PRIVATE_KEY",
-    "ACCOUNT_ED25519_PRIVATE_KEY": "ACCOUNT_ED25519_PRIVATE_KEY",
     "ED25519_PUBLIC_KEY": "ACCOUNT_ED25519_PUBLIC_KEY",
     "X25519_PRIVATE_KEY": "ACCOUNT_X25519_PRIVATE_KEY",
     "X25519_PUBLIC_KEY": "ACCOUNT_X25519_PUBLIC_KEY",
@@ -75,8 +75,6 @@ LEGACY_BWS: dict[str, str] = {
 BENCH_LEGACY_BWS: dict[str, str] = {
     "API_KEY": "ACCOUNT_SERVER_API_KEY",
     "JWT_SECRET": "ACCOUNT_JWT_SECRET",
-    "ED25519_PRIVATE_KEY": "ACCOUNT_ED25519_PRIVATE_KEY",
-    "ACCOUNT_ED25519_PRIVATE_KEY": "ACCOUNT_ED25519_PRIVATE_KEY",
     "ED25519_PUBLIC_KEY": "ACCOUNT_ED25519_PUBLIC_KEY",
     "X25519_PRIVATE_KEY": "ACCOUNT_X25519_PRIVATE_KEY",
     "X25519_PUBLIC_KEY": "ACCOUNT_X25519_PUBLIC_KEY",
@@ -345,9 +343,26 @@ def archive_extras(
             wanted[(row.worker, name)] = bws_key(
                 name, region_suffix(suffixes, row.region), row.region
             )
-    have = values(sorted({k for k in wanted.values() if k}))
+    keys = sorted({k for k in wanted.values() if k})
+    have = values(keys) if keys else {}
     for row in rows:
         for name in row.extras:
+            if name in NO_ARCHIVE:
+                if dry_run:
+                    lines.append(
+                        "would delete without an archive %s: %s (the licence private key is not copied back onto a Worker)"
+                        % (row.worker, name)
+                    )
+                    left += 1
+                    continue
+                try:
+                    fetch("DELETE", secrets_path(account, row.worker, name), token)
+                except ApiError as exc:
+                    lines.append("failed %s: %s: %s" % (row.worker, name, exc))
+                    left += 1
+                    continue
+                lines.append("deleted %s: %s (no archive kept on a Worker)" % (row.worker, name))
+                continue
             key = wanted[(row.worker, name)]
             value = have.get(key) if key else None
             if not value:

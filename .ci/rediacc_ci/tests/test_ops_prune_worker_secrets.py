@@ -118,7 +118,7 @@ def test_bench_extras_are_the_seven_legacy_names_and_each_maps_to_a_bws_key() ->
     live += [{"name": "EXECUTOR_MODE", "type": "secret_text"}]
     live += [{"name": "__ARCHIVE_OLD", "type": "secret_text"}]
     assert verb.extras(live, verb.expected_for(row)) == legacy
-    assert all(verb.bws_key(n, "", "bench") for n in legacy)
+    assert all(verb.bws_key(n, "", "bench") or n in verb.NO_ARCHIVE for n in legacy)
     assert verb.bws_key("JWT_SECRET", "", "bench") == "ACCOUNT_JWT_SECRET"
 
 
@@ -206,13 +206,82 @@ def test_archive_with_a_regions_file_lacking_a_suffix_fails_closed(tmp_path) -> 
     assert any("lacks secretSuffix" in line and "nothing archived" in line for line in lines), lines
 
 
-def test_the_licence_private_key_is_an_extra_on_every_account_worker_and_archivable() -> None:
-    """After PLAN-enterprise-isolation S4 no account Worker is pushed the licence private key, so a live copy is an extra, and the store copy makes it archivable."""
-    key = "ACCOUNT_ED25519_PRIVATE_KEY"
-    for row in verb.load_workers(bench=True):
-        want = verb.expected_for(row)
-        assert key not in want
-        assert "ACCOUNT_ED25519_PUBLIC_KEY" in want
-        live: list[dict[str, object]] = [{"name": n, "type": "secret_text"} for n in [*want, key]]
-        assert verb.extras(live, want) == [key]
-        assert verb.bws_key(key, "EU", row.region) == key
+def test_the_licence_private_key_is_an_extra_on_every_account_worker_and_never_archived() -> None:
+    """After PLAN-enterprise-isolation S4 no account Worker is pushed the licence private key, so a live copy is an extra; the prune deletes it without a bws mapping, because an archive PUT would keep the key on the Worker."""
+    for key in ("ACCOUNT_ED25519_PRIVATE_KEY", "ED25519_PRIVATE_KEY"):
+        assert key in verb.NO_ARCHIVE
+        for row in verb.load_workers(bench=True):
+            want = verb.expected_for(row)
+            assert key not in want
+            assert "ACCOUNT_ED25519_PUBLIC_KEY" in want
+            live: list[dict[str, object]] = [
+                {"name": n, "type": "secret_text"} for n in [*want, key]
+            ]
+            assert verb.extras(live, want) == [key]
+            assert verb.bws_key(key, "EU", row.region) is None
+
+
+def _licence_key_run(extra_args: list[str], values) -> tuple[int, list[str], list[tuple[str, str]]]:
+    calls: list[tuple[str, str]] = []
+    state = {"live": ["ACCOUNT_ED25519_PRIVATE_KEY", "ED25519_PRIVATE_KEY"]}
+
+    def fetch(method: str, path: str, _token: str, _body=None):
+        calls.append((method, path))
+        if method == "GET":
+            return [
+                {"name": n, "type": "secret_text"} for n in [*verb.expected_names(), *state["live"]]
+            ]
+        return {}
+
+    code, lines, _rows = verb.run(
+        ["--region", "eu", "--archive", *extra_args], ENV, fetch, values=values
+    )
+    return code, lines, calls
+
+
+def test_archive_deletes_the_licence_key_and_puts_no_archive_copy() -> None:
+    def no_bws(_keys: list[str]) -> dict[str, str]:
+        raise AssertionError("the store is not read for a key that is never archived")
+
+    code, lines, calls = _licence_key_run([], no_bws)
+    assert code == 0, lines
+    methods = [m for m, _p in calls]
+    assert "PUT" not in methods
+    deleted = [p for m, p in calls if m == "DELETE"]
+    assert len(deleted) == 2
+    assert all(
+        p.endswith(("/ACCOUNT_ED25519_PRIVATE_KEY", "/ED25519_PRIVATE_KEY")) for p in deleted
+    )
+    assert not any(
+        "__ARCHIVE_" in line and "ED25519" in line for line in lines if "archived" in line
+    )
+
+
+def test_archive_dry_run_names_the_licence_key_as_delete_without_archive() -> None:
+    code, lines, calls = _licence_key_run(["--dry-run"], lambda _k: {})
+    assert code == 1, lines
+    assert [m for m, _p in calls] == ["GET"]
+    assert any("would delete without an archive" in line for line in lines), lines
+
+
+def test_archive_keeps_archiving_the_other_legacy_names() -> None:
+    puts: list[object] = []
+
+    def fetch(method: str, _path: str, _token: str, body=None):
+        if method == "PUT":
+            puts.append(body)
+        if method == "GET":
+            names = [*verb.expected_names(), "JWT_SECRET"]
+            if puts:
+                names.append("__ARCHIVE_JWT_SECRET")
+            return [{"name": n, "type": "secret_text"} for n in names]
+        return {}
+
+    code, lines, _rows = verb.run(
+        ["--region", "eu", "--archive"],
+        ENV,
+        fetch,
+        values=lambda _k: {"ACCOUNT_JWT_SECRET": "v"},
+    )
+    assert code == 0, lines
+    assert len(puts) == 1
