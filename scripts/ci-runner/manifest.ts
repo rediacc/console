@@ -2320,6 +2320,33 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    // WHAT STILL HOLDS A CLOSED PLAN (agent/plans/PLAN-plan-compaction-bindings.md CB4). A plan under _done/ or _removed/, or whose Status is finished, parked, moved or removed, with a live binding (an own open box, an open worklist item of any session citing it, an unfinished dependent, another plan's open box citing one of its boxes) is a finding. The decision is
+    // wl_planbind.bindings, shared with the compaction verbs and check_plan_folders --move/--sweep, which is why it and the modules it reads are in `paths`; agent/worklist/** is there because an item opened or ticked changes the verdict. Lane quality-static: it needs no merge-base, and that job carries a gate-bind region, so the step is emitted from the gate header.
+    id: 'check:ci-plan-bindings',
+    run: 'npm run check:ci-plan-bindings',
+    gate: true,
+    slow: true, // ~50 s on a dev host 2026-11-09: wl_planbind.bindings rebuilds the plan graph per call, 158 judged plans over 312 read and 3,312 items
+    paths: [
+      'agent/plans/**',
+      'agent/INDEX.md',
+      'agent/worklist/**',
+      '.ci/scripts/quality/check_plan_bindings.py',
+      '.claude/hooks/stop/wl_planbind.py',
+      '.claude/hooks/stop/wl_plandeps.py',
+      '.claude/hooks/stop/wl_planfile.py',
+      '.claude/hooks/stop/wl_planrec.py',
+      '.claude/hooks/stop/wl_store.py',
+    ],
+    pathsOrigin: 'declared',
+    leaves: ['.ci/scripts/quality/check_plan_bindings.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-static',
+      step: 'Plan bindings',
+    },
+  },
+  {
     // A PLAN THAT TOUCHES A DEPLOYABLE SURFACE CLOSES ONLY ON A LIVE RECEIPT (agent/plans/PLAN-tested-on-bench.md V6): its `Live-Proof:` header, one `LP-<target> [live]` box per declared target, and from tiers.live.baseline_at on a VERIFIED row in agent/ledgers/live-proof.jsonl for every LP box this branch ticks.
     // NO `paths:` DELIBERATELY. LP5 recomputes the surface inputs digest from the surface code itself (private/renet, private/account, packages/cli, workers/**), and the gate imports check_plan_boxes, check_plan_implementation, wl_planrec and the worklist store, so a path table would let `--changed` drop it exactly when surface code moves after a receipt. Lane quality-branch for the merge-base its LP4 to LP6 need (fetch-depth 0, the PR head ref, GITHUB_BASE_REF); hand-written for its neighbours' reason (no `- id: setup` in that job).
     id: 'check:ci-plan-live-proof',

@@ -399,6 +399,9 @@ jobs:
       - name: Pathspec scope
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_pathspec_scope.py
+      - name: Plan bindings
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_plan_bindings.py
       - name: Policy inventory
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_policy_inventory.py

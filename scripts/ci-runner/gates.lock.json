@@ -2413,6 +2413,33 @@
     }
   },
   {
+    "id": "check:ci-plan-bindings",
+    "run": "npm run check:ci-plan-bindings",
+    "gate": true,
+    "slow": true,
+    "paths": [
+      "agent/plans/**",
+      "agent/INDEX.md",
+      "agent/worklist/**",
+      ".ci/scripts/quality/check_plan_bindings.py",
+      ".claude/hooks/stop/wl_planbind.py",
+      ".claude/hooks/stop/wl_plandeps.py",
+      ".claude/hooks/stop/wl_planfile.py",
+      ".claude/hooks/stop/wl_planrec.py",
+      ".claude/hooks/stop/wl_store.py"
+    ],
+    "pathsOrigin": "declared",
+    "leaves": [
+      ".ci/scripts/quality/check_plan_bindings.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Plan bindings"
+    }
+  },
+  {
     "id": "check:ci-plan-live-proof",
     "env": {
       "GITHUB_BASE_REF": "${{ github.base_ref }}"
