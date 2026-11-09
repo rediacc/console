@@ -198,6 +198,9 @@ def bindings(
     base = rel.rsplit("/", 1)[-1]
     if graph is None:
         graph = D.Graph(texts, index_text, root)
+    elif graph.texts.keys() != texts.keys():
+        # A graph built over another plan set would answer dependents from that set (review 7aa999c1.1).
+        raise ValueError("bindings: graph was built over a different plan set than texts")
     item_by_id = {str(r.get("id")): r for r in items}
     out: list[Binding] = []
 

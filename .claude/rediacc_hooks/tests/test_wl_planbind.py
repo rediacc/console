@@ -290,3 +290,25 @@ def test_bound_refusal_message_is_catalogued():
     out = msgs.CLI_PLANREC_BOUND % ("bound text", "abc12345", TARGET)
     assert "bound text" in out
     assert "--plan-compact abc12345 " + TARGET in out
+
+
+def test_a_reused_graph_gives_the_same_verdict_and_a_stale_one_is_refused():
+    """Review 7aa999c1.1/.2: the gate builds one graph for every plan; the verdict equals the per-call build, and a graph over another plan set is refused rather than silently used."""
+    texts = {TARGET: plan(boxes=("[ ] T1 open work here",)), OTHER: other_plan(depends="PLAN-x.md")}
+    items = [item("aa11bb22", " ", "finish PLAN-x.md")]
+    deps = importlib.import_module("wl_plandeps")
+    graph = deps.Graph(texts, "", None)
+    alone = B.bindings("/nonexistent", TARGET, texts=texts, items=items, index_text="")
+    shared = B.bindings(
+        "/nonexistent", TARGET, texts=texts, items=items, index_text="", graph=graph
+    )
+    assert alone == shared
+    assert alone
+    stale = deps.Graph({TARGET: texts[TARGET]}, "", None)
+    with pytest.raises(ValueError, match="different plan set"):
+        B.bindings("/nonexistent", TARGET, texts=texts, items=items, index_text="", graph=stale)
+
+
+def test_the_open_box_memo_returns_the_parser_result():
+    text = plan(boxes=("[ ] T1 open work here", "[x] T2 done"))
+    assert list(B._open_boxes(text)) == list(R.open_boxes(text))

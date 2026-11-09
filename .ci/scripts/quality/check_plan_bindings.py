@@ -109,10 +109,14 @@ def evaluate(
 def load(root: pathlib.Path) -> tuple[dict[str, str], list[dict], str]:
     texts = B.load_texts(root)
     items = B.store_items(root)
-    if any(root.glob(STORE_GLOB)) and not items:
+    if not items:
+        # No store files at all, or files that fold to nothing: either way no item binding could be seen (review 3ccdddec.3).
         raise CannotRunError(
-            "%s holds store files but they fold to zero items, so no item binding could be seen"
-            % STORE_GLOB
+            "%s yields zero items (%s), so no item binding could be seen"
+            % (
+                STORE_GLOB,
+                "files fold to nothing" if any(root.glob(STORE_GLOB)) else "no store files",
+            )
         )
     try:
         index_text = (root / D.INDEX_REL).read_text(encoding="utf-8", errors="replace")
@@ -321,6 +325,17 @@ def selftest() -> int:
     with tempfile.TemporaryDirectory(prefix="plan-bindings-") as tmp:
         root = _write_root(pathlib.Path(tmp), {}, [_add("aa11bb22", cite)])
         tally.check("real files, B0: an empty plans tree exits 77", _quiet_check(root), 77)
+    # Review 3ccdddec.2/.3: a store that folds to zero items, and no store at all, are CANNOT RUN, never green.
+    with tempfile.TemporaryDirectory(prefix="plan-bindings-") as tmp:
+        root = _write_root(pathlib.Path(tmp), _clean(), [])
+        tally.check(
+            "real files, B0b: store files folding to zero items exit 77", _quiet_check(root), 77
+        )
+    with tempfile.TemporaryDirectory(prefix="plan-bindings-") as tmp:
+        root = _write_root(pathlib.Path(tmp), _clean(), [])
+        for f in (root / "agent" / "worklist").glob("*.jsonl"):
+            f.unlink()
+        tally.check("real files, B0c: no store files at all exit 77", _quiet_check(root), 77)
     return 0 if tally.report() else 1
 
 
