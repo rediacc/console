@@ -1,7 +1,7 @@
 # Breakpoint's secret shape
 
 Status: done -- option 1 is implemented (breakpoint.yml reads none of the three empty secrets); the [?] DEFAULT "neither; option 1 stands alone" executed 2026-10-04, so the two option-2 boxes are not taken
-Ruling: #a6ec6d6c
+Ruling: #b4858621
 Depends-On: no-dep -- cites no other plan
 First-Seen: 2026-09-17
 Owner decision required. Raised by session d1589e0b under operator ruling "Build the step-scoped fetch shape now" (/ask, 2026-09-05).
@@ -16,9 +16,9 @@ Owns: .github/workflows/breakpoint.yml
 - [x] Restore part of what option 1 removes: option 2 (a `mint` job handing `session` a 1-hour installation token) or option 3 (an out-of-band notify with no long-lived credential on the box)? DEFAULT: neither; option 1 stands alone, the cheapest and honest option, since nothing is broken by leaving the capability gap
     (ticked) 2026-10-04T16:05:00Z by d778be9d: nocommit:operator-deferred the DEFAULT "neither; option 1 stands alone" executed (worklist #a6ec6d6c), so neither option 2 nor option 3 is built.
 - [ ] Before building option 2, verify on a scratch branch whether a masked `actions/create-github-app-token` token survives as a job output or arrives EMPTY -- acceptance: a scratch-branch run whose downstream job prints a non-zero token length
-    dropped by ruling #a6ec6d6c: the DEFAULT 'neither; option 1 stands alone' executed 2026-10-04, so option 2 is never built and this pre-check has no purpose
+    dropped by ruling #b4858621 (the executed DEFAULT of #a6ec6d6c): the DEFAULT 'neither; option 1 stands alone' executed 2026-10-04, so option 2 is never built and this pre-check has no purpose
 - [ ] Option 2, only when the question above picks it: a separate `mint` job with no shell holds the private key and passes `session` a short-lived installation token -- acceptance: a breakpoint run with `services` set checks out `private/elite` with the minted token
-    dropped by ruling #a6ec6d6c: the question above picked neither option, so the mint job is not built
+    dropped by ruling #b4858621 (the executed DEFAULT of #a6ec6d6c): the question above picked neither option, so the mint job is not built
 
 ## The problem, precisely
 

@@ -620,7 +620,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-backup-credential-isolation.md` | done | 55 | 0 | 8 | 12190 |
 | `agent/plans/_done/PLAN-backup-presign-bucket-require-and-wrangler-vars.md` | done | 50 | 0 | 7 | 7369 |
 | `agent/plans/_done/PLAN-biome-only-lint.md` | done | 317 | 0 | 29 | 54095 |
-| `agent/plans/_done/PLAN-breakpoint-secret-shape.md` | done | 63 | 2 | 2 | 5712 |
+| `agent/plans/_done/PLAN-breakpoint-secret-shape.md` | done | 63 | 2 | 2 | 5784 |
 | `agent/plans/_done/PLAN-carried-red-finding-keys.md` | done | 103 | 0 | 7 | 12046 |
 | `agent/plans/_done/PLAN-cd-errors-in-ci.md` | done | 86 | 0 | 6 | 8862 |
 | `agent/plans/_done/PLAN-chunk-store-browse-toc-and-remote.md` | done | 172 | 0 | 11 | 35651 |

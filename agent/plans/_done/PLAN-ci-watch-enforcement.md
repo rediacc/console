@@ -1,6 +1,6 @@
 # PLAN: CI-watch enforcement, from "the session remembered" to a ledger join
 Status: superseded -- closed by operator ruling #0c1cbd0d (2026-10-23, /ask "Close two, rewrite one"): boxes 1, 2 and 5 are superseded by shipped code, box 3 is a moot probe, box 4 is a gate nobody is building, box 6 is a marginal registry row
-Ruling: #0c1cbd0d
+Ruling: #c8071f18
 Depends-On: no-dep -- cites no other plan
 First-Seen: 2026-09-17
 Owner: d778be9d (closed 2026-10-23; drafted by 9d92d9b6, 2026-08-28)
@@ -203,22 +203,22 @@ fires after every compaction — correct behaviour, but worth knowing first.
 
 - [ ] Receipts: `.ci/scripts/ci/ci-trace.py` appends `{at, sha, exit, reason, jobs, runs, session, tool}` to `<worklist>.ciread` (path from `wl_core.worklist_for`, JSONL, cap 200) on every terminal exit path.
       CONTROL: extend `ci-trace.py --selftest`. A green shim writes an `exit 0` row. A red shim's `jobs` names every failing job. Mutation: delete the write, and the selftest must go red.
-    dropped by ruling #0c1cbd0d (box 1): superseded by shipped code, the post-bash arm_ci_watch.py watch
+    dropped by ruling #c8071f18 (box 1): superseded by shipped code, the post-bash arm_ci_watch.py watch
 - [ ] Push ledger: new `.claude/hooks/post-bash/record_push.py`, registered in `.claude/rediacc_hooks/lifecycle.py` "post-bash" before `trapguard`. It records `{at, sha, branch, session}` to `<worklist>.cipush-<sid8>` (cap 20), and only when `origin/<dest>` equals HEAD afterwards. It excludes submodule pushes and matches only at a command position (`shellscan`). Add it to `scripts/data/hook-inventory-baseline.json`.
       CONTROL: new `.claude/rediacc_hooks/tests/test_hooks_record_push.py`. It fires on a successful push and on a push with `-c k=v` flags. It stays silent on a rejected push, a submodule push, and prose. It writes only to its own session's file. `check:ci-hook-integrity` reds when the file is deleted.
-    dropped by ruling #0c1cbd0d (box 2): superseded by shipped code, the post-bash arm_ci_watch.py watch
+    dropped by ruling #c8071f18 (box 2): superseded by shipped code, the post-bash arm_ci_watch.py watch
 - [ ] Probe §14 items 2, 3 and 5 (teammate `session_id`, failed-push `tool_response`, background tasks across compaction). Record the answers in this plan before the next box.
       CONTROL: the answers cite probe rows, not docstrings.
-    dropped by ruling #0c1cbd0d (box 3): the probe is moot once boxes 1, 2 and 4 are not built
+    dropped by ruling #c8071f18 (box 3): the probe is moot once boxes 1, 2 and 4 are not built
 - [ ] Join: `wl_ci.unwatched_push(...)` per §3, with a ceiling of 3 blocks then a downgrade note. Call it from `wl_checks.py` after the adhoc-watch block and before `ci_trouble` (`:3361`). A hook error raises `vadd(..., always=True)` and never passes silently.
       CONTROL in `.claude/rediacc_hooks/tests/test_wl_ci_status.py`: the §9 cases, renumbered after the last `test_1xx`. Required: a peer-session ledger entry is SILENT, and with no ledger a `gh` shim printing `GH-WAS-CALLED` is never called.
-    dropped by ruling #0c1cbd0d (box 4): a gate nobody is building
+    dropped by ruling #c8071f18 (box 4): a gate nobody is building
 - [ ] Widen `hands_out_loop` (`.ci/rediacc_ci/quality/ci_watch_recipe.py:154`) to accept `status = completed` with or without the dot and the quotes. In the same commit, replace `.claude/agents/pr-babysitter.md:105` with `ci-trace.py --wait --until-final` and fix `:187`, and add the push-then-watch line to `.claude/commands/pr-babysit.md`.
       CONTROL: the gate's own selftest plants the old `:105` line and requires a red. The tree is green after the doc edits.
-    dropped by ruling #0c1cbd0d (box 5): superseded by shipped code
+    dropped by ruling #c8071f18 (box 5): superseded by shipped code
 - [ ] Add the §7 variable-assigned-loop row to `.claude/hooks/lib/sanctioned.py`, with `example` and `counter`, and write the stated residual into this plan.
       CONTROL: `check_sanctioned_registry.py` re-runs the new example and counter.
-    dropped by ruling #0c1cbd0d (box 6): a marginal registry row, not built
+    dropped by ruling #c8071f18 (box 6): a marginal registry row, not built
 
 ## Closure, 2026-10-23
 
