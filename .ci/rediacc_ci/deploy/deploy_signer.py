@@ -15,6 +15,8 @@ THE WRANGLER. Every call runs from `workers/signer`, whose own lockfile pins wra
 
 A DRY RUN (`--dry-run`) renders with a placeholder control id and runs `wrangler deploy --dry-run`, which bundles the Worker and needs no credential or key.
 
+THE LAB READERS AND DRIVERS (box S2's group in `rediacc_ci.enterprise.lab`, the `Lab` protocol of `rediacc_ci.enterprise.proof`). Fifteen module functions that `LiveLab` binds by name at call time. Each live call goes through an injectable seam, a keyword-only argument that defaults to the production transport: `run` (the wrangler `Runner` above), `api` (a Cloudflare account GET, `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` from the environment), `companies` (the registry's rows) and `probe`. `bench=True` selects `signer-bench-<r>` and `account-bench`; `callers` and `account_workers` also list each non-removed company's `account-<name>` Worker. `secret_names` is `wrangler secret list`; `signer_of` and `signer_props` read the caller's `LICENSE_SIGNER` service binding from the Workers settings API; `expected_props` is what S4's binding must carry (`{tier: shared, region}` from the account config's `vars.REGION`, `{tier: enterprise, companyId, region}` from the control row); `certificate_audited` reads the signer region's control `audit` table. A signer is stopped by `wrangler delete --force` (what the plan's V2 text calls removing a bench signer) and started by this module's own `deploy`, which re-pushes the key; `cut_region` stops that region's bench signer and does NOT delete or detach its control database, because D1 offers no unreachable state short of destroying the data, and the signer is the only Worker that reads it for signing. `issue`, `renew` and `current_licence_works` need the caller Worker to ask its signer, and no caller-side probe route exists yet (box S4 binds `LICENSE_SIGNER`); their default `probe` raises `LabError("not built yet: ...")`, never an answer, so a refused claim cannot pass on a missing route.
+
 THE RECORD. `--record PATH` writes JSON: target, worker, region, config, version id, the previous version id, the secret names seen, and the rollback command (`wrangler rollback <previous>`, or null on a first deploy).
 """
 
@@ -22,6 +24,7 @@ from __future__ import annotations
 
 import argparse
 import dataclasses
+import io
 import json
 import os
 import pathlib
@@ -33,6 +36,8 @@ import typing
 
 from rediacc_ci import paths
 from rediacc_ci.core import wrangler
+from rediacc_ci.enterprise import control_db, proof, registry
+from rediacc_ci.housekeeping import cf_leftovers
 
 SELF = "rediacc_ci.deploy.deploy_signer"
 
@@ -360,6 +365,225 @@ def deploy(
     say("Deployed %s version %s; secrets %s." % (target.worker, version, ", ".join(names)))
     say("Rollback: %s" % (result["rollback"] or "none (first deploy)"))
     return result
+
+
+# ---- the lab readers and drivers (box S2's method group) ----------------------
+
+SIGNER_BINDING = "LICENSE_SIGNER"
+COMPANY_WORKER_PREFIX = "account-"
+BENCH_ACCOUNT = "account-bench"
+
+# (path under /accounts/<id>) -> the decoded `result`. The tests swap it for a dict lookup.
+Api = typing.Callable[[str], typing.Any]
+Companies = typing.Callable[[bool], list[dict]]
+# (caller, action in issue|renew|current, kind) -> Answer.
+Probe = typing.Callable[[str, str, str], proof.Answer]
+
+
+def _no_probe(caller: str, action: str, kind: str) -> proof.Answer:
+    raise proof.LabError(
+        "not built yet: S4 (no caller-side signing probe: %s cannot be asked to %s %s, "
+        "and nothing was signed)" % (caller, action, kind)
+    )
+
+
+def _root() -> pathlib.Path:
+    return pathlib.Path(paths.repo_root())
+
+
+def _signer_dir() -> pathlib.Path:
+    return _root().joinpath(*SIGNER_REL)
+
+
+def _all_targets() -> dict[str, Target]:
+    return targets(load_region_ids(_root()))
+
+
+def default_api() -> Api:
+    token = os.environ.get("CLOUDFLARE_API_TOKEN", "")
+    account = os.environ.get("CLOUDFLARE_ACCOUNT_ID", "")
+    if not token or not account:
+        raise proof.LabError(
+            "CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID are required (bws_env exec --profile %s)"
+            % PROFILE
+        )
+
+    def get(path: str) -> typing.Any:
+        try:
+            return cf_leftovers.fetch("/accounts/%s%s" % (account, path), token).get("result")
+        except cf_leftovers.CfError as exc:
+            raise proof.LabError(str(exc)) from None
+
+    return get
+
+
+def default_companies(bench: bool) -> list[dict]:
+    try:
+        rows = registry.Registry(control_db.transport(), bench=bench).companies()
+    except registry.RegistryUnreachableError as exc:
+        raise proof.LabError(str(exc)) from None
+    return [r for r in rows if r.get("state") != "removed"]
+
+
+def _wrangler(run: Runner, argv: list[str]) -> Result:
+    cwd = _signer_dir()
+    try:
+        wrangler.require(cwd, os.environ)
+    except wrangler.WranglerNotInstalledError as exc:
+        raise proof.LabError(str(exc)) from None
+    return run(argv, cwd, None)
+
+
+def account_workers(*, bench: bool, companies: Companies = default_companies) -> list[str]:
+    """Every account Worker whose secret list must hold no private key: the shared ones, then each live company's."""
+    shared = (
+        [BENCH_ACCOUNT] if bench else [COMPANY_WORKER_PREFIX + r for r in load_region_ids(_root())]
+    )
+    return [*shared, *(COMPANY_WORKER_PREFIX + str(r["name"]) for r in companies(bench))]
+
+
+def signers(*, bench: bool) -> list[str]:
+    keys = ["bench-%s" % r for r in BENCH_REGIONS] if bench else load_region_ids(_root())
+    return [_all_targets()[k].worker for k in keys]
+
+
+def secret_names(worker: str, *, run: Runner = run_process) -> list[str]:
+    res = _wrangler(run, [*wrangler.ARGV, "secret", "list", "--format", "json", "--name", worker])
+    if res.rc != 0:
+        raise proof.LabError("wrangler secret list for %s exited %d" % (worker, res.rc))
+    try:
+        return sorted(str(s["name"]) for s in json.loads(res.stdout))
+    except (json.JSONDecodeError, KeyError, TypeError):
+        raise proof.LabError("wrangler secret list for %s printed no JSON list" % worker) from None
+
+
+def callers(*, bench: bool, companies: Companies = default_companies) -> list[str]:
+    """The Workers that ask a signer: every account Worker."""
+    return account_workers(bench=bench, companies=companies)
+
+
+def _binding(caller: str, api: Api | None) -> dict:
+    result = (api or default_api())("/workers/scripts/%s/settings" % caller)
+    rows = result.get("bindings", []) if isinstance(result, dict) else []
+    found = [
+        b
+        for b in rows
+        if isinstance(b, dict) and b.get("type") == "service" and b.get("name") == SIGNER_BINDING
+    ]
+    if len(found) != 1:
+        raise proof.LabError(
+            "%s has %d %s service binding(s), not 1" % (caller, len(found), SIGNER_BINDING)
+        )
+    return found[0]
+
+
+def signer_of(caller: str, *, api: Api | None = None) -> str:
+    return str(_binding(caller, api).get("service", ""))
+
+
+def signer_props(caller: str, *, api: Api | None = None) -> dict[str, str]:
+    props = _binding(caller, api).get("props")
+    return {str(k): str(v) for k, v in props.items()} if isinstance(props, dict) else {}
+
+
+def _account_region(config: str) -> str:
+    path = _root().joinpath(*ACCOUNT_REL) / config
+    return str(tomllib.loads(path.read_text(encoding="utf-8")).get("vars", {}).get("REGION", ""))
+
+
+def expected_props(caller: str, *, companies: Companies = default_companies) -> dict[str, str]:
+    """The props S4's binding must carry for `caller`: shared `{tier, region}`, a company's `{tier, companyId, region}`."""
+    if caller == BENCH_ACCOUNT:
+        return {"tier": "shared", "region": _account_region("wrangler.bench.toml")}
+    name = caller[len(COMPANY_WORKER_PREFIX) :] if caller.startswith(COMPANY_WORKER_PREFIX) else ""
+    if name in load_region_ids(_root()):
+        return {"tier": "shared", "region": name}
+    for bench in (True, False):
+        for row in companies(bench):
+            if str(row["name"]) == name:
+                return {
+                    "tier": "enterprise",
+                    "companyId": str(row["id"]),
+                    "region": str(row["region"]),
+                }
+    raise proof.LabError("no shared Worker or company is named by %s" % caller)
+
+
+def issue(caller: str, kind: str, *, probe: Probe = _no_probe) -> proof.Answer:
+    return probe(caller, "issue", kind)
+
+
+def certificate_audited(
+    signer: str, certificate_id: str, *, run: control_db.Runner = control_db.run_wrangler
+) -> bool:
+    """A `delegation_cert.signed` row naming the certificate's subscription id sits in the signer region's control audit table."""
+    if not signer.startswith("signer-"):
+        raise proof.LabError("%r is not a signer Worker" % signer)
+    database = "control-" + signer[len("signer-") :]
+    try:
+        rows = control_db.query(
+            database,
+            "SELECT COUNT(*) AS n FROM audit WHERE action = ? AND detail LIKE ?",
+            ["delegation_cert.signed", '%%"subscriptionId":%s%%' % json.dumps(certificate_id)],
+            runner=run,
+        )
+    except control_db.ControlDbError as exc:
+        raise proof.LabError(str(exc)) from None
+    return bool(rows) and int(rows[0].get("n", 0)) > 0
+
+
+def current_licence_works(caller: str, *, probe: Probe = _no_probe) -> bool:
+    return probe(caller, "current", "licence").ok
+
+
+def renew(caller: str, *, probe: Probe = _no_probe) -> proof.Answer:
+    return probe(caller, "renew", "licence")
+
+
+def stop_signer(signer: str, *, run: Runner = run_process) -> None:
+    """Delete the signer Worker (`--force`, since callers bind it); `start_signer` redeploys it."""
+    if signer not in {t.worker for t in _all_targets().values()}:
+        raise proof.LabError("%r is not a signer Worker" % signer)
+    res = _wrangler(run, [*wrangler.ARGV, "delete", "--name", signer, "--force"])
+    if res.rc != 0:
+        raise proof.LabError("wrangler delete %s exited %d" % (signer, res.rc))
+
+
+def start_signer(
+    signer: str, *, run: Runner = run_process, env: typing.Mapping[str, str] | None = None
+) -> None:
+    keys = [k for k, t in _all_targets().items() if t.worker == signer]
+    if not keys:
+        raise proof.LabError("%r is not a signer Worker" % signer)
+    try:
+        deploy(
+            _root(),
+            keys[0],
+            env=os.environ if env is None else env,
+            run=run,
+            out=io.StringIO(),
+        )
+    except (RefusedError, wrangler.WranglerNotInstalledError) as exc:
+        raise proof.LabError("; ".join(getattr(exc, "lines", (str(exc),)))) from None
+
+
+def _bench_signer(region: str) -> str:
+    if region not in BENCH_REGIONS:
+        raise proof.LabError(
+            "bench has no signer in %r (one of %s)" % (region, ", ".join(BENCH_REGIONS))
+        )
+    return "signer-bench-%s" % region
+
+
+def cut_region(region: str, *, run: Runner = run_process) -> None:
+    """Bench only: stop the region's bench signer. Its control database is not cut (see the module docstring)."""
+    stop_signer(_bench_signer(region), run=run)
+
+
+def restore_region(
+    region: str, *, run: Runner = run_process, env: typing.Mapping[str, str] | None = None
+) -> None:
+    start_signer(_bench_signer(region), run=run, env=env)
 
 
 def main(argv: list[str] | None = None, *, run: Runner = run_process) -> int:
