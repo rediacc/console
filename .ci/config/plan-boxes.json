@@ -673,6 +673,19 @@
       "open_sigs": [],
       "done_sigs": []
     },
+    "agent/plans/PLAN-ci-vm-image-followups.md": {
+      "status": "approved",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 2,
+      "done": 0,
+      "open_sigs": [
+        "2575e0f6",
+        "9071fc1d"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-ciquick-green-then-batch.md": {
       "status": "approved",
       "owner": "d778be9d",
@@ -844,6 +857,19 @@
       "open": 0,
       "done": 0,
       "open_sigs": [],
+      "done_sigs": []
+    },
+    "agent/plans/PLAN-config-mirror-reseal.md": {
+      "status": "proposed",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 2,
+      "done": 0,
+      "open_sigs": [
+        "55ead55d",
+        "b00bc9df"
+      ],
       "done_sigs": []
     },
     "agent/plans/PLAN-config-networkid-discovery.md": {
@@ -1715,18 +1741,18 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 3,
-      "done": 4,
+      "open": 1,
+      "done": 6,
       "open_sigs": [
-        "9cd30874",
-        "d1f30da7",
-        "e6863976"
+        "9cd30874"
       ],
       "done_sigs": [
         "000bcda3",
         "5be9e42b",
         "9b7feb0e",
-        "d12cc4ab"
+        "d12cc4ab",
+        "d1f30da7",
+        "e6863976"
       ]
     },
     "agent/plans/PLAN-plan-preflight.md": {
@@ -3303,27 +3329,6 @@
         "e0c269f4",
         "ec86975c"
       ]
-    },
-    "agent/plans/_done/PLAN-ci-prebaked-vm-images.md": {
-      "status": "closed",
-      "owner": "d778be9d",
-      "folder": "agent/plans/_done",
-      "moved_at": "2026-09-29",
-      "open": 2,
-      "done": 6,
-      "open_sigs": [
-        "0352e5e4",
-        "25afa53a"
-      ],
-      "done_sigs": [
-        "3343dd87",
-        "53977b5c",
-        "6db74aaa",
-        "d3461f95",
-        "f33eebb6",
-        "f708aafa"
-      ],
-      "ruling": "#c3a46b36"
     },
     "agent/plans/_done/PLAN-ci-verdict.md": {
       "status": "done",
