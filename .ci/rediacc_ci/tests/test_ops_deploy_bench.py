@@ -474,6 +474,15 @@ def test_the_payload_carries_the_config_server_key(monkeypatch):
     assert "CONFIG_SERVER_KEY" not in payload
 
 
+def test_the_payload_sender_defaults_to_the_product_zone_notify_host(monkeypatch):
+    """Without AWS_SES_FROM the bench Worker sends from noreply@notify.rediacc.cloud, and an explicit value wins."""
+    _bench_env(monkeypatch)
+    monkeypatch.delenv("AWS_SES_FROM", raising=False)
+    assert deploy_bench.secrets_payload()["AWS_SES_FROM"] == "noreply@notify.rediacc.cloud"
+    monkeypatch.setenv("AWS_SES_FROM", "x@example.test")
+    assert deploy_bench.secrets_payload()["AWS_SES_FROM"] == "x@example.test"
+
+
 def test_the_payload_carries_the_backup_store_kek(monkeypatch):
     """The bench KEK reaches the Worker under its Worker name, and an empty one refuses the push."""
     _bench_env(monkeypatch)

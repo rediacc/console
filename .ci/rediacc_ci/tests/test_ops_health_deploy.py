@@ -318,7 +318,12 @@ def test_a_404_or_an_unreachable_host_is_a_first_deploy(monkeypatch: pytest.Monk
 
 @pytest.mark.parametrize(
     "reason",
-    [ConnectionResetError(104, "reset"), BrokenPipeError(32, "broken pipe"), "unknown"],
+    [
+        ConnectionResetError(104, "reset"),
+        BrokenPipeError(32, "broken pipe"),
+        TimeoutError("timed out"),
+        "unknown",
+    ],
 )
 def test_a_urlerror_from_the_send_after_connecting_is_unreadable_not_a_first_deploy(
     monkeypatch: pytest.MonkeyPatch, reason: object
