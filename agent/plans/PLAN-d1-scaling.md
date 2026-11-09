@@ -132,10 +132,11 @@ Two resume paths keep the invariant "every exists answer the commit relies on wa
   Owns: .ci/rediacc_ci/deploy/set_account_worker_secrets.py, .ci/config/secret-supply.json.
   Accept: `npm run check:ci-secret-supply` rc 0.
     (ticked) 2026-11-09T16:26:11Z by d778be9d: commit:a3adea22 check:ci-secret-supply and check:ci-bws-map rc=0; pusher and bench tests 180 passed
-- [ ] A2 [writer] Portal and config history read telemetry from AE (Z3 step 2): `listFiltered` and `countFiltered` split by type class and merge by timestamp; the config history merges `config.pull` and `config.version.read` from AE with D1's `config.push`. Test with a fake AE reader: a mixed page orders correctly and counts add up.
+- [x] A2 [writer] Portal and config history read telemetry from AE (Z3 step 2): `listFiltered` and `countFiltered` split by type class and merge by timestamp; the config history merges `config.pull` and `config.version.read` from AE with D1's `config.push`. Test with a fake AE reader: a mixed page orders correctly and counts add up.
   Depends on: A1, G1 (routes/configs.ts), W1.
   Owns: private/account/src/routes/portal.ts, private/account/src/routes/configs.ts, private/account/tests/integration/portal-telemetry-read.test.ts (new).
   Accept: `cd private/account && npx vitest run portal-telemetry-read` rc 0.
+    (ticked) 2026-11-09T17:03:40Z by d778be9d: commit:d0749b6f account suite 256 files 3961 passed rc=0; tsc rc=0; pusher tests 98 passed
 - [ ] H3 [writer] Cross-shard reads per Z8: root admin activity and the Stripe day and subscription views through `forEachShard`, the app building the router from the bindings (identity with one database). Test: two in-memory shards merge in timestamp order; login by email resolves from the directory.
   Depends on: H1, W1, PLAN-enterprise-isolation.md#S3.
   Owns: private/account/src/routes/root.ts, private/account/src/routes/root-stripe.ts, private/account/src/app.ts, private/account/tests/integration/shard-fanout.test.ts (new).
