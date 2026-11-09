@@ -347,13 +347,75 @@ def test_first_deploy_has_no_rollback(repo):
         def __call__(self, argv, cwd, stdin):
             if argv[3:5] == ["deployments", "list"]:
                 self.calls.append((argv, cwd, stdin))
-                return ds.Result(1, "", "no such worker")
+                return ds.Result(1, "", "This Worker does not exist on your account. [code: 10007]")
             return super().__call__(argv, cwd, stdin)
 
     result, out = run(repo, First())
     assert result["previous_version_id"] is None
     assert result["rollback"] is None
     assert "none (first deploy)" in out
+
+
+@pytest.mark.parametrize(
+    "answer",
+    [ds.Result(1, "", "network down"), ds.Result(0, "not json", ""), ds.Result(0, '{"a": 1}', "")],
+)
+def test_an_unreadable_deployments_list_is_not_claimed_as_a_first_deploy(repo, answer):
+    class Unreadable(FakeWrangler):
+        def __call__(self, argv, cwd, stdin):
+            if argv[3:5] == ["deployments", "list"]:
+                self.calls.append((argv, cwd, stdin))
+                return answer
+            return super().__call__(argv, cwd, stdin)
+
+    result, out = run(repo, Unreadable())
+    assert result["previous_known"] is False
+    assert result["rollback"] is None
+    assert "first deploy" not in out
+    assert "Rollback: unknown" in out
+
+
+def test_an_empty_deployments_list_is_a_first_deploy(repo):
+    class Empty(FakeWrangler):
+        def __call__(self, argv, cwd, stdin):
+            if argv[3:5] == ["deployments", "list"]:
+                self.calls.append((argv, cwd, stdin))
+                return ds.Result(0, "[]", "")
+            return super().__call__(argv, cwd, stdin)
+
+    result, out = run(repo, Empty())
+    assert result["previous_known"] is True
+    assert "none (first deploy)" in out
+
+
+def test_the_record_and_rollback_exist_before_the_key_is_pushed(repo, tmp_path):
+    class BulkFails(FakeWrangler):
+        def __call__(self, argv, cwd, stdin):
+            if argv[3:5] == ["secret", "bulk"]:
+                self.calls.append((argv, cwd, stdin))
+                return ds.Result(1, "", "boom")
+            return super().__call__(argv, cwd, stdin)
+
+    record = tmp_path / "record.json"
+    out = io.StringIO()
+    with pytest.raises(ds.RefusedError, match="secret bulk failed"):
+        ds.deploy(repo, "bench-eu", env=ENV, run=BulkFails(), out=out, record=record)
+    written = json.loads(record.read_text())
+    assert written["version_id"] == VERSION
+    assert written["previous_version_id"] == PREVIOUS
+    assert written["rollback"]
+    assert "Rollback: npx --no-install wrangler rollback %s" % PREVIOUS in out.getvalue()
+
+
+def test_a_duplicate_d1_binding_is_refused():
+    spec = ds.targets(["eu"])["eu"]
+    good = _good_text(spec)
+    dup = (
+        good
+        + '\n[[d1_databases]]\nbinding = "SHARED"\ndatabase_name = "account-us"\ndatabase_id = "z"\n'
+    )
+    reasons = ds.config_refusals(dup, spec)
+    assert any("SHARED is declared 2 times" in r for r in reasons), reasons
 
 
 def test_dry_run_needs_no_credential_and_reads_no_control(repo):

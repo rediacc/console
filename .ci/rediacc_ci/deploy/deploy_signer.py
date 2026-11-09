@@ -17,7 +17,7 @@ A DRY RUN (`--dry-run`) renders with a placeholder control id and runs `wrangler
 
 THE LAB READERS AND DRIVERS (box S2's group in `rediacc_ci.enterprise.lab`, the `Lab` protocol of `rediacc_ci.enterprise.proof`). Fifteen module functions that `LiveLab` binds by name at call time. Each live call goes through an injectable seam, a keyword-only argument that defaults to the production transport: `run` (the wrangler `Runner` above), `api` (a Cloudflare account GET, `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` from the environment), `companies` (the registry's rows) and `probe`. `bench=True` selects `signer-bench-<r>` and `account-bench`; `callers` and `account_workers` also list each non-removed company's `account-<name>` Worker. `secret_names` is `wrangler secret list`; `signer_of` and `signer_props` read the caller's `LICENSE_SIGNER` service binding from the Workers settings API; `expected_props` is what S4's binding must carry (`{tier: shared, region}` from the account config's `vars.REGION`, `{tier: enterprise, companyId, region}` from the control row); `certificate_audited` reads the signer region's control `audit` table. A signer is stopped by `wrangler delete --force` (what the plan's V2 text calls removing a bench signer) and started by this module's own `deploy`, which re-pushes the key; `cut_region` stops that region's bench signer and does NOT delete or detach its control database, because D1 offers no unreachable state short of destroying the data, and the signer is the only Worker that reads it for signing. `issue`, `renew` and `current_licence_works` need the caller Worker to ask its signer, and no caller-side probe route exists yet (box S4 binds `LICENSE_SIGNER`); their default `probe` raises `LabError("not built yet: ...")`, never an answer, so a refused claim cannot pass on a missing route.
 
-THE RECORD. `--record PATH` writes JSON: target, worker, region, config, version id, the previous version id, the secret names seen, and the rollback command (`wrangler rollback <previous>`, or null on a first deploy).
+THE RECORD. `--record PATH` writes JSON: target, worker, region, config, version id, the previous version id, whether it could be read (`previous_known`), the secret names seen, and the rollback command (`wrangler rollback <previous>`, or null). The record is written, and the rollback line printed, right after `wrangler deploy` succeeds, with empty `secret_names`; it is rewritten once the secret list is verified, so a failure of the key push still leaves the way back on disk.
 """
 
 from __future__ import annotations
@@ -57,6 +57,8 @@ DRY_RUN_DB_ID = "00000000-0000-0000-0000-000000000000"
 TOKEN_RE = re.compile(r"@[A-Z_]+@")
 VERSION_ID_RE = re.compile(r"Current Version ID:\s*([0-9A-Za-z][0-9A-Za-z-]*)")
 REDACTED = "[redacted]"
+# What `wrangler deployments list` prints for a Worker that has never been deployed.
+NO_WORKER_RE = re.compile(r"10007|does not exist|no such worker|not found", re.IGNORECASE)
 
 
 class RefusedError(Exception):
@@ -159,6 +161,11 @@ def config_refusals(text: str, target: Target) -> list[str]:
         reasons.append("has an [env.*] table")
     if doc.get("vars", {}).get("REGION") != target.region:
         reasons.append("vars.REGION is not %r" % target.region)
+    names = [d.get("binding") for d in doc.get("d1_databases", [])]
+    reasons.extend(
+        "d1 binding %s is declared %d times" % (n, names.count(n))
+        for n in sorted({n for n in names if names.count(n) > 1}, key=str)
+    )
     bindings = {d.get("binding"): d.get("database_name") for d in doc.get("d1_databases", [])}
     if bindings.get("CONTROL") != target.control_db:
         reasons.append("CONTROL binds %r, not %r" % (bindings.get("CONTROL"), target.control_db))
@@ -230,16 +237,24 @@ def control_db_id(run: Runner, cwd: pathlib.Path, name: str) -> str:
     return ids[0]
 
 
+class DeploymentsUnreadableError(Exception):
+    """The deployments list failed or printed something that is not a list, which is not the same as a first deploy."""
+
+
 def newest_version(run: Runner, cwd: pathlib.Path, config: pathlib.Path) -> str | None:
-    """The version id of the newest deployment at 100%, or None (a first deploy)."""
+    """The version id of the newest deployment at 100%, or None (a first deploy: an empty list, or wrangler saying the Worker does not exist). Raises `DeploymentsUnreadableError` for any other failure, so a rollback line never claims a first deploy it cannot know."""
     res = run(deployments_argv(config), cwd, None)
     if res.rc != 0:
-        return None
+        if NO_WORKER_RE.search(res.stdout + res.stderr):
+            return None
+        raise DeploymentsUnreadableError
     try:
         rows = json.loads(res.stdout)
     except json.JSONDecodeError:
-        return None
-    if not isinstance(rows, list) or not rows:
+        raise DeploymentsUnreadableError from None
+    if not isinstance(rows, list):
+        raise DeploymentsUnreadableError
+    if not rows:
         return None
     newest = max(rows, key=lambda d: str(d.get("created_on", "")))
     for v in newest.get("versions", []):
@@ -319,7 +334,11 @@ def deploy(
         say("Dry run passed: %s bundles with %s." % (target.worker, config_rel))
         return {"target": target.key, "worker": target.worker, "dry_run": True}
 
-    previous = newest_version(run, signer_dir, config)
+    previous_known = True
+    try:
+        previous = newest_version(run, signer_dir, config)
+    except DeploymentsUnreadableError:
+        previous, previous_known = None, False
     res = run(deploy_argv(config, dry_run=False), signer_dir, None)
     say(res.stdout)
     say(res.stderr)
@@ -329,6 +348,28 @@ def deploy(
     if not found:
         raise RefusedError("%s: wrangler deploy printed no Current Version ID" % SELF)
     version = found[-1]
+
+    # The version is live from here, so the record and the way back are written before the key is pushed.
+    result: dict[str, typing.Any] = {
+        "target": target.key,
+        "worker": target.worker,
+        "region": target.region,
+        "config": config_rel,
+        "version_id": version,
+        "previous_version_id": previous,
+        "previous_known": previous_known,
+        "secret_names": [],
+        "rollback": rollback_command(config_rel, previous) if previous else None,
+    }
+    if record is not None:
+        record.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
+    say("Deployed %s version %s." % (target.worker, version))
+    if result["rollback"]:
+        say("Rollback: %s" % result["rollback"])
+    elif previous_known:
+        say("Rollback: none (first deploy)")
+    else:
+        say("Rollback: unknown (the deployments list could not be read before this deploy)")
 
     document = json.dumps({PRIVATE_KEY: private_key, PUBLIC_KEY: public_key})
     res = run(secret_bulk_argv(config), signer_dir, document)
@@ -350,20 +391,10 @@ def deploy(
             % (SELF, target.worker, names, sorted(SECRET_NAMES))
         )
 
-    result = {
-        "target": target.key,
-        "worker": target.worker,
-        "region": target.region,
-        "config": config_rel,
-        "version_id": version,
-        "previous_version_id": previous,
-        "secret_names": names,
-        "rollback": rollback_command(config_rel, previous) if previous else None,
-    }
+    result["secret_names"] = names
     if record is not None:
         record.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
-    say("Deployed %s version %s; secrets %s." % (target.worker, version, ", ".join(names)))
-    say("Rollback: %s" % (result["rollback"] or "none (first deploy)"))
+    say("Secrets %s verified on %s." % (", ".join(names), target.worker))
     return result
 
 
