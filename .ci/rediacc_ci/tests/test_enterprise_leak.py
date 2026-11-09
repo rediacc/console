@@ -295,7 +295,7 @@ def test_leftovers_masks_company_scripts_routes_and_says_what_they_are(monkeypat
     out = capsys.readouterr().out
     assert CO not in out
     assert "LEFTOVER script account-<company-1>" in out
-    assert "company-shaped, the control database accounts for it" in out
+    assert "company-shaped name, masked" in out
     assert "<company-1>-proxy.%s/*" % PRODUCT_DOMAIN in out
     assert "script proxy-<company-1> does not exist" in out
     assert "LEFTOVER script stray-worker" in out

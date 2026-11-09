@@ -106,12 +106,11 @@ def configured(root) -> tuple[set, set]:
     """(Worker names, D1 database names) the repo's wrangler configs declare, `[env.*]` blocks included."""
     scripts: set = set()
     dbs: set = set()
-    files = sorted({p for g in CONFIG_GLOBS for p in root.glob(g)})
+    # A template carries bare @@ placeholders and is not TOML until rendered, so it is not a config: a tree holding only templates is as empty as one holding nothing.
+    files = sorted({p for g in CONFIG_GLOBS for p in root.glob(g) if ".template." not in p.name})
     if not files:
         raise CfError("no wrangler config found under %s" % root)
     for path in files:
-        if ".template." in path.name:
-            continue  # a template carries bare @@ placeholders and is not TOML until rendered
         try:
             data = tomllib.loads(path.read_text(encoding="utf-8"))
         except (tomllib.TOMLDecodeError, OSError) as exc:
@@ -207,7 +206,7 @@ def main(argv: list[str], get=fetch) -> int:
         why = (
             detail
             if shown == name
-            else detail + "; company-shaped, the control database accounts for it"
+            else detail + "; company-shaped name, masked"
         )
         print("LEFTOVER %-6s %s  (%s)" % (kind, shown, masker.mask(why)))
     print("cf_leftovers: scanned %s" % ", ".join("%d %s" % (v, k) for k, v in scanned.items()))

@@ -165,6 +165,13 @@ def test_no_config_is_an_error(tmp_path):
         cfl.configured(tmp_path)
 
 
+def test_a_tree_holding_only_a_template_is_no_config(tmp_path):
+    (tmp_path / "workers" / "w").mkdir(parents=True)
+    (tmp_path / "workers" / "w" / "wrangler.template.toml").write_text('name = "@@NAME@@"\n')
+    with pytest.raises(cfl.CfError):
+        cfl.configured(tmp_path)
+
+
 def test_report_states_how_many_items_were_scanned(monkeypatch, capsys):
     monkeypatch.setenv("CLOUDFLARE_API_TOKEN", TOKEN)
     monkeypatch.setenv("CLOUDFLARE_ACCOUNT_ID", "acct")
