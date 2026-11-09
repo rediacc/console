@@ -10,7 +10,7 @@ on:
   workflow_call:
     inputs:
       target:
-        description: 'Label for the job name and the GitHub environment; the only caller passes edge, and the target does not change what is deployed'
+        description: 'Label for the job name and the GitHub environment'
         required: true
         type: string
       ref:
