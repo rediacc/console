@@ -241,9 +241,10 @@ def test_r1_evidence_only_refusal_ends_with_both_forms_and_has_no_also(wl):
     got = wl.cli("--tick", wlfix.ME, item, "done, works nocommit:research")
     assert got.rc != 0, got.out[:300]
     assert "Also unmet" not in got.err, got.err[:600]
-    assert (
-        "nocommit:no-tracked-change|research|operator-deferred" in got.err.strip().splitlines()[-1]
-    )
+    last = got.err.strip().splitlines()[-1]
+    assert "nocommit:no-tracked-change|research|operator-deferred" in last, last
+    # Review f71f0506.2: the retry line names the same path as the commit-reference refusal.
+    assert last.lstrip().startswith(".claude/hooks/stop/worklist.py --tick <me>"), last
     assert "also" not in last_refusal(wl)
 
 
@@ -299,6 +300,8 @@ def test_r1_an_issue_without_a_door_and_without_a_commit_names_both(wl):
     got = wl.cli("--tick", wlfix.ME, item, "filed https://github.com/x/y/issues/9 for the rest")
     assert got.rc != 0, got.out[:300]
     assert "Also unmet: the evidence names no commit" in got.err, got.err[:600]
+    last = got.err.strip().splitlines()[-1]
+    assert "commit:<sha>" in last, last
     row = last_refusal(wl)
     assert row["why"] == "issue-without-door", row
     assert row["also"] == ["no-commit-ref"], row

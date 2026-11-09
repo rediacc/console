@@ -1776,8 +1776,14 @@ def _item_cli(argv, worklist):
             text = M.CLI_TICK_ISSUE_DOOR % item_id
             if bad is not None:
                 kind, token = bad
-                text += "\nAlso unmet: the evidence names no commit.%s" % (
-                    CLI_TICK_COMMIT_REF_DETAIL[kind] % token if token else ""
+                text += (
+                    "\nAlso unmet: the evidence names no commit.%s"
+                    "\n    .claude/hooks/stop/worklist.py --tick <me> %s %s"
+                    % (
+                        CLI_TICK_COMMIT_REF_DETAIL[kind] % token if token else "",
+                        item_id,
+                        CLI_TICK_FORMS,
+                    )
                 )
             die(text)
         if not evidence_ok or bad is not None:
