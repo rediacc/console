@@ -106,3 +106,21 @@ class_name = "BackupReplicator"
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["BackupReplicator"]
+
+# Telemetry mirror (PLAN-d1-scaling Z3): EventLogService writes telemetry event types to this Analytics
+# Engine dataset as well as D1. The portal's reads use the SQL API with ACCOUNT_AE_READ_TOKEN.
+[[analytics_engine_datasets]]
+binding = "TELEMETRY"
+dataset = "telemetry_us"
+
+# Per-tenant write caps (PLAN-d1-scaling Z6; private/account/src/middleware/tenant-write-cap.ts reads
+# these binding names). Approximate per location: a false refusal costs a retry, never data.
+[[ratelimits]]
+name = "AUDIT_WRITE_LIMIT"
+namespace_id = "1102"
+simple = { limit = 120, period = 60 }
+
+[[ratelimits]]
+name = "CONFIG_WRITE_LIMIT"
+namespace_id = "1202"
+simple = { limit = 60, period = 60 }
