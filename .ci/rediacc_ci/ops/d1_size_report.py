@@ -336,7 +336,7 @@ def _dataset_name(template: str, region_id: str) -> str:
     """The AE dataset of a region, checked as a plain identifier before it is spliced into SQL."""
     try:
         name = template.format(region=region_id)
-    except (KeyError, IndexError, ValueError, AttributeError) as exc:
+    except (KeyError, IndexError, ValueError, AttributeError, TypeError) as exc:
         raise RegionError(
             "TELEMETRY_AE_DATASET %r is not a usable template: %s" % (template, exc)
         ) from None
@@ -420,7 +420,7 @@ def sync_alert_issue(
             "--search",
             '"%s" in:title' % ISSUE_TITLE,
             "--json",
-            "number,title,body",
+            "number,title,body,comments",
         )
         or "[]"
     )
@@ -432,10 +432,29 @@ def sync_alert_issue(
     if marker in str(found[0].get("body") or ""):
         gh("issue", "edit", number, "--body", body)
         return ["edit"]
-    # The comment goes first: the body marker is what a later run compares, so a comment that fails leaves the old marker in place and the next run posts it again.
+    # The comment goes first and carries the marker: a failed comment leaves the old marker in the body, so the next run posts it again, and a failed edit leaves the new marker in the latest alert comment, so the next run retries only the edit.
+    if _last_comment_marker(found[0]) == marker:
+        gh("issue", "edit", number, "--body", body)
+        return ["edit"]
     gh("issue", "comment", number, "--body", body)
     gh("issue", "edit", number, "--body", body)
     return ["comment", "edit"]
+
+
+_MARKER_RE = re.compile(r"<!-- d1-size-alerts: [^>]*-->")
+
+
+def _last_comment_marker(issue: Mapping[str, object]) -> str | None:
+    """The marker of the newest alert comment on the issue, or None when no comment carries one."""
+    comments = issue.get("comments")
+    for comment in reversed(comments if isinstance(comments, list) else []):
+        found = _MARKER_RE.search(str(comment.get("body") or ""))
+        if found:
+            return found.group(0)
+    return None
+
+
+_ONCE = {("issue", "create"), ("issue", "comment")}
 
 
 class GhError(Exception):
@@ -444,7 +463,9 @@ class GhError(Exception):
 
 def _real_gh(*args: str, runner=None, sleep=None) -> str:
     """`gh <args>` through the transient-retry wrapper, which never raises for a non-zero exit, so the result is checked here."""
-    result = gh_retry.gh(list(args), runner=runner, sleep=sleep)
+    # `issue create` and `issue comment` are not idempotent: a 502 after GitHub accepted the POST would retry into a duplicate, so they run once and the next run reconciles.
+    attempts = 1 if tuple(args[:2]) in _ONCE else gh_retry.ATTEMPTS
+    result = gh_retry.gh(list(args), runner=runner, sleep=sleep, attempts=attempts)
     if not result.ok:
         raise GhError(
             "gh %s failed (exit %d): %s"

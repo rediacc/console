@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import io
 import json
+import sqlite3
 from datetime import UTC, datetime
 
 import pytest
@@ -235,10 +236,35 @@ def test_value_bytes_are_summed_over_the_blob_cast():
         assert sql.count("sum(length(") == 2
 
 
+def test_the_summed_sql_returns_the_byte_count_of_the_values():
+    fake = FakeD1({"eu": region(1, 1), "us": region(1, 1)})
+    run(fake)
+    sums = [b["sql"] for m, _u, b in fake.calls if m == "POST" and "sum(length" in b["sql"]]
+    assert sums
+    sql = next(q for q in sums if q.rsplit("FROM ", 1)[1].strip('"') == "event_log")
+    conn = sqlite3.connect(":memory:")
+    conn.execute('CREATE TABLE "event_log" ("id", "data")')
+    conn.execute('INSERT INTO "event_log" VALUES (?, ?)', ("héllo", b"\x00\x01\x02"))
+    conn.execute('INSERT INTO "event_log" VALUES (?, ?)', (12345, "ab"))
+    row = conn.execute(sql).fetchone()
+    # c0: 6 + 5 bytes, c1: 3 + 2 bytes; the columns after `n` are the per-column sums.
+    assert row[1:] == (11, 5)
+
+
 def test_a_dataset_template_with_an_attribute_reference_is_a_named_refusal(capsys):
     fake = FakeD1({"eu": region(1, 1, telemetry=5), "us": region(1, 1, telemetry=5)})
     ae = ae_returning(5)
     env = {**ENV, "TELEMETRY_AE_DATASET": "t_{region.upper_x}"}
+    rc = sr.run_compare(env, fake, ae, days=7, regions=REGIONS, now=NOW, out=io.StringIO())
+    assert rc == 2
+    assert ae.seen == []
+    assert "not a usable template" in capsys.readouterr().err
+
+
+def test_a_dataset_template_with_an_index_into_the_region_is_a_named_refusal(capsys):
+    fake = FakeD1({"eu": region(1, 1, telemetry=5), "us": region(1, 1, telemetry=5)})
+    ae = ae_returning(5)
+    env = {**ENV, "TELEMETRY_AE_DATASET": "t_{region[x]}"}
     rc = sr.run_compare(env, fake, ae, days=7, regions=REGIONS, now=NOW, out=io.StringIO())
     assert rc == 2
     assert ae.seen == []
@@ -258,11 +284,14 @@ def test_a_dataset_name_that_is_not_an_identifier_is_refused_before_any_ae_query
 
 class _FakeGh:
     def __init__(self, issues: list[dict]) -> None:
+        self.bodies: list[str] = []
         self.issues = issues
         self.verbs: list[str] = []
 
     def __call__(self, *args: str) -> str:
         self.verbs.append(args[1])
+        if "--body" in args:
+            self.bodies.append(args[args.index("--body") + 1])
         return json.dumps(self.issues) if args[1] == "list" else ""
 
 
@@ -289,6 +318,45 @@ def test_a_changed_alert_set_edits_and_comments():
     gh = _FakeGh([{"number": 7, "title": sr.ISSUE_TITLE, "body": sr.alert_marker(_doc("eu"))}])
     assert sr.sync_alert_issue(_doc("eu", "us"), "report", gh) == ["comment", "edit"]
     assert gh.verbs == ["list", "comment", "edit"]
+
+
+def test_a_failed_edit_after_the_comment_retries_only_the_edit():
+    issue = {
+        "number": 7,
+        "title": sr.ISSUE_TITLE,
+        "body": sr.alert_marker(_doc("eu")),
+        "comments": [],
+    }
+
+    class EditFails(_FakeGh):
+        def __call__(self, *args: str) -> str:
+            out = super().__call__(*args)
+            if args[1] == "edit":
+                raise RuntimeError("502")
+            return out
+
+    first = EditFails([issue])
+    with pytest.raises(RuntimeError):
+        sr.sync_alert_issue(_doc("eu", "us"), "report", first)
+    assert first.verbs == ["list", "comment", "edit"]
+    # The next run sees the comment carrying the new marker with the body still old.
+    issue["comments"] = [{"body": first.bodies[0]}]
+    second = _FakeGh([issue])
+    assert sr.sync_alert_issue(_doc("eu", "us"), "report", second) == ["edit"]
+    assert second.verbs == ["list", "edit"]
+
+
+def test_an_older_alert_comment_with_the_same_set_does_not_suppress_a_new_one():
+    old = sr.alert_marker(_doc("eu", "us"))
+    mid = sr.alert_marker(_doc("eu"))
+    issue = {
+        "number": 7,
+        "title": sr.ISSUE_TITLE,
+        "body": mid,
+        "comments": [{"body": "x\n" + old}, {"body": "y\n" + mid}],
+    }
+    gh = _FakeGh([issue])
+    assert sr.sync_alert_issue(_doc("eu", "us"), "report", gh) == ["comment", "edit"]
 
 
 def test_a_failed_comment_leaves_the_old_marker_so_the_next_run_posts_it_again():
@@ -320,6 +388,19 @@ def test_the_real_gh_retries_a_transient_failure():
     assert sr._real_gh("issue", "list", runner=runner, sleep=naps.append) == "[]"
     assert len(calls) == 2
     assert len(naps) == 1
+
+
+@pytest.mark.parametrize("verb", ["create", "comment"])
+def test_the_real_gh_never_retries_a_non_idempotent_call(verb):
+    calls: list[list[str]] = []
+
+    def runner(args, **_kw):
+        calls.append(args)
+        return _gh_result(1, err="gh: Server Error (HTTP 502)")
+
+    with pytest.raises(sr.GhError):
+        sr._real_gh("issue", verb, "--body", "x", runner=runner, sleep=lambda _s: None)
+    assert len(calls) == 1
 
 
 def test_the_real_gh_failure_carries_gh_stderr():

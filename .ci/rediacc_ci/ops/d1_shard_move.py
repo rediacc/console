@@ -609,7 +609,9 @@ def move(
         off = mismatches(dst, plan.tables, schema)
         live = live_rows(src, plan.subscriptions, clock())
     except (MoveError, sqlite3.Error) as exc:
-        delete_rows(dst, plan.tables)
+        if not _rollback(dst, plan, err):
+            print("d1_shard_move: import failed too: %s" % exc, file=err)
+            return EXIT_SOURCE_CHANGED
         print(
             "d1_shard_move: import failed, target rows rolled back (copied parent rows stay, inert), no flip: %s"
             % exc,
@@ -617,11 +619,13 @@ def move(
         )
         return EXIT_VERIFY
     if off or live:
-        delete_rows(dst, plan.tables)
+        rolled = _rollback(dst, plan, err)
         for line in off:
             print("d1_shard_move: mismatch %s" % line, file=err)
         for line in live:
             print("d1_shard_move: live on the source since the plan: %s" % line, file=err)
+        if not rolled:
+            return EXIT_SOURCE_CHANGED
         print(
             "d1_shard_move: target rows rolled back (copied parent rows stay, inert), no flip",
             file=err,
@@ -643,11 +647,25 @@ def move(
         return _finish(src, plan, schema, out, err)
     except (MoveError, sqlite3.Error) as exc:
         print(
-            "d1_shard_move: flipped, but the source cleanup failed: %s; source rows kept on shard %d, reconcile them by hand"
+            "d1_shard_move: flipped, but the source cleanup failed: %s; source rows on shard %d may be partly deleted, reconcile them by hand"
             % (exc, plan.source),
             file=err,
         )
         return EXIT_SOURCE_CHANGED
+
+
+def _rollback(dst: Executor, plan: Plan, err) -> bool:
+    """Delete the copied rows from the target. A failed delete is reported with the rows kept, and returns False."""
+    try:
+        delete_rows(dst, plan.tables)
+    except (MoveError, sqlite3.Error) as exc:
+        print(
+            "d1_shard_move: rollback failed: %s; copied rows may remain on shard %d, the source on shard %d is untouched, reconcile by hand"
+            % (exc, plan.target, plan.source),
+            file=err,
+        )
+        return False
+    return True
 
 
 def _flip_failed(directory: Executor, dst: Executor, plan: Plan, exc: Exception, err) -> int:
@@ -661,7 +679,13 @@ def _flip_failed(directory: Executor, dst: Executor, plan: Plan, exc: Exception,
             str(r["shard"]) == str(plan.source) for r in rows
         )
         if still_source:
-            delete_rows(dst, plan.tables)
+            if not _rollback(dst, plan, err):
+                print(
+                    "d1_shard_move: flip failed (%s), the directory still names shard %d"
+                    % (exc, plan.source),
+                    file=err,
+                )
+                return EXIT_SOURCE_CHANGED
             print(
                 "d1_shard_move: flip failed, directory still on shard %d, target rows rolled back: %s"
                 % (plan.source, exc),

@@ -422,11 +422,63 @@ def test_flip_failure_with_unknown_state_keeps_both_copies(shards) -> None:
     assert counts(shards[0], (S1, S2))
 
 
+class FailingTarget:
+    """The target with a delete that always fails, and optionally an insert that fails first."""
+
+    def __init__(self, inner: mod.SqliteExecutor, fail_insert: bool = False) -> None:
+        self.inner = inner
+        self.fail_insert = fail_insert
+
+    def query(self, sql: str) -> list[dict]:
+        return self.inner.query(sql)
+
+    def batch(self, statements: list[str]) -> None:
+        if statements and statements[0].startswith("DELETE"):
+            raise mod.MoveError("delete refused")
+        if self.fail_insert:
+            raise mod.MoveError("insert refused")
+        self.inner.batch(statements)
+
+
+def test_flip_failure_with_a_failed_target_rollback_names_the_rollback(shards) -> None:
+    wrapped = {0: FailingDirectory(shards[0], "flip-before"), 1: FailingTarget(shards[1])}
+    rc, _, err = run(wrapped, [S1, S2], write=True)
+    assert rc == mod.EXIT_SOURCE_CHANGED
+    assert "rollback failed: delete refused" in err
+    assert "state is unknown" not in err
+    assert "rolled back" not in err
+    assert counts(shards[1], (S1, S2))
+
+
+def test_import_failure_with_a_failed_rollback_does_not_escape(shards) -> None:
+    wrapped = {0: shards[0], 1: FailingTarget(shards[1], fail_insert=True)}
+    rc, _, err = run(wrapped, [S1, S2], write=True)
+    assert rc == mod.EXIT_SOURCE_CHANGED
+    assert "rollback failed: delete refused" in err
+    assert "import failed too: insert refused" in err
+    assert "target rows rolled back" not in err
+
+
+def test_mismatch_with_a_failed_rollback_does_not_escape(shards) -> None:
+    shards[1].conn.executescript(
+        "CREATE TRIGGER tamper AFTER INSERT ON config_entries "
+        "BEGIN UPDATE config_entries SET hmac = 'tampered' WHERE id = NEW.id; END;"
+    )
+    wrapped = {0: shards[0], 1: FailingTarget(shards[1])}
+    rc, _, err = run(wrapped, [S1, S2], write=True)
+    assert rc == mod.EXIT_SOURCE_CHANGED
+    assert "mismatch config_entries" in err
+    assert "rollback failed: delete refused" in err
+    assert "target rows rolled back" not in err
+
+
 def test_source_cleanup_failure_after_the_flip_is_reported_not_raised(shards) -> None:
     wrapped = {0: FailingDirectory(shards[0], "after-reads"), 1: shards[1]}
     rc, _, err = run(wrapped, [S1, S2], write=True)
     assert rc == mod.EXIT_SOURCE_CHANGED
     assert "source cleanup failed" in err
+    assert "may be partly deleted" in err
+    assert "source rows kept" not in err
     assert counts(shards[0], (S1, S2))
 
 
