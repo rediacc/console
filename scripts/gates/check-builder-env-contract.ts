@@ -127,6 +127,21 @@ export function isOtherChannelName(name: string, channel: 'STABLE'): boolean {
   return channel === 'STABLE' && /_EDGE$/.test(name);
 }
 
+/** The finding for a required guard on a name of the channel the step does not serve, or null. */
+export function crossChannelGuardProblem(
+  pair: { builder: string; workflow: string; channel?: 'STABLE' },
+  stepLine: number,
+  g: { label: string; varName: string | null; line: number }
+): string | null {
+  if (g.varName === null || !pair.channel || !isOtherChannelName(g.varName, pair.channel)) {
+    return null;
+  }
+  return (
+    `    ${pair.builder}:${g.line}  guard demands "${g.label}", a name of the other channel, but ${pair.workflow}:${stepLine} serves only ${pair.channel} and never exports it.\n` +
+    `      The read-side skip for the other channel's names covers the cross-channel refusal reads only. A required guard on one would refuse every ${pair.channel} run.`
+  );
+}
+
 /**
  * Measured 2026-09-02: 44/32/4, 27/25/0, 17/16/0 (exports / direct reads /
  * fan-ins). The floors sit under those, far enough to survive an honest edit
@@ -339,12 +354,35 @@ export function guardLabels(
   return out;
 }
 
-/** A YAML scalar as its value: a trailing ` # comment` and one pair of matching quotes removed, so `"stable"` and `stable # note` both read `stable`. */
+/** A YAML scalar as its value: a trailing ` # comment` and one pair of matching quotes removed, so `"stable"` and `stable # note` both read `stable`. A backslash escape inside double quotes (`\"`, `\\`) and a doubled quote inside single quotes (`''`) do not end the scalar. */
 export function scalarValue(raw: string): string {
   const text = raw.trim();
-  if (text.startsWith('"') || text.startsWith("'")) {
-    const close = text.indexOf(text[0], 1);
-    if (close > 0) return text.slice(1, close);
+  if (text.startsWith('"')) {
+    let value = '';
+    for (let i = 1; i < text.length; i++) {
+      const ch = text[i];
+      if (ch === '\\' && i + 1 < text.length) {
+        value += text[++i];
+      } else if (ch === '"') {
+        return value;
+      } else {
+        value += ch;
+      }
+    }
+  } else if (text.startsWith("'")) {
+    let value = '';
+    for (let i = 1; i < text.length; i++) {
+      if (text[i] === "'") {
+        if (text[i + 1] === "'") {
+          value += "'";
+          i++;
+        } else {
+          return value;
+        }
+      } else {
+        value += text[i];
+      }
+    }
   }
   return text.replace(/\s+#.*$/, '').trim();
 }
@@ -737,6 +775,34 @@ export function stepEnvNames(yamlText: string, builder: string): StepEnv | null 
     );
     process.exit(1);
   }
+  // The guard branch, both directions: a required guard on an _EDGE name for a STABLE step is a finding; the same guard on a STABLE name, or with no channel, is not.
+  const fixturePair = { builder: 'b.py', workflow: 'w.yml', channel: 'STABLE' as const };
+  const edgeGuard = { label: 'BACKUP_BUCKET_EDGE', varName: 'BACKUP_BUCKET_EDGE', line: 3 };
+  const stableGuard = { label: 'BACKUP_BUCKET_STABLE', varName: 'BACKUP_BUCKET_STABLE', line: 4 };
+  if (
+    crossChannelGuardProblem(fixturePair, 9, edgeGuard) === null ||
+    crossChannelGuardProblem(fixturePair, 9, stableGuard) !== null ||
+    crossChannelGuardProblem({ builder: 'b.py', workflow: 'w.yml' }, 9, edgeGuard) !== null
+  ) {
+    console.error(
+      'x instrument control: crossChannelGuardProblem() must flag a required _EDGE guard for a STABLE step and nothing else, or the guard branch could never fire.'
+    );
+    process.exit(1);
+  }
+  // Quoted scalars: an escaped quote or a doubled quote stays inside the value.
+  const quoted: [string, string][] = [
+    ['"a\\"b" # note', 'a"b'],
+    ["'it''s' # note", "it's"],
+    ['"stable"', 'stable'],
+    ['stable # note', 'stable'],
+  ];
+  const badQuoted = quoted.filter(([raw, want]) => scalarValue(raw) !== want);
+  if (badQuoted.length > 0) {
+    console.error(
+      `x instrument control: scalarValue() misread ${JSON.stringify(badQuoted.map(([raw]) => [raw, scalarValue(raw)]))}; an escaped or doubled quote must not end the scalar.`
+    );
+    process.exit(1);
+  }
   const targetFixture = stepEnvNames(
     wfFixture.replace('          WORKER_NAME:', '          TARGET: stable\n          WORKER_NAME:'),
     '.ci/rediacc_ci/deploy/set_fixture_secrets.py'
@@ -921,12 +987,8 @@ for (const pair of PAIRS) {
   for (const g of guardLabels(bText, reads, fanPrefixes)) {
     totalGuards += 1;
     if (g.varName === null) continue; // a fan-in RESULT; its label is the Worker key
-    if (pair.channel && isOtherChannelName(g.varName, pair.channel)) {
-      problems.push(
-        `    ${pair.builder}:${g.line}  guard demands "${g.label}", a name of the other channel, but ${pair.workflow}:${step.stepLine} serves only ${pair.channel} and never exports it.\n` +
-          `      The read-side skip for the other channel's names covers the cross-channel refusal reads only. A required guard on one would refuse every ${pair.channel} run.`
-      );
-    }
+    const crossChannel = crossChannelGuardProblem(pair, step.stepLine, g);
+    if (crossChannel !== null) problems.push(crossChannel);
     if (g.label !== g.varName) {
       problems.push(
         `    ${pair.builder}:${g.line}  guard demands "${g.label}", but the port never reads that name from the environment.\n` +
