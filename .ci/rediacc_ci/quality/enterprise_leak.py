@@ -5,13 +5,14 @@
 
 NOT YET A CI GATE: no `.ci/scripts/quality/` entry point, package.json script or workflow step runs it, because a run over the tracked tree still reports findings in files outside the quality tooling (test fixtures naming `usa.<domain>`, `1.<domain>`, a `proxy-eu.<domain>` comment). Those are fixed, and the three-point registration follows, before it can gate.
 
-WHY IT EXISTS (agent/plans/PLAN-enterprise-isolation.md, N2). This repository is public, and so is every CI log it produces. A company's name lives in the per-region control database and in gitignored generated configs, never in a tracked file. Four ways it could still escape are checked here, and the two public reports that read live Cloudflare names mask them through `Masker` below.
+WHY IT EXISTS (agent/plans/PLAN-enterprise-isolation.md, N2). This repository is public, and so is every CI log it produces. A company's name lives in the per-region control database and in gitignored generated configs, never in a tracked file. Five ways it could still escape are checked here, and the two public reports that read live Cloudflare names mask them through `Masker` below.
 
-THE FOUR CHECKS, each over TRACKED files only (`git ls-files`; submodules are their own repositories and are not listed):
+THE FIVE CHECKS, each over TRACKED files only (`git ls-files`; submodules are their own repositories and are not listed):
 
   tracked-company-toml   A tracked `enterprise.<x>.toml` anywhere, except `enterprise.template.toml`. The generator writes `workers/{account,proxy}/enterprise.<company>.toml`, which the two `.gitignore` files keep out; a `git add -f` or a lost ignore line would publish the name in the file name itself.
   store-name             Every secret NAME the two public secret records declare (.ci/config/bws-secret-map.json, which the vault refresh writes from the SHARED project, and .ci/config/secret-supply.json) is either a shared UPPER_SNAKE name or it is refused. An opaque company store id (`c<hex>`) is refused too: company stores live in the separate enterprise project, and one showing up in the shared record means it was created in the wrong project. Anything else (lowercase, dashes, a company spelled out) is a non-opaque store name.
   product-host           Every `<label>.<product domain>` and `<label>-proxy.<product domain>` in a tracked text file names a label a company cannot take (`rediacc_ci.enterprise.names.reserved()`: region ids, well-known host labels, service words) or the fake `acme`. Any other label is a company host. Placeholders like `<company>` do not match the label grammar and pass.
+  worker-name            A string of a tracked `workers/**/*.toml` shaped like a company resource (`account-<c>`, `proxy-<c>`, `configs-<c>`, `backups-<c>`, `signer-<c>`, `control-<c>`) whose rest is no public label. `Masker.for_tree` treats every string of those files as public, so this keeps a company Worker name from becoming public by being typed into one. A tracked toml that does not parse (and is no `@`-placeholder template) cannot be checked, so it counts in the verdict as not scanned.
   known-label            Local only. The labels of the generated tomls on disk (tracked or not), plus `ENTERPRISE_LEAK_LABELS` (comma separated), are searched for in the shapes a company name takes: `account-<c>`, `proxy-<c>`, `configs-<c>`, `backups-<c>`, `signer-<c>`, `control-<c>`, `<c>.<domain>`, `<c>-proxy.<domain>`, `enterprise.<c>.toml`, and, in the files that carry store names (the two secret records and .github/), the uppercase token `<C>` inside a NAME beside at least one `_` part. CI holds no generated toml, so there this check knows zero labels and says so; it is the half that catches a leak on the operator's machine before the commit leaves it.
 
 WHAT IT DOES NOT CATCH, said plainly: an uppercase shared-shaped store name such as `GLOBEX_JWT` in the shared record when the label is not known locally (the store-name check only sees shape), and a company name written as a plain word in prose. A plain-word search would flag any company whose name is a dictionary word in every unrelated sentence, with no way out but a suppression, so the known-label search is contexted on purpose.
@@ -91,7 +92,7 @@ class Shape:
         return (
             "%d tracked files, %d tracked company toml(s) (the template is allowed), "
             "%d store names in %d public records, %d product host(s) in %d file(s), "
-            "%d company label(s) known locally%s; %d tracked file(s) not scanned (over 4 MiB, binary or unreadable)"
+            "%d company label(s) known locally%s; %d tracked file(s) not scanned (over %d MiB, binary, unparsable or unreadable)"
             % (
                 self.tracked,
                 self.generated_tracked,
@@ -102,6 +103,7 @@ class Shape:
                 self.labels,
                 " (%s)" % self.label_sources if self.label_sources else " (none generated here)",
                 self.skipped,
+                MAX_SCAN_BYTES // 2**20,
             )
         )
 
@@ -235,9 +237,10 @@ def store_findings(root: pathlib.Path, pairs: list[tuple[str, str]]) -> list[Fin
 
 
 def host_re(domain: str) -> re.Pattern[str]:
-    """`<labels>.<domain>`: group 1 is the whole dotted prefix (`host_labels` splits it), every label of which is judged (`proxy.eu.<domain>` gives `proxy.eu`, and `globex.eu.<domain>` gives `globex.eu`, so a company label is not hidden behind a public one). The prefix is one linear character class, not nested label groups, so a long run of host characters cannot backtrack badly."""
+    """`<labels>.<domain>`: group 1 is the whole dotted prefix (`host_labels` splits it), every label of which is judged (`proxy.eu.<domain>` gives `proxy.eu`, and `globex.eu.<domain>` gives `globex.eu`, so a company label is not hidden behind a public one). The prefix is one linear character class, not nested label groups, so a long run of host characters cannot backtrack badly. A match may not start after `<char>.` inside a run, so a run is scanned from its start once and not from every label inside it (a leading dot, as in `.<domain>`, still starts a match)."""
     return re.compile(
-        r"(?<![A-Za-z0-9_-])([a-z0-9][a-z0-9.-]*)\.%s(?![A-Za-z0-9-])" % re.escape(domain)
+        r"(?<![A-Za-z0-9_-])(?<![A-Za-z0-9_-]\.)([a-z0-9][a-z0-9.-]*)\.%s(?![A-Za-z0-9-])"
+        % re.escape(domain)
     )
 
 
@@ -302,11 +305,12 @@ def host_findings(
     return out
 
 
+PLACEHOLDER = re.compile(r"@@?[A-Z][A-Z0-9_]*@@?")
 _WORKER_RESOURCE = re.compile(r"(%s)-([a-z0-9]+(?:-[a-z0-9]+)*)" % "|".join(RESOURCE_PREFIXES))
 
 
 def worker_name_findings(
-    root: pathlib.Path, files: list[str], public: frozenset[str]
+    root: pathlib.Path, files: list[str], public: frozenset[str], shape: Shape | None = None
 ) -> list[Finding]:
     """A finding per string of a tracked `workers/**/*.toml` that is a company-shaped resource name (`account-<c>`, `proxy-<c>`, ...) whose rest is no public label. `Masker.for_tree` treats every string of those files as public, so this is the check that keeps a company Worker name from becoming public by being typed into one."""
     out: list[Finding] = []
@@ -321,7 +325,10 @@ def worker_name_findings(
         try:
             doc = tomllib.loads(text)
         except tomllib.TOMLDecodeError:
-            continue  # a template with @@ placeholders is not TOML
+            # A template with @-placeholders is not TOML and holds no company name; any other file that does not parse was not checked.
+            if shape is not None and not PLACEHOLDER.search(text):
+                shape.skipped += 1
+            continue
         strings: set[str] = set()
         _strings(doc, strings)
         for value in sorted(strings):
@@ -454,7 +461,7 @@ def scan(
         )
     findings += store_findings(root, pairs)
     findings += host_findings(root, files, public, domain, shape)
-    findings += worker_name_findings(root, files, public)
+    findings += worker_name_findings(root, files, public, shape)
     labels, sources = known_labels(root, env)
     shape.labels, shape.label_sources = len(labels), sources
     findings += label_findings(root, files, labels, domain)

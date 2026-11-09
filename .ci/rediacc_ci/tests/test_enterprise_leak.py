@@ -6,6 +6,7 @@ import io
 import json
 import pathlib
 import subprocess
+import time
 
 import pytest
 
@@ -144,7 +145,7 @@ def test_a_company_label_behind_a_public_one_is_found_and_masked(tmp_path):
     (tmp_path / "doc.md").write_text("see %s.eu.%s here\n" % (CO, PRODUCT_DOMAIN))
     shape = leak.Shape()
     found = leak.host_findings(tmp_path, ["doc.md"], PUBLIC, PRODUCT_DOMAIN, shape)
-    assert [f.what for f in found]
+    assert len(found) == 1
     assert "'%s'" % CO in found[0].what
     masked = leak.Masker(PUBLIC, frozenset(), PRODUCT_DOMAIN).mask(
         "%s.eu.%s and proxy.eu.%s" % (CO, PRODUCT_DOMAIN, PRODUCT_DOMAIN)
@@ -174,6 +175,41 @@ def test_a_company_worker_name_in_a_tracked_worker_toml_fires_and_a_public_one_d
     assert [f.rule for f in found] == ["worker-name"]
     assert "proxy-%s" % CO in found[0].what
     assert found[0].line == 3
+
+
+def test_a_tracked_worker_toml_that_does_not_parse_is_counted_not_scanned(tmp_path):
+    (tmp_path / "workers" / "account").mkdir(parents=True)
+    (tmp_path / "workers/account/broken.toml").write_text('name = "account-%s\n' % CO)
+    (tmp_path / "workers/account/wrangler.template.toml").write_text('name = "@@WORKER@@"\n[')
+    shape = leak.Shape()
+    found = leak.worker_name_findings(
+        tmp_path,
+        ["workers/account/broken.toml", "workers/account/wrangler.template.toml"],
+        PUBLIC,
+        shape,
+    )
+    assert found == []
+    assert shape.skipped == 1
+
+
+def test_a_long_dotted_run_is_scanned_in_linear_time():
+    pattern = leak.host_re(PRODUCT_DOMAIN)
+    started = time.perf_counter()
+    assert list(pattern.finditer("a." * 40000 + "x")) == []
+    assert time.perf_counter() - started < 2.0
+    # The run is still judged whole, and a leading dot still starts a match.
+    hit = pattern.search("see a.b.%s.eu.%s" % (CO, PRODUCT_DOMAIN))
+    assert hit is not None
+    assert hit.group(1) == "a.b.%s.eu" % CO
+    lead = pattern.search(" .%s.%s" % (CO, PRODUCT_DOMAIN))
+    assert lead is not None
+    assert lead.group(1) == CO
+
+
+def test_the_verdict_names_the_scan_limit_from_the_constant(monkeypatch):
+    assert "over %d MiB" % (leak.MAX_SCAN_BYTES // 2**20) in leak.Shape().render()
+    monkeypatch.setattr(leak, "MAX_SCAN_BYTES", 2 * 2**20)
+    assert "over 2 MiB" in leak.Shape().render()
 
 
 def test_known_labels_come_from_generated_tomls_and_the_env(tree):
