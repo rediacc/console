@@ -92,7 +92,7 @@ class Shape:
         return (
             "%d tracked files, %d tracked company toml(s) (the template is allowed), "
             "%d store names in %d public records, %d product host(s) in %d file(s), "
-            "%d company label(s) known locally%s; %d tracked file(s) not scanned (over %d MiB, binary, unparsable or unreadable)"
+            "%d company label(s) known locally%s; %d tracked file(s) not scanned (over %g MiB, binary, unparsable or unreadable)"
             % (
                 self.tracked,
                 self.generated_tracked,
@@ -103,7 +103,7 @@ class Shape:
                 self.labels,
                 " (%s)" % self.label_sources if self.label_sources else " (none generated here)",
                 self.skipped,
-                MAX_SCAN_BYTES // 2**20,
+                MAX_SCAN_BYTES / 2**20,
             )
         )
 
@@ -237,16 +237,16 @@ def store_findings(root: pathlib.Path, pairs: list[tuple[str, str]]) -> list[Fin
 
 
 def host_re(domain: str) -> re.Pattern[str]:
-    """`<labels>.<domain>`: group 1 is the whole dotted prefix (`host_labels` splits it), every label of which is judged (`proxy.eu.<domain>` gives `proxy.eu`, and `globex.eu.<domain>` gives `globex.eu`, so a company label is not hidden behind a public one). The prefix is one linear character class, not nested label groups, so a long run of host characters cannot backtrack badly. A match may not start after `<char>.` inside a run, so a run is scanned from its start once and not from every label inside it (a leading dot, as in `.<domain>`, still starts a match)."""
+    """`<labels>.<domain>`: group 1 is the whole dotted prefix (`host_labels` splits it), every label of which is judged (`proxy.eu.<domain>` gives `proxy.eu`, and `globex.eu.<domain>` gives `globex.eu`, so a company label is not hidden behind a public one). The prefix is one linear character class, not nested label groups, so a long run of host characters cannot backtrack badly. A match may not start after `<char>.` inside a run, so a run is scanned from its start once and not from every label inside it (a leading dot, as in `.<domain>`, still starts a match). The prefix may start with an uppercase letter, so `Acme.globex.eu.<domain>` still shows `globex` (review 7d4e4a4a.1); labels are judged lowercased."""
     return re.compile(
-        r"(?<![A-Za-z0-9_-])(?<![A-Za-z0-9_-]\.)([a-z0-9][a-z0-9.-]*)\.%s(?![A-Za-z0-9-])"
+        r"(?<![A-Za-z0-9_-])(?<![A-Za-z0-9_-]\.)([A-Za-z0-9][A-Za-z0-9.-]*)\.%s(?![A-Za-z0-9-])"
         % re.escape(domain)
     )
 
 
 def host_labels(prefix: str) -> list[str]:
-    """The well-formed labels of a dotted prefix; an empty or hyphen-edged piece is no label and is left out."""
-    return [part for part in prefix.split(".") if _LABEL.fullmatch(part)]
+    """The well-formed labels of a dotted prefix, lowercased; an empty or hyphen-edged piece is no label and is left out."""
+    return [part.lower() for part in prefix.split(".") if _LABEL.fullmatch(part.lower())]
 
 
 def label_is_public(label: str, public: frozenset[str]) -> bool:
@@ -309,6 +309,11 @@ PLACEHOLDER = re.compile(r"@@?[A-Z][A-Z0-9_]*@@?")
 _WORKER_RESOURCE = re.compile(r"(%s)-([a-z0-9]+(?:-[a-z0-9]+)*)" % "|".join(RESOURCE_PREFIXES))
 
 
+def _has_placeholder(text: str) -> bool:
+    """Does a non-comment part of a line carry an `@X@` placeholder? A `# @TODO@` comment makes no file a template (review 7d4e4a4a.2)."""
+    return any(PLACEHOLDER.search(line.split("#", 1)[0]) for line in text.splitlines())
+
+
 def worker_name_findings(
     root: pathlib.Path, files: list[str], public: frozenset[str], shape: Shape | None = None
 ) -> list[Finding]:
@@ -326,7 +331,7 @@ def worker_name_findings(
             doc = tomllib.loads(text)
         except tomllib.TOMLDecodeError:
             # A template with @-placeholders is not TOML and holds no company name; any other file that does not parse was not checked.
-            if shape is not None and not PLACEHOLDER.search(text):
+            if shape is not None and not _has_placeholder(text):
                 shape.skipped += 1
             continue
         strings: set[str] = set()
@@ -554,7 +559,9 @@ class Masker:
             return "%s%s" % (self._token(base), PROXY_SUFFIX if proxy else "")
 
         def host(m: re.Match[str]) -> str:
-            parts = [one(p) if _LABEL.fullmatch(p) else p for p in m.group(1).split(".")]
+            parts = [
+                one(p.lower()) if _LABEL.fullmatch(p.lower()) else p for p in m.group(1).split(".")
+            ]
             return "%s.%s" % (".".join(parts), self.domain)
 
         def resource(m: re.Match[str]) -> str:

@@ -194,9 +194,17 @@ def test_a_tracked_worker_toml_that_does_not_parse_is_counted_not_scanned(tmp_pa
 
 def test_a_long_dotted_run_is_scanned_in_linear_time():
     pattern = leak.host_re(PRODUCT_DOMAIN)
-    started = time.perf_counter()
-    assert list(pattern.finditer("a." * 40000 + "x")) == []
-    assert time.perf_counter() - started < 2.0
+
+    # Relative, not absolute: a quadratic scan costs 16x for 4x the input, a linear one about 4x, and a loaded runner slows both alike (review 7d4e4a4a.4).
+    def best(n: int) -> float:
+        times = []
+        for _ in range(3):
+            started = time.perf_counter()
+            assert list(pattern.finditer("a." * n + "x")) == []
+            times.append(time.perf_counter() - started)
+        return min(times)
+
+    assert best(40000) < 10 * best(10000) + 0.05
     # The run is still judged whole, and a leading dot still starts a match.
     hit = pattern.search("see a.b.%s.eu.%s" % (CO, PRODUCT_DOMAIN))
     assert hit is not None
@@ -206,8 +214,35 @@ def test_a_long_dotted_run_is_scanned_in_linear_time():
     assert lead.group(1) == CO
 
 
+def test_an_uppercase_label_does_not_hide_the_company_label_after_it():
+    """Review 7d4e4a4a.1: `Acme.globex.eu.<domain>` still shows `globex`."""
+    hit = leak.host_re(PRODUCT_DOMAIN).search("Acme.%s.eu.%s" % (CO, PRODUCT_DOMAIN))
+    assert hit is not None
+    assert leak.host_labels(hit.group(1)) == ["acme", CO, "eu"]
+
+
+def test_a_comment_placeholder_does_not_excuse_an_unparsable_worker_toml(tmp_path):
+    """Review 7d4e4a4a.2: only a placeholder in a non-comment part of a line marks a template."""
+    (tmp_path / "workers" / "account").mkdir(parents=True)
+    (tmp_path / "workers/account/broken.toml").write_text('# @TODO@ later\nname = "account-\n')
+    (tmp_path / "workers/account/wrangler.template.toml").write_text('name = "@@WORKER@@"\n[')
+    shape = leak.Shape()
+    leak.worker_name_findings(
+        tmp_path,
+        ["workers/account/broken.toml", "workers/account/wrangler.template.toml"],
+        PUBLIC,
+        shape,
+    )
+    assert shape.skipped == 1
+
+
+def test_the_verdict_renders_a_fractional_limit_whole(monkeypatch):
+    monkeypatch.setattr(leak, "MAX_SCAN_BYTES", int(4.5 * 2**20))
+    assert "over 4.5 MiB" in leak.Shape().render()
+
+
 def test_the_verdict_names_the_scan_limit_from_the_constant(monkeypatch):
-    assert "over %d MiB" % (leak.MAX_SCAN_BYTES // 2**20) in leak.Shape().render()
+    assert "over %g MiB" % (leak.MAX_SCAN_BYTES / 2**20) in leak.Shape().render()
     monkeypatch.setattr(leak, "MAX_SCAN_BYTES", 2 * 2**20)
     assert "over 2 MiB" in leak.Shape().render()
 
