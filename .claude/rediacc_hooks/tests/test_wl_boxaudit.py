@@ -279,7 +279,7 @@ def test_closed_links_trailer_path_skips_absent_rows_and_empty_tokens(world):
         (SIG["tick"], "trailer %s" % tick[:12])
     ]
     assert "" not in closed
-    given = "feedface1"
+    given = "nosuchsha"
     inv = world.root / "agent" / "ledgers" / "plan-investigation.jsonl"
     with inv.open("a", encoding="utf-8") as fh:
         fh.write(

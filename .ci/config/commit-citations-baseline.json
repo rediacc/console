@@ -21,10 +21,6 @@
       "path": ".claude/rediacc_hooks/tests/test_review_commit_hook.py",
       "sha": "e2a16724"
     },
-    "0a37244ce74b1731": {
-      "path": ".github/workflows/cd-release-edge.yml",
-      "sha": "c608e29a8"
-    },
     "0a8794dd9e8f9d17": {
       "path": ".ci/rediacc_ci/tests/gates/test_gate_scope_engine.py",
       "sha": "bcc4f1ee1"
@@ -444,10 +440,6 @@
     "d0e682f1271281d4": {
       "path": ".claude/rediacc_hooks/git/githooks.py",
       "sha": "1fb9eefe7"
-    },
-    "d14465604a658539": {
-      "path": ".github/workflows/ops-housekeeping.yml",
-      "sha": "9384e046c"
     },
     "d19274a1f8e5e787": {
       "path": ".ci/rediacc_ci/tests/test_quality_ci_job_aggregation.py",

@@ -138,7 +138,7 @@ jobs:
       #
       # Age-guarded nightly rather than workflow_run-triggered on purpose:
       # cleanup-on-ci-cancel.yml was exactly that reactive shape and it deleted
-      # in-flight release binaries (9384e046c). Same lesson, shorter floor.
+      # in-flight release binaries. Same lesson, shorter floor.
       #
       # Continues past a failure of the step above: an unrelated R2 hiccup must
       # not leave a live tunnel up for another 24 hours.

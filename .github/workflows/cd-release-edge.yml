@@ -517,7 +517,7 @@ jobs:
     # correctly skipped (its own `if:` gates on workers_only), and bare
     # success() treats a skipped need as a failure -> this job silently
     # skips too, defeating workers_only's whole purpose. Use explicit
-    # per-job result checks (the shape commit c608e29a8 established).
+    # per-job result checks.
     if: >-
       github.ref == format('refs/heads/{0}', github.event.repository.default_branch) &&
       always() &&

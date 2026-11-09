@@ -16,6 +16,8 @@ if TYPE_CHECKING:
 
 DOMAIN = "bench.example"
 OK = Answer(ok=True)
+# An opaque-shaped company id no lab created (c and 16 characters), built so no hex literal reads as a commit citation.
+FOREIGN_COMPANY = "c" + "0" * 16
 
 
 def refused(error: str = "refused by scope") -> Answer:
@@ -314,14 +316,14 @@ class FakeLab:
     # -- cost
     def deploy_records(self, *, bench: bool) -> list[dict[str, object]]:
         del bench
-        return [{"company": cid, "duration_s": 42.0} for cid in ["c0123abcd", *self.companies]]
+        return [{"company": cid, "duration_s": 42.0} for cid in [FOREIGN_COMPANY, *self.companies]]
 
     def usage_rows(self, *, bench: bool) -> list[dict[str, object]]:
         del bench
         return (
             []
             if self.usage_missing
-            else [{"company": cid} for cid in ["c0123abcd", *self.companies]]
+            else [{"company": cid} for cid in [FOREIGN_COMPANY, *self.companies]]
         )
 
     def image_rebuild_seconds(self) -> float:
