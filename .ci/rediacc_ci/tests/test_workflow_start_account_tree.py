@@ -29,13 +29,18 @@ def _needs_account_tree(job: dict) -> bool:
 
 
 def _installs_account_tree(job: dict) -> bool:
-    """The install must come before the first step that starts a server."""
+    """The install, via `setup-workspace` or an explicit `npm install` in private/account, must come before the first step that starts a server."""
     for step in job["steps"]:
         if any(n in str(step.get("run", "")) for n in NEEDLES):
             return False
         if (
             "setup-workspace" in str(step.get("uses", ""))
             and str((step.get("with") or {}).get("account")).lower() == "true"
+        ):
+            return True
+        if (
+            step.get("working-directory") == "private/account"
+            and str(step.get("run", "")).strip() in ("npm install", "npm ci")
         ):
             return True
     return False
@@ -61,3 +66,12 @@ def test_an_install_after_the_start_does_not_count() -> None:
     install = {"uses": "./.github/actions/setup-workspace", "with": {"account": True}}
     assert _installs_account_tree({"steps": [install, start]})
     assert not _installs_account_tree({"steps": [start, install]})
+
+
+def test_an_explicit_install_in_the_account_dir_counts_and_one_elsewhere_does_not() -> None:
+    start = {"run": "python3 -m rediacc_ci.testrun.start_account"}
+    here = {"run": "npm install", "working-directory": "private/account"}
+    elsewhere = {"run": "npm install", "working-directory": "packages/cli"}
+    assert _installs_account_tree({"steps": [here, start]})
+    assert not _installs_account_tree({"steps": [elsewhere, start]})
+    assert not _installs_account_tree({"steps": [start, here]})

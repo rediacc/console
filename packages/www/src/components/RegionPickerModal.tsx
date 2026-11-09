@@ -44,9 +44,7 @@ export function modeFromPath(path: string): PickerMode {
 
 export {
   createPickTracker,
-  detectLikelyRegion,
   extractDomain,
-  fetchGeoRegion,
   parseLookupHost,
   preselectFromGeo,
   regionForCountry,
