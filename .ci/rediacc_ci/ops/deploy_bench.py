@@ -198,6 +198,8 @@ def secrets_payload() -> dict[str, str]:
         "ACCOUNT_JWT_SECRET": signing["ACCOUNT_JWT_SECRET"],
         "FREE_LICENSE_HMAC_KEY": signing["FREE_LICENSE_HMAC_KEY"],
         "ACCOUNT_AE_READ_TOKEN": signing["ACCOUNT_AE_READ_TOKEN"],
+        # The account whose Analytics Engine datasets the SQL API reads; every regional Worker gets it from the pusher.
+        "CLOUDFLARE_ACCOUNT_ID": ACCOUNT_ID,
         "ACCOUNT_CONFIG_SERVER_KEY": signing["ACCOUNT_CONFIG_SERVER_KEY"],
         "ACCOUNT_BACKUP_STORE_KEK": signing["ACCOUNT_BACKUP_STORE_KEK"],
         # Stripe is disabled (empty strings) so the worker boots without billing, as edge does.

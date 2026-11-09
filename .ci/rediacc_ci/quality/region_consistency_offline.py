@@ -64,6 +64,8 @@ BENCH_UNALIASED = (
     "ACCOUNT_SERVER_API_KEY",
     "ACCOUNT_JWT_SECRET",
 )
+# The licence private key stays out of the bench profile in any spelling, aliased or not: the bench account Worker signs through LICENSE_SIGNER (review 9829ab50.1 pins the absence).
+BENCH_FORBIDDEN = ("ACCOUNT_ED25519_PRIVATE_KEY",)
 # Vars each channel's account toml carries beyond REGION / WEBAUTHN_RP_ID / WEBAUTHN_ORIGIN, with the value where it is fixed.
 CHANNEL_VARS: dict[str, dict[str, str | None]] = {
     # ENVIRONMENT=edge stays on the shared Workers: it picks the CLI's update channel (private/account/src/app.ts:234).
@@ -511,6 +513,13 @@ def _check_bench_profile(t: Target, prof: dict, suffixes: set[str]) -> list[Find
         )
         for spec in specs
         if ">" in spec and spec.split(">")[1] in BENCH_UNALIASED
+    )
+    f.extend(
+        Finding(
+            t.id, "profile", "%s binds `%s`, which no bench profile may carry" % (t.profile, spec)
+        )
+        for spec in specs
+        if any(forbidden in spec for forbidden in BENCH_FORBIDDEN)
     )
     foreign = [*sorted(suffixes - {t.suffix}), pusher.CHANNEL_STABLE, pusher.CHANNEL_EDGE]
     stores = [s.split(">")[0] for s in specs]

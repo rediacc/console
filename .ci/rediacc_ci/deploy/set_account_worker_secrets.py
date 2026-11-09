@@ -344,7 +344,7 @@ def read_env() -> dict[str, str]:
         "ACCOUNT_JWT_SECRET": os.environ.get("ACCOUNT_JWT_SECRET", ""),
         "FREE_LICENSE_HMAC_KEY": os.environ.get("FREE_LICENSE_HMAC_KEY", ""),
         "ACCOUNT_AE_READ_TOKEN": os.environ.get("ACCOUNT_AE_READ_TOKEN", ""),
-        # The account the Analytics Engine SQL API reads belong to (PLAN-d1-scaling A2).
+        # The account whose Analytics Engine datasets the SQL API reads (PLAN-d1-scaling A2).
         "CLOUDFLARE_ACCOUNT_ID": os.environ.get("CLOUDFLARE_ACCOUNT_ID", ""),
         "ROOT_EMAIL": os.environ.get("ROOT_EMAIL", ""),
         "AWS_SES_REGION": os.environ.get("AWS_SES_REGION", ""),

@@ -133,6 +133,13 @@ PLANTS = [
         "bench       profile",
     ),
     (
+        "bench-licence-key-bound",
+        ".ci/config/secret-supply.json",
+        '        "ACCOUNT_JWT_SECRET",\n        "ACCOUNT_CONFIG_SERVER_KEY_BENCH',
+        '        "ACCOUNT_JWT_SECRET",\n        "ACCOUNT_ED25519_PRIVATE_KEY",\n        "ACCOUNT_CONFIG_SERVER_KEY_BENCH',
+        "bench       profile",
+    ),
+    (
         "bench-payload",
         ".ci/rediacc_ci/ops/deploy_bench.py",
         '        "STRIPE_WEBHOOK_SECRET": "",\n',

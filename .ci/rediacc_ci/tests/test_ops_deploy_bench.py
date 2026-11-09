@@ -627,3 +627,9 @@ def test_a_queue_preflight_failure_refuses_before_any_build_or_write(monkeypatch
         deploy_bench._deploy(deploy_bench.cf_auth.Auth(token="t"), tmp_path)
     assert seen == [deploy_bench.CONFIG]
     assert events == []
+
+
+def test_the_payload_carries_the_cloudflare_account_id(monkeypatch):
+    """The AE SQL reads need the account id the regional pusher also sends; the region-consistency gate compares the two key sets (review c5be449f.2)."""
+    _bench_env(monkeypatch)
+    assert deploy_bench.secrets_payload()["CLOUDFLARE_ACCOUNT_ID"] == deploy_bench.ACCOUNT_ID

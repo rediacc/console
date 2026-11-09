@@ -195,7 +195,7 @@ def _as_port_env(env: dict[str, str]) -> dict[str, str]:
 
 
 def _without_config_key(calls: str) -> str:
-    """The recorded call with the two document lines the twin never had removed (the config server key and the free-licence HMAC key)."""
+    """The recorded call with the document lines the twin never had removed: the free-licence HMAC key, the AE read token, the Cloudflare account id, the backup store KEK and the config server key."""
     calls = calls.replace('  "FREE_LICENSE_HMAC_KEY": "hm",\n', "")
     calls = calls.replace('  "ACCOUNT_AE_READ_TOKEN": "ae",\n', "")
     calls = calls.replace('  "CLOUDFLARE_ACCOUNT_ID": "acct",\n', "")
@@ -459,7 +459,7 @@ PORT_ONLY_GUARDS = (
 def test_every_one_of_the_seventeen_guards_fires_with_its_own_name(
     tmp_path: pathlib.Path,
 ) -> None:
-    """SIXTEEN CASES ON STABLE, ONE PER TWIN GUARD (the three port-only guards have their own tests; the function name keeps `seventeen` because the twin goldens are keyed on it), each driven EMPTY rather than absent, and each blanking the variable the value really comes from rather than the name the guard prints."""
+    """SIXTEEN CASES ON STABLE, ONE PER TWIN GUARD (the port-only guards in PORT_ONLY_GUARDS have their own tests; the function name keeps `seventeen` because the twin goldens are keyed on it), each driven EMPTY rather than absent, and each blanking the variable the value really comes from rather than the name the guard prints."""
     # The config server key is the port's own sixteenth guard; the twin has no golden for it, and `test_an_empty_config_server_key_is_refused_by_its_worker_key` drives it.
     demanded = tuple(
         name
@@ -1085,6 +1085,23 @@ def test_the_free_license_hmac_key_is_pushed_and_demanded(tmp_path: pathlib.Path
     assert calls == ""
     assert "FREE_LICENSE_HMAC_KEY is EMPTY for" in proc.stderr
     assert port.REQUIRED_NONEMPTY.count("FREE_LICENSE_HMAC_KEY") == 1
+
+
+@pytest.mark.parametrize("name", ["ACCOUNT_AE_READ_TOKEN", "CLOUDFLARE_ACCOUNT_ID"])
+def test_the_analytics_engine_guards_are_pushed_and_demanded(
+    tmp_path: pathlib.Path, name: str
+) -> None:
+    """Port-only (review a3adea22.1): the value is pushed under its own name, and an empty one is refused with no wrangler call and no value in either stream."""
+    ok, calls = _port_raw(tmp_path, **_pair_for("stable"))
+    assert ok.returncode == 0, ok.stderr
+    assert json.loads(document(calls))[name]
+    refused = tmp_path / "refused"
+    refused.mkdir()
+    proc, calls = _port_raw(refused, **_pair_for("stable"), **{name: ""})
+    assert proc.returncode == 1
+    assert calls == ""
+    assert "%s is EMPTY for" % name in proc.stderr
+    assert port.REQUIRED_NONEMPTY.count(name) == 1
 
 
 def test_config_server_key_helper() -> None:
