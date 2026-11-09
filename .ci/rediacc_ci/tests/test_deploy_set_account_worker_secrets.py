@@ -52,6 +52,7 @@ FIXTURE_ENV = {
     "ACCOUNT_JWT_SECRET": "jw",
     "FREE_LICENSE_HMAC_KEY": "hm",
     "ACCOUNT_AE_READ_TOKEN": "ae",
+    "CLOUDFLARE_ACCOUNT_ID": "acct",
     "ROOT_EMAIL": "root@example.invalid",
     "AWS_SES_ACCESS_KEY_ID_EU": "sk-eu",
     "AWS_SES_SECRET_ACCESS_KEY_EU": "ss-eu",
@@ -197,6 +198,7 @@ def _without_config_key(calls: str) -> str:
     """The recorded call with the two document lines the twin never had removed (the config server key and the free-licence HMAC key)."""
     calls = calls.replace('  "FREE_LICENSE_HMAC_KEY": "hm",\n', "")
     calls = calls.replace('  "ACCOUNT_AE_READ_TOKEN": "ae",\n', "")
+    calls = calls.replace('  "CLOUDFLARE_ACCOUNT_ID": "acct",\n', "")
     calls = calls.replace('  "ACCOUNT_BACKUP_STORE_KEK": "%s",\n' % KEK_VALUE, "")
     return calls.replace('  "ACCOUNT_CONFIG_SERVER_KEY": "%s",\n' % CONFIG_KEY, "")
 
@@ -450,6 +452,7 @@ PORT_ONLY_GUARDS = (
     "ACCOUNT_BACKUP_STORE_KEK",
     "FREE_LICENSE_HMAC_KEY",
     "ACCOUNT_AE_READ_TOKEN",
+    "CLOUDFLARE_ACCOUNT_ID",
 )
 
 
@@ -645,10 +648,10 @@ def test_a_non_ascii_secret_is_byte_identical_through_both(tmp_path: pathlib.Pat
 
 def test_the_three_sibling_scripts_are_not_the_same_script() -> None:
     """THE ASSUMPTION THAT WOULD PORT THIS ONE WRONG, refuted in one place. This is the only member of the family that decides anything, and every difference below is driven by a test above."""
-    assert len(port.KEYS) == 32
+    assert len(port.KEYS) == 33
     assert len(www.KEYS) == 24
-    assert len(preview.KEYS) == 15
-    assert len(port.REQUIRED_NONEMPTY) == 18
+    assert len(preview.KEYS) == 14
+    assert len(port.REQUIRED_NONEMPTY) == 19
     assert len(port.REQUIRED_NONEMPTY_STABLE) == 2
     # Neither sibling has a conditional guard list, a channel, or a fan-in.
     assert not hasattr(www, "REQUIRED_NONEMPTY_STABLE")
