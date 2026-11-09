@@ -295,7 +295,7 @@ const LookupForm: React.FC<LookupFormProps> = ({ t, targetPath, onBack }) => {
         />
       )}
       {captchaEnabled && captcha.failed && (
-        <p className="form-error" role="status">
+        <p className="form-error" role="alert">
           {t('captchaUnavailable')}{' '}
           <button
             type="button"
@@ -384,6 +384,15 @@ interface RegionPickerModalProps {
 type Phase = 'resolving' | 'counting' | 'choosing';
 
 /**
+ * The phase an open starts in. Sign-up and a forced open (the visitor asked to pick) show the cards and never forward on
+ * their own; a login with a stored region goes straight to the countdown, and one without waits on the geo answer.
+ */
+export function openPhase(mode: PickerMode, hasStoredRegion: boolean, force: boolean): Phase {
+  if (mode === 'signup' || force) return 'choosing';
+  return hasStoredRegion ? 'counting' : 'resolving';
+}
+
+/**
  * `lang` is passed by BaseLayout and is AUTHORITATIVE on the server.
  *
  * `useLanguage()` reads `window.location.pathname`, and there is no `window` during SSR,
@@ -412,7 +421,7 @@ const RegionPickerModal: React.FC<RegionPickerModalProps> = ({ lang }) => {
   // Bumped on every open, close and stop, so a late /api/geo answer cannot restart a countdown the visitor ended.
   const runRef = useRef(0);
 
-  const begin = useCallback((path?: string) => {
+  const begin = useCallback((path?: string, force = false) => {
     const target = path ?? DEFAULT_TARGET_PATH;
     const nextMode = modeFromPath(target);
     const run = ++runRef.current;
@@ -427,8 +436,10 @@ const RegionPickerModal: React.FC<RegionPickerModalProps> = ({ lang }) => {
     window.plausible?.('region_picker_open', {
       props: { source: target.includes('checkout') ? 'checkout' : 'nav', mode: nextMode },
     });
-    if (nextMode === 'signup') {
-      setPhase('choosing');
+    // A forced open is the visitor asking to pick a region: the cards show, with the stored one preselected, and nothing forwards on its own.
+    const phase = openPhase(nextMode, stored !== null, force);
+    if (phase === 'choosing') {
+      setPhase(phase);
       return;
     }
     setPhase('resolving');
@@ -489,10 +500,10 @@ const RegionPickerModal: React.FC<RegionPickerModalProps> = ({ lang }) => {
     [targetPath]
   );
 
-  // Expose global functions. Both open the picker; a stored region preselects and never forwards silently.
+  // Expose global functions. openRegionPicker runs the login countdown (a stored region forwards after it unless cancelled); forceOpenRegionPicker only shows the cards.
   useEffect(() => {
     window.openRegionPicker = begin;
-    window.forceOpenRegionPicker = begin;
+    window.forceOpenRegionPicker = (path?: string) => begin(path, true);
     return () => {
       delete window.openRegionPicker;
       delete window.forceOpenRegionPicker;

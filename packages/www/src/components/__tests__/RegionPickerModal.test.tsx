@@ -4,6 +4,7 @@ import type { Region } from '../../config/regions';
 import {
   extractDomain,
   modeFromPath,
+  openPhase,
   parseLookupHost,
   regionForCountry,
   regionForTimeZone,
@@ -91,5 +92,22 @@ describe('parseLookupHost', () => {
     expect(parseLookupHost({ host: 'evilrediacc.cloud' })).toBeNull();
     expect(parseLookupHost({ host: 'a.rediacc.cloud/../x' })).toBeNull();
     expect(parseLookupHost({ host: 'a.rediacc.cloud:8080' })).toBeNull();
+  });
+});
+
+describe('openPhase', () => {
+  it('counts down for a login with a stored region and resolves geo without one', () => {
+    expect(openPhase('login', true, false)).toBe('counting');
+    expect(openPhase('login', false, false)).toBe('resolving');
+  });
+
+  it('shows the cards for sign-up', () => {
+    expect(openPhase('signup', true, false)).toBe('choosing');
+    expect(openPhase('signup', false, false)).toBe('choosing');
+  });
+
+  it('shows the cards for a forced open, so a stored region never forwards on its own', () => {
+    expect(openPhase('login', true, true)).toBe('choosing');
+    expect(openPhase('login', false, true)).toBe('choosing');
   });
 });

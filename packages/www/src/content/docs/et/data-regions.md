@@ -20,7 +20,7 @@ Rediacci konto loomisel valite andmeregiooni. Kõik teie andmed jäävad selless
 |---|---|---|
 | **Euroopa (EU)** | Frankfurt, Saksamaa | `eu.rediacc.cloud` |
 | **Ameerika Ühendriigid (US)** | Virginia, USA | `us.rediacc.cloud` |
-| **Aasia ja Vaikse ookeani piirkond** | Tõkio, Jaapan | `asia.rediacc.cloud` |
+| **Aasia ja Vaikse ookeani piirkond** | Tōkyō, Jaapan | `asia.rediacc.cloud` |
 
 Toode töötab nendel `rediacc.cloud` domeenidel. Kogu dokumentatsioon ja turundusveebisait asuvad aadressil `www.rediacc.com`, mis suunab sind regioonivalija kaudu õigesse regiooni.
 
