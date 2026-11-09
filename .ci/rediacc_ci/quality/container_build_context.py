@@ -44,6 +44,11 @@ def missing(context: pathlib.Path, sources: list[str]) -> list[str]:
     return [s for s in sources if not glob.glob(str(context / s))]
 
 
+def is_template(rel: str) -> bool:
+    """A `wrangler.template.toml` carries `@@TOKEN@@` placeholders and is not valid TOML; its `[[containers]]` block is rendered verbatim into each per-target config, which this gate does check."""
+    return pathlib.PurePosixPath(rel).name.endswith(".template.toml")
+
+
 def findings(root: pathlib.Path) -> list[str]:
     tracked = subprocess.run(
         ["git", "-C", str(root), "ls-files", "*wrangler*.toml"],
@@ -53,6 +58,8 @@ def findings(root: pathlib.Path) -> list[str]:
     ).stdout.split()
     out: list[str] = []
     for rel in tracked:
+        if is_template(rel):
+            continue
         cfg_path = root / rel
         cfg = tomllib.loads(cfg_path.read_text(encoding="utf-8"))
         for c in cfg.get("containers") or []:
@@ -85,6 +92,14 @@ def selftest() -> bool:
     text = "FROM node\nCOPY --from=build /x /x\nCOPY package.json \\\n  lib/ ./\nADD https://e.x/f /f\n"
     if copy_sources(text) != ["package.json", "lib/"]:
         print("✗ control: COPY source parsing is wrong: %r" % copy_sources(text), file=sys.stderr)
+        failed = True
+    if not is_template("workers/proxy/wrangler.template.toml") or is_template(
+        "workers/proxy/wrangler.eu.toml"
+    ):
+        print(
+            "✗ control: only a *.template.toml may be skipped; a per-target config must be checked",
+            file=sys.stderr,
+        )
         failed = True
     with tempfile.TemporaryDirectory() as d:
         ctx = pathlib.Path(d)
