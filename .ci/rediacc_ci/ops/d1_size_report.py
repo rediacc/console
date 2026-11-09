@@ -24,14 +24,13 @@ import argparse
 import json
 import os
 import re
-import subprocess
 import sys
 import urllib.error
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from rediacc_ci.core import https
+from rediacc_ci.core import gh_retry, https
 from rediacc_ci.ops import observability_volume as ov
 from rediacc_ci.well_known import CF_API_BASE
 
@@ -337,7 +336,7 @@ def _dataset_name(template: str, region_id: str) -> str:
     """The AE dataset of a region, checked as a plain identifier before it is spliced into SQL."""
     try:
         name = template.format(region=region_id)
-    except (KeyError, IndexError, ValueError) as exc:
+    except (KeyError, IndexError, ValueError, AttributeError) as exc:
         raise RegionError(
             "TELEMETRY_AE_DATASET %r is not a usable template: %s" % (template, exc)
         ) from None
@@ -430,15 +429,28 @@ def sync_alert_issue(
         gh("issue", "create", "--title", ISSUE_TITLE, "--body", body)
         return ["create"]
     number = str(found[0]["number"])
-    gh("issue", "edit", number, "--body", body)
     if marker in str(found[0].get("body") or ""):
+        gh("issue", "edit", number, "--body", body)
         return ["edit"]
+    # The comment goes first: the body marker is what a later run compares, so a comment that fails leaves the old marker in place and the next run posts it again.
     gh("issue", "comment", number, "--body", body)
-    return ["edit", "comment"]
+    gh("issue", "edit", number, "--body", body)
+    return ["comment", "edit"]
 
 
-def _real_gh(*args: str) -> str:
-    return subprocess.run(["gh", *args], check=True, capture_output=True, text=True).stdout
+class GhError(Exception):
+    """A `gh` call that failed after its transient retries; the message carries gh's stderr."""
+
+
+def _real_gh(*args: str, runner=None, sleep=None) -> str:
+    """`gh <args>` through the transient-retry wrapper, which never raises for a non-zero exit, so the result is checked here."""
+    result = gh_retry.gh(list(args), runner=runner, sleep=sleep)
+    if not result.ok:
+        raise GhError(
+            "gh %s failed (exit %d): %s"
+            % (" ".join(args[:2]), result.returncode, result.stderr.strip())
+        )
+    return result.stdout_raw
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -458,7 +470,13 @@ def main(argv: list[str] | None = None) -> int:
         if not (args.json_out and args.md_out):
             print("d1_size_report: --alert-issue needs --json-out and --md-out", file=sys.stderr)
             return EXIT_UNREACHABLE
-        sync_alert_issue(json.loads(args.json_out.read_text()), args.md_out.read_text(), _real_gh)
+        try:
+            sync_alert_issue(
+                json.loads(args.json_out.read_text()), args.md_out.read_text(), _real_gh
+            )
+        except GhError as exc:
+            print("d1_size_report: %s" % exc, file=sys.stderr)
+            return 1
         return 0
     if args.compare_telemetry:
         if args.days < 1:
