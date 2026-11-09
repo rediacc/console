@@ -968,3 +968,14 @@ def test_parity_differences_is_pure() -> None:
         "b: missing in the target (source 2 rows)",
         "c: only in the target (1 rows)",
     ]
+
+
+@pytest.mark.parametrize("name", ["users\n", "a b", "1x", ""])
+def test_table_name_is_anchored_for_match_and_search_alike(name: str) -> None:
+    assert port.TABLE_NAME.fullmatch(name) is None
+    assert port.TABLE_NAME.match(name) is None
+    assert port.TABLE_NAME.search(name) is None
+
+
+def test_table_name_accepts_a_plain_identifier() -> None:
+    assert port.TABLE_NAME.search("users_2") is not None

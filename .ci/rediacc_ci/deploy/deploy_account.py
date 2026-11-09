@@ -533,7 +533,7 @@ def main(argv: list[str]) -> int:
         try:
             bound = queues_audit.config_queues(worker_dir / config)
         except queues_audit.QueueAuditError as exc:
-            # The real run refuses an unreadable queues section (check_queues, rc 77), so the preview refuses too.
+            # The real run refuses an unreadable queues section too: check_queues raises QueuePreflightError (the audit's own no-verdict code is 77) and main returns 1, so the preview returns 1 as well.
             log.error(shown(str(exc)))
             return 1
         if bound and not _has_credentials(os.environ):
