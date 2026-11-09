@@ -205,6 +205,17 @@ def test_the_www_secrets_bind_the_eu_ses_pair_under_the_unsuffixed_names() -> No
     assert not [b for b in step.binds if "SANDBOX" in b]
 
 
+def test_the_www_steps_deploy_and_bind_the_worker_the_wrangler_config_names() -> None:
+    deploy = next(s for s in EDGE if s.id == "www-deploy")
+    secrets = next(s for s in EDGE if s.id == "www-secrets")
+    assert "rediacc_ci.deploy.deploy_www" in deploy.argv
+    assert "rediacc_ci.deploy.set_www_worker_secrets" in secrets.argv
+    config = (pathlib.Path(__file__).resolve().parents[3] / "workers/www/wrangler.toml").read_text()
+    name = re.search(r'^name = "([^"]+)"', config, re.M)
+    assert name
+    assert dict(secrets.env)["WORKER_NAME"] == name.group(1)
+
+
 def test_every_push_uses_the_session_github_token() -> None:
     order = ids(EDGE)
     cred = EDGE[order.index("clone-credential")]
