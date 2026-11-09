@@ -79,11 +79,12 @@ jobs:
           COMPANY: ${{ inputs.company }}
           RESUME: ${{ inputs.resume }}
           DRY_RUN: ${{ inputs.dry_run }}
-        # Explicit bash keeps pipefail, so the runner's exit code (1 on a failed company or a latched stop) survives the `tee`.
+        # Explicit bash keeps pipefail, so the runner's exit code (1 on a failed company or a latched stop) survives the redacting tee.
         shell: bash
         run: |
           args=(--version "$VERSION")
           [ -n "$COMPANY" ] && args+=(--company "$COMPANY")
           [ -n "$RESUME" ] && args+=(--resume "$RESUME")
           [ "$DRY_RUN" = "true" ] && args+=(--dry-run)
-          PYTHONPATH=.ci python3 -m rediacc_ci.release.rings_run "${args[@]}" | tee -a "$GITHUB_STEP_SUMMARY"
+          # `::add-mask::` redacts the log only, never the step-summary file, so the summary copy goes through redacted_tee.
+          PYTHONPATH=.ci python3 -m rediacc_ci.release.rings_run "${args[@]}" | PYTHONPATH=.ci python3 -m rediacc_ci.release.redacted_tee

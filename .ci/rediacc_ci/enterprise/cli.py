@@ -8,7 +8,8 @@
         [--allow-ip <ip|cidr>]... [--clear-allow-ips] [--ring R --ring-reason T] [--bench]
     ./run.sh enterprise suspend <company> [--resume] [--bench]
     ./run.sh enterprise export <company> [--export-root <dir>] [--bws-project <id>] [--bench]
-    ./run.sh enterprise remove <company> [--delete-data --confirm <company>] [--export-root <dir>] [--bench]
+    ./run.sh enterprise remove <company> [--delete-data --confirm <company>] [--export-root <dir>]
+        [--lookup-domain <d>]... [--bws-project <id>] [--bench]
     ./run.sh enterprise release ...          (box K2, rediacc_ci.release.rings_run)
     ./run.sh enterprise proof <verb> [--bench]
     ./run.sh enterprise control ensure [--bench] [--region <r>]
@@ -156,24 +157,27 @@ class LiveSeams:
 
 
 class Lazy:
-    """An adapter built on its first call, from the region of the company that call names, so a verb that never reaches it needs none of its credentials."""
+    """An adapter built on first use for the region of the company a call names (one per region; a later call that names no company, such as a bucket or object read, goes to the adapter of the last company named), so a verb that never reaches it needs none of its credentials."""
 
     def __init__(self, error: type[Exception], build: Callable[[str], Any]):
         self._error = error
         self._build = build
-        self._inner: Any = None
+        self._inners: dict[str, Any] = {}
+        self._current: Any = None
 
     def __getattr__(self, attr: str) -> Callable[..., Any]:
         if attr.startswith("_"):
             raise AttributeError(attr)
 
         def call(*args: Any, **kwargs: Any) -> Any:
-            if self._inner is None:
-                region = getattr(args[0], "region", None) if args else None
-                if not region:
-                    raise self._error("the adapter was reached before a company was named")
-                self._inner = self._build(str(region))
-            return getattr(self._inner, attr)(*args, **kwargs)
+            region = getattr(args[0], "region", None) if args else None
+            if region:
+                if str(region) not in self._inners:
+                    self._inners[str(region)] = self._build(str(region))
+                self._current = self._inners[str(region)]
+            if self._current is None:
+                raise self._error("the adapter was reached before a company was named")
+            return getattr(self._current, attr)(*args, **kwargs)
 
         return call
 
@@ -229,9 +233,9 @@ def _live_bws(error: type[Exception], env: Mapping[str, str]) -> tuple[Any, Any]
     def list_rows() -> list[dict]:
         try:
             return bws_env.listing(binary, environ)
-        except bws_env.RefusalError:
-            pass
-        raise error("bws secret list failed")
+        except bws_env.RefusalError as exc:
+            reason = (str(exc).splitlines() or [""])[0]
+        raise error("bws secret list failed: %s" % reason if reason else "bws secret list failed")
 
     def delete(secret_id: str) -> int:
         proc = subprocess.run(

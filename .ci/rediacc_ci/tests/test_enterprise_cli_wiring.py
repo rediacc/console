@@ -201,3 +201,54 @@ def test_the_context_builds_no_adapter_until_a_verb_uses_it():
     ctx = cli.lifecycle_context(lifecycle, bench=False, query=lambda _d, _s, _p: [], env={})
     assert isinstance(ctx.exporter, cli.Lazy)
     assert isinstance(ctx.teardown, cli.Lazy)
+
+
+class _Region:
+    def __init__(self, region: str):
+        self.region = region
+
+
+def test_lazy_builds_one_adapter_per_region():
+    built: list[str] = []
+
+    class Inner:
+        def __init__(self, region: str):
+            self.region = region
+
+        def where(self, _company: Any) -> str:
+            return self.region
+
+    def build(region: str) -> Inner:
+        built.append(region)
+        return Inner(region)
+
+    lazy = cli.Lazy(RuntimeError, build)
+    assert lazy.where(_Region("eu")) == "eu"
+    assert lazy.where(_Region("us")) == "us"
+    assert lazy.where(_Region("eu")) == "eu"
+    assert built == ["eu", "us"]
+
+
+def test_lazy_refuses_a_call_with_no_company():
+    with pytest.raises(RuntimeError, match="before a company was named"):
+        cli.Lazy(RuntimeError, lambda _r: None).anything()
+
+
+def test_the_remove_usage_names_every_flag_the_parser_takes():
+    remove = next(line for line in cli.__doc__.splitlines() if "enterprise remove" in line)
+    block = cli.__doc__[cli.__doc__.index(remove) :].split("\n    ./run.sh enterprise release")[0]
+    for flag in ("--lookup-domain", "--bws-project", "--export-root", "--delete-data", "--confirm"):
+        assert flag in block
+
+
+def test_lazy_sends_a_call_without_a_company_to_the_last_named_adapter():
+    class Inner:
+        def read(self, key: str) -> str:
+            return "got %s" % key
+
+        def dump(self, _company: Any) -> str:
+            return "dump"
+
+    lazy = cli.Lazy(RuntimeError, lambda _r: Inner())
+    assert lazy.dump(_Region("eu")) == "dump"
+    assert lazy.read("k") == "got k"
