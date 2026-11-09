@@ -833,7 +833,6 @@ jobs:
         with:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
-            ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY
             ACCOUNT_JWT_SECRET > BWS_ACCOUNT_JWT_SECRET
             ACCOUNT_SERVER_API_KEY > BWS_ACCOUNT_SERVER_API_KEY
             GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
@@ -874,28 +873,18 @@ jobs:
         env:
           STRIPE_SANDBOX_SECRET_KEY: ${{ env.BWS_STRIPE_SANDBOX_SECRET_KEY }}
 
-      # Step-scoped (.ci/config/bws-step-scoped.json, check:ci-bws-step-scope): this
-      # fetch serves the next step only, and the scrub after it blanks the key.
-      - name: Fetch the step-scoped signing key(s) for the next step only
-        uses: ./.github/actions/bws-secrets
-        with:
-          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
-          secrets: |
-            ACCOUNT_ED25519_PRIVATE_KEY > BWS_ACCOUNT_ED25519_PRIVATE_KEY
+      # The signing pair is minted for this run (agent/plans/PLAN-production-key-only.md
+      # D6): the production private key never reaches this job, and the sandbox server's
+      # licences verify nothing outside it.
       - name: Start account server
         id: deploy
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.ci_start_account
+        run: |
+          pair="$(PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_account --emit-pair)"
+          eval "$pair"
+          PYTHONPATH=.ci python3 -m rediacc_ci.infra.ci_start_account
         env:
-          ACCOUNT_ED25519_PRIVATE_KEY: ${{ env.BWS_ACCOUNT_ED25519_PRIVATE_KEY }}
-          ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
           ACCOUNT_SERVER_API_KEY: ${{ env.BWS_ACCOUNT_SERVER_API_KEY }}
           ACCOUNT_JWT_SECRET: ${{ env.BWS_ACCOUNT_JWT_SECRET }}
-      - name: Blank the step-scoped signing key(s) for the rest of the job
-        if: always()
-        uses: ./.github/actions/bws-scrub
-        with:
-          names: |
-            BWS_ACCOUNT_ED25519_PRIVATE_KEY
 
       - name: Verify account server health
         run: curl -sf http://localhost:3000/health
@@ -1259,13 +1248,11 @@ jobs:
     # on every distro and that nothing consumed; renet no longer does it.
     # The needs edge was pure critical-path cost (about 10.5 min), not a
     # real dependency.
-    # build-renet IS a real dependency (agent/plans/PLAN-free-license.md R2,
-    # F2): every VM/E2E leg installs the one renet that ci-build-renet.yml's
-    # renet-embed-assets job uploads (renet-test-linux-amd64-<sha>) instead of
-    # building its own.
+    # build-renet stays a dependency: its renet-embed-assets job stages the
+    # embedded assets the legs' own renet builds read from the cache.
     # always() below keeps the caller running when build-renet skips or fails,
     # so migration-test still runs on push-to-main; renet_built tells the legs
-    # that need the artifact to skip instead of dying in its download. A
+    # that need its output to skip instead of dying without it. A
     # failed build-renet still reds CI Complete through build-cli (HARD).
     needs: [initialize, build-renet]
     # full_suite moved from this `if:` into an INPUT so the workflow is still
@@ -1589,6 +1576,8 @@ jobs:
     # step below writes it to $GITHUB_STEP_SUMMARY. Cloudflare-side publish and
     # cleanup are untouched -- the operator's ask was to stop publishing them on
     # the GitHub side only.
+    outputs:
+      ed25519_public_key: ${{ steps.preview-secrets.outputs.ed25519_public_key }}
     env:
       PR_NUMBER: ${{ github.event.pull_request.number }}
     steps:
@@ -1612,7 +1601,6 @@ jobs:
         with:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
-            ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY
             ACCOUNT_JWT_SECRET > BWS_ACCOUNT_JWT_SECRET
             ACCOUNT_SERVER_API_KEY > BWS_ACCOUNT_SERVER_API_KEY
             ACCOUNT_X25519_PUBLIC_KEY > BWS_ACCOUNT_X25519_PUBLIC_KEY
@@ -1731,17 +1719,18 @@ jobs:
         with:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
-            ACCOUNT_ED25519_PRIVATE_KEY > BWS_ACCOUNT_ED25519_PRIVATE_KEY
             ACCOUNT_X25519_PRIVATE_KEY > BWS_ACCOUNT_X25519_PRIVATE_KEY
+      # The signing pair is minted in this step (agent/plans/PLAN-production-key-only.md D6): the
+      # production private key never reaches a PR job. Both halves go into the preview Worker as its
+      # own secrets, and the public half is the job output the smoke test verifies against.
       - name: Set preview worker secrets
+        id: preview-secrets
         env:
           CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
           # ONE NAME EVERYWHERE: the left side is the name the builder READS
           # and the key it WRITES into the Worker (private/account/src/types/
           # env.ts). The right side keeps the GitHub secret's current name.
-          ACCOUNT_ED25519_PRIVATE_KEY: ${{ env.BWS_ACCOUNT_ED25519_PRIVATE_KEY }}
-          ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
           ACCOUNT_X25519_PRIVATE_KEY: ${{ env.BWS_ACCOUNT_X25519_PRIVATE_KEY }}
           ACCOUNT_X25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_X25519_PUBLIC_KEY }}
           ACCOUNT_SERVER_API_KEY: ${{ env.BWS_ACCOUNT_SERVER_API_KEY }}
@@ -1757,13 +1746,16 @@ jobs:
           CLOUDFLARE_TURNSTILE_SECRET_KEY: ${{ steps.create-widget.outputs.secret }}
           AWS_SES_FROM: ${{ env.BWS_AWS_SES_FROM }}
           AWS_SES_CONFIGURATION_SET: ${{ env.BWS_AWS_SES_CONFIGURATION_SET }}
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.set_preview_worker_secrets
+        run: |
+          pair="$(PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_account --emit-pair)"
+          eval "$pair"
+          echo "ed25519_public_key=${ACCOUNT_ED25519_PUBLIC_KEY}" >> "$GITHUB_OUTPUT"
+          PYTHONPATH=.ci python3 -m rediacc_ci.deploy.set_preview_worker_secrets
       - name: Blank the step-scoped signing key(s) for the rest of the job
         if: always()
         uses: ./.github/actions/bws-scrub
         with:
           names: |
-            BWS_ACCOUNT_ED25519_PRIVATE_KEY
             BWS_ACCOUNT_X25519_PRIVATE_KEY
 
       - name: Deployment summary
@@ -1826,7 +1818,6 @@ jobs:
         with:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
-            ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY
             ACCOUNT_JWT_SECRET > BWS_ACCOUNT_JWT_SECRET
             CLOUDFLARE_API_TOKEN > BWS_CLOUDFLARE_API_TOKEN
             CLOUDFLARE_ACCOUNT_ID > BWS_CLOUDFLARE_ACCOUNT_ID
@@ -1864,7 +1855,7 @@ jobs:
         env:
           PREVIEW_URL: https://pr-${{ env.PR_NUMBER }}.rediacc.workers.dev
           SMOKE_TEST_TOKEN: ${{ steps.seed.outputs.SMOKE_TEST_TOKEN }}
-          ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
+          ACCOUNT_ED25519_PUBLIC_KEY: ${{ needs.deploy-preview.outputs.ed25519_public_key }}
 
   # ============================================================================
   # VALIDATE INSTALL METHODS - Full pre-publish validation on all 6 platforms

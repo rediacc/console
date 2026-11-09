@@ -35,19 +35,10 @@ WORKER_SECRET_PUSHERS: dict[tuple[str, str], str] = {
         "cd-deploy-worker.yml",
         "deploy",
     ): "pushes the account Worker's secrets for a production region; the Worker is the key's one consumer",
-    (
-        "ci.yml",
-        "deploy-preview",
-    ): "pushes the per-PR preview Worker's secrets (set_account_worker_secrets); a Worker push, not a test leg",
 }
 
 # (workflow file, job id) -> the CI leg outside this box's files that still maps the key. Shrink-only.
-PENDING_CI_LEGS: dict[tuple[str, str], str] = {
-    (
-        "ci.yml",
-        "stripe-sandbox",
-    ): "rediacc_ci.infra.ci_start_account starts the Stripe-sandbox account server with the production pair; ci.yml is outside PLAN-production-key-only N5's files",
-}
+PENDING_CI_LEGS: dict[tuple[str, str], str] = {}
 
 # (workflow file, job id) -> why the job starts an account server but builds no renet binary.
 RUNTIME_KEY_LEGS: dict[tuple[str, str], str] = {
