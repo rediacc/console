@@ -4379,6 +4379,21 @@ def test_the_skip_reset_mark_ignores_quotes_and_comments_and_reads_env_and_expor
     assert vm_check.leg_skips_reset(_fake_leg("a", "npx a | cat; BRIDGE_TEST_SKIP_RESET=1 npx x"))
 
 
+def test_the_skip_reset_mark_is_not_read_from_quoted_or_option_prefixed_words() -> None:
+    assert not vm_check.leg_skips_reset(
+        _fake_leg("a", 'cd e2e && "BRIDGE_TEST_SKIP_RESET=1" npx x')
+    )
+    assert not vm_check.leg_skips_reset(_fake_leg("a", "'BRIDGE_TEST_SKIP_RESET=1' npx x"))
+    assert not vm_check.leg_skips_reset(_fake_leg("a", 'echo "" BRIDGE_TEST_SKIP_RESET=1 npx x'))
+    assert vm_check.leg_skips_reset(_fake_leg("a", 'NOTE="ab" BRIDGE_TEST_SKIP_RESET=1 npx x'))
+    # Unsupported prefixes: a quoted value holding a space, a leading redirection or an env option ends the prefix, so the leg counts as resetting.
+    assert not vm_check.leg_skips_reset(_fake_leg("a", 'NOTE="a b" BRIDGE_TEST_SKIP_RESET=1 npx x'))
+    assert not vm_check.leg_skips_reset(
+        _fake_leg("a", "2>/dev/null BRIDGE_TEST_SKIP_RESET=1 npx x")
+    )
+    assert not vm_check.leg_skips_reset(_fake_leg("a", "env -i BRIDGE_TEST_SKIP_RESET=1 npx x"))
+
+
 def test_reuse_legs_outside_the_sized_group_keep_map_order(monkeypatch: pytest.MonkeyPatch) -> None:
     """Only the VM_DSK group puts reuse legs first; elsewhere a reuse leg does not jump ahead of resetting legs."""
     monkeypatch.setattr(vm_check, "recipe_env", lambda _fleet: {})
