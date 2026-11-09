@@ -1,21 +1,9 @@
+import { NON_ENGLISH_LOCALES } from '@rediacc/locales';
 import { describe, expect, it, vi } from 'vitest';
 import { type CatalogLoader, createCatalogStore } from '../react/catalog-store';
 import type { Language } from '../types';
 
-const OTHER_LOCALES = [
-  'ar',
-  'de',
-  'es',
-  'et',
-  'fr',
-  'it',
-  'ja',
-  'ko',
-  'pt',
-  'ru',
-  'tr',
-  'zh',
-] as const;
+const OTHER_LOCALES = NON_ENGLISH_LOCALES;
 
 function loaders(overrides: Partial<Record<(typeof OTHER_LOCALES)[number], CatalogLoader>> = {}) {
   const calls: string[] = [];

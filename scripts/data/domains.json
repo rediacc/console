@@ -161,7 +161,7 @@
     },
     {
       "id": "gates",
-      "paths": ["scripts/gates/check-*.ts"],
+      "paths": ["scripts/gates/check-*.ts", "scripts/gates/lib/*.ts"],
       "home": "scripts/gates",
       "stays": true,
       "why": "The TypeScript gate bodies, 125 of them. THE P2 MOVE IS DONE: they left scripts/ for scripts/gates/ on 2026-09-09, so this is now a STAYS declaration, and the references that break if they move again are the ones the move had to rewrite: the npm script commands in package.json, the leaves entries in scripts/ci-runner/manifest.ts and the generated scripts/ci-runner/gates.lock.json, the knip root entry glob, and 219 further files across .ci/, .claude/, scripts/ and packages/.",

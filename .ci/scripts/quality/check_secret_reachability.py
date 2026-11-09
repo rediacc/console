@@ -27,6 +27,7 @@ import datetime as dt
 import json
 import pathlib
 import re
+import subprocess
 import sys
 
 import _cipath
@@ -226,8 +227,19 @@ def refresh(root, baseline_path):
         recorded[repo_name] = entry
 
     # A CHECKED-OUT submodule with no workflows is recorded with an EMPTY entry, not dropped: the record still knows the repo, so a CI checkout without submodules (where the directory is empty) stays CANNOT SEE instead of silently scanning console alone. account and renet reached this state on 2026-10-02 when their only workflows (the Claude Review callers) were removed.
+    # Only a gitlink counts: a gitignored sibling repo (private/growth, private/generative) is never in a CI checkout, so recording it would make every clean clone CANNOT SEE it.
+    gitlinks = {
+        line.split("\t", 1)[1].removeprefix("private/")
+        for line in subprocess.run(
+            ["git", "-C", str(root), "ls-files", "-s", "--", "private"],
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.splitlines()
+        if line.startswith("160000 ")
+    }
     for sub in sorted((root / "private").glob("*")):
-        if (sub / ".git").exists() and sub.name not in recorded:
+        if sub.name in gitlinks and (sub / ".git").exists() and sub.name not in recorded:
             recorded[sub.name] = {}
 
     baseline_path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")

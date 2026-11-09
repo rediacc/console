@@ -38,10 +38,9 @@ def _installs_account_tree(job: dict) -> bool:
             and str((step.get("with") or {}).get("account")).lower() == "true"
         ):
             return True
-        if (
-            step.get("working-directory") == "private/account"
-            and str(step.get("run", "")).strip() in ("npm install", "npm ci")
-        ):
+        if step.get("working-directory") == "private/account" and str(
+            step.get("run", "")
+        ).strip() in ("npm install", "npm ci"):
             return True
     return False
 
