@@ -1097,7 +1097,7 @@ class Graph:
         return Target(token, LIVE, rel, status)
 
     def is_complete(self, token: str) -> bool:
-        """True when the token's plan is finished (a Status in FINISHED_STATES, folder not consulted) or a `_done/` tombstone. A task edge counts as complete only with its whole plan until T12 teaches box-level completion."""
+        """True when the token's plan is finished (a Status in FINISHED_STATES, folder not consulted) or a `_done/` tombstone. A task edge `PLAN-y.md#<id>` of a LIVE plan counts as complete when that one box is ticked with evidence (`_with_task`)."""
         return self.resolve(token).state == COMPLETE
 
     # ---- per-box edges (agent/plans/PLAN-idle-writer-capacity.md D3, operator ruling R4)
@@ -1110,7 +1110,7 @@ class Graph:
     ) -> list[tuple[str, str]]:
         """[(ref, why)] for every unresolved dependency of one box of plan `rel`, `block` being the box with its continuation lines (`box_block`).
 
-        A box that states its own `Depends on:` clause is judged by that clause alone and strictly: a same-plan id or a task token needs its box ticked with evidence (`task_verdict`), a plan token needs the plan finished, and a ref that resolves to nothing holds the box. A box that states none is judged by the plan's `Depends-On:` edges: a finished one passes, and a LIVE one passes when `clear(target, edge)` says so (the writer-readiness rule of `wl_boxready` passes it). A dangling, withdrawn or ambiguous edge always holds."""
+        A box that states its own `Depends on:` clause is judged by that clause alone and strictly: a same-plan id needs its box ticked with evidence (`task_verdict`), a task token `PLAN-y.md#<id>` the same through `resolve` and `_with_task`, a plan token needs the plan finished, and a ref that resolves to nothing holds the box. A box that states none is judged by the plan's `Depends-On:` edges: a finished one passes, and a LIVE one passes when `clear(target, edge)` says so (the writer-readiness rule of `wl_boxready` passes it). A dangling, withdrawn or ambiguous edge always holds."""
         refs = box_depends(block)
         out: list[tuple[str, str]] = []
         if refs is not None:
