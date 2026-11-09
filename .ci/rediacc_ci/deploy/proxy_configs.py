@@ -274,7 +274,10 @@ def company_target(company: str, region_id: str, regions: list[dict], domain: st
         version_metadata=True,
         generated=True,
         own_tokens=frozenset({region_id}),
-        executor_vars=(("EXECUTOR_CAP", "25"), ("EXECUTOR_HEAVY_CAP", "5")),
+        executor_vars=(
+            ("EXECUTOR_CAP", str(MAX_EXECUTOR_CAP)),
+            ("EXECUTOR_HEAVY_CAP", str(MAX_EXECUTOR_HEAVY_CAP)),
+        ),
         optional_variables=COMPANY_OPTIONAL_VARS,
         zone=domain,
     )

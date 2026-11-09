@@ -58,7 +58,8 @@ def _region(region: str, root: pathlib.Path) -> tuple[list[dict], dict]:
 def _check_allow_ips(allow_ips: tuple[str, ...]) -> tuple[tuple[str, str], ...]:
     if not allow_ips:
         return ()
-    value = ",".join(allow_ips)
+    # Each entry is stripped before it is joined, so the checked text is the emitted text.
+    value = ",".join(entry.strip() for item in allow_ips for entry in item.split(","))
     reason = pc.allow_ips_refusal(value)
     if reason:
         raise ConfigError(reason)
