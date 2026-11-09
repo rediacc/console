@@ -839,6 +839,17 @@ def corrections_for(lines, idx):
     return out
 
 
+def _parent_line(lines, idx):
+    """0-based index of the nearest earlier non-blank line indented less than line `idx`, else None."""
+    if idx >= len(lines):
+        return None
+    indent = _indent(lines[idx])
+    for k in range(idx - 1, -1, -1):
+        if lines[k].strip() and _indent(lines[k]) < indent:
+            return k
+    return None
+
+
 def corrected(root, kind, token, fixes):
     """True when a correction line re-points `token` at a replacement of the same kind that resolves today."""
     new = fixes.get(token)
@@ -862,8 +873,10 @@ def problems_for(root, rows, skip_prefixes=()):
         if lineno in fences[rel]:
             continue
         fixes = corrections_for(texts[rel], lineno - 1)
-        # The correction line is itself an added line that names the old token; it is excused by the same replacement test.
-        fixes.update({_bare(a): _bare(b) for a, b in CORRECTION_RE.findall(text)})
+        # A correction line is itself an added line that names the old token. It is excused by the same replacement test, but only beneath a TICKED box: a correction under an open box, a prose line or nothing excuses nothing.
+        parent = _parent_line(texts[rel], lineno - 1)
+        if parent is not None:
+            fixes.update(corrections_for(texts[rel], parent))
         for kind, token in citations(text):
             if fixes and corrected(root, kind, token, fixes):
                 continue
@@ -1194,6 +1207,16 @@ def selftest(root, drift=False):
             )
             return problems_for(fx, [("agent/plans/PLAN-fx.md", 1, plan_lines[0])])
 
+        def fx_all(plan_lines):
+            """Every line of the plan judged as an added row, the correction lines included."""
+            (fx / "agent" / "plans").mkdir(parents=True, exist_ok=True)
+            (fx / "agent" / "plans" / "PLAN-fx.md").write_text(
+                "\n".join(plan_lines) + "\n", encoding="utf-8"
+            )
+            return problems_for(
+                fx, [("agent/plans/PLAN-fx.md", n + 1, t) for n, t in enumerate(plan_lines)]
+            )
+
         tick = "- [x] T1: run `check:ci-gone-zzz` and see lib.txt:99"
         gone_fix = "    (corrected 2026-11-08, fx) check:ci-gone-zzz now at check:ci-real-zzz"
         line_fix = "    (corrected 2026-11-08, fx) lib.txt:99 now at lib.txt:2"
@@ -1203,7 +1226,8 @@ def selftest(root, drift=False):
         )
         ck(
             "a `(corrected ...) X now at Y` line beneath a TICKED box excuses X when Y resolves",
-            fx_problems([tick, gone_fix, line_fix]) == [],
+            fx_problems([tick, gone_fix, line_fix]) == []
+            and fx_all([tick, gone_fix, line_fix]) == [],
         )
         ck(
             "CONTROL: a correction whose replacement does NOT resolve excuses nothing",
@@ -1224,11 +1248,13 @@ def selftest(root, drift=False):
         ck(
             "CONTROL: the same correction beneath an OPEN box or a prose line excuses nothing",
             len(fx_problems(["- [ ] T1: see lib.txt:99", line_fix])) == 1
-            and len(fx_problems(["prose sees lib.txt:99", line_fix])) == 1,
+            and len(fx_problems(["prose sees lib.txt:99", line_fix])) == 1
+            and len(fx_all(["- [ ] T1: see lib.txt:99", line_fix])) == 2
+            and len(fx_all(["prose sees lib.txt:99", line_fix])) == 2,
         )
         ck(
-            "the correction line itself, as an added row, is silent when its replacement resolves",
-            fx_problems([gone_fix.strip()]) == [],
+            "CONTROL: a correction line standing alone, under no ticked box, excuses its own old token nothing",
+            len(fx_problems([gone_fix.strip()])) == 1,
         )
         ck(
             "CONTROL: the correction line itself is judged (old token and dead replacement both) when its replacement does not resolve",
@@ -1244,7 +1270,8 @@ def selftest(root, drift=False):
             len(
                 fx_problems(
                     [
-                        "(corrected 2026-11-08, fx) check:ci-gone-zzz now at check:ci-real-zzz, lib.txt:99"
+                        tick,
+                        "    (corrected 2026-11-08, fx) check:ci-gone-zzz now at check:ci-real-zzz, lib.txt:99",
                     ]
                 )
             )
