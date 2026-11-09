@@ -751,8 +751,19 @@ def test_strip_newlines_removes_both_bytes_anywhere_in_the_token() -> None:
 
 def test_the_generated_toml_ends_with_exactly_one_newline() -> None:
     body = port.preview_toml("pr-1", "db", "u")
-    assert body.endswith('migrations_dir = "../../private/account/drizzle"\n')
+    assert body.endswith('props = { tier = "shared", region = "eu" }\n')
     assert not body.endswith("\n\n")
+
+
+def test_a_preview_signs_through_the_bench_signer_and_holds_no_key() -> None:
+    """Since PLAN-enterprise-isolation S3 the account Worker refuses a private key and needs LICENSE_SIGNER; the preview binds signer-bench-eu."""
+    body = port.preview_toml("pr-1", "db", "u")
+    assert (
+        '[[services]]\nbinding = "LICENSE_SIGNER"\nservice = "signer-bench-eu"\nentrypoint = "LicenseSigner"\n'
+        in body
+    )
+    assert 'props = { tier = "shared", region = "eu" }' in body
+    assert "ED25519_PRIVATE_KEY" not in body
 
 
 def test_a_preview_worker_persists_no_logs_or_traces() -> None:

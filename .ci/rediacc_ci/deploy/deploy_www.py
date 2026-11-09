@@ -182,6 +182,15 @@ binding = "DB"
 database_name = "%s"
 database_id = "%s"
 migrations_dir = "../../private/account/drizzle"
+
+# The account Worker refuses to serve with a licence private key set and requires this binding
+# (private/account src/entry/cloudflare.ts requireSignerOnly). The preview signs through the bench
+# signer and holds no key; signer-bench-eu is deployed first (rediacc_ci.deploy.deploy_signer).
+[[services]]
+binding = "LICENSE_SIGNER"
+service = "signer-bench-eu"
+entrypoint = "LicenseSigner"
+props = { tier = "shared", region = "eu" }
 """
 )
 
