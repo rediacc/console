@@ -744,6 +744,24 @@ def control_landed(tmp):
         {".": [sha2]},
     )
 
+    # CONTROL (review 99374771.2): a landed sha that IS a real commit, kept on another branch and no ancestor of the live tip, records nothing either.
+    side = git(tmp, main, "commit-tree", "HEAD^{tree}", "-p", "HEAD~1", "-m", "side")
+    git(tmp, main, "branch", "side-work", side)
+    commit_in(tmp, main, "f.txt", "f\n", "stray\n\nLease-Landed-As: %s %s" % (sha2, side))
+    check(
+        "a Lease-Landed-As trailer naming a commit off the live tip leaves the lease unlanded",
+        read(tmp, main)["unlanded"][0]["commits"],
+        {".": [sha2]},
+    )
+    # The same row naming a real ancestor of the live tip does record it.
+    ancestor = git(tmp, main, "rev-parse", "HEAD~1")
+    commit_in(tmp, main, "g.txt", "g\n", "fix\n\nLease-Landed-As: %s %s" % (sha2, ancestor))
+    check(
+        "a Lease-Landed-As trailer naming a real ancestor reads it landed",
+        read(tmp, main)["unlanded"],
+        [],
+    )
+
     main = lease_main_repo(tmp, "pinned")
     lease = new_lease(tmp, main, "w1")
     base = git(tmp, main, "rev-parse", "HEAD")
