@@ -73,7 +73,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 12 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic c6b82e88, plan agent/plans/PLAN-settings-set-verb.md, outside the set, 2 commit(s) on the branch, 0 open item(s): settings set verb: one source for the ceilings
   - epic dbb7de07, plan agent/plans/PLAN-cloudflare-spend-guard.md, outside the set, 48 commit(s) on the branch, 0 open item(s): cloudflare spend guard closure
-  - epic 09b8bdfa, plan agent/plans/PLAN-detached-jobs.md, outside the set, 1232 commit(s) on the branch, 0 open item(s): detached jobs: proxied poll follow and job kinds
+  - epic 09b8bdfa, plan agent/plans/PLAN-detached-jobs.md, outside the set, 1237 commit(s) on the branch, 0 open item(s): detached jobs: proxied poll follow and job kinds
   - epic ec9ba176, plan agent/plans/PLAN-backup-integrity.md, outside the set, 2 commit(s) on the branch, 0 open item(s): backup integrity docs and closure
   - epic d6bb9963, plan agent/plans/PLAN-backup-critical-tier.md, outside the set, 7 commit(s) on the branch, 0 open item(s): backup critical tier proofs
   - epic b21ab2e2, plan agent/plans/PLAN-jobs-backup-real-machine-tests.md, outside the set, 2 commit(s) on the branch, 0 open item(s): real machine tests for jobs and backup
@@ -83,15 +83,15 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic 1d805023, plan agent/plans/PLAN-tick-tracking.md, outside the set, 26 commit(s) on the branch, 0 open item(s): tick tracking: plan-box trailer, landing prints the tick, box audit
   - epic f65726d5, plan agent/plans/PLAN-renet-down-before-kill.md, outside the set, 16 commit(s) on the branch, 0 open item(s): renet runs Rediaccfile down() before repo containers stop
   - epic 53c31db2, plan agent/plans/PLAN-repo-resource-limits.md, outside the set, 20 commit(s) on the branch, 0 open item(s): per-repo resource limits and a renet-managed RAM volume
-- Writers: 2 live of writer_cap 25 (session d778be9d): worker:a6580a6f91d8d3073, worker:aa4d62675a7f0ea77.
-- Leased items: 2: #5ec8bb78 (worker:aa4d62675a7f0ea77, d778be9d), #b4bb4a4e (worker:a6580a6f91d8d3073, d778be9d).
+- Writers: 2 live of writer_cap 25 (session d778be9d): worker:a0a0279b0f7269a07, worker:a98b3d26739131579.
+- Leased items: 2: #92f5d9d4 (worker:a98b3d26739131579, d778be9d), #bfd63e36 (worker:a0a0279b0f7269a07, d778be9d).
 - Next plan: agent/plans/PLAN-console-executor-multi-org.md, Promoted entry 18; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 15 of 60 plans done, 911 of 1130 boxes done (80%).
+Promoted: 16 of 60 plans done, 916 of 1130 boxes done (81%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -148,10 +148,10 @@ Promoted: 15 of 60 plans done, 911 of 1130 boxes done (80%).
 | 51 | PLAN-renet-docker-running-semantics.md | 11/15 | 4 open |
 | 52 | PLAN-product-domain-rename.md | 19/28 | 9 open |
 | 53 | PLAN-website-routing-and-mail.md | 6/20 | 14 open |
-| 54 | PLAN-enterprise-isolation.md | 6/34 | 28 open |
+| 54 | PLAN-enterprise-isolation.md | 7/34 | 27 open |
 | 55 | PLAN-renet-restart-cycle-defects.md | 5/6 | 1 open |
 | 56 | PLAN-drop-free-license-ip-prefix-hash.md | 4/6 | 2 open |
-| 57 | PLAN-stop-hook-retro-20261101.md | 0/4 | 4 open |
+| 57 | PLAN-stop-hook-retro-20261101.md | 4/4 | done |
 | 58 | PLAN-plan-compaction-bindings.md | 0/7 | 7 open |
 | 59 | PLAN-ciquick-green-then-batch.md | 6/7 | 1 open |
 | 60 | PLAN-vmcheck-incremental.md | 2/3 | 1 open |

@@ -1121,8 +1121,8 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 28,
-      "done": 6,
+      "open": 27,
+      "done": 7,
       "open_sigs": [
         "096ada29",
         "0a6e5712",
@@ -1149,7 +1149,6 @@
         "cc2cb507",
         "cc583290",
         "cdf29e6f",
-        "e74848b6",
         "e8b5ad6f",
         "f4b49503"
       ],
@@ -1159,7 +1158,8 @@
         "4fecf68e",
         "6296754b",
         "859c4aee",
-        "bb7fdaa6"
+        "bb7fdaa6",
+        "e74848b6"
       ]
     },
     "agent/plans/PLAN-executor-durable-object-policy.md": {
@@ -2629,15 +2629,15 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 4,
-      "done": 0,
-      "open_sigs": [
+      "open": 0,
+      "done": 4,
+      "open_sigs": [],
+      "done_sigs": [
         "7e9b923d",
         "9ebeab9c",
         "a8063221",
         "fa7056ab"
-      ],
-      "done_sigs": []
+      ]
     },
     "agent/plans/PLAN-stop-report-queue.md": {
       "status": "compacted",

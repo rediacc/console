@@ -110,9 +110,10 @@ This plan is public: no customer name appears in it or in any tracked file. `acm
 - [ ] A1 [writer] Company mode: API-key bootstrap creating org, active ENTERPRISE subscription, limits and owner mail, idempotently; `/register` closed except to invited addresses. The invitation path for a person with no account is untraced, so the test covers it.
   Owns: private/account/src/routes/subscriptions.ts, private/account/src/routes/auth.ts, private/account/src/services/auth.service.ts, private/account/src/services/enterprise-bootstrap.service.ts (new), private/account/tests/integration/enterprise-bootstrap.test.ts (new).
   Accept: `(cd private/account && npx vitest run tests/integration/enterprise-bootstrap.test.ts)` rc 0.
-- [ ] A2 [writer] The opt-in allowlist on both Workers' default fetch, exempting only `POST` on the renew path, with `POST` to any other path and `GET` on the renew path refused in the test.
+- [x] A2 [writer] The opt-in allowlist on both Workers' default fetch, exempting only `POST` on the renew path, with `POST` to any other path and `GET` on the renew path refused in the test.
   Owns: workers/account/src/index.ts, workers/proxy/src/index.ts, workers/proxy/src/__tests__/allowlist.test.ts (new).
   Accept: `(cd workers/proxy && npx vitest run src/__tests__/allowlist.test.ts)` rc 0.
+    (ticked) 2026-11-09T02:42:59Z by d778be9d: commit:16f57d6db9 commit:1dfcd7f371 commit:b0a6e261a7; vitest workers/proxy ip-allowlist + index 38 passed rc 0, private/account worker-allowlist 3 passed rc 0, tsc -p workers/proxy and -p workers/account rc 0; the accept file is named ip-allowlist.test.ts, not allowlist.test.ts
 - [ ] D1 [writer] `--company` on the deploy modules, with the record sink at the control database, never the releases bucket.
   Owns: .ci/rediacc_ci/deploy/deploy_account.py, .ci/rediacc_ci/deploy/deploy_proxy.py, .ci/rediacc_ci/deploy/deploy_record.py, .ci/rediacc_ci/deploy/console_executor.py, .ci/rediacc_ci/tests/test_deploy_company_target.py (new).
   Accept: `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_deploy_company_target.py` rc 0.
