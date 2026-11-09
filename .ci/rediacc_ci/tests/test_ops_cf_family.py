@@ -13,7 +13,7 @@ import typing
 
 import pytest
 
-from rediacc_ci.ops import cf_auth, deploy_bench, reset_bench
+from rediacc_ci.ops import backup_d1, cf_auth, deploy_bench, reset_bench
 from rediacc_ci.tests import ops_cf_harness as h
 
 if typing.TYPE_CHECKING:
@@ -322,6 +322,23 @@ def test_backup_d1_unknown_argument_matches_bash(world: h.World) -> None:
     assert h.strip(err_b).replace(usage_bash, usage_port).replace(
         "[production|edge]", "[shared|bench|production|edge]"
     ) == h.strip(err_p)
+
+
+def test_backup_d1_default_plan_is_the_shared_set_and_retired_sets_are_named() -> None:
+    shared = [("shared", "account-eu"), ("shared", "account-us"), ("shared", "account-asia")]
+    assert backup_d1.export_plan("") == shared
+    assert backup_d1.export_plan("shared") == shared
+    assert backup_d1.export_plan("bench") == [("bench", "account-bench")]
+    assert [n for _s, n in backup_d1.export_plan("production")] == [
+        "account-db-eu",
+        "account-db-us",
+        "account-db-asia",
+    ]
+    assert [n for _s, n in backup_d1.export_plan("edge")] == [
+        "edge-account-db-eu",
+        "edge-account-db-us",
+        "edge-account-db-asia",
+    ]
 
 
 def test_delta_a_minted_token_is_always_destroyed(world: h.World) -> None:

@@ -36,6 +36,20 @@ USAGE = "Usage: PYTHONPATH=.ci python3 -m rediacc_ci.ops.backup_d1 [--dry-run] [
 FILTERED = ("r2.cloudflarestorage.com", "valid for one hour")
 
 
+def export_plan(target: str) -> list[tuple[str, str]]:
+    """The (set, database) pairs one run exports. No target (or `shared`) is the live shared set only: the retired `production` and `edge` sets are archived by naming them."""
+    plan: list[tuple[str, str]] = []
+    if target in ("", "shared"):
+        plan += [("shared", "%s-%s" % (SHARED_DB_PREFIX, r)) for r in REGIONS]
+    if target == "bench":
+        plan.append(("bench", BENCH_DB))
+    if target == "production":
+        plan += [("production", "%s-%s" % (PROD_DB_PREFIX, r)) for r in REGIONS]
+    if target == "edge":
+        plan += [("edge", "%s-%s" % (EDGE_DB_PREFIX, r)) for r in REGIONS]
+    return plan
+
+
 def _human_size(size: int) -> str:
     value = float(size)
     for unit in ("B", "K", "M", "G"):
@@ -132,15 +146,7 @@ def main(argv: list[str]) -> int:
         log.step("D1 Database Backup (per-region)")
         if dry_run:
             log.warn("DRY-RUN mode: no exports will be performed")
-        plan = []
-        if target in ("", "shared"):
-            plan += [("shared", "%s-%s" % (SHARED_DB_PREFIX, r)) for r in REGIONS]
-        if target == "bench":
-            plan.append(("bench", BENCH_DB))
-        if target == "production":
-            plan += [("production", "%s-%s" % (PROD_DB_PREFIX, r)) for r in REGIONS]
-        if target == "edge":
-            plan += [("edge", "%s-%s" % (EDGE_DB_PREFIX, r)) for r in REGIONS]
+        plan = export_plan(target)
         for env_name, db_name in plan:
             if not _backup_database(env, backup_dir, stamp, env_name, db_name, dry_run):
                 return 1
