@@ -49,13 +49,15 @@ def is_template(rel: str) -> bool:
     return pathlib.PurePosixPath(rel).name.endswith(".template.toml")
 
 
-def findings(root: pathlib.Path) -> list[str]:
-    tracked = subprocess.run(
-        ["git", "-C", str(root), "ls-files", "*wrangler*.toml"],
-        capture_output=True,
-        text=True,
-        check=True,
-    ).stdout.split()
+def findings(root: pathlib.Path, tracked: list[str] | None = None) -> list[str]:
+    """The build-context findings of every tracked wrangler config under `root`; `tracked` replaces the listing of tracked files (the selftest's own tree)."""
+    if tracked is None:
+        tracked = subprocess.run(
+            ["git", "-C", str(root), "ls-files", "*wrangler*.toml"],
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.split()
     out: list[str] = []
     for rel in tracked:
         if is_template(rel):
@@ -101,6 +103,20 @@ def selftest() -> bool:
             file=sys.stderr,
         )
         failed = True
+    with tempfile.TemporaryDirectory() as d:
+        tree = pathlib.Path(d)
+        (tree / "Dockerfile").write_text("FROM node\nCOPY absent-dir/ ./\n")
+        container = '[[containers]]\nclass_name = "C"\nimage = "./Dockerfile"\n'
+        (tree / "wrangler.template.toml").write_text("name = @@NAME@@\n" + container)
+        (tree / "wrangler.eu.toml").write_text('name = "w"\n' + container)
+        found = findings(tree, ["wrangler.template.toml", "wrangler.eu.toml"])
+        if len(found) != 1 or not found[0].startswith("wrangler.eu.toml:"):
+            print(
+                "✗ control: with a template and a per-target config tracked, only the per-target config may be checked and reported: %r"
+                % found,
+                file=sys.stderr,
+            )
+            failed = True
     with tempfile.TemporaryDirectory() as d:
         ctx = pathlib.Path(d)
         (ctx / "package.json").write_text("{}")
