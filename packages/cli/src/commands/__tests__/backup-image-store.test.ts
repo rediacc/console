@@ -208,7 +208,7 @@ describe('storeFetchJson', () => {
       cellsRoot: 'verified',
       cellsRootValue: root,
     };
-    expect(storeFetchJson({ snapshotId: SNAP, dest: '/d.img', record })).toEqual({
+    expect(storeFetchJson({ snapshotId: SNAP, dest: '/d.img', record, store: 'st1' })).toEqual({
       status: 'fetched',
       image: '/d.img',
       snapshotId: SNAP,
@@ -219,7 +219,12 @@ describe('storeFetchJson', () => {
   });
 
   it('omits the root fields when the record has none', () => {
-    const out = storeFetchJson({ snapshotId: SNAP, dest: '/d.img', record: { status: 'fetched' } });
+    const out = storeFetchJson({
+      snapshotId: SNAP,
+      dest: '/d.img',
+      record: { status: 'fetched' },
+      store: 'st1',
+    });
     expect(out).not.toHaveProperty('cellsRoot');
     expect(out).not.toHaveProperty('cellsRootValue');
   });

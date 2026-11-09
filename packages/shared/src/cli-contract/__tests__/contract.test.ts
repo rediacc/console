@@ -158,7 +158,9 @@ describe('CLI contract', () => {
     // 93 -> 94: `repo health` (PLAN-health-checks-local G3) runs repository_health on the machine that holds the repository, non-interactive, so proxy-capable and detachable like `repo status`.
     //
     // 94 -> 96: `repo repair` and `machine repair` (PLAN-health-checks-local X2, X4) run renet functions on the machine that holds the repository, non-interactive, so proxy-capable and detachable.
-    expect(proxyCapableCommands().length).toBe(96);
+    //
+    // 96 -> 97: `rdc job dismiss` landed. It acknowledges a ticket in the machine's job spool over SSH like the other `job *` verbs, which are proxy-capable and never detachable.
+    expect(proxyCapableCommands().length).toBe(97);
   });
 
   it('every refusal carries a reason, and every proxyable command carries none', () => {

@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { COMPACT_THRESHOLD, foldEvents, TicketStore } from '../ticket-store.js';
+import { COMPACT_THRESHOLD, type ExpiredReason, foldEvents, TicketStore } from '../ticket-store.js';
 
 let base: string;
 
@@ -215,7 +215,7 @@ describe('ticket store: expired', () => {
   it('drops a reason outside the schema and defaults the fold to age', () => {
     const store = storeIn();
     store.append('starting', 'r1', {});
-    store.append('expired', 'r1', { reason: 'bogus' });
+    store.append('expired', 'r1', { reason: 'bogus' as ExpiredReason });
     expect(storeIn().tickets()[0].expiredReason).toBe('age');
   });
 
