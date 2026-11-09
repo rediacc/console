@@ -36,7 +36,11 @@ jobs:
     permissions:
       contents: read
     steps:
+      # The default branch, never the dispatched ref: the local profiler action runs before the refusal, and a branch must not choose the code this job runs. No credential is persisted.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
 
       - uses: ./.github/actions/profiler
         with:

@@ -215,7 +215,6 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
           GH_TOKEN: ${{ github.token }}
 
-
   cf-leftovers:
     name: Cloudflare leftovers report
     runs-on: ubuntu-latest

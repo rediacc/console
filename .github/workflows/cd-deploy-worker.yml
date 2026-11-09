@@ -1,7 +1,7 @@
 name: Deploy WWW Worker
 
 # Reusable workflow for deploying the www Worker (marketing site + embedded
-# account portal) to the edge or stable channel.
+# account portal).
 # One shared www Worker serves www.rediacc.com, built from edge. Called by the edge release
 # workflow (cd-release-edge.yml) only.
 # Builds pages + account portal from source at the specified git ref, then deploys.
@@ -10,7 +10,7 @@ on:
   workflow_call:
     inputs:
       target:
-        description: 'Deploy channel: edge or stable'
+        description: 'Label for the job name and the GitHub environment; the only caller passes edge, and the target does not change what is deployed'
         required: true
         type: string
       ref:
