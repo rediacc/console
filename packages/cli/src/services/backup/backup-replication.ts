@@ -100,11 +100,12 @@ function reasonOf(error: unknown): string {
 
 /**
  * Run one request per item. A 404 carrying BACKUP_REPLICATE_RULE_UNKNOWN is a rule the server does not hold, which a
- * drop counts as done and moves past. Any other 404 is a server without the replication routes: it folds into
+ * drop (`dropping`) counts as done and moves past; on a write it is a failure like any other refusal. Any other 404 is a server without the replication routes: it folds into
  * `unsupported` and stops, since every later call would 404 too. Any other failure goes into `failures`.
  */
 async function applyAll(
-  items: { lineageGuid: string; target: string; call: () => Promise<unknown> }[]
+  items: { lineageGuid: string; target: string; call: () => Promise<unknown> }[],
+  dropping: boolean
 ): Promise<ReplicationSyncResult> {
   const result = emptyResult();
   for (const item of items) {
@@ -112,22 +113,29 @@ async function applyAll(
       await item.call();
       result.done++;
     } catch (error) {
-      if (statusOf(error) === 404 && codeOf(error) === RULE_UNKNOWN) {
+      const outcome = outcomeOf(error, dropping);
+      if (outcome === 'done') {
         result.done++;
-        continue;
-      }
-      if (statusOf(error) === 404) {
+      } else if (outcome === 'unsupported') {
         result.unsupported = true;
         return result;
+      } else {
+        result.failures.push({
+          lineageGuid: item.lineageGuid,
+          target: item.target,
+          reason: reasonOf(error),
+        });
       }
-      result.failures.push({
-        lineageGuid: item.lineageGuid,
-        target: item.target,
-        reason: reasonOf(error),
-      });
     }
   }
   return result;
+}
+
+/** How one failed request counts: a drop of a rule the server does not hold is done, a bare 404 is an older server, anything else fails. */
+function outcomeOf(error: unknown, dropping: boolean): 'done' | 'unsupported' | 'failed' {
+  if (statusOf(error) !== 404) return 'failed';
+  if (codeOf(error) !== RULE_UNKNOWN) return 'unsupported';
+  return dropping ? 'done' : 'failed';
 }
 
 /** Write each rule to the account server. */
@@ -141,7 +149,8 @@ export function pushReplicationRules(rules: ReplicationRule[]): Promise<Replicat
           method: 'PUT',
           body: { lineageGuid: rule.lineageGuid, from: rule.from },
         }),
-    }))
+    })),
+    false
   );
 }
 
@@ -158,7 +167,8 @@ export function dropReplicationRules(
           `${STORES_PATH}/${encodeURIComponent(pair.targetId)}/replication?lineage=${encodeURIComponent(pair.lineageGuid)}`,
           { method: 'DELETE' }
         ),
-    }))
+    })),
+    true
   );
 }
 

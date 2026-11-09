@@ -107,7 +107,7 @@ describe('scheduled backups to the chunk store', () => {
       DATASTORE,
       RENET
     );
-    expect(commands[0]).toContain('--bwlimit 6000000');
+    expect(commands[0]).toMatch(/--bwlimit 6000000(?!\d)/);
     expect(commands[0]).not.toContain('--bwlimit 6M');
   });
 
@@ -119,7 +119,7 @@ describe('scheduled backups to the chunk store', () => {
       DATASTORE,
       RENET
     );
-    expect(commands[0]).toContain('--bwlimit 12500000');
+    expect(commands[0]).toMatch(/--bwlimit 12500000(?!\d)/);
     expect(commands[0]).toContain('--parallelism 2');
   });
 
@@ -142,12 +142,12 @@ describe('scheduled backups to the chunk store', () => {
       true
     );
     // Each destination's command carries its own cap: the strategy's for a, b's own for b.
-    expect(commands[0]).toContain('--bwlimit 12500000');
-    expect(commands[1]).toContain('--bwlimit 6000000');
-    expect(commands[1]).not.toContain('--bwlimit 12500000');
+    expect(commands[0]).toMatch(/--bwlimit 12500000(?!\d)/);
+    expect(commands[1]).toMatch(/--bwlimit 6000000(?!\d)/);
+    expect(commands[1]).not.toMatch(/--bwlimit 12500000(?!\d)/);
     // c's own cap (200 Mbps) is looser than the strategy's, so the strategy's 100 Mbps wins on c's command.
-    expect(commands[2]).toContain('--bwlimit 12500000');
-    expect(commands[2]).not.toContain('--bwlimit 25000000');
+    expect(commands[2]).toMatch(/--bwlimit 12500000(?!\d)/);
+    expect(commands[2]).not.toMatch(/--bwlimit 25000000(?!\d)/);
   });
 
   it('runs the scheduled unit and the ad-hoc strategy run at low CPU and I/O priority', () => {

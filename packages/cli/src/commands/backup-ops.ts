@@ -238,26 +238,37 @@ async function readStatusTargets(
 ): Promise<StatusTargets> {
   const byStrategy: Record<string, string[]> = {};
   const replicas: Record<string, Record<string, string>> = {};
-  const bound = await configService.listBackupStrategies();
-  for (const name of new Set(strategies)) {
-    const destinations = bound[name]?.destinations ?? [];
-    const enabled = destinations.filter((d) => d.enabled !== false);
-    byStrategy[name] = [...new Set(enabled.map((d) => d.target ?? HOME_STORE))];
-    // A replicate destination's row shows its copy lag against the store it copies from.
-    const copies = replicateDestinations({ destinations: enabled }, true).filter((d) => d.from);
-    if (copies.length > 0) {
-      replicas[name] = Object.fromEntries(
-        copies.map((d) => [d.target ?? HOME_STORE, d.from as string])
-      );
+  try {
+    const bound = await configService.listBackupStrategies();
+    for (const name of new Set(strategies)) {
+      const destinations = bound[name]?.destinations ?? [];
+      const enabled = destinations.filter((d) => d.enabled !== false);
+      byStrategy[name] = [...new Set(enabled.map((d) => d.target ?? HOME_STORE))];
+      // A replicate destination's row shows its copy lag against the store it copies from.
+      const copies = replicateDestinations({ destinations: enabled }, true).filter((d) => d.from);
+      if (copies.length > 0) {
+        replicas[name] = Object.fromEntries(
+          copies.map((d) => [d.target ?? HOME_STORE, d.from as string])
+        );
+      }
     }
+  } catch {
+    // An unreadable strategy list leaves the store columns `-`; the status itself still prints.
   }
-  const repos = await configService.listRepositories();
-  const lineages = new Set(
-    repos
-      .filter(({ config }) => config.placement && 'machine' in config.placement)
-      .filter(({ config }) => (config.placement as { machine: string }).machine === machineName)
-      .map(({ config }) => config.grandGuid ?? config.repositoryGuid)
-  );
+  const lineages = new Set<string>();
+  try {
+    for (const { config } of await configService.listRepositories()) {
+      if (
+        config.placement &&
+        'machine' in config.placement &&
+        (config.placement as { machine: string }).machine === machineName
+      ) {
+        lineages.add(config.grandGuid ?? config.repositoryGuid);
+      }
+    }
+  } catch {
+    // An unreadable repository list leaves the per-store listing empty.
+  }
   return { byStrategy, replicas, stores: await readStoreStatuses([...lineages]) };
 }
 

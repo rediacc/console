@@ -134,6 +134,26 @@ describe('--replicate-from that equals the resulting target', () => {
     ).rejects.toThrow(/into itself/);
   });
 
+  it('refuses a new --target equal to the stored source when --replicate-from is absent', async () => {
+    store.strategy = { schedule: '0 3 * * *', destinations: [upload, replica] };
+    await expect(
+      applyBackupStrategyOptions('s', { destination: 'copy', target: 'home' })
+    ).rejects.toThrow(/into itself/);
+    expect(store.strategy?.destinations.find((d) => d.name === 'copy')).toMatchObject({
+      target: 'eu-west',
+      from: 'home',
+    });
+  });
+
+  it('admits a new --target that differs from the stored source (control)', async () => {
+    store.strategy = { schedule: '0 3 * * *', destinations: [upload, replica] };
+    await applyBackupStrategyOptions('s', { destination: 'copy', target: 'us-east' });
+    expect(store.strategy?.destinations.find((d) => d.name === 'copy')).toMatchObject({
+      target: 'us-east',
+      from: 'home',
+    });
+  });
+
   it('admits a source that differs from the target (control)', async () => {
     await applyBackupStrategyOptions('s', {
       destination: 'copy',

@@ -114,6 +114,22 @@ describe('server answers', () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
+  it('does not count a RULE_UNKNOWN 404 on a push as done', async () => {
+    fetchMock.mockRejectedValueOnce(
+      Object.assign(new Error('no such rule'), {
+        status: 404,
+        code: 'BACKUP_REPLICATE_RULE_UNKNOWN',
+      })
+    );
+    const result = await pushReplicationRules([
+      { lineageGuid: 'G1', targetId: 'eu-west', from: 'home' },
+    ]);
+    expect(result.done).toBe(0);
+    expect(result.unsupported).toBe(false);
+    expect(result.failures).toHaveLength(1);
+    expect(result.failures[0]).toMatchObject({ lineageGuid: 'G1', target: 'eu-west' });
+  });
+
   it('collects a refusal per rule and goes on with the next', async () => {
     fetchMock
       .mockRejectedValueOnce(Object.assign(new Error('source store retired'), { status: 400 }))

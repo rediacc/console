@@ -121,7 +121,7 @@ export async function applyBackupStrategyOptions(
     throw new ValidationError(t('commands.backup.strategy.set.cpuLimitStrategyOnly'));
   }
 
-  if (options.destination && options.replicateFrom !== undefined) {
+  if (options.destination) {
     await assertReplicaIsNotSelfCopy({
       strategyName: name,
       destinationName: options.destination,

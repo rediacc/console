@@ -278,7 +278,8 @@ function renetCommandsOf(execStart: string): string[] {
   const wrapper = /^\/bin\/sh -c '(.*)'$/.exec(execStart);
   if (!wrapper) {
     // Anything else must be a bare renet command; a shell or env wrapper of another shape would otherwise pass unparsed.
-    if (!execStart.startsWith(`${RENET_PATH} `)) {
+    // A shell separator after the renet path would hide a second command from the flag check.
+    if (!execStart.startsWith(`${RENET_PATH} `) || /;|&&|\|\||\||\n/.test(execStart)) {
       throw new Error(
         `unrecognized ExecStart (neither a bare renet command nor the isolating wrapper): ${execStart}`
       );
