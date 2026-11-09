@@ -9,6 +9,7 @@ import base64
 import hashlib
 import json
 import traceback
+from typing import Any
 
 import pytest
 
@@ -701,6 +702,7 @@ def _traceback_text(exc):
 @pytest.mark.parametrize("where", ["minter", "store"])
 def test_a_failing_seam_leaves_no_cause_no_context_and_no_value_in_the_traceback(where):
     # 57f7d3fa.1: `from None` inside the except block still keeps the seam exception as __context__.
+    kw: dict[str, Any]
     if where == "minter":
         kw = {"minter": FakeMinter(fail=True)}
         leaked = R2_TOKEN_VALUE

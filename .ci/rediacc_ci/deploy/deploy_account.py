@@ -513,7 +513,10 @@ def main(argv: list[str]) -> int:
     else:
         config = config_name(region)
         label = "%s (%s)" % (region, config)
-        shown = str
+
+        def shown(text: str) -> str:
+            return text
+
     if not (worker_dir / config).is_file():
         log.error("Wrangler config not found: %s/%s" % (shown(str(worker_dir)), shown(config)))
         return 1

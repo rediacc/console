@@ -726,8 +726,8 @@ def lroot(tmp_path: pathlib.Path) -> pathlib.Path:
     return tmp_path
 
 
-def ltarget(root: pathlib.Path, **over) -> ce.CompanyTarget:
-    args = {
+def ltarget(root: pathlib.Path, **over: Any) -> ce.CompanyTarget:
+    args: dict[str, Any] = {
         "name": LABEL,
         "company_id": LABEL_ID,
         "region": "eu",
@@ -828,6 +828,7 @@ def test_the_account_deploy_logs_no_label_on_a_refusal(lroot, monkeypatch, capsy
 def test_the_account_deploy_logs_no_label_when_its_config_is_missing(lroot, monkeypatch, capsys):
     monkeypatch.setattr(common, "repo_root", lambda: lroot)
     company = ltarget(lroot)
+    assert company.account_config is not None
     company.account_config.unlink()
     monkeypatch.setattr(da, "company_from_args", lambda *_unused: company)
     assert da.main([*lflags(lroot, "account"), "--dry-run"]) == 1
