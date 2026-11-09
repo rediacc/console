@@ -415,7 +415,7 @@ def _import_world(tmp_path, anchored, body="export const x = 1;\n"):
 
 
 @pytest.mark.parametrize(
-    "anchored, test, body",
+    ("anchored", "test", "body"),
     [
         (
             "src/blob-storage.service.ts",
@@ -439,7 +439,7 @@ def test_a_named_test_that_imports_the_anchored_module_closes_the_finding(
 
 
 @pytest.mark.parametrize(
-    "anchored, test, body",
+    ("anchored", "test", "body"),
     [
         (
             "src/blob-storage.service.ts",

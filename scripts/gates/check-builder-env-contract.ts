@@ -94,6 +94,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { recordProblem } from './lib/gate-problems.js';
 
 const ROOT = join(fileURLToPath(new URL('.', import.meta.url)), '..', '..');
 
@@ -966,7 +967,8 @@ for (const pair of PAIRS) {
   }
   for (const [name, line] of step.names) {
     if (pair.channel && isOtherChannelName(name, pair.channel)) {
-      problems.push(
+      recordProblem(
+        problems,
         `    ${pair.workflow}:${line}  exports ${name}, a name of the other channel, from a step that serves only ${pair.channel}.\n` +
           `      The builder refuses a cross-channel value; the step must never supply one. Delete the export.`
       );

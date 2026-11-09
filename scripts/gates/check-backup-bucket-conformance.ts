@@ -70,6 +70,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { joinReport } from '../lib/console.js';
+import { recordProblem } from './lib/gate-problems.js';
 
 const ROOT = join(fileURLToPath(new URL('.', import.meta.url)), '..', '..');
 
@@ -361,10 +362,8 @@ for (const d of deployments) {
     continue;
   }
   if (!d.declared) {
-    problems.push(
-      `    ${d.label}: regions.json names no backup bucket ` +
-        `(backupR2), but the binding says "${bucket}"`
-    );
+    const named = `${d.label}: regions.json names no backup bucket (backupR2)`;
+    recordProblem(problems, `    ${named}, but the binding says "${bucket}"`);
     continue;
   }
   if (d.declared !== bucket) {

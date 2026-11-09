@@ -111,6 +111,7 @@ import { laneCanEmit, rewriteStrategyRegions } from '../gate-bind.js';
 import { GREEN, NC, RED } from '../lib/console.js';
 import { summarizeControls } from '../lib/controls.js';
 import { envRoot } from '../lib/repo-root.js';
+import { recordProblem } from './lib/gate-problems.js';
 
 const ROOT = envRoot('QUALITY_COMPLETE_ROOT');
 
@@ -218,7 +219,8 @@ export function readReceipts(dir: string): { receipts: ShardReceipt[]; problems:
     const hasGates = typeof r.gates === 'number';
     const hasUnits = Array.isArray(r.units);
     if (hasGates === hasUnits) {
-      problems.push(
+      recordProblem(
+        problems,
         `${file}: a receipt needs EXACTLY ONE of a numeric \`gates\` (lock-id currency) or ` +
           `a \`units\` array (unit currency, T2.11); got ${JSON.stringify(parsed)}`
       );
