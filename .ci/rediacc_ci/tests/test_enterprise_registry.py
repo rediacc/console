@@ -99,3 +99,16 @@ def test_every_unreachable_region_is_listed():
     with pytest.raises(registry.RegistryUnreachableError) as err:
         reg.companies()
     assert err.value.regions == ["asia", "us"]
+
+
+def test_a_sqlite_error_is_recorded_per_region_and_does_not_stop_the_loop():
+    def query(database, _sql, _params):
+        if database == "control-us":
+            raise sqlite3.OperationalError("no such table: companies")
+        return []
+
+    reg = registry.Registry(query)
+    with pytest.raises(registry.RegistryUnreachableError) as err:
+        reg.companies()
+    assert err.value.regions == ["us"]
+    assert "OperationalError" in err.value.causes["us"]

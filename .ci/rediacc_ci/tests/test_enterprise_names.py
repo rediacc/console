@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import typing
 
 import pytest
 
@@ -59,6 +60,8 @@ def test_every_region_id_is_reserved():
         "stable",
         "edge",
         "control",
+        "notify",
+        "ops-health",
     ],
 )
 def test_service_words_reserved(word):
@@ -97,3 +100,14 @@ def test_hosts_under_product_domain():
     )
     with pytest.raises(names.CompanyNameError):
         names.hosts("eu", PRODUCT_DOMAIN)
+
+
+def test_xn_prefix_is_refused_by_its_own_rule():
+    with pytest.raises(names.CompanyNameError, match="xn--"):
+        names.check("xn--acme")
+
+
+@pytest.mark.parametrize("domain", [None, "", " ", "."])
+def test_hosts_refuses_a_missing_domain(domain: typing.Any):
+    with pytest.raises(names.CompanyNameError, match="not a domain"):
+        names.hosts("acme", domain)

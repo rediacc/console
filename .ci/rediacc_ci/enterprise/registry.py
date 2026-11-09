@@ -2,12 +2,13 @@
 
 Each region holds only its own companies (private/account/control/migrations/0001_control.sql), so the full picture needs every region, and a region that cannot be read is named rather than skipped: `enterprise add` must refuse when it cannot prove a name is free everywhere, and `enterprise list` must say which region is missing.
 
-The transport is injected: `Query(database, sql, params) -> rows`, which raises on an unreachable database. The production transport is the Cloudflare D1 query API; tests pass a recording fake or an in-memory sqlite.
+The transport is injected: `Query(database, sql, params) -> rows`, which raises OSError, RuntimeError, ValueError, LookupError or sqlite3.Error on an unreachable database (any other exception is a defect and propagates). The production transport is the Cloudflare D1 query API; tests pass a recording fake or an in-memory sqlite.
 """
 
 from __future__ import annotations
 
 import json
+import sqlite3
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -73,7 +74,8 @@ class Registry:
                 RuntimeError,
                 ValueError,
                 LookupError,
-            ) as exc:  # transport, HTTP and decode failures; the region is what matters
+                sqlite3.Error,
+            ) as exc:  # transport, HTTP, decode and sqlite failures; the region is what matters
                 failed[region] = "%s: %s" % (type(exc).__name__, exc)
         if failed:
             raise RegistryUnreachableError(sorted(failed), failed)

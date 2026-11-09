@@ -68,6 +68,9 @@ def reserved() -> frozenset[str]:
 
 def check(name: str) -> str:
     """The name when valid; raises CompanyNameError naming the first rule it breaks."""
+    # Before the label rule: `xn--` holds a double hyphen, which the label rule refuses with its generic message.
+    if isinstance(name, str) and name.startswith("xn--"):
+        raise CompanyNameError("%r uses the reserved xn-- prefix" % name)
     if not isinstance(name, str) or not _LABEL.fullmatch(name):
         raise CompanyNameError(
             "%r is not a lowercase DNS label (a-z, 0-9, single inner hyphens)" % (name,)
@@ -76,8 +79,6 @@ def check(name: str) -> str:
         raise CompanyNameError("%r is a reserved region or service name" % name)
     if not MIN_LENGTH <= len(name) <= MAX_LENGTH:
         raise CompanyNameError("%r must be %d to %d characters" % (name, MIN_LENGTH, MAX_LENGTH))
-    if name.startswith("xn--"):
-        raise CompanyNameError("%r uses the reserved xn-- prefix" % name)
     if name.endswith(PROXY_SUFFIX):
         raise CompanyNameError(
             "%r ends in %s, the proxy host suffix of another name" % (name, PROXY_SUFFIX)
@@ -88,6 +89,8 @@ def check(name: str) -> str:
 
 
 def hosts(name: str, domain: str) -> tuple[str, str]:
-    """(account host, proxy host) for a valid name under the product domain the caller names (well_known.PRODUCT_DOMAIN once the rename lands)."""
+    """(account host, proxy host) for a valid name under the product domain the caller names (`well_known.PRODUCT_DOMAIN`). The domain has no default, and an empty or non-string one is refused rather than formatted into a host like `acme.` or `acme.None`."""
     check(name)
+    if not isinstance(domain, str) or not domain.strip(". "):
+        raise CompanyNameError("%r is not a domain to host %r under" % (domain, name))
     return "%s.%s" % (name, domain), "%s%s.%s" % (name, PROXY_SUFFIX, domain)
