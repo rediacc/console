@@ -9,7 +9,9 @@ EACH SIDE ON ITS OWN. A private/account range charges the account side and a ren
 
 THE LEDGER. An admitted escape appends one line per push to agent/ledgers/vm-check-push-reasons.jsonl in the world; a refused command, a command whose second push is refused, and a push a VERIFIED receipt admits append nothing. All three are read back from the file.
 
-THE MUTANTS ARE PROVEN HERE TOO. The guard's `DEFECT` and every one of its `MUTANTS` (`inputs-always-equal`, `asked-always-true`, `phases-ignored`, `account-side-dropped`) are each planted in a copy run through the same payloads, and each must flip at least one refusal to allowed; a suite whose green did not depend on that line would pass the copy too.
+THE VERIFIED CHAIN (agent/plans/PLAN-vmcheck-incremental.md V2). A renet-only receipt whose run diffed against a both-phase VERIFIED account commit admits a push touching both sides; the same receipt is refused when the account side moved after that commit (`chain-touched`), when the base commit has no receipt, and when its receipt is NOT_VERIFIED (`chain-broken`).
+
+THE MUTANTS ARE PROVEN HERE TOO. The guard's `DEFECT` and every one of its `MUTANTS` (`inputs-always-equal`, `asked-always-true`, `phases-ignored`, `account-side-dropped`, `chain-touched-ignored`) are each planted in a copy run through the same payloads, and each must flip at least one refusal to allowed; a suite whose green did not depend on that line would pass the copy too.
 """
 
 import importlib.util
@@ -148,6 +150,11 @@ ESC_GATEWAY = G.plant_receipt(
     "NOT_VERIFIED",
     reason_class="account-gateway",
 )
+# The V2 chain worlds: a renet-only receipt for the pushed tree naming a both-phase VERIFIED commit as its base.
+CHAIN_OK = built("vmc-chain-ok")
+CHAIN_ACCOUNT_AFTER = built("vmc-chain-account-after")
+CHAIN_NO_BASE = built("vmc-chain-no-base")
+CHAIN_BASE_NV = built("vmc-chain-base-not-verified")
 ACCOUNT_HIT = "private/account/%s" % G.ACCOUNT_SRC
 TIP = G.TIP_BRANCH
 TIP_PUSH = "git push origin %s:refs/heads/x" % TIP
@@ -360,6 +367,35 @@ CASES = [
     ),
     ("both sides: both costs named", PUSH, BOTH_ACCOUNT_ONLY, None, None, True, "renet phase"),
     ("both sides, both phases VERIFIED", PUSH, BOTH_VERIFIED, None, None, False, ""),
+    # ---- the VERIFIED chain (PLAN-vmcheck-incremental V2): a renet-only receipt whose run diffed against a both-phase VERIFIED commit
+    ("chain: the account side rides its VERIFIED base", PUSH, CHAIN_OK, None, None, False, ""),
+    (
+        "chain: the account side changed after the base",
+        PUSH,
+        CHAIN_ACCOUNT_AFTER,
+        None,
+        None,
+        True,
+        "[chain-touched] the account side changed since the VERIFIED base",
+    ),
+    (
+        "chain: the base has no receipt",
+        PUSH,
+        CHAIN_NO_BASE,
+        None,
+        None,
+        True,
+        "[chain-broken]",
+    ),
+    (
+        "chain: the base receipt is NOT_VERIFIED",
+        PUSH,
+        CHAIN_BASE_NV,
+        None,
+        None,
+        True,
+        "which does not cover it: [not-verified]",
+    ),
     (
         "account checkout is not the pointer",
         PUSH,
@@ -816,8 +852,9 @@ BROKEN_RUNNER = (
 
 
 def ledger_lines(root):
-    path = pathlib.Path(root) / LEDGER
-    return path.read_text(encoding="utf-8").splitlines() if path.is_file() else []
+    # Not named `path`: block_live_proof_ledger_shell_write reads Python bindings without scope, so a `path` bound to a ledger here made `transcript()`'s `path.write_text` read as a ledger write and refused every run of this harness from the Bash tool.
+    reasons = pathlib.Path(root) / LEDGER
+    return reasons.read_text(encoding="utf-8").splitlines() if reasons.is_file() else []
 
 
 def run(command, root, transcript_path, cwd, broken=None):
@@ -998,6 +1035,7 @@ MUST_FLIP = {
     # Only the empty-sides call admits it: with the account side dropped, the renet phase is still missing.
     "phases-ignored": "both sides, an account-only VERIFIED receipt",
     "account-side-dropped": "account range, a renet-only VERIFIED receipt",
+    "chain-touched-ignored": "chain: the account side changed after the base",
 }
 for label, mutant in CONTROLS:
     flipped = [

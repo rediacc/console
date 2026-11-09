@@ -10,7 +10,9 @@ EVERY PUSHED COMMIT IS JUDGED ON ITS OWN. A command can send several commits: tw
 
 `--mirror` IS REFUSED OUTRIGHT, touched or not. It sends every ref, deletes each remote ref missing here and forces each diverged one, so no receipt for one tree can speak for it. Only the escape admits it, and only as `not-runtime` or `deadline`: `vm-unavailable` names a NOT_VERIFIED attempt for one tree, which a push of every ref has none of. An unenumerable ref set is judged the same way.
 
-THE RECEIPT is judged by `rediacc_ci.proof.vm_tier.admit(root, tree, inputs(root, tree), sides)`: the pushed tree's archive, then `receipt.json`, then the newest archives. VERIFIED with the same tree or the same trigger digest, a renet build equal to the pointer and not modified, and the phase of every touched side run (`phase-missing` otherwise: a renet-only receipt does not admit an account range), admits. `receipt.identity_refusal` then judges the surfaces of the touched sides: a clean console tree (`dirty-tree`), each needed submodule checked out at its pointer (`checkout-mismatch`) and unmodified (`modified-checkout`). The digest (version 3) covers the pointer of each submodule a VM surface lives in. A later commit outside the trigger keeps the digest, so it costs no new VM run. Receipts of an earlier schema are a clean break: the receipt module reads only schema 3, so one admits nothing and backs no escape (`no-receipt`).
+THE RECEIPT is judged by `rediacc_ci.proof.vm_tier.admit(root, tree, inputs(root, tree), sides, chain_for(root, commit))`: the pushed tree's archive, then `receipt.json`, then the newest archives. VERIFIED with the same tree or the same trigger digest, a renet build equal to the pointer and not modified, and the phase of every touched side run (`phase-missing` otherwise: a renet-only receipt does not admit an account range), admits. `receipt.identity_refusal` then judges the surfaces of the touched sides: a clean console tree (`dirty-tree`), each needed submodule checked out at its pointer (`checkout-mismatch`) and unmodified (`modified-checkout`). The digest (version 3) covers the pointer of each submodule a VM surface lives in. A later commit outside the trigger keeps the digest, so it costs no new VM run. Receipts of an earlier schema are a clean break: the receipt module reads only schema 3, so one admits nothing and backs no escape (`no-receipt`).
+
+TWO WAYS A RECEIPT IS BUILT UP, both in agent/plans/PLAN-vmcheck-incremental.md, and neither widens what admits. A FAILED receipt repaired by `vm:check --only` runs of its failed steps is a VERIFIED receipt like any other once vm_check has re-judged the merged ledger; `vm_tier.validate` holds each `merged` entry to that receipt's tree, inputs, submodules and renet build, so a receipt whose merge does not fit reads as no receipt at all. A `--changed` run that diffed against an earlier VERIFIED commit records it as `trigger.verifiedBase` and may not have run a side the push touches: that side admits only when it is unchanged from that commit to the pushed one (`changed_paths` in push mode, recomputed here, never read from the receipt) and the base tree's own receipt admits it, link by link (`chain-touched`, `chain-broken`, `chain-loop`, `chain-too-long` otherwise).
 
 THE ESCAPE is an environment assignment on the push itself, read from the shared lexer's walk (`run.env`) exactly as `TURBO_PUSH_REASON` is, so a prefix, an earlier `export` and `env NAME=value` count, and prose naming it does not:
 
@@ -50,8 +52,13 @@ DEFECT = ("if not hits:", "if True:")
 MUTANTS = {
     # The judge stops passing the touched sides, so a receipt that skipped a phase admits.
     "phases-ignored": (
-        "verdict = receipt_mod.admit(root_path, tree, digest, sides)",
-        "verdict = receipt_mod.admit(root_path, tree, digest, ())",
+        "verdict = receipt_mod.admit(root_path, tree, digest, sides, chain)",
+        "verdict = receipt_mod.admit(root_path, tree, digest, (), chain)",
+    ),
+    # The chain stops asking what changed since a receipt's VERIFIED base, so a side changed after that base and never run rides the base anyway.
+    "chain-touched-ignored": (
+        "chain = receipt_mod.chain_for(root_path, commit)",
+        "chain = receipt_mod.Chain(commit, lambda old, new: (), lambda t: trigger.inputs(root_path, t))",
     ),
     # `_hits` loses the account side, so a renet-only receipt admits an account range.
     "account-side-dropped": (
@@ -211,10 +218,11 @@ def plant_receipt(
     reason_class=None,
     account_checkout=None,
     account_modified=False,
+    verified_base=None,
 ):
     """Write a schema 3 receipt into `root`'s cache through the receipt module's own `write`, keyed on `tree` (HEAD's by default) with the trigger digest the guard will compute for it unless `inputs` overrides it.
 
-    `ran` names the phases a VERIFIED receipt ran (each also required); a FAILED or NOT_VERIFIED one ran none and required both. `reason_class` overrides the NOT_VERIFIED or FAILED class, `account_checkout` the account checkout (the pointer by default) and `account_modified` its modified flag.
+    `ran` names the phases a VERIFIED receipt ran (each also required); a FAILED or NOT_VERIFIED one ran none and required both. `reason_class` overrides the NOT_VERIFIED or FAILED class, `account_checkout` the account checkout (the pointer by default) and `account_modified` its modified flag. `verified_base`, a (commit, tree) pair, is recorded as `trigger.verifiedBase`, the base a `--changed` run diffed against.
     """
     trigger = syspath.import_from_ci(TRIGGER_MOD)
     receipt_mod = syspath.import_from_ci(RECEIPT_MOD)
@@ -297,6 +305,9 @@ def plant_receipt(
         "finishedAt": "2026-01-01T00:01:00Z",
         "wallMs": 60000,
     }
+    if verified_base is not None:
+        receipt["trigger"]["verifiedBase"] = {"head": verified_base[0], "tree": verified_base[1]}
+        receipt["runId"] = "fixture-run-chained"
     receipt_mod.write(root, receipt)
     return root
 
@@ -384,6 +395,21 @@ def _stale_not_verified(path):
     return plant_receipt(root, "NOT_VERIFIED", tree=seed_tree)
 
 
+def _chained(path, base="VERIFIED", account_after=False):
+    """The V2 chain: an account commit with a both-phase receipt of status `base` (none when `base` is None), then a CLI commit whose renet-only VERIFIED receipt names the account commit as its `verifiedBase`. `account_after` also moves the account gitlink in the CLI commit, so the account side changed after the base and the chained receipt did not run it."""
+    root = world(path, account_files=(ACCOUNT_SRC,))
+    base_head = _git(root, "rev-parse", "HEAD")
+    base_tree = _git(root, "rev-parse", "HEAD^{tree}")
+    if base is not None:
+        plant_receipt(root, base, ran=("renet", "account"))
+    if account_after:
+        _put(root / ACCOUNT, ACCOUNT_SRC, "export const licenses = 3;\n")
+        _commit(root / ACCOUNT, "account C")
+    _put(root, CLI_FILE, "export const sftp = 3;\n")
+    _commit(root, "the CLI after the VERIFIED run")
+    return plant_receipt(root, ran=("renet",), verified_base=(base_head, base_tree))
+
+
 TIP_BRANCH = "vm-tip"
 
 
@@ -418,6 +444,10 @@ FIXTURES = {
     "vmc-account-missing-old": lambda p: world(p, account_missing_old=True),
     "vmc-renet-wide": lambda p: world(p, renet_files=("pkg/license/x.go",)),
     "vmc-renet-gomod": lambda p: world(p, renet_files=("go.mod",)),
+    "vmc-chain-ok": _chained,
+    "vmc-chain-account-after": lambda p: _chained(p, account_after=True),
+    "vmc-chain-no-base": lambda p: _chained(p, base=None),
+    "vmc-chain-base-not-verified": lambda p: _chained(p, base="NOT_VERIFIED"),
     "vmc-schema-1": lambda p: plant_retired(world(p, cli=True), 1),
     "vmc-schema-2": lambda p: plant_retired(world(p, cli=True), 2),
 }
@@ -884,7 +914,8 @@ def run(ev):
         if not hits:
             continue
         digest = trigger.inputs(root_path, tree)
-        verdict = receipt_mod.admit(root_path, tree, digest, sides)
+        chain = receipt_mod.chain_for(root_path, commit)
+        verdict = receipt_mod.admit(root_path, tree, digest, sides, chain)
         if verdict.ok:
             continue
         refusals = []

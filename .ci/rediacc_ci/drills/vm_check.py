@@ -32,7 +32,7 @@ VERDICTS. VERIFIED exit 0 (assertions ran, none failed, every required phase ran
 
 EVIDENCE. Each A1 suite's and A2 drill's full stdout and stderr is kept in `.ci/cache/vm-check/runs/<run id>/<step>-<name>.log` (the newest RUNS_KEEP run directories are kept), its row carries that path as `log`, and the receipt carries the directory as `runDir`. A row's `evidence` stays clipped to 200 bytes, so the log is where a failure is read in full.
 
-`--changed` evaluates `rediacc_ci.proof.surfaces` against the push base in worktree mode; `--base <ref>` replaces that base with the named ref (recorded as `trigger.base`, `via` `--base`; an unknown ref exits with a message and runs nothing), which is how a run on `main` diffs against a tag; with no hit it prints the no-op line, writes no receipt and exits 0. The receipt is schema 3 (`rediacc_ci.proof.vm_tier`): the shared envelope (`tier`, `tree`, `head`, `dirty`, `inputs`, `surfaces`, `submodules`, `renet`) plus `phases`, `gateway` and `trigger.sides`. Receipts of an earlier schema no longer count, and a run that finds some says so once.
+`--changed` evaluates `rediacc_ci.proof.surfaces` in worktree mode against the newest commit on the branch whose own receipt the push guard admits, recorded as `trigger.verifiedBase`, or against the push base when there is none (`with_verified_base`, agent/plans/PLAN-vmcheck-incremental.md V2); `--base <ref>` replaces that base with the named ref (recorded as `trigger.base`, `via` `--base`; an unknown ref exits with a message and runs nothing), which is how a run on `main` diffs against a tag; with no hit it prints the no-op line, writes no receipt and exits 0. The receipt is schema 3 (`rediacc_ci.proof.vm_tier`): the shared envelope (`tier`, `tree`, `head`, `dirty`, `inputs`, `surfaces`, `submodules`, `renet`) plus `phases`, `gateway` and `trigger.sides`. Receipts of an earlier schema no longer count, and a run that finds some says so once.
 
 The whole flow runs through `Host` and `Account`, so the tests drive it with a fake host and a fake account and never reach a VM, a gateway or a suite.
 """
@@ -726,6 +726,13 @@ def only_deps(
             queue.extend(deps.get(dep, ()))
         deps[step_id] = tuple(closed)
     return deps
+
+
+def phase_ran_in(rows: Sequence[Mapping[str, Any]], side: str) -> bool:
+    """True only when every step of the phase `side` recorded a row in `rows` and every such row is ok."""
+    wanted = PHASE_STEPS[side]
+    mine = [r for r in rows if r.get("id") in wanted]
+    return {r["id"] for r in mine} == set(wanted) and all(r.get("verdict") == "ok" for r in mine)
 
 
 def verdict(
@@ -1444,7 +1451,7 @@ class Options:
     selftest: bool = False
     keep_work: bool = False
     net_base: str = DEFAULT_NET_BASE
-    # `--only <id>[,...]` runs P0 plus the named steps alone, to iterate one step without a full run; a run so narrowed writes a run record, never receipt.json, and never reaches VERIFIED (`_finish`), so the push guard never admits it.
+    # `--only <id>[,...]` runs P0 plus the named steps alone, to iterate one step without a full run; a run so narrowed writes a run record, never receipt.json, and is never VERIFIED itself (`_finish`). When it names only steps the FAILED receipt of its tree failed, and keeps that receipt's tree and build identity, its rows merge into that receipt, which is re-judged whole (`_merge_into_failed`, `vm_tier.merge_refusal`).
     only: frozenset[str] = frozenset()
     # `--dry-run` prints what the run would prove (sides, phases, areas and their legs) and touches nothing: no lock, no fleet, no gateway, no receipt.
     dry_run: bool = False
@@ -1884,6 +1891,9 @@ class VmCheck:
                 "areas": list(trigger.AREAS),
             }
             return True
+        verified = None
+        if not self.opts.base:
+            base, verified = with_verified_base(self.root, git, base)
         changed = trigger.changed_paths(self.root, base.merge_base, "worktree")
         # A touched change always names a side (a hit carries its side, an unknown range its submodule's); none at all would be a trigger defect, so it costs both phases rather than none.
         sides = set(changed.sides) or set(trigger.SIDES)
@@ -1895,6 +1905,8 @@ class VmCheck:
             "sides": sorted(sides),
             "areas": [a for a in trigger.AREAS if a in changed.areas],
         }
+        if verified is not None:
+            self.trigger_info["verifiedBase"] = {"head": verified[0], "tree": verified[1]}
         if not changed.touched:
             self.say(
                 "vm:check: no trigger path changed since %s (via %s); nothing to verify"
@@ -3769,9 +3781,7 @@ class VmCheck:
 
     def phase_ran(self, side: str) -> bool:
         """True only when every step of the phase recorded a row and every such row is ok."""
-        wanted = PHASE_STEPS[side]
-        rows = [r for r in self.steps if r["id"] in wanted]
-        return {r["id"] for r in rows} == set(wanted) and all(r["verdict"] == "ok" for r in rows)
+        return phase_ran_in(self.steps, side)
 
     def _finish(self) -> int:
         for side in trigger.SIDES:
@@ -3807,13 +3817,15 @@ class VmCheck:
                 },
             )
         path: pathlib.Path | None = None
+        record: dict[str, Any] | None = None
         if self.tree and self.inputs and (self.lock_lost or self.opts.only):
-            # A lock loser's or an `--only` run's record is for the record only: the holder's receipt.json and tree archive stay as they are.
+            # A lock loser's or an `--only` run's record is for the record only: the holder's receipt.json and tree archive stay as they are. An `--only` run that held the lock may then merge into the FAILED receipt of its tree (`_merge_into_failed`), under the rules of `vm_tier.merge_refusal`.
             fresh = not self.run_dir().is_dir()
             self.run_dir().mkdir(parents=True, exist_ok=True)
             if fresh:
                 self._prune_runs()
-            path = receipt_mod.write_run_record(self.root, self._receipt(status, reason))
+            record = self._receipt(status, reason)
+            path = receipt_mod.write_run_record(self.root, record)
         elif self.tree and self.inputs:
             path = receipt_mod.write(self.root, self._receipt(status, reason))
         else:
@@ -3828,7 +3840,99 @@ class VmCheck:
                     },
                 )
         self._summary(status, reason, path)
+        if record is not None and self.opts.only and not self.lock_lost:
+            merged = self._merge_into_failed(record)
+            if merged is not None:
+                return EXIT_CODES[merged]
         return EXIT_CODES[status]
+
+    def _merge_into_failed(self, run: dict[str, Any]) -> str | None:
+        """V1 of agent/plans/PLAN-vmcheck-incremental.md: merge this `--only` run's record into the FAILED receipt archived for the same tree, then judge the merged ledger with the verdict, phases and area legs a full run uses. Writes the merged receipt and returns its status when it is VERIFIED or still FAILED; returns None, writing nothing, when `vm_tier.merge_refusal` refuses or the merged ledger would be NOT_VERIFIED (a step the FAILED run never reached, an area leg it never ran)."""
+        base = receipt_mod.read_archive(self.root, self.tree)
+        if base is None:
+            self.say(
+                "  --only merge: no receipt is archived for tree %s, so nothing takes this run"
+                % self.tree[:12]
+            )
+            return None
+        refusal = receipt_mod.merge_refusal(base, run)
+        if refusal is not None:
+            self.say("  --only merge refused: %s" % refusal)
+            return None
+        areas = list((base.get("trigger") or {}).get("areas") or [])
+        unknown = [a for a in areas if a not in trigger.AREAS]
+        if unknown:
+            self.say(
+                "  --only merge refused: the FAILED receipt names areas this map does not know (%s); run the whole check"
+                % ", ".join(map(str, unknown))
+            )
+            return None
+        steps = receipt_mod.merge_steps(base["steps"], run["steps"], frozenset(run["only"]))
+        phases = {
+            side: {
+                "required": bool((base["phases"].get(side) or {}).get("required")),
+                "ran": phase_ran_in(steps, side),
+            }
+            for side in trigger.SIDES
+        }
+        failures = [
+            "%s: %s (%s)" % (r.get("id"), r.get("desc", ""), r.get("evidence", ""))
+            for r in steps
+            if r.get("verdict") == "FAIL"
+        ]
+        assertions = sum(1 for r in steps if r.get("verdict") in ("ok", "FAIL"))
+        status, reason = verdict(assertions, failures, None, [], phases)
+        fleet = base.get("fleet") or {}
+        results = judge_areas(
+            frozenset(areas),
+            steps,
+            lambda _receipt: self.receipt_fn(self.root, self.tree),
+            list(fleet.get("ips") or []) if fleet.get("mode") else None,
+        )
+        short = area_shortfall(results)
+        if short and status == receipt_mod.VERIFIED:
+            status, reason = (
+                receipt_mod.NOT_VERIFIED,
+                {
+                    "class": "area-not-verified",
+                    "detail": "%d area leg(s) not proven: %s" % (len(short), "; ".join(short)),
+                },
+            )
+        if status == receipt_mod.NOT_VERIFIED:
+            self.say(
+                "  --only merge not written: the merged ledger would be NOT_VERIFIED (%s: %s); the FAILED receipt of tree %s stays, so run the whole check"
+                % (
+                    reason["class"] if reason else "?",
+                    reason["detail"] if reason else "",
+                    self.tree[:12],
+                )
+            )
+            return None
+        merged = {
+            **base,
+            "status": status,
+            "reason": reason,
+            "steps": steps,
+            "phases": phases,
+            "areas": results,
+            "merged": [*(base.get("merged") or []), receipt_mod.merge_entry(run)],
+        }
+        path = receipt_mod.write(self.root, merged)
+        self.say(
+            "  --only %s merged into the FAILED receipt of tree %s (run %s): now %s%s"
+            % (
+                ", ".join(sorted(run["only"])),
+                self.tree[:12],
+                base.get("runId"),
+                status,
+                "" if reason is None else " (%s)" % reason["detail"],
+            )
+        )
+        self.say(
+            "  receipt: %s"
+            % (path.relative_to(self.root) if path.is_relative_to(self.root) else path)
+        )
+        return status
 
     def _receipt(self, status: str, reason: dict[str, str] | None) -> dict[str, Any]:
         finished = self.host.now()
@@ -3890,6 +3994,8 @@ class VmCheck:
                 if self.run_id and self.run_dir().is_dir()
                 else None
             ),
+            # The steps an `--only` run named, which `vm_tier.merge_refusal` reads; absent on a full run.
+            **({"only": sorted(self.opts.only)} if self.opts.only else {}),
             "startedAt": _iso(self.started_at),
             "finishedAt": _iso(finished),
             "wallMs": int((self.host.monotonic() - self.started_mono) * 1000),
@@ -4024,6 +4130,31 @@ def plan_lines(changed: trigger.Changed | None, sides: Collection[str]) -> list[
     return lines
 
 
+def with_verified_base(
+    root: pathlib.Path,
+    git: Callable[[Sequence[str]], str | None],
+    base: trigger.BaseResolution,
+) -> tuple[trigger.BaseResolution, tuple[str, str] | None]:
+    """V2 of agent/plans/PLAN-vmcheck-incremental.md: the base `--changed` diffs against when no `--base` is given. That is the newest commit in `base.merge_base..HEAD` whose own receipt the push guard admits (`surfaces.newest_verified_base` with `vm_tier.verified_base_admits`), so a batch after a VERIFIED run selects only what changed since it; with no such commit, `base` itself. The second value is that (commit, tree), which the receipt records as `trigger.verifiedBase`: the guard admits a side this run skips only through it (`vm_tier.admit`'s chain)."""
+    if base.merge_base is None:
+        return base, None
+    verified = trigger.newest_verified_base(
+        git, base.merge_base, receipt_mod.verified_base_admits(root, base.merge_base)
+    )
+    if verified is None:
+        return base, None
+    return (
+        trigger.BaseResolution(
+            verified[0],
+            "the newest VERIFIED receipt on the branch, tree %s" % verified[1][:12],
+            verified[0],
+            base.tried,
+            base.warnings,
+        ),
+        verified,
+    )
+
+
 def dry_run(root: pathlib.Path, opts: Options, out=None) -> int:
     """`--dry-run`: print what the run would prove and touch nothing (no lock, no fleet, no gateway, no receipt). Exit 0 when the plan was read; 2 when the diff could not be read at all, since a plan over an unreadable change would be a guess."""
     stream = out if out is not None else sys.stdout
@@ -4051,6 +4182,8 @@ def dry_run(root: pathlib.Path, opts: Options, out=None) -> int:
             base = trigger.BaseResolution(opts.base, "--base", commit, (opts.base,), ())
         else:
             base = trigger.push_base(git, branch if branch and branch != "HEAD" else None)
+            if opts.changed and base.merge_base is not None:
+                base, _verified = with_verified_base(root, git, base)
         if base.merge_base is None:
             say(
                 "vm:check: no push base resolved (tried %s): both phases and every area"

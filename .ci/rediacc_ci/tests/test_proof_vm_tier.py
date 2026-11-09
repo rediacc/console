@@ -631,3 +631,418 @@ def test_write_run_record_refuses_a_malformed_record(tmp_path: pathlib.Path) -> 
     with pytest.raises(ValueError, match="missing field inputs"):
         rc.write_run_record(tmp_path, bad)
     assert not rc.receipt_dir(tmp_path).exists()
+
+
+# ------------------------------------------------------------------ V1: the --only merge
+
+
+def row(step: str, verdict: str = "ok") -> dict[str, Any]:
+    return {"id": step, "desc": step, "rc": 0, "verdict": verdict, "ms": 1, "evidence": ""}
+
+
+def failed_base(**over: object) -> dict[str, Any]:
+    """A FAILED receipt whose V1.3 and V1.5 failed, every other row ok."""
+    receipt = make(
+        status=rc.FAILED,
+        reason={"class": "step-failed", "detail": "V1.3: x"},
+        runId="run-base",
+        steps=[
+            row("P0"),
+            row("P1"),
+            row("P5"),
+            row("V1.1"),
+            row("V1.2"),
+            row("V1.3", "FAIL"),
+            row("V1.4"),
+            row("V1.5", "FAIL"),
+            row("V1.5"),
+            row("T"),
+        ],
+    )
+    receipt.update(over)
+    return receipt
+
+
+def only_run(named: tuple[str, ...] = ("V1.3",), **over: object) -> dict[str, Any]:
+    """A passing `--only` run record naming `named` at the same tree and build as `failed_base`."""
+    receipt = make(
+        status=rc.NOT_VERIFIED,
+        reason={"class": "phase-not-run", "detail": "narrowed"},
+        runId="run-only",
+        only=list(named),
+        steps=[row("P0"), row("P1"), row("P5"), row("V1.1"), *(row(s) for s in named), row("T")],
+    )
+    receipt.update(over)
+    return receipt
+
+
+def test_a_passing_only_of_a_failed_step_may_merge() -> None:
+    assert rc.merge_refusal(failed_base(), only_run()) is None
+    assert rc.merge_refusal(failed_base(), only_run(("V1.3", "V1.5"))) is None
+    assert rc.validate(only_run()) == []
+
+
+def _renet(**over: object) -> dict[str, Any]:
+    return {**make()["renet"], **over}
+
+
+def _subs(sub: str, **over: object) -> dict[str, Any]:
+    subs = copy.deepcopy(make()["submodules"])
+    subs[sub].update(over)
+    return subs
+
+
+BASE_REFUSALS: dict[str, tuple[dict[str, Any], str]] = {
+    "verified": ({"status": rc.VERIFIED, "reason": None}, "only a FAILED receipt"),
+    "not-verified": (
+        {"status": rc.NOT_VERIFIED, "reason": {"class": "crashed", "detail": "x"}},
+        "only a FAILED receipt",
+    ),
+    "not-step-failed": ({"reason": {"class": "other", "detail": "x"}}, "not step-failed"),
+    "stopped": (
+        {"steps": [row("P0"), row("V1.3", "FAIL"), row("--", "FAIL"), row("T")]},
+        "stopped part-way",
+    ),
+    "teardown": ({"teardown": {"ok": False, "leftovers": ["fork a"]}}, "teardown left"),
+    "no-failed-row": ({"steps": [row("P0"), row("V1.3")]}, "records no failed row"),
+    "failed-p2": ({"steps": [row("P0"), row("P2", "FAIL"), row("V1.3", "FAIL")]}, "failed at P2"),
+    "failed-p4": ({"steps": [row("P4", "FAIL")]}, "failed at P4"),
+    "failed-t": ({"steps": [row("V1.3", "FAIL"), row("T", "FAIL")]}, "failed at T"),
+}
+
+
+@pytest.mark.parametrize("case", sorted(BASE_REFUSALS))
+def test_the_merge_refuses_a_base_it_cannot_repair(case: str) -> None:
+    over, needle = BASE_REFUSALS[case]
+    refused = rc.merge_refusal(failed_base(**over), only_run())
+    assert refused is not None
+    assert needle in refused, refused
+
+
+RUN_REFUSALS: dict[str, tuple[dict[str, Any], str]] = {
+    "no-only": ({"only": None}, "names no --only steps"),
+    "empty-only": ({"only": []}, "names no --only steps"),
+    "same-run": ({"runId": "run-base"}, "already part of this receipt"),
+    "names-unfailed": ({"only": ["V1.3", "V1.4"]}, "names V1.4"),
+    "names-p3": ({"only": ["P3"]}, "names P3"),
+    "status-failed": (
+        {"status": rc.FAILED, "reason": {"class": "step-failed", "detail": "x"}},
+        "has a failed row",
+    ),
+    "failed-dependency": (
+        {"steps": [row("P0"), row("V1.1", "FAIL"), row("V1.3"), row("T")]},
+        "has a failed row (V1.1)",
+    ),
+    "stopped": ({"steps": [row("V1.3"), row("--", "FAIL")]}, "has a failed row"),
+    "stopped-ok-verdict": ({"steps": [row("V1.3"), row("--")]}, "stopped part-way"),
+    "teardown": ({"teardown": {"ok": False, "leftovers": ["x"]}}, "teardown left"),
+    "crashed": ({"reason": {"class": "crashed", "detail": "x"}}, "not as a narrowed pass"),
+    "fleet-busy": ({"reason": {"class": "fleet-busy", "detail": "x"}}, "not as a narrowed pass"),
+    "verified": ({"status": rc.VERIFIED, "reason": None}, "not as a narrowed pass"),
+    "no-row": ({"steps": [row("P0"), row("T")]}, "recorded no V1.3 row"),
+    "skip-row": ({"steps": [row("V1.3", "skip")]}, "V1.3 rows are not all ok"),
+    "other-tree": ({"tree": OTHER_TREE}, "judged tree bbbbbbbbbbbb"),
+    "other-inputs": ({"inputs": "0" * 64}, "inputs digest"),
+    "dirty": ({"dirty": True}, "not clean"),
+    "dirty-unknown": ({"dirty": None}, "not clean"),
+    "renet-pointer": ({"submodules": _subs("private/renet", pointer="1" * 40)}, "submodule"),
+    "renet-checkout-modified": ({"submodules": _subs("private/renet", modified=True)}, "submodule"),
+    "account-checkout": ({"submodules": _subs("private/account", checkout="1" * 40)}, "submodule"),
+    "build-revision": ({"renet": _renet(built="1" * 40)}, "renet build"),
+    "build-modified": ({"renet": _renet(modified=True)}, "renet build"),
+    "build-binary": ({"renet": _renet(sha256="0" * 64)}, "renet build"),
+    "build-absent": ({"renet": None}, "renet build"),
+}
+
+
+@pytest.mark.parametrize("case", sorted(RUN_REFUSALS))
+def test_the_merge_refuses_a_run_that_does_not_prove_the_failed_step(case: str) -> None:
+    over, needle = RUN_REFUSALS[case]
+    refused = rc.merge_refusal(failed_base(), only_run(**over))
+    assert refused is not None
+    assert needle in refused, refused
+
+
+def test_a_run_already_merged_is_refused() -> None:
+    base = failed_base(merged=[rc.merge_entry(only_run(("V1.5",)))])
+    assert rc.merge_refusal(base, only_run()) is not None
+    assert "already part" in str(rc.merge_refusal(base, only_run()))
+
+
+def test_merge_steps_replaces_the_named_rows_in_place_and_keeps_the_rest() -> None:
+    base = failed_base()["steps"]
+    run = [row("P0"), row("V1.5"), row("T", "FAIL")]
+    merged = rc.merge_steps(base, run, {"V1.5"})
+    assert [(r["id"], r["verdict"]) for r in merged] == [
+        ("P0", "ok"),
+        ("P1", "ok"),
+        ("P5", "ok"),
+        ("V1.1", "ok"),
+        ("V1.2", "ok"),
+        ("V1.3", "FAIL"),
+        ("V1.4", "ok"),
+        ("V1.5", "ok"),
+        ("T", "ok"),
+    ]
+
+
+def merged_receipt(status: str = rc.FAILED, **entry_over: object) -> dict[str, Any]:
+    run = only_run(("V1.5",))
+    entry = {**rc.merge_entry(run), **entry_over}
+    steps = rc.merge_steps(failed_base()["steps"], run["steps"], {"V1.5"})
+    if status == rc.VERIFIED:
+        steps = [r if r["id"] != "V1.3" else row("V1.3") for r in steps]
+        return failed_base(status=rc.VERIFIED, reason=None, steps=steps, merged=[entry])
+    return failed_base(steps=steps, merged=[entry])
+
+
+def test_a_well_formed_merged_receipt_validates() -> None:
+    assert rc.validate(merged_receipt()) == []
+    assert rc.validate(merged_receipt(rc.VERIFIED)) == []
+
+
+@pytest.mark.parametrize(
+    ("entry_over", "needle"),
+    [
+        ({"tree": OTHER_TREE}, "merged[0].tree"),
+        ({"inputs": "0" * 64}, "merged[0].inputs"),
+        ({"submodules": _subs("private/renet", checkout="1" * 40)}, "merged[0].submodules"),
+        ({"renet": _renet(sha256="0" * 64)}, "merged[0].renet"),
+        ({"steps": ["P2"]}, "merges P2"),
+        ({"steps": ["T"]}, "merges T"),
+        ({"steps": []}, "merged[0].steps"),
+        ({"runId": ""}, "names no runId"),
+    ],
+)
+def test_validate_holds_every_merged_entry_to_its_receipt(
+    entry_over: dict[str, Any], needle: str
+) -> None:
+    errors = rc.validate(merged_receipt(**entry_over))
+    assert any(needle in e for e in errors), errors
+
+
+def test_a_verified_receipt_with_a_merged_step_that_failed_is_malformed() -> None:
+    bad = merged_receipt(rc.VERIFIED)
+    bad["steps"] = [r if r["id"] != "V1.5" else row("V1.5", "FAIL") for r in bad["steps"]]
+    errors = rc.validate(bad)
+    assert any("merges V1.5, which has no ok row" in e for e in errors), errors
+
+
+def test_a_not_verified_receipt_carries_no_merge() -> None:
+    bad = merged_receipt()
+    bad.update(status=rc.NOT_VERIFIED, reason={"class": "phase-not-run", "detail": "x"})
+    assert any("carries no merged steps" in e for e in rc.validate(bad))
+
+
+def test_a_merged_receipt_that_fails_validation_never_admits(tmp_path: pathlib.Path) -> None:
+    """A merged VERIFIED receipt whose entry names another build is unreadable, so the guard reads no receipt at all."""
+    bad = merged_receipt(rc.VERIFIED, renet=_renet(sha256="0" * 64))
+    folder = rc.receipt_dir(tmp_path)
+    folder.mkdir(parents=True)
+    (folder / f"{TREE}.json").write_text(json.dumps(bad))
+    assert rc.read_archive(tmp_path, TREE) is None
+    assert rc.admit(tmp_path, TREE, DIGEST, RENET).code == "no-receipt"
+    assert rc.admit(tmp_path, TREE, DIGEST, RENET).ok is False
+
+
+@pytest.mark.parametrize(
+    "bad",
+    [{"only": []}, {"only": "V1.3"}, {"only": [""]}, {"only": [3]}],
+)
+def test_validate_refuses_a_malformed_only(bad: dict[str, Any]) -> None:
+    assert any("only is not" in e for e in rc.validate(make(**bad)))
+
+
+# ------------------------------------------------------------------ V2: the VERIFIED chain
+
+BASE_TREE = "1" * 40
+BASE_HEAD = "2" * 40
+TIP = "3" * 40
+BASE_DIGEST = "4" * 64
+
+
+def chain(
+    touched: frozenset[str] = frozenset(), seen: list[tuple[str, str]] | None = None
+) -> rc.Chain:
+    def judge(old: str, new: str) -> frozenset[str]:
+        if seen is not None:
+            seen.append((old, new))
+        return touched
+
+    digests = {TREE: DIGEST, BASE_TREE: BASE_DIGEST}
+    return rc.Chain(TIP, judge, digests.get)
+
+
+def both_ran(**over: object) -> dict[str, Any]:
+    fields: dict[str, Any] = {
+        "tree": BASE_TREE,
+        "head": BASE_HEAD,
+        "inputs": BASE_DIGEST,
+        "runId": "run-base",
+        "phases": {
+            "renet": {"required": True, "ran": True},
+            "account": {"required": True, "ran": True},
+        },
+        "trigger": {"base": "origin/main", "via": "x", "hits": [], "sides": ["account", "renet"]},
+    }
+    fields.update(over)
+    return make(**fields)
+
+
+def chained_tip(**over: object) -> dict[str, Any]:
+    """A renet-only VERIFIED receipt for TREE whose run diffed against BASE_HEAD."""
+    trigger = {
+        "base": BASE_HEAD,
+        "via": "verified",
+        "hits": ["x"],
+        "sides": ["renet"],
+        "verifiedBase": {"head": BASE_HEAD, "tree": BASE_TREE},
+    }
+    return make(runId="run-tip", trigger=trigger, **over)
+
+
+def test_a_chained_receipt_admits_the_side_its_base_covers(tmp_path: pathlib.Path) -> None:
+    rc.write(tmp_path, both_ran())
+    rc.write(tmp_path, chained_tip())
+    seen: list[tuple[str, str]] = []
+    got = rc.admit(tmp_path, TREE, DIGEST, BOTH, chain(frozenset({"renet"}), seen))
+    assert got.ok, got.message
+    assert "rides its base" in got.message
+    assert seen == [(BASE_HEAD, TIP)]
+
+
+def test_without_a_chain_the_same_receipt_is_phase_missing(tmp_path: pathlib.Path) -> None:
+    rc.write(tmp_path, both_ran())
+    rc.write(tmp_path, chained_tip())
+    assert rc.admit(tmp_path, TREE, DIGEST, BOTH).code == "phase-missing"
+
+
+def test_a_side_changed_since_the_base_and_not_run_is_refused(tmp_path: pathlib.Path) -> None:
+    rc.write(tmp_path, both_ran())
+    rc.write(tmp_path, chained_tip())
+    got = rc.admit(tmp_path, TREE, DIGEST, BOTH, chain(frozenset({"renet", "account"})))
+    assert not got.ok
+    assert got.code == "chain-touched"
+    assert "account side changed" in got.message
+
+
+@pytest.mark.parametrize(
+    ("base", "code"),
+    [
+        # No base archive: the first candidate for the base tree is the tip's own receipt.json, which was taken with other inputs.
+        (None, "other-inputs"),
+        ({"status": rc.NOT_VERIFIED, "reason": {"class": "x", "detail": "y"}}, "not-verified"),
+        ({"status": rc.FAILED, "reason": {"class": "step-failed", "detail": "y"}}, "failed"),
+        (
+            {
+                "phases": {
+                    "renet": {"required": True, "ran": True},
+                    "account": {"required": False, "ran": False},
+                }
+            },
+            "phase-missing",
+        ),
+        (
+            {"submodules": _subs("private/account", checkout="1" * 40)},
+            "checkout-mismatch",
+        ),
+        ({"inputs": "5" * 64, "tree": "6" * 40}, "other-inputs"),
+    ],
+    ids=["absent", "not-verified", "failed", "account-not-run", "account-mismatch", "other"],
+)
+def test_a_base_the_guard_would_refuse_breaks_the_chain(
+    tmp_path: pathlib.Path, base: dict[str, Any] | None, code: str
+) -> None:
+    if base is not None:
+        rc.write(tmp_path, both_ran(**base))
+    rc.write(tmp_path, chained_tip())
+    got = rc.admit(tmp_path, TREE, DIGEST, BOTH, chain(frozenset({"renet"})))
+    assert not got.ok
+    assert got.code == "chain-broken"
+    assert "[%s]" % code in got.message, got.message
+
+
+def test_the_ran_side_still_needs_its_own_identity(tmp_path: pathlib.Path) -> None:
+    rc.write(tmp_path, both_ran())
+    rc.write(tmp_path, chained_tip(renet=_renet(built="1" * 40)))
+    got = rc.admit(tmp_path, TREE, DIGEST, BOTH, chain(frozenset({"renet"})))
+    assert not got.ok
+    assert got.code == "build-mismatch"
+
+
+def test_a_receipt_naming_its_own_tree_as_base_is_a_loop(tmp_path: pathlib.Path) -> None:
+    tip = chained_tip()
+    tip["trigger"]["verifiedBase"] = {"head": BASE_HEAD, "tree": TREE}
+    rc.write(tmp_path, tip)
+    got = rc.admit(tmp_path, TREE, DIGEST, BOTH, chain())
+    assert got.code == "chain-loop"
+
+
+def test_two_receipts_naming_each_other_stop_at_the_chain_limit(tmp_path: pathlib.Path) -> None:
+    rc.write(tmp_path, chained_tip())
+    base = make(
+        tree=BASE_TREE,
+        inputs=BASE_DIGEST,
+        runId="run-base",
+        trigger={
+            "base": "x",
+            "via": "verified",
+            "hits": [],
+            "sides": ["renet"],
+            "verifiedBase": {"head": "7" * 40, "tree": TREE},
+        },
+    )
+    rc.write(tmp_path, base)
+    got = rc.admit(tmp_path, TREE, DIGEST, BOTH, chain())
+    assert not got.ok
+    assert "chain-too-long" in got.message, got.message
+
+
+def test_a_two_link_chain_admits_when_every_link_holds(tmp_path: pathlib.Path) -> None:
+    """TREE ran renet over BASE_TREE, BASE_TREE ran renet over ROOT_TREE, and ROOT_TREE ran the account side."""
+    root_tree, root_head = "8" * 40, "9" * 40
+    rc.write(
+        tmp_path,
+        make(
+            tree=root_tree,
+            head=root_head,
+            inputs="a" * 64,
+            runId="run-root",
+            phases={
+                "renet": {"required": False, "ran": False},
+                "account": {"required": True, "ran": True},
+            },
+            trigger={"base": "o", "via": "x", "hits": [], "sides": ["account"]},
+        ),
+    )
+    rc.write(
+        tmp_path,
+        make(
+            tree=BASE_TREE,
+            head=BASE_HEAD,
+            inputs=BASE_DIGEST,
+            runId="run-base",
+            trigger={
+                "base": root_head,
+                "via": "verified",
+                "hits": [],
+                "sides": ["renet"],
+                "verifiedBase": {"head": root_head, "tree": root_tree},
+            },
+        ),
+    )
+    rc.write(tmp_path, chained_tip())
+    seen: list[tuple[str, str]] = []
+    digests = {TREE: DIGEST, BASE_TREE: BASE_DIGEST, root_tree: "a" * 64}
+    links = rc.Chain(
+        TIP, lambda old, new: (seen.append((old, new)), frozenset({"renet"}))[1], digests.get
+    )
+    got = rc.admit(tmp_path, TREE, DIGEST, BOTH, links)
+    assert got.ok, got.message
+    assert seen == [(BASE_HEAD, TIP), (root_head, BASE_HEAD)]
+
+
+def test_a_malformed_verified_base_makes_the_receipt_unreadable() -> None:
+    bad = chained_tip()
+    bad["trigger"]["verifiedBase"] = {"head": "HEAD", "tree": BASE_TREE}
+    assert any("verifiedBase" in e for e in rc.validate(bad))

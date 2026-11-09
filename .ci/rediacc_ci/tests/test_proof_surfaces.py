@@ -1259,3 +1259,65 @@ def test_the_naturalization_ledger_is_no_www_surface() -> None:
     ledger = "packages/www/src/i18n/translations/.naturalized-hashes.json"
     assert trig.owns_surfaces([ledger]) == {}
     assert "www" in trig.owns_surfaces(["packages/www/src/i18n/translations/en.json"])
+
+
+# ----------------------------------------------------------------------------- V2: the newest VERIFIED base on the branch
+
+
+def branch_git(
+    commits: Sequence[str], calls: list[list[str]] | None = None
+) -> Callable[[Sequence[str]], str | None]:
+    """A git that lists `commits` (newest first) for `rev-list` and answers `t-<commit>` as each tree."""
+
+    def git(args: Sequence[str]) -> str | None:
+        if calls is not None:
+            calls.append(list(args))
+        if args[0] == "rev-list":
+            return "\n".join(commits)
+        if args[0] == "rev-parse" and args[1].endswith("^{tree}"):
+            return "t-" + args[1][: -len("^{tree}")]
+        return None
+
+    return git
+
+
+def test_with_no_admitted_commit_the_push_base_stands() -> None:
+    asked: list[tuple[str, str]] = []
+
+    def admitted(commit: str, tree: str) -> bool:
+        asked.append((commit, tree))
+        return False
+
+    assert trig.newest_verified_base(branch_git(["c3", "c2", "c1"]), "mb", admitted) is None
+    assert asked == [("c3", "t-c3"), ("c2", "t-c2"), ("c1", "t-c1")]
+
+
+def test_the_newest_admitted_commit_is_the_base_and_older_ones_are_not_read() -> None:
+    asked: list[str] = []
+
+    def admitted(commit: str, _tree: str) -> bool:
+        asked.append(commit)
+        return commit in ("c2", "c1")
+
+    got = trig.newest_verified_base(branch_git(["c3", "c2", "c1"]), "mb", admitted)
+    assert got == ("c2", "t-c2")
+    assert asked == ["c3", "c2"]
+
+
+def test_the_scan_walks_first_parent_commits_since_the_merge_base() -> None:
+    calls: list[list[str]] = []
+    trig.newest_verified_base(branch_git([], calls), "mb", lambda _c, _t: True, limit=7)
+    assert calls == [["rev-list", "--first-parent", "--max-count=7", "mb..HEAD"]]
+
+
+def test_a_branch_git_cannot_list_falls_back_to_the_push_base() -> None:
+    assert trig.newest_verified_base(lambda _args: None, "mb", lambda _c, _t: True) is None
+
+
+def test_a_commit_whose_tree_cannot_be_read_is_skipped() -> None:
+    def git(args: Sequence[str]) -> str | None:
+        if args[0] == "rev-list":
+            return "c2\nc1"
+        return None if args[1] == "c2^{tree}" else "t-c1"
+
+    assert trig.newest_verified_base(git, "mb", lambda _c, _t: True) == ("c1", "t-c1")

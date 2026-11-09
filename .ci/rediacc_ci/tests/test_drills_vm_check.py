@@ -4391,3 +4391,385 @@ def test_an_external_leg_command_runs_under_its_fleet_recipe_environment(
     bash_envs = [e for c, e in zip(world.calls, world.envs, strict=True) if c[:2] == ["bash", "-c"]]
     assert len(bash_envs) == 2
     assert all(e.get("VM_DSK") == "48" for e in bash_envs), [e.get("VM_DSK") for e in bash_envs]
+
+
+# --------------------------------------------------------------------------- V1: an --only run merges into the FAILED receipt of its tree
+
+
+def _failing_extra(step_id: str) -> Any:
+    def stub(check: Any) -> None:
+        check.check(step_id, "stub %s" % step_id, False, evidence="planted %s failure" % step_id)
+
+    return stub
+
+
+def run_merge(
+    tmp_path: pathlib.Path, world: World, *argv: str, fail: tuple[str, ...] = ()
+) -> tuple[int, str]:
+    """One run through `main` against `world` with the stub extra steps, those named in `fail` planted red. Returns (exit code, output)."""
+    out = io.StringIO()
+    extra = {**STUB_EXTRA, **{step_id: _failing_extra(step_id) for step_id in fail}}
+    rc = vm_check.main(
+        [*argv, "--keep-work", "--wait", "0"],
+        root=world.root,
+        host=world,
+        account=FakeAccount(),
+        lock=vm_check.Lock(tmp_path / "vm-check.lock"),
+        out=out,
+        environ={
+            "HOME": str(tmp_path / "home"),
+            "PATH": os.environ.get("PATH", ""),
+            "VM_NET_BASE": NET,
+        },
+        inputs_fn=lambda _root: DIGEST,
+        account_modified_fn=lambda _root: False,
+        dirty_fn=lambda _root, _surfaces: False,
+        renet_modified_fn=lambda _root: False,
+        account_digest_fn=lambda _root: ADIGEST,
+        u1_fn=stub_u1,
+        extra_fns=extra,
+    )
+    return rc, out.getvalue()
+
+
+def archived(world: World, tree: str = TREE) -> dict[str, Any]:
+    got = receipt_mod.read_archive(world.root, tree)
+    assert got is not None, "no readable archive for tree %s" % tree[:12]
+    return got
+
+
+def test_mandatory_steps_are_the_infra_chain_vm_check_runs() -> None:
+    """The merge's mandatory set is the infra chain every run takes: a drift here would let a P-step failure merge."""
+    assert set(receipt_mod.MANDATORY_STEPS) == set(vm_check.INFRA_STEPS)
+    assert not set(receipt_mod.UNMERGEABLE_ROWS) & vm_check.only_step_ids()
+
+
+def test_a_passing_only_of_the_failed_step_makes_the_failed_receipt_verified(
+    tmp_path: pathlib.Path,
+) -> None:
+    rc, out = run_merge(tmp_path, make_world(tmp_path, ro_breach=True))
+    assert rc == vm_check.EXIT_FAILED, out
+    before = archived(make_world(tmp_path))
+    assert before["status"] == receipt_mod.FAILED
+    assert receipt_mod.failed_step_ids(before) == ["V1.2"]
+    assert not receipt_mod.admit(make_world(tmp_path).root, TREE, DIGEST, {"renet"}).ok
+
+    world = make_world(tmp_path)
+    rc, out = run_merge(tmp_path, world, "--only", "V1.2")
+    assert rc == vm_check.EXIT_VERIFIED, out
+    assert "--only V1.2 merged into the FAILED receipt" in out, out
+    after = archived(world)
+    assert receipt_mod.validate(after) == []
+    assert after["status"] == receipt_mod.VERIFIED
+    assert after["reason"] is None
+    assert after["runId"] == before["runId"]
+    assert [e["steps"] for e in after["merged"]] == [["V1.2"]]
+    assert all(r["verdict"] == "ok" for r in after["steps"] if r["id"] == "V1.2")
+    # Every row the base had but V1.2 is kept as it was, in place.
+    keep = [r for r in before["steps"] if r["id"] != "V1.2"]
+    assert [r for r in after["steps"] if r["id"] != "V1.2"] == keep
+    assert after["phases"]["renet"] == {"required": True, "ran": True}
+    latest = world.root / receipt_mod.CACHE_DIR / receipt_mod.LATEST
+    assert json.loads(latest.read_text()) == after
+    assert receipt_mod.admit(world.root, TREE, DIGEST, {"renet", "account"}).ok
+
+
+def test_a_partial_only_leaves_the_receipt_failed_and_a_second_completes_it(
+    tmp_path: pathlib.Path,
+) -> None:
+    k2 = EXTRA_IDS[-1]
+    rc, out = run_merge(tmp_path, make_world(tmp_path, ro_breach=True), fail=(k2,))
+    assert rc == vm_check.EXIT_FAILED, out
+    assert receipt_mod.failed_step_ids(archived(make_world(tmp_path))) == ["V1.2", k2]
+
+    rc, out = run_merge(tmp_path, make_world(tmp_path), "--only", "V1.2", fail=(k2,))
+    assert rc == vm_check.EXIT_FAILED, out
+    partial = archived(make_world(tmp_path))
+    assert partial["status"] == receipt_mod.FAILED
+    assert partial["reason"]["detail"].startswith(k2), partial["reason"]
+    assert receipt_mod.failed_step_ids(partial) == [k2]
+    assert receipt_mod.validate(partial) == []
+    assert not receipt_mod.admit(make_world(tmp_path).root, TREE, DIGEST, {"renet"}).ok
+
+    rc, out = run_merge(tmp_path, make_world(tmp_path), "--only", k2)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    done = archived(make_world(tmp_path))
+    assert done["status"] == receipt_mod.VERIFIED
+    assert [e["steps"] for e in done["merged"]] == [["V1.2"], [k2]]
+
+
+def test_an_only_at_another_tree_merges_into_nothing(tmp_path: pathlib.Path) -> None:
+    """The only FAILED receipt is of another tree: the run at TREE finds no archive of its own tree, and the other tree's receipt is left as it was."""
+    run_merge(tmp_path, make_world(tmp_path, ro_breach=True))
+    world = make_world(tmp_path)
+    failed = archived(world)
+    other = "1" * 40
+    folder = world.root / receipt_mod.CACHE_DIR
+    (folder / f"{TREE}.json").unlink()
+    receipt_mod.write(world.root, {**failed, "tree": other})
+    rc, out = run_merge(tmp_path, world, "--only", "V1.2")
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    assert "no receipt is archived for tree %s" % TREE[:12] in out, out
+    assert receipt_mod.read_archive(world.root, TREE) is None
+    assert archived(world, other) == {**failed, "tree": other}
+
+
+def test_an_only_naming_a_step_the_receipt_did_not_fail_is_refused(tmp_path: pathlib.Path) -> None:
+    run_merge(tmp_path, make_world(tmp_path, ro_breach=True))
+    world = make_world(tmp_path)
+    rc, out = run_merge(tmp_path, world, "--only", "V1.2,V1.3")
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    assert "--only merge refused: the --only run names V1.3" in out, out
+    assert archived(world)["status"] == receipt_mod.FAILED
+    assert "merged" not in archived(world)
+
+
+def test_an_only_that_fails_again_is_not_merged(tmp_path: pathlib.Path) -> None:
+    run_merge(tmp_path, make_world(tmp_path, ro_breach=True))
+    world = make_world(tmp_path, ro_breach=True)
+    rc, out = run_merge(tmp_path, world, "--only", "V1.2")
+    assert rc == vm_check.EXIT_FAILED, out
+    assert "--only merge refused: the --only run has a failed row (V1.2)" in out, out
+    assert "merged" not in archived(world)
+
+
+def test_an_only_under_another_renet_build_is_not_merged(tmp_path: pathlib.Path) -> None:
+    run_merge(tmp_path, make_world(tmp_path, ro_breach=True))
+    world = make_world(tmp_path)
+    failed = archived(world)
+    failed["renet"] = {**failed["renet"], "sha256": HASH}
+    receipt_mod.write(world.root, failed)
+    rc, out = run_merge(tmp_path, world, "--only", "V1.2")
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    assert "is not the one the FAILED receipt was judged with" in out, out
+    assert archived(world) == failed
+
+
+class _StaleRenetWorld(World):
+    """The worker answers a renet hash that is not the local build's, so V1.1 FAILS and the run stops before V1.2."""
+
+    def run(self, argv, env=None, timeout=None) -> vm_check.Result:
+        if list(argv[:1]) == ["ssh"] and argv[-1] == vm_check.PROBE_RENET_HASH:
+            return vm_check.Result(0, "0" * 64 + "\n")
+        return super().run(argv, env=env, timeout=timeout)
+
+
+def test_a_failure_that_stopped_the_battery_never_merges_to_verified(
+    tmp_path: pathlib.Path,
+) -> None:
+    """V1.1 FAILED and the battery returned, so V1.2 to the extra steps never ran: a passing V1.1 alone leaves a ledger with no row for them, which is NOT_VERIFIED, so nothing is written and the FAILED receipt stays."""
+    root = tmp_path / "repo"
+    root.mkdir()
+    rc, out = run_merge(tmp_path, _StaleRenetWorld(root))
+    assert rc == vm_check.EXIT_FAILED, out
+    world = make_world(tmp_path)
+    before = archived(world)
+    assert receipt_mod.failed_step_ids(before) == ["V1.1"]
+    assert "V1.2" not in _ids(before)
+    rc, out = run_merge(tmp_path, world, "--only", "V1.1")
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    assert "--only merge not written: the merged ledger would be NOT_VERIFIED (phase-not-run" in out
+    assert archived(world) == before
+    assert not receipt_mod.admit(world.root, TREE, DIGEST, {"renet"}).ok
+
+
+def test_a_run_that_stopped_before_the_build_identity_is_never_merged(
+    tmp_path: pathlib.Path,
+) -> None:
+    """A red A1 suite ends the run before P1 read the renet pointer and build, so that receipt has no identity a --only run can match: refused, and the FAILED receipt stays."""
+    red = make_world(tmp_path, suites={"A1.1": (1, "FAIL x\n1 failed\n")})
+    rc, out = run_merge(tmp_path, red)
+    assert rc == vm_check.EXIT_FAILED, out
+    world = make_world(tmp_path)
+    before = archived(world)
+    rc, out = run_merge(tmp_path, world, "--only", "A1.1")
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    assert "--only merge refused: the --only run's submodule pointers" in out, out
+    assert archived(world) == before
+    assert not receipt_mod.admit(world.root, TREE, DIGEST, {"account"}).ok
+
+
+def test_a_verified_receipt_takes_no_merge(tmp_path: pathlib.Path) -> None:
+    run_merge(tmp_path, make_world(tmp_path))
+    world = make_world(tmp_path)
+    before = archived(world)
+    rc, out = run_merge(tmp_path, world, "--only", "V1.2")
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    assert "only a FAILED receipt takes a --only merge" in out, out
+    assert archived(world) == before
+
+
+def test_the_only_run_record_names_its_steps(tmp_path: pathlib.Path) -> None:
+    world = make_world(tmp_path)
+    _rc, out = run_merge(tmp_path, world, "--only", "U1")
+    runs = world.root / receipt_mod.CACHE_DIR / receipt_mod.RUNS_DIR
+    records = [json.loads(p.read_text()) for p in runs.glob("vmc-*/receipt.json")]
+    assert [r["only"] for r in records] == [["U1"]], out
+    assert all(receipt_mod.validate(r) == [] for r in records)
+
+
+# --------------------------------------------------------------------------- V2: --changed diffs against the newest VERIFIED tree on the branch
+
+
+CLI_A = "packages/cli/src/remote/sync.ts"
+CLI_B = "packages/cli/src/remote/sftp.ts"
+
+
+def _commit_cli(root: pathlib.Path, rel: str, text: str) -> str:
+    path = root / rel
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text)
+    git(root, "add", rel)
+    git(root, "commit", "-q", "-m", "touch %s" % rel)
+    return git(root, "rev-parse", "HEAD")
+
+
+def plant_verified(root: pathlib.Path, commit: str, **over: Any) -> dict[str, Any]:
+    """A VERIFIED renet-side receipt for `commit`'s real tree and real inputs digest, written through the receipt module."""
+    tree = git(root, "rev-parse", "%s^{tree}" % commit)
+    receipt: dict[str, Any] = {
+        "tier": "vm",
+        "schema": receipt_mod.SCHEMA,
+        "status": receipt_mod.VERIFIED,
+        "reason": None,
+        "tree": tree,
+        "head": commit,
+        "dirty": False,
+        "inputs": vm_check.trigger.inputs(root, tree),
+        "surfaces": ["cli-remote", "renet"],
+        "submodules": {
+            "private/renet": {"pointer": PTR, "checkout": PTR, "modified": False},
+            "private/account": {"pointer": APTR, "checkout": APTR, "modified": False},
+        },
+        "renet": {"built": PTR, "modified": False, "sha256": HASH, "deployed": PTR},
+        "trigger": {"base": "origin/main", "via": "x", "hits": [], "sides": ["renet"]},
+        "phases": {
+            "renet": {"required": True, "ran": True},
+            "account": {"required": False, "ran": False},
+        },
+        "gateway": {"mode": None, "port": None, "started": None},
+        "fleet": {"mode": "reused", "os": "ubuntu", "ips": [], "landlock": {}},
+        "forks": [],
+        "steps": [{"id": "V1.2", "desc": "x", "rc": 0, "verdict": "ok", "ms": 1, "evidence": ""}],
+        "teardown": {"ok": True, "leftovers": []},
+        "runId": "planted-%s" % commit[:8],
+        "startedAt": "2026-11-09T00:00:00Z",
+        "finishedAt": "2026-11-09T00:01:00Z",
+        "wallMs": 60000,
+    }
+    receipt.update(over)
+    receipt_mod.write(root, receipt)
+    return receipt
+
+
+def _base_of(root: pathlib.Path) -> tuple[Any, tuple[str, str] | None]:
+    g = vm_check.trigger.make_git(root)
+    return vm_check.with_verified_base(root, g, vm_check.trigger.push_base(g, "main"))
+
+
+def test_with_no_verified_receipt_changed_diffs_against_the_push_base(
+    tmp_path: pathlib.Path,
+) -> None:
+    root = fixture_repo(tmp_path)
+    seed = git(root, "rev-parse", "HEAD")
+    _commit_cli(root, CLI_A, "a\n")
+    base, verified = _base_of(root)
+    assert verified is None
+    assert base.merge_base == seed
+    assert base.ref == "origin/main"
+
+
+def test_a_verified_receipt_on_the_branch_becomes_the_base(tmp_path: pathlib.Path) -> None:
+    root = fixture_repo(tmp_path)
+    first = _commit_cli(root, CLI_A, "a\n")
+    plant_verified(root, first)
+    _commit_cli(root, CLI_B, "b\n")
+    base, verified = _base_of(root)
+    assert verified == (first, git(root, "rev-parse", "%s^{tree}" % first))
+    assert base.merge_base == first
+    assert "newest VERIFIED receipt" in str(base.via)
+
+
+def test_the_newest_of_two_verified_receipts_is_the_base(tmp_path: pathlib.Path) -> None:
+    root = fixture_repo(tmp_path)
+    first = _commit_cli(root, CLI_A, "a\n")
+    plant_verified(root, first)
+    second = _commit_cli(root, CLI_B, "b\n")
+    plant_verified(root, second)
+    _commit_cli(root, CLI_A, "a2\n")
+    _base, verified = _base_of(root)
+    assert verified is not None
+    assert verified[0] == second
+
+
+@pytest.mark.parametrize(
+    "over",
+    [
+        {"status": receipt_mod.FAILED, "reason": {"class": "step-failed", "detail": "V1.2"}},
+        {"renet": {"built": "0" * 40, "modified": False, "sha256": HASH, "deployed": PTR}},
+        {"dirty": True},
+        {
+            "phases": {
+                "renet": {"required": False, "ran": False},
+                "account": {"required": True, "ran": True},
+            },
+            "surfaces": ["account"],
+            "trigger": {"base": "origin/main", "via": "x", "hits": [], "sides": ["account"]},
+        },
+    ],
+    ids=["failed", "build-mismatch", "dirty", "account-only"],
+)
+def test_a_receipt_the_guard_would_refuse_is_never_the_base(
+    tmp_path: pathlib.Path, over: dict[str, Any]
+) -> None:
+    root = fixture_repo(tmp_path)
+    first = _commit_cli(root, CLI_A, "a\n")
+    plant_verified(root, first, **over)
+    _commit_cli(root, CLI_B, "b\n")
+    base, verified = _base_of(root)
+    assert verified is None
+    assert base.ref == "origin/main"
+
+
+def test_changed_after_a_verified_run_selects_only_what_changed_since_it(
+    tmp_path: pathlib.Path,
+) -> None:
+    root = fixture_repo(tmp_path)
+    first = _commit_cli(root, CLI_A, "a\n")
+    plant_verified(root, first)
+    _commit_cli(root, CLI_B, "b\n")
+    world = World(root)
+    rc, out, receipt = run_check(tmp_path, world, "--changed")
+    assert rc == vm_check.EXIT_VERIFIED, out
+    assert receipt["trigger"]["base"] == first
+    assert receipt["trigger"]["hits"] == [CLI_B]
+    assert receipt["trigger"]["verifiedBase"] == {
+        "head": first,
+        "tree": git(root, "rev-parse", "%s^{tree}" % first),
+    }
+
+
+def test_changed_with_nothing_since_the_verified_run_is_a_no_op(tmp_path: pathlib.Path) -> None:
+    root = fixture_repo(tmp_path)
+    first = _commit_cli(root, CLI_A, "a\n")
+    plant_verified(root, first)
+    (root / "docs.md").write_text("docs\n")
+    world = World(root)
+    rc, out, _receipt = run_check(tmp_path, world, "--changed")
+    assert rc == 0, out
+    assert "no trigger path changed since %s" % first in out, out
+    assert world.rdc_calls() == []
+
+
+def test_an_explicit_base_is_never_replaced_by_a_verified_one(tmp_path: pathlib.Path) -> None:
+    root = fixture_repo(tmp_path)
+    git(root, "tag", "v0")
+    first = _commit_cli(root, CLI_A, "a\n")
+    plant_verified(root, first)
+    _commit_cli(root, CLI_B, "b\n")
+    world = World(root)
+    rc, out, receipt = run_check(tmp_path, world, "--changed", "--base", "v0")
+    assert rc == vm_check.EXIT_VERIFIED, out
+    assert receipt["trigger"]["base"] == "v0"
+    assert "verifiedBase" not in receipt["trigger"]
+    assert sorted(receipt["trigger"]["hits"]) == sorted([CLI_A, CLI_B])

@@ -619,6 +619,31 @@ def push_base(git: Callable[[Sequence[str]], str | None], branch: str | None) ->
     return BaseResolution(tried=tuple(tried), warnings=tuple(warnings))
 
 
+# The most branch commits `newest_verified_base` reads, newest first. A branch longer than this falls back to the push base for its older commits, which is the pre-V2 behaviour and never narrows a run.
+VERIFIED_SCAN_MAX = 200
+
+
+def newest_verified_base(
+    git: Callable[[Sequence[str]], str | None],
+    merge_base: str,
+    admitted: Callable[[str, str], bool],
+    tip: str = "HEAD",
+    limit: int = VERIFIED_SCAN_MAX,
+) -> tuple[str, str] | None:
+    """(commit, tree) of the newest first-parent commit in `merge_base..tip` that `admitted(commit, tree)` accepts, or None when none does or git cannot list them (agent/plans/PLAN-vmcheck-incremental.md V2).
+
+    `vm:check --changed` diffs against that commit instead of `merge_base`, so a batch after a VERIFIED run selects only what changed since it. `admitted` is `vm_tier.verified_base_admits`, the push guard's judgment of that tree; the merge base itself is never a candidate, since diffing against it is the fallback.
+    """
+    listed = git(["rev-list", "--first-parent", f"--max-count={limit}", f"{merge_base}..{tip}"])
+    if listed is None:
+        return None
+    for commit in listed.split():
+        tree = git(["rev-parse", f"{commit}^{{tree}}"])
+        if tree and admitted(commit, tree):
+            return commit, tree
+    return None
+
+
 # ----------------------------------------------------------------------------- inputs digest
 
 
