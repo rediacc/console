@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/deploy/set-preview-worker-secrets.sh`.
 
-Pushes fifteen runtime secrets into the per-PR preview Worker `pr-<PR_NUMBER>` in ONE `wrangler secret bulk` call. The twin's own header carries the reason the call is bulk and not fifteen `secret put`s: each `put` mints a new Worker version, and on an assets-bound Worker a new version disassociates the static assets the deploy just uploaded. One bulk call sets them all against a
+Pushes fourteen runtime secrets (no licence private key: the preview Worker signs through its LICENSE_SIGNER service binding to signer-bench-eu, so only the public half the signer signs with is pushed) into the per-PR preview Worker `pr-<PR_NUMBER>` in ONE `wrangler secret bulk` call. The twin's own header carries the reason the call is bulk and not fifteen `secret put`s: each `put` mints a new Worker version, and on an assets-bound Worker a new version disassociates the static assets the deploy just uploaded. One bulk call sets them all against a
 single version.
 
 SECRETS ARRIVE AS ENVIRONMENT VARIABLES AND NEVER TRAVEL AS ARGUMENTS, and this port keeps that property end to end. `argv` is visible in `ps` and in some log surfaces. A value travels env -> a `json.dumps` object on jq's STDIN -> jq's document on wrangler's STDIN. The twin passed each value as a `jq --arg` pair, on jq's argv; the port does not (worklist #a2d19f74), and `test_no_secret_value_reaches_any_child_argv` pins it.
@@ -67,12 +67,11 @@ WORKER_PREFIX = "pr-"
 # The `${PR_NUMBER:?...}` stand-in named in the docstring's divergence note.
 MISSING_PR_NUMBER = "PR_NUMBER: PR_NUMBER is required"
 
-# The fifteen `--arg <var> "${<ENV>:-}"` pairs (:72-86) in the twin's ORDER,
+# The fourteen `--arg <var> "${<ENV>:-}"` pairs (:72-86) in the twin's ORDER,
 # which is also the key order of the object it builds (:87-103). ORDER IS OBSERVABLE: it is the byte order of the document on wrangler's stdin, so the tuple is the port's copy of the twin's list and the differential re-derives the same list from the twin's source and compares.
 #
 # (environment variable this script READS, jq variable it binds it to). ONE NAME EVERYWHERE: the variable read is the key written, which is what the Worker's zod schema declares (private/account/src/types/env.ts).
 KEYS: tuple[tuple[str, str], ...] = (
-    ("ACCOUNT_ED25519_PRIVATE_KEY", "ed25519_priv"),
     ("ACCOUNT_ED25519_PUBLIC_KEY", "ed25519_pub"),
     ("ACCOUNT_X25519_PRIVATE_KEY", "x25519_priv"),
     ("ACCOUNT_X25519_PUBLIC_KEY", "x25519_pub"),
@@ -89,12 +88,11 @@ KEYS: tuple[tuple[str, str], ...] = (
     ("CLOUDFLARE_TURNSTILE_SECRET_KEY", "turnstile"),
 )
 
-# The eleven `_require_nonempty` calls (:59-69), in order. The FIRST empty one ends the run, so the order is observable in the message a caller reads.
+# The ten `_require_nonempty` calls (:59-69), in order. The FIRST empty one ends the run, so the order is observable in the message a caller reads.
 #
-# WHY THESE ELEVEN AND NOT THE OTHER FOUR, in the twin's own words (:42-49): the SES pair, the SES region and Turnstile are optional() in the Worker schema and turn their feature off SILENTLY when empty, and the six ACCOUNT_* ones are non-optional and would make every request on the preview 500 with an EnvConfigError. Stripe is deliberately NOT demanded: ci.yml feeds the preview
+# WHY THESE ELEVEN AND NOT THE OTHER FOUR, in the twin's own words (:42-49): the SES pair, the SES region and Turnstile are optional() in the Worker schema and turn their feature off SILENTLY when empty, and the five ACCOUNT_* ones are non-optional and would make every request on the preview 500 with an EnvConfigError. Stripe is deliberately NOT demanded: ci.yml feeds the preview
 # the SANDBOX key, and a preview without billing is a legitimate state.
 REQUIRED_NONEMPTY: tuple[str, ...] = (
-    "ACCOUNT_ED25519_PRIVATE_KEY",
     "ACCOUNT_ED25519_PUBLIC_KEY",
     "ACCOUNT_X25519_PRIVATE_KEY",
     "ACCOUNT_X25519_PUBLIC_KEY",
@@ -117,7 +115,7 @@ GUARD_EXPLANATION: tuple[str, ...] = (
 GUARD_LABEL_SAYS_WORKER_NAME = True
 
 # Observation 2: the closing line's count is a literal in the twin, not a tally.
-SECRET_COUNT_CLAIM = 15
+SECRET_COUNT_CLAIM = 14
 
 
 class GuardError(Exception):
@@ -141,7 +139,7 @@ def worker_name(pr_number: str) -> str:
 
 
 def check_nonempty(env: dict[str, str], worker: str) -> None:
-    """The eleven guards, in the twin's order. Raises on the FIRST empty one.
+    """The ten guards, in the twin's order. Raises on the FIRST empty one.
 
     An ABSENT variable and an EMPTY one are the same case, because the twin
     reads `"${NAME:-}"` into the check.
@@ -170,7 +168,7 @@ def jq_input(env: dict[str, str]) -> str:
     """The values as one JSON object keyed by jq variable, in `KEYS` order, for jq's stdin. ASCII only (`ensure_ascii`), so a value the environment decoded with surrogate escapes still reaches jq, which re-encodes each string exactly as it encoded the twin's `--arg`.
 
     Every value is read as `"${NAME:-}"`, so an absent variable becomes the
-    empty string rather than an error: the eleven guards above have already refused the ones that must not be empty, and the other four are legitimately absent.
+    empty string rather than an error: the ten guards above have already refused the ones that must not be empty, and the other four are legitimately absent.
     """
     return json.dumps({var: env.get(key, "") for key, var in KEYS})
 

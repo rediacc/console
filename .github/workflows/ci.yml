@@ -1604,6 +1604,7 @@ jobs:
             ACCOUNT_JWT_SECRET > BWS_ACCOUNT_JWT_SECRET
             ACCOUNT_SERVER_API_KEY > BWS_ACCOUNT_SERVER_API_KEY
             ACCOUNT_X25519_PUBLIC_KEY > BWS_ACCOUNT_X25519_PUBLIC_KEY
+            ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY
             GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
             STRIPE_SANDBOX_SECRET_KEY > BWS_STRIPE_SANDBOX_SECRET_KEY
             AWS_SES_ACCESS_KEY_ID_EU > BWS_AWS_SES_ACCESS_KEY_ID_EU
@@ -1720,9 +1721,10 @@ jobs:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
             ACCOUNT_X25519_PRIVATE_KEY > BWS_ACCOUNT_X25519_PRIVATE_KEY
-      # The signing pair is minted in this step (agent/plans/PLAN-production-key-only.md D6): the
-      # production private key never reaches a PR job. Both halves go into the preview Worker as its
-      # own secrets, and the public half is the job output the smoke test verifies against.
+      # The preview Worker holds NO licence private key (PLAN-enterprise-isolation S3): it signs
+      # through its LICENSE_SIGNER service binding to signer-bench-eu (deploy_www.PREVIEW_TOML), which
+      # signs with the production key. Only the public half is pushed, and it is the job output the
+      # smoke test verifies against.
       - name: Set preview worker secrets
         id: preview-secrets
         env:
@@ -1731,6 +1733,7 @@ jobs:
           # ONE NAME EVERYWHERE: the left side is the name the builder READS
           # and the key it WRITES into the Worker (private/account/src/types/
           # env.ts). The right side keeps the GitHub secret's current name.
+          ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
           ACCOUNT_X25519_PRIVATE_KEY: ${{ env.BWS_ACCOUNT_X25519_PRIVATE_KEY }}
           ACCOUNT_X25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_X25519_PUBLIC_KEY }}
           ACCOUNT_SERVER_API_KEY: ${{ env.BWS_ACCOUNT_SERVER_API_KEY }}
@@ -1747,8 +1750,6 @@ jobs:
           AWS_SES_FROM: ${{ env.BWS_AWS_SES_FROM }}
           AWS_SES_CONFIGURATION_SET: ${{ env.BWS_AWS_SES_CONFIGURATION_SET }}
         run: |
-          pair="$(PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_account --emit-pair)"
-          eval "$pair"
           echo "ed25519_public_key=${ACCOUNT_ED25519_PUBLIC_KEY}" >> "$GITHUB_OUTPUT"
           PYTHONPATH=.ci python3 -m rediacc_ci.deploy.set_preview_worker_secrets
       - name: Blank the step-scoped signing key(s) for the rest of the job

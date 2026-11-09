@@ -1,12 +1,10 @@
-"""Differential: `rediacc_ci.deploy.set_preview_worker_secrets` against its twin `.ci/scripts/deploy/set-preview-worker-secrets.sh`.
+"""`rediacc_ci.deploy.set_preview_worker_secrets` against a recording fake `npx`.
 
-A RECORDING FAKE `npx` ON A SCRATCH PATH. Nothing here reaches Cloudflare: the fake logs its exact argv AND the bytes on its stdin, and every case uses fixture secrets whose values are two characters long, so even a bypassed fake would carry nothing real. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that
-the mocked parity ledger is a separate, achievable piece of work. This is that piece.
+Nothing here reaches Cloudflare: the fake logs its exact argv AND the bytes on its stdin, and every case uses fixture secrets whose values are two characters long. The observable effect of the program is one JSON document handed to `wrangler secret bulk`, so every case that reaches wrangler asserts the recorded stdin, and the happy path pins it against literal bytes.
 
-THE DOCUMENT IS COMPARED, NOT JUST THE STREAMS, and on this script that is the whole point. The observable effect of the program is one JSON document handed to `wrangler secret bulk`; two implementations can print an identical `✓ Set 15 secrets on pr-123 in one bulk call` while sending a different key set, a different key ORDER, or a differently escaped value. Every case that
-reaches wrangler asserts the recorded stdin, and `test_the_bulk_call_and_its_document_are_pinned_in_full` pins it against literal bytes rather than against the port's own builders.
+The preview Worker signs through its LICENSE_SIGNER service binding (signer-bench-eu), so the pusher sends the signer's PUBLIC key only. `test_no_licence_private_key_is_pushed_or_required` pins that a private key in the environment never reaches the document and never gates the run.
 
-THE BASH SIDE OF EVERY CASE IS ANSWERED FROM ITS FROZEN GOLDEN (`goldens/twins/deploy.set-preview-worker-secrets.jsonl`), so the twin file is not needed to run this module; the key and guard counts are pinned against the port by `test_pure_helpers` and the happy-path document.
+The bash twin `.ci/scripts/deploy/set-preview-worker-secrets.sh` and its frozen golden no longer back this module: the twin pushed a fifteenth key, the private one, that this script no longer sends, so agreement with it would pin the defect.
 """
 
 from __future__ import annotations
@@ -21,8 +19,6 @@ import typing
 
 from rediacc_ci import paths
 from rediacc_ci.deploy import set_preview_worker_secrets as port
-from rediacc_ci.tests import differential as diff
-from rediacc_ci.tests.twin_names import as_twin
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -30,15 +26,11 @@ if typing.TYPE_CHECKING:
     import pytest
 
 ROOT = paths.repo_root()
-TWIN = ROOT / ".ci" / "scripts" / "deploy" / "set-preview-worker-secrets.sh"
-TWIN_REL = ".ci/scripts/deploy/set-preview-worker-secrets.sh"
 PORT = ROOT / ".ci" / "rediacc_ci" / "deploy" / "set_preview_worker_secrets.py"
-BASH = shutil.which("bash") or "/bin/bash"
 
-# The eleven values the twin refuses to deploy without, plus the PR number. Two characters each, and visibly not credentials.
+# The ten values the script refuses to deploy without, plus the PR number. Two characters each, and visibly not credentials.
 FIXTURE_ENV = {
     "PR_NUMBER": "123",
-    "ACCOUNT_ED25519_PRIVATE_KEY": "e1",
     "ACCOUNT_ED25519_PUBLIC_KEY": "e2",
     "ACCOUNT_X25519_PRIVATE_KEY": "x1",
     "ACCOUNT_X25519_PUBLIC_KEY": "x2",
@@ -69,8 +61,9 @@ if rc:
 sys.stdout.write("Finished processing secrets JSON file.\\n")
 """
 
-# `jq` is a real prerequisite of BOTH sides (the port shells out to the same binary, for the reasons in its docstring), and `uname` / `dirname` are what `common.sh` needs at source time. Nothing else is on the scratch PATH, so a tool leaking in would show up as a behaviour change rather than as a silent convenience.
+# `jq` is a real prerequisite (the port shells out to it), and `uname` / `dirname` are kept so a tool leaking in shows up as a behaviour change.
 PATH_MINIMUM = ("jq", "uname", "dirname")
+OK_LINE = "✓ Set 14 secrets on pr-123 in one bulk call\n"
 
 
 def _bin(tmp_path: pathlib.Path, name: str, *, drop: str = "") -> str:
@@ -96,42 +89,16 @@ def _bin(tmp_path: pathlib.Path, name: str, *, drop: str = "") -> str:
 
 
 def _run(
-    subject: pathlib.Path,
     tmp_path: pathlib.Path,
     *,
     drop: str = "",
     drop_env: tuple[str, ...] = (),
     **extra: str,
 ):
-    """The port runs live; the bash side is answered from its frozen golden."""
-    if subject.suffix != ".sh":
-        return _run_live(subject, tmp_path, drop=drop, drop_env=drop_env, **extra)
-    parts = [
-        "drop=%s" % drop,
-        "drop_env=%s" % ",".join(drop_env),
-        *("%s=%s" % kv for kv in sorted(extra.items())),
-    ]
-    return diff.twin_result(
-        TWIN_REL,
-        parts,
-        lambda: _run_live(subject, tmp_path, drop=drop, drop_env=drop_env, **extra),
-        work=(tmp_path,),
-    )
-
-
-def _run_live(
-    subject: pathlib.Path,
-    tmp_path: pathlib.Path,
-    *,
-    drop: str = "",
-    drop_env: tuple[str, ...] = (),
-    **extra: str,
-):
-    side = "old" if subject.suffix == ".sh" else "new"
-    call_log = tmp_path / f"{side}-calls.log"
+    call_log = tmp_path / "calls.log"
     call_log.write_text("", encoding="utf-8")
     env = {
-        "PATH": _bin(tmp_path, f"{side}-bin", drop=drop),
+        "PATH": _bin(tmp_path, "bin", drop=drop),
         "HOME": os.environ.get("HOME", "/tmp"),
         "LC_ALL": "C.UTF-8",
         "LANG": "C.UTF-8",
@@ -143,9 +110,8 @@ def _run_live(
     env.update(extra)
     for name in drop_env:
         env.pop(name, None)
-    runner = [BASH] if subject.suffix == ".sh" else [sys.executable]
     proc = subprocess.run(
-        [*runner, str(subject)],
+        [sys.executable, str(PORT)],
         cwd=tmp_path,
         capture_output=True,
         text=True,
@@ -154,31 +120,7 @@ def _run_live(
         timeout=120,
         input="",
     )
-    calls = call_log.read_text(encoding="utf-8")
-    return proc, calls
-
-
-def run_both(tmp_path: pathlib.Path, **kw):
-    old, old_calls = _run(TWIN, tmp_path, **kw)
-    new, new_calls = _run(PORT, tmp_path, **kw)
-    return old, new, old_calls, new_calls
-
-
-def _assert_agree(old, new, label: str, old_calls=None, new_calls=None) -> None:
-    assert new.returncode == old.returncode, (
-        f"{label}: exit diverged: {old.returncode!r} vs {new.returncode!r}"
-    )
-    assert as_twin(new.stdout) == old.stdout, (
-        f"{label}: stdout diverged:\nold: {old.stdout!r}\nnew: {as_twin(new.stdout)!r}"
-    )
-    assert as_twin(new.stderr) == old.stderr, (
-        f"{label}: stderr diverged:\nold: {old.stderr!r}\nnew: {as_twin(new.stderr)!r}"
-    )
-    if old_calls is not None:
-        assert new_calls == old_calls, (
-            f"{label}: the wrangler call or its document diverged:\n"
-            f"old: {old_calls!r}\nnew: {new_calls!r}"
-        )
+    return proc, call_log.read_text(encoding="utf-8")
 
 
 def document(calls: str) -> str:
@@ -188,14 +130,21 @@ def document(calls: str) -> str:
     return match.group(1)
 
 
+def guard_text(name: str, worker: str = "pr-123") -> str:
+    return (
+        f"{port.SELF}: {name} is EMPTY for WORKER_NAME={worker}.\n"
+        "  The Worker's schema either accepts an empty value and silently disables the\n"
+        "  feature, or rejects it on every request; this refuses to deploy instead.\n"
+    )
+
+
 def test_the_bulk_call_and_its_document_are_pinned_in_full(tmp_path: pathlib.Path) -> None:
-    """ONE CALL, PINNED AGAINST LITERAL BYTES rather than against the port's own builders, so a change in both would still be caught. The argv, then the fifteen keys in order with the four legitimately-empty ones present as empty strings."""
-    old, new, old_calls, new_calls = run_both(tmp_path)
-    assert old.returncode == 0
-    assert old_calls.splitlines()[0] == "npx\t--no-install\twrangler\tsecret\tbulk\t--name\tpr-123"
-    assert document(old_calls) == (
+    """ONE CALL, PINNED AGAINST LITERAL BYTES: the argv, then the fourteen keys in order, the four legitimately-empty ones present as empty strings, and no licence private key."""
+    proc, calls = _run(tmp_path)
+    assert proc.returncode == 0
+    assert calls.splitlines()[0] == "npx\t--no-install\twrangler\tsecret\tbulk\t--name\tpr-123"
+    assert document(calls) == (
         "{\n"
-        '  "ACCOUNT_ED25519_PRIVATE_KEY": "e1",\n'
         '  "ACCOUNT_ED25519_PUBLIC_KEY": "e2",\n'
         '  "ACCOUNT_X25519_PRIVATE_KEY": "x1",\n'
         '  "ACCOUNT_X25519_PUBLIC_KEY": "x2",\n'
@@ -212,186 +161,147 @@ def test_the_bulk_call_and_its_document_are_pinned_in_full(tmp_path: pathlib.Pat
         '  "CLOUDFLARE_TURNSTILE_SECRET_KEY": "ts"\n'
         "}\n"
     )
-    assert old.stdout == "Finished processing secrets JSON file.\n", "wrangler's own output"
-    assert old.stderr == "✓ Set 15 secrets on pr-123 in one bulk call\n"
-    _assert_agree(old, new, "happy-path", old_calls, new_calls)
+    assert proc.stdout == "Finished processing secrets JSON file.\n", "wrangler's own output"
+    assert proc.stderr == OK_LINE
+
+
+def test_no_licence_private_key_is_pushed_or_required(tmp_path: pathlib.Path) -> None:
+    """The preview Worker signs through LICENSE_SIGNER, so a private key in the environment never reaches the document, and its absence never refuses the run."""
+    proc, calls = _run(tmp_path, ACCOUNT_ED25519_PRIVATE_KEY="SECRET-PRIVATE")
+    assert proc.returncode == 0
+    assert "ED25519_PRIVATE_KEY" not in document(calls)
+    assert "SECRET-PRIVATE" not in calls
+    assert "ACCOUNT_ED25519_PRIVATE_KEY" not in {key for key, _var in port.KEYS}
+    assert "ACCOUNT_ED25519_PRIVATE_KEY" not in port.REQUIRED_NONEMPTY
+    assert "ACCOUNT_ED25519_PUBLIC_KEY" in port.REQUIRED_NONEMPTY
 
 
 def test_the_worker_name_is_the_pr_number_prefixed(tmp_path: pathlib.Path) -> None:
-    old, new, old_calls, new_calls = run_both(tmp_path, PR_NUMBER="9001")
-    assert "--name\tpr-9001" in old_calls
-    assert old.stderr == "✓ Set 15 secrets on pr-9001 in one bulk call\n"
-    _assert_agree(old, new, "worker-name", old_calls, new_calls)
+    proc, calls = _run(tmp_path, PR_NUMBER="9001")
+    assert "--name\tpr-9001" in calls
+    assert proc.stderr == OK_LINE.replace("pr-123", "pr-9001")
 
 
 def test_stripe_is_deliberately_not_demanded(tmp_path: pathlib.Path) -> None:
-    """A PREVIEW WITHOUT BILLING IS A LEGITIMATE STATE (twin :48-49): ci.yml feeds the preview the sandbox key, so an absent Stripe key deploys rather than refusing. Pinned in the direction a "consistency" edit would break: adding Stripe to the guard list would turn every preview red."""
-    old, new, old_calls, new_calls = run_both(tmp_path)
-    assert old.returncode == 0
-    assert '"STRIPE_SECRET_KEY": ""' in document(old_calls)
+    """A preview without billing is a legitimate state: adding Stripe to the guard list would turn every preview red."""
+    proc, calls = _run(tmp_path)
+    assert proc.returncode == 0
+    assert '"STRIPE_SECRET_KEY": ""' in document(calls)
     assert "STRIPE_SECRET_KEY" not in port.REQUIRED_NONEMPTY
     assert "STRIPE_WEBHOOK_SECRET" not in port.REQUIRED_NONEMPTY
-    _assert_agree(old, new, "stripe-optional", old_calls, new_calls)
 
 
 def test_a_present_stripe_key_reaches_the_document(tmp_path: pathlib.Path) -> None:
-    # PASSED AS A DICT, not as keyword arguments: ruff's S106 keys on the
-    # ARGUMENT NAME, and `STRIPE_SECRET_KEY="sk_test_x"` reads to the linter as a
-    # hardcoded credential even though the value is visibly a fixture.
+    # PASSED AS A DICT: ruff's S106 keys on the argument name.
     stripe = {"STRIPE_SECRET_KEY": "sk_test_x", "STRIPE_WEBHOOK_SECRET": "whsec_x"}
-    old, new, old_calls, new_calls = run_both(tmp_path, **stripe)
-    assert '"STRIPE_SECRET_KEY": "sk_test_x"' in document(old_calls)
-    assert '"STRIPE_WEBHOOK_SECRET": "whsec_x"' in document(old_calls)
-    _assert_agree(old, new, "stripe-present", old_calls, new_calls)
+    _proc, calls = _run(tmp_path, **stripe)
+    assert '"STRIPE_SECRET_KEY": "sk_test_x"' in document(calls)
+    assert '"STRIPE_WEBHOOK_SECRET": "whsec_x"' in document(calls)
 
 
-def test_every_one_of_the_eleven_guards_fires_with_its_own_name(
-    tmp_path: pathlib.Path,
-) -> None:
-    """ELEVEN CASES, ONE PER GUARD, and each is driven EMPTY rather than absent:
-    `"${NAME:-}"` collapses the two, and a port testing membership in os.environ
-    would pass the absent case and deploy the empty one."""
+def test_every_one_of_the_ten_guards_fires_with_its_own_name(tmp_path: pathlib.Path) -> None:
+    """One case per guard, each driven EMPTY rather than absent."""
+    assert len(port.REQUIRED_NONEMPTY) == 10
     for name in port.REQUIRED_NONEMPTY:
         case = tmp_path / f"guard-{name}"
         case.mkdir()
-        old, new, old_calls, new_calls = run_both(case, **{name: ""})
-        assert old.returncode == 1, f"{name}: the twin accepted an empty value"
-        assert old.stdout == ""
-        assert old.stderr == (
-            f"set-preview-worker-secrets.sh: {name} is EMPTY for WORKER_NAME=pr-123.\n"
-            "  The Worker's schema either accepts an empty value and silently disables the\n"
-            "  feature, or rejects it on every request; this refuses to deploy instead.\n"
-        )
-        assert old_calls == "", f"{name}: a refused run still called wrangler"
-        _assert_agree(old, new, f"guard-{name}", old_calls, new_calls)
+        proc, calls = _run(case, **{name: ""})
+        assert proc.returncode == 1, f"{name}: an empty value was accepted"
+        assert proc.stdout == ""
+        assert proc.stderr == guard_text(name)
+        assert calls == "", f"{name}: a refused run still called wrangler"
 
 
 def test_an_absent_value_refuses_exactly_as_an_empty_one_does(tmp_path: pathlib.Path) -> None:
-    old, new, old_calls, new_calls = run_both(tmp_path, drop_env=("ACCOUNT_JWT_SECRET",))
-    assert old.returncode == 1
-    assert "ACCOUNT_JWT_SECRET is EMPTY" in old.stderr
-    _assert_agree(old, new, "absent-value", old_calls, new_calls)
+    proc, _calls = _run(tmp_path, drop_env=("ACCOUNT_JWT_SECRET",))
+    assert proc.returncode == 1
+    assert proc.stderr == guard_text("ACCOUNT_JWT_SECRET")
 
 
 def test_the_first_empty_guard_wins_and_the_rest_never_run(tmp_path: pathlib.Path) -> None:
-    """ORDER IS OBSERVABLE. With every guarded value empty, the message names the FIRST one in the twin's order, not the last and not all eleven."""
+    """ORDER IS OBSERVABLE: with every guarded value empty, the message names the first one only."""
     blanks = dict.fromkeys(port.REQUIRED_NONEMPTY, "")
-    old, new, old_calls, new_calls = run_both(tmp_path, **blanks)
-    assert old.stderr.startswith(
-        "set-preview-worker-secrets.sh: ACCOUNT_ED25519_PRIVATE_KEY is EMPTY"
-    )
-    assert old.stderr.count("is EMPTY") == 1
-    _assert_agree(old, new, "first-guard-wins", old_calls, new_calls)
-
-
-def test_the_guard_message_names_a_variable_this_script_does_not_have(
-    tmp_path: pathlib.Path,
-) -> None:
-    """OBSERVATION 1, PINNED. The guard prints `WORKER_NAME=pr-123`, and this
-    script has no WORKER_NAME: the sentence is inherited from the www sibling, where the variable is real. The VALUE is right and the LABEL points a reader at an environment variable that plays no part here. Reproduced, because agreement with the live twin is the deliverable."""
-    old, new, old_calls, new_calls = run_both(tmp_path, ROOT_EMAIL="")
-    assert "WORKER_NAME=pr-123." in old.stderr
-
-    assert port.GUARD_LABEL_SAYS_WORKER_NAME
-    _assert_agree(old, new, "worker-name-label", old_calls, new_calls)
+    proc, _calls = _run(tmp_path, **blanks)
+    assert proc.stderr.startswith(f"{port.SELF}: ACCOUNT_ED25519_PUBLIC_KEY is EMPTY")
+    assert proc.stderr.count("is EMPTY") == 1
 
 
 def test_missing_jq_refuses_before_anything_else(tmp_path: pathlib.Path) -> None:
-    old, new, old_calls, new_calls = run_both(tmp_path, drop="jq")
-    assert old.returncode == 1
-    assert old.stderr == "✗ Required command 'jq' is not available\n"
-    assert old.stdout == ""
-    assert old_calls == ""
-    _assert_agree(old, new, "no-jq", old_calls, new_calls)
+    proc, calls = _run(tmp_path, drop="jq")
+    assert proc.returncode == 1
+    assert proc.stderr == "✗ Required command 'jq' is not available\n"
+    assert proc.stdout == ""
+    assert calls == ""
 
 
 def test_missing_npx_refuses_after_jq(tmp_path: pathlib.Path) -> None:
-    old, new, old_calls, new_calls = run_both(tmp_path, drop="npx")
-    assert old.returncode == 1
-    assert old.stderr == "✗ Required command 'npx' is not available\n"
-    _assert_agree(old, new, "no-npx", old_calls, new_calls)
+    proc, _calls = _run(tmp_path, drop="npx")
+    assert proc.returncode == 1
+    assert proc.stderr == "✗ Required command 'npx' is not available\n"
 
 
 def test_the_tool_checks_run_before_the_pr_number_check(tmp_path: pathlib.Path) -> None:
-    """ORDER AGAIN: no jq and no PR_NUMBER names jq, not PR_NUMBER."""
-    old, new, old_calls, new_calls = run_both(tmp_path, drop="jq", drop_env=("PR_NUMBER",))
-    assert old.stderr == "✗ Required command 'jq' is not available\n"
-    _assert_agree(old, new, "tools-first", old_calls, new_calls)
+    proc, _calls = _run(tmp_path, drop="jq", drop_env=("PR_NUMBER",))
+    assert proc.stderr == "✗ Required command 'jq' is not available\n"
 
 
-def test_divergence_a_missing_pr_number_is_bashs_own_unbound_variable(
-    tmp_path: pathlib.Path,
-) -> None:
-    """THE ONE DIVERGENCE, ASSERTED IN BOTH DIRECTIONS SO IT CANNOT BE "FIXED" BY
-    ACCIDENT. `${PR_NUMBER:?...}` is bash refusing, and it names the bash FILE and
-    a bash LINE NUMBER. The port cannot honestly print that; it prints the `VAR: message` half. Same stream, same status, no call from either."""
-    old, new, old_calls, new_calls = run_both(tmp_path, drop_env=("PR_NUMBER",))
-    assert old.returncode == new.returncode == 1
-    assert old.stderr.endswith("line 38: PR_NUMBER: PR_NUMBER is required\n")
-    assert new.stderr == "PR_NUMBER: PR_NUMBER is required\n"
-    assert old.stderr != new.stderr
-    assert old.stdout == new.stdout == ""
-    assert old_calls == new_calls == ""
-
-
-def test_an_empty_pr_number_refuses_too(tmp_path: pathlib.Path) -> None:
-    """`:?` IS AN UNSET-OR-EMPTY TEST. A port checking `"PR_NUMBER" in os.environ` would sail past this and write fifteen secrets to a Worker named `pr-`."""
-    old, new, old_calls, new_calls = run_both(tmp_path, PR_NUMBER="")
-    assert old.returncode == new.returncode == 1
-    assert new.stderr == port.MISSING_PR_NUMBER + "\n"
-    assert old_calls == new_calls == "", "an empty PR number still reached wrangler"
+def test_a_missing_or_empty_pr_number_refuses_without_a_call(tmp_path: pathlib.Path) -> None:
+    """`:?` semantics: unset and empty refuse alike, so a Worker literally named `pr-` is never written."""
+    unset = tmp_path / "unset"
+    unset.mkdir()
+    empty = tmp_path / "empty"
+    empty.mkdir()
+    for proc, calls in (
+        _run(unset, drop_env=("PR_NUMBER",)),
+        _run(empty, PR_NUMBER=""),
+    ):
+        assert proc.returncode == 1
+        assert proc.stderr == port.MISSING_PR_NUMBER + "\n"
+        assert proc.stdout == ""
+        assert calls == "", "a missing PR number still reached wrangler"
 
 
 def test_a_wrangler_failure_ends_the_run_with_its_status(tmp_path: pathlib.Path) -> None:
-    """PIPEFAIL, the right-hand half. wrangler's status becomes the script's, and the closing line does NOT print: a caller must not read "Set 15 secrets" over a failed bulk call."""
-    old, new, old_calls, new_calls = run_both(tmp_path, FAKE_NPX_RC="7")
-    assert old.returncode == 7
-    assert old.stderr == "wrangler: failed to set secrets\n"
-    assert "Set 15 secrets" not in old.stderr
-    assert old.stdout == ""
-    _assert_agree(old, new, "wrangler-fails", old_calls, new_calls)
+    """wrangler's status becomes the script's, and the closing line does NOT print."""
+    proc, _calls = _run(tmp_path, FAKE_NPX_RC="7")
+    assert proc.returncode == 7
+    assert proc.stderr == "wrangler: failed to set secrets\n"
+    assert "Set 14 secrets" not in proc.stderr
+    assert proc.stdout == ""
 
 
 def test_the_document_carries_raw_utf8_the_way_jq_writes_it(tmp_path: pathlib.Path) -> None:
-    """WHY THE PORT SHELLS OUT TO `jq` INSTEAD OF CALLING `json.dumps`. jq emits raw UTF-8; `json.dumps` defaults to `\\uXXXX` escapes. A secret is opaque bytes chosen by someone else, so this is not a hypothetical difference, and the assertion below shows the two answers side by side."""
+    """WHY THE PORT SHELLS OUT TO `jq`: jq emits raw UTF-8, `json.dumps` defaults to `\\uXXXX` escapes."""
     exotic = "Ünïcødé 7Ω"
-    old, new, old_calls, new_calls = run_both(tmp_path, ROOT_EMAIL=exotic)
-    assert f'"ROOT_EMAIL": "{exotic}"' in document(old_calls)
-    escaped = '{"ROOT_EMAIL": "\\u00dcn\\u00efc\\u00f8d\\u00e9 7\\u03a9"}'
-    assert json.dumps({"ROOT_EMAIL": exotic}) == escaped, (
-        "json.dumps stopped escaping non-ASCII; the reasoning in the port's docstring changed"
-    )
-    _assert_agree(old, new, "utf8", old_calls, new_calls)
+    _proc, calls = _run(tmp_path, ROOT_EMAIL=exotic)
+    assert f'"ROOT_EMAIL": "{exotic}"' in document(calls)
+    assert json.dumps({"ROOT_EMAIL": exotic}) == (
+        '{"ROOT_EMAIL": "\\u00dcn\\u00efc\\u00f8d\\u00e9 7\\u03a9"}'
+    ), "json.dumps stopped escaping non-ASCII; the reasoning in the port's docstring changed"
 
 
 def test_a_value_with_quotes_and_newlines_survives_intact(tmp_path: pathlib.Path) -> None:
     awkward = {"ACCOUNT_JWT_SECRET": 'a"b\nc\\d'}
-    old, new, old_calls, new_calls = run_both(tmp_path, **awkward)
-    assert '"ACCOUNT_JWT_SECRET": "a\\"b\\nc\\\\d"' in document(old_calls)
-    _assert_agree(old, new, "escaping", old_calls, new_calls)
+    _proc, calls = _run(tmp_path, **awkward)
+    assert '"ACCOUNT_JWT_SECRET": "a\\"b\\nc\\\\d"' in document(calls)
 
 
 def test_the_closing_line_counts_what_is_actually_sent() -> None:
-    """The twin hard-coded "15" in its closing line rather than tallying, so the port's claim must equal the number of keys it sends."""
-    assert len(port.KEYS) == port.SECRET_COUNT_CLAIM
+    assert len(port.KEYS) == port.SECRET_COUNT_CLAIM == 14
 
 
 def test_pure_helpers() -> None:
     assert port.SELF == "rediacc_ci.deploy.set_preview_worker_secrets"
     assert port.worker_name("42") == "pr-42"
-    assert len(port.KEYS) == 15
-    assert len(port.REQUIRED_NONEMPTY) == 11
-
     assert port.jq_argv() == ["jq", port.jq_filter()], (
         "the program only; the values travel on stdin"
     )
-    document = json.loads(port.jq_input({"ROOT_EMAIL": "a@b", "AWS_SES_FROM": "f@g"}))
-    assert list(document) == [var for _key, var in port.KEYS]
-    assert document["ed25519_priv"] == "", "an absent value is the empty string"
-    assert document["admin"] == "a@b"
-    assert port.jq_filter().startswith("{ACCOUNT_ED25519_PRIVATE_KEY: .ed25519_priv")
+    document_in = json.loads(port.jq_input({"ROOT_EMAIL": "a@b", "AWS_SES_FROM": "f@g"}))
+    assert list(document_in) == [var for _key, var in port.KEYS]
+    assert document_in["ed25519_pub"] == "", "an absent value is the empty string"
+    assert document_in["admin"] == "a@b"
+    assert port.jq_filter().startswith("{ACCOUNT_ED25519_PUBLIC_KEY: .ed25519_pub")
     assert port.jq_filter().endswith("CLOUDFLARE_TURNSTILE_SECRET_KEY: .turnstile}")
-
     assert port.wrangler_argv("pr-7") == [
         "npx",
         "--no-install",
@@ -401,43 +311,9 @@ def test_pure_helpers() -> None:
         "--name",
         "pr-7",
     ]
-
     guard = port.GuardError("ROOT_EMAIL", "pr-7")
-    assert guard.lines()[0] == (
-        "rediacc_ci.deploy.set_preview_worker_secrets: ROOT_EMAIL is EMPTY for WORKER_NAME=pr-7."
-    )
+    assert guard.lines()[0] == f"{port.SELF}: ROOT_EMAIL is EMPTY for WORKER_NAME=pr-7."
     assert len(guard.lines()) == 3
-
-
-def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
-    """ANTI-VACUITY, planted on the ONE property no printed line can show: the key order of the document. `✓ Set 15 secrets on pr-123 in one bulk call` is identical either way, the exit code is 0 either way, and only the recorded stdin sees it. In production a reordered document is harmless; a REORDERED PORT is the same class of edit as a dropped key, and this is the control
-    that proves the comparison would catch either. Driven red, then the source is confirmed byte-identical and green."""
-    original = PORT.read_text(encoding="utf-8")
-    mutated = original.replace(
-        '    ("STRIPE_SECRET_KEY", "stripe"),\n    ("STRIPE_WEBHOOK_SECRET", "stripe_wh"),\n',
-        '    ("STRIPE_WEBHOOK_SECRET", "stripe_wh"),\n    ("STRIPE_SECRET_KEY", "stripe"),\n',
-        1,
-    )
-    assert mutated != original, "the lines this plant targets are no longer present verbatim"
-    mutant = tmp_path / "mutant.py"
-    mutant.write_text(mutated, encoding="utf-8")
-
-    old, old_calls = _run(TWIN, tmp_path)
-    bad, bad_calls = _run(mutant, tmp_path)
-    assert bad.returncode == old.returncode == 0, (
-        "the plant is invisible in the exit code, which is why the document is compared"
-    )
-    assert bad.stderr == old.stderr, "the plant is invisible on stderr too"
-    assert bad_calls != old_calls, "the mutant's document matched the twin's"
-    assert document(bad_calls).index('"STRIPE_WEBHOOK_SECRET"') < document(bad_calls).index(
-        '"STRIPE_SECRET_KEY"'
-    )
-
-    _good, good_calls = _run(PORT, tmp_path)
-    assert good_calls == old_calls, "restored port no longer agrees with the twin"
-    assert PORT.read_text(encoding="utf-8") == original, (
-        "port source must be restored byte-identical"
-    )
 
 
 # ---------------------------------------------------------------- no value on any child's argv (worklist #a2d19f74)
