@@ -61,7 +61,7 @@
     "happened."
   ],
   "refreshed_at": "2026-11-09T16:42:51Z",
-  "refreshed_from": "PROFILER_BASELINE_V1 annotations on 4 Console CI runs of branch 0923-1 (PR #590), check-runs annotations API. Not main: main has produced no annotated runs since the Actions-variables deletion; refresh from main after #590 merges.",
+  "refreshed_from": "PROFILER_BASELINE_V1 annotations on up to 20 Console CI runs of branch main (check_runner_advice.py --refresh --branch main --runs 20), check-runs annotations API.",
   "jobs": {
     "ci-build-cli.yml:build-cli-executables": {
       "workflow": "ci-build-cli.yml",
