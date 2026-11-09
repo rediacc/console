@@ -972,6 +972,15 @@ def test_the_stub_refuses_when_the_account_cannot_be_read(tmp_path: pathlib.Path
     assert "npx" not in calls
 
 
+def test_the_stub_names_a_missing_wrangler_before_any_call(tmp_path: pathlib.Path) -> None:
+    """`--stub` skips `npm install`, so with no local or PATH wrangler it refuses by name, before credentials, the account listing or npx."""
+    root = _fixture_root(tmp_path, configs={"wrangler.eu.toml": STUB_TOML})
+    new, calls = _run(PORT, tmp_path, root, ("--region", "eu", "--stub"), with_wrangler=False)
+    assert new.returncode == 1
+    assert "wrangler is not installed for" in new.stderr
+    assert calls == ""
+
+
 def test_the_stub_dry_run_prints_the_command_and_reaches_nothing(tmp_path: pathlib.Path) -> None:
     root = _fixture_root(tmp_path, configs={"wrangler.eu.toml": STUB_TOML})
     new, calls = _run(PORT, tmp_path, root, ("--region", "eu", "--stub", "--dry-run"))

@@ -462,6 +462,12 @@ def stub_main(
             print("would run: %s" % " ".join(argv), flush=True)
             return 0
         os.chdir(worker_dir)
+        # `--stub` runs no `npm install`, so a fresh checkout has no local wrangler: name that before any credential or network call instead of letting `npx --no-install` fail opaquely.
+        try:
+            wrangler_cmd.require(worker_dir)
+        except wrangler_cmd.WranglerNotInstalledError as exc:
+            log.error(shown(str(exc)))
+            return 1
         for var in ("CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID"):
             try:
                 common.require_var(var)

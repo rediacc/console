@@ -317,6 +317,14 @@ def _agree(old, new, label: str) -> None:
     """THE THREE STREAMS SEPARATELY, plus the call log and the generated config."""
     old_proc, old_calls, old_config = old
     new_proc, new_calls, new_config = new
+    # `_golden` maps the port's spelling onto the twin's, which would hide a port that still used the retired name, so the port's raw streams are refused for it first.
+    for stream, text in (
+        ("stdout", new_proc.stdout),
+        ("stderr", new_proc.stderr),
+        ("calls", new_calls),
+        ("config", new_config),
+    ):
+        assert "account-db-pr-" not in text, f"{label}: the port's {stream} names account-db-pr-"
     new_proc = subprocess.CompletedProcess(
         new_proc.args, new_proc.returncode, _golden(new_proc.stdout), _golden(new_proc.stderr)
     )

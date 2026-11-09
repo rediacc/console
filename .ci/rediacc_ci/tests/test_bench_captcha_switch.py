@@ -46,6 +46,11 @@ def test_no_other_config_carries_a_captcha_or_test_switch():
     others = [p for p in CONFIGS if p.name != "wrangler.bench.toml"]
     # The floor keeps the sweep from reading nothing: one config per shared region (eu, us, asia) since the edge and stable pair retired with the product-domain rename.
     assert len(others) >= 3
+    assert {r for r in ("eu", "us", "asia") if any(f".{r}." in p.name for p in others)} == {
+        "eu",
+        "us",
+        "asia",
+    }
     for path in others:
         found = [
             "%s:%s" % (where, k)
