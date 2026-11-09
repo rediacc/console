@@ -137,10 +137,11 @@ Two resume paths keep the invariant "every exists answer the commit relies on wa
   Owns: private/account/src/routes/portal.ts, private/account/src/routes/configs.ts, private/account/tests/integration/portal-telemetry-read.test.ts (new).
   Accept: `cd private/account && npx vitest run portal-telemetry-read` rc 0.
     (ticked) 2026-11-09T17:03:40Z by d778be9d: commit:d0749b6f account suite 256 files 3961 passed rc=0; tsc rc=0; pusher tests 98 passed
-- [ ] H3 [writer] Cross-shard reads per Z8: root admin activity and the Stripe day and subscription views through `forEachShard`, the app building the router from the bindings (identity with one database). Test: two in-memory shards merge in timestamp order; login by email resolves from the directory.
+- [x] H3 [writer] Cross-shard reads per Z8: root admin activity and the Stripe day and subscription views through `forEachShard`, the app building the router from the bindings (identity with one database). Test: two in-memory shards merge in timestamp order; login by email resolves from the directory.
   Depends on: H1, W1, PLAN-enterprise-isolation.md#S3.
   Owns: private/account/src/routes/root.ts, private/account/src/routes/root-stripe.ts, private/account/src/app.ts, private/account/tests/integration/shard-fanout.test.ts (new).
   Accept: `cd private/account && npx vitest run shard-fanout` rc 0.
+    (ticked) 2026-11-09T17:34:22Z by d778be9d: commit:126729c0 account suite 258 files 3971 passed rc=0; tsc rc=0
 - [ ] WC [writer] Waiting-chunk compaction per Z5: rebuild migration and the converted readers and writers. Tests: the backup-gc suite passes unchanged in behaviour, a 20,000-row bulk insert and a 1,000-row reap page work, and no statement binds more than 100 parameters.
   Depends on: P1, P3, C1 (backup-gc.service.ts, schema.ts, drizzle order).
   Owns: private/account/src/services/backup-gc.service.ts, private/account/src/db/schema.ts, private/account/drizzle/** (its migration only), private/account/tests/integration/backup-waiting-compact.test.ts (new).
