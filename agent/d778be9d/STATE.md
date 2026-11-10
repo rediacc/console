@@ -1,26 +1,40 @@
-## SESSION d778be9d 2026-11-10T16:21:17Z
+## SESSION d778be9d 2026-11-10T20:16:10Z
 
-# STATE d778be9d (branch 1104-1), 2026-11-10 evening, context 21 near compaction
+# STATE d778be9d (branch 1104-1), 2026-11-10T20:20Z, operator away since 20:13Z
+
+## Overnight
+
+Landed since the 18:30Z host restart (docker pruned, capped at 100 GB):
+- Docker socket detector db1c62fbd6, 994df3ab75, 4cebc06f61, 1f67f0c48a; its plan ticked 1ae0b3f5b0.
+- CLI licence refresh reissues foreign-origin licences (2c6d60240f, b279e65454, 055f4b2371); renet scan carries renewal URL (gitlinks 3d764f3ce3, c3f8b3ef60).
+- Reports on stdout, prose off stdout under -o json, subscription status -m JSON (cd64926ebe, 6d47b5720e, 00334ac3bd).
+- Stop hook interim hold and live-owed judge facts (418a809591, a2b0adc5c4, 8a7f7ac120).
+- Onprem image starts (8b6502d5fa); Elite box embeds its delegation cert (gitlink ddf330595a); elite drill licence path (7e6241f339, e207fae9a0).
+- ci:quick reds cleared (27edad0e76, 26c883d8f7); .gitignore for build_server staging (405537e6a8).
+
+Ticked: rename L9 and critical-tier J1 (32d194d32e), retro R.8 (239afec80e), backup-program I3 10/10 (c17645d119), five submodule-guard boxes (9ac4af920c).
+
+Parked [?] with DEFAULT:
+- #20d0b3ea eu-remote rebind to 62.216.201.136; DEFAULT re-probe, then J3 read and J4, not before 2026-11-11T08:15Z.
+- #dcea1f9b submodule guard retire or redesign; DEFAULT retire, not before 2026-11-11T19:59Z.
+- #36c2e402 go-mod pin bump, not before 2026-11-12T00:05Z.
+- #93f61363 SES grace keys, not before 2026-11-17.
 
 ## Big pieces
-- Production .cloud rollout: L6/L7/L8 live and ticked. L9 then J1-J4 (2 h windows, operator "accept a shorter window") running on hostinger via eu-remote. L10 after L9; L11 permitted after L10 with a final rediacc-www-media -> media copy first (#9fbaebd9).
-- Mail M2/M3 ticked; SES keys rotated, asia uses the EU key (ses-asia dormant in the manifest).
-- vm:check waiver landed; 23/23 LP-bench ticked. LP-hostinger receipts wait for the hostinger runner (use --vm-waived ASKED:2026-11-10T13:38Z).
-- Review findings rounds 1-3 closed (~180); tail of 16 open below block_at (#770b5cbb).
-- Stop-hook retro R.1-.7 landed and ticked; R.8 re-count later (#e6bdab37).
-- Asia executor: SYNs from Cloudflare asia egress arrive late or never; relocation probe fix landed and proven; 25 s executor connect deadline landed (baac87c8), live proof delegated.
+
+PLAN-health-checks-local, PLAN-enterprise-isolation, PLAN-d1-scaling, PLAN-backup-integrity, PLAN-first-release-checks: queued behind the batch; none started tonight.
 
 ## Owed ticks
-- PLAN-first-release-checks 357547f9 (us/asia placement): after the asia E1 passes.
-- PLAN-product-domain-rename L9, L10, L11; PLAN-backup-critical-tier J1-J4; LP-hostinger boxes.
+
+- CI run id after the push: PLAN-backup-program.md#0a237b2e, #575e0098, #07955f58; PLAN-proxy-cd-six-targets.md#abe9b4eb.
+- Live run: PLAN-production-key-only.md#6a1ca4a4, PLAN-health-checks-local.md#85f55665, PLAN-enterprise-isolation.md#2878e08d, #a8892e0c, #0a6e5712, #e8b5ad6f, #6041744e, #f4b49503, #0fbd62dc, #cc583290, #b343464b; each runs after the batch gate cycle.
 
 ## Delegated
-- a1917d88f28e26699: #8d576362 L9 + J1-J4 on hostinger (eu-remote); owns nothing; accept: per-step rc in its report, then tick L9 and J1-J4.
-- a83eaa16d8354d6a5: #60c7b83e asia 25 s timeout live proof; owns nothing; accept: asia E1 passes for org d0c9dce0 after the proxy-asia redeploy.
+
+- lead: #caa837d4 gate cycle, ci:quick in bg b1e7ign1p (logs /tmp/ciq-d778.out and .err). No writers running.
 
 ## Next action
-1. When a report lands: spot-check, tick with its evidence, commit by path.
-2. After the hostinger runner: LP-hostinger receipts via worklist.py --live-proof ... --vm-waived ASKED:2026-11-10T13:38Z --write --tick.
-3. Small fixes owed: #b73c585b (wl_boxaudit --owed in its printed command), review ba502013.1 (worklist.py docstring), #1b41bc45 (bws LIVE_CONSOLE_EDGE_{ASIA,US}_D1_DATABASE values), #05edcebd (27-91 one-org switch), #fcbed611 tick with this STATE commit sha.
-4. Then the gate cycle: ci:quick, ./run.sh drill backup && backup-onprem, VM_DSK=48 npm run vm:check -- --changed (confirms the waived receipts); push at batch end.
-5. Parked with dated defaults: #36c2e402 go-mod bump NOT-BEFORE 2026-11-12T00:05Z; #93f61363 SES grace keys NOT-BEFORE 2026-11-17.
+
+1. Read the ci:quick rc and failing gates when it reports; fix each red at its root and rerun only the gates it invalidates.
+2. ./run.sh drill backup && ./run.sh drill backup-onprem, then VM_DSK=48 npm run vm:check -- --changed (rediacc11 and rediacc12 are up).
+3. Record the LP-hostinger receipts with --vm-waived ASKED:2026-11-10T13:38Z (restore-path L1, prune L2, H3 #4f4df453), then push at batch end.
