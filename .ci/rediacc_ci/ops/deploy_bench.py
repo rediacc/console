@@ -826,7 +826,9 @@ def _http_status(url: str) -> int:
         return 0
 
 
-def smoke(fetch: Callable[[str], int] | None = None, sleep: Callable[[float], None] = time.sleep) -> None:
+def smoke(
+    fetch: Callable[[str], int] | None = None, sleep: Callable[[float], None] = time.sleep
+) -> None:
     """The deployed Worker must serve: GET server-info answers 200, retried while the new version propagates. A last status other than 200 is a DeployError naming it."""
     fetch = fetch or _http_status
     url = "https://%s%s" % (DOMAIN, SMOKE_PATH)

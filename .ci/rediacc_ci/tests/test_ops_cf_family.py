@@ -811,7 +811,9 @@ def test_deploy_bench_matches_bash(world: h.World) -> None:
     bash_calls = world.calls()
     world.reset_log()
     world.add_routes(SEED_ROUTE)
-    rc_p, out_p, err_p = world.port("rediacc_ci.tests.deploy_bench_fakes", [], _port_deploy_env(env))
+    rc_p, out_p, err_p = world.port(
+        "rediacc_ci.tests.deploy_bench_fakes", [], _port_deploy_env(env)
+    )
     port_calls = world.calls()
     assert rc_b == rc_p == 0, (err_b, err_p)
     assert any(_is_seed_call(c) for c in port_calls)
