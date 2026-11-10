@@ -13,6 +13,7 @@ import re
 import subprocess
 import sys
 
+from rediacc_ci import paths
 from rediacc_ci.core import wrangler
 
 BUCKET_NAME = re.compile(r'^\s*bucket_name\s*=\s*"([^"]+)"', re.MULTILINE)
@@ -105,6 +106,8 @@ def lockfile(dirs):
 def buckets(config):
     """Create every R2 bucket the config binds that does not exist yet.
 
+    Both wrangler calls start in `workers/account`: `npx --no-install` finds only a `node_modules/.bin/wrangler` at or above its cwd, never PATH (finding e69747ea), and `--config` is not passed, so the caller's directory does not matter.
+
     A binding that names a jurisdiction is refused rather than guessed: creating it in the default jurisdiction would put the data somewhere the config did not ask for.
     """
     with open(config, encoding="utf-8") as fh:
@@ -116,8 +119,13 @@ def buckets(config):
             file=sys.stderr,
         )
         return 1
+    cwd = paths.repo_root() / "workers" / "account"
     listing = subprocess.run(
-        [*wrangler.ARGV, "r2", "bucket", "list"], capture_output=True, text=True, check=False
+        [*wrangler.ARGV, "r2", "bucket", "list"],
+        cwd=cwd,
+        capture_output=True,
+        text=True,
+        check=False,
     )
     if listing.returncode != 0:
         print("✗ could not list R2 buckets: %s" % listing.stderr.strip()[:300], file=sys.stderr)
@@ -129,6 +137,7 @@ def buckets(config):
         print("→ creating R2 bucket %s (bound in %s, absent)" % (bucket, config))
         made = subprocess.run(
             [*wrangler.ARGV, "r2", "bucket", "create", bucket],
+            cwd=cwd,
             capture_output=True,
             text=True,
             check=False,

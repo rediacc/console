@@ -530,6 +530,8 @@ def edge_version(*, fetch: Fetch = http_get, base: pathlib.Path | None = None) -
 
 CAPTURED_SQL = "SELECT subject FROM captured_emails WHERE recipient = ? ORDER BY created_at"
 WWW_REL = ("workers", "www")
+# The directory a `deployments list` / `rollback` call starts in: `npx --no-install` finds only a `node_modules/.bin/wrangler` at or above its cwd, and the repository root (run_process's default) has none (finding e69747ea). `--name` selects the Worker, and `workers/account` holds no default wrangler config.
+WRANGLER_REL = ("workers", "account")
 NOT_FOUND = "value not found"
 
 
@@ -1617,7 +1619,8 @@ def _json_value(text: str, open_ch: str) -> object:
 
 def worker_versions(worker: str, *, run: Runner = run_process) -> list[str]:
     """The 100% version of each deployment of `worker`, newest first, each version once."""
-    done = run([*wrangler.ARGV, "deployments", "list", "--json", "--name", worker], None, None)
+    argv = [*wrangler.ARGV, "deployments", "list", "--json", "--name", worker]
+    done = run(argv, root().joinpath(*WRANGLER_REL), None)
     if done.rc != 0:
         raise proof.LabError("wrangler deployments list exited %d" % done.rc)
     data = _json_value(done.stdout, "[")
@@ -1642,7 +1645,7 @@ def put_version(worker: str, version_id: str, *, run: Runner = run_process) -> N
         *wrangler.ARGV, "rollback", version_id, "--message", ROLLBACK_MESSAGE, "--yes",
         "--name", worker,
     ]  # fmt: skip
-    done = run(argv, None, None)
+    done = run(argv, root().joinpath(*WRANGLER_REL), None)
     if done.rc != 0:
         raise proof.LabError("wrangler rollback exited %d" % done.rc)
 

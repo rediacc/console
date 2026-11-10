@@ -289,6 +289,12 @@ def test_backup_d1_matches_bash(world: h.World) -> None:
     port_calls = world.calls()
     port_files = sorted(p.name for p in (world.root / ".backups/edge").iterdir())
     assert rc_b == rc_p == 0
+    # The one deliberate divergence from the twin: the port starts wrangler in `workers/account`, where `npx --no-install` finds the pinned install (finding e69747ea); the twin ran it wherever it stood.
+    port_npx_cwds = [c.pop("cwd") for c in port_calls if c["tool"] == "npx"]
+    for c in bash_calls:
+        c.pop("cwd", None)
+    assert port_npx_cwds
+    assert set(port_npx_cwds) == {"workers/account"}
     assert h.mask_stamp(json.dumps(bash_calls)) == h.mask_stamp(json.dumps(port_calls))
     assert h.mask_stamp(str(bash_files)) == h.mask_stamp(str(port_files))
     assert out_b == out_p

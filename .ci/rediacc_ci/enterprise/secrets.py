@@ -690,6 +690,13 @@ class IamMinter:
 def wrangler_push(
     argv: list[str], payload: str, runner: Callable[..., Any] = subprocess.run
 ) -> int:
-    """`wrangler secret bulk` with the document on stdin and both streams captured, never echoed."""
-    proc = runner(argv, input=payload, capture_output=True, text=True, check=False)
+    """`wrangler secret bulk` with the document on stdin and both streams captured, never echoed. It starts in `workers/account`, the install `npx --no-install` finds (finding e69747ea)."""
+    proc = runner(
+        argv,
+        input=payload,
+        capture_output=True,
+        text=True,
+        check=False,
+        cwd=set_account_worker_secrets.worker_dir(),
+    )
     return int(proc.returncode)

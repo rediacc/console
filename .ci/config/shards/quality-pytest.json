@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 5,
-  "generatedAt": "2026-11-10T12:46:59.165Z",
+  "generatedAt": "2026-11-10T12:52:35.984Z",
   "legs": [
     {
       "index": 1,
@@ -677,6 +677,7 @@
         "pytest:.ci/rediacc_ci/tests/test_version_resolve_version.py",
         "pytest:.ci/rediacc_ci/tests/test_vitest_cache_isolation.py",
         "pytest:.ci/rediacc_ci/tests/test_workflow_called_permissions.py",
+        "pytest:.ci/rediacc_ci/tests/test_wrangler_cwd_sweep.py",
         "pytest:.claude/rediacc_hooks/tests/test_block_turbo_early_push_merge_phase.py",
         "pytest:.claude/rediacc_hooks/tests/test_githook_generated_artifacts.py",
         "pytest:.claude/rediacc_hooks/tests/test_githook_plan_box.py",

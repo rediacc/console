@@ -60,10 +60,11 @@ def _human_size(size: int) -> str:
 
 
 def _export(env: dict[str, str], db_name: str, out_file: str) -> int:
-    """Run the wrangler export, echoing its output minus the pre-signed URL lines; return its exit status."""
+    """Run the wrangler export, echoing its output minus the pre-signed URL lines; return its exit status. It starts in `workers/account`, the install `npx --no-install` finds (finding e69747ea)."""
     proc = subprocess.Popen(
         [*wrangler.ARGV, "d1", "export", db_name, "--remote", "--output=%s" % out_file],
         env=env,
+        cwd=paths.repo_root() / "workers" / "account",
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
