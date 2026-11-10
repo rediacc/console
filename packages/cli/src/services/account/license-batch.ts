@@ -218,6 +218,18 @@ export function guidsWithForeignLicenseOrigin(
 }
 
 /**
+ * The config's account-server origin, the form `licenseOriginsFromListing` yields. A server URL that does not parse
+ * as a URL is refused: comparing a raw URL with bare origins would count every licence as foreign and reissue all.
+ */
+function configAccountOrigin(machineName: string): string {
+  const origin = expectedAccountServerOrigin();
+  if (origin) return origin;
+  throw new Error(
+    `Cannot compare the licences on ${machineName} with this config's account server: "${getSubscriptionServerUrl()}" is not a URL`
+  );
+}
+
+/**
  * Reads every installed repo licence on the machine and returns the guids issued by another account server than
  * this config's. Throws when the listing cannot be read: an empty answer would leave the stale licence unchanged
  * and report a clean refresh.
@@ -242,8 +254,7 @@ export async function foreignOriginLicenseGuids(
       `Cannot read the installed licences on ${machineName} to compare their issuing origin: the listing was cut short`
     );
   }
-  const expected = expectedAccountServerOrigin() ?? getSubscriptionServerUrl();
-  return guidsWithForeignLicenseOrigin(listing, expected);
+  return guidsWithForeignLicenseOrigin(listing, configAccountOrigin(machineName));
 }
 
 /** Adds each scanned repo whose guid is in the lowercase `foreignGuids` set to `target`, under the scan's own spelling. */

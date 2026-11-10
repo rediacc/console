@@ -29,8 +29,10 @@ vi.mock('../../machine/machine-connection.js', () => ({
 }));
 vi.mock('../../telemetry/telemetry.js', () => ({ telemetryService: { trackError: vi.fn() } }));
 
+const server = vi.hoisted(() => ({ url: 'https://eu.rediacc.cloud' }));
+
 vi.mock('../subscription-auth.js', () => ({
-  getSubscriptionServerUrl: () => 'https://eu.rediacc.cloud',
+  getSubscriptionServerUrl: () => server.url,
   getSubscriptionTokenState: () => ({ kind: 'ready' }),
 }));
 
@@ -72,6 +74,30 @@ describe('foreignOriginLicenseGuids', () => {
     const guids = await foreignOriginLicenseGuids({ exec }, 'hostinger');
     expect([...guids]).toEqual([OLD]);
     expect(exec.mock.calls[0][0]).toContain('sudo -n sh -c');
+  });
+
+  it('compares origins when the configured server URL carries a path', async () => {
+    server.url = 'https://eu.rediacc.cloud/account/api/v1';
+    try {
+      const guids = await foreignOriginLicenseGuids(
+        { exec: vi.fn().mockResolvedValue(listing) },
+        'hostinger'
+      );
+      expect([...guids]).toEqual([OLD]);
+    } finally {
+      server.url = NEW_ORIGIN;
+    }
+  });
+
+  it('refuses a configured server that is not a URL instead of reissuing every licence', async () => {
+    server.url = 'not a url';
+    try {
+      await expect(
+        foreignOriginLicenseGuids({ exec: vi.fn().mockResolvedValue(listing) }, 'hostinger')
+      ).rejects.toThrow(/"not a url" is not a URL/);
+    } finally {
+      server.url = NEW_ORIGIN;
+    }
   });
 
   it('names the failure when the listing command fails', async () => {
