@@ -10,6 +10,7 @@ import shutil
 import socket
 import subprocess
 import tempfile
+import types
 from typing import Any
 
 import pytest
@@ -429,6 +430,7 @@ class FakeWorker:
         self.root_calls: list[str] = []
         self.timer_on = True
         self.pause_rc = 0
+        self.cat_rc = 0
 
     def tick(self, secs: int = 1) -> None:
         self.now += secs
@@ -485,6 +487,8 @@ class FakeWorker:
                 % (self.now, n["pid"], n["start"], n["active"])
             )
         if command.startswith("systemctl cat"):
+            if self.cat_rc:
+                return _Res(rc=self.cat_rc, err="Failed to get unit file")
             return _Res(out=self.units[self.nid_of(command)])
         if command.startswith("cat ") and k.LOG_FILE in command:
             guid = GUID_A if GUID_A in command else GUID_B
@@ -496,9 +500,10 @@ class FakeWorker:
         if "FragmentPath" in command:
             return self._edit(command)
         if command.startswith("systemctl stop %s" % k.RECONCILE_TIMER):
+            # The stop lands first; a tick that outlives the wait then fails the script.
+            self.timer_on = False
             if self.pause_rc:
                 return _Res(rc=self.pause_rc, out="STILL=active\n")
-            self.timer_on = False
             return _Res(out="PAUSED\n")
         if command == k.resume_reconcile_script():
             self.timer_on = True
@@ -566,9 +571,6 @@ class FakeWorker:
                 return _Res(rc=self.repo_up_rc)
             nid = self.ref_nid(args[2])
             drifted = "Environment=" not in self.units[nid]
-            if self.repo_up_err:
-                self.up(nid)
-                return _Res(err=self.repo_up_err)
             if "--no-start" in args:
                 # MountWithDocker: the same BeforeRestart down(), then up() only on a renet whose mount restart path runs it.
                 if self.repo_up_restarts and drifted:
@@ -582,7 +584,7 @@ class FakeWorker:
                 self.restart(nid, down_first=self.hook)
                 self.units[nid] = unit_text(nid, self.nets[nid]["guid"])
             self.up(nid)
-            return _Res()
+            return _Res(err=self.repo_up_err)
         if args[:2] == ("machine", "converge"):
             self.restart_any(NID_A)
             self.up(NID_A)
@@ -662,7 +664,7 @@ class FakeCtx:
         return res.text()
 
     def scrub(self, text: str) -> str:
-        return text
+        return text.replace("s3cr3t", "***")
 
 
 def _live(tmp_path: pathlib.Path, worker: FakeWorker) -> tuple[k._LiveK1, FakeCtx]:
@@ -759,6 +761,48 @@ def test_k1_3_evidence_carries_repo_up_stderr_and_the_unit_environment(
     evidence = ctx.rows[-1][2]
     assert "repo up stderr: write unit: read-only file system" in evidence, evidence
     assert "unit Environment=: <none>" in evidence, evidence
+
+
+def test_k1_3_scrubs_the_environment_lines(tmp_path: pathlib.Path) -> None:
+    worker = FakeWorker()
+    worker.units[NID_A] += "Environment=API_TOKEN=s3cr3t\n"
+    live, ctx = _ready(tmp_path, worker)
+    live.k1_3_unit_rewrite()
+    evidence = ctx.rows[-1][2]
+    assert "API_TOKEN=***" in evidence, evidence
+    assert "s3cr3t" not in evidence, evidence
+
+
+def test_k1_3_an_unread_unit_is_not_reported_as_having_no_environment(
+    tmp_path: pathlib.Path,
+) -> None:
+    worker = FakeWorker()
+    worker.repo_up_restarts = False
+    live, _ctx = _ready(tmp_path, worker)
+    live.k1_3_unit_rewrite()
+    worker.cat_rc = 1
+    detail = live._unit_rewrite_detail(types.SimpleNamespace(err=""))
+    assert "<unread: systemctl cat rc=1>" in detail, detail
+    assert "<none>" not in detail, detail
+    # CONTROL: a readable unit with no Environment= line still says none.
+    worker.cat_rc = 0
+    assert "unit Environment=: <none>" in live._unit_rewrite_detail(types.SimpleNamespace(err=""))
+
+
+def test_a_repo_up_with_stderr_still_restarts_on_drift(tmp_path: pathlib.Path) -> None:
+    """The stderr rides on the same repo up as the restart logic, so a no-restart case is not forced up by it."""
+    worker = FakeWorker()
+    worker.repo_up_err = "warning: slow"
+    live, ctx = _ready(tmp_path, worker)
+    live.k1_3_unit_rewrite()
+    assert _oks(ctx, "K1.3 repo up") == [True], ctx.rows
+    quiet = FakeWorker()
+    quiet.repo_up_restarts = False
+    quiet.repo_up_err = "warning: slow"
+    (tmp_path / "q").mkdir()
+    live2, ctx2 = _ready(tmp_path / "q", quiet)
+    live2.k1_3_unit_rewrite()
+    assert _oks(ctx2, "K1.3 repo up") == [False]
 
 
 def test_k1_3_failure_leads_with_the_detail_and_keeps_the_full_output(
@@ -1110,6 +1154,43 @@ def test_pause_reconcile_stops_the_timer_and_cleanup_starts_it(tmp_path: pathlib
     live2, ctx2 = _ready(tmp_path / "b", worker2)
     assert not live2.pause_reconcile()
     assert _oks(ctx2, "K1 the autostart-reconcile timer") == [False]
+    # The stop landed before the wait gave up: the timer is off, and cleanup starts it again.
+    assert not worker2.timer_on
+    live2.cleanup()
+    assert worker2.timer_on
+
+
+def test_pause_reconcile_script_fails_when_the_stop_fails(tmp_path: pathlib.Path) -> None:
+    env = _fake_bin(
+        tmp_path,
+        "systemctl",
+        'case "$*" in\n  stop*) echo "no such unit" >&2; exit 5;;\n  is-active*) echo inactive;;\nesac\n',
+    )
+    res = subprocess.run(
+        ["sh", "-c", k.pause_reconcile_script()],
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert res.returncode == 1, (res.returncode, res.stdout, res.stderr)
+    assert "PAUSED" not in res.stdout
+    assert "STOPFAILED" in res.stdout
+
+
+def test_edit_script_removes_its_backup_when_the_sed_fails(tmp_path: pathlib.Path) -> None:
+    unit = tmp_path / "unit.service"
+    unit.write_text(unit_text(NID_A, GUID_A))
+    scratch = tmp_path / "scratch"
+    scratch.mkdir()
+    env = _fake_bin(
+        tmp_path, "systemctl", 'case "$*" in\n  *FragmentPath*) echo %s;;\nesac\n' % unit
+    )
+    env["TMPDIR"] = str(scratch)
+    script = k._edit_unit_script(NID_A, "bogus")
+    res = subprocess.run(["sh", "-c", script], env=env, capture_output=True, text=True, check=False)
+    assert res.returncode != 0, (res.stdout, res.stderr)
+    assert list(scratch.iterdir()) == []
 
 
 def test_pause_reconcile_script_waits_for_a_running_tick(tmp_path: pathlib.Path) -> None:

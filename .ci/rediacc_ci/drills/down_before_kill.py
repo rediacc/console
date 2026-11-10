@@ -126,7 +126,10 @@ def _edit_unit_script(network_id: int | str, sed_expr: str) -> str:
     unit = shlex.quote(daemon_unit(network_id))
     return (
         "set -e; f=$(systemctl show -p FragmentPath --value %(u)s); "
-        'test -n "$f"; b=$(mktemp); cp "$f" "$b"; sed -i %(expr)s "$f"; '
+        'test -n "$f"; b=$(mktemp); '
+        # The backup goes with the script, including when the sed fails under `set -e`.
+        "trap 'rm -f \"$b\"' EXIT; "
+        'cp "$f" "$b"; sed -i %(expr)s "$f"; '
         # A sed that matches nothing exits 0, so the row would pass with the unit untouched.
         'if cmp -s "$f" "$b"; then rm -f "$b"; echo "UNCHANGED=$f"; exit 3; fi; rm -f "$b"; '
         "systemctl daemon-reload; echo EDITED=$f"
@@ -188,7 +191,7 @@ PAUSE_WAIT_S = 900
 def pause_reconcile_script() -> str:
     """Root on the worker: stop the autostart-reconcile timer and wait out a tick already running (`PAUSED` on success). A tick recovers an autostart repository that runs no container on every pass, rewriting its unit and restarting its daemon, so it races the rows that drift the unit and judge the restart; K1.4 and K1.6 run their own tick."""
     return (
-        "systemctl stop %(t)s; i=0; while [ $i -lt %(n)d ]; do "
+        "systemctl stop %(t)s || { echo STOPFAILED; exit 1; }; i=0; while [ $i -lt %(n)d ]; do "
         "s=$(systemctl is-active %(s)s || true); "
         'case "$s" in active|activating|deactivating|reloading) sleep 1; i=$((i+1));; '
         '*) echo PAUSED; exit 0;; esac; done; echo "STILL=$s"; exit 1'
@@ -670,12 +673,18 @@ class _LiveK1:
     def _unit_rewrite_detail(self, up: Any) -> str:
         """What a no-restart K1.3 needs to name its cause: `repo up`'s stderr and the unit's `Environment=` lines as systemd reads them afterwards."""
         err = self.ctx.scrub(str(getattr(up, "err", "") or "")).strip()
-        text = self.root(unit_text_script(self.nids[self.ref_a])).out
-        env = [ln.strip() for ln in text.splitlines() if ln.strip().startswith("Environment=")]
-        return "unit Environment=: %s; repo up stderr: %s" % (
-            " | ".join(env) or "<none>",
-            err[-600:] or "<empty>",
-        )
+        cat = self.root(unit_text_script(self.nids[self.ref_a]))
+        if cat.rc != 0:
+            # An unread unit says nothing about its Environment= lines, so it must not read as "none".
+            shown = "<unread: systemctl cat rc=%d>" % cat.rc
+        else:
+            env = [
+                self.ctx.scrub(ln.strip())
+                for ln in cat.out.splitlines()
+                if ln.strip().startswith("Environment=")
+            ]
+            shown = " | ".join(env) or "<none>"
+        return "unit Environment=: %s; repo up stderr: %s" % (shown, err[-600:] or "<empty>")
 
     def k1_4_stop_side_drift(self) -> None:
         nid, guid = self.nids[self.ref_a], self.guids[self.ref_a]
@@ -925,7 +934,8 @@ class _LiveK1:
 
     def pause_reconcile(self) -> bool:
         res = self.root(pause_reconcile_script(), timeout=PAUSE_WAIT_S + 60)
-        self.reconcile_paused = res.rc == 0 or self.reconcile_paused
+        # The stop may have landed before the wait gave up, so cleanup starts the timer whatever the rc.
+        self.reconcile_paused = True
         return self.check(
             "K1 the autostart-reconcile timer is paused for the restart rows",
             res.rc == 0 and "PAUSED" in res.out,
