@@ -52,6 +52,7 @@ vi.mock('node:fs/promises', () => ({
 
 vi.mock('../account/subscription-auth.js', () => ({
   getSubscriptionTokenState: mockGetSubscriptionTokenState,
+  getSubscriptionServerUrl: () => `http://localhost:${WK_ACCOUNT_DEV_PORT}`,
 }));
 
 vi.mock('../config/config-resources.js', () => ({
@@ -113,7 +114,12 @@ describe('refreshRepoLicensesBatch', () => {
         },
       },
     ]);
-    mockExec.mockResolvedValue(`${MACHINE_ID}\n`);
+    // The machine-id probe answers the id; the licence-origin listing (sudo sh -c) answers an empty, complete listing.
+    mockExec.mockImplementation((command: string) =>
+      Promise.resolve(
+        command.includes('sudo -n sh -c') ? '__RDC_LICENSE_LISTING_COMPLETE__\n' : `${MACHINE_ID}\n`
+      )
+    );
     jobs.scan = [
       {
         repositoryGuid: '550e8400-e29b-41d4-a716-446655440000',
@@ -517,8 +523,12 @@ describe('refreshRepoLicensesBatch', () => {
           license: { payload: 'a', signature: 'b', publicKeyId: VALID_KEY_ID },
         },
       ]);
-      // No shell placement from the CLI any more: only the machine-id probe goes over SFTP.
-      expect(mockExec.mock.calls.every((c) => String(c[0]).includes('machine-id'))).toBe(true);
+      // No shell placement from the CLI any more: only the machine-id probe and the read-only licence-origin listing go over SFTP.
+      expect(
+        mockExec.mock.calls.every(
+          (c) => String(c[0]).includes('machine-id') || String(c[0]).startsWith('sudo -n sh -c')
+        )
+      ).toBe(true);
       expect(mockExecStreaming).not.toHaveBeenCalled();
     });
 
