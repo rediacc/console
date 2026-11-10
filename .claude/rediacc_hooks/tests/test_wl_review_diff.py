@@ -70,3 +70,101 @@ def test_move_search_note_says_so_when_the_commits_cannot_be_counted(monkeypatch
     assert "could not count" in R.move_search_note("r", "b" * 12, "f" * 12)
     monkeypatch.setattr(R, "git", lambda *_a, **_k: (0, "%d\n" % (R.MOVE_MAX_COMMITS + 5)))
     assert "read only the newest" in R.move_search_note("r", "b" * 12, "f" * 12)
+
+
+def _commit_files(tmp_path, name, files):
+    """A repo whose last commit writes `files` ({path: text}) over a base commit; returns (repo, sha)."""
+    repo = tmp_path / name
+    repo.mkdir()
+    _git(repo, "init", "-q", "--initial-branch=main")
+    (repo / "README.md").write_text("base\n")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-q", "-m", "base")
+    for rel, text in files.items():
+        path = repo / rel
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text)
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-q", "-m", "change")
+    return repo, _git(repo, "rev-parse", "HEAD")
+
+
+def _cfg():
+    """The console's real config: a scratch repo carries none of its own."""
+    return R.load_config(R.CONSOLE_ROOT)
+
+
+def test_control_a_code_only_commit_diff_is_unchanged(tmp_path):
+    repo, sha = _commit_files(tmp_path, "c", {"a.py": "x = 1\n"})
+    diff, _total, files, cut = R.capped_diff(str(repo), sha, 100_000)
+    assert "diff --git a/a.py b/a.py" in diff
+    assert files == 1
+    assert cut == []
+
+
+def test_a_queue_record_leaves_the_diff_and_the_code_stays(tmp_path):
+    repo, sha = _commit_files(tmp_path, "q", {"a.py": "x = 1\n", "agent/plans/QUEUE.md": "queue\n"})
+    diff, _total, files, _cut = R.capped_diff(str(repo), sha, 100_000)
+    assert "a.py" in diff
+    assert "QUEUE.md" not in diff
+    assert files == 1
+
+
+def test_the_other_skip_paths_leave_the_diff(tmp_path):
+    repo, sha = _commit_files(
+        tmp_path,
+        "o",
+        {
+            "a.py": "x = 1\n",
+            "agent/s1/STATE.md": "s\n",
+            "agent/ledgers/census-x.jsonl": "{}\n",
+            ".ci/config/plan-boxes.json": "{}\n",
+            "agent/worklist/events.jsonl": "{}\n",
+        },
+    )
+    diff, _total, files, _cut = R.capped_diff(str(repo), sha, 100_000)
+    for gone in ("STATE.md", "ledgers", "plan-boxes", "worklist"):
+        assert gone not in diff
+    assert files == 1
+
+
+def test_skip_globs_union_the_record_paths_read_at_runtime(tmp_path):
+    (tmp_path / ".ci" / "policy").mkdir(parents=True)
+    (tmp_path / ".ci" / "policy" / "record-paths.json").write_text(
+        '{"records": [{"glob": "agent/worklist/*.jsonl", "except": []}]}'
+    )
+    skips = R.skip_globs(str(tmp_path), {"review_skip_globs": ["agent/ledgers/**"]})
+    assert R.is_skipped_path("agent/worklist/e.jsonl", skips)
+    assert R.is_skipped_path("agent/ledgers/a/b.jsonl", skips)
+    assert R.is_skipped_path("agent/reviews/b/clean.jsonl", skips)
+    assert not R.is_skipped_path("a.py", skips)
+    assert not R.is_skipped_path("agent/worklist/sub/e.jsonl", skips)
+
+
+def test_a_record_only_commit_is_skipped_without_a_model_call(tmp_path):
+    repo, sha = _commit_files(
+        tmp_path, "r", {"agent/plans/QUEUE.md": "queue\n", "agent/s1/STATE.md": "s\n"}
+    )
+
+    def no_model(*_a):
+        raise AssertionError("a record-only commit reached the model")
+
+    path = R.run_review(
+        repo, "console", sha, "1110-1", reviewer=no_model, cfg=_cfg(), log=lambda _m: None
+    )
+    assert path is not None
+    assert R.read_ledger(path)[0][0].verdict == "skipped (record-only)"
+
+
+def test_control_a_mixed_commit_still_reaches_the_model_with_only_the_code(tmp_path):
+    repo, sha = _commit_files(tmp_path, "m", {"a.py": "x = 1\n", "agent/plans/QUEUE.md": "queue\n"})
+    seen = []
+
+    def model(prompt, *_a):
+        seen.append(prompt)
+        return {"verdict": "clean", "findings": [], "labels": None}, ""
+
+    R.run_review(repo, "console", sha, "1110-2", reviewer=model, cfg=_cfg(), log=lambda _m: None)
+    assert len(seen) == 1
+    assert "a.py" in seen[0]
+    assert "QUEUE.md" not in seen[0]

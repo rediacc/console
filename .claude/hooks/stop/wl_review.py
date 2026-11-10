@@ -56,6 +56,7 @@ DEFAULTS = {
     "block_at": "high",
     "review_epoch": "",
     "retention_days": 14,
+    "review_skip_globs": [],
 }
 
 SEVERITIES = ("high", "medium", "low")
@@ -97,7 +98,7 @@ RESOLUTION_RES = (
 RESOLUTION_BY_KIND = dict(RESOLUTION_RES)
 RESOLUTION_GRAMMAR = "open | fixed <sha40> | not-a-bug | <evidence> | waived #<item> ASKED:<YYYY-MM-DDTHH:MM>Z (legacy: deferred #<item>), each signed `| <me8> <isoZ>`"
 VERDICT_RE = re.compile(
-    r"^(findings|clean|skipped \((?:gitlink-only|no-review)\)|failed \([^()\n]{1,200}\))$"
+    r"^(findings|clean|skipped \((?:gitlink-only|no-review|record-only)\)|failed \([^()\n]{1,200}\))$"
 )
 FINDING_HEAD = re.compile(r"^### ([0-9a-f]{8})\.(\d+) \[(high|medium|low)\] (\S.*):(\d+)$")
 HEADER_KEYS = (
@@ -126,7 +127,12 @@ COST_RE = re.compile(r"^\$(\d+\.\d{4}) USD, (\d+) call\(s\), (\d+\.\d)s$")
 # THE CLEAN LEDGER (agent/plans/PLAN-clean-review-ledger.md D1, D2). A verdict that leaves nothing to do (clean or skipped, no finding, the whole diff seen, nothing dropped) is one JSON line in `agent/reviews/<branch>/clean.jsonl` instead of a tracked file; every other verdict stays `<sha40>.md`, and for any sha a `.md` beats a ledger line.
 LEDGER_NAME = "clean.jsonl"
 LEDGER_V = 1
-LEDGER_VERDICTS = ("clean", "skipped (gitlink-only)", "skipped (no-review)")
+LEDGER_VERDICTS = (
+    "clean",
+    "skipped (gitlink-only)",
+    "skipped (no-review)",
+    "skipped (record-only)",
+)
 LEDGER_KEYS = frozenset(
     (
         "attempt",
@@ -1248,20 +1254,63 @@ def _commit_facts(repo, sha):
     return paths, gitlink_only, subject, message, parent
 
 
-def _is_review_record_chunk(chunk):
-    """True for a `diff --git` section of a file under `agent/reviews/`."""
+def _glob_re(glob):
+    """Regex for a glob that uses only `**` (any depth) and `*` (no slash), the dialect `.ci/policy/record-paths.json` is written in."""
+    out, i = [], 0
+    while i < len(glob):
+        if glob.startswith("**/", i):
+            out.append("(?:.*/)?")
+            i += 3
+        elif glob.startswith("**", i):
+            out.append(".*")
+            i += 2
+        elif glob[i] == "*":
+            out.append("[^/]*")
+            i += 1
+        else:
+            out.append(re.escape(glob[i]))
+            i += 1
+    return re.compile("".join(out) + r"\Z")
+
+
+def skip_globs(root, cfg=None):
+    """The reviewer's own skip list (PLAN-experience-feedback P5): `review_skip_globs` of commit-review.json plus every glob of `.ci/policy/record-paths.json`, read at runtime and never edited here. A path matching one is a record (a ledger, a worklist, a STATE.md, a review file), not code, so it leaves the reviewed diff and the stat. The record file's `except` globs are honoured."""
+    cfg = cfg if cfg is not None else load_config(root)
+    globs = [(g, []) for g in cfg.get("review_skip_globs") or [] if isinstance(g, str)]
+    try:
+        doc = json.loads(
+            pathlib.Path(root, ".ci", "policy", "record-paths.json").read_text(encoding="utf-8")
+        )
+        for rec in doc.get("records", []):
+            if isinstance(rec, dict) and isinstance(rec.get("glob"), str):
+                excepts = [e for e in rec.get("except") or [] if isinstance(e, str)]
+                globs.append((rec["glob"], excepts))
+    except (OSError, ValueError, AttributeError):
+        pass
+    if not any(g == REVIEWS_REL + "/**" for g, _e in globs):
+        globs.append((REVIEWS_REL + "/**", []))
+    return [(_glob_re(g), [_glob_re(e) for e in ex], g) for g, ex in globs]
+
+
+def is_skipped_path(path, skips):
+    return any(rx.match(path) and not any(e.match(path) for e in exc) for rx, exc, _g in skips)
+
+
+def _is_skipped_chunk(chunk, skips):
+    """True for a `diff --git` section of a file the skip list covers (review records included)."""
     m = re.match(r"diff --git a/(.*?) b/(.*)", chunk)
-    return m is not None and m.group(2).startswith(REVIEWS_REL + "/")
+    return m is not None and is_skipped_path(m.group(2), skips)
 
 
-def capped_diff(repo, sha, cap):
+def capped_diff(repo, sha, cap, skips=None):
     """(diff_text, total_bytes, file_count, unreviewed_files). Whole per-file sections are kept until `cap`; the rest are listed, never cut mid-file."""
     rc, diff = git(repo, "show", "-U%d" % ANCHOR_SLACK, "--no-color", "--format=", "-M", sha)
     if rc != 0:
         return "", 0, 0, []
     chunks = re.split(r"(?m)^(?=diff --git )", diff)
     # The review records that ride a commit (CLAUDE.md rule 1, Cadence) are the reviewer's own output, never its input: a commit of only those is not reviewed at all, and in a mixed commit they are left out, or every record would draw a finding about itself.
-    chunks = [c for c in chunks if c.strip() and not _is_review_record_chunk(c)]
+    skips = skips if skips is not None else skip_globs(CONSOLE_ROOT)
+    chunks = [c for c in chunks if c.strip() and not _is_skipped_chunk(c, skips)]
     kept, cut, used = [], [], 0
     for chunk in chunks:
         m = re.match(r"diff --git a/(.*?) b/(.*)", chunk)
@@ -2249,6 +2298,7 @@ def run_review(
         if not paths or reviews_only(paths):
             log("nothing to review in %s" % full)
             return None
+        skips = skip_globs(root, cfg)
         out_path = review_path(root, branch, full)
         pid = patch_id(repo, full)
         _by_sha, by_patch = review_index(root, branch)
@@ -2273,12 +2323,23 @@ def run_review(
             review.verdict, review.model = "skipped (gitlink-only)", "(none)"
         elif _no_review_skip(root, message, paths):
             review.verdict, review.model = "skipped (no-review)", "(none)"
+        elif all(is_skipped_path(p, skips) for p in paths):
+            review.verdict, review.model = "skipped (record-only)", "(none)"
         else:
-            diff_text, total, nfiles, cut = capped_diff(repo, full, int(cfg["diff_cap_bytes"]))
+            diff_text, total, nfiles, cut = capped_diff(
+                repo, full, int(cfg["diff_cap_bytes"]), skips
+            )
             review.diff_bytes, review.diff_files = total, nfiles
             review.truncated, review.unreviewed = bool(cut), cut
             stat = git_out(
-                repo, "show", "--stat", "--format=", full, "--", ".", ":(exclude)%s" % REVIEWS_REL
+                repo,
+                "show",
+                "--stat",
+                "--format=",
+                full,
+                "--",
+                ".",
+                *[":(exclude,glob)%s" % g for _rx, ex, g in skips if not ex],
             )
             prompt = PROMPT % {
                 "message": message or "(empty)",
