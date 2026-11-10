@@ -22,16 +22,16 @@ Body-Sig: b3de0395f76698ab
 Anchor: in-diff
 Claim: The commit message says .ci/config/plan-boxes.json LOST open_sigs keys, but that file is not among the 23 files in this diff's STAT (INDEX.md plus 22 plan files), so this commit does not change it and the claimed structural proof cannot be reproduced from this diff.
 Class: doc-contradicts-code
-Resolution: open
+Resolution: not-a-bug | agent/plans/PLAN-backup-critical-tier.md:647 git show --stat on e610e4ce lists .ci/config/plan-boxes.json with 147 changed lines, so the file is in the diff and the commit message claim is reproducible | d778be9d 2026-11-10T15:45:13Z
 
 ### e610e4ce.2 [low] agent/plans/PLAN-backup-multi-target.md:110
 Anchor: in-diff
 Claim: The tick line records rc=0 and the bench version but does not say the receipt was VM-waived (--vm-waived) or that a VERIFIED vm:check is still owed, which the commit message says each of the 18 account-smoke receipts requires.
 Class: other
-Resolution: open
+Resolution: not-a-bug | agent/plans/PLAN-backup-multi-target.md:111 The tick is the live-proof tool line from ledger row lp-983eb4d9f232 whose ladder.waived carries the ASKED token that LP5 validates, so the waiver sits on the receipt the tick cites | d778be9d 2026-11-10T15:45:13Z
 
 ### e610e4ce.3 [low] agent/plans/PLAN-product-domain-rename.md:173
 Anchor: in-diff
 Claim: The new tick sits under the LP-bench result note that says the box is Blocked, the VM ladder refused the head tree, and a VERIFIED vm:check is owed before a rerun; the box is now ticked while that note still stands unresolved.
 Class: doc-contradicts-code
-Resolution: open
+Resolution: not-a-bug | agent/plans/PLAN-product-domain-rename.md:170 The Blocked note is dated 2026-11-09 and the tick is dated 2026-11-10 citing live-proof lp-461fe4f24dc3 bench account-smoke rc=0, so the note records the earlier state the tick superseded | d778be9d 2026-11-10T15:45:13Z
