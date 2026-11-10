@@ -851,3 +851,15 @@ def test_patch_ids_prefetches_a_partial_clone_and_skips_a_gitlink(tmp_path, monk
     assert fetched == []
     R.prefetch_diff_blobs(tmp_path, "%s..HEAD" % base, "a.txt")
     assert fetched == [sorted([old, new])]
+
+
+def test_a_claim_masks_an_aws_key_id_the_credentials_gate_would_red() -> None:
+    # 2026-11-10: a reviewer quoted a rotation manifest's key ids into a committed review record and check:ci-tracked-credentials went red.
+    key = "AKIA" + "ABCDEFGHIJKL" + "VCE5"
+    claim = R.normalise_claim("the ses-eu delete of %s is recorded early" % key)
+    assert key not in claim
+    assert "AKIA...VCE5" in claim
+
+
+def test_a_claim_naming_the_akia_prefix_in_prose_is_left_alone() -> None:
+    assert R.normalise_claim("we rotate the AKIA keys") == "we rotate the AKIA keys"

@@ -394,9 +394,14 @@ class Review:
         return not self.verdict.startswith("failed")
 
 
+# The AWS key-id shape check:ci-tracked-credentials reds on (scripts/gates/check-tracked-credentials.ts AWS_RE). Review records are committed to a public repository, and a reviewer quotes what the diff shows: a rotation manifest's key ids reached agent/reviews on 2026-11-10 and reddened the gate. A claim keeps the last four characters, enough to tell keys apart.
+_AWS_KEY_ID = re.compile(r"\b(AKIA|ASIA|AIDA|AROA)[0-9A-Z]{12}([0-9A-Z]{4})\b")
+
+
 def normalise_claim(text, cap=CLAIM_MAX):
     text = str(text or "").replace("\u2014", "--").replace("\u2013", "--")
     text = re.sub(r"\s+", " ", text).strip()
+    text = _AWS_KEY_ID.sub(r"\1...\2", text)
     return text[:cap]
 
 
