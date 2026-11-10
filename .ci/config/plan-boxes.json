@@ -2743,6 +2743,25 @@
         "fa7056ab"
       ]
     },
+    "agent/plans/PLAN-stop-hook-retro-20261110.md": {
+      "status": "ready",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 8,
+      "done": 0,
+      "open_sigs": [
+        "05745435",
+        "1d5e863a",
+        "657da0bd",
+        "7b8d3749",
+        "90cc6ba0",
+        "b31f4e0a",
+        "cee078c5",
+        "fc4fa3b6"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-stop-report-queue.md": {
       "status": "compacted",
       "owner": "unowned",

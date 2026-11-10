@@ -10,3 +10,18 @@
 {"at": "2026-09-25T13:32:35Z", "band": "late", "ev": "tracked", "item": "9f9ca9e7", "session": "d778be9d"}
 {"agent": "ae06fedae89115ef2", "at": "2026-09-25T13:33:10Z", "band": "late", "ev": "dispatched", "item": "9f9ca9e7", "session": "d778be9d"}
 {"at": "2026-09-25T13:46:10Z", "band": "late", "ev": "saved", "item": "9f9ca9e7", "plan": "agent/plans/PLAN-stop-hook-retro-20260925.md", "session": "d778be9d", "tasks_open": 10, "tasks_total": 10}
+{"at": "2026-11-01T19:40:54Z", "band": "early", "epoch": 0, "ev": "ordered", "from_off": 0, "session": "45048a90", "state_md_at": "2026-11-01T19:40:52Z", "threshold": 967000, "to_off": 10487797, "transcript": "/home/developer/.claude/projects/-home-developer-console/45048a90-d5ac-4fee-b735-33d98a994baa.jsonl", "usage": 952518}
+{"at": "2026-11-01T19:40:59Z", "band": "early", "ev": "tracked", "item": "b4940dfa", "session": "45048a90"}
+{"at": "2026-11-01T19:45:03Z", "band": "late", "epoch": 0, "ev": "ordered", "from_off": 0, "session": "45048a90", "state_md_at": "2026-11-01T19:40:52Z", "threshold": 967000, "to_off": 10523302, "transcript": "/home/developer/.claude/projects/-home-developer-console/45048a90-d5ac-4fee-b735-33d98a994baa.jsonl", "usage": 953501}
+{"at": "2026-11-01T19:45:07Z", "band": "late", "ev": "tracked", "item": "67470510", "session": "45048a90"}
+{"agent": "a4553ae66498d6c60", "at": "2026-11-01T20:11:06Z", "band": "early", "ev": "dispatched", "item": "b4940dfa", "session": "45048a90"}
+{"agent": "a4553ae66498d6c60", "at": "2026-11-01T20:11:06Z", "band": "late", "ev": "dispatched", "item": "67470510", "session": "45048a90"}
+{"at": "2026-11-01T20:59:12Z", "band": "early", "ev": "saved", "item": "b4940dfa", "plan": "agent/plans/PLAN-stop-hook-retro-20261101.md", "session": "45048a90", "tasks_open": 4, "tasks_total": 4}
+{"at": "2026-11-01T20:59:12Z", "band": "late", "ev": "saved", "item": "67470510", "plan": "agent/plans/PLAN-stop-hook-retro-20261101.md", "session": "45048a90", "tasks_open": 4, "tasks_total": 4}
+{"at": "2026-11-10T08:40:29Z", "band": "late", "ev": "rearmed", "session": "d778be9d"}
+{"at": "2026-11-10T08:40:29Z", "band": "late", "epoch": 20, "ev": "ordered", "from_off": 238604947, "session": "d778be9d", "state_md_at": "2026-11-10T08:40:28Z", "threshold": 967000, "to_off": 1506919390, "transcript": "/home/developer/.claude/projects/-home-developer-console/d778be9d-a8e6-4b88-a419-e8a03e7e9888.jsonl", "usage": 958358}
+{"at": "2026-11-10T08:41:03Z", "band": "late", "ev": "tracked", "item": "e40d41c6", "session": "d778be9d"}
+{"at": "2026-11-10T14:57:49Z", "band": "early", "ev": "rearmed", "session": "d778be9d"}
+{"at": "2026-11-10T14:57:49Z", "band": "early", "epoch": 21, "ev": "ordered", "from_off": 238604947, "session": "d778be9d", "state_md_at": "2026-11-10T14:57:48Z", "threshold": 967000, "to_off": 1517665944, "transcript": "/home/developer/.claude/projects/-home-developer-console/d778be9d-a8e6-4b88-a419-e8a03e7e9888.jsonl", "usage": 732287}
+{"at": "2026-11-10T14:57:56Z", "band": "early", "ev": "tracked", "item": "cb6c78eb", "session": "d778be9d"}
+{"agent": "a3e8877d1c647e3cb", "at": "2026-11-10T15:05:30Z", "band": "early", "ev": "dispatched", "item": "cb6c78eb", "session": "d778be9d"}
