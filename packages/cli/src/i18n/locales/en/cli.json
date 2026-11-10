@@ -2979,7 +2979,8 @@
     },
     "container": {
       "execFailed": "container_exec failed",
-      "logsFailed": "container_logs failed"
+      "logsFailed": "container_logs failed",
+      "unknown": "No container \"{{container}}\" in repository \"{{repository}}\". Containers: {{containers}}. Did you mean \"{{suggestion}}\"?"
     },
     "datastore": {
       "defaultIsImplicit": "the default datastore is implicit; these verbs manage additional named datastores.",

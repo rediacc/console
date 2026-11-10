@@ -133,3 +133,28 @@ describe('repo logs options', () => {
     expect(handleError).toHaveBeenCalled();
   });
 });
+
+describe('repo exec unknown container', () => {
+  const listing = {
+    success: true,
+    exitCode: 0,
+    allSteps: [],
+    stdout: '{"Names":"observability-grafana"}\n{"Names":"observability-loki"}\n',
+  };
+
+  it('names the repo containers and the closest match, and does not exec', async () => {
+    execute.mockResolvedValueOnce(listing);
+    await run(['exec', 'obs', '-c', 'grafana', '--', 'echo', 'ok']);
+    expect(execute.mock.calls.some((c) => c[0].functionName === 'container_exec')).toBe(false);
+    const err = handleError.mock.calls.at(-1)?.[0] as Error;
+    expect(err.message).toContain('observability-grafana, observability-loki');
+    expect(err.message).toContain('Did you mean "observability-grafana"');
+  });
+
+  it('control: a known container runs the exec silently', async () => {
+    execute.mockResolvedValueOnce(listing);
+    await run(['exec', 'obs', '-c', 'observability-grafana', '--', 'echo', 'ok']);
+    expect(handleError).not.toHaveBeenCalled();
+    expect(execute.mock.calls.at(-1)?.[0].functionName).toBe('container_exec');
+  });
+});
