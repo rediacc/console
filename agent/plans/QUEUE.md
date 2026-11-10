@@ -79,10 +79,10 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic f65726d5, plan agent/plans/PLAN-renet-down-before-kill.md, outside the set, 16 commit(s) on the branch, 0 open item(s): renet runs Rediaccfile down() before repo containers stop
   - epic 53c31db2, plan agent/plans/PLAN-repo-resource-limits.md, outside the set, 20 commit(s) on the branch, 0 open item(s): per-repo resource limits and a renet-managed RAM volume
   - epic a86f5622, plan agent/plans/PLAN-production-key-only.md, outside the set, 4 commit(s) on the branch, 0 open item(s): Production key only: every leg licensed from its own plane
-  - epic 79b7e92e, no plan, 284 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
-  - epic 562ef6c3, plan agent/plans/PLAN-experience-feedback.md, outside the set, 49 commit(s) on the branch, 0 open item(s): experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire
-- Writers: 2 live of writer_cap 25 (session d778be9d): worker:a1917d88f28e26699, worker:aa53d794243f2a70e.
-- Leased items: 7: #4f4df453 (worker:busfc6826, d778be9d), #54aacfb3 (worker:bkqae9edw, d778be9d), #60c7b83e (worker:aa53d794243f2a70e, d778be9d), #67c9eb34 (worker:bijpuix39, d778be9d), #8d576362 (worker:a1917d88f28e26699, d778be9d), #caa837d4 (worker:a1917d88f28e26699, d778be9d), #cb6c78eb (worker:a3e8877d1c647e3cb, d778be9d).
+  - epic 79b7e92e, no plan, 286 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 562ef6c3, plan agent/plans/PLAN-experience-feedback.md, outside the set, 50 commit(s) on the branch, 0 open item(s): experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire
+- Writers: 5 live of writer_cap 25 (session d778be9d): worker:a1917d88f28e26699, worker:a8abd0dcaf1b1658f, worker:abc79fa77a4d3677f, worker:adae3b030a84866c2, worker:a480a577eb2974e40.
+- Leased items: 8: #0094d0f6 (worker:a8abd0dcaf1b1658f, d778be9d), #4f4df453 (worker:busfc6826, d778be9d), #54aacfb3 (worker:bkqae9edw, d778be9d), #60c7b83e (worker:a480a577eb2974e40, d778be9d), #67c9eb34 (worker:bijpuix39, d778be9d), #8d576362 (worker:a1917d88f28e26699, d778be9d), #caa837d4 (worker:a1917d88f28e26699, d778be9d), #e6bdab37 (worker:abc79fa77a4d3677f, d778be9d).
 - Next plan: agent/plans/PLAN-sandbox-tenant-separation.md, Promoted entry 14; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
@@ -230,12 +230,12 @@ Promoted: 18 of 64 plans done, 1003 of 1187 boxes done (84%).
 1. agent/plans/PLAN-agent-tree-lifecycle.md -- P1, mostly-done, in progress (6 of 7 boxes ticked)
 2. agent/plans/PLAN-haiku-model-routing.md -- P1, executing, in progress (11 of 20 boxes ticked)
 3. agent/plans/PLAN-stop-hook-refactor-enforcement.md -- P1, executing, in progress (16 of 17 boxes ticked)
-4. agent/plans/PLAN-ci-quick-cpu-scheduling.md -- P2, active, in progress (2 of 5 boxes ticked)
-5. agent/plans/PLAN-config-mirror-reseal.md -- P2, proposed, in progress (1 of 2 boxes ticked)
-6. agent/plans/PLAN-backup-toc-exact-opt-in.md -- P3, proposed, in progress (1 of 10 boxes ticked)
-7. agent/plans/PLAN-deletion-budget.md -- P3 (operator), draft, not started
-8. agent/plans/PLAN-fix-upgrade-drills-flat-daemon-bringup.md -- P1, executing, not started
-9. agent/plans/PLAN-stop-hook-retro-20261110.md -- P1, ready, not started
+4. agent/plans/PLAN-stop-hook-retro-20261110.md -- P1, ready, in progress (1 of 8 boxes ticked)
+5. agent/plans/PLAN-ci-quick-cpu-scheduling.md -- P2, active, in progress (2 of 5 boxes ticked)
+6. agent/plans/PLAN-config-mirror-reseal.md -- P2, proposed, in progress (1 of 2 boxes ticked)
+7. agent/plans/PLAN-backup-toc-exact-opt-in.md -- P3, proposed, in progress (1 of 10 boxes ticked)
+8. agent/plans/PLAN-deletion-budget.md -- P3 (operator), draft, not started
+9. agent/plans/PLAN-fix-upgrade-drills-flat-daemon-bringup.md -- P1, executing, not started
 10. agent/plans/PLAN-first-release-checks.md -- P2, approved, not started
 11. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
 12. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
