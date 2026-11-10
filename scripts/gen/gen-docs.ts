@@ -818,17 +818,43 @@ export function couldAffect(
   return hits;
 }
 
+/**
+ * All of stdin, synchronously, from a file, a terminal or a PIPE.
+ *
+ * NOT `fs.readFileSync(0)`. On a pipe whose writer is still sending, fd 0 can be non-blocking and
+ * that call throws EAGAIN; the first cut of `--could-affect` caught it as "no stdin", so the spawn
+ * guard's 1,988 www paths read as zero and the refusal below named the wrong cause (2026-11-10).
+ * EAGAIN waits 5 ms and reads again; end of input ends the loop; anything else propagates.
+ */
+function readStdin(): string {
+  const chunks: Buffer[] = [];
+  const buf = Buffer.alloc(1 << 16);
+  const nap = new Int32Array(new SharedArrayBuffer(4));
+  for (;;) {
+    let n = 0;
+    try {
+      n = fs.readSync(0, buf, 0, buf.length, null);
+    } catch (err) {
+      const code = (err as NodeJS.ErrnoException).code;
+      if (code === 'EAGAIN') {
+        Atomics.wait(nap, 0, 0, 5);
+        continue;
+      }
+      if (code === 'EOF') break;
+      throw err;
+    }
+    if (n === 0) break;
+    chunks.push(Buffer.from(buf.subarray(0, n)));
+  }
+  return Buffer.concat(chunks).toString('utf-8');
+}
+
 /** The CLI face of `couldAffect`: paths from argv after the flag, else one per stdin line; JSON on stdout. */
 function couldAffectMain(argv: string[]): number {
   const at = argv.indexOf('--could-affect');
   let paths = argv.slice(at + 1).filter((a) => !a.startsWith('--'));
   if (paths.length === 0) {
-    let text = '';
-    try {
-      text = fs.readFileSync(0, 'utf-8');
-    } catch {
-      // no stdin at all: the empty-set refusal below says so
-    }
+    const text = readStdin();
     paths = text
       .split('\n')
       .map((l) => l.trim())
