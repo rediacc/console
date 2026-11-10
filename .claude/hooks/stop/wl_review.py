@@ -585,6 +585,8 @@ def parse(text):
             )
         (hn, head), (an, anchor), (cn, claim) = body[:3]
         klass = body[3][1][len("Class: ") :] if width == 5 else ""
+        if width == 5 and not klass.strip():
+            raise MalformedReviewError("`Class:` line with no class name", body[3][0])
         rn, resolution = body[width - 1]
         body = body[width:]
         m = FINDING_HEAD.match(head)
@@ -1320,7 +1322,7 @@ def admissible_skip_glob(glob):
         return True
     # The directory of a pattern glob is named literally below agent/ (one wildcard segment at
     # most would still span every directory's JSON), so a json pattern cannot reach another tree.
-    literal_dir = head != SKIP_AGENT_ROOT.rstrip("/") and "*" not in head
+    literal_dir = head != SKIP_AGENT_ROOT.rstrip("/") and not any(c in head for c in "*?[")
     return literal_dir and tail.endswith(SKIP_AGENT_TAILS)
 
 

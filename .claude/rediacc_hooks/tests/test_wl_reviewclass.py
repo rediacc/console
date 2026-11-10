@@ -188,6 +188,40 @@ def test_a_new_record_rebuilds_the_cache(tmp_path):
     assert len(C.brief_lines(again, ["a/**"])) == 1
 
 
+def test_an_in_place_same_size_rewrite_rebuilds_the_fold(tmp_path):
+    path = _record(tmp_path, [("medium", "a/x.py", DOC, FIXED)] * 3)
+    assert len(C.brief_lines(C.index(tmp_path), ["a/**"])) == 1
+    assert C.index(tmp_path)["cached"] is True
+    dir_st = os.stat(path.parent)
+    file_st = os.stat(path)
+    text = path.read_text(encoding="utf-8")
+    assert text.count("Resolution: fixed ") == 3
+    # Same byte length, so only the record's own mtime can tell; the directory mtime is put back.
+    path.write_text(text.replace("Resolution: fixed ", "Resolution: fixeX "), encoding="utf-8")
+    os.utime(path, ns=(file_st.st_atime_ns, file_st.st_mtime_ns + 10_000_000))
+    os.utime(path.parent, ns=(dir_st.st_atime_ns, dir_st.st_mtime_ns))
+    assert os.stat(path).st_size == file_st.st_size
+    again = C.index(tmp_path)
+    assert again["cached"] is False
+    assert C.brief_lines(again, ["a/**"]) == []
+
+
+def test_an_untouched_store_keeps_its_cache_across_a_stat(tmp_path):
+    _record(tmp_path, [("medium", "a/x.py", DOC, FIXED)] * 3)
+    C.index(tmp_path)
+    assert C.index(tmp_path)["cached"] is True
+    assert C.index(tmp_path)["cached"] is True
+
+
+def test_a_changed_parser_signature_invalidates_the_cache(tmp_path, monkeypatch):
+    _record(tmp_path, [("medium", "a/x.py", DOC, FIXED)] * 3)
+    C.index(tmp_path)
+    assert C.index(tmp_path)["cached"] is True
+    monkeypatch.setattr(C, "parse_sig", lambda: [1, 2])
+    assert C.index(tmp_path)["cached"] is False
+    assert C.index(tmp_path)["cached"] is True
+
+
 def test_a_corrupt_cache_is_rebuilt_and_named(tmp_path):
     _record(tmp_path, [("medium", "a/x.py", DOC, FIXED)] * 3)
     cache = tmp_path / C.CACHE_REL

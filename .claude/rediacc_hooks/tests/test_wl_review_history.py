@@ -74,6 +74,18 @@ def test_an_unknown_class_in_a_record_is_malformed():
         R.parse(text)
 
 
+def test_an_empty_class_value_in_a_record_is_malformed():
+    base = R.render(_review("missing-control-test"))
+    for empty in ("Class: ", "Class:  "):
+        text = base.replace("Class: missing-control-test", empty)
+        with pytest.raises(R.MalformedReviewError, match="Class"):
+            R.parse(text)
+    # CONTROL: the four-line record with no Class line at all still parses.
+    assert (
+        R.parse(_without_class(R.render(_review("missing-control-test")))).findings[0].klass == ""
+    )
+
+
 def test_the_schema_class_enum_is_the_a1_class_list_ending_in_other():
     item = R.SCHEMA["properties"]["findings"]["items"]
     assert "class" in item["required"]
@@ -109,7 +121,10 @@ IDX = {
 
 def test_a_file_with_no_history_adds_no_prior_line(tmp_path):
     assert R.prior_lines(IDX, ["never-reviewed.py"]) == []
-    assert R.prior_text(tmp_path, ["never-reviewed.py"], log=lambda *_: None) == ""
+    logged: list[str] = []
+    assert R.prior_text(tmp_path, ["never-reviewed.py"], log=logged.append) == ""
+    # A broken index read also returns "" and says so on the log, so an empty log is what proves the read worked.
+    assert logged == []
     prompt = R.PROMPT % {
         "prior": "",
         "message": "m",

@@ -142,6 +142,30 @@ def test_skip_globs_union_the_record_paths_read_at_runtime(tmp_path):
     assert not R.is_skipped_path("agent/worklist/sub/e.jsonl", skips)
 
 
+def test_skip_globs_without_the_policy_import_keep_the_config_globs(tmp_path, monkeypatch):
+    real = R.importlib.import_module
+
+    def broken(name, *a, **kw):
+        if name == "wl_proc":
+            raise ImportError("planted: wl_proc is not importable")
+        return real(name, *a, **kw)
+
+    (tmp_path / ".ci" / "policy").mkdir(parents=True)
+    (tmp_path / ".ci" / "policy" / "record-paths.json").write_text(
+        '{"records": [{"glob": "agent/worklist/*.jsonl", "except": []}]}'
+    )
+    cfg = {"review_skip_globs": ["agent/ledgers/plan-*.jsonl"]}
+    # CONTROL: with the import intact the record-paths glob is read.
+    with_policy = R.skip_globs(str(tmp_path), cfg)
+    assert R.is_skipped_path("agent/worklist/e.jsonl", with_policy)
+    monkeypatch.setattr(R.importlib, "import_module", broken)
+    skips = R.skip_globs(str(tmp_path), cfg)
+    assert R.is_skipped_path("agent/ledgers/plan-b.jsonl", skips)
+    assert R.is_skipped_path("agent/reviews/b/clean.jsonl", skips)
+    assert not R.is_skipped_path("agent/worklist/e.jsonl", skips)
+    assert not R.is_skipped_path("a.py", skips)
+
+
 def test_a_record_only_commit_is_skipped_without_a_model_call(tmp_path):
     repo, sha = _commit_files(
         tmp_path, "r", {"agent/plans/QUEUE.md": "queue\n", "agent/s1/STATE.md": "s\n"}
@@ -241,6 +265,9 @@ def test_a_skip_glob_admits_only_record_files(tmp_path):
         "agent/*/*.json",
         "agent/*.json",
         "agent/x/**/*.jsonl",
+        "agent/?/*.json",
+        "agent/[!x]/*.json",
+        "agent/x?/*.jsonl",
     ):
         assert not R.admissible_skip_glob(bad), bad
     for good in (

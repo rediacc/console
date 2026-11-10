@@ -8,7 +8,7 @@ WHAT IS COUNTED. Only high and medium findings: a low finding is a style note, a
 
 THE CLASSIFIER is a keyword table shaped like the effort tuner's `JUDGE_SHAPES` (`wl_effort_tune.py`): one row per class, a regex over the Claim, first match wins, `other` when none does. A finding that carries its own class (the optional `Class:` record line B6 adds, read here as the attribute `CLASS_ATTR`) is believed over the table, as long as it names a class this table knows.
 
-THE CACHE. `.ci/cache/review-classes/index.json`, keyed by the mtime and entry count of `agent/reviews/` and of each branch directory under it, plus the classifier's own signature. A new or rewritten record changes its directory's mtime (`wl_review.write_atomic` renames into place), so a key match means nothing under the store moved and the cached fold is returned WITHOUT parsing a single record. Any failure to read or write the cache falls back to a fresh fold; a cache is never a reason to answer wrong.
+THE CACHE. `.ci/cache/review-classes/index.json`, keyed by the name, mtime_ns and size of every record under `agent/reviews/`, plus the classifier's own signature and the size and mtime_ns of `wl_review.py` (the parser). A new or rewritten record changes its own stat, so a key match means nothing under the store moved and the cached fold is returned WITHOUT parsing a single record. Any failure to read or write the cache falls back to a fresh fold; a cache is never a reason to answer wrong.
 
 NO ENVIRONMENT READ, NO MODEL CALL, NO WRITE outside the cache directory.
 """
@@ -101,22 +101,40 @@ def _review_module():
 
 
 def store_key(root) -> list | None:
-    """[[rel, mtime_ns, entries], ...] for the reviews directory and each branch directory under it, sorted, or None when there is no store."""
+    """[[rel, mtime_ns, size], ...] for every record under the reviews directory, sorted, or None when there is no store.
+
+    Keyed per record, not per directory: a same-size in-place rewrite that leaves the directory mtime alone still moves the record's own mtime_ns."""
     base = pathlib.Path(root) / REVIEWS_REL
     try:
-        top = os.stat(base)
         subs = sorted(p for p in base.iterdir() if p.is_dir())
     except OSError:
         return None
-    key = [[REVIEWS_REL, top.st_mtime_ns, len(subs)]]
+    key: list = []
     for sub in subs:
         try:
-            st = os.stat(sub)
-            count = sum(1 for _ in os.scandir(sub))
+            entries = sorted(os.scandir(sub), key=lambda e: e.name)
         except OSError:
             continue
-        key.append(["%s/%s" % (REVIEWS_REL, sub.name), st.st_mtime_ns, count])
+        for entry in entries:
+            if not entry.name.endswith(".md"):
+                continue
+            try:
+                st = entry.stat()
+            except OSError:
+                continue
+            key.append(
+                ["%s/%s/%s" % (REVIEWS_REL, sub.name, entry.name), st.st_mtime_ns, st.st_size]
+            )
     return key
+
+
+def parse_sig() -> list | None:
+    """[size, mtime_ns] of wl_review.py, whose `parse` and `resolution_kind` the fold runs: an edit to either changes what a record counts as, so it invalidates the cache."""
+    try:
+        st = os.stat(pathlib.Path(__file__).with_name("wl_review.py"))
+    except OSError:
+        return None
+    return [st.st_size, st.st_mtime_ns]
 
 
 def fold(root, parse=None) -> dict:
@@ -183,7 +201,7 @@ def index(root, parse=None, notes=None) -> dict:
     if key is None:
         return {"files": {}, "records": 0, "malformed": 0, "counted": 0, "cached": False}
     cache = root / CACHE_REL
-    want = {"schema": SCHEMA, "classifier": CLASSIFIER_SIG, "key": key}
+    want = {"schema": SCHEMA, "classifier": CLASSIFIER_SIG, "parser": parse_sig(), "key": key}
     try:
         doc = json.loads(cache.read_text(encoding="utf-8"))
         if isinstance(doc, dict) and all(doc.get(k) == v for k, v in want.items()):
