@@ -1071,13 +1071,14 @@ def present(
 #
 # THE ALLOWLIST FROM ONE VANTAGE POINT. This machine is the only place a request comes from, so the proof never asks for a request from another address: it lists this machine for the listed case and lists only `proof.FOREIGN_IP` (TEST-NET-1) for the foreign cases, which puts this machine off the list. `egress_ips()` is this machine's public address per family as Cloudflare sees it (`https://1.1.1.1/cdn-cgi/trace` and its IPv6 twin, through `ops.bench_access.detect_public_ips`), so whichever family a request to the company host takes, its address is on a list that names this machine.
 #
-# `set_allowlist(company, ips)` writes the control row's `scope.allow_ips` (box C2's `lifecycle.update`), regenerates the company's two configs with `ALLOW_IPS` (onboarding's `configs` step, against the company's existing `account-<name>` D1, never creating one), redeploys both Workers (onboarding's `deploy` step) and waits `ALLOWLIST_SETTLE_S` for the new version to serve. An empty list clears it. `request_from(company, method=, path=)` sends one request from this machine to the company's account host and answers the status; a 403 whose body is not the allowlist's own refusal (workers/proxy/src/ip-allowlist.ts) is a `LabError`, so a WAF or a token refusal never reads as the allowlist blocking.
+# `set_allowlist(company, ips)` writes the control row's `scope.allow_ips` (box C2's `lifecycle.update`), regenerates the company's two configs with `ALLOW_IPS` (onboarding's `configs` step, against the company's existing `account-<name>` D1, never creating one), redeploys both Workers (onboarding's `deploy` step) and waits `ALLOWLIST_SETTLE_S` for the new version to serve. An empty list clears it. A step that fails puts the previous `scope.allow_ips` back, so the control row never keeps a list the Workers did not get. `request_from(company, method=, path=)` sends one request from this machine to the company's account host and answers the status; a 403 whose body is not the allowlist's own refusal (workers/proxy/src/ip-allowlist.ts) is a `LabError`, so a WAF or a token refusal never reads as the allowlist blocking.
 #
 # NOT BUILT HERE. `console_command` runs a machine command through the company's proxy, which needs the company's config store and an executor CEK grant; it raises `LabError("not built yet: V7 ...")` naming that, and `proof proxy` records it broken and still checks the allowlist.
 
 
 EXECUTOR_CLASS = "OrgExecutor"
 ALLOWLIST_STEPS = ("configs", "deploy")
+BODY_START = 80
 ALLOWLIST_SETTLE_S = 30.0
 # workers/proxy/src/ip-allowlist.ts `allowlistRefusal`, the body of its 403.
 ALLOWLIST_REFUSAL = "This address is not on the allowlist."
@@ -1160,11 +1161,31 @@ def _d1_ids() -> dict[str, str]:
         raise proof.LabError(str(exc)) from None
 
 
+SCOPE_IPS_SQL = "SELECT allow_ips FROM scope WHERE company_id = ?"
+
+
+def _scope_ips(rows: list[dict], company: str) -> list[str]:
+    """The control row's `scope.allow_ips` (a JSON list, or NULL for none)."""
+    if len(rows) != 1:
+        raise proof.LabError("company %s has %d scope rows, not 1" % (company, len(rows)))
+    raw = rows[0].get("allow_ips")
+    if not raw:
+        return []
+    try:
+        ips = json.loads(raw) if isinstance(raw, str) else raw
+    except ValueError:
+        ips = None
+    if not isinstance(ips, list):
+        raise proof.LabError("company %s: its scope.allow_ips is not a JSON list" % company)
+    return [str(i) for i in ips]
+
+
 def set_allowlist(
     company: str,
     ips: Sequence[str],
     *,
     companies: Companies = all_companies,
+    query: Query = d1_query,
     update: AllowUpdate = _update_scope,
     d1_ids: D1Ids = _d1_ids,
     actions: dict[str, onboarding.Action] | None = None,
@@ -1176,23 +1197,38 @@ def set_allowlist(
     uuid = d1_ids().get(database, "")
     if not uuid:
         raise proof.LabError("company %s has no account D1 to configure against" % company)
+    previous = _scope_ips(
+        query(registry.control_database(region, BENCH), SCOPE_IPS_SQL, [company]), company
+    )
     update(name, ips)
-    req = onboarding.Request(
-        name=name, region=region, owner="", storage_gb=0, allow_ips=tuple(ips), bench=BENCH
-    )
-    ctx = onboarding.Context(
-        plan=onboarding.plan_for(req, company),
-        query=control_db.transport(),
-        details={"d1": uuid},
-        now=onboarding.utc_now(),
-    )
-    steps = actions if actions is not None else onboarding.live_actions()
-    for step in ALLOWLIST_STEPS:
+    try:
+        # `configs` and `deploy` read the name, region, allowlist and bench flag only (onboarding.py `write_configs`,
+        # `deploy_both`); `owner` and `storage_gb` feed the audit, subscription and lookup steps, which are not run here.
+        req = onboarding.Request(
+            name=name, region=region, owner="", storage_gb=0, allow_ips=tuple(ips), bench=BENCH
+        )
+        ctx = onboarding.Context(
+            plan=onboarding.plan_for(req, company),
+            query=control_db.transport(),
+            details={"d1": uuid},
+            now=onboarding.utc_now(),
+        )
+        steps = actions if actions is not None else onboarding.live_actions()
+        for step in ALLOWLIST_STEPS:
+            try:
+                steps[step](ctx)
+            except onboarding.OnboardingError as exc:
+                raise proof.LabError(str(exc)) from None
+        sleep(ALLOWLIST_SETTLE_S)
+    except proof.LabError as exc:
         try:
-            steps[step](ctx)
-        except onboarding.OnboardingError as exc:
-            raise proof.LabError(str(exc)) from None
-    sleep(ALLOWLIST_SETTLE_S)
+            update(name, previous)
+        except proof.LabError as back:
+            raise proof.LabError(
+                "%s; and putting scope.allow_ips of company %s back to %s failed: %s"
+                % (exc, company, previous, back)
+            ) from None
+        raise
 
 
 def request_from(
@@ -1207,8 +1243,10 @@ def request_from(
     headers = {"Content-Type": "application/json"} if body is not None else {}
     answer = call(method, "https://%s%s" % (_host(company, companies), path), headers, body)
     if answer.status == proof.HTTP_FORBIDDEN and answer.json().get("error") != ALLOWLIST_REFUSAL:
+        start = " ".join(answer.body[:BODY_START].decode("utf-8", "replace").split())
         raise proof.LabError(
-            "%s %s answered a 403 that is not the allowlist's refusal" % (method, path)
+            "%s %s answered a 403 that is not the allowlist's refusal (body starts: %r)"
+            % (method, path, start)
         )
     return answer.status
 

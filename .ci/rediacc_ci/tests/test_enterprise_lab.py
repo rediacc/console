@@ -1219,14 +1219,25 @@ def test_no_egress_answer_is_a_lab_error_not_an_empty_list():
         lab.egress_ips(fetch=fetch)
 
 
+def scope_query(ips):
+    def query(database, sql, params):
+        assert (database, sql, params) == ("control-bench-eu", lab.SCOPE_IPS_SQL, ["c0000000a"])
+        return [{"allow_ips": ips}]
+
+    return query
+
+
 class Redeploy:
-    def __init__(self, fail: str = ""):
+    def __init__(self, fail: str = "", fail_update_to: str | None = None):
         self.fail = fail
+        self.fail_update_to = fail_update_to
         self.events: list[str] = []
         self.contexts: list[onboarding.Context] = []
 
     def update(self, name, ips):
         self.events.append("update:%s:%s" % (name, ",".join(ips)))
+        if self.fail_update_to is not None and ",".join(ips) == self.fail_update_to:
+            raise proof.LabError("update failed")
 
     def step(self, name):
         def run(ctx):
@@ -1242,11 +1253,12 @@ class Redeploy:
         return {name: self.step(name) for name in lab.ALLOWLIST_STEPS}
 
 
-def allow_v7(redeploy: Redeploy, ips, d1=None):
+def allow_v7(redeploy: Redeploy, ips, d1=None, before='["198.51.100.1"]'):
     return lab.set_allowlist(
         "c0000000a",
         ips,
         companies=companies_proxy,
+        query=scope_query(before),
         update=redeploy.update,
         d1_ids=lambda: {"account-proof-a": "uuid-a"} if d1 is None else d1,
         actions=redeploy.actions(),
@@ -1258,6 +1270,7 @@ def test_set_allowlist_writes_the_scope_then_regenerates_and_redeploys():
     redeploy = Redeploy()
     allow_v7(redeploy, ["203.0.113.7"])
     assert redeploy.events == ["update:proof-a:203.0.113.7", "configs", "deploy", "settle"]
+    assert redeploy.contexts[0].plan.request.name == "proof-a"
     ctx = redeploy.contexts[0]
     assert ctx.plan.request.allow_ips == ("203.0.113.7",)
     assert ctx.plan.request.bench is True
@@ -1281,11 +1294,31 @@ def test_a_company_without_its_d1_changes_nothing():
     assert redeploy.events == []
 
 
-def test_a_failed_redeploy_is_a_lab_error():
+def test_a_failed_redeploy_is_a_lab_error_and_the_previous_allowlist_returns():
+    """Control: the control row never keeps an allowlist the Workers did not get."""
     redeploy = Redeploy(fail="deploy")
     with pytest.raises(proof.LabError, match="deploy exited 1"):
         allow_v7(redeploy, ["203.0.113.7"])
     assert "settle" not in redeploy.events
+    assert redeploy.events == [
+        "update:proof-a:203.0.113.7",
+        "configs",
+        "deploy",
+        "update:proof-a:198.51.100.1",
+    ]
+
+
+def test_a_company_that_had_no_allowlist_gets_none_back():
+    redeploy = Redeploy(fail="configs")
+    with pytest.raises(proof.LabError, match="configs exited 1"):
+        allow_v7(redeploy, ["203.0.113.7"], before=None)
+    assert redeploy.events[-1] == "update:proof-a:"
+
+
+def test_a_failed_restore_is_named_with_the_value_it_could_not_put_back():
+    redeploy = Redeploy(fail="deploy", fail_update_to="198.51.100.1")
+    with pytest.raises(proof.LabError, match=r"deploy exited 1; and putting scope.allow_ips.*198"):
+        allow_v7(redeploy, ["203.0.113.7"])
 
 
 class Edge:
@@ -1327,6 +1360,17 @@ def test_the_allowlists_403_is_answered_and_any_other_403_is_a_lab_error():
     assert lab.request_from("c0000000a", call=Edge(403), **kw) == 403
     with pytest.raises(proof.LabError, match="not the allowlist"):
         lab.request_from("c0000000a", call=Edge(403, "Forbidden"), **kw)
+
+
+def test_a_non_json_403_is_a_lab_error_naming_the_start_of_the_body():
+    def waf(_method, _url, _headers, _body):
+        return lab.HttpAnswer(403, (), b"<html>\n  <title>Attention Required</title>" + b"x" * 500)
+
+    with pytest.raises(
+        proof.LabError, match=r"body starts: '<html> <title>Attention Required"
+    ) as e:
+        lab.request_from("c0000000a", method="GET", path="/", call=waf, companies=companies_proxy)
+    assert "x" * 100 not in str(e.value)
 
 
 # --- cost ---------------------------------------------------------------
