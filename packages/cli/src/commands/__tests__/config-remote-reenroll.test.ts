@@ -712,7 +712,7 @@ describe('config remote status: can this device open the store', () => {
     expect(messages.join('\n')).toContain('rdc config remote enable');
   });
 
-  // Review 097081be.1: a healthy local key says nothing about the server, so "connected" still needs the session probe.
+  // A healthy local key says nothing about the server, so "connected" still needs the session probe.
   it('reads error, not connected, when the key works but the server session does not answer', async () => {
     await enrolledDevice();
     server.sessionDown = true;
@@ -720,7 +720,7 @@ describe('config remote status: can this device open the store', () => {
     expect(printed()).toMatchObject({ status: 'error', deviceCanOpen: true });
   });
 
-  // Review 097081be.2: enrollmentUsable throws (server unreachable), so the old connection test decides and deviceCanOpen is unknown.
+  // enrollmentUsable throws (server unreachable), so the old connection test decides and deviceCanOpen is unknown.
   it('falls back to the connection test with no deviceCanOpen when the server is unreachable', async () => {
     await enrolledDevice();
     server.failure = () => new RemoteUnreachableError(API_URL, new Error('ECONNREFUSED'));
@@ -731,7 +731,7 @@ describe('config remote status: can this device open the store', () => {
     expect(messages).toEqual([]);
   });
 
-  // Review 097081be.3: a rejected enrollment (rotated or stale slot) is not "the key is gone".
+  // A rejected enrollment (rotated or stale slot) is not "the key is gone".
   it('reads device-cannot-open with a neutral warning when the slot was rejected, not device-key-missing', async () => {
     await enrolledDevice();
     server.slotSecrets = new Set(['rotated-away']);

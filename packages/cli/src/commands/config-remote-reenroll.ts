@@ -74,14 +74,15 @@ function isLostEnrollment(error: unknown): boolean {
   );
 }
 
+/** Why a device cannot open the linked config: a credential absent locally, or one the server rejected. */
+export type DeviceAccessLoss = 'key-missing' | 'rejected';
+
 /**
  * Why this device cannot open the linked config, or null when it can. `key-missing` is a slot secret
  * or token file absent locally (read with no request); `rejected` is a failure the server or the
  * unwrap reported about the credentials (a rotated or stale slot, a refused login, an undecryptable
  * blob). An error that says nothing about the device's credentials is rethrown.
  */
-export type DeviceAccessLoss = 'key-missing' | 'rejected';
-
 export async function deviceAccessLoss(
   remote: RemoteConfig,
   configName: string
