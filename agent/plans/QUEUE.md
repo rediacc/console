@@ -74,22 +74,22 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic 92df2f69, plan agent/plans/PLAN-free-license.md, outside the set, 5 commit(s) on the branch, 0 open item(s): free license ladder F6
   - epic 1f877343, plan agent/plans/PLAN-worktree-lease.md, outside the set, 55 commit(s) on the branch, 0 open item(s): guided detached worktree leases
   - epic 2e0e531f, plan agent/plans/PLAN-rediaccfile-unprivileged.md, outside the set, 19 commit(s) on the branch, 0 open item(s): Rediaccfile lifecycle runs unprivileged
-  - epic 783185d2, plan agent/plans/PLAN-enterprise-isolation.md, outside the set, 48 commit(s) on the branch, 0 open item(s): Enterprise per-company isolation, regional signers and release rings
+  - epic 783185d2, plan agent/plans/PLAN-enterprise-isolation.md, outside the set, 49 commit(s) on the branch, 0 open item(s): Enterprise per-company isolation, regional signers and release rings
   - epic 1d805023, plan agent/plans/PLAN-tick-tracking.md, outside the set, 26 commit(s) on the branch, 0 open item(s): tick tracking: plan-box trailer, landing prints the tick, box audit
   - epic f65726d5, plan agent/plans/PLAN-renet-down-before-kill.md, outside the set, 16 commit(s) on the branch, 0 open item(s): renet runs Rediaccfile down() before repo containers stop
   - epic 53c31db2, plan agent/plans/PLAN-repo-resource-limits.md, outside the set, 20 commit(s) on the branch, 0 open item(s): per-repo resource limits and a renet-managed RAM volume
   - epic a86f5622, plan agent/plans/PLAN-production-key-only.md, outside the set, 4 commit(s) on the branch, 0 open item(s): Production key only: every leg licensed from its own plane
-  - epic 79b7e92e, no plan, 201 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
-  - epic 562ef6c3, plan agent/plans/PLAN-experience-feedback.md, outside the set, 12 commit(s) on the branch, 0 open item(s): experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire
-- Writers: 6 live of writer_cap 25 (session d778be9d): worker:a3271a96ec2d52c1e, worker:a92d80e1f915e1b1c, worker:aaeed820daea17e86, worker:a9c317955db44348b, worker:ac2dd3a9da03045e8, worker:a0f227ccbf21c87a0.
-- Leased items: 7: #53fe7005 (worker:a92d80e1f915e1b1c, d778be9d), #7ef3159a (worker:ac63bb3e986a4cbc3, d778be9d), #9a2d9af0 (worker:a3271a96ec2d52c1e, d778be9d), #9d65d5b9 (worker:aaeed820daea17e86, d778be9d), #b3f84b22 (worker:ac2dd3a9da03045e8, d778be9d), #b5fbdfee (worker:a9c317955db44348b, d778be9d), #ba1df726 (worker:a0f227ccbf21c87a0, d778be9d).
+  - epic 79b7e92e, no plan, 207 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 562ef6c3, plan agent/plans/PLAN-experience-feedback.md, outside the set, 21 commit(s) on the branch, 0 open item(s): experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire
+- Writers: 3 live of writer_cap 25 (session d778be9d): worker:a3271a96ec2d52c1e, worker:a50cba832c37f04b2, worker:a96af74e77a02d468.
+- Leased items: 1: #9a2d9af0 (worker:a3271a96ec2d52c1e, d778be9d).
 - Next plan: agent/plans/PLAN-sandbox-tenant-separation.md, Promoted entry 14; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 17 of 64 plans done, 969 of 1187 boxes done (81%).
+Promoted: 17 of 64 plans done, 972 of 1187 boxes done (81%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -156,7 +156,7 @@ Promoted: 17 of 64 plans done, 969 of 1187 boxes done (81%).
 | 61 | PLAN-ci-vm-image-followups.md | 0/2 | 2 open |
 | 62 | PLAN-idle-writer-capacity.md | 5/5 | done |
 | 63 | PLAN-d1-scaling.md | 16/31 | 15 open |
-| 64 | PLAN-experience-feedback.md | 7/16 | 9 open |
+| 64 | PLAN-experience-feedback.md | 10/16 | 6 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-backup-program.md -- operator 2026-10-20 ("move agent/plans/PLAN-backup-program.md to the promoted"): one backup program across renet, account, CLI and shared, ending in a live hostinger to eu R2 backup; P1; Depends-On PLAN-shell-sandbox-readonly-view.md and PLAN-account-vm-check.md (done 2026-10-20); released to writers by operator /ask ASKED:2026-10-20T15:14Z ("edit writers to go NOW")
