@@ -191,8 +191,9 @@ M1 merges with these boxes open, so the PR body carries `Operational-Reason: hos
 
 ### hostinger
 
-- [ ] L9 [live] Edit the 17 local config and token files to the new hosts. Through `eu-remote`: re-issue hostinger's licences so `renewalUrl` names `eu.rediacc.cloud`, then re-run `backup schedule` and `backup strategy bind`. If the IP binding has moved, `eu-remote` stops at the authenticator and only the operator rebinds it.
+- [x] L9 [live] Edit the 17 local config and token files to the new hosts. Through `eu-remote`: re-issue hostinger's licences so `renewalUrl` names `eu.rediacc.cloud`, then re-run `backup schedule` and `backup strategy bind`. If the IP binding has moved, `eu-remote` stops at the authenticator and only the operator rebinds it.
   Accept: `./rdc.sh --config eu-remote machine status hostinger` rc 0 and `./rdc.sh --config eu-remote backup status -m hostinger` rc 0, with one licence's `renewalUrl` recorded here.
+    (ticked) 2026-11-10T19:05:54Z by d778be9d: nocommit: live run 2026-11-10T13:13-13:24Z via eu-remote: machine status hostinger rc 0, backup status -m hostinger rc 0 (nightly-hot scheduled, next 02:00Z), renewalUrl https://eu.rediacc.cloud/account/api/v1/licenses/renew on all 13 (mail 24effd58 issued 13:19:40Z), strategy bind rc 0, backup schedule rc 0 with --expect-account-server https://eu.rediacc.cloud; repo list unchanged (13 repos). Edge configs (eu-edge, edge-asia-*) hold edge-D1 tokens that account-eu does not, so they no longer authenticate.
 - [ ] L10 [live] Let the schedule re-upload to `backups-eu`, then prove it: a verify, one restore test under an `-rt` name with only that copy deleted by GUID, and one nightly on the new target.
   Accept: `./rdc.sh --config eu-remote backup verify --store` rc 0, `./rdc.sh --config eu-remote backup usage -o json` rc 0 with a snapshot per repository, and the restore compared by checksum.
 

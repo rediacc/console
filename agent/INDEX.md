@@ -470,7 +470,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-agent-hints-in-stop-hook.md` | compacted | 51 | 0 | 0 | 3640 |
 | `agent/plans/PLAN-agent-tree-lifecycle.md` | mostly-done | 74 | 1 | 6 | 12129 |
 | `agent/plans/PLAN-ask-flow-preemptive-settled-check.md` | compacted | 38 | 0 | 0 | 2358 |
-| `agent/plans/PLAN-backup-critical-tier.md` | approved | 788 | 8 | 43 | 110065 |
+| `agent/plans/PLAN-backup-critical-tier.md` | approved | 789 | 7 | 44 | 110487 |
 | `agent/plans/PLAN-backup-download-from-store.md` | approved | 57 | 2 | 7 | 12292 |
 | `agent/plans/PLAN-backup-integrity.md` | approved | 497 | 12 | 44 | 77849 |
 | `agent/plans/PLAN-backup-list-executor-fix.md` | compacted | 55 | 0 | 0 | 5498 |
@@ -549,7 +549,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-plan-preflight.md` | approved | 190 | 0 | 8 | 29710 |
 | `agent/plans/PLAN-plan-verbs.md` | draft | 35 | 3 | 0 | 3779 |
 | `agent/plans/PLAN-printf-echo-pipefail-sweep.md` | compacted | 103 | 0 | 33 | 10281 |
-| `agent/plans/PLAN-product-domain-rename.md` | executing | 220 | 5 | 23 | 44074 |
+| `agent/plans/PLAN-product-domain-rename.md` | executing | 221 | 4 | 24 | 44632 |
 | `agent/plans/PLAN-production-key-only.md` | approved | 347 | 4 | 13 | 51339 |
 | `agent/plans/PLAN-promote-mutation-runner.md` | compacted | 39 | 0 | 0 | 2977 |
 | `agent/plans/PLAN-proxy-cd-six-targets.md` | approved | 412 | 4 | 27 | 69368 |
