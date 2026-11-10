@@ -832,6 +832,7 @@ def _table() -> tuple[Step, ...]:
             **w,
         ),
         Step("account-worker-deps", "deploy", ("npm", "install"), cwd="clone:workers/account", **w),
+        Step("signer-worker-deps", "deploy", ("npm", "install"), cwd="clone:workers/signer", **w),
         Step("proxy-worker-deps", "deploy", ("npm", "install"), cwd="clone:workers/proxy", **w),
         Step(
             "order",
@@ -865,6 +866,30 @@ def _table() -> tuple[Step, ...]:
                 "{out}/{region}/before.json",
             ),
             profiles=("deploy-proxy",),
+            per_region=True,
+            **w,
+        ),
+        # THE SIGNER BEFORE THE ACCOUNT WORKER (finding fc8ad2fd). Every account config binds LICENSE_SIGNER to `signer-<region>`, and Cloudflare refuses the account deploy with error 10143 while that Worker is missing. The same two steps `deploy_bench._ensure_signers` runs on bench: the control database the signer binds (`control_db ensure`, which creates and migrates only what is missing), then the signer itself under the deploy-signer profile, the one profile that binds the signing key. Both are idempotent: a present database is left alone, and a present signer is redeployed from the same template with the same key.
+        Step(
+            "control-db",
+            "deploy",
+            (*PY, "rediacc_ci.enterprise.control_db", "ensure", "--region", "{region}"),
+            profiles=("deploy-signer",),
+            per_region=True,
+            **w,
+        ),
+        Step(
+            "signer-deploy",
+            "deploy",
+            (
+                *PY,
+                "rediacc_ci.deploy.deploy_signer",
+                "--target",
+                "{region}",
+                "--record",
+                "{out}/{region}/signer.json",
+            ),
+            profiles=("deploy-signer",),
             per_region=True,
             **w,
         ),

@@ -115,6 +115,42 @@ def test_every_account_deploy_is_behind_its_order_check_and_bracketed_by_records
             assert order_step.argv[:3] == ("python3", "-m", "rediacc_ci.release.order")
 
 
+def test_every_account_deploy_follows_its_regions_signer() -> None:
+    """Finding fc8ad2fd: every account config binds LICENSE_SIGNER to `signer-<region>`, and Cloudflare refuses the account deploy with error 10143 while it is missing. As on bench (`deploy_bench._ensure_signers`): the control database, then the signer under the deploy-signer profile, before the account deploy, in a release and in a workers-only run alike."""
+    for steps in (EDGE, WORKERS):
+        order = ids(steps)
+        deps = order.index("signer-worker-deps")
+        assert steps[deps].cwd == "clone:workers/signer"
+        for region in REGIONS:
+            control = steps[order.index("control-db-%s" % region)]
+            signer = steps[order.index("signer-deploy-%s" % region)]
+            deploy = order.index("account-deploy-%s" % region)
+            assert deps < order.index(control.id) < order.index(signer.id) < deploy
+            assert control.argv == (
+                "python3", "-m", "rediacc_ci.enterprise.control_db", "ensure", "--region", region,
+            )
+            assert signer.argv[:5] == (
+                "python3", "-m", "rediacc_ci.deploy.deploy_signer", "--target", region,
+            )
+            assert control.profiles == signer.profiles == ("deploy-signer",)
+
+
+def test_the_dry_run_names_the_signer_rows(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setattr(local, "prereq_refusals", no_prereqs)
+    rc = local.main(
+        ["--channel", "edge", "--dry-run"], runner=FakeRunner(VERSION_ANSWERS), gates=_gates([])
+    )
+    out = capsys.readouterr().out
+    assert rc == 0
+    for region in REGIONS:
+        for step_id in ("control-db-%s" % region, "signer-deploy-%s" % region):
+            assert re.search(
+                r"^  \[deploy\] %s  profile=deploy-signer" % re.escape(step_id), out, re.MULTILINE
+            ), step_id
+
+
 def test_the_lock_is_judged_again_before_the_first_stage_write_and_right_before_the_seal() -> None:
     order = ids(EDGE)
     first_stage = next(i for i, s in enumerate(EDGE) if s.section == "stage")
