@@ -12,12 +12,12 @@ THE `_done/` DOOR (operator ruling #827dc647). A finished plan directly under `a
 Then, in order, each a refusal that stops the run:
   1. identity: `receipt.identity` of those surfaces (a renet-hash check rebuilds `bin/renet` once through its registry `rebuild` argv), judged by `receipt.identity_refusal` (dirty-tree, checkout-mismatch, modified-checkout, build-mismatch, modified-build);
   2. the ladder: a VM phase of `live_tier.ladder_phases` (a row surface's, or the renet phase of a renet-hash deploy, which provisions renet on a real machine even for a CLI-only plan) needs `vm_tier.admit` to admit the head tree (no live run before the ops VMs pass it); the row records the VM run id. `--vm-waived ASKED:<minute>Z` (operator ruling 2026-11-10: a full vm:check takes hours and restarts on any commit) lets a run the ladder refuses go on: the token must have the minute shape and match an AskUserQuestion answer in the lead transcript (`wl_checks._asked_in_transcript`, the proof `block_vm_unverified_push` and `release.local_gates --force-asked` use; the transcript is `--transcript` or `$REDIACC_TRANSCRIPT_PATH`, and none proves nothing), both checked before anything runs. The row then records `ladder: {"vm": null, "waived": "<token>", "head_tree": <tree>}`, a waived receipt forever, and `check:ci-plan-live-proof` names it owed until a VERIFIED vm:check receipt covers that tree or a descendant.
-  3. the deploy record (bench-cache): `.ci/cache/live-deploys/bench.json` must exist, keep the identity rules itself, and be cut from the head;
+  3. the deploy record (bench-cache: `.ci/cache/live-deploys/bench.json`, which deploy_bench writes; bench-proxy-cache: `.ci/cache/live-deploys/proxy-bench.json`, which `deploy_proxy --target bench` writes after its smoke passes) must exist, keep the identity rules itself over the surfaces its deploy script records, and be cut from the head;
   4. the steps, in registry order; a non-zero exit is FAILED. `stale-binary-empty` needs `stale_binary == []` in the JSON answer, `renet-hash` needs the remote hash to equal the local sha256 (else `not-live`);
-  5. live confirmation: bench-cache asks wrangler for the version serving 100% and refuses `not-live` when it is not the recorded one; renet-hash is confirmed by step 4; an `unrecorded` check can confirm nothing and is NOT_VERIFIED;
+  5. live confirmation: bench-cache and bench-proxy-cache ask wrangler for the version serving 100% (account-bench through `workers/account`, proxy-bench through `workers/proxy`) and refuse `not-live` when it is not the recorded one or cannot be read; renet-hash is confirmed by step 4; an `unrecorded` check can confirm nothing and is NOT_VERIFIED;
   6. secrets: the log is scrubbed of every secret-named environment value (`core.secrets.redact_env`), a secret shape in the row refuses, and `deploy_record.refuse_secret_values` runs over the row.
 
-A bench-cache check needs Cloudflare credentials for the wrangler read; without them the recorder re-executes itself under the `deploy-bench` Bitwarden profile, as deploy_bench does. Bench is IP-restricted: run `PYTHONPATH=.ci python3 -m rediacc_ci.ops.bench_access add-current` first, or the server-info step answers 403.
+A bench-cache or bench-proxy-cache check needs Cloudflare credentials for the wrangler read; without them the recorder re-executes itself under its deploy script's Bitwarden profile (`deploy-bench`, `deploy-proxy-bench`), as that script does. Bench is IP-restricted: run `PYTHONPATH=.ci python3 -m rediacc_ci.ops.bench_access add-current` first, or the server-info step answers 403.
 
 THE eu-bench LOGIN IS THE RECORDER'S OWN STEP (operator order 2026-10-30). An eu-bench rdc step that fails because the login is tied to another network address, or is absent (`login_bench.login_needed`), runs `npm run login:bench` once and retries that step; the log keeps the failed answer, the login and the retry. The login runs on a DRY RUN too (no `--write`): a dry run executes the registry steps like a written one, so a needed eu-bench login, with its bench IP-allowlist refresh (`bench_access add-current`), happens on every `record` call; `verify` runs no step and never logs in. A login that fails leaves the step FAILED and the message names the remedy. Nobody is asked for an authenticator code.
 
@@ -40,7 +40,7 @@ from typing import TYPE_CHECKING, Any
 
 from rediacc_ci import log, paths
 from rediacc_ci.core import jsonl_append, secrets
-from rediacc_ci.deploy import deploy_record
+from rediacc_ci.deploy import deploy_proxy, deploy_record, proxy_configs
 from rediacc_ci.ops import cf_auth, deploy_bench, login_bench
 from rediacc_ci.proof import live_tier as LT
 from rediacc_ci.proof import receipt as R
@@ -65,7 +65,6 @@ OWED_TIMEOUT_S = 300
 MOVED_NOTE_RE = re.compile(
     r"\(moved [^)]*?\bto (agent/plans/[\w./-]+?\.md)\)\s*LP-([A-Za-z0-9_-]+)"
 )
-BENCH_PROFILE = deploy_bench.PROFILE
 BY_MAX = 32
 EXIT_VERIFIED = 0
 EXIT_REFUSED = 1
@@ -81,6 +80,44 @@ LOGIN_TIMEOUT_S = 600
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
 
 D = importlib.import_module("wl_plandeps")
+
+
+@dataclasses.dataclass(frozen=True)
+class DeployCache:
+    """A deploy kind whose deploy script records the version it put live: the record's path and surfaces, the Worker and how wrangler is asked what serves it, and the Bitwarden profile that script runs under."""
+
+    label: str
+    record: tuple[str, ...]
+    surfaces: tuple[str, ...]
+    worker: str
+    worker_dir: tuple[str, ...]
+    config: str
+    profile: str
+    remedy: str
+
+
+CACHES = {
+    LT.BENCH_CACHE: DeployCache(
+        "bench",
+        deploy_bench.VERSION_RECORD,
+        deploy_bench.BENCH_SURFACES,
+        deploy_bench.WORKER_NAME,
+        ("workers", "account"),
+        deploy_bench.CONFIG,
+        deploy_bench.PROFILE,
+        "run deploy_bench from this head",
+    ),
+    LT.BENCH_PROXY_CACHE: DeployCache(
+        "bench proxy",
+        deploy_proxy.BENCH_VERSION_RECORD,
+        deploy_proxy.BENCH_RECORD_SURFACES,
+        deploy_proxy.BENCH_WORKER,
+        deploy_proxy.WORKER_SUBDIR,
+        proxy_configs.BENCH_CONFIG,
+        deploy_proxy.BENCH_PROFILE,
+        "run `deploy_proxy --target bench` from this head",
+    ),
+}
 
 
 class RequestError(ValueError):
@@ -383,15 +420,16 @@ def _wrangler_env(environ: Mapping[str, str]) -> dict[str, str] | None:
     return env
 
 
-def _bench_live_version(root: pathlib.Path, world: World, log_: _Log) -> str | None:
+def _live_version(root: pathlib.Path, cache: DeployCache, world: World, log_: _Log) -> str | None:
+    """The version wrangler reports serving 100% on the cache's Worker; None when it cannot be read, which the caller refuses."""
     env = _wrangler_env(world.environ)
-    argv = deploy_record.deployments_argv(deploy_bench.CONFIG)
+    argv = deploy_record.deployments_argv(cache.config)
     if env is None:
         log_.add(
             "# no Cloudflare credentials for the wrangler read (CLOUDFLARE_API_TOKEN or CF_GLOBAL_API_KEY + CF_EMAIL)"
         )
         return None
-    result = world.run(argv, root / "workers" / "account", LT.DEFAULT_TIMEOUT_S, env)
+    result = world.run(argv, root.joinpath(*cache.worker_dir), LT.DEFAULT_TIMEOUT_S, env)
     log_.run("confirm", argv, result)
     if result.rc != 0:
         return None
@@ -399,22 +437,27 @@ def _bench_live_version(root: pathlib.Path, world: World, log_: _Log) -> str | N
     return version if parsed else None
 
 
-def _bench_record(root: pathlib.Path, run: _Run) -> str | None:
-    """Fill run.deploy from bench.json; the refusal message, or None."""
-    path = root.joinpath(*deploy_bench.VERSION_RECORD)
+def _cache_record(root: pathlib.Path, cache: DeployCache, run: _Run) -> str | None:
+    """Fill run.deploy from the cache's deploy record; the refusal message, or None."""
+    rel = "/".join(cache.record)
     try:
-        record = json.loads(path.read_text(encoding="utf-8"))
+        record = json.loads(root.joinpath(*cache.record).read_text(encoding="utf-8"))
     except (OSError, ValueError) as exc:
-        return f"no bench deploy record at {'/'.join(deploy_bench.VERSION_RECORD)} ({exc.__class__.__name__}); run deploy_bench from this head"
+        return f"no {cache.label} deploy record at {rel} ({exc.__class__.__name__}); {cache.remedy}"
     if not isinstance(record, dict):
-        return "the bench deploy record is not an object"
+        return f"the {cache.label} deploy record is not an object"
+    worker = record.get("worker", cache.worker)
+    if worker != cache.worker:
+        return (
+            f"the {cache.label} deploy record at {rel} names Worker {worker!r}, not {cache.worker}"
+        )
     run.deploy["version_id"] = record.get("version_id")
     run.deploy["deployed_head"] = record.get("head")
-    refused = R.identity_refusal(record, deploy_bench.BENCH_SURFACES)
+    refused = R.identity_refusal(record, cache.surfaces)
     if refused is not None:
-        return f"the bench deploy was cut from an unclean tree ({refused.code}: {refused.message})"
+        return f"the {cache.label} deploy was cut from an unclean tree ({refused.code}: {refused.message})"
     if record.get("head") != run.ident["head"]:
-        return f"bench serves a deploy cut from {str(record.get('head'))[:12]}, not the head {run.ident['head'][:12]}"
+        return f"{cache.label} serves a deploy cut from {str(record.get('head'))[:12]}, not the head {run.ident['head'][:12]}"
     return None
 
 
@@ -610,9 +653,10 @@ def record(
         f"# live-proof {req.plan} box {req.box} target {req.target} check {check.id} surfaces {','.join(names)}"
     )
     ident = _identity(root, check, req, names, world, log_)
+    cache = CACHES.get(check.deploy)
     deploy = {
         "surface": LT.DEPLOY_SURFACE[check.deploy],
-        "worker": deploy_bench.WORKER_NAME if check.deploy == LT.BENCH_CACHE else None,
+        "worker": cache.worker if cache is not None else None,
         "version_id": None,
         "source": None,
         "deployed_head": None,
@@ -640,9 +684,9 @@ def record(
             run.ladder = {"vm": None, "waived": req.vm_waived, "head_tree": ident["tree"]}
         else:
             run.ladder = {"vm": (verdict.receipt or {}).get("runId")}
-    if check.deploy == LT.BENCH_CACHE:
-        deploy["source"] = LT.BENCH_CACHE
-        why = _bench_record(root, run)
+    if cache is not None:
+        deploy["source"] = check.deploy
+        why = _cache_record(root, cache, run)
         if why is not None:
             return _refuse(run, root, world, R.NOT_VERIFIED, R.NOT_LIVE, why)
     relogged = False
@@ -672,10 +716,11 @@ def _confirm(root: pathlib.Path, run: _Run, world: World) -> str | None:
     """Set deploy.confirmed_live from the live side; the refusal message, or None."""
     kind = run.check.deploy
     head = run.ident["head"]
-    if kind == LT.BENCH_CACHE:
-        live = _bench_live_version(root, world, run.log)
+    cache = CACHES.get(kind)
+    if cache is not None:
+        live = _live_version(root, cache, world, run.log)
         if not live or live != run.deploy["version_id"]:
-            return f"bench serves version {live or '<unknown>'}, not the recorded {run.deploy['version_id']}"
+            return f"{cache.label} serves version {live or '<unknown>'}, not the recorded {run.deploy['version_id']}"
     elif kind == LT.RENET_HASH:
         renet = run.ident.get("renet") or {}
         run.deploy.update(
@@ -787,15 +832,17 @@ def verify(
 # ----------------------------------------------------------------------------- command line
 
 
-def _needs_profile(check: LT.Check | None, environ: Mapping[str, str]) -> bool:
-    if check is None or check.deploy != LT.BENCH_CACHE:
-        return False
-    if BENCH_PROFILE in (environ.get("REDIACC_BWS_PROFILES") or "").split(","):
-        return False
-    return _wrangler_env(environ) is None
+def _profile_for(check: LT.Check | None, environ: Mapping[str, str]) -> str | None:
+    """The Bitwarden profile to re-execute under for the check's wrangler read: its deploy script's, unless it is already bound or credentials are present. None for a kind with no read."""
+    cache = CACHES.get(check.deploy) if check is not None else None
+    if cache is None:
+        return None
+    if cache.profile in (environ.get("REDIACC_BWS_PROFILES") or "").split(","):
+        return None
+    return cache.profile if _wrangler_env(environ) is None else None
 
 
-def _reexec_under_profile(argv: list[str]) -> int:
+def _reexec_under_profile(argv: list[str], profile: str) -> int:
     env = dict(os.environ)
     ci = str(paths.repo_root() / ".ci")
     env["PYTHONPATH"] = ci + (os.pathsep + env["PYTHONPATH"] if env.get("PYTHONPATH") else "")
@@ -806,7 +853,7 @@ def _reexec_under_profile(argv: list[str]) -> int:
             "rediacc_ci.core.bws_env",
             "exec",
             "--profile",
-            BENCH_PROFILE,
+            profile,
             "--",
             sys.executable,
             "-m",
@@ -893,8 +940,9 @@ def main(argv: list[str] | None = None) -> int:
     except (LT.RegistryError, S.MapError) as exc:
         log.error(f"the check registry cannot be read: {exc}")
         return EXIT_USAGE
-    if _needs_profile(checks.get(req.check), os.environ):
-        return _reexec_under_profile(argv)
+    profile = _profile_for(checks.get(req.check), os.environ)
+    if profile is not None:
+        return _reexec_under_profile(argv, profile)
     try:
         world = World()
         if args.transcript:

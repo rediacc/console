@@ -378,8 +378,8 @@
         "proxy-ready": {
           "targets": ["bench"],
           "surfaces": ["proxy"],
-          "deploy": "unrecorded",
-          "what": "deploy_proxy --smoke-only against bench: /v1/health 200, /v1/server-info 401 and /v1/ready on the newest deployment; no deploy record ties that version to a console head yet, so a run is NOT_VERIFIED not-live",
+          "deploy": "bench-proxy-cache",
+          "what": "deploy_proxy --smoke-only against bench: /v1/health 200, /v1/server-info 401 and /v1/ready on the newest deployment; the version deploy_proxy --target bench recorded after its smoke passed is the one serving 100% on proxy-bench at check time",
           "steps": [
             {"id": "smoke", "argv": ["python3", "-m", "rediacc_ci.deploy.deploy_proxy", "--target", "bench", "--smoke-only"], "timeout_s": 900}
           ]

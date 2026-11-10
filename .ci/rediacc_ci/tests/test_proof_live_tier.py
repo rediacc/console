@@ -465,11 +465,34 @@ def test_a_tree_row_on_a_cli_only_plan_keeps_a_null_ladder() -> None:
 
 def test_an_unrecorded_deploy_never_validates() -> None:
     row = _cli_row()
+    row["check"]["id"] = "www-smoke"
+    row["check"]["argv"] = [list(r.argv) for r in LT.expand(LT.registry()["www-smoke"], "bench")]
+    row["surfaces"] = ["www"]
+    _reid(row)
+    assert any("identifies no deploy" in p for p in LT.validate_row(row))
+
+
+def _proxy_row(version: str) -> dict[str, Any]:
+    row = _cli_row()
     row["check"]["id"] = "proxy-ready"
     row["check"]["argv"] = [list(r.argv) for r in LT.expand(LT.registry()["proxy-ready"], "bench")]
     row["surfaces"] = ["proxy"]
+    row["deploy"] = {
+        "surface": "proxy",
+        "worker": "proxy-bench",
+        "version_id": version,
+        "source": LT.BENCH_PROXY_CACHE,
+        "deployed_head": HEAD,
+        "confirmed_live": True,
+    }
     _reid(row)
-    assert any("identifies no deploy" in p for p in LT.validate_row(row))
+    return row
+
+
+def test_a_bench_proxy_row_validates_with_a_version_uuid_only() -> None:
+    assert LT.validate_row(_proxy_row(UUID)) == [], "the control must pass before the plant"
+    assert any("malformed" in p for p in LT.validate_row(_proxy_row("proxy:" + HEAD)))
+    assert LT.DEPLOY_SURFACE[LT.BENCH_PROXY_CACHE] == "proxy"
 
 
 # ------------------------------------------------------------------ the git checks and the kept log

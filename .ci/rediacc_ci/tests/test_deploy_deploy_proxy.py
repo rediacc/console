@@ -27,6 +27,7 @@ from rediacc_ci import paths
 from rediacc_ci.deploy import deploy_proxy as port
 from rediacc_ci.deploy import proxy_configs
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.tests.test_proof_surfaces import World, _commit, _write
 from rediacc_ci.well_known import BENCH_ORIGIN, PROXY_BENCH_HOST, PROXY_US_HOST
 
 if typing.TYPE_CHECKING:
@@ -1960,3 +1961,95 @@ def test_the_ready_route_never_reaches_an_executor() -> None:
 
 def test_the_module_says_so() -> None:
     assert "starts no executor container" in (port.__doc__ or "")
+
+
+# ---- the bench deploy record live_proof reads (item #99279bf8) ----------------
+
+
+def _bench_record(root: pathlib.Path) -> pathlib.Path:
+    return root.joinpath(*port.BENCH_VERSION_RECORD)
+
+
+def test_a_passing_bench_deploy_writes_the_live_proof_record(tmp_path: pathlib.Path) -> None:
+    """The record `live_proof` confirms a proxy-ready check against: worker, config, the version the smoke passed on, and the identity of the tree it was built from."""
+    root = _fixture_root(tmp_path)
+    proc, _calls = _run(
+        tmp_path, root, ("--target", "bench"), REDIACC_BWS_PROFILES=port.BENCH_PROFILE
+    )
+    assert proc.returncode == 0, proc.stderr
+    data = json.loads(_bench_record(root).read_text(encoding="utf-8"))
+    assert data["worker"] == port.BENCH_WORKER
+    assert data["config"] == "workers/proxy/wrangler.bench.toml"
+    assert data["version_id"] == NEW_ID
+    assert data["surfaces"] == sorted(port.BENCH_RECORD_SURFACES)
+    for key in ("head", "tree", "dirty", "inputs", "submodules", "at"):
+        assert key in data, key
+    assert (
+        "Bench proxy version %s recorded in .ci/cache/live-deploys/proxy-bench.json" % NEW_ID
+        in (proc.stderr)
+    )
+
+
+def test_a_failing_bench_smoke_writes_no_live_proof_record(tmp_path: pathlib.Path) -> None:
+    root = _fixture_root(tmp_path)
+    proc, calls = _run(
+        tmp_path,
+        root,
+        ("--target", "bench"),
+        FAKE_READY_CODE="503",
+        FAKE_READY_TIMEOUT="0",
+        REDIACC_BWS_PROFILES=port.BENCH_PROFILE,
+    )
+    assert proc.returncode == 1
+    assert calls.endswith("/v1/ready\n"), "the control: the deploy ran and the smoke failed"
+    assert not _bench_record(root).exists()
+
+
+@pytest.mark.parametrize(
+    ("args", "needle", "ready"),
+    [
+        (("--target", "bench", "--var", "EXECUTOR_CAP=2"), "--var overrides", NEW_ID),
+        # With no deploy the newest deployment is PREV_ID, so /v1/ready answers it.
+        (("--target", "bench", "--smoke-only"), None, PREV_ID),
+        (("--target", "stable", "--region", "us", "--version", VERSION), None, NEW_ID),
+    ],
+)
+def test_only_a_plain_bench_deploy_writes_the_live_proof_record(
+    tmp_path: pathlib.Path, args: tuple[str, ...], needle: str | None, ready: str
+) -> None:
+    root = _fixture_root(tmp_path)
+    proc, _calls = _run(
+        tmp_path, root, args, REDIACC_BWS_PROFILES=port.BENCH_PROFILE, FAKE_READY_VERSION=ready
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert not _bench_record(root).exists()
+    if needle is not None:
+        assert needle in proc.stderr, "a skipped record is named, never silent"
+
+
+def test_the_bench_worker_constant_is_the_bench_configs_worker() -> None:
+    spec = proxy_configs.targets(proxy_configs.load_regions(ROOT))["bench"]
+    assert spec.name == port.BENCH_WORKER
+    assert spec.config == proxy_configs.BENCH_CONFIG
+
+
+def test_a_tree_that_moved_during_the_deploy_records_nothing(tmp_path: pathlib.Path) -> None:
+    world = World(tmp_path / "console")
+    built = port.bench_identity(world.root)
+    record = port.record_bench_version(
+        world.root, port.BENCH_WORKER, "wrangler.bench.toml", NEW_ID.upper(), built
+    )
+    assert record["version_id"] == NEW_ID, "the id is stored lowercase, the shape live_tier accepts"
+    assert record["head"] == built["head"]
+    assert len(str(built["head"])) == 40
+    assert record["dirty"] is False
+    on_disk = json.loads(_bench_record(world.root).read_text(encoding="utf-8"))
+    assert on_disk == record
+    _bench_record(world.root).unlink()
+    _write(world.root, "workers/proxy/src/index.ts", "export {};\n")
+    _commit(world.root, "moved")
+    with pytest.raises(port.RefusedError, match="moved during the deploy"):
+        port.record_bench_version(
+            world.root, port.BENCH_WORKER, "wrangler.bench.toml", NEW_ID, built
+        )
+    assert not _bench_record(world.root).exists()

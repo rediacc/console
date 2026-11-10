@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 
+from rediacc_ci.deploy import deploy_proxy, proxy_configs
 from rediacc_ci.ops import deploy_bench
 from rediacc_ci.ops import live_proof as LP
 from rediacc_ci.proof import live_tier as LT
@@ -67,6 +68,7 @@ class Fake:
 
     def __init__(self, renet_ptr: str) -> None:
         self.calls: list[tuple[str, ...]] = []
+        self.cwds: list[pathlib.Path] = []
         self.envs: list[dict[str, str] | None] = []
         self.answers: dict[str, LP.Result] = {
             "curl": LP.Result(0, '{"status":"ok"}\n', ""),
@@ -114,11 +116,12 @@ class Fake:
     def run(
         self,
         argv: Sequence[str],
-        _cwd: pathlib.Path,
+        cwd: pathlib.Path,
         _timeout: int,
         env: dict[str, str] | None = None,
     ) -> LP.Result:
         self.calls.append(tuple(argv))
+        self.cwds.append(cwd)
         self.envs.append(env)
         queued = self.queued.get(self.key(argv))
         if queued:
@@ -181,6 +184,17 @@ class Bed:
         }
         record.update(over)
         _write(self.root, "/".join(deploy_bench.VERSION_RECORD), json.dumps(record))
+
+    def proxy_json(self, **over: Any) -> None:
+        record = {
+            "worker": deploy_proxy.BENCH_WORKER,
+            "config": "workers/proxy/" + proxy_configs.BENCH_CONFIG,
+            "version_id": UUID,
+            **R.identity(self.root, deploy_proxy.BENCH_RECORD_SURFACES),
+            "at": "2026-10-28T09:00:00Z",
+        }
+        record.update(over)
+        _write(self.root, "/".join(deploy_proxy.BENCH_VERSION_RECORD), json.dumps(record))
 
     def ledger(self) -> list[dict[str, Any]]:
         return [e.row for e in LT.read_ledger(LT.ledger_path(self.root)) if e.row is not None]
@@ -572,14 +586,101 @@ def test_an_envelope_without_the_key_is_still_refused(bed: Bed) -> None:
     assert "stale_binary is null" in out.message
 
 
-def test_an_unrecorded_deploy_is_never_verified(bed: Bed) -> None:
+def _proxy_plan(bed: Bed) -> None:
     text = PLAN.replace("private/renet/cmd/**", "private/renet/cmd/**, workers/proxy/src/**")
     _write(bed.root, PLAN_REL, text)
     _commit(bed.root, "proxy owns")
-    out = bed.record(bed.request("proxy-ready"), write=True)
+
+
+def test_an_unrecorded_deploy_is_never_verified(bed: Bed) -> None:
+    """`unrecorded` stays for any check with no record (www-smoke today); the proxy-ready check with its deploy kind swapped back is the fixture, with a valid proxy record present so only the kind can refuse it."""
+    _proxy_plan(bed)
+    bed.proxy_json()
+    checks = LT.registry()
+    assert bed.record(bed.request("proxy-ready"), checks=checks).status == R.VERIFIED, (
+        "the control: the recorded kind verifies the same run"
+    )
+    checks["proxy-ready"] = dataclasses.replace(checks["proxy-ready"], deploy=LT.UNRECORDED)
+    out = bed.record(bed.request("proxy-ready"), write=True, checks=checks)
     assert (out.status, out.code) == (R.NOT_VERIFIED, R.NOT_LIVE)
     assert "no deploy record" in out.message
     assert bed.ledger() == []
+
+
+def test_proxy_ready_is_recorded_by_the_bench_proxy_deploy() -> None:
+    assert LT.registry()["proxy-ready"].deploy == LT.BENCH_PROXY_CACHE
+    assert LT.registry()["www-smoke"].deploy == LT.UNRECORDED
+
+
+def test_a_proxy_run_reads_the_proxy_record_and_confirms_it_through_wrangler(bed: Bed) -> None:
+    _proxy_plan(bed)
+    bed.proxy_json()
+    out = bed.record(bed.request("proxy-ready"), write=True)
+    assert out.status == R.VERIFIED, out.message
+    assert out.written
+    assert out.row is not None
+    deploy = out.row["deploy"]
+    assert deploy["source"] == LT.BENCH_PROXY_CACHE
+    assert deploy["surface"] == "proxy"
+    assert deploy["worker"] == deploy_proxy.BENCH_WORKER
+    assert deploy["version_id"] == UUID
+    assert deploy["deployed_head"] == out.row["head"]
+    assert deploy["confirmed_live"] is True
+    assert [bed.fake.key(c) for c in bed.fake.calls] == ["deploy_proxy", "wrangler"]
+    wrangler = bed.fake.calls[-1]
+    assert proxy_configs.BENCH_CONFIG in wrangler
+    assert bed.fake.cwds[-1] == bed.root.joinpath(*deploy_proxy.WORKER_SUBDIR), (
+        "the read names proxy-bench through workers/proxy, not account-bench through workers/account"
+    )
+    code, lines = LP.verify(bed.root, PLAN_REL)
+    assert code == 0, lines
+
+
+def test_a_moved_bench_proxy_version_refuses_not_live(bed: Bed) -> None:
+    _proxy_plan(bed)
+    bed.proxy_json()
+    assert bed.record(bed.request("proxy-ready")).status == R.VERIFIED
+    bed.fake.answers["wrangler"] = LP.Result(0, Fake.deployments(MOVED), "")
+    out = bed.record(bed.request("proxy-ready"), write=True)
+    assert (out.status, out.code) == (R.NOT_VERIFIED, R.NOT_LIVE)
+    assert f"bench proxy serves version {MOVED}, not the recorded {UUID}" in out.message
+    assert bed.ledger() == []
+
+
+def test_an_unreadable_proxy_listing_refuses_not_live(bed: Bed) -> None:
+    _proxy_plan(bed)
+    bed.proxy_json()
+    bed.fake.answers["wrangler"] = LP.Result(1, "", "rate limited\n")
+    out = bed.record(bed.request("proxy-ready"))
+    assert (out.status, out.code) == (R.NOT_VERIFIED, R.NOT_LIVE)
+    assert "<unknown>" in out.message, "an unknown live version is a refusal, never a pass"
+
+
+def test_a_missing_foreign_or_unclean_proxy_record_refuses_not_live(bed: Bed) -> None:
+    _proxy_plan(bed)
+    bed.bench_json()
+    out = bed.record(bed.request("proxy-ready"))
+    assert (out.status, out.code) == (R.NOT_VERIFIED, R.NOT_LIVE)
+    assert "no bench proxy deploy record" in out.message, "the account record never stands in"
+    bed.proxy_json(head="9" * 40)
+    out = bed.record(bed.request("proxy-ready"))
+    assert (out.status, out.code) == (R.NOT_VERIFIED, R.NOT_LIVE)
+    assert "bench proxy serves a deploy cut from 999999999999, not the head" in out.message
+    bed.proxy_json(dirty=True)
+    assert "unclean tree" in bed.record(bed.request("proxy-ready")).message
+    bed.proxy_json(dirty=None)
+    assert "unclean tree" in bed.record(bed.request("proxy-ready")).message
+    assert bed.fake.ran("deploy_proxy") == 0, "a refused record runs no step"
+
+
+def test_a_proxy_check_reexecutes_under_the_proxy_bench_profile() -> None:
+    checks = LT.registry()
+    assert LP._profile_for(checks["proxy-ready"], {}) == deploy_proxy.BENCH_PROFILE
+    assert LP._profile_for(checks["account-smoke"], {}) == deploy_bench.PROFILE
+    assert LP._profile_for(checks["cli-bench"], {}) is None
+    bound = {"REDIACC_BWS_PROFILES": deploy_proxy.BENCH_PROFILE}
+    assert LP._profile_for(checks["proxy-ready"], bound) is None
+    assert LP._profile_for(checks["proxy-ready"], {"CLOUDFLARE_API_TOKEN": "t"}) is None
 
 
 def test_a_planted_secret_in_the_tail_refuses(bed: Bed) -> None:

@@ -2,7 +2,7 @@
 
 THE REGISTRY. `tiers.live.checks` in `.ci/config/proof-tiers.json` maps a check id to its `targets`, the `surfaces` it covers, how its deploy is identified (`deploy`) and a list of `steps`, each a FIXED argv. The only parameters are values the map itself names: `{origin}` (the value of the target's `origin_wk`, a key of `.ci/config/well-known.env`, never a literal URL) and `{config}` from `tiers.live.targets.<target>`, and `{machine}`, one alias of `tiers.live.targets.<target>.machines`, for a check marked `per_machine`. There are no free arguments: `parse_checks` refuses an unknown placeholder, a shell or a no-op as a step's program, and a surface no target of the check admits. `expand` is the only way to an argv, and `validate_row` re-expands a row's check and refuses any argv that differs, so a hand-edited command cannot pass.
 
-DEPLOY KINDS. `bench-cache`: the version `rediacc_ci.ops.deploy_bench` recorded in `.ci/cache/live-deploys/bench.json`, confirmed serving 100% through wrangler at check time (a uuid). `renet-hash`: the renet binary built from the head's renet pointer, confirmed byte for byte on each machine (`renet:<vcs.revision>@sha256:<64 hex>`). `tree`: a CLI run from the clean head tree itself (`cli:<head>`). `unrecorded`: nothing records which head the deployed version was cut from, so no run of that check can confirm a deploy and none is VERIFIED.
+DEPLOY KINDS. `bench-cache`: the version `rediacc_ci.ops.deploy_bench` recorded in `.ci/cache/live-deploys/bench.json`, confirmed serving 100% through wrangler at check time (a uuid). `bench-proxy-cache`: the same for the bench proxy, the version `rediacc_ci.deploy.deploy_proxy --target bench` recorded in `.ci/cache/live-deploys/proxy-bench.json` after its smoke passed, confirmed serving 100% on proxy-bench through wrangler (a uuid). `renet-hash`: the renet binary built from the head's renet pointer, confirmed byte for byte on each machine (`renet:<vcs.revision>@sha256:<64 hex>`). `tree`: a CLI run from the clean head tree itself (`cli:<head>`). `unrecorded`: nothing records which head the deployed version was cut from, so no run of that check can confirm a deploy and none is VERIFIED.
 
 THE ROW (schema 1). `receipt.envelope` with `tier` `live`, plus `id`, `at`, `by`, `plan`, `box`, `target`, `region`, `deploy` (`surface`, `worker`, `version_id`, `source`, `deployed_head`, `confirmed_live`), `check` (`id`, `args`, `argv` as one argv per step run, `rc`, `duration_s`, `log_sha256`, `tail`) and `ladder` (`vm`, the admitting VM run id, null only when `ladder_phases` is empty or when the row is WAIVED: `vm` null, `waived` the operator's `ASKED:<YYYY-MM-DDTHH:MM>Z` the recorder proved against the transcript, and `head_tree` the row's own tree, which `check:ci-plan-live-proof` reports as owed a VERIFIED `vm:check` until one covers that tree or a descendant). `id` is `receipt.row_id`. The full log stays in the gitignored `.ci/cache/live-proof/<id>.log`; `check.log_sha256` is its digest, and `validate_row` re-reads the log when it is present and refuses a mismatch (box V10).
 
@@ -37,10 +37,11 @@ TAIL_LINE_MAX = 300
 EMAIL_RE = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+)*")
 DEFAULT_TIMEOUT_S = 600
 BENCH_CACHE = "bench-cache"
+BENCH_PROXY_CACHE = "bench-proxy-cache"
 RENET_HASH = "renet-hash"
 TREE = "tree"
 UNRECORDED = "unrecorded"
-DEPLOY_KINDS = (BENCH_CACHE, RENET_HASH, TREE, UNRECORDED)
+DEPLOY_KINDS = (BENCH_CACHE, BENCH_PROXY_CACHE, RENET_HASH, TREE, UNRECORDED)
 EXPECT_RC = "rc"
 EXPECT_STALE_BINARY_EMPTY = "stale-binary-empty"
 EXPECT_RENET_HASH = "renet-hash"
@@ -50,12 +51,20 @@ REGIONS = ("eu", "us", "asia")
 MACHINE = "machine"
 # A shell or a no-op as a step's program is a free command or a check that cannot fail.
 REFUSED_PROGRAMS = frozenset({"sh", "bash", "zsh", "dash", "env", "eval", "exec", "true", ":"})
+_UUID_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
 VERSION_RES = {
-    BENCH_CACHE: re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"),
+    BENCH_CACHE: _UUID_RE,
+    BENCH_PROXY_CACHE: _UUID_RE,
     RENET_HASH: re.compile(r"^renet:[0-9a-f]{40}@sha256:[0-9a-f]{64}$"),
     TREE: re.compile(r"^cli:[0-9a-f]{40}([0-9a-f]{24})?$"),
 }
-DEPLOY_SURFACE = {BENCH_CACHE: "account", RENET_HASH: "renet", TREE: "cli", UNRECORDED: None}
+DEPLOY_SURFACE = {
+    BENCH_CACHE: "account",
+    BENCH_PROXY_CACHE: "proxy",
+    RENET_HASH: "renet",
+    TREE: "cli",
+    UNRECORDED: None,
+}
 _PLACEHOLDER = re.compile(r"\{([^{}]*)\}")
 _TARGET_KEYS = ("origin", "config")
 # The operator answer a waived ladder carries (`live_proof record --vm-waived`); the minute shape `release.local_gates.ASKED_RE` spells.

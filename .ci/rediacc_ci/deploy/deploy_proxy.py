@@ -17,6 +17,8 @@ THE SMOKE. `/v1/health` must answer 200, an unauthenticated `/v1/server-info` 40
 
 THE RECORD. `--record PATH` writes JSON: target, region, worker, config, version id, the previous version id, the artifacts version, the smoke rc, the rollback command, the last `migration_tag` and `cold_start_ms` (the wait for the first `/v1/ready` on the deployed version). A deploy whose `[[migrations]]` list differs from the previous release's (`git show <previous v* tag>:<config>`; bench: its last recorded `migration_tag`) is forward-only, and its rollback reads `forward-only: Durable Object class lifecycle change (v<n>); fix forward` in place of a command wrangler would refuse. The deploy record of Design item 9 reads the rollback field. The closing lines print the worker, the version id and the rollback command. No executor token is minted, put or named: the Worker obtains one over its ISSUER binding.
 
+THE LIVE-PROOF RECORD. A plain bench deploy (no `--var`, no `--company`) whose smoke passes writes `.ci/cache/live-deploys/proxy-bench.json` (gitignored): `worker`, `config`, `version_id` (the id the smoke passed on, lowercase), the `proof.receipt.identity` of the tree the image was built from over the `proxy` and `cli` surfaces (the image ships the CLI bundle built from that tree) and `at`. `rediacc_ci.ops.live_proof` reads it for a `bench-proxy-cache` check (proxy-ready): the record must keep the identity rules, be cut from the receipt's head, and name the version wrangler reports serving 100%. The identity is taken before the build and taken again at the record; a tree that moved in between writes no record and exits 1 (the deploy itself stands). A `--var` deploy writes none and says so, because its config is not the head's, and a failing smoke, `--smoke-only` and `--rollback` write none either: the old record then names a version no longer serving, and the recorder refuses it as not live.
+
 A DRY RUN (`--dry-run`) runs the config refusals and `wrangler deploy --dry-run --containers-rollout none` for any target, and needs no credentials, fetch or build. The `none` rollout is load-bearing: wrangler 4.152's dry run DOES build the container image (measured 2026-10-25, it failed on the unstaged `workers/proxy/stage/`), and `none` compiles the Worker without building or updating any container. The image itself is built and booted by check:ci-proxy-image-smoke.
 
 A ROLLBACK (`--rollback <version-id>`) runs `wrangler rollback <id> --message <m> --yes --config <config>` against the config the target deploys with (`--yes` because wrangler otherwise prompts twice), then the same cross-check (`wrangler deployments list` must name the id at 100%), the same smoke on that id, and the same record with `rolled_back: true`. A cross-check that fails still writes the record and exits 1, because wrangler has already moved the Worker: `version_id` is then the version the listing names live (null when none), never the unconfirmed target, so a later `--smoke-only` smokes what is live; the target stays in `requested_version_id`, beside `smoke_rc` null and the `failure`. The id is lowercased before wrangler, the smoke and the record. The key is `rolled_back`, not `rollback`, because `rollback` already holds the command that reverts this run, which `deploy_record` reads; here that is a rollback to the version that was live before, or the forward-only notice when the same forward-only check a deploy makes (the config's `[[migrations]]` against the previous release's, bench: against its recorded tag) says wrangler would refuse it. The id must be a full version UUID (`wrangler deployments list` prints them), checked before any credential. `migration_tag` is carried from the existing record, since a rollback undoes no Durable Object migration and wrangler names no tag per version; it is the string `unknown`, never null, when it cannot be read. Off bench, the forward-only check asks about the live version's release, the `artifacts_version` its record names, exactly as the deploy asks about `--version`. A rollback builds and fetches nothing, so `--version`, `--var`, `--dry-run` and `--smoke-only` are refused beside it: a `--dry-run` beside a rollback would read as a rehearsal while the rollback published. Every target may roll back, and a stable (shared) rollback needs no ask, exactly as a shared deploy needs none (PLAN-product-domain-rename W7).
@@ -38,10 +40,12 @@ import time
 import tomllib
 import typing
 import urllib.parse
+from datetime import UTC, datetime
 
 from rediacc_ci import log
 from rediacc_ci.core import common, https, wrangler
 from rediacc_ci.deploy import console_executor, proxy_configs
+from rediacc_ci.proof import receipt
 from rediacc_ci.version import resolve_version
 
 # This module's own dotted name, the prefix of every diagnostic it prints (the same name `python3 -m` runs it by). A literal, because `__name__` is `__main__` under `-m`.
@@ -65,6 +69,12 @@ BENCH_PROFILE = "deploy-proxy-bench"
 # The stable profile: a bare local run with no CLOUDFLARE_API_TOKEN re-executes itself under it.
 PROFILE = "deploy-proxy"
 PROFILES_ENV = "REDIACC_BWS_PROFILES"
+
+# The live-proof record of a bench deploy (THE LIVE-PROOF RECORD): the bench Worker, the surfaces its identity covers, the path `rediacc_ci.ops.live_proof` reads, and the identity fields that must not move between the build and the record.
+BENCH_WORKER = "proxy-bench"
+BENCH_RECORD_SURFACES = ("proxy", "cli")
+BENCH_VERSION_RECORD = (".ci", "cache", "live-deploys", "proxy-bench.json")
+BENCH_BUILT_KEYS = ("head", "tree", "dirty", "inputs")
 
 # A fixed path in /tmp, as the bash original had it.
 DRY_RUN_OUTDIR = "/tmp/rediacc-proxy-dry-run"
@@ -761,6 +771,76 @@ def read_record_version(path: pathlib.Path | None) -> str | None:
     return str(value) if value else None
 
 
+def bench_identity(repo_root: pathlib.Path) -> dict[str, object]:
+    """`proof.receipt.identity` of the checkout over the surfaces a bench image is built from."""
+    return receipt.identity(repo_root, BENCH_RECORD_SURFACES)
+
+
+def record_bench_version(
+    repo_root: pathlib.Path,
+    worker: str,
+    config: str,
+    version_id: str,
+    built: dict[str, object],
+) -> dict[str, object]:
+    """Write the live-proof record of a bench deploy whose smoke passed, from `built` (the identity taken before the build), and return it. RefusedError, with nothing written, when the tree moved between the build and now."""
+    now = bench_identity(repo_root)
+    moved = [key for key in BENCH_BUILT_KEYS if built.get(key) != now.get(key)]
+    if moved:
+        raise RefusedError(
+            "the tree moved during the deploy (%s changed between the build and the record), "
+            "so no deploy record ties version %s to one head: %s is not written"
+            % (", ".join(moved), version_id, "/".join(BENCH_VERSION_RECORD))
+        )
+    record: dict[str, object] = {
+        "worker": worker,
+        "config": "%s/%s" % (WORKER_REL, config),
+        "version_id": version_id.lower(),
+        **built,
+        "at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    }
+    receipt.write_atomic(
+        repo_root.joinpath(*BENCH_VERSION_RECORD), json.dumps(record, indent=2) + "\n"
+    )
+    return record
+
+
+def _record_bench(
+    repo_root: pathlib.Path,
+    worker: str,
+    config: str,
+    version_id: str,
+    built: dict[str, object] | None,
+    overrides: dict[str, str],
+) -> int:
+    """After a passing bench smoke: write the live-proof record, or say why none is written. 1 when the tree moved."""
+    rel = "/".join(BENCH_VERSION_RECORD)
+    if overrides:
+        log.warn(
+            "No live-proof record written to %s: --var overrides make this deploy differ from the "
+            "head's config, so live_proof proxy-ready stays not-live until a plain bench deploy"
+            % rel
+        )
+        return 0
+    if built is None:
+        return 0
+    try:
+        record = record_bench_version(repo_root, worker, config, version_id, built)
+    except RefusedError as exc:
+        log.error(str(exc))
+        return 1
+    log.info(
+        "Bench proxy version %s recorded in %s (head %s)"
+        % (record["version_id"], rel, str(record.get("head") or "unknown")[:12])
+    )
+    if record.get("dirty") is not False:
+        log.warn(
+            "The tree was not known clean over %s (dirty=%s): live_proof refuses this record; deploy "
+            "again from a clean head" % (", ".join(BENCH_RECORD_SURFACES), record.get("dirty"))
+        )
+    return 0
+
+
 def closing_lines(
     worker: str, version_id: str, rollback: str, *, rolled_back: bool = False
 ) -> tuple[str, ...]:
@@ -1152,6 +1232,8 @@ def main(argv: list[str]) -> int:
         log.error(MISSING_KEY)
         return 1
 
+    # Taken before the build, so the record names the tree the image was built from (THE LIVE-PROOF RECORD).
+    built = bench_identity(repo_root) if bench and company is None and not overrides else None
     status = (
         stage_bench(repo_root, worker_dir) if bench else stage_release(worker_dir, args.version)
     )
@@ -1214,6 +1296,10 @@ def main(argv: list[str]) -> int:
     if smoke_rc != 0:
         log.error("Rollback: %s" % shown(rollback))
         return smoke_rc
+    if bench and company is None:
+        status = _record_bench(repo_root, spec.name, config, version_id, built, overrides)
+        if status != 0:
+            return status
     for line in closing_lines(spec.name, version_id, rollback):
         log.info(shown(line))
     return 0
