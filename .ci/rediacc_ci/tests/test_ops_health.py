@@ -981,3 +981,55 @@ def test_the_repo_config_names_every_key_the_readers_use():
     assert derived <= set(oh.DEFAULTS["local_ttl_minutes"])
     assert set(oh.DEFAULTS["local_ttl_minutes"]) <= set(doc["local_ttl_minutes"])
     assert set(oh.DEFAULTS["stale"]) <= set(doc["stale"])
+
+
+# --------------------------------------------------------------------------- failure text carries the CLI's stdout envelope
+
+PROGRESS = "→ Preparing CLI development environment\n✓ Renet available at /x\n→ Starting CLI (config eu-bench)"
+ERR_ENVELOPE = json.dumps(
+    {
+        "success": False,
+        "command": "x",
+        "data": None,
+        "errors": [{"code": "GENERAL_ERROR", "message": "HTTP 403"}],
+    }
+)
+FAILING_VERBS = [
+    "machine list",
+    "machine health",
+    "machine status m1 --containers",
+    "machine status m1 --services",
+]
+
+
+def _failing_fleet(verb_prefix: str, stdout: str):
+    """A Fleet whose `verb_prefix` calls fail with rc 1, `stdout` and progress text on stderr."""
+    base = Fleet()
+
+    def run(argv, env, timeout):
+        args = " ".join(_verb_args(argv))
+        if args.startswith(verb_prefix):
+            return oh.Result(1, stdout, PROGRESS)
+        return base(argv, env, timeout)
+
+    return run
+
+
+@pytest.mark.parametrize("verb_prefix", FAILING_VERBS)
+def test_failed_call_reports_the_stdout_envelope_not_the_progress(verb_prefix):
+    out = machines(_failing_fleet(verb_prefix, ERR_ENVELOPE))
+    assert "GENERAL_ERROR: HTTP 403" in out["detail"]
+    assert "Preparing CLI development environment" not in out["detail"]
+
+
+@pytest.mark.parametrize("verb_prefix", FAILING_VERBS)
+def test_failed_call_without_an_envelope_keeps_the_stderr_tail(verb_prefix):
+    out = machines(_failing_fleet(verb_prefix, ""))
+    assert "Starting CLI (config eu-bench)" in out["detail"]
+
+
+def test_envelope_errors_helper():
+    assert oh.envelope_errors(ERR_ENVELOPE) == "GENERAL_ERROR: HTTP 403"
+    assert oh.envelope_errors("progress\n" + ERR_ENVELOPE) == "GENERAL_ERROR: HTTP 403"
+    assert oh.envelope_errors(envelope({"a": 1})) == ""
+    assert oh.envelope_errors("not json") == ""

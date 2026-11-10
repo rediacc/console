@@ -230,25 +230,51 @@ def rdc_argv(env: dict, config: str | None, args: list) -> list:
     return [rdc, *(["--config", config] if config else []), *args]
 
 
-def envelope_data(stdout: str):
-    """The `data` of the CLI's JSON envelope, or the whole document when it has no envelope. None when stdout holds no JSON."""
+def _envelope_doc(stdout: str):
+    """The parsed JSON document on stdout (progress text before it tolerated), or None."""
     text = (stdout or "").strip()
     if not text:
         return None
     try:
-        doc = json.loads(text)
+        return json.loads(text)
     except ValueError:
         # Progress text before the document: take from the first brace or bracket on its own line.
         start = min((i for i in (text.find("\n{"), text.find("\n[")) if i >= 0), default=-1)
         if start < 0:
             return None
         try:
-            doc = json.loads(text[start + 1 :])
+            return json.loads(text[start + 1 :])
         except ValueError:
             return None
+
+
+def envelope_data(stdout: str):
+    """The `data` of the CLI's JSON envelope, or the whole document when it has no envelope. None when stdout holds no JSON."""
+    doc = _envelope_doc(stdout)
     if isinstance(doc, dict) and "data" in doc and "success" in doc:
         return doc["data"]
     return doc
+
+
+def envelope_errors(stdout: str) -> str:
+    """The envelope's `errors[]` as "CODE: message; ...", or "" when stdout carries none. The CLI writes its real error there; stderr holds only progress lines."""
+    doc = _envelope_doc(stdout)
+    if not isinstance(doc, dict) or not isinstance(doc.get("errors"), list):
+        return ""
+    parts = []
+    for err in doc["errors"]:
+        if isinstance(err, dict):
+            message = str(err.get("message") or "").strip()
+            code = str(err.get("code") or "").strip()
+            parts.append("%s: %s" % (code, message) if code and message else code or message)
+        elif err:
+            parts.append(str(err))
+    return "; ".join(p for p in parts if p)
+
+
+def failure_text(res: Result, limit: int = 200, default: str = "") -> str:
+    """Why a failed rdc call failed: the stdout envelope's errors first, else the stderr (then stdout) tail."""
+    return _trim(envelope_errors(res.stdout) or res.stderr or res.stdout or default, limit)
 
 
 # --------------------------------------------------------------------------- machines (L1, D-verdict)
@@ -331,7 +357,7 @@ def check_machine(config: str | None, machine: str, runner: Runner, env: dict, c
     elif not isinstance(data, dict):
         detail = "machine health rc %d printed no JSON: %s" % (
             health.rc,
-            _trim(health.stderr or health.stdout, 200),
+            failure_text(health),
         )
         # An exit of 1 or more is red whether or not the output could be read.
         if health.rc >= 1:
@@ -360,8 +386,7 @@ def check_machine(config: str | None, machine: str, runner: Runner, env: dict, c
             unreadable.append("machine status --%s timed out" % step)
         elif res.rc != 0:
             row["problems"].append(
-                "machine status --%s rc %d: %s"
-                % (step, res.rc, _trim(res.stderr or res.stdout, 200))
+                "machine status --%s rc %d: %s" % (step, res.rc, failure_text(res))
             )
 
     listing = data if isinstance(data, dict) and "repositories" in data else None
@@ -467,7 +492,7 @@ def repair_machine(
     if res.timed_out or res.rc >= 2 or res.rc < 0:
         out["failed"] = "machine repair %s: %s" % (
             "timed out" if res.timed_out else "rc %d" % res.rc,
-            "; ".join(_failed_actions(actions)) or _trim(res.stderr or "no action reported", 200),
+            "; ".join(_failed_actions(actions)) or failure_text(res, default="no action reported"),
         )
     return out
 
@@ -515,7 +540,7 @@ def machines_check(
         if res.timed_out or res.rc != 0 or not isinstance(data, list):
             setup.append(
                 "%s: machine list rc %s: %s"
-                % (label, "timeout" if res.timed_out else res.rc, _trim(res.stderr, 200))
+                % (label, "timeout" if res.timed_out else res.rc, failure_text(res))
             )
             continue
         names = [str(m.get("name")) for m in data if isinstance(m, dict) and m.get("name")]
