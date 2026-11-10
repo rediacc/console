@@ -136,6 +136,17 @@ def test_secret_reachability_gitlink_names_reads_gitmodules_outside_a_work_tree(
     assert mod.gitlink_names(tmp_path) == {"sub"}
 
 
+def test_secret_reachability_gitlink_names_ignores_a_trailing_comment(tmp_path: Path) -> None:
+    """A `# note` or `; note` after the path is a comment, not part of the name (review d2c48d38.1)."""
+    mod = _load("check_secret_reachability")
+    (tmp_path / ".gitmodules").write_text(
+        "[submodule a]\n\tpath = private/sub # note\n[submodule b]\n\tpath = private/two ; n\n"
+        "[submodule c]\n\tpath = private/three\n",
+        encoding="utf-8",
+    )
+    assert mod.gitlink_names(tmp_path) == {"sub", "two", "three"}
+
+
 def _refresh_in_archive(monkeypatch, tmp_path: Path) -> dict:
     if importlib.util.find_spec("yaml") is None:
         monkeypatch.setitem(sys.modules, "yaml", types.ModuleType("yaml"))

@@ -754,6 +754,7 @@ class _LiveK1:
             " and up() after it",
             lambda: self.rdc("repo", "up", self.ref_a, "--no-start"),
             want_up=True,
+            detail=self._unit_rewrite_detail,
         )
 
     # -- K1.6 ------------------------------------------------------------------

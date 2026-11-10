@@ -578,7 +578,7 @@ class FakeWorker:
                     self.units[nid] = unit_text(nid, self.nets[nid]["guid"])
                     if self.mount_restart_up:
                         self.up(nid)
-                return _Res()
+                return _Res(err=self.repo_up_err)
             if self.repo_up_restarts and "Environment=" not in self.units[nid]:
                 # The start side differs from the render: BeforeRestart runs down() (fixed renet) or not.
                 self.restart(nid, down_first=self.hook)
@@ -933,6 +933,22 @@ def test_k1_10_mount_restart(
     assert ("rdc", "repo", "up", live.ref_a, "--no-start") in ctx.calls
     if hook and not mount_up:
         assert "no up line" in ctx.rows[-1][2]
+
+
+def test_k1_10_evidence_carries_the_no_start_repo_up_stderr(tmp_path: pathlib.Path) -> None:
+    worker = FakeWorker()
+    worker.repo_up_restarts = False
+    worker.repo_up_err = "write unit: read-only file system"
+    live, ctx = _ready(tmp_path, worker)
+    live.k1_10_mount_restart()
+    assert "repo up stderr: write unit: read-only file system" in ctx.rows[-1][2], ctx.rows
+    # CONTROL: a silent repo up reads as an empty stderr.
+    quiet = FakeWorker()
+    quiet.repo_up_restarts = False
+    (tmp_path / "q").mkdir()
+    live2, ctx2 = _ready(tmp_path / "q", quiet)
+    live2.k1_10_mount_restart()
+    assert "repo up stderr: <empty>" in ctx2.rows[-1][2], ctx2.rows
 
 
 def test_k1_10_fails_when_the_mount_does_not_restart(tmp_path: pathlib.Path) -> None:

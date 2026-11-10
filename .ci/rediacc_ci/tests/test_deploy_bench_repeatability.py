@@ -208,10 +208,10 @@ def test_an_unset_path_leaves_no_empty_entry(monkeypatch, tmp_path):
 
 
 def test_a_missing_curl_reads_as_no_answer(monkeypatch):
-    def missing(_url):
+    def missing(*_a, **_k):
         raise FileNotFoundError("curl")
 
-    monkeypatch.setattr(deploy_bench, "_run_curl", missing)
+    monkeypatch.setattr(deploy_bench.subprocess, "run", missing)
     assert deploy_bench._http_status("https://bench.example/") == 0
     with pytest.raises(deploy_bench.DeployError):
         deploy_bench.smoke(sleep=lambda _s: None)

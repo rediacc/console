@@ -955,7 +955,9 @@ def test_two_new_links_are_a_race_and_sign_in_nothing():
 
 def test_the_link_read_is_bounded_but_never_to_one_row():
     """Review 12d04dd4.5: the poll reads the newest rows, not the owner's whole history; review 14377d66.2: more than one."""
-    assert "LIMIT %d" % lab.LINK_ROWS in lab.LINK_SQL
+    limit = re.search(r"LIMIT (\d+)$", lab.LINK_SQL)
+    assert limit is not None, lab.LINK_SQL
+    assert int(limit.group(1)) == lab.LINK_ROWS
     assert lab.LINK_ROWS > 1
 
 
@@ -2369,7 +2371,7 @@ def test_a_runtime_error_in_the_rollback_keeps_the_renewal_error():
     assert "restore it by hand" in note
 
 
-def test_both_rollbacks_catch_the_same_tuple():
+def test_a_runtime_error_from_the_success_path_rollback_names_the_hand_fix():
     """Review 58abac9b.2: a RuntimeError from the success-path rollback names the hand fix."""
     fleet = _RuntimeRollback("v-new")
     with pytest.raises(proof.LabError, match=r"renewal answered ok=True.*v-new"):

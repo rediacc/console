@@ -146,7 +146,9 @@ def gitlink_names(root):
         text = (pathlib.Path(root) / ".gitmodules").read_text(encoding="utf-8")
     except FileNotFoundError:
         return set()
-    return set(re.findall(r"^\s*path\s*=\s*private/(\S+)\s*$", text, flags=re.MULTILINE))
+    return set(
+        re.findall(r"^\s*path\s*=\s*private/([^\s#;]+)\s*(?:[#;].*)?$", text, flags=re.MULTILINE)
+    )
 
 
 def refresh(root, baseline_path):
