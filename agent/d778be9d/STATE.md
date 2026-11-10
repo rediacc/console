@@ -1,31 +1,25 @@
-## SESSION d778be9d 2026-11-10T08:40:28Z
+## SESSION d778be9d 2026-11-10T14:57:48Z
 
-# STATE d778be9d (branch 1104-1, 2026-11-10 ~08:40Z)
-
-## Where things stand
-- vmcheck18-0739: NOT_VERIFIED (rc=77). K1.3-K1.5 ok (reconcile fix proven); ceph, ceph-workers and k8s-ceph legs not-verified because those fleets and worker .12 were down. Rerun running: bkqae9edw (VM_DSK=48 ./rdc.sh ops up, then vm:check; logs opsup-*, vmcheck19-*).
-- Q14 ticked (13 hostinger repos verified via eu-remote). Experience plan 11/16; B6 landed d45d4a12, tick waits on its old-prompt control replay (agent aba86e19, #54aacfb3).
-
-## Remaining proof steps (in order)
-1. vm:check VERIFIED on the full fleet (#caa837d4): read vmcheck19-*.log; K1.3, backup/backup-large-2g (#63c8f457), ceph and k8s-ceph legs must be ok. This also proves PLAN-renet-docker-running-semantics V1 and PLAN-backup-program P15.
-2. ci:quick once on the final tree (receipt for the push).
-3. Hostinger (via eu-remote; provisioning via eu-bench): H3 #4f4df453 (re-deploy the backup schedule, units show verify and OnFailure=), Q2 (machine setup + status clean), the LP-hostinger receipt #c09f14c3 (worklist.py --live-proof d778be9d agent/plans/PLAN-first-release-checks.md 7692f2db --write --tick), the LP-hostinger receipts of shared-bucket, tiered-license and docker-running, H1 (hermes docker_running re-measure), L1 (tiered-license refusal exit 10).
-4. Bench receipts: #2510777a (rename LP-bench 062294e2), #9f06e09a (free-license LP-bench), LP-bench of shared-bucket and docker-running, N4b (rdc --config eu-bench backup restore --path on a real snapshot), enterprise bench proofs V3-V11 (./run.sh enterprise proof <verb> --bench).
-5. After the batch push: CI-run boxes A4d (elite S3 probe job), J6 (suite 26 green), J9 (renet full suite on a renet change), A1a #ab9c68b1 (preview smoke for the quota page, after #658c04e3).
-6. After merge / nightly: K10 #fa1eb550 (first nightly result), cloudflare-proxy B4 (suite 29 nightly), the scheduled CT Backup Perf rerun (unmount fix), V3 #ce85c831, P-series #7c54901a; shared-bucket L2 (scheduled hostinger snapshot after the stable deploy).
-7. After the .cloud deploys (#ceff5711): L9 #f5c5b668 (licence re-issue via eu-remote); Z3 #5b5d1cfe once the batch receipts are VERIFIED.
-8. Record steps: Q16 (close the backup record with run ids); experience B6 tick after the control replay, then E0, R1, R3, M1.
+# STATE d778be9d (branch 1104-1), 2026-11-10 afternoon
 
 ## Big pieces
-- PLAN-backup-program (9 open, all live/CI/record), PLAN-enterprise-isolation (live bench proofs), PLAN-experience-feedback (5 open).
+- Production .cloud rollout: L6 (us, asia) and L8 (eu) live (account-us ea14b606, account-asia d1b9be6d, account-eu 713ede69), L7 live (releases/media buckets, www Worker 331fdbc0, lifecycle 13/13). L9 running now on hostinger via eu-remote (runner a1917d88, item #8d576362), then J1 and J2-J4 with 2 h windows (operator "accept a shorter window"). L10 after L9; L11 permitted after L10 with a final rediacc-www-media -> media copy first (#9fbaebd9).
+- Mail M2/M3 ticked: all SES policies *@notify.rediacc.cloud, keys rotated, asia uses the EU key by ruling; rotation consumers fixed (account 52d5e14).
+- vm:check waiver landed (--vm-waived ASKED:2026-11-10T13:38Z); 23 of 23 LP-bench boxes ticked (e610e4ce, 487ead90). LP-hostinger receipts wait for the hostinger runner to finish.
+- ci:quick last run (1137) red on 5; since then many fixes landed. Next gate cycle: ci:quick, ./run.sh drill backup && backup-onprem, then VM_DSK=48 npm run vm:check -- --changed (run 20), which also confirms the waived receipts.
 
 ## Owed ticks
-- PLAN-enterprise-isolation.md 2878e08d a8892e0c 0a6e5712 e8b5ad6f 6041744e f4b49503 0fbd62dc cc583290 b343464b; PLAN-backup-program.md 0a237b2e 5d379672 575e0098 07955f58 d7be9d49 (see proof steps above).
+- PLAN-first-release-checks 357547f9 (us/asia placement): asia org d0c9dce0 stuck placement; writer aa53d794 (#60c7b83e) fixing the relocation probe vantage, then redeploy proxy-asia and rerun asia E1.
+- PLAN-product-domain-rename L9, L10, L11; PLAN-backup-critical-tier J1-J4; LP-hostinger boxes (with --vm-waived) after the hostinger runner.
 
 ## Delegated
-- bkqae9edw (background shell): #caa837d4, ops up + vm:check; accept "vm:check VERIFIED" in vmcheck19-*.log.
-- agent aba86e19b7f772102: #54aacfb3, B6 old-prompt control replay; accept not-a-bug rate falls and recall within run-to-run spread.
+- a1917d88f28e26699: #8d576362 L9 + J1-J4 on hostinger (eu-remote), report has per-step rc.
+- a20b057c7916526ac: guard false positives #921336d9 #90988086 #883cdc8c #c9c8c18e (lease).
+- aa53d794243f2a70e: #60c7b83e relocation probe vantage (lease, workers/proxy).
 
 ## Next action
-1. When bkqae9edw exits, read the verdict; VERIFIED -> step 2 then 3 and 4 above; else diagnose the failing legs from the run dir.
-2. When aba86e19 reports, tick B6 (af608650) or route the recall gap.
+1. As each lease report lands: spot-check, cherry-pick (submodule first), run its tests, commit gitlink, mark review findings, gc the tree.
+2. When the hostinger runner reports: tick L9 and J1-J4 with its evidence, then record LP-hostinger receipts with --vm-waived ASKED:2026-11-10T13:38Z.
+3. Then the gate cycle above; push only at batch end (turbo) or with a TURBO_PUSH_REASON.
+4. Parked with dated defaults: #36c2e402 go-mod pin bump NOT-BEFORE 2026-11-12T00:05Z; #93f61363 SES grace keys deactivate NOT-BEFORE 2026-11-17.
+5. Effort is low by operator request; #fcbed611 restores smart near compaction.
