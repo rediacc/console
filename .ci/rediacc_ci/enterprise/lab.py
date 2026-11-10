@@ -1358,16 +1358,25 @@ def read_limits(*, fetch: Fetch = http_get) -> dict[str, int]:
 #
 # THE VERBS. Read-only: `rdc machine status <machine>`. Mutating: `rdc repo up <repo>`, the ordinary verb a machine takes its new renet on. `renet_version` runs `renet version` on the machine through `rdc term connect <machine> -c`, and `released_renet` is the version edge runs (`cli/edge/latest.json`), which the released renet carries.
 #
-# NOT BUILT HERE. `executor_upload` needs a mutating verb sent through a company's proxy with a minted proxy token (box V6's minter), and `renew_with` needs the previous and the new Worker deployed side by side for one company; neither driver exists, so both raise `LabError("not built yet: V9 ...")` through their seam, never an answer, so a refusal claim cannot pass on a missing driver.
+# THE EXECUTOR DRIVER. `executor_upload(machine)` sends the mutating verb through a company's proxy: `REDIACC_TOKEN=<proxy token> rdc --proxy https://<company>-proxy.<domain> repo up <repo>` (packages/cli/src/cli.ts `--proxy`), the proxy token minted by box V6 for the bench company `ENTERPRISE_PROOF_COMPANY` names. The executor serves the request (packages/cli/src/services/renet/renet-upload-decision.ts `inExecutor`), so it must leave the machine's renet as it was. The verb must succeed (a non-zero exit is a `LabError`, never a refusal: a verb that failed before reaching the machine proves nothing); the answer is refused, naming the version, when renet did not move, and admitted when it did. The company's executor resolves the repository from the company's config store, so the live run needs `ENTERPRISE_PROOF_REPO` in that store.
+#
+# THE SPREAD-RELEASE DRIVER. `renew_with(machine, renet=, worker=)` puts one renet on the machine, one version of the company's account Worker in front of it, and renews: `previous` renet is the one the released rdc `ENTERPRISE_PROOF_RDC_PREVIOUS` names uploads on `repo up`, `new` the one `ENTERPRISE_PROOF_RDC` uploads (checked against what edge runs). The Worker versions are the 100% versions of `wrangler deployments list --json --name account-<name>`, newest first (`new`, then the next distinct one, `previous`); `previous` is put in front with `wrangler rollback <id> --name account-<name> --yes`, and the newest is rolled back in again afterwards whatever happened. The renewal is `sudo renet license renew --force --output json` on the machine (private/renet/cmd/renet/license_renew.go): admitted when every result is `renewed`, refused naming the first other outcome and its code, and a `LabError` when nothing is installed or the lock was busy, so a renewal that never ran is never a refusal. The machine's repositories must carry licences of that company for the renewal to reach its Worker.
 
 
 RDC_ENV = "ENTERPRISE_PROOF_RDC"
+PREVIOUS_RDC_ENV = "ENTERPRISE_PROOF_RDC_PREVIOUS"
 CONFIG_ENV = "ENTERPRISE_PROOF_CONFIG"
 MACHINE_ENV = "ENTERPRISE_PROOF_MACHINE"
 REPO_ENV = "ENTERPRISE_PROOF_REPO"
+COMPANY_ENV = "ENTERPRISE_PROOF_COMPANY"
 DEFAULT_CONFIG = "eu-bench"
 HOLD_ENV = "REDIACC_NO_PROVISION"
+PROXY_BEARER_ENV = "REDIACC_TOKEN"
 VERSION_RE = re.compile(r"renet(?:\s+version)?\s+v?([0-9]+\.[0-9]+\.[0-9]+[0-9A-Za-z.+-]*)")
+RENEW_COMMAND = "sudo renet license renew --force --output json"
+RENEWED = "renewed"
+ROLLBACK_MESSAGE = "enterprise proof renet: spread release"
+SPREAD = ("previous", "new")
 
 Env = Callable[[str], str]
 
@@ -1381,15 +1390,21 @@ def _env(name: str) -> str:
     return value
 
 
-def _rdc(run: Runner, env: Env, *args: str) -> Proc:
-    binary = env(RDC_ENV)
+def _rdc(
+    run: Runner,
+    env: Env,
+    *args: str,
+    binary_env: str = RDC_ENV,
+    extra: dict[str, str] | None = None,
+) -> Proc:
+    binary = env(binary_env)
     if binary.endswith("rdc.sh"):
         raise proof.LabError(
-            "%s names the checkout's rdc.sh, which holds renet; name a released rdc" % RDC_ENV
+            "%s names the checkout's rdc.sh, which holds renet; name a released rdc" % binary_env
         )
     config = os.environ.get(CONFIG_ENV) or DEFAULT_CONFIG
     # Empty, not removed and not "0": see the section header (renetHold reads only "1" and "0").
-    return run((binary, "--config", config, *args), None, {HOLD_ENV: ""})
+    return run((binary, "--config", config, *args), None, {HOLD_ENV: "", **(extra or {})})
 
 
 def fleet_machine(*, env: Env = _env) -> str:
@@ -1417,19 +1432,147 @@ def run_verb(machine: str, *, mutating: bool, run: Runner = run_process, env: En
     return _rdc(run, env, *argv).rc
 
 
-def _not_built(what: str) -> proof.Answer:
-    raise proof.LabError("not built yet: V9 (%s; nothing was run)" % what)
-
-
 Driver = Callable[[str], proof.Answer]
+Versions = Callable[[str], str]
+
+
+def live_executor_upload(
+    machine: str,
+    *,
+    run: Runner = run_process,
+    env: Env = _env,
+    token: Callable[[str], str] | None = None,
+    version: Versions | None = None,
+    companies: Companies = all_companies,
+) -> proof.Answer:
+    company = env(COMPANY_ENV)
+    proxy_host = names.hosts(
+        str(company_row(company, companies=companies)["name"]), PRODUCT_DOMAIN
+    )[1]
+    read = version or (lambda m: renet_version(m, run=run, env=env))
+    minted = (token or (lambda c: mint(c, "proxy-token")))(company)
+    before = read(machine)
+    done = _rdc(
+        run,
+        env,
+        "--proxy",
+        "https://%s" % proxy_host,
+        "repo",
+        "up",
+        env(REPO_ENV),
+        extra={PROXY_BEARER_ENV: minted},
+    )
+    if done.rc != 0:
+        raise proof.LabError("the proxied repo up exited %d; nothing was proven" % done.rc)
+    after = read(machine)
+    if after == before:
+        return proof.Answer(False, "the executor left renet at %s" % before)
+    return proof.Answer(True)
 
 
 def executor_upload(machine: str, *, driver: Driver | None = None) -> proof.Answer:
-    if driver is None:
-        return _not_built(
-            "no executor driver: a mutating verb through a company proxy needs V6's minted proxy token"
+    return (driver or live_executor_upload)(machine)
+
+
+def _json_value(text: str, open_ch: str, close_ch: str) -> object:
+    start, end = text.find(open_ch), text.rfind(close_ch)
+    if start < 0 or end < start:
+        return None
+    try:
+        return json.loads(text[start : end + 1])
+    except ValueError:
+        return None
+
+
+def worker_versions(worker: str, *, run: Runner = run_process) -> list[str]:
+    """The 100% version of each deployment of `worker`, newest first, each version once."""
+    done = run([*wrangler.ARGV, "deployments", "list", "--json", "--name", worker], None, None)
+    if done.rc != 0:
+        raise proof.LabError("wrangler deployments list exited %d" % done.rc)
+    data = _json_value(done.stdout, "[", "]")
+    if not isinstance(data, list):
+        raise proof.LabError("wrangler deployments list printed no JSON list")
+    rows = sorted(
+        (d for d in data if isinstance(d, dict)),
+        key=lambda d: str(d.get("created_on", "")),
+        reverse=True,
+    )
+    out: list[str] = []
+    for row in rows:
+        for v in row.get("versions") or []:
+            vid = str(v.get("version_id") or "") if isinstance(v, dict) else ""
+            if vid and v.get("percentage") in (100, 100.0) and vid not in out:
+                out.append(vid)
+    return out
+
+
+def put_version(worker: str, version_id: str, *, run: Runner = run_process) -> None:
+    argv = [
+        *wrangler.ARGV, "rollback", version_id, "--message", ROLLBACK_MESSAGE, "--yes",
+        "--name", worker,
+    ]  # fmt: skip
+    done = run(argv, None, None)
+    if done.rc != 0:
+        raise proof.LabError("wrangler rollback exited %d" % done.rc)
+
+
+def renew_on(machine: str, *, run: Runner = run_process, env: Env = _env) -> proof.Answer:
+    done = _rdc(run, env, "term", "connect", machine, "-c", RENEW_COMMAND)
+    if done.rc != 0:
+        raise proof.LabError("renet license renew on the fleet machine exited %d" % done.rc)
+    doc = _json_value(done.stdout, "{", "}")
+    if not isinstance(doc, dict):
+        raise proof.LabError("renet license renew printed no JSON object")
+    if doc.get("lockBusy"):
+        raise proof.LabError("another renewal held the lock; nothing was renewed")
+    results = [r for r in doc.get("results") or [] if isinstance(r, dict)]
+    if not results:
+        raise proof.LabError("renet license renew found no installed licence")
+    for r in results:
+        if r.get("outcome") != RENEWED:
+            code = str(r.get("code") or "")
+            return proof.Answer(
+                False, "%s%s" % (r.get("outcome"), " code=%s" % code if code else "")
+            )
+    return proof.Answer(True)
+
+
+def live_spread_renew(
+    machine: str,
+    renet: str,
+    worker: str,
+    *,
+    run: Runner = run_process,
+    env: Env = _env,
+    version: Versions | None = None,
+    released: Callable[[], str] = released_renet,
+    companies: Companies = all_companies,
+) -> proof.Answer:
+    if renet not in SPREAD or worker not in SPREAD:
+        raise proof.LabError("a spread release is previous or new, not %s/%s" % (renet, worker))
+    name = str(company_row(env(COMPANY_ENV), companies=companies)["name"])
+    script = "account-%s" % name
+    versions = worker_versions(script, run=run)
+    if len(versions) < 2:
+        raise proof.LabError("the company Worker has %d deployed version(s), not 2" % len(versions))
+    newest, previous = versions[0], versions[1]
+    binary_env = PREVIOUS_RDC_ENV if renet == "previous" else RDC_ENV
+    placed = _rdc(run, env, "repo", "up", env(REPO_ENV), binary_env=binary_env)
+    if placed.rc != 0:
+        raise proof.LabError("repo up with the %s rdc exited %d" % (renet, placed.rc))
+    runs = (version or (lambda m: renet_version(m, run=run, env=env)))(machine)
+    current = released()
+    if (runs == current) != (renet == "new"):
+        raise proof.LabError(
+            "the machine runs renet %s, not the %s one (edge runs %s)" % (runs, renet, current)
         )
-    return driver(machine)
+    if worker == "new":
+        return renew_on(machine, run=run, env=env)
+    put_version(script, previous, run=run)
+    try:
+        return renew_on(machine, run=run, env=env)
+    finally:
+        put_version(script, newest, run=run)
 
 
 def renew_with(
@@ -1439,12 +1582,7 @@ def renew_with(
     worker: str,
     driver: Callable[[str, str, str], proof.Answer] | None = None,
 ) -> proof.Answer:
-    if driver is None:
-        return _not_built(
-            "no spread-release driver: renewing %s renet against the %s Worker needs both Worker versions deployed"
-            % (renet, worker)
-        )
-    return driver(machine, renet, worker)
+    return (driver or live_spread_renew)(machine, renet, worker)
 
 
 # ==== box V10: the GitHub dispatch and its run (`proof github`)

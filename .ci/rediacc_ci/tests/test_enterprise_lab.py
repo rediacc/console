@@ -1426,10 +1426,184 @@ def test_released_renet_is_what_edge_runs():
     assert lab.released_renet(edge=lambda: "0.9.2") == "0.9.2"
 
 
-def test_the_unbuilt_drivers_refuse_by_name_and_a_driver_is_used():
-    with pytest.raises(proof.LabError, match="not built yet: V9"):
+ENV_V9 = {
+    **ENV_RENET,
+    lab.PREVIOUS_RDC_ENV: "/opt/rdc-prev/rdc",
+    lab.COMPANY_ENV: "c0000000a",
+}
+DEPLOYMENTS_V9 = [
+    {
+        "created_on": "2026-11-01T00:00:00Z",
+        "versions": [{"version_id": "v-old", "percentage": 100}],
+    },
+    {
+        "created_on": "2026-11-09T00:00:00Z",
+        "versions": [{"version_id": "v-new", "percentage": 100}],
+    },
+    {
+        "created_on": "2026-11-05T00:00:00Z",
+        "versions": [
+            {"version_id": "v-prev", "percentage": 100},
+        ],
+    },
+    {
+        "created_on": "2026-11-08T00:00:00Z",
+        "versions": [{"version_id": "v-new", "percentage": 100}],
+    },
+]
+
+
+def env_v9(name):
+    if name not in ENV_V9:
+        raise proof.LabError("%s is not set" % name)
+    return ENV_V9[name]
+
+
+class Fleet:
+    """One fleet machine behind a released rdc, and the company's account Worker behind wrangler."""
+
+    def __init__(
+        self, *, renet="0.9.0", proxy_uploads=False, proxy_rc=0, outcome=None, deployments=None
+    ):
+        self.renet = renet
+        self.proxy_uploads = proxy_uploads
+        self.proxy_rc = proxy_rc
+        # (renet, worker version) -> renew JSON; default: every pairing renews.
+        self.outcome = outcome or (lambda _r, _w: {"results": [{"outcome": "renewed"}]})
+        self.deployments = DEPLOYMENTS_V9 if deployments is None else deployments
+        self.worker = "v-new"
+        self.calls: list[tuple[list[str], dict | None]] = []
+        self.renewed_with: list[tuple[str, str]] = []
+
+    def __call__(self, argv, cwd, extra):
+        del cwd
+        argv = list(argv)
+        self.calls.append((argv, extra))
+        if "deployments" in argv:
+            return lab.Proc(0, "banner\n" + json.dumps(self.deployments))
+        if "rollback" in argv:
+            self.worker = argv[argv.index("rollback") + 1]
+            return lab.Proc(0)
+        if "term" in argv and argv[-1] == "renet version":
+            return lab.Proc(0, "renet version %s\n" % self.renet)
+        if "term" in argv and argv[-1] == lab.RENEW_COMMAND:
+            self.renewed_with.append((self.renet, self.worker))
+            return lab.Proc(0, "Welcome\n" + json.dumps(self.outcome(self.renet, self.worker)))
+        if argv[-3:-1] == ["repo", "up"]:
+            if "--proxy" in argv:
+                if self.proxy_uploads:
+                    self.renet = "0.9.2"
+                return lab.Proc(self.proxy_rc)
+            self.renet = "0.9.1" if argv[0] == "/opt/rdc-prev/rdc" else "0.9.2"
+            return lab.Proc(0)
+        raise AssertionError(argv)
+
+
+def upload_v9(fleet: Fleet):
+    return lab.live_executor_upload(
+        "vm-1", run=fleet, env=env_v9, token=lambda c: "rdt_proxy_%s" % c, companies=companies_proxy
+    )
+
+
+def test_the_executor_upload_goes_through_the_company_proxy_with_its_token():
+    fleet = Fleet()
+    assert upload_v9(fleet) == proof.Answer(False, "the executor left renet at 0.9.0")
+    argv, extra = next(c for c in fleet.calls if "--proxy" in c[0])
+    assert argv[argv.index("--proxy") + 1] == "https://proof-a-proxy.%s" % PRODUCT_DOMAIN
+    assert argv[-3:] == ["repo", "up", "proofrepo@vm-1"]
+    assert extra == {lab.HOLD_ENV: "", lab.PROXY_BEARER_ENV: "rdt_proxy_c0000000a"}
+
+
+def test_an_executor_that_uploads_is_admitted_so_the_refusal_claim_breaks():
+    """Control: the driver reports the move it saw, never a refusal it assumed."""
+    assert upload_v9(Fleet(proxy_uploads=True)) == proof.Answer(True)
+
+
+def test_a_proxied_verb_that_failed_proves_nothing():
+    with pytest.raises(proof.LabError, match="proxied repo up exited 1"):
+        upload_v9(Fleet(proxy_rc=1))
+
+
+def test_worker_versions_are_the_distinct_full_versions_newest_first():
+    assert lab.worker_versions("account-proof-a", run=Fleet()) == ["v-new", "v-prev", "v-old"]
+
+
+def spread_v9(fleet: Fleet, renet: str, worker: str):
+    return lab.live_spread_renew(
+        "vm-1",
+        renet,
+        worker,
+        run=fleet,
+        env=env_v9,
+        released=lambda: "0.9.2",
+        companies=companies_proxy,
+    )
+
+
+def test_the_previous_renet_renews_against_the_new_worker():
+    fleet = Fleet()
+    assert spread_v9(fleet, "previous", "new") == proof.Answer(True)
+    assert fleet.renewed_with == [("0.9.1", "v-new")]
+    assert not any("rollback" in c[0] for c in fleet.calls)
+
+
+def test_the_new_renet_renews_against_the_previous_worker_and_the_newest_returns():
+    fleet = Fleet()
+    assert spread_v9(fleet, "new", "previous") == proof.Answer(True)
+    assert fleet.renewed_with == [("0.9.2", "v-prev")]
+    rollbacks = [c[0][c[0].index("rollback") + 1] for c in fleet.calls if "rollback" in c[0]]
+    assert rollbacks == ["v-prev", "v-new"]
+    assert fleet.worker == "v-new"
+
+
+def test_a_refused_renewal_is_refused_with_its_code_and_the_newest_still_returns():
+    def outcome(_renet, worker):
+        if worker == "v-prev":
+            return {"results": [{"outcome": "refused", "code": "SIGNER_SCOPE"}]}
+        return {"results": [{"outcome": "renewed"}]}
+
+    fleet = Fleet(outcome=outcome)
+    assert spread_v9(fleet, "new", "previous") == proof.Answer(False, "refused code=SIGNER_SCOPE")
+    assert fleet.worker == "v-new"
+
+
+@pytest.mark.parametrize(
+    ("doc", "match"),
+    [({"results": []}, "no installed licence"), ({"lockBusy": True, "results": []}, "lock")],
+)
+def test_a_renewal_that_never_ran_is_a_lab_error_not_a_refusal(doc, match):
+    with pytest.raises(proof.LabError, match=match):
+        spread_v9(Fleet(outcome=lambda _r, _w: doc), "previous", "new")
+
+
+def test_one_deployed_worker_version_is_a_lab_error_before_anything_moves():
+    fleet = Fleet(deployments=DEPLOYMENTS_V9[1:2])
+    with pytest.raises(proof.LabError, match="1 deployed version"):
+        spread_v9(fleet, "new", "previous")
+    assert fleet.renewed_with == []
+    assert not any(c[0][-3:-1] == ["repo", "up"] for c in fleet.calls)
+
+
+def test_a_machine_left_on_the_wrong_renet_is_a_lab_error():
+    """Control: renewing on the wrong renet would prove the other direction."""
+    with pytest.raises(proof.LabError, match="not the previous one"):
+        lab.live_spread_renew(
+            "vm-1",
+            "previous",
+            "new",
+            run=Fleet(),
+            env=env_v9,
+            version=lambda _m: "0.9.2",
+            released=lambda: "0.9.2",
+            companies=companies_proxy,
+        )
+
+
+def test_the_default_drivers_are_the_live_ones():
+    """Both seams take a driver; with none they run the live drivers, which name an unset variable before anything runs."""
+    with pytest.raises(proof.LabError, match=lab.COMPANY_ENV):
         lab.executor_upload("vm-1")
-    with pytest.raises(proof.LabError, match="not built yet: V9"):
+    with pytest.raises(proof.LabError, match=lab.COMPANY_ENV):
         lab.renew_with("vm-1", renet="previous", worker="new")
     refused = proof.Answer(False, "executor never uploads renet")
     assert lab.executor_upload("vm-1", driver=lambda _m: refused) == refused
