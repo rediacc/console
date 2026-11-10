@@ -781,7 +781,7 @@ def turnstile_domains(*, listing: Listing = cf_list) -> list[str]:
 #
 # The `enterprise proof replay` and `proof proxy` token readers (agent/plans/PLAN-enterprise-isolation.md, box V6's group, which V7's proxy token rides). SEAMS binds them by name.
 #
-# SIGNING IN AS A FAKE OWNER. `owner_session(company)` is the owner's first sign-in, the one company mode designs: the owner account is passwordless (private/account/src/services/enterprise-bootstrap.service.ts `ensureOwner`), and `POST /account/api/v1/subscriptions/enterprise/owner-mail` under the company's own `ACCOUNT_SERVER_API_KEY` mails it a magic link (`authService.sendCompanyOwnerMail`). That route carries no captcha, unlike the public `POST /auth/magic-link`. A bench company captures every mail in its own D1 (`captured_emails`, `kind = 'magic-link'`), so the link is read back from `account-<name>`, the newest one created after the request (less `MAIL_SKEW_S` of clock skew), and `POST /account/api/v1/auth/magic-link/verify` answers the session as its `access_token` cookie. The owner has no TOTP; a verify answering `requiresTwoFactor` is a `LabError`. The owner address is read from the company D1 (`company_orgs` -> `organizations.owner_user_id` -> `users.email`) and the key from the enterprise bws project (`secrets.store_name(<id>, "ACCOUNT_SERVER_API_KEY")`, project id in `ENTERPRISE_PROOF_BWS_PROJECT`). The link's token is never put into an error.
+# SIGNING IN AS A FAKE OWNER. `owner_session(company)` is the owner's first sign-in, the one company mode designs: the owner account is passwordless (private/account/src/services/enterprise-bootstrap.service.ts `ensureOwner`), and `POST /account/api/v1/subscriptions/enterprise/owner-mail` under the company's own `ACCOUNT_SERVER_API_KEY` mails it a magic link (`authService.sendCompanyOwnerMail`). That route carries no captcha, unlike the public `POST /auth/magic-link`. A bench company captures every mail in its own D1 (`captured_emails`, `kind = 'magic-link'`), so the link is read back from `account-<name>`, the newest one that differs from the newest one the company held before the request (a row only the request can have added, whatever either clock says), and `POST /account/api/v1/auth/magic-link/verify` answers the session as its `access_token` cookie. The owner has no TOTP; a verify answering `requiresTwoFactor` is a `LabError`. The owner address is read from the company D1 (`company_orgs` -> `organizations.owner_user_id` -> `users.email`) and the key from the enterprise bws project (`secrets.store_name(<id>, "ACCOUNT_SERVER_API_KEY")`, project id in `ENTERPRISE_PROOF_BWS_PROJECT`). The link's token is never put into an error.
 #
 # `mint(company, kind)`: a `session` is that cookie; an `api-token` (scope `license:read`) and a `proxy-token` (scope `proxy:exec`) are `POST /account/api/v1/api-tokens` under the session for the subscription the company's control row names (`scope.subscription_id`). A `config-token` needs the company's config store, whose setup takes a TOTP-verified, elevated session and client-wrapped CEK slots (`POST /configs/setup`), and an `e2e-envelope` needs a request sealed to the company's X25519 key (`POST /account/api/v1/tunnel`); neither driver is written, so both raise `LabError("not built yet: V6 ...")` naming what is missing, never an artifact.
 #
@@ -796,7 +796,6 @@ TOKENS_PATH = "/account/api/v1/api-tokens"
 REFUSED = (401, 403)
 BWS_PROJECT_ENV = "ENTERPRISE_PROOF_BWS_PROJECT"
 API_KEY_ENTRY = "ACCOUNT_SERVER_API_KEY"
-MAIL_SKEW_S = 120
 MAIL_TRIES = 10
 MAIL_POLL_S = 3.0
 LABEL_PREFIX = "enterprise-proof"
@@ -808,7 +807,7 @@ OWNER_SQL = (
 )
 LINK_SQL = (
     "SELECT text_body FROM captured_emails WHERE recipient = ? AND kind = 'magic-link' "
-    "AND created_at >= ? ORDER BY created_at DESC LIMIT 1"
+    "ORDER BY created_at DESC LIMIT 1"
 )
 SUBSCRIPTION_SQL = "SELECT subscription_id FROM scope WHERE company_id = ?"
 MAGIC_TOKEN = re.compile(r"/account/magic-link/verify\?token=([^&\s\"'<>]+)")
@@ -893,15 +892,15 @@ def store_api_key(company: str, *, env: Mapping[str, str] | None = None) -> str:
     return value
 
 
-def _utc(now: float) -> str:
-    return datetime.datetime.fromtimestamp(now, datetime.UTC).strftime("%Y-%m-%dT%H:%M:%S.000Z")
-
-
 def _one(rows: list[dict], key: str, what: str) -> str:
     values = [str(r.get(key) or "") for r in rows]
     if len(values) != 1 or not values[0]:
         raise proof.LabError("%s: %d answers, not 1" % (what, len(values)))
     return values[0]
+
+
+def _newest_link(rows: list[dict]) -> str:
+    return str(rows[0].get("text_body") or "") if rows else ""
 
 
 def owner_session(
@@ -912,7 +911,6 @@ def owner_session(
     post: onboarding.AccountPost = onboarding.account_post,
     api_key: ApiKey = store_api_key,
     call: Call = http_call,
-    clock: Callable[[], float] = time.time,
     sleep: Callable[[float], None] = time.sleep,
 ) -> str:
     """The `access_token` of the company owner's magic-link sign-in."""
@@ -923,15 +921,15 @@ def owner_session(
     owner = _one(
         query(database, OWNER_SQL, [company]), "email", "the owner of company %s" % company
     )
-    since = _utc(clock() - MAIL_SKEW_S)
+    before = _newest_link(query(database, LINK_SQL, [owner]))
     url = "https://%s%sowner-mail" % (host, onboarding.SUBSCRIPTIONS_PATH)
     status, _payload = post(url, api_key(company), {"companyId": company, "ownerEmail": owner})
     if not 200 <= status < 300:
         raise proof.LabError("company %s: the owner-mail call answered HTTP %d" % (company, status))
     token = ""
     for attempt in range(MAIL_TRIES):
-        found = query(database, LINK_SQL, [owner, since])
-        match = MAGIC_TOKEN.search(str(found[0].get("text_body") or "")) if found else None
+        text = _newest_link(query(database, LINK_SQL, [owner]))
+        match = MAGIC_TOKEN.search(text) if text and text != before else None
         if match:
             token = match.group(1)
             break
@@ -968,6 +966,10 @@ def _subscription(company: str, *, companies: Companies, query: Query) -> str:
     )
 
 
+# company -> its owner's session, for the length of one proof run.
+_SESSIONS: dict[str, str] = {}
+
+
 def live_minter(
     company: str,
     kind: str,
@@ -976,7 +978,9 @@ def live_minter(
     companies: Companies = all_companies,
     query: Query = d1_query,
     call: Call = http_call,
+    sessions: dict[str, str] = _SESSIONS,
 ) -> str:
+    """One token of `kind`, minted under the owner's session; the session is signed in once per company and shared by every kind (`sessions`)."""
     if kind == "config-token":
         raise proof.LabError(
             "not built yet: V6 (a config token of company %s needs its config store, whose setup takes a "
@@ -990,9 +994,14 @@ def live_minter(
         )
     if kind != "session" and kind not in TOKEN_SCOPES:
         raise proof.LabError("no minter for a %s" % kind)
-    cookie = (session or (lambda c: owner_session(c, companies=companies, query=query, call=call)))(
-        company
-    )
+    if session is None:
+
+        def session(c: str) -> str:
+            if c not in sessions:
+                sessions[c] = owner_session(c, companies=companies, query=query, call=call)
+            return sessions[c]
+
+    cookie = session(company)
     if kind == "session":
         return cookie
     body = {

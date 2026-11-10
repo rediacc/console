@@ -8,7 +8,9 @@ import json
 import socket
 import subprocess
 import sys
+import threading
 import types
+import wsgiref.simple_server
 
 import pytest
 
@@ -17,17 +19,26 @@ from rediacc_ci.enterprise import lab, onboarding, proof
 from rediacc_ci.ops import enterprise_lookup
 from rediacc_ci.well_known import PRODUCT_DOMAIN
 
+REAL_URLOPEN = https.urlopen
+REAL_CREATE_CONNECTION = socket.create_connection
+
 
 @pytest.fixture(autouse=True)
 def no_network(monkeypatch):
-    """No test in this file reaches a child process, an HTTPS request or a TLS socket: the live readers take fakes."""
+    """No test in this file reaches a child process, an HTTPS request or a TLS socket (a loopback connection, the stub server's, is the one allowed): the live readers take fakes."""
 
     def boom(*_a, **_k):
         raise AssertionError("a test reached a live call")
 
     monkeypatch.setattr(subprocess, "run", boom)
     monkeypatch.setattr(https, "urlopen", boom)
-    monkeypatch.setattr(socket, "create_connection", boom)
+
+    def loopback_only(address, *args, **kwargs):
+        if address[0] != "127.0.0.1":
+            boom()
+        return REAL_CREATE_CONNECTION(address, *args, **kwargs)
+
+    monkeypatch.setattr(socket, "create_connection", loopback_only)
     monkeypatch.setenv("CLOUDFLARE_API_TOKEN", "t")
     monkeypatch.setenv("CLOUDFLARE_ACCOUNT_ID", "acct")
     monkeypatch.delenv(lab.CONFIG_ENV, raising=False)
@@ -767,14 +778,14 @@ def test_kinds_without_a_probe_are_not_built(kind):
 
 
 HOST_A = "proof-a.%s" % PRODUCT_DOMAIN
-T_NOW = 1_800_000_000.0
 
 
 class AccountV6:
     """Two bench company Workers and their D1s: owner-mail captures a magic link, verify signs in, api-tokens mints."""
 
-    def __init__(self, *, link=True, two_factor=False, cookie=True, mail_status=200):
+    def __init__(self, *, link=True, two_factor=False, cookie=True, mail_status=200, stale=False):
         self.link = link
+        self.stale = stale
         self.two_factor = two_factor
         self.cookie = cookie
         self.mail_status = mail_status
@@ -791,7 +802,9 @@ class AccountV6:
             return [{"email": "owner@proof-a.example"}]
         if sql == lab.LINK_SQL:
             if not (self.link and self.mailed):
-                return []
+                # An older link for the same owner, from before the request, stays the newest row.
+                old = "Sign in: https://%s/account/magic-link/verify?token=tok-old\n" % HOST_A
+                return [{"text_body": old}] if self.stale else []
             body = (
                 "Sign in: https://%s/account/magic-link/verify?token=tok-123&next=%%2F\n" % HOST_A
             )
@@ -812,6 +825,7 @@ class AccountV6:
         if path == lab.VERIFY_PATH:
             if doc.get("token") != "tok-123":
                 return lab.HttpAnswer(400)
+            self.mailed = False  # the link is spent: a later company's baseline sees no mail
             if self.two_factor:
                 return lab.HttpAnswer(200, (), b'{"requiresTwoFactor": true}')
             cookies = [("Set-Cookie", "refresh_token=r-1; Path=/")]
@@ -849,7 +863,6 @@ def session_v6(acct: AccountV6) -> str:
         post=acct.post,
         api_key=lambda c: "key-%s" % c,
         call=acct.call,
-        clock=lambda: T_NOW,
         sleep=acct.sleep,
     )
 
@@ -863,7 +876,7 @@ def test_the_owner_signs_in_through_the_owner_mail_and_its_captured_link():
     assert body == {"companyId": "c0000000a", "ownerEmail": "owner@proof-a.example"}
     link = next(q for q in acct.queries if q[1] == lab.LINK_SQL)
     assert link[0] == "account-proof-a"
-    assert link[2] == ["owner@proof-a.example", "2027-01-15T07:58:00.000Z"]
+    assert link[2] == ["owner@proof-a.example"]
     method, verify_url, _headers, doc = acct.calls[0]
     assert (method, verify_url, doc) == (
         "POST",
@@ -879,6 +892,20 @@ def test_no_captured_link_is_a_lab_error_after_every_try():
         session_v6(acct)
     assert acct.sleeps == lab.MAIL_TRIES - 1
     assert acct.calls == []
+
+
+def test_an_older_link_for_the_owner_is_never_taken_for_this_requests():
+    """Control: a mail that was not captured in time must not fall back to a link from an earlier request."""
+    acct = AccountV6(link=False, stale=True)
+    with pytest.raises(proof.LabError, match="no magic link"):
+        session_v6(acct)
+    assert acct.calls == []
+
+
+def test_the_new_link_is_taken_over_an_older_one_for_the_same_owner():
+    acct = AccountV6(stale=True)
+    assert session_v6(acct) == "sess-a"
+    assert acct.calls[0][3] == {"token": "tok-123"}
 
 
 def test_a_refused_owner_mail_signs_in_nothing():
@@ -965,6 +992,132 @@ def test_a_token_probe_that_is_not_a_yes_or_a_no_is_a_lab_error(status):
         lab.present(
             "c0000000a", "api-token", "x", send=Server({}, status), companies=companies_proxy
         )
+
+
+def test_two_token_kinds_of_one_company_share_one_owner_sign_in(monkeypatch):
+    """Control: without the shared session each kind signs the owner in again."""
+    acct = AccountV6()
+    signed_in: list[str] = []
+
+    def sign_in(company, **_kw):
+        signed_in.append(company)
+        return "sess-a"
+
+    monkeypatch.setattr(lab, "owner_session", sign_in)
+    shared: dict[str, str] = {}
+    for kind in ("api-token", "proxy-token"):
+        lab.live_minter(
+            "c0000000a",
+            kind,
+            sessions=shared,
+            companies=companies_proxy,
+            query=acct.query,
+            call=acct.call,
+        )
+    assert signed_in == ["c0000000a"]
+
+
+class FakeBws:
+    def __init__(self, found):
+        self.found = found
+        self.asked: list[list[str]] = []
+
+    def read(self, names):
+        self.asked.append(list(names))
+        return self.found
+
+
+def test_the_api_key_is_read_under_the_companys_store_name(monkeypatch):
+    fake = FakeBws({"c0123456789abcdef_ACCOUNT_SERVER_API_KEY": "key-1"})
+    projects: list[str] = []
+
+    def from_env(_cls, project, env=None):
+        del env
+        projects.append(project)
+        return fake
+
+    monkeypatch.setattr(lab.secrets.BwsStore, "from_env", classmethod(from_env))
+    env = {lab.BWS_PROJECT_ENV: "proj-1"}
+    assert lab.store_api_key("c0123456789abcdef", env=env) == "key-1"
+    assert projects == ["proj-1"]
+    assert fake.asked == [["c0123456789abcdef_ACCOUNT_SERVER_API_KEY"]]
+
+
+def test_a_company_with_no_stored_api_key_is_a_lab_error(monkeypatch):
+    monkeypatch.setattr(lab.secrets.BwsStore, "from_env", classmethod(lambda _c, _p: FakeBws({})))
+    with pytest.raises(proof.LabError, match="no ACCOUNT_SERVER_API_KEY"):
+        lab.store_api_key("c0123456789abcdef", env={lab.BWS_PROJECT_ENV: "proj-1"})
+
+
+STUB_SEEN: list[tuple[str, str, bytes, str]] = []
+
+
+def stub_app(environ, start_response):
+    size = int(environ.get("CONTENT_LENGTH") or 0)
+    body = environ["wsgi.input"].read(size) if size else b""
+    path = environ["PATH_INFO"]
+    STUB_SEEN.append((environ["REQUEST_METHOD"], path, body, environ.get("HTTP_X_PROBE", "")))
+    missing = path == "/missing"
+    start_response(
+        "404 Not Found" if missing else "200 OK", [("Set-Cookie", "access_token=abc; Path=/")]
+    )
+    return [b"gone" if missing else b'{"ok": true}']
+
+
+class QuietHandler(wsgiref.simple_server.WSGIRequestHandler):
+    def log_message(self, *_args):
+        pass
+
+
+@pytest.fixture
+def stub_origin(monkeypatch):
+    """A loopback server behind `https.urlopen`: the code under test builds an https URL, the fixture opens it as loopback http."""
+    STUB_SEEN.clear()
+    server = wsgiref.simple_server.make_server("127.0.0.1", 0, stub_app, handler_class=QuietHandler)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    port = server.server_address[1]
+
+    def urlopen(req, *, timeout):
+        loop = https.build_request(
+            "http://127.0.0.1:%d%s" % (port, req.selector),
+            data=req.data,
+            headers=dict(req.header_items()),
+            method=req.get_method(),
+            http="loopback",
+        )
+        return REAL_URLOPEN(loop, timeout=timeout, http="loopback")
+
+    monkeypatch.setattr(https, "urlopen", urlopen)
+    yield
+    server.shutdown()
+    server.server_close()
+
+
+@pytest.mark.usefixtures("stub_origin")
+def test_http_call_sends_the_method_headers_and_body_and_reads_the_answer():
+    answer = lab.http_call("POST", "https://h.example/a/b", {"X-Probe": "p1"}, b'{"n": 1}')
+    assert answer.status == 200
+    assert answer.json() == {"ok": True}
+    assert answer.header_values("Set-Cookie") == ["access_token=abc; Path=/"]
+    assert STUB_SEEN == [("POST", "/a/b", b'{"n": 1}', "p1")]
+
+
+@pytest.mark.usefixtures("stub_origin")
+def test_http_call_answers_a_4xx_instead_of_raising():
+    answer = lab.http_call("GET", "https://h.example/missing", {}, None)
+    assert (answer.status, answer.body) == (404, b"gone")
+    assert answer.header_values("Set-Cookie") == ["access_token=abc; Path=/"]
+
+
+def test_http_call_with_no_answer_is_a_lab_error_naming_the_path_not_the_host(monkeypatch):
+    def refused(_req, *, timeout):
+        del timeout
+        raise ConnectionRefusedError("secret-host.example")
+
+    monkeypatch.setattr(https, "urlopen", refused)
+    with pytest.raises(proof.LabError) as raised:
+        lab.http_call("GET", "https://secret-host.example/the/path", {}, None)
+    assert str(raised.value) == "GET /the/path: ConnectionRefusedError"
 
 
 def test_the_api_key_needs_the_enterprise_project():
