@@ -218,6 +218,49 @@ def test_a_verified_receipt_on_the_landed_code_proves_the_lp_box(world):
     assert "live-proof lp-000000000001" in a.tick
 
 
+def _add_landed_box(world, body, verdict):
+    """Append an open box to the fixture plan, land a trailer commit for it, and record one investigation row with `verdict` taken at the new HEAD; returns the box sig."""
+    root = world.root
+    plan = root / REL
+    plan.write_text(plan.read_text(encoding="utf-8") + "- [ ] %s\n" % body, encoding="utf-8")
+    sig = R.box_sig(body)
+    name = "x-%s.txt" % sig
+    _commit(root, name, "feat: x\n\nPlan-Box: %s#%s clauses=all\n" % (PLAN, sig))
+    ledger = root / "agent" / "ledgers" / "plan-investigation.jsonl"
+    row = {"plan": REL, "sig": sig, "verdict": verdict, "head": _git(root, "rev-parse", "HEAD")}
+    ledger.write_text(
+        ledger.read_text(encoding="utf-8") + json.dumps(row) + "\n", encoding="utf-8"
+    )
+    return sig
+
+
+def test_a_partial_verdict_with_a_ci_run_id_accept_is_owed_not_tickable(world):
+    body = "J6 suite runs in CI nightly. Accept: a green CI run id recorded here."
+    sig = _add_landed_box(world, body, "partial")
+    a = _by_sig(BA.audit(world.root, ME)[0])[sig]
+    assert a.verdict == "live-owed"
+    assert a.tick == ""
+
+
+def test_a_partial_verdict_alone_is_owed_not_tickable(world):
+    sig = _add_landed_box(world, "J9 a local thing. Accept: unit test rc=0.", "partial")
+    a = _by_sig(BA.audit(world.root, ME)[0])[sig]
+    assert a.verdict == "live-owed"
+    assert a.tick == ""
+
+
+def test_a_ci_run_id_accept_is_owed_even_when_the_verdict_is_present(world):
+    sig = _add_landed_box(world, "J10 gate. Accept: a green CI run id recorded here.", "present")
+    assert _by_sig(BA.audit(world.root, ME)[0])[sig].verdict == "live-owed"
+
+
+def test_control_a_present_verdict_with_a_local_accept_stays_tickable_now(world):
+    sig = _add_landed_box(world, "J11 a local thing. Accept: pytest tests rc=0.", "present")
+    a = _by_sig(BA.audit(world.root, ME)[0])[sig]
+    assert a.verdict == "tickable-now"
+    assert a.tick
+
+
 def test_live_owed_box_is_linked_by_its_report_through_the_x_line(world):
     a = _by_sig(BA.audit(world.root, ME)[0])[SIG["live"]]
     assert [s for s, _src in a.landed] == [world.shas["live"]]

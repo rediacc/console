@@ -272,6 +272,23 @@ def _stale(root, row, base, head):
     return ""
 
 
+LIVE_ACCEPT_RE = re.compile(
+    r"Accept:[^\n]*\b(?:CI run(?: id)?s?|run ids?|nightly|live receipts?|live[- ]proof|VERIFIED)\b",
+    re.IGNORECASE,
+)
+
+
+def _proof_owed(root, a):
+    """Whether a box with no clause map still owes proof: its Accept names a CI run id, a nightly or a live receipt (the caller has already ruled out a VERIFIED row), or its newest investigation verdict is `partial` and was taken on code that includes the landing. Without this a partial verdict on landed code read as tickable-now (finding #2a4ebecd, box 575e0098)."""
+    if LIVE_ACCEPT_RE.search(a.body):
+        return True
+    inv = a.inv
+    if inv is None or str(inv.get("verdict") or "").strip().lower() != "partial":
+        return False
+    last = a.landed[-1][0] if a.landed else ""
+    return not last or _descends(root, last, str(inv.get("head") or ""))
+
+
 def _judge(root, a, base, head, me):
     ids = [c["id"] for c in a.cmap] if a.cmap else []
     halves = {c["id"]: c.get("half") for c in a.cmap or []}
@@ -295,6 +312,8 @@ def _judge(root, a, base, head, me):
                 owed += [(c, h) for c, h in latest.owed if h in LIVE_HALVES]
             owed += [(c, "live") for c, (state, _r) in a.progress.items() if state == "live-owed"]
             if a.body.startswith("LP-") and not owed:
+                owed.append(("*", "live"))
+            if not owed and _proof_owed(root, a):
                 owed.append(("*", "live"))
         done = "all" in a.covered and not owed
         code_landed = bool(a.landed)
