@@ -18,6 +18,8 @@ export interface RemoteRepoLicenseScanEntry {
   storageFingerprint?: string;
   currentRefreshRecommendedAt?: string;
   currentHardExpiresAt?: string;
+  /** The `renewalUrl` of the installed licence: the account server that issued it. Absent on a licence that predates it. */
+  currentRenewalUrl?: string;
 }
 
 /** The persistent marker renet's backup gate writes when licensing refuses a backup. */

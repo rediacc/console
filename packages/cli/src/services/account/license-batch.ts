@@ -7,13 +7,7 @@
 import { DEFAULTS } from '@rediacc/shared/config';
 import type { SFTPClient } from '../../remote/sftp/index.js';
 import type { MachineConfig } from '../../types/index.js';
-import { shellQuote } from '../../utils/shell-quote.js';
-import {
-  expectedAccountServerOrigin,
-  LICENSE_DIR,
-  LISTING_COMPLETE_MARKER,
-  licenseOriginsFromListing,
-} from '../backup/backup-store-universe.js';
+import { expectedAccountServerOrigin } from '../backup/backup-store-universe.js';
 import { configService } from '../config/config-resources.js';
 import { sftpConfigForMachine, withSharedOrPooledSftp } from '../machine/machine-connection.js';
 import { telemetryService } from '../telemetry/telemetry.js';
@@ -197,29 +191,8 @@ export function refreshRepoLicensesBatch(
 }
 
 /**
- * The guids whose installed licence names an account-server origin other than `expectedOrigin`, from a listing of
- * `<guid>\t<base64 licence file>` lines. The server compares dates only, so a fresh licence from another origin
- * (the config's account server moved) is never reissued unless the request drops its current dates. A licence
- * without a `renewalUrl` names no origin and is not counted.
- */
-export function guidsWithForeignLicenseOrigin(
-  listing: string,
-  expectedOrigin: string
-): Set<string> {
-  const guids = new Set<string>();
-  for (const line of listing.split('\n')) {
-    const [guid, encoded] = line.trim().split('\t');
-    if (!guid || !encoded) continue;
-    if (licenseOriginsFromListing(encoded).some((origin) => origin !== expectedOrigin)) {
-      guids.add(guid.toLowerCase());
-    }
-  }
-  return guids;
-}
-
-/**
- * The config's account-server origin, the form `licenseOriginsFromListing` yields. A server URL that does not parse
- * as a URL is refused: comparing a raw URL with bare origins would count every licence as foreign and reissue all.
+ * The config's account-server origin. A server URL that does not parse as a URL is refused: comparing a raw URL with
+ * bare origins would count every licence as foreign and reissue all.
  */
 function configAccountOrigin(machineName: string): string {
   const origin = expectedAccountServerOrigin();
@@ -229,43 +202,50 @@ function configAccountOrigin(machineName: string): string {
   );
 }
 
-/**
- * Reads every installed repo licence on the machine and returns the guids issued by another account server than
- * this config's. Throws when the listing cannot be read: an empty answer would leave the stale licence unchanged
- * and report a clean refresh.
- */
-export async function foreignOriginLicenseGuids(
-  sftp: Pick<SFTPClient, 'exec'>,
-  machineName: string
-): Promise<Set<string>> {
-  const script =
-    `set -e; for f in ${LICENSE_DIR}/repos/*/*.json ${LICENSE_DIR}/datastores/*/repos/*/*.json; ` +
-    `do if [ -f "$f" ]; then printf '%s\\t' "$(basename "$(dirname "$f")")"; base64 -w0 "$f"; echo; fi; done; echo ${LISTING_COMPLETE_MARKER}`;
-  let listing: string;
+/** The origin of a licence's `renewalUrl`; one that does not parse stays as itself, so it is never the config's origin. */
+function renewalOrigin(renewalUrl: string): string {
   try {
-    listing = await sftp.exec(`sudo -n sh -c ${shellQuote(script)}`);
-  } catch (err) {
-    throw new Error(
-      `Cannot read the installed licences on ${machineName} to compare their issuing origin: ${err instanceof Error ? err.message : String(err)}`
-    );
+    return new URL(renewalUrl).origin;
+  } catch {
+    return renewalUrl;
   }
-  if (!listing.split('\n').some((line) => line.trim() === LISTING_COMPLETE_MARKER)) {
-    throw new Error(
-      `Cannot read the installed licences on ${machineName} to compare their issuing origin: the listing was cut short`
-    );
-  }
-  return guidsWithForeignLicenseOrigin(listing, configAccountOrigin(machineName));
 }
 
-/** Adds each scanned repo whose guid is in the lowercase `foreignGuids` set to `target`, under the scan's own spelling. */
-function addForeignOriginRepos(
-  target: Set<string>,
-  foreignGuids: Set<string>,
-  remoteRepos: RemoteRepoLicenseScanEntry[]
-): void {
+/**
+ * The scanned repos whose installed licence names an account-server origin other than the config's, from the
+ * `currentRenewalUrl` the `license-scan` entry carries. The server compares dates only, so a fresh licence from another
+ * origin (the config's account server moved) is never reissued unless the request drops its current dates. A licence
+ * without a `renewalUrl` names no origin and is not counted.
+ */
+export function reposWithForeignLicenseOrigin(
+  remoteRepos: RemoteRepoLicenseScanEntry[],
+  machineName: string
+): Set<string> {
+  const expected = configAccountOrigin(machineName);
+  const guids = new Set<string>();
   for (const repo of remoteRepos) {
-    if (foreignGuids.has(repo.repositoryGuid.toLowerCase())) target.add(repo.repositoryGuid);
+    if (repo.currentRenewalUrl && renewalOrigin(repo.currentRenewalUrl) !== expected) {
+      guids.add(repo.repositoryGuid);
+    }
   }
+  return guids;
+}
+
+// `identity_mismatch` joins it: after `backup snapshot --accept-identity-change` the image's UUID is new, an unexpired licence answers `unchanged` to a plain refresh, and the repository stays unmountable until the refresh window opens. Only a forced GUID is reissued.
+// machine_mismatch force-reissues (the documented remedy the guidance points users at). invalid_signature no longer triggers a reissue: with the per-signer license layout a foreign-universe file is simply never selected, so a genuine invalid_signature means the machine's OWN key can't validate its own file, that must fail fast, not loop reissuing (matches subscription-licensing.md).
+function forceReissueSet(
+  licenseStatuses: { repositoryGuid: string; status: string }[],
+  remoteRepos: RemoteRepoLicenseScanEntry[],
+  machineName: string
+): Set<string> {
+  const guids = new Set(
+    licenseStatuses
+      .filter((s) => s.status === 'machine_mismatch' || s.status === 'identity_mismatch')
+      .map((s) => s.repositoryGuid)
+  );
+  // A licence issued by another account server (the config's server moved) is reissued here too: its dates are fresh, so the server would answer `unchanged`.
+  for (const guid of reposWithForeignLicenseOrigin(remoteRepos, machineName)) guids.add(guid);
+  return guids;
 }
 
 /** The caller's `license-scan` answer when it holds one, else a scan job of its own. */
@@ -293,30 +273,20 @@ async function runRepoLicenseBatch(
   scanned?: RemoteRepoLicenseScanEntry[]
 ): Promise<RepoBatchRefreshResult> {
   const datastore = machine.datastore ?? DEFAULT_DATASTORE;
-  const [machineId, clientMachineId, remoteRepos, localRepos, licenseStatuses, foreignOriginGuids] =
-    await Promise.all([
-      readRemoteMachineId(sftp, remoteRenetPath),
-      readLocalMachineId(),
-      remoteScan(machineName, datastore, scanned),
-      configService.listRepositories().catch((err: unknown) => {
-        telemetryService.trackError(err, {
-          operation: 'license.list_repositories',
-        });
-        return [];
-      }),
-      scanRemoteLicenseStatuses(machineName, datastore).catch(() => []),
-      foreignOriginLicenseGuids(sftp, machineName),
-    ]);
+  const [machineId, clientMachineId, remoteRepos, localRepos, licenseStatuses] = await Promise.all([
+    readRemoteMachineId(sftp, remoteRenetPath),
+    readLocalMachineId(),
+    remoteScan(machineName, datastore, scanned),
+    configService.listRepositories().catch((err: unknown) => {
+      telemetryService.trackError(err, {
+        operation: 'license.list_repositories',
+      });
+      return [];
+    }),
+    scanRemoteLicenseStatuses(machineName, datastore).catch(() => []),
+  ]);
 
-  // `identity_mismatch` joins it: after `backup snapshot --accept-identity-change` the image's UUID is new, an unexpired licence answers `unchanged` to a plain refresh, and the repository stays unmountable until the refresh window opens. Only a forced GUID is reissued.
-  // machine_mismatch force-reissues (the documented remedy the guidance points users at). invalid_signature no longer triggers a reissue: with the per-signer license layout a foreign-universe file is simply never selected, so a genuine invalid_signature means the machine's OWN key can't validate its own file, that must fail fast, not loop reissuing (matches subscription-licensing.md).
-  const forceReissueGuids = new Set(
-    licenseStatuses
-      .filter((s) => s.status === 'machine_mismatch' || s.status === 'identity_mismatch')
-      .map((s) => s.repositoryGuid)
-  );
-  // A licence issued by another account server (the config's server moved) is reissued here too: its dates are fresh, so the server would answer `unchanged`.
-  addForeignOriginRepos(forceReissueGuids, foreignOriginGuids, remoteRepos);
+  const forceReissueGuids = forceReissueSet(licenseStatuses, remoteRepos, machineName);
 
   const repoByGuid = new Map(
     localRepos.map((entry) => [entry.config.repositoryGuid, { grandGuid: entry.config.grandGuid }])
