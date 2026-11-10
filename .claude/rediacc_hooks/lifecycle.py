@@ -143,6 +143,8 @@ PATTERNS = {
             {"command": "python3 " + _P % "hooks/post-bash/github_status_note.py", "timeout": 10},
             # agent/plans/PLAN-fast-loop.md Parts 3 and 4: one note when a pre-push receipt is built before a push is due, one when a `git push` lands while the cached PR run is in progress and not red. Informational; reads the cached CI state only, never the network; never exits non-zero.
             {"command": "python3 " + _P % "hooks/post-bash/loop_speed_note.py", "timeout": 10},
+            # A bench 403 is the bench IP allowlist, never a rate limit (2026-11-10: a session read it as one and idled bench work for hours). Names `bench_access add-current`, or `npm run login:bench` for the IP-changed login refusal, on every output that shows one from a bench command. Substring prefilter first; never exits non-zero.
+            {"command": "python3 " + _P % "hooks/stop/wl_benchblock.py", "timeout": 10},
             "python3 " + _P % "hooks/trapguard/dispatch.py" + " --posttool",
         ),
     },

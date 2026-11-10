@@ -1033,3 +1033,93 @@ def test_envelope_errors_helper():
     assert oh.envelope_errors("progress\n" + ERR_ENVELOPE) == "GENERAL_ERROR: HTTP 403"
     assert oh.envelope_errors(envelope({"a": 1})) == ""
     assert oh.envelope_errors("not json") == ""
+
+
+# --------------------------------------------------------------------------- a bench 403 names the allowlist fix, never a rate limit
+
+FOREIGN_FAILURE = json.dumps(
+    {"success": False, "data": None, "errors": [{"code": "GENERAL_ERROR", "message": "HTTP 500"}]}
+)
+
+
+def _bench_fleet(verb_prefix: str, config: str | None, stdout: str):
+    """`_failing_fleet` with `config` listing m1, so a per-machine verb is reached under that config."""
+    base = Fleet()
+    base.machines[config] = ["m1"]
+
+    def run(argv, env, timeout):
+        if " ".join(_verb_args(argv)).startswith(verb_prefix):
+            return oh.Result(1, stdout, PROGRESS)
+        return base(argv, env, timeout)
+
+    return run
+
+
+@pytest.mark.parametrize("verb_prefix", FAILING_VERBS)
+def test_a_bench_403_names_the_allowlist_command(verb_prefix):
+    config = "eu-bench"
+    assert (config,) == oh.BENCH_CONFIG_NAMES
+    out = machines(_bench_fleet(verb_prefix, config, ERR_ENVELOPE), {oh.CONFIGS_ENV: config})
+    assert oh.bench_access.COMMAND in out["detail"]
+    assert "not a rate limit" in out["detail"]
+    # The evidence stays beside the hint.
+    assert "GENERAL_ERROR: HTTP 403" in out["detail"]
+
+
+def test_the_bench_machine_list_hint_survives_the_stop_hooks_first_line_cut():
+    fleet = _bench_fleet("machine list", "eu-bench", ERR_ENVELOPE)
+    out = machines(fleet, {oh.CONFIGS_ENV: "eu-bench"})
+    first = out["detail"].splitlines()[0]
+    # wl_opshealth.unknown_rows keeps the first line's first 160 characters.
+    assert oh.bench_access.COMMAND in first[:160], first
+
+
+@pytest.mark.parametrize(
+    ("config", "stdout"),
+    [
+        ("eu-remote", ERR_ENVELOPE),  # a 403 from another config is not the bench allowlist
+        (None, ERR_ENVELOPE),  # the default config is not bench
+        ("eu-bench", FOREIGN_FAILURE),  # a bench failure that is not a 403
+        ("eu-bench-old", ERR_ENVELOPE),  # another config whose name merely contains bench
+    ],
+)
+def test_control_no_bench_hint_off_a_bench_403(config, stdout):
+    env = {oh.CONFIGS_ENV: config} if config else {"PATH": "/usr/bin"}
+    out = machines(_bench_fleet("machine list", config, stdout), env)
+    assert "machine list rc 1" in out["detail"], out["detail"]
+    assert oh.bench_access.COMMAND not in out["detail"], out["detail"]
+
+
+def test_bench_hint_helper_both_directions():
+    assert oh.bench_hint("eu-bench", "GENERAL_ERROR: HTTP 403") == oh.BENCH_403_HINT
+    assert oh.bench_hint("eu-bench", "<title>Attention Required! | Cloudflare</title>")
+    assert oh.bench_hint("eu-bench", "HTTP/2 403") == oh.BENCH_403_HINT
+    assert oh.bench_hint("eu-bench", "processed 403 items") == ""
+    assert oh.bench_hint("eu-remote", "GENERAL_ERROR: HTTP 403") == ""
+    assert oh.bench_hint(None, "GENERAL_ERROR: HTTP 403") == ""
+
+
+# --------------------------------------------------------------------------- review 13ede7fb.1: a failed repair with no error text says so
+
+REPAIR_ROW = {"config": "", "machine": "m1", "findings": []}
+
+
+def _repair(stdout: str, stderr: str) -> str:
+    row = {**REPAIR_ROW, "findings": [finding("a.b")]}
+    done = oh.repair_machine(row, lambda _a, _e, _t: oh.Result(2, stdout, stderr), {}, CFG, {}, NOW)
+    return done["failed"]
+
+
+@pytest.mark.parametrize(
+    "stdout",
+    [envelope({"actions": []}), "not json at all", ""],
+    ids=["actions-envelope", "raw-text", "empty"],
+)
+def test_a_failed_repair_with_no_error_text_reports_no_action(stdout):
+    assert _repair(stdout, "") == "machine repair rc 2: no action reported"
+
+
+def test_a_failed_repair_still_prefers_the_envelope_error_then_stderr():
+    err = json.dumps({"success": False, "data": None, "errors": [{"code": "E", "message": "nope"}]})
+    assert _repair(err, "stderr text") == "machine repair rc 2: E: nope"
+    assert _repair("{}", "stderr text") == "machine repair rc 2: stderr text"

@@ -2061,3 +2061,17 @@ Documented-In: doc:agent/plans/PLAN-plan-compaction-bindings.md#Operator ruling 
 
 On 2026-10-03 seven plans sat compacted in `_done/` with open boxes, and the worklist items that cited them reached the operator as "no live box: keep or drop?": the work had been closed by moving its document, not by finishing it. Compaction, `--move` and `--sweep` checked the plan's own status and nothing that pointed at it. `wl_planbind.bindings` now names every open box, open item, unfinished dependent and citing box, the three verbs refuse while it is non-empty, and the gate fails any closed plan that still has one.
 
+
+## A bench 403 is the IP allowlist, never a rate limit
+Trap-Id: bench-403-read-as-rate-limit
+Enforced-By: file:.claude/hooks/stop/wl_benchblock.py, file:.ci/rediacc_ci/ops/ops_health.py
+Residue: the hint keys on a bench config or bench host in the COMMAND, so a script that reaches bench without naming either (a wrapper whose own argv carries neither) shows the 403 with no note; `bench_access preflight` covers `ci:quick` only.
+Documented-In: text:.ci/rediacc_ci/ops/bench_access.py whose bench request answers Cloudflare's own 403 page
+
+On 2026-11-10 `./rdc.sh --config eu-bench` answered `{"errors":[{"code":"GENERAL_ERROR","message":"HTTP 403"}]}` on stdout with nothing but progress lines on stderr. A session read the 403 as a rate limit, wrote "bench rate-limits this IP until 2026-11-12" onto worklist items, and left bench work idle for hours.
+
+The 403 was Cloudflare's own block page. Bench sits behind ONE WAF custom rule that allows a short IP list (`.ci/rediacc_ci/ops/bench_access.py`): each entry expires 7 days after it was added, and this machine's egress IP rotates nightly, so falling off the list is routine and nothing about it waits out. The fix is one command, `PYTHONPATH=.ci python3 -m rediacc_ci.ops.bench_access add-current`, then a rerun.
+
+A second, different refusal follows it: with the new IP allowed, the eu-bench login is still tied to the old one, and the CLI asks for an authenticator code. That is the agent's own step too: `npm run login:bench` moves the login headlessly (see the `human-remedy-read-as-operator-step` entry above).
+
+A post-bash hint (`.claude/hooks/stop/wl_benchblock.py`) now names both commands on every output that shows either refusal from a bench command, and the ops-health machines check appends the allowlist command to a bench 403. Before recording any "rate limit" against bench, look for Cloudflare's "Attention Required" page or a bare `HTTP 403`: a rate limit answers 429.

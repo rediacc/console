@@ -30,6 +30,7 @@ import hashlib
 import json
 import os
 import pathlib
+import re
 import subprocess
 import sys
 import time
@@ -39,6 +40,7 @@ from collections.abc import Callable
 from rediacc_ci import well_known
 from rediacc_ci.core import bws_env, https, jsonl_append
 from rediacc_ci.core.common import repo_root
+from rediacc_ci.ops import bench_access, login_bench
 
 CONFIG_REL = ".ci/config/ops-health.json"
 CACHE_DIR_REL = ".ci/cache/ops-health"
@@ -257,7 +259,7 @@ def envelope_data(stdout: str):
 
 
 def envelope_errors(stdout: str) -> str:
-    """The envelope's `errors[]` as "CODE: message; ...", or "" when stdout carries none. The CLI writes its real error there; stderr holds only progress lines."""
+    """The envelope's `errors[]` as "CODE: message; ...", or "" when stdout carries none. A failed CLI call writes its real error there while its stderr usually carries only progress lines, which is why `failure_text` reads this first; stderr can still hold the error (a crash before the envelope, a non-CLI runner), so it stays the fallback."""
     doc = _envelope_doc(stdout)
     if not isinstance(doc, dict) or not isinstance(doc.get("errors"), list):
         return ""
@@ -272,9 +274,39 @@ def envelope_errors(stdout: str) -> str:
     return "; ".join(p for p in parts if p)
 
 
-def failure_text(res: Result, limit: int = 200, default: str = "") -> str:
-    """Why a failed rdc call failed: the stdout envelope's errors first, else the stderr (then stdout) tail."""
-    return _trim(envelope_errors(res.stdout) or res.stderr or res.stdout or default, limit)
+# The bench config by its owner's name (`login_bench.CONFIG`, so this source still names no config), and a 403 as the CLI or Cloudflare reports one. Both are needed: a 403 from any other config is not the bench allowlist.
+BENCH_CONFIG_NAMES = (login_bench.CONFIG,)
+BENCH_403 = re.compile(
+    r"\bHTTP(?:/[0-9.]+)?\s+403\b|\b403 Forbidden\b|Attention Required! \| Cloudflare"
+)
+# A bench 403 is the bench IP allowlist (bench_access.py), never a rate limit; 2026-11-10 a session read it as one and idled bench work for hours. Short enough that a setup line keeps the command inside the Stop hook's 160-character cut (wl_opshealth.unknown_rows).
+BENCH_403_HINT = "bench IP allowlist, not a rate limit; run " + bench_access.COMMAND
+
+
+def bench_hint(config: str | None, text: str) -> str:
+    """`BENCH_403_HINT` when `text` is a 403 from a bench config, else ""."""
+    if (config or "") not in BENCH_CONFIG_NAMES or not BENCH_403.search(text or ""):
+        return ""
+    return BENCH_403_HINT
+
+
+def failure_text(
+    res: Result,
+    limit: int = 200,
+    default: str = "",
+    *,
+    config: str | None = None,
+    stdout_tail: bool = True,
+) -> str:
+    """Why a failed rdc call failed: the stdout envelope's errors first, else the stderr tail, else (with `stdout_tail`) the stdout tail, else `default`.
+
+    A 403 from a bench `config` LEADS with `BENCH_403_HINT` and keeps the error in parentheses, so a reader cut to the first line's head still sees the fix."""
+    text = (
+        envelope_errors(res.stdout) or res.stderr or (res.stdout if stdout_tail else "") or default
+    )
+    hint = bench_hint(config, text)
+    trimmed = _trim(text, limit)
+    return "%s (%s)" % (hint, trimmed) if hint else trimmed
 
 
 # --------------------------------------------------------------------------- machines (L1, D-verdict)
@@ -357,7 +389,7 @@ def check_machine(config: str | None, machine: str, runner: Runner, env: dict, c
     elif not isinstance(data, dict):
         detail = "machine health rc %d printed no JSON: %s" % (
             health.rc,
-            failure_text(health),
+            failure_text(health, config=config),
         )
         # An exit of 1 or more is red whether or not the output could be read.
         if health.rc >= 1:
@@ -386,7 +418,7 @@ def check_machine(config: str | None, machine: str, runner: Runner, env: dict, c
             unreadable.append("machine status --%s timed out" % step)
         elif res.rc != 0:
             row["problems"].append(
-                "machine status --%s rc %d: %s" % (step, res.rc, failure_text(res))
+                "machine status --%s rc %d: %s" % (step, res.rc, failure_text(res, config=config))
             )
 
     listing = data if isinstance(data, dict) and "repositories" in data else None
@@ -492,7 +524,14 @@ def repair_machine(
     if res.timed_out or res.rc >= 2 or res.rc < 0:
         out["failed"] = "machine repair %s: %s" % (
             "timed out" if res.timed_out else "rc %d" % res.rc,
-            "; ".join(_failed_actions(actions)) or failure_text(res, default="no action reported"),
+            # No stdout tail here: a repair's stdout is its actions JSON, already read above, so a failure with no envelope error and no stderr says "no action reported" (review 13ede7fb.1).
+            "; ".join(_failed_actions(actions))
+            or failure_text(
+                res,
+                default="no action reported",
+                config=row["config"] or None,
+                stdout_tail=False,
+            ),
         )
     return out
 
@@ -540,7 +579,7 @@ def machines_check(
         if res.timed_out or res.rc != 0 or not isinstance(data, list):
             setup.append(
                 "%s: machine list rc %s: %s"
-                % (label, "timeout" if res.timed_out else res.rc, failure_text(res))
+                % (label, "timeout" if res.timed_out else res.rc, failure_text(res, config=config))
             )
             continue
         names = [str(m.get("name")) for m in data if isinstance(m, dict) and m.get("name")]
