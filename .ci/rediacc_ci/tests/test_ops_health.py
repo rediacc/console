@@ -188,7 +188,7 @@ def test_configs_from_env_and_the_default_config():
 
 def test_source_names_no_machine_or_config():
     text = pathlib.Path(oh.__file__).read_text(encoding="utf-8")
-    for word in ("hostinger", "eu-remote"):
+    for word in ("hostinger", "eu-remote", "eu-bench", '"bench"', "'bench'"):
         assert word not in text
 
 
@@ -1058,9 +1058,11 @@ def _bench_fleet(verb_prefix: str, config: str | None, stdout: str):
 @pytest.mark.parametrize("verb_prefix", FAILING_VERBS)
 def test_a_bench_403_names_the_allowlist_command(verb_prefix):
     config = "eu-bench"
-    assert (config,) == oh.BENCH_CONFIG_NAMES
+    assert oh.BENCH_CONFIG_NAMES == oh.login_bench.BENCH_CONFIGS
     out = machines(_bench_fleet(verb_prefix, config, ERR_ENVELOPE), {oh.CONFIGS_ENV: config})
-    assert oh.bench_access.COMMAND in out["detail"]
+    # The envelope's bare "HTTP 403" is ambiguous (review dcd1a513.2): the deciding check, hedged.
+    assert oh.bench_access.PREFLIGHT_COMMAND in out["detail"]
+    assert "unless the API refused" in out["detail"]
     assert "not a rate limit" in out["detail"]
     # The evidence stays beside the hint.
     assert "GENERAL_ERROR: HTTP 403" in out["detail"]
@@ -1071,7 +1073,15 @@ def test_the_bench_machine_list_hint_survives_the_stop_hooks_first_line_cut():
     out = machines(fleet, {oh.CONFIGS_ENV: "eu-bench"})
     first = out["detail"].splitlines()[0]
     # wl_opshealth.unknown_rows keeps the first line's first 160 characters.
-    assert oh.bench_access.COMMAND in first[:160], first
+    assert oh.bench_access.PREFLIGHT_COMMAND in first[:160], first
+
+
+@pytest.mark.parametrize("config", ["eu-bench", "bench"])
+def test_every_bench_config_gets_the_hint(config):
+    """Review dcd1a513.4: `--config bench` reaches bench too, and the names come from `login_bench.BENCH_CONFIGS`."""
+    assert config in oh.login_bench.BENCH_CONFIGS
+    out = machines(_bench_fleet("machine list", config, ERR_ENVELOPE), {oh.CONFIGS_ENV: config})
+    assert oh.bench_access.PREFLIGHT_COMMAND in out["detail"], out["detail"]
 
 
 @pytest.mark.parametrize(
@@ -1088,12 +1098,17 @@ def test_control_no_bench_hint_off_a_bench_403(config, stdout):
     out = machines(_bench_fleet("machine list", config, stdout), env)
     assert "machine list rc 1" in out["detail"], out["detail"]
     assert oh.bench_access.COMMAND not in out["detail"], out["detail"]
+    assert oh.bench_access.PREFLIGHT_COMMAND not in out["detail"], out["detail"]
 
 
 def test_bench_hint_helper_both_directions():
-    assert oh.bench_hint("eu-bench", "GENERAL_ERROR: HTTP 403") == oh.BENCH_403_HINT
-    assert oh.bench_hint("eu-bench", "<title>Attention Required! | Cloudflare</title>")
-    assert oh.bench_hint("eu-bench", "HTTP/2 403") == oh.BENCH_403_HINT
+    # Cloudflare's own signals: definite, add-current. A bare 403: hedged, preflight (review dcd1a513.2).
+    page = "<title>Attention Required! | Cloudflare</title>"
+    assert oh.bench_hint("eu-bench", page) == oh.BENCH_403_HINT
+    assert oh.bench_hint("eu-bench", "HTTP/2 403\ncf-mitigated: block") == oh.BENCH_403_HINT
+    assert oh.bench_hint("eu-bench", "GENERAL_ERROR: HTTP 403") == oh.BENCH_403_MAYBE_HINT
+    assert oh.bench_hint("eu-bench", "HTTP/2 403") == oh.BENCH_403_MAYBE_HINT
+    assert oh.bench_hint("bench", "GENERAL_ERROR: HTTP 403") == oh.BENCH_403_MAYBE_HINT
     assert oh.bench_hint("eu-bench", "processed 403 items") == ""
     assert oh.bench_hint("eu-remote", "GENERAL_ERROR: HTTP 403") == ""
     assert oh.bench_hint(None, "GENERAL_ERROR: HTTP 403") == ""
@@ -1112,11 +1127,27 @@ def _repair(stdout: str, stderr: str) -> str:
 
 @pytest.mark.parametrize(
     "stdout",
-    [envelope({"actions": []}), "not json at all", ""],
-    ids=["actions-envelope", "raw-text", "empty"],
+    [
+        envelope({"actions": []}),
+        "progress line\n" + envelope({"actions": []}),
+        json.dumps({"actions": []}),
+        json.dumps({"success": False, "data": None, "errors": []}),
+        "",
+    ],
+    ids=["actions-envelope", "progress-then-envelope", "bare-actions", "empty-envelope", "empty"],
 )
 def test_a_failed_repair_with_no_error_text_reports_no_action(stdout):
     assert _repair(stdout, "") == "machine repair rc 2: no action reported"
+
+
+@pytest.mark.parametrize(
+    "stdout",
+    ["not json at all", "Error: ssh: connect to host m1 port 22: Connection refused\n"],
+    ids=["raw-text", "ssh-error"],
+)
+def test_a_failed_repair_reports_a_plain_text_stdout(stdout):
+    """Review dcd1a513.3: only a stdout that IS the JSON reply is suppressed; a plain-text error on stdout with an empty stderr is the reason, not "no action reported"."""
+    assert _repair(stdout, "") == "machine repair rc 2: %s" % stdout.strip()
 
 
 def test_a_failed_repair_still_prefers_the_envelope_error_then_stderr():

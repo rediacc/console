@@ -35,6 +35,8 @@ from rediacc_ci.well_known import BENCH_ORIGIN
 PROFILE = "bench-login"
 SERVER = BENCH_ORIGIN
 CONFIG = "eu-bench"
+# Every CLI config name that reaches bench, and the one place a consumer reads it from (ops_health's bench hint, the post-bash bench hint `.claude/hooks/stop/wl_benchblock.py`): this script's own config and rdc.sh's `./rdc.sh --config bench <cmd>`.
+BENCH_CONFIGS = (CONFIG, "bench")
 CONFIG_ID = "1880812c-2086-4daa-a620-8f84aa3b6e7c"
 PLACEHOLDER = "PLACEHOLDER-operator-fills"
 MIN_WINDOW_LEFT = 5

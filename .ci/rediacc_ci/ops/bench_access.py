@@ -58,7 +58,10 @@ STAMP_MARK = " | added "
 RULE_DESCRIPTION = "rediacc bench IP allowlist (rediacc_ci.ops.bench_access)"
 # GET of these paths is never blocked: ops-telemetry-probe.yml probes them from runners with no fixed IP.
 EXEMPT_PATHS = ("/account/api/v1/health", "/v1/health")
-COMMAND = "PYTHONPATH=.ci python3 -m rediacc_ci.ops.bench_access add-current"
+RUN = "PYTHONPATH=.ci python3 -m rediacc_ci.ops.bench_access "
+COMMAND = RUN + "add-current"
+# The one command that DECIDES whether a bench 403 is this rule: it GETs the bench root (no EXEMPT_PATHS entry, and no account API permission applies to it) and runs add-current only when that answers 403, so an ambiguous 403 (the CLI envelope's bare "HTTP 403") is settled and fixed in one step.
+PREFLIGHT_COMMAND = RUN + "preflight"
 HINT = "bench is IP-restricted; run " + COMMAND
 # Cloudflare's own view of the caller's address, one literal per family (the IP literal needs no DNS).
 TRACE_URLS = ("https://1.1.1.1/cdn-cgi/trace", "https://[2606:4700:4700::1111]/cdn-cgi/trace")

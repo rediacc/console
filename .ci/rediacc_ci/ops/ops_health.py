@@ -274,20 +274,29 @@ def envelope_errors(stdout: str) -> str:
     return "; ".join(p for p in parts if p)
 
 
-# The bench config by its owner's name (`login_bench.CONFIG`, so this source still names no config), and a 403 as the CLI or Cloudflare reports one. Both are needed: a 403 from any other config is not the bench allowlist.
-BENCH_CONFIG_NAMES = (login_bench.CONFIG,)
+# The bench configs by their owner's name (`login_bench.BENCH_CONFIGS`, so this source still names no config), and a 403 as the CLI or Cloudflare reports one. Both are needed: a 403 from any other config is not the bench allowlist.
+BENCH_CONFIG_NAMES = login_bench.BENCH_CONFIGS
 BENCH_403 = re.compile(
     r"\bHTTP(?:/[0-9.]+)?\s+403\b|\b403 Forbidden\b|Attention Required! \| Cloudflare"
 )
-# A bench 403 is the bench IP allowlist (bench_access.py), never a rate limit; 2026-11-10 a session read it as one and idled bench work for hours. Short enough that a setup line keeps the command inside the Stop hook's 160-character cut (wl_opshealth.unknown_rows).
+# What only Cloudflare's WAF prints: its block page and the `cf-mitigated` header. A bare "HTTP 403" (the CLI envelope's message) is also what the account API answers for a permission it refuses AFTER the WAF let the request through, so only these make the 403 the allowlist for certain (review dcd1a513.2).
+BENCH_WAF_PAGE = re.compile(
+    r"Attention Required! \| Cloudflare|Sorry, you have been blocked|^\s*cf-mitigated\s*:",
+    re.IGNORECASE | re.MULTILINE,
+)
+# A bench 403 is the bench IP allowlist (bench_access.py) or the API's own refusal, never a rate limit; 2026-11-10 a session read it as one and idled bench work for hours. On Cloudflare's page the fix is add-current; on a bare 403 it is preflight, which decides and adds only on the WAF's 403. Short enough that a setup line keeps the command inside the Stop hook's 160-character cut (wl_opshealth.unknown_rows).
 BENCH_403_HINT = "bench IP allowlist, not a rate limit; run " + bench_access.COMMAND
+BENCH_403_MAYBE_HINT = (
+    "bench IP allowlist unless the API refused, not a rate limit; run "
+    + bench_access.PREFLIGHT_COMMAND
+)
 
 
 def bench_hint(config: str | None, text: str) -> str:
-    """`BENCH_403_HINT` when `text` is a 403 from a bench config, else ""."""
+    """The bench hint when `text` is a 403 from a bench config, else "": `BENCH_403_HINT` on Cloudflare's own block signals, `BENCH_403_MAYBE_HINT` on a bare 403."""
     if (config or "") not in BENCH_CONFIG_NAMES or not BENCH_403.search(text or ""):
         return ""
-    return BENCH_403_HINT
+    return BENCH_403_HINT if BENCH_WAF_PAGE.search(text) else BENCH_403_MAYBE_HINT
 
 
 def failure_text(
@@ -298,7 +307,7 @@ def failure_text(
     config: str | None = None,
     stdout_tail: bool = True,
 ) -> str:
-    """Why a failed rdc call failed: the stdout envelope's errors first, else the stderr tail, else (with `stdout_tail`) the stdout tail, else `default`.
+    """Why a failed rdc call failed: the stdout envelope's errors first, else the stderr tail, else (with `stdout_tail`) the stdout tail, else `default`. A caller that already read stdout as its JSON reply passes `stdout_tail=False` for that case only, so a plain-text stdout still reports (review dcd1a513.3).
 
     A 403 from a bench `config` LEADS with `BENCH_403_HINT` and keeps the error in parentheses, so a reader cut to the first line's head still sees the fix."""
     text = (
@@ -508,6 +517,9 @@ def repair_machine(
     raw = data.get("actions") if isinstance(data, dict) else None
     actions = [a for a in raw or [] if isinstance(a, dict)]
     out["actions"] = actions
+    # The stdout already read: the CLI's JSON envelope, or a bare actions document. Plain-text stdout (an error printed before or instead of the envelope) is NOT read here, so it still reaches failure_text (review dcd1a513.3).
+    doc = None if res.timed_out else _envelope_doc(res.stdout)
+    stdout_read = isinstance(doc, dict) and ("success" in doc or isinstance(raw, list))
     ran = {
         str(a.get("code"))
         for a in actions
@@ -524,13 +536,13 @@ def repair_machine(
     if res.timed_out or res.rc >= 2 or res.rc < 0:
         out["failed"] = "machine repair %s: %s" % (
             "timed out" if res.timed_out else "rc %d" % res.rc,
-            # No stdout tail here: a repair's stdout is its actions JSON, already read above, so a failure with no envelope error and no stderr says "no action reported" (review 13ede7fb.1).
+            # No stdout tail when stdout is the actions JSON already read above, so that failure with no envelope error and no stderr says "no action reported" (review 13ede7fb.1); a plain-text stdout is the error and is reported (review dcd1a513.3).
             "; ".join(_failed_actions(actions))
             or failure_text(
                 res,
                 default="no action reported",
                 config=row["config"] or None,
-                stdout_tail=False,
+                stdout_tail=not stdout_read,
             ),
         )
     return out
