@@ -228,9 +228,7 @@ def _add_landed_box(world, body, verdict):
     _commit(root, name, "feat: x\n\nPlan-Box: %s#%s clauses=all\n" % (PLAN, sig))
     ledger = root / "agent" / "ledgers" / "plan-investigation.jsonl"
     row = {"plan": REL, "sig": sig, "verdict": verdict, "head": _git(root, "rev-parse", "HEAD")}
-    ledger.write_text(
-        ledger.read_text(encoding="utf-8") + json.dumps(row) + "\n", encoding="utf-8"
-    )
+    ledger.write_text(ledger.read_text(encoding="utf-8") + json.dumps(row) + "\n", encoding="utf-8")
     return sig
 
 
@@ -276,6 +274,9 @@ def test_a_nightly_run_or_live_receipt_accept_is_owed(world):
     for body in (
         "J14 gate. Accept: a nightly run is green.",
         "J15 gate. Accept: a live receipt is recorded.",
+        "J15a gate. Accept: nightly is green.",
+        "J15b gate. Accept: the nightly suite passes.",
+        "J15c gate. Accept: nightly running.",
     ):
         sig = _add_landed_box(world, body, "present")
         assert _by_sig(BA.audit(world.root, ME)[0])[sig].verdict == "live-owed"
@@ -292,11 +293,9 @@ def test_a_partial_verdict_taken_before_the_landing_is_not_owed(world):
     _commit(root, "x-%s.txt" % sig, "feat: x\n\nPlan-Box: %s#%s clauses=all\n" % (PLAN, sig))
     ledger = root / "agent" / "ledgers" / "plan-investigation.jsonl"
     row = {"plan": REL, "sig": sig, "verdict": "partial", "head": old_head}
-    ledger.write_text(
-        ledger.read_text(encoding="utf-8") + json.dumps(row) + "\n", encoding="utf-8"
-    )
+    ledger.write_text(ledger.read_text(encoding="utf-8") + json.dumps(row) + "\n", encoding="utf-8")
     a = _by_sig(BA.audit(root, ME)[0])[sig]
-    assert a.verdict != "live-owed"
+    assert a.verdict == "tickable-now"
 
 
 def test_live_owed_box_is_linked_by_its_report_through_the_x_line(world):

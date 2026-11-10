@@ -134,9 +134,9 @@ def test_skip_globs_union_the_record_paths_read_at_runtime(tmp_path):
     (tmp_path / ".ci" / "policy" / "record-paths.json").write_text(
         '{"records": [{"glob": "agent/worklist/*.jsonl", "except": []}]}'
     )
-    skips = R.skip_globs(str(tmp_path), {"review_skip_globs": ["agent/ledgers/**/*.jsonl"]})
+    skips = R.skip_globs(str(tmp_path), {"review_skip_globs": ["agent/ledgers/plan-*.jsonl"]})
     assert R.is_skipped_path("agent/worklist/e.jsonl", skips)
-    assert R.is_skipped_path("agent/ledgers/a/b.jsonl", skips)
+    assert R.is_skipped_path("agent/ledgers/plan-b.jsonl", skips)
     assert R.is_skipped_path("agent/reviews/b/clean.jsonl", skips)
     assert not R.is_skipped_path("a.py", skips)
     assert not R.is_skipped_path("agent/worklist/sub/e.jsonl", skips)
@@ -237,6 +237,10 @@ def test_a_skip_glob_admits_only_record_files(tmp_path):
         ".ci/config/effort.json",
         ".ci/config/*.json",
         "agent/x/*.json*",
+        "agent/**/*.json",
+        "agent/*/*.json",
+        "agent/*.json",
+        "agent/x/**/*.jsonl",
     ):
         assert not R.admissible_skip_glob(bad), bad
     for good in (
@@ -256,7 +260,7 @@ def test_a_skip_glob_admits_only_record_files(tmp_path):
     assert not R.is_skipped_path("agent/tools/x.py", skips)
 
 
-def test_the_stat_reads_paths_literally_from_stdin(tmp_path):
+def test_the_stat_lists_glob_named_paths_as_themselves(tmp_path):
     """Review 60c6a9aa.1/.2: a path with glob characters is listed as itself, and a skipped sibling stays out."""
     repo, sha = _commit_files(
         tmp_path,
@@ -278,3 +282,53 @@ def test_the_stat_reads_paths_literally_from_stdin(tmp_path):
     assert "x[a].py" in stat
     assert "xa.py" in stat
     assert "QUEUE.md" not in stat
+
+
+def test_numstat_rows_keep_a_tab_in_a_path_whole(tmp_path):
+    """Review 046b15f9.3: only the first two tabs separate the counts, so a path holding a tab stays whole."""
+    repo, sha = _commit_files(tmp_path, "t", {"a\tb.py": "x = 1\n"})
+    assert R.numstat_rows(str(repo), sha) == [("a\tb.py", "1", "0")]
+
+
+def test_numstat_rows_is_none_when_git_fails_and_the_prompt_says_so(tmp_path):
+    """Review 046b15f9.4: a failed numstat read is not an empty stat; it is logged and named in the prompt."""
+    repo, sha = _commit_files(tmp_path, "f", {"a.py": "x = 1\n"})
+    assert R.numstat_rows(str(repo), "0" * 40) is None
+    seen, logs = [], []
+
+    def model(prompt, *_a):
+        seen.append(prompt)
+        raise RuntimeError("stop after the call")
+
+    real = R.numstat_rows
+    R.numstat_rows = lambda *_a: None
+    try:
+        with contextlib.suppress(RuntimeError):
+            R.run_review(
+                repo, "console", sha, "1110-1", reviewer=model, cfg=_cfg(), log=logs.append
+            )
+    finally:
+        R.numstat_rows = real
+    assert seen
+    assert "(unavailable: git show --numstat failed)" in seen[0]
+    assert any("numstat failed" in m for m in logs)
+
+
+def test_render_stat_lists_kept_paths_with_counts_binary_and_a_total():
+    """Review 046b15f9.5: one `path | +a -d` line per kept row, a binary counts as "-", skipped rows leave, and a total closes."""
+    rows = [("a.py", "3", "1"), ("img.png", "-", "-"), ("agent/x.jsonl", "9", "0")]
+    assert R.render_stat(rows, ["a.py", "img.png"]) == (
+        "a.py | +3 -1\nimg.png | +- --\n2 file(s) changed"
+    )
+    assert R.render_stat(rows, []) == ""
+
+
+def test_a_rename_lists_only_its_new_path(tmp_path):
+    """Review 046b15f9.5: `git show --numstat -z` gives a rename as old and new path fields; the stat lists the new one."""
+    repo, _sha = _commit_files(tmp_path, "r", {"old.py": "line\n" * 20})
+    _git(repo, "mv", "old.py", "new.py")
+    _git(repo, "commit", "-q", "-m", "rename")
+    sha = _git(repo, "rev-parse", "HEAD")
+    rows = R.numstat_rows(str(repo), sha)
+    assert [r[0] for r in rows] == ["new.py"]
+    assert R.render_stat(rows, ["new.py"]) == "new.py | +0 -0\n1 file(s) changed"

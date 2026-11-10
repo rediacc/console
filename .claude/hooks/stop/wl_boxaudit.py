@@ -273,7 +273,7 @@ def _stale(root, row, base, head):
 
 
 LIVE_ACCEPT_RE = re.compile(
-    r"Accept:[^\n]*\b(?:CI run(?: id)?s?|run ids?|nightly (?:runs?|receipts?|proof|verdicts?|green)|live receipts?|live[- ]proof)\b",
+    r"Accept:[^\n]*\b(?:CI run(?: id)?s?|run ids?|nightly (?:(?:is|are|suite|job) )*(?:runs?|running|receipts?|proof|verdicts?|green|passe?s?|passing)|live receipts?|live[- ]proof)\b",
     re.IGNORECASE,
 )
 

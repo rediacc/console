@@ -1277,8 +1277,10 @@ def _glob_re(glob):
 # lives in files a commit can edit, so a glob such as "**", "agent/**" or "agent/**/*.py" would
 # otherwise turn later code commits record-only (reviews 623c29ce.1 and c8abe868.1). The rule is
 # positive, not a denylist: under agent/ the glob's last segment must name a record file (a
-# *.jsonl or *.json pattern, or exactly STATE.md or QUEUE.md); under .ci/config/ only the named
-# record files are admitted, as literals.
+# *.jsonl or *.json pattern, or exactly STATE.md or QUEUE.md) and, for the pattern form, sit in
+# a directory the glob names literally (agent/worklist/*.jsonl, never agent/**/*.json, which
+# would take every JSON file under agent/); under .ci/config/ only the named record files are
+# admitted, as literals.
 SKIP_AGENT_ROOT = "agent/"
 SKIP_AGENT_TAILS = (".jsonl", ".json")
 SKIP_AGENT_NAMES = ("STATE.md", "QUEUE.md")
@@ -1291,10 +1293,13 @@ def admissible_skip_glob(glob):
         return True
     if not glob.startswith(SKIP_AGENT_ROOT):
         return False
-    tail = glob.rsplit("/", 1)[-1]
+    head, _, tail = glob.rpartition("/")
     if tail in SKIP_AGENT_NAMES:
         return True
-    return tail.endswith(SKIP_AGENT_TAILS) and "*" not in tail[tail.rfind(".") :]
+    # The directory of a pattern glob is named literally below agent/ (one wildcard segment at
+    # most would still span every directory's JSON), so a json pattern cannot reach another tree.
+    literal_dir = head != SKIP_AGENT_ROOT.rstrip("/") and "*" not in head
+    return literal_dir and tail.endswith(SKIP_AGENT_TAILS)
 
 
 def skip_globs(root, cfg=None):
@@ -1325,10 +1330,10 @@ def skip_globs(root, cfg=None):
 
 
 def numstat_rows(repo, sha):
-    """[(path, added, deleted)] for every path of `sha`, read verbatim from `git show --numstat -z` (a binary file counts as "-")."""
+    """[(path, added, deleted)] for every path of `sha`, read verbatim from `git show --numstat -z` (a binary file counts as "-"); None when git failed, so a failed read is not an empty stat."""
     rc, out = git(repo, "show", "--numstat", "-z", "--format=", sha)
     if rc != 0:
-        return []
+        return None
     rows = []
     fields = out.split("\0")
     k = 0
@@ -1337,7 +1342,7 @@ def numstat_rows(repo, sha):
         k += 1
         if not head:
             continue
-        parts = head.split("\t")
+        parts = head.split("\t", 2)
         if len(parts) < 3:
             continue
         added, deleted, path = parts[0], parts[1], parts[2]
@@ -2408,7 +2413,12 @@ def run_review(
             # The stat is built from the commit's own --numstat -z (every path verbatim, no
             # pathspec): no argv limit on a large commit and no glob magic in a path such as
             # `a[1].py` (review 60c6a9aa.1 and .2).
-            stat = render_stat(numstat_rows(repo, full), kept)
+            rows = numstat_rows(repo, full)
+            if rows is None:
+                log("numstat failed for %s: the stat is withheld" % full[:12])
+                stat = "(unavailable: git show --numstat failed)"
+            else:
+                stat = render_stat(rows, kept)
             prompt = PROMPT % {
                 "message": message or "(empty)",
                 "stat": stat or "(empty)",
