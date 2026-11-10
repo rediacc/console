@@ -1384,6 +1384,27 @@ SLASH_KEYWORDS = frozenset(
 )
 SLASH_WORD = re.compile(r"[A-Za-z0-9_$\x80-\U0010ffff]+")
 
+# A SENTENCE IN A STRING RUNS NOTHING (#90988086). An edited scripts/gen/gen-docs.ts was refused until committed (measured 2026-11-10, `npx tsx` of an untracked copy, rc 2): its only `worktree` in code is the template text "in the index, absent from the worktree:", and `add` sits in unrelated code elsewhere in the file, so the comment-stripped phrase reading saw both. A string literal that reads as prose is dropped from that reading the way a comment is: it holds `worktree` (quotes and backslashes gone, as `_names_phrase` reads it), at least three words, no judged verb word, no `git` and no `alias`, and none of the marks in PROSE_MARKS.
+# Every literal an invocation is assembled from keeps at least one of those: a lone `"worktree"` argv word (one word), `"git worktree "` (git), `"-c alias.wt=worktree wt"` (alias, `=`), a shell wrapper (braces, `$`). A literal that is part prose and part piece of a command built at run time (`"the worktree is " + ...` split later) is the built-string edge every reading here already sits on. Shell, perl and ruby scripts keep every literal: there a string is as often a command as a sentence.
+PROSE_BAR = frozenset(("git", "alias", *LEASE_INVOCATION_VERBS))
+PROSE_MARKS = frozenset("=$`{}();|&<>")
+
+
+def _prose_literal(content):
+    """Does a string literal's content read as a sentence that mentions `worktree` and could not be a piece of a git command line? Such a literal is dropped from the script arm's phrase reading (`_code_text`)."""
+    bare = PHRASE_NOISE.sub("", content).lower()
+    if "worktree" not in bare or PROSE_MARKS & set(bare):
+        return False
+    words = re.findall(r"[a-z0-9]+", bare)
+    return len(words) >= 3 and not PROSE_BAR & set(words)
+
+
+def _kept_literal(literal, head, tail):
+    """`literal` as the JS scanner keeps it: its delimiters alone when the text between them (`head` characters in, `tail` from the end) is prose (`_prose_literal`), else unchanged."""
+    if _prose_literal(literal[head : len(literal) - tail]):
+        return literal[:head] + literal[len(literal) - tail :]
+    return literal
+
 
 def _slash_scan(text, ambiguous_regex):
     """One reading of a JS-family text with its comments removed, an ambiguous `/` read as a regex when `ambiguous_regex`; None when the text holds a construct this reading does not place exactly."""
@@ -1450,7 +1471,7 @@ def _slash_scan(text, ambiguous_regex):
                 j += 1
             if j >= n:
                 return None
-            out.append(text[i : j + 1])
+            out.append(_kept_literal(text[i : j + 1], 1, 1))
             i = j + 1
             prev = "lit"
             continue
@@ -1461,7 +1482,7 @@ def _slash_scan(text, ambiguous_regex):
             if read is None:
                 return None
             j, hole = read
-            out.append(text[i:j])
+            out.append(_kept_literal(text[i:j], 1, 2 if hole else 1))
             i = j
             if hole:
                 frames.append(0)
@@ -1536,12 +1557,24 @@ def _slash_code_text(text):
     return as_division if as_division == as_regex else as_division + "\n" + as_regex
 
 
+# The tokens a Python literal's text arrives in: a whole string, and the text pieces of an f-string or t-string (3.12+, 3.14+), whose `{...}` holes are tokens of their own.
+PY_LITERAL_TOKENS = frozenset(
+    t
+    for t in (
+        tokenize.STRING,
+        getattr(tokenize, "FSTRING_MIDDLE", None),
+        getattr(tokenize, "TSTRING_MIDDLE", None),
+    )
+    if t is not None
+)
+
+
 def _code_text(family, text):
-    """`text` with the comments its `family` writes removed, the raw text for a family this does not read exactly or a text the family's scanner cannot place."""
+    """`text` with the comments its `family` writes removed, and for Python and the JS family each prose string literal too (`_prose_literal`); the raw text for a family this does not read exactly or a text the family's scanner cannot place."""
     if family == "python":
         try:
             return " ".join(
-                tok.string
+                '""' if tok.type in PY_LITERAL_TOKENS and _prose_literal(tok.string) else tok.string
                 for tok in tokenize.generate_tokens(io.StringIO(text).readline)
                 if tok.type != tokenize.COMMENT
             )

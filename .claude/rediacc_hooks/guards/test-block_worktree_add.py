@@ -247,6 +247,42 @@ REFUSED += [
     AMBIGUOUS_ROW,
     *TERMINATOR_ROWS,
 ]
+# #90988086: an edited scripts/gen/gen-docs.ts was refused until committed, its only `worktree` the template text "in the index, absent from the worktree:" and its `add` unrelated code. A prose literal is dropped from the phrase reading like a comment (`_prose_literal`), so the gen-docs shape and its Python twin are allowed; a literal holding `git`, `alias`, `=`, a verb, or one bare word stays, so each REFUSED twin below still names the phrase.
+PROSE = {
+    "gendocs_like.ts": (
+        "npx tsx",
+        (
+            'const RED = "", NC = "", m = "x";\n'
+            "console.error(`  ${RED}in the index, absent from the worktree:${NC} ${m}`);\n"
+            "const seen = new Set<string>();\nseen.add(m);\n"
+        ),
+    ),
+    "prose.py": (
+        "python3",
+        'print("in the index, absent from the worktree")\nseen = set()\nseen.add(1)\n',
+    ),
+}
+PROSE_REFUSED = {
+    "prose_alias.py": (
+        "python3",
+        'import subprocess\nsubprocess.run("git -c alias.wt=worktree wt add /p", shell=True)\n',
+    ),
+    "prose_word.py": (
+        "python3",
+        'import subprocess\nW = "worktree"\nsubprocess.run(["git", W, "add", "/p"])\n',
+    ),
+    "prose_verb.ts": ("npx tsx", "console.log(`the worktree we add here`);\n"),
+}
+for prose_name, (_runner, prose_text) in {**PROSE, **PROSE_REFUSED}.items():
+    pathlib.Path(FIXTURE_DIR, prose_name).write_text(prose_text, encoding="utf-8")
+PROSE_ROWS = [
+    ("a prose literal: %s" % name, "%s %s/%s" % (runner, FIXTURE_DIR, name))
+    for name, (runner, _text) in PROSE.items()
+]
+REFUSED += [
+    ("not prose: %s" % name, "%s %s/%s" % (runner, FIXTURE_DIR, name))
+    for name, (runner, _text) in PROSE_REFUSED.items()
+]
 # The JS helper is also caught by the text reading (`_text_verdict` folds the concatenation), so only the shell rows depend on the script arm alone.
 SCRIPT_ARM_ROWS = [row for row in APART_ROWS if row[1].startswith("bash ")]
 FALSE_POSITIVES = [
@@ -417,6 +453,7 @@ ALLOWED = [
     *FALSE_POSITIVES,
     *COMMENTED_ROWS,
     DEPS_LIKE_ROW,
+    *PROSE_ROWS,
 ]
 
 # (family, text, does the comment-stripped text still name the phrase): the scanners on their own, both directions, and the raw-text fallback for a construct they do not read.
@@ -451,6 +488,15 @@ CODE_TEXT = [
     ("node", "f(`\n// the worktree\ng('add');\n", True),
     ("node", "x = /abc\n// the worktree\ng.add(1)\n", True),
     ("node", "return <a href='//x'>don't</a>; // the worktree\ng.add(1)\n", True),
+    # #90988086: a prose literal drops like a comment; one holding a mark of a command line stays.
+    ("tsx", "console.log(`${a} in the index, absent from the worktree:${b}`);\ns.add(1);\n", False),
+    ("node", "f('absent from the worktree'); g.add(1)\n", False),
+    ("python", 'print("absent from the worktree")\ns.add(1)\n', False),
+    ("python", 'W = "worktree"\ng(W, "add")\n', True),
+    ("python", 'msg = "the worktree is = here"\ns.add(1)\n', True),
+    ("node", 'f("git worktree is " + v); g.add(1)\n', True),
+    ("node", "f(`the worktree we add here`);\n", True),
+    ("shell", 'echo "absent from the worktree"; git add -A\n', True),
 ]
 
 # (operand, directory, trees on disk, does it name a lease)
@@ -700,6 +746,20 @@ REVERSE = [
         "a comment licenses the JS hole fill",
         ('"worktree" in _slash_code_text(_mask_file_names(code))', "None"),
         DEPS_LIKE_ROW,
+    ),
+    # #90988086: with prose literals kept, the gen-docs shape and its Python twin are refused again, so each is allowed BY the prose drop.
+    (
+        "the JS scanner keeps a prose literal",
+        ("    if _prose_literal(literal[head : len(literal) - tail]):\n", "    if False:\n"),
+        PROSE_ROWS[0],
+    ),
+    (
+        "the Python reading keeps a prose literal",
+        (
+            "'\"\"' if tok.type in PY_LITERAL_TOKENS and _prose_literal(tok.string) else tok.string",
+            "tok.string",
+        ),
+        PROSE_ROWS[1],
     ),
 ]
 for label, pair, (row_name, row_command) in REVERSE:
