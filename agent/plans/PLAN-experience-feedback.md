@@ -11,7 +11,7 @@ Owns: agent/plans/PLAN-experience-feedback.md, .claude/hooks/stop/wl_reviewclass
 
 ## Why
 
-The ledger audit of 2026-11-10 found that about half of the experience stores feed back into hooks and gates, while the experience that would stop a session repeating a mistake mostly never reaches it: 125 hint proposals with 0 promoted, a retro gate that silenced retros for long-lived sessions, 6,465 per-commit review findings that recur by class (doc contradicts code 969, missing control test 800, swallowed error 326) without reaching any writer brief, about 430 not-a-bug findings on record files, and memory notes with no enforcement behind them. The operator also asked that a lesson leave active rotation once a guard, gate, test, CI check or tool fix enforces it.
+The ledger audit of 2026-11-10 found that about half of the experience stores feed back into hooks and gates, while the experience that would stop a session repeating a mistake mostly never reaches it: 125 hint proposals with 0 promoted, a retro gate that silenced retros for long-lived sessions, 6,465 per-commit review findings that recur by class (doc contradicts code 969, missing control test 800, swallowed error 326) without reaching any writer brief, about 440 not-a-bug findings on record files (441 outside record-paths.json, 20 inside), and memory notes with no enforcement behind them. The operator also asked that a lesson leave active rotation once a guard, gate, test, CI check or tool fix enforces it.
 
 ## Facts the design rests on (checked 2026-11-10)
 
