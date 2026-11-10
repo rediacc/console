@@ -25,7 +25,7 @@ import tomllib
 import urllib.error
 import urllib.parse
 import uuid
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from typing import TYPE_CHECKING, Any
 
 from rediacc_ci import paths
@@ -39,6 +39,7 @@ from rediacc_ci.enterprise import (
     onboarding,
     proof,
     registry,
+    secrets,
 )
 from rediacc_ci.housekeeping import cf_leftovers
 from rediacc_ci.ops import cf_usage_report, enterprise_lookup
@@ -777,17 +778,63 @@ def turnstile_domains(*, listing: Listing = cf_list) -> list[str]:
 #
 # The `enterprise proof replay` and `proof proxy` token readers (agent/plans/PLAN-enterprise-isolation.md, box V6's group, which V7's proxy token rides). SEAMS binds them by name.
 #
-# `present(company, kind, artifact)` sends one artifact to the company's own host and maps the answer: 2xx is admitted, 401 or 403 is refused with the status, anything else is a `LabError` (a 5xx or a 404 says the probe is wrong, not that the artifact was refused). Each kind has one READ-ONLY probe, so presenting never changes what it presents: a `session` is the `access_token` cookie on `GET /account/api/v1/portal/me` (private/account/src/middleware/session.ts). The other kinds have no read-only probe on the account Worker: the config token's routes rotate the token they accept (`X-Config-Token`, private/account/src/routes/configs.ts), the API token's are writes, and the E2E envelope and the proxy token are presented through the proxy. Their presenters raise `LabError("not built yet: V6 ...")` naming the missing probe.
+# SIGNING IN AS A FAKE OWNER. `owner_session(company)` is the owner's first sign-in, the one company mode designs: the owner account is passwordless (private/account/src/services/enterprise-bootstrap.service.ts `ensureOwner`), and `POST /account/api/v1/subscriptions/enterprise/owner-mail` under the company's own `ACCOUNT_SERVER_API_KEY` mails it a magic link (`authService.sendCompanyOwnerMail`). That route carries no captcha, unlike the public `POST /auth/magic-link`. A bench company captures every mail in its own D1 (`captured_emails`, `kind = 'magic-link'`), so the link is read back from `account-<name>`, the newest one created after the request (less `MAIL_SKEW_S` of clock skew), and `POST /account/api/v1/auth/magic-link/verify` answers the session as its `access_token` cookie. The owner has no TOTP; a verify answering `requiresTwoFactor` is a `LabError`. The owner address is read from the company D1 (`company_orgs` -> `organizations.owner_user_id` -> `users.email`) and the key from the enterprise bws project (`secrets.store_name(<id>, "ACCOUNT_SERVER_API_KEY")`, project id in `ENTERPRISE_PROOF_BWS_PROJECT`). The link's token is never put into an error.
 #
-# `mint(company, kind)` needs a signed-in user of a fake company. The owner has no password and no TOTP the proof holds, and no sign-in driver is written here (the candidate is the magic link `POST /account/api/v1/auth/magic-link` sends, read back from the company's captured mail through `captured_mail`, with the captcha that route carries unverified on a bench company), so no minter exists: the default raises `LabError("not built yet: V6 ...")`, never an artifact, and `proof replay` and the token half of `proof proxy` stop there by name.
+# `mint(company, kind)`: a `session` is that cookie; an `api-token` (scope `license:read`) and a `proxy-token` (scope `proxy:exec`) are `POST /account/api/v1/api-tokens` under the session for the subscription the company's control row names (`scope.subscription_id`). A `config-token` needs the company's config store, whose setup takes a TOTP-verified, elevated session and client-wrapped CEK slots (`POST /configs/setup`), and an `e2e-envelope` needs a request sealed to the company's X25519 key (`POST /account/api/v1/tunnel`); neither driver is written, so both raise `LabError("not built yet: V6 ...")` naming what is missing, never an artifact.
+#
+# `present(company, kind, artifact)` sends one artifact to the company's own account host and maps the answer: 2xx is admitted, 401 or 403 is refused with the status, anything else is a `LabError` (a 5xx or a 404 says the probe is wrong, not that the artifact was refused). Each kind has one probe that changes nothing it reads: a `session` is the `access_token` cookie on `GET /account/api/v1/portal/me` (private/account/src/middleware/session.ts); an `api-token` is the bearer of `GET /account/api/v1/licenses/status` (scope `license:read`, private/account/src/routes/license.ts); a `proxy-token` is the bearer of `POST /account/api/v1/proxy/introspect` with `{"token": "self", "self": true}` (scope `proxy:exec`, private/account/src/routes/proxy.ts), the lookup the company's proxy makes through its own account Worker's `ExecutorIssuer`, over the same D1. The api-token middleware binds a first-use token to the presenting address, which is this machine for both companies, so a refusal by the other company is never an address mismatch. A `config-token` rotates on every use and an `e2e-envelope` has no presenter: both raise `LabError("not built yet: V6 ...")`.
 
 
 ME_PATH = "/account/api/v1/portal/me"
+STATUS_PATH = "/account/api/v1/licenses/status"
+INTROSPECT_PATH = "/account/api/v1/proxy/introspect"
+VERIFY_PATH = "/account/api/v1/auth/magic-link/verify"
+TOKENS_PATH = "/account/api/v1/api-tokens"
 REFUSED = (401, 403)
+BWS_PROJECT_ENV = "ENTERPRISE_PROOF_BWS_PROJECT"
+API_KEY_ENTRY = "ACCOUNT_SERVER_API_KEY"
+MAIL_SKEW_S = 120
+MAIL_TRIES = 10
+MAIL_POLL_S = 3.0
+LABEL_PREFIX = "enterprise-proof"
+# kind -> the scope its token carries.
+TOKEN_SCOPES: dict[str, str] = {"api-token": "license:read", "proxy-token": "proxy:exec"}
+OWNER_SQL = (
+    "SELECT u.email AS email FROM company_orgs c JOIN organizations o ON o.id = c.org_id "
+    "JOIN users u ON u.id = o.owner_user_id WHERE c.company_id = ?"
+)
+LINK_SQL = (
+    "SELECT text_body FROM captured_emails WHERE recipient = ? AND kind = 'magic-link' "
+    "AND created_at >= ? ORDER BY created_at DESC LIMIT 1"
+)
+SUBSCRIPTION_SQL = "SELECT subscription_id FROM scope WHERE company_id = ?"
+MAGIC_TOKEN = re.compile(r"/account/magic-link/verify\?token=([^&\s\"'<>]+)")
+ACCESS_COOKIE = re.compile(r"(?:^|[;,]\s*)access_token=([^;,\s]+)")
+
+
+@dataclasses.dataclass(frozen=True)
+class HttpAnswer:
+    status: int
+    headers: tuple[tuple[str, str], ...] = ()
+    body: bytes = b""
+
+    def header_values(self, name: str) -> list[str]:
+        return [v for k, v in self.headers if k.lower() == name.lower()]
+
+    def json(self) -> dict:
+        try:
+            doc = json.loads(self.body or b"{}")
+        except ValueError:
+            return {}
+        return doc if isinstance(doc, dict) else {}
+
 
 # (url, headers) -> status.
 Send = Callable[[str, dict[str, str]], int]
+# (method, url, headers, body) -> the answer. A 4xx or 5xx is an answer; no answer at all is a LabError.
+Call = Callable[[str, str, dict[str, str], "bytes | None"], HttpAnswer]
 Minter = Callable[[str, str], str]
+ApiKey = Callable[[str], str]
 
 
 def _send(url: str, headers: dict[str, str]) -> int:
@@ -799,22 +846,181 @@ def _send(url: str, headers: dict[str, str]) -> int:
         exc.close()
         return int(exc.code)
     except OSError as exc:
-        raise proof.LabError("GET %s: %s" % (ME_PATH, type(exc).__name__)) from None
+        raise proof.LabError(
+            "GET %s: %s" % (urllib.parse.urlsplit(url).path, type(exc).__name__)
+        ) from None
+
+
+def http_call(method: str, url: str, headers: dict[str, str], body: bytes | None) -> HttpAnswer:
+    """One HTTPS request through `core.https`; the path, never the host, names a failure."""
+    path = urllib.parse.urlsplit(url).path
+    try:
+        req = https.build_request(url, data=body, headers=headers, method=method)
+        with https.urlopen(req, timeout=60) as resp:
+            return HttpAnswer(int(resp.status), tuple(resp.headers.items()), resp.read())
+    except urllib.error.HTTPError as exc:
+        try:
+            return HttpAnswer(int(exc.code), tuple(exc.headers.items()), exc.read())
+        finally:
+            exc.close()
+    except OSError as exc:
+        raise proof.LabError("%s %s: %s" % (method, path, type(exc).__name__)) from None
 
 
 def _host(company: str, companies: Companies) -> str:
     return names.hosts(str(company_row(company, companies=companies)["name"]), PRODUCT_DOMAIN)[0]
 
 
-def _no_minter(company: str, kind: str) -> str:
-    raise proof.LabError(
-        "not built yet: V6 (no minter for a %s of company %s: the fake owner holds no credential "
-        "the proof can sign in with, and nothing was minted)" % (kind, company)
+def store_api_key(company: str, *, env: Mapping[str, str] | None = None) -> str:
+    """The company's ACCOUNT_SERVER_API_KEY from the enterprise bws project `ENTERPRISE_PROOF_BWS_PROJECT` names."""
+    environ = os.environ if env is None else env
+    project = environ.get(BWS_PROJECT_ENV, "")
+    if not project:
+        raise proof.LabError("%s is not set (the enterprise bws project id)" % BWS_PROJECT_ENV)
+    try:
+        name = secrets.store_name(company, API_KEY_ENTRY)
+        found = secrets.BwsStore.from_env(project).read([name])
+    except secrets.SecretsError as exc:
+        raise proof.LabError("company %s: %s" % (company, exc)) from None
+    value = found.get(name, "")
+    if not value:
+        raise proof.LabError(
+            "company %s: no %s in the enterprise project" % (company, API_KEY_ENTRY)
+        )
+    return value
+
+
+def _utc(now: float) -> str:
+    return datetime.datetime.fromtimestamp(now, datetime.UTC).strftime("%Y-%m-%dT%H:%M:%S.000Z")
+
+
+def _one(rows: list[dict], key: str, what: str) -> str:
+    values = [str(r.get(key) or "") for r in rows]
+    if len(values) != 1 or not values[0]:
+        raise proof.LabError("%s: %d answers, not 1" % (what, len(values)))
+    return values[0]
+
+
+def owner_session(
+    company: str,
+    *,
+    companies: Companies = all_companies,
+    query: Query = d1_query,
+    post: onboarding.AccountPost = onboarding.account_post,
+    api_key: ApiKey = store_api_key,
+    call: Call = http_call,
+    clock: Callable[[], float] = time.time,
+    sleep: Callable[[float], None] = time.sleep,
+) -> str:
+    """The `access_token` of the company owner's magic-link sign-in."""
+    row = company_row(company, companies=companies)
+    name = str(row["name"])
+    host = names.hosts(name, PRODUCT_DOMAIN)[0]
+    database = "account-%s" % name
+    owner = _one(
+        query(database, OWNER_SQL, [company]), "email", "the owner of company %s" % company
+    )
+    since = _utc(clock() - MAIL_SKEW_S)
+    url = "https://%s%sowner-mail" % (host, onboarding.SUBSCRIPTIONS_PATH)
+    status, _payload = post(url, api_key(company), {"companyId": company, "ownerEmail": owner})
+    if not 200 <= status < 300:
+        raise proof.LabError("company %s: the owner-mail call answered HTTP %d" % (company, status))
+    token = ""
+    for attempt in range(MAIL_TRIES):
+        found = query(database, LINK_SQL, [owner, since])
+        match = MAGIC_TOKEN.search(str(found[0].get("text_body") or "")) if found else None
+        if match:
+            token = match.group(1)
+            break
+        if attempt + 1 < MAIL_TRIES:
+            sleep(MAIL_POLL_S)
+    if not token:
+        raise proof.LabError("company %s: no magic link was captured for its owner" % company)
+    answer = call(
+        "POST",
+        "https://%s%s" % (host, VERIFY_PATH),
+        {"Content-Type": "application/json"},
+        json.dumps({"token": token}).encode(),
+    )
+    if answer.status != 200:
+        raise proof.LabError(
+            "company %s: the magic-link verify answered HTTP %d" % (company, answer.status)
+        )
+    if answer.json().get("requiresTwoFactor"):
+        raise proof.LabError("company %s: the owner sign-in asks for a second factor" % company)
+    for cookie in answer.header_values("Set-Cookie"):
+        got = ACCESS_COOKIE.search(cookie)
+        if got:
+            return got.group(1)
+    raise proof.LabError("company %s: the magic-link verify set no access_token" % company)
+
+
+def _subscription(company: str, *, companies: Companies, query: Query) -> str:
+    row = company_row(company, companies=companies)
+    database = registry.control_database(str(row.get("region", "")), BENCH)
+    return _one(
+        query(database, SUBSCRIPTION_SQL, [company]),
+        "subscription_id",
+        "the subscription of company %s" % company,
     )
 
 
-def mint(company: str, kind: str, *, minter: Minter = _no_minter) -> str:
+def live_minter(
+    company: str,
+    kind: str,
+    *,
+    session: Callable[[str], str] | None = None,
+    companies: Companies = all_companies,
+    query: Query = d1_query,
+    call: Call = http_call,
+) -> str:
+    if kind == "config-token":
+        raise proof.LabError(
+            "not built yet: V6 (a config token of company %s needs its config store, whose setup takes a "
+            "TOTP-verified elevated session and client-wrapped CEK slots; nothing was minted)"
+            % company
+        )
+    if kind == "e2e-envelope":
+        raise proof.LabError(
+            "not built yet: V6 (an E2E envelope of company %s needs a request sealed to its X25519 key; "
+            "nothing was minted)" % company
+        )
+    if kind != "session" and kind not in TOKEN_SCOPES:
+        raise proof.LabError("no minter for a %s" % kind)
+    cookie = (session or (lambda c: owner_session(c, companies=companies, query=query, call=call)))(
+        company
+    )
+    if kind == "session":
+        return cookie
+    body = {
+        "subscriptionId": _subscription(company, companies=companies, query=query),
+        "name": "%s-%s" % (LABEL_PREFIX, kind),
+        "scopes": [TOKEN_SCOPES[kind]],
+    }
+    answer = call(
+        "POST",
+        "https://%s%s" % (_host(company, companies), TOKENS_PATH),
+        {"Content-Type": "application/json", "Cookie": "access_token=%s" % cookie},
+        json.dumps(body).encode(),
+    )
+    token = answer.json().get("token")
+    if answer.status != 201 or not isinstance(token, str) or not token:
+        raise proof.LabError(
+            "company %s: creating a %s answered HTTP %d" % (company, kind, answer.status)
+        )
+    return token
+
+
+def mint(company: str, kind: str, *, minter: Minter = live_minter) -> str:
     return minter(company, kind)
+
+
+def _verdict(kind: str, status: int) -> proof.Answer:
+    if 200 <= status < 300:
+        return proof.Answer(True)
+    if status in REFUSED:
+        return proof.Answer(False, "HTTP %d" % status)
+    raise proof.LabError("the %s probe answered HTTP %d" % (kind, status))
 
 
 def present(
@@ -823,17 +1029,26 @@ def present(
     artifact: str,
     *,
     send: Send = _send,
+    call: Call = http_call,
     companies: Companies = all_companies,
 ) -> proof.Answer:
-    if kind != "session":
-        raise proof.LabError("not built yet: V6 (no read-only probe presents a %s)" % kind)
-    url = "https://%s%s" % (_host(company, companies), ME_PATH)
-    status = send(url, {"Cookie": "access_token=%s" % artifact})
-    if 200 <= status < 300:
-        return proof.Answer(True)
-    if status in REFUSED:
-        return proof.Answer(False, "HTTP %d" % status)
-    raise proof.LabError("the session probe answered HTTP %d" % status)
+    if kind not in ("session", "api-token", "proxy-token"):
+        raise proof.LabError("not built yet: V6 (no probe presents a %s)" % kind)
+    host = _host(company, companies)
+    if kind == "session":
+        return _verdict(
+            kind, send("https://%s%s" % (host, ME_PATH), {"Cookie": "access_token=%s" % artifact})
+        )
+    bearer = {"Authorization": "Bearer %s" % artifact}
+    if kind == "api-token":
+        return _verdict(kind, send("https://%s%s" % (host, STATUS_PATH), bearer))
+    answer = call(
+        "POST",
+        "https://%s%s" % (host, INTROSPECT_PATH),
+        {**bearer, "Content-Type": "application/json"},
+        json.dumps({"token": "self", "self": True}).encode(),
+    )
+    return _verdict(kind, answer.status)
 
 
 # ==== box V7: the proxy and executor (`proof proxy`)

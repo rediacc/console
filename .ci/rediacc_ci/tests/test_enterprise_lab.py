@@ -718,8 +718,8 @@ def test_the_cloudflare_credentials_are_required(monkeypatch):
 
 
 ROWS_PROXY = [
-    {"id": "c0000000a", "name": "proof-a", "state": "active"},
-    {"id": "c0000000b", "name": "proof-b", "state": "active"},
+    {"id": "c0000000a", "name": "proof-a", "state": "active", "region": "eu"},
+    {"id": "c0000000b", "name": "proof-b", "state": "active", "region": "eu"},
 ]
 
 
@@ -760,32 +760,241 @@ def test_a_probe_that_is_not_a_yes_or_a_no_is_a_lab_error(status):
         lab.present("c0000000a", "session", "x", send=Server({}, status), companies=companies_proxy)
 
 
-@pytest.mark.parametrize("kind", ["api-token", "config-token", "e2e-envelope", "proxy-token"])
-def test_kinds_without_a_read_only_probe_are_not_built(kind):
+@pytest.mark.parametrize("kind", ["config-token", "e2e-envelope"])
+def test_kinds_without_a_probe_are_not_built(kind):
     with pytest.raises(proof.LabError, match="not built yet: V6"):
         lab.present("c0000000a", kind, "x", send=Server({}), companies=companies_proxy)
 
 
-def test_mint_without_a_minter_is_not_built_and_a_minter_is_used():
-    with pytest.raises(proof.LabError, match="not built yet: V6"):
-        lab.mint("c0000000a", "session")
-    assert lab.mint("c0000000a", "session", minter=lambda c, k: "%s:%s" % (c, k)) == (
-        "c0000000a:session"
+HOST_A = "proof-a.%s" % PRODUCT_DOMAIN
+T_NOW = 1_800_000_000.0
+
+
+class AccountV6:
+    """Two bench company Workers and their D1s: owner-mail captures a magic link, verify signs in, api-tokens mints."""
+
+    def __init__(self, *, link=True, two_factor=False, cookie=True, mail_status=200):
+        self.link = link
+        self.two_factor = two_factor
+        self.cookie = cookie
+        self.mail_status = mail_status
+        self.mailed = False
+        self.posts: list[tuple[str, str, dict]] = []
+        self.calls: list[tuple[str, str, dict, dict]] = []
+        self.queries: list[tuple[str, str, list]] = []
+        self.minted: dict[str, str] = {}
+        self.sleeps = 0
+
+    def query(self, database, sql, params):
+        self.queries.append((database, sql, list(params)))
+        if sql == lab.OWNER_SQL:
+            return [{"email": "owner@proof-a.example"}]
+        if sql == lab.LINK_SQL:
+            if not (self.link and self.mailed):
+                return []
+            body = (
+                "Sign in: https://%s/account/magic-link/verify?token=tok-123&next=%%2F\n" % HOST_A
+            )
+            return [{"text_body": body}]
+        if sql == lab.SUBSCRIPTION_SQL:
+            return [{"subscription_id": "sub-a"}]
+        raise AssertionError(sql)
+
+    def post(self, url, key, body):
+        self.posts.append((url, key, body))
+        self.mailed = self.mail_status == 200
+        return self.mail_status, {}
+
+    def call(self, method, url, headers, body):
+        doc = json.loads(body or b"{}")
+        self.calls.append((method, url, headers, doc))
+        path = url.split(PRODUCT_DOMAIN, 1)[1]
+        if path == lab.VERIFY_PATH:
+            if doc.get("token") != "tok-123":
+                return lab.HttpAnswer(400)
+            if self.two_factor:
+                return lab.HttpAnswer(200, (), b'{"requiresTwoFactor": true}')
+            cookies = [("Set-Cookie", "refresh_token=r-1; Path=/")]
+            if self.cookie:
+                cookies.append(("Set-Cookie", "access_token=sess-a; Path=/; HttpOnly"))
+            return lab.HttpAnswer(200, tuple(cookies), b'{"user": {}}')
+        if path == lab.TOKENS_PATH:
+            if headers.get("Cookie") != "access_token=sess-a":
+                return lab.HttpAnswer(401)
+            token = "rdt_%s" % doc["scopes"][0]
+            self.minted[token] = url.split("/")[2]
+            return lab.HttpAnswer(201, (), json.dumps({"token": token}).encode())
+        if path == lab.INTROSPECT_PATH:
+            bearer = headers.get("Authorization", "")[7:]
+            return lab.HttpAnswer(200 if self.minted.get(bearer) == url.split("/")[2] else 401)
+        raise AssertionError(path)
+
+    def send(self, url, headers):
+        host, path = url.split("/")[2], "/" + url.split("/", 3)[3]
+        if path == lab.ME_PATH:
+            return 200 if headers.get("Cookie") == "access_token=sess-a" and host == HOST_A else 401
+        if path == lab.STATUS_PATH:
+            return 200 if self.minted.get(headers.get("Authorization", "")[7:]) == host else 401
+        raise AssertionError(path)
+
+    def sleep(self, _s):
+        self.sleeps += 1
+
+
+def session_v6(acct: AccountV6) -> str:
+    return lab.owner_session(
+        "c0000000a",
+        companies=companies_proxy,
+        query=acct.query,
+        post=acct.post,
+        api_key=lambda c: "key-%s" % c,
+        call=acct.call,
+        clock=lambda: T_NOW,
+        sleep=acct.sleep,
     )
 
 
-def test_the_replay_proof_stops_at_the_minter_by_name():
+def test_the_owner_signs_in_through_the_owner_mail_and_its_captured_link():
+    acct = AccountV6()
+    assert session_v6(acct) == "sess-a"
+    ((url, key, body),) = acct.posts
+    assert url == "https://%s/account/api/v1/subscriptions/enterprise/owner-mail" % HOST_A
+    assert key == "key-c0000000a"
+    assert body == {"companyId": "c0000000a", "ownerEmail": "owner@proof-a.example"}
+    link = next(q for q in acct.queries if q[1] == lab.LINK_SQL)
+    assert link[0] == "account-proof-a"
+    assert link[2] == ["owner@proof-a.example", "2027-01-15T07:58:00.000Z"]
+    method, verify_url, _headers, doc = acct.calls[0]
+    assert (method, verify_url, doc) == (
+        "POST",
+        "https://%s%s" % (HOST_A, lab.VERIFY_PATH),
+        {"token": "tok-123"},
+    )
+
+
+def test_no_captured_link_is_a_lab_error_after_every_try():
+    """Control: a mail that never arrived is never a session."""
+    acct = AccountV6(link=False)
+    with pytest.raises(proof.LabError, match="no magic link"):
+        session_v6(acct)
+    assert acct.sleeps == lab.MAIL_TRIES - 1
+    assert acct.calls == []
+
+
+def test_a_refused_owner_mail_signs_in_nothing():
+    acct = AccountV6(mail_status=403)
+    with pytest.raises(proof.LabError, match="owner-mail call answered HTTP 403"):
+        session_v6(acct)
+    assert acct.calls == []
+
+
+@pytest.mark.parametrize(
+    ("kw", "match"),
+    [({"two_factor": True}, "second factor"), ({"cookie": False}, "no access_token")],
+)
+def test_a_verify_without_a_session_cookie_is_a_lab_error(kw, match):
+    with pytest.raises(proof.LabError, match=match):
+        session_v6(AccountV6(**kw))
+
+
+def minter_v6(acct: AccountV6):
+    def minter(company, kind):
+        return lab.live_minter(
+            company,
+            kind,
+            session=lambda _c: session_v6(acct),
+            companies=companies_proxy,
+            query=acct.query,
+            call=acct.call,
+        )
+
+    return minter
+
+
+@pytest.mark.parametrize(
+    ("kind", "scope"), [("api-token", "license:read"), ("proxy-token", "proxy:exec")]
+)
+def test_tokens_are_minted_under_the_owner_session_for_the_control_subscription(kind, scope):
+    acct = AccountV6()
+    token = lab.mint("c0000000a", kind, minter=minter_v6(acct))
+    assert token == "rdt_%s" % scope
+    created = acct.calls[-1]
+    assert created[1] == "https://%s%s" % (HOST_A, lab.TOKENS_PATH)
+    assert created[2]["Cookie"] == "access_token=sess-a"
+    assert created[3]["scopes"] == [scope]
+    assert created[3]["subscriptionId"] == "sub-a"
+    assert ("control-bench-eu", lab.SUBSCRIPTION_SQL, ["c0000000a"]) in acct.queries
+
+
+@pytest.mark.parametrize("kind", ["config-token", "e2e-envelope"])
+def test_the_unbuilt_kinds_are_named_before_anyone_signs_in(kind):
+    acct = AccountV6()
+    with pytest.raises(proof.LabError, match="not built yet: V6"):
+        lab.mint("c0000000a", kind, minter=minter_v6(acct))
+    assert acct.posts == []
+
+
+@pytest.mark.parametrize("kind", ["api-token", "proxy-token"])
+def test_a_token_is_admitted_by_its_own_company_and_refused_by_the_other(kind):
+    acct = AccountV6()
+    token = lab.mint("c0000000a", kind, minter=minter_v6(acct))
+    kw = {"send": acct.send, "call": acct.call, "companies": companies_proxy}
+    assert lab.present("c0000000a", kind, token, **kw) == proof.Answer(True)
+    assert lab.present("c0000000b", kind, token, **kw) == proof.Answer(False, "HTTP 401")
+
+
+def test_the_proxy_token_probe_introspects_its_own_bearer():
+    acct = AccountV6()
+    lab.present(
+        "c0000000a",
+        "proxy-token",
+        "rdt_x",
+        send=acct.send,
+        call=acct.call,
+        companies=companies_proxy,
+    )
+    method, url, headers, doc = acct.calls[-1]
+    assert (method, url) == ("POST", "https://%s%s" % (HOST_A, lab.INTROSPECT_PATH))
+    assert headers["Authorization"] == "Bearer rdt_x"
+    assert doc == {"token": "self", "self": True}
+
+
+@pytest.mark.parametrize("status", [404, 500])
+def test_a_token_probe_that_is_not_a_yes_or_a_no_is_a_lab_error(status):
+    with pytest.raises(proof.LabError, match="HTTP %d" % status):
+        lab.present(
+            "c0000000a", "api-token", "x", send=Server({}, status), companies=companies_proxy
+        )
+
+
+def test_the_api_key_needs_the_enterprise_project():
+    with pytest.raises(proof.LabError, match=lab.BWS_PROJECT_ENV):
+        lab.store_api_key("c0123456789abcdef", env={})
+
+
+def test_the_replay_proof_holds_for_the_built_kinds_and_names_the_unbuilt_ones():
+    acct = AccountV6()
+
     class Lab:
         def ensure_company(self, label, region, *, ring=None):
             del region, ring
             return {"proof-replay-a": "c0000000a", "proof-replay-b": "c0000000b"}[label]
 
-        mint = staticmethod(lab.mint)
-        present = staticmethod(lab.present)
+        def mint(self, company, kind):
+            return lab.mint(company, kind, minter=minter_v6(acct))
+
+        def present(self, company, kind, artifact):
+            return lab.present(
+                company, kind, artifact, send=acct.send, call=acct.call, companies=companies_proxy
+            )
 
     lines: list[str] = []
     assert proof.run_verb("replay", Lab(), bench=True, out=lines.append) == 1
-    assert any("not built yet: V6" in line for line in lines)
+    assert any("not built yet: V6" in line and "config token" in line for line in lines)
+    held = [line for line in lines if line.startswith("ok")]
+    for kind in ("session", "api-token"):
+        assert "ok      %s: accepted by its own company" % kind in held
+        assert "ok      %s: refused by the other company" % kind in held
 
 
 NAMESPACES_PROXY = [
