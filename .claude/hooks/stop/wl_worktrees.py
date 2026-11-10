@@ -309,8 +309,9 @@ def _same_file_set_commits(tree, shas):
         return list(shas)
     files: dict[str, frozenset[str]] = {}
     for chunk in text.split("\x00")[1:]:
-        head, _, rest = chunk.partition("\n")
-        files[head.strip()] = frozenset(ln for ln in rest.splitlines() if ln)
+        lines = [ln.strip() for ln in chunk.splitlines() if ln.strip()]
+        if lines:
+            files[lines[0]] = frozenset(lines[1:])
     count: dict[frozenset[str], int] = {}
     for sha in shas:
         if files.get(sha):

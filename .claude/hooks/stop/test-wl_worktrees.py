@@ -836,6 +836,19 @@ def control_landed(tmp):
         {".": [first, second]},
     )
 
+    # CONTROL: the NUL-split reader tolerates stray whitespace around a chunk, and a commit with an empty file list stays a candidate.
+    probe = (
+        "import sys\nsys.path.insert(0, sys.argv[1])\nimport wl_worktrees\n"
+        "text = '\\x00aaa\\n\\nf.txt\\n\\x00 bbb \\n\\n f.txt \\n\\n\\x00ccc\\n\\x00ddd\\n\\ng.txt\\n'\n"
+        "wl_worktrees._git = lambda *a, **k: text\n"
+        "print(','.join(wl_worktrees._same_file_set_commits('.', ['aaa', 'bbb', 'ccc', 'ddd'])))\n"
+    )
+    check(
+        "an empty file list stays a candidate and padded chunks still pair",
+        pyrun(tmp, tmp, probe, SOURCE / "hooks/stop")[1].strip(),
+        "aaa,bbb,ccc",
+    )
+
     # CONTROL: a commit alone stays unlanded.
     main = lease_main_repo(tmp, "no-revert")
     lease = new_lease(tmp, main, "w1")

@@ -267,7 +267,7 @@ ENABLE_REFUSED_CAN_OPEN = (
             "errors": [
                 {
                     "code": "VALIDATION_ERROR",
-                    "message": 'Config "eu-bench" is already linked to remote storage and this device can open it, so there is nothing to enable.',
+                    "message": 'Config "eu-bench" is already linked to remote storage and this device can open it, so there is nothing to enable. To unlink it, run: rdc config remote disable',
                 }
             ],
         }
@@ -299,6 +299,11 @@ def test_enable_refusal_that_the_device_can_open_it_is_success():
     [
         (2, '{"success": false, "errors": [{"code": "VALIDATION_ERROR", "message": "bad flag"}]}'),
         (2, ""),
+        (
+            2,
+            '{"success": false, "errors": [{"code": "VALIDATION_ERROR", "message": "Config \\"eu-bench\\" has no store, so there is nothing to enable."}]}',
+        ),
+        (2, "Config is linked, so there is nothing to enable."),
         (1, ENABLE_REFUSED_CAN_OPEN[1]),
         (3, "boom"),
     ],
