@@ -58,7 +58,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 - Phase: merge on PR #602 (branch 1023-1, session 45048a90, since 2026-11-03T09:46:12Z, past its 24-hour limit).
 - Branch: 1104-1, no PR yet.
 - Plans on the PR (5):
-  - agent/plans/PLAN-backup-program.md -- 182 of 192 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
+  - agent/plans/PLAN-backup-program.md -- 183 of 192 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-cloudflare-proxy.md -- 28 of 29 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-backup-plane-shared-bucket-hardening.md -- 4 of 7 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-renet-executor-tiered-license-check.md -- 2 of 4 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
@@ -79,17 +79,17 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic f65726d5, plan agent/plans/PLAN-renet-down-before-kill.md, outside the set, 16 commit(s) on the branch, 0 open item(s): renet runs Rediaccfile down() before repo containers stop
   - epic 53c31db2, plan agent/plans/PLAN-repo-resource-limits.md, outside the set, 20 commit(s) on the branch, 0 open item(s): per-repo resource limits and a renet-managed RAM volume
   - epic a86f5622, plan agent/plans/PLAN-production-key-only.md, outside the set, 4 commit(s) on the branch, 0 open item(s): Production key only: every leg licensed from its own plane
-  - epic 79b7e92e, no plan, 226 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
-  - epic 562ef6c3, plan agent/plans/PLAN-experience-feedback.md, outside the set, 38 commit(s) on the branch, 0 open item(s): experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire
-- Writers: 3 live of writer_cap 25 (session d778be9d): worker:a3aea699635bb3f62, worker:ab548dad2c4a01cbf, worker:aa533e33c4a6eb271.
-- Leased items: 4: #4f4df453 (worker:busfc6826, d778be9d), #54aacfb3 (worker:bkqae9edw, d778be9d), #caa837d4 (worker:a3aea699635bb3f62, d778be9d), #e549c21b (worker:ab548dad2c4a01cbf, d778be9d).
+  - epic 79b7e92e, no plan, 243 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 562ef6c3, plan agent/plans/PLAN-experience-feedback.md, outside the set, 40 commit(s) on the branch, 0 open item(s): experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire
+- Writers: 3 live of writer_cap 25 (session d778be9d): worker:afddcbf79b45afa1c, worker:a3a98bb99c127bef3, worker:a81de8294b0f65d03.
+- Leased items: 6: #2dff72c4 (worker:afddcbf79b45afa1c, d778be9d), #4f4df453 (worker:busfc6826, d778be9d), #54aacfb3 (worker:bkqae9edw, d778be9d), #6025a1d5 (worker:a3a98bb99c127bef3, d778be9d), #67c9eb34 (worker:bd56d7ebk, d778be9d), #caa837d4 (worker:bd56d7ebk, d778be9d).
 - Next plan: agent/plans/PLAN-sandbox-tenant-separation.md, Promoted entry 14; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 17 of 64 plans done, 976 of 1187 boxes done (82%).
+Promoted: 17 of 64 plans done, 978 of 1187 boxes done (82%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -144,7 +144,7 @@ Promoted: 17 of 64 plans done, 976 of 1187 boxes done (82%).
 | 49 | PLAN-scope-bws-signing-key-to-consuming-step.md | 8/10 | 2 open |
 | 50 | PLAN-split-cli-files-over-512-line-budget.md | 5/7 | 2 open |
 | 51 | PLAN-renet-docker-running-semantics.md | 11/15 | 4 open |
-| 52 | PLAN-product-domain-rename.md | 19/28 | 9 open |
+| 52 | PLAN-product-domain-rename.md | 21/28 | 7 open |
 | 53 | PLAN-website-routing-and-mail.md | 12/20 | 8 open |
 | 54 | PLAN-enterprise-isolation.md | 19/34 | 15 open |
 | 55 | PLAN-renet-restart-cycle-defects.md | 5/7 | 2 open |
