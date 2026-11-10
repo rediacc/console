@@ -835,6 +835,24 @@ def test_land_printed_lines_run_as_printed_land_the_submodule_first_and_rebump(l
     assert (repo.root / SUB / "sub-new.txt").is_file()
 
 
+def test_land_with_a_submodule_commit_prints_the_gitlink_step_and_the_sha_reminder(landing):
+    result = run_land(landing.repo.root, LAND_ID)
+    assert result.returncode == 0, result.stderr
+    assert "git commit -F <msg> -- %s" % SUB in result.stdout.splitlines()
+    assert "%s: the gitlink commit" % SUB in result.stderr
+    assert "bumped short sha" in result.stderr
+
+
+def test_land_control_with_only_console_commits_prints_no_gitlink_step(tmp_path):
+    repo = make_repo(tmp_path.resolve())
+    tree = make_tree(repo, LAND_ID)
+    console_sha = committed(tree, "only.txt")
+    result = run_land(repo.root, LAND_ID)
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.splitlines() == ["git cherry-pick -x %s" % console_sha]
+    assert "gitlink" not in result.stderr
+
+
 def test_land_source_sha_reads_landed_afterwards_by_patch_id(landing, tmp_path):
     repo, tree, sub_sha, console_sha = landing
     assert unlanded_in(repo, tree) == [console_sha]

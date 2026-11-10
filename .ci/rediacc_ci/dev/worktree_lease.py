@@ -605,6 +605,11 @@ def land_plan(root, lease_id, notes=None):
                 "git add -- %s" % key,
                 "git commit -F <msg> -- %s" % key,
             ]
+            if notes is not None:
+                notes.append(
+                    "%s: the gitlink commit below its picks needs a message naming the bumped short sha"
+                    % key
+                )
     return lines
 
 
