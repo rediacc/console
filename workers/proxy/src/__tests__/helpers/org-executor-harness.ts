@@ -133,7 +133,7 @@ class FakeIssuer {
 }
 
 /** The outside vantage stub `env.ORG_EXECUTOR.get` hands out. `answer` is what each probe answers; an Error rejects. */
-export class FakeVantage {
+class FakeVantage {
   answer: ProbeResult | Error = { verdict: 'target-unreachable', reason: 'timeout' };
   calls: { name: string; locationHint?: string; hint: string; target: ProbeTarget }[] = [];
   /** Set by `get` before each call: the name and hint the stub was reached by. */

@@ -123,6 +123,7 @@ const datastoreEventTypes = [
 // `repo logs` / `repo exec` (repo-container.ts, new in P4) and the container restart `machine repair` issues. Dotted, like every other group — the fall-through would have produced `cli.container_exec`.
 const containerEventTypes = [
   'cli.container.exec',
+  'cli.container.list',
   'cli.container.logs',
   'cli.container.restart',
 ] as const;

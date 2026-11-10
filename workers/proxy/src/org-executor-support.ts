@@ -17,7 +17,7 @@ export const EXECUTOR_PORT = 8080;
 /** The image key under `[containers.images]` in the wrangler config. */
 export const EXECUTOR_IMAGE_KEY = 'executor';
 /** Readiness: poll every READY_POLL_MS for at most READY_TIMEOUT_MS, a probe that stalls included. */
-export const READY_POLL_MS = 100;
+const READY_POLL_MS = 100;
 export const READY_TIMEOUT_MS = 20_000;
 /**
  * The longest one call into the container runtime may take: a health probe, the intercept registration, a destroy. The library this class replaced aborted each of its port pings at the same 5 s (`PING_TIMEOUT_MS`, @cloudflare/containers 0.3.7).
@@ -200,8 +200,7 @@ export function pinnedFrom(value: unknown): PinnedExecutor | undefined {
   return { orgId, placement: valid };
 }
 
-export const wait = (ms: number): Promise<void> =>
-  new Promise((resolve) => setTimeout(resolve, ms));
+const wait = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
 /** A call into the container runtime that outlived CONTAINER_CALL_TIMEOUT_MS. The message is the reason a failed start reports. */
 export class StallError extends Error {
@@ -252,7 +251,7 @@ export function errorSummary(error: unknown): { name: string; message: string } 
 }
 
 /** Whether the executor's health route answers 2xx within `limitMs`. A refused connection means it is not listening yet; a probe that stalls is aborted and logged, and answers false like one. */
-export async function healthy(
+async function healthy(
   container: Container,
   limitMs = CONTAINER_CALL_TIMEOUT_MS
 ): Promise<boolean> {
@@ -372,4 +371,26 @@ export async function warnIfThrows(run: () => Promise<unknown>, message: string)
   } catch {
     console.warn(message);
   }
+}
+
+/** Poll the health route until it answers 2xx. `live` says whether the start is still current: it going false, or READY_TIMEOUT_MS passing, is a failed start. No probe may outlive the deadline, so a stalled one ends the wait on time. */
+export async function pollReady(container: Container, live: () => boolean): Promise<boolean> {
+  const deadline = Date.now() + READY_TIMEOUT_MS;
+  for (;;) {
+    if (!live()) return false;
+    const limitMs = Math.min(CONTAINER_CALL_TIMEOUT_MS, deadline - Date.now());
+    if (await healthy(container, limitMs)) return live();
+    if (Date.now() >= deadline) return false;
+    await wait(READY_POLL_MS);
+  }
+}
+
+/** Record an out-of-memory exit for the sizing rule: the time of any, and separately of one on the heavy size. */
+export async function flagOom(
+  storage: DurableObjectStorage,
+  size: string | undefined
+): Promise<void> {
+  const now = Date.now();
+  await storage.put(OOM_KEY, now);
+  if (size === 'heavy') await storage.put(OOM_HEAVY_KEY, now);
 }

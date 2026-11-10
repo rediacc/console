@@ -31,7 +31,7 @@ const BACKUP_SESSION_FUNCTIONS: ReadonlySet<string> = new Set([
 ]);
 
 /** renet's licence store (pkg/license/store.go): the unscoped layout and the per-datastore one. */
-export const LICENSE_DIR = '/var/lib/rediacc/license';
+const LICENSE_DIR = '/var/lib/rediacc/license';
 const GUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function isBackupSessionFunction(functionName: string): boolean {

@@ -61,7 +61,7 @@ function resolveContainer(
 }
 
 /** Container names out of `docker ps --format json` output (one JSON object per line). */
-export function parseContainerNames(stdout: string | undefined): string[] {
+function parseContainerNames(stdout: string | undefined): string[] {
   const names: string[] = [];
   for (const line of (stdout ?? '').split('\n')) {
     const trimmed = line.trim();
@@ -83,11 +83,7 @@ function editDistance(a: string, b: string): number {
   for (let i = 1; i <= a.length; i++) {
     const row = [i];
     for (let j = 1; j <= b.length; j++) {
-      row[j] = Math.min(
-        prev[j] + 1,
-        row[j - 1] + 1,
-        prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)
-      );
+      row[j] = Math.min(prev[j] + 1, row[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
     }
     prev = row;
   }
@@ -95,14 +91,14 @@ function editDistance(a: string, b: string): number {
 }
 
 /** The listed name closest to the typed one: a name containing it wins, else the smallest edit distance. */
-export function closestContainer(requested: string, names: string[]): string | undefined {
+function closestContainer(requested: string, names: string[]): string | undefined {
   const contained = names.find((n) => n.includes(requested) || requested.includes(n));
   if (contained) return contained;
   return [...names].sort((x, y) => editDistance(requested, x) - editDistance(requested, y))[0];
 }
 
 /** Whether `docker exec -c` would accept `requested` as an ID: the full ID or a unique ID prefix from the listing's `ID` fields. */
-export function matchesContainerId(stdout: string | undefined, requested: string): boolean {
+function matchesContainerId(stdout: string | undefined, requested: string): boolean {
   const ids: string[] = [];
   for (const line of (stdout ?? '').split('\n')) {
     const trimmed = line.trim();

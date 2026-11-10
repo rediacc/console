@@ -25,7 +25,6 @@ import {
 import {
   acquireLease,
   bounded,
-  CONTAINER_CALL_TIMEOUT_MS,
   containerRequest,
   destroyContainer,
   durationMs,
@@ -35,8 +34,9 @@ import {
   type ExecutorRecord,
   type ExitResult,
   errorSummary,
+  flagOom,
+  pollReady,
   executorEnv,
-  healthy,
   isOomExit,
   isRefusal,
   logStall,
@@ -47,8 +47,6 @@ import {
   type PinAnswer,
   type PinnedExecutor,
   pinnedFrom,
-  READY_POLL_MS,
-  READY_TIMEOUT_MS,
   RECORD_KEY,
   RENEW_THROTTLE_MS,
   RETIRED_KEY,
@@ -61,7 +59,6 @@ import {
   trackBody,
   UNREACHABLE_AT_KEY,
   UNREACHABLE_KEY,
-  wait,
   warnIfThrows,
 } from './org-executor-support';
 import { executorName, placementOf, UNREACHABLE_THRESHOLD, unreachableRecent } from './placement';
@@ -556,9 +553,7 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
     try {
       if (!result.clean && isOomExit(result.error)) {
         console.warn(`proxy: org executor out of memory on ${wasSize ?? UNKNOWN_SIZE}`);
-        const now = Date.now();
-        await this.ctx.storage.put(OOM_KEY, now);
-        if (wasSize === 'heavy') await this.ctx.storage.put(OOM_HEAVY_KEY, now);
+        await flagOom(this.ctx.storage, wasSize);
       }
     } catch {
       console.warn('proxy: org executor exit bookkeeping failed');
@@ -571,18 +566,9 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
     await releaseLease(this.capacity(), owner?.orgId, owner?.placement);
   }
 
-  /** Poll the health route until it answers 2xx. An exit during the poll, or READY_TIMEOUT_MS passing, is a failed start. No probe may outlive the deadline, so a stalled one ends the wait on time. */
-  private async waitReady(container: Container, generation: number): Promise<boolean> {
-    const deadline = Date.now() + READY_TIMEOUT_MS;
-    for (;;) {
-      if (this.generation !== generation || this.exited !== undefined) return false;
-      const limitMs = Math.min(CONTAINER_CALL_TIMEOUT_MS, deadline - Date.now());
-      if (await healthy(container, limitMs)) {
-        return this.generation === generation && this.exited === undefined;
-      }
-      if (Date.now() >= deadline) return false;
-      await wait(READY_POLL_MS);
-    }
+  /** Wait for the container's health route: see `pollReady`. An exit during the poll, or a newer generation, is a failed start. */
+  private waitReady(container: Container, generation: number): Promise<boolean> {
+    return pollReady(container, () => this.generation === generation && this.exited === undefined);
   }
 
   /** Stop the container deliberately, so its exit is not mistaken for a crash, and forget its record. The lease is the caller's. */
