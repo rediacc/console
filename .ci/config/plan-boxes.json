@@ -2748,18 +2748,18 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 7,
-      "done": 1,
+      "open": 1,
+      "done": 7,
       "open_sigs": [
+        "fc4fa3b6"
+      ],
+      "done_sigs": [
         "05745435",
         "1d5e863a",
         "657da0bd",
         "7b8d3749",
         "90cc6ba0",
         "b31f4e0a",
-        "fc4fa3b6"
-      ],
-      "done_sigs": [
         "cee078c5"
       ]
     },

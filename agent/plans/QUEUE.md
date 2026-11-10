@@ -230,7 +230,7 @@ Promoted: 18 of 64 plans done, 1003 of 1187 boxes done (84%).
 1. agent/plans/PLAN-agent-tree-lifecycle.md -- P1, mostly-done, in progress (6 of 7 boxes ticked)
 2. agent/plans/PLAN-haiku-model-routing.md -- P1, executing, in progress (11 of 20 boxes ticked)
 3. agent/plans/PLAN-stop-hook-refactor-enforcement.md -- P1, executing, in progress (16 of 17 boxes ticked)
-4. agent/plans/PLAN-stop-hook-retro-20261110.md -- P1, ready, in progress (1 of 8 boxes ticked)
+4. agent/plans/PLAN-stop-hook-retro-20261110.md -- P1, ready, in progress (7 of 8 boxes ticked)
 5. agent/plans/PLAN-ci-quick-cpu-scheduling.md -- P2, active, in progress (2 of 5 boxes ticked)
 6. agent/plans/PLAN-config-mirror-reseal.md -- P2, proposed, in progress (1 of 2 boxes ticked)
 7. agent/plans/PLAN-backup-toc-exact-opt-in.md -- P3, proposed, in progress (1 of 10 boxes ticked)
