@@ -2,7 +2,7 @@
 
     PYTHONPATH=.ci python3 -m rediacc_ci.enterprise.control_db ensure [--bench] [--region <r>]
 
-EVERY CALL GOES THROUGH WRANGLER, spelled by `core.wrangler.ARGV`, from a neutral temporary directory so no worker config is picked up. The runner is injected (`Runner(argv, *, cwd) -> Completed`), so the tests drive a fake over in-memory sqlite and never reach Cloudflare.
+EVERY CALL GOES THROUGH WRANGLER, spelled by `core.wrangler.ARGV`, from a neutral temporary directory so no worker config is picked up; the production runner swaps that prefix for the pinned binary's absolute path (`core.wrangler.resolve`), because npx finds no install from that directory. The runner is injected (`Runner(argv, *, cwd) -> Completed`), so the tests drive a fake over in-memory sqlite and never reach Cloudflare.
 
 IDEMPOTENT. `ensure` lists the account's databases first and creates only a missing one, then applies the migration only when the `companies` table is absent, so a second run changes nothing. The migration's `CREATE TABLE` statements have no `IF NOT EXISTS`, which is why the table probe decides rather than a blind re-apply.
 
@@ -67,15 +67,27 @@ def wrangler_env(
 def run_wrangler(
     argv: list[str], *, cwd: pathlib.Path | str | None = None, root: pathlib.Path | None = None
 ) -> Completed:
-    """The production runner: both streams captured, wrangler resolved through `wrangler_env`. `cwd=None` runs from a fresh empty directory."""
+    """The production runner: both streams captured, wrangler resolved through `wrangler_env` and run by its absolute path (`wrangler.resolve`), since npx ignores PATH and finds nothing from a neutral directory. `cwd=None` runs from a fresh empty directory."""
     env = wrangler_env(root=root)
     if cwd is not None:
         proc = subprocess.run(
-            argv, cwd=str(cwd), env=env, capture_output=True, text=True, check=False
+            wrangler.resolve(argv, pathlib.Path(cwd), env),
+            cwd=str(cwd),
+            env=env,
+            capture_output=True,
+            text=True,
+            check=False,
         )
         return Completed(proc.returncode, proc.stdout, proc.stderr)
     with tempfile.TemporaryDirectory(prefix="control-db-") as tmp:
-        proc = subprocess.run(argv, cwd=tmp, env=env, capture_output=True, text=True, check=False)
+        proc = subprocess.run(
+            wrangler.resolve(argv, pathlib.Path(tmp), env),
+            cwd=tmp,
+            env=env,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
     return Completed(proc.returncode, proc.stdout, proc.stderr)
 
 
@@ -85,6 +97,8 @@ def _call(runner: Runner, argv: list[str]) -> Completed:
             return runner(argv, cwd=pathlib.Path(tmp))
         except OSError as exc:
             raise ControlDbError("wrangler could not run: %s" % (exc.strerror or exc)) from None
+        except wrangler.WranglerNotInstalledError as exc:
+            raise ControlDbError(str(exc)) from None
 
 
 def location(region: str, root: pathlib.Path | None = None) -> str:
