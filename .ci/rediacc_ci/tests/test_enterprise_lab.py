@@ -19,7 +19,7 @@ import pytest
 from rediacc_ci.core import https
 from rediacc_ci.enterprise import lab, onboarding, proof
 from rediacc_ci.ops import enterprise_lookup
-from rediacc_ci.well_known import PRODUCT_DOMAIN
+from rediacc_ci.well_known import BENCH_ORIGIN, GH_API_BASE, PRODUCT_DOMAIN
 
 REAL_URLOPEN = https.urlopen
 REAL_CREATE_CONNECTION = socket.create_connection
@@ -455,8 +455,8 @@ def _key_add(domain: str) -> str:
 
 
 def test_lookup_hits_the_stored_host():
-    kv = Kv({_key_add("acme.example"): "acme.rediacc.cloud"})
-    assert lab.lookup("ACME.example.", run=kv, pepper="pep") == "acme.rediacc.cloud"
+    kv = Kv({_key_add("acme.example"): "tenant.example.org"})
+    assert lab.lookup("ACME.example.", run=kv, pepper="pep") == "tenant.example.org"
     assert "--remote" in kv.argv[0]
     assert "acme.example" not in " ".join(kv.argv[0]), "the domain never reaches argv"
 
@@ -648,12 +648,13 @@ def test_cert_log_names_never_answer_an_empty_list_for_a_failed_read(status, bod
 
 
 def test_turnstile_domains_read_the_one_shared_widget():
+    bench_host = BENCH_ORIGIN.removeprefix("https://")
     widgets = [
-        {"name": "rediacc-console", "domains": ["rediacc.cloud", "Bench.rediacc.cloud"]},
+        {"name": "rediacc-console", "domains": [PRODUCT_DOMAIN, bench_host.capitalize()]},
         {"name": "other", "domains": ["example.org"]},
     ]
     got = lab.turnstile_domains(listing=lambda _p: widgets)
-    assert got == ["rediacc.cloud", "bench.rediacc.cloud"]
+    assert got == [PRODUCT_DOMAIN, bench_host]
 
 
 def test_turnstile_refuses_a_missing_or_doubled_widget():
@@ -1124,11 +1125,11 @@ def test_a_company_with_no_stored_api_key_is_a_lab_error(monkeypatch):
 STUB_SEEN: list[tuple[str, str, bytes, str]] = []
 
 
-def stub_app(environ, start_response):
-    size = int(environ.get("CONTENT_LENGTH") or 0)
-    body = environ["wsgi.input"].read(size) if size else b""
-    path = environ["PATH_INFO"]
-    STUB_SEEN.append((environ["REQUEST_METHOD"], path, body, environ.get("HTTP_X_PROBE", "")))
+def stub_app(request, start_response):
+    size = int(request.get("CONTENT_LENGTH") or 0)
+    body = request["wsgi.input"].read(size) if size else b""
+    path = request["PATH_INFO"]
+    STUB_SEEN.append((request["REQUEST_METHOD"], path, body, request.get("HTTP_X_PROBE", "")))
     missing = path == "/missing"
     start_response(
         "404 Not Found" if missing else "200 OK", [("Set-Cookie", "access_token=abc; Path=/")]
@@ -2162,7 +2163,7 @@ CHECK_SUMMARIES = {"905": "sum of job 5", "906": "sum of job 6"}
 def _job(job_id: int, check_id: int) -> dict:
     return {
         "id": job_id,
-        "check_run_url": "https://api.github.com/repos/o/r/check-runs/%d" % check_id,
+        "check_run_url": GH_API_BASE + "/repos/o/r/check-runs/%d" % check_id,
     }
 
 

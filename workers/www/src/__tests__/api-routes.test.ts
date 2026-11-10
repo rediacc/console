@@ -107,13 +107,13 @@ describe('POST /api/enterprise-lookup', () => {
     siteverify();
     const key = await lookupKey(PEPPER, 'acme.example');
     const e = env({
-      ENTERPRISE_LOOKUP: kv({ [key]: 'acme.rediacc.cloud' }),
+      ENTERPRISE_LOOKUP: kv({ [key]: 'tenant.example.org' }),
       ENTERPRISE_LOOKUP_PEPPER: PEPPER,
       ...SECRET,
     });
     const hit = await lookup({ domain: 'ACME.example', turnstileToken: 'good' }, e);
     expect(hit.headers.get('cache-control')).toBe('no-store');
-    expect(await hit.json()).toEqual({ host: 'acme.rediacc.cloud' });
+    expect(await hit.json()).toEqual({ host: 'tenant.example.org' });
     const miss = await lookup({ domain: 'unknown.example', turnstileToken: 'good' }, e);
     expect(await miss.json()).toEqual({ host: null });
     const bad = await lookup({ domain: 'not a domain', turnstileToken: 'good' }, e);

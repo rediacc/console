@@ -4883,7 +4883,7 @@ def test_a_missing_renet_binary_is_told_apart_from_other_refusals():
     )
     assert not vm_check._renet_binary_missing("SSH connection error: connect EHOSTUNREACH")
     assert not vm_check._renet_binary_missing(
-        "open /etc/rediacc/config.json: No such file or directory"
+        "open %s/config.json: No such file or directory" % well_known.ETC_DIR
     )
     # An unrelated file under a renet path, or a path that only starts with renet, is not the missing binary.
     assert not vm_check._renet_binary_missing(

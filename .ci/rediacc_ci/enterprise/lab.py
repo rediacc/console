@@ -29,7 +29,7 @@ from collections.abc import Callable, Mapping, Sequence
 from typing import TYPE_CHECKING, Any
 
 from rediacc_ci import paths
-from rediacc_ci.core import https, wrangler
+from rediacc_ci.core import gh_retry, https, wrangler
 from rediacc_ci.enterprise import (
     cli,
     control_db,
@@ -1757,7 +1757,7 @@ def renew_with(
 #
 # `dispatch_release(company)` refuses before any call unless the workflow file declares a `bench` input, which the release step turns into `--bench`: the fake companies live in the bench control databases, and a dispatch without it would read production, where the opaque id names nothing. It then runs `gh workflow run cd-enterprise-release.yml --ref <ref>` with `version` (what edge runs), the opaque `company` id, `bench=true` and `dry_run=false`, finds the `workflow_dispatch` run created after the dispatch, and waits for it to complete (at most `RUN_TIMEOUT_S`). The ref is the repository's default branch unless `ENTERPRISE_PROOF_REF` names another, because a dispatch needs the workflow file on the ref (*Not verified*).
 #
-# `run_surfaces(run_id)` reads the four surfaces `proof.GITHUB_SURFACES` names, as text: `logs` (`gh run view --log`), `jobs-api` (`/actions/runs/<id>/jobs`), `run-api` (`/actions/runs/<id>`) and `step-summary` (each job's check run `output.summary` and `output.text`, where GitHub serves `$GITHUB_STEP_SUMMARY`; the check run is the one the job's `check_run_url` names, never the job's own `id`). A read that fails is a `LabError`, so a surface is never compared as empty.
+# `run_surfaces(run_id)` reads the four surfaces `proof.GITHUB_SURFACES` names, as text: `logs` (`gh run view --log`), `jobs-api` (`/actions/runs/<id>/jobs`), `run-api` (`/actions/runs/<id>`) and `step-summary` (each job's check run `output.summary` and `output.text`, where GitHub serves `$GITHUB_STEP_SUMMARY`; the check run is the one the job's `check_run_url` names, never the job's own `id`). Every gh read is retried on a 5xx or a connection fault (`_gh_read`); the dispatch itself is sent once (`_gh`). A read that still fails is a `LabError`, so a surface is never compared as empty.
 
 
 WORKFLOW = "cd-enterprise-release.yml"
@@ -1768,8 +1768,22 @@ POLL_S = 30
 FIND_TRIES = 20
 
 
+def _gh_failure(done: Proc) -> str | None:
+    """None for a clean exit, else the stderr `gh_retry.is_transient` judges (a 4xx never matches, so it is not retried)."""
+    return None if done.rc == 0 else (done.stderr or "failed")
+
+
 def _gh(run: Runner, *args: str) -> str:
+    """A one-shot gh call, for a WRITE: `gh workflow run` is never retried, since a retry after a lost reply would dispatch twice."""
     done = run(("gh", *args), None, None)
+    if done.rc != 0:
+        raise proof.LabError("gh %s exited %d" % (args[0] if args else "", done.rc))
+    return done.stdout
+
+
+def _gh_read(run: Runner, *args: str) -> str:
+    """A gh READ, retried on a 5xx or a connection fault through `gh_retry.retry_transient`; any other failure is a `LabError` at once."""
+    done = gh_retry.retry_transient(lambda: run(("gh", *args), None, None), _gh_failure)
     if done.rc != 0:
         raise proof.LabError("gh %s exited %d" % (args[0] if args else "", done.rc))
     return done.stdout
@@ -1799,7 +1813,7 @@ def declares_bench_input(text: str) -> bool:
 
 
 def _default_ref(run: Runner) -> str:
-    doc = _json(_gh(run, "repo", "view", "--json", "defaultBranchRef"), "gh repo view")
+    doc = _json(_gh_read(run, "repo", "view", "--json", "defaultBranchRef"), "gh repo view")
     ref = (doc.get("defaultBranchRef") or {}).get("name") if isinstance(doc, dict) else None
     if not ref:
         raise proof.LabError("gh repo view named no default branch")
@@ -1834,7 +1848,7 @@ def dispatch_release(
     run_id = ""
     for _ in range(FIND_TRIES):
         listed = _json(
-            _gh(
+            _gh_read(
                 run, "run", "list", "--workflow", WORKFLOW, "--event", "workflow_dispatch",
                 "--limit", "10", "--json", "databaseId,createdAt",
             ),
@@ -1852,7 +1866,7 @@ def dispatch_release(
         raise proof.LabError("no %s run appeared after the dispatch" % WORKFLOW)
     waited = 0.0
     while True:
-        doc = _json(_gh(run, "run", "view", run_id, "--json", "status"), "gh run view")
+        doc = _json(_gh_read(run, "run", "view", run_id, "--json", "status"), "gh run view")
         if isinstance(doc, dict) and doc.get("status") == "completed":
             return run_id
         if waited >= RUN_TIMEOUT_S:
@@ -1876,14 +1890,14 @@ def _check_run_id(job: object) -> str:
 def run_surfaces(run_id: str, *, run: Runner = run_process) -> dict[str, str]:
     if not run_id.isdigit():
         raise proof.LabError("%r is not a run id" % run_id)
-    logs = _gh(run, "run", "view", run_id, "--log")
-    jobs_text = _gh(run, "api", "repos/{owner}/{repo}/actions/runs/%s/jobs" % run_id)
-    run_text = _gh(run, "api", "repos/{owner}/{repo}/actions/runs/%s" % run_id)
+    logs = _gh_read(run, "run", "view", run_id, "--log")
+    jobs_text = _gh_read(run, "api", "repos/{owner}/{repo}/actions/runs/%s/jobs" % run_id)
+    run_text = _gh_read(run, "api", "repos/{owner}/{repo}/actions/runs/%s" % run_id)
     jobs = _json(jobs_text, "the jobs API")
     summaries: list[str] = []
     for job in (jobs.get("jobs") or []) if isinstance(jobs, dict) else []:
         check = _json(
-            _gh(run, "api", "repos/{owner}/{repo}/check-runs/%s" % _check_run_id(job)),
+            _gh_read(run, "api", "repos/{owner}/{repo}/check-runs/%s" % _check_run_id(job)),
             "the check-runs API",
         )
         output = (check.get("output") or {}) if isinstance(check, dict) else {}

@@ -43,10 +43,10 @@ def test_normalize_matches_the_worker() -> None:
 
 def test_put_writes_the_hashed_key_and_the_host() -> None:
     run = Recorder()
-    assert el.put("Acme.example", "acme.rediacc.cloud", "NS", run) == 0
+    assert el.put("Acme.example", "tenant.example.org", "NS", run) == 0
     key = el.lookup_key(PEPPER, "acme.example")
     assert run.calls == [
-        ["kv", "key", "put", key, "acme.rediacc.cloud", "--namespace-id", "NS", "--remote"]
+        ["kv", "key", "put", key, "tenant.example.org", "--namespace-id", "NS", "--remote"]
     ]
     assert "acme.example" not in " ".join(run.calls[0])
 
@@ -91,7 +91,7 @@ def test_main_exit_codes(capsys: pytest.CaptureFixture[str]) -> None:
     assert el.main(["put", "gmail.com", "x.rediacc.cloud"], run) == 1
     assert "free-mail" in capsys.readouterr().err
     assert el.main(["bogus"], run) == 2
-    assert el.main(["put", "acme.example", "acme.rediacc.cloud", "--namespace-id", "N2"], run) == 0
+    assert el.main(["put", "acme.example", "tenant.example.org", "--namespace-id", "N2"], run) == 0
     assert "N2" in run.calls[0]
     assert el.main(["key", "acme.example"], run) == 0
     assert capsys.readouterr().out.strip() == el.lookup_key(PEPPER, "acme.example")

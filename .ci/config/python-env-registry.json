@@ -597,6 +597,15 @@
       "HOME",
       "VM_IMAGE"
     ],
+    ".ci/rediacc_ci/enterprise/lab.py": [
+      "*name",
+      "CLOUDFLARE_ACCOUNT_ID",
+      "CLOUDFLARE_API_TOKEN",
+      "ENTERPRISE_LOOKUP_PEPPER",
+      "ENTERPRISE_PROOF_BWS_PROJECT",
+      "ENTERPRISE_PROOF_CONFIG",
+      "ENTERPRISE_PROOF_REF"
+    ],
     ".ci/rediacc_ci/enterprise/onboarding.py": [
       "AWS_SES_FROM",
       "CF_MANAGEMENT_TOKEN"
@@ -2420,9 +2429,15 @@
       "WORKLIST_PUBLISH_ROOT"
     ],
     ".claude/hooks/trapguard/dispatch.py": [
+      "SHAPE_ROOT",
       "TRAPGUARD_DIR",
       "TRAPGUARD_FAULT",
       "TRAPGUARD_PROBE_PATH"
+    ],
+    ".claude/hooks/trapguard/shapes.py": [
+      "CLAUDE_CONFIG_DIR",
+      "SHAPE_MEMORY_DIR",
+      "TRAPGUARD_DIR"
     ],
     ".claude/hooks/why-on-edit.py": [
       "CLAUDE_PROJECT_DIR",
@@ -2479,6 +2494,9 @@
     ],
     ".claude/rediacc_hooks/guards/test-warn_staged_shape_duplication.py": [
       "PATH"
+    ],
+    ".claude/rediacc_hooks/guards/test-warn_writer_brief.py": [
+      "CLAUDE_PROJECT_DIR"
     ],
     ".claude/rediacc_hooks/guards/warn_staged_shape_duplication.py": [
       "SHAPE_PROBE_DEADLINE_S"
