@@ -573,6 +573,7 @@ def _holds_ledger(expr, names, consts=None, key=None, recorder=None):
 _LEDGER_SYMBOLS = frozenset(("LEDGER", "ledger_path"))
 _RECORDER_PATH = re.compile(r"(?:^|\.)(?:live_tier|live_proof)(?:\.|$)")
 _RECORDER_MENTION = re.compile(r"\blive_(?:tier|proof)\b")
+_UNPLACED_VALUE = (ast.Call, ast.Subscript, ast.Attribute, ast.Name, ast.Await, ast.NamedExpr)
 
 
 class _RecorderNames:
@@ -599,8 +600,8 @@ class _RecorderNames:
                 for text in _node_words(n)
             ):
                 return True
-            # A value produced by a call (`importlib.import_module(name)`, a factory) can hold the recorder module whatever its own words say, so it cannot be placed: the program-wide mention decides (review 75c74e05.1).
-            if any(isinstance(n, ast.Call) for v in values for n in ast.walk(v)):
+            # A value produced by a call (`importlib.import_module(name)`, a factory), read from a container or attribute (`sys.modules[name]`, `h.mod`) or copied from another name can hold the recorder module whatever its own words say, so it cannot be placed: the program-wide mention decides (reviews 75c74e05.1, b124565b.1).
+            if any(isinstance(n, _UNPLACED_VALUE) for v in values for n in ast.walk(v)):
                 return None
             return False
         return None

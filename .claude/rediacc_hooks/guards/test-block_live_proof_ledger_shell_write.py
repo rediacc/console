@@ -552,6 +552,41 @@ def recorder_symbol_cases(world):
             True,
         ),
         (
+            "python writes ledger_path of a module read from sys.modules by name (review b124565b.1)",
+            _py(
+                "import sys, importlib\nname = 'rediacc_ci.proof.live_tier'\nimportlib.import_module(name)\n"
+                "m = sys.modules[name]\nm.ledger_path('.').write_text('x')"
+            ),
+            True,
+        ),
+        (
+            "python writes ledger_path of a module held as an attribute (review b124565b.1)",
+            _py(
+                "import importlib\nmods = importlib.import_module('rediacc_ci.proof.live_tier')\n"
+                "class H: pass\nh = H()\nh.mod = mods\nm = h.mod\nm.ledger_path('.').write_text('x')"
+            ),
+            True,
+        ),
+        (
+            "python writes ledger_path of a module bound through another name (review b124565b.1)",
+            _py(
+                "import importlib\nmods = importlib.import_module('rediacc_ci.proof.live_tier')\n"
+                "m = mods\nm.ledger_path('.').write_text('x')"
+            ),
+            True,
+        ),
+        # A call-bound receiver in a program that names no recorder module stays allowed (review b124565b.2).
+        (
+            "python writes ledger_path of a call-bound receiver with no recorder mention (review b124565b.2)",
+            _py("m = make_store()\nm.ledger_path('.').write_text('x')"),
+            False,
+        ),
+        (
+            "python writes ledger_path of a subscript-bound receiver with no recorder mention (review b124565b.2)",
+            _py("import sys\nm = sys.modules['other']\nm.ledger_path('.').write_text('x')"),
+            False,
+        ),
+        (
             "python appends to a LEDGER a star import brings",
             _py("from rediacc_ci.proof.live_tier import *\nopen(LEDGER, 'a').write('x')"),
             True,
