@@ -79,17 +79,17 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic f65726d5, plan agent/plans/PLAN-renet-down-before-kill.md, outside the set, 16 commit(s) on the branch, 0 open item(s): renet runs Rediaccfile down() before repo containers stop
   - epic 53c31db2, plan agent/plans/PLAN-repo-resource-limits.md, outside the set, 20 commit(s) on the branch, 0 open item(s): per-repo resource limits and a renet-managed RAM volume
   - epic a86f5622, plan agent/plans/PLAN-production-key-only.md, outside the set, 4 commit(s) on the branch, 0 open item(s): Production key only: every leg licensed from its own plane
-  - epic 79b7e92e, no plan, 247 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
-  - epic 562ef6c3, plan agent/plans/PLAN-experience-feedback.md, outside the set, 47 commit(s) on the branch, 0 open item(s): experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire
-- Writers: 6 live of writer_cap 25 (session d778be9d): worker:a81de8294b0f65d03, worker:a377e68770d18365c, worker:a000d6c9e2ac29c74, worker:aaaeb1e3c9d6b17e9, worker:a26c26330d498d8c3, worker:aa957897321241d01.
-- Leased items: 10: #2a0d9191 (worker:aa957897321241d01, d778be9d), #36c2e402 (worker:a000d6c9e2ac29c74, d778be9d), #4f4df453 (worker:busfc6826, d778be9d), #54aacfb3 (worker:bkqae9edw, d778be9d), #6025a1d5 (worker:a26c26330d498d8c3, d778be9d), #67c9eb34 (worker:bijpuix39, d778be9d), #778851f0 (worker:aaaeb1e3c9d6b17e9, d778be9d), #a2e6bd56 (worker:a26c26330d498d8c3, d778be9d), #caa837d4 (worker:a377e68770d18365c, d778be9d), #fc8ad2fd (worker:a377e68770d18365c, d778be9d).
+  - epic 79b7e92e, no plan, 263 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 562ef6c3, plan agent/plans/PLAN-experience-feedback.md, outside the set, 48 commit(s) on the branch, 0 open item(s): experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire
+- Writers: 4 live of writer_cap 25 (session d778be9d): worker:a81de8294b0f65d03, worker:ac4080c663ae4bb94, worker:a1917d88f28e26699, worker:af2e03cc54a89aa71.
+- Leased items: 8: #1e4c214c (worker:ac4080c663ae4bb94, d778be9d), #4f4df453 (worker:busfc6826, d778be9d), #54aacfb3 (worker:bkqae9edw, d778be9d), #6025a1d5 (worker:ac4080c663ae4bb94, d778be9d), #612689ff (worker:af2e03cc54a89aa71, d778be9d), #67c9eb34 (worker:bijpuix39, d778be9d), #8d576362 (worker:a1917d88f28e26699, d778be9d), #caa837d4 (worker:ac4080c663ae4bb94, d778be9d).
 - Next plan: agent/plans/PLAN-sandbox-tenant-separation.md, Promoted entry 14; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 17 of 64 plans done, 978 of 1187 boxes done (82%).
+Promoted: 17 of 64 plans done, 979 of 1187 boxes done (82%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -144,7 +144,7 @@ Promoted: 17 of 64 plans done, 978 of 1187 boxes done (82%).
 | 49 | PLAN-scope-bws-signing-key-to-consuming-step.md | 8/10 | 2 open |
 | 50 | PLAN-split-cli-files-over-512-line-budget.md | 5/7 | 2 open |
 | 51 | PLAN-renet-docker-running-semantics.md | 11/15 | 4 open |
-| 52 | PLAN-product-domain-rename.md | 21/28 | 7 open |
+| 52 | PLAN-product-domain-rename.md | 22/28 | 6 open |
 | 53 | PLAN-website-routing-and-mail.md | 12/20 | 8 open |
 | 54 | PLAN-enterprise-isolation.md | 19/34 | 15 open |
 | 55 | PLAN-renet-restart-cycle-defects.md | 5/7 | 2 open |
