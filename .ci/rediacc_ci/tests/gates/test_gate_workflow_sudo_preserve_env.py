@@ -50,3 +50,32 @@ def test_sudo_env_and_comments_pass(gate):
             result = workflow_rule.run_check(gate, d, ci=True)
             gate.assert_exit(0, result, "`%s` must pass" % command)
     gate.log_pass("sudo env, a comment, and other sudo flags stay silent")
+
+
+def test_flags_sudo_options_before_e(gate):
+    gate.log_test("`sudo -H -E`, `sudo -u root -E` and `sudo -n --preserve-env` must fail (review 40262498.3)")
+    for command in (
+        "sudo -H -E node cli.cjs ops up",
+        "sudo -u root -E node cli.cjs ops up",
+        "sudo -s -E node cli.cjs ops up",
+        "sudo -n --preserve-env node cli.cjs ops up",
+    ):
+        with harness.temp_dir() as d:
+            _write_run(d / "bad.yml", command)
+            result = workflow_rule.run_check(gate, d, ci=True)
+            gate.assert_exit(1, result, "`%s` must fail" % command)
+    gate.log_pass("options between sudo and -E no longer hide it")
+
+
+def test_sudo_options_without_e_pass(gate):
+    gate.log_test("CONTROL: `sudo -H`, `sudo -u root cmd -E` and `sudo -n true` pass")
+    for command in (
+        "sudo -H node cli.cjs ops up",
+        "sudo -u root node cli.cjs ops up -E",
+        "sudo -n true",
+    ):
+        with harness.temp_dir() as d:
+            _write_run(d / "ok.yml", command)
+            result = workflow_rule.run_check(gate, d, ci=True)
+            gate.assert_exit(0, result, "`%s` must pass" % command)
+    gate.log_pass("sudo options without -E stay silent")

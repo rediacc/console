@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 5,
-  "generatedAt": "2026-11-10T12:39:49.159Z",
+  "generatedAt": "2026-11-10T12:46:59.165Z",
   "legs": [
     {
       "index": 1,
@@ -524,7 +524,8 @@
         "pytest:.ci/rediacc_ci/tests/test_enterprise_cli_wiring.py",
         "pytest:.ci/rediacc_ci/tests/test_enterprise_no_key_on_account.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_plandeps_box_edges.py",
-        "pytest:.claude/rediacc_hooks/tests/test_wl_reviewclass.py"
+        "pytest:.claude/rediacc_hooks/tests/test_wl_reviewclass.py",
+        "pytest:.ci/rediacc_ci/tests/gates/test_gate_workflow_sudo_env_drops.py"
       ]
     },
     {
