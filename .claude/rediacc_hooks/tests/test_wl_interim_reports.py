@@ -388,7 +388,10 @@ def _in_process_in_scratch(sc: Scratch, monkeypatch) -> None:
     for key, value in sc.env.items():
         monkeypatch.setenv(key, value)
     got = os.environ.get("WORKLIST_REPORTS_DIR")
-    assert got == str(sc.store), "the scratch report store is not pinned (got %r): the capture would land in the real store" % got
+    assert got == str(sc.store), (
+        "the scratch report store is not pinned (got %r): the capture would land in the real store"
+        % got
+    )
 
 
 def test_r8_4_a_filesystem_error_from_armed_monitors_costs_only_the_interim(sc, monkeypatch):
