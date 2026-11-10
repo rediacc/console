@@ -1850,7 +1850,7 @@ def redact_secret_shapes(text):
 
 
 def _redact_secret_shapes(ev):
-    """Redact one event in place AT THE DOOR, over its serialized JSON so keys, nested values and any container type json writes are all covered: the store is tracked, and on 2026-11-10 an `add` whose text quoted an AWS key id went straight into agent/worklist because only the lint read these shapes. The replacements carry no quote or backslash, so the text stays valid JSON."""
+    """Redact one event in place AT THE DOOR, over its serialized JSON so keys, nested values and any container type json writes are all covered: the store is tracked, and on 2026-11-10 an `add` whose text quoted an AWS key id went straight into agent/worklist because only the lint read these shapes. No shape's pattern matches a quote or a backslash, so a match never spans a JSON delimiter or escape, and the replacements carry neither, so the text stays valid JSON."""
     text = json.dumps(ev)
     if not secret_shapes_in(text):
         return
