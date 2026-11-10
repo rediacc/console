@@ -1165,7 +1165,7 @@ def test_a_run_that_never_completes_is_a_lab_error_not_an_answer(monkeypatch):
 
 def test_no_run_after_the_dispatch_is_a_lab_error():
     gh = Gh(runs_after=lab.FIND_TRIES)
-    with pytest.raises(proof.LabError, match="no .* run appeared"):
+    with pytest.raises(proof.LabError, match=r"no .* run appeared"):
         dispatch_gh(gh)
 
 
@@ -1193,6 +1193,17 @@ def test_a_name_is_refused_as_the_dispatch_input():
         lab.dispatch_release("acme", run=Gh(), workflow_text=lambda: WITH_BENCH_GH)
 
 
+# Review 98b2c18f.2: a job's check run id differs from its job id; only check runs 905 and 906 exist.
+CHECK_SUMMARIES = {"905": "sum of job 5", "906": "sum of job 6"}
+
+
+def _job(job_id: int, check_id: int) -> dict:
+    return {
+        "id": job_id,
+        "check_run_url": "https://api.github.com/repos/o/r/check-runs/%d" % check_id,
+    }
+
+
 def test_run_surfaces_reads_logs_both_apis_and_each_job_summary():
     def gh(argv, cwd, env):
         del cwd, env
@@ -1200,19 +1211,29 @@ def test_run_surfaces_reads_logs_both_apis_and_each_job_summary():
         if args[:2] == ["run", "view"]:
             return lab.Proc(0, "log line\n")
         if args[1].endswith("/jobs"):
-            return lab.Proc(0, json.dumps({"jobs": [{"id": 5}, {"id": 6}]}))
+            return lab.Proc(0, json.dumps({"jobs": [_job(5, 905), _job(6, 906)]}))
         if "/check-runs/" in args[1]:
-            job = args[1].rsplit("/", 1)[1]
+            check = args[1].rsplit("/", 1)[1]
+            summary = CHECK_SUMMARIES.get(check)
+            if summary is None:
+                return lab.Proc(1)
             return lab.Proc(
-                0, json.dumps({"output": {"title": None, "summary": "sum %s" % job, "text": ""}})
+                0, json.dumps({"output": {"title": None, "summary": summary, "text": ""}})
             )
         return lab.Proc(0, json.dumps({"id": 77, "name": "Enterprise release"}))
 
     got = lab.run_surfaces("77", run=gh)
     assert set(got) == set(proof.GITHUB_SURFACES)
     assert got["logs"] == "log line\n"
-    assert got["step-summary"] == "sum 5\nsum 6"
+    assert got["step-summary"] == "sum of job 5\nsum of job 6"
     assert '"id": 77' in got["run-api"]
+
+
+def test_a_job_without_a_check_run_url_is_a_lab_error():
+    """Control: the job id is never used as the check run id."""
+    with pytest.raises(proof.LabError, match="check_run_url"):
+        lab._check_run_id({"id": 5})
+    assert lab._check_run_id(_job(5, 905)) == "905"
 
 
 def test_a_failed_surface_read_is_a_lab_error_not_an_empty_surface():

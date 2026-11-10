@@ -1159,7 +1159,7 @@ def renew_with(
 #
 # `dispatch_release(company)` refuses before any call unless the workflow file declares a `bench` input, which the release step turns into `--bench`: the fake companies live in the bench control databases, and a dispatch without it would read production, where the opaque id names nothing. It then runs `gh workflow run cd-enterprise-release.yml --ref <ref>` with `version` (what edge runs), the opaque `company` id, `bench=true` and `dry_run=false`, finds the `workflow_dispatch` run created after the dispatch, and waits for it to complete (at most `RUN_TIMEOUT_S`). The ref is the repository's default branch unless `ENTERPRISE_PROOF_REF` names another, because a dispatch needs the workflow file on the ref (*Not verified*).
 #
-# `run_surfaces(run_id)` reads the four surfaces `proof.GITHUB_SURFACES` names, as text: `logs` (`gh run view --log`), `jobs-api` (`/actions/runs/<id>/jobs`), `run-api` (`/actions/runs/<id>`) and `step-summary` (each job's check run `output.summary` and `output.text`, where GitHub serves `$GITHUB_STEP_SUMMARY`). A read that fails is a `LabError`, so a surface is never compared as empty.
+# `run_surfaces(run_id)` reads the four surfaces `proof.GITHUB_SURFACES` names, as text: `logs` (`gh run view --log`), `jobs-api` (`/actions/runs/<id>/jobs`), `run-api` (`/actions/runs/<id>`) and `step-summary` (each job's check run `output.summary` and `output.text`, where GitHub serves `$GITHUB_STEP_SUMMARY`; the check run is the one the job's `check_run_url` names, never the job's own `id`). A read that fails is a `LabError`, so a surface is never compared as empty.
 
 
 WORKFLOW = "cd-enterprise-release.yml"
@@ -1263,6 +1263,18 @@ def dispatch_release(
         waited += POLL_S
 
 
+CHECK_RUN_URL = re.compile(r"/check-runs/([0-9]+)$")
+
+
+def _check_run_id(job: object) -> str:
+    """The check run of an Actions job, from its `check_run_url`: the job's own `id` is a different number, and GET check-runs/<job id> reads another run or nothing."""
+    url = str(job.get("check_run_url") or "") if isinstance(job, dict) else ""
+    found = CHECK_RUN_URL.search(url)
+    if not found:
+        raise proof.LabError("a job of the run carries no check_run_url")
+    return found.group(1)
+
+
 def run_surfaces(run_id: str, *, run: Runner = run_process) -> dict[str, str]:
     if not run_id.isdigit():
         raise proof.LabError("%r is not a run id" % run_id)
@@ -1273,7 +1285,7 @@ def run_surfaces(run_id: str, *, run: Runner = run_process) -> dict[str, str]:
     summaries: list[str] = []
     for job in (jobs.get("jobs") or []) if isinstance(jobs, dict) else []:
         check = _json(
-            _gh(run, "api", "repos/{owner}/{repo}/check-runs/%s" % job.get("id")),
+            _gh(run, "api", "repos/{owner}/{repo}/check-runs/%s" % _check_run_id(job)),
             "the check-runs API",
         )
         output = (check.get("output") or {}) if isinstance(check, dict) else {}
