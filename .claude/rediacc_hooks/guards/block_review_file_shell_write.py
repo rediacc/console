@@ -7,6 +7,8 @@ nobody listed is refused when it names a review path rather than allowed.
 READ BY THE LEXER, NOT BY A REGEX OVER THE TEXT. `shellscan` already knows where bash really redirects and which words are a command's operands, so `echo "agent/reviews"`, `cat agent/reviews/b/x.md`, `grep -rn x agent/reviews/` and a commit message naming the path all pass. The two sanctioned writers are named and pass too: the reviewer (`wl_review.py`) and the worklist verbs that
 call it (`worklist.py --review-mark`, `--review-commit`, `--review-run`).
 
+A LISTING NAMES REVIEW FILES WITHOUT THE WORD (d218ebf3). A write whose target comes from a listing over `agent/reviews` or an ancestor short of the repository root (`grep -rl ... agent/`, `glob.glob('agent/**')`, `Path('agent').rglob`, `os.walk('agent')`, `find agent | xargs sed -i`) is a review write; a listing over the repository root is the accepted limit, read in `_head_walks_reviews`.
+
 THIS GUARD HAS NO BASH TWIN (`OWN_SUITE = True`), so it is judged against `test-block_review_file_shell_write.py` beside it and against its own DEFECT, never against a golden.
 """
 
@@ -311,9 +313,9 @@ def _span_choices(span, word, run, cmd):
         source = _positional_source(cmd)
         if source is None:
             return [on_line], False
-        return [_WORST if _SPELLS_REVIEWS.search(source) else _OUTSIDE], False
+        return [_WORST if _names_reviews(source) else _OUTSIDE], False
     if kind == "subst":
-        return [_WORST if _SPELLS_REVIEWS.search(text) else _OUTSIDE], False
+        return [_WORST if _names_reviews(text) else _OUTSIDE], False
     if kind == "indirect":
         # Read through both names when the walk knows both (`P=D; D=x` gives `x`); a name it cannot know, or a value that is not a variable name, leaves the line's unknown.
         if name:
@@ -362,7 +364,7 @@ def _span_choices(span, word, run, cmd):
         source = _value_source(name, cmd, shellscan._CLOBBERED in str(value))
         if source is None:
             return [on_line], False
-        return [_WORST if _SPELLS_REVIEWS.search(source) else _OUTSIDE], False
+        return [_WORST if _names_reviews(source) else _OUTSIDE], False
     if shellscan._OPAQUE_KEY in state:
         return [on_line], False
     return [_OUTSIDE], False
@@ -727,6 +729,9 @@ def _run_operands(run, argv):
     ops = _operands(argv)
     # What xargs reads becomes this command's words, appended or put where its marker stands, whatever the marker is (`shellscan.xargs_fed_operands`). It over-reads the operands and never under-reads them; a file named only inside an option's value (`sort --output=X/kept.md`) is not an operand, fed or typed, and is read by the `shellscan.output_landings` arm of `_offending` instead (worklist item ff3ab826): `echo <review file> | xargs sed -i ...` named no review file among sed's own words and was allowed.
     ops = shellscan.xargs_fed_operands(run, ops)
+    # What a listing over the review directory or an ancestor feeds is review paths (d218ebf3): `grep -rl x agent/ | xargs sed -i ...` feeds the words `grep -rl x agent/`, none of them a review file.
+    if _fed_a_listing(run):
+        ops.append(_WORST)
     if run.launch is None or run.launch.launcher != "find":
         return ops
     out: list[str] = []
@@ -956,7 +961,7 @@ def _render(expr, bound, review_names, seen=frozenset()):
         return expr.value if isinstance(expr.value, str) else str(expr.value)
     if isinstance(expr, ast.JoinedStr):
         return "".join(sub(v) for v in expr.values)
-    if isinstance(expr, ast.FormattedValue):
+    if isinstance(expr, (ast.FormattedValue, ast.Starred)):
         return sub(expr.value)
     if isinstance(expr, ast.BinOp) and isinstance(expr.op, ast.Add):
         return sub(expr.left) + sub(expr.right)
@@ -1048,7 +1053,7 @@ def _python_writes_review(program, depth=0):
 
     THE SHELL COMMANDS ARE ADDITIVE (e30f1ad1.2): a program whose only write is `os.system('echo x > agent/reviews/a.md')` names no write target, so each command it hands to a shell is rendered and judged by `_offending` as the shell line it is. A review path in written CONTENT is still data: only a string that reaches a shell is read as a command.
     """
-    if REVIEW_TEXT.rstrip("/") not in program:
+    if REVIEW_TEXT.rstrip("/") not in program and not _AGENT_SEGMENT.search(program):
         return False
     try:
         tree = ast.parse(program)
@@ -1061,16 +1066,30 @@ def _python_writes_review(program, depth=0):
         return shellscan.python_holds(expr, _is_review_string, review_names)
 
     imports = shellscan.python_imports(tree)
-    if any(holds_review(t) for t in shellscan.python_write_targets(tree, imports)):
+    targets = list(shellscan.python_write_targets(tree, imports))
+    if any(holds_review(t) for t in targets):
         return True
+    # A target bound to what a listing over the review directory or an ancestor returns (d218ebf3), and a command handed to a shell with such a name in it, rendered as a review path.
+    listed, calls = _python_listing_names(tree, imports, bound, review_names)
+    if any(_listing_target(t, listed, calls, bound, review_names) for t in targets):
+        return True
+    unbound = {k: v for k, v in bound.items() if k not in listed}
     return any(
         REVIEW_TEXT.rstrip("/") in c and _offending(c, depth + 1)
-        for c in _shell_commands(tree, imports, bound, review_names)
+        for c in _shell_commands(tree, imports, unbound, review_names | listed)
     )
 
 
+def _is_python_run(run, cwd):
+    """Is this run a Python interpreter, named or by a script's shebang?"""
+    name = run.name.rsplit("/", 1)[-1]
+    if not name.startswith(INTERPRETERS):
+        name = shellscan.shebang_interpreter(run, cwd) or ""
+    return re.match(r"^python[0-9.]*$", name) is not None
+
+
 def _programs_name_reviews(cmd, cwd):
-    """The pre-filter's program question: does a script `cmd` runs by path name `reviews` in its text (#c4542b69), or does a program it runs have text this hook cannot read whose sources may (#b53f586d)?
+    """The pre-filter's program question: does a script `cmd` runs by path name `reviews` in its text (#c4542b69), does a Python program it runs write what a listing over an ancestor of the directory returns (d218ebf3), or does a program it runs have text this hook cannot read whose sources may (#b53f586d)?
 
     AN UNJUDGEABLE PROGRAM IS JUDGED BY WHAT IT CAN BE MADE FROM. `mkdir -p "$(echo n)" && cp rv.py n && python3 n/rv.py` runs `rv.py`, which writes a review file, while the walk cannot say where the copy landed: the line names no review word, so the pre-filter allowed it (rc 0), and the same line with one was refused. Refusing every such program instead turns the planting loop this repository runs (`sed -i ... x.py && python3 x.py`: 522 of 158,263 distinct Bash commands in this repository's session transcripts on 2026-10-15 run an unjudgeable program, 518 of them naming no review word) into review-record refusals.
     So the program is read through its possible sources: every file a word of the line names (each run's words, as typed and as expanded, joined to the run's directory), and the command goes to the full check, which refuses the program as unjudgeable, when one of those files is larger than a script read or holds code the full check reads as a write into the review directory (`_source_writes_review`), or when `curl`/`wget` fetches a URL or an archive is extracted, whose content no file on disk holds as code.
@@ -1083,6 +1102,14 @@ def _programs_name_reviews(cmd, cwd):
     for run in runs:
         text, kind = shellscan.interpreter_program(run, cmd, cwd)
         if kind == "file" and "reviews" in (text or ""):
+            return True
+        # A Python program that writes what a listing over an ancestor of the directory returns names no `reviews` at all (d218ebf3).
+        if (
+            text
+            and _AGENT_SEGMENT.search(text)
+            and _is_python_run(run, cwd)
+            and _python_writes_review(text)
+        ):
             return True
         unjudgeable = unjudgeable or kind == "unjudgeable"
     if not unjudgeable:
@@ -1118,10 +1145,275 @@ def _source_writes_review(path):
             text = handle.read()
     except (OSError, ValueError):
         return False
-    if REVIEW_TEXT.rstrip("/") not in text:
+    if REVIEW_TEXT.rstrip("/") not in text and not _AGENT_SEGMENT.search(text):
         return False
     verdict = _python_writes_review(text)
     return bool(_code_writes_review(text) if verdict is None else verdict)
+
+
+# A LISTING OVER AN ANCESTOR OF THE REVIEW DIRECTORY NAMES REVIEW FILES (d218ebf3). Measured 2026-11-10: a python heredoc bound `files` to `subprocess.run(['grep','-rlE',...,'agent/'], ...).stdout.split()`, looped `for f in files` and ran `open(f,'w')`, rewriting a review record (rc 0): no review literal ever reached the target, and the command never spelled `reviews`, so the pre-filter allowed it unread.
+# So a LISTING is read as a source of review paths when its root is `agent/reviews`, a directory under it, or one of its ancestors short of the repository root: `agent`, `agent/`, `./agent`, `../x/agent`, an absolute or `~` path ending in `/agent`. The listings are a subprocess or shell run of grep -l/-L/-r/-R, rg, find, ls, fd or git ls-files; `glob.glob`/`glob.iglob` (with `root_dir`); a path's `.glob`/`.rglob`/`.iterdir`/`.walk`; `os.walk`, `os.fwalk`, `os.scandir`, `os.listdir`.
+# In Python a name is bound to one through an assignment, a walrus, a `for` or comprehension target, or a `with ... as`, transitively and through any call, attribute or index on the way (`.split()`, `.splitlines()`, `list(...)`, `[0]`), and a write target holding such a name is a review write unless what it renders to starts at a literal directory that is no ancestor (`'/tmp/out/' + basename(f)` is a copy out). In the shell the listing's output reaches a command through xargs, a `$(...)` substitution, a `for` list or a `read`.
+# THE ACCEPTED LIMIT: a listing over the repository root (`.`, `**/*.md`, a bare `git ls-files`, a root that is an unknown value) is not read as one. It covers every file in the tree, so refusing its writes would refuse every repo-wide rewrite; a write that reaches the review directory that way is not seen by this reading.
+_AGENT_SEGMENT = re.compile(r"(?<![\w.-])agent(?![\w.-])")
+_ANCESTOR_CHAIN = ("agent", "reviews")
+
+
+def _head_walks_reviews(segs):
+    """Do path segments, read from their start, name `agent`, `agent/reviews` or a directory under it? A glob segment counts as a name it matches, and a `**` past the first segment walks everything below; a bare `*` or `**` FIRST is the repository root, the accepted limit."""
+    for i, want in enumerate(_ANCESTOR_CHAIN):
+        if i >= len(segs):
+            return i > 0
+        seg = segs[i]
+        if i == 0 and seg in ("*", "**"):
+            return False
+        if seg == "**":
+            return True
+        if seg != want and not (any(ch in seg for ch in _GLOB) and fnmatch.fnmatchcase(want, seg)):
+            return False
+    return True
+
+
+def _root_walks_reviews(path):
+    """Is a listing rooted at `path` (a directory or a glob pattern) one that walks the review directory? A relative path is read from its start; an absolute one, a `~` one, one holding `..` and one that starts at an unknown value (`_UNKNOWN`) are read at every `agent` segment they hold, so `/srv/console/agent` counts and `/srv/agent-tools` does not."""
+    text = str(path).replace("\\", "/")
+    segs = [s for s in text.split("/") if s not in ("", ".")]
+    anchored = not (text.startswith(("/", "~")) or ".." in segs or segs[:1] == ["_"])
+    starts = [0] if anchored else range(len(segs))
+    return any(_head_walks_reviews(segs[i:]) for i in starts)
+
+
+# Short options whose value is the rest of the bundle or the next word, for each searcher; `e` and `f` give the pattern. rg's `-r` is `--replace`, so its listing flags are not grep's.
+_SEARCH_VALUE_LETTERS = {"grep": "efmABCdD", "rg": "efgrtTmABCjM"}
+_GREP_LISTING_LETTERS = frozenset("lLrR")
+_SEARCH_LISTING_LONG = frozenset(
+    (
+        "--files-with-matches",
+        "--files-without-match",
+        "--recursive",
+        "--dereference-recursive",
+        "--files",
+    )
+)
+
+
+def _search_roots(name, argv):
+    """The roots grep or rg walks when it prints file names, or None when it prints none: grep needs -l, -L, -r or -R (or their long forms); rg names files whenever it searches more than one. The pattern operand is dropped unless -e, -f or `--files` gives it."""
+    family = "rg" if name == "rg" else "grep"
+    values = _SEARCH_VALUE_LETTERS[family]
+    lists = family == "rg"
+    pattern_given = False
+    operands = []
+    skip = ended = False
+    for w in argv:
+        if skip:
+            skip = False
+            continue
+        if ended or not w.startswith("-") or w == "-":
+            operands.append(w)
+            continue
+        if w == "--":
+            ended = True
+            continue
+        if w.startswith("--"):
+            key = w.split("=", 1)[0]
+            lists = lists or key in _SEARCH_LISTING_LONG
+            if key in ("--regexp", "--file", "--files"):
+                pattern_given = True
+                skip = key != "--files" and "=" not in w
+            continue
+        for at, letter in enumerate(w[1:]):
+            if letter in values:
+                pattern_given = pattern_given or letter in "ef"
+                skip = at == len(w) - 2
+                break
+            lists = lists or (family == "grep" and letter in _GREP_LISTING_LETTERS)
+    if not lists:
+        return None
+    if not pattern_given:
+        operands = operands[1:]
+    return operands or ["."]
+
+
+def _listing_roots(run):
+    """The roots a shell run walks when it prints file names (grep and rg as `_search_roots` reads them, find, ls, fd, git ls-files), joined to the run's own directory; None for any other run."""
+    name = run.name.rsplit("/", 1)[-1]
+    argv = [str(a) for a in run.argv]
+    if name in ("grep", "egrep", "fgrep", "rg"):
+        roots = _search_roots(name, argv)
+    elif name == "find":
+        at = 0
+        while at < len(argv) and (
+            argv[at] in ("-H", "-L", "-P", "-D") or argv[at].startswith("-O")
+        ):
+            at += 2 if argv[at] == "-D" else 1
+        roots = []
+        for w in argv[at:]:
+            if w.startswith("-") or w in ("(", "!", ")"):
+                break
+            roots.append(w)
+        roots = roots or ["."]
+    elif name == "ls":
+        roots = _operands(argv) or ["."]
+    elif name in ("fd", "fdfind"):
+        roots = _operands(argv)[1:] or ["."]
+    elif name == "git":
+        at, here = shellscan._git_verb_at(argv)
+        if at is None or argv[at] != "ls-files":
+            return None
+        roots = [os.path.join(here, r) if here else r for r in _operands(argv[at + 1 :])]
+        roots = roots or [here or "."]
+    else:
+        return None
+    where = str(run.cwd) if isinstance(run.cwd, str) and run.cwd else ""
+    return [r if not where or r.startswith(("/", "~")) else where + "/" + r for r in roots]
+
+
+def _text_lists_reviews(text, where=None):
+    """Does shell text run a listing over the review directory or an ancestor of it (`_root_walks_reviews`)? `where` is the directory it runs in, when known. Text that spells no `agent` segment is never lexed."""
+    if not text or not _AGENT_SEGMENT.search(text + " " + str(where or "")):
+        return False
+    for run in shellscan.every_run(text):
+        roots = _listing_roots(run)
+        if roots and any(
+            _root_walks_reviews(
+                r if not where or r.startswith(("/", "~")) else "%s/%s" % (where, r)
+            )
+            for r in roots
+        ):
+            return True
+    return False
+
+
+def _names_reviews(text):
+    """Text a value is made from that names the review directory: it spells `reviews` as a path segment, or it runs a listing over the directory or an ancestor of it, whose output is review paths (d218ebf3)."""
+    return bool(_SPELLS_REVIEWS.search(text)) or _text_lists_reviews(text)
+
+
+def _fed_a_listing(run):
+    """Does xargs feed this run the output of a listing over the review directory or an ancestor (`grep -rl x agent/ | xargs sed -i ...`)?"""
+    return bool(run.feed) and "xargs" in run.via and _text_lists_reviews(run.feed)
+
+
+def _feeds_listing(cmd):
+    """The pre-filter's listing question for the shell: does xargs feed any run the output of a listing over the review directory or an ancestor? A substitution, a `for` list and a `read` are read by `_globs_reviews` through `_readings`."""
+    if not _AGENT_SEGMENT.search(cmd):
+        return False
+    return any(_fed_a_listing(run) for run in shellscan.every_run(cmd))
+
+
+_PY_LISTING_FUNCS = frozenset(("os.walk", "os.fwalk", "os.scandir", "os.listdir"))
+_PY_LISTING_METHODS = frozenset(("glob", "rglob", "iterdir", "walk"))
+
+
+def _python_listing_call(node, imports, bound, review_names):
+    """Is this Python call a listing over the review directory or an ancestor of it (`_root_walks_reviews`), its root rendered by `_render`?"""
+
+    def render(expr):
+        return _render(expr, bound, review_names)
+
+    func = node.func
+    qualified = shellscan.python_qualified(func, imports)
+    if qualified in ("glob.glob", "glob.iglob"):
+        pattern = node.args[0] if node.args else shellscan.python_keyword(node, "pathname")
+        if pattern is None:
+            return False
+        root_dir = shellscan.python_keyword(node, "root_dir")
+        text = render(pattern)
+        if root_dir is not None and not text.startswith("/"):
+            text = render(root_dir).rstrip("/") + "/" + text
+        return _root_walks_reviews(text)
+    if qualified in _PY_LISTING_FUNCS:
+        root = node.args[0] if node.args else None
+        root = root if root is not None else shellscan.python_keyword(node, "top")
+        root = root if root is not None else shellscan.python_keyword(node, "path")
+        return _root_walks_reviews(render(root) if root is not None else ".")
+    if qualified in _SHELL_CALLS:
+        arg = (
+            node.args[0]
+            if node.args
+            else shellscan.python_keyword(node, "args") or shellscan.python_keyword(node, "cmd")
+        )
+        if arg is None:
+            return False
+        if isinstance(arg, (ast.List, ast.Tuple)):
+            line = shlex.join(render(e) for e in arg.elts)
+        else:
+            line = render(arg)
+        cwd = shellscan.python_keyword(node, "cwd")
+        return _text_lists_reviews(line, render(cwd) if cwd is not None else None)
+    if (
+        isinstance(func, ast.Attribute)
+        and func.attr in _PY_LISTING_METHODS
+        and not qualified.startswith(("glob.", "os."))
+    ):
+        text = render(func.value)
+        # `rglob` walks every directory below its receiver; `glob` and `walk` are read by their own pattern and root.
+        if func.attr in ("glob", "rglob") and node.args:
+            text = (
+                text.rstrip("/") + ("/**/" if func.attr == "rglob" else "/") + render(node.args[0])
+            )
+        return _root_walks_reviews(text)
+    return False
+
+
+def _python_listing_names(tree, imports, bound, review_names):
+    """`(names, calls)`: the names bound, transitively, to a value carrying a listing over the review directory or an ancestor, and the ids of the listing calls themselves. A binding is an assignment, a walrus, a `for` or comprehension target and a `with ... as`; a value carries a listing when any node in it is such a call or such a name."""
+    calls = {
+        id(n)
+        for n in ast.walk(tree)
+        if isinstance(n, ast.Call) and _python_listing_call(n, imports, bound, review_names)
+    }
+    if not calls:
+        return set(), calls
+    # An annotation with no value (`x: list`) binds nothing; its None value carries nothing below.
+    pairs: list[tuple[ast.expr, ast.expr | None]] = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Assign):
+            pairs.extend((t, node.value) for t in node.targets)
+        elif isinstance(node, (ast.NamedExpr, ast.AnnAssign, ast.AugAssign)):
+            pairs.append((node.target, node.value))
+        elif isinstance(node, (ast.For, ast.AsyncFor, ast.comprehension)):
+            pairs.append((node.target, node.iter))
+        elif isinstance(node, ast.withitem) and node.optional_vars is not None:
+            pairs.append((node.optional_vars, node.context_expr))
+    names: set = set()
+
+    def carries(expr):
+        return any(
+            (isinstance(n, ast.Name) and n.id in names) or id(n) in calls for n in ast.walk(expr)
+        )
+
+    changed = True
+    while changed:
+        changed = False
+        for target, value in pairs:
+            if value is None or not carries(value):
+                continue
+            for n in ast.walk(target):
+                if isinstance(n, ast.Name) and n.id not in names:
+                    names.add(n.id)
+                    changed = True
+    return names, calls
+
+
+def _listing_target(expr, names, calls, bound, review_names):
+    """Is a write target a path a listing over the review directory produced? It must hold a listing name or call; it is cleared only when it renders (a listing name as `agent/reviews/_`) to a path whose literal head, before the first value the ast cannot spell, is a directory that is no ancestor of the review directory: `'/tmp/out/' + basename(f)` is a copy out, and `f`, `f.with_suffix(...)`, `'agent/' + relpath(f)` and `os.path.join(ROOT, f)` with ROOT the repository are not."""
+    if not any(
+        (isinstance(n, ast.Name) and n.id in names) or id(n) in calls for n in ast.walk(expr)
+    ):
+        return False
+    unbound = {k: v for k, v in bound.items() if k not in names}
+    text = _render(expr, unbound, review_names | names)
+    if REVIEW_WORD.search(text):
+        return True
+    segs = text.split("/")
+    if "_" not in segs:
+        return False
+    head = "/".join(segs[: segs.index("_")])
+    if head in ("", ".", "./") or _root_walks_reviews(head):
+        return True
+    return os.path.isabs(head) and os.path.isdir(os.path.join(head, "agent", "reviews"))
 
 
 def run(ev):
@@ -1132,10 +1424,12 @@ def run(ev):
         cwd = ev.cwd
     # A script run by path names the directory in its own text, not the command's (#c4542b69), so the pre-filter reads those scripts too; the lexer starts only when an interpreter is named. A glob or brace can spell the directory without the word (`echo revi*s/... | xargs cp ...` under `cd agent`, #7094b75e), so a command with a word the full check would read as one is read too (`_globs_reviews`).
     # A LINK SPELLS THE DIRECTORY WITHOUT THE WORD (#816a7c93): with `lnk` a link into `agent/reviews`, `cd lnk && tee x.md` names neither, so a command the text test passes is read once more against the disk, and only one whose directories and words stay outside the review directory takes the cheap path.
+    # A LISTING SPELLS THE DIRECTORY WITHOUT THE WORD (d218ebf3): `grep -rl x agent/ | xargs sed -i ...` names an ancestor, and so does a Python program writing what one returns (`_programs_name_reviews`).
     if (
         "reviews" not in cmd
         and not _globs_reviews(cmd, cwd)
         and not _programs_name_reviews(cmd, cwd)
+        and not _feeds_listing(cmd)
         and not _reaches_reviews(cmd, cwd)
     ):
         return hookio.ALLOW

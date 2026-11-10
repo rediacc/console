@@ -19,6 +19,21 @@ SHARED = pathlib.Path(__file__).resolve().with_name("test-block_review_file_edit
 STEM = "block_review_file_shell_write"
 # A line that writes a Python program opening a review file for writing (#3ff3bb16 rows).
 _REVIEW_WRITER = "printf \"open('agent/reviews/x/y.md','w')\\n\" > /tmp/r87s.py"
+# d218ebf3, verbatim: the command that rewrote a review record through a listing over `agent/`.
+_LISTING_MEASURED = """python3 - <<'EOF'
+import re,glob,subprocess
+files=subprocess.run(['grep','-rlE','AKIA[A-Z0-9]{16}','agent/'],capture_output=True,text=True).stdout.split()
+for f in files:
+    s=open(f).read()
+    n=re.sub(r'AKIA[A-Z0-9]{16}',lambda m:'AKIA…'+m.group(0)[-4:],s)
+    if n!=s: open(f,'w').write(n); print('redacted',f)
+EOF"""
+
+
+def _py(code):
+    """`code` as a python3 heredoc, the shape the measured command took."""
+    return "python3 - <<'EOF'\n%s\nEOF" % code
+
 
 OWN_CASES = [
     # #f6334e52: each refusal was allowed (rc 0) at 5e00d0768, because the operand was read as typed (`$D/y.md`).
@@ -306,6 +321,209 @@ OWN_CASES = [
         "git archive HEAD | tar -xf - -C agent/reviews/b",
         True,
     ),
+    # d218ebf3: a write target bound to what a LISTING over an ancestor of the review directory returns. The measured command rewrote a review record on 2026-11-10 (rc 0 at a49d20475): its target `f` comes from `grep -rlE ... agent/`, so no review literal ever reaches it. Each refusal below was allowed (rc 0) there; every control was allowed there too and stays allowed.
+    ("a listing over agent/ feeds the write target (measured)", _LISTING_MEASURED, True),
+    (
+        "glob.glob over agent/ feeds open for write",
+        _py(
+            "import glob\nfor f in glob.glob('agent/**/*.md', recursive=True):\n    open(f, 'w').write('x')"
+        ),
+        True,
+    ),
+    (
+        "Path('agent').rglob feeds write_text",
+        _py(
+            "from pathlib import Path\nfor p in Path('agent').rglob('*.md'):\n"
+            "    p.write_text(p.read_text().replace('a', 'b'))"
+        ),
+        True,
+    ),
+    (
+        "os.walk('agent') feeds open for write",
+        _py(
+            "import os\nfor root, dirs, names in os.walk('agent'):\n    for n in names:\n"
+            "        with open(os.path.join(root, n), 'w') as h:\n            h.write('x')"
+        ),
+        True,
+    ),
+    (
+        "an indexed glob result under ./agent",
+        _py("import glob\nfiles = glob.glob('./agent/*/*/*.md')\nopen(files[0], 'w').write('x')"),
+        True,
+    ),
+    (
+        "glob with root_dir agent, joined back",
+        _py(
+            "import glob, os\nfor f in glob.glob('**/*.md', root_dir='agent', recursive=True):\n"
+            "    open(os.path.join('agent', f), 'w').write('x')"
+        ),
+        True,
+    ),
+    (
+        "an absolute root ending in /agent",
+        _py(
+            "import os\nfor r, d, ns in os.walk('/home/developer/console/agent'):\n"
+            "    for n in ns:\n        open(os.path.join(r, n), 'w').write('x')"
+        ),
+        True,
+    ),
+    (
+        "an absolute walk of /x/agent feeds the target",
+        _py(
+            "import pathlib\nfor p in pathlib.Path('/srv/console/agent').glob('*/*/*.md'):\n"
+            "    p.write_bytes(b'x')"
+        ),
+        True,
+    ),
+    (
+        "find over agent through check_output, splitlines",
+        _py(
+            "import subprocess, pathlib\n"
+            "out = subprocess.check_output(['find', 'agent', '-name', '*.md'], text=True)\n"
+            "for f in out.splitlines():\n    pathlib.Path(f).write_text('x')"
+        ),
+        True,
+    ),
+    (
+        "git ls-files agent, list() and a comprehension",
+        _py(
+            "import subprocess\nnames = list(subprocess.run('git ls-files agent', shell=True, "
+            "capture_output=True, text=True).stdout.split())\n"
+            "[open(n, 'a').write('x') for n in names]"
+        ),
+        True,
+    ),
+    (
+        "a listing handed to sed -i through subprocess",
+        _py(
+            "import glob, subprocess\nfiles = glob.glob('agent/**/*.md', recursive=True)\n"
+            "subprocess.run(['sed', '-i', 's/a/b/', *files])"
+        ),
+        True,
+    ),
+    (
+        "a path derived from the listed one",
+        _py(
+            "from pathlib import Path\nfor p in Path('agent').rglob('*.md'):\n"
+            "    p.with_suffix('.md').write_text('x')"
+        ),
+        True,
+    ),
+    (
+        "a relative path under agent rebuilt from the listed one",
+        _py(
+            "import glob, os\nfor f in glob.glob('agent/**/*.md', recursive=True):\n"
+            "    open('agent/' + os.path.relpath(f, 'agent'), 'w').write('x')"
+        ),
+        True,
+    ),
+    # The shell spellings of the same class: a listing's output reaches sed -i through xargs, a substitution or a read.
+    (
+        "grep -rl over agent/ piped to xargs sed -i",
+        "grep -rl AKIA agent/ | xargs sed -i s/a/b/",
+        True,
+    ),
+    (
+        "find over agent piped to xargs -0 sed -i",
+        "find agent -name '*.md' -print0 | xargs -0 sed -i s/a/b/",
+        True,
+    ),
+    (
+        "a for loop over a grep -rl of agent/",
+        "for f in $(grep -rl AKIA agent/); do sed -i s/a/b/ $f; done",
+        True,
+    ),
+    (
+        "a read loop over a grep -rl of agent",
+        'grep -rl AKIA agent | while read f; do sed -i s/a/b/ "$f"; done',
+        True,
+    ),
+    (
+        "a variable holding a git ls-files of agent",
+        "F=$(git ls-files agent); sed -i s/a/b/ $F",
+        True,
+    ),
+    # Controls: a listing that is only read, a write elsewhere, a root that is no ancestor, and the repository root (the accepted limit: a listing over the whole tree is too broad to judge, and refusing it would refuse every repo-wide rewrite).
+    (
+        "the measured grep -rl over agent/, results printed",
+        _py(
+            "import subprocess\nfiles = subprocess.run(['grep', '-rlE', 'AKIA[A-Z0-9]{16}', 'agent/'], "
+            "capture_output=True, text=True).stdout.split()\nprint(files)"
+        ),
+        False,
+    ),
+    ("the measured grep in the shell", "grep -rlE 'AKIA[A-Z0-9]{16}' agent/", False),
+    (
+        "glob.glob over agent/ only read",
+        _py(
+            "import glob\nfor f in glob.glob('agent/**/*.md', recursive=True):\n    print(open(f).read())"
+        ),
+        False,
+    ),
+    (
+        "Path('agent').rglob only read",
+        _py(
+            "from pathlib import Path\nfor p in Path('agent').rglob('*.md'):\n    print(p.read_text())"
+        ),
+        False,
+    ),
+    (
+        "os.walk('agent') only read",
+        _py(
+            "import os\nfor root, dirs, names in os.walk('agent'):\n    for n in names:\n"
+            "        print(open(os.path.join(root, n)).read())"
+        ),
+        False,
+    ),
+    (
+        "a listing copied out to /tmp",
+        _py(
+            "import glob, os\nfor f in glob.glob('agent/**/*.md', recursive=True):\n"
+            "    open('/tmp/out/' + os.path.basename(f), 'w').write(open(f).read())"
+        ),
+        False,
+    ),
+    (
+        "a listing written as content of a scratch file",
+        _py(
+            "import glob\nout = open('/tmp/list.txt', 'w')\n"
+            "out.write('\\n'.join(glob.glob('agent/**', recursive=True)))"
+        ),
+        False,
+    ),
+    (
+        "a sibling root under agent that holds no reviews",
+        _py(
+            "from pathlib import Path\nfor p in Path('agent/plans').rglob('*.md'):\n    p.write_text('x')"
+        ),
+        False,
+    ),
+    (
+        "a root whose name only starts with agent",
+        _py(
+            "import os\nfor r, d, ns in os.walk('agent-tools'):\n    open(os.path.join(r, ns[0]), 'w')"
+        ),
+        False,
+    ),
+    (
+        "a listing over the repository root that writes (the accepted limit)",
+        _py(
+            "import glob\nfor f in glob.glob('**/*.md', recursive=True):\n"
+            "    s = open(f).read()\n    open(f, 'w').write(s.replace('agent/plans/', 'agent/plans/_done/'))"
+        ),
+        False,
+    ),
+    (
+        "grep -rl over . piped to xargs sed -i (the accepted limit)",
+        "grep -rl AKIA . | xargs sed -i s/a/b/",
+        False,
+    ),
+    ("grep -rl over agent/ piped to xargs cat", "grep -rl AKIA agent/ | xargs cat", False),
+    (
+        "a for loop over agent/plans",
+        "for f in $(grep -rl x agent/plans); do sed -i s/a/b/ $f; done",
+        False,
+    ),
 ]
 
 MUTANTS = [
@@ -383,6 +601,39 @@ MUTANTS = [
     (
         "an indirect expansion read as $! (8ef78586.1)",
         ('elif body.startswith("!") and len(body) > 1:', "elif False:"),
+    ),
+    (
+        "a Python target bound to a listing not read (d218ebf3)",
+        (
+            "if any(_listing_target(t, listed, calls, bound, review_names) for t in targets):",
+            "if False:",
+        ),
+    ),
+    (
+        "rglob read as a one-level glob (d218ebf3)",
+        ('("/**/" if func.attr == "rglob" else "/")', '"/"'),
+    ),
+    (
+        "a listing fed through xargs not read (d218ebf3)",
+        (
+            'return bool(run.feed) and "xargs" in run.via and _text_lists_reviews(run.feed)',
+            "return False",
+        ),
+    ),
+    (
+        "a value's source read for the word reviews alone (d218ebf3)",
+        (
+            "return bool(_SPELLS_REVIEWS.search(text)) or _text_lists_reviews(text)",
+            "return bool(_SPELLS_REVIEWS.search(text))",
+        ),
+    ),
+    (
+        "the repository root read as an ancestor (d218ebf3 limit)",
+        ('        if i == 0 and seg in ("*", "**"):\n            return False\n', ""),
+    ),
+    (
+        "a copy out to a literal directory refused (d218ebf3)",
+        ('if head in ("", ".", "./") or _root_walks_reviews(head):', "if True:"),
     ),
 ]
 
