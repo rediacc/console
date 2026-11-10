@@ -117,6 +117,14 @@ export interface InputChange {
 export interface InputDecl {
   scope(rel: string, read: SeamReader): boolean;
   moves?(c: InputChange, read: SeamReader): boolean;
+  /**
+   * Whether an edit to `rel` as it stands could move a row, asked BEFORE any edit exists
+   * (`gen-docs.ts --could-affect`, the pre-agent guard `warn_writer_brief`). Absent means the
+   * answer is `moves` on a hypothetical add of the file. Declared only where that answer is
+   * useless, and built from the same helpers `rows` calls; the selftest proves every file a
+   * provider's rows name today answers true.
+   */
+  could?(rel: string, read: SeamReader, root: string): boolean;
 }
 
 /** A path appeared, disappeared or changed type: the only changes a listing-only provider can see. */
@@ -232,8 +240,9 @@ export const readGatesLock = (root: string): LockEntry[] => {
         'empty table and report success, which is the vacuity this generator exists to refuse.'
     );
   }
-  const entries = parsed as LockEntry[];
-  for (const [i, g] of entries.entries()) {
+  // Typed as what JSON can hold, not as what it should: the checks below ARE the proof that each entry is a LockEntry.
+  const unchecked = parsed as (Partial<LockEntry> | null)[];
+  for (const [i, g] of unchecked.entries()) {
     if (typeof g?.id !== 'string' || g.id === '') {
       throw new Error(`${GATES_LOCK} entry ${i} has no id`);
     }
@@ -241,7 +250,7 @@ export const readGatesLock = (root: string): LockEntry[] => {
       throw new Error(`${GATES_LOCK} entry ${i} (${g.id}) has no ci.kind`);
     }
   }
-  return entries;
+  return unchecked as LockEntry[];
 };
 
 /**
@@ -1908,6 +1917,28 @@ const namerTokens = (text: string | null): string =>
         .map((re) => re.source)
         .join('\n');
 
+/** The tracked, present `.json`/`.jsonc` members of one home, as `rows` lists them. */
+const homeMembers = (root: string, dir: string): string[] => {
+  const listed = lsFiles(root, ...(dir === '.' ? ['*.json', '*.jsonc'] : [dir]));
+  // ROOT MEANS DEPTH ONE. `git ls-files -- '*.json'` matches at every depth, and a pathspec that quietly swept `packages/**` into the root bucket would report a predicate violation for every workspace manifest in the repository.
+  return presentFiles(root, listed).present.filter(
+    (f) => isJsonMember(f) && (dir === '.' ? !f.includes('/') : path.dirname(f) === dir)
+  );
+};
+
+/** Every home's members, once per root per process: `could` asks about many paths in one call. */
+const allMembers = (() => {
+  const memo = new Map<string, string[]>();
+  return (root: string): string[] => {
+    let got = memo.get(root);
+    if (got === undefined) {
+      got = JSON_HOMES.flatMap(({ dir }) => homeMembers(root, dir));
+      memo.set(root, got);
+    }
+    return got;
+  };
+})();
+
 export const jsonInventoryProvider: Provider = {
   id: 'json-inventory',
   scans:
@@ -1947,11 +1978,7 @@ export const jsonInventoryProvider: Provider = {
 
     const rows: ProviderRow[] = [];
     for (const { home, dir } of JSON_HOMES) {
-      const listed = lsFiles(root, ...(dir === '.' ? ['*.json', '*.jsonc'] : [dir]));
-      // ROOT MEANS DEPTH ONE. `git ls-files -- '*.json'` matches at every depth, and a pathspec that quietly swept `packages/**` into the root bucket would report a predicate violation for every workspace manifest in the repository.
-      const members = presentFiles(root, listed).present.filter(
-        (f) => isJsonMember(f) && (dir === '.' ? !f.includes('/') : path.dirname(f) === dir)
-      );
+      const members = homeMembers(root, dir);
       // ANTI-VACUITY PER HOME, NOT JUST IN TOTAL. Three of these four could empty out without the total reaching zero, and this table's whole claim is about WHERE files live: a home that silently stopped being scanned reads as a home that has been cleaned up.
       if (members.length === 0) {
         throw new Error(
@@ -2016,6 +2043,16 @@ export const jsonInventoryProvider: Provider = {
     moves: (c) =>
       (isJsonMember(c.path) && membershipChanged(c)) ||
       (isNamerCandidate(c.path) && namerTokens(c.before()) !== namerTokens(c.after())),
+    // A member can arrive or leave; a namer matters only when one of its tokens names a member today, since nearly every code file carries some `.json` token and an add would count them all.
+    could: (rel, read, root) => {
+      if (isJsonMember(rel)) return true;
+      if (!isNamerCandidate(rel)) return false;
+      const tokens = jsonTokens(read(rel) ?? '');
+      return (
+        tokens.length > 0 &&
+        allMembers(root).some((m) => m !== rel && tokens.some((re) => re.test(m)))
+      );
+    },
   },
 };
 

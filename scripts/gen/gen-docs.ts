@@ -778,11 +778,13 @@ export interface CouldHit {
  * or an input some provider's declared `inputs` could see.
  *
  * THE HYPOTHETICAL CHANGE IS AN ADD of the file as it stands now (before: absent, after: its
- * current text), judged by the same `providersReading` the commit hook calls. That counts a
- * listing-only provider for every path in its scope, since a writer may add or delete files in
- * its Owns, and counts a content provider exactly when the file contributes a row today, which is
- * what an edit to it could move. It cannot foresee an edit that makes a file NEWLY contribute; the
- * commit hook still refuses that drift, so this is advice and the hook stays the gate.
+ * current text), judged by each provider's `scope` and then its `moves`, as the commit hook's
+ * `providersReading` judges a staged path. That counts a listing-only provider for every path in
+ * its scope, since a writer may add or delete files in its Owns, and a content provider when the
+ * file's text matters to it today. Where an add answers too broadly (json-inventory: nearly every
+ * code file carries some `.json` token) the provider declares `could` instead, built from the
+ * helpers its `rows` calls. Neither foresees an edit that makes a file NEWLY matter; the commit
+ * hook still refuses that drift, so this is advice and the hook stays the gate.
  */
 export function couldAffect(
   root: string,
@@ -802,7 +804,15 @@ export function couldAffect(
       continue;
     }
     const c: InputChange = { path: rel, status: 'A', before: () => null, after: () => seams(rel) };
-    const ids = providersReading(c, seams, providers);
+    const ids = providers
+      .filter((p) => {
+        const decl = p.inputs;
+        if (decl === undefined) return true;
+        if (!decl.scope(rel, seams)) return false;
+        if (decl.could !== undefined) return decl.could(rel, seams, root);
+        return decl.moves?.(c, seams) ?? true;
+      })
+      .map((p) => p.id);
     if (ids.length > 0) hits.push({ path: rel, why: 'input', providers: ids });
   }
   return hits;
@@ -1212,6 +1222,34 @@ function selftest(): number {
   );
   const target = couldAffect(ROOT, ['scripts/data/doc-registry.md']);
   ck('a document carrying a region is named as a target', target[0]?.why === 'target', target);
+  // `could` is a declaration, so it is held to the rows: every file json-inventory names today must answer true.
+  const inv = providerById('json-inventory');
+  const named = new Set<string>();
+  for (const r of inv?.rows(ROOT) ?? []) {
+    named.add(r.key);
+    const m = /`([^`]+)`/.exec(r.cells[2] ?? '');
+    if (m) named.add(m[1] as string);
+  }
+  const unnamed = [...named].filter(
+    (f) => !couldAffect(ROOT, [f]).some((h) => h.providers.includes('json-inventory'))
+  );
+  ck(
+    `every file json-inventory's rows name today could move it (${named.size} file(s))`,
+    inv !== undefined && named.size > 0 && unnamed.length === 0,
+    unnamed.slice(0, 8)
+  );
+  const someNamer = [...named].find((f) => !f.endsWith('.json') && !f.endsWith('.jsonc'));
+  const deaf: Provider | undefined =
+    inv?.inputs === undefined
+      ? undefined
+      : { ...inv, inputs: { ...inv.inputs, could: () => false } };
+  ck(
+    'planted: a `could` answering false drops a real namer, which the check above would name',
+    deaf !== undefined &&
+      someNamer !== undefined &&
+      couldAffect(ROOT, [someNamer], [deaf]).length === 0,
+    someNamer
+  );
 
   // --- every provider must actually see the tree ---
   for (const p of PROVIDERS) {
