@@ -5,7 +5,7 @@
  *
  * The Worker calls `pin(orgId, placement, size)` with the org and placement `ExecutorIssuer.route` named, then forwards the request with `fetch`. Every refusal is an answer with a code, never error text for the Worker to guess at.
  *
- * Relocation (agent/plans/PLAN-org-executor-connect-timeout-relocate.md Design item 5): the executor reports a machine it cannot reach through `recordEgressUnreachable`, which counts the report only when the Worker itself reaches that machine's SSH banner (src/reachability.ts). At UNREACHABLE_THRESHOLD counted reports within UNREACHABLE_WINDOW_MS the instance asks the issuer to bump the org's placement, and on success it retires: `pin` refuses with `EXECUTOR_RELOCATED`, the lease is never re-acquired, and the container stops once nothing is in flight. The retired instance never touches the new name, so the new instance is placed the way a fresh org's is.
+ * Relocation (agent/plans/PLAN-org-executor-connect-timeout-relocate.md Design item 5): the executor reports a machine it cannot reach through `recordEgressUnreachable`, which counts the report only when the Worker reaches that machine's SSH banner (src/reachability.ts): from this instance first, then, when that fails, from the outside vantage instance on another continent (`probeFromVantage`, src/org-executor-relocate.ts), since this instance shares its container's colo. At UNREACHABLE_THRESHOLD counted reports within UNREACHABLE_WINDOW_MS the instance asks the issuer to bump the org's placement, and on success it retires: `pin` refuses with `EXECUTOR_RELOCATED`, the lease is never re-acquired, and the container stops once nothing is in flight. The retired instance never touches the new name, so the new instance is placed the way a fresh org's is.
  */
 
 import { DurableObject } from 'cloudflare:workers';
@@ -13,12 +13,14 @@ import { capacityStub, type ExecutorCapacity, type ExecutorSize } from './capaci
 import { drillProbeTarget } from './drill';
 import {
   type ExecutorIdentity,
+  outsideProbe,
   pinRefusal,
   ReachabilityGate,
   recentCount,
   relocateOrg,
   reportAnswer,
   reportRefusal,
+  vantageTarget,
 } from './org-executor-relocate';
 import {
   acquireLease,
@@ -63,7 +65,7 @@ import {
   warnIfThrows,
 } from './org-executor-support';
 import { executorName, placementOf, UNREACHABLE_THRESHOLD, unreachableRecent } from './placement';
-import type { ProbeTarget } from './reachability';
+import { type ProbeResult, type ProbeTarget, probeSshBanner } from './reachability';
 import { INSTANCE_BY_SIZE } from './sizing';
 
 export {
@@ -112,8 +114,8 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
   private unreachableAt: number | undefined;
   /** The report being counted, which a concurrent report waits on, so the issuer is asked at most once per crossing. */
   private reporting: Promise<EgressReportAnswer> | undefined;
-  /** Decides whether a report counts: the Worker's own probe of the reported machine (src/reachability.ts). */
-  private readonly reachability = new ReachabilityGate();
+  /** Decides whether a report counts: the Worker's own probe of the reported machine (src/reachability.ts), asked again from the outside vantage when it fails here (src/org-executor-relocate.ts). */
+  private readonly reachability: ReachabilityGate;
   /** Bumped on every start and deliberate destroy, so a stale `monitor()` settlement is ignored. */
   private generation = 0;
   /** How the current generation's container exited, once it has. */
@@ -123,6 +125,7 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
 
   constructor(ctx: DurableObjectState, env: OrgExecutorEnv) {
     super(ctx, env);
+    this.reachability = new ReachabilityGate(probeSshBanner, outsideProbe(env));
     void ctx.blockConcurrencyWhile(() => this.recover());
   }
 
@@ -232,6 +235,18 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
     if (moved === undefined) return reportAnswer(count, false, probe);
     await this.retire(moved);
     return reportAnswer(count, true, probe);
+  }
+
+  /**
+   * The outside reachability vantage (src/org-executor-relocate.ts module comment): probe `target`'s SSH banner from this instance, which must be the unpinned instance named `vantageName(hint)`, reached by `outsideProbe` with that location hint (the hint places the instance when the first call creates it). On any other instance, on a pinned one, or for a target `probeTarget` refuses, it answers `target-unreachable (error)` without a connect, so a refusal never counts a report.
+   */
+  probeFromVantage(hint: string, target: ProbeTarget): Promise<ProbeResult> {
+    const admitted = vantageTarget(this.identity(), hint, target);
+    if ('refused' in admitted) {
+      console.warn(`proxy: org executor outside probe refused: ${admitted.refused}`);
+      return Promise.resolve({ verdict: 'target-unreachable', reason: 'error' });
+    }
+    return probeSshBanner(admitted);
   }
 
   /** Retire this instance: kept in storage so a restart stays retired, then drain. The request whose report caused the move still ends with its result line before the container goes. */

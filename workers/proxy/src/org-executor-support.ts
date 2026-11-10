@@ -6,7 +6,7 @@ import type { AcquireAnswer, ExecutorCapacity, ExecutorSize } from './capacity';
 import { EXECUTOR_TOKEN_PLACEHOLDER } from './egress';
 import type { ExecutorIssuerRpc } from './issued-token';
 import { executorName, placementOf } from './placement';
-import type { ProbeVerdict } from './reachability';
+import type { ProbeResult, ProbeTarget, ProbeVerdict } from './reachability';
 
 /** The host the container addresses the account server by; `interceptOutboundHttp` routes it to the `AccountEgress` entrypoint. A container's own public egress is outside Cloudflare's ranges: on bench (2026-10-24) every introspection, executor-token request, config pull and audit post a container made to ACCOUNT_URL got 403 "outside Cloudflare ranges" while the Worker's own binding calls answered 200. The name resolves nowhere, so an egress that somehow escaped interception fails at DNS rather than reaching the internet. */
 export const ACCOUNT_EGRESS_HOST = 'account.internal';
@@ -60,7 +60,14 @@ export type RelocateAnswer =
 
 /** The env slice OrgExecutor reads. */
 export interface OrgExecutorEnv {
-  ORG_EXECUTOR: { idFromName(name: string): DurableObjectId };
+  /** The instance's own namespace: `idFromName` for the identity checks, `get` for the outside reachability vantage (src/org-executor-relocate.ts `outsideProbe`). */
+  ORG_EXECUTOR: {
+    idFromName(name: string): DurableObjectId;
+    get(
+      id: DurableObjectId,
+      options?: DurableObjectNamespaceGetDurableObjectOptions
+    ): { probeFromVantage(hint: string, target: ProbeTarget): Promise<ProbeResult> };
+  };
   EXECUTOR_CAPACITY: DurableObjectNamespace<ExecutorCapacity>;
   /** The account Worker's `ExecutorIssuer`, called only by `recordEgressUnreachable` at the threshold. Without it a report never relocates. */
   ISSUER?: Pick<ExecutorIssuerRpc, 'relocate'>;

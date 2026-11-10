@@ -4,12 +4,15 @@
  * `ctx.container` is a fake with the surface the class uses (start, running, monitor, destroy, getTcpPort, interceptOutboundHttp, images), recording each call in one ordered log. The coordinator and the issuer are fakes whose answers each test sets. Each suite mocks `cloudflare:workers` itself, before it imports this module.
  *
  * The reachability probe (src/reachability.ts) connects through `cloudflare:sockets`, which vitest aliases to src/__tests__/cloudflare-sockets-stub.ts. Each harness installs a `connect` whose sockets greet with an SSH banner unless `banner` says otherwise, and counts the connects in `probes`.
+ *
+ * The outside vantage (src/org-executor-relocate.ts `outsideProbe`) is reached through `env.ORG_EXECUTOR.get`, which hands out a `FakeVantage`: it records every call with the name and location hint it was reached by, and answers `target-unreachable (timeout)` unless a test sets `answer`. Its answers never go through `connect`, so `probes` counts only the instance's own probes.
  */
 
 import { expect, vi } from 'vitest';
 import type { AcquireAnswer, RenewAnswer } from '../../capacity';
 import { OrgExecutor, type OrgExecutorEnv, type RelocateAnswer } from '../../org-executor';
 import { executorName } from '../../placement';
+import type { ProbeResult, ProbeTarget } from '../../reachability';
 import { fakeSocket, type ScriptedRead, setConnect } from '../cloudflare-sockets-stub';
 
 export const T0 = Date.UTC(2026, 9, 27, 12, 0, 0);
@@ -129,6 +132,21 @@ class FakeIssuer {
   );
 }
 
+/** The outside vantage stub `env.ORG_EXECUTOR.get` hands out. `answer` is what each probe answers; an Error rejects. */
+export class FakeVantage {
+  answer: ProbeResult | Error = { verdict: 'target-unreachable', reason: 'timeout' };
+  calls: { name: string; locationHint?: string; hint: string; target: ProbeTarget }[] = [];
+  /** Set by `get` before each call: the name and hint the stub was reached by. */
+  reachedAs: { name: string; locationHint?: string } = { name: '' };
+
+  probeFromVantage(hint: string, target: ProbeTarget): Promise<ProbeResult> {
+    this.calls.push({ ...this.reachedAs, hint, target });
+    return this.answer instanceof Error
+      ? Promise.reject(this.answer)
+      : Promise.resolve(this.answer);
+  }
+}
+
 export class FakeCapacity {
   acquire = vi.fn(async (_orgId: string, _size: string): Promise<AcquireAnswer> => ({ ok: true }));
   renew = vi.fn(async (_orgId: string): Promise<RenewAnswer> => 'held');
@@ -140,6 +158,8 @@ export interface Harness {
   container: FakeContainer;
   capacity: FakeCapacity;
   issuer: FakeIssuer;
+  /** The outside reachability vantage. */
+  vantage: FakeVantage;
   storage: Map<string, unknown>;
   alarmAt: () => number | null;
   egress: ReturnType<typeof vi.fn>;
@@ -176,6 +196,7 @@ export function harness(options: HarnessOptions = {}): Harness {
   const container = options.container ?? new FakeContainer();
   const capacity = options.capacity ?? new FakeCapacity();
   const issuer = new FakeIssuer();
+  const vantage = new FakeVantage();
   const id = executorName(name, options.placement ?? 0);
   const storage = options.storage ?? new Map<string, unknown>();
   let alarm: number | null = null;
@@ -219,6 +240,16 @@ export function harness(options: HarnessOptions = {}): Harness {
     ORG_EXECUTOR: {
       idFromName: (executor: string) =>
         fakeId(options.sameIdForEveryOrg ? id : executor) as unknown as DurableObjectId,
+      get: (
+        target: DurableObjectId,
+        getOptions?: DurableObjectNamespaceGetDurableObjectOptions
+      ) => {
+        vantage.reachedAs = {
+          name: (target as unknown as { name: string }).name,
+          locationHint: getOptions?.locationHint,
+        };
+        return vantage;
+      },
     },
     EXECUTOR_CAPACITY: {
       idFromName: (n: string) => fakeId(n),
@@ -239,6 +270,7 @@ export function harness(options: HarnessOptions = {}): Harness {
     container,
     capacity,
     issuer,
+    vantage,
     storage,
     alarmAt: () => alarm,
     egress,
