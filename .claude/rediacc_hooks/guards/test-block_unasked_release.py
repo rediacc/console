@@ -747,6 +747,46 @@ CASES = [
         "",
     ),
     (
+        # Setting a Worker's secrets publishes no release; `_bind` only copies bound store names (finding 2a0d9191).
+        "_bind wrapping set_www_worker_secrets",
+        "%s rediacc_ci.release.local _bind --spec 'A > B' -- %s rediacc_ci.deploy.set_www_worker_secrets"
+        % (PY, PY),
+        None,
+        A,
+        "",
+    ),
+    (
+        "_bind wrapping a stable promote",
+        "%s rediacc_ci.release.local _bind --spec 'A > B' -- %s rediacc_ci.deploy.promote_r2_to_stable"
+        % (PY, PY),
+        None,
+        B,
+        "promote_r2_to_stable",
+    ),
+    (
+        "_bind wrapping an R2 release upload",
+        "%s rediacc_ci.release.local _bind --spec 'A > B' -- %s rediacc_ci.deploy.upload_to_r2"
+        % (PY, PY),
+        None,
+        B,
+        "a step of the release entry",
+    ),
+    (
+        "_bind wrapping a wrangler deploy of a bench config",
+        "%s rediacc_ci.release.local _bind --spec 'A > B' -- npx wrangler deploy -c wrangler.bench.toml"
+        % PY,
+        None,
+        B,
+        "wrangler",
+    ),
+    (
+        "release module with no channel and no _bind",
+        "%s rediacc_ci.release.local --dry-run" % PY,
+        None,
+        B,
+        "names no --channel edge",
+    ),
+    (
         "a release step with a proven ASKED",
         "%s %s rediacc_ci.release.create_github_release" % (ASK, PY),
         TR,
@@ -1288,6 +1328,7 @@ MUST_FLIP = {
     "run-sh-enterprise-ignored": "rings: run.sh enterprise release, real",
     "interpreter-run-sh-ignored": "rings: bash ./run.sh enterprise release, real",
     "region-dir-ignored": "wrangler deploy on a region config in an arbitrary dir, no ASKED",
+    "bind-verb-unwrapped": "_bind wrapping a stable promote",
     "package-enterprise-ignored": "rings: package enterprise release, real",
 }
 # A control passes when the planted copy breaks its case's verdict: the refusal flips to allowed, the admission to refused, or the named reason goes missing.

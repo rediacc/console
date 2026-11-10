@@ -101,6 +101,10 @@ MUTANTS = {
         "    if not word:\n        return False",
         "    if True:\n        return False",
     ),
+    "bind-verb-unwrapped": (
+        '    if _module(run, where) == RELEASE_MODULE:\n        # `_bind',
+        '    if False:\n        # `_bind',
+    ),
     "module-no-channel-says-npm": (
         "NO_CHANNEL_REFUSAL if npm else NO_CHANNEL_MODULE_REFUSAL",
         "NO_CHANNEL_REFUSAL",
@@ -618,6 +622,12 @@ def _wrapped(run, where):
     if _module(run, where) == "rediacc_ci.core.bws_env":
         rest = _module_args(run)
         if rest[:1] == ["exec"] and "--" in rest:
+            return shlex.join(rest[rest.index("--") + 1 :])
+        return None
+    if _module(run, where) == RELEASE_MODULE:
+        # `_bind --spec ... -- CMD` (the entry's own verb) only copies bound store names, then runs CMD: CMD is the command to judge, and the entry itself is not run (it names no --channel).
+        rest = _module_args(run)
+        if rest[:1] == ["_bind"] and "--" in rest:
             return shlex.join(rest[rest.index("--") + 1 :])
         return None
     if name == "docker" and args[:1] == ["exec"]:
