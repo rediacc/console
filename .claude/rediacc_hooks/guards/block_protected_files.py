@@ -193,6 +193,19 @@ EDGE_CASES = [
         "a real sh -c after a quoted mention",
         """echo "sh -c 'rm x'"; sh -c 'rm .claude/settings.json'""",
     ),
+    # #c9c8c18e: a glob under a variable the same command set to a literal is judged as that literal (allowed); unset, set from a substitution, or set into a protected root, it is still refused.
+    (
+        "a glob under a variable this command set",
+        "D=agent/d778be9d/b6-replay; git rm -q -- $D/*.py $D/*.json",
+    ),
+    ("a glob under a variable never set", "rm $D/*.json"),
+    ("a glob under a variable set to .claude", "D=.claude; git rm -q -- $D/*.json"),
+    ("a glob under a variable set by a substitution", "D=$(echo .claude); rm $D/*.json"),
+    ("a glob under a variable set then unset", "D=agent/x; unset D; rm $D/*.json"),
+    (
+        "a glob under a variable set only on one branch",
+        "D=agent/x; [ -n y ] && D=.claude; rm $D/*.json",
+    ),
 ]
 
 
@@ -517,9 +530,33 @@ def _names_protected_text(word, base, root, recursive):
     return False
 
 
+# A VARIABLE THE SAME COMMAND SET IS NOT AN UNKNOWN ROOT (#c9c8c18e, 2026-11-10). `D=agent/d778be9d/b6-replay; git rm -q -- $D/*.py $D/*.json` was refused: the expanded word `agent/d778be9d/b6-replay/*.json` named nothing, but the typed word `$D/*.json` was judged too, and with D read as "any text" it is `_unknown_root_glob`'s `<anything>/*.json`, which `.claude/settings.json` matches. So a typed word whose every `$NAME` and `${NAME}` holds a literal value an earlier statement of the same command gave it is judged as that value, in place of the typed text. A word with any other `$` form, a substitution, a backtick, a name the walk does not know (`unset`, a value from `$(...)`, the session's own environment) or a `for` variable keeps its typed text, so `rm $D/*.json` with D unknown, and `D=.claude; rm $D/*.json`, are still refused.
+_PLAIN_REF = re.compile(r"\$(?:\{([A-Za-z_][A-Za-z0-9_]*)\}|([A-Za-z_][A-Za-z0-9_]*))")
+
+
+def _assigned(run_, word):
+    """`word` with each plain `$NAME`/`${NAME}` replaced by the literal value this command assigned it, or None when it holds none, or anything that stays unknown."""
+    if "$" not in word or "`" in word:
+        return None
+
+    def value(match):
+        name = match.group(1) or match.group(2)
+        held = None if name in run_.loop_vars else (run_.vars or {}).get(name)
+        text = held[0] if isinstance(held, tuple) else None
+        if not isinstance(text, str) or "\0" in text or "$" in text or "`" in text:
+            raise LookupError(name)
+        return text
+
+    try:
+        out = _PLAIN_REF.sub(value, word)
+    except LookupError:
+        return None
+    return None if "$" in out else out
+
+
 def _operand_words(run_):
-    """Every word an operand of `run_` could be: the quote-removed argv, the expanded argv where the walk could evaluate it, and each word of a `for` list a `$NAME` in it names."""
-    words = list(run_.argv)
+    """Every word an operand of `run_` could be: the quote-removed argv (a word whose variables this command assigned, as that value: `_assigned`), the expanded argv where the walk could evaluate it, and each word of a `for` list a `$NAME` in it names."""
+    words = [_assigned(run_, a) or a for a in run_.argv]
     # An expanded word the walk could not finish keeps its unknown part as a backtick span, which `_wildcarded` reads as "any text". The typed word alone loses the boundary bash sees: `"$D"settings*` is `$Dsettings*` after quote removal, a variable called `Dsettings` (review 094dea3b.4).
     words += [w.replace(shellscan._UNRESOLVED, "`_`") for w in (run_.xargv or [])]
     for name, values in run_.loop_vars.items():
