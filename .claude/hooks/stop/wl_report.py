@@ -398,11 +398,13 @@ def _monitor_launch(line):
     except ValueError:
         return None
     res = rec.get("toolUseResult") if isinstance(rec, dict) else None
-    tid = res.get("taskId") if isinstance(res, dict) else None
+    if not isinstance(res, dict):
+        return None
+    tid = res.get("taskId")
     if not isinstance(tid, str) or not _TASK_ID.match(tid):
         return None
     timeout = res.get("timeoutMs")
-    horizon = wl_roster.WAIT_HORIZON_MIN * 60
+    horizon: float = wl_roster.WAIT_HORIZON_MIN * 60
     if (
         not res.get("persistent")
         and isinstance(timeout, int | float)

@@ -70,6 +70,10 @@ DATASTORE_ID = re.compile(r"^[0-9a-fA-F-]{8,64}$")
 LOGIN_PHRASE = "RoundTrip123!"  # a throwaway local-plane account, created and used only here
 
 
+# What the descriptor probe prints when the datastore has no descriptor at all.
+NO_DESCRIPTOR = "NO-DATASTORE-DESCRIPTOR"
+
+
 class StepError(Exception):
     """A step could not run to a verdict."""
 
@@ -229,17 +233,27 @@ class Roundtrip:
         return sub
 
     def license_root(self) -> str:
-        """The directory renet reads repo licences from for `self.datastore`: the flat `repos` population, or `datastores/<id>/repos` when the datastore carries a descriptor identity (`license.RepoLicenseBaseDir`). Resolved once per run from the descriptor on the VM; an unreadable descriptor is the flat population, as `datastore.IdentityAt` answers."""
+        """The directory renet reads repo licences from for `self.datastore`: the flat `repos` population, or `datastores/<id>/repos` when the datastore carries a descriptor identity (`license.RepoLicenseBaseDir`). Resolved once per run from the descriptor on the VM. An absent descriptor, or one renet cannot read an identity from, is the flat population, as `datastore.IdentityAt` answers; a probe that fails (ssh, sudo) raises, because guessing the flat root on a scoped datastore installs the licence where renet never reads it."""
         if self._license_root is None:
             root = "/var/lib/rediacc/license/repos"
+            descriptor = "%s/.rediacc/datastore.json" % self.datastore
             probe = self.run_vm(
-                "sudo -n cat %s/.rediacc/datastore.json" % self.datastore, must=False
+                "sudo -n sh -c 'if [ -e %s ]; then cat %s; else echo %s; fi'"
+                % (descriptor, descriptor, NO_DESCRIPTOR),
+                must=False,
             )
-            try:
-                ident = str(json.loads(probe.stdout).get("datastoreId", ""))
-            except (ValueError, AttributeError):
-                ident = ""
-            if probe.returncode == 0 and DATASTORE_ID.fullmatch(ident):
+            if probe.returncode != 0:
+                raise StepError(
+                    "cannot read the datastore descriptor %s on the machine (exit %d): %s"
+                    % (descriptor, probe.returncode, (probe.stderr or probe.stdout).strip())
+                )
+            ident = ""
+            if probe.stdout.strip() != NO_DESCRIPTOR:
+                try:
+                    ident = str(json.loads(probe.stdout).get("datastoreId", ""))
+                except (ValueError, AttributeError):
+                    ident = ""
+            if DATASTORE_ID.fullmatch(ident):
                 root = "/var/lib/rediacc/license/datastores/%s/repos" % ident
             self._license_root = root
         return self._license_root

@@ -474,3 +474,38 @@ def test_a_box_licence_renet_cannot_select_is_refused_before_the_create(
     with pytest.raises(rt.StepError, match=needle):
         trip.issue_license("g1", "g1", "grand")
     assert not any("cp /tmp/rt-lic.json" in c for c, _ in vm.calls)
+
+
+def test_a_failed_descriptor_probe_raises_instead_of_guessing_the_flat_root(licence_trip) -> None:
+    # A transient ssh or sudo failure must not install the licence where a scoped datastore is never read.
+    trip, vm, _api = licence_trip(box_licence(cert=signed_cert()))
+    vm.answers.insert(0, ("datastore.json", rt.VmResult(255, "", "ssh: connection reset")))
+    with pytest.raises(rt.StepError, match="cannot read the datastore descriptor"):
+        trip.issue_license("g1", "g1", "grand")
+    assert not any("license/repos/g1/" in c for c, _ in vm.calls)
+
+
+def test_an_absent_descriptor_is_the_flat_population(licence_trip) -> None:
+    trip, vm, _api = licence_trip(box_licence(cert=signed_cert()))
+    vm.answers.insert(0, ("datastore.json", ok(rt.NO_DESCRIPTOR + "\n")))
+    trip.issue_license("g1", "g1", "grand")
+    assert any("license/repos/g1/0123456789abcdef.json" in c for c, _ in vm.calls)
+
+
+@pytest.mark.parametrize(
+    ("descriptor", "root"),
+    [
+        (json.dumps({"datastoreId": "abcd1234-ef"}), "license/datastores/abcd1234-ef/repos/g1"),
+        (rt.NO_DESCRIPTOR, "license/repos/g1"),
+    ],
+)
+def test_teardown_removes_the_licence_from_the_root_renet_reads(
+    licence_trip, descriptor: str, root: str
+) -> None:
+    trip, vm, _api = licence_trip(box_licence(cert=signed_cert()))
+    vm.answers.insert(0, ("datastore.json", ok(descriptor + "\n")))
+    trip.created = ["g1"]
+    trip.teardown()
+    removals = [c for c, _ in vm.calls if "rm -rf" in c]
+    assert removals
+    assert all(root in c for c in removals)
