@@ -1680,20 +1680,6 @@
         "f06b6846"
       ]
     },
-    "agent/plans/PLAN-lessons-registry-followups.md": {
-      "status": "draft",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 1,
-      "done": 1,
-      "open_sigs": [
-        "0b714aa1"
-      ],
-      "done_sigs": [
-        "e371147a"
-      ]
-    },
     "agent/plans/PLAN-lint-css-ci-wiring.md": {
       "status": "compacted",
       "owner": "e6500e92",
@@ -3849,6 +3835,21 @@
         "794425ab",
         "f66674d0"
       ]
+    },
+    "agent/plans/_done/PLAN-lessons-registry-followups.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-11-10",
+      "open": 1,
+      "done": 1,
+      "open_sigs": [
+        "0b714aa1"
+      ],
+      "done_sigs": [
+        "e371147a"
+      ],
+      "ruling": "#4eeeab75"
     },
     "agent/plans/_done/PLAN-lessons-registry.md": {
       "status": "done",
