@@ -6,7 +6,9 @@ import io
 import json
 
 from rediacc_ci import paths, workflows
-from rediacc_ci.release import redacted_tee
+from rediacc_ci.core import bws_env
+from rediacc_ci.deploy import console_executor
+from rediacc_ci.release import redacted_tee, rings_run
 
 WORKFLOWS = paths.repo_root() / ".github" / "workflows"
 RELEASE = WORKFLOWS / "cd-enterprise-release.yml"
@@ -68,3 +70,31 @@ def test_redacted_tee_replaces_the_company_in_the_summary_only(
 
 def test_redacted_tee_with_no_company_passes_text_through() -> None:
     assert redacted_tee.redact("x c0123456789abcdef", "") == "x c0123456789abcdef"
+
+
+def _release_step() -> dict:
+    return next(s for s in _steps() if s.get("name") == "Release the rings")
+
+
+def test_bench_input_reaches_the_runner_as_bench_flag() -> None:
+    """V10: a dispatch for a fake company must read the bench control databases, so `bench` is a boolean input that becomes `--bench`."""
+    doc = workflows.load(RELEASE)
+    inputs = doc.get("on", doc.get(True))["workflow_dispatch"]["inputs"]
+    assert inputs["bench"]["type"] == "boolean"
+    assert inputs["bench"]["default"] is False
+    step = _release_step()
+    assert step["env"]["BENCH"] == "${{ inputs.bench }}"
+    assert '[ "$BENCH" = "true" ] && args+=(--bench)' in step["run"]
+
+
+def test_release_step_binds_every_required_name_of_the_step_profiles() -> None:
+    """Each company step runs under `bws_env exec --profile <p>` with no token in the job, which proceeds only when every required LOCAL name is already set, for bench and production alike."""
+    wanted = [
+        rings_run.ACCOUNT_PROFILE,
+        console_executor.profile_for(console_executor.BENCH_TARGET),
+        console_executor.profile_for(console_executor.STABLE_TARGET),
+    ]
+    required, _optional = bws_env.profile_specs(bws_env.profiles(), wanted)
+    env = _release_step()["env"]
+    missing = sorted(local for _store, local in required if local not in env)
+    assert missing == []

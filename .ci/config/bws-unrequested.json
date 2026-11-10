@@ -84,10 +84,6 @@
       "kind": "no-github-twin",
       "reason": "The local DEV keypair and session secrets, seeded 2026-09-24 from the retired account env file with read-back MATCH (agent/plans/PLAN-account-env-to-bws.md T11, Q1). Bound by `bws_env exec --profile account-dev|backup-plane|deploy-bench` (.ci/config/secret-supply.json consumers); no workflow requests it, because CI's drills leg mints throwaway keys instead."
     },
-    "ENTERPRISE_LOOKUP_PEPPER": {
-      "kind": "no-github-twin",
-      "reason": "The HMAC pepper of the www Worker's enterprise-lookup route (workers/www/src/enterprise-lookup.ts, rediacc_ci.ops.enterprise_lookup). Bound by `bws_env exec --profile deploy-workers` and pushed as a Worker secret by rediacc_ci.deploy.deploy_www in the local release; no workflow requests it."
-    },
     "AWS_IAM_ADMIN_ACCESS_KEY_ID": {
       "kind": "no-github-twin",
       "reason": "Admin credential seeded 2026-09-24 on the operator's choice to keep it in ci-shared (agent/plans/PLAN-account-env-to-bws.md Q2). Read only by the local secret-rotation tool, never by a workflow."

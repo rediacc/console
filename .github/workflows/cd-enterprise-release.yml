@@ -30,6 +30,11 @@ on:
         required: false
         type: boolean
         default: true
+      bench:
+        description: 'Bench companies and control databases'
+        required: false
+        type: boolean
+        default: false
 
 permissions: {}
 
@@ -67,22 +72,39 @@ jobs:
         run: npm ci && npm run install:natives
 
       - name: Fetch secrets from Bitwarden
-        # LIVE: read by the release step below.
+        # LIVE: read by the release step below. Each company step runs under `bws_env exec --profile <p>`
+        # (deploy-workers, and deploy-proxy or deploy-proxy-bench), which has no token here and so proceeds
+        # only when every required name of its profile is already in the step's environment: these are the
+        # union of the three profiles' required names in .ci/config/secret-supply.json. Bench and production
+        # share the one Cloudflare account, so the same token serves both.
         uses: ./.github/actions/bws-secrets
         with:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
             CLOUDFLARE_API_TOKEN > BWS_CLOUDFLARE_API_TOKEN
             CLOUDFLARE_ACCOUNT_ID > BWS_CLOUDFLARE_ACCOUNT_ID
+            ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY
+            TURNSTILE_SITE_KEY > BWS_TURNSTILE_SITE_KEY
+            ENTERPRISE_LOOKUP_PEPPER > BWS_ENTERPRISE_LOOKUP_PEPPER
+            CLOUDFLARE_R2_ENDPOINT > BWS_CLOUDFLARE_R2_ENDPOINT
+            CLOUDFLARE_R2_ACCESS_KEY_ID > BWS_CLOUDFLARE_R2_ACCESS_KEY_ID
+            CLOUDFLARE_R2_SECRET_ACCESS_KEY > BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY
 
       - name: Release the rings
         env:
           CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
+          ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
+          TURNSTILE_SITE_KEY: ${{ env.BWS_TURNSTILE_SITE_KEY }}
+          ENTERPRISE_LOOKUP_PEPPER: ${{ env.BWS_ENTERPRISE_LOOKUP_PEPPER }}
+          CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
+          AWS_ACCESS_KEY_ID: ${{ env.BWS_CLOUDFLARE_R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ env.BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
           VERSION: ${{ inputs.version }}
           COMPANY: ${{ inputs.company }}
           RESUME: ${{ inputs.resume }}
           DRY_RUN: ${{ inputs.dry_run }}
+          BENCH: ${{ inputs.bench }}
         # Explicit bash keeps pipefail, so the runner's exit code (1 on a failed company or a latched stop) survives the redacting tee.
         shell: bash
         run: |
@@ -90,5 +112,6 @@ jobs:
           [ -n "$COMPANY" ] && args+=(--company "$COMPANY")
           [ -n "$RESUME" ] && args+=(--resume "$RESUME")
           [ "$DRY_RUN" = "true" ] && args+=(--dry-run)
+          [ "$BENCH" = "true" ] && args+=(--bench)
           # `::add-mask::` redacts the log only, never the step-summary file, so the summary copy goes through redacted_tee.
           PYTHONPATH=.ci python3 -m rediacc_ci.release.rings_run "${args[@]}" | PYTHONPATH=.ci python3 -m rediacc_ci.release.redacted_tee

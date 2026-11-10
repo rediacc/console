@@ -1167,6 +1167,12 @@ def test_the_tracked_workflow_is_scanned_by_the_same_reader():
     assert lab.declares_bench_input(text) == ("      bench:\n" in text)
 
 
+def test_the_tracked_workflow_declares_the_bench_input():
+    """V10: the dispatch's guard admits the tracked workflow, so `proof github` dispatches to bench."""
+    text = lab.root().joinpath(*lab.WORKFLOW_REL).read_text(encoding="utf-8")
+    assert lab.declares_bench_input(text)
+
+
 def test_a_name_is_refused_as_the_dispatch_input():
     with pytest.raises(proof.LabError, match="opaque"):
         lab.dispatch_release("acme", run=Gh(), workflow_text=lambda: WITH_BENCH_GH)
