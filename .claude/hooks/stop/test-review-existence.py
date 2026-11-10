@@ -493,7 +493,7 @@ def review_case(n, path, line, severity, claim):
     git("commit", "-q", "-m", "fix(x): case %d" % n)
     sha = git("rev-parse", "HEAD")
     reviewer, calls = reviewer_for(
-        {"severity": severity, "file": path, "line": line, "claim": claim}
+        {"severity": severity, "file": path, "line": line, "claim": claim, "class": "other"}
     )
     out = R.run_review(
         root, "console", sha, BRANCH, cfg=CFG, reviewer=reviewer, now=NOW, log=lambda *_a: None

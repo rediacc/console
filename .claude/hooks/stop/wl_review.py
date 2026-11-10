@@ -159,9 +159,9 @@ Severity:
 high = on the changed path it will produce wrong behaviour, data loss, a security hole, a broken build or a CI gate that can no longer fail;
 medium = a real bug only on an edge path, changed behaviour with no test, or a comment that states the wrong behaviour;
 low = anything else worth a line.
-Style and naming are never above low, and neither is anything in prose (plans, notes, generated ledgers, Markdown). Do not speculate about code you cannot see. The diff shows changed lines with a few lines of context, so imports, definitions and declarations usually sit OUTSIDE it: never claim a name is undefined, not imported, missing or a typo because you cannot see its definition here, only when the diff itself removes or renames it. Quote code only as it appears in the diff, character for character. Every finding names a file from this diff and a line number in the NEW version of that file. The claim must say what goes wrong and when, in one sentence a reviewer can check. If the commit only moves or renames text, answer clean. Also classify the commit for release labels: bump none (no user-facing change), patch, minor (new capability), major (only recommend); kind from bug, feature, docs, ci.
+Style and naming are never above low, and neither is anything in prose (plans, notes, generated ledgers, Markdown). Do not speculate about code you cannot see. The diff shows changed lines with a few lines of context, so imports, definitions and declarations usually sit OUTSIDE it: never claim a name is undefined, not imported, missing or a typo because you cannot see its definition here, only when the diff itself removes or renames it. Quote code only as it appears in the diff, character for character. Every finding names a file from this diff and a line number in the NEW version of that file. The claim must say what goes wrong and when, in one sentence a reviewer can check. If the commit only moves or renames text, answer clean. Give every finding a class: doc-contradicts-code (a comment, docstring or message says what the code does not do), missing-control-test (a change with no test, or a test that cannot fail), swallowed-error (a failure is dropped or turned into a pass), seam-not-restored (a patched seam, env var or global leaks into later code), or other. A "Prior on this file" line is a base rate of what earlier reviews fixed or refuted there: it never replaces a defect you can see in the diff, and it is no reason to report one. Also classify the commit for release labels: bump none (no user-facing change), patch, minor (new capability), major (only recommend); kind from bug, feature, docs, ci.
 
-COMMIT MESSAGE:
+%(prior)sCOMMIT MESSAGE:
 %(message)s
 
 STAT:
@@ -170,6 +170,15 @@ STAT:
 DIFF (may be truncated; truncated files: %(truncated)s):
 %(diff)s
 """
+
+# The finding classes the schema offers, ending in `other`. The one list is wl_reviewclass.CLASS_NAMES; test_wl_review_history pins the two together (the schema is built at import, before that module is on the path).
+FINDING_CLASSES = (
+    "doc-contradicts-code",
+    "missing-control-test",
+    "swallowed-error",
+    "seam-not-restored",
+    "other",
+)
 
 SCHEMA = {
     "type": "object",
@@ -183,12 +192,13 @@ SCHEMA = {
             "items": {
                 "type": "object",
                 "additionalProperties": False,
-                "required": ["severity", "file", "line", "claim"],
+                "required": ["severity", "file", "line", "claim", "class"],
                 "properties": {
                     "severity": {"type": "string", "enum": list(SEVERITIES)},
                     "file": {"type": "string"},
                     "line": {"type": "integer", "minimum": 1},
                     "claim": {"type": "string", "maxLength": CLAIM_MAX},
+                    "class": {"type": "string", "enum": list(FINDING_CLASSES)},
                 },
             },
         },
@@ -334,6 +344,8 @@ class Finding:
     anchor: str
     claim: str
     resolution: str = "open"
+    # The review class (wl_reviewclass.CLASS_NAMES) the reviewer gave the finding, "" for a record written before B6. Not covered by body_sig, so old records verify unchanged.
+    klass: str = ""
 
     def resolution_kind(self):
         for kind, rx in RESOLUTION_RES:
@@ -473,10 +485,18 @@ def render(review):
             "### %s [%s] %s:%d" % (f.id, f.severity, f.file, f.line),
             "Anchor: %s" % f.anchor,
             "Claim: %s" % f.claim,
+            *(["Class: %s" % f.klass] if f.klass else []),
             "Resolution: %s" % f.resolution,
             "",
         ]
     return "\n".join(lines).rstrip("\n") + "\n"
+
+
+def _class_names():
+    """The finding classes (wl_reviewclass.CLASS_NAMES, `other` last), imported lazily like the other stop-hook helpers."""
+    import wl_reviewclass
+
+    return wl_reviewclass.CLASS_NAMES
 
 
 class MalformedReviewError(ValueError):
@@ -557,12 +577,16 @@ def parse(text):
         if body:
             raise MalformedReviewError("text after `(none)`", body[0][0])
     while body:
-        if len(body) < 4:
+        # `Class:` sits between Claim and Resolution and is optional: a record written before B6 has the four-line shape.
+        width = 5 if len(body) >= 5 and body[3][1].startswith("Class: ") else 4
+        if len(body) < width:
             raise MalformedReviewError(
                 "a finding needs a heading, Anchor:, Claim: and Resolution:", body[0][0]
             )
-        (hn, head), (an, anchor), (cn, claim), (rn, resolution) = body[:4]
-        body = body[4:]
+        (hn, head), (an, anchor), (cn, claim) = body[:3]
+        klass = body[3][1][len("Class: ") :] if width == 5 else ""
+        rn, resolution = body[width - 1]
+        body = body[width:]
         m = FINDING_HEAD.match(head)
         if not m:
             raise MalformedReviewError(
@@ -586,7 +610,12 @@ def parse(text):
             anchor=anchor[8:],
             claim=claim[7:],
             resolution=resolution[12:],
+            klass=klass,
         )
+        if klass and klass not in _class_names():
+            raise MalformedReviewError(
+                "Class %r is not one of %s" % (klass[:40], ", ".join(_class_names())), hn
+            )
         if not finding.resolution_kind():
             raise MalformedReviewError(
                 "Resolution %r is not %s" % (finding.resolution[:80], RESOLUTION_GRAMMAR), rn
@@ -1439,7 +1468,14 @@ def validate(structured, paths, diff_text, sha, is_writing=None):
         except (TypeError, ValueError):
             line = 0
         claim = normalise_claim(item.get("claim"))
-        if path not in paths or sev not in SEV_RANK or line < 1 or not claim:
+        klass = item.get("class")
+        if (
+            path not in paths
+            or sev not in SEV_RANK
+            or line < 1
+            or not claim
+            or klass not in FINDING_CLASSES
+        ):
             dropped += 1
             continue
         if is_writing is not None and sev != "low" and is_writing(path):
@@ -1455,6 +1491,7 @@ def validate(structured, paths, diff_text, sha, is_writing=None):
                 line=line,
                 anchor="in-diff" if inside else "outside-diff",
                 claim=claim,
+                klass=klass,
             )
         )
     labels_in = structured.get("labels") if isinstance(structured, dict) else None
@@ -2298,6 +2335,41 @@ def claude_reviewer(prompt, cfg, log=print):
     return None, why, _cost()
 
 
+PRIOR_MAX_FILES = 8
+
+
+def prior_lines(idx, paths, limit=PRIOR_MAX_FILES):
+    """One "Prior on this file" line per touched file that has history in the A1 index, the files with the most fixed findings first, at most `limit`. A file with no fixed or refuted finding adds nothing."""
+    import wl_reviewclass
+
+    rows = []
+    for path in sorted(set(paths)):
+        prior = wl_reviewclass.file_prior(idx, path)
+        if prior["fixed"] or prior["refuted"]:
+            rows.append((-prior["fixed"], path, prior))
+    rows.sort(key=lambda r: (r[0], r[1]))
+    return [
+        "Prior on this file: %s: %d fixed, %d refuted%s."
+        % (path, p["fixed"], p["refuted"], (", top class %s" % p["top"]) if p["top"] else "")
+        for _n, path, p in rows[:limit]
+    ]
+
+
+def prior_text(root, paths, log=print):
+    """The prompt's prior block ("" when no touched file has history, or the index cannot be read: a prior is never a reason to fail a review)."""
+    import wl_reviewclass
+
+    notes: list[str] = []
+    try:
+        lines = prior_lines(wl_reviewclass.index(root, notes=notes), paths)
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        log("prior-on-file index unavailable (%s: %s)" % (type(exc).__name__, exc))
+        return ""
+    for note in notes:
+        log(note)
+    return "\n".join(lines) + "\n\n" if lines else ""
+
+
 def _load_commit_policy(root):
     """`.claude/rediacc_hooks/commit_policy.py` loaded BY FILE, as the git-level hooks load it: it is stdlib-only, and no sys.path entry is added."""
     path = pathlib.Path(root) / ".claude" / "rediacc_hooks" / "commit_policy.py"
@@ -2413,6 +2485,7 @@ def run_review(
             else:
                 stat = render_stat(rows, kept)
             prompt = PROMPT % {
+                "prior": prior_text(root, kept, log),
                 "message": message or "(empty)",
                 "stat": stat or "(empty)",
                 "truncated": ", ".join(cut) or "(none)",
