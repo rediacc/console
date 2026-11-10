@@ -761,6 +761,7 @@
   "commands.config.remote.serverFailed": "Konfiguratsiooniserver {{server}} vastas veaga (HTTP {{status}})",
   "commands.config.remote.staleSlot": "Sinu key slot on aegunud (konfiguratsiooni krüptovõti roteeriti). Registreeru uuesti käsuga: rdc config remote enable",
   "commands.config.remote.status.description": "Kuva kaugühenduse olek",
+  "commands.config.remote.status.deviceKeyMissing": "See seade ei saa enam selle konfiguratsiooni kaugsalvestust avada: seadme võti on kadunud (Linuxis tühjendatakse kerneli võtmehoidja igal taaskäivitusel). Registreeri seade uuesti käsuga: rdc config remote enable",
   "commands.config.remote.storeCopyGone": "Hoidlas {{storeId}} ei ole enam kaugkonfiguratsiooni {{configId}}, millega konfiguratsioon \"{{name}}\" on seotud. Midagi ei muudetud; kohalik fail on viimane koopia, mida see seade nägi. Seose eemaldamiseks ja selle koopia kohaliku konfiguratsioonina säilitamiseks käivita: rdc config remote disable --local",
   "commands.config.remote.teamForbidden": "Konfiguratsioon \"{{config}}\" kuulub meeskonnale, mille liige see konto ei ole, seega lükkas konfiguratsiooniserver selle tagasi. Palu organisatsiooni omanikul või administraatoril lisada see konto sellesse meeskonda.",
   "commands.config.remote.teamForbiddenCachePurged": "Konfiguratsiooni \"{{config}}\" võrguühenduseta koopia eemaldati sellest seadmest. Varem tehtud koopiaid see tagasi ei too.",

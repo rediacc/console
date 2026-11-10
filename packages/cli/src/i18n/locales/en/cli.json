@@ -391,7 +391,8 @@
           "fileNotice": "REDIACC_SECRET_STORE=file: this device's config storage key is kept in {{path}} (mode 0600), protected by file permissions only."
         },
         "status": {
-          "description": "Show remote connection status"
+          "description": "Show remote connection status",
+          "deviceKeyMissing": "This device can no longer open this config's remote storage: its key is gone (on Linux the kernel keyring is emptied at every restart). Enroll this device again with: rdc config remote enable"
         },
         "masterPassword": {
           "description": "Manage this member's master password (the password key slot)",

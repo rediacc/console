@@ -761,6 +761,7 @@
   "commands.config.remote.serverFailed": "Config server {{server}} answered with an error (HTTP {{status}})",
   "commands.config.remote.staleSlot": "Your key slot is outdated (the config encryption key was rotated). Re-enroll with: rdc config remote enable",
   "commands.config.remote.status.description": "Show remote connection status",
+  "commands.config.remote.status.deviceKeyMissing": "This device can no longer open this config's remote storage: its key is gone (on Linux the kernel keyring is emptied at every restart). Enroll this device again with: rdc config remote enable",
   "commands.config.remote.storeCopyGone": "Store {{storeId}} no longer holds remote config {{configId}}, which config \"{{name}}\" is linked to. Nothing was changed; the local file is the last copy this device saw. To drop the link and keep that copy as a local config, run: rdc config remote disable --local",
   "commands.config.remote.teamForbidden": "Config \"{{config}}\" belongs to a team this account is not a member of, so the config server refused it. Ask an owner or admin of the organization to add this account to that team.",
   "commands.config.remote.teamForbiddenCachePurged": "The offline copy of config \"{{config}}\" was removed from this device. Copies made before the removal are not recalled.",

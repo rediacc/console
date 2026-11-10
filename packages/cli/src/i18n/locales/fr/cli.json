@@ -931,7 +931,8 @@
         },
         "staleSlot": "Votre key slot est obsolète (la clé de chiffrement de la configuration a été rotée). Réinscrivez-vous avec : rdc config remote enable",
         "status": {
-          "description": "Afficher l'état de la connexion distante"
+          "description": "Afficher l'état de la connexion distante",
+          "deviceKeyMissing": "Cet appareil ne peut plus ouvrir le stockage distant de cette configuration : sa clé a disparu (sous Linux, le trousseau du noyau est vidé à chaque redémarrage). Réinscrivez cet appareil avec : rdc config remote enable"
         },
         "masterPassword": {
           "description": "Gérer le mot de passe maître de ce membre (le password slot)",

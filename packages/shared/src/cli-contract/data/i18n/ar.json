@@ -761,6 +761,7 @@
   "commands.config.remote.serverFailed": "خادم الإعدادات {{server}} أعاد خطأً (HTTP {{status}})",
   "commands.config.remote.staleSlot": "فتحة مفتاحك قديمة (تم تدوير مفتاح تشفير الإعدادات). أعد التسجيل عبر: rdc config remote enable",
   "commands.config.remote.status.description": "عرض حالة الاتصال عن بُعد",
+  "commands.config.remote.status.deviceKeyMissing": "لم يعد بإمكان هذا الجهاز فتح التخزين البعيد لهذا التكوين: مفتاحه مفقود (في Linux تُفرَّغ حلقة مفاتيح النواة عند كل إعادة تشغيل). سجّل هذا الجهاز من جديد بالأمر: rdc config remote enable",
   "commands.config.remote.storeCopyGone": "لم يعد المخزن {{storeId}} يحتوي على الإعدادات البعيدة {{configId}} التي ترتبط بها الإعدادات \"{{name}}\". لم يتغير شيء؛ الملف المحلي هو آخر نسخة رآها هذا الجهاز. لإزالة الارتباط والاحتفاظ بتلك النسخة كإعدادات محلية، شغّل: rdc config remote disable --local",
   "commands.config.remote.teamForbidden": "الإعدادات \"{{config}}\" تابعة لفريق لا ينتمي إليه هذا الحساب، لذا رفضها خادم الإعدادات. اطلب من مالك المؤسسة أو أحد مسؤوليها إضافة هذا الحساب إلى ذلك الفريق.",
   "commands.config.remote.teamForbiddenCachePurged": "حُذفت النسخة غير المتصلة من الإعدادات \"{{config}}\" من هذا الجهاز. النسخ التي أُخذت قبل ذلك لا تُسترجع.",

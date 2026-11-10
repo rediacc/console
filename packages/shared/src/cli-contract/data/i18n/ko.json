@@ -761,6 +761,7 @@
   "commands.config.remote.serverFailed": "설정 서버 {{server}}이(가) 오류를 반환했습니다 (HTTP {{status}})",
   "commands.config.remote.staleSlot": "키 슬롯이 오래되었습니다 (설정 암호화 키가 교체되었습니다). 다음 명령으로 다시 등록하세요: rdc config remote enable",
   "commands.config.remote.status.description": "원격 연결 상태를 표시합니다",
+  "commands.config.remote.status.deviceKeyMissing": "이 기기는 더 이상 이 설정의 원격 저장소를 열 수 없습니다. 키가 사라졌습니다(Linux에서는 재부팅할 때마다 커널 키링이 비워집니다). 다음 명령으로 기기를 다시 등록하세요: rdc config remote enable",
   "commands.config.remote.storeCopyGone": "스토어 {{storeId}}에는 설정 \"{{name}}\"이(가) 연결된 원격 설정 {{configId}}이(가) 더 이상 없습니다. 변경된 것은 없습니다. 로컬 파일이 이 기기가 마지막으로 본 사본입니다. 연결을 끊고 그 사본을 로컬 설정으로 유지하려면 다음을 실행하세요: rdc config remote disable --local",
   "commands.config.remote.teamForbidden": "설정 \"{{config}}\"은(는) 이 계정이 속하지 않은 팀의 것이므로 설정 서버가 거부했습니다. 조직의 소유자나 관리자에게 이 계정을 해당 팀에 추가해 달라고 요청하십시오.",
   "commands.config.remote.teamForbiddenCachePurged": "이 기기에서 설정 \"{{config}}\"의 오프라인 사본을 삭제했습니다. 그 전에 만들어진 사본은 회수되지 않습니다.",

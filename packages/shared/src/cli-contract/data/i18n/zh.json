@@ -761,6 +761,7 @@
   "commands.config.remote.serverFailed": "配置服务器 {{server}} 返回了错误 (HTTP {{status}})",
   "commands.config.remote.staleSlot": "你的密钥槽位已过期（配置加密密钥已被轮换）。请使用以下命令重新注册：rdc config remote enable",
   "commands.config.remote.status.description": "显示远程连接状态",
+  "commands.config.remote.status.deviceKeyMissing": "此设备已无法打开该配置的远程存储：它的密钥已丢失（在 Linux 上，内核密钥环会在每次重启时清空）。请用以下命令重新注册此设备：rdc config remote enable",
   "commands.config.remote.storeCopyGone": "存储 {{storeId}} 中已不存在配置 \"{{name}}\" 所链接的远程配置 {{configId}}。未做任何更改；本地文件是此设备最后看到的副本。要解除链接并将该副本保留为本地配置，请运行：rdc config remote disable --local",
   "commands.config.remote.teamForbidden": "配置 \"{{config}}\" 属于此账户不在其中的团队，因此配置服务器拒绝了请求。请让组织的所有者或管理员将此账户加入该团队。",
   "commands.config.remote.teamForbiddenCachePurged": "已从此设备删除配置 \"{{config}}\" 的离线副本。此前已复制出去的副本无法收回。",

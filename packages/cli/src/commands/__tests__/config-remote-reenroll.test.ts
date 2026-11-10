@@ -183,6 +183,7 @@ import {
 } from '../../adapters/remote-config-adapter.js';
 import { remoteTokenStorage } from '../../adapters/remote-token-storage.js';
 import { RemoteTokenRefreshError } from '../../services/config/device-token-refresh.js';
+import { outputService } from '../../services/core/output.js';
 import { registerRemoteCommands } from '../config-remote.js';
 
 // ─── Fixtures ────────────────────────────────────────────────────────────
@@ -660,5 +661,47 @@ describe('config remote enable on a linked config: other lost and not-lost enrol
     expect(relay.runs).toBe(0);
     expect(await fs.readFile(configFileStorage.getConfigPath(active.name), 'utf-8')).toBe(before);
     expect(secureMem.get(PASSKEY_KEY_ID)).toBe(SLOT_SECRET);
+  });
+});
+
+// ─── `config remote status` reports whether this device can open the store ──
+
+describe('config remote status: can this device open the store', () => {
+  const printed = () => {
+    const calls = vi.mocked(outputService.print).mock.calls;
+    return calls[calls.length - 1][0] as Record<string, unknown>;
+  };
+
+  beforeEach(() => {
+    vi.mocked(outputService.print).mockClear();
+  });
+
+  it('reads connected with deviceCanOpen true while the device key works', async () => {
+    await enrolledDevice();
+    await rdc('status');
+    expect(printed()).toMatchObject({ status: 'connected', deviceCanOpen: true });
+    expect(messages.join('\n')).not.toContain('rdc config remote enable');
+  });
+
+  it('reads device-key-missing with deviceCanOpen false, and names enable, once the keyring is empty', async () => {
+    await enrolledDevice();
+    reboot();
+    await rdc('status');
+    expect(printed()).toMatchObject({
+      config: active.name,
+      status: 'device-key-missing',
+      deviceCanOpen: false,
+      storeId: STORE_ID,
+    });
+    expect(messages.join('\n')).toContain('rdc config remote enable');
+  });
+
+  it('leaves an unlinked config as it was: disconnected, no deviceCanOpen', async () => {
+    const unlinked = linkedCache();
+    delete unlinked.remote;
+    await writeConfigFile(unlinked);
+    await rdc('status');
+    expect(printed()).toEqual({ config: active.name, status: 'disconnected' });
+    expect(messages).toEqual([]);
   });
 });

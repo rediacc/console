@@ -109,24 +109,39 @@ async function showStatus(configName: string, format: OutputFormat): Promise<voi
 
   const remote = config.remote;
   let connected = false;
+  // null: unknown, the server could not be asked (status stays a read and reports what is known locally).
+  let deviceCanOpen: boolean | null = null;
 
   // Outside the try: a device with no usable secure storage is told so, with the remedy, instead of reading "error".
   const { getSecureStorage } = await import('../utils/secure-storage.js');
   const secureStorage = getSecureStorage();
 
   try {
-    const { RemoteConfigAdapter } = await import('../adapters/remote-config-adapter.js');
-    const { remoteTokenStorage } = await import('../adapters/remote-token-storage.js');
-    const adapter = new RemoteConfigAdapter(remote, configName, remoteTokenStorage, secureStorage);
-    connected = await adapter.testConnection();
+    // The same question `enable` asks before it re-enrolls this device; it never prompts or unlocks.
+    const { enrollmentUsable } = await import('./config-remote-reenroll.js');
+    deviceCanOpen = await enrollmentUsable(remote, configName);
+    connected = deviceCanOpen;
   } catch {
-    // Connection test failed
+    // Server unreachable, or an error that says nothing about this device's credentials: fall back to a plain connection test.
+    try {
+      const { RemoteConfigAdapter } = await import('../adapters/remote-config-adapter.js');
+      const { remoteTokenStorage } = await import('../adapters/remote-token-storage.js');
+      const adapter = new RemoteConfigAdapter(remote, configName, remoteTokenStorage, secureStorage);
+      connected = await adapter.testConnection();
+    } catch {
+      // Connection test failed
+    }
   }
+
+  let status = 'error';
+  if (deviceCanOpen === false) status = 'device-key-missing';
+  else if (connected) status = 'connected';
 
   outputService.print(
     {
       config: configName,
-      status: connected ? 'connected' : 'error',
+      status,
+      ...(deviceCanOpen === null ? {} : { deviceCanOpen }),
       apiUrl: remote.apiUrl,
       storeId: remote.storeId,
       configId: remote.configId,
@@ -136,6 +151,9 @@ async function showStatus(configName: string, format: OutputFormat): Promise<voi
     },
     format
   );
+  if (deviceCanOpen === false && format !== 'json') {
+    outputService.warn(t('commands.config.remote.status.deviceKeyMissing'));
+  }
 }
 
 // ─── Refresh Flow ────────────────────────────────────────────────────────

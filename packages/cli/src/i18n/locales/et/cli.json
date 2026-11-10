@@ -931,7 +931,8 @@
         },
         "staleSlot": "Sinu key slot on aegunud (konfiguratsiooni krüptovõti roteeriti). Registreeru uuesti käsuga: rdc config remote enable",
         "status": {
-          "description": "Kuva kaugühenduse olek"
+          "description": "Kuva kaugühenduse olek",
+          "deviceKeyMissing": "See seade ei saa enam selle konfiguratsiooni kaugsalvestust avada: seadme võti on kadunud (Linuxis tühjendatakse kerneli võtmehoidja igal taaskäivitusel). Registreeri seade uuesti käsuga: rdc config remote enable"
         },
         "masterPassword": {
           "description": "Halda selle liikme peaparooli (password slot)",

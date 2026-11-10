@@ -931,7 +931,8 @@
         },
         "staleSlot": "Ihr Key-Slot ist veraltet (der Config-Verschlüsselungskey wurde rotiert). Erneut anmelden mit: rdc config remote enable",
         "status": {
-          "description": "Remote-Verbindungsstatus anzeigen"
+          "description": "Remote-Verbindungsstatus anzeigen",
+          "deviceKeyMissing": "Dieses Gerät kann den Remote-Speicher dieser Konfiguration nicht mehr öffnen: Sein Schlüssel fehlt (unter Linux wird der Kernel-Schlüsselbund bei jedem Neustart geleert). Registriere das Gerät erneut mit: rdc config remote enable"
         },
         "masterPassword": {
           "description": "Master-Passwort dieses Mitglieds verwalten (der Passwort-Slot)",

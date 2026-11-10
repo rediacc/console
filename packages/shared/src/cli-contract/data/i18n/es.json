@@ -761,6 +761,7 @@
   "commands.config.remote.serverFailed": "El servidor de configuración {{server}} respondió con un error (HTTP {{status}})",
   "commands.config.remote.staleSlot": "Tu key slot está desactualizado (la clave de cifrado de la configuración fue rotada). Vuelve a inscribirte con: rdc config remote enable",
   "commands.config.remote.status.description": "Mostrar estado de conexión remota",
+  "commands.config.remote.status.deviceKeyMissing": "Este dispositivo ya no puede abrir el almacenamiento remoto de esta configuración: falta su clave (en Linux el llavero del kernel se vacía en cada reinicio). Vuelve a registrar este dispositivo con: rdc config remote enable",
   "commands.config.remote.storeCopyGone": "El almacén {{storeId}} ya no contiene la configuración remota {{configId}}, a la que está vinculada la configuración \"{{name}}\". No se cambió nada; el archivo local es la última copia que vio este dispositivo. Para quitar el vínculo y conservar esa copia como configuración local, ejecuta: rdc config remote disable --local",
   "commands.config.remote.teamForbidden": "La configuración \"{{config}}\" pertenece a un equipo del que esta cuenta no es miembro, así que el servidor de configuración la rechazó. Pide al propietario o a un administrador de la organización que añada esta cuenta a ese equipo.",
   "commands.config.remote.teamForbiddenCachePurged": "Se eliminó de este dispositivo la copia sin conexión de la configuración \"{{config}}\". Las copias hechas antes no se recuperan.",

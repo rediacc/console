@@ -761,6 +761,7 @@
   "commands.config.remote.serverFailed": "設定サーバー {{server}} がエラーを返しました (HTTP {{status}})",
   "commands.config.remote.staleSlot": "キースロットが古くなっています（設定の暗号化キーがローテーションされました）。次のコマンドで再登録してください: rdc config remote enable",
   "commands.config.remote.status.description": "リモート接続状態を表示",
+  "commands.config.remote.status.deviceKeyMissing": "このデバイスは、この設定のリモートストレージを開けなくなりました。鍵が失われています（Linux ではカーネルキーリングが再起動のたびに空になります）。次のコマンドでデバイスを登録し直してください: rdc config remote enable",
   "commands.config.remote.storeCopyGone": "ストア {{storeId}} には、設定 \"{{name}}\" のリンク先であるリモート設定 {{configId}} がもうありません。何も変更されていません。ローカルファイルは、このデバイスが最後に確認したコピーです。リンクを外してそのコピーをローカル設定として残すには、次を実行してください: rdc config remote disable --local",
   "commands.config.remote.teamForbidden": "設定 \"{{config}}\" は、このアカウントが所属していないチームのものであるため、設定サーバーに拒否されました。組織のオーナーまたは管理者に、このアカウントをそのチームへ追加するよう依頼してください。",
   "commands.config.remote.teamForbiddenCachePurged": "このデバイスから設定 \"{{config}}\" のオフラインコピーを削除しました。これより前に作成されたコピーは回収されません。",

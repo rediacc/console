@@ -761,6 +761,7 @@
   "commands.config.remote.serverFailed": "Yapılandırma sunucusu {{server}} bir hatayla yanıt verdi (HTTP {{status}})",
   "commands.config.remote.staleSlot": "Key slot'unuz güncel değil (yapılandırma şifreleme anahtarı döndürüldü). Şununla yeniden kaydolun: rdc config remote enable",
   "commands.config.remote.status.description": "Uzak bağlantı durumunu göster",
+  "commands.config.remote.status.deviceKeyMissing": "Bu cihaz artık bu yapılandırmanın uzak depolamasını açamıyor: anahtarı kayboldu (Linux'ta çekirdek anahtarlığı her yeniden başlatmada boşaltılır). Cihazı şu komutla yeniden kaydedin: rdc config remote enable",
   "commands.config.remote.storeCopyGone": "{{storeId}} deposu, \"{{name}}\" yapılandırmasının bağlı olduğu {{configId}} uzak yapılandırmasını artık barındırmıyor. Hiçbir şey değiştirilmedi; yerel dosya bu cihazın gördüğü son kopyadır. Bağlantıyı kaldırıp bu kopyayı yerel yapılandırma olarak tutmak için şunu çalıştırın: rdc config remote disable --local",
   "commands.config.remote.teamForbidden": "\"{{config}}\" yapılandırması bu hesabın üyesi olmadığı bir takıma ait olduğundan yapılandırma sunucusu isteği reddetti. Kuruluşun sahibinden veya bir yöneticisinden bu hesabı o takıma eklemesini isteyin.",
   "commands.config.remote.teamForbiddenCachePurged": "\"{{config}}\" yapılandırmasının çevrimdışı kopyası bu cihazdan silindi. Daha önce alınmış kopyalar geri çağrılmaz.",

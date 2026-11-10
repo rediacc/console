@@ -761,6 +761,7 @@
   "commands.config.remote.serverFailed": "Config-Server {{server}} hat mit einem Fehler geantwortet (HTTP {{status}})",
   "commands.config.remote.staleSlot": "Ihr Key-Slot ist veraltet (der Config-Verschlüsselungskey wurde rotiert). Erneut anmelden mit: rdc config remote enable",
   "commands.config.remote.status.description": "Remote-Verbindungsstatus anzeigen",
+  "commands.config.remote.status.deviceKeyMissing": "Dieses Gerät kann den Remote-Speicher dieser Konfiguration nicht mehr öffnen: Sein Schlüssel fehlt (unter Linux wird der Kernel-Schlüsselbund bei jedem Neustart geleert). Registriere das Gerät erneut mit: rdc config remote enable",
   "commands.config.remote.storeCopyGone": "Der Speicher {{storeId}} enthält die Remote-Konfiguration {{configId}} nicht mehr, mit der die Konfiguration \"{{name}}\" verknüpft ist. Es wurde nichts geändert; die lokale Datei ist die letzte Kopie, die dieses Gerät gesehen hat. Um die Verknüpfung zu lösen und diese Kopie als lokale Konfiguration zu behalten: rdc config remote disable --local",
   "commands.config.remote.teamForbidden": "Die Konfiguration \"{{config}}\" gehört zu einem Team, in dem dieses Konto kein Mitglied ist, deshalb hat der Konfigurationsserver sie abgelehnt. Bitte den Inhaber oder einen Administrator der Organisation, dieses Konto dem Team hinzuzufügen.",
   "commands.config.remote.teamForbiddenCachePurged": "Die Offline-Kopie der Konfiguration \"{{config}}\" wurde von diesem Gerät entfernt. Früher angefertigte Kopien werden dadurch nicht zurückgeholt.",

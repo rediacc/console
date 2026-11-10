@@ -931,7 +931,8 @@
         },
         "staleSlot": "Il tuo key slot non è aggiornato (la chiave di cifratura della config è stata ruotata). Ripeti l'iscrizione con: rdc config remote enable",
         "status": {
-          "description": "Mostra lo stato della connessione remota"
+          "description": "Mostra lo stato della connessione remota",
+          "deviceKeyMissing": "Questo dispositivo non riesce più ad aprire l'archivio remoto di questa configurazione: la sua chiave è sparita (su Linux il portachiavi del kernel viene svuotato a ogni riavvio). Registra di nuovo il dispositivo con: rdc config remote enable"
         },
         "masterPassword": {
           "description": "Gestisci la password master di questo membro (il password slot)",
