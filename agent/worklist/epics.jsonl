@@ -128,3 +128,4 @@
 {"at":"2026-11-05T22:10:14Z","by":"d778be9d","id":"53c31db2","title":"per-repo resource limits and a renet-managed RAM volume","covers":[],"order":null,"plan":"agent/plans/PLAN-repo-resource-limits.md"}
 {"at":"2026-11-09T11:23:22Z","by":"d778be9d","id":"a86f5622","title":"Production key only: every leg licensed from its own plane","covers":[],"order":null,"plan":"agent/plans/PLAN-production-key-only.md"}
 {"at":"2026-11-09T11:23:22Z","by":"d778be9d","id":"79b7e92e","title":"D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention","covers":[],"order":null}
+{"at":"2026-11-10T06:42:08Z","by":"d778be9d","id":"562ef6c3","title":"experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire","covers":[],"order":null,"plan":"agent/plans/PLAN-experience-feedback.md"}
