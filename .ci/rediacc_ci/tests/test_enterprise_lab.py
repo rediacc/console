@@ -785,8 +785,17 @@ class AccountV6:
     """Two bench company Workers and their D1s: owner-mail captures a magic link, verify signs in, api-tokens mints."""
 
     def __init__(
-        self, *, link=True, two_factor=False, cookie=True, mail_status=200, stale=False, rival=False
+        self,
+        *,
+        link=True,
+        two_factor=False,
+        cookie=True,
+        mail_status=200,
+        stale=False,
+        rival=False,
+        early_rival=False,
     ):
+        self.early_rival = early_rival
         self.link = link
         self.rival = rival
         self.stale = stale
@@ -807,16 +816,20 @@ class AccountV6:
         if sql == lab.LINK_SQL:
             # An older link for the same owner, from before the request, stays in the table.
             old = "Sign in: https://%s/account/magic-link/verify?token=tok-old\n" % HOST_A
-            rows = [{"text_body": old}] if self.stale else []
+            rows = [{"text_body": old, "created_at": OLD_AT}] if self.stale else []
             if not (self.link and self.mailed):
                 return rows
             body = (
                 "Sign in: https://%s/account/magic-link/verify?token=tok-123&next=%%2F\n" % HOST_A
             )
-            new = [{"text_body": body}]
+            new = [{"text_body": body, "created_at": NEW_AT}]
             if self.rival:
                 rival = "Sign in: https://%s/account/magic-link/verify?token=tok-rival\n" % HOST_A
-                new.append({"text_body": rival})
+                new.append({"text_body": rival, "created_at": NEW_AT})
+            if self.early_rival:
+                # Captured for another sign-in before this request, yet absent from the before-snapshot.
+                early = "Sign in: https://%s/account/magic-link/verify?token=tok-early\n" % HOST_A
+                new.append({"text_body": early, "created_at": EARLY_AT})
             # Row order is whatever the clocks say: the oldest row may come last or first.
             return new + rows
         if sql == lab.SUBSCRIPTION_SQL:
@@ -865,6 +878,12 @@ class AccountV6:
         self.sleeps += 1
 
 
+ASKED_AT = datetime.datetime(2026, 11, 10, 7, 0, 0, tzinfo=datetime.UTC)
+OLD_AT = "2026-11-09T07:00:00.000Z"
+EARLY_AT = "2026-11-10T06:50:00.000Z"
+NEW_AT = "2026-11-10T07:00:05.123Z"
+
+
 def session_v6(acct: AccountV6) -> str:
     return lab.owner_session(
         "c0000000a",
@@ -874,6 +893,7 @@ def session_v6(acct: AccountV6) -> str:
         api_key=lambda c: "key-%s" % c,
         call=acct.call,
         sleep=acct.sleep,
+        clock=ASKED_AT.timestamp,
     )
 
 
@@ -926,9 +946,23 @@ def test_two_new_links_are_a_race_and_sign_in_nothing():
     assert acct.calls == []
 
 
-def test_the_link_is_read_without_a_clock_or_a_limit():
-    """Review 14377d66.2: no `LIMIT 1` and no reliance on row order; the new body is a set difference."""
-    assert "LIMIT" not in lab.LINK_SQL
+def test_the_link_read_is_bounded_but_never_to_one_row():
+    """Review 12d04dd4.5: the poll reads the newest rows, not the owner's whole history; review 14377d66.2: more than one."""
+    assert "LIMIT %d" % lab.LINK_ROWS in lab.LINK_SQL
+    assert lab.LINK_ROWS > 1
+
+
+def test_a_link_captured_before_the_request_is_not_taken_for_this_requests():
+    """Review 12d04dd4.6: a lone rival whose capture instant precedes the request is disproved, not trusted."""
+    acct = AccountV6(early_rival=True)
+    assert session_v6(acct) == "sess-a"
+    assert acct.calls[0][3] == {"token": "tok-123"}
+
+
+def test_a_link_without_a_readable_capture_instant_is_never_new():
+    rows = [{"text_body": "a", "created_at": "garbage"}, {"text_body": "b"}]
+    assert lab._links(rows, 0.0) == set()
+    assert lab._links(rows) == {"a", "b"}
 
 
 def test_a_new_live_lab_starts_with_no_cached_session():
@@ -1269,6 +1303,7 @@ class Redeploy:
         self.fail_times = fail_times
         self.raises = raises
         self.fail_update_to = fail_update_to
+        self.tries = 0
         self.events: list[str] = []
         self.contexts: list[onboarding.Context] = []
 
@@ -1283,7 +1318,8 @@ class Redeploy:
             self.contexts.append(ctx)
             if name == self.fail and self.fail_times > 0:
                 self.fail_times -= 1
-                raise self.raises("company x: %s exited 1" % name)
+                self.tries += 1
+                raise self.raises("company x: %s exited 1 (try %d)" % (name, self.tries))
             return ""
 
         return run
@@ -1386,6 +1422,40 @@ def test_a_failed_restore_is_named_with_the_value_it_could_not_put_back():
         allow_v7(redeploy, ["203.0.113.7"])
     (note,) = e.value.__notes__
     assert re.search(r"putting scope.allow_ips.*198.*failed", note)
+    # Review 12d04dd4.4: a row that could not be put back leaves the Workers on the new list as well.
+    assert "may still serve the new list" in note
+
+
+def test_an_interrupt_during_a_step_restores_nothing():
+    """Review 12d04dd4.2: Ctrl-C does not start minutes of redeploy work."""
+    redeploy = Redeploy(fail="deploy", raises=KeyboardInterrupt)
+    with pytest.raises(KeyboardInterrupt):
+        allow_v7(redeploy, ["203.0.113.7"])
+    assert redeploy.events == ["update:proof-a:203.0.113.7", "configs", "deploy"]
+
+
+def test_a_restore_that_raises_any_error_is_a_note_and_the_original_error_survives():
+    """Review 12d04dd4.3: a KeyError out of the previous list's redeploy never replaces the step's own failure."""
+    redeploy = Redeploy(fail="deploy", fail_times=2, raises=KeyError)
+    with pytest.raises(KeyError, match="try 1") as e:
+        allow_v7(redeploy, ["203.0.113.7"])
+    (note,) = e.value.__notes__
+    assert "redeploying the previous list" in note
+    assert "try 2" in note
+
+
+def test_a_restore_of_the_row_that_raises_any_error_is_a_note_too():
+    class Broken(Redeploy):
+        def update(self, name, ips):
+            super().update(name, ips)
+            if ",".join(ips) == "198.51.100.1":
+                raise KeyError("row")
+
+    redeploy = Broken(fail="deploy")
+    with pytest.raises(proof.LabError, match="deploy exited 1") as e:
+        allow_v7(redeploy, ["203.0.113.7"])
+    (note,) = e.value.__notes__
+    assert "putting scope.allow_ips" in note
 
 
 class Edge:
@@ -1756,9 +1826,11 @@ class Fleet:
         outcome=None,
         deployments=None,
         rollback_fails_to="",
+        rollback_raises_to="",
         banner="banner",
     ):
         self.rollback_fails_to = rollback_fails_to
+        self.rollback_raises_to = rollback_raises_to
         self.banner = banner
         self.renet = renet
         self.proxy_uploads = proxy_uploads
@@ -1778,6 +1850,8 @@ class Fleet:
             return lab.Proc(0, self.banner + "\n" + json.dumps(self.deployments))
         if "rollback" in argv:
             target = argv[argv.index("rollback") + 1]
+            if target == self.rollback_raises_to:
+                raise TypeError("a runner bug")
             if target == self.rollback_fails_to:
                 return lab.Proc(1)
             self.worker = target
@@ -1880,6 +1954,14 @@ def test_a_failed_rollback_after_a_renewal_is_not_a_clean_answer():
     fleet = Fleet(rollback_fails_to="v-new")
     with pytest.raises(proof.LabError, match=r"renewal answered ok=True.*account-proof-a.*v-new"):
         spread_v9(fleet, "new", "previous")
+
+
+def test_a_non_listed_error_from_the_rollback_after_a_renewal_still_names_the_hand_fix():
+    """Review 12d04dd4.1: a TypeError out of put_version is the same hand-fix refusal, not a bare escape."""
+    fleet = Fleet(rollback_raises_to="v-new")
+    with pytest.raises(proof.LabError, match=r"renewal answered ok=True.*restore it by hand") as e:
+        spread_v9(fleet, "new", "previous")
+    assert isinstance(e.value.__cause__, TypeError)
 
 
 def test_a_banner_with_brackets_does_not_break_the_json_the_drivers_read():

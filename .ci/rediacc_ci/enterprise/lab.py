@@ -806,10 +806,16 @@ OWNER_SQL = (
     "SELECT u.email AS email FROM company_orgs c JOIN organizations o ON o.id = c.org_id "
     "JOIN users u ON u.id = o.owner_user_id WHERE c.company_id = ?"
 )
+# The newest rows only (review 12d04dd4.5): the table grows with every sign-in, and a link this request adds is
+# among the newest however the clocks lie; which of them is new is still decided by the set difference below.
+LINK_ROWS = 50  # the LIMIT of LINK_SQL, pinned equal by the lab test
 LINK_SQL = (
-    "SELECT text_body FROM captured_emails WHERE recipient = ? AND kind = 'magic-link' "
-    "ORDER BY created_at DESC"
+    "SELECT text_body, created_at FROM captured_emails WHERE recipient = ? AND kind = 'magic-link' "
+    "ORDER BY created_at DESC LIMIT 50"
 )
+# A captured link older than the owner-mail request by more than this is not this request's, whatever the
+# before-snapshot held (review 12d04dd4.6); the allowance covers the clock skew between this host and the D1 writer.
+MAIL_SKEW_S = 30.0
 SUBSCRIPTION_SQL = "SELECT subscription_id FROM scope WHERE company_id = ?"
 MAGIC_TOKEN = re.compile(r"/account/magic-link/verify\?token=([^&\s\"'<>]+)")
 ACCESS_COOKIE = re.compile(r"(?:^|[;,]\s*)access_token=([^;,\s]+)")
@@ -900,9 +906,24 @@ def _one(rows: list[dict], key: str, what: str) -> str:
     return values[0]
 
 
-def _links(rows: list[dict]) -> set[str]:
-    """The distinct mail bodies of one owner's captured magic links."""
-    return {str(r.get("text_body") or "") for r in rows if r.get("text_body")}
+def _links(rows: list[dict], since: float | None = None) -> set[str]:
+    """The distinct mail bodies of one owner's captured magic links, only those captured at or after `since` (epoch s)."""
+    return {
+        str(r["text_body"])
+        for r in rows
+        if r.get("text_body") and (since is None or _captured_at(r) >= since)
+    }
+
+
+def _captured_at(row: dict) -> float:
+    """The capture instant of a row, or -inf when it is missing or unreadable: such a row is never taken as new."""
+    try:
+        stamp = datetime.datetime.fromisoformat(str(row.get("created_at")))
+    except ValueError:
+        return float("-inf")
+    if stamp.tzinfo is None:
+        stamp = stamp.replace(tzinfo=datetime.UTC)
+    return stamp.timestamp()
 
 
 def owner_session(
@@ -914,6 +935,7 @@ def owner_session(
     api_key: ApiKey = store_api_key,
     call: Call = http_call,
     sleep: Callable[[float], None] = time.sleep,
+    clock: Callable[[], float] = time.time,
 ) -> str:
     """The `access_token` of the company owner's magic-link sign-in."""
     row = company_row(company, companies=companies)
@@ -925,13 +947,14 @@ def owner_session(
     )
     before = _links(query(database, LINK_SQL, [owner]))
     url = "https://%s%sowner-mail" % (host, onboarding.SUBSCRIPTIONS_PATH)
+    asked = clock() - MAIL_SKEW_S
     status, _payload = post(url, api_key(company), {"companyId": company, "ownerEmail": owner})
     if not 200 <= status < 300:
         raise proof.LabError("company %s: the owner-mail call answered HTTP %d" % (company, status))
     token = ""
     for attempt in range(MAIL_TRIES):
-        # A link this request added is a body the owner did not hold before it; no clock or row order is read.
-        fresh = sorted(_links(query(database, LINK_SQL, [owner])) - before)
+        # A link this request added is a body the owner did not hold before it and that was captured after it was asked.
+        fresh = sorted(_links(query(database, LINK_SQL, [owner]), asked) - before)
         tokens = {m.group(1) for m in (MAGIC_TOKEN.search(t) for t in fresh) if m}
         if len(tokens) > 1:
             # Another sign-in captured a link in the same window: which one is this request's cannot be told.
@@ -1237,28 +1260,44 @@ def set_allowlist(
     try:
         apply(ips)
         sleep(ALLOWLIST_SETTLE_S)
-    except BaseException as exc:  # put the row back whatever failed, then re-raise it
+    except (
+        Exception
+    ) as exc:  # put the row back, then re-raise it; an interrupt or exit is never restored
         failures: list[str] = []
         try:
-            update(name, previous)
-        except ROLLBACK_FAILURES as back:
-            failures.append(
-                "putting scope.allow_ips of company %s back to %s failed: %s"
-                % (company, previous, back)
+            _restore(
+                lambda: update(name, previous),
+                "putting scope.allow_ips of company %s back to %s failed (its Workers may still serve the "
+                "new list)" % (company, previous),
             )
+        except _RestoreError as back:
+            failures.append(str(back))
         else:
             # A step that already published a Worker with the new list left it serving that list, so the
             # previous one is deployed again: the row and the Workers agree again, or the error says they do not.
             try:
-                apply(previous)
-            except ROLLBACK_FAILURES as back:
-                failures.append(
+                _restore(
+                    lambda: apply(previous),
                     "redeploying the previous list %s for company %s failed (its Workers may still serve the "
-                    "new list): %s" % (previous, company, back)
+                    "new list)" % (previous, company),
                 )
+            except _RestoreError as back:
+                failures.append(str(back))
         if failures:
             exc.add_note("; and ".join(failures))
         raise
+
+
+class _RestoreError(Exception):
+    """A restore step failed; its text is the note the original error gets."""
+
+
+def _restore(step: Callable[[], None], what: str) -> None:
+    """Run one restore step; whatever it raises becomes `_RestoreError`, so the original error is never replaced."""
+    try:
+        step()
+    except Exception as back:
+        raise _RestoreError("%s: %s" % (what, back)) from back
 
 
 def request_from(
@@ -1667,6 +1706,7 @@ def live_spread_renew(
         except ROLLBACK_FAILURES as back:  # not only LabError (review e2231d81.1)
             exc.add_note(_left_behind(script, newest, back))
         raise
+    # Any failure of this put leaves the Worker on the old version, so none is left unnoted (review 12d04dd4.1).
     try:
         put_version(script, newest, run=run)
     except Exception as back:  # any failure, re-raised with the hand fix (review 12d04dd4.1)
