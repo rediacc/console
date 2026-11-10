@@ -24,6 +24,7 @@ AMP = "shell `&`"
 SHARES = "shares the call"
 FG = "run_in_background is not true"
 SHORT = "below "
+INVALID = "not a valid number of milliseconds"
 
 CASES = [
     # (name, command, extra tool_input, needles the refusal must carry; [] means admitted)
@@ -76,6 +77,37 @@ CASES = [
         ARM,
         {"run_in_background": True, "timeout": "60000"},
         [SHORT],
+    ),
+    (
+        "a missing timeout is named absent",
+        ARM,
+        {"run_in_background": True},
+        ["absent (the harness default"],
+    ),
+    (
+        "timeout nan is invalid",
+        ARM,
+        {"run_in_background": True, "timeout": "nan"},
+        [INVALID, "'nan'"],
+    ),
+    (
+        "timeout inf is invalid",
+        ARM,
+        {"run_in_background": True, "timeout": "inf"},
+        [INVALID, "'inf'"],
+    ),
+    ("a negative timeout is short", ARM, {"run_in_background": True, "timeout": -5}, [SHORT, "-5"]),
+    (
+        "timeout true is invalid",
+        ARM,
+        {"run_in_background": True, "timeout": True},
+        [INVALID, "True"],
+    ),
+    (
+        "timeout abc is invalid",
+        ARM,
+        {"run_in_background": True, "timeout": "abc"},
+        [INVALID, "'abc'"],
     ),
     # ---- the admitting direction ----
     ("the correct arm", ARM, OK, []),

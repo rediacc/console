@@ -146,17 +146,18 @@ def _minutes(operands, wl_wake):
 
 
 def _timeout(ev):
-    """The Bash call's `timeout` in milliseconds, or None when absent or not a number."""
+    """The Bash call's `timeout` as (raw, ms): raw is None when the key is missing, ms is None unless raw is a finite number."""
     doc = ev.doc
     if not isinstance(doc, dict):
-        return None
-    value = (doc.get("tool_input") or {}).get("timeout")
-    if isinstance(value, bool):
-        return None
+        return None, None
+    raw = (doc.get("tool_input") or {}).get("timeout")
+    if raw is None or isinstance(raw, bool):
+        return raw, None
     try:
-        return float(value)
+        ms = float(raw)
     except (TypeError, ValueError):
-        return None
+        return raw, None
+    return raw, (ms if math.isfinite(ms) else None)
 
 
 def _label(run_):
@@ -208,8 +209,13 @@ def run(ev):
     else:
         need = math.ceil(wl_wake.harness_timeout_ms(minutes))
         why_need = "harness_timeout_ms(%g)" % minutes
-    got = _timeout(ev)
-    if got is None or got < need:
+    raw, got = _timeout(ev)
+    if got is None and raw is not None:
+        problems.append(
+            "its timeout is %r, which is not a valid number of milliseconds (the harness kills "
+            "the task before the timer fires unless it is at least %d, %s)" % (raw, need, why_need)
+        )
+    elif got is None or got < need:
         problems.append(
             "its timeout is %s, below %d (%s): the harness kills the task before the timer fires"
             % (
