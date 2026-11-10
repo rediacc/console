@@ -40,6 +40,8 @@ interface RemoteUnitFile {
   path: string;
   exists: boolean;
   sha256: string | null;
+  /** Octal permission bits as `stat -c %a` prints them; null when unread (older state, failed stat). */
+  mode?: string | null;
 }
 
 export interface RemoteUnitState {
@@ -171,6 +173,18 @@ async function hashRemoteFiles(sftp: SFTPClient, paths: string[]): Promise<Map<s
   return hashes;
 }
 
+async function statRemoteModes(sftp: SFTPClient, paths: string[]): Promise<Map<string, string>> {
+  const modes = new Map<string, string>();
+  if (paths.length === 0) return modes;
+  const quoted = paths.map((p) => `'${p.replaceAll("'", "'\\''")}'`).join(' ');
+  const { stdout } = await captureStdout(sftp, `sudo stat -c '%a %n' ${quoted}`);
+  for (const line of stdout.split('\n')) {
+    const match = /^([0-7]{3,4}) (.+)$/.exec(line);
+    if (match) modes.set(match[2], match[1]);
+  }
+  return modes;
+}
+
 async function querySystemdStates(
   sftp: SFTPClient,
   strategyNames: Iterable<string>
@@ -189,12 +203,14 @@ async function querySystemdStates(
 
 function makeRemoteUnitFile(
   filePath: string | undefined,
-  hashes: Map<string, string>
+  hashes: Map<string, string>,
+  modes: Map<string, string>
 ): RemoteUnitFile {
   return {
     path: filePath ?? '',
     exists: filePath !== undefined,
     sha256: filePath ? (hashes.get(filePath) ?? null) : null,
+    mode: filePath ? (modes.get(filePath) ?? null) : null,
   };
 }
 
@@ -219,6 +235,7 @@ export async function readRemoteState(
   }
 
   const hashes = await hashRemoteFiles(sftp, paths);
+  const modes = await statRemoteModes(sftp, paths);
   const systemdStates = await querySystemdStates(sftp, allStrategies);
 
   const result = new Map<string, RemoteUnitState>();
@@ -228,9 +245,9 @@ export async function readRemoteState(
     const adhocRec = systemdStates.get(`rediacc-backup-${name}-adhoc.service`) ?? {};
     const timerRec = systemdStates.get(`rediacc-backup-${name}.timer`) ?? {};
     result.set(name, {
-      serviceFile: makeRemoteUnitFile(entry.service, hashes),
-      timerFile: makeRemoteUnitFile(entry.timer, hashes),
-      envFile: makeRemoteUnitFile(entry.env, hashes),
+      serviceFile: makeRemoteUnitFile(entry.service, hashes, modes),
+      timerFile: makeRemoteUnitFile(entry.timer, hashes, modes),
+      envFile: makeRemoteUnitFile(entry.env, hashes, modes),
       isActiveService: isActiveState(serviceRec.ActiveState),
       isActiveAdhoc: isActiveState(adhocRec.ActiveState),
       isEnabledTimer: isEnabledState(timerRec.UnitFileState),
@@ -414,6 +431,8 @@ function envDrifted(
   return remoteEnvExists;
 }
 
+const UNIT_FILE_MODE = '644';
+
 function classifyDesired(unit: DesiredUnit, remote: RemoteUnitState | undefined): StrategyDiff {
   const desiredServiceHash = sha256Hex(unit.serviceContent);
   const hasTimer = unit.timerContent !== '';
@@ -435,8 +454,18 @@ function classifyDesired(unit: DesiredUnit, remote: RemoteUnitState | undefined)
   }
 
   const changed: ChangedFile[] = [];
-  if (remote.serviceFile.sha256 !== desiredServiceHash) changed.push('service');
-  if (hasTimer && remote.timerFile.sha256 !== desiredTimerHash) changed.push('timer');
+  // A unit whose content matches but whose mode drifted from 0644 (a 0600 file under the default umask) is rewritten: the write stages the file at the intended mode.
+  const unitModeDrifted = (file: RemoteUnitFile): boolean =>
+    file.exists && file.mode != null && file.mode !== UNIT_FILE_MODE;
+  if (remote.serviceFile.sha256 !== desiredServiceHash || unitModeDrifted(remote.serviceFile)) {
+    changed.push('service');
+  }
+  if (
+    hasTimer &&
+    (remote.timerFile.sha256 !== desiredTimerHash || unitModeDrifted(remote.timerFile))
+  ) {
+    changed.push('timer');
+  }
   if (envDrifted(desiredEnvHash, remote.envFile.exists, remote.envFile.sha256)) {
     changed.push('env');
   }

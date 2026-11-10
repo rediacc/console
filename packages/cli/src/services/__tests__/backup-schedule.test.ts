@@ -594,8 +594,8 @@ describe('parseStrategyFromPath', () => {
 // Build a RemoteUnitState fixture without hard-coding the internal type.
 function buildRemoteFixture(
   overrides: Partial<{
-    service: { exists: boolean; sha256: string | null };
-    timer: { exists: boolean; sha256: string | null };
+    service: { exists: boolean; sha256: string | null; mode?: string };
+    timer: { exists: boolean; sha256: string | null; mode?: string };
     env: { exists: boolean; sha256: string | null };
     isActiveService: boolean;
     isActiveAdhoc: boolean;
@@ -607,11 +607,13 @@ function buildRemoteFixture(
       path: '/etc/systemd/system/rediacc-backup-x.service',
       exists: overrides.service?.exists ?? false,
       sha256: overrides.service?.sha256 ?? null,
+      mode: overrides.service?.mode ?? null,
     },
     timerFile: {
       path: '/etc/systemd/system/rediacc-backup-x.timer',
       exists: overrides.timer?.exists ?? false,
       sha256: overrides.timer?.sha256 ?? null,
+      mode: overrides.timer?.mode ?? null,
     },
     envFile: {
       path: `${WK_ETC_DIR}/backup-x.env`,
@@ -661,6 +663,27 @@ describe('computeReconcilePlan', () => {
     expect(plan.toUpdate).toHaveLength(0);
     expect(plan.toCreate).toHaveLength(0);
     expect(plan.daemonReloadNeeded).toBe(false);
+  });
+
+  it('classifies matching content at mode 0600 as updated (mode drift), 0644 as unchanged', async () => {
+    const { _testing } = await import('../backup/backup-schedule.js');
+    const desired = new Map([['x', makeUnit('x', 'svc', 'tim')]]);
+    const remoteAt = (mode: string) =>
+      new Map([
+        [
+          'x',
+          buildRemoteFixture({
+            service: { exists: true, sha256: _testing.sha256Hex('svc'), mode },
+            timer: { exists: true, sha256: _testing.sha256Hex('tim'), mode },
+          }),
+        ],
+      ]);
+    const drifted = _testing.computeReconcilePlan(desired, remoteAt('600'));
+    expect(drifted.unchanged).toHaveLength(0);
+    expect(drifted.toUpdate[0].changedFiles).toEqual(['service', 'timer']);
+    expect(drifted.daemonReloadNeeded).toBe(true);
+    const ok = _testing.computeReconcilePlan(desired, remoteAt('644'));
+    expect(ok.unchanged).toHaveLength(1);
   });
 
   it('classifies differing timer hash as updated with changedFiles=[timer]', async () => {
