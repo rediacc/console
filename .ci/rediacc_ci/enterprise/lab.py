@@ -1669,7 +1669,7 @@ def live_spread_renew(
         raise
     try:
         put_version(script, newest, run=run)
-    except ROLLBACK_FAILURES as back:  # the same tuple as the failure path above
+    except Exception as back:  # any failure, re-raised with the hand fix (review 12d04dd4.1)
         raise proof.LabError(
             "the renewal answered ok=%s%s; %s"
             % (

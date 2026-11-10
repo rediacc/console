@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import datetime
 import functools
-import inspect
 import json
 import re
 import socket
@@ -2290,13 +2289,31 @@ def test_a_runtime_error_in_the_rollback_keeps_the_renewal_error():
 
 
 def test_both_rollbacks_catch_the_same_tuple():
-    """Review 58abac9b.2: the success path catches ROLLBACK_FAILURES too, so a RuntimeError there names the hand fix."""
+    """Review 58abac9b.2: a RuntimeError from the success-path rollback names the hand fix."""
     fleet = _RuntimeRollback("v-new")
     with pytest.raises(proof.LabError, match=r"renewal answered ok=True.*v-new"):
         spread_v9(fleet, "new", "previous")
-    source = inspect.getsource(lab.live_spread_renew)
-    assert "except Exception" not in source
-    assert source.count("except ROLLBACK_FAILURES") == 2
+
+
+class _TypeErrorRollback(Fleet):
+    """A rollback that fails with an error outside ROLLBACK_FAILURES (a bug in put_version itself)."""
+
+    def __init__(self, bad, **kw):
+        super().__init__(**kw)
+        self.bad = bad
+
+    def __call__(self, argv, cwd, env):
+        if "rollback" in argv and self.bad in argv:
+            raise TypeError("put_version bug")
+        return super().__call__(argv, cwd, env)
+
+
+def test_any_error_from_the_success_path_rollback_names_the_hand_fix():
+    """Review 12d04dd4.1: a TypeError after an ok renewal still raises LabError naming the version to restore."""
+    fleet = _TypeErrorRollback("v-new")
+    with pytest.raises(proof.LabError, match=r"renewal answered ok=True.*v-new") as raised:
+        spread_v9(fleet, "new", "previous")
+    assert isinstance(raised.value.__cause__, TypeError)
 
 
 def test_the_json_scan_is_linear_in_brackets():
