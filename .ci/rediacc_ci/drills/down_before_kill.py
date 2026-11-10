@@ -21,11 +21,14 @@ import shlex
 import shutil
 import time
 import uuid
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from rediacc_ci.core import local_common
 from rediacc_ci.drills import lifecycle_privilege, upgrade_converge, vm_ssh
 from rediacc_ci.well_known import DATASTORE_PATH, RUNTIME_DIR
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 STEP_ID = "K1"
 
@@ -573,7 +576,14 @@ class _LiveK1:
         )
         self.check("K1.1 A's unit has the stop hook and both After= lines", ok, None, why)
 
-    def _restart_row(self, desc: str, act: Any, *, want_up: bool) -> None:
+    def _restart_row(
+        self,
+        desc: str,
+        act: Any,
+        *,
+        want_up: bool,
+        detail: Callable[[Any], str] | None = None,
+    ) -> None:
         """Read A's state, `act()`, read it again, and judge the log: a finished down() before the new start (and an up() after it when `want_up`)."""
         before = self.state(self.ref_a)
         res = act()
@@ -587,6 +597,8 @@ class _LiveK1:
             ok_up, why_up = up_after_verdict(events, after["start"])
             ok, why = ok and ok_up, "%s; %s" % (why, why_up)
         rc = getattr(res, "rc", 0)
+        if detail is not None:
+            why = "%s; %s" % (why, detail(res))
         self.check(desc, rc == 0 and ok, res, "rc=%d %s" % (rc, why))
 
     def k1_2_raw_restart(self) -> None:
@@ -606,6 +618,17 @@ class _LiveK1:
             "K1.3 repo up after a start-side change runs down() before the restart and up() after it",
             lambda: self.rdc("repo", "up", self.ref_a),
             want_up=True,
+            detail=self._unit_rewrite_detail,
+        )
+
+    def _unit_rewrite_detail(self, up: Any) -> str:
+        """What a no-restart K1.3 needs to name its cause: `repo up`'s stderr and the unit's `Environment=` lines as systemd reads them afterwards."""
+        err = self.ctx.scrub(str(getattr(up, "err", "") or "")).strip()
+        text = self.root(unit_text_script(self.nids[self.ref_a])).out
+        env = [ln.strip() for ln in text.splitlines() if ln.strip().startswith("Environment=")]
+        return "repo up stderr: %s; unit Environment=: %s" % (
+            err[-600:] or "<empty>",
+            " | ".join(env) or "<none>",
         )
 
     def k1_4_stop_side_drift(self) -> None:

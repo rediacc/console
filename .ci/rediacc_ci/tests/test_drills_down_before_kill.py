@@ -418,6 +418,7 @@ class FakeWorker:
         self.up_writes = True
         self.repo_up_restarts = True
         self.repo_up_rc = 0
+        self.repo_up_err = ""
         self.delete_grand_rc = 0
         self.comes_back = True
         # A skewed daemon's restart: down() through the old socket first (renet b63746a and the stop hook's fallback), or the heal restart first and down() after it (the order before b63746a).
@@ -555,6 +556,9 @@ class FakeWorker:
                 return _Res(rc=self.repo_up_rc)
             nid = self.ref_nid(args[2])
             drifted = "Environment=" not in self.units[nid]
+            if self.repo_up_err:
+                self.up(nid)
+                return _Res(err=self.repo_up_err)
             if "--no-start" in args:
                 # MountWithDocker: the same BeforeRestart down(), then up() only on a renet whose mount restart path runs it.
                 if self.repo_up_restarts and drifted:
@@ -714,6 +718,30 @@ def test_k1_3_fails_when_repo_up_does_not_restart(tmp_path: pathlib.Path) -> Non
     live.k1_3_unit_rewrite()
     assert _oks(ctx, "K1.3 repo up") == [False]
     assert "nothing restarted" in ctx.rows[-1][2]
+
+
+def test_k1_3_evidence_carries_repo_up_stderr_and_the_unit_environment(
+    tmp_path: pathlib.Path,
+) -> None:
+    worker = FakeWorker()
+    worker.repo_up_restarts = False
+    worker.repo_up_err = "write unit: read-only file system"
+    live, ctx = _ready(tmp_path, worker)
+    live.k1_3_unit_rewrite()
+    evidence = ctx.rows[-1][2]
+    assert "repo up stderr: write unit: read-only file system" in evidence, evidence
+    assert "unit Environment=: <none>" in evidence, evidence
+
+
+def test_k1_3_evidence_names_the_environment_line_when_the_unit_has_one(
+    tmp_path: pathlib.Path,
+) -> None:
+    worker = FakeWorker()
+    live, ctx = _ready(tmp_path, worker)
+    live.k1_3_unit_rewrite()
+    evidence = ctx.rows[-1][2]
+    assert "repo up stderr: <empty>" in evidence, evidence
+    assert "unit Environment=: Environment=DOCKER_RAMDISK=true" in evidence, evidence
 
 
 def test_k1_4_restores_the_stop_side_without_a_restart(tmp_path: pathlib.Path) -> None:
