@@ -66,8 +66,7 @@ PR-TASK <the plan's epic id>, repo <repo root>. Boxes (this writer's share, with
 Prerequisite in this round: <PLAN-x.md, or "none">.
 Survey: </tmp/writers-now/...md>, a hint; the tree decides.
 
-Boundary: only the files named by Owns above. Any other file is not edited: the exact change goes
-into the report for the lead.
+Boundary: only the files named by Owns above, plus the outputs of the one generator the Rules below admit. Any other file is not edited: the exact change goes into the report for the lead.
 
 Implement each box and run its acceptance command. A box the tree already holds changes nothing:
 cite file:line or the commit, and run the command that proves it. A box whose remaining half is a
