@@ -205,7 +205,7 @@ def render(lines, kind, tool_input, delivery=None):
     """The one stdout document for `lines`, in the `delivery` encoding (DELIVERY unless a test names one)."""
     delivery = delivery or DELIVERY
     bullets = "\n".join("- " + ln for ln in lines)
-    specific = {
+    specific: dict[str, object] = {
         "hookEventName": "PreToolUse",
         "additionalContext": "%s\n%s" % (CONTEXT_HEAD[delivery] % (len(lines), kind), bullets),
     }

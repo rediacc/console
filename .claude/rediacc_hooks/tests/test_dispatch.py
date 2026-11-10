@@ -194,7 +194,7 @@ def stdout_speakers(source):
 
 def test_at_most_one_stdout_speaker_per_chain():
     """`run_chain` CONCATENATES every guard's stdout, and a JSON hook answer (`warn_staged_shape_duplication` on pre-bash, `warn_writer_brief` on pre-agent) is only read when stdout is ONE document. A second speaker on either chain would make both unparseable, silently; each speaker's docstring says so, and this is what holds the claim."""
-    speakers = {}
+    speakers: dict[str, list[str]] = {}
     for chain in guards.CHAINS:
         for module in guards.by_chain(chain):
             source = pathlib.Path(module.__file__).read_text(encoding="utf-8")

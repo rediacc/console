@@ -216,7 +216,7 @@ def corpus_sources(corpus):
 
 def memory_sources(folder):
     """[(note stem, "memory", path, description, rows)] for the memory notes in `folder` carrying a Shape key. MEMORY.md is the index, not a note."""
-    out = []
+    out: list = []
     if folder is None or not pathlib.Path(folder).is_dir():
         return out
     for note in sorted(pathlib.Path(folder).glob("*.md")):
@@ -387,7 +387,7 @@ def load(root, memory=None, validate_samples=True):
 def load_sources(sources, validate_samples=True):
     """`load` over sources already read (`corpus_sources`, `memory_sources`): what `check:ci-trap-registry` calls with its own corpus seam."""
     shapes = []
-    problems = []
+    problems: list = []
     for shape_id, source, path, title, rows in sources:
         shape, found = build(shape_id, source, path, title, rows)
         if shape is not None and validate_samples:

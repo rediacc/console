@@ -145,7 +145,7 @@ class Ctx:
 
     def tests_text(self):
         if self._tests is None:
-            parts = []
+            parts: list[str] = []
             base = pathlib.Path(self.root)
             for pattern in TEST_GLOBS:
                 parts.extend(_read(p) for p in sorted(base.glob(pattern)) if p.is_file())
@@ -311,7 +311,7 @@ def default_memory_dir(root):
 
 def memory_notes(memdir):
     """[{id, title, enforced, path}] for every note in `memdir` except the MEMORY.md index. Read-only."""
-    out = []
+    out: list = []
     base = pathlib.Path(memdir)
     if not base.is_dir():
         return out
