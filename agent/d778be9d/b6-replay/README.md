@@ -2,7 +2,7 @@
 
 The harnesses behind the replay quoted under box B6. `b6_pick.py` chose the 20 commits (`b6_cands.json`); `b6_replay*.py` run the current reviewer prompt, `b6_oldctl*.py` the prompt at `d45d4a121f~1`, loaded from a `/tmp/oldroot` copy of `.claude/hooks/stop/` (the old module derives its root from its own path); `b6_score*.py` match findings as same file and line within 8. Each script runs from the repo root and writes its output JSON to `/tmp`.
 
-The scripts follow, verbatim; copy one to a file under /tmp and run it from the repo root.
+The scripts follow, verbatim; copy one to a file under /tmp and run it from the repo root. `b6_pick.py` writes every qualifying candidate to `/tmp/b6_cands.json`; the pick of 20 is made inside the replay scripts from a shuffle seeded 20261110: 10 commits with both fixed and not-a-bug outcomes, 5 with only fixed, 5 with only not-a-bug. The `/tmp/oldroot` tree the control scripts load is recreated first with `mkdir -p /tmp/oldroot && git archive d45d4a121f~1 .claude/hooks/stop | tar -x -C /tmp/oldroot && ln -sfn "$PWD/.ci" /tmp/oldroot/.ci`.
 
 ## b6_cands.json
 
@@ -13,7 +13,7 @@ The scripts follow, verbatim; copy one to a file under /tmp and run it from the 
 ## b6_oldctl.py
 
 ````python
-"""B6 replay: re-review historical commits with the NEW prompt, as of the time of the original review (the prior index excludes every record reviewed at or after it)."""
+"""B6 replay: re-review historical commits with the OLD prompt (the reviewer at d45d4a121f~1, loaded from /tmp/oldroot), as of the time of the original review (the prior index excludes every record reviewed at or after it)."""
 import json
 import pathlib
 import random
@@ -98,7 +98,7 @@ for sha, branch, kinds, nbytes in picks[start:stop]:
 ## b6_oldctl_r2.py
 
 ````python
-"""B6 replay: re-review historical commits with the NEW prompt, as of the time of the original review (the prior index excludes every record reviewed at or after it)."""
+"""B6 replay: re-review historical commits with the OLD prompt (the reviewer at d45d4a121f~1, loaded from /tmp/oldroot), as of the time of the original review (the prior index excludes every record reviewed at or after it)."""
 import json
 import pathlib
 import random
@@ -183,7 +183,7 @@ for sha, branch, kinds, nbytes in picks[start:stop]:
 ## b6_oldctl_r3.py
 
 ````python
-"""B6 replay: re-review historical commits with the NEW prompt, as of the time of the original review (the prior index excludes every record reviewed at or after it)."""
+"""B6 replay: re-review historical commits with the OLD prompt (the reviewer at d45d4a121f~1, loaded from /tmp/oldroot), as of the time of the original review (the prior index excludes every record reviewed at or after it)."""
 import json
 import pathlib
 import random
