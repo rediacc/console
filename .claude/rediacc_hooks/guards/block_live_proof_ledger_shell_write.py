@@ -592,12 +592,17 @@ class _RecorderNames:
             return bool(_RECORDER_PATH.search(self.imports[node.id]))
         values = self.bound.get(self.scopes.key(node))
         if values:
-            return any(
+            if any(
                 _RECORDER_MENTION.search(text)
                 for v in values
                 for n in ast.walk(v)
                 for text in _node_words(n)
-            )
+            ):
+                return True
+            # A value produced by a call (`importlib.import_module(name)`, a factory) can hold the recorder module whatever its own words say, so it cannot be placed: the program-wide mention decides (review 75c74e05.1).
+            if any(isinstance(n, ast.Call) for v in values for n in ast.walk(v)):
+                return None
+            return False
         return None
 
     def means(self, node):

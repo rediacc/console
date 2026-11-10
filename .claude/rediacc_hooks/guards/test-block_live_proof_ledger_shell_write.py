@@ -514,6 +514,16 @@ def recorder_symbol_cases(world):
         ),
         # The recorder's symbols, however reached: each must be REFUSED.
         (
+            "python writes ledger_path of a module imported by a variable name (review 75c74e05.1)",
+            _py(
+                "import importlib\n"
+                "name = 'rediacc_ci.proof.live_tier'\n"
+                "m = importlib.import_module(name)\n"
+                "m.ledger_path('.').write_text('x')"
+            ),
+            True,
+        ),
+        (
             "python writes the recorder's ledger_path through a parameter",
             _py(lt + "def go(m):\n    m.ledger_path('.').write_text('x')\ngo(LT)"),
             True,
