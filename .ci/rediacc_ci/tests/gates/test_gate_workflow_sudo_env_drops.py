@@ -85,3 +85,79 @@ def test_sibling_step_env_not_blamed(gate):
         result = workflow_rule.run_check(gate, d, ci=True)
         gate.assert_exit(0, result, "sibling step env must not be blamed")
     gate.log_pass("env stays scoped to its own step")
+
+
+def _write_raw(path: pathlib.Path, step_lines: list[str]) -> None:
+    head = [
+        "name: fixture",
+        "on: push",
+        "jobs:",
+        "  j:",
+        "    runs-on: ubuntu-latest",
+        "    steps:",
+    ]
+    path.write_text("\n".join(head + step_lines) + "\n", encoding="utf-8")
+
+
+def test_name_elsewhere_in_step_does_not_count(gate):
+    gate.log_test(
+        "an `export NAME=` or prefix assignment outside the sudo env line must not hide a drop"
+    )
+    cases = (
+        ["          export VM_BRIDGE=1", "          sudo env PATH=$PATH renet ops up"],
+        ["          VM_BRIDGE=1 sudo env PATH=$PATH renet ops up"],
+    )
+    for body in cases:
+        with harness.temp_dir() as d:
+            _write_raw(
+                d / "bad.yml",
+                ["      - run: |", *body, "        env:", "          VM_BRIDGE: '1'"],
+            )
+            result = workflow_rule.run_check(gate, d, ci=True)
+            gate.assert_exit(1, result, "name outside the sudo line must still fail: %s" % body)
+            gate.assert_contains(result.combined, "VM_BRIDGE", "names the dropped variable")
+    gate.log_pass("only the sudo env line counts")
+
+
+def test_continuation_line_names_count(gate):
+    gate.log_test("CONTROL: a name on a backslash continuation of the sudo env line stays silent")
+    with harness.temp_dir() as d:
+        _write_raw(
+            d / "ok.yml",
+            [
+                "      - run: |",
+                "          sudo env PATH=$PATH \\",
+                '            "VM_BRIDGE=$VM_BRIDGE" renet ops up',
+                "        env:",
+                "          VM_BRIDGE: '1'",
+            ],
+        )
+        result = workflow_rule.run_check(gate, d, ci=True)
+        gate.assert_exit(0, result, "continued sudo env line naming the variable must pass")
+    gate.log_pass("continuations are part of the line")
+
+
+def test_flow_style_env_mapping(gate):
+    gate.log_test("a flow-style step `env: {..}` is read; naming every key stays silent")
+    with harness.temp_dir() as d:
+        _write_raw(
+            d / "bad.yml",
+            [
+                "      - run: sudo env PATH=$PATH renet ops up",
+                "        env: {VM_BRIDGE: '1', \"VM_WORKERS\": 11}",
+            ],
+        )
+        result = workflow_rule.run_check(gate, d, ci=True)
+        gate.assert_exit(1, result, "flow-style env drop must fail")
+        gate.assert_contains(result.combined, "VM_BRIDGE, VM_WORKERS", "names both flow keys")
+    with harness.temp_dir() as d:
+        _write_raw(
+            d / "ok.yml",
+            [
+                "      - run: sudo env VM_BRIDGE=$VM_BRIDGE VM_WORKERS=$VM_WORKERS renet ops up",
+                "        env: {VM_BRIDGE: '1', \"VM_WORKERS\": 11}",
+            ],
+        )
+        result = workflow_rule.run_check(gate, d, ci=True)
+        gate.assert_exit(0, result, "flow-style env fully named must pass")
+    gate.log_pass("flow-style env covered both ways")

@@ -558,11 +558,15 @@ def check_sudo_preserve_env(errors: Errors, root: pathlib.Path, workflow_dir: st
         )
 
 
-SUDO_ENV_RE = re.compile(r"(^|[;&|(`]|\$\()[ \t]*sudo[ \t]+env([ \t]|$)")
+SUDO_ENV_RE = re.compile(
+    r"(^|[;&|(`]|\$\()[ \t]*(?:[A-Za-z_][A-Za-z0-9_]*=\S*[ \t]+)*sudo[ \t]+env([ \t]|$)"
+)
 STEP_START_RE = re.compile(
     r"^([ \t]*)-([ \t]+)(name|run|uses|env|with|if|id|shell|working-directory|timeout-minutes):"
 )
 KEY_LINE_RE = re.compile(r"^([ \t]*)(?:-[ \t]+)?([A-Za-z_][A-Za-z0-9_-]*):(.*)$")
+# Names in a flow-style step `env: {A: '1', "B": x}`: a key follows `{` or `,`.
+FLOW_ENV_NAME_RE = re.compile(r"(?:[{,])[ \t]*['\"]?([A-Za-z_][A-Za-z0-9_]*)['\"]?[ \t]*:")
 
 
 class StepFacts:
@@ -632,28 +636,39 @@ def step_facts(lines: list[str]) -> list[StepFacts]:
                 cur.run_lines.append((number, rest))
         elif name == "env" and not rest:
             mode, mode_indent, env_child = "env", key_col, -1
+        elif name == "env" and rest.startswith("{"):
+            cur.env_names.extend(FLOW_ENV_NAME_RE.findall(rest))
     return steps
 
 
 def sudo_env_drop_hits(lines: list[str]) -> list[tuple[int, str, list[str]]]:
     """`sudo env ...` run lines that leave out a variable their own step's `env:` block sets.
 
-    `sudo env NAME=value cmd` hands the command ONLY the names it lists, so a step-level `env:` entry never reaches it unless the run text says `NAME=`. Returns (line, text, missing names) for the first `sudo env` line of each offending step.
+    `sudo env NAME=value cmd` hands the command ONLY the names it lists, so a step-level `env:` entry never reaches it unless that `sudo env` line itself (with its backslash continuations, from `env` onward) says `NAME=`; an `export` or prefix assignment elsewhere in the step does not count. Returns (line, text, missing names) for the first `sudo env` line of each offending step.
     """
     out: list[tuple[int, str, list[str]]] = []
     for step in step_facts(lines):
-        sudo_lines = [(n, t) for n, t in step.run_lines if SUDO_ENV_RE.search(t.lstrip())]
-        if not sudo_lines or not step.env_names:
+        if not step.env_names:
             continue
-        text = "\n".join(t for _, t in step.run_lines)
-        missing = [
-            name
-            for name in step.env_names
-            if not re.search(r"(?<![A-Za-z0-9_])%s=" % re.escape(name), text)
-        ]
-        if missing:
-            number, line = sudo_lines[0]
-            out.append((number, line, missing))
+        for index, (number, text) in enumerate(step.run_lines):
+            found = SUDO_ENV_RE.search(text.lstrip())
+            if not found:
+                continue
+            command = text.lstrip()[found.end() :]
+            follow = index + 1
+            last = text
+            while last.rstrip().endswith("\\") and follow < len(step.run_lines):
+                last = step.run_lines[follow][1]
+                command += "\n" + last
+                follow += 1
+            missing = [
+                name
+                for name in step.env_names
+                if not re.search(r"(?<![A-Za-z0-9_])%s=" % re.escape(name), command)
+            ]
+            if missing:
+                out.append((number, step.run_lines[index][1], missing))
+                break
     return out
 
 
