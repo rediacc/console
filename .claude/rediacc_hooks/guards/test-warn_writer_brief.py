@@ -145,6 +145,10 @@ def case(
 ):
     """Run one case; `want_needles` empty means it must be silent on stdout. `inproc` is for the cases that ask the real gen-docs: they run the guard in process with a roomy DEADLINE_S, so a saturated box cannot turn the guard's 2.5 s deadline into a failure of its logic (2026-11-10, ci:quick 1137). The real deadline has its own cases in `deadline_cases`."""
     if inproc:
+        if argv != (STEM,) or extra_env:
+            raise ValueError(
+                "an inproc case runs drive_in_process, which takes neither argv nor extra_env"
+            )
         rc, out, err, took = drive_in_process(payload, root)
     else:
         rc, out, err, took = drive(payload, root, argv, extra_env)
@@ -284,30 +288,47 @@ def planted_defect(module, hot):
 class _Fake:
     """A subprocess.run stand-in: records each call's argv head and timeout, sleeps `delay_git` on the listing, answers an empty verdict."""
 
-    def __init__(self, delay_git=0.0):
+    def __init__(self, clock, delay_git=0.0):
         self.calls = []
         self.delay_git = delay_git
+        self.clock = clock
 
     def __call__(self, argv, **kw):
         self.calls.append((argv[0], kw.get("timeout")))
         if argv[0] == "git":
-            time.sleep(self.delay_git)
+            self.clock.advance(self.delay_git)
             return subprocess.CompletedProcess(argv, 0, stdout=b"x.txt\0", stderr=b"")
         return subprocess.CompletedProcess(
             argv, 0, stdout='{"affected": [], "targets": []}', stderr=""
         )
 
 
+class _Clock:
+    """A fake monotonic clock that moves only when the fake listing "takes" time, so the budget cases judge the guard's arithmetic and not how fast this machine runs."""
+
+    def __init__(self):
+        self.now = 0.0
+
+    def monotonic(self):
+        return self.now
+
+    def advance(self, seconds):
+        self.now += seconds
+
+
 def _run_fake(module, stub, deadline, fake):
-    """One spawn with `subprocess.run` replaced by `fake` and REPO pointed at `stub`; every seam restored."""
+    """One spawn with `subprocess.run` replaced by `fake`, the guard's `time` replaced by the fake's clock, and REPO pointed at `stub`; every seam restored."""
     hookio = importlib.import_module("rediacc_hooks.hookio")
     saved = (module.DEADLINE_S, module.REPO, subprocess.run, os.environ.get("CLAUDE_PROJECT_DIR"))
+    saved_time = module.time
     try:
         module.DEADLINE_S, module.REPO, subprocess.run = deadline, stub, fake
+        module.time = fake.clock
         os.environ["CLAUDE_PROJECT_DIR"] = str(stub)
         event = hookio.Event(json.dumps(spawn("x\nOwns: x.txt", root=stub)))
         return event.result(module.run(event))
     finally:
+        module.time = saved_time
         module.DEADLINE_S, module.REPO, subprocess.run = saved[:3]
         if saved[3] is None:
             os.environ.pop("CLAUDE_PROJECT_DIR", None)
@@ -347,7 +368,7 @@ def deadline_cases(base):
     )
 
     # 530c1884.1: no child may be given more than what is left of the budget.
-    fake = _Fake(delay_git=0.7)
+    fake = _Fake(_Clock(), delay_git=0.7)
     rc, out, err = _run_fake(module, stub, 0.6, fake)
     heads = [c[0] for c in fake.calls]
     check(
@@ -355,7 +376,7 @@ def deadline_cases(base):
         rc == 0 and "node" not in heads and NOT_RUN in err and "git" in heads,
         (fake.calls, err[:200]),
     )
-    fake = _Fake()
+    fake = _Fake(_Clock())
     rc, out, err = _run_fake(module, stub, 0.6, fake)
     git_t = [t for h, t in fake.calls if h == "git"]
     node_t = [t for h, t in fake.calls if h == "node"]
@@ -364,7 +385,7 @@ def deadline_cases(base):
         rc == 0 and len(git_t) == 1 and git_t[0] <= 0.6 and len(node_t) == 1 and node_t[0] <= 0.6,
         fake.calls,
     )
-    rc, out, err = _run_fake(module, stub, 60.0, _Fake())
+    rc, out, err = _run_fake(module, stub, 60.0, _Fake(_Clock()))
     check(
         "budget control: a roomy budget asks gen-docs and stays silent on an empty verdict",
         rc == 0 and out == "" and NOT_RUN not in err,
