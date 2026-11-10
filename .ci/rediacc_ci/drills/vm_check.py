@@ -1887,6 +1887,20 @@ class VmCheck:
 
     def repo_list(self) -> tuple[Result, list[dict[str, Any]]]:
         res = self.rdc("repo", "list", "-m", self.machine, "-o", "json", refuse=False)
+        if res.rc != 0 and _renet_binary_missing(rdc_failure(res)):
+            # A freshly recreated ops VM has no renet yet, and `repo list` runs through renet, so the first list (P3's leftover check or P5) fails before any step installs one; `machine setup` installs the branch renet, then the list is read again.
+            self.say(
+                "        %s has no renet binary yet; installing it with ./rdc.sh machine setup %s"
+                % (self.machine, self.machine)
+            )
+            setup = self.rdc("machine", "setup", self.machine, timeout=1800)
+            if setup.rc != 0:
+                raise NotVerifiedError(
+                    "fleet-unavailable",
+                    "repo list -m %s found no renet binary, and ./rdc.sh machine setup %s failed rc=%d: %s"
+                    % (self.machine, self.machine, setup.rc, rdc_failure(setup)),
+                )
+            res = self.rdc("repo", "list", "-m", self.machine, "-o", "json", refuse=False)
         return res, _data_list(res.out) if res.rc == 0 else []
 
     # ------------------------------------------------------------------ the run
@@ -2801,20 +2815,6 @@ class VmCheck:
 
     def p5_parent(self) -> None:
         res, entries = self.repo_list()
-        if res.rc != 0 and _renet_binary_missing(rdc_failure(res)):
-            # A freshly recreated ops VM has no renet yet, and `repo list` runs through renet, so it fails before any step installs one; `machine setup` installs the branch renet, then the list is read again.
-            self.say(
-                "        %s has no renet binary yet; installing it with ./rdc.sh machine setup %s"
-                % (self.machine, self.machine)
-            )
-            setup = self.rdc("machine", "setup", self.machine, timeout=1800)
-            if setup.rc != 0:
-                raise NotVerifiedError(
-                    "fleet-unavailable",
-                    "repo list -m %s found no renet binary, and ./rdc.sh machine setup %s failed rc=%d: %s"
-                    % (self.machine, self.machine, setup.rc, rdc_failure(setup)),
-                )
-            res, entries = self.repo_list()
         if res.rc != 0:
             raise self._repo_list_refusal(res)
         names = [str(e.get("name", "")) for e in entries]
