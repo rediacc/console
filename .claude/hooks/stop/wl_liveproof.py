@@ -4,6 +4,8 @@ THE ENGINE IS NOT RESTATED HERE. The box's Accept sub-line is parsed by `rediacc
 
 THE TICK IS `--plan-tick`'S OWN PATH. `worklist.py` hands `run` a `tick` callable that drives `_plantick_cli` (the dependency gate, `wl_planrec.plan_tick`, the plan plus `.ci/config/plan-boxes.json` written together), so a live-proof tick cannot drift from an ordinary one. It fires only after the recorder exited 0 under `--write` AND the VERIFIED row it named is read back out of `agent/ledgers/live-proof.jsonl` for this plan and box. The evidence line is the plan's: `live-proof <id> <target> <check> rc=<the row's check rc> v=<version>`.
 
+THE VM WAIVER. `--vm-waived ASKED:<YYYY-MM-DDTHH:MM>Z` (operator ruling 2026-11-10) is passed to the recorder with `--transcript <the lead transcript>`, resolved the way `worklist.py`'s `_lead_transcript` resolves it; the recorder checks the shape and proves the minute against that transcript before anything runs, and a waived row records the waiver.
+
 NEVER COMMITS. The ledger row, the plan and the box ledger ride one commit, and the success message says so.
 """
 
@@ -29,6 +31,7 @@ HERE = pathlib.Path(__file__).resolve().parent
 USAGE = (
     "usage: worklist.py --live-proof <me>\n"
     "       worklist.py --live-proof <me> <agent/plans/PLAN-x.md> <LP-box-sig> [--write] [--tick]\n"
+    "                    [--vm-waived ASKED:<YYYY-MM-DDTHH:MM>Z]\n"
     "\n"
     "  With only <me>: list every open `LP-<target> [live]` box and its Accept line.\n"
     "  With a plan and a box: read the box's `Accept: live-proof <target> <check> [machine=<alias>]`\n"
@@ -38,6 +41,9 @@ USAGE = (
     "  --tick    after a VERIFIED row is written, close the box through the --plan-tick path\n"
     "            with the evidence `live-proof <id> <target> <check> rc=0 v=<version>`;\n"
     "            needs --write and an investigation row for the box (--plan-investigate)\n"
+    "  --vm-waived ASKED:<minute>Z  go on when no VM receipt admits the head tree, on an\n"
+    "            operator answer the recorder proves against this session's transcript; the\n"
+    "            row records the waiver and check:ci-plan-live-proof names it owed a vm:check\n"
     "  Never commits: the ledger row, the plan and .ci/config/plan-boxes.json ride one commit.\n"
 )
 
@@ -55,6 +61,7 @@ PLANS_DIR = "agent/plans/"
 DONE_SUB = "_done/"
 LEDGER_REL = "agent/ledgers/live-proof.jsonl"
 FORM = "`live-proof <target> <check> [machine=<alias>]`"
+VM_WAIVED = "--vm-waived"
 
 
 class RefusedError(Exception):
@@ -157,14 +164,51 @@ def resolve_plan(root: pathlib.Path, rel: str) -> str:
     raise RefusedError("unknown plan %r: no such file under %s" % (rel, root / PLANS_DIR))
 
 
+def lead_transcript(me: str) -> str | None:
+    """The lead session's own transcript path, or None: `worklist.py`'s `_lead_transcript` (`<projects>/<munged root>/<session>.jsonl`, beside its `subagents/` directory), the transcript an `ASKED:` tick is proven against."""
+    import wl_core as C
+    import wl_roster
+
+    sub = wl_roster.session_subagents_dir(os.getcwd(), C.resolve_session_id() or me)
+    return str(sub.parent.with_suffix(".jsonl")) if sub is not None else None
+
+
+def split_waiver(args: Sequence[str]) -> tuple[list[str], str | None]:
+    """(the other args, the `--vm-waived` token or None). Both `--vm-waived <token>` and `--vm-waived=<token>` are read; RefusedError for a flag with no token."""
+    rest: list[str] = []
+    token: str | None = None
+    it = iter(args)
+    for arg in it:
+        if arg == VM_WAIVED or arg.startswith(VM_WAIVED + "="):
+            value = arg.partition("=")[2] if "=" in arg else next(it, "")
+            if not value or value.startswith("--"):
+                raise RefusedError("%s needs ASKED:<YYYY-MM-DDTHH:MM>Z\n\n%s" % (VM_WAIVED, USAGE))
+            token = value
+        else:
+            rest.append(arg)
+    return rest, token
+
+
 def recorder_argv(
-    rel: str, sig: str, target: str, check: str, machine: str | None, me: str, write: bool
+    rel: str,
+    sig: str,
+    target: str,
+    check: str,
+    machine: str | None,
+    me: str,
+    write: bool,
+    vm_waived: str | None = None,
+    transcript: str | None = None,
 ) -> list[str]:
     argv = [sys.executable, "-m", "rediacc_ci.ops.live_proof", "record"]
     argv += ["--plan", rel, "--box", sig, "--target", target, "--check", check]
     if machine:
         argv += ["--machine", machine]
     argv += ["--by", me[:8]]
+    if vm_waived is not None:
+        argv += [VM_WAIVED, vm_waived]
+        if transcript:
+            argv += ["--transcript", transcript]
     if write:
         argv.append("--write")
     return argv
@@ -303,17 +347,19 @@ def run(
     recorder: Callable[[Sequence[str], pathlib.Path], tuple[int, str, str]] = run_recorder,
     precheck: Callable[[pathlib.Path, str, str, str], str | None] = tick_precheck,
     lt: Any = None,
+    transcript: Callable[[str], str | None] = lead_transcript,
 ) -> int:
-    """One `--live-proof <me> <plan> <sig> [--write] [--tick]` run; the exit code. `tick(rel, sig, evidence)` returns the --plan-tick exit code."""
+    """One `--live-proof <me> <plan> <sig> [--write] [--tick] [--vm-waived ASKED:<minute>Z]` run; the exit code. `tick(rel, sig, evidence)` returns the --plan-tick exit code; `transcript(me)` names the lead transcript a waiver is proven against."""
     try:
-        return _run(root, me, args, tick, recorder, precheck, lt)
+        return _run(root, me, args, tick, recorder, precheck, lt, transcript)
     except RefusedError as exc:
         _say("live-proof REFUSED: %s" % exc, err=True)
         return exc.rc
 
 
-def _run(root, me, args, tick, recorder, precheck, lt) -> int:
+def _run(root, me, args, tick, recorder, precheck, lt, transcript) -> int:
     root = pathlib.Path(root)
+    args, vm_waived = split_waiver(args)
     pos = [a for a in args if not a.startswith("--")]
     flags = [a for a in args if a.startswith("--")]
     bad = [f for f in flags if f not in ("--write", "--tick")]
@@ -340,7 +386,8 @@ def _run(root, me, args, tick, recorder, precheck, lt) -> int:
         if why:
             raise RefusedError(why)
 
-    argv = recorder_argv(rel, sig, target, check, machine, me, write)
+    lead = transcript(me) if vm_waived is not None else None
+    argv = recorder_argv(rel, sig, target, check, machine, me, write, vm_waived, lead)
     rc, out, err = recorder(argv, root)
     _say(out)
     _say(err, err=True)

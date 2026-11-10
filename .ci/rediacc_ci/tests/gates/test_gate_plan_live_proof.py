@@ -13,7 +13,9 @@ import sys
 import wl_plandeps as D
 
 from rediacc_ci import controls, paths
+from rediacc_ci.proof import vm_tier
 from rediacc_ci.tests.gates import harness
+from rediacc_ci.tests.test_proof_vm_tier import make as make_vm
 
 GATE = paths.from_root(".ci", "scripts", "quality", "check_plan_live_proof.py")
 MAP = paths.from_root(".ci", "config", "proof-tiers.json")
@@ -460,3 +462,139 @@ def test_owed_with_no_merge_base_cannot_run(gate, tmp_path):
     gate.assert_exit(77, result, "no merge-base is CANNOT RUN")
     gate.assert_contains(result.err, "no merge-base", "and names why")
     gate.log_pass("--owed with no merge-base is 77")
+
+
+# --------------------------------------------------------------------------- waived VM ladders (`live_proof record --vm-waived`)
+
+WAIVED_ID = "lp-0123456789ab"
+ASKED = "ASKED:2026-11-10T13:38Z"
+
+
+def _rev(root: pathlib.Path, ref: str) -> str:
+    return _git(root, "rev-parse", ref).strip()
+
+
+def _waived_tree(tmp_path: pathlib.Path) -> tuple[pathlib.Path, str, str]:
+    """The seed with one committed ledger row recorded at the work head with its VM ladder waived; (root, head, tree) of that row."""
+    root = _seed(tmp_path)
+    _write(root, ".gitignore", ".ci/cache/\n")
+    _commit(root, "ignore the cache", BEFORE)
+    head, tree = _rev(root, "HEAD"), _rev(root, "HEAD^{tree}")
+    row = {
+        "id": WAIVED_ID,
+        "status": "VERIFIED",
+        "plan": "agent/plans/PLAN-acct.md",
+        "target": "bench",
+        "head": head,
+        "tree": tree,
+        "surfaces": ["account"],
+        "check": {"id": "account-smoke", "rc": 0},
+        "ladder": {"vm": None, "waived": ASKED, "head_tree": tree},
+    }
+    _write(root, "agent/ledgers/live-proof.jsonl", json.dumps(row) + "\n")
+    _commit(root, "the waived receipt", BEFORE)
+    return root, head, tree
+
+
+def _vm_receipt(root: pathlib.Path, tree: str, head: str, **over: object) -> None:
+    """A schema-3 VM receipt that ran the account phase, archived the way vm:check archives it."""
+    receipt = make_vm(
+        tree=tree,
+        head=head,
+        phases={
+            "renet": {"required": False, "ran": False},
+            "account": {"required": True, "ran": True},
+        },
+        trigger={"base": "origin/main", "via": "@{push}", "hits": ["x"], "sides": ["account"]},
+        runId="vmc-confirm-1",
+    )
+    receipt.update(over)
+    assert vm_tier.validate(receipt) == [], vm_tier.validate(receipt)
+    vm_tier.write(root, receipt)
+
+
+def test_a_waived_row_with_no_vm_receipt_is_printed_owed_every_run(gate, tmp_path):
+    root, _head, tree = _waived_tree(tmp_path)
+    result = _gate(root, _map(tmp_path))
+    gate.assert_exit(0, result, "an owed confirmation is advisory, never a finding")
+    gate.assert_contains(
+        result.out, "OWED-VM %s agent/plans/PLAN-acct.md bench" % WAIVED_ID, "named"
+    )
+    gate.assert_contains(result.out, "waived (%s) at tree %s" % (ASKED, tree[:12]), "with tree")
+    gate.assert_contains(
+        result.out,
+        "waived VM ladders: 1 row(s), 0 confirmed, 1 owed (0 VERIFIED vm:check receipt(s)",
+        "the count says nothing was read",
+    )
+    gate.log_pass("an unconfirmed waived row is OWED-VM")
+
+
+def test_a_verified_receipt_of_the_rows_tree_confirms_it(gate, tmp_path):
+    root, head, tree = _waived_tree(tmp_path)
+    _vm_receipt(root, tree, head, status="FAILED", reason={"class": "step-failed"})
+    control = _gate(root, _map(tmp_path))
+    gate.assert_contains(control.out, "OWED-VM %s" % WAIVED_ID, "a FAILED receipt confirms nothing")
+    _vm_receipt(root, tree, head)
+    result = _gate(root, _map(tmp_path))
+    gate.assert_exit(0, result, "green")
+    gate.assert_eq("OWED-VM" in result.out, False, "no longer owed: %s" % result.out)
+    gate.assert_contains(result.out, "CONFIRMED-VM %s" % WAIVED_ID, "confirmed")
+    gate.assert_contains(result.out, "by VERIFIED vm:check vmc-confirm-1", "names the run")
+    gate.assert_contains(result.out, "1 row(s), 1 confirmed, 0 owed (1 VERIFIED", "counted")
+    gate.log_pass("a VERIFIED receipt of the tree confirms a waived row")
+
+
+def test_a_verified_receipt_on_a_descendant_confirms_it_and_an_ancestor_does_not(gate, tmp_path):
+    root, _head, _tree = _waived_tree(tmp_path)
+    seed = _rev(root, "main")
+    _vm_receipt(root, _rev(root, "main^{tree}"), seed)
+    control = _gate(root, _map(tmp_path))
+    gate.assert_contains(control.out, "OWED-VM %s" % WAIVED_ID, "an ancestor's receipt stays owed")
+    _write(root, "docs/fixture/later.md", "later\n")
+    _commit(root, "a later commit", BEFORE)
+    _vm_receipt(root, _rev(root, "HEAD^{tree}"), _rev(root, "HEAD"))
+    result = _gate(root, _map(tmp_path))
+    gate.assert_eq("OWED-VM" in result.out, False, "a descendant confirms: %s" % result.out)
+    gate.assert_contains(result.out, "CONFIRMED-VM %s" % WAIVED_ID, "confirmed")
+    gate.log_pass("a descendant's VERIFIED receipt confirms; an ancestor's does not")
+
+
+def _lp_sig() -> str:
+    return next(b.sig for b in D.plan_boxes(_plan("acct")) if b.body.startswith("LP-bench"))
+
+
+def _ticked_on_waived_row(tmp_path: pathlib.Path, waived: str) -> harness.RunResult:
+    """The LP box ticked after the baseline on a matching row whose waived ladder carries `waived`."""
+    tmp_path.mkdir()
+    root = _seed(tmp_path)
+    head, tree = _rev(root, "HEAD"), _rev(root, "HEAD^{tree}")
+    row = {
+        "id": WAIVED_ID,
+        "status": "VERIFIED",
+        "dirty": False,
+        "plan": "agent/plans/PLAN-acct.md",
+        "box": _lp_sig(),
+        "target": "bench",
+        "head": head,
+        "tree": tree,
+        "surfaces": ["account"],
+        "check": {"id": "account-smoke", "args": [], "rc": 0},
+        "ladder": {"vm": None, "waived": waived, "head_tree": tree},
+    }
+    _write(root, "agent/ledgers/live-proof.jsonl", json.dumps(row) + "\n")
+    _tick_lp(root)
+    _commit(root, "tick the LP box on a waived receipt", AFTER)
+    return _gate(root, _map(tmp_path))
+
+
+def test_lp5_names_a_malformed_waiver_on_a_ticked_receipt(gate, tmp_path):
+    """A waived row is judged like any receipt; the hand-trimmed fixture row is LP5 for other reasons too, so the claim is only that the ladder reason appears for the bad token and not for the good one."""
+    good = _ticked_on_waived_row(tmp_path / "good", ASKED)
+    gate.assert_exit(1, good, "the trimmed fixture row is LP5 on its other fields")
+    gate.assert_eq("ladder.waived" in good.err, False, "a well-formed waiver: %s" % good.err)
+    bad = _ticked_on_waived_row(tmp_path / "bad", "ASKED:today")
+    gate.assert_exit(1, bad, "red")
+    gate.assert_contains(
+        bad.err, "ladder.waived 'ASKED:today' is not ASKED:<YYYY-MM-DDTHH:MM>Z", "LP5 names it"
+    )
+    gate.log_pass("LP5 judges a waived ladder's shape")

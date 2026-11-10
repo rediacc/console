@@ -50,7 +50,9 @@ THE RULES, EACH WITH A PLANTED CONTROL IN `--selftest`:
         paths, or LP4 to LP6 cannot run (no merge-base, or plan-boxes.json
         unreadable at HEAD or at the base). ZERO parsed plans is CANNOT RUN (exit 77), never green.
 
-ADVISORY, printed every run, red or green: every `Live-Proof: none` on a required plan, and the PENDING (V7) set.
+ADVISORY, printed every run, red or green: every `Live-Proof: none` on a required plan, the PENDING (V7) set, and every WAIVED VM LADDER still owed a confirmation.
+
+WAIVED VM LADDERS (operator ruling 2026-11-10, `live_proof record --vm-waived ASKED:<minute>Z`). A ledger row whose `ladder` carries `waived` was recorded with no VM receipt admitting its head tree. It is CONFIRMED when a VERIFIED `vm:check` receipt that ran every VM phase the row's surfaces need (`live_tier.ladder_phases`) has the row's `ladder.head_tree` as its tree, or a head that descends from the row's head (through the rebase successor map); until then it prints `OWED-VM <row id> <plan> <target>` with the receipt count it searched. ADVISORY, not a finding, for two reasons: the VM receipts live in the gitignored `.ci/cache/vm-check/`, so CI's fresh clone reads zero of them and a finding there could never clear, while the same tree would read green on the one machine that ran vm:check; and the ruling keeps a box ticked on a waived receipt tickable, so the owed confirmation is what stays visible, every run, never folded into green. The summary line counts waived, confirmed and owed rows and the receipts read, so "0 receipt(s) read" says the confirmation was not judgeable here rather than that nothing is owed. LP5 still judges a waived row's shape (`validate_row`: the minute form, `head_tree` equal to the row's tree, no run id beside the waiver, a VM phase to waive).
 
 FORWARD-ONLY. LP4 to LP6 judge only transitions committed strictly after `baseline_at` (`.ci/config/proof-tiers.json` `tiers.live.baseline_at`), the device P-A2 uses: on the landing commit they are silent by construction. No allowlist and no suppression: the waiver is a named operator ruling, never a config entry.
 
@@ -109,6 +111,7 @@ try:
     import wl_planfile as PF
     from rediacc_ci.proof import live_tier as LT
     from rediacc_ci.proof import surfaces as S
+    from rediacc_ci.proof import vm_tier as VT
     from rediacc_ci.review import successor as SUCC
 except ImportError as _exc:  # pragma: no cover -- a tree without the hook or proof modules
     print(
@@ -125,7 +128,7 @@ REPO_ROOT = paths.repo_root()
 BOXES_REL = ".ci/config/plan-boxes.json"
 MAP_REL = ".ci/config/proof-tiers.json"
 CANNOT_RUN = 77
-CONTROL_FLOOR = 96
+CONTROL_FLOOR = 104
 LP_BOX_RE = re.compile(r"^LP-([A-Za-z0-9_-]+)\b(.*)$")
 LIVE_MARK = "[live]"
 # A Ruling line that waives the live proof names it in so many words.
@@ -834,6 +837,131 @@ def read_rows(root: pathlib.Path) -> tuple[list[dict[str, Any]], list[Finding]]:
     return rows, bad
 
 
+# ----------------------------------------------------------------------------- waived VM ladders
+
+OWED_VM = "OWED-VM"
+CONFIRMED_VM = "CONFIRMED-VM"
+
+
+def waiver_of(row: dict[str, Any]) -> str | None:
+    """The `ASKED:` token a row's ladder was waived on, or None for a VM-admitted or unphased row."""
+    ladder = row.get("ladder")
+    waived = ladder.get("waived") if isinstance(ladder, dict) else None
+    return waived if isinstance(waived, str) and waived else None
+
+
+def vm_receipts(root: pathlib.Path) -> list[dict[str, Any]]:
+    """Every VERIFIED, schema-valid `vm:check` receipt under `.ci/cache/vm-check/` (`vm_tier.receipt_files`: `receipt.json` and the `<tree>.json` archives), each once."""
+    out: list[dict[str, Any]] = []
+    for path in VT.receipt_files(root):
+        try:
+            parsed = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if (
+            isinstance(parsed, dict)
+            and not VT.validate(parsed)
+            and parsed.get("status") == VT.VERIFIED
+            and parsed not in out
+        ):
+            out.append(parsed)
+    return out
+
+
+def _ran(receipt: dict[str, Any]) -> frozenset[str]:
+    phases = receipt.get("phases") or {}
+    return frozenset(
+        s for s in VT.SIDES if isinstance(phases.get(s), dict) and phases[s].get("ran")
+    )
+
+
+def row_phases(row: dict[str, Any], checks: dict[str, Any]) -> frozenset[str]:
+    """The VM phases a row's ladder stands for: `live_tier.ladder_phases` of its known surfaces and its check."""
+    names = row.get("surfaces")
+    known = (
+        [n for n in names if isinstance(n, str) and n in S.MAP.surfaces]
+        if isinstance(names, list)
+        else []
+    )
+    return LT.ladder_phases(known, checks.get(str((row.get("check") or {}).get("id"))))
+
+
+def confirming_receipt(
+    row: dict[str, Any],
+    receipts: Iterable[dict[str, Any]],
+    phases: frozenset[str],
+    descends: Callable[[str, str], bool],
+) -> dict[str, Any] | None:
+    """The first VERIFIED receipt that ran every phase in `phases` and covers the row: its tree is the row's `ladder.head_tree`, or its head descends from the row's head. None when no receipt confirms the waiver."""
+    tree = (row.get("ladder") or {}).get("head_tree")
+    head = str(row.get("head") or "")
+    for receipt in receipts:
+        if receipt.get("status") != VT.VERIFIED or not phases <= _ran(receipt):
+            continue
+        if (tree and receipt.get("tree") == tree) or descends(head, str(receipt.get("head") or "")):
+            return receipt
+    return None
+
+
+def waiver_notes(
+    rows: Iterable[dict[str, Any]],
+    receipts: list[dict[str, Any]],
+    checks: dict[str, Any],
+    descends: Callable[[str, str], bool],
+) -> tuple[list[str], dict[str, int]]:
+    """(advisory lines, counts) for every waived row: CONFIRMED-VM naming the receipt, or OWED-VM naming what would confirm it."""
+    notes: list[str] = []
+    counts = {"waived": 0, "confirmed": 0, "owed_vm": 0, "vm_receipts": len(receipts)}
+    for row in rows:
+        waived = waiver_of(row)
+        if waived is None:
+            continue
+        counts["waived"] += 1
+        name = "%s %s %s" % (row.get("id"), row.get("plan"), row.get("target"))
+        tree = str((row.get("ladder") or {}).get("head_tree") or row.get("tree") or "")
+        phases = row_phases(row, checks)
+        hit = confirming_receipt(row, receipts, phases, descends)
+        if hit is not None:
+            counts["confirmed"] += 1
+            notes.append(
+                "%s %s: waived %s, confirmed by VERIFIED vm:check %s (tree %s)"
+                % (CONFIRMED_VM, name, waived, hit.get("runId"), str(hit.get("tree"))[:12])
+            )
+            continue
+        counts["owed_vm"] += 1
+        notes.append(
+            "%s %s: recorded with the VM ladder waived (%s) at tree %s; no VERIFIED vm:check "
+            "receipt that ran the %s phase(s) for that tree or a descendant of head %s among the "
+            "%d on this machine (.ci/cache/vm-check/, gitignored). Run `npm run vm:check` from "
+            "that head or a later one"
+            % (
+                OWED_VM,
+                name,
+                waived,
+                tree[:12],
+                ", ".join(sorted(phases)) or "no",
+                str(row.get("head") or "")[:12],
+                len(receipts),
+            )
+        )
+    return notes, counts
+
+
+def descends_in(
+    root: pathlib.Path, successor_of: Callable[[str], str | None] | None
+) -> Callable[[str, str], bool]:
+    """`descends(old, new)`: `new` is `old` or a descendant of it in the checkout at `root`; an `old` a rebase rewrote is re-resolved through `successor_of` first."""
+
+    def descends(old: str, new: str) -> bool:
+        if not old or not new:
+            return False
+        if _git(root, "cat-file", "-e", old) is None and successor_of is not None:
+            old = successor_of(old) or old
+        return _git(root, "merge-base", "--is-ancestor", old, new) is not None
+
+    return descends
+
+
 # ----------------------------------------------------------------------------- the run
 
 
@@ -1062,6 +1190,16 @@ def evaluate(
         findings.extend(box_findings(plan, view.checks, view.live_of))
     moved, line = transitions(ctx, base_override)
     findings.extend(moved)
+    base = base_of(root, base_override)
+    successor_of = (
+        SUCC.lazy_successor_of(str(root), base, importlib.import_module("wl_planrec"))
+        if base
+        else None
+    )
+    waived_notes, waived = waiver_notes(
+        rows, vm_receipts(root), view.checks or LT.registry(), descends_in(root, successor_of)
+    )
+    notes.extend(waived_notes)
     stats: dict[str, Any] = {
         "plans": len(plans),
         "live": len(live),
@@ -1071,6 +1209,7 @@ def evaluate(
         "baseline_at": view.baseline_at,
         "pending": sum(n.startswith("PENDING") for n in notes),
         "transitions": line,
+        **waived,
     }
     return findings, notes, stats
 
@@ -1723,6 +1862,64 @@ class _Suite:
         )
         c.check("not pending: never committed", pending_migration("p", {}, day), False)
 
+    def waivers(self) -> None:
+        c = self.c
+        tree, head, other_tree, other_head = "b" * 40, "a" * 40, "c" * 40, "d" * 40
+        waived = {
+            "id": "lp-0123456789ab",
+            "plan": _FX,
+            "target": "hostinger",
+            "head": head,
+            "tree": tree,
+            "surfaces": ["renet"],
+            "check": {"id": "renet-live"},
+            "ladder": {"vm": None, "waived": "ASKED:2026-11-10T13:38Z", "head_tree": tree},
+        }
+        plain = {**waived, "id": "lp-111111111111", "ladder": {"vm": "vmc-0"}}
+
+        def receipt(**over: Any) -> dict[str, Any]:
+            base = {
+                "status": VT.VERIFIED,
+                "tree": tree,
+                "head": head,
+                "runId": "vmc-1",
+                "phases": {"renet": {"required": True, "ran": True}},
+            }
+            base.update(over)
+            return base
+
+        def never(_old: str, _new: str) -> bool:
+            return False
+
+        def child(old: str, new: str) -> bool:
+            return (old, new) == (head, other_head)
+
+        def owed_of(receipts: list[dict[str, Any]], descends=never) -> int:
+            notes, _counts = waiver_notes([waived, plain], receipts, self.checks, descends)
+            return sum(n.startswith(OWED_VM) for n in notes)
+
+        elsewhere = receipt(tree=other_tree, head=other_head)
+        no_renet = receipt(phases={"renet": {"required": False, "ran": False}})
+        c.check(
+            "a waived row stands for the renet phase",
+            row_phases(waived, self.checks),
+            frozenset({"renet"}),
+        )
+        c.check("a waived row with no VM receipt is OWED-VM", owed_of([]), 1)
+        c.check("a VERIFIED receipt of its tree confirms it", owed_of([receipt()]), 0)
+        c.check(
+            "a VERIFIED receipt on a descendant head confirms it", owed_of([elsewhere], child), 0
+        )
+        c.check("a receipt of another tree and head stays owed", owed_of([elsewhere]), 1)
+        c.check("a receipt that did not run the renet phase stays owed", owed_of([no_renet]), 1)
+        c.check("a FAILED receipt of its tree stays owed", owed_of([receipt(status=VT.FAILED)]), 1)
+        notes, counts = waiver_notes([plain], [], self.checks, never)
+        c.check(
+            "a VM-admitted row prints nothing and counts as no waiver",
+            (notes, counts["waived"]),
+            ([], 0),
+        )
+
     def run(self) -> bool:
         for part in (
             self.map_rules,
@@ -1735,6 +1932,7 @@ class _Suite:
             self.lp6,
             self.owed_door,
             self.forward_only,
+            self.waivers,
         ):
             part()
         return self.c.report()
@@ -1809,6 +2007,10 @@ def main(argv: list[str] | None = None) -> int:
         "baseline_at %(baseline_at)s" % stats
     )
     print("  transitions: %s" % stats["transitions"])
+    print(
+        "  waived VM ladders: %(waived)d row(s), %(confirmed)d confirmed, %(owed_vm)d owed "
+        "(%(vm_receipts)d VERIFIED vm:check receipt(s) read on this machine)" % stats
+    )
     if findings:
         for f in sorted(findings, key=lambda f: (f.code, f.rel, f.message)):
             print("  %s" % f, file=sys.stderr)

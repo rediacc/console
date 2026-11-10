@@ -241,6 +241,69 @@ def test_machine_argument_reaches_the_recorder(root):
     assert argv[argv.index("--machine") + 1] == "eu-1"
 
 
+ASKED = "ASKED:2026-11-10T13:38Z"
+
+
+def _run_waived(root, *args, transcript="/t/lead.jsonl"):
+    rec, tick = FakeRecorder(root), FakeTick()
+    seen = []
+
+    def resolve(me):
+        seen.append(me)
+        return transcript
+
+    rc = LP.run(
+        root,
+        ME,
+        list(args),
+        tick=tick,
+        recorder=rec,
+        precheck=lambda *_a: None,
+        transcript=resolve,
+    )
+    return rc, rec, tick, seen
+
+
+@pytest.mark.parametrize("form", [("--vm-waived", ASKED), ("--vm-waived=" + ASKED,)])
+def test_vm_waived_reaches_the_recorder_with_the_lead_transcript(root, form):
+    sig = _sig(PLAN, "LP-hostinger")
+    rc, rec, tick, seen = _run_waived(root, REL, sig, *form, "--write", "--tick")
+    assert rc == 0
+    argv = rec.calls[0]
+    assert argv[argv.index("--vm-waived") + 1] == ASKED
+    assert argv[argv.index("--transcript") + 1] == "/t/lead.jsonl"
+    assert argv[argv.index("--box") + 1] == sig, "the token is not read as the box"
+    assert seen == [ME]
+    assert len(tick.calls) == 1
+
+
+def test_vm_waived_with_no_resolvable_transcript_still_reaches_the_recorder_which_refuses(root):
+    _rc, rec, _tick, _seen = _run_waived(
+        root, REL, _sig(PLAN, "LP-hostinger"), "--vm-waived", ASKED, transcript=None
+    )
+    argv = rec.calls[0]
+    assert argv[argv.index("--vm-waived") + 1] == ASKED
+    assert "--transcript" not in argv, (
+        "no transcript is passed as none, and the recorder names the refusal"
+    )
+
+
+@pytest.mark.parametrize("args", [("--vm-waived",), ("--vm-waived=",), ("--vm-waived", "--write")])
+def test_vm_waived_without_a_value_is_refused_before_the_recorder(root, capsys, args):
+    rc, rec, tick, _seen = _run_waived(root, REL, _sig(PLAN, "LP-hostinger"), *args)
+    assert rc == 2
+    assert rec.calls == []
+    assert tick.calls == []
+    assert "--vm-waived needs ASKED:<YYYY-MM-DDTHH:MM>Z" in capsys.readouterr().err
+
+
+def test_no_vm_waived_passes_no_waiver(root):
+    _rc, rec, _tick, seen = _run_waived(root, REL, _sig(PLAN, "LP-hostinger"))
+    assert "--vm-waived" not in rec.calls[0]
+    assert "--transcript" not in rec.calls[0]
+    assert seen == [], "the transcript is resolved only for a waiver"
+
+
 def test_recorder_failure_surfaces_rc_and_stderr_and_never_ticks(root, capsys):
     sig = _sig(PLAN, "LP-bench")
     rec = FakeRecorder(root, rc=1, err="NOT_VERIFIED not-live: the live version moved\n")

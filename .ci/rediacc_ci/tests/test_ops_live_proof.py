@@ -921,3 +921,150 @@ def test_lp6_owed_reads_the_gate_and_fails_closed(
     else:
         assert LP._lp6_owed(tmp_path, DONE_REL) == want
     assert seen[0][-2:] == ["--owed", DONE_REL]
+
+
+# ------------------------------------------------------------------ the VM waiver (`--vm-waived ASKED:<minute>Z`, operator ruling 2026-11-10)
+
+ASKED = "ASKED:2026-11-10T13:38Z"
+
+
+class _Asked:
+    """An ASKED proof that records each (token, transcript) it is asked about and answers `ok`."""
+
+    def __init__(self, ok: bool = True) -> None:
+        self.ok = ok
+        self.calls: list[tuple[str, str | None]] = []
+
+    def __call__(self, token: str, transcript: str | None) -> bool:
+        self.calls.append((token, transcript))
+        return self.ok
+
+
+def _waiver_world(bed: Bed, asked: _Asked, admit: Callable[..., R.Verdict] = _refuses) -> LP.World:
+    return dataclasses.replace(bed.lp_world(admit), asked=asked, transcript="/t/lead.jsonl")
+
+
+@pytest.mark.parametrize(
+    "token",
+    [
+        "today",
+        "ASKED:today",
+        "ASKED:2026-11-10",
+        "ASKED:2026-11-10T13:38",
+        "x ASKED:2026-11-10T13:38Z",
+    ],
+)
+def test_a_malformed_waiver_refuses_before_anything_runs(bed: Bed, token: str) -> None:
+    asked = _Asked()
+    req = bed.request("renet-live", target="hostinger", vm_waived=token)
+    with pytest.raises(LP.RequestError, match=r"--vm-waived .* is not ASKED:<YYYY-MM-DDTHH:MM>Z"):
+        bed.record(req, world=_waiver_world(bed, asked), write=True)
+    assert bed.fake.calls == []
+    assert asked.calls == [], "a malformed token never reaches the transcript"
+    assert bed.ledger() == []
+
+
+def test_a_waiver_no_operator_answer_proves_refuses_before_anything_runs(bed: Bed) -> None:
+    asked = _Asked(ok=False)
+    req = bed.request("renet-live", target="hostinger", vm_waived=ASKED)
+    with pytest.raises(LP.RequestError, match="matches no AskUserQuestion answer"):
+        bed.record(req, world=_waiver_world(bed, asked), write=True)
+    assert asked.calls == [(ASKED, "/t/lead.jsonl")]
+    assert bed.fake.calls == []
+    assert bed.ledger() == []
+
+
+def test_a_waiver_with_no_transcript_names_where_the_transcript_comes_from(bed: Bed) -> None:
+    world = dataclasses.replace(bed.lp_world(_refuses), asked=_Asked(ok=False), transcript=None)
+    req = bed.request("renet-live", target="hostinger", vm_waived=ASKED)
+    with pytest.raises(LP.RequestError, match=r"--transcript .*REDIACC_TRANSCRIPT_PATH"):
+        bed.record(req, world=world)
+
+
+def test_a_proven_waiver_lets_a_ladder_failing_run_record_a_waived_row(bed: Bed) -> None:
+    # Control: the same run without the waiver is the ladder refusal.
+    plain = bed.record(bed.request("renet-live", target="hostinger"), admit=_refuses, write=True)
+    assert (plain.status, plain.code) == (R.NOT_VERIFIED, LP.CODE_LADDER)
+    bed.fake.calls.clear()
+    req = bed.request("renet-live", target="hostinger", vm_waived=ASKED)
+    out = bed.record(req, world=_waiver_world(bed, _Asked()), write=True)
+    assert out.status == R.VERIFIED, out.message
+    assert out.row is not None
+    assert out.row["ladder"] == {"vm": None, "waived": ASKED, "head_tree": out.row["tree"]}
+    assert "waived" in out.message
+    assert out.row["tree"][:12] in out.message
+    assert [bed.fake.key(c) for c in bed.fake.calls] == ["status", "hash"], "the steps ran"
+    assert bed.ledger() == [out.row]
+    assert out.log_path is not None
+    assert f"ladder waived {ASKED}" in out.log_path.read_text(encoding="utf-8")
+    code, lines = LP.verify(bed.root, PLAN_REL)
+    assert code == 0, lines
+    assert f"vm=waived:{ASKED}" in lines[0]
+
+
+def test_a_waiver_on_a_run_the_ladder_admits_records_the_vm_run(bed: Bed) -> None:
+    req = bed.request("renet-live", target="hostinger", vm_waived=ASKED)
+    out = bed.record(req, world=_waiver_world(bed, _Asked(), admit=_admits))
+    assert out.status == R.VERIFIED, out.message
+    assert out.row is not None
+    assert out.row["ladder"] == {"vm": "vmc-fixture-1"}, "an admitted ladder needs no waiver"
+
+
+def _set(key: str, value: Any) -> Callable[[dict[str, Any]], None]:
+    return lambda ladder: ladder.update({key: value})
+
+
+@pytest.mark.parametrize(
+    ("edit", "needle"),
+    [
+        (_set("waived", "ASKED:today"), "ladder.waived"),
+        (_set("head_tree", "0" * 40), "ladder.head_tree"),
+        (_set("vm", "vmc-1"), "both"),
+        (lambda ladder: ladder.pop("waived"), "needs ladder.vm"),
+    ],
+    ids=["malformed", "other-tree", "vm-and-waived", "no-waiver"],
+)
+def test_validate_row_refuses_a_tampered_waived_ladder(
+    bed: Bed, edit: Callable[[dict[str, Any]], Any], needle: str
+) -> None:
+    req = bed.request("renet-live", target="hostinger", vm_waived=ASKED)
+    out = bed.record(req, world=_waiver_world(bed, _Asked()))
+    assert out.row is not None
+    checks = LT.registry()
+    assert LT.validate_row(out.row, checks=checks) == [], "control: the waived row is valid"
+    row = json.loads(json.dumps(out.row))
+    edit(row["ladder"])
+    row["id"] = R.row_id(row)
+    problems = LT.validate_row(row, checks=checks)
+    assert any(needle in p for p in problems), problems
+
+
+def test_a_waiver_on_a_row_with_no_vm_phase_is_refused_by_validate_row(bed: Bed) -> None:
+    out = bed.record(bed.request("cli-bench"))
+    assert out.row is not None
+    row = json.loads(json.dumps(out.row))
+    row["ladder"] = {"vm": None, "waived": ASKED, "head_tree": row["tree"]}
+    row["id"] = R.row_id(row)
+    problems = LT.validate_row(row, checks=LT.registry())
+    assert any("no VM phase to waive" in p for p in problems), problems
+
+
+def test_the_command_line_takes_vm_waived_and_transcript() -> None:
+    args = LP._parser().parse_args(
+        [
+            "record",
+            "--plan",
+            "p",
+            "--box",
+            "b",
+            "--target",
+            "bench",
+            "--check",
+            "cli-bench",
+            "--vm-waived",
+            ASKED,
+            "--transcript",
+            "/t/x.jsonl",
+        ]
+    )
+    assert (args.vm_waived, args.transcript) == (ASKED, "/t/x.jsonl")
