@@ -547,8 +547,10 @@ def retro_live(rows):
             dead.update(seen.pop(key, ()))
             dead.add(i)
         elif ev == "rearmed":
-            gen[key] = gen.get(key, 0) + 1
-            for j in seen.pop(key, ()):
+            held = seen.pop(key, ())
+            if held:
+                gen[key] = gen.get(key, 0) + 1
+            for j in held:
                 out[j] = dict(rows[j], band="%s#%d" % (key[1], gen[key]))
             dead.add(i)
         else:
@@ -681,11 +683,15 @@ def retro_order_row(
 ):
     """Append the `ordered` row for (me8, band) and return it. The byte range runs from the previous retro's end to the transcript's current size."""
     rows = retro_rows(project)
+    covered = retro_ordered(rows, me8, band)
+    if covered is not None:
+        # A fresh order already covers the pair: a repeat call returns it and appends nothing.
+        return covered
     if any(
         r.get("ev") == "ordered" and r.get("session") == me8 and r.get("band") == band
         for r in retro_live(rows)
     ):
-        # The pair is covered by a stale order (the callers asked retro_ordered first): retire that generation so the new order gets its own tracking item.
+        # The pair is covered by a stale order: retire that generation so the new order gets its own tracking item.
         retro_append(project, {"ev": "rearmed", "at": utc_stamp(), "session": me8, "band": band})
         rows = retro_rows(project)
     try:

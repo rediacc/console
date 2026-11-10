@@ -492,9 +492,38 @@ def test_rearm_an_unparseable_stamp_dedupes(wl):
     cb = load_ctx(wl)
     rows = [ordered("late", 0, 10, at="not-a-stamp")]
     assert cb.retro_ordered(rows, "deadbeef", "late") is rows[0]
+
+
+def test_rearm_a_stale_order_is_none(wl):
+    cb = load_ctx(wl)
     assert (
         cb.retro_ordered([ordered("late", 0, 10, at=_days_ago(7.01))], "deadbeef", "late") is None
     )
+
+
+def test_rearm_a_rearmed_row_with_no_earlier_rows_makes_no_generation(wl):
+    """A `rearmed` row that retires nothing must not bump the generation: the next real rearm is `#1`."""
+    cb = load_ctx(wl)
+    rows = [
+        {"ev": "rearmed", "session": "deadbeef", "band": "early"},
+        ordered("early", 0, 10, at=_days_ago(9)),
+        {"ev": "rearmed", "session": "deadbeef", "band": "early"},
+        ordered("early", 10, 20),
+    ]
+    got = cb.retro_live(rows)
+    assert [(r["ev"], r["band"]) for r in got] == [("ordered", "early#1"), ("ordered", "early")], (
+        got
+    )
+    control = cb.retro_live(rows[1:])
+    assert [r["band"] for r in control] == ["early#1", "early"], control
+
+
+def test_rearm_order_row_inside_the_window_appends_nothing(wl):
+    cb = load_ctx(wl)
+    first = cb.retro_order_row(wl.proj, "deadbeef", "early", wl.transcript)
+    second = cb.retro_order_row(wl.proj, "deadbeef", "early", wl.transcript)
+    assert second == first
+    assert [r["ev"] for r in ledger_rows(wl)] == ["ordered"], ledger_rows(wl)
 
 
 # ---- SessionStart source=compact is attributed too (retro writer A's finding #d85ee, second retro) ----
