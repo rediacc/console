@@ -2593,7 +2593,7 @@ jobs:
           cp ~/.ssh/id_ed25519 ~/.ssh/id_rsa
           cp ~/.ssh/id_ed25519.pub ~/.ssh/id_rsa.pub
       - name: Provision VM
-        run: sudo -E "$RENET_BINARY" ops up --force --parallel
+        run: sudo env "PATH=$PATH" "HOME=$HOME" "VM_NET_BASE=$VM_NET_BASE" "$RENET_BINARY" ops up --force --parallel
         env:
           VM_NET_BASE: ${{ env.VM_NET_BASE }}
           VM_WORKERS: '11'
@@ -2972,7 +2972,7 @@ jobs:
       # the `renet-integration:` id prefix `scripts/ci-runner/unit-enumerators.ts`
       # (`renetIntegrationUnits`) puts on them, and hands the plain filenames to
       # `ci-test.sh` (via `rediacc_ci.private.renet_integration`)
-      # as RENET_INTEGRATION_FILES. `sudo env VAR=... cmd`, not `sudo -E`: the
+      # as RENET_INTEGRATION_FILES. `sudo env VAR=... cmd`, not the preserve-env flag: the
       # value is set directly on the command sudo execs, so nothing else in this
       # step's environment is exposed to the root-run script that was not
       # already reaching it before this box.

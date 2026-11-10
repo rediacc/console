@@ -309,7 +309,7 @@ jobs:
       - name: "Test: eBPF socket-isolation behavior"
         run: |
           cd private/renet
-          sudo -E env "PATH=$PATH" "GOPATH=$(go env GOPATH)" "GOCACHE=$(go env GOCACHE)" \
+          sudo env "PATH=$PATH" "GOPATH=$(go env GOPATH)" "GOCACHE=$(go env GOCACHE)" \
             go test -tags=ebpf_e2e -v -run TestEBPF_ -timeout 2m ./pkg/ebpf/...
 
       - name: Build CLI
@@ -356,14 +356,14 @@ jobs:
 
       - name: "Test: rdc ops up --basic"
         run: |
-          sudo -E node packages/cli/dist/cli-bundle.cjs ops up \
+          sudo env "PATH=$PATH" "HOME=$HOME" "RENET_DATA_DIR=$RUNNER_TEMP/renet" node packages/cli/dist/cli-bundle.cjs ops up \
             --basic --skip-orchestration -o json
 
       - name: "Test: rdc ops status"
         id: status
         shell: bash
         run: |
-          STATUS=$(sudo -E node packages/cli/dist/cli-bundle.cjs ops status -o json)
+          STATUS=$(sudo env "PATH=$PATH" "HOME=$HOME" "RENET_DATA_DIR=$RUNNER_TEMP/renet" node packages/cli/dist/cli-bundle.cjs ops status -o json)
           echo "$STATUS"
           BRIDGE_IP=$(echo "$STATUS" | jq -r '.data.vms[0].ip')
           echo "bridge_ip=$BRIDGE_IP" >> "$GITHUB_OUTPUT"
@@ -413,7 +413,7 @@ jobs:
         # Idempotent over the --basic cluster: existing VMs are left alone,
         # only worker 12 is created. Ceph nodes stay disabled.
         run: |
-          sudo -E env VM_CEPH_NODES= node packages/cli/dist/cli-bundle.cjs \
+          sudo env "PATH=$PATH" "HOME=$HOME" "RENET_DATA_DIR=$RUNNER_TEMP/renet" VM_CEPH_NODES= node packages/cli/dist/cli-bundle.cjs \
             ops up --skip-orchestration -o json
 
       - name: "Tutorial prep: Docker Hub auth on worker VMs"
@@ -492,13 +492,13 @@ jobs:
 
       - name: "Test: rdc ops down"
         if: always()
-        run: sudo -E node packages/cli/dist/cli-bundle.cjs ops down -o json || true
+        run: sudo env "PATH=$PATH" "HOME=$HOME" "RENET_DATA_DIR=$RUNNER_TEMP/renet" node packages/cli/dist/cli-bundle.cjs ops down -o json || true
 
       - name: "Verify: cleanup"
         if: always()
         shell: bash
         run: |
-          STATUS=$(sudo -E node packages/cli/dist/cli-bundle.cjs ops status -o json 2>/dev/null || echo '{"data":{"vms":[]}}')
+          STATUS=$(sudo env "PATH=$PATH" "HOME=$HOME" "RENET_DATA_DIR=$RUNNER_TEMP/renet" node packages/cli/dist/cli-bundle.cjs ops status -o json 2>/dev/null || echo '{"data":{"vms":[]}}')
           echo "$STATUS" | jq -e '.data.vms | length == 0' || echo "Warning: VMs still present after cleanup"
 
       # `ops up` ran via sudo, so the downloaded image is root-owned; chown it

@@ -515,6 +515,42 @@ def check_env_shell_vars(errors: Errors, root: pathlib.Path, workflow_dir: str) 
         errors.count += 1
 
 
+SUDO_E_RE = re.compile(r"(^|[;&|(`]|\$\()[ \t]*sudo[ \t]+(-[A-Za-z]*E[A-Za-z]*|--preserve-env([ \t]|$))")
+
+
+def sudo_preserve_env_hits(lines: list[str]) -> list[tuple[int, str]]:
+    """Uncommented lines that run `sudo -E` (or `--preserve-env`), which sudo-rs ignores."""
+    out: list[tuple[int, str]] = []
+    for number, line in enumerate(lines, start=1):
+        if COMMENT_RE.match(line):
+            continue
+        body = re.sub(r"^[ \t]*(-[ \t]+)?(run:[ \t]*[|>]?[-+]?[ \t]*)?", "", line)
+        if SUDO_E_RE.search(body):
+            out.append((number, line))
+    return out
+
+
+def check_sudo_preserve_env(errors: Errors, root: pathlib.Path, workflow_dir: str) -> None:
+    """No run step may rely on `sudo -E`: ubuntu-26.04 ships sudo-rs, where `-E` is a no-op."""
+    base = root / workflow_dir
+    if not base.is_dir():
+        return
+    for path in sorted(base.glob("*.yml")):
+        hits = sudo_preserve_env_hits(read_lines(path))
+        if not hits:
+            continue
+        errors.report(
+            "`sudo -E` in %s: ubuntu-26.04 sudo-rs ignores it and drops the whole environment"
+            % path.name,
+            [
+                *["    %s:%d: %s" % (path.name, number, line.strip()) for number, line in hits],
+                '    Fix: `sudo env "NAME=value" ... cmd`, naming each variable the command reads',
+                "    (PATH, HOME, RENET_DATA_DIR, VM_NET_BASE ...).",
+                "",
+            ],
+        )
+
+
 def pr_environment_hits(lines: list[str], file_label: str) -> list[str]:
     """Both syntactic forms of a `pr-`-prefixed deployment environment."""
     out: list[str] = []
@@ -780,6 +816,7 @@ def main(argv: list[str] | None = None) -> int:
     check_inline_run_blocks(errors, root, workflow_dir, max_logic)
     check_env_shell_vars(errors, root, workflow_dir)
     check_pr_environment_names(errors, root, workflow_dir)
+    check_sudo_preserve_env(errors, root, workflow_dir)
     check_gh_slurp_jq(errors, root, files)
     retention_lines = check_retention_days(errors, root, files)
 
