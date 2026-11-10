@@ -1,4 +1,4 @@
-/** The result format the running command prints in (`-o`). It has no imports, so `utils/errors.ts` (which sets it) and `output.ts` (which reads it) share it without an import cycle. */
+/** The result format the running command prints in (`-o`). Its only import is type-only and erased at runtime, so `utils/errors.ts` (which sets it) and `output.ts` (which reads it) share it without an import cycle. */
 
 import type { OutputFormat } from '../../types/index.js';
 

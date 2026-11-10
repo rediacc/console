@@ -168,6 +168,35 @@ describe('subscription verbs (J20)', () => {
     );
   });
 
+  it('status -m under -o json records the activation failure beside the licences, as the text view warns and goes on', async () => {
+    m.readActivation.mockRejectedValue(new Error('activation lookup failed'));
+    m.jobAnswer = {
+      ...OK,
+      stdout: JSON.stringify([{ repositoryGuid: 'guid-1', status: 'valid' }]),
+    };
+
+    await executeMachineStatus('m1');
+
+    expect(m.print).toHaveBeenCalledWith(
+      expect.objectContaining({
+        machine: 'm1',
+        activation: null,
+        activationError: 'activation lookup failed',
+        repoLicenses: [{ repositoryGuid: 'guid-1', status: 'valid' }],
+      }),
+      'json'
+    );
+  });
+
+  it('status -m under -o json fails its step on a licence answer that is not JSON and prints nothing', async () => {
+    m.jobAnswer = { ...OK, stdout: 'not json' };
+
+    await executeMachineStatus('m1');
+
+    expect(m.print).not.toHaveBeenCalled();
+    expect(stepWarnings).toEqual(['renet license-status returned output that is not JSON']);
+  });
+
   it('status -m makes one license-status job and renders the table in its step', async () => {
     m.format = 'table';
     m.readActivation.mockResolvedValue(null);
