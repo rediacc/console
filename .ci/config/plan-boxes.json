@@ -3272,24 +3272,6 @@
       ],
       "ruling": "#b4858621"
     },
-    "agent/plans/_done/PLAN-carried-red-finding-keys.md": {
-      "status": "done",
-      "owner": "d778be9d",
-      "folder": "agent/plans/_done",
-      "moved_at": "2026-09-30",
-      "open": 0,
-      "done": 7,
-      "open_sigs": [],
-      "done_sigs": [
-        "1c30a477",
-        "83e1bb4b",
-        "a1bffc58",
-        "ac33af2e",
-        "ad32ef87",
-        "b3624895",
-        "d87cd336"
-      ]
-    },
     "agent/plans/_done/PLAN-cd-errors-in-ci.md": {
       "status": "done",
       "owner": "d778be9d",
@@ -3925,21 +3907,6 @@
         "fc5f438e"
       ]
     },
-    "agent/plans/_done/PLAN-npm-global-install-release-age.md": {
-      "status": "done",
-      "owner": "d778be9d",
-      "folder": "agent/plans/_done",
-      "moved_at": "2026-09-30",
-      "open": 0,
-      "done": 4,
-      "open_sigs": [],
-      "done_sigs": [
-        "76fc6ed3",
-        "ab348c25",
-        "bf9f08ca",
-        "e1112748"
-      ]
-    },
     "agent/plans/_done/PLAN-parallel-writer-roster.md": {
       "status": "done",
       "owner": "d778be9d",
@@ -4332,24 +4299,6 @@
         "c1087942"
       ],
       "ruling": "#0c1cbd0d"
-    },
-    "agent/plans/_done/PLAN-renet-obs-mirror.md": {
-      "status": "closed",
-      "owner": "d778be9d",
-      "folder": "agent/plans/_done",
-      "moved_at": "2026-09-30",
-      "open": 1,
-      "done": 4,
-      "open_sigs": [
-        "d1494aea"
-      ],
-      "done_sigs": [
-        "55ffd3c5",
-        "8fd517f8",
-        "98b94872",
-        "9dbe8909"
-      ],
-      "ruling": "#39e0011a"
     },
     "agent/plans/_done/PLAN-repair-prose-style-findings.md": {
       "status": "done",
