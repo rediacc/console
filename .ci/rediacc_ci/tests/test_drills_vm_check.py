@@ -3840,6 +3840,54 @@ def test_a_running_fleet_whose_disks_meet_vm_dsk_is_reused(
     assert sorted(_disk_probes(world)) == sorted([WORKER, NET + ".12"])
 
 
+SUPERSET = [*TWO_WORKERS, NET + ".21", NET + ".22", NET + ".23"]
+
+
+def test_a_superset_fleet_already_running_is_reused_when_its_disks_are_big_enough(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Finding #162202f1: the 6-VM fleet left by the ceph legs runs every VM of a smaller fleet, so the leg runs on its own VMs and the extra VMs are left alone."""
+    _sized_two_workers(monkeypatch, "VM_DSK=48 ./rdc.sh ops up")
+    disks = dict.fromkeys(SUPERSET, 48 * vm_check.GIB)
+    world = make_world(tmp_path, running=SUPERSET, disks=disks)
+    rc, out, receipt = run_areas(tmp_path, monkeypatch, world, {"multi-vm"})
+    assert rc == vm_check.EXIT_VERIFIED, out
+    assert _leg(receipt, "multi-vm", "multi-machine-11")["status"] == "ok"
+    assert "fleet two-workers reused" in out
+    assert not [c for c in world.rdc_calls() if c[:2] in (["ops", "up"], ["ops", "down"])]
+
+
+def test_a_superset_fleet_missing_a_needed_vm_is_still_brought_up(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """CONTROL: running VMs that are not the ones the leg needs (.12 is missing) do not stand in for it, so the leg fails when `ops up` fails."""
+    _sized_two_workers(monkeypatch, "./rdc.sh ops up")
+    running = [BRIDGE, WORKER, NET + ".21", NET + ".22"]
+    world = make_world(tmp_path, running=running, ops_up_rc=1)
+    rc, out, receipt = run_areas(tmp_path, monkeypatch, world, {"multi-vm"})
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    leg = _leg(receipt, "multi-vm", "multi-machine-11")
+    assert leg["status"] == "not-verified", leg
+    assert "the fleet could not be brought up" in leg["detail"]
+    assert world.bash_cmds == []
+
+
+def test_a_superset_fleet_with_a_small_disk_on_a_needed_vm_is_refused(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """CONTROL: the ceph fleet's workers carry the default disk (19.5 GiB), below VM_DSK=48, so a superset reuse is refused as fleet-disk-too-small. Disk size, not the extra VMs, is what failed fleet run 17's worker legs."""
+    _sized_two_workers(monkeypatch, "VM_DSK=48 ./rdc.sh ops up")
+    disks = dict.fromkeys(SUPERSET, 48 * vm_check.GIB)
+    disks[WORKER] = int(19.5 * vm_check.GIB)
+    world = make_world(tmp_path, running=SUPERSET, disks=disks)
+    rc, out, receipt = run_areas(tmp_path, monkeypatch, world, {"multi-vm"})
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    leg = _leg(receipt, "multi-vm", "multi-machine-11")
+    assert "fleet-disk-too-small" in leg["detail"]
+    assert "%s has 19.5 GiB of VM_DSK=48" % WORKER in leg["detail"]
+    assert world.bash_cmds == []
+
+
 def test_a_fleet_with_an_unrunnable_recipe_still_has_its_disks_probed(
     tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
