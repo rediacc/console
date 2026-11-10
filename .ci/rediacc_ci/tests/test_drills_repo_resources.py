@@ -160,6 +160,21 @@ def test_shmem_verdict() -> None:
     assert not r.shmem_verdict(None, None, r.RESTORE_BYTES)[0]
 
 
+def test_charged_verdict_names_whether_up_restored() -> None:
+    ok, why = r.charged_verdict(True, 220200960, 0, r.RESTORE_BYTES)
+    assert ok, why
+    assert why.startswith("restored=True, "), why
+    # The K3.3 regression of renet b512ca8d: up() never restored, so both cgroups hold
+    # nothing, and the evidence must say so rather than read as a restore charged elsewhere.
+    ok, why = r.charged_verdict(False, 0, 0, r.RESTORE_BYTES)
+    assert not ok, why
+    assert why.startswith("restored=False, "), why
+    # Control: a logged restore whose shmem is missing from rediacc-<E> still fails.
+    ok, why = r.charged_verdict(True, 1000, 220200960, r.RESTORE_BYTES)
+    assert not ok, why
+    assert why.startswith("restored=True, "), why
+
+
 def test_grant_and_marker_readers() -> None:
     show = 'time="x" level=info msg="y"\n{\n  "version": 1,\n  "limits": {"memory_max": 1610612736}\n}\n'
     assert r.grant_memory_max(show) == r.C_MEMORY_RAISED

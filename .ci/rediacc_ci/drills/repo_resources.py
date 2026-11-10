@@ -365,6 +365,14 @@ def shmem_verdict(e_shmem: int | None, exec_shmem: int | None, least: int) -> tu
     return e_shmem >= least and (exec_shmem or 0) < least, why
 
 
+def charged_verdict(
+    restored: bool, e_shmem: int | None, exec_shmem: int | None, least: int
+) -> tuple[bool, str]:
+    """K3.3 in full: up() logged its restore AND the shmem landed in rediacc-<E>. The evidence opens with `restored=<bool>`, so an up() that never restored (REDIACC_RAM_DIR unset, renet b512ca8d) cannot read as a restore charged to the wrong cgroup."""
+    ok, why = shmem_verdict(e_shmem, exec_shmem, least)
+    return restored and ok, "restored=%s, %s" % (restored, why)
+
+
 def unmounted_verdict(findmnt_after: str, target: str) -> tuple[bool, str]:
     """K3.5: no `.ram` mount is listed after `repo down --unmount`; a listing that still carries it is FAIL."""
     mounted, _ = ram_mounted(findmnt_after, target)
@@ -715,11 +723,11 @@ class _Live:
         e_shmem = shmem(sections(self.readout(e)).get("memory.stat", ""))
         exec_shmem = shmem(self.root(exec_stat_script(self.nid[e])).out)
         restored = ("restored %d" % RESTORE_BYTES) in up_log
-        ok, why = shmem_verdict(e_shmem, exec_shmem, RESTORE_BYTES)
+        ok, why = charged_verdict(restored, e_shmem, exec_shmem, RESTORE_BYTES)
         self.check(
             "K3.3 up() restored %d bytes into .ram, charged to rediacc-%d and not to renet-exec-%d"
             % (RESTORE_BYTES, self.nid[e], self.nid[e]),
-            restored and ok,
+            ok,
             None,
             why,
         )
