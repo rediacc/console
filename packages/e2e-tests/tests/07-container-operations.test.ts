@@ -85,7 +85,7 @@ test.describe('Container Operations @bridge', () => {
     await runner.repositoryDown(testRepo, datastorePath, networkId);
 
     // Unmount and delete repository
-    await runner.repositoryUnmount(testRepo, datastorePath, DEFAULT_NETWORK_ID);
+    await runner.repositoryUnmount(testRepo, datastorePath, networkId);
     await runner.repositoryRm(testRepo, datastorePath);
 
     // Teardown daemon

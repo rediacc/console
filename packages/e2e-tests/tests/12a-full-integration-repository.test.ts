@@ -158,7 +158,7 @@ test.describe
         /* ignore */
       }
       try {
-        await runner.repositoryUnmount(repositoryName, datastorePath, DEFAULT_NETWORK_ID);
+        await runner.repositoryUnmount(repositoryName, datastorePath, networkId);
       } catch {
         /* ignore */
       }

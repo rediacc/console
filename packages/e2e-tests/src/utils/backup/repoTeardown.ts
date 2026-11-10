@@ -110,6 +110,7 @@ export const teardownRepos = async (targets: TeardownTargets): Promise<void> => 
   for (const guid of guids) {
     if (!GUID.test(guid)) failures.push(`not a GUID, refusing to put it in a shell: ${guid}`);
   }
+  // Only config repos carry a network id. `extraGuids` are raw-verb restore targets (suite 26 K2/L5): images written by `renet backup restore`, never mounted, so the sweep never needs an id for them. A mounted guid absent from this map is therefore a real finding and is recorded as a failure, never given a guessed id.
   const networkOf = new Map(families.flatMap((f) => Object.entries(f.networks)));
   const valid = guids.filter((g) => GUID.test(g));
 

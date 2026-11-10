@@ -904,8 +904,11 @@ test.describe
           ).toBeGreaterThan(startupHits);
         } finally {
           if (tokenOriginal !== undefined) writeFileSync(tokenFile, tokenOriginal, { mode: 0o600 });
-          await unmountRepo(w1, repo);
-          await new Promise<void>((resolve) => sink.close(() => resolve()));
+          try {
+            await unmountRepo(w1, repo);
+          } finally {
+            await new Promise<void>((resolve) => sink.close(() => resolve()));
+          }
         }
       });
     }
