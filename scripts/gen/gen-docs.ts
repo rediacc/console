@@ -849,6 +849,31 @@ function readStdin(): string {
   return Buffer.concat(chunks).toString('utf-8');
 }
 
+/**
+ * An argument with a glob character becomes the tracked files it matches (a `:(glob)` pathspec, so `**` works). The CLI used to judge a glob as a literal path, so `packages/www/src/**` read no file and the report said `affected: []` with exit 0: a green it never earned. A glob that matches nothing is named on stderr and contributes nothing.
+ */
+function expandGlobs(paths: string[]): string[] {
+  const out = new Set<string>();
+  for (const p of paths) {
+    if (!/[*?[]/.test(p)) {
+      out.add(p);
+      continue;
+    }
+    const hit = execFileSync('git', ['ls-files', '-z', '--', `:(glob)${p}`], {
+      cwd: ROOT,
+      maxBuffer: 256 * 1024 * 1024,
+    })
+      .toString('utf-8')
+      .split('\0')
+      .filter((f) => f !== '');
+    if (hit.length === 0) {
+      console.error(`${RED}✗${NC} --could-affect: the glob ${p} matches no tracked file`);
+    }
+    for (const f of hit) out.add(f);
+  }
+  return [...out];
+}
+
 /** The CLI face of `couldAffect`: paths from argv after the flag, else one per stdin line; JSON on stdout. */
 function couldAffectMain(argv: string[]): number {
   const at = argv.indexOf('--could-affect');
@@ -860,6 +885,7 @@ function couldAffectMain(argv: string[]): number {
       .map((l) => l.trim())
       .filter((l) => l !== '');
   }
+  paths = expandGlobs(paths);
   if (paths.length === 0) {
     // A verdict over zero paths would read as "nothing could move", which is a green it never earned.
     console.error(
@@ -1232,7 +1258,18 @@ function selftest(): number {
   const anyPath: Provider = { ...P, id: 'reads-everything', inputs: { scope: () => true } };
   ck(
     'planted: a provider scoped to every path makes that same www set fire',
-    couldAffect(ROOT, www.slice(0, 3), [anyPath]).length === 3
+    couldAffect(ROOT, www, [anyPath]).length === www.length
+  );
+  const globbed = execFileSync(
+    'node',
+    [path.join(ROOT, 'scripts/gen/gen-docs.ts'), '--could-affect', '.ci/config/env-manifes?.json'],
+    { cwd: ROOT }
+  ).toString('utf-8');
+  const globDoc = JSON.parse(globbed) as { affected: string[]; paths: number };
+  ck(
+    'the CLI expands a glob: a pattern naming the env manifest reaches the env-manifest provider',
+    globDoc.paths === 1 && globDoc.affected.includes('env-manifest'),
+    globDoc
   );
   const env = couldAffect(ROOT, ['.ci/config/env-manifest.json']);
   ck(
