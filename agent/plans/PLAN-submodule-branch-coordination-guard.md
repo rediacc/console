@@ -4,7 +4,7 @@ Status: proposed -- hold lifted 2026-10-04: the 2026-09-26 ruling held it until 
 Depends-On: no-dep -- cites no other plan
 Owner: d778be9d
 Updated: 2026-09-23
-Priority: P3 -- seed: Status proposed, 8 open box(es)
+Priority: P3 -- the guard it proposes is parked for a retire-or-redesign ruling (#dcea1f9b); nothing ships from it before that answer
 Concurrency: parallel -- the 2026-09-26 run-alone ruling (limited token budget) is lifted: operator 2026-10-04 asked for parallel turbo with writer_cap 10; Owns: decides overlaps
 Owns: private/renet, private/account, .claude/rediacc_hooks/guards/block_uncoordinated_submodule_pointer.py, .claude/rediacc_hooks/guards/block_prose_style_commit.py, .claude/rediacc_hooks/guards/test-block_uncoordinated_submodule_pointer.py, .claude/agents/pr-babysitter.md, .claude/commands/pr-babysit.md
 
@@ -87,14 +87,19 @@ Proposed guard: **`.claude/rediacc_hooks/guards/block_uncoordinated_submodule_po
 
 ## Boxes
 
-- [ ] Re-verify live (this tree moves fast): `git submodule status`, `private/renet`/`private/account` branch names, and whether PR #590's `Submodule Branches` check has actually run and rendered a verdict yet.
-- [ ] If confirmed red on `Submodule Branches` for #590: do not force a pass; either wait for `renet#111`/`account#87` to merge and re-point, or get explicit operator sign-off to treat it as a documented, expected red in the interim.
+- [x] Re-verify live (this tree moves fast): `git submodule status`, `private/renet`/`private/account` branch names, and whether PR #590's `Submodule Branches` check has actually run and rendered a verdict yet.
+    (ticked) 2026-11-10T19:59:06Z by d778be9d: nocommit: git submodule status rc 0 (2026-11-10); console PR #590 merged 2026-09-30 per gh api repos/rediacc/console/pulls/590 rc 0, renet#111 and account#87 closed unmerged; .claude/agents/pr-babysitter.md:128 states the same-name rule
+- [x] If confirmed red on `Submodule Branches` for #590: do not force a pass; either wait for `renet#111`/`account#87` to merge and re-point, or get explicit operator sign-off to treat it as a documented, expected red in the interim.
+    (ticked) 2026-11-10T19:59:07Z by d778be9d: nocommit: moot, gh api repos/rediacc/console/pulls/590 rc 0 shows merged 2026-09-30 and both submodule PRs closed, so no Submodule Branches red remains; policy at .claude/agents/pr-babysitter.md:128
 - [ ] Add `.claude/rediacc_hooks/guards/block_uncoordinated_submodule_pointer.py`: `TWIN = None`, `CHAIN = "pre-bash"`, next free `ORDER` slot (verify live, candidate 46), scoped `sys.path` import of `submodule_branches.py` per `.claude/rediacc_hooks/guards/block_prose_style_commit.py:164-175`'s pattern, the four-way decision tree in section 5, the `SUBMODULE_POINTER_OK` escape hatch.
 - [ ] Add `.claude/rediacc_hooks/guards/test-block_uncoordinated_submodule_pointer.py`: hermetic scratch-repo fixtures covering every EDGE_CASES row, `gh` stubbed per this repo's existing convention, and the planted DEFECT proving the block-vs-warn distinction is load-bearing.
 - [ ] Register the guard (no registry edit needed per the directory-scan design) and run the hook-integrity check to confirm it's picked up.
-- [ ] Add the one cross-reference sentence to `.claude/agents/pr-babysitter.md`; do not touch `.claude/commands/pr-babysit.md`.
-- [ ] Leave `#6f6c87e0` (account PR #87's fate) and every submodule branch/checkout exactly as found -- no rename, no local checkout switch, pending operator action per the Immediate recommendation.
-- [ ] File the CI-gate-lookup-gap (section 5's companion note) as its own future consideration, explicitly not as a box in this plan, since it changes an already-enforced gate and needs its own scoping.
+- [x] Add the one cross-reference sentence to `.claude/agents/pr-babysitter.md`; do not touch `.claude/commands/pr-babysit.md`.
+    (ticked) 2026-11-10T19:58:44Z by d778be9d: nocommit: present: .claude/agents/pr-babysitter.md:128 already states the same-name rule for submodule PR branches and why the Submodule Branches gate and /pr-merge need it
+- [x] Leave `#6f6c87e0` (account PR #87's fate) and every submodule branch/checkout exactly as found -- no rename, no local checkout switch, pending operator action per the Immediate recommendation.
+    (ticked) 2026-11-10T19:59:08Z by d778be9d: nocommit: nothing touched; #6f6c87e0 closed 2026-09-23T17:25:43Z on its default; git submodule status rc 0 shows every submodule at its gitlink; rule at .claude/agents/pr-babysitter.md:128
+- [x] File the CI-gate-lookup-gap (section 5's companion note) as its own future consideration, explicitly not as a box in this plan, since it changes an already-enforced gate and needs its own scoping.
+    (ticked) 2026-11-10T19:59:39Z by d778be9d: nocommit: reported, not filed: .ci/rediacc_ci/quality/submodule_branches.py:622 looks the submodule branch up by the console branch name, the policy block_second_branch enforces and .claude/agents/pr-babysitter.md:128 states
 
 ## Critical files
 
