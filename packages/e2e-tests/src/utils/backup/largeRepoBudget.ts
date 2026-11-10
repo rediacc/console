@@ -42,9 +42,30 @@ export interface LargeRepoBudgetInput {
 /** The absolute cap applies from this seed size up; below it the budget is purely proportional. */
 export const CAP_FLOOR_BYTES = 20 * GIB;
 
-/** The incremental's time budget in ms: a tenth of the seed, clipped to the cap when the seed is at least 20 GiB (or its size is not given). */
-export const incrTimeBudgetMs = (seedDurationMs: number, seedBytes?: number): number => {
-  const proportional = INCR_TIME_RATIO * seedDurationMs;
+/** Multiplier on the changed-bytes share of the seed, so measurement noise does not fail a healthy anchor path. */
+export const INCR_SHARE_HEADROOM = 1.5;
+
+/**
+ * The incremental's time budget in ms, clipped to the cap when the seed is at least 20 GiB (or its size is not given).
+ *
+ * Snapshot time is linear in bytes (the hash cap plus upload), so a healthy incremental takes about
+ * changedBytes / seedBytes of the seed's time. A fixed 10% ratio is unsatisfiable once the change
+ * is more than a tenth of the seed (a 256 MiB change on the 2 GiB vm:check seed is 12%, measured
+ * 12379 ms against 10124 ms). The ratio is therefore the larger of INCR_TIME_RATIO and the changed
+ * share times INCR_SHARE_HEADROOM. At 20 GiB and up the share is a few percent at most (0.5% at
+ * 50 GiB), the 10% ratio wins, and the nightly budget is unchanged. A full rehash takes about the
+ * seed's whole time, far over either ratio, so the control stays separable.
+ */
+export const incrTimeBudgetMs = (
+  seedDurationMs: number,
+  seedBytes?: number,
+  changedBytes?: number
+): number => {
+  const share =
+    seedBytes !== undefined && seedBytes > 0 && changedBytes !== undefined && changedBytes > 0
+      ? (changedBytes / seedBytes) * INCR_SHARE_HEADROOM
+      : 0;
+  const proportional = Math.max(INCR_TIME_RATIO, share) * seedDurationMs;
   if (seedBytes !== undefined && seedBytes < CAP_FLOOR_BYTES) return proportional;
   return Math.min(INCR_TIME_CAP_MS, proportional);
 };
@@ -110,14 +131,14 @@ export const largeRepoBudgetViolations = (input: LargeRepoBudgetInput): string[]
       `the incremental uploaded ${incr.chunksUploaded} chunks, over the ${chunkCeiling} ceiling`
     );
   }
-  const budget = incrTimeBudgetMs(seed.durationMs, input.seedBytes);
+  const budget = incrTimeBudgetMs(seed.durationMs, input.seedBytes, changedBytes);
   if (incr.durationMs > budget) {
     const capped = input.seedBytes >= CAP_FLOOR_BYTES;
     const capNote = capped
       ? `, capped at ${INCR_TIME_CAP_MS} ms from 20 GiB`
       : ', no cap under 20 GiB';
     out.push(
-      `the incremental took ${incr.durationMs} ms, over the ${budget} ms budget (${INCR_TIME_RATIO * 100}% of the ${seed.durationMs} ms seed${capNote})`
+      `the incremental took ${incr.durationMs} ms, over the ${budget} ms budget (${Math.round((budget / seed.durationMs) * 1000) / 10}% of the ${seed.durationMs} ms seed${capNote})`
     );
   }
   return out;

@@ -321,7 +321,7 @@ test.describe
           violations.length,
           'the budget did not flag the anchor-deleted snapshot'
         ).toBeGreaterThan(0);
-        const budgetMs = incrTimeBudgetMs((seed as SnapshotRecord).durationMs, SEED_BYTES);
+        const budgetMs = incrTimeBudgetMs((seed as SnapshotRecord).durationMs, SEED_BYTES, CHANGE_BYTES);
         expect(
           control.durationMs,
           `the rehash took ${control.durationMs} ms, not over the ${budgetMs} ms incremental budget (cap ${INCR_TIME_CAP_MS}); the budget does not separate the two cases on this runner`
@@ -335,7 +335,7 @@ test.describe
           seed: measure(seed as SnapshotRecord),
           incr: measure(incr as SnapshotRecord),
           control: measure(control as SnapshotRecord),
-          incrBudgetMs: incrTimeBudgetMs((seed as SnapshotRecord).durationMs, SEED_BYTES),
+          incrBudgetMs: incrTimeBudgetMs((seed as SnapshotRecord).durationMs, SEED_BYTES, CHANGE_BYTES),
           runner: {
             workers: workers.join(' '),
             vmDsk: process.env.VM_DSK ?? '',

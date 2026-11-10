@@ -28,6 +28,37 @@ describe('incrTimeBudgetMs below the cap floor', () => {
   });
 });
 
+describe('incrTimeBudgetMs follows the changed share', () => {
+  const seedBytes = 2_516_582_400;
+  const seedMs = 101_237;
+  const changed = 268_435_456;
+  const mk = (incrMs: number, bytes = seedBytes, ms = seedMs) => ({
+    seed: { durationMs: ms, bytesUploaded: bytes, chunksUploaded: 1 },
+    incr: { durationMs: incrMs, bytesUploaded: changed, chunksUploaded: 1 },
+    changedBytes: changed,
+    seedBytes: bytes,
+    cellBytes: 4 * 1024 * 1024,
+  });
+
+  it('passes the measured 2 GiB incremental (12379 ms)', () => {
+    expect(incrTimeBudgetMs(seedMs, seedBytes, changed)).toBeGreaterThan(12_379);
+    expect(largeRepoBudgetViolations(mk(12_379))).toEqual([]);
+  });
+
+  it('still fails an incremental at 3x that time', () => {
+    const v = largeRepoBudgetViolations(mk(3 * 12_379));
+    expect(v.some((m) => m.includes('budget'))).toBe(true);
+  });
+
+  it('CONTROL: at 50 GiB the 10% ratio and the cap are unchanged', () => {
+    expect(incrTimeBudgetMs(10_000_000, 50 * GIB, changed)).toBe(INCR_TIME_CAP_MS);
+    expect(incrTimeBudgetMs(10_000_000, 50 * GIB, changed)).toBe(
+      incrTimeBudgetMs(10_000_000, 50 * GIB)
+    );
+    expect(incrTimeBudgetMs(100_000, 50 * GIB, changed)).toBeCloseTo(10_000, 6);
+  });
+});
+
 describe('per-seed-file time guard', () => {
   it('scales the limit per GiB', () => {
     expect(seedFileLimitMs(2 * GIB)).toBe(2 * seedFileLimitMs(GIB));
