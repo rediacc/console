@@ -35,7 +35,9 @@ THE RULES, EACH WITH A PLANTED CONTROL IN `--selftest`:
         ledger line is LP5 too.
     LP6 a required plan reached a finished Status or `_done/` on this branch, after
         `baseline_at`, without a valid receipt per declared target, unless its
-        `Ruling:` line resolves and names the live-proof waiver.
+        `Ruling:` line resolves and names the live-proof waiver. An LP box already
+        ticked at the base, and ticked through the whole branch, was judged by LP4/LP5
+        on the branch that ticked it, so LP6 does not judge its receipt again.
     LP7 vacuity: the surface map or the live registry is empty or unparsable,
         `baseline_at` is unset or not a date, a surface admits a target that no
         registry check covers, an Accept line names a check the registry lacks, or
@@ -449,6 +451,7 @@ class Oracles:
     done_commit_of: Callable[[str, str], str]
     date_of: Callable[[str], str]
     judge_row: Callable[[dict[str, Any], str], list[str]]
+    ticked_at_base: Callable[[str, str], bool] = lambda _r, _s: False
 
 
 def matching_rows(
@@ -562,11 +565,13 @@ def ruling_waives(plan: Plan, resolve: Callable[[Plan], tuple[bool, str]]) -> bo
 def _has_receipt(
     plan: Plan, target: str, rows: list[dict[str, Any]], commit: str, oracles: Oracles
 ) -> bool:
-    """Whether a row proves `target`, judged at the commit that ticked its box: staleness is read only there, so surface code landing between the tick and the close-out does not unprove it. A box still open (a `Ruling:` finish) has no tick, and its row is judged at the finishing `commit`."""
+    """Whether a row proves `target`, judged at the commit that ticked its box: staleness is read only there, so surface code landing between the tick and the close-out does not unprove it. A box still open (a `Ruling:` finish) has no tick, and its row is judged at the finishing `commit`. A box ticked at the base, and still ticked through the whole branch, was judged by LP4/LP5 on the branch that ticked it, so LP6 does not judge it again."""
     for t, box in lp_boxes(plan):
         accept = LT.accept_of(plan.text, box.line) if t == target else None
         if accept is None:
             continue
+        if oracles.ticked_at_base(plan.rel, box.sig):
+            return True
         at = oracles.done_commit_of(plan.rel, box.sig) or commit
         for row in matching_rows(rows, plan.rel, box.sig, t, accept):
             if not oracles.judge_row(row, at):
@@ -623,8 +628,9 @@ def finish_findings(
             Finding(
                 "LP6",
                 rel,
-                "finished in %s without a valid receipt for its declared target %s"
-                % (commit[:12], target),
+                "finished in %s without a valid receipt for its declared target %s; record it "
+                "while the plan is live (worklist.py --live-proof) or close under a Ruling: "
+                "naming the live-proof waiver" % (commit[:12], target),
             )
             for target in proof.targets
             if not _has_receipt(plan, target, rows, commit, oracles)
@@ -825,22 +831,35 @@ class Context:
         return PF.resolve_ruling(str(self.root), plan.rel, plan.text, self.item_states())
 
 
-def _transition_oracles(ctx: Context, base: str, history: Callable[[], list]) -> Oracles:
+def _attests(ident: str, sig: str) -> Callable[[dict[str, Any]], bool]:
+    """Whether a plan-boxes document records `sig` done for the plan `ident`, by identity, the way matching_rows and finished_on_branch read a plan: keyed on the path, a plan ticked and then moved to `_done/` on one branch named the move as its tick."""
+
+    def attests(doc: dict[str, Any]) -> bool:
+        return any(
+            identity(r) == ident and isinstance(v, dict) and sig in (v.get("done_sigs") or [])
+            for r, v in (doc.get("plans") or {}).items()
+        )
+
+    return attests
+
+
+def _transition_oracles(
+    ctx: Context, base: str, history: Callable[[], list], base_plans: dict[str, Any]
+) -> Oracles:
     root = ctx.root
     checks = ctx.view.checks or LT.registry()
     successor_of = SUCC.lazy_successor_of(str(root), base, importlib.import_module("wl_planrec"))
 
     def done_commit_of(rel: str, sig: str) -> str:
-        # By identity, the way matching_rows and finished_on_branch read a plan: keyed on the path, a plan ticked and then moved to `_done/` on one branch named the move as its tick.
-        ident = identity(rel)
+        return first_of_latest_run(history(), _attests(identity(rel), sig))
 
-        def attests(doc: dict[str, Any]) -> bool:
-            return any(
-                identity(r) == ident and isinstance(v, dict) and sig in (v.get("done_sigs") or [])
-                for r, v in (doc.get("plans") or {}).items()
-            )
-
-        return first_of_latest_run(history(), attests)
+    def ticked_at_base(rel: str, sig: str) -> bool:
+        # Ticked at the base and never reopened on the branch: the tick, and its receipt, belong to the branch that made it. A box reopened and ticked again here is judged.
+        attests = _attests(identity(rel), sig)
+        if not attests({"plans": base_plans}):
+            return False
+        h = history()
+        return not h or first_of_latest_run(h, attests) == h[0][0]
 
     def date_of(commit: str) -> str:
         # The author date, which a rebase keeps: the committer date would move every tick on a rebased branch past baseline_at.
@@ -868,7 +887,7 @@ def _transition_oracles(ctx: Context, base: str, history: Callable[[], list]) ->
             inputs_at=inputs_at,
         )
 
-    return Oracles(done_commit_of, date_of, judge)
+    return Oracles(done_commit_of, date_of, judge, ticked_at_base)
 
 
 def _skip_finding(why: str) -> Finding:
@@ -901,7 +920,7 @@ def transitions(ctx: Context, base_override: str | None) -> tuple[list[Finding],
             memo["h"] = branch_history(root, base)
         return memo["h"]
 
-    oracles = _transition_oracles(ctx, base, history)
+    oracles = _transition_oracles(ctx, base, history, base_plans)
     tally: dict[str, int] = {}
     judged = PI.moved_to_done(base_plans, head_plans)
     found = tick_findings(judged, ctx.plans, ctx.rows, ctx.view.baseline_at, oracles, tally)
@@ -1426,6 +1445,31 @@ class _Suite:
                     refused,
                 )
             ),
+            ["LP6"],
+        )
+
+        def at_base(flag: bool) -> Oracles:
+            return Oracles(
+                lambda _r, _s: _C,
+                lambda _c: "2026-10-29T10:00:00Z",
+                lambda _row, _at: ["the row fails a rule that landed after the tick"],
+                lambda _r, _s: flag,
+            )
+
+        c.check(
+            "finished with the LP box ticked at the base: judged on the branch that ticked it, silent",
+            finish_findings(pair, {_FX_DONE: done}, [], _BASE, at_base(True), refused),
+            [],
+        )
+        c.check(
+            "CONTROL: the same box ticked on this branch is judged, LP6",
+            _codes(finish_findings(pair, {_FX_DONE: done}, [], _BASE, at_base(False), refused)),
+            ["LP6"],
+        )
+        boxless = _fixture(boxes="", rel=_FX_DONE, status="done")
+        c.check(
+            "CONTROL: a declared target with no LP box is LP6 even when ticked_at_base says yes",
+            _codes(finish_findings(pair, {_FX_DONE: boxless}, [], _BASE, at_base(True), refused)),
             ["LP6"],
         )
         ruled = _fixture(

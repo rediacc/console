@@ -286,6 +286,58 @@ def test_a_move_to_done_is_not_the_tick(gate, tmp_path):
     gate.log_pass("a _done move keeps the box's own ticking commit")
 
 
+def _two_box_plan(tmp_path: pathlib.Path, lp_ticked: bool) -> pathlib.Path:
+    """`main` at one commit: the account plan with its LP box (ticked when `lp_ticked`) and a second box T2 still open, so the plan is unfinished at the base, beside the docs-only plan that keeps one plan live after the close. A `work` branch is checked out on top."""
+    root = tmp_path / "tree"
+    root.mkdir()
+    _git(root, "init", "-q", "-b", "main")
+    text = _plan("acct") + "- [ ] T2 the rest\n"
+    if lp_ticked:
+        text = text.replace("- [ ] LP-bench", "- [x] LP-bench")
+    _write(root, "agent/plans/PLAN-acct.md", text)
+    _write(
+        root, "agent/plans/PLAN-docs.md", _plan("docs", owns="docs/fixture/**", line=None, box="")
+    )
+    _commit(root, "seed", AFTER)
+    _git(root, "checkout", "-q", "-b", "work")
+    return root
+
+
+def _finish(root: pathlib.Path) -> None:
+    """Tick every open box of the account plan and move it to `_done/` with a done Status."""
+    plan = root / "agent" / "plans" / "PLAN-acct.md"
+    text = (
+        plan.read_text(encoding="utf-8")
+        .replace("Status: in-progress", "Status: done")
+        .replace("- [ ] ", "- [x] ")
+    )
+    plan.unlink()
+    _write(root, "agent/plans/_done/PLAN-acct.md", text)
+    _commit(root, "tick the rest and close the plan", AFTER)
+
+
+def test_a_box_ticked_before_the_base_is_not_rejudged_at_the_finish(gate, tmp_path):
+    """An LP box ticked on an earlier branch, already in done_sigs at the merge-base, was judged by LP4/LP5 there. A plan that finishes on this branch because another box was open at the base does not re-judge that receipt: walking only base..HEAD, the box read as ticked by the first branch commit, and a rule landed later failed it."""
+    root = _two_box_plan(tmp_path, lp_ticked=True)
+    _finish(root)
+    result = _gate(root, _map(tmp_path))
+    gate.assert_eq("LP6" in result.err, False, "the pre-base tick is not re-judged: %r" % result)
+    gate.assert_exit(0, result, "the plan finishes over a box ticked before the base")
+    gate.log_pass("a box ticked before the base is not re-judged at the finish")
+
+
+def test_a_box_ticked_on_the_branch_at_the_finish_is_still_judged(gate, tmp_path):
+    """CONTROL: the same finish with the LP box still open at the base. The tick is this branch's, so LP6 judges it and finds no receipt."""
+    root = _two_box_plan(tmp_path, lp_ticked=False)
+    _finish(root)
+    result = _gate(root, _map(tmp_path))
+    gate.assert_exit(1, result, "a branch tick with no receipt row")
+    gate.assert_contains(
+        result.err, "LP6 agent/plans/_done/PLAN-acct.md", "the finish is judged on the branch"
+    )
+    gate.log_pass("a box ticked on the branch is still judged at the finish")
+
+
 def test_no_merge_base_is_lp7_not_a_skip(gate, tmp_path):
     """LP4 to LP6 judge transitions against a merge-base. When none can be computed they judge nothing, so the run must be red: a green here would mean every tick on the branch went unchecked."""
     result = _gate_on_base(_seed(tmp_path), _map(tmp_path), "no-such-ref")
