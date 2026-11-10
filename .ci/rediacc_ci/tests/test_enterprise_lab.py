@@ -977,6 +977,32 @@ def test_read_limits_takes_the_paid_column_of_each_row():
     assert got == {"workers_scripts": 500, "routes_per_zone": 1000}
 
 
+# The page's own form, read 2026-11-10: a <sup> footnote link in the Paid cell, and a one-column routes table beside a remote-dev row of the same words.
+PAGE_LIVE_FORM = """
+| Feature | Workers Free | Workers Paid |
+| --- | --- | --- |
+| [Number of Workers](#number-of-workers) | 100 | 500<sup>[1](#user-content-fn-1)</sup> |
+| [Requests](#daily-requests) | 100,000/day | No limit |
+
+| Limit | Value |
+| --- | --- |
+| [Routes](https://developers.cloudflare.com/workers/configuration/routing/routes/) per zone | 1,000 |
+| Routes per zone ([`wrangler dev --remote`](#routes-remote-dev)) | 50 |
+"""
+
+
+def test_read_limits_reads_the_live_page_form():
+    got = lab.read_limits(fetch=lambda _u: (200, PAGE_LIVE_FORM))
+    assert got == {"workers_scripts": 500, "routes_per_zone": 1000}
+
+
+def test_a_paid_cell_without_a_figure_is_a_lab_error_not_the_free_figure():
+    """Review 98b2c18f.1: an unlimited Paid cell never reads as the Free column's 100."""
+    page = PAGE_LIVE_FORM.replace("500<sup>[1](#user-content-fn-1)</sup>", "No limit")
+    with pytest.raises(proof.LabError, match="No limit"):
+        lab.read_limits(fetch=lambda _u: (200, page))
+
+
 def test_a_moved_row_is_a_lab_error_not_a_changed_limit():
     """Control: a page without the row never reads as a different figure."""
     with pytest.raises(proof.LabError, match="Number of Workers"):

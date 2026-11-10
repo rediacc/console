@@ -924,7 +924,7 @@ def request_from(company: str, *, foreign: bool, method: str, path: str) -> int:
 #
 # `image_rebuild_seconds()` times a cold `docker build --no-cache` of the executor image (`workers/proxy/Dockerfile`, the image `console_executor --enable` ships), the question the plan's *Not verified* leaves open; a build that fails is a `LabError`, never a time.
 #
-# `read_limits()` re-reads the two figures *Limits* took from a summarizing tool, from Cloudflare's own Workers limits page (its markdown form): the Workers Paid column of "Number of Workers" and of "Routes per zone". A row that cannot be found is a `LabError`, so a page that moved never reads as a changed limit.
+# `read_limits()` re-reads the two figures *Limits* took from a summarizing tool, from Cloudflare's own Workers limits page (its markdown form): the last column of "Number of Workers" (Workers Paid; Free is the column before it) and of "Routes per zone" (the routes table has one Value column). A row that cannot be found, or whose last column holds no figure ("No limit" is how the page writes an unlimited Paid cell), is a `LabError`, so a page that moved never reads as a changed limit and a Paid cell is never read from the Free column.
 
 
 RECORDS_SQL = "SELECT company_id, detail FROM audit WHERE action = ? ORDER BY id"
@@ -1042,10 +1042,14 @@ def _row_figure(text: str, label: str) -> int:
         cells = [c.strip() for c in line.strip().strip("|").split("|")]
         head = re.sub(r"[*_`]", "", MD_LINK.sub(r"\1", cells[0])).strip().lower()
         if len(cells) >= 2 and head == label.lower():
-            figures = [re.sub(r"[^0-9]", "", FOOTNOTE.sub("", c)) for c in cells[1:]]
-            figures = [f for f in figures if f]
-            if figures:
-                return int(figures[-1])
+            # The last column only: Workers Paid in the plan table, Value in the single-column routes table. A Paid cell with no figure ("No limit") must never fall back to the Free column beside it.
+            figure = re.sub(r"[^0-9]", "", FOOTNOTE.sub("", cells[-1]))
+            if not figure:
+                raise proof.LabError(
+                    "the Workers limits page's %r row reads %r in its last column, not a figure"
+                    % (label, cells[-1])
+                )
+            return int(figure)
     raise proof.LabError("the Workers limits page has no %r row with a figure" % label)
 
 
