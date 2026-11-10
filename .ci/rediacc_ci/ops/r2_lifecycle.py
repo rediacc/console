@@ -112,6 +112,14 @@ class Wrangler:
 Runner = typing.Callable[..., tuple[int, str]]
 
 
+class BucketRunner(typing.Protocol):
+    """A `Runner` that can also list every bucket in the account."""
+
+    def __call__(self, *args: str) -> tuple[int, str]: ...
+
+    def list_buckets(self) -> list[str]: ...
+
+
 def parse_rules(text: str) -> list[Rule]:
     """Parse `wrangler r2 bucket lifecycle list` blocks (name / enabled / prefix / action lines)."""
     rules: list[Rule] = []
@@ -196,7 +204,8 @@ def diff(existing: list[Rule], wanted: list[Rule]) -> tuple[list[Rule], list[Rul
 
 LIST_PAGE = 1000
 MAX_PAGES = 100
-NOT_FOUND_MARKERS = ("10006", "does not exist", "not found")
+# wrangler's answer for an absent bucket is "The specified bucket does not exist. [code: 10006]"; a bare "not found" also appears in unrelated auth and network failures, so it is no marker.
+NOT_FOUND = re.compile(r"\[code:\s*10006\]|specified bucket does not exist", re.IGNORECASE)
 
 
 def list_all_buckets(
@@ -223,7 +232,14 @@ def list_all_buckets(
         if page is None or not hasattr(page, "__iter__"):
             raise RuntimeError("complete bucket listing unavailable: no buckets array in the reply")
         page = list(page)
-        names.extend(str(b["name"]) for b in page if isinstance(b, dict) and "name" in b)
+        for entry in page:
+            name = entry.get("name") if isinstance(entry, dict) else None
+            if not name or not isinstance(name, str):
+                raise RuntimeError(
+                    "complete bucket listing unavailable: a bucket entry has no name: %.200r"
+                    % (entry,)
+                )
+            names.append(name)
         info = body.get("result_info")
         cursor = str(info.get("cursor") or "") if isinstance(info, dict) else ""
         if not cursor:
@@ -244,12 +260,12 @@ def bucket_exists(run: Runner, bucket: str) -> bool:
     rc, out = run("bucket", "info", bucket)
     if rc == 0:
         return True
-    if any(m in out.lower() for m in NOT_FOUND_MARKERS):
+    if NOT_FOUND.search(out):
         return False
     raise RuntimeError("bucket info %s failed (exit %d): %s" % (bucket, rc, out.strip()[-300:]))
 
 
-def target_buckets(run: typing.Any) -> tuple[list[str], list[str]]:
+def target_buckets(run: BucketRunner) -> tuple[list[str], list[str]]:
     """(writable targets that exist, every protected bucket in the complete account listing).
 
     Targets are probed by name, never read from a listing. The protected set comes from `run.list_buckets()`, which raises RuntimeError rather than return a partial listing.
@@ -268,7 +284,7 @@ def planted(run: Runner, protected: list[str]) -> list[tuple[str, Rule]]:
     return found
 
 
-def run_mode(run: Runner, mode: str, bucket: str | None = None, dry_run: bool = False) -> int:
+def run_mode(run: BucketRunner, mode: str, bucket: str | None = None, dry_run: bool = False) -> int:
     """Return the exit status for `mode` in apply|list|check."""
     if bucket is not None:
         try:

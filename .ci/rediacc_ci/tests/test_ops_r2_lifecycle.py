@@ -292,6 +292,50 @@ def test_bucket_info_failure_other_than_not_found_raises():
         r2.bucket_exists(run, r2.RELEASES_BUCKET)
 
 
+@pytest.mark.parametrize(
+    "out",
+    [
+        "Authentication error [code: 10000]: token not found",
+        "fetch failed: host not found (ENOTFOUND api.cloudflare.com)",
+    ],
+)
+def test_an_unrelated_failure_mentioning_not_found_is_not_an_absent_bucket(out):
+    with pytest.raises(RuntimeError, match="bucket info"):
+        r2.bucket_exists(lambda *_a: (1, out), r2.RELEASES_BUCKET)
+
+
+@pytest.mark.parametrize(
+    "out",
+    ["The specified bucket does not exist. [code: 10006]", "bucket not found [code: 10006]"],
+)
+def test_a_real_not_found_answer_is_an_absent_bucket(out):
+    assert r2.bucket_exists(lambda *_a: (1, out), "x") is False
+
+
+@pytest.mark.parametrize("entry", ["oops", {"nom": "x"}, {"name": None}, {"name": 5}])
+def test_list_all_buckets_refuses_a_malformed_entry(entry):
+    def get(*_a):
+        return {"success": True, "result": {"buckets": [{"name": "a"}, entry]}}
+
+    with pytest.raises(RuntimeError, match="no name"):
+        r2.list_all_buckets(get, [], "acct")
+
+
+def test_list_all_buckets_accepts_well_formed_entries_control():
+    def get(*_a):
+        return _page(["a", "b"])
+
+    assert r2.list_all_buckets(get, [], "acct") == ["a", "b"]
+
+
+def test_wrangler_runs_the_verified_binary_without_a_real_install(monkeypatch, tmp_path):
+    fake = tmp_path / "wrangler"
+    fake.write_text("")
+    monkeypatch.setattr(r2.wrangler, "local_binary", lambda _cwd: fake)
+    w = r2.Wrangler({"CLOUDFLARE_API_TOKEN": "t", "CLOUDFLARE_ACCOUNT_ID": "a"})
+    assert w.argv == [str(fake)]
+
+
 def _page(names, cursor=""):
     return {
         "success": True,
@@ -345,15 +389,14 @@ def test_parse_rules_reads_wrangler_default_rule():
 
 
 def test_failed_add_raises():
-    def failing(*args):
-        if args == ("bucket", "list"):
-            return 0, "name: %s\n" % r2.RELEASES_BUCKET
-        if args[:3] == ("bucket", "lifecycle", "list"):
-            return 0, ""
-        return 1, "boom"
+    class Failing(FakeWrangler):
+        def __call__(self, *args):
+            if args[:3] == ("bucket", "lifecycle", "add"):
+                return 1, "boom"
+            return super().__call__(*args)
 
-    with pytest.raises(RuntimeError):
-        r2.run_mode(failing, "apply")
+    with pytest.raises(RuntimeError, match="lifecycle add"):
+        r2.run_mode(Failing([r2.RELEASES_BUCKET]), "apply")
 
 
 def test_a_failed_replacement_restores_the_drifted_rule():
