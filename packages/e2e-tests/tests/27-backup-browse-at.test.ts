@@ -22,6 +22,7 @@ import {
   provisionRepo,
   registerMachines,
   restoreLedger,
+  unmountRepo,
   workers,
 } from '../src/utils/backup/chunkCliHarness';
 import {
@@ -340,7 +341,7 @@ test.describe
           expect(l.result.code, `local browse: ${bothChannels(l.result).slice(-800)}`).toBe(0);
           local = comparable(l.json?.data);
         } finally {
-          await w1.repositoryUnmount(repo.guid, DS).catch(() => undefined);
+          await unmountRepo(w1, repo);
         }
 
         const r = await cli.runJson<CliEnvelope<unknown>>([
@@ -421,7 +422,7 @@ test.describe
           stagedSnapshotId = await snapshot();
         } finally {
           await disableAutostart().catch(() => undefined);
-          await w1.repositoryUnmount(repo.guid, DS).catch(() => undefined);
+          await unmountRepo(w1, repo);
         }
         expect(await storedListingSource(stagedSnapshotId)).toBe('staged');
         const human = await cli.run([
@@ -544,7 +545,7 @@ test.describe
           restoreSnapshotId = await snapshot();
         } finally {
           await disableAutostart().catch(() => undefined);
-          await w1.repositoryUnmount(repo.guid, DS).catch(() => undefined);
+          await unmountRepo(w1, repo);
         }
 
         try {
@@ -657,7 +658,7 @@ test.describe
           snapshotId = await snapshot();
         } finally {
           await disableAutostart().catch(() => undefined);
-          await w1.repositoryUnmount(repo.guid, DS).catch(() => undefined);
+          await unmountRepo(w1, repo);
         }
 
         try {
@@ -903,7 +904,7 @@ test.describe
           ).toBeGreaterThan(startupHits);
         } finally {
           if (tokenOriginal !== undefined) writeFileSync(tokenFile, tokenOriginal, { mode: 0o600 });
-          await w1.repositoryUnmount(repo.guid, DS).catch(() => undefined);
+          await unmountRepo(w1, repo);
           await new Promise<void>((resolve) => sink.close(() => resolve()));
         }
       });

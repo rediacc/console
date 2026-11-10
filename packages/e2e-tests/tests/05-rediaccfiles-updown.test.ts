@@ -99,7 +99,11 @@ test.describe
 
     // Note: repository_create leaves repo mounted, so unmount first before testing mount
     test('2a. unmount repository before mount test', async () => {
-      const result = await runner.repositoryUnmount(repositoryName, datastorePath);
+      const result = await runner.repositoryUnmount(
+        repositoryName,
+        datastorePath,
+        DEFAULT_NETWORK_ID
+      );
       expect(runner.isSuccess(result)).toBe(true);
     });
 
@@ -131,7 +135,11 @@ test.describe
     });
 
     test('7. cleanup: unmount and remove repository', async () => {
-      const unmountResult = await runner.repositoryUnmount(repositoryName, datastorePath);
+      const unmountResult = await runner.repositoryUnmount(
+        repositoryName,
+        datastorePath,
+        DEFAULT_NETWORK_ID
+      );
       expect(runner.isSuccess(unmountResult)).toBe(true);
 
       const rmResult = await runner.repositoryRm(repositoryName, datastorePath);
@@ -335,7 +343,11 @@ test.describe
     });
 
     test('8. cleanup: unmount and remove repository', async () => {
-      const unmountResult = await runner.repositoryUnmount(repositoryName, datastorePath);
+      const unmountResult = await runner.repositoryUnmount(
+        repositoryName,
+        datastorePath,
+        DEFAULT_NETWORK_ID
+      );
       expect(runner.isSuccess(unmountResult)).toBe(true);
 
       const rmResult = await runner.repositoryRm(repositoryName, datastorePath);
@@ -440,7 +452,9 @@ test.describe
           return false;
         }
       };
-      const unmount = await attempt(() => runner.repositoryUnmount(repositoryName, datastorePath));
+      const unmount = await attempt(() =>
+        runner.repositoryUnmount(repositoryName, datastorePath, DEFAULT_NETWORK_ID)
+      );
       const rm = await attempt(() => runner.repositoryRm(repositoryName, datastorePath));
       const teardown = await attempt(() => runner.daemonTeardown(DEFAULT_NETWORK_ID));
       expect(

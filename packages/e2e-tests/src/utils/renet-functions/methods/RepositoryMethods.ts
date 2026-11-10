@@ -114,8 +114,12 @@ export class RepositoryMethods {
     });
   }
 
-  repositoryUnmount(name: string, datastorePath?: string, networkId?: string): Promise<ExecResult> {
-    // Like mount: without networkId the harness default rides along, which is wrong for a repo on another network.
+  repositoryUnmount(
+    name: string,
+    datastorePath: string | undefined,
+    networkId: string
+  ): Promise<ExecResult> {
+    // Required: a missing id would fall back to the harness default and stop the wrong daemon.
     return this.testFunction({
       function: 'repository_unmount',
       repository: name,

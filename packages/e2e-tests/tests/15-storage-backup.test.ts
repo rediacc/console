@@ -7,6 +7,7 @@ import {
   DEFAULT_WORKER_2_IP,
   TEST_TEAM,
   TEST_USER,
+  DEFAULT_NETWORK_ID,
 } from '../src/constants';
 import { e2eRepoGuid } from '../src/utils/licence';
 import { peerKnownHostsArg } from '../src/utils/renet-functions/peerKnownHosts';
@@ -201,7 +202,11 @@ test.describe
         `sudo dd if=/dev/urandom of="${DEFAULT_DATASTORE_PATH}/mounts/${guid}/fill.bin" bs=1M count=${FILL_MIB} conv=fsync status=none`
       );
       expect(fill.code, `fill: ${runner.getCombinedOutput(fill)}`).toBe(0);
-      const unmounted = await runner.repositoryUnmount(guid, DEFAULT_DATASTORE_PATH);
+      const unmounted = await runner.repositoryUnmount(
+        guid,
+        DEFAULT_DATASTORE_PATH,
+        DEFAULT_NETWORK_ID
+      );
       expect(
         unmounted.code,
         `repository_unmount: ${runner.getCombinedOutput(unmounted).slice(-600)}`

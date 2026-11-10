@@ -83,7 +83,11 @@ test.describe
 
     // Note: repository_create leaves repo mounted, so unmount first before testing mount
     test('repository unmount should not have shell syntax errors', async () => {
-      const result = await runner.repositoryUnmount(TEST_REPOSITORY_NAME, DEFAULT_DATASTORE_PATH);
+      const result = await runner.repositoryUnmount(
+        TEST_REPOSITORY_NAME,
+        DEFAULT_DATASTORE_PATH,
+        DEFAULT_NETWORK_ID
+      );
       expect(runner.isSuccess(result)).toBe(true);
     });
 
@@ -103,7 +107,11 @@ test.describe
 
     // Note: resize/expand require unmounted repo - unmount first
     test('repository resize should not have shell syntax errors', async () => {
-      await runner.repositoryUnmount(TEST_REPOSITORY_NAME, DEFAULT_DATASTORE_PATH);
+      await runner.repositoryUnmount(
+        TEST_REPOSITORY_NAME,
+        DEFAULT_DATASTORE_PATH,
+        DEFAULT_NETWORK_ID
+      );
       const result = await runner.repositoryResize(
         TEST_REPOSITORY_NAME,
         '2G',
@@ -126,7 +134,11 @@ test.describe
     });
 
     test('repository rm should not have shell syntax errors', async () => {
-      await runner.repositoryUnmount(TEST_REPOSITORY_NAME, DEFAULT_DATASTORE_PATH);
+      await runner.repositoryUnmount(
+        TEST_REPOSITORY_NAME,
+        DEFAULT_DATASTORE_PATH,
+        DEFAULT_NETWORK_ID
+      );
       const result = await runner.repositoryRm(TEST_REPOSITORY_NAME, DEFAULT_DATASTORE_PATH);
       expect(runner.isSuccess(result)).toBe(true);
     });
@@ -161,7 +173,11 @@ test.describe
 
     // Note: repository_create leaves repo mounted, unmount first
     test('repository unmount with password should work', async () => {
-      const result = await runner.repositoryUnmount(ENCRYPTED_REPO, DEFAULT_DATASTORE_PATH);
+      const result = await runner.repositoryUnmount(
+        ENCRYPTED_REPO,
+        DEFAULT_DATASTORE_PATH,
+        DEFAULT_NETWORK_ID
+      );
       expect(runner.isSuccess(result)).toBe(true);
     });
 
@@ -176,7 +192,7 @@ test.describe
 
     test('repository with special characters in password should handle correctly', async () => {
       // encrypted-repo (still mounted from the previous test) auto-detects the SAME default network id that special-repo below is about to create on. Its state mirror keeps claiming that id for as long as its repository image exists (netid_guard.go), regardless of mount state, so special-repo's create was refused with "network ID ... already in use (holder: repo, encrypted-repo)" until this unmount+rm freed it first.
-      await runner.repositoryUnmount(ENCRYPTED_REPO, DEFAULT_DATASTORE_PATH);
+      await runner.repositoryUnmount(ENCRYPTED_REPO, DEFAULT_DATASTORE_PATH, DEFAULT_NETWORK_ID);
       await runner.repositoryRm(ENCRYPTED_REPO, DEFAULT_DATASTORE_PATH);
 
       // Test with special characters that might need escaping
@@ -190,7 +206,9 @@ test.describe
     });
 
     test.afterAll(async () => {
-      await runner.repositoryUnmount(SPECIAL_REPO, DEFAULT_DATASTORE_PATH).catch(() => undefined);
+      await runner
+        .repositoryUnmount(SPECIAL_REPO, DEFAULT_DATASTORE_PATH, DEFAULT_NETWORK_ID)
+        .catch(() => undefined);
       await runner.repositoryRm(SPECIAL_REPO, DEFAULT_DATASTORE_PATH).catch(() => undefined);
     });
   });
@@ -224,7 +242,11 @@ test.describe
     });
 
     test('repository unmount before resize', async () => {
-      const result = await runner.repositoryUnmount(SIZE_TEST_REPO, DEFAULT_DATASTORE_PATH);
+      const result = await runner.repositoryUnmount(
+        SIZE_TEST_REPO,
+        DEFAULT_DATASTORE_PATH,
+        DEFAULT_NETWORK_ID
+      );
       expect(runner.isSuccess(result)).toBe(true);
     });
 
@@ -303,7 +325,11 @@ test.describe
 
     // Note: repository_create leaves repo mounted, unmount first to test mount
     test('4a. unmount: unmount for mount test', async () => {
-      const result = await runner.repositoryUnmount(repositoryName, datastorePath);
+      const result = await runner.repositoryUnmount(
+        repositoryName,
+        datastorePath,
+        DEFAULT_NETWORK_ID
+      );
       expect(runner.isSuccess(result)).toBe(true);
     });
 
@@ -323,7 +349,11 @@ test.describe
     });
 
     test('7a. unmount: unmount before resize', async () => {
-      const result = await runner.repositoryUnmount(repositoryName, datastorePath);
+      const result = await runner.repositoryUnmount(
+        repositoryName,
+        datastorePath,
+        DEFAULT_NETWORK_ID
+      );
       expect(runner.isSuccess(result)).toBe(true);
     });
 
@@ -338,7 +368,11 @@ test.describe
     });
 
     test('8. unmount: unmount repository', async () => {
-      const result = await runner.repositoryUnmount(repositoryName, datastorePath);
+      const result = await runner.repositoryUnmount(
+        repositoryName,
+        datastorePath,
+        DEFAULT_NETWORK_ID
+      );
       expect(runner.isSuccess(result)).toBe(true);
     });
 
@@ -473,7 +507,9 @@ test.describe
     });
 
     test.afterAll(async () => {
-      await runner.repositoryUnmount(repositoryName, datastorePath).catch(() => undefined);
+      await runner
+        .repositoryUnmount(repositoryName, datastorePath, DEFAULT_NETWORK_ID)
+        .catch(() => undefined);
       await runner.repositoryRm(repositoryName, datastorePath).catch(() => undefined);
     });
 

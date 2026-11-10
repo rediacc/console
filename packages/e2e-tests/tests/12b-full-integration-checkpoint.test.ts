@@ -30,7 +30,7 @@ test.describe
     test.afterAll(async () => {
       // Cleanup: ensure repository is unmounted and deleted even if tests fail
       try {
-        await runner.repositoryUnmount(repositoryName, datastorePath);
+        await runner.repositoryUnmount(repositoryName, datastorePath, DEFAULT_NETWORK_ID);
       } catch {
         /* ignore */
       }
@@ -122,7 +122,11 @@ test.describe
 
     // Cleanup - always run even if CRIU tests were skipped
     test('8. unmount repository', async () => {
-      const result = await runner.repositoryUnmount(repositoryName, datastorePath);
+      const result = await runner.repositoryUnmount(
+        repositoryName,
+        datastorePath,
+        DEFAULT_NETWORK_ID
+      );
       expect(runner.isSuccess(result)).toBe(true);
     });
 

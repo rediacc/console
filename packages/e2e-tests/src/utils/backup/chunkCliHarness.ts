@@ -175,16 +175,32 @@ export const repoIdentity = (cli: CliRunner, name: string, tag?: string): Provis
 /** Every repository family in the CLI config, with each tag's GUID: what a teardown has to remove, read BEFORE the deletes drop it from the config. */
 export const configRepoFamilies = (
   cli: CliRunner
-): { name: string; grand: string; tags: Record<string, string> }[] =>
-  Object.entries(readCliConfig(cli).resources?.repositories ?? {}).map(([name, family]) => ({
+): {
+  name: string;
+  grand: string;
+  tags: Record<string, string>;
+  /** guid -> network id recorded in the config state, for the tags that have one. */
+  networks: Record<string, string>;
+}[] => {
+  const cfg = readCliConfig(cli);
+  return Object.entries(cfg.resources?.repositories ?? {}).map(([name, family]) => ({
     name,
     grand: family.grand ?? 'latest',
+    networks: Object.fromEntries(
+      Object.entries(family.tags ?? {}).flatMap(([tag, entry]) => {
+        const networkId = cfg.state?.repos?.[name]?.[tag]?.networkId;
+        return entry.repositoryGuid && networkId !== undefined
+          ? [[entry.repositoryGuid, String(networkId)]]
+          : [];
+      })
+    ),
     tags: Object.fromEntries(
       Object.entries(family.tags ?? {}).flatMap(([tag, entry]) =>
         entry.repositoryGuid ? [[tag, entry.repositoryGuid]] : []
       )
     ),
   }));
+};
 
 /** Every repository GUID the CLI config holds, across all names and tags. */
 const allRepoGuids = (cli: CliRunner): string[] =>
@@ -235,6 +251,21 @@ export const registerMachines = async (cli: CliRunner): Promise<void> => {
     const added = await cli.addMachine(name, ip, SSH_USER);
     expect(added.code, `machine add ${name}: ${bothChannels(added).slice(-600)}`).toBe(0);
   }
+};
+
+/**
+ * Unmount a repository on its OWN network id and fail with the combined output when the unmount does not exit 0.
+ * The harness resolves with a code rather than rejecting, so a `.catch` here would never see a failed unmount.
+ */
+export const unmountRepo = async (
+  runner: RenetFunctionsTestRunner,
+  repo: { readonly guid: string; readonly networkId: string }
+): Promise<void> => {
+  const out = await runner.repositoryUnmount(repo.guid, DS, repo.networkId);
+  expect(
+    out.code,
+    `unmounting ${repo.guid} on network ${repo.networkId}: ${bothChannels(out).slice(-800)}`
+  ).toBe(0);
 };
 
 /**
@@ -299,8 +330,9 @@ export const provisionRepo = async (
   ).toBe(true);
 
   // `repo create` leaves the repo MOUNTED with its docker daemon up. The snapshot verb reads the image underneath, so bring it down first.
-  await runner.repositoryUnmount(guid, DS).catch(() => undefined);
-  return { name, guid, credential, networkId: String(networkId) };
+  const provisioned = { name, guid, credential, networkId: String(networkId) };
+  await unmountRepo(runner, provisioned);
+  return provisioned;
 };
 
 export const seam = async (route: string, body: unknown): Promise<Response> =>

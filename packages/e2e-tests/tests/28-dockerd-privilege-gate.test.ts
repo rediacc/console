@@ -163,7 +163,7 @@ test.describe
         await runner.repositoryNew(repoA, '1G', TEST_PASSWORD, datastorePath)
       );
       await writeNginx(repoA);
-      must('repository_unmount A', await runner.repositoryUnmount(repoA, datastorePath));
+      must('repository_unmount A', await runner.repositoryUnmount(repoA, datastorePath, networkA));
       must(
         'repository fork A -> B',
         await runner.createRepositoryFork(repoA, repoB, datastorePath, networkB)

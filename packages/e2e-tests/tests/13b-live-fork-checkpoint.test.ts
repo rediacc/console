@@ -118,7 +118,7 @@ test.describe
         [parentRepoName, parentNetworkId],
       ] as const) {
         await ignoreFailure(() => runner.repositoryDown(name, datastorePath, String(netId)));
-        await ignoreFailure(() => runner.repositoryUnmount(name, datastorePath));
+        await ignoreFailure(() => runner.repositoryUnmount(name, datastorePath, String(netId)));
         await ignoreFailure(() => runner.repositoryRm(name, datastorePath));
       }
       await ignoreFailure(() => runner.daemonTeardown(forkNetworkId));

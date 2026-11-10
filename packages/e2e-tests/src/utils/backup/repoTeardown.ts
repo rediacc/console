@@ -46,6 +46,7 @@ const sweepWorker = async (
   label: string,
   runner: RenetFunctionsTestRunner,
   guids: string[],
+  networkOf: ReadonlyMap<string, string>,
   failures: string[]
 ): Promise<void> => {
   const found = await residue(runner, guids);
@@ -53,7 +54,12 @@ const sweepWorker = async (
   console.warn(`teardown: ${label} still held ${found.join(', ')} after the CLI deletes`);
   for (const line of found.filter((l) => l.startsWith('mounted '))) {
     const guid = line.slice('mounted '.length);
-    const out = await runner.repositoryUnmount(guid, DS);
+    const networkId = networkOf.get(guid);
+    if (networkId === undefined) {
+      failures.push(`${label}: ${guid} is mounted and the config holds no network id for it`);
+      continue;
+    }
+    const out = await runner.repositoryUnmount(guid, DS, networkId);
     if (out.code !== 0)
       failures.push(`${label}: unmount ${guid}: ${bothChannels(out).slice(-300)}`);
   }
@@ -104,11 +110,12 @@ export const teardownRepos = async (targets: TeardownTargets): Promise<void> => 
   for (const guid of guids) {
     if (!GUID.test(guid)) failures.push(`not a GUID, refusing to put it in a shell: ${guid}`);
   }
+  const networkOf = new Map(families.flatMap((f) => Object.entries(f.networks)));
   const valid = guids.filter((g) => GUID.test(g));
 
   await deleteFamilies(targets.cli, families, failures);
   for (const { label, runner } of targets.workers) {
-    await sweepWorker(label, runner, valid, failures);
+    await sweepWorker(label, runner, valid, networkOf, failures);
   }
   if (failures.length > 0) {
     throw new Error(`teardown left residue:\n${failures.join('\n')}`);

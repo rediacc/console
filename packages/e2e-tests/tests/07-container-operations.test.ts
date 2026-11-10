@@ -85,7 +85,7 @@ test.describe('Container Operations @bridge', () => {
     await runner.repositoryDown(testRepo, datastorePath, networkId);
 
     // Unmount and delete repository
-    await runner.repositoryUnmount(testRepo, datastorePath);
+    await runner.repositoryUnmount(testRepo, datastorePath, DEFAULT_NETWORK_ID);
     await runner.repositoryRm(testRepo, datastorePath);
 
     // Teardown daemon
@@ -325,7 +325,7 @@ test.describe
       await runner.repositoryDown(repositoryName, datastorePath, networkId);
 
       // Unmount and delete repository
-      await runner.repositoryUnmount(repositoryName, datastorePath);
+      await runner.repositoryUnmount(repositoryName, datastorePath, DEFAULT_NETWORK_ID);
       await runner.repositoryRm(repositoryName, datastorePath);
 
       // Teardown daemon
@@ -599,7 +599,7 @@ test.describe('Multiple Container Operations @bridge', () => {
     await runner.repositoryDown(repositoryName, datastorePath, networkId);
 
     // Unmount and delete repository
-    await runner.repositoryUnmount(repositoryName, datastorePath);
+    await runner.repositoryUnmount(repositoryName, datastorePath, DEFAULT_NETWORK_ID);
     await runner.repositoryRm(repositoryName, datastorePath);
 
     // Teardown daemon

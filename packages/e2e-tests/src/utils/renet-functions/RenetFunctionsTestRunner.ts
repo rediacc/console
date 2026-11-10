@@ -1382,7 +1382,7 @@ export class RenetFunctionsTestRunner {
     this.repositoryMethods.repositoryRm(name, datastorePath, networkId);
   repositoryMount = (name: string, password?: string, datastorePath?: string, networkId?: string) =>
     this.repositoryMethods.repositoryMount(name, password, datastorePath, networkId);
-  repositoryUnmount = (name: string, datastorePath?: string, networkId?: string) =>
+  repositoryUnmount = (name: string, datastorePath: string | undefined, networkId: string) =>
     this.repositoryMethods.repositoryUnmount(name, datastorePath, networkId);
   repositoryUp = (name: string, datastorePath?: string, networkId?: string) =>
     this.repositoryMethods.repositoryUp(name, datastorePath, networkId);

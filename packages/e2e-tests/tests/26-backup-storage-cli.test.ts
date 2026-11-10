@@ -24,6 +24,7 @@ import {
   repoIdentity,
   restoreLedger,
   seam,
+  unmountRepo,
   workers,
 } from '../src/utils/backup/chunkCliHarness';
 import { corruptStoredChunk, storeAccessFromEnv } from '../src/utils/backup/chunkCorruption';
@@ -471,7 +472,7 @@ test.describe
           `sudo dd if=/dev/urandom of="${DS}/mounts/${repo.guid}/${fileName}" ${dd} conv=notrunc status=none && sync`
         );
         expect(write.code, `planting the write: ${w1.getCombinedOutput(write)}`).toBe(0);
-        const unmounted = await w1.repositoryUnmount(repo.guid, DS);
+        const unmounted = await w1.repositoryUnmount(repo.guid, DS, repo.networkId);
         expect(
           unmounted.code,
           `unmounting ${repo.guid}: ${w1.getCombinedOutput(unmounted).slice(-800)}`
@@ -904,7 +905,7 @@ test.describe
           `sudo dd if=/dev/urandom of="${DS}/mounts/${target.guid}/${fileName}" ${CELL_WRITE} conv=notrunc status=none && sync`
         );
         expect(write.code, `write into ${target.guid}: ${runner.getCombinedOutput(write)}`).toBe(0);
-        const unmounted = await runner.repositoryUnmount(target.guid, DS);
+        const unmounted = await runner.repositoryUnmount(target.guid, DS, target.networkId);
         expect(
           unmounted.code,
           `unmounting ${target.guid}: ${runner.getCombinedOutput(unmounted).slice(-600)}`
@@ -1033,7 +1034,7 @@ test.describe
         expect(fork.code, `repo fork: ${bothChannels(fork).slice(-1000)}`).toBe(0);
         forkIdentity = repoIdentity(cli, REPO_NAME, FORK_TAG);
         expect(forkIdentity.guid, 'the fork reused the parent guid').not.toBe(repo.guid);
-        await w1.repositoryUnmount(forkIdentity.guid, DS).catch(() => undefined);
+        await unmountRepo(w1, forkIdentity);
 
         await churnOn(w1, forkIdentity, 'fork-only.bin');
         const record = await snapshotOf(w1, forkIdentity.guid);
@@ -1155,7 +1156,7 @@ test.describe
           'up() {\n    renet compose -- up -d\n}\n\ndown() {\n    renet compose -- down\n}\n';
         cleanup.push(async () => {
           await w1.repositoryDown(cold.guid, DS, cold.networkId);
-          await w1.repositoryUnmount(cold.guid, DS);
+          await w1.repositoryUnmount(cold.guid, DS, cold.networkId);
         });
 
         await w1.daemonSetup(cold.networkId).catch(() => undefined);
@@ -1200,7 +1201,7 @@ test.describe
         const restore = await cliRestore(`${COLD_NAME}@${M1}`, COLD_BACK, M2, committed.snapshotId);
         expect(restore.code, `cold restore: ${bothChannels(restore).slice(-1200)}`).toBe(0);
         const back = repoIdentity(cli, COLD_BACK);
-        cleanup.push(async () => w2.repositoryUnmount(back.guid, DS));
+        cleanup.push(async () => w2.repositoryUnmount(back.guid, DS, back.networkId));
         const remount = await w2.repositoryMount(back.guid, back.credential, DS, back.networkId);
         expect(
           remount.code,
@@ -1446,7 +1447,7 @@ test.describe
         // The uploader reads only the cells that hold data (a fresh image is mostly zero: 15 of 64 cells were read, which is 62.9 MB and 8 s at 8 MB/s), so the floor needs the image to HOLD more than 30 s x 8 MB/s of data.
         const repo = await provisionRepo(cli, w1, name, M1, `${CAP_FILL_IMAGE_MIB}M`);
         // Registered after the delete above, so it runs first: a failed fill or unmount below must not leave the image mounted under `repo delete`.
-        cleanup.push(async () => w1.repositoryUnmount(repo.guid, DS));
+        cleanup.push(async () => w1.repositoryUnmount(repo.guid, DS, repo.networkId));
         const mounted = await w1.repositoryMount(repo.guid, repo.credential, DS, repo.networkId);
         expect(
           mounted.code,
@@ -1457,7 +1458,7 @@ test.describe
           600_000
         );
         expect(write.code, `fill ${repo.guid}: ${w1.getCombinedOutput(write)}`).toBe(0);
-        const unmounted = await w1.repositoryUnmount(repo.guid, DS);
+        const unmounted = await w1.repositoryUnmount(repo.guid, DS, repo.networkId);
         expect(
           unmounted.code,
           `unmounting ${repo.guid}: ${w1.getCombinedOutput(unmounted).slice(-600)}`

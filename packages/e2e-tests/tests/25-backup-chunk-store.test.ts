@@ -1,5 +1,11 @@
 import { expect, test } from '@playwright/test';
-import { DEFAULT_DATASTORE_PATH, TEST_PASSWORD, TEST_TEAM, TEST_USER } from '../src/constants';
+import {
+  DEFAULT_DATASTORE_PATH,
+  TEST_PASSWORD,
+  TEST_TEAM,
+  TEST_USER,
+  DEFAULT_NETWORK_ID,
+} from '../src/constants';
 import {
   chunkVerbs,
   dryRunViolations,
@@ -265,12 +271,12 @@ test.describe
           console.error('[Setup] datastore init:', runner.getCombinedOutput(init));
         }
         await runner.repositoryNew(REPO_GUID, '1G', TEST_PASSWORD, DS);
-        await runner.repositoryUnmount(REPO_GUID, DS).catch(() => {});
+        await runner.repositoryUnmount(REPO_GUID, DS, DEFAULT_NETWORK_ID).catch(() => {});
       });
 
       test.afterAll(async () => {
         for (const name of [named, REPO_GUID]) {
-          await runner.repositoryUnmount(name, DS).catch(() => {});
+          await runner.repositoryUnmount(name, DS, DEFAULT_NETWORK_ID).catch(() => {});
           await runner.repositoryRm(name, DS).catch(() => {});
         }
       });
@@ -545,7 +551,7 @@ test.describe
             expect(path).not.toBe('/CLAUDE.md');
           }
         } finally {
-          await runner.repositoryUnmount(REPO_GUID, DS).catch(() => {});
+          await runner.repositoryUnmount(REPO_GUID, DS, DEFAULT_NETWORK_ID).catch(() => {});
         }
       });
 
@@ -588,7 +594,7 @@ test.describe
             );
           }
         } finally {
-          await runner.repositoryUnmount(REPO_GUID, DS).catch(() => {});
+          await runner.repositoryUnmount(REPO_GUID, DS, DEFAULT_NETWORK_ID).catch(() => {});
         }
       });
 
