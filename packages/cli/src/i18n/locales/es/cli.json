@@ -2998,7 +2998,8 @@
     },
     "container": {
       "execFailed": "container_exec falló",
-      "logsFailed": "container_logs falló"
+      "logsFailed": "container_logs falló",
+      "unknown": "No hay ningún contenedor \"{{container}}\" en el repositorio \"{{repository}}\". Contenedores: {{containers}}. ¿Quisiste decir \"{{suggestion}}\"?"
     },
     "datastore": {
       "defaultIsImplicit": "el almacén de datos por defecto es implícito; estos verbos gestionan almacenes de datos adicionales con nombre.",

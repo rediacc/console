@@ -2998,7 +2998,8 @@
     },
     "container": {
       "execFailed": "Falha em container_exec",
-      "logsFailed": "Falha em container_logs"
+      "logsFailed": "Falha em container_logs",
+      "unknown": "Não existe nenhum contêiner \"{{container}}\" no repositório \"{{repository}}\". Contêineres: {{containers}}. Você quis dizer \"{{suggestion}}\"?"
     },
     "datastore": {
       "defaultIsImplicit": "o datastore predefinido é implícito; estes verbos gerem datastores adicionais com nome.",

@@ -2998,7 +2998,8 @@
     },
     "container": {
       "execFailed": "container_exec に失敗しました",
-      "logsFailed": "container_logs に失敗しました"
+      "logsFailed": "container_logs に失敗しました",
+      "unknown": "リポジトリ \"{{repository}}\" にコンテナ \"{{container}}\" はありません。利用可能なコンテナ: {{containers}}。\"{{suggestion}}\" ではありませんか？"
     },
     "datastore": {
       "defaultIsImplicit": "デフォルトデータストアは暗黙的な存在であり、ここでの各コマンドはそれ以外の名前付きデータストアを管理する。",

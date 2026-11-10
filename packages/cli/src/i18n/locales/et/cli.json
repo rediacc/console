@@ -2998,7 +2998,8 @@
     },
     "container": {
       "execFailed": "container_exec ebaõnnestus",
-      "logsFailed": "container_logs ebaõnnestus"
+      "logsFailed": "container_logs ebaõnnestus",
+      "unknown": "Hoidlas \"{{repository}}\" pole konteinerit \"{{container}}\". Konteinerid: {{containers}}. Kas mõtlesid \"{{suggestion}}\"?"
     },
     "datastore": {
       "defaultIsImplicit": "vaikimisi andmehoidla on kaudne; need käsud haldavad täiendavaid nimega andmehoidlaid.",

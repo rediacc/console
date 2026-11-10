@@ -2998,7 +2998,8 @@
     },
     "container": {
       "execFailed": "Échec de container_exec",
-      "logsFailed": "Échec de container_logs"
+      "logsFailed": "Échec de container_logs",
+      "unknown": "Aucun conteneur \"{{container}}\" dans le dépôt \"{{repository}}\". Conteneurs : {{containers}}. Vouliez-vous dire \"{{suggestion}}\" ?"
     },
     "datastore": {
       "defaultIsImplicit": "le datastore par défaut est implicite ; ces verbes gèrent des datastores nommés supplémentaires.",

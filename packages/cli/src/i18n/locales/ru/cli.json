@@ -2998,7 +2998,8 @@
     },
     "container": {
       "execFailed": "Ошибка container_exec",
-      "logsFailed": "Ошибка container_logs"
+      "logsFailed": "Ошибка container_logs",
+      "unknown": "В репозитории \"{{repository}}\" нет контейнера \"{{container}}\". Доступные контейнеры: {{containers}}. Возможно, вы имели в виду \"{{suggestion}}\"?"
     },
     "datastore": {
       "defaultIsImplicit": "хранилище данных по умолчанию неявно; эти команды управляют дополнительными именованными хранилищами данных.",

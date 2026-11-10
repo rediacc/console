@@ -2998,7 +2998,8 @@
     },
     "container": {
       "execFailed": "container_exec fehlgeschlagen",
-      "logsFailed": "container_logs fehlgeschlagen"
+      "logsFailed": "container_logs fehlgeschlagen",
+      "unknown": "Kein Container \"{{container}}\" im Repository \"{{repository}}\". Vorhandene Container: {{containers}}. Meinten Sie \"{{suggestion}}\"?"
     },
     "datastore": {
       "defaultIsImplicit": "Der Standard-Datenspeicher ist implizit; diese Befehle verwalten zusätzliche, benannte Datenspeicher.",

@@ -2998,7 +2998,8 @@
     },
     "container": {
       "execFailed": "container_exec 실패",
-      "logsFailed": "container_logs 실패"
+      "logsFailed": "container_logs 실패",
+      "unknown": "리포지토리 \"{{repository}}\"에 \"{{container}}\" 컨테이너가 없습니다. 컨테이너 목록: {{containers}}. \"{{suggestion}}\"을(를) 찾으셨나요?"
     },
     "datastore": {
       "defaultIsImplicit": "기본 데이터스토어는 암묵적으로 존재합니다. 이 명령어들은 그 외의 이름 지정 데이터스토어를 관리합니다.",

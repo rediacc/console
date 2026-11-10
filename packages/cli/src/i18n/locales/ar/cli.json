@@ -2998,7 +2998,8 @@
     },
     "container": {
       "execFailed": "فشل container_exec",
-      "logsFailed": "فشل container_logs"
+      "logsFailed": "فشل container_logs",
+      "unknown": "لا توجد حاوية باسم \"{{container}}\" في المستودع \"{{repository}}\". الحاويات: {{containers}}. هل تقصد \"{{suggestion}}\"؟"
     },
     "datastore": {
       "defaultIsImplicit": "مخزن البيانات الافتراضي ضمني؛ هذه الأفعال تُدير مخازن بيانات مسمّاة إضافية.",

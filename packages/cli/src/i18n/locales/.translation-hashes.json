@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 2590,
-    "sourceCommit": "ae5206a74f3f0b0ae42189cf91982d4a586a7fd0"
+    "keyCount": 2591,
+    "sourceCommit": "b9b6118a2eacd999b837783d415af0cd11d0e422"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -2326,6 +2326,7 @@
     "errors.config.retiredKey": "2cd6bc26",
     "errors.container.execFailed": "78ed6800",
     "errors.container.logsFailed": "949fd5b9",
+    "errors.container.unknown": "8f7377db",
     "errors.datastore.defaultIsImplicit": "0dd252b1",
     "errors.datastore.deleteHasChildren": "ee827c35",
     "errors.datastore.deleteHasRepos": "81a72d91",

@@ -2998,7 +2998,8 @@
     },
     "container": {
       "execFailed": "container_exec 失败",
-      "logsFailed": "container_logs 失败"
+      "logsFailed": "container_logs 失败",
+      "unknown": "仓库 \"{{repository}}\" 中没有名为 \"{{container}}\" 的容器。现有容器：{{containers}}。您是指 \"{{suggestion}}\" 吗？"
     },
     "datastore": {
       "defaultIsImplicit": "default 数据存储是隐式的；这些命令用于管理其他具名数据存储。",

@@ -2998,7 +2998,8 @@
     },
     "container": {
       "execFailed": "container_exec non riuscito",
-      "logsFailed": "container_logs non riuscito"
+      "logsFailed": "container_logs non riuscito",
+      "unknown": "Nessun container \"{{container}}\" nel repository \"{{repository}}\". Container disponibili: {{containers}}. Intendevi \"{{suggestion}}\"?"
     },
     "datastore": {
       "defaultIsImplicit": "il datastore predefinito è implicito; questi verbi gestiscono datastore aggiuntivi con nome.",

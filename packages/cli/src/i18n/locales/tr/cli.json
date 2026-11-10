@@ -2998,7 +2998,8 @@
     },
     "container": {
       "execFailed": "container_exec başarısız oldu",
-      "logsFailed": "container_logs başarısız oldu"
+      "logsFailed": "container_logs başarısız oldu",
+      "unknown": "\"{{repository}}\" deposunda \"{{container}}\" adlı bir konteyner yok. Konteynerler: {{containers}}. Şunu mu demek istediniz: \"{{suggestion}}\"?"
     },
     "datastore": {
       "defaultIsImplicit": "varsayılan veri deposu örtüktür; bu fiiller ek adlandırılmış veri depolarını yönetir.",
