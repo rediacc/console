@@ -330,7 +330,7 @@ def parse_results(text: str) -> list[list[dict]] | None:
 
 
 class Wrangler:
-    """Runs `npx wrangler ...` in the account Worker directory with a fixed environment; stdout is returned and never printed, since it carries row data.
+    """Runs `wrangler ...` (the absolute binary `core.wrangler.require` verified) in the account Worker directory with a fixed environment; stdout is returned and never printed, since it carries row data.
 
     A failure is reported by its exit code and the message `_wrangler_error` extracts (the JSON `error.text` and its notes, else the last non-empty line). Before it is shown, every value in `mask` (the secret columns of the copied rows) is replaced whole by `<redacted>`, every id in `redact` is cut to its prefix, a message that echoes SQL is withheld outright (a truncated echo could carry part of a secret no replacement would match), and the result is capped at 300 characters.
     """

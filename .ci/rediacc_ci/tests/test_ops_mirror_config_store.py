@@ -1,6 +1,6 @@
 """Tests for `rediacc_ci.ops.mirror_config_store`.
 
-The planner and the generated SQL run against two sqlite databases built from `private/account/drizzle/*.sql` (M1-M3). The apply path runs end to end against a fake `npx` on PATH that answers `wrangler d1 execute` from those same sqlite files and `wrangler r2 object get|put` from a scratch directory, recording every argv (M4). No Cloudflare credential and no network.
+The planner and the generated SQL run against two sqlite databases built from `private/account/drizzle/*.sql` (M1-M3). The apply path runs end to end against a fake `wrangler` on PATH that answers `wrangler d1 execute` from those same sqlite files and `wrangler r2 object get|put` from a scratch directory, recording every argv (M4). No Cloudflare credential and no network.
 """
 
 from __future__ import annotations
@@ -1026,15 +1026,15 @@ def test_bench_subscriptions_of_the_customer_without_the_org_refuse(dbs) -> None
         plan_for(src, dst)
 
 
-# ---- M4: the apply path against a fake npx -----------------------------------
+# ---- M4: the apply path against a fake wrangler -----------------------------------
 
-FAKE_NPX = r"""#!/usr/bin/env python3
+FAKE_WRANGLER = r"""#!/usr/bin/env python3
 import json, os, pathlib, shutil, sqlite3, sys
 argv = sys.argv[1:]
 with open(os.environ["FAKE_LOG"], "a") as f:
-    f.write(json.dumps(["npx"] + argv) + "\n")
-assert argv[:2] == ["--no-install", "wrangler"]
-args = argv[2:]
+    # two filler words keep the logged argv indices of the old `npx --no-install wrangler` prefix
+    f.write(json.dumps(["wrangler", "-", "-"] + argv) + "\n")
+args = argv
 def opt(name):
     return args[args.index(name) + 1]
 dbdir = pathlib.Path(os.environ["FAKE_DB_DIR"])
@@ -1095,14 +1095,13 @@ def fake(tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch, dbs) -> dict:
         conn.close()
     bin_dir = tmp_path / "bin"
     bin_dir.mkdir()
-    npx = bin_dir / "npx"
-    npx.write_text(FAKE_NPX, encoding="utf-8")
-    npx.chmod(npx.stat().st_mode | stat.S_IXUSR)
-    # `wrangler.require` proves a wrangler is reachable (local install or PATH) before it runs npx; the Pytest lane
-    # installs no workers/account node_modules, so the fake bin dir carries the PATH entry the real resolver wants.
+    # `wrangler.require` returns the absolute path of the wrangler it found (npx reads no PATH); the Pytest lane
+    # installs no workers/account node_modules, so the fake is the `wrangler` on PATH and is run by that path.
     stub = bin_dir / "wrangler"
-    stub.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+    stub.write_text(FAKE_WRANGLER, encoding="utf-8")
     stub.chmod(stub.stat().st_mode | stat.S_IXUSR)
+    # A seeded checkout has a real workers/account install, which `binary` prefers over PATH and would reach Cloudflare.
+    monkeypatch.setattr(mod.wrangler_cmd, "local_binary", lambda _cwd: None)
     r2 = tmp_path / "r2"
     for key, data in BLOBS.items():
         obj = r2 / "eu__configs-eu" / key

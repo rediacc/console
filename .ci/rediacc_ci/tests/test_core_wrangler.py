@@ -2,16 +2,13 @@
 
 from __future__ import annotations
 
+import pathlib
 import stat
-from typing import TYPE_CHECKING
 
 import pytest
 
 from rediacc_ci.core import wrangler
 from rediacc_ci.enterprise import control_db
-
-if TYPE_CHECKING:
-    import pathlib
 
 
 def _bin(base: pathlib.Path) -> pathlib.Path:
@@ -27,15 +24,15 @@ def test_argv_forbids_the_registry_download() -> None:
 
 
 def test_a_local_install_in_the_directory_is_accepted(tmp_path: pathlib.Path) -> None:
-    _bin(tmp_path)
-    assert wrangler.require(tmp_path, {"PATH": ""}) == wrangler.ARGV
+    tool = _bin(tmp_path)
+    assert wrangler.require(tmp_path, {"PATH": ""}) == [str(tool)]
 
 
 def test_a_local_install_in_an_ancestor_is_accepted(tmp_path: pathlib.Path) -> None:
-    _bin(tmp_path)
+    tool = _bin(tmp_path)
     nested = tmp_path / "a" / "b"
     nested.mkdir(parents=True)
-    assert wrangler.require(nested, {"PATH": ""}) == wrangler.ARGV
+    assert wrangler.require(nested, {"PATH": ""}) == [str(tool)]
 
 
 def test_a_wrangler_on_path_is_accepted(tmp_path: pathlib.Path) -> None:
@@ -46,7 +43,39 @@ def test_a_wrangler_on_path_is_accepted(tmp_path: pathlib.Path) -> None:
     exe.chmod(0o755)
     work = tmp_path / "work"
     work.mkdir()
-    assert wrangler.require(work, {"PATH": str(on_path)}) == wrangler.ARGV
+    # npx reads no PATH, so the prefix is the verified binary itself, never `ARGV`.
+    assert wrangler.require(work, {"PATH": str(on_path)}) == [str(exe)]
+
+
+def test_binary_is_absolute_for_a_relative_cwd(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path
+) -> None:
+    tool = _bin(tmp_path / "w")
+    monkeypatch.chdir(tmp_path)
+    got = wrangler.binary(pathlib.Path("w"), {"PATH": ""})
+    assert got.is_absolute()
+    assert got == tool
+
+
+def test_binary_is_absolute_for_a_relative_path_entry(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path
+) -> None:
+    exe = tmp_path / "bin" / "wrangler"
+    exe.parent.mkdir()
+    exe.write_text("#!/bin/sh\n", encoding="utf-8")
+    exe.chmod(0o755)
+    work = tmp_path / "work"
+    work.mkdir()
+    monkeypatch.chdir(tmp_path)
+    got = wrangler.binary(work, {"PATH": "bin"})
+    assert got.is_absolute()
+    assert got == exe
+
+
+def test_an_absolute_cwd_and_path_are_unchanged(tmp_path: pathlib.Path) -> None:
+    """THE SILENT CONTROL: already-absolute inputs come back as they were."""
+    tool = _bin(tmp_path)
+    assert wrangler.binary(tmp_path, {"PATH": ""}) == tool
 
 
 def test_no_install_anywhere_is_a_named_refusal(tmp_path: pathlib.Path) -> None:

@@ -4,11 +4,12 @@ A bare `npx wrangler` run from a directory with no local install makes npx downl
 
 NPX NEVER READS PATH. npm 11.21.0's `npx --no-install wrangler`, run from a temporary directory with a pinned `workers/*/node_modules/.bin` first on PATH, answers "npm error npx canceled due to missing packages and no YES option" (measured 2026-11-10). So `ARGV` works only for a caller whose cwd is inside a worker directory with its install. A caller that runs anywhere else (control_db's neutral temporary directory) passes its argv through `resolve(argv, cwd, env)`, which swaps the leading `ARGV` for the absolute path of the pinned binary: the local install reachable from `cwd`, else the first `wrangler` on `env`'s PATH (`control_db.wrangler_env` puts the repo's pinned `.bin` directories there).
 
-`binary(cwd, env)` is that lookup, and the explicit refusal: it raises `WranglerNotInstalledError` naming the directory and the fix before any subprocess starts. `require(cwd, env)` is the same refusal for a caller that runs `ARGV` from `cwd` itself.
+`binary(cwd, env)` is that lookup, and the explicit refusal: it raises `WranglerNotInstalledError` naming the directory and the fix before any subprocess starts. `require(cwd, env)` is the same refusal and returns `[<absolute binary>]`, the argv prefix for a caller that runs from `cwd` itself. Both paths are absolute even for a relative `cwd` or PATH entry.
 """
 
 from __future__ import annotations
 
+import os
 import pathlib
 import shutil
 from typing import TYPE_CHECKING
@@ -37,10 +38,10 @@ def binary(cwd: pathlib.Path, env: Mapping[str, str] | None = None) -> pathlib.P
     """The pinned wrangler a call from `cwd` runs: the local install in `cwd` or an ancestor, else the first `wrangler` on `env`'s PATH (this process's when `env` is None), else a named error."""
     found = local_binary(cwd)
     if found is not None:
-        return found
+        return pathlib.Path(os.path.abspath(found))
     on_path = shutil.which("wrangler", path=None if env is None else env.get("PATH"))
     if on_path is not None:
-        return pathlib.Path(on_path)
+        return pathlib.Path(os.path.abspath(on_path))
     raise WranglerNotInstalledError(
         "wrangler is not installed for %s: no node_modules/.bin/wrangler in it or an ancestor, "
         "and none on PATH; run: %s" % (cwd, FIX)
@@ -58,6 +59,5 @@ def resolve(
 
 
 def require(cwd: pathlib.Path, env: Mapping[str, str] | None = None) -> list[str]:
-    """`ARGV` once `binary(cwd, env)` finds a wrangler, else its named error. npx itself resolves only the local install or npm's global prefix, so a caller outside a worker directory runs `resolve` instead."""
-    binary(cwd, env)
-    return list(ARGV)
+    """`[<absolute path of binary(cwd, env)>]`, else its named error: the argv prefix runs exactly the wrangler that was verified, because npx reads no PATH and a PATH-only wrangler would make `ARGV` fail."""
+    return [str(binary(cwd, env))]

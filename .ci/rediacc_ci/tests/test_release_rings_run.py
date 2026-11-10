@@ -847,5 +847,6 @@ def test_d1_query_control_names_the_missing_install(
     """THE CONTROL: with no wrangler on the same PATH the call refuses, with the database named and no statement."""
     stub = _path_with(tmp_path, wrangler_on_path=False)
     monkeypatch.setattr(rings_run.control_db, "wrangler_env", lambda: {"PATH": stub})
-    with pytest.raises(RuntimeError, match="control-eu"):
+    with pytest.raises(RuntimeError, match=r"control-eu could not run") as raised:
         rings_run.d1_query("control-eu", "SELECT 1", [])
+    assert "SELECT 1" not in str(raised.value)
