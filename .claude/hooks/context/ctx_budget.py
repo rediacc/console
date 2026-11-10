@@ -681,7 +681,7 @@ def compaction_owner(transcript_path, sid, now=None):
 def retro_order_row(
     project, me8, band, transcript, usage=None, threshold=None, epoch=None, state_md_at=""
 ):
-    """Append the `ordered` row for (me8, band) and return it. The byte range runs from the previous retro's end to the transcript's current size."""
+    """The `ordered` row for (me8, band): a fresh covering order is returned unchanged with nothing appended, otherwise a new row is appended (retiring a stale order first) and returned. The new row's byte range runs from the previous retro's end to the transcript's current size."""
     rows = retro_rows(project)
     covered = retro_ordered(rows, me8, band)
     if covered is not None:

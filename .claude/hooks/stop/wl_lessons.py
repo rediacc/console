@@ -36,7 +36,7 @@ TRAPGUARD_SUITE = ".claude/rediacc_hooks/tests/test_hooks_trapguard.py"
 
 
 def is_test_path(rel):
-    """True when `rel` (repo-relative or bare) is a non-prose file named like a test (test-*, test_*, *-test.*, *_test.*, *.test.*) or sitting under a tests/ or test/ directory."""
+    """True when `rel` (repo-relative or bare) is a non-prose file (not .md, .rst or .adoc) named like a test (test-*, test_*, *-test.*, *_test.*, *.test.*) or sitting under a tests/ or test/ directory. A prose file is never a test, so tests/README.md is False."""
     text = str(rel)
     return not text.lower().endswith(_PROSE_EXT) and bool(_TEST_PATH_RE.search(text))
 
