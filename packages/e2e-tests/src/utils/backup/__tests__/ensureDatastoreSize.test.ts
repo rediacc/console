@@ -67,6 +67,16 @@ describe('ensureDatastoreSize', () => {
     expect(err?.message).toContain('no space on host');
   });
 
+  it('fails loudly and never expands when the size probe prints no number', async () => {
+    const t = fake({
+      sizeBytes: () => Promise.resolve(res(1, '', 'df: /mnt/rediacc: No such file')),
+    });
+    await expect(ensureDatastoreSize(t.ops, 'w1', '32G')).rejects.toThrow(
+      /could not read the size of the existing datastore on w1: df: \/mnt\/rediacc: No such file/
+    );
+    expect(t.calls).toEqual(['init']);
+  });
+
   it('rejects an init failure that is not "already exists"', async () => {
     const t = fake({ init: () => Promise.resolve(res(1, '', 'permission denied')) });
     await expect(ensureDatastoreSize(t.ops, 'w1', '32G')).rejects.toThrow(/permission denied/);
