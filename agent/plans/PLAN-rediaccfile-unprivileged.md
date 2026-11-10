@@ -244,8 +244,9 @@ Rules: an original is never deleted, pruned, replaced or downed. `mail` and `mau
   Accept: one row per repo with those outputs, every container back to baseline.
 - [ ] H3 [hostinger] Originals unchanged: repeat H1's snapshot. Same network ids and container sets, every H0 grant present via `renet daemon grant --network-id <N> --show`, `/var/lib/rediacc/reconcile/failed/` empty, next `nightly-hot` run reports hooks as expected. Container start times unchanged except `mail` and `mautic`.
   Accept: the diff is empty except uptime and those two, recorded in the tick.
-- [ ] LP-bench [live] Fresh bench receipt.
+- [x] LP-bench [live] Fresh bench receipt.
   Accept: `live-proof bench account-smoke`
+    (ticked) 2026-11-10T14:06:14Z by d778be9d: live-proof lp-24731970c99b bench account-smoke rc=0 v=1f90c7e1-6458-486f-ac2e-c261d28a7f09
 - [ ] LP-hostinger [live] Fresh hostinger receipt after a VERIFIED `npm run vm:check -- --changed` on the same tree.
   Accept: `live-proof hostinger renet-live`
 

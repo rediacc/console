@@ -436,8 +436,9 @@ Every H box uses the branch-built `rdc` and renet while edge and stable are on h
   (corrected ASKED:2026-11-05T07:06Z) "The released binary" reads as the branch-built binary: `renet backup report --test` from the branch renet, still with no repository involved. The Accept stands.
   - Accept: the command rc 0, and the digest's receipt recorded here.
 
-- [ ] LP-bench [live] Fresh bench receipt through worklist.py --live-proof, after this plan's bench-deployable boxes land.
+- [x] LP-bench [live] Fresh bench receipt through worklist.py --live-proof, after this plan's bench-deployable boxes land.
   Accept: live-proof bench account-smoke
+    (ticked) 2026-11-10T14:04:57Z by d778be9d: live-proof lp-4df668cbb3ef bench account-smoke rc=0 v=1f90c7e1-6458-486f-ac2e-c261d28a7f09
 
 - [ ] LP-hostinger [live] Fresh hostinger receipt through worklist.py --live-proof, after this plan's hostinger-deployable boxes land.
   Accept: live-proof hostinger renet-live machine=hostinger

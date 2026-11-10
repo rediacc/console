@@ -34,8 +34,9 @@ Three residual risks:
 - [ ] L2. Hostinger: after the stable deploy, the next scheduled snapshot of one hostinger repo uploads and commits. Accept: `backup usage` shows the new snapshot.
   (corrected ASKED:2026-11-05T07:06Z) Bench form: a manual `backup snapshot` on a bench repo, and the Accept reads as bench: `rdc --config eu-bench backup usage` shows the new snapshot. The hostinger scheduled-timer clause, after the stable deploy, moved to agent/plans/PLAN-first-release-checks.md (Hostinger scheduled timer).
 
-- [ ] LP-bench [live] Fresh bench receipt through worklist.py --live-proof, after this plan's bench-deployable boxes land.
+- [x] LP-bench [live] Fresh bench receipt through worklist.py --live-proof, after this plan's bench-deployable boxes land.
   Accept: live-proof bench account-smoke
+    (ticked) 2026-11-10T14:05:13Z by d778be9d: live-proof lp-38935a195311 bench account-smoke rc=0 v=1f90c7e1-6458-486f-ac2e-c261d28a7f09
 
 - [ ] LP-hostinger [live] Fresh hostinger receipt through worklist.py --live-proof, after this plan's hostinger-deployable boxes land.
   Accept: live-proof hostinger renet-live machine=hostinger

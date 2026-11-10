@@ -265,8 +265,9 @@ Most of this exists already, and A1 pins it with tests:
 - Hostinger repair (ASKED 2026-10-29, "Let nightly run, then verify (Recommended)"): L0 captures the before state now, the 03:00 UTC maintenance run is allowed to re-bill, and L2 still runs `backup reconcile --check` after A1 reaches stable EU.
 - Orphans (ASKED 2026-10-29, "Bill them (Recommended)"): usage counts every chunk the store holds, referenced or not, until GC deletes it after the 7-day grace.
 
-- [ ] LP-bench [live] Fresh bench receipt through worklist.py --live-proof, after this plan's bench-deployable boxes land.
+- [x] LP-bench [live] Fresh bench receipt through worklist.py --live-proof, after this plan's bench-deployable boxes land.
   Accept: live-proof bench account-smoke
+    (ticked) 2026-11-10T14:05:02Z by d778be9d: live-proof lp-cf9b036ade89 bench account-smoke rc=0 v=1f90c7e1-6458-486f-ac2e-c261d28a7f09
 
 - [ ] LP-hostinger [live] Fresh hostinger receipt through worklist.py --live-proof, after this plan's hostinger-deployable boxes land.
   Accept: live-proof hostinger renet-live machine=hostinger

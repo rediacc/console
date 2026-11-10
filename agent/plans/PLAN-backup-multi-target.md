@@ -106,7 +106,8 @@ What exists today for several destinations, each checked against the tree at fbe
     (ticked) 2026-11-07T17:02:20Z by d778be9d: commit:025a04bb72 P2 landed; box tests passed on HEAD
 - [ ] P3: replicate mode live proof on bench: one upload destination and one replicate destination, the copy committed after the source commit, a restore from the replica byte-identical by image hash. Accept: the run log under agent/ with the commands and exit codes and a `live_proof record` receipt for bench.
 
-- [ ] LP-bench [live] Fresh bench receipt (PLAN-tested-on-bench ruling 3): deploy this branch to bench with deploy_bench, then record and tick through worklist.py --live-proof.
+- [x] LP-bench [live] Fresh bench receipt (PLAN-tested-on-bench ruling 3): deploy this branch to bench with deploy_bench, then record and tick through worklist.py --live-proof.
   - Accept: `live-proof bench account-smoke`
+    (ticked) 2026-11-10T14:05:08Z by d778be9d: live-proof lp-983eb4d9f232 bench account-smoke rc=0 v=1f90c7e1-6458-486f-ac2e-c261d28a7f09
 - [ ] LP-hostinger [live] Fresh hostinger receipt through --config eu-bench (PLAN-tested-on-bench ruling 3), after a VERIFIED npm run vm:check -- --changed on the same tree.
   - Accept: `live-proof hostinger renet-live`

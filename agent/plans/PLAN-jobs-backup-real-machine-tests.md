@@ -50,5 +50,6 @@ Worklist: PR-TASK 9f92c43e
     (ticked) 2026-11-05T13:43:06Z by d778be9d: commit:351bf305f every clause read as corrected; suite 23 leg ok 12 of 12 on the fleet, BLOCKERs removed, check:ci-e2e-coverage rc=0; gc race proven by a device-mapper entry since an immutable commit cannot be mounted
   (corrected 2026-11-06, review f19b7e04.2) The Accept command ran as the vm:check leg `--only cli-migrate-23` (the `CLI_SUITE=1` leg named in the correction above), run vmc-11051256-41cee8, step X.cli-migrate-23 rc 0 with 12 passed and "Zero-skip gate: 0 skipped tests", the `--fail-on-skip` condition; the rc=77 beside the same run id is the run's no-receipt verdict (NOT_VERIFIED, account and renet phases not run) and not that step's result.
 
-- [ ] LP-bench [live] Fresh bench receipt through worklist.py --live-proof, after this plan's bench-deployable boxes land.
+- [x] LP-bench [live] Fresh bench receipt through worklist.py --live-proof, after this plan's bench-deployable boxes land.
   Accept: live-proof bench account-smoke
+    (ticked) 2026-11-10T14:05:59Z by d778be9d: live-proof lp-9cf4da1e6343 bench account-smoke rc=0 v=1f90c7e1-6458-486f-ac2e-c261d28a7f09

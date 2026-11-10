@@ -49,8 +49,9 @@ Worklist: #b76e7dcb, PR-TASK 9f92c43e
   (corrected 2026-11-07, review b16944c4.3) The manifest format holds no whole-image sha256, so "the image sha256 equals the recorded one" reads as: the per-cell SHA-256 Merkle root (private/renet/pkg/chunkstore/cellsroot.go) recomputed over the downloaded image equals the manifest's `cellsRoot`, which the backup run wrote at commit time; the image sha256 still equals across runs.
   (corrected 2026-11-07, review 76b37207.1 and f36184e7.1) The Accept clause "the image sha256 equals the recorded one" is closed only by the cellsRoot reading in the correction above: the Merkle root recomputed over the downloaded image equals the manifest's `cellsRoot`, written by the backup run at commit time, which is an independent record. The run-two-against-run-one equality of image sha256 2788bb37...0f4c1a, cited in the tick and in the correction, is a consistency observation that the 2026-11-06 reopen note correctly calls met by construction; it is not part of what closes the clause, and the box is not ticked on it.
 
-- [ ] LP-bench [live] Fresh bench receipt through worklist.py --live-proof, after this plan's bench-deployable boxes land.
+- [x] LP-bench [live] Fresh bench receipt through worklist.py --live-proof, after this plan's bench-deployable boxes land.
   Accept: live-proof bench account-smoke
+    (ticked) 2026-11-10T14:04:50Z by d778be9d: live-proof lp-5ca705e10a30 bench account-smoke rc=0 v=1f90c7e1-6458-486f-ac2e-c261d28a7f09
 
 - [ ] LP-hostinger [live] Fresh hostinger receipt through worklist.py --live-proof, after this plan's hostinger-deployable boxes land.
   Accept: live-proof hostinger renet-live machine=hostinger

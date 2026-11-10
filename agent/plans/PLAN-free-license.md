@@ -102,8 +102,9 @@ Worklist: #6d2022b2, PR-TASK 9f92c43e
 - [x] L2 [live] bench: a FREE licence from a clean config with no login, a renewal, the 9th issuance from one address refused, the 4th per machine refused.
     (ticked) 2026-11-09T01:36:02Z by d778be9d: commit:eeb2a25630 bench 2026-11-09T01:34:05-01:34:21Z, clean config fl-l2-1109013356 (config init --server https://bench.rediacc.cloud rc 0, no login): POST /licenses/free issued planCode FREE subscriptionId free:4c6da6a6...; /licenses/renew sequence 2; issuance 9 from one address 429 FREE_LICENSE_IP_LIMIT; 4th on one machine 403 FREE_LICENSE_MACHINE_LIMIT. Driven through the CLI's accountServerFetch (noAuth), not the rdc verb, which needs a machine (bench holds only hostinger). Side effect: this IP is FREE-limited on bench until about 2026-11-12T01:34Z
 - [ ] L3 [live] hostinger: a FREE-licensed repository created; after a forced expiry, `repo up` of it succeeds and a new `repo create` under FREE is refused with the upgrade message.
-- [ ] LP-bench [live] Fresh bench receipt after L2.
+- [x] LP-bench [live] Fresh bench receipt after L2.
   Accept: live-proof bench account-smoke
+    (ticked) 2026-11-10T14:05:49Z by d778be9d: live-proof lp-ea238cae8491 bench account-smoke rc=0 v=1f90c7e1-6458-486f-ac2e-c261d28a7f09
 - [ ] LP-hostinger [live] Fresh hostinger receipt after L3 and a verified vm:check on the same tree.
   Accept: live-proof hostinger renet-live machine=hostinger
 

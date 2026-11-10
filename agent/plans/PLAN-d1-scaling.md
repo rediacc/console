@@ -198,8 +198,9 @@ Two resume paths keep the invariant "every exists answer the commit relies on wa
   Depends on: Z1, H4.
   Accept: `PYTHONPATH=.ci python3 -m rediacc_ci.ops.d1_size_report --region <r>` rc 0 after the move, with the shard split recorded here.
   (corrected 2026-11-09, d778be9d) `Depends on: Z1` names the size-report box Z1 (Wave 1b), not the design section Z1 (no pins).
-- [ ] LP-bench [live] Fresh bench receipt after LB1 and H4.
+- [x] LP-bench [live] Fresh bench receipt after LB1 and H4.
   Accept: live-proof bench account-smoke
+    (ticked) 2026-11-10T14:05:29Z by d778be9d: live-proof lp-82f0a1bfbf38 bench account-smoke rc=0 v=1f90c7e1-6458-486f-ac2e-c261d28a7f09
 - [ ] LP-hostinger [live] Fresh hostinger receipt after LR1.
   Accept: live-proof hostinger renet-live
 

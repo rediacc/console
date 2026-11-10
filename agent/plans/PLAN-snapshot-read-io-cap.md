@@ -256,5 +256,6 @@ Asked after erpnext peaked at load 12.89 at --parallelism 1, the operator answer
 - [ ] LP-hostinger [live] Fresh hostinger receipt through worklist.py --live-proof, after this plan's hostinger-deployable boxes land.
   Accept: live-proof hostinger renet-live machine=hostinger
 
-- [ ] LP-bench [live] Fresh bench receipt through worklist.py --live-proof, after this plan's bench-deployable boxes land.
+- [x] LP-bench [live] Fresh bench receipt through worklist.py --live-proof, after this plan's bench-deployable boxes land.
   Accept: live-proof bench account-smoke
+    (ticked) 2026-11-10T14:06:30Z by d778be9d: live-proof lp-fbd7642162d4 bench account-smoke rc=0 v=1f90c7e1-6458-486f-ac2e-c261d28a7f09

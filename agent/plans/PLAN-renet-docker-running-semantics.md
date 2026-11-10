@@ -71,5 +71,6 @@ Live-Proof: bench, hostinger -- the account surface (the regenerated list-types 
 - [ ] LP-hostinger [live] Fresh hostinger receipt through worklist.py --live-proof, after this plan's hostinger-deployable boxes land.
   Accept: live-proof hostinger renet-live machine=hostinger
 
-- [ ] LP-bench [live] Fresh bench receipt through worklist.py --live-proof, after this plan's bench-deployable boxes land.
+- [x] LP-bench [live] Fresh bench receipt through worklist.py --live-proof, after this plan's bench-deployable boxes land.
   Accept: live-proof bench account-smoke
+    (ticked) 2026-11-10T14:06:20Z by d778be9d: live-proof lp-29cfa95d25be bench account-smoke rc=0 v=1f90c7e1-6458-486f-ac2e-c261d28a7f09

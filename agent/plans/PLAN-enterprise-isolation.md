@@ -178,8 +178,9 @@ This plan is public: no customer name appears in it or in any tracked file. `acm
   Accept: `./run.sh enterprise proof github --bench` rc 0.
 - [ ] V11 [live] Both paths of delete: the local script exports, then removes one fake company with data, and a second attempt under `GITHUB_ACTIONS=1` and a scan of the workflows both refuse. The GitHub path has no delete to run.
   Accept: `./run.sh enterprise proof remove --bench` rc 0.
-- [ ] LP-bench [live] Fresh bench receipts after V11.
+- [x] LP-bench [live] Fresh bench receipts after V11.
   Accept: live-proof bench account-smoke
+    (ticked) 2026-11-10T14:05:44Z by d778be9d: live-proof lp-fc4a9c18fc11 bench account-smoke rc=0 v=1f90c7e1-6458-486f-ac2e-c261d28a7f09
 
 ### Production
 

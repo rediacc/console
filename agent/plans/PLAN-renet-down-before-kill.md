@@ -142,8 +142,9 @@ Hub daemons (private/renet/pkg/hub/gc.go:144; private/renet/pkg/hub/user_daemon.
   - CONTROL: the same restart on the fork before provisioning writes no `down` line. Record that run first.
 - [ ] LP-hostinger [live] Fresh hostinger receipt after a VERIFIED `npm run vm:check -- --changed` on the same tree.
   - Accept: `live-proof hostinger renet-live`
-- [ ] LP-bench [live] Fresh bench receipt for the account surface this plan owns (packages/shared/src/renet-contract/data/**): deploy this branch to bench with deploy_bench, then record and tick through worklist.py --live-proof.
+- [x] LP-bench [live] Fresh bench receipt for the account surface this plan owns (packages/shared/src/renet-contract/data/**): deploy this branch to bench with deploy_bench, then record and tick through worklist.py --live-proof.
   - Accept: `live-proof bench account-smoke`
+    (ticked) 2026-11-10T14:06:25Z by d778be9d: live-proof lp-62e877b0a5b2 bench account-smoke rc=0 v=1f90c7e1-6458-486f-ac2e-c261d28a7f09
 
 ## Design only: a renet-managed RAM volume per repository (requirement E, no box)
 

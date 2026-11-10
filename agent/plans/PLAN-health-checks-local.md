@@ -636,8 +636,9 @@ The hostinger-side scripts are written on hostinger and live only in its repos. 
 - [ ] P2: PR CI green on the head, including N1, N3, the K5 leg and the new ops-health gate (L4), read with the ci-watch skill.
   (corrected 2026-11-06, operator rulings A to E4) PR CI green on the head, including N1, N3, the G and X tests, the K5 leg and the new ops-health gate (L4), read with the ci-watch skill.
   - Accept: CI Complete SUCCESS.
-- [ ] LP-bench [live]: A fresh bench receipt through worklist.py --live-proof, after the cli boxes land.
+- [x] LP-bench [live]: A fresh bench receipt through worklist.py --live-proof, after the cli boxes land.
   - Accept: live-proof bench cli-bench
+    (ticked) 2026-11-10T14:05:54Z by d778be9d: live-proof lp-9ca9cfb4a3d9 bench cli-bench rc=0 v=cli:f47a394037e51464b49970f977e3626925fc67b5
 - [ ] LP-hostinger [live]: A fresh hostinger receipt through worklist.py --live-proof, after H5 to H7, since renet-live expects `stale_binary == []` (F6).
   - Accept: live-proof hostinger renet-live machine=hostinger
 

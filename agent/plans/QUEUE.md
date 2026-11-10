@@ -79,17 +79,17 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic f65726d5, plan agent/plans/PLAN-renet-down-before-kill.md, outside the set, 16 commit(s) on the branch, 0 open item(s): renet runs Rediaccfile down() before repo containers stop
   - epic 53c31db2, plan agent/plans/PLAN-repo-resource-limits.md, outside the set, 20 commit(s) on the branch, 0 open item(s): per-repo resource limits and a renet-managed RAM volume
   - epic a86f5622, plan agent/plans/PLAN-production-key-only.md, outside the set, 4 commit(s) on the branch, 0 open item(s): Production key only: every leg licensed from its own plane
-  - epic 79b7e92e, no plan, 263 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
-  - epic 562ef6c3, plan agent/plans/PLAN-experience-feedback.md, outside the set, 48 commit(s) on the branch, 0 open item(s): experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire
-- Writers: 4 live of writer_cap 25 (session d778be9d): worker:a81de8294b0f65d03, worker:ac4080c663ae4bb94, worker:a1917d88f28e26699, worker:af2e03cc54a89aa71.
-- Leased items: 8: #1e4c214c (worker:ac4080c663ae4bb94, d778be9d), #4f4df453 (worker:busfc6826, d778be9d), #54aacfb3 (worker:bkqae9edw, d778be9d), #6025a1d5 (worker:ac4080c663ae4bb94, d778be9d), #612689ff (worker:af2e03cc54a89aa71, d778be9d), #67c9eb34 (worker:bijpuix39, d778be9d), #8d576362 (worker:a1917d88f28e26699, d778be9d), #caa837d4 (worker:ac4080c663ae4bb94, d778be9d).
+  - epic 79b7e92e, no plan, 268 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 562ef6c3, plan agent/plans/PLAN-experience-feedback.md, outside the set, 49 commit(s) on the branch, 0 open item(s): experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire
+- Writers: 3 live of writer_cap 25 (session d778be9d): worker:a1917d88f28e26699, worker:a237dbf359be42ce8, worker:a498291f952c03530.
+- Leased items: 8: #19b4818e (worker:a237dbf359be42ce8, d778be9d), #4f4df453 (worker:busfc6826, d778be9d), #54aacfb3 (worker:bkqae9edw, d778be9d), #612689ff (worker:a237dbf359be42ce8, d778be9d), #67c9eb34 (worker:bijpuix39, d778be9d), #8d576362 (worker:a1917d88f28e26699, d778be9d), #99279bf8 (worker:a498291f952c03530, d778be9d), #caa837d4 (worker:a1917d88f28e26699, d778be9d).
 - Next plan: agent/plans/PLAN-sandbox-tenant-separation.md, Promoted entry 14; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 17 of 64 plans done, 979 of 1187 boxes done (82%).
+Promoted: 17 of 64 plans done, 1000 of 1187 boxes done (84%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -118,44 +118,44 @@ Promoted: 17 of 64 plans done, 979 of 1187 boxes done (82%).
 | 23 | PLAN-backup-restore-path.md | 7/10 | 3 open |
 | 24 | PLAN-ssh-key-source-ranges.md | 10/11 | 1 open |
 | 25 | PLAN-repo-docker-storage-prune.md | 11/14 | 3 open |
-| 26 | PLAN-production-key-only.md | 12/17 | 5 open |
+| 26 | PLAN-production-key-only.md | 13/17 | 4 open |
 | 27 | PLAN-detached-jobs.md | 31/40 | 9 open |
-| 28 | PLAN-snapshot-read-io-cap.md | 13/16 | 3 open |
-| 29 | PLAN-backup-meter-orphaned-chunks.md | 6/8 | 2 open |
+| 28 | PLAN-snapshot-read-io-cap.md | 14/16 | 2 open |
+| 29 | PLAN-backup-meter-orphaned-chunks.md | 7/8 | 1 open |
 | 30 | PLAN-backup-local-image.md | 10/14 | 4 open |
-| 31 | PLAN-backup-plane-shared-bucket-hardening.md | 4/7 | 3 open |
-| 32 | PLAN-jobs-backup-real-machine-tests.md | 9/11 | 2 open |
+| 31 | PLAN-backup-plane-shared-bucket-hardening.md | 5/7 | 2 open |
+| 32 | PLAN-jobs-backup-real-machine-tests.md | 10/11 | 1 open |
 | 33 | PLAN-cli-tofu-toolchain.md | 10/10 | done |
-| 34 | PLAN-backup-download-from-store.md | 6/9 | 3 open |
+| 34 | PLAN-backup-download-from-store.md | 7/9 | 2 open |
 | 35 | PLAN-settings-set-verb.md | 4/4 | done |
-| 36 | PLAN-free-license.md | 9/13 | 4 open |
-| 37 | PLAN-backup-integrity.md | 43/56 | 13 open |
-| 38 | PLAN-backup-critical-tier.md | 42/51 | 9 open |
-| 39 | PLAN-rediaccfile-unprivileged.md | 15/23 | 8 open |
+| 36 | PLAN-free-license.md | 10/13 | 3 open |
+| 37 | PLAN-backup-integrity.md | 44/56 | 12 open |
+| 38 | PLAN-backup-critical-tier.md | 43/51 | 8 open |
+| 39 | PLAN-rediaccfile-unprivileged.md | 16/23 | 7 open |
 | 40 | PLAN-worktree-lease.md | 15/16 | 1 open |
 | 41 | PLAN-tick-tracking.md | 13/15 | 2 open |
-| 42 | PLAN-renet-down-before-kill.md | 11/15 | 4 open |
+| 42 | PLAN-renet-down-before-kill.md | 12/15 | 3 open |
 | 43 | PLAN-repo-resource-limits.md | 9/13 | 4 open |
-| 44 | PLAN-health-checks-local.md | 59/81 | 22 open |
-| 45 | PLAN-backup-multi-target.md | 16/21 | 5 open |
-| 46 | PLAN-ciquick-reds-1023-1.md | 9/12 | 3 open |
+| 44 | PLAN-health-checks-local.md | 60/81 | 21 open |
+| 45 | PLAN-backup-multi-target.md | 17/21 | 4 open |
+| 46 | PLAN-ciquick-reds-1023-1.md | 10/12 | 2 open |
 | 47 | PLAN-docker-pin-digest.md | 8/9 | 1 open |
 | 48 | PLAN-renet-executor-tiered-license-check.md | 2/4 | 2 open |
 | 49 | PLAN-scope-bws-signing-key-to-consuming-step.md | 8/10 | 2 open |
-| 50 | PLAN-split-cli-files-over-512-line-budget.md | 5/7 | 2 open |
-| 51 | PLAN-renet-docker-running-semantics.md | 11/15 | 4 open |
-| 52 | PLAN-product-domain-rename.md | 22/28 | 6 open |
-| 53 | PLAN-website-routing-and-mail.md | 12/20 | 8 open |
-| 54 | PLAN-enterprise-isolation.md | 19/34 | 15 open |
+| 50 | PLAN-split-cli-files-over-512-line-budget.md | 6/7 | 1 open |
+| 51 | PLAN-renet-docker-running-semantics.md | 12/15 | 3 open |
+| 52 | PLAN-product-domain-rename.md | 23/28 | 5 open |
+| 53 | PLAN-website-routing-and-mail.md | 13/20 | 7 open |
+| 54 | PLAN-enterprise-isolation.md | 20/34 | 14 open |
 | 55 | PLAN-renet-restart-cycle-defects.md | 5/7 | 2 open |
-| 56 | PLAN-drop-free-license-ip-prefix-hash.md | 4/6 | 2 open |
+| 56 | PLAN-drop-free-license-ip-prefix-hash.md | 5/6 | 1 open |
 | 57 | PLAN-stop-hook-retro-20261101.md | 4/4 | done |
 | 58 | PLAN-plan-compaction-bindings.md | 6/7 | 1 open |
 | 59 | PLAN-ciquick-green-then-batch.md | 6/7 | 1 open |
 | 60 | PLAN-vmcheck-incremental.md | 2/3 | 1 open |
 | 61 | PLAN-ci-vm-image-followups.md | 0/2 | 2 open |
 | 62 | PLAN-idle-writer-capacity.md | 5/5 | done |
-| 63 | PLAN-d1-scaling.md | 16/31 | 15 open |
+| 63 | PLAN-d1-scaling.md | 17/31 | 14 open |
 | 64 | PLAN-experience-feedback.md | 12/16 | 4 open |
 <!-- queue:progress:end -->
 
@@ -231,10 +231,10 @@ Promoted: 17 of 64 plans done, 979 of 1187 boxes done (82%).
 2. agent/plans/PLAN-haiku-model-routing.md -- P1, executing, in progress (11 of 20 boxes ticked)
 3. agent/plans/PLAN-stop-hook-refactor-enforcement.md -- P1, executing, in progress (16 of 17 boxes ticked)
 4. agent/plans/PLAN-ci-quick-cpu-scheduling.md -- P2, active, in progress (2 of 5 boxes ticked)
-5. agent/plans/PLAN-backup-toc-exact-opt-in.md -- P3, proposed, in progress (1 of 10 boxes ticked)
-6. agent/plans/PLAN-deletion-budget.md -- P3 (operator), draft, not started
-7. agent/plans/PLAN-fix-upgrade-drills-flat-daemon-bringup.md -- P1, executing, not started
-8. agent/plans/PLAN-config-mirror-reseal.md -- P2, proposed, not started
+5. agent/plans/PLAN-config-mirror-reseal.md -- P2, proposed, in progress (1 of 2 boxes ticked)
+6. agent/plans/PLAN-backup-toc-exact-opt-in.md -- P3, proposed, in progress (1 of 10 boxes ticked)
+7. agent/plans/PLAN-deletion-budget.md -- P3 (operator), draft, not started
+8. agent/plans/PLAN-fix-upgrade-drills-flat-daemon-bringup.md -- P1, executing, not started
 9. agent/plans/PLAN-first-release-checks.md -- P2, approved, not started
 10. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
 11. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started

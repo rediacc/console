@@ -123,8 +123,9 @@ The zone is on Cloudflare with null MX, `v=spf1 -all` and `_dmarc` reject with s
     (result 2026-11-09T08:55Z, d778be9d) Blocked on rename L8 and L7. `workers/www/wrangler.toml` binds service `account-eu`, and the account's Worker list (read 2026-11-09 through `deploy-workers`) has no `account-eu`, only `rediacc-account-eu` and `edge-rediacc-account-eu`. A deploy of `www` or a `pr-<n>` preview fails on that binding. `www.rediacc.com` is still a custom domain of `rediacc-www` (rollback handle: its current version 9a3b8f9e-e54f-4bc5-aadb-e0df270e3b5d), and moving that domain is rename L7's unverified step. `curl -sD- https://www.rediacc.com/api/geo` answers 404 today. Ready: `packages/www` builds rc 0 (1853 pages), and the W1 code is tested.
 - [ ] R2 [live] Passkey register and login on bench under the new RP ID. A lookup hit and a miss answer the same shape.
   Accept: `curl -fsS -X POST https://www.rediacc.com/api/enterprise-lookup -d '{"domain":"unknown.example"}' | jq -e '.host==null'` rc 0, and the bench passkey login recorded here.
-- [ ] LP-bench [live] Fresh bench receipt after R2.
+- [x] LP-bench [live] Fresh bench receipt after R2.
   Accept: live-proof bench account-smoke
+    (ticked) 2026-11-10T14:06:40Z by d778be9d: live-proof lp-03fd60e43535 bench account-smoke rc=0 v=1f90c7e1-6458-486f-ac2e-c261d28a7f09
 
 ### Cleanup
 
