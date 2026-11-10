@@ -255,6 +255,12 @@
       "term": "rclone",
       "count": 1,
       "blocker": "BLOCKER: rclone config, vault and executor handling in private/renet/pkg/output/progress.go is removed by agent/plans/PLAN-backup-program.md H9"
+    },
+    {
+      "path": "private/account/rotation-manifest.json",
+      "term": "pre-rename-worker-bucket-names",
+      "count": 7,
+      "blocker": "BLOCKER: rotation-manifest.json is JSON and cannot carry a retired-term-ok marker, and the old edge-rediacc-account-<r> and rediacc-account-<r> Workers still receive rotated secrets as consumers until agent/plans/PLAN-product-domain-rename.md L11 deletes them"
     }
   ],
   "file_exclusions": [

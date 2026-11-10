@@ -11,6 +11,7 @@ import threading
 import pytest
 
 from rediacc_ci.core import dockerx
+from rediacc_ci.well_known import RUNTIME_DIR
 
 HEADER = "Num       RefCount Protocol Flags    Type St Inode Path\n"
 LISTEN = "00010000"
@@ -240,7 +241,7 @@ def test_cannot_run_reason_appends_the_defect(monkeypatch: pytest.MonkeyPatch) -
     ("env", "host"),
     [
         ({"DOCKER_HOST": "tcp://10.0.0.1:2375"}, None),
-        ({}, "unix:///var/run/rediacc/net-7/docker-7.sock"),
+        ({}, f"unix://{RUNTIME_DIR}/net-7/docker-7.sock"),
         ({"DOCKER_HOST": "ssh://box"}, None),
     ],
 )

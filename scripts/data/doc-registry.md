@@ -900,7 +900,7 @@ Scans: every tracked non-source, non-prose file carrying a `BLOCKER:` line.
 | .ci/config/docker-npm-pin-exclusions.json | 1 | JSON value |
 | .ci/config/pins.json | 16 | JSON value |
 | .ci/config/prose-style-rules.json | 9 | JSON value |
-| .ci/config/retired-terms.json | 10 | JSON value |
+| .ci/config/retired-terms.json | 11 | JSON value |
 | .ci/config/secret-supply.json | 2 | JSON value |
 | .ci/config/syncpack-source-exclusions.json | 10 | JSON value |
 | .ci/policy/.audit-allowlist | 3 | # comment |

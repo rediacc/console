@@ -187,6 +187,11 @@ FRAGMENTS: dict[tuple[str, str], str] = {
         "BLOCKER: a `$name`/`${name}` expansion parser used by `.sub()` to substitute assigned values into the commit "
         "text before linting; it rewrites text and decides nothing itself."
     ),
+    ("block_protected_files.py", "_PLAIN_REF"): (
+        "BLOCKER: a `$name`/`${name}` expansion parser used by `.sub()` in `_assigned` to replace a typed word's variables "
+        "with the literal values an earlier statement of the same command gave them; it rewrites a word the walk already "
+        "located and decides nothing itself."
+    ),
     ("block_suppressions_shell_write.py", "_SED_SUB"): (
         "BLOCKER: parses a sed `s<d>pat<d>rep<d>` expression from argv of an in-place sed already aimed at a suppression "
         "file; the delimiter is any punctuation, so there is no literal word to mention."

@@ -1,3 +1,4 @@
+import { WK_ACCOUNT_DEFAULT_ORIGIN } from '@rediacc/shared/config/well-known.generated';
 import { describe, expect, it, vi } from 'vitest';
 
 const fetchMock = vi.hoisted(() => vi.fn());
@@ -29,7 +30,7 @@ vi.mock('../../machine/machine-connection.js', () => ({
 }));
 vi.mock('../../telemetry/telemetry.js', () => ({ telemetryService: { trackError: vi.fn() } }));
 
-const server = vi.hoisted(() => ({ url: 'https://eu.rediacc.cloud' }));
+const server = vi.hoisted(() => ({ url: '' }));
 
 vi.mock('../subscription-auth.js', () => ({
   getSubscriptionServerUrl: () => server.url,
@@ -41,7 +42,8 @@ import { refreshRepoLicensesBatch, reposWithForeignLicenseOrigin } from '../lice
 const OLD = '11111111-1111-4111-8111-111111111111';
 const FRESH = '22222222-2222-4222-8222-222222222222';
 const BARE = '33333333-3333-4333-8333-333333333333';
-const NEW_ORIGIN = 'https://eu.rediacc.cloud';
+const NEW_ORIGIN = WK_ACCOUNT_DEFAULT_ORIGIN;
+server.url = NEW_ORIGIN;
 const DATES = { currentRefreshRecommendedAt: '2099-01-01', currentHardExpiresAt: '2099-02-01' };
 
 const scan = [
@@ -71,7 +73,7 @@ describe('reposWithForeignLicenseOrigin', () => {
   });
 
   it('compares origins when the configured server URL carries a path', () => {
-    server.url = 'https://eu.rediacc.cloud/account/api/v1';
+    server.url = `${NEW_ORIGIN}/account/api/v1`;
     try {
       expect([...reposWithForeignLicenseOrigin(scan, 'hostinger')]).toEqual([OLD]);
     } finally {
