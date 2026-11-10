@@ -1953,12 +1953,14 @@ so in the same report that discloses the workaround, because the workaround's ow
 
 ## The wake timer dies before it fires when its Bash timeout is not above its sleep
 Trap-Id: wake-timer-timeout-above-sleep
-Enforced-By: file:.claude/hooks/stop/wl_checks.py
-Residue: nothing reads the Bash call's timeout, so a wake timer started with the harness default is killed before it fires.
+Enforced-By: guard:block_short_wake_timeout, file:.claude/hooks/stop/wl_checks.py
+Residue:
 Documented-In: text:CLAUDE.md a `timeout` above its sleep
 Documented-In: text:CLAUDE.md as a background Bash call
 
 The wake timer exists because the harness re-invokes a session only when a background task exits. Started with the harness's own 30-minute default timeout around a 30-minute sleep, the call is killed just before it would have fired, so a stop that waits on hung work never ends. The `timeout` passed to the Bash call has to sit above the timer's sleep (2400000 ms for the default).
+
+The same arm fails three more ways that look armed: behind a shell `&` (on 2026-11-10 one was appended to an unrelated command, so the Bash call returned at once and the orphaned timer's exit woke nothing), chained with other work in one call, or run in the foreground. Since 2026-11-10 `block_short_wake_timeout` refuses all four in the pre-bash chain, reading the required timeout from `wl_wake.harness_timeout_ms`, and names the one correct form: the arm alone in its own Bash call, `run_in_background: true`, `timeout: 2400000`.
 
 ## ci:quick drops a touched slow gate and the push goes out unverified
 Trap-Id: ci-quick-drops-touched-slow-gate
