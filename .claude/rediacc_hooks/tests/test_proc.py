@@ -5,8 +5,10 @@ THE ORACLE IS THE REAL TOOL, as in the shellscan differential: a live child proc
 BOTH BACKENDS RUN HERE, forced through `REDIACC_PROC_BACKEND`. The `ps` backend is the macOS one, and it is exercised on Linux on purpose: a backend that is only ever run on the platform nobody tests is a backend that is broken on the day it is needed, and the guards it serves go quietly to sleep rather than failing.
 """
 
+import contextlib
 import os
 import shutil
+import signal
 import subprocess
 import time
 import uuid
@@ -46,6 +48,8 @@ def child(tmp_path):
     popen = subprocess.Popen(
         [BASH, str(script)],
         env={"PATH": os.environ.get("PATH", "/usr/bin:/bin"), "HOME": os.environ.get("HOME", "/")},
+        # Its own session, so the bash AND its long-sleep child share one process group that teardown can kill. `popen.kill()` alone reaps only the bash and orphans the child for its whole lifetime (worklist #2998e5d5).
+        start_new_session=True,
     )
     # The process must be in the table before anything asks about it. Polling beats a fixed pause: a fixed one is either flaky on a loaded machine or slow on an idle one, and this suite runs on both.
     # READY MEANS EXEC'D, not forked.
@@ -64,8 +68,32 @@ def child(tmp_path):
     try:
         yield {"pid": popen.pid, "token": token, "script": str(script), "popen": popen}
     finally:
-        popen.kill()
-        popen.wait()
+        _reap_group(popen)
+
+
+def _reap_group(popen):
+    """Kill the fixture's whole process group, then collect the shell."""
+    # The group is gone already when the child finished first.
+    with contextlib.suppress(ProcessLookupError):
+        os.killpg(popen.pid, signal.SIGKILL)
+    popen.wait()
+
+
+def _group_members(pgid):
+    """Pids still in process group `pgid`, read from /proc (zombies excluded)."""
+    out = []
+    for name in os.listdir("/proc"):
+        if not name.isdigit():
+            continue
+        try:
+            with open("/proc/%s/stat" % name, encoding="utf-8") as fh:
+                rest = fh.read().rsplit(")", 1)[1].split()
+        except OSError:
+            continue
+        # rest[0] is the state, rest[2] the pgrp.
+        if rest[0] != "Z" and int(rest[2]) == pgid:
+            out.append(int(name))
+    return out
 
 
 @pytest.fixture
@@ -176,3 +204,33 @@ def test_both_backends_see_this_very_process(monkeypatch):
     # Not an equality: processes start and exit between the two listings, and a test that demanded identical sets would be flaky on a busy machine for a reason that has nothing to do with the code.
     overlap = set(seen["proc"]) & set(seen["ps"])
     assert len(overlap) > 10
+
+
+def _spawn_long_child(tmp_path):
+    script = tmp_path / "reap-probe.sh"
+    script.write_text("#!/usr/bin/env bash\nsleep %d\n" % 600, encoding="utf-8")
+    popen = subprocess.Popen([BASH, str(script)], start_new_session=True)
+    deadline = time.time() + 10
+    while time.time() < deadline and len(_group_members(popen.pid)) < 2:
+        time.sleep(0.02)
+    assert len(_group_members(popen.pid)) >= 2, "CONTROL: the fixture never forked its child"
+    return popen
+
+
+def test_the_child_fixture_leaves_no_process_behind(tmp_path):
+    """Teardown must take the fixture's long-sleep child with it, not just the bash (worklist #2998e5d5)."""
+    popen = _spawn_long_child(tmp_path)
+    _reap_group(popen)
+    assert _group_members(popen.pid) == []
+
+
+def test_killing_only_the_shell_does_leave_the_child(tmp_path):
+    """CONTROL: with the reap reduced to the old `popen.kill()`, the check above would fail."""
+    popen = _spawn_long_child(tmp_path)
+    try:
+        popen.kill()
+        popen.wait()
+        assert _group_members(popen.pid) != []
+    finally:
+        _reap_group(popen)
+    assert _group_members(popen.pid) == []
