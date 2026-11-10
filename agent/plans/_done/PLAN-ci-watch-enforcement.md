@@ -1,5 +1,5 @@
 # PLAN: CI-watch enforcement, from "the session remembered" to a ledger join
-Status: superseded -- closed by operator ruling #0c1cbd0d (2026-10-23, /ask "Close two, rewrite one"): boxes 1, 2 and 5 are superseded by shipped code, box 3 is a moot probe, box 4 is a gate nobody is building, box 6 is a marginal registry row
+Status: superseded -- closed by operator ruling #0c1cbd0d (recorded as #c8071f18; 2026-10-23, /ask "Close two, rewrite one"): boxes 1, 2 and 5 are superseded by shipped code, box 3 is a moot probe, box 4 is a gate nobody is building, box 6 is a marginal registry row
 Ruling: #c8071f18
 Depends-On: no-dep -- cites no other plan
 First-Seen: 2026-09-17
@@ -222,7 +222,7 @@ fires after every compaction — correct behaviour, but worth knowing first.
 
 ## Closure, 2026-10-23
 
-A validation on 2026-10-23 found the enforcement this plan designed already delivered by other means, and the operator closed the plan as superseded (ruling #0c1cbd0d). The six boxes above stay as written; they leave every count under the `Ruling:` header. Disposition of each, in box order:
+A validation on 2026-10-23 found the enforcement this plan designed already delivered by other means, and the operator closed the plan as superseded (ruling #0c1cbd0d, recorded as #c8071f18). The six boxes above stay as written; they leave every count under the `Ruling:` header. Disposition of each, in box order:
 
 1. Receipts (`.ci/scripts/ci/ci-trace.py` writing `<worklist>.ciread`): superseded by the ci-trace `--wait --until-final` verdict cache, read at `.claude/hooks/stop/wl_civerdict.py:64`.
 2. Push ledger (`.claude/hooks/post-bash/record_push.py`): superseded by `.claude/hooks/post-bash/arm_ci_watch.py`, which detects the push and arms one watcher per head, so the "pushed and never watched" state this ledger was to detect cannot arise.
