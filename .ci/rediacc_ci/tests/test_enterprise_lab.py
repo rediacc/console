@@ -1053,6 +1053,20 @@ def test_the_read_only_and_mutating_verbs_run_through_the_released_rdc():
     assert ro_env == mut_env == {lab.HOLD_ENV: ""}
 
 
+def test_an_inherited_hold_reaches_the_released_rdc_as_empty(monkeypatch):
+    """Review 98b2c18f.4: an operator shell's REDIACC_NO_PROVISION=1 is overridden to "", which renetHold reads as no hold for a release build."""
+    seen: dict[str, str] = {}
+
+    def fake_run(argv, **kw):
+        seen.update(kw["env"])
+        return subprocess.CompletedProcess(argv, 0, "", "")
+
+    monkeypatch.setenv(lab.HOLD_ENV, "1")
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    assert lab.run_verb("vm-1", mutating=False, env=env_renet) == 0
+    assert seen[lab.HOLD_ENV] == ""
+
+
 def test_the_checkout_rdc_sh_is_refused_before_anything_runs():
     """Control: a development build holds renet, so it would pass `a read-only verb leaves renet` and fail the rest silently."""
     rdc = Rdc()

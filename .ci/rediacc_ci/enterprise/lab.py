@@ -1064,7 +1064,7 @@ def read_limits(*, fetch: Fetch = http_get) -> dict[str, int]:
 #
 # The `enterprise proof renet` readers and drivers (agent/plans/PLAN-enterprise-isolation.md, box V9). SEAMS binds them by name.
 #
-# A RELEASED CLI, NEVER `./rdc.sh`. A development build holds the machine's renet on every mutating verb (packages/cli/src/services/renet/renet-upload-decision.ts `renetHold`), so a checkout's CLI cannot show a mutating verb moving renet. Every call runs the released `rdc` that `ENTERPRISE_PROOF_RDC` names (the edge install), under the rdc config `ENTERPRISE_PROOF_CONFIG` (default `eu-bench`), with `REDIACC_NO_PROVISION` removed from its environment. The fleet VM is `ENTERPRISE_PROOF_MACHINE` and the repository the mutating verb runs on is `ENTERPRISE_PROOF_REPO` (a ref on that machine). An unset variable is a `LabError` naming it, before anything runs.
+# A RELEASED CLI, NEVER `./rdc.sh`. A development build holds the machine's renet on every mutating verb (packages/cli/src/services/renet/renet-upload-decision.ts `renetHold`), so a checkout's CLI cannot show a mutating verb moving renet. Every call runs the released `rdc` that `ENTERPRISE_PROOF_RDC` names (the edge install), under the rdc config `ENTERPRISE_PROOF_CONFIG` (default `eu-bench`), with `REDIACC_NO_PROVISION` set to the empty string, overriding an inherited `1`. `renetHold` reads only `"1"` (hold) and `"0"` (lift the development default), so for a release build empty is the same as unset: no hold. It is not `0`, so a development build named by mistake keeps its hold, never moves renet, and breaks the `a mutating verb moves renet` claim instead of uploading a checkout's renet. The fleet VM is `ENTERPRISE_PROOF_MACHINE` and the repository the mutating verb runs on is `ENTERPRISE_PROOF_REPO` (a ref on that machine). An unset variable is a `LabError` naming it, before anything runs.
 #
 # THE VERBS. Read-only: `rdc machine status <machine>`. Mutating: `rdc repo up <repo>`, the ordinary verb a machine takes its new renet on. `renet_version` runs `renet version` on the machine through `rdc term connect <machine> -c`, and `released_renet` is the version edge runs (`cli/edge/latest.json`), which the released renet carries.
 #
@@ -1098,7 +1098,7 @@ def _rdc(run: Runner, env: Env, *args: str) -> Proc:
             "%s names the checkout's rdc.sh, which holds renet; name a released rdc" % RDC_ENV
         )
     config = os.environ.get(CONFIG_ENV) or DEFAULT_CONFIG
-    # An empty value lifts the hold the same way an unset one does (renetHold reads only "1" and "0").
+    # Empty, not removed and not "0": see the section header (renetHold reads only "1" and "0").
     return run((binary, "--config", config, *args), None, {HOLD_ENV: ""})
 
 
