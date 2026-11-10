@@ -57,6 +57,9 @@ LOGIN_TOTP_ENV = "REDIACC_LOGIN_TOTP"
 ENABLE_ALREADY_OPEN = re.compile(
     r'Config "[^"]+" is already linked to remote storage and this device can open it, so there is nothing to enable\.'
 )
+# The CLI refusal carries no error code, so its text is matched; the child's language is pinned to the English catalogue the template comes from (packages/cli/src/i18n/config.ts and config-base.ts `getLanguage` read this variable first).
+CLI_LANG_ENV = "REDIACC_LANG"
+CLI_LANG = "en"
 CLI_STORE_MASTER_PW_ENV = "REDIACC_STORE_MASTER_PASSWORD"
 CHILD_SECRET_NAMES = (
     *SOURCE_NAMES,
@@ -215,12 +218,20 @@ def enable_settled(rc: int, out: str) -> bool:
     return rc == 0 or (rc == 2 and any(ENABLE_ALREADY_OPEN.search(m) for m in _error_messages(out)))
 
 
+def _is_json(out: str) -> bool:
+    try:
+        json.loads(out)
+    except ValueError:
+        return False
+    return True
+
+
 def _error_messages(out: str) -> list[str]:
-    """errors[].message of a JSON envelope on stdout; the raw text when stdout is not one."""
+    """errors[].message of a JSON envelope on stdout; nothing when stdout is not one, so plain text never counts as the refusal."""
     try:
         envelope = json.loads(out)
     except ValueError:
-        return [out]
+        return []
     errors = envelope.get("errors") if isinstance(envelope, dict) else None
     if not isinstance(errors, list):
         return []
@@ -277,11 +288,14 @@ def login(
     )
 
     enable_env = dict(clean)
+    enable_env[CLI_LANG_ENV] = CLI_LANG
     enable_env[CLI_STORE_MASTER_PW_ENV] = values[MASTER_PW_ENV]
     log.step("Enabling the remote config store (config remote enable)")
     enable_rc, enable_out = capture(
         _rdc(
             config,
+            "-o",
+            "json",
             "config",
             "remote",
             "enable",
@@ -296,8 +310,12 @@ def login(
     if enable_out:
         print(enable_out, end="" if enable_out.endswith("\n") else "\n")
     if not enable_settled(enable_rc, enable_out):
+        detail = ""
+        if enable_rc == 2 and not _is_json(enable_out):
+            detail = "; stdout was not a JSON envelope: %r" % enable_out[:300]
         raise LoginError(
-            "Enabling the remote config store (config remote enable) failed (exit %d)" % enable_rc,
+            "Enabling the remote config store (config remote enable) failed (exit %d)%s"
+            % (enable_rc, detail),
             rc=1,
         )
 

@@ -180,6 +180,8 @@ def test_the_steps_run_in_order_against_bench_and_eu_bench():
     assert argvs[2][1:] == [
         "--config",
         "eu-bench",
+        "-o",
+        "json",
         "config",
         "remote",
         "enable",
@@ -304,6 +306,7 @@ def test_enable_refusal_that_the_device_can_open_it_is_success():
             '{"success": false, "errors": [{"code": "VALIDATION_ERROR", "message": "Config \\"eu-bench\\" has no store, so there is nothing to enable."}]}',
         ),
         (2, "Config is linked, so there is nothing to enable."),
+        (2, "not json: " + json.loads(ENABLE_REFUSED_CAN_OPEN[1])["errors"][0]["message"]),
         (1, ENABLE_REFUSED_CAN_OPEN[1]),
         (3, "boom"),
     ],
@@ -315,6 +318,28 @@ def test_any_other_enable_failure_is_a_login_error(result):
     assert caught.value.rc == 1
     assert "config remote enable" in str(caught.value)
     assert runner.calls[-1][0][-1] != "status"
+
+
+def test_enable_non_json_exit_2_names_the_output():
+    runner = FakeRunner(enable=(2, "plain text refusal"))
+    with pytest.raises(login_bench.LoginError) as caught:
+        _login(runner)
+    assert "plain text refusal" in str(caught.value)
+
+
+def test_enable_runs_json_and_pins_the_cli_language_to_english():
+    runner = FakeRunner(enable=ENABLE_REENROLLED)
+    _login(runner)
+    argv, env = runner.captured[0]
+    assert argv[argv.index("-o") + 1] == "json"
+    assert env[login_bench.CLI_LANG_ENV] == "en"
+    assert env["REDIACC_LANG"] == "en"
+
+
+def test_enable_pins_english_over_an_inherited_locale():
+    runner = FakeRunner(enable=ENABLE_REENROLLED)
+    _login(runner, env=_env(REDIACC_LANG="de"))
+    assert runner.captured[0][1]["REDIACC_LANG"] == "en"
 
 
 # ---- whose step it is (operator order 2026-10-30) ----

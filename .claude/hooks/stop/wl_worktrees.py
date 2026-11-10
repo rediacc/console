@@ -301,17 +301,25 @@ def _patch_id(tree, *diff_args):
 
 
 def _same_file_set_commits(tree, shas):
-    """The members of `shas` whose changed-path set equals another member's, in `shas` order. A commit whose paths could not be read (git failed, or a merge with no diff of its own) stays a candidate, so the filter only ever narrows what a patch-id comparison would have decided."""
+    """The members of `shas` whose changed-path set equals another member's, in `shas` order. Paths are read verbatim from `-z` output (NUL between names, whitespace kept), so two paths differing only by leading or trailing whitespace stay distinct. A commit whose paths could not be read (git failed, or a merge with no diff of its own) stays a candidate, so the filter only ever narrows what a patch-id comparison would have decided."""
     text = _git(
-        tree, "log", "--no-walk=unsorted", "--no-renames", "--name-only", "--format=%x00%H", *shas
+        tree,
+        "log",
+        "-z",
+        "--no-walk=unsorted",
+        "--no-renames",
+        "--name-only",
+        "--format=%x01%H",
+        *shas,
     )
     if text is None:
         return list(shas)
     files: dict[str, frozenset[str]] = {}
-    for chunk in text.split("\x00")[1:]:
-        lines = [ln.strip() for ln in chunk.splitlines() if ln.strip()]
-        if lines:
-            files[lines[0]] = frozenset(lines[1:])
+    # With -z a record is `\x01<sha>\0\n<name>\0<name>\0`: the sha ends at the first NUL, one newline follows it, and every name after that is NUL-terminated and kept verbatim.
+    for chunk in text.split("\x01")[1:]:
+        sha, _, rest = chunk.partition("\0")
+        names = rest.removeprefix("\n").split("\0")
+        files[sha.strip()] = frozenset(n for n in names if n)
     count: dict[frozenset[str], int] = {}
     for sha in shas:
         if files.get(sha):

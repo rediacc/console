@@ -836,17 +836,35 @@ def control_landed(tmp):
         {".": [first, second]},
     )
 
-    # CONTROL: the NUL-split reader tolerates stray whitespace around a chunk, and a commit with an empty file list stays a candidate.
+    # CONTROL: the -z reader keeps an empty file list a candidate and pairs commits with the same verbatim paths.
     probe = (
         "import sys\nsys.path.insert(0, sys.argv[1])\nimport wl_worktrees\n"
-        "text = '\\x00aaa\\n\\nf.txt\\n\\x00 bbb \\n\\n f.txt \\n\\n\\x00ccc\\n\\x00ddd\\n\\ng.txt\\n'\n"
+        "text = sys.argv[2].encode().decode('unicode_escape')\n"
         "wl_worktrees._git = lambda *a, **k: text\n"
         "print(','.join(wl_worktrees._same_file_set_commits('.', ['aaa', 'bbb', 'ccc', 'ddd'])))\n"
     )
     check(
-        "an empty file list stays a candidate and padded chunks still pair",
-        pyrun(tmp, tmp, probe, SOURCE / "hooks/stop")[1].strip(),
+        "an empty file list stays a candidate and equal path sets still pair",
+        pyrun(
+            tmp,
+            tmp,
+            probe,
+            SOURCE / "hooks/stop",
+            "\\x01aaa\\0\\nf.txt\\0\\x01bbb\\0\\nf.txt\\0\\x01ccc\\0\\x01ddd\\0\\ng.txt\\0",
+        )[1].strip(),
         "aaa,bbb,ccc",
+    )
+    # CONTROL: two paths differing only by a trailing (or leading) space are different paths, so their commits are not paired.
+    check(
+        "paths differing only by whitespace are not merged",
+        pyrun(
+            tmp,
+            tmp,
+            probe,
+            SOURCE / "hooks/stop",
+            "\\x01aaa\\0\\nf.txt\\0\\x01bbb\\0\\nf.txt \\0\\x01ccc\\0\\n f.txt\\0\\x01ddd\\0\\ng.txt\\0",
+        )[1].strip(),
+        "",
     )
 
     # CONTROL: a commit alone stays unlanded.
