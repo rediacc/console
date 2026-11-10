@@ -348,14 +348,56 @@ def _foreign_and_stale(entry, reader):
     return age >= float(os.environ.get("WORKLIST_DEAD_HOURS", "24")) * 60
 
 
-def _still_waiting(entry):
-    """True while the agent behind an interim capture is still waiting on a shell of its own, read from its transcript alone (wl_roster.transcript_waiting)."""
+def _still_waiting(entry, now=None):
+    """True while the agent behind an interim capture is still alive on work of its own, read from its transcript alone.
+
+    TWO SHAPES COUNT AS ALIVE, and the second is the one R.7 missed (agent/plans/PLAN-stop-hook-retro-20261110.md, recount residue #819c9be9). (1) A background child is still armed: a shell (`wl_roster.transcript_armed`) or a Monitor (`armed_monitors`), whether or not the agent's last record ended a turn. (2) The agent was resumed and is mid-turn: its last record is not idle and the transcript is fresh. On 2026-11-10 at 16:37Z a Monitor event resumed agent a5d362329446575d0 at 16:36:45Z and it sat in a Bash call until 16:38:49Z; R.7 asked only "idle with a shell armed", read the in-flight tool_use as finished, and the [SILENT] capture blocked the stop two minutes before the agent's real report.
+
+    An agent that truly finished (idle last record, nothing armed) is not waiting, so its silent capture is returned: it fails closed."""
+    import wl_liveness as L
     import wl_roster
 
     path = str(entry.get("transcript") or "")
     if not path:
         return False
-    return bool(wl_roster.transcript_waiting(pathlib.Path(path), time.time()))
+    jsonl = pathlib.Path(path)
+    now = time.time() if now is None else now
+    if wl_roster.transcript_armed(jsonl, now) or armed_monitors(jsonl, now):
+        return True
+    rec = wl_roster.last_record(jsonl)
+    if rec is None or L._record_is_idle(rec):
+        return False
+    try:
+        age = now - jsonl.stat().st_mtime
+    except OSError:
+        return False
+    # A tool call writes nothing while it runs (a gate run takes 25 minutes), so an in-flight tool gets the wait horizon; any other mid-turn shape must have written recently.
+    horizon = wl_roster.WAIT_HORIZON_MIN if wl_roster.inflight_tool(rec) else L.TEAMMATE_FRESH_MIN
+    return age <= horizon * 60
+
+
+# A Monitor launch records `"toolUseResult":{"taskId":"<id>",...}`, not the shells' `backgroundTaskId`, so `wl_roster.armed_shells` never saw one. Measured on the 2026-11-10 transcript of agent a5d362329446575d0: six launches, each in exactly this form.
+_MONITOR_LAUNCH = re.compile(rb'"toolUseResult":\{"taskId":"([A-Za-z0-9_-]+)"')
+# A Monitor sends one notification per event; only a terminal status ends it ("stream ended" arrives as `<status>completed</status>`).
+_MONITOR_END = rb"<task-id>%s</task-id>(?:(?!</task-notification>).){0,2000}?<status>(?:completed|failed|killed|stopped|timeout|expired)</status>"
+
+
+def armed_monitors(jsonl, now):
+    """Monitor task ids this transcript started that no terminal notification IN IT has ended, newest last; empty past `wl_roster.WAIT_HORIZON_MIN` of transcript silence."""
+    import wl_roster
+
+    try:
+        if now - jsonl.stat().st_mtime > wl_roster.WAIT_HORIZON_MIN * 60:
+            return []
+        data = jsonl.read_bytes()
+    except (OSError, AttributeError):
+        return []
+    out = []
+    for m in _MONITOR_LAUNCH.finditer(data):
+        tid = m.group(1)
+        if re.search(_MONITOR_END % re.escape(tid), data[m.end() :], re.DOTALL) is None:
+            out.append(tid.decode())
+    return out
 
 
 # ---- lead-bound substance (agent/plans/PLAN-tick-tracking.md, Design 5) ------
@@ -953,6 +995,11 @@ def handle_subagent_stop(event):
         with contextlib.suppress(Exception):
             # The SubagentStop event proves the turn ended, so the transcript's last record (often an `api-request`) is not asked to say so.
             interim = wl_roster.transcript_armed(pathlib.Path(transcript), time.time())
+        if not interim:
+            with contextlib.suppress(Exception):
+                # An agent that ended its turn to wait on a Monitor alone is interim too.
+                mons = armed_monitors(pathlib.Path(transcript), time.time())
+                interim = mons[-1] if mons else ""
     capture(
         store,
         _branch_of(start),

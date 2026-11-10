@@ -8,8 +8,10 @@ Every case drives `wl_report.py --subagent-stop` and the SessionStart surface, t
 from __future__ import annotations
 
 import json
+import os
 import time
 
+import wl_report
 import wl_roster
 
 from rediacc_hooks.tests.test_wl_report_inbox import BIG, Scratch
@@ -140,3 +142,138 @@ def test_transcript_waiting_is_empty_for_a_missing_or_stale_transcript(sc):
     future = time.time() + (roster.WAIT_HORIZON_MIN + 1) * 60
     assert roster.transcript_waiting(path, future) == ""
     assert roster.transcript_waiting(path.with_name("agent-gone.jsonl"), time.time()) == ""
+
+
+# ---- recount residue #819c9be9 (agent/plans/PLAN-stop-hook-retro-20261110.md R.8) ----
+# The 2026-11-10 16:37Z shape: the agent backgrounded a build shell, armed a Monitor on it, ended its turn saying it was waiting, then a Monitor event resumed it and it sat in a Bash call. R.7 asked only "idle with a shell armed", so the in-flight tool_use read as finished and the silent capture blocked.
+
+MON_AGENT = "amonitor0000333344445"
+MON_WAITING = "The build is still running, and I'm waiting for the monitor to report that it finished."  # style-ok -- the agent's own words, quoted
+MONITOR = "bmon00001"
+
+
+def _rec_tool_use(name: str) -> dict:
+    return {
+        "type": "assistant",
+        "message": {
+            "stop_reason": "tool_use",
+            "content": [{"type": "tool_use", "id": "toolu_x", "name": name, "input": {}}],
+        },
+    }
+
+
+def _rec_end(text: str) -> dict:
+    return {
+        "type": "assistant",
+        "message": {"stop_reason": "end_turn", "content": [{"type": "text", "text": text}]},
+    }
+
+
+def _rec_notice(tid: str, status: str = "completed") -> dict:
+    return {
+        "type": "user",
+        "message": {
+            "content": "<task-notification>\n<task-id>%s</task-id>\n<status>%s</status>\n</task-notification>"
+            % (tid, status)
+        },
+    }
+
+
+def monitor_transcript(sc: Scratch, stage: str, shell: bool = True):
+    """`waiting`: shell and Monitor armed, turn ended. `resumed`: the Monitor ended and the agent is mid-Bash with the shell still armed. `working`: every child ended and the agent is mid-Bash. `finished`: every child ended and the agent ended its turn."""
+    path = sc.subagents_dir() / ("agent-%s.jsonl" % MON_AGENT)
+    records: list[dict] = [{"type": "user", "message": {"content": "brief"}}]
+    if shell:
+        records.append(
+            {
+                "type": "user",
+                "message": {"content": [{"type": "tool_result", "content": "moved to background"}]},
+                "toolUseResult": {"backgroundTaskId": SHELL},
+            }
+        )
+    records += [
+        _rec_tool_use("Monitor"),
+        {
+            "type": "user",
+            "message": {"content": [{"type": "tool_result", "content": "Monitor started"}]},
+            "toolUseResult": {"taskId": MONITOR, "timeoutMs": 600000, "persistent": False},
+        },
+        _rec_end(MON_WAITING),
+    ]
+    if stage in ("resumed", "working", "finished"):
+        records.append(_rec_notice(MONITOR))
+        if stage != "resumed" and shell:
+            records.append(_rec_notice(SHELL))
+        records.append(_rec_tool_use("Bash"))
+    if stage == "finished":
+        records.append(
+            {"type": "user", "message": {"content": [{"type": "tool_result", "content": "x"}]}}
+        )
+        records.append(_rec_end("done"))
+    path.write_text(
+        "".join(json.dumps(r, separators=(",", ":")) + "\n" for r in records), encoding="utf-8"
+    )
+    return path
+
+
+def _mon_capture(sc: Scratch, tx) -> None:
+    got = sc.raw_stop(
+        {
+            "agent_id": MON_AGENT,
+            "agent_type": "general-purpose",
+            "session_id": "aaaaaaaa-1111",
+            "cwd": sc.env["CLAUDE_PROJECT_DIR"],
+            "agent_transcript_path": str(tx),
+            "last_assistant_message": MON_WAITING,
+        },
+        env=sc.env,
+    )
+    assert got.rc == 0, got.err[:300]
+
+
+def test_r8_silent_a_resumed_agent_mid_tool_with_its_shell_armed_is_held(sc):
+    """SILENT: the 16:37Z shape. Before R.8 the in-flight Bash read as finished and the capture surfaced."""
+    _mon_capture(sc, monitor_transcript(sc, "waiting"))
+    monitor_transcript(sc, "resumed")
+    assert MON_WAITING not in surfaced(sc), surfaced(sc)[:600]
+
+
+def test_r8_silent_a_fresh_mid_turn_agent_with_no_child_left_is_held(sc):
+    """SILENT: every child ended and the agent is still working toward its next capture."""
+    _mon_capture(sc, monitor_transcript(sc, "waiting"))
+    monitor_transcript(sc, "working")
+    assert MON_WAITING not in surfaced(sc), surfaced(sc)[:600]
+
+
+def test_r8_fire_a_finished_silent_agent_still_blocks(sc):
+    """FIRE: an idle last record with nothing armed is a finished agent that said nothing; its capture surfaces."""
+    _mon_capture(sc, monitor_transcript(sc, "waiting"))
+    monitor_transcript(sc, "finished")
+    assert MON_WAITING in surfaced(sc), "a finished agent's silent capture stayed hidden"
+
+
+def test_r8_fire_a_stale_mid_turn_transcript_is_not_believed(sc):
+    """FIRE: a mid-turn transcript quiet past the horizon is a dead agent, not a working one."""
+    _mon_capture(sc, monitor_transcript(sc, "waiting"))
+    tx = monitor_transcript(sc, "working")
+    old = time.time() - (wl_roster.WAIT_HORIZON_MIN + 5) * 60
+    os.utime(tx, (old, old))
+    assert MON_WAITING in surfaced(sc), "a dead mid-turn agent's capture stayed hidden"
+
+
+def test_r8_control_a_monitor_only_wait_is_written_interim(sc):
+    """CONTROL: a Monitor launch carries `taskId`, not `backgroundTaskId`; before R.8 a Monitor-only wait wrote no `interim` and blocked."""
+    _mon_capture(sc, monitor_transcript(sc, "waiting", shell=False))
+    assert _capture_interim(sc) == MONITOR
+    assert MON_WAITING not in surfaced(sc), surfaced(sc)[:600]
+
+
+def test_r8_control_a_non_terminal_monitor_event_keeps_it_armed(sc):
+    """CONTROL: a per-event notice is not the stream's end, and a terminal one is."""
+    tx = monitor_transcript(sc, "waiting", shell=False)
+    with tx.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(_rec_notice(MONITOR, "running"), separators=(",", ":")) + "\n")
+    assert wl_report.armed_monitors(tx, time.time()) == [MONITOR]
+    with tx.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(_rec_notice(MONITOR), separators=(",", ":")) + "\n")
+    assert wl_report.armed_monitors(tx, time.time()) == []
