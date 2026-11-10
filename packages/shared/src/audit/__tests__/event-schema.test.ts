@@ -75,6 +75,7 @@ describe('functionNameToEventType', () => {
     ['repository_repair', 'cli.repo.repair'],
     ['backup_snapshot', 'cli.backup.snapshot'],
     ['container_restart', 'cli.container.restart'],
+    ['container_list', 'cli.container.list'],
     ['proxy_acme_fix', 'cli.proxy_acme_fix'],
   ])('maps %s to %s', (functionName, type) => {
     expect(functionNameToEventType(functionName)).toBe(type);

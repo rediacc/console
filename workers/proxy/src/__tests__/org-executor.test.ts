@@ -28,30 +28,6 @@ import {
 } from '../org-executor';
 import { flush, harness, IMAGE_V1, IMAGE_V2, LEASE, ORG, T0 } from './helpers/org-executor-harness';
 
-/** Every console.warn line so far, its arguments joined. */
-function _warnLines(): string[] {
-  return vi.mocked(console.warn).mock.calls.map((c) => c.join(' '));
-}
-
-/** A promise executor that never settles. */
-function _neverSettles(): void {
-  // Neither resolve nor reject is ever called.
-}
-
-/** How `promise` settled, readable at any point; undefined while it is pending. */
-function _tracked(promise: Promise<unknown>): { outcome: () => string | undefined } {
-  let outcome: string | undefined;
-  promise.then(
-    () => {
-      outcome = 'resolved';
-    },
-    (error: Error) => {
-      outcome = `rejected: ${error.message}`;
-    }
-  );
-  return { outcome: () => outcome };
-}
-
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ['Date'] });
   vi.setSystemTime(T0);

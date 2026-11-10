@@ -120,7 +120,7 @@ const datastoreEventTypes = [
   'cli.datastore.volumes_open',
 ] as const;
 
-// `repo logs` / `repo exec` (repo-container.ts, new in P4) and the container restart `machine repair` issues. Dotted, like every other group — the fall-through would have produced `cli.container_exec`.
+// `repo logs` / `repo exec` and the container listing they resolve names from (repo-container.ts, new in P4), and the container restart `machine repair` issues. Dotted, like every other group — the fall-through would have produced `cli.container_exec`.
 const containerEventTypes = [
   'cli.container.exec',
   'cli.container.list',
