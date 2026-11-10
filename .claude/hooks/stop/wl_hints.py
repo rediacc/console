@@ -30,8 +30,8 @@ HINTS_REL = "docs/agent-reference/HINTS.md"
 # The `## ` heading is the displayed line itself; a hint whose heading does not stand alone as a complete reminder is not a hint yet. `Hint-Id`/`Source`/`Status` are read only from the trailer block between the heading and the first blank line, mirroring `wl_store.trap_entries`'s fenced-block-safe parser exactly -- a markdown example inside a hint's own body must not become a
 # phantom entry, for the identical reason that guard exists there.
 _HEADING_RE = re.compile(r"^## (.+)$")
-TRAILER_KEYS = ("Hint-Id:", "Source:", "Status:", "Proposal:")
-TRAILER_FIELDS = ("id", "source", "status", "proposal")
+TRAILER_KEYS = ("Hint-Id:", "Source:", "Status:", "Proposal:", "Enforced-By:")
+TRAILER_FIELDS = ("id", "source", "status", "proposal", "enforced")
 # A trailer value stops at a trailing `<!-- style-ok -->` prose-style marker, so a citation that
 # must quote a literal word the R1/R2 gate would otherwise flag never leaks the marker itself into the value a consumer resolves or displays.
 _MARKER_RE = re.compile(r"\s*<!--\s*style-ok\s*-->\s*$")
@@ -82,6 +82,7 @@ def load_corpus(path):
                     "source": "",
                     "status": "active",
                     "proposal": "",
+                    "enforced": "",
                 }
             )
             in_trailer = True
@@ -135,6 +136,16 @@ def hint_pick(entries, ledger, rng=None):
     ledger["last"] = pick["id"]
     index = sorted(e["id"] for e in active).index(pick["id"]) + 1
     return pick, index, len(active)
+
+
+def rotation(root, entries):
+    """The entries the draw may pick from: `entries` minus every one whose `Enforced-By:` names a live, tested enforcer (wl_lessons.in_rotation, PLAN-experience-feedback.md P7). Fail-open like the rest of this module: any failure returns `entries` unchanged, so a broken check keeps a hint in rotation rather than silencing the corpus."""
+    try:
+        import wl_lessons as L
+
+        return L.in_rotation(root, entries)
+    except Exception:
+        return entries
 
 
 def render(entry, index, total):

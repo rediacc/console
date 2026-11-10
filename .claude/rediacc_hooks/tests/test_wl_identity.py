@@ -511,6 +511,8 @@ def drive_l1(fix) -> L1Drive:
             "--hint-resolve @WHO@ 0000beef guard:x",
             "no hint proposal has id 0000beef",
         ),
+        # Read-only (PLAN-experience-feedback.md P7): the fixture's memory directory does not exist, so the sweep classifies the fixture's own stores after the same _identity_or_die.
+        ("--lessons-sweep", "--lessons-sweep @WHO@ --memory-dir l1-no-memory", "lessons sweep:"),
         # The effort tuner's verbs (agent/plans/PLAN-stop-hook-effort-tuning.md T2, T5), each driven in its listing mode: a bare `<me>` prints the proposal ledger's summary after the same _identity_or_die their write modes run.
         ("--effort-propose", "--effort-propose @WHO@", "effort proposals:"),
         ("--effort-answer", "--effort-answer @WHO@", "effort proposals:"),

@@ -794,6 +794,44 @@ def _hint_resolve_cli(argv):
     print("resolved: %s -> %s  (%s)" % (pid, pointer, known[pid]["text"][:60]))
 
 
+def _lessons_sweep_cli(argv):
+    """--lessons-sweep <me> [--memory-dir <dir>] [--json]: classify every lesson entry (TRAPS, HINTS, hint proposals, memory notes) as retire-now, encode-as-guard, encode-as-CI-gate, fix-the-tool or keep-as-prose (agent/plans/PLAN-experience-feedback.md P7).
+
+    READ-ONLY, memory notes included: retiring a note (moving its why into the enforcer's refusal text, then deleting it and its MEMORY.md line) is the lead's step. retire-now is the one mechanical verdict; every `basis: curator` row is provisional until the lesson-curator judges it. The memory directory defaults to the harness's one for this project root.
+    """
+    import json as _json
+
+    import wl_lessons as L
+
+    def die(msg):
+        print(msg, file=sys.stderr)
+        sys.exit(2)
+
+    rest = argv[1:]
+    if not rest:
+        die(M.CLI_LESSONS_SWEEP_USAGE)
+    me, opts = rest[0], rest[1:]
+    if not C.PREFIX_RE.match(me):
+        die("bad prefix %r: pass YOUR session-id prefix first" % me)
+    _identity_or_die(me, die)
+    as_json, memdir = False, None
+    while opts:
+        flag = opts.pop(0)
+        if flag == "--json":
+            as_json = True
+        elif flag == "--memory-dir" and opts:
+            memdir = opts.pop(0)
+        else:
+            die(M.CLI_LESSONS_SWEEP_USAGE)
+    root = C.project_root(C.project_start())
+    memdir = memdir or str(L.default_memory_dir(root))
+    rows = L.sweep(root, memdir)
+    if as_json:
+        print(_json.dumps(rows, indent=1))
+    else:
+        print(L.render_sweep(rows, memdir))
+
+
 def _retro_brief_cli(argv):
     """--retro-brief <me> <band>: print the stop-hook retro brief for the read-only Plan agent (agent/plans/PLAN-stop-hook-retro-20260924.md R20260924.13).
 
@@ -3651,6 +3689,9 @@ def main():
         return
     if sys.argv[1:2] == ["--hint-resolve"]:
         _hint_resolve_cli(sys.argv[1:])
+        return
+    if sys.argv[1:2] == ["--lessons-sweep"]:
+        _lessons_sweep_cli(sys.argv[1:])
         return
     if sys.argv[1:2] and sys.argv[1] in (
         "--review-mark",

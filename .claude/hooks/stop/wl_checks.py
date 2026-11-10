@@ -6273,7 +6273,8 @@ def run_stop(event, event_ok, worklist, hook_file):
             _hage = C.stamp_age_min(_hl.get("block_at") or "")
             # Not in focus mode: the wind-down spends no tokens on advice.
             if not _focus and (_hage is None or _hage >= BLOCK_HINT_MIN):
-                _hpick = wl_hints.hint_pick(wl_hints.load_corpus(wl_hints.hints_path(root))[0], _hl)
+                _hents = wl_hints.load_corpus(wl_hints.hints_path(root))[0]
+                _hpick = wl_hints.hint_pick(wl_hints.rotation(root, _hents), _hl)
                 if _hpick:
                     _block_hint = "\n\n" + wl_hints.render(*_hpick)
                     _hl["block_at"] = C.stamp_now()
@@ -7060,7 +7061,8 @@ def run_stop(event, event_ok, worklist, hook_file):
     if not _focus and (parts or wl_popup.should_pop()):
         with contextlib.suppress(Exception):  # an advisory must never wedge a stop
             ledger = state_doc.setdefault("hints", {})
-            picked = wl_hints.hint_pick(hint_entries, ledger)
+            # An entry a live, tested enforcer carries has left rotation (PLAN-experience-feedback.md P7).
+            picked = wl_hints.hint_pick(wl_hints.rotation(root, hint_entries), ledger)
             if picked:
                 parts.append(wl_hints.render(*picked))
     # outq_drain persisted the queue already; this save carries the judge-line marker pop and any late state mutation, and one redundant atomic write is cheaper than reasoning about which came last. It happens BEFORE the exit below, because a silent allow must still bank everything a loud one does.

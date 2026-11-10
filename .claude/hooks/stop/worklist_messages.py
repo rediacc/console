@@ -1468,6 +1468,12 @@ CLI_HINT_RESOLVE_USAGE = (
     "while that pointer resolves. Writes agent/ledgers/hint-resolutions.jsonl only.\n"
 )
 
+CLI_LESSONS_SWEEP_USAGE = (
+    "usage: worklist.py --lessons-sweep <my-prefix> [--memory-dir <dir>] [--json]\n"
+    "Classifies every TRAPS, HINTS, hint-proposal and memory-note entry as retire-now,\n"
+    "encode-as-guard, encode-as-CI-gate, fix-the-tool or keep-as-prose. Read-only.\n"
+)
+
 CLI_HINT_RESOLVE_UNKNOWN = (
     "no hint proposal has id %(id)s (%(n)d proposal(s) on record). The id is printed by "
     "--hint-propose and listed by the lesson-curator's clusters."
