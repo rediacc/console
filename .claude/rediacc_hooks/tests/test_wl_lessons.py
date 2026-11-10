@@ -6,13 +6,14 @@ Every world here is a temp root with its own HINTS, TRAPS, guards, tests and mem
 from __future__ import annotations
 
 import json
+import os
+import pathlib
 import random
-from typing import TYPE_CHECKING
+import subprocess
 
 from rediacc_hooks.tests import wlfix
 
-if TYPE_CHECKING:
-    import pathlib
+REAL_ROOT = pathlib.Path(__file__).resolve().parents[3]
 
 
 # What the real guards package does: its stems are the modules in the directory.
@@ -303,13 +304,141 @@ def test_pointer_problem_is_dead_when_the_shared_resolver_cannot_load(tmp_path, 
     assert lessons.classify(root, "guard:block_tested", lessons.Ctx(root))["class"] != "retire-now"
 
 
-def test_a_self_referencing_shape_entry_is_kept_not_retired(tmp_path):
-    """#5394dfa7: an entry whose Enforced-By is shape:<its own id> is the guard's data; retiring it deletes the rule."""
+def test_shape_pointer_to_the_entrys_own_id_is_kept_only_while_its_shape_lines_exist(tmp_path):
+    """8dfaed43.1: the own-id shortcut judges the enforcer first. CONTROL: the real TRAPS entry with Shape: lines is kept by declaration; the same id in a tree whose Shape: lines are gone is dead, not declared."""
     lessons = _lessons()
-    ctx = lessons.Ctx(str(tmp_path))
-    row = lessons.classify(str(tmp_path), "shape:feedback_x", ctx, own_id="feedback_x")
-    assert row["class"] == "keep-as-prose"
-    assert row["basis"] == "declared"
-    # CONTROL: the same pointer on a different entry is judged on the enforcer, not kept by declaration.
-    other = lessons.classify(str(tmp_path), "shape:feedback_x", ctx, own_id="feedback_y")
-    assert other["basis"] != "declared" or other["class"] != "keep-as-prose"
+    real = str(REAL_ROOT)
+    trap = "date-precision-digit-under-uutils"
+    live = lessons.classify(real, "shape:%s" % trap, lessons.Ctx(real), own_id=trap)
+    assert (live["class"], live["basis"]) == ("keep-as-prose", "declared"), live
+    # CONTROL: the same pointer on a different entry is judged on the enforcer itself, not kept by declaration.
+    other = lessons.classify(real, "shape:%s" % trap, lessons.Ctx(real), own_id="another-entry")
+    assert other["basis"] != "declared", other
+    root = str(tmp_path)
+    _write(
+        tmp_path,
+        "docs/agent-reference/TRAPS.md",
+        "# Traps\n\n## x\nTrap-Id: %s\nResidue: x.\n" % trap,
+    )
+    dead = lessons.classify(root, "shape:%s" % trap, lessons.Ctx(root), own_id=trap)
+    assert dead["basis"] == "curator", dead
+    assert "Shape" in dead["why"], dead
+
+
+def test_test_pointer_requires_a_file_named_like_a_test(tmp_path):
+    """4a6d5f3f.2: `test:README.md` names a file, but not a test. CONTROL: test_*.py and a file under tests/ pass."""
+    lessons = _lessons()
+    root = str(tmp_path)
+    _write(tmp_path, "README.md", "docs\n")
+    _write(tmp_path, "pkg/test_real.py", "def test_a():\n    pass\n")
+    _write(tmp_path, "tests/case.txt", "x\n")
+    why = lessons.pointer_problem(root, "test:README.md")
+    assert why is not None
+    assert "not named like a test" in why, why
+    assert lessons.pointer_problem(root, "test:pkg/test_real.py") is None
+    assert lessons.pointer_problem(root, "test:pkg/test_real.py::test_a") is None
+    assert lessons.pointer_problem(root, "test:tests/case.txt") is None
+
+
+def test_a_commit_counts_as_touching_a_test_by_path_not_by_substring(tmp_path):
+    """571d9078.3: `latest.md` and `contest.json` contain "test" but are not tests. CONTROL: a commit adding tests/test_x.py counts."""
+    lessons = _lessons()
+    root = str(tmp_path)
+    env = {
+        "GIT_AUTHOR_NAME": "t",
+        "GIT_AUTHOR_EMAIL": "t@t",
+        "GIT_COMMITTER_NAME": "t",
+        "GIT_COMMITTER_EMAIL": "t@t",
+        "PATH": os.environ["PATH"],
+    }
+
+    def run_git(*args):
+        return subprocess.run(
+            ["git", "-C", root, *args], check=True, capture_output=True, text=True, env=env
+        ).stdout.strip()
+
+    run_git("init", "-q")
+    _write(tmp_path, "latest.md", "a\n")
+    _write(tmp_path, "contest.json", "{}\n")
+    run_git("add", "-A")
+    run_git("commit", "-q", "-m", "docs")
+    docs = run_git("rev-parse", "HEAD")
+    _write(tmp_path, "tests/test_x.py", "def test_x():\n    pass\n")
+    run_git("add", "-A")
+    run_git("commit", "-q", "-m", "test")
+    test = run_git("rev-parse", "HEAD")
+    assert lessons._commit_touches_a_test(root, docs) is False
+    assert lessons._commit_touches_a_test(root, test) is True
+
+
+def test_a_guard_named_only_in_an_unrelated_test_keeps_the_hint_in_rotation(tmp_path, monkeypatch):
+    """571d9078.1: a guard reached through `file:` is tested only by its own test-<stem>.py (or both hook cases), not by some other test naming it. CONTROL: its own test file makes it tested."""
+    root = str(_world(tmp_path, monkeypatch))
+    lessons = _lessons()
+    pointer = "file:.claude/rediacc_hooks/guards/block_untested.py"
+    real = lessons.pointer_problem
+    monkeypatch.setattr(
+        lessons, "pointer_problem", lambda r, p, **kw: None if p == pointer else real(r, p, **kw)
+    )
+    _write(
+        tmp_path,
+        ".claude/rediacc_hooks/tests/test_other.py",
+        "def test_other():\n    assert 'block_untested'\n",
+    )
+    live, tested, why = lessons.enforcer_state(root, pointer, lessons.Ctx(root))
+    assert (live, tested) == (True, False), why
+    _write(
+        tmp_path,
+        ".claude/rediacc_hooks/guards/test-block_untested.py",
+        "# tests block_untested\ndef test_it():\n    pass\n",
+    )
+    assert lessons.enforcer_state(root, pointer, lessons.Ctx(root))[:2] == (True, True)
+
+
+def test_a_hook_token_in_another_tests_fixture_does_not_make_the_rule_tested(tmp_path, monkeypatch):
+    """571d9078.2: a live rule counts as tested only when test_hooks_trapguard.py names it. CONTROL: a quoted token there tests it."""
+    root = str(_world(tmp_path, monkeypatch))
+    lessons = _lessons()
+    dispatch = tmp_path / ".claude/hooks/trapguard/dispatch.py"
+    dispatch.write_text(
+        dispatch.read_text(encoding="utf-8").replace(
+            "RULES = (",
+            "def rule_fixture_only(cmd):\n    return 'NEEDLE-fo'\n\n\nRULES = (\n    rule_fixture_only,",
+        ),
+        encoding="utf-8",
+    )
+    suite = tmp_path / ".claude/rediacc_hooks/tests/test_hooks_trapguard.py"
+    suite.write_text(
+        suite.read_text(encoding="utf-8")
+        + "check_inject fires 'a case' \"NEEDLE-fo\"\ncheck_inject silent 'a case' \"x\"\n",
+        encoding="utf-8",
+    )
+    _write(
+        tmp_path,
+        ".claude/rediacc_hooks/tests/test_unrelated.py",
+        "FIXTURE = 'fixture-only fixture_only rule_fixture_only'\n",
+    )
+    live, tested, why = lessons.enforcer_state(root, "hook:fixture-only", lessons.Ctx(root))
+    assert live is True, why
+    assert tested is False, why
+    suite.write_text(
+        suite.read_text(encoding="utf-8") + "CASE = 'fixture-only'\n", encoding="utf-8"
+    )
+    assert lessons.enforcer_state(root, "hook:fixture-only", lessons.Ctx(root))[1] is True
+
+
+def test_a_trap_is_tested_only_through_a_live_tested_enforcer_of_its_own(tmp_path, monkeypatch):
+    """571d9078.4: a trap whose Enforced-By is a deleted guard no longer counts. CONTROL: one naming the tested guard does; a trap naming itself terminates."""
+    root = str(_world(tmp_path, monkeypatch))
+    lessons = _lessons()
+    traps = tmp_path / "docs/agent-reference/TRAPS.md"
+    traps.write_text(
+        traps.read_text(encoding="utf-8")
+        + "\n## dead\nTrap-Id: dead-trap\nEnforced-By: guard:block_gone\nResidue: x.\n"
+        "\n## live\nTrap-Id: live-trap\nEnforced-By: guard:block_tested\nResidue: x.\n"
+        "\n## loop\nTrap-Id: loop-trap\nEnforced-By: trap:loop-trap\nResidue: x.\n",
+        encoding="utf-8",
+    )
+    assert lessons.classify(root, "trap:dead-trap", lessons.Ctx(root))["class"] != "retire-now"
+    assert lessons.classify(root, "trap:live-trap", lessons.Ctx(root))["class"] == "retire-now"
+    assert lessons.classify(root, "trap:loop-trap", lessons.Ctx(root))["class"] != "retire-now"

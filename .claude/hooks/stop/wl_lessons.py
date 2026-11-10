@@ -29,6 +29,14 @@ SHARED_KINDS = ("guard", "gate", "hook", "file", "shape")
 CODE_ROOT = pathlib.Path(__file__).resolve().parents[3]
 GUARDS_REL = ".claude/rediacc_hooks/guards"
 _NAME_RE = re.compile(r"^[A-Za-z0-9_.:-]+$")
+# A test path: the final component is test-*, test_*, *-test.*, *_test.* or *.test.*, or a directory is tests/ or test/. Matched over the whole path, so `latest.md` and `contest.json` are not tests.
+_TEST_PATH_RE = re.compile(r"(^|/)test[-_][^/]*$|[-_.]test\.[^/]*$|(^|/)tests?/")
+TRAPGUARD_SUITE = ".claude/rediacc_hooks/tests/test_hooks_trapguard.py"
+
+
+def is_test_path(rel):
+    """True when `rel` (repo-relative or bare) is named like a test file or sits under a tests/ directory."""
+    return bool(_TEST_PATH_RE.search(str(rel)))
 
 
 def parse_pointer(text):
@@ -91,6 +99,11 @@ def pointer_problem(root, pointer, registry=None, memory_dir=None):
     path = _inside(root, rel)
     if path is None or not path.is_file():
         return "test:%s names no file in this tree" % token
+    if not is_test_path(rel):
+        return (
+            "test:%s names %s, which is not named like a test "
+            "(test-*, test_*, *_test.*, *.test.* or under tests/)" % (token, rel)
+        )
     if name and not re.search(r"^\s*def %s\(" % re.escape(name), _read(path), re.MULTILINE):
         return "test:%s has no `def %s(` in %s" % (token, name, rel)
     return None
@@ -115,7 +128,7 @@ KIND_CLASS = {
     "commit": "fix-the-tool",
     "trap": "keep-as-prose",
 }
-# Where a test that names an enforcer can live. Read once per sweep, never per pointer.
+# Where a test file named for an enforcer can live.
 TEST_GLOBS = (
     ".claude/rediacc_hooks/tests/*.py",
     ".claude/rediacc_hooks/guards/test-*.py",
@@ -125,15 +138,15 @@ TEST_GLOBS = (
 
 
 class Ctx:
-    """The per-sweep caches: the test corpus text and the TRAPS entries."""
+    """The per-sweep caches: the shared resolver, the trapguard suite, the test stems and the TRAPS entries."""
 
     def __init__(self, root, memory_dir=None):
         self.root = root
         self.memory_dir = memory_dir
         self._registry = None
-        self._tests = None
         self._traps = None
         self._stems = None
+        self._trapguard = None
 
     def registry(self):
         """The shared resolver pair, built once per sweep. Raises when it cannot be loaded; `pointer_problem` turns that into a dead pointer."""
@@ -141,14 +154,11 @@ class Ctx:
             self._registry = shared_registry(self.root, self.memory_dir)
         return self._registry
 
-    def tests_text(self):
-        if self._tests is None:
-            parts: list[str] = []
-            base = pathlib.Path(self.root)
-            for pattern in TEST_GLOBS:
-                parts.extend(_read(p) for p in sorted(base.glob(pattern)) if p.is_file())
-            self._tests = "\n".join(parts)
-        return self._tests
+    def trapguard_text(self):
+        """The trapguard suite alone: a `hook:` enforcer is tested only by a case in the file that drives its rules."""
+        if self._trapguard is None:
+            self._trapguard = _read(pathlib.Path(self.root) / TRAPGUARD_SUITE)
+        return self._trapguard
 
     def test_stems(self):
         """The module stems the test files are named for: `test-<stem>.py` and `test_<stem>.py`. A `file:` enforcer counts as tested only through its own test file, since every hook file is named somewhere in some test."""
@@ -173,7 +183,7 @@ def split_enforced(value):
 
 def _commit_touches_a_test(root, token):
     names = PR._git_out(root, "show", "--name-only", "--format=", token)
-    return any("test" in n.rsplit("/", 1)[-1] for n in names.splitlines())
+    return any(is_test_path(n) for n in names.splitlines())
 
 
 def _loads(ctx):
@@ -185,8 +195,8 @@ def _loads(ctx):
     return True
 
 
-def enforcer_state(root, pointer, ctx):
-    """(live, tested, why) for one Enforced-By pointer."""
+def enforcer_state(root, pointer, ctx, _trail=frozenset()):
+    """(live, tested, why) for one Enforced-By pointer. `_trail` holds the trap ids being resolved, so a trap that names itself (directly or through another) is not followed twice."""
     kind, _sep, token = pointer.partition(":")
     kind, token = kind.strip(), token.strip()
     if kind in POINTER_KINDS and token:
@@ -209,15 +219,19 @@ def enforcer_state(root, pointer, ctx):
             gate = next((k for k, v in PR._package_scripts(root).items() if str(rel) in str(v)), "")
             if gate:
                 kind, token = "gate", gate
-    tests = ctx.tests_text()
     if kind == "guard":
         stem = token.removesuffix(".py")
-        tested = (
-            pathlib.Path(root) / GUARDS_REL / ("test-%s.py" % stem)
-        ).is_file() or stem in tests
+        # The guard's own test rule, the one `guard:` is judged by: a sibling test-<stem>.py that names it, or both hook-case directions. A `file:` pointer reaches here without it, so it is asked again; a mention in some other test proves nothing.
+        try:
+            tested = not ctx.registry()[1].guard_liveness(stem)
+        except Exception:
+            tested = False
         return True, tested, "guard %s %s" % (stem, "has a test" if tested else "has no test")
     if kind == "hook":
-        tested = token in tests or "rule_%s" % token.replace("-", "_") in tests
+        suite = ctx.trapguard_text()
+        quoted = re.search(r"[\"']%s[\"']" % re.escape(token), suite)
+        named = re.search(r"\brule_%s\b" % re.escape(token.replace("-", "_")), suite)
+        tested = bool(quoted or named)
         state = "has a test" if tested else "has no test"
         return True, tested, "trapguard rule %s %s" % (token, state)
     if kind == "file":
@@ -247,8 +261,17 @@ def enforcer_state(root, pointer, ctx):
         return True, True, "shape %s is applied by a live, tested instrument" % token
     # trap: the trap itself must name a mechanism, not judgment
     inner = [p for p in split_enforced(ctx.trap_enforced(token)) if p != JUDGMENT_ONLY]
-    state = "is enforced by %s" % ", ".join(inner) if inner else "is judgment-only"
-    return True, bool(inner), "trap %s %s" % (token, state)
+    if not inner:
+        return True, False, "trap %s is judgment-only" % token
+    trail = _trail | {token}
+    for ptr in inner:
+        ikind, _s, itoken = ptr.partition(":")
+        if ikind.strip() == "trap" and itoken.strip() in trail:
+            continue
+        live, tested, _why = enforcer_state(root, ptr, ctx, trail)
+        if live and tested:
+            return True, True, "trap %s is enforced by %s" % (token, ptr)
+    return True, False, "trap %s names no live, tested enforcer (%s)" % (token, ", ".join(inner))
 
 
 def classify(root, enforced, ctx, own_id=""):
@@ -273,14 +296,14 @@ def classify(root, enforced, ctx, own_id=""):
         if pointer == JUDGMENT_ONLY:
             continue
         kind, _sep, target = pointer.partition(":")
-        if own_id and kind.strip() == "shape" and target.strip() == own_id:
+        live, tested, why = enforcer_state(root, pointer, ctx)
+        if live and own_id and kind.strip() == "shape" and target.strip() == own_id:
             return {
                 "class": "keep-as-prose",
                 "basis": "declared",
                 "pointer": pointer,
                 "why": "the entry carries its own Shape: lines, so it is the enforcer's data",
             }
-        live, tested, why = enforcer_state(root, pointer, ctx)
         if live and tested:
             return {"class": "retire-now", "basis": "mechanical", "pointer": pointer, "why": why}
         if first is None:

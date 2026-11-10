@@ -498,3 +498,44 @@ def test_trapfires_no_candidate_leaves_a_clean_stop_quiet(wl):
     wl.hand_now()
     _plant_fires(pathlib.Path(wl.env["TRAPGUARD_DIR"]), "rebase-unverified", 40)
     wl.check_absent("allow", "trapguard retirement candidates", "40 fires are not a candidate")
+
+
+def test_hint_resolve_cli_accepts_file_and_shape_pointers_and_refuses_dead_ones(wl):
+    """440abc77.2: the pointer grammar of `--hint-resolve` includes file: and shape:. CONTROL: the missing file and the unknown shape id are refused, with no ledger row."""
+    wl.env["WORKLIST_HINTS_FILE"] = str(wl.proj / "no-hints.md")
+    ledger = wl.proj / "agent" / "ledgers" / "hint-resolutions.jsonl"
+    ids = []
+    for text in ("a lesson a file carries", "a lesson a shape carries"):
+        proposed = wl.cli("--hint-propose", "deadbeef", text)
+        assert proposed.rc == 0, proposed.err
+        ids.append(proposed.out.rsplit("(id ", 1)[1].split(")")[0])
+    missing = wl.cli("--hint-resolve", "deadbeef", ids[0], "file:notes/missing.py")
+    assert missing.rc == 2, missing.err
+    assert "not a live enforcer" in missing.err, missing.err
+    unknown = wl.cli("--hint-resolve", "deadbeef", ids[1], "shape:no-such-shape")
+    assert unknown.rc == 2, unknown.err
+    assert not ledger.exists()
+    (wl.proj / "notes").mkdir()
+    (wl.proj / "notes" / "live.py").write_text("print('x')\n", encoding="utf-8")
+    (wl.proj / ".claude").mkdir(exist_ok=True)
+    (wl.proj / ".claude" / "settings.json").write_text('{"hook": "live.py"}\n', encoding="utf-8")
+    accepted = wl.cli("--hint-resolve", "deadbeef", ids[0], "file:notes/live.py:1")
+    assert accepted.rc == 0, accepted.err
+    traps = wl.proj / "docs" / "agent-reference"
+    traps.mkdir(parents=True, exist_ok=True)
+    (traps / "TRAPS.md").write_text(
+        "# Traps\n\n## a shaped trap\nTrap-Id: shaped-trap\nEnforced-By: shape:shaped-trap\n"
+        "Residue: x.\nShape: pre:warn ^date\\b.*%[0-9]+N\nShape-Say: say\n"
+        "Shape-Fires: date +%s%3N\nShape-Silent: date +%s\n",
+        encoding="utf-8",
+    )
+    guards = wl.proj / ".claude" / "rediacc_hooks" / "guards"
+    guards.mkdir(parents=True, exist_ok=True)
+    _plant_guard(guards, "block_shape_lessons")
+    shaped = wl.cli("--hint-resolve", "deadbeef", ids[1], "shape:shaped-trap")
+    assert shaped.rc == 0, shaped.err
+    rows = [json.loads(ln) for ln in ledger.read_text(encoding="utf-8").splitlines()]
+    assert [(r["id"], r["pointer"]) for r in rows] == [
+        (ids[0], "file:notes/live.py:1"),
+        (ids[1], "shape:shaped-trap"),
+    ]

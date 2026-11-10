@@ -50,7 +50,14 @@ def test_control_the_live_corpus_is_green(tmp_path, capsys):
 
 @pytest.mark.parametrize(
     "pointer",
-    ["gate:check:ci-hint-corpus", "JUDGMENT-ONLY", "JUDGMENT-ONLY, gate:check:ci-hint-corpus"],
+    [
+        "gate:check:ci-hint-corpus",
+        "JUDGMENT-ONLY",
+        "JUDGMENT-ONLY, gate:check:ci-hint-corpus",
+        "test:.ci/rediacc_ci/tests/test_gate_hint_corpus_enforced_by.py",
+        "test:.ci/rediacc_ci/tests/test_gate_hint_corpus_enforced_by.py::test_control_the_live_corpus_is_green",
+        "trap:date-precision-digit-under-uutils",
+    ],
 )
 def test_a_live_pointer_and_a_judgment_only_declaration_pass(tmp_path, capsys, pointer):
     rc, err = _run(_gate(), tmp_path, pointer, capsys)
@@ -65,6 +72,8 @@ def test_a_live_pointer_and_a_judgment_only_declaration_pass(tmp_path, capsys, p
         "hook:planted-missing-rule",
         "file:docs/agent-reference/NO-SUCH-FILE.md",
         "test:something",
+        "test:.ci/rediacc_ci/tests/test_planted_missing.py",
+        "test:README.md",
     ],
 )
 def test_a_pointer_the_shared_resolver_rejects_reds_the_gate_with_the_reason(

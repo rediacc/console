@@ -112,15 +112,16 @@ def load_registry():
 
 
 def enforced_findings(resolver, entry):
-    """H7: one finding per `Enforced-By:` pointer of `entry` that the shared resolver rejects. `resolver` is the (module, Registry) pair; None skips the check."""
+    """H7: one finding per `Enforced-By:` pointer of `entry` that `wl_lessons.pointer_problem` rejects, the judge `--hint-resolve` and the rotation sweep use too (so trap:, test: and commit: are judged by their local checks, the rest by the shared resolver). `resolver` is the (module, Registry) pair; None skips the check."""
     if resolver is None:
         return []
-    module, registry = resolver
+    import wl_lessons  # on sys.path once load_hints has run
+
     out = []
     for ptr in str(entry.get("enforced") or "").replace(",", " ").split():
         if ptr == JUDGMENT_ONLY:
             continue
-        why = module.pointer_problem(registry, ptr)
+        why = wl_lessons.pointer_problem(REPO_ROOT, ptr, registry=resolver)
         if why:
             out.append(
                 "%s: Enforced-By %s is not a live enforcer -- %s"
@@ -240,7 +241,10 @@ def controls_fired(hints_mod, plan_r, resolver):
             "plan-with-them",
             "Plan with them on anything non-trivial",
             "file:CLAUDE.md:1",
-            "gate:check:ci-hint-corpus",  # H7: a live pointer, judged by the real resolver
+            (  # H7: live pointers, judged by the real resolver
+                "gate:check:ci-hint-corpus, "
+                "test:.ci/rediacc_ci/tests/test_gate_hint_corpus_enforced_by.py"
+            ),
         ),
         (
             "writing-agents",
@@ -362,8 +366,12 @@ def controls_fired(hints_mod, plan_r, resolver):
     if not (has_pronoun and has_length):
         missed.append("either a pronoun heading or an oversized heading was not caught")
 
-    # CONTROL 7 (H7): an Enforced-By naming a guard that does not exist, and a gate that is not scheduled
-    for planted in ("guard:block_planted_missing_guard", "gate:check:ci-planted-missing-gate"):
+    # CONTROL 7 (H7): an Enforced-By naming a guard that does not exist, a gate that is not scheduled and a test file that is missing
+    for planted in (
+        "guard:block_planted_missing_guard",
+        "gate:check:ci-planted-missing-gate",
+        "test:.ci/rediacc_ci/tests/test_planted_missing.py",
+    ):
         bad_enforcer = list(healthy_entries)
         bad_enforcer[3] = (*bad_enforcer[3][:3], planted)
         findings = judge(bad_enforcer)
@@ -463,7 +471,7 @@ def main() -> int:
         f"  {len(entries)} total entries, {len(active)} active, every entry reachable "
         f"in one cycle of {len(active)}"
     )
-    print("  8 planted defects were caught first, so this green means the check can fail")
+    print("  the planted defects were caught first, so this green means the check can fail")
     return 0
 
 

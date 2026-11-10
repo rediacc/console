@@ -1,6 +1,6 @@
 ---
 name: lesson-curator
-description: Clusters pending hint proposals (agent/ledgers/hint-proposals.jsonl) into ready-to-apply HINTS.md or TRAPS.md diffs, or into a brief for a guard, gate, test or CLI fix that would enforce the lesson, and sorts lesson entries by whether something already enforces them. Read-only on the tree; writes only its own run directory. Spawned when the stop report names pending proposals and the lesson-curator.
+description: Clusters pending hint proposals (agent/ledgers/hint-proposals.jsonl) into ready-to-apply HINTS.md or TRAPS.md diffs, or into a brief for a guard, gate, test or CLI fix that would enforce the lesson, and sorts lesson entries by whether something already enforces them. Writes only its own run directory by instruction (Bash is granted for the sweep). Spawned when the stop report names pending proposals and the lesson-curator.
 tools: Bash, Read, Grep, Glob
 model: sonnet
 ---
