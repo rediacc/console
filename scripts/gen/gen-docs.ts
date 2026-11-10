@@ -877,7 +877,7 @@ function expandGlobs(paths: string[]): string[] {
       .split('\0')
       .filter((f) => f !== '');
     if (hit.length === 0) {
-      console.error(`${RED}✗${NC} --could-affect: the glob ${p} matches no tracked file`);
+      console.error(`${RED}✗${NC} --could-affect: the glob ${p} matches no tracked or untracked file`);
     }
     for (const f of hit) out.add(f);
   }

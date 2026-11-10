@@ -13,6 +13,7 @@ import os
 import subprocess
 
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.well_known import MEDIA_BUCKET
 
 TWIN = ".ci/scripts/deploy/upload-media-to-r2.sh"
 MODULE = "upload_media_to_r2"
@@ -85,8 +86,11 @@ def test_upload_target_is_the_media_bucket(tmp_path) -> None:
     argv = ["bash", ".ci/media/tools/upload-r2.sh", "--kind", "solutions", "--key", "k"]
     argv += ["--lang", "en", "--field", "mp4", "--file", str(video)]
     argv += ["--defer-manifest", str(tmp_path / "deferred.tsv")]
-    proc = subprocess.run(argv, env=env, capture_output=True, text=True, timeout=60, check=False)
+    proc = subprocess.run(
+        argv, env=env, cwd=diff.repo(), capture_output=True, text=True, timeout=60, check=False
+    )
     assert proc.returncode == 0, proc.stderr
     lines = calls.read_text().splitlines()
-    assert lines[0].startswith("s3 cp %s s3://media/videos/solutions/en/clip.mp4 " % video)
-    assert "s3api head-object --bucket media --key videos/solutions/en/clip.mp4 " in lines[1]
+    key = "videos/solutions/en/clip.mp4"
+    assert lines[0].startswith("s3 cp %s s3://%s/%s " % (video, MEDIA_BUCKET, key))
+    assert "s3api head-object --bucket %s --key %s " % (MEDIA_BUCKET, key) in lines[1]
