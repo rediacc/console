@@ -803,6 +803,39 @@ def control_landed(tmp):
         {".": [change, partial]},
     )
 
+    # CONTROL: mirrored add/delete counts on DIFFERENT files are no inverse, and the pair is not even read for patch-ids.
+    main = lease_main_repo(tmp, "mirrored-counts")
+    lease = new_lease(tmp, main, "w1")
+    added = commit_in(tmp, lease, "n1.txt", "n\n")
+    git(tmp, lease, "rm", "-q", "--", "a.txt")
+    git(tmp, lease, "commit", "-q", "-m", "drop a")
+    removed = git(tmp, lease, "rev-parse", "HEAD")
+    check(
+        "mirrored counts on different files stay unlanded",
+        read(tmp, main)["unlanded"][0]["commits"],
+        {".": [added, removed]},
+    )
+    probe = (
+        "import sys\nsys.path.insert(0, sys.argv[1])\nimport wl_worktrees\n"
+        "seen = []\nwl_worktrees._patch_id = lambda *a: seen.append(a) or ''\n"
+        "wl_worktrees._drop_revert_pairs(sys.argv[2], sys.argv[3:])\nprint(len(seen))\n"
+    )
+    check(
+        "commits with no shared file set cost no patch-id read",
+        pyrun(tmp, tmp, probe, SOURCE / "hooks/stop", lease, added, removed)[1].strip(),
+        "0",
+    )
+    # CONTROL: the same file changed twice, the second not an inverse, stays unlanded.
+    main = lease_main_repo(tmp, "same-file-no-inverse")
+    lease = new_lease(tmp, main, "w1")
+    first = commit_in(tmp, lease, "a.txt", "one\n")
+    second = commit_in(tmp, lease, "a.txt", "two\n")
+    check(
+        "a same-file change that is no inverse stays unlanded",
+        read(tmp, main)["unlanded"][0]["commits"],
+        {".": [first, second]},
+    )
+
     # CONTROL: a commit alone stays unlanded.
     main = lease_main_repo(tmp, "no-revert")
     lease = new_lease(tmp, main, "w1")

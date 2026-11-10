@@ -300,10 +300,33 @@ def _patch_id(tree, *diff_args):
     return done.stdout.split()[0] if done.returncode == 0 and done.stdout.split() else ""
 
 
+def _same_file_set_commits(tree, shas):
+    """The members of `shas` whose changed-path set equals another member's, in `shas` order. A commit whose paths could not be read (git failed, or a merge with no diff of its own) stays a candidate, so the filter only ever narrows what a patch-id comparison would have decided."""
+    text = _git(
+        tree, "log", "--no-walk=unsorted", "--no-renames", "--name-only", "--format=%x00%H", *shas
+    )
+    if text is None:
+        return list(shas)
+    files: dict[str, frozenset[str]] = {}
+    for chunk in text.split("\x00")[1:]:
+        head, _, rest = chunk.partition("\n")
+        files[head.strip()] = frozenset(ln for ln in rest.splitlines() if ln)
+    count: dict[frozenset[str], int] = {}
+    for sha in shas:
+        if files.get(sha):
+            count[files[sha]] = count.get(files[sha], 0) + 1
+    return [sha for sha in shas if sha not in files or not files[sha] or count[files[sha]] > 1]
+
+
 def _drop_revert_pairs(tree, left):
     """`left` without every commit and its exact revert. A lease that committed a change and then reverted it holds a net-zero pair that no pick could ever land, so it would keep the tree uncollectable forever. A revert counts only when its patch-id equals that of the commit's diff reversed (`git diff C C^`), whatever its message says; a partial revert differs and both stay."""
     if len(left) < 2:
         return left
+    # One `git log` names every commit's file set; an exact inverse touches the very same paths, so only commits that share a file set with another can be a pair and the patch-ids are read for those alone.
+    candidates = _same_file_set_commits(tree, left)
+    if len(candidates) < 2:
+        return left
+    left_all, left = left, candidates
     forward = {sha: _patch_id(tree, sha + "^", sha) for sha in left}
     inverse = {sha: _patch_id(tree, sha, sha + "^") for sha in left}
     dropped: set[str] = set()
@@ -314,7 +337,7 @@ def _drop_revert_pairs(tree, left):
             if revert != change and revert not in dropped and forward[revert] == inverse[change]:
                 dropped.update((change, revert))
                 break
-    return [sha for sha in left if sha not in dropped]
+    return [sha for sha in left_all if sha not in dropped]
 
 
 def figures(repos, tips, pins, base):

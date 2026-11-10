@@ -315,6 +315,10 @@ def _stable(value: object) -> str:
     return _EPOCH_RE.sub("<EPOCH>", _INSTANT_RE.sub("<TS>", text))
 
 
+# The `port_delta` of the `sides` call in flight, so a re-record from the port (`regolden --source port`) records the answer a case compares, delta removed, and not the raw port output.
+_RECORD_DELTA: list = []
+
+
 def _run(
     side: str,
     phase: str,
@@ -337,7 +341,17 @@ def _run(
         )
         return code, out.decode("utf-8"), err.decode("utf-8"), calls
 
-    code, out, err, calls = diff.twin_tuple(TWIN_REL, parts, live, work=(base.parent,))
+    def port() -> tuple[int, str, str, list[str]]:
+        # The re-record seam (`regolden --source port`): the port's own answer, for a Rule-T change after the twin is gone.
+        code, out, err, calls = _mask_result(
+            _run_live("python", phase, argv, fixture, dict(extra_env), base)
+        )
+        answer = (code, out, err, [_listing_call_as_s3_ls(c) for c in calls])
+        if _RECORD_DELTA:
+            answer = _RECORD_DELTA[-1](answer)
+        return answer[0], answer[1].decode("utf-8"), answer[2].decode("utf-8"), answer[3]
+
+    code, out, err, calls = diff.twin_tuple(TWIN_REL, parts, live, port=port, work=(base.parent,))
     return _mask_result((code, out.encode("utf-8"), err.encode("utf-8"), calls))
 
 
@@ -413,26 +427,6 @@ def _listing_call_as_s3_ls(call: str) -> str:
     return "\t".join([*out, "--endpoint-url", endpoint])
 
 
-def _without_vm_bake(
-    result: tuple[int, bytes, bytes, list[str]],
-) -> tuple[int, bytes, bytes, list[str]]:
-    """The twin's goldens predate the `ci-vm-bake` entry in `GHCR_PACKAGES`: drop that package's Phase 3 block (its lines run to the next `→` line) and its calls from the port's result, so everything else stays byte-compared. `test_phase_3_covers_the_vm_bake_package_and_keeps_it_per_policy` asserts the dropped block against the port alone."""
-    code, out, err, calls = result
-    kept: list[str] = []
-    skipping = False
-    for line in err.decode("utf-8").splitlines(keepends=True):
-        if line.startswith("\u2192"):
-            skipping = "Processing package: ci-vm-bake" in line
-        if not skipping:
-            kept.append(line)
-    return (
-        code,
-        out,
-        "".join(kept).encode("utf-8"),
-        [c for c in calls if "packages/container/ci-vm-bake" not in c],
-    )
-
-
 def sides(
     phase: str,
     *,
@@ -449,6 +443,7 @@ def sides(
     """
     fixture = fixture or {}
     results = []
+    _RECORD_DELTA[:] = [port_delta] if port_delta is not None else []
     with tempfile.TemporaryDirectory() as td:
         for side in ("bash", "python"):
             base = pathlib.Path(td) / side
@@ -456,7 +451,6 @@ def sides(
             results.append(_run(side, phase, argv, fixture, dict(env or {}), base))
     old, new = results
     new = (new[0], new[1], new[2], [_listing_call_as_s3_ls(c) for c in new[3]])
-    new = _without_vm_bake(new)
     if port_delta is not None:
         new = port_delta(new)
     assert new[0] == old[0], "%s: exit diverged: twin %r port %r\n twin err: %s\n port err: %s" % (
@@ -1776,7 +1770,7 @@ def test_phase_3_treats_a_non_array_page_as_inaccessible_rather_than_dying() -> 
 
 
 def test_phase_3_covers_the_vm_bake_package_and_keeps_it_per_policy() -> None:
-    """`ci-vm-bake` is a retention target: its old tail is deleted and its newest version kept. Port only, since the twin's goldens predate the entry. The control is `rdc`, which holds one recent version and loses nothing."""
+    """`ci-vm-bake` is a retention target: its old tail is deleted and its newest version kept. The control is `rdc`, which holds one recent version and loses nothing."""
     assert "ci-vm-bake" in cv.GHCR_PACKAGES
     fixture = {
         "gh": [
@@ -1806,6 +1800,36 @@ def test_phase_3_covers_the_vm_bake_package_and_keeps_it_per_policy() -> None:
     assert "Would delete version: 22" not in err
     assert "Package ci-vm-bake: would delete 1 of 2 versions" in err
     assert "Package rdc: would delete 0 of 1 versions" in err
+
+
+def test_phase_3_really_deletes_the_old_vm_bake_version_and_only_that_one() -> None:
+    """Without `--dry-run` the DELETE for the old `ci-vm-bake` version is issued, and none for the recent one."""
+    fixture = {
+        "gh": [
+            rule(
+                "packages/container/ci-vm-bake/versions?",
+                json_body=[
+                    _package_version(22, ago(1.5), ["vm-bake-v1-ubuntu-2026-11-abc"]),
+                    _package_version(21, ago(400.5), ["vm-bake-v1-ubuntu-2025-10-old"]),
+                ],
+            ),
+            rule("packages/container/renet/versions", json_body=[]),
+            rule("packages/container/rdc/versions", json_body=[]),
+            rule("packages/container/server/versions", json_body=[]),
+            rule("-X", "DELETE", "packages/container", rc=0, raw=""),
+        ]
+    }
+    with tempfile.TemporaryDirectory() as td:
+        base = pathlib.Path(td) / "python"
+        base.mkdir(parents=True)
+        code, _out, _err, calls = _run(
+            "python", "cleanup_packages", ("--versions", "1", "--days", "7"), fixture, {}, base
+        )
+    assert code == 0
+    deletes = [c for c in calls if "DELETE" in c.split("\t")]
+    assert len(deletes) == 1, deletes
+    assert deletes[0].endswith("packages/container/ci-vm-bake/versions/21"), deletes
+    assert not any("/versions/22" in c for c in deletes)
 
 
 # --------------------------------------------------------------------------- PHASE 4: GITHUB DEPLOYMENTS ---------------------------------------------------------------------------
