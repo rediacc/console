@@ -22,4 +22,4 @@ Body-Sig: a2d75214f0f60e13
 Anchor: in-diff
 Claim: The _Fake class docstring says it 'sleeps `delay_git` on the listing', but the code now calls self.clock.advance(self.delay_git) and never sleeps, so the comment states the wrong behaviour for anyone reading the fake.
 Class: doc-contradicts-code
-Resolution: open
+Resolution: fixed a62c7d11ec98f945edcab8e2c24d21f0e814882d | d778be9d 2026-11-10T16:17:53Z

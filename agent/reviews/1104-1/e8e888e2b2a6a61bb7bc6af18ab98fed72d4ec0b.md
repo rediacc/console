@@ -22,4 +22,4 @@ Body-Sig: b079a186bb74405d
 Anchor: in-diff
 Claim: transcript_waiting now calls last_record(jsonl) before the mtime/WAIT_HORIZON_MIN check, so a missing or stale transcript that previously returned "" without being read now reaches last_record(); if last_record raises on a missing path, transcript_waiting raises where it used to return "" (the diff does not show last_record, so this is unverified).
 Class: other
-Resolution: open
+Resolution: not-a-bug | .claude/hooks/stop/wl_liveness.py:425 last_record returns None for a missing path (its reader catches OSError) and _record_is_idle(None) is False, so transcript_waiting still returns empty for a missing or stale transcript; test_wl_interim_reports pins both shapes | d778be9d 2026-11-10T16:18:08Z
