@@ -1,4 +1,4 @@
-"""deploy_bench repeatability from a clean bench (finding 87f7acb9): signer and control databases first, wrangler resolved without PATH, the retired private-key secret removed, and a smoke that refuses a Worker serving 500. A fake runner stands in for every wrangler and child process; nothing reaches Cloudflare."""
+"""deploy_bench repeatability from a clean bench (finding 87f7acb9): signer and control databases first, wrangler resolved without PATH, the retired private-key secret removed, and a smoke that refuses a Worker serving 500. A fake runner stands in for every wrangler and child process; nothing reaches Cloudflare. The deploy's own end-to-end pass runs through `.ci/rediacc_ci/tests/deploy_bench_fakes.py`, the entry point `test_ops_cf_family.py` runs in place of `deploy_bench`; it replaces `_ensure_signers` and `smoke`, which this file covers."""
 
 from __future__ import annotations
 
@@ -49,7 +49,9 @@ def test_signers_and_control_databases_come_before_the_account_deploy(monkeypatc
     joined = [" ".join(e) for e in events]
     control = [i for i, e in enumerate(joined) if "control_db ensure --bench" in e]
     signers = [i for i, e in enumerate(joined) if "deploy_signer --target" in e]
-    account = next(i for i, e in enumerate(joined) if e.endswith("deploy --config " + deploy_bench.CONFIG))
+    account = next(
+        i for i, e in enumerate(joined) if e.endswith("deploy --config " + deploy_bench.CONFIG)
+    )
     migrate = next(i for i, e in enumerate(joined) if "migrations apply" in e)
     assert len(control) == 1
     assert [joined[i].rsplit(" ", 1)[1] for i in signers] == ["bench-eu", "bench-us"]
@@ -140,8 +142,16 @@ def test_the_deploy_removes_retired_secrets_then_smokes(monkeypatch, tmp_path):
     events: list[list[str]] = []
     _world(monkeypatch, tmp_path, events)
     seen: list[str] = []
-    monkeypatch.setattr(deploy_bench, "_remove_retired_secrets", lambda _d: seen.append("rm") or [])
-    monkeypatch.setattr(deploy_bench, "smoke", lambda: seen.append("smoke"))
+
+    def remove(_d):
+        seen.append("rm")
+        return []
+
+    def smoke():
+        seen.append("smoke")
+
+    monkeypatch.setattr(deploy_bench, "_remove_retired_secrets", remove)
+    monkeypatch.setattr(deploy_bench, "smoke", smoke)
     deploy_bench._deploy(deploy_bench.cf_auth.Auth(token="t"), tmp_path)
     assert seen == ["rm", "smoke"]
 
@@ -179,8 +189,13 @@ def test_smoke_passes_on_200_and_retries_a_propagation_lag():
 
 def test_smoke_stops_asking_after_its_attempts():
     n: list[int] = []
+
+    def fetch(_u):
+        n.append(1)
+        return 0
+
     with pytest.raises(deploy_bench.DeployError, match="answered 0"):
-        deploy_bench.smoke(lambda _u: n.append(1) or 0, lambda _s: None)
+        deploy_bench.smoke(fetch, lambda _s: None)
     assert len(n) == deploy_bench.SMOKE_ATTEMPTS
 
 
@@ -193,7 +208,7 @@ def test_an_unset_path_leaves_no_empty_entry(monkeypatch, tmp_path):
 
 
 def test_a_missing_curl_reads_as_no_answer(monkeypatch):
-    def missing(url):
+    def missing(_url):
         raise FileNotFoundError("curl")
 
     monkeypatch.setattr(deploy_bench, "_run_curl", missing)
