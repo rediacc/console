@@ -88,7 +88,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 17 of 63 plans done, 962 of 1171 boxes done (82%).
+Promoted: 17 of 64 plans done, 962 of 1187 boxes done (81%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -155,6 +155,7 @@ Promoted: 17 of 63 plans done, 962 of 1171 boxes done (82%).
 | 61 | PLAN-ci-vm-image-followups.md | 0/2 | 2 open |
 | 62 | PLAN-idle-writer-capacity.md | 5/5 | done |
 | 63 | PLAN-d1-scaling.md | 16/31 | 15 open |
+| 64 | PLAN-experience-feedback.md | 0/16 | 16 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-backup-program.md -- operator 2026-10-20 ("move agent/plans/PLAN-backup-program.md to the promoted"): one backup program across renet, account, CLI and shared, ending in a live hostinger to eu R2 backup; P1; Depends-On PLAN-shell-sandbox-readonly-view.md and PLAN-account-vm-check.md (done 2026-10-20); released to writers by operator /ask ASKED:2026-10-20T15:14Z ("edit writers to go NOW")
@@ -220,6 +221,7 @@ Promoted: 17 of 63 plans done, 962 of 1171 boxes done (82%).
 61. agent/plans/PLAN-ci-vm-image-followups.md -- lead packaging 2026-11-09 (CB5 of PLAN-plan-compaction-bindings): the B5 live check and B7 measurement ruling #c3a46b36 moved out of PLAN-ci-prebaked-vm-images
 62. agent/plans/PLAN-idle-writer-capacity.md -- operator rulings ASKED 2026-11-09 via AskUserQuestion (R1 ceiling fix and IDLE CAPACITY block, R2 name boxes and the spawn command, R3 `[writer]` tag only, R4 per-box Depends-on): writer slots sat idle while writer-ready boxes waited
 63. agent/plans/PLAN-d1-scaling.md -- operator rulings 2026-11-09T12:12Z and 12:39Z on the D1 scaling review (Q1-Q8)
+64. agent/plans/PLAN-experience-feedback.md -- operator rulings ASKED:2026-11-10T06:24Z ("One plan, run now in parallel"; retire a lesson once a guard, gate, test, CI check or tool fix enforces it): the ledger audit found experience recorded but never fed back (0 of 125 hint proposals promoted, a retro gate silencing long sessions, 6,465 review findings recurring by class); epic #562ef6c3; P1
 
 ## Generated
 

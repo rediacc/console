@@ -1,0 +1,70 @@
+# PLAN: experience-feedback, ledgers reach the next writer, the reviewer and the guards, and enforced lessons leave rotation
+
+Status: approved -- operator ruling ASKED:2026-11-10T06:24Z "One plan, run now in parallel" (#5a7f7ae4); P7 added by the operator ("if we can improve the hooks based on our experience then we can remove them ... Not just hooks. Maybe CI improvements etc.")
+Depends-On: no-dep -- every store, the pre-agent chain, trapguard and the trap registry exist; R4's guard landed in edf21f818e
+Owner: d778be9d
+First-Seen: 2026-11-10
+Priority: P1 -- 2,416 not-a-bug review closings, 125 hint proposals with 0 promoted, and the same review findings come back on the same files
+Concurrency: parallel -- four file-disjoint writer groups (below); generated docs and goldens are re-run at landing, never merged by hand
+Live-Proof: none -- hook, reviewer and gate tooling with no deployable surface, per the closed operator ruling #5a7f7ae4
+Owns: agent/plans/PLAN-experience-feedback.md, .claude/hooks/stop/wl_reviewclass.py, .claude/rediacc_hooks/guards/warn_writer_brief.py, .claude/rediacc_hooks/guards/test-warn_writer_brief.py, .claude/rediacc_hooks/guards/block_plan_concurrency.py, scripts/gen/gen-docs.ts, scripts/lib/doc-providers.ts, .claude/hooks/stop/wl_review.py, .ci/config/commit-review.json, .claude/hooks/context/ctx_budget.py, .claude/hooks/stop/wl_hints.py, .claude/hooks/stop/wl_lessons.py, .claude/hooks/stop/worklist.py, .claude/hooks/stop/wl_checks.py, .claude/hooks/stop/worklist_messages.py, .claude/agents/lesson-curator.md, docs/agent-reference/HINTS.md, .claude/hooks/trapguard/shapes.py, .claude/hooks/trapguard/dispatch.py, .claude/rediacc_hooks/guards/block_shape_lessons.py, .claude/rediacc_hooks/guards/test-block_shape_lessons.py, .ci/rediacc_ci/quality/trap_registry.py, docs/agent-reference/TRAPS.md, .claude/rediacc_hooks/tests/**, .ci/rediacc_ci/tests/test_quality_trap_registry.py, .ci/rediacc_ci/tests/goldens/**, docs/ci-overhaul/07-tooling-decisions.md, scripts/data/doc-registry.md
+
+## Why
+
+The ledger audit of 2026-11-10 found that about half of the experience stores feed back into hooks and gates, while the experience that would stop a session repeating a mistake mostly never reaches it: 125 hint proposals with 0 promoted, a retro gate that silenced retros for long-lived sessions, 6,465 per-commit review findings that recur by class (doc contradicts code 969, missing control test 800, swallowed error 326) without reaching any writer brief, about 430 not-a-bug findings on record files, and memory notes with no enforcement behind them. The operator also asked that a lesson leave active rotation once a guard, gate, test, CI check or tool fix enforces it.
+
+## Facts the design rests on (checked 2026-11-10)
+
+- Spawn hook: the pre-agent chain is `dispatch.py --chain pre-agent` (`.claude/rediacc_hooks/lifecycle.py:120`), holding block_agent_cap, block_focus_spawn and block_plan_concurrency, whose docstring calls itself the last guard of the chain. A brief's Owns is parsed by `wl_planconc.declared_owns`.
+- Whether a PreToolUse hook's `updatedInput` reaches an Agent spawn is unproven here; E0 settles it live.
+- `ctx_budget.retro_ordered` keys on (session, band), so a session that lives for weeks orders one retro per band and never again.
+- Hint proposal rows carry no id, and `pending_proposals` in `.claude/hooks/stop/wl_hints.py` matches by substring.
+- `.ci/policy/record-paths.json` covers only 20 of the not-a-bug review findings; the other 441 sit on QUEUE.md, STATE.md, agent/ledgers/** and plan-boxes.json, which also carry 51 fixed findings, so the reviewer gets its own skip list rather than a change to the push-receipt policy.
+- The review record parser unpacks Anchor/Claim/Resolution, so a `Class:` line must be optional.
+- gen-docs inputs are predicates, not globs, so the spawn warning asks gen-docs itself which providers a path set could affect.
+- Trapguard is post-bash only, under `.claude/hooks/trapguard/`; TRAPS already carries `Enforced-By:` and `trap_registry.py` checks its pointers.
+- Tonight's three seeds already have a mechanism (bench 403: wl_benchblock; the keyring refusal: fixed in the tool, 59e6f7d8 and ae5206a7; the `&` wake timer: block_short_wake_timeout), so they belong to P7, and P3 seeds lessons nothing enforces yet.
+
+## Writer groups (file-disjoint, up to 4 leases)
+
+| Group | Parts | Files |
+|---|---|---|
+| A spawn | P1 + P4 | wl_reviewclass.py, warn_writer_brief.py and its test, block_plan_concurrency.py (docstring), gen-docs.ts, doc-providers.ts, tests/test_wl_reviewclass.py |
+| B reviewer | P5, then P6 | wl_review.py, commit-review.json, tests/test_wl_review_diff.py, tests/test_wl_review_history.py |
+| C lessons | P2 + P7 | ctx_budget.py, wl_hints.py, wl_lessons.py, worklist.py, wl_checks.py, worklist_messages.py, lesson-curator.md, HINTS.md, tests/test_wl_hints.py, tests/test_wl_retro.py, tests/test_wl_lessons.py |
+| D shapes | P3 | trapguard/shapes.py, trapguard/dispatch.py, block_shape_lessons.py and its test, trap_registry.py, TRAPS.md, tests/test_hooks_trapguard.py, tests/hookcases.py, test_quality_trap_registry.py, goldens/twins/quality.check-trap-registry.jsonl |
+
+B6 needs A1 (the index lives in wl_reviewclass.py); C7b needs D3 (the exported pointer resolver). Land in the order A, D, C, B; a conflict in a generated region or a golden is resolved by re-running its generator or `regolden.py`, never by hand. Each writer runs the generator its commit hook names inside its lease (gen-docs for new hook files). No settings.json timeout changes: every new member runs inside an existing dispatch entry and is capped at 3 s. D ratchets the trap registry floor and re-records its twin.
+
+## Design
+
+P1/P4, `warn_writer_brief` (pre-agent, last ORDER), never refuses and stays silent for Plan and Explore, for `Owns: none` and for a brief with no Owns. `wl_reviewclass.index(root)` reads agent/reviews/*/*.md through `wl_review.parse`, keeps fixed high and medium findings (not-a-bug counted separately for P6), classifies each Claim with a keyword table shaped like the effort tuner's judge shapes (doc-contradicts-code, missing-control-test, swallowed-error, seam-not-restored, other), prefers a finding's own `Class:` field, and caches to `.ci/cache/review-classes/index.json` keyed by the reviews directory mtime. A class with at least 3 fixed findings on paths the Owns match contributes one line; at most 3 lines. A gen-docs `--could-affect` mode answers which providers a path set could move, and a hit adds the step to run `npx tsx scripts/gen/gen-docs.ts --write` in the lease. Delivery follows E0: `updatedInput` with the prompt appended when the harness applies it to an Agent spawn, otherwise `additionalContext` to the lead naming the lines. Any failure stays silent with one stderr note.
+
+P5: `review_skip_globs` in commit-review.json, the record-paths.json globs read at runtime plus QUEUE.md, `agent/*/STATE.md`, `agent/ledgers/**` and `.ci/config/plan-boxes.json`; those paths leave the reviewed diff and stat, and a record-only commit is `skipped (record-only)`. The 51 fixed findings on those paths are the cost, quoted by class in the before/after.
+
+P6: the review prompt gets one "Prior on this file" line per touched file from the A index (fixed and refuted counts, top class); the schema requires a `class` (an enum ending in `other`); records gain an optional `Class:` line and old records still parse.
+
+P2: the retro rearms after RETRO_REARM_DAYS = 7 in the same band. Proposals get an id (sha8 of by, at, text; derived for old rows); a proposal stops being pending when a HINTS entry carries `Proposal: <id>` or a `worklist.py --hint-resolve <id> <pointer>` row names a live pointer of kind trap, guard, gate, hook, test or commit, so a proposal can become a gate, test or tool fix and not only prose. A read-only `lesson-curator` agent (sibling of effort-tuner) clusters pending proposals into ready HINTS/TRAPS diffs or a gate/test/CLI brief per cluster.
+
+P7: a lesson entry (TRAPS, HINTS, a proposal, a memory note) carries `Enforced-By: <pointer>`; `trap_registry.pointer_problem` (exported by D3) checks it, HINTS through check:ci-hint-corpus, memory notes (outside the repo) through `worklist.py --lessons-sweep`. An entry with a live enforcer leaves rotation: HINTS gets `Status: retired`; TRAPS already leaves the judge prompt; a memory note is deleted with its index line after its why moves into the enforcer's own refusal text, since an unversioned pointer stub would go stale unseen. The sweep classifies every entry as retire-now, encode-as-guard, encode-as-CI-gate, fix-the-tool or keep-as-prose; retire-now is mechanical and the curator judges the rest.
+
+P3: `trapguard/shapes.py` loads `Shape:` (pre: and/or post: regex) with `Shape-Fires:` and `Shape-Silent:` samples from TRAPS and memory notes; `block_shape_lessons` (pre-bash, stderr) refuses or warns per the entry, and one generic post-bash rule joins trapguard. A Shape that does not compile or whose samples do not behave as declared is not loaded and is named once; the registry gains the pointer kind `shape:<trap-id>`. Seeds: refuse a bare `gh run rerun <id>` (memory feedback_rerun_failed_only); warn before `date +%s%3N` (TRAPS: it returns nanoseconds); post-bash on `-p no:cacheprovider` plus "no tests ran".
+
+## Boxes
+
+- [ ] E0 [lead] Probe whether a PreToolUse hook's updatedInput reaches an Agent spawn: a throwaway hook appends a marker to an Explore spawn's prompt and the agent echoes it. Accept: the agent's reply quoted here, marker present or absent, and the delivery mode A builds.
+- [ ] A1 [writer] wl_reviewclass index and classifier. Accept: `PYTHONPATH=.claude .ci/cache/toolchain/uv-tools/bin/pytest -q .claude/rediacc_hooks/tests/test_wl_reviewclass.py` rc 0, controls first: 2 fixed findings stay silent, not-a-bug is not counted as fixed, low severity is excluded, a cache hit does no parse.
+- [ ] A2 [writer] warn_writer_brief P1 line, delivered per E0, and the block_plan_concurrency docstring. Accept: `python3 .claude/rediacc_hooks/guards/test-warn_writer_brief.py` rc 0 and `PYTHONPATH=.claude .ci/cache/toolchain/uv-tools/bin/pytest -q .claude/rediacc_hooks/tests/test_dispatch.py .claude/rediacc_hooks/tests/test_settings_collapse.py` rc 0, controls first: an Owns on an untouched file, Explore and `Owns: none` stay silent, the guard never exits 2, its stdout is one JSON document.
+- [ ] A3 [writer] gen-docs `--could-affect` and the P4 line. Accept: `node scripts/gen/gen-docs.ts --selftest` rc 0, `--check-inputs` rc 0 and the guard suite's P4 cases, controls first: Owns `packages/www/src/**` stays silent and `.ci/config/env-manifest.json` fires.
+- [ ] B5 [writer] review_skip_globs. Accept: `PYTHONPATH=.claude .ci/cache/toolchain/uv-tools/bin/pytest -q .claude/rediacc_hooks/tests/test_wl_review_diff.py` rc 0, control first: an a.py-only commit's diff is unchanged; QUEUE.md plus a.py shows only a.py; a record-only commit is `skipped (record-only)`; `npm run check:ci-record-paths` rc 0 with the policy file untouched.
+- [ ] B6 [writer] Depends on A1. History line, `class` in the schema, optional `Class:` in records. Accept: test_wl_review_history.py rc 0 (old records parse unchanged, round trip with Class) and a replay of 20 historical commits with known resolutions, old prompt against new, quoted here: the not-a-bug rate falls and fixed-finding recall does not.
+- [ ] C2a [writer] Rearm the retro. Accept: `PYTHONPATH=.claude .ci/cache/toolchain/uv-tools/bin/pytest -q .claude/rediacc_hooks/tests/test_wl_retro.py` rc 0 and `python3 .claude/hooks/context/test-context-bands.py` rc 0, control first: a 6-day-old row in the same band still dedupes; an 8-day-old row orders again.
+- [ ] C2b [writer] Proposal ids, `--hint-resolve`, the lesson-curator agent and the advisory text. Accept: test_wl_hints.py rc 0 and `npm run check:ci-hint-corpus` rc 0, controls first: reworded text with no cite stays pending; a resolved row with a dead pointer stays pending.
+- [ ] C7a [writer] `Enforced-By` on HINTS and memory notes, the rotation drop and `--lessons-sweep` with its five classes. Accept: test_wl_lessons.py rc 0, controls first: a judgment-only entry stays in rotation; an entry whose enforcer has no test stays.
+- [ ] C7b [writer] Depends on D3. HINTS Enforced-By pointers checked with `pointer_problem`. Accept: `npm run check:ci-hint-corpus` rc 0 and red on a fixture naming a missing guard.
+- [ ] D3 [writer] shapes.py, the generic rule, block_shape_lessons, `shape:` pointers, the exported resolver, the floor ratchet and three seeds. Accept: `PYTHONPATH=.claude .ci/cache/toolchain/uv-tools/bin/pytest -q .claude/rediacc_hooks/tests/test_hooks_trapguard.py .ci/rediacc_ci/tests/test_quality_trap_registry.py` rc 0, `python3 .claude/rediacc_hooks/guards/test-block_shape_lessons.py` rc 0 and `npm run check:ci-trap-registry` rc 0, controls first: `gh run rerun 1 --failed` passes; a Shape that does not compile is not loaded; a Shape whose Silent sample fires is not loaded.
+- [ ] R1 [lead] Run `worklist.py --lessons-sweep` and the curator over all four stores. Accept: the classification table quoted here, each retire-now row citing a live pointer.
+- [ ] R2 [lead] Retire the bench-403 memory note (enforcer wl_benchblock) and the keyring lesson (fix-the-tool, 59e6f7d8 and ae5206a7): delete the notes and their MEMORY.md lines. Accept: `--lessons-sweep` shows neither, and the MEMORY.md grep for the bench-403 note counts 0.
+- [ ] R3 [lead] Promote or resolve the 125 proposals from the curator's diffs. Accept: the pending count quoted before and after.
+- [ ] R4 [lead] Retire memory `feedback_wake_timer_no_ampersand` with `Enforced-By: guard:block_short_wake_timeout` after confirming the guard refuses `&`. Accept: that guard's test output quoted and the sweep showing retire-now executed.
+- [ ] M1 [lead] Two weeks after landing, compare per-class review findings for spawns that got the brief lines against spawns that did not, from effort-outcomes key `brief-enrich`. Accept: the numbers quoted here.
