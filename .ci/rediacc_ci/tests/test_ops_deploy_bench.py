@@ -287,6 +287,8 @@ def test_deploy_seeds_the_root_after_the_secrets_push(monkeypatch, tmp_path):
     monkeypatch.setattr(deploy_bench.bench_preflight, "buckets", lambda _c: 0)
     monkeypatch.setattr(deploy_bench, "capture_bookmark", lambda _d: None)
     monkeypatch.setattr(deploy_bench, "_rotation_check", lambda _r: events.append("rotation"))
+    monkeypatch.setattr(deploy_bench, "_remove_retired_secrets", lambda _d: [])
+    monkeypatch.setattr(deploy_bench, "smoke", lambda: None)
 
     def fake_run(argv, *_a, **_k):
         events.append(" ".join(argv[:5]))
@@ -391,6 +393,8 @@ def test_a_missing_live_version_after_the_deploy_fails_the_deploy(monkeypatch, t
     monkeypatch.setattr(deploy_bench.bench_preflight, "buckets", lambda _c: 0)
     monkeypatch.setattr(deploy_bench, "capture_bookmark", lambda _d: None)
     monkeypatch.setattr(deploy_bench, "_rotation_check", lambda _r: None)
+    monkeypatch.setattr(deploy_bench, "_remove_retired_secrets", lambda _d: [])
+    monkeypatch.setattr(deploy_bench, "smoke", lambda: None)
     monkeypatch.setattr(deploy_bench, "_run", lambda *_a, **_k: "Current Version ID: " + VID)
     monkeypatch.setattr(deploy_bench, "_seed_and_report", lambda: None)
     wrote: list[str] = []
@@ -582,6 +586,8 @@ def _deploy_world(monkeypatch, tmp_path, toml, events):
     monkeypatch.setattr(deploy_bench.bench_preflight, "buckets", lambda _c: 0)
     monkeypatch.setattr(deploy_bench, "capture_bookmark", lambda _d: None)
     monkeypatch.setattr(deploy_bench, "_rotation_check", lambda _r: None)
+    monkeypatch.setattr(deploy_bench, "_remove_retired_secrets", lambda _d: [])
+    monkeypatch.setattr(deploy_bench, "smoke", lambda: None)
     monkeypatch.setattr(deploy_bench, "_seed_and_report", lambda: None)
     monkeypatch.setattr(deploy_bench, "record_version", lambda *_a: None)
     monkeypatch.setattr(deploy_bench.deploy_record, "worker_version", lambda *_a: (True, "live"))

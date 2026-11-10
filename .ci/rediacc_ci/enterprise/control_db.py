@@ -15,11 +15,12 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import pathlib
 import subprocess
 import sys
 import tempfile
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from typing import NamedTuple
 
 from rediacc_ci import paths
@@ -50,13 +51,31 @@ class Ensured(NamedTuple):
     migrated: bool
 
 
-def run_wrangler(argv: list[str], *, cwd: pathlib.Path | str | None = None) -> Completed:
-    """The production runner: both streams captured. `cwd=None` runs from a fresh empty directory."""
+def wrangler_env(
+    environ: Mapping[str, str] | None = None, root: pathlib.Path | None = None
+) -> dict[str, str]:
+    """`environ` (default: this process's) with the repo's local wrangler `.bin` directories (`workers/signer`, then `workers/account`) at the front of PATH, so `npx --no-install wrangler` finds the pinned binary from any working directory, a neutral temporary one included."""
+    env = dict(os.environ if environ is None else environ)
+    base = root or paths.repo_root()
+    found = [wrangler.local_binary(base / "workers" / name) for name in ("signer", "account")]
+    bins = [str(b.parent) for b in found if b is not None]
+    if bins:
+        env["PATH"] = os.pathsep.join([*bins, env.get("PATH", "")])
+    return env
+
+
+def run_wrangler(
+    argv: list[str], *, cwd: pathlib.Path | str | None = None, root: pathlib.Path | None = None
+) -> Completed:
+    """The production runner: both streams captured, wrangler resolved through `wrangler_env`. `cwd=None` runs from a fresh empty directory."""
+    env = wrangler_env(root=root)
     if cwd is not None:
-        proc = subprocess.run(argv, cwd=str(cwd), capture_output=True, text=True, check=False)
+        proc = subprocess.run(
+            argv, cwd=str(cwd), env=env, capture_output=True, text=True, check=False
+        )
         return Completed(proc.returncode, proc.stdout, proc.stderr)
     with tempfile.TemporaryDirectory(prefix="control-db-") as tmp:
-        proc = subprocess.run(argv, cwd=tmp, capture_output=True, text=True, check=False)
+        proc = subprocess.run(argv, cwd=tmp, env=env, capture_output=True, text=True, check=False)
     return Completed(proc.returncode, proc.stdout, proc.stderr)
 
 

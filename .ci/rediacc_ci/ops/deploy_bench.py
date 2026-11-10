@@ -24,6 +24,8 @@ RULE T: WHERE THIS DELIBERATELY DIFFERS FROM THE BASH (each pinned by a test in 
 
   10. BENCH BINDS THE PRODUCTION KEY (operator rulings 2026-10-27 and 2026-10-29). The deploy-bench profile binds the unsuffixed session names and the ED25519 PUBLIC key (`ACCOUNT_ED25519_PUBLIC_KEY`, `ACCOUNT_X25519_*`, `ACCOUNT_SERVER_API_KEY`, `ACCOUNT_JWT_SECRET`) that the edge and stable account-secrets profiles bind (ED25519 fingerprint fb37f1ae16f8b7c0 through `renet_key_gate.key_fingerprint`), so a released renet verifies a bench licence. The ED25519 PRIVATE key is not in the account Worker's secret list: `signer-bench-eu` and `signer-bench-us` hold it (the deploy-signer profile) and `account-bench` signs through its LICENSE_SIGNER binding (agent/plans/PLAN-enterprise-isolation.md S4). The values are still read by name from the environment; only the profile binding changed, and `tests/test_ops_deploy_bench.py` pins it.
 
+  11. A DEPLOY FROM A CLEAN BENCH REPEATS (finding 87f7acb9, `tests/test_deploy_bench_repeatability.py`). `_ensure_signers` creates the control databases (`control_db ensure --bench`) and deploys `signer-bench-eu` and `signer-bench-us` (each under the deploy-signer profile, which binds the private key) before the migrations, since Cloudflare refuses the account deploy with error 10143 while the `LICENSE_SIGNER` target Worker is missing. `_remove_retired_secrets` deletes a leftover `ACCOUNT_ED25519_PRIVATE_KEY` from `account-bench` (the listed names are read first, nothing else is deleted), because `requireSignerOnly` makes a Worker holding it answer 500. `smoke` then GETs `/account/api/v1/.well-known/server-info` and a last status other than 200 exits 1 naming it, so a Worker serving 500 is never a green deploy.
+
 THE SECRET VALUES ARE READ BY NAME FROM THE ENVIRONMENT, as the bash read them, and are never logged; the `OBS_OTLP_CREDENTIALS` validity probe reports only that the value is not a JSON {user, pass} object, never the value.
 """
 
@@ -44,7 +46,8 @@ from typing import TYPE_CHECKING
 
 from rediacc_ci import log, paths
 from rediacc_ci.core import wrangler
-from rediacc_ci.deploy import deploy_account, deploy_record
+from rediacc_ci.deploy import deploy_account, deploy_record, deploy_signer
+from rediacc_ci.enterprise import control_db
 from rediacc_ci.ops import bench_access, bench_preflight, cf_auth, push_backup_credentials
 from rediacc_ci.proof import receipt
 from rediacc_ci.well_known import BENCH_ORIGIN, PRODUCT_DOMAIN
@@ -711,6 +714,128 @@ def bench_assets_refusal(worker_dir) -> str | None:
     return None
 
 
+# The account Worker binds LICENSE_SIGNER to `signer-bench-<region>` (workers/account/wrangler.bench.toml), and Cloudflare refuses the account deploy with error 10143 while that Worker does not exist. The control databases the signers bind are created first. A signer holds the private key, which only the deploy-signer profile binds, so each signer deploys in its own child under that profile.
+SIGNER_TARGETS = tuple("bench-%s" % r for r in deploy_signer.BENCH_REGIONS)
+# Secrets the account Worker must never hold: `requireSignerOnly` (private/account/src/entry/cloudflare.ts) refuses to serve, HTTP 500 "Server misconfiguration", while the retired private key is present.
+RETIRED_SECRETS = (deploy_signer.PRIVATE_KEY,)
+SMOKE_PATH = "/account/api/v1/.well-known/server-info"
+SMOKE_ATTEMPTS = 5
+SMOKE_WAIT_S = 3.0
+
+
+def _child_env(root) -> dict[str, str]:
+    env = dict(os.environ)
+    ci = str(root / ".ci")
+    env["PYTHONPATH"] = ci + (os.pathsep + env["PYTHONPATH"] if env.get("PYTHONPATH") else "")
+    return env
+
+
+def _ensure_signers(root, run=None) -> None:
+    """Create and migrate the bench control databases, then deploy both bench signers, before the account deploy."""
+    run = run or _run
+    env = _child_env(root)
+    log.step("Ensuring the bench control databases")
+    run(
+        [sys.executable, "-m", control_db.SELF, "ensure", "--bench"],
+        root,
+        "control_db ensure --bench",
+        env=env,
+    )
+    for target in SIGNER_TARGETS:
+        log.step("Deploying the signer Worker signer-%s (LICENSE_SIGNER binding)" % target)
+        run(
+            [
+                sys.executable,
+                "-m",
+                "rediacc_ci.core.bws_env",
+                "exec",
+                "--profile",
+                deploy_signer.PROFILE,
+                "--",
+                sys.executable,
+                "-m",
+                deploy_signer.SELF,
+                "--target",
+                target,
+            ],
+            root,
+            "deploy_signer --target %s" % target,
+            env=env,
+        )
+
+
+def _remove_retired_secrets(worker_dir, run=None) -> list[str]:
+    """Delete each retired secret that `account-bench` still holds (names listed first; nothing else is touched). Returns the names removed."""
+    run = run or _run
+    listing = run(
+        [*wrangler.ARGV, "secret", "list", "--format", "json", "--name", WORKER_NAME],
+        worker_dir,
+        "wrangler secret list",
+        capture=True,
+    )
+    try:
+        rows = control_db.parse_json(listing)
+    except control_db.ControlDbError as exc:
+        raise DeployError("wrangler secret list printed no JSON list: %s" % exc) from None
+    if not isinstance(rows, list):
+        raise DeployError("wrangler secret list did not print a list")
+    held = {str(r.get("name")) for r in rows if isinstance(r, dict)}
+    removed = [name for name in RETIRED_SECRETS if name in held]
+    for name in removed:
+        run(
+            [*wrangler.ARGV, "secret", "delete", name, "--name", WORKER_NAME],
+            worker_dir,
+            "wrangler secret delete %s" % name,
+            stdin="y\n",
+        )
+        log.info("Removed the retired secret %s from %s" % (name, WORKER_NAME))
+    return removed
+
+
+def _http_status(url: str) -> int:
+    """GET `url` with curl; 0 means no HTTP answer."""
+    proc = subprocess.run(
+        [
+            "curl",
+            "-sS",
+            "-o",
+            os.devnull,
+            "--connect-timeout",
+            str(CURL_CONNECT_TIMEOUT_S),
+            "--max-time",
+            str(CURL_MAX_TIME_S),
+            "-w",
+            "%{http_code}",
+            url,
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    try:
+        return int(proc.stdout.strip())
+    except ValueError:
+        return 0
+
+
+def smoke(fetch: Callable[[str], int] | None = None, sleep: Callable[[float], None] = time.sleep) -> None:
+    """The deployed Worker must serve: GET server-info answers 200, retried while the new version propagates. A last status other than 200 is a DeployError naming it."""
+    fetch = fetch or _http_status
+    url = "https://%s%s" % (DOMAIN, SMOKE_PATH)
+    status = 0
+    for attempt in range(SMOKE_ATTEMPTS):
+        status = fetch(url)
+        if status == 200:
+            log.info("bench smoke: %s answered 200" % url)
+            return
+        if attempt + 1 < SMOKE_ATTEMPTS:
+            sleep(SMOKE_WAIT_S)
+    raise DeployError(
+        "bench smoke failed: GET %s answered %d%s"
+        % (url, status, _blocked_hint(status) if status == 403 else "")
+    )
+
+
 def _deploy(auth: cf_auth.Auth, root) -> None:
     worker_dir = root / "workers" / "account"
     if not (worker_dir / CONFIG).is_file():
@@ -768,6 +893,7 @@ def _deploy(auth: cf_auth.Auth, root) -> None:
 
     if not (worker_dir / "node_modules").is_dir():
         _run(["npm", "install"], worker_dir, "npm install")
+    _ensure_signers(root)
     capture_bookmark(worker_dir)
     log.step("Applying D1 migrations to %s (remote)" % DB_NAME)
     _run(
@@ -784,6 +910,7 @@ def _deploy(auth: cf_auth.Auth, root) -> None:
     log.info("Worker deployed")
 
     _rotation_check(root)
+    _remove_retired_secrets(worker_dir)
     _run(
         [*wrangler.ARGV, "secret", "bulk", "--name", WORKER_NAME],
         worker_dir,
@@ -791,6 +918,7 @@ def _deploy(auth: cf_auth.Auth, root) -> None:
         stdin=body,
     )
     log.info("Worker secrets pushed")
+    smoke()
     _seed_and_report()
     # After the whole deploy, so a missing id fails a finished deploy rather than leaving secrets unpushed.
     exists, live_version = deploy_record.worker_version(worker_dir, CONFIG, WORKER_NAME)

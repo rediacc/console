@@ -90,7 +90,15 @@ Runner = typing.Callable[[list[str], pathlib.Path, "str | None"], Result]
 
 
 def run_process(argv: list[str], cwd: pathlib.Path, stdin: str | None) -> Result:
-    proc = subprocess.run(argv, cwd=cwd, input=stdin, capture_output=True, text=True, check=False)
+    proc = subprocess.run(
+        argv,
+        cwd=cwd,
+        env=control_db.wrangler_env(),
+        input=stdin,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
     return Result(proc.returncode, proc.stdout, proc.stderr)
 
 
@@ -307,7 +315,7 @@ def deploy(
                 "%s: a deploy needs %s set (bind with bws_env exec --profile %s)"
                 % (SELF, ", ".join(missing), PROFILE)
             )
-        wrangler.require(signer_dir, env)
+        wrangler.require(signer_dir, control_db.wrangler_env(env, repo_root))
 
     control_id = DRY_RUN_DB_ID if dry_run else control_db_id(run, signer_dir, target.control_db)
     text = render(
@@ -464,7 +472,7 @@ def default_companies(bench: bool) -> list[dict]:
 def _wrangler(run: Runner, argv: list[str]) -> Result:
     cwd = _signer_dir()
     try:
-        wrangler.require(cwd, os.environ)
+        wrangler.require(cwd, control_db.wrangler_env(os.environ))
     except wrangler.WranglerNotInstalledError as exc:
         raise proof.LabError(str(exc)) from None
     return run(argv, cwd, None)
