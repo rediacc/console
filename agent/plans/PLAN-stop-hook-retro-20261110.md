@@ -54,7 +54,7 @@ Counts for the window:
 - **What the boxes needed:** the open boxes of the PR plan set were 22, then 21. They needed a PR preview (A1a), CI run ids (A4d, J6, J9), a nightly (K10), elite live (I3), hostinger or bench (Q2, H3, L2, LP-*), or the receipts (P15). The lead had already written investigation rows saying so. For example, A1a got its row at 19:59:01 (offset 1481364236 onward), and A4d was committed at 04:24:43.
 - **The streak of 04:09 to 04:33:**
   - At 04:13:18 (1493820829) the judge said the batch's open boxes had not been checked.
-  - At 04:13:29 (1493844952) the lead replied "I've already checked every unchecked box in the batch ... The 22 open boxes, by plan", with each box's reason.
+  - At 04:13:29 (1493844952) the lead replied "I've already checked every unchecked box in the batch ... The 22 open boxes, by plan", with each box's reason. <!-- style-ok -->
   - The judge then gave the same order again at 04:17:30 (1493936103), 04:19:22 (1493971475) and 04:21:17 (1493998970), saying "its open boxes are never checked", and again at 04:31:59 (1495988676).
   - At 04:32:15 (1496021277) the lead replied with a second full table.
 - **Repeated tables:** 16 replies to a judge continue name 12 to 14 of the box ids, so each is a full box table. They are at offsets 1484306017, 1484621129, 1487111609, 1487537139, 1487701996, 1489090709, 1489335292, 1490148500, 1490202824, 1492526091, 1493844952, 1496021277, 1506391913, 1506951164, 1508461914 and 1508823368.
@@ -133,7 +133,7 @@ Counts for the window:
 ## 4. Interim [SILENT] captures block as unread reports (R20260924.7 did not hold)
 
 **What happened.**
-- At 08:53:29 the unread-reports key led a block on `5bff99729ead`: "The runs have not finished yet. I'm waiting on the background notification".
+- At 08:53:29 the unread-reports key led a block on `5bff99729ead`: "The runs have not finished yet. I'm waiting on the background notification". <!-- style-ok -->
 - At 12:40:52 it led again, with roster-dead named, on `1e3c9d6b17e9` and `-2` ("Waiting on the test run's completion notification", "Waiting for regolden to finish.").
 - Each of the three index rows in `~/.claude/agent-reports/home_developer_console/index.jsonl` has `silent: true` and no `interim` key.
 - Agent aaaeb1e3c9d6b17e9 had launched background shell `bn3oml4sf` at 12:35:45Z. Its `<task-id>` notification first appears at 12:40:00Z, after the 12:39:17Z capture. So at capture time the agent was waiting on an armed shell, which is the case R.7 holds.

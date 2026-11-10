@@ -79,10 +79,10 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic f65726d5, plan agent/plans/PLAN-renet-down-before-kill.md, outside the set, 16 commit(s) on the branch, 0 open item(s): renet runs Rediaccfile down() before repo containers stop
   - epic 53c31db2, plan agent/plans/PLAN-repo-resource-limits.md, outside the set, 20 commit(s) on the branch, 0 open item(s): per-repo resource limits and a renet-managed RAM volume
   - epic a86f5622, plan agent/plans/PLAN-production-key-only.md, outside the set, 4 commit(s) on the branch, 0 open item(s): Production key only: every leg licensed from its own plane
-  - epic 79b7e92e, no plan, 286 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
-  - epic 562ef6c3, plan agent/plans/PLAN-experience-feedback.md, outside the set, 50 commit(s) on the branch, 0 open item(s): experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire
-- Writers: 5 live of writer_cap 25 (session d778be9d): worker:a1917d88f28e26699, worker:a8abd0dcaf1b1658f, worker:abc79fa77a4d3677f, worker:adae3b030a84866c2, worker:a480a577eb2974e40.
-- Leased items: 8: #0094d0f6 (worker:a8abd0dcaf1b1658f, d778be9d), #4f4df453 (worker:busfc6826, d778be9d), #54aacfb3 (worker:bkqae9edw, d778be9d), #60c7b83e (worker:a480a577eb2974e40, d778be9d), #67c9eb34 (worker:bijpuix39, d778be9d), #8d576362 (worker:a1917d88f28e26699, d778be9d), #caa837d4 (worker:a1917d88f28e26699, d778be9d), #e6bdab37 (worker:abc79fa77a4d3677f, d778be9d).
+  - epic 79b7e92e, no plan, 294 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 562ef6c3, plan agent/plans/PLAN-experience-feedback.md, outside the set, 53 commit(s) on the branch, 0 open item(s): experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire
+- Writers: 10 live of writer_cap 25 (session d778be9d): worker:a1917d88f28e26699, worker:abc79fa77a4d3677f, worker:ada88115e243d73bd, worker:ad2e9f4239541c1d6, worker:ae89f489e15e02286, worker:a46c4b173247f3c39, worker:a5871f0697fbdc20a, worker:ae8d074602283b89c, worker:a41647b70f9dce508, worker:a7382695451fe134d.
+- Leased items: 8: #0094d0f6 (worker:a249d49c8dddeba16, d778be9d), #4f4df453 (worker:busfc6826, d778be9d), #54aacfb3 (worker:bkqae9edw, d778be9d), #60c7b83e (worker:a7382695451fe134d, d778be9d), #67c9eb34 (worker:bijpuix39, d778be9d), #8d576362 (worker:a1917d88f28e26699, d778be9d), #caa837d4 (worker:a1917d88f28e26699, d778be9d), #e6bdab37 (worker:abc79fa77a4d3677f, d778be9d).
 - Next plan: agent/plans/PLAN-sandbox-tenant-separation.md, Promoted entry 14; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
