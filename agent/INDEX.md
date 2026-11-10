@@ -496,7 +496,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-citation-fragility.md` | compacted | 49 | 0 | 6 | 5254 |
 | `agent/plans/PLAN-cli-em-dash-lint-gate.md` | compacted | 57 | 0 | 0 | 4340 |
 | `agent/plans/PLAN-cli-tofu-toolchain.md` | approved | 55 | 0 | 10 | 11354 |
-| `agent/plans/PLAN-cloudflare-proxy.md` | approved | 451 | 2 | 27 | 64039 |
+| `agent/plans/PLAN-cloudflare-proxy.md` | approved | 455 | 1 | 28 | 65423 |
 | `agent/plans/PLAN-cloudflare-spend-guard.md` | approved | 116 | 0 | 10 | 41221 |
 | `agent/plans/PLAN-cold-path.md` | compacted | 52 | 0 | 0 | 4022 |
 | `agent/plans/PLAN-completion-strategy.md` | compacted | 39 | 0 | 0 | 3939 |

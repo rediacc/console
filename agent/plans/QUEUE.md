@@ -74,26 +74,26 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic 92df2f69, plan agent/plans/PLAN-free-license.md, outside the set, 5 commit(s) on the branch, 0 open item(s): free license ladder F6
   - epic 1f877343, plan agent/plans/PLAN-worktree-lease.md, outside the set, 55 commit(s) on the branch, 0 open item(s): guided detached worktree leases
   - epic 2e0e531f, plan agent/plans/PLAN-rediaccfile-unprivileged.md, outside the set, 19 commit(s) on the branch, 0 open item(s): Rediaccfile lifecycle runs unprivileged
-  - epic 783185d2, plan agent/plans/PLAN-enterprise-isolation.md, outside the set, 32 commit(s) on the branch, 0 open item(s): Enterprise per-company isolation, regional signers and release rings
+  - epic 783185d2, plan agent/plans/PLAN-enterprise-isolation.md, outside the set, 34 commit(s) on the branch, 0 open item(s): Enterprise per-company isolation, regional signers and release rings
   - epic 1d805023, plan agent/plans/PLAN-tick-tracking.md, outside the set, 26 commit(s) on the branch, 0 open item(s): tick tracking: plan-box trailer, landing prints the tick, box audit
   - epic f65726d5, plan agent/plans/PLAN-renet-down-before-kill.md, outside the set, 16 commit(s) on the branch, 0 open item(s): renet runs Rediaccfile down() before repo containers stop
   - epic 53c31db2, plan agent/plans/PLAN-repo-resource-limits.md, outside the set, 20 commit(s) on the branch, 0 open item(s): per-repo resource limits and a renet-managed RAM volume
   - epic a86f5622, plan agent/plans/PLAN-production-key-only.md, outside the set, 4 commit(s) on the branch, 0 open item(s): Production key only: every leg licensed from its own plane
-  - epic 79b7e92e, no plan, 156 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
-- Writers: 1 live of writer_cap 25 (session d778be9d): worker:a2ce15f7aa11a3c27.
-- Leased items: 1: #46b2a9e8 (worker:bj45wmd54, d778be9d).
+  - epic 79b7e92e, no plan, 185 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+- Writers: 6 live of writer_cap 25 (session d778be9d): worker:a031d62382684fb5e, worker:a398bea3b8fe2baee, worker:aeaab3feb3d3e2139, worker:a8f694a9a07c80391, worker:ac67141426f884580, worker:a78f4fa1ee3f64f5a.
+- Leased items: 6: #0666111b (worker:a398bea3b8fe2baee, d778be9d), #4eeeab75 (worker:a031d62382684fb5e, d778be9d), #60583428 (worker:ac67141426f884580, d778be9d), #653cfcdf (worker:aeaab3feb3d3e2139, d778be9d), #d394b263 (worker:a8f694a9a07c80391, d778be9d), #f20701b0 (worker:a78f4fa1ee3f64f5a, d778be9d).
 - Next plan: agent/plans/PLAN-sandbox-tenant-separation.md, Promoted entry 14; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 17 of 63 plans done, 961 of 1171 boxes done (82%).
+Promoted: 17 of 63 plans done, 962 of 1171 boxes done (82%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
 | 1 | PLAN-backup-program.md | 181/192 | 11 open |
-| 2 | PLAN-cloudflare-proxy.md | 27/29 | 2 open |
+| 2 | PLAN-cloudflare-proxy.md | 28/29 | 1 open |
 | 3 | PLAN-sync-remote-file-ownership.md | 7/7 | done |
 | 4 | PLAN-telemetry-export.md | 19/19 | done |
 | 5 | PLAN-renet-bridge-leftovers.md | 16/16 | done |
