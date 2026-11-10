@@ -940,6 +940,7 @@ def append_events(worklist, payloads, writer=None, root=None):
     hh = host_hash()
     for ev in payloads:
         if isinstance(ev, dict):
+            _redact_secret_shapes(ev)
             ev.setdefault("h", hh)
             if br:
                 ev.setdefault("br", br)
@@ -1835,6 +1836,24 @@ _SECRET_SHAPES = (
 )
 
 _CONFLICT_RE = re.compile(r"^(<<<<<<<|=======|>>>>>>>)")
+
+
+_AWS_KEY_ID_KEEP = re.compile(r"\b(AKIA|ASIA|AIDA|AROA)[0-9A-Z]{12}([0-9A-Z]{4})\b")
+
+
+def redact_secret_shapes(text):
+    """`text` with every secret shape replaced: an AWS key id keeps its prefix and last four characters (enough to tell keys apart), any other shape becomes `[redacted]`."""
+    out = _AWS_KEY_ID_KEEP.sub(r"\1...\2", str(text))
+    for shape in _SECRET_SHAPES:
+        out = shape.sub("[redacted]", out)
+    return out
+
+
+def _redact_secret_shapes(ev):
+    """Redact every string value of one event in place, AT THE DOOR: the store is tracked, and on 2026-11-10 an `add` whose text quoted an AWS key id went straight into agent/worklist because only the lint read these shapes."""
+    for key, value in list(ev.items()):
+        if isinstance(value, str) and secret_shapes_in(value):
+            ev[key] = redact_secret_shapes(value)
 
 
 def secret_shapes_in(text):

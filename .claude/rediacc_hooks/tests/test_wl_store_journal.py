@@ -157,3 +157,22 @@ def test_event_order_sorts_an_infinite_or_junk_ns_as_zero():
     assert S.event_order(inf) == ("2026-01-01T00:00:00Z", 0)
     assert S.event_order({"at": "x", "ns": "abc"}) == ("x", 0)
     assert S.event_order({"at": "x", "ns": 7}) == ("x", 7)
+
+
+def test_an_added_aws_key_id_never_reaches_the_tracked_store(repo):
+    # 2026-11-10: an `add` quoting an AWS key id went straight into agent/worklist; only the lint read secret shapes.
+    key = "AKIA" + "ABCDEFGHIJKL" + "VCE5"
+    rid = S.add_item(worklist(), ME, "(%s) bws holds %s, a key of the EU user" % (ME, key))
+    stored = "".join(p.read_text() for p in S.store_dir(repo).glob("*.jsonl"))
+    assert key not in stored
+    assert "AKIA...VCE5" in stored
+    assert "AKIA...VCE5" in S.load(worklist(), sync=False).by_id[rid]["text"]
+
+
+@pytest.mark.usefixtures("repo")
+def test_control_a_note_without_a_secret_shape_is_stored_verbatim() -> None:
+    rid = S.add_item(worklist(), ME, "(%s) rotate the AKIA keys for ses-eu" % ME)
+    assert (
+        S.load(worklist(), sync=False).by_id[rid]["text"]
+        == "(%s) rotate the AKIA keys for ses-eu" % ME
+    )
