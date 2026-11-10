@@ -1214,6 +1214,18 @@ def _search_roots(name, argv, where=None):
 
     GREP NAMES FILES WITH -H AND OVER TWO ROOTS (ffbd9211.3). Its listing letters omitted `-H`, so `grep -H x <review file> | cut -d: -f1 | xargs sed -i ...` fed review paths to sed and was allowed (rc 0, measured 2026-11-10), and grep over two file roots prefixes each line with its file the same way. grep -r over one file root prints no name (GNU grep 3.12, measured 2026-11-10); it is still read as a listing, the fail-safe direction."""
     family = "rg" if name == "rg" else "grep"
+    lists, operands = _search_operands(family, argv)
+    if family == "rg" and not lists:
+        lists = len(operands) != 1 or _names_a_directory(operands[0], where)
+    if family == "grep" and not lists:
+        lists = len(operands) > 1
+    if not lists:
+        return None
+    return operands or ["."]
+
+
+def _search_operands(family, argv):
+    """`(lists, operands)` for a grep (`family` "grep") or rg argv: whether a listing option is given, and the operands past the pattern, which are the files or directories it reads."""
     values = _SEARCH_VALUE_LETTERS[family]
     lists = False
     pattern_given = False
@@ -1244,13 +1256,7 @@ def _search_roots(name, argv, where=None):
             lists = lists or letter in _SEARCH_LISTING_LETTERS[family]
     if not pattern_given:
         operands = operands[1:]
-    if family == "rg" and not lists:
-        lists = len(operands) != 1 or _names_a_directory(operands[0], where)
-    if family == "grep" and not lists:
-        lists = len(operands) > 1
-    if not lists:
-        return None
-    return operands or ["."]
+    return lists, operands
 
 
 def _names_a_directory(root, where=None):
@@ -1365,8 +1371,56 @@ def _lists_under(text, where):
 
 
 def _fed_a_listing(run):
-    """Does xargs feed this run the output of a listing over the review directory or an ancestor (`grep -rl x agent/ | xargs sed -i ...`, or `grep -rl x . | xargs sed -i ...` under `cd agent`)?"""
-    return bool(run.feed) and "xargs" in run.via and _lists_under(run.feed, _run_dir(run))
+    """Does xargs feed this run the output of a listing over the review directory or an ancestor (`grep -rl x agent/ | xargs sed -i ...`, or `grep -rl x . | xargs sed -i ...` under `cd agent`)?
+
+    THE STAGE THAT PRODUCES THE INPUT IS READ, NOT THE BAG OF EVERY STAGE (#3661517d). The whole feed was lexed as one command, so in `grep -o x README.md | grep -v agent | xargs sed -i ...` the second grep's words read as more roots of the first, a grep over two roots names files, and the edit was refused (rc 2, measured 2026-11-10); `echo README.md | grep -rl x agent/ | xargs sed -i ...` read as one `echo` and was allowed. The stages are read nearest first (`shellscan._Run.feed_stages`): a stage that lists the review directory or an ancestor answers yes, and a stage that ignores its stdin (`_ignores_stdin`) or is data (a here-string, a heredoc) ends the walk, since what lies in front of it never reaches xargs. Any other stage (`sort`, `cut`, `grep -v`, `sed -n`, `awk`, a program this cannot read) passes what is in front of it through, the over-reading direction.
+    """
+    if "xargs" not in run.via:
+        return False
+    where = _run_dir(run)
+    for stage in reversed(run.feed_stages):
+        if _lists_under(stage.text, where):
+            return True
+        if stage.kind == "data" or _ignores_stdin(stage.text):
+            return False
+    return False
+
+
+# Commands whose output never holds what arrives on their stdin. A search or a `cat` counts only with a file operand (`_reads_files`), and an `echo` or a `printf` only with no expansion in its words, since its value may be what a `read` in an enclosing loop took from the stage in front (`grep -rl x agent/ | while read f; do echo $f | xargs sed -i ...; done`).
+_STDIN_BLIND = frozenset(("find", "ls", "fd", "fdfind"))
+
+
+def _reads_files(name, argv):
+    """Does a grep, rg or cat run read files named by its operands rather than its stdin? A `-` operand is stdin."""
+    if name in ("grep", "egrep", "fgrep", "rg"):
+        operands = _search_operands("rg" if name == "rg" else "grep", argv)[1]
+    elif name == "cat":
+        operands = _operands(argv)
+    else:
+        return False
+    return bool(operands) and "-" not in operands
+
+
+def _ignores_stdin(text):
+    """Is every command a pipeline stage's shell text runs (`shellscan.FeedStage`) one whose output holds nothing from its stdin? A command run by xargs reads its words from stdin, so it never is; a stage that lexes to no command is not either."""
+    runs = list(shellscan.every_run(text))
+    if not runs:
+        return False
+    for run in runs:
+        name = run.name.rsplit("/", 1)[-1]
+        argv = [str(a) for a in run.argv]
+        if "xargs" in run.via:
+            return False
+        if name in ("echo", "printf"):
+            if any("$" in a or "`" in a for a in argv):
+                return False
+        elif name == "git":
+            at, _here = shellscan._git_verb_at(argv)
+            if at is None or argv[at] != "ls-files":
+                return False
+        elif name not in _STDIN_BLIND and not _reads_files(name, argv):
+            return False
+    return True
 
 
 def _feeds_listing(cmd):

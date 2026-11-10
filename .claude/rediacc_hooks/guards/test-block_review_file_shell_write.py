@@ -864,7 +864,7 @@ OWN_CASES = [
         "grep -r x agent/plans/../revi*s/1104-1/clean.jsonl | cut -d: -f1 | xargs sed -i s/a/b/",
         True,
     ),
-    # The three rows above are refused by the two-root reading too: `run.feed` is the word bag of every stage in front, so grep reads `cut -d: -f1` as more roots. The two below hand grep its words alone.
+    # The rows above hand grep, through a `cut`, to xargs: the stage that produces the input is read alone (`shellscan._Run.feed_stages`, #3661517d), so `cut -d: -f1` is no root of the grep. The two below hand grep its words alone through a program.
     (
         "python writes the files grep -H names in one review file",
         _py(
@@ -902,6 +902,59 @@ OWN_CASES = [
         "grep -H over one plan file cut to names and fed to sed -i",
         "grep -H x agent/plans/a.md | cut -d: -f1 | xargs sed -i s/a/b/",
         False,
+    ),
+    # #3661517d: the feed was read as one bag of every stage's words, lexed as one command. The first allowed row was refused (rc 2) and the echo row allowed (rc 0) at 13f2459fb0, both measured 2026-11-10.
+    ("a listing sorted and fed to sed -i", "grep -rl x agent/ | sort | xargs sed -i s/a/b/", True),
+    (
+        "grep -H over a review file cut to names and fed to sed -i",
+        "grep -H x agent/reviews/b/c.jsonl | cut -d: -f1 | xargs sed -i s/a/b/",
+        True,
+    ),
+    (
+        "grep lines filtered by grep -v and fed to sed -i",
+        "grep -o x README.md | grep -v agent | xargs sed -i s/a/b/",
+        False,
+    ),
+    ("a file list fed to cat", "cat list.txt | xargs cat", False),
+    (
+        "a listing after an echo stage fed to sed -i",
+        "echo README.md | grep -rl x agent/ | xargs sed -i s/a/b/",
+        True,
+    ),
+    (
+        "a listing in a subshell under cd fed to sed -i",
+        "(cd agent && grep -rl x .) | xargs sed -i s/a/b/",
+        True,
+    ),
+    (
+        "a listing in a brace group fed to sed -i",
+        "{ echo a; grep -rl x agent/; } | xargs sed -i s/a/b/",
+        True,
+    ),
+    (
+        "a listing through a loop's echo fed to sed -i",
+        "grep -rl x agent/ | while read f; do echo $f | xargs sed -i s/a/b/; done",
+        True,
+    ),
+    (
+        "a listing piped to xargs that reads a here-string",
+        "grep -rl x agent/ | xargs sed -i s/a/b/ <<< README.md",
+        False,
+    ),
+    (
+        "a listing piped into a grep over its own file, fed to sed -i",
+        "grep -rl x agent/ | grep -o x README.md | xargs sed -i s/a/b/",
+        False,
+    ),
+    (
+        "a listing piped into a cat of its own file, fed to sed -i",
+        "grep -rl x agent/ | cat list.txt | xargs sed -i s/a/b/",
+        False,
+    ),
+    (
+        "a listing through a process substitution fed to sed -i",
+        "xargs sed -i s/a/b/ < <(grep -rl x agent/ | sort)",
+        True,
     ),
 ]
 
@@ -994,10 +1047,39 @@ MUTANTS = [
     ),
     (
         "a listing fed through xargs not read (d218ebf3)",
+        ("        if _lists_under(stage.text, where):\n            return True\n", ""),
+    ),
+    (
+        "the feed lexed as one bag of every stage (#3661517d)",
         (
-            'return bool(run.feed) and "xargs" in run.via and _lists_under(run.feed, _run_dir(run))',
-            "return False",
+            "    for stage in reversed(run.feed_stages):\n",
+            "    for stage in [shellscan.FeedStage('data', run.feed or '')]:\n",
         ),
+    ),
+    (
+        "a filter stage read as ending the walk (#3661517d)",
+        (
+            '        if stage.kind == "data" or _ignores_stdin(stage.text):\n',
+            "        if True:\n",
+        ),
+    ),
+    (
+        "a data stage read as passing the pipe through (#3661517d)",
+        (
+            '        if stage.kind == "data" or _ignores_stdin(stage.text):\n',
+            "        if _ignores_stdin(stage.text):\n",
+        ),
+    ),
+    (
+        "an echo of an expansion read as ignoring its stdin (#3661517d)",
+        (
+            '            if any("$" in a or "`" in a for a in argv):\n                return False\n',
+            "            pass\n",
+        ),
+    ),
+    (
+        "a search with a file operand read as passing stdin through (#3661517d)",
+        ('    return bool(operands) and "-" not in operands\n', "    return False\n"),
     ),
     (
         "a value's source read for the word reviews alone (d218ebf3)",

@@ -1342,6 +1342,60 @@ def _stage_feed(stage, lexer):
     return " ".join(o for o in out if o)
 
 
+# THE FEED KEEPS ITS STAGE BOUNDARIES (#3661517d). `_Run.feed` is one bag of the words of every stage in front, so a reader that lexed it back read `grep -H x F | cut -d: -f1 | xargs sed -i ...` as the ONE command `grep -H x F cut -d: -f1`, with `cut` and `-f1` as more grep roots, and read `echo README.md | grep -rl x agent/ | xargs sed -i ...` as an `echo`, missing the listing (measured 2026-11-10 through block_review_file_shell_write). `_Run.feed_stages` is the same feed one source at a time, nearest last, each a `FeedStage`: kind "stage" for a pipeline stage or a `< <(...)` substitution, whose text is shell that lexes back into that stage's own commands (the typed words, and a group's separators), and kind "data" for text that is no command (a here-string's word, a heredoc's body, the words a `find -exec` hands its command).
+class FeedStage(typing.NamedTuple):
+    kind: str
+    text: str
+
+
+def _list_shell(items, lexer):
+    """Shell text for a parsed list (`_parse`): each pipeline's stages joined by `|`, its separators kept, so a reader lexing it walks the same commands in the same order and the same `cd` state."""
+    out: list[str] = []
+    for item in items:
+        if item[0] == "sep":
+            out.append(";" if item[1] == "\n" else item[1])
+        else:
+            out.append(" | ".join(_stage_shell(s, lexer) for s in item[1]))
+    return " ".join(o for o in out if o)
+
+
+def _stage_shell(stage, lexer):
+    """Shell text for one pipeline stage: a simple command's words as typed (`lexer.src`, so quotes, expansions and substitutions lex back the same), a group as its list inside its brackets. Redirects are left out: what a stage RUNS is the question, and its input text is in `_Run.feed`."""
+    if stage[0] in ("sub", "brace"):
+        items = list(stage[1])
+        while items and items[-1][0] == "sep" and items[-1][1] in (";", "\n"):
+            items.pop()
+        body = _list_shell(items, lexer)
+        if stage[0] == "sub":
+            return "( %s )" % body
+        # A `}` needs a separator in front of it, and `&` already is one (`{ a & }`).
+        return "{ %s }" % body if body.endswith("&") else "{ %s; }" % body
+    return " ".join(lexer.src[t.start : t.end] for t in stage[1] if isinstance(t, _Word))
+
+
+def _redir_stage(redir, lexer):
+    """What a redirect hands a command on stdin as one `FeedStage`, or None for a file or a descriptor: a here-string or a heredoc is data, a `< <(...)` is the commands it runs."""
+    if redir.heredoc is not None and redir.heredoc.body_start is not None:
+        return FeedStage("data", lexer.src[redir.heredoc.body_start : redir.heredoc.body_end])
+    if redir.op == "<<<" and redir.target is not None:
+        return FeedStage("data", _word_value(redir.target))
+    sub = _procsub(redir.target)
+    if redir.op == "<" and sub is not None and sub.sub is not None:
+        return FeedStage("stage", _list_shell(_parse(sub.sub), lexer))
+    return None
+
+
+def _stages_of(producers, redirs, lexer, inherited=()):
+    """The `FeedStage`s a command reads, nearest last: what its group or loop inherited, the pipeline stages in front of it, then its own stdin redirects, the empty ones left out. A producer's own stdin redirect sits right in front of that producer, since it, not the pipe, is what the producer reads (`cat <<EOF | xargs rm` hands xargs the heredoc's body)."""
+    found = list(inherited)
+    for p in producers:
+        own = p[2] if p[0] in ("sub", "brace") else [t for t in p[1] if isinstance(t, _Redir)]
+        found.extend(s for s in (_redir_stage(r, lexer) for r in own) if s is not None)
+        found.append(FeedStage("stage", _stage_shell(p, lexer)))
+    found.extend(s for s in (_redir_stage(r, lexer) for r in redirs) if s is not None)
+    return tuple(s for s in found if s.text)
+
+
 # WHEN THE WORDS ON xargs's STDIN ARE KNOWN EXACTLY (#5077391c, review 126f2a9f.1). Measured on bash 5.3 by piping each spelling into `xargs printf '[%s]'`:
 #   an unquoted `echo` word expands `~` at its start and after `=` (`a=~/r`), braces (`{x,y}`, `{1..2}`), globs (`*`, `?`, `[ab]`), `$`, backticks and `<(...)`;
 #   a here-string word expands `~` at its start and after `:` (`a:~/r`, but not `a=~/r`), `$`, backticks and `<(...)`, and neither braces nor globs;
@@ -2095,6 +2149,7 @@ class _Run:
         "env",
         "feed",
         "feed_cwds",
+        "feed_stages",
         "feed_values",
         "feed_words",
         "git_dir",
@@ -2140,6 +2195,8 @@ class _Run:
         self.remote = None
         # WHAT ARRIVES ON STDIN, AS TEXT (#ec63ff8c): the literal words of the pipeline stages before this command (`_stage_feed`) and its own here-string or heredoc body, None when there are none. For a command a `find -exec` runs, `find`'s own words, since `{}` is replaced by what they name. What a producer PRINTS is not computed, so every word counts. Policy stays with the guard: `xargs rm` turns this text into operands and `cat` only reads it.
         self.feed = None
+        # THE SAME FEED ONE SOURCE AT A TIME (#3661517d): a tuple of `FeedStage`, nearest last, empty when nothing is fed (`_stages_of`). `feed` stays the flat bag every over-reading reader splits; a reader asking which stage PRODUCES the input (a listing in front of `xargs`, through a `sort` or a `cut`) reads this instead, since the bag holds no `|`.
+        self.feed_stages = ()
         # THE WORDS xargs WOULD READ, EXACTLY, or None when they are not known (#5077391c). Only a literal producer is exact: the pipeline stage in front is an `echo` whose words carry no expansion, or the command reads its own here-string or heredoc with none. Any other producer (`find`, `git`, a group, a loop's feed) prints what this walk cannot compute, so its words are in `feed` alone, read in the fail-safe direction. Words holding a quote or a backslash are not exact either, because xargs reads quotes itself.
         self.feed_words = None
         # WHERE IN `feed` THE EXPANDED FED WORDS SIT, `(start, end)`, or None (test_landing feed regression from 5e00d0768). `feed` is a word bag the over-reading guards split, so the values the walk expanded (`B=q; echo $B | xargs node` feeds `q`) are appended to it; they are not more text on stdin, and `stdin_text` cuts this span back out. Every later change to `feed` appends after it, so the offsets hold.
@@ -3582,8 +3639,8 @@ class _Walker:
         inner.items(_parse(toks), state, lexer)
         return tuple(state) if persist else (cwd, shell, physical, floor, stack)
 
-    def items(self, items, state, lexer, inherited=None):
-        """Walk a parsed list. `inherited` is the text a group's stdin carries (`echo x | (xargs rm)`), handed to every command in it.
+    def items(self, items, state, lexer, inherited=None, inherited_stages=()):
+        """Walk a parsed list. `inherited` is the text a group's stdin carries (`echo x | (xargs rm)`), handed to every command in it, and `inherited_stages` the same input as `FeedStage`s (`_Run.feed_stages`).
 
         A COMPOUND COMMAND IS A FRAME (#97ed76a7). The parse keeps `while`/`for`/`if`/`case` and their closers as words in front of commands, so a frame opens at each opener and closes at its `done`/`fi`/`esac`. At the close: the closer's own redirects (`done > $D.out`, `fi > f`) are expanded under the state the frame opened with, as bash expands them before the body runs (`D=a; for x in 1; do D=b; done > $D.out` opens `a.out`, bash 5.3.9), and are added to every run inside the frame that runs where the frame opened, so `run.writes`/`run.xwrites` see them as `_Analysis.writes` always did; a loop's body is walked once more from its opener with every variable the body changed unknown, since a second iteration reads what the first assigned (`D=a; for i in 1 2; do echo > $D.l; D=b; done` writes `a.l` and `b.l`); and a frame that runs in a subshell (its opener or its closer in a pipeline, or sent to the background) leaves the state as it found it, while its body still sees what its condition assigned (`echo src | while read D; do echo > $D.out; done` writes `src.out`, and `$D` is the old value afterwards).
         A FUNCTION BODY is walked where it is defined, as before, but under a state with every variable unknown, since it runs only when called and reads the values of that moment; the definition itself assigns nothing, and a call assigns what the body did (`_FN_KEY`).
@@ -3641,11 +3698,13 @@ class _Walker:
                 for kind, binding, family in keywords:
                     if kind == "open":
                         before = [inherited or ""] + [_stage_feed(p, lexer) for p in stages[:pos]]
+                        before_stages = _stages_of(stages[:pos], (), lexer, inherited_stages)
                         opens = opens or (isolated and family != "case")
                         frames.append(
                             {
                                 "first": start,
                                 "fed": " ".join(f for f in before if f),
+                                "fed_stages": before_stages,
                                 "binding": binding,
                                 "family": family,
                                 "item": idx,
@@ -3668,6 +3727,7 @@ class _Walker:
                     tested=tested and pos == len(stages) - 1,
                     producers=stages[:pos],
                     inherited=inherited,
+                    inherited_stages=inherited_stages,
                 )
                 closer_targets = self.last_targets
                 for kind, _binding, _family in keywords:
@@ -3680,10 +3740,20 @@ class _Walker:
                             _redir_feed(t, lexer) for t in stage[1] if isinstance(t, _Redir)
                         ]
                         fed = " ".join(f for f in [frame["fed"], *own_feed] if f)
+                        fed_stages = _stages_of(
+                            (),
+                            [t for t in stage[1] if isinstance(t, _Redir)],
+                            lexer,
+                            frame["fed_stages"],
+                        )
                         for inner in _runs_within(runs[first:start]):
                             if fed and fed not in (inner.feed or ""):
                                 inner.feed = " ".join(f for f in (inner.feed, fed) if f)
                                 inner.feed_words = None
+                            # The loop's input is farther than anything the body pipes in front of a command, so it goes first.
+                            new = tuple(f for f in fed_stages if f not in inner.feed_stages)
+                            if new:
+                                inner.feed_stages = (*new, *inner.feed_stages)
                             if frame["binding"] is not None:
                                 inner.loop_vars.setdefault(frame["binding"][0], frame["binding"][1])
                     for at, word in closer_targets:
@@ -3774,7 +3844,17 @@ class _Walker:
                 run.writes = [*run.writes, *(t for t, _x in own)]
                 run.xwrites = [*run.xwrites, *(x for _t, x in own)]
 
-    def element(self, stage, state, lexer, upstream, tested=False, producers=(), inherited=None):
+    def element(
+        self,
+        stage,
+        state,
+        lexer,
+        upstream,
+        tested=False,
+        producers=(),
+        inherited=None,
+        inherited_stages=(),
+    ):
         kind = stage[0]
         if kind in ("sub", "brace"):
             # `( ... ) > ${D:=x}` assigns D while its redirect is expanded (#97ed76a7).
@@ -3790,7 +3870,13 @@ class _Walker:
                 + [_redir_feed(r, lexer) for r in stage[2]]
                 if f
             )
-            self.items(stage[1], list(state) if kind == "sub" else state, lexer, fed or None)
+            self.items(
+                stage[1],
+                list(state) if kind == "sub" else state,
+                lexer,
+                fed or None,
+                _stages_of(producers, stage[2], lexer, inherited_stages),
+            )
             # The group's redirect is the output of every command inside it (#97ed76a7): `{ echo x; } > $D/a.md` is the echo's write as much as `echo x > $D/a.md` is.
             self.attach(
                 first, len(self.analysis.runs), entry, self.redirs(stage[2], state, lexer, outer)
@@ -3800,7 +3886,7 @@ class _Walker:
         state[1] = _clobber(state[1], _expansion_assigns(stage[1]))
         start = state[1]
         self.effects = (set(), False, set())
-        self.simple(stage, state, lexer, upstream, tested, producers, inherited)
+        self.simple(stage, state, lexer, upstream, tested, producers, inherited, inherited_stages)
         names, opaque, watch = self.effects
         shell = _opaque(state[1]) if opaque else _clobber(state[1], names)
         if watch:
@@ -3813,7 +3899,9 @@ class _Walker:
             shell = _opaque(shell)
         state[1] = shell
 
-    def simple(self, stage, state, lexer, upstream, tested, producers, inherited):
+    def simple(
+        self, stage, state, lexer, upstream, tested, producers, inherited, inherited_stages=()
+    ):
         """Walk one simple command (`element` for a `("cmd", ...)` stage)."""
         words = [t for t in stage[1] if isinstance(t, _Word)]
         redirs = [t for t in stage[1] if isinstance(t, _Redir)]
@@ -3915,6 +4003,7 @@ class _Walker:
             + [_redir_feed(r, lexer) for r in redirs]
             if f
         ]
+        run.feed_stages = _stages_of(producers, redirs, lexer, inherited_stages)
         if feed:
             run.feed = " ".join(feed)
             if not inherited:
@@ -3949,6 +4038,11 @@ class _Walker:
                     inner_run.via = (*inner_run.via, "find")
                     inner_run.feed = " ".join(f for f in (inner_run.feed, " ".join(mixed)) if f)
                     inner_run.feed_words = None
+                    if mixed:
+                        inner_run.feed_stages = (
+                            *inner_run.feed_stages,
+                            FeedStage("data", " ".join(mixed)),
+                        )
             # The innermost launcher names the run; an outer `elsewhere` still holds for everything nested under it (`find -execdir npx -c '...'`).
             for inner_run in _every_run(sub):
                 if inner_run.launch is None:
