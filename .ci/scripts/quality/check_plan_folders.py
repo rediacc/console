@@ -564,8 +564,11 @@ def _released_boxes(text: str) -> list[str]:
     out: list[str] = []
     for index, raw, _body, sig in rec.open_boxes(text):
         out.append("open box %s: %s" % (sig, raw.strip()))
+        indent = len(raw) - len(raw.lstrip())
         for line in lines[index + 1 :]:
-            if not line.strip() or not line[:1].isspace() or line.lstrip().startswith("- ["):
+            if not line.strip():
+                continue  # a note may follow a blank line; a box or heading ends it below
+            if rec.BOX_LINE_RE.match(line) or len(line) - len(line.lstrip()) <= indent:
                 break
             out.append("  " + line.strip())
     return out

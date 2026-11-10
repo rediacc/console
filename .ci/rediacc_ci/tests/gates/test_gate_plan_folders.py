@@ -466,6 +466,26 @@ def test_a_box_dropped_by_a_closed_ruling_is_swept_and_printed(gate, tmp_path):
     gate.log_pass("a dropped box is swept, and never silently")
 
 
+def test_a_released_boxes_note_after_a_blank_line_is_printed(gate, tmp_path):
+    """The note of a released box is printed even when a blank line separates it from the box; the next box's text is not read as this box's note."""
+    root = _aged_pair(
+        tmp_path,
+        "# PLAN: boxed\nStatus: done\nRuling: #abcdef12\nFirst-Seen: 2024-01-01\n\n"
+        "%s\n\n    dropped by ruling #abcdef12\n\n- [x] NEXTBOX finished work\n    NEXTNOTE\n"
+        % _BOX_LINE,
+    )
+    _ruling_item(root, "abcdef12", "x")
+    swept = _gate(root, "--sweep", "--write")
+    gate.assert_exit(0, swept, "a released box does not hold the sweep")
+    gate.assert_contains(
+        swept.out, "dropped by ruling #abcdef12", "a note after a blank line prints"
+    )
+    gate.assert_eq(
+        "NEXTBOX" in swept.out or "NEXTNOTE" in swept.out, False, "CONTROL: next box is not a note"
+    )
+    gate.log_pass("a note after a blank line is printed")
+
+
 def test_move_leaves_a_stub_and_stamps_both_clocks(gate, tmp_path):
     root = _seed(
         tmp_path, {"agent/PLAN-closing.md": "# PLAN: closing\nStatus: done\n\n- [x] a box\n"}
