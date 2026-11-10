@@ -96,6 +96,28 @@ CASES = [
         "python3 - <<'PY'\nimport glob\nfor p in glob.glob('/home/u/console/**', recursive=True):\n    open(p, 'w').write('')\nPY",
         True,
     ),
+    # #6fdc7136: a program held as DATA in a string literal is not a write. The first control is the live probe (refused rc 2 on 2026-11-10: the quote regex read `'*.md'` out of the triple-quoted program as a literal of its own); the refusals make the same call for real.
+    (
+        "a write call held in a triple-quoted literal",
+        "cd .claude && python3 -c \"\nfrom rediacc_hooks.guards import block_review_file_shell_write as g\nprog='''from pathlib import Path\nfor p in Path('agent').rglob('*.md'):\n    p.write_text(p.read_text().replace('a', 'b'))'''\nprint(g._python_writes_review(prog))\n\"",
+        False,
+    ),
+    (
+        "a write call held in a literal and printed",
+        "python3 - <<'PY'\nimport json\nprog = '''p = open('agent/*.md')\np.write_text(p.read_text().replace('a','b'))'''\nprint(json.dumps(prog))\nPY",
+        False,
+    ),
+    (
+        "a write call on a globbed listing under agent",
+        "python3 -c \"\nfrom pathlib import Path\nfor p in Path('agent').rglob('*.md'):\n    p.write_text(p.read_text().replace('a', 'b'))\n\"",
+        True,
+    ),
+    (
+        "a write call on a round log",
+        "python3 - <<'PY'\nimport pathlib\np = pathlib.Path('%s')\np.write_text(p.read_text().replace('a','b'))\nPY"
+        % LOG,
+        True,
+    ),
 ]
 
 # The two readers overlap (each alone refuses the same rows), so the plant takes both.
@@ -126,8 +148,17 @@ MUTANTS = [
         "any glob literal puts a log in play (#63109cf2)",
         [
             (
-                '        and _glob_reaches_log_dir(m.group(0)[1:-1], code + "\\n" + (context or ""))\n',
+                '        and _glob_reaches_log_dir(literal, code + "\\n" + (context or ""))\n',
                 "",
+            ),
+        ],
+    ),
+    (
+        "python literals read by the quote regex (#6fdc7136)",
+        [
+            (
+                '    if family != "python":\n        return code, None\n',
+                "    return code, None\n",
             ),
         ],
     ),

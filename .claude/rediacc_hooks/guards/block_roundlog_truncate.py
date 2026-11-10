@@ -1302,21 +1302,54 @@ def _program_could_name_log(code, family="python", context=None):
 
     ONE NARROW EXEMPTION, for #cad8d610: a literal that is exactly a comment delimiter, held as list text or printed, in a program with no shell-out, computed name or glob call (`_delimiter_as_text`). The two live generators it was found on require a module from `node_modules` and so are not inert; they pass on this exemption alone. NAMED RESIDUAL: a delimiter placed in a list and later read back out of it as a pattern by a library this text does not name, a glob ASSEMBLED at runtime, and a module name assembled at runtime.
     """
-    if _LOG_STEM in code:
+    text, literals = _program_literals(code, family)
+    if _LOG_STEM in (text if literals is None else "\n".join(lit for lit, _at in literals)):
         return True
-    # Every single- or double-quoted string literal, escapes kept (Python, shell and JS alike): an EXTRACTOR over program text the walk already chose, so it is local here rather than a module pattern a sentence could be probed against.
+    if literals is None:
+        # Every single- or double-quoted string literal, escapes kept (shell, JS, perl and ruby alike, and python that does not parse): an EXTRACTOR over program text the walk already chose, so it is local here rather than a module pattern a sentence could be probed against.
+        literals = [
+            (m.group(0)[1:-1], m.start())
+            for m in re.finditer(r"'(?:[^'\\\n]|\\.)*'|\"(?:[^\"\\\n]|\\.)*\"", code)
+        ]
     meeting = [
-        m
-        for m in re.finditer(r"'(?:[^'\\\n]|\\.)*'|\"(?:[^\"\\\n]|\\.)*\"", code)
-        if _word_could_name_log(m.group(0)[1:-1])
-        and _glob_reaches_log_dir(m.group(0)[1:-1], code + "\n" + (context or ""))
+        literal
+        for literal, at in literals
+        if _word_could_name_log(literal)
+        and _glob_reaches_log_dir(literal, code + "\n" + (context or ""))
         and not (
-            m.group(0)[1:-1] in _DELIMITERS
-            and not _NOT_TEXT.search(code)
-            and _delimiter_as_text(code, m.start())
+            literal in _DELIMITERS and not _NOT_TEXT.search(text) and _delimiter_as_text(text, at)
         )
     ]
     return bool(meeting) and not _program_inert(code, family)
+
+
+def _program_literals(code, family):
+    """`(text, literals)`: a python program's string constants as the parser sees them, each with its offset in `text` (the dedented program), or `(code, None)` for another language or python that does not parse.
+
+    A PROGRAM HELD AS DATA IS NOT CODE (#6fdc7136). The quote regex read a triple-quoted string as a run of short literals, so a debug probe holding `prog='''... Path('agent').rglob('*.md') ... p.write_text(...)'''` and handing it to an imported guard function put `'*.md'` in play, and the unfollowable import then refused it as a round-log truncation (rc 2, measured 2026-11-10). The parser sees one constant, the whole program text, and judges that string as the one value it is; a comment is no literal at all.
+    """
+    if family != "python":
+        return code, None
+    text = textwrap.dedent(code)
+    try:
+        tree = ast.parse(text)
+        nodes = [
+            node
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Constant) and isinstance(node.value, (str, bytes))
+        ]
+    except (SyntaxError, ValueError, RecursionError):
+        return code, None
+    starts = [0, *(m.end() for m in re.finditer(r"\r\n|\r|\n", text))]
+    literals = []
+    for node in nodes:
+        value = node.value
+        literal = value.decode("utf-8", "replace") if isinstance(value, bytes) else value
+        line = starts[node.lineno - 1] if node.lineno - 1 < len(starts) else 0
+        row = text[line:].split("\n", 1)[0]
+        at = line + len(row.encode("utf-8")[: node.col_offset].decode("utf-8", "replace"))
+        literals.append((literal, at))
+    return text, literals
 
 
 _redirects = shellscan.analysis_redirects
