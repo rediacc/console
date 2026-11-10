@@ -3331,7 +3331,8 @@ push, a PR or a CI run before the batch completes.
 # No open box of the batch is local work. Keys: open, rows (one box per line, with its class).
 JUDGE_LOCAL_BATCH_NO_LOCAL = """BATCH BOXES, MEASURED BY THE HOOK: none of the batch's %(open)d open box(es) is
 local work. Each is tagged for a live system, the operator or after the merge
-(`non-writer`), or its investigation row says what it still owes (`owed:<kind>`):
+(`non-writer`), or its investigation row or box-audit says what it still owes
+(`owed:<kind>`: `live`, `ci`, `post-push` or `operator` is a wait, never writer work):
 %(rows)s
 There is NO local box work. Never order the session to advance, check or work
 the batch's open boxes: the hook already read every one. A stop that names the
@@ -3340,9 +3341,11 @@ batch can be advanced, and then the order names that item by id.
 """
 # Some open boxes of the batch are local work. Keys: local, open, local_rows, other_rows.
 JUDGE_LOCAL_BATCH_LOCAL = """BATCH BOXES, MEASURED BY THE HOOK: %(local)d of the batch's %(open)d open box(es)
-are local work, with no tag or investigation row saying they wait on anything:
+are local work, with no tag, investigation row or box-audit verdict saying they
+wait on anything:
 %(local_rows)s
-The other open boxes wait on something no local edit supplies:
+The other open boxes wait on something no local edit supplies (an `owed:<kind>`
+box is live-owed: no writer advances it):
 %(other_rows)s
 An order to work the batch must name one of the local boxes by its id.
 """

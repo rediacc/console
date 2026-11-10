@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import stat
+import subprocess
 import types
 
 import pytest
@@ -386,3 +387,96 @@ def test_settle_batch_no_local_alone():
     assert J.settle_batch_no_local(dict(BATCH_CONTINUE), None)["verdict"] == "continue"
     stop = dict(BATCH_CONTINUE, verdict="stop")
     assert J.settle_batch_no_local(stop, lb) == stop
+
+
+# ---- recount residue, lesson a6d0391f: a box box-audit reads live-owed is not local ------------
+# PLAN-backup-program.md J9 ("Accept: CI run id.") had landed code and a newest `partial` row written before `--owed` existed. D1 classed it local, box-audit read it live-owed, and the judge ordered a writer for it.
+
+LIVE_BODY = "J9 the second CI leg runs on every renet change. Accept: CI run id."
+ABSENT_BODY = "Z9 a local thing with no row and nothing landed"
+GIT_ENV = {
+    "GIT_AUTHOR_NAME": "t",
+    "GIT_AUTHOR_EMAIL": "t@example.invalid",
+    "GIT_COMMITTER_NAME": "t",
+    "GIT_COMMITTER_EMAIL": "t@example.invalid",
+    "GIT_CONFIG_GLOBAL": "/dev/null",
+    "GIT_CONFIG_SYSTEM": "/dev/null",
+}
+
+
+def _git(root, *args):
+    return subprocess.run(
+        ["git", "-C", str(root), *args], capture_output=True, text=True, check=True
+    ).stdout.strip()
+
+
+def live_owed_world(tmp_path, monkeypatch, landed=True):
+    """A git repo on a live branch past `main`: J9 with (when `landed`) a commit whose Plan-Box trailer names it and an old partial row taken on that commit, and Z9 with nothing."""
+    for key, value in GIT_ENV.items():
+        monkeypatch.setenv(key, value)
+    monkeypatch.setenv("TMPDIR", str(tmp_path / "tmp"))
+    monkeypatch.setenv("WORKLIST_REPORTS_DIR", str(tmp_path / "reports"))
+    (tmp_path / "tmp").mkdir()
+    root = (tmp_path / "proj").resolve()
+    root.mkdir()
+    _git(root, "init", "-q", "-b", "main")
+    (root / "base.txt").write_text("base\n", encoding="utf-8")
+    _git(root, "add", "--", "base.txt")
+    _git(root, "commit", "-q", "--no-gpg-sign", "-m", "base")
+    _git(root, "switch", "-q", "-c", "0101-1")
+    text = (
+        "# PLAN: live-owed fixture\nStatus: ready\nUpdated: 2026-11-10\n\n## Tasks\n\n"
+        "- [ ] %s\n- [ ] %s\n" % (LIVE_BODY, ABSENT_BODY)
+    )
+    (root / REL).parent.mkdir(parents=True, exist_ok=True)
+    (root / REL).write_text(text, encoding="utf-8")
+    sig = sig_of(text, "J9 ")
+    if landed:
+        (root / "j9.txt").write_text("j9\n", encoding="utf-8")
+        _git(root, "add", "--", "j9.txt")
+        _git(
+            root,
+            "commit",
+            "-q",
+            "--no-gpg-sign",
+            "-m",
+            "feat: j9 code half\n\nPlan-Box: PLAN-batch-fixture.md#%s clauses=all\n" % sig,
+        )
+        # D1: the newest row is partial with no `owed`, taken on the landed code.
+        head = _git(root, "rev-parse", "HEAD")
+        write_rows(root, [{"plan": REL, "sig": sig, "verdict": "partial", "head": head}])
+    monkeypatch.setattr(CK, "local_batch_open", lambda *_a: True)
+    return root, types.SimpleNamespace(plans=(REL,), finished=0, batch_size=3)
+
+
+def test_a_live_owed_box_is_not_in_the_local_list(tmp_path, monkeypatch):
+    """FIRE: before the fix J9 read `local` and the prompt listed it as local work."""
+    root, state = live_owed_world(tmp_path, monkeypatch)
+    classes = {bid: cls for _plan, bid, _sig, cls in CK._batch_box_facts(state, root)}
+    assert classes == {"J9": "owed:live", "Z9": "local"}, classes
+    lb = CK._judge_local_batch(state, root)
+    assert (lb["open"], lb["local"]) == (2, 1), lb
+    text = J.local_batch_boxes(lb)
+    local_part, _sep, other_part = text.partition("The other open boxes")
+    assert "Z9" in local_part, text
+    assert "J9" not in local_part, text
+    assert "J9" in other_part, text
+    assert "owed:live" in other_part, text
+
+
+def test_control_with_nothing_landed_a_truly_absent_box_stays_local(tmp_path, monkeypatch):
+    """CONTROL: box-audit reads a box with no landed work `untouched`, so a truly absent box stays local work."""
+    root, state = live_owed_world(tmp_path, monkeypatch, landed=False)
+    classes = {bid: cls for _plan, bid, _sig, cls in CK._batch_box_facts(state, root)}
+    assert classes == {"J9": "local", "Z9": "local"}, classes
+
+
+def test_live_owed_boxes_is_empty_when_the_audit_fails(tmp_path, monkeypatch):
+    ba = wlfix.import_wl("wl_boxaudit")
+
+    def boom(*_a, **_k):
+        raise OSError("unreadable")
+
+    monkeypatch.setenv("TMPDIR", str(tmp_path))
+    monkeypatch.setattr(ba, "audit", boom)
+    assert J.live_owed_boxes(tmp_path) == {}

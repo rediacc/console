@@ -3117,11 +3117,12 @@ BOX_OWED_PREFIX = "owed:"
 def _batch_box_facts(state, root):
     """[(plan basename, box id, sig, class)] for every open box of `state.plans`, in plan order.
 
-    The class is `non-writer` when the box's tag names work no writer does or waits for the merge (`wl_boxready.non_writer`, `post_merge`); `owed:<kind>` when the newest investigation row for (plan, sig) is `partial` with an `owed` other than `code` (`wl_planrec.INV_OWED`); `local` otherwise, which includes an untagged box with no row and an old partial row written before `owed` existed (D1). A plan is read through `plan_gate`'s Moved-To follow, the same read `_set_finished` makes; a plan that cannot be read adds no row."""
+    The class is `non-writer` when the box's tag names work no writer does or waits for the merge (`wl_boxready.non_writer`, `post_merge`); `owed:<kind>` when the newest investigation row for (plan, sig) is `partial` with an `owed` other than `code` (`wl_planrec.INV_OWED`); `owed:<kind>` also when `worklist.py --box-audit` reads the box `live-owed` (`wl_judge.live_owed_boxes`, lesson a6d0391f), the kind being its unproved halves; `local` otherwise, which includes an untagged box with no row and no landed work, and an old partial row written before `owed` existed whose box the audit does not read live-owed (D1). A plan is read through `plan_gate`'s Moved-To follow, the same read `_set_finished` makes; a plan that cannot be read adds no row."""
     import wl_planrec as R
 
     plan_gate = wl_prscope._hooks_pkg()[0]
     rows = R.read_investigations(root)
+    live_owed = None
     out = []
     for rel in state.plans or ():
         text, read = plan_gate._plan_text(str(root), rel, "")
@@ -3139,6 +3140,13 @@ def _batch_box_facts(state, root):
                     cls = BOX_OWED_PREFIX + owed
                 else:
                     cls = BOX_LOCAL
+            if cls == BOX_LOCAL:
+                # The row alone misses a box box-audit reads live-owed (an old partial row with no `owed`, an Accept naming a CI run id): lesson a6d0391f, wl_judge.live_owed_boxes.
+                if live_owed is None:
+                    live_owed = wl_judge.live_owed_boxes(root)
+                kind = live_owed.get((_base(rel), sig)) or live_owed.get((_base(read), sig))
+                if kind:
+                    cls = BOX_OWED_PREFIX + kind
             box_id = (body.split() or [sig])[0]
             out.append((_base(rel), box_id, sig, cls))
     return out

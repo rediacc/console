@@ -3,6 +3,7 @@
 Fail CLOSED by contract: every error path returns an error string, and the caller turns that into a block. See "NO ESCAPE HATCH" in worklist.py.
 """
 
+import contextlib
 import copy
 import datetime
 import hashlib
@@ -1141,6 +1142,44 @@ def run_judge(
 
 def _box_rows(rows):
     return "\n".join("  %s %s [%s] %s" % (plan, bid, sig, cls) for plan, bid, sig, cls in rows)
+
+
+def live_owed_boxes(root):
+    """{(plan basename, sig): owed kind} for every open box `worklist.py --box-audit` reads `live-owed`, the kind being the unproved halves (`live`, `operator`, or both joined by `+`). {} when the audit cannot run, which leaves the caller's own classing as it was: a failed audit must never take the judge with it.
+
+    THE RESIDUE THIS CLOSES (agent/plans/PLAN-stop-hook-retro-20261110.md, recount after .1 to .7, lesson a6d0391f). `wl_checks._batch_box_facts` read only the newest investigation row, and a `partial` row written before `--owed` existed counts as local (D1). PLAN-backup-program.md A4d, J6 and J9 carried exactly such rows while box-audit already read them live-owed (landed code, an Accept naming a CI run id or a partial verdict on that code), so the judge ordered writers for them six times. The audit is the authority on what a box still owes; this hands its verdict to the judge's facts.
+
+    Cached per HEAD and per `wl_boxaudit.inputs_stamp`, the cache `owned_owed_cached` keeps, under its own key: the judge runs inside a Stop hook."""
+    try:
+        import wl_boxaudit as BA
+
+        root = pathlib.Path(root)
+        head = BA.head_of(root)
+        stamp = BA.inputs_stamp(root)
+        cache = BA.cache_path(root, "lo-%s" % (head or "nohead"))
+        try:
+            doc = json.loads(cache.read_text(encoding="utf-8"))
+            if doc.get("stamp") == stamp and doc.get("head") == head:
+                return {(p, s): k for p, s, k in doc.get("rows") or []}
+        except (OSError, ValueError, AttributeError, TypeError):
+            pass
+        audited, _head, _base = BA.audit(root, "judge")
+        rows = [
+            [
+                a.plan.rsplit("/", 1)[-1],
+                a.sig,
+                "+".join(sorted({str(h) for _c, h in a.owed})) or "live",
+            ]
+            for a in audited
+            if a.verdict == "live-owed"
+        ]
+        with contextlib.suppress(OSError):
+            cache.write_text(
+                json.dumps({"stamp": stamp, "head": head, "rows": rows}), encoding="utf-8"
+            )
+        return {(p, s): k for p, s, k in rows}
+    except Exception:
+        return {}
 
 
 def local_batch_boxes(local_batch):
