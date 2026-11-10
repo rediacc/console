@@ -294,7 +294,8 @@ def test_numstat_rows_is_none_when_git_fails_and_the_prompt_says_so(tmp_path):
     """Review 046b15f9.4: a failed numstat read is not an empty stat; it is logged and named in the prompt."""
     repo, sha = _commit_files(tmp_path, "f", {"a.py": "x = 1\n"})
     assert R.numstat_rows(str(repo), "0" * 40) is None
-    seen, logs = [], []
+    seen: list[str] = []
+    logs: list[str] = []
 
     def model(prompt, *_a):
         seen.append(prompt)

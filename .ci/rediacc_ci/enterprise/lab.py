@@ -615,7 +615,9 @@ def _tls_names(host: str) -> tuple[str, ...]:
             cert = tls.getpeercert() or {}
     except (OSError, ssl.SSLError) as exc:
         raise proof.LabError("TLS to %s: %s" % (host, type(exc).__name__)) from None
-    return tuple(str(v) for k, v in cert.get("subjectAltName", ()) if k == "DNS")
+    names = cert.get("subjectAltName", ())
+    pairs = names if isinstance(names, tuple) else ()
+    return tuple(str(v) for k, v in pairs if k == "DNS")
 
 
 def live_probe(host: str) -> tuple[int, tuple[str, ...]]:

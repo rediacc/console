@@ -196,7 +196,8 @@ def main(stdin=None, stdout=None, src=None):
             return 0
         if not isinstance(doc, dict) or doc.get("tool_name") not in (None, "Bash"):
             return 0
-        tool_input = doc.get("tool_input") if isinstance(doc.get("tool_input"), dict) else {}
+        raw_input = doc.get("tool_input")
+        tool_input = raw_input if isinstance(raw_input, dict) else {}
         cmd = str(tool_input.get("command") or "")
         out = response_text(doc.get("tool_response"))
         try:

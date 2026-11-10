@@ -12,6 +12,7 @@ import sys
 import threading
 import types
 import wsgiref.simple_server
+from typing import cast
 
 import pytest
 
@@ -143,6 +144,11 @@ class FakeAdd:
 
     def by_id(self, cid):
         return next((c for c in self.companies.values() if c["id"] == cid), None)
+
+
+def run_partial_verb(verb: str, partial: object, lines: list[str]) -> int:
+    """Drive one verb with a lab that implements only the methods that verb calls, as test_enterprise_proof does."""
+    return proof.run_verb(verb, cast("proof.Lab", partial), bench=True, out=lines.append)
 
 
 def _bound(fake: FakeAdd) -> lab.LiveLab:
@@ -700,7 +706,7 @@ class RoutingLab:
 def test_routing_proof_holds_when_every_host_reaches_its_worker(tmp_path):
     built = RoutingLab(_declared_routing(tmp_path), lambda lab, host: lab.expected_worker(host))
     lines: list[str] = []
-    assert proof.run_verb("routing", built, bench=True, out=lines.append) == 0, lines
+    assert run_partial_verb("routing", built, lines) == 0, lines
 
 
 def test_routing_proof_breaks_when_a_specific_host_falls_to_a_company_worker(tmp_path):
@@ -715,7 +721,7 @@ def test_routing_proof_breaks_when_a_specific_host_falls_to_a_company_worker(tmp
 
     lines: list[str] = []
     built = RoutingLab(_declared_routing(tmp_path), answer)
-    assert proof.run_verb("routing", built, bench=True, out=lines.append) == 1
+    assert run_partial_verb("routing", built, lines) == 1
     assert any(line.startswith("BROKEN") and "status." in line for line in lines)
 
 
@@ -1029,9 +1035,11 @@ def test_the_unbuilt_kinds_are_named_before_anyone_signs_in(kind):
 def test_a_token_is_admitted_by_its_own_company_and_refused_by_the_other(kind):
     acct = AccountV6()
     token = lab.mint("c0000000a", kind, minter=minter_v6(acct))
-    kw = {"send": acct.send, "call": acct.call, "companies": companies_proxy}
-    assert lab.present("c0000000a", kind, token, **kw) == proof.Answer(True)
-    assert lab.present("c0000000b", kind, token, **kw) == proof.Answer(False, "HTTP 401")
+    present = functools.partial(
+        lab.present, send=acct.send, call=acct.call, companies=companies_proxy
+    )
+    assert present("c0000000a", kind, token) == proof.Answer(True)
+    assert present("c0000000b", kind, token) == proof.Answer(False, "HTTP 401")
 
 
 def test_the_proxy_token_probe_introspects_its_own_bearer():
@@ -1206,7 +1214,7 @@ def test_the_replay_proof_holds_for_the_built_kinds_and_names_the_unbuilt_ones()
             )
 
     lines: list[str] = []
-    assert proof.run_verb("replay", Lab(), bench=True, out=lines.append) == 1
+    assert run_partial_verb("replay", Lab(), lines) == 1
     assert any("not built yet: V6" in line and "config token" in line for line in lines)
     held = [line for line in lines if line.startswith("ok")]
     for kind in ("session", "api-token"):
@@ -1493,10 +1501,12 @@ def test_request_from_sends_from_this_machine_to_the_account_host():
 
 def test_the_allowlists_403_is_answered_and_any_other_403_is_a_lab_error():
     """Control: a WAF or token 403 never reads as the allowlist blocking."""
-    kw = {"method": "GET", "path": "/", "companies": companies_proxy}
-    assert lab.request_from("c0000000a", call=Edge(403), **kw) == 403
+    get = functools.partial(
+        lab.request_from, "c0000000a", method="GET", path="/", companies=companies_proxy
+    )
+    assert get(call=Edge(403)) == 403
     with pytest.raises(proof.LabError, match="not the allowlist"):
-        lab.request_from("c0000000a", call=Edge(403, "Forbidden"), **kw)
+        get(call=Edge(403, "Forbidden"))
 
 
 def test_a_non_json_403_is_a_lab_error_naming_the_start_of_the_body():
@@ -1588,7 +1598,7 @@ def test_a_record_without_a_start_breaks_the_cost_claim():
             return dict(proof.PLAN_LIMITS)
 
     lines: list[str] = []
-    assert proof.run_verb("cost", Lab(), bench=True, out=lines.append) == 1
+    assert run_partial_verb("cost", Lab(), lines) == 1
     assert any(line.startswith("BROKEN  record c00000002") for line in lines)
 
 
@@ -1615,7 +1625,7 @@ def test_usage_rows_keep_only_live_company_workers_by_opaque_id():
 
 def test_usage_rows_with_no_company_worker_are_empty():
     """Control: shared Workers never count as a company's usage."""
-    shared = [g for g in GROUPS_COST if g["dimensions"]["scriptName"] == "account-eu"]
+    shared = [g for g in GROUPS_COST if g["dimensions"] == {"scriptName": "account-eu"}]
     assert lab.usage_rows(bench=True, workers=lambda: shared, companies=lambda _b: ROWS_COST) == []
 
 
@@ -2227,7 +2237,7 @@ def test_the_github_proof_breaks_on_a_name_in_a_surface():
             return {**clean, "step-summary": "deployed proof-github.rediacc.cloud"}
 
     lines: list[str] = []
-    assert proof.run_verb("github", Lab(), bench=True, out=lines.append) == 1
+    assert run_partial_verb("github", Lab(), lines) == 1
     assert any("step-summary: word #" in line for line in lines)
 
 
@@ -2398,7 +2408,7 @@ def test_any_error_from_the_success_path_rollback_names_the_hand_fix():
     assert isinstance(raised.value.__cause__, TypeError)
 
 
-def test_the_json_scan_is_linear_in_brackets():
+def test_the_json_scan_is_linear_in_brackets(monkeypatch):
     """Review e2231d81.3: a value that runs to the end is found without a decode from every inner bracket."""
     calls = []
     real = json.JSONDecoder.raw_decode
@@ -2410,17 +2420,13 @@ def test_the_json_scan_is_linear_in_brackets():
     inner = "[" + ",".join("[1]" for _ in range(200)) + "]"
     text = "noise " + inner
     want = json.loads(inner)
-    orig = json.JSONDecoder.raw_decode
-    json.JSONDecoder.raw_decode = counting
-    try:
-        got = lab._json_value(text, "[")
-    finally:
-        json.JSONDecoder.raw_decode = orig
+    monkeypatch.setattr(json.JSONDecoder, "raw_decode", counting)
+    got = lab._json_value(text, "[")
     assert got == want
     assert len(calls) == 1
 
 
-def test_the_json_scan_resumes_after_a_decoded_value_followed_by_text():
+def test_the_json_scan_resumes_after_a_decoded_value_followed_by_text(monkeypatch):
     """Review 58abac9b.3: trailing text after the outer value forces the scan branch; one decode, not one per inner bracket."""
     calls = []
     real = json.JSONDecoder.raw_decode
@@ -2430,10 +2436,8 @@ def test_the_json_scan_resumes_after_a_decoded_value_followed_by_text():
         return real(self, s, idx)
 
     inner = "[" + ",".join("[1]" for _ in range(200)) + "]"
-    json.JSONDecoder.raw_decode = counting
-    try:
-        got = lab._json_value("noise " + inner + " trailing words", "[")
-    finally:
-        json.JSONDecoder.raw_decode = real
-    assert got == json.loads(inner)
+    want = json.loads(inner)
+    monkeypatch.setattr(json.JSONDecoder, "raw_decode", counting)
+    got = lab._json_value("noise " + inner + " trailing words", "[")
+    assert got == want
     assert len(calls) == 1

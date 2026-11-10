@@ -9,6 +9,7 @@ import dataclasses
 import datetime
 import pathlib
 import sqlite3
+from typing import cast
 
 import pytest
 
@@ -809,4 +810,6 @@ def test_the_release_proof_holds_over_the_runner(tmp_path):
             return rings_run.lab_release(world=r.world, version=V, sleep=sleep, **kw)
 
     lines: list[str] = []
-    assert proof.run_verb("release", Lab(), bench=True, out=lines.append) == 0, lines
+    assert proof.run_verb("release", cast("proof.Lab", Lab()), bench=True, out=lines.append) == 0, (
+        lines
+    )

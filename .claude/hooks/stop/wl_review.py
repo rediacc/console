@@ -1305,7 +1305,9 @@ def admissible_skip_glob(glob):
 def skip_globs(root, cfg=None):
     """The reviewer's own skip list (PLAN-experience-feedback P5): `review_skip_globs` of commit-review.json plus every glob of `.ci/policy/record-paths.json`, read at runtime and never edited here. A path matching one is a record (a ledger, a worklist, a STATE.md, a review file), not code, so it leaves the reviewed diff and the stat. The record file's `except` globs are honoured. A glob that could match a non-record file is refused (admissible_skip_glob) and named on stderr, so the list cannot be widened to hide code."""
     cfg = cfg if cfg is not None else load_config(root)
-    globs = [(g, []) for g in cfg.get("review_skip_globs") or [] if isinstance(g, str)]
+    globs: list[tuple[str, list[str]]] = [
+        (g, []) for g in cfg.get("review_skip_globs") or [] if isinstance(g, str)
+    ]
     try:
         doc = json.loads(
             pathlib.Path(root, ".ci", "policy", "record-paths.json").read_text(encoding="utf-8")
