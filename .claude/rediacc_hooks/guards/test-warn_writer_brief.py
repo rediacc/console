@@ -94,6 +94,30 @@ def drive(payload, root, argv=(STEM,), extra_env=None):
     return proc.returncode, proc.stdout, proc.stderr, time.monotonic() - started
 
 
+ROOMY_DEADLINE_S = 120.0
+
+
+def drive_in_process(payload, root):
+    """The guard run in this process with DEADLINE_S raised; the module constant and CLAUDE_PROJECT_DIR are restored in the finally."""
+    module = guards.load(STEM)
+    hookio = importlib.import_module("rediacc_hooks.hookio")
+    saved_deadline = module.DEADLINE_S
+    saved_dir = os.environ.get("CLAUDE_PROJECT_DIR")
+    started = time.monotonic()
+    try:
+        module.DEADLINE_S = ROOMY_DEADLINE_S
+        os.environ["CLAUDE_PROJECT_DIR"] = str(root)
+        event = hookio.Event(payload if isinstance(payload, str) else json.dumps(payload))
+        result = event.result(module.run(event))
+    finally:
+        module.DEADLINE_S = saved_deadline
+        if saved_dir is None:
+            os.environ.pop("CLAUDE_PROJECT_DIR", None)
+        else:
+            os.environ["CLAUDE_PROJECT_DIR"] = saved_dir
+    return result[0], result[1], result[2], time.monotonic() - started
+
+
 def one_document(stdout):
     """The parsed document when stdout holds exactly one, else None. Empty stdout is {}."""
     if stdout.strip() == "":
@@ -109,14 +133,6 @@ TALLY = {"fails": 0, "fired": 0, "silent": 0}
 TIMED_OUT = "TimeoutExpired"
 
 
-def load_stalled(rc, err, took):
-    """True when a run died of machine load rather than of the guard: it was slower than the budget, or its own gen-docs child hit the guard's deadline while the guard still exited 0. Anything else (a refusal, a crash, a wrong document) is the guard's and is never retried.
-
-    The gen-docs half spawns a node child with a hard deadline, so a pytest run that has the box saturated times it out although the guard is correct (measured 2026-11-10). A single retry bounds the cost; a real defect fails twice.
-    """
-    return rc == 0 and (took > BUDGET_S or (NOT_RUN in err and TIMED_OUT in err))
-
-
 def check(name, ok, detail=""):
     TALLY["fails"] += not ok
     print("%-76s %s" % (name, "ok" if ok else "*** FAIL ***"))
@@ -124,10 +140,13 @@ def check(name, ok, detail=""):
         print("    %s" % str(detail)[:600])
 
 
-def case(name, payload, root, want_needles, refuse_needles=(), argv=(STEM,), extra_env=None):
-    """Run one case; `want_needles` empty means it must be silent on stdout."""
-    rc, out, err, took = drive(payload, root, argv, extra_env)
-    if load_stalled(rc, err, took):
+def case(
+    name, payload, root, want_needles, refuse_needles=(), argv=(STEM,), extra_env=None, inproc=False
+):
+    """Run one case; `want_needles` empty means it must be silent on stdout. `inproc` is for the cases that ask the real gen-docs: they run the guard in process with a roomy DEADLINE_S, so a saturated box cannot turn the guard's 2.5 s deadline into a failure of its logic (2026-11-10, ci:quick 1137). The real deadline has its own cases in `deadline_cases`."""
+    if inproc:
+        rc, out, err, took = drive_in_process(payload, root)
+    else:
         rc, out, err, took = drive(payload, root, argv, extra_env)
     doc = one_document(out)
     context = ((doc or {}).get("hookSpecificOutput") or {}).get("additionalContext") or ""
@@ -136,7 +155,7 @@ def case(name, payload, root, want_needles, refuse_needles=(), argv=(STEM,), ext
         problems.append("rc=%d (the guard must never refuse or crash)" % rc)
     if doc is None:
         problems.append("stdout is not one JSON document: %r" % out[:200])
-    if took > BUDGET_S:
+    if took > BUDGET_S and not inproc:
         problems.append("took %.2fs, over the %.1fs budget" % (took, BUDGET_S))
     if want_needles:
         TALLY["fired"] += 1
@@ -262,6 +281,97 @@ def planted_defect(module, hot):
     )
 
 
+class _Fake:
+    """A subprocess.run stand-in: records each call's argv head and timeout, sleeps `delay_git` on the listing, answers an empty verdict."""
+
+    def __init__(self, delay_git=0.0):
+        self.calls = []
+        self.delay_git = delay_git
+
+    def __call__(self, argv, **kw):
+        self.calls.append((argv[0], kw.get("timeout")))
+        if argv[0] == "git":
+            time.sleep(self.delay_git)
+            return subprocess.CompletedProcess(argv, 0, stdout=b"x.txt\0", stderr=b"")
+        return subprocess.CompletedProcess(
+            argv, 0, stdout='{"affected": [], "targets": []}', stderr=""
+        )
+
+
+def _run_fake(module, stub, deadline, fake):
+    """One spawn with `subprocess.run` replaced by `fake` and REPO pointed at `stub`; every seam restored."""
+    hookio = importlib.import_module("rediacc_hooks.hookio")
+    saved = (module.DEADLINE_S, module.REPO, subprocess.run, os.environ.get("CLAUDE_PROJECT_DIR"))
+    try:
+        module.DEADLINE_S, module.REPO, subprocess.run = deadline, stub, fake
+        os.environ["CLAUDE_PROJECT_DIR"] = str(stub)
+        event = hookio.Event(json.dumps(spawn("x\nOwns: x.txt", root=stub)))
+        return event.result(module.run(event))
+    finally:
+        module.DEADLINE_S, module.REPO, subprocess.run = saved[:3]
+        if saved[3] is None:
+            os.environ.pop("CLAUDE_PROJECT_DIR", None)
+        else:
+            os.environ["CLAUDE_PROJECT_DIR"] = saved[3]
+
+
+def deadline_cases(base):
+    """The guard's own 2.5 s deadline, which the in-process cases deliberately do not exercise."""
+    module = guards.load(STEM)
+    check("the shipped deadline is still 2.5 s", module.DEADLINE_S == 2.5, module.DEADLINE_S)
+
+    stub = pathlib.Path(base) / "stub"
+    (stub / "scripts" / "gen").mkdir(parents=True)
+    (stub / ".git").mkdir()
+    (stub / module.GEN_DOCS_REL).write_text("setTimeout(() => {}, 30000);\n", encoding="utf-8")
+    # A real node child that never answers, under the real constant: the guard must stay in budget and say so.
+    hookio = importlib.import_module("rediacc_hooks.hookio")
+    saved = (module.REPO, module._tracked, os.environ.get("CLAUDE_PROJECT_DIR"))
+    started = time.monotonic()
+    try:
+        module.REPO, module._tracked = stub, lambda repo, timeout: ["x.txt"]
+        os.environ["CLAUDE_PROJECT_DIR"] = str(stub)
+        event = hookio.Event(json.dumps(spawn("x\nOwns: x.txt", root=stub)))
+        rc, out, err = event.result(module.run(event))
+    finally:
+        module.REPO, module._tracked = saved[:2]
+        if saved[2] is None:
+            os.environ.pop("CLAUDE_PROJECT_DIR", None)
+        else:
+            os.environ["CLAUDE_PROJECT_DIR"] = saved[2]
+    took = time.monotonic() - started
+    check(
+        "real deadline: a gen-docs child that never answers is cut at 2.5 s, rc 0, silent, one note",
+        rc == 0 and out == "" and NOT_RUN in err and TIMED_OUT in err and took < BUDGET_S + 1.0,
+        (rc, out[:100], err[:200], took),
+    )
+
+    # 530c1884.1: no child may be given more than what is left of the budget.
+    fake = _Fake(delay_git=0.7)
+    rc, out, err = _run_fake(module, stub, 0.6, fake)
+    heads = [c[0] for c in fake.calls]
+    check(
+        "budget (530c1884.1): listing files past the deadline starts no gen-docs child",
+        rc == 0 and "node" not in heads and NOT_RUN in err and "git" in heads,
+        (fake.calls, err[:200]),
+    )
+    fake = _Fake()
+    rc, out, err = _run_fake(module, stub, 0.6, fake)
+    git_t = [t for h, t in fake.calls if h == "git"]
+    node_t = [t for h, t in fake.calls if h == "node"]
+    check(
+        "budget (530c1884.1): the listing's and the child's timeouts sit inside the budget",
+        rc == 0 and len(git_t) == 1 and git_t[0] <= 0.6 and len(node_t) == 1 and node_t[0] <= 0.6,
+        fake.calls,
+    )
+    rc, out, err = _run_fake(module, stub, 60.0, _Fake())
+    check(
+        "budget control: a roomy budget asks gen-docs and stays silent on an empty verdict",
+        rc == 0 and out == "" and NOT_RUN not in err,
+        (rc, out[:100], err[:200]),
+    )
+
+
 def main():
     with tempfile.TemporaryDirectory(prefix="writer-brief-") as base:
         hot = make_root(base, "hot", 3)
@@ -297,6 +407,7 @@ def main():
             empty,
             [],
             refuse_needles=(GEN_NEEDLE, NOT_RUN),
+            inproc=True,
         )
 
         # ---- the firing half ----
@@ -313,6 +424,7 @@ def main():
             empty,
             [GEN_NEEDLE, "env-manifest"],
             refuse_needles=(REVIEW_NEEDLE, NOT_RUN),
+            inproc=True,
         )
         case(
             "fires: review and gen-docs lines together",
@@ -320,6 +432,7 @@ def main():
             hot,
             [REVIEW_NEEDLE, GEN_NEEDLE],
             refuse_needles=(NOT_RUN,),
+            inproc=True,
         )
 
         # ---- the whole chain: its concatenated stdout must still be one document ----
@@ -336,21 +449,7 @@ def main():
             extra_env={"WORKLIST_STORE_DIR": str(store), "TMPDIR": str(tmp)},
         )
 
-        # The retry gate: it fires only on load (slow, or the gen-docs child's deadline), and stays silent on a real defect.
-        stall = "writer-brief: the gen-docs question did not run (%s: deadline)" % TIMED_OUT
-        check(
-            "retry gate: a slow run and a gen-docs deadline are retried",
-            load_stalled(0, "", BUDGET_S + 1) and load_stalled(0, stall, 0.1),
-        )
-        check(
-            "retry gate control: a crash, a refusal, a fast silent run and another stderr are not",
-            not (
-                load_stalled(1, stall, 9.0)
-                or load_stalled(2, "", 0.1)
-                or load_stalled(0, "", 0.1)
-                or load_stalled(0, "writer-brief: did not run (ValueError)", 0.1)
-            ),
-        )
+        deadline_cases(base)
 
         module = encodings()
         flipped_end_to_end(module, hot)

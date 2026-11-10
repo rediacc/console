@@ -152,12 +152,12 @@ class _LateError(Exception):
     """The deadline passed before an answer."""
 
 
-def _tracked(repo):
+def _tracked(repo, timeout):
     out = subprocess.run(
         ["git", "ls-files", "-z"],
         cwd=str(repo),
         capture_output=True,
-        timeout=2,
+        timeout=timeout,
         check=True,
     ).stdout.decode("utf-8", "replace")
     return [p for p in out.split("\0") if p]
@@ -170,17 +170,20 @@ def _gen_docs_line(globs, planconc, left):
         raise FileNotFoundError("%s is absent" % GEN_DOCS_REL)
     if left() < MIN_GEN_DOCS_S:
         raise _LateError("no time left for gen-docs")
-    paths = set(planconc.materialise(globs, _tracked(REPO)))
+    # Every child is bounded by what is left of the whole budget, so the 2.5 s holds however slow the checkout is.
+    paths = set(planconc.materialise(globs, _tracked(REPO, min(2.0, left()))))
     paths.update(g for g in globs if not planconc._has_wild(g))
     if not paths:
         return ""
+    if left() < MIN_GEN_DOCS_S:
+        raise _LateError("no time left for gen-docs after listing the tracked files")
     proc = subprocess.run(
         ["node", str(script), "--could-affect"],
         cwd=str(REPO),
         input="\n".join(sorted(paths)) + "\n",
         capture_output=True,
         text=True,
-        timeout=max(MIN_GEN_DOCS_S, left()),
+        timeout=left(),
         check=False,
     )
     if proc.returncode != 0:
