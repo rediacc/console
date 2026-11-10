@@ -478,7 +478,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-backup-meter-orphaned-chunks.md` | approved | 273 | 1 | 7 | 36747 |
 | `agent/plans/PLAN-backup-multi-target.md` | approved | 113 | 4 | 17 | 31455 |
 | `agent/plans/PLAN-backup-plane-shared-bucket-hardening.md` | approved | 42 | 2 | 5 | 6986 |
-| `agent/plans/PLAN-backup-program.md` | approved | 614 | 9 | 183 | 163528 |
+| `agent/plans/PLAN-backup-program.md` | approved | 615 | 8 | 184 | 163920 |
 | `agent/plans/PLAN-backup-quota-delta-gc.md` | compacted | 58 | 0 | 0 | 5584 |
 | `agent/plans/PLAN-backup-restore-path.md` | executing | 202 | 3 | 7 | 35762 |
 | `agent/plans/PLAN-backup-restore-target-license.md` | compacted | 56 | 0 | 0 | 5560 |
