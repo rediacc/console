@@ -264,6 +264,15 @@ def config_flag_words(wrangler_config: str) -> list[str]:
     return ("--config %s" % wrangler_config).split()
 
 
+# THE DIRECTORY EVERY wrangler CALL RUNS FROM (finding fc8ad2fd, met live 2026-11-10). `npx --no-install` runs only a `node_modules/.bin/wrangler` at or above its cwd, or npm's global prefix; npm 11.21.0 never reads PATH. Run from the repository root, where `test_d1_migrations` calls `main`, it answered "npm error npx canceled due to missing packages and no YES option: ["wrangler@4.160.0"]". `workers/account` holds the pinned install (its lockfile) and only per-region configs (`wrangler.<r>.toml`), no default `wrangler.toml`, so no config is picked up implicitly. Every path this module passes wrangler is absolute; a relative `--wrangler-config` (no caller passes one, DEFECT D) resolves against this directory.
+WRANGLER_CWD_REL = ("workers", "account")
+
+
+def wrangler_cwd() -> str:
+    """The worker directory the wrangler calls run from, under this run's repository root."""
+    return str(common.repo_root().joinpath(*WRANGLER_CWD_REL))
+
+
 def export_argv(source_db: str, out_path: str) -> list[str]:
     """`npx wrangler d1 export "$SOURCE_DB" --remote --output=...` (twin :94)."""
     return [*wrangler.ARGV, "d1", "export", source_db, "--remote", "--output=%s" % out_path]
@@ -384,6 +393,7 @@ def run_export(source_db: str, tmpdir: str) -> int:
                 export_argv(source_db, os.path.join(tmpdir, "export.sql")),
                 stdout=handle,
                 stderr=subprocess.STDOUT,
+                cwd=wrangler_cwd(),
             )
         if export_rc == 0:
             break
@@ -485,7 +495,9 @@ def verify_fk(target_db: str, config_words: list[str]) -> None:
     `2>/dev/null || true` on the wrangler call and `2>/dev/null || echo "0"` on the jq call mean the only observable outcome of a failed verification is the success line. Reproduced exactly, including the fact that on empty input `jq` prints nothing and exits 0, so the `|| echo "0"` fallback does not fire and `FK_COUNT` is the empty string rather than `0`.
     """
     log.step("Verifying foreign key integrity")
-    _, fk_result = _capture(fk_check_argv(target_db, config_words), stderr=subprocess.DEVNULL)
+    _, fk_result = _capture(
+        fk_check_argv(target_db, config_words), stderr=subprocess.DEVNULL, cwd=wrangler_cwd()
+    )
 
     # `echo "$FK_RESULT" | jq ...`: echo appends a newline, so jq's input is never truly empty, and jq's own status is discarded either way.
     _flush()
@@ -600,7 +612,9 @@ def query_argv(db: str, config_words: list[str], sql: str) -> list[str]:
 
 def _query_rows(db: str, config_words: list[str], sql: str) -> list[dict]:
     """The result rows of one read-only query; a failed wrangler or unreadable answer raises BashExitError(1) with the reason, never an empty answer."""
-    status, out = _capture(query_argv(db, config_words, sql), stderr=subprocess.DEVNULL)
+    status, out = _capture(
+        query_argv(db, config_words, sql), stderr=subprocess.DEVNULL, cwd=wrangler_cwd()
+    )
     if status:
         log.error("row parity: wrangler d1 execute %s failed (exit %d)" % (db, status))
         raise BashExitError(1)
@@ -728,7 +742,8 @@ def main(argv: list[str]) -> int:
         # --- Step 4: import ------------------------------------------------
         log.step("Importing into D1 database: %s" % target_db)
         status = _run(
-            execute_file_argv(target_db, config_words, os.path.join(tmpdir, "import.sql"))
+            execute_file_argv(target_db, config_words, os.path.join(tmpdir, "import.sql")),
+            cwd=wrangler_cwd(),
         )
         if status:
             raise BashExitError(status)

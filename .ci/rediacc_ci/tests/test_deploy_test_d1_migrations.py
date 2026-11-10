@@ -213,6 +213,8 @@ def fixture(
         ROOT / ".ci" / "config" / "well-known.generated.sh",
         root / ".ci" / "config" / "well-known.generated.sh",
     )
+    # clone_d1 runs its wrangler calls from workers/account (finding fc8ad2fd).
+    (root / "workers" / "account").mkdir(parents=True, exist_ok=True)
 
     if worker_dir:
         (root / "workers" / "www").mkdir(parents=True, exist_ok=True)

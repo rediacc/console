@@ -98,6 +98,15 @@ if rest is None:
     sys.stderr.write("fake npx: unmodelled tool %r\n" % (argv[:1],))
     sys.exit(127)
 
+# `--no-install` AS npm 11.21.0 RESOLVES IT, when asked: only a node_modules/.bin/wrangler at or above the cwd counts, never PATH.
+if os.environ.get("FAKE_NPX_LOCAL_ONLY"):
+    here = os.getcwd()
+    while not os.path.exists(os.path.join(here, "node_modules", ".bin", "wrangler")):
+        if os.path.dirname(here) == here:
+            sys.stderr.write('npm error npx canceled due to missing packages and no YES option: ["wrangler@4.160.0"]\n')
+            sys.exit(1)
+        here = os.path.dirname(here)
+
 if rest[:2] == ["d1", "export"]:
     fail_until = int(os.environ.get("FAKE_EXPORT_FAIL_UNTIL", "0"))
     attempt = int(os.environ.get("FAKE_EXPORT_ATTEMPT", "0")) + 1
@@ -254,6 +263,10 @@ def fixture(tmp_path: pathlib.Path, *, sanitize_sql: bool = False) -> pathlib.Pa
         ROOT / ".ci" / "config" / "well-known.generated.sh",
         root / ".ci" / "config" / "well-known.generated.sh",
     )
+    # The worker directory the port's wrangler calls run from, with a stand-in for its pinned install (`FAKE_NPX_LOCAL_ONLY` looks for it).
+    local_bin = root.joinpath(*port.WRANGLER_CWD_REL, "node_modules", ".bin")
+    local_bin.mkdir(parents=True, exist_ok=True)
+    (local_bin / "wrangler").write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
     if sanitize_sql:
         (root / ".ci" / "scripts" / "deploy" / "sanitize-d1.sql").write_text(
             "UPDATE users SET email = 'redacted@example.com';\n", encoding="utf-8"
@@ -979,3 +992,26 @@ def test_table_name_is_anchored_for_match_and_search_alike(name: str) -> None:
 
 def test_table_name_accepts_a_plain_identifier() -> None:
     assert port.TABLE_NAME.search("users_2") is not None
+
+
+# --------------------------------------------------------------------------- finding fc8ad2fd: the worker directory ---------------------------------------------------------------------------
+
+
+def test_every_wrangler_call_runs_from_the_worker_directory(tmp_path) -> None:
+    """Defect 1 of finding fc8ad2fd: run from outside a worker directory (here the fixture's parent, as `test_d1_migrations` runs it from the repository root), `npx --no-install` finds no pinned install and answers "npx canceled due to missing packages". Every call, row parity included, must come from `workers/account`."""
+    _root, proc, calls = _port_only(
+        tmp_path, args=(*SEED_ARGS, "--row-parity"), FAKE_NPX_LOCAL_ONLY="1"
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert "npx canceled" not in proc.stdout + proc.stderr
+    assert _verbs(calls)[:3] == ["d1 export", "d1 execute", "d1 execute"], _verbs(calls)
+
+
+def test_the_local_only_fake_refuses_without_the_pinned_install(tmp_path) -> None:
+    """THE CONTROL: with the worker directory's install removed, the same fake fails every export the way npm does, so the test above can go red."""
+    root = fixture(tmp_path)
+    (root.joinpath(*port.WRANGLER_CWD_REL, "node_modules", ".bin", "wrangler")).unlink()
+    proc, calls = _run_live(root, "new", args=SEED_ARGS, FAKE_NPX_LOCAL_ONLY="1")
+    assert proc.returncode != 0
+    assert "npx canceled due to missing packages" in proc.stdout + proc.stderr
+    assert _verbs(calls).count("d1 export") == port.EXPORT_ATTEMPTS
