@@ -1391,14 +1391,22 @@ _STDIN_BLIND = frozenset(("find", "ls", "fd", "fdfind"))
 
 
 def _reads_files(name, argv):
-    """Does a grep, rg or cat run read files named by its operands rather than its stdin? A `-` operand is stdin."""
+    """Does a grep, rg or cat run read files named by its operands rather than its stdin? `-`, a stdin device (`/dev/stdin`, `/dev/fd/0`, `/proc/self/fd/0`) and an operand whose value is unknown (`$x`, a backtick) may all be stdin, so any of them means the run passes its stdin through (review b3ef7ca3.1)."""
     if name in ("grep", "egrep", "fgrep", "rg"):
         operands = _search_operands("rg" if name == "rg" else "grep", argv)[1]
     elif name == "cat":
         operands = _operands(argv)
     else:
         return False
-    return bool(operands) and "-" not in operands
+    return bool(operands) and not any(_may_be_stdin(o) for o in operands)
+
+
+_STDIN_DEVICES = frozenset(("-", "/dev/stdin", "/dev/fd/0", "/proc/self/fd/0"))
+
+
+def _may_be_stdin(operand):
+    """An operand that is, or may expand to, the run's stdin."""
+    return operand in _STDIN_DEVICES or "$" in operand or "`" in operand
 
 
 def _ignores_stdin(text):

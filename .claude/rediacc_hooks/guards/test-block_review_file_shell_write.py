@@ -956,9 +956,36 @@ OWN_CASES = [
         "xargs sed -i s/a/b/ < <(grep -rl x agent/ | sort)",
         True,
     ),
+    (
+        "a listing piped through cat /dev/stdin, fed to sed -i (b3ef7ca3.1)",
+        "grep -rl x agent/ | cat /dev/stdin | xargs sed -i s/a/b/",
+        True,
+    ),
+    (
+        "a listing piped through grep over /dev/fd/0, fed to sed -i (b3ef7ca3.1)",
+        "grep -rl x agent/ | grep x /dev/fd/0 | xargs sed -i s/a/b/",
+        True,
+    ),
+    (
+        "a listing piped through cat of a variable, fed to sed -i (b3ef7ca3.1)",
+        "grep -rl x agent/ | cat $F | xargs sed -i s/a/b/",
+        True,
+    ),
+    (
+        "control: a listing piped into a cat of a named file stays a stdin-ignoring stage",
+        "grep -rl x agent/ | cat README.md | xargs sed -i s/a/b/",
+        False,
+    ),
 ]
 
 MUTANTS = [
+    (
+        "a stdin device read as a named file (b3ef7ca3.1)",
+        (
+            'return operand in _STDIN_DEVICES or "$" in operand or "`" in operand',
+            'return operand == "-"',
+        ),
+    ),
     (
         "operands read as typed only (#f6334e52)",
         (
@@ -1079,7 +1106,10 @@ MUTANTS = [
     ),
     (
         "a search with a file operand read as passing stdin through (#3661517d)",
-        ('    return bool(operands) and "-" not in operands\n', "    return False\n"),
+        (
+            "    return bool(operands) and not any(_may_be_stdin(o) for o in operands)\n",
+            "    return False\n",
+        ),
     ),
     (
         "a value's source read for the word reviews alone (d218ebf3)",
