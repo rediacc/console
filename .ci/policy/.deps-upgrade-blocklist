@@ -29,3 +29,5 @@
 
 
 i18next  # BLOCKER: the 27.x major changes the runtime API under three i18n trees (packages/www, packages/cli, private/account/web) and their 13 locales; it moves as its own change, run against the i18n gates and a live portal session
+
+react-i18next  # BLOCKER: the 18.x major pairs with the i18next 27 line that is itself held; react-i18next carries the portal bindings of private/account/web, so it moves with i18next 27 as one change, run against the i18n gates and a live portal session
