@@ -10,20 +10,24 @@ POINTERS. One grammar, `<kind>:<token>`, for `worklist.py --hint-resolve` and fo
   hook    a trapguard rule: `def rule_<token>(` in .claude/hooks/trapguard/dispatch.py
   test    a repo-relative test file, optionally `<path>::<name>` with `def <name>` in it
   commit  a commit reachable from HEAD or origin/main (wl_planrec.resolve)
+  file    `<path>[:line]`, shape `shape:<trap id>`: the TRAPS grammar
 
-`pointer_problem` is a LOCAL existence check. The exported resolver `trap_registry.pointer_problem` (PLAN-experience-feedback.md D3) replaces it in C7b; until then this module asks the same questions of the tree directly, so a dead pointer never counts as an enforcer.
+`pointer_problem` asks the shared resolver, `trap_registry.pointer_problem` (PLAN-experience-feedback.md D3, wired by C7b), for every kind it has a grammar for (guard, gate, hook, file, shape), so a HINTS entry, a proposal and a memory note judge a pointer exactly as TRAPS and `check:ci-hint-corpus` do. Only `trap:`, `test:` and `commit:` have no TRAPS counterpart and keep their local existence checks. A resolver that cannot be loaded makes the pointer dead, never live.
 """
 
 from __future__ import annotations
 
 import pathlib
 import re
+import sys
 
 import wl_planrec as PR
 
-POINTER_KINDS = ("trap", "guard", "gate", "hook", "test", "commit")
+POINTER_KINDS = ("trap", "guard", "gate", "hook", "test", "commit", "file", "shape")
+# The kinds `trap_registry.pointer_problem` judges. The rest of POINTER_KINDS are local.
+SHARED_KINDS = ("guard", "gate", "hook", "file", "shape")
+CODE_ROOT = pathlib.Path(__file__).resolve().parents[3]
 GUARDS_REL = ".claude/rediacc_hooks/guards"
-TRAPGUARD_REL = ".claude/hooks/trapguard/dispatch.py"
 _NAME_RE = re.compile(r"^[A-Za-z0-9_.:-]+$")
 
 
@@ -50,31 +54,41 @@ def _inside(root, rel):
     return pathlib.Path(root) / rel
 
 
-def pointer_problem(root, pointer):
-    """None when `pointer` names something that exists in this tree; else one line saying why not."""
+def shared_registry(root, memory_dir=None):
+    """(trap_registry module, Registry over `root`), loaded from THIS checkout's code. `root` supplies the data (TRAPS, manifest, guards, tests); the shape loader stays the code's own when `root` has none. Raises on a resolver that cannot be loaded."""
+    ci = str(CODE_ROOT / ".ci")
+    if ci not in sys.path:
+        sys.path.insert(0, ci)
+    from rediacc_ci.quality import trap_registry as TR
+
+    seams = TR.resolve_seams(pathlib.Path(root))
+    if not seams["TRAP_SHAPES"].is_file():
+        seams["TRAP_SHAPES"] = TR.SHAPES_DEFAULT
+    return TR, TR.Registry(seams, memory_dir=pathlib.Path(memory_dir) if memory_dir else None)
+
+
+def pointer_problem(root, pointer, registry=None, memory_dir=None):
+    """None when `pointer` names a live enforcer in this tree; else one line saying why not.
+
+    guard, gate, hook, file and shape go to `trap_registry.pointer_problem`; `registry` is a `shared_registry` pair a sweep reuses, so the corpus is read once. `memory_dir` lets a `shape:` pointer resolve against memory notes, as the sweep does.
+    """
     kind, token = parse_pointer(pointer)
     if kind is None:
         return "%r is not <kind>:<token> with kind one of %s" % (token, ", ".join(POINTER_KINDS))
-    if kind in ("trap", "gate", "commit"):
+    if kind in SHARED_KINDS:
+        try:
+            tr, reg = registry or shared_registry(root, memory_dir)
+            why = tr.pointer_problem(reg, "%s:%s" % (kind, token))
+        except Exception as exc:  # an unloadable resolver is a dead pointer, never a crash
+            return "%s:%s could not be resolved (%s)" % (kind, token, exc)
+        return "the pointer %s" % why.rstrip(".") if why else None
+    if kind in ("trap", "commit"):
         try:
             ok, detail = PR.resolve(root, kind, token)
         except Exception as exc:  # a resolver failure is a dead pointer, never a crash
             return "%s:%s could not be resolved (%s)" % (kind, token, exc)
         return None if ok else "%s:%s does not resolve -- %s" % (kind, token, detail)
-    if kind == "guard":
-        if not _NAME_RE.match(token) or "/" in token:
-            return "guard:%s is not a guard module name" % token
-        stem = token.removesuffix(".py")
-        path = pathlib.Path(root) / GUARDS_REL / ("%s.py" % stem)
-        return None if path.is_file() else "guard:%s has no %s/%s.py" % (token, GUARDS_REL, stem)
-    if kind == "hook":
-        fn = "rule_%s" % token.replace("-", "_")
-        if re.search(
-            r"^def %s\(" % re.escape(fn), _read(pathlib.Path(root) / TRAPGUARD_REL), re.MULTILINE
-        ):
-            return None
-        return "hook:%s has no `def %s(` in %s" % (token, fn, TRAPGUARD_REL)
-    # test
+    # test: no TRAPS counterpart
     rel, _sep, name = token.partition("::")
     path = _inside(root, rel)
     if path is None or not path.is_file():
@@ -91,8 +105,7 @@ def pointer_problem(root, pointer):
 # AN ENFORCER COUNTS ONLY WHEN IT IS LIVE AND TESTED. A guard nobody tests can be deleted or broken without a red, and then the lesson it replaced is gone from both places; so a live pointer whose enforcer has no test keeps the entry in rotation and sends it to the curator instead.
 
 JUDGMENT_ONLY = "JUDGMENT-ONLY"
-# `file:` is accepted on an Enforced-By line because TRAPS.md already uses it for guard scripts; --hint-resolve keeps the six POINTER_KINDS.
-ENFORCED_KINDS = (*POINTER_KINDS, "file")
+ENFORCED_KINDS = POINTER_KINDS
 CLASSES = ("retire-now", "encode-as-guard", "encode-as-CI-gate", "fix-the-tool", "keep-as-prose")
 # The class an entry gets when its named enforcer is dead or untested: finish that kind of mechanism.
 KIND_CLASS = {
@@ -116,11 +129,19 @@ TEST_GLOBS = (
 class Ctx:
     """The per-sweep caches: the test corpus text and the TRAPS entries."""
 
-    def __init__(self, root):
+    def __init__(self, root, memory_dir=None):
         self.root = root
+        self.memory_dir = memory_dir
+        self._registry = None
         self._tests = None
         self._traps = None
         self._stems = None
+
+    def registry(self):
+        """The shared resolver pair, built once per sweep. Raises when it cannot be loaded; `pointer_problem` turns that into a dead pointer."""
+        if self._registry is None:
+            self._registry = shared_registry(self.root, self.memory_dir)
+        return self._registry
 
     def tests_text(self):
         if self._tests is None:
@@ -152,29 +173,31 @@ def split_enforced(value):
     return str(value or "").replace(",", " ").split()
 
 
-def _file_problem(root, token):
-    rel, _sep, line = token.partition(":")
-    path = _inside(root, rel)
-    if path is None or not path.is_file():
-        return "file:%s names no file in this tree" % token
-    if line and (not line.isdigit() or int(line) < 1 or int(line) > _read(path).count("\n") + 1):
-        return "file:%s points past the end of %s" % (token, rel)
-    return None
-
-
 def _commit_touches_a_test(root, token):
     names = PR._git_out(root, "show", "--name-only", "--format=", token)
     return any("test" in n.rsplit("/", 1)[-1] for n in names.splitlines())
+
+
+def _loads(ctx):
+    """True when the shared resolver loads, so `enforcer_state` can reuse its registry; a failure falls back to `pointer_problem`, which reports it as the dead pointer's reason."""
+    try:
+        ctx.registry()
+    except Exception:
+        return False
+    return True
 
 
 def enforcer_state(root, pointer, ctx):
     """(live, tested, why) for one Enforced-By pointer."""
     kind, _sep, token = pointer.partition(":")
     kind, token = kind.strip(), token.strip()
-    if kind == "file" and token:
-        why = _file_problem(root, token)
-    elif kind in POINTER_KINDS:
-        why = pointer_problem(root, pointer)
+    if kind in POINTER_KINDS and token:
+        why = pointer_problem(
+            root,
+            pointer,
+            registry=ctx.registry() if kind in SHARED_KINDS and _loads(ctx) else None,
+            memory_dir=ctx.memory_dir,
+        )
     else:
         return False, False, "%r is not one of %s" % (pointer, ", ".join(ENFORCED_KINDS))
     if why:
@@ -221,6 +244,9 @@ def enforcer_state(root, pointer, ctx):
         tested = _commit_touches_a_test(root, token)
         state = "touches a test" if tested else "touches no test"
         return True, tested, "commit %s %s" % (token[:12], state)
+    if kind == "shape":
+        # The shared resolver already required the shape's applying guard or rule to be tested in both directions.
+        return True, True, "shape %s is applied by a live, tested instrument" % token
     # trap: the trap itself must name a mechanism, not judgment
     inner = [p for p in split_enforced(ctx.trap_enforced(token)) if p != JUDGMENT_ONLY]
     state = "is enforced by %s" % ", ".join(inner) if inner else "is judgment-only"
@@ -323,7 +349,7 @@ def sweep(root, memdir):
     import wl_hints as H
     import wl_store as S
 
-    ctx = Ctx(root)
+    ctx = Ctx(root, memdir)
     rows = []
 
     def add(store, eid, title, enforced):

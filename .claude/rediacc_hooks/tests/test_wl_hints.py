@@ -358,6 +358,19 @@ def test_pending_a_proposal_line_citing_the_id_takes_it(tmp_path, monkeypatch):
     assert [p["text"] for p in h.pending_proposals(str(tmp_path))] == ["lesson two"]
 
 
+def _plant_guard(guards, stem):
+    """A guard the shared resolver (trap_registry.pointer_problem) accepts: loaded by the package's stems() and tested by a sibling suite that names it."""
+    (guards / "__init__.py").write_text(
+        "import pathlib\n\n\ndef stems():\n"
+        "    return sorted(p.stem for p in pathlib.Path(__file__).parent.glob('block_*.py'))\n",
+        encoding="utf-8",
+    )
+    (guards / ("%s.py" % stem)).write_text("RULE = 1\n", encoding="utf-8")
+    (guards / ("test-%s.py" % stem)).write_text(
+        "# tests %s\ndef test_it():\n    pass\n" % stem, encoding="utf-8"
+    )
+
+
 def test_pending_control_a_resolution_with_a_dead_pointer_stays_pending(tmp_path, monkeypatch):
     """CONTROL: a resolution row counts only while its pointer resolves; a guard that does not exist (or was deleted) puts the proposal back."""
     monkeypatch.delenv("WORKLIST_HINTS_FILE", raising=False)
@@ -367,7 +380,7 @@ def test_pending_control_a_resolution_with_a_dead_pointer_stays_pending(tmp_path
     assert [p["id"] for p in h.pending_proposals(str(tmp_path))] == [row["id"]]
     guards = tmp_path / ".claude" / "rediacc_hooks" / "guards"
     guards.mkdir(parents=True)
-    (guards / "block_no_such_guard.py").write_text("RULE = 1\n", encoding="utf-8")
+    _plant_guard(guards, "block_no_such_guard")
     assert h.pending_proposals(str(tmp_path)) == []
     (guards / "block_no_such_guard.py").unlink()
     assert [p["id"] for p in h.pending_proposals(str(tmp_path))] == [row["id"]]
@@ -408,7 +421,7 @@ def test_hint_resolve_cli_refuses_an_unknown_id_and_a_dead_pointer_then_records_
     assert not ledger.exists()
     guards = wl.proj / ".claude" / "rediacc_hooks" / "guards"
     guards.mkdir(parents=True, exist_ok=True)
-    (guards / "block_planted.py").write_text("RULE = 1\n", encoding="utf-8")
+    _plant_guard(guards, "block_planted")
     live = wl.cli("--hint-resolve", "deadbeef", pid, "guard:block_planted")
     assert live.rc == 0, live.err
     rows = [json.loads(ln) for ln in ledger.read_text(encoding="utf-8").splitlines()]

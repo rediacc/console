@@ -15,6 +15,13 @@ if TYPE_CHECKING:
     import pathlib
 
 
+# What the real guards package does: its stems are the modules in the directory.
+GUARDS_INIT = (
+    "import pathlib\n\n\ndef stems():\n"
+    "    return sorted(p.stem for p in pathlib.Path(__file__).parent.glob('block_*.py'))\n"
+)
+
+
 def _lessons():
     return wlfix.import_wl("wl_lessons")
 
@@ -45,18 +52,29 @@ def _world(tmp_path: pathlib.Path, monkeypatch) -> pathlib.Path:
     _write(tmp_path, "CLAUDE.md", "rules\n")
     _write(tmp_path, ".claude/rediacc_hooks/guards/block_tested.py", "RULE = 1\n")
     _write(
-        tmp_path, ".claude/rediacc_hooks/guards/test-block_tested.py", "def test_x():\n    pass\n"
+        tmp_path,
+        ".claude/rediacc_hooks/guards/test-block_tested.py",
+        "# tests block_tested\ndef test_it():\n    pass\n",
     )
     _write(tmp_path, ".claude/rediacc_hooks/guards/block_untested.py", "RULE = 1\n")
+    # The shared resolver (trap_registry.pointer_problem) asks the guards package which stems it loads, and the dispatcher which rules it lists.
+    _write(
+        tmp_path,
+        ".claude/rediacc_hooks/guards/__init__.py",
+        GUARDS_INIT,
+    )
     _write(
         tmp_path,
         ".claude/hooks/trapguard/dispatch.py",
-        "def rule_tested_rule(cmd):\n    return 1\n\n\ndef rule_lonely_rule(cmd):\n    return 1\n",
+        "def rule_tested_rule(cmd):\n    return 'NEEDLE-tested'\n\n\n"
+        "def rule_lonely_rule(cmd):\n    return 1\n\n\n"
+        "RULES = (\n    rule_tested_rule,\n    rule_lonely_rule,\n)\n",
     )
     _write(
         tmp_path,
         ".claude/rediacc_hooks/tests/test_hooks_trapguard.py",
-        "def test_tested_rule():\n    assert 'tested-rule'\n",
+        "def test_tested_rule():\n    assert 'tested-rule'\n\n"
+        "check_inject fires 'a case' \"NEEDLE-tested\"\ncheck_inject silent 'a case' \"x\"\n",
     )
     _write(
         tmp_path,
@@ -230,8 +248,11 @@ def test_sweep_classifies_all_four_stores_and_writes_nothing(tmp_path, monkeypat
 def test_lessons_sweep_cli_prints_the_table_and_the_json(wl):
     mem = _memory(wl.proj)
     _write(wl.proj, ".claude/rediacc_hooks/guards/block_tested.py", "RULE = 1\n")
+    _write(wl.proj, ".claude/rediacc_hooks/guards/__init__.py", GUARDS_INIT)
     _write(
-        wl.proj, ".claude/rediacc_hooks/guards/test-block_tested.py", "def test_x():\n    pass\n"
+        wl.proj,
+        ".claude/rediacc_hooks/guards/test-block_tested.py",
+        "# tests block_tested\ndef test_it():\n    pass\n",
     )
     got = wl.cli("--lessons-sweep", "deadbeef", "--memory-dir", str(mem))
     assert got.rc == 0, got.err
@@ -246,3 +267,37 @@ def test_lessons_sweep_cli_prints_the_table_and_the_json(wl):
     bad = wl.cli("--lessons-sweep", "deadbeef", "--bogus")
     assert bad.rc == 2, bad.err
     assert "usage: worklist.py --lessons-sweep" in bad.err, bad.err
+
+
+# ---- the shared resolver (box C7b) -------------------------------------------
+
+
+def test_pointer_problem_asks_the_shared_resolver_for_the_traps_kinds(tmp_path, monkeypatch):
+    """CONTROL: a live guard resolves; each dead pointer carries `trap_registry.pointer_problem`'s own clause."""
+    root = str(_world(tmp_path, monkeypatch))
+    lessons = _lessons()
+    assert lessons.pointer_problem(root, "guard:block_tested") is None
+    why = lessons.pointer_problem(root, "guard:block_gone")
+    assert why is not None
+    assert "is not a guard the pre-tool dispatcher loads" in why, why
+    why = lessons.pointer_problem(root, "hook:lonely-rule")
+    assert why is not None
+    assert "lacks a FIRING case or a SILENT case" in why, why
+    why = lessons.pointer_problem(root, "gate:check:ci-absent")
+    assert why is not None
+    assert "not both a manifest entry and a package.json script" in why, why
+
+
+def test_pointer_problem_is_dead_when_the_shared_resolver_cannot_load(tmp_path, monkeypatch):
+    """A resolver failure never makes a pointer live."""
+    root = str(_world(tmp_path, monkeypatch))
+    lessons = _lessons()
+
+    def boom(*_a, **_k):
+        raise ImportError("planted")
+
+    monkeypatch.setattr(lessons, "shared_registry", boom)
+    why = lessons.pointer_problem(root, "guard:block_tested")
+    assert why is not None
+    assert "could not be resolved" in why, why
+    assert lessons.classify(root, "guard:block_tested", lessons.Ctx(root))["class"] != "retire-now"
