@@ -42,7 +42,7 @@ from rediacc_ci.enterprise import (
     secrets,
 )
 from rediacc_ci.housekeeping import cf_leftovers
-from rediacc_ci.ops import cf_usage_report, enterprise_lookup
+from rediacc_ci.ops import bench_access, cf_usage_report, enterprise_lookup
 from rediacc_ci.ops import observability_volume as ov
 from rediacc_ci.release import local
 from rediacc_ci.well_known import CF_API_BASE, PRODUCT_DOMAIN
@@ -97,7 +97,10 @@ _GROUPS: dict[str, tuple[str, ...]] = {
     ),
     "K2": ("target_version", "versions", "release"),
     "V6": ("mint", "present"),
-    "V7": ("container_app", "durable_object", "console_command", "set_allowlist", "request_from"),
+    "V7": (
+        "container_app", "durable_object", "console_command", "egress_ips", "set_allowlist",
+        "request_from",
+    ),
     "V8": ("deploy_records", "usage_rows", "image_rebuild_seconds", "read_limits"),
     "V9": (
         "fleet_machine", "renet_version", "released_renet", "run_verb", "executor_upload",
@@ -1057,10 +1060,18 @@ def present(
 #
 # `durable_object(company)` is the id of the `OrgExecutor` Durable Object namespace whose script is the company's `proxy-<name>` (`/workers/durable_objects/namespaces`). `container_app(company)` is the id of the Containers application backed by that namespace (`/containers/applications`, matched on `durable_objects.namespace_id`). Each answers an opaque id, never a name, and a company with none, or with more than one, is a `LabError`.
 #
-# NOT BUILT HERE. `console_command` needs a minted proxy token (box V6). `set_allowlist` and `request_from` need a redeploy of one company with a changed `ALLOW_IPS` and a request from an address on the list and one off it; this host is one vantage point, and the proof asks for the listed case from `192.0.2.10` (TEST-NET-1), an address no request can come from. Each raises `LabError("not built yet: V7 ...")` naming that, so no allowlist claim can pass on a request that was never sent.
+# THE ALLOWLIST FROM ONE VANTAGE POINT. This machine is the only place a request comes from, so the proof never asks for a request from another address: it lists this machine for the listed case and lists only `proof.FOREIGN_IP` (TEST-NET-1) for the foreign cases, which puts this machine off the list. `egress_ips()` is this machine's public address per family as Cloudflare sees it (`https://1.1.1.1/cdn-cgi/trace` and its IPv6 twin, through `ops.bench_access.detect_public_ips`), so whichever family a request to the company host takes, its address is on a list that names this machine.
+#
+# `set_allowlist(company, ips)` writes the control row's `scope.allow_ips` (box C2's `lifecycle.update`), regenerates the company's two configs with `ALLOW_IPS` (onboarding's `configs` step, against the company's existing `account-<name>` D1, never creating one), redeploys both Workers (onboarding's `deploy` step) and waits `ALLOWLIST_SETTLE_S` for the new version to serve. An empty list clears it. `request_from(company, method=, path=)` sends one request from this machine to the company's account host and answers the status; a 403 whose body is not the allowlist's own refusal (workers/proxy/src/ip-allowlist.ts) is a `LabError`, so a WAF or a token refusal never reads as the allowlist blocking.
+#
+# NOT BUILT HERE. `console_command` runs a machine command through the company's proxy, which needs the company's config store and an executor CEK grant; it raises `LabError("not built yet: V7 ...")` naming that, and `proof proxy` records it broken and still checks the allowlist.
 
 
 EXECUTOR_CLASS = "OrgExecutor"
+ALLOWLIST_STEPS = ("configs", "deploy")
+ALLOWLIST_SETTLE_S = 30.0
+# workers/proxy/src/ip-allowlist.ts `allowlistRefusal`, the body of its 403.
+ALLOWLIST_REFUSAL = "This address is not on the allowlist."
 
 
 def _proxy_worker(company: str, companies: Companies) -> str:
@@ -1109,24 +1120,88 @@ def container_app(
 
 def console_command(company: str) -> proof.Answer:
     raise proof.LabError(
-        "not built yet: V7 (a console command for company %s needs V6's minted proxy token; nothing was run)"
+        "not built yet: V7 (a console command for company %s runs a machine command through its proxy, "
+        "which needs the company's config store and an executor CEK grant; nothing was run)"
         % company
     )
 
 
-def set_allowlist(company: str, ips: Sequence[str]) -> None:
-    raise proof.LabError(
-        "not built yet: V7 (no allowlist driver: %d address(es) for company %s need a redeploy of its "
-        "Workers, and nothing was changed)" % (len(ips), company)
-    )
+AllowUpdate = Callable[[str, Sequence[str]], None]
+D1Ids = Callable[[], dict[str, str]]
 
 
-def request_from(company: str, *, foreign: bool, method: str, path: str) -> int:
-    where = "an address off the list" if foreign else "an address on the list"
-    raise proof.LabError(
-        "not built yet: V7 (no vantage point sends %s %s to company %s from %s)"
-        % (method, path, company, where)
+def egress_ips(*, fetch: Callable[[str], str] | None = None) -> list[str]:
+    try:
+        return bench_access.detect_public_ips(fetch)
+    except bench_access.AccessError as exc:
+        raise proof.LabError(str(exc)) from None
+
+
+def _update_scope(name: str, ips: Sequence[str]) -> None:
+    try:
+        lifecycle.update(cli.lifecycle_context(lifecycle, bench=BENCH), name, allow_ips=list(ips))
+    except lifecycle.LifecycleError as exc:
+        raise proof.LabError(str(exc)) from None
+
+
+def _d1_ids() -> dict[str, str]:
+    try:
+        return control_db.database_ids(control_db.run_wrangler)
+    except control_db.ControlDbError as exc:
+        raise proof.LabError(str(exc)) from None
+
+
+def set_allowlist(
+    company: str,
+    ips: Sequence[str],
+    *,
+    companies: Companies = all_companies,
+    update: AllowUpdate = _update_scope,
+    d1_ids: D1Ids = _d1_ids,
+    actions: dict[str, onboarding.Action] | None = None,
+    sleep: Callable[[float], None] = time.sleep,
+) -> None:
+    row = company_row(company, companies=companies)
+    name, region = str(row["name"]), str(row.get("region", ""))
+    database = "account-%s" % name
+    uuid = d1_ids().get(database, "")
+    if not uuid:
+        raise proof.LabError("company %s has no account D1 to configure against" % company)
+    update(name, ips)
+    req = onboarding.Request(
+        name=name, region=region, owner="", storage_gb=0, allow_ips=tuple(ips), bench=BENCH
     )
+    ctx = onboarding.Context(
+        plan=onboarding.plan_for(req, company),
+        query=control_db.transport(),
+        details={"d1": uuid},
+        now=onboarding.utc_now(),
+    )
+    steps = actions if actions is not None else onboarding.live_actions()
+    for step in ALLOWLIST_STEPS:
+        try:
+            steps[step](ctx)
+        except onboarding.OnboardingError as exc:
+            raise proof.LabError(str(exc)) from None
+    sleep(ALLOWLIST_SETTLE_S)
+
+
+def request_from(
+    company: str,
+    *,
+    method: str,
+    path: str,
+    call: Call = http_call,
+    companies: Companies = all_companies,
+) -> int:
+    body = b"{}" if method == "POST" else None
+    headers = {"Content-Type": "application/json"} if body is not None else {}
+    answer = call(method, "https://%s%s" % (_host(company, companies), path), headers, body)
+    if answer.status == proof.HTTP_FORBIDDEN and answer.json().get("error") != ALLOWLIST_REFUSAL:
+        raise proof.LabError(
+            "%s %s answered a 403 that is not the allowlist's refusal" % (method, path)
+        )
+    return answer.status
 
 
 # ==== box V8: deploy records, usage, the image rebuild and the limits (`proof cost`)

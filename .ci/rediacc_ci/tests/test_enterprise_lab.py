@@ -1044,21 +1044,136 @@ def test_two_apps_on_one_namespace_are_a_lab_error():
         )
 
 
-@pytest.mark.parametrize(
-    ("call", "args", "kwargs"),
-    [
-        (lab.console_command, ("c0000000a",), {}),
-        (lab.set_allowlist, ("c0000000a", ["192.0.2.10"]), {}),
-        (
-            lab.request_from,
-            ("c0000000a",),
-            {"foreign": True, "method": "GET", "path": "/"},
-        ),
-    ],
-)
-def test_the_unbuilt_proxy_drivers_refuse_by_name(call, args, kwargs):
+def test_the_unbuilt_console_command_refuses_by_name():
     with pytest.raises(proof.LabError, match="not built yet: V7"):
-        call(*args, **kwargs)
+        lab.console_command("c0000000a")
+
+
+def test_egress_ips_read_cloudflares_view_of_each_family():
+    def fetch(url):
+        if "1.1.1.1" in url:
+            return "fl=1\nip=203.0.113.7\nts=1\n"
+        raise OSError("no IPv6 route")
+
+    assert lab.egress_ips(fetch=fetch) == ["203.0.113.7"]
+
+
+def test_no_egress_answer_is_a_lab_error_not_an_empty_list():
+    def fetch(_url):
+        raise OSError("offline")
+
+    with pytest.raises(proof.LabError, match="public IP"):
+        lab.egress_ips(fetch=fetch)
+
+
+class Redeploy:
+    def __init__(self, fail: str = ""):
+        self.fail = fail
+        self.events: list[str] = []
+        self.contexts: list[onboarding.Context] = []
+
+    def update(self, name, ips):
+        self.events.append("update:%s:%s" % (name, ",".join(ips)))
+
+    def step(self, name):
+        def run(ctx):
+            self.events.append(name)
+            self.contexts.append(ctx)
+            if name == self.fail:
+                raise onboarding.OnboardingError("company x: %s exited 1" % name)
+            return ""
+
+        return run
+
+    def actions(self):
+        return {name: self.step(name) for name in lab.ALLOWLIST_STEPS}
+
+
+def allow_v7(redeploy: Redeploy, ips, d1=None):
+    return lab.set_allowlist(
+        "c0000000a",
+        ips,
+        companies=companies_proxy,
+        update=redeploy.update,
+        d1_ids=lambda: {"account-proof-a": "uuid-a"} if d1 is None else d1,
+        actions=redeploy.actions(),
+        sleep=lambda _s: redeploy.events.append("settle"),
+    )
+
+
+def test_set_allowlist_writes_the_scope_then_regenerates_and_redeploys():
+    redeploy = Redeploy()
+    allow_v7(redeploy, ["203.0.113.7"])
+    assert redeploy.events == ["update:proof-a:203.0.113.7", "configs", "deploy", "settle"]
+    ctx = redeploy.contexts[0]
+    assert ctx.plan.request.allow_ips == ("203.0.113.7",)
+    assert ctx.plan.request.bench is True
+    assert ctx.plan.environment == onboarding.BENCH_ENVIRONMENT
+    assert ctx.plan.company_id == "c0000000a"
+    assert ctx.details == {"d1": "uuid-a"}
+
+
+def test_an_empty_list_clears_the_allowlist_through_the_same_redeploy():
+    redeploy = Redeploy()
+    allow_v7(redeploy, [])
+    assert redeploy.events[0] == "update:proof-a:"
+    assert redeploy.contexts[0].plan.request.allow_ips == ()
+
+
+def test_a_company_without_its_d1_changes_nothing():
+    """Control: the driver never creates a database or writes a scope it cannot deploy."""
+    redeploy = Redeploy()
+    with pytest.raises(proof.LabError, match="no account D1"):
+        allow_v7(redeploy, ["203.0.113.7"], d1={})
+    assert redeploy.events == []
+
+
+def test_a_failed_redeploy_is_a_lab_error():
+    redeploy = Redeploy(fail="deploy")
+    with pytest.raises(proof.LabError, match="deploy exited 1"):
+        allow_v7(redeploy, ["203.0.113.7"])
+    assert "settle" not in redeploy.events
+
+
+class Edge:
+    def __init__(self, status: int, error: str = lab.ALLOWLIST_REFUSAL):
+        self.status = status
+        self.error = error
+        self.sent: list[tuple[str, str, dict, bytes | None]] = []
+
+    def __call__(self, method, url, headers, body):
+        self.sent.append((method, url, headers, body))
+        return lab.HttpAnswer(self.status, (), json.dumps({"error": self.error}).encode())
+
+
+def test_request_from_sends_from_this_machine_to_the_account_host():
+    edge = Edge(200)
+    assert (
+        lab.request_from("c0000000a", method="GET", path="/", call=edge, companies=companies_proxy)
+        == 200
+    )
+    assert (
+        lab.request_from(
+            "c0000000a",
+            method="POST",
+            path=proof.LICENSE_RENEW_PATH,
+            call=edge,
+            companies=companies_proxy,
+        )
+        == 200
+    )
+    (m1, u1, _h1, b1), (m2, u2, h2, b2) = edge.sent
+    assert (m1, u1, b1) == ("GET", "https://%s/" % HOST_A, None)
+    assert (m2, u2, b2) == ("POST", "https://%s%s" % (HOST_A, proof.LICENSE_RENEW_PATH), b"{}")
+    assert h2["Content-Type"] == "application/json"
+
+
+def test_the_allowlists_403_is_answered_and_any_other_403_is_a_lab_error():
+    """Control: a WAF or token 403 never reads as the allowlist blocking."""
+    kw = {"method": "GET", "path": "/", "companies": companies_proxy}
+    assert lab.request_from("c0000000a", call=Edge(403), **kw) == 403
+    with pytest.raises(proof.LabError, match="not the allowlist"):
+        lab.request_from("c0000000a", call=Edge(403, "Forbidden"), **kw)
 
 
 # --- cost ---------------------------------------------------------------

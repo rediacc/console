@@ -35,6 +35,8 @@ PRIVATE_KEY = "ACCOUNT_ED25519_PRIVATE_KEY"
 LICENSE_RENEW_PATH = "/account/api/v1/licenses/renew"
 OPAQUE_ID = re.compile(r"^c[0-9a-f]{6,}$")
 HTTP_FORBIDDEN = 403
+# TEST-NET-1 (RFC 5737): no request comes from it, so an allowlist naming only it puts this machine off the list.
+FOREIGN_IP = "192.0.2.10"
 
 # The signer scope matrix of box S1: each is refused, beside a legitimate licence and certificate that are issued.
 SCOPE_CASES: tuple[str, ...] = (
@@ -163,8 +165,9 @@ class Lab(Protocol):
     def container_app(self, company: str) -> str: ...
     def durable_object(self, company: str) -> str: ...
     def console_command(self, company: str) -> Answer: ...
+    def egress_ips(self) -> list[str]: ...
     def set_allowlist(self, company: str, ips: Sequence[str]) -> None: ...
-    def request_from(self, company: str, *, foreign: bool, method: str, path: str) -> int: ...
+    def request_from(self, company: str, *, method: str, path: str) -> int: ...
 
     # Cost.
     def deploy_records(self, *, bench: bool) -> list[dict[str, object]]: ...
@@ -520,34 +523,44 @@ def verb_proxy(lab: Lab, p: Proof, *, bench: bool) -> None:
     tok = lab.mint(a, "proxy-token")
     p.admitted("a proxy token is accepted by its own proxy", lab.present(a, "proxy-token", tok))
     p.refused("a proxy token is refused by the other proxy", lab.present(b, "proxy-token", tok))
-    p.admitted("a console command runs", lab.console_command(a))
-
-    if not p.attempt("an allowlist is set", lambda: lab.set_allowlist(a, ["192.0.2.10"])):
-        p.attempt("the allowlist is cleared", lambda: lab.set_allowlist(a, []))
-        return
     try:
-        cases = (
-            ("a listed IP reaches GET /", False, "GET", "/", False),
-            ("a foreign IP is blocked on GET /", True, "GET", "/", True),
-            (
-                "a foreign IP is blocked on POST to another path",
-                True,
-                "POST",
-                "/account/api/v1/auth/login",
-                True,
-            ),
-            (
-                "a foreign IP is blocked on GET of the renew path",
-                True,
-                "GET",
-                LICENSE_RENEW_PATH,
-                True,
-            ),
-            ("a foreign IP still reaches POST renew", True, "POST", LICENSE_RENEW_PATH, False),
-        )
-        for claim, foreign, method, path, blocked in cases:
-            status = lab.request_from(a, foreign=foreign, method=method, path=path)
-            p.check(claim, ok=(status == HTTP_FORBIDDEN) == blocked, detail=f"status {status}")
+        p.admitted("a console command runs", lab.console_command(a))
+    except LAB_ERRORS as exc:
+        # A console command that cannot run yet does not keep the allowlist claims from being checked.
+        p.check("a console command runs", ok=False, detail=f"{type(exc).__name__}: {exc}")
+
+    # One vantage point: the listed case is this machine on the list, the foreign cases this machine off it.
+    listed = [ip for ip in lab.egress_ips() if ip]
+    if not p.check(
+        "this machine's egress address is read",
+        ok=listed and FOREIGN_IP not in listed,
+        detail=f"{listed}",
+    ):
+        return
+    cases = (
+        ("a foreign IP is blocked on GET /", "GET", "/", True),
+        (
+            "a foreign IP is blocked on POST to another path",
+            "POST",
+            "/account/api/v1/auth/login",
+            True,
+        ),
+        ("a foreign IP is blocked on GET of the renew path", "GET", LICENSE_RENEW_PATH, True),
+        ("a foreign IP still reaches POST renew", "POST", LICENSE_RENEW_PATH, False),
+    )
+    try:
+        if p.attempt("the allowlist names this machine", lambda: lab.set_allowlist(a, listed)):
+            status = lab.request_from(a, method="GET", path="/")
+            p.check(
+                "a listed IP reaches GET /", ok=status != HTTP_FORBIDDEN, detail=f"status {status}"
+            )
+        if p.attempt(
+            "the allowlist names only a foreign address",
+            lambda: lab.set_allowlist(a, [FOREIGN_IP]),
+        ):
+            for claim, method, path, blocked in cases:
+                status = lab.request_from(a, method=method, path=path)
+                p.check(claim, ok=(status == HTTP_FORBIDDEN) == blocked, detail=f"status {status}")
     finally:
         p.attempt("the allowlist is cleared", lambda: lab.set_allowlist(a, []))
 

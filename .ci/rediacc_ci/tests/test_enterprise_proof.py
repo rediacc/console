@@ -57,6 +57,9 @@ class FakeLab:
     shared_container: bool = False
     allowlist: list[str] = dataclasses.field(default_factory=list)
     renew_blocked_by_allowlist: bool = False
+    egress: list[str] = dataclasses.field(default_factory=lambda: ["203.0.113.7"])
+    listed_blocked: bool = False
+    console_raises: bool = False
     # cost
     limits: dict[str, int] = dataclasses.field(default_factory=lambda: dict(proof.PLAN_LIMITS))
     usage_missing: bool = False
@@ -298,18 +301,28 @@ class FakeLab:
 
     def console_command(self, company: str) -> Answer:
         del company
+        if self.console_raises:
+            msg = "not built yet: V7 (console)"
+            raise LabError(msg)
         return OK
+
+    def egress_ips(self) -> list[str]:
+        return list(self.egress)
 
     def set_allowlist(self, company: str, ips: Sequence[str]) -> None:
         del company
         self._rec(f"set_allowlist:{len(ips)}")
         self.allowlist = list(ips)
 
-    def request_from(self, company: str, *, foreign: bool, method: str, path: str) -> int:
+    def request_from(self, company: str, *, method: str, path: str) -> int:
+        """Every request comes from this machine, `egress[0]`."""
         del company
         self._rec("request_from")
         exempt = method == "POST" and path == proof.LICENSE_RENEW_PATH
-        if self.allowlist and foreign and (self.renew_blocked_by_allowlist or not exempt):
+        off_list = bool(self.allowlist) and self.egress[0] not in self.allowlist
+        if self.allowlist and self.listed_blocked:
+            return 403
+        if off_list and (self.renew_blocked_by_allowlist or not exempt):
             return 403
         return 200
 
@@ -449,6 +462,9 @@ BREAKS: list[tuple[str, FakeLab, str]] = [
     ("proxy", FakeLab(cross_accepts="proxy-token"), "refused by the other proxy"),
     ("proxy", FakeLab(shared_container=True), "own container app"),
     ("proxy", FakeLab(renew_blocked_by_allowlist=True), "still reaches POST renew"),
+    ("proxy", FakeLab(listed_blocked=True), "a listed IP reaches GET /"),
+    ("proxy", FakeLab(egress=[]), "egress address is read"),
+    ("proxy", FakeLab(egress=[proof.FOREIGN_IP]), "egress address is read"),
     ("cost", FakeLab(limits={"workers_scripts": 100, "routes_per_zone": 1000}), "workers_scripts"),
     ("cost", FakeLab(usage_missing=True), "appears in the usage report"),
     ("renet", FakeLab(read_only_moves=True), "a read-only verb leaves renet"),
@@ -499,6 +515,22 @@ def test_region_loss_records_what_bench_cannot_prove() -> None:
     _, lines = run("region-loss", FakeLab())
     notes = [line for line in lines if line.startswith("note")]
     assert len(notes) == len(proof.NOT_PROVEN_ON_BENCH)
+
+
+def test_proxy_lists_this_machine_then_only_the_foreign_address() -> None:
+    lab = FakeLab()
+    rc, _ = run("proxy", lab)
+    assert rc == 0
+    sets = [c for c in lab.calls if c.startswith("set_allowlist")]
+    assert sets == ["set_allowlist:1", "set_allowlist:1", "set_allowlist:0"]
+
+
+def test_an_unbuilt_console_command_still_checks_the_allowlist() -> None:
+    lab = FakeLab(console_raises=True)
+    rc, lines = run("proxy", lab)
+    assert rc == 1
+    assert any("console command" in line for line in broken(lines))
+    assert any(line.startswith("ok") and "still reaches POST renew" in line for line in lines)
 
 
 def test_proxy_clears_the_allowlist_after_the_proof() -> None:
