@@ -286,7 +286,7 @@ def planted_defect(module, hot):
 
 
 class _Fake:
-    """A subprocess.run stand-in: records each call's argv head and timeout, sleeps `delay_git` on the listing, answers an empty verdict."""
+    """A subprocess.run stand-in: records each call's argv head and timeout, advances the fake clock by `delay_git` on the listing, answers an empty verdict."""
 
     def __init__(self, clock, delay_git=0.0):
         self.calls = []

@@ -15,6 +15,7 @@ import pathlib
 import subprocess
 import sys
 import tempfile
+import typing
 
 HERE = pathlib.Path(__file__).resolve().parent
 REPO = HERE.parents[2]
@@ -315,7 +316,9 @@ def every_run_import_error():
     """The ImportError `_every_run` raises when `rediacc_hooks` is unimportable and syspath.py has no loader, else None."""
     real_spec = importlib.util.spec_from_file_location
     saved = {k: sys.modules.pop(k) for k in list(sys.modules) if k.split(".")[0] == "rediacc_hooks"}
-    sys.modules["rediacc_hooks"] = None  # makes `from rediacc_hooks import ...` raise ImportError
+    sys.modules["rediacc_hooks"] = typing.cast(
+        "typing.Any", None
+    )  # makes `from rediacc_hooks import ...` raise ImportError
     importlib.util.spec_from_file_location = lambda *_a, **_k: None
     try:
         _shapes._every_run()
@@ -328,7 +331,7 @@ def every_run_import_error():
     return None
 
 
-TALLY["total"] += 1
+# Not a guard invocation: it stays out of TALLY["total"], which the anti-vacuity check compares with TALLY["blocked"].
 _err = every_run_import_error()
 _ok = _err is not None and "syspath.py" in _err
 TALLY["fails"] += not _ok

@@ -575,6 +575,25 @@ def recorder_symbol_cases(world):
             ),
             True,
         ),
+        # A plain copy of another module in a program that also names the recorder is placed as that module (review 6e0a2c3e.1).
+        (
+            "python writes ledger_path of a copied non-recorder import in a recorder-mentioning program (review 6e0a2c3e.1)",
+            _py(
+                lt + "from rediacc_hooks.lib import reviews as rv\n"
+                "m = rv\nm.ledger_path('.', 'b').write_text('{}')"
+            ),
+            False,
+        ),
+        (
+            "python writes ledger_path of a copied recorder import (control, review 6e0a2c3e.1)",
+            _py(lt + "m = LT\nm.ledger_path('.').write_text('x')"),
+            True,
+        ),
+        (
+            "python writes ledger_path of a copied parameter in a recorder-mentioning program (control, review 6e0a2c3e.1)",
+            _py(lt + "def go(p):\n    m = p\n    m.ledger_path('.').write_text('x')\ngo(LT)"),
+            True,
+        ),
         # A call-bound receiver in a program that names no recorder module stays allowed (review b124565b.2).
         (
             "python writes ledger_path of a call-bound receiver with no recorder mention (review b124565b.2)",

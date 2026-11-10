@@ -583,6 +583,7 @@ class _RecorderNames:
         self.imports = imports
         self.scopes = scopes
         self.bound = bound
+        self._copying = set()
         self.mentioned = any(
             _RECORDER_MENTION.search(text) for node in ast.walk(tree) for text in _node_words(node)
         )
@@ -601,6 +602,15 @@ class _RecorderNames:
             ):
                 return True
             # A value produced by a call (`importlib.import_module(name)`, a factory), read from a container or attribute (`sys.modules[name]`, `h.mod`) or copied from another name can hold the recorder module whatever its own words say, so it cannot be placed: the program-wide mention decides (reviews 75c74e05.1, b124565b.1).
+            # A plain copy of a name this reading can place (`m = rv` where `rv` is an import of another module) is placed as that name is, so a recorder mention elsewhere in the program does not refuse it (review 6e0a2c3e.1); a cycle of copies cannot be placed.
+            if all(isinstance(v, ast.Name) for v in values) and node not in self._copying:
+                self._copying.add(node)
+                try:
+                    placed = [self._name(v) for v in values]
+                finally:
+                    self._copying.discard(node)
+                if all(p is False for p in placed):
+                    return False
             if any(isinstance(n, _UNPLACED_VALUE) for v in values for n in ast.walk(v)):
                 return None
             return False
