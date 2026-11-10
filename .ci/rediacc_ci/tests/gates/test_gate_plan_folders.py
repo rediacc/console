@@ -409,6 +409,63 @@ def test_sweep_with_write_deletes_and_leaves_a_tombstone(gate, tmp_path):
     gate.log_pass("--sweep --write deletes the file and keeps its text in a resolvable blob")
 
 
+_BOXED_REL = "agent/plans/_done/PLAN-boxed.md"
+_GONE_REL = "agent/plans/_done/PLAN-gone.md"
+_BOX_LINE = "- [ ] P4 rehearsal dispatch with OBS blocked, recorded in the round log"
+
+
+def _aged_pair(tmp_path: pathlib.Path, boxed_text: str) -> pathlib.Path:
+    """Two terminal plans past retention: PLAN-boxed carries `boxed_text`, PLAN-gone carries no open box (the control)."""
+    root = _seed(
+        tmp_path,
+        {
+            _BOXED_REL: boxed_text,
+            _GONE_REL: "# PLAN: gone\nStatus: done\nFirst-Seen: 2024-01-01\n",
+        },
+    )
+    _ledger(root, {_BOXED_REL: {"moved_at": "2024-02-01"}, _GONE_REL: {"moved_at": "2024-02-01"}})
+    return root
+
+
+def test_an_aged_plan_its_open_box_binds_is_f10_and_is_never_swept(gate, tmp_path):
+    """Review 21dcc994.1, control first: past retention with no open box is F3 and is swept; the same age with an open box that binds is F10, names the box, and survives --sweep --write."""
+    root = _aged_pair(
+        tmp_path, "# PLAN: boxed\nStatus: done\nFirst-Seen: 2024-01-01\n\n%s\n" % _BOX_LINE
+    )
+    result = _gate(root)
+    gate.assert_exit(1, result, "both aged plans are findings")
+    gate.assert_contains(result.err, "F3 %s" % _GONE_REL, "the control: no open box stays F3")
+    gate.assert_contains(result.err, "F10 %s" % _BOXED_REL, "an open box turns F3 into F10")
+    gate.assert_contains(result.err, "P4 rehearsal dispatch", "F10 names the open box")
+    gate.assert_contains(result.err, "re-home an open box", "and the fix")
+    gate.assert_eq(
+        "F3 %s" % _BOXED_REL in result.err,
+        False,
+        "a bound plan is never told to run the sweep that refuses it",
+    )
+    swept = _gate(root, "--sweep", "--write")
+    gate.assert_contains(swept.err, "%s is not swept" % _BOXED_REL, "the sweep says why it skips")
+    gate.assert_eq((root / _BOXED_REL).exists(), True, "the plan with an open box is kept")
+    gate.assert_eq((root / _GONE_REL).exists(), False, "the control is swept")
+    gate.log_pass("an open box keeps an aged plan out of the sweep and out of F3")
+
+
+def test_a_box_dropped_by_a_closed_ruling_is_swept_and_printed(gate, tmp_path):
+    """The binding rule's release, kept visible: an open box dropped by a closed operator ruling no longer binds, so the plan is swept, and the sweep prints the box and the note that released it."""
+    root = _aged_pair(
+        tmp_path,
+        "# PLAN: boxed\nStatus: done\nRuling: #abcdef12\nFirst-Seen: 2024-01-01\n\n"
+        "%s\n    dropped by ruling #abcdef12\n" % _BOX_LINE,
+    )
+    _ruling_item(root, "abcdef12", "x")
+    swept = _gate(root, "--sweep", "--write")
+    gate.assert_exit(0, swept, "a released box does not hold the sweep")
+    gate.assert_eq((root / _BOXED_REL).exists(), False, "the plan is swept")
+    gate.assert_contains(swept.out, _BOX_LINE, "the sweep prints the released box")
+    gate.assert_contains(swept.out, "dropped by ruling #abcdef12", "and the note releasing it")
+    gate.log_pass("a dropped box is swept, and never silently")
+
+
 def test_move_leaves_a_stub_and_stamps_both_clocks(gate, tmp_path):
     root = _seed(
         tmp_path, {"agent/PLAN-closing.md": "# PLAN: closing\nStatus: done\n\n- [x] a box\n"}

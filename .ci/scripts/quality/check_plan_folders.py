@@ -5,7 +5,7 @@ Logic is in `rediacc_ci.quality.plan_lifecycle`, which pytest and this file's `-
 
 WHAT THIS GATE ADDS TO THE ONES ALREADY IN THE FAMILY. `check:ci-plan-housekeeping` asks how OLD a plan is, `check:ci-plan-boxes` asks whether its boxes survived, `check:ci-plan-record` asks whether a compaction record is honest. None of the three has ever asked WHERE a plan is or WHEN it leaves, which is why `agent/` accumulated 103 files at its root with no rule either way.
 
-NINE FINDINGS, EACH WITH A PLANTED CONTROL:
+TEN FINDINGS, EACH WITH A PLANTED CONTROL:
 
     F1  a plan at the legacy path rather than under agent/plans/**
     F2  the folder disagrees with `Status:`
@@ -16,6 +16,10 @@ NINE FINDINGS, EACH WITH A PLANTED CONTROL:
     F7  a citation resolving to neither a file nor a tombstone
     F8  a tombstone whose blob does not resolve
     F9  the vacuity floor
+    F10 a terminal plan past terminal_days that something still binds (an open box, an open
+        item citing it, an unfinished dependent), so the sweep F3 would demand refuses it
+
+F10 REPLACES F3 FOR A BOUND PLAN, AND IS AS FATAL AS F3 WAS. F3 names `--sweep --write` as the fix, and the sweep refuses a bound plan (`wl_planbind`, PLAN-plan-compaction-bindings CB3), so an F3 on a bound plan demanded a deletion the binding rule forbids. F10 names the bindings and their fixes instead. It is fatal with no baseline because `check:ci-plan-bindings` already reds, with no baseline, on every terminal plan a live binding holds: a tree where F10 fires is a tree that gate has already failed, so F10 cannot turn a green tree red. An open box that `wl_planbind` RELEASES (re-homed under a resolving `Ruling:`, or dropped by a closed operator ruling) does not bind; the sweep deletes such a plan and prints each released box with the note that released it, so a deleted `- [ ]` is never silent.
 
 F1 IS FATAL SINCE THE MIGRATION LANDED. It spent exactly one stage as an advisory, because a gate cannot red on the day it arrives over a tree where all 103 plans still sit at the legacy path: that is the shape that gets suppressed within a day, which is the failure docs/agent-reference/suppressions.md exists to prevent. The 103 moved in S4, so the escape hatch that made the
 advisory possible is gone rather than left behind switched off -- a flag whose only job is finished is a suppression waiting for a reader who does not know why it is there.
@@ -467,6 +471,25 @@ def selftest() -> int:
         (0, 1, None),
     )
 
+    # B6. F3 on a bound plan becomes F10 naming the binding (review 21dcc994.1): the sweep F3 demands would refuse it. The twin, nothing binding, keeps F3 and its sweep fix.
+    aged_f3 = PL.finding_f3(_plans([(bound_rel, CLEAN_DONE)], aged_ledger), CONFIG, TODAY)
+    boxed_done = plant(CLEAN_DONE, "- [x] one box", "- [ ] one box")
+    held_f3 = _hold_bound(nowhere, aged_f3, 40, {bound_rel: boxed_done}, [])
+    tally.check(
+        "B6 an aged plan its own open box binds is F10, naming the box, not F3",
+        (
+            _codes(held_f3),
+            "one box" in held_f3[0].message,
+            "--sweep --write` is not" in held_f3[0].message,
+        ),
+        ({"F10"}, True, True),
+    )
+    tally.check(
+        "B7 the same aged plan with nothing binding stays F3",
+        _codes(_hold_bound(nowhere, aged_f3, 40, {bound_rel: CLEAN_DONE}, [])),
+        {"F3"},
+    )
+
     return 0 if tally.report() else 1
 
 
@@ -509,6 +532,45 @@ def _gather(root: pathlib.Path):
     return plans, set(rels), stones
 
 
+def _hold_bound(
+    root: pathlib.Path, found: list[PL.Finding], terminal_days: int, texts=None, items=None
+):
+    """`found` with every F3 on a plan something still binds replaced by an F10 naming the bindings. The sweep F3 demands would refuse that plan, so F3's own fix is wrong for it. `texts` and `items` are the selftest's door, as in `_binding_refusal`."""
+    out: list[PL.Finding] = []
+    for finding in found:
+        refusal = _binding_refusal(root, finding.rel, texts, items) if finding.code == "F3" else ""
+        if not refusal:
+            out.append(finding)
+            continue
+        out.append(
+            PL.Finding(
+                "F10",
+                finding.rel,
+                "%s is past the %d-day terminal retention, but the sweep refuses it while "
+                "anything binds it, so F3's `--sweep --write` is not its fix. Release each "
+                "binding first: re-home an open box into a live plan (or tick it with "
+                "evidence), and close or re-home each item and dependent below.\n%s"
+                % (finding.rel, terminal_days, refusal),
+            )
+        )
+    return out
+
+
+def _released_boxes(text: str) -> list[str]:
+    """Each open box of a plan the sweep is about to delete, with the indented note lines under it (where a re-home or a `dropped by ruling #<id>` is written). The binding decision released every one of them, or the plan would not be due; printing them keeps a deleted `- [ ]` visible in the sweep's own output."""
+    paths.on_sys_path(paths.hooks_stop_dir())
+    rec = importlib.import_module("wl_planrec")
+    lines = text.splitlines()
+    out: list[str] = []
+    for index, raw, _body, sig in rec.open_boxes(text):
+        out.append("open box %s: %s" % (sig, raw.strip()))
+        for line in lines[index + 1 :]:
+            if not line.strip() or not line[:1].isspace() or line.lstrip().startswith("- ["):
+                break
+            out.append("  " + line.strip())
+    return out
+
+
 def run(root: pathlib.Path, config: dict) -> int:
     plans, existing, stones = _gather(root)
     found = PL.findings(
@@ -520,6 +582,7 @@ def run(root: pathlib.Path, config: dict) -> int:
         tombstones=stones,
         blob_resolves=PL.blob_resolves(root, {t.blob for t in stones}),
     )
+    found = _hold_bound(root, found, int(config["terminal_days"]))
     for finding in found:
         print("✗ %s %s" % (finding.code, finding.message), file=sys.stderr)
     if found:
@@ -691,6 +754,14 @@ def sweep(root: pathlib.Path, config: dict, *, write: bool) -> int:
         return held_exit
     for plan in due:
         print("  %s (%s)" % (plan.rel, PL.classify(plan)))
+        released = _released_boxes((root / plan.rel).read_text(encoding="utf-8", errors="replace"))
+        if released:
+            print(
+                "    open box(es) the binding rule released (re-homed, or dropped by a closed "
+                "ruling); the tombstone blob keeps them:"
+            )
+            for line in released:
+                print("      %s" % line)
     if not write:
         print(
             "Refusing to delete %d file(s) without --write. A sweeper whose default is "
