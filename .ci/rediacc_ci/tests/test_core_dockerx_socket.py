@@ -326,10 +326,10 @@ def test_a_row_spelled_through_a_symlinked_directory_counts(sock_dir: pathlib.Pa
 
 def test_a_backlog_that_drains_is_not_a_hang(monkeypatch: pytest.MonkeyPatch) -> None:
     # A busy engine whose queue empties within the timeout answers; only a backlog full to the end counts as no answer.
-    calls = iter([BlockingIOError(11, "full"), True])
+    calls: list[BaseException | bool] = [BlockingIOError(11, "full"), True]
 
     def once(_path: str, _timeout: float) -> bool | None:
-        step = next(calls)
+        step = calls.pop(0)
         if isinstance(step, BaseException):
             raise step
         return step

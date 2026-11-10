@@ -589,7 +589,7 @@ def _with_socket_hint(
     path = _local_socket(env, host)
     # The re-bind command names the systemd docker.socket, so only the host engine's socket is judged; a repo daemon's socket is not.
     engine = path is not None and os.path.realpath(path) == os.path.realpath("/var/run/docker.sock")
-    defect = socket_defect(path) if engine else None
+    defect = socket_defect(path) if path is not None and engine else None
     return "%s\n  %s" % (reason, defect) if defect else reason
 
 
