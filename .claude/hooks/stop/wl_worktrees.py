@@ -276,7 +276,45 @@ def unlanded_commits(tree, head, pin, tip, base):
         and tip
         and _git(tree, "merge-base", "--is-ancestor", pair[1] + "^{commit}", tip) is not None
     }
-    return [sha for sha in found if PICKED_LINE % sha not in text and sha not in recorded]
+    left = [sha for sha in found if PICKED_LINE % sha not in text and sha not in recorded]
+    return _drop_revert_pairs(tree, left)
+
+
+def _patch_id(tree, *diff_args):
+    """The stable patch-id of `git diff <diff_args>`, or "" for an empty patch or when git could not say."""
+    patch = _git(tree, "diff", "--no-ext-diff", *diff_args)
+    if not patch:
+        return ""
+    try:
+        done = subprocess.run(
+            ["git", "--no-optional-locks", "-C", str(tree), "patch-id", "--stable"],
+            input=patch,
+            capture_output=True,
+            text=True,
+            errors="replace",
+            timeout=GIT_TIMEOUT_S,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return ""
+    return done.stdout.split()[0] if done.returncode == 0 and done.stdout.split() else ""
+
+
+def _drop_revert_pairs(tree, left):
+    """`left` without every commit and its exact revert. A lease that committed a change and then reverted it holds a net-zero pair that no pick could ever land, so it would keep the tree uncollectable forever. A revert counts only when its patch-id equals that of the commit's diff reversed (`git diff C C^`), whatever its message says; a partial revert differs and both stay."""
+    if len(left) < 2:
+        return left
+    forward = {sha: _patch_id(tree, sha + "^", sha) for sha in left}
+    inverse = {sha: _patch_id(tree, sha, sha + "^") for sha in left}
+    dropped: set[str] = set()
+    for change in left:
+        if change in dropped or not inverse[change]:
+            continue
+        for revert in left:
+            if revert != change and revert not in dropped and forward[revert] == inverse[change]:
+                dropped.update((change, revert))
+                break
+    return [sha for sha in left if sha not in dropped]
 
 
 def figures(repos, tips, pins, base):

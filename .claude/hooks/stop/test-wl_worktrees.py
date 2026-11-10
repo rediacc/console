@@ -771,6 +771,48 @@ def control_landed(tmp):
     got = read(tmp, main)
     check("a pin past HEAD still counts", got["unlanded"][0]["commits"], {".": [sha]})
 
+    # A commit and its exact revert (made by `git revert -n` and a plain message) are net-zero: only the third commit needs landing.
+    main = lease_main_repo(tmp, "revert-pair")
+    lease = new_lease(tmp, main, "w1")
+    change = commit_in(tmp, lease, "a.txt", "changed\n")
+    git(tmp, lease, "revert", "-n", change)
+    git(tmp, lease, "commit", "-q", "-m", "put it back")
+    third = commit_in(tmp, lease, "x.txt", "x\n")
+    check(
+        "a commit and its exact revert stay unlanded until the third is picked",
+        read(tmp, main)["unlanded"][0]["commits"],
+        {".": [third]},
+    )
+    git(tmp, main, "cherry-pick", "-x", third)
+    check("a commit and its exact revert read landed", read(tmp, main)["unlanded"], [])
+
+    # CONTROL: a partial revert is not an inverse, so both commits stay unlanded.
+    main = lease_main_repo(tmp, "partial-revert")
+    lease = new_lease(tmp, main, "w1")
+    (lease / "p.txt").write_text("p\n", encoding="utf-8")
+    (lease / "q.txt").write_text("q\n", encoding="utf-8")
+    git(tmp, lease, "add", "--", "p.txt", "q.txt")
+    git(tmp, lease, "commit", "-q", "-m", "two files")
+    change = git(tmp, lease, "rev-parse", "HEAD")
+    git(tmp, lease, "rm", "-q", "--", "p.txt")
+    git(tmp, lease, "commit", "-q", "-m", "drop one")
+    partial = git(tmp, lease, "rev-parse", "HEAD")
+    check(
+        "a partial revert leaves both commits unlanded",
+        read(tmp, main)["unlanded"][0]["commits"],
+        {".": [change, partial]},
+    )
+
+    # CONTROL: a commit alone stays unlanded.
+    main = lease_main_repo(tmp, "no-revert")
+    lease = new_lease(tmp, main, "w1")
+    alone = commit_in(tmp, lease, "b.txt", "b\n")
+    check(
+        "a commit with no revert stays unlanded",
+        read(tmp, main)["unlanded"][0]["commits"],
+        {".": [alone]},
+    )
+
 
 def control_orphans(tmp):
     main = lease_main_repo(tmp, "orphans")
