@@ -11,6 +11,7 @@ import json
 import os
 import time
 
+import pytest
 import wl_report
 import wl_roster
 
@@ -277,3 +278,161 @@ def test_r8_control_a_non_terminal_monitor_event_keeps_it_armed(sc):
     with tx.open("a", encoding="utf-8") as fh:
         fh.write(json.dumps(_rec_notice(MONITOR), separators=(",", ":")) + "\n")
     assert wl_report.armed_monitors(tx, time.time()) == []
+
+
+# ---- review findings 418a8095.1 to .5 ----
+
+
+def _write_line(path, record: dict) -> None:
+    with path.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(record, separators=(",", ":")) + "\n")
+
+
+def _launch(timeout_ms=None, persistent=False, first=None, tid=MONITOR) -> dict:
+    result: dict = dict(first or {})
+    result["taskId"] = tid
+    if timeout_ms is not None:
+        result["timeoutMs"] = timeout_ms
+    result["persistent"] = persistent
+    return {
+        "type": "user",
+        "message": {"content": [{"type": "tool_result", "content": "Monitor started"}]},
+        "toolUseResult": result,
+    }
+
+
+def _aged(path, minutes: float) -> float:
+    now = time.time()
+    old = now - minutes * 60
+    os.utime(path, (old, old))
+    return now
+
+
+def test_r8_1_a_quiet_monitor_inside_its_own_timeout_stays_armed_past_the_flat_horizon(tmp_path):
+    """FIRE: a 3-hour build Monitor emits no events; the flat 120-minute horizon released its waiting agent."""
+    tx = tmp_path / "agent.jsonl"
+    _write_line(tx, _launch(timeout_ms=3 * 3600 * 1000))
+    now = _aged(tx, wl_roster.WAIT_HORIZON_MIN + 30)
+    assert wl_report.armed_monitors(tx, now) == [MONITOR]
+
+
+def test_r8_1_inverse_silence_past_the_monitor_timeout_and_grace_is_a_gone_agent(tmp_path):
+    """INVERSE: the Monitor's own timeout notification would have been written by now, so the silence is a dead agent."""
+    tx = tmp_path / "agent.jsonl"
+    _write_line(tx, _launch(timeout_ms=600000))
+    edge = 600 + wl_report.MONITOR_GRACE_SEC
+    now = time.time()
+    os.utime(tx, (now - edge + 5, now - edge + 5))
+    assert wl_report.armed_monitors(tx, now) == [MONITOR]
+    os.utime(tx, (now - edge - 5, now - edge - 5))
+    assert wl_report.armed_monitors(tx, now) == []
+
+
+def test_r8_1_a_persistent_monitor_keeps_the_wait_horizon(tmp_path):
+    tx = tmp_path / "agent.jsonl"
+    _write_line(tx, _launch(timeout_ms=600000, persistent=True))
+    assert wl_report.armed_monitors(tx, _aged(tx, wl_roster.WAIT_HORIZON_MIN - 5)) == [MONITOR]
+    assert wl_report.armed_monitors(tx, _aged(tx, wl_roster.WAIT_HORIZON_MIN + 5)) == []
+
+
+def test_r8_2_a_launch_with_another_key_first_is_still_a_launch(tmp_path):
+    """FIRE: the old pattern needed `taskId` as the first key of toolUseResult."""
+    tx = tmp_path / "agent.jsonl"
+    _write_line(tx, _launch(timeout_ms=600000, first={"command": "tail -f x"}))
+    raw = tx.read_text(encoding="utf-8")
+    assert raw.index('"command"') < raw.index('"taskId"')
+    assert wl_report.armed_monitors(tx, time.time()) == [MONITOR]
+
+
+def test_r8_2_inverse_a_line_that_only_names_task_id_is_not_a_launch(tmp_path):
+    tx = tmp_path / "agent.jsonl"
+    _write_line(tx, {"type": "user", "message": {"content": 'the "taskId" key of a brief'}})
+    _write_line(tx, {"toolUseResult": {"taskId": 7}})
+    with tx.open("a", encoding="utf-8") as fh:
+        fh.write('{not json "taskId"\n')
+    assert wl_report.armed_monitors(tx, time.time()) == []
+
+
+def test_r8_3_an_api_request_tail_after_the_resume_is_held_until_superseded(sc):
+    """The mid-turn reading of an api-request tail is intended: the shell's notification resumed the agent, so the tail is a turn in flight, and its own SubagentStop capture supersedes the entry."""
+    path = transcript(sc, flushed=False)
+    capture(sc, WAITING, path)
+    assert _capture_interim(sc) == SHELL
+    _write_line(path, _rec_notice(SHELL))
+    _write_line(path, {"type": "api-request", "message": {"content": []}})
+    assert WAITING not in surfaced(sc), surfaced(sc)[:600]
+
+
+def test_r8_3_inverse_the_same_tail_gone_quiet_past_the_fresh_window_is_returned(sc):
+    path = transcript(sc, flushed=False)
+    capture(sc, WAITING, path)
+    _write_line(path, _rec_notice(SHELL))
+    _write_line(path, {"type": "api-request", "message": {"content": []}})
+    _aged(path, 30)
+    assert WAITING in surfaced(sc), "an api-request tail that never flushed stayed hidden"
+
+
+def _stop_event(sc: Scratch, tx) -> dict:
+    return {
+        "agent_id": MON_AGENT,
+        "agent_type": "general-purpose",
+        "session_id": "aaaaaaaa-1111",
+        "cwd": sc.env["CLAUDE_PROJECT_DIR"],
+        "agent_transcript_path": str(tx),
+        "last_assistant_message": MON_WAITING,
+    }
+
+
+def _in_process_in_scratch(sc: Scratch, monkeypatch) -> None:
+    """An in-process `handle_subagent_stop` writes to `$WORKLIST_REPORTS_DIR`, and with the scratch env unset it writes to the operator's real report store: a first draft of the r8_4 cases did, and its fixture capture (id 000333344445) blocked the lead's stop as an unread report."""
+    for key, value in sc.env.items():
+        monkeypatch.setenv(key, value)
+    assert os.environ["WORKLIST_REPORTS_DIR"] == str(sc.store)
+
+
+def test_r8_4_a_filesystem_error_from_armed_monitors_costs_only_the_interim(sc, monkeypatch):
+    """The capture hook never wedges a stop on an unreadable transcript."""
+    tx = monitor_transcript(sc, "waiting", shell=False)
+    _in_process_in_scratch(sc, monkeypatch)
+
+    def boom(*_a, **_k):
+        raise OSError("unreadable")
+
+    monkeypatch.setattr(wl_report, "armed_monitors", boom)
+    wl_report.handle_subagent_stop(_stop_event(sc, tx))
+    assert _capture_interim(sc) == ""
+    assert sc.index_lines(), "the capture itself was lost"
+
+
+def test_r8_4_inverse_any_other_error_from_armed_monitors_surfaces(sc, monkeypatch):
+    """FIRE: suppress(Exception) hid a bug in the scan as a silent loss of the interim mark."""
+    tx = monitor_transcript(sc, "waiting", shell=False)
+    _in_process_in_scratch(sc, monkeypatch)
+
+    def bug(*_a, **_k):
+        raise RuntimeError("a bug in the scan")
+
+    monkeypatch.setattr(wl_report, "armed_monitors", bug)
+    with pytest.raises(RuntimeError):
+        wl_report.handle_subagent_stop(_stop_event(sc, tx))
+
+
+def test_r8_5_the_transcript_is_read_once_per_call(tmp_path, monkeypatch):
+    """FIRE: the scan copied the rest of the transcript per launch; one call now reads the file once however many Monitors it launched."""
+    tx = tmp_path / "agent.jsonl"
+    for i in range(40):
+        _write_line(tx, _launch(timeout_ms=600000, tid="bmon%05d" % i))
+    _write_line(tx, _rec_notice("bmon00003"))
+    reads = []
+    real = type(tx).read_bytes
+
+    def counting(self):
+        reads.append(self)
+        return real(self)
+
+    monkeypatch.setattr(type(tx), "read_bytes", counting)
+    got = wl_report.armed_monitors(tx, time.time())
+    assert len(reads) == 1
+    assert len(got) == 39
+    assert "bmon00003" not in got
+    assert got[-1] == "bmon00039"

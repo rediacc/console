@@ -472,11 +472,24 @@ def test_control_with_nothing_landed_a_truly_absent_box_stays_local(tmp_path, mo
 
 
 def test_live_owed_boxes_is_empty_when_the_audit_fails(tmp_path, monkeypatch):
+    """The audit itself raises on a real git fixture: head and stamp work before it, so the empty result is the audit's exception being caught."""
+    root, _state = live_owed_world(tmp_path, monkeypatch)
     ba = wlfix.import_wl("wl_boxaudit")
+    assert ba.head_of(root)
+    assert ba.inputs_stamp(root) is not None
+    calls = []
 
-    def boom(*_a, **_k):
+    def boom(*a, **_k):
+        calls.append(a)
         raise OSError("unreadable")
 
-    monkeypatch.setenv("TMPDIR", str(tmp_path))
     monkeypatch.setattr(ba, "audit", boom)
-    assert J.live_owed_boxes(tmp_path) == {}
+    assert J.live_owed_boxes(root) == {}
+    assert len(calls) == 1, "the audit was never reached, so the empty result proves nothing"
+
+
+def test_live_owed_boxes_control_the_same_world_reads_j9_live_owed(tmp_path, monkeypatch):
+    """CONTROL: with the audit untouched the fixture is not empty, so the failure test's {} is the caught exception."""
+    root, _state = live_owed_world(tmp_path, monkeypatch)
+    got = J.live_owed_boxes(root)
+    assert [p for p, _s in got] == ["PLAN-batch-fixture.md"], got

@@ -371,32 +371,67 @@ def _still_waiting(entry, now=None):
         age = now - jsonl.stat().st_mtime
     except OSError:
         return False
+    # AN `api-request` TAIL READS AS MID-TURN HERE, ON PURPOSE (review finding 418a8095.3). This runs only for an interim entry, whose capture saw a child armed; the only way that child ends is a notification that RESUMES the agent, which writes after the capture. A resumed turn that finishes fires its own SubagentStop, and that second capture supersedes this entry (`unread`), so an api-request tail with no later capture is a turn still in flight, and one the harness never flushed ages out at TEAMMATE_FRESH_MIN. The SubagentStop site is different: its event proves the turn ended, so it does not ask the tail.
     # A tool call writes nothing while it runs (a gate run takes 25 minutes), so an in-flight tool gets the wait horizon; any other mid-turn shape must have written recently.
     horizon = wl_roster.WAIT_HORIZON_MIN if wl_roster.inflight_tool(rec) else L.TEAMMATE_FRESH_MIN
     return age <= horizon * 60
 
 
-# A Monitor launch records `"toolUseResult":{"taskId":"<id>",...}`, not the shells' `backgroundTaskId`, so `wl_roster.armed_shells` never saw one. Measured on the 2026-11-10 transcript of agent a5d362329446575d0: six launches, each in exactly this form.
-_MONITOR_LAUNCH = re.compile(rb'"toolUseResult":\{"taskId":"([A-Za-z0-9_-]+)"')
+# A Monitor launch records a `toolUseResult` object with a `taskId` (and its own `timeoutMs` / `persistent`), not the shells' `backgroundTaskId`, so `wl_roster.armed_shells` never saw one. The record is parsed as JSON, so the key order inside `toolUseResult` is not part of the match. Measured on the 2026-11-10 transcript of agent a5d362329446575d0: six launches.
+_TASK_ID = re.compile(r"[A-Za-z0-9_-]+\Z")
 # A Monitor sends one notification per event; only a terminal status ends it ("stream ended" arrives as `<status>completed</status>`).
-_MONITOR_END = rb"<task-id>%s</task-id>(?:(?!</task-notification>).){0,2000}?<status>(?:completed|failed|killed|stopped|timeout|expired)</status>"
+_MONITOR_END = re.compile(
+    rb"<task-id>([A-Za-z0-9_-]+)</task-id>(?:(?!</task-notification>).){0,2000}?"
+    rb"<status>(?:completed|failed|killed|stopped|timeout|expired)</status>",
+    re.DOTALL,
+)
+# A Monitor stops itself at its own `timeoutMs`, and the notification that says so is a record in the transcript. A transcript quiet for longer than that timeout plus this grace therefore belongs to an agent that is gone; a Monitor launched without a timeout (or a persistent one) falls back to `wl_roster.WAIT_HORIZON_MIN`. Review finding 418a8095.1: a flat 120-minute horizon released an agent waiting on a quiet 3-hour build Monitor.
+MONITOR_GRACE_SEC = 300
 
 
-def armed_monitors(jsonl, now):
-    """Monitor task ids this transcript started that no terminal notification IN IT has ended, newest last; empty past `wl_roster.WAIT_HORIZON_MIN` of transcript silence."""
+def _monitor_launch(line):
+    """(task id, silence horizon in seconds) for a transcript line that launched a Monitor, else None."""
     import wl_roster
 
     try:
-        if now - jsonl.stat().st_mtime > wl_roster.WAIT_HORIZON_MIN * 60:
-            return []
+        rec = json.loads(line)
+    except ValueError:
+        return None
+    res = rec.get("toolUseResult") if isinstance(rec, dict) else None
+    tid = res.get("taskId") if isinstance(res, dict) else None
+    if not isinstance(tid, str) or not _TASK_ID.match(tid):
+        return None
+    timeout = res.get("timeoutMs")
+    horizon = wl_roster.WAIT_HORIZON_MIN * 60
+    if (
+        not res.get("persistent")
+        and isinstance(timeout, int | float)
+        and not isinstance(timeout, bool)
+        and timeout > 0
+    ):
+        horizon = timeout / 1000.0 + MONITOR_GRACE_SEC
+    return tid, horizon
+
+
+def armed_monitors(jsonl, now):
+    """Monitor task ids this transcript started that no terminal notification IN IT has ended, newest last.
+
+    The transcript is read once and scanned in one pass: launch lines are parsed as JSON, and every terminal notification id is collected by one regex sweep. A Monitor counts as armed while the transcript's silence is inside ITS OWN horizon (`_monitor_launch`), not a flat one."""
+    try:
+        silence = now - jsonl.stat().st_mtime
         data = jsonl.read_bytes()
     except (OSError, AttributeError):
         return []
+    ended = {m.group(1) for m in _MONITOR_END.finditer(data)}
     out = []
-    for m in _MONITOR_LAUNCH.finditer(data):
-        tid = m.group(1)
-        if re.search(_MONITOR_END % re.escape(tid), data[m.end() :], re.DOTALL) is None:
-            out.append(tid.decode())
+    for line in data.splitlines():
+        if b'"taskId"' not in line:
+            continue
+        launch = _monitor_launch(line)
+        if launch is None or launch[0].encode() in ended or silence > launch[1]:
+            continue
+        if launch[0] not in out:
+            out.append(launch[0])
     return out
 
 
@@ -996,7 +1031,8 @@ def handle_subagent_stop(event):
             # The SubagentStop event proves the turn ended, so the transcript's last record (often an `api-request`) is not asked to say so.
             interim = wl_roster.transcript_armed(pathlib.Path(transcript), time.time())
         if not interim:
-            with contextlib.suppress(Exception):
+            # `armed_monitors` reports an unreadable transcript as [] itself; only a filesystem or decode error can still reach here, and anything else is a bug that must surface.
+            with contextlib.suppress(OSError, ValueError):
                 # An agent that ended its turn to wait on a Monitor alone is interim too.
                 mons = armed_monitors(pathlib.Path(transcript), time.time())
                 interim = mons[-1] if mons else ""
