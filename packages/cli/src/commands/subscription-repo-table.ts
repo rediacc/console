@@ -8,15 +8,15 @@ export function renderRepoLicenseTable(
   machineName: string,
   entries: RuntimeRepoLicenseStatus[]
 ): void {
-  outputService.info(t('commands.subscription.repo.status.header', { machineName }));
+  outputService.report(t('commands.subscription.repo.status.header', { machineName }));
   if (entries.length === 0) {
-    outputService.info(t('commands.subscription.repo.status.empty'));
+    outputService.report(t('commands.subscription.repo.status.empty'));
     return;
   }
 
   for (const entry of entries) {
     const effectiveHardExpiry = entry.hardExpiresAt ?? entry.expiresAt;
-    outputService.info(
+    outputService.report(
       t('commands.subscription.repo.status.entry', {
         repositoryGuid: entry.repositoryGuid,
         freshness: formatRuntimeRepoLicenseStatus(entry),
@@ -79,7 +79,7 @@ function renderLastRenewal(entry: RuntimeRepoLicenseStatus): void {
     outputService.warn(line);
     return;
   }
-  outputService.info(line);
+  outputService.report(line);
 }
 
 /**

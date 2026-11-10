@@ -218,7 +218,7 @@ async function applyTargetOptions(
       const refs = change.asks.map((a) => a.ref ?? name).join(', ');
       throw new ValidationError(t('commands.backup.strategy.set.noMeasurement', { refs }));
     }
-    for (const line of report.lines) outputService.info(line);
+    for (const line of report.lines) outputService.report(line);
   }
   for (const { ref, size } of change.reseeds) {
     outputService.warn(t('commands.backup.strategy.set.reseedWarning', { ref, size }));

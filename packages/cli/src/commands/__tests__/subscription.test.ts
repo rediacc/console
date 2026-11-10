@@ -25,6 +25,7 @@ const {
   mockGetSubscriptionScopeMismatch,
   mockSaveStoredSubscriptionToken,
   mockOutputInfo,
+  mockOutputReport,
   mockOutputWarn,
   mockOutputSuccess,
   mockOutputError,
@@ -60,6 +61,7 @@ const {
   }),
   mockSaveStoredSubscriptionToken: vi.fn(),
   mockOutputInfo: vi.fn(),
+  mockOutputReport: vi.fn(),
   mockOutputWarn: vi.fn(),
   mockOutputSuccess: vi.fn(),
   mockOutputError: vi.fn(),
@@ -137,6 +139,7 @@ vi.mock('../../services/renet/renet-execution.js', () => ({
 vi.mock('../../services/core/output.js', () => ({
   outputService: {
     info: mockOutputInfo,
+    report: mockOutputReport,
     warn: mockOutputWarn,
     success: mockOutputSuccess,
     error: mockOutputError,
@@ -283,9 +286,9 @@ describe('subscription command helpers', () => {
     await executeSubscriptionStatus();
 
     expect(mockFetchLicenseReportOrThrow).toHaveBeenCalledTimes(1);
-    expect(mockOutputInfo).toHaveBeenCalledWith('commands.subscription.status.remote');
-    expect(mockOutputInfo).toHaveBeenCalledWith('Organization: Acme');
-    expect(mockOutputInfo).toHaveBeenCalledWith('Team: Platform');
+    expect(mockOutputReport).toHaveBeenCalledWith('commands.subscription.status.remote');
+    expect(mockOutputReport).toHaveBeenCalledWith('Organization: Acme');
+    expect(mockOutputReport).toHaveBeenCalledWith('Team: Platform');
     expect(mockOutputWarn).toHaveBeenCalledWith('commands.subscription.status.issuanceUsageHigh80');
     expect(mockReadMachineActivationStatus).not.toHaveBeenCalled();
   });
@@ -299,7 +302,7 @@ describe('subscription command helpers', () => {
     await expect(executeSubscriptionStatus()).rejects.toThrow(
       'Token is bound to a different IP address'
     );
-    expect(mockOutputInfo).not.toHaveBeenCalledWith('commands.subscription.status.remote');
+    expect(mockOutputReport).not.toHaveBeenCalledWith('commands.subscription.status.remote');
   });
 
   // Same swallow, same class: refresh reported a generic "could not read" string and dropped the server's own reason on the floor.
@@ -482,7 +485,7 @@ describe('subscription command helpers', () => {
 
     expect(mockOutputWarn).toHaveBeenCalledWith('commands.subscription.status.parseFailed');
     expect(mockReadMachineActivationStatus).not.toHaveBeenCalled();
-    expect(mockOutputInfo).toHaveBeenCalledWith('commands.subscription.repo.status.empty');
+    expect(mockOutputReport).toHaveBeenCalledWith('commands.subscription.repo.status.empty');
   });
 
   it('status fails hard when token team and current config team differ', async () => {
@@ -533,29 +536,29 @@ describe('subscription command helpers', () => {
     expect(mockAcquireRemoteRenet).toHaveBeenCalledTimes(1);
     expect(mockAcquireRemoteRenet.mock.calls[0][0]).toBe('read-only');
     expect(mockReadMachineActivationStatus).toHaveBeenCalledTimes(1);
-    expect(mockOutputInfo).toHaveBeenCalledWith(
+    expect(mockOutputReport).toHaveBeenCalledWith(
       'commands.subscription.activation.status.header:hostinger'
     );
-    expect(mockOutputInfo).toHaveBeenCalledWith(
+    expect(mockOutputReport).toHaveBeenCalledWith(
       'commands.subscription.activation.status.machineId:machine-activation-id'
     );
-    expect(mockOutputSuccess).toHaveBeenCalledWith(
+    expect(mockOutputReport).toHaveBeenCalledWith(
       'commands.subscription.activation.status.active:2026-03-12T00:00:00Z'
     );
 
     // The table is the job's answer: one license-status job on the machine.
     expect(jobs).toHaveLength(1);
     expect(jobs[0]).toMatchObject({ functionName: 'license-status', machineName: 'hostinger' });
-    expect(mockOutputInfo).toHaveBeenCalledWith(
+    expect(mockOutputReport).toHaveBeenCalledWith(
       'commands.subscription.repo.status.header:hostinger'
     );
-    expect(mockOutputInfo).toHaveBeenCalledWith(
+    expect(mockOutputReport).toHaveBeenCalledWith(
       'commands.subscription.repo.status.entry:repo-valid:valid:commands.subscription.repo.status.hardExpirySuffix:2026-05-10T14:29:53.723Z'
     );
-    expect(mockOutputInfo).toHaveBeenCalledWith(
+    expect(mockOutputReport).toHaveBeenCalledWith(
       'commands.subscription.repo.status.entry:repo-missing:missing:'
     );
-    expect(mockOutputInfo).toHaveBeenCalledWith(
+    expect(mockOutputReport).toHaveBeenCalledWith(
       'commands.subscription.repo.status.entry:repo-machine:machine mismatch:'
     );
     // The account view is a different scope: no -m means no machine report.
@@ -636,12 +639,12 @@ describe('subscription command helpers', () => {
 
     await executeMachineStatus('hostinger');
 
-    expect(mockOutputInfo).toHaveBeenCalledWith(
+    expect(mockOutputReport).toHaveBeenCalledWith(
       'commands.subscription.repo.status.lastRenewal:renewed: (seq 42)'
     );
     expect(mockOutputWarn).not.toHaveBeenCalledWith(expect.stringContaining('lastRenewal'));
     // The datastore a licence is scoped to rides on the entry line.
-    expect(mockOutputInfo).toHaveBeenCalledWith(
+    expect(mockOutputReport).toHaveBeenCalledWith(
       expect.stringContaining(
         'commands.subscription.repo.status.datastoreSuffix:7f3c9e11-8a4b-4c2d-9e5f-1a2b3c4d5e6f'
       )
@@ -655,10 +658,10 @@ describe('subscription command helpers', () => {
     await executeMachineStatus('hostinger');
 
     expect(mockOutputWarn).toHaveBeenCalledWith('commands.subscription.status.parseFailed');
-    expect(mockOutputInfo).toHaveBeenCalledWith(
+    expect(mockOutputReport).toHaveBeenCalledWith(
       'commands.subscription.repo.status.header:hostinger'
     );
-    expect(mockOutputInfo).toHaveBeenCalledWith('commands.subscription.repo.status.empty');
+    expect(mockOutputReport).toHaveBeenCalledWith('commands.subscription.repo.status.empty');
   });
 
   it('refresh with no flags re-reads account state and never touches a machine', async () => {
@@ -686,7 +689,7 @@ describe('subscription command helpers', () => {
     await executeAccountRefresh();
 
     expect(mockFetchLicenseReportOrThrow).toHaveBeenCalledTimes(1);
-    expect(mockOutputInfo).toHaveBeenCalledWith('commands.subscription.status.remote');
+    expect(mockOutputReport).toHaveBeenCalledWith('commands.subscription.status.remote');
     expect(mockAcquireRemoteRenet).not.toHaveBeenCalled();
     expect(mockRefreshRepoLicensesBatch).not.toHaveBeenCalled();
   });
@@ -793,7 +796,7 @@ describe('subscription command helpers', () => {
       recoveryFailureMode: null,
     });
 
-    expect(mockOutputInfo).toHaveBeenCalledWith(
+    expect(mockOutputReport).toHaveBeenCalledWith(
       'Repo licenses: scanned 2, issued 1, refreshed 0, unchanged 1, failed 1'
     );
     expect(mockOutputWarn).toHaveBeenCalledWith('repo-x: account quota reached');

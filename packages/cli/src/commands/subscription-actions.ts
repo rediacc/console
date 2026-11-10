@@ -207,14 +207,14 @@ function outputRepoLicenseCounts(
   const recent = repoLicenses.recent;
   if (recent && configGuids) {
     const split = splitRepoLicensesByConfig(recent, configGuids);
-    outputService.info(t('commands.subscription.status.remoteRepoLicensesInConfig', split));
-    outputService.info(
+    outputService.report(t('commands.subscription.status.remoteRepoLicensesInConfig', split));
+    outputService.report(
       t('commands.subscription.status.remoteRepoLicensesNotInConfig', {
         count: split.notInConfigCount,
       })
     );
   } else {
-    outputService.info(
+    outputService.report(
       t('commands.subscription.status.remoteRepoLicenses', {
         totalTrackedRepos: repoLicenses.totalTrackedRepos,
         validCount: repoLicenses.validCount,
@@ -230,20 +230,20 @@ function outputRemoteStatus(
   configGuids?: Set<string>
 ) {
   if (!status) return;
-  outputService.info(t('commands.subscription.status.remote'));
+  outputService.report(t('commands.subscription.status.remote'));
   outputSubscriptionScope({
     orgName: status.orgName,
     teamName: status.teamName,
   });
-  outputService.info(t('commands.subscription.status.remotePlan', { plan: status.planCode }));
-  outputService.info(t('commands.subscription.status.remoteStatus', { status: status.status }));
-  outputService.info(
+  outputService.report(t('commands.subscription.status.remotePlan', { plan: status.planCode }));
+  outputService.report(t('commands.subscription.status.remoteStatus', { status: status.status }));
+  outputService.report(
     t('commands.subscription.status.remoteMachineActivations', {
       active: status.machineSlots.active,
       max: status.machineSlots.max,
     })
   );
-  outputService.info(
+  outputService.report(
     t('commands.subscription.status.remoteRepoLicenseIssuances', {
       used: status.repoLicenseIssuances.used,
       limit: status.repoLicenseIssuances.limit,
@@ -265,7 +265,7 @@ function outputRemoteStatus(
     const key = machine.overLimit
       ? 'commands.subscription.status.remoteMachineOverLimit'
       : 'commands.subscription.status.remoteMachine';
-    outputService.info(
+    outputService.report(
       t(key, {
         id: machine.machineId.slice(0, 12),
         lastSeen: machine.lastSeenAt,

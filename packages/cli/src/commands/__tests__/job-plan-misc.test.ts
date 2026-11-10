@@ -26,6 +26,7 @@ const m = vi.hoisted(() => ({
   accountFetch: vi.fn(),
   resolveRepoRef: vi.fn(),
   info: vi.fn(),
+  outReport: vi.fn(),
   setExitCode: vi.fn(),
   jobs: [] as Record<string, unknown>[],
   jobAnswer: {} as Record<string, unknown>,
@@ -82,7 +83,14 @@ vi.mock('../../services/renet/renet-execution.js', () => ({
   readSSHKey: vi.fn(),
 }));
 vi.mock('../../services/core/output.js', () => ({
-  outputService: { info: m.info, success: vi.fn(), warn: vi.fn(), error: vi.fn(), print: m.print },
+  outputService: {
+    info: m.info,
+    report: m.outReport,
+    success: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    print: m.print,
+  },
 }));
 vi.mock('../../services/core/request-context.js', async (orig) => ({
   ...(await orig<Record<string, unknown>>()),
@@ -155,7 +163,7 @@ describe('subscription verbs (J20)', () => {
       commandKind: { name: 'license-status' },
       jobSteps: [{ name: 'renderSubscriptionStatus', on: 'success' }],
     });
-    expect(m.info).toHaveBeenCalledWith(
+    expect(m.outReport).toHaveBeenCalledWith(
       expect.stringContaining('commands.subscription.repo.status.entry')
     );
   });
@@ -176,7 +184,7 @@ describe('subscription verbs (J20)', () => {
     await executeMachineStatus('m1');
 
     expect(m.jobs).toHaveLength(1);
-    expect(m.info).not.toHaveBeenCalled();
+    expect(m.outReport).not.toHaveBeenCalled();
     expect(m.readActivation).not.toHaveBeenCalled();
   });
 
@@ -186,7 +194,7 @@ describe('subscription verbs (J20)', () => {
     await expect(executeMachineStatus('m1')).rejects.toThrow(
       'renet license-status failed on m1 (exit 2): no datastore'
     );
-    expect(m.info).not.toHaveBeenCalled();
+    expect(m.outReport).not.toHaveBeenCalled();
   });
 
   it('refresh -m makes one license-scan job and hands its output to the batch in the step', async () => {

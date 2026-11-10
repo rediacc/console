@@ -356,6 +356,20 @@ class OutputService {
     this.writeProse(message, (line) => (this.colorEnabled ? chalk.blueBright(line) : line));
   }
 
+  /**
+   * A line of a command's primary result in prose form (a status report, a cost estimate): stdout, so a pipe or a
+   * redirect captures it. Progress, notes and warnings stay on `info`/`warn` (stderr). Plain text, wrapped to the
+   * terminal as `info` is, and not suppressed by `--quiet`, which silences progress and not the result.
+   */
+  report(message: string): void {
+    const context = currentRequestContext();
+    if (context) {
+      context.stdout.push(message);
+      return;
+    }
+    for (const line of wrapProse(message, terminalWidth())) this.writeOut(line);
+  }
+
   dim(text: string): string {
     return this.colorEnabled ? chalk.dim(text) : text;
   }

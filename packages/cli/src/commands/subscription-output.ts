@@ -11,18 +11,18 @@ export function outputSubscriptionScope(input: {
   serverUrl?: string;
 }): void {
   if (input.serverUrl) {
-    outputService.info(`Server: ${input.serverUrl}`);
+    outputService.report(`Server: ${input.serverUrl}`);
   }
   if (input.orgName) {
-    outputService.info(`Organization: ${input.orgName}`);
+    outputService.report(`Organization: ${input.orgName}`);
   }
   if (input.teamName) {
-    outputService.info(`Team: ${input.teamName}`);
+    outputService.report(`Team: ${input.teamName}`);
   }
 }
 
 export function renderRepoBatchRefreshSummary(batchSummary: RepoBatchRefreshResult): void {
-  outputService.info(
+  outputService.report(
     `Repo licenses: scanned ${batchSummary.scanned}, issued ${batchSummary.issued}, refreshed ${batchSummary.refreshed}, unchanged ${batchSummary.unchanged}, failed ${batchSummary.failed}`
   );
   for (const failure of batchSummary.failures) {
@@ -34,17 +34,17 @@ export function renderMachineActivationStatus(
   machineName: string,
   activation: MachineActivationStatus | null
 ): void {
-  outputService.info(t('commands.subscription.activation.status.header', { machineName }));
+  outputService.report(t('commands.subscription.activation.status.header', { machineName }));
   if (!activation) {
     outputService.warn(t('commands.subscription.activation.status.unavailable'));
     return;
   }
 
-  outputService.info(
+  outputService.report(
     t('commands.subscription.activation.status.machineId', { machineId: activation.machineId })
   );
   if (typeof activation.activeCount === 'number' && typeof activation.maxCount === 'number') {
-    outputService.info(
+    outputService.report(
       t('commands.subscription.activation.status.activations', {
         active: activation.activeCount,
         max: activation.maxCount,
@@ -52,7 +52,7 @@ export function renderMachineActivationStatus(
     );
   }
   if (activation.active) {
-    outputService.success(
+    outputService.report(
       t('commands.subscription.activation.status.active', { lastSeenAt: activation.lastSeenAt })
     );
     return;
