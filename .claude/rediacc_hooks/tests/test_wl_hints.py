@@ -5,6 +5,7 @@ Ported from PLAN-stop-hook-behavioral-hints.md's own task list: the in-process u
 
 from __future__ import annotations
 
+import json
 import pathlib
 import random
 from typing import Any
@@ -317,18 +318,102 @@ def test_propose_writes_only_the_ledger_and_never_touches_hints_md(tmp_path):
     assert row["source"] == "incident-1"
 
 
-def test_pending_proposals_excludes_text_already_present_in_the_corpus(tmp_path):
+def _corpus(tmp_path, body):
+    (tmp_path / "docs" / "agent-reference").mkdir(parents=True, exist_ok=True)
+    (tmp_path / "docs" / "agent-reference" / "HINTS.md").write_text(body, encoding="utf-8")
+
+
+def _resolution(tmp_path, pid, pointer):
+    ledger = tmp_path / "agent" / "ledgers" / "hint-resolutions.jsonl"
+    ledger.parent.mkdir(parents=True, exist_ok=True)
+    with ledger.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps({"by": "d778be9d", "at": "x", "id": pid, "pointer": pointer}) + "\n")
+
+
+def test_pending_control_reworded_or_copied_text_with_no_cite_stays_pending(tmp_path, monkeypatch):
+    """CONTROL (PLAN-experience-feedback.md C2b): text is never matched. Before C2b an exact copy left the count by substring; a reworded promotion never did. Both now stay until an entry cites the id."""
+    monkeypatch.delenv("WORKLIST_HINTS_FILE", raising=False)
     h = _hints()
-    (tmp_path / "docs" / "agent-reference").mkdir(parents=True)
-    hints_file = tmp_path / "docs" / "agent-reference" / "HINTS.md"
-    hints_file.write_text(
-        "## already promoted\nHint-Id: x\nSource: file:CLAUDE.md:1\nStatus: active\n",
-        encoding="utf-8",
+    _corpus(
+        tmp_path,
+        "## already promoted\nHint-Id: x\nSource: file:CLAUDE.md:1\nStatus: active\n\n"
+        "## Promoted, in other words\nHint-Id: y\nSource: file:CLAUDE.md:1\nStatus: active\n",
     )
     h.propose(str(tmp_path), "d778be9d", "already promoted", "")
-    h.propose(str(tmp_path), "d778be9d", "still waiting on review", "")
+    h.propose(str(tmp_path), "d778be9d", "promoted with different words", "")
     pending = h.pending_proposals(str(tmp_path))
-    assert [p["text"] for p in pending] == ["still waiting on review"]
+    assert [p["text"] for p in pending] == ["already promoted", "promoted with different words"]
+
+
+def test_pending_a_proposal_line_citing_the_id_takes_it(tmp_path, monkeypatch):
+    monkeypatch.delenv("WORKLIST_HINTS_FILE", raising=False)
+    h = _hints()
+    first = h.propose(str(tmp_path), "d778be9d", "lesson one", "")
+    h.propose(str(tmp_path), "d778be9d", "lesson two", "")
+    _corpus(
+        tmp_path,
+        "## Lesson one, reworded\nHint-Id: one\nSource: file:CLAUDE.md:1\nStatus: active\n"
+        "Proposal: %s, 00000000\n" % first["id"],
+    )
+    assert [p["text"] for p in h.pending_proposals(str(tmp_path))] == ["lesson two"]
+
+
+def test_pending_control_a_resolution_with_a_dead_pointer_stays_pending(tmp_path, monkeypatch):
+    """CONTROL: a resolution row counts only while its pointer resolves; a guard that does not exist (or was deleted) puts the proposal back."""
+    monkeypatch.delenv("WORKLIST_HINTS_FILE", raising=False)
+    h = _hints()
+    row = h.propose(str(tmp_path), "d778be9d", "a lesson a guard carries", "")
+    _resolution(tmp_path, row["id"], "guard:block_no_such_guard")
+    assert [p["id"] for p in h.pending_proposals(str(tmp_path))] == [row["id"]]
+    guards = tmp_path / ".claude" / "rediacc_hooks" / "guards"
+    guards.mkdir(parents=True)
+    (guards / "block_no_such_guard.py").write_text("RULE = 1\n", encoding="utf-8")
+    assert h.pending_proposals(str(tmp_path)) == []
+    (guards / "block_no_such_guard.py").unlink()
+    assert [p["id"] for p in h.pending_proposals(str(tmp_path))] == [row["id"]]
+
+
+def test_proposal_id_is_derived_for_old_rows_and_written_for_new_ones(tmp_path):
+    h = _hints()
+    old = {"by": "d778be9d", "at": "2026-10-24T04:27:51Z", "text": "an old lesson"}
+    assert h.proposal_id(old) == h.proposal_id(dict(old)), "a derived id must be stable"
+    assert len(h.proposal_id(old)) == 8
+    assert h.proposal_id(dict(old, text="another")) != h.proposal_id(old)
+    row = h.propose(str(tmp_path), "d778be9d", "a new lesson", "")
+    assert row["id"] == h.proposal_id({k: v for k, v in row.items() if k != "id"})
+    assert [r["id"] for r in h.proposals(str(tmp_path))] == [row["id"]]
+
+
+def test_pending_note_names_the_curator_and_its_run_directory():
+    h = _hints()
+    note = h.pending_note("d778be9d-aaaa", 3)
+    assert note.startswith("3 hint proposal(s)"), note
+    assert "lesson-curator" in note, note
+    assert "agent/d778be9d/lessons/e" in note, note
+    assert "--hint-resolve d778be9d <id> <kind>:<token>" in note, note
+
+
+def test_hint_resolve_cli_refuses_an_unknown_id_and_a_dead_pointer_then_records_a_live_one(wl):
+    wl.env["WORKLIST_HINTS_FILE"] = str(wl.proj / "no-hints.md")
+    proposed = wl.cli("--hint-propose", "deadbeef", "a lesson a guard now carries")
+    assert proposed.rc == 0, proposed.err
+    pid = proposed.out.rsplit("(id ", 1)[1].split(")")[0]
+    ledger = wl.proj / "agent" / "ledgers" / "hint-resolutions.jsonl"
+    unknown = wl.cli("--hint-resolve", "deadbeef", "0000beef", "guard:block_planted")
+    assert unknown.rc == 2, unknown.err
+    assert "no hint proposal has id 0000beef" in unknown.err, unknown.err
+    dead = wl.cli("--hint-resolve", "deadbeef", pid, "guard:block_planted")
+    assert dead.rc == 2, dead.err
+    assert "not a live enforcer" in dead.err, dead.err
+    assert not ledger.exists()
+    guards = wl.proj / ".claude" / "rediacc_hooks" / "guards"
+    guards.mkdir(parents=True, exist_ok=True)
+    (guards / "block_planted.py").write_text("RULE = 1\n", encoding="utf-8")
+    live = wl.cli("--hint-resolve", "deadbeef", pid, "guard:block_planted")
+    assert live.rc == 0, live.err
+    rows = [json.loads(ln) for ln in ledger.read_text(encoding="utf-8").splitlines()]
+    assert [(r["id"], r["pointer"]) for r in rows] == [(pid, "guard:block_planted")]
+    assert _hints().pending_proposals(str(wl.proj)) == []
 
 
 def test_hint_propose_cli_round_trip_via_worklist(wl):

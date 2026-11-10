@@ -760,8 +760,38 @@ def _hint_propose_cli(argv):
     if not text:
         die("an empty proposal names no lesson")
     root = C.project_root(C.project_start())
-    H.propose(root, me, text, source)
-    print("proposed: %s" % text[:80])
+    row = H.propose(root, me, text, source)
+    print("proposed: %s  (id %s)" % (text[:80], row["id"]))
+
+
+def _hint_resolve_cli(argv):
+    """--hint-resolve <me> <proposal-id> <kind>:<token>: record that a guard, gate, test, trapguard rule, trap or commit now carries a hint proposal (agent/plans/PLAN-experience-feedback.md P2).
+
+    Refuses an id no proposal carries and a pointer that does not resolve in this tree (wl_lessons.pointer_problem), so a resolution row starts out live. It still counts only while its pointer resolves: wl_hints.pending_proposals re-checks every stop, and a deleted guard puts its proposal back in the pending count. Writes agent/ledgers/hint-resolutions.jsonl and nothing else.
+    """
+
+    def die(msg):
+        print(msg, file=sys.stderr)
+        sys.exit(2)
+
+    rest = argv[1:]
+    if len(rest) != 3:
+        die(M.CLI_HINT_RESOLVE_USAGE)
+    me, pid, pointer = rest
+    if not C.PREFIX_RE.match(me):
+        die("bad prefix %r: pass YOUR session-id prefix first" % me)
+    _identity_or_die(me, die)
+    root = C.project_root(C.project_start())
+    known = {r["id"]: r for r in H.proposals(root)}
+    if pid not in known:
+        die(M.CLI_HINT_RESOLVE_UNKNOWN % {"id": pid, "n": len(known)})
+    import wl_lessons as L
+
+    why = L.pointer_problem(root, pointer)
+    if why:
+        die(M.CLI_HINT_RESOLVE_DEAD % {"pointer": pointer, "why": why})
+    H.resolve_proposal(root, me, pid, pointer)
+    print("resolved: %s -> %s  (%s)" % (pid, pointer, known[pid]["text"][:60]))
 
 
 def _retro_brief_cli(argv):
@@ -3618,6 +3648,9 @@ def main():
         return
     if sys.argv[1:2] == ["--hint-propose"]:
         _hint_propose_cli(sys.argv[1:])
+        return
+    if sys.argv[1:2] == ["--hint-resolve"]:
+        _hint_resolve_cli(sys.argv[1:])
         return
     if sys.argv[1:2] and sys.argv[1] in (
         "--review-mark",

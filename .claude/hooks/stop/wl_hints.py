@@ -30,7 +30,8 @@ HINTS_REL = "docs/agent-reference/HINTS.md"
 # The `## ` heading is the displayed line itself; a hint whose heading does not stand alone as a complete reminder is not a hint yet. `Hint-Id`/`Source`/`Status` are read only from the trailer block between the heading and the first blank line, mirroring `wl_store.trap_entries`'s fenced-block-safe parser exactly -- a markdown example inside a hint's own body must not become a
 # phantom entry, for the identical reason that guard exists there.
 _HEADING_RE = re.compile(r"^## (.+)$")
-TRAILER_KEYS = ("Hint-Id:", "Source:", "Status:")
+TRAILER_KEYS = ("Hint-Id:", "Source:", "Status:", "Proposal:")
+TRAILER_FIELDS = ("id", "source", "status", "proposal")
 # A trailer value stops at a trailing `<!-- style-ok -->` prose-style marker, so a citation that
 # must quote a literal word the R1/R2 gate would otherwise flag never leaks the marker itself into the value a consumer resolves or displays.
 _MARKER_RE = re.compile(r"\s*<!--\s*style-ok\s*-->\s*$")
@@ -75,7 +76,13 @@ def load_corpus(path):
         m = _HEADING_RE.match(line) if not line.startswith("### ") else None
         if m:
             entries.append(
-                {"heading": m.group(1).strip(), "id": "", "source": "", "status": "active"}
+                {
+                    "heading": m.group(1).strip(),
+                    "id": "",
+                    "source": "",
+                    "status": "active",
+                    "proposal": "",
+                }
             )
             in_trailer = True
             continue
@@ -83,7 +90,7 @@ def load_corpus(path):
             if not line.strip():
                 in_trailer = False
                 continue
-            for key, field in zip(TRAILER_KEYS, ("id", "source", "status"), strict=True):
+            for key, field in zip(TRAILER_KEYS, TRAILER_FIELDS, strict=True):
                 if line.startswith(key):
                     entries[-1][field] = _MARKER_RE.sub("", line[len(key) :].strip())
                     break
@@ -155,11 +162,21 @@ def _proposals_lock(path):
     return os.path.join(base, "hint-proposals-%s.lock" % key)
 
 
+def proposal_id(row):
+    """A proposal's id: its own `id` field, else the sha8 of (by, at, text), so rows written before ids existed get the same id every time they are read (PLAN-experience-feedback.md P2)."""
+    rid = str(row.get("id") or "").strip()
+    if rid:
+        return rid
+    key = "%s\n%s\n%s" % (row.get("by") or "", row.get("at") or "", (row.get("text") or "").strip())
+    return hashlib.sha256(key.encode("utf-8", "replace")).hexdigest()[:8]
+
+
 def propose(root, by, text, source=""):
     """Append one proposal row and nothing else. Never touches HINTS.md.
 
-    Round-tripped through `worklist.py --hint-propose <session> <text...> [SOURCE: <pointer>]`. `text` is the hint sentence itself; `source` is optional free text naming where the lesson came from, for the human reviewing the backlog rather than for the parser -- a proposal is not yet a graded entry and gets no `Hint-Id`/`Status` fields until it is promoted by hand."""
+    Round-tripped through `worklist.py --hint-propose <session> <text...> [SOURCE: <pointer>]`. `text` is the hint sentence itself; `source` is optional free text naming where the lesson came from, for the human reviewing the backlog rather than for the parser -- a proposal is not yet a graded entry and gets no `Hint-Id`/`Status` fields until it is promoted by hand. The row carries its `id`, which a promoted HINTS entry cites as `Proposal: <id>`."""
     row = {"by": by, "at": C.stamp_now(), "text": text.strip(), "source": source.strip()}
+    row["id"] = proposal_id(row)
     path = proposals_path(root)
     os.makedirs(os.path.dirname(path), exist_ok=True)
     S._append_lines(path, _proposals_lock(path), [row])
@@ -169,21 +186,102 @@ def propose(root, by, text, source=""):
 # Plain constant, not a WORKLIST_* env knob -- matching wl_claimcheck's own reasoning: an untunable rule costs nothing an edit does not buy, and every WORKLIST_* name in this tree must be declared in the registry check:ci-worklist-env-registry enforces.
 PROPOSAL_REFRESH_MIN = 720
 
+# A proposal can also become a gate, a test, a guard or a tool fix rather than prose (PLAN-experience-feedback.md P2). `worklist.py --hint-resolve` records that in its own ledger, so the proposals ledger keeps one row shape and the retro brief that lists a session's proposals reads only proposals.
+RESOLUTIONS_REL = ("agent", "ledgers", "hint-resolutions.jsonl")
 
-def pending_proposals(root):
-    """[{...proposal row...}] whose text is not yet a Hint-Id-bearing line in HINTS.md.
 
-    A COARSE containment check (the proposal's own text as a substring of the corpus file), not a semantic one: promotion is a human editing HINTS.md by hand, and the point of this count is only to tell a reader something is waiting, not to decide whether it was accepted."""
+def resolutions_path(root):
+    return os.path.join(root, *RESOLUTIONS_REL)
+
+
+def _jsonl(path):
+    """Every JSON object row of `path`, oldest first; a torn line is skipped, a missing file is []."""
     try:
-        rows = [
-            json.loads(line)
-            for line in pathlib.Path(proposals_path(root)).read_text(encoding="utf-8").splitlines()
-            if line.strip()
-        ]
+        text = pathlib.Path(path).read_text(encoding="utf-8")
     except OSError:
         return []
+    out = []
+    for line in text.splitlines():
+        if not line.strip():
+            continue
+        try:
+            row = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(row, dict):
+            out.append(row)
+    return out
+
+
+def proposals(root):
+    """Every proposal row, each with its `id` filled in."""
+    return [
+        dict(row, id=proposal_id(row)) for row in _jsonl(proposals_path(root)) if row.get("text")
+    ]
+
+
+def resolve_proposal(root, by, pid, pointer):
+    """Append one resolution row naming `pointer` as what now carries proposal `pid`. The caller has already checked both."""
+    row = {"by": by, "at": C.stamp_now(), "id": pid, "pointer": pointer.strip()}
+    path = resolutions_path(root)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    S._append_lines(path, _proposals_lock(path), [row])
+    return row
+
+
+def cited_proposal_ids(entries):
+    """The proposal ids HINTS entries cite in a `Proposal:` line (comma-separated)."""
+    out = set()
+    for e in entries:
+        for raw in str(e.get("proposal") or "").split(","):
+            if raw.strip():
+                out.add(raw.strip())
+    return out
+
+
+def pending_proposals(root):
+    """[{...proposal row with its id...}] that no HINTS entry and no live resolution has taken.
+
+    A proposal stops being pending when a HINTS entry carries `Proposal: <id>`, or when a `--hint-resolve` row names it with a pointer that still resolves (wl_lessons.pointer_problem). Text is never matched: a reworded promotion with no cite stays pending, and so does one whose resolving guard, gate or test has since been deleted."""
+    rows = proposals(root)
+    if not rows:
+        return []
+    entries, _errors = load_corpus(hints_path(root))
+    taken = cited_proposal_ids(entries)
+    resolutions = _jsonl(resolutions_path(root))
+    if resolutions:
+        import wl_lessons as L
+
+        live: dict = {}
+        for res in resolutions:
+            pid, pointer = str(res.get("id") or ""), str(res.get("pointer") or "")
+            if not pid or pid in taken:
+                continue
+            if pointer not in live:
+                live[pointer] = L.pointer_problem(root, pointer) is None
+            if live[pointer]:
+                taken.add(pid)
+    return [r for r in rows if r["id"] not in taken]
+
+
+def lessons_dir(me8, epoch):
+    """The lesson-curator's output directory for one context epoch, repo-relative: agent/<me8>/lessons/e<epoch>/ (sibling of the effort tuner's agent/<me8>/effort-tune/e<epoch>/)."""
+    return "agent/%s/lessons/e%s/" % (me8, epoch)
+
+
+def pending_note(session_id, n):
+    """The advisory line for `n` pending proposals, naming this session's curator run and its output directory. The epoch comes from the context band state; any failure reading it names epoch 0 rather than dropping the line."""
+    me8 = S.agent_session_slug(session_id)
+    epoch = 0
     try:
-        corpus_text = hints_path(root).read_text(encoding="utf-8", errors="replace")
-    except OSError:
-        corpus_text = ""
-    return [r for r in rows if r.get("text") and r["text"] not in corpus_text]
+        import wl_retro
+
+        epoch = int(wl_retro.ctx().load_state(session_id).get("epoch") or 0)
+    except Exception:
+        epoch = 0
+    return M.N_HINT_PROPOSALS_PENDING % {
+        "n": n,
+        "me8": me8,
+        "epoch": epoch,
+        "dir": lessons_dir(me8, epoch),
+    }

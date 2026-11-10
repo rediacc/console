@@ -7004,7 +7004,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 session_id,
                 state_doc,
                 "hint-proposals",
-                M.N_HINT_PROPOSALS_PENDING % len(pending),
+                wl_hints.pending_note(session_id, len(pending)),
                 3,
                 refresh_min=wl_hints.PROPOSAL_REFRESH_MIN,
             )

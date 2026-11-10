@@ -29,7 +29,7 @@ XDIST_GROUP = "wl-identity-l1"
 
 
 #: Exit codes an ACCEPTED run of a verb ends with when the git-less fixture makes it answer with a refusal of its own (see the 184 loop).
-ACCEPTED_RC = {"--add-many": 2, "--batch-body": 1, "--promote": 1}
+ACCEPTED_RC = {"--add-many": 2, "--batch-body": 1, "--promote": 1, "--hint-resolve": 2}
 
 
 def l1run(fix, *argv: str, peer: str = "") -> wlfix.Result:
@@ -505,6 +505,12 @@ def drive_l1(fix) -> L1Drive:
         # Read-only (T9): the fixture has no git repository and no plan, so the audit prints its header over zero boxes after the same _identity_or_die.
         ("--box-audit", "--box-audit @WHO@", "BOX AUDIT @"),
         ("--hint-propose", "--hint-propose @WHO@ l1-table-hint", "proposed:"),
+        # Writes agent/ledgers/hint-resolutions.jsonl (PLAN-experience-feedback.md P2): the fixture holds no proposal with this id, so the accepted run answers with the unknown-id refusal after the same _identity_or_die a real resolve passes.
+        (
+            "--hint-resolve",
+            "--hint-resolve @WHO@ 0000beef guard:x",
+            "no hint proposal has id 0000beef",
+        ),
         # The effort tuner's verbs (agent/plans/PLAN-stop-hook-effort-tuning.md T2, T5), each driven in its listing mode: a bare `<me>` prints the proposal ledger's summary after the same _identity_or_die their write modes run.
         ("--effort-propose", "--effort-propose @WHO@", "effort proposals:"),
         ("--effort-answer", "--effort-answer @WHO@", "effort proposals:"),

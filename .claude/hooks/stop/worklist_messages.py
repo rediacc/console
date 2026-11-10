@@ -1451,9 +1451,31 @@ N_HINT_CORPUS_ERR = (
     "Hint corpus problem (the rotating behavioral hint is degraded until fixed):\n%s"
 )
 
+# THE CURATOR NAMED (PLAN-experience-feedback.md P2): 125 proposals waited with 0 promoted while this line only counted them. It now names the two ways a proposal leaves the count and the read-only agent that drafts both, with the directory its output lands in.
 N_HINT_PROPOSALS_PENDING = (
-    "%d hint proposal(s) are waiting in agent/ledgers/hint-proposals.jsonl, not yet promoted into "
-    "docs/agent-reference/HINTS.md. Promotion is a reviewed hand edit to that file, never automatic."
+    "%(n)d hint proposal(s) are waiting in agent/ledgers/hint-proposals.jsonl. A proposal leaves "
+    "this count when a docs/agent-reference/HINTS.md entry cites it (`Proposal: <id>`, a reviewed "
+    "hand edit) or when a live guard, gate, test, trapguard rule, trap or commit carries it: "
+    "`worklist.py --hint-resolve %(me8)s <id> <kind>:<token>`. The read-only lesson-curator agent "
+    "(.claude/agents/lesson-curator.md, prompt `run %(me8)s %(epoch)s`) clusters them into ready "
+    "HINTS/TRAPS diffs and gate/test/tool briefs under %(dir)s."
+)
+
+CLI_HINT_RESOLVE_USAGE = (
+    "usage: worklist.py --hint-resolve <my-prefix> <proposal-id> <kind>:<token>\n"
+    "  kind is one of: trap, guard, gate, hook, test, commit.\n"
+    "Records that the named enforcer now carries the proposal, so it leaves the pending count\n"
+    "while that pointer resolves. Writes agent/ledgers/hint-resolutions.jsonl only.\n"
+)
+
+CLI_HINT_RESOLVE_UNKNOWN = (
+    "no hint proposal has id %(id)s (%(n)d proposal(s) on record). The id is printed by "
+    "--hint-propose and listed by the lesson-curator's clusters."
+)
+
+CLI_HINT_RESOLVE_DEAD = (
+    "refused: %(pointer)s is not a live enforcer -- %(why)s. A resolution counts only while its "
+    "pointer resolves, so record it once the guard, gate, test or commit exists."
 )
 
 # ---- the push-back (wl_agents.pushback_for) --------------------------------- NOT an accusation and deliberately not phrased as one: concluding that something is impossible is often CORRECT, and CLAUDE.md rule 3 forbids only concluding it WITHOUT PROBING. So this quotes the claim back, names the file that may already answer it, and asks for one command. A session that has already
