@@ -261,6 +261,44 @@ def test_control_a_present_verdict_with_a_local_accept_stays_tickable_now(world)
     assert a.tick
 
 
+def test_a_local_accept_saying_verified_or_nightly_not_required_stays_tickable_now(world):
+    """Review 8f904df6.1/.4: the word VERIFIED or a bare `nightly` in a local Accept does not make a box live-owed."""
+    for body in (
+        "J12 a local thing. Accept: unit tests verified rc=0.",
+        "J13 a local thing. Accept: nightly not required; unit rc=0.",
+    ):
+        sig = _add_landed_box(world, body, "present")
+        assert _by_sig(BA.audit(world.root, ME)[0])[sig].verdict == "tickable-now"
+
+
+def test_a_nightly_run_or_live_receipt_accept_is_owed(world):
+    """Review 8f904df6.4: the `nightly run` and `live receipt` alternatives are live-owed."""
+    for body in (
+        "J14 gate. Accept: a nightly run is green.",
+        "J15 gate. Accept: a live receipt is recorded.",
+    ):
+        sig = _add_landed_box(world, body, "present")
+        assert _by_sig(BA.audit(world.root, ME)[0])[sig].verdict == "live-owed"
+
+
+def test_a_partial_verdict_taken_before_the_landing_is_not_owed(world):
+    """Review 8f904df6.3: a partial verdict whose head predates the landed commit says nothing about the landed code, so the box is not live-owed."""
+    root = world.root
+    old_head = _git(root, "rev-parse", "HEAD")
+    body = "J16 a local thing. Accept: unit test rc=0."
+    plan = root / REL
+    plan.write_text(plan.read_text(encoding="utf-8") + "- [ ] %s\n" % body, encoding="utf-8")
+    sig = R.box_sig(body)
+    _commit(root, "x-%s.txt" % sig, "feat: x\n\nPlan-Box: %s#%s clauses=all\n" % (PLAN, sig))
+    ledger = root / "agent" / "ledgers" / "plan-investigation.jsonl"
+    row = {"plan": REL, "sig": sig, "verdict": "partial", "head": old_head}
+    ledger.write_text(
+        ledger.read_text(encoding="utf-8") + json.dumps(row) + "\n", encoding="utf-8"
+    )
+    a = _by_sig(BA.audit(root, ME)[0])[sig]
+    assert a.verdict != "live-owed"
+
+
 def test_live_owed_box_is_linked_by_its_report_through_the_x_line(world):
     a = _by_sig(BA.audit(world.root, ME)[0])[SIG["live"]]
     assert [s for s, _src in a.landed] == [world.shas["live"]]

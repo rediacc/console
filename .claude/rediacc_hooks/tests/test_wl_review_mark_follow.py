@@ -491,6 +491,21 @@ def test_a_bare_identifier_on_an_import_line_is_no_module(tmp_path):
     R.mark(repo, BRANCH, fid, "fixed", [fix, "--test", test], ME)
 
 
+def test_a_python_from_import_of_the_stem_is_a_module_even_with_a_quoted_comment(tmp_path):
+    """Review 2e26138f.2/.3: `from index import add # "note"` imports the module `index`; a quote elsewhere on the line does not disable the unquoted rule, while `import index from '../other/thing'` (a JS default-import identifier) stays refused."""
+    anchored = "src/foo/index.py"
+    repo, fid = _import_world(tmp_path, anchored)
+    test = "tests/test_other_thing.py"
+    key = test.replace("/", "__").replace(".", "_dot_")
+    fix = _commit(repo, "test: other", **{key: "import index from '../other/thing'\n"})
+    with pytest.raises(ValueError, match="does not touch"):
+        R.mark(repo, BRANCH, fid, "fixed", [fix, "--test", test], ME)
+    (tmp_path / "ok").mkdir()
+    repo, fid = _import_world(tmp_path / "ok", anchored)
+    fix = _commit(repo, "test: foo", **{key: 'from index import add  # "note"\n'})
+    R.mark(repo, BRANCH, fid, "fixed", [fix, "--test", test], ME)
+
+
 def test_control_an_importing_test_without_the_test_flag_is_refused(tmp_path):
     """The import relation serves a named test only; a fix that touches an importing test unnamed stays refused."""
     repo, fid = _import_world(tmp_path, "src/onboarding.py")

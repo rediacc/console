@@ -3276,13 +3276,13 @@ _MODULE_SUFFIXES = {"ts", "tsx", "js", "jsx", "mjs", "cjs", "py", "go", "rs"}
 
 
 def _bare_token_is_module(body, token):
-    """Whether a bare word (no `/` or `.`) sits where a module name does: inside quotes (`'index'`, `"index"`), or right after `from`/`import` on a line with no quotes (`from index import x`). `import { index } from '../other/thing'` carries the identifier `index`, which names no module (review a27ac34b.1)."""
+    """Whether a bare word (no `/` or `.`) sits where a module name does: inside quotes (`'index'`, `"index"`), or right after `from`/`import` on a line with no `from '<path>'` clause (`from index import x`, even with a quoted trailing comment). `import { index } from '../other/thing'` carries the identifier `index`, which names no module (review a27ac34b.1)."""
     if "/" in token or "." in token:
         return True
     esc = re.escape(token)
     if re.search(r"""['"`]%s['"`]""" % esc, body):
         return True
-    return not re.search(r"""['"`]""", body) and bool(
+    return not re.search(r"""\bfrom\s*['"`]""", body) and bool(
         re.search(r"\b(?:from|import)\s+%s\b" % esc, body)
     )
 

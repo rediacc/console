@@ -273,13 +273,13 @@ def _stale(root, row, base, head):
 
 
 LIVE_ACCEPT_RE = re.compile(
-    r"Accept:[^\n]*\b(?:CI run(?: id)?s?|run ids?|nightly|live receipts?|live[- ]proof|VERIFIED)\b",
+    r"Accept:[^\n]*\b(?:CI run(?: id)?s?|run ids?|nightly (?:runs?|receipts?|proof|verdicts?|green)|live receipts?|live[- ]proof)\b",
     re.IGNORECASE,
 )
 
 
 def _proof_owed(root, a):
-    """Whether a box with no clause map still owes proof: its Accept names a CI run id, a nightly or a live receipt (the caller has already ruled out a VERIFIED row), or its newest investigation verdict is `partial` and was taken on code that includes the landing. Without this a partial verdict on landed code read as tickable-now (finding #2a4ebecd, box 575e0098)."""
+    """Whether a box with no clause map still owes proof: its Accept names a CI run id, a nightly or a live receipt (the one caller reaches here only for a box with no live-proof row, `not a.lp`, and the pattern carries no VERIFIED word of its own), or its newest investigation verdict is `partial` and was taken on code that includes the landing. Without this a partial verdict on landed code read as tickable-now (finding #2a4ebecd, box 575e0098)."""
     if LIVE_ACCEPT_RE.search(a.body):
         return True
     inv = a.inv
