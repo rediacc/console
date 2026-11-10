@@ -932,7 +932,8 @@
         "staleSlot": "你的密钥槽位已过期（配置加密密钥已被轮换）。请使用以下命令重新注册：rdc config remote enable",
         "status": {
           "description": "显示远程连接状态",
-          "deviceKeyMissing": "此设备已无法打开该配置的远程存储：它的密钥已丢失（在 Linux 上，内核密钥环会在每次重启时清空）。请用以下命令重新注册此设备：rdc config remote enable"
+          "deviceKeyMissing": "此设备已无法打开该配置的远程存储：它的密钥已丢失（重启可能会清空密钥存储）。请用以下命令重新注册此设备：rdc config remote enable",
+          "deviceCannotOpen": "此设备无法打开该配置的远程存储：它的注册已被拒绝，例如在密钥轮换之后。请用以下命令重新注册此设备：rdc config remote enable"
         },
         "masterPassword": {
           "description": "管理该成员的主密码（密码槽位）",

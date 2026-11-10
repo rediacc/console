@@ -932,7 +932,8 @@
         "staleSlot": "O seu key slot está desatualizado (a chave de encriptação da config foi rodada). Volte a inscrever-se com: rdc config remote enable",
         "status": {
           "description": "Mostrar o estado da ligação remota",
-          "deviceKeyMissing": "Este dispositivo já não consegue abrir o armazenamento remoto desta configuração: a sua chave desapareceu (no Linux o chaveiro do kernel é esvaziado a cada reinício). Volte a registar este dispositivo com: rdc config remote enable"
+          "deviceKeyMissing": "Este dispositivo já não consegue abrir o armazenamento remoto desta configuração: a sua chave desapareceu (um reinício pode esvaziar o armazém de chaves). Volte a registar este dispositivo com: rdc config remote enable",
+          "deviceCannotOpen": "Este dispositivo não consegue abrir o armazenamento remoto desta configuração: o seu registo foi rejeitado, por exemplo depois de a chave ser rodada. Volte a registar este dispositivo com: rdc config remote enable"
         },
         "masterPassword": {
           "description": "Gerir a password mestra deste membro (o password slot)",

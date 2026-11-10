@@ -392,7 +392,8 @@
         },
         "status": {
           "description": "Show remote connection status",
-          "deviceKeyMissing": "This device can no longer open this config's remote storage: its key is gone (on Linux the kernel keyring is emptied at every restart). Enroll this device again with: rdc config remote enable"
+          "deviceKeyMissing": "This device can no longer open this config's remote storage: its key is gone (a restart can empty the key store). Enroll this device again with: rdc config remote enable",
+          "deviceCannotOpen": "This device cannot open this config's remote storage: its enrollment was rejected, for example after the key was rotated. Enroll this device again with: rdc config remote enable"
         },
         "masterPassword": {
           "description": "Manage this member's master password (the password key slot)",

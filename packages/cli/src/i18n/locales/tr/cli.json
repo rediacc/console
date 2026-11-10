@@ -932,7 +932,8 @@
         "staleSlot": "Key slot'unuz güncel değil (yapılandırma şifreleme anahtarı döndürüldü). Şununla yeniden kaydolun: rdc config remote enable",
         "status": {
           "description": "Uzak bağlantı durumunu göster",
-          "deviceKeyMissing": "Bu cihaz artık bu yapılandırmanın uzak depolamasını açamıyor: anahtarı kayboldu (Linux'ta çekirdek anahtarlığı her yeniden başlatmada boşaltılır). Cihazı şu komutla yeniden kaydedin: rdc config remote enable"
+          "deviceKeyMissing": "Bu cihaz artık bu yapılandırmanın uzak depolamasını açamıyor: anahtarı kayboldu (yeniden başlatma anahtar deposunu boşaltabilir). Cihazı şu komutla yeniden kaydedin: rdc config remote enable",
+          "deviceCannotOpen": "Bu cihaz bu yapılandırmanın uzak depolamasını açamıyor: kaydı reddedildi, örneğin anahtar döndürüldükten sonra. Cihazı şu komutla yeniden kaydedin: rdc config remote enable"
         },
         "masterPassword": {
           "description": "Bu üyenin ana parolasını yönetin (password slot)",

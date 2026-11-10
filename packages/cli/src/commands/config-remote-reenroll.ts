@@ -75,29 +75,46 @@ function isLostEnrollment(error: unknown): boolean {
 }
 
 /**
- * True when this device can still open the linked config. See the module doc for how it decides;
- * an error that says nothing about the device's credentials is rethrown.
+ * Why this device cannot open the linked config, or null when it can. `key-missing` is a slot secret
+ * or token file absent locally (read with no request); `rejected` is a failure the server or the
+ * unwrap reported about the credentials (a rotated or stale slot, a refused login, an undecryptable
+ * blob). An error that says nothing about the device's credentials is rethrown.
  */
-export async function enrollmentUsable(remote: RemoteConfig, configName: string): Promise<boolean> {
+export type DeviceAccessLoss = 'key-missing' | 'rejected';
+
+export async function deviceAccessLoss(
+  remote: RemoteConfig,
+  configName: string
+): Promise<DeviceAccessLoss | null> {
   const { getSecureStorage } = await import('../utils/secure-storage.js');
   const { remoteTokenStorage } = await import('../adapters/remote-token-storage.js');
   const secureStorage = getSecureStorage();
 
-  if ((await secureStorage.get(remote.storageKeyId)) === null) return false;
+  if ((await secureStorage.get(remote.storageKeyId)) === null) return 'key-missing';
   const tokenData = await remoteTokenStorage.get(configName);
-  if (!tokenData?.token || !tokenData.wrappedCek) return false;
+  if (!tokenData?.token || !tokenData.wrappedCek) return 'key-missing';
 
   const { RemoteConfigAdapter } = await import('../adapters/remote-config-adapter.js');
   const adapter = new RemoteConfigAdapter(remote, configName, remoteTokenStorage, secureStorage);
   try {
     await adapter.pull();
-    return true;
+    return null;
   } catch (error) {
-    if (isLostEnrollment(error)) return false;
+    if (isLostEnrollment(error)) {
+      return error instanceof RemotePasskeySecretMissingError ? 'key-missing' : 'rejected';
+    }
     // The credentials work and the store no longer holds the config: no enrollment brings it back, so the way out is named.
     if (isStoreCopyGone(error)) throw storeCopyGone(configName, remote);
     throw error;
   }
+}
+
+/**
+ * True when this device can still open the linked config. See the module doc for how it decides;
+ * an error that says nothing about the device's credentials is rethrown.
+ */
+export async function enrollmentUsable(remote: RemoteConfig, configName: string): Promise<boolean> {
+  return (await deviceAccessLoss(remote, configName)) === null;
 }
 
 /** Refuse credentials that are not for the store and config this local config is linked to. */

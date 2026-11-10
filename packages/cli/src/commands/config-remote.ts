@@ -111,30 +111,38 @@ async function showStatus(configName: string, format: OutputFormat): Promise<voi
   let connected = false;
   // null: unknown, the server could not be asked (status stays a read and reports what is known locally).
   let deviceCanOpen: boolean | null = null;
+  let accessLoss: 'key-missing' | 'rejected' | null = null;
 
   // Outside the try: a device with no usable secure storage is told so, with the remedy, instead of reading "error".
   const { getSecureStorage } = await import('../utils/secure-storage.js');
   const secureStorage = getSecureStorage();
 
-  try {
-    // The same question `enable` asks before it re-enrolls this device; it never prompts or unlocks.
-    const { enrollmentUsable } = await import('./config-remote-reenroll.js');
-    deviceCanOpen = await enrollmentUsable(remote, configName);
-    connected = deviceCanOpen;
-  } catch {
-    // Server unreachable, or an error that says nothing about this device's credentials: fall back to a plain connection test.
+  const testServer = async (): Promise<boolean> => {
     try {
       const { RemoteConfigAdapter } = await import('../adapters/remote-config-adapter.js');
       const { remoteTokenStorage } = await import('../adapters/remote-token-storage.js');
       const adapter = new RemoteConfigAdapter(remote, configName, remoteTokenStorage, secureStorage);
-      connected = await adapter.testConnection();
+      return await adapter.testConnection();
     } catch {
-      // Connection test failed
+      return false;
     }
+  };
+
+  try {
+    // The same question `enable` asks before it re-enrolls this device; it never prompts or unlocks.
+    const { deviceAccessLoss } = await import('./config-remote-reenroll.js');
+    accessLoss = await deviceAccessLoss(remote, configName);
+    deviceCanOpen = accessLoss === null;
+    // Reachability is its own proof: a healthy local key says nothing about the server.
+    if (deviceCanOpen) connected = await testServer();
+  } catch {
+    // Server unreachable, or an error that says nothing about this device's credentials: fall back to a plain connection test.
+    connected = await testServer();
   }
 
   let status = 'error';
-  if (deviceCanOpen === false) status = 'device-key-missing';
+  if (accessLoss === 'key-missing') status = 'device-key-missing';
+  else if (accessLoss === 'rejected') status = 'device-cannot-open';
   else if (connected) status = 'connected';
 
   outputService.print(
@@ -151,8 +159,14 @@ async function showStatus(configName: string, format: OutputFormat): Promise<voi
     },
     format
   );
-  if (deviceCanOpen === false && format !== 'json') {
-    outputService.warn(t('commands.config.remote.status.deviceKeyMissing'));
+  if (accessLoss !== null && format !== 'json') {
+    outputService.warn(
+      t(
+        accessLoss === 'key-missing'
+          ? 'commands.config.remote.status.deviceKeyMissing'
+          : 'commands.config.remote.status.deviceCannotOpen'
+      )
+    );
   }
 }
 

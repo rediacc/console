@@ -932,7 +932,8 @@
         "staleSlot": "キースロットが古くなっています（設定の暗号化キーがローテーションされました）。次のコマンドで再登録してください: rdc config remote enable",
         "status": {
           "description": "リモート接続状態を表示",
-          "deviceKeyMissing": "このデバイスは、この設定のリモートストレージを開けなくなりました。鍵が失われています（Linux ではカーネルキーリングが再起動のたびに空になります）。次のコマンドでデバイスを登録し直してください: rdc config remote enable"
+          "deviceKeyMissing": "このデバイスは、この設定のリモートストレージを開けなくなりました。鍵が失われています（再起動するとキーストアが空になることがあります）。次のコマンドでデバイスを登録し直してください: rdc config remote enable",
+          "deviceCannotOpen": "このデバイスは、この設定のリモートストレージを開けません。デバイスの登録が拒否されました（たとえば鍵のローテーション後）。次のコマンドでデバイスを登録し直してください: rdc config remote enable"
         },
         "masterPassword": {
           "description": "このメンバーのマスターパスワード（パスワードスロット）を管理",

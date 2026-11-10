@@ -932,7 +932,8 @@
         "staleSlot": "키 슬롯이 오래되었습니다 (설정 암호화 키가 교체되었습니다). 다음 명령으로 다시 등록하세요: rdc config remote enable",
         "status": {
           "description": "원격 연결 상태를 표시합니다",
-          "deviceKeyMissing": "이 기기는 더 이상 이 설정의 원격 저장소를 열 수 없습니다. 키가 사라졌습니다(Linux에서는 재부팅할 때마다 커널 키링이 비워집니다). 다음 명령으로 기기를 다시 등록하세요: rdc config remote enable"
+          "deviceKeyMissing": "이 기기는 더 이상 이 설정의 원격 저장소를 열 수 없습니다. 키가 사라졌습니다(재부팅하면 키 저장소가 비워질 수 있습니다). 다음 명령으로 기기를 다시 등록하세요: rdc config remote enable",
+          "deviceCannotOpen": "이 기기는 이 설정의 원격 저장소를 열 수 없습니다. 기기 등록이 거부되었습니다(예: 키가 교체된 뒤). 다음 명령으로 기기를 다시 등록하세요: rdc config remote enable"
         },
         "masterPassword": {
           "description": "이 멤버의 마스터 비밀번호(비밀번호 슬롯) 관리",
