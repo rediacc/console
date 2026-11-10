@@ -13,7 +13,7 @@ import sqlite3
 import pytest
 
 from rediacc_ci.deploy import console_executor
-from rediacc_ci.enterprise import registry
+from rediacc_ci.enterprise import proof, registry
 from rediacc_ci.release import rings, rings_run
 
 UTC = datetime.UTC
@@ -669,3 +669,144 @@ def test_decision_uses_the_k1_core(tmp_path: pathlib.Path) -> None:
     assert [c.id for c in read.state.companies] == ["c00000001"]
     assert read.state.companies[0].override == "canary"
     assert rings.decide(read.state, NOW).ring == "canary"
+
+
+# -- the lab group (box K2's methods of rediacc_ci.enterprise.lab, driven by `enterprise proof release`, box V5) --
+# rings_run's lab group (box K2's methods of `rediacc_ci.enterprise.lab`, driven by `enterprise proof release`, box V5): `target_version`, `versions` and `lab_release`, over the in-memory control plane of test_release_rings_run. Nothing is deployed and nothing is fetched.
+
+
+CANARY, SMALL, MEDIUM, LARGE = "c00000001", "c00000002", "c00000003", "c00000004"
+
+
+def four(tmp_path):
+    r = rig(tmp_path, bench=True)
+    r.plane.add(CANARY, 2, override="canary")
+    r.plane.add(SMALL, 3)
+    r.plane.add(MEDIUM, 20)
+    r.plane.add(LARGE, 60)
+    return r
+
+
+def napper(r):
+    naps: list[float] = []
+
+    def sleep(seconds: float) -> None:
+        naps.append(seconds)
+        r.clock[0] += rings_run.datetime.timedelta(seconds=seconds)
+
+    return sleep, naps
+
+
+def release(r, **kw):
+    sleep, naps = napper(r)
+    got = rings_run.lab_release(world=r.world, version=V, sleep=sleep, **kw)
+    return got, naps
+
+
+def test_a_release_waits_out_each_shortened_pause_and_finishes(tmp_path):
+    r = four(tmp_path)
+    got, naps = release(r)
+    assert got == proof.ReleaseResult(0)
+    assert r.kids.deployed() == [CANARY, SMALL, MEDIUM, LARGE]
+    assert naps, "the pauses after small and medium were waited, not skipped"
+    assert all(n == rings_run.PROOF_PAUSE_MINUTES * 60 for n in naps)
+
+
+def test_a_planted_failure_stops_names_the_company_and_leaves_large(tmp_path):
+    r = four(tmp_path)
+    got, _naps = release(r, plant_failure=MEDIUM)
+    assert got.rc == 1
+    assert got.stopped == MEDIUM
+    assert MEDIUM in got.error
+    assert LARGE not in r.kids.deployed()
+    assert rings_run.versions([CANARY, SMALL, MEDIUM, LARGE], world=r.world) == {
+        CANARY: V,
+        SMALL: V,
+    }
+
+
+def test_a_clean_run_names_no_stopped_company(tmp_path):
+    """Control: `stopped` is read from a failed rollout row, not filled in for every run."""
+    r = four(tmp_path)
+    got, _naps = release(r)
+    assert got.stopped == ""
+
+
+def test_the_resume_finishes_after_a_planted_stop(tmp_path):
+    r = four(tmp_path)
+    release(r, plant_failure=MEDIUM)
+    got, _naps = release(r, resume=MEDIUM)
+    assert got == proof.ReleaseResult(0)
+    assert set(rings_run.versions([CANARY, SMALL, MEDIUM, LARGE], world=r.world)) == {
+        CANARY,
+        SMALL,
+        MEDIUM,
+        LARGE,
+    }
+
+
+def test_skip_pauses_without_an_order_is_refused_and_runs_nothing(tmp_path):
+    r = four(tmp_path)
+    got, naps = release(r, skip_pauses=True)
+    assert got.rc == 2
+    assert "--skip-pauses" in got.error
+    assert r.kids.calls == []
+    assert naps == []
+
+
+def test_skip_pauses_with_an_order_needs_no_wait(tmp_path):
+    r = four(tmp_path)
+    got, naps = release(r, skip_pauses=True, order="sec-1")
+    assert got == proof.ReleaseResult(0)
+    assert naps == []
+
+
+def test_versions_reads_the_last_deployed_row_and_the_fast_tier(tmp_path):
+    r = four(tmp_path)
+    con = r.plane.control("eu")
+    con.execute(
+        "INSERT INTO rollout VALUES ('v0.9.0', ?, 'small', 'deployed', '0.9.0', '2026-01-01T00:00:00Z')",
+        (SMALL,),
+    )
+    con.execute(
+        "INSERT INTO rollout VALUES ('v0.9.1+f0', ?, 'small', 'failed', '0.9.1', '2026-01-02T00:00:00Z')",
+        (SMALL,),
+    )
+    con.commit()
+    got = rings_run.versions([SMALL, LARGE, "fast"], world=r.world, edge=lambda: "0.9.1")
+    assert got == {SMALL: "0.9.0", "fast": "0.9.1"}, "a failed row is not a version a company runs"
+
+
+def test_versions_names_an_unreachable_region(tmp_path):
+    r = four(tmp_path)
+    r.plane.down.add("control-bench-us")
+    with pytest.raises(proof.LabError, match="region us"):
+        rings_run.versions([SMALL], world=r.world)
+
+
+def test_target_version_is_what_edge_runs():
+    assert rings_run.target_version(edge=lambda: "1.2.3") == "1.2.3"
+
+
+def test_the_release_proof_holds_over_the_runner(tmp_path):
+    """`enterprise proof release` end to end over lab_release, versions and the fake plane."""
+    r = four(tmp_path)
+    ids = {"canary": CANARY, "small": SMALL, "medium": MEDIUM, "large": LARGE}
+    sleep, _naps = napper(r)
+
+    class Lab:
+        def ensure_company(self, label, region, *, ring=None):
+            del label, region
+            return ids[ring]
+
+        def target_version(self):
+            return V
+
+        def versions(self, targets):
+            return rings_run.versions(targets, world=r.world, edge=lambda: "0.9.0")
+
+        def release(self, **kw):
+            return rings_run.lab_release(world=r.world, version=V, sleep=sleep, **kw)
+
+    lines: list[str] = []
+    assert proof.run_verb("release", Lab(), bench=True, out=lines.append) == 0, lines

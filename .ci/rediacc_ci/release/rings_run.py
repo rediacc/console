@@ -29,21 +29,24 @@ EXIT CODES. 0 the run ended on `wait`, `window` or `done`; 1 a company failed, a
 from __future__ import annotations
 
 import argparse
+import contextlib
 import dataclasses
 import datetime
+import io
 import json
 import os
 import re
 import subprocess
 import sys
 import tempfile
+import time
 import uuid
 from typing import TYPE_CHECKING, Any
 
 from rediacc_ci import paths
 from rediacc_ci.core import wrangler as wrangler_cmd
 from rediacc_ci.deploy import console_executor
-from rediacc_ci.enterprise import registry
+from rediacc_ci.enterprise import lab, proof, registry
 from rediacc_ci.release import local, rings
 from rediacc_ci.well_known import PRODUCT_DOMAIN
 
@@ -775,6 +778,105 @@ def live_world() -> World:
         out=root / OUT_REL / uuid.uuid4().hex[:12],
         target=live_target,
     )
+
+
+# --------------------------------------------------------------------------- the lab group (box K2 in rediacc_ci.enterprise.lab)
+
+# `enterprise proof release` (box V5) on bench: no soak, and pauses shortened to a minute that the driver waits out.
+PROOF_SOAK_DAYS = 0
+PROOF_PAUSE_MINUTES = 1
+PROOF_SETTLE_RUNS = 16
+FAST = "fast"
+
+
+def target_version(*, edge: Callable[[], str] | None = None) -> str:
+    """The version a proof release rolls out: the one edge runs (`cli/edge/latest.json`), whose edge record the soak reads."""
+    return (edge or lab.edge_version)()
+
+
+def versions(
+    targets: Sequence[str],
+    *,
+    world: World | None = None,
+    edge: Callable[[], str] | None = None,
+) -> dict[str, str]:
+    """`{target: version}` for each bench company id among `targets` (its last `deployed` rollout row, unless a later `failed` row of the same version rolled it back), and `fast` (the version edge runs). A target with no deployed version is absent."""
+    w = world or live_world()
+    wanted = set(targets)
+    history: dict[str, list[str]] = {}
+    for region, database in registry.databases(True).items():
+        try:
+            rows = w.query(database, ROLLOUT_SQL, [])
+        except TRANSPORT_ERRORS as exc:
+            raise proof.LabError("region %s: %s" % (region, type(exc).__name__)) from None
+        for row in rows:
+            cid = str(row.get("company_id", ""))
+            if cid not in wanted:
+                continue
+            seen = history.setdefault(cid, [])
+            version = str(row.get("version") or "")
+            if row.get("status") == "deployed":
+                seen.append(version)
+            elif row.get("status") == "failed":
+                # A failed run rolls the company back: the version it failed on is not what it runs.
+                while seen and seen[-1] == version:
+                    seen.pop()
+    out = {cid: seen[-1] for cid, seen in history.items() if seen}
+    if FAST in wanted:
+        out[FAST] = target_version(edge=edge)
+    return out
+
+
+def _stopped(world: World, version: str) -> str:
+    """The company whose last rollout row of `version` is `failed`: the one a latched stop names."""
+    read = read_world(world, version, bench=True, sample=False)
+    failed = [c for c, rows in read.rollouts.items() if rows and rows[-1].get("status") == "failed"]
+    return failed[-1] if failed else ""
+
+
+def lab_release(
+    *,
+    skip_pauses: bool = False,
+    order: str = "",
+    plant_failure: str = "",
+    resume: str = "",
+    world: World | None = None,
+    version: str | None = None,
+    sleep: Callable[[float], None] | None = None,
+    pause_minutes: int = PROOF_PAUSE_MINUTES,
+) -> proof.ReleaseResult:
+    """One bench release as `enterprise proof release` asks for it, as a `proof.ReleaseResult`.
+
+    Each invocation of the runner ends at a `wait` while a shortened pause runs, so the driver sleeps the pause and invokes again until the run ends on anything else (at most `PROOF_SETTLE_RUNS`). `--resume` applies to the first invocation only. A non-zero exit names the company whose last rollout row of the version is `failed`. The runner's own lines are captured, not printed: the proof prints its claims."""
+    w = world or live_world()
+    v = version or target_version()
+    nap = sleep or time.sleep
+    base = ["--version", v, "--bench", "--soak-days", str(PROOF_SOAK_DAYS)]
+    base += ["--pause-minutes", str(pause_minutes)]
+    if order:
+        base += ["--order", order]
+    if skip_pauses:
+        base.append("--skip-pauses")
+    if plant_failure:
+        base += ["--plant-failure", plant_failure]
+    first = [*base, "--resume", v, "--company", resume] if resume else base
+    argv = first
+    for _ in range(PROOF_SETTLE_RUNS):
+        out, err = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            rc = main(argv, world=w)
+        lines = [ln for ln in err.getvalue().splitlines() if ln.strip()]
+        error = lines[-1] if lines else ""
+        if rc == 2:
+            return proof.ReleaseResult(rc, "", error or "refused")
+        if rc != 0:
+            return proof.ReleaseResult(rc, _stopped(w, v), error)
+        decided = [ln for ln in out.getvalue().splitlines() if ln and not ln.startswith("would ")]
+        if not decided or not decided[-1].startswith("wait"):
+            return proof.ReleaseResult(0)
+        nap(pause_minutes * 60.0)
+        argv = base
+    return proof.ReleaseResult(1, "", "the release did not settle in %d runs" % PROOF_SETTLE_RUNS)
 
 
 def main(argv: list[str], world: World | None = None) -> int:
