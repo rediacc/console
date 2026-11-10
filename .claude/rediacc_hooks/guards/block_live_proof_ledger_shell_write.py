@@ -550,18 +550,85 @@ def _names_ledger(text):
     return isinstance(text, str) and text.rstrip("/").endswith(LEDGER_NAME)
 
 
-def _holds_ledger(expr, names, consts=None, key=None):
-    """Whether a Python expression carries the ledger: a string naming it (or its file name), constant or folded from constant pieces (`_fold`), a name bound to one, a `ledger_path(...)` call, or the `LEDGER` constant. Searched text (`_flow`) is not carried. With `key` (`_Scopes.key`), `names` holds scoped keys and a Name is the ledger only when the binding it resolves to is."""
+def _holds_ledger(expr, names, consts=None, key=None, recorder=None):
+    """Whether a Python expression carries the ledger: a string naming it (or its file name), constant or folded from constant pieces (`_fold`), a name bound to one, a `ledger_path(...)` call, or the `LEDGER` constant. Searched text (`_flow`) is not carried. With `key` (`_Scopes.key`), `names` holds scoped keys and a Name is the ledger only when the binding it resolves to is. With `recorder` (`_RecorderNames.means`), a `LEDGER` or `ledger_path` is the ledger only when it is the live-proof module's; without it, every one is."""
     for n in _flow(expr):
         constant = (isinstance(n, ast.Constant) and _names_ledger(n.value)) or (
             isinstance(n, (ast.BinOp, ast.JoinedStr))
             and _names_ledger(_fold(n, consts or {}, key=key))
         )
-        name = isinstance(n, ast.Name) and ((key(n) if key else n.id) in names or n.id == "LEDGER")
-        attribute = isinstance(n, ast.Attribute) and n.attr in ("LEDGER", "ledger_path")
-        if constant or name or attribute:
+        name = isinstance(n, ast.Name) and (key(n) if key else n.id) in names
+        symbol = (isinstance(n, ast.Name) and n.id in _LEDGER_SYMBOLS) or (
+            isinstance(n, ast.Attribute) and n.attr in _LEDGER_SYMBOLS
+        )
+        if symbol and recorder is not None:
+            symbol = recorder(n)
+        if constant or name or symbol:
             return True
     return False
+
+
+# A LEDGER IS NOT THIS LEDGER BY ITS NAME (#921336d9, 2026-11-10). `LEDGER` and `ledger_path` were read as the live-proof ledger wherever they appeared, and the repository has several of each: the review store's `ledger_path(repo, branch)` (`.claude/rediacc_hooks/lib`), the shadow-observation `LEDGER`s under `.ci/rediacc_ci/tests`, `test_twin_parity.ledger_path`. So every run of an edited `test-block_push_with_unrecorded_reviews.py`, whose `path = rv.ledger_path(repo, BRANCH)` is the review ledger written through `path.write_text`, was refused as a hand write of this one (a tracked, unchanged script is not read, which made the refusal look intermittent).
+# A symbol now counts when it is the recorder's (`_RecorderNames`): imported from a module whose dotted path holds `live_tier` or `live_proof` (`from rediacc_ci.proof import live_tier as LT`, `from ...live_tier import LEDGER`), or reached through a receiver this reading cannot place (a parameter, a call's result, a name the program never binds) in a program that names one of those modules anywhere. A name the program binds itself is judged by its value, as every other name is.
+_LEDGER_SYMBOLS = frozenset(("LEDGER", "ledger_path"))
+_RECORDER_PATH = re.compile(r"(?:^|\.)(?:live_tier|live_proof)(?:\.|$)")
+_RECORDER_MENTION = re.compile(r"\blive_(?:tier|proof)\b")
+
+
+class _RecorderNames:
+    """Which `LEDGER` and `ledger_path` uses in one parsed program are the live-proof recorder's (#921336d9)."""
+
+    def __init__(self, tree, imports, scopes, bound):
+        self.imports = imports
+        self.scopes = scopes
+        self.bound = bound
+        self.mentioned = any(
+            _RECORDER_MENTION.search(text) for node in ast.walk(tree) for text in _node_words(node)
+        )
+
+    def _name(self, node):
+        """A Name used as a module or symbol: True, False, or None when this reading cannot place it."""
+        if node.id in self.imports and self.bound.get(self.scopes.key(node)) == []:
+            return bool(_RECORDER_PATH.search(self.imports[node.id]))
+        values = self.bound.get(self.scopes.key(node))
+        if values:
+            return any(
+                _RECORDER_MENTION.search(text)
+                for v in values
+                for n in ast.walk(v)
+                for text in _node_words(n)
+            )
+        return None
+
+    def means(self, node):
+        if isinstance(node, ast.Name):
+            # A name the program binds to a value is judged by that value through the scoped names; only an import or an unbound name reaches here as a symbol.
+            if self.bound.get(self.scopes.key(node)) and node.id not in self.imports:
+                return False
+            placed = self._name(node)
+            return self.mentioned if placed is None else placed
+        receiver = node.value
+        if isinstance(receiver, ast.Name):
+            placed = self._name(receiver)
+            return self.mentioned if placed is None else placed
+        return self.mentioned or any(
+            _RECORDER_MENTION.search(text) for n in ast.walk(receiver) for text in _node_words(n)
+        )
+
+
+def _node_words(node):
+    """The identifiers and string constants one AST node spells: a module path in an import, a name, an attribute, a literal."""
+    if isinstance(node, ast.alias):
+        return (node.name,)
+    if isinstance(node, ast.ImportFrom):
+        return (node.module or "",)
+    if isinstance(node, ast.Name):
+        return (node.id,)
+    if isinstance(node, ast.Attribute):
+        return (node.attr,)
+    if isinstance(node, ast.Constant) and isinstance(node.value, str):
+        return (node.value,)
+    return ()
 
 
 def _call_name(func):
@@ -592,16 +659,20 @@ def _tree_writes_ledger(tree):
     bound = scopes.bound()
     consts = _string_constants(bound, key)
     names: set = {n for n, text in consts.items() if _names_ledger(text)}
+    imports = shellscan.python_imports(tree)
+    recorder = _RecorderNames(tree, imports, scopes, bound).means
     changed = True
     while changed:
         changed = False
         for name, values in bound.items():
-            if name not in names and any(_holds_ledger(v, names, consts, key) for v in values):
+            if name not in names and any(
+                _holds_ledger(v, names, consts, key, recorder) for v in values
+            ):
                 names.add(name)
                 changed = True
-    imports = shellscan.python_imports(tree)
     if any(
-        _holds_ledger(t, names, consts, key) for t in shellscan.python_write_targets(tree, imports)
+        _holds_ledger(t, names, consts, key, recorder)
+        for t in shellscan.python_write_targets(tree, imports)
     ):
         return True
     for node in ast.walk(tree):
@@ -625,7 +696,7 @@ def _tree_writes_ledger(tree):
             # A two-path call takes its DESTINATION second (`os.replace(src, dst)`, `shutil.copy(src, dst)`), and `shellscan.python_write_targets` reads that only on a module spelled `os` or `shutil`, so an aliased `import os as o; o.replace(forged, <ledger>)` reached nothing (found with #4e20f8c5).
             if _call_name(func) in _TWO_PATH_CALLS:
                 parts.extend(node.args[1:2])
-        if any(_holds_ledger(p, names, consts, key) for p in parts):
+        if any(_holds_ledger(p, names, consts, key, recorder) for p in parts):
             return True
     return False
 

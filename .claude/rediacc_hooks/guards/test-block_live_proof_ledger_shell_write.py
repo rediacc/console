@@ -473,6 +473,82 @@ def scope_cases(world, ledger):
 
 
 # Review 53e8d8aa.1: a left-nested `+` chain parses (the parser loops over it) while the scope walk recurses about two frames per level, so 2000 terms overflow the walk and not the parse.
+# The shape of `test-block_push_with_unrecorded_reviews.py` refused on 2026-11-10 (#921336d9): a parameter `rv` (the review store module) hands back `ledger_path(repo, BRANCH)`, the REVIEW ledger, and the harness writes it. `ledger_path` and `LEDGER` were read as this ledger by name alone.
+REVIEW_LEDGER_SCRIPT = (
+    "import pathlib\n"
+    "BRANCH = '1104-1'\n"
+    "def record(rv, repo):\n"
+    "    path = rv.ledger_path(repo, BRANCH)\n"
+    "    path.parent.mkdir(parents=True, exist_ok=True)\n"
+    "    path.write_text('{}\\n', encoding='utf-8')\n"
+    "    rels = [str(rv.ledger_path(repo, BRANCH).relative_to(repo))]\n"
+    "    return rels\n"
+)
+
+
+def recorder_symbol_cases(world):
+    """#921336d9: `LEDGER` and `ledger_path` are the live-proof ledger only when they are the recorder's (imported from a `live_tier`/`live_proof` module, or reached through a receiver this reading cannot place in a program that names one); another module's of the same name is not. `(name, command, refused?)`."""
+    script = world / "check_review_ledger.py"
+    script.write_text(REVIEW_LEDGER_SCRIPT, encoding="utf-8")
+    lt = "from rediacc_ci.proof import live_tier as LT\n"
+    return [
+        # The false positives: each must be ALLOWED.
+        ("python runs a script writing the review ledger", "python3 check_review_ledger.py", False),
+        (
+            "python heredoc writes the review ledger",
+            _py(REVIEW_LEDGER_SCRIPT + "record(None, '.')"),
+            False,
+        ),
+        (
+            "python writes another module's ledger_path",
+            _py(
+                "from rediacc_hooks.lib import reviews as rv\n"
+                "rv.ledger_path('.', 'b').write_text('{}')"
+            ),
+            False,
+        ),
+        (
+            "python appends to another module's LEDGER",
+            _py("from rediacc_ci.tests.test_dev_www import LEDGER\nopen(LEDGER, 'a').write('x')"),
+            False,
+        ),
+        # The recorder's symbols, however reached: each must be REFUSED.
+        (
+            "python writes the recorder's ledger_path through a parameter",
+            _py(lt + "def go(m):\n    m.ledger_path('.').write_text('x')\ngo(LT)"),
+            True,
+        ),
+        (
+            "python appends to the recorder's LEDGER imported by name",
+            _py(
+                "from rediacc_ci.proof.live_tier import LEDGER\n"
+                "open('/'.join(LEDGER), 'a').write('x')"
+            ),
+            True,
+        ),
+        (
+            "python writes the recorder's ledger_path imported by name",
+            _py(
+                "from rediacc_ci.proof.live_tier import ledger_path\nledger_path('.').write_text('x')"
+            ),
+            True,
+        ),
+        (
+            "python writes the ledger_path of a module imported at run time",
+            _py(
+                "import importlib\nm = importlib.import_module('rediacc_ci.proof.live_tier')\n"
+                "m.ledger_path('.').write_text('x')"
+            ),
+            True,
+        ),
+        (
+            "python appends to a LEDGER a star import brings",
+            _py("from rediacc_ci.proof.live_tier import *\nopen(LEDGER, 'a').write('x')"),
+            True,
+        ),
+    ]
+
+
 DEEP_TERMS = 2000
 
 
@@ -562,6 +638,7 @@ def main():
     shared.SHELL_CASES.extend(read_is_not_write_cases(shared.WORLD, shared.L))
     shared.SHELL_CASES.extend(scope_cases(shared.WORLD, shared.L))
     shared.SHELL_CASES.extend(review_53e8d8aa_cases(shared.L))
+    shared.SHELL_CASES.extend(recorder_symbol_cases(shared.WORLD))
     rc = shared.main(("block_live_proof_ledger_shell_write",))
     return 1 if no_traceback(shared) else rc
 
