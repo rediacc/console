@@ -16,7 +16,7 @@ WAITING = "I'll wait for this notification now."  # style-ok -- the agent's own 
 SHELL = "bwait0001"
 
 
-def transcript(sc: Scratch, notified: bool = False):
+def transcript(sc: Scratch, notified: bool = False, flushed: bool = True):
     """The agent's transcript: a launched background shell, then an idle final record. `notified` appends the shell's `<task-id>` notification and a second idle record, the shape of an agent the harness resumed and that finished."""
     path = sc.subagents_dir() / ("agent-%s.jsonl" % AGENT)
     records = [
@@ -31,6 +31,9 @@ def transcript(sc: Scratch, notified: bool = False):
             "message": {"stop_reason": "end_turn", "content": [{"type": "text", "text": WAITING}]},
         },
     ]
+    if not flushed:
+        # The tail the harness had not flushed at SubagentStop: the last record is an api-request, not the end_turn.
+        records[-1] = {"type": "api-request", "message": {"content": []}}
     if notified:
         records.append(
             {
@@ -98,3 +101,18 @@ def test_r7_inverse_a_later_capture_supersedes_it(sc):
 def test_r7_adversarial_a_substantive_report_is_never_held(sc):
     capture(sc, "SUBSTANCE WHILE WAITING\n" + BIG, transcript(sc))
     assert "SUBSTANCE WHILE WAITING" in surfaced(sc)
+
+
+def _capture_interim(sc: Scratch) -> str:
+    return "".join(json.loads(ln).get("interim", "") for ln in sc.index_lines() if ln.strip())
+
+
+def test_r6_an_unflushed_tail_with_an_armed_shell_is_written_interim(sc):
+    """CONTROL: the idle test read an api-request tail as working, so `interim` stayed empty and the capture blocked."""
+    capture(sc, WAITING, transcript(sc, flushed=False))
+    assert _capture_interim(sc) == SHELL
+
+
+def test_r6_inverse_the_notification_present_writes_no_interim(sc):
+    capture(sc, WAITING, transcript(sc, notified=True, flushed=False))
+    assert _capture_interim(sc) == ""

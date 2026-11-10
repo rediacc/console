@@ -951,7 +951,8 @@ def handle_subagent_stop(event):
         import wl_roster
 
         with contextlib.suppress(Exception):
-            interim = wl_roster.transcript_waiting(pathlib.Path(transcript), time.time())
+            # The SubagentStop event proves the turn ended, so the transcript's last record (often an `api-request`) is not asked to say so.
+            interim = wl_roster.transcript_armed(pathlib.Path(transcript), time.time())
     capture(
         store,
         _branch_of(start),

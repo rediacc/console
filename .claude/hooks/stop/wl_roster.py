@@ -588,10 +588,17 @@ def transcript_waiting(jsonl, now):
     For the callers with no fresh Stop event (the spawn guard, `--lease worker:queue`, `--status`): an agent whose last record ended the turn, written inside WAIT_HORIZON_MIN, with a background shell still armed. 2026-09-24: without this the estimate counted such an agent as finished until the next stop refreshed the event, so `--lease worker:queue` refused ("3 of 4 busy") in the same minute the spawn guard blocked at 4 of 4."""
     import wl_liveness as L
 
+    if not L._record_is_idle(last_record(jsonl)):
+        return ""
+    return transcript_armed(jsonl, now)
+
+
+def transcript_armed(jsonl, now):
+    """The shell id an agent still has armed, or "", WITHOUT asking whether its last record ended the turn.
+
+    For a caller whose own event proves the turn ended (the SubagentStop capture): the transcript's tail may not be flushed yet, so its last record can be an `api-request`, which `transcript_waiting`'s idle test reads as working. The WAIT_HORIZON_MIN and `armed_shells` checks are the same as `transcript_waiting`'s."""
     mt = _mtime(jsonl)
     if mt is None or now - mt > WAIT_HORIZON_MIN * 60:
-        return ""
-    if not L._record_is_idle(last_record(jsonl)):
         return ""
     armed = armed_shells(jsonl)
     return armed[-1] if armed else ""
