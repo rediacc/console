@@ -229,11 +229,11 @@ Promoted: 17 of 63 plans done, 962 of 1171 boxes done (82%).
 3. agent/plans/PLAN-stop-hook-refactor-enforcement.md -- P1, executing, in progress (16 of 17 boxes ticked)
 4. agent/plans/PLAN-ci-quick-cpu-scheduling.md -- P2, active, in progress (2 of 5 boxes ticked)
 5. agent/plans/PLAN-backup-toc-exact-opt-in.md -- P3, proposed, in progress (1 of 10 boxes ticked)
-6. agent/plans/PLAN-deletion-budget.md -- P3 (operator), draft, not started
-7. agent/plans/PLAN-fix-upgrade-drills-flat-daemon-bringup.md -- P1, executing, not started
-8. agent/plans/PLAN-config-mirror-reseal.md -- P2, proposed, not started
-9. agent/plans/PLAN-first-release-checks.md -- P2, approved, not started
-10. agent/plans/PLAN-lessons-registry-followups.md -- P3, draft, not started
+6. agent/plans/PLAN-lessons-registry-followups.md -- P3, draft, in progress (1 of 2 boxes ticked)
+7. agent/plans/PLAN-deletion-budget.md -- P3 (operator), draft, not started
+8. agent/plans/PLAN-fix-upgrade-drills-flat-daemon-bringup.md -- P1, executing, not started
+9. agent/plans/PLAN-config-mirror-reseal.md -- P2, proposed, not started
+10. agent/plans/PLAN-first-release-checks.md -- P2, approved, not started
 11. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
 12. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
 <!-- queue:generated:end -->

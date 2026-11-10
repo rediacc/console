@@ -1685,13 +1685,14 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 2,
-      "done": 0,
+      "open": 1,
+      "done": 1,
       "open_sigs": [
-        "0b714aa1",
-        "e371147a"
+        "0b714aa1"
       ],
-      "done_sigs": []
+      "done_sigs": [
+        "e371147a"
+      ]
     },
     "agent/plans/PLAN-lint-css-ci-wiring.md": {
       "status": "compacted",
