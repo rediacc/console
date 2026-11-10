@@ -511,7 +511,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-devbox-uid-derived-image.md` | compacted | 36 | 0 | 0 | 2750 |
 | `agent/plans/PLAN-docker-image-freshness-soak-filter.md` | compacted | 39 | 0 | 0 | 2715 |
 | `agent/plans/PLAN-docker-pin-digest.md` | executing | 119 | 0 | 9 | 19984 |
-| `agent/plans/PLAN-docker-sock-listener-preflight-detect.md` | executing | 56 | 5 | 0 | 4977 |
+| `agent/plans/PLAN-docker-sock-listener-preflight-detect.md` | executing | 61 | 0 | 5 | 5892 |
 | `agent/plans/PLAN-drop-free-license-ip-prefix-hash.md` | executing | 36 | 1 | 5 | 6053 |
 | `agent/plans/PLAN-duplication-angle.md` | compacted | 37 | 0 | 0 | 2630 |
 | `agent/plans/PLAN-durable-reports-and-push-inbox.md` | compacted | 52 | 0 | 0 | 3692 |
