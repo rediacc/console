@@ -1053,9 +1053,27 @@ OWN_CASES = [
         "A=age; B=nt; grep -rl x $A$B/plans | xargs sed -i s/a/b/",
         False,
     ),
+    # a6ad833c.1: a root whose value is a listing over itself recurses to _SCOPE_DEPTH_CAP; past it the root is the review directory only when the line spells it.
+    (
+        "a self-referencing root past the depth cap on a line naming reviews",
+        "D=$(grep -rl x $D); grep -rl x $D | xargs sed -i s/reviews/b/",
+        True,
+    ),
+    (
+        "control: a self-referencing root past the depth cap on a line naming no reviews",
+        "D=$(grep -rl x $D); grep -rl x $D | xargs sed -i s/a/b/",
+        False,
+    ),
 ]
 
 MUTANTS = [
+    (
+        "past the depth cap a root never reads as the review directory (a6ad833c.1)",
+        (
+            "return [root, _WORST] if _SPELLS_REVIEWS.search(cmd) else [root]",
+            "return [root]",
+        ),
+    ),
     (
         "a stdin device read as a named file (b3ef7ca3.1)",
         (

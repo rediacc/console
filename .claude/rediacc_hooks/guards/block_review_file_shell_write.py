@@ -1298,7 +1298,7 @@ def _disk_readings(text, where):
 
 
 def _listing_roots(run, outer=None, scope=None):
-    """The roots a shell run walks when it prints file names (grep and rg as `_search_roots` reads them, find, ls, fd, git ls-files), joined to the run's own directory; None for any other run. `outer` is the directory the text runs in when it is known (`_text_lists_reviews`), which a relative run directory sits under, and `scope` the run whose line the text sits in, whose variables a root holding an expansion is read through (`_root_forms`)."""
+    """The roots a shell run walks when it prints file names (grep and rg as `_search_roots` reads them, find, ls, fd, git ls-files), joined to the run's own directory; None for any other run. `outer` is the directory the text runs in when it is known (`_text_lists_reviews`), which a relative run directory sits under, and `scope` the `(run, command)` pair of the line the text sits in: the run whose variables a root holding an expansion is read through, and the command text `_root_forms` checks past its depth cap."""
     name = run.name.rsplit("/", 1)[-1]
     argv = [str(a) for a in run.argv]
     if name in ("grep", "egrep", "fgrep", "rg"):
