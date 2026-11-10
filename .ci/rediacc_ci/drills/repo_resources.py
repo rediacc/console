@@ -11,7 +11,7 @@ Deviation: the plan's K3.0 names `--memory-max 1G` with a 512M volume, which Dec
 
 TEARDOWN. Every fork joins `ctx.forks`, so the run's teardown deletes it and purges its licence state even when a step crashes; this module removes only its detached container.
 
-The pure pieces (the readout scripts, the probe Rediaccfile, and the parsers and verdicts of memory.events, /proc/vmstat, memory.stat, findmnt, the probe logs and StartedAt listings) are pinned by `tests/test_drills_repo_resources.py` without a machine.
+The pure pieces (the readout scripts, the probe Rediaccfile, and the parsers and verdicts of memory.events, /proc/vmstat, memory.stat, findmnt, the probe logs and StartedAt listings) are pinned by `tests/test_drills_repo_resources.py` without a machine, and the fork-list reading (`_Live.fork` with `fork_ids`, `fork_list_evidence` and `fork_reads_note`) by `tests/test_vm_check_list_evidence.py` against fake results.
 """
 
 from __future__ import annotations
@@ -38,6 +38,9 @@ RAM_SIZE = 512 * MIB
 E_MEMORY_MAX = RAM_SIZE + GIB
 RESTORE_BYTES = 200 * MIB
 IMAGE = "busybox:1.36"
+# A fork's entry is read from `repo list` at most this many times (the first read and three re-reads), FORK_REREAD_S apart, while it is missing or carries no numeric network id. One K2.6 list exited 0 after 28 s and the fork had no guid and network id in it, and ten replays never showed it again (vm:check run vmc-11100841-450cef), so the re-read is a measured mitigation: the step line names every re-read it needed and the check still fails after the last.
+FORK_LIST_READS = 4
+FORK_REREAD_S = 5.0
 SLICE = "/sys/fs/cgroup/rediacc.slice"
 MOUNTS = DATASTORE_PATH + "/mounts"
 MARKER = "marker"
@@ -391,6 +394,40 @@ def probe_up_verdict(up_log: str, target: str) -> tuple[bool, str]:
 # --------------------------------------------------------------------------- live
 
 
+def fork_ids(entries: list[dict[str, Any]], ref: str) -> tuple[bool, str, int | None]:
+    """Whether `ref` is listed, its guid, and its network id when that is a positive integer: a fork's state mirror omits a zero network id until the first up persists it (renet `repository_fork.go`), so 0 reads as none."""
+    for e in entries:
+        if e.get("name") == ref:
+            raw = str(e.get("networkId", e.get("network_id")) or "")
+            nid = int(raw) if raw.isdigit() else 0
+            return True, str(e.get("guid", "")), nid if nid > 0 else None
+    return False, "", None
+
+
+def fork_reads_note(ok: bool, reads: int) -> str:
+    """The K2 fork row's suffix naming the re-reads: empty when the first read held the fork, so a re-read is never silent and the one-read row reads as before."""
+    if reads <= 1:
+        return ""
+    return " (listed after %d reads)" % reads if ok else " (not listed after %d reads)" % reads
+
+
+def fork_list_evidence(listed: Any, entries: list[dict[str, Any]], ref: str, reads: int) -> str:
+    """The K2 fork row's evidence, cause first for the EVIDENCE_MAX clip: the reads it took, the last list's rc, ms and whether its stdout parsed (yes only for the list `repo_list` read at rc 0), how many entries it held, the fork's guid and network id, and the last stderr lines (which carry `repo_list`'s reason for an unreadable list)."""
+    found, guid, nid = fork_ids(entries, ref)
+    err = [ln.strip() for ln in listed.err.splitlines() if ln.strip()]
+    return "reads=%d list rc=%d ms=%d parsed=%s entries=%d %s guid=%s networkId=%s stderr: %s" % (
+        reads,
+        listed.rc,
+        listed.ms,
+        "yes" if listed.rc == 0 else "no",
+        len(entries),
+        "listed" if found else "absent",
+        guid or "<none>",
+        "<none>" if nid is None else nid,
+        " | ".join(err[-2:]) or "<empty>",
+    )
+
+
 def run_k2(ctx: Any) -> None:
     """The live K2 step: records K2 rows on `ctx`."""
     _Live(ctx, K2_ID).k2()
@@ -454,18 +491,37 @@ class _Live:
         )
         if not self.check("%s fork %s --up" % (self.step, self.ctx.ref(tag)), res.rc == 0, res):
             return False
-        listed, entries = self.ctx.repo_list()
-        for e in entries:
-            if e.get("name") == self.ctx.ref(tag):
-                entry["guid"] = str(e.get("guid", ""))
-                nid = e.get("networkId", e.get("network_id"))
-                if str(nid or "").isdigit():
-                    self.nid[tag] = int(nid)
-        self.mount[tag] = "%s/%s" % (MOUNTS, entry["guid"])
-        return self.check(
-            "%s fork %s listed with a guid and network id" % (self.step, self.ctx.ref(tag)),
-            bool(entry["guid"]) and tag in self.nid,
+        ref = self.ctx.ref(tag)
+        argv = ["repo", "list", "-m", self.ctx.machine, "-o", "json"]
+        reads = 0
+        logs: list[str] = []
+        while True:
+            listed, entries = self.ctx.repo_list()
+            reads += 1
+            logs.append(
+                self.ctx.keep_log(self.step, "fork-%s-list-%d" % (tag, reads), argv, listed)
+            )
+            _found, guid, nid = fork_ids(entries, ref)
+            if (guid and nid is not None) or reads >= FORK_LIST_READS:
+                break
+            self.ctx.say(
+                "        %s fork %s: list read %d (rc=%d, %d ms) has no guid and network id for it; reading again in %ds"
+                % (self.step, ref, reads, listed.rc, listed.ms, FORK_REREAD_S)
+            )
+            self.ctx.host.sleep(FORK_REREAD_S)
+        entry["guid"] = guid
+        if nid is not None:
+            self.nid[tag] = nid
+        self.mount[tag] = "%s/%s" % (MOUNTS, guid)
+        ok = bool(guid) and nid is not None
+        return self.ctx.check(
+            self.step,
+            "%s fork %s listed with a guid and network id%s"
+            % (self.step, ref, fork_reads_note(ok, reads)),
+            ok,
             listed,
+            fork_list_evidence(listed, entries, ref, reads),
+            log_path=logs[-1],
         )
 
     def oom_counters(self) -> tuple[int | None, int | None, int | None]:

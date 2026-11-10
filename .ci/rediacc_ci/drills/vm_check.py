@@ -1334,6 +1334,22 @@ def _data_list(raw: str) -> list[dict[str, Any]]:
     return [d for d in data if isinstance(d, dict)]
 
 
+# The rc `VmCheck.repo_list` gives a `repo list` that exited 0 without a list on stdout (sysexits EX_DATAERR). Every caller reads rc != 0 as a failed list, so an empty or clipped stdout, or a pending job ticket, no longer reads as a machine with no repositories (vm:check run vmc-11100841-450cef, K2.6).
+LIST_UNREADABLE_RC = 65
+
+
+def list_problem(out: str) -> str:
+    """Why `out` is not a `repo list -o json` answer, empty when it is one: an envelope whose `data` is an array, or a bare array."""
+    if not out.strip():
+        return "stdout is empty"
+    parsed = wire.parse(out)
+    if parsed is wire.MISSING:
+        return "stdout is not JSON"
+    if isinstance(parsed, list) or isinstance(wire.lookup(parsed, "data"), list):
+        return ""
+    return "stdout JSON carries no data array"
+
+
 def os_matches(image: str, os_id: str, version: str) -> bool:
     """`ubuntu-24.04` against /etc/os-release's `ubuntu 24.04`; `rocky-9` against `rocky 9.4`."""
     distro, _, wanted = image.rpartition("-")
@@ -1418,15 +1434,14 @@ def envelope_errors(out: str) -> str:
 
 
 def remote_evidence(res: Result) -> str:
-    """A failed remote command's evidence, stderr first: `term connect` puts the remote stderr on stderr and a JSON envelope on stdout, and the envelope's tail filled the 200-byte evidence (2026-10-15). The CLI's own startup lines on stderr go unless nothing else is there, because they filled it ahead of a refusal (2026-11-04), and the envelope gives its error messages rather than its tail."""
+    """A failed remote command's evidence, stderr first: `term connect` puts the remote stderr on stderr and a JSON envelope on stdout, and the envelope's tail filled the 200-byte evidence (2026-10-15). The CLI's own startup lines on stderr go unless nothing else is there, because they filled it ahead of a refusal (2026-11-04), and the envelope gives its error messages rather than its tail. When stderr holds only startup lines, stdout leads, so those lines cannot fill the evidence ahead of the envelope's errors (vm:check run vmc-11100841-450cef)."""
     remote = "\n".join(
         ln for ln in res.err.splitlines() if not ln.lstrip().startswith(CLI_STARTUP_MARKS)
     )
-    return "rc=%d stderr: %s | stdout: %s" % (
-        res.rc,
-        last_lines(remote) or last_lines(res.err) or "<empty>",
-        envelope_errors(res.out) or last_lines(res.out) or "<empty>",
-    )
+    stdout = envelope_errors(res.out) or last_lines(res.out) or "<empty>"
+    if remote.strip():
+        return "rc=%d stderr: %s | stdout: %s" % (res.rc, last_lines(remote), stdout)
+    return "rc=%d stdout: %s | stderr: %s" % (res.rc, stdout, last_lines(res.err) or "<empty>")
 
 
 def _renet_binary_missing(why: str) -> bool:
@@ -1743,7 +1758,7 @@ class VmCheck:
         log_path: str = "",
         failed: Sequence[str] = (),
     ) -> bool:
-        """One ledger row. `ok` None is a skip; `assertion` counts it towards the verdict's ledger. `log_path` (the kept full output) and `failed` (a drill's failed assertions) are added to the row only when given."""
+        """One ledger row. `ok` None is a skip; `assertion` counts it towards the verdict's ledger. `log_path` (the kept full output) and `failed` (a drill's failed assertions) are added to the row only when given. A row that did not pass and names no `evidence` takes `remote_evidence(res)`, the stderr tail and the envelope's errors: the evidence is clipped to its first EVIDENCE_MAX bytes, and the head of stdout plus stderr was the CLI's startup lines, which dropped the cause (vm:check run vmc-11100841-450cef, K2.6)."""
         verdict_text = "skip" if ok is None else ("ok" if ok else "FAIL")
         row = {
             "id": step_id,
@@ -1751,7 +1766,9 @@ class VmCheck:
             "rc": res.rc if res is not None else 0,
             "verdict": verdict_text,
             "ms": res.ms if res is not None else 0,
-            "evidence": self._clean(evidence or (res.text() if res is not None and not ok else "")),
+            "evidence": self._clean(
+                evidence or (remote_evidence(res) if res is not None and not ok else "")
+            ),
         }
         if log_path:
             row["log"] = log_path
@@ -1886,6 +1903,7 @@ class VmCheck:
         return "%s/%s" % (MOUNTS, self.guids.get(tag, "<unknown>"))
 
     def repo_list(self) -> tuple[Result, list[dict[str, Any]]]:
+        """`repo list -m <machine> -o json` and its entries. A list that failed comes back with its rc and no entries; one that exited 0 without a list on stdout (`list_problem`) comes back as LIST_UNREADABLE_RC with the reason as the last stderr line, which `rdc_failure` and `remote_evidence` both read."""
         res = self.rdc("repo", "list", "-m", self.machine, "-o", "json", refuse=False)
         if res.rc != 0 and _renet_binary_missing(rdc_failure(res)):
             # A freshly recreated ops VM has no renet yet, and `repo list` runs through renet, so the first list (P3's leftover check or P5) fails before any step installs one; `machine setup` installs the branch renet, then the list is read again.
@@ -1901,7 +1919,15 @@ class VmCheck:
                     % (self.machine, self.machine, setup.rc, rdc_failure(setup)),
                 )
             res = self.rdc("repo", "list", "-m", self.machine, "-o", "json", refuse=False)
-        return res, _data_list(res.out) if res.rc == 0 else []
+        if res.rc != 0:
+            return res, []
+        problem = list_problem(res.out)
+        if problem:
+            unread = "repo list exited 0 but its %s" % problem
+            return dataclasses.replace(
+                res, rc=LIST_UNREADABLE_RC, err=(res.err + "\n" + unread).strip()
+            ), []
+        return res, _data_list(res.out)
 
     # ------------------------------------------------------------------ the run
 
@@ -3366,7 +3392,7 @@ class VmCheck:
     ) -> bool:
         res = self.shell(ref, command, extra_env)
         ok = res.rc == 0
-        return self.check("V1.3", "A: %s" % desc, ok, res, "" if ok else self.remote_evidence(res))
+        return self.check("V1.3", "A: %s" % desc, ok, res)
 
     def _upload_compose(self, ref: str) -> bool:
         """The minimal compose file, synced into fork A's mount root; the grand stays as it is."""

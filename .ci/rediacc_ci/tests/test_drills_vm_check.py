@@ -143,8 +143,8 @@ MUTANTS = {
         "            self._positive(ref, desc, command)\n",
     ),
     "evidence-stdout-first": (
-        '        return self.check("V1.3", "A: %s" % desc, ok, res, "" if ok else self.remote_evidence(res))\n',
-        '        return self.check("V1.3", "A: %s" % desc, ok, res)\n',
+        '                evidence or (remote_evidence(res) if res is not None and not ok else "")\n',
+        '                evidence or (res.text() if res is not None and not ok else "")\n',
     ),
     "no-compose-upload": (
         "        if self._upload_compose(ref):\n",
