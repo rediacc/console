@@ -27,6 +27,7 @@ import {
 } from '../services/account/subscription-auth.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
+import { isMachineReadable } from '../services/core/output-format.js';
 import { setExitCode } from '../services/core/request-context.js';
 import { pendingExitCode, runCommandJob } from '../services/jobs/command-job.js';
 import { bindStepHandler, planStep } from '../services/jobs/steps.js';
@@ -361,8 +362,38 @@ export async function executeMachineStatus(machineName: string): Promise<void> {
     throw licenseJobFailure('license-status', machineName, outcome.result);
 }
 
+/** The activation as data for a machine-readable `-o`, or null with the reason when the account server cannot say. */
+async function readActivationData(
+  context: SubscriptionCommandContext
+): Promise<{ activation: unknown; activationError?: string }> {
+  const tokenState = getSubscriptionTokenState();
+  if (tokenState.kind !== 'ready') {
+    return { activation: null, activationError: unreadyTokenDiagnostic(tokenState) };
+  }
+  try {
+    await assertSubscriptionScopeMatchesConfig(tokenState.token);
+    return {
+      activation: await readMachineActivationStatus(
+        context.machine,
+        context.sshPrivateKey,
+        context.remoteRenetPath
+      ),
+    };
+  } catch (err) {
+    return { activation: null, activationError: err instanceof Error ? err.message : String(err) };
+  }
+}
+
 bindStepHandler('renderSubscriptionStatus', async ({ machine, output }) => {
   const context = await resolveMachineContext(machine, 'read-only');
+  const format = getOutputFormat();
+  if (isMachineReadable(format)) {
+    // stdout carries only data under json, yaml and csv: the activation and the per-repo licences as one record.
+    const repoLicenses = parseJsonArray<RuntimeRepoLicenseStatus>('license-status', output);
+    const activation = await readActivationData(context);
+    outputService.print({ machine, ...activation, repoLicenses }, format);
+    return;
+  }
   // The activation section goes first: an unusable licence answer fails the step after it, not before it.
   await renderActivationSection(machine, context);
   renderRepoLicenseTable(

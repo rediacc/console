@@ -1,6 +1,7 @@
 /** `outputService.report` is a command's primary prose result: stdout. `info` and `warn` stay on stderr. */
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { setOutputFormat } from '../../../utils/errors.js';
 import { outputService } from '../output.js';
 import { createOutputState, runInRequestContext } from '../request-context.js';
 
@@ -8,6 +9,7 @@ describe('outputService.report', () => {
   afterEach(() => {
     vi.restoreAllMocks();
     outputService.setQuiet(false);
+    setOutputFormat('table');
   });
 
   it('writes to stdout and leaves stderr empty, while info and warn write to stderr only', () => {
@@ -41,5 +43,28 @@ describe('outputService.report', () => {
     });
     expect(ctx.stdout).toEqual(['plan: PRO']);
     expect(ctx.stderr).toEqual(['progress note']);
+  });
+
+  it.each(['json', 'yaml', 'csv'] as const)(
+    'keeps prose off stdout under -o %s, where stdout carries only the data',
+    (format) => {
+      const out = vi.spyOn(process.stdout, 'write').mockReturnValue(true);
+      const err = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      setOutputFormat(format);
+      outputService.report('plan: PRO');
+      expect(out).not.toHaveBeenCalled();
+      expect(err.mock.calls.map((c) => String(c[0]))).toEqual(['plan: PRO']);
+    }
+  );
+
+  it('keeps prose out of the request stdout buffer under -o json', async () => {
+    setOutputFormat('json');
+    const ctx = { output: createOutputState(), stdout: [] as string[], stderr: [] as string[] };
+    await runInRequestContext(ctx, () => {
+      outputService.report('plan: PRO');
+      return Promise.resolve();
+    });
+    expect(ctx.stdout).toEqual([]);
+    expect(ctx.stderr).toEqual(['plan: PRO']);
   });
 });

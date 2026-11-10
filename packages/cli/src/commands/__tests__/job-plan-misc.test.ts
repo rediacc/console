@@ -28,6 +28,7 @@ const m = vi.hoisted(() => ({
   info: vi.fn(),
   outReport: vi.fn(),
   setExitCode: vi.fn(),
+  format: 'json' as string,
   jobs: [] as Record<string, unknown>[],
   jobAnswer: {} as Record<string, unknown>,
 }));
@@ -98,7 +99,7 @@ vi.mock('../../services/core/request-context.js', async (orig) => ({
 }));
 vi.mock('../../utils/errors.js', async (orig) => ({
   ...(await orig<Record<string, unknown>>()),
-  getOutputFormat: () => 'json',
+  getOutputFormat: () => m.format,
 }));
 
 const {
@@ -115,6 +116,7 @@ const OK = { success: true, exitCode: 0, durationMs: 1, state: 'succeeded' as co
 
 beforeEach(() => {
   vi.clearAllMocks();
+  m.format = 'json';
   m.jobs.length = 0;
   m.jobAnswer = { ...OK, stdout: '[]' };
   stepWarnings = [];
@@ -147,7 +149,27 @@ describe('subscription verbs (J20)', () => {
     expect(m.print).toHaveBeenCalledOnce();
   });
 
+  it('status -m under -o json prints one record and no prose on stdout', async () => {
+    m.readActivation.mockResolvedValue({ status: 'active' });
+    m.jobAnswer = {
+      ...OK,
+      stdout: JSON.stringify([{ repositoryGuid: 'guid-1', status: 'valid' }]),
+    };
+
+    await executeMachineStatus('m1');
+
+    expect(m.outReport).not.toHaveBeenCalled();
+    expect(m.print).toHaveBeenCalledWith(
+      expect.objectContaining({
+        machine: 'm1',
+        repoLicenses: [{ repositoryGuid: 'guid-1', status: 'valid' }],
+      }),
+      'json'
+    );
+  });
+
   it('status -m makes one license-status job and renders the table in its step', async () => {
+    m.format = 'table';
     m.readActivation.mockResolvedValue(null);
     m.jobAnswer = {
       ...OK,
@@ -169,6 +191,7 @@ describe('subscription verbs (J20)', () => {
   });
 
   it('status -m renders the activation section, then fails its step on an answer that is not JSON', async () => {
+    m.format = 'table';
     m.readActivation.mockResolvedValue(null);
     m.jobAnswer = { ...OK, stdout: 'not json' };
 

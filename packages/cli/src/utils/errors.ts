@@ -1,5 +1,6 @@
 import { DEFAULTS } from '@rediacc/shared/config';
 import { outputService } from '../services/core/output.js';
+import { currentOutputFormat, setCurrentOutputFormat } from '../services/core/output-format.js';
 import {
   currentRequestContext,
   DispatchExit,
@@ -11,19 +12,16 @@ import { type CliError, ERROR_CODES, type NextAction, ValidationError } from '..
 import { EXIT_CODES, type OutputFormat } from '../types/index.js';
 import { CliExitError } from './cli-exit-error.js';
 
-// Global output format (set by main program before command execution)
-let currentOutputFormat: OutputFormat = 'table';
-
 /**
  * Set the current output format for error handling.
  * Should be called after parsing CLI options but before running commands.
  */
 export function setOutputFormat(format: OutputFormat): void {
-  currentOutputFormat = format;
+  setCurrentOutputFormat(format);
 }
 
 export function getOutputFormat(): OutputFormat {
-  return currentOutputFormat;
+  return currentOutputFormat();
 }
 
 /** Determine if an error is retryable based on exit code */
@@ -173,7 +171,7 @@ export function handleError(error: unknown): never {
     hasDetails: Boolean(cliError.details?.length),
   });
 
-  if (currentOutputFormat === 'json') {
+  if (currentOutputFormat() === 'json') {
     outputJsonError(cliError);
   } else {
     outputTextError(cliError);

@@ -5,6 +5,7 @@ import chalk from 'chalk';
 import type CliTable3 from 'cli-table3';
 import { stringify as yamlStringify } from 'yaml';
 import type { OutputFormat } from '../../types/index.js';
+import { isMachineReadable } from './output-format.js';
 import { createOutputState, currentRequestContext, type OutputState } from './request-context.js';
 
 // esbuild statically bundles this literal `require` and wraps cli-table3 (→ string-width → chardet, ~16 ms of module init) in a lazy CJS initializer that only runs the first time a table is actually rendered. A top-level `import` would run it eagerly on every startup, including --version/--help/JSON-output runs that never draw a table.
@@ -362,6 +363,11 @@ class OutputService {
    * terminal as `info` is, and not suppressed by `--quiet`, which silences progress and not the result.
    */
   report(message: string): void {
+    if (isMachineReadable()) {
+      // Under a machine-readable -o, stdout carries only the data; prose there would corrupt it, so it goes where info goes.
+      this.writeProse(message, (line) => line);
+      return;
+    }
     const context = currentRequestContext();
     if (context) {
       context.stdout.push(message);
