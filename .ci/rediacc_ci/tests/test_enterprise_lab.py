@@ -2148,3 +2148,55 @@ def test_a_failed_listing_is_a_lab_error_not_an_empty_list():
 
     with pytest.raises(proof.LabError, match="403"):
         lab.leftovers("c00000001", companies=rows_left("removed"), listing=down)
+
+
+class _OSErrorRollback(Fleet):
+    """The runner itself fails (an OSError, as a timeout or a missing binary does) on the rollback to `bad`."""
+
+    def __init__(self, bad, **kw):
+        super().__init__(**kw)
+        self.bad = bad
+
+    def __call__(self, argv, cwd, env):
+        if "rollback" in argv and self.bad in argv:
+            raise OSError("runner timed out")
+        return super().__call__(argv, cwd, env)
+
+
+def test_a_non_lab_rollback_failure_still_keeps_the_renewal_error_and_names_the_hand_fix():
+    """Review e2231d81.1: an OSError from the rollback is a note, never the replacement."""
+    fleet = _OSErrorRollback("v-new", outcome=lambda _r, _w: {"results": []})
+    with pytest.raises(proof.LabError, match="no installed licence") as raised:
+        spread_v9(fleet, "new", "previous")
+    (note,) = raised.value.__notes__
+    assert "v-new" in note
+    assert "restore it by hand" in note
+
+
+def test_a_non_lab_rollback_failure_after_a_renewal_names_the_hand_fix():
+    """Review e2231d81.2."""
+    fleet = _OSErrorRollback("v-new")
+    with pytest.raises(proof.LabError, match=r"renewal answered ok=True.*v-new"):
+        spread_v9(fleet, "new", "previous")
+
+
+def test_the_json_scan_is_linear_in_brackets():
+    """Review e2231d81.3: a value that runs to the end is found without a decode from every inner bracket."""
+    calls = []
+    real = json.JSONDecoder.raw_decode
+
+    def counting(self, s, idx=0):
+        calls.append(idx)
+        return real(self, s, idx)
+
+    inner = "[" + ",".join("[1]" for _ in range(200)) + "]"
+    text = "noise " + inner
+    want = json.loads(inner)
+    orig = json.JSONDecoder.raw_decode
+    json.JSONDecoder.raw_decode = counting
+    try:
+        got = lab._json_value(text, "[")
+    finally:
+        json.JSONDecoder.raw_decode = orig
+    assert got == want
+    assert len(calls) == 1

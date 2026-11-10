@@ -1536,6 +1536,10 @@ def _json_value(text: str, open_ch: str) -> object:
                 return value
             if best is None or end - start > best[0]:
                 best = (end - start, value)
+            # A value nested inside this one is never the longest, so the scan resumes after it:
+            # one pass over the text instead of a decode from every bracket (review e2231d81.3).
+            start = text.find(open_ch, end)
+            continue
         start = text.find(open_ch, start + 1)
     return best[1] if best else None
 
@@ -1630,12 +1634,14 @@ def live_spread_renew(
     except BaseException as exc:
         try:
             put_version(script, newest, run=run)
-        except proof.LabError as back:
+        except ROLLBACK_FAILURES as back:  # not only LabError (review e2231d81.1)
             exc.add_note(_left_behind(script, newest, back))
         raise
     try:
         put_version(script, newest, run=run)
-    except proof.LabError as back:
+    except (
+        Exception
+    ) as back:  # an OSError or timeout from the runner still names the hand fix (e2231d81.2)
         raise proof.LabError(
             "the renewal answered ok=%s%s; %s"
             % (
@@ -1647,7 +1653,12 @@ def live_spread_renew(
     return answer
 
 
-def _left_behind(script: str, version: str, back: proof.LabError) -> str:
+# What a rollback can raise: the lab's own refusal, or the runner failing underneath it (a
+# missing binary, a broken pipe, a subprocess timeout).
+ROLLBACK_FAILURES = (proof.LabError, OSError, subprocess.SubprocessError)
+
+
+def _left_behind(script: str, version: str, back: BaseException) -> str:
     return "rolling Worker %s back to version %s failed (%s): restore it by hand" % (
         script,
         version,
