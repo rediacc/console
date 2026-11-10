@@ -427,6 +427,8 @@ class FakeWorker:
         self.mount_restart_up = True
         self.plant_rc = 0
         self.root_calls: list[str] = []
+        self.timer_on = True
+        self.pause_rc = 0
 
     def tick(self, secs: int = 1) -> None:
         self.now += secs
@@ -493,6 +495,14 @@ class FakeWorker:
             return _Res()
         if "FragmentPath" in command:
             return self._edit(command)
+        if command.startswith("systemctl stop %s" % k.RECONCILE_TIMER):
+            if self.pause_rc:
+                return _Res(rc=self.pause_rc, out="STILL=active\n")
+            self.timer_on = False
+            return _Res(out="PAUSED\n")
+        if command == k.resume_reconcile_script():
+            self.timer_on = True
+            return _Res()
         if "repository reconcile" in command:
             return self._reconcile()
         if command.startswith("rm -f") and "runtime" in command:
@@ -603,6 +613,8 @@ class FakeCtx:
         self.rows: list[tuple[str, bool, str]] = []
         self.calls: list[tuple[str, ...]] = []
         self.host_hook: Any = None
+        self.row_logs: list[str] = []
+        self.kept: dict[str, str] = {}
 
     def rdc(self, *args: str, **_kw: Any) -> _Res:
         self.calls.append(("rdc", *args))
@@ -624,11 +636,27 @@ class FakeCtx:
             {"name": grand + ":k1b", "guid": GUID_B, "networkId": NID_B},
         ]
 
-    def check(self, step: str, desc: str, ok: bool, res: Any = None, evidence: str = "") -> bool:
+    def check(
+        self,
+        step: str,
+        desc: str,
+        ok: bool,
+        res: Any = None,
+        evidence: str = "",
+        *,
+        log_path: str = "",
+    ) -> bool:
         assert step == "K1"
         del res
         self.rows.append((desc, ok, evidence))
+        self.row_logs.append(log_path)
         return ok
+
+    def keep_log(self, step: str, name: str, argv: list[str], res: Any) -> str:
+        self.calls.append(("keep_log", *argv))
+        path = "runs/%s-%s.log" % (step, name)
+        self.kept[path] = "rc=%d\n%s\n%s" % (res.rc, res.out, res.err)
+        return path
 
     def remote_evidence(self, res: Any) -> str:
         return res.text()
@@ -731,6 +759,40 @@ def test_k1_3_evidence_carries_repo_up_stderr_and_the_unit_environment(
     evidence = ctx.rows[-1][2]
     assert "repo up stderr: write unit: read-only file system" in evidence, evidence
     assert "unit Environment=: <none>" in evidence, evidence
+
+
+def test_k1_3_failure_leads_with_the_detail_and_keeps_the_full_output(
+    tmp_path: pathlib.Path,
+) -> None:
+    worker = FakeWorker(hook=True)
+    worker.repo_up_restarts = False
+    worker.repo_up_err = "x" * 900 + " write unit: read-only file system"
+    live, ctx = _ready(tmp_path, worker)
+    live.k1_3_unit_rewrite()
+    evidence = ctx.rows[-1][2]
+    # The row's evidence is clipped to EVIDENCE_MAX bytes, so the cause-naming detail comes before the verdict text.
+    assert evidence.startswith("rc=0 unit Environment=: <none>; repo up stderr: "), evidence
+    log = ctx.row_logs[-1]
+    assert log == "runs/K1-K1.3.log", ctx.row_logs
+    assert "write unit: read-only file system" in ctx.kept[log]
+    assert "--- detail" in ctx.kept[log]
+    # CONTROL: a passing K1.3 keeps no log.
+    worker.repo_up_restarts = True
+    worker.repo_up_err = ""
+    ctx.kept.clear()
+    live.k1_3_unit_rewrite()
+    assert _oks(ctx, "K1.3 repo up")[-1] is True
+    assert ctx.row_logs[-1] == ""
+    assert not ctx.kept
+
+
+def test_k1_4_failure_keeps_the_reconcile_output(tmp_path: pathlib.Path) -> None:
+    worker = FakeWorker()
+    worker.reconcile_restores = False
+    live, ctx = _ready(tmp_path, worker)
+    live.k1_4_stop_side_drift()
+    assert _oks(ctx, "K1.4 one") == [False]
+    assert ctx.row_logs[-1] == "runs/K1-K1.4.log", ctx.row_logs
 
 
 def test_k1_3_evidence_names_the_environment_line_when_the_unit_has_one(
@@ -1014,6 +1076,7 @@ def test_execute_runs_the_rows_in_order_and_always_cleans_up(
     names = (
         "k1_0_bring_up",
         "k1_1_unit_order",
+        "pause_reconcile",
         "k1_2_raw_restart",
         "k1_3_unit_rewrite",
         "k1_4_stop_side_drift",
@@ -1022,6 +1085,7 @@ def test_execute_runs_the_rows_in_order_and_always_cleans_up(
         "k1_10_mount_restart",
         "k1_6_rollout",
         "k1_8_job_timeout",
+        "resume_reconcile",
         "k1_7_reboot",
         "cleanup",
     )
@@ -1029,6 +1093,56 @@ def test_execute_runs_the_rows_in_order_and_always_cleans_up(
         monkeypatch.setattr(live, name, lambda n=name: _mark(order, n, True))
     live.execute()
     assert order == list(names)
+
+
+def test_pause_reconcile_stops_the_timer_and_cleanup_starts_it(tmp_path: pathlib.Path) -> None:
+    worker = FakeWorker()
+    live, ctx = _ready(tmp_path, worker)
+    assert live.pause_reconcile()
+    assert not worker.timer_on
+    assert _oks(ctx, "K1 the autostart-reconcile timer") == [True]
+    live.cleanup()
+    assert worker.timer_on
+    # CONTROL: a tick that never finishes fails the row and stops the run before K1.2.
+    worker2 = FakeWorker()
+    worker2.pause_rc = 1
+    (tmp_path / "b").mkdir()
+    live2, ctx2 = _ready(tmp_path / "b", worker2)
+    assert not live2.pause_reconcile()
+    assert _oks(ctx2, "K1 the autostart-reconcile timer") == [False]
+
+
+def test_pause_reconcile_script_waits_for_a_running_tick(tmp_path: pathlib.Path) -> None:
+    calls = tmp_path / "calls"
+    env = _fake_bin(
+        tmp_path,
+        "systemctl",
+        'echo "$*" >> %s\ncase "$*" in\n  is-active*) n=$(grep -c is-active %s); '
+        '[ "$n" -lt 3 ] && echo active || echo inactive;;\nesac\n' % (calls, calls),
+    )
+    script = k.pause_reconcile_script().replace("sleep 1", "true")
+    res = subprocess.run(["sh", "-c", script], env=env, capture_output=True, text=True, check=False)
+    assert res.returncode == 0, res.stderr
+    assert res.stdout.strip() == "PAUSED"
+    lines = calls.read_text().splitlines()
+    assert lines[0] == "stop %s" % k.RECONCILE_TIMER
+    assert lines.count("is-active %s" % k.RECONCILE_SERVICE) == 3
+
+
+def test_edit_script_refuses_a_sed_that_changes_nothing(tmp_path: pathlib.Path) -> None:
+    unit = tmp_path / "unit.service"
+    unit.write_text(unit_text(NID_A, GUID_A).replace("Environment=DOCKER_RAMDISK=true\n", ""))
+    env = _fake_bin(
+        tmp_path,
+        "systemctl",
+        'case "$*" in\n  *FragmentPath*) echo %s;;\n  daemon-reload) echo reloaded > %s;;\nesac\n'
+        % (unit, tmp_path / "reload"),
+    )
+    script = k.drop_environment_script(NID_A)
+    res = subprocess.run(["sh", "-c", script], env=env, capture_output=True, text=True, check=False)
+    assert res.returncode == 3, (res.returncode, res.stdout, res.stderr)
+    assert "UNCHANGED=" in res.stdout
+    assert not (tmp_path / "reload").exists()
 
 
 def test_execute_cleans_up_when_bring_up_fails(
@@ -1084,6 +1198,7 @@ class _RowProbe(k._LiveK1):
     def __init__(self) -> None:
         self.ref_a = "a"
         self.seen: list[tuple[str, bool]] = []
+        self.logs: list[str] = []
         self._states = iter(
             [
                 {"now": 100, "pid": 11, "start": 90},
@@ -1097,8 +1212,11 @@ class _RowProbe(k._LiveK1):
     def events(self, _ref: str) -> list:
         return [("down", 50)]
 
-    def check(self, _desc: str, ok: bool, _res=None, evidence: str = "") -> bool:
+    def check(
+        self, _desc: str, ok: bool, _res=None, evidence: str = "", *, log_path: str = ""
+    ) -> bool:
         self.seen.append((evidence, ok))
+        self.logs.append(log_path)
         return ok
 
 

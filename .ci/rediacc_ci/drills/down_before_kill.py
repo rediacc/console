@@ -4,7 +4,7 @@
 
 THE PROBE. Repository A is a grand of its own (autostart is refused on a fork), with autostart on; repository B is a fork of A (`A:<tag>`), with autostart off. Both carry the probe Rediaccfile: `up()` appends `up <epoch>` to `downproof.log` in the mount, and `down()` appends `down <epoch>` and then sleeps `DOWN_SLEEP_S` seconds. The line is written at the START of `down()`, so a `down` line at least `DOWN_SLEEP_S` before the daemon's next `ExecMainStartTimestamp` proves the stop waited for the whole `down()` (a stop that killed it part way restarts sooner). Every epoch comes from the worker's own clock: the probe's `date +%s`, `systemctl show` and `uptime -s` read through `date -d`.
 
-THE ROWS. K1.0 A (autostart on) and B (autostart off) are up and each wrote an `up` line; K1.1 A's docker unit carries an `ExecStop` that runs `renet daemon stop-hook --network-id=<N>` and both `After=` lines (`rediacc-repo-shutdown.service` and the systemd-escaped mount unit); K1.2 a raw `systemctl restart` of A's unit writes a `down` line at least `DOWN_SLEEP_S` before the new start; K1.3 A's unit loses its first `Environment=` line, `daemon-reload`, then `rdc repo up`: a `down` line before the restart and an `up` line after it; K1.4 the stop side drifts (ExecStop and TimeoutStopSec removed), one `renet repository reconcile` tick restores it and MainPID is unchanged; K1.5 A's runtime stamp is removed and `rdc machine converge` restarts A with a `down` line before the restart; K1.9 A's daemon is made SKEWED (its live socket renamed to the old-layout path, so it answers only there, as a daemon an older-layout renet started does), then `rdc machine converge` restarts it with a `down` line at least `DOWN_SLEEP_S` before the new start (down() through the old socket before the heal, renet b63746a), and the same again through `renet daemon restart` (the stop hook's old-socket fallback) with an `up` line after the restart; K1.10 A's unit loses its first `Environment=` line again, then the mount-only `rdc repo up --no-start` (renet's MountWithDocker): a `down` line before the restart and an `up` line after it; K1.6 the main-pointer renet is installed on the worker (`upgrade_converge.install_current_renet_script`), A is upped under it through a throwaway config, `rdc machine setup` installs the branch renet back, neither daemon restarts, and after one reconcile tick both units carry the new stop side; K1.8 `reboot.target`'s `JobTimeoutUSec` is 30 min or more; K1.7 `systemctl reboot`, then both A and B have a `down` line timestamped at least `DOWN_SLEEP_S` before `uptime -s`, and A is back up with an `up` line after the boot. K1.8 runs before K1.7 so a worker that does not come back still leaves its read.
+THE ROWS. K1.0 A (autostart on) and B (autostart off) are up and each wrote an `up` line; K1.1 A's docker unit carries an `ExecStop` that runs `renet daemon stop-hook --network-id=<N>` and both `After=` lines (`rediacc-repo-shutdown.service` and the systemd-escaped mount unit); then the autostart-reconcile timer is paused until K1.7 (a tick recovers A, which runs no container, on every pass and rewrote its unit under K1.3; K1.4 and K1.6 run their own tick); K1.2 a raw `systemctl restart` of A's unit writes a `down` line at least `DOWN_SLEEP_S` before the new start; K1.3 A's unit loses its first `Environment=` line, `daemon-reload`, then `rdc repo up`: a `down` line before the restart and an `up` line after it; K1.4 the stop side drifts (ExecStop and TimeoutStopSec removed), one `renet repository reconcile` tick restores it and MainPID is unchanged; K1.5 A's runtime stamp is removed and `rdc machine converge` restarts A with a `down` line before the restart; K1.9 A's daemon is made SKEWED (its live socket renamed to the old-layout path, so it answers only there, as a daemon an older-layout renet started does), then `rdc machine converge` restarts it with a `down` line at least `DOWN_SLEEP_S` before the new start (down() through the old socket before the heal, renet b63746a), and the same again through `renet daemon restart` (the stop hook's old-socket fallback) with an `up` line after the restart; K1.10 A's unit loses its first `Environment=` line again, then the mount-only `rdc repo up --no-start` (renet's MountWithDocker): a `down` line before the restart and an `up` line after it; K1.6 the main-pointer renet is installed on the worker (`upgrade_converge.install_current_renet_script`), A is upped under it through a throwaway config, `rdc machine setup` installs the branch renet back, neither daemon restarts, and after one reconcile tick both units carry the new stop side; K1.8 `reboot.target`'s `JobTimeoutUSec` is 30 min or more; K1.7 `systemctl reboot`, then both A and B have a `down` line timestamped at least `DOWN_SLEEP_S` before `uptime -s`, and A is back up with an `up` line after the boot. K1.8 runs before K1.7 so a worker that does not come back still leaves its read.
 
 TEARDOWN. B then A are deleted (A's autostart disabled first), the throwaway config files are removed, and a run that installed the main-pointer renet reverts the worker with `rdc machine setup`; anything that stays rides `ctx.sweep_leftovers`.
 
@@ -20,6 +20,7 @@ import re
 import shlex
 import shutil
 import time
+import types
 import uuid
 from typing import TYPE_CHECKING, Any
 
@@ -125,7 +126,10 @@ def _edit_unit_script(network_id: int | str, sed_expr: str) -> str:
     unit = shlex.quote(daemon_unit(network_id))
     return (
         "set -e; f=$(systemctl show -p FragmentPath --value %(u)s); "
-        'test -n "$f"; sed -i %(expr)s "$f"; systemctl daemon-reload; echo EDITED=$f'
+        'test -n "$f"; b=$(mktemp); cp "$f" "$b"; sed -i %(expr)s "$f"; '
+        # A sed that matches nothing exits 0, so the row would pass with the unit untouched.
+        'if cmp -s "$f" "$b"; then rm -f "$b"; echo "UNCHANGED=$f"; exit 3; fi; rm -f "$b"; '
+        "systemctl daemon-reload; echo EDITED=$f"
     ) % {"u": unit, "expr": shlex.quote(sed_expr)}
 
 
@@ -174,6 +178,26 @@ def daemon_restart_script(network_id: int | str) -> str:
 def read_log_script(guid: str) -> str:
     """Root on the worker: the probe's log in the repository's mount (empty when it does not exist)."""
     return "cat %s 2>/dev/null || true" % shlex.quote("%s/%s" % (mount_path(guid), LOG_FILE))
+
+
+RECONCILE_TIMER = "rediacc-autostart-reconcile.timer"
+RECONCILE_SERVICE = "rediacc-autostart-reconcile.service"
+PAUSE_WAIT_S = 900
+
+
+def pause_reconcile_script() -> str:
+    """Root on the worker: stop the autostart-reconcile timer and wait out a tick already running (`PAUSED` on success). A tick recovers an autostart repository that runs no container on every pass, rewriting its unit and restarting its daemon, so it races the rows that drift the unit and judge the restart; K1.4 and K1.6 run their own tick."""
+    return (
+        "systemctl stop %(t)s; i=0; while [ $i -lt %(n)d ]; do "
+        "s=$(systemctl is-active %(s)s || true); "
+        'case "$s" in active|activating|deactivating|reloading) sleep 1; i=$((i+1));; '
+        '*) echo PAUSED; exit 0;; esac; done; echo "STILL=$s"; exit 1'
+    ) % {"t": RECONCILE_TIMER, "s": RECONCILE_SERVICE, "n": PAUSE_WAIT_S}
+
+
+def resume_reconcile_script() -> str:
+    """Root on the worker: start the autostart-reconcile timer again."""
+    return "systemctl start %s" % RECONCILE_TIMER
 
 
 def reconcile_script() -> str:
@@ -451,13 +475,16 @@ class _LiveK1:
         self.cfg = config_name(ctx.run_id)
         self.created_cfg = False
         self.main_installed = False
+        self.reconcile_paused = False
         self.tmp = pathlib.Path(ctx.work) / ("k1-%s" % ctx.run_id)
         self.sleep = time.sleep
 
     # -- helpers ---------------------------------------------------------------
 
-    def check(self, desc: str, ok: bool, res: Any = None, evidence: str = "") -> bool:
-        return self.ctx.check(STEP_ID, desc, ok, res, evidence)
+    def check(
+        self, desc: str, ok: bool, res: Any = None, evidence: str = "", *, log_path: str = ""
+    ) -> bool:
+        return self.ctx.check(STEP_ID, desc, ok, res, evidence, log_path=log_path)
 
     def root(self, command: str, timeout: float = 60.0) -> Any:
         """`command` as root on the worker, through the run's own ssh recipe."""
@@ -491,6 +518,8 @@ class _LiveK1:
             if not self.k1_0_bring_up():
                 return
             self.k1_1_unit_order()
+            if not self.pause_reconcile():
+                return
             self.k1_2_raw_restart()
             self.k1_3_unit_rewrite()
             self.k1_4_stop_side_drift()
@@ -499,6 +528,7 @@ class _LiveK1:
             self.k1_10_mount_restart()
             self.k1_6_rollout()
             self.k1_8_job_timeout()
+            self.resume_reconcile()
             self.k1_7_reboot()
         finally:
             self.cleanup()
@@ -597,9 +627,25 @@ class _LiveK1:
             ok_up, why_up = up_after_verdict(events, after["start"])
             ok, why = ok and ok_up, "%s; %s" % (why, why_up)
         rc = getattr(res, "rc", 0)
+        passed = rc == 0 and ok
+        log_path = ""
         if detail is not None:
-            why = "%s; %s" % (why, detail(res))
-        self.check(desc, rc == 0 and ok, res, "rc=%d %s" % (rc, why))
+            # The detail is what names a failure's cause, so it leads: the row's evidence is clipped to EVIDENCE_MAX bytes and the verdict text alone fills them.
+            extra = detail(res)
+            why = "%s; %s" % (extra, why)
+            if not passed and hasattr(res, "out"):
+                log_path = self.ctx.keep_log(
+                    STEP_ID,
+                    desc.split(" ", 1)[0],
+                    [desc],
+                    types.SimpleNamespace(
+                        rc=rc,
+                        ms=getattr(res, "ms", 0),
+                        out="%s\n--- detail\n%s" % (res.out, extra),
+                        err=getattr(res, "err", ""),
+                    ),
+                )
+        self.check(desc, passed, res, "rc=%d %s" % (rc, why), log_path=log_path)
 
     def k1_2_raw_restart(self) -> None:
         self._restart_row(
@@ -626,9 +672,9 @@ class _LiveK1:
         err = self.ctx.scrub(str(getattr(up, "err", "") or "")).strip()
         text = self.root(unit_text_script(self.nids[self.ref_a])).out
         env = [ln.strip() for ln in text.splitlines() if ln.strip().startswith("Environment=")]
-        return "repo up stderr: %s; unit Environment=: %s" % (
-            err[-600:] or "<empty>",
+        return "unit Environment=: %s; repo up stderr: %s" % (
             " | ".join(env) or "<none>",
+            err[-600:] or "<empty>",
         )
 
     def k1_4_stop_side_drift(self) -> None:
@@ -641,11 +687,13 @@ class _LiveK1:
         after = self.state(self.ref_a)
         ok_pid, why_pid = pid_unchanged_verdict(before["pid"], after["pid"])
         ok_unit, why_unit = stop_side_verdict(self.unit(self.ref_a), nid, guid)
+        passed = tick.rc == 0 and ok_pid and ok_unit
         self.check(
             "K1.4 one reconcile tick restores the stop side without a restart",
-            tick.rc == 0 and ok_pid and ok_unit,
+            passed,
             tick,
             "reconcile rc=%d %s %s" % (tick.rc, why_pid, why_unit),
+            log_path="" if passed else self.ctx.keep_log(STEP_ID, "K1.4", ["reconcile"], tick),
         )
 
     def k1_5_converge(self) -> None:
@@ -875,8 +923,26 @@ class _LiveK1:
 
     # -- teardown --------------------------------------------------------------
 
+    def pause_reconcile(self) -> bool:
+        res = self.root(pause_reconcile_script(), timeout=PAUSE_WAIT_S + 60)
+        self.reconcile_paused = res.rc == 0 or self.reconcile_paused
+        return self.check(
+            "K1 the autostart-reconcile timer is paused for the restart rows",
+            res.rc == 0 and "PAUSED" in res.out,
+            res,
+        )
+
+    def resume_reconcile(self) -> bool:
+        if not self.reconcile_paused:
+            return True
+        res = self.root(resume_reconcile_script())
+        self.reconcile_paused = res.rc != 0
+        return res.rc == 0
+
     def cleanup(self) -> None:
         left: list[str] = []
+        if not self.resume_reconcile():
+            left.append("K1 %s still stopped (systemctl start failed)" % RECONCILE_TIMER)
         if self.main_installed:
             res = self.rdc("machine", "setup", self.ctx.machine, timeout=1800)
             if res.rc != 0:
