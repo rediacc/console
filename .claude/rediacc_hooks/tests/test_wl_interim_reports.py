@@ -8,6 +8,9 @@ Every case drives `wl_report.py --subagent-stop` and the SessionStart surface, t
 from __future__ import annotations
 
 import json
+import time
+
+import wl_roster
 
 from rediacc_hooks.tests.test_wl_report_inbox import BIG, Scratch
 
@@ -119,20 +122,11 @@ def test_r6_inverse_the_notification_present_writes_no_interim(sc):
 
 
 def _roster_module():
-    import importlib
-    import sys
-
-    from rediacc_hooks.tests.test_wl_report_inbox import HERE
-
-    stop_dir = str(HERE)
-    if stop_dir not in sys.path:
-        sys.path.insert(0, stop_dir)
-    return importlib.import_module("wl_roster")
+    return wl_roster
 
 
 def test_transcript_waiting_names_the_shell_for_a_fresh_idle_transcript(sc):
     """CONTROL: a fresh idle transcript with an armed shell is waiting on it."""
-    import time
 
     path = transcript(sc)
     assert _roster_module().transcript_waiting(path, time.time()) == SHELL
@@ -140,7 +134,6 @@ def test_transcript_waiting_names_the_shell_for_a_fresh_idle_transcript(sc):
 
 def test_transcript_waiting_is_empty_for_a_missing_or_stale_transcript(sc):
     """last_record runs before the mtime horizon check, and a missing path reads as no record, so neither shape raises."""
-    import time
 
     roster = _roster_module()
     path = transcript(sc)

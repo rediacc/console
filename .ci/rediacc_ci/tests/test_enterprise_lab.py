@@ -16,6 +16,7 @@ from typing import cast
 
 import pytest
 
+from rediacc_ci import paths
 from rediacc_ci.core import https
 from rediacc_ci.enterprise import lab, onboarding, proof
 from rediacc_ci.ops import enterprise_lookup
@@ -658,9 +659,19 @@ def test_turnstile_domains_read_the_one_shared_widget():
 
 
 def test_turnstile_hosts_are_pinned_to_the_literal_domains():
-    """Review 09e1a50e.2: the test above derives both sides from well_known, so a wrong host there would still pass; this pins the values."""
-    assert PRODUCT_DOMAIN == "rediacc.cloud"
-    assert BENCH_ORIGIN == "https://bench.rediacc.cloud"
+    """Review 09e1a50e.2: the test above derives both sides from well_known, so a wrong host there would still pass; this pins the values to the registry file itself, read independently of the well_known module (a literal copy here is what check:ci-literal-sources refuses)."""
+    registry = {}
+    for line in (
+        (paths.repo_root() / ".ci" / "config" / "well-known.env")
+        .read_text(encoding="utf-8")
+        .splitlines()
+    ):
+        key, sep, value = line.partition("=")
+        if sep and not key.startswith("#"):
+            registry[key.strip()] = value.strip().strip('"')
+    assert registry["WK_PRODUCT_DOMAIN"] == PRODUCT_DOMAIN
+    assert registry["WK_BENCH_ORIGIN"] == BENCH_ORIGIN
+    assert BENCH_ORIGIN == "https://bench." + PRODUCT_DOMAIN
 
 
 def test_turnstile_refuses_a_missing_or_doubled_widget():

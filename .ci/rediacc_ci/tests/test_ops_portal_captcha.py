@@ -353,9 +353,12 @@ def test_a_redirect_to_another_host_is_not_dialed_at_the_pinned_address(monkeypa
 def test_the_pin_matches_the_host_in_any_letter_case(monkeypatch):
     """A mixed-case URL host still dials the pin. CONTROL: another host does not."""
     dialed: list = []
-    monkeypatch.setattr(
-        pc.socket, "create_connection", lambda addr, timeout: dialed.append(addr) or "sock"
-    )
+
+    def connect(addr, _timeout):
+        dialed.append(addr)
+        return "sock"
+
+    monkeypatch.setattr(pc.socket, "create_connection", connect)
     context = pc.ssl.create_default_context()
     monkeypatch.setattr(context, "wrap_socket", lambda *_a, **_k: "tls")
     handler = pc._PinnedHTTPS("198.51.100.7", "new.example.test", context)

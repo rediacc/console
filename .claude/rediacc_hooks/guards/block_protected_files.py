@@ -211,6 +211,10 @@ EDGE_CASES = [
     ("misaligned argv, an expanded variable", "E=; D=agent/x; rm -r $E $D/../.claude"),
     ("misaligned argv, a single-quoted variable", "E=; D=agent/x; rm -r $E '$D/../.claude'"),
     (
+        "misaligned argv, a single-quoted twin of an expanded word (review a62c7d11.1)",
+        "E=; D=agent/x; rm -r $E $D/../.claude '$D/../.claude'",
+    ),
+    (
         "a glob under a variable set only on one branch",
         "D=agent/x; [ -n y ] && D=.claude; rm $D/*.json",
     ),
@@ -565,13 +569,20 @@ def _assigned(run_, word):
 def _operand_words(run_):
     """Every word an operand of `run_` could be: the quote-removed argv (a word whose variables this command assigned, as that value: `_assigned`), the expanded argv where the walk could evaluate it, and each word of a `for` list a `$NAME` in it names."""
     # A typed word is read as its assigned value only when bash's own expansion of it (`xargv`, aligned by position) IS that value: `'$D/..'` stays `$D/..` there and `"\$D/.."` is unresolved, and both name a literal `$D` directory, so they keep the typed text (review acc34f73.1).
-    # `xargv` drops a word that expands to nothing (`E=; rm $E x`), so its positions can fall out of line with `argv`; the assigned value is then accepted where bash's expansion produced it anywhere in `xargv`, which keeps `'$D/..'` (bash leaves it `$D/..`) typed while `rm $E $D/..` still reads `$D` as its value (review 335d582f.1).
+    # `xargv` drops a word that expands to nothing (`E=; rm $E x`), so `rm $E $D/..` must still read `$D` as its value while `'$D/..'` (bash leaves it `$D/..`) stays typed (review 335d582f.1).
+    # The two lists are walked in step (review a62c7d11.1): a typed word matches only the expanded word at its own position, and a word whose assigned value is empty consumes none, so another word that happens to expand to the same value can never lend it.
     xargv = run_.xargv
-    aligned = xargv is not None and len(xargv) == len(run_.argv)
     words = []
-    for k, a in enumerate(run_.argv):
+    j = 0
+    for a in run_.argv:
         value = _assigned(run_, a)
-        seen = xargv is not None and (value == xargv[k] if aligned else value in xargv)
+        seen = False
+        if xargv is not None:
+            if j < len(xargv) and value is not None and value == xargv[j]:
+                seen = True
+                j += 1
+            elif value != "":
+                j += 1
         words.append((seen and value) or a)
     # An expanded word the walk could not finish keeps its unknown part as a backtick span, which `_wildcarded` reads as "any text". The typed word alone loses the boundary bash sees: `"$D"settings*` is `$Dsettings*` after quote removal, a variable called `Dsettings` (review 094dea3b.4).
     words += [w.replace(shellscan._UNRESOLVED, "`_`") for w in (run_.xargv or [])]
