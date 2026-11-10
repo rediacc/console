@@ -3919,6 +3919,8 @@ def test_the_root_disk_probe_reads_a_btrfs_source_and_the_smallest_backing_disk(
 def test_a_fleet_whose_recipe_sets_no_vm_dsk_is_reused_without_a_disk_probe(
     tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    # Every real recipe that brings up 192.168.111.11 now sets VM_DSK=48, so the no-VM_DSK case is a recipe of the test's own.
+    _sized_two_workers(monkeypatch, "./rdc.sh ops up")
     world = make_world(tmp_path, running=TWO_WORKERS, disks={WORKER: 18 * vm_check.GIB})
     rc, out, receipt = run_areas(tmp_path, monkeypatch, world, {"multi-vm"})
     assert rc == vm_check.EXIT_VERIFIED, out
@@ -4386,7 +4388,7 @@ def test_a_leg_runs_under_its_fleet_recipe_environment() -> None:
     """The worker fleet's recipe is `VM_DSK=48 ./rdc.sh ops up --basic`; a leg on it carries VM_DSK=48 into its e2e setup, whose `ops up --force` reads the size only from the environment. A fleet whose recipe sets nothing adds nothing."""
     fleets = vm_check.trigger.MAP.fleets
     assert vm_check.recipe_env(fleets["worker"]) == {"VM_DSK": "48"}
-    assert vm_check.recipe_env(fleets["two-workers"]) == {}
+    assert vm_check.recipe_env(fleets["two-workers"]) == {"VM_DSK": "48"}
 
 
 def test_a_sized_leg_that_skips_the_reset_runs_before_a_sized_leg_that_resets() -> None:
