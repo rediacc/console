@@ -559,14 +559,46 @@ def check_sudo_preserve_env(errors: Errors, root: pathlib.Path, workflow_dir: st
 
 
 SUDO_ENV_RE = re.compile(
-    r"(^|[;&|(`]|\$\()[ \t]*(?:[A-Za-z_][A-Za-z0-9_]*=\S*[ \t]+)*sudo[ \t]+env([ \t]|$)"
+    r"(^|[;&|(`]|\$\()[ \t]*(?:[A-Za-z_][A-Za-z0-9_]*=(?:\"[^\"]*\"|'[^']*'|\S)*[ \t]+)*sudo[ \t]+env([ \t]|$)"
 )
 STEP_START_RE = re.compile(
     r"^([ \t]*)-([ \t]+)(name|run|uses|env|with|if|id|shell|working-directory|timeout-minutes):"
 )
 KEY_LINE_RE = re.compile(r"^([ \t]*)(?:-[ \t]+)?([A-Za-z_][A-Za-z0-9_-]*):(.*)$")
-# Names in a flow-style step `env: {A: '1', "B": x}`: a key follows `{` or `,`.
-FLOW_ENV_NAME_RE = re.compile(r"(?:[{,])[ \t]*['\"]?([A-Za-z_][A-Za-z0-9_]*)['\"]?[ \t]*:")
+FLOW_KEY_RE = re.compile(
+    r"^[ \t]*(?:\"([A-Za-z_][A-Za-z0-9_]*)\"|'([A-Za-z_][A-Za-z0-9_]*)'|([A-Za-z_][A-Za-z0-9_]*))[ \t]*:"
+)
+
+
+def flow_env_names(text: str) -> list[str]:
+    """Top-level keys of a flow-style mapping `{A: '1', "B": x}`; commas and colons inside quoted values or nested brackets do not start a key."""
+    names: list[str] = []
+    depth = 0
+    quote = ""
+    start = 0
+    for index, char in enumerate(text):
+        if quote:
+            if char == quote:
+                quote = ""
+        elif char in "\"'":
+            quote = char
+        elif char in "{[":
+            depth += 1
+            if depth == 1 and char == "{":
+                start = index + 1
+        elif char in "}]":
+            depth -= 1
+        elif char == "," and depth == 1:
+            names.extend(_flow_key(text[start:index]))
+            start = index + 1
+    if depth <= 0 and start:
+        names.extend(_flow_key(text[start : text.rfind("}")]))
+    return names
+
+
+def _flow_key(entry: str) -> list[str]:
+    found = FLOW_KEY_RE.match(entry)
+    return [next(g for g in found.groups() if g)] if found else []
 
 
 class StepFacts:
@@ -637,14 +669,14 @@ def step_facts(lines: list[str]) -> list[StepFacts]:
         elif name == "env" and not rest:
             mode, mode_indent, env_child = "env", key_col, -1
         elif name == "env" and rest.startswith("{"):
-            cur.env_names.extend(FLOW_ENV_NAME_RE.findall(rest))
+            cur.env_names.extend(flow_env_names(rest))
     return steps
 
 
 def sudo_env_drop_hits(lines: list[str]) -> list[tuple[int, str, list[str]]]:
     """`sudo env ...` run lines that leave out a variable their own step's `env:` block sets.
 
-    `sudo env NAME=value cmd` hands the command ONLY the names it lists, so a step-level `env:` entry never reaches it unless that `sudo env` line itself (with its backslash continuations, from `env` onward) says `NAME=`; an `export` or prefix assignment elsewhere in the step does not count. Returns (line, text, missing names) for the first `sudo env` line of each offending step.
+    `sudo env NAME=value cmd` hands the command ONLY the names it lists, so a step-level `env:` entry never reaches it unless that `sudo env` line itself (with its backslash continuations, from `env` onward) says `NAME=`; an `export` or prefix assignment elsewhere in the step does not count. Returns (line, text, missing names) for the first offending `sudo env` line of each offending step; a compliant `sudo env` line before it is skipped.
     """
     out: list[tuple[int, str, list[str]]] = []
     for step in step_facts(lines):

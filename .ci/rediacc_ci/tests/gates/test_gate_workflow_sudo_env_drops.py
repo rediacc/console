@@ -161,3 +161,75 @@ def test_flow_style_env_mapping(gate):
         result = workflow_rule.run_check(gate, d, ci=True)
         gate.assert_exit(0, result, "flow-style env fully named must pass")
     gate.log_pass("flow-style env covered both ways")
+
+
+def test_flow_env_quoted_value_is_not_a_key(gate):
+    gate.log_test("a `, NAME:` inside a quoted flow value is not an env name")
+    with harness.temp_dir() as d:
+        _write_raw(
+            d / "ok.yml",
+            [
+                "      - run: sudo env MSG=$MSG renet ops up",
+                '        env: {MSG: "a, B: c"}',
+            ],
+        )
+        result = workflow_rule.run_check(gate, d, ci=True)
+        gate.assert_exit(0, result, "quoted comma-colon must not add a required name")
+    with harness.temp_dir() as d:
+        _write_raw(
+            d / "bad.yml",
+            [
+                "      - run: sudo env PATH=$PATH renet ops up",
+                '        env: {MSG: "a, B: c"}',
+            ],
+        )
+        result = workflow_rule.run_check(gate, d, ci=True)
+        gate.assert_exit(1, result, "the real key MSG still fails when dropped")
+        gate.assert_contains(result.combined, "missing MSG:", "only MSG is missing")
+    gate.log_pass("quoted flow values are not keys")
+
+
+def test_quoted_prefix_assignment_with_space(gate):
+    gate.log_test("a prefix assignment with a quoted value holding a space still reaches sudo env")
+    with harness.temp_dir() as d:
+        _write_raw(
+            d / "bad.yml",
+            [
+                '      - run: X="a b" sudo env PATH=$PATH renet ops up',
+                "        env:",
+                "          VM_BRIDGE: '1'",
+            ],
+        )
+        result = workflow_rule.run_check(gate, d, ci=True)
+        gate.assert_exit(1, result, "quoted-space prefix must not hide the sudo env line")
+    with harness.temp_dir() as d:
+        _write_raw(
+            d / "ok.yml",
+            [
+                '      - run: X="a b" sudo env VM_BRIDGE=$VM_BRIDGE renet ops up',
+                "        env:",
+                "          VM_BRIDGE: '1'",
+            ],
+        )
+        result = workflow_rule.run_check(gate, d, ci=True)
+        gate.assert_exit(0, result, "naming the variable stays silent")
+    gate.log_pass("quoted prefix covered both ways")
+
+
+def test_second_sudo_env_line_is_reported(gate):
+    gate.log_test("a compliant first sudo env line does not hide a dropping second one")
+    with harness.temp_dir() as d:
+        _write_raw(
+            d / "bad.yml",
+            [
+                "      - run: |",
+                "          sudo env VM_BRIDGE=$VM_BRIDGE a",
+                "          sudo env PATH=$PATH b",
+                "        env:",
+                "          VM_BRIDGE: '1'",
+            ],
+        )
+        result = workflow_rule.run_check(gate, d, ci=True)
+        gate.assert_exit(1, result, "second line drops the variable")
+        gate.assert_contains(result.combined, "bad.yml:9", "cites the second sudo line")
+    gate.log_pass("first offending line reported")
