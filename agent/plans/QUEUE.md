@@ -60,9 +60,9 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 - Plans on the PR (5):
   - agent/plans/PLAN-backup-program.md -- 183 of 192 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-cloudflare-proxy.md -- 28 of 29 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
-  - agent/plans/PLAN-backup-plane-shared-bucket-hardening.md -- 4 of 7 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
+  - agent/plans/PLAN-backup-plane-shared-bucket-hardening.md -- 5 of 7 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-renet-executor-tiered-license-check.md -- 2 of 4 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
-  - agent/plans/PLAN-renet-docker-running-semantics.md -- 11 of 15 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
+  - agent/plans/PLAN-renet-docker-running-semantics.md -- 12 of 15 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
 - Work outside the PR's plans (17 epic(s)):
   - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 26 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic c6b82e88, plan agent/plans/PLAN-settings-set-verb.md, outside the set, 2 commit(s) on the branch, 0 open item(s): settings set verb: one source for the ceilings
@@ -79,17 +79,17 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic f65726d5, plan agent/plans/PLAN-renet-down-before-kill.md, outside the set, 16 commit(s) on the branch, 0 open item(s): renet runs Rediaccfile down() before repo containers stop
   - epic 53c31db2, plan agent/plans/PLAN-repo-resource-limits.md, outside the set, 20 commit(s) on the branch, 0 open item(s): per-repo resource limits and a renet-managed RAM volume
   - epic a86f5622, plan agent/plans/PLAN-production-key-only.md, outside the set, 4 commit(s) on the branch, 0 open item(s): Production key only: every leg licensed from its own plane
-  - epic 79b7e92e, no plan, 268 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 79b7e92e, no plan, 273 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 562ef6c3, plan agent/plans/PLAN-experience-feedback.md, outside the set, 49 commit(s) on the branch, 0 open item(s): experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire
-- Writers: 3 live of writer_cap 25 (session d778be9d): worker:a1917d88f28e26699, worker:a237dbf359be42ce8, worker:a498291f952c03530.
-- Leased items: 8: #19b4818e (worker:a237dbf359be42ce8, d778be9d), #4f4df453 (worker:busfc6826, d778be9d), #54aacfb3 (worker:bkqae9edw, d778be9d), #612689ff (worker:a237dbf359be42ce8, d778be9d), #67c9eb34 (worker:bijpuix39, d778be9d), #8d576362 (worker:a1917d88f28e26699, d778be9d), #99279bf8 (worker:a498291f952c03530, d778be9d), #caa837d4 (worker:a1917d88f28e26699, d778be9d).
+- Writers: 1 live of writer_cap 25 (session d778be9d): worker:a1917d88f28e26699.
+- Leased items: 6: #4f4df453 (worker:busfc6826, d778be9d), #54aacfb3 (worker:bkqae9edw, d778be9d), #67c9eb34 (worker:bijpuix39, d778be9d), #8d576362 (worker:a1917d88f28e26699, d778be9d), #99279bf8 (worker:btsw052pt, d778be9d), #caa837d4 (worker:a1917d88f28e26699, d778be9d).
 - Next plan: agent/plans/PLAN-sandbox-tenant-separation.md, Promoted entry 14; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 17 of 64 plans done, 1002 of 1187 boxes done (84%).
+Promoted: 18 of 64 plans done, 1003 of 1187 boxes done (84%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -139,7 +139,7 @@ Promoted: 17 of 64 plans done, 1002 of 1187 boxes done (84%).
 | 44 | PLAN-health-checks-local.md | 60/81 | 21 open |
 | 45 | PLAN-backup-multi-target.md | 17/21 | 4 open |
 | 46 | PLAN-ciquick-reds-1023-1.md | 10/12 | 2 open |
-| 47 | PLAN-docker-pin-digest.md | 8/9 | 1 open |
+| 47 | PLAN-docker-pin-digest.md | 9/9 | done |
 | 48 | PLAN-renet-executor-tiered-license-check.md | 2/4 | 2 open |
 | 49 | PLAN-scope-bws-signing-key-to-consuming-step.md | 8/10 | 2 open |
 | 50 | PLAN-split-cli-files-over-512-line-budget.md | 6/7 | 1 open |
