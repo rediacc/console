@@ -1262,11 +1262,6 @@ def dispatch_release(
         sleep(POLL_S)
         waited += POLL_S
 
-    try:
-        return datetime.datetime.fromisoformat(text)
-    except ValueError:
-        return None
-
 
 def run_surfaces(run_id: str, *, run: Runner = run_process) -> dict[str, str]:
     if not run_id.isdigit():

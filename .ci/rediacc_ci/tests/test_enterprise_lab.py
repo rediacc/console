@@ -1154,6 +1154,21 @@ def test_a_run_older_than_the_dispatch_is_not_taken_for_it():
     assert sum(1 for c in gh.calls if c[:2] == ["run", "list"]) == 3
 
 
+def test_a_run_that_never_completes_is_a_lab_error_not_an_answer(monkeypatch):
+    """Review 98b2c18f.3: the wait loop's only exits are a completed run id and a LabError."""
+    monkeypatch.setattr(lab, "RUN_TIMEOUT_S", lab.POLL_S * 2)
+    gh = Gh(statuses=["in_progress"] * 10)
+    with pytest.raises(proof.LabError, match="did not complete"):
+        dispatch_gh(gh)
+    assert sum(1 for c in gh.calls if c[:2] == ["run", "view"]) == 3
+
+
+def test_no_run_after_the_dispatch_is_a_lab_error():
+    gh = Gh(runs_after=lab.FIND_TRIES)
+    with pytest.raises(proof.LabError, match="no .* run appeared"):
+        dispatch_gh(gh)
+
+
 def test_without_a_bench_input_nothing_is_dispatched():
     """Control: the workflow as it stands reads production, so the dispatch is refused before gh runs."""
     gh = Gh()
