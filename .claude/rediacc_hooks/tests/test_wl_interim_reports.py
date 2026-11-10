@@ -387,7 +387,8 @@ def _in_process_in_scratch(sc: Scratch, monkeypatch) -> None:
     """An in-process `handle_subagent_stop` writes to `$WORKLIST_REPORTS_DIR`, and with the scratch env unset it writes to the operator's real report store: a first draft of the r8_4 cases did, and its fixture capture (id 000333344445) blocked the lead's stop as an unread report."""
     for key, value in sc.env.items():
         monkeypatch.setenv(key, value)
-    assert os.environ["WORKLIST_REPORTS_DIR"] == str(sc.store)
+    got = os.environ.get("WORKLIST_REPORTS_DIR")
+    assert got == str(sc.store), "the scratch report store is not pinned (got %r): the capture would land in the real store" % got
 
 
 def test_r8_4_a_filesystem_error_from_armed_monitors_costs_only_the_interim(sc, monkeypatch):

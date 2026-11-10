@@ -797,6 +797,7 @@
       "CLAUDE_CODE_SESSION_ID",
       "CLOUDFLARE_API_TOKEN",
       "REDIACC_BWS_PROFILES",
+      "REDIACC_TRANSCRIPT_PATH",
       "WORKLIST_SESSION_ID"
     ],
     ".ci/rediacc_ci/ops/login_bench.py": [
@@ -1776,6 +1777,9 @@
     ".ci/rediacc_ci/tests/test_deploy_test_d1_migrations.py": [
       "HOME"
     ],
+    ".ci/rediacc_ci/tests/test_deploy_upload_media_to_r2.py": [
+      "PATH"
+    ],
     ".ci/rediacc_ci/tests/test_deploy_upload_repos_to_r2.py": [
       "HOME"
     ],
@@ -1837,6 +1841,9 @@
       "PATH"
     ],
     ".ci/rediacc_ci/tests/test_drills_vm_check.py": [
+      "PATH"
+    ],
+    ".ci/rediacc_ci/tests/test_enterprise_add.py": [
       "PATH"
     ],
     ".ci/rediacc_ci/tests/test_housekeeping_cleanup_cf_preview.py": [
@@ -2556,6 +2563,12 @@
     ],
     ".claude/rediacc_hooks/tests/test_wl_commit_remind.py": [
       "TMPDIR"
+    ],
+    ".claude/rediacc_hooks/tests/test_wl_interim_reports.py": [
+      "WORKLIST_REPORTS_DIR"
+    ],
+    ".claude/rediacc_hooks/tests/test_wl_lessons.py": [
+      "PATH"
     ],
     ".claude/rediacc_hooks/tests/test_wl_report_inbox.py": [
       "TMPDIR"
