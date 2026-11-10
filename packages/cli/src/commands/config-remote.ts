@@ -98,6 +98,18 @@ async function disableRemote(configName: string): Promise<void> {
 
 // ─── Status Flow ─────────────────────────────────────────────────────────
 
+function statusLabel(accessLoss: 'key-missing' | 'rejected' | null, connected: boolean): string {
+  if (accessLoss === 'key-missing') return 'device-key-missing';
+  if (accessLoss === 'rejected') return 'device-cannot-open';
+  return connected ? 'connected' : 'error';
+}
+
+function accessLossKey(accessLoss: 'key-missing' | 'rejected') {
+  return accessLoss === 'key-missing'
+    ? 'commands.config.remote.status.deviceKeyMissing'
+    : 'commands.config.remote.status.deviceCannotOpen';
+}
+
 async function showStatus(configName: string, format: OutputFormat): Promise<void> {
   const { configFileStorage } = await import('../adapters/config-file-storage.js');
   const config = await configFileStorage.load(configName);
@@ -121,7 +133,12 @@ async function showStatus(configName: string, format: OutputFormat): Promise<voi
     try {
       const { RemoteConfigAdapter } = await import('../adapters/remote-config-adapter.js');
       const { remoteTokenStorage } = await import('../adapters/remote-token-storage.js');
-      const adapter = new RemoteConfigAdapter(remote, configName, remoteTokenStorage, secureStorage);
+      const adapter = new RemoteConfigAdapter(
+        remote,
+        configName,
+        remoteTokenStorage,
+        secureStorage
+      );
       return await adapter.testConnection();
     } catch {
       return false;
@@ -140,10 +157,7 @@ async function showStatus(configName: string, format: OutputFormat): Promise<voi
     connected = await testServer();
   }
 
-  let status = 'error';
-  if (accessLoss === 'key-missing') status = 'device-key-missing';
-  else if (accessLoss === 'rejected') status = 'device-cannot-open';
-  else if (connected) status = 'connected';
+  const status = statusLabel(accessLoss, connected);
 
   outputService.print(
     {
@@ -160,13 +174,7 @@ async function showStatus(configName: string, format: OutputFormat): Promise<voi
     format
   );
   if (accessLoss !== null && format !== 'json') {
-    outputService.warn(
-      t(
-        accessLoss === 'key-missing'
-          ? 'commands.config.remote.status.deviceKeyMissing'
-          : 'commands.config.remote.status.deviceCannotOpen'
-      )
-    );
+    outputService.warn(t(accessLossKey(accessLoss)));
   }
 }
 

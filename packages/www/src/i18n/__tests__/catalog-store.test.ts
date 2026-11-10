@@ -1,4 +1,4 @@
-import { NON_ENGLISH_LOCALES } from '@rediacc/locales';
+import { NON_ENGLISH_LOCALES, SITE_LOCALES } from '@rediacc/locales';
 import { describe, expect, it, vi } from 'vitest';
 import { type CatalogLoader, createCatalogStore } from '../react/catalog-store';
 import type { Language } from '../types';
@@ -7,20 +7,8 @@ const OTHER_LOCALES = NON_ENGLISH_LOCALES;
 
 describe('the locale set the store tests iterate', () => {
   it('is pinned, so a shrunken export cannot quietly weaken the per-locale assertions', () => {
-    expect(OTHER_LOCALES.toSorted()).toEqual([
-      'ar',
-      'de',
-      'es',
-      'et',
-      'fr',
-      'it',
-      'ja',
-      'ko',
-      'pt',
-      'ru',
-      'tr',
-      'zh',
-    ]);
+    expect(OTHER_LOCALES.toSorted()).toEqual(SITE_LOCALES.filter((l) => l !== 'en').toSorted());
+    expect(OTHER_LOCALES).toHaveLength(12);
   });
 });
 

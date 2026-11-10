@@ -108,9 +108,9 @@ describe('registerNewRepo allocation floor', () => {
     h.liveGrand = { repositoryGuid: 'grand-guid' };
     h.repository = h.liveGrand;
     const { registerNewRepo } = await import('../../../commands/repo-create-delete.js');
-    await expect(
-      registerNewRepo('shop', { machine: 'm1' }, {}, { machine: 'm1' })
-    ).rejects.toThrow(/shop.*already exists/);
+    await expect(registerNewRepo('shop', { machine: 'm1' }, {}, { machine: 'm1' })).rejects.toThrow(
+      /shop.*already exists/
+    );
     expect(addRepository).not.toHaveBeenCalled();
   });
 });

@@ -74,6 +74,20 @@ function isLostEnrollment(error: unknown): boolean {
   );
 }
 
+/** True when the slot secret and the token file (token plus wrapped CEK) are both present locally. */
+async function hasLocalCredentials(
+  remote: RemoteConfig,
+  configName: string,
+  secureStorage: { get(key: string): Promise<string | null> },
+  tokenStorage: {
+    get(name: string): Promise<{ token?: string; wrappedCek?: string } | null | undefined>;
+  }
+): Promise<boolean> {
+  if ((await secureStorage.get(remote.storageKeyId)) === null) return false;
+  const tokenData = await tokenStorage.get(configName);
+  return Boolean(tokenData?.token && tokenData.wrappedCek);
+}
+
 /** Why a device cannot open the linked config: a credential absent locally, or one the server rejected. */
 export type DeviceAccessLoss = 'key-missing' | 'rejected';
 
@@ -91,9 +105,9 @@ export async function deviceAccessLoss(
   const { remoteTokenStorage } = await import('../adapters/remote-token-storage.js');
   const secureStorage = getSecureStorage();
 
-  if ((await secureStorage.get(remote.storageKeyId)) === null) return 'key-missing';
-  const tokenData = await remoteTokenStorage.get(configName);
-  if (!tokenData?.token || !tokenData.wrappedCek) return 'key-missing';
+  if (!(await hasLocalCredentials(remote, configName, secureStorage, remoteTokenStorage))) {
+    return 'key-missing';
+  }
 
   const { RemoteConfigAdapter } = await import('../adapters/remote-config-adapter.js');
   const adapter = new RemoteConfigAdapter(remote, configName, remoteTokenStorage, secureStorage);

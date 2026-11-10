@@ -43,7 +43,7 @@ export interface LargeRepoBudgetInput {
 export const CAP_FLOOR_BYTES = 20 * GIB;
 
 /** Multiplier on the changed-bytes share of the seed, so measurement noise does not fail a healthy anchor path. */
-export const INCR_SHARE_HEADROOM = 1.5;
+const INCR_SHARE_HEADROOM = 1.5;
 
 /**
  * The incremental's time budget in ms, clipped to the cap when the seed is at least 20 GiB (or its size is not given).

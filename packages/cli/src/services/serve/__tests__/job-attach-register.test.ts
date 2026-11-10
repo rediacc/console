@@ -38,6 +38,9 @@ vi.mock('../../config/config-resources.js', () => ({
         rows.get(name) ?? (name.includes(':') ? undefined : rows.get(`${name}:latest`))
       )
     ),
+    getLiveGrand: vi.fn((name: string) =>
+      Promise.resolve(rows.get(name) ?? rows.get(`${name}:latest`))
+    ),
     addRepository: vi.fn((name: string, row: Row) => {
       rows.set(name, row);
       return Promise.resolve();

@@ -48,17 +48,16 @@ import {
 import { allocateNetworkIdInStore } from './config-network-id.js';
 import {
   assertNoCredentialCollision,
-  assertRestoredForkKeyIsExplicit,
   buildArchivedRecord,
   buildGuidMap,
   grandTagsOf,
   resolveDestructiveTargetFromRepos,
   resolveLiveGrandKey,
   resolveRepoKey,
-  restoreArchivedRecord,
   withGpuDevices,
   withLifecycleGrant,
 } from './config-resources-resolve.js';
+import { takeArchivedRepository } from './config-resources-archive.js';
 import type { ResourceState } from './resource-state.js';
 import { updateSyncedConfig } from './synced-write.js';
 
@@ -505,25 +504,9 @@ class ConfigService extends ConfigAccessService {
     await this.requireSelfHosted();
     const state = await this.getResourceState();
     const deletedRepos = state.getDeletedRepositories();
-    const index = deletedRepos.findIndex((r) => r.repositoryGuid === guid);
-    if (index === -1) throw new Error(`Archived repository with GUID "${guid}" not found`);
-
-    const archived = deletedRepos[index];
-    const restoredName = name ?? archived.name;
-    assertRestoredForkKeyIsExplicit(archived, restoredName);
-
     const repos = state.getRepositories();
-    if (restoredName in repos)
-      throw new Error(
-        `Repository "${restoredName}" already exists. Use --name to specify a different name.`
-      );
-    const repoConfig = restoreArchivedRecord(archived);
-    // This write bypasses addRepository, but the record it makes LIVE is subject to the same GUID-keyed credential map.
-    assertNoCredentialCollision(repos, restoredName, repoConfig);
-    repos[restoredName] = repoConfig;
+    const restoredName = takeArchivedRepository(repos, deletedRepos, guid, name);
     await state.setRepositories(repos);
-
-    deletedRepos.splice(index, 1);
     await state.setDeletedRepositories(deletedRepos);
     return restoredName;
   }
