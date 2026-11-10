@@ -1268,26 +1268,26 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 15,
-      "done": 1,
+      "open": 11,
+      "done": 5,
       "open_sigs": [
-        "0b514b3a",
         "18a33f98",
         "2c2ff65b",
         "40c43a46",
         "43d0c68b",
         "45e50fa7",
-        "75fbfc2b",
         "945b9f91",
-        "9941e27a",
         "af1e3072",
         "af608650",
-        "bf18da62",
         "c60ad719",
         "f284c4b8",
         "f2fc03c2"
       ],
       "done_sigs": [
+        "0b514b3a",
+        "75fbfc2b",
+        "9941e27a",
+        "bf18da62",
         "e1ced11f"
       ]
     },
