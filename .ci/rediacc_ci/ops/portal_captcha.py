@@ -19,16 +19,23 @@ HOSTS default to every shared host in regions.json (`portal_health.hosts`), so a
 
 from __future__ import annotations
 
+import http.client as http_client
 import json
 import re
 import shlex
+import socket
+import ssl
 import sys
 import time
 import urllib.error
+import urllib.parse
+import urllib.request
 from collections.abc import Callable
 from dataclasses import dataclass
+from typing import Any
 
 from rediacc_ci.core import https
+from rediacc_ci.deploy import deploy_proxy
 from rediacc_ci.ops import portal_health
 
 LOGIN_PATH = portal_health.LOGIN_PATH
@@ -59,26 +66,67 @@ class Reply:
 Http = Callable[[str, str, "dict | None"], Reply]
 
 
+class _PinnedHTTPS(urllib.request.HTTPSHandler):
+    """HTTPS to a fixed address: the TCP connection goes to `address`, while SNI, the certificate check and the Host header still name the URL's host, as curl's `--resolve host:443:<address>` does for the proxy smoke."""
+
+    def __init__(self, address: str, context: ssl.SSLContext | None = None) -> None:
+        super().__init__()
+        self.address = address
+        self.tls = context or ssl.create_default_context()
+
+    def https_open(self, req: urllib.request.Request) -> http_client.HTTPResponse:
+        address, tls = self.address, self.tls
+
+        class Connection(http_client.HTTPSConnection):
+            def connect(self) -> None:
+                sock = socket.create_connection((address, self.port), self.timeout)
+                self.sock = tls.wrap_socket(sock, server_hostname=self.host)
+
+        return self.do_open(Connection, req)
+
+
+def _open(request: urllib.request.Request, pin: str | None) -> Any:
+    """The response to `request`, through the system resolver, or straight to `pin` when set."""
+    if pin is None:
+        return https.urlopen(request, timeout=TIMEOUT_S)
+    https.check_url(request.full_url)
+    return https.build_opener(_PinnedHTTPS(pin)).open(request, timeout=TIMEOUT_S)
+
+
+def _unresolved(exc: OSError) -> bool:
+    """A URLError whose cause is a failed name lookup (NXDOMAIN, or a negative answer the local resolver still caches)."""
+    return isinstance(exc, urllib.error.URLError) and isinstance(exc.reason, socket.gaierror)
+
+
 def http(method: str, url: str, body: dict | None = None) -> Reply:
-    """One request through `rediacc_ci.core.https` (https only). An HTTP error status is an answer, not an exception."""
+    """One request through `rediacc_ci.core.https` (https only). An HTTP error status is an answer, not an exception.
+
+    A BRAND-NEW HOST (finding fc8ad2fd): right after a first deploy the local resolver can still hold the NXDOMAIN it cached before the record existed (negative TTL up to 1800 s), and the portal smoke then failed with URLError after a good deploy. A failed name lookup is therefore answered the way the proxy smoke answers it, by `deploy_proxy._doh_lookup` (Cloudflare's DNS-over-HTTPS, `REDIACC_SMOKE_DOH_URL`, empty disables it), and the request is sent once more straight to that address with the host still named for TLS.
+    """
     headers = {"User-Agent": USER_AGENT}
     data = None
     if body is not None:
         data = json.dumps(body).encode("utf-8")
         headers["Content-Type"] = "application/json"
     request = https.build_request(url, data=data, headers=headers, method=method)
-    try:
-        with https.urlopen(request, timeout=TIMEOUT_S) as resp:
-            return Reply(resp.status, resp.read(4_000_000).decode("utf-8", "replace"))
-    except urllib.error.HTTPError as exc:
+    pin: str | None = None
+    while True:
         try:
-            text = exc.read(65_536).decode("utf-8", "replace")
-        except OSError:
-            text = ""
-        exc.close()
-        return Reply(exc.code, text)
-    except (OSError, ValueError) as exc:
-        return Reply(0, error=type(exc).__name__)
+            with _open(request, pin) as resp:
+                return Reply(resp.status, resp.read(4_000_000).decode("utf-8", "replace"))
+        except urllib.error.HTTPError as exc:
+            try:
+                text = exc.read(65_536).decode("utf-8", "replace")
+            except OSError:
+                text = ""
+            exc.close()
+            return Reply(exc.code, text)
+        except (OSError, ValueError) as exc:
+            if pin is None and isinstance(exc, OSError) and _unresolved(exc):
+                pin = deploy_proxy._doh_lookup(urllib.parse.urlsplit(url).hostname or "")
+                if pin:
+                    continue
+            return Reply(0, error=type(exc).__name__)
 
 
 @dataclass(frozen=True)
