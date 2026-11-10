@@ -657,6 +657,12 @@ def test_turnstile_domains_read_the_one_shared_widget():
     assert got == [PRODUCT_DOMAIN, bench_host]
 
 
+def test_turnstile_hosts_are_pinned_to_the_literal_domains():
+    """Review 09e1a50e.2: the test above derives both sides from well_known, so a wrong host there would still pass; this pins the values."""
+    assert PRODUCT_DOMAIN == "rediacc.cloud"
+    assert BENCH_ORIGIN == "https://bench.rediacc.cloud"
+
+
 def test_turnstile_refuses_a_missing_or_doubled_widget():
     with pytest.raises(proof.LabError, match="not 1"):
         lab.turnstile_domains(listing=lambda _p: [{"name": "other", "domains": []}])
@@ -2194,6 +2200,53 @@ def test_run_surfaces_reads_logs_both_apis_and_each_job_summary():
     assert '"id": 77' in got["run-api"]
 
 
+class _FlakyGh:
+    """A gh runner answering `outcomes` in order, the last one repeating; `calls` counts attempts."""
+
+    def __init__(self, *outcomes):
+        self.outcomes = list(outcomes)
+        self.calls = 0
+
+    def __call__(self, argv, cwd, env):
+        del argv, cwd, env
+        index = min(self.calls, len(self.outcomes) - 1)
+        self.calls += 1
+        return self.outcomes[index]
+
+
+@pytest.fixture
+def no_retry_sleep(monkeypatch):
+    """Stub the retry's clock so the 5 s / 15 s backoff never runs; returns the pauses taken."""
+    pauses: list[float] = []
+    monkeypatch.setattr(lab.gh_retry, "time", types.SimpleNamespace(sleep=pauses.append))
+    return pauses
+
+
+def test_a_gh_read_retries_a_transient_5xx_then_answers(no_retry_sleep):
+    """Review 09e1a50e.1: a 502 then a clean read returns the read, after one backoff."""
+    gh = _FlakyGh(lab.Proc(1, "", "gh: Server Error (HTTP 502)"), lab.Proc(0, "ok\n"))
+    assert lab._gh_read(gh, "run", "view", "77") == "ok\n"
+    assert gh.calls == 2
+    assert len(no_retry_sleep) == 1
+
+
+def test_a_gh_read_gives_up_on_a_persistent_5xx_as_a_lab_error(no_retry_sleep):
+    gh = _FlakyGh(lab.Proc(1, "", "gh: Server Error (HTTP 502)"))
+    with pytest.raises(proof.LabError, match="gh run exited 1"):
+        lab._gh_read(gh, "run", "view", "77")
+    assert gh.calls == lab.gh_retry.ATTEMPTS
+    assert len(no_retry_sleep) == lab.gh_retry.ATTEMPTS - 1
+
+
+def test_a_gh_read_never_retries_a_4xx(no_retry_sleep):
+    """Control: a 404 is a LabError at once, with no backoff."""
+    gh = _FlakyGh(lab.Proc(1, "", "gh: Not Found (HTTP 404)"), lab.Proc(0, "late\n"))
+    with pytest.raises(proof.LabError, match="gh api exited 1"):
+        lab._gh_read(gh, "api", "x")
+    assert gh.calls == 1
+    assert no_retry_sleep == []
+
+
 def test_a_job_without_a_check_run_url_is_a_lab_error():
     """Control: the job id is never used as the check run id."""
     with pytest.raises(proof.LabError, match="check_run_url"):
@@ -2347,7 +2400,9 @@ def test_a_non_lab_rollback_failure_still_keeps_the_renewal_error_and_names_the_
 def test_a_non_lab_rollback_failure_after_a_renewal_names_the_hand_fix():
     """Review e2231d81.2."""
     fleet = _OSErrorRollback("v-new")
-    with pytest.raises(proof.LabError, match=r"renewal answered ok=True.*v-new"):
+    with pytest.raises(
+        proof.LabError, match=r"renewal answered ok=True.*v-new.*restore it by hand"
+    ):
         spread_v9(fleet, "new", "previous")
 
 
@@ -2372,9 +2427,11 @@ def test_a_runtime_error_in_the_rollback_keeps_the_renewal_error():
 
 
 def test_a_runtime_error_from_the_success_path_rollback_names_the_hand_fix():
-    """Review 58abac9b.2: a RuntimeError from the success-path rollback names the hand fix."""
+    """Review 58abac9b.2 and 9a92fe49.1: a RuntimeError from the success-path rollback names the hand fix."""
     fleet = _RuntimeRollback("v-new")
-    with pytest.raises(proof.LabError, match=r"renewal answered ok=True.*v-new"):
+    with pytest.raises(
+        proof.LabError, match=r"renewal answered ok=True.*v-new.*restore it by hand"
+    ):
         spread_v9(fleet, "new", "previous")
 
 
@@ -2394,7 +2451,9 @@ class _TypeErrorRollback(Fleet):
 def test_any_error_from_the_success_path_rollback_names_the_hand_fix():
     """Review 12d04dd4.1: a TypeError after an ok renewal still raises LabError naming the version to restore."""
     fleet = _TypeErrorRollback("v-new")
-    with pytest.raises(proof.LabError, match=r"renewal answered ok=True.*v-new") as raised:
+    with pytest.raises(
+        proof.LabError, match=r"renewal answered ok=True.*v-new.*restore it by hand"
+    ) as raised:
         spread_v9(fleet, "new", "previous")
     assert isinstance(raised.value.__cause__, TypeError)
 
