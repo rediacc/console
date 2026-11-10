@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 5,
-  "generatedAt": "2026-11-10T16:54:59.712Z",
+  "generatedAt": "2026-11-10T22:54:22.131Z",
   "legs": [
     {
       "index": 1,
@@ -160,6 +160,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_project_dir_fallback.py",
         "pytest:.claude/rediacc_hooks/tests/test_runningscript_target.py",
         "pytest:.claude/rediacc_hooks/tests/test_shellscan_differential.py",
+        "pytest:.claude/rediacc_hooks/tests/test_shellscan_feed_stages.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_add_many.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_benchblock.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_cite_extensions.py",
