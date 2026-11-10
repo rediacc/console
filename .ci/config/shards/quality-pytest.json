@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 5,
-  "generatedAt": "2026-11-10T12:52:35.984Z",
+  "generatedAt": "2026-11-10T13:07:40.491Z",
   "legs": [
     {
       "index": 1,
@@ -122,6 +122,7 @@
         "pytest:.ci/rediacc_ci/tests/test_quality_env_register.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_guard_mention_anchoring.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_label_inventory.py",
+        "pytest:.ci/rediacc_ci/tests/test_quality_literal_sources_word.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_pipefail_grep_q.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_pool_writer_safety.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_profiler_coverage.py",
