@@ -39,7 +39,7 @@ The overrides (each level's bundle value in brackets for `high`):
 A ` -- solo` note on a Promoted entry keeps that plan alone in its PR under turbo.
 
 ```stop-hook
-effort: smart
+effort: low
 turbo: on
 batch_size: 3 -- operator 2026-10-04: go in parallel as much as possible
 plan_concurrency: 5 -- operator 2026-10-04: plan limit 5
@@ -54,11 +54,11 @@ backup_push_h: 4 -- operator 2026-10-08: backup push valve, no PR
 What the loop is working on now, rendered between the markers by `.claude/hooks/stop/wl_planqueue.py` (`refresh_inflight`) on every stop and on every `worklist.py --queue-set` or `--phase`. It is runtime state: rewritten only when it changes, never compared by `npm run check:ci-plan-record`, and a committed copy is a snapshot from its commit.
 
 <!-- queue:inflight:begin -->
-- Mode: effort smart; turbo on; turbo_push batch-end; batch_size 3; plan_concurrency 5; writer_cap 25; commit_remind_min 15; backup_push_h 4; judge core; cadence on; agent_hint on; agent_pushback on.
+- Mode: effort low; turbo on; turbo_push batch-end; batch_size 3; plan_concurrency 5; writer_cap 25; commit_remind_min 15; backup_push_h 4; judge off; cadence on; agent_hint off; agent_pushback off.
 - Phase: merge on PR #602 (branch 1023-1, session 45048a90, since 2026-11-03T09:46:12Z, past its 24-hour limit).
 - Branch: 1104-1, no PR yet.
 - Plans on the PR (5):
-  - agent/plans/PLAN-backup-program.md -- 181 of 192 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
+  - agent/plans/PLAN-backup-program.md -- 182 of 192 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-cloudflare-proxy.md -- 28 of 29 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-backup-plane-shared-bucket-hardening.md -- 4 of 7 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-renet-executor-tiered-license-check.md -- 2 of 4 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
@@ -79,17 +79,17 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic f65726d5, plan agent/plans/PLAN-renet-down-before-kill.md, outside the set, 16 commit(s) on the branch, 0 open item(s): renet runs Rediaccfile down() before repo containers stop
   - epic 53c31db2, plan agent/plans/PLAN-repo-resource-limits.md, outside the set, 20 commit(s) on the branch, 0 open item(s): per-repo resource limits and a renet-managed RAM volume
   - epic a86f5622, plan agent/plans/PLAN-production-key-only.md, outside the set, 4 commit(s) on the branch, 0 open item(s): Production key only: every leg licensed from its own plane
-  - epic 79b7e92e, no plan, 215 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
-  - epic 562ef6c3, plan agent/plans/PLAN-experience-feedback.md, outside the set, 35 commit(s) on the branch, 0 open item(s): experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire
-- Writers: 0 live of writer_cap 25 (session d778be9d).
-- Leased items: 3: #4e2179b4 (worker:bhaw42tk1, d778be9d), #63c8f457 (worker:bzwdsv65s, d778be9d), #caa837d4 (worker:bzwdsv65s, d778be9d).
+  - epic 79b7e92e, no plan, 219 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 562ef6c3, plan agent/plans/PLAN-experience-feedback.md, outside the set, 37 commit(s) on the branch, 0 open item(s): experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire
+- Writers: 1 live of writer_cap 25 (session d778be9d): worker:aa533e33c4a6eb271.
+- Leased items: 6: #4f4df453 (worker:busfc6826, d778be9d), #54aacfb3 (worker:bkqae9edw, d778be9d), #87f7acb9 (worker:aa533e33c4a6eb271, d778be9d), #c4b8a547 (worker:bkqae9edw, d778be9d), #caa837d4 (worker:bkqae9edw, d778be9d), #e549c21b (worker:busfc6826, d778be9d).
 - Next plan: agent/plans/PLAN-sandbox-tenant-separation.md, Promoted entry 14; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 17 of 64 plans done, 974 of 1187 boxes done (82%).
+Promoted: 17 of 64 plans done, 975 of 1187 boxes done (82%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -156,7 +156,7 @@ Promoted: 17 of 64 plans done, 974 of 1187 boxes done (82%).
 | 61 | PLAN-ci-vm-image-followups.md | 0/2 | 2 open |
 | 62 | PLAN-idle-writer-capacity.md | 5/5 | done |
 | 63 | PLAN-d1-scaling.md | 16/31 | 15 open |
-| 64 | PLAN-experience-feedback.md | 11/16 | 5 open |
+| 64 | PLAN-experience-feedback.md | 12/16 | 4 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-backup-program.md -- operator 2026-10-20 ("move agent/plans/PLAN-backup-program.md to the promoted"): one backup program across renet, account, CLI and shared, ending in a live hostinger to eu R2 backup; P1; Depends-On PLAN-shell-sandbox-readonly-view.md and PLAN-account-vm-check.md (done 2026-10-20); released to writers by operator /ask ASKED:2026-10-20T15:14Z ("edit writers to go NOW")
