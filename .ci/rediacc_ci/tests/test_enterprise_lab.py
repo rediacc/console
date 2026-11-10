@@ -1616,8 +1616,18 @@ class Fleet:
     """One fleet machine behind a released rdc, and the company's account Worker behind wrangler."""
 
     def __init__(
-        self, *, renet="0.9.0", proxy_uploads=False, proxy_rc=0, outcome=None, deployments=None
+        self,
+        *,
+        renet="0.9.0",
+        proxy_uploads=False,
+        proxy_rc=0,
+        outcome=None,
+        deployments=None,
+        rollback_fails_to="",
+        banner="banner",
     ):
+        self.rollback_fails_to = rollback_fails_to
+        self.banner = banner
         self.renet = renet
         self.proxy_uploads = proxy_uploads
         self.proxy_rc = proxy_rc
@@ -1633,15 +1643,19 @@ class Fleet:
         argv = list(argv)
         self.calls.append((argv, extra))
         if "deployments" in argv:
-            return lab.Proc(0, "banner\n" + json.dumps(self.deployments))
+            return lab.Proc(0, self.banner + "\n" + json.dumps(self.deployments))
         if "rollback" in argv:
-            self.worker = argv[argv.index("rollback") + 1]
+            target = argv[argv.index("rollback") + 1]
+            if target == self.rollback_fails_to:
+                return lab.Proc(1)
+            self.worker = target
             return lab.Proc(0)
         if "term" in argv and argv[-1] == "renet version":
             return lab.Proc(0, "renet version %s\n" % self.renet)
         if "term" in argv and argv[-1] == lab.RENEW_COMMAND:
             self.renewed_with.append((self.renet, self.worker))
-            return lab.Proc(0, "Welcome\n" + json.dumps(self.outcome(self.renet, self.worker)))
+            doc = json.dumps(self.outcome(self.renet, self.worker))
+            return lab.Proc(0, self.banner + " Welcome\n" + doc)
         if argv[-3:-1] == ["repo", "up"]:
             if "--proxy" in argv:
                 if self.proxy_uploads:
@@ -1709,6 +1723,50 @@ def test_the_new_renet_renews_against_the_previous_worker_and_the_newest_returns
     assert fleet.worker == "v-new"
 
 
+def test_the_newest_version_is_rolled_back_when_the_renewal_raises():
+    fleet = Fleet(outcome=lambda _r, _w: {"results": []})
+    with pytest.raises(proof.LabError, match="no installed licence"):
+        spread_v9(fleet, "new", "previous")
+    rollbacks = [c[0][c[0].index("rollback") + 1] for c in fleet.calls if "rollback" in c[0]]
+    assert rollbacks == ["v-prev", "v-new"]
+    assert fleet.worker == "v-new"
+
+
+def test_a_failed_rollback_keeps_the_renewals_own_error_and_names_the_hand_fix():
+    """Control: the rollback failure is a note on the renewal's error, never its replacement."""
+    fleet = Fleet(outcome=lambda _r, _w: {"results": []}, rollback_fails_to="v-new")
+    with pytest.raises(proof.LabError, match="no installed licence") as raised:
+        spread_v9(fleet, "new", "previous")
+    (note,) = raised.value.__notes__
+    assert "account-proof-a" in note
+    assert "v-new" in note
+    assert "restore it by hand" in note
+    assert fleet.worker == "v-prev"
+
+
+def test_a_failed_rollback_after_a_renewal_is_not_a_clean_answer():
+    fleet = Fleet(rollback_fails_to="v-new")
+    with pytest.raises(proof.LabError, match=r"renewal answered ok=True.*account-proof-a.*v-new"):
+        spread_v9(fleet, "new", "previous")
+
+
+def test_a_banner_with_brackets_does_not_break_the_json_the_drivers_read():
+    banner = "[info] wrangler {4.1} ready"
+    assert lab.worker_versions("account-proof-a", run=Fleet(banner=banner)) == [
+        "v-new",
+        "v-prev",
+        "v-old",
+    ]
+    assert spread_v9(Fleet(banner=banner), "previous", "new") == proof.Answer(True)
+
+
+def test_the_last_complete_json_value_is_the_one_read():
+    text = 'noise [1] more {"a": [2]}\n[{"k": "v"}]\n'
+    assert lab._json_value(text, "[") == [{"k": "v"}]
+    assert lab._json_value("none here", "[") is None
+    assert lab._json_value("[broken", "[") is None
+
+
 def test_a_refused_renewal_is_refused_with_its_code_and_the_newest_still_returns():
     def outcome(_renet, worker):
         if worker == "v-prev":
@@ -1752,8 +1810,9 @@ def test_a_machine_left_on_the_wrong_renet_is_a_lab_error():
         )
 
 
-def test_the_default_drivers_are_the_live_ones():
+def test_the_default_drivers_are_the_live_ones(monkeypatch):
     """Both seams take a driver; with none they run the live drivers, which name an unset variable before anything runs."""
+    monkeypatch.delenv(lab.COMPANY_ENV, raising=False)
     with pytest.raises(proof.LabError, match=lab.COMPANY_ENV):
         lab.executor_upload("vm-1")
     with pytest.raises(proof.LabError, match=lab.COMPANY_ENV):

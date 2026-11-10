@@ -1483,14 +1483,23 @@ def executor_upload(machine: str, *, driver: Driver | None = None) -> proof.Answ
     return (driver or live_executor_upload)(machine)
 
 
-def _json_value(text: str, open_ch: str, close_ch: str) -> object:
-    start, end = text.find(open_ch), text.rfind(close_ch)
-    if start < 0 or end < start:
-        return None
-    try:
-        return json.loads(text[start : end + 1])
-    except ValueError:
-        return None
+def _json_value(text: str, open_ch: str) -> object:
+    """The JSON value that opens with `open_ch` and runs to the end of `text` (a banner may come before it and carry brackets of its own); failing that, the longest complete one."""
+    decoder = json.JSONDecoder()
+    best: tuple[int, object] | None = None
+    start = text.find(open_ch)
+    while start >= 0:
+        try:
+            value, end = decoder.raw_decode(text, start)
+        except ValueError:
+            value, end = None, -1
+        if end >= 0:
+            if not text[end:].strip():
+                return value
+            if best is None or end - start > best[0]:
+                best = (end - start, value)
+        start = text.find(open_ch, start + 1)
+    return best[1] if best else None
 
 
 def worker_versions(worker: str, *, run: Runner = run_process) -> list[str]:
@@ -1498,7 +1507,7 @@ def worker_versions(worker: str, *, run: Runner = run_process) -> list[str]:
     done = run([*wrangler.ARGV, "deployments", "list", "--json", "--name", worker], None, None)
     if done.rc != 0:
         raise proof.LabError("wrangler deployments list exited %d" % done.rc)
-    data = _json_value(done.stdout, "[", "]")
+    data = _json_value(done.stdout, "[")
     if not isinstance(data, list):
         raise proof.LabError("wrangler deployments list printed no JSON list")
     rows = sorted(
@@ -1529,7 +1538,7 @@ def renew_on(machine: str, *, run: Runner = run_process, env: Env = _env) -> pro
     done = _rdc(run, env, "term", "connect", machine, "-c", RENEW_COMMAND)
     if done.rc != 0:
         raise proof.LabError("renet license renew on the fleet machine exited %d" % done.rc)
-    doc = _json_value(done.stdout, "{", "}")
+    doc = _json_value(done.stdout, "{")
     if not isinstance(doc, dict):
         raise proof.LabError("renet license renew printed no JSON object")
     if doc.get("lockBusy"):
@@ -1579,9 +1588,33 @@ def live_spread_renew(
         return renew_on(machine, run=run, env=env)
     put_version(script, previous, run=run)
     try:
-        return renew_on(machine, run=run, env=env)
-    finally:
+        answer = renew_on(machine, run=run, env=env)
+    except BaseException as exc:
+        try:
+            put_version(script, newest, run=run)
+        except proof.LabError as back:
+            exc.add_note(_left_behind(script, newest, back))
+        raise
+    try:
         put_version(script, newest, run=run)
+    except proof.LabError as back:
+        raise proof.LabError(
+            "the renewal answered ok=%s%s; %s"
+            % (
+                answer.ok,
+                " (%s)" % answer.error if answer.error else "",
+                _left_behind(script, newest, back),
+            )
+        ) from back
+    return answer
+
+
+def _left_behind(script: str, version: str, back: proof.LabError) -> str:
+    return "rolling Worker %s back to version %s failed (%s): restore it by hand" % (
+        script,
+        version,
+        back,
+    )
 
 
 def renew_with(
