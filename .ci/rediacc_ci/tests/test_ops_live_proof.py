@@ -324,7 +324,7 @@ def test_a_modified_renet_build_refuses_modified_build(bed: Bed) -> None:
         ({"check": "account-smoke", "target": "hostinger"}, "not 'hostinger'"),
         ({"machine": "prod-1"}, "not in tiers.live.targets.hostinger.machines"),
         ({"region": "mars"}, "--region"),
-        ({"plan": "agent/plans/_done/PLAN-demo.md"}, "not a live plan"),
+        ({"plan": "agent/plans/_removed/PLAN-demo.md"}, "not a live plan"),
         ({"box": "ffffffff"}, "no box with signature"),
     ],
 )
@@ -723,3 +723,201 @@ def test_a_cli_check_on_a_cli_only_plan_asks_no_vm_run(bed: Bed) -> None:
     assert out.row is not None
     assert admit.phases == [], "a tree deploy provisions nothing, so no VM run is asked for"
     assert out.row["ladder"] == {"vm": None}
+
+
+# ------------------------------------------------------------------ the `_done/` door (operator ruling #827dc647)
+
+
+DONE_REL = "agent/plans/_done/PLAN-demo.md"
+DONE_PLAN = PLAN.replace("Status: approved", "Status: done")
+STUB = "# PLAN: demo\n\nStatus: moved\nMoved-To: agent/plans/PLAN-demo.md\n"
+
+
+class _Owed:
+    """A fake `World.owed`: answers `owed` (or raises it) and records every plan it was asked about."""
+
+    def __init__(self, owed: Iterable[str] | Exception) -> None:
+        self.owed = owed
+        self.asked: list[str] = []
+
+    def __call__(self, _root: pathlib.Path, rel: str) -> frozenset[str]:
+        self.asked.append(rel)
+        if isinstance(self.owed, Exception):
+            raise self.owed
+        return frozenset(self.owed)
+
+
+def _to_done(bed: Bed, text: str = DONE_PLAN, keep_live: bool = False) -> None:
+    """Move the plan to `_done/` with a done Status, its boxes still open: the state after an LP box is moved back byte-identical."""
+    if not keep_live:
+        (bed.root / PLAN_REL).unlink()
+    _write(bed.root, DONE_REL, text)
+    _commit(bed.root, "finish the plan")
+
+
+def _door(
+    bed: Bed, owed: Iterable[str] | Exception, **over: Any
+) -> tuple[LP.World, _Owed, LP.Request]:
+    ask = _Owed(owed)
+    world = bed.lp_world()
+    world.owed = ask
+    req = dataclasses.replace(bed.request("renet-live", target="hostinger"), plan=DONE_REL)
+    return world, ask, dataclasses.replace(req, **over)
+
+
+def test_an_owed_done_plan_records_in_place(bed: Bed) -> None:
+    _to_done(bed)
+    world, ask, req = _door(bed, {"hostinger"})
+    out = bed.record(req, world=world, write=True)
+    assert out.status == R.VERIFIED, out.message
+    assert out.row is not None
+    assert out.row["plan"] == DONE_REL, "the plan never moves, and the row names where it is"
+    assert ask.asked == [DONE_REL]
+    assert [r["plan"] for r in bed.ledger()] == [DONE_REL]
+    code, lines = LP.verify(bed.root, PLAN_REL)
+    assert code == 0, f"verify --plan matches by identity: {lines}"
+
+
+@pytest.mark.parametrize("owed", [set(), {"bench"}], ids=["nothing-owed", "another-target"])
+def test_a_done_plan_lp6_does_not_owe_this_target_refuses(bed: Bed, owed: set[str]) -> None:
+    _to_done(bed)
+    world, ask, req = _door(bed, owed)
+    with pytest.raises(LP.RequestError, match="no LP6 finding on this branch owes it a hostinger"):
+        bed.record(req, world=world)
+    assert ask.asked == [DONE_REL]
+    assert bed.fake.calls == []
+
+
+def test_a_removed_plan_is_never_admitted(bed: Bed) -> None:
+    rel = "agent/plans/_removed/PLAN-demo.md"
+    _write(bed.root, rel, DONE_PLAN)
+    _commit(bed.root, "removed copy")
+    world, ask, req = _door(bed, {"hostinger"}, plan=rel)
+    with pytest.raises(LP.RequestError, match="is not a live plan under agent/plans/"):
+        bed.record(req, world=world)
+    assert ask.asked == [], "the door is not even asked"
+    assert bed.fake.calls == []
+
+
+def test_a_done_stub_is_refused(bed: Bed) -> None:
+    _to_done(bed, text=STUB, keep_live=True)
+    world, ask, req = _door(bed, {"hostinger"})
+    with pytest.raises(LP.RequestError, match="is a stub"):
+        bed.record(req, world=world)
+    assert ask.asked == []
+    assert bed.fake.calls == []
+
+
+def test_a_ticked_box_in_a_done_plan_refuses(bed: Bed) -> None:
+    _to_done(bed)
+    world, _ask, _req = _door(bed, {"bench"})
+    req = dataclasses.replace(bed.request("cli-bench"), plan=DONE_REL, box=bed.sigs["ticked"])
+    with pytest.raises(LP.RequestError, match="already ticked"):
+        bed.record(req, world=world)
+    assert bed.fake.calls == []
+
+
+RENET_BOX = (
+    "- [ ] LP-hostinger [live] renet on hostinger\n  - Accept: live-proof hostinger renet-live\n"
+)
+HOME_REL = "agent/plans/PLAN-home.md"
+TWIN_REL = "agent/plans/PLAN-twin.md"
+
+
+def _home(name: str) -> str:
+    return (
+        f"# PLAN: {name}\n\nStatus: approved\nOwns: private/renet/cmd/**\n\n## Tasks\n\n{RENET_BOX}"
+    )
+
+
+def _moved_out_then_back(bed: Bed) -> None:
+    """HEAD: the `_done/` plan carries a move note where its renet box was, and PLAN-home holds the box. The working tree: the box is back in the `_done/` plan, byte-identical, and the note is gone, the state the recorder sees before the restore commit."""
+    (bed.root / PLAN_REL).unlink()
+    _write(
+        bed.root,
+        DONE_REL,
+        DONE_PLAN.replace(RENET_BOX, f"(moved 2026-11-08 to {HOME_REL}) LP-hostinger\n"),
+    )
+    _write(bed.root, HOME_REL, _home("home"))
+    _commit(bed.root, "finish the plan, its renet box moved to PLAN-home")
+    _write(bed.root, DONE_REL, DONE_PLAN)
+
+
+def test_a_box_still_open_in_the_plan_it_was_moved_to_refuses(bed: Bed) -> None:
+    _moved_out_then_back(bed)
+    world, ask, req = _door(bed, {"hostinger"})
+    with pytest.raises(LP.RequestError, match=f"still open in {HOME_REL}; move it, do not copy it"):
+        bed.record(req, world=world)
+    assert ask.asked == [DONE_REL]
+    assert bed.fake.calls == []
+
+
+def test_a_box_moved_back_out_of_its_interim_home_records(bed: Bed) -> None:
+    """CONTROL: the same restore with the box removed from PLAN-home is admitted."""
+    _moved_out_then_back(bed)
+    _write(bed.root, HOME_REL, _home("home").replace(RENET_BOX, ""))
+    world, _ask, req = _door(bed, {"hostinger"})
+    out = bed.record(req, world=world)
+    assert out.status == R.VERIFIED, out.message
+
+
+def test_a_templated_twin_box_in_an_unrelated_plan_does_not_refuse(bed: Bed) -> None:
+    """CONTROL: box signatures repeat across plans whose LP text is templated (eleven live plans shared one on 2026-11-10). A twin the move note does not name is another plan's own box, not a copy."""
+    _to_done(bed)
+    _write(bed.root, TWIN_REL, _home("twin"))
+    _commit(bed.root, "an unrelated plan with the same templated box")
+    world, _ask, req = _door(bed, {"hostinger"})
+    out = bed.record(req, world=world)
+    assert out.status == R.VERIFIED, out.message
+
+
+def test_an_owed_lookup_that_fails_refuses_and_runs_nothing(bed: Bed) -> None:
+    _to_done(bed)
+    world, ask, req = _door(bed, LP.RequestError("cannot ask LP6: exited 77"))
+    with pytest.raises(LP.RequestError, match="exited 77"):
+        bed.record(req, world=world)
+    assert ask.asked == [DONE_REL]
+    assert bed.fake.calls == []
+
+
+def test_a_live_folder_plan_with_a_done_status_is_still_refused(bed: Bed) -> None:
+    _write(bed.root, PLAN_REL, DONE_PLAN)
+    _commit(bed.root, "done in place")
+    world, ask, req = _door(bed, {"hostinger"}, plan=PLAN_REL)
+    with pytest.raises(LP.RequestError, match="is finished"):
+        bed.record(req, world=world)
+    assert ask.asked == [], "the door is for _done/ plans alone"
+    assert bed.fake.calls == []
+
+
+@pytest.mark.parametrize(
+    ("rc", "stdout", "want"),
+    [
+        (0, f"96 control(s) passed\nowed {DONE_REL} hostinger\n", frozenset({"hostinger"})),
+        (1, "96 control(s) passed\n", frozenset()),
+        (77, "", None),
+        (0, "96 control(s) passed\n", None),
+        (2, "owed x hostinger\n", None),
+    ],
+    ids=["owed", "nothing", "cannot-run", "rc0-no-line", "control-failed"],
+)
+def test_lp6_owed_reads_the_gate_and_fails_closed(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: pathlib.Path,
+    rc: int,
+    stdout: str,
+    want: frozenset[str] | None,
+) -> None:
+    seen: list[list[str]] = []
+
+    def fake(argv: Sequence[str], _cwd: pathlib.Path, _timeout: int, _env: Any = None) -> LP.Result:
+        seen.append(list(argv))
+        return LP.Result(rc, stdout, "CANNOT RUN: no merge-base\n" if rc == 77 else "")
+
+    monkeypatch.setattr(LP, "run_subprocess", fake)
+    if want is None:
+        with pytest.raises(LP.RequestError, match=f"exited {rc}"):
+            LP._lp6_owed(tmp_path, DONE_REL)
+    else:
+        assert LP._lp6_owed(tmp_path, DONE_REL) == want
+    assert seen[0][-2:] == ["--owed", DONE_REL]

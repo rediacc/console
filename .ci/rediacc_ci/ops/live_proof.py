@@ -7,6 +7,8 @@ RECORD. A dry run is the default; `--write` appends the row to `agent/ledgers/li
 
 What a request must name, all checked before anything runs: a live plan under `agent/plans/` whose `Live-Proof:` line declares the target; an open box of that plan (`--box`, its signature) whose `Accept: live-proof <target> <check-id> [args]` sub-line names this target, check and arguments; a registry check that runs on the target (`tiers.live.checks`, fixed argv, no passthrough); a machine alias from `tiers.live.targets.<target>.machines`, if any; and at least one surface the plan's Owns hit (`surfaces.owns_surfaces`) that the check covers and the target admits. Those surfaces are the row's.
 
+THE `_done/` DOOR (operator ruling #827dc647). A finished plan directly under `agent/plans/_done/` is admitted only when `check_plan_live_proof.py --owed <rel>` names the target (LP6 says this branch finished it without that receipt), the plan is not a stub, and the plan its `(moved <when> to <plan>) LP-<target>` note names (in the working text or at HEAD) no longer holds the box open. Only that plan is read: box signatures repeat across plans whose LP box text is templated. The plan never moves: its LP box comes back byte-identical and is recorded and ticked in place, and every check below applies unchanged. An `--owed` that cannot answer refuses the request. `_removed/` is never admitted.
+
 Then, in order, each a refusal that stops the run:
   1. identity: `receipt.identity` of those surfaces (a renet-hash check rebuilds `bin/renet` once through its registry `rebuild` argv), judged by `receipt.identity_refusal` (dirty-tree, checkout-mismatch, modified-checkout, build-mismatch, modified-build);
   2. the ladder: a VM phase of `live_tier.ladder_phases` (a row surface's, or the renet phase of a renet-hash deploy, which provisions renet on a real machine even for a CLI-only plan) needs `vm_tier.admit` to admit the head tree (no live run before the ops VMs pass it); the row records the VM run id;
@@ -54,6 +56,15 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Mapping, Sequence
 
 PLANS_DIR = "agent/plans/"
+DONE_DIR = "agent/plans/_done/"
+LP_GATE = (".ci", "scripts", "quality", "check_plan_live_proof.py")
+# `check_plan_live_proof.py --owed` exit codes: 0 with `owed <rel> <target>` lines, 1 nothing owed.
+OWED_NONE = 1
+OWED_TIMEOUT_S = 300
+# The note a plan keeps where an LP box was carried out of it: `(moved 2026-11-08 to agent/plans/PLAN-x.md) LP-hostinger`.
+MOVED_NOTE_RE = re.compile(
+    r"\(moved [^)]*?\bto (agent/plans/[\w./-]+?\.md)\)\s*LP-([A-Za-z0-9_-]+)"
+)
 BENCH_PROFILE = deploy_bench.PROFILE
 BY_MAX = 32
 EXIT_VERIFIED = 0
@@ -103,6 +114,27 @@ def run_subprocess(
     return Result(proc.returncode, proc.stdout or "", proc.stderr or "")
 
 
+def _lp6_owed(root: pathlib.Path, rel: str) -> frozenset[str]:
+    """The targets LP6 says the finished plan `rel` still owes on this branch, read from `check_plan_live_proof.py --owed`, the gate's own judgement. Any answer but 0 with owed lines or 1 (77 when the gate cannot reach a merge-base, a failed control, a crash) raises RequestError: a door that cannot ask stays shut."""
+    gate = root.joinpath(*LP_GATE)
+    argv = [sys.executable, str(gate), "--root", str(root), "--owed", rel]
+    result = run_subprocess(argv, root, OWED_TIMEOUT_S)
+    if result.rc == OWED_NONE:
+        return frozenset()
+    found = [
+        parts[2]
+        for parts in (ln.split() for ln in result.stdout.splitlines())
+        if len(parts) == 3 and parts[0] == "owed"
+    ]
+    if result.rc != 0 or not found:
+        tail = (result.stderr.strip() or result.stdout.strip())[-600:]
+        raise RequestError(
+            f"cannot ask LP6 what {rel} owes: `{' '.join(argv[1:])}` exited {result.rc}"
+            f"{' with no owed line' if result.rc == 0 else ''}; {tail or '(no output)'}"
+        )
+    return frozenset(found)
+
+
 @dataclasses.dataclass
 class World:
     """Everything the recorder reaches outside the process, replaceable in tests."""
@@ -110,6 +142,7 @@ class World:
     run: Callable[..., Result] = run_subprocess
     read_build: Callable[[pathlib.Path], str | None] = S.go_version_m
     admit: Callable[..., R.Verdict] = vm_tier.admit
+    owed: Callable[[pathlib.Path, str], frozenset[str]] = _lp6_owed
     now: Callable[[], str] = lambda: datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
     environ: Mapping[str, str] = dataclasses.field(default_factory=lambda: dict(os.environ))
 
@@ -146,10 +179,65 @@ class _Plan:
     accept: LT.Accept
 
 
-def _read_plan(root: pathlib.Path, req: Request, check: LT.Check) -> _Plan:
+def _is_done_plan(rel: str) -> bool:
+    """A plan file directly under `agent/plans/_done/`: the one finished folder whose plan can still owe a receipt (never `_removed/`, never a climb out)."""
+    rest = rel[len(DONE_DIR) :]
+    return rel.startswith(DONE_DIR) and rest.endswith(".md") and "/" not in rest and ".." not in rel
+
+
+def _interim_homes(root: pathlib.Path, rel: str, text: str, target: str) -> list[str]:
+    """The plans a `(moved <when> to <plan>) LP-<target>` note in `rel` names, read from the working text and from HEAD's (the note is replaced when the box comes back, and HEAD still holds it until that commit lands). A path whose plan has since moved to `_done/` is followed there."""
+    head = S.make_git(root)(["show", f"HEAD:{rel}"]) or ""
+    out: list[str] = []
+    for m in MOVED_NOTE_RE.finditer(text + "\n" + head):
+        if m.group(2) != target:
+            continue
+        home = m.group(1)
+        if not (root / home).is_file():
+            home = DONE_DIR + home.rsplit("/", 1)[-1]
+        if home != rel and home not in out:
+            out.append(home)
+    return out
+
+
+def _open_elsewhere(root: pathlib.Path, homes: Sequence[str], sig: str) -> str | None:
+    """The first interim home that still holds box `sig` OPEN, or None. A box moved back into a `_done/` plan must leave the plan it was moved to: two open copies are two places it could be ticked.
+
+    Only the plans a move note names are read, never every plan: box signatures are not unique across plans. A templated box (`LP-hostinger [live] Fresh hostinger receipt through --config eu-bench ...`) reads the same in eleven live plans on 2026-11-10, so a tree-wide scan refused every restore."""
+    for home in homes:
+        try:
+            text = (root / home).read_text(encoding="utf-8")
+        except OSError:
+            continue
+        if any(b.sig == sig and not b.done for b in D.plan_boxes(text)):
+            return home
+    return None
+
+
+def _done_door(root: pathlib.Path, req: Request, world: World, header: Any, text: str) -> None:
+    """Admit a finished `_done/` plan only for a target LP6 says it still owes, and only when the box is not still open in another plan; RequestError otherwise. The plan never moves: its box comes back byte-identical and is recorded and ticked in place (operator ruling #827dc647)."""
     rel = req.plan
+    try:
+        finished = header.status in D.finished_states()
+    except ImportError:
+        finished = False
+    if not finished or req.target not in world.owed(root, rel):
+        raise RequestError(
+            f"{rel} is not a live plan, and no LP6 finding on this branch owes it a {req.target} receipt"
+        )
+    elsewhere = _open_elsewhere(root, _interim_homes(root, rel, text, req.target), req.box)
+    if elsewhere is not None:
+        raise RequestError(f"box {req.box} is still open in {elsewhere}; move it, do not copy it")
+
+
+def _read_plan(root: pathlib.Path, req: Request, check: LT.Check, world: World) -> _Plan:
+    rel = req.plan
+    done = _is_done_plan(rel)
     if not (
-        rel.startswith(PLANS_DIR) and rel.endswith(".md") and "/_" not in rel and ".." not in rel
+        rel.startswith(PLANS_DIR)
+        and rel.endswith(".md")
+        and ("/_" not in rel or done)
+        and ".." not in rel
     ):
         raise RequestError(f"--plan {rel!r} is not a live plan under {PLANS_DIR}")
     try:
@@ -159,14 +247,17 @@ def _read_plan(root: pathlib.Path, req: Request, check: LT.Check) -> _Plan:
     header = D.parse_header(text)
     if D.is_stub_header(header):
         raise RequestError(f"{rel} is a stub, not a live plan")
-    try:
-        finished = header.status in D.finished_states()
-    except ImportError:
-        finished = False
-    if finished:
-        raise RequestError(
-            f"{rel} is finished (Status: {header.status}); a receipt closes an open box"
-        )
+    if done:
+        _done_door(root, req, world, header, text)
+    else:
+        try:
+            finished = header.status in D.finished_states()
+        except ImportError:
+            finished = False
+        if finished:
+            raise RequestError(
+                f"{rel} is finished (Status: {header.status}); a receipt closes an open box"
+            )
     proof = header.live_proof
     if proof is None or req.target not in proof.targets:
         declared = ", ".join(proof.targets) if proof is not None and proof.targets else "none"
@@ -467,7 +558,7 @@ def record(
     world = world or World()
     checks = LT.registry() if checks is None else checks
     check = _validate_request(req, checks)
-    plan = _read_plan(root, req, check)
+    plan = _read_plan(root, req, check, world)
     req = dataclasses.replace(req, by=_by(req, world.environ))
     names = LT.row_surfaces(plan.touched, check, req.target)
     if not names:
@@ -597,6 +688,11 @@ def _base(root: pathlib.Path) -> str:
     return ""
 
 
+def _basename(rel: str) -> str:
+    """A plan's identity across its folders: a row recorded at `agent/plans/` or `agent/plans/_done/` names the same plan, as check_plan_live_proof.matching_rows reads it."""
+    return rel.rsplit("/", 1)[-1]
+
+
 def verify(
     root: pathlib.Path,
     plan: str | None = None,
@@ -620,7 +716,7 @@ def verify(
             bad += 1
             lines.append(f"INVALID line {entry.lineno}: {entry.error}")
             continue
-        if plan is not None and entry.row.get("plan") != plan:
+        if plan is not None and _basename(str(entry.row.get("plan") or "")) != _basename(plan):
             continue
         judged += 1
         problems = LT.validate_row(entry.row, checks=checks, root=root, successor_of=successor_of)

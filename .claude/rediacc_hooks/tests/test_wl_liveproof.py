@@ -398,14 +398,42 @@ def test_refusals_run_no_recorder(root, capsys, args, needle):
     assert needle in capsys.readouterr().err
 
 
-def test_a_plan_outside_the_live_folder_is_refused(root, capsys):
+def test_a_done_plan_reaches_the_recorder_which_decides(root):
+    """A `_done/` plan is the recorder's to admit or refuse (it asks LP6 what the plan still owes), so the verb hands it over unchanged."""
     done = root / "agent" / "plans" / "_done" / "PLAN-old.md"
     done.parent.mkdir()
-    done.write_text(PLAN, encoding="utf-8")
+    done.write_text(PLAN.replace("Status: in-progress", "Status: done"), encoding="utf-8")
     rc, rec, _tick = _run(root, "agent/plans/_done/PLAN-old.md", "LP-bench")
+    assert rc == 0
+    argv = rec.calls[0]
+    assert argv[argv.index("--plan") + 1] == "agent/plans/_done/PLAN-old.md"
+
+
+@pytest.mark.parametrize(
+    "rel", ["agent/plans/_removed/PLAN-old.md", "agent/plans/_done/nested/PLAN-old.md", "PLAN-x.md"]
+)
+def test_a_plan_outside_the_admitted_folders_is_refused(root, capsys, rel):
+    path = root / rel
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(PLAN, encoding="utf-8")
+    rc, rec, _tick = _run(root, str(path), "LP-bench")
     assert rc == 2
     assert rec.calls == []
-    assert "not a live plan" in capsys.readouterr().err
+    assert "is not a plan under agent/plans/" in capsys.readouterr().err
+
+
+def test_a_stub_names_its_moved_to_path(root, capsys):
+    stub = root / "agent" / "plans" / "PLAN-gone.md"
+    stub.write_text(
+        "# PLAN: gone\n\nStatus: moved\nMoved-To: agent/plans/_done/PLAN-gone.md\n",
+        encoding="utf-8",
+    )
+    rc, rec, _tick = _run(root, "agent/plans/PLAN-gone.md", "LP-bench")
+    assert rc == 2
+    assert rec.calls == []
+    assert "a stub; its plan is agent/plans/_done/PLAN-gone.md, pass that path" in (
+        capsys.readouterr().err
+    )
 
 
 def test_bare_plan_name_resolves_under_agent_plans(root):

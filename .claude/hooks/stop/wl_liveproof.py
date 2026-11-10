@@ -18,6 +18,7 @@ import subprocess
 import sys
 from typing import TYPE_CHECKING, Any
 
+import wl_plandeps as PD
 import wl_planrec as R
 
 if TYPE_CHECKING:
@@ -51,6 +52,7 @@ ACCEPT_ANY_RE = re.compile(r"\bAccept:\s*(.*?)\s*$")
 _BOX_LINE = re.compile(r"^\s*[-*]\s+\[[ xX?>]\]\s")
 _HEADING = re.compile(r"^#{1,6}\s")
 PLANS_DIR = "agent/plans/"
+DONE_SUB = "_done/"
 LEDGER_REL = "agent/ledgers/live-proof.jsonl"
 FORM = "`live-proof <target> <check> [machine=<alias>]`"
 
@@ -121,8 +123,19 @@ def parse_accept(text: str, line: int, lt: Any = None) -> tuple[str, str, str | 
     return accept.target, accept.check, machine
 
 
+def _admitted_path(out: str) -> bool:
+    """A plan file directly under agent/plans/ or agent/plans/_done/. A `_done/` plan reaches the recorder, which admits it only for a target LP6 still owes (operator ruling #827dc647); `_removed/` and anything outside agent/plans/ never do."""
+    if not out.endswith(".md"):
+        return False
+    rest = out[len(PLANS_DIR) :] if out.startswith(PLANS_DIR) else None
+    if rest is None:
+        return False
+    rest = rest.removeprefix(DONE_SUB)
+    return "/" not in rest and not rest.startswith("_")
+
+
 def resolve_plan(root: pathlib.Path, rel: str) -> str:
-    """The plan's path relative to `root`, under agent/plans/ and outside `_done/`/`_removed/`. RefusedError otherwise."""
+    """The plan's path relative to `root`: a file directly under agent/plans/ or agent/plans/_done/, and not a stub. RefusedError otherwise; a stub names the plan its `Moved-To:` points at."""
     p = pathlib.Path(rel)
     cands = [p] if p.is_absolute() else [root / p, root / PLANS_DIR / p]
     for c in cands:
@@ -131,8 +144,15 @@ def resolve_plan(root: pathlib.Path, rel: str) -> str:
         except ValueError:
             continue
         if c.is_file():
-            if not out.startswith(PLANS_DIR) or "/_" in out or not out.endswith(".md"):
-                raise RefusedError("%s is not a live plan under %s" % (out, PLANS_DIR))
+            if not _admitted_path(out):
+                raise RefusedError(
+                    "%s is not a plan under %s or %s%s" % (out, PLANS_DIR, PLANS_DIR, DONE_SUB)
+                )
+            header = PD.parse_header(c.read_text(encoding="utf-8", errors="replace"))
+            if PD.is_stub_header(header):
+                raise RefusedError(
+                    "%s is a stub; its plan is %s, pass that path" % (out, header.moved_to)
+                )
             return out
     raise RefusedError("unknown plan %r: no such file under %s" % (rel, root / PLANS_DIR))
 

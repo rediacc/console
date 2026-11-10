@@ -38,6 +38,11 @@ THE RULES, EACH WITH A PLANTED CONTROL IN `--selftest`:
         `Ruling:` line resolves and names the live-proof waiver. An LP box already
         ticked at the base, and ticked through the whole branch, was judged by LP4/LP5
         on the branch that ticked it, so LP6 does not judge its receipt again.
+        THE DOOR for a finished plan that still owes a receipt is in place, and the
+        plan never moves: move its LP box back into the `_done/` plan byte-identical
+        (same signature, open), then `worklist.py --live-proof <me> <rel> <sig> --write
+        --tick` in the same commit. The recorder admits a `_done/` plan only for a
+        target `--owed` names, and LP4/LP5 judge the restored tick like any other.
     LP7 vacuity: the surface map or the live registry is empty or unparsable,
         `baseline_at` is unset or not a date, a surface admits a target that no
         registry check covers, an Accept line names a check the registry lacks, or
@@ -59,6 +64,10 @@ Exit codes: 0 green, 1 findings, 2 a control failed or bad usage, 77 cannot run.
     --proof-map <path>    read baseline_at and the registry for LP7 from another map
                           (what-if; the surfaces themselves are the committed map's)
     --baseline-at <date>  override baseline_at (what-if)
+    --owed <rel>          the LP6 half alone for one plan: print `owed <rel> <target>` per
+                          declared target with no valid receipt. Exit 0 with lines, 1 when
+                          nothing is owed, 77 when LP6 cannot run (no merge-base, or
+                          plan-boxes.json unreadable). The recorder's `_done/` door reads it.
 
 ---- gate ----
 step: Plan live proof
@@ -116,7 +125,7 @@ REPO_ROOT = paths.repo_root()
 BOXES_REL = ".ci/config/plan-boxes.json"
 MAP_REL = ".ci/config/proof-tiers.json"
 CANNOT_RUN = 77
-CONTROL_FLOOR = 80
+CONTROL_FLOOR = 96
 LP_BOX_RE = re.compile(r"^LP-([A-Za-z0-9_-]+)\b(.*)$")
 LIVE_MARK = "[live]"
 # A Ruling line that waives the live proof names it in so many words.
@@ -579,6 +588,25 @@ def _has_receipt(
     return False
 
 
+def owed_targets(
+    plan: Plan,
+    rows: list[dict[str, Any]],
+    commit: str,
+    oracles: Oracles,
+    resolvers: tuple[Callable[[Plan], tuple[bool, str]], Callable[[Plan], tuple[bool, str]]],
+    baseline: object,
+) -> list[str]:
+    """The declared targets of one plan this branch finished in `commit` that have no valid receipt: LP6's per-plan judgement, which `finish_findings` words and `--owed` prints. [] when the finish is not after `baseline`, a `Ruling:` names the live-proof waiver, or the plan declares no target (a missing line and a `none` are judged by `finish_findings` itself, since neither owes a receipt for a target)."""
+    if not PI.after_baseline(baseline, oracles.date_of(commit) if commit else ""):
+        return []
+    if ruling_waives(plan, resolvers[0]):
+        return []
+    proof = plan.header.live_proof
+    if proof is None or proof.none:
+        return []
+    return [t for t in proof.targets if not _has_receipt(plan, t, rows, commit, oracles)]
+
+
 def finish_findings(
     finished: Iterable[tuple[str, str]],
     plans: dict[str, Plan],
@@ -628,12 +656,12 @@ def finish_findings(
             Finding(
                 "LP6",
                 rel,
-                "finished in %s without a valid receipt for its declared target %s; record it "
-                "while the plan is live (worklist.py --live-proof) or close under a Ruling: "
-                "naming the live-proof waiver" % (commit[:12], target),
+                "finished in %s without a valid receipt for its declared target %s; move its "
+                "LP box back into this plan byte-identical, then worklist.py --live-proof <me> "
+                "%s <sig> --write --tick in the same commit, or close under a Ruling: naming "
+                "the live-proof waiver" % (commit[:12], target, rel),
             )
-            for target in proof.targets
-            if not _has_receipt(plan, target, rows, commit, oracles)
+            for target in owed_targets(plan, rows, commit, oracles, resolvers, baseline)
         )
     return out
 
@@ -899,36 +927,17 @@ def _skip_finding(why: str) -> Finding:
     )
 
 
-def transitions(ctx: Context, base_override: str | None) -> tuple[list[Finding], str]:
-    """LP4 to LP6 and the summary line that says what they judged (or why they did not run)."""
-    root = ctx.root
-    base = base_of(root, base_override)
-    head_plans = boxes_at(root, None)
-    base_plans = boxes_at(root, base) if base else None
-    # A skip is a finding, never a green: with no base LP4 to LP6 judge nothing, and every tick on the branch would pass unchecked.
-    if not base:
-        why = "no merge-base to judge transitions against"
-        return [_skip_finding(why)], "SKIPPED: " + why
-    if head_plans is None or base_plans is None:
-        where = "HEAD" if head_plans is None else base[:12]
-        why = "%s is unreadable at %s" % (BOXES_REL, where)
-        return [_skip_finding(why)], "SKIPPED: " + why
-    memo: dict[str, list] = {}
+def is_finished(row: dict[str, Any], rel: str) -> bool:
+    """A plan-boxes row is finished by its Status or by sitting in a finished folder."""
+    return row.get("status") in PF.FINISHED_STATES or rel.rsplit("/", 1)[0] in FINISHED_FOLDERS
 
-    def history() -> list[tuple[str, dict[str, Any]]]:
-        if "h" not in memo:
-            memo["h"] = branch_history(root, base)
-        return memo["h"]
 
-    oracles = _transition_oracles(ctx, base, history, base_plans)
-    tally: dict[str, int] = {}
-    judged = PI.moved_to_done(base_plans, head_plans)
-    found = tick_findings(judged, ctx.plans, ctx.rows, ctx.view.baseline_at, oracles, tally)
-    states = PF.FINISHED_STATES
-
-    def is_finished(row: dict[str, Any], rel: str) -> bool:
-        return row.get("status") in states or rel.rsplit("/", 1)[0] in FINISHED_FOLDERS
-
+def finished_pairs(
+    base_plans: dict[str, Any],
+    head_plans: dict[str, Any],
+    history: Callable[[], list[tuple[str, dict[str, Any]]]],
+) -> list[tuple[str, str]]:
+    """[(head rel, finishing commit)] for every plan this branch finished: the commit is the first of the latest unbroken run of branch commits in which the plan's identity reads finished ("" when the finish is uncommitted)."""
     pairs = []
     for rel in finished_on_branch(base_plans, head_plans, is_finished):
         ident = identity(rel)
@@ -943,6 +952,56 @@ def transitions(ctx: Context, base_override: str | None) -> tuple[list[Finding],
             )
 
         pairs.append((rel, first_of_latest_run(history(), done)))
+    return pairs
+
+
+@dataclasses.dataclass
+class Branch:
+    """What LP4 to LP6 read from git: the merge-base, plan-boxes.json at it and at HEAD, and the memoised branch history."""
+
+    base: str
+    base_plans: dict[str, Any]
+    head_plans: dict[str, Any]
+    history: Callable[[], list[tuple[str, dict[str, Any]]]]
+
+
+def branch_of(root: pathlib.Path, base_override: str | None) -> Branch | str:
+    """The Branch, or the reason LP4 to LP6 cannot run (no merge-base, or plan-boxes.json unreadable)."""
+    base = base_of(root, base_override)
+    if not base:
+        return "no merge-base to judge transitions against"
+    head_plans = boxes_at(root, None)
+    base_plans = boxes_at(root, base)
+    if head_plans is None or base_plans is None:
+        where = "HEAD" if head_plans is None else base[:12]
+        return "%s is unreadable at %s" % (BOXES_REL, where)
+    memo: dict[str, list] = {}
+
+    def history() -> list[tuple[str, dict[str, Any]]]:
+        if "h" not in memo:
+            memo["h"] = branch_history(root, base)
+        return memo["h"]
+
+    return Branch(base, base_plans, head_plans, history)
+
+
+def transitions(ctx: Context, base_override: str | None) -> tuple[list[Finding], str]:
+    """LP4 to LP6 and the summary line that says what they judged (or why they did not run)."""
+    branch = branch_of(ctx.root, base_override)
+    # A skip is a finding, never a green: with no base LP4 to LP6 judge nothing, and every tick on the branch would pass unchecked.
+    if isinstance(branch, str):
+        return [_skip_finding(branch)], "SKIPPED: " + branch
+    base, base_plans, head_plans, history = (
+        branch.base,
+        branch.base_plans,
+        branch.head_plans,
+        branch.history,
+    )
+    oracles = _transition_oracles(ctx, base, history, base_plans)
+    tally: dict[str, int] = {}
+    judged = PI.moved_to_done(base_plans, head_plans)
+    found = tick_findings(judged, ctx.plans, ctx.rows, ctx.view.baseline_at, oracles, tally)
+    pairs = finished_pairs(base_plans, head_plans, history)
     found += finish_findings(
         pairs,
         ctx.plans,
@@ -1014,6 +1073,39 @@ def evaluate(
         "transitions": line,
     }
     return findings, notes, stats
+
+
+def owed(
+    root: pathlib.Path, view: MapView, base_override: str | None, rel: str
+) -> list[tuple[str, str]]:
+    """[(plan rel, target)] LP6 owes for the plan whose identity is `rel`'s: plans, rows and the map read the way `evaluate` reads them, then only the LP6 half. CannotRunError when LP6 cannot run, since an empty answer there would read as "nothing owed"."""
+    plans = load_plans(root, PF.FINISHED_STATES)
+    if not plans:
+        raise CannotRunError("zero plans parsed under %s" % (root / D.PLANS_DIR))
+    rows, _bad = read_rows(root)
+    ctx = Context(root, view, plans, rows)
+    branch = branch_of(root, base_override)
+    if isinstance(branch, str):
+        raise CannotRunError("LP6 cannot run (%s)" % branch)
+    oracles = _transition_oracles(ctx, branch.base, branch.history, branch.base_plans)
+    ident = identity(rel)
+    out: list[tuple[str, str]] = []
+    for head_rel, commit in finished_pairs(branch.base_plans, branch.head_plans, branch.history):
+        plan = plans.get(head_rel)
+        if identity(head_rel) != ident or plan is None or not plan.touched:
+            continue
+        out.extend(
+            (head_rel, target)
+            for target in owed_targets(
+                plan,
+                rows,
+                commit,
+                oracles,
+                (ctx.resolve_ruling, ctx.resolve_waiver),
+                view.baseline_at,
+            )
+        )
+    return out
 
 
 # ----------------------------------------------------------------------------- selftest
@@ -1554,6 +1646,55 @@ class _Suite:
             "c",
         )
 
+    def owed_door(self) -> None:
+        """The `_done/` door: a finished plan owes a target until its LP box comes back, is ticked, and a matching row the judge accepts proves it."""
+        c = self.c
+        oracles, row = self.oracles, self.row
+        resolvers = (_refused, _ok)
+        moved = _fixture(
+            rel=_FX_DONE, status="done", boxes="(moved 2026-11-08 to PLAN-other.md) LP-bench\n"
+        )
+        c.check(
+            "owed: a finished _done plan whose LP box was moved out owes its target",
+            owed_targets(moved, [], _C, oracles(), resolvers, _BASE),
+            ["bench"],
+        )
+        back = _fixture(rel=_FX_DONE, status="done", boxes=_GOOD_BOX.replace("- [ ]", "- [x]"))
+        sig = lp_boxes(back)[0][1].sig
+        mine = {**row, "plan": _FX_DONE, "box": sig}
+        c.check(
+            "owed: box restored and ticked with a matching accepted row owes nothing",
+            owed_targets(back, [mine], _C, oracles(), resolvers, _BASE),
+            [],
+        )
+        c.check(
+            "owed: CONTROL restored and ticked with no row still owes",
+            owed_targets(back, [], _C, oracles(), resolvers, _BASE),
+            ["bench"],
+        )
+        c.check(
+            "owed: CONTROL the restored tick with no row is LP4",
+            _codes(tick_findings([(_FX_DONE, sig)], {_FX_DONE: back}, [], _BASE, oracles())),
+            ["LP4"],
+        )
+        c.check(
+            "owed: CONTROL a row for another plan with the same sig and Accept is no receipt",
+            owed_targets(
+                back,
+                [{**mine, "plan": "agent/plans/PLAN-other.md"}],
+                _C,
+                oracles(),
+                resolvers,
+                _BASE,
+            ),
+            ["bench"],
+        )
+        c.check(
+            "owed: CONTROL a row the judge rejects still owes",
+            owed_targets(back, [mine], _C, oracles(problems=["bad id"]), resolvers, _BASE),
+            ["bench"],
+        )
+
     def forward_only(self) -> None:
         c = self.c
         day = dt.date(2026, 10, 28)
@@ -1592,6 +1733,7 @@ class _Suite:
             self.transitions,
             self.judge,
             self.lp6,
+            self.owed_door,
             self.forward_only,
         ):
             part()
@@ -1605,6 +1747,28 @@ def selftest() -> bool:
 # ----------------------------------------------------------------------------- main
 
 
+def _owed_main(root: pathlib.Path, view: MapView, base: str | None, rel: str) -> int:
+    """`--owed <rel>`: 0 with one `owed <rel> <target>` line per owed target, 1 when nothing is owed, 77 when LP6 cannot run."""
+    if parse_baseline(view.baseline_at) is None:
+        # No forward-only cut: every finish would read as exempt, which is "nothing owed" by default rather than by judgement.
+        print(
+            "CANNOT RUN: tiers.live.baseline_at is %r, not a date" % (view.baseline_at,),
+            file=sys.stderr,
+        )
+        return CANNOT_RUN
+    try:
+        found = owed(root, view, base, rel)
+    except CannotRunError as exc:
+        print("CANNOT RUN: %s" % exc, file=sys.stderr)
+        return CANNOT_RUN
+    for plan_rel, target in found:
+        print("owed %s %s" % (plan_rel, target))
+    if not found:
+        print("nothing owed: no LP6 finding on this branch for %s" % rel, file=sys.stderr)
+        return 1
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="check:ci-plan-live-proof (LP1 to LP7)")
     ap.add_argument("--selftest", action="store_true")
@@ -1612,6 +1776,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--base", default=None)
     ap.add_argument("--proof-map", default=None)
     ap.add_argument("--baseline-at", default=None)
+    ap.add_argument("--owed", default=None, metavar="REL")
     args = ap.parse_args(argv)
 
     if controls.controls_first("plan live proof", lambda: not selftest()):
@@ -1629,6 +1794,8 @@ def main(argv: list[str] | None = None) -> int:
     view = map_view(raw)
     if args.baseline_at is not None:
         view.baseline_at = args.baseline_at
+    if args.owed is not None:
+        return _owed_main(root, view, args.base, args.owed)
     try:
         findings, notes, stats = evaluate(root, view, args.base)
     except CannotRunError as exc:

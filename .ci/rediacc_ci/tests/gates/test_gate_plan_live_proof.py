@@ -131,7 +131,9 @@ def _gate(root: pathlib.Path, map_path: pathlib.Path, *argv: str) -> harness.Run
     )
 
 
-def _gate_on_base(root: pathlib.Path, map_path: pathlib.Path, base: str) -> harness.RunResult:
+def _gate_on_base(
+    root: pathlib.Path, map_path: pathlib.Path, base: str, *argv: str
+) -> harness.RunResult:
     return harness.run(
         [
             sys.executable,
@@ -142,6 +144,7 @@ def _gate_on_base(root: pathlib.Path, map_path: pathlib.Path, base: str) -> harn
             base,
             "--proof-map",
             str(map_path),
+            *argv,
         ],
         cwd=paths.repo_root(),
     )
@@ -362,3 +365,98 @@ def test_zero_live_plans_cannot_run(gate, tmp_path):
     gate.assert_exit(77, result, "zero parsed plans is CANNOT RUN, never green")
     gate.assert_contains(result.err, "CANNOT RUN", "and says so")
     gate.log_pass("an empty corpus cannot run")
+
+
+# --------------------------------------------------------------------------- --owed, the recorder's `_done/` door
+
+DONE_REL = "agent/plans/_done/PLAN-acct.md"
+MOVED_LINE = "(moved 2026-11-02 to agent/plans/PLAN-docs.md) LP-bench\n"
+
+
+def _owed(root: pathlib.Path, map_path: pathlib.Path, base: str = "main") -> harness.RunResult:
+    return _gate_on_base(root, map_path, base, "--owed", DONE_REL)
+
+
+def _finish_box_moved_out(root: pathlib.Path) -> None:
+    """Tick T1 and move the account plan to `_done/` with a done Status, its LP box carried out as a plain line: the shape PLAN-hostinger-upgrade-followups closed in."""
+    plan = root / "agent" / "plans" / "PLAN-acct.md"
+    text = (
+        plan.read_text(encoding="utf-8")
+        .replace("Status: in-progress", "Status: done")
+        .replace("- [ ] T1", "- [x] T1")
+        .replace(LP_BOX, MOVED_LINE)
+    )
+    plan.unlink()
+    _write(root, DONE_REL, text)
+    _commit(root, "close the plan with its LP box moved out", AFTER)
+
+
+def test_owed_names_the_target_a_plan_finished_on_the_branch_still_owes(gate, tmp_path):
+    root = _seed(tmp_path)
+    _finish_box_moved_out(root)
+    map_path = _map(tmp_path)
+    result = _owed(root, map_path)
+    gate.assert_exit(0, result, "the plan finished on the branch with no receipt")
+    gate.assert_contains(result.out, "owed %s bench" % DONE_REL, "one owed line per target")
+    verdict = _gate(root, map_path)
+    gate.assert_exit(1, verdict, "the gate agrees")
+    gate.assert_contains(verdict.err, "LP6 %s" % DONE_REL, "LP6 names the plan")
+    gate.assert_contains(verdict.err, "byte-identical", "LP6 names the door")
+    gate.log_pass("--owed names the owed target and the gate fires LP6 on the same plan")
+
+
+def test_owed_is_silent_for_a_plan_finished_at_the_base(gate, tmp_path):
+    """CONTROL: the same `_done/` plan, finished on `main` before the branch began, is not this branch's finish, so nothing is owed here."""
+    root = tmp_path / "tree"
+    root.mkdir()
+    _git(root, "init", "-q", "-b", "main")
+    text = (
+        _plan("acct")
+        .replace("Status: in-progress", "Status: done")
+        .replace("- [ ] T1", "- [x] T1")
+        .replace(LP_BOX, MOVED_LINE)
+    )
+    _write(root, DONE_REL, text)
+    _write(
+        root, "agent/plans/PLAN-docs.md", _plan("docs", owns="docs/fixture/**", line=None, box="")
+    )
+    _commit(root, "seed", AFTER)
+    _git(root, "checkout", "-q", "-b", "work")
+    _write(root, "docs/fixture/x.md", "x\n")
+    _commit(root, "an unrelated change", AFTER)
+    result = _owed(root, _map(tmp_path))
+    gate.assert_exit(1, result, "a finish at the base owes nothing on this branch")
+    gate.assert_eq("owed " in result.out, False, "no owed line: %r" % result)
+    gate.log_pass("--owed is 1 for a plan finished at the base")
+
+
+def test_a_box_moved_back_and_ticked_with_no_row_is_lp4_and_lp6(gate, tmp_path):
+    """CONTROL: restoring the box and ticking it is not a receipt. The tick is judged by LP4 and the finish still owes."""
+    root = _seed(tmp_path)
+    _finish_box_moved_out(root)
+    done = root / DONE_REL
+    done.write_text(
+        done.read_text(encoding="utf-8").replace(
+            MOVED_LINE, LP_BOX.replace("- [ ] LP-bench", "- [x] LP-bench")
+        ),
+        encoding="utf-8",
+    )
+    _commit(root, "move the LP box back and tick it", AFTER)
+    map_path = _map(tmp_path)
+    verdict = _gate(root, map_path)
+    gate.assert_exit(1, verdict, "a restored tick with no row")
+    gate.assert_contains(verdict.err, "LP4 %s" % DONE_REL, "the tick is LP4")
+    gate.assert_contains(verdict.err, "LP6 %s" % DONE_REL, "the finish still owes")
+    owed = _owed(root, map_path)
+    gate.assert_exit(0, owed, "still owed")
+    gate.log_pass("a restored, ticked box with no row is LP4 plus LP6")
+
+
+def test_owed_with_no_merge_base_cannot_run(gate, tmp_path):
+    """CONTROL: with no merge-base `--owed` cannot judge, and an empty answer there would read as nothing owed, so it is 77."""
+    root = _seed(tmp_path)
+    _finish_box_moved_out(root)
+    result = _owed(root, _map(tmp_path), base="no-such-ref")
+    gate.assert_exit(77, result, "no merge-base is CANNOT RUN")
+    gate.assert_contains(result.err, "no merge-base", "and names why")
+    gate.log_pass("--owed with no merge-base is 77")
