@@ -253,8 +253,10 @@ def enforcer_state(root, pointer, ctx):
     return True, bool(inner), "trap %s %s" % (token, state)
 
 
-def classify(root, enforced, ctx):
+def classify(root, enforced, ctx, own_id=""):
     """{"class", "basis", "pointer", "why"} for one entry's Enforced-By value.
+
+    An entry whose pointer is `shape:<its own id>` is the rule's own data (its Shape: lines are what the guard loads), so it is kept, never retired: deleting it would delete the enforcement.
 
     retire-now is the one mechanical verdict: a live pointer whose enforcer is tested. JUDGMENT-ONLY alone is keep-as-prose by declaration. Everything else is provisional (`basis: curator`): a dead or untested enforcer gets the class of the mechanism to finish (KIND_CLASS), and an entry with no Enforced-By gets keep-as-prose until the lesson-curator judges it.
     """
@@ -272,6 +274,14 @@ def classify(root, enforced, ctx):
     for pointer in pointers:
         if pointer == JUDGMENT_ONLY:
             continue
+        kind, _sep, target = pointer.partition(":")
+        if own_id and kind.strip() == "shape" and target.strip() == own_id:
+            return {
+                "class": "keep-as-prose",
+                "basis": "declared",
+                "pointer": pointer,
+                "why": "the entry carries its own Shape: lines, so it is the enforcer's data",
+            }
         live, tested, why = enforcer_state(root, pointer, ctx)
         if live and tested:
             return {"class": "retire-now", "basis": "mechanical", "pointer": pointer, "why": why}
@@ -353,7 +363,9 @@ def sweep(root, memdir):
     rows = []
 
     def add(store, eid, title, enforced):
-        rows.append(dict(classify(root, enforced, ctx), store=store, id=eid, title=title))
+        rows.append(
+            dict(classify(root, enforced, ctx, own_id=eid), store=store, id=eid, title=title)
+        )
 
     for e in S.trap_entries(root):
         add(

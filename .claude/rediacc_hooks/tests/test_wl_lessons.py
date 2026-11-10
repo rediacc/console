@@ -301,3 +301,15 @@ def test_pointer_problem_is_dead_when_the_shared_resolver_cannot_load(tmp_path, 
     assert why is not None
     assert "could not be resolved" in why, why
     assert lessons.classify(root, "guard:block_tested", lessons.Ctx(root))["class"] != "retire-now"
+
+
+def test_a_self_referencing_shape_entry_is_kept_not_retired(tmp_path):
+    """#5394dfa7: an entry whose Enforced-By is shape:<its own id> is the guard's data; retiring it deletes the rule."""
+    lessons = _lessons()
+    ctx = lessons.Ctx(str(tmp_path))
+    row = lessons.classify(str(tmp_path), "shape:feedback_x", ctx, own_id="feedback_x")
+    assert row["class"] == "keep-as-prose"
+    assert row["basis"] == "declared"
+    # CONTROL: the same pointer on a different entry is judged on the enforcer, not kept by declaration.
+    other = lessons.classify(str(tmp_path), "shape:feedback_x", ctx, own_id="feedback_y")
+    assert other["basis"] != "declared" or other["class"] != "keep-as-prose"
