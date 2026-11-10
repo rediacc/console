@@ -1048,7 +1048,7 @@ async function main(): Promise<void> {
   const keyed = staleKeys;
   if (process.argv.includes('--write-baseline')) {
     // COMPOSITION. "Drain with --write-baseline as pins move" was an unconditional reseed, so a drain could retire two pins that had been bumped and quietly enshrine a third that had just gone stale, while printing a smaller number. A newly stale pin is the exact finding this gate exists to raise, so absorbing one silently inverts its purpose.
-    const sorted = keyed.slice().sort();
+    const sorted = keyed.slice().sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
     const had = existsSync(BASELINE);
     const previous: string[] = had ? JSON.parse(readFileSync(BASELINE, 'utf8')) : [];
     // THE ONE LEGITIMATE GROW PATH: a pin deliberately held BACK.

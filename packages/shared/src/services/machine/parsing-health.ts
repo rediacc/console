@@ -198,7 +198,7 @@ function checkContainers(
     ctx.exitCode = Math.max(ctx.exitCode, 2);
   }
 
-  const looping = containers.filter((c) => /^restarting\b/i.test(c.status ?? ''));
+  const looping = containers.filter((c) => /^restarting\b/i.test(c.status));
   if (looping.length > 0) {
     ctx.issues.push(`${looping.length} container(s) in restart loop`);
     containerFindings(ctx, 3, 'container.restart-loop', looping, 'in a restart loop');

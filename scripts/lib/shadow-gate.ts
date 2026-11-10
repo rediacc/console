@@ -1069,7 +1069,10 @@ export function assertEquivalent(rows: LedgerRow[], k: number): AssertResult {
   // `RED twin-parity` for a file that was working perfectly, and the message said
   // nothing about which file or why. A malformed row is a finding to report, not
   // an exception to throw.
-  const shaped = rows.filter((r) => r && typeof r.tree === 'object' && r.tree !== null);
+  // Typed as the wire shape: a hand-edited ledger can hold null rows or a null `tree`.
+  const shaped = (rows as ({ tree?: unknown } | null)[]).filter(
+    (r) => r !== null && typeof r.tree === 'object' && r.tree !== null
+  ) as LedgerRow[];
   if (shaped.length !== rows.length) {
     reasons.push(
       `${rows.length - shaped.length} row(s) carry no \`tree\` object and were ignored; ` +

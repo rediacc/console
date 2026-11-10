@@ -355,7 +355,7 @@ async function runHandler(step: string, params?: Record<string, string | number 
 }
 
 function ticketOwing(step: string) {
-  const ticket = store.tickets().find((t) => t.steps?.some((s) => s.name === step));
+  const ticket = store.tickets().find((t) => t.steps.some((s) => s.name === step));
   if (!ticket) throw new Error(`no ticket owes ${step}`);
   return ticket;
 }

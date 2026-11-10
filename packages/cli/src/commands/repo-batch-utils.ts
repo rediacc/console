@@ -358,6 +358,12 @@ export async function handleDownAll(options: {
   }
 }
 
+// An empty or missing list renders as '-', so '' falls through like undefined does.
+function joinOrDash(values: string[] | undefined): string {
+  const joined = values?.join(', ');
+  return joined === undefined || joined === '' ? '-' : joined;
+}
+
 // Renders the `repo list` table: resolves tag/type from local config, marks server-sourced names (not in local config) with ' *', and prints a legend when any such name is shown.
 export async function printRepoListTable(resolved: Record<string, unknown>[]): Promise<void> {
   const { parseRepoRef } = await import('../utils/config-schema.js');
@@ -400,8 +406,8 @@ export async function printRepoListTable(resolved: Record<string, unknown>[]): P
       containers: r.container_count,
       services: r.service_count,
       modified: r.modified_human,
-      gpu: cfg?.gpuDevices?.join(', ') || '-',
-      lifecycle: cfg?.lifecycleRoot ? 'root' : cfg?.lifecyclePaths?.join(', ') || '-',
+      gpu: joinOrDash(cfg?.gpuDevices),
+      lifecycle: cfg?.lifecycleRoot ? 'root' : joinOrDash(cfg?.lifecyclePaths),
     };
   });
   outputService.print(compact, 'table');
