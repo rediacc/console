@@ -776,6 +776,9 @@ def _deploy_shape(calls: list[dict]) -> list[dict]:
             continue
         if _is_seed_call(raw):
             continue
+        # DECLARED DELTA (finding 87f7acb9): the port lists the Worker's secret names to delete the retired private key; the bash never did.
+        if raw["tool"] == "npx" and raw["argv"][2:4] == ["secret", "list"]:
+            continue
         # DECLARED DELTA (b8601cfde): the port lists the Worker's deployments after the secrets push to record the live version; the bash never did.
         if raw["tool"] == "npx" and raw["argv"][2:4] == ["deployments", "list"]:
             continue
@@ -808,7 +811,7 @@ def test_deploy_bench_matches_bash(world: h.World) -> None:
     bash_calls = world.calls()
     world.reset_log()
     world.add_routes(SEED_ROUTE)
-    rc_p, out_p, err_p = world.port("rediacc_ci.ops.deploy_bench", [], _port_deploy_env(env))
+    rc_p, out_p, err_p = world.port("rediacc_ci.tests.deploy_bench_fakes", [], _port_deploy_env(env))
     port_calls = world.calls()
     assert rc_b == rc_p == 0, (err_b, err_p)
     assert any(_is_seed_call(c) for c in port_calls)
@@ -830,6 +833,9 @@ def test_deploy_bench_matches_bash(world: h.World) -> None:
         "  ./rdc.sh --config eu-bench repo create": "  ./rdc.sh --config bench repo create",
     }
     out_mapped = out_p.replace(version_line, "", 1)
+    # DECLARED DELTA (finding 87f7acb9): the secret-name listing that precedes the retired-key deletion is echoed (the fake prints an empty list); asserted once, then dropped.
+    assert out_mapped.count("[]\n") == 1
+    out_mapped = out_mapped.replace("[]\n", "", 1)
     for port_text, bash_text in hint_delta.items():
         assert out_mapped.count(port_text) == 1
         out_mapped = out_mapped.replace(port_text, bash_text)
@@ -903,7 +909,7 @@ def test_deploy_bench_tokens_minted_from_the_global_key_wait_then_are_destroyed(
     assert any(c["tool"] == "sleep" for c in bash_calls)  # the control: the bash slept a fixed 5 s
     world.reset_log()
     world.add_routes(*h.PROBE_ROUTES, SEED_ROUTE)  # after the twin: the route table keys its golden
-    rc, _, err = world.port("rediacc_ci.ops.deploy_bench", [], _port_deploy_env(env))
+    rc, _, err = world.port("rediacc_ci.tests.deploy_bench_fakes", [], _port_deploy_env(env))
     assert rc == 0, err
     # The port probes instead: the probe block sits between the mint and the first wrangler call.
     port_calls, probes = h.split_probe_block(world.calls())
@@ -921,7 +927,7 @@ def test_delta_a_supplied_token_does_not_wait(world: h.World) -> None:
     assert any(c["tool"] == "sleep" for c in world.calls())  # the control
     world.reset_log()
     world.add_routes(*h.PROBE_ROUTES)
-    world.port("rediacc_ci.ops.deploy_bench", [], _port_deploy_env(env))
+    world.port("rediacc_ci.tests.deploy_bench_fakes", [], _port_deploy_env(env))
     assert not any(c["tool"] == "sleep" for c in world.calls())
     assert not any(
         c["tool"] == "curl" and ("/d1/database?" in c["url"] or "/workers/scripts" in c["url"])
@@ -938,7 +944,7 @@ def test_delta_arguments_are_rejected_not_ignored(world: h.World) -> None:
         for c in world.calls()
     )
     world.reset_log()
-    rc_p, _, err_p = world.port("rediacc_ci.ops.deploy_bench", ["--dry-run"], env)
+    rc_p, _, err_p = world.port("rediacc_ci.tests.deploy_bench_fakes", ["--dry-run"], env)
     assert rc_p == 2
     assert "takes no arguments" in err_p
     assert world.calls() == []
@@ -955,7 +961,7 @@ def test_delta_secrets_are_validated_before_the_first_remote_write(world: h.Worl
         for c in world.calls()
     )  # the control: deployed first
     world.reset_log()
-    rc_p, _, err_p = world.port("rediacc_ci.ops.deploy_bench", [], _port_deploy_env(env))
+    rc_p, _, err_p = world.port("rediacc_ci.tests.deploy_bench_fakes", [], _port_deploy_env(env))
     assert rc_p == 1
     assert "ROOT_EMAIL is EMPTY" in h.strip(err_p)
     assert not any(c["tool"] == "npx" for c in world.calls())
@@ -978,7 +984,7 @@ def test_delta_the_account_wide_r2_trio_alone_is_refused_before_any_remote_write
         **env,
         **{name: bound[name] for name in needed},
     }
-    rc_p, _, err_p = world.port("rediacc_ci.ops.deploy_bench", [], keyed)
+    rc_p, _, err_p = world.port("rediacc_ci.tests.deploy_bench_fakes", [], keyed)
     assert rc_p == 1
     assert "ACCOUNT_BACKUP_S3_ENDPOINT is EMPTY for bench" in h.strip(err_p)
     assert "r2-secret" not in err_p
@@ -988,7 +994,7 @@ def test_delta_the_account_wide_r2_trio_alone_is_refused_before_any_remote_write
 def test_deploy_bench_rotation_drift_matches_bash(world: h.World) -> None:
     env = world.env(FAKE_ROTATION_RC="1", **TOKEN_ENV, **DEPLOY_ENV)
     rc_b, _, err_b = world.twin_run("scripts/ops/deploy-bench.sh", [], env)
-    rc_p, _, err_p = world.port("rediacc_ci.ops.deploy_bench", [], _port_deploy_env(env))
+    rc_p, _, err_p = world.port("rediacc_ci.tests.deploy_bench_fakes", [], _port_deploy_env(env))
     assert rc_b == rc_p == 1
     assert "rotation drift detected" in h.strip(err_b)
     assert "rotation drift detected" in h.strip(err_p)
@@ -1009,7 +1015,7 @@ def test_deploy_bench_refuses_on_a_check_that_could_not_run_and_never_pushes(
     env = world.env(
         FAKE_ROTATION_RC="2", FAKE_ROTATION_STDERR=UNCHECKED_STDERR, **TOKEN_ENV, **DEPLOY_ENV
     )
-    rc, _, err = world.port("rediacc_ci.ops.deploy_bench", [], _port_deploy_env(env))
+    rc, _, err = world.port("rediacc_ci.tests.deploy_bench_fakes", [], _port_deploy_env(env))
     assert rc == 1, err
     text = h.strip(err)
     refusal = text.split("rotation check could NOT READ every credential", 1)[1]
@@ -1028,7 +1034,7 @@ def test_deploy_bench_still_refuses_on_drift_and_never_pushes(world: h.World) ->
     env = world.env(
         FAKE_ROTATION_RC="1", FAKE_ROTATION_STDERR=UNCHECKED_STDERR, **TOKEN_ENV, **DEPLOY_ENV
     )
-    rc, _, err = world.port("rediacc_ci.ops.deploy_bench", [], _port_deploy_env(env))
+    rc, _, err = world.port("rediacc_ci.tests.deploy_bench_fakes", [], _port_deploy_env(env))
     assert rc == 1
     assert "rotation drift detected" in h.strip(err)
     assert not any(

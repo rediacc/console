@@ -107,6 +107,9 @@ if argv[:2] == ["wrangler", "deploy"]:
     print("Current Version ID: 0b1f2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d")
 if argv[:3] == ["wrangler", "deployments", "list"]:
     print(json.dumps([{{"created_on": "2026-10-28T00:00:00Z", "versions": [{{"version_id": "bb3e1ba3-0000-4000-8000-000000000000", "percentage": 100}}]}}]))
+# deploy_bench lists the Worker's secret names to delete the retired private key (finding 87f7acb9); an empty list is the clean Worker.
+if argv[:3] == ["wrangler", "secret", "list"]:
+    print("[]")
 if argv[:4] == ["wrangler", "r2", "bucket", "list"]:
     print("name:           configs-bench")
     print("name:           backups-bench")
