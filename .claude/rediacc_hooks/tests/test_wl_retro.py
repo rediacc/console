@@ -190,9 +190,7 @@ def test_r13_retro_brief_prints_the_id_and_the_previous_range_end(wl):
             }
         )
         + "\n"
-        + json.dumps(
-            {"at": day_at("09:00"), "key": "before-the-range", "named": [], "judge": {}}
-        )
+        + json.dumps({"at": day_at("09:00"), "key": "before-the-range", "named": [], "judge": {}})
         + "\n"
     )
     plant_rows(
@@ -486,14 +484,17 @@ def test_rearm_retro_live_is_idempotent_and_keeps_the_retired_generation(wl):
     assert cb.retro_live(once) == once
     assert cb.retro_ordered(rows, "deadbeef", "early") is rows[3]
     start = cb.retro_window_start(once, "deadbeef", before=once[-1])
-    assert start is not None and start["to_off"] == 10, start
+    assert start is not None
+    assert start["to_off"] == 10, start
 
 
 def test_rearm_an_unparseable_stamp_dedupes(wl):
     cb = load_ctx(wl)
     rows = [ordered("late", 0, 10, at="not-a-stamp")]
     assert cb.retro_ordered(rows, "deadbeef", "late") is rows[0]
-    assert cb.retro_ordered([ordered("late", 0, 10, at=_days_ago(7.01))], "deadbeef", "late") is None
+    assert (
+        cb.retro_ordered([ordered("late", 0, 10, at=_days_ago(7.01))], "deadbeef", "late") is None
+    )
 
 
 # ---- SessionStart source=compact is attributed too (retro writer A's finding #d85ee, second retro) ----
