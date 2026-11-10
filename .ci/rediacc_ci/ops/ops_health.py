@@ -536,13 +536,13 @@ def repair_machine(
     if res.timed_out or res.rc >= 2 or res.rc < 0:
         out["failed"] = "machine repair %s: %s" % (
             "timed out" if res.timed_out else "rc %d" % res.rc,
-            # No stdout tail when stdout is the actions JSON already read above, so that failure with no envelope error and no stderr says "no action reported" (review 13ede7fb.1); a plain-text stdout is the error and is reported (review dcd1a513.3).
+            # No stdout tail when stdout is the actions JSON already read above, so that failure with no envelope error and no stderr says "no action reported" (review 13ede7fb.1); a plain-text stdout is the error and is reported (review dcd1a513.3), but a timed-out run's stdout is progress or a cut-off document, never the error (review 6631d6d0.1).
             "; ".join(_failed_actions(actions))
             or failure_text(
                 res,
                 default="no action reported",
                 config=row["config"] or None,
-                stdout_tail=not stdout_read,
+                stdout_tail=not (stdout_read or res.timed_out),
             ),
         )
     return out

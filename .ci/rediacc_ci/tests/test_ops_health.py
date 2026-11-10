@@ -590,6 +590,7 @@ class RepairFleet(Fleet):
         self.actions = actions
         self.heals = heals
         self.repaired = False
+        self.timeout_stdout = ""
 
     def repair_calls(self):
         return [a for a, _e in self.calls if _verb_args(a)[:2] == ["machine", "repair"]]
@@ -599,7 +600,7 @@ class RepairFleet(Fleet):
         if args[:2] == ["machine", "repair"]:
             if self.timeout_on and self.timeout_on in " ".join(args):
                 self.calls.append((list(argv), dict(env)))
-                return oh.Result(124, "", "", timed_out=True)
+                return oh.Result(124, self.timeout_stdout, "", timed_out=True)
             self.calls.append((list(argv), dict(env)))
             codes = [args[i + 1] for i, a in enumerate(args) if a == "--code"]
             actions = self.actions
@@ -913,6 +914,17 @@ def test_repair_that_reports_only_other_codes_still_counts_an_attempt():
     fleet = RepairFleet(findings, actions=only_cd, heals=False)
     oh.machines_check(fleet, {"PATH": "/usr/bin"}, CFG, attempts=attempts, now=NOW)
     assert attempts[oh._attempt_key("", "m1", "a.b")]["n"] == 1
+
+
+def test_a_timed_out_repair_failure_text_carries_no_partial_stdout(tmp_path):
+    """A timed-out repair's stdout is progress or a cut-off document, so the failure says `no action reported` rather than that tail (review 6631d6d0.1)."""
+    fleet = RepairFleet([finding("a.b")])
+    fleet.timeout_on = "machine repair"
+    fleet.timeout_stdout = "PROGRESS-50-PERCENT"
+    (_rc, doc), _web = refreshed(tmp_path, fleet)
+    problems = doc["checks"]["machines"]["rows"][0]["problems"]
+    assert any("timed out" in p and "no action reported" in p for p in problems)
+    assert not any("PROGRESS-50-PERCENT" in p for p in problems)
 
 
 def test_a_timed_out_repair_without_actions_is_ledgered(tmp_path):
