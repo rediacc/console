@@ -57,8 +57,11 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 - Mode: effort smart; turbo on; turbo_push batch-end; batch_size 3; plan_concurrency 5; writer_cap 25; commit_remind_min 15; backup_push_h 4; judge core; cadence on; agent_hint on; agent_pushback on.
 - Phase: merge on PR #602 (branch 1023-1, session 45048a90, since 2026-11-03T09:46:12Z, past its 24-hour limit).
 - Branch: 1104-1, no PR yet.
-- Plans on the PR (1):
+- Plans on the PR (4):
   - agent/plans/PLAN-backup-program.md -- 183 of 192 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
+  - agent/plans/PLAN-backup-restore-path.md -- 7 of 10 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
+  - agent/plans/PLAN-stop-hook-retro-20261110.md -- 7 of 8 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
+  - agent/plans/PLAN-submodule-branch-coordination-guard.md -- 0 of 8 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
 - Work outside the PR's plans (17 epic(s)):
   - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 26 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic c6b82e88, plan agent/plans/PLAN-settings-set-verb.md, outside the set, 2 commit(s) on the branch, 0 open item(s): settings set verb: one source for the ceilings
@@ -75,10 +78,10 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic f65726d5, plan agent/plans/PLAN-renet-down-before-kill.md, outside the set, 16 commit(s) on the branch, 0 open item(s): renet runs Rediaccfile down() before repo containers stop
   - epic 53c31db2, plan agent/plans/PLAN-repo-resource-limits.md, outside the set, 20 commit(s) on the branch, 0 open item(s): per-repo resource limits and a renet-managed RAM volume
   - epic a86f5622, plan agent/plans/PLAN-production-key-only.md, outside the set, 4 commit(s) on the branch, 0 open item(s): Production key only: every leg licensed from its own plane
-  - epic 79b7e92e, no plan, 317 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 79b7e92e, no plan, 318 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 562ef6c3, plan agent/plans/PLAN-experience-feedback.md, outside the set, 59 commit(s) on the branch, 0 open item(s): experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire
-- Writers: 1 live of writer_cap 25 (session d778be9d): worker:a1917d88f28e26699.
-- Leased items: 4: #34ccb9e2 (worker:a5d362329446575d0, d778be9d), #4f4df453 (worker:a1917d88f28e26699, d778be9d), #8d576362 (worker:a1917d88f28e26699, d778be9d), #caa837d4 (worker:a1917d88f28e26699, d778be9d).
+- Writers: 2 live of writer_cap 25 (session d778be9d): worker:aeb6c3b82262cf973, worker:a5d362329446575d0.
+- Leased items: 3: #34ccb9e2 (worker:a5d362329446575d0, d778be9d), #5628e1d5 (worker:aeb6c3b82262cf973, d778be9d), #ef193ea8 (worker:aeb6c3b82262cf973, d778be9d).
 - Next plan: agent/plans/PLAN-cloudflare-proxy.md, Promoted entry 2; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
@@ -226,17 +229,17 @@ Promoted: 18 of 64 plans done, 1005 of 1187 boxes done (84%).
 1. agent/plans/PLAN-agent-tree-lifecycle.md -- P1, mostly-done, in progress (6 of 7 boxes ticked)
 2. agent/plans/PLAN-haiku-model-routing.md -- P1, executing, in progress (11 of 20 boxes ticked)
 3. agent/plans/PLAN-stop-hook-refactor-enforcement.md -- P1, executing, in progress (16 of 17 boxes ticked)
-4. agent/plans/PLAN-stop-hook-retro-20261110.md -- P1, ready, in progress (7 of 8 boxes ticked)
-5. agent/plans/PLAN-ci-quick-cpu-scheduling.md -- P2, active, in progress (2 of 5 boxes ticked)
-6. agent/plans/PLAN-config-mirror-reseal.md -- P2, proposed, in progress (1 of 2 boxes ticked)
-7. agent/plans/PLAN-backup-toc-exact-opt-in.md -- P3, proposed, in progress (1 of 10 boxes ticked)
-8. agent/plans/PLAN-deletion-budget.md -- P3 (operator), draft, not started
-9. agent/plans/PLAN-fix-upgrade-drills-flat-daemon-bringup.md -- P1, executing, not started
-10. agent/plans/PLAN-first-release-checks.md -- P2, approved, not started
-11. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
-12. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
+4. agent/plans/PLAN-ci-quick-cpu-scheduling.md -- P2, active, in progress (2 of 5 boxes ticked)
+5. agent/plans/PLAN-config-mirror-reseal.md -- P2, proposed, in progress (1 of 2 boxes ticked)
+6. agent/plans/PLAN-backup-toc-exact-opt-in.md -- P3, proposed, in progress (1 of 10 boxes ticked)
+7. agent/plans/PLAN-deletion-budget.md -- P3 (operator), draft, not started
+8. agent/plans/PLAN-fix-upgrade-drills-flat-daemon-bringup.md -- P1, executing, not started
+9. agent/plans/PLAN-first-release-checks.md -- P2, approved, not started
+10. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
+11. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
 
 ### Not queued
 
 - agent/plans/PLAN-docker-sock-listener-preflight-detect.md -- all boxes ticked: close it
+- agent/plans/PLAN-stop-hook-retro-20261110.md -- all boxes ticked: close it
 <!-- queue:generated:end -->

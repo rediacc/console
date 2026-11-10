@@ -200,11 +200,12 @@ Counts for the window:
     (ticked) 2026-11-10T15:44:02Z by d778be9d: commit:e8e888e2b2 transcript_armed on the SubagentStop capture path writes interim for a silent capture with an armed shell; test_wl_interim_reports 6 passed rc=0, red with the old call
 - [x] **R20261110.7** Add `settle_contentless`: a continue with a non-order `next_action`, or a reason under 40 characters naming nothing, reads as stop with a `judge-contentless` advisory. Fixture: the 21:21:06 verdict. Test: .claude/rediacc_hooks/tests/test_wl_judge_facts.py.
     (ticked) 2026-11-10T16:18:26Z by d778be9d: commit:f242757002 judge local-batch facts, receipt-in-flight suppression, measured facts (missing ids, wake time, item workers), contentless settle and --owed on partial investigations; 74 new tests passed rc=0, 234 judge/planrec/checks tests passed
-- [ ] **R20261110.8** After .1 to .7 land, re-count on the next session's blocklog and judge log, and record the before and after numbers in this plan's Status:
+- [x] **R20261110.8** After .1 to .7 land, re-count on the next session's blocklog and judge log, and record the before and after numbers in this plan's Status:
   - the local, checklist and other continue classes (55, 22 and 11 here);
   - restatement replies with no work call (50);
   - the longest continue streak (12);
   - `unread-reports` blocks on [SILENT] interim captures (3).
+    (ticked) 2026-11-10T19:12:03Z by d778be9d: nocommit: recount recorded at agent/plans/PLAN-stop-hook-retro-20261110.md:218: judge continues local/checklist/other 55/22/11 -> 6/1/0, no-work replies 50 -> 2, longest streak 12 -> 3, SILENT unread-reports blocks 3 -> 1; window 16:12-19:09Z from the transcript since the restart wiped /tmp/claude-worklist
 
   Test: .claude/rediacc_hooks/tests/test_wl_retro.py.
 
@@ -214,3 +215,20 @@ Counts for the window:
 - /home/developer/console/.claude/hooks/stop/wl_checks.py
 - /home/developer/console/.claude/hooks/stop/wl_planrec.py
 - /home/developer/console/.claude/hooks/stop/wl_report.py
+
+## Recount after .1 to .7 (R20261110.8)
+
+The fixes landed by f242757002 at 2026-11-10T16:12:34Z. The after window is 16:12Z to 19:09Z of the same session, because a host restart at about 18:30Z wiped `/tmp/claude-worklist`, which held the blocklog and the judge log. The rows were counted from the session transcript instead: every Stop hook block in the window, with each judge `reason`.
+
+| Measure | Before (window above) | After (16:12Z to 19:09Z) |
+|---|---|---|
+| Judge continues by class: local, checklist, other | 55, 22, 11 | 6, 1, 0 |
+| Judge continues answered with no work call | 50 | 2 |
+| Longest run of consecutive judge continues | 12 | 3 |
+| `unread-reports` blocks on a [SILENT] interim capture | 3 | 1 |
+
+The after window covers 3 hours against the 19 hours before, so the absolute counts are not comparable. The ratios are: no-work replies fell from 57% of continues to 29%, and the longest streak fell from 12 to 3.
+
+Two residues are tracked:
+- The judge still counts a box as local when its latest investigation row is `partial --owed live` and box-audit reads it live-owed. Six of the seven continues named such boxes: A4d, J6 and J9, whose Accept is a CI run id, and I3, Q2, L2 and H1, which wait on a runner or hostinger. Lesson a6d0391f.
+- One `unread-reports` block fired at 16:37Z on a [SILENT] capture whose task notification read "waiting on its own background work". That is the interim shape .7 was meant to stand down.

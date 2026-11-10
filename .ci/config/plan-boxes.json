@@ -2764,11 +2764,9 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 1,
-      "done": 7,
-      "open_sigs": [
-        "fc4fa3b6"
-      ],
+      "open": 0,
+      "done": 8,
+      "open_sigs": [],
       "done_sigs": [
         "05745435",
         "1d5e863a",
@@ -2776,7 +2774,8 @@
         "7b8d3749",
         "90cc6ba0",
         "b31f4e0a",
-        "cee078c5"
+        "cee078c5",
+        "fc4fa3b6"
       ]
     },
     "agent/plans/PLAN-stop-report-queue.md": {
