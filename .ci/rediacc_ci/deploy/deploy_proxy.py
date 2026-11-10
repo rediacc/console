@@ -74,7 +74,7 @@ PROFILES_ENV = "REDIACC_BWS_PROFILES"
 BENCH_WORKER = "proxy-bench"
 BENCH_RECORD_SURFACES = ("proxy", "cli")
 BENCH_VERSION_RECORD = (".ci", "cache", "live-deploys", "proxy-bench.json")
-BENCH_BUILT_KEYS = ("head", "tree", "dirty", "inputs")
+BENCH_BUILT_KEYS = ("head", "tree", "dirty", "inputs", "submodules")
 
 # A fixed path in /tmp, as the bash original had it.
 DRY_RUN_OUTDIR = "/tmp/rediacc-proxy-dry-run"

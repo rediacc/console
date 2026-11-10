@@ -2053,3 +2053,43 @@ def test_a_tree_that_moved_during_the_deploy_records_nothing(tmp_path: pathlib.P
             world.root, port.BENCH_WORKER, "wrangler.bench.toml", NEW_ID, built
         )
     assert not _bench_record(world.root).exists()
+
+
+def test_a_submodule_that_moved_during_the_deploy_records_nothing(tmp_path: pathlib.Path) -> None:
+    """The identity carries both submodules' pointer and checkout, so a checkout that moves after the build refuses the record even when the console head, tree and inputs did not move."""
+    world = World(tmp_path / "console")
+    built = port.bench_identity(world.root)
+    # The control: nothing moved, so the record is written.
+    port.record_bench_version(world.root, port.BENCH_WORKER, "wrangler.bench.toml", NEW_ID, built)
+    _bench_record(world.root).unlink()
+    world.renet_commit({"cmd/renet/moved.go": "package main\n"})
+    now = port.bench_identity(world.root)
+    assert now["submodules"] != built["submodules"]
+    with pytest.raises(port.RefusedError, match="submodules"):
+        port.record_bench_version(
+            world.root, port.BENCH_WORKER, "wrangler.bench.toml", NEW_ID, built
+        )
+    assert not _bench_record(world.root).exists()
+
+
+def test_record_bench_returns_1_and_logs_when_the_tree_moved(
+    tmp_path: pathlib.Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """The exit-1 contract `main` propagates: a moved tree is an error line and 1, with no record; the control (unmoved) is 0 and writes it."""
+    world = World(tmp_path / "console")
+    built = port.bench_identity(world.root)
+    assert (
+        port._record_bench(world.root, port.BENCH_WORKER, "wrangler.bench.toml", NEW_ID, built, {})
+        == 0
+    )
+    assert _bench_record(world.root).is_file()
+    _bench_record(world.root).unlink()
+    capsys.readouterr()
+    _write(world.root, "workers/proxy/src/index.ts", "export {};\n")
+    _commit(world.root, "moved")
+    assert (
+        port._record_bench(world.root, port.BENCH_WORKER, "wrangler.bench.toml", NEW_ID, built, {})
+        == 1
+    )
+    assert "moved during the deploy" in capsys.readouterr().err
+    assert not _bench_record(world.root).exists()
