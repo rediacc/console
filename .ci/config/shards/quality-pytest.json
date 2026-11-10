@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 5,
-  "generatedAt": "2026-11-10T16:02:41.044Z",
+  "generatedAt": "2026-11-10T16:54:59.712Z",
   "legs": [
     {
       "index": 1,
@@ -596,6 +596,7 @@
         "pytest:.ci/rediacc_ci/tests/test_core_allowlist.py",
         "pytest:.ci/rediacc_ci/tests/test_core_blocker_validator.py",
         "pytest:.ci/rediacc_ci/tests/test_core_common.py",
+        "pytest:.ci/rediacc_ci/tests/test_core_dockerx_socket.py",
         "pytest:.ci/rediacc_ci/tests/test_core_env.py",
         "pytest:.ci/rediacc_ci/tests/test_core_ghx.py",
         "pytest:.ci/rediacc_ci/tests/test_d1_shard_move.py",

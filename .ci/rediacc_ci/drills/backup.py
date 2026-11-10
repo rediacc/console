@@ -44,6 +44,7 @@ import uuid
 from typing import TYPE_CHECKING
 
 from rediacc_ci import log
+from rediacc_ci.core import dockerx
 from rediacc_ci.drills import (
     backup_check_trigger,
     backup_local_plane,
@@ -561,8 +562,12 @@ class Backup:
         d, o = self.d, self.o
         d.step("Preflight: tools")
         ok = True
-        if o.needs_plane() and not _docker_ok():
-            log.error("Docker is not available, so ./run.sh account dev cannot start RustFS.")
+        docker_reason = dockerx.cannot_run_reason() if o.needs_plane() else None
+        if docker_reason:
+            log.error(
+                "Docker is not usable, so ./run.sh account dev cannot start RustFS: %s"
+                % docker_reason
+            )
             log.error(
                 "Legs a,b,c,d,e,f,h,j,k,l,m,n,o,p,q,r,s all need the chunk store; only leg g can run here:"
             )
@@ -3471,12 +3476,6 @@ class Backup:
 
 
 # ---------------------------------------------------------------------- small utilities
-
-
-def _docker_ok() -> bool:
-    if not shutil.which("docker"):
-        return False
-    return subprocess.run(["docker", "info"], capture_output=True, check=False).returncode == 0
 
 
 def _sha_file(path: pathlib.Path) -> str:

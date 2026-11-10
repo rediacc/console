@@ -44,6 +44,11 @@ The right answer on stdout, and a non-zero exit, at once. `.ci/lib/setup.sh:583`
 (measured), and the status check survives. A module whose own helpers have to break its rule has not got a rule.
 
 ------------------------------------------------------------------------------
+MEASUREMENT 4: A FOREIGN LISTENER ON THE SOCKET HANGS EVERY DOCKER CALL.
+------------------------------------------------------------------------------
+Measured on a WSL host, 2026-11-10: Docker Desktop's WSL proxy (`docker-desktop-user-distro proxy`) bound `/var/run/docker.sock` (the same path as `/run/docker.sock`) over the systemd `docker.socket` that `dockerd -H fd://` listens on. `timeout 20 docker version` returned 124 and a raw `_ping` hung, so the state is neither absent nor a refusal. `systemctl restart docker` changed nothing; only stopping docker and docker.socket, removing the socket file and starting docker.socket and docker again helped. `socket_defect()` names that case from `/proc/net/unix` and a bounded stdlib ping, never by shelling out to docker, and its sentence is appended to the reason when the state is not READY.
+
+------------------------------------------------------------------------------
 EXIT 77 IS "COULD NOT RUN", AND IT IS NEVER A VERDICT.
 ------------------------------------------------------------------------------
 The convention is this repo's, not an invention: `scripts/ci-runner/pool.ts:80-89` defines it ("Exit code a gate uses to say 'I could not run' ... 1 is a finding, 2 is usage, 124 is a timeout, 127 is not-found"), `.ci/scripts/quality/ check-python-lint.sh:191` established it for ruff, `.ci/scripts/security/ shfmt.sh:52-60` adopted it, and `.ci/rediacc_ci/check_pytest.py:124` names
@@ -63,6 +68,7 @@ for a genuine failure has converted a red into a shrug.
 
 import json
 import os
+import socket
 import sys
 import time
 
@@ -400,7 +406,9 @@ _ADVICE = {
         "  wsl:    Docker Desktop > Settings > Resources > WSL Integration, and enable\n"
         "          this distro. The CLI shim exists without an engine, which is why\n"
         "          `command -v docker` succeeded (.ci/lib/setup.sh:565-571).\n"
-        "  mac:    start Docker Desktop."
+        "  mac:    start Docker Desktop.\n"
+        "  a hang rather than a refusal can be a foreign listener holding the socket path\n"
+        "          (Docker Desktop's WSL proxy over docker.socket); a line below names it when so."
     ),
     STATE_DENIED: (
         "the docker engine is running and this user cannot talk to its socket.\n"
@@ -416,6 +424,136 @@ _ADVICE = {
 }
 
 
+# Owners that may legitimately hold the docker socket. Anything else listening on the path is a foreign process.
+_SOCKET_OWNERS = frozenset({"dockerd", "systemd", "containerd"})
+_SOCKET_REBIND = (
+    "sudo systemctl stop docker docker.socket; sudo rm -f /run/docker.sock; "
+    "sudo systemctl start docker.socket docker"
+)
+_ACCEPTCON = 0x00010000
+
+
+def _listener_inodes(net_unix: str, target: str) -> list[str]:
+    """Inodes of listening rows (state 01, ACCEPTCON) bound to `target`."""
+    inodes: list[str] = []
+    try:
+        with open(net_unix, encoding="utf-8", errors="replace") as handle:
+            rows = handle.read().splitlines()[1:]
+    except OSError:
+        return inodes
+    for row in rows:
+        cols = row.split()
+        if len(cols) < 8 or cols[7] != target:
+            continue
+        try:
+            flags = int(cols[3], 16)
+        except ValueError:
+            continue
+        if cols[5] == "01" and flags & _ACCEPTCON:
+            inodes.append(cols[6])
+    return inodes
+
+
+def _inode_owners(inodes: list[str], proc_root: str) -> tuple[dict[str, set[str]], bool]:
+    """comm names per inode from /proc/<pid>/fd, and whether any fd directory was unreadable."""
+    owners: dict[str, set[str]] = {inode: set() for inode in inodes}
+    unreadable = False
+    wanted = {"socket:[%s]" % inode: inode for inode in inodes}
+    try:
+        pids = [name for name in os.listdir(proc_root) if name.isdigit()]
+    except OSError:
+        return owners, True
+    for pid in pids:
+        fd_dir = os.path.join(proc_root, pid, "fd")
+        try:
+            fds = os.listdir(fd_dir)
+        except PermissionError:
+            unreadable = True
+            continue
+        except OSError:
+            continue
+        for fd in fds:
+            try:
+                link = os.readlink(os.path.join(fd_dir, fd))
+            except OSError:
+                continue
+            inode = wanted.get(link)
+            if inode is None:
+                continue
+            try:
+                with open(os.path.join(proc_root, pid, "comm"), encoding="utf-8") as handle:
+                    owners[inode].add(handle.read().strip())
+            except OSError:
+                owners[inode].add("?")
+    return owners, unreadable
+
+
+def _ping_answers(path: str, timeout: float) -> bool | None:
+    """True when `GET /_ping` is answered OK, False when it hangs or answers wrongly, None when nobody could be asked."""
+    sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    sock.settimeout(timeout)
+    try:
+        sock.connect(path)
+        sock.sendall(b"GET /_ping HTTP/1.0\r\n\r\n")
+        data = b""
+        while len(data) < 4096:
+            chunk = sock.recv(4096)
+            if not chunk:
+                break
+            data += chunk
+    except TimeoutError:
+        return False
+    except OSError:
+        return None
+    finally:
+        sock.close()
+    head = data.split(b"\r\n", 1)[0]
+    return head.startswith(b"HTTP/") and b" 200" in head and data.rstrip().endswith(b"OK")
+
+
+def socket_defect(
+    path: str = "/var/run/docker.sock",
+    *,
+    ping_timeout: float = 3.0,
+    net_unix: str | None = None,
+    proc_root: str = "/proc",
+) -> str | None:
+    """None when the docker socket is clean, else one sentence naming the defect and the re-bind command.
+
+    A defect is a listener whose owner is not dockerd, systemd or containerd, more than one listener on the path, or a `_ping` that gets no OK within `ping_timeout`. A missing path is `STATE_UNREACHABLE`'s case and no defect. Owners that cannot be read (EACCES on their fds) leave the ping to decide. Never shells out to docker.
+    """
+    if not os.path.exists(path):
+        return None
+    target = os.path.realpath(path)
+    inodes = _listener_inodes(net_unix or "/proc/net/unix", target)
+    owners, unreadable = _inode_owners(inodes, proc_root)
+    problems: list[str] = []
+    if len(inodes) > 1:
+        problems.append("%d listeners hold %s" % (len(inodes), target))
+    foreign = sorted(
+        {comm for comms in owners.values() for comm in comms if comm not in _SOCKET_OWNERS}
+    )
+    if foreign:
+        problems.append("%s is held by %s" % (target, ", ".join(foreign)))
+    if _ping_answers(path, ping_timeout) is False:
+        problems.append("a _ping on %s got no OK within %gs" % (path, ping_timeout))
+    if not problems:
+        return None
+    hint = ""
+    if unreadable and not foreign:
+        hint = " (owners could not be read; verify with `sudo ss -xlpn | grep docker.sock`)"
+    return (
+        "the docker socket is held by something that is not the engine: %s%s. "
+        "`systemctl restart docker` alone does not fix it; re-bind it with: %s"
+        % ("; ".join(problems), hint, _SOCKET_REBIND)
+    )
+
+
+def _with_socket_hint(reason: str) -> str:
+    defect = socket_defect()
+    return "%s\n  %s" % (reason, defect) if defect else reason
+
+
 def cannot_run_reason(env: dict[str, str] | None = None, *, host: str | None = None) -> str | None:
     """None when docker is usable; otherwise the sentence a gate should print.
 
@@ -426,7 +564,7 @@ def cannot_run_reason(env: dict[str, str] | None = None, *, host: str | None = N
     current = state(env, host=host)
     if current == STATE_READY:
         return None
-    return "%s: %s" % (current, _ADVICE.get(current, "unusable"))
+    return _with_socket_hint("%s: %s" % (current, _ADVICE.get(current, "unusable")))
 
 
 def require_ready(env: dict[str, str] | None = None, *, host: str | None = None) -> None:
@@ -435,7 +573,7 @@ def require_ready(env: dict[str, str] | None = None, *, host: str | None = None)
     if current == STATE_READY:
         return
     argv = ["docker", "version"]
-    message = _ADVICE.get(current, "docker is unusable")
+    message = _with_socket_hint(_ADVICE.get(current, "docker is unusable"))
     if current == STATE_ABSENT:
         raise DockerAbsentError(argv, NOT_INSTALLED_RC, message, FAILURE_ABSENT)
     if current == STATE_DENIED:
@@ -519,6 +657,12 @@ def main(argv: list[str]) -> int:
             print("docker: %s" % exc, file=sys.stderr)
             return 1
         return 0
+    if verb == "socket-check":
+        defect = socket_defect()
+        if defect is None:
+            return 0
+        print("error: %s" % defect, file=sys.stderr)
+        return CANNOT_RUN_RC
     if verb == "require-ready":
         reason = cannot_run_reason(host=host)
         if reason is None:
@@ -578,6 +722,7 @@ __all__ = [
     "main",
     "require_ready",
     "server_version",
+    "socket_defect",
     "state",
     "which_docker",
 ]
