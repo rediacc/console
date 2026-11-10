@@ -22,6 +22,7 @@ import os
 import posixpath
 import re
 import shlex
+import types
 
 from rediacc_hooks import hookio, shellscan
 
@@ -316,9 +317,9 @@ def _span_choices(span, word, run, cmd):
         source = _positional_source(cmd)
         if source is None:
             return [on_line], False
-        return [_WORST if _names_reviews(source, _run_dir(run)) else _OUTSIDE], False
+        return [_WORST if _names_reviews(source, _run_dir(run), (run, cmd)) else _OUTSIDE], False
     if kind == "subst":
-        return [_WORST if _names_reviews(text, _run_dir(run)) else _OUTSIDE], False
+        return [_WORST if _names_reviews(text, _run_dir(run), (run, cmd)) else _OUTSIDE], False
     if kind == "indirect":
         # Read through both names when the walk knows both (`P=D; D=x` gives `x`); a name it cannot know, or a value that is not a variable name, leaves the line's unknown.
         if name:
@@ -367,7 +368,7 @@ def _span_choices(span, word, run, cmd):
         source = _value_source(name, cmd, shellscan._CLOBBERED in str(value))
         if source is None:
             return [on_line], False
-        return [_WORST if _names_reviews(source, _run_dir(run)) else _OUTSIDE], False
+        return [_WORST if _names_reviews(source, _run_dir(run), (run, cmd)) else _OUTSIDE], False
     if shellscan._OPAQUE_KEY in state:
         return [on_line], False
     return [_OUTSIDE], False
@@ -476,8 +477,8 @@ def _outside_forms(form):
     ]
 
 
-def _readings(word, run, cmd, depth=0):
-    """`(form, definite)` for every path `word` may expand to that the walk did not expand (#b53f586d), [] for a word with no expansion. A definite form is one bash really produces (a loop value, a known variable); any other stands for a value this hook cannot know."""
+def _readings(word, run, cmd, depth=0, known=False):
+    """`(form, definite)` for every path `word` may expand to that the walk did not expand (#b53f586d), [] for a word with no expansion. A definite form is one bash really produces (a loop value, a known variable); any other stands for a value this hook cannot know. `known` reads a word whose every value the walk knows too, for a word the walk never expanded (a listing root lexed apart from its line, `_root_forms`)."""
     if not word or ("$" not in word and "`" not in word):
         return []
     spans = _expansions(word)
@@ -485,7 +486,7 @@ def _readings(word, run, cmd, depth=0):
         return []
     state = getattr(run, "vars", None) or {}
     loop = getattr(run, "loop_vars", None) or {}
-    if all(
+    if not known and all(
         kind == "number"
         or (
             kind in ("var", "op")
@@ -517,7 +518,7 @@ def _readings(word, run, cmd, depth=0):
         definite = all(d for _v, d in choices)
         if depth == 0 and ("$" in text or "`" in text) and _OUTSIDE not in text:
             # A loop word may itself hold an expansion (`for D in $X`): read it once more.
-            nested = _readings(text, run, cmd, depth + 1)
+            nested = _readings(text, run, cmd, depth + 1, known)
             if nested:
                 out.extend((f, definite and d) for f, d in nested)
                 continue
@@ -1296,8 +1297,8 @@ def _disk_readings(text, where):
     return [p for w in words for base in bases for p in _expanded(os.path.join(base, w))]
 
 
-def _listing_roots(run, outer=None):
-    """The roots a shell run walks when it prints file names (grep and rg as `_search_roots` reads them, find, ls, fd, git ls-files), joined to the run's own directory; None for any other run. `outer` is the directory the text runs in when it is known (`_text_lists_reviews`), which a relative run directory sits under."""
+def _listing_roots(run, outer=None, scope=None):
+    """The roots a shell run walks when it prints file names (grep and rg as `_search_roots` reads them, find, ls, fd, git ls-files), joined to the run's own directory; None for any other run. `outer` is the directory the text runs in when it is known (`_text_lists_reviews`), which a relative run directory sits under, and `scope` the run whose line the text sits in, whose variables a root holding an expansion is read through (`_root_forms`)."""
     name = run.name.rsplit("/", 1)[-1]
     argv = [str(a) for a in run.argv]
     if name in ("grep", "egrep", "fgrep", "rg"):
@@ -1332,16 +1333,46 @@ def _listing_roots(run, outer=None):
     # A search that prints lines, not names, lists nothing; joining its None crashed the guard on `grep x agent/plans/a.md | xargs sed -i ...` (TypeError, measured 2026-11-10), so the guard decided nothing.
     if roots is None:
         return None
+    roots = [form for r in roots for form in _root_forms(r, run, scope)]
     where = str(run.cwd) if isinstance(run.cwd, str) and run.cwd else ""
     return [r if not where or r.startswith(("/", "~")) else where + "/" + r for r in roots]
 
 
-def _text_lists_reviews(text, where=None):
-    """Does shell text run a listing over the review directory or an ancestor of it (`_root_walks_reviews`)? `where` is the directory it runs in, when known. Text that spells no `agent` segment is never lexed."""
-    if not text or not _AGENT_SEGMENT.search(text + " " + str(where or "")):
+# A LISTING ROOT HOLDING A VARIABLE IS READ AS ITS VALUE (#8638dd20). A feed stage and a substitution are lexed as text of their own, so the line's variables were lost and the root stayed the literal `$D`: `D=agent; grep -rl x $D | xargs sed -i s/a/b/`, `D=agent; sed -i s/a/b/ $(grep -rl x $D)` and `for D in agent; do grep -rl x $D | xargs sed -i s/a/b/; done` edit review files and were allowed (rc 0, measured 2026-11-10 at 4c9b439aac).
+# Each root is read through the variables of the run its output reaches, joined with any the text assigns itself, the way `_readings` reads an operand: an assignment or `export` is its value, a loop variable each word it walks, a `read` from a listing over the directory the review directory itself, and a value from outside the line one unknown segment. An unknown root alone is the repository root, the accepted limit; under `cd agent` it is `agent/*`, an ancestor.
+_SCOPE_DEPTH_CAP = 4
+
+
+def _root_forms(root, inner, scope):
+    """The paths a listing root may stand for: `root` itself, and when it holds an expansion and `scope` (`(run, command)`) is known, each of its readings (`_readings`) through the variables `inner` (the listing's own run, lexed apart) assigns over those of the scope's run. Past `_SCOPE_DEPTH_CAP` nested readings (a value made from a listing over itself) the root is read as `_readings` reads the line's unknown: the review directory when the line spells `reviews`."""
+    if scope is None or ("$" not in root and "`" not in root):
+        return [root]
+    outer, cmd = scope
+    depth = getattr(outer, "scope_depth", 0)
+    if depth >= _SCOPE_DEPTH_CAP:
+        return [root, _WORST] if _SPELLS_REVIEWS.search(cmd) else [root]
+    merged = types.SimpleNamespace(
+        vars={**(getattr(outer, "vars", None) or {}), **(getattr(inner, "vars", None) or {})},
+        loop_vars={
+            **(getattr(outer, "loop_vars", None) or {}),
+            **(getattr(inner, "loop_vars", None) or {}),
+        },
+        cwd=getattr(outer, "cwd", None),
+        command=cmd,
+        scope_depth=depth + 1,
+    )
+    return [root, *(form for form, _definite in _readings(root, merged, cmd, known=True))]
+
+
+def _text_lists_reviews(text, where=None, scope=None):
+    """Does shell text run a listing over the review directory or an ancestor of it (`_root_walks_reviews`)? `where` is the directory it runs in, when known, and `scope` the `(run, command)` its output reaches, whose variables its roots are read through (`_root_forms`). Text that spells no `agent` segment is never lexed, unless an expansion in it may stand for one."""
+    if not text:
+        return False
+    expands = scope is not None and ("$" in text or "`" in text)
+    if not expands and not _AGENT_SEGMENT.search(text + " " + str(where or "")):
         return False
     for run in shellscan.every_run(text):
-        roots = _listing_roots(run, where)
+        roots = _listing_roots(run, where, scope)
         if roots and any(
             _root_walks_reviews(
                 r if not where or r.startswith(("/", "~")) else "%s/%s" % (where, r)
@@ -1352,9 +1383,9 @@ def _text_lists_reviews(text, where=None):
     return False
 
 
-def _names_reviews(text, where=None):
-    """Text a value is made from that names the review directory: it spells `reviews` as a path segment, or it runs a listing over the directory or an ancestor of it, whose output is review paths (d218ebf3), read alone and under `where` (`_lists_under`)."""
-    return bool(_SPELLS_REVIEWS.search(text)) or _lists_under(text, where)
+def _names_reviews(text, where=None, scope=None):
+    """Text a value is made from that names the review directory: it spells `reviews` as a path segment, or it runs a listing over the directory or an ancestor of it, whose output is review paths (d218ebf3), read alone and under `where` (`_lists_under`), its roots read through the variables of `scope`."""
+    return bool(_SPELLS_REVIEWS.search(text)) or _lists_under(text, where, scope)
 
 
 def _run_dir(run):
@@ -1362,12 +1393,14 @@ def _run_dir(run):
     return run.cwd if isinstance(run.cwd, str) and run.cwd else None
 
 
-def _lists_under(text, where):
+def _lists_under(text, where, scope=None):
     """Does shell text list the review directory or an ancestor, read alone or with its relative roots joined to `where`, the directory of the run its output reaches?
 
     THE LISTING'S ROOT IS READ WHERE ITS OUTPUT IS USED (#6fdc7136). A substitution or a feed is lexed as text of its own, so the `cd` before it was lost: `cd agent/plans && sed -i s/a/b/ $(grep -rl x ..)` and `cd agent && grep -rl x . | xargs sed -i s/a/b/` edit review files and were allowed (rc 0, measured 2026-11-10). A listing prints its roots as typed, and the command it feeds opens those words from its own directory, so that directory is joined. The bare reading stays beside it, which over-reads a text that carries its own `cd`, the fail-safe direction.
     """
-    return _text_lists_reviews(text) or bool(where and _text_lists_reviews(text, where))
+    return _text_lists_reviews(text, None, scope) or bool(
+        where and _text_lists_reviews(text, where, scope)
+    )
 
 
 def _fed_a_listing(run):
@@ -1378,8 +1411,9 @@ def _fed_a_listing(run):
     if "xargs" not in run.via:
         return False
     where = _run_dir(run)
+    scope = (run, getattr(run, "command", None) or "")
     for stage in reversed(run.feed_stages):
-        if _lists_under(stage.text, where):
+        if _lists_under(stage.text, where, scope):
             return True
         if stage.kind == "data" or _ignores_stdin(stage.text):
             return False
@@ -1433,7 +1467,8 @@ def _ignores_stdin(text):
 
 def _feeds_listing(cmd):
     """The pre-filter's listing question for the shell: does xargs feed any run the output of a listing over the review directory or an ancestor? A substitution, a `for` list and a `read` are read by `_globs_reviews` through `_readings`."""
-    if not _AGENT_SEGMENT.search(cmd):
+    # A variable may spell the ancestor in pieces (`A=age; B=nt; grep -rl x $A$B | xargs ...`, #8638dd20), so a line feeding xargs through an expansion is read too.
+    if not _AGENT_SEGMENT.search(cmd) and not ("xargs" in cmd and ("$" in cmd or "`" in cmd)):
         return False
     return any(_fed_a_listing(run) for run in shellscan.every_run(cmd))
 

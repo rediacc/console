@@ -976,6 +976,83 @@ OWN_CASES = [
         "grep -rl x agent/ | cat README.md | xargs sed -i s/a/b/",
         False,
     ),
+    # #8638dd20: a listing root holding a variable was read as the literal `$D`. The first four rows were allowed (rc 0) at 4c9b439aac, measured 2026-11-10.
+    (
+        "a listing over an assigned root fed to sed -i",
+        "D=agent; grep -rl x $D | xargs sed -i s/a/b/",
+        True,
+    ),
+    ("sed -i over a listing of an assigned root", "D=agent; sed -i s/a/b/ $(grep -rl x $D)", True),
+    (
+        "a listing over a loop root fed to sed -i",
+        "for D in agent; do grep -rl x $D | xargs sed -i s/a/b/; done",
+        True,
+    ),
+    (
+        "a listing over an exported root fed to sed -i",
+        "export D=agent/reviews; grep -rl x $D | xargs sed -i s/a/b/",
+        True,
+    ),
+    (
+        "a listing over a root read from a listing, fed to sed -i",
+        "grep -rl x agent/ | while read D; do grep -rl y $D | xargs sed -i s/a/b/; done",
+        True,
+    ),
+    (
+        "sed -i over a backquoted listing of an assigned root",
+        "D=agent; sed -i s/a/b/ `grep -rl x $D`",
+        True,
+    ),
+    (
+        "a listing over a quoted assigned root fed to sed -i",
+        'D=agent; grep -rl x "${D}/" | xargs sed -i s/a/b/',
+        True,
+    ),
+    (
+        "find over an assigned root fed to sed -i",
+        "D=agent; find $D -name '*.md' | xargs sed -i s/a/b/",
+        True,
+    ),
+    (
+        "a listing over a root spelled in two variables",
+        "A=age; B=nt; grep -rl x $A$B | xargs sed -i s/a/b/",
+        True,
+    ),
+    (
+        "a listing over an unknown root under cd agent",
+        "cd agent && grep -rl x $UNSET_ROOT | xargs sed -i s/a/b/",
+        True,
+    ),
+    (
+        "a listing over an assigned plans root fed to sed -i",
+        "D=agent/plans; grep -rl x $D | xargs sed -i s/a/b/",
+        False,
+    ),
+    (
+        "sed -i over a listing of an assigned plans root",
+        "D=agent/plans; sed -i s/a/b/ $(grep -rl x $D)",
+        False,
+    ),
+    (
+        "grep lines of an assigned file fed to sed -i",
+        "D=README.md; grep -o x $D | xargs sed -i s/a/b/",
+        False,
+    ),
+    (
+        "a listing over an unknown root at the top level",
+        "grep -rl x $UNSET_ROOT | xargs sed -i s/a/b/",
+        False,
+    ),
+    (
+        "a listing over a plans root assigned under cd agent",
+        "cd agent && D=plans; grep -rl x $D | xargs sed -i s/a/b/",
+        False,
+    ),
+    (
+        "a listing over two variables spelling plans",
+        "A=age; B=nt; grep -rl x $A$B/plans | xargs sed -i s/a/b/",
+        False,
+    ),
 ]
 
 MUTANTS = [
@@ -1074,7 +1151,7 @@ MUTANTS = [
     ),
     (
         "a listing fed through xargs not read (d218ebf3)",
-        ("        if _lists_under(stage.text, where):\n            return True\n", ""),
+        ("        if _lists_under(stage.text, where, scope):\n            return True\n", ""),
     ),
     (
         "the feed lexed as one bag of every stage (#3661517d)",
@@ -1114,7 +1191,7 @@ MUTANTS = [
     (
         "a value's source read for the word reviews alone (d218ebf3)",
         (
-            "return bool(_SPELLS_REVIEWS.search(text)) or _lists_under(text, where)",
+            "return bool(_SPELLS_REVIEWS.search(text)) or _lists_under(text, where, scope)",
             "return bool(_SPELLS_REVIEWS.search(text))",
         ),
     ),
@@ -1129,8 +1206,8 @@ MUTANTS = [
     (
         "a listing read without the cd its output is used under (#6fdc7136)",
         (
-            "return _text_lists_reviews(text) or bool(where and _text_lists_reviews(text, where))",
-            "return _text_lists_reviews(text)",
+            "        where and _text_lists_reviews(text, where, scope)\n",
+            "        False\n",
         ),
     ),
     (
@@ -1153,7 +1230,10 @@ MUTANTS = [
     ),
     (
         "a search printing lines joined as roots (crash, 2026-11-10)",
-        ("    if roots is None:\n        return None\n    where = ", "    where = "),
+        (
+            "    if roots is None:\n        return None\n    roots = [form",
+            "    roots = [form",
+        ),
     ),
     (
         "a listing name kept past a straight-line rebinding (727fc4a4.3)",
@@ -1211,6 +1291,28 @@ MUTANTS = [
     (
         "--with-filename read as printing no names (ffbd9211.3)",
         ('        "--with-filename",\n    )\n)\n', "    )\n)\n"),
+    ),
+    (
+        "a listing root read as typed (#8638dd20)",
+        ("    roots = [form for r in roots for form in _root_forms(r, run, scope)]\n", ""),
+    ),
+    (
+        "a substitution's roots read without the line's variables (#8638dd20)",
+        ("_names_reviews(text, _run_dir(run), (run, cmd))", "_names_reviews(text, _run_dir(run))"),
+    ),
+    (
+        "a listing text with no agent word never lexed (#8638dd20)",
+        (
+            '    expands = scope is not None and ("$" in text or "`" in text)\n',
+            "    expands = False\n",
+        ),
+    ),
+    (
+        "the pre-filter blind to a feed spelled in variables (#8638dd20)",
+        (
+            'and not ("xargs" in cmd and ("$" in cmd or "`" in cmd))',
+            "",
+        ),
     ),
     (
         "grep over two roots read as printing no names (ffbd9211.3)",
