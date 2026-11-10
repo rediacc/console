@@ -792,9 +792,9 @@ def _remove_retired_secrets(worker_dir, run=None) -> list[str]:
     return removed
 
 
-def _http_status(url: str) -> int:
-    """GET `url` with curl; 0 means no HTTP answer."""
-    proc = subprocess.run(
+def _run_curl(url: str) -> subprocess.CompletedProcess[str]:
+    """One curl GET of `url` printing only the status code."""
+    return subprocess.run(
         [
             "curl",
             "-sS",
@@ -812,6 +812,14 @@ def _http_status(url: str) -> int:
         text=True,
         check=False,
     )
+
+
+def _http_status(url: str) -> int:
+    """GET `url` with curl; 0 means no HTTP answer, a missing curl included."""
+    try:
+        proc = _run_curl(url)
+    except OSError:
+        return 0
     try:
         return int(proc.stdout.strip())
     except ValueError:

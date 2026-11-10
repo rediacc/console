@@ -182,3 +182,21 @@ def test_smoke_stops_asking_after_its_attempts():
     with pytest.raises(deploy_bench.DeployError, match="answered 0"):
         deploy_bench.smoke(lambda _u: n.append(1) or 0, lambda _s: None)
     assert len(n) == deploy_bench.SMOKE_ATTEMPTS
+
+
+def test_an_unset_path_leaves_no_empty_entry(monkeypatch, tmp_path):
+    bin_dir = _bin(tmp_path)
+    monkeypatch.delenv("PATH", raising=False)
+    path = control_db.wrangler_env(root=tmp_path)["PATH"]
+    assert path.startswith(str(bin_dir))
+    assert "" not in path.split(":"), "an empty PATH entry searches the working directory"
+
+
+def test_a_missing_curl_reads_as_no_answer(monkeypatch):
+    def missing(url):
+        raise FileNotFoundError("curl")
+
+    monkeypatch.setattr(deploy_bench, "_run_curl", missing)
+    assert deploy_bench._http_status("https://bench.example/") == 0
+    with pytest.raises(deploy_bench.DeployError):
+        deploy_bench.smoke(sleep=lambda _s: None)

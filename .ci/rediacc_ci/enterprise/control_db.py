@@ -60,7 +60,7 @@ def wrangler_env(
     found = [wrangler.local_binary(base / "workers" / name) for name in ("signer", "account")]
     bins = [str(b.parent) for b in found if b is not None]
     if bins:
-        env["PATH"] = os.pathsep.join([*bins, env.get("PATH", "")])
+        env["PATH"] = os.pathsep.join([*bins, *([env["PATH"]] if env.get("PATH") else [])])
     return env
 
 
