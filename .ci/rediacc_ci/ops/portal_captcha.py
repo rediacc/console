@@ -67,7 +67,7 @@ Http = Callable[[str, str, "dict | None"], Reply]
 
 
 class _PinnedHTTPS(urllib.request.HTTPSHandler):
-    """HTTPS to a fixed address: the TCP connection goes to `address`, while SNI, the certificate check and the Host header still name the URL's host, as curl's `--resolve host:443:<address>` does for the proxy smoke."""
+    """HTTPS to a fixed address: the TCP connection to the pinned host goes to `address` (a redirect to any other host dials that host by name, after `https.build_opener`'s redirect check), while SNI, the certificate check and the Host header still name the URL's host, as curl's `--resolve host:443:<address>` does for the proxy smoke."""
 
     def __init__(self, address: str, host: str, context: ssl.SSLContext | None = None) -> None:
         super().__init__()
@@ -81,7 +81,7 @@ class _PinnedHTTPS(urllib.request.HTTPSHandler):
         class Connection(http_client.HTTPSConnection):
             def connect(self) -> None:
                 # A redirect to another host dials that host by name: the pin is the first host's address.
-                target = address if self.host == pinned_host else self.host
+                target = address if self.host.lower() == pinned_host else self.host
                 sock = socket.create_connection((target, self.port), self.timeout)
                 self.sock = tls.wrap_socket(sock, server_hostname=self.host)
 
