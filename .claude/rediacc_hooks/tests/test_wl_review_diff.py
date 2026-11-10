@@ -5,6 +5,7 @@ A commit that carries `agent/reviews/<branch>/<sha>.md` beside its own change us
 
 from __future__ import annotations
 
+import contextlib
 import os
 import subprocess
 
@@ -168,3 +169,46 @@ def test_control_a_mixed_commit_still_reaches_the_model_with_only_the_code(tmp_p
     assert len(seen) == 1
     assert "a.py" in seen[0]
     assert "QUEUE.md" not in seen[0]
+
+
+def test_a_skip_glob_that_would_cover_code_is_refused(tmp_path):
+    """Review 623c29ce.1: the skip list lives in files a commit can edit, so a glob reaching code is refused."""
+    (tmp_path / ".ci" / "policy").mkdir(parents=True)
+    (tmp_path / ".ci" / "policy" / "record-paths.json").write_text('{"records": []}')
+    for bad in ("**", "agent/**", "*.py", ".ci/config/*.json", "packages/**", ".ci/policy/*.json"):
+        skips = R.skip_globs(str(tmp_path), {"review_skip_globs": [bad]})
+        for code in (
+            "a.py",
+            "agent/plans/PLAN-y.md",
+            ".ci/config/commit-review.json",
+            ".ci/policy/record-paths.json",
+        ):
+            assert not R.is_skipped_path(code, skips), (bad, code)
+    # CONTROL: the real record globs stay admitted.
+    for good in (
+        "agent/plans/QUEUE.md",
+        "agent/*/STATE.md",
+        "agent/ledgers/plan-*.jsonl",
+        ".ci/config/plan-boxes.json",
+    ):
+        assert R.admissible_skip_glob(good), good
+    skips = R.skip_globs(str(tmp_path), {"review_skip_globs": ["agent/*/STATE.md"]})
+    assert R.is_skipped_path("agent/s1/STATE.md", skips)
+
+
+def test_a_commit_widening_the_skip_list_is_still_reviewed(tmp_path):
+    """The commit that writes "**" into the skip list is itself reviewed, and the "**" is refused."""
+    repo, sha = _commit_files(
+        tmp_path, "w", {".ci/config/commit-review.json": '{"review_skip_globs": ["**"]}\n'}
+    )
+    seen = []
+
+    def model(*a):
+        seen.append(a)
+        raise RuntimeError("stop after the call")
+
+    with contextlib.suppress(RuntimeError):
+        R.run_review(
+            repo, "console", sha, "1110-1", reviewer=model, cfg=_cfg(), log=lambda _m: None
+        )
+    assert seen, "a commit that widens the skip list must reach the model"

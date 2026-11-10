@@ -1273,6 +1273,34 @@ def _glob_re(glob):
     return re.compile("".join(out) + r"\Z")
 
 
+# A skip glob is honoured only inside the record roots, and only when it covers none of these
+# code paths: the skip list lives in files a commit can edit, so a glob such as "**" or
+# "agent/**" would otherwise turn every later code commit record-only (review 623c29ce.1).
+SKIP_ROOTS = ("agent/", ".ci/config/")
+SKIP_SENTINELS = (
+    "a.py",
+    "packages/cli/src/index.ts",
+    "private/renet/cmd/renet/main.go",
+    ".github/workflows/ci.yml",
+    ".claude/hooks/stop/wl_review.py",
+    ".claude/settings.json",
+    "agent/plans/PLAN-x.md",
+    "agent/plans/_done/PLAN-x.md",
+    "agent/README.md",
+    ".ci/config/commit-review.json",
+    ".ci/policy/record-paths.json",
+    ".ci/config/proof-tiers.json",
+)
+
+
+def admissible_skip_glob(glob):
+    """True when `glob` stays inside the record roots and covers no sentinel code path."""
+    if not glob.startswith(SKIP_ROOTS):
+        return False
+    rx = _glob_re(glob)
+    return not any(rx.match(path) for path in SKIP_SENTINELS)
+
+
 def skip_globs(root, cfg=None):
     """The reviewer's own skip list (PLAN-experience-feedback P5): `review_skip_globs` of commit-review.json plus every glob of `.ci/policy/record-paths.json`, read at runtime and never edited here. A path matching one is a record (a ledger, a worklist, a STATE.md, a review file), not code, so it leaves the reviewed diff and the stat. The record file's `except` globs are honoured."""
     cfg = cfg if cfg is not None else load_config(root)
@@ -1287,6 +1315,14 @@ def skip_globs(root, cfg=None):
                 globs.append((rec["glob"], excepts))
     except (OSError, ValueError, AttributeError):
         pass
+    refused = [g for g, _e in globs if not admissible_skip_glob(g)]
+    if refused:
+        print(
+            "wl_review: skip glob(s) refused (outside the record roots or covering code): %s"
+            % ", ".join(refused),
+            file=sys.stderr,
+        )
+    globs = [(g, ex) for g, ex in globs if admissible_skip_glob(g)]
     if not any(g == REVIEWS_REL + "/**" for g, _e in globs):
         globs.append((REVIEWS_REL + "/**", []))
     return [(_glob_re(g), [_glob_re(e) for e in ex], g) for g, ex in globs]
