@@ -202,3 +202,11 @@ agent/reggate/*.lock
 .claude/hooks/stop/.waiter-*
 .claude/hooks/stop/.requests
 .claude/hooks/stop/.loop
+
+# The build context rediacc_ci.ops.build_server stages at the console root for `docker buildx build --target onprem`
+# (renet binaries, the marketing site, the portal SPA, the CLI npm tarball). It is rebuilt on every run and never
+# committed; www-assets alone measured 7.1 GB on 2026-11-10.
+/binaries/
+/www-assets/
+/account-web-assets/
+/cli-npm/
