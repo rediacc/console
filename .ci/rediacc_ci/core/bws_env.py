@@ -320,7 +320,7 @@ USAGE = """bws_env -- the `bws-env.sh` fetch, without the shell mutation.
   PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env store-from-env [--create] SPEC [SPEC ...]
       For each `STORE > LOCAL` spec, write the environment's LOCAL value into
       the existing store entry STORE, then read it back with the same
-      comparison `compare` makes. Prints names and MATCH/MISMATCH only.
+      comparison `compare` makes. Prints the STORE entry's name and MATCH/MISMATCH only.
       --create makes an absent STORE in the map's project instead of refusing;
       then run scripts/ops/bws-map-refresh.py to record its id.
 
@@ -1473,8 +1473,9 @@ def _store_verb(raw_specs: list[str], *, create: bool = False) -> int:
             print(line, file=sys.stderr)
         return 1
     verdicts = compare_values(dict(os.environ), rows, specs)
-    for local, verdict in verdicts:
-        print("%s %s" % (local, verdict))
+    # compare_values names the LOCAL side; the entry written is the STORE side, so that is the name printed (the specs and the verdicts run in the same order).
+    for (store, _local), (_l, verdict) in zip(specs, verdicts, strict=True):
+        print("%s %s" % (store, verdict))
     return 0 if all(v == MATCH for _l, v in verdicts) else 1
 
 

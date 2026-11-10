@@ -1163,7 +1163,7 @@ def _boxaudit_cli(argv):
 def _liveproof_cli(argv):
     """--live-proof <me> [<plan> <LP-box-sig> [--write] [--tick]] (agent/plans/PLAN-tested-on-bench.md, "Agent verb").
 
-    The logic is wl_liveproof's. This arm parses and checks `<me>` like every other verb, lists the open LP boxes when no plan is given (the --plan-tick listing shape), and hands wl_liveproof a `tick` that IS `_plantick_cli`, so a live-proof tick runs the same dependency gate, `wl_planrec.plan_tick` and paired plan-plus-ledger write as `--plan-tick`, never a second copy of them.
+    The logic is wl_liveproof's. This arm parses and checks `<me>` like every other verb, lists the open LP boxes when no plan is given (the --plan-tick listing shape), and hands wl_liveproof a `tick` that IS `_plantick_cli`, so a live-proof tick runs the same dependency gate, `wl_planrec.plan_tick` and paired plan-plus-ledger write as `--plan-tick`, never a second copy of them. A run that records (a plan and a box given) is refused from a lease tree, as the recorder itself refuses one: `root` is the main checkout there, so the recorder would otherwise run from the main tree's code and ledger. The listing stays allowed.
     """
 
     def die(msg):
@@ -1179,6 +1179,10 @@ def _liveproof_cli(argv):
         die("bad prefix %r: pass YOUR session-id prefix first" % me)
     _identity_or_die(me, die)
     root = pathlib.Path(C.project_root(C.project_start()))
+    if len(argv) > 2:
+        refusal = LP.lease_refusal(C.project_start())
+        if refusal:
+            die("live-proof REFUSED: %s" % refusal)
     if len(argv) == 2:
         print(LP.listing(root, CK.plan_records(root)))
         return

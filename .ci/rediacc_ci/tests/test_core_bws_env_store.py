@@ -141,7 +141,7 @@ def test_the_check_fires_on_the_old_argv_shape() -> None:
 def test_store_from_env_writes_through_stdin_and_reads_back(tmp_path) -> None:
     root = _fixture(tmp_path / "ok")
     code, out, err = _run(root)
-    assert (code, out) == (0, "DEMO_KEY MATCH\n"), err
+    assert (code, out) == (0, "DEMO_KEY_DEV MATCH\n"), err
     spawns = _spawns(root)
     assert [s["prog"] for s in spawns] == ["bws", "npx", "bws"], "list, write, read back"
     for s in spawns:
@@ -337,7 +337,7 @@ def test_create_makes_the_absent_name_in_the_maps_project_through_stdin(tmp_path
     root = _fixture(tmp_path / "create")
     _with_map(root, PROJECT)
     code, out, err = _run_spec(root, "NEW_TOKEN > DEMO_KEY", create=True)
-    assert (code, out) == (0, "DEMO_KEY MATCH\n"), err
+    assert (code, out) == (0, "NEW_TOKEN MATCH\n"), err
     spawns = _spawns(root)
     assert [s["prog"] for s in spawns] == ["bws", "npx", "bws"], "list, create, read back"
     for s in spawns:

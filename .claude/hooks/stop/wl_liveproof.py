@@ -338,6 +338,23 @@ def _say(text: str, err: bool = False) -> None:
         stream.write(text if text.endswith("\n") else text + "\n")
 
 
+def lease_refusal(start: pathlib.Path | str) -> str | None:
+    """Why a recording may not start from `start`, or None. `project_root` answers a lease with the main checkout (one store), so the recorder would run from the main tree's code and ledger while the lease's own recorder refuses; the refusal is made here, from the tree `start` really sits in, with the recorder's own wording."""
+    import wl_core
+
+    here = pathlib.Path(start).resolve()
+    for tree in (here, *here.parents):
+        if (tree / ".git").exists():
+            main = wl_core.lease_main(tree)
+            if main is None:
+                return None
+            return (
+                "%s is a lease of %s, and live proof runs only in the main checkout at landing: its identity is that tree's head and its ledger is that tree's. Land the commits, then run --live-proof in %s."
+                % (tree, main, main)
+            )
+    return None
+
+
 def run(
     root: pathlib.Path,
     me: str,

@@ -521,3 +521,45 @@ def test_cli_with_no_arguments_prints_usage_and_exits_nonzero():
     assert got.returncode == 2
     assert "usage: worklist.py --live-proof <me>" in got.stderr
     assert got.stdout == ""
+
+
+def _fake_lease(tmp_path: pathlib.Path) -> pathlib.Path:
+    main = tmp_path / "main"
+    admin = main / ".git" / "worktrees" / "lease1"
+    admin.mkdir(parents=True)
+    (admin / "commondir").write_text("../..\n", encoding="utf-8")
+    lease = main / ".claude" / "worktrees" / "lease1"
+    lease.mkdir(parents=True)
+    (lease / ".git").write_text("gitdir: %s\n" % admin, encoding="utf-8")
+    return lease
+
+
+def test_a_lease_start_refuses_recording_and_names_the_main_checkout(tmp_path):
+    lease = _fake_lease(tmp_path)
+    why = LP.lease_refusal(lease / "sub")
+    assert why is not None
+    assert "is a lease of" in why
+    assert str(tmp_path / "main") in why
+
+
+def test_a_main_checkout_start_is_not_refused(tmp_path):
+    (tmp_path / "plain" / ".git").mkdir(parents=True)
+    assert LP.lease_refusal(tmp_path / "plain") is None
+
+
+def test_cli_from_a_lease_refuses_before_any_recorder(tmp_path):
+    lease = _fake_lease(tmp_path)
+    env = wlfix.scrubbed_environ()
+    env["CLAUDE_PROJECT_DIR"] = str(lease)
+    got = subprocess.run(
+        [sys.executable, str(wlfix.STOP_DIR / "worklist.py"), "--live-proof", ME, REL, "abcd1234"],
+        capture_output=True,
+        text=True,
+        env=env,
+        cwd=str(lease),
+        stdin=subprocess.DEVNULL,
+        check=False,
+        timeout=60,
+    )
+    assert got.returncode == 2
+    assert "is a lease of" in got.stderr
