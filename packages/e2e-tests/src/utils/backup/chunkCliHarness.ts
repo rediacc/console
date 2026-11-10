@@ -13,6 +13,7 @@ import {
 import { CliRunner } from '../CliRunner';
 import { loginCliToAccount } from '../licence';
 import { RenetFunctionsTestRunner } from '../renet-functions/RenetFunctionsTestRunner';
+import type { ExecResult } from '../renet-functions/types';
 
 // Shared by suites 26 and 27: the account-server and fleet wiring, the CLI login, and the repository provisioning both chunk-store CLI suites build on.
 
@@ -232,14 +233,72 @@ export const ensureDatastore = async (
   label: string,
   size = '10G'
 ): Promise<void> => {
-  const init = await runner.datastoreInitPool(size, DS, false);
+  await ensureDatastoreSize(
+    {
+      init: () => runner.datastoreInitPool(size, DS, false),
+      sizeBytes: () => runner.executeViaBridge(`df -B1 --output=size "${DS}" | tail -1`),
+      expand: () => runner.datastoreExpand(size, DS),
+      output: (r) => runner.getCombinedOutput(r),
+    },
+    label,
+    size
+  );
+};
+
+/** Operations `ensureDatastoreSize` drives, so the decision can be tested with a fake. */
+export interface DatastoreSizeOps {
+  init: () => Promise<ExecResult>;
+  /** `df -B1 --output=size` of the datastore mount: stdout is the size in bytes. */
+  sizeBytes: () => Promise<ExecResult>;
+  expand: () => Promise<ExecResult>;
+  output: (result: ExecResult) => string;
+}
+
+/** A filesystem reports slightly less than its image; a shortfall below this is not a smaller store. */
+export const DATASTORE_SIZE_SLACK_BYTES = 256 * 1024 * 1024;
+
+const SIZE_UNITS: Record<string, number> = { K: 1024, M: 1024 ** 2, G: 1024 ** 3, T: 1024 ** 4 };
+
+/** Parse a renet size string (`32G`, `500M`, `1024`) into bytes. */
+export const parseSizeBytes = (size: string): number => {
+  const m = /^(\d+(?:\.\d+)?)\s*([KMGT])?i?B?$/i.exec(size.trim());
+  if (!m) throw new Error(`unparseable datastore size: ${size}`);
+  return Math.round(Number(m[1]) * (m[2] ? SIZE_UNITS[m[2].toUpperCase()] : 1));
+};
+
+/**
+ * Init the datastore when absent; when one already exists, grow it to `size` if it is smaller.
+ *
+ * An existing 10G store used to satisfy a 32G request, so a leg reusing the fleet died later on `insufficient disk space`. Growing is `datastore expand`, never `init --force` (that deletes every repository image).
+ */
+export const ensureDatastoreSize = async (
+  ops: DatastoreSizeOps,
+  label: string,
+  size: string
+): Promise<void> => {
+  const init = await ops.init();
   if (init.code === 0) return;
   // Without --force, renet REFUSES an existing BTRFS datastore by name ("datastore already exists", datastore_init.go:106-111). That refusal is the answer this function wants, so it is the success case, not a failure — and it is a more reliable probe than a shell test, whose `&&`/`||` has to survive two levels of SSH quoting to mean anything.
-  const output = runner.getCombinedOutput(init);
+  const output = ops.output(init);
   expect(
     /already exists/i.test(output),
     `datastore init on ${label} failed for a reason other than one already being there: ${output.slice(-800)}`
   ).toBe(true);
+
+  const wanted = parseSizeBytes(size);
+  const probe = await ops.sizeBytes();
+  const have = Number.parseInt(probe.stdout.trim(), 10);
+  expect(
+    Number.isFinite(have),
+    `could not read the size of the existing datastore on ${label}: ${ops.output(probe).slice(-400)}`
+  ).toBe(true);
+  if (have + DATASTORE_SIZE_SLACK_BYTES >= wanted) return;
+
+  const grown = await ops.expand();
+  expect(
+    grown.code,
+    `datastore on ${label} is ${have} bytes (requested ${size} = ${wanted} bytes) and expanding it failed: ${ops.output(grown).slice(-800)}`
+  ).toBe(0);
 };
 
 /** Register both workers in the CLI config (idempotent per fresh config). */
