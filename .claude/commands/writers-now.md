@@ -1,6 +1,6 @@
 ---
 description: Drain the Promoted plans in agent/plans/QUEUE.md. One read-only survey sorts every open box into six groups first. Writers in leases take the code boxes only, grouped by the files a box touches, and land in one batch that is gated once. Live boxes run in the main checkout in three side-by-side queues: fleet, bench and hostinger, the last two started at once by any agent at any time. Writers, gates and fleet runs never share the local machine, and operator questions go in one batched ask. Free text after the command narrows it to matching plans.
-argument-hint: "[filter: plan names or substrings, e.g. 'backup proxy'; omit for every unfinished Promoted plan]"
+argument-hint: "[ask] [filter: plan names or substrings, e.g. 'backup proxy'; omit for every unfinished Promoted plan; 'ask' asks for risk/permit rulings that unblock stuck boxes]"
 allowed-tools: Bash(.claude/hooks/stop/worklist.py --list --open:*), Bash(.claude/hooks/stop/worklist.py --plan-investigate:*), Bash(.claude/hooks/stop/worklist.py --plan-tick:*), Bash(.claude/hooks/stop/worklist.py --live-proof:*), Bash(.claude/hooks/stop/worklist.py --add:*), Bash(.claude/hooks/stop/worklist.py --add-many:*), Bash(.claude/hooks/stop/worklist.py --lease:*), Bash(.claude/hooks/stop/worklist.py --update:*), Bash(git add:*), Bash(git commit:*), Bash(npm run login\:bench:*), Bash(git branch:*), Bash(git log:*), Bash(sed:*), Bash(grep:*), Bash(date:*), Bash(uptime:*), Bash(nproc:*), Bash(python3 -c:*)
 ---
 
@@ -115,6 +115,17 @@ Hostinger runs without asking, and provisioning restarts its services. Productio
 
 G3 and G4 boxes stay open and are named once in the report. A G6 question goes in one batched `AskUserQuestion` with the recommended option first, only when no ruling settles it. There is no ask for what `feedback` memory already rules.
 
+### 7a. The permit ask: trading risk for time (opt-in)
+
+A round often stalls on boxes no writer or runner can move without a wider permit: a gate the recorder will not pass (no VERIFIED `vm:check`), a soak window, a production or destructive step, an external send, or a decision parked as G6. When the arguments carry the word `ask` (any position; it is removed from the filter), the lead runs this step right after the survey returns and before the writers start, so the answers shape the round.
+
+1. **Group the stuck boxes by the reason they cannot move**, from the survey's G3, G4 and G6 lines and the live boxes blocked on a gate, window or permit. Skip the reasons a merge or a CI run settles. Count boxes per reason and keep the top ten.
+2. **Turn each reason into the permit that would move it**, phrased as the action the session would then take, with its consequence: for example a recorder waiver marked `--vm-waived ASKED:<minute>` that a later VERIFIED run confirms, a 2-hour window in place of a day, a production run on a named region, a destructive cleanup after its archive step, a real mail to a named address, or a parked decision taken now. A reason that a ruling or `feedback` memory already settles is acted on, not asked.
+3. **Ask in batches of up to four** with `AskUserQuestion`, the riskier permit first and labelled with its consequence, the conservative option beside it, and a free-text answer always possible. More than four reasons go in the next batch after the first is answered.
+4. **Record each answer before acting on it**: one round-log DECISIONS line with the operator's words and `ASKED:<minute>Z`, and one worklist item per permit granted naming the boxes it moves. Then start the runs the permits unlock, in the queues of steps 3 and 7.
+
+Without the word `ask`, the step does not run; the report (step 8) still names the top stuck reasons in one line each, ending with "run `/writers-now ask` to be asked for the permits". In away mode (`/awk`) the questions are refused, so each permit is parked as a `[?]` whose DEFAULT is the conservative option.
+
 ### 8. Report in one screen
 
-Boxes ticked with their commits and commits landed lead the report. Then the writers running or queued with the refusal that holds each, the live box in progress, and the boxes still open by group. No narration of the survey.
+Boxes ticked with their commits and commits landed lead the report. Then the writers running or queued with the refusal that holds each, the live box in progress, and the boxes still open by group. Then the top stuck reasons of step 7a, one line each with the permit that would move it (and the answers taken, when `ask` ran). No narration of the survey.
