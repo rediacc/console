@@ -39,8 +39,13 @@ import json
 import os
 import subprocess
 import sys
+from typing import TYPE_CHECKING
 
+from rediacc_ci import paths
 from rediacc_ci.core import common, wrangler
+
+if TYPE_CHECKING:
+    import pathlib
 
 # This module's own dotted name, the prefix of every diagnostic it prints (the same name `python3 -m` runs it by). A literal, because `__name__` is `__main__` under `-m`.
 SELF = "rediacc_ci.deploy.set_www_worker_secrets"
@@ -171,6 +176,11 @@ def _jq(argv: list[str], document: str) -> tuple[int, str]:
     return proc.returncode, proc.stdout
 
 
+def worker_dir() -> pathlib.Path:
+    """`workers/www`, whose `node_modules/.bin/wrangler` the release (`www-worker-deps`) and the deploy job install. `wrangler.ARGV` is `npx --no-install`, which resolves only a local binary at or above its cwd, and the repository root has none: the L7 production run of release:local (2026-11-10, finding fc8ad2fd) died on `npx canceled due to missing packages and no YES option: ["wrangler@4.160.0"]`. So wrangler starts here, as `set_preview_worker_secrets` and `deploy_www` do."""
+    return paths.repo_root() / "workers" / "www"
+
+
 def wrangler_argv(worker_name: str) -> list[str]:
     """`npx wrangler secret bulk --name "$WORKER_NAME"` (:141)."""
     return [*wrangler.ARGV, "secret", "bulk", "--name", worker_name]
@@ -178,7 +188,7 @@ def wrangler_argv(worker_name: str) -> list[str]:
 
 def _wrangler(argv: list[str], payload: str) -> int:
     """The right half of the pipe. BOTH streams inherited, as the twin leaves them: wrangler's own output is the entire visible result of a good run."""
-    proc = subprocess.run(argv, input=payload, text=True, check=False)
+    proc = subprocess.run(argv, input=payload, text=True, check=False, cwd=worker_dir())
     return proc.returncode
 
 
