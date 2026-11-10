@@ -20,7 +20,7 @@ describe('runSetupStepsConcurrently', () => {
     });
     await runSetupStepsConcurrently([step('a'), step('b'), step('c')]);
     expect(events.slice(0, 3)).toEqual(['start a', 'start b', 'start c']);
-    expect(events.slice(3).sort()).toEqual(['end a', 'end b', 'end c']);
+    expect(events.slice(3).sort((a, b) => a.localeCompare(b))).toEqual(['end a', 'end b', 'end c']);
   });
 
   it('names every failed step, not only the first', async () => {
