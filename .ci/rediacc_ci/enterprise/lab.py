@@ -1708,7 +1708,6 @@ def live_spread_renew(
         except ROLLBACK_FAILURES as back:  # not only LabError (review e2231d81.1)
             exc.add_note(_left_behind(script, newest, back))
         raise
-    # Any failure of this put leaves the Worker on the old version, so none is left unnoted (review 12d04dd4.1).
     try:
         put_version(script, newest, run=run)
     except Exception as back:  # any failure, re-raised with the hand fix (review 12d04dd4.1)

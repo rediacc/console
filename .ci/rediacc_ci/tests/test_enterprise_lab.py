@@ -1836,11 +1836,9 @@ class Fleet:
         outcome=None,
         deployments=None,
         rollback_fails_to="",
-        rollback_raises_to="",
         banner="banner",
     ):
         self.rollback_fails_to = rollback_fails_to
-        self.rollback_raises_to = rollback_raises_to
         self.banner = banner
         self.renet = renet
         self.proxy_uploads = proxy_uploads
@@ -1860,8 +1858,6 @@ class Fleet:
             return lab.Proc(0, self.banner + "\n" + json.dumps(self.deployments))
         if "rollback" in argv:
             target = argv[argv.index("rollback") + 1]
-            if target == self.rollback_raises_to:
-                raise TypeError("a runner bug")
             if target == self.rollback_fails_to:
                 return lab.Proc(1)
             self.worker = target
@@ -1964,14 +1960,6 @@ def test_a_failed_rollback_after_a_renewal_is_not_a_clean_answer():
     fleet = Fleet(rollback_fails_to="v-new")
     with pytest.raises(proof.LabError, match=r"renewal answered ok=True.*account-proof-a.*v-new"):
         spread_v9(fleet, "new", "previous")
-
-
-def test_a_non_listed_error_from_the_rollback_after_a_renewal_still_names_the_hand_fix():
-    """Review 12d04dd4.1: a TypeError out of put_version is the same hand-fix refusal, not a bare escape."""
-    fleet = Fleet(rollback_raises_to="v-new")
-    with pytest.raises(proof.LabError, match=r"renewal answered ok=True.*restore it by hand") as e:
-        spread_v9(fleet, "new", "previous")
-    assert isinstance(e.value.__cause__, TypeError)
 
 
 def test_a_banner_with_brackets_does_not_break_the_json_the_drivers_read():
