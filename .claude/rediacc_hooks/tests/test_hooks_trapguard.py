@@ -427,6 +427,32 @@ CASES = [
         ),
         "trapguard CONTROL: an eu-bench run that worked is never warned about",
     ),
+    # shape-lessons (PLAN-experience-feedback P3): the REAL corpus, so the TRAPS seed no-cacheprovider-vs-strict-config is judged where it lives. The firing output is the measured one (rc 4 under the repo's --strict-config, 2026-11-10).
+    inject(
+        ("check_inject fires", "trapguard[shape-lessons]"),
+        inject_json(
+            "PYTHONPATH=.claude pytest -q -p no:cacheprovider .ci/rediacc_ci/tests/x.py",
+            "no tests ran in 0.10s\nERROR: Unknown config option: cache_dir",
+        ),
+        "trapguard: a pytest run with -p no:cacheprovider that collected nothing names the lesson",
+    ),
+    inject(
+        ("check_inject silent", ""),
+        inject_json(
+            "pytest -q -p no:cacheprovider .ci/rediacc_ci/tests/x.py", "12 passed in 0.40s"
+        ),
+        "trapguard CONTROL: the same flag on a run that collected tests says nothing",
+    ),
+    inject(
+        ("check_inject silent", ""),
+        inject_json("pytest -q .ci/rediacc_ci/tests/x.py", "no tests ran in 0.01s"),
+        "trapguard CONTROL: an empty run WITHOUT the flag is not this lesson",
+    ),
+    inject(
+        ("check_inject silent", ""),
+        inject_json('echo "pytest -p no:cacheprovider"', "no tests ran"),
+        "trapguard CONTROL: the flag named inside an echo is not a pytest run",
+    ),
 ]
 
 
@@ -770,3 +796,124 @@ def test_the_bench_login_markers_are_the_login_bench_markers():
     spec.loader.exec_module(module)
     assert module.BENCH_LOGIN_MARKERS, "the hook's copy is empty; the parity pin compared nothing"
     assert tuple(module.BENCH_LOGIN_MARKERS) == tuple(login_bench.LOGIN_NEEDED_MARKERS)
+
+
+# --- shape-lessons against fixture sources (PLAN-experience-feedback P3) -----------
+SHAPES_PY = hookcases.HOOKS / "trapguard" / "shapes.py"
+
+POST_TRAPS = """# Traps
+
+## A fixture post lesson
+Trap-Id: fixture-post
+Enforced-By: shape:fixture-post
+Residue:
+Shape: post ^make\\b
+Shape-Output: boom
+Shape-Say: make printed boom
+Shape-Fires: make all => boom
+Shape-Silent: make all => fine
+Shape-Silent: echo make => boom
+
+body
+"""
+
+
+def _shape_world(tmp_path, traps="# Traps\n", notes=None):
+    root = tmp_path / "root"
+    (root / "docs" / "agent-reference").mkdir(parents=True)
+    (root / "docs" / "agent-reference" / "TRAPS.md").write_text(traps, encoding="utf-8")
+    memory = tmp_path / "memory"
+    memory.mkdir()
+    for stem, text in (notes or {}).items():
+        (memory / ("%s.md" % stem)).write_text(text, encoding="utf-8")
+    return {"SHAPE_ROOT": str(root), "SHAPE_MEMORY_DIR": str(memory)}
+
+
+def _post(tmp_path, env, command, output):
+    return run_dispatch(inject_json(command, output).encode(), tmp_path / "ledgers", **env)
+
+
+def test_a_fixture_post_shape_fires_only_where_its_samples_say(tmp_path):
+    env = _shape_world(tmp_path, POST_TRAPS)
+    rc, out, err = _post(tmp_path, env, "cd /x && make all", "boom")
+    assert rc == 0, err
+    assert "trapguard[shape-lessons]: lesson fixture-post: make printed boom" in out
+    assert _post(tmp_path, env, "make all", "fine")[1] == ""
+    assert _post(tmp_path, env, 'echo "make all"', "boom")[1] == ""
+
+
+def test_a_post_shape_whose_silent_sample_fires_is_not_loaded(tmp_path):
+    """The control for the case above: the SAME shape with a Silent sample its regex matches says nothing on the output that fired there."""
+    broken = POST_TRAPS.replace("Shape-Silent: make all => fine", "Shape-Silent: make all => boom")
+    env = _shape_world(tmp_path, broken)
+    rc, out, err = _post(tmp_path, env, "make all", "boom")
+    assert rc == 0, err
+    assert out == ""
+
+
+def test_a_post_shape_that_does_not_compile_is_not_loaded(tmp_path):
+    broken = POST_TRAPS.replace("Shape: post ^make\\b", "Shape: post ^make(")
+    assert broken != POST_TRAPS, "the plant did not apply"
+    env = _shape_world(tmp_path, broken)
+    assert _post(tmp_path, env, "make all", "boom")[1] == ""
+
+
+def test_a_memory_note_post_shape_fires(tmp_path):
+    note = (
+        "---\nname: n\ndescription: a fixture memory lesson\n---\n\nbody\n\n"
+        "Shape: post ^tar\\b\nShape-Output: Cannot open\n"
+        "Shape-Fires: tar xf a.tar => tar: a.tar: Cannot open\n"
+        "Shape-Silent: tar xf a.tar => ok\n"
+    )
+    env = _shape_world(tmp_path, notes={"feedback_tar": note})
+    out = _post(tmp_path, env, "tar xf b.tar", "tar: b.tar: Cannot open: No such file")[1]
+    assert "lesson feedback_tar: a fixture memory lesson" in out
+    assert "feedback_tar.md" in out
+
+
+def test_an_output_that_shows_no_trap_never_imports_shellscan(tmp_path):
+    """The cost claim in shapes.py: the output regex runs first, so the common call parses no command."""
+    env = _shape_world(tmp_path, POST_TRAPS)
+    probe = (
+        "import importlib.util, sys\n"
+        "spec = importlib.util.spec_from_file_location('s', %r)\n"
+        "m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)\n"
+        "quiet = m.post_notes('make all', 'fine', %r)\n"
+        "print(quiet, 'rediacc_hooks.shellscan' in sys.modules)\n"
+        "loud = m.post_notes('make all', 'boom', %r)\n"
+        "print(bool(loud), 'rediacc_hooks.shellscan' in sys.modules)\n"
+    ) % (str(SHAPES_PY), env["SHAPE_ROOT"], env["SHAPE_ROOT"])
+    done = subprocess.run(
+        ["python3", "-c", probe],
+        capture_output=True,
+        text=True,
+        check=False,
+        env=dict(os.environ, SHAPE_MEMORY_DIR=env["SHAPE_MEMORY_DIR"], PYTHONPATH=""),
+        timeout=60,
+    )
+    assert done.returncode == 0, done.stderr
+    assert done.stdout.splitlines() == ["[] False", "True True"]
+
+
+def test_memory_dir_follows_a_worktree_to_its_main_checkout(tmp_path, monkeypatch):
+    """A lease or worktree shares the main checkout's memory, so the munged name is the main checkout's."""
+    spec = importlib.util.spec_from_file_location("trapguard_shapes_memdir", SHAPES_PY)
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    main = tmp_path / "main"
+    common = main / ".git"
+    (common / "worktrees" / "w1").mkdir(parents=True)
+    (common / "worktrees" / "w1" / "commondir").write_text("../..\n", encoding="utf-8")
+    tree = main / ".claude" / "worktrees" / "w1"
+    tree.mkdir(parents=True)
+    (tree / ".git").write_text("gitdir: %s\n" % (common / "worktrees" / "w1"), encoding="utf-8")
+    monkeypatch.delenv("SHAPE_MEMORY_DIR", raising=False)
+    monkeypatch.setenv("CLAUDE_CONFIG_DIR", str(tmp_path / "cfg"))
+    munged = re.sub(r"[^A-Za-z0-9]", "-", str(main.resolve()))
+    want = tmp_path / "cfg" / "projects" / munged / "memory"
+    assert module.memory_dir(tree) == want
+    assert module.memory_dir(main) == want
+    monkeypatch.setenv("SHAPE_MEMORY_DIR", "")
+    assert module.memory_dir(tree) is None

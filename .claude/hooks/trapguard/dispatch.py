@@ -505,6 +505,45 @@ def rule_bench_login_is_the_agents_step(cmd, out, _root, _resp):
     )
 
 
+# The checkout this file lives in: <repo>/.claude/hooks/trapguard/dispatch.py.
+_REPO = pathlib.Path(__file__).resolve().parents[3]
+_SHAPES_MODULE = "trapguard_shapes"
+
+
+def _shapes():
+    """`shapes.py` beside this file, loaded once by path (this directory is not a package)."""
+    loaded = sys.modules.get(_SHAPES_MODULE)
+    if loaded is not None:
+        return loaded
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        _SHAPES_MODULE, pathlib.Path(__file__).resolve().parent / "shapes.py"
+    )
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[_SHAPES_MODULE] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def rule_shape_lessons(cmd, out, _root, _resp):
+    """The one generic rule for every lesson that carries a `Shape: post <regex>` line (PLAN-experience-feedback P3).
+
+    A lesson in docs/agent-reference/TRAPS.md or a memory note names the command and the output that together show its trap; `shapes.py` reads it, checks its Shape-Fires and Shape-Silent samples, and this rule adds the lesson's own sentence after a call that matches both. A new lesson of this kind needs a Shape line, not a new rule here.
+
+    The corpus is read from THIS checkout (the one holding this file), not the payload's cwd, which is wherever the command ran; `SHAPE_ROOT` overrides it so the suite can hand it a fixture corpus. A shape whose samples do not behave is skipped here and named by the pre-bash guard `block_shape_lessons`.
+
+    ONE NOTE PER SESSION FOR THE WHOLE RULE, as for every trapguard rule: the dispatcher dedupes on the rule id, so a second post shape firing later in the same session is not repeated. Acceptable while post shapes are few; key the ledger on the shape id when they are not.
+    """
+    root = os.environ.get("SHAPE_ROOT") or str(_REPO)
+    notes = _shapes().post_notes(cmd, out, root)
+    if not notes:
+        return None
+    return "\n".join(
+        "trapguard[shape-lessons]: lesson %s: %s" % (shape_id, text) for shape_id, text in notes
+    )
+
+
 RULES = (
     rule_cancelled_run_not_passed,
     rule_phantom_deletion_diff,
@@ -513,6 +552,7 @@ RULES = (
     rule_rebase_unverified,
     rule_bws_auth_failure,
     rule_bench_login_is_the_agents_step,
+    rule_shape_lessons,
 )
 
 # The rules that judge the COMMAND alone and never read `tool_response`. Over the payload bound only these run (plan section 4.3.1): the response was not read whole, so a rule keyed on it would be judging a truncated output.

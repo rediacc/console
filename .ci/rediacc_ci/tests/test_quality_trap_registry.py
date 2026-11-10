@@ -382,3 +382,124 @@ def test_a_longer_guard_name_in_the_sibling_suite_does_not_make_a_guard_live(
     assert reg.guard_liveness("block_ctl_tested") != ""
     sibling.write_text("# covers block_ctl_tested_extra and block_ctl_tested.\n", encoding="utf-8")
     assert reg.guard_liveness("block_ctl_tested") == ""
+
+
+# --- PLAN-experience-feedback P3: Shape lines, shape: pointers, the exported resolver ---
+
+GOOD_PRE = "Shape: pre:refuse ^rm\\s+-rf\\b\nShape-Fires: rm -rf x\nShape-Silent: rm x\n"
+
+
+def test_shape_keys_do_not_move_the_five_golden_fields_and_keep_documented_in() -> None:
+    """The trailer gains the Shape keys after Residue: the frozen five fields are unchanged, and a Documented-In written after a Shape line is still read."""
+    plain = "## a\nTrap-Id: a-trap\nEnforced-By: JUDGMENT-ONLY\nResidue: r.\n\nbody\n"
+    shaped = plain.replace(
+        "Residue: r.\n", "Residue: r.\n" + GOOD_PRE + "Documented-In: trap:a-trap\n"
+    )
+
+    def five(corpus: str):
+        return [
+            (e.line, e.trap_id, e.enforced_by, e.residue, e.residue_seen)
+            for e in mod.parse_corpus(corpus)
+        ]
+
+    assert five(shaped) == five(plain)
+    entry = mod.parse_corpus(shaped)[0]
+    assert entry.shape_lines == 3
+    assert not entry.shape_early
+    assert entry.documented_in == [(8, "trap:a-trap")]
+    early = mod.parse_corpus(
+        "## e\nTrap-Id: e-trap\nEnforced-By: shape:e-trap\n" + GOOD_PRE + "Residue: y.\n"
+    )[0]
+    assert early.shape_early
+    assert early.residue == "y."
+
+
+def test_pointer_problem_is_the_public_resolver_in_both_directions(tmp_path: pathlib.Path) -> None:
+    """Group C imports this (PLAN-experience-feedback C7b): each kind answers "" for a live instrument and a sentence for a dead one."""
+    entry = "## s\nTrap-Id: ctl-shape\nEnforced-By: shape:ctl-shape\nResidue:\n" + GOOD_PRE
+    reg = _anchor_registry(tmp_path, entry)
+    # `_anchor_registry` re-roots file_root onto the anchor fixture; the fake manifest names this file, so it is live at hop 1.
+    (reg.file_root / "sub").mkdir()
+    (reg.file_root / "sub" / "ctl-guard.sh").write_text("#!/bin/bash\necho real\n", "utf-8")
+    live = (
+        "gate:check:ctl-live",
+        "hook:ctl-two-sided",
+        "file:sub/ctl-guard.sh",
+        "guard:block_ctl_tested",
+        "shape:ctl-shape",
+    )
+    for ptr in live:
+        assert mod.pointer_problem(reg, ptr) == "", ptr
+    dead = {
+        "gate:check:ctl-dark": "does not mark 'gate: true'",
+        "hook:ctl-one-sided": "lacks a FIRING case or a SILENT case",
+        "file:no/such.sh": "does not resolve",
+        "guard:block_ctl_one_sided": "one-sided",
+        "shape:filler-trap-1": "no entry with that id carries a `Shape:` line",
+        "grep:x": "unknown pointer",
+        "JUDGMENT-ONLY": "not an instrument",
+    }
+    for ptr, needle in dead.items():
+        assert needle in mod.pointer_problem(reg, ptr), ptr
+    counts = mod.Shape()
+    for ptr in live:
+        mod.pointer_problem(reg, ptr, counts)
+    assert (counts.gate, counts.hook, counts.file, counts.guard, counts.shape) == (1, 1, 1, 1, 1)
+    assert _probe_findings(reg) == []
+
+
+def test_a_shape_pointer_reaches_memory_notes_only_when_given_a_memory_dir(
+    tmp_path: pathlib.Path,
+) -> None:
+    """The gate never passes `memory_dir` (CI cannot see it); `--lessons-sweep` does, and then `shape:<note stem>` resolves."""
+    reg = _anchor_registry(tmp_path, "")
+    memory = tmp_path / "memory"
+    memory.mkdir()
+    (memory / "feedback_rm.md").write_text(
+        "---\nname: rm\ndescription: d\n---\n\nbody\n\n" + GOOD_PRE, encoding="utf-8"
+    )
+    assert "no entry with that id" in mod.pointer_problem(reg, "shape:feedback_rm")
+    with_memory = mod.Registry(
+        {
+            "TRAP_CORPUS": reg.corpus,
+            "TRAP_MANIFEST": reg.manifest,
+            "TRAP_PACKAGE_JSON": reg.package_json,
+            "TRAP_DISPATCH": reg.dispatch,
+            "TRAP_HOOK_SUITE": reg.hook_suite,
+            "TRAP_SETTINGS": reg.settings,
+            "TRAP_LIFECYCLE": reg.lifecycle,
+            "TRAP_FILE_ROOT": reg.file_root,
+            "TRAP_ANCHOR_ROOT": reg.anchor_root,
+        },
+        memory_dir=memory,
+    )
+    assert mod.pointer_problem(with_memory, "shape:feedback_rm") == ""
+    (memory / "feedback_rm.md").write_text(
+        "---\nname: rm\n---\n\n" + GOOD_PRE.replace("rm x", "rm -rf y"), encoding="utf-8"
+    )
+    with_memory._shapes = None
+    assert "Shape-Silent sample 'rm -rf y' fires" in mod.pointer_problem(
+        with_memory, "shape:feedback_rm"
+    )
+
+
+def test_a_missing_shape_loader_is_a_finding_not_an_empty_answer(tmp_path: pathlib.Path) -> None:
+    """Anti-vacuity: a loader that cannot be imported must not read as "no entry carries a Shape"."""
+    entry = "## s\nTrap-Id: ctl-shape\nEnforced-By: shape:ctl-shape\nResidue:\n" + GOOD_PRE
+    reg = _anchor_registry(tmp_path, entry)
+    reg.shapes_path = tmp_path / "no-such-shapes.py"
+    found = _probe_findings(reg)
+    assert any("cannot be used" in f for f in found), found
+
+
+def test_the_real_seeds_load_and_their_pointers_are_live() -> None:
+    """The two TRAPS seeds, judged on the real tree: an empty loaded set would make every shape: red for the wrong reason."""
+    real = mod.Registry(mod.resolve_seams(paths.repo_root(), env={}))
+    loaded, broken = real.loaded_shapes()
+    assert broken == {}, broken
+    assert {"date-precision-digit-under-uutils", "no-cacheprovider-vs-strict-config"} <= set(loaded)
+    assert loaded["date-precision-digit-under-uutils"].pre.action == "warn"
+    assert loaded["no-cacheprovider-vs-strict-config"].post is not None
+    for trap_id in loaded:
+        assert mod.pointer_problem(real, "shape:%s" % trap_id) == "", trap_id
+    assert real.shapes_path == mod.SHAPES_DEFAULT

@@ -15,7 +15,19 @@ Residue: <what the instruments do not reach>   mandatory when JUDGMENT-ONLY
 Documented-In: <anchor>            optional, 0..n lines, one anchor each, only after Residue:
 ```
 
-A pointer is `gate:<npm check id>`, `hook:<trapguard rule id>`, `guard:<guard stem>`, or `file:<path>` / `file:<path>:<line>`. Every pointer must RESOLVE and must be LIVE, because the cheapest thing to name under a coverage gate is an instrument that cannot fire. A `guard:` pointer is live when the guard has its own `test-<stem>.py` suite, or both a firing and a silent case in `hookcases.py`.
+A pointer is `gate:<npm check id>`, `hook:<trapguard rule id>`, `guard:<guard stem>`, `shape:<trap id>`, or `file:<path>` / `file:<path>:<line>`. Every pointer must RESOLVE and must be LIVE, because the cheapest thing to name under a coverage gate is an instrument that cannot fire. A `guard:` pointer is live when the guard has its own `test-<stem>.py` suite, or both a firing and a silent case in `hookcases.py`.
+
+A lesson about one command shape enforces itself with `Shape:` lines after `Residue:`, and `shape:<its own id>` names them. `block_shape_lessons` (pre-bash) refuses or warns on a `pre:` shape, and trapguard's `shape-lessons` rule adds a note after a `post` shape whose output also matches. Each shape carries samples in both directions, and a shape whose regex does not compile or whose samples misbehave is not loaded and reds this gate:
+
+```
+Shape: pre:refuse <regex>    or pre:warn <regex>; searched against each command bash runs, as `name arg ...`
+Shape: post <regex>          with Shape-Output: <regex>, searched in stdout and stderr
+Shape-Fires: <sample>        1..n; a post sample is `<command> => <output>`
+Shape-Silent: <sample>       1..n
+Shape-Say: <text>            optional: the sentence the refusal or note leads with
+```
+
+Memory notes carry the same lines; `.claude/hooks/trapguard/shapes.py` holds the full grammar.
 
 `Documented-In:` names where a lesson is written down. It never counts as enforcement, and each anchor must resolve to the lesson's text, not merely to a place:
 
@@ -953,8 +965,15 @@ See `.ci/scripts/test/gates/test-scope-gate-outputs.sh:254` for the fixed instan
 
 ## `date +%s%3N` returns NANOSECONDS under uutils coreutils, and CI will never tell you
 Trap-Id: date-precision-digit-under-uutils
-Enforced-By: JUDGMENT-ONLY
-Residue: GitHub runners ship GNU coreutils, so any gate for this is green there forever. `git grep 'date +%s%[0-9]*N'` is a sweep a human runs, and only a precision digit compared against a threshold is a defect.
+Enforced-By: shape:date-precision-digit-under-uutils
+Residue: the shape warns on a `date` the Bash call itself runs; a precision digit inside a script file the call runs (`bash test.sh`) is not seen, and GitHub runners ship GNU coreutils, so `git grep 'date +%s%[0-9]*N'` stays the sweep for committed scripts.
+Shape: pre:warn ^date\b.*%[0-9]+N
+Shape-Say: `date` with a precision digit (%3N) returns NANOSECONDS under uutils coreutils (0.8 here); use bash's EPOCHREALTIME for milliseconds
+Shape-Fires: date +%s%3N
+Shape-Fires: t=$(date -u +%H:%M:%S.%3N); echo $t
+Shape-Silent: date +%s
+Shape-Silent: date +%s%N
+Shape-Silent: echo "date +%s%3N"
 
 **GNU `date` honours the precision digit in `%3N` (milliseconds). uutils coreutils — the Rust reimplementation, shipping by default on more and more systems, 0.8.0 on this host — IGNORES it and returns the full nine digits.** Same command, same flags, a number a million times larger.
 
@@ -2013,10 +2032,18 @@ A citation of a bare file name resolves against nothing once the file moves or a
 
 ## -p no:cacheprovider under --strict-config collects nothing
 Trap-Id: no-cacheprovider-vs-strict-config
-Enforced-By: JUDGMENT-ONLY
-Residue: a nested pytest run against the repo's ini with `-p no:cacheprovider` exits 4 and collects nothing; nothing refuses it.
+Enforced-By: shape:no-cacheprovider-vs-strict-config
+Residue: the note follows a Bash call that ran pytest with `-p no:cacheprovider` and printed the empty run; a nested run inside a script or a gate whose output the session never reads is not seen, and nothing refuses the flag up front.
 Documented-In: text:.ci/rediacc_ci/tests/gates/test_twin_parity.py Disabling that plugin UNREGISTERS the `cache_dir` ini key
 Documented-In: text:pyproject.toml --strict-config  an unknown key in THIS table is an error
+Shape: post ^(?:\S*/)?(?:pytest|python[0-9.]*\s.*-m\s*pytest)\b.*\s-p\s*no:cacheprovider(?:\s|$)
+Shape-Output: no tests ran|Unknown config option: cache_dir
+Shape-Say: `-p no:cacheprovider` unregisters the `cache_dir` ini key, so under the repo's --strict-config pytest exits 4 having collected NOTHING; drop the flag and rerun
+Shape-Fires: pytest -q -p no:cacheprovider tests/ => no tests ran in 0.10s
+Shape-Fires: python3 -m pytest -p no:cacheprovider x.py => ERROR: Unknown config option: cache_dir
+Shape-Silent: pytest -q -p no:cacheprovider tests/ => 12 passed in 0.40s
+Shape-Silent: pytest -q tests/ => no tests ran in 0.01s
+Shape-Silent: echo pytest -p no:cacheprovider => no tests ran
 
 Disabling pytest's cacheprovider plugin also unregisters its `cache_dir` ini key. Under the repo's `--strict-config`, the ini's `cache_dir` then counts as an unknown key, so a nested pytest run with `-p no:cacheprovider` exits 4 and collects nothing. The empty run looks like a pass to anything that reads only the exit status of a later step.
 

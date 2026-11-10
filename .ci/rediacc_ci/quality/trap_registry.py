@@ -24,10 +24,18 @@ ASSERTIONS
   F3c ANCHOR PLACEMENT. Every `Documented-In:` line comes AFTER `Residue:`.
       `wl_store.trap_entries` ends the trailer at the first key it does not
       know, so an anchor above Residue would hide the Residue from the judge.
+  F3d SHAPE PLACEMENT. Every `Shape*:` line comes AFTER `Residue:`, for the
+      same reason (PLAN-experience-feedback P3).
   F4  POINTERS RESOLVE. gate: exists in the ci-runner manifest AND in
       package.json; hook: exists in the trapguard dispatcher's RULES tuple;
       file: exists on disk, and its :line is within the file and non-blank;
-      guard: is a stem `guards.stems()` admits.
+      guard: is a stem `guards.stems()` admits;
+      shape: names an entry whose `Shape:` lines LOAD through
+      `.claude/hooks/trapguard/shapes.py` (the regexes compile and every
+      Shape-Fires / Shape-Silent sample behaves as declared).
+  F4c EVERY SHAPE LOADS. A TRAPS entry carrying `Shape:` lines whose shape
+      does not load reds whether or not any pointer names it: a broken shape
+      is silently skipped by both hooks, so only this gate can say so.
   F4b DOCUMENTATION ANCHORS RESOLVE (PLAN-lessons-registry). `Documented-In:`
       is optional, 0..n per entry, one anchor per line, and never counts as
       enforcement. Each anchor resolves under TRAP_ANCHOR_ROOT:
@@ -58,6 +66,10 @@ ASSERTIONS
         guard: the guard is tested in BOTH directions: a sibling
               test-<stem>.py, or both a `check 2` and a `check 0
               guards/<stem>.py` case in the hook suite.
+        shape: the instrument that applies it is live: a pre shape needs
+              the guard `block_shape_lessons` live as a guard: pointer
+              would be, a post shape needs trapguard's `shape-lessons` rule
+              live as a hook: pointer would be.
   F6  SELF-CONTROL, FIRST. Every assertion above is planted against a mktemp
       fixture and required to red WITH THE MATCHING MESSAGE, and two clean
       fixtures are required to stay green. If any control misbehaves the gate
@@ -204,7 +216,16 @@ SEAMS = {
     "TRAP_FILE_ROOT": (),
     # Where `Documented-In:` anchors resolve. A seam of its own so the gate test can copy the anchored documents into a scratch root and mutate them there, never in the shared tree.
     "TRAP_ANCHOR_ROOT": (),
+    # The shape loader both hooks use (PLAN-experience-feedback P3). CODE, not data: a `shape:` pointer is judged by the same `load_sources` that decides whether the hooks apply the shape, so the gate and the hooks cannot disagree about what loads.
+    "TRAP_SHAPES": (".claude", "hooks", "trapguard", "shapes.py"),
 }
+
+# The shape loader when no TRAP_SHAPES seam is given: the CODE in this checkout (`<repo>/.ci/rediacc_ci/quality/trap_registry.py`, so parents[3] is the repo). The controls build fixture DATA and judge it with this real loader, as they judge fixture guards with the real `guard_liveness`.
+SHAPES_DEFAULT = pathlib.Path(__file__).resolve().parents[3].joinpath(*SEAMS["TRAP_SHAPES"])
+
+# The guard and the trapguard rule that apply a shape, by side.
+SHAPE_GUARD = "block_shape_lessons"
+SHAPE_RULE = "shape-lessons"
 
 # The retired probe's flag. Its presence in a registration file means the diagnostic is back on every tool call.
 PROBE_FLAG = "--probe-payload"
@@ -225,6 +246,8 @@ class Entry:
         "line",
         "residue",
         "residue_seen",
+        "shape_early",
+        "shape_lines",
         "title",
         "trap_id",
     )
@@ -248,6 +271,9 @@ class Entry:
         self.documented_in: list[tuple[int, str]] = []
         # A `Documented-In:` read BEFORE the Residue line (F3c).
         self.documented_early = False
+        # `Shape*:` trailer lines, and whether one came before Residue (F3d).
+        self.shape_lines = 0
+        self.shape_early = False
 
 
 FENCE_RE = re.compile(r"^[ \t]*(```+|~~~+)")
@@ -299,6 +325,12 @@ def parse_corpus(text: str) -> list[Entry]:
                 current.documented_in.append((number, line[len(DOCUMENTED_IN) :].strip()))
                 if not current.residue_seen:
                     current.documented_early = True
+                continue
+            # The shape keys (`Shape:`, `Shape-Output:`, `Shape-Fires:`, `Shape-Silent:`, `Shape-Say:`) stay in the trailer, so a Documented-In after them is still read. The twin's awk stopped at any unknown key; no frozen corpus carries one, so the five golden fields are unchanged.
+            if re.match(r"Shape(?:-[A-Za-z]+)?:", line):
+                current.shape_lines += 1
+                if not current.residue_seen:
+                    current.shape_early = True
                 continue
             in_trailer = False
     if current is not None:
@@ -396,9 +428,14 @@ def nearest(word: str, pool: list[str]) -> str:
 
 
 class Registry:
-    """The five artifacts a pointer resolves against, resolved once."""
+    """The artifacts a pointer resolves against, resolved once.
 
-    def __init__(self, seams: dict[str, pathlib.Path]) -> None:
+    `memory_dir` is for a caller outside this gate (`worklist.py --lessons-sweep`, PLAN-experience-feedback P7): with it, a `shape:<note stem>` pointer also resolves against the user's memory notes. The gate itself never passes one, because CI cannot see that directory.
+    """
+
+    def __init__(
+        self, seams: dict[str, pathlib.Path], memory_dir: pathlib.Path | None = None
+    ) -> None:
         self.corpus = seams["TRAP_CORPUS"]
         self.manifest = seams["TRAP_MANIFEST"]
         self.package_json = seams["TRAP_PACKAGE_JSON"]
@@ -408,6 +445,9 @@ class Registry:
         self.lifecycle = seams["TRAP_LIFECYCLE"]
         self.file_root = seams["TRAP_FILE_ROOT"]
         self.anchor_root = seams["TRAP_ANCHOR_ROOT"]
+        self.shapes_path = seams.get("TRAP_SHAPES") or SHAPES_DEFAULT
+        self.memory_dir = memory_dir
+        self._shapes: tuple[dict, dict] | None = None
         self._live_l1: list[pathlib.Path] | None = None
         self._stems: list[str] | None = None
         self._markdown: list[str] | None = None
@@ -632,6 +672,81 @@ class Registry:
             HOOKCASES_REL,
         )
 
+    # -- F4/F5 for `shape:` -------------------------------------------------
+
+    def loaded_shapes(self) -> tuple[dict, dict[str, list[str]]]:
+        """({id: shape} that LOAD, {id: [problem]} that do not), from the corpus and `memory_dir`, read once.
+
+        Asked of `shapes.py` itself (loaded by file, as `guard_stems` loads the guards package), so this gate and the two hooks share one answer to "does this shape load". A loader that cannot be used is one problem under the id `*`, never an empty answer: an empty answer would read as "no entry carries a Shape".
+        """
+        if self._shapes is not None:
+            return self._shapes
+        loaded: dict = {}
+        broken: dict[str, list[str]] = {}
+        try:
+            spec = importlib.util.spec_from_file_location("trap_registry_shapes", self.shapes_path)
+            if spec is None or spec.loader is None:
+                raise ImportError("no loader for %s" % self.shapes_path)
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            sources = module.corpus_sources(self.corpus)
+            if self.memory_dir is not None:
+                sources += module.memory_sources(self.memory_dir)
+            shapes, problems = module.load_sources(sources)
+        except (ImportError, OSError, SyntaxError, AttributeError) as exc:
+            broken["*"] = ["the shape loader %s cannot be used (%s)" % (self.shapes_path, exc)]
+            self._shapes = (loaded, broken)
+            return self._shapes
+        for one in shapes:
+            loaded[one.id] = one
+        for shape_id, _where, problem in problems:
+            broken.setdefault(shape_id, []).append(problem)
+        self._shapes = (loaded, broken)
+        return self._shapes
+
+    def shape_problem(self, shape_id: str) -> str:
+        """Empty when `shape:<id>` names a shape that loads and whose applying instrument is live, else the clause saying why not."""
+        loaded, broken = self.loaded_shapes()
+        if "*" in broken:
+            return "names shape:%s, but %s." % (shape_id, broken["*"][0])
+        if shape_id in broken:
+            return "names shape:%s, whose Shape lines do not load: %s." % (
+                shape_id,
+                "; ".join(broken[shape_id]),
+            )
+        found = loaded.get(shape_id)
+        if found is None:
+            return (
+                "names shape:%s, but no entry with that id carries a `Shape:` line. Add the "
+                "Shape lines (the grammar is in .claude/hooks/trapguard/shapes.py) or name "
+                "another instrument." % shape_id
+            )
+        if found.pre is not None:
+            if SHAPE_GUARD not in self.guard_stems():
+                return (
+                    "names shape:%s, a pre shape, but %s is not a guard the pre-tool dispatcher "
+                    "loads, so nothing applies it." % (shape_id, SHAPE_GUARD)
+                )
+            why = self.guard_liveness(SHAPE_GUARD)
+            if why:
+                return "names shape:%s, a pre shape, but its guard %s: %s." % (
+                    shape_id,
+                    SHAPE_GUARD,
+                    why,
+                )
+        if found.post is not None:
+            if not self.hook_resolves(SHAPE_RULE):
+                return (
+                    "names shape:%s, a post shape, but hook:%s is not a rule listed in RULES in "
+                    "%s, so nothing applies it." % (shape_id, SHAPE_RULE, self.dispatch)
+                )
+            if not self.hook_is_live(SHAPE_RULE):
+                return (
+                    "names shape:%s, a post shape, but hook:%s lacks a FIRING case or a SILENT "
+                    "case in %s." % (shape_id, SHAPE_RULE, self.hook_suite)
+                )
+        return ""
+
     # -- the Documented-In anchors ------------------------------------------
 
     def markdown_files(self) -> list[str]:
@@ -759,7 +874,89 @@ class Shape:
         self.hook = 0
         self.file = 0
         self.guard = 0
+        self.shape = 0
         self.anchors = dict.fromkeys(ANCHOR_KINDS, 0)
+
+
+def pointer_problem(registry: Registry, ptr: str, shape: "Shape | None" = None) -> str:
+    """Empty when one `Enforced-By` pointer RESOLVES and is LIVE (F4 + F5), else the clause saying why not.
+
+    THE PUBLIC RESOLVER. `check:ci-hint-corpus` and `worklist.py --lessons-sweep` (PLAN-experience-feedback P7) judge a HINTS entry's or a memory note's `Enforced-By:` with exactly this function, so "a live enforcer" means one thing everywhere. The clause starts "names <ptr>, ..." and reads after "'<id>' "; `scan` prefixes the corpus line and the Trap-Id. `shape` collects the per-kind counts when given.
+
+    `JUDGMENT-ONLY` is a disposition, not an instrument, so it is never a live enforcer here; `scan` skips it before calling.
+    """
+    counts = shape if shape is not None else Shape()
+    if ptr == "JUDGMENT-ONLY":
+        return "is JUDGMENT-ONLY, a disposition and not an instrument."
+    if ptr.startswith("gate:"):
+        counts.gate += 1
+        gid = ptr[len("gate:") :]
+        if not registry.gate_resolves(gid):
+            return (
+                "names gate:%s, which is not both a manifest entry and a package.json script. "
+                "A dangling pointer is a lie about coverage." % gid
+            )
+        if not registry.gate_is_live(gid):
+            return (
+                "names gate:%s, which the manifest does not mark 'gate: true', so 'npm run ci' "
+                "never schedules it. A gate nobody runs is not an instrument." % gid
+            )
+        return ""
+    if ptr.startswith("hook:"):
+        counts.hook += 1
+        hid = ptr[len("hook:") :]
+        if not registry.hook_resolves(hid):
+            return "names hook:%s, which is not a rule listed in RULES in %s." % (
+                hid,
+                registry.dispatch,
+            )
+        if not registry.hook_is_live(hid):
+            return (
+                "names hook:%s, which lacks a FIRING case or a SILENT case in %s. One-sided "
+                "coverage cannot tell a rule that always fires from one that never does."
+                % (hid, registry.hook_suite)
+            )
+        return ""
+    if ptr.startswith("file:"):
+        counts.file += 1
+        fspec = ptr[len("file:") :]
+        if not registry.file_resolves(fspec):
+            return (
+                "names file:%s, which does not resolve (missing file, or a line number past the "
+                "end, or a blank line)." % fspec
+            )
+        if not registry.file_is_live(fspec):
+            return (
+                "names file:%s, which nothing registered or scheduled reaches within two hops of "
+                ".claude/settings.json or the ci-runner manifest. Point at something that RUNS."
+                % fspec
+            )
+        return ""
+    if ptr.startswith("guard:"):
+        counts.guard += 1
+        stem = ptr[len("guard:") :]
+        stems = registry.guard_stems()
+        if not stems:
+            return (
+                "names guard:%s, but %s/__init__.py yields no stems, so no guard: pointer can be "
+                "judged. The gate cannot see the guards." % (stem, GUARDS_PACKAGE_REL)
+            )
+        if stem not in stems:
+            return (
+                "names guard:%s, which is not a guard the pre-tool dispatcher loads "
+                "(guards.stems()). Nearest: %s." % (stem, nearest(stem, stems))
+            )
+        why = registry.guard_liveness(stem)
+        if why:
+            return "names guard:%s, but %s. Add the missing direction." % (stem, why)
+        return ""
+    if ptr.startswith("shape:"):
+        counts.shape += 1
+        return registry.shape_problem(ptr[len("shape:") :])
+    return (
+        "has an unknown pointer '%s'. Use gate:<check id>, hook:<trapguard rule>, "
+        "file:<path>[:line], guard:<guard stem>, shape:<trap id>, or JUDGMENT-ONLY." % ptr
+    )
 
 
 def anchor_problem(registry: Registry, anchor: str, all_ids: set[str], shape: Shape) -> str:
@@ -878,83 +1075,21 @@ def scan(registry: Registry, floor: int, shape: Shape, report=None) -> int:
         if entry.residue != "":
             shape.residue += 1
 
-        # F4 + F5, per pointer. `${enf//,/ }` then word splitting.
+        # F3d: a Shape line above Residue ends the Stop hook's trailer read early, exactly as F3c's Documented-In does.
+        if entry.shape_early:
+            err(
+                "%s: '%s' has a Shape line before its Residue line. Move every Shape line below "
+                "Residue: the Stop hook's parser stops at the first key it does not know, so the "
+                "Residue above would be lost to the judge prompt." % (where, entry.trap_id)
+            )
+
+        # F4 + F5, per pointer. `${enf//,/ }` then word splitting. The checks live in `pointer_problem`, the resolver other gates import.
         for ptr in entry.enforced_by.replace(",", " ").split():
             if ptr == "JUDGMENT-ONLY":
                 continue
-            if ptr.startswith("gate:"):
-                shape.gate += 1
-                gid = ptr[len("gate:") :]
-                if not registry.gate_resolves(gid):
-                    err(
-                        "%s: '%s' names gate:%s, which is not both a manifest entry and a "
-                        "package.json script. A dangling pointer is a lie about coverage."
-                        % (where, entry.trap_id, gid)
-                    )
-                elif not registry.gate_is_live(gid):
-                    err(
-                        "%s: '%s' names gate:%s, which the manifest does not mark "
-                        "'gate: true', so 'npm run ci' never schedules it. A gate nobody "
-                        "runs is not an instrument." % (where, entry.trap_id, gid)
-                    )
-            elif ptr.startswith("hook:"):
-                shape.hook += 1
-                hid = ptr[len("hook:") :]
-                if not registry.hook_resolves(hid):
-                    err(
-                        "%s: '%s' names hook:%s, which is not a rule listed in RULES in %s."
-                        % (where, entry.trap_id, hid, registry.dispatch)
-                    )
-                elif not registry.hook_is_live(hid):
-                    err(
-                        "%s: '%s' names hook:%s, which lacks a FIRING case or a SILENT case "
-                        "in %s. One-sided coverage cannot tell a rule that always fires from "
-                        "one that never does." % (where, entry.trap_id, hid, registry.hook_suite)
-                    )
-            elif ptr.startswith("file:"):
-                shape.file += 1
-                fspec = ptr[len("file:") :]
-                if not registry.file_resolves(fspec):
-                    err(
-                        "%s: '%s' names file:%s, which does not resolve (missing file, or a "
-                        "line number past the end, or a blank line)."
-                        % (where, entry.trap_id, fspec)
-                    )
-                elif not registry.file_is_live(fspec):
-                    err(
-                        "%s: '%s' names file:%s, which nothing registered or scheduled "
-                        "reaches within two hops of .claude/settings.json or the ci-runner "
-                        "manifest. Point at something that RUNS." % (where, entry.trap_id, fspec)
-                    )
-            elif ptr.startswith("guard:"):
-                shape.guard += 1
-                stem = ptr[len("guard:") :]
-                stems = registry.guard_stems()
-                if not stems:
-                    err(
-                        "%s: '%s' names guard:%s, but %s/__init__.py yields no stems, so no "
-                        "guard: pointer can be judged. The gate cannot see the guards."
-                        % (where, entry.trap_id, stem, GUARDS_PACKAGE_REL)
-                    )
-                elif stem not in stems:
-                    err(
-                        "%s: '%s' names guard:%s, which is not a guard the pre-tool dispatcher "
-                        "loads (guards.stems()). Nearest: %s."
-                        % (where, entry.trap_id, stem, nearest(stem, stems))
-                    )
-                else:
-                    why = registry.guard_liveness(stem)
-                    if why:
-                        err(
-                            "%s: '%s' names guard:%s, but %s. Add the missing direction."
-                            % (where, entry.trap_id, stem, why)
-                        )
-            else:
-                err(
-                    "%s: '%s' has an unknown pointer '%s'. Use gate:<check id>, "
-                    "hook:<trapguard rule>, file:<path>[:line], guard:<guard stem>, or "
-                    "JUDGMENT-ONLY." % (where, entry.trap_id, ptr)
-                )
+            problem = pointer_problem(registry, ptr, shape)
+            if problem:
+                err("%s: '%s' %s" % (where, entry.trap_id, problem))
 
         # F4b: every Documented-In anchor resolves to the lesson's text, not merely to a place.
         for line_no, anchor in entry.documented_in:
@@ -962,6 +1097,18 @@ def scan(registry: Registry, floor: int, shape: Shape, report=None) -> int:
             problem = anchor_problem(registry, anchor, all_ids, shape)
             if problem:
                 err("%s: '%s' Documented-In %s %s." % (at, entry.trap_id, anchor, problem))
+
+    # F4c: every TRAPS Shape loads, named or not. Both hooks skip a broken shape without a word in the session that wrote it, so this is where it is said.
+    if any(e.shape_lines for e in corpus):
+        _loaded, broken = registry.loaded_shapes()
+        lines_of = {e.trap_id: e.line for e in corpus if e.trap_id}
+        for shape_id, problems in sorted(broken.items()):
+            at = "%s:%d" % (registry.corpus, lines_of.get(shape_id, 0))
+            err(
+                "%s: '%s' carries Shape lines that do not load, so neither hook applies them: %s. "
+                "Fix the regex or the samples; a lesson whose shape is not loaded is prose only."
+                % (at, shape_id, "; ".join(problems))
+            )
 
     # W3-retire: the payload probe stays unregistered. Read from both registration files, because a hook can be wired from either.
     for reg in (registry.settings, registry.lifecycle):
@@ -1137,10 +1284,19 @@ def build_anchor_fixture(files: pathlib.Path) -> str:
     guards = files / GUARDS_PACKAGE_REL
     guards.mkdir(parents=True, exist_ok=True)
     (guards / "__init__.py").write_text(CONTROL_GUARDS_INIT, encoding="utf-8")
-    for stem in ("block_ctl_tested", "block_ctl_cased", "block_ctl_one_sided", "warn_ctl_bare"):
+    for stem in (
+        "block_ctl_tested",
+        "block_ctl_cased",
+        "block_ctl_one_sided",
+        "warn_ctl_bare",
+        SHAPE_GUARD,
+    ):
         (guards / ("%s.py" % stem)).write_text("def main():\n    return 0\n", encoding="utf-8")
     (guards / "test-block_ctl_tested.py").write_text(
         "print('block_ctl_tested ok')\n", encoding="utf-8"
+    )
+    (guards / ("test-%s.py" % SHAPE_GUARD)).write_text(
+        "print('%s ok')\n" % SHAPE_GUARD, encoding="utf-8"
     )
     cases = files / HOOKCASES_REL
     cases.parent.mkdir(parents=True, exist_ok=True)
@@ -1617,6 +1773,87 @@ def run_controls(control_dir: pathlib.Path) -> bool:
         "has no Enforced-By",
     )
 
+    # -- shape: pointers and F3d/F4c (PLAN-experience-feedback P3) ---------
+    def shaped(name: str, trap_id: str, *shape_lines: str, enforced: str = "") -> pathlib.Path:
+        entry = "## %s\nTrap-Id: %s\nEnforced-By: %s\nResidue:\n%s\n\nbody\n" % (
+            trap_id,
+            trap_id,
+            enforced or "shape:%s" % trap_id,
+            "\n".join(shape_lines),
+        )
+        return write(name, entry, 5)
+
+    good_pre = (
+        "Shape: pre:refuse ^rm\\s+-rf\\b",
+        "Shape-Fires: rm -rf x",
+        "Shape-Silent: rm x",
+    )
+    expect_green(
+        "S1 a shape: pointer whose pre Shape loads", shaped("s1.md", "ctl-shape", *good_pre)
+    )
+    expect_red(
+        "S2 a Shape that does not compile is not loaded (F4 and F4c)",
+        shaped(
+            "s2.md",
+            "ctl-shape",
+            "Shape: pre:refuse ^rm\\s+(-rf",
+            "Shape-Fires: rm -rf x",
+            "Shape-Silent: rm x",
+        ),
+        "does not compile",
+    )
+    expect_red(
+        "S3 a Shape whose Silent sample fires is not loaded",
+        shaped(
+            "s3.md",
+            "ctl-shape",
+            "Shape: pre:refuse ^rm\\b",
+            "Shape-Fires: rm -rf x",
+            "Shape-Silent: rm -i x",
+        ),
+        "Shape-Silent sample 'rm -i x' fires",
+    )
+    expect_red(
+        "S4 a shape: pointer at an entry with no Shape line",
+        write("s4.md", anchored("ctl-shape-none", "shape:ctl-shape-none"), 5),
+        "no entry with that id carries a `Shape:` line",
+    )
+    expect_red(
+        "S5 a post shape whose trapguard rule is not in RULES (F5)",
+        shaped(
+            "s5.md",
+            "ctl-shape",
+            "Shape: post ^make\\b",
+            "Shape-Output: boom",
+            "Shape-Fires: make all => boom",
+            "Shape-Silent: make all => fine",
+        ),
+        "hook:%s is not a rule listed in RULES" % SHAPE_RULE,
+    )
+    expect_red(
+        "S6 a broken Shape that no pointer names still reds (F4c)",
+        shaped(
+            "s6.md",
+            "ctl-shape",
+            "Shape: pre:refuse ^rm\\s+-rf\\b",
+            "Shape-Fires: rm -r x",
+            "Shape-Silent: rm x",
+            enforced="JUDGMENT-ONLY",
+        ),
+        "carries Shape lines that do not load",
+    )
+    expect_red(
+        "S7 a Shape line before Residue (F3d)",
+        write(
+            "s7.md",
+            "## early shape\nTrap-Id: ctl-early-shape\nEnforced-By: shape:ctl-early-shape\n"
+            "Shape: pre:refuse ^rm\\s+-rf\\b\nShape-Fires: rm -rf x\nShape-Silent: rm x\n"
+            "Residue:\n",
+            5,
+        ),
+        "has a Shape line before its Residue line",
+    )
+
     if tally.failures > 0:
         log.error(
             "%d of the gate's own controls misbehaved. NOT judging the real tree: a gate "
@@ -1632,7 +1869,7 @@ def run_controls(control_dir: pathlib.Path) -> bool:
 
 
 def resolve_seams(root: pathlib.Path, env: dict[str, str] | None = None) -> dict[str, pathlib.Path]:
-    """The nine seams, each overridable by its own environment variable."""
+    """The ten seams, each overridable by its own environment variable."""
     environ = os.environ if env is None else env
     out: dict[str, pathlib.Path] = {}
     for name, parts in SEAMS.items():
@@ -1678,18 +1915,19 @@ def main(argv: list[str] | None = None) -> int:
     # Print the SHAPE, not just the verdict: a reader can notice when a number collapses, and "OK" tells nobody that the corpus stopped being parsed.
     log.info(
         "trap registry OK: %d entries (floor %d), %d JUDGMENT-ONLY, %d carrying residue, "
-        "%d live pointers (%d gate, %d hook, %d file, %d guard), %d documentation anchors "
-        "(%d text, %d doc, %d box, %d trap)"
+        "%d live pointers (%d gate, %d hook, %d file, %d guard, %d shape), %d documentation "
+        "anchors (%d text, %d doc, %d box, %d trap)"
         % (
             shape.entries,
             floor,
             shape.judgment,
             shape.residue,
-            shape.gate + shape.hook + shape.file + shape.guard,
+            shape.gate + shape.hook + shape.file + shape.guard + shape.shape,
             shape.gate,
             shape.hook,
             shape.file,
             shape.guard,
+            shape.shape,
             sum(shape.anchors.values()),
             *(shape.anchors[k] for k in ANCHOR_KINDS),
         )
