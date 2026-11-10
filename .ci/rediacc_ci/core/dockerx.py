@@ -489,8 +489,8 @@ def _inode_owners(inodes: list[str], proc_root: str) -> tuple[dict[str, set[str]
     return owners, unreadable
 
 
-def _ping_answers(path: str, timeout: float) -> bool | None:
-    """True when `GET /_ping` is answered OK, False when it hangs or answers wrongly, None when nobody could be asked."""
+def _ping_once(path: str, timeout: float) -> bool | None:
+    """One `GET /_ping`: True on OK, False on a hang or a wrong answer, None when nobody could be asked; BlockingIOError (a full backlog) propagates to the caller."""
     sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     sock.settimeout(timeout)
     try:
@@ -502,15 +502,31 @@ def _ping_answers(path: str, timeout: float) -> bool | None:
             if not chunk:
                 break
             data += chunk
-    except (TimeoutError, BlockingIOError):
-        # A hang, or a listener whose backlog is full and accepts nobody: both are a socket that does not answer.
+    except TimeoutError:
         return False
+    except BlockingIOError:
+        raise
     except OSError:
         return None
     finally:
         sock.close()
     head = data.split(b"\r\n", 1)[0]
     return head.startswith(b"HTTP/") and b" 200" in head and data.rstrip().endswith(b"OK")
+
+
+def _ping_answers(path: str, timeout: float) -> bool | None:
+    """True when `GET /_ping` is answered OK, False when it hangs or answers wrongly, None when nobody could be asked.
+
+    A full backlog (BlockingIOError) is retried until `timeout` runs out, so a busy engine that drains its queue is not called hung; a backlog still full at the end is a socket that does not answer.
+    """
+    deadline = time.monotonic() + timeout
+    while True:
+        try:
+            return _ping_once(path, max(deadline - time.monotonic(), 0.05))
+        except BlockingIOError:
+            if time.monotonic() >= deadline:
+                return False
+            time.sleep(min(0.1, max(deadline - time.monotonic(), 0.0)))
 
 
 def socket_defect(

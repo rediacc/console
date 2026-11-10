@@ -322,3 +322,17 @@ def test_a_row_spelled_through_a_symlinked_directory_counts(sock_dir: pathlib.Pa
         responder.close()
     assert verdict is not None
     assert "docker-desktop-" in verdict
+
+
+def test_a_backlog_that_drains_is_not_a_hang(monkeypatch: pytest.MonkeyPatch) -> None:
+    # A busy engine whose queue empties within the timeout answers; only a backlog full to the end counts as no answer.
+    calls = iter([BlockingIOError(11, "full"), True])
+
+    def once(_path: str, _timeout: float) -> bool | None:
+        step = next(calls)
+        if isinstance(step, BaseException):
+            raise step
+        return step
+
+    monkeypatch.setattr(dockerx, "_ping_once", once)
+    assert dockerx._ping_answers("/nonexistent", 1.0) is True
