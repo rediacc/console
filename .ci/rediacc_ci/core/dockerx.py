@@ -434,7 +434,7 @@ _ACCEPTCON = 0x00010000
 
 
 def _listener_inodes(net_unix: str, target: str) -> list[str]:
-    """Inodes of listening rows (state 01, ACCEPTCON) bound to `target`."""
+    """Inodes of listening rows (state 01, ACCEPTCON) whose path resolves to `target`; `/var/run` and `/run` are one directory, so both spellings count."""
     inodes: list[str] = []
     try:
         with open(net_unix, encoding="utf-8", errors="replace") as handle:
@@ -443,7 +443,7 @@ def _listener_inodes(net_unix: str, target: str) -> list[str]:
         return inodes
     for row in rows:
         cols = row.split()
-        if len(cols) < 8 or cols[7] != target:
+        if len(cols) < 8 or os.path.realpath(cols[7]) != target:
             continue
         try:
             flags = int(cols[3], 16)
@@ -484,7 +484,8 @@ def _inode_owners(inodes: list[str], proc_root: str) -> tuple[dict[str, set[str]
                 with open(os.path.join(proc_root, pid, "comm"), encoding="utf-8") as handle:
                     owners[inode].add(handle.read().strip())
             except OSError:
-                owners[inode].add("?")
+                # The process left mid-scan or hid its comm: an unread owner, which leaves the ping to decide.
+                unreadable = True
     return owners, unreadable
 
 
@@ -501,7 +502,8 @@ def _ping_answers(path: str, timeout: float) -> bool | None:
             if not chunk:
                 break
             data += chunk
-    except TimeoutError:
+    except (TimeoutError, BlockingIOError):
+        # A hang, or a listener whose backlog is full and accepts nobody: both are a socket that does not answer.
         return False
     except OSError:
         return None
@@ -520,9 +522,13 @@ def socket_defect(
 ) -> str | None:
     """None when the docker socket is clean, else one sentence naming the defect and the re-bind command.
 
-    A defect is a listener whose owner is not dockerd, systemd or containerd, more than one listener on the path, or a `_ping` that gets no OK within `ping_timeout`. A missing path is `STATE_UNREACHABLE`'s case and no defect. Owners that cannot be read (EACCES on their fds) leave the ping to decide. Never shells out to docker.
+    A `_ping` answered OK is a working socket and no defect. Otherwise a defect is a listener whose owner is not dockerd, systemd or containerd, more than one listener on the path (either spelling), or a `_ping` that gets no OK within `ping_timeout`. A missing path is `STATE_UNREACHABLE`'s case and no defect. Owners that cannot be read (EACCES on their fds) leave the ping to decide. Never shells out to docker.
     """
     if not os.path.exists(path):
+        return None
+    answered = _ping_answers(path, ping_timeout)
+    if answered is True:
+        # The engine answers, so the socket works; a leftover listener on another spelling of the path (Docker Desktop's proxy after a re-bind, measured 2026-11-10) is not a defect while it does.
         return None
     target = os.path.realpath(path)
     inodes = _listener_inodes(net_unix or "/proc/net/unix", target)
@@ -535,7 +541,7 @@ def socket_defect(
     )
     if foreign:
         problems.append("%s is held by %s" % (target, ", ".join(foreign)))
-    if _ping_answers(path, ping_timeout) is False:
+    if answered is False:
         problems.append("a _ping on %s got no OK within %gs" % (path, ping_timeout))
     if not problems:
         return None
@@ -549,8 +555,25 @@ def socket_defect(
     )
 
 
-def _with_socket_hint(reason: str) -> str:
-    defect = socket_defect()
+def _local_socket(env: dict[str, str] | None, host: str | None) -> str | None:
+    """The unix socket path a docker call with this env and host addresses, or None when it addresses a non-unix daemon."""
+    target = (
+        host if host is not None else (os.environ if env is None else env).get("DOCKER_HOST", "")
+    )
+    if not target:
+        return "/var/run/docker.sock"
+    if target.startswith("unix://"):
+        return target[len("unix://") :]
+    return None
+
+
+def _with_socket_hint(
+    reason: str, env: dict[str, str] | None = None, host: str | None = None
+) -> str:
+    path = _local_socket(env, host)
+    # The re-bind command names the systemd docker.socket, so only the host engine's socket is judged; a repo daemon's socket is not.
+    engine = path is not None and os.path.realpath(path) == os.path.realpath("/var/run/docker.sock")
+    defect = socket_defect(path) if engine else None
     return "%s\n  %s" % (reason, defect) if defect else reason
 
 
@@ -564,7 +587,7 @@ def cannot_run_reason(env: dict[str, str] | None = None, *, host: str | None = N
     current = state(env, host=host)
     if current == STATE_READY:
         return None
-    return _with_socket_hint("%s: %s" % (current, _ADVICE.get(current, "unusable")))
+    return _with_socket_hint("%s: %s" % (current, _ADVICE.get(current, "unusable")), env, host)
 
 
 def require_ready(env: dict[str, str] | None = None, *, host: str | None = None) -> None:
@@ -573,7 +596,7 @@ def require_ready(env: dict[str, str] | None = None, *, host: str | None = None)
     if current == STATE_READY:
         return
     argv = ["docker", "version"]
-    message = _with_socket_hint(_ADVICE.get(current, "docker is unusable"))
+    message = _with_socket_hint(_ADVICE.get(current, "docker is unusable"), env, host)
     if current == STATE_ABSENT:
         raise DockerAbsentError(argv, NOT_INSTALLED_RC, message, FAILURE_ABSENT)
     if current == STATE_DENIED:

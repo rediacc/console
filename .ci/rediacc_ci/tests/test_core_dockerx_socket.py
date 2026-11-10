@@ -79,12 +79,13 @@ def sock_dir(tmp_path: pathlib.Path) -> pathlib.Path:
 
 
 def _fire_foreign_owner(tmp: pathlib.Path, detector) -> str | None:
-    responder = Responder(tmp / "d.sock", OK_ANSWER)
+    # The 2026-11-10 incident: the socket hung while a foreign or second listener held the path.
+    responder = Responder(tmp / "d.sock", None)
     try:
         proc_root = _proc(tmp / "proc", {"5001": "docker-desktop-"})
         return detector(
             responder.path,
-            ping_timeout=1.0,
+            ping_timeout=0.3,
             net_unix=_net(tmp, responder.path, ["5001"]),
             proc_root=proc_root,
         )
@@ -93,12 +94,13 @@ def _fire_foreign_owner(tmp: pathlib.Path, detector) -> str | None:
 
 
 def _fire_two_listeners(tmp: pathlib.Path, detector) -> str | None:
-    responder = Responder(tmp / "d.sock", OK_ANSWER)
+    # The 2026-11-10 incident: the socket hung while a foreign or second listener held the path.
+    responder = Responder(tmp / "d.sock", None)
     try:
         proc_root = _proc(tmp / "proc", {"5001": "dockerd", "5002": "dockerd"})
         return detector(
             responder.path,
-            ping_timeout=1.0,
+            ping_timeout=0.3,
             net_unix=_net(tmp, responder.path, ["5001", "5002"]),
             proc_root=proc_root,
         )
@@ -223,11 +225,100 @@ def test_socket_check_verb_maps_defect_to_77(monkeypatch: pytest.MonkeyPatch) ->
 
 
 def test_cannot_run_reason_appends_the_defect(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("DOCKER_HOST", raising=False)
     monkeypatch.setattr(dockerx, "state", lambda *_a, **_k: dockerx.STATE_UNREACHABLE)
-    monkeypatch.setattr(dockerx, "socket_defect", lambda: "FOREIGN-LISTENER")
+    monkeypatch.setattr(dockerx, "socket_defect", lambda *_a, **_k: "FOREIGN-LISTENER")
     reason = dockerx.cannot_run_reason()
     assert reason is not None
     assert "FOREIGN-LISTENER" in reason
     with pytest.raises(dockerx.DockerUnreachableError) as excinfo:
         dockerx.require_ready()
     assert "FOREIGN-LISTENER" in excinfo.value.stderr
+
+
+@pytest.mark.parametrize(
+    ("env", "host"),
+    [
+        ({"DOCKER_HOST": "tcp://10.0.0.1:2375"}, None),
+        ({}, "unix:///var/run/rediacc/net-7/docker-7.sock"),
+        ({"DOCKER_HOST": "ssh://box"}, None),
+    ],
+)
+def test_the_hint_judges_only_the_host_engine_socket(
+    env, host, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # The re-bind names the systemd docker.socket, so a tcp, ssh or repo daemon is never judged by it.
+    monkeypatch.setattr(dockerx, "state", lambda *_a, **_k: dockerx.STATE_UNREACHABLE)
+    monkeypatch.setattr(dockerx, "socket_defect", lambda *_a, **_k: "FOREIGN-LISTENER")
+    reason = dockerx.cannot_run_reason(env, host=host)
+    assert reason is not None
+    assert "FOREIGN-LISTENER" not in reason
+
+
+def test_a_full_backlog_counts_as_no_answer(
+    monkeypatch: pytest.MonkeyPatch, sock_dir: pathlib.Path
+) -> None:
+    path = sock_dir / "d.sock"
+    path.touch()
+
+    class Full:
+        def __init__(self, *_a: object) -> None:
+            pass
+
+        def settimeout(self, _t: float) -> None:
+            pass
+
+        def connect(self, _p: str) -> None:
+            raise BlockingIOError(11, "Resource temporarily unavailable")
+
+        def close(self) -> None:
+            pass
+
+    monkeypatch.setattr(dockerx.socket, "socket", Full)
+    assert dockerx._ping_answers(str(path), 0.3) is False
+
+
+def test_an_unread_comm_leaves_the_ping_to_decide(sock_dir: pathlib.Path) -> None:
+    proc_root = sock_dir / "proc"
+    (proc_root / "100" / "fd").mkdir(parents=True)
+    os.symlink("socket:[5001]", proc_root / "100" / "fd" / "3")
+    owners, unreadable = dockerx._inode_owners(["5001"], str(proc_root))
+    assert owners["5001"] == set()
+    assert unreadable
+
+
+def test_answering_engine_beside_a_leftover_listener_is_clean(sock_dir: pathlib.Path) -> None:
+    # After the re-bind the proxy's row stays in /proc/net/unix while dockerd answers; docker works, so no defect.
+    responder = Responder(sock_dir / "d.sock", OK_ANSWER)
+    try:
+        proc_root = _proc(sock_dir / "proc", {"5001": "dockerd", "5002": "docker-desktop-"})
+        verdict = dockerx.socket_defect(
+            responder.path,
+            ping_timeout=1.0,
+            net_unix=_net(sock_dir, responder.path, ["5001", "5002"]),
+            proc_root=proc_root,
+        )
+    finally:
+        responder.close()
+    assert verdict is None
+
+
+def test_a_row_spelled_through_a_symlinked_directory_counts(sock_dir: pathlib.Path) -> None:
+    # /var/run is a symlink to /run: the proxy's row named /var/run/docker.sock while dockerd's named /run/docker.sock.
+    real = sock_dir / "run"
+    real.mkdir()
+    alias = sock_dir / "varrun"
+    alias.symlink_to(real)
+    responder = Responder(real / "d.sock", None)
+    try:
+        proc_root = _proc(sock_dir / "proc", {"5001": "docker-desktop-"})
+        verdict = dockerx.socket_defect(
+            responder.path,
+            ping_timeout=0.3,
+            net_unix=_net(sock_dir, str(alias / "d.sock"), ["5001"]),
+            proc_root=proc_root,
+        )
+    finally:
+        responder.close()
+    assert verdict is not None
+    assert "docker-desktop-" in verdict
