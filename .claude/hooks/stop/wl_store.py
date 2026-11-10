@@ -1849,11 +1849,21 @@ def redact_secret_shapes(text):
     return out
 
 
+def _redacted(value):
+    """`value` with every string inside it redacted, through nested lists and dicts."""
+    if isinstance(value, str):
+        return redact_secret_shapes(value) if secret_shapes_in(value) else value
+    if isinstance(value, list):
+        return [_redacted(v) for v in value]
+    if isinstance(value, dict):
+        return {k: _redacted(v) for k, v in value.items()}
+    return value
+
+
 def _redact_secret_shapes(ev):
-    """Redact every string value of one event in place, AT THE DOOR: the store is tracked, and on 2026-11-10 an `add` whose text quoted an AWS key id went straight into agent/worklist because only the lint read these shapes."""
+    """Redact every string of one event in place, nested lists and dicts included, AT THE DOOR: the store is tracked, and on 2026-11-10 an `add` whose text quoted an AWS key id went straight into agent/worklist because only the lint read these shapes."""
     for key, value in list(ev.items()):
-        if isinstance(value, str) and secret_shapes_in(value):
-            ev[key] = redact_secret_shapes(value)
+        ev[key] = _redacted(value)
 
 
 def secret_shapes_in(text):

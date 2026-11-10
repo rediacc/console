@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 import shutil
 import subprocess
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import pytest
 import wl_core as C
@@ -176,3 +176,12 @@ def test_control_a_note_without_a_secret_shape_is_stored_verbatim() -> None:
         S.load(worklist(), sync=False).by_id[rid]["text"]
         == "(%s) rotate the AKIA keys for ses-eu" % ME
     )
+
+
+def test_a_secret_nested_in_an_event_value_is_redacted_too() -> None:
+    key = "AKIA" + "ABCDEFGHIJKL" + "ZBCP"
+    ev: dict[str, Any] = {"ev": "x", "notes": [{"t": "holds %s" % key}], "meta": {"k": [key]}}
+    S._redact_secret_shapes(ev)
+    assert key not in json.dumps(ev)
+    assert ev["notes"][0]["t"] == "holds AKIA...ZBCP"
+    assert ev["meta"]["k"] == ["AKIA...ZBCP"]
