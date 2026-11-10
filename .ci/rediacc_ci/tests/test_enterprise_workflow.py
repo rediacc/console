@@ -98,3 +98,23 @@ def test_release_step_binds_every_required_name_of_the_step_profiles() -> None:
     env = _release_step()["env"]
     missing = sorted(local for _store, local in required if local not in env)
     assert missing == []
+
+
+def test_each_bound_name_takes_its_own_bws_entry() -> None:
+    """Review 6e3252c5.1: a local name is wired to the BWS alias of the store entry the profile reads, and that alias is fetched under the same entry, so a swapped or wrong alias fails."""
+    wanted = [
+        rings_run.ACCOUNT_PROFILE,
+        console_executor.profile_for(console_executor.BENCH_TARGET),
+        console_executor.profile_for(console_executor.STABLE_TARGET),
+    ]
+    required, _optional = bws_env.profile_specs(bws_env.profiles(), wanted)
+    env = _release_step()["env"]
+    fetch = next(s for s in _steps() if s.get("name") == "Fetch secrets from Bitwarden")
+    fetched = {
+        line.split(">")[1].strip(): line.split(">")[0].strip()
+        for line in fetch["with"]["secrets"].splitlines()
+        if ">" in line
+    }
+    for store, local in required:
+        assert env[local] == "${{ env.BWS_%s }}" % store, local
+        assert fetched["BWS_%s" % store] == store, store

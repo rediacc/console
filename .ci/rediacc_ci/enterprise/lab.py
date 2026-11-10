@@ -166,6 +166,7 @@ class LiveLab:
         lifecycle_ctx: Callable[..., Any] | None = None,
     ):
         self.bench = bench
+        reset_sessions()
         self._adder = adder or self._live_add
         self._finder = finder or self._live_find
         self._resolver = resolver or self._live_resolve
@@ -781,7 +782,7 @@ def turnstile_domains(*, listing: Listing = cf_list) -> list[str]:
 #
 # The `enterprise proof replay` and `proof proxy` token readers (agent/plans/PLAN-enterprise-isolation.md, box V6's group, which V7's proxy token rides). SEAMS binds them by name.
 #
-# SIGNING IN AS A FAKE OWNER. `owner_session(company)` is the owner's first sign-in, the one company mode designs: the owner account is passwordless (private/account/src/services/enterprise-bootstrap.service.ts `ensureOwner`), and `POST /account/api/v1/subscriptions/enterprise/owner-mail` under the company's own `ACCOUNT_SERVER_API_KEY` mails it a magic link (`authService.sendCompanyOwnerMail`). That route carries no captcha, unlike the public `POST /auth/magic-link`. A bench company captures every mail in its own D1 (`captured_emails`, `kind = 'magic-link'`), so the link is read back from `account-<name>`, the newest one that differs from the newest one the company held before the request (a row only the request can have added, whatever either clock says), and `POST /account/api/v1/auth/magic-link/verify` answers the session as its `access_token` cookie. The owner has no TOTP; a verify answering `requiresTwoFactor` is a `LabError`. The owner address is read from the company D1 (`company_orgs` -> `organizations.owner_user_id` -> `users.email`) and the key from the enterprise bws project (`secrets.store_name(<id>, "ACCOUNT_SERVER_API_KEY")`, project id in `ENTERPRISE_PROOF_BWS_PROJECT`). The link's token is never put into an error.
+# SIGNING IN AS A FAKE OWNER. `owner_session(company)` is the owner's first sign-in, the one company mode designs: the owner account is passwordless (private/account/src/services/enterprise-bootstrap.service.ts `ensureOwner`), and `POST /account/api/v1/subscriptions/enterprise/owner-mail` under the company's own `ACCOUNT_SERVER_API_KEY` mails it a magic link (`authService.sendCompanyOwnerMail`). That route carries no captcha, unlike the public `POST /auth/magic-link`. A bench company captures every mail in its own D1 (`captured_emails`, `kind = 'magic-link'`), so the link is read back from `account-<name>`, the one mail body the owner did not hold before the request (a set difference, so neither clock nor row order is read; two new bodies mean another sign-in raced this one and are a `LabError`), and `POST /account/api/v1/auth/magic-link/verify` answers the session as its `access_token` cookie. The owner has no TOTP; a verify answering `requiresTwoFactor` is a `LabError`. The owner address is read from the company D1 (`company_orgs` -> `organizations.owner_user_id` -> `users.email`) and the key from the enterprise bws project (`secrets.store_name(<id>, "ACCOUNT_SERVER_API_KEY")`, project id in `ENTERPRISE_PROOF_BWS_PROJECT`). The link's token is never put into an error.
 #
 # `mint(company, kind)`: a `session` is that cookie; an `api-token` (scope `license:read`) and a `proxy-token` (scope `proxy:exec`) are `POST /account/api/v1/api-tokens` under the session for the subscription the company's control row names (`scope.subscription_id`). A `config-token` needs the company's config store, whose setup takes a TOTP-verified, elevated session and client-wrapped CEK slots (`POST /configs/setup`), and an `e2e-envelope` needs a request sealed to the company's X25519 key (`POST /account/api/v1/tunnel`); neither driver is written, so both raise `LabError("not built yet: V6 ...")` naming what is missing, never an artifact.
 #
@@ -807,7 +808,7 @@ OWNER_SQL = (
 )
 LINK_SQL = (
     "SELECT text_body FROM captured_emails WHERE recipient = ? AND kind = 'magic-link' "
-    "ORDER BY created_at DESC LIMIT 1"
+    "ORDER BY created_at DESC"
 )
 SUBSCRIPTION_SQL = "SELECT subscription_id FROM scope WHERE company_id = ?"
 MAGIC_TOKEN = re.compile(r"/account/magic-link/verify\?token=([^&\s\"'<>]+)")
@@ -899,8 +900,9 @@ def _one(rows: list[dict], key: str, what: str) -> str:
     return values[0]
 
 
-def _newest_link(rows: list[dict]) -> str:
-    return str(rows[0].get("text_body") or "") if rows else ""
+def _links(rows: list[dict]) -> set[str]:
+    """The distinct mail bodies of one owner's captured magic links."""
+    return {str(r.get("text_body") or "") for r in rows if r.get("text_body")}
 
 
 def owner_session(
@@ -921,17 +923,24 @@ def owner_session(
     owner = _one(
         query(database, OWNER_SQL, [company]), "email", "the owner of company %s" % company
     )
-    before = _newest_link(query(database, LINK_SQL, [owner]))
+    before = _links(query(database, LINK_SQL, [owner]))
     url = "https://%s%sowner-mail" % (host, onboarding.SUBSCRIPTIONS_PATH)
     status, _payload = post(url, api_key(company), {"companyId": company, "ownerEmail": owner})
     if not 200 <= status < 300:
         raise proof.LabError("company %s: the owner-mail call answered HTTP %d" % (company, status))
     token = ""
     for attempt in range(MAIL_TRIES):
-        text = _newest_link(query(database, LINK_SQL, [owner]))
-        match = MAGIC_TOKEN.search(text) if text and text != before else None
-        if match:
-            token = match.group(1)
+        # A link this request added is a body the owner did not hold before it; no clock or row order is read.
+        fresh = sorted(_links(query(database, LINK_SQL, [owner])) - before)
+        tokens = {m.group(1) for m in (MAGIC_TOKEN.search(t) for t in fresh) if m}
+        if len(tokens) > 1:
+            # Another sign-in captured a link in the same window: which one is this request's cannot be told.
+            raise proof.LabError(
+                "company %s: %d new magic links were captured for its owner, not 1; "
+                "another sign-in raced this one" % (company, len(tokens))
+            )
+        if tokens:
+            (token,) = tokens
             break
         if attempt + 1 < MAIL_TRIES:
             sleep(MAIL_POLL_S)
@@ -966,8 +975,12 @@ def _subscription(company: str, *, companies: Companies, query: Query) -> str:
     )
 
 
-# company -> its owner's session, for the length of one proof run.
+# company -> its owner's session, for the length of one proof run: `LiveLab()` is a run, and empties it.
 _SESSIONS: dict[str, str] = {}
+
+
+def reset_sessions(sessions: dict[str, str] = _SESSIONS) -> None:
+    sessions.clear()
 
 
 def live_minter(
@@ -1071,7 +1084,7 @@ def present(
 #
 # THE ALLOWLIST FROM ONE VANTAGE POINT. This machine is the only place a request comes from, so the proof never asks for a request from another address: it lists this machine for the listed case and lists only `proof.FOREIGN_IP` (TEST-NET-1) for the foreign cases, which puts this machine off the list. `egress_ips()` is this machine's public address per family as Cloudflare sees it (`https://1.1.1.1/cdn-cgi/trace` and its IPv6 twin, through `ops.bench_access.detect_public_ips`), so whichever family a request to the company host takes, its address is on a list that names this machine.
 #
-# `set_allowlist(company, ips)` writes the control row's `scope.allow_ips` (box C2's `lifecycle.update`), regenerates the company's two configs with `ALLOW_IPS` (onboarding's `configs` step, against the company's existing `account-<name>` D1, never creating one), redeploys both Workers (onboarding's `deploy` step) and waits `ALLOWLIST_SETTLE_S` for the new version to serve. An empty list clears it. A step that fails puts the previous `scope.allow_ips` back, so the control row never keeps a list the Workers did not get. `request_from(company, method=, path=)` sends one request from this machine to the company's account host and answers the status; a 403 whose body is not the allowlist's own refusal (workers/proxy/src/ip-allowlist.ts) is a `LabError`, so a WAF or a token refusal never reads as the allowlist blocking.
+# `set_allowlist(company, ips)` writes the control row's `scope.allow_ips` (box C2's `lifecycle.update`), regenerates the company's two configs with `ALLOW_IPS` (onboarding's `configs` step, against the company's existing `account-<name>` D1, never creating one), redeploys both Workers (onboarding's `deploy` step) and waits `ALLOWLIST_SETTLE_S` for the new version to serve. An empty list clears it. Any failure puts the previous `scope.allow_ips` back and deploys that list again, so the control row and the Workers agree; when either of those two repairs fails too, the error carries a note saying so. `request_from(company, method=, path=)` sends one request from this machine to the company's account host and answers the status; a 403 whose body is not the allowlist's own refusal (workers/proxy/src/ip-allowlist.ts) is a `LabError`, so a WAF or a token refusal never reads as the allowlist blocking.
 #
 # NOT BUILT HERE. `console_command` runs a machine command through the company's proxy, which needs the company's config store and an executor CEK grant; it raises `LabError("not built yet: V7 ...")` naming that, and `proof proxy` records it broken and still checks the allowlist.
 
@@ -1200,12 +1213,12 @@ def set_allowlist(
     previous = _scope_ips(
         query(registry.control_database(region, BENCH), SCOPE_IPS_SQL, [company]), company
     )
-    update(name, ips)
-    try:
+
+    def apply(wanted: Sequence[str]) -> None:
         # `configs` and `deploy` read the name, region, allowlist and bench flag only (onboarding.py `write_configs`,
         # `deploy_both`); `owner` and `storage_gb` feed the audit, subscription and lookup steps, which are not run here.
         req = onboarding.Request(
-            name=name, region=region, owner="", storage_gb=0, allow_ips=tuple(ips), bench=BENCH
+            name=name, region=region, owner="", storage_gb=0, allow_ips=tuple(wanted), bench=BENCH
         )
         ctx = onboarding.Context(
             plan=onboarding.plan_for(req, company),
@@ -1219,15 +1232,32 @@ def set_allowlist(
                 steps[step](ctx)
             except onboarding.OnboardingError as exc:
                 raise proof.LabError(str(exc)) from None
+
+    update(name, ips)
+    try:
+        apply(ips)
         sleep(ALLOWLIST_SETTLE_S)
-    except proof.LabError as exc:
+    except BaseException as exc:  # put the row back whatever failed, then re-raise it
+        failures: list[str] = []
         try:
             update(name, previous)
-        except proof.LabError as back:
-            raise proof.LabError(
-                "%s; and putting scope.allow_ips of company %s back to %s failed: %s"
-                % (exc, company, previous, back)
-            ) from None
+        except ROLLBACK_FAILURES as back:
+            failures.append(
+                "putting scope.allow_ips of company %s back to %s failed: %s"
+                % (company, previous, back)
+            )
+        else:
+            # A step that already published a Worker with the new list left it serving that list, so the
+            # previous one is deployed again: the row and the Workers agree again, or the error says they do not.
+            try:
+                apply(previous)
+            except ROLLBACK_FAILURES as back:
+                failures.append(
+                    "redeploying the previous list %s for company %s failed (its Workers may still serve the "
+                    "new list): %s" % (previous, company, back)
+                )
+        if failures:
+            exc.add_note("; and ".join(failures))
         raise
 
 
@@ -1243,7 +1273,7 @@ def request_from(
     headers = {"Content-Type": "application/json"} if body is not None else {}
     answer = call(method, "https://%s%s" % (_host(company, companies), path), headers, body)
     if answer.status == proof.HTTP_FORBIDDEN and answer.json().get("error") != ALLOWLIST_REFUSAL:
-        start = " ".join(answer.body[:BODY_START].decode("utf-8", "replace").split())
+        start = " ".join(answer.body.decode("utf-8", "replace").split())[:BODY_START]
         raise proof.LabError(
             "%s %s answered a 403 that is not the allowlist's refusal (body starts: %r)"
             % (method, path, start)
@@ -1639,9 +1669,7 @@ def live_spread_renew(
         raise
     try:
         put_version(script, newest, run=run)
-    except (
-        Exception
-    ) as back:  # an OSError or timeout from the runner still names the hand fix (e2231d81.2)
+    except ROLLBACK_FAILURES as back:  # the same tuple as the failure path above
         raise proof.LabError(
             "the renewal answered ok=%s%s; %s"
             % (
@@ -1654,8 +1682,14 @@ def live_spread_renew(
 
 
 # What a rollback can raise: the lab's own refusal, or the runner failing underneath it (a
-# missing binary, a broken pipe, a subprocess timeout).
-ROLLBACK_FAILURES = (proof.LabError, OSError, subprocess.SubprocessError)
+# missing binary, a broken pipe, a subprocess timeout, an undecodable output, a runner that gives up).
+ROLLBACK_FAILURES = (
+    proof.LabError,
+    OSError,
+    subprocess.SubprocessError,
+    ValueError,
+    RuntimeError,
+)
 
 
 def _left_behind(script: str, version: str, back: BaseException) -> str:

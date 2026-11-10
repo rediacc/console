@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import datetime
 import functools
+import inspect
 import json
+import re
 import socket
 import subprocess
 import sys
@@ -783,8 +785,11 @@ HOST_A = "proof-a.%s" % PRODUCT_DOMAIN
 class AccountV6:
     """Two bench company Workers and their D1s: owner-mail captures a magic link, verify signs in, api-tokens mints."""
 
-    def __init__(self, *, link=True, two_factor=False, cookie=True, mail_status=200, stale=False):
+    def __init__(
+        self, *, link=True, two_factor=False, cookie=True, mail_status=200, stale=False, rival=False
+    ):
         self.link = link
+        self.rival = rival
         self.stale = stale
         self.two_factor = two_factor
         self.cookie = cookie
@@ -801,14 +806,20 @@ class AccountV6:
         if sql == lab.OWNER_SQL:
             return [{"email": "owner@proof-a.example"}]
         if sql == lab.LINK_SQL:
+            # An older link for the same owner, from before the request, stays in the table.
+            old = "Sign in: https://%s/account/magic-link/verify?token=tok-old\n" % HOST_A
+            rows = [{"text_body": old}] if self.stale else []
             if not (self.link and self.mailed):
-                # An older link for the same owner, from before the request, stays the newest row.
-                old = "Sign in: https://%s/account/magic-link/verify?token=tok-old\n" % HOST_A
-                return [{"text_body": old}] if self.stale else []
+                return rows
             body = (
                 "Sign in: https://%s/account/magic-link/verify?token=tok-123&next=%%2F\n" % HOST_A
             )
-            return [{"text_body": body}]
+            new = [{"text_body": body}]
+            if self.rival:
+                rival = "Sign in: https://%s/account/magic-link/verify?token=tok-rival\n" % HOST_A
+                new.append({"text_body": rival})
+            # Row order is whatever the clocks say: the oldest row may come last or first.
+            return new + rows
         if sql == lab.SUBSCRIPTION_SQL:
             return [{"subscription_id": "sub-a"}]
         raise AssertionError(sql)
@@ -906,6 +917,26 @@ def test_the_new_link_is_taken_over_an_older_one_for_the_same_owner():
     acct = AccountV6(stale=True)
     assert session_v6(acct) == "sess-a"
     assert acct.calls[0][3] == {"token": "tok-123"}
+
+
+def test_two_new_links_are_a_race_and_sign_in_nothing():
+    """Review 14377d66.1: a link another sign-in captured in the window is never taken for this request's."""
+    acct = AccountV6(stale=True, rival=True)
+    with pytest.raises(proof.LabError, match="2 new magic links"):
+        session_v6(acct)
+    assert acct.calls == []
+
+
+def test_the_link_is_read_without_a_clock_or_a_limit():
+    """Review 14377d66.2: no `LIMIT 1` and no reliance on row order; the new body is a set difference."""
+    assert "LIMIT" not in lab.LINK_SQL
+
+
+def test_a_new_live_lab_starts_with_no_cached_session():
+    """Review 14377d66.3: a session lives for one proof run, and constructing the lab is that run."""
+    lab._SESSIONS["c0000000a"] = "stale-session"
+    lab.LiveLab(bench=True)
+    assert lab._SESSIONS == {}
 
 
 def test_a_refused_owner_mail_signs_in_nothing():
@@ -1228,8 +1259,16 @@ def scope_query(ips):
 
 
 class Redeploy:
-    def __init__(self, fail: str = "", fail_update_to: str | None = None):
+    def __init__(
+        self,
+        fail: str = "",
+        fail_update_to: str | None = None,
+        fail_times: int = 1,
+        raises: type[BaseException] = onboarding.OnboardingError,
+    ):
         self.fail = fail
+        self.fail_times = fail_times
+        self.raises = raises
         self.fail_update_to = fail_update_to
         self.events: list[str] = []
         self.contexts: list[onboarding.Context] = []
@@ -1243,8 +1282,9 @@ class Redeploy:
         def run(ctx):
             self.events.append(name)
             self.contexts.append(ctx)
-            if name == self.fail:
-                raise onboarding.OnboardingError("company x: %s exited 1" % name)
+            if name == self.fail and self.fail_times > 0:
+                self.fail_times -= 1
+                raise self.raises("company x: %s exited 1" % name)
             return ""
 
         return run
@@ -1305,6 +1345,32 @@ def test_a_failed_redeploy_is_a_lab_error_and_the_previous_allowlist_returns():
         "configs",
         "deploy",
         "update:proof-a:198.51.100.1",
+        # the Workers get the previous list again, so they and the row agree (review 4ec9e6b7.2)
+        "configs",
+        "deploy",
+    ]
+
+
+def test_a_failed_redeploy_of_the_previous_list_is_a_note_on_the_original_error():
+    """Review 4ec9e6b7.2: a row put back while a Worker still serves the new list is named, never silent."""
+    redeploy = Redeploy(fail="deploy", fail_times=2)
+    with pytest.raises(proof.LabError, match="deploy exited 1") as e:
+        allow_v7(redeploy, ["203.0.113.7"])
+    (note,) = e.value.__notes__
+    assert "redeploying the previous list" in note
+    assert "may still serve the new list" in note
+
+
+@pytest.mark.parametrize("error", [RuntimeError, ValueError, KeyError])
+def test_a_step_failure_of_any_kind_puts_the_previous_allowlist_back(error):
+    """Review 4ec9e6b7.1: the restore is not limited to a LabError."""
+    redeploy = Redeploy(fail="configs", raises=error)
+    with pytest.raises(error):
+        allow_v7(redeploy, ["203.0.113.7"])
+    assert redeploy.events[:3] == [
+        "update:proof-a:203.0.113.7",
+        "configs",
+        "update:proof-a:198.51.100.1",
     ]
 
 
@@ -1312,13 +1378,15 @@ def test_a_company_that_had_no_allowlist_gets_none_back():
     redeploy = Redeploy(fail="configs")
     with pytest.raises(proof.LabError, match="configs exited 1"):
         allow_v7(redeploy, ["203.0.113.7"], before=None)
-    assert redeploy.events[-1] == "update:proof-a:"
+    assert redeploy.events[2] == "update:proof-a:"
 
 
 def test_a_failed_restore_is_named_with_the_value_it_could_not_put_back():
     redeploy = Redeploy(fail="deploy", fail_update_to="198.51.100.1")
-    with pytest.raises(proof.LabError, match=r"deploy exited 1; and putting scope.allow_ips.*198"):
+    with pytest.raises(proof.LabError, match="deploy exited 1") as e:
         allow_v7(redeploy, ["203.0.113.7"])
+    (note,) = e.value.__notes__
+    assert re.search(r"putting scope.allow_ips.*198.*failed", note)
 
 
 class Edge:
@@ -1371,6 +1439,27 @@ def test_a_non_json_403_is_a_lab_error_naming_the_start_of_the_body():
     ) as e:
         lab.request_from("c0000000a", method="GET", path="/", call=waf, companies=companies_proxy)
     assert "x" * 100 not in str(e.value)
+
+
+def test_the_body_start_is_eighty_characters_not_eighty_bytes():
+    """Review 4ec9e6b7.3 and .4: the cut is on characters, and the limit is pinned exactly."""
+
+    def waf(_method, _url, _headers, _body):
+        return lab.HttpAnswer(403, (), ("\u00e9" * 200).encode())
+
+    with pytest.raises(proof.LabError) as e:
+        lab.request_from("c0000000a", method="GET", path="/", call=waf, companies=companies_proxy)
+    assert "\u00e9" * lab.BODY_START in str(e.value)
+    assert "\u00e9" * (lab.BODY_START + 1) not in str(e.value)
+    assert "\ufffd" not in str(e.value)
+
+    def plain(_method, _url, _headers, _body):
+        return lab.HttpAnswer(403, (), b"x" * 200)
+
+    with pytest.raises(proof.LabError) as e:
+        lab.request_from("c0000000a", method="GET", path="/", call=plain, companies=companies_proxy)
+    assert "x" * 80 in str(e.value)
+    assert "x" * 81 not in str(e.value)
 
 
 # --- cost ---------------------------------------------------------------
@@ -2180,6 +2269,36 @@ def test_a_non_lab_rollback_failure_after_a_renewal_names_the_hand_fix():
         spread_v9(fleet, "new", "previous")
 
 
+class _RuntimeRollback(Fleet):
+    def __init__(self, bad, **kw):
+        super().__init__(**kw)
+        self.bad = bad
+
+    def __call__(self, argv, cwd, env):
+        if "rollback" in argv and self.bad in argv:
+            raise RuntimeError("runner gave up")
+        return super().__call__(argv, cwd, env)
+
+
+def test_a_runtime_error_in_the_rollback_keeps_the_renewal_error():
+    """Review 58abac9b.1: a non-listed exception of the rollback is a note, never the replacement."""
+    fleet = _RuntimeRollback("v-new", outcome=lambda _r, _w: {"results": []})
+    with pytest.raises(proof.LabError, match="no installed licence") as raised:
+        spread_v9(fleet, "new", "previous")
+    (note,) = raised.value.__notes__
+    assert "restore it by hand" in note
+
+
+def test_both_rollbacks_catch_the_same_tuple():
+    """Review 58abac9b.2: the success path catches ROLLBACK_FAILURES too, so a RuntimeError there names the hand fix."""
+    fleet = _RuntimeRollback("v-new")
+    with pytest.raises(proof.LabError, match=r"renewal answered ok=True.*v-new"):
+        spread_v9(fleet, "new", "previous")
+    source = inspect.getsource(lab.live_spread_renew)
+    assert "except Exception" not in source
+    assert source.count("except ROLLBACK_FAILURES") == 2
+
+
 def test_the_json_scan_is_linear_in_brackets():
     """Review e2231d81.3: a value that runs to the end is found without a decode from every inner bracket."""
     calls = []
@@ -2199,4 +2318,23 @@ def test_the_json_scan_is_linear_in_brackets():
     finally:
         json.JSONDecoder.raw_decode = orig
     assert got == want
+    assert len(calls) == 1
+
+
+def test_the_json_scan_resumes_after_a_decoded_value_followed_by_text():
+    """Review 58abac9b.3: trailing text after the outer value forces the scan branch; one decode, not one per inner bracket."""
+    calls = []
+    real = json.JSONDecoder.raw_decode
+
+    def counting(self, s, idx=0):
+        calls.append(idx)
+        return real(self, s, idx)
+
+    inner = "[" + ",".join("[1]" for _ in range(200)) + "]"
+    json.JSONDecoder.raw_decode = counting
+    try:
+        got = lab._json_value("noise " + inner + " trailing words", "[")
+    finally:
+        json.JSONDecoder.raw_decode = real
+    assert got == json.loads(inner)
     assert len(calls) == 1
