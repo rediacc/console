@@ -202,6 +202,11 @@ EDGE_CASES = [
     ("a glob under a variable set to .claude", "D=.claude; git rm -q -- $D/*.json"),
     ("a glob under a variable set by a substitution", "D=$(echo .claude); rm $D/*.json"),
     ("a glob under a variable set then unset", "D=agent/x; unset D; rm $D/*.json"),
+    # acc34f73.1/.2: a `$D` that bash does not expand (single quotes, an escaped dollar) names a literal directory `$D`, so the typed text is judged, not the assigned value.
+    ("a single-quoted variable under a recursive rm", "D=agent/x; rm -r '$D/../.claude'"),
+    ("an escaped dollar in double quotes", 'D=agent/x; rm -r "\\$D/../.claude"'),
+    ("an escaped braced dollar in double quotes", 'D=agent/x; rm -r "\\${D}/../.claude"'),
+    ("a variable that bash expands under a recursive rm", "D=agent/x; rm -r $D/../.claude"),
     (
         "a glob under a variable set only on one branch",
         "D=agent/x; [ -n y ] && D=.claude; rm $D/*.json",
@@ -556,7 +561,12 @@ def _assigned(run_, word):
 
 def _operand_words(run_):
     """Every word an operand of `run_` could be: the quote-removed argv (a word whose variables this command assigned, as that value: `_assigned`), the expanded argv where the walk could evaluate it, and each word of a `for` list a `$NAME` in it names."""
-    words = [_assigned(run_, a) or a for a in run_.argv]
+    # A typed word is read as its assigned value only when bash's own expansion of it (`xargv`, aligned by position) IS that value: `'$D/..'` stays `$D/..` there and `"\$D/.."` is unresolved, and both name a literal `$D` directory, so they keep the typed text (review acc34f73.1).
+    expanded = run_.xargv if run_.xargv is not None and len(run_.xargv) == len(run_.argv) else None
+    words = [
+        (expanded is not None and _assigned(run_, a) == expanded[k] and _assigned(run_, a)) or a
+        for k, a in enumerate(run_.argv)
+    ]
     # An expanded word the walk could not finish keeps its unknown part as a backtick span, which `_wildcarded` reads as "any text". The typed word alone loses the boundary bash sees: `"$D"settings*` is `$Dsettings*` after quote removal, a variable called `Dsettings` (review 094dea3b.4).
     words += [w.replace(shellscan._UNRESOLVED, "`_`") for w in (run_.xargv or [])]
     for name, values in run_.loop_vars.items():
