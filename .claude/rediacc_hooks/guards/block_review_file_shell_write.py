@@ -17,6 +17,7 @@ import fnmatch
 import functools
 import itertools
 import os
+import posixpath
 import re
 import shlex
 
@@ -313,9 +314,9 @@ def _span_choices(span, word, run, cmd):
         source = _positional_source(cmd)
         if source is None:
             return [on_line], False
-        return [_WORST if _names_reviews(source) else _OUTSIDE], False
+        return [_WORST if _names_reviews(source, _run_dir(run)) else _OUTSIDE], False
     if kind == "subst":
-        return [_WORST if _names_reviews(text) else _OUTSIDE], False
+        return [_WORST if _names_reviews(text, _run_dir(run)) else _OUTSIDE], False
     if kind == "indirect":
         # Read through both names when the walk knows both (`P=D; D=x` gives `x`); a name it cannot know, or a value that is not a variable name, leaves the line's unknown.
         if name:
@@ -364,7 +365,7 @@ def _span_choices(span, word, run, cmd):
         source = _value_source(name, cmd, shellscan._CLOBBERED in str(value))
         if source is None:
             return [on_line], False
-        return [_WORST if _names_reviews(source) else _OUTSIDE], False
+        return [_WORST if _names_reviews(source, _run_dir(run)) else _OUTSIDE], False
     if shellscan._OPAQUE_KEY in state:
         return [on_line], False
     return [_OUTSIDE], False
@@ -1180,7 +1181,13 @@ def _root_walks_reviews(path):
     segs = [s for s in text.split("/") if s not in ("", ".")]
     anchored = not (text.startswith(("/", "~")) or ".." in segs or segs[:1] == ["_"])
     starts = [0] if anchored else range(len(segs))
-    return any(_head_walks_reviews(segs[i:]) for i in starts)
+    if any(_head_walks_reviews(segs[i:]) for i in starts):
+        return True
+    # A `..` is also read as the text cancels it (#6fdc7136): `agent/plans/..`, the root `grep -rl x ..` gets under `cd agent/plans`, is `agent`, while the reading above, kept for a `..` after a link, met `plans` and stopped. A root climbing above the start (`../x`) stays as read above.
+    folded = posixpath.normpath(text)
+    if ".." not in segs or folded == text or folded.startswith(("..", "/..")):
+        return False
+    return _root_walks_reviews(folded)
 
 
 # Short options whose value is the rest of the bundle or the next word, for each searcher; `e` and `f` give the pattern. rg's `-r` is `--replace`, so its listing flags are not grep's.
@@ -1285,14 +1292,27 @@ def _text_lists_reviews(text, where=None):
     return False
 
 
-def _names_reviews(text):
-    """Text a value is made from that names the review directory: it spells `reviews` as a path segment, or it runs a listing over the directory or an ancestor of it, whose output is review paths (d218ebf3)."""
-    return bool(_SPELLS_REVIEWS.search(text)) or _text_lists_reviews(text)
+def _names_reviews(text, where=None):
+    """Text a value is made from that names the review directory: it spells `reviews` as a path segment, or it runs a listing over the directory or an ancestor of it, whose output is review paths (d218ebf3), read alone and under `where` (`_lists_under`)."""
+    return bool(_SPELLS_REVIEWS.search(text)) or _lists_under(text, where)
+
+
+def _run_dir(run):
+    """The directory a run executes in as the walk's `cd` state spells it (`_Run.cwd`), or None for the starting directory."""
+    return run.cwd if isinstance(run.cwd, str) and run.cwd else None
+
+
+def _lists_under(text, where):
+    """Does shell text list the review directory or an ancestor, read alone or with its relative roots joined to `where`, the directory of the run its output reaches?
+
+    THE LISTING'S ROOT IS READ WHERE ITS OUTPUT IS USED (#6fdc7136). A substitution or a feed is lexed as text of its own, so the `cd` before it was lost: `cd agent/plans && sed -i s/a/b/ $(grep -rl x ..)` and `cd agent && grep -rl x . | xargs sed -i s/a/b/` edit review files and were allowed (rc 0, measured 2026-11-10). A listing prints its roots as typed, and the command it feeds opens those words from its own directory, so that directory is joined. The bare reading stays beside it, which over-reads a text that carries its own `cd`, the fail-safe direction.
+    """
+    return _text_lists_reviews(text) or bool(where and _text_lists_reviews(text, where))
 
 
 def _fed_a_listing(run):
-    """Does xargs feed this run the output of a listing over the review directory or an ancestor (`grep -rl x agent/ | xargs sed -i ...`)?"""
-    return bool(run.feed) and "xargs" in run.via and _text_lists_reviews(run.feed)
+    """Does xargs feed this run the output of a listing over the review directory or an ancestor (`grep -rl x agent/ | xargs sed -i ...`, or `grep -rl x . | xargs sed -i ...` under `cd agent`)?"""
+    return bool(run.feed) and "xargs" in run.via and _lists_under(run.feed, _run_dir(run))
 
 
 def _feeds_listing(cmd):

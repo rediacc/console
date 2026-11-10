@@ -524,6 +524,62 @@ OWN_CASES = [
         "for f in $(grep -rl x agent/plans); do sed -i s/a/b/ $f; done",
         False,
     ),
+    # #6fdc7136: a substitution or a feed is lexed as text of its own, so the `cd` in force was lost. Each refusal was allowed (rc 0) at 00932b650 except the first, refused there only because any unknown value under `cd agent` completes `agent/<x>`; the controls were allowed there too and stay allowed.
+    (
+        "a for loop over a grep -rl of . under cd agent",
+        'cd agent && for f in $(grep -rl x .); do sed -i s/a/b/ "$f"; done',
+        True,
+    ),
+    (
+        "a for loop over a grep -rl of .. under cd agent/plans",
+        'cd agent/plans && for f in $(grep -rl x ..); do sed -i s/a/b/ "$f"; done',
+        True,
+    ),
+    (
+        "a substitution operand over .. under cd agent/plans",
+        "cd agent/plans && sed -i s/a/b/ $(grep -rl x ..)",
+        True,
+    ),
+    (
+        "a variable holding a grep -rl of .. under cd agent/plans",
+        "cd agent/plans && F=$(grep -rl x ..); sed -i s/a/b/ $F",
+        True,
+    ),
+    (
+        "grep -rl over . piped to xargs sed -i under cd agent",
+        "cd agent && grep -rl x . | xargs sed -i s/a/b/",
+        True,
+    ),
+    (
+        "find over . piped to xargs sed -i under cd agent",
+        "cd agent && find . -name '*.md' | xargs sed -i s/a/b/",
+        True,
+    ),
+    (
+        "grep -rl over .. piped to xargs sed -i under cd agent/plans",
+        "cd agent/plans && grep -rl x .. | xargs sed -i s/a/b/",
+        True,
+    ),
+    (
+        "a for loop over a grep -rl of . under cd agent/plans",
+        'cd agent/plans && for f in $(grep -rl x .); do sed -i s/a/b/ "$f"; done',
+        False,
+    ),
+    (
+        "grep -rl over . piped to xargs sed -i under cd agent/plans",
+        "cd agent/plans && grep -rl x . | xargs sed -i s/a/b/",
+        False,
+    ),
+    (
+        "a listing under cd agent piped to xargs cat",
+        "cd agent && grep -rl x . | xargs cat",
+        False,
+    ),
+    (
+        "a listing whose .. climbs out of agent",
+        "cd agent/plans && grep -rl x ../.. | xargs sed -i s/a/b/",
+        False,
+    ),
 ]
 
 MUTANTS = [
@@ -616,14 +672,14 @@ MUTANTS = [
     (
         "a listing fed through xargs not read (d218ebf3)",
         (
-            'return bool(run.feed) and "xargs" in run.via and _text_lists_reviews(run.feed)',
+            'return bool(run.feed) and "xargs" in run.via and _lists_under(run.feed, _run_dir(run))',
             "return False",
         ),
     ),
     (
         "a value's source read for the word reviews alone (d218ebf3)",
         (
-            "return bool(_SPELLS_REVIEWS.search(text)) or _text_lists_reviews(text)",
+            "return bool(_SPELLS_REVIEWS.search(text)) or _lists_under(text, where)",
             "return bool(_SPELLS_REVIEWS.search(text))",
         ),
     ),
@@ -634,6 +690,17 @@ MUTANTS = [
     (
         "a copy out to a literal directory refused (d218ebf3)",
         ('if head in ("", ".", "./") or _root_walks_reviews(head):', "if True:"),
+    ),
+    (
+        "a listing read without the cd its output is used under (#6fdc7136)",
+        (
+            "return _text_lists_reviews(text) or bool(where and _text_lists_reviews(text, where))",
+            "return _text_lists_reviews(text)",
+        ),
+    ),
+    (
+        "a listing root's .. not folded (#6fdc7136)",
+        ("    return _root_walks_reviews(folded)\n", "    return False\n"),
     ),
 ]
 
