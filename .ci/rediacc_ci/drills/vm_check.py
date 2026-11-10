@@ -1431,7 +1431,7 @@ def remote_evidence(res: Result) -> str:
 
 def _renet_binary_missing(why: str) -> bool:
     """Whether an `rdc` failure says the worker has no renet binary at all (a freshly recreated ops VM), as opposed to any other refusal."""
-    return "/renet" in why and "No such file or directory" in why
+    return re.search(r"/renet': No such file or directory", why) is not None
 
 
 def rdc_failure(res: Result) -> str:

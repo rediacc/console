@@ -275,6 +275,8 @@ class World(vm_check.Host):
         # False: the worker has no BTRFS datastore until `machine setup` runs; `setup_rc` is that command's answer.
         self.datastore = over.pop("datastore", True)
         self.setup_rc = over.pop("setup_rc", 0)
+        # A refusal text for `repo list` until `machine setup` runs (a freshly recreated ops VM has no renet binary).
+        self.list_refusal = over.pop("list_refusal", "")
         self.gateway = over.pop("gateway", GATEWAY)
         # Further addresses the same gateway answers at (its loopback one), for the cold-fleet path that mints on localhost first.
         self.gateways = {self.gateway, *over.pop("also_gateways", ())}
@@ -473,6 +475,7 @@ class World(vm_check.Host):
             if self.setup_rc:
                 return self._json_error(self.setup_rc, "renet install failed")
             self.datastore = True
+            self.list_refusal = ""
             return ok
         if head == ("subscription", "status"):
             if self._undecryptable(env):
@@ -530,6 +533,8 @@ class World(vm_check.Host):
                 ],
             }
             return vm_check.Result(1, json.dumps(envelope), "Listing repositories...\n")
+        if head == ("repo", "list") and self.list_refusal:
+            return self._json_error(1, self.list_refusal)
         if head == ("repo", "list") and self.list_fails_after_delete and self.deleted_any:
             return vm_check.Result(1, "", "list unavailable")
         if head == ("repo", "list"):
@@ -4876,3 +4881,42 @@ def test_a_missing_renet_binary_is_told_apart_from_other_refusals():
     assert not vm_check._renet_binary_missing(
         "open /etc/rediacc/config.json: No such file or directory"
     )
+    # An unrelated file under a renet path, or a path that only starts with renet, is not the missing binary.
+    assert not vm_check._renet_binary_missing(
+        "open '/var/lib/rediacc/renet/state.json': No such file or directory"
+    )
+    assert not vm_check._renet_binary_missing(
+        "env: '/opt/renet-repos/x': No such file or directory"
+    )
+
+
+RENET_GONE = "Failed to start a detached job on 'ops-worker': env: '/usr/lib/rediacc/renet/0.0.0-dev/renet': No such file or directory"
+
+
+def test_a_missing_renet_binary_is_installed_once_then_the_list_is_read_again(
+    tmp_path: pathlib.Path,
+) -> None:
+    """P3's leftover check lists first and P5 after it; the one `machine setup` serves both and the run goes on."""
+    world = make_world(tmp_path, list_refusal=RENET_GONE)
+    rc, out, _receipt = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    setups = [c for c in world.rdc_calls() if c[:2] == ["machine", "setup"]]
+    assert setups == [["machine", "setup", vm_check.OPS_WORKER_NAME]], setups
+
+
+def test_a_failed_renet_install_ends_the_list_as_fleet_unavailable(tmp_path: pathlib.Path) -> None:
+    world = make_world(tmp_path, list_refusal=RENET_GONE, setup_rc=1)
+    rc, out, receipt = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    assert receipt["reason"]["class"] == "fleet-unavailable"
+    assert "found no renet binary" in receipt["reason"]["detail"]
+
+
+def test_an_unrelated_list_refusal_never_runs_machine_setup(tmp_path: pathlib.Path) -> None:
+    world = make_world(
+        tmp_path, list_refusal="open '/var/lib/rediacc/renet/state.json': No such file or directory"
+    )
+    rc, out, receipt = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    assert not [c for c in world.rdc_calls() if c[:2] == ["machine", "setup"]]
+    assert "state.json" in receipt["reason"]["detail"]
