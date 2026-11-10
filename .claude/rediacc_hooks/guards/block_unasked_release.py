@@ -102,8 +102,8 @@ MUTANTS = {
         "    if True:\n        return False",
     ),
     "bind-verb-unwrapped": (
-        '    if _module(run, where) == RELEASE_MODULE:\n        # `_bind',
-        '    if False:\n        # `_bind',
+        "    if _module(run, where) == RELEASE_MODULE:\n        # `_bind",
+        "    if False:\n        # `_bind",
     ),
     "module-no-channel-says-npm": (
         "NO_CHANNEL_REFUSAL if npm else NO_CHANNEL_MODULE_REFUSAL",

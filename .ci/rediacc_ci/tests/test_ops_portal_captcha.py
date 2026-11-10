@@ -258,6 +258,7 @@ def test_an_unresolved_host_is_answered_over_doh_and_pinned(monkeypatch):
 
     monkeypatch.setattr(pc.https, "build_opener", build_opener)
     asked: list = []
+
     def doh(host):
         asked.append(host)
         return "198.51.100.7"
@@ -298,6 +299,7 @@ def test_a_failure_that_is_not_a_lookup_asks_no_doh(monkeypatch):
 def test_the_pinned_connection_dials_the_address_and_names_the_host(monkeypatch):
     """`--resolve host:443:<address>`: TCP to the address, SNI and the certificate check against the host."""
     dialed: list = []
+
     def create_connection(addr, timeout):
         assert timeout == 5
         dialed.append(addr)

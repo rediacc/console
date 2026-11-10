@@ -516,9 +516,12 @@ def check_env_shell_vars(errors: Errors, root: pathlib.Path, workflow_dir: str) 
 
 
 # Options that may sit between `sudo` and `-E`: `-H`, `-n`, `--login`, and the ones that take a value (`-u root`, `-g grp`, ...).
-SUDO_OPT = r"(?:-[A-Za-z]*[ugCDRTUrtph][ \t]+[^\s-][^\s;&|)]*|-[A-Za-z]+|--[a-z-]+(?:=[^\s;&|)]+)?)[ \t]+"
+SUDO_OPT = (
+    r"(?:-[A-Za-z]*[ugCDRTUrtph][ \t]+[^\s-][^\s;&|)]*|-[A-Za-z]+|--[a-z-]+(?:=[^\s;&|)]+)?)[ \t]+"
+)
 SUDO_E_RE = re.compile(
-    r"(^|[;&|(`]|\$\()[ \t]*sudo[ \t]+(?:%s)*(-[A-Za-z]*E[A-Za-z]*|--preserve-env([ \t]|$))" % SUDO_OPT
+    r"(^|[;&|(`]|\$\()[ \t]*sudo[ \t]+(?:%s)*(-[A-Za-z]*E[A-Za-z]*|--preserve-env([ \t]|$))"
+    % SUDO_OPT
 )
 
 
@@ -664,10 +667,12 @@ def check_sudo_env_drops(errors: Errors, root: pathlib.Path, workflow_dir: str) 
         if not hits:
             continue
         errors.report(
-            "`sudo env` drops step env variables in %s: it passes only the names it lists" % path.name,
+            "`sudo env` drops step env variables in %s: it passes only the names it lists"
+            % path.name,
             [
                 *[
-                    "    %s:%d: missing %s: %s" % (path.name, number, ", ".join(missing), line.strip())
+                    "    %s:%d: missing %s: %s"
+                    % (path.name, number, ", ".join(missing), line.strip())
                     for number, line, missing in hits
                 ],
                 '    Fix: add `"NAME=$NAME"` for each missing variable to the `sudo env` line.',

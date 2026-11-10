@@ -127,10 +127,19 @@ def test_every_account_deploy_follows_its_regions_signer() -> None:
             deploy = order.index("account-deploy-%s" % region)
             assert deps < order.index(control.id) < order.index(signer.id) < deploy
             assert control.argv == (
-                "python3", "-m", "rediacc_ci.enterprise.control_db", "ensure", "--region", region,
+                "python3",
+                "-m",
+                "rediacc_ci.enterprise.control_db",
+                "ensure",
+                "--region",
+                region,
             )
             assert signer.argv[:5] == (
-                "python3", "-m", "rediacc_ci.deploy.deploy_signer", "--target", region,
+                "python3",
+                "-m",
+                "rediacc_ci.deploy.deploy_signer",
+                "--target",
+                region,
             )
             assert control.profiles == signer.profiles == ("deploy-signer",)
 

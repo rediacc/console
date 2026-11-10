@@ -53,7 +53,9 @@ def test_sudo_env_and_comments_pass(gate):
 
 
 def test_flags_sudo_options_before_e(gate):
-    gate.log_test("`sudo -H -E`, `sudo -u root -E` and `sudo -n --preserve-env` must fail (review 40262498.3)")
+    gate.log_test(
+        "`sudo -H -E`, `sudo -u root -E` and `sudo -n --preserve-env` must fail (review 40262498.3)"
+    )
     for command in (
         "sudo -H -E node cli.cjs ops up",
         "sudo -u root -E node cli.cjs ops up",

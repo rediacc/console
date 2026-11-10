@@ -47,7 +47,9 @@ def binary(cwd: pathlib.Path, env: Mapping[str, str] | None = None) -> pathlib.P
     )
 
 
-def resolve(argv: Sequence[str], cwd: pathlib.Path, env: Mapping[str, str] | None = None) -> list[str]:
+def resolve(
+    argv: Sequence[str], cwd: pathlib.Path, env: Mapping[str, str] | None = None
+) -> list[str]:
     """`argv` with a leading `ARGV` replaced by the absolute path of `binary(cwd, env)`, so the pinned binary runs from any cwd; any other argv comes back unchanged."""
     out = list(argv)
     if out[: len(ARGV)] != ARGV:

@@ -36,7 +36,9 @@ def test_flags_sudo_env_dropping_step_env(gate):
         result = workflow_rule.run_check(gate, d, ci=True)
         gate.assert_exit(1, result, "dropped step env must fail")
         gate.assert_contains(result.combined, "bad.yml:8", "cites file:line")
-        gate.assert_contains(result.combined, "VM_BRIDGE, VM_CEPH_NODES", "names the missing variables")
+        gate.assert_contains(
+            result.combined, "VM_BRIDGE, VM_CEPH_NODES", "names the missing variables"
+        )
     gate.log_pass("missing names reported with file:line")
 
 
@@ -44,22 +46,8 @@ def test_flags_block_scalar_run(gate):
     gate.log_test("a `sudo env` inside a run block scalar is read too")
     with harness.temp_dir() as d:
         (d / "bad.yml").write_text(
-            "\n".join(
-                [
-                    "name: fixture",
-                    "on: push",
-                    "jobs:",
-                    "  j:",
-                    "    runs-on: ubuntu-latest",
-                    "    steps:",
-                    "      - run: |",
-                    "          echo start",
-                    "          sudo env PATH=$PATH renet ops up",
-                    "        env:",
-                    "          VM_BRIDGE: '1'",
-                ]
-            )
-            + "\n",
+            "name: fixture\non: push\njobs:\n  j:\n    runs-on: ubuntu-latest\n    steps:\n      - run: |\n          echo start\n          sudo env PATH=$PATH renet ops up\n        env:\n          VM_BRIDGE: '1'"
+            "\n",
             encoding="utf-8",
         )
         result = workflow_rule.run_check(gate, d, ci=True)
@@ -90,21 +78,8 @@ def test_sibling_step_env_not_blamed(gate):
     gate.log_test("CONTROL: an env block on a different step does not count against the sudo step")
     with harness.temp_dir() as d:
         (d / "ok.yml").write_text(
-            "\n".join(
-                [
-                    "name: fixture",
-                    "on: push",
-                    "jobs:",
-                    "  j:",
-                    "    runs-on: ubuntu-latest",
-                    "    steps:",
-                    "      - run: sudo env PATH=$PATH renet ops up",
-                    "      - run: ./other.sh",
-                    "        env:",
-                    "          OTHER: x",
-                ]
-            )
-            + "\n",
+            "name: fixture\non: push\njobs:\n  j:\n    runs-on: ubuntu-latest\n    steps:\n      - run: sudo env PATH=$PATH renet ops up\n      - run: ./other.sh\n        env:\n          OTHER: x"
+            "\n",
             encoding="utf-8",
         )
         result = workflow_rule.run_check(gate, d, ci=True)
