@@ -329,7 +329,7 @@ def deadline_cases(base):
     saved = (module.REPO, module._tracked, os.environ.get("CLAUDE_PROJECT_DIR"))
     started = time.monotonic()
     try:
-        module.REPO, module._tracked = stub, lambda repo, timeout: ["x.txt"]
+        module.REPO, module._tracked = stub, lambda _repo, _timeout: ["x.txt"]
         os.environ["CLAUDE_PROJECT_DIR"] = str(stub)
         event = hookio.Event(json.dumps(spawn("x\nOwns: x.txt", root=stub)))
         rc, out, err = event.result(module.run(event))

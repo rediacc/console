@@ -336,12 +336,14 @@ def _every_run():
     """`shellscan.every_run`, importing `rediacc_hooks` from this checkout's `.claude/` when it is not already importable."""
     try:
         from rediacc_hooks import shellscan
-    except ImportError:
+    except ImportError as first:
         spec = importlib.util.spec_from_file_location(
             "rediacc_hooks_syspath", _CLAUDE_DIR / "rediacc_hooks" / "syspath.py"
         )
         if spec is None or spec.loader is None:
-            raise ImportError("cannot load %s" % (_CLAUDE_DIR / "rediacc_hooks" / "syspath.py"))
+            raise ImportError(
+                "cannot load %s" % (_CLAUDE_DIR / "rediacc_hooks" / "syspath.py")
+            ) from first
         syspath = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(syspath)
         syspath.on_sys_path(_CLAUDE_DIR)
