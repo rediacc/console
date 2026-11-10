@@ -486,6 +486,23 @@ def test_a_released_boxes_note_after_a_blank_line_is_printed(gate, tmp_path):
     gate.log_pass("a note after a blank line is printed")
 
 
+def test_a_released_boxes_note_stops_at_unindented_text_and_a_nested_box(gate, tmp_path):
+    """A blank line does not extend the note: an unindented paragraph after it, and an indented checkbox under the box, are not printed as its note (review a7dc2ab5.1, a7dc2ab5.2)."""
+    root = _aged_pair(
+        tmp_path,
+        "# PLAN: boxed\nStatus: done\nRuling: #abcdef12\nFirst-Seen: 2024-01-01\n\n"
+        "%s\n    REALNOTE dropped by ruling #abcdef12\n    - [x] NESTEDBOX\n"
+        "    NESTEDTEXT\n\nUNINDENTEDPARA\n" % _BOX_LINE,
+    )
+    _ruling_item(root, "abcdef12", "x")
+    swept = _gate(root, "--sweep", "--write")
+    gate.assert_exit(0, swept, "a released box does not hold the sweep")
+    gate.assert_contains(swept.out, "REALNOTE", "the note under the box prints")
+    for stray in ("NESTEDBOX", "NESTEDTEXT", "UNINDENTEDPARA"):
+        gate.assert_eq(stray in swept.out, False, "CONTROL: %s is not the box's note" % stray)
+    gate.log_pass("the note stops at a nested box and at unindented text")
+
+
 def test_move_leaves_a_stub_and_stamps_both_clocks(gate, tmp_path):
     root = _seed(
         tmp_path, {"agent/PLAN-closing.md": "# PLAN: closing\nStatus: done\n\n- [x] a box\n"}
