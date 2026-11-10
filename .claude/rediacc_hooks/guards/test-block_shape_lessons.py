@@ -301,6 +301,47 @@ with tempfile.TemporaryDirectory(prefix="shape-lessons-") as tmp:
         "REAL TRAPS: date +%s says nothing", "date +%s", real_env, 0, absent=["WARNING", NOT_LOADED]
     )
 
+# ---- shapes._every_run: an unloadable syspath.py raises ImportError (review a735c9c8.1) ----
+_SHAPES_SPEC = importlib.util.spec_from_file_location(
+    "shapes_under_test", REPO / ".claude" / "hooks" / "trapguard" / "shapes.py"
+)
+if _SHAPES_SPEC is None or _SHAPES_SPEC.loader is None:
+    raise SystemExit("%s: trapguard/shapes.py is missing" % __file__)
+_shapes = importlib.util.module_from_spec(_SHAPES_SPEC)
+_SHAPES_SPEC.loader.exec_module(_shapes)
+
+
+def every_run_import_error():
+    """The ImportError `_every_run` raises when `rediacc_hooks` is unimportable and syspath.py has no loader, else None."""
+    real_spec = importlib.util.spec_from_file_location
+    saved = {k: sys.modules.pop(k) for k in list(sys.modules) if k.split(".")[0] == "rediacc_hooks"}
+    sys.modules["rediacc_hooks"] = None  # makes `from rediacc_hooks import ...` raise ImportError
+    importlib.util.spec_from_file_location = lambda *_a, **_k: None
+    try:
+        _shapes._every_run()
+    except ImportError as err:
+        return str(err)
+    finally:
+        importlib.util.spec_from_file_location = real_spec
+        sys.modules.pop("rediacc_hooks", None)
+        sys.modules.update(saved)
+    return None
+
+
+TALLY["total"] += 1
+_err = every_run_import_error()
+_ok = _err is not None and "syspath.py" in _err
+TALLY["fails"] += not _ok
+print(
+    "%-70s %s"
+    % (
+        "shapes._every_run: no spec raises ImportError naming syspath.py",
+        "ok" if _ok else "*** FAIL ***",
+    )
+)
+if not _ok:
+    print("    got: %r" % _err)
+
 print()
 # ANTI-VACUITY: a guard that answers one way on every input passes half of any suite.
 total, blocked = TALLY["total"], TALLY["blocked"]

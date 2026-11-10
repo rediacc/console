@@ -9,6 +9,9 @@ The K=5 shadow-gate ledger is
 
 from __future__ import annotations
 
+import os
+import subprocess
+
 from rediacc_ci.tests import differential as diff
 
 TWIN = ".ci/scripts/deploy/upload-media-to-r2.sh"
@@ -55,3 +58,35 @@ def test_missing_file_byte_for_byte(tmp_path) -> None:
     old, new = run_both(argv)
     assert old[0] == 1
     assert new == old
+
+
+def test_upload_target_is_the_media_bucket(tmp_path) -> None:
+    """The primitive publishes to the registry's `media` bucket, in both the `s3 cp` and the HEAD readback."""
+
+    calls = tmp_path / "aws-calls.txt"
+    fake_aws = tmp_path / "fake-aws"
+    fake_aws.write_text('#!/bin/sh\necho "$@" >> "%s"\n' % calls)
+    fake_aws.chmod(0o755)
+    fake_bin = tmp_path / "bin"
+    fake_bin.mkdir()
+    fake_npx = fake_bin / "npx"
+    fake_npx.write_text("#!/bin/sh\nexit 0\n")
+    fake_npx.chmod(0o755)
+    video = tmp_path / "clip.mp4"
+    video.write_bytes(b"x")
+    env = dict(os.environ)
+    env.update(
+        AWS_BIN=str(fake_aws),
+        PATH="%s:%s" % (fake_bin, os.environ["PATH"]),
+        CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID="k",
+        CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_KEY="s",
+        CLOUDFLARE_R2_MEDIA_ENDPOINT="http://127.0.0.1:1",
+    )
+    argv = ["bash", ".ci/media/tools/upload-r2.sh", "--kind", "solutions", "--key", "k"]
+    argv += ["--lang", "en", "--field", "mp4", "--file", str(video)]
+    argv += ["--defer-manifest", str(tmp_path / "deferred.tsv")]
+    proc = subprocess.run(argv, env=env, capture_output=True, text=True, timeout=60, check=False)
+    assert proc.returncode == 0, proc.stderr
+    lines = calls.read_text().splitlines()
+    assert lines[0].startswith("s3 cp %s s3://media/videos/solutions/en/clip.mp4 " % video)
+    assert "s3api head-object --bucket media --key videos/solutions/en/clip.mp4 " in lines[1]

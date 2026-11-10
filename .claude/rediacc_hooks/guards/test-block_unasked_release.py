@@ -780,6 +780,14 @@ CASES = [
         "wrangler",
     ),
     (
+        # `_bind` with no `--` has no CMD to judge, so it falls through to the bare entry run, which names no --channel (review 47b1278b.1).
+        "_bind with no -- separator is judged as a bare entry run",
+        "%s rediacc_ci.release.local _bind --spec 'A > B'" % PY,
+        None,
+        B,
+        "names no --channel edge",
+    ),
+    (
         "release module with no channel and no _bind",
         "%s rediacc_ci.release.local --dry-run" % PY,
         None,
