@@ -21,4 +21,4 @@ Body-Sig: f27da39d16f81465
 ### 3feb7c7b.1 [low] agent/plans/PLAN-backup-program.md:607
 Anchor: in-diff
 Claim: The added Q14 note says the run went through eu-remote, not eu-bench, but the older '(note) Runs through `eu-bench`, not `eu-remote`' line directly beneath it at line 608 is left unchanged, so the box now holds two contradictory notes and a reader can't tell which one governs.
-Resolution: open
+Resolution: fixed ba193ffde0b2976051dbed1e3e14a9c09c978f7b | d778be9d 2026-11-10T12:35:33Z
