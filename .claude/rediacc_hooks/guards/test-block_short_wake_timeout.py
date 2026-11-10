@@ -85,6 +85,12 @@ CASES = [
         ["absent (the harness default"],
     ),
     (
+        "an explicit null timeout is invalid, not absent",
+        ARM,
+        {"run_in_background": True, "timeout": None},
+        [INVALID, "None"],
+    ),
+    (
         "timeout nan is invalid",
         ARM,
         {"run_in_background": True, "timeout": "nan"},
