@@ -243,6 +243,15 @@ def jq_names(program: str, cwd: str) -> str:
     return proc.stdout.decode("utf-8", "surrogateescape")
 
 
+# THE DIRECTORY THE create, info AND delete CALLS RUN FROM (finding e69747ea, sibling of fc8ad2fd). `npx --no-install` runs only a `node_modules/.bin/wrangler` at or above its cwd, never PATH, so from the repository root (or the workspace) it answers "npx canceled due to missing packages". Same directory `clone_d1` uses; the migrations apply runs from `workers/www`, which holds its own install.
+WRANGLER_CWD_REL = clone_d1.WRANGLER_CWD_REL
+
+
+def wrangler_cwd() -> str:
+    """The worker directory the d1 create, info and delete calls run from, under this run's repository root."""
+    return str(common.repo_root().joinpath(*WRANGLER_CWD_REL))
+
+
 def create_argv(db_name: str, location: str) -> list[str]:
     """`npx wrangler d1 create "$DB_NAME" --location <region location>` (twin :104, with the location read from regions.json)."""
     return [*wrangler.ARGV, "d1", "create", db_name, "--location", location]
@@ -323,6 +332,7 @@ def get_d1_uuid(db_name: str) -> str:
         info_argv(db_name),
         stdout=subprocess.PIPE,
         stderr=subprocess.DEVNULL,
+        cwd=wrangler_cwd(),
         check=False,
     )
     sed = subprocess.run(
@@ -359,6 +369,7 @@ def cleanup(cleanup_dbs: list[str]) -> None:
             delete_argv(db),
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
+            cwd=wrangler_cwd(),
         )
         if status == 0:
             print("  Deleted %s" % db)
@@ -396,7 +407,7 @@ def _one_region(
 
     print("::group::Test migrations against %s (%s)" % (source_db, region))
 
-    status = _run(create_argv(db_name, location))
+    status = _run(create_argv(db_name, location), cwd=wrangler_cwd())
     if status:
         raise BashExitError(status)
 

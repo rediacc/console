@@ -1164,3 +1164,25 @@ def test_no_secret_value_reaches_any_child_argv(monkeypatch: pytest.MonkeyPatch)
         if name != "OBS_OTLP_CREDENTIALS_EU":
             assert value in wrangler_stdin, "%s never reached wrangler's stdin" % name
     assert "SENTINEL-otlp-pass" in wrangler_stdin
+
+
+def test_wrangler_starts_in_the_worker_directory(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Finding e69747ea: `npx --no-install wrangler` run from the caller's directory finds no pinned install ("npx canceled due to missing packages"); only workers/account carries it."""
+    for name, value in _as_port_env(FIXTURE_ENV).items():
+        monkeypatch.setenv(name, value)
+    monkeypatch.setattr(port.common, "require_cmd", lambda *_a, **_k: "/bin/true")
+    real_run = subprocess.run
+    cwds: dict[str, object] = {}
+
+    def recording_run(argv, **kw):
+        cwds[argv[0]] = kw.get("cwd")
+        if argv[0] == "npx":
+            return subprocess.CompletedProcess(argv, 0)
+        return real_run(argv, **kw)
+
+    monkeypatch.setattr(port.subprocess, "run", recording_run)
+    assert port.main([]) == 0
+    assert cwds["npx"] == port.paths.repo_root() / "workers" / "account"
+    assert (port.paths.repo_root() / "workers" / "account").is_dir()
+    # THE CONTROL: jq, the left half of the pipe, still runs where the caller stands.
+    assert cwds["jq"] is None

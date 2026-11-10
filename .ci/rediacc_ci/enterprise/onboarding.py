@@ -543,8 +543,9 @@ def live_actions(
             ("backup queue", ["queues", "create", "backup-replicate-%s" % plan.name]),
             ("dead-letter queue", ["queues", "create", "backup-replicate-%s-dlq" % plan.name]),
         )
+        # From the account worker directory, never `cwd=None`: `run_captured` turns None into an empty temporary directory, where `npx --no-install` finds no pinned wrangler ("npx canceled due to missing packages", finding e69747ea). That directory holds no default wrangler.toml, and these calls name no config.
         for what, args in work:
-            done = run_cmd([*wrangler.ARGV, *args], cwd=None)
+            done = run_cmd([*wrangler.ARGV, *args], cwd=base().joinpath(*pc.ACCOUNT_REL))
             if done.returncode != 0 and not _exists(done):
                 raise OnboardingError(
                     "company %s: creating the %s failed (wrangler exited %d)"

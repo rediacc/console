@@ -106,8 +106,13 @@ import os
 import re
 import subprocess
 import sys
+from typing import TYPE_CHECKING
 
+from rediacc_ci import paths
 from rediacc_ci.core import common, wrangler
+
+if TYPE_CHECKING:
+    import pathlib
 
 # This module's own dotted name, the prefix of every diagnostic it prints (the same name `python3 -m` runs it by). A literal, because `__name__` is `__main__` under `-m`.
 SELF = "rediacc_ci.deploy.set_account_worker_secrets"
@@ -609,9 +614,14 @@ def wrangler_argv(worker_name: str) -> list[str]:
     return [*wrangler.ARGV, "secret", "bulk", "--name", worker_name]
 
 
+def worker_dir() -> pathlib.Path:
+    """`workers/account`, whose `node_modules/.bin/wrangler` the release installs. `wrangler.ARGV` is `npx --no-install`, which resolves only a local binary at or above its cwd and never PATH, so from any other directory it dies on `npx canceled due to missing packages` (finding e69747ea, sibling of the www pusher's fc8ad2fd)."""
+    return paths.repo_root() / "workers" / "account"
+
+
 def _wrangler(argv: list[str], payload: str) -> int:
-    """The right half of the pipe. BOTH streams inherited, as the twin leaves them: wrangler's own output is the entire visible result of a good run."""
-    proc = subprocess.run(argv, input=payload, text=True, check=False)
+    """The right half of the pipe. BOTH streams inherited, as the twin leaves them: wrangler's own output is the entire visible result of a good run. It starts in `worker_dir()`; jq, the left half, runs where the caller stands."""
+    proc = subprocess.run(argv, input=payload, text=True, check=False, cwd=worker_dir())
     return proc.returncode
 
 

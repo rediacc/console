@@ -5,6 +5,7 @@ from __future__ import annotations
 import email.message
 import http.client
 import io
+import os
 import shutil
 import sqlite3
 import types
@@ -363,6 +364,54 @@ def test_live_buckets_step_creates_buckets_and_queues_and_accepts_existing():
     assert ["r2", "bucket", "create", "backups-acme", "--jurisdiction", "eu"] in calls
     assert ["queues", "create", "backup-replicate-acme"] in calls
     assert ["queues", "create", "backup-replicate-acme-dlq"] in calls
+
+
+def _local_only_npx(tmp_path, *, install: bool):
+    """A fake `npx` that resolves as npm 11.21.0 does: only a node_modules/.bin/wrangler at or above the cwd counts, never PATH. Returns (PATH dir, repository root with or without the account worker's install)."""
+    stub = tmp_path / "bin"
+    stub.mkdir()
+    npx = stub / "npx"
+    npx.write_text(
+        '#!/bin/sh\nd=$(pwd -P)\nwhile [ ! -e "$d/node_modules/.bin/wrangler" ]; do\n'
+        "  if [ \"$d\" = / ]; then echo 'npm error npx canceled due to missing packages' >&2; exit 1; fi\n"
+        '  d=$(dirname "$d")\ndone\nexit 0\n',
+        encoding="utf-8",
+    )
+    npx.chmod(0o755)
+    root = tmp_path / "repo"
+    worker = root.joinpath(*onboarding.pc.ACCOUNT_REL)
+    worker.mkdir(parents=True)
+    if install:
+        (worker / "node_modules" / ".bin").mkdir(parents=True)
+        (worker / "node_modules" / ".bin" / "wrangler").write_text("#!/bin/sh\n", encoding="utf-8")
+    return str(stub), root
+
+
+def test_live_buckets_step_finds_the_pinned_wrangler_as_npm_resolves_it(tmp_path, monkeypatch):
+    """Finding e69747ea: the buckets step ran from an empty temporary directory, where npx finds no wrangler."""
+    stub, root = _local_only_npx(tmp_path, install=True)
+    monkeypatch.setenv("PATH", stub + os.pathsep + os.environ["PATH"])
+    onboarding.live_actions(runner=None, out_root=root)["buckets"](_ctx(World()))
+
+
+def test_live_buckets_step_control_fails_without_the_install(tmp_path, monkeypatch):
+    """THE CONTROL: with no install in the account worker the same fake refuses, so the test above can go red."""
+    stub, root = _local_only_npx(tmp_path, install=False)
+    monkeypatch.setenv("PATH", stub + os.pathsep + os.environ["PATH"])
+    with pytest.raises(onboarding.OnboardingError):
+        onboarding.live_actions(runner=None, out_root=root)["buckets"](_ctx(World()))
+
+
+def test_live_buckets_step_runs_from_the_account_worker():
+    seen = []
+
+    def runner(_argv, *, cwd=None):
+        seen.append(str(cwd))
+        return Proc(0)
+
+    onboarding.live_actions(runner=runner)["buckets"](_ctx(World()))
+    assert seen
+    assert all(cwd.endswith("workers/account") for cwd in seen), seen
 
 
 def test_live_buckets_step_names_a_failure_without_the_label():

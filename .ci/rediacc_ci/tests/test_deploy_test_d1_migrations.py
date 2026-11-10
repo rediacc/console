@@ -88,6 +88,15 @@ if rest is None:
     sys.stderr.write("fake npx: unmodelled tool %r\n" % (argv[:1],))
     sys.exit(127)
 
+# `--no-install` AS npm 11.21.0 RESOLVES IT, when asked: only a node_modules/.bin/wrangler at or above the cwd counts, never PATH.
+if os.environ.get("FAKE_NPX_LOCAL_ONLY"):
+    here = os.getcwd()
+    while not os.path.exists(os.path.join(here, "node_modules", ".bin", "wrangler")):
+        if os.path.dirname(here) == here:
+            sys.stderr.write('npm error npx canceled due to missing packages and no YES option: ["wrangler@4.160.0"]\n')
+            sys.exit(1)
+        here = os.path.dirname(here)
+
 state = load()
 
 if rest[:2] == ["d1", "create"]:
@@ -218,6 +227,11 @@ def fixture(
 
     if worker_dir:
         (root / "workers" / "www").mkdir(parents=True, exist_ok=True)
+    # Stand-ins for the pinned installs (`FAKE_NPX_LOCAL_ONLY` looks for them).
+    for worker in ("account", "www"):
+        local_bin = root / "workers" / worker / "node_modules" / ".bin"
+        local_bin.mkdir(parents=True, exist_ok=True)
+        (local_bin / "wrangler").write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
     if regions is not None:
         (root / "regions.json").write_text(json.dumps(regions, indent=2), encoding="utf-8")
 
@@ -520,3 +534,26 @@ def test_the_guard_table_and_the_literal_reads_cannot_drift() -> None:
 def test_diagnostics_are_prefixed_with_the_module_name() -> None:
     assert port.SELF == "rediacc_ci.deploy.test_d1_migrations"
     assert port.__name__ == port.SELF
+
+
+# --------------------------------------------------------------------------- finding e69747ea: the worker directory ---------------------------------------------------------------------------
+
+
+def test_every_wrangler_call_runs_from_a_worker_directory(tmp_path) -> None:
+    """create, info and the cleanup delete used to run from the repository root, where `npx --no-install` finds no pinned install ("npx canceled due to missing packages")."""
+    root = fixture(tmp_path)
+    proc, calls = _run(root, FAKE_NPX_LOCAL_ONLY="1")
+    assert proc.returncode == 0, proc.stderr
+    assert "npx canceled" not in proc.stdout + proc.stderr
+    assert _wrangler_verbs(calls).count("d1 create") == 2
+    assert _wrangler_verbs(calls).count("d1 delete") == 2
+
+
+def test_the_local_only_fake_refuses_without_a_pinned_install(tmp_path) -> None:
+    """THE CONTROL: with the worker installs removed the same fake fails the way npm does, so the test above can go red."""
+    root = fixture(tmp_path)
+    for worker in ("account", "www"):
+        (root / "workers" / worker / "node_modules" / ".bin" / "wrangler").unlink()
+    proc, _calls_log = _run(root, FAKE_NPX_LOCAL_ONLY="1")
+    assert proc.returncode != 0
+    assert "npx canceled due to missing packages" in proc.stdout + proc.stderr

@@ -813,3 +813,39 @@ def test_the_release_proof_holds_over_the_runner(tmp_path):
     assert proof.run_verb("release", cast("proof.Lab", Lab()), bench=True, out=lines.append) == 0, (
         lines
     )
+
+
+def _path_with(tmp_path: pathlib.Path, *, wrangler_on_path: bool) -> str:
+    """A PATH holding an `npx` that refuses as npm 11.21.0 does outside a worker directory, and a pinned `wrangler` when asked."""
+    stub = tmp_path / "bin"
+    stub.mkdir()
+    npx = stub / "npx"
+    npx.write_text(
+        "#!/bin/sh\necho 'npm error npx canceled due to missing packages' >&2\nexit 1\n",
+        encoding="utf-8",
+    )
+    npx.chmod(0o755)
+    if wrangler_on_path:
+        tool = stub / "wrangler"
+        tool.write_text('#!/bin/sh\necho \'[{"results": [{"n": 1}]}]\'\n', encoding="utf-8")
+        tool.chmod(0o755)
+    return str(stub)
+
+
+def test_d1_query_runs_the_pinned_binary_not_npx(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Finding e69747ea: the transport ran `npx --no-install wrangler` from a temporary directory, which npm 11 answers with "npx canceled"; the pinned binary runs by path."""
+    stub = _path_with(tmp_path, wrangler_on_path=True)
+    monkeypatch.setattr(rings_run.control_db, "wrangler_env", lambda: {"PATH": stub})
+    assert rings_run.d1_query("control-eu", "SELECT 1", []) == [{"n": 1}]
+
+
+def test_d1_query_control_names_the_missing_install(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """THE CONTROL: with no wrangler on the same PATH the call refuses, with the database named and no statement."""
+    stub = _path_with(tmp_path, wrangler_on_path=False)
+    monkeypatch.setattr(rings_run.control_db, "wrangler_env", lambda: {"PATH": stub})
+    with pytest.raises(RuntimeError, match="control-eu"):
+        rings_run.d1_query("control-eu", "SELECT 1", [])

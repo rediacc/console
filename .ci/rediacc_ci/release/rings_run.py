@@ -35,6 +35,7 @@ import datetime
 import io
 import json
 import os
+import pathlib
 import re
 import subprocess
 import sys
@@ -46,12 +47,11 @@ from typing import TYPE_CHECKING, Any
 from rediacc_ci import paths
 from rediacc_ci.core import wrangler as wrangler_cmd
 from rediacc_ci.deploy import console_executor
-from rediacc_ci.enterprise import lab, proof, registry
+from rediacc_ci.enterprise import control_db, lab, proof, registry
 from rediacc_ci.release import local, rings
 from rediacc_ci.well_known import PRODUCT_DOMAIN
 
 if TYPE_CHECKING:
-    import pathlib
     from collections.abc import Callable, Sequence
 
 SELF = "rediacc_ci.release.rings_run"
@@ -712,12 +712,19 @@ def d1_rows(text: str) -> list[dict[str, Any]]:
 
 
 def d1_query(database: str, sql: str, params: list) -> list[dict]:
-    """The production transport: `wrangler d1 execute <database> --remote --json` from a neutral directory. Raises RuntimeError naming the database only, never the statement."""
+    """The production transport: `wrangler d1 execute <database> --remote --json` from a neutral directory, by the pinned binary's absolute path. `npx --no-install` never reads PATH and finds no install from a temporary directory ("npx canceled due to missing packages", finding e69747ea), so the argv goes through `wrangler.resolve` with the repo's `.bin` directories on PATH, as `control_db.run_wrangler` does. Raises RuntimeError naming the database only, never the statement."""
     argv = [*wrangler_cmd.ARGV, "d1", "execute", database, "--remote", "--json"]
     argv += ["--command", inline(sql, params)]
+    env = control_db.wrangler_env()
     with tempfile.TemporaryDirectory(prefix="rings-run-") as tmp:
         try:
-            proc = subprocess.run(argv, cwd=tmp, capture_output=True, text=True, check=False)
+            run = wrangler_cmd.resolve(argv, pathlib.Path(tmp), env)
+            proc = subprocess.run(
+                run, cwd=tmp, env=env, capture_output=True, text=True, check=False
+            )
+        except wrangler_cmd.WranglerNotInstalledError as exc:
+            msg = "wrangler d1 execute %s could not run: %s" % (database, exc)
+            raise RuntimeError(msg) from None
         except OSError as exc:
             msg = "wrangler d1 execute %s could not run: %s" % (database, exc.strerror)
             raise RuntimeError(msg) from None
