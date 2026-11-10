@@ -4816,3 +4816,13 @@ def test_an_explicit_base_is_never_replaced_by_a_verified_one(tmp_path: pathlib.
     assert receipt["trigger"]["base"] == "v0"
     assert "verifiedBase" not in receipt["trigger"]
     assert sorted(receipt["trigger"]["hits"]) == sorted([CLI_A, CLI_B])
+
+
+def test_a_missing_renet_binary_is_told_apart_from_other_refusals():
+    """A freshly recreated ops VM has no renet, and P5 installs it with machine setup; any other repo-list refusal keeps its own verdict."""
+    fresh = "Failed to start a detached job on 'ops-worker': env: '/usr/lib/rediacc/renet/0.0.0-dev/renet': No such file or directory"
+    assert vm_check._renet_binary_missing(fresh)
+    assert not vm_check._renet_binary_missing("SSH connection error: connect EHOSTUNREACH")
+    assert not vm_check._renet_binary_missing(
+        "open /etc/rediacc/config.json: No such file or directory"
+    )

@@ -1429,6 +1429,11 @@ def remote_evidence(res: Result) -> str:
     )
 
 
+def _renet_binary_missing(why: str) -> bool:
+    """Whether an `rdc` failure says the worker has no renet binary at all (a freshly recreated ops VM), as opposed to any other refusal."""
+    return "/renet" in why and "No such file or directory" in why
+
+
 def rdc_failure(res: Result) -> str:
     """Why an `rdc` call failed. With `-o json` the CLI puts its errors in the JSON envelope on stdout and only progress lines on stderr, so a reason read from stderr alone named "Listing repositories..." and dropped `SSH connection error: connect EHOSTUNREACH` (2026-10-14T23:53Z)."""
     try:
@@ -2796,6 +2801,20 @@ class VmCheck:
 
     def p5_parent(self) -> None:
         res, entries = self.repo_list()
+        if res.rc != 0 and _renet_binary_missing(rdc_failure(res)):
+            # A freshly recreated ops VM has no renet yet, and `repo list` runs through renet, so it fails before any step installs one; `machine setup` installs the branch renet, then the list is read again.
+            self.say(
+                "        %s has no renet binary yet; installing it with ./rdc.sh machine setup %s"
+                % (self.machine, self.machine)
+            )
+            setup = self.rdc("machine", "setup", self.machine, timeout=1800)
+            if setup.rc != 0:
+                raise NotVerifiedError(
+                    "fleet-unavailable",
+                    "repo list -m %s found no renet binary, and ./rdc.sh machine setup %s failed rc=%d: %s"
+                    % (self.machine, self.machine, setup.rc, rdc_failure(setup)),
+                )
+            res, entries = self.repo_list()
         if res.rc != 0:
             raise self._repo_list_refusal(res)
         names = [str(e.get("name", "")) for e in entries]
