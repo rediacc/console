@@ -12,10 +12,10 @@ routes = [
 ]
 
 # The ops-health mail comes from ai@, so an alert raised by the agents' monitor is told
-# apart from the product's own noreply@ mail (operator ask 2026-11-07). notify.rediacc.com is a
+# apart from the product's own noreply@ mail (operator ask 2026-11-07). notify.rediacc.cloud is a
 # verified SES domain identity, so any local part of it sends.
 [vars]
-OPS_MAIL_FROM = "ai@notify.rediacc.com"
+OPS_MAIL_FROM = "ai@notify.rediacc.cloud"
 
 [triggers]
 crons = ["*/10 * * * *"]

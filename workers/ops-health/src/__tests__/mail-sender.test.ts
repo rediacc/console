@@ -27,8 +27,8 @@ describe('ops-health sender', () => {
     });
   });
 
-  it('deploys ai@notify.rediacc.com, apart from the product noreply@ sender', () => {
+  it('deploys ai@notify.rediacc.cloud, apart from the product noreply@ sender', () => {
     const toml = readFileSync(join(__dirname, '..', '..', 'wrangler.toml'), 'utf8');
-    expect(toml).toMatch(/^OPS_MAIL_FROM = "ai@notify\.rediacc\.com"$/m);
+    expect(toml).toMatch(/^OPS_MAIL_FROM = "ai@notify\.rediacc\.cloud"$/m);
   });
 });
