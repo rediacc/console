@@ -340,6 +340,23 @@ def test_test_pointer_requires_a_file_named_like_a_test(tmp_path):
     assert lessons.pointer_problem(root, "test:tests/case.txt") is None
 
 
+def test_test_pointer_refuses_a_prose_document_named_like_a_test(tmp_path):
+    """bf8465a7.2: `test_plan.md` and `unit-test.md` match the name pattern but are prose. CONTROL: the same names as code pass."""
+    lessons = _lessons()
+    root = str(tmp_path)
+    for rel in ("docs/test_plan.md", "docs/unit-test.md", "tests/README.md"):
+        _write(tmp_path, rel, "prose\n")
+        why = lessons.pointer_problem(root, "test:%s" % rel)
+        assert why is not None, rel
+        assert "not named like a test" in why, (rel, why)
+        assert not lessons.is_test_path(rel), rel
+    _write(tmp_path, "docs/test_plan.py", "def test_a():\n    pass\n")
+    _write(tmp_path, "docs/unit-test.py", "x = 1\n")
+    assert lessons.pointer_problem(root, "test:docs/test_plan.py") is None
+    assert lessons.pointer_problem(root, "test:docs/unit-test.py") is None
+    assert lessons.is_test_path("tests/case.txt")
+
+
 def test_a_commit_counts_as_touching_a_test_by_path_not_by_substring(tmp_path):
     """571d9078.3: `latest.md` and `contest.json` contain "test" but are not tests. CONTROL: a commit adding tests/test_x.py counts."""
     lessons = _lessons()

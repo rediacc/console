@@ -142,7 +142,7 @@ def test_skip_globs_union_the_record_paths_read_at_runtime(tmp_path):
     assert not R.is_skipped_path("agent/worklist/sub/e.jsonl", skips)
 
 
-def test_skip_globs_without_the_policy_import_keep_the_config_globs(tmp_path, monkeypatch):
+def test_skip_globs_without_the_policy_import_keep_the_config_globs(tmp_path, monkeypatch, capsys):
     real = R.importlib.import_module
 
     def broken(name, *a, **kw):
@@ -158,8 +158,12 @@ def test_skip_globs_without_the_policy_import_keep_the_config_globs(tmp_path, mo
     # CONTROL: with the import intact the record-paths glob is read.
     with_policy = R.skip_globs(str(tmp_path), cfg)
     assert R.is_skipped_path("agent/worklist/e.jsonl", with_policy)
+    assert "record-paths globs not loaded" not in capsys.readouterr().err
     monkeypatch.setattr(R.importlib, "import_module", broken)
     skips = R.skip_globs(str(tmp_path), cfg)
+    err = capsys.readouterr().err
+    assert "record-paths globs not loaded" in err, err
+    assert "planted: wl_proc" in err, err
     assert R.is_skipped_path("agent/ledgers/plan-b.jsonl", skips)
     assert R.is_skipped_path("agent/reviews/b/clean.jsonl", skips)
     assert not R.is_skipped_path("agent/worklist/e.jsonl", skips)

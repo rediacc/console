@@ -29,14 +29,16 @@ SHARED_KINDS = ("guard", "gate", "hook", "file", "shape")
 CODE_ROOT = pathlib.Path(__file__).resolve().parents[3]
 GUARDS_REL = ".claude/rediacc_hooks/guards"
 _NAME_RE = re.compile(r"^[A-Za-z0-9_.:-]+$")
-# A test path: the final component is test-*, test_*, *-test.*, *_test.* or *.test.*, or a directory is tests/ or test/. Matched over the whole path, so `latest.md` and `contest.json` are not tests.
+# A test path: the final component is test-*, test_*, *-test.*, *_test.* or *.test.*, or a directory is tests/ or test/. Matched over the whole path, so `latest.md` and `contest.json` are not tests. A prose document (.md, .rst, .adoc) is never a test, whatever its name or directory.
 _TEST_PATH_RE = re.compile(r"(^|/)test[-_][^/]*$|[-_.]test\.[^/]*$|(^|/)tests?/")
+_PROSE_EXT = (".md", ".rst", ".adoc")
 TRAPGUARD_SUITE = ".claude/rediacc_hooks/tests/test_hooks_trapguard.py"
 
 
 def is_test_path(rel):
-    """True when `rel` (repo-relative or bare) is named like a test file or sits under a tests/ directory."""
-    return bool(_TEST_PATH_RE.search(str(rel)))
+    """True when `rel` (repo-relative or bare) is a non-prose file named like a test (test-*, test_*, *-test.*, *_test.*, *.test.*) or sitting under a tests/ or test/ directory."""
+    text = str(rel)
+    return not text.lower().endswith(_PROSE_EXT) and bool(_TEST_PATH_RE.search(text))
 
 
 def parse_pointer(text):
@@ -102,7 +104,8 @@ def pointer_problem(root, pointer, registry=None, memory_dir=None):
     if not is_test_path(rel):
         return (
             "test:%s names %s, which is not named like a test "
-            "(test-*, test_*, *_test.*, *.test.* or under tests/)" % (token, rel)
+            "(a non-prose test-*, test_*, *-test.*, *_test.* or *.test.* file, or one under tests/ or test/)"
+            % (token, rel)
         )
     if name and not re.search(r"^\s*def %s\(" % re.escape(name), _read(path), re.MULTILINE):
         return "test:%s has no `def %s(` in %s" % (token, name, rel)
@@ -277,7 +280,7 @@ def enforcer_state(root, pointer, ctx, _trail=frozenset()):
 def classify(root, enforced, ctx, own_id=""):
     """{"class", "basis", "pointer", "why"} for one entry's Enforced-By value.
 
-    An entry whose pointer is `shape:<its own id>` is the rule's own data (its Shape: lines are what the guard loads), so it is kept, never retired: deleting it would delete the enforcement.
+    An entry whose pointer is `shape:<its own id>` and whose enforcer is live (its Shape: lines are present, which is what the guard loads) is the rule's own data, so it is kept, never retired: deleting it would delete the enforcement. When those Shape: lines are gone the pointer is dead and the entry falls through to the provisional `curator` verdict like any other dead pointer.
 
     retire-now is the one mechanical verdict: a live pointer whose enforcer is tested. JUDGMENT-ONLY alone is keep-as-prose by declaration. Everything else is provisional (`basis: curator`): a dead or untested enforcer gets the class of the mechanism to finish (KIND_CLASS), and an entry with no Enforced-By gets keep-as-prose until the lesson-curator judges it.
     """

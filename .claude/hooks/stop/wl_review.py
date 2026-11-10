@@ -1341,7 +1341,13 @@ def skip_globs(root, cfg=None):
             if isinstance(rec, dict) and isinstance(rec.get("glob"), str):
                 excepts = [e for e in rec.get("except") or [] if isinstance(e, str)]
                 globs.append((rec["glob"], excepts))
-    except (OSError, ValueError, AttributeError, ImportError):
+    except ImportError as exc:
+        print(
+            "wl_review: record-paths globs not loaded, so record files may enter the reviewed diff (%s)"
+            % exc,
+            file=sys.stderr,
+        )
+    except (OSError, ValueError, AttributeError):
         pass
     refused = [g for g, _e in globs if not admissible_skip_glob(g)]
     if refused:

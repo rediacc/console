@@ -82,3 +82,12 @@ def test_a_pointer_the_shared_resolver_rejects_reds_the_gate_with_the_reason(
     rc, err = _run(_gate(), tmp_path, pointer, capsys)
     assert rc != 0, "the gate stayed green over %s" % pointer
     assert "planted-enforced-by: Enforced-By %s is not a live enforcer" % pointer in err, err
+
+
+def test_a_prose_pointer_is_refused_for_not_being_named_like_a_test(tmp_path, capsys):
+    """bf8465a7.4: README.md exists in this tree, so the refusal can only be the naming rule, not a missing file."""
+    assert paths.from_root("README.md").is_file()
+    rc, err = _run(_gate(), tmp_path, "test:README.md", capsys)
+    assert rc != 0
+    assert "not named like a test" in err, err
+    assert "names no file" not in err, err
