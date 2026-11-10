@@ -67,6 +67,7 @@ SPECIMENS = {
     "test-advisor": "this fix landed and nothing stops it coming back, decide which regression surface owns it",
     "renet-dev": "add a renet function end to end in private/renet: registry, builder, tier map, and a Go test for the machine-side orchestrator",
     "effort-tuner": "the effort tuner is due near compaction: measure which checks led to work and propose new thresholds from the outcome ledger",
+    "lesson-curator": "cluster the pending hint proposals into HINTS diffs and resolve the ones a guard or gate already enforces",
 }
 
 # Neutral haystacks. Every one of them is ordinary work that no specialist owns. They run inline on EVERY invocation, never behind a flag: a control you have to remember to run is how a control stops controlling anything.

@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 5,
-  "generatedAt": "2026-11-09T15:05:31.765Z",
+  "generatedAt": "2026-11-10T07:18:14.877Z",
   "legs": [
     {
       "index": 1,
@@ -159,6 +159,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_runningscript_target.py",
         "pytest:.claude/rediacc_hooks/tests/test_shellscan_differential.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_add_many.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_benchblock.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_cite_extensions.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_drift_loops_freshness.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_judge_fixset_scope.py",
@@ -344,6 +345,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_wl_guide_and_deferrals.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_identity.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_interim_reports.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_lessons.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_loopspeed.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_planbox.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_prscope.py",
