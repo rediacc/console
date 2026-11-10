@@ -22,6 +22,9 @@ BACKENDS = ("proc", "ps")
 # The interpreter the fixture runs, by absolute path. See the fixture.
 BASH = "/bin/bash"
 
+# How long the probe sleeps, see the fixture.
+LIFETIME_S = 600
+
 
 @pytest.fixture
 def child(tmp_path):
@@ -29,6 +32,13 @@ def child(tmp_path):
 
     Not a bare `sleep`: the guards look for an INTERPRETER executing a named script, so the fixture has to produce one or the assertions below would be about a shape that never occurs.
     """
+    with _running_child(tmp_path) as info:
+        yield info
+
+
+@contextlib.contextmanager
+def _running_child(tmp_path):
+    """Spawn the probe, yield its description, reap its whole group on exit. The fixture and the leak regression test both run this code."""
     if not os.path.exists(BASH):
         pytest.skip("%s is not present on this host" % BASH)
     token = "shellscan-probe-%s" % uuid.uuid4().hex[:12]
@@ -38,7 +48,7 @@ def child(tmp_path):
     # a message describing a string comparison rather than the dead process that caused it. Observed in job 104713219233.
     #
     # Teardown kills this unconditionally in a `finally`, so a generous lifetime cannot leak: the child dies when the test does, not when its timer expires.
-    lifetime_s = 600
+    lifetime_s = LIFETIME_S
     script.write_text("#!/usr/bin/env bash\nsleep %d\n" % lifetime_s, encoding="utf-8")
     # AN ABSOLUTE PATH, not `bash`. On this machine `bash` on PATH is a coverage shim (`bashcov-sup`) that execs the real one, so the fixture produced a process whose `comm` was `bashcov-sup` and, for a moment, TWO processes matching the token -- which made the pgrep comparison below race. The guards care about a real interpreter, so the fixture starts one.
     #
@@ -47,7 +57,7 @@ def child(tmp_path):
     # and the real interpreter is its CHILD. The fixture wants a plain interpreter, so it asks for one.
     popen = subprocess.Popen(
         [BASH, str(script)],
-        env={"PATH": os.environ.get("PATH", "/usr/bin:/bin"), "HOME": os.environ.get("HOME", "/")},
+        env=_scrubbed_env(),
         # Its own session, so the bash AND its long-sleep child share one process group that teardown can kill. `popen.kill()` alone reaps only the bash and orphans the child for its whole lifetime (worklist #2998e5d5).
         start_new_session=True,
     )
@@ -71,29 +81,61 @@ def child(tmp_path):
         _reap_group(popen)
 
 
+def _scrubbed_env():
+    return {"PATH": os.environ.get("PATH", "/usr/bin:/bin"), "HOME": os.environ.get("HOME", "/")}
+
+
 def _reap_group(popen):
     """Kill the fixture's whole process group, then collect the shell."""
     # The group is gone already when the child finished first.
     with contextlib.suppress(ProcessLookupError):
         os.killpg(popen.pid, signal.SIGKILL)
+    # Without its own session there is no such group; the shell must still not hang the wait.
+    popen.kill()
     popen.wait()
 
 
-def _group_members(pgid):
-    """Pids still in process group `pgid`, read from /proc (zombies excluded)."""
+def _stat_fields(pid):
+    """Fields after the command name in /proc/<pid>/stat (state first), or None when gone."""
+    try:
+        with open("/proc/%d/stat" % pid, encoding="utf-8") as fh:
+            return fh.read().rsplit(")", 1)[1].split()
+    except (OSError, IndexError):
+        return None
+
+
+def _alive(pid):
+    """Live and not a zombie: a killed-but-unreaped process is gone for this purpose."""
+    fields = _stat_fields(pid)
+    return fields is not None and fields[0] != "Z"
+
+
+def _sleep_children(ppid):
+    """Pids of the long `sleep` processes whose parent is `ppid`."""
     out = []
     for name in os.listdir("/proc"):
         if not name.isdigit():
             continue
+        fields = _stat_fields(int(name))
+        # fields[0] is the state, fields[1] the ppid.
+        if fields is None or int(fields[1]) != ppid:
+            continue
         try:
-            with open("/proc/%s/stat" % name, encoding="utf-8") as fh:
-                rest = fh.read().rsplit(")", 1)[1].split()
+            with open("/proc/%s/cmdline" % name, "rb") as fh:
+                if fh.read() == b"sleep\x00%d\x00" % LIFETIME_S:
+                    out.append(int(name))
         except OSError:
             continue
-        # rest[0] is the state, rest[2] the pgrp.
-        if rest[0] != "Z" and int(rest[2]) == pgid:
-            out.append(int(name))
     return out
+
+
+def _wait_for(predicate, timeout_s):
+    deadline = time.time() + timeout_s
+    while time.time() < deadline:
+        if predicate():
+            return True
+        time.sleep(0.02)
+    return predicate()
 
 
 @pytest.fixture
@@ -206,31 +248,39 @@ def test_both_backends_see_this_very_process(monkeypatch):
     assert len(overlap) > 10
 
 
-def _spawn_long_child(tmp_path):
-    script = tmp_path / "reap-probe.sh"
-    script.write_text("#!/usr/bin/env bash\nsleep %d\n" % 600, encoding="utf-8")
-    popen = subprocess.Popen([BASH, str(script)], start_new_session=True)
-    deadline = time.time() + 10
-    while time.time() < deadline and len(_group_members(popen.pid)) < 2:
-        time.sleep(0.02)
-    assert len(_group_members(popen.pid)) >= 2, "CONTROL: the fixture never forked its child"
-    return popen
+needs_proc = pytest.mark.skipif(
+    not os.path.isdir("/proc/self"), reason="needs a /proc process table"
+)
 
 
+@needs_proc
 def test_the_child_fixture_leaves_no_process_behind(tmp_path):
-    """Teardown must take the fixture's long-sleep child with it, not just the bash (worklist #2998e5d5)."""
-    popen = _spawn_long_child(tmp_path)
-    _reap_group(popen)
-    assert _group_members(popen.pid) == []
+    """The fixture's own spawn and teardown must take the long-sleep child with the bash (worklist #2998e5d5).
+
+    Runs the very helper the `child` fixture runs, so dropping `start_new_session` or the group kill there fails this test.
+    """
+    with _running_child(tmp_path) as info:
+        popen = info["popen"]
+        assert _wait_for(lambda: _sleep_children(popen.pid), 10), (
+            "CONTROL: the shell never forked its sleep"
+        )
+        sleeper = _sleep_children(popen.pid)[0]
+    assert _wait_for(lambda: not _alive(sleeper), 2), "the sleep outlived the fixture teardown"
 
 
+@needs_proc
 def test_killing_only_the_shell_does_leave_the_child(tmp_path):
-    """CONTROL: with the reap reduced to the old `popen.kill()`, the check above would fail."""
-    popen = _spawn_long_child(tmp_path)
-    try:
+    """CONTROL: with the reap reduced to `popen.kill()`, the sleep survives, so the check above can fail."""
+    with _running_child(tmp_path) as info:
+        popen = info["popen"]
+        assert _wait_for(lambda: _sleep_children(popen.pid), 10), (
+            "CONTROL: the shell never forked its sleep"
+        )
+        sleeper = _sleep_children(popen.pid)[0]
         popen.kill()
         popen.wait()
-        assert _group_members(popen.pid) != []
-    finally:
-        _reap_group(popen)
-    assert _group_members(popen.pid) == []
+        try:
+            assert _alive(sleeper)
+        finally:
+            os.kill(sleeper, signal.SIGKILL)
+    assert _wait_for(lambda: not _alive(sleeper), 2)
