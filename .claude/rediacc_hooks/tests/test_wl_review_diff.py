@@ -212,3 +212,16 @@ def test_a_commit_widening_the_skip_list_is_still_reviewed(tmp_path):
             repo, "console", sha, "1110-1", reviewer=model, cfg=_cfg(), log=lambda _m: None
         )
     assert seen, "a commit that widens the skip list must reach the model"
+
+
+def test_the_stat_honours_a_skip_globs_except_like_the_diff(tmp_path):
+    """Review 623c29ce.2: a path a skip glob's `except` keeps is listed in the stat as in the diff, and a covered one leaves both."""
+    (tmp_path / ".ci" / "policy").mkdir(parents=True)
+    (tmp_path / ".ci" / "policy" / "record-paths.json").write_text(
+        '{"records": [{"glob": "agent/worklist/*.jsonl", "except": ["agent/worklist/keep.jsonl"]}]}'
+    )
+    skips = R.skip_globs(str(tmp_path), {"review_skip_globs": []})
+    paths = ["agent/worklist/e.jsonl", "agent/worklist/keep.jsonl", "a.py"]
+    assert R.stat_paths(paths, skips) == ["agent/worklist/keep.jsonl", "a.py"]
+    # CONTROL: with no skip covering them, every path stays.
+    assert R.stat_paths(["a.py", "b.py"], skips) == ["a.py", "b.py"]

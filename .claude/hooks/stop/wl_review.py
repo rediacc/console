@@ -1328,6 +1328,11 @@ def skip_globs(root, cfg=None):
     return [(_glob_re(g), [_glob_re(e) for e in ex], g) for g, ex in globs]
 
 
+def stat_paths(paths, skips):
+    """The commit's paths the reviewed stat lists: every path the skip list does not cover, `except` globs honoured."""
+    return [p for p in paths if not is_skipped_path(p, skips)]
+
+
 def is_skipped_path(path, skips):
     return any(rx.match(path) and not any(e.match(path) for e in exc) for rx, exc, _g in skips)
 
@@ -2367,16 +2372,10 @@ def run_review(
             )
             review.diff_bytes, review.diff_files = total, nfiles
             review.truncated, review.unreviewed = bool(cut), cut
-            stat = git_out(
-                repo,
-                "show",
-                "--stat",
-                "--format=",
-                full,
-                "--",
-                ".",
-                *[":(exclude,glob)%s" % g for _rx, ex, g in skips if not ex],
-            )
+            # The stat lists exactly the paths the diff kept, through the same is_skipped_path
+            # test (its `except` globs included), so the two never disagree (review 623c29ce.2).
+            kept = stat_paths(paths, skips)
+            stat = git_out(repo, "show", "--stat", "--format=", full, "--", *kept) if kept else ""
             prompt = PROMPT % {
                 "message": message or "(empty)",
                 "stat": stat or "(empty)",
