@@ -413,6 +413,26 @@ def _listing_call_as_s3_ls(call: str) -> str:
     return "\t".join([*out, "--endpoint-url", endpoint])
 
 
+def _without_vm_bake(
+    result: tuple[int, bytes, bytes, list[str]],
+) -> tuple[int, bytes, bytes, list[str]]:
+    """The twin's goldens predate the `ci-vm-bake` entry in `GHCR_PACKAGES`: drop that package's Phase 3 block (its lines run to the next `→` line) and its calls from the port's result, so everything else stays byte-compared. `test_phase_3_covers_the_vm_bake_package_and_keeps_it_per_policy` asserts the dropped block against the port alone."""
+    code, out, err, calls = result
+    kept: list[str] = []
+    skipping = False
+    for line in err.decode("utf-8").splitlines(keepends=True):
+        if line.startswith("\u2192"):
+            skipping = "Processing package: ci-vm-bake" in line
+        if not skipping:
+            kept.append(line)
+    return (
+        code,
+        out,
+        "".join(kept).encode("utf-8"),
+        [c for c in calls if "packages/container/ci-vm-bake" not in c],
+    )
+
+
 def sides(
     phase: str,
     *,
@@ -436,6 +456,7 @@ def sides(
             results.append(_run(side, phase, argv, fixture, dict(env or {}), base))
     old, new = results
     new = (new[0], new[1], new[2], [_listing_call_as_s3_ls(c) for c in new[3]])
+    new = _without_vm_bake(new)
     if port_delta is not None:
         new = port_delta(new)
     assert new[0] == old[0], "%s: exit diverged: twin %r port %r\n twin err: %s\n port err: %s" % (
@@ -1752,6 +1773,39 @@ def test_phase_3_treats_a_non_array_page_as_inaccessible_rather_than_dying() -> 
     assert "Skipping renet: package not accessible" in err
     assert "Skipping rdc: package not accessible" in err
     assert result[0] == 0
+
+
+def test_phase_3_covers_the_vm_bake_package_and_keeps_it_per_policy() -> None:
+    """`ci-vm-bake` is a retention target: its old tail is deleted and its newest version kept. Port only, since the twin's goldens predate the entry. The control is `rdc`, which holds one recent version and loses nothing."""
+    assert "ci-vm-bake" in cv.GHCR_PACKAGES
+    fixture = {
+        "gh": [
+            rule(
+                "packages/container/ci-vm-bake/versions",
+                json_body=[
+                    _package_version(22, ago(1.5), ["vm-bake-v1-ubuntu-2026-11-abc"]),
+                    _package_version(21, ago(400.5), ["vm-bake-v1-ubuntu-2025-10-old"]),
+                ],
+            ),
+            rule("packages/container/renet/versions", json_body=[]),
+            rule(
+                "packages/container/rdc/versions",
+                json_body=[_package_version(3, ago(1.5), ["latest"])],
+            ),
+            rule("packages/container/server/versions", json_body=[]),
+        ]
+    }
+    argv = ("--dry-run", "--versions", "1", "--days", "7")
+    with tempfile.TemporaryDirectory() as td:
+        base = pathlib.Path(td) / "python"
+        base.mkdir(parents=True)
+        code, _out, raw_err, _calls = _run("python", "cleanup_packages", argv, fixture, {}, base)
+    err = raw_err.decode()
+    assert code == 0
+    assert "Would delete version: 21 (tags: vm-bake-v1-ubuntu-2025-10-old, created:" in err
+    assert "Would delete version: 22" not in err
+    assert "Package ci-vm-bake: would delete 1 of 2 versions" in err
+    assert "Package rdc: would delete 0 of 1 versions" in err
 
 
 # --------------------------------------------------------------------------- PHASE 4: GITHUB DEPLOYMENTS ---------------------------------------------------------------------------

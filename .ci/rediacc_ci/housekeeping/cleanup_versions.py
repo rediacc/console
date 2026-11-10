@@ -134,7 +134,8 @@ DEFAULT_KEEP_VERSIONS = str(retention_contract.KEEP_RELEASES)
 
 GITHUB_ORG = "rediacc"
 TAG_REPOS = ("console", "renet")
-GHCR_PACKAGES = ("renet", "rdc", "server")
+# `ci-vm-bake` is the private package `ci-vm-bake.yml` pushes every baked VM image to (one tag per distro and bake key). It takes the same keep-newest-N-and-14-days window as the release images: a pruned key is only re-baked by the next run that probes it.
+GHCR_PACKAGES = ("renet", "rdc", "server", "ci-vm-bake")
 DEPLOYMENT_REPOS = ("console",)
 BRANCH_REPOS = ("console", "renet", "account", "elite", "homebrew-tap", "sql")
 
