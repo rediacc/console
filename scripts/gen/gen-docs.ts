@@ -849,20 +849,30 @@ function readStdin(): string {
   return Buffer.concat(chunks).toString('utf-8');
 }
 
+/** A glob-looking argument that is really a path: on disk, or tracked (a bracketed route like `[slug].astro`). */
+function isLiteralPath(p: string): boolean {
+  if (fs.existsSync(path.join(ROOT, p))) return true;
+  return execFileSync('git', ['ls-files', '-z', '--', `:(literal)${p}`], { cwd: ROOT }).length > 0;
+}
+
 /**
- * An argument with a glob character becomes the tracked files it matches (a `:(glob)` pathspec, so `**` works). The CLI used to judge a glob as a literal path, so `packages/www/src/**` read no file and the report said `affected: []` with exit 0: a green it never earned. A glob that matches nothing is named on stderr and contributes nothing.
+ * An argument with a glob character becomes the files it matches, tracked or not yet added (a `:(glob)` pathspec, so `**` works), unless the argument is itself an existing or tracked path (a bracketed route). The CLI used to judge a glob as a literal path, so `packages/www/src/**` read no file and the report said `affected: []` with exit 0: a green it never earned. A glob that matches nothing is named on stderr and contributes nothing.
  */
 function expandGlobs(paths: string[]): string[] {
   const out = new Set<string>();
   for (const p of paths) {
-    if (!/[*?[]/.test(p)) {
+    if (!/[*?[]/.test(p) || isLiteralPath(p)) {
       out.add(p);
       continue;
     }
-    const hit = execFileSync('git', ['ls-files', '-z', '--', `:(glob)${p}`], {
-      cwd: ROOT,
-      maxBuffer: 256 * 1024 * 1024,
-    })
+    const hit = execFileSync(
+      'git',
+      ['ls-files', '-z', '--cached', '--others', '--exclude-standard', '--', `:(glob)${p}`],
+      {
+        cwd: ROOT,
+        maxBuffer: 256 * 1024 * 1024,
+      }
+    )
       .toString('utf-8')
       .split('\0')
       .filter((f) => f !== '');
@@ -1271,6 +1281,40 @@ function selftest(): number {
     globDoc.paths === 1 && globDoc.affected.includes('env-manifest'),
     globDoc
   );
+  const bracketed = JSON.parse(
+    execFileSync(
+      'node',
+      [
+        path.join(ROOT, 'scripts/gen/gen-docs.ts'),
+        '--could-affect',
+        'packages/www/src/pages/[lang]/blog/[slug].astro',
+      ],
+      { cwd: ROOT }
+    ).toString('utf-8')
+  ) as { paths: number };
+  ck(
+    'the CLI keeps a bracketed literal path as that path, not a character class',
+    bracketed.paths === 1,
+    bracketed
+  );
+  const untracked = path.join(ROOT, 'scripts/gen/.selftest-untracked-probe.json');
+  fs.writeFileSync(untracked, '{}');
+  try {
+    const un = JSON.parse(
+      execFileSync(
+        'node',
+        [
+          path.join(ROOT, 'scripts/gen/gen-docs.ts'),
+          '--could-affect',
+          'scripts/gen/.selftest-untracked-prob?.json',
+        ],
+        { cwd: ROOT }
+      ).toString('utf-8')
+    ) as { paths: number };
+    ck('the CLI expands a glob over a not-yet-added file like a literal one', un.paths === 1, un);
+  } finally {
+    fs.rmSync(untracked, { force: true });
+  }
   const env = couldAffect(ROOT, ['.ci/config/env-manifest.json']);
   ck(
     'the env manifest could move the env-manifest provider',
