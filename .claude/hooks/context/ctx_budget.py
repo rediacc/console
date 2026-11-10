@@ -477,6 +477,8 @@ def fmt(n):
 # rather than keeping a second reader of the same rows.
 RETRO_LEDGER_REL = ("agent", "ledgers", "stop-hook-retros.jsonl")
 RETRO_BANDS = ("early", "late", "post-compact")
+# A covered band is due again after this many days (PLAN-experience-feedback.md P2). `retro_order_row` writes a `rearmed` row first, which retires the old generation in `retro_live`.
+RETRO_REARM_DAYS = 7
 
 # The order, emitted once per session per band on the first PostToolUse after STATE.md was rewritten past the crossing. Framed as a repo procedure with its source named, not as a system command: see band-notice.py's docstring for the one exception this text is to its "does not instruct" rule.
 RETRO_ORDER = (
@@ -484,7 +486,9 @@ RETRO_ORDER = (
     "  1. Print the brief:  python3 .claude/hooks/stop/worklist.py --retro-brief %(me8)s %(band)s\n"
     "  2. Dispatch ONE Agent with subagent_type Plan and run_in_background true, with that brief as its prompt. Plan agents are read-only and do not count toward the writer cap.\n"
     "  3. Save what it returns verbatim to agent/plans/PLAN-stop-hook-retro-%(date)s.md (update the file if it exists).\n"
-    "The tracking item is created at your next stop and auto-leased to the agent from the #id in its brief. Ledger: agent/ledgers/stop-hook-retros.jsonl. Emitted once per session per band."
+    "The tracking item is created at your next stop and auto-leased to the agent from the #id in its brief. Ledger: agent/ledgers/stop-hook-retros.jsonl. Emitted once per session per band, again after "
+    + str(RETRO_REARM_DAYS)
+    + " days."
 )
 
 
@@ -528,17 +532,28 @@ def retro_append(project, row):
 
 
 def retro_live(rows):
-    """The rows a `voided` event has not cancelled, voided events themselves dropped. A `voided` row cancels every EARLIER row of its `(session, band)`, so the pair's dedupe key is free again and a later `ordered` row for it is live (R20260924.17)."""
+    """The rows a `voided` or `rearmed` event has not cancelled, both events themselves dropped. A `voided` row cancels every EARLIER row of its `(session, band)`, so the pair's dedupe key is free again and a later `ordered` row for it is live (R20260924.17).
+
+    A `rearmed` row (PLAN-experience-feedback.md P2) frees the pair the same way, but keeps its history: every earlier row of the pair comes back as a copy whose band is `<band>#<n>`, the n-th retired generation. Nothing addresses a retired band again, so the pair's tracking item and dedupe start fresh, while `retro_window_start` still sees the retired generation's `saved` row and starts the next window after it rather than at byte 0. Applying this twice returns the same rows (the event is dropped on the first pass), which matters because callers pass already-live rows back in.
+    """
     dead: set[int] = set()
     seen: dict[tuple, list[int]] = {}
+    gen: dict[tuple, int] = {}
+    out = list(rows)
     for i, row in enumerate(rows):
         key = (row.get("session"), row.get("band"))
-        if row.get("ev") == "voided":
+        ev = row.get("ev")
+        if ev == "voided":
             dead.update(seen.pop(key, ()))
+            dead.add(i)
+        elif ev == "rearmed":
+            gen[key] = gen.get(key, 0) + 1
+            for j in seen.pop(key, ()):
+                out[j] = dict(rows[j], band="%s#%d" % (key[1], gen[key]))
             dead.add(i)
         else:
             seen.setdefault(key, []).append(i)
-    return [r for i, r in enumerate(rows) if i not in dead]
+    return [r for i, r in enumerate(out) if i not in dead]
 
 
 def retro_void(project, me8, band, why):
@@ -548,12 +563,24 @@ def retro_void(project, me8, band, why):
     return row
 
 
-def retro_ordered(rows, me8, band):
-    """The live `ordered` row for (session, band), or None. THE DEDUPE KEY is exactly this pair (the plan's Decision): a later epoch does not earn a second retro for a band already covered, unless a `voided` row freed it."""
+def retro_ordered(rows, me8, band, now=None):
+    """The newest live `ordered` row for (session, band) younger than RETRO_REARM_DAYS, or None. THE DEDUPE KEY is this pair (the plan's Decision): a later epoch does not earn a second retro for a band already covered, unless a `voided` row freed it or the covering order is older than RETRO_REARM_DAYS (PLAN-experience-feedback.md P2: a session that lives for weeks otherwise orders one retro per band and never again). A row whose `at` does not parse counts as fresh, so a torn stamp dedupes rather than reorders on every call."""
+    hit = None
     for row in retro_live(rows):
         if row.get("ev") == "ordered" and row.get("session") == me8 and row.get("band") == band:
-            return row
-    return None
+            hit = row
+    if hit is None or retro_stale(hit, now):
+        return None
+    return hit
+
+
+def retro_stale(row, now=None):
+    """True when the `ordered` row is RETRO_REARM_DAYS old or older, so its pair may be ordered again."""
+    at = _stamp_epoch(row.get("at"))
+    if at is None:
+        return False
+    now = time.time() if now is None else now
+    return now - at >= RETRO_REARM_DAYS * 86400
 
 
 def retro_window_start(rows, me8, before=None):
@@ -654,6 +681,13 @@ def retro_order_row(
 ):
     """Append the `ordered` row for (me8, band) and return it. The byte range runs from the previous retro's end to the transcript's current size."""
     rows = retro_rows(project)
+    if any(
+        r.get("ev") == "ordered" and r.get("session") == me8 and r.get("band") == band
+        for r in retro_live(rows)
+    ):
+        # The pair is covered by a stale order (the callers asked retro_ordered first): retire that generation so the new order gets its own tracking item.
+        retro_append(project, {"ev": "rearmed", "at": utc_stamp(), "session": me8, "band": band})
+        rows = retro_rows(project)
     try:
         to_off = os.path.getsize(transcript) if transcript else 0
     except OSError:

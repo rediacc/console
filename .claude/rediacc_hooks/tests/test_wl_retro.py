@@ -60,6 +60,13 @@ def test_r10_a_judge_block_carries_the_judge_flags(wl):
 # ---- R.12 and R.13: the retro order at PostCompact, the tracking item, and the brief ----------
 
 RETRO_PLAN = "agent/plans/PLAN-stop-hook-retro-20260924.md"
+# The planted rows' day: yesterday, so an order stays inside RETRO_REARM_DAYS (PLAN-experience-feedback.md P2). A fixed calendar date ages out of the window and the pair is ordered again.
+DAY = time.strftime("%Y-%m-%d", time.gmtime(time.time() - 86400))
+
+
+def day_at(hhmm: str) -> str:
+    """A stamp on DAY at hh:mm."""
+    return "%sT%s:00Z" % (DAY, hhmm)
 
 
 def ledger(fix):
@@ -81,10 +88,10 @@ def plant_rows(fix, *rows: dict) -> None:
             fh.write(json.dumps(row) + "\n")
 
 
-def ordered(band: str, from_off: int, to_off: int, at: str = "2026-09-24T10:00:00Z") -> dict:
+def ordered(band: str, from_off: int, to_off: int, at: str = "") -> dict:
     return {
         "ev": "ordered",
-        "at": at,
+        "at": at or day_at("10:00"),
         "session": "deadbeef",
         "band": band,
         "transcript": "/t/lead.jsonl",
@@ -148,7 +155,7 @@ def test_r13_one_ordered_row_is_one_owned_item_across_two_stops(wl):
     wl.say("all done")
     got = wl.run()
     assert got.decision == "block", got.out[:300]
-    assert "stop-hook retro early 20260924" in got.out, got.out[:600]
+    assert "stop-hook retro early %s" % DAY.replace("-", "") in got.out, got.out[:600]
     wl.run()
     items = retro_items(wl)
     assert len(items) == 1, items
@@ -176,7 +183,7 @@ def test_r13_retro_brief_prints_the_id_and_the_previous_range_end(wl):
     wl.stem(".blocklog-deadbeef.jsonl").write_text(
         json.dumps(
             {
-                "at": "2026-09-24T11:00:00Z",
+                "at": day_at("11:00"),
                 "key": "no-remaining",
                 "named": ["open-items"],
                 "judge": {},
@@ -184,7 +191,7 @@ def test_r13_retro_brief_prints_the_id_and_the_previous_range_end(wl):
         )
         + "\n"
         + json.dumps(
-            {"at": "2026-09-24T09:00:00Z", "key": "before-the-range", "named": [], "judge": {}}
+            {"at": day_at("09:00"), "key": "before-the-range", "named": [], "judge": {}}
         )
         + "\n"
     )
@@ -192,7 +199,7 @@ def test_r13_retro_brief_prints_the_id_and_the_previous_range_end(wl):
         wl,
         ordered("early", 0, 100),
         {"ev": "saved", "session": "deadbeef", "band": "early", "item": "aaaa0001"},
-        ordered("late", 100, 250, at="2026-09-24T12:00:00Z"),
+        ordered("late", 100, 250, at=day_at("12:00")),
     )
     got = wl.cli("--retro-brief", "deadbeef", "late")
     assert got.rc == 0, got.err[:300]
@@ -355,17 +362,17 @@ def test_r16_mutant_the_agent_id_only_guard_lets_the_control_write_a_row(wl, tmp
 def test_r17_the_brief_window_starts_at_the_last_saved_retro(wl):
     """CONTROL: before R.17 the window and `since` started at the newest `ordered` row, here the unreviewed post-compact at 12:00Z, which hid the 11:00Z block."""
     wl.stem(".blocklog-deadbeef.jsonl").write_text(
-        json.dumps({"at": "2026-09-24T11:00:00Z", "key": "unreviewed", "named": [], "judge": {}})
+        json.dumps({"at": day_at("11:00"), "key": "unreviewed", "named": [], "judge": {}})
         + "\n"
-        + json.dumps({"at": "2026-09-24T09:00:00Z", "key": "reviewed", "named": [], "judge": {}})
+        + json.dumps({"at": day_at("09:00"), "key": "reviewed", "named": [], "judge": {}})
         + "\n"
     )
     plant_rows(
         wl,
-        ordered("late", 0, 100, at="2026-09-24T10:00:00Z"),
+        ordered("late", 0, 100, at=day_at("10:00")),
         {"ev": "saved", "session": "deadbeef", "band": "late", "item": "aaaa0001"},
-        ordered("post-compact", 100, 300, at="2026-09-24T12:00:00Z"),
-        ordered("early", 300, 400, at="2026-09-24T13:00:00Z"),
+        ordered("post-compact", 100, 300, at=day_at("12:00")),
+        ordered("early", 300, 400, at=day_at("13:00")),
     )
     got = wl.cli("--retro-brief", "deadbeef", "early")
     assert got.rc == 0, got.err[:300]
@@ -400,6 +407,93 @@ def test_r17_a_voided_pair_gets_no_item_and_can_be_ordered_again(wl):
     live = [r for r in ledger_rows(wl) if r["ev"] == "ordered"]
     assert len(live) == 2, live
     assert live[-1]["from_off"] == 0, live[-1]
+
+
+# ---- the rearm: a covered band is due again after RETRO_REARM_DAYS (PLAN-experience-feedback.md P2) ----------
+
+
+def _days_ago(days: float) -> str:
+    return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(time.time() - days * 86400))
+
+
+def load_ctx(fix):
+    spec = importlib.util.spec_from_file_location(
+        "_t_ctx_budget_rearm", fix.hook.parents[1] / "context" / "ctx_budget.py"
+    )
+    assert spec is not None
+    assert spec.loader is not None
+    cb = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(cb)
+    return cb
+
+
+def test_rearm_control_a_six_day_old_order_still_dedupes(wl):
+    """CONTROL: a covered band inside the window orders nothing, as before the rearm."""
+    plant_rows(
+        wl,
+        ordered("post-compact", 0, 10, at=_days_ago(6)),
+        {"ev": "tracked", "session": "deadbeef", "band": "post-compact", "item": "aaaa0001"},
+        {"ev": "saved", "session": "deadbeef", "band": "post-compact", "item": "aaaa0001"},
+    )
+    wl.plant_state("## Next action\n\nkeep going")
+    wl.append_transcript(boundary(False))
+    text = compact(wl)
+    assert "STOP-HOOK RETRO" not in text, text[-600:]
+    assert [r["ev"] for r in ledger_rows(wl)] == ["ordered", "tracked", "saved"], ledger_rows(wl)
+
+
+def test_rearm_an_eight_day_old_order_orders_again_after_the_saved_window(wl):
+    """An order older than RETRO_REARM_DAYS frees its pair: a `rearmed` row retires the old generation, the new order's window starts after the retired `saved` retro, and the next stop tracks it with a fresh item."""
+    plant_rows(
+        wl,
+        ordered("post-compact", 0, 10, at=_days_ago(8)),
+        {"ev": "tracked", "session": "deadbeef", "band": "post-compact", "item": "aaaa0001"},
+        {"ev": "saved", "session": "deadbeef", "band": "post-compact", "item": "aaaa0001"},
+    )
+    wl.plant_state("## Next action\n\nkeep going")
+    wl.append_transcript(boundary(False))
+    text = compact(wl)
+    assert "--retro-brief deadbeef post-compact" in text, text[-600:]
+    rows = ledger_rows(wl)
+    assert [r["ev"] for r in rows] == ["ordered", "tracked", "saved", "rearmed", "ordered"], rows
+    assert rows[-1]["from_off"] == 10, rows[-1]
+    assert "bytes 10-%d" % rows[-1]["to_off"] in text, text[-600:]
+    again = compact(wl)
+    assert "STOP-HOOK RETRO" not in again, again[-600:]
+    wl.brief_now()
+    wl.hand_now()
+    wl.say("all done")
+    wl.run()
+    tracked = [r for r in ledger_rows(wl) if r["ev"] == "tracked"]
+    assert len(tracked) == 2, tracked
+    assert tracked[-1]["item"] != "aaaa0001", tracked
+
+
+def test_rearm_retro_live_is_idempotent_and_keeps_the_retired_generation(wl):
+    cb = load_ctx(wl)
+    rows = [
+        ordered("early", 0, 10, at=_days_ago(9)),
+        {"ev": "saved", "session": "deadbeef", "band": "early", "item": "aaaa0001"},
+        {"ev": "rearmed", "session": "deadbeef", "band": "early"},
+        ordered("early", 10, 20),
+    ]
+    once = cb.retro_live(rows)
+    assert [(r["ev"], r["band"]) for r in once] == [
+        ("ordered", "early#1"),
+        ("saved", "early#1"),
+        ("ordered", "early"),
+    ], once
+    assert cb.retro_live(once) == once
+    assert cb.retro_ordered(rows, "deadbeef", "early") is rows[3]
+    start = cb.retro_window_start(once, "deadbeef", before=once[-1])
+    assert start is not None and start["to_off"] == 10, start
+
+
+def test_rearm_an_unparseable_stamp_dedupes(wl):
+    cb = load_ctx(wl)
+    rows = [ordered("late", 0, 10, at="not-a-stamp")]
+    assert cb.retro_ordered(rows, "deadbeef", "late") is rows[0]
+    assert cb.retro_ordered([ordered("late", 0, 10, at=_days_ago(7.01))], "deadbeef", "late") is None
 
 
 # ---- SessionStart source=compact is attributed too (retro writer A's finding #d85ee, second retro) ----
