@@ -110,7 +110,7 @@ describe('registerNewRepo allocation floor', () => {
     const { registerNewRepo } = await import('../../../commands/repo-create-delete.js');
     await expect(
       registerNewRepo('shop', { machine: 'm1' }, {}, { machine: 'm1' })
-    ).rejects.toThrow();
+    ).rejects.toThrow(/shop.*already exists/);
     expect(addRepository).not.toHaveBeenCalled();
   });
 });

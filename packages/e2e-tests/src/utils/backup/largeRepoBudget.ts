@@ -52,8 +52,10 @@ export const INCR_SHARE_HEADROOM = 1.5;
  * changedBytes / seedBytes of the seed's time. A fixed 10% ratio is unsatisfiable once the change
  * is more than a tenth of the seed (a 256 MiB change on the 2 GiB vm:check seed is 12%, measured
  * 12379 ms against 10124 ms). The ratio is therefore the larger of INCR_TIME_RATIO and the changed
- * share times INCR_SHARE_HEADROOM. At 20 GiB and up the share is a few percent at most (0.5% at
- * 50 GiB), the 10% ratio wins, and the nightly budget is unchanged. A full rehash takes about the
+ * share times INCR_SHARE_HEADROOM. The share term overtakes the 10% ratio once the change passes
+ * INCR_TIME_RATIO / INCR_SHARE_HEADROOM of the seed (about 6.7%: 1.33 GiB at 20 GiB, 3.3 GiB at
+ * 50 GiB). Below that the 10% ratio wins and the nightly budget is unchanged (the suite's 256 MiB
+ * change is 0.5% of 50 GiB); a larger change raises the budget in proportion, still clipped to the cap. A full rehash takes about the
  * seed's whole time, far over either ratio, so the control stays separable.
  */
 export const incrTimeBudgetMs = (
@@ -134,11 +136,13 @@ export const largeRepoBudgetViolations = (input: LargeRepoBudgetInput): string[]
   const budget = incrTimeBudgetMs(seed.durationMs, input.seedBytes, changedBytes);
   if (incr.durationMs > budget) {
     const capped = input.seedBytes >= CAP_FLOOR_BYTES;
+    const budgetShare =
+      seed.durationMs > 0 ? `${Math.round((budget / seed.durationMs) * 1000) / 10}%` : 'n/a';
     const capNote = capped
       ? `, capped at ${INCR_TIME_CAP_MS} ms from 20 GiB`
       : ', no cap under 20 GiB';
     out.push(
-      `the incremental took ${incr.durationMs} ms, over the ${budget} ms budget (${Math.round((budget / seed.durationMs) * 1000) / 10}% of the ${seed.durationMs} ms seed${capNote})`
+      `the incremental took ${incr.durationMs} ms, over the ${budget} ms budget (${budgetShare} of the ${seed.durationMs} ms seed${capNote})`
     );
   }
   return out;

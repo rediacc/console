@@ -142,7 +142,7 @@ def references(repo_root):
 
 
 def gitlink_names(root):
-    """The names of the `private/*` gitlinks, or None when `root` is not a git work tree (an extracted archive): the gitlink filter cannot apply there, so every checked-out sibling counts as before."""
+    """The names of the `private/*` gitlinks, or None when `root` is not a git work tree (an extracted archive): a gitlink cannot be told from a gitignored sibling there, so `refresh` records no bare submodule directory."""
     try:
         out = subprocess.run(
             ["git", "-C", str(root), "ls-files", "-s", "--", "private"],
@@ -249,7 +249,7 @@ def refresh(root, baseline_path):
     gitlinks = gitlink_names(root)
     for sub in sorted((root / "private").glob("*")):
         if (
-            (gitlinks is None or sub.name in gitlinks)
+            gitlinks is not None and sub.name in gitlinks
             and (sub / ".git").exists()
             and sub.name not in recorded
         ):

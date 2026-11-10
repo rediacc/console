@@ -14,7 +14,7 @@ function Probe({ lang }: { lang: Language }) {
 const render = (lang: Language) => renderToString(createElement(Probe, { lang }));
 
 describe('useTranslation on the server', () => {
-  it('renders the requested locale from the catalog loaded before any island evaluates', () => {
+  it('renders the requested locale from its catalog, not the English one', () => {
     expect(german.captchaRetry).not.toBe(english.captchaRetry);
     expect(render('de')).toContain(german.captchaRetry);
   });

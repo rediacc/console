@@ -165,7 +165,7 @@ def test_main_dry_run_creates_nothing(
     out = capsys.readouterr().out
     assert "would create queue: q-main-dlq" in out
     assert "would create queue: q-main" in out
-    # Each argv part is shell-quoted on its own, so the preview reads as the exact wrangler call.
+    # Each argv part passes through the log mask on its own and the parts join with single spaces; the preview is not shell-quoted.
     assert "would run: " + " ".join(port.deploy_argv("wrangler.eu.toml")) + "\n" in out
 
 

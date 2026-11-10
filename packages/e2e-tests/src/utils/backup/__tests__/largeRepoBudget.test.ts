@@ -84,6 +84,16 @@ describe('the time-budget violation message', () => {
     expect(msg).not.toContain('capped at');
   });
 
+  it('prints no Infinity or NaN percentage for a zero seed duration', () => {
+    const msg = largeRepoBudgetViolations({
+      ...input,
+      seed: { ...seed, durationMs: 0 },
+      seedBytes: 100,
+    }).find((v) => v.includes('budget'));
+    expect(msg).toBeDefined();
+    expect(msg).not.toMatch(/Infinity|NaN/);
+  });
+
   it('names the cap from 20 GiB up', () => {
     const msg = largeRepoBudgetViolations({ ...input, seedBytes: 20 * GIB }).find((v) =>
       v.includes('budget')

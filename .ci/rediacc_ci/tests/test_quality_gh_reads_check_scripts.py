@@ -123,7 +123,21 @@ def test_secret_reachability_refresh_does_not_read_a_failed_listing_as_empty(
 
 
 def test_secret_reachability_gitlink_names_is_none_outside_a_work_tree(tmp_path: Path) -> None:
-    """`refresh` must complete on an extracted archive: no git tree means no gitlink filter, not a CalledProcessError."""
+    """No git work tree gives None, not a CalledProcessError (the refresh test below covers the consumer)."""
     mod = _load("check_secret_reachability")
     (tmp_path / "private" / "sub").mkdir(parents=True)
     assert mod.gitlink_names(tmp_path) is None
+
+
+def test_secret_reachability_refresh_records_no_bare_sibling_outside_a_work_tree(
+    monkeypatch, tmp_path: Path
+):
+    """`refresh` on an extracted archive completes and records no `private/*` directory it cannot prove is a gitlink."""
+    if importlib.util.find_spec("yaml") is None:
+        monkeypatch.setitem(sys.modules, "yaml", types.ModuleType("yaml"))
+    mod = _load("check_secret_reachability")
+    _fake(monkeypatch, mod, [(0, "", "")])
+    (tmp_path / "private" / "sibling" / ".git").mkdir(parents=True)
+    baseline = tmp_path / "b.json"
+    assert mod.refresh(tmp_path, baseline) == 0
+    assert "sibling" not in json.loads(baseline.read_text(encoding="utf-8"))["repos"]
