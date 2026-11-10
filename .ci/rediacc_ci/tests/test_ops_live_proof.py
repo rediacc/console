@@ -1053,6 +1053,7 @@ def _waiver_world(bed: Bed, asked: _Asked, admit: Callable[..., R.Verdict] = _re
         "ASKED:2026-11-10",
         "ASKED:2026-11-10T13:38",
         "x ASKED:2026-11-10T13:38Z",
+        "ASKED:2026-11-10T13:38Z\n",
     ],
 )
 def test_a_malformed_waiver_refuses_before_anything_runs(bed: Bed, token: str) -> None:

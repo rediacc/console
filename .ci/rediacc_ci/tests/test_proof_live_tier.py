@@ -84,8 +84,8 @@ def _cli_row(**over: Any) -> dict[str, Any]:
     return LT.build_row(_ident(["cli"]), R.VERIFIED, **body)
 
 
-def _account_row() -> dict[str, Any]:
-    """A healthy VERIFIED account-smoke row: the bench cache deploy, the account VM phase."""
+def _account_row(ladder: dict[str, Any] | None = None) -> dict[str, Any]:
+    """A healthy VERIFIED account-smoke row: the bench cache deploy, the account VM phase; `ladder` replaces the default admitting run id."""
     argv = [list(r.argv) for r in LT.expand(LT.registry()["account-smoke"], "bench")]
     return LT.build_row(
         _ident(["account"]),
@@ -113,7 +113,7 @@ def _account_row() -> dict[str, Any]:
             "log_sha256": "b" * 64,
             "tail": ['{"status":"ok"}'],
         },
-        ladder={"vm": "vmc-10280533-5ddf37"},
+        ladder=ladder or {"vm": "vmc-10280533-5ddf37"},
     )
 
 
@@ -366,6 +366,24 @@ def test_a_vm_phase_surface_needs_its_ladder_run() -> None:
     assert LT.validate_row(row) == []
     _plant("ladder", {"vm": None})(row)
     assert any("ladder.vm" in p for p in LT.validate_row(row))
+
+
+def _waived_account_row(waived: str) -> dict[str, Any]:
+    return _account_row({"vm": None, "waived": waived, "head_tree": TREE})
+
+
+def test_a_well_formed_waived_row_is_a_valid_receipt() -> None:
+    """The positive control for the waiver: the judge LP5 runs passes a ticked-eligible waived row."""
+    assert LT.validate_row(_waived_account_row("ASKED:2026-11-10T13:38Z")) == []
+
+
+@pytest.mark.parametrize("suffix", ["\n", " ", "\r\n"])
+def test_a_waiver_token_with_a_trailing_character_is_refused(suffix: str) -> None:
+    """`$` matches before a trailing newline; the token must be the whole minute, nothing after it."""
+    token = "ASKED:2026-11-10T13:38Z"
+    assert LT.validate_row(_waived_account_row(token)) == [], "the control must pass first"
+    problems = LT.validate_row(_waived_account_row(token + suffix))
+    assert any("ladder.waived" in p for p in problems), problems
 
 
 def test_an_account_row_on_a_moved_account_checkout_is_refused() -> None:

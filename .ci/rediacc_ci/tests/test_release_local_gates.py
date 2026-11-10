@@ -467,6 +467,14 @@ def test_stable_force_with_an_unproven_minute_refuses() -> None:
     assert "has not soaked" in messages
 
 
+def test_stable_force_with_a_trailing_newline_refuses_as_malformed() -> None:
+    """`$` matches before a trailing newline; the token must be the whole minute."""
+    got = stable({"smoke_rc": 0, "recorded_at": stamp(2)}, force_asked=ASKED + "\n", proven=True)
+    assert any("is not ASKED:<YYYY-MM-DDTHH:MM>Z" in r.message for r in got)
+    control = stable({"smoke_rc": 0, "recorded_at": stamp(2)}, force_asked=ASKED, proven=True)
+    assert not any("is not ASKED" in r.message for r in control)
+
+
 def test_stable_force_with_a_proven_minute_skips_the_age() -> None:
     assert stable({"smoke_rc": 0, "recorded_at": stamp(2)}, force_asked=ASKED, proven=True) == []
 

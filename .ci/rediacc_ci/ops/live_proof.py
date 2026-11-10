@@ -614,7 +614,7 @@ def _check_waiver(req: Request, world: World) -> None:
     token = req.vm_waived
     if token is None:
         return
-    if not LT.WAIVED_RE.match(token):
+    if not LT.WAIVED_RE.fullmatch(token):
         raise RequestError(f"--vm-waived {token!r} is not ASKED:<YYYY-MM-DDTHH:MM>Z")
     if not world.asked(token, world.transcript):
         where = (

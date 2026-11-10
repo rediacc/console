@@ -48,7 +48,7 @@ EDGE_RECORD_KEY = "release-records/v%s/edge.json"
 TRANSCRIPT_ENV = "REDIACC_TRANSCRIPT_PATH"
 GIT_TIMEOUT_S = 600
 FETCH_TIMEOUT_S = 120
-ASKED_RE = re.compile(r"^ASKED:\d{4}-\d{2}-\d{2}T\d{2}:\d{2}Z$")
+ASKED_RE = re.compile(r"ASKED:\d{4}-\d{2}-\d{2}T\d{2}:\d{2}Z")
 
 # The seams. Each answers the question its gate asks of the world, None meaning "could not tell".
 Fetch = Callable[[pathlib.Path], "tuple[str | None, str]"]
@@ -424,7 +424,7 @@ def stable_refusals(
         found.append(Refusal("stable", "the edge record %s has smoke_rc %r, not 0" % (key, smoke)))
     forced = False
     if force_asked is not None:
-        if not ASKED_RE.match(force_asked):
+        if not ASKED_RE.fullmatch(force_asked):
             found.append(
                 Refusal("stable", "--force-asked %r is not ASKED:<YYYY-MM-DDTHH:MM>Z" % force_asked)
             )

@@ -68,7 +68,7 @@ DEPLOY_SURFACE = {
 _PLACEHOLDER = re.compile(r"\{([^{}]*)\}")
 _TARGET_KEYS = ("origin", "config")
 # The operator answer a waived ladder carries (`live_proof record --vm-waived`); the minute shape `release.local_gates.ASKED_RE` spells.
-WAIVED_RE = re.compile(r"^ASKED:\d{4}-\d{2}-\d{2}T\d{2}:\d{2}Z$")
+WAIVED_RE = re.compile(r"ASKED:\d{4}-\d{2}-\d{2}T\d{2}:\d{2}Z")
 # A target's origin is stored as a well-known key (`origin_wk`), never as a literal URL, so check:ci-literal-sources keeps one definition of each origin in .ci/config/well-known.env.
 _ORIGIN_WK = "origin_wk"
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
@@ -495,7 +495,7 @@ def _ladder_problems(row: dict[str, Any], ladder: dict[str, Any], phased: bool) 
     if ladder["vm"] is not None:
         out.append("ladder carries both a VM run id and a waiver; a row is one or the other")
     waived = ladder.get("waived")
-    if not (isinstance(waived, str) and WAIVED_RE.match(waived)):
+    if not (isinstance(waived, str) and WAIVED_RE.fullmatch(waived)):
         out.append(f"ladder.waived {waived!r} is not ASKED:<YYYY-MM-DDTHH:MM>Z")
     if ladder.get("head_tree") != row.get("tree"):
         out.append("ladder.head_tree is not the row's tree")
