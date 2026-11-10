@@ -516,7 +516,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-durable-reports-and-push-inbox.md` | compacted | 52 | 0 | 0 | 3692 |
 | `agent/plans/PLAN-enterprise-isolation.md` | executing | 206 | 15 | 19 | 38469 |
 | `agent/plans/PLAN-executor-durable-object-policy.md` | approved | 483 | 3 | 15 | 64699 |
-| `agent/plans/PLAN-experience-feedback.md` | approved | 70 | 16 | 0 | 14141 |
+| `agent/plans/PLAN-experience-feedback.md` | approved | 71 | 15 | 1 | 14323 |
 | `agent/plans/PLAN-extension-shaped-matchers.md` | compacted | 37 | 0 | 0 | 3104 |
 | `agent/plans/PLAN-first-release-checks.md` | approved | 150 | 31 | 0 | 17463 |
 | `agent/plans/PLAN-fix-ci-contention-aware-timeouts.md` | compacted | 38 | 0 | 0 | 3425 |

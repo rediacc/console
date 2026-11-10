@@ -1268,8 +1268,8 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 16,
-      "done": 0,
+      "open": 15,
+      "done": 1,
       "open_sigs": [
         "0b514b3a",
         "18a33f98",
@@ -1284,11 +1284,12 @@
         "af608650",
         "bf18da62",
         "c60ad719",
-        "e1ced11f",
         "f284c4b8",
         "f2fc03c2"
       ],
-      "done_sigs": []
+      "done_sigs": [
+        "e1ced11f"
+      ]
     },
     "agent/plans/PLAN-extension-shaped-matchers.md": {
       "status": "compacted",
