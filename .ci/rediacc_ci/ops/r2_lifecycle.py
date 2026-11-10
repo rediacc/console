@@ -14,6 +14,7 @@ from __future__ import annotations
 import argparse
 import dataclasses
 import fnmatch
+import json
 import re
 import subprocess
 import sys
@@ -88,6 +89,14 @@ class Wrangler:
         self.argv = wrangler.require(local, env)
         self.cwd = str(local)
 
+    def list_buckets(self) -> list[str]:
+        """Every bucket name in the account, from the REST listing with cursor pagination (wrangler's own listing stops at 20)."""
+        return list_all_buckets(
+            cf_auth.curl_json,
+            ["-H", "Authorization: Bearer %s" % self.env["CLOUDFLARE_API_TOKEN"]],
+            self.env["CLOUDFLARE_ACCOUNT_ID"],
+        )
+
     def __call__(self, *args: str) -> tuple[int, str]:
         proc = subprocess.run(
             [*self.argv, "r2", *args],
@@ -101,10 +110,6 @@ class Wrangler:
 
 
 Runner = typing.Callable[..., tuple[int, str]]
-
-
-def parse_buckets(text: str) -> list[str]:
-    return re.findall(r"^name:\s+(\S+)\s*$", text, flags=re.MULTILINE)
 
 
 def parse_rules(text: str) -> list[Rule]:
@@ -189,16 +194,70 @@ def diff(existing: list[Rule], wanted: list[Rule]) -> tuple[list[Rule], list[Rul
     return missing, drifted
 
 
-def target_buckets(run: Runner) -> tuple[list[str], list[str]]:
-    """(writable targets present in the live listing, protected buckets present)."""
-    rc, out = run("bucket", "list")
-    if rc != 0:
-        raise RuntimeError("bucket list failed (exit %d): %s" % (rc, out.strip()[-300:]))
-    live = parse_buckets(out)
-    targets = [b for b in ALLOWED_BUCKETS if b in live]
+LIST_PAGE = 1000
+MAX_PAGES = 100
+NOT_FOUND_MARKERS = ("10006", "does not exist", "not found")
+
+
+def list_all_buckets(
+    get: typing.Callable[..., dict], headers: list[str], account_id: str
+) -> list[str]:
+    """Every R2 bucket name via `GET /accounts/<id>/r2/buckets`, following the cursor. Raises RuntimeError when a complete listing cannot be had."""
+    names: list[str] = []
+    cursor = ""
+    seen: set[str] = set()
+    for _ in range(MAX_PAGES):
+        url = "%s/accounts/%s/r2/buckets?per_page=%d" % (cf_auth.CF_API_BASE, account_id, LIST_PAGE)
+        if cursor:
+            url += "&cursor=%s" % cursor
+        try:
+            body = get("GET", url, headers)
+        except cf_auth.CfAuthError as exc:
+            raise RuntimeError("complete bucket listing unavailable: %s" % exc) from exc
+        if not body.get("success"):
+            raise RuntimeError(
+                "complete bucket listing unavailable: %s" % json.dumps(body.get("errors"))[:300]
+            )
+        result = body.get("result")
+        page = result.get("buckets") if isinstance(result, dict) else None
+        if page is None or not hasattr(page, "__iter__"):
+            raise RuntimeError("complete bucket listing unavailable: no buckets array in the reply")
+        page = list(page)
+        names.extend(str(b["name"]) for b in page if isinstance(b, dict) and "name" in b)
+        info = body.get("result_info")
+        cursor = str(info.get("cursor") or "") if isinstance(info, dict) else ""
+        if not cursor:
+            if len(page) >= LIST_PAGE:
+                raise RuntimeError(
+                    "complete bucket listing unavailable: a full page of %d came back with no cursor"
+                    % LIST_PAGE
+                )
+            return names
+        if cursor in seen:
+            raise RuntimeError("complete bucket listing unavailable: the cursor did not advance")
+        seen.add(cursor)
+    raise RuntimeError("complete bucket listing unavailable: more than %d pages" % MAX_PAGES)
+
+
+def bucket_exists(run: Runner, bucket: str) -> bool:
+    """`wrangler r2 bucket info <name>`: rc 0 is present, a not-found answer is absent, any other failure raises."""
+    rc, out = run("bucket", "info", bucket)
+    if rc == 0:
+        return True
+    if any(m in out.lower() for m in NOT_FOUND_MARKERS):
+        return False
+    raise RuntimeError("bucket info %s failed (exit %d): %s" % (bucket, rc, out.strip()[-300:]))
+
+
+def target_buckets(run: typing.Any) -> tuple[list[str], list[str]]:
+    """(writable targets that exist, every protected bucket in the complete account listing).
+
+    Targets are probed by name, never read from a listing. The protected set comes from `run.list_buckets()`, which raises RuntimeError rather than return a partial listing.
+    """
+    targets = [b for b in ALLOWED_BUCKETS if bucket_exists(run, b)]
     for b in targets:
         require_writable(b)
-    return targets, [b for b in live if is_protected(b)]
+    return targets, [b for b in run.list_buckets() if is_protected(b)]
 
 
 def planted(run: Runner, protected: list[str]) -> list[tuple[str, Rule]]:
@@ -221,7 +280,7 @@ def run_mode(run: Runner, mode: str, bucket: str | None = None, dry_run: bool = 
     if bucket is not None:
         targets = [b for b in targets if b == bucket]
     if not targets:
-        log.error("no allowed bucket (%s) in the live listing" % ", ".join(ALLOWED_BUCKETS))
+        log.error("no allowed bucket (%s) exists in the account" % ", ".join(ALLOWED_BUCKETS))
         return 2
     wanted = desired_rules()
     status = 0
