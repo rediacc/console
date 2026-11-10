@@ -87,6 +87,7 @@ def test_every_key_the_drill_sets_reaches_the_rendered_web_service() -> None:
     assert missing == []
     # Control: the same check names a key the files do not read. The box needs none: the cert embeds in every licence from the cert alone, and the ON_PREMISE_* pair only turns on auto-renew (private/account/src/services/onprem-extras.ts).
     assert "${ON_PREMISE_PRIVATE_KEY" not in both
+    assert "${ON_PREMISE_PUBLIC_KEY" not in both
 
 
 def test_the_env_text_is_quoted_and_refuses_a_value_it_cannot_hold() -> None:
