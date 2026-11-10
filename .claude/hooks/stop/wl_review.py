@@ -1273,14 +1273,7 @@ def _glob_re(glob):
     return re.compile("".join(out) + r"\Z")
 
 
-# A skip glob is honoured only when every path it can match is a record file: the skip list
-# lives in files a commit can edit, so a glob such as "**", "agent/**" or "agent/**/*.py" would
-# otherwise turn later code commits record-only (reviews 623c29ce.1 and c8abe868.1). The rule is
-# positive, not a denylist: under agent/ the glob's last segment must name a record file (a
-# *.jsonl or *.json pattern, or exactly STATE.md or QUEUE.md) and, for the pattern form, sit in
-# a directory the glob names literally (agent/worklist/*.jsonl, never agent/**/*.json, which
-# would take every JSON file under agent/); under .ci/config/ only the named record files are
-# admitted, as literals.
+# A skip glob is honoured only when every path it can match is a record file: the skip list lives in files a commit can edit, so a glob such as "**", "agent/**" or "agent/**/*.py" would otherwise turn later code commits record-only (reviews 623c29ce.1 and c8abe868.1). The rule is positive, not a denylist: under agent/ the glob's last segment must name a record file (a *.jsonl or *.json pattern, or exactly STATE.md or QUEUE.md) and, for the pattern form, sit in a directory the glob names literally (agent/worklist/*.jsonl, never agent/**/*.json, which would take every JSON file under agent/); under .ci/config/ only the named record files are admitted, as literals.
 SKIP_AGENT_ROOT = "agent/"
 SKIP_AGENT_TAILS = (".jsonl", ".json")
 SKIP_AGENT_NAMES = ("STATE.md", "QUEUE.md")
@@ -2412,9 +2405,7 @@ def run_review(
             # The stat lists exactly the paths the diff kept, through the same is_skipped_path
             # test (its `except` globs included), so the two never disagree (review 623c29ce.2).
             kept = stat_paths(paths, skips)
-            # The stat is built from the commit's own --numstat -z (every path verbatim, no
-            # pathspec): no argv limit on a large commit and no glob magic in a path such as
-            # `a[1].py` (review 60c6a9aa.1 and .2).
+            # The stat is built from the commit's own --numstat -z (every path verbatim, no pathspec): no argv limit on a large commit and no glob magic in a path such as `a[1].py` (review 60c6a9aa.1 and .2).
             rows = numstat_rows(repo, full)
             if rows is None:
                 log("numstat failed for %s: the stat is withheld" % full[:12])
