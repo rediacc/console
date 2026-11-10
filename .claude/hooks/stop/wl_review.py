@@ -1273,36 +1273,32 @@ def _glob_re(glob):
     return re.compile("".join(out) + r"\Z")
 
 
-# A skip glob is honoured only inside the record roots, and only when it covers none of these
-# code paths: the skip list lives in files a commit can edit, so a glob such as "**" or
-# "agent/**" would otherwise turn every later code commit record-only (review 623c29ce.1).
-SKIP_ROOTS = ("agent/", ".ci/config/")
-SKIP_SENTINELS = (
-    "a.py",
-    "packages/cli/src/index.ts",
-    "private/renet/cmd/renet/main.go",
-    ".github/workflows/ci.yml",
-    ".claude/hooks/stop/wl_review.py",
-    ".claude/settings.json",
-    "agent/plans/PLAN-x.md",
-    "agent/plans/_done/PLAN-x.md",
-    "agent/README.md",
-    ".ci/config/commit-review.json",
-    ".ci/policy/record-paths.json",
-    ".ci/config/proof-tiers.json",
-)
+# A skip glob is honoured only when every path it can match is a record file: the skip list
+# lives in files a commit can edit, so a glob such as "**", "agent/**" or "agent/**/*.py" would
+# otherwise turn later code commits record-only (reviews 623c29ce.1 and c8abe868.1). The rule is
+# positive, not a denylist: under agent/ the glob's last segment must name a record file (a
+# *.jsonl or *.json pattern, or exactly STATE.md or QUEUE.md); under .ci/config/ only the named
+# record files are admitted, as literals.
+SKIP_AGENT_ROOT = "agent/"
+SKIP_AGENT_TAILS = (".jsonl", ".json")
+SKIP_AGENT_NAMES = ("STATE.md", "QUEUE.md")
+SKIP_CONFIG_LITERALS = (".ci/config/plan-boxes.json", ".ci/config/carried-reds.json")
 
 
 def admissible_skip_glob(glob):
-    """True when `glob` stays inside the record roots and covers no sentinel code path."""
-    if not glob.startswith(SKIP_ROOTS):
+    """True when every path `glob` can match is a record file (see SKIP_AGENT_* and SKIP_CONFIG_LITERALS)."""
+    if glob in SKIP_CONFIG_LITERALS:
+        return True
+    if not glob.startswith(SKIP_AGENT_ROOT):
         return False
-    rx = _glob_re(glob)
-    return not any(rx.match(path) for path in SKIP_SENTINELS)
+    tail = glob.rsplit("/", 1)[-1]
+    if tail in SKIP_AGENT_NAMES:
+        return True
+    return tail.endswith(SKIP_AGENT_TAILS) and "*" not in tail[tail.rfind(".") :]
 
 
 def skip_globs(root, cfg=None):
-    """The reviewer's own skip list (PLAN-experience-feedback P5): `review_skip_globs` of commit-review.json plus every glob of `.ci/policy/record-paths.json`, read at runtime and never edited here. A path matching one is a record (a ledger, a worklist, a STATE.md, a review file), not code, so it leaves the reviewed diff and the stat. The record file's `except` globs are honoured."""
+    """The reviewer's own skip list (PLAN-experience-feedback P5): `review_skip_globs` of commit-review.json plus every glob of `.ci/policy/record-paths.json`, read at runtime and never edited here. A path matching one is a record (a ledger, a worklist, a STATE.md, a review file), not code, so it leaves the reviewed diff and the stat. The record file's `except` globs are honoured. A glob that could match a non-record file is refused (admissible_skip_glob) and named on stderr, so the list cannot be widened to hide code."""
     cfg = cfg if cfg is not None else load_config(root)
     globs = [(g, []) for g in cfg.get("review_skip_globs") or [] if isinstance(g, str)]
     try:
@@ -1326,6 +1322,40 @@ def skip_globs(root, cfg=None):
     if not any(g == REVIEWS_REL + "/**" for g, _e in globs):
         globs.append((REVIEWS_REL + "/**", []))
     return [(_glob_re(g), [_glob_re(e) for e in ex], g) for g, ex in globs]
+
+
+def numstat_rows(repo, sha):
+    """[(path, added, deleted)] for every path of `sha`, read verbatim from `git show --numstat -z` (a binary file counts as "-")."""
+    rc, out = git(repo, "show", "--numstat", "-z", "--format=", sha)
+    if rc != 0:
+        return []
+    rows = []
+    fields = out.split("\0")
+    k = 0
+    while k < len(fields):
+        head = fields[k].lstrip("\n")
+        k += 1
+        if not head:
+            continue
+        parts = head.split("\t")
+        if len(parts) < 3:
+            continue
+        added, deleted, path = parts[0], parts[1], parts[2]
+        if path == "" and k + 1 < len(fields):
+            # A rename: the record is "a\td\t" then the old and the new path as two fields.
+            path = fields[k + 1]
+            k += 2
+        rows.append((path, added, deleted))
+    return rows
+
+
+def render_stat(rows, kept):
+    """One `path | +added -deleted` line per row whose path is in `kept`, then a total line; "" when none is kept."""
+    keep = set(kept)
+    lines = ["%s | +%s -%s" % (p, a, d) for p, a, d in rows if p in keep]
+    if not lines:
+        return ""
+    return "\n".join([*lines, "%d file(s) changed" % len(lines)])
 
 
 def stat_paths(paths, skips):
@@ -2375,7 +2405,10 @@ def run_review(
             # The stat lists exactly the paths the diff kept, through the same is_skipped_path
             # test (its `except` globs included), so the two never disagree (review 623c29ce.2).
             kept = stat_paths(paths, skips)
-            stat = git_out(repo, "show", "--stat", "--format=", full, "--", *kept) if kept else ""
+            # The stat is built from the commit's own --numstat -z (every path verbatim, no
+            # pathspec): no argv limit on a large commit and no glob magic in a path such as
+            # `a[1].py` (review 60c6a9aa.1 and .2).
+            stat = render_stat(numstat_rows(repo, full), kept)
             prompt = PROMPT % {
                 "message": message or "(empty)",
                 "stat": stat or "(empty)",

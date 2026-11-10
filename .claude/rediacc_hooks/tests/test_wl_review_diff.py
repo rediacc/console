@@ -134,7 +134,7 @@ def test_skip_globs_union_the_record_paths_read_at_runtime(tmp_path):
     (tmp_path / ".ci" / "policy" / "record-paths.json").write_text(
         '{"records": [{"glob": "agent/worklist/*.jsonl", "except": []}]}'
     )
-    skips = R.skip_globs(str(tmp_path), {"review_skip_globs": ["agent/ledgers/**"]})
+    skips = R.skip_globs(str(tmp_path), {"review_skip_globs": ["agent/ledgers/**/*.jsonl"]})
     assert R.is_skipped_path("agent/worklist/e.jsonl", skips)
     assert R.is_skipped_path("agent/ledgers/a/b.jsonl", skips)
     assert R.is_skipped_path("agent/reviews/b/clean.jsonl", skips)
@@ -225,3 +225,56 @@ def test_the_stat_honours_a_skip_globs_except_like_the_diff(tmp_path):
     assert R.stat_paths(paths, skips) == ["agent/worklist/keep.jsonl", "a.py"]
     # CONTROL: with no skip covering them, every path stays.
     assert R.stat_paths(["a.py", "b.py"], skips) == ["a.py", "b.py"]
+
+
+def test_a_skip_glob_admits_only_record_files(tmp_path):
+    """Review c8abe868.1: the rule is positive, so a code-extension glob under a record root is refused."""
+    for bad in (
+        "agent/**/*.py",
+        "agent/**",
+        "agent/plans/*.md",
+        "agent/*.*",
+        ".ci/config/effort.json",
+        ".ci/config/*.json",
+        "agent/x/*.json*",
+    ):
+        assert not R.admissible_skip_glob(bad), bad
+    for good in (
+        "agent/plans/QUEUE.md",
+        "agent/*/STATE.md",
+        "agent/ledgers/plan-*.jsonl",
+        "agent/worklist/*.jsonl",
+        ".ci/config/plan-boxes.json",
+        ".ci/config/carried-reds.json",
+    ):
+        assert R.admissible_skip_glob(good), good
+    # CONTROL: the review records stay skipped even though "agent/reviews/**" is not admissible by shape.
+    (tmp_path / ".ci" / "policy").mkdir(parents=True)
+    (tmp_path / ".ci" / "policy" / "record-paths.json").write_text('{"records": []}')
+    skips = R.skip_globs(str(tmp_path), {"review_skip_globs": ["agent/**/*.py"]})
+    assert R.is_skipped_path("agent/reviews/b/clean.jsonl", skips)
+    assert not R.is_skipped_path("agent/tools/x.py", skips)
+
+
+def test_the_stat_reads_paths_literally_from_stdin(tmp_path):
+    """Review 60c6a9aa.1/.2: a path with glob characters is listed as itself, and a skipped sibling stays out."""
+    repo, sha = _commit_files(
+        tmp_path,
+        "g",
+        {"x[a].py": "x = 1\n", "xa.py": "y = 2\n", "agent/plans/QUEUE.md": "queue\n"},
+    )
+    seen = []
+
+    def model(prompt, *_a):
+        seen.append(prompt)
+        raise RuntimeError("stop after the call")
+
+    with contextlib.suppress(RuntimeError):
+        R.run_review(
+            repo, "console", sha, "1110-1", reviewer=model, cfg=_cfg(), log=lambda _m: None
+        )
+    assert seen, "the mixed commit must reach the model"
+    stat = seen[0].split("diff --git", 1)[0]
+    assert "x[a].py" in stat
+    assert "xa.py" in stat
+    assert "QUEUE.md" not in stat
