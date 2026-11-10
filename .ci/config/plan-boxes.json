@@ -1149,6 +1149,22 @@
         "c1f1de21"
       ]
     },
+    "agent/plans/PLAN-docker-sock-listener-preflight-detect.md": {
+      "status": "executing",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 5,
+      "done": 0,
+      "open_sigs": [
+        "67d7242d",
+        "730155f9",
+        "832c6a10",
+        "920ac93d",
+        "cbe82b44"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-drop-free-license-ip-prefix-hash.md": {
       "status": "executing",
       "owner": "d778be9d",
