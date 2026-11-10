@@ -69,17 +69,20 @@ Http = Callable[[str, str, "dict | None"], Reply]
 class _PinnedHTTPS(urllib.request.HTTPSHandler):
     """HTTPS to a fixed address: the TCP connection goes to `address`, while SNI, the certificate check and the Host header still name the URL's host, as curl's `--resolve host:443:<address>` does for the proxy smoke."""
 
-    def __init__(self, address: str, context: ssl.SSLContext | None = None) -> None:
+    def __init__(self, address: str, host: str, context: ssl.SSLContext | None = None) -> None:
         super().__init__()
         self.address = address
+        self.host = host
         self.tls = context or ssl.create_default_context()
 
     def https_open(self, req: urllib.request.Request) -> http_client.HTTPResponse:
-        address, tls = self.address, self.tls
+        address, tls, pinned_host = self.address, self.tls, self.host
 
         class Connection(http_client.HTTPSConnection):
             def connect(self) -> None:
-                sock = socket.create_connection((address, self.port), self.timeout)
+                # A redirect to another host dials that host by name: the pin is the first host's address.
+                target = address if self.host == pinned_host else self.host
+                sock = socket.create_connection((target, self.port), self.timeout)
                 self.sock = tls.wrap_socket(sock, server_hostname=self.host)
 
         return self.do_open(Connection, req)
@@ -90,7 +93,9 @@ def _open(request: urllib.request.Request, pin: str | None) -> Any:
     if pin is None:
         return https.urlopen(request, timeout=TIMEOUT_S)
     https.check_url(request.full_url)
-    return https.build_opener(_PinnedHTTPS(pin)).open(request, timeout=TIMEOUT_S)
+    return https.build_opener(
+        _PinnedHTTPS(pin, urllib.parse.urlsplit(request.full_url).hostname or "")
+    ).open(request, timeout=TIMEOUT_S)
 
 
 def _unresolved(exc: OSError) -> bool:

@@ -101,6 +101,22 @@ export function closestContainer(requested: string, names: string[]): string | u
   return [...names].sort((x, y) => editDistance(requested, x) - editDistance(requested, y))[0];
 }
 
+/** Whether `docker exec -c` would accept `requested` as an ID: the full ID or a unique ID prefix from the listing's `ID` fields. */
+export function matchesContainerId(stdout: string | undefined, requested: string): boolean {
+  const ids: string[] = [];
+  for (const line of (stdout ?? '').split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed.startsWith('{')) continue;
+    try {
+      const entry = JSON.parse(trimmed) as { ID?: unknown };
+      if (typeof entry.ID === 'string') ids.push(entry.ID);
+    } catch {
+      // not a container row
+    }
+  }
+  return ids.filter((id) => id.startsWith(requested)).length === 1;
+}
+
 /**
  * An unknown container is a named error that lists the repo's containers. docker's own "No such container" went to a stream nothing printed, so the verb exited 1 silent. When the listing cannot be read the call proceeds and renet decides.
  */
@@ -120,6 +136,7 @@ async function assertContainerKnown(
   if (!listing.success) return;
   const names = parseContainerNames(listing.stdout);
   if (names.length === 0 || names.includes(container)) return;
+  if (matchesContainerId(listing.stdout, container)) return;
   throw new ValidationError(
     t('errors.container.unknown', {
       container,

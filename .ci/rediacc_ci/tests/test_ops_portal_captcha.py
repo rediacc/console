@@ -315,7 +315,7 @@ def test_the_pinned_connection_dials_the_address_and_names_the_host(monkeypatch)
     context = pc.ssl.create_default_context()
     monkeypatch.setattr(context, "wrap_socket", wrap_socket)
     captured: dict = {}
-    handler = pc._PinnedHTTPS("198.51.100.7", context)
+    handler = pc._PinnedHTTPS("198.51.100.7", "new.example.test", context)
 
     def do_open(conn_class, req):
         conn = conn_class(req.host, timeout=5)
@@ -329,3 +329,22 @@ def test_the_pinned_connection_dials_the_address_and_names_the_host(monkeypatch)
     assert dialed == [("198.51.100.7", 443)]
     assert wrapped == [("sock", "new.example.test")]
     assert captured["sock"] == "tls"
+
+
+def test_a_redirect_to_another_host_is_not_dialed_at_the_pinned_address(monkeypatch):
+    """The pin is the first host's address; a redirect target dials by name. CONTROL: the pinned host itself still dials the pin."""
+    dialed: list = []
+
+    def create_connection(addr, timeout):
+        del timeout
+        dialed.append(addr)
+        return "sock"
+
+    monkeypatch.setattr(pc.socket, "create_connection", create_connection)
+    context = pc.ssl.create_default_context()
+    monkeypatch.setattr(context, "wrap_socket", lambda *_a, **_k: "tls")
+    handler = pc._PinnedHTTPS("198.51.100.7", "new.example.test", context)
+    monkeypatch.setattr(handler, "do_open", lambda conn_class, req: conn_class(req.host).connect())
+    for url in ("https://other.example.test/x", "https://new.example.test/x"):
+        handler.https_open(pc.urllib.request.Request(url))
+    assert dialed == [("other.example.test", 443), ("198.51.100.7", 443)]

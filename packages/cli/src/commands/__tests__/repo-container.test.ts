@@ -157,4 +157,24 @@ describe('repo exec unknown container', () => {
     expect(handleError).not.toHaveBeenCalled();
     expect(execute.mock.calls.at(-1)?.[0].functionName).toBe('container_exec');
   });
+
+  it('a container ID prefix that docker accepts runs the exec', async () => {
+    execute.mockResolvedValueOnce({
+      ...listing,
+      stdout:
+        '{"ID":"abc123def456","Names":"observability-grafana"}\n{"ID":"fff000111222","Names":"observability-loki"}\n',
+    });
+    await run(['exec', 'obs', '-c', 'abc123', '--', 'echo', 'ok']);
+    expect(handleError).not.toHaveBeenCalled();
+    expect(execute.mock.calls.at(-1)?.[0].functionName).toBe('container_exec');
+  });
+
+  it('control: an ID prefix shared by two containers is still refused', async () => {
+    execute.mockResolvedValueOnce({
+      ...listing,
+      stdout: '{"ID":"abc111","Names":"a"}\n{"ID":"abc222","Names":"b"}\n',
+    });
+    await run(['exec', 'obs', '-c', 'abc', '--', 'echo', 'ok']);
+    expect(execute.mock.calls.some((c) => c[0].functionName === 'container_exec')).toBe(false);
+  });
 });
