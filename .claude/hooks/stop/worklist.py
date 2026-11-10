@@ -1377,7 +1377,7 @@ def _planpreflight_cli(argv):
 
 
 def _planinvestigate_cli(argv):
-    """--plan-investigate <me> <path> <box> <verdict> <kind>:<tok>... -- <note...> [--write].
+    """--plan-investigate <me> <path> <box> <verdict> [--owed <kind>] <kind>:<tok>... -- <note...> [--write].
 
     THE VERB THE OPERATOR ASKED FOR: "we must investigate if they're implemented before implement". Everything it does is re-derivation and none of it is trust -- see wl_planrec.plan_investigate. Ordinary shell quoting is the interface and no new parser is introduced; a bare `--` separates the pointer list from the note, the same way a shell separates a command's flags from its
     operands.
@@ -1425,6 +1425,15 @@ def _planinvestigate_cli(argv):
             )
         evidence = rest[k + 1]
         rest = rest[:k] + rest[k + 2 :]
+    # `--owed <kind>` is what a `partial` box still owes (wl_planrec.INV_OWED, required there on a live partial). Read BEFORE the bare `--`, like --evidence.
+    owed = None
+    cut_at = rest.index("--") if "--" in rest else len(rest)
+    if "--owed" in rest[:cut_at]:
+        k = rest.index("--owed")
+        if k + 1 >= cut_at:
+            die("--owed takes a kind (%s)\n\n%s" % ("|".join(R.INV_OWED), usage))
+        owed = rest[k + 1]
+        rest = rest[:k] + rest[k + 2 :]
     # THE NOTE IS EVERYTHING AFTER A BARE `--`, not "the last argument", because a note is a sentence and a sentence quoted as one argv entry is the shape nobody types correctly the first time.
     if "--" in rest:
         cut = rest.index("--")
@@ -1442,7 +1451,7 @@ def _planinvestigate_cli(argv):
 
     try:
         row, resolved = R.plan_investigate(
-            root, rel, selector, verdict, pointer_tokens, note, me, retro=retro
+            root, rel, selector, verdict, pointer_tokens, note, me, retro=retro, owed=owed
         )
         # THE PLAN HALF of a late record, computed BEFORE anything is written so a refusal on it leaves the ledger untouched.
         retro_text = (

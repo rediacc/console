@@ -449,6 +449,9 @@
     "sweep-ungrounded": {
       "advise": "low"
     },
+    "judge-contentless": {
+      "advise": "smart"
+    },
     "scheduled-green": {
       "advise": "smart"
     },

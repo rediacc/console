@@ -2290,6 +2290,9 @@ INVESTIGATION_REL = ("agent", "ledgers", "plan-investigation.jsonl")
 #:   partial  some of it exists; `note` says which part, and the box stays open.
 INV_VERDICTS = ("absent", "present", "partial")
 
+#: What a `partial` box still OWES, required on a live partial row (`--owed`, agent/plans/PLAN-stop-hook-retro-20261110.md R20261110.1, D1). Every kind but `code` names work no local edit can supply -- a live system, a CI run, a push, the operator -- so the stop-gate judge reads such a box as not local work (`wl_checks._batch_box_facts`). A free-text note cannot be read mechanically, which is why this is a field. Rows written before it carry none and count as `code`.
+INV_OWED = ("live", "ci", "post-push", "operator", "code")
+
 #: TWO POINTERS OF TWO DISTINCT KINDS. One pointer is a citation; two of different kinds is a triangulation, and the asymmetry is cheap -- a `fileline` plus a `commit` costs one file read and one `rev-parse`. Two of the SAME kind is refused because the cheapest way to satisfy a pointer count is to cite the same artifact twice.
 INV_MIN_POINTERS = 2
 INV_MIN_KINDS = 2
@@ -2517,7 +2520,9 @@ def _retro_commits(root, pointers):
     return out
 
 
-def plan_investigate(root, rel, selector, verdict, pointer_tokens, note, me, now=None, retro=False):
+def plan_investigate(
+    root, rel, selector, verdict, pointer_tokens, note, me, now=None, retro=False, owed=None
+):
     """(row, resolved) for one investigation. Raises RecordError. WRITES NOTHING.
 
     `retro=True` IS THE HONEST LATE RECORD, and it is the only door for a box that was ticked without an investigation. It reaches ONLY a box that is already `[x]` (an open box is refused: it can still be investigated before the work, which is the whole point), requires a `commit:` pointer to the implementing commit that is an ancestor of HEAD, and a note of at least
@@ -2533,6 +2538,7 @@ def plan_investigate(root, rel, selector, verdict, pointer_tokens, note, me, now
          calls, and the whole row is refused if any one fails, naming which.
       4. at least INV_MIN_POINTERS pointers of at least INV_MIN_KINDS kinds.
       5. the note clears INV_NOTE_MIN characters.
+      6. a live `partial` names what it still owes (`owed`, one of INV_OWED); any other verdict names none.
 
     `head` is `git rev-parse HEAD` at write time, and it is what makes the record an ASSERTION ABOUT A TREE rather than a story: Clause 1 in plan_tick requires the tick's own cited commit to descend from it, which an investigation written after the implementation cannot satisfy.
     """
@@ -2548,6 +2554,21 @@ def plan_investigate(root, rel, selector, verdict, pointer_tokens, note, me, now
             "whole gate optional in one command. The door for a box that cannot be worked now "
             "is `worklist.py --add` or `worklist.py --defer`, both of which keep it VISIBLE."
             % (verdict, ", ".join(INV_VERDICTS))
+        )
+    owed_kind = str(owed or "").strip().lower()
+    if owed_kind and owed_kind not in INV_OWED:
+        raise RecordError("--owed %r is not one of %s" % (owed, ", ".join(INV_OWED)))
+    if owed_kind and v != "partial":
+        raise RecordError(
+            "--owed belongs to a `partial` verdict: a box that is %s owes nothing a kind can name"
+            % v
+        )
+    if v == "partial" and not retro and not owed_kind:
+        raise RecordError(
+            "a `partial` verdict needs --owed <%s>: say what the open part still owes. Every kind "
+            "but `code` names work no local edit supplies (a live system, a CI run, a push, the "
+            "operator), and the stop-gate judge reads the box that way; `code` keeps it local work."
+            % "|".join(INV_OWED)
         )
     text = p.read_text(encoding="utf-8", errors="replace")
     if is_record(text):
@@ -2634,6 +2655,8 @@ def plan_investigate(root, rel, selector, verdict, pointer_tokens, note, me, now
         "resolved": [[k, ok, d] for k, ok, d in resolved],
         "note": n[:600],
     }
+    if owed_kind:
+        row["owed"] = owed_kind
     if retro:
         # PROVENANCE IN THE ROW. `head` stays the live HEAD, because that IS when this was written; `retro` says the ordering P-A4 checks never happened, and the gate prints it instead of judging it.
         row["retro"] = True

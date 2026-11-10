@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 5,
-  "generatedAt": "2026-11-10T13:07:40.491Z",
+  "generatedAt": "2026-11-10T16:02:41.044Z",
   "legs": [
     {
       "index": 1,
@@ -348,6 +348,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_wl_guide_and_deferrals.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_identity.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_interim_reports.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_judge_facts.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_lessons.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_loopspeed.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_planbox.py",
@@ -526,7 +527,8 @@
         "pytest:.ci/rediacc_ci/tests/test_enterprise_no_key_on_account.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_plandeps_box_edges.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_reviewclass.py",
-        "pytest:.ci/rediacc_ci/tests/gates/test_gate_workflow_sudo_env_drops.py"
+        "pytest:.ci/rediacc_ci/tests/gates/test_gate_workflow_sudo_env_drops.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_judge_receipt_inflight.py"
       ]
     },
     {
@@ -879,7 +881,8 @@
         "pytest:.ci/rediacc_ci/tests/test_enterprise_lifecycle.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_boxready.py",
         "pytest:.ci/rediacc_ci/tests/test_gate_hint_corpus_enforced_by.py",
-        "pytest:.ci/rediacc_ci/tests/gates/test_gate_workflow_sudo_preserve_env.py"
+        "pytest:.ci/rediacc_ci/tests/gates/test_gate_workflow_sudo_preserve_env.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_judge_local_batch.py"
       ]
     }
   ]

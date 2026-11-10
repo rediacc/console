@@ -3108,14 +3108,156 @@ def live_batch_ready(state, finished_all):
     return wl_prscope.batch_ready(state, finished_all)
 
 
+# The three classes `_batch_box_facts` gives an open box of the batch (agent/plans/PLAN-stop-hook-retro-20261110.md R20261110.2).
+BOX_NON_WRITER = "non-writer"
+BOX_LOCAL = "local"
+BOX_OWED_PREFIX = "owed:"
+
+
+def _batch_box_facts(state, root):
+    """[(plan basename, box id, sig, class)] for every open box of `state.plans`, in plan order.
+
+    The class is `non-writer` when the box's tag names work no writer does or waits for the merge (`wl_boxready.non_writer`, `post_merge`); `owed:<kind>` when the newest investigation row for (plan, sig) is `partial` with an `owed` other than `code` (`wl_planrec.INV_OWED`); `local` otherwise, which includes an untagged box with no row and an old partial row written before `owed` existed (D1). A plan is read through `plan_gate`'s Moved-To follow, the same read `_set_finished` makes; a plan that cannot be read adds no row."""
+    import wl_planrec as R
+
+    plan_gate = wl_prscope._hooks_pkg()[0]
+    rows = R.read_investigations(root)
+    out = []
+    for rel in state.plans or ():
+        text, read = plan_gate._plan_text(str(root), rel, "")
+        if not text:
+            continue
+        for _i, raw, body, sig in R.open_boxes(text):
+            if wl_boxready.non_writer(raw) or wl_boxready.post_merge(raw):
+                cls = BOX_NON_WRITER
+            else:
+                row = R.investigation_for(root, rel, sig, rows) or R.investigation_for(
+                    root, read, sig, rows
+                )
+                owed = str((row or {}).get("owed") or "")
+                if row and row.get("verdict") == "partial" and owed and owed != "code":
+                    cls = BOX_OWED_PREFIX + owed
+                else:
+                    cls = BOX_LOCAL
+            box_id = (body.split() or [sig])[0]
+            out.append((_base(rel), box_id, sig, cls))
+    return out
+
+
 def _judge_local_batch(state, root):
-    """The judge's `local_batch` argument (agent/plans/PLAN-turbo-local-first.md D6): `{"finished", "batch"}` while a local batch fills, else None. A failed read is None, today's prompt."""
+    """The judge's `local_batch` argument (agent/plans/PLAN-turbo-local-first.md D6): `{"finished", "batch", "open", "local", "rows"}` while a local batch fills, else None. `rows` is `_batch_box_facts`, `open` its length and `local` how many of them are local work (R20261110.2), so the judge is told which boxes a local action could advance instead of being told that some could. A failed read is None, today's prompt; a failed box read keeps the batch facts and drops the box ones."""
     try:
-        if local_batch_open(state, root):
-            return {"finished": int(state.finished), "batch": int(state.batch_size)}
+        if not local_batch_open(state, root):
+            return None
+        got = {"finished": int(state.finished), "batch": int(state.batch_size)}
+    except Exception:
+        return None
+    try:
+        rows = _batch_box_facts(state, root)
+    except Exception:
+        return got
+    got["rows"] = rows
+    got["open"] = len(rows)
+    got["local"] = sum(1 for r in rows if r[3] == BOX_LOCAL)
+    return got
+
+
+def _judge_receipt_run(root):
+    """The judge's `receipt_run` (agent/plans/PLAN-stop-hook-retro-20261110.md R20261110.3): "vm:check" while a vm:check run holds the fleet lock, "ci:quick" while this checkout's ci:quick lock names a live run, else None. The same two readings that hold the unlanded-lease block; a failed read is None."""
+    try:
+        if vm_check_running():
+            return "vm:check"
+        if ci_quick_running(root):
+            return "ci:quick"
     except Exception:
         pass
     return None
+
+
+# A worker id that names no agent: the queue placeholder and the lead itself (wl_leasehelp.LEAD_WORKER).
+_PSEUDO_WORKERS = frozenset({"queue", wl_leasehelp.LEAD_WORKER})
+
+
+def _item_id_named(item_id, message):
+    """True when `message` names `item_id`, with or without its `#`."""
+    return bool(re.search(r"(?<![0-9a-zA-Z])#?%s(?![0-9a-zA-Z])" % re.escape(item_id), message))
+
+
+def _judge_facts(me8, message, recs, task_ids, root, reports=None, read_only=None):
+    """The judge's `facts` (agent/plans/PLAN-stop-hook-retro-20261110.md R20261110.4, .5): what the checklist asked the model to find by reading, measured here.
+
+    tracked       the ids of `recs` (the remaining items' records) and `task_ids` (the harness tasks).
+    missing_ids   the tracked ids `message` never names.
+    wake_until    the fire time (epoch) of this session's wake timer, only while its lock names a live wl_wake process (wl_wake.read_lock, is_waker_pid).
+    item_workers  {item id: [{id, current, type, kind, title}]}: every worker each item was leased to (the store's `lease_workers`, then `worker`), with the agent type and title of its newest report-index row (`reports`, wl_report.read_index) and `kind` "Plan", "read-only" or "writer" by type (`read_only`, wl_roster.read_only_types); the queue and lead placeholders are left out.
+    """
+    message = message or ""
+    tracked = [str(r.get("id")) for r in recs if r.get("id")] + [str(t) for t in task_ids]
+    missing = [i for i in tracked if not _item_id_named(i, message)]
+    wake_until = None
+    with contextlib.suppress(Exception):
+        lock = wl_wake.read_lock(me8)
+        if lock and wl_wake.is_waker_pid(lock.get("pid")):
+            wake_until = float(lock.get("until"))
+    if reports is None:
+        try:
+            reports = wl_report.read_index(wl_report.store_root(root))
+        except Exception:
+            reports = []
+    by_short: dict[str, dict] = {}
+    for row in reports or ():
+        rid = str(row.get("id") or "")
+        by_short[rid.rsplit("-", 1)[0] if re.search(r"-\d+$", rid) else rid] = row
+    if read_only is None:
+        read_only = wl_roster.read_only_types(root)
+    workers: dict[str, list] = {}
+    for rec in recs:
+        ids = list(rec.get("lease_workers") or ())
+        cur = str(rec.get("worker") or "") if rec.get("state") == ">" else ""
+        if cur and cur not in ids:
+            ids.append(cur)
+        rows = []
+        for wid in ids:
+            if not wid or wid in _PSEUDO_WORKERS:
+                continue
+            row = by_short.get(wl_report.short_id(wid)) or {}
+            atype = str(row.get("type") or row.get("agent") or "")
+            kind = ""
+            if atype:
+                kind = (
+                    "Plan" if atype == "Plan" else "read-only" if atype in read_only else "writer"
+                )
+            rows.append(
+                {
+                    "id": wid,
+                    "current": wid == cur,
+                    "type": atype,
+                    "kind": kind,
+                    "title": str(row.get("title") or ""),
+                }
+            )
+        if rows:
+            workers[str(rec.get("id"))] = rows
+    return {
+        "tracked": tracked,
+        "missing_ids": missing,
+        "wake_until": wake_until,
+        "item_workers": workers,
+    }
+
+
+def _remaining_recs(fold, session_id, open_items, deferred_recs, in_flight_recs):
+    """The records behind the judge's remaining lines: the open items (matched by their display line, which `classify_items` may extend with a suffix), then the deferred and in-flight records it returned."""
+    shown = list(open_items)
+    out = []
+    for rec in getattr(fold, "items", None) or ():
+        if rec.get("state") not in (" ", ">") or not C.owned_by_me(rec.get("owner"), session_id):
+            continue
+        disp = S.brief_line(rec)
+        if any(line == disp or line.startswith(disp + " ") for line in shown):
+            out.append(rec)
+    seen = {id(r) for r in out}
+    return out + [r for r in (*deferred_recs, *in_flight_recs) if id(r) not in seen]
 
 
 def loop_next_text(state, root, state_doc, pr_finish_fired, me="<me>"):
@@ -6562,6 +6704,14 @@ def run_stop(event, event_ok, worklist, hook_file):
                 with_riders=_riders,
                 closed=wl_judge.closed_items(fold, lambda o: C.owned_by_me(o, session_id)),
                 effort_level=_cfg.effort,
+                receipt_run=_judge_receipt_run(root),
+                facts=_judge_facts(
+                    me8,
+                    last_msg,
+                    _remaining_recs(fold, session_id, open_items, deferred_recs, in_flight_recs),
+                    [i for i, _sub, _st in tasks],
+                    root,
+                ),
             )
         if err is not None:
             # FAIL CLOSED, by operator instruction. A judge that cannot answer must not become the way out.
@@ -6583,6 +6733,11 @@ def run_stop(event, event_ok, worklist, hook_file):
         # A continue the effort level reads as stop (wl_judge.settle_by_effort) rides its report key's own threshold instead of the block.
         for _ekey, _etext in verdict.get("effort_advised") or []:
             outq_add(worklist, session_id, state_doc, _ekey, _etext, 2)
+        # A content-free continue read as stop (wl_judge.settle_contentless, R20261110.7) is reported, never blocked on.
+        if verdict.get("contentless"):
+            outq_add(
+                worklist, session_id, state_doc, "judge-contentless", str(verdict["contentless"]), 2
+            )
         # DEFER-SETTLE VERDICT: banks, corroborates, and acts only through wl_defersettle's own evidence-gated tick. It cannot block, so it runs before any path below that can exit.
         if settle_batch:
             with contextlib.suppress(Exception):

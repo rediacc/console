@@ -881,6 +881,8 @@ def run_judge(
     with_riders=True,
     closed=None,
     effort_level=None,
+    receipt_run=None,
+    facts=None,
 ):
     """(verdict_dict, error_string). Exactly one is non-None.
 
@@ -888,7 +890,11 @@ def run_judge(
 
     `with_riders` False (`judge: core`, wl_judge.riders) asks no class sweep, proof obligation or brave-default question, fresh or outstanding: the judge answers whether stopping is honest and nothing else. `closed` is the session's recently closed items as (id, text, evidence) rows (`closed_items`): the prompt names them with their tick evidence, and a `continue` whose only order names one of them is read as stop (`settle_closed_reraise`), so finished work is not ordered again.
 
-    `local_batch` is `{"finished": k, "batch": n}` while a turbo batch fills on a no-PR branch (agent/plans/PLAN-turbo-local-first.md D6), else None: the prompt then carries M.JUDGE_LOCAL_BATCH and the sanitiser also strips an order to open a PR (LOCAL_BATCH_ORDERS).
+    `local_batch` is `{"finished": k, "batch": n}` while a turbo batch fills on a no-PR branch (agent/plans/PLAN-turbo-local-first.md D6), else None: the prompt then carries M.JUDGE_LOCAL_BATCH and the sanitiser also strips an order to open a PR (LOCAL_BATCH_ORDERS). With `rows`, `open` and `local` (wl_checks._judge_local_batch, agent/plans/PLAN-stop-hook-retro-20261110.md R20261110.2) the paragraph names the boxes and their classes (`local_batch_boxes`), and with `local == 0` a continue that only orders batch work is read as stop (`settle_batch_no_local`).
+
+    `receipt_run` is `"vm:check"` or `"ci:quick"` while such a run is building a receipt on this tree (wl_checks.vm_check_running, ci_quick_running), else None: the prompt carries M.JUDGE_RECEIPT_IN_FLIGHT and the sanitiser rewrites a main-checkout commit, edit, land or cherry-pick order (RECEIPT_ORDERS, R20261110.3).
+
+    `facts` is what the hook measured for the checklist (wl_checks._judge_facts, R20261110.4 and .5): `missing_ids`, `tracked`, `wake_until` and `item_workers`, rendered as M.JUDGE_FACTS (`render_facts`). A continue whose order and reason carry nothing at all is read as stop first (`settle_contentless`, R20261110.7).
 
     `transcript` is the lead's transcript path: an outstanding sweep or proof demand it already answers is discharged before the prompt is built (wl_classsweep.discharge_if_evidenced, wl_proofcheck.discharge_if_evidenced).
 
@@ -978,6 +984,12 @@ def run_judge(
             "finished": int(local_batch.get("finished") or 0),
             "batch": int(local_batch.get("batch") or 1),
         }
+        prompt += local_batch_boxes(local_batch)
+    if receipt_run:
+        # After `extra` like the local batch: it asks for no schema field.
+        prompt += M.JUDGE_RECEIPT_IN_FLIGHT % {"run": receipt_run}
+    if facts is not None:
+        prompt += render_facts(facts)
     env = dict(os.environ)
     # THE RECURSION GUARD. `claude -p` fires this very hook; --settings does not suppress it. Without this line the hook forks itself forever.
     env["STOPHOOK_CHILD"] = "1"
@@ -1112,10 +1124,141 @@ def run_judge(
                 :400
             ]
     if not fired:
+        out = settle_contentless(out)
         out = settle_wait_only_continue(out)
         out = settle_closed_reraise(out, [c[0] for c in closed or ()])
-        out = settle_by_effort(out, effort_level, local_batch=bool(local_batch))
-    return sanitize_next_action(out, local_batch=bool(local_batch)), None
+        out = settle_batch_no_local(out, local_batch, (facts or {}).get("tracked"))
+        out = settle_by_effort(
+            out, effort_level, local_batch=bool(local_batch), receipt_run=receipt_run
+        )
+    return sanitize_next_action(out, local_batch=bool(local_batch), receipt_run=receipt_run), None
+
+
+# ---- WHAT THE HOOK MEASURED FOR THE JUDGE (agent/plans/PLAN-stop-hook-retro-20261110.md R20261110.2, .4, .5) -------------
+# The judge sees the last message only, so a box table or a wake time given two stops earlier no longer exists for it, and its checklist asked it to find, by reading, facts the hook already holds: which ids the message omits (a set difference), whether a wake timer is armed and when it fires (wl_wake's lock), and who already holds an item (the store's lease
+# history). It now gets them as measured facts.
+
+
+def _box_rows(rows):
+    return "\n".join("  %s %s [%s] %s" % (plan, bid, sig, cls) for plan, bid, sig, cls in rows)
+
+
+def local_batch_boxes(local_batch):
+    """The box paragraph that follows M.JUDGE_LOCAL_BATCH: M.JUDGE_LOCAL_BATCH_NO_LOCAL when no open box is local work, M.JUDGE_LOCAL_BATCH_LOCAL naming the local ones otherwise, "" when the hook could not class the boxes (no `rows`) or the batch has none open."""
+    rows = (local_batch or {}).get("rows")
+    if not rows:
+        return ""
+    local = [r for r in rows if r[3] == "local"]
+    if not local:
+        return M.JUDGE_LOCAL_BATCH_NO_LOCAL % {"open": len(rows), "rows": _box_rows(rows)}
+    other = [r for r in rows if r[3] != "local"]
+    return M.JUDGE_LOCAL_BATCH_LOCAL % {
+        "local": len(local),
+        "open": len(rows),
+        "local_rows": _box_rows(local),
+        "other_rows": _box_rows(other) or "  (none)",
+    }
+
+
+def _stamp(epoch):
+    try:
+        return datetime.datetime.fromtimestamp(float(epoch), datetime.UTC).strftime(
+            "%Y-%m-%dT%H:%MZ"
+        )
+    except (TypeError, ValueError, OverflowError, OSError):
+        return None
+
+
+def render_facts(facts):
+    """M.JUDGE_FACTS for `facts` (see run_judge)."""
+    missing = list(facts.get("missing_ids") or ())
+    until = _stamp(facts.get("wake_until")) if facts.get("wake_until") else None
+    rows = [
+        "  #%s: %s %s (%s%s)%s"
+        % (
+            item_id,
+            "current worker" if w.get("current") else "past worker",
+            w.get("id"),
+            w.get("type") or "agent type unknown",
+            ", %s" % w["kind"] if w.get("kind") else "",
+            ' report: "%s"' % str(w["title"])[:90] if w.get("title") else "",
+        )
+        for item_id, workers in (facts.get("item_workers") or {}).items()
+        for w in workers
+    ]
+    return M.JUDGE_FACTS % {
+        "missing": ", ".join("#" + i for i in missing)
+        if missing
+        else "none: the message names every tracked id",
+        "wake": "armed, fires at %s" % until if until else "none armed",
+        "workers": "\n".join(rows) or "  (no remaining item has had a worker)",
+    }
+
+
+BATCH_WORDS = re.compile(r"turbo|batch|open\s+boxes|locally", re.IGNORECASE)
+
+
+def settle_batch_no_local(out, local_batch, tracked_ids=None):
+    """`out` with a `continue` read as `stop` when the hook classed the batch's open boxes and none is local work (`local == 0`), the continue's reason or order is about the batch (BATCH_WORDS), and it names no tracked item (`#<id>` in `tracked_ids`, or any `#<id>` when the caller passed none). Anything else unchanged."""
+    lb = local_batch or {}
+    if out.get("verdict") != "continue" or not lb.get("rows") or int(lb.get("local") or 0) != 0:
+        return out
+    text = "%s %s" % (out.get("reason") or "", out.get("next_action") or "")
+    if not BATCH_WORDS.search(text):
+        return out
+    refs = set(_ITEM_REF.findall(text))
+    if tracked_ids is not None:
+        refs &= {str(t) for t in tracked_ids}
+    if refs:
+        return out
+    out = dict(out)
+    out["verdict"] = "stop"
+    out["reason"] = (
+        "%s [read as stop: the judge said continue about the batch, and the hook measured no "
+        "local work in any of its %d open box(es)]" % (out.get("reason", ""), len(lb["rows"]))
+    )[:400]
+    out["next_action"] = ""
+    return out
+
+
+# ---- A CONTENT-FREE VERDICT (R20261110.7). On 2026-11-09T21:21:05Z the judge returned continue with reason "Duplicate call ignored." and next action "Ignore.", which blocked the stop and drew a restated Remaining list. A continue carries an order or a reason that names something; one with neither is read as stop and reported as the `judge-contentless` advisory.
+CONTENTLESS_ORDERS = frozenset({"", "ignore", "none", "n/a", "na", "nothing"})
+CONTENTLESS_REASON_MAX = 40
+# The short-reason arm also needs an order of at most this many words that names nothing. The plan's arm read every reason under 40 characters naming nothing as content-free, which also caught deliberate controls such as reason "a test is red" with order "Fix the failing test in foo.py" (stop/test-judge-schema.py): a short reason beside a real order is a real verdict.
+CONTENTLESS_ORDER_WORDS = 2
+# What makes a short reason or order name something: an item id, a file path or name, or a run.
+_NAMES_SOMETHING = re.compile(
+    r"#[0-9a-f]{6,12}\b|[\w.-]+/[\w./-]+|\b[\w-]+\.(?:py|ts|js|json|md|go|sh|ya?ml|toml)\b|"
+    r"\brun\s+#?\d+|\b\d{8,}\b",
+    re.IGNORECASE,
+)
+
+
+def settle_contentless(out):
+    """`out` with a content-free `continue` read as `stop`, its text kept as `contentless` (wl_checks queues it under `judge-contentless`): `next_action`, stripped of punctuation, is one of CONTENTLESS_ORDERS, or `reason` is under CONTENTLESS_REASON_MAX characters and names no item id, file or run while the order is at most CONTENTLESS_ORDER_WORDS words naming none either. Anything else unchanged."""
+    if out.get("verdict") != "continue":
+        return out
+    reason = str(out.get("reason") or "").strip()
+    action = str(out.get("next_action") or "")
+    bare = re.sub(r"[^\w\s/]", "", action).strip().lower()
+    empty_order = bare in CONTENTLESS_ORDERS
+    empty_reason = (
+        len(reason) < CONTENTLESS_REASON_MAX
+        and not _NAMES_SOMETHING.search(reason)
+        and len(bare.split()) <= CONTENTLESS_ORDER_WORDS
+        and not _NAMES_SOMETHING.search(action)
+    )
+    if not (empty_order or empty_reason):
+        return out
+    out = dict(out)
+    out["verdict"] = "stop"
+    out["contentless"] = M.N_JUDGE_CONTENTLESS % (reason[:200], action[:200])
+    out["reason"] = (
+        "%s [read as stop: the judge said continue with %s]"
+        % (reason, "no order" if empty_order else "a reason that names nothing")
+    )[:400]
+    out["next_action"] = ""
+    return out
 
 
 # ---- WHAT THE JUDGE IS TOLD IS ALREADY DONE (agent/plans/PLAN-stop-hook-effort.md E5) -------------
@@ -1190,7 +1333,7 @@ def report_bases_quiet(level, table=None):
     return tuple(k for k in REPORT_BASES if wl_effort.verdict(k, level, table) != wl_effort.BLOCK)
 
 
-def settle_by_effort(out, level, table=None, local_batch=False):
+def settle_by_effort(out, level, table=None, local_batch=False, receipt_run=None):
     """`out` with a `continue` whose `basis` is a report key that does not block at `level` read as `stop`, the judge's reason and order moved to `effort_advised` as one (key, text) pair; anything else unchanged.
 
     The order is sanitized on the way in (`sanitize_next_action`), because the field is blanked here and the sanitizer that closes `judge_verdict` never sees it again."""
@@ -1199,9 +1342,9 @@ def settle_by_effort(out, level, table=None, local_batch=False):
     basis = out.get("basis")
     if basis not in report_bases_quiet(level, table):
         return out
-    order = sanitize_next_action({"next_action": out.get("next_action")}, local_batch)[
-        "next_action"
-    ]
+    order = sanitize_next_action(
+        {"next_action": out.get("next_action")}, local_batch, receipt_run=receipt_run
+    )["next_action"]
     advised = "Stop-gate judge, advised at effort %s (%s does not block at this level): %s%s" % (
         level,
         basis,
@@ -1264,6 +1407,11 @@ LOCAL_BATCH_ORDERS = (
     (re.compile(r"\bopen\s+(?:a|the)\s+(?:draft\s+)?PR\b", re.IGNORECASE), "opening a PR"),
 )
 
+# The orders a receipt run in flight forbids (agent/plans/PLAN-stop-hook-retro-20261110.md R20261110.3, D3): vm:check rebuilds the CLI from the live tree on each rdc call, and the ci:quick receipt is keyed on the tree, so a main-checkout commit, edit, land or cherry-pick voids the run. Applied only while `receipt_run` is set; an order that names a lease or a worktree is a
+# writer's own tree and passes. The lead declined this order 12 times in one window, so it is rewritten, not advised against.
+RECEIPT_ORDERS = re.compile(r"\b(?:commit|edit|land|cherry-pick)\w*\b", re.IGNORECASE)
+RECEIPT_ORDER_OK = re.compile(r"\b(?:lease|worktree)s?\b", re.IGNORECASE)
+
 
 # ---- ADVICE RULES (agent/plans/PLAN-stop-hook-effort.md E5): orders the judge may not give because a repo rule it cannot see decides them. Checked in order after FORBIDDEN_ORDERS; the first match rewrites next_action with its own message.
 #
@@ -1300,8 +1448,8 @@ def _release_age_message(action):
 ADVICE_RULES = ((_PIN_ORDER, _release_age_message),)
 
 
-def sanitize_next_action(out, local_batch=False):
-    """Strip an operator-only directive from a judge verdict, in place, then an order a repo rule decides (ADVICE_RULES: a version pin inside the release-age soak), and with `local_batch` an order to open a PR before the batch completes (LOCAL_BATCH_ORDERS).
+def sanitize_next_action(out, local_batch=False, receipt_run=None):
+    """Strip an operator-only directive from a judge verdict, in place, then an order a repo rule decides (ADVICE_RULES: a version pin inside the release-age soak), with `local_batch` an order to open a PR before the batch completes (LOCAL_BATCH_ORDERS), and with `receipt_run` a main-checkout commit or edit while that run builds its receipt (RECEIPT_ORDERS).
 
     Matches on the ORDER, not on politeness: "merge 563" and "you should probably merge 563" are the same instruction. Deliberately narrow about `release`, since "release notes" and "the release channel" are ordinary nouns a legitimate next action may name, while "cut the release" is an order.
     """
@@ -1321,4 +1469,7 @@ def sanitize_next_action(out, local_batch=False):
             if pattern.search(action):
                 out["next_action"] = M.V_JUDGE_BATCH_ORDER_REJECTED % (action[:120],)
                 return out
+    if receipt_run and RECEIPT_ORDERS.search(action) and not RECEIPT_ORDER_OK.search(action):
+        out["next_action"] = M.V_JUDGE_RECEIPT_ORDER_REJECTED % (receipt_run, action[:120])
+        return out
     return out
