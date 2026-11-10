@@ -580,6 +580,150 @@ OWN_CASES = [
         "cd agent/plans && grep -rl x ../.. | xargs sed -i s/a/b/",
         False,
     ),
+    # 727fc4a4.1: allowed (rc 0) at 727fc4a419, where an anchored root holding `..` was read only at its `agent` segments; aafefb4b31 folds the `..`.
+    (
+        "grep -rl over agent/plans/../revi*s piped to xargs sed -i",
+        "grep -rl x agent/plans/../revi*s | xargs sed -i s/a/b/",
+        True,
+    ),
+    (
+        "a python write over glob of agent/plans/../reviews",
+        _py(
+            "import glob\n"
+            "for f in glob.glob('agent/plans/../reviews/**/*.md', recursive=True):\n"
+            "    open(f, 'w')"
+        ),
+        True,
+    ),
+    (
+        "grep -rl over agent/plans/../plans piped to xargs sed -i",
+        "grep -rl x agent/plans/../plans | xargs sed -i s/a/b/",
+        False,
+    ),
+    # 727fc4a4.2: rg over one file prints its lines, not names; the first two were refused (rc 2) at 727fc4a419, which read every rg run as a listing.
+    (
+        "python writes paths rg prints out of one review file",
+        _py(
+            "import subprocess\n"
+            "out = subprocess.run(['rg', '-o', 'packages/[a-z/]+', "
+            "'agent/reviews/1104-1/clean.jsonl'], capture_output=True, text=True).stdout\n"
+            "for p in out.split():\n"
+            "    open(p, 'w')"
+        ),
+        False,
+    ),
+    (
+        "python writes paths rg prints out of one file under cwd agent/reviews",
+        _py(
+            "import subprocess\n"
+            "out = subprocess.run(['rg', '-o', 'packages/[a-z/]+', 'clean.jsonl'], "
+            "capture_output=True, text=True, cwd='agent/reviews/1104-1').stdout\n"
+            "for p in out.split():\n"
+            "    open(p, 'w')"
+        ),
+        False,
+    ),
+    (
+        "rg over the agent directory piped to xargs sed -i",
+        "rg -o x agent | xargs sed -i s/a/b/",
+        True,
+    ),
+    (
+        "rg -H over one review file cut to names and fed to sed -i",
+        "rg -H x agent/plans/../revi*s/1104-1/clean.jsonl | cut -d: -f1 | xargs sed -i s/a/b/",
+        True,
+    ),
+    (
+        "rg over two roots under agent piped to xargs sed -i",
+        "rg x agent/plans agent | xargs sed -i s/a/b/",
+        True,
+    ),
+    # A search that prints lines crashed the guard (TypeError on the None roots, so it decided nothing), measured 2026-11-10.
+    (
+        "grep over one plan file piped to xargs sed -i",
+        "grep x agent/plans/a.md | xargs sed -i s/a/b/",
+        False,
+    ),
+    (
+        "a line-printing grep before a review write",
+        "grep x agent/plans/a.md | xargs echo; sed -i s/a/b/ agent/reviews/x/y.md",
+        True,
+    ),
+    # 727fc4a4.3: the listing name is cleared by a later straight-line rebinding; the first two were refused (rc 2) at 727fc4a419.
+    (
+        "a listing loop name rebound to /tmp before a write",
+        _py(
+            "import glob\n"
+            "for f in glob.glob('agent/**/*.md', recursive=True):\n"
+            "    print(f)\n"
+            "f = '/tmp/x'\n"
+            "open(f, 'w')"
+        ),
+        False,
+    ),
+    (
+        "a listing loop name rebound to /tmp inside the loop before a write",
+        _py(
+            "import glob\n"
+            "for f in glob.glob('agent/**/*.md', recursive=True):\n"
+            "    f = '/tmp/x'\n"
+            "    open(f, 'w')"
+        ),
+        False,
+    ),
+    (
+        "a listing loop name rebound to /tmp only after the write",
+        _py(
+            "import glob\n"
+            "for f in glob.glob('agent/**/*.md', recursive=True):\n"
+            "    open(f, 'w')\n"
+            "    f = '/tmp/x'"
+        ),
+        True,
+    ),
+    (
+        "a while loop that rebinds the name to a listing after the write",
+        _py(
+            "import glob\n"
+            "f = '/tmp/x'\n"
+            "while True:\n"
+            "    open(f, 'w')\n"
+            "    f = glob.glob('agent/**/*.md', recursive=True)[0]"
+        ),
+        True,
+    ),
+    (
+        "a listing name rebound to /tmp in one branch only",
+        _py(
+            "import glob\n"
+            "f = glob.glob('agent/**/*.md', recursive=True)[0]\n"
+            "if f:\n"
+            "    f = '/tmp/x'\n"
+            "open(f, 'w')"
+        ),
+        True,
+    ),
+    (
+        "a comprehension rebinding the name to a listing in the write",
+        _py(
+            "import glob\n"
+            "files = glob.glob('agent/**/*.md', recursive=True)\n"
+            "f = '/tmp/x'\n"
+            "[open(f, 'w') for f in files]"
+        ),
+        True,
+    ),
+    (
+        "a name rebound to another listing value before the write",
+        _py(
+            "import glob\n"
+            "files = glob.glob('agent/**/*.md', recursive=True)\n"
+            "f = '/tmp/x'\n"
+            "f = files[0]\n"
+            "open(f, 'w')"
+        ),
+        True,
+    ),
 ]
 
 MUTANTS = [
@@ -661,7 +805,7 @@ MUTANTS = [
     (
         "a Python target bound to a listing not read (d218ebf3)",
         (
-            "if any(_listing_target(t, listed, calls, bound, review_names) for t in targets):",
+            "if any(_listing_target(t, listed, calls, bound, review_names, parents) for t in targets):",
             "if False:",
         ),
     ),
@@ -702,6 +846,29 @@ MUTANTS = [
         "a listing root's .. not folded (#6fdc7136)",
         ("    return _root_walks_reviews(folded)\n", "    return False\n"),
     ),
+    (
+        "every rg run read as a listing (727fc4a4.2)",
+        (
+            "        lists = len(operands) != 1 or _names_a_directory(operands[0])\n",
+            "        lists = True\n",
+        ),
+    ),
+    (
+        "rg over one directory read as one file (727fc4a4.2)",
+        ("    return not looks_like_file or os.path.isdir(text)", "    return False"),
+    ),
+    (
+        "a search printing lines joined as roots (crash, 2026-11-10)",
+        ("    if roots is None:\n        return None\n    where = ", "    where = "),
+    ),
+    (
+        "a listing name kept past a straight-line rebinding (727fc4a4.3)",
+        ("            if value is None or carries(value):\n", "            if True:\n"),
+    ),
+    (
+        "any rebinding clears a listing name (727fc4a4.3)",
+        ("            if value is None or carries(value):\n", "            if False:\n"),
+    ),
 ]
 
 
@@ -727,7 +894,11 @@ def _planted(shared, old, new):
 
     def run(_stem, payload):
         event = hookio.Event(json.dumps(payload))
-        rc = ns["run"](event)
+        # dispatch.py reports a guard that raises and lets the command through, so a planted crash (the errors a broken guard raises) reads as allowed.
+        try:
+            rc = ns["run"](event)
+        except (TypeError, AttributeError, KeyError, IndexError, ValueError) as exc:
+            return 0, "guard crashed: %r" % exc
         _rc, out, err = event.result(rc)
         return rc, out + err
 

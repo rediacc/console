@@ -118,6 +118,53 @@ CASES = [
         % LOG,
         True,
     ),
+    # 39b711fa.1: a program held in a literal and RUN is code. The six refusals were allowed (rc 0) at 39b711fa66, where the whole held program was one constant.
+    (
+        "a round-log glob write handed to exec",
+        "python3 - <<'PY'\nexec('''import glob\nfor p in glob.glob('agent/*.md'):\n    open(p, 'w').write('')''')\nPY",
+        True,
+    ),
+    (
+        "a round-log glob write bound to a name and compiled",
+        "python3 - <<'PY'\nprog = '''import glob\nfor p in glob.glob('agent/*.md'):\n    open(p, 'w').write('')'''\nexec(compile(prog, 'x', 'exec'))\nPY",
+        True,
+    ),
+    (
+        "a round-log glob write run through an alias of exec",
+        "python3 - <<'PY'\nf = exec\nf('''import glob\nfor p in glob.glob('agent/*.md'):\n    open(p, 'w').write('')''')\nPY",
+        True,
+    ),
+    (
+        "a round-log glob write concatenated into exec",
+        "python3 - <<'PY'\nhead = 'import glob\\n'\nexec(head + 'for p in glob.glob(\"agent/*.md\"):\\n    open(p, \"w\").write(\"\")')\nPY",
+        True,
+    ),
+    (
+        "a round-log glob write held two levels deep",
+        "python3 - <<'PY'\nexec(\"exec('''import glob\\\\nfor p in glob.glob(\\\\'agent/*.md\\\\'):\\\\n    open(p, \\\\'w\\\\').write(\\\\'\\\\')''')\")\nPY",
+        True,
+    ),
+    (
+        "a held program that does not parse, run by exec",
+        "python3 - <<'PY'\nexec('''print 'python 2'\nimport glob\nfor p in glob.glob('agent/*.md'):\n    open(p, 'w').write('')''')\nPY",
+        True,
+    ),
+    (
+        "exec of a held program that writes outside any log directory",
+        "python3 - <<'PY'\nexec('''import glob\nfor p in glob.glob('workers/src/*.ts'):\n    open(p, 'w').write('')''')\nPY",
+        False,
+    ),
+    # 39b711fa.3: python that does not parse is read by the quote regex, so its round-log glob stays in play (refused at 39b711fa66 too, but by no row; the two fallback mutants each turn the refusal).
+    (
+        "python that does not parse writing a round-log glob",
+        "python3 - <<'PY'\nprint 'python 2'\nimport glob\nfor p in glob.glob('agent/*.md'):\n    open(p, 'w').write('')\nPY",
+        True,
+    ),
+    (
+        "python that does not parse writing outside any log directory",
+        "python3 - <<'PY'\nprint 'python 2'\nimport glob\nfor p in glob.glob('workers/src/*.ts'):\n    open(p, 'w').write('')\nPY",
+        False,
+    ),
 ]
 
 # The two readers overlap (each alone refuses the same rows), so the plant takes both.
@@ -161,6 +208,41 @@ MUTANTS = [
                 "    return code, None\n",
             ),
         ],
+    ),
+    (
+        "a program run by exec read as one constant (39b711fa.1)",
+        [
+            (
+                "    if _runs_code(tree):\n        for literal, at in held:\n            literals.extend(_held_literals(literal, at, 1))\n",
+                "",
+            ),
+        ],
+    ),
+    (
+        "a held program not read past one level (39b711fa.1)",
+        [
+            (
+                "        for text in held:\n            literals.extend(_held_literals(text, at, depth + 1))\n",
+                "        pass\n",
+            ),
+        ],
+    ),
+    (
+        "a held program that does not parse yields no literal (39b711fa.1)",
+        [("        return _quoted_literals(program, at)\n", "        return []\n")],
+    ),
+    (
+        "python that does not parse yields no literal (39b711fa.3)",
+        [
+            (
+                "    except (SyntaxError, ValueError, RecursionError):\n        return code, None\n    starts = [0",
+                "    except (SyntaxError, ValueError, RecursionError):\n        return code, []\n    starts = [0",
+            ),
+        ],
+    ),
+    (
+        "the quote regex fallback reads nothing (39b711fa.3)",
+        [("        literals = _quoted_literals(code)\n", "        literals = []\n")],
     ),
 ]
 

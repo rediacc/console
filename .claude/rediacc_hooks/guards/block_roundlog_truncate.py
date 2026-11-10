@@ -1300,17 +1300,14 @@ def _program_could_name_log(code, family="python", context=None):
 
     INERT IS PROVEN, NEVER PRESUMED (review db54423c.1). A glob literal names files only through something that expands it, and the set of things that can is open: a library (shelljs, Open3, python `sh`, zx, execa, globby), a shell-out, a computed name, a directory listing the literal filters. So a glob literal counts unless every import is on a short inert list and the text holds none of those constructs; an unknown module is enough to keep the log in play, and the program is then read by `_follow`, which refuses what it cannot follow.
 
-    ONE NARROW EXEMPTION, for #cad8d610: a literal that is exactly a comment delimiter, held as list text or printed, in a program with no shell-out, computed name or glob call (`_delimiter_as_text`). The two live generators it was found on require a module from `node_modules` and so are not inert; they pass on this exemption alone. NAMED RESIDUAL: a delimiter placed in a list and later read back out of it as a pattern by a library this text does not name, a glob ASSEMBLED at runtime, and a module name assembled at runtime.
+    ONE NARROW EXEMPTION, for #cad8d610: a literal that is exactly a comment delimiter, held as list text or printed, in a program with no shell-out, computed name or glob call (`_delimiter_as_text`). The two live generators it was found on require a module from `node_modules` and so are not inert; they pass on this exemption alone. NAMED RESIDUAL: a delimiter placed in a list and later read back out of it as a pattern by a library this text does not name, a glob ASSEMBLED at runtime, a module name assembled at runtime, a python program handed to `exec`, `eval` or `compile` whose text no literal holds (decoded, read from a file, fetched: `exec(base64.b64decode(...))`), and a code runner reached by a computed name (`getattr(builtins, 'ex' + 'ec')`); a program held in a literal is read (`_program_literals`, 39b711fa.2).
     """
     text, literals = _program_literals(code, family)
     if _LOG_STEM in (text if literals is None else "\n".join(lit for lit, _at in literals)):
         return True
     if literals is None:
-        # Every single- or double-quoted string literal, escapes kept (shell, JS, perl and ruby alike, and python that does not parse): an EXTRACTOR over program text the walk already chose, so it is local here rather than a module pattern a sentence could be probed against.
-        literals = [
-            (m.group(0)[1:-1], m.start())
-            for m in re.finditer(r"'(?:[^'\\\n]|\\.)*'|\"(?:[^\"\\\n]|\\.)*\"", code)
-        ]
+        # Every single- or double-quoted string literal, escapes kept (shell, JS, perl and ruby alike, and python that does not parse): an EXTRACTOR over program text the walk already chose (`_QUOTED`).
+        literals = _quoted_literals(code)
     meeting = [
         literal
         for literal, at in literals
@@ -1323,33 +1320,87 @@ def _program_could_name_log(code, family="python", context=None):
     return bool(meeting) and not _program_inert(code, family)
 
 
+# The python builtins that run a string as code: a program naming one may run any of its constants (39b711fa.1).
+_PY_CODE_RUNNERS = frozenset(("exec", "eval", "compile"))
+# How deep a program held in a string held in a program is read before the rest is read by the quote regex.
+_PY_CODE_DEPTH = 4
+# Every single- or double-quoted string literal, escapes kept: the reading for a program the parser cannot read.
+_QUOTED = re.compile(r"'(?:[^'\\\n]|\\.)*'|\"(?:[^\"\\\n]|\\.)*\"")
+
+
+def _quoted_literals(code, at=0):
+    """Every quoted literal of `code` as the quote regex reads it, each at `at` plus its offset."""
+    return [(m.group(0)[1:-1], at + m.start()) for m in _QUOTED.finditer(code)]
+
+
 def _program_literals(code, family):
     """`(text, literals)`: a python program's string constants as the parser sees them, each with its offset in `text` (the dedented program), or `(code, None)` for another language or python that does not parse.
 
     A PROGRAM HELD AS DATA IS NOT CODE (#6fdc7136). The quote regex read a triple-quoted string as a run of short literals, so a debug probe holding `prog='''... Path('agent').rglob('*.md') ... p.write_text(...)'''` and handing it to an imported guard function put `'*.md'` in play, and the unfollowable import then refused it as a round-log truncation (rc 2, measured 2026-11-10). The parser sees one constant, the whole program text, and judges that string as the one value it is; a comment is no literal at all.
+
+    UNLESS THE PROGRAM CAN RUN IT (39b711fa.1). A program that names `exec`, `eval` or `compile` (`_runs_code`) may hand any of its constants to one, directly, through a name, an alias of the builtin, a concatenation or a `.replace`, and the reading above let `exec('''for p in glob.glob('agent/*.md'): open(p, 'w')''')` through (rc 0, measured 2026-11-10; rc 2 under the quote regex). In such a program every constant is also read as a program held in a string (`_held_literals`): parsed to `_PY_CODE_DEPTH` levels, and by the quote regex below that or where it does not parse, its literals placed at the constant's offset.
     """
     if family != "python":
         return code, None
     text = textwrap.dedent(code)
     try:
         tree = ast.parse(text)
-        nodes = [
-            node
-            for node in ast.walk(tree)
-            if isinstance(node, ast.Constant) and isinstance(node.value, (str, bytes))
-        ]
     except (SyntaxError, ValueError, RecursionError):
         return code, None
     starts = [0, *(m.end() for m in re.finditer(r"\r\n|\r|\n", text))]
-    literals = []
-    for node in nodes:
-        value = node.value
-        literal = value.decode("utf-8", "replace") if isinstance(value, bytes) else value
+
+    def offset(node):
         line = starts[node.lineno - 1] if node.lineno - 1 < len(starts) else 0
         row = text[line:].split("\n", 1)[0]
-        at = line + len(row.encode("utf-8")[: node.col_offset].decode("utf-8", "replace"))
-        literals.append((literal, at))
+        return line + len(row.encode("utf-8")[: node.col_offset].decode("utf-8", "replace"))
+
+    held = [(literal, offset(node)) for literal, node in _string_constants(tree)]
+    literals = list(held)
+    if _runs_code(tree):
+        for literal, at in held:
+            literals.extend(_held_literals(literal, at, 1))
     return text, literals
+
+
+def _string_constants(tree):
+    """Every str or bytes constant of a python tree, as `(text, node)`."""
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Constant) and isinstance(node.value, (str, bytes)):
+            value = node.value
+            yield (value.decode("utf-8", "replace") if isinstance(value, bytes) else value), node
+
+
+def _runs_code(tree):
+    """Does a python tree name `exec`, `eval` or `compile`, bare or as `builtins.<name>`? A name, not a call: `f = exec; f(prog)` runs code too."""
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Name) and node.id in _PY_CODE_RUNNERS:
+            return True
+        if (
+            isinstance(node, ast.Attribute)
+            and node.attr in _PY_CODE_RUNNERS
+            and isinstance(node.value, ast.Name)
+            and node.value.id in ("builtins", "__builtins__")
+        ):
+            return True
+    return False
+
+
+def _held_literals(program, at, depth):
+    """The literals of a program held in a string at offset `at`: its constants when it parses, each read again as a held program when it names a code runner (`_runs_code`), while `depth` is within `_PY_CODE_DEPTH`; the quote regex's reading when it does not parse or lies deeper."""
+    tree = None
+    if depth <= _PY_CODE_DEPTH:
+        try:
+            tree = ast.parse(textwrap.dedent(program))
+        except (SyntaxError, ValueError, RecursionError):
+            tree = None
+    if tree is None:
+        return _quoted_literals(program, at)
+    held = [text for text, _node in _string_constants(tree)]
+    literals = [(text, at) for text in held]
+    if _runs_code(tree):
+        for text in held:
+            literals.extend(_held_literals(text, at, depth + 1))
+    return literals
 
 
 _redirects = shellscan.analysis_redirects

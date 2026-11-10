@@ -1072,7 +1072,8 @@ def _python_writes_review(program, depth=0):
         return True
     # A target bound to what a listing over the review directory or an ancestor returns (d218ebf3), and a command handed to a shell with such a name in it, rendered as a review path.
     listed, calls = _python_listing_names(tree, imports, bound, review_names)
-    if any(_listing_target(t, listed, calls, bound, review_names) for t in targets):
+    parents = {id(c): p for p in ast.walk(tree) for c in ast.iter_child_nodes(p)}
+    if any(_listing_target(t, listed, calls, bound, review_names, parents) for t in targets):
         return True
     unbound = {k: v for k, v in bound.items() if k not in listed}
     return any(
@@ -1192,7 +1193,8 @@ def _root_walks_reviews(path):
 
 # Short options whose value is the rest of the bundle or the next word, for each searcher; `e` and `f` give the pattern. rg's `-r` is `--replace`, so its listing flags are not grep's.
 _SEARCH_VALUE_LETTERS = {"grep": "efmABCdD", "rg": "efgrtTmABCjM"}
-_GREP_LISTING_LETTERS = frozenset("lLrR")
+_SEARCH_LISTING_LETTERS = {"grep": frozenset("lLrR"), "rg": frozenset("lH")}
+_FILE_SUFFIX = re.compile(r"\A[^.].*\.[A-Za-z0-9]+\Z")
 _SEARCH_LISTING_LONG = frozenset(
     (
         "--files-with-matches",
@@ -1205,10 +1207,10 @@ _SEARCH_LISTING_LONG = frozenset(
 
 
 def _search_roots(name, argv):
-    """The roots grep or rg walks when it prints file names, or None when it prints none: grep needs -l, -L, -r or -R (or their long forms); rg names files whenever it searches more than one. The pattern operand is dropped unless -e, -f or `--files` gives it."""
+    """The roots grep or rg walks when it prints file names, or None when it prints none: grep needs -l, -L, -r or -R (or their long forms); rg needs -l, -H or their long forms, `--files`, more than one root, or a root that is a directory (`_names_a_directory`), so a single file root (`rg -o x agent/reviews/a/b.jsonl`) prints its lines and lists nothing (727fc4a4.2). The pattern operand is dropped unless -e, -f or `--files` gives it."""
     family = "rg" if name == "rg" else "grep"
     values = _SEARCH_VALUE_LETTERS[family]
-    lists = family == "rg"
+    lists = False
     pattern_given = False
     operands = []
     skip = ended = False
@@ -1225,6 +1227,7 @@ def _search_roots(name, argv):
         if w.startswith("--"):
             key = w.split("=", 1)[0]
             lists = lists or key in _SEARCH_LISTING_LONG
+            lists = lists or (family == "rg" and key == "--with-filename")
             if key in ("--regexp", "--file", "--files"):
                 pattern_given = True
                 skip = key != "--files" and "=" not in w
@@ -1234,12 +1237,26 @@ def _search_roots(name, argv):
                 pattern_given = pattern_given or letter in "ef"
                 skip = at == len(w) - 2
                 break
-            lists = lists or (family == "grep" and letter in _GREP_LISTING_LETTERS)
-    if not lists:
-        return None
+            lists = lists or letter in _SEARCH_LISTING_LETTERS[family]
     if not pattern_given:
         operands = operands[1:]
+    if family == "rg" and not lists:
+        lists = len(operands) != 1 or _names_a_directory(operands[0])
+    if not lists:
+        return None
     return operands or ["."]
+
+
+def _names_a_directory(root):
+    """Can an rg root be a directory, so rg prints the names of the files it finds there? Only a word that ends in a segment with a file suffix (`b.jsonl`), holds no glob character, and is no directory on disk reads as a file; anything else is read as a directory, the fail-safe direction."""
+    text = str(root)
+    last = "" if text.endswith("/") else text.rsplit("/", 1)[-1]
+    looks_like_file = (
+        bool(_FILE_SUFFIX.search(last))
+        and not any(ch in text for ch in _GLOB_OR_BRACE)
+        and "$" not in text
+    )
+    return not looks_like_file or os.path.isdir(text)
 
 
 def _listing_roots(run):
@@ -1271,6 +1288,9 @@ def _listing_roots(run):
         roots = [os.path.join(here, r) if here else r for r in _operands(argv[at + 1 :])]
         roots = roots or [here or "."]
     else:
+        return None
+    # A search that prints lines, not names, lists nothing; joining its None crashed the guard on `grep x agent/plans/a.md | xargs sed -i ...` (TypeError, measured 2026-11-10), so the guard decided nothing.
+    if roots is None:
         return None
     where = str(run.cwd) if isinstance(run.cwd, str) and run.cwd else ""
     return [r if not where or r.startswith(("/", "~")) else where + "/" + r for r in roots]
@@ -1417,14 +1437,82 @@ def _python_listing_names(tree, imports, bound, review_names):
     return names, calls
 
 
-def _listing_target(expr, names, calls, bound, review_names):
-    """Is a write target a path a listing over the review directory produced? It must hold a listing name or call; it is cleared only when it renders (a listing name as `agent/reviews/_`) to a path whose literal head, before the first value the ast cannot spell, is a directory that is no ancestor of the review directory: `'/tmp/out/' + basename(f)` is a copy out, and `f`, `f.with_suffix(...)`, `'agent/' + relpath(f)` and `os.path.join(ROOT, f)` with ROOT the repository are not."""
-    if not any(
-        (isinstance(n, ast.Name) and n.id in names) or id(n) in calls for n in ast.walk(expr)
-    ):
+_SCOPES = (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef, ast.Lambda, ast.Module)
+_LOOPS = (ast.For, ast.AsyncFor, ast.While)
+
+
+def _binds(node, name):
+    """Does anything inside `node` store to `name`?"""
+    return any(
+        isinstance(n, ast.Name) and n.id == name and isinstance(n.ctx, ast.Store)
+        for n in ast.walk(node)
+    )
+
+
+def _straight_line_value(node, name, parents):
+    """The value of the plain assignment (`name = value`, `name: T = value`) that binds `name` last before `node` on a straight line through the enclosing blocks, or None when the binding reaching it is anything else: a loop or compound statement binding it, a binding inside the statement itself, or none before the enclosing function or module.
+
+    A REBINDING CLEARS A LISTING NAME (727fc4a4.3). The listing names are bound flow-insensitively, so after `for f in glob.glob('agent/**/*.md', recursive=True): ...` a later `f = '/tmp/x'; open(f, 'w')` was refused. A name whose reaching binding is a plain assignment of a value carrying no listing is cleared; a loop around the write that binds the name keeps it, since the back edge may bring the listing value round.
+    """
+    cur = node
+    innermost = True
+    while True:
+        parent = parents.get(id(cur))
+        if parent is None:
+            return None
+        if isinstance(cur, ast.stmt):
+            # A walrus or comprehension in the write's own statement (`[open(f, 'w') for f in listing]`) binds before the write reads.
+            if innermost and _binds(cur, name):
+                return None
+            innermost = False
+            for field in ("body", "orelse", "finalbody", "handlers"):
+                block = getattr(parent, field, None)
+                if not isinstance(block, list) or not any(s is cur for s in block):
+                    continue
+                for earlier in reversed(block[: [id(s) for s in block].index(id(cur))]):
+                    if not _binds(earlier, name):
+                        continue
+                    if isinstance(earlier, ast.Assign) and all(
+                        isinstance(t, ast.Name) for t in earlier.targets
+                    ):
+                        return earlier.value
+                    if (
+                        isinstance(earlier, ast.AnnAssign)
+                        and isinstance(earlier.target, ast.Name)
+                        and earlier.value is not None
+                    ):
+                        return earlier.value
+                    return None
+                break
+            if isinstance(parent, _LOOPS) and _binds(parent, name):
+                return None
+        if isinstance(parent, _SCOPES):
+            return None
+        cur = parent
+
+
+def _listing_target(expr, names, calls, bound, review_names, parents):
+    """Is a write target a path a listing over the review directory produced? It must hold a listing name whose reaching binding is a listing (`_straight_line_value`), or a listing call; it is cleared only when it renders (a live listing name as `agent/reviews/_`, a cleared one as its reaching value) to a path whose literal head, before the first value the ast cannot spell, is a directory that is no ancestor of the review directory: `'/tmp/out/' + basename(f)` is a copy out, and `f`, `f.with_suffix(...)`, `'agent/' + relpath(f)` and `os.path.join(ROOT, f)` with ROOT the repository are not."""
+
+    def carries(value):
+        return any(
+            (isinstance(n, ast.Name) and n.id in names) or id(n) in calls for n in ast.walk(value)
+        )
+
+    live: set = set()
+    cleared: dict = {}
+    for n in ast.walk(expr):
+        if isinstance(n, ast.Name) and n.id in names:
+            value = _straight_line_value(n, n.id, parents)
+            if value is None or carries(value):
+                live.add(n.id)
+            else:
+                cleared[n.id] = [value]
+    if not live and not any(id(n) in calls for n in ast.walk(expr)):
         return False
     unbound = {k: v for k, v in bound.items() if k not in names}
-    text = _render(expr, unbound, review_names | names)
+    unbound.update((k, v) for k, v in cleared.items() if k not in live)
+    text = _render(expr, unbound, review_names | live)
     if REVIEW_WORD.search(text):
         return True
     segs = text.split("/")
