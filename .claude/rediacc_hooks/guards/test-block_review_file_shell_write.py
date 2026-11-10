@@ -8,11 +8,14 @@ The cases below are this guard's own, added to the shared shell cases: the opera
     test-block_review_file_shell_write.py
 """
 
+import atexit
 import importlib
 import importlib.util
 import json
 import pathlib
+import shutil
 import sys
+import tempfile
 import typing
 
 SHARED = pathlib.Path(__file__).resolve().with_name("test-block_review_file_edit.py")
@@ -28,6 +31,15 @@ for f in files:
     n=re.sub(r'AKIA[A-Z0-9]{16}',lambda m:'AKIA…'+m.group(0)[-4:],s)
     if n!=s: open(f,'w').write(n); print('redacted',f)
 EOF"""
+
+
+# ffbd9211.2: a review directory whose name reads as a file, present only under a directory the run reaches by its own `cd`, never under the guard process's directory or the repository root.
+_DOTTED = pathlib.Path(tempfile.mkdtemp(prefix="test-review-dotted-"))
+atexit.register(shutil.rmtree, str(_DOTTED), True)
+(_DOTTED / "agent" / "reviews" / "1104-1.v2").mkdir(parents=True)
+_DOTTED_REVIEWS = str(_DOTTED / "agent" / "revi*s")
+# A listing loop that leaves `f` naming a review file, for the ffbd9211.1 rows.
+_LISTED = "import glob\nfor f in glob.glob('agent/**/*.md', recursive=True):\n    print(f)\n"
 
 
 def _py(code):
@@ -724,6 +736,173 @@ OWN_CASES = [
         ),
         True,
     ),
+    # ffbd9211.1: a write in a try's handler, else or finally block, or a match case, read the plain assignment before the whole statement; the four refusals were allowed (rc 0) at ffbd92113d.
+    (
+        "a try binding a listing, the write in its except handler",
+        _py(
+            "import glob\n"
+            "f = '/tmp/x'\n"
+            "try:\n"
+            "    f = glob.glob('agent/**/*.md', recursive=True)[0]\n"
+            "    raise ValueError\n"
+            "except ValueError:\n"
+            "    open(f, 'w')"
+        ),
+        True,
+    ),
+    (
+        "a try binding a listing, the write in its else block",
+        _py(
+            "import glob\n"
+            "f = '/tmp/x'\n"
+            "try:\n"
+            "    f = glob.glob('agent/**/*.md', recursive=True)[0]\n"
+            "except ValueError:\n"
+            "    pass\n"
+            "else:\n"
+            "    open(f, 'w')"
+        ),
+        True,
+    ),
+    (
+        "a try binding a listing, the write in its finally block",
+        _py(
+            "import glob\n"
+            "f = '/tmp/x'\n"
+            "try:\n"
+            "    f = glob.glob('agent/**/*.md', recursive=True)[0]\n"
+            "finally:\n"
+            "    open(f, 'w')"
+        ),
+        True,
+    ),
+    (
+        "a match capturing a listing element, the write in its case",
+        _py(
+            "import glob\n"
+            "f = '/tmp/x'\n"
+            "match glob.glob('agent/**/*.md', recursive=True):\n"
+            "    case [f, *_]:\n"
+            "        open(f, 'w')"
+        ),
+        True,
+    ),
+    (
+        "a listing name rebound to /tmp in the except handler before the write",
+        _py(
+            _LISTED + "try:\n"
+            "    f = glob.glob('agent/**/*.md', recursive=True)[0]\n"
+            "except ValueError:\n"
+            "    f = '/tmp/x'\n"
+            "    open(f, 'w')"
+        ),
+        False,
+    ),
+    (
+        "a listing name rebound to /tmp in a try body before the write",
+        _py(_LISTED + "try:\n    f = '/tmp/x'\n    open(f, 'w')\nexcept ValueError:\n    pass"),
+        False,
+    ),
+    (
+        "a match capturing a listing element, the write rebinds first",
+        _py(
+            "import glob\n"
+            "match glob.glob('agent/**/*.md', recursive=True):\n"
+            "    case [f, *_]:\n"
+            "        f = '/tmp/x'\n"
+            "        open(f, 'w')"
+        ),
+        False,
+    ),
+    # ffbd9211.2: the directory test read the guard process's directory, so a directory named like a file under the run's own cwd read as one file; the refusal was allowed (rc 0) at ffbd92113d.
+    (
+        "python writes paths rg prints out of a dotted review directory under cwd",
+        _py(
+            "import subprocess\n"
+            "out = subprocess.run(['rg', '-o', 'packages/[a-z/]+', '1104-1.v2'], "
+            "capture_output=True, text=True, cwd=%r).stdout\n"
+            "for p in out.split():\n"
+            "    open(p, 'w')" % _DOTTED_REVIEWS
+        ),
+        True,
+    ),
+    (
+        "python writes paths rg prints out of a dotted review file under cwd",
+        _py(
+            "import subprocess\n"
+            "out = subprocess.run(['rg', '-o', 'packages/[a-z/]+', '1104-1.v3'], "
+            "capture_output=True, text=True, cwd=%r).stdout\n"
+            "for p in out.split():\n"
+            "    open(p, 'w')" % _DOTTED_REVIEWS
+        ),
+        False,
+    ),
+    # ffbd9211.3: grep -H and grep over two file roots print each line with its file; the three refusals were allowed (rc 0) at ffbd92113d.
+    (
+        "grep -H over one review file cut to names and fed to sed -i",
+        "grep -H x agent/plans/../revi*s/1104-1/clean.jsonl | cut -d: -f1 | xargs sed -i s/a/b/",
+        True,
+    ),
+    (
+        "grep --with-filename over one review file cut to names and fed to sed -i",
+        (
+            "grep --with-filename x agent/plans/../revi*s/1104-1/clean.jsonl "
+            "| cut -d: -f1 | xargs sed -i s/a/b/"
+        ),
+        True,
+    ),
+    (
+        "grep over two file roots cut to names and fed to sed -i",
+        (
+            "grep x agent/plans/a.md agent/plans/../revi*s/1104-1/clean.jsonl "
+            "| cut -d: -f1 | xargs sed -i s/a/b/"
+        ),
+        True,
+    ),
+    (
+        "grep -r over one review file cut to names and fed to sed -i",
+        "grep -r x agent/plans/../revi*s/1104-1/clean.jsonl | cut -d: -f1 | xargs sed -i s/a/b/",
+        True,
+    ),
+    # The three rows above are refused by the two-root reading too: `run.feed` is the word bag of every stage in front, so grep reads `cut -d: -f1` as more roots. The two below hand grep its words alone.
+    (
+        "python writes the files grep -H names in one review file",
+        _py(
+            "import subprocess\n"
+            "out = subprocess.run(['grep', '-H', 'x', 'agent/reviews/1104-1/clean.jsonl'], "
+            "capture_output=True, text=True).stdout\n"
+            "for line in out.splitlines():\n"
+            "    open(line.split(':')[0], 'w')"
+        ),
+        True,
+    ),
+    (
+        "python writes the files grep --with-filename names in one review file",
+        _py(
+            "import subprocess\n"
+            "out = subprocess.run(['grep', '--with-filename', 'x', "
+            "'agent/reviews/1104-1/clean.jsonl'], capture_output=True, text=True).stdout\n"
+            "for line in out.splitlines():\n"
+            "    open(line.split(':')[0], 'w')"
+        ),
+        True,
+    ),
+    (
+        "python writes paths grep prints out of one review file",
+        _py(
+            "import subprocess\n"
+            "out = subprocess.run(['grep', '-o', 'packages/[a-z/]+', "
+            "'agent/reviews/1104-1/clean.jsonl'], capture_output=True, text=True).stdout\n"
+            "for p in out.split():\n"
+            "    open(p, 'w')"
+        ),
+        False,
+    ),
+    (
+        "grep -H over one plan file cut to names and fed to sed -i",
+        "grep -H x agent/plans/a.md | cut -d: -f1 | xargs sed -i s/a/b/",
+        False,
+    ),
 ]
 
 MUTANTS = [
@@ -849,13 +1028,16 @@ MUTANTS = [
     (
         "every rg run read as a listing (727fc4a4.2)",
         (
-            "        lists = len(operands) != 1 or _names_a_directory(operands[0])\n",
+            "        lists = len(operands) != 1 or _names_a_directory(operands[0], where)\n",
             "        lists = True\n",
         ),
     ),
     (
         "rg over one directory read as one file (727fc4a4.2)",
-        ("    return not looks_like_file or os.path.isdir(text)", "    return False"),
+        (
+            "    return any(os.path.isdir(path) for path in _disk_readings(text, where))",
+            "    return False",
+        ),
     ),
     (
         "a search printing lines joined as roots (crash, 2026-11-10)",
@@ -868,6 +1050,62 @@ MUTANTS = [
     (
         "any rebinding clears a listing name (727fc4a4.3)",
         ("            if value is None or carries(value):\n", "            if False:\n"),
+    ),
+    (
+        "only a loop around the write keeps a listing name (ffbd9211.1)",
+        (
+            "        if _binds(parent, name):\n            return None\n        cur = parent\n",
+            (
+                "        if isinstance(parent, (ast.For, ast.While)) and _binds(parent, name):\n"
+                "            return None\n        cur = parent\n"
+            ),
+        ),
+    ),
+    (
+        "any binding around the write keeps a listing name (ffbd9211.1)",
+        (
+            "                    if isinstance(earlier, ast.Assign) and all(\n",
+            "                    if False and all(\n",
+        ),
+    ),
+    (
+        "a match capture read as no binding (ffbd9211.1)",
+        (
+            "        if isinstance(n, (ast.ExceptHandler, ast.MatchAs, ast.MatchStar)) and n.name == name:\n",
+            "        if isinstance(n, ast.ExceptHandler) and n.name == name:\n",
+        ),
+    ),
+    (
+        "a match subject not carried to its captures (ffbd9211.1)",
+        (
+            "            pairs.extend((case.pattern, node.subject) for case in node.cases)\n",
+            "            pass\n",
+        ),
+    ),
+    (
+        "an rg root tested from the process directory only (ffbd9211.2)",
+        (
+            "        words.insert(0, os.path.join(os.path.expanduser(str(where)), text))\n",
+            "        pass\n",
+        ),
+    ),
+    (
+        "grep -H read as printing no names (ffbd9211.3)",
+        (
+            '_SEARCH_LISTING_LETTERS = {"grep": frozenset("lLrRH"), "rg": frozenset("lH")}',
+            '_SEARCH_LISTING_LETTERS = {"grep": frozenset("lLrR"), "rg": frozenset("lH")}',
+        ),
+    ),
+    (
+        "--with-filename read as printing no names (ffbd9211.3)",
+        ('        "--with-filename",\n    )\n)\n', "    )\n)\n"),
+    ),
+    (
+        "grep over two roots read as printing no names (ffbd9211.3)",
+        (
+            '    if family == "grep" and not lists:\n        lists = len(operands) > 1\n',
+            "",
+        ),
     ),
 ]
 

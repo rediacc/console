@@ -1370,16 +1370,66 @@ def _string_constants(tree):
             yield (value.decode("utf-8", "replace") if isinstance(value, bytes) else value), node
 
 
+def _builtins_module_call(node):
+    """Is `node` a call returning the builtins module by its literal name: `__import__('builtins')` or `importlib.import_module('builtins')` (`import_module` bare too)?"""
+    if not isinstance(node, ast.Call) or not node.args:
+        return False
+    first = node.args[0]
+    if not (isinstance(first, ast.Constant) and first.value in ("builtins", "__builtins__")):
+        return False
+    func = node.func
+    name = func.id if isinstance(func, ast.Name) else getattr(func, "attr", "")
+    return name in ("__import__", "import_module")
+
+
+def _builtins_aliases(tree):
+    """The names a python tree binds to the builtins module: `builtins` and `__builtins__` themselves, `import builtins as X`, and `X = __import__('builtins')` or `X = importlib.import_module('builtins')`."""
+    names = {"builtins", "__builtins__"}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            names.update(a.asname for a in node.names if a.name == "builtins" and a.asname)
+        elif isinstance(node, (ast.Assign, ast.AnnAssign, ast.NamedExpr)):
+            if node.value is None or not _builtins_module_call(node.value):
+                continue
+            targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+            names.update(t.id for t in targets if isinstance(t, ast.Name))
+    return names
+
+
 def _runs_code(tree):
-    """Does a python tree name `exec`, `eval` or `compile`, bare or as `builtins.<name>`? A name, not a call: `f = exec; f(prog)` runs code too."""
+    """Does a python tree name `exec`, `eval` or `compile`, bare, imported from builtins under any name, or as an attribute of the builtins module however it is reached (`builtins.exec`, `b.exec` after `import builtins as b`, `__import__('builtins').exec`, `getattr(importlib.import_module('builtins'), 'exec')`)? A name, not a call: `f = exec; f(prog)` runs code too.
+
+    AN ALIAS OF THE MODULE RUNS CODE TOO (ffbd9211.4). Only the names `builtins` and `__builtins__` were read, so `import builtins as b; b.exec('''...glob.glob('agent/*.md')...''')` and `__import__('builtins').exec(...)` left the held program unread (rc 0, measured 2026-11-10). A runner's name given to `getattr` or a subscript as a literal (`vars(b)['exec']`) is read as naming it; one assembled at runtime stays the named residual.
+    """
+    aliases = _builtins_aliases(tree)
+
+    def module(expr):
+        return (isinstance(expr, ast.Name) and expr.id in aliases) or _builtins_module_call(expr)
+
     for node in ast.walk(tree):
         if isinstance(node, ast.Name) and node.id in _PY_CODE_RUNNERS:
             return True
         if (
-            isinstance(node, ast.Attribute)
-            and node.attr in _PY_CODE_RUNNERS
-            and isinstance(node.value, ast.Name)
-            and node.value.id in ("builtins", "__builtins__")
+            isinstance(node, ast.ImportFrom)
+            and node.module == "builtins"
+            and any(a.name in _PY_CODE_RUNNERS or a.name == "*" for a in node.names)
+        ):
+            return True
+        if isinstance(node, ast.Attribute) and node.attr in _PY_CODE_RUNNERS and module(node.value):
+            return True
+        if (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Name)
+            and node.func.id == "getattr"
+            and len(node.args) >= 2
+            and isinstance(node.args[1], ast.Constant)
+            and node.args[1].value in _PY_CODE_RUNNERS
+        ):
+            return True
+        if (
+            isinstance(node, ast.Subscript)
+            and isinstance(node.slice, ast.Constant)
+            and node.slice.value in _PY_CODE_RUNNERS
         ):
             return True
     return False

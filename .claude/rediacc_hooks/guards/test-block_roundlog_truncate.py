@@ -20,6 +20,8 @@ HOOKS = HERE.parents[1]
 DISPATCH = str(HOOKS / "dispatch.py")
 STEM = "block_roundlog_truncate"
 LOG = "agent/pr-babysit-1008-1.md"
+# A program that truncates every round-log glob match, held in a string for a code runner (ffbd9211.4 rows).
+_HELD = "import glob\nfor p in glob.glob('agent/*.md'):\n    open(p, 'w').write('')"
 
 CASES = [
     ("truncate through an assigned name", "L=%s; echo x > $L" % LOG, True),
@@ -165,6 +167,48 @@ CASES = [
         "python3 - <<'PY'\nprint 'python 2'\nimport glob\nfor p in glob.glob('workers/src/*.ts'):\n    open(p, 'w').write('')\nPY",
         False,
     ),
+    # ffbd9211.4: exec reached through the builtins module however it is named. The six refusals were allowed (rc 0) at ffbd92113d, which read only `builtins.` and `__builtins__.`.
+    (
+        "a round-log glob write run by exec of an aliased builtins",
+        "python3 - <<'PY'\nimport builtins as b\nb.exec(%r)\nPY" % _HELD,
+        True,
+    ),
+    (
+        "a round-log glob write run by exec imported from builtins under a name",
+        "python3 - <<'PY'\nfrom builtins import exec as run\nrun(%r)\nPY" % _HELD,
+        True,
+    ),
+    (
+        "a round-log glob write run by exec of __import__('builtins')",
+        "python3 - <<'PY'\n__import__('builtins').exec(%r)\nPY" % _HELD,
+        True,
+    ),
+    (
+        "a round-log glob write run by exec of a name bound to import_module('builtins')",
+        "python3 - <<'PY'\nimport importlib\nb = importlib.import_module('builtins')\nb.exec(%r)\nPY"
+        % _HELD,
+        True,
+    ),
+    (
+        "a round-log glob write run by getattr of the builtins module",
+        "python3 - <<'PY'\ngetattr(__import__('builtins'), 'exec')(%r)\nPY" % _HELD,
+        True,
+    ),
+    (
+        "a round-log glob write run by a literal subscript of vars(builtins)",
+        "python3 - <<'PY'\nimport builtins as b\nvars(b)['exec'](%r)\nPY" % _HELD,
+        True,
+    ),
+    (
+        "a round-log glob write printed through an aliased builtins",
+        "python3 - <<'PY'\nimport builtins as b\nb.print(%r)\nPY" % _HELD,
+        False,
+    ),
+    (
+        "a round-log glob write handed to exec of a module that is not builtins",
+        "python3 - <<'PY'\nimport shelltools as b\nb.exec(%r)\nPY" % _HELD,
+        False,
+    ),
 ]
 
 # The two readers overlap (each alone refuses the same rows), so the plant takes both.
@@ -243,6 +287,46 @@ MUTANTS = [
     (
         "the quote regex fallback reads nothing (39b711fa.3)",
         [("        literals = _quoted_literals(code)\n", "        literals = []\n")],
+    ),
+    (
+        "the builtins module read under its own names only (ffbd9211.4)",
+        [
+            (
+                "    aliases = _builtins_aliases(tree)\n",
+                '    aliases = {"builtins", "__builtins__"}\n',
+            )
+        ],
+    ),
+    (
+        "a call returning builtins not read as the module (ffbd9211.4)",
+        [
+            (
+                '    return name in ("__import__", "import_module")\n',
+                "    return False\n",
+            )
+        ],
+    ),
+    (
+        "a runner imported from builtins under a name not read (ffbd9211.4)",
+        [
+            (
+                '            and node.module == "builtins"\n',
+                '            and node.module == ""\n',
+            )
+        ],
+    ),
+    (
+        "a runner named to getattr not read (ffbd9211.4)",
+        [('            and node.func.id == "getattr"\n', '            and node.func.id == ""\n')],
+    ),
+    (
+        "a runner named in a subscript not read (ffbd9211.4)",
+        [
+            (
+                "            isinstance(node, ast.Subscript)\n            and isinstance(node.slice, ast.Constant)\n",
+                "            False\n            and isinstance(node.slice, ast.Constant)\n",
+            )
+        ],
     ),
 ]
 
