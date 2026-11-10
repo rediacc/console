@@ -79,21 +79,21 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic f65726d5, plan agent/plans/PLAN-renet-down-before-kill.md, outside the set, 16 commit(s) on the branch, 0 open item(s): renet runs Rediaccfile down() before repo containers stop
   - epic 53c31db2, plan agent/plans/PLAN-repo-resource-limits.md, outside the set, 20 commit(s) on the branch, 0 open item(s): per-repo resource limits and a renet-managed RAM volume
   - epic a86f5622, plan agent/plans/PLAN-production-key-only.md, outside the set, 4 commit(s) on the branch, 0 open item(s): Production key only: every leg licensed from its own plane
-  - epic 79b7e92e, no plan, 219 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
-  - epic 562ef6c3, plan agent/plans/PLAN-experience-feedback.md, outside the set, 37 commit(s) on the branch, 0 open item(s): experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire
-- Writers: 1 live of writer_cap 25 (session d778be9d): worker:aa533e33c4a6eb271.
-- Leased items: 6: #4f4df453 (worker:busfc6826, d778be9d), #54aacfb3 (worker:bkqae9edw, d778be9d), #87f7acb9 (worker:aa533e33c4a6eb271, d778be9d), #c4b8a547 (worker:bkqae9edw, d778be9d), #caa837d4 (worker:bkqae9edw, d778be9d), #e549c21b (worker:busfc6826, d778be9d).
+  - epic 79b7e92e, no plan, 226 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 562ef6c3, plan agent/plans/PLAN-experience-feedback.md, outside the set, 38 commit(s) on the branch, 0 open item(s): experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire
+- Writers: 3 live of writer_cap 25 (session d778be9d): worker:a3aea699635bb3f62, worker:ab548dad2c4a01cbf, worker:aa533e33c4a6eb271.
+- Leased items: 4: #4f4df453 (worker:busfc6826, d778be9d), #54aacfb3 (worker:bkqae9edw, d778be9d), #caa837d4 (worker:a3aea699635bb3f62, d778be9d), #e549c21b (worker:ab548dad2c4a01cbf, d778be9d).
 - Next plan: agent/plans/PLAN-sandbox-tenant-separation.md, Promoted entry 14; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 17 of 64 plans done, 975 of 1187 boxes done (82%).
+Promoted: 17 of 64 plans done, 976 of 1187 boxes done (82%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
-| 1 | PLAN-backup-program.md | 182/192 | 10 open |
+| 1 | PLAN-backup-program.md | 183/192 | 9 open |
 | 2 | PLAN-cloudflare-proxy.md | 28/29 | 1 open |
 | 3 | PLAN-sync-remote-file-ownership.md | 7/7 | done |
 | 4 | PLAN-telemetry-export.md | 19/19 | done |
