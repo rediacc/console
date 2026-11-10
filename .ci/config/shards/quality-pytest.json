@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 5,
-  "generatedAt": "2026-11-10T07:18:14.877Z",
+  "generatedAt": "2026-11-10T07:29:36.523Z",
   "legs": [
     {
       "index": 1,
@@ -521,7 +521,8 @@
         "pytest:.ci/rediacc_ci/tests/test_deploy_signer.py",
         "pytest:.ci/rediacc_ci/tests/test_enterprise_cli_wiring.py",
         "pytest:.ci/rediacc_ci/tests/test_enterprise_no_key_on_account.py",
-        "pytest:.claude/rediacc_hooks/tests/test_wl_plandeps_box_edges.py"
+        "pytest:.claude/rediacc_hooks/tests/test_wl_plandeps_box_edges.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_reviewclass.py"
       ]
     },
     {
@@ -870,7 +871,8 @@
         "pytest:.claude/rediacc_hooks/tests/test_wl_planbind.py",
         "pytest:.ci/rediacc_ci/tests/test_enterprise_add.py",
         "pytest:.ci/rediacc_ci/tests/test_enterprise_lifecycle.py",
-        "pytest:.claude/rediacc_hooks/tests/test_wl_boxready.py"
+        "pytest:.claude/rediacc_hooks/tests/test_wl_boxready.py",
+        "pytest:.ci/rediacc_ci/tests/test_gate_hint_corpus_enforced_by.py"
       ]
     }
   ]
