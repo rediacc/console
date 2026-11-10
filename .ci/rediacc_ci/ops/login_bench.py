@@ -11,7 +11,7 @@ THE STEPS, in order:
   2. Refuse a value that is unset or still the placeholder `PLACEHOLDER-operator-fills`, naming its Bitwarden entry, before anything else runs.
   3. Refresh the bench IP allowlist (`rediacc_ci.ops.bench_access add-current`, which binds its own `bench-access` profile). The four bench values are removed from that child's environment.
   4. Compute the six-digit TOTP code in memory (`rediacc_ci.ops.totp`), waiting for the next 30 s window when fewer than `MIN_WINDOW_LEFT` seconds remain, then run `./rdc.sh --config eu-bench subscription login --server <BENCH_ORIGIN>` with REDIACC_LOGIN_EMAIL, REDIACC_LOGIN_PASSWORD and REDIACC_LOGIN_TOTP in the child environment.
-  5. Run `./rdc.sh --config eu-bench config remote enable --master-password --config-id <CONFIG_ID> --api-url <BENCH_ORIGIN>` with REDIACC_STORE_MASTER_PASSWORD in the child environment, unless `config remote status` already reports the config connected to CONFIG_ID on bench: enable refuses a linked config ("nothing to enable", exit 2, measured 2026-10-27 on the first live run), so a second run skips the step instead of failing on it.
+  5. Always run `./rdc.sh --config eu-bench config remote enable --master-password --config-id <CONFIG_ID> --api-url <BENCH_ORIGIN>` with REDIACC_STORE_MASTER_PASSWORD in the child environment; `config remote status` is not consulted, because it reports "connected" even when this device has lost its key for the store (the Linux kernel keyring is empty after a restart; measured 2026-11-10). Exit 0 is done: a first link, or this device enrolled again against the same store. Exit 2 is done only when the output says the config is linked and this device can already open it ("nothing to enable"); any other failure exits 1 naming the step.
   6. Print `./rdc.sh --config eu-bench config remote status`.
 
 WHOSE STEP IT IS. Running this is an agent's own step, never an operator one: when an eu-bench command answers that its login is "tied to another network address", that the IP address changed, or "Not logged in", the remedy is `npm run login:bench` and a rerun, not a request for an authenticator code. `rediacc_ci.ops.live_proof` does that itself (`login_needed`, `targets_config`, `REMEDY_ARGV`).
@@ -51,6 +51,8 @@ SOURCE_NAMES = (EMAIL_ENV, PW_ENV, TOTP_SEED_ENV, MASTER_PW_ENV)
 LOGIN_EMAIL_ENV = "REDIACC_LOGIN_EMAIL"
 LOGIN_PW_ENV = "REDIACC_LOGIN_PASSWORD"
 LOGIN_TOTP_ENV = "REDIACC_LOGIN_TOTP"
+# The CLI refusal for a config that is linked and whose device can open it (no distinct error code exists).
+ENABLE_NOTHING_TO_ENABLE = "nothing to enable"
 CLI_STORE_MASTER_PW_ENV = "REDIACC_STORE_MASTER_PASSWORD"
 CHILD_SECRET_NAMES = (
     *SOURCE_NAMES,
@@ -204,19 +206,9 @@ def _subprocess_capture(argv: Sequence[str], env: Mapping[str, str]) -> tuple[in
     return proc.returncode, proc.stdout or ""
 
 
-def already_linked(status_rc: int, status_out: str, server: str) -> bool:
-    """True when `config remote status` reports this config connected to CONFIG_ID on `server`: `config remote enable` then refuses with "nothing to enable", so the step is skipped."""
-    if status_rc != 0:
-        return False
-    try:
-        data = json.loads(status_out).get("data") or {}
-    except (ValueError, AttributeError):
-        return False
-    return (
-        data.get("status") == "connected"
-        and data.get("configId") == CONFIG_ID
-        and str(data.get("apiUrl") or "").rstrip("/") == server
-    )
+def enable_settled(rc: int, out: str) -> bool:
+    """True when `config remote enable` left this device able to open the store: exit 0 (enrolled, or enrolled again after the device lost its key), or exit 2 with the CLI's refusal that the config is linked and this device can already open it. The refusal is a plain ValidationError with no distinct error code (packages/cli/src/commands/config-remote.ts, `commands.config.remote.enable.alreadyEnabled`), so its text is the only handle."""
+    return rc == 0 or (rc == 2 and ENABLE_NOTHING_TO_ENABLE in out)
 
 
 def _rdc(config: str, *args: str) -> list[str]:
@@ -266,30 +258,29 @@ def login(
         login_env,
     )
 
-    status_rc, status_out = capture(_rdc(config, "config", "remote", "status"), dict(clean))
-    if already_linked(status_rc, status_out, server):
-        log.info(
-            "%s is already linked to config %s on %s; config remote enable skipped"
-            % (config, CONFIG_ID, server)
-        )
-    else:
-        enable_env = dict(clean)
-        enable_env[CLI_STORE_MASTER_PW_ENV] = values[MASTER_PW_ENV]
-        _step(
-            run,
-            "Enabling the remote config store (config remote enable)",
-            _rdc(
-                config,
-                "config",
-                "remote",
-                "enable",
-                "--master-password",
-                "--config-id",
-                CONFIG_ID,
-                "--api-url",
-                server,
-            ),
-            enable_env,
+    enable_env = dict(clean)
+    enable_env[CLI_STORE_MASTER_PW_ENV] = values[MASTER_PW_ENV]
+    log.step("Enabling the remote config store (config remote enable)")
+    enable_rc, enable_out = capture(
+        _rdc(
+            config,
+            "config",
+            "remote",
+            "enable",
+            "--master-password",
+            "--config-id",
+            CONFIG_ID,
+            "--api-url",
+            server,
+        ),
+        enable_env,
+    )
+    if enable_out:
+        print(enable_out, end="" if enable_out.endswith("\n") else "\n")
+    if not enable_settled(enable_rc, enable_out):
+        raise LoginError(
+            "Enabling the remote config store (config remote enable) failed (exit %d)" % enable_rc,
+            rc=1,
         )
 
     _step(

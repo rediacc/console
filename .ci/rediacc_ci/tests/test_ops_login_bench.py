@@ -19,19 +19,20 @@ FIXED_NOW = 1_800_000_010.0  # 20 s left in the window
 
 
 class FakeRunner:
-    def __init__(self, fail_at: int | None = None, status: tuple[int, str] = (1, "")):
+    def __init__(self, fail_at: int | None = None, enable: tuple[int, str] = (0, "")):
         self.calls: list[tuple[list[str], dict[str, str]]] = []
         self.captured: list[tuple[list[str], dict[str, str]]] = []
         self.fail_at = fail_at
-        self.status = status
+        self.enable = enable
 
     def __call__(self, argv, env):
         self.calls.append((list(argv), dict(env)))
         return 7 if self.fail_at == len(self.calls) - 1 else 0
 
     def capture(self, argv, env):
+        self.calls.append((list(argv), dict(env)))
         self.captured.append((list(argv), dict(env)))
-        return self.status
+        return self.enable
 
 
 def _env(**overrides):
@@ -257,43 +258,58 @@ def test_the_code_comes_from_the_next_window_when_the_current_one_is_closing():
     assert code == totp.code(SEED, at=1_800_000_031.0)
 
 
-def _status(config_id=login_bench.CONFIG_ID, api_url=BENCH_ORIGIN, status="connected"):
-    return (
-        0,
-        json.dumps(
-            {
-                "success": True,
-                "data": {"status": status, "configId": config_id, "apiUrl": api_url},
-            }
-        ),
-    )
+ENABLE_REENROLLED = (0, "This device is enrolled again.\n")
+ENABLE_REFUSED_CAN_OPEN = (
+    2,
+    json.dumps(
+        {
+            "success": False,
+            "errors": [
+                {
+                    "code": "VALIDATION_ERROR",
+                    "message": 'Config "eu-bench" is already linked to remote storage and this device can open it, so there is nothing to enable.',
+                }
+            ],
+        }
+    ),
+)
 
 
-def test_an_already_linked_config_skips_enable():
-    runner = FakeRunner(status=_status())
+def test_enable_always_runs_and_status_is_not_consulted():
+    runner = FakeRunner(enable=ENABLE_REENROLLED)
     _login(runner)
-    argvs = [argv for argv, _e in runner.calls]
-    assert not any("enable" in argv for argv in argvs)
-    assert argvs[-1][1:] == ["--config", "eu-bench", "config", "remote", "status"]
     assert len(runner.captured) == 1
-    assert runner.captured[0][0][1:] == ["--config", "eu-bench", "config", "remote", "status"]
-    assert not set(runner.captured[0][1]) & set(login_bench.CHILD_SECRET_NAMES)
+    assert "enable" in runner.captured[0][0]
+    assert [argv[-1] for argv, _e in runner.calls].count("status") == 1
+    assert runner.calls[-1][0][1:] == ["--config", "eu-bench", "config", "remote", "status"]
+
+
+def test_enable_exit_0_reenroll_is_success():
+    _login(FakeRunner(enable=ENABLE_REENROLLED))
+
+
+def test_enable_refusal_that_the_device_can_open_it_is_success():
+    runner = FakeRunner(enable=ENABLE_REFUSED_CAN_OPEN)
+    _login(runner)
+    assert runner.calls[-1][0][-1] == "status"
 
 
 @pytest.mark.parametrize(
-    "status",
+    "result",
     [
-        _status(config_id="00000000-0000-0000-0000-000000000000"),
-        _status(api_url=SITE_ORIGIN),
-        _status(status="disconnected"),
+        (2, '{"success": false, "errors": [{"code": "VALIDATION_ERROR", "message": "bad flag"}]}'),
         (2, ""),
-        (0, "not json"),
+        (1, ENABLE_REFUSED_CAN_OPEN[1]),
+        (3, "boom"),
     ],
 )
-def test_anything_but_this_link_runs_enable(status):
-    runner = FakeRunner(status=status)
-    _login(runner)
-    assert any("enable" in argv for argv, _e in runner.calls)
+def test_any_other_enable_failure_is_a_login_error(result):
+    runner = FakeRunner(enable=result)
+    with pytest.raises(login_bench.LoginError) as caught:
+        _login(runner)
+    assert caught.value.rc == 1
+    assert "config remote enable" in str(caught.value)
+    assert runner.calls[-1][0][-1] != "status"
 
 
 # ---- whose step it is (operator order 2026-10-30) ----
