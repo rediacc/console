@@ -73,8 +73,7 @@ Implement each box and run its acceptance command. A box the tree already holds 
 cite file:line or the commit, and run the command that proves it. A box whose remaining half is a
 live run, a pipeline or a decision is not attempted: name the exact command or question.
 
-Rules: no git checkout, restore, stash, clean, reset; no regenerate or sync script (name it for the
-lead instead); never vitest from the repo root; no inline suppression. This tree is a lease:
+Rules: no git checkout, restore, stash, clean, reset; no regenerate or sync script (name it for the lead instead), except the one generator the lease's own commit-policy hook names for the commit in hand (`npx tsx scripts/gen/gen-docs.ts --write` for a stale doc region, `npm run generate:cli-contract -w @rediacc/cli` for a stale CLI contract): run it in the lease and commit its outputs, because the hook refuses the commit without them (2026-11-10: three writers stopped short or packed new modules into one file to avoid it); never vitest from the repo root; no inline suppression. This tree is a lease:
   - commit on the detached HEAD with `git commit -F <msg> -- <paths>`, a `PR-TASK:` trailer and one
     Plan-Box trailer per box the commit serves (the lease commit-msg hook and `land` refuse without):
       Plan-Box: <PLAN-file>.md#<sig8> clauses=<C1,C2,...|all>
