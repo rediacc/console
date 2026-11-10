@@ -631,7 +631,7 @@ def test_divergence_each_of_the_five_guards_is_bashs_own_unbound_variable(
 def test_an_empty_channel_refuses_exactly_as_an_absent_one_does(
     tmp_path: pathlib.Path,
 ) -> None:
-    """`:?` IS AN UNSET-OR-EMPTY TEST. A port testing `"CHANNEL" in os.environ` would sail past this and sync every format to `s3://rediacc-releases/apt//`, which is every channel's parent prefix."""
+    """`:?` IS AN UNSET-OR-EMPTY TEST. A port testing `"CHANNEL" in os.environ` would sail past this and sync every format to `s3://releases/apt//`, which is every channel's parent prefix."""
     old, new, old_calls, new_calls = run_both(tmp_path, CHANNEL="")
     assert old.returncode == new.returncode == 1
     assert new.stderr == "CHANNEL: rediacc_ci.deploy.upload_repos_to_r2: CHANNEL must be set\n"

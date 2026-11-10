@@ -87,10 +87,10 @@ import sys
 
 from rediacc_ci import log
 from rediacc_ci.core import awscli, common
-from rediacc_ci.well_known import MEDIA_ORIGIN
+from rediacc_ci.well_known import MEDIA_BUCKET, MEDIA_ORIGIN
 
-# `BUCKET="media"` (twin :36). Hard-coded there, hard-coded here.
-BUCKET = "media"
+# `BUCKET="media"` (twin :36), from the registry here (WK_MEDIA_BUCKET).
+BUCKET = MEDIA_BUCKET
 
 # `CACHE_CONTROL="public, max-age=31536000"` (twin :37). ONE ARGV ELEMENT
 # CONTAINING A SPACE, which is why the differential records argv with a quoting join rather than a plain space: `--cache-control 'public,

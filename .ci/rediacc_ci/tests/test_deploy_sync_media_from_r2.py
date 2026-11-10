@@ -28,6 +28,7 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.deploy import sync_media_from_r2 as port
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.well_known import MEDIA_BUCKET
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -278,28 +279,28 @@ def test_the_default_run_restores_three_prefixes_in_order(tmp_path: pathlib.Path
     assert old.returncode == 0
     assert old_calls == [
         (
-            "aws\ts3\tsync\ts3://media/tutorials/video/\t"
+            f"aws\ts3\tsync\ts3://{MEDIA_BUCKET}/tutorials/video/\t"
             f"{tree}/packages/www/public/assets/tutorials/video/\t"
             f"--endpoint-url\t{ENDPOINT}\t--no-progress"
         ),
         (
-            "aws\ts3\tsync\ts3://media/videos/\t"
+            f"aws\ts3\tsync\ts3://{MEDIA_BUCKET}/videos/\t"
             f"{tree}/packages/www/public/assets/videos/\t"
             f"--endpoint-url\t{ENDPOINT}\t--no-progress"
         ),
         (
-            "aws\ts3\tsync\ts3://media/tutorials/audio/\t"
+            f"aws\ts3\tsync\ts3://{MEDIA_BUCKET}/tutorials/audio/\t"
             f"{tree}/packages/www/public/assets/tutorials/audio/\t"
             f"--endpoint-url\t{ENDPOINT}\t--no-progress"
         ),
     ]
     assert old.stderr == (
-        f"→ Restoring s3://media/tutorials/video/ -> {tree}/packages/www/public/assets/tutorials/video/\n"
-        f"→ Restoring s3://media/videos/ -> {tree}/packages/www/public/assets/videos/\n"
-        f"→ Restoring s3://media/tutorials/audio/ -> {tree}/packages/www/public/assets/tutorials/audio/\n"
+        f"→ Restoring s3://{MEDIA_BUCKET}/tutorials/video/ -> {tree}/packages/www/public/assets/tutorials/video/\n"
+        f"→ Restoring s3://{MEDIA_BUCKET}/videos/ -> {tree}/packages/www/public/assets/videos/\n"
+        f"→ Restoring s3://{MEDIA_BUCKET}/tutorials/audio/ -> {tree}/packages/www/public/assets/tutorials/audio/\n"
         "✓ Restore complete.\n"
     )
-    assert "call: aws s3 sync s3://media/videos/" in old.stdout
+    assert f"call: aws s3 sync s3://{MEDIA_BUCKET}/videos/" in old.stdout
     _assert_agree(old, new, "default", old_calls, new_calls)
 
 
@@ -322,7 +323,7 @@ def test_tutorials_only_restores_one_prefix(tmp_path: pathlib.Path) -> None:
     old, new, old_calls, new_calls = run_both(tmp_path, ["--tutorials-only"])
     assert old.returncode == 0
     assert len(old_calls) == 1
-    assert "s3://media/tutorials/video/" in old_calls[0]
+    assert f"s3://{MEDIA_BUCKET}/tutorials/video/" in old_calls[0]
     _assert_agree(old, new, "tutorials-only", old_calls, new_calls)
 
 
@@ -330,7 +331,7 @@ def test_solutions_only_restores_one_prefix(tmp_path: pathlib.Path) -> None:
     old, new, old_calls, new_calls = run_both(tmp_path, ["--solutions-only"])
     assert old.returncode == 0
     assert len(old_calls) == 1
-    assert "s3://media/videos/" in old_calls[0]
+    assert f"s3://{MEDIA_BUCKET}/videos/" in old_calls[0]
     _assert_agree(old, new, "solutions-only", old_calls, new_calls)
 
 
@@ -338,7 +339,7 @@ def test_audio_only_restores_one_prefix(tmp_path: pathlib.Path) -> None:
     old, new, old_calls, new_calls = run_both(tmp_path, ["--audio-only"])
     assert old.returncode == 0
     assert len(old_calls) == 1
-    assert "s3://media/tutorials/audio/" in old_calls[0]
+    assert f"s3://{MEDIA_BUCKET}/tutorials/audio/" in old_calls[0]
     _assert_agree(old, new, "audio-only", old_calls, new_calls)
 
 
@@ -347,7 +348,7 @@ def test_the_only_flags_are_not_additive_and_the_last_one_wins(tmp_path: pathlib
     old, new, old_calls, new_calls = run_both(tmp_path, ["--tutorials-only", "--audio-only"])
     assert old.returncode == 0
     assert len(old_calls) == 1, "the two flags accumulated instead of overwriting"
-    assert "s3://media/tutorials/audio/" in old_calls[0]
+    assert f"s3://{MEDIA_BUCKET}/tutorials/audio/" in old_calls[0]
     _assert_agree(old, new, "last-only-wins", old_calls, new_calls)
 
 
@@ -544,7 +545,7 @@ def test_a_failing_mkdir_stops_before_the_step_line(tmp_path: pathlib.Path) -> N
 
 def test_pure_helpers() -> None:
     """The exported helpers, driven directly. Both directions on the parse loop: something that must be refused, and flag combinations that must NOT be."""
-    assert port.BUCKET == "media"
+    assert port.BUCKET == MEDIA_BUCKET
     assert port.TUTORIALS == ("tutorials/video/", "packages/www/public/assets/tutorials/video/")
     assert port.SOLUTIONS == ("videos/", "packages/www/public/assets/videos/")
     assert port.AUDIO == ("tutorials/audio/", "packages/www/public/assets/tutorials/audio/")
@@ -579,7 +580,7 @@ def test_pure_helpers() -> None:
         "aws",
         "s3",
         "sync",
-        "s3://media/videos/",
+        f"s3://{MEDIA_BUCKET}/videos/",
         "/x/y/",
         "--no-progress",
     ]

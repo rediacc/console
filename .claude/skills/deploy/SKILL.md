@@ -86,7 +86,7 @@ The default is a listing. `--archive --region <r>` is the way to remove extras: 
 The entry deploys only committed code, from the release clone. A dirty shared checkout never ships, and the clean-clone gate refuses a `HEAD` that differs from `origin/main`.
 
 - **Account Worker, per region.** The portal is built with `VITE_TURNSTILE_SITE_KEY` and the build is refused when the key is absent from `assets` (on 2026-09-24 a portal built without it reached production and nobody could log in). `wrangler_pin` refuses unless `WRANGLER_VERSION` in `.ci/config/constants.sh`, the `wrangler` entry of `workers/account/package.json` and the installed `workers/account/node_modules/wrangler` agree; the fix is `npm ci --prefix workers/account`. `deploy_account` then applies the region's D1 migrations and runs `wrangler deploy`.
-- **www Worker (global).** Built with `APP_VERSION` set to the release version, because without it the site shows `0.0.0-dev` and `verify_edge_endpoints` fails.
+- **www Worker (global).** Built with `APP_VERSION` set to the release version, because without it the site shows `0.0.0-dev` and `verify_edge_endpoints` fails. The www build runs in a lease or clean clone, never the main checkout, because local media that is ignored by version control under `packages/www/public/assets` is bundled into `dist` (a 7.1 GB build with self-hosted video links on 2026-11-10).
 - **Records.** The `Current Version ID` of each Worker is the rollback handle, and it lands in the deploy record under `release-records/v<V>/<channel>/` in R2.
 
 ### 4a. Proxy steps inside the per-region account deploy

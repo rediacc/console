@@ -95,7 +95,7 @@ class Entry:
 
     key: str
     value: str
-    kind: str  # url | host | email | path | port | image | slug | token
+    kind: str  # url | host | email | path | port | image | slug | word | token
     host: str = ""
     path: str = ""
     # A URL entry listed under `exact_stem` in the policy matches only its own normalized stem, not every URL on its host.
@@ -117,6 +117,8 @@ class Entry:
 
 _SLUG_SHAPE = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")
 _IMAGE_SHAPE = re.compile(r"^[a-z0-9.-]+\.[a-z]{2,}/[a-z0-9._/-]+$")
+# A plain lowercase word (a bucket named `releases`) is also an ordinary word everywhere else, so it is a copy only where a bucket reference introduces it.
+_WORD_SHAPE = re.compile(r"^[a-z]+$")
 
 
 def entry_for(key: str, value: str) -> Entry:
@@ -138,6 +140,8 @@ def entry_for(key: str, value: str) -> Entry:
         return Entry(key, value, "host", value.lower(), "")
     if _SLUG_SHAPE.match(value):
         return Entry(key, value, "slug")
+    if _WORD_SHAPE.match(value):
+        return Entry(key, value, "word")
     return Entry(key, value, "token")
 
 
@@ -670,7 +674,7 @@ class Hit:
     path: str
     line: int
     col: int
-    detector: str  # url | host | email | path | slug | image | port | token
+    detector: str  # url | host | email | path | slug | image | port | word | token
     raw: str
     key: str  # the normalized literal: a stem, a host, an address, a namespace root
     owned: bool
@@ -719,12 +723,22 @@ class Detectors:
             if tokens
             else None
         )
+        words = sorted({e.value for e in entries if e.kind == "word"}, key=len, reverse=True)
+        self.word = (
+            re.compile(
+                r"(?:s3://|--bucket[ =]|\b[A-Za-z0-9_]*[Bb][Uu][Cc][Kk][Ee][Tt][A-Za-z0-9_]*['\"]?\s*[:=]-?\s*['\"]?)"
+                r"(%s)(?![\w.-])" % "|".join(re.escape(w) for w in words)
+            )
+            if words
+            else None
+        )
         prefilter = [re.escape(s) for s in policy.host_suffixes]
         prefilter += [re.escape(p) for p in policy.path_prefixes]
         prefilter += [re.escape(r) + "/" for r in policy.image_registries]
         prefilter += [re.escape(o) + "/" for o in policy.owners]
         prefilter += ["[a-z]+://"]
         prefilter += [re.escape(t) for t in tokens] + [re.escape(p) for p in ports]
+        prefilter += [re.escape(w) for w in words]
         self.prefilter = "|".join(prefilter)
 
     def owned_host(self, host: str) -> bool:
@@ -870,6 +884,13 @@ class Detectors:
                     m.end(1),
                     Hit(path, lineno, m.start(1), "token", m.group(1), m.group(1), True),
                 )
+        if self.word:
+            for m in self.word.finditer(text):
+                add(
+                    m.start(1),
+                    m.end(1),
+                    Hit(path, lineno, m.start(1), "word", m.group(1), m.group(1), True),
+                )
         return hits
 
 
@@ -897,7 +918,7 @@ def match_entry(hit: Hit, entries: list[Entry]) -> Entry | None:
             ok = hit.key == e.value or hit.key.startswith(e.value + "/")
         elif hit.detector == "slug" and e.kind == "slug":
             ok = hit.key == e.value.lower()
-        elif hit.detector == e.kind and hit.detector in ("port", "token"):
+        elif hit.detector == e.kind and hit.detector in ("port", "word", "token"):
             ok = hit.key == e.value
         if ok and (
             best is None or (best.is_region and not e.is_region) or len(e.value) > len(best.value)

@@ -61,7 +61,7 @@ with the script name:
 This port prints the `VAR: msg` half, on the same stream, with the same exit status 1. Identical ruling to `deploy/delete_r2_channel.py`. The ORDER of the guards is kept, and `require_cmd aws` runs BEFORE all five, so a run missing both the binary and every variable names the binary.
 
 `:?` IS AN UNSET-OR-EMPTY TEST: `CHANNEL=` refuses exactly as an absent CHANNEL
-does. Driven, because a port testing `"CHANNEL" in os.environ` would sail past it and then sync every package format to `s3://rediacc-releases/apt//`.
+does. Driven, because a port testing `"CHANNEL" in os.environ` would sail past it and then sync every package format to `s3://releases/apt//`.
 
 -----------------------------------------------------------------------------
 RULE T DELTA: A TRANSIENT R2 FAILURE IS RETRIED (#4175e786)

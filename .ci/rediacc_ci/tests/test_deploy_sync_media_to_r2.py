@@ -28,7 +28,7 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.deploy import sync_media_to_r2 as port
 from rediacc_ci.tests import differential as diff
-from rediacc_ci.well_known import MEDIA_ORIGIN
+from rediacc_ci.well_known import MEDIA_BUCKET, MEDIA_ORIGIN
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -234,7 +234,7 @@ def _assert_agree(old, new, label: str, old_calls=None, new_calls=None) -> None:
 
 CLOSING = (
     "✓ Sync complete. Verify with:\n"
-    "✓   aws s3 sync --dryrun <local-dir> s3://media/<prefix>/ "
+    f"✓   aws s3 sync --dryrun <local-dir> s3://{MEDIA_BUCKET}/<prefix>/ "
     "--endpoint-url $CLOUDFLARE_R2_MEDIA_ENDPOINT\n"
     "✓   curl -sI " + MEDIA_ORIGIN + "/<path>\n"
 )
@@ -248,27 +248,27 @@ def test_the_default_run_uploads_three_prefixes_in_order(tmp_path: pathlib.Path)
     assert old_calls == [
         (
             f"aws\ts3\tsync\t{tree}/packages/www/public/assets/tutorials/video/\t"
-            "s3://media/tutorials/video/\t"
+            f"s3://{MEDIA_BUCKET}/tutorials/video/\t"
             f"--endpoint-url\t{ENDPOINT}\t"
             "--cache-control\tpublic, max-age=31536000\t--no-progress"
         ),
         (
             f"aws\ts3\tsync\t{tree}/packages/www/public/assets/videos/\t"
-            "s3://media/videos/\t"
+            f"s3://{MEDIA_BUCKET}/videos/\t"
             f"--endpoint-url\t{ENDPOINT}\t"
             "--cache-control\tpublic, max-age=31536000\t--no-progress"
         ),
         (
             f"aws\ts3\tsync\t{tree}/packages/www/public/assets/tutorials/audio/\t"
-            "s3://media/tutorials/audio/\t"
+            f"s3://{MEDIA_BUCKET}/tutorials/audio/\t"
             f"--endpoint-url\t{ENDPOINT}\t"
             "--cache-control\tpublic, max-age=31536000\t--no-progress"
         ),
     ]
     assert old.stderr == (
-        f"→ Syncing {tree}/packages/www/public/assets/tutorials/video/ -> s3://media/tutorials/video/\n"
-        f"→ Syncing {tree}/packages/www/public/assets/videos/ -> s3://media/videos/\n"
-        f"→ Syncing {tree}/packages/www/public/assets/tutorials/audio/ -> s3://media/tutorials/audio/\n"
+        f"→ Syncing {tree}/packages/www/public/assets/tutorials/video/ -> s3://{MEDIA_BUCKET}/tutorials/video/\n"
+        f"→ Syncing {tree}/packages/www/public/assets/videos/ -> s3://{MEDIA_BUCKET}/videos/\n"
+        f"→ Syncing {tree}/packages/www/public/assets/tutorials/audio/ -> s3://{MEDIA_BUCKET}/tutorials/audio/\n"
         + CLOSING
     )
     _assert_agree(old, new, "default", old_calls, new_calls)
@@ -321,21 +321,21 @@ def test_dry_run_and_delete_keep_their_order_in_both_the_log_and_the_argv(
 def test_tutorials_only_uploads_one_prefix(tmp_path: pathlib.Path) -> None:
     old, new, old_calls, new_calls = run_both(tmp_path, ["--tutorials-only"])
     assert len(old_calls) == 1
-    assert "s3://media/tutorials/video/" in old_calls[0]
+    assert f"s3://{MEDIA_BUCKET}/tutorials/video/" in old_calls[0]
     _assert_agree(old, new, "tutorials-only", old_calls, new_calls)
 
 
 def test_solutions_only_uploads_one_prefix(tmp_path: pathlib.Path) -> None:
     old, new, old_calls, new_calls = run_both(tmp_path, ["--solutions-only"])
     assert len(old_calls) == 1
-    assert "s3://media/videos/" in old_calls[0]
+    assert f"s3://{MEDIA_BUCKET}/videos/" in old_calls[0]
     _assert_agree(old, new, "solutions-only", old_calls, new_calls)
 
 
 def test_audio_only_uploads_one_prefix(tmp_path: pathlib.Path) -> None:
     old, new, old_calls, new_calls = run_both(tmp_path, ["--audio-only"])
     assert len(old_calls) == 1
-    assert "s3://media/tutorials/audio/" in old_calls[0]
+    assert f"s3://{MEDIA_BUCKET}/tutorials/audio/" in old_calls[0]
     _assert_agree(old, new, "audio-only", old_calls, new_calls)
 
 
@@ -343,7 +343,7 @@ def test_the_only_flags_are_not_additive_and_the_last_one_wins(tmp_path: pathlib
     """Each `--*-only` arm assigns ALL THREE booleans, so the flags overwrite rather than accumulate. A port that OR-ed them would upload two prefixes where the twin uploads one, and would still print a plausible log."""
     old, new, old_calls, new_calls = run_both(tmp_path, ["--audio-only", "--solutions-only"])
     assert len(old_calls) == 1, "the two flags accumulated instead of overwriting"
-    assert "s3://media/videos/" in old_calls[0]
+    assert f"s3://{MEDIA_BUCKET}/videos/" in old_calls[0]
     _assert_agree(old, new, "last-only-wins", old_calls, new_calls)
 
 
@@ -485,7 +485,7 @@ def test_a_missing_directory_is_a_warning_and_the_other_legs_still_run(
     assert old.returncode == 0
     assert len(old_calls) == 2
     assert f"⚠ Skipping {tree}/{SOLUTIONS_DIR}/ (not present locally)\n" in old.stderr
-    assert all("s3://media/videos/" not in c for c in old_calls)
+    assert all(f"s3://{MEDIA_BUCKET}/videos/" not in c for c in old_calls)
     _assert_agree(old, new, "one-missing-leg", old_calls, new_calls)
 
 
@@ -537,12 +537,12 @@ def test_a_symlink_to_a_directory_is_synced_not_skipped(tmp_path: pathlib.Path) 
         proc, calls = _run(subject, tree, ["--solutions-only"])
         assert proc.returncode == 0
         assert len(calls) == 1, "a symlinked media directory was skipped"
-        assert "s3://media/videos/" in calls[0]
+        assert f"s3://{MEDIA_BUCKET}/videos/" in calls[0]
 
 
 def test_pure_helpers() -> None:
     """The exported helpers, driven directly. Both directions on the parse loop: something that must be refused, and flag combinations that must NOT be."""
-    assert port.BUCKET == "media"
+    assert port.BUCKET == MEDIA_BUCKET
     assert port.CACHE_CONTROL == "public, max-age=31536000"
     assert port.TUTORIALS == ("packages/www/public/assets/tutorials/video/", "tutorials/video/")
     assert port.SOLUTIONS == ("packages/www/public/assets/videos/", "videos/")
@@ -578,7 +578,7 @@ def test_pure_helpers() -> None:
         "s3",
         "sync",
         "/x/y/",
-        "s3://media/videos/",
+        f"s3://{MEDIA_BUCKET}/videos/",
         "--no-progress",
     ]
 

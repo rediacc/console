@@ -75,7 +75,7 @@ FLOOR_FILE_REL = ".ci/config/release-contract-floor.txt"
 
 
 def bucket() -> str:
-    """`RSV_BUCKET="${RELEASES_BUCKET:-rediacc-releases}"`."""
+    """`RSV_BUCKET="${RELEASES_BUCKET:-releases}"`."""
     return os.environ.get("RELEASES_BUCKET") or DEFAULT_BUCKET
 
 

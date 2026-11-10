@@ -149,7 +149,7 @@ CF_PAGES_PROJECT = "rediacc"
 # The one product that writes `.released` sentinels (`write_release_sentinel.PRODUCT`). A strict-semver tag of RELEASE_REPO lives exactly as long as `<this>/<tag>/.released` does; see `release_tag_held_by_r2`.
 SENTINEL_PRODUCT = "cli"
 
-# `R2_BUCKET="${RELEASES_BUCKET:-rediacc-releases}"`. constants.sh has already
+# `R2_BUCKET="${RELEASES_BUCKET:-releases}"`. constants.sh has already
 # defaulted RELEASES_BUCKET by the time the twin reads it, so the two `:-` defaults are the same value twice.
 DEFAULT_R2_BUCKET = RELEASES_BUCKET
 R2_RETENTION_DAYS = 7
@@ -158,7 +158,7 @@ R2_ORPHAN_VERSION_AGE_DAYS = 14
 R2_PR_MAX_AGE_DAYS = 3
 # 8f's window: the npm tarballs kept per channel (`npm/<channel>/rediacc-cli-<semver>.tgz`). The four package trees are not 8f's any more: each publish prunes them to what its index lists (`upload_repos_to_r2`, `r2_promote.prune_tree`; operator ruling 2026-10-06, "Current version only").
 R2_NPM_KEEP_VERSIONS = 20
-# 8g's window: the newest `--versions` (DEFAULT_KEEP_VERSIONS, which is retention_contract.KEEP_RELEASES) `v<semver>/` folders per format directory, plus whatever `edge` and `stable` currently point at; `cli/` is the directory whose channel manifests name them. Operator ruling 2026-10-23 ("Keep N newest releases"): rediacc-releases held 142.7 GB of the account's 151 GB.
+# 8g's window: the newest `--versions` (DEFAULT_KEEP_VERSIONS, which is retention_contract.KEEP_RELEASES) `v<semver>/` folders per format directory, plus whatever `edge` and `stable` currently point at; `cli/` is the directory whose channel manifests name them. Operator ruling 2026-10-23 ("Keep N newest releases"): the releases bucket held 142.7 GB of the account's 151 GB.
 _R2_CHANNEL_POINTER_DIR = "cli"
 
 GH_RUNS_KEEP_PER_WORKFLOW = 100

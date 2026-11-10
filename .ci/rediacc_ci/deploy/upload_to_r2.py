@@ -182,7 +182,7 @@ def repo_root() -> str:
 
 
 def releases_bucket() -> str:
-    """`readonly RELEASES_BUCKET="${RELEASES_BUCKET:-rediacc-releases}"`.
+    """`readonly RELEASES_BUCKET="${RELEASES_BUCKET:-releases}"`.
 
     `:-` is an unset-OR-EMPTY test, so `RELEASES_BUCKET=` falls back to the
     default exactly as an absent one does.

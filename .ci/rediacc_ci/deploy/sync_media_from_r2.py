@@ -79,9 +79,10 @@ import sys
 
 from rediacc_ci import log
 from rediacc_ci.core import awscli, common
+from rediacc_ci.well_known import MEDIA_BUCKET
 
-# `BUCKET="media"` (twin :48). Hard-coded there, hard-coded here.
-BUCKET = "media"
+# `BUCKET="media"` (twin :48), from the registry here (WK_MEDIA_BUCKET).
+BUCKET = MEDIA_BUCKET
 
 # The three legs, in the twin's order (twin :110-120), as (remote_prefix, local_path_relative_to_repo_root). ORDER IS OBSERVABLE: it is the order of the step lines and the order of the `aws` calls, and a reordered tuple is a different program even though the same bytes end up on disk. Every local path keeps its TRAILING SLASH because the twin's does, and `aws` is handed the string
 # as written.

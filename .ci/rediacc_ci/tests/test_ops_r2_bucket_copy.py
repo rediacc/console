@@ -9,6 +9,7 @@ import pytest
 
 from rediacc_ci.deploy import r2_promote
 from rediacc_ci.ops import r2_bucket_copy as bc
+from rediacc_ci.well_known import MEDIA_BUCKET
 
 T = datetime.datetime(2026, 11, 8, 12, 0, tzinfo=datetime.UTC)
 HOUR = datetime.timedelta(hours=1)
@@ -71,11 +72,11 @@ def test_copy_argv_preserves_metadata_and_names_both_buckets() -> None:
         "k.mp4",
         "k.mp4",
         "https://x",
-        bucket="media",
+        bucket=MEDIA_BUCKET,
         src_bucket="rediacc-www-media",
         preserve_metadata=True,
     )
-    assert argv[argv.index("--bucket") + 1] == "media"
+    assert argv[argv.index("--bucket") + 1] == MEDIA_BUCKET
     assert argv[argv.index("--copy-source") + 1] == "rediacc-www-media/k.mp4"
     assert argv[argv.index("--metadata-directive") + 1] == "COPY"
     assert "--cache-control" not in argv
