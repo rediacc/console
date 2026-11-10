@@ -40,7 +40,7 @@ Counts for the window:
 | Rank | Point | Count in this window | Turns lost | Already fixed by? |
 |---|---|---|---|---|
 | 1 | #1: the local-batch paragraph orders "advance the open boxes locally" when no open box has local work | 55 continues; 16 replies restating the box table | 33 replies with no work call; judge switched off by the operator at 09:01Z | No. Hint rows 2026-11-09T22:13:49Z, 533bfb90 and 8ed821a7 proposed it; nothing landed |
-| 2 | #2: the judge orders live-tree commits while vm:check or ci:quick is building a receipt | 12 lead replies explaining that a commit voids the receipt; 4 "other" continues ordering held edits | about 12 turns | No. `vm_check_running` and `ci_quick_running` exist (wl_checks.py:2649, :2729) but the judge never reads them |
+| 2 | #2: the judge orders live-tree commits while vm:check or ci:quick is building a receipt | 12 lead replies explaining that a commit voids the receipt; 4 "other" continues ordering held edits | about 12 turns | No. `vm_check_running` and `ci_quick_running` exist (.claude/hooks/stop/wl_checks.py:2649, :2729) but the judge never reads them |
 | 3 | #3: the checklist asks the model to check facts the hook already holds (wake time, the worker behind an item) | 22 continues resting on the checklist alone; 8 schedule demands, 15 complicated demands | 12 replies with no work call, plus a Plan agent spawned only to satisfy a demand (04:34:11) | No |
 | 4 | #4: interim [SILENT] captures block as unread reports | 2 led, 1 named | 2 turns | **R20260924.7 did not hold** on these captures |
 | 5 | #5: a content-free verdict ("Duplicate call ignored." / "Ignore.") blocks as a continue | 1 | 1 turn | No |
@@ -67,8 +67,8 @@ Counts for the window:
 - The facts are on disk:
   - `wl_boxready.non_writer` and `post_merge` (`.claude/hooks/stop/wl_boxready.py:48`, `:54`) read box tags.
   - `agent/ledgers/plan-investigation.jsonl` holds 60 rows written in the window, 43 present and 17 partial.
-- Tags alone cannot decide this, because A1a, A4d, I3, J6, J9, K10, P15, Q2 and Q16 carry no tag (`agent/plans/PLAN-backup-program.md:109-614`), and `startable` (`wl_boxready.py:65`) reads an untagged box as startable.
-- A `partial` row does not say which part is owed. `INV_VERDICTS`, `wl_planrec.py:2291`, holds only absent, present and partial, with free-text notes.
+- Tags alone cannot decide this, because A1a, A4d, I3, J6, J9, K10, P15, Q2 and Q16 carry no tag (`agent/plans/PLAN-backup-program.md:109-614`), and `startable` (`.claude/hooks/stop/wl_boxready.py:65`) reads an untagged box as startable.
+- A `partial` row does not say which part is owed. `INV_VERDICTS`, `.claude/hooks/stop/wl_planrec.py:2291`, holds only absent, present and partial, with free-text notes.
 
 **Fix.**
 - (a) `--plan-investigate ... partial` takes `--owed live|ci|post-push|operator|code`, stored as `owed` on the row (`wl_planrec.append_investigation`, `:2321`).
@@ -80,7 +80,7 @@ Counts for the window:
 - (d) `JUDGE_LOCAL_BATCH` splits in two:
   - With `local == 0`, a paragraph that lists each box with its class and says there is no local box work, so a named live wait is a legitimate stop.
   - With `local > 0`, a paragraph that names those boxes, so an order must name one.
-- (e) `settle_batch_no_local` joins the settle chain (`wl_judge.py:1114-1117`). When `local == 0`, a continue whose reason or order matches `turbo|batch|open boxes|locally` and names no tracked `#id` outside the batch is read as stop.
+- (e) `settle_batch_no_local` joins the settle chain (`.claude/hooks/stop/wl_judge.py:1114-1117`). When `local == 0`, a continue whose reason or order matches `turbo|batch|open boxes|locally` and names no tracked `#id` outside the batch is read as stop.
 
 ## 2. The judge orders live-tree commits while a receipt is being built
 
@@ -94,14 +94,14 @@ Counts for the window:
 - The repo shows the cost of a commit here. The hint row of 2026-11-06T01:25:58Z records vm:check run 1 failing V1.1 because a commit landed mid-run. The hint row of 2026-11-07T13:05:12Z records the backup receipt being keyed on the tree.
 
 **Root cause.**
-- JUDGE_PROMPT states as fact that "unpushed work cannot disturb a run in flight" (`worklist_messages.py:2191-2193`, inside the CI-wait paragraph at :2179). That is false for vm:check, which rebuilds the CLI from the live tree on each rdc call, and for ci:quick and the backup receipt, which are keyed on the tree.
-- The hook can already tell such a run is live: `vm_check_running` (`wl_checks.py:2649`) and `ci_quick_running` (`:2729`) back the unlanded-lease stand-down. `run_judge` (`wl_judge.py:868-980`) never receives either.
+- JUDGE_PROMPT states as fact that "unpushed work cannot disturb a run in flight" (`.claude/hooks/stop/worklist_messages.py:2191-2193`, inside the CI-wait paragraph at :2179). That is false for vm:check, which rebuilds the CLI from the live tree on each rdc call, and for ci:quick and the backup receipt, which are keyed on the tree.
+- The hook can already tell such a run is live: `vm_check_running` (`.claude/hooks/stop/wl_checks.py:2649`) and `ci_quick_running` (`:2729`) back the unlanded-lease stand-down. `run_judge` (`.claude/hooks/stop/wl_judge.py:868-980`) never receives either.
 
 **Fix.**
-- `run_judge` takes `receipt_run` (`"vm:check"`, `"ci:quick"` or None), and the call site at `wl_checks.py:6561` sets it from the two functions.
+- `run_judge` takes `receipt_run` (`"vm:check"`, `"ci:quick"` or None), and the call site at `.claude/hooks/stop/wl_checks.py:6561` sets it from the two functions.
 - When it is set, `M.JUDGE_RECEIPT_IN_FLIGHT` is appended after `extra`, like the local-batch paragraph. It says: a commit or edit in the main checkout now voids the receipt this run is producing; local work during the run means a writer in a lease tree; never order a main-checkout edit or commit.
 - The sentence at :2192-2193 gains "except while a vm:check or ci:quick run is building a receipt on this tree".
-- `sanitize_next_action` (`wl_judge.py:1303`) gains `RECEIPT_ORDERS` (`commit|edit|land|cherry-pick` without `lease`/`worktree`). With `receipt_run` set, a matching order is rewritten to a `V_JUDGE_RECEIPT_ORDER_REJECTED` text, the way LOCAL_BATCH_ORDERS is handled.
+- `sanitize_next_action` (`.claude/hooks/stop/wl_judge.py:1303`) gains `RECEIPT_ORDERS` (`commit|edit|land|cherry-pick` without `lease`/`worktree`). With `receipt_run` set, a matching order is rewritten to a `V_JUDGE_RECEIPT_ORDER_REJECTED` text, the way LOCAL_BATCH_ORDERS is handled.
 
 ## 3. The checklist asks the model to check facts the hook already holds
 
@@ -115,8 +115,8 @@ Counts for the window:
 - **Id omissions:** these demands were correct where checked. At 08:59:04 the message judged (offset 1508777920) did leave out 14 of the 16 box ids named. They cost a model round trip (median 115 s) to find something a set difference finds.
 
 **Root cause.**
-- The checklist, `worklist_messages.py:2229-2242`, ends with 'Answer "continue" if any of these is missing'.
-- The prompt gives the judge only a lease count (`"leases": leases`, `wl_judge.py:955`) and the remaining lines (`:954`). It gets no wake fire time, no worker per item and no worker type.
+- The checklist, `.claude/hooks/stop/worklist_messages.py:2229-2242`, ends with 'Answer "continue" if any of these is missing'.
+- The prompt gives the judge only a lease count (`"leases": leases`, `.claude/hooks/stop/wl_judge.py:955`) and the remaining lines (`:954`). It gets no wake fire time, no worker per item and no worker type.
 - `wl_wake.read_lock(me)` (`.claude/hooks/stop/wl_wake.py:63`) returns `until`, and `is_waker_pid` (`:49`) proves the timer is live.
 
 **Fix.**
@@ -133,24 +133,24 @@ Counts for the window:
 ## 4. Interim [SILENT] captures block as unread reports (R20260924.7 did not hold)
 
 **What happened.**
-- At 08:53:29 the unread-reports key led a block on `5bff99729ead`: "The runs have not finished yet. I'm waiting on the background notification". <!-- style-ok -->
-- At 12:40:52 it led again, with roster-dead named, on `1e3c9d6b17e9` and `-2` ("Waiting on the test run's completion notification", "Waiting for regolden to finish.").
+- At 08:53:29 the unread-reports key led a block on `5bff9972`: "The runs have not finished yet. I'm waiting on the background notification". <!-- style-ok -->
+- At 12:40:52 it led again, with roster-dead named, on `1e3c9d6b` and its `-2` sibling ("Waiting on the test run's completion notification", "Waiting for regolden to finish.").
 - Each of the three index rows in `~/.claude/agent-reports/home_developer_console/index.jsonl` has `silent: true` and no `interim` key.
 - Agent aaaeb1e3c9d6b17e9 had launched background shell `bn3oml4sf` at 12:35:45Z. Its `<task-id>` notification first appears at 12:40:00Z, after the 12:39:17Z capture. So at capture time the agent was waiting on an armed shell, which is the case R.7 holds.
 
 **Root cause (inferred).**
 - `wl_roster.transcript_waiting` (`.claude/hooks/stop/wl_roster.py:585-597`) returns "" unless `_record_is_idle(last_record(...))` holds.
-- In the transcript, the record just before the end_turn assistant record (12:39:17.626Z) is an `api-request` (12:39:15.931Z). If SubagentStop fires before the end_turn record is flushed, the last record is not an assistant record. `_record_is_idle` (`wl_liveness.py:425-447`) then answers False, and `wl_report` (`:949-954`) writes no `interim`.
+- In the transcript, the record just before the end_turn assistant record (12:39:17.626Z) is an `api-request` (12:39:15.931Z). If SubagentStop fires before the end_turn record is flushed, the last record is not an assistant record. `_record_is_idle` (`.claude/hooks/stop/wl_liveness.py:425-447`) then answers False, and `wl_report` (`:949-954`) writes no `interim`.
 - This is inferred from record order; it was not reproduced.
 
-**Fix.** On the SubagentStop capture path (`wl_report.py:949-954`), the event itself proves the turn ended, so call a `transcript_armed(jsonl, now)` variant that skips the idle-record test and keeps the WAIT_HORIZON and `armed_shells` checks.
+**Fix.** On the SubagentStop capture path (`.claude/hooks/stop/wl_report.py:949-954`), the event itself proves the turn ended, so call a `transcript_armed(jsonl, now)` variant that skips the idle-record test and keeps the WAIT_HORIZON and `armed_shells` checks.
 
 ## 5. A content-free verdict blocks as a continue
 
 **What happened.** At 21:21:06 (offset 1486457014) the block read `reason: Duplicate call ignored.` and `next action: Ignore.` This judge row (2026-11-09T21:21:05Z) is the only one in the file with that text. The lead restated its Remaining list (21:21:11), at a cost of 1 turn.
 
 **Root cause.**
-- The schema (`wl_judge.py:66-72`) accepts any string.
+- The schema (`.claude/hooks/stop/wl_judge.py:66-72`) accepts any string.
 - `settle_wait_only_continue` (`:1229`) only catches wait-only orders.
 - `sanitize_next_action` (`:1303`) only rewrites forbidden orders.
 
@@ -165,7 +165,7 @@ Counts for the window:
   - WHY: a free-text note cannot be read mechanically, and counting every partial row as non-local would hide real code gaps.
   - HOW: the R20261110.1 verb change. The lead re-records the open boxes once.
 - **D2, a hard cap on judge streaks.**
-  - DEFAULT: no cap. Keep v5's "no cap" (`wl_judge.py:27`).
+  - DEFAULT: no cap. Keep v5's "no cap" (`.claude/hooks/stop/wl_judge.py:27`).
   - WHY: within a run, the 4th and later continues repeated one of the previous three orders only 5 times in 36 (Jaccard of 0.25 or more on reason words). So a similarity cap would not have fired; frictions 1 to 3 are the causes.
   - HOW: R20261110.8 re-counts the streaks after the fixes.
 - **D3, whether a running receipt suppresses the order or only advises against it.**
@@ -190,13 +190,13 @@ Counts for the window:
     (ticked) 2026-11-10T16:18:19Z by d778be9d: commit:f242757002 judge local-batch facts, receipt-in-flight suppression, measured facts (missing ids, wake time, item workers), contentless settle and --owed on partial investigations; 74 new tests passed rc=0, 234 judge/planrec/checks tests passed
 - [x] **R20261110.2** Add `wl_checks._batch_box_facts`: each open box of the batch is classed non-writer by tag, `owed:<kind>` by its newest partial row, or `local`. `_judge_local_batch` carries `open`, `local` and the rows. `JUDGE_LOCAL_BATCH` gets the `local == 0` and `local > 0` variants. `settle_batch_no_local` reads a batch-box order as stop when `local == 0`. The fixture is the 04:13:18 state, 22 boxes all non-local, where the stub-captured prompt carries the no-local variant and a "advance the batch's open boxes" continue settles to stop. The inverse: one box with no row stays `local`, and the continue stands. Test: .claude/rediacc_hooks/tests/test_wl_judge_local_batch.py.
     (ticked) 2026-11-10T16:18:21Z by d778be9d: commit:f242757002 judge local-batch facts, receipt-in-flight suppression, measured facts (missing ids, wake time, item workers), contentless settle and --owed on partial investigations; 74 new tests passed rc=0, 234 judge/planrec/checks tests passed
-- [x] **R20261110.3** When `vm_check_running()` or `ci_quick_running(root)` is true, append `JUDGE_RECEIPT_IN_FLIGHT`, qualify the sentence at `worklist_messages.py:2192-2193`, and sanitise main-checkout commit and edit orders (`RECEIPT_ORDERS`). Fixture: a held vm:check lock whose pid has a vm_check argv, and the 23:12:05 order. Inverse: a free lock, where the order passes. Test: .claude/rediacc_hooks/tests/test_wl_judge_receipt_inflight.py.
+- [x] **R20261110.3** When `vm_check_running()` or `ci_quick_running(root)` is true, append `JUDGE_RECEIPT_IN_FLIGHT`, qualify the sentence at `.claude/hooks/stop/worklist_messages.py:2192-2193`, and sanitise main-checkout commit and edit orders (`RECEIPT_ORDERS`). Fixture: a held vm:check lock whose pid has a vm_check argv, and the 23:12:05 order. Inverse: a free lock, where the order passes. Test: .claude/rediacc_hooks/tests/test_wl_judge_receipt_inflight.py.
     (ticked) 2026-11-10T16:18:22Z by d778be9d: commit:f242757002 judge local-batch facts, receipt-in-flight suppression, measured facts (missing ids, wake time, item workers), contentless settle and --owed on partial investigations; 74 new tests passed rc=0, 234 judge/planrec/checks tests passed
-- [x] **R20261110.4** Add `JUDGE_FACTS`: `missing_ids` as a set difference against the message, and `wake_until` from a live `wl_wake.read_lock`. The checklist (`worklist_messages.py:2229-2242`) defers to both. Fixture: the 08:20:57 message, with "wake timer is armed" and a live lock until 08:50Z. The prompt states the schedule check passed. Inverse: a dead lock pid. Test: .claude/rediacc_hooks/tests/test_wl_judge_facts.py.
+- [x] **R20261110.4** Add `JUDGE_FACTS`: `missing_ids` as a set difference against the message, and `wake_until` from a live `wl_wake.read_lock`. The checklist (`.claude/hooks/stop/worklist_messages.py:2229-2242`) defers to both. Fixture: the 08:20:57 message, with "wake timer is armed" and a live lock until 08:50Z. The prompt states the schedule check passed. Inverse: a dead lock pid. Test: .claude/rediacc_hooks/tests/test_wl_judge_facts.py.
     (ticked) 2026-11-10T16:18:23Z by d778be9d: commit:f242757002 judge local-batch facts, receipt-in-flight suppression, measured facts (missing ids, wake time, item workers), contentless settle and --owed on partial investigations; 74 new tests passed rc=0, 234 judge/planrec/checks tests passed
 - [x] **R20261110.5** Add `item_workers` to `JUDGE_FACTS`: current and past `worker:` ids per remaining item, with agent type and report title. The complicated check passes for an item with a Plan or writer worker. Fixture: K1.7 with finished worker ab68f85bb599acb4a (23:20:25). Test: .claude/rediacc_hooks/tests/test_wl_judge_facts.py.
     (ticked) 2026-11-10T16:18:25Z by d778be9d: commit:f242757002 judge local-batch facts, receipt-in-flight suppression, measured facts (missing ids, wake time, item workers), contentless settle and --owed on partial investigations; 74 new tests passed rc=0, 234 judge/planrec/checks tests passed
-- [x] **R20261110.6** The SubagentStop capture (`wl_report.py:949-954`) calls a `transcript_armed` that skips `_record_is_idle`, so a silent capture with an armed shell is written `interim`. Fixture: a transcript whose last record is an `api-request` after a `backgroundTaskId` with no `<task-id>`, which gives `interim` set. Inverse: the notification present, which gives no `interim`. Test: .claude/rediacc_hooks/tests/test_wl_interim_reports.py.
+- [x] **R20261110.6** The SubagentStop capture (`.claude/hooks/stop/wl_report.py:949-954`) calls a `transcript_armed` that skips `_record_is_idle`, so a silent capture with an armed shell is written `interim`. Fixture: a transcript whose last record is an `api-request` after a `backgroundTaskId` with no `<task-id>`, which gives `interim` set. Inverse: the notification present, which gives no `interim`. Test: .claude/rediacc_hooks/tests/test_wl_interim_reports.py.
     (ticked) 2026-11-10T15:44:02Z by d778be9d: commit:e8e888e2b2 transcript_armed on the SubagentStop capture path writes interim for a silent capture with an armed shell; test_wl_interim_reports 6 passed rc=0, red with the old call
 - [x] **R20261110.7** Add `settle_contentless`: a continue with a non-order `next_action`, or a reason under 40 characters naming nothing, reads as stop with a `judge-contentless` advisory. Fixture: the 21:21:06 verdict. Test: .claude/rediacc_hooks/tests/test_wl_judge_facts.py.
     (ticked) 2026-11-10T16:18:26Z by d778be9d: commit:f242757002 judge local-batch facts, receipt-in-flight suppression, measured facts (missing ids, wake time, item workers), contentless settle and --owed on partial investigations; 74 new tests passed rc=0, 234 judge/planrec/checks tests passed

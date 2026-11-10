@@ -37,7 +37,7 @@ It does not report a defect in these cases:
 - the path is missing, which is `STATE_UNREACHABLE`'s case;
 - the owner cannot be read because of EACCES. Then the ping alone decides, and the message names `sudo ss -xlpn | grep docker.sock`.
 
-The devbox, setup and build_server modules stay untouched. All three are ports checked against a recorded transcript of their bash twins (`.ci/rediacc_ci/core/devbox.py:26`, `test_setup_port.py:58`, `test_ops_build_server.py`), so a new probe there would break parity. They gain the hint through the `socket-check` verb.
+The devbox, setup and build_server modules stay untouched. All three are ports checked against a recorded transcript of their bash twins (`.ci/rediacc_ci/core/devbox.py:26`, `.ci/rediacc_ci/tests/test_setup_port.py:58`, `test_ops_build_server.py`), so a new probe there would break parity. They gain the hint through the `socket-check` verb.
 
 ## Tasks
 
@@ -45,7 +45,7 @@ The devbox, setup and build_server modules stay untouched. All three are ports c
     (ticked) 2026-11-10T19:00:51Z by d778be9d: commit:db1c62fbd6 commit:994df3ab75; pytest dockerx, socket, backup-integrity, build_server, setup rc 0 (144 passed); socket-check rc 0
 - [x] D2 Append `socket_defect()` to the reason in `cannot_run_reason` and `require_ready` when the state is not READY. Extend `_ADVICE[STATE_UNREACHABLE]` and the module docstring with this measurement. Accept: the pytest run of `test_core_dockerx.py` exits 0.
     (ticked) 2026-11-10T19:00:52Z by d778be9d: commit:db1c62fbd6 commit:994df3ab75; pytest dockerx, socket, backup-integrity, build_server, setup rc 0 (144 passed); socket-check rc 0
-- [x] D3 In the backup drill preflight, have `preflight_tools` (`drills/backup.py:560-564`) use `dockerx.cannot_run_reason()` in place of the bare, unbounded `docker info` in `_docker_ok` (:3476), and delete `_docker_ok`. Accept: `rg -n "_docker_ok" .ci/rediacc_ci` is empty and the backup preflight tests pass.
+- [x] D3 In the backup drill preflight, have `preflight_tools` (`.ci/rediacc_ci/drills/backup.py:560-564`) use `dockerx.cannot_run_reason()` in place of the bare, unbounded `docker info` in `_docker_ok` (:3476), and delete `_docker_ok`. Accept: `rg -n "_docker_ok" .ci/rediacc_ci` is empty and the backup preflight tests pass.
     (ticked) 2026-11-10T19:00:53Z by d778be9d: commit:db1c62fbd6 commit:994df3ab75; pytest dockerx, socket, backup-integrity, build_server, setup rc 0 (144 passed); socket-check rc 0
 - [x] D4 Add the tests in a new `test_core_dockerx_socket.py`, then run `npm run shard:place -- quality-pytest`. The tests fire on a planted `docker-desktop-` owner, on two listeners, and on a listener that accepts and never answers. They stay silent on a clean host, a missing path, and an EACCES on fd. A control plants a no-op detector and asserts the firing cases go silent. Accept: the pytest run of the new file exits 0 and the shard file changed.
     (ticked) 2026-11-10T19:00:54Z by d778be9d: commit:db1c62fbd6 commit:994df3ab75; pytest dockerx, socket, backup-integrity, build_server, setup rc 0 (144 passed); socket-check rc 0
