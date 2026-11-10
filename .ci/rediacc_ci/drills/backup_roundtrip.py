@@ -41,6 +41,7 @@ import http.client
 import json
 import os
 import pathlib
+import re
 import subprocess
 import sys
 import time
@@ -64,6 +65,8 @@ SCOPES = [
     "backup:manage",
 ]
 CLIENT_MACHINE_ID = pathlib.Path("/etc/machine-id")
+# `license.datastoreIDPattern`: what renet accepts as a license-store scope.
+DATASTORE_ID = re.compile(r"^[0-9a-fA-F-]{8,64}$")
 LOGIN_PHRASE = "RoundTrip123!"  # a throwaway local-plane account, created and used only here
 
 
@@ -175,6 +178,7 @@ class Roundtrip:
         self.say = say or print
         self.failures = 0
         self.created: list[str] = []
+        self._license_root: str | None = None
 
     # ---------------------------------------------------------------- reporting
 
@@ -224,14 +228,27 @@ class Roundtrip:
         self.api.cookies.clear()
         return sub
 
-    def issue_license(self, guid: str, grand: str, kind: str) -> None:
-        """Mint a licence server-side and install it where renet reads it.
+    def license_root(self) -> str:
+        """The directory renet reads repo licences from for `self.datastore`: the flat `repos` population, or `datastores/<id>/repos` when the datastore carries a descriptor identity (`license.RepoLicenseBaseDir`). Resolved once per run from the descriptor on the VM; an unreadable descriptor is the flat population, as `datastore.IdentityAt` answers."""
+        if self._license_root is None:
+            root = "/var/lib/rediacc/license/repos"
+            probe = self.run_vm(
+                "sudo -n cat %s/.rediacc/datastore.json" % self.datastore, must=False
+            )
+            try:
+                ident = str(json.loads(probe.stdout).get("datastoreId", ""))
+            except (ValueError, AttributeError):
+                ident = ""
+            if probe.returncode == 0 and DATASTORE_ID.fullmatch(ident):
+                root = "/var/lib/rediacc/license/datastores/%s/repos" % ident
+            self._license_root = root
+        return self._license_root
 
-        The filename is the blob's own publicKeyId, so licences from different account universes coexist instead of clobbering.
-        """
+    def fetch_license(self, guid: str, grand: str, kind: str) -> dict:
+        """Ask the account server this drill talks to for a repo licence."""
         machine_id = self.run_vm("sudo -n renet machine-id").stdout.strip("\r\n")
         client_id = CLIENT_MACHINE_ID.read_text(encoding="utf-8").strip()
-        license_doc = self.api.call(
+        doc = self.api.call(
             "POST",
             "/licenses/activate-repo",
             {
@@ -243,16 +260,25 @@ class Roundtrip:
                 "requestedSizeGb": 1,
             },
         )["license"]
+        return dict(doc)
+
+    def issue_license(self, guid: str, grand: str, kind: str) -> None:
+        """Mint a licence server-side and install it where renet reads it.
+
+        The filename is the blob's own publicKeyId, so licences from different account universes coexist instead of clobbering.
+        """
+        license_doc = self.fetch_license(guid, grand, kind)
         blob = self.work / "lic.json"
         blob.write_text(json.dumps(license_doc, indent=2), encoding="utf-8")
         blob.chmod(0o600)
-        target = "/var/lib/rediacc/license/repos/%s/%s.json" % (guid, license_doc["publicKeyId"])
+        directory = "%s/%s" % (self.license_root(), guid)
+        target = "%s/%s.json" % (directory, license_doc["publicKeyId"])
         self.run_vm("cat > /tmp/rt-lic.json", blob.read_text(encoding="utf-8"))
         self.run_vm(
-            "sudo -n mkdir -p /var/lib/rediacc/license/repos/%s && "
+            "sudo -n mkdir -p %s && "
             "sudo -n cp /tmp/rt-lic.json %s && "
             "sudo -n chmod 640 %s && "
-            "rm -f /tmp/rt-lic.json" % (guid, target, target)
+            "rm -f /tmp/rt-lic.json" % (directory, target, target)
         )
 
     def create_source(self, src: str) -> None:
@@ -339,7 +365,7 @@ class Roundtrip:
         for guid in self.created:
             self.run_vm("sudo -n renet repository unmount --name %s" % guid, must=False)
             self.run_vm("sudo -n renet repository delete --name %s --force" % guid, must=False)
-            self.run_vm("sudo -n rm -rf /var/lib/rediacc/license/repos/%s" % guid, must=False)
+            self.run_vm("sudo -n rm -rf %s/%s" % (self.license_root(), guid), must=False)
         self.run_vm("rm -f /tmp/rt_pass.txt", must=False)
         if self.created:
             self.say("removed repos %s and their licences" % " and ".join(self.created))

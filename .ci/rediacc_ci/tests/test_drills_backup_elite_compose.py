@@ -398,3 +398,79 @@ def test_the_drill_is_registered_with_the_run_sh_dispatcher() -> None:
         run_verbs.DRILL_MODULES["backup-elite-compose"] == "rediacc_ci.drills.backup_elite_compose"
     )
     assert "backup-elite-compose" in run_verbs.DRILL_ARMS
+
+
+# ---------------------------------------------------------------- the machine's licence from the box
+
+
+def box_licence(*, cert: dict | None = None, key_id: str = "0123456789abcdef") -> dict:
+    doc: dict = {"payload": "p", "signature": "s", "publicKeyId": key_id}
+    if cert is not None:
+        doc["delegationCert"] = cert
+    return doc
+
+
+class LicenceApi(FakeApi):
+    def __init__(self, licence: dict) -> None:
+        super().__init__("http://box")
+        self.licence = licence
+        self.bodies: list[dict] = []
+
+    def call(self, method: str, path: str, body: dict | None = None, timeout: int = 30) -> dict:
+        if path == "/licenses/activate-repo":
+            self.bodies.append(body or {})
+            return {"license": self.licence}
+        return super().call(method, path, body, timeout)
+
+
+@pytest.fixture
+def licence_trip(tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch):
+    ident = tmp_path / "machine-id"
+    ident.write_text("client-1\n", encoding="utf-8")
+    monkeypatch.setattr(rt, "CLIENT_MACHINE_ID", ident)
+    work = tmp_path / "work"
+    work.mkdir()
+
+    def make(licence: dict):
+        vm = FakeVm([("renet machine-id", ok("mid-1\n"))])
+        api = LicenceApi(licence)
+        trip = ec.EliteRoundtrip(
+            vm, typing.cast("typing.Any", api), work, say=lambda _m: None, subscription=SUB
+        )
+        return trip, vm, api
+
+    return make
+
+
+def test_the_machine_is_licensed_by_the_box_it_backs_up_into(licence_trip) -> None:
+    """The elite path must install the box's licence before `repository create`; a machine with none gets LICENSE_REQUIRED / missing."""
+    trip, vm, api = licence_trip(box_licence(cert=signed_cert()))
+    trip.issue_license("g1", "g1", "grand")
+    assert api.bodies
+    assert api.bodies[0]["repositoryGuid"] == "g1"
+    assert any("license/repos/g1/0123456789abcdef.json" in c for c, _ in vm.calls)
+
+
+def test_the_elite_path_installs_where_a_scoped_datastore_is_read(licence_trip) -> None:
+    trip, vm, _api = licence_trip(box_licence(cert=signed_cert()))
+    vm.answers.insert(0, ("datastore.json", ok(json.dumps({"datastoreId": "abcd1234-ef"}))))
+    trip.issue_license("g1", "g1", "grand")
+    assert any("license/datastores/abcd1234-ef/repos/g1/" in c for c, _ in vm.calls)
+    assert not any("license/repos/g1/" in c for c, _ in vm.calls)
+
+
+@pytest.mark.parametrize(
+    ("licence", "needle"),
+    [
+        (box_licence(), "delegationCert"),
+        (box_licence(cert=signed_cert("other-sub")), "other-sub"),
+        (box_licence(cert=signed_cert(), key_id="kid-1"), "16-hex"),
+    ],
+)
+def test_a_box_licence_renet_cannot_select_is_refused_before_the_create(
+    licence_trip, licence: dict, needle: str
+) -> None:
+    trip, vm, _api = licence_trip(licence)
+    with pytest.raises(rt.StepError, match=needle):
+        trip.issue_license("g1", "g1", "grand")
+    assert not any("cp /tmp/rt-lic.json" in c for c, _ in vm.calls)

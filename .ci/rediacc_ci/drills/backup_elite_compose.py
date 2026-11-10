@@ -210,6 +210,26 @@ def cert_subscription(cert_b64: str) -> str:
     return ""
 
 
+LICENCE_FILE_ID = re.compile(r"^[0-9a-f]{16}$")  # `repoLicenseFilePattern` in pkg/license/store.go
+
+
+def licence_problem(doc: dict, subscription: str) -> str:
+    """What stops renet selecting this repo licence, or empty when nothing does: a key id that is not a 16-hex file name, no delegation cert, or a cert for another subscription than the box's."""
+    if not LICENCE_FILE_ID.fullmatch(str(doc.get("publicKeyId", ""))):
+        return "publicKeyId %r is not a 16-hex key fingerprint, so renet ignores the file" % (
+            doc.get("publicKeyId"),
+        )
+    cert = doc.get("delegationCert")
+    if not isinstance(cert, dict) or not cert:
+        return (
+            "it carries no delegationCert, so a renet baked with the upstream key cannot chain it"
+        )
+    named = cert_subscription(base64.b64encode(json.dumps(cert).encode("utf-8")).decode("ascii"))
+    if named != subscription:
+        return "its delegation cert names subscription %r, not the box's %r" % (named, subscription)
+    return ""
+
+
 class EliteRoundtrip(rt.Roundtrip):
     """The machine-level round trip against the elite box. The box has no `/test` seam, so the account step is the registration this drill already did, and the subscription it returns is the adopted one."""
 
@@ -227,6 +247,14 @@ class EliteRoundtrip(rt.Roundtrip):
 
     def account(self) -> str:
         return self.subscription
+
+    def fetch_license(self, guid: str, grand: str, kind: str) -> dict:
+        """The box's licence, refused here unless renet can select it. The box signs with its own delegated key, so the file is named by that key's id, and renet picks it only when it carries the delegation cert chaining to the build's baked key (`validateSelectedAt`); a blob without one reads as `LICENSE_REQUIRED` / `missing` at `repository create`, an error that names no cause."""
+        doc = super().fetch_license(guid, grand, kind)
+        problem = licence_problem(doc, self.subscription)
+        if problem:
+            raise rt.StepError("the box's licence for %s is unusable: %s" % (guid, problem))
+        return doc
 
 
 def ssh_runner(user: str, key: str, host: str) -> Callable[[str, str | None], rt.VmResult]:
