@@ -97,6 +97,7 @@
   ".claude/rediacc_hooks/guards/warn_staged_shape_duplication.py",
   ".claude/rediacc_hooks/guards/warn_stale_index.py",
   ".claude/rediacc_hooks/guards/warn_submodule_deletions.py",
+  ".claude/rediacc_hooks/guards/warn_writer_brief.py",
   ".claude/rediacc_hooks/hookio.py",
   ".claude/rediacc_hooks/shellscan.py"
 ]

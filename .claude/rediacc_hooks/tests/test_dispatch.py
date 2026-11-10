@@ -7,7 +7,9 @@ a chain that does not exist. Those are properties of the collection, and the col
 `dispatch.run_chain` is tested here rather than left for that cutover, because the fork saving this whole workstream is measured by is the difference between 38 processes and one. A chain runner that is written but never driven is the shape of thing that is discovered to be wrong on the day it is wired in.
 """
 
+import ast
 import json
+import pathlib
 import re
 import subprocess
 import sys
@@ -169,6 +171,47 @@ def test_chain_order_is_unique_per_chain():
 def test_by_chain_covers_every_module():
     covered = {m.__name__ for chain in guards.CHAINS for m in guards.by_chain(chain)}
     assert covered == {guards.load(s).__name__ for s in guards.stems()}
+
+
+def stdout_speakers(source):
+    """True when a guard module writes stdout: an `.say(...)` call on the event, or `sys.stdout.write`. Read from the AST, so a docstring that merely mentions either does not count."""
+    for node in ast.walk(ast.parse(source)):
+        if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Attribute):
+            continue
+        if node.func.attr == "say":
+            return True
+        target = node.func.value
+        if (
+            node.func.attr == "write"
+            and isinstance(target, ast.Attribute)
+            and target.attr == "stdout"
+            and isinstance(target.value, ast.Name)
+            and target.value.id == "sys"
+        ):
+            return True
+    return False
+
+
+def test_at_most_one_stdout_speaker_per_chain():
+    """`run_chain` CONCATENATES every guard's stdout, and a JSON hook answer (`warn_staged_shape_duplication` on pre-bash, `warn_writer_brief` on pre-agent) is only read when stdout is ONE document. A second speaker on either chain would make both unparseable, silently; each speaker's docstring says so, and this is what holds the claim."""
+    speakers = {}
+    for chain in guards.CHAINS:
+        for module in guards.by_chain(chain):
+            source = pathlib.Path(module.__file__).read_text(encoding="utf-8")
+            if stdout_speakers(source):
+                speakers.setdefault(chain, []).append(module.__name__.rsplit(".", 1)[-1])
+    # Anti-vacuity: the detector must see the two speakers this test exists for.
+    assert "warn_staged_shape_duplication" in speakers.get("pre-bash", []), speakers
+    assert "warn_writer_brief" in speakers.get("pre-agent", []), speakers
+    crowded = {c: names for c, names in speakers.items() if len(names) > 1}
+    assert not crowded, "more than one stdout speaker on a chain: %r" % crowded
+
+
+def test_the_stdout_detector_reads_code_not_prose():
+    assert stdout_speakers("def run(event):\n    event.say('x')\n")
+    assert stdout_speakers("import sys\nsys.stdout.write('x')\n")
+    assert not stdout_speakers('"""event.say() is mentioned only here."""\n')
+    assert not stdout_speakers("def run(event):\n    event.warn('x')\n")
 
 
 # --------------------------------------------------------------------------- The entry point ---------------------------------------------------------------------------
