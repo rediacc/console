@@ -185,3 +185,12 @@ def test_a_secret_nested_in_an_event_value_is_redacted_too() -> None:
     assert key not in json.dumps(ev)
     assert ev["notes"][0]["t"] == "holds AKIA...ZBCP"
     assert ev["meta"]["k"] == ["AKIA...ZBCP"]
+
+
+def test_a_secret_used_as_a_nested_key_or_in_a_tuple_is_redacted() -> None:
+    key = "AKIA" + "ABCDEFGHIJKL" + "OQGI"
+    ev: dict[str, Any] = {"ev": "x", "map": {key: 1}, "pair": (key, "y")}
+    S._redact_secret_shapes(ev)
+    assert key not in json.dumps(ev)
+    assert "AKIA...OQGI" in ev["map"]
+    assert ev["pair"] == ["AKIA...OQGI", "y"]
