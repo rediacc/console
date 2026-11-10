@@ -24,11 +24,11 @@ THE SOURCES. TRAPS.md under the repo root the hook is handed, and the user's mem
 COST. Both hooks run on every Bash call. The corpus is read whole only when it contains the text `Shape:`, the post rule tests each shape's OUTPUT regex before it parses the command or validates a sample, so a call whose output shows no trap never imports `shellscan`.
 """
 
+import importlib.util
 import json
 import os
 import pathlib
 import re
-import sys
 
 SHAPE = "Shape:"
 SHAPE_OUTPUT = "Shape-Output:"
@@ -337,7 +337,12 @@ def _every_run():
     try:
         from rediacc_hooks import shellscan
     except ImportError:
-        sys.path.insert(0, str(_CLAUDE_DIR))
+        spec = importlib.util.spec_from_file_location(
+            "rediacc_hooks_syspath", _CLAUDE_DIR / "rediacc_hooks" / "syspath.py"
+        )
+        syspath = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(syspath)
+        syspath.on_sys_path(_CLAUDE_DIR)
         from rediacc_hooks import shellscan
     return shellscan.every_run
 

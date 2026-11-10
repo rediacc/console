@@ -1331,14 +1331,15 @@ def skip_globs(root, cfg=None):
         (g, []) for g in cfg.get("review_skip_globs") or [] if isinstance(g, str)
     ]
     try:
-        doc = json.loads(
-            pathlib.Path(root, ".ci", "policy", "record-paths.json").read_text(encoding="utf-8")
-        )
+        importlib.import_module("wl_proc")  # its import puts .ci on sys.path
+        from rediacc_ci.policy_paths import policy_path
+
+        doc = json.loads(policy_path("record-paths.json", root).read_text(encoding="utf-8"))
         for rec in doc.get("records", []):
             if isinstance(rec, dict) and isinstance(rec.get("glob"), str):
                 excepts = [e for e in rec.get("except") or [] if isinstance(e, str)]
                 globs.append((rec["glob"], excepts))
-    except (OSError, ValueError, AttributeError):
+    except (OSError, ValueError, AttributeError, ImportError):
         pass
     refused = [g for g, _e in globs if not admissible_skip_glob(g)]
     if refused:

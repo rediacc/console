@@ -6,7 +6,6 @@ The gate script is run for real over a fixture HINTS.md (its `HINTS_FILE` pointe
 from __future__ import annotations
 
 import importlib.util
-import sys
 from typing import TYPE_CHECKING
 
 import pytest
@@ -21,7 +20,7 @@ LIVE_HINTS = paths.from_root("docs", "agent-reference", "HINTS.md")
 
 
 def _gate():
-    sys.path.insert(0, str(SCRIPT.parent))
+    paths.on_sys_path(SCRIPT.parent)
     spec = importlib.util.spec_from_file_location("check_hint_corpus_under_test", SCRIPT)
     assert spec is not None
     assert spec.loader is not None

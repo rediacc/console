@@ -8,6 +8,7 @@ IT DRIVES THE LIVE GUARD THROUGH THE DISPATCHER against FIXTURE sources: a scrat
 THE THREE CONTROLS THE BOX NAMES COME FIRST: `gh run rerun 1 --failed` passes while the bare form is refused (so the pass is not a guard that loaded nothing), a Shape that does not compile is not loaded, and a Shape whose Silent sample fires is not loaded. A shape that is not loaded must ADMIT the command it would have matched, and say so on stderr.
 """
 
+import importlib.util
 import json
 import os
 import pathlib
@@ -18,6 +19,14 @@ import tempfile
 HERE = pathlib.Path(__file__).resolve().parent
 REPO = HERE.parents[2]
 DISPATCH = str(HERE.parent / "dispatch.py")
+# `rediacc_hooks/wellknown.py` loaded by file, as the dispatcher's guards do: this script has no `.claude` on sys.path.
+_WK = importlib.util.spec_from_file_location(
+    "rediacc_hooks_wellknown", HERE.parent / "wellknown.py"
+)
+if _WK is None or _WK.loader is None:
+    raise SystemExit("%s: rediacc_hooks/wellknown.py is missing" % __file__)
+_wellknown = importlib.util.module_from_spec(_WK)
+_WK.loader.exec_module(_wellknown)
 GUARD_ARGV = [sys.executable, DISPATCH, "block_shape_lessons"]
 
 RERUN_NOTE = """---
@@ -30,7 +39,7 @@ Re-run with `--failed`.
 Shape: pre:refuse ^gh(?:\\s+(?:-R|--repo)[\\s=]\\S+)?\\s+run\\s+rerun\\b(?!.*\\s(?:--failed|--job|-j|--help|-h)(?:[\\s=]|$))
 Shape-Say: a bare `gh run rerun <id>` restarts EVERY job; add --failed
 Shape-Fires: gh run rerun 39766647743
-Shape-Fires: gh -R rediacc/console run rerun 5
+Shape-Fires: gh -R {repo} run rerun 5
 Shape-Silent: gh run rerun 1 --failed
 Shape-Silent: echo gh run rerun 1
 """
@@ -148,7 +157,11 @@ with tempfile.TemporaryDirectory(prefix="shape-lessons-") as tmp:
     base = pathlib.Path(tmp)
 
     # ---- the three controls, first ----
-    rerun = world(base, "rerun", notes={"feedback_rerun_failed_only": RERUN_NOTE})
+    rerun = world(
+        base,
+        "rerun",
+        notes={"feedback_rerun_failed_only": RERUN_NOTE.replace("{repo}", _wellknown.GH_REPO)},
+    )
     case(
         "CONTROL: gh run rerun 1 --failed passes",
         "gh run rerun 1 --failed",

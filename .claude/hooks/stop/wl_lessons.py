@@ -17,9 +17,9 @@ POINTERS. One grammar, `<kind>:<token>`, for `worklist.py --hint-resolve` and fo
 
 from __future__ import annotations
 
+import importlib
 import pathlib
 import re
-import sys
 
 import wl_planrec as PR
 
@@ -56,9 +56,7 @@ def _inside(root, rel):
 
 def shared_registry(root, memory_dir=None):
     """(trap_registry module, Registry over `root`), loaded from THIS checkout's code. `root` supplies the data (TRAPS, manifest, guards, tests); the shape loader stays the code's own when `root` has none. Raises on a resolver that cannot be loaded."""
-    ci = str(CODE_ROOT / ".ci")
-    if ci not in sys.path:
-        sys.path.insert(0, ci)
+    importlib.import_module("wl_proc")  # its import puts this checkout's `.ci` on sys.path
     from rediacc_ci.quality import trap_registry as TR
 
     seams = TR.resolve_seams(pathlib.Path(root))

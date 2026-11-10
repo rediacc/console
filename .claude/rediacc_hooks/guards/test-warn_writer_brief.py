@@ -13,6 +13,7 @@ THE PIPE CASE IS THE www ONE. The guard hands gen-docs about 2,000 paths on a pi
 """
 
 import importlib
+import importlib.util
 import json
 import os
 import pathlib
@@ -27,8 +28,14 @@ HOOKS = HERE.parent
 CLAUDE = HOOKS.parent
 STOP = CLAUDE / "hooks" / "stop"
 DISPATCH = str(HOOKS / "dispatch.py")
-sys.path.insert(0, str(CLAUDE))
-sys.path.insert(0, str(STOP))
+# The canonical sys.path hop, through rediacc_hooks/syspath.py loaded by file.
+_SYSPATH = importlib.util.spec_from_file_location("rediacc_hooks_syspath", HOOKS / "syspath.py")
+if _SYSPATH is None or _SYSPATH.loader is None:
+    raise SystemExit("%s: rediacc_hooks/syspath.py is missing" % __file__)
+_syspath = importlib.util.module_from_spec(_SYSPATH)
+_SYSPATH.loader.exec_module(_syspath)
+_syspath.on_sys_path(str(CLAUDE))
+_syspath.on_sys_path(str(STOP))
 R = importlib.import_module("wl_review")
 dispatch = importlib.import_module("rediacc_hooks.dispatch")
 guards = importlib.import_module("rediacc_hooks.guards")
@@ -99,6 +106,16 @@ def one_document(stdout):
 
 TALLY = {"fails": 0, "fired": 0, "silent": 0}
 
+TIMED_OUT = "TimeoutExpired"
+
+
+def load_stalled(rc, err, took):
+    """True when a run died of machine load rather than of the guard: it was slower than the budget, or its own gen-docs child hit the guard's deadline while the guard still exited 0. Anything else (a refusal, a crash, a wrong document) is the guard's and is never retried.
+
+    The gen-docs half spawns a node child with a hard deadline, so a pytest run that has the box saturated times it out although the guard is correct (measured 2026-11-10). A single retry bounds the cost; a real defect fails twice.
+    """
+    return rc == 0 and (took > BUDGET_S or (NOT_RUN in err and TIMED_OUT in err))
+
 
 def check(name, ok, detail=""):
     TALLY["fails"] += not ok
@@ -110,6 +127,8 @@ def check(name, ok, detail=""):
 def case(name, payload, root, want_needles, refuse_needles=(), argv=(STEM,), extra_env=None):
     """Run one case; `want_needles` empty means it must be silent on stdout."""
     rc, out, err, took = drive(payload, root, argv, extra_env)
+    if load_stalled(rc, err, took):
+        rc, out, err, took = drive(payload, root, argv, extra_env)
     doc = one_document(out)
     context = ((doc or {}).get("hookSpecificOutput") or {}).get("additionalContext") or ""
     problems = []
@@ -315,6 +334,22 @@ def main():
             [REVIEW_NEEDLE],
             argv=("--chain", "pre-agent"),
             extra_env={"WORKLIST_STORE_DIR": str(store), "TMPDIR": str(tmp)},
+        )
+
+        # The retry gate: it fires only on load (slow, or the gen-docs child's deadline), and stays silent on a real defect.
+        stall = "writer-brief: the gen-docs question did not run (%s: deadline)" % TIMED_OUT
+        check(
+            "retry gate: a slow run and a gen-docs deadline are retried",
+            load_stalled(0, "", BUDGET_S + 1) and load_stalled(0, stall, 0.1),
+        )
+        check(
+            "retry gate control: a crash, a refusal, a fast silent run and another stderr are not",
+            not (
+                load_stalled(1, stall, 9.0)
+                or load_stalled(2, "", 0.1)
+                or load_stalled(0, "", 0.1)
+                or load_stalled(0, "writer-brief: did not run (ValueError)", 0.1)
+            ),
         )
 
         module = encodings()
