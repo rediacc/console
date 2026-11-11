@@ -92,7 +92,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-dead-bash | quality-code / Dead bash | yes | yes |
 | check:ci-dead-case-arms | test: .ci/rediacc_ci/tests/gates/test_gate_dead_case_arms.py | yes | no |
 | check:ci-dead-css | quality-content / Dead CSS | yes | no |
-| check:ci-dead-python | quality-static / Dead Python | yes | no |
+| check:ci-dead-python | quality-static / Dead Python | yes | yes |
 | check:ci-dead-service-methods | quality-content / Dead service methods | yes | no |
 | check:ci-dead-translation-keys | quality-i18n / i18n | yes | no |
 | check:ci-decision-ids | quality-branch / Decision ids | yes | no |
@@ -362,7 +362,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-tracked-credentials | quality-security / Tracked credentials | yes | no |
 | check:ci-tracked-sidecars | quality-static / Tracked runtime sidecars | yes | no |
 | check:ci-trap-registry | quality-code / Trap registry dispositions | yes | no |
-| check:ci-tree-shape | quality-static / Tree shape | yes | no |
+| check:ci-tree-shape | quality-static / Tree shape | yes | yes |
 | check:ci-turnstile-drift | quality-static / Turnstile widget drift | yes | no |
 | check:ci-tutorial-caption-sync | quality-content / Validate published tutorial word-timing sync (real ASR alignment, not estimated) | yes | no |
 | check:ci-tutorial-card-fonts | quality-content / Validate tutorial card fonts cover every locale | yes | yes |

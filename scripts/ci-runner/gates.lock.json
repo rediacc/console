@@ -1295,6 +1295,7 @@
     "id": "check:ci-tree-shape",
     "run": "npm run check:ci-tree-shape",
     "gate": true,
+    "slow": true,
     "leaves": [
       ".ci/scripts/quality/check_tree_shape.py"
     ],
@@ -2119,6 +2120,7 @@
     "id": "check:ci-dead-python",
     "run": "npm run check:ci-dead-python",
     "gate": true,
+    "slow": true,
     "leaves": [
       ".ci/scripts/quality/check_dead_python.py"
     ],

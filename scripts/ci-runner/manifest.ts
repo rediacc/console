@@ -1243,6 +1243,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-tree-shape',
     run: 'npm run check:ci-tree-shape',
     gate: true,
+    slow: true, // 20.9s CI step measured 2026-11-11 (check:ci-gate-manifest tier)
     leaves: ['.ci/scripts/quality/check_tree_shape.py'],
     ci: {
       kind: 'step',
@@ -2037,6 +2038,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-dead-python',
     run: 'npm run check:ci-dead-python',
     gate: true,
+    slow: true, // 20.3s CI step measured 2026-11-11 (check:ci-gate-manifest tier)
     leaves: ['.ci/scripts/quality/check_dead_python.py'],
     ci: {
       kind: 'step',
