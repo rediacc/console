@@ -80,17 +80,17 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic f65726d5, plan agent/plans/PLAN-renet-down-before-kill.md, outside the set, 16 commit(s) on the branch, 0 open item(s): renet runs Rediaccfile down() before repo containers stop
   - epic 53c31db2, plan agent/plans/PLAN-repo-resource-limits.md, outside the set, 20 commit(s) on the branch, 0 open item(s): per-repo resource limits and a renet-managed RAM volume
   - epic a86f5622, plan agent/plans/PLAN-production-key-only.md, outside the set, 4 commit(s) on the branch, 0 open item(s): Production key only: every leg licensed from its own plane
-  - epic 79b7e92e, no plan, 408 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
-  - epic 562ef6c3, plan agent/plans/PLAN-experience-feedback.md, outside the set, 102 commit(s) on the branch, 0 open item(s): experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire
-- Writers: 1 live of writer_cap 25 (session d778be9d): worker:ac10a855e9fa102d3.
-- Leased items: 3: #6072ddc7 (worker:a10fd250d441d9905, d778be9d), #8d576362 (worker:bdocaxfhn, d778be9d), #9cb71958 (worker:ac10a855e9fa102d3, d778be9d).
+  - epic 79b7e92e, no plan, 414 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 562ef6c3, plan agent/plans/PLAN-experience-feedback.md, outside the set, 104 commit(s) on the branch, 0 open item(s): experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire
+- Writers: 5 live of writer_cap 25 (session d778be9d): worker:aa9a3c6b190cef86e, worker:ac881a0c2a1ac16fb, worker:a0d6e91e53a1c724c, worker:a4bceb07e0ba9747c, worker:aad55adc60cba4c8f.
+- Leased items: 3: #29531257 (worker:aa9a3c6b190cef86e, d778be9d), #9cb71958 (worker:ac881a0c2a1ac16fb, d778be9d), #df6143bb (worker:a0d6e91e53a1c724c, d778be9d).
 - Next plan: agent/plans/PLAN-cloudflare-proxy.md, Promoted entry 2; a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 23 of 64 plans done, 1039 of 1187 boxes done (87%).
+Promoted: 23 of 65 plans done, 1039 of 1202 boxes done (86%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -158,6 +158,7 @@ Promoted: 23 of 64 plans done, 1039 of 1187 boxes done (87%).
 | 62 | PLAN-idle-writer-capacity.md | 5/5 | done |
 | 63 | PLAN-d1-scaling.md | 17/31 | 14 open |
 | 64 | PLAN-experience-feedback.md | 12/16 | 4 open |
+| 65 | PLAN-local-first-delivery.md | 0/15 | 15 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-backup-program.md -- operator 2026-10-20 ("move agent/plans/PLAN-backup-program.md to the promoted"): one backup program across renet, account, CLI and shared, ending in a live hostinger to eu R2 backup; P1; Depends-On PLAN-shell-sandbox-readonly-view.md and PLAN-account-vm-check.md (done 2026-10-20); released to writers by operator /ask ASKED:2026-10-20T15:14Z ("edit writers to go NOW")
@@ -224,6 +225,7 @@ Promoted: 23 of 64 plans done, 1039 of 1187 boxes done (87%).
 62. agent/plans/PLAN-idle-writer-capacity.md -- operator rulings ASKED 2026-11-09 via AskUserQuestion (R1 ceiling fix and IDLE CAPACITY block, R2 name boxes and the spawn command, R3 `[writer]` tag only, R4 per-box Depends-on): writer slots sat idle while writer-ready boxes waited
 63. agent/plans/PLAN-d1-scaling.md -- operator rulings 2026-11-09T12:12Z and 12:39Z on the D1 scaling review (Q1-Q8)
 64. agent/plans/PLAN-experience-feedback.md -- operator rulings ASKED:2026-11-10T06:24Z ("One plan, run now in parallel"; retire a lesson once a guard, gate, test, CI check or tool fix enforces it): the ledger audit found experience recorded but never fed back (0 of 125 hint proposals promoted, a retro gate silencing long sessions, 6,465 review findings recurring by class); epic #562ef6c3; P1
+65. agent/plans/PLAN-local-first-delivery.md -- operator 2026-11-11T09:0xZ: "Queue the new plan now to prompted and start implementing"
 
 ## Generated
 
@@ -236,9 +238,8 @@ Promoted: 23 of 64 plans done, 1039 of 1187 boxes done (87%).
 6. agent/plans/PLAN-backup-toc-exact-opt-in.md -- P3, proposed, in progress (2 of 10 boxes ticked)
 7. agent/plans/PLAN-deletion-budget.md -- P3 (operator), draft, not started
 8. agent/plans/PLAN-fix-upgrade-drills-flat-daemon-bringup.md -- P1, executing, not started
-9. agent/plans/PLAN-local-first-delivery.md -- P1, proposed, not started
-10. agent/plans/PLAN-first-release-checks.md -- P2, approved, not started
-11. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
+9. agent/plans/PLAN-first-release-checks.md -- P2, approved, not started
+10. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
 
 ### Not queued
 
