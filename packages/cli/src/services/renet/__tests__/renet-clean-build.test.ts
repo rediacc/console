@@ -147,6 +147,7 @@ beforeEach(() => {
   workingBinary = path.join(top, 'bin', 'renet');
   fs.mkdirSync(path.join(top, 'bin'), { recursive: true });
   fs.writeFileSync(workingBinary, 'dirty build');
+  fs.writeFileSync(path.join(top, 'build.sh'), '');
   fs.mkdirSync(path.join(top, 'pkg', 'embed', 'assets', 'amd64'), { recursive: true });
   fs.writeFileSync(path.join(top, 'pkg', 'embed', 'assets', 'amd64', 'x.zst'), 'asset');
   fs.mkdirSync(path.join(superproject, 'private', 'account', '.cache'), { recursive: true });
@@ -195,6 +196,23 @@ describe('selectRenetUploadBinary', () => {
     const { deps } = fakeDeps();
     const selection = await selectRenetUploadBinary('/usr/local/bin/renet', deps);
     expect(selection.localBinaryPath).toBe('/usr/local/bin/renet');
+    expect(deps.build).not.toHaveBeenCalled();
+  });
+
+  it('a binary cached inside another repository (no renet build.sh) is used as it is', async () => {
+    const cached = path.join(superproject, '.ci', 'cache', 'renet-main', 'k', 'renet');
+    fs.mkdirSync(path.dirname(cached), { recursive: true });
+    fs.writeFileSync(cached, 'cached');
+    mockExecFileSync.mockImplementation((_cmd: string, args: string[]) => {
+      if (args.includes('--show-toplevel')) return `${superproject}\n`;
+      if (args.includes('--porcelain')) return ' M README.md\n';
+      throw new Error(`unexpected git ${args.join(' ')}`);
+    });
+    const { selectRenetUploadBinary } = await load();
+    const { deps } = fakeDeps();
+    const selection = await selectRenetUploadBinary(cached, deps);
+    expect(selection.localBinaryPath).toBe(cached);
+    expect(selection.cleanCommit).toBeNull();
     expect(deps.build).not.toHaveBeenCalled();
   });
 

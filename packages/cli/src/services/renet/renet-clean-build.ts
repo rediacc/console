@@ -55,8 +55,9 @@ export function assertRenetSourceClean(localBinaryPath: string, machine: Machine
 }
 
 /**
- * The git work tree a local renet binary sits in and its `status --porcelain` lines, or null for
- * a binary outside any git work tree (a release binary on PATH).
+ * The renet work tree a local renet binary sits in and its `status --porcelain` lines, or null
+ * for a binary outside one: a release binary on PATH, or a copy cached inside another repository
+ * (the console's `.ci/cache`), whose work tree is not renet's source and has no `build.sh`.
  */
 export function renetSourceState(localBinaryPath: string): { top: string; dirty: string[] } | null {
   let top: string;
@@ -65,7 +66,7 @@ export function renetSourceState(localBinaryPath: string): { top: string; dirty:
   } catch {
     return null;
   }
-  if (!top) return null;
+  if (!top || !fsSync.existsSync(path.join(top, 'build.sh'))) return null;
   const porcelain = gitOut(['status', '--porcelain'], top);
   return { top, dirty: porcelain.split('\n').filter((line) => line.trim() !== '') };
 }
