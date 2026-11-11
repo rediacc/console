@@ -12,6 +12,7 @@ import os
 import shlex
 import sqlite3
 import stat
+import subprocess
 import typing
 from urllib.parse import urlparse
 
@@ -577,7 +578,7 @@ def test_a_row_not_sealed_under_the_bench_key_refuses() -> None:
     """Each channel holds its own key, so a row sealed under the stable key (any kid but bench's) cannot open on bench."""
     with pytest.raises(
         mod.RefusedError,
-        match="kid 99999999, not the bench key's kid abcdef12: it would not open on account-bench, and no step reseals it under the target's key yet",
+        match=r"kid 99999999, not the bench key's kid abcdef12: it would not open on account-bench, and the reseal \(reseal_server_key\) did not seal it",
     ):
         _check(NEW, NEW, "csk1.99999999.Zm9v", _bench(ROW_KID))
 
@@ -1632,7 +1633,7 @@ def test_bench_server_key_checks_read_the_bench_worker_and_key() -> None:
     assert "sealed under the bench key (kid bbbbbbbb)" in line
     with pytest.raises(
         mod.RefusedError,
-        match="not the bench key's kid bbbbbbbb: it would not open on account-bench, and no step reseals",
+        match="not the bench key's kid bbbbbbbb: it would not open on account-bench, and the reseal",
     ):
         _bench_check(NEW, NEW, "csk1.99999999.Zm9v", _bench_kid)
     with pytest.raises(
@@ -1655,3 +1656,237 @@ def test_a_bench_apply_without_the_ack_names_the_target(fake, capsys) -> None:
     assert mod.main([*BENCH_BASE, "--store", STORE, "--apply"]) == 2
     assert "--apply writes the bench database and bucket" in "".join(capsys.readouterr())
     assert _calls(fake["log"]) == []
+
+
+# ---- R1: the reseal of config layer 3 (PLAN-config-mirror-reseal) ------------
+
+SRC_KEY_ENV = "ACCOUNT_CONFIG_SERVER_KEY_EU_STABLE"
+SRC_KEY_VALUE = "SOURCE-KEY-MATERIAL-zz"
+DST_KEY_VALUE = "TARGET-KEY-MATERIAL-zz"
+TARGET_KID = "0fbf017a"
+RESEALED_ROW = "csk1.%s.RESEALED-BODY-zz" % TARGET_KID
+KIDS = {SRC.name: (SRC_KEY_ENV, ROW_KID), DST.name: (BENCH_KEY_ENV, TARGET_KID)}
+
+
+def _kids(**override: tuple[str, str | None]):
+    table = {**KIDS, **override}
+    return lambda _root, end: table[end.name]
+
+
+class FakeReseal:
+    """Stands in for `reseal_proc` (the account script): records each call, checks the keys reach it only through the environment, and seals under the target kid unless told to refuse."""
+
+    def __init__(self, code: int = 0, answer: dict | None = None, err: str = "") -> None:
+        self.calls: list[tuple[tuple[str, str], dict]] = []
+        self.code, self.answer, self.err = code, answer, err
+
+    def __call__(self, _root, names, payload):
+        assert os.environ.get(names[0]) == SRC_KEY_VALUE
+        assert os.environ.get(names[1]) == DST_KEY_VALUE
+        doc = json.loads(payload)
+        self.calls.append((names, doc))
+        if self.code:
+            return self.code, "", self.err
+        answer = self.answer or {
+            "source_kid": ROW_KID,
+            "target_kid": TARGET_KID,
+            "rows": [{"id": r["id"], "old_kid": ROW_KID, "new": RESEALED_ROW} for r in doc["rows"]],
+        }
+        return 0, json.dumps(answer), ""
+
+
+@pytest.fixture
+def keys(monkeypatch: pytest.MonkeyPatch) -> FakeReseal:
+    monkeypatch.setenv(SRC_KEY_ENV, SRC_KEY_VALUE)
+    monkeypatch.setenv(BENCH_KEY_ENV, DST_KEY_VALUE)
+    monkeypatch.setattr(mod, "key_kid", _kids())
+    proc = FakeReseal()
+    monkeypatch.setattr(mod, "reseal_proc", proc)
+    return proc
+
+
+def test_a_foreign_kid_row_is_resealed_and_then_passes_the_kid_check(keys) -> None:
+    value, line = mod.reseal_server_key(ROOT, SRC, DST, STORE, TAGGED_ROW)
+    assert value == RESEALED_ROW
+    assert keys.calls == [
+        ((SRC_KEY_ENV, BENCH_KEY_ENV), {"rows": [{"id": STORE, "value": TAGGED_ROW}]})
+    ]
+    assert line is not None
+    assert "opened under the stable key (%s, kid %s)" % (SRC_KEY_ENV, ROW_KID) in line
+    assert "sealed under the bench key (%s, kid %s)" % (BENCH_KEY_ENV, TARGET_KID) in line
+    # The unresealed row still refuses; the resealed one passes the same check.
+    with pytest.raises(mod.RefusedError, match="not the bench key's kid %s" % TARGET_KID):
+        _check(NEW, NEW, TAGGED_ROW, _bench(TARGET_KID))
+    assert "sealed under the bench key (kid %s)" % TARGET_KID in _check(
+        NEW, NEW, value, _bench(TARGET_KID)
+    )
+
+
+def test_a_row_whose_kid_is_not_the_source_keys_refuses_before_the_script(
+    keys, monkeypatch
+) -> None:
+    monkeypatch.setattr(mod, "key_kid", _kids(eu=(SRC_KEY_ENV, "77777777")))
+    with pytest.raises(
+        mod.RefusedError,
+        match=r"sealed under kid abcdef12, but the stable key \(%s\) is kid 77777777: the row does not open under the source key"
+        % SRC_KEY_ENV,
+    ):
+        mod.reseal_server_key(ROOT, SRC, DST, STORE, TAGGED_ROW)
+    assert keys.calls == []
+
+
+@pytest.mark.usefixtures("keys")
+def test_a_row_the_script_cannot_open_under_the_source_key_refuses_without_key_material(
+    monkeypatch,
+) -> None:
+    proc = FakeReseal(
+        code=1,
+        err="reseal-config-server-key: store %s (kid %s) does not open under the source key %s\n"
+        % (STORE[:8], ROW_KID, SRC_KEY_VALUE),
+    )
+    monkeypatch.setattr(mod, "reseal_proc", proc)
+    with pytest.raises(mod.RefusedError) as info:
+        mod.reseal_server_key(ROOT, SRC, DST, STORE, TAGGED_ROW)
+    text = str(info.value)
+    assert "refused (exit 1)" in text
+    assert "does not open under the source key" in text
+    for secret in (SRC_KEY_VALUE, DST_KEY_VALUE, TAGGED_ROW):
+        assert secret not in text
+
+
+def test_a_missing_source_key_refuses_naming_the_variable(keys, monkeypatch) -> None:
+    monkeypatch.setattr(mod, "key_kid", _kids(eu=(SRC_KEY_ENV, None)))
+    with pytest.raises(
+        mod.RefusedError, match=r"stable key is not in the environment \(%s\)" % SRC_KEY_ENV
+    ):
+        mod.reseal_server_key(ROOT, SRC, DST, STORE, TAGGED_ROW)
+    assert keys.calls == []
+
+
+@pytest.mark.parametrize(
+    ("value", "dst_kid"),
+    [
+        (None, TARGET_KID),
+        (LEGACY_ROW, TARGET_KID),
+        ("csk1.%s.Zm9v" % TARGET_KID, TARGET_KID),
+        (TAGGED_ROW, None),
+    ],
+    ids=["no-row", "untagged", "already-target", "no-target-key"],
+)
+def test_nothing_to_reseal_leaves_the_row_for_the_kid_check(
+    keys, monkeypatch, value, dst_kid
+) -> None:
+    monkeypatch.setattr(mod, "key_kid", _kids(bench=(BENCH_KEY_ENV, dst_kid)))
+    assert mod.reseal_server_key(ROOT, SRC, DST, STORE, value) == (value, None)
+    assert keys.calls == []
+
+
+@pytest.mark.parametrize(
+    "answer",
+    [
+        {
+            "source_kid": ROW_KID,
+            "target_kid": "11111111",
+            "rows": [{"id": STORE, "new": "csk1.11111111.x"}],
+        },
+        {
+            "source_kid": ROW_KID,
+            "target_kid": TARGET_KID,
+            "rows": [{"id": "other-store", "new": RESEALED_ROW}],
+        },
+        {
+            "source_kid": ROW_KID,
+            "target_kid": TARGET_KID,
+            "rows": [{"id": STORE, "new": TAGGED_ROW}],
+        },
+        {"source_kid": ROW_KID, "target_kid": TARGET_KID},
+    ],
+    ids=["wrong-target-kid", "wrong-row", "not-resealed", "no-rows"],
+)
+@pytest.mark.usefixtures("keys")
+def test_a_reseal_answer_that_does_not_hold_up_refuses(monkeypatch, answer) -> None:
+    monkeypatch.setattr(mod, "reseal_proc", FakeReseal(answer=answer))
+    with pytest.raises(mod.RefusedError, match="the reseal of store store000"):
+        mod.reseal_server_key(ROOT, SRC, DST, STORE, TAGGED_ROW)
+
+
+def test_a_resealing_dry_run_writes_nothing_and_prints_no_key(fake, keys, capsys) -> None:
+    assert mod.main([*BASE, "--store", STORE]) == 0
+    assert {_kind(c) for c in _calls(fake["log"])} == {"read", "r2-get"}
+    assert len(keys.calls) == 1
+    out = capsys.readouterr()
+    text = out.out + out.err
+    assert "reseal: server_recoverable_org_passphrase opened under the stable key" in text
+    assert "the store's row is sealed under the bench key (kid %s)" % TARGET_KID in text
+    assert "dry run: nothing written" in text
+    for secret in [
+        *NEVER_SHOWN,
+        RESEALED_ROW,
+        SRC_KEY_VALUE,
+        DST_KEY_VALUE,
+        "cf-token-secret-value",
+    ]:
+        assert secret not in text
+    assert count(_db(fake, "account-bench"), "config_stores") == 0
+
+
+def test_a_resealing_apply_writes_the_resealed_row(fake, keys, capsys) -> None:
+    # `keys` after `fake`: it replaces the fixture's single-kid key_kid with the per-end one.
+    assert mod.main(_apply_argv(fake)) == 0
+    assert len(keys.calls) == 1
+    got = rows(
+        _db(fake, "account-bench"),
+        "SELECT server_recoverable_org_passphrase AS v FROM config_stores WHERE id = ?",
+        STORE,
+    )
+    assert got == [{"v": RESEALED_ROW}]
+    out = capsys.readouterr()
+    for secret in (RESEALED_ROW, SRC_KEY_VALUE, DST_KEY_VALUE):
+        assert secret not in out.out + out.err
+
+
+SEAL_HELPER = """import { sealServerSecret } from %s;
+const sealed = await sealServerSecret(process.env.SEAL_KEY!, new TextEncoder().encode(process.env.SEAL_PLAIN!), process.env.SEAL_STORE!);
+process.stdout.write(sealed);
+"""
+
+
+def test_the_real_reseal_script_round_trips_under_the_workers_crypto(tmp_path, monkeypatch) -> None:
+    """The account's own script end to end: a row sealed by the Worker's own `sealServerSecret` under one key comes back sealed under the other, and a body sealed under a third key refuses. Skipped only where private/account has no node_modules (the Pytest lane installs none)."""
+    tsx = ROOT.joinpath(*mod.RESEAL_TSX)
+    if not tsx.is_file():
+        pytest.skip("private/account has no node_modules")
+    # .mts: an ES module wherever it lands, so its top-level await compiles outside any package.json.
+    helper = tmp_path / "seal.mts"
+    module = ROOT / "private" / "account" / "src" / "services" / "config-server-key.ts"
+    helper.write_text(SEAL_HELPER % json.dumps(str(module)), encoding="utf-8")
+
+    def seal(key: str, plain: str) -> str:
+        env = {**os.environ, "SEAL_KEY": key, "SEAL_PLAIN": plain, "SEAL_STORE": STORE}
+        proc = subprocess.run(
+            [str(tsx), str(helper)],
+            cwd=ROOT / "private" / "account",
+            env=env,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        return proc.stdout.strip()
+
+    monkeypatch.setenv(SRC_KEY_ENV, SRC_KEY_VALUE)
+    monkeypatch.setenv(BENCH_KEY_ENV, DST_KEY_VALUE)
+    row = seal(SRC_KEY_VALUE, "org-passphrase-plaintext")
+    assert row.startswith("csk1.%s." % mod.config_server_key_id(SRC_KEY_VALUE))
+    value, line = mod.reseal_server_key(ROOT, SRC, DST, STORE, row)
+    assert isinstance(value, str)
+    assert value.startswith("csk1.%s." % mod.config_server_key_id(DST_KEY_VALUE))
+    assert line is not None
+    assert "org-passphrase-plaintext" not in line
+    forged = "csk1.%s.%s" % (
+        mod.config_server_key_id(SRC_KEY_VALUE),
+        seal("SOME-OTHER-KEY", "x").split(".", 2)[2],
+    )
+    with pytest.raises(mod.RefusedError, match="does not open under the source key") as info:
+        mod.reseal_server_key(ROOT, SRC, DST, STORE, forged)
+    for secret in (SRC_KEY_VALUE, DST_KEY_VALUE, forged):
+        assert secret not in str(info.value)

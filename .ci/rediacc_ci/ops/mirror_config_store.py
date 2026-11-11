@@ -18,7 +18,7 @@ IDENTITY. Case A: no bench user has the operator's `email_hash`, so the user row
 
 REUSE ON MATCH, REFUSE ON CONFLICT (the identity tables). A bench D1 once cloned from stable already holds the operator's org, subscription and memberships under the same ids. A bench row of `organizations`, `subscriptions`, `org_memberships`, `teams`, `team_memberships` or `users` with the plan's id is REUSED, never updated, when its identity columns match (`IDENTITY_MATCH`; user ids compared after the case-B remap; a user matches on `email_hash`), and the run refuses, naming the table and column, when one differs. A unique key (`IDENTITY_UNIQUE`) held under another id refuses too. A reused subscription that is not live on bench is printed as a note. `customer_id` is never compared: it is a per-environment Stripe id (bench bills through a separate Stripe account and bench runs with Stripe disabled), so a reused org carrying its own is printed as a note and an inserted org keeps the stable id as an inert label. The store's own rows (`config_stores`, `config_entries`, `config_versions`, `config_key_slots`, `config_user_identities`) refuse on any collision.
 
-PRE-CHECKS, each one refusing the run: a pending CEK rotation; an operator with no password or recovery slot at the store's current CEK generation; a `CONFIG_SERVER_KEY` or `ACCOUNT_CONFIG_SERVER_KEY` secret present on one Worker and absent on the other (the first is what the code before PLAN-config-server-key K1 reads, falling back to a constant; the second is K1's, which seals `server_recoverable_org_passphrase` as `csk1.<kid>.`; the check reads secret NAMES from the Workers secrets listing); once both Workers hold `ACCOUNT_CONFIG_SERVER_KEY`, an untagged row or a `csk1` row whose kid is not the bench key's (computed from `ACCOUNT_CONFIG_SERVER_KEY_BENCH`, by `config_server_key_id`; each channel holds its own key, so a row rewrapped under the stable key refuses here); a stable `d1_migrations` entry bench lacks, a stable column bench lacks, or a bench-only NOT NULL column with no default; a bench row already holding the store id, a store for the org, or an entry, version, slot or identity id; an identity row that conflicts as above, or the operator's id under another email hash; a write target that is a stable database or bucket.
+PRE-CHECKS, each one refusing the run: a pending CEK rotation; an operator with no password or recovery slot at the store's current CEK generation; a `CONFIG_SERVER_KEY` or `ACCOUNT_CONFIG_SERVER_KEY` secret present on one Worker and absent on the other (the first is what the code before PLAN-config-server-key K1 reads, falling back to a constant; the second is K1's, which seals `server_recoverable_org_passphrase` as `csk1.<kid>.`; the check reads secret NAMES from the Workers secrets listing); once both Workers hold `ACCOUNT_CONFIG_SERVER_KEY`, an untagged row or a `csk1` row whose kid is not the bench key's (computed from `ACCOUNT_CONFIG_SERVER_KEY_BENCH`, by `config_server_key_id`; each channel holds its own key, so a row sealed under the stable key is first RESEALED: `reseal_server_key` opens it under the source's `ACCOUNT_CONFIG_SERVER_KEY_<SUFFIX>_STABLE` and seals it under `ACCOUNT_CONFIG_SERVER_KEY_BENCH` through `private/account/scripts/reseal-config-server-key.ts`, the dry run prints a `reseal:` line, the apply writes the resealed row, and the kid check compares the resealed kid; a row that does not open under the source key refuses); a stable `d1_migrations` entry bench lacks, a stable column bench lacks, or a bench-only NOT NULL column with no default; a bench row already holding the store id, a store for the org, or an entry, version, slot or identity id; an identity row that conflicts as above, or the operator's id under another email hash; a write target that is a stable database or bucket.
 
 THE APPLY, in order: the pre-checks; the bench D1 bookmark (`wrangler d1 time-travel info`, parsed by `deploy_record.parse_bookmark`; no bookmark, no write); the rollback files written to `--out-dir` and their paths printed with the time-travel restore command; the R2 copy, each object fetched to a temp dir, put, read back and compared by sha256; one `wrangler d1 execute --file` of plain INSERTs (never OR REPLACE) ending with an `event_log` row `config.store.mirrored`; then a re-read of every inserted row compared column by column with the plan, and `PRAGMA foreign_key_check` on every touched table compared with the check taken before the write.
 
@@ -969,7 +969,7 @@ def check_server_key(
 ) -> str:
     """Whether the store's `server_recoverable_org_passphrase` will open on the target (bench); refuses when it would not. Messages name the target by its channel.
 
-    `CONFIG_SERVER_KEY` (the pre-K1 name) must still match on both Workers, so a Worker that kept the old name is caught. An untagged row refuses: PLAN-config-server-key K6 removed the legacy path, so no account server opens one any more. A `csk1.<kid>.` row opens only under the key that sealed it, so the target must hold `ACCOUNT_CONFIG_SERVER_KEY` and its kid must match (`target_kid`, computed from the target's own key in the environment, `ACCOUNT_CONFIG_SERVER_KEY_BENCH` (bench is the only target; the source's key is `ACCOUNT_CONFIG_SERVER_KEY_<SUFFIX>_STABLE`, `key_env_name`), since Worker secrets are write-only). Each channel has its own key (K2), so a row sealed under the stable key refuses: there is no reseal step yet (worklist #fc0490ad).
+    `CONFIG_SERVER_KEY` (the pre-K1 name) must still match on both Workers, so a Worker that kept the old name is caught. An untagged row refuses: PLAN-config-server-key K6 removed the legacy path, so no account server opens one any more. A `csk1.<kid>.` row opens only under the key that sealed it, so the target must hold `ACCOUNT_CONFIG_SERVER_KEY` and its kid must match (`target_kid`, computed from the target's own key in the environment, `ACCOUNT_CONFIG_SERVER_KEY_BENCH` (bench is the only target; the source's key is `ACCOUNT_CONFIG_SERVER_KEY_<SUFFIX>_STABLE`, `key_env_name`), since Worker secrets are write-only). Each channel has its own key (K2), so `_work` reseals a row sealed under the stable key first (`reseal_server_key`); this check then sees the resealed row, and a row still under another kid refuses.
     """
     a, b = names.get(src.worker), names.get(dst.worker)
     if a is None or b is None:
@@ -1007,10 +1007,96 @@ def check_server_key(
         )
     if match.group(1) != want:
         raise RefusedError(
-            "the store's row is sealed under kid %s, not the %s key's kid %s: it would not open on %s, and no step reseals it under the target's key yet (worklist #fc0490ad)"
+            "the store's row is sealed under kid %s, not the %s key's kid %s: it would not open on %s, and the reseal (reseal_server_key) did not seal it under the target's key"
             % (match.group(1), dst.channel, want, dst.worker)
         )
     return "the store's row is sealed under the %s key (kid %s)" % (dst.channel, want)
+
+
+# The one csk1-sealed column: `sealServerSecret` (private/account/src/services/config-server-key.ts) has a single caller, the layer-3 seal of `config_stores.server_recoverable_org_passphrase` in config.service.ts.
+RESEAL_COLUMN = "server_recoverable_org_passphrase"
+RESEAL_SCRIPT = ("private", "account", "scripts", "reseal-config-server-key.ts")
+RESEAL_TSX = ("private", "account", "node_modules", ".bin", "tsx")
+
+
+def reseal_proc(root: pathlib.Path, names: tuple[str, str], payload: str) -> tuple[int, str, str]:
+    """Runs the account's reseal script: argv carries only the two environment variable NAMES, the keys reach it through the inherited environment and the rows through stdin. Returns (exit code, stdout, stderr); stdout carries sealed rows and is never printed."""
+    tsx = root.joinpath(*RESEAL_TSX)
+    if not tsx.is_file():
+        raise RefusedError(
+            "the reseal needs the account's tsx (%s): run `npm ci` in private/account"
+            % "/".join(RESEAL_TSX)
+        )
+    proc = subprocess.run(
+        [str(tsx), str(root.joinpath(*RESEAL_SCRIPT)), *names],
+        cwd=root / "private" / "account",
+        input=payload,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return proc.returncode, proc.stdout, proc.stderr
+
+
+def reseal_server_key(
+    root: pathlib.Path, src: End, dst: End, store_id: str, value: object
+) -> tuple[object, str | None]:
+    """The store's layer-3 row opened under the source channel's key and sealed under the target's by `private/account/scripts/reseal-config-server-key.ts` (the Worker's own seal and open); returns (the row to write, the plan line) and refuses when the row would not open under the source key.
+
+    Nothing to do (the value returned as is, no line) when the store has no row, the row is not csk1 (`check_server_key` refuses it), the target's key is not in the environment (`check_server_key` refuses that too), or the row is already sealed under the target's kid. Both keys come from the environment under the names `key_env_name` gives (bws, `bws_env exec`); neither key nor the passphrase is printed or held here, since the plaintext stays inside the script.
+    """
+    match = CSK_VALUE.match(value) if isinstance(value, str) else None
+    if match is None:
+        return value, None
+    dst_name, want = key_kid(root, dst)
+    if want is None or match.group(1) == want:
+        return value, None
+    src_name, have = key_kid(root, src)
+    if have is None:
+        raise RefusedError(
+            "the store's row is csk1.%s and the %s key is kid %s, but the %s key is not in the environment (%s) to open it for the reseal"
+            % (match.group(1), dst.channel, want, src.channel, src_name)
+        )
+    if have != match.group(1):
+        raise RefusedError(
+            "the store's row is sealed under kid %s, but the %s key (%s) is kid %s: the row does not open under the source key, so it cannot be resealed for %s"
+            % (match.group(1), src.channel, src_name, have, dst.channel)
+        )
+    payload = json.dumps({"rows": [{"id": store_id, "value": value}]})
+    code, out, err = reseal_proc(root, (src_name, dst_name), payload)
+    if code != 0:
+        last = (err.strip().splitlines() or ["no message"])[-1]
+        for secret in (value, os.environ.get(src_name) or "", os.environ.get(dst_name) or ""):
+            if len(secret) >= MASK_MIN:
+                last = last.replace(secret, "<redacted>")
+        raise RefusedError(
+            "the reseal of store %s refused (exit %d): %s" % (prefix(store_id), code, last[:300])
+        )
+    try:
+        doc = json.loads(out)
+        rows = doc["rows"]
+        kids = (str(doc["source_kid"]), str(doc["target_kid"]))
+    except (ValueError, KeyError, TypeError):
+        raise RefusedError("the reseal of store %s answered no rows" % prefix(store_id)) from None
+    if kids != (have, want):
+        raise RefusedError(
+            "the reseal of store %s used kids %s -> %s, not %s -> %s"
+            % (prefix(store_id), kids[0], kids[1], have, want)
+        )
+    row = rows[0] if isinstance(rows, list) and len(rows) == 1 else None
+    if not isinstance(row, dict) or row.get("id") != store_id:
+        raise RefusedError("the reseal of store %s answered another row set" % prefix(store_id))
+    new = row.get("new")
+    resealed = CSK_VALUE.match(new) if isinstance(new, str) else None
+    if resealed is None or resealed.group(1) != want:
+        raise RefusedError(
+            "the reseal of store %s answered a row not sealed under kid %s"
+            % (prefix(store_id), want)
+        )
+    return new, (
+        "reseal: %s opened under the %s key (%s, kid %s) and sealed under the %s key (%s, kid %s), round trip verified"
+        % (RESEAL_COLUMN, src.channel, src_name, have, dst.channel, dst_name, want)
+    )
 
 
 # ---- the plan ----------------------------------------------------------------
@@ -1571,6 +1657,13 @@ def _work(
     ]
     wrangler.mask += secret_values(source)
     lines = schema_parity(src, dst, dst_end.channel)
+    resealed, reseal_line = reseal_server_key(
+        root, src_end, dst_end, str(source["store"]["id"]), source["store"].get(RESEAL_COLUMN)
+    )
+    if reseal_line is not None:
+        source["store"][RESEAL_COLUMN] = resealed
+        wrangler.mask.append(str(resealed))
+        lines.append(reseal_line)
     lines.append(
         check_server_key(
             secret_names(token, env["CLOUDFLARE_ACCOUNT_ID"], [src_end.worker, dst_end.worker]),
