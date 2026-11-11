@@ -13,12 +13,13 @@ import pathlib
 import re
 import sys
 import types
+from typing import Any
 
 HERE = pathlib.Path(__file__).resolve().parent
 _SPEC = importlib.util.spec_from_file_location("wl_epic", HERE / "wl_epic.py")
 if _SPEC is None or _SPEC.loader is None:
     raise SystemExit("cannot load wl_epic.py")
-E = importlib.util.module_from_spec(_SPEC)
+E: Any = importlib.util.module_from_spec(_SPEC)
 _SPEC.loader.exec_module(E)
 
 FAILS: list[str] = []
@@ -42,8 +43,8 @@ def item(n: int) -> dict:
 def render_with(n_items: int) -> str:
     recs = [item(i) for i in range(n_items)]
     fold = types.SimpleNamespace(items=recs)
-    setattr(E, "load_epics", dict)
-    setattr(E, "backlog_items", lambda *_a, **_k: list(recs))
+    E.load_epics = dict
+    E.backlog_items = lambda *_a, **_k: list(recs)
     return E.render(fold, [])
 
 
@@ -59,7 +60,9 @@ m_more = re.search(r"^_\+(\d+) more open item\(s\) ", big, re.MULTILINE)
 listed = len(re.findall(r"^- \[.\] `#[0-9a-f]+`", big, re.MULTILINE))
 check(
     "the heading N equals the listed items plus the +K more line (the gate's rule)",
-    bool(m_head and m_more) and int(m_head.group(1)) == listed + int(m_more.group(1)) == 2000,
+    m_head is not None
+    and m_more is not None
+    and int(m_head.group(1)) == listed + int(m_more.group(1)) == 2000,
 )
 small = render_with(5)
 check("CONTROL: a 5-item backlog lists all five", all(("#%08x" % i) in small for i in range(5)))
