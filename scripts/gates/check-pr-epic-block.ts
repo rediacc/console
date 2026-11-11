@@ -119,7 +119,8 @@ export const backlogProblem = (text: string): string => {
   const markers = body
     .map((l) => /^_\+(\d+) more open item\(s\) /.exec(l.trim()))
     .filter((mm): mm is RegExpExecArray => mm !== null);
-  if (markers.length > 1) return `${markers.length} "+K more" lines, the renderer writes at most one`;
+  if (markers.length > 1)
+    return `${markers.length} "+K more" lines, the renderer writes at most one`;
   const more = markers.length === 1 ? Number(markers[0][1]) : 0;
   const listed = body.filter((l) => /^- \[.\] `#[0-9a-f]+`/.test(l)).length + more;
   const none = body.some((l) => l.trim() === '_none_');

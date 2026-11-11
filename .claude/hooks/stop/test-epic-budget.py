@@ -42,8 +42,8 @@ def item(n: int) -> dict:
 def render_with(n_items: int) -> str:
     recs = [item(i) for i in range(n_items)]
     fold = types.SimpleNamespace(items=recs)
-    E.load_epics = dict
-    E.backlog_items = lambda *_a, **_k: list(recs)
+    setattr(E, "load_epics", dict)
+    setattr(E, "backlog_items", lambda *_a, **_k: list(recs))
     return E.render(fold, [])
 
 
