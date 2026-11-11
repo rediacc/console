@@ -50,6 +50,61 @@ The repo is bind-mounted at its IDENTICAL host path (never `/workspace`): a git 
 
 **`node_modules` is not shared between host and container** — the host and the image have different glibc versions, and `install:natives` builds against whichever one it runs on. `REDIACC_NPM_RUNTIME` is part of the `ensure_deps` stamp so switching sides forces one honest reinstall instead of a loader error.
 
+## Backup refs on GitLab
+
+Unpushed work gets an off-machine copy under `refs/backup/<branch>/` on the repository's own GitLab project (Design G of `agent/plans/PLAN-local-first-delivery.md`). The refs are a backup, never a publication: nothing on that project counts as pushed.
+
+### Ref kinds
+
+| Ref | Written | Mutability |
+|---|---|---|
+| `live` | Created at HEAD by the first sync of a branch, then fast-forwarded by every later sync | Moves forward only |
+| `daily-<YYYY-MM-DD>` | Created at HEAD by the first sync of each UTC day | Immutable |
+| `pre-rewrite-<YYYYMMDDTHHMMZ>` | When HEAD no longer descends from `live` (amend, rebase): keeps the old `live` tip, then `live` restarts at HEAD | Immutable |
+
+The rewrite is one `--atomic` push that creates the `pre-rewrite-*` ref and deletes `live`, followed by a push creating `live` at HEAD. No push is ever forced. `main`, a detached HEAD and a lease tree are never backed up.
+
+### Triggers
+
+The post-commit, post-rewrite and post-merge hooks start `.ci/rediacc_ci/dev/backup_ref.py sync` detached, and the hook returns at once. Output goes to `<git-dir>/rediacc-backup/log`. A failed sync is retried by the next trigger, since the worker always pushes the current tip. `./run.sh backup-ref sync` runs the same worker by hand.
+
+### Retention
+
+`daily-*` refs are kept 90 days and `pre-rewrite-*` refs 30 days (`BACKUP_RETENTION_DAYS` in `.claude/rediacc_hooks/git/githooks.py`). The pre-push hook deletes a snapshot only once the stamp in its name is past that age. `live` is deleted only in the push that creates the `pre-rewrite-*` ref at its old tip.
+
+### Where the remote points
+
+Each repository's `gitlab` remote is pinned to `https://gitlab.rediacc.io<path>` by `BACKUP_PATHS`, beside `MIRROR_PATH`:
+
+| Repository | Project path |
+|---|---|
+| console | `/rediacc-org/github/console.git` |
+| `private/renet` | `/rediacc-org/github/renet.git` |
+| `private/account` | `/rediacc-org/github/account.git` |
+| `private/elite` | `/rediacc-org/github/elite.git` |
+
+`rediacc_ci.setup.backup_remotes` adds the submodule remotes during setup. The pre-push hook refuses `refs/backup/**` to any other URL (`origin` included) and refuses a push that mixes backup refs with other refs.
+
+### Why a fetch never writes `refs/remotes/gitlab/*`
+
+Every "is it published" question in the tree (`--not --remotes`, the pre-push session scan, `block_unpushed_submodule_pin`) reads a remote-tracking ref as published. A fetched backup ref would make unpushed commits look published. The remote is therefore added with `--no-tags`, no fetch refspec and `skipFetchAll`, and the worker reads the remote with `ls-remote`.
+
+### Restore
+
+The `restore` verb arrives with box G6. Until then, the ref is fetched into a private namespace and checked out detached:
+
+```bash
+git ls-remote gitlab 'refs/backup/<branch>/*'
+git fetch gitlab refs/backup/<branch>/<ref>:refs/backup-restored/<ref>
+git worktree add --detach <path> refs/backup-restored/<ref>
+```
+
+A checkout in the operator's own tree works the same way from `refs/backup-restored/<ref>`. An agent's second tree comes from a lease, never from `git worktree add`.
+
+### Leases
+
+A lease tree never pushes and never starts the worker. Its commits reach the backup when the lead lands them in the main checkout and a hook fires there.
+
 ## The `./rdc.sh` wrappers
 
 ### `./rdc.sh` targets production by default (`RDC_DEV=1` for local dev)
