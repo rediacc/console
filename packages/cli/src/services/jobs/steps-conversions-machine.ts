@@ -389,7 +389,7 @@ export const MACHINE_CONVERSION_STEPS: StepDefinition[] = [
   privateStep(
     'renderSubscriptionRefresh',
     'success',
-    ['machine', 'repo'],
+    ['machine', 'repo', 'adoptOrigin'],
     () => import('../../commands/subscription-actions.js'),
     true
   ),
