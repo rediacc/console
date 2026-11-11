@@ -381,11 +381,19 @@ def refuse_unresolved_citations(root, text, what):
         if dead:
             bad.append("%s citation `%s` %s" % (kind, token, why))
     if bad:
+        hints = []
+        if any(b.startswith(("fileline ", "plan ")) for b in bad):
+            hints.append(
+                "Write the full repo-relative path (`scripts/ci-runner/run.ts:352`, not `run.ts:352`)."
+            )
+        if any(not b.startswith(("fileline ", "plan ")) for b in bad):
+            hints.append(
+                "Cite a sha HEAD reaches: a lease's own commit is gone once its tree is collected, so cite the landed sha."
+            )
         raise RecordError(
             "%s carries %d citation(s) that do not resolve, so check:ci-plan-citations would "
-            "red the plan they are written into:\n  %s\n\nWrite the full repo-relative path "
-            "(`scripts/ci-runner/run.ts:352`, not `run.ts:352`)."
-            % (what, len(bad), "\n  ".join(bad))
+            "red the plan they are written into:\n  %s\n\n%s"
+            % (what, len(bad), "\n  ".join(bad), "\n".join(hints))
         )
 
 
