@@ -12,6 +12,7 @@ THE ANTI-VACUITY CLAIMS, because a differential that compared two empty transcri
 """
 
 import contextlib
+import difflib
 import http.server
 import json
 import os
@@ -1205,6 +1206,25 @@ def drive_lifecycle(side: str, scenario: str) -> tuple[int, str, str]:
     return _LIFECYCLE_CACHE[key]
 
 
+def _transcript_divergence(scenario: str, old: list[str], new: list[str], cap: int = 60) -> str:
+    """An ordered diff of the two transcripts, so a reorder or a duplicated line shows up instead of an empty set difference."""
+    lines = list(
+        difflib.unified_diff(old, new, fromfile="bash twin", tofile="port", lineterm="", n=1)
+    )
+    shown = lines[:cap]
+    if len(lines) > cap:
+        shown.append("... %d more diff lines" % (len(lines) - cap))
+    return "scenario %s diverged:\n%s" % (scenario, "\n".join(shown))
+
+
+def test_the_divergence_message_shows_a_reorder() -> None:
+    """CONTROL. Two transcripts that differ only in order: the old set difference printed `[]` for them."""
+    message = _transcript_divergence("demo", ["obs a", "obs b"], ["obs b", "obs a"])
+    assert "+obs b" in message
+    assert "-obs b" in message
+    assert "[]" not in message
+
+
 @pytest.mark.xdist_group(LIFECYCLE_GROUP)
 @pytest.mark.parametrize("scenario", LIFECYCLE_SCENARIOS)
 def test_the_lifecycle_port_matches_the_live_twin(scenario: str) -> None:
@@ -1215,8 +1235,7 @@ def test_the_lifecycle_port_matches_the_live_twin(scenario: str) -> None:
     old = _lifecycle_comparable(old_out.splitlines(), scenario)
     new = _lifecycle_comparable(new_out.splitlines(), scenario)
     if old != new:
-        diverged = sorted(set(old) ^ set(new))
-        pytest.fail("scenario %s diverged:\n%s" % (scenario, "\n".join(diverged[:40])))
+        pytest.fail(_transcript_divergence(scenario, old, new))
 
 
 @pytest.mark.xdist_group(LIFECYCLE_GROUP)
