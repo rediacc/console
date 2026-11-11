@@ -271,3 +271,15 @@ def test_token_file_of_the_throwaway_config_is_dropped():
 def test_token_file_path_names_only_that_config(monkeypatch, tmp_path):
     monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
     assert ftr.token_file("ftr-1") == tmp_path / "rediacc" / "api-token-ftr-1.json"
+
+
+def test_a_refusal_raised_before_its_step_line_still_fails_the_run(capsys):
+    """Review 23c783db.1: _http raises DrillError on no HTTP answer before step 4 prints its line; the run must exit 1, not 0."""
+    fake = Fake()
+
+    def no_answer(path, _body):
+        raise ftr.DrillError("no HTTP answer from the bench origin%s" % path)
+
+    fake.http = no_answer
+    assert go(fake) == 1
+    assert "no HTTP answer" in capsys.readouterr().err

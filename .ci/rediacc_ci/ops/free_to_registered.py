@@ -425,6 +425,8 @@ def run(dry_run: bool, deps: Deps | None = None, env: Mapping[str, str] | None =
         _step_email(d, ev, email, since_iso)
         _step_login(d, ev, base, config, (email, password), limits)
     except DrillError as exc:
+        # A refusal raised before its STEP line (no HTTP answer, a missing config) must still fail the run (review 23c783db.1).
+        ev.failed = True
         print("drill: %s" % exc, file=sys.stderr)
     finally:
         notes: list[str] = []
