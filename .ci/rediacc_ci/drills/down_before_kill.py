@@ -54,6 +54,8 @@ MAIN_POINTER = "origin/main:private/renet"
 # K1.6's build cache: `<root>/.ci/cache/vm-check/renet-main/<key>/{renet,manifest.json}`; the 3 newest keys stay.
 RENET_CACHE_DIR = ".ci/cache/vm-check/renet-main"
 RENET_CACHE_KEEP = 3
+# A `.tmp-*` stage older than this is a dead writer's (a build is capped at 1800 s), so the prune removes it.
+RENET_STAGE_MAX_AGE_S = 7200
 RENET_LOCK_FILE = "embed-assets.lock.json"
 
 
@@ -259,8 +261,26 @@ def vcs_revision(go_version_m: str) -> str:
     return m.group(1) if m else ""
 
 
-def prune_renet_cache(cache: pathlib.Path, keep: int) -> None:
-    """Remove every key directory under `cache` but the `keep` newest by manifest mtime; unfinished `.tmp-*` stages are left to their writer."""
+def prune_renet_cache(cache: pathlib.Path, keep: int, *, now: float | None = None) -> list[str]:
+    """Remove every key directory under `cache` but the `keep` newest by manifest mtime (a slot with no manifest ranks oldest), and every `.tmp-*` stage older than RENET_STAGE_MAX_AGE_S, which only a dead writer leaves; a younger stage is left to its live writer. Returns the names it could not remove, so the caller records them."""
+    clock = time.time() if now is None else now
+    failed: list[str] = []
+
+    def remove(path: pathlib.Path) -> None:
+        try:
+            shutil.rmtree(path)
+        except FileNotFoundError:
+            pass
+        except OSError:
+            failed.append(path.name)
+
+    for stage in (p for p in cache.iterdir() if p.is_dir() and p.name.startswith(".tmp-")):
+        try:
+            stale = clock - stage.stat().st_mtime > RENET_STAGE_MAX_AGE_S
+        except OSError:
+            continue
+        if stale:
+            remove(stage)
     slots = [p for p in cache.iterdir() if p.is_dir() and not p.name.startswith(".tmp-")]
 
     def age(p: pathlib.Path) -> float:
@@ -270,7 +290,8 @@ def prune_renet_cache(cache: pathlib.Path, keep: int) -> None:
             return 0.0
 
     for old in sorted(slots, key=age, reverse=True)[keep:]:
-        shutil.rmtree(old, ignore_errors=True)
+        remove(old)
+    return failed
 
 
 # --------------------------------------------------------------------------- parsers
@@ -843,6 +864,22 @@ class _LiveK1:
         cache.mkdir(parents=True, exist_ok=True)
         stage = cache / (".tmp-%s-%s" % (key[:12], uuid.uuid4().hex[:8]))
         stage.mkdir()
+        try:
+            return self._build_into(stage, slot, cache, commit, go_line, env)
+        except BaseException:
+            shutil.rmtree(stage, ignore_errors=True)
+            raise
+
+    def _build_into(
+        self,
+        stage: pathlib.Path,
+        slot: pathlib.Path,
+        cache: pathlib.Path,
+        commit: str,
+        go_line: str,
+        env: dict[str, str],
+    ) -> pathlib.Path | None:
+        """Build into `stage` and rename it to `slot`. The caller removes `stage` when this raises; a failed build or a lost rename removes it here."""
         script = build_main_renet_script(str(self.tmp / "src-main"), str(stage / "renet"), commit)
         built = self.ctx.host_run(["bash", "-c", script], env=env, timeout=1800)
         if not self.check(
@@ -858,8 +895,26 @@ class _LiveK1:
         (stage / "manifest.json").write_text(json.dumps(manifest, sort_keys=True))
         if slot.exists():
             shutil.rmtree(slot, ignore_errors=True)
-        os.replace(stage, slot)
-        prune_renet_cache(cache, RENET_CACHE_KEEP)
+        try:
+            os.replace(stage, slot)
+        except OSError as exc:
+            # A second run of the same key renamed its stage in between: its slot is the same build, so reuse it when it verifies.
+            shutil.rmtree(stage, ignore_errors=True)
+            if not self._cache_hit(slot, commit, env):
+                self.check(
+                    "K1.6 move the built renet into the cache",
+                    False,
+                    evidence=_clip(str(exc)),
+                )
+                return None
+            return slot / "renet"
+        left = prune_renet_cache(cache, RENET_CACHE_KEEP)
+        if left:
+            self.check(
+                "K1.6 the renet cache prunes to %d keys" % RENET_CACHE_KEEP,
+                False,
+                evidence="could not remove: %s" % ", ".join(left),
+            )
         return slot / "renet"
 
     def _cache_hit(self, slot: pathlib.Path, commit: str, env: dict[str, str]) -> bool:

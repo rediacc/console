@@ -1443,3 +1443,104 @@ def test_the_reboot_wait_outlasts_the_stop_budget() -> None:
     """A shutdown that uses its whole stop budget is not a failed reboot, so the wait stays above the budget with room for a boot."""
     assert k.REBOOT_WAIT_S > k.STOP_TIMEOUT_S
     assert k.REBOOT_WAIT_S - k.STOP_TIMEOUT_S >= 5 * 60
+
+
+def _slot(cache: pathlib.Path, name: str, mtime: float | None) -> pathlib.Path:
+    d = cache / name
+    d.mkdir(parents=True)
+    (d / "renet").write_bytes(b"x")
+    if mtime is not None:
+        (d / "manifest.json").write_text("{}")
+        os.utime(d / "manifest.json", (mtime, mtime))
+    return d
+
+
+def test_prune_keeps_a_young_stage_and_removes_a_dead_writers_stale_one(
+    tmp_path: pathlib.Path,
+) -> None:
+    # 22c8d996.1 and .4: a stage past RENET_STAGE_MAX_AGE_S is a dead writer's and goes; a younger one is a live writer's and stays.
+    now = 1_000_000.0
+    young = _slot(tmp_path, ".tmp-aaaa-1", None)
+    stale = _slot(tmp_path, ".tmp-bbbb-2", None)
+    os.utime(young, (now - 60, now - 60))
+    os.utime(stale, (now - k.RENET_STAGE_MAX_AGE_S - 60, now - k.RENET_STAGE_MAX_AGE_S - 60))
+    assert k.prune_renet_cache(tmp_path, 3, now=now) == []
+    assert young.is_dir()
+    assert not stale.exists()
+
+
+def test_prune_evicts_a_slot_with_no_manifest_before_a_newer_one(tmp_path: pathlib.Path) -> None:
+    # 22c8d996.4: a manifest-less slot ranks oldest, so keep=2 over three slots drops it.
+    bare = _slot(tmp_path, "bare", None)
+    _slot(tmp_path, "k1", 1000.0)
+    _slot(tmp_path, "k2", 2000.0)
+    assert k.prune_renet_cache(tmp_path, 2) == []
+    assert not bare.exists()
+    assert (tmp_path / "k1").is_dir()
+    assert (tmp_path / "k2").is_dir()
+
+
+def test_prune_reports_a_slot_it_could_not_remove(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # 22c8d996.3: before the fix the removal ignored errors and the prune returned nothing.
+    _slot(tmp_path, "k1", 1000.0)
+    _slot(tmp_path, "k2", 2000.0)
+
+    def boom(*_a: Any, **_kw: Any) -> None:
+        raise PermissionError("busy")
+
+    monkeypatch.setattr(k.shutil, "rmtree", boom)
+    assert k.prune_renet_cache(tmp_path, 1) == ["k1"]
+
+
+def test_k1_6_a_build_that_raises_leaves_no_stage(tmp_path: pathlib.Path) -> None:
+    # 22c8d996.1: before the fix a raise after stage.mkdir() left `.tmp-*` behind for good.
+    live, ctx = _ready(tmp_path, FakeWorker())
+    b = _Builder(ctx)
+    hook = b.hook
+
+    def raising(argv: list[str], **kw: Any) -> _Res:
+        if argv[:2] == ["bash", "-c"]:
+            raise RuntimeError("killed")
+        return hook(argv, **kw)
+
+    ctx.host_hook = raising
+    with pytest.raises(RuntimeError):
+        live._main_binary()
+    assert list(_cache_dir(ctx).iterdir()) == []
+
+
+def test_k1_6_a_lost_rename_race_reuses_the_winners_slot(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # 22c8d996.2: before the fix os.replace raised OSError out of the step when another run of the key won.
+    live, ctx = _ready(tmp_path, FakeWorker())
+    _Builder(ctx)
+    real = os.replace
+
+    def raced(src: Any, dst: Any) -> None:
+        real(src, dst)  # the other run's stage lands first
+        raise OSError(39, "Directory not empty")
+
+    monkeypatch.setattr(k.os, "replace", raced)
+    out = live._main_binary()
+    assert out is not None
+    assert out.read_bytes() == b"renet-feedface"
+    assert list(_cache_dir(ctx).glob(".tmp-*")) == []
+
+
+def test_k1_6_a_lost_rename_with_no_valid_slot_is_a_failed_check(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    live, ctx = _ready(tmp_path, FakeWorker())
+    _Builder(ctx)
+
+    def refuse(*_a: Any) -> None:
+        raise OSError(39, "Directory not empty")
+
+    monkeypatch.setattr(k.os, "replace", refuse)
+    assert live._main_binary() is None
+    assert ("K1.6 move the built renet into the cache", False) in [
+        (d, ok) for d, ok, _e in ctx.rows
+    ]
