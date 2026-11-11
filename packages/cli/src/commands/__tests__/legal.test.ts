@@ -89,7 +89,7 @@ describe('rdc legal --json', () => {
   });
 });
 
-describe('rdc legal text', () => {
+describe('the legal command, human-readable output', () => {
   it('shows the contracting entity only, the binding links and the credits pointer', async () => {
     const out = renderLegal(await collectLegalInfo());
     expect(out).toContain(LEGAL_ENTITY.legalName);
