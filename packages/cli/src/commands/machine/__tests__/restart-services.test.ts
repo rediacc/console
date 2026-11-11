@@ -183,6 +183,21 @@ describe('machine restart-services --repo', () => {
     expect(mocks.setExitCode).not.toHaveBeenCalled();
   });
 
+  it('refuses a successful job whose stdout ends in a progress line (review a3da6bd9.1: renet prints the report last on success, so its absence is an error, never "nothing stale")', async () => {
+    const progress = (action: string) =>
+      JSON.stringify({ event: 'progress', unit: 'rediacc-hub.service', action, elapsed_ms: 0 });
+    answer = {
+      success: true,
+      exitCode: 0,
+      durationMs: 1,
+      state: 'succeeded',
+      stdout: [progress('starting'), progress('restarted')].join('\n'),
+      stderr: '',
+    };
+    await run('--include-docker').catch(() => undefined);
+    expect(mocks.success).not.toHaveBeenCalled();
+  });
+
   describe('a FAILED daemons-restart job with progress lines on stdout', () => {
     const progress = (action: string) =>
       JSON.stringify({ event: 'progress', unit: 'rediacc-hub.service', action, elapsed_ms: 0 });
