@@ -243,8 +243,8 @@ describe('refreshRepoLicensesBatch and a foreign-origin licence', () => {
     });
 
     it('control: a licence whose scan entry reports no subscription id is not taken for FREE', async () => {
-      const { currentSubscriptionId: _omit, ...bare } = entry(OLD, EU, 'free:0123abcd');
-      const { sent } = await refreshUnder(US, bare as ReturnType<typeof entry>);
+      const bare = { ...entry(OLD, EU, 'free:0123abcd'), currentSubscriptionId: undefined };
+      const { sent } = await refreshUnder(US, bare);
       expect(sent.size).toBe(0);
     });
   });

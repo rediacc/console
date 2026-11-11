@@ -359,14 +359,14 @@ export function refreshRepoLicenseIdentity(
         outputService.warn(error.message);
         return false;
       }
+      const { datastoreMount, adoptOrigin, ...issueParams } = params;
       assertRepoLicenseOriginAllowed(
         machineName,
         params.repositoryGuid,
         scanned.currentRenewalUrl,
         scanned.currentSubscriptionId,
-        params.adoptOrigin === true
+        adoptOrigin === true
       );
-      const { datastoreMount, adoptOrigin: _adoptOrigin, ...issueParams } = params;
       const requestedSizeGb =
         params.requestedSizeGb ??
         scanned.requestedSizeGb ??
