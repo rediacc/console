@@ -263,6 +263,12 @@ CASES = [
         edit("agent/plans/PLAN-lpwait.md", "T1 a box", "T1 the box"),
         False,
     ),
+    # 3818220a.2: a finished plan is history, so an edit to it is not judged for a wait (the gate judges live plans only).
+    (
+        "LP8 allow twin: a finished plan edited to add an untagged wait",
+        edit("agent/plans/_done/PLAN-fin.md", "- [ ] T1 a box\n", "- [ ] T1 a box\n" + LP8_WAIT),
+        False,
+    ),
     # ---- refusals ----
     ("a Write without the field", write(NEW, plan()), True),
     # Judged where the write LANDS (#bc7d998c): each refusal was allowed (rc 0) before.
@@ -856,6 +862,34 @@ def main():
 
     _good_ns: dict = {"__name__": "good_guard", "__file__": str(GUARD)}
     exec(compile(SOURCE, str(GUARD), "exec"), _good_ns)
+
+    # 3818220a.1: an unreadable proof-tiers.json warns and skips LP8, it neither refuses nor raises.
+    class _NoMapDeps:
+        @staticmethod
+        def github_wait_config(_root):
+            return None
+
+        @staticmethod
+        def github_wait_introduced(*_a):
+            raise AssertionError("LP8 must not run without the map")
+
+    class _Ev:
+        def __init__(self):
+            self.warned = []
+
+        def warn(self, msg):
+            self.warned.append(msg)
+
+    _ev = _Ev()
+    _got = _good_ns["_github_wait_findings"](
+        _NoMapDeps, None, LP8_WAIT, "agent/plans/PLAN-x.md", _ev
+    )
+    if _got != [] or len(_ev.warned) != 1 or "PLAN-x.md" not in _ev.warned[0]:
+        print("*** FAIL *** an unreadable map must warn once and skip: %r %r" % (_got, _ev.warned))
+        fails += 1
+    else:
+        print("ok: an unreadable proof-tiers.json warns once and skips LP8")
+
     for label in ("DEFECT", "VERDICT_DEFECT", "LIVE_DEFECT"):
         old, new = _good_ns[label]
         if old not in _outside_defect(SOURCE, "DEFECT", "VERDICT_DEFECT", "LIVE_DEFECT"):
