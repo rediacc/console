@@ -345,7 +345,7 @@
       "meta": {
         "description": "Rediacc CLI、Renet Agent、アカウントポータル、およびホスト型サービスの利用ルール：禁止コンテンツ、禁止行為、通報、および措置について。",
         "keywords": "利用規定, AUP, 禁止事項, 不正利用, Rediacc",
-        "title": "利用規定 | Rediacc"
+        "title": "利用規定：禁止されている利用方法と対応措置 | Rediacc"
       },
       "related": {
         "title": "関連ポリシー"
@@ -666,7 +666,7 @@
       "meta": {
         "description": "Rediaccの法人のお客様に適用される、GDPR第28条に基づくデータ処理の条件：処理の指示、セキュリティ、サブプロセッサー、国際移転、侵害の通知、削除について。",
         "keywords": "データ処理契約, DPA, GDPR, 第28条, サブプロセッサー, 標準契約条項, Rediacc",
-        "title": "データ処理契約 | Rediacc"
+        "title": "データ処理契約（GDPR第28条）：法人向けの処理条件 | Rediacc"
       },
       "related": {
         "title": "関連ポリシー"
@@ -1000,7 +1000,7 @@
       "meta": {
         "description": "注文書に基づいて販売されるRediacc Enterpriseサブスクリプションのライセンス条件：セルフホスト型アカウントサーバー、アクティベーション上限、サポート、検証を含みます。",
         "keywords": "Enterpriseライセンス, ソフトウェアライセンス契約, オンプレミス, 注文書, Rediacc Enterprise",
-        "title": "Enterpriseソフトウェアライセンス | Rediacc"
+        "title": "Enterpriseライセンス条件：セルフホスト向け契約 | Rediacc"
       },
       "related": {
         "title": "関連ポリシー"
@@ -3336,7 +3336,7 @@
       "meta": {
         "description": "有料サブスクリプションにおけるRediaccアカウントポータルとAPIの月間稼働率の保証、および未達の場合に適用されるサービスクレジットについて。",
         "keywords": "サービスレベル契約, SLA, 稼働時間, 可用性, サービスクレジット, Rediacc",
-        "title": "サービスレベル契約 | Rediacc"
+        "title": "サービスレベル契約：稼働率の保証とクレジット | Rediacc"
       },
       "related": {
         "title": "関連ポリシー"

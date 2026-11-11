@@ -335,9 +335,9 @@
         "title": "Política de Utilização Aceitável"
       },
       "meta": {
-        "description": "As regras de utilização da CLI Rediacc, do Agente Renet, do portal de conta e dos serviços alojados: conteúdos proibidos, atividades proibidas, comunicação de violações e aplicação das regras.",
+        "description": "Regras de utilização da CLI Rediacc, do Agente Renet, do portal de conta e dos serviços alojados: conteúdos e atividades proibidos, comunicação e aplicação.",
         "keywords": "política de utilização aceitável, AUP, utilização proibida, abuso, Rediacc",
-        "title": "Política de Utilização Aceitável | Rediacc"
+        "title": "Utilização aceitável: usos proibidos | Rediacc"
       },
       "related": {
         "title": "Políticas Relacionadas"
@@ -660,9 +660,9 @@
         "title": "Acordo de Tratamento de Dados"
       },
       "meta": {
-        "description": "As condições de tratamento de dados ao abrigo do artigo 28.º do RGPD para os clientes empresariais da Rediacc: instruções de tratamento, segurança, subcontratantes ulteriores, transferências internacionais, notificação de violações e eliminação.",
+        "description": "Tratamento de dados (art. 28.º do RGPD) para clientes empresariais da Rediacc: instruções, segurança, subcontratantes, transferências, violações e eliminação.",
         "keywords": "acordo de tratamento de dados, DPA, RGPD, artigo 28.º, subcontratantes ulteriores, cláusulas contratuais-tipo, Rediacc",
-        "title": "Acordo de Tratamento de Dados | Rediacc"
+        "title": "Acordo de Tratamento de Dados (RGPD, art. 28) | Rediacc"
       },
       "related": {
         "title": "Políticas Relacionadas"
@@ -994,9 +994,9 @@
         "title": "Licença de Software Enterprise"
       },
       "meta": {
-        "description": "Os termos de licença das Subscrições Enterprise da Rediacc vendidas mediante Formulário de Encomenda, incluindo servidores de conta self-hosted, limites de ativação, apoio e verificação.",
+        "description": "Termos de licença das Subscrições Enterprise da Rediacc vendidas por Formulário de Encomenda: servidores self-hosted, limites de ativação, apoio e verificação.",
         "keywords": "licença enterprise, contrato de licença de software, on-premise, formulário de encomenda, Rediacc Enterprise",
-        "title": "Licença de Software Enterprise | Rediacc"
+        "title": "Licença Enterprise para self-hosting | Rediacc"
       },
       "related": {
         "title": "Políticas Relacionadas"
@@ -3355,9 +3355,9 @@
         "title": "Acordo de Nível de Serviço"
       },
       "meta": {
-        "description": "O compromisso mensal de disponibilidade do portal de conta e da API da Rediacc nas Subscrições pagas, e os créditos de serviço aplicáveis quando não é cumprido.",
+        "description": "Compromisso mensal de disponibilidade do portal de conta e da API da Rediacc nas Subscrições pagas, e créditos de serviço aplicáveis se não for cumprido.",
         "keywords": "acordo de nível de serviço, SLA, tempo de atividade, disponibilidade, créditos de serviço, Rediacc",
-        "title": "Acordo de Nível de Serviço | Rediacc"
+        "title": "SLA: disponibilidade e créditos de serviço | Rediacc"
       },
       "related": {
         "title": "Políticas Relacionadas"
@@ -10027,7 +10027,7 @@
         "title": "Termos de Serviço"
       },
       "meta": {
-        "description": "Os termos que regem a utilização da CLI Rediacc, do Agente Renet, do portal de conta e dos serviços relacionados, incluindo a licença de software, os preços, a responsabilidade e a resolução de litígios.",
+        "description": "Termos da CLI Rediacc, do Agente Renet, do portal de conta e dos serviços relacionados: licença de software, preços, responsabilidade e resolução de litígios.",
         "keywords": "termos de serviço, acordo com o cliente, licença de software, Rediacc, plataforma de infraestrutura, termos SaaS, licença CLI, arbitragem",
         "title": "Termos de Serviço - Acordo Legal | Rediacc"
       },

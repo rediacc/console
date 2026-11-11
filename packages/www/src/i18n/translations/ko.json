@@ -345,7 +345,7 @@
       "meta": {
         "description": "Rediacc CLI, Renet Agent, 계정 포털 및 호스팅 서비스 사용 규칙: 금지된 콘텐츠, 금지된 활동, 신고 및 조치.",
         "keywords": "허용 가능한 사용 정책, AUP, 금지된 사용, 남용, Rediacc",
-        "title": "허용 가능한 사용 정책 | Rediacc"
+        "title": "허용 가능한 사용 정책: 금지된 사용과 조치 | Rediacc"
       },
       "related": {
         "title": "관련 정책"
@@ -668,7 +668,7 @@
       "meta": {
         "description": "Rediacc의 기업 고객에게 적용되는 GDPR 제28조에 따른 데이터 처리 조건: 처리 지침, 보안, 하위 처리자, 국제 이전, 침해 통지 및 삭제.",
         "keywords": "데이터 처리 계약, DPA, GDPR, 제28조, 하위 처리자, 표준 계약 조항, Rediacc",
-        "title": "데이터 처리 계약 | Rediacc"
+        "title": "데이터 처리 계약(GDPR 제28조): 기업 고객 약관 | Rediacc"
       },
       "related": {
         "title": "관련 정책"
@@ -1002,7 +1002,7 @@
       "meta": {
         "description": "주문서에 따라 판매되는 Rediacc Enterprise 구독의 라이선스 조건: 자체 호스팅 계정 서버, 활성화 상한, 지원 및 검증을 포함합니다.",
         "keywords": "Enterprise 라이선스, 소프트웨어 라이선스 계약, 온프레미스, 주문서, Rediacc Enterprise",
-        "title": "Enterprise 소프트웨어 라이선스 | Rediacc"
+        "title": "Enterprise 라이선스 약관: 자체 호스팅 구독 조건 | Rediacc"
       },
       "related": {
         "title": "관련 정책"
@@ -3350,7 +3350,7 @@
       "meta": {
         "description": "유료 구독에서 Rediacc 계정 포털과 API에 적용되는 월간 가용성 보장과, 이를 지키지 못한 경우에 적용되는 서비스 크레딧.",
         "keywords": "서비스 수준 계약, SLA, 가동 시간, 가용성, 서비스 크레딧, Rediacc",
-        "title": "서비스 수준 계약 | Rediacc"
+        "title": "서비스 수준 계약: 가동률 보장과 서비스 크레딧 | Rediacc"
       },
       "related": {
         "title": "관련 정책"

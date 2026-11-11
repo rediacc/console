@@ -335,8 +335,8 @@
   "pages": {
     "acceptableUsePolicy": {
       "meta": {
-        "title": "Politica di utilizzo accettabile | Rediacc",
-        "description": "Le regole per l'uso della CLI di Rediacc, del Renet Agent, del portale account e dei servizi ospitati: contenuti vietati, attività vietate, segnalazione e applicazione.",
+        "title": "Uso accettabile: usi vietati | Rediacc",
+        "description": "Regole per l'uso della CLI di Rediacc, del Renet Agent, del portale account e dei servizi ospitati: contenuti e attività vietati, segnalazione e applicazione.",
         "keywords": "politica di utilizzo accettabile, AUP, uso vietato, abuso, Rediacc"
       },
       "hero": {
@@ -666,8 +666,8 @@
     },
     "dataProcessingAgreement": {
       "meta": {
-        "title": "Accordo sul trattamento dei dati | Rediacc",
-        "description": "Le condizioni di trattamento dei dati ai sensi dell'articolo 28 del GDPR per i clienti aziendali di Rediacc: istruzioni di trattamento, sicurezza, sub-responsabili, trasferimenti internazionali, notifica delle violazioni e cancellazione.",
+        "title": "Accordo sul trattamento dei dati (GDPR art. 28) | Rediacc",
+        "description": "Trattamento dei dati ex art. 28 GDPR per i clienti aziendali di Rediacc: istruzioni, sicurezza, sub-responsabili, trasferimenti, violazioni e cancellazione.",
         "keywords": "accordo sul trattamento dei dati, DPA, GDPR, articolo 28, sub-responsabili, clausole contrattuali tipo, Rediacc"
       },
       "hero": {
@@ -1003,8 +1003,8 @@
     },
     "enterpriseLicense": {
       "meta": {
-        "title": "Licenza Software Enterprise | Rediacc",
-        "description": "I termini di licenza degli Abbonamenti Enterprise di Rediacc venduti con un Modulo d'Ordine, compresi i server account self-hosted, i limiti di attivazione, il supporto e la verifica.",
+        "title": "Licenza Enterprise per il self-hosting | Rediacc",
+        "description": "Termini di licenza degli Abbonamenti Enterprise di Rediacc venduti con Modulo d'Ordine: server account self-hosted, limiti di attivazione, supporto e verifica.",
         "keywords": "licenza enterprise, contratto di licenza software, on-premise, modulo d'ordine, Rediacc Enterprise"
       },
       "hero": {
@@ -3430,8 +3430,8 @@
     },
     "serviceLevelAgreement": {
       "meta": {
-        "title": "Accordo sul livello di servizio | Rediacc",
-        "description": "L'impegno di disponibilità mensile del portale account e dell'API di Rediacc per gli Abbonamenti a pagamento e i crediti di servizio che si applicano quando non viene rispettato.",
+        "title": "SLA: disponibilità e crediti di servizio | Rediacc",
+        "description": "Impegno di disponibilità mensile del portale account e dell'API di Rediacc per gli Abbonamenti a pagamento e crediti di servizio se l'impegno non è rispettato.",
         "keywords": "accordo sul livello di servizio, SLA, uptime, disponibilità, crediti di servizio, Rediacc"
       },
       "hero": {
@@ -11687,7 +11687,7 @@
         "title": "Termini di servizio"
       },
       "meta": {
-        "description": "Le condizioni che regolano la CLI di Rediacc, il Renet Agent, il portale account e i servizi correlati, tra cui licenza software, corrispettivi, responsabilità e risoluzione delle controversie.",
+        "description": "Condizioni che regolano la CLI di Rediacc, il Renet Agent, il portale account e i servizi correlati: licenza, corrispettivi, responsabilità e controversie.",
         "keywords": "termini di servizio, contratto con il cliente, licenza software, Rediacc, piattaforma infrastrutturale, condizioni SaaS, licenza CLI, arbitrato",
         "title": "Termini di Servizio - Accordo Legale | Rediacc"
       },

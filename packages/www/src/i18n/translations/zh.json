@@ -345,7 +345,7 @@
       "meta": {
         "description": "使用 Rediacc CLI、Renet 代理、账户门户和托管服务的规则：禁止的内容、禁止的活动、举报与执行。",
         "keywords": "可接受使用政策, AUP, 禁止使用, 滥用, Rediacc",
-        "title": "可接受使用政策 | Rediacc"
+        "title": "可接受使用政策：禁止的使用行为与执行措施 | Rediacc"
       },
       "related": {
         "title": "相关政策"
@@ -662,7 +662,7 @@
       "meta": {
         "description": "适用于 Rediacc 企业客户的 GDPR 第 28 条数据处理条款：处理指示、安全、子处理者、跨境传输、违规通知和删除。",
         "keywords": "数据处理协议, DPA, GDPR, 第 28 条, 子处理者, 标准合同条款, Rediacc",
-        "title": "数据处理协议 | Rediacc"
+        "title": "数据处理协议（GDPR 第 28 条）：企业客户数据处理条款 | Rediacc"
       },
       "related": {
         "title": "相关政策"
@@ -992,7 +992,7 @@
       "meta": {
         "description": "适用于按订单表销售的 Rediacc Enterprise 订阅的许可条款，包括自托管账户服务器、激活上限、支持和验证。",
         "keywords": "Enterprise 许可证, 软件许可协议, 本地部署, 订单表, Rediacc Enterprise",
-        "title": "Enterprise 软件许可证 | Rediacc"
+        "title": "Enterprise 许可条款：自托管订阅许可说明 | Rediacc"
       },
       "related": {
         "title": "相关政策"
@@ -3303,9 +3303,9 @@
         "title": "服务级别协议"
       },
       "meta": {
-        "description": "付费订阅中 Rediacc 账户门户和 API 的每月可用性承诺，以及未达标时适用的服务抵扣额。",
+        "description": "付费订阅中 Rediacc 账户门户和 API 的每月可用性承诺，以及在未达到该承诺时适用的服务抵扣额度。",
         "keywords": "服务级别协议, SLA, 正常运行时间, 可用性, 服务抵扣额, Rediacc",
-        "title": "服务级别协议 | Rediacc"
+        "title": "服务级别协议：可用性承诺与服务抵扣额度及适用条件 | Rediacc"
       },
       "related": {
         "title": "相关政策"
@@ -9959,7 +9959,7 @@
       "meta": {
         "description": "适用于 Rediacc CLI、Renet 代理、账户门户及相关服务的条款，包括软件许可、费用、责任和争议解决。",
         "keywords": "服务条款, 客户协议, 软件许可, Rediacc, 基础设施平台, SaaS 条款, CLI 许可, 仲裁",
-        "title": "服务条款 - Rediacc 基础设施自动化平台使用法律协议与用户权利"
+        "title": "服务条款 - Rediacc 平台使用法律协议与用户权利 | Rediacc"
       },
       "related": {
         "title": "相关政策"

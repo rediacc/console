@@ -335,8 +335,8 @@
   "pages": {
     "acceptableUsePolicy": {
       "meta": {
-        "title": "Richtlinie zur akzeptablen Nutzung | Rediacc",
-        "description": "Die Regeln für die Nutzung der Rediacc-CLI, des Renet-Agents, des Kontoportals und der gehosteten Dienste: verbotene Inhalte, verbotene Handlungen, Meldung und Durchsetzung.",
+        "title": "Nutzungsrichtlinie: Verbotene Nutzungsarten | Rediacc",
+        "description": "Regeln für die Nutzung der Rediacc-CLI, des Renet-Agents, des Kontoportals und gehosteter Dienste: verbotene Inhalte und Handlungen, Meldung, Durchsetzung.",
         "keywords": "Richtlinie zur akzeptablen Nutzung, AUP, verbotene Nutzung, Missbrauch, Rediacc"
       },
       "hero": {
@@ -666,8 +666,8 @@
     },
     "dataProcessingAgreement": {
       "meta": {
-        "title": "Auftragsverarbeitungsvertrag | Rediacc",
-        "description": "Die Bedingungen der Datenverarbeitung nach Art. 28 DSGVO für Geschäftskunden von Rediacc: Weisungen, Sicherheit, Unterauftragsverarbeiter, internationale Übermittlungen, Meldung von Verletzungen und Löschung.",
+        "title": "Auftragsverarbeitungsvertrag (DSGVO Art. 28) | Rediacc",
+        "description": "Datenverarbeitung nach Art. 28 DSGVO für Rediacc-Geschäftskunden: Weisungen, Sicherheit, Unterauftragsverarbeiter, Übermittlungen, Datenpannen, Löschung.",
         "keywords": "Auftragsverarbeitungsvertrag, AVV, DSGVO, Artikel 28, Unterauftragsverarbeiter, Standardvertragsklauseln, Rediacc"
       },
       "hero": {
@@ -1003,8 +1003,8 @@
     },
     "enterpriseLicense": {
       "meta": {
-        "title": "Enterprise-Softwarelizenz | Rediacc",
-        "description": "Die Lizenzbedingungen für Rediacc-Enterprise-Abonnements, die auf Grundlage eines Bestellformulars verkauft werden, einschließlich selbst gehosteter Kontoserver, Aktivierungsgrenzen, Support und Verifizierung.",
+        "title": "Enterprise-Lizenzbedingungen für Self-Hosting | Rediacc",
+        "description": "Lizenzbedingungen für Rediacc-Enterprise-Abonnements auf Bestellformular: selbst gehostete Kontoserver, Aktivierungsgrenzen, Support und Verifizierung.",
         "keywords": "Enterprise-Lizenz, Softwarelizenzvertrag, On-Premise, Bestellformular, Rediacc Enterprise"
       },
       "hero": {
@@ -3430,8 +3430,8 @@
     },
     "serviceLevelAgreement": {
       "meta": {
-        "title": "Service-Level-Vereinbarung | Rediacc",
-        "description": "Die monatliche Verfügbarkeitszusage für das Rediacc-Kontoportal und die API bei kostenpflichtigen Abonnements und die Service-Gutschriften, die bei ihrer Verfehlung gelten.",
+        "title": "SLA: Verfügbarkeit und Service-Gutschriften | Rediacc",
+        "description": "Monatliche Verfügbarkeitszusage für Kontoportal und API von Rediacc bei kostenpflichtigen Abonnements sowie die Service-Gutschriften bei Nichteinhaltung.",
         "keywords": "Service-Level-Vereinbarung, SLA, Betriebszeit, Verfügbarkeit, Service-Gutschriften, Rediacc"
       },
       "hero": {
@@ -11687,7 +11687,7 @@
         "title": "Nutzungsbedingungen"
       },
       "meta": {
-        "description": "Die Bedingungen für die Rediacc-CLI, den Renet-Agent, das Kontoportal und die zugehörigen Dienste, einschließlich Softwarelizenz, Entgelte, Haftung und Streitbeilegung.",
+        "description": "Bedingungen für die Rediacc-CLI, den Renet-Agent, das Kontoportal und zugehörige Dienste: Softwarelizenz, Entgelte, Haftung und Streitbeilegung.",
         "keywords": "Nutzungsbedingungen, Kundenvertrag, Softwarelizenz, Rediacc, Infrastrukturplattform, SaaS-Bedingungen, CLI-Lizenz, Schiedsverfahren",
         "title": "Nutzungsbedingungen - Servicebedingungen | Rediacc"
       },

@@ -335,8 +335,8 @@
   "pages": {
     "acceptableUsePolicy": {
       "meta": {
-        "title": "Politique d'utilisation acceptable | Rediacc",
-        "description": "Les règles d'utilisation de la CLI Rediacc, du Renet Agent, du portail de compte et des services hébergés : contenus interdits, activités interdites, signalement et application.",
+        "title": "Utilisation acceptable : usages interdits | Rediacc",
+        "description": "Règles d'utilisation de la CLI Rediacc, du Renet Agent, du portail de compte et des services hébergés : contenus et activités interdits, signalement, sanctions.",
         "keywords": "politique d'utilisation acceptable, AUP, usage interdit, abus, Rediacc"
       },
       "hero": {
@@ -660,8 +660,8 @@
     },
     "dataProcessingAgreement": {
       "meta": {
-        "title": "Accord de traitement des données | Rediacc",
-        "description": "Les conditions de traitement des données au titre de l'article 28 du RGPD pour les clients professionnels de Rediacc : instructions de traitement, sécurité, sous-traitants ultérieurs, transferts internationaux, notification des violations et suppression.",
+        "title": "Accord de traitement des données (RGPD art. 28) | Rediacc",
+        "description": "Traitement des données (art. 28 du RGPD) pour les clients professionnels de Rediacc : instructions, sécurité, sous-traitants, violations, suppression.",
         "keywords": "accord de traitement des données, DPA, RGPD, article 28, sous-traitants ultérieurs, clauses contractuelles types, Rediacc"
       },
       "hero": {
@@ -994,8 +994,8 @@
     },
     "enterpriseLicense": {
       "meta": {
-        "title": "Licence logicielle Enterprise | Rediacc",
-        "description": "Les conditions de licence des Abonnements Enterprise de Rediacc vendus sur Bon de commande, y compris les serveurs de compte auto-hébergés, les plafonds d'activation, l'assistance et la vérification.",
+        "title": "Licence Enterprise pour l'auto-hébergement | Rediacc",
+        "description": "Conditions de licence des Abonnements Enterprise de Rediacc vendus sur Bon de commande : serveurs auto-hébergés, plafonds d'activation, assistance, contrôle.",
         "keywords": "licence enterprise, contrat de licence logicielle, sur site, bon de commande, Rediacc Enterprise"
       },
       "hero": {
@@ -3337,8 +3337,8 @@
     },
     "serviceLevelAgreement": {
       "meta": {
-        "title": "Accord de niveau de service | Rediacc",
-        "description": "L'engagement de disponibilité mensuelle du portail de compte et de l'API Rediacc pour les Abonnements payants, et les crédits de service applicables en cas de non-respect.",
+        "title": "SLA : disponibilité et crédits de service | Rediacc",
+        "description": "Engagement de disponibilité mensuelle du portail de compte et de l'API Rediacc pour les Abonnements payants, et crédits de service en cas de manquement.",
         "keywords": "accord de niveau de service, SLA, disponibilité, temps de fonctionnement, crédits de service, Rediacc"
       },
       "hero": {
@@ -10018,9 +10018,9 @@
         "title": "Conditions d'utilisation"
       },
       "meta": {
-        "description": "Les conditions qui régissent la CLI Rediacc, le Renet Agent, le portail de compte et les services associés, notamment la licence logicielle, les frais, la responsabilité et le règlement des litiges.",
+        "description": "Conditions de la CLI Rediacc, du Renet Agent, du portail de compte et des services associés : licence logicielle, frais, responsabilité et litiges.",
         "keywords": "conditions d'utilisation, contrat client, licence logicielle, Rediacc, plateforme d'infrastructure, conditions SaaS, licence CLI, arbitrage",
-        "title": "Conditions d'Utilisation — Rediacc"
+        "title": "Conditions d'utilisation - Accord juridique | Rediacc"
       },
       "related": {
         "title": "Politiques associées"

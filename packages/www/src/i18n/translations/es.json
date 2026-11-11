@@ -335,8 +335,8 @@
   "pages": {
     "acceptableUsePolicy": {
       "meta": {
-        "title": "Política de uso aceptable | Rediacc",
-        "description": "Las reglas para usar la CLI de Rediacc, el Agente Renet, el portal de cuentas y los servicios alojados: contenido prohibido, actividades prohibidas, denuncia y aplicación.",
+        "title": "Política de uso aceptable: usos prohibidos | Rediacc",
+        "description": "Reglas de uso de la CLI de Rediacc, el Agente Renet, el portal de cuentas y los servicios alojados: contenido y actividades prohibidos, denuncia y sanciones.",
         "keywords": "política de uso aceptable, AUP, uso prohibido, abuso, Rediacc"
       },
       "hero": {
@@ -666,8 +666,8 @@
     },
     "dataProcessingAgreement": {
       "meta": {
-        "title": "Acuerdo de encargo de tratamiento de datos | Rediacc",
-        "description": "Las condiciones de tratamiento de datos conforme al artículo 28 del RGPD para los clientes empresariales de Rediacc: instrucciones de tratamiento, seguridad, subencargados, transferencias internacionales, notificación de violaciones y supresión.",
+        "title": "Acuerdo de tratamiento de datos (RGPD art. 28) | Rediacc",
+        "description": "Tratamiento de datos (art. 28 RGPD) para clientes empresariales de Rediacc: instrucciones, seguridad, subencargados, transferencias, brechas y supresión.",
         "keywords": "acuerdo de encargo de tratamiento de datos, DPA, RGPD, artículo 28, subencargados, cláusulas contractuales tipo, Rediacc"
       },
       "hero": {
@@ -1003,8 +1003,8 @@
     },
     "enterpriseLicense": {
       "meta": {
-        "title": "Licencia de Software Enterprise | Rediacc",
-        "description": "Los términos de licencia de las Suscripciones Enterprise de Rediacc vendidas mediante un Formulario de Pedido, incluidos los servidores de cuentas autoalojados, los límites de activación, el soporte y la verificación.",
+        "title": "Licencia Enterprise para autoalojamiento | Rediacc",
+        "description": "Licencia de las Suscripciones Enterprise de Rediacc vendidas con Formulario de Pedido: servidores autoalojados, límites de activación, soporte y verificación.",
         "keywords": "licencia enterprise, contrato de licencia de software, on-premise, formulario de pedido, Rediacc Enterprise"
       },
       "hero": {
@@ -3430,8 +3430,8 @@
     },
     "serviceLevelAgreement": {
       "meta": {
-        "title": "Acuerdo de nivel de servicio | Rediacc",
-        "description": "El compromiso de disponibilidad mensual del portal de cuentas y de la API de Rediacc para las Suscripciones de pago, y los créditos de servicio que se aplican cuando no se cumple.",
+        "title": "SLA: disponibilidad y créditos de servicio | Rediacc",
+        "description": "Compromiso de disponibilidad mensual del portal de cuentas y la API de Rediacc en las Suscripciones de pago, y los créditos de servicio si no se cumple.",
         "keywords": "acuerdo de nivel de servicio, SLA, tiempo de actividad, disponibilidad, créditos de servicio, Rediacc"
       },
       "hero": {
@@ -11687,9 +11687,9 @@
         "title": "Condiciones del servicio"
       },
       "meta": {
-        "description": "Las condiciones que rigen la CLI de Rediacc, el Agente Renet, el portal de cuentas y los servicios relacionados, incluidas la licencia de software, las tarifas, la responsabilidad y la resolución de conflictos.",
+        "description": "Condiciones de la CLI de Rediacc, el Agente Renet, el portal de cuentas y servicios afines: licencia, tarifas, responsabilidad y resolución de disputas.",
         "keywords": "condiciones del servicio, contrato de cliente, licencia de software, Rediacc, plataforma de infraestructura, condiciones SaaS, licencia de la CLI, arbitraje",
-        "title": "Condiciones del Servicio — Rediacc"
+        "title": "Condiciones del servicio - Acuerdo legal | Rediacc"
       },
       "related": {
         "title": "Políticas relacionadas"

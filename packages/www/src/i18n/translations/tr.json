@@ -337,7 +337,7 @@
       "meta": {
         "description": "Rediacc CLI, Renet Ajanı, hesap portalı ve barındırılan hizmetlerin kullanım kuralları: yasaklı içerik, yasaklı faaliyetler, ihlal bildirimi ve uygulama.",
         "keywords": "kabul edilebilir kullanım politikası, AUP, yasaklı kullanım, kötüye kullanım, Rediacc",
-        "title": "Kabul Edilebilir Kullanım Politikası | Rediacc"
+        "title": "Kabul Edilebilir Kullanım: Yasaklı Kullanımlar | Rediacc"
       },
       "related": {
         "title": "İlgili Politikalar"
@@ -656,9 +656,9 @@
         "title": "Veri İşleme Sözleşmesi"
       },
       "meta": {
-        "description": "Rediacc'ın kurumsal müşterileri için GDPR madde 28 kapsamındaki veri işleme koşulları: işleme talimatları, güvenlik, alt işleyiciler, uluslararası aktarımlar, ihlal bildirimi ve silme.",
+        "description": "Rediacc kurumsal müşterileri için GDPR madde 28 kapsamında veri işleme koşulları: talimatlar, güvenlik, alt işleyiciler, aktarımlar, ihlal bildirimi ve silme.",
         "keywords": "veri işleme sözleşmesi, DPA, GDPR, madde 28, alt işleyiciler, standart sözleşme hükümleri, Rediacc",
-        "title": "Veri İşleme Sözleşmesi | Rediacc"
+        "title": "Veri İşleme Sözleşmesi (GDPR Madde 28) | Rediacc"
       },
       "related": {
         "title": "İlgili Politikalar"
@@ -990,9 +990,9 @@
         "title": "Kurumsal Yazılım Lisansı"
       },
       "meta": {
-        "description": "Sipariş Formu ile satılan Rediacc Kurumsal Aboneliklerinin lisans koşulları: kendi sunucunuzda çalışan hesap sunucuları, etkinleştirme üst sınırları, destek ve doğrulama dahil.",
+        "description": "Sipariş Formu ile satılan Rediacc Kurumsal Abonelikleri lisans koşulları: kendi sunucunuzdaki hesap sunucuları, etkinleştirme sınırları, destek ve doğrulama.",
         "keywords": "kurumsal lisans, yazılım lisans sözleşmesi, şirket içi, sipariş formu, Rediacc Enterprise",
-        "title": "Kurumsal Yazılım Lisansı | Rediacc"
+        "title": "Kurumsal Lisans: Kendi Sunucunuzda Barındırma | Rediacc"
       },
       "related": {
         "title": "İlgili Politikalar"
@@ -3328,7 +3328,7 @@
       "meta": {
         "description": "Ücretli Aboneliklerde Rediacc hesap portalı ve API'si için aylık erişilebilirlik taahhüdü ile bu taahhüt karşılanmadığında uygulanan hizmet kredileri.",
         "keywords": "hizmet seviyesi sözleşmesi, SLA, çalışma süresi, erişilebilirlik, hizmet kredileri, Rediacc",
-        "title": "Hizmet Seviyesi Sözleşmesi | Rediacc"
+        "title": "SLA: Çalışma Süresi ve Hizmet Kredileri | Rediacc"
       },
       "related": {
         "title": "İlgili Politikalar"

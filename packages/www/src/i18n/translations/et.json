@@ -337,7 +337,7 @@
       "meta": {
         "description": "Rediacc CLI, Renet agendi, kontoportaali ja majutatud teenuste kasutamise reeglid: keelatud sisu, keelatud tegevused, rikkumistest teatamine ja jõustamine.",
         "keywords": "lubatud kasutuse poliitika, AUP, keelatud kasutus, kuritarvitamine, Rediacc",
-        "title": "Lubatud kasutuse poliitika | Rediacc"
+        "title": "Lubatud kasutuse poliitika: keelatud tegevused | Rediacc"
       },
       "related": {
         "title": "Seotud poliitikad"
@@ -660,9 +660,9 @@
         "title": "Andmetöötluslepe"
       },
       "meta": {
-        "description": "GDPR artikli 28 kohased andmetöötlustingimused Rediacc ärikliendile: töötlemisjuhised, turvalisus, alltöötlejad, rahvusvahelised edastamised, rikkumisest teatamine ja kustutamine.",
+        "description": "GDPRi artikli 28 andmetöötlustingimused Rediacc ärikliendile: juhised, turvalisus, alltöötlejad, edastamised, rikkumisest teatamine ja kustutamine.",
         "keywords": "andmetöötluslepe, DPA, GDPR, artikkel 28, alltöötlejad, standardsed lepingutingimused, Rediacc",
-        "title": "Andmetöötluslepe | Rediacc"
+        "title": "Andmetöötluslepe (GDPRi artikkel 28) | Rediacc"
       },
       "related": {
         "title": "Seotud poliitikad"
@@ -994,9 +994,9 @@
         "title": "Enterprise-tarkvaralitsents"
       },
       "meta": {
-        "description": "Tellimusvormi alusel müüdavate Rediacc Enterprise-tellimuste litsentsitingimused, sealhulgas isehostitud kontoserverid, aktiveerimiste ülempiirid, tugi ja kontrollimine.",
+        "description": "Tellimusvormi alusel müüdavate Rediacc Enterprise-tellimuste litsentsitingimused: isehostitud kontoserverid, aktiveerimispiirangud, tugi ja kontrollimine.",
         "keywords": "enterprise-litsents, tarkvara litsentsileping, ettevõttesisene, tellimusvorm, Rediacc Enterprise",
-        "title": "Enterprise-tarkvaralitsents | Rediacc"
+        "title": "Enterprise-litsentsi tingimused isehostimiseks | Rediacc"
       },
       "related": {
         "title": "Seotud poliitikad"
@@ -3349,7 +3349,7 @@
       "meta": {
         "description": "Rediacc kontoportaali ja API igakuine kättesaadavuse lubadus tasuliste tellimuste puhul ning teenusekrediidid, mida kohaldatakse selle täitmata jätmisel.",
         "keywords": "teenusetaseme leping, SLA, tööaeg, kättesaadavus, teenusekrediit, Rediacc",
-        "title": "Teenusetaseme leping | Rediacc"
+        "title": "Teenusetaseme leping: tööaeg ja krediidid | Rediacc"
       },
       "related": {
         "title": "Seotud poliitikad"
@@ -10019,7 +10019,7 @@
         "title": "Teenuse kasutustingimused"
       },
       "meta": {
-        "description": "Tingimused, mis reguleerivad Rediacc CLI, Renet agendi, kontoportaali ja seotud teenuste kasutamist, sealhulgas tarkvaralitsents, tasud, vastutus ja vaidluste lahendamine.",
+        "description": "Rediacc CLI, Renet agendi, kontoportaali ja seotud teenuste tingimused: tarkvaralitsents, tasud, vastutus ja vaidluste lahendamine.",
         "keywords": "teenuse kasutustingimused, kliendileping, tarkvara litsents, Rediacc, infrastruktuuri platvorm, SaaS tingimused, CLI litsents, vahekohus",
         "title": "Teenuse kasutustingimused - õiguslik kokkulepe | Rediacc"
       },
