@@ -274,6 +274,8 @@ class World(vm_check.Host):
         self.forget_keeps = over.pop("forget_keeps", False)
         # Stale fork entries sharing the grand's name: a bare forget is refused as ambiguous while any remains, and finds nothing ("is not in this config") once the family is gone.
         self.stale_fork_refs = list(over.pop("stale_fork_refs", ()))
+        # True: the ambiguity refusal lists no `<name>:<tag>` refs the harness can parse.
+        self.stale_refs_unlisted = over.pop("stale_refs_unlisted", False)
         # False: the worker has no BTRFS datastore until `machine setup` runs; `setup_rc` is that command's answer.
         self.datastore = over.pop("datastore", True)
         self.setup_rc = over.pop("setup_rc", 0)
@@ -558,7 +560,7 @@ class World(vm_check.Host):
             if self.forget_rc:
                 return vm_check.Result(self.forget_rc, "", "forget refused")
             if self.stale_fork_refs and args[2] == PARENT:
-                listing = "".join("\n  - %s" % r for r in self.stale_fork_refs)
+                listing = "" if self.stale_refs_unlisted else "".join("\n  - %s" % r for r in self.stale_fork_refs)
                 msg = 'Repository "%s" is ambiguous:%s' % (PARENT, listing)
                 return vm_check.Result(1, json.dumps({"success": False, "errors": [{"message": msg}]}))
             if args[2] in self.stale_fork_refs:
@@ -2908,6 +2910,24 @@ def test_an_ambiguous_forget_deletes_each_ref_and_never_reruns_the_bare_forget(
     assert rc == vm_check.EXIT_VERIFIED, out
     assert [c[2] for c in _forgets(world)] == [PARENT, *refs]
     assert PARENT in world.repos
+
+
+def test_an_ambiguous_forget_listing_no_refs_is_not_verified_and_names_the_ambiguity(
+    tmp_path: pathlib.Path,
+) -> None:
+    """Review b852fc5a.1: with no parseable ref there is nothing to delete by tag, so the refusal itself is the verdict."""
+    world = make_world(
+        tmp_path,
+        grands=(),
+        config_has_parent=True,
+        stale_fork_refs=["%s:vmc-a" % PARENT],
+        stale_refs_unlisted=True,
+    )
+    rc, out, receipt = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    assert receipt["reason"]["class"] == "parent-grand-missing"
+    assert "is ambiguous" in receipt["reason"]["detail"], receipt["reason"]
+    assert [c[2] for c in _forgets(world)] == [PARENT]
 
 
 def test_a_grand_present_on_the_worker_is_never_forgotten(tmp_path: pathlib.Path) -> None:
