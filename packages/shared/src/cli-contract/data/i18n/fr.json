@@ -2200,6 +2200,7 @@
   "options.healthWindow": "Fenêtre totale du health-gate en secondes (par défaut 300)",
   "options.insiders": "Utiliser les paramètres VS Code Insiders",
   "options.lang": "Remplacement de langue ({{languages}})",
+  "options.licenseRegion": "Région de compte qui délivre une licence gratuite quand la configuration n'indique aucun serveur (p. ex. us, eu)",
   "options.licenses": "Afficher le texte complet THIRD_PARTY_LICENSES fourni avec les builds de release",
   "options.localPath": "Chemin du répertoire local (par défaut : répertoire actuel)",
   "options.localPaths": "Un ou plusieurs chemins locaux de fichier ou de répertoire (par défaut : répertoire actuel)",

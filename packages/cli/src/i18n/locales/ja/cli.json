@@ -3040,6 +3040,8 @@
       "offerLogin": "アカウントにログインする",
       "offerFree": "無料ライセンスで続ける（最大 {{maxGb}} GB）",
       "autoTaken": "ログインしていないため、無料ライセンス（最大 {{maxGb}} GB、ホスト型バックアップなし）を使用します。無料アカウントを登録すると、Communityの上限とホスト型バックアップを利用できます: {{url}}",
+      "defaultRegion": "リージョンが選択されていないため、無料ライセンスは {{server}} から発行されます。別のリージョンを選ぶには、--license-region <id> を指定するか、REDIACC_ACCOUNT_SERVER を設定してください。",
+      "regionIgnored": "この設定はすでに {{server}} を使用しているため、--license-region は無視されます。",
       "issued": "このリポジトリに無料ライセンスをインストールしました（最大 {{maxGb}} GB）。",
       "noHostedBackup": "無料ライセンスにはホスト型バックアップが含まれません。無料アカウントを登録するとCommunityのホスト型バックアップを利用できます。さらに必要な場合は有料プランを選んでください: {{url}}"
     },
@@ -3303,6 +3305,7 @@
     "healthWindow": "ヘルスゲート全体のウィンドウ秒数（デフォルト 300）",
     "insiders": "VS Code Insiders 設定を使用する",
     "lang": "言語オーバーライド ({{languages}})",
+    "licenseRegion": "設定でサーバーが指定されていない場合に無料ライセンスを発行するアカウントのリージョン(例: us、eu)",
     "licenses": "リリースビルドに同梱される THIRD_PARTY_LICENSES の全文を表示する",
     "localPath": "ローカルディレクトリパス (デフォルト: 現在のディレクトリ)",
     "localPaths": "1 つ以上のローカルファイルまたはディレクトリのパス（既定: カレントディレクトリ）",

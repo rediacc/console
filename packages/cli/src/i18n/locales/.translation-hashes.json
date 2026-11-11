@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 2596,
-    "sourceCommit": "fe5c5c32c713a638fe06ba39ddf65d6d6a2f1467"
+    "keyCount": 2599,
+    "sourceCommit": "e97a5463811073e1216f528e233f92e27de67430"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -2343,11 +2343,13 @@
     "errors.editor.notFound": "40d10a72",
     "errors.editor.spawnFailed": "4982c53f",
     "errors.freeLicense.autoTaken": "8f9ea028",
+    "errors.freeLicense.defaultRegion": "ef2a6644",
     "errors.freeLicense.issued": "8e45eb9d",
     "errors.freeLicense.noHostedBackup": "1fa66962",
     "errors.freeLicense.offerFree": "73cc2913",
     "errors.freeLicense.offerLogin": "7ae2e813",
     "errors.freeLicense.offerPrompt": "fe15d97f",
+    "errors.freeLicense.regionIgnored": "877918d5",
     "errors.invalidFunctionParams": "e00a56a1",
     "errors.invalidKey": "ce3f98e5",
     "errors.invalidOutputFormat": "70d1e4d9",
@@ -2519,6 +2521,7 @@
     "options.healthWindow": "a50d7906",
     "options.insiders": "fadd36a8",
     "options.lang": "5835ea94",
+    "options.licenseRegion": "81fc8813",
     "options.licenses": "3e1e52cc",
     "options.localPath": "b4ba13b0",
     "options.localPaths": "8b6ea265",

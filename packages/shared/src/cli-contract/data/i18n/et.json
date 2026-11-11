@@ -2200,6 +2200,7 @@
   "options.healthWindow": "Terviseväravaks kuluv koguaeg sekundites (vaikimisi 300)",
   "options.insiders": "Kasuta VS Code Insidersi seadeid",
   "options.lang": "Keele alistamine ({{languages}})",
+  "options.licenseRegion": "Konto piirkond, mis annab tasuta litsentsi, kui konfiguratsioon serverit ei nimeta (nt us, eu)",
   "options.licenses": "Prindi väljalaske ehitistega kaasas olev täielik THIRD_PARTY_LICENSES tekst",
   "options.localPath": "Lokaalne kaustatee (vaikimisi: praegune kaust)",
   "options.localPaths": "Üks või mitu lokaalset faili- või kaustateed (vaikimisi: praegune kaust)",

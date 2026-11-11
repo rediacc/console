@@ -21,6 +21,7 @@ import { registerToolsCommands } from './commands/tools.js';
 import { registerUpdateCommand } from './commands/update.js';
 import { registerVSCodeCommands } from './commands/vscode.js';
 import { changeLanguage, initI18n, SUPPORTED_LANGUAGES, t } from './i18n/index.js';
+import { setFreeLicenseRegion } from './services/account/free-license.js';
 import { getSubscriptionTokenState } from './services/account/subscription-auth.js';
 import { configService } from './services/config/config-resources.js';
 import { setInvocationCommand } from './services/config/push-visibility.js';
@@ -215,6 +216,7 @@ export function createCli(): Command {
     .option('-y, --yes', t('options.yes'))
     .option('--fields <fields>', t('options.fields'))
     .option('--proxy <url>', t('options.proxy'))
+    .option('--license-region <id>', t('options.licenseRegion'))
     .option('-b, --background', t('options.background'))
     .hook('preAction', async (thisCommand, actionCommand) => {
       const opts = thisCommand.opts();
@@ -239,6 +241,10 @@ export function createCli(): Command {
       // Set --fields for output filtering
       if (opts.fields) {
         outputService.setFields(opts.fields);
+      }
+      // Pick the account region a FREE licence is issued by (`--region` is taken by machine provisioning)
+      if (opts.licenseRegion) {
+        setFreeLicenseRegion(opts.licenseRegion as string);
       }
       // Set runtime config override if --config flag is provided
       if (opts.config) {

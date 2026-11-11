@@ -3040,6 +3040,8 @@
       "offerLogin": "Bir hesapla oturum aç",
       "offerFree": "Ücretsiz lisansla devam et ({{maxGb}} GB'a kadar)",
       "autoTaken": "Oturum açılmadığı için ücretsiz lisans kullanılıyor ({{maxGb}} GB'a kadar, barındırılan yedekleme yok). Ücretsiz bir hesap Community limitlerini ve barındırılan yedeklemeyi sağlar: {{url}}",
+      "defaultRegion": "Bölge seçilmedi, bu yüzden ücretsiz lisans {{server}} sunucusundan alınır. Başka bir bölge seçmek için --license-region <id> verin veya REDIACC_ACCOUNT_SERVER değerini ayarlayın.",
+      "regionIgnored": "Bu yapılandırma zaten {{server}} sunucusunu kullanıyor, bu yüzden --license-region yok sayılır.",
       "issued": "Bu depo için ücretsiz lisans kuruldu (en fazla {{maxGb}} GB).",
       "noHostedBackup": "Ücretsiz lisansta barındırılan yedekleme yoktur. Community'nin barındırılan yedeklemesi için ücretsiz bir hesap oluşturun; daha fazlası için ücretli bir plan seçin: {{url}}"
     },
@@ -3303,6 +3305,7 @@
     "healthWindow": "Toplam sağlık kapısı penceresi, saniye cinsinden (varsayılan 300)",
     "insiders": "VS Code Insiders ayarlarını kullanın",
     "lang": "Dil geçersiz kılması ({{languages}})",
+    "licenseRegion": "Yapılandırma sunucu belirtmediğinde ücretsiz lisansı veren hesap bölgesi (örn. us, eu)",
     "licenses": "Sürüm derlemeleriyle paketlenen tam THIRD_PARTY_LICENSES metnini yazdır",
     "localPath": "Yerel dizin yolu (varsayılan: güncel dizin)",
     "localPaths": "Bir veya daha fazla yerel dosya veya dizin yolu (varsayılan: geçerli dizin)",

@@ -33,6 +33,12 @@
       "defaultValue": null
     },
     {
+      "flags": "--license-region <id>",
+      "descriptionKey": "options.licenseRegion",
+      "mandatory": false,
+      "defaultValue": null
+    },
+    {
       "flags": "-b, --background",
       "descriptionKey": "options.background",
       "mandatory": false,
@@ -6971,6 +6977,12 @@
             {
               "flags": "--repo <ref>",
               "descriptionKey": "options.repoRef",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--adopt-origin",
+              "descriptionKey": "commands.subscription.refresh.adoptOrigin",
               "mandatory": false,
               "defaultValue": null
             }

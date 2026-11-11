@@ -2200,6 +2200,7 @@
   "options.healthWindow": "نافذة بوابة الصحة الإجمالية بالثواني (الافتراضي 300)",
   "options.insiders": "استخدام إعدادات VS Code Insiders",
   "options.lang": "تجاوز اللغة ({{languages}})",
+  "options.licenseRegion": "منطقة الحساب التي تصدر الرخصة المجانية عندما لا يحدد الإعداد خادمًا (مثل us وeu)",
   "options.licenses": "طباعة نص THIRD_PARTY_LICENSES الكامل المرفق مع إصدارات الإطلاق",
   "options.localPath": "مسار المجلد المحلي (افتراضي: المجلد الحالي)",
   "options.localPaths": "مسار واحد أو أكثر لملف أو مجلد محلي (الافتراضي: المجلد الحالي)",

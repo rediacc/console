@@ -2200,6 +2200,7 @@
   "options.healthWindow": "Gesamtes Zeitfenster für das Health-Gate in Sekunden (Standard 300)",
   "options.insiders": "VS Code Insiders-Einstellungen verwenden",
   "options.lang": "Sprache überschreiben ({{languages}})",
+  "options.licenseRegion": "Kontoregion, die eine kostenlose Lizenz ausstellt, wenn die Konfiguration keinen Server nennt (z. B. us, eu)",
   "options.licenses": "Den vollständigen THIRD_PARTY_LICENSES-Text ausgeben, der mit Release-Builds gebündelt ist",
   "options.localPath": "Lokaler Verzeichnispfad (Standard: aktuelles Verzeichnis)",
   "options.localPaths": "Ein oder mehrere lokale Datei- oder Verzeichnispfade (Standard: aktuelles Verzeichnis)",

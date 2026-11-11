@@ -2200,6 +2200,7 @@
   "options.healthWindow": "전체 상태 게이트 윈도우(초) (기본값 300)",
   "options.insiders": "VS Code Insiders 설정 사용",
   "options.lang": "언어 재정의 ({{languages}})",
+  "options.licenseRegion": "구성에 서버가 지정되지 않았을 때 무료 라이선스를 발급하는 계정 리전(예: us, eu)",
   "options.licenses": "릴리스 빌드에 포함된 THIRD_PARTY_LICENSES 전문을 출력합니다",
   "options.localPath": "로컬 디렉터리 경로 (기본값: 현재 디렉터리)",
   "options.localPaths": "하나 이상의 로컬 파일 또는 디렉터리 경로 (기본값: 현재 디렉터리)",

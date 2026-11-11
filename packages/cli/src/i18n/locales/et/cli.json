@@ -3040,6 +3040,8 @@
       "offerLogin": "Logi kontole sisse",
       "offerFree": "Jätka tasuta litsentsiga (kuni {{maxGb}} GB)",
       "autoTaken": "Sisselogimist ei leitud, seega kasutatakse tasuta litsentsi (kuni {{maxGb}} GB, ilma majutatud varukoopiateta). Tasuta konto annab Community piirangud ja majutatud varukoopiad: {{url}}",
+      "defaultRegion": "Piirkonda pole valitud, seega pärineb tasuta litsents serverist {{server}}. Teise valimiseks lisa --license-region <id> või sea REDIACC_ACCOUNT_SERVER.",
+      "regionIgnored": "See konfiguratsioon kasutab juba serverit {{server}}, seega --license-region jäetakse tähelepanuta.",
       "issued": "Selle hoidla tasuta litsents on paigaldatud (kuni {{maxGb}} GB).",
       "noHostedBackup": "Tasuta litsentsiga ei kaasne majutatud varukoopiaid. Loo tasuta konto, et kasutada Community majutatud varukoopiaid, või vali rohkema jaoks tasuline pakett: {{url}}"
     },
@@ -3303,6 +3305,7 @@
     "healthWindow": "Terviseväravaks kuluv koguaeg sekundites (vaikimisi 300)",
     "insiders": "Kasuta VS Code Insidersi seadeid",
     "lang": "Keele alistamine ({{languages}})",
+    "licenseRegion": "Konto piirkond, mis annab tasuta litsentsi, kui konfiguratsioon serverit ei nimeta (nt us, eu)",
     "licenses": "Prindi väljalaske ehitistega kaasas olev täielik THIRD_PARTY_LICENSES tekst",
     "localPath": "Lokaalne kaustatee (vaikimisi: praegune kaust)",
     "localPaths": "Üks või mitu lokaalset faili- või kaustateed (vaikimisi: praegune kaust)",

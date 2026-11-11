@@ -3040,6 +3040,8 @@
       "offerLogin": "登录账户",
       "offerFree": "使用免费许可证继续（最多 {{maxGb}} GB）",
       "autoTaken": "未登录，因此使用免费许可证（最多 {{maxGb}} GB，不含托管备份）。注册免费账户即可获得 Community 的限额和托管备份：{{url}}",
+      "defaultRegion": "未选择区域,因此免费许可证来自 {{server}}。要选择其他区域,请传入 --license-region <id> 或设置 REDIACC_ACCOUNT_SERVER。",
+      "regionIgnored": "此配置已使用 {{server}},因此会忽略 --license-region。",
       "issued": "已为此仓库安装免费许可证（最多 {{maxGb}} GB）。",
       "noHostedBackup": "免费许可证不含托管备份。注册免费账户即可使用 Community 的托管备份，需要更多请选择付费套餐：{{url}}"
     },
@@ -3303,6 +3305,7 @@
     "healthWindow": "健康门禁检查的总时间窗口（秒，默认 300）",
     "insiders": "使用 VS Code Insiders 设置",
     "lang": "语言覆盖（{{languages}}）",
+    "licenseRegion": "当配置未指定服务器时,签发免费许可证的账户区域(例如 us、eu)",
     "licenses": "打印随发行版打包的完整 THIRD_PARTY_LICENSES 文本",
     "localPath": "本地目录路径（默认：当前目录）",
     "localPaths": "一个或多个本地文件或目录路径（默认：当前目录）",

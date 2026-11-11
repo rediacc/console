@@ -3040,6 +3040,8 @@
       "offerLogin": "Iniciar sessão numa conta",
       "offerFree": "Continuar com uma licença gratuita (até {{maxGb}} GB)",
       "autoTaken": "Não há sessão iniciada, por isso é usada uma licença gratuita (até {{maxGb}} GB, sem cópias de segurança alojadas). Com uma conta gratuita aplicam-se os limites do Community e as cópias de segurança alojadas: {{url}}",
+      "defaultRegion": "Nenhuma região escolhida, então a licença gratuita vem de {{server}}. Para escolher outra, passe --license-region <id> ou defina REDIACC_ACCOUNT_SERVER.",
+      "regionIgnored": "Esta configuração já usa {{server}}, então --license-region é ignorado.",
       "issued": "Licença gratuita instalada para este repositório (até {{maxGb}} GB).",
       "noHostedBackup": "Uma licença gratuita não inclui cópias de segurança alojadas. Crie uma conta gratuita para usar as cópias de segurança alojadas do Community, ou escolha um plano pago para ter mais: {{url}}"
     },
@@ -3303,6 +3305,7 @@
     "healthWindow": "Janela total da verificação de saúde, em segundos (por omissão 300)",
     "insiders": "Usar definições do VS Code Insiders",
     "lang": "Substituição de idioma ({{languages}})",
+    "licenseRegion": "Região da conta que emite uma licença gratuita quando a configuração não indica nenhum servidor (p. ex. us, eu)",
     "licenses": "Imprimir o texto completo THIRD_PARTY_LICENSES incluído nas compilações de lançamento",
     "localPath": "Caminho do diretório local (predefinição: diretório atual)",
     "localPaths": "Um ou mais caminhos de ficheiros ou diretórios locais (predefinição: diretório atual)",

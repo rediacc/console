@@ -3040,6 +3040,8 @@
       "offerLogin": "Bei einem Konto anmelden",
       "offerFree": "Mit einer kostenlosen Lizenz fortfahren (bis zu {{maxGb}} GB)",
       "autoTaken": "Keine Anmeldung gefunden, daher wird eine kostenlose Lizenz verwendet (bis zu {{maxGb}} GB, ohne gehostete Backups). Mit einem kostenlosen Konto gelten die Community-Limits samt gehostetem Backup: {{url}}",
+      "defaultRegion": "Keine Region gewählt, daher stammt die kostenlose Lizenz von {{server}}. Eine andere Region wählen Sie mit --license-region <id> oder über REDIACC_ACCOUNT_SERVER.",
+      "regionIgnored": "Diese Konfiguration verwendet bereits {{server}}, daher wird --license-region ignoriert.",
       "issued": "Kostenlose Lizenz für dieses Repository installiert (bis zu {{maxGb}} GB).",
       "noHostedBackup": "Eine kostenlose Lizenz enthält keine gehosteten Backups. Registrieren Sie ein kostenloses Konto, um das gehostete Backup von Community zu nutzen, oder wählen Sie einen kostenpflichtigen Plan für mehr: {{url}}"
     },
@@ -3303,6 +3305,7 @@
     "healthWindow": "Gesamtes Zeitfenster für das Health-Gate in Sekunden (Standard 300)",
     "insiders": "VS Code Insiders-Einstellungen verwenden",
     "lang": "Sprache überschreiben ({{languages}})",
+    "licenseRegion": "Kontoregion, die eine kostenlose Lizenz ausstellt, wenn die Konfiguration keinen Server nennt (z. B. us, eu)",
     "licenses": "Den vollständigen THIRD_PARTY_LICENSES-Text ausgeben, der mit Release-Builds gebündelt ist",
     "localPath": "Lokaler Verzeichnispfad (Standard: aktuelles Verzeichnis)",
     "localPaths": "Ein oder mehrere lokale Datei- oder Verzeichnispfade (Standard: aktuelles Verzeichnis)",

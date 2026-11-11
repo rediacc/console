@@ -2200,6 +2200,7 @@
   "options.healthWindow": "Janela total da verificação de saúde, em segundos (por omissão 300)",
   "options.insiders": "Usar definições do VS Code Insiders",
   "options.lang": "Substituição de idioma ({{languages}})",
+  "options.licenseRegion": "Região da conta que emite uma licença gratuita quando a configuração não indica nenhum servidor (p. ex. us, eu)",
   "options.licenses": "Imprimir o texto completo THIRD_PARTY_LICENSES incluído nas compilações de lançamento",
   "options.localPath": "Caminho do diretório local (predefinição: diretório atual)",
   "options.localPaths": "Um ou mais caminhos de ficheiros ou diretórios locais (predefinição: diretório atual)",

@@ -7,7 +7,7 @@ order: 2
 language: ru
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/ru/cli.json
-sourceHash: "7c7cf8e7441d6692"
+sourceHash: "06d1e3290846434c"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -3329,6 +3329,7 @@ rdc subscription refresh [options]
 |------|-------------|----------|---------|
 | `-m, --machine <name>` | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--repo <ref>` | {{t:cli.options.repoRef}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--adopt-origin` | {{t:cli.commands.subscription.refresh.adoptOrigin}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 ---

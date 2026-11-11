@@ -3040,6 +3040,8 @@
       "offerLogin": "계정에 로그인",
       "offerFree": "무료 라이선스로 계속 (최대 {{maxGb}} GB)",
       "autoTaken": "로그인되어 있지 않아 무료 라이선스를 사용합니다 (최대 {{maxGb}} GB, 호스팅 백업 없음). 무료 계정을 만들면 Community 한도와 호스팅 백업을 쓸 수 있습니다: {{url}}",
+      "defaultRegion": "리전을 선택하지 않았으므로 무료 라이선스는 {{server}}에서 발급됩니다. 다른 리전을 선택하려면 --license-region <id>를 지정하거나 REDIACC_ACCOUNT_SERVER를 설정하세요.",
+      "regionIgnored": "이 구성은 이미 {{server}}를 사용하므로 --license-region은 무시됩니다.",
       "issued": "이 저장소에 무료 라이선스를 설치했습니다 (최대 {{maxGb}} GB).",
       "noHostedBackup": "무료 라이선스에는 호스팅 백업이 없습니다. 무료 계정을 만들면 Community의 호스팅 백업을 쓸 수 있고, 더 필요하면 유료 플랜을 선택하세요: {{url}}"
     },
@@ -3303,6 +3305,7 @@
     "healthWindow": "전체 상태 게이트 윈도우(초) (기본값 300)",
     "insiders": "VS Code Insiders 설정 사용",
     "lang": "언어 재정의 ({{languages}})",
+    "licenseRegion": "구성에 서버가 지정되지 않았을 때 무료 라이선스를 발급하는 계정 리전(예: us, eu)",
     "licenses": "릴리스 빌드에 포함된 THIRD_PARTY_LICENSES 전문을 출력합니다",
     "localPath": "로컬 디렉터리 경로 (기본값: 현재 디렉터리)",
     "localPaths": "하나 이상의 로컬 파일 또는 디렉터리 경로 (기본값: 현재 디렉터리)",

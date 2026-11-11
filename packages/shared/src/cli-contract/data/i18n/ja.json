@@ -2200,6 +2200,7 @@
   "options.healthWindow": "ヘルスゲート全体のウィンドウ秒数（デフォルト 300）",
   "options.insiders": "VS Code Insiders 設定を使用する",
   "options.lang": "言語オーバーライド ({{languages}})",
+  "options.licenseRegion": "設定でサーバーが指定されていない場合に無料ライセンスを発行するアカウントのリージョン(例: us、eu)",
   "options.licenses": "リリースビルドに同梱される THIRD_PARTY_LICENSES の全文を表示する",
   "options.localPath": "ローカルディレクトリパス (デフォルト: 現在のディレクトリ)",
   "options.localPaths": "1 つ以上のローカルファイルまたはディレクトリのパス（既定: カレントディレクトリ）",

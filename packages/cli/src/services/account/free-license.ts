@@ -55,7 +55,7 @@ let serverSignupUrl: string | undefined;
 
 /** The server picked for this run when the config named none (a region pick or the default). */
 let chosenServerUrl: string | undefined;
-/** The `--region` id set by the command layer for this process. */
+/** The `--license-region` id set by the command layer for this process. */
 let requestedRegion: string | undefined;
 
 /** Test seam: forget the process-wide choice and signup link. */
@@ -66,7 +66,7 @@ export function resetFreeLicenseStateForTests(): void {
   requestedRegion = undefined;
 }
 
-/** Record the `--region <id>` flag so the free path honours it without every caller threading it. */
+/** Record the `--license-region <id>` flag so the free path honours it without every caller threading it. */
 export function setFreeLicenseRegion(regionId: string | undefined): void {
   requestedRegion = regionId;
 }
@@ -147,7 +147,7 @@ async function saveAccountServer(serverUrl: string): Promise<void> {
 
 /**
  * Pick the region a FREE licence comes from, only when no server is configured (flag, env, config,
- * or a stored login): `--region <id>` names it, a terminal is asked (timezone suggestion as the
+ * or a stored login): `--license-region <id>` names it, a terminal is asked (timezone suggestion as the
  * default), anything else keeps the default and says how to choose. A configured server is never
  * asked about and never overwritten.
  */

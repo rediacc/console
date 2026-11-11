@@ -2200,6 +2200,7 @@
   "options.healthWindow": "Ventana total de la puerta de salud, en segundos (por defecto 300)",
   "options.insiders": "Usar configuración de VS Code Insiders",
   "options.lang": "Anulación de idioma ({{languages}})",
+  "options.licenseRegion": "Región de cuenta que emite una licencia gratuita cuando la configuración no indica ningún servidor (p. ej. us, eu)",
   "options.licenses": "Imprimir el texto completo de THIRD_PARTY_LICENSES incluido con las compilaciones de lanzamiento",
   "options.localPath": "Ruta de directorio local (predeterminado: directorio actual)",
   "options.localPaths": "Una o más rutas locales de archivo o directorio (predeterminado: directorio actual)",

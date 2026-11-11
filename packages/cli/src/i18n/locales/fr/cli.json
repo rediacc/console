@@ -3040,6 +3040,8 @@
       "offerLogin": "Se connecter à un compte",
       "offerFree": "Continuer avec une licence gratuite (jusqu'à {{maxGb}} Go)",
       "autoTaken": "Aucune connexion trouvée : une licence gratuite est utilisée (jusqu'à {{maxGb}} Go, sans sauvegardes hébergées). Un compte gratuit donne accès aux limites de Community et à la sauvegarde hébergée : {{url}}",
+      "defaultRegion": "Aucune région choisie, la licence gratuite provient donc de {{server}}. Pour en choisir une autre, passez --license-region <id> ou définissez REDIACC_ACCOUNT_SERVER.",
+      "regionIgnored": "Cette configuration utilise déjà {{server}}, donc --license-region est ignoré.",
       "issued": "Licence gratuite installée pour ce dépôt (jusqu'à {{maxGb}} Go).",
       "noHostedBackup": "Une licence gratuite n'inclut pas de sauvegardes hébergées. Créez un compte gratuit pour profiter de la sauvegarde hébergée de Community, ou choisissez une offre payante pour aller plus loin : {{url}}"
     },
@@ -3303,6 +3305,7 @@
     "healthWindow": "Fenêtre totale du health-gate en secondes (par défaut 300)",
     "insiders": "Utiliser les paramètres VS Code Insiders",
     "lang": "Remplacement de langue ({{languages}})",
+    "licenseRegion": "Région de compte qui délivre une licence gratuite quand la configuration n'indique aucun serveur (p. ex. us, eu)",
     "licenses": "Afficher le texte complet THIRD_PARTY_LICENSES fourni avec les builds de release",
     "localPath": "Chemin du répertoire local (par défaut : répertoire actuel)",
     "localPaths": "Un ou plusieurs chemins locaux de fichier ou de répertoire (par défaut : répertoire actuel)",

@@ -2200,6 +2200,7 @@
   "options.healthWindow": "Toplam sağlık kapısı penceresi, saniye cinsinden (varsayılan 300)",
   "options.insiders": "VS Code Insiders ayarlarını kullanın",
   "options.lang": "Dil geçersiz kılması ({{languages}})",
+  "options.licenseRegion": "Yapılandırma sunucu belirtmediğinde ücretsiz lisansı veren hesap bölgesi (örn. us, eu)",
   "options.licenses": "Sürüm derlemeleriyle paketlenen tam THIRD_PARTY_LICENSES metnini yazdır",
   "options.localPath": "Yerel dizin yolu (varsayılan: güncel dizin)",
   "options.localPaths": "Bir veya daha fazla yerel dosya veya dizin yolu (varsayılan: geçerli dizin)",

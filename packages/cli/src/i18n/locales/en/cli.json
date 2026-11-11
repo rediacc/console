@@ -3022,8 +3022,8 @@
       "offerLogin": "Log in to an account",
       "offerFree": "Continue with a free license (up to {{maxGb}} GB)",
       "autoTaken": "No login found, so a free license is used (up to {{maxGb}} GB, no hosted backups). Register a free account for Community limits and hosted backup: {{url}}",
-      "defaultRegion": "No region chosen, so the free license comes from {{server}}. To choose another, pass --region <id> or set REDIACC_ACCOUNT_SERVER.",
-      "regionIgnored": "This config already uses {{server}}, so --region is ignored.",
+      "defaultRegion": "No region chosen, so the free license comes from {{server}}. To choose another, pass --license-region <id> or set REDIACC_ACCOUNT_SERVER.",
+      "regionIgnored": "This config already uses {{server}}, so --license-region is ignored.",
       "issued": "Free license installed for this repository (up to {{maxGb}} GB).",
       "noHostedBackup": "A free license has no hosted backups. Register a free account to get Community's hosted backup, or choose a paid plan for more: {{url}}"
     },
@@ -3237,6 +3237,7 @@
     "healthWindow": "Total health-gate window in seconds (default 300)",
     "insiders": "Use VS Code Insiders settings",
     "lang": "Language override ({{languages}})",
+    "licenseRegion": "Account region that issues a free license when the config names no server (e.g. us, eu)",
     "licenses": "Print the full THIRD_PARTY_LICENSES text bundled with release builds",
     "localPath": "Local directory path (default: current directory)",
     "localPaths": "One or more local file or directory paths (default: current directory)",

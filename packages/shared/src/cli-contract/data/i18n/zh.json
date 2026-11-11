@@ -2200,6 +2200,7 @@
   "options.healthWindow": "健康门禁检查的总时间窗口（秒，默认 300）",
   "options.insiders": "使用 VS Code Insiders 设置",
   "options.lang": "语言覆盖（{{languages}}）",
+  "options.licenseRegion": "当配置未指定服务器时,签发免费许可证的账户区域(例如 us、eu)",
   "options.licenses": "打印随发行版打包的完整 THIRD_PARTY_LICENSES 文本",
   "options.localPath": "本地目录路径（默认：当前目录）",
   "options.localPaths": "一个或多个本地文件或目录路径（默认：当前目录）",
