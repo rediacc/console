@@ -221,6 +221,10 @@
         {
           "id": "check:ci-ops-health",
           "reason": "Its closure imports rediacc_ci.ops.login_bench (ops_health.py:43), which imports rediacc_ci.ops.deploy_bench for the bench D1 helper (login_bench.py _d1_rows); deploy_bench reaches proof/surfaces.py, which loads .ci/config/proof-tiers.json at import, and the **/*.md the derivation cites there is an entry of that map's exclude list. The gate runs gate_main, one GET of the Worker's /v1/status, and opens no file under agent/reviews/."
+        },
+        {
+          "id": "check:ci-dead-translation-keys",
+          "reason": "Its only citation of this record is the key-site pattern '*.*' in a selftest fixture (scripts/gates/check-dead-translation-keys.ts:529), a string the selftest feeds to its own resolver; the verdict is computed over packages/www translation JSON and source, and no file under this record is read."
         }
       ]
     },
@@ -418,6 +422,10 @@
         {
           "id": "check:ci-gates-lock",
           "reason": "It imports scripts/ci-runner/manifest.ts for the gate table; the only citation of agent/worklist/** there is the `paths` of check:ci-plan-bindings (manifest.ts:2324), a declaration of that gate's inputs, and this gate's own verdict is computed over other files and reads nothing under agent/worklist/."
+        },
+        {
+          "id": "check:ci-dead-translation-keys",
+          "reason": "Its only citation of this record is the key-site pattern '*.*' in a selftest fixture (scripts/gates/check-dead-translation-keys.ts:529), a string the selftest feeds to its own resolver; the verdict is computed over packages/www translation JSON and source, and no file under this record is read."
         }
       ]
     },
@@ -566,6 +574,10 @@
         {
           "id": "check:ci-plan-bindings",
           "reason": "It imports .claude/hooks/stop/wl_planbind.py and, through the hook modules, wl_checks.py; the *.jsonl glob the derivation cites at wl_checks.py:2823 walks .ci/cache/profiles.prev, a profile cache, and no file under agent/reggate/ is read: the verdict is computed over agent/plans and agent/worklist."
+        },
+        {
+          "id": "check:ci-dead-translation-keys",
+          "reason": "Its only citation of this record is the key-site pattern '*.*' in a selftest fixture (scripts/gates/check-dead-translation-keys.ts:529), a string the selftest feeds to its own resolver; the verdict is computed over packages/www translation JSON and source, and no file under this record is read."
         }
       ]
     },
@@ -674,6 +686,10 @@
         {
           "id": "check:ci-commit-citations",
           "reason": "It names the record globs only to say it never reads them: its WHERE paragraph (.ci/scripts/quality/check_commit_citations.py:18) excludes agent/reviews/**, agent/worklist/** and agent/ledgers/** because those are records of a moment, and it scans git ls-files code, tests and agent/plans/**.md."
+        },
+        {
+          "id": "check:ci-dead-translation-keys",
+          "reason": "Its only citation of this record is the key-site pattern '*.*' in a selftest fixture (scripts/gates/check-dead-translation-keys.ts:529), a string the selftest feeds to its own resolver; the verdict is computed over packages/www translation JSON and source, and no file under this record is read."
         },
         {
           "id": "check:ci-devcontainer-pins",
@@ -870,6 +886,10 @@
         }
       ],
       "notReaders": [
+        {
+          "id": "check:ci-dead-translation-keys",
+          "reason": "Its only citation of this record is the key-site pattern '*.*' in a selftest fixture (scripts/gates/check-dead-translation-keys.ts:529), a string the selftest feeds to its own resolver; the verdict is computed over packages/www translation JSON and source, and no file under this record is read."
+        },
         {
           "id": "check:ci-plan-bindings",
           "reason": "It imports wl_planbind.py and the hook modules it reaches; the .ci/config/carried-reds.json the derivation cites at wl_checks.py:4913 is a comment on the Stop hook's carried-CI branch, and this gate never calls that branch: the verdict is computed over agent/plans and agent/worklist."
