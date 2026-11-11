@@ -1494,7 +1494,7 @@ def test_a_clean_run_is_verified_and_its_receipt_admits_the_tree(tmp_path: pathl
         assert receipt_mod.admit(world.root, TREE, DIGEST, sides).ok, sides
     ids = _ids(receipt)
     assert {"P0", "P1", "P2", "P3", "P4", *A_STEPS, *V_STEPS, "T"} <= set(ids)
-    # Run order: A0 after P1 and before P4; A1's rows are recorded after P3 and before A2 (the suites themselves run beside P0-P3); A2 before P5.
+    # Run order: A0 after P1 and before P4; A2 runs beside the A1 worker and its rows come first; A1's rows are recorded at the join, after A2 and before P5 (the suites themselves run beside P0-P3 and A2).
     order = [
         ids.index(s)
         for s in (
@@ -1504,12 +1504,12 @@ def test_a_clean_run_is_verified_and_its_receipt_admits_the_tree(tmp_path: pathl
             "P4",
             "P2",
             "P3",
+            "A2.1",
+            "A2.3",
             "A1.1",
             "A1.2",
             "A1.3",
             "A1.4",
-            "A2.1",
-            "A2.3",
             "P5",
         )
     ]
@@ -2409,7 +2409,7 @@ def test_an_account_only_change_is_verified_with_the_account_phase_alone(
 def test_a_red_suite_ends_the_run_failed_at_the_join_and_t_still_tears_down(
     tmp_path: pathlib.Path,
 ) -> None:
-    """Case 4, restated for R3: the suites run beside P0-P3, so the fleet steps ran before the red result was read; the run ends FAILED at the join, with no A2 or P5 row, and T tears the forks down."""
+    """Case 4, restated for R3 and V3: the suites run beside P0-P3 and A2, so the fleet steps and the drills ran before the red result was read; the run ends FAILED at the join, with no P5 row, and T tears the forks down."""
     world = make_world(
         tmp_path, suites={"A1.1": (1, "running 412 tests\nFAIL src/licenses.test.ts\n3 failed\n")}
     )
@@ -2425,9 +2425,9 @@ def test_a_red_suite_ends_the_run_failed_at_the_join_and_t_still_tears_down(
     assert [r["verdict"] for r in a1] == ["FAIL", "ok", "ok", "ok"]
     ids = _ids(receipt)
     assert {"P0", "P1", "P2", "P3"} <= set(ids)
-    assert ids.index("P3") < ids.index("A1.1")
-    assert world.drill_calls() == []
-    assert not {"A2.1", "A2.2", "A2.3", "P5"} & set(ids)
+    assert ids.index("P3") < ids.index("A2.1") < ids.index("A1.1")
+    assert len(world.drill_calls()) == 3
+    assert "P5" not in ids
     assert "T" in ids
     assert world.forks_left() == []
     assert receipt["phases"]["account"]["ran"] is False
@@ -2471,6 +2471,38 @@ def test_a1_starts_before_p0_returns_and_is_still_running_when_it_does(
     )
     assert rc == vm_check.EXIT_VERIFIED, out.getvalue()
     assert seen == {"started": True, "in_flight": True}
+
+
+def test_a2_runs_before_the_a1_join_and_a_failing_join_still_fails_the_battery(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """V3: A2 overlaps the A1 worker, so `a2_drills` is called while the thread is still unjoined. CONTROL: with a green A1 the order is a2 then join then P5; a red join ends the run FAILED even though A2 was green, and P5 never runs."""
+    events: list[str] = []
+    real_join = vm_check.VmCheck.a1_join
+    real_a2 = vm_check.VmCheck.a2_drills
+
+    def watched_join(self: Any) -> bool:
+        events.append("join")
+        return real_join(self)
+
+    def watched_a2(self: Any, *args: Any) -> bool:
+        events.append("a2:thread_unjoined=%s" % (self.a1_thread is not None))
+        return real_a2(self, *args)
+
+    monkeypatch.setattr(vm_check.VmCheck, "a1_join", watched_join)
+    monkeypatch.setattr(vm_check.VmCheck, "a2_drills", watched_a2)
+    rc, out, receipt = run_check(tmp_path, make_world(tmp_path))
+    assert rc == vm_check.EXIT_VERIFIED, out
+    assert events == ["a2:thread_unjoined=True", "join"], events
+    events.clear()
+    red = make_world(tmp_path, suites={"A1.3": (2, "error TS2304\n")})
+    rc, out, receipt = run_check(tmp_path, red)
+    assert rc == vm_check.EXIT_FAILED, out
+    assert events == ["a2:thread_unjoined=True", "join"], events
+    ids = _ids(receipt)
+    assert {"A2.1", "A2.2", "A2.3", "A1.3"} <= set(ids)
+    assert "P5" not in ids
+    assert receipt["phases"]["account"]["ran"] is False
 
 
 class PrepareLockProbeWorld(World):

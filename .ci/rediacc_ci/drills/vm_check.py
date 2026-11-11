@@ -12,7 +12,7 @@ Design 2 of agent/plans/PLAN-vm-check.md and Design 3 of agent/plans/PLAN-accoun
 
 PHASES. There are two sides, the trigger's `renet` and `account` (`rediacc_ci.proof.surfaces.SIDES`, the VM phases of `.ci/config/proof-tiers.json`). With `--changed` the sides of `Changed.sides` are required; with no `--changed`, or a push base that cannot be resolved, both are. The renet phase is P5 and V1.1-V1.7; the account phase is A1.1-A1.4, A0 and A2.1-A2.3. P0-P4 and T run on every run, P1 included, because the license drill deploys renet too and the receipt check needs `renet.built == renet.pointer` even on an account-only receipt. `phases.<side>.ran` is true only when every step of that phase recorded a row and every such row is ok. The steps, in run order:
 
-  A1  account only. A worker thread starts the suites before P0 and they run beside P0-P3, which need no suite result; the thread is joined after P3 and before A2, and the main thread then records the rows in the order below, so a red suite no longer stops the run before a VM is touched: it ends the run FAILED at the join, and T tears down what P0-P3 made. SIGINT and SIGTERM kill the suites' process group. A1.1 `npm run check:ci-account-server`, A1.2 `npm run check:ci-test-account-web`, A1.3 `npm --prefix private/account run typecheck`, A1.4 `npm --prefix private/account run typecheck:web`. Each is one assertion row with its rc and ms; a non-zero rc is a failed row carrying the last three output lines. All four run, and any failure ends the run FAILED at the join.
+  A1  account only. A worker thread starts the suites before P0 and they run beside P0-P3, which need no suite result; A2 runs beside the thread (the drills need no suite result) and the thread is joined after A2 and before P5, and the main thread then records the rows in the order below (so they follow A2's rows), so a red suite no longer stops the run before a VM is touched: it ends the run FAILED at the join, and T tears down what P0-P3 and A2 made. SIGINT and SIGTERM kill the suites' process group. A1.1 `npm run check:ci-account-server`, A1.2 `npm run check:ci-test-account-web`, A1.3 `npm --prefix private/account run typecheck`, A1.4 `npm --prefix private/account run typecheck:web`. Each is one assertion row with its rc and ms; a non-zero rc is a failed row carrying the last three output lines. All four run, and any failure ends the run FAILED at the join.
   P0  an exclusive flock on `rediacc-vm-check.lock` in the per-user runtime directory, waited for up to `--wait` seconds (`fleet-busy`). A run that gives up there judged nothing while a holder may still be running, so it writes neither `receipt.json` nor the tree archive: its record goes to `runs/<run id>/receipt.json` (`vm_tier.write_run_record`), and the summary prints where.
   P1  `go version -m private/renet/bin/renet` must carry the submodule HEAD as `vcs.revision` and `vcs.modified=false`; one `./rdc.sh --version` rebuild is tried before `renet-build-mismatch`.
   A0  account only. The dev gateway does not hot-reload, so it is reused only when it is healthy, the `started=` and `gateway_port=` of `.account-state` equal the record `.ci/cache/vm-check/gateway.json` this runner wrote when it last started one, and that record's `account` equals `rediacc_ci.proof.surfaces.account_worktree_digest`. Otherwise `lib.Drill.restart_gateway` starts it with its log at `.ci/cache/vm-check/gateway.log`, the record is rewritten (mode `started`, or `restarted` when a gateway was already answering), and `detach_gateway` leaves it running after the run for the next one to reuse. A restart rotates every dev password and may move the port, and the run says so. A start that fails, or a gateway still unhealthy after it, is `account-gateway` with the log tail.
@@ -2231,7 +2231,7 @@ class VmCheck:
                 "vm:check: area legs run here: %s"
                 % (", ".join(sorted(wanted)) if wanted else "none beyond the phases")
             )
-        # A1 starts before P0 on a worker thread and runs beside P0-P3: the suites need no fleet, so their 97 s hide behind fleet setup. A red suite no longer stops the run before a VM is touched; it ends the run FAILED at `a1_join`, after P3 and before A2, and T tears down what P0-P3 made.
+        # A1 starts before P0 on a worker thread and runs beside P0-P3: the suites need no fleet, so their 97 s hide behind fleet setup. A red suite no longer stops the run before a VM is touched; it ends the run FAILED at `a1_join`, after A2 and before P5, and T tears down what P0-P3 and A2 made.
         if account:
             self.a1_start()
         self.p0_lock()
@@ -2245,11 +2245,12 @@ class VmCheck:
         self.p4_rebind()
         self.p3_keys()
         self.p3_leftovers()
-        if account and not self.a1_join():
-            return
+        # A2 runs BEFORE the join, beside the A1 worker: the drills need P4, the gateway and the fleet, not the suites' results. The suites are in-memory vitest and `tsc --noEmit` (no port, no database file, no write to the worker), and the preparation lock orders any rebuild a drill's `./rdc.sh` needs behind them. A red A1 still ends the run, now after A2 instead of before it; its rows are recorded at the join, so they follow A2's.
         # A2 before P5: the license drill deploys bin/renet and P5 re-uploads the same binary; neither rebuilds it.
-        if account and not self.a2_drills():
-            return
+        if account:
+            a2_ok = self.a2_drills()
+            if not self.a1_join() or not a2_ok:
+                return
         if not account and area_a2 and not self.a2_drills(area_a2):
             return
         if not renet:
@@ -3208,7 +3209,7 @@ class VmCheck:
             green = self._record_suite(step_id, script, package, res) and green
         self.a1_results = []
         if not green:
-            self.say("        an account suite is red; the run ends here, before A2")
+            self.say("        an account suite is red; the run ends here, before P5")
         return green
 
     def a1_stop(self) -> None:
