@@ -670,3 +670,57 @@ def test_portal_build_rebuilds_shared_packages_first():
     assert build < vite
     # Control: the vite step is the one the portal build runs, so the order above is the order at run time.
     assert src.count('"vite build",') == 1
+
+
+def _clear_stripe(monkeypatch):
+    monkeypatch.delenv("STRIPE_SECRET_KEY", raising=False)
+    monkeypatch.delenv("STRIPE_WEBHOOK_SECRET", raising=False)
+
+
+def test_a_sandbox_stripe_pair_is_bound_under_the_worker_names(monkeypatch, capsys):
+    _bench_env(monkeypatch, STRIPE_SECRET_KEY="sk_test_abc", STRIPE_WEBHOOK_SECRET="whsec_abc")
+    payload = deploy_bench.secrets_payload()
+    assert payload["STRIPE_SECRET_KEY"] == "sk_test_abc"
+    assert payload["STRIPE_WEBHOOK_SECRET"] == "whsec_abc"
+    out = capsys.readouterr()
+    assert "sk_test_abc" not in out.out + out.err
+    assert "whsec_abc" not in out.out + out.err
+
+
+def test_a_restricted_test_key_is_accepted(monkeypatch):
+    _bench_env(monkeypatch, STRIPE_SECRET_KEY="rk_test_abc", STRIPE_WEBHOOK_SECRET="whsec_abc")
+    assert deploy_bench.secrets_payload()["STRIPE_SECRET_KEY"] == "rk_test_abc"
+
+
+@pytest.mark.parametrize("key", ["sk_live_SECRETVALUE", "rk_live_SECRETVALUE", "garbage"])
+def test_a_non_test_stripe_key_is_refused_without_printing_it(monkeypatch, capsys, key):
+    _bench_env(monkeypatch, STRIPE_SECRET_KEY=key, STRIPE_WEBHOOK_SECRET="whsec_SECRETHOOK")
+    with pytest.raises(deploy_bench.DeployError, match="not a Stripe test key") as err:
+        deploy_bench.secrets_payload()
+    out = capsys.readouterr()
+    shown = str(err.value) + out.out + out.err
+    assert "SECRETVALUE" not in shown
+    assert "SECRETHOOK" not in shown
+    assert key not in shown
+
+
+def test_an_absent_stripe_pair_keeps_the_blanks_and_says_so(monkeypatch, capsys):
+    _bench_env(monkeypatch)
+    _clear_stripe(monkeypatch)
+    payload = deploy_bench.secrets_payload()
+    assert payload["STRIPE_SECRET_KEY"] == ""
+    assert payload["STRIPE_WEBHOOK_SECRET"] == ""
+    assert "Stripe sandbox pair absent" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize(
+    ("key", "hook", "missing"),
+    [
+        ("sk_test_abc", "", "STRIPE_SANDBOX_WEBHOOK_SECRET"),
+        ("", "whsec_abc", "STRIPE_SANDBOX_SECRET_KEY"),
+    ],
+)
+def test_a_half_set_stripe_pair_is_refused_by_name(monkeypatch, key, hook, missing):
+    _bench_env(monkeypatch, STRIPE_SECRET_KEY=key, STRIPE_WEBHOOK_SECRET=hook)
+    with pytest.raises(deploy_bench.DeployError, match=missing):
+        deploy_bench.secrets_payload()
