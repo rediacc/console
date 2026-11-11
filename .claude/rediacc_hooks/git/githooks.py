@@ -9,7 +9,7 @@ WHAT EACH HOOK REFUSES (the rules are `commit_policy`'s, shared with the pre-bas
   pre-commit              a commit from a lease tree (`commit_policy.lease_root`) that stages a gitlink or a path under `agent/`; a commit that stages a gen-docs provider input and leaves a generated doc region drifted in the COMMITTED tree (the section above `gen_docs_pre_commit` says how it stays fast), and a commit that stages an input of a generated artifact enrolled in `.ci/config/generated-artifacts.json` and leaves that artifact stale in the committed tree (`artifacts.py` beside this file).
   pre-push                a push sending or naming a pin under `refs/worktrees/`, from every repository; any push from a lease tree; a push to `main` other than the fast-forward fallback (one ref, a real commit, the live branch's pushed tip, the remote `main` its ancestor; box M2 of PLAN-plan-per-pr-loop, operator ruling 2026-10-02) or the GitLab mirror push (below), a delete of `main` included; a push creating a remote branch that is not the current one; a push of the backup paths that no VERIFIED backup receipt covers (box J10 of PLAN-backup-program, `backup_receipt_refusal` below). A line a live release run lists is admitted instead (box W1-D of PLAN-local-release, `_release_admitted` below). A push naming `refs/backup/**` meets the backup-ref rules instead of all of these (Design G of PLAN-local-first-delivery, `backup_push` below): the repository's pinned GitLab project only, nothing else in the push, create or fast-forward, immutable snapshots, and incremental session-link and secret scans.
 
-`post-commit` REFUSES NOTHING. In a lease tree it runs the `pin` verb of `.ci/rediacc_ci/dev/worktree_lease.py`, which moves `refs/worktrees/<id>` forward to HEAD, so a commit outlives its tree until it lands (agent/plans/PLAN-worktree-lease.md, Design 3). Outside a lease, it and `post-rewrite` and `post-merge` start the backup worker detached in a repository with a pinned `gitlab` remote (box G3 of PLAN-local-first-delivery, `spawn_backup` below). They run under the override too.
+`post-commit` REFUSES NOTHING. In a lease tree it runs the `pin` verb of `.ci/rediacc_ci/dev/worktree_lease.py`, which moves `refs/worktrees/<id>` forward to HEAD, so a commit outlives its tree until it lands (agent/plans/PLAN-worktree-lease.md, Design 3). Outside a lease, it and `post-rewrite` and `post-merge` start the backup worker detached in a repository with a pinned `gitlab` remote, on a branch other than `main` (box G3 of PLAN-local-first-delivery, `spawn_backup` below). They run under the override too.
 
 THE PRE-BASH LAYER STAYS AUTHORITATIVE FOR AGENTS; this is the backstop. It reads no `gh`, so it cannot compute today's next name or know a PR merged; it checks shape and local liveness only.
 
@@ -35,6 +35,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 import urllib.parse
 
@@ -344,7 +345,7 @@ MIRROR_PATH = "/rediacc-org/github/console.git"
 
 
 def _pinned_url_refusal(url: str, path: str, what: str) -> str:
-    """ "" when `url` is exactly `https://<MIRROR_HOST><path>`, else why not, naming `what` the pin is. Credentials in the URL are never echoed."""
+    """ "" when `url` is `https://<MIRROR_HOST><path>` with no port, query or fragment (userinfo is tolerated and ignored), else why not, naming `what` the pin is. Credentials in the URL are never echoed."""
     try:
         parts = urllib.parse.urlsplit(url or "")
         port = parts.port
@@ -464,7 +465,8 @@ def backup_repo_key(repo: str) -> str | None:
         return None
     sup = cp.superproject(repo)
     if not sup:
-        return ""
+        # No superproject: the console, which is the repository that lists the pinned submodules. A standalone repository with the mirror URL is not it.
+        return "" if os.path.isfile(os.path.join(repo, ".gitmodules")) else None
     rel = os.path.relpath(os.path.realpath(repo), os.path.realpath(sup))
     return rel if rel in BACKUP_PATHS else None
 
@@ -605,7 +607,7 @@ def outgoing_secret_shapes(
     argv = [
         "git",
         "log",
-        "-p",
+        "--cc",
         "--no-color",
         "--no-ext-diff",
         "--no-textconv",
@@ -622,29 +624,44 @@ def outgoing_secret_shapes(
         proc = subprocess.Popen(argv, cwd=repo, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
     except OSError as exc:
         return [], "`git log -p` did not start (%s)" % exc
-    deadline = time.monotonic() + BACKUP_SCAN_TIMEOUT
     stream = proc.stdout
     if stream is None:
         proc.kill()
         proc.wait()
         return [], "`git log -p` gave no output stream"
-    with stream:
-        for raw in stream:
-            if time.monotonic() > deadline:
-                proc.kill()
-                proc.wait()
-                return [], "`git log -p` ran past %ds" % BACKUP_SCAN_TIMEOUT
-            text = raw.decode("utf-8", "replace").rstrip("\n")
-            if text.startswith("\x1e"):
-                sha, _sep, subject = text[1:].partition("\x1f")
-                continue
-            if not text.startswith("+") or text.startswith("+++ "):
-                continue
-            for shape in shapes_in(text[1:]):
-                if (sha, shape) in seen:
+    # A watchdog, not a clock read per line: a git that stalls without writing would block the read below for ever.
+    timer = threading.Timer(BACKUP_SCAN_TIMEOUT, proc.kill)
+    timer.daemon = True
+    timer.start()
+    # Hunk lines carry one prefix column per parent (`--cc` on a merge shows only what no parent had). A line is ADDED when every column is `+`. Header lines (`+++ b/path`) are told apart from content by position: only a line outside a hunk is a header, so an added line `++ x` is scanned.
+    cols = 0
+    try:
+        with stream:
+            for raw in stream:
+                text = raw.decode("utf-8", "replace").rstrip("\n")
+                if text.startswith("\x1e"):
+                    sha, _sep, subject = text[1:].partition("\x1f")
+                    cols = 0
                     continue
-                seen.add((sha, shape))
-                offenders.append("%s %s: %s" % (sha[:12], subject[:60], shape))
+                if text.startswith("@@"):
+                    cols = len(text) - len(text.lstrip("@")) - 1
+                    continue
+                if text.startswith("diff "):
+                    cols = 0
+                    continue
+                if not cols or text[:cols] != "+" * cols:
+                    continue
+                for shape in shapes_in(text[cols:]):
+                    if (sha, shape) in seen:
+                        continue
+                    seen.add((sha, shape))
+                    offenders.append("%s %s: %s" % (sha[:12], subject[:60], shape))
+    finally:
+        fired = not timer.is_alive()
+        timer.cancel()
+    if fired:
+        proc.wait()
+        return [], "`git log -p` ran past %ds" % BACKUP_SCAN_TIMEOUT
     if proc.wait() != 0:
         return [], "`git log -p <tips> --not --remotes <old tips>` exited %d" % proc.returncode
     return offenders, ""
@@ -1249,7 +1266,7 @@ def artifacts_pre_commit() -> int:
     return 0
 
 
-# THE BACKUP TRIGGER (box G3 of agent/plans/PLAN-local-first-delivery.md). After a commit, a rewrite (`post-rewrite`: amend, rebase) or a merge, the backup worker (`.ci/rediacc_ci/dev/backup_ref.py sync`) is started DETACHED: its own session (`start_new_session=True`), stdin closed, stdout and stderr appended to `<git-dir>/rediacc-backup/log`, and the hook returns at once. Only in a repository whose `gitlab` push URL is its pin in `BACKUP_PATHS` and whose HEAD is a branch other than `main`; a fixture repository, a detached rebase step and `main` start nothing. A lease tree never starts it, because a lease never pushes. A failed sync is retried by the next trigger, since the worker pushes the tip as it is then. The worker's argv is `BACKUP_WORKER`, a seam the tests replace with a sleeper.
+# THE BACKUP TRIGGER (box G3 of agent/plans/PLAN-local-first-delivery.md). After a commit, a rewrite (`post-rewrite`: amend, rebase) or a merge, the backup worker (`.ci/rediacc_ci/dev/backup_ref.py sync`) is started DETACHED: its own session (`start_new_session=True`), stdin closed, stdout and stderr appended to `<git-dir>/rediacc-backup/log`, and the hook returns at once. Only in a repository whose `gitlab` push URL is its pin in `BACKUP_PATHS` and whose HEAD is a branch other than `main` (a detached HEAD starts nothing either); a fixture repository, a detached rebase step and `main` start nothing. A lease tree never starts it, because a lease never pushes. A failed sync is retried by the next trigger, since the worker pushes the tip as it is then. The worker's argv is `BACKUP_WORKER`, a seam the tests replace with a sleeper.
 BACKUP_WORKER = ("-m", "rediacc_ci.dev.backup_ref", "sync", "--quiet")
 
 

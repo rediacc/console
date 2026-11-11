@@ -14,7 +14,6 @@ import pathlib
 import signal
 import subprocess
 import sys
-import time
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[3]
 HOOKS = REPO_ROOT / ".claude" / "rediacc_hooks" / "git"
@@ -65,6 +64,8 @@ class World:
         self.root = root
         root.mkdir(parents=True)
         _git(root, "init", "-q", "-b", "main")
+        # The console is the repository that lists the pinned submodules (`backup_repo_key`).
+        (root / ".gitmodules").write_text("", encoding="utf-8")
         self.seed = self.commit("seed", "README.md", "seed\n")
         _git(root, "update-ref", "refs/remotes/origin/main", self.seed)
         _git(root, "checkout", "-q", "-b", "1104-1")
@@ -359,14 +360,12 @@ def test_the_hook_returns_before_a_slow_worker_finishes(tmp_path, monkeypatch):
     w = _pinned(tmp_path)
     rec = _Recorder(real=True)
     monkeypatch.setattr(GH, "_detach", rec)
-    monkeypatch.setattr(GH, "BACKUP_WORKER", ("-c", "import time; time.sleep(5)"))
+    monkeypatch.setattr(GH, "BACKUP_WORKER", ("-c", "import time; time.sleep(30)"))
     try:
-        started = time.monotonic()
+        # No wall-clock bound (7cb1253a.2): the hook returning while a 30 s worker still runs is the proof, and it holds on a loaded runner.
         assert _hook(monkeypatch, w.root) == 0
-        took = time.monotonic() - started
         assert len(rec.procs) == 1
         assert rec.procs[0].poll() is None, "the worker should still be sleeping"
-        assert took < 0.3, took
     finally:
         for proc in rec.procs:
             os.killpg(proc.pid, signal.SIGKILL)
@@ -416,3 +415,85 @@ def test_setup_installs_the_new_hooks_and_they_are_executable():
     assert SETUP.missing_hooks(REPO_ROOT) == []
     for name in ("post-rewrite", "post-merge"):
         assert (HOOKS / name).read_bytes() == (HOOKS / "post-commit").read_bytes()
+    for name in ("post-commit", "post-rewrite", "post-merge"):
+        assert os.access(HOOKS / name, os.X_OK), name
+
+
+# ------------------------------------------------------------------ review findings of the landing
+
+
+def test_an_added_line_starting_with_plus_plus_space_is_still_scanned(
+    tmp_path, monkeypatch, capsys
+):
+    """Its patch line reads `+++ ...`, which looks like a file header; only a line outside a hunk is one (8c0d488b.1)."""
+    w = World(tmp_path / "c")
+    tip = w.commit("add", "cfg.txt", "++ token=%s\n" % SECRET)
+    rc, err = _push(monkeypatch, capsys, w.root, [(tip, LIVE, ZERO)])
+    assert rc == 1
+    assert "secret shape" in err
+
+
+def test_a_secret_added_by_a_merge_resolution_is_scanned(tmp_path, monkeypatch, capsys):
+    """`git log -p` prints no patch for a merge; `--cc` shows what no parent had (8c0d488b.2)."""
+    w = World(tmp_path / "c")
+    base = w.commit("base", "f.txt", "base\n")
+    _git(w.root, "checkout", "-q", "-b", "side")
+    w.commit("side", "f.txt", "side\n")
+    _git(w.root, "checkout", "-q", "1104-1")
+    w.commit("main line", "f.txt", "line\n")
+    merged = subprocess.run(
+        ["git", "-C", str(w.root), "merge", "--no-commit", "side"],
+        capture_output=True,
+        text=True,
+        check=False,
+        env=ENV,
+    )
+    assert merged.returncode == 1, merged.stdout  # the conflict this case needs
+    (w.root / "f.txt").write_text("token=%s\n" % SECRET, encoding="utf-8")
+    _git(w.root, "add", "-A")
+    _git(w.root, "commit", "-q", "-m", "merge")
+    tip = _git(w.root, "rev-parse", "HEAD")
+    assert base != tip
+    rc, err = _push(monkeypatch, capsys, w.root, [(tip, LIVE, ZERO)])
+    assert rc == 1
+    assert "secret shape" in err
+
+
+def test_a_git_log_that_stalls_without_output_trips_the_scan_timeout(tmp_path, monkeypatch):
+    """The limit is a watchdog on the process, not a check between lines (8c0d488b.4)."""
+    w = World(tmp_path / "c")
+    tip = w.commit("work")
+    fake = tmp_path / "bin"
+    fake.mkdir()
+    (fake / "git").write_text("#!/bin/sh\nexec sleep 20\n", encoding="utf-8")
+    (fake / "git").chmod(0o755)
+    monkeypatch.setenv("PATH", "%s:%s" % (fake, os.environ.get("PATH", "")))
+    monkeypatch.setattr(GH, "BACKUP_SCAN_TIMEOUT", 1)
+    offenders, unchecked = GH.outgoing_secret_shapes(str(w.root), [[tip, tip, LIVE, ZERO]], [])
+    assert offenders == []
+    assert "ran past 1s" in unchecked
+
+
+def test_a_standalone_repository_is_not_the_console(tmp_path):
+    """The mirror URL pins the console only; a repository with no superproject and no `.gitmodules` is no console (8c0d488b.5)."""
+    lone = tmp_path / "lone"
+    lone.mkdir()
+    _git(lone, "init", "-q", "-b", "main")
+    assert GH.backup_repo_key(str(lone)) is None
+    assert GH.backup_url_refusal(str(lone), CONSOLE_URL)
+    w = World(tmp_path / "c")
+    assert GH.backup_repo_key(str(w.root)) == ""
+    assert GH.backup_url_refusal(str(w.root), CONSOLE_URL) == ""
+
+
+def test_a_state_directory_that_cannot_be_made_warns_and_starts_nothing(
+    tmp_path, monkeypatch, capsys
+):
+    w = _pinned(tmp_path)
+    rec = _Recorder()
+    monkeypatch.setattr(GH, "_detach", rec)
+    git_dir = pathlib.Path(_git(w.root, "rev-parse", "--absolute-git-dir"))
+    (git_dir / "rediacc-backup").write_text("in the way\n", encoding="utf-8")
+    assert GH.spawn_backup(str(w.root)) is False
+    assert "backup sync not started" in capsys.readouterr().err
+    assert rec.calls == []

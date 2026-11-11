@@ -71,34 +71,58 @@ def plan(root: pathlib.Path) -> list[tuple[str, pathlib.Path, str, str]]:
     return out
 
 
+def fetchable(repo: pathlib.Path) -> bool:
+    """Whether the `gitlab` remote still has a fetch refspec or lacks `skipFetchAll`, the half-done state of a `remote add` whose next step failed."""
+    refspec = _git(repo, "config", "--get-all", "remote.%s.fetch" % REMOTE).stdout.strip()
+    skip = _git(repo, "config", "--get", "remote.%s.skipFetchAll" % REMOTE).stdout.strip()
+    return bool(refspec) or skip != "true"
+
+
+def _lock_down(repo: pathlib.Path) -> tuple[str, ...] | None:
+    """Remove the fetch refspec and set `skipFetchAll`; the failing step, or None."""
+    for step in (
+        ("config", "--unset-all", "remote.%s.fetch" % REMOTE),
+        ("config", "remote.%s.skipFetchAll" % REMOTE, "true"),
+    ):
+        proc = _git(repo, *step)
+        # `--unset-all` exits 5 when there was no such key, which is the state wanted.
+        if proc.returncode not in (0, 5) or (proc.returncode == 5 and step[1] != "--unset-all"):
+            return step
+    return None
+
+
 def install(root: pathlib.Path, say=print) -> int:
-    """Add each missing pinned remote. 0 on success, a foreign remote reported and left alone included; 1 when a git command failed."""
+    """Add each missing pinned remote, and finish one an earlier run left with its fetch refspec. 0 on success, a foreign remote reported and left alone included; 1 when a git command failed."""
     failed = 0
     for rel, repo, want, have in plan(root):
-        if have == want:
-            continue
-        if have:
+        if have and have != want:
             say(
                 "backup remotes: %s: `%s` points at %s, not the pin %s; left alone"
                 % (rel, REMOTE, _shown(have), want)
             )
             continue
-        steps = (
-            ("remote", "add", "--no-tags", REMOTE, want),
-            ("config", "--unset-all", "remote.%s.fetch" % REMOTE),
-            ("config", "remote.%s.skipFetchAll" % REMOTE, "true"),
-        )
-        for step in steps:
-            proc = _git(repo, *step)
-            if proc.returncode != 0:
+        if have == want:
+            if not fetchable(repo):
+                continue
+            step = _lock_down(repo)
+            if step:
                 failed += 1
-                say(
-                    "backup remotes: %s: git %s failed: %s"
-                    % (rel, " ".join(step), proc.stderr.strip())
-                )
-                break
-        else:
-            say("backup remotes: %s: `%s` -> %s" % (rel, REMOTE, want))
+                say("backup remotes: %s: git %s failed" % (rel, " ".join(step)))
+            else:
+                say("backup remotes: %s: `%s` fetch refspec removed" % (rel, REMOTE))
+            continue
+        add = ("remote", "add", "--no-tags", REMOTE, want)
+        proc = _git(repo, *add)
+        if proc.returncode != 0:
+            failed += 1
+            say("backup remotes: %s: git %s failed: %s" % (rel, " ".join(add), proc.stderr.strip()))
+            continue
+        step = _lock_down(repo)
+        if step:
+            failed += 1
+            say("backup remotes: %s: git %s failed" % (rel, " ".join(step)))
+            continue
+        say("backup remotes: %s: `%s` -> %s" % (rel, REMOTE, want))
     return 1 if failed else 0
 
 
@@ -107,6 +131,11 @@ def check_row(root: pathlib.Path) -> tuple[str, bool]:
     rows = plan(root)
     missing = [rel for rel, _repo, _want, have in rows if not have]
     foreign = [rel for rel, _repo, want, have in rows if have and have != want]
+    unlocked = [rel for rel, repo, want, have in rows if have == want and fetchable(repo)]
+    if unlocked:
+        return "  backup remotes keep a fetch refspec in %s (setup removes it)" % ", ".join(
+            unlocked
+        ), True
     if missing:
         return "  backup remotes NOT added in %s (setup adds `%s`)" % (
             ", ".join(missing),

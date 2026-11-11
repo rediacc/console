@@ -187,7 +187,11 @@ def sync(repo: pathlib.Path, remote: str = REMOTE, echo: bool = False) -> int:
         sys.stderr.write("backup-ref: %s\n" % exc)
         return 1
     state = git_dir / STATE_DIR
-    state.mkdir(parents=True, exist_ok=True)
+    try:
+        state.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        sys.stderr.write("backup-ref: %s: cannot create %s: %s\n" % (real, state, exc))
+        return 1
     log = Log(state / "log", echo)
     try:
         with _locked(state / "lock", LOCK_WAIT_S):
@@ -207,7 +211,7 @@ def _sync_locked(repo: pathlib.Path, remote: str, log: Log) -> int:
         return 0
     if _git(repo, ["remote", "get-url", remote], check=False).returncode != 0:
         log("skip: no `%s` remote" % remote)
-        return 1
+        return 0
     tip = _out(repo, ["rev-parse", "--verify", "HEAD^{commit}"])
     base = "%s%s/" % (SPACE, branch)
     refs = remote_refs(repo, remote, branch)
@@ -217,7 +221,13 @@ def _sync_locked(repo: pathlib.Path, remote: str, log: Log) -> int:
     if live and live != tip and not _is_ancestor(repo, live, tip):
         if not _has_commit(repo, live):
             _git(repo, ["fetch", "--no-tags", "--refmap=", remote, base + "live"])
-        stamp = _utcnow().strftime("%Y%m%dT%H%MZ")
+        # The stamp is to the minute (the hook's retention parser reads that shape), and a pre-rewrite ref is create-only: a second rewrite in the same minute takes the next free minute, never an existing name at another oid.
+        when = _utcnow()
+        while True:
+            stamp = when.strftime("%Y%m%dT%H%MZ")
+            if refs.get("pre-rewrite-%s" % stamp, live) == live:
+                break
+            when += datetime.timedelta(minutes=1)
         kept = "%spre-rewrite-%s" % (base, stamp)
         _git(repo, ["push", "--atomic", remote, "%s:%s" % (live, kept), ":%slive" % base])
         log("rewrite: kept %s at %s, live restarted" % (kept, live[:12]))

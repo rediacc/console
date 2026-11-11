@@ -252,3 +252,38 @@ def test_the_verb_is_registered():
     assert "backup-ref" in entry.names()
     assert br.main(["--help"]) == 0
     assert br.main(["nope"]) == 2
+
+
+def test_two_rewrites_in_one_minute_keep_both_tips_without_a_move(world):
+    """The clock is frozen, so both rewrites carry one minute stamp; the second pre-rewrite ref must take the next free name, since an existing one is create-only (e7710698.1)."""
+    work, bare = world
+    first = _commit(work, "one")
+    assert br.sync(work) == 0
+    _git(work, "commit", "-q", "--amend", "-m", "one, rewritten")
+    second = _git(work, "rev-parse", "HEAD")
+    assert br.sync(work) == 0
+    _git(work, "commit", "-q", "--amend", "-m", "one, rewritten again")
+    third = _git(work, "rev-parse", "HEAD")
+    assert br.sync(work) == 0
+    refs = _backup(bare)
+    assert refs["pre-rewrite-20261111T1030Z"] == first
+    assert refs["pre-rewrite-20261111T1031Z"] == second
+    assert refs["live"] == third
+
+
+def test_a_repository_with_no_remote_is_nothing_to_do_not_a_failure(world):
+    """`--all` must not exit nonzero because one listed repository has no `gitlab` remote (e7710698.2)."""
+    work, _bare = world
+    _commit(work, "one")
+    _git(work, "remote", "remove", "gitlab")
+    assert br.sync(work) == 0
+
+
+def test_an_unwritable_state_directory_is_a_logged_failure_not_a_traceback(world, capsys):
+    """`state.mkdir` failing returns 1 so a later repository of an `--all` run still syncs (e7710698.3)."""
+    work, _bare = world
+    _commit(work, "one")
+    git_dir = pathlib.Path(_git(work, "rev-parse", "--absolute-git-dir"))
+    (git_dir / "rediacc-backup").write_text("in the way\n", encoding="utf-8")
+    assert br.sync(work) == 1
+    assert "cannot create" in capsys.readouterr().err

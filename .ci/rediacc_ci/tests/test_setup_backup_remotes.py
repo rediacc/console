@@ -148,3 +148,62 @@ def test_the_setup_phase_runs_the_step(tmp_path):
         == br.pins()["private/renet"]
     )
     assert any("backup remotes" in line for line in said)
+
+
+def _failing(monkeypatch, needle: str):
+    """`br._git` that fails any command containing `needle` and runs the rest for real."""
+    real = br._git
+
+    def fake(repo, *args):
+        if needle in args:
+            return subprocess.CompletedProcess(args, 1, "", "injected failure")
+        return real(repo, *args)
+
+    monkeypatch.setattr(br, "_git", fake)
+
+
+def test_a_step_that_fails_after_the_add_returns_1_and_the_next_run_finishes_it(
+    tmp_path, monkeypatch
+):
+    """The half-done remote (added, refspec still there) must not read as done on the next run (3cbc97c3.1, .2)."""
+    root = _console(tmp_path, subs=("private/renet",))
+    repo = root / "private" / "renet"
+    with monkeypatch.context() as m:
+        _failing(m, "--unset-all")
+        said: list[str] = []
+        assert br.install(root, say=said.append) == 1
+        assert any("failed" in line for line in said)
+    # The state the review feared: the remote exists with its default refspec.
+    assert "refs/remotes/gitlab" in _config(repo)
+    assert br.fetchable(repo)
+    assert br.install(root, say=lambda _line: None) == 0
+    assert not br.fetchable(repo)
+    assert "refs/remotes/gitlab" not in _config(repo)
+    assert "skipFetchAll = true" in _config(repo)
+
+
+def test_a_remote_left_with_its_default_refspec_is_repaired(tmp_path):
+    root = _console(tmp_path, subs=("private/renet",))
+    repo = root / "private" / "renet"
+    _git(repo, "remote", "add", "gitlab", br.pins()["private/renet"])
+    assert "refs/remotes/gitlab" in _config(repo)
+    assert br.install(root, say=lambda _line: None) == 0
+    assert "refs/remotes/gitlab" not in _config(repo)
+    assert not br.fetchable(repo)
+
+
+def test_a_failed_remote_add_returns_1(tmp_path, monkeypatch):
+    root = _console(tmp_path, subs=("private/renet",))
+    _failing(monkeypatch, "add")
+    assert br.install(root, say=lambda _line: None) == 1
+    assert br.current(root / "private" / "renet") == ""
+
+
+def test_check_row_reports_a_remote_that_kept_its_refspec_as_pending(tmp_path):
+    root = _console(tmp_path, subs=("private/renet",))
+    _git(root / "private" / "renet", "remote", "add", "gitlab", br.pins()["private/renet"])
+    row, pending = br.check_row(root)
+    assert pending
+    assert "fetch refspec" in row
+    br.install(root, say=lambda _line: None)
+    assert br.check_row(root)[1] is False
