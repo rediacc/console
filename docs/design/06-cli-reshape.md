@@ -49,7 +49,7 @@ rdc backup:     strategy {set remove list show bind unbind}  retention {set clea
 rdc term:       connect
 rdc vscode:     connect list cleanup check serve {status stop}
 rdc ops:        up down status ssh setup check
-rdc subscription: login logout status refresh proxy-token
+rdc subscription: login register logout status refresh proxy-token
 rdc job:        list status logs cancel gc wait dismiss   (see §9)
 rdc tools:      install list
 rdc doctor | credits | update | version | legal | serve | mcp serve | run (hidden)
@@ -57,7 +57,7 @@ rdc doctor | credits | update | version | legal | serve | mcp serve | run (hidde
 
 ### 1.1 Where the shipped tree differs from the tree this section used to draw
 
-Twenty-eight differences. The first six are deliberate and each is traceable to a ruling. The seventh IS drift, and is recorded as such: it is what this gate exists to catch. The next two are a whole program landing after this transcript was drawn, and the rest are later additions.
+Twenty-nine differences. The first six are deliberate and each is traceable to a ruling. The seventh IS drift, and is recorded as such: it is what this gate exists to catch. The next two are a whole program landing after this transcript was drawn, and the rest are later additions.
 
 | Was drawn as | Shipped as | Why |
 |---|---|---|
@@ -89,6 +89,7 @@ Twenty-eight differences. The first six are deliberate and each is traceable to 
 | `machine` and `repo` with no health repair verbs | `repo health`, `repo repair` + `machine repair` | PLAN-health-checks-local: `repo health` runs a repository's Rediaccfile `health()` checks and exits 0 (ok), 1 (warning) or 2 (error); `repo repair` runs the `repair()` functions their declared class allows and then `health()` again; `machine repair` runs the safe fixes for a machine's health findings and re-checks, and `--set-window` stores the machine's maintenance window. |
 | `job {list,status,logs,cancel,gc,wait}` | `job {list,status,logs,cancel,gc,wait,dismiss}` | PLAN-renet-restart-cycle-defects D4: `dismiss <id...>` or `dismiss --stale [--older-than]` gives up local job tickets (an `expired` event with reason dismissed), with no machine call, so a ticket whose job is gone stops printing "steps pending" on every command. Not drift: the verb landed with the ticket-expiry fix (e573d1e0d) after this transcript. |
 | no `version` or `legal` commands | `version` + `legal` | PLAN-terms-acceptance Design 7: `version` prints the CLI version, platform, update channel and the active licence; `legal` prints the document URLs for the user's language, the current terms version and the accepted version, and the licensor and contracting entity. Both take only `--json`, so they are leaves with no noun of their own. `--version` is unchanged. |
+| no `subscription register` | `subscription register --email <address> [--server <url>]` | A first-time user without an account starts from the CLI: `register` validates the address, picks the region, and runs the same device-code authorisation as `login` with the email attached, then prints the login summary. A leaf under the existing `subscription` noun. |
 
 Four families were built by operator commits AFTER this tree was drawn. They exist in the live CLI today, so P4 recontracts them; it does not invent them. **All four were ruled on 2026-07-13** (spec/03 §9) and are folded into the §1 tree above:
 
