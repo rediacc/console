@@ -207,7 +207,7 @@ function clickSelector(selector) {
  * the scenario's own state assertion still fails on it -- the retry cannot hide that.
  */
 const REFUSED_BEFORE_DISPATCH =
-  /not found|not visible|not attached|detached|intercept|obscured|not stable/i;
+  /not found|not visible|not attached|detached|intercept|obscured|covered by|not stable/i;
 const CLICK_ATTEMPTS = 4;
 const CLICK_RETRY_GAP_MS = 400;
 
@@ -226,7 +226,23 @@ function clickWithRetry(selector) {
   return result;
 }
 
+/**
+ * Video.js hides the control bar 2 s after the last pointer activity while the video plays
+ * (IDLE_DELAY in @videojs/core controls.js). Nothing moves the pointer between the poster press and
+ * the first playback click, so on a loaded host that click landed on a hidden bar and agent-browser
+ * refused it as "covered by <video>" (2026-11-11). A hover over the player first is the pointer
+ * activity a real user makes, and it brings the bar back before every click.
+ */
+function revealControls() {
+  try {
+    runAgent(['hover', '.tvp-root video']);
+  } catch (error) {
+    log(`→ hover over the player to reveal its controls failed: ${String(error).slice(0, 300)}`);
+  }
+}
+
 function clickPlaybackButton() {
+  revealControls();
   return clickWithRetry('.tvp-root .media-play-button');
 }
 
