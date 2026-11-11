@@ -189,10 +189,14 @@
       "summary": "{{companyName}} | Sicil kodu {{registryCode}} | KDV {{vatNumber}} |"
     },
     "legalLinks": {
+      "acceptableUsePolicy": "Kabul Edilebilir Kullanım Politikası",
       "cookiePolicy": "Çerez Politikası",
+      "dataProcessingAgreement": "Veri İşleme Sözleşmesi",
+      "enterpriseLicense": "Kurumsal Lisans",
       "legalInformation": "Yasal Bilgiler",
       "privacyPolicy": "Gizlilik Politikası",
       "refundPolicy": "İade Politikası",
+      "serviceLevelAgreement": "Hizmet Seviyesi Sözleşmesi",
       "telemetryPolicy": "Telemetri Politikası",
       "termsOfService": "Kullanım Koşulları"
     },
@@ -321,6 +325,106 @@
     "errorRequiredEmail": "Lütfen e-posta adresinizi girin."
   },
   "pages": {
+    "acceptableUsePolicy": {
+      "contact": {
+        "description": "Bu Kabul Edilebilir Kullanım Politikası hakkında sorularınız varsa veya kötüye kullanımı bildirmeniz gerekiyorsa bize <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> adresinden ulaşın.",
+        "title": "Sorularınız mı var?"
+      },
+      "hero": {
+        "effectiveDate": "Yürürlük Tarihi: 11 Kasım 2026",
+        "title": "Kabul Edilebilir Kullanım Politikası"
+      },
+      "meta": {
+        "description": "Rediacc CLI, Renet Ajanı, hesap portalı ve barındırılan hizmetlerin kullanım kuralları: yasaklı içerik, yasaklı faaliyetler, ihlal bildirimi ve uygulama.",
+        "keywords": "kabul edilebilir kullanım politikası, AUP, yasaklı kullanım, kötüye kullanım, Rediacc",
+        "title": "Kabul Edilebilir Kullanım Politikası | Rediacc"
+      },
+      "related": {
+        "title": "İlgili Politikalar"
+      },
+      "sections": {
+        "changes": {
+          "content": [
+            "Rediacc bu Politikayı <a href=\"terms-of-service\">Hizmet Koşullarındaki</a> değişiklik prosedürü uyarınca güncelleyebilir."
+          ],
+          "id": "changes",
+          "title": "8. Bu Politikadaki Değişiklikler"
+        },
+        "enforcement": {
+          "content": [
+            "Rediacc şüpheli ihlalleri inceleyebilir. Ciddiyete bağlı olarak Rediacc, Müşteriyi uyarabilir, Platformdaki içeriğe erişimi kaldırabilir veya devre dışı bırakabilir, lisans vermeyi veya yenilemeyi reddedebilir, Hesabı askıya alabilir veya sonlandırabilir ve hukuka aykırı faaliyeti yetkili makamlara bildirebilir. Uygulanabilir ve hukuka uygun olduğunda Rediacc, ihlal Hizmetler, başkaları veya Rediacc için acil bir risk oluşturmadıkça işlem yapmadan önce bildirimde bulunur ve düzeltme fırsatı tanır."
+          ],
+          "id": "enforcement",
+          "title": "7. Uygulama"
+        },
+        "platformAbuse": {
+          "content": ["Şunlar yasaktır:"],
+          "id": "platform-abuse",
+          "items": [
+            "lisans doğrulamasını, Makine etkinleştirme limitlerini, hız limitlerini, boyut limitlerini veya diğer teknik limitleri aşmak ya da aşmaya çalışmak",
+            "Ücretsiz Lisansları veya Hesapları toplu olarak, dönüşümlü ağ adresleri veya Makine tanımlayıcılarıyla ya da Ücretsiz Lisans limitlerini atlatmaya yönelik başka yollarla edinmek",
+            "Platforma müdahale etmek veya ona makul olmayan yük bindirmek ya da başkaları için hizmeti bozacak şekilde kullanmak",
+            "Rediacc'ın önceden yazılı onayı olmadan Hizmetleri üçüncü taraflara yönetilen hizmet olarak yeniden satmak, yeniden dağıtmak veya sunmak",
+            "Hesap kimlik bilgilerini veya API belirteçlerini Hesabın Yetkili Kullanıcıları dışında paylaşmak"
+          ],
+          "title": "4. Platformun ve Ücretsiz Planların Kötüye Kullanımı"
+        },
+        "prohibitedActivities": {
+          "content": ["Hizmetler şu amaçlarla kullanılamaz:"],
+          "id": "prohibited-activities",
+          "items": [
+            "Rediacc'ınkiler dahil herhangi bir sisteme, ağa, hesaba veya veriye yetkisiz erişim sağlamak ya da sağlamaya çalışmak",
+            "Rediacc'ın önceden yazılı izni olmadan Rediacc altyapısını taramak, yoklamak, sızma testine veya yük testine tabi tutmak",
+            "hizmet reddi saldırıları başlatmak veya kolaylaştırmak ya da kötüye kullanım için açık proxy, açık röle veya anonimleştirme hizmetleri işletmek",
+            "istenmeyen toplu iletişim (spam) göndermek, kimlik avı veya dolandırıcılık yapmak",
+            "Platformda veya barındırılan yedek depolamada kripto para madenciliği yapmak",
+            "herhangi bir kişi ya da kuruluşun kimliğine bürünmek veya bir bağlantıyı yanlış beyan etmek",
+            "ihracat kontrolü veya yaptırım yasalarını ihlal etmek",
+            "uygulanabilir herhangi bir yasayı veya düzenlemeyi ihlal etmek"
+          ],
+          "title": "3. Yasaklı Faaliyetler"
+        },
+        "prohibitedContent": {
+          "content": [
+            "Hizmetler şunları depolamak, barındırmak, dağıtmak veya işlemek için kullanılamaz:"
+          ],
+          "id": "prohibited-content",
+          "items": [
+            "çocuk cinsel istismarı materyali veya reşit olmayanları cinsel olarak istismar eden ya da tehlikeye atan içerik",
+            "başkalarının fikri mülkiyet, gizlilik veya diğer haklarını ihlal eden veya haksız yere kullanan içerik",
+            "kötü amaçlı yazılım, fidye yazılımı, casus yazılım, botnet denetleyicileri veya sistemlere ya da verilere zarar vermek için tasarlanmış diğer kodlar",
+            "barındırıldığı veya erişildiği yerde hukuka aykırı olan içerik; terör içeriği ve yasa dışı nefret söylemi dahil",
+            "hukuki dayanak olmaksızın işlenen kişisel veriler"
+          ],
+          "title": "2. Yasaklı İçerik"
+        },
+        "reporting": {
+          "content": [
+            "Bu Politikanın şüpheli ihlalleri \"Abuse\" konusuyla <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> adresine bildirilebilir. Telif hakkı şikâyetleri <a href=\"terms-of-service\">Hizmet Koşullarının</a> Telif Hakkı Şikâyetleri bölümündeki prosedürü izler. Yasa dışı içerik bildirimleri, uygulandığı yerde AB Dijital Hizmetler Yasası uyarınca ele alınır."
+          ],
+          "id": "reporting",
+          "title": "6. İhlallerin Bildirilmesi"
+        },
+        "scope": {
+          "content": [
+            "Bu Kabul Edilebilir Kullanım Politikası (\"Politika\"), CLI, Renet Ajanı, hesap portalı, API, barındırılan yedek depolama ve Ücretsiz Lisans dahil, {{legalName}} (\"Rediacc\") Hizmetlerini kullanan herkes için geçerlidir. <a href=\"terms-of-service\">Hizmet Koşullarının</a> parçasıdır ve orada tanımlanan terimler burada da aynı anlama gelir. Bu sayfa İngilizce yazılmıştır. Çeviriler yalnızca kolaylık sağlamak amacıyla sunulur; bir çeviri İngilizce sürümden farklıysa İngilizce sürüm geçerlidir.",
+            "Müşteri Verileri, Rediacc'ın kontrol etmediği Makinelerde kalır. Bu Politika, Hizmetlerle dağıtılan her şey için yine geçerlidir; Müşteri, her Yetkili Kullanıcıdan ve Hesabı kapsamında ya da Makinelerinde hareket eden her otomasyondan sorumludur."
+          ],
+          "id": "scope",
+          "title": "1. Kapsam"
+        },
+        "security": {
+          "content": [
+            "İyi niyetli güvenlik araştırması, \"Security\" konusuyla <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> adresine bildirildiğinde, gizlilik ihlallerinden, veri tahribatından ve hizmetin bozulmasından kaçındığında ve araştırmacının sahip olduğu Hesaplar ile Makinelerle sınırlı kaldığında memnuniyetle karşılanır. Rediacc bu koşullara uyan araştırmalara karşı işlem yapmaz."
+          ],
+          "id": "security-research",
+          "title": "5. Güvenlik Araştırması"
+        }
+      },
+      "toc": {
+        "title": "İçindekiler"
+      }
+    },
     "blog": {
       "allArticles": "Tüm Makaleler",
       "featured": "Öne Çıkan Makaleler",
@@ -542,6 +646,155 @@
         "title": "İçindekiler"
       }
     },
+    "dataProcessingAgreement": {
+      "contact": {
+        "description": "Bu Veri İşleme Sözleşmesi hakkındaki sorularınız veya bir Alt İşleyene itiraz etmek için bize <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> adresinden ulaşın.",
+        "title": "Sorularınız mı var?"
+      },
+      "hero": {
+        "effectiveDate": "Yürürlük Tarihi: 11 Kasım 2026",
+        "title": "Veri İşleme Sözleşmesi"
+      },
+      "meta": {
+        "description": "Rediacc'ın kurumsal müşterileri için GDPR madde 28 kapsamındaki veri işleme koşulları: işleme talimatları, güvenlik, alt işleyiciler, uluslararası aktarımlar, ihlal bildirimi ve silme.",
+        "keywords": "veri işleme sözleşmesi, DPA, GDPR, madde 28, alt işleyiciler, standart sözleşme hükümleri, Rediacc",
+        "title": "Veri İşleme Sözleşmesi | Rediacc"
+      },
+      "related": {
+        "title": "İlgili Politikalar"
+      },
+      "sections": {
+        "attribution": {
+          "content": [
+            "Bu DPA'nın bazı bölümleri, Common Paper, Inc. tarafından Creative Commons Attribution 4.0 International lisansı (<a href=\"https://creativecommons.org/licenses/by/4.0/\">CC BY 4.0</a>) altında yayımlanan Common Paper Data Processing Agreement Standard Terms Version 1.1'den (<a href=\"https://commonpaper.com/standards/data-processing-agreement/1.1\">commonpaper.com/standards/data-processing-agreement/1.1</a>) uyarlanmıştır. Metin değiştirilmiştir: yeniden yapılandırılmış, kısaltılmış ve Hizmetlere uyarlanmıştır. Common Paper, Inc. bu DPA'yı onaylamaz."
+          ],
+          "id": "attribution",
+          "title": "14. Bu DPA'nın Kaynağı"
+        },
+        "audits": {
+          "content": [
+            "Rediacc, GDPR madde 28'e uyumu göstermek için gerekli bilgileri, başlıca makul güvenlik anketlerine yazılı yanıtlar ile Rediacc'ın ve Alt İşleyenlerinin mevcut denetim raporları ve sertifikaları aracılığıyla Müşteriye sunar. Bu bilgiler yetersizse veya bir denetim otoritesi gerektiriyorsa Müşteri, masrafı kendisine ait olmak üzere, otuz (30) gün önceden bildirimle, mesai saatleri içinde, yılda en fazla bir kez, gizlilik yükümlülükleri altında ve Hizmetleri veya diğer müşterileri aksatmayacak şekilde denetim yapabilir."
+          ],
+          "id": "audits",
+          "title": "12. Denetimler"
+        },
+        "breach": {
+          "content": [
+            "Rediacc, Müşteri Kişisel Verilerini etkileyen bir Kişisel Veri İhlalinden haberdar olduktan sonra gereksiz gecikme olmaksızın ve her halükârda yetmiş iki (72) saat içinde Müşteriyi bilgilendirir. Bildirim, bilinen ölçüde ihlalin niteliğini, ilgili veri sahiplerinin ve kayıtların kategorilerini ve yaklaşık sayısını, olası sonuçları ve alınan veya önerilen önlemleri açıklar. Rediacc ihlali kontrol altına almak ve gidermek için makul adımlar atar."
+          ],
+          "id": "breach",
+          "title": "10. Kişisel Veri İhlali"
+        },
+        "confidentiality": {
+          "content": [
+            "Rediacc, Müşteri Kişisel Verilerini işlemeye yetkili her kişinin bir gizlilik yükümlülüğü ile bağlı olmasını sağlar."
+          ],
+          "id": "confidentiality",
+          "title": "5. Gizlilik"
+        },
+        "dataSubjectRights": {
+          "content": [
+            "Rediacc, bir veri sahibinden gelen Müşteri Kişisel Verilerine ilişkin her talebi derhal Müşteriye iletir ve Müşterinin talimatları dışında kendisi yanıt vermez. İşlemenin niteliğini dikkate alarak Rediacc, Müşteriye bu tür taleplere yanıt vermede ve veri koruma etki değerlendirmeleri ile ön istişareler dahil GDPR madde 32 ila 36 kapsamındaki yükümlülüklerini yerine getirmede yardımcı olur."
+          ],
+          "id": "data-subject-rights",
+          "title": "9. Veri Sahibi Talepleri ve Yardım"
+        },
+        "definitions": {
+          "id": "definitions",
+          "items": [
+            "<strong>\"Veri Koruma Yasaları\"</strong>, AB Genel Veri Koruma Tüzüğünü (Tüzük (AB) 2016/679, \"GDPR\"), Birleşik Krallık GDPR'sini ve bu DPA kapsamındaki işlemeye uygulanan diğer tüm veri koruma yasalarını ifade eder.",
+            "<strong>\"Müşteri Kişisel Verileri\"</strong>, Rediacc'ın Platformu sunarken Müşteri adına işlediği kişisel veriler anlamına gelir; örneğin Müşterinin davet ettiği Yetkili Kullanıcıların ve ekip üyelerinin adları ile e-posta adresleri ve Müşterinin Platformda sakladığı şifreli veriler.",
+            "<strong>\"Kişisel Veri İhlali\"</strong>, <strong>\"işleme\"</strong>, <strong>\"veri sorumlusu\"</strong>, <strong>\"işleyen\"</strong> ve <strong>\"veri sahibi\"</strong>, GDPR'da verilen anlamlara sahiptir.",
+            "<strong>\"SCC\"</strong>, Avrupa Komisyonunun (AB) 2021/914 sayılı Uygulama Kararıyla onaylanan standart sözleşme hükümleri anlamına gelir.",
+            "<strong>\"Alt İşleyen\"</strong>, Rediacc tarafından Müşteri Kişisel Verilerini işlemek üzere görevlendirilen üçüncü taraf anlamına gelir."
+          ],
+          "title": "2. Tanımlar"
+        },
+        "deletion": {
+          "content": [
+            "Hizmetler sona erdiğinde Müşteri, Müşteri Kişisel Verilerini otuz (30) gün içinde dışa aktarabilir. Hukuk Rediacc'ın verileri saklamasını gerektirmedikçe Rediacc daha sonra Müşteri Kişisel Verilerini aktif sistemlerden ve doksan (90) gün içinde yedeklerden siler."
+          ],
+          "id": "deletion",
+          "title": "11. Silme veya İade"
+        },
+        "details": {
+          "id": "details",
+          "items": [
+            "<strong>Konu ve amaç:</strong> Hesap ve ekip yönetimi, lisans verme, şifreli yapılandırma depolama, barındırılan yedek depolama ve destek dahil Platformun sunulması",
+            "<strong>Süre:</strong> Hizmet Koşullarının süresi ve Bölüm 11'deki silme süresi",
+            "<strong>İşlemenin niteliği:</strong> toplama, saklama, iletme, erişme ve silme",
+            "<strong>Veri sahibi kategorileri:</strong> Müşterinin Yetkili Kullanıcıları, davet edilen ekip üyeleri ve iş ortağı iletişim kişileri",
+            "<strong>Kişisel veri kategorileri:</strong> adlar, e-posta adresleri, kuruluş ve rol, kimlik doğrulama verileri (parola karmaları, geçiş anahtarı (passkey) açık anahtarları), oturumların ağ adresleri ve user agent bilgileri ile Müşterinin Platformda sakladığı şifreli verilerin içindeki her türlü kişisel veri",
+            "<strong>Özel kategoriler:</strong> öngörülmemektedir; Müşteri, özel kategorilerdeki verileri Platformda şifrelemeden saklamamalıdır"
+          ],
+          "title": "4. İşlemenin Ayrıntıları"
+        },
+        "instructions": {
+          "content": [
+            "Rediacc, hukukun aksini gerektirdiği haller dışında, Müşteri Kişisel Verilerini yalnızca Müşterinin belgelenmiş talimatları doğrultusunda işler; bu talimatlar Hizmet Koşulları, bu DPA ve Müşterinin Hizmetleri kullanımı ve yapılandırmasıdır. Hukukun aksini gerektirdiği hallerde, hukuk yasaklamıyorsa Rediacc işlemeden önce Müşteriyi bilgilendirir. Rediacc, bir talimatın Veri Koruma Yasalarını ihlal ettiği kanaatindeyse Müşteriyi bilgilendirir."
+          ],
+          "id": "instructions",
+          "title": "3. Talimatlar Doğrultusunda İşleme"
+        },
+        "liability": {
+          "content": [
+            "Veri Koruma Yasalarının izin vermediği haller dışında, her tarafın bu DPA kapsamındaki sorumluluğu Hizmet Koşullarındaki sınırlamalara tabidir. Bu DPA ile Hizmet Koşulları çelişirse, Müşteri Kişisel Verilerinin işlenmesinde bu DPA geçerlidir; SCC ile bu DPA çelişirse SCC geçerlidir."
+          ],
+          "id": "liability",
+          "title": "13. Sorumluluk ve Öncelik"
+        },
+        "scope": {
+          "content": [
+            "Bu Veri İşleme Sözleşmesi (\"DPA\"), Müşterinin Hizmetleri bir işletme olarak kullandığı ve Rediacc'ın Müşteri Kişisel Verilerini Müşteri adına işlediği durumlarda, {{legalName}} (\"Rediacc\", \"İşleyen\") ile Müşteri arasındaki <a href=\"terms-of-service\">Hizmet Koşullarının</a> parçasıdır. Hizmet Koşullarında tanımlanan terimler burada da aynı anlama gelir. Bu sayfa İngilizce yazılmıştır. Çeviriler yalnızca kolaylık sağlamak amacıyla sunulur; bir çeviri İngilizce sürümden farklıysa İngilizce sürüm geçerlidir.",
+            "Müşteri Kişisel Verileri bakımından Müşteri veri sorumlusudur (veya kendi veri sorumlusu adına hareket eden bir işleyendir), Rediacc ise işleyendir (veya alt işleyendir). Hesap, faturalandırma ve kabul kayıtları ile Telemetri Verileri bakımından Rediacc, <a href=\"privacy-policy\">Gizlilik Politikasında</a> açıklandığı şekilde bağımsız bir veri sorumlusudur ve bu DPA söz konusu işlemeye uygulanmaz.",
+            "Müşterinin Makinelerindeki Müşteri Verileri Rediacc tarafından işlenmez. Şifreli yapılandırma depolama ve barındırılan yedekler Rediacc'ın sahip olmadığı anahtarlarla şifrelenir; bu nedenle Rediacc bu veri bloklarını saklar ancak içeriklerini okuyamaz."
+          ],
+          "id": "scope",
+          "title": "1. Kapsam ve Roller"
+        },
+        "security": {
+          "content": [
+            "Rediacc, GDPR madde 32 uyarınca uygun teknik ve organizasyonel önlemleri uygular; bunlar arasında şunlar bulunur:"
+          ],
+          "id": "security",
+          "items": [
+            "aktarım sırasında (TLS 1.2 veya üzeri) ve beklemede şifreleme ile yapılandırma depolama ve barındırılan yedeklerin Rediacc'ın sahip olmadığı anahtarlarla istemci tarafında şifrelenmesi",
+            "üretim sistemlerine erişimin çok faktörlü kimlik doğrulamayla yetkili personelle sınırlandırılması",
+            "müşteri verilerinin mantıksal olarak ayrılması ve bölgesel veri depolama",
+            "üretim sistemlerinin günlüğe alınması ve izlenmesi ile güvenlik önlemlerinin düzenli testi"
+          ],
+          "title": "6. Güvenlik"
+        },
+        "subprocessors": {
+          "content": [
+            "Müşteri, Rediacc'ın Alt İşleyen görevlendirmesine izin verir. Rediacc, her Alt İşleyene bu DPA'dan daha az koruyucu olmayan veri koruma yükümlülükleri getirir ve Alt İşleyenlerinin performansından sorumlu kalır. Mevcut Alt İşleyenler şunlardır:"
+          ],
+          "content2": [
+            "Rediacc, bir Alt İşleyen eklemeden veya değiştirmeden en az otuz (30) gün önce bu sayfayı güncelleyerek ve Hesap e-postasını bilgilendirerek bildirimde bulunur. Müşteri bu süre içinde makul veri koruma gerekçeleriyle itiraz edebilir. Taraflar itirazı çözemezse Müşteri etkilenen Hizmetleri sonlandırabilir ve fesihten sonraki döneme ait ödenmiş ücretlerin iadesini alabilir.",
+            "Web sitesi analitiği (Plausible) Müşteri Kişisel Verilerini işlemez ve Gizlilik Politikası kapsamındadır."
+          ],
+          "id": "subprocessors",
+          "items": [
+            "<strong>Cloudflare, Inc.</strong> (Amerika Birleşik Devletleri; küresel ağ): hesap portalı ve API'nin barındırılması (Workers), hesap veritabanı (D1), barındırılan yedek ve nesne depolama (R2), içerik dağıtımı ve DNS ile formlarda bot koruması (Turnstile)",
+            "<strong>Amazon Web Services, Inc.</strong> (Müşterinin hesap bölgesine hizmet veren AWS bölgesindeki Amazon Simple Email Service): oturum açma bağlantıları, bildirimler ve faturalar gibi işlemsel e-postaların teslimi",
+            "<strong>Stripe, Inc. ve iştirakleri</strong> (Amerika Birleşik Devletleri ve İrlanda): ücretli Abonelikler için ödeme işleme, abonelik faturalandırması, fatura düzenleme ve vergi hesaplama",
+            "<strong>Hostinger</strong> (Avrupa Birliği'ndeki sanal sunucular): Telemetri Verilerini ve hizmet günlüklerini alan telemetri ve gözlemlenebilirlik uç noktasının (<code>otlp.rediacc.io</code>) barındırılması"
+          ],
+          "title": "7. Alt İşleyenler"
+        },
+        "transfers": {
+          "content": [
+            "Müşteri Kişisel Verileri, Avrupa Ekonomik Alanı dışındaki ve yeterlilik kararı bulunmayan bir ülkeye aktarıldığında SCC, atıf yoluyla bu DPA'ya dahil edilir: Müşteri veri sorumlusuysa İkinci Modül (veri sorumlusundan işleyene), Müşteri işleyense Üçüncü Modül (işleyenden işleyene). SCC bakımından: isteğe bağlı katılım maddesi (Madde 7) uygulanır; Madde 9(a) Seçenek 2 (genel yetkilendirme), Bölüm 7'deki bildirim süresiyle uygulanır; Madde 11'deki isteğe bağlı ifade uygulanmaz; Madde 17 ve 18'de seçilen hukuk ve mahkemeler şunlardır: {{country}}; Ek I ve II, bu DPA'nın Bölüm 1, 4 ve 6'sı ile, Ek III ise Bölüm 7'si ile tamamlanır.",
+            "GDPR'ın Birleşik Krallık versiyonuna tabi aktarımlar için SCC ile birlikte Birleşik Krallık Bilgi Komiseri tarafından yayımlanan Uluslararası Veri Aktarımı Eki (International Data Transfer Addendum) uygulanır. Rediacc, bu çerçeveye göre sertifikalı Alt İşleyenler bakımından AB-ABD Veri Gizliliği Çerçevesine (EU-US Data Privacy Framework) dayanır."
+          ],
+          "id": "transfers",
+          "title": "8. Uluslararası Aktarımlar"
+        }
+      },
+      "toc": {
+        "title": "İçindekiler"
+      }
+    },
     "disasterRecovery": {
       "enterpriseCta": {
         "button": "Satışla İletişim",
@@ -725,6 +978,139 @@
       },
       "sections": {
         "cli": "Komut Satırı Arayüzü (CLI)"
+      }
+    },
+    "enterpriseLicense": {
+      "contact": {
+        "description": "Kurumsal lisanslama hakkındaki sorularınız veya bir Sipariş Formu talep etmek için bize <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> adresinden ulaşın.",
+        "title": "Sorularınız mı var?"
+      },
+      "hero": {
+        "effectiveDate": "Yürürlük Tarihi: 11 Kasım 2026",
+        "title": "Kurumsal Yazılım Lisansı"
+      },
+      "meta": {
+        "description": "Sipariş Formu ile satılan Rediacc Kurumsal Aboneliklerinin lisans koşulları: kendi sunucunuzda çalışan hesap sunucuları, etkinleştirme üst sınırları, destek ve doğrulama dahil.",
+        "keywords": "kurumsal lisans, yazılım lisans sözleşmesi, şirket içi, sipariş formu, Rediacc Enterprise",
+        "title": "Kurumsal Yazılım Lisansı | Rediacc"
+      },
+      "related": {
+        "title": "İlgili Politikalar"
+      },
+      "sections": {
+        "attribution": {
+          "content": [
+            "Bu Lisansın bazı bölümleri, Common Paper, Inc. tarafından Creative Commons Attribution 4.0 International lisansı (<a href=\"https://creativecommons.org/licenses/by/4.0/\">CC BY 4.0</a>) altında yayımlanan Common Paper Software License Agreement Standard Terms Version 1.1'den (<a href=\"https://commonpaper.com/standards/software-license-agreement/1.1\">commonpaper.com/standards/software-license-agreement/1.1</a>) uyarlanmıştır. Metin değiştirilmiştir: yeniden yapılandırılmış, kısaltılmış ve Hizmetlere uyarlanmıştır. Common Paper, Inc. bu Lisansı onaylamaz."
+          ],
+          "id": "attribution",
+          "title": "15. Bu Lisansın Kaynağı"
+        },
+        "definitions": {
+          "id": "definitions",
+          "items": [
+            "<strong>\"Lisanslı Yazılım\"</strong>, Şirket İçi Yazılım ve Sipariş Formu dahil ediyorsa Platformu Müşterinin kendi altyapısında çalıştırmak için kendi sunucuda çalışan hesap sunucusu yazılımı anlamına gelir; nesne kodu biçiminde ve Rediacc'ın sağladığı güncellemelerle birlikte.",
+            "<strong>\"Etkinleştirme Üst Sınırı\"</strong>, Sipariş Formunda belirtildiği şekilde aynı anda etkinleştirilmiş olabilecek azami Makine sayısı anlamına gelir; belirtilmemişse 25'tir.",
+            "<strong>\"Abonelik Süresi\"</strong>, yenilemeler dahil Sipariş Formunda belirtilen dönem anlamına gelir.",
+            "<strong>\"İş Ortağı\"</strong>, Kurumsal Abonelik satmak üzere Rediacc tarafından yetkilendirilmiş bir bayi veya hizmet sağlayıcı anlamına gelir."
+          ],
+          "title": "2. Tanımlar"
+        },
+        "delivery": {
+          "content": [
+            "Rediacc, Lisanslı Yazılımı elektronik olarak teslim eder. Lisanslar, Lisanslı Yazılımın çevrimdışı dahil doğruladığı imzalı dosyalardır. Kendi sunucuda çalışan bir hesap sunucusu kendi lisansı altında çalışır ve Müşterinin sözleşmesinin kabulünü Platformun çevrimiçi kabul akışı yerine Sipariş Formu aracılığıyla kaydeder."
+          ],
+          "id": "delivery",
+          "title": "5. Teslimat, Lisans Dosyaları ve Doğrulama"
+        },
+        "fees": {
+          "content": [
+            "Ücretler, faturalandırma ve ödeme koşulları Sipariş Formunda belirtilir. Sipariş Formu aksini belirtmedikçe faturalar otuz (30) gün içinde ödenir, ücretlere vergiler dahil değildir ve Abonelik Süresine ait ücretler, bu Lisans veya Hizmet Koşullarının öngördüğü haller dışında iptal edilemez ve iade edilemez."
+          ],
+          "id": "fees",
+          "title": "7. Ücretler ve Ödeme"
+        },
+        "general": {
+          "content": [
+            "Sipariş Formu başka koşullar belirlemedikçe, Hizmet Koşullarındaki ihracat kontrolü, uygulanacak hukuk, uyuşmazlık çözümü ve genel hükümler bu Lisansa da uygulanır. Hizmet Koşullarındaki tahkim bölümü yalnızca ana iş yeri Amerika Birleşik Devletleri'nde olan Müşteriler için geçerlidir."
+          ],
+          "id": "general",
+          "title": "14. İhracat, Uygulanacak Hukuk ve Genel Hükümler"
+        },
+        "grant": {
+          "content": [
+            "Bu Lisansa ve ücretlerin ödenmesine tabi olarak Rediacc, Müşteriye Abonelik Süresi boyunca Lisanslı Yazılımı Müşterinin sahip olduğu veya kontrol ettiği altyapıya, Etkinleştirme Üst Sınırına kadar, yalnızca Müşterinin ve iştiraklerinin dahili iş amaçları için yüklemek ve kullanmak üzere münhasır olmayan, devredilemez, alt lisanslanamaz bir lisans verir. Yükleniciler Lisanslı Yazılımı Müşteri adına kullanabilir ve Müşteri onlardan sorumludur."
+          ],
+          "id": "grant",
+          "title": "3. Lisans Verilmesi"
+        },
+        "indemnity": {
+          "content": [
+            "Hizmet Koşullarındaki Rediacc'ın ihlal savunması yükümlülüğü Lisanslı Yazılım için de geçerlidir."
+          ],
+          "id": "indemnity",
+          "title": "11. İhlal Savunması"
+        },
+        "liability": {
+          "content": [
+            "Hizmet Koşullarındaki sorumluluk sınırlaması uygulanır; ancak Sipariş Formu farklı bir tutar belirlemedikçe üst sınır, talebe yol açan olaydan önceki on iki (12) ay içinde Sipariş Formu kapsamındaki Abonelik için ödenen veya ödenecek ücretlerdir."
+          ],
+          "id": "liability",
+          "title": "10. Sorumluluğun Sınırlandırılması"
+        },
+        "ownership": {
+          "content": [
+            "Lisanslı Yazılım ve onun üzerindeki tüm fikri mülkiyet hakları Rediacc'a ve lisans verenlerine aittir veya bunları lisanslama hakkı onlardadır. Lisanslı Yazılım satılmaz, lisanslanır ve bu Lisansta açıkça belirtilenler dışında hiçbir hak verilmez."
+          ],
+          "id": "ownership",
+          "title": "8. Mülkiyet"
+        },
+        "restrictions": {
+          "content": [
+            "Hizmet Koşullarındaki kısıtlamalar geçerlidir. Ayrıca Müşteri, Etkinleştirme Üst Sınırını aşmayacak, kendi sunucuda çalışan hesap sunucusunu Müşteri ve iştirakleri dışında kimse için çalıştırmayacak ve Sipariş Formu açıkça izin vermedikçe Lisanslı Yazılımı üçüncü taraflara barındırılan veya yönetilen hizmet olarak sunmayacaktır."
+          ],
+          "id": "restrictions",
+          "title": "4. Kısıtlamalar"
+        },
+        "scope": {
+          "content": [
+            "Bu Kurumsal Yazılım Lisansı (\"Lisans\"), {{legalName}} (\"Rediacc\") veya yetkili bir Rediacc iş ortağı üzerinden Sipariş Formu ile satın alınan Kurumsal Aboneliklere uygulanır. Lisans, Sipariş Formu ve <a href=\"terms-of-service\">Hizmet Koşulları</a> birlikte o Aboneliğe ilişkin sözleşmeyi oluşturur. Çelişki halinde önce Sipariş Formu, sonra bu Lisans, ardından Hizmet Koşulları geçerlidir. Bu sayfa İngilizce yazılmıştır. Çeviriler yalnızca kolaylık sağlamak amacıyla sunulur; bir çeviri İngilizce sürümden farklıysa İngilizce sürüm geçerlidir.",
+            "Kurumsal Abonelik bir iş ortağı aracılığıyla satın alındığında, ücretler ve ödeme koşulları Müşteri ile iş ortağı arasında kararlaştırılır; lisans hakları ve kısıtlamaları Rediacc tarafından bu Lisans uyarınca verilir."
+          ],
+          "id": "scope",
+          "title": "1. Kapsam ve Sipariş Formu"
+        },
+        "support": {
+          "content": [
+            "Rediacc veya İş Ortağı, Sipariş Formunda belirtilen düzeyde destek ve güncelleme sağlar. Belirtilmemişse destek iş günlerinde e-postayla sağlanır ve Lisanslı Yazılım için güncellemeler Abonelik Süresi boyunca sunulur."
+          ],
+          "id": "support",
+          "title": "6. Destek ve Güncellemeler"
+        },
+        "term": {
+          "content": [
+            "Bu Lisans Abonelik Süresi boyunca geçerlidir. Taraflardan her biri, yazılı bildirimden sonra otuz (30) gün içinde giderilmeyen esaslı ihlal nedeniyle Lisansı feshedebilir. Sona erme veya fesih halinde Müşteri Lisanslı Yazılımı kullanmayı bırakır; ancak halihazırda çalışan Depolar Topluluk planı özellik düzeyinde çalışmaya devam eder ve Müşteri talep üzerine lisans dosyalarını siler."
+          ],
+          "id": "term",
+          "title": "13. Süre ve Fesih"
+        },
+        "verification": {
+          "content": [
+            "Lisanslı Yazılım, etkinleştirme sayılarını lisans hizmetine bildirir; çevrimdışı çalışan, kendi sunucuda barındırılan bir hesap sunucusu için ise yerel etkinleştirme kayıtları tutar. Makul talep üzerine, yılda en fazla bir kez, Müşteri etkinleştirme sayılarını yazılı olarak teyit eder. Müşteri Etkinleştirme Üst Sınırını aşarsa taraflar değiştirilmiş bir Sipariş Formu üzerinde anlaşır ve Müşteri aşan kullanım için Sipariş Formundaki oranlarla ücret öder."
+          ],
+          "id": "verification",
+          "title": "12. Doğrulama"
+        },
+        "warranty": {
+          "content": [
+            "Rediacc, tesliminden sonraki doksan (90) gün boyunca Lisanslı Yazılımın Belgelerine esaslı olarak uygun olacağını garanti eder. Bu garantinin ihlali halinde Müşterinin tek çözüm yolu, Rediacc'ın uyumsuzluğu gidermesi veya Rediacc makul süre içinde gideremezse taraflardan birinin etkilenen Aboneliği feshetmesi ve Rediacc'ın kalan Abonelik Süresi için ödenmiş ücretleri iade etmesidir.",
+            "BU SINIRLI GARANTİ HARİCİNDE LİSANSLI YAZILIM \"OLDUĞU GİBİ\" SUNULUR VE HİZMET KOŞULLARINDAKİ GARANTİLERİN REDDİ UYGULANIR."
+          ],
+          "id": "warranty",
+          "title": "9. Sınırlı Garanti"
+        }
+      },
+      "toc": {
+        "title": "İçindekiler"
       }
     },
     "home": {
@@ -2066,7 +2452,7 @@
         "title": "Sorularınız mı var?"
       },
       "hero": {
-        "effectiveDate": "Yürürlük Tarihi: 1 Şubat 2026",
+        "effectiveDate": "Yürürlük Tarihi: 11 Kasım 2026",
         "title": "Gizlilik Taahhüdümüz"
       },
       "meta": {
@@ -2080,13 +2466,15 @@
       "sections": {
         "changes": {
           "content": [
-            "Bu Gizlilik Politikasını zaman zaman güncelleyebiliriz. Değişiklikler bu sayfada yayınlanacaktır."
+            "Bu Gizlilik Politikasını zaman zaman güncelleyebiliriz. Değişiklikler güncellenmiş bir yürürlük tarihiyle bu sayfada yayımlanır; esaslı değişiklikler ise yürürlüğe girmelerinden en az otuz (30) gün önce hesap sahiplerine e-postayla da bildirilir. Hizmet Koşullarının kabul edilme biçimindeki değişiklikler, <a href=\"terms-of-service\">Hizmet Koşullarındaki</a> değişiklik prosedürünü izler."
           ],
           "id": "changes",
           "title": "10. Bu Politikadaki Değişiklikler"
         },
         "childrenPrivacy": {
-          "content": ["Hizmetlerimiz 16 yaşın altındaki bireylere yönelik değildir."],
+          "content": [
+            "Hizmetlerimiz en az 18 yaşındaki kişilere yöneliktir ve çocuklara yönelik değildir. 18 yaşın altındaki kişilerden bilerek kişisel veri toplamayız. Bu tür verileri topladığımızı fark edersek derhal sileriz."
+          ],
           "id": "children-privacy",
           "title": "9. Çocukların Gizliliği"
         },
@@ -2094,7 +2482,8 @@
           "content": [
             "İletişim formu verileri gerekli olduğu sürece saklanır. Hesap verileri, hesabınız aktif olduğu süre boyunca ve silme işleminden sonra 30 gün saklanır.",
             "Plausible analiz verileri toplu halde tutulur ve kişisel veri içermez, bu nedenle veri saklama politikaları bunlar için geçerli değildir.",
-            "Ürün telemetri verileri, hata ayıklama amacıyla ham izler olarak 90 güne kadar saklanır. Toplu telemetri metrikleri 12 aya kadar saklanır ve ardından silinir. Ayrıntılar için <a href=\"telemetry-policy\">Telemetri Politikamıza</a> bakın."
+            "Ürün telemetri verileri, hata ayıklama amacıyla ham izler olarak 90 güne kadar saklanır. Toplu telemetri metrikleri 12 aya kadar saklanır ve ardından silinir. Ayrıntılar için <a href=\"telemetry-policy\">Telemetri Politikamıza</a> bakın.",
+            "Bir hesabın kabul kayıtları hesabın ömrü boyunca ve ek olarak üç (3) yıl saklanır; bu süre Estonya hukukunda sözleşmesel talepler için genel zamanaşımı süresidir. Bir Ücretsiz Lisansın kabul kayıtları kabulden itibaren üç (3) yıl saklanır. Her iki durumda da süre dolunca otomatik olarak silinir."
           ],
           "id": "data-retention",
           "title": "5. Veri Saklama"
@@ -2110,7 +2499,7 @@
           "content": ["Kişisel verilerinizi üçüncü taraflara satmıyoruz veya kiralamıyoruz."],
           "id": "data-sharing",
           "items": [
-            "Platformu işletmemize yardımcı olan <strong>hizmet sağlayıcılar</strong>",
+            "Platformumuzu barındıran ve işleten, e-posta gönderen ve ödemeleri işleyen, verilerinizi korumaya yönelik sözleşmesel yükümlülüklerle bağlı <strong>hizmet sağlayıcılar (alt işleyiciler)</strong>. Her sağlayıcının rolünü ve konumunu içeren güncel liste <a href=\"data-processing-agreement\">Veri İşleme Sözleşmemizde</a> yer alır",
             "Çerezsiz anonim web analitiği için <strong>Plausible Analytics</strong>",
             "<strong>Telemetri işleme</strong> — anonimleştirilmiş ürün kullanım verileri, toplama ve analiz için AB içindeki kendi telemetri uç noktamıza iletilir. Telemetri verileri üçüncü taraflarla paylaşılmaz (bkz. <a href=\"telemetry-policy\">Telemetri Politikamız</a>)",
             "Kanun gerektirdiğinde <strong>kolluk kuvvetleri</strong>"
@@ -2171,6 +2560,14 @@
                 "Bir makine hesap olmadan ücretsiz lisans istediğinde, isteği yapan IP adresinin (IPv4 adresinin tamamı veya IPv6 adresinin /64 öneki) anahtarlı bir özetini saklarız; adresin kendisini asla saklamayız. Özet yalnızca adrese özgü sayaçta tutulur ve 72 saat sonra silinir. Lisans kaydında istekteki makine ve depo tanımlayıcıları bulunur, IP verisi bulunmaz. Hukuki dayanak, ücretsiz bir hizmetin kötüye kullanılmasını önlemeye yönelik meşru menfaatimizdir."
               ],
               "title": "2.6 Ücretsiz Lisans Talepleri"
+            },
+            "acceptanceRecords": {
+              "content": [
+                "Hizmet Koşulları kabul edildiğinde, sözleşmenin kanıtı olarak kabulün kaydını tutarız: belge ve sürümü, kabul edilen metnin sağlama toplamı, gösterilen onay ifadesinin tam metni ve dili, kullanılan yöntem (portal onay kutusu, ödeme sayfası, CLI istemi veya gözetimsiz CLI bayrağı) ve zaman. Bir hesap için kayıt ayrıca isteğin IP adresini ve user agent bilgisini, ödeme sayfası için ise ödeme oturumu tanımlayıcısını içerir.",
+                "Hesap olmadan kabul edilen bir Ücretsiz Lisans için kayıt; lisansın zaten kullandığı makine tabanlı tanımlayıcıyı, istemci makine tanımlayıcısının anahtarlı bir karmasını ve CLI sürümünü içerir; IP adresi veya başka ağ verisi içermez.",
+                "Hukuki dayanaklar, sözleşmenin ifası (GDPR madde 6(1)(b)) ile hukuki yükümlülüklerimize uyum ve hukuki taleplerin tesisi, kullanılması veya savunulmasıdır (GDPR madde 6(1)(c) ve (f))."
+              ],
+              "title": "2.7 Kabul Kayıtları"
             }
           },
           "title": "2. Topladığımız Bilgiler"
@@ -2746,7 +3143,7 @@
     },
     "resourcesNis2Directive": {
       "about": {
-        "body": "Rediacc, Estonya'da kayıtlı öz barındırmalı bir altyapı platformudur (OÜ 17363830, KDV EE102920091). Bu özet, NIS2 içerik programımızın bir parçası olarak hazırlanmıştır. Yukarıdaki tamamlayıcı rehberler, Rediacc'ın direktifin belirli maddelerini nasıl ele aldığını açıklamakta; Rediacc'ın sağlamadığı alanlar dahil (henüz sertifika yok; GRC katmanı yok; yönetilen Madde 23 bildirimi yok; yalnızca portal MFA). Kamuya açık yetenek haritası için belgelerdeki {nis2DoraLink} sayfasına bakın.",
+        "body": "Rediacc, kendi sunucularınızda çalışan bir altyapı platformudur; şirketin kayıt bilgileri yasal bilgiler sayfasında yer alır. Bu özet, NIS2 içerik programımızın bir parçası olarak hazırlanmıştır. Yukarıdaki tamamlayıcı kılavuzlar, Rediacc'ın direktifin belirli maddelerini nasıl ele aldığını, Rediacc'ın çözüm olmadığı boşluklar dahil (henüz sertifika yok; GRC katmanı yok; yönetilen Madde 23 raporlaması yok; yalnızca portalda MFA) anlatır. Herkese açık yetenek eşlemesi için belgelerdeki {nis2DoraLink} bölümüne bakın.",
         "cta": "Tedarikçi anketinizi veya geçen yılın bütçesinden en büyük üç güvenlik kalemini bize gönderin. Boşluklar dahil, kendi sunucularımızdaki canlı bir kuruluma karşı yazılı yanıt vereceğiz. Ya da PDF'i indirip bir meslektaşınıza iletin.",
         "downloadButton": "PDF'i İndir",
         "heading": "Bu Özet Hakkında"
@@ -2918,6 +3315,102 @@
         "threeYearRoi": "3 Yıllık ROI"
       },
       "title": "Rediacc kuruluşunuza ne kadar tasarruf sağlayabilir?"
+    },
+    "serviceLevelAgreement": {
+      "contact": {
+        "description": "Bu Hizmet Seviyesi Sözleşmesi hakkındaki sorularınız veya Hizmet Kredisi talep etmek için bize <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> adresinden ulaşın.",
+        "title": "Sorularınız mı var?"
+      },
+      "hero": {
+        "effectiveDate": "Yürürlük Tarihi: 11 Kasım 2026",
+        "title": "Hizmet Seviyesi Sözleşmesi"
+      },
+      "meta": {
+        "description": "Ücretli Aboneliklerde Rediacc hesap portalı ve API'si için aylık erişilebilirlik taahhüdü ile bu taahhüt karşılanmadığında uygulanan hizmet kredileri.",
+        "keywords": "hizmet seviyesi sözleşmesi, SLA, çalışma süresi, erişilebilirlik, hizmet kredileri, Rediacc",
+        "title": "Hizmet Seviyesi Sözleşmesi | Rediacc"
+      },
+      "related": {
+        "title": "İlgili Politikalar"
+      },
+      "sections": {
+        "attribution": {
+          "content": [
+            "Bu SLA'nın bazı bölümleri, Common Paper, Inc. tarafından Creative Commons Attribution 4.0 International lisansı (<a href=\"https://creativecommons.org/licenses/by/4.0/\">CC BY 4.0</a>) altında yayımlanan Common Paper Service Level Agreement Standard Terms Version 2.0'dan (<a href=\"https://commonpaper.com/standards/service-level-agreement/2.0\">commonpaper.com/standards/service-level-agreement/2.0</a>) uyarlanmıştır. Metin değiştirilmiştir: yeniden yapılandırılmış, kısaltılmış ve Hizmetlere uyarlanmıştır. Common Paper, Inc. bu SLA'yı onaylamaz."
+          ],
+          "id": "attribution",
+          "title": "8. Bu SLA'nın Kaynağı"
+        },
+        "claims": {
+          "content": [
+            "Hizmet Kredisi almak için Müşteri, etkilenen ayın bitiminden sonraki otuz (30) gün içinde, Kesintinin tarih ve saatlerini ve etkilenen istekleri belirterek \"SLA credit\" konusuyla <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> adresine bir talep göndermelidir. Rediacc, izlemesine dayanarak talebi otuz (30) gün içinde onaylar veya reddeder. Ödenmemiş ücreti olan Müşteri Hizmet Kredisi almaya hak kazanmaz."
+          ],
+          "id": "claims",
+          "title": "6. Hizmet Kredisi Talep Etme"
+        },
+        "commitment": {
+          "content": [
+            "Rediacc, Kapsanan Hizmetin en az %99,5 Aylık Çalışma Süresi Yüzdesiyle erişilebilir olması için ticari olarak makul çabayı gösterir."
+          ],
+          "id": "commitment",
+          "title": "3. Erişilebilirlik Taahhüdü"
+        },
+        "credits": {
+          "content": [
+            "Aylık Çalışma Süresi Yüzdesi taahhüdün altına düşerse Müşteri aşağıdaki Hizmet Kredisini almaya hak kazanır:"
+          ],
+          "content2": [
+            "Bir ay için toplam Hizmet Kredileri Aylık Ücretin %25'ini aşmaz. Hizmet Kredileri gelecekteki faturalara mahsup edilir, nakit ödenmez, devredilemez ve Abonelik sona erdiğinde geçerliliğini yitirir."
+          ],
+          "id": "credits",
+          "items": [
+            "%99,5'in altında ancak en az %99,0: Aylık Ücretin %10'u",
+            "%99,0'ın altında: Aylık Ücretin %25'i"
+          ],
+          "title": "4. Hizmet Kredileri"
+        },
+        "definitions": {
+          "id": "definitions",
+          "items": [
+            "<strong>\"Kesinti\"</strong>, Kapsanan Hizmetin, Rediacc'ın izlemesiyle ölçüldüğü üzere geçerli isteklerin en az yüzde beşine sunucu hatası döndürdüğü veya yanıt vermediği, en az beş (5) ardışık dakikalık bir dönem anlamına gelir.",
+            "<strong>\"Aylık Çalışma Süresi Yüzdesi\"</strong>, bir takvim ayındaki toplam dakikadan Kesinti dakikalarının çıkarılması ve sonucun o aydaki toplam dakikaya bölünmesi anlamına gelir; Bölüm 5'teki olayların dakikaları hariçtir.",
+            "<strong>\"Aylık Ücret\"</strong>, etkilenen ay için Abonelik adına ödenen ücret anlamına gelir (yıllık faturalandırmada yıllık ücretin on ikide biri).",
+            "<strong>\"Hizmet Kredisi\"</strong>, Aylık Ücretin yüzdesi olarak hesaplanan ve gelecekteki ücretlere mahsup edilen kredi anlamına gelir."
+          ],
+          "title": "2. Tanımlar"
+        },
+        "exclusions": {
+          "content": ["Kesinti, şunlardan kaynaklanan erişilemezliği içermez:"],
+          "id": "exclusions",
+          "items": [
+            "en az kırk sekiz (48) saat önceden duyurulan, ayda dört (4) saate kadar planlı bakım",
+            "bir güvenlik açığını veya aktif bir saldırıyı gidermek için gereken acil bakım",
+            "internetin, üçüncü taraf ağların veya Rediacc'ın görevlendirmediği sağlayıcıların arızaları dahil Rediacc'ın makul kontrolü dışındaki olaylar",
+            "Müşterinin Makineleri, ağları, yazılımı, yapılandırması veya kimlik bilgileri ya da Müşterinin veya Yetkili Kullanıcılarının herhangi bir eylemi veya ihmali",
+            "Hizmet Koşulları uyarınca askıya alma veya fesih ya da Kabul Edilebilir Kullanım Politikasını ihlal eden kullanım",
+            "deneysel özellikler veya Müşterinin Şirket İçi Yazılımın desteklenmeyen bir sürümünü kullanması"
+          ],
+          "title": "5. İstisnalar"
+        },
+        "scope": {
+          "content": [
+            "Bu Hizmet Seviyesi Sözleşmesi (\"SLA\"), {{legalName}} (\"Rediacc\") ile ücretli Aboneliği olan Müşteriler (Sipariş Formu başka koşullar belirlemedikçe Profesyonel, İş veya Kurumsal) arasındaki <a href=\"terms-of-service\">Hizmet Koşullarının</a> parçasıdır. Ücretsiz Lisans, Topluluk planı, denemeler veya deneysel özellikler için geçerli değildir. Bu sayfa İngilizce yazılmıştır. Çeviriler yalnızca kolaylık sağlamak amacıyla sunulur; bir çeviri İngilizce sürümden farklıysa İngilizce sürüm geçerlidir.",
+            "SLA, Müşterinin bölgesindeki hesap portalının ve hesap API'sinin erişilebilirliğini (\"Kapsanan Hizmet\") kapsar. Müşterinin Makinelerini, Depolarını, ağlarını veya bunlarda çalışan Şirket İçi Yazılımı asla kapsamaz; bunlar Kapsanan Hizmetten bağımsız çalışır: Kapsanan Hizmet kullanılamazken çalışan Depolar çalışmaya devam eder."
+          ],
+          "id": "scope",
+          "title": "1. Kapsam"
+        },
+        "soleRemedy": {
+          "content": [
+            "<strong>Hizmet Kredileri, erişilebilirlik taahhüdünün karşılanmamasına ilişkin Müşterinin tek ve münhasır çözüm yoludur ve Rediacc'ın tüm sorumluluğudur.</strong> Tekrarlayan aksaklıklar bunu değiştirmez; ancak Aylık Çalışma Süresi Yüzdesi art arda üç (3) ay %99,0'ın altına düşen Müşteri Aboneliği feshedebilir ve kalan süre için ödenmiş ücretlerin iadesini alabilir."
+          ],
+          "id": "sole-remedy",
+          "title": "7. Tek Çözüm Yolu"
+        }
+      },
+      "toc": {
+        "title": "İçindekiler"
+      }
     },
     "solutionPages": {
       "aiPentesting": {
@@ -9137,7 +9630,6 @@
           "title": "Yavaş yamalama size ne kadara mal oluyor?",
           "withAnnual": "",
           "withoutTag": "Rediacc Olmadan",
-          "withResults": {},
           "withTag": "Rediacc ile"
         },
         "hero": {
@@ -9502,300 +9994,448 @@
         "title": "Sorularınız mı var?"
       },
       "hero": {
-        "effectiveDate": "Yürürlük Tarihi: 1 Şubat 2026",
-        "title": "Kullanım Koşulları ve Şartlar"
+        "effectiveDate": "Yürürlük Tarihi: 11 Kasım 2026",
+        "title": "Hizmet Koşulları"
       },
       "meta": {
-        "description": "Rediacc web sitesi ve altyapı otomasyon platformunun kullanımını düzenleyen koşullar.",
-        "keywords": "hizmet koşulları, kullanım şartları, kullanıcı sözleşmesi, Rediacc",
+        "description": "Rediacc CLI, Renet Ajanı, hesap portalı ve ilgili hizmetlerin kullanımını düzenleyen koşullar: yazılım lisansı, ücretler, sorumluluk ve uyuşmazlık çözümü dahil.",
+        "keywords": "hizmet koşulları, müşteri sözleşmesi, yazılım lisansı, Rediacc, altyapı platformu, SaaS koşulları, CLI lisansı, tahkim",
         "title": "Hizmet Koşulları - Yasal Sözleşme | Rediacc"
       },
       "related": {
         "title": "İlgili Politikalar"
       },
       "sections": {
+        "acceptableUse": {
+          "content": [
+            "Hizmetleri kullanımınız, bu Koşulların parçası olan <a href=\"acceptable-use-policy\">Kabul Edilebilir Kullanım Politikasına</a> uygun olmalıdır. Makinelerinizde dağıtılan içerikten ve uygulamalardan ile Yetkili Kullanıcılarınızın davranışlarından siz sorumlusunuz."
+          ],
+          "id": "acceptable-use",
+          "title": "11. Kabul Edilebilir Kullanım"
+        },
         "acceptance": {
           "content": [
-            "Rediacc web sitesine (<a href=\"https://www.rediacc.com\">www.rediacc.com</a>) veya Rediacc platformuna erişerek bu Hizmet Koşullarını kabul etmiş olursunuz.",
-            "Bu Şartları kabul etmiyorsanız, Hizmetlere erişmemeli veya kullanmamalısınız. Bu Şartlar, sizinle ofisi Harju maakond, Tallinn, Kesklinna linnaosa, Tartu mnt 67/1-13b, 10115, Estonya adresinde bulunan, Estonya'da kayıtlı bir şirket olan Rediacc OÜ (sicil kodu 17363830) (\"Rediacc\", \"biz\" veya \"bizim\") arasında yasal olarak bağlayıcı bir sözleşme oluşturur."
+            "Bu Hizmet Koşulları (\"Koşullar\"), sizinle Rediacc arasında yasal olarak bağlayıcı bir sözleşmedir. Koşulları açık bir eylemle kabul edersiniz: bir Hesap oluştururken veya Hesabı bir sonraki kullanışınızda kabul kutusunu işaretleyerek, ödeme sayfasında kabul ederek, CLI'nin kabul istemine evet yanıtı vererek ya da CLI gözetimsiz çalışırken <code>--accept-terms</code> bayrağını ileterek veya <code>RDC_ACCEPT_TERMS=1</code> ayarlayarak. Her kabul; bu Koşulların sürümü, zaman ve kullanılan yöntemle birlikte kaydedilir.",
+            "Koşulları bir kuruluş adına kabul ediyorsanız, o kuruluşu bağlama yetkisine sahip olduğunuzu beyan edersiniz; bu durumda \"siz\" ve \"Müşteri\" o kuruluşu ifade eder. Bu yetkiniz yoksa veya Koşulları kabul etmiyorsanız, Koşulları kabul etmeyin ve Hizmetleri kullanmayın.",
+            "Şu belgeler bu Koşulların parçasıdır: <a href=\"acceptable-use-policy\">Kabul Edilebilir Kullanım Politikası</a>, <a href=\"refund-policy\">İade Politikası</a>, kurumsal müşteriler için <a href=\"data-processing-agreement\">Veri İşleme Sözleşmesi</a>, ücretli Abonelikler için <a href=\"service-level-agreement\">Hizmet Seviyesi Sözleşmesi</a> ve Kurumsal müşteriler için <a href=\"enterprise-license\">Kurumsal Yazılım Lisansı</a> ile Sipariş Formu. <a href=\"privacy-policy\">Gizlilik Politikası</a> ve <a href=\"telemetry-policy\">Telemetri Politikası</a>, kişisel verilerin ve Telemetri Verilerinin nasıl ele alındığını açıklar.",
+            "Bu Koşullar İngilizce yazılmıştır. Çeviriler yalnızca kolaylık sağlamak amacıyla sunulur. Bir çeviri İngilizce sürümden farklıysa İngilizce sürüm geçerlidir."
           ],
           "id": "acceptance",
-          "title": "2. Koşulların Kabulü"
+          "title": "2. Sözleşme ve Kabul"
         },
-        "accounts": {
+        "attribution": {
           "content": [
-            "Kayıt sırasında doğru bilgi vermeniz ve hesabınızdaki tüm faaliyetlerden sorumlu olmanız gerekmektedir."
+            "Bu Koşulların bazı bölümleri, Common Paper, Inc. tarafından Creative Commons Attribution 4.0 International lisansı (<a href=\"https://creativecommons.org/licenses/by/4.0/\">CC BY 4.0</a>) altında yayımlanan Common Paper Terms of Service ve Common Paper Cloud Service Agreement Standard Terms Version 2.1'den (<a href=\"https://commonpaper.com/standards/cloud-service-agreement/2.1\">commonpaper.com/standards/cloud-service-agreement/2.1</a>) uyarlanmıştır. Metin değiştirilmiştir: yeniden yapılandırılmış, Hizmetler için hazırlanan hükümlerle (tahkim, ihracat, telif hakkı ve kabul bölümleri dahil) birleştirilmiş ve Hizmetlere uyarlanmıştır. Common Paper, Inc. bu Koşulları onaylamaz."
           ],
-          "content2": [
-            "Hesabınıza yetkisiz erişimden şüpheleniyorsanız bizi derhal <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> adresinden bilgilendirmelisiniz. On iki (12) aydan fazla etkin olmayan veya bu Şartları ihlal ettiğine makul olarak inandığımız Hesapları askıya alma veya silme hakkımızı saklı tutarız."
-          ],
-          "id": "accounts",
-          "items": [
-            "Hesap kimlik bilgilerinizi, API tokenlarınızı ve erişim anahtarlarınızı korumak",
-            "Hesabınız altında veya Yetkili Kullanıcılarınız aracılığıyla gerçekleşen tüm faaliyetler",
-            "Yetkili Kullanıcıların bu Şartlara uymasını sağlamak",
-            "SSH özel anahtarları ve şifreleme kimlik bilgileri dahil olmak üzere Yapılandırma dosyalarınızın gizliliğini korumak"
-          ],
-          "title": "4. Hesaplar ve Kayıt"
+          "id": "attribution",
+          "title": "28. Bu Koşulların Kaynağı"
         },
         "changes": {
           "content": [
-            "Bu koşulları zaman zaman güncelleyebiliriz.",
-            "Güncellenen Şartlar yürürlüğe girdikten sonra Hizmetleri kullanmaya devam etmeniz, revize edilmiş Şartları kabul ettiğiniz anlamına gelir. Güncellenen Şartları kabul etmiyorsanız, değişiklikler yürürlüğe girmeden önce Hizmetleri kullanmayı bırakmalı ve Aboneliğinizi iptal etmelisiniz."
+            "Rediacc bu Koşulları güncelleyebilir. Her sürüm; sürüm tanımlayıcısı, yürürlük tarihi ve sağlama toplamıyla yayımlanır ve önceki sürümler bu sayfada bağlantısı verilen arşivde erişilebilir kalır.",
+            "Esaslı bir değişiklikte Rediacc, değişiklik yürürlüğe girmeden en az otuz (30) gün önce Hesap adresine e-postayla ve web sitesinde sizi bilgilendirir. Esaslı bir değişiklik, ancak Bölüm 2'de açıklanan açık bir eylemle kabul ettiğinizde sizi bağlar; o zamana kadar Rediacc, Platforma erişimi ve lisans vermeyi yeni sürümü incelemek ve kabul etmek için gereken adımlarla sınırlayabilir. Kabul etmezseniz Hizmetleri kullanmayı bırakabilir ve Aboneliğinizi iptal edebilirsiniz; değişikliğin yürürlüğe girmesinden sonraki döneme ait ödenmiş ücretler iade edilir.",
+            "Düzeltme veya haklarınızı azaltmayan bir açıklama gibi esaslı olmayan bir değişiklik yayımlandığında yürürlüğe girer."
           ],
           "id": "changes",
-          "title": "19. Bu Koşullardaki Değişiklikler"
+          "title": "24. Bu Koşullardaki Değişiklikler"
         },
-        "dataOwnership": {
+        "confidentiality": {
           "content": [
-            "Verileriniz size aittir. Ayrıntılar <a href=\"privacy-policy\">Gizlilik Politikamızda</a>.",
-            "Hesap bilgileri (e-posta, kuruluş adı, faturalama bilgileri) <a href=\"privacy-policy\">Gizlilik Politikamıza</a> uygun olarak işlenir. Hesabınızın sonlandırılması üzerine, Hesap verilerinizi otuz (30) gün içinde dışa aktarabilirsiniz. Otuz (30) günden sonra Hesap verilerinizi aktif sistemlerimizden sileceğiz. Makinelerinizdeki Müşteri Verileri, Hesap sonlandırmasından etkilenmez — kontrolünüz altında altyapınızda kalır.",
-            "AB Veri Yasası (Yönetmelik 2023/2854) uyarınca, Platformun bulut özelliklerini kullanıyorsanız, sağlayıcı değiştirme veya kendi barındırdığınız bir kuruluma geçme hakkınız vardır. Müşteri Verileriniz kendi Makinelerinizde saklanır ve her zaman kontrolünüz altındadır. Platformda saklanan Hesap verileri ve yapılandırma, standart, makine tarafından okunabilir formatlarda dışa aktarılabilir. Talebinizin ardından otuz (30) güne kadar olan geçiş süresinde makul yardım sağlayacağız."
+            "\"Gizli Bilgi\", bir tarafın diğerine açıkladığı, gizli olarak işaretlenmiş veya makul olarak gizli kabul edilmesi gereken, kamuya açık olmayan bilgiler anlamına gelir; bunlara kamuya açık olmayan fiyatlandırma, Sipariş Formları ve güvenlik bilgileri dahildir. Alıcının kusuru olmaksızın kamuya açık olan veya sonradan açık hâle gelen, alıcının zaten bildiği veya bağımsız olarak geliştirdiği ya da üçüncü bir taraftan gizlilik yükümlülüğü olmaksızın hukuka uygun biçimde aldığı bilgiler buna dahil değildir.",
+            "Alıcı, açıklayanın Gizli Bilgilerini yalnızca bu Koşullar kapsamındaki edimleri yerine getirmek için kullanır, bunları en az makul özenle korur ve yalnızca bilmesi gereken ve benzer yükümlülüklerle bağlı çalışanlarına, yüklenicilerine ve danışmanlarına ya da hukuk gerektirdiğinde, yasal olarak izin verilen hallerde önceden bildirimde bulunarak açıklar."
           ],
-          "id": "data-ownership",
-          "title": "11. Verileriniz"
+          "id": "confidentiality",
+          "title": "17. Gizlilik Yükümlülüğü"
+        },
+        "copyright": {
+          "content": [
+            "Rediacc fikri mülkiyet haklarına saygı gösterir ve iddia edilen ihlallere ilişkin bildirimlere ABD Dijital Binyıl Telif Hakkı Yasası (17 U.S.C. 512) ve AB Dijital Hizmetler Yasası uyarınca yanıt verir. Bildirimleri \"Copyright notice\" konusuyla <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> adresine gönderin. Bir bildirim şunları içermelidir:"
+          ],
+          "content2": [
+            "Materyali kaldırılan kişi, 17 U.S.C. 512(g)(3)'ün gerektirdiği bilgilerle aynı adrese bir karşı bildirim gönderebilir. Rediacc, uygun hallerde tekrarlayan ihlalcilerin Hesaplarını sonlandırır. Müşteri Verileri Rediacc'ın kontrol etmediği Makinelerde kaldığından, Rediacc materyali doğrudan kaldıramayabilir ve bunun yerine bildirimi Müşteriye iletip Bölüm 21 uyarınca işlem yapabilir."
+          ],
+          "id": "copyright",
+          "items": [
+            "telif hakkı sahibinin veya adına hareket etmeye yetkili bir kişinin fiziksel veya elektronik imzası",
+            "ihlal edildiği iddia edilen telif hakkıyla korunan eserin tanımı",
+            "ihlal ettiği iddia edilen materyalin tanımı ve onu bulmaya makul ölçüde yetecek bilgi",
+            "e-posta adresi dahil iletişim bilgileriniz",
+            "kullanımın telif hakkı sahibi, temsilcisi veya hukuk tarafından yetkilendirilmediğine iyi niyetle inandığınıza dair bir beyan",
+            "bildirimdeki bilgilerin doğru olduğuna ve hak sahibi adına hareket etmeye yetkili olduğunuza dair, yalan yere yemin cezası altında bir beyan"
+          ],
+          "title": "23. Telif Hakkı Şikâyetleri (DMCA)"
+        },
+        "customerData": {
+          "content": [
+            "<strong>Müşteri Verileriniz size aittir.</strong> Müşteri Verileri, kontrol ettiğiniz Makinelerde, yalnızca sizde bulunan kimlik bilgileriyle şifrelenmiş olarak kalır. Rediacc'ın hareketsiz haldeki Müşteri Verilerine erişimi yoktur; talep ettiğiniz Hizmetleri sunmak için kesinlikle gerekli olan haller dışında bunlara erişmez, bunları kullanmaz ve paylaşmaz.",
+            "Şirket İçi Yazılım, Depo verileri için LUKS tam disk şifrelemesi kullanır; şifreli yapılandırma depolama ve barındırılan yedekler ise cihazlarınızda türetilen anahtarlarla şifrelenir (sıfır bilgi şifrelemesi). <strong>Rediacc bu anahtarları okuyamaz, sıfırlayamaz veya kurtaramaz. Şifreleme kimlik bilgilerinizi, ana parolanızı, geçiş anahtarlarınızı (passkey) ve kurtarma kodlarınızı kaybetmek, onların koruduğu verileri kaybetmek demektir ve Rediacc bunları geri yükleyemez.</strong>",
+            "<strong>Yedekler sizin sorumluluğunuzdadır.</strong> Barındırılan yedek depolamayı kullanıp kullanmadığınızdan bağımsız olarak Müşteri Verilerinizin ve Yapılandırmanızın güncel yedeklerini tutmaktan siz sorumlusunuz. Planınıza dahilse barındırılan yedek depolama bunu yapmanıza yardımcı olan bir araçtır; verilerin geri yüklenebileceğine dair bir garanti değildir.",
+            "Bir Hesap kapatıldığında Hesap verileri otuz (30) gün içinde dışa aktarılabilir ve ardından aktif sistemlerden silinir. Makinelerinizdeki Müşteri Verileri fesihten etkilenmez. AB Veri Yasası (Tüzük 2023/2854) uyarınca sağlayıcı değiştirebilir veya tamamen kendi sunucunuzda çalışan bir kuruluma geçebilirsiniz, Hesap verileri makine tarafından okunabilir biçimlerde dışa aktarılabilir ve Rediacc, talepten sonra otuz (30) güne kadar makul yardım sağlar."
+          ],
+          "id": "customer-data",
+          "title": "13. Müşteri Verileri, Şifreleme ve Yedekler"
+        },
+        "customerResponsibilities": {
+          "content": ["Şunlardan yalnızca siz sorumlusunuz:"],
+          "id": "customer-responsibilities",
+          "items": [
+            "SSH erişimi, güvenlik duvarları, işletim sistemi güncellemeleri ve fiziksel güvenlik dahil Makinelerinizin güvenliği, işletimi ve bakımı",
+            "CLI'yi çalıştıran veya Platformu kimlik bilgilerinizle ya da Makinelerinizde çağıran her betik, CI hattı, yapay zekâ ajanı ve diğer otomasyon ile bunların yaptığı her şey",
+            "otomasyonun verdiği kabuller: <code>--accept-terms</code> veya <code>RDC_ACCEPT_TERMS=1</code> kullanıldığında bu Koşullar o otomasyonu çalıştıranı bağlar ve onu yapılandıran kişi veya kuruluş Koşulları kabul etmiş sayılır",
+            "Altyapınızda dağıtılan her türlü üçüncü taraf yazılımın lisanslarına uyum"
+          ],
+          "title": "12. Sunucularınız, Ajanlarınız ve Otomasyonunuz"
         },
         "definitions": {
           "content": ["Aşağıdaki tanımlar bu Hizmet Şartları boyunca geçerlidir:"],
           "id": "definitions",
           "items": [
-            "<strong>\"Hesap\"</strong>, Platforma erişmek ve Aboneliğinizi yönetmek için oluşturduğunuz kullanıcı hesabı anlamına gelir.",
-            "<strong>\"Yetkili Kullanıcı\"</strong>, ekip üyeleri, çalışanlar ve sizin adınıza hareket eden yükleniciler dahil olmak üzere Hesabınız kapsamında Hizmetlere erişim izni verilen herhangi bir birey anlamına gelir.",
-            "<strong>\"Renet Ajanı\"</strong>, şifreli depolama, konteyner orkestrasyonu ve altyapı işlemlerini yönetmek için Makinelerinizde çalışan Rediacc sunucu tarafı ajanı anlamına gelir.",
-            "<strong>\"CLI\"</strong>, iş istasyonunuza yüklenen Rediacc komut satırı arayüzü (<code>rdc</code>) anlamına gelir.",
-            "<strong>\"Yapılandırma\"</strong>, iş istasyonunuzda depolanan ve Makine bağlantı bilgileri, şifreleme kimlik bilgileri ve diğer işletimsel ayarları içeren yerel yapılandırma dosyaları anlamına gelir.",
-            "<strong>\"Müşteri Verileri\"</strong>, Hizmetleri kullanarak Makinelerinizde dağıttığınız, depoladığınız veya işlediğiniz herhangi bir veri, içerik, dosya, konteyner, yapılandırma ve uygulama anlamına gelir. Müşteri Verileri, Hesap bilgilerini veya Telemetri Verilerini içermez.",
-            "<strong>\"Makine\"</strong>, sahip olduğunuz veya kontrol ettiğiniz ve Renet Ajanı'nın yüklü olduğu bir sunucu veya sanal makine anlamına gelir.",
-            "<strong>\"Şirket İçi Yazılım\"</strong>, CLI, Renet Ajanı ve Masaüstü Uygulaması dahil olmak üzere altyapınıza yüklenen yazılım bileşenleri anlamına gelir.",
-            "<strong>\"Platform\"</strong>, Rediacc web uygulaması, hesap portalı ve Rediacc tarafından sağlanan bulut barındırmalı hizmetler anlamına gelir.",
+            "<strong>\"Hesap\"</strong>, Platforma erişmek ve bir Aboneliği yönetmek için oluşturulan kullanıcı hesabı anlamına gelir.",
+            "<strong>\"Yetkili Kullanıcı\"</strong>, ekip üyeleri, çalışanlar ve Müşteri adına hareket eden yükleniciler dahil olmak üzere bir Hesap kapsamında Hizmetlere erişim izni verilen herhangi bir birey anlamına gelir.",
+            "<strong>\"CLI\"</strong>, Rediacc komut satırı arayüzü (<code>rdc</code>) anlamına gelir.",
+            "<strong>\"Yapılandırma\"</strong>, bir iş istasyonundaki, Makine bağlantı bilgilerini, şifreleme kimlik bilgilerini ve diğer işletimsel ayarları içeren yapılandırma dosyaları anlamına gelir.",
+            "<strong>\"Müşteri\"</strong> veya <strong>\"siz\"</strong>, bu Koşulları kabul eden birey, bu birey bir kuruluş adına kabul ediyorsa o kuruluş anlamına gelir.",
+            "<strong>\"Müşteri Verileri\"</strong>, Hizmetler kullanılarak Makinelerde dağıtılan, depolanan veya işlenen her türlü veri, içerik, dosya, konteyner, yapılandırma ve uygulama anlamına gelir. Müşteri Verileri, Hesap bilgilerini veya Telemetri Verilerini içermez.",
+            "<strong>\"Belgeler\"</strong>, <a href=\"https://www.rediacc.com\">www.rediacc.com</a> adresinde yayımlanan kullanım kılavuzları ve başvuru materyalleri anlamına gelir.",
+            "<strong>\"Ücretsiz Lisans\"</strong>, herhangi bir Makinenin Hesap olmadan CLI üzerinden edinebileceği, Bölüm 6.1'de açıklanan bir depo lisansı anlamına gelir.",
+            "<strong>\"Makine\"</strong>, Müşterinin sahip olduğu veya kontrol ettiği ve Renet Ajanı'nın yüklü olduğu bir sunucu veya sanal makine anlamına gelir.",
+            "<strong>\"Şirket İçi Yazılım\"</strong>, CLI ve Renet Ajanı dahil olmak üzere Müşterinin altyapısına yüklenen yazılım anlamına gelir.",
+            "<strong>\"Sipariş Formu\"</strong>, bu Koşullara atıfta bulunan, bir Kurumsal Abonelik için düzenlenen sipariş belgesi anlamına gelir.",
+            "<strong>\"Platform\"</strong>, Rediacc hesap portalı, API'si ve Rediacc tarafından sağlanan bulut barındırmalı hizmetler anlamına gelir.",
+            "<strong>\"Renet Ajanı\"</strong>, şifreli depolama, konteyner orkestrasyonu ve altyapı işlemlerini yönetmek için Makinelerde çalışan Rediacc sunucu tarafı ajanı anlamına gelir.",
             "<strong>\"Depo\"</strong>, şifreli bir disk görüntüsü, ayrılmış bir Docker daemon'u ve ilişkili konteynerlerden oluşan, Renet Ajanı tarafından yönetilen izole bir uygulama dağıtımı anlamına gelir.",
-            "<strong>\"Hizmetler\"</strong>, toplu olarak Şirket İçi Yazılım, Platform, belgeler ve Rediacc tarafından sağlanan ilgili profesyonel hizmetler anlamına gelir.",
-            "<strong>\"Abonelik\"</strong>, özelliklere ve kaynak limitlerine erişiminizi belirleyen, seçtiğiniz plan seviyesi (Topluluk, Profesyonel, İş veya Kurumsal) anlamına gelir.",
-            "<strong>\"Telemetri Verileri\"</strong>, <a href=\"telemetry-policy\">Telemetri Politikamızda</a> açıklandığı şekilde Hizmetler tarafından toplanan anonimleştirilmiş kullanım verileri anlamına gelir."
+            "<strong>\"Hizmetler\"</strong>, toplu olarak Şirket İçi Yazılım, Platform, Belgeler ve Rediacc tarafından sağlanan ilgili hizmetler anlamına gelir.",
+            "<strong>\"Abonelik\"</strong>, bir Hesap için seçilen, özelliklere ve kaynak limitlerine erişimi belirleyen plan (Topluluk, Profesyonel, İş veya Kurumsal) anlamına gelir.",
+            "<strong>\"Telemetri Verileri\"</strong>, <a href=\"telemetry-policy\">Telemetri Politikasında</a> açıklandığı şekilde Hizmetler tarafından toplanan kullanım verileri anlamına gelir."
           ],
           "title": "1. Definitions"
         },
-        "experimentalFeatures": {
+        "eligibility": {
           "content": [
-            "Hizmetlerin belirli özellikleri \"deneysel\", \"beta\" veya \"önizleme\" (toplu olarak \"Deneysel Özellikler\") olarak tanımlanabilir. Deneysel Özellikler değerlendirme amacıyla sağlanır ve eksik, kararsız olabilir veya önceden bildirilmeksizin değiştirilebilir.",
-            "Deneysel Özellikler herhangi bir garanti olmaksızın \"OLDUĞU GİBİ\" sağlanır. Deneysel Özellikleri önceden bildirimde bulunmaksızın herhangi bir zamanda değiştirebilir veya kullanımdan kaldırabiliriz ve Deneysel Özellikleri kullanmanızdan veya bunlara güvenmenizden kaynaklanan herhangi bir kayıp veya hasar için sorumlu değiliz."
+            "Bu Koşulları kabul etmek veya Hizmetleri kullanmak için en az 18 yaşında olmanız ve bağlayıcı bir sözleşme yapabilecek durumda olmanız gerekir. Hizmetler 18 yaşın altındaki kişilere yönelik değildir. Bu Koşulları kabul ederek bu şartları karşıladığınızı ve Bölüm 22'de açıklanan yasalar uyarınca Hizmetleri almanızın yasaklanmadığını onaylarsınız."
           ],
-          "id": "experimental-features",
-          "title": "8. Deneysel Özellikler"
+          "id": "eligibility",
+          "title": "4. Ehliyet"
+        },
+        "exportControl": {
+          "content": [
+            "Şirket İçi Yazılım şifreleme içerir. ABD İhracat İdaresi Yönetmeliklerinin 5D992.c İhracat Kontrol Sınıflandırma Numarası (ECCN) altında kitlesel pazar şifreleme yazılımı olarak sınıflandırılmıştır ve Avrupa Birliği (Tüzük (AB) 2021/821 dahil), Amerika Birleşik Devletleri ve diğer ülkelerin ihracat ve çift kullanımlı ürün kontrolü yasalarına tabidir.",
+            "Hizmetleri şu şekillerde ihraç etmeyecek, yeniden ihraç etmeyecek, devretmeyecek veya kullanmayacaksınız: (a) kapsamlı AB, BM veya ABD yaptırımlarına ya da ambargolarına tabi herhangi bir ülke veya bölgede ya da bunlara yönelik olarak; (b) AB, BM, Birleşik Krallık veya ABD yaptırım ya da engellenmiş taraflar listesinde yer alan bir kişi tarafından ya da bu kişi adına, ya da bu kişinin sahip olduğu veya kontrol ettiği bir kişi tarafından; veya (c) kitle imha silahları dahil, bu yasaların yasakladığı herhangi bir nihai kullanım için. Böyle bir kişi olmadığınızı ve böyle bir ülkede veya bölgede bulunmadığınızı beyan edersiniz. Rediacc, bu yasalara uymak için gerekli olduğunda Hizmetleri askıya alabilir veya sonlandırabilir."
+          ],
+          "id": "export-control",
+          "title": "22. İhracat Kontrolü ve Yaptırımlar"
+        },
+        "fees": {
+          "id": "fees",
+          "subsections": {
+            "autoRenewal": {
+              "content": [
+                "<strong>Ücretli Abonelikler her faturalandırma döneminin sonunda aynı süre için ve o tarihteki güncel fiyatla otomatik olarak yenilenir; siz iptal edene kadar her yenilemede kayıtlı ödeme yönteminizden tahsilat yapılır.</strong> İstediğiniz zaman hesap portalından veya <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> adresine yazarak iptal edebilirsiniz. İptal bir sonraki yenilemeyi durdurur; ücretli özellikler mevcut faturalandırma döneminin sonuna kadar kullanılabilir. Rediacc, her yıllık yenilemeden önce Hesap e-postasına bir hatırlatma gönderir."
+              ],
+              "title": "7.3 Otomatik Yenileme"
+            },
+            "billing": {
+              "content": [
+                "Ücretli Abonelikler 14 günlük ücretsiz denemeyle başlar. Kayıt sırasında bir ödeme yöntemi gerekir ve ilk tahsilat deneme süresi bittiğinde yapılır. Deneme süresi bitmeden iptal etmek hiçbir ücrete tabi değildir.",
+                "Ücretli Abonelikler aylık veya yıllık olarak peşin faturalandırılır. Yıllık faturalandırma, aylık fiyatın on iki (12) aylık tutarı üzerinden %15 indirimle sunulur. Tüm ücretler ABD doları cinsinden belirtilir. Ödemeleri Stripe işler; Rediacc ödeme kartı bilgilerinin tamamını saklamaz. Kurumsal ücretler Sipariş Formunda belirlenir.",
+                "Rediacc fiyatlarını otuz (30) gün önceden bildirerek değiştirebilir. Fiyat değişikliği, mevcut dönemde değil, bir sonraki faturalandırma döneminin başında yürürlüğe girer ve yürürlüğe girmeden önce iptal edebilirsiniz."
+              ],
+              "title": "7.1 Ücretler ve Faturalandırma"
+            },
+            "gracePeriod": {
+              "content": [
+                "Şirket İçi Yazılım Aboneliği düzenli olarak doğrular. Doğrulama bir ağ sorunu, süresi dolmuş bir Abonelik veya ödeme yapılmaması nedeniyle başarısız olursa üç (3) günlük ek süre uygulanır. Bunun ardından Şirket İçi Yazılım, Abonelik yeniden etkinleştirilene kadar Topluluk özellik düzeyinde çalışır. Çalışan Depolar çalışmaya devam eder."
+              ],
+              "title": "7.5 Lisans Doğrulama ve Ek Süre"
+            },
+            "refunds": {
+              "content": [
+                "Kısmi faturalandırma dönemleri için, <a href=\"refund-policy\">İade Politikasında</a> açıklanan veya hukukun gerektirdiği haller dışında orantılı iade yapılmaz."
+              ],
+              "title": "7.4 İadeler"
+            },
+            "taxes": {
+              "content": [
+                "Tüm ücretlere vergiler dahil değildir. Rediacc'ın net gelirine ilişkin vergiler hariç, Aboneliğinize uygulanan tüm vergi, resim ve harçlardan siz sorumlusunuz. Hukukun gerektirdiği hallerde Rediacc vergileri (AB KDV'si dahil) tahsil eder ve öder; bunlar faturada kalem kalem gösterilir."
+              ],
+              "title": "7.2 Vergiler"
+            }
+          },
+          "title": "7. Ücretler, Vergiler, Yenileme ve İadeler"
+        },
+        "freeAndBeta": {
+          "content": [
+            "Ücretsiz Lisans, Topluluk planı, denemeler ve \"deneysel\", \"beta\" veya \"önizleme\" olarak belirlenen her özellik (birlikte \"Ücretsiz Hizmetler\"), değerlendirme ile kişisel veya dahili kullanım için sunulur. Ücretsiz Hizmetler eksik, kararsız, sınırlı olabilir veya önceden haber verilmeden değiştirilebilir.",
+            "ÜCRETSİZ HİZMETLER HİÇBİR TÜRDE GARANTİ OLMAKSIZIN VE HİÇBİR HİZMET TAAHHÜDÜ OLMAKSIZIN \"OLDUĞU GİBİ\" SUNULUR. Rediacc herhangi bir Ücretsiz Hizmeti istediği zaman değiştirebilir, sınırlayabilir veya sonlandırabilir. Hukukun izin verdiği ölçüde Rediacc'ın Ücretsiz Hizmetlere ilişkin toplam sorumluluğu yüz ABD dolarıyla (USD 100) sınırlıdır."
+          ],
+          "id": "free-and-beta",
+          "title": "10. Ücretsiz Lisans, Ücretsiz Planlar ve Deneysel Özellikler"
+        },
+        "general": {
+          "id": "general",
+          "items": [
+            "<strong>Sözleşmenin bütünlüğü.</strong> Bu Koşullar, Bölüm 2'de sıralanan belgeler ve varsa Sipariş Formu ile birlikte sizinle Rediacc arasında Hizmetlere ilişkin tüm sözleşmeyi oluşturur ve bu konudaki önceki tüm anlaşmaların yerine geçer. Bir Sipariş Formu bu Koşullarla çelişirse, o Abonelik için Sipariş Formu geçerlidir.",
+            "<strong>Devir.</strong> Rediacc'ın önceden yazılı onayı olmadan bu Koşulları devredemezsiniz. Rediacc, bu Koşulları bir iştirakine veya ilgili işin ya da varlıkların tamamının veya büyük bölümünün birleşmesi, devralınması ya da satışı kapsamında size bildirimde bulunarak devredebilir.",
+            "<strong>Mücbir sebep.</strong> Hiçbir taraf, ödeme yükümlülükleri hariç, makul kontrolü dışındaki olayların neden olduğu gecikme veya ifa etmemeden sorumlu değildir.",
+            "<strong>Bildirimler.</strong> Rediacc bildirimleri Hesap e-postasına veya hesap portalı üzerinden gönderir. Rediacc'a bildirimler <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> adresine gönderilir.",
+            "<strong>Elektronik sözleşme.</strong> Kendi yapılandırdığınız otomasyon dahil, açık bir elektronik eylemle kabulün geçerli bir imza olduğunu ve kabulün elektronik kayıtlarının delil olarak kabul edilebileceğini kabul edersiniz.",
+            "<strong>Ayrılabilirlik ve feragat etmeme.</strong> Herhangi bir hüküm uygulanamaz bulunursa izin verilen azami ölçüde uygulanır ve bu Koşulların geri kalanı yürürlükte kalır. Bir hükmün uygulanmaması feragat anlamına gelmez.",
+            "<strong>Bağımsız taraflar.</strong> Taraflar bağımsız yüklenicilerdir. Bu Koşullardaki hiçbir şey ortaklık, vekâlet veya iş ilişkisi yaratmaz ve üçüncü taraf lehtarlar yoktur."
+          ],
+          "title": "27. Genel Hükümler"
         },
         "governingLaw": {
           "content": [
-            "Bu koşullar Estonya Cumhuriyeti yasalarına tabidir.",
-            "Yukarıdaki hükme rağmen, taraflardan herhangi biri, fikri mülkiyet haklarının veya gizlilik yükümlülüklerinin fiili veya tehdit edilen ihlalini, kötüye kullanımını veya çiğnenmesini önlemek için yetkili herhangi bir mahkemede ihtiyati tedbir veya diğer hakkaniyete dayalı çözümler talep edebilir."
+            "Bu Koşullar ve bunlardan veya bunlarla bağlantılı olarak doğan her türlü uyuşmazlık, kanunlar ihtilafı kuralları ve Birleşmiş Milletler Uluslararası Mal Satımına İlişkin Sözleşmeler Konvansiyonu hariç olmak üzere Estonya Cumhuriyeti hukukuna tabidir. Bölüm 26 saklı kalmak üzere, Tallinn, Estonya'daki Harju İlçe Mahkemesi (Harju Maakohus) münhasır yetkilidir.",
+            "Tüketiciyseniz bu hukuk seçimi, ikamet ettiğiniz ülkenin hukukunun emredici hükümlerinin sağladığı korumadan sizi yoksun bırakmaz; bu hukuk izin veriyorsa ikamet ettiğiniz ülkenin mahkemelerinde de dava açabilirsiniz. AB'deki tüketiciler, uygulanabilir hukuk kapsamında sunulan AB çevrimiçi uyuşmazlık çözüm yollarından da yararlanabilir.",
+            "Taraflardan her biri, fikri mülkiyet haklarının fiili veya yaklaşan ihlalini ya da gizlilik ihlalini önlemek için herhangi bir yetkili mahkemeden ihtiyati tedbir veya diğer hakkaniyet temelli çözüm talep edebilir."
           ],
           "id": "governing-law",
-          "title": "18. Geçerli Hukuk"
+          "title": "25. Uygulanacak Hukuk ve Mahkemeler"
         },
         "indemnification": {
           "id": "indemnification",
           "subsections": {
             "byCustomer": {
               "content": [
-                "Şu durumlardan kaynaklanan herhangi bir üçüncü taraf iddiası, hasar, kayıp veya masraftan (makul avukatlık ücretleri dahil) Rediacc'ı ve görevlilerini, yöneticilerini, çalışanlarını ve temsilcilerini tazmin etmeyi, savunmayı ve zarar görmekten korumayı kabul edersiniz: (a) Hizmetleri kullanımınız; (b) Hizmetleri kullanarak dağıttığınız içerik veya uygulamalar; (c) bu Şartları ihlal etmeniz; veya (d) herhangi bir geçerli yasayı veya üçüncü taraf haklarını ihlal etmeniz."
+                "Siz; (a) Müşteri Verilerinizden veya Makinelerinizde dağıtılan içerik ve uygulamalardan; (b) Hizmetleri bu Koşulları veya Kabul Edilebilir Kullanım Politikasını ihlal ederek kullanmanızdan; (c) kimlik bilgilerinizle veya Makinelerinizde çalıştırılan otomasyondan; ya da (d) herhangi bir yasayı veya üçüncü taraf hakkını ihlal etmenizden doğan her türlü üçüncü taraf talebinden ve bunlardan kaynaklanan zararlar, kayıplar ve masraflardan (makul hukuki masraflar dahil) Rediacc'ı, lisans verenlerini, yöneticilerini, direktörlerini, çalışanlarını ve temsilcilerini tazmin etmeyi, savunmayı ve zarar görmemelerini sağlamayı kabul edersiniz. İkamet ettiği ülkenin hukuku buna izin vermiyorsa bu bölüm tüketicilere uygulanmaz."
               ],
-              "title": "16.1 By You"
+              "title": "20.1 Sizin Tarafınızdan"
             },
             "byRediacc": {
               "content": [
-                "Rediacc, Şirket İçi Yazılım veya Platformun, Rediacc tarafından sağlandığı şekliyle, bir üçüncü tarafın geçerli fikri mülkiyet hakkını ihlal ettiğine dair herhangi bir üçüncü taraf iddiasından sizi tazmin edecek, savunacak ve zarar görmekten koruyacaktır; ancak şu koşullarla: (a) Rediacc'ı iddiadan derhal haberdar etmeniz; (b) Rediacc'a savunma ve uzlaşmanın tek kontrolünü vermeniz; ve (c) Rediacc'ın masrafı karşılığında makul işbirliği sağlamanız.",
-                "Hizmetler bir ihlal iddiasının konusu olursa veya Rediacc'ın görüşüne göre olma olasılığı varsa, Rediacc kendi seçeneğine göre: (i) Hizmetleri kullanmaya devam etmeniz için hak temin edebilir; (ii) etkilenen bileşeni ihlal etmeyecek şekilde değiştirebilir veya değiştirebilir; veya (iii) ne (i) ne de (ii) ticari olarak uygulanabilir değilse, etkilenen Aboneliği sonlandırabilir ve ön ödemeli, kullanılmamış ücretleri iade edebilir.",
-                "Rediacc'ın bu bölüm kapsamında şu durumlardan kaynaklanan iddialar için yükümlülüğü yoktur: Hizmetlerde yaptığınız değişiklikler, Hizmetlerin Rediacc tarafından sağlanmayan üçüncü taraf yazılımlarıyla birlikte kullanılması veya Hizmetlerin bu Şartları ihlal ederek kullanılması."
+                "Ücretli Abonelikler için Rediacc; Rediacc tarafından sağlanan haliyle Şirket İçi Yazılımın veya Platformun üçüncü tarafın fikri mülkiyet hakkını ihlal ettiği yönündeki her türlü üçüncü taraf talebine karşı sizi savunur ve kesinleşmiş veya uzlaşmayla kararlaştırılmış zararları öder; şu şartla ki siz: (a) talebi Rediacc'a derhal bildirirsiniz; (b) savunma ve uzlaşma üzerindeki tek yetkiyi Rediacc'a verirsiniz; ve (c) masrafları Rediacc'a ait olmak üzere makul iş birliği sağlarsınız.",
+                "Hizmetler böyle bir talebin konusu olursa veya Rediacc'ın görüşüne göre olma ihtimali bulunursa, Rediacc şunları yapabilir: (i) Hizmetleri kullanmaya devam etme hakkını sizin için temin etmek; (ii) etkilenen bileşeni ihlal etmeyecek şekilde değiştirmek veya yenisiyle değiştirmek; ya da (iii) bunların hiçbiri ticari olarak uygulanabilir değilse etkilenen Aboneliği sonlandırıp ödenmiş, kullanılmamış ücretleri iade etmek.",
+                "Rediacc, sizin yaptığınız değişikliklerden, Rediacc tarafından sağlanmayan yazılım veya verilerle birleştirmeden, Ücretsiz Hizmetlerden ya da bu Koşulları ihlal eden kullanımdan doğan talepler bakımından bu bölüm kapsamında yükümlülük taşımaz. Bu bölüm, ihlal taleplerine ilişkin Rediacc'ın tüm sorumluluğunu belirtir."
               ],
-              "title": "16.2 By Rediacc"
+              "title": "20.2 Rediacc Tarafından"
             }
           },
-          "title": "16. Tazminat"
+          "title": "20. Tazminat"
         },
         "intellectualProperty": {
           "content": [
-            "Hizmetler Rediacc'e aittir ve fikri mülkiyet yasalarıyla korunmaktadır.",
-            "Müşteri Verileriniz ve Hizmetleri kullanarak oluşturduğunuz herhangi bir içerik veya uygulamadaki tüm haklar, mülkiyet ve çıkarlar sizde kalır. Platformu kullanarak, Rediacc'a yalnızca size Hizmetleri sağlamak amacıyla Hesap bilgilerinizi barındırma, işleme ve görüntüleme konusunda sınırlı, dünya çapında, telif ücretsiz bir lisans verirsiniz. Bu lisans, Hesabınızı sildiğinizde sona erer.",
-            "Hizmetleri kullanımınızdan elde edilen anonimleştirilmiş, toplu verileri (Telemetri Verileri dahil) ürün iyileştirme, analitik ve kıyaslama amacıyla toplayabilir ve kullanabiliriz. Bu tür toplu veriler sizi veya herhangi bir bireysel kullanıcıyı tanımlamaz."
+            "Hizmetler; Şirket İçi Yazılım, Platform, Belgeler, API'ler, tasarımlar ve Rediacc'ın sağladığı tüm içerik dahil olmak üzere Rediacc'a ve lisans verenlerine aittir veya bunları lisanslama hakkı Rediacc'a ve lisans verenlerine aittir; bunlara ilişkin tüm fikri mülkiyet hakları da aynı şekildedir. Bu Koşullarda açıkça verilen lisanslar dışında, zımnen veya başka bir şekilde hiçbir hak veya lisans verilmez.",
+            "Müşteri Verileriniz ile oluşturduğunuz içerik ve uygulamalar üzerindeki tüm haklar sizde kalır. Rediacc'a, Hesap bilgilerinizi yalnızca size Hizmetleri sunmak amacıyla barındırması, işlemesi ve görüntülemesi için sınırlı, dünya çapında, telifsiz bir lisans verirsiniz; bu lisans Hesabınız silindiğinde sona erer.",
+            "Rediacc'a Hizmetlerle ilgili geri bildirim veya öneri (\"Geri Bildirim\") verebilirsiniz, ancak bu zorunlu değildir. Geri Bildirim \"OLDUĞU GİBİ\" verilir ve Rediacc onu kısıtlama veya yükümlülük olmaksızın serbestçe kullanabilir. Rediacc ayrıca kullanım verilerini ve Telemetri Verilerini anonimleştirilmiş, toplulaştırılmış biçimde Hizmetleri işletmek, geliştirmek ve güvence altına almak için kullanabilir; bu veriler sizi veya herhangi bir bireyi tanımlamaz."
           ],
           "id": "intellectual-property",
-          "title": "12. Fikri Mülkiyet"
+          "title": "15. Fikri Mülkiyet ve Geri Bildirim"
         },
         "limitationOfLiability": {
           "content": [
-            "Yasaların izin verdiği azami ölçüde, Rediacc dolaylı zararlardan sorumlu olmayacaktır.",
-            "REDİACC'IN BU ŞARTLARDAN VEYA HİZMETLERDEN KAYNAKLANAN VEYA BUNLARLA İLGİLİ TÜM TALEPLERDEKİ TOPLAM YÜKÜMLÜLÜĞÜ ŞU İKİSİNDEN BÜYÜK OLANI AŞMAYACAKTIR: (A) TALEBİN DOĞMASINA NEDEN OLAN OLAYDAN ÖNCEKİ ON İKİ (12) AY İÇİNDE REDİACC'A ÖDEDİĞİNİZ TOPLAM TUTAR; VEYA (B) YÜZ ABD DOLARI ($100).",
-            "BÖLÜM 14 VE 15'TEKİ SINIRLAMALAR VE İSTİSNALAR ŞU DURUMLAR İÇİN GEÇERLİ DEĞİLDİR: (A) İHMALDEN KAYNAKLANAN ÖLÜM VEYA KİŞİSEL YARALANMA SORUMLULUĞU; (B) DOLANDIRICILIK VEYA DOLANDIRICI YANLIŞ BEYAN SORUMLULUĞU; (C) ESTONYA BORÇLAR HUKUKU KANUNU KAPSAMINDAKİ KASITLI İHLAL (TAHTLİK RİKKUMİNE) VEYA AĞIR İHMAL (RASKE HOOLETUS) SORUMLULUĞU; VEYA (D) GEÇERLİ YASA KAPSAMINDAKİ HARİÇ TUTULAMAYAN VEYA SINIRLANAMAYAN DİĞER HERHANGİ BİR SORUMLULUK."
+            "UYGULANABİLİR HUKUKUN İZİN VERDİĞİ AZAMİ ÖLÇÜDE REDIACC, LİSANS VERENLERİ, İŞTİRAKLERİ, YÖNETİCİLERİ, DİREKTÖRLERİ, ÇALIŞANLARI VEYA TEMSİLCİLERİ; İŞBU KOŞULLARDAN VEYA HİZMETLERDEN DOĞAN YA DA BUNLARLA BAĞLANTILI DOLAYLI, ARIZİ, ÖZEL, SONUÇSAL VEYA CEZAİ ZARARLARDAN YA DA KÂR, GELİR, VERİ, KULLANIM VEYA İTİBAR KAYIPLARINDAN, SORUMLULUK TEORİSİ NE OLURSA OLSUN VE BU TÜR ZARARLARIN OLASILIĞINDAN HABERDAR EDİLMİŞ OLSALAR DAHİ, HİÇBİR DURUMDA SORUMLU OLMAZ.",
+            "REDIACC'IN, İŞBU KOŞULLARDAN VEYA HİZMETLERDEN DOĞAN YA DA BUNLARLA İLGİLİ TÜM TALEPLER İÇİN TOPLAM KÜMÜLATİF SORUMLULUĞU, TALEBE YOL AÇAN OLAYDAN ÖNCEKİ ON İKİ (12) AY İÇİNDE HİZMETLER İÇİN REDIACC'A ÖDEDİĞİNİZ ÜCRETLERİ AŞMAZ; BU SÜREDE HİÇBİR ÜCRET ÖDEMEDİYSENİZ YÜZ ABD DOLARINI (USD 100) AŞMAZ.",
+            "18 VE 19. BÖLÜMLERDEKİ SINIRLAMALAR ŞUNLARA UYGULANMAZ: (A) İHMALDEN KAYNAKLANAN ÖLÜM VEYA KİŞİSEL YARALANMA SORUMLULUĞU; (B) DOLANDIRICILIK VEYA HİLELİ BEYAN; (C) ESTONYA BORÇLAR HUKUKU KANUNU (VÕLAÕIGUSSEADUS) KAPSAMINDA KASTEN İHLAL (TAHTLIK RIKKUMINE) VEYA AĞIR İHMAL (RASKE HOOLETUS); VEYA (D) UYGULANABİLİR HUKUK ÇERÇEVESİNDE HARİÇ TUTULAMAYAN VEYA SINIRLANDIRILAMAYAN DİĞER HER TÜRLÜ SORUMLULUK."
           ],
           "id": "limitation-of-liability",
-          "title": "15. Sorumluluk Sınırlaması"
+          "title": "19. Sorumluluğun Sınırlandırılması"
         },
-        "onPremiseLicense": {
+        "parties": {
           "content": [
-            "Bu Şartlara ve aktif Aboneliğinize tabi olarak, Rediacc size Abonelik süreniz boyunca yalnızca dahili iş amaçlarınız için Şirket İçi Yazılımı (CLI, Renet Ajanı ve Masaüstü Uygulaması) yüklemek ve kullanmak üzere sınırlı, münhasır olmayan, alt lisanslanamaz, devredilemez, geri alınabilir bir lisans verir."
+            "Hizmetler, {{legalName}} tarafından sunulur; şirket {{country}} ülkesinde, {{registerName}} nezdinde, {{registryCode}} sicil kodu ile kayıtlıdır, KDV numarası {{vatNumber}} ve kayıtlı adresi {{registeredAddress}} şeklindedir (\"Rediacc\", \"biz\" veya \"bizim\").",
+            "Rediacc ve lisans verenleri Hizmetlerin ve içerdikleri yazılımın sahibidir veya bunları lisanslama hakkına sahiptir. Rediacc, Şirket İçi Yazılımı lisanslar ve Platforma erişimi bu Koşullar uyarınca size verir."
           ],
-          "id": "on-premise-license",
+          "id": "parties",
+          "title": "3. Taraflar ve Yazılımın Mülkiyeti"
+        },
+        "plans": {
+          "content": [
+            "Hizmetler aşağıdaki planlar altında sunulur. Her planın güncel limitleri fiyatlandırma sayfasında yayımlanır."
+          ],
+          "id": "plans",
           "subsections": {
-            "encryptionCredentials": {
+            "clusters": {
               "content": [
-                "Şirket İçi Yazılım, Depo verileri için LUKS tam disk şifrelemesi kullanır. Şifreleme kimlik bilgileri yerel olarak oluşturulur ve yalnızca iş istasyonunuzdaki Yapılandırma dosyalarınızda saklanır. <strong>Rediacc şifreleme kimlik bilgilerinize erişime sahip değildir ve bunları kaybetmeniz durumunda verilerinizi kurtaramaz.</strong> Yapılandırma dosyalarınızı ve şifreleme kimlik bilgilerinizi yedeklemek yalnızca sizin sorumluluğunuzdadır."
+                "<strong>\"Küme\"</strong>, Hizmetler kullanılarak tek bir depolama veya işlem havuzu olarak birlikte çalıştırılan iki veya daha fazla Makine anlamına gelir. <strong>\"Düğüm\"</strong>, bir Kümenin üyesi olan tek bir Makine anlamına gelir. Düğüm, bu Koşullar bakımından her bakımdan bir Makinedir ve her Düğüm bir Makine etkinleştirmesi tüketir. Kümeler birleştirilmez veya indirim almaz: beş Düğümlü bir Küme beş Makine etkinleştirmesi tüketir.",
+                "<strong>Makine etkinleştirme üst sınırı</strong>, aynı anda etkinleştirilmiş olabilecek azami Makine sayısıdır. Abonelikte kayıtlıdır. Yayımlanan plan rakamları standart varsayılanlardır; bir Sipariş Formunda veya iş ortağı sözleşmesinde kararlaştırılan üst sınır, o Abonelik için varsayılanın yerine geçer. Kümeleme yalnızca Kurumsal ve iş ortağı sözleşmeleri kapsamında sunulur.",
+                "Bir Makine etkinleştirmesi, bir Depo oluşturulduğunda, kopyalandığında veya bir Makineye yerleştirildiğinde tüketilir ve bir hareketsizlik süresinden sonra otomatik olarak serbest bırakılır. Yalnızca altyapı kurmak, bir Küme oluşturmak ve ona Düğümler katmak dahil, etkinleştirme tüketmez.",
+                "Tüm etkinleştirmeler kullanımdayken Rediacc ek bir Makinenin etkinleştirilmesini reddedebilir. Zaten etkinleştirilmiş Makineler çalışmaya devam eder ve mevcut lisanslarını yenileyebilir; Rediacc bu yenilemeleri üst sınırın aşılması olarak kaydedebilir ve Aboneliği düzenlemek için sizinle iletişime geçebilir."
               ],
-              "title": "6.3 Encryption and Credentials"
+              "title": "6.5 Makine Etkinleştirmeleri, Kümeler ve Düğümler"
             },
-            "installation": {
+            "community": {
               "content": [
-                "Renet Ajanı, şifreli birimleri, konteyner çalışma zamanlarını ve sistem hizmetlerini yönetmek için Makinelerinizde yükseltilmiş (root) ayrıcalıklarla çalışır. SSH erişimi, güvenlik duvarı yapılandırması, işletim sistemi güncellemeleri ve fiziksel güvenlik dahil olmak üzere Makinelerinizin güvenliğinden yalnızca siz sorumlusunuz. Rediacc, destek amacıyla siz tarafından açıkça talep edilmedikçe Makinelerinize uzaktan erişmez."
+                "Topluluk, kayıtlı bir Hesabın ücretsiz planıdır. Kendisi için yayımlanan özellikleri ve limitleri, yalnızca topluluk desteğini sunar ve hizmet taahhüdü içermez. Deneme süresi veya ücretli Abonelik sona erdiğinde Hesap Topluluk planına döner."
               ],
-              "title": "6.1 Installation and Machine Access"
+              "title": "6.2 Topluluk"
             },
-            "restrictions": {
-              "content": ["Aşağıdakileri yapmamalısınız:"],
-              "items": [
-                "Renet Ajanı'nın ikili dosyasının veya Şirket İçi Yazılımın açık kaynak olmayan herhangi bir bileşeninin kaynak kodunu tersine mühendislik, derlemeyi çözme, sökme veya başka bir şekilde elde etmeye çalışma",
-                "Şirket İçi Yazılımı herhangi bir üçüncü tarafa yeniden dağıtma, alt lisanslama, kiralama, lease veya ödünç verme",
-                "Şirket İçi Yazılım üzerindeki herhangi bir mülkiyet bildirimi, etiket veya işareti kaldırma, değiştirme veya gizleme",
-                "Şirket İçi Yazılımı rakip bir ürün veya hizmet oluşturmak için kullanma",
-                "Şirket İçi Yazılımdaki herhangi bir lisans doğrulama, telemetri veya güvenlik mekanizmasını atlatma veya devre dışı bırakma",
-                "Abonelik seviyenizin Makine etkinleştirme limitlerini aşma"
+            "enterprise": {
+              "content": [
+                "Kurumsal Abonelikler, Rediacc'ın iş ortakları aracılığıyla veya doğrudan bir Sipariş Formu ile satılır. Kurumsal Abonelik bu Koşullara, Kurumsal Yazılım Lisansına ve Sipariş Formuna tabidir. Makine etkinleştirme üst sınırını Sipariş Formu belirler; üst sınır müzakere edilmemişse 25 Makine etkinleştirmesi geçerlidir."
               ],
-              "title": "6.2 Restrictions"
+              "title": "6.4 Kurumsal"
+            },
+            "freeLicense": {
+              "content": [
+                "Her Makine, Hesap olmadan CLI üzerinden bir Depo için Ücretsiz Lisans edinebilir. Ücretsiz Lisans, en fazla 3 GB'lık bir Depoyu kapsar, 48 saat geçerlidir ve ücretsiz yenilenebilir. Barındırılan yedek depolama içermez. Kötüye kullanımı önlemek için verme işlemi Makine ve ağ adresi başına sınırlıdır. Ücretsiz Lisans Bölüm 10 uyarınca sunulur; garanti ve hizmet taahhüdü içermez."
+              ],
+              "title": "6.1 Ücretsiz Lisans"
+            },
+            "paid": {
+              "content": [
+                "Profesyonel ve İş, hesap portalı üzerinden satın alınan ücretli Aboneliklerdir. Kendileri için yayımlanan özellikleri, limitleri ve desteği ile Hizmet Seviyesi Sözleşmesini içerirler."
+              ],
+              "title": "6.3 Ücretli Abonelikler"
             }
           },
-          "title": "6. Şirket İçi Yazılım Lisansı"
+          "title": "6. Planlar"
         },
-        "platformLicense": {
+        "platform": {
           "content": [
-            "Bu Şartlara ve aktif Aboneliğinize tabi olarak, Rediacc size Abonelik süreniz boyunca Platforma erişmek ve kullanmak üzere sınırlı, münhasır olmayan, devredilemez bir lisans verir. Kuruluşunuzdaki Yetkili Kullanıcılara erişim izni verebilirsiniz.",
-            "Platformun özelliklerini istediğimiz zaman değiştirme, güncelleme veya kullanımdan kaldırma hakkımızı saklı tutarız. Mümkün olduğunda, önemli değişiklikler için önceden bildirim sağlayacağız. Değişiklikler, aktif ücretli faturalandırma döneminde mevcut Abonelik seviyenizin temel işlevselliğini önemli ölçüde azaltmayacaktır.",
-            "Platformun yüksek kullanılabilirliğini sağlamaya çalışıyoruz ancak kesintisiz erişimi garanti etmiyoruz. Platform, bakım, güncellemeler veya kontrolümüz dışındaki koşullar nedeniyle geçici olarak kullanılamayabilir."
+            "Bu Koşullara tabi olarak Rediacc size, Aboneliğiniz süresince Platforma erişmek ve onu kullanmak için sınırlı, münhasır olmayan, devredilemez bir hak verir. Yetkili Kullanıcılara erişim verebilirsiniz ve bunların bu Koşullara uyumundan sorumlusunuz.",
+            "Hesap kimlik bilgilerinin, API belirteçlerinin, geçiş anahtarlarının (passkey) ve kurtarma kodlarının güvenliğini sağlamaktan, Hesabınızdaki tüm faaliyetlerden ve şüphelendiğiniz yetkisiz erişimi derhal <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> adresine bildirmekten siz sorumlusunuz. Rediacc, on iki (12) aydan uzun süre etkin olmayan Hesapları askıya alabilir veya silebilir.",
+            "Rediacc, Platformun özelliklerini değiştirebilir, güncelleyebilir veya kaldırabilir. Rediacc, uygulanabilir olduğunda esaslı değişiklikleri önceden bildirir ve bir değişiklik, ödenmiş bir faturalandırma döneminde ücretli bir Aboneliğin temel işlevselliğini önemli ölçüde azaltmaz. Ücretli Abonelikler için Hizmet Seviyesi Sözleşmesi dışında Rediacc kesintisiz erişimi garanti etmez."
           ],
-          "id": "platform-license",
-          "title": "7. Platform Lisansı"
+          "id": "platform",
+          "title": "9. Platform Erişimi"
+        },
+        "privacy": {
+          "content": [
+            "Kişisel veriler <a href=\"privacy-policy\">Gizlilik Politikasında</a> açıklandığı şekilde ele alınır. Hizmetleri kurumsal olarak kullandığınızda ve Rediacc sizin adınıza kişisel veri işlediğinde, bu Koşulların parçası olan <a href=\"data-processing-agreement\">Veri İşleme Sözleşmesi</a> uygulanır.",
+            "Şirket İçi Yazılım ve Platform, her ürünün neyi topladığını ve veri gönderilmeden önce nasıl devre dışı bırakılacağını açıklayan <a href=\"telemetry-policy\">Telemetri Politikasında</a> belirtildiği şekilde Telemetri Verileri toplar. CI ortamlarında telemetri otomatik olarak devre dışı bırakılır."
+          ],
+          "id": "privacy",
+          "title": "14. Gizlilik, Veri İşleme ve Telemetri"
         },
         "serviceDescription": {
           "content": [
             "Rediacc, yapay zeka destekli operasyonlar için altyapı otomasyon platformu sağlar."
           ],
           "content2": [
-            "Sizin için mevcut olan belirli özellikler, kaynak limitleri ve yetenekler Abonelik seviyenize bağlıdır. Web sitemiz ve belgelerimizde yer alan özellik açıklamaları, her seviyenin amaçlanan işlevselliğini tanımlar ancak bağlayıcı performans garantileri oluşturmaz."
+            "Sunulan özellikler, kaynak limitleri ve yetenekler, sahip olunan Aboneliğe veya lisansa bağlıdır. Web sitesindeki ve Belgelerdeki özellik açıklamaları her planın hedeflenen işlevselliğini tarif eder; Hizmet Seviyesi Sözleşmesinin ücretli Abonelikler için öngördüğü haller dışında bağlayıcı performans garantisi değildir."
           ],
           "id": "service-description",
           "items": [
-            "<strong>Şirket İçi Yazılım:</strong> CLI (<code>rdc</code>), Renet Ajanı ve Masaüstü Uygulaması — şifreli, izole konteyner dağıtımlarını düzenlemek için iş istasyonlarınıza ve Makinelerinize yüklenir",
-            "<strong>Platform:</strong> Abonelik yönetimi, ekip işbirliği ve (mevcut olduğunda) bulut tabanlı altyapı yönetimi için web uygulaması ve hesap portalı",
-            "<strong>Profesyonel Hizmetler:</strong> Ayrı hizmet sözleşmelerine tabi isteğe bağlı danışmanlık, geçiş yardımı ve uygulama desteği"
+            "<strong>Şirket İçi Yazılım:</strong> şifreli, izole konteyner dağıtımlarını yönetmek için iş istasyonlarına ve Makinelere yüklenen CLI (<code>rdc</code>) ve Renet Ajanı",
+            "<strong>Platform:</strong> lisans verme, abonelik yönetimi, ekip işbirliği, şifreli yapılandırma depolama ve mevcut olduğunda barındırılan yedek depolama için hesap portalı ve API",
+            "<strong>Profesyonel Hizmetler:</strong> ayrı hizmet sözleşmelerine tabi, isteğe bağlı danışmanlık, geçiş desteği ve uygulama desteği"
           ],
-          "title": "3. Hizmetlerin Tanımı"
+          "title": "5. Hizmetlerin Tanımı"
         },
-        "subscriptions": {
-          "content": [
-            "Ücretli abonelikler aylık veya yıllık olarak peşin faturalandırılır. İadeler <a href=\"refund-policy\">İade Politikamıza</a> göre yapılır."
-          ],
-          "id": "subscriptions",
-          "items": [
-            "<strong>Community</strong> (ücretsiz): 1 Makine etkinleştirmesi, temel özellikler, topluluk desteği. Bu, deneme süresi veya ücretli bir Abonelik sona erdikten sonra hesabınızın döndüğü varsayılan plandır.",
-            "<strong>Professional</strong>: 1 Makine etkinleştirmesi, denetim günlüğü, öncelikli destek, özel markalama",
-            "<strong>Business</strong>: 1 Makine etkinleştirmesi, dağıtık depolama, gelişmiş analizler, özel başarı yöneticisi",
-            "<strong>Enterprise</strong>: özel altyapı, özel entegrasyonlar, 7/24 destek ve siparişinizde belirlenen bir Makine etkinleştirme tavanı. Bir tavan üzerinde anlaşılmadığı takdirde 25 Makine etkinleştirmesi uygulanır. Enterprise, iş ortaklarımız aracılığıyla satılır."
-          ],
+        "softwareLicense": {
+          "id": "software-license",
           "subsections": {
-            "billing": {
+            "grant": {
               "content": [
-                "Ücretli Abonelikler (Professional ve Business) 14 günlük ücretsiz deneme ile başlar. Kayıt sırasında bir ödeme yöntemi sağlarsınız ve deneme süresi sona erdiğinde ilk ücretlendirme yapılır. Deneme süresi sona ermeden önce ücretsiz olarak iptal edebilirsiniz. Deneme süresi boyunca iptal ederseniz, daha sonra ücretli bir Aboneliği iptal ederseniz veya bir ödeme başarısız olursa, hesabınız ücretsiz Community seviyesine döner.",
-                "Ücretli Abonelikler aylık veya yıllık olarak peşin faturalandırılır. Yıllık faturalandırma, aylık fiyatın on iki (12) ayına karşılık gelen tutar üzerinden %15 indirimli olarak sunulur. Tüm ücretler ABD doları cinsindendir. Ödeme, üçüncü taraf ödeme işlemcimiz (Stripe) tarafından işlenir; tam ödeme kartı bilgilerini saklamayız.",
-                "Fiyatlarımızı otuz (30) gün önceden bildirimle değiştirme hakkımızı saklı tutarız. Fiyat değişiklikleri mevcut faturalandırma döngünüzü etkilemez. Bir fiyat değişikliğini kabul etmiyorsanız, bir sonraki faturalandırma döngüsünden önce Aboneliğinizi iptal edebilirsiniz."
+                "Bu Koşullara tabi olarak Rediacc size, Şirket İçi Yazılımı (CLI ve Renet Ajanı) kontrol ettiğiniz Makinelere ve iş istasyonlarına yüklemek ve kullanmak için, yalnızca dahili iş veya kişisel amaçlarınız doğrultusunda, Aboneliğinizin veya Ücretsiz Lisansınızın sınırları içinde ve bunlar yürürlükte kaldığı sürece geçerli, sınırlı, münhasır olmayan, devredilemez, alt lisanslanamaz ve geri alınabilir bir lisans verir."
               ],
-              "title": "5.1 Billing"
+              "title": "8.1 Lisans Verilmesi"
             },
-            "clusters": {
+            "installation": {
               "content": [
-                "Bir <strong>\"Küme\"</strong>, Hizmetleri kullanarak birlikte tek bir depolama veya işlem havuzu olarak işlettiğiniz iki veya daha fazla Makine anlamına gelir. Bir <strong>\"Düğüm\"</strong>, bir Kümenin üyesi olan bir Makine anlamına gelir. Bir Düğüm, bu Şartlar kapsamındaki tüm amaçlar için bir Makinedir ve her Düğüm bir Makine etkinleştirmesi tüketir. Kümeler havuzlanmaz veya indirime tabi tutulmaz: beş Düğümden oluşan bir Küme, beş Makine etkinleştirmesi tüketir.",
-                "<strong>Makine etkinleştirme tavanınız</strong>, bir anda etkinleştirme tutabilecek maksimum Makine sayısıdır. Aboneliğinizde kayıtlıdır ve siparişiniz tarafından belirlenir. Yukarıda listelenen seviye rakamları, üzerinde pazarlık yapılmamış standart varsayılan değerlerdir; bir siparişte veya iş ortağı anlaşmasında kabul edilen bir tavan, o Abonelik için varsayılan değerin yerini alır. Kümeleme yalnızca Enterprise ve iş ortağı anlaşmaları kapsamında kullanılabilir.",
-                "Bir Makine etkinleştirmesi, bir Depo bir Makinede oluşturulduğunda, kopyalandığında veya yerleştirildiğinde tüketilir ve bir hareketsizlik süresinden sonra otomatik olarak serbest bırakılır. Bir Küme oluşturmak ve ona Düğüm eklemek dahil, yalnızca altyapı kurmak bir etkinleştirme tüketmez.",
-                "Tüm etkinleştirmeler zaten kullanımdayken Rediacc, ek bir Makinenin etkinleştirilmesini reddedebilir. Zaten bir etkinleştirme tutan Makineler çalışmaya devam eder ve mevcut lisanslarını yenileyebilir; Rediacc bu yenilemeleri tavanınızı aşan durumlar olarak kaydedebilir. Bir Makine etkinleştirme tavanı sürekli olarak aşıldığında Rediacc, Aboneliğinizi uyumlu hale getirmek için sizinle iletişime geçebilir."
+                "Renet Ajanı, şifreli birimleri, konteyner çalışma zamanlarını ve sistem hizmetlerini yönetmek için Makinelerde yükseltilmiş (root) ayrıcalıklarla çalışır. Rediacc, destek için açıkça talep etmediğiniz sürece Makinelerinize uzaktan erişmez."
               ],
-              "title": "5.5 Makine Etkinleştirmeleri, Kümeler ve Düğümler"
+              "title": "8.3 Kurulum ve Makine Erişimi"
             },
-            "gracePeriod": {
+            "restrictions": {
               "content": [
-                "Şirket İçi Yazılım, Abonelik durumunuzu periyodik olarak doğrular. Doğrulama başarısız olursa (ağ sorunları, süresi dolmuş Abonelik veya ödeme yapılmaması nedeniyle), üç (3) günlük bir ek süre uygulanır. Ek süre sonrasında, Şirket İçi Yazılım, Abonelik durumu yeniden sağlanana kadar Topluluk seviyesi özellik düzeyinde çalışacaktır."
+                "Bu Koşulların açıkça izin verdiği haller dışında, şunları yapmayacak ve başkalarının yapmasına izin vermeyeceksiniz:"
               ],
-              "title": "5.4 License Validation and Grace Period"
+              "items": [
+                "uygulanabilir hukukun bu kısıtlamaya rağmen açıkça izin verdiği ölçü dışında, Şirket İçi Yazılımın yayımlanmamış herhangi bir bileşeninin kaynak kodunu tersine mühendislikle çözmek, dekompile etmek, parçalarına ayırmak veya başka şekilde elde etmeye çalışmak",
+                "Şirket İçi Yazılımı kopyalamak, değiştirmek, yeniden dağıtmak, alt lisanslamak, kiralamak, ödünç vermek veya satmak ya da üçüncü bir tarafın kullanımına sunmak",
+                "Hizmetlerdeki herhangi bir mülkiyet bildirimini kaldırmak, değiştirmek veya gizlemek",
+                "Hizmetleri rakip bir ürün veya hizmet geliştirmek için kullanmak",
+                "Hizmetlerin herhangi bir lisans doğrulama, etkinleştirme limiti, hız limiti veya güvenlik mekanizmasını aşmak ya da devre dışı bırakmak veya Ücretsiz Lisansları limitlerini atlatmaya yönelik biçimde edinmek",
+                "Hizmetleri Kabul Edilebilir Kullanım Politikasını veya herhangi bir yasayı ihlal ederek kullanmak"
+              ],
+              "title": "8.4 Kısıtlamalar"
             },
-            "renewalCancellation": {
+            "sourceLicense": {
               "content": [
-                "Ücretli Abonelikler, yenileme tarihinden önce iptal etmediğiniz sürece her faturalandırma döngüsünün sonunda o anki fiyattan otomatik olarak yenilenir. <strong>Ücretli bir seviyeye abone olarak, iptal edene kadar ödeme yönteminize tekrarlayan ücretlendirme yetkisi verirsiniz.</strong> Hesap portalı üzerinden veya <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> adresinden bize ulaşarak istediğiniz zaman iptal edebilirsiniz. İptal üzerine, mevcut faturalandırma döneminizin sonuna kadar ücretli özelliklere erişiminiz devam eder. <a href=\"refund-policy\">İade Politikamızda</a> açıklananlar dışında kısmi faturalandırma dönemleri için orantılı iade yapılmaz. Her yıllık yenilemeden önce Hesap e-postanıza bir yenileme hatırlatması göndereceğiz."
+                "Rediacc Hizmetlerin kaynak kodunu yayımladığında, bu kaynak kod yalnızca eğitim, araştırma ve ticari olmayan amaçlarla görüntülemeye ve incelemeye izin veren Rediacc Source License (RSL) 1.0 kapsamında sunulur. RSL yazılımı çalıştırma, değiştirme veya dağıtma hakkı vermez; Şirket İçi Yazılımı çalıştırma hakkı yalnızca Bölüm 8.1'den gelir."
               ],
-              "title": "5.3 Renewal and Cancellation"
-            },
-            "taxes": {
-              "content": [
-                "Tüm ücretler geçerli vergiler hariçtir. Rediacc'ın net geliri üzerindeki vergiler hariç, Aboneliğinize uygulanan tüm vergiler, gümrük vergileri ve harçlardan siz sorumlusunuz. Yasaların gerektirdiği durumlarda, Rediacc geçerli vergileri (AB KDV'si dahil) toplayacak ve ödeyecektir ve bunlar faturanızda ayrıntılı olarak gösterilecektir."
-              ],
-              "title": "5.2 Taxes"
+              "title": "8.2 Kaynak Kod"
             }
           },
-          "title": "5. Abonelikler ve Ödeme"
-        },
-        "telemetry": {
-          "content": [
-            "Yazılım ürünlerimiz, ürün kalitesini ve performansını artırmak amacıyla anonimleştirilmiş kullanım telemetrisi toplar. Hizmetleri kullanarak, <a href=\"telemetry-policy\">Telemetri Politikamızda</a> açıklandığı şekilde telemetri toplamanın gerçekleştiğini kabul edersiniz.",
-            "Telemetri, gizliliği koruyacak şekilde tasarlanmıştır: kişisel tanımlayıcılar iletim öncesinde anonimleştirilir ve telemetriyi istediğiniz zaman devre dışı bırakabilirsiniz. <a href=\"telemetry-policy\">Telemetri Politikası</a>, her ürün tarafından toplanan belirli verileri ve toplama işlemini devre dışı bırakma mekanizmalarını açıklar.",
-            "Terminal ekipmanlarında telemetri toplanması için açık onay gerektiren yargı bölgelerinde (yargı bölgenizde uygulandığı şekliyle eGizlilik Direktifi kapsamında dahil), Şirket İçi Yazılımın ilk kullanımından önce telemetri tercihlerinizi yapılandırmalısınız. Telemetri etkinleştirilmiş olarak Hizmetleri kullanmaya devam etmeniz, <a href=\"telemetry-policy\">Telemetri Politikasında</a> açıklanan toplamaya onay verdiğiniz anlamına gelir."
-          ],
-          "id": "telemetry",
-          "title": "10. Telemetri ve Veri Toplama"
+          "title": "8. Yazılım Lisansı"
         },
         "termination": {
           "content": [
-            "Hesabınızı istediğiniz zaman kapatabilirsiniz. Bu koşulları ihlal etmeniz halinde erişiminizi askıya alabiliriz.",
-            "Sonlandırma üzerine:"
+            "Bu Koşullar, ilk kabulünüzden Hesabınız kapatılıp Hizmetleri kullanmayı bırakana kadar geçerlidir. Aboneliğinizi iptal edebilir ve Hesabınızı istediğiniz zaman hesap portalından veya <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> adresine yazarak kapatabilirsiniz.",
+            "Rediacc şu durumlarda Platforma erişimi derhal askıya alabilir veya lisans vermeyi reddedebilir: (a) bir ödemenin vadesi otuz (30) günden fazla geçmişse; (b) kullanımınız Kabul Edilebilir Kullanım Politikasını ihlal ediyorsa veya Rediacc, Hizmetler ya da başkaları için güvenlik veya hukuki risk oluşturuyorsa; ya da (c) hukuk bunu gerektiriyorsa. Rediacc askıya almayı makul ölçüde gerekli olanla sınırlar ve neden ortadan kalktığında kaldırır.",
+            "Taraflardan biri, diğer tarafın yazılı bildirimden sonra otuz (30) gün içinde gidermediği esaslı ihlal nedeniyle bu Koşulları feshedebilir. Rediacc, ihlal hukuka aykırı bir faaliyet ise veya giderilemiyorsa derhal feshedebilir. Rediacc bir Ücretsiz Hizmeti istediği zaman sona erdirebilir.",
+            "Fesih halinde:"
           ],
           "id": "termination",
           "items": [
-            "Şirket İçi Yazılım ve Platform lisansınız mevcut faturalandırma döneminizin sonunda sona erer (ihlal durumunda derhal)",
-            "Makinelerinizdeki Müşteri Verileri kontrolünüz altında kalır — Rediacc'ın bunlara erişme veya silme yeteneği yoktur",
-            "Hesap verileri, dışa aktarmaya izin vermek için otuz (30) gün saklanacak, ardından aktif sistemlerimizden silinecektir",
-            "Bölüm 1 (Tanımlar), 11 (Verileriniz), 12 (Fikri Mülkiyet), 14 (Garantiler), 15 (Sorumluluk), 16 (Tazminat) ve 18 (Uygulanacak Hukuk) sonlandırmadan sonra da geçerliliğini korur"
+            "Şirket İçi Yazılım lisansınız ve Platforma erişiminiz, mevcut faturalandırma döneminin sonunda, ihlal nedeniyle fesih halinde ise derhal sona erer",
+            "Makinelerinizdeki Müşteri Verileri kontrolünüz altında kalır; Rediacc'ın bunlara erişme veya silme yeteneği yoktur",
+            "Hesap verileri dışa aktarma için otuz (30) gün saklanır, ardından aktif sistemlerden silinir; Rediacc'ın yasa gereği veya Gizlilik Politikası uyarınca tutmak zorunda olduğu kayıtlar hariçtir",
+            "Bölüm 1, 3, 12, 13, 15 ve 17 ila 27 yürürlükte kalır"
           ],
-          "title": "17. Fesih"
+          "title": "21. Süre, Askıya Alma ve Fesih"
         },
         "thirdPartyComponents": {
           "content": [
-            "Şirket İçi Yazılım, Docker, konteyner çalışma zamanları ve depolama senkronizasyon araçları dahil olmak üzere Makinelerinize üçüncü taraf açık kaynak yazılımları yükleyebilir, yapılandırabilir veya bunlarla etkileşimde bulunabilir. Bu üçüncü taraf bileşenleri kendi lisanslarına tabidir ve Rediacc tarafından herhangi bir garanti olmaksızın \"OLDUĞU GİBİ\" sağlanır.",
-            "Rediacc, üçüncü taraf bileşenlerinin işlevselliği, güvenliği veya kullanılabilirliği konusunda sorumluluk üstlenmez. Altyapınıza dağıtılan herhangi bir üçüncü taraf yazılımının lisanslarını incelemek ve bunlara uymaktan siz sorumlusunuz."
+            "Şirket İçi Yazılım; Docker, konteyner çalışma zamanları ve depolama senkronizasyon araçları gibi üçüncü taraf açık kaynak bileşenleri içerir veya yükler. Bu bileşenler kendi lisanslarına tabidir, lisansları <code>rdc credits --licenses</code> ile listelenir ve Rediacc'ın garantisi olmaksızın \"OLDUĞU GİBİ\" sağlanır. Rediacc, Hizmetlere bağlamayı seçtiğiniz üçüncü taraf hizmetlerinden sorumlu değildir."
           ],
           "id": "third-party-components",
-          "title": "13. Üçüncü Taraf Bileşenler"
+          "title": "16. Üçüncü Taraf Bileşenler"
         },
-        "useRestrictions": {
+        "usArbitration": {
           "content": [
-            "Siz ve Yetkili Kullanıcılarınızın Hizmetleri aşağıdaki amaçlarla kullanmayacağınızı kabul edersiniz:"
+            "<strong>Bu bölüm yalnızca Amerika Birleşik Devletleri'nde ikamet ediyorsanız veya kuruluşunuzun ana iş yeri Amerika Birleşik Devletleri'ndeyse geçerlidir. Uyuşmazlıkların bireysel bağlayıcı tahkimle çözülmesini gerektirir ve jüri yargılaması ile toplu davaya katılma hakkından feragat eder. Lütfen dikkatle okuyun.</strong> Avrupa Birliği'ndeki veya Amerika Birleşik Devletleri dışındaki başka yerlerdeki kullanıcılara uygulanmaz."
           ],
-          "content2": [
-            "Hizmetleri kullanarak Makinelerinizde dağıttığınız içerik ve uygulamalardan yalnızca siz sorumlusunuz. Bu kısıtlamaların ihlal edildiğine makul olarak inanırsak Platforma erişimi askıya alma veya sonlandırma hakkımızı saklı tutarız."
-          ],
-          "id": "use-restrictions",
-          "items": [
-            "Kötü amaçlı yazılım, virüs, fidye yazılımı veya diğer zararlı kodları dağıtma, barındırma veya yayma",
-            "Kripto para madenciliği, eşler arası dosya paylaşım ağları veya açık proxy hizmetleri işletme",
-            "Herhangi bir üçüncü tarafın fikri mülkiyet, gizlilik veya diğer haklarını ihlal etme veya kötüye kullanma",
-            "İstenmeyen ticari iletişim (spam) gönderme veya kimlik avı saldırıları düzenleme",
-            "Rediacc altyapısına karşı yetkisiz güvenlik açığı tarama, sızma testi veya yük testi gerçekleştirme",
-            "Herhangi bir kişi veya kuruluşun kimliğine bürünme veya bağlılığınızı yanlış beyan etme",
-            "Herhangi bir geçerli yasa, düzenleme veya üçüncü taraf haklarını ihlal etme",
-            "Önceden yazılı iznimiz olmadan Hizmetleri üçüncü taraflara yönetilen hizmet teklifi kapsamında yeniden satma, yeniden dağıtma veya sunma"
-          ],
-          "title": "9. Kullanım Kısıtlamaları"
+          "id": "us-arbitration",
+          "subsections": {
+            "agreement": {
+              "content": [
+                "Sizinle Rediacc arasında bu Koşullardan veya Hizmetlerden doğan ya da bunlarla ilgili olan ve gayriresmî olarak çözülemeyen her türlü uyuşmazlık, talep veya ihtilaf; bu bölümle değiştirilmiş haliyle, American Arbitration Association (\"AAA\") tarafından Tüketici Tahkim Kuralları (bireyler için) veya Ticari Tahkim Kuralları (kuruluşlar için) uyarınca yürütülen bağlayıcı bireysel tahkimle çözülür. Rediacc aleyhine aynı veya koordineli vekiller tarafından ya da onların yardımıyla yirmi beş (25) veya daha fazla benzer talep sunulduğunda, AAA'nın Toplu Tahkim Ek Kuralları (Mass Arbitration Supplementary Rules) da uygulanır. AAA kurallarına <a href=\"https://www.adr.org\">www.adr.org</a> adresinden ulaşılabilir.",
+                "Tahkim edilebilirliğe ilişkin tüm soruları mahkeme değil hakem karara bağlar; ancak Bölüm 26.4 ve 26.7 ile ilgili soruları mahkeme karara bağlar. Taraflar aksini kararlaştırmadıkça tahkim, video konferansla veya ikamet ettiğiniz ilçede (county) yapılır. Hakem, bir mahkemenin hükmedebileceği bireysel çözümün aynısına hükmedebilir; ancak yalnızca çözüm talep eden bireysel taraf lehine ve yalnızca o tarafın bireysel talebi için gereken ölçüde. Bu bölümün yorumu ve icrası ABD Federal Tahkim Yasasına (Federal Arbitration Act) tabidir."
+              ],
+              "title": "26.2 Tahkim Anlaşması"
+            },
+            "classWaiver": {
+              "content": [
+                "<strong>SİZ VE REDIACC, HER BİRİNİZ JÜRİ YARGILAMASI HAKKINDAN FERAGAT EDER VE UYUŞMAZLIKLARIN YALNIZCA BİREYSEL TEMELDE ÇÖZÜLMESİNİ, HERHANGİ BİR TOPLU, KOLLEKTİF, BİRLEŞTİRİLMİŞ VEYA TEMSİLİ YARGILAMADA DAVACI VEYA GRUP ÜYESİ OLARAK ÇÖZÜLMEMESİNİ KABUL EDER.</strong> Hakem, Toplu Tahkim Ek Kurallarının yönetim için öngördüğü haller dışında birden fazla kişinin taleplerini birleştiremez."
+              ],
+              "title": "26.4 Toplu Dava ve Jüri Yargılaması Feragati"
+            },
+            "fees": {
+              "content": [
+                "AAA başvuru, yönetim ve hakem ücretlerinin ödenmesi AAA kurallarına tabidir. 10.000 USD veya daha düşük tutarlı bireysel tüketici talebinde, hakem talebi mesnetsiz veya yersiz bir amaçla ileri sürülmüş bulmadıkça bu ücretleri Rediacc öder."
+              ],
+              "title": "26.3 Ücretler"
+            },
+            "informal": {
+              "content": [
+                "Tahkim veya küçük davalar mahkemesinde dava başlatmadan önce, uyuşmazlığı olan taraf diğerine uyuşmazlığı ve talep edilen çözümü açıklayan yazılı bir bildirim göndermelidir (Rediacc'a <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> adresine; size Hesap e-postanıza). Taraflar, bildirimin alınmasından sonraki altmış (60) gün boyunca, taraflardan birinin talebi halinde bireysel bir görüşme dahil, uyuşmazlığı iyi niyetle gayriresmî olarak çözmeye çalışır. Bu süre boyunca zamanaşımı süreleri durur."
+              ],
+              "title": "26.1 Önce Gayriresmî Çözüm"
+            },
+            "optOut": {
+              "content": [
+                "Bu tahkim anlaşmasından, bu Koşulları ilk kabul etmenizden sonraki otuz (30) gün içinde, adınızı, Hesap e-postanızı (Ücretsiz Lisans için <code>rdc legal</code> komutunun gösterdiği Makine tanımlayıcısını) ve tahkimden çıktığınızı belirterek \"Arbitration opt out\" konusuyla <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> adresine e-posta göndererek çıkabilirsiniz. Çıkmak bu Koşulların diğer hiçbir bölümünü etkilemez. Çıkarsanız uyuşmazlıklarınıza Bölüm 25 uygulanır.",
+                "Rediacc bu bölümde esaslı bir değişiklik yaparsa, değişikliğin yürürlüğe girmesinden sonraki otuz (30) gün içinde aynı bildirimi göndererek değişikliği reddedebilirsiniz; bu durumda bu bölümün en son kabul ettiğiniz sürümü uygulanmaya devam eder."
+              ],
+              "title": "26.6 Tahkimden Çıkma Hakkı"
+            },
+            "severability": {
+              "content": [
+                "Bölüm 26.4'teki toplu dava feragati belirli bir talep veya çözüm isteği bakımından uygulanamaz bulunursa, o talep veya istek ayrılır ve diğer tüm taleplerin tahkiminden sonra tahkimde değil, Bölüm 25 uyarınca mahkemede karara bağlanır. Kamu yararına ihtiyati tedbir talebi uygulanabilir hukuk uyarınca (<em>McGill v. Citibank, N.A.</em>, 2 Cal. 5th 945 (2017) dahil) feragat edilemiyor veya tahkime götürülemiyorsa, o talep ayrılır, bireysel taleplerin tahkimi sonuçlanana kadar durdurulur ve mahkemece karara bağlanır. Bu bölümün geri kalanı yürürlükte kalır."
+              ],
+              "title": "26.7 Ayrılabilirlik"
+            },
+            "smallClaims": {
+              "content": [
+                "Taraflardan her biri bunun yerine ikamet ettiğiniz ilçedeki bir küçük davalar mahkemesinde veya küçük davalar konusunda yetkili başka bir mahkemede, talep o mahkemede kaldığı ve yalnızca bireysel temelde takip edildiği sürece bireysel bir talepte bulunabilir."
+              ],
+              "title": "26.5 Küçük Davalar İstisnası"
+            }
+          },
+          "title": "26. Amerika Birleşik Devletleri Kullanıcıları için Tahkim ve Toplu Dava Feragati"
         },
         "warranties": {
           "content": [
-            "GEÇERLİ YASALARIN İZİN VERDİĞİ AZAMİ ÖLÇÜDE, HİZMETLER \"OLDUĞU GİBİ\" VE \"MEVCUT OLDUĞU ŞEKİLDE\" SUNULUR. REDİACC, TİCARİ ELVERİŞLİLİK, BELİRLİ BİR AMACA UYGUNLUK, İHLAL ETMEME VE TİCARİ İLİŞKİ VEYA TİCARİ KULLANIM SÜRECİNDEN DOĞAN GARANTİLER DAHİL ANCAK BUNLARLA SINIRLI OLMAMAK ÜZERE, AÇIK, ZIMNİ VEYA YASAL TÜM GARANTİLERİ REDDEDER.",
-            "YUKARIDAKİLERİ SINIRLAMAKSIZIN, REDİACC ŞU HUSUSLARI GARANTİ ETMEZ: (A) HİZMETLERİN GEREKSİNİMLERİNİZİ VEYA BEKLENTİLERİNİZİ KARŞILAYACAĞI; (B) HİZMETLERİN KESİNTİSİZ, ZAMANINDA, GÜVENLİ VEYA HATASIZ OLACAĞI; (C) HİZMETLERDEN ELDE EDİLEN SONUÇLARIN DOĞRU VEYA GÜVENİLİR OLACAĞI; VEYA (D) HİZMETLERDEKİ HERHANGİ BİR KUSURUN DÜZELTİLECEĞİ.",
-            "BU ŞARTLARDA HİÇBİR ŞEY ŞU KONULARDA SORUMLULUĞU HARİÇ TUTMAZ VEYA SINIRLAMAZ: (A) İHMALDEN KAYNAKLANAN ÖLÜM VEYA KİŞİSEL YARALANMA; (B) DOLANDIRICILIK VEYA DOLANDIRICI YANLIŞ BEYAN; VEYA (C) ESTONYA BORÇLAR HUKUKU KANUNU (VÕLAÕIGUSSEADUS) KAPSAMINDA HARİÇ TUTULAMAYAN VEYA SINIRLANAMAYAN HERHANGİ BİR SORUMLULUK, KASITLI SUİSTİMAL VEYA AĞIR İHMAL SORUMLULUĞU DAHİL.",
-            "Şirket İçi Yazılımın Makinelerinizde yükseltilmiş ayrıcalıklarla çalıştığını ve altyapınıza kurulumu ve işletimiyle ilişkili tüm riskleri üstlendiğinizi kabul edersiniz. Belgelerimiz ve pazarlama materyallerimizde yer alan özellik açıklamaları, performans metrikleri ve kurtarma süresi tahminleri amaçlanan işlevselliği tanımlar ve bağlayıcı performans garantileri değildir."
+            "UYGULANABİLİR HUKUKUN İZİN VERDİĞİ AZAMİ ÖLÇÜDE HİZMETLER \"OLDUĞU GİBİ\" VE \"MEVCUT HALİYLE\" SUNULUR. REDIACC VE LİSANS VERENLERİ; SATILABİLİRLİK, BELİRLİ BİR AMACA UYGUNLUK, MÜLKİYET VE İHLAL ETMEME KONUSUNDAKİ ZIMNİ GARANTİLER VE TİCARİ UYGULAMADAN VEYA TİCARİ ÖRFTEN DOĞAN HER TÜRLÜ GARANTİ DAHİL, AÇIK, ZIMNİ VEYA YASAL TÜM GARANTİ VE KOŞULLARI REDDEDER.",
+            "YUKARIDAKİLERİ SINIRLAMAKSIZIN REDIACC ŞUNLARI GARANTİ ETMEZ: (A) HİZMETLERİN GEREKSİNİMLERİNİZİ KARŞILAYACAĞINI; (B) HİZMETLERİN KESİNTİSİZ, ZAMANINDA, GÜVENLİ VEYA HATASIZ OLACAĞINI; (C) HERHANGİ BİR VERİNİN KORUNACAĞINI VEYA GERİ YÜKLENEBİLECEĞİNİ; VEYA (D) HERHANGİ BİR KUSURUN GİDERİLECEĞİNİ.",
+            "ŞİRKET İÇİ YAZILIMIN MAKİNELERİNİZDE YÜKSELTİLMİŞ AYRICALIKLARLA ÇALIŞTIĞINI VE ALTYAPINIZDA KURULUMUNA VE İŞLETİLMESİNE İLİŞKİN TÜM RİSKLERİ ÜSTLENDİĞİNİZİ KABUL EDERSİNİZ.",
+            "Bazı yargı bölgeleri belirli garantilerin hariç tutulmasına izin vermez. Tüketiciyseniz, ikamet ettiğiniz ülkenin hukukunun size tanıdığı ve sözleşmeyle hariç tutulamayan haklarınız saklıdır."
           ],
           "id": "warranties",
-          "title": "14. Garanti Reddi"
+          "title": "18. Garantilerin Reddi"
         }
       },
       "toc": {
@@ -9884,5 +10524,13 @@
     "footer": "İşletmeniz dakikalar içinde çalışıyor. Test kopyanız hâlâ günler çalışıyor.",
     "overline": "Neden Şimdi",
     "title": "Dünyanız hızlı hareket ediyor. Test kopyanız değil."
+  },
+  "legal": {
+    "consent": {
+      "cliPrompt": "Ücretsiz Lisans için {{termsUrl}} adresindeki {{legalName}} Hizmet Koşullarının ve {{privacyUrl}} adresindeki Gizlilik Politikasının kabul edilmesi gerekir; Amerika Birleşik Devletleri kullanıcıları için Koşullar bireysel tahkim gerektirir ve toplu davalardan feragat eder. Koşullar kabul edilsin mi?",
+      "cliRefusal": "Ücretsiz Lisans için {{termsUrl}} adresindeki {{legalName}} Hizmet Koşullarının ve {{privacyUrl}} adresindeki Gizlilik Politikasının kabul edilmesi gerekir; Amerika Birleşik Devletleri kullanıcıları için Koşullar bireysel tahkim gerektirir ve toplu davalardan feragat eder. Bu çalıştırma gözetimsiz olduğundan hiçbir şey kabul edilmedi veya indirilmedi. Kabul etmek için --accept-terms iletin veya RDC_ACCEPT_TERMS=1 ayarlayın; tek başına --yes kabul anlamına gelmez. Koşullar, bu otomasyonu çalıştıranı bağlar.",
+      "stripeCheckout": "{{legalName}} Hizmet Koşullarını ({{termsUrl}}) kabul ediyorum ve Gizlilik Politikasını ({{privacyUrl}}) okudum. Amerika Birleşik Devletleri kullanıcıları bireysel bağlayıcı tahkimi kabul eder ve toplu davalardan feragat eder. Abonelik her faturalandırma döneminin sonunda otomatik olarak yenilenir ve iptal edilene kadar ödeme yönteminden tahsilat yapılır; bir sonraki tahsilatı durdurmak için yenileme tarihinden önce istediğiniz zaman hesap portalından iptal edin.",
+      "webCheckbox": "{{legalName}} Hizmet Koşullarını ({{termsUrl}}) kabul ediyorum ve Gizlilik Politikasını ({{privacyUrl}}) okudum. Amerika Birleşik Devletleri'ndeysem, Koşullarda açıklandığı üzere uyuşmazlıkların bireysel bağlayıcı tahkimle çözülmesini kabul ediyor, jüri yargılaması ve toplu davaya katılma hakkımdan feragat ediyorum."
+    }
   }
 }
