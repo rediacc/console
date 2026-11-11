@@ -548,7 +548,7 @@ def _declared_defect():
 ENV = dict(os.environ, CLAUDE_PROJECT_DIR=ROOT)
 
 
-def run_guard(command, defect=None):
+def run_guard(command, defect=None, cwd=ROOT):
     if defect is not None:
         code = BROKEN_RUNNER % (str(HOOKS.parent), str(GUARD), defect, str(GUARD))
         argv = [sys.executable, "-c", code]
@@ -556,7 +556,7 @@ def run_guard(command, defect=None):
         argv = [sys.executable, DISPATCH, STEM]
     proc = subprocess.run(
         argv,
-        input=_payload(command),
+        input=_payload(command, cwd),
         capture_output=True,
         text=True,
         check=False,
@@ -769,7 +769,7 @@ for label, pair, (row_name, row_command) in REVERSE:
     else:
         print("%s: %r refused again" % (label, row_name))
 
-WALK_OFF = ("WORKTREE_ADD, scan) or runs_worktree_add(cmd):", "WORKTREE_ADD, scan):")
+WALK_OFF = ("WORKTREE_ADD, scan) or runs_worktree_add(cmd))", "WORKTREE_ADD, scan))")
 
 # THE REWORK'S OWN PLANTS: back to dd6898eb0's adjacency-only script arm, every shell APART script is admitted; without the written-script lookup in the `$` arm, the printf shape is admitted. So the APART rows are refused BY these lines, not by another arm.
 for label, pair, rows in (
@@ -853,10 +853,148 @@ for label, pair, rows in (
     else:
         print("%s: all %d admitted" % (label, len(rows)))
 
+# THE SCOPE (#a8ae93bd): a scratch repository with a git common dir of its own is admitted, and this checkout, a submodule and every target the guard cannot resolve stay refused. The scratch repository is a bare `git init`, made here in a subprocess no hook sees; the guard only asks git where its common dir is, so it needs no commit. Each row carries the event `cwd` it is judged from.
+SCRATCH = tempfile.mkdtemp(prefix="wt-scope-")
+atexit.register(shutil.rmtree, SCRATCH, True)
+WORK = os.path.join(SCRATCH, "work")
+subprocess.run(["git", "init", "-q", WORK], check=True)
+os.symlink(ROOT, os.path.join(SCRATCH, "link"))
+SUBMODULE = os.path.join(ROOT, "private", "renet")
+VERB = "worktree add"
+SCOPE_ADMITTED = [
+    (
+        "scratch by -C (the backup-ref recipe)",
+        "git -C %s %s --detach %s/r refs/backup-restored/x" % (WORK, VERB, SCRATCH),
+        ROOT,
+    ),
+    ("scratch by the event cwd", "git %s --detach %s/r HEAD" % (VERB, SCRATCH), WORK),
+    ("scratch by cd", "cd %s && git %s --detach ../r HEAD" % (WORK, VERB), ROOT),
+    ("scratch inside sh -c", "sh -c 'git -C %s %s %s/r'" % (WORK, VERB, SCRATCH), "/tmp"),
+]
+SCOPE_REFUSED = [
+    ("this checkout by the event cwd", "git %s /tmp/wt HEAD" % VERB, ROOT),
+    ("this checkout by -C", "git -C %s %s /tmp/wt" % (ROOT, VERB), "/tmp"),
+    ("this checkout through a symlink", "git -C %s/link %s /tmp/wt" % (SCRATCH, VERB), "/tmp"),
+    ("a submodule by -C", "git -C %s %s /tmp/wt" % (SUBMODULE, VERB), "/tmp"),
+    ("a submodule by relative -C", "git -C private/renet %s /tmp/wt" % VERB, ROOT),
+    ("a -C path that does not exist", "git -C /nonexistent/wt-scope %s /tmp/wt" % VERB, "/tmp"),
+    ("a -C directory in a variable", 'git -C "$D" %s /tmp/wt' % VERB, "/tmp"),
+    ("an attached -C", "git -C%s %s /tmp/wt" % (WORK, VERB), ROOT),
+    (
+        "--git-dir naming ours",
+        "git -C %s --git-dir=%s/.git %s /tmp/wt" % (WORK, ROOT, VERB),
+        "/tmp",
+    ),
+    ("GIT_DIR naming ours", "GIT_DIR=%s/.git git -C %s %s /tmp/wt" % (ROOT, WORK, VERB), "/tmp"),
+    (
+        "an exported GIT_DIR",
+        "export GIT_DIR=%s/.git; git -C %s %s /tmp/wt" % (ROOT, WORK, VERB),
+        "/tmp",
+    ),
+    (
+        "scratch, then this checkout",
+        "git -C %s %s /tmp/a; git %s /tmp/wt" % (WORK, VERB, VERB),
+        ROOT,
+    ),
+    ("a subshell cd does not persist", "(cd %s) && git %s /tmp/wt" % (WORK, VERB), ROOT),
+    ("scratch through an alias", "git -C %s -c alias.wt=worktree wt add /tmp/wt" % WORK, ROOT),
+    (
+        "scratch, then a program running the phrase",
+        "git -C %s %s /tmp/a; python3 -c \"import os; os.system('git %s /tmp/y')\""
+        % (WORK, VERB, VERB),
+        ROOT,
+    ),
+    (
+        "scratch, then run.sh create",
+        "git -C %s %s /tmp/a && ./run.sh worktree create x" % (WORK, VERB),
+        ROOT,
+    ),
+    ("no cwd on the event", "git %s /tmp/wt" % VERB, None),
+    ("a relative cwd on the event", "git %s /tmp/wt" % VERB, "work"),
+]
+if not os.path.isdir(os.path.join(SUBMODULE, ".git")) and not os.path.isfile(
+    os.path.join(SUBMODULE, ".git")
+):
+    failures.append("scope: private/renet is not checked out, so the submodule rows judge nothing")
+    print(
+        "*** FAIL *** %s is not a checked-out submodule; the submodule rows would not test the scope"
+        % SUBMODULE
+    )
+
+
+def scope_check(name, want_blocked, command, cwd, defect=None):
+    rc, err = run_guard(command, defect=defect, cwd=cwd)
+    blocked = rc == 2
+    fine = blocked == want_blocked and (want_blocked or not err)
+    print(
+        "%-40s want=%-8s got=%-8s %s"
+        % (
+            name[:40],
+            "BLOCKED" if want_blocked else "allowed",
+            "BLOCKED" if blocked else "allowed",
+            "ok" if fine else "*** FAIL ***",
+        )
+    )
+    if not fine:
+        failures.append("scope: %s" % name)
+        print("    command: %r cwd=%r\n    stderr: %s" % (command, cwd, err.strip()[:400]))
+
+
+print("== the scope: scratch admitted (%d rows)" % len(SCOPE_ADMITTED))
+for row_name, row_command, row_cwd in SCOPE_ADMITTED:
+    scope_check(row_name, False, row_command, row_cwd)
+print("== the scope: ours and the unresolvable refused (%d rows)" % len(SCOPE_REFUSED))
+for row_name, row_command, row_cwd in SCOPE_REFUSED:
+    scope_check(row_name, True, row_command, row_cwd)
+
+# The scope's plants. Without the scope, every scratch row is refused again, so those rows are admitted BY `_foreign_adds`. Without the "ours" comparison, this checkout and the submodule are admitted, so those rows are refused BY the common-dir test and not by a parsing refusal on the way.
+OURS_ROWS = [
+    r
+    for r in SCOPE_REFUSED
+    if r[0]
+    in (
+        "this checkout by the event cwd",
+        "this checkout by -C",
+        "this checkout through a symlink",
+        "a submodule by -C",
+        "a submodule by relative -C",
+    )
+]
+for label, pair, rows, want in (
+    (
+        "the scope taken out",
+        ("base and _foreign_adds(cmd, scan, base)", "False"),
+        SCOPE_ADMITTED,
+        2,
+    ),
+    (
+        "the ours comparison taken out",
+        ("if not common or commit_policy.is_inside(common, ours):", "if not common:"),
+        OURS_ROWS,
+        0,
+    ),
+):
+    flipped = [n for n, c, d in rows if run_guard(c, defect=pair, cwd=d)[0] == want]
+    if not rows or len(flipped) != len(rows):
+        failures.append("scope plant: %s" % label)
+        print(
+            "*** FAIL *** with %s planted, %d of %d rows flipped" % (label, len(flipped), len(rows))
+        )
+    else:
+        print("%s: all %d rows flipped" % (label, len(rows)))
+
 if failures:
     print("\n%d FAILED: %s" % (len(failures), ", ".join(failures[:25])))
     sys.exit(1)
 print(
-    "\nOK: %d refused, %d allowed, %d helper rows, %d tree(s) on disk, chain and plants held"
-    % (len(REFUSED), len(ALLOWED), len(HELPER), len(on_disk))
+    "\nOK: %d refused, %d allowed, %d helper rows, %d tree(s) on disk, %d+%d scope rows, "
+    "chain and plants held"
+    % (
+        len(REFUSED),
+        len(ALLOWED),
+        len(HELPER),
+        len(on_disk),
+        len(SCOPE_ADMITTED),
+        len(SCOPE_REFUSED),
+    )
 )

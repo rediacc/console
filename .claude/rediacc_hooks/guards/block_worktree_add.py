@@ -11,6 +11,8 @@ hooks rely on for that distinction, and inventing one on an unverified guess is 
     to, so the practical effect is worktree creation never happens there,
     which is exactly the "non-interactive: not allowed" requirement.
 
+THE SCOPE IS THIS REPOSITORY. "Unconditional" is about who asks, not about which repository: a typed `git worktree add` is refused when the repository it acts on has this checkout's git common dir (the main checkout, a lease, any linked tree) or one under it (a submodule's `.git/modules/*` store), and admitted for a scratch repository with a git common dir of its own, such as the `git init` under /tmp that `./run.sh backup-ref restore`'s printed recipe targets (#a8ae93bd, measured 2026-11-11: that recipe was refused in a throwaway repo). Every doubt refuses: no `cwd` on the event, a `-C` or `cd` directory the walk cannot know or that does not exist, any global option but `-C`/`-c`, a `GIT_*` variable on the run or in the hook's environment, an alias, a verb built at run time, git not answering, or a text match the walk did not account for. Only the direct shell form is scoped; a program or script that runs the phrase is refused as before (`_foreign_adds`).
+
 THE ONE TREE AN ASSISTANT MAY GET is a lease: `./run.sh worktree lease` makes a detached, locked tree under `.claude/worktrees` for a writer, and only GC removes it (agent/plans/PLAN-worktree-lease.md Design 6, the remove arm below). A clone of this origin is `block_origin_clone`'s refusal.
 
 Found live 2026-08-01: a session created a throwaway worktree+branch for a small doc edit mid-/pr-merge, then a second one for a NUL-byte gate fix, after the operator had already twice said to keep changes local instead. The operator then found six PRE-EXISTING worktrees holding real, unrelated work from other sessions sitting untouched in the same repo. Worktrees are cheap to
@@ -28,7 +30,7 @@ import tokenize
 import zipfile
 from typing import Any
 
-from rediacc_hooks import hookio, shellscan
+from rediacc_hooks import commit_policy, hookio, shellscan
 
 CHAIN = "pre-bash"
 ORDER = 28
@@ -272,6 +274,94 @@ def runs_worktree_add(cmd, depth=0):
         if _unknown_word(rest[0]) and PHRASE_VERB.search(PHRASE_NOISE.sub("", cmd).lower()):
             return True
     return False
+
+
+# A SCRATCH REPOSITORY IS NOT A SECOND CHECKOUT OF THIS ONE (#a8ae93bd). Measured 2026-11-11: `git -C /tmp/tmp.X/work worktree add --detach /tmp/tmp.X/restored refs/backup-restored/...`, in a `git init` under /tmp with a local bare remote, was refused, and that is the exact command `./run.sh backup-ref restore` prints. The rule is about the console and its submodules, so the git arm is
+# scoped to the repository each `git worktree add` acts on: its git common dir, asked of git in the directory the run's `cd` and `-C` compose. That dir being this checkout's common dir, or under it (`modules/<path>` is a submodule's store), keeps the refusal. Everything this helper cannot know keeps it too.
+GIT_REPO_ENV = (
+    "GIT_DIR",
+    "GIT_COMMON_DIR",
+    "GIT_WORK_TREE",
+    "GIT_CEILING_DIRECTORIES",
+    "GIT_DISCOVERY_ACROSS_FILESYSTEM",
+)
+GIT_REPO_ENV_TEXT = re.compile(
+    r"GIT_(?:DIR|COMMON_DIR|WORK_TREE|CEILING_DIRECTORIES|DISCOVERY_ACROSS_FILESYSTEM)\b"
+)
+
+
+def _common_dir(directory):
+    """The absolute, resolved git common dir of the repository `directory` sits in, "" when git cannot say."""
+    got = commit_policy.git(
+        ["rev-parse", "--path-format=absolute", "--git-common-dir"], cwd=directory, foreign=True
+    )
+    return os.path.realpath(got) if got else ""
+
+
+def _add_target(run_, argv, at, base):
+    """The directory the `git worktree add` run `run_` acts on, or None when it cannot be known exactly."""
+    k = 0
+    while k < at:
+        word = argv[k]
+        if word in ("-C", "-c") and k + 1 < at:
+            if word == "-c" and argv[k + 1].lower().startswith("alias."):
+                return None
+            k += 2
+            continue
+        # `--git-dir`, `--work-tree`, `--namespace`, an attached `-C<dir>`, `-calias...`: each could move git elsewhere or rename the verb, and none is needed for a scratch repository.
+        return None
+    _, where = shellscan._git_verb_at(argv)
+    parts = [run_.cwd or "", where]
+    if any(_unknown_word(p) or p.startswith("~") for p in parts):
+        return None
+    directory = os.path.normpath(os.path.join(base, *parts))
+    return directory if os.path.isdir(directory) else None
+
+
+def _foreign_adds(cmd, scan, base):
+    """Is every `git worktree add` the shell command `cmd` runs aimed at a repository that is neither this checkout nor one of its submodules? `scan` is the text the regex arm read; `base` is the directory the command starts in, from the event. False whenever any part of the answer is unknown."""
+    if not base or not os.path.isabs(base) or not os.path.isdir(base):
+        return False
+    if GIT_REPO_ENV_TEXT.search(cmd) or any(os.environ.get(name) for name in GIT_REPO_ENV):
+        return False
+    adds = 0
+    targets = []
+    for run_ in shellscan.every_run(cmd):
+        if run_.name.rsplit("/", 1)[-1] != "git":
+            continue
+        argv = list(run_.xargv if run_.xargv is not None else run_.argv)
+        at, _ = shellscan._git_verb_at(argv)
+        if at is None:
+            continue
+        verb, rest = argv[at], argv[at + 1 :]
+        if _unknown_word(verb) or _git_aliases(run_, argv, at).get(verb) is not None:
+            return False
+        if verb != "worktree" or not rest:
+            continue
+        if _unknown_word(rest[0]):
+            return False
+        if rest[0] != "add":
+            continue
+        if any(name.startswith("GIT_") for name in (run_.env or {})):
+            return False
+        target = _add_target(run_, argv, at, base)
+        if target is None:
+            return False
+        adds += 1
+        targets.append(target)
+    # The regex reads text the walk may not have turned into a run; a match the walk did not account for is one this helper never judged.
+    records, _ = hookio._records(scan)
+    matched = sum(len(list(re.finditer(WORKTREE_ADD, record))) for record in records)
+    if adds == 0 or matched > adds:
+        return False
+    ours = _common_dir(str(hookio.repo_root()))
+    if not ours:
+        return False
+    for target in targets:
+        common = _common_dir(target)
+        if not common or commit_policy.is_inside(common, ours):
+            return False
+    return True
 
 
 # THE INTERPRETER SAILED PAST ALL THREE ARMS, the way the wrapper sailed past the literal one and the port past the wrapper. Measured 2026-10-09 through chain-head.sh before this arm existed, every one rc 0:
@@ -1275,10 +1365,12 @@ def _text_verdict(code, depth, mentions=None):
     return None
 
 
-def _direct_verdict(cmd):
-    """The arm that refuses `cmd` as the shell reads it, before any program text is opened: "git", "run.sh", "port", "lease", or None."""
+def _direct_verdict(cmd, base=None):
+    """The arm that refuses `cmd` as the shell reads it, before any program text is opened: "git", "run.sh", "port", "lease", or None. `base`, the event's `cwd`, is given only for the command typed at the prompt, so the git arm admits a scratch repository there (`_foreign_adds`) and nowhere inside a program."""
     scan = shellscan._command_substitution(shellscan.scan_target(cmd))
-    if hookio.grep_q(WORKTREE_ADD, scan) or runs_worktree_add(cmd):
+    if (hookio.grep_q(WORKTREE_ADD, scan) or runs_worktree_add(cmd)) and not (
+        base and _foreign_adds(cmd, scan, base)
+    ):
         return "git"
     if hookio.grep_q(RUN_SH_CREATE, scan):
         return "run.sh"
@@ -1964,7 +2056,7 @@ def run(ev):
         "script": SCRIPT_MESSAGE,
         "unread": UNREAD_MESSAGE,
     }
-    verdict = _direct_verdict(cmd)
+    verdict = _direct_verdict(cmd, ev.field("cwd") or None)
     if verdict:
         ev.warn(messages[verdict])
         return hookio.DENY
