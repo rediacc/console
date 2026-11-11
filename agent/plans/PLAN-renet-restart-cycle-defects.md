@@ -35,5 +35,6 @@ Worklist: #5e864374, PR-TASK 09b8bdfa
   (corrected 2026-11-07, review 4504214e.2) D4's `job claim` exit-16 half is in the private/renet submodule: 85aa590 (job claim on a missing job exits 16) and afc70f1 (the claim error carries the spool's own message), reaching the console through the pointer bump d82ce6f6a; e573d1e0d, cited in the tick, carries the ticket expiry and `rdc job dismiss` half.
 - [ ] L1 hostinger: the remaining restart cycle runs on the landed renet and mautic's up() succeeds without a manual chown
 
-- [ ] LP-hostinger [live] Fresh hostinger receipt through --config eu-bench (PLAN-tested-on-bench ruling 3), after a VERIFIED npm run vm:check -- --changed on the same tree.
+- [x] LP-hostinger [live] Fresh hostinger receipt through --config eu-bench (PLAN-tested-on-bench ruling 3), after a VERIFIED npm run vm:check -- --changed on the same tree.
   - Accept: `live-proof hostinger renet-live`
+    (ticked) 2026-11-11T06:44:21Z by d778be9d: live-proof lp-6b368497b871 hostinger renet-live rc=0 v=renet@sha256:4d1c0da322ddbdc4fce38739cc289d54468efcc333fbb4bc13e85cfc9377be13

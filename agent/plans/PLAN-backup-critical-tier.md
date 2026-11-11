@@ -653,8 +653,9 @@ Every J box uses the released `rdc` and its released renet. No original repo is 
   Accept: live-proof bench account-smoke
     (ticked) 2026-11-10T14:04:41Z by d778be9d: live-proof lp-c8c0ba793c7d bench account-smoke rc=0 v=1f90c7e1-6458-486f-ac2e-c261d28a7f09
 
-- [ ] LP-hostinger [live] Fresh hostinger receipt through worklist.py --live-proof, after this plan's hostinger-deployable boxes land.
+- [x] LP-hostinger [live] Fresh hostinger receipt through worklist.py --live-proof, after this plan's hostinger-deployable boxes land.
   Accept: live-proof hostinger renet-live machine=hostinger
+    (ticked) 2026-11-11T06:30:36Z by d778be9d: live-proof lp-42f5ff089ae6 hostinger renet-live rc=0 v=renet@sha256:4d1c0da322ddbdc4fce38739cc289d54468efcc333fbb4bc13e85cfc9377be13 DEPS-WAIVED: PLAN-backup-integrity open boxes are all live or post-merge proofs; its code is landed and is what hostinger runs (operator kept this waiver for J2/J3 ASKED:2026-11-11T04:44Z)
 
 **The merge (corrected ASKED:2026-11-05T07:06Z):** no box here waits for it any more: Z1 and Z2 read as bench, J1 to J4 run on hostinger now, and J5 and J6 moved to agent/plans/PLAN-first-release-checks.md, where J6 takes about 10 days after J1. A box still open at the merge needs an `Operational-Reason:` naming it or the operator's ruling on them, because the merge gate refuses open boxes on a plan on the PR's `Plan:` line.
 

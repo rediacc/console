@@ -86,9 +86,10 @@ Live QA on .11 (2026-10-24, renet binary identical to 230dea5, repos isoa/isob/i
     (ticked) 2026-10-24T13:23:13Z by d778be9d: commit:5df0888f8 DR drill rows I1 (tenant isolation) and I2 (session teardown) all ok in VERIFIED vmc run 4 (124/124, tree 9e70707b951f, renet 614e255)
 - [ ] H1 [operator window] after release, on one machine: `rdc machine converge <m> --dry-run` lists every repo stale (epoch 2), then the real pass -- Accept: converge-last.json shows every repo converged or pending with a reason, and `stat -c %G /var/run/rediacc/net-*/docker-*[0-9].sock` prints only `rediacc-net-*`.
   (corrected ASKED:2026-11-05T07:06Z) One eu-bench machine with a renet carrying D1-D5, with no release and no operator window: `rdc --config eu-bench machine converge <m> --dry-run` lists every repo stale (epoch 2), then the real pass. The Accept stands on that machine, and the tick states that the proof is bench-only.
-- [ ] LP-hostinger [live] Fresh hostinger receipt through --config eu-bench (PLAN-tested-on-bench ruling 3), after a VERIFIED npm run vm:check -- --changed on the same tree; ASK the operator first, because provisioning a branch renet restarts the router and daemons.
+- [x] LP-hostinger [live] Fresh hostinger receipt through --config eu-bench (PLAN-tested-on-bench ruling 3), after a VERIFIED npm run vm:check -- --changed on the same tree; ASK the operator first, because provisioning a branch renet restarts the router and daemons.
   - Accept: `live-proof hostinger renet-live`
     (preflight) 2026-11-07: open. No investigation row records this box, so no partial verdict is claimed for it; the receipt `live-proof hostinger renet-live` named in Accept is the evidence still owed.
+    (ticked) 2026-11-11T06:39:54Z by d778be9d: live-proof lp-bcbbd8f02cff hostinger renet-live rc=0 v=renet@sha256:4d1c0da322ddbdc4fce38739cc289d54468efcc333fbb4bc13e85cfc9377be13
 
 RB and RC's sudo acceptance lines (`TestPrivateRepoViewLinux`, the `ebpf_e2e` tests) run on an ops VM through the drill harness's sanctioned path (vm_check's own helpers), never by hand-copying test binaries: a pre-bash guard refuses scp/ssh deployment of binaries. RB and RC stay open until those lines and I1 pass.
 

@@ -109,5 +109,6 @@ What exists today for several destinations, each checked against the tree at fbe
 - [x] LP-bench [live] Fresh bench receipt (PLAN-tested-on-bench ruling 3): deploy this branch to bench with deploy_bench, then record and tick through worklist.py --live-proof.
   - Accept: `live-proof bench account-smoke`
     (ticked) 2026-11-10T14:05:08Z by d778be9d: live-proof lp-983eb4d9f232 bench account-smoke rc=0 v=1f90c7e1-6458-486f-ac2e-c261d28a7f09
-- [ ] LP-hostinger [live] Fresh hostinger receipt through --config eu-bench (PLAN-tested-on-bench ruling 3), after a VERIFIED npm run vm:check -- --changed on the same tree.
+- [x] LP-hostinger [live] Fresh hostinger receipt through --config eu-bench (PLAN-tested-on-bench ruling 3), after a VERIFIED npm run vm:check -- --changed on the same tree.
   - Accept: `live-proof hostinger renet-live`
+    (ticked) 2026-11-11T06:42:58Z by d778be9d: live-proof lp-f4cbf40e3725 hostinger renet-live rc=0 v=renet@sha256:4d1c0da322ddbdc4fce38739cc289d54468efcc333fbb4bc13e85cfc9377be13

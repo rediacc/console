@@ -219,8 +219,9 @@ Root test shape: `sudo -n env -i` is what local uid-1000 gates can't replace (th
 
 ### Fleet
 
-- [ ] T1 [drill] L1 complete: uid not 0, every denied probe, `sudo` fails on NNP, `.env` owned by the universal user, a failing compose fails up, down with a stopped daemon reports honestly, fork has no grant, root-grant positive control, fake CDI node with and without a device grant, reboot-shaped path through `repository autostart` and a `reconcile` tick that ends running.
+- [x] T1 [drill] L1 complete: uid not 0, every denied probe, `sudo` fails on NNP, `.env` owned by the universal user, a failing compose fails up, down with a stopped daemon reports honestly, fork has no grant, root-grant positive control, fake CDI node with and without a device grant, reboot-shaped path through `repository autostart` and a `reconcile` tick that ends running.
   Accept: `npm run vm:check` VERIFIED with every L1 row ok (`--only L1` alone never reaches VERIFIED).
+    (ticked) 2026-11-11T06:43:31Z by d778be9d: nocommit:research VM_DSK=48 npm run vm:check -- --changed rc=0, run vmc-11110524-6b70ae VERIFIED, tree 308164199061, 276 assertions 0 failed (the --changed form ran the full renet battery). Every L1 row ok: L1.1 uid not 0 and empty CapEff; L1.2 kcore, shadow, block device, grants dir denied, no credential; L1.3 sudo fails on no_new_privs; L1.4 created files and .env owned by the function uid; L1.5 failing renet compose fails repo up; L1.6 down() not root; L1.7 fork grant holds no lifecycle root; L1.8 root-grant positive control runs as uid 0 and withdrawal restores the drop; L1.9 fake CDI node unreachable without a device grant and reachable with it; L1.10 cold barrier restarts up() without the credential; L1.11 down with a stopped daemon reports the failure; L1.12 autostart reboot shape with one reconcile tick ending running
 - [x] T2 [e2e] `packages/e2e-tests` 05, 07, 13, 28, 30 and 27 on the bridge suite, with 05 gaining "up() file is owned by the universal user" and "sudo in up() is refused".
   Accept: `cd packages/e2e-tests && npx playwright test tests/05-rediaccfiles-updown.test.ts tests/07-container-operations.test.ts tests/13-postgres-fork-isolation.test.ts tests/28-dockerd-privilege-gate.test.ts tests/30-gpu-device-grants.test.ts tests/27-backup-browse-at.test.ts` rc=0.
     (ticked) 2026-11-05T19:57:20Z by d778be9d: commit:91c61a32d every clause read: 05, 07, 13, 28, 30 and 27 each rc=0 with 0 skipped through rediacc_ci.testrun.e2e, the harness the Accept's playwright command runs under; 05 carries both new cases
@@ -247,8 +248,9 @@ Rules: an original is never deleted, pruned, replaced or downed. `mail` and `mau
 - [x] LP-bench [live] Fresh bench receipt.
   Accept: `live-proof bench account-smoke`
     (ticked) 2026-11-10T14:06:14Z by d778be9d: live-proof lp-24731970c99b bench account-smoke rc=0 v=1f90c7e1-6458-486f-ac2e-c261d28a7f09
-- [ ] LP-hostinger [live] Fresh hostinger receipt after a VERIFIED `npm run vm:check -- --changed` on the same tree.
+- [x] LP-hostinger [live] Fresh hostinger receipt after a VERIFIED `npm run vm:check -- --changed` on the same tree.
   Accept: `live-proof hostinger renet-live`
+    (ticked) 2026-11-11T06:38:03Z by d778be9d: live-proof lp-84a2c5fb049d hostinger renet-live rc=0 v=renet@sha256:4d1c0da322ddbdc4fce38739cc289d54468efcc333fbb4bc13e85cfc9377be13
 
 ## Order of work
 

@@ -253,8 +253,9 @@ Asked after erpnext peaked at load 12.89 at --parallelism 1, the operator answer
     (ticked) 2026-11-07T09:57:32Z by d778be9d: live 2026-11-07T09:56Z on the installed branch renet: PYTHONPATH=.ci python3 -m rediacc_ci.ops.read_cap_seed mautic --machine hostinger --config eu-bench --stop-on cpu rc=0, and the Accept awk over the last mautic line of /tmp/seed/summary.log rc=0. Line: rc=0 snapshotrc=0 cpuQuota=400% cpuLimitPercent=50 readCapBps=50000000 hashWorkers=1 samples=5 backupcpun=5 backupcpuover50=0 backupcpu=1.66,1.44,0.99,1.05,1.20,none busycpu=24.25,20.54,18.34,19.00,32.67,18.84 peakload=2.79 baseload=1.80 peakwa=4.13 readkind=changed-cells readbytes=385875968 bytesUploaded=385875968 durationMs=48138 snapshotId=20261107T095621Z-2cfe776ce7c3149c. Outputs /tmp/m/host-snapshot-read-io-cap-e990ac90/
 
 
-- [ ] LP-hostinger [live] Fresh hostinger receipt through worklist.py --live-proof, after this plan's hostinger-deployable boxes land.
+- [x] LP-hostinger [live] Fresh hostinger receipt through worklist.py --live-proof, after this plan's hostinger-deployable boxes land.
   Accept: live-proof hostinger renet-live machine=hostinger
+    (ticked) 2026-11-11T06:40:25Z by d778be9d: live-proof lp-01cbdd150787 hostinger renet-live rc=0 v=renet@sha256:4d1c0da322ddbdc4fce38739cc289d54468efcc333fbb4bc13e85cfc9377be13
 
 - [x] LP-bench [live] Fresh bench receipt through worklist.py --live-proof, after this plan's bench-deployable boxes land.
   Accept: live-proof bench account-smoke

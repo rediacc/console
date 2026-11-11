@@ -422,9 +422,10 @@ R2's changes:
 - [x] LP-bench [live] Fresh bench receipt (PLAN-tested-on-bench ruling 3): deploy this branch to bench with deploy_bench, then record and tick through worklist.py --live-proof.
   - Accept: `live-proof bench account-smoke`
     (ticked) 2026-10-30T06:16:42Z by d778be9d: live-proof lp-a5a6c2416537 bench account-smoke rc=0 v=b0ffdd76-1edb-40a0-9517-ed940f8b3981
-- [ ] LP-hostinger [live] Fresh hostinger receipt through --config eu-remote (PLAN-tested-on-bench ruling 3), after a VERIFIED npm run vm:check -- --changed on the same tree. ASK the operator first, because provisioning a branch renet restarts the router and daemons.
+- [x] LP-hostinger [live] Fresh hostinger receipt through --config eu-remote (PLAN-tested-on-bench ruling 3), after a VERIFIED npm run vm:check -- --changed on the same tree. ASK the operator first, because provisioning a branch renet restarts the router and daemons.
   (note) Runs through `eu-bench`, not `eu-remote`: PLAN-tested-on-bench ruling 1 as extended on 2026-11-04. The text above keeps the old name because a box's first 120 characters are its identity.
   - Accept: `live-proof hostinger renet-live`
+    (ticked) 2026-11-11T06:33:01Z by d778be9d: live-proof lp-d0eafc23530b hostinger renet-live rc=0 v=renet@sha256:4d1c0da322ddbdc4fce38739cc289d54468efcc333fbb4bc13e85cfc9377be13
 
 ## Open questions for the operator
 

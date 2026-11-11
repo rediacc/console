@@ -68,8 +68,9 @@ Live-Proof: bench, hostinger -- the account surface (the regenerated list-types 
 - /home/developer/console/private/renet/cmd/renet/repository_reconcile.go
 - /home/developer/console/packages/shared/src/renet-contract/data/list-types.generated.ts
 
-- [ ] LP-hostinger [live] Fresh hostinger receipt through worklist.py --live-proof, after this plan's hostinger-deployable boxes land.
+- [x] LP-hostinger [live] Fresh hostinger receipt through worklist.py --live-proof, after this plan's hostinger-deployable boxes land.
   Accept: live-proof hostinger renet-live machine=hostinger
+    (ticked) 2026-11-11T06:38:32Z by d778be9d: live-proof lp-fa289a26155c hostinger renet-live rc=0 v=renet@sha256:4d1c0da322ddbdc4fce38739cc289d54468efcc333fbb4bc13e85cfc9377be13
 
 - [x] LP-bench [live] Fresh bench receipt through worklist.py --live-proof, after this plan's bench-deployable boxes land.
   Accept: live-proof bench account-smoke

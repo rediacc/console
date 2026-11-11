@@ -640,8 +640,9 @@ The hostinger-side scripts are written on hostinger and live only in its repos. 
 - [x] LP-bench [live]: A fresh bench receipt through worklist.py --live-proof, after the cli boxes land.
   - Accept: live-proof bench cli-bench
     (ticked) 2026-11-10T14:05:54Z by d778be9d: live-proof lp-9ca9cfb4a3d9 bench cli-bench rc=0 v=cli:f47a394037e51464b49970f977e3626925fc67b5
-- [ ] LP-hostinger [live]: A fresh hostinger receipt through worklist.py --live-proof, after H5 to H7, since renet-live expects `stale_binary == []` (F6).
+- [x] LP-hostinger [live]: A fresh hostinger receipt through worklist.py --live-proof, after H5 to H7, since renet-live expects `stale_binary == []` (F6).
   - Accept: live-proof hostinger renet-live machine=hostinger
+    (ticked) 2026-11-11T06:43:27Z by d778be9d: live-proof lp-03d7b0e8288d hostinger renet-live rc=0 v=renet@sha256:4d1c0da322ddbdc4fce38739cc289d54468efcc333fbb4bc13e85cfc9377be13
 
 What bench and hostinger prove before the merge:
 - Hostinger proves the generic verdict (H0 red, H8 green), the repair layer (H14 classes, H15 auto-safe run and idempotence, hub volume kept), the hostinger-side `health()` functions through `rdc repo health` (H9 to H11), the certificate renewal (H3), the renet install and restart cycle (H4 to H7), the `ops` repo's backups in the existing store (H12), the archive move (S), and the renet-live receipt.

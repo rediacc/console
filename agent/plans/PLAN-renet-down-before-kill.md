@@ -140,8 +140,9 @@ Hub daemons (private/renet/pkg/hub/gc.go:144; private/renet/pkg/hub/user_daemon.
   - After: repeat the snapshot. `repo list` and `backup usage` match except for the fork. Delete the fork with `repo delete ... --dry-run`, read that it names only the fork, then run it with `-y`. No reboot of hostinger, and no production data is wiped.
   - Accept: a tick quoting the before and after snapshots and the fork's `downproof.log`.
   - CONTROL: the same restart on the fork before provisioning writes no `down` line. Record that run first.
-- [ ] LP-hostinger [live] Fresh hostinger receipt after a VERIFIED `npm run vm:check -- --changed` on the same tree.
+- [x] LP-hostinger [live] Fresh hostinger receipt after a VERIFIED `npm run vm:check -- --changed` on the same tree.
   - Accept: `live-proof hostinger renet-live`
+    (ticked) 2026-11-11T06:43:53Z by d778be9d: live-proof lp-9532d29d7e23 hostinger renet-live rc=0 v=renet@sha256:4d1c0da322ddbdc4fce38739cc289d54468efcc333fbb4bc13e85cfc9377be13
 - [x] LP-bench [live] Fresh bench receipt for the account surface this plan owns (packages/shared/src/renet-contract/data/**): deploy this branch to bench with deploy_bench, then record and tick through worklist.py --live-proof.
   - Accept: `live-proof bench account-smoke`
     (ticked) 2026-11-10T14:06:25Z by d778be9d: live-proof lp-62e877b0a5b2 bench account-smoke rc=0 v=1f90c7e1-6458-486f-ac2e-c261d28a7f09

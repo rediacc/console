@@ -440,8 +440,9 @@ Every H box uses the branch-built `rdc` and renet while edge and stable are on h
   Accept: live-proof bench account-smoke
     (ticked) 2026-11-10T14:04:57Z by d778be9d: live-proof lp-4df668cbb3ef bench account-smoke rc=0 v=1f90c7e1-6458-486f-ac2e-c261d28a7f09
 
-- [ ] LP-hostinger [live] Fresh hostinger receipt through worklist.py --live-proof, after this plan's hostinger-deployable boxes land.
+- [x] LP-hostinger [live] Fresh hostinger receipt through worklist.py --live-proof, after this plan's hostinger-deployable boxes land.
   Accept: live-proof hostinger renet-live machine=hostinger
+    (ticked) 2026-11-11T06:32:30Z by d778be9d: live-proof lp-78e6c1cbfedf hostinger renet-live rc=0 v=renet@sha256:4d1c0da322ddbdc4fce38739cc289d54468efcc333fbb4bc13e85cfc9377be13
 
 **Closes only after the merge:** B1, B2, H1 to H9, LP-bench, LP-hostinger. Everything else closes before it. The PR's merge rule therefore needs an `Operational-Reason:` naming these boxes or the operator's ruling on them, because the merge gate refuses open boxes on a plan on the PR's `Plan:` line.
 

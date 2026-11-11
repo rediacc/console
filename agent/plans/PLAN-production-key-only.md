@@ -329,8 +329,9 @@ There are two account keypairs today. Production is one keypair, the same for al
   Accept: live-proof bench cli-bench
   (note 2026-10-30) The operator dropped the account-smoke bench check as this box's Accept. The earlier ground, that the plan touched no account code, was wrong: L2 redeploys the account worker on bench with the production keys. The account worker's behaviour under those keys is proven by L2 itself (deploy_bench smoke rc, step 6's bench backup drill with licences under `fingerprint:fb37f1ae16f8b7c0`), and the nolicense removal (N4) adds packages/cli, whose bench check is cli-bench, so the box stays on that check.
     (ticked) 2026-11-10T14:06:09Z by d778be9d: live-proof lp-7839152929cc bench cli-bench rc=0 v=cli:f47a394037e51464b49970f977e3626925fc67b5
-- [ ] LP-hostinger [live] Fresh hostinger receipt through --config eu-bench after L3 and a verified vm:check on the same tree. Ask the operator first, because provisioning restarts the router.
+- [x] LP-hostinger [live] Fresh hostinger receipt through --config eu-bench after L3 and a verified vm:check on the same tree. Ask the operator first, because provisioning restarts the router.
   Accept: live-proof hostinger renet-live machine=hostinger
+    (ticked) 2026-11-11T06:37:35Z by d778be9d: live-proof lp-13644232e18a hostinger renet-live rc=0 v=renet@sha256:4d1c0da322ddbdc4fce38739cc289d54468efcc333fbb4bc13e85cfc9377be13
 
 ## Alternatives rejected
 

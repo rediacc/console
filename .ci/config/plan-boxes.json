@@ -75,12 +75,11 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 4,
-      "done": 47,
+      "open": 3,
+      "done": 48,
       "open_sigs": [
         "34760cc9",
         "3a4d5f78",
-        "ef318b56",
         "fb72dffd"
       ],
       "done_sigs": [
@@ -129,6 +128,7 @@
         "d854ba61",
         "dd072b26",
         "e2486508",
+        "ef318b56",
         "f40009dc",
         "f7214b08"
       ]
@@ -138,11 +138,10 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 2,
-      "done": 7,
+      "open": 1,
+      "done": 8,
       "open_sigs": [
-        "ac625afc",
-        "ef318b56"
+        "ac625afc"
       ],
       "done_sigs": [
         "0128b879",
@@ -151,7 +150,8 @@
         "88337d5a",
         "b1c4f7cb",
         "c060ce7a",
-        "c53965ed"
+        "c53965ed",
+        "ef318b56"
       ]
     },
     "agent/plans/PLAN-backup-integrity.md": {
@@ -159,8 +159,8 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 12,
-      "done": 44,
+      "open": 11,
+      "done": 45,
       "open_sigs": [
         "06623ce1",
         "3b026825",
@@ -172,8 +172,7 @@
         "97372e4f",
         "b472cb77",
         "b7391850",
-        "e39f99dd",
-        "ef318b56"
+        "e39f99dd"
       ],
       "done_sigs": [
         "03d3059d",
@@ -215,6 +214,7 @@
         "dda0e806",
         "e09055a5",
         "e34094ab",
+        "ef318b56",
         "ef6c1dc4",
         "f6317671",
         "f80ba538",
@@ -237,17 +237,17 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 4,
-      "done": 10,
+      "open": 3,
+      "done": 11,
       "open_sigs": [
         "129cdf9a",
         "339bf791",
-        "55c84971",
-        "703a6ce4"
+        "55c84971"
       ],
       "done_sigs": [
         "5c59f4aa",
         "5e91f886",
+        "703a6ce4",
         "7e3d19ee",
         "85493dc7",
         "89621109",
@@ -263,11 +263,9 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 1,
-      "done": 7,
-      "open_sigs": [
-        "ef318b56"
-      ],
+      "open": 0,
+      "done": 8,
+      "open_sigs": [],
       "done_sigs": [
         "11388dba",
         "564c2d2d",
@@ -275,6 +273,7 @@
         "b45ef8a8",
         "b4fd892f",
         "d36ccec3",
+        "ef318b56",
         "fd8547ed"
       ]
     },
@@ -283,10 +282,9 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 4,
-      "done": 17,
+      "open": 3,
+      "done": 18,
       "open_sigs": [
-        "7692f2db",
         "8feb1ff7",
         "98a97a4f",
         "fbab6b3f"
@@ -295,6 +293,7 @@
         "227d0373",
         "3bb83356",
         "6330cde7",
+        "7692f2db",
         "7cbc543c",
         "83acf6a3",
         "a86ac9b3",
@@ -316,18 +315,18 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 2,
-      "done": 5,
+      "open": 1,
+      "done": 6,
       "open_sigs": [
-        "06492e4e",
-        "ef318b56"
+        "06492e4e"
       ],
       "done_sigs": [
         "0dd37fd7",
         "11388dba",
         "2a858fea",
         "b75e70c6",
-        "db7a591c"
+        "db7a591c",
+        "ef318b56"
       ]
     },
     "agent/plans/PLAN-backup-program.md": {
@@ -549,17 +548,17 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 3,
-      "done": 7,
+      "open": 2,
+      "done": 8,
       "open_sigs": [
         "094664ee",
-        "7692f2db",
         "a6aa3bb3"
       ],
       "done_sigs": [
         "055c7d0d",
         "29fda24a",
         "6f475942",
+        "7692f2db",
         "b00bc9df",
         "ea53c07a",
         "f13a4009",
@@ -581,8 +580,8 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 9,
-      "done": 1,
+      "open": 8,
+      "done": 2,
       "open_sigs": [
         "0c1f578e",
         "1415b673",
@@ -590,11 +589,11 @@
         "344f5351",
         "4b51dde2",
         "662ce951",
-        "7692f2db",
         "bc479abe",
         "e0349ed2"
       ],
       "done_sigs": [
+        "7692f2db",
         "b00bc9df"
       ]
     },
@@ -712,11 +711,10 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 2,
-      "done": 10,
+      "open": 1,
+      "done": 11,
       "open_sigs": [
-        "875f8c76",
-        "d0158f1a"
+        "875f8c76"
       ],
       "done_sigs": [
         "11388dba",
@@ -727,6 +725,7 @@
         "a205fcc6",
         "b7770343",
         "b92c9a48",
+        "d0158f1a",
         "ef15247c",
         "f84c9e2a"
       ]
@@ -1062,13 +1061,12 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 9,
-      "done": 31,
+      "open": 8,
+      "done": 32,
       "open_sigs": [
         "1d17b634",
         "27123f68",
         "3d256594",
-        "7692f2db",
         "845dbf74",
         "8ab57406",
         "96717f6c",
@@ -1089,6 +1087,7 @@
         "561f92bc",
         "579abcb9",
         "6b8d5026",
+        "7692f2db",
         "86690927",
         "87e959e9",
         "8ac038c6",
@@ -1500,10 +1499,9 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 2,
-      "done": 12,
+      "open": 1,
+      "done": 13,
       "open_sigs": [
-        "7692f2db",
         "eb12263c"
       ],
       "done_sigs": [
@@ -1512,6 +1510,7 @@
         "3cb5b506",
         "45956b61",
         "4df60921",
+        "7692f2db",
         "8920e043",
         "b00bc9df",
         "b9e9f08f",
@@ -1568,13 +1567,12 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 20,
-      "done": 61,
+      "open": 19,
+      "done": 62,
       "open_sigs": [
         "0b3361b6",
         "121aedb1",
         "161312b4",
-        "169b9ab7",
         "23150bb5",
         "2f4e8cf6",
         "34210882",
@@ -1594,6 +1592,7 @@
       ],
       "done_sigs": [
         "00f94357",
+        "169b9ab7",
         "178d3769",
         "17a1b07b",
         "240b66a6",
@@ -1804,11 +1803,9 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 1,
-      "done": 16,
-      "open_sigs": [
-        "7692f2db"
-      ],
+      "open": 0,
+      "done": 17,
+      "open_sigs": [],
       "done_sigs": [
         "00927901",
         "021e12ec",
@@ -1816,6 +1813,7 @@
         "304a978e",
         "432e07dc",
         "56256a98",
+        "7692f2db",
         "7c5d2b99",
         "8659204a",
         "88f1dbcd",
@@ -1968,11 +1966,10 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 4,
-      "done": 13,
+      "open": 3,
+      "done": 14,
       "open_sigs": [
         "30316aea",
-        "48ac90a9",
         "6a1ca4a4",
         "e1ffe36e"
       ],
@@ -1983,6 +1980,7 @@
         "23378074",
         "3be7a7fb",
         "44b08903",
+        "48ac90a9",
         "70f30a71",
         "75c73349",
         "7f85bab7",
@@ -2081,20 +2079,19 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 7,
-      "done": 16,
+      "open": 5,
+      "done": 18,
       "open_sigs": [
         "1fc992df",
         "31a903ee",
-        "3e8ac9d9",
         "77f740eb",
         "8d218ccc",
-        "b589c4ea",
         "d5789763"
       ],
       "done_sigs": [
         "124d9bb0",
         "32e45dcc",
+        "3e8ac9d9",
         "4bc38d4e",
         "5aab0155",
         "5ef1c737",
@@ -2103,6 +2100,7 @@
         "7428fa28",
         "8e7a76f5",
         "afa91934",
+        "b589c4ea",
         "b77f4b89",
         "c1809be6",
         "c90ef1b1",
@@ -2194,12 +2192,11 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 3,
-      "done": 12,
+      "open": 2,
+      "done": 13,
       "open_sigs": [
         "098555d6",
-        "38554e84",
-        "ef318b56"
+        "38554e84"
       ],
       "done_sigs": [
         "11388dba",
@@ -2213,7 +2210,8 @@
         "b4f5246e",
         "c562604a",
         "cb8d7874",
-        "d347a64f"
+        "d347a64f",
+        "ef318b56"
       ]
     },
     "agent/plans/PLAN-renet-down-before-kill.md": {
@@ -2221,12 +2219,11 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 3,
-      "done": 12,
+      "open": 2,
+      "done": 13,
       "open_sigs": [
         "2361305e",
-        "32d0c02a",
-        "b589c4ea"
+        "32d0c02a"
       ],
       "done_sigs": [
         "1068de3a",
@@ -2235,6 +2232,7 @@
         "9e557c7e",
         "9f253d25",
         "a83d659c",
+        "b589c4ea",
         "b7afe4ea",
         "c2bc67d8",
         "da3b6759",
@@ -2248,15 +2246,15 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 2,
-      "done": 2,
+      "open": 1,
+      "done": 3,
       "open_sigs": [
-        "201f331a",
-        "ef318b56"
+        "201f331a"
       ],
       "done_sigs": [
         "50ce321e",
-        "d2002335"
+        "d2002335",
+        "ef318b56"
       ]
     },
     "agent/plans/PLAN-renet-fetch-retries.md": {
@@ -2278,15 +2276,15 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 2,
-      "done": 5,
+      "open": 1,
+      "done": 6,
       "open_sigs": [
-        "7692f2db",
         "b25b2351"
       ],
       "done_sigs": [
         "46031ecb",
         "62e2eb8d",
+        "7692f2db",
         "88fd4c8e",
         "ab184966",
         "ab52c8f5"
@@ -2328,11 +2326,10 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 3,
-      "done": 11,
+      "open": 2,
+      "done": 12,
       "open_sigs": [
         "0f938263",
-        "7692f2db",
         "cc94874d"
       ],
       "done_sigs": [
@@ -2341,6 +2338,7 @@
         "6430ef63",
         "72ea8088",
         "73ea9ce4",
+        "7692f2db",
         "99b77b08",
         "b00bc9df",
         "b853022c",
@@ -2354,11 +2352,10 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 4,
-      "done": 9,
+      "open": 3,
+      "done": 10,
       "open_sigs": [
         "30d6b624",
-        "4d4b8cd5",
         "e12434a3",
         "ff9329ec"
       ],
@@ -2366,6 +2363,7 @@
         "00d591f5",
         "34dee0e7",
         "4144aa75",
+        "4d4b8cd5",
         "7eade686",
         "93ff15df",
         "9f6a0401",
@@ -2448,16 +2446,16 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 2,
-      "done": 6,
+      "open": 1,
+      "done": 7,
       "open_sigs": [
-        "40820c64",
-        "7692f2db"
+        "40820c64"
       ],
       "done_sigs": [
         "31520157",
         "43ae1021",
         "67b7dece",
+        "7692f2db",
         "b3908820",
         "dfd33f28",
         "e89f926a"
@@ -2565,11 +2563,10 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 2,
-      "done": 14,
+      "open": 1,
+      "done": 15,
       "open_sigs": [
-        "b9daaf63",
-        "ef318b56"
+        "b9daaf63"
       ],
       "done_sigs": [
         "112b6afb",
@@ -2585,7 +2582,8 @@
         "9f4cc8b1",
         "a63d1aaf",
         "ae0adefa",
-        "e990ac90"
+        "e990ac90",
+        "ef318b56"
       ]
     },
     "agent/plans/PLAN-split-cli-files-over-512-line-budget.md": {
@@ -2593,18 +2591,17 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 1,
-      "done": 6,
-      "open_sigs": [
-        "ef318b56"
-      ],
+      "open": 0,
+      "done": 7,
+      "open_sigs": [],
       "done_sigs": [
         "11388dba",
         "426da0f8",
         "5d3f37ce",
         "b8ea74a1",
         "cf5a3321",
-        "da8d7bc9"
+        "da8d7bc9",
+        "ef318b56"
       ]
     },
     "agent/plans/PLAN-ssh-key-source-ranges.md": {
@@ -2612,17 +2609,16 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 1,
-      "done": 10,
-      "open_sigs": [
-        "7692f2db"
-      ],
+      "open": 0,
+      "done": 11,
+      "open_sigs": [],
       "done_sigs": [
         "1d4d78e1",
         "25c164cb",
         "38d70bfe",
         "4b71c828",
         "5dedfb94",
+        "7692f2db",
         "83df7d0e",
         "966f84cd",
         "b00bc9df",

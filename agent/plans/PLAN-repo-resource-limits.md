@@ -184,5 +184,6 @@ Order and shared files: one writer in one worktree, box by box, in this order: R
   - After: repeat the snapshot. Everything matches except the fork. Run `repo delete <fork> --dry-run`, read that it names only the fork, then run it with `-y`. No reboot of hostinger.
   - Accept: a tick that quotes the before and after snapshots and the fork's memory.events.
   - CONTROL: before provisioning, `alloc` in the fork reaches 2 GB with no OOM kill. Record that run first.
-- [ ] LP-hostinger [live] A fresh hostinger receipt after a VERIFIED `npm run vm:check -- --changed` on the same tree.
+- [x] LP-hostinger [live] A fresh hostinger receipt after a VERIFIED `npm run vm:check -- --changed` on the same tree.
   - Accept: `live-proof hostinger renet-live`
+    (ticked) 2026-11-11T06:45:23Z by d778be9d: live-proof lp-1e23d3667fd6 hostinger renet-live rc=0 v=renet@sha256:4d1c0da322ddbdc4fce38739cc289d54468efcc333fbb4bc13e85cfc9377be13 DEPS-WAIVED: the prerequisite PLAN-renet-down-before-kill has only its K1 fleet control and live boxes open, and its own hostinger receipt landed this round; this receipt proves the renet hostinger runs

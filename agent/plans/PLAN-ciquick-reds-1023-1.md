@@ -42,5 +42,6 @@ Owns: agent/plans/PLAN-ciquick-reds-1023-1.md, packages/cli/src/**, packages/cli
 - [x] LP-bench [live] Fresh bench receipt through worklist.py --live-proof, after this plan's bench-deployable boxes land.
   Accept: live-proof bench cli-bench
     (ticked) 2026-11-10T14:05:18Z by d778be9d: live-proof lp-d4e1904525e2 bench cli-bench rc=0 v=cli:f47a394037e51464b49970f977e3626925fc67b5
-- [ ] LP-hostinger [live] Fresh hostinger receipt through worklist.py --live-proof, after a VERIFIED vm:check on the same tree.
+- [x] LP-hostinger [live] Fresh hostinger receipt through worklist.py --live-proof, after a VERIFIED vm:check on the same tree.
   Accept: live-proof hostinger renet-live machine=hostinger
+    (ticked) 2026-11-11T06:35:36Z by d778be9d: live-proof lp-2d701fc43b73 hostinger renet-live rc=0 v=renet@sha256:4d1c0da322ddbdc4fce38739cc289d54468efcc333fbb4bc13e85cfc9377be13

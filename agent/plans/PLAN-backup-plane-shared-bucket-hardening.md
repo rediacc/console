@@ -38,5 +38,6 @@ Three residual risks:
   Accept: live-proof bench account-smoke
     (ticked) 2026-11-10T14:05:13Z by d778be9d: live-proof lp-38935a195311 bench account-smoke rc=0 v=1f90c7e1-6458-486f-ac2e-c261d28a7f09
 
-- [ ] LP-hostinger [live] Fresh hostinger receipt through worklist.py --live-proof, after this plan's hostinger-deployable boxes land.
+- [x] LP-hostinger [live] Fresh hostinger receipt through worklist.py --live-proof, after this plan's hostinger-deployable boxes land.
   Accept: live-proof hostinger renet-live machine=hostinger
+    (ticked) 2026-11-11T06:34:03Z by d778be9d: live-proof lp-13ad979a8dd5 hostinger renet-live rc=0 v=renet@sha256:4d1c0da322ddbdc4fce38739cc289d54468efcc333fbb4bc13e85cfc9377be13

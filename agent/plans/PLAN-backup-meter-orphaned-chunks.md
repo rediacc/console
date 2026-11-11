@@ -269,5 +269,6 @@ Most of this exists already, and A1 pins it with tests:
   Accept: live-proof bench account-smoke
     (ticked) 2026-11-10T14:05:02Z by d778be9d: live-proof lp-cf9b036ade89 bench account-smoke rc=0 v=1f90c7e1-6458-486f-ac2e-c261d28a7f09
 
-- [ ] LP-hostinger [live] Fresh hostinger receipt through worklist.py --live-proof, after this plan's hostinger-deployable boxes land.
+- [x] LP-hostinger [live] Fresh hostinger receipt through worklist.py --live-proof, after this plan's hostinger-deployable boxes land.
   Accept: live-proof hostinger renet-live machine=hostinger
+    (ticked) 2026-11-11T06:33:31Z by d778be9d: live-proof lp-aee210773ce9 hostinger renet-live rc=0 v=renet@sha256:4d1c0da322ddbdc4fce38739cc289d54468efcc333fbb4bc13e85cfc9377be13
