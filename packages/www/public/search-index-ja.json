@@ -5937,7 +5937,7 @@
   {
     "id": "search-12379",
     "content": "12.5 refresh",
-    "body": "アカウントサーバーからライセンスを更新する rdc subscription refresh [options] | フラグ | 説明 | 必須 | デフォルト | |------|-------------|----------|---------| | -m, --machine <name> | マシン名 | いいえ | - | | --repo <ref> | リポジトリ ref: 名前、または 名前:タグ、任意で @machine を付加（例: shop、shop:test） | いいえ | - | --- <a id=\"cli-local-group-update\"></a>",
+    "body": "アカウントサーバーからライセンスを更新する rdc subscription refresh [options] | フラグ | 説明 | 必須 | デフォルト | |------|-------------|----------|---------| | -m, --machine <name> | マシン名 | いいえ | - | | --repo <ref> | リポジトリ ref: 名前、または 名前:タグ、任意で @machine を付加（例: shop、shop:test） | いいえ | - | | --adopt-origin | 別のアカウントサーバーが発行したライセンスを、この設定のアカウントサーバーから再発行して移行します。指定しない場合、そうしたライセンスは変更されません | いいえ | - | --- <a id=\"cli-local-group-update\"></a>",
     "excerpt": "アカウントサーバーからライセンスを更新する rdc subscription refresh [options] | フラグ | 説明 | 必須 | デフォルト | |------|-------------|----------|---------| | -m, --machine <name>...",
     "category": "Documentation",
     "page": "/ja/docs/cli-application",

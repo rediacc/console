@@ -5937,7 +5937,7 @@
   {
     "id": "search-18451",
     "content": "12.5 refresh",
-    "body": "Lisansları hesap sunucusundan yenile. rdc subscription refresh [options] | Bayrak | Açıklama | Gerekli | Varsayılan | |------|-------------|----------|---------| | -m, --machine <name> | Makine adı | Hayır | - | | --repo <ref> | Depo referansı: ad, veya ad:etiket, isteğe bağlı olarak @makine ile (örn. shop veya shop:test) | Hayır | - | --- <a id=\"cli-local-group-update\"></a>",
+    "body": "Lisansları hesap sunucusundan yenile. rdc subscription refresh [options] | Bayrak | Açıklama | Gerekli | Varsayılan | |------|-------------|----------|---------| | -m, --machine <name> | Makine adı | Hayır | - | | --repo <ref> | Depo referansı: ad, veya ad:etiket, isteğe bağlı olarak @makine ile (örn. shop veya shop:test) | Hayır | - | | --adopt-origin | Başka bir hesap sunucusunun verdiği lisansları bu yapılandırmanın hesap sunucusundan yeniden verip taşır. Bu seçenek olmadan bu lisanslara dokunulmaz. | Hayır | - | --- <a id=\"cli-local-group-update\"></a>",
     "excerpt": "Lisansları hesap sunucusundan yenile. rdc subscription refresh [options] | Bayrak | Açıklama | Gerekli | Varsayılan | |------|-------------|----------...",
     "category": "Documentation",
     "page": "/tr/docs/cli-application",

@@ -5937,7 +5937,7 @@
   {
     "id": "search-19969",
     "content": "12.5 refresh",
-    "body": "从账户服务器刷新许可证。 rdc subscription refresh [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|----------|---------| | -m, --machine <name> | 机器名称 | 否 | - | | --repo <ref> | 仓库引用：name，或 name:tag，可选带 @machine（例如 shop 或 shop:test） | 否 | - | --- <a id=\"cli-local-group-update\"></a>",
+    "body": "从账户服务器刷新许可证。 rdc subscription refresh [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|----------|---------| | -m, --machine <name> | 机器名称 | 否 | - | | --repo <ref> | 仓库引用：name，或 name:tag，可选带 @machine（例如 shop 或 shop:test） | 否 | - | | --adopt-origin | 由此配置的账户服务器重新签发其他账户服务器签发的许可证，并将其迁移过来。不使用该选项时，这类许可证保持不变。 | 否 | - | --- <a id=\"cli-local-group-update\"></a>",
     "excerpt": "从账户服务器刷新许可证。 rdc subscription refresh [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|----------|---------| | -m, --machine <name> | 机器名称 | 否 |...",
     "category": "Documentation",
     "page": "/zh/docs/cli-application",

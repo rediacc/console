@@ -5937,7 +5937,7 @@
   {
     "id": "search-10861",
     "content": "12.5 refresh",
-    "body": "Aggiorna le licenze dal server account. rdc subscription refresh [options] | Flag | Descrizione | Obbligatorio | Predefinito | |------|-------------|----------|---------| | -m, --machine <name> | Nome della macchina | No | - | | --repo <ref> | Riferimento di repository: nome, oppure nome:tag, opzionalmente con @macchina (es. shop oppure shop:test) | No | - | --- <a id=\"cli-local-group-update\"></a>",
+    "body": "Aggiorna le licenze dal server account. rdc subscription refresh [options] | Flag | Descrizione | Obbligatorio | Predefinito | |------|-------------|----------|---------| | -m, --machine <name> | Nome della macchina | No | - | | --repo <ref> | Riferimento di repository: nome, oppure nome:tag, opzionalmente con @macchina (es. shop oppure shop:test) | No | - | | --adopt-origin | Riemette dal server account di questa configurazione le licenze emesse da un altro server account, spostandole. Senza questa opzione, tali licenze restano intatte. | No | - | --- <a id=\"cli-local-group-update\"></a>",
     "excerpt": "Aggiorna le licenze dal server account. rdc subscription refresh [options] | Flag | Descrizione | Obbligatorio | Predefinito | |------|-------------|-...",
     "category": "Documentation",
     "page": "/it/docs/cli-application",

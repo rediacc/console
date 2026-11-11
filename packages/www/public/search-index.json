@@ -6092,7 +6092,7 @@
   {
     "id": "search-4776",
     "content": "12.5 refresh",
-    "body": "Refresh licenses from the account server. rdc subscription refresh [options] | Flag | Description | Required | Default | |------|-------------|----------|---------| | -m, --machine <name> | Machine name | No | - | | --repo <ref> | Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test) | No | - | --- <a id=\"cli-local-group-update\"></a>",
+    "body": "Refresh licenses from the account server. rdc subscription refresh [options] | Flag | Description | Required | Default | |------|-------------|----------|---------| | -m, --machine <name> | Machine name | No | - | | --repo <ref> | Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test) | No | - | | --adopt-origin | Reissue licenses another account server issued from this config's account server, moving them over. Without it such licenses are left untouched. | No | - | --- <a id=\"cli-local-group-update\"></a>",
     "excerpt": "Refresh licenses from the account server. rdc subscription refresh [options] | Flag | Description | Required | Default | |------|-------------|-------...",
     "category": "Documentation",
     "page": "/en/docs/cli-application",

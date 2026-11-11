@@ -5937,7 +5937,7 @@
   {
     "id": "search-1740",
     "content": "12.5 refresh",
-    "body": "تحديث التراخيص من خادم الحساب. rdc subscription refresh [options] | العلامة | الوصف | مطلوب | افتراضي | |------|-------------|----------|---------| | -m, --machine <name> | اسم الآلة | لا | - | | --repo <ref> | مرجع المستودع: اسم، أو اسم:وسم، اختياريًا مع @machine (مثال shop أو shop:test) | لا | - | --- <a id=\"cli-local-group-update\"></a>",
+    "body": "تحديث التراخيص من خادم الحساب. rdc subscription refresh [options] | العلامة | الوصف | مطلوب | افتراضي | |------|-------------|----------|---------| | -m, --machine <name> | اسم الآلة | لا | - | | --repo <ref> | مرجع المستودع: اسم، أو اسم:وسم، اختياريًا مع @machine (مثال shop أو shop:test) | لا | - | | --adopt-origin | أعد إصدار التراخيص التي أصدرها خادم حساب آخر من خادم الحساب في هذا التكوين، لنقلها إليه. بدون هذا الخيار تُترك هذه التراخيص دون تغيير. | لا | - | --- <a id=\"cli-local-group-update\"></a>",
     "excerpt": "تحديث التراخيص من خادم الحساب. rdc subscription refresh [options] | العلامة | الوصف | مطلوب | افتراضي | |------|-------------|----------|---------| |...",
     "category": "Documentation",
     "page": "/ar/docs/cli-application",

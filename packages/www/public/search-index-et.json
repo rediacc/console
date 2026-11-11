@@ -5937,7 +5937,7 @@
   {
     "id": "search-7825",
     "content": "12.5 refresh",
-    "body": "Värskenda litsentsid kontoserverist. rdc subscription refresh [options] | Lipuke | Kirjeldus | Kohustuslik | Vaikimisi | |------|-------------|----------|---------| | -m, --machine <name> | Masina nimi | Ei | - | | --repo <ref> | Hoidla viide: nimi, või nimi:silt, valikuliselt koos @machine-ga (nt shop või shop:test) | Ei | - | --- <a id=\"cli-local-group-update\"></a>",
+    "body": "Värskenda litsentsid kontoserverist. rdc subscription refresh [options] | Lipuke | Kirjeldus | Kohustuslik | Vaikimisi | |------|-------------|----------|---------| | -m, --machine <name> | Masina nimi | Ei | - | | --repo <ref> | Hoidla viide: nimi, või nimi:silt, valikuliselt koos @machine-ga (nt shop või shop:test) | Ei | - | | --adopt-origin | Väljasta teise kontoserveri antud litsentsid uuesti selle konfiguratsiooni kontoserverist ja vii need sinna üle. Ilma selle valikuta jäävad sellised litsentsid puutumata. | Ei | - | --- <a id=\"cli-local-group-update\"></a>",
     "excerpt": "Värskenda litsentsid kontoserverist. rdc subscription refresh [options] | Lipuke | Kirjeldus | Kohustuslik | Vaikimisi | |------|-------------|-------...",
     "category": "Documentation",
     "page": "/et/docs/cli-application",

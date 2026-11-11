@@ -5937,7 +5937,7 @@
   {
     "id": "search-13897",
     "content": "12.5 refresh",
-    "body": "계정 서버에서 라이선스를 갱신합니다 rdc subscription refresh [options] | 플래그 | 설명 | 필수 | 기본값 | |------|-------------|----------|---------| | -m, --machine <name> | 머신 이름 | 아니오 | - | | --repo <ref> | 저장소 참조: 이름, 또는 이름:태그, 선택적으로 @machine 포함 (예: shop 또는 shop:test) | 아니오 | - | --- <a id=\"cli-local-group-update\"></a>",
+    "body": "계정 서버에서 라이선스를 갱신합니다 rdc subscription refresh [options] | 플래그 | 설명 | 필수 | 기본값 | |------|-------------|----------|---------| | -m, --machine <name> | 머신 이름 | 아니오 | - | | --repo <ref> | 저장소 참조: 이름, 또는 이름:태그, 선택적으로 @machine 포함 (예: shop 또는 shop:test) | 아니오 | - | | --adopt-origin | 다른 계정 서버가 발급한 라이선스를 이 설정의 계정 서버에서 다시 발급해 옮깁니다. 지정하지 않으면 해당 라이선스는 변경하지 않습니다 | 아니오 | - | --- <a id=\"cli-local-group-update\"></a>",
     "excerpt": "계정 서버에서 라이선스를 갱신합니다 rdc subscription refresh [options] | 플래그 | 설명 | 필수 | 기본값 | |------|-------------|----------|---------| | -m, --machine <name> | 머신...",
     "category": "Documentation",
     "page": "/ko/docs/cli-application",

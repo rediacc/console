@@ -5937,7 +5937,7 @@
   {
     "id": "search-6307",
     "content": "12.5 refresh",
-    "body": "Renovar licencias desde el servidor de cuenta. rdc subscription refresh [options] | Opción | Descripción | Obligatorio | Predeterminado | |------|-------------|----------|---------| | -m, --machine <name> | Nombre de máquina | No | - | | --repo <ref> | Referencia de repositorio: nombre, o nombre:etiqueta, opcionalmente con @machine (por ejemplo shop o shop:test) | No | - | --- <a id=\"cli-local-group-update\"></a>",
+    "body": "Renovar licencias desde el servidor de cuenta. rdc subscription refresh [options] | Opción | Descripción | Obligatorio | Predeterminado | |------|-------------|----------|---------| | -m, --machine <name> | Nombre de máquina | No | - | | --repo <ref> | Referencia de repositorio: nombre, o nombre:etiqueta, opcionalmente con @machine (por ejemplo shop o shop:test) | No | - | | --adopt-origin | Reemite desde el servidor de cuenta de esta configuración las licencias que emitió otro servidor de cuenta, trasladándolas. Sin esta opción, esas licencias se dejan intactas. | No | - | --- <a id=\"cli-local-group-update\"></a>",
     "excerpt": "Renovar licencias desde el servidor de cuenta. rdc subscription refresh [options] | Opción | Descripción | Obligatorio | Predeterminado | |------|----...",
     "category": "Documentation",
     "page": "/es/docs/cli-application",
