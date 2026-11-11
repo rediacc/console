@@ -3578,3 +3578,25 @@ def test_prefer_todays_leg_matches_only_the_name_s_own_lane():
     samples = {"Q / X (4/4)": [("today4", 6.0), ("today4", 5.0), ("old4", 14.8)]}
     p90, _ = br.prefer_todays_leg({"Q / X (4/4)": 13.0}, samples, set(), today, _PLAN_PATTERNS)
     assert p90 == {"Q / X (4/4)": 13.0}
+
+
+# --------------------------------------------------------------------------- a run whose jobs stay unreadable on a server fault is skipped and named ---------------------------------------------------------------------------
+
+
+def test_jobs_or_skip_skips_a_502_names_it_and_still_raises_a_401(monkeypatch, capsys):
+    def boom(stderr):
+        def _fetch(_repo, _run_id):
+            raise br.ghx.GhError(["gh", "api"], 1, stderr, br.ghx.FAILURE_FAILED)
+
+        return _fetch
+
+    monkeypatch.setattr(br, "fetch_jobs", boom("gh: Server Error (HTTP 502)"))
+    assert br._jobs_or_skip("o/r", 36670172984) is None
+    assert "skipped run 36670172984: jobs unreadable after" in capsys.readouterr().err
+
+    monkeypatch.setattr(br, "fetch_jobs", boom("gh: Bad credentials (HTTP 401)"))
+    with pytest.raises(br.ghx.GhError):
+        br._jobs_or_skip("o/r", 1)
+
+    monkeypatch.setattr(br, "fetch_jobs", lambda _r, _i: [{"id": 1}])
+    assert br._jobs_or_skip("o/r", 2) == [{"id": 1}]

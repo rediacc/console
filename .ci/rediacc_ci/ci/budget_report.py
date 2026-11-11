@@ -460,6 +460,21 @@ def fetch_jobs(repo: str, run_id: int) -> list[dict[str, Any]]:
     return jobs
 
 
+def _jobs_or_skip(repo: str, run_id: Any) -> list[dict[str, Any]] | None:
+    """`fetch_jobs`, except a run whose jobs stay unreadable after the retry budget on a server or connection fault answers None and is NAMED on stderr. Any other failure (a 4xx, auth, a bad document) still raises: one old run behind a failing endpoint must not block every refresh (2026-11-11, run 36670172984, HTTP 502), but a skip is never silent."""
+    try:
+        return fetch_jobs(repo, run_id)
+    except ghx.GhError as exc:
+        transient = exc.failure == ghx.FAILURE_TIMED_OUT or gh_retry.is_transient(exc.stderr)
+        if isinstance(exc, ghx.GhBadOutputError) or not transient:
+            raise
+        log.warn(
+            "skipped run %s: jobs unreadable after %d attempts: %s"
+            % (run_id, GH_ATTEMPTS, exc.stderr.strip() or exc.failure)
+        )
+        return None
+
+
 # The needs graph, aliased the way check_job_timeout_headroom.refresh() is.
 
 _JOB_HEADER_RE = re.compile(r"^  ([A-Za-z0-9_.-]+):\s*$")
@@ -1637,13 +1652,19 @@ def compute_lane_durations(
     )
     # Fetched JOB_FETCH_WORKERS at a time: the walk was serial and, at 10 to 15 runs of 150+ jobs (3 pages each), was ~250 s of the ~430 s a `--check` took (measured 2026-10-20). Results are read in run order, so every consumer below sees the same list the serial loop built, and a GhError propagates from the first failing run in that order; the fetches not yet started are cancelled first, so the error does not wait for the remaining runs' job pages (only the calls already in flight finish).
     with ThreadPoolExecutor(max_workers=JOB_FETCH_WORKERS) as pool:
-        futures = [pool.submit(fetch_jobs, repo, run["id"]) for run in pr_runs]
+        futures = [pool.submit(_jobs_or_skip, repo, run["id"]) for run in pr_runs]
         try:
-            pr_jobs_by_run = [f.result() for f in futures]
+            fetched = [f.result() for f in futures]
         except BaseException:
             for f in futures:
                 f.cancel()
             raise
+    # `pr_runs` and `pr_jobs_by_run` stay parallel: a skipped run leaves both.
+    readable = [(run, jobs) for run, jobs in zip(pr_runs, fetched, strict=True) if jobs is not None]
+    if pr_runs and not readable:
+        raise ghx.GhError([], 1, "every sampled PR run's jobs were unreadable", ghx.FAILURE_FAILED)
+    pr_runs = [run for run, _ in readable]
+    pr_jobs_by_run = [jobs for _, jobs in readable]
 
     patterns = lane_display_patterns(tree_root, workflow)
     # How many sampled runs measured each entry, per section: the evidence `refreshed_on_evidence` and the job drift check count, the same `MIN_DRIFT_RUNS` units are held to.
@@ -1751,7 +1772,13 @@ def compute_lane_durations(
 
     # THE HEADROOM SAMPLE IS ALWAYS THE DEFAULT BRANCH: `ci.yml` runs on `push` to `main` only, so a `--branch` naming a PR branch would sample zero push runs and leave `job_max_seconds` unmeasured.
     main_runs = fetch_runs(repo, workflow, "push", DEFAULT_BRANCH, DEFAULT_STATUS, limit, **bound)
-    main_jobs_by_run = [fetch_jobs(repo, run["id"]) for run in main_runs]
+    main_fetched = [(run, _jobs_or_skip(repo, run["id"])) for run in main_runs]
+    if main_runs and all(jobs is None for _, jobs in main_fetched):
+        raise ghx.GhError(
+            [], 1, "every sampled main-push run's jobs were unreadable", ghx.FAILURE_FAILED
+        )
+    main_runs = [run for run, jobs in main_fetched if jobs is not None]
+    main_jobs_by_run = [jobs for _, jobs in main_fetched if jobs is not None]
     # A job that never runs on a PR (the release chain) takes its p90 from the SAME main-push sample; a job the PR sample ran keeps its PR number, untouched. See `main_push_only_p90`.
     main_only = main_push_only_p90(pr_jobs_by_run, main_jobs_by_run)
     for name in sorted(main_only):
