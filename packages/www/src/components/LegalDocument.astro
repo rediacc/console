@@ -8,6 +8,7 @@
  */
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { createTranslator } from '../i18n/utils';
+import { legalPageName, type LegalPageKey } from '../lib/legal-pages';
 import { orderedKeys } from '../utils/legal-order';
 import { interpolateTree, legalTokens } from '../utils/legal-tokens';
 import type { Language } from '../i18n/types';
@@ -23,7 +24,7 @@ interface Related {
 interface Props {
   lang: Language;
   /** Translation root of the page, for example `pages.termsOfService`. */
-  pageKey: string;
+  pageKey: LegalPageKey;
   related: Related[];
 }
 
@@ -32,14 +33,18 @@ const { t, to } = createTranslator(lang);
 const en = createTranslator('en');
 const tokens = legalTokens(lang);
 
-const text = (path: string) =>
-  interpolateTree(t(`${pageKey}.${path}`, en.t(`${pageKey}.${path}`)), tokens);
+const legalPage = legalPageName(pageKey);
+
+// Every key is spelled in full, `pages.${legalPage}.<path>`, at its call: a key assembled from a
+// prop and a parameter resolves to no branch, and check:ci-dead-translation-keys refuses it.
+const text = (key: string) => interpolateTree(t(key, en.t(key)), tokens);
 const sections = interpolateTree(
-  (to(`${pageKey}.sections` as any) ?? en.to(`${pageKey}.sections` as any)) as Record<string, any>,
+  (to(`pages.${legalPage}.sections` as any) ??
+    en.to(`pages.${legalPage}.sections` as any)) as Record<string, any>,
   tokens
 );
 // English is the source of truth for the numbering; a locale's own numbers can be stale.
-const enSections = en.to(`${pageKey}.sections` as any) as Record<string, any>;
+const enSections = en.to(`pages.${legalPage}.sections` as any) as Record<string, any>;
 const sectionKeys = orderedKeys(sections, enSections);
 const relatedPages = related.map(({ page, labelKey }) => ({
   href: `/${lang}/${page}`,
@@ -49,24 +54,24 @@ const relatedPages = related.map(({ page, labelKey }) => ({
 
 <BaseLayout
   lang={lang}
-  title={text('meta.title')}
-  description={text('meta.description')}
-  keywords={text('meta.keywords')}
+  title={text(`pages.${legalPage}.meta.title`)}
+  description={text(`pages.${legalPage}.meta.description`)}
+  keywords={text(`pages.${legalPage}.meta.keywords`)}
   ogType="website"
 >
   <article class="legal-page">
     <section class="legal-hero">
       <div class="legal-hero-content">
-        <h1>{text('hero.title')}</h1>
-        <p class="effective-date">{text('hero.effectiveDate')}</p>
+        <h1>{text(`pages.${legalPage}.hero.title`)}</h1>
+        <p class="effective-date">{text(`pages.${legalPage}.hero.effectiveDate`)}</p>
         <slot name="hero-extra" />
       </div>
     </section>
 
     <div class="legal-content">
       <div class="legal-layout">
-        <nav class="legal-toc" aria-label={text('toc.title')}>
-          <h2>{text('toc.title')}</h2>
+        <nav class="legal-toc" aria-label={text(`pages.${legalPage}.toc.title`)}>
+          <h2>{text(`pages.${legalPage}.toc.title`)}</h2>
           <ol>
             {sectionKeys.map((key) => (
               <li>
@@ -118,12 +123,12 @@ const relatedPages = related.map(({ page, labelKey }) => ({
           })}
 
           <div class="legal-contact">
-            <h2>{text('contact.title')}</h2>
-            <p set:html={text('contact.description')} />
+            <h2>{text(`pages.${legalPage}.contact.title`)}</h2>
+            <p set:html={text(`pages.${legalPage}.contact.description`)} />
           </div>
 
           <div class="legal-related">
-            <h2>{text('related.title')}</h2>
+            <h2>{text(`pages.${legalPage}.related.title`)}</h2>
             <ul class="legal-related-links">
               {relatedPages.map(({ href, label }) => (
                 <li><a href={href}>{label}</a></li>

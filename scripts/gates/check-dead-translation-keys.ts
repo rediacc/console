@@ -59,6 +59,14 @@
  *     frontmatter note contains the English word "content" in prose, which read as a bare
  *     use and switched narrowing off for the whole file.
  *
+ * A KEY SITE WITH NO LITERAL ROOT IS REFUSED, NOT TRUSTED. `LegalDocument.astro` once did
+ * `t(`${pageKey}.${path}`)` with a prop and a parameter: `*.*`, a pattern matching every key of
+ * two or more segments, so the whole catalog looked reachable and all 184 baselined dead keys
+ * read as wired up. A pattern whose FIRST segment is a wildcard is therefore never used, and
+ * its file:line is a hard failure telling the author to make the key resolvable. A literal
+ * root with a wildcard below it (`pages.*.meta.title`) stays accepted, as generosity bounded
+ * by a branch name.
+ *
  * SHRINK-ONLY BASELINE. Turning that blindness off exposed 192 pre-existing dead leaves in
  * one step, none of them deletable by the session that sharpened the gate (the thirteen
  * catalogs are a serialised surface with one owner). They are frozen in
@@ -81,24 +89,46 @@
  * lane: quality-i18n
  * ---- end gate ----
  */
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
-import process from 'node:process';
-import { fileURLToPath } from 'node:url';
-import { printTruncated, truncatedLines } from '../lib/findings-report.js';
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import process from "node:process";
+import { fileURLToPath } from "node:url";
+import { printTruncated, truncatedLines } from "../lib/findings-report.js";
 import {
   baselineAdditions,
   renderRefusal,
   sharedSelftestCases,
   writeBaselineVerdict,
-} from '../lib/shrink-only-baseline.js';
+} from "../lib/shrink-only-baseline.js";
 
-const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
-const WWW_SRC = 'packages/www/src';
-const EN_JSON = 'packages/www/src/i18n/translations/en.json';
-const SOURCE_EXTS = ['.astro', '.tsx', '.ts', '.js', '.mjs', '.md', '.mdx'];
-const BASELINE = 'scripts/data/dead-translation-keys-baseline.json';
+const REPO_ROOT = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "..",
+  "..",
+);
+const WWW_SRC = "packages/www/src";
+const EN_JSON = "packages/www/src/i18n/translations/en.json";
+const SOURCE_EXTS = [".astro", ".tsx", ".ts", ".js", ".mjs", ".md", ".mdx"];
+const BASELINE = "scripts/data/dead-translation-keys-baseline.json";
+
+/**
+ * Files OUTSIDE `packages/www/src` that read the www catalogs by key, scanned with the same
+ * rules. Each is a scan root, not an exemption: a key still has to be referenced in the file to
+ * count. A listed file that no longer exists is a hard failure, so the list cannot go stale
+ * quietly.
+ *
+ * `legal.consent.*` is the case that added this: the four consent notices are rendered into
+ * `packages/shared/src/legal/consent.generated.ts` (read by the CLI and the account portal) and
+ * no www page shows them. Until LegalDocument.astro's `*.*` was refused, that pattern hid the
+ * scan root being missing.
+ */
+export const CATALOG_CONSUMERS: ReadonlyArray<{ file: string; why: string }> = [
+  {
+    file: "scripts/gen/gen-legal.ts",
+    why: "renders legal.consent.<method> of every locale into packages/shared/src/legal/consent.generated.ts",
+  },
+];
 
 /** Floors. Either one failing means the scan lost its input, not that the site is clean. */
 const MIN_SOURCE_FILES = 50;
@@ -114,7 +144,7 @@ function walk(dir: string, out: string[] = []): string[] {
   for (const entry of fs
     .readdirSync(dir, { withFileTypes: true })
     .sort((a, b) => a.name.localeCompare(b.name))) {
-    if (entry.name.startsWith('.') || entry.name === 'node_modules') continue;
+    if (entry.name.startsWith(".") || entry.name === "node_modules") continue;
     const abs = path.join(dir, entry.name);
     if (entry.isDirectory()) walk(abs, out);
     else if (SOURCE_EXTS.some((e) => entry.name.endsWith(e))) out.push(abs);
@@ -123,10 +153,16 @@ function walk(dir: string, out: string[] = []): string[] {
 }
 
 /** Dotted paths of every leaf, arrays indexed numerically as the runtime resolves them. */
-export function leafKeys(value: unknown, prefix = '', out: string[] = []): string[] {
+export function leafKeys(
+  value: unknown,
+  prefix = "",
+  out: string[] = [],
+): string[] {
   if (Array.isArray(value)) {
-    value.forEach((v, i) => leafKeys(v, prefix ? `${prefix}.${i}` : String(i), out));
-  } else if (value && typeof value === 'object') {
+    value.forEach((v, i) =>
+      leafKeys(v, prefix ? `${prefix}.${i}` : String(i), out),
+    );
+  } else if (value && typeof value === "object") {
     for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
       leafKeys(v, prefix ? `${prefix}.${k}` : k, out);
     }
@@ -135,7 +171,7 @@ export function leafKeys(value: unknown, prefix = '', out: string[] = []): strin
 }
 
 /** `${anything}` becomes a single-segment wildcard. */
-const wildcard = (s: string): string => s.replace(/\$\{[^}]*\}/g, '*');
+const wildcard = (s: string): string => s.replace(/\$\{[^}]*\}/g, "*");
 
 /**
  * Namespace constants declared in one file, whatever they are named.
@@ -148,12 +184,12 @@ const wildcard = (s: string): string => s.replace(/\$\{[^}]*\}/g, '*');
 export function namespaceVars(src: string): Map<string, string> {
   const out = new Map<string, string>();
   for (const m of src.matchAll(
-    /\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*(?::[^=]+)?=\s*['"]([^'"\s]*\.[^'"\s]*)['"]/g
+    /\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*(?::[^=]+)?=\s*['"]([^'"\s]*\.[^'"\s]*)['"]/g,
   )) {
     if (!out.has(m[1])) out.set(m[1], m[2]);
   }
   for (const m of src.matchAll(
-    /\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*(?::[^=]+)?=\s*`([^`]*\.[^`]*)`/g
+    /\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*(?::[^=]+)?=\s*`([^`]*\.[^`]*)`/g,
   )) {
     if (!out.has(m[1])) out.set(m[1], wildcard(m[2]));
   }
@@ -170,7 +206,7 @@ export function namespaceVars(src: string): Map<string, string> {
 export function catalogImportVars(src: string): string[] {
   const out: string[] = [];
   for (const m of src.matchAll(
-    /\bimport\s+([A-Za-z_$][\w$]*)\s+from\s+['"][^'"]*\/translations\/[A-Za-z-]+\.json['"]/g
+    /\bimport\s+([A-Za-z_$][\w$]*)\s+from\s+['"][^'"]*\/translations\/[A-Za-z-]+\.json['"]/g,
   ))
     out.push(m[1]);
   return out;
@@ -184,7 +220,9 @@ export function catalogImportVars(src: string): string[] {
  * treating it as unreachable would report a deliberately parked branch as dead.
  */
 export function stripComments(src: string): string {
-  return src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:\\])\/\/[^\n]*/gm, '$1 ');
+  return src
+    .replace(/\/\*[\s\S]*?\*\//g, " ")
+    .replace(/(^|[^:\\])\/\/[^\n]*/gm, "$1 ");
 }
 
 /**
@@ -193,38 +231,38 @@ export function stripComments(src: string): string {
  * so the whole subtree stays vouched for.
  */
 const BUILTIN_PROPS = new Set([
-  'map',
-  'filter',
-  'forEach',
-  'length',
-  'slice',
-  'find',
-  'findIndex',
-  'some',
-  'every',
-  'reduce',
-  'join',
-  'entries',
-  'keys',
-  'values',
-  'at',
-  'concat',
-  'includes',
-  'indexOf',
-  'sort',
-  'flat',
-  'flatMap',
-  'push',
-  'toString',
-  'constructor',
-  'then',
-  'catch',
-  'replaceAll',
-  'replace',
-  'split',
-  'trim',
-  'startsWith',
-  'endsWith',
+  "map",
+  "filter",
+  "forEach",
+  "length",
+  "slice",
+  "find",
+  "findIndex",
+  "some",
+  "every",
+  "reduce",
+  "join",
+  "entries",
+  "keys",
+  "values",
+  "at",
+  "concat",
+  "includes",
+  "indexOf",
+  "sort",
+  "flat",
+  "flatMap",
+  "push",
+  "toString",
+  "constructor",
+  "then",
+  "catch",
+  "replaceAll",
+  "replace",
+  "split",
+  "trim",
+  "startsWith",
+  "endsWith",
 ]);
 
 export interface SubtreeNarrowing {
@@ -238,13 +276,16 @@ export interface SubtreeNarrowing {
  * `const content = to('a.b')` followed by `content.hero` reaches `a.b.hero`, and NOT the
  * siblings of `hero`. See the header for why this exists and what it refuses to narrow.
  */
-export function subtreeNarrowing(src: string, ns: Map<string, string>): SubtreeNarrowing {
+export function subtreeNarrowing(
+  src: string,
+  ns: Map<string, string>,
+): SubtreeNarrowing {
   const drop = new Set<string>();
   const add: string[] = [];
   const scan = stripComments(src);
 
   for (const m of src.matchAll(
-    /\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*(?::[^=]+)?=\s*\bto\(\s*(?:'([^']+)'|"([^"]+)"|`([^`]+)`)/g
+    /\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*(?::[^=]+)?=\s*\bto\(\s*(?:'([^']+)'|"([^"]+)"|`([^`]+)`)/g,
   )) {
     const id = m[1];
     const literal = m[2] ?? m[3];
@@ -254,11 +295,14 @@ export function subtreeNarrowing(src: string, ns: Map<string, string>): SubtreeN
         : wildcard(
             m[4].replace(
               /\$\{([A-Za-z_$][\w$]*)\}/g,
-              (whole, name: string) => ns.get(name) ?? whole
-            )
+              (whole, name: string) => ns.get(name) ?? whole,
+            ),
           );
 
-    const occurrences = new RegExp(`(?<![\\w$.])${id.replace(/\$/g, '\\$')}(?![\\w$])`, 'g');
+    const occurrences = new RegExp(
+      `(?<![\\w$.])${id.replace(/\$/g, "\\$")}(?![\\w$])`,
+      "g",
+    );
     const props = new Set<string>();
     let bare = false;
     for (const occ of scan.matchAll(occurrences)) {
@@ -266,7 +310,9 @@ export function subtreeNarrowing(src: string, ns: Map<string, string>): SubtreeN
       // The declaration itself, and a JSX attribute that happens to share the name.
       if (/^\s*=(?!=)/.test(rest)) continue;
       // `content.hero`, `content?.hero`, `(content as any).hero`.
-      const read = /^\s*(?:as\s+[^).]+)?\)?\s*\??\.\s*([A-Za-z_$][\w$]*)/.exec(rest);
+      const read = /^\s*(?:as\s+[^).]+)?\)?\s*\??\.\s*([A-Za-z_$][\w$]*)/.exec(
+        rest,
+      );
       if (read && !BUILTIN_PROPS.has(read[1])) {
         props.add(read[1]);
         continue;
@@ -282,31 +328,72 @@ export function subtreeNarrowing(src: string, ns: Map<string, string>): SubtreeN
   return { drop, add };
 }
 
+/** A template key path with each `${name}` replaced by its same-file namespace, else `*`. */
+const resolveTemplate = (body: string, ns: Map<string, string>): string =>
+  wildcard(
+    body.replace(
+      /\$\{([A-Za-z_$][\w$]*)\}/g,
+      (whole, name: string) => ns.get(name) ?? whole,
+    ),
+  );
+
+/**
+ * A pattern whose FIRST segment is not literal names no branch of the catalog. `*.*` (from
+ * `t(`${pageKey}.${path}`)` with both names unresolvable) matches every key of two or more
+ * segments, so one such call vouched for the whole catalog and every dead key in it. See the
+ * header: such a pattern is never used, and its call site is a finding.
+ */
+export const isOpaquePattern = (p: string): boolean =>
+  p.split(".")[0].includes("*");
+
+export interface UnresolvableSite {
+  line: number;
+  /** The call as written, e.g. t(`${pageKey}.${path}`). */
+  call: string;
+  pattern: string;
+}
+
+/** Key calls in `src` whose key resolves to an opaque pattern, with 1-based line numbers. */
+export function unresolvableSites(src: string): UnresolvableSite[] {
+  const ns = namespaceVars(src);
+  const out: UnresolvableSite[] = [];
+  for (const m of src.matchAll(/\bt[ao]?\(\s*`([^`]+)`/g)) {
+    const pattern = resolveTemplate(m[1], ns);
+    if (!isOpaquePattern(pattern)) continue;
+    out.push({
+      line: src.slice(0, m.index).split("\n").length,
+      call: `${m[0]})`,
+      pattern,
+    });
+  }
+  return out;
+}
+
 export function referencePatterns(src: string): string[] {
   const pats: string[] = [];
   const ns = namespaceVars(src);
 
-  for (const m of src.matchAll(/\bt[ao]?\(\s*['"]([^'"]+)['"]/g)) pats.push(m[1]);
-  for (const m of src.matchAll(/\bt[ao]?\(\s*`([^`]+)`/g)) {
-    pats.push(
-      wildcard(
-        m[1].replace(/\$\{([A-Za-z_$][\w$]*)\}/g, (whole, name: string) => ns.get(name) ?? whole)
-      )
-    );
-  }
+  for (const m of src.matchAll(/\bt[ao]?\(\s*['"]([^'"]+)['"]/g))
+    pats.push(m[1]);
+  for (const m of src.matchAll(/\bt[ao]?\(\s*`([^`]+)`/g))
+    pats.push(resolveTemplate(m[1], ns));
   for (const m of src.matchAll(/\{\{t:([^}\s]+)\}\}/g)) pats.push(m[1]);
   // Key paths carried as DATA in a config table, and template key paths built inline.
-  for (const m of src.matchAll(/['"]([a-zA-Z][\w]*(?:\.[a-zA-Z][\w]*){2,})['"]/g)) pats.push(m[1]);
-  for (const m of src.matchAll(/`([a-zA-Z][\w]*(?:\.[a-zA-Z_${}][\w${}]*){2,})`/g)) {
-    pats.push(
-      wildcard(
-        m[1].replace(/\$\{([A-Za-z_$][\w$]*)\}/g, (whole, name: string) => ns.get(name) ?? whole)
-      )
-    );
+  for (const m of src.matchAll(
+    /['"]([a-zA-Z][\w]*(?:\.[a-zA-Z][\w]*){2,})['"]/g,
+  ))
+    pats.push(m[1]);
+  for (const m of src.matchAll(
+    /`([a-zA-Z][\w]*(?:\.[a-zA-Z_${}][\w${}]*){2,})`/g,
+  )) {
+    pats.push(resolveTemplate(m[1], ns));
   }
   // Keys reached by property access on a statically imported catalog: `en.a.b.c`.
   for (const v of catalogImportVars(src)) {
-    const re = new RegExp(`\\b${v}\\.([A-Za-z][\\w]*(?:\\.[A-Za-z][\\w]*)*)`, 'g');
+    const re = new RegExp(
+      `\\b${v}\\.([A-Za-z][\\w]*(?:\\.[A-Za-z][\\w]*)*)`,
+      "g",
+    );
     for (const m of src.matchAll(re)) pats.push(m[1]);
   }
   // A `to()` subtree bound to a variable vouches only for the properties actually read.
@@ -314,17 +401,25 @@ export function referencePatterns(src: string): string[] {
   // produced both by the `to()` call and by rule 3 seeing the backtick, and leaving either
   // copy in would restore the whole subtree and undo the narrowing.
   const { drop, add } = subtreeNarrowing(src, ns);
-  return drop.size === 0 ? pats : [...pats.filter((p) => !drop.has(p)), ...add];
+  const all =
+    drop.size === 0 ? pats : [...pats.filter((p) => !drop.has(p)), ...add];
+  // An opaque pattern vouches for everything, so it vouches for nothing: main() reports its
+  // site via unresolvableSites() and fails.
+  return all.filter((p) => !isOpaquePattern(p));
 }
 
 /** A pattern matches a key when it equals it or is a prefix of it. `*` spans one segment. */
-export function buildMatcher(patterns: Iterable<string>): (key: string) => boolean {
+export function buildMatcher(
+  patterns: Iterable<string>,
+): (key: string) => boolean {
   const exact = new Set<string>();
   const prefixes: string[] = [];
   const wild: RegExp[] = [];
   for (const p of patterns) {
-    if (p.includes('*')) {
-      wild.push(new RegExp(`^${p.split('*').map(escapeRe).join('[^.]+')}(\\.|$)`));
+    if (p.includes("*")) {
+      wild.push(
+        new RegExp(`^${p.split("*").map(escapeRe).join("[^.]+")}(\\.|$)`),
+      );
     } else {
       exact.add(p);
       prefixes.push(`${p}.`);
@@ -335,79 +430,92 @@ export function buildMatcher(patterns: Iterable<string>): (key: string) => boole
     if (exact.has(key)) return true;
     // Walk the key's own ancestors rather than every pattern: 9,190 keys against 1,300
     // patterns is 12 million comparisons, and each key has fewer than ten ancestors.
-    const parts = key.split('.');
+    const parts = key.split(".");
     for (let i = 1; i <= parts.length; i++) {
-      if (prefixSet.has(`${parts.slice(0, i).join('.')}.`)) return true;
-      if (exact.has(parts.slice(0, i).join('.'))) return true;
+      if (prefixSet.has(`${parts.slice(0, i).join(".")}.`)) return true;
+      if (exact.has(parts.slice(0, i).join("."))) return true;
     }
     return wild.some((r) => r.test(key));
   };
 }
 
-const escapeRe = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const escapeRe = (s: string): string =>
+  s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 function selftest(): boolean {
   const failures: string[] = [];
-  const check = (name: string, ok: boolean, detail = '') => {
+  const check = (name: string, ok: boolean, detail = "") => {
     if (ok) console.log(`  PASS  ${name}`);
     else {
-      console.error(`  FAIL  ${name}${detail ? `\n        ${detail}` : ''}`);
+      console.error(`  FAIL  ${name}${detail ? `\n        ${detail}` : ""}`);
       failures.push(name);
     }
   };
 
-  const reach = (src: string, key: string) => buildMatcher(referencePatterns(src))(key);
+  const reach = (src: string, key: string) =>
+    buildMatcher(referencePatterns(src))(key);
 
   // THE PLANT: an orphan key, reachable by nothing.
   const SRC = `const ns = 'pages.pricing';
 export const P = () => <h1>{t(\`\${ns}.hero.title\`)}</h1>;`;
   check(
-    'PLANT: a key nothing references is unreachable',
-    !reach(SRC, 'pages.pricing.orphan.title')
+    "PLANT: a key nothing references is unreachable",
+    !reach(SRC, "pages.pricing.orphan.title"),
   );
   check(
-    'a key reached through a string namespace is reachable (control)',
-    reach(SRC, 'pages.pricing.hero.title')
+    "a key reached through a string namespace is reachable (control)",
+    reach(SRC, "pages.pricing.hero.title"),
   );
 
   // The false-positive class that the first version produced: a TEMPLATE namespace.
-  const TMPL = 'const ns = `pages.resourcesBrief.${deckKey}`;\nconst x = t(`${ns}.title`);';
+  const TMPL =
+    "const ns = `pages.resourcesBrief.${deckKey}`;\nconst x = t(`${ns}.title`);";
   check(
-    'a key reached through a TEMPLATE namespace is reachable (control)',
-    reach(TMPL, 'pages.resourcesBrief.ransomwareSurvival.title')
+    "a key reached through a TEMPLATE namespace is reachable (control)",
+    reach(TMPL, "pages.resourcesBrief.ransomwareSurvival.title"),
   );
   // A template namespace deliberately vouches for its whole subtree (see the header: the deck key is data, so every deck under it is reachable). What it must NOT do is reach past its own prefix -- a wildcard segment is one segment, never a free pass.
   check(
-    'a template namespace covers its own subtree (control)',
-    reach(TMPL, 'pages.resourcesBrief.ransomwareSurvival.sections.0.body')
+    "a template namespace covers its own subtree (control)",
+    reach(TMPL, "pages.resourcesBrief.ransomwareSurvival.sections.0.body"),
   );
   check(
-    'a template namespace does NOT vouch for a different branch',
-    !reach(TMPL, 'pages.pricing.plans.pro.name')
-  );
-
-  const DYNAMIC = "const ns = 'pages.pricing';\nconst n = t(`${ns}.plans.${p.id}.name`);";
-  check(
-    'a dynamic segment makes every sibling reachable (control)',
-    reach(DYNAMIC, 'pages.pricing.plans.pro.name') &&
-      reach(DYNAMIC, 'pages.pricing.plans.free.name')
-  );
-  check(
-    'a dynamic segment does NOT make an unrelated leaf reachable',
-    !reach(DYNAMIC, 'pages.pricing.plans.pro.features.0')
+    "a template namespace does NOT vouch for a different branch",
+    !reach(TMPL, "pages.pricing.plans.pro.name"),
   );
 
+  const DYNAMIC =
+    "const ns = 'pages.pricing';\nconst n = t(`${ns}.plans.${p.id}.name`);";
   check(
-    'a key carried as config DATA is reachable (control)',
-    reach("{ key: 'linux', labelKey: 'hero.install.tabs.linux' }", 'hero.install.tabs.linux')
+    "a dynamic segment makes every sibling reachable (control)",
+    reach(DYNAMIC, "pages.pricing.plans.pro.name") &&
+      reach(DYNAMIC, "pages.pricing.plans.free.name"),
   );
   check(
-    'a {{t:key}} placeholder in markdown is reachable (control)',
-    reach('Some docs text {{t:docs.cli.overview}} more text', 'docs.cli.overview')
+    "a dynamic segment does NOT make an unrelated leaf reachable",
+    !reach(DYNAMIC, "pages.pricing.plans.pro.features.0"),
+  );
+
+  check(
+    "a key carried as config DATA is reachable (control)",
+    reach(
+      "{ key: 'linux', labelKey: 'hero.install.tabs.linux' }",
+      "hero.install.tabs.linux",
+    ),
   );
   check(
-    'a `to()` subtree reference covers its children (control)',
-    reach("const o = to('pages.company.mission');", 'pages.company.mission.belief')
+    "a {{t:key}} placeholder in markdown is reachable (control)",
+    reach(
+      "Some docs text {{t:docs.cli.overview}} more text",
+      "docs.cli.overview",
+    ),
+  );
+  check(
+    "a `to()` subtree reference covers its children (control)",
+    reach(
+      "const o = to('pages.company.mission');",
+      "pages.company.mission.belief",
+    ),
   );
 
   // SUBTREE NARROWING. The blind spot that let a whole deleted section keep 184 translated leaves alive. `o` above is declared and never read, so it stays a whole subtree; the moment a file READS properties off it, only those properties are vouched for.
@@ -415,91 +523,121 @@ export const P = () => <h1>{t(\`\${ns}.hero.title\`)}</h1>;`;
 const title = (content as any).hero?.title;
 const body = (content as any).problem;`;
   check(
-    'a narrowed subtree still reaches the properties that ARE read (control)',
-    reach(NARROW, 'pages.solutionPages.encryption.hero.title') &&
-      reach(NARROW, 'pages.solutionPages.encryption.problem.timeline.oldLabel')
+    "a narrowed subtree still reaches the properties that ARE read (control)",
+    reach(NARROW, "pages.solutionPages.encryption.hero.title") &&
+      reach(NARROW, "pages.solutionPages.encryption.problem.timeline.oldLabel"),
   );
   check(
-    'PLANT: a SECTION nobody reads off the subtree is unreachable',
-    !reach(NARROW, 'pages.solutionPages.encryption.socialProof.quote'),
-    'this is the defect: `pages.solutionPages.*` is a prefix of every key of every page'
+    "PLANT: a SECTION nobody reads off the subtree is unreachable",
+    !reach(NARROW, "pages.solutionPages.encryption.socialProof.quote"),
+    "this is the defect: `pages.solutionPages.*` is a prefix of every key of every page",
   );
   check(
-    'a subtree passed WHOLE is not narrowed (control)',
+    "a subtree passed WHOLE is not narrowed (control)",
     reach(
       "const content = to('pages.roiCalculator');\nconst el = <C content={content} />;",
-      'pages.roiCalculator.anything.at.all'
+      "pages.roiCalculator.anything.at.all",
     ),
-    'a component handed the object intact can read any key under it'
+    "a component handed the object intact can read any key under it",
   );
   check(
-    'a subtree read through an ARRAY builtin is not narrowed (control)',
+    "a subtree read through an ARRAY builtin is not narrowed (control)",
     reach(
       "const items = to('pages.pricing.faq.items');\nconst n = items.map((i) => i.q);",
-      'pages.pricing.faq.items.0.question'
-    )
+      "pages.pricing.faq.items.0.question",
+    ),
   );
   check(
-    'a t() STRING is never narrowed by its String methods (control)',
+    "a t() STRING is never narrowed by its String methods (control)",
     reach(
       "const askTemplate = t('documentation.pageActions.ask');\n" +
         "const l = (p) => askTemplate.replaceAll('{{provider}}', p);",
-      'documentation.pageActions.ask'
+      "documentation.pageActions.ask",
     ),
-    'narrowing t() reported this real key as dead on the whole tree'
+    "narrowing t() reported this real key as dead on the whole tree",
   );
   check(
-    'a property read only inside a COMMENT does not keep narrowing switched off',
+    "a property read only inside a COMMENT does not keep narrowing switched off",
     !reach(
-      '// restore with: <X y={(content as any).socialProof} /> -- the content behind it\n' +
+      "// restore with: <X y={(content as any).socialProof} /> -- the content behind it\n" +
         "const content = to('pages.solutionPages.encryption');\n" +
-        'const h = (content as any).hero;',
-      'pages.solutionPages.encryption.socialProof.quote'
+        "const h = (content as any).hero;",
+      "pages.solutionPages.encryption.socialProof.quote",
     ),
-    'prose containing the variable name read as a bare use and disabled narrowing entirely'
+    "prose containing the variable name read as a bare use and disabled narrowing entirely",
+  );
+  // A FULLY DYNAMIC key: `${a}.${b}` resolved to `*.*`, a pattern that names no branch and so matched every key of two or more segments. LegalDocument.astro shipped exactly this and made 184 baselined dead keys look wired up.
+  const OPAQUE =
+    "const text = (p) => t(`${pageKey}.${p}`);\nconst s = to(`${pageKey}.sections`);";
+  check(
+    "PLANT: a key site with no literal first segment does NOT vouch for an unrelated key",
+    !reach(
+      OPAQUE,
+      "pages.solutionPages.environmentCloning.socialProof.quote",
+    ) && !reach(OPAQUE, "pages.termsOfService.sections.intro.title"),
+    "a leading wildcard is a prefix of every key; this is the defect, not generosity",
   );
   check(
-    'stripComments leaves a URL alone',
-    stripComments("const u = 'https://x.dev/a';").includes('https://x.dev/a')
+    "a key site with no literal first segment is reported at its line",
+    JSON.stringify(
+      unresolvableSites(OPAQUE).map((s) => [s.line, s.pattern]),
+    ) ===
+      JSON.stringify([
+        [1, "*.*"],
+        [2, "*.sections"],
+      ]),
+    JSON.stringify(unresolvableSites(OPAQUE)),
+  );
+  check(
+    "a namespace that resolves to a literal root is NOT reported (control)",
+    unresolvableSites(
+      "const ns = `pages.${page}`;\nconst x = t(`${ns}.meta.title`);",
+    ).length === 0 &&
+      unresolvableSites(SRC).length === 0 &&
+      unresolvableSites(NARROW).length === 0,
+  );
+  check(
+    "stripComments leaves a URL alone",
+    stripComments("const u = 'https://x.dev/a';").includes("https://x.dev/a"),
   );
 
   for (const c of sharedSelftestCases()) check(c.name, c.ok, c.detail);
 
   // A different key with a matching SUFFIX must not be laundered as reachable, or half the dead keys in the tree would look alive.
   check(
-    'a similarly named key elsewhere does not make this one reachable',
-    !reach("const x = t('layout.meta.siteName');", 'common.siteName')
+    "a similarly named key elsewhere does not make this one reachable",
+    !reach("const x = t('layout.meta.siteName');", "common.siteName"),
   );
 
   // The leaf walker must see arrays, because `items.0.text` is how most content is stored.
   check(
-    'array elements are leaf keys',
-    leafKeys({ a: { items: ['x', 'y'] } }).join(',') === 'a.items.0,a.items.1',
-    leafKeys({ a: { items: ['x', 'y'] } }).join(',')
+    "array elements are leaf keys",
+    leafKeys({ a: { items: ["x", "y"] } }).join(",") === "a.items.0,a.items.1",
+    leafKeys({ a: { items: ["x", "y"] } }).join(","),
   );
 
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dead-keys-'));
-  fs.writeFileSync(path.join(tmp, 'A.astro'), SRC);
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "dead-keys-"));
+  fs.writeFileSync(path.join(tmp, "A.astro"), SRC);
   {
     const imp =
       "import en from '../i18n/translations/en.json';\nconst on = en.announcement.enabled === true;";
     check(
-      'a key read off a statically imported catalog is reachable (control)',
-      reach(imp, 'announcement.enabled')
+      "a key read off a statically imported catalog is reachable (control)",
+      reach(imp, "announcement.enabled"),
     );
     check(
-      'a static catalog import does NOT vouch for an unrelated branch',
-      !reach(imp, 'pages.contact.form.submit')
+      "a static catalog import does NOT vouch for an unrelated branch",
+      !reach(imp, "pages.contact.form.submit"),
     );
     check(
-      'a non-catalog import of the same shape is ignored',
+      "a non-catalog import of the same shape is ignored",
       !reach(
         "import en from '../data/en.json';\nconst on = en.announcement.enabled;",
-        'announcement.enabled'
-      )
+        "announcement.enabled",
+      ),
     );
   }
-  check('the walker finds source files on disk', walk(tmp).length === 1);
+  check("the walker finds source files on disk", walk(tmp).length === 1);
   fs.rmSync(tmp, { recursive: true, force: true });
 
   if (failures.length > 0) {
@@ -516,25 +654,61 @@ function main(): void {
     return i >= 0 ? argv[i + 1] : undefined;
   };
 
-  if (argv.includes('--selftest')) process.exit(selftest() ? 0 : 1);
-  if (!argv.includes('--skip-control') && !selftest()) process.exit(1);
+  if (argv.includes("--selftest")) process.exit(selftest() ? 0 : 1);
+  if (!argv.includes("--skip-control") && !selftest()) process.exit(1);
 
-  const base = path.resolve(arg('--root') ?? REPO_ROOT);
+  const base = path.resolve(arg("--root") ?? REPO_ROOT);
   const enPath = path.join(base, EN_JSON);
   const srcDir = path.join(base, WWW_SRC);
   if (!fs.existsSync(enPath) || !fs.existsSync(srcDir)) {
     console.error(
       `✗ Refusing to run: need both ${enPath} and ${srcDir}.\n` +
-        `  With either missing, every key would look dead or every key would look alive.`
+        `  With either missing, every key would look dead or every key would look alive.`,
     );
     process.exit(1);
   }
 
-  const keys = leafKeys(JSON.parse(fs.readFileSync(enPath, 'utf-8')));
+  const keys = leafKeys(JSON.parse(fs.readFileSync(enPath, "utf-8")));
   const files = walk(srcDir);
+  const consumers = CATALOG_CONSUMERS.map((c) => ({
+    ...c,
+    abs: path.join(base, c.file),
+  }));
+  const missing = consumers.filter((c) => !fs.existsSync(c.abs));
+  if (missing.length > 0) {
+    console.error(
+      `✗ Refusing to run: ${missing.length} catalog consumer(s) in CATALOG_CONSUMERS no longer exist:\n` +
+        missing.map((c) => `  ${c.file}  (${c.why})`).join("\n") +
+        `\n  Point the entry at the file that now reads those keys, or delete it if nothing does.`,
+    );
+    process.exit(1);
+  }
   const patterns = new Set<string>();
-  for (const file of files) {
-    for (const p of referencePatterns(fs.readFileSync(file, 'utf-8'))) patterns.add(p);
+  const opaque: string[] = [];
+  for (const file of [...files, ...consumers.map((c) => c.abs)]) {
+    const src = fs.readFileSync(file, "utf-8");
+    for (const p of referencePatterns(src)) patterns.add(p);
+    for (const site of unresolvableSites(src)) {
+      opaque.push(
+        `${path.relative(base, file)}:${site.line}  ${site.call}  resolves to "${site.pattern}"`,
+      );
+    }
+  }
+
+  if (opaque.length > 0) {
+    console.error(
+      `\x1b[31m✗\x1b[0m ${opaque.length} translation key site(s) have no literal first segment, so the\n` +
+        `gate cannot tell which branch they read. Each would vouch for EVERY key in the catalog\n` +
+        `(184 dead keys looked wired up behind one such call), so none of them is used:\n`,
+    );
+    printTruncated(opaque, { limit: 30, indent: "  " });
+    console.error(
+      `\nMake each key resolvable: declare its namespace in the same file with a literal root\n` +
+        `(const ns = \`pages.\${page}\`), and spell the rest of the path at the call\n` +
+        `(t(\`\${ns}.hero.title\`)) rather than passing it in as a parameter. Do NOT baseline\n` +
+        `the keys this hides, and do not allowlist the site.`,
+    );
+    process.exit(1);
   }
 
   if (files.length < MIN_SOURCE_FILES || patterns.size < MIN_PATTERNS) {
@@ -542,7 +716,7 @@ function main(): void {
       `✗ Refusing to run: ${files.length} source file(s) yielded ${patterns.size} reference ` +
         `pattern(s), below the floors of ${MIN_SOURCE_FILES} and ${MIN_PATTERNS}.\n` +
         `  With no patterns, EVERY key is dead -- a failure that looks like a catastrophic ` +
-        `finding rather than a broken scan.`
+        `finding rather than a broken scan.`,
     );
     process.exit(1);
   }
@@ -550,7 +724,7 @@ function main(): void {
   const reachable = buildMatcher(patterns);
   const dead = keys.filter((k) => !reachable(k));
 
-  if (argv.includes('--list')) {
+  if (argv.includes("--list")) {
     for (const k of dead) console.log(k);
     return;
   }
@@ -558,31 +732,31 @@ function main(): void {
   const baselinePath = path.join(base, BASELINE);
   const baselineExists = fs.existsSync(baselinePath);
   const previous: string[] = baselineExists
-    ? JSON.parse(fs.readFileSync(baselinePath, 'utf-8'))
+    ? JSON.parse(fs.readFileSync(baselinePath, "utf-8"))
     : [];
 
-  if (argv.includes('--write-baseline')) {
+  if (argv.includes("--write-baseline")) {
     // COMPOSITION lives in scripts/lib/shrink-only-baseline.ts. No seed target: there is no legitimate way for this backlog to grow, because a new dead key is always either a deletion someone forgot or a wiring someone forgot.
     const verdict = writeBaselineVerdict({
       baselineExists,
-      firstSeedFlag: argv.includes('--first-seed'),
+      firstSeedFlag: argv.includes("--first-seed"),
       additions: baselineExists ? baselineAdditions(previous, dead) : [],
     });
     if (verdict !== null) {
       console.error(
         `\n\x1b[31m✗\x1b[0m ${renderRefusal(verdict, {
           baselineLabel: BASELINE,
-          noun: 'dead key',
+          noun: "dead key",
           previousCount: previous.length,
           newCount: dead.length,
-        })}`
+        })}`,
       );
       process.exit(1);
     }
     fs.writeFileSync(baselinePath, `${JSON.stringify(dead, null, 2)}\n`);
     console.log(
       `baseline written: ${dead.length} dead key(s) (${previous.length} before, ` +
-        `${previous.filter((k) => !dead.includes(k)).length} drained, 0 added)`
+        `${previous.filter((k) => !dead.includes(k)).length} drained, 0 added)`,
     );
     return;
   }
@@ -595,7 +769,7 @@ function main(): void {
     console.error(
       `\n\x1b[31m✗\x1b[0m ${drained.length} baselined key(s) are no longer dead -- either ` +
         `deleted from the\ncatalogs or wired up. This baseline is SHRINK-ONLY, so drain it:\n` +
-        `  npx tsx scripts/gates/check-dead-translation-keys.ts --write-baseline\n`
+        `  npx tsx scripts/gates/check-dead-translation-keys.ts --write-baseline\n`,
     );
     printTruncated(drained, { limit: 10 });
     process.exit(1);
@@ -604,8 +778,9 @@ function main(): void {
   if (fresh.length === 0) {
     console.log(
       `✓ All ${keys.length} English translation key(s) are reachable from ${files.length} ` +
-        `source file(s) (${patterns.size} reference pattern(s)), ` +
-        `baseline ${previous.length} known dead.`
+        `source file(s) and ${consumers.length} catalog consumer(s) (${patterns.size} reference ` +
+        `pattern(s), 0 unresolvable key sites), ` +
+        `baseline ${previous.length} known dead.`,
     );
     return;
   }
@@ -613,26 +788,26 @@ function main(): void {
   // Group by the shallowest branch that holds only dead leaves, so 46 sibling leaves read as one decision to make rather than 46.
   const byBranch = new Map<string, string[]>();
   for (const k of fresh) {
-    const branch = k.split('.').slice(0, 3).join('.');
+    const branch = k.split(".").slice(0, 3).join(".");
     byBranch.set(branch, [...(byBranch.get(branch) ?? []), k]);
   }
 
   console.error(
     `✗ ${fresh.length} NEW English translation key(s) in ${byBranch.size} branch(es) are ` +
       `reachable by no code path, out of ${keys.length} key(s) ` +
-      `(${previous.length} already baselined):\n`
+      `(${previous.length} already baselined):\n`,
   );
   printTruncated(
     [...byBranch].sort((a, b) => b[1].length - a[1].length),
     {
       limit: 30,
-      indent: '  ',
+      indent: "  ",
       format: ([branch, list]) => [
         `${branch}  (${list.length})`,
-        ...truncatedLines(list, { limit: 3, indent: '  ' }),
+        ...truncatedLines(list, { limit: 3, indent: "  " }),
       ],
       more: (n) => `... and ${n} more branch(es)`,
-    }
+    },
   );
   console.error(
     `\nEach of these is also carried in twelve other catalogs, translated, re-naturalized on\n` +
@@ -640,7 +815,7 @@ function main(): void {
       `catalogs, or wire it up. Do NOT add it to ${BASELINE}.\n` +
       `Full list: npx tsx scripts/gates/check-dead-translation-keys.ts --list\n` +
       `If a key IS reached and is listed here, the reference shape is one this gate cannot\n` +
-      `see: extend referencePatterns() rather than allowlisting the key.`
+      `see: extend referencePatterns() rather than allowlisting the key.`,
   );
   process.exit(1);
 }
