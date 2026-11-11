@@ -103,6 +103,28 @@ DOCS_DRIFT_MAX = int(os.environ.get("WORKLIST_DOCS_DRIFT_MAX", "10"))
 PROGRAM_SURFACE = os.environ.get("WORKLIST_PROGRAM_SURFACE", ".ci .github .claude").split()
 
 
+def backup_lag(root):
+    """The `backup-lag` advisory text, or None. Asks `backup_ref status --cached` (the live oid the last sync recorded, so no network at a stop): exit 1 means the branch is more than 50 commits ahead of its live backup (agent/plans/PLAN-local-first-delivery.md G6). Any other exit, a timeout or a missing module is silence."""
+    env = dict(os.environ)
+    env["PYTHONPATH"] = os.path.join(str(root), ".ci") + os.pathsep + env.get("PYTHONPATH", "")
+    try:
+        proc = subprocess.run(
+            [_sys.executable, "-m", "rediacc_ci.dev.backup_ref", "status", "--cached"],
+            cwd=str(root),
+            capture_output=True,
+            text=True,
+            timeout=10,
+            env=env,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    # Exit 1 is also what python gives for a module it cannot find, so the verdict line on stdout is required too.
+    if proc.returncode != 1 or not proc.stdout.startswith("backup-ref: "):
+        return None
+    return "BACKUP LAG: %s" % proc.stdout.strip().removeprefix("backup-ref: ")
+
+
 def broken_schedules(event, now=None):
     """The scheduled tasks whose schedule this hook cannot parse, as "<schedule> -- <label>" rows. Empty when every schedule is readable.
 
@@ -5170,6 +5192,22 @@ def run_stop(event, event_ok, worklist, hook_file):
                 state_doc,
                 "backup-push",
                 M.N_BACKUP_PUSH % _bp,
+                1,
+                refresh_min=60,
+                on_change=False,
+            )
+    except Exception:
+        pass
+    #   backup-lag      the branch is more than 50 commits ahead of its live backup ref (`backup_ref status --cached`, advise level only).
+    try:
+        _bl = backup_lag(root)
+        if _bl:
+            outq_add(
+                worklist,
+                session_id,
+                state_doc,
+                "backup-lag",
+                _bl,
                 1,
                 refresh_min=60,
                 on_change=False,

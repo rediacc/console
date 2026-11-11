@@ -398,6 +398,9 @@
     "backup-push": {
       "advise": "low"
     },
+    "backup-lag": {
+      "advise": "low"
+    },
     "ciquick-on-red": {
       "advise": "low"
     },

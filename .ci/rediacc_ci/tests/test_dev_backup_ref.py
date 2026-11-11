@@ -8,9 +8,12 @@ EVERY CASE ALSO PROVES THE TWO INVARIANTS: `for-each-ref refs/remotes` is byte-i
 from __future__ import annotations
 
 import datetime
+import importlib.util
+import io
 import os
 import pathlib
 import subprocess
+import sys
 
 import pytest
 
@@ -287,3 +290,171 @@ def test_an_unwritable_state_directory_is_a_logged_failure_not_a_traceback(world
     (git_dir / "rediacc-backup").write_text("in the way\n", encoding="utf-8")
     assert br.sync(work) == 1
     assert "cannot create" in capsys.readouterr().err
+
+
+# ---- G6: list, restore, prune, status -------------------------------------------------------
+
+
+def _seed(work: pathlib.Path, *leaves: str) -> str:
+    """Creates each `refs/backup/1104-1/<leaf>` on the remote at HEAD, with plain git (no worker)."""
+    tip = _git(work, "rev-parse", "HEAD")
+    for leaf in leaves:
+        _git(work, "push", "-q", "gitlab", "HEAD:refs/backup/1104-1/%s" % leaf)
+    return tip
+
+
+def _heads(work: pathlib.Path) -> str:
+    return _git(work, "for-each-ref", "--format=%(refname) %(objectname)", "refs/heads")
+
+
+def test_list_prints_kind_and_age_per_ref(world, capsys):
+    work, _bare = world
+    _commit(work, "one")
+    _seed(work, "live", "daily-2026-11-01", "pre-rewrite-20261101T0900Z")
+    assert br.list_refs(work, "gitlab", sys.stdout) == 0
+    rows = {
+        line.split("\t")[0]: line.split("\t")[1:] for line in capsys.readouterr().out.splitlines()
+    }
+    assert rows["1104-1/live"][:2] == ["live", "-"]
+    assert rows["1104-1/daily-2026-11-01"][:2] == ["daily", "10d"]
+    assert rows["1104-1/pre-rewrite-20261101T0900Z"][:2] == ["pre-rewrite", "10d"]
+
+
+def test_restore_writes_only_the_restored_namespace(world, capsys):
+    work, _bare = world
+    old = _commit(work, "one")
+    assert br.sync(work) == 0
+    _git(work, "commit", "-q", "--amend", "-m", "one, reworded")
+    assert br.sync(work) == 0
+    heads, remotes = _heads(work), _git(work, "for-each-ref", "refs/remotes")
+    before = set(_git(work, "for-each-ref", "--format=%(refname)").splitlines())
+    name = "pre-rewrite-20261111T1030Z"
+    assert br.restore(work, "gitlab", "1104-1/" + name, sys.stdout) == 0
+    out = capsys.readouterr().out
+    assert _git(work, "rev-parse", "refs/backup-restored/1104-1/" + name) == old
+    assert "git worktree add --detach" in out
+    assert out.strip().endswith("refs/backup-restored/1104-1/" + name)
+    assert _heads(work) == heads
+    assert _git(work, "for-each-ref", "refs/remotes") == remotes
+    after = set(_git(work, "for-each-ref", "--format=%(refname)").splitlines())
+    assert after - before == {"refs/backup-restored/1104-1/" + name}
+    assert before - after == set()
+
+
+def test_restore_accepts_the_full_ref_and_refuses_a_bare_leaf(world):
+    work, _bare = world
+    _commit(work, "one")
+    assert br.sync(work) == 0
+    assert br.restore(work, "gitlab", "refs/backup/1104-1/live", io.StringIO()) == 0
+    assert _git(work, "rev-parse", "--verify", "refs/backup-restored/1104-1/live")
+    with pytest.raises(br.StepError):
+        br.restore(work, "gitlab", "live", io.StringIO())
+
+
+def test_prune_deletes_past_retention_and_keeps_the_rest(world):
+    work, bare = world
+    _commit(work, "one")
+    keep = ["live", "daily-2026-08-14", "pre-rewrite-20261020T1030Z", "daily-2026-11-11"]
+    gone = ["daily-2026-08-12", "pre-rewrite-20261011T1030Z"]  # 91 and 31 days before DAY
+    _seed(work, *keep, *gone)
+    # The listing is not a deletion.
+    assert br.prune(work, "gitlab", False, io.StringIO()) == 0
+    assert set(_backup(bare)) == set(keep + gone)
+    assert br.prune(work, "gitlab", True, io.StringIO()) == 0
+    assert set(_backup(bare)) == set(keep)  # the 89-day daily and the 21-day pre-rewrite stay
+    assert br.prune(work, "gitlab", True, io.StringIO()) == 0  # second run: nothing left
+
+
+def test_prune_never_deletes_live_or_a_name_it_cannot_date(world):
+    work, bare = world
+    _commit(work, "one")
+    _seed(work, "live", "odd-name")
+    far = br._utcnow() + datetime.timedelta(days=999)
+    assert br.expired(br.all_remote_refs(work, "gitlab"), far) == []
+    assert br.prune(work, "gitlab", True, io.StringIO()) == 0
+    assert set(_backup(bare)) == {"live", "odd-name"}
+
+
+def test_prune_boundary_matches_the_hook():
+    """Exactly 90 days (a daily) and exactly 30 days (a pre-rewrite) are still inside retention, as in the pre-push hook."""
+    rows = [("b", "daily-2026-08-13", "x"), ("b", "pre-rewrite-20261012T0000Z", "x")]
+    midnight = DAY.replace(hour=0, minute=0)
+    assert br.expired(rows, midnight) == []
+    assert br.expired(rows, midnight + datetime.timedelta(days=1)) == rows
+
+
+def _ahead(work: pathlib.Path, n: int) -> None:
+    for i in range(n):
+        _git(work, "commit", "-q", "--allow-empty", "-m", "c%d" % i)
+
+
+def test_status_exits_1_at_51_commits_behind_and_0_at_50(world):
+    work, _bare = world
+    _commit(work, "one")
+    assert br.sync(work) == 0
+    _ahead(work, 50)
+    out = io.StringIO()
+    assert br.status(work, "gitlab", False, out) == 0
+    assert "50 commits" in out.getvalue()
+    _ahead(work, 1)
+    out = io.StringIO()
+    assert br.status(work, "gitlab", False, out) == 1
+    assert "51 commits" in out.getvalue()
+    # The cached form (the Stop hook's) judges the oid the last sync recorded.
+    assert br.status(work, "gitlab", True, io.StringIO()) == 1
+    assert br.sync(work) == 0
+    assert br.status(work, "gitlab", True, io.StringIO()) == 0
+    assert br.status(work, "gitlab", False, io.StringIO()) == 0
+
+
+def test_status_has_nothing_to_judge_on_main_or_without_a_remote(world):
+    work, _bare = world
+    _ahead(work, 51)
+    _git(work, "remote", "remove", "gitlab")
+    assert br.status(work, "gitlab", False, io.StringIO()) == 0
+    _git(work, "checkout", "-q", "main")
+    assert br.status(work, "gitlab", True, io.StringIO()) == 0
+
+
+def test_main_dispatches_the_new_verbs(world, monkeypatch, capsys):
+    work, _bare = world
+    _commit(work, "one")
+    assert br.sync(work) == 0
+    monkeypatch.chdir(work)
+    assert br.main(["status"]) == 0
+    assert br.main(["prune"]) == 0
+    assert br.main(["list"]) == 0
+    assert "1104-1/live" in capsys.readouterr().out
+    assert br.main(["restore", "nonsense"]) == 1
+    assert br.main(["bogus"]) == 2
+
+
+def test_prune_agrees_with_the_pre_push_hook_on_every_boundary():
+    """Whatever `prune` deletes, `backup_ref_refusal` admits; whatever it keeps inside retention, the hook refuses to delete (so the two never drift)."""
+    root = pathlib.Path(__file__).resolve().parents[3]
+    spec = importlib.util.spec_from_file_location(
+        "githooks_prune_parity", root / ".claude" / "rediacc_hooks" / "git" / "githooks.py"
+    )
+    assert spec is not None
+    assert spec.loader is not None
+    gh = importlib.util.module_from_spec(spec)
+    sys.modules["githooks_prune_parity"] = gh
+    spec.loader.exec_module(gh)
+    assert br.RETENTION_DAYS == gh.BACKUP_RETENTION_DAYS
+    monkey_now = DAY
+    gh._utcnow = lambda: monkey_now
+    repo = str(pathlib.Path(__file__).resolve().parents[3])
+    url = "https://gitlab.rediacc.io" + gh.BACKUP_PATHS[""]
+    oid = "a" * 40
+    for leaf in (
+        "daily-2026-08-12",
+        "daily-2026-08-13",
+        "daily-2026-08-14",
+        "pre-rewrite-20261011T1030Z",
+        "pre-rewrite-20261012T1030Z",
+        "pre-rewrite-20261020T1030Z",
+    ):
+        line = ["", gh.cp.ZERO_OID, "refs/backup/1104-1/" + leaf, oid]
+        refused = gh.backup_ref_refusal(repo, url, [line])
+        pruned = bool(br.expired([("1104-1", leaf, oid)], DAY))
+        assert pruned == (refused == ""), (leaf, refused)
