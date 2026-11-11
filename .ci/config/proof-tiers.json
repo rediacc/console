@@ -379,13 +379,13 @@
         },
         "hostinger": {
           "what": "the branch build on the hostinger machine (renet provisioned from this tree, the CLI run against it)",
-          "run": ["./rdc.sh --config eu-remote machine status hostinger -o json"]
+          "run": ["./rdc.sh --config eu-bench machine status hostinger -o json"]
         },
         "e2e-local": {
-          "what": "an e2e suite on the local KVM fleet (.claude/agents/e2e-local.md), never a CI ct-tests run",
+          "what": "the e2e suites on the local KVM fleet (.claude/agents/e2e-local.md), never a CI ct-tests run; append --test <file> to narrow to one suite",
           "run": [
             "PYTHONPATH=.ci python3 -m rediacc_ci.env.create_e2e_env --renet-path \"$PWD/private/renet/bin/renet\" --output packages/e2e-tests/.env",
-            "PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --test <suite>"
+            "PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1"
           ]
         },
         "bench-cli": {

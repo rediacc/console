@@ -996,14 +996,16 @@ def _why_errors(why: str, tag: str) -> list[str]:
 
 
 def box_github_wait(
-    block: str, phrases: tuple[str, ...] | list[str], runners: tuple[str, ...] | list[str] = ()
+    block: str,
+    phrases: tuple[str, ...] | list[str],
+    runners: tuple[str, ...] | list[str] | None = None,
 ) -> GitHubWait:
     """LP8's reading of one box block (`box_block`). A tag counts on the box line or on an indented `(corrected ...)` line under it, and the last one of each kind wins (a later correction supersedes an earlier one):
 
         GitHub-only: <CD|CI parity|native-runner|soak|preview> -- <why no local path, 20+ chars>
         Local-route: <runner>[, <runner>...] -- <how the branch proves it, 20+ chars>
 
-    `runners` are the `tiers.live.local_runners` ids; when empty, a route's runner names are not checked. Phrases are matched over the whole block with every tag's value removed, so a why that says "only CD deploys edge" is not itself a wait."""
+    `runners` are the `tiers.live.local_runners` ids; None skips the runner-name check, while an empty list means no runner is known, so every route is refused. Phrases are matched over the whole block with every tag's value removed, so a why that says "only CD deploys edge" is not itself a wait."""
     lines = (block or "").replace("`", "").replace("*", "").splitlines()
     tag_lines = lines[:1] + [ln for ln in lines[1:] if _CORRECTED_RE.match(ln)]
     kind = ""
@@ -1025,7 +1027,7 @@ def box_github_wait(
                 kind = "" if errs else canon
             else:
                 names = tuple(n.strip() for n in head.split(",") if n.strip())
-                unknown = [n for n in names if runners and n not in runners]
+                unknown = [n for n in names if runners is not None and n not in runners]
                 if not names:
                     errs.insert(0, "`%s:` names no runner" % tag)
                 elif unknown:
@@ -1042,7 +1044,9 @@ def box_github_wait(
 
 
 def github_wait_findings(
-    text: str, phrases: tuple[str, ...] | list[str], runners: tuple[str, ...] | list[str] = ()
+    text: str,
+    phrases: tuple[str, ...] | list[str],
+    runners: tuple[str, ...] | list[str] | None = None,
 ) -> list[tuple[str, str]]:
     """[(LP8, message)] for every OPEN box of a plan that waits on GitHub (names a `github_waits` phrase) with no valid `GitHub-only:` tag or `Local-route:` correction, and for every malformed tag or route. A ticked box is history and is not judged. Shared by `check:ci-plan-live-proof` and the pre-edit guard (`github_wait_introduced`)."""
     out: list[tuple[str, str]] = []
@@ -1079,7 +1083,7 @@ def github_wait_introduced(
     before: str | None,
     after: str,
     phrases: tuple[str, ...] | list[str],
-    runners: tuple[str, ...] | list[str] = (),
+    runners: tuple[str, ...] | list[str] | None = None,
 ) -> list[tuple[str, str]]:
     """The LP8 findings of `after` that `before` did not already carry: the pre-edit guard's reading, so an edit is refused for a wait it adds and never for one it leaves as it was."""
     had = set(github_wait_findings(before or "", phrases, runners))

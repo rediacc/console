@@ -6,6 +6,7 @@ Every surface names at least one `tiers.live.local_runners` id in `local`, and `
 from __future__ import annotations
 
 import json
+import re
 from typing import Any
 
 import pytest
@@ -96,3 +97,21 @@ def test_a_bad_github_waits_list_is_refused(value: object, why: str) -> None:
         live["github_waits"] = value
     with pytest.raises(S.MapError, match=why):
         S.parse_map(raw)
+
+
+def test_no_local_runner_command_is_a_placeholder() -> None:
+    """a0287d35.2: a planner runs `run` as written, so an `<angle>` token fails at argument parsing."""
+    for rid, runner in S.MAP.local_runners.items():
+        for cmd in runner.run:
+            assert not re.search(r"<[^>\s]+>", cmd), (rid, cmd)
+
+
+def test_a_runner_naming_a_machine_uses_the_live_target_config() -> None:
+    """a0287d35.1: the hostinger local route reads through the same config as `tiers.live.targets.hostinger`."""
+    raw = _raw()
+    targets = raw["tiers"]["live"]["targets"]
+    for machine, target in targets.items():
+        for rid, runner in S.MAP.local_runners.items():
+            for cmd in runner.run:
+                if re.search(rf"machine \w+ {machine}\b", cmd):
+                    assert f"--config {target['config']} " in cmd, (rid, cmd)

@@ -1618,4 +1618,25 @@ check(
     True,
 )
 
+# dd7d6799.2: an empty runner list means no runner is known, so a route is refused; None leaves the names unchecked.
+LP8_ROUTE_BOX = (
+    "- [ ] T9 the edge check after the merge\n"
+    "  (corrected 2026-11-12) Local-route: nowhere -- the branch proves it from this machine\n"
+)
+check(
+    "LP8: no known runner (empty list) refuses a Local-route",
+    len(D.github_wait_findings(LP8_ROUTE_BOX, ["after the merge"], [])),
+    1,
+)
+check(
+    "LP8: runners None leaves the route names unchecked",
+    D.github_wait_findings(LP8_ROUTE_BOX, ["after the merge"], None),
+    [],
+)
+check(
+    "LP8: a listed runner clears the route",
+    D.github_wait_findings(LP8_ROUTE_BOX, ["after the merge"], ["nowhere"]),
+    [],
+)
+
 T.exit()
