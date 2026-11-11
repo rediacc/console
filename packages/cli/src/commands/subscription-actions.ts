@@ -427,7 +427,7 @@ function runRepoBatchRefresh(
 
 /**
  * `subscription refresh`, routed by its flags: none = account, -m = machine, --repo = one repo. `--adopt-origin` moves a
- * machine's licences in one batch, so it rides -m only; --repo reissues through its own path.
+ * machine's licences in one batch (-m) or reissues one repo's (--repo); a plain refresh refuses a foreign origin either way.
  */
 export async function executeSubscriptionRefresh(options: {
   machine?: string;
@@ -438,12 +438,12 @@ export async function executeSubscriptionRefresh(options: {
     throw new ValidationError(t('commands.subscription.refresh.targetExclusive'));
   }
   const adoptOrigin = options.adoptOrigin === true;
-  if (adoptOrigin && !options.machine) {
+  if (adoptOrigin && !options.machine && !options.repo) {
     throw new ValidationError(t('commands.subscription.refresh.adoptOriginNeedsTarget'));
   }
   if (options.repo) {
     // --repo derives its own machine from the ref, so it never needs -m.
-    await executeRepoLicenseRefresh(options.repo);
+    await executeRepoLicenseRefresh(options.repo, { adoptOrigin });
     return;
   }
   if (options.machine) {
@@ -588,7 +588,10 @@ bindStepHandler('renderSubscriptionRefresh', async ({ machine, output, params })
  * `subscription refresh --repo <ref>`: reissue one repo's license. The machine
  * is derived from the ref (spec/03 §2.3), so this verb never takes `-m`.
  */
-export async function executeRepoLicenseRefresh(ref: string): Promise<void> {
+export async function executeRepoLicenseRefresh(
+  ref: string,
+  options: { adoptOrigin?: boolean } = {}
+): Promise<void> {
   const { repoKey, machineName } = await resolveRepoRef(ref, { readOnly: true });
 
   await withSpinner(
@@ -618,6 +621,7 @@ export async function executeRepoLicenseRefresh(ref: string): Promise<void> {
             ? 'fork'
             : 'grand',
         ...(datastoreMount !== undefined && { datastoreMount }),
+        ...(options.adoptOrigin === true && { adoptOrigin: true }),
       });
       if (!refreshed) {
         throw new ValidationError(t('commands.subscription.refresh.repo.failed'));

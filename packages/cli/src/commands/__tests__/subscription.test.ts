@@ -724,12 +724,21 @@ describe('subscription command helpers', () => {
   });
 
   it('--adopt-origin without -m refuses before touching the account or a machine', async () => {
-    for (const options of [{ adoptOrigin: true }, { adoptOrigin: true, repo: 'mail' }]) {
-      await expect(executeSubscriptionRefresh(options)).rejects.toThrow(
-        'commands.subscription.refresh.adoptOriginNeedsTarget'
-      );
-    }
+    await expect(executeSubscriptionRefresh({ adoptOrigin: true })).rejects.toThrow(
+      'commands.subscription.refresh.adoptOriginNeedsTarget'
+    );
     expect(mockRefreshRepoLicensesBatch).not.toHaveBeenCalled();
+    expect(mockRefreshRepoLicenseIdentity).not.toHaveBeenCalled();
+  });
+
+  it('refresh --repo --adopt-origin hands the flag to the repo reissue; a plain --repo hands none', async () => {
+    await executeSubscriptionRefresh({ repo: 'shop:test', adoptOrigin: true });
+    expect(mockRefreshRepoLicenseIdentity.mock.calls[0][3]).toEqual(
+      expect.objectContaining({ adoptOrigin: true })
+    );
+    mockRefreshRepoLicenseIdentity.mockClear();
+    await executeSubscriptionRefresh({ repo: 'shop:test' });
+    expect(mockRefreshRepoLicenseIdentity.mock.calls[0][3]).not.toHaveProperty('adoptOrigin');
   });
 
   it('refresh -m --adopt-origin with no login refuses instead of renewing in place', async () => {

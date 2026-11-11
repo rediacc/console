@@ -1,10 +1,14 @@
 import { TELEMETRY_SUBSCRIPTION_SOURCES } from '@rediacc/shared/telemetry';
+import { t } from '../../i18n/index.js';
 import type { SFTPClient } from '../../remote/sftp/index.js';
 import type { MachineConfig } from '../../types/index.js';
+import { ValidationError } from '../../utils/errors.js';
+import { expectedAccountServerOrigin } from '../backup/backup-store-universe.js';
 import { outputService } from '../core/output.js';
 import { sftpConfigForMachine, withSharedOrPooledSftp } from '../machine/machine-connection.js';
 import { telemetryService } from '../telemetry/telemetry.js';
 import { accountServerFetch } from './account-client.js';
+import { reposWithForeignLicenseOrigin } from './license-batch.js';
 import {
   clusterIdFor,
   DEFAULT_DATASTORE,
@@ -206,6 +210,7 @@ async function readRepoLicenseInputs(
   datastoreId?: string;
   datastorePath?: string;
   requestedSizeGb?: number;
+  currentRenewalUrl?: string;
 }> {
   let scanned: Awaited<ReturnType<typeof scanRemoteRepoLicenses>>;
   try {
@@ -233,7 +238,42 @@ async function readRepoLicenseInputs(
     // The mount the machine itself reports for this repo. Better than anything the client can derive, and it is the datastore the size probe below must measure when the scan could not price the repo.
     datastorePath: entry.datastorePath,
     requestedSizeGb: entry.requestedSizeGb,
+    // The account server that issued the installed licence, read from the same scan entry, so the foreign-origin check costs no second scan.
+    currentRenewalUrl: entry.currentRenewalUrl,
   };
+}
+
+/**
+ * Refuse to reissue a licence whose `renewalUrl` names another account server than this config's, unless `adoptOrigin`.
+ * A reissue from here writes this server's blob over it with this server's sequence, which renet refuses as
+ * `sequence_regression` when the other server's chain is ahead. A licence with no `renewalUrl` names no origin.
+ */
+function assertRepoLicenseOriginAllowed(
+  machineName: string,
+  repositoryGuid: string,
+  currentRenewalUrl: string | undefined,
+  adoptOrigin: boolean
+): void {
+  if (adoptOrigin || !currentRenewalUrl) return;
+  const foreign = reposWithForeignLicenseOrigin(
+    [{ repositoryGuid, requestedSizeGb: 0, currentRenewalUrl }],
+    machineName
+  );
+  if (!foreign.has(repositoryGuid)) return;
+  let licenseOrigin = currentRenewalUrl;
+  try {
+    licenseOrigin = new URL(currentRenewalUrl).origin;
+  } catch {
+    // An unparseable renewalUrl is reported as written.
+  }
+  throw new ValidationError(
+    t('errors.license.foreignOriginSkipped', {
+      repo: repositoryGuid,
+      machine: machineName,
+      licenseOrigin,
+      configOrigin: expectedAccountServerOrigin() ?? '',
+    })
+  );
 }
 
 /** The machine's license scan failed, or answered without this repository, so its identity cannot be read. */
@@ -284,6 +324,11 @@ export function refreshRepoLicenseIdentity(
      * the reissue silently asked for the 1 GB floor.
      */
     datastoreMount?: string;
+    /**
+     * Reissue even when the installed licence names another account server than this config's. Only the explicit
+     * moves set it (`subscription refresh --repo --adopt-origin`, a migration); without it such a licence is refused.
+     */
+    adoptOrigin?: boolean;
   },
   remoteRenetPath?: string,
   sharedSftp?: SFTPClient
@@ -310,7 +355,13 @@ export function refreshRepoLicenseIdentity(
         outputService.warn(error.message);
         return false;
       }
-      const { datastoreMount, ...issueParams } = params;
+      assertRepoLicenseOriginAllowed(
+        machineName,
+        params.repositoryGuid,
+        scanned.currentRenewalUrl,
+        params.adoptOrigin === true
+      );
+      const { datastoreMount, adoptOrigin: _adoptOrigin, ...issueParams } = params;
       const requestedSizeGb =
         params.requestedSizeGb ??
         scanned.requestedSizeGb ??
