@@ -9,9 +9,12 @@ from __future__ import annotations
 
 import datetime
 import importlib.util
+import os
 import pathlib
+import signal
 import subprocess
 import sys
+import time
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[3]
 HOOKS = REPO_ROOT / ".claude" / "rediacc_hooks" / "git"
@@ -46,6 +49,9 @@ def _load(name: str, path: pathlib.Path):
 
 
 GH = _load("githooks_backup_ref_under_test", HOOKS / "githooks.py")
+SETUP = _load(
+    "setup_githooks_backup_ref", REPO_ROOT / ".ci" / "rediacc_ci" / "setup" / "githooks.py"
+)
 
 
 def _git(cwd: pathlib.Path, *args: str) -> str:
@@ -292,3 +298,121 @@ def test_the_branch_rules_still_judge_a_heads_push(tmp_path, monkeypatch, capsys
     )
     assert rc == 1
     assert "creates the remote branch" in err
+
+
+# ------------------------------------------------------------------ the trigger (box G3)
+
+
+class _Recorder:
+    """Stands in for `subprocess.Popen` and records each call's argv and keywords; `real=True` also starts the process, so a timing case can kill it afterwards."""
+
+    def __init__(self, real: bool = False) -> None:
+        self.calls: list[tuple[list[str], dict]] = []
+        self.procs: list[subprocess.Popen] = []
+        self.real = real
+
+    def __call__(self, argv, **kwargs):
+        self.calls.append((list(argv), kwargs))
+        if self.real:
+            proc = subprocess.Popen(argv, **kwargs)
+            self.procs.append(proc)
+            return proc
+        return None
+
+
+def _pinned(tmp_path) -> World:
+    w = World(tmp_path / "c")
+    _git(w.root, "remote", "add", "gitlab", CONSOLE_URL)
+    return w
+
+
+def _hook(monkeypatch, cwd: pathlib.Path, name: str = "post-commit", argv=None) -> int:
+    monkeypatch.chdir(cwd)
+    return GH.main(name, argv or [])
+
+
+def test_post_commit_starts_the_worker_detached(tmp_path, monkeypatch):
+    w = _pinned(tmp_path)
+    rec = _Recorder()
+    monkeypatch.setattr(GH, "_detach", rec)
+    assert _hook(monkeypatch, w.root) == 0
+    assert len(rec.calls) == 1
+    argv, kwargs = rec.calls[0]
+    assert argv == [sys.executable, *GH.BACKUP_WORKER]
+    assert kwargs["start_new_session"] is True
+    assert kwargs["stdin"] is subprocess.DEVNULL
+    assert kwargs["cwd"] == str(w.root)
+    assert ".ci" in kwargs["env"]["PYTHONPATH"]
+    assert not set(kwargs["env"]) & set(GH.cp.REPO_ENV)
+
+
+def test_post_rewrite_and_post_merge_start_it_too(tmp_path, monkeypatch):
+    w = _pinned(tmp_path)
+    rec = _Recorder()
+    monkeypatch.setattr(GH, "_detach", rec)
+    assert _hook(monkeypatch, w.root, "post-rewrite", ["amend"]) == 0
+    assert _hook(monkeypatch, w.root, "post-merge", ["0"]) == 0
+    assert len(rec.calls) == 2
+
+
+def test_the_hook_returns_before_a_slow_worker_finishes(tmp_path, monkeypatch):
+    w = _pinned(tmp_path)
+    rec = _Recorder(real=True)
+    monkeypatch.setattr(GH, "_detach", rec)
+    monkeypatch.setattr(GH, "BACKUP_WORKER", ("-c", "import time; time.sleep(5)"))
+    try:
+        started = time.monotonic()
+        assert _hook(monkeypatch, w.root) == 0
+        took = time.monotonic() - started
+        assert len(rec.procs) == 1
+        assert rec.procs[0].poll() is None, "the worker should still be sleeping"
+        assert took < 0.3, took
+    finally:
+        for proc in rec.procs:
+            os.killpg(proc.pid, signal.SIGKILL)
+            proc.wait()
+
+
+def test_no_pinned_remote_main_or_detached_head_starts_nothing(tmp_path, monkeypatch):
+    w = World(tmp_path / "c")
+    rec = _Recorder()
+    monkeypatch.setattr(GH, "_detach", rec)
+    assert _hook(monkeypatch, w.root) == 0  # no gitlab remote at all
+    _git(w.root, "remote", "add", "gitlab", ORIGIN_URL)
+    assert _hook(monkeypatch, w.root) == 0  # a gitlab remote that is not the pin
+    _git(w.root, "remote", "set-url", "gitlab", CONSOLE_URL)
+    _git(w.root, "checkout", "-q", "main")
+    assert _hook(monkeypatch, w.root) == 0
+    _git(w.root, "checkout", "-q", "--detach")
+    assert _hook(monkeypatch, w.root) == 0
+    assert rec.calls == []
+    # Control: the same repository on its branch does start it.
+    _git(w.root, "checkout", "-q", "1104-1")
+    assert _hook(monkeypatch, w.root) == 0
+    assert len(rec.calls) == 1
+
+
+def test_a_lease_tree_spawns_nothing_and_still_moves_its_pin(tmp_path, monkeypatch):
+    w = _pinned(tmp_path)
+    rec = _Recorder()
+    ran: list[list[str]] = []
+    monkeypatch.setattr(GH, "_detach", rec)
+    monkeypatch.setattr(GH.cp, "lease_root", lambda _d: str(w.root))
+
+    def fake_run(args, *_rest, **_kw):
+        ran.append(list(args))
+        return subprocess.CompletedProcess(args, 0, "", "")
+
+    monkeypatch.setattr(GH, "_run", fake_run)
+    assert _hook(monkeypatch, w.root) == 0
+    assert _hook(monkeypatch, w.root, "post-rewrite", ["amend"]) == 0
+    assert _hook(monkeypatch, w.root, "post-merge", ["0"]) == 0
+    assert rec.calls == []
+    assert ran == [[sys.executable, "-m", "rediacc_ci.dev.worktree_lease", "pin"]]
+
+
+def test_setup_installs_the_new_hooks_and_they_are_executable():
+    assert {"post-commit", "post-rewrite", "post-merge"} <= set(SETUP.HOOK_NAMES)
+    assert SETUP.missing_hooks(REPO_ROOT) == []
+    for name in ("post-rewrite", "post-merge"):
+        assert (HOOKS / name).read_bytes() == (HOOKS / "post-commit").read_bytes()

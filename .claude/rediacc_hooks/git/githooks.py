@@ -9,7 +9,7 @@ WHAT EACH HOOK REFUSES (the rules are `commit_policy`'s, shared with the pre-bas
   pre-commit              a commit from a lease tree (`commit_policy.lease_root`) that stages a gitlink or a path under `agent/`; a commit that stages a gen-docs provider input and leaves a generated doc region drifted in the COMMITTED tree (the section above `gen_docs_pre_commit` says how it stays fast), and a commit that stages an input of a generated artifact enrolled in `.ci/config/generated-artifacts.json` and leaves that artifact stale in the committed tree (`artifacts.py` beside this file).
   pre-push                a push sending or naming a pin under `refs/worktrees/`, from every repository; any push from a lease tree; a push to `main` other than the fast-forward fallback (one ref, a real commit, the live branch's pushed tip, the remote `main` its ancestor; box M2 of PLAN-plan-per-pr-loop, operator ruling 2026-10-02) or the GitLab mirror push (below), a delete of `main` included; a push creating a remote branch that is not the current one; a push of the backup paths that no VERIFIED backup receipt covers (box J10 of PLAN-backup-program, `backup_receipt_refusal` below). A line a live release run lists is admitted instead (box W1-D of PLAN-local-release, `_release_admitted` below). A push naming `refs/backup/**` meets the backup-ref rules instead of all of these (Design G of PLAN-local-first-delivery, `backup_push` below): the repository's pinned GitLab project only, nothing else in the push, create or fast-forward, immutable snapshots, and incremental session-link and secret scans.
 
-`post-commit` REFUSES NOTHING. In a lease tree it runs the `pin` verb of `.ci/rediacc_ci/dev/worktree_lease.py`, which moves `refs/worktrees/<id>` forward to HEAD, so a commit outlives its tree until it lands (agent/plans/PLAN-worktree-lease.md, Design 3). It runs under the override too.
+`post-commit` REFUSES NOTHING. In a lease tree it runs the `pin` verb of `.ci/rediacc_ci/dev/worktree_lease.py`, which moves `refs/worktrees/<id>` forward to HEAD, so a commit outlives its tree until it lands (agent/plans/PLAN-worktree-lease.md, Design 3). Outside a lease, it and `post-rewrite` and `post-merge` start the backup worker detached in a repository with a pinned `gitlab` remote (box G3 of PLAN-local-first-delivery, `spawn_backup` below). They run under the override too.
 
 THE PRE-BASH LAYER STAYS AUTHORITATIVE FOR AGENTS; this is the backstop. It reads no `gh`, so it cannot compute today's next name or know a PR merged; it checks shape and local liveness only.
 
@@ -1249,10 +1249,63 @@ def artifacts_pre_commit() -> int:
     return 0
 
 
-def post_commit() -> int:
-    """Move the lease pin for the tree the commit landed in. Git runs this hook from the top of that tree. Outside a holder path `lease_root` starts no subprocess, so a commit in the main checkout pays only the shim's load. The commit already exists, so a failure here is a warning and the exit stays 0."""
+# THE BACKUP TRIGGER (box G3 of agent/plans/PLAN-local-first-delivery.md). After a commit, a rewrite (`post-rewrite`: amend, rebase) or a merge, the backup worker (`.ci/rediacc_ci/dev/backup_ref.py sync`) is started DETACHED: its own session (`start_new_session=True`), stdin closed, stdout and stderr appended to `<git-dir>/rediacc-backup/log`, and the hook returns at once. Only in a repository whose `gitlab` push URL is its pin in `BACKUP_PATHS` and whose HEAD is a branch other than `main`; a fixture repository, a detached rebase step and `main` start nothing. A lease tree never starts it, because a lease never pushes. A failed sync is retried by the next trigger, since the worker pushes the tip as it is then. The worker's argv is `BACKUP_WORKER`, a seam the tests replace with a sleeper.
+BACKUP_WORKER = ("-m", "rediacc_ci.dev.backup_ref", "sync", "--quiet")
+
+
+def _detach(argv: list[str], **kwargs) -> subprocess.Popen:
+    """`subprocess.Popen`, named so a test can record the call without replacing `Popen` under every `subprocess.run`."""
+    return subprocess.Popen(argv, **kwargs)
+
+
+def spawn_backup(tree: str) -> bool:
+    """Start the backup worker detached for the repository at `tree`, when it qualifies (above). True when one was started. Never raises: the commit already exists."""
+    url = cp.git(["remote", "get-url", "--push", MIRROR_REMOTE], cwd=tree)
+    if not url or backup_url_refusal(tree, url):
+        return False
+    branch = cp.current_branch(tree)
+    if not branch or branch == "main":
+        return False
+    git_dir = cp.git(["rev-parse", "--absolute-git-dir"], cwd=tree)
+    if not git_dir:
+        return False
+    env = {k: v for k, v in os.environ.items() if k not in cp.REPO_ENV}
+    inherited = env.get("PYTHONPATH", "")
+    code = str(CONSOLE_ROOT / ".ci")
+    env["PYTHONPATH"] = "%s:%s" % (code, inherited) if inherited else code
+    try:
+        state = pathlib.Path(git_dir) / "rediacc-backup"
+        state.mkdir(parents=True, exist_ok=True)
+        with (state / "log").open("ab") as log:
+            _detach(
+                [sys.executable, *BACKUP_WORKER],
+                cwd=tree,
+                env=env,
+                stdin=subprocess.DEVNULL,
+                stdout=log,
+                stderr=log,
+                start_new_session=True,
+                close_fds=True,
+            )
+    except OSError as exc:
+        sys.stderr.write("commit-policy: backup sync not started in %s: %s\n" % (tree, exc))
+        return False
+    return True
+
+
+def post_rewrite_or_merge() -> int:
+    """`post-rewrite` and `post-merge`: the backup trigger, outside a lease tree. Refuses nothing."""
     tree = os.getcwd()
     if not cp.lease_root(tree):
+        spawn_backup(tree)
+    return 0
+
+
+def post_commit() -> int:
+    """Move the lease pin for the tree the commit landed in, or, outside a lease, start the backup trigger (above). Git runs this hook from the top of that tree. Outside a holder path `lease_root` starts no subprocess. The commit already exists, so a failure here is a warning and the exit stays 0."""
+    tree = os.getcwd()
+    if not cp.lease_root(tree):
+        spawn_backup(tree)
         return 0
     inherited = os.environ.get("PYTHONPATH", "")
     code = str(CONSOLE_ROOT / ".ci")
@@ -1272,6 +1325,8 @@ def main(hook: str, argv: list[str]) -> int:
     # Before the override: a pin refuses nothing, and a commit made under the override is as much in need of one.
     if hook == "post-commit":
         return post_commit()
+    if hook in ("post-rewrite", "post-merge"):
+        return post_rewrite_or_merge()
     if os.environ.get("COMMIT_POLICY_OK", "") == "1":
         return 0
     if hook == "commit-msg":
