@@ -118,6 +118,14 @@ CASES = [
         True,
         "cd private/$s",
     ),
+    # 3e82900b.2: `cd -` returns to a directory the walk never saw, so it is unverifiable, not the session repo.
+    (
+        "cd - is a directory the hook cannot evaluate",
+        "cd -; " + CREATE,
+        GH_CONSOLE_OPEN,
+        True,
+        "cd -",
+    ),
     # ---- controls
     (
         "a second console PR from the console",

@@ -375,7 +375,8 @@ def _judge(ev, act, repo, reason, open_plans, backup_h, root=""):
                 "`red-fix`, but `%s` has no open PR%s, so there is no red on a live PR to fix"
                 % (
                     branch or "(detached)",
-                    " here or in the console" if _is_submodule(root, repo) else "",
+                    # The console is looked up only for a named branch, so a detached HEAD checked nothing there.
+                    " here or in the console" if branch and _is_submodule(root, repo) else "",
                 ),
             )
     if kind == "backup":

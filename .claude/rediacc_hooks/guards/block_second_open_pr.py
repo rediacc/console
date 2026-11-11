@@ -178,14 +178,15 @@ def _rows(text):
 def _create_repo(run_, cwd, inherited):
     """The repository one walked `gh pr create` targets, read as gh reads it: `--repo`/`-R`/`GH_REPO` (`shellscan.gh_named_repo`), else the directory the call really runs in after its `cd`s, else the session `cwd`.
 
-    `shellscan.gh_run_repo` alone reads the cd only when it names `private/<submodule>` and otherwise asks the SESSION cwd's origin, so `(cd private/$s && gh pr create)` from the console counted console's open PR (worklist #29531257, console PR 605, 2026-11-11), and a cd into any other checkout did the same. The effective directory is handed to `gh_run_repo` as its cwd, so its own order still applies there. A cd target with an unexpanded `$` or backquote is `UNRESOLVED_REPO`; a cd into a missing directory leaves the shell where it was, so the session cwd stands.
+    `shellscan.gh_run_repo` alone reads the cd only when it names `private/<submodule>` and otherwise asks the SESSION cwd's origin, so `(cd private/$s && gh pr create)` from the console counted console's open PR (worklist #29531257, console PR 605, 2026-11-11), and a cd into any other checkout did the same. The effective directory is handed to `gh_run_repo` as its cwd, so its own order still applies there. A cd target with an unexpanded `$` or backquote, or `cd -`, is `UNRESOLVED_REPO`; a cd into a missing directory leaves the shell where it was, so the session cwd stands.
     """
     if shellscan.gh_named_repo(run_, inherited):
         return shellscan.gh_run_repo(run_, cwd, inherited)
     rel = run_.cwd or ""
     if rel in ("", "."):
         return shellscan.gh_run_repo(run_, cwd, inherited)
-    if _UNEXPANDED.search(rel):
+    # `cd -` goes to a previous directory this walk never saw (the walk leaves `-` as the target when the first `cd` of the command is it), so it is as unknown as a variable.
+    if rel == "-" or _UNEXPANDED.search(rel):
         return shellscan.UNRESOLVED_REPO
     target = os.path.expanduser(rel)
     if not os.path.isabs(target):

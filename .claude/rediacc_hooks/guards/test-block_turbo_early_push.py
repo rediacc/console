@@ -111,6 +111,15 @@ G.world(SUB_LISTED / "private" / "renet")
     "\turl = https://github.com/fixture/renet.git\n",
     encoding="utf-8",
 )
+# 3e82900b.1: the same submodule on a detached HEAD, where the console is never asked, so the refusal must not claim it was.
+SUB_DETACHED = world()
+G.world(SUB_DETACHED / "private" / "renet")
+G._git(SUB_DETACHED / "private" / "renet", "checkout", "-q", "--detach")
+(SUB_DETACHED / ".gitmodules").write_text(
+    '[submodule "private/renet"]\n\tpath = private/renet\n'
+    "\turl = https://github.com/fixture/renet.git\n",
+    encoding="utf-8",
+)
 # `gh pr list` answers an open PR only in the console checkout: the submodule has none yet, the live case of console PR 605.
 GH_CONSOLE_ONLY = stub(
     "#!/bin/sh\n"
@@ -291,6 +300,14 @@ CASES = [
         GH_NONE,
         True,
         "has no open PR here or in the console",
+    ),
+    (
+        "red-fix submodule on a detached HEAD does not claim the console was checked",
+        "cd private/renet && " + (R % "red-fix: console PR 605 needs the submodule half") + PUSH,
+        SUB_DETACHED,
+        GH_NONE,
+        True,
+        "`(detached)` has no open PR, so",
     ),
     (
         "red-fix nested repo not in .gitmodules, console PR open",
