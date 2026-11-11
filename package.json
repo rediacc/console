@@ -403,7 +403,7 @@
     "i18n:coverage": "tsx scripts/gen/i18n-coverage-report.ts",
     "i18n:generate-hashes": "tsx scripts/gen/generate-translation-hashes.ts",
     "i18n:sync": "tsx scripts/gen/sync-translations.ts",
-    "i18n:sync:control": "tsx scripts/__tests__/sync-translations.control.ts",
+    "check:ci-i18n-sync": "tsx scripts/__tests__/sync-translations.control.ts",
     "i18n:update-hashes": "tsx scripts/gen/generate-translation-hashes.ts",
     "i18n:backfill-commits": "tsx scripts/gen/i18n-backfill-commits.ts",
     "lint": "biome lint .",

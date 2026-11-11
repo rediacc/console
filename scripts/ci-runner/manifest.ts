@@ -221,6 +221,18 @@ export const GATES: readonly GateSpec[] = [
   },
   // <<< gen-manifest: region 2
   {
+    id: 'check:ci-i18n-sync',
+    run: 'npm run check:ci-i18n-sync',
+    gate: true,
+    leaves: ['scripts/__tests__/sync-translations.control.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-i18n',
+      step: 'i18n sync control',
+    },
+  },
+  {
     id: 'check:ci-i18n-docs-render-parity',
     run: 'npm run check:ci-i18n-docs-render-parity',
     gate: true,

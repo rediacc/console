@@ -2040,6 +2040,10 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:i18n
 
+      - name: i18n sync control
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-i18n-sync
+
       # The three tutorial-media validators (transcripts, narration audio,
       # cast output), split out of check:i18n so the no-media-quality label
       # can hold exactly these without touching the rest of the i18n surface.
