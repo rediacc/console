@@ -2861,6 +2861,29 @@
         "checksumMismatch": "Checksum divergente para {{url}}: esperado {{expected}}, obtido {{actual}}. O download foi apagado e nada foi instalado.",
         "badArchive": "O arquivo baixado não pode ser usado: {{reason}}"
       }
+    },
+    "version": {
+      "channel": "Canal de atualização: {{channel}}",
+      "description": "Mostra a versão do rdc, a plataforma, o canal de atualização e a licença ativa: o plano com login, \"anônima (FREE por repositório)\" sem login e \"desconhecida (offline)\" quando o servidor de contas não responde. A opção --version continua mostrando apenas a versão.",
+      "descriptionShort": "Mostrar a versão da CLI, o canal e a licença ativa",
+      "license": {
+        "anonymous": "anônima (FREE por repositório)",
+        "label": "Licença: {{license}}",
+        "unknown": "desconhecida (offline)"
+      },
+      "platform": "Plataforma: {{platform}} {{arch}}"
+    },
+    "legal": {
+      "accepted": "Aceito: versão {{version}} em {{at}} ({{method}})",
+      "binding": "prevalece",
+      "credits": "Avisos de terceiros: {{command}}",
+      "description": "Mostra os links dos documentos legais no seu idioma, com os links em inglês que prevalecem, a versão atual dos Termos de Serviço com checksum e URL do arquivo, o aceite registrado (do servidor de contas com login, desta configuração sem login) e a entidade contratante. Os avisos de terceiros estão em rdc credits --licenses.",
+      "descriptionShort": "Mostrar os documentos legais, a versão dos Termos e o seu aceite",
+      "documentsTitle": "Documentos legais:",
+      "entity": "Entidade contratante: {{name}}, {{register}} {{code}}, IVA {{vat}}, {{address}}",
+      "notAccepted": "Aceito: não aceito",
+      "terms": "Termos de Serviço: versão {{version}}, em vigor desde {{effective}}",
+      "upcoming": "A próxima versão {{version}} entra em vigor em {{effective}}"
     }
   },
   "docs": {
@@ -2927,7 +2950,9 @@
       "term": "Acesso SSH por Terminal",
       "update": "Atualizações da CLI",
       "vscode": "Integração com VS Code",
-      "tools": "Ferramentas locais"
+      "tools": "Ferramentas locais",
+      "legal": "Documentos legais e Termos",
+      "version": "Informações de versão"
     },
     "supplements": {
       "config": {
@@ -3315,6 +3340,7 @@
     "healthTimeout": "Tempo limite por tentativa da verificação de saúde, em segundos (por omissão 30)",
     "healthWindow": "Janela total da verificação de saúde, em segundos (por omissão 300)",
     "insiders": "Usar definições do VS Code Insiders",
+    "json": "Mostrar JSON legível por máquina",
     "lang": "Substituição de idioma ({{languages}})",
     "licenseRegion": "Região da conta que emite uma licença gratuita quando a configuração não indica nenhum servidor (p. ex. us, eu)",
     "licenses": "Imprimir o texto completo THIRD_PARTY_LICENSES incluído nas compilações de lançamento",

@@ -2329,3 +2329,21 @@ Run this process as an executor so clients can run commands through it instead o
 - `--mode <mode>`: Placement: daemon (customer host) or container (default: daemon)
 
 > MCP excluded: Runs the executor daemon in the foreground until SIGINT; it never returns.
+
+## Other
+
+### rdc legal
+
+Print the legal document links in the CLI language with the binding English links, the current Terms of Service version with its checksum and archive URL, the acceptance on record (from the account server when logged in, from this config when anonymous), and the contracting entity. Third-party notices are under rdc credits --licenses.
+
+**Options:**
+
+- `--json`: Print machine-readable JSON
+
+### rdc version
+
+Print the CLI version, platform, update channel and the active license: the plan when logged in, "anonymous (FREE per repository)" without a login, and "unknown (offline)" when the account server cannot be reached. The --version flag still prints the bare version.
+
+**Options:**
+
+- `--json`: Print machine-readable JSON

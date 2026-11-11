@@ -6700,6 +6700,40 @@
     },
     {
       "path": [
+        "legal"
+      ],
+      "pathKey": "legal",
+      "domain": "legal",
+      "group": null,
+      "plane": "other",
+      "descriptionKey": "commands.legal.description",
+      "label": "Print the legal document links in the CLI language with the binding English links, the current Terms of Service version with its checksum and archive URL, the acceptance on record (from the account server when logged in, from this config when anonymous), and the contracting entity. Third-party notices are under rdc credits --licenses.",
+      "options": [
+        {
+          "flags": "--json",
+          "long": "json",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "options.json",
+          "label": "Print machine-readable JSON"
+        }
+      ],
+      "positionals": [],
+      "hasSubcommands": false,
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
         "machine",
         "access",
         "push"
@@ -15384,6 +15418,40 @@
         "self-update"
       ],
       "mcpExcludeReason": "CLI self-update, not a remote operation",
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "version"
+      ],
+      "pathKey": "version",
+      "domain": "version",
+      "group": null,
+      "plane": "other",
+      "descriptionKey": "commands.version.description",
+      "label": "Print the CLI version, platform, update channel and the active license: the plan when logged in, \"anonymous (FREE per repository)\" without a login, and \"unknown (offline)\" when the account server cannot be reached. The --version flag still prints the bare version.",
+      "options": [
+        {
+          "flags": "--json",
+          "long": "json",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "options.json",
+          "label": "Print machine-readable JSON"
+        }
+      ],
+      "positionals": [],
+      "hasSubcommands": false,
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",

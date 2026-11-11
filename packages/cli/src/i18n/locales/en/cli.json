@@ -2881,6 +2881,29 @@
         "checksumMismatch": "Checksum mismatch for {{url}}: expected {{expected}}, got {{actual}}. The download was deleted and nothing was installed.",
         "badArchive": "The downloaded archive cannot be used: {{reason}}"
       }
+    },
+    "version": {
+      "channel": "Update channel: {{channel}}",
+      "description": "Print the CLI version, platform, update channel and the active license: the plan when logged in, \"anonymous (FREE per repository)\" without a login, and \"unknown (offline)\" when the account server cannot be reached. The --version flag still prints the bare version.",
+      "descriptionShort": "Show the CLI version, channel and active license",
+      "license": {
+        "anonymous": "anonymous (FREE per repository)",
+        "label": "License: {{license}}",
+        "unknown": "unknown (offline)"
+      },
+      "platform": "Platform: {{platform}} {{arch}}"
+    },
+    "legal": {
+      "accepted": "Accepted: version {{version}} at {{at}} ({{method}})",
+      "binding": "binding",
+      "credits": "Third-party notices: {{command}}",
+      "description": "Print the legal document links in the CLI language with the binding English links, the current Terms of Service version with its checksum and archive URL, the acceptance on record (from the account server when logged in, from this config when anonymous), and the contracting entity. Third-party notices are under rdc credits --licenses.",
+      "descriptionShort": "Show the legal documents, the Terms version and the acceptance on record",
+      "documentsTitle": "Legal documents:",
+      "entity": "Contracting entity: {{name}}, {{register}} {{code}}, VAT {{vat}}, {{address}}",
+      "notAccepted": "Accepted: not accepted",
+      "terms": "Terms of Service: version {{version}}, in force from {{effective}}",
+      "upcoming": "Upcoming version {{version}} takes effect on {{effective}}"
     }
   },
   "help": {
@@ -3247,6 +3270,7 @@
     "healthTimeout": "Per-attempt health-check timeout in seconds (default 30)",
     "healthWindow": "Total health-gate window in seconds (default 300)",
     "insiders": "Use VS Code Insiders settings",
+    "json": "Print machine-readable JSON",
     "lang": "Language override ({{languages}})",
     "licenseRegion": "Account region that issues a free license when the config names no server (e.g. us, eu)",
     "licenses": "Print the full THIRD_PARTY_LICENSES text bundled with release builds",
@@ -3376,7 +3400,9 @@
       "backup": "Backup & Restore",
       "job": "Detached Jobs",
       "serve": "Executor Service",
-      "tools": "Local Tools"
+      "tools": "Local Tools",
+      "legal": "Legal Documents and Terms",
+      "version": "Version Information"
     },
     "errors": {
       "heading": "Common Error Messages",

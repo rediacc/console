@@ -2861,6 +2861,29 @@
         "checksumMismatch": "Checksum non corrispondente per {{url}}: atteso {{expected}}, ottenuto {{actual}}. Il download è stato eliminato e non è stato installato nulla.",
         "badArchive": "L'archivio scaricato non è utilizzabile: {{reason}}"
       }
+    },
+    "version": {
+      "channel": "Canale di aggiornamento: {{channel}}",
+      "description": "Stampa la versione di rdc, la piattaforma, il canale di aggiornamento e la licenza attiva: il piano dopo l'accesso, \"anonima (FREE per repository)\" senza accesso e \"sconosciuta (offline)\" se il server degli account non è raggiungibile. L'opzione --version continua a stampare solo la versione.",
+      "descriptionShort": "Mostra versione della CLI, canale e licenza attiva",
+      "license": {
+        "anonymous": "anonima (FREE per repository)",
+        "label": "Licenza: {{license}}",
+        "unknown": "sconosciuta (offline)"
+      },
+      "platform": "Piattaforma: {{platform}} {{arch}}"
+    },
+    "legal": {
+      "accepted": "Accettato: versione {{version}} il {{at}} ({{method}})",
+      "binding": "vincolante",
+      "credits": "Note su componenti di terze parti: {{command}}",
+      "description": "Stampa i link ai documenti legali nella tua lingua con i link inglesi vincolanti, la versione corrente dei Termini di servizio con checksum e URL dell'archivio, l'accettazione registrata (dal server degli account dopo l'accesso, da questa configurazione senza accesso) e l'entità contraente. Le note su componenti di terze parti sono in rdc credits --licenses.",
+      "descriptionShort": "Mostra i documenti legali, la versione dei Termini e la tua accettazione",
+      "documentsTitle": "Documenti legali:",
+      "entity": "Entità contraente: {{name}}, {{register}} {{code}}, P. IVA {{vat}}, {{address}}",
+      "notAccepted": "Accettato: non accettato",
+      "terms": "Termini di servizio: versione {{version}}, in vigore dal {{effective}}",
+      "upcoming": "La prossima versione {{version}} entra in vigore il {{effective}}"
     }
   },
   "docs": {
@@ -2927,7 +2950,9 @@
       "term": "Accesso SSH al terminale",
       "update": "Aggiornamenti CLI",
       "vscode": "Integrazione VS Code",
-      "tools": "Strumenti locali"
+      "tools": "Strumenti locali",
+      "legal": "Documenti legali e Termini",
+      "version": "Informazioni sulla versione"
     },
     "supplements": {
       "config": {
@@ -3315,6 +3340,7 @@
     "healthTimeout": "Timeout dell'health check per singolo tentativo in secondi (predefinito 30)",
     "healthWindow": "Finestra totale del gate di salute in secondi (predefinito 300)",
     "insiders": "Usa le impostazioni di VS Code Insiders",
+    "json": "Stampa JSON leggibile da macchina",
     "lang": "Override della lingua ({{languages}})",
     "licenseRegion": "Regione dell'account che emette una licenza gratuita quando la configurazione non indica alcun server (es. us, eu)",
     "licenses": "Stampa il testo completo THIRD_PARTY_LICENSES incluso nelle build di release",

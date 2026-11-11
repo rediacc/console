@@ -7,7 +7,7 @@ order: 2
 language: it
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/it/cli.json
-sourceHash: "06d1e3290846434c"
+sourceHash: "c090202120f76c2e"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -3372,8 +3372,42 @@ rdc credits [options]
 
 ---
 
+<a id="cli-local-group-legal"></a>
+## 15. {{t:cli.docs.sectionTitles.legal}}
+
+{{t:cli.commands.legal.description}}
+
+<a id="cli-local-legal"></a>
+```bash
+rdc legal [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--json` | {{t:cli.options.json}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+---
+
+<a id="cli-local-group-version"></a>
+## 16. {{t:cli.docs.sectionTitles.version}}
+
+{{t:cli.commands.version.description}}
+
+<a id="cli-local-version"></a>
+```bash
+rdc version [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--json` | {{t:cli.options.json}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+---
+
 <a id="cli-local-group-doctor"></a>
-## 15. {{t:cli.docs.sectionTitles.doctor}}
+## 17. {{t:cli.docs.sectionTitles.doctor}}
 
 {{t:cli.commands.doctor.description}}
 
@@ -3385,12 +3419,12 @@ rdc doctor
 ---
 
 <a id="cli-local-group-tools"></a>
-## 16. {{t:cli.docs.sectionTitles.tools}}
+## 18. {{t:cli.docs.sectionTitles.tools}}
 
 {{t:cli.commands.tools.description}}
 
 <a id="cli-local-tools-install"></a>
-### 16.1 install
+### 18.1 install
 
 {{t:cli.commands.tools.install.description}}
 
@@ -3404,7 +3438,7 @@ rdc tools install <tool> [options]
 
 
 <a id="cli-local-tools-list"></a>
-### 16.2 list
+### 18.2 list
 
 {{t:cli.commands.tools.list.description}}
 
@@ -3415,12 +3449,12 @@ rdc tools list
 ---
 
 <a id="cli-local-group-ops"></a>
-## 17. {{t:cli.docs.sectionTitles.ops}}
+## 19. {{t:cli.docs.sectionTitles.ops}}
 
 {{t:cli.commands.ops.description}}
 
 <a id="cli-local-ops-up"></a>
-### 17.1 up
+### 19.1 up
 
 {{t:cli.commands.ops.up.description}}
 
@@ -3441,7 +3475,7 @@ rdc ops up [options]
 
 
 <a id="cli-local-ops-down"></a>
-### 17.2 down
+### 19.2 down
 
 {{t:cli.commands.ops.down.description}}
 
@@ -3456,7 +3490,7 @@ rdc ops down [options]
 
 
 <a id="cli-local-ops-status"></a>
-### 17.3 status
+### 19.3 status
 
 {{t:cli.commands.ops.status.description}}
 
@@ -3470,7 +3504,7 @@ rdc ops status [options]
 
 
 <a id="cli-local-ops-ssh"></a>
-### 17.4 ssh
+### 19.4 ssh
 
 {{t:cli.commands.ops.ssh.description}}
 
@@ -3487,7 +3521,7 @@ rdc ops ssh [options]
 
 
 <a id="cli-local-ops-setup"></a>
-### 17.5 setup
+### 19.5 setup
 
 {{t:cli.commands.ops.setup.description}}
 
@@ -3501,7 +3535,7 @@ rdc ops setup [options]
 
 
 <a id="cli-local-ops-check"></a>
-### 17.6 check
+### 19.6 check
 
 {{t:cli.commands.ops.check.description}}
 
@@ -3512,7 +3546,7 @@ rdc ops check
 ---
 
 <a id="cli-local-group-serve"></a>
-## 18. {{t:cli.docs.sectionTitles.serve}}
+## 20. {{t:cli.docs.sectionTitles.serve}}
 
 {{t:cli.commands.serve.description}}
 

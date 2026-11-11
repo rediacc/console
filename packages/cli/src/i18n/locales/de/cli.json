@@ -2861,6 +2861,29 @@
         "checksumMismatch": "Prüfsumme für {{url}} stimmt nicht: erwartet {{expected}}, erhalten {{actual}}. Der Download wurde gelöscht, nichts wurde installiert.",
         "badArchive": "Das heruntergeladene Archiv ist unbrauchbar: {{reason}}"
       }
+    },
+    "version": {
+      "channel": "Update-Kanal: {{channel}}",
+      "description": "Gibt die rdc-Version, die Plattform, den Update-Kanal und die aktive Lizenz aus: den Tarif bei Anmeldung, „anonym (FREE pro Repository)“ ohne Anmeldung und „unbekannt (offline)“, wenn der Kontoserver nicht erreichbar ist. Das Flag --version gibt weiterhin nur die Version aus.",
+      "descriptionShort": "CLI-Version, Kanal und aktive Lizenz anzeigen",
+      "license": {
+        "anonymous": "anonym (FREE pro Repository)",
+        "label": "Lizenz: {{license}}",
+        "unknown": "unbekannt (offline)"
+      },
+      "platform": "Plattform: {{platform}} {{arch}}"
+    },
+    "legal": {
+      "accepted": "Akzeptiert: Version {{version}} am {{at}} ({{method}})",
+      "binding": "maßgeblich",
+      "credits": "Hinweise zu Drittkomponenten: {{command}}",
+      "description": "Gibt die Links zu den rechtlichen Dokumenten in Ihrer Sprache samt den maßgeblichen englischen Links aus, dazu die aktuelle Version der Nutzungsbedingungen mit Prüfsumme und Archiv-URL, die hinterlegte Zustimmung (bei Anmeldung vom Kontoserver, sonst aus dieser Konfiguration) und die Vertragspartei. Hinweise zu Drittkomponenten stehen unter rdc credits --licenses.",
+      "descriptionShort": "Rechtliche Dokumente, Nutzungsbedingungen-Version und Ihre Zustimmung anzeigen",
+      "documentsTitle": "Rechtliche Dokumente:",
+      "entity": "Vertragspartei: {{name}}, {{register}} {{code}}, USt-IdNr. {{vat}}, {{address}}",
+      "notAccepted": "Akzeptiert: nicht akzeptiert",
+      "terms": "Nutzungsbedingungen: Version {{version}}, gültig ab {{effective}}",
+      "upcoming": "Die kommende Version {{version}} gilt ab dem {{effective}}"
     }
   },
   "docs": {
@@ -2927,7 +2950,9 @@
       "term": "SSH-Terminalzugang",
       "update": "CLI-Updates",
       "vscode": "VS Code-Integration",
-      "tools": "Lokale Werkzeuge"
+      "tools": "Lokale Werkzeuge",
+      "legal": "Rechtliche Dokumente und Nutzungsbedingungen",
+      "version": "Versionsinformationen"
     },
     "supplements": {
       "config": {
@@ -3315,6 +3340,7 @@
     "healthTimeout": "Timeout pro Healthcheck-Versuch in Sekunden (Standard 30)",
     "healthWindow": "Gesamtes Zeitfenster für das Health-Gate in Sekunden (Standard 300)",
     "insiders": "VS Code Insiders-Einstellungen verwenden",
+    "json": "Maschinenlesbares JSON ausgeben",
     "lang": "Sprache überschreiben ({{languages}})",
     "licenseRegion": "Kontoregion, die eine kostenlose Lizenz ausstellt, wenn die Konfiguration keinen Server nennt (z. B. us, eu)",
     "licenses": "Den vollständigen THIRD_PARTY_LICENSES-Text ausgeben, der mit Release-Builds gebündelt ist",

@@ -19,6 +19,8 @@ const LOCAL_GROUPS = [
   'subscription',
   'update',
   'credits',
+  'legal',
+  'version',
   'doctor',
   'tools',
   'ops',

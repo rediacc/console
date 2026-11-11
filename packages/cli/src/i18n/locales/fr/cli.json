@@ -2861,6 +2861,29 @@
         "checksumMismatch": "Empreinte incorrecte pour {{url}} : attendu {{expected}}, obtenu {{actual}}. Le téléchargement a été supprimé et rien n'a été installé.",
         "badArchive": "L'archive téléchargée est inutilisable : {{reason}}"
       }
+    },
+    "version": {
+      "channel": "Canal de mise à jour : {{channel}}",
+      "description": "Affiche la version de rdc, la plateforme, le canal de mise à jour et la licence active : le forfait une fois connecté, « anonyme (FREE par dépôt) » sans connexion et « inconnue (hors ligne) » quand le serveur de compte est injoignable. L'option --version n'affiche toujours que la version.",
+      "descriptionShort": "Afficher la version du CLI, le canal et la licence active",
+      "license": {
+        "anonymous": "anonyme (FREE par dépôt)",
+        "label": "Licence : {{license}}",
+        "unknown": "inconnue (hors ligne)"
+      },
+      "platform": "Plateforme : {{platform}} {{arch}}"
+    },
+    "legal": {
+      "accepted": "Accepté : version {{version}} le {{at}} ({{method}})",
+      "binding": "qui fait foi",
+      "credits": "Mentions des composants tiers : {{command}}",
+      "description": "Affiche les liens des documents juridiques dans votre langue avec les liens anglais qui font foi, la version en vigueur des Conditions d'utilisation avec sa somme de contrôle et l'URL de l'archive, l'acceptation enregistrée (depuis le serveur de compte une fois connecté, depuis cette configuration sinon) et l'entité contractante. Les mentions des composants tiers sont sous rdc credits --licenses.",
+      "descriptionShort": "Afficher les documents juridiques, la version des Conditions et votre acceptation",
+      "documentsTitle": "Documents juridiques :",
+      "entity": "Entité contractante : {{name}}, {{register}} {{code}}, TVA {{vat}}, {{address}}",
+      "notAccepted": "Accepté : non accepté",
+      "terms": "Conditions d'utilisation : version {{version}}, en vigueur depuis le {{effective}}",
+      "upcoming": "La prochaine version {{version}} entre en vigueur le {{effective}}"
     }
   },
   "docs": {
@@ -2927,7 +2950,9 @@
       "term": "Accès Terminal SSH",
       "update": "Mises à jour CLI",
       "vscode": "Intégration VS Code",
-      "tools": "Outils locaux"
+      "tools": "Outils locaux",
+      "legal": "Documents juridiques et Conditions",
+      "version": "Informations de version"
     },
     "supplements": {
       "config": {
@@ -3315,6 +3340,7 @@
     "healthTimeout": "Délai d'expiration par tentative de healthcheck en secondes (par défaut 30)",
     "healthWindow": "Fenêtre totale du health-gate en secondes (par défaut 300)",
     "insiders": "Utiliser les paramètres VS Code Insiders",
+    "json": "Afficher du JSON lisible par une machine",
     "lang": "Remplacement de langue ({{languages}})",
     "licenseRegion": "Région de compte qui délivre une licence gratuite quand la configuration n'indique aucun serveur (p. ex. us, eu)",
     "licenses": "Afficher le texte complet THIRD_PARTY_LICENSES fourni avec les builds de release",

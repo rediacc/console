@@ -2861,6 +2861,29 @@
         "checksumMismatch": "{{url}} 的校验和不匹配：应为 {{expected}}，实际为 {{actual}}。已删除下载的文件，未安装任何内容。",
         "badArchive": "下载的归档文件无法使用：{{reason}}"
       }
+    },
+    "version": {
+      "channel": "更新通道：{{channel}}",
+      "description": "输出 rdc 版本、平台、更新通道和当前许可证：已登录时为套餐，未登录时为“匿名（每个仓库 FREE）”，无法连接账户服务器时为“未知（离线）”。--version 标志仍然只输出版本号。",
+      "descriptionShort": "显示 CLI 版本、通道和当前许可证",
+      "license": {
+        "anonymous": "匿名（每个仓库 FREE）",
+        "label": "许可证：{{license}}",
+        "unknown": "未知（离线）"
+      },
+      "platform": "平台：{{platform}} {{arch}}"
+    },
+    "legal": {
+      "accepted": "已接受：版本 {{version}}，{{at}}（{{method}}）",
+      "binding": "具约束力",
+      "credits": "第三方声明：{{command}}",
+      "description": "输出您所用语言的法律文件链接及具有约束力的英文链接、当前服务条款版本（含校验和与存档 URL）、已记录的接受情况（已登录时来自账户服务器，匿名时来自当前配置）以及合同主体。第三方声明请运行 rdc credits --licenses 查看。",
+      "descriptionShort": "显示法律文件、服务条款版本及您的接受情况",
+      "documentsTitle": "法律文件：",
+      "entity": "合同主体：{{name}}，{{register}} {{code}}，增值税号 {{vat}}，{{address}}",
+      "notAccepted": "已接受：尚未接受",
+      "terms": "服务条款：版本 {{version}}，自 {{effective}} 起生效",
+      "upcoming": "下一版本 {{version}} 将于 {{effective}} 生效"
     }
   },
   "docs": {
@@ -2927,7 +2950,9 @@
       "term": "SSH 终端访问",
       "update": "CLI 更新",
       "vscode": "VS Code 集成",
-      "tools": "本地工具"
+      "tools": "本地工具",
+      "legal": "法律文件与服务条款",
+      "version": "版本信息"
     },
     "supplements": {
       "config": {
@@ -3315,6 +3340,7 @@
     "healthTimeout": "单次健康检查的超时时间（秒，默认 30）",
     "healthWindow": "健康门禁检查的总时间窗口（秒，默认 300）",
     "insiders": "使用 VS Code Insiders 设置",
+    "json": "输出机器可读的 JSON",
     "lang": "语言覆盖（{{languages}}）",
     "licenseRegion": "当配置未指定服务器时,签发免费许可证的账户区域(例如 us、eu)",
     "licenses": "打印随发行版打包的完整 THIRD_PARTY_LICENSES 文本",

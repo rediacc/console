@@ -2861,6 +2861,29 @@
         "checksumMismatch": "{{url}} のチェックサムが一致しません。期待値 {{expected}}、実際 {{actual}}。ダウンロードを削除し、何もインストールしていません。",
         "badArchive": "ダウンロードしたアーカイブは使用できません: {{reason}}"
       }
+    },
+    "version": {
+      "channel": "更新チャンネル: {{channel}}",
+      "description": "rdc のバージョン、プラットフォーム、更新チャンネル、有効なライセンスを表示します。ログイン済みならプラン、未ログインなら「匿名（リポジトリごとの FREE）」、アカウントサーバーに接続できない場合は「不明（オフライン）」と表示します。--version フラグは従来どおりバージョンだけを表示します。",
+      "descriptionShort": "CLI のバージョン、チャンネル、有効なライセンスを表示します",
+      "license": {
+        "anonymous": "匿名（リポジトリごとの FREE）",
+        "label": "ライセンス: {{license}}",
+        "unknown": "不明（オフライン）"
+      },
+      "platform": "プラットフォーム: {{platform}} {{arch}}"
+    },
+    "legal": {
+      "accepted": "承諾済み: バージョン {{version}}、{{at}}（{{method}}）",
+      "binding": "正本",
+      "credits": "サードパーティの通知: {{command}}",
+      "description": "各言語の法的文書へのリンクと、拘束力のある英語版のリンク、現行の利用規約のバージョン（チェックサムとアーカイブ URL 付き）、記録済みの承諾（ログイン時はアカウントサーバー、未ログイン時はこの設定から）、契約当事者を表示します。サードパーティの通知は rdc credits --licenses にあります。",
+      "descriptionShort": "法的文書、利用規約のバージョン、承諾状況を表示します",
+      "documentsTitle": "法的文書:",
+      "entity": "契約当事者: {{name}}、{{register}} {{code}}、VAT {{vat}}、{{address}}",
+      "notAccepted": "承諾済み: 未承諾",
+      "terms": "利用規約: バージョン {{version}}、{{effective}} から有効",
+      "upcoming": "次のバージョン {{version}} は {{effective}} に発効します"
     }
   },
   "docs": {
@@ -2927,7 +2950,9 @@
       "term": "SSHターミナルアクセス",
       "update": "CLIアップデート",
       "vscode": "VS Code統合",
-      "tools": "ローカルツール"
+      "tools": "ローカルツール",
+      "legal": "法的文書と利用規約",
+      "version": "バージョン情報"
     },
     "supplements": {
       "config": {
@@ -3315,6 +3340,7 @@
     "healthTimeout": "ヘルスチェック1回あたりのタイムアウト秒数（デフォルト 30）",
     "healthWindow": "ヘルスゲート全体のウィンドウ秒数（デフォルト 300）",
     "insiders": "VS Code Insiders 設定を使用する",
+    "json": "機械可読な JSON を出力します",
     "lang": "言語オーバーライド ({{languages}})",
     "licenseRegion": "設定でサーバーが指定されていない場合に無料ライセンスを発行するアカウントのリージョン(例: us、eu)",
     "licenses": "リリースビルドに同梱される THIRD_PARTY_LICENSES の全文を表示する",

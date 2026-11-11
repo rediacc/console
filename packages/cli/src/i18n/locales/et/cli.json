@@ -2861,6 +2861,29 @@
         "checksumMismatch": "Faili {{url}} kontrollsumma ei klapi: oodati {{expected}}, saadi {{actual}}. Allalaaditud fail kustutati ja midagi ei paigaldatud.",
         "badArchive": "Allalaaditud arhiivi ei saa kasutada: {{reason}}"
       }
+    },
+    "version": {
+      "channel": "Uuenduskanal: {{channel}}",
+      "description": "Prindib CLI versiooni, platvormi, uuenduskanali ja aktiivse litsentsi: sisselogituna paketi, ilma sisselogimiseta „anonüümne (FREE repositooriumi kohta)“ ja „teadmata (võrguühenduseta)“, kui konto serverini ei jõua. Lipp --version prindib endiselt ainult versiooni.",
+      "descriptionShort": "Näita CLI versiooni, kanalit ja aktiivset litsentsi",
+      "license": {
+        "anonymous": "anonüümne (FREE repositooriumi kohta)",
+        "label": "Litsents: {{license}}",
+        "unknown": "teadmata (võrguühenduseta)"
+      },
+      "platform": "Platvorm: {{platform}} {{arch}}"
+    },
+    "legal": {
+      "accepted": "Nõustutud: versioon {{version}}, {{at}} ({{method}})",
+      "binding": "siduv",
+      "credits": "Kolmandate osapoolte teated: {{command}}",
+      "description": "Prindib õigusdokumentide lingid sinu keeles koos siduvate ingliskeelsete linkidega, kehtiva kasutustingimuste versiooni koos kontrollsumma ja arhiivi URL-iga, registreeritud nõusoleku (sisselogituna konto serverist, muidu sellest konfiguratsioonist) ja lepingupoole. Kolmandate osapoolte teated on käsu rdc credits --licenses all.",
+      "descriptionShort": "Näita õigusdokumente, kasutustingimuste versiooni ja sinu nõusolekut",
+      "documentsTitle": "Õigusdokumendid:",
+      "entity": "Lepingupool: {{name}}, {{register}} {{code}}, KMKR {{vat}}, {{address}}",
+      "notAccepted": "Nõustutud: ei ole nõustutud",
+      "terms": "Kasutustingimused: versioon {{version}}, kehtib alates {{effective}}",
+      "upcoming": "Tulev versioon {{version}} jõustub {{effective}}"
     }
   },
   "docs": {
@@ -2927,7 +2950,9 @@
       "term": "SSH-terminali juurdepääs",
       "update": "CLI uuendused",
       "vscode": "VS Code'i integratsioon",
-      "tools": "Kohalikud tööriistad"
+      "tools": "Kohalikud tööriistad",
+      "legal": "Õigusdokumendid ja kasutustingimused",
+      "version": "Versiooniteave"
     },
     "supplements": {
       "config": {
@@ -3315,6 +3340,7 @@
     "healthTimeout": "Terviskontrolli katse aegumine sekundites (vaikimisi 30)",
     "healthWindow": "Terviseväravaks kuluv koguaeg sekundites (vaikimisi 300)",
     "insiders": "Kasuta VS Code Insidersi seadeid",
+    "json": "Väljasta masinloetav JSON",
     "lang": "Keele alistamine ({{languages}})",
     "licenseRegion": "Konto piirkond, mis annab tasuta litsentsi, kui konfiguratsioon serverit ei nimeta (nt us, eu)",
     "licenses": "Prindi väljalaske ehitistega kaasas olev täielik THIRD_PARTY_LICENSES tekst",

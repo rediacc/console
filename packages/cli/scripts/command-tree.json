@@ -5691,6 +5691,34 @@
       "subcommands": []
     },
     {
+      "name": "legal",
+      "descriptionKey": "commands.legal.description",
+      "options": [
+        {
+          "flags": "--json",
+          "descriptionKey": "options.json",
+          "mandatory": false,
+          "defaultValue": null
+        }
+      ],
+      "arguments": [],
+      "subcommands": []
+    },
+    {
+      "name": "version",
+      "descriptionKey": "commands.version.description",
+      "options": [
+        {
+          "flags": "--json",
+          "descriptionKey": "options.json",
+          "mandatory": false,
+          "defaultValue": null
+        }
+      ],
+      "arguments": [],
+      "subcommands": []
+    },
+    {
       "name": "cluster",
       "descriptionKey": "commands.cluster.description",
       "options": [],
