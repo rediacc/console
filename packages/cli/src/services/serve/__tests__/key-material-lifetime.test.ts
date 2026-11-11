@@ -10,6 +10,7 @@
 
 import { existsSync, statSync } from 'node:fs';
 import type { AddressInfo } from 'node:net';
+import { fileURLToPath } from 'node:url';
 import { serve } from '@hono/node-server';
 import { CLI_CONTRACT_VERSION } from '@rediacc/shared/cli-contract';
 import { PROXY_ROUTES } from '@rediacc/shared/cli-contract/wire';
@@ -225,6 +226,8 @@ const CONFIG = {
   schemaVersion: 3,
   id: '00000000-0000-4000-8000-0000000000dd',
   version: 1,
+  // Any file that exists: the executor resolves a local renet path before it touches the machine, and a CI unit job has no renet on PATH. This test file stands in, so the run never depends on the host having a renet binary.
+  renetPath: fileURLToPath(import.meta.url),
   credentials: { ssh: { privateKey: PRIVATE_KEY } },
   resources: {
     machines: {
