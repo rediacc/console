@@ -309,6 +309,7 @@ There are two account keypairs today. Production is one keypair, the same for al
   4. Re-login with rediacc_ci.ops.login_bench.
   5. Run `--config eu-bench subscription refresh -m <each bench machine>`.
   6. Run a bench backup drill. It must pass with licences under `fingerprint:fb37f1ae16f8b7c0`.
+  (corrected 2026-11-11, R2) Local-route: deploy-bench -- deploy_bench runs from the branch head, and the version id, smoke rc and bench licence drill are the record.
 
 - [x] L3 [live] hostinger, read-only first.
   1. Run `renet_key_gate` against the local `private/renet/bin/renet` built by `./rdc.sh`. It must pass and name `fingerprint:fb37f1ae16f8b7c0`.

@@ -31,6 +31,7 @@ One order carries over: multi-org ML5 reaches the three stable targets before du
 - [ ] Q0: Before the cutover, set the four ACCOUNT_BACKUP_S3_* secrets on the eu stable Worker (names only, through the M1 path) and add the bucket-scoped cf-r2-backup rotation slug to the rotation profile in .ci/config/secret-supply.json; carried from CHECKLIST w8. Accept: the Worker settings list all four names; the rotation dry run lists the slug; the rollback version id is recorded. (corrected 2026-11-04: the slugs exist as cf-r2-backup-stable, -edge and -bench in private/account/rotation-manifest.json:136, and the rotation profile in .ci/config/secret-supply.json has no slug concept, so that clause needs no change there; what remains is the live push and dry run, which wait on the operator's hold on stable.)
 - [ ] Q1: Merge the program's PR through the loop (CD deploys edge). Deploy stable EU locally per .claude/skills/deploy/SKILL.md: `./run.sh devbox exec -- env PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile deploy-workers -- bash -c 'npm run build:packages && PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_account --region eu --target stable'` (with the portal build step the skill names), then the M1 secrets path for eu stable. Record the rollback version id and the D1 bookmark. Accept: https://eu.rediacc.com/account/api/v1/health answers 200 and the portal assets load.
   Note: the old Worker, bucket, D1 and host names in this box predate the rename in PLAN-product-domain-rename.md.
+  (corrected 2026-11-11, R2) GitHub-only: CD -- the edge deploy is triggered by the merge through the release pipeline; the stable EU step stays local per the deploy skill.
 - [ ] Q12: The next 02:00 timer run completes on its own and uploads only changed cells. Accept: backup status shows the timer run; usage grows by a small delta.
 - [ ] Q13: After a few runs, `./rdc.sh backup retention preview mail --config eu-remote`. Accept: nothing beyond the policy is listed, and the floor is kept.
   (note) Runs through `eu-bench`, not `eu-remote`: PLAN-tested-on-bench ruling 1 as extended on 2026-11-04. The text above keeps the old name because a box's first 120 characters are its identity.
@@ -48,6 +49,7 @@ One order carries over: multi-org ML5 reaches the three stable targets before du
 ## Moved from PLAN-stop-hook-one-plan-scope.md
 
 - [ ] SC13b Real run after the merge: the first stop on the merged branch blocks with `loop-next` naming the next QUEUE.md plan and the step-7 commands; after the cut, the push and `gh pr create`, the new PR's body reads that plan's `Plan:` line and `loop-next` is silent. Files: none owned (evidence only). Depends on: SC13a and this PR's merge. Acceptance: both decision blocks quoted in the round log with the branch, PR number and head sha.
+  (corrected 2026-11-11, R2) GitHub-only: CD -- the proof is the first stop after a real PR merge, and only the merge pipeline produces that event; no local run can fake it.
 
 ## Moved from PLAN-plan-preflight.md
 
@@ -63,6 +65,7 @@ One order carries over: multi-org ML5 reaches the three stable targets before du
     - `rdc --version` from the edge channel names V;
     - the R1 order entry reads satisfied;
     - the account Worker reaches eu edge after the CLI.
+  (corrected 2026-11-11, R2) Local-route: deploy-bench, bench-cli -- rehearse the same release:local path on bench from the branch head (--workers-only --regions bench); the real edge release follows it.
 - [ ] L2 [lead] The first stable release through `release:local --channel stable` after the soak, together with the R3 live check (`subscription status` against `machine status hostinger --licenses`).
   - Accept: `verify_stable_endpoints` rc=0, and the stable deploy records are in R2.
 
@@ -70,6 +73,7 @@ One order carries over: multi-org ML5 reaches the three stable targets before du
 
 - [ ] L5 [live, post-merge] stable-eu through promote-stable (soak or nightly waiver). Delete rediacc-proxy-eu's `EXECUTOR_TOKEN` secret and revoke its token. -- Owns: agent/plans/PLAN-proxy-cd-six-targets.md. Accept: the stable-eu record matches L4's manifest sha256s for the same version, smoke rc is 0, E1 against `https://eu.rediacc.com` exits 0 with the audit event naming the user (this also closes PLAN-cloudflare-proxy C2), and no unrevoked 'cloudflare' token remains in the eu D1.
   Note: the old Worker, bucket, D1 and host names in this box predate the rename in PLAN-product-domain-rename.md.
+  (corrected 2026-11-11, R2) GitHub-only: soak -- stable-eu comes through promote-stable after the soak window on edge, which is calendar time on a released channel.
 - [ ] L6 [live, post-merge] stable-us, as L5. -- Owns: agent/plans/PLAN-proxy-cd-six-targets.md. Accept: as L5 for us.
 - [ ] L7 [live, post-merge] stable-asia, as L5. -- Owns: agent/plans/PLAN-proxy-cd-six-targets.md. Accept: as L5 for asia.
 - [ ] L8 [ops, post-merge] Telemetry acceptance, which folds in PLAN-telemetry-export T15.
@@ -82,6 +86,7 @@ One order carries over: multi-org ML5 reaches the three stable targets before du
 ## Moved from PLAN-console-executor-multi-org.md
 
 - [ ] ML4 [live, post-merge] The first CD edge run after merge. Its three job records, plus E1 per edge region. -- Owns: agent/plans/PLAN-console-executor-multi-org.md. Accept: three deploy jobs succeed with smoke rc 0, and E1 exits 0 for each edge origin.
+  (corrected 2026-11-11, R2) GitHub-only: CD -- the box is the first CD edge run itself, and only the release pipeline produces its three job records.
 - [ ] ML5 [live, post-merge] stable-eu, stable-us and stable-asia through promote-stable. -- Owns: agent/plans/PLAN-console-executor-multi-org.md. Accept: each stable row has smoke rc 0, and E1 against `https://eu.rediacc.com`, `https://us.rediacc.com` and `https://asia.rediacc.com` exits 0 with two org ids each.
   Note: the old Worker, bucket, D1 and host names in this box predate the rename in PLAN-product-domain-rename.md.
 - [ ] ML6 [ops, post-merge] Capacity watch. A Grafana query of the per-target count of `rediacc.proxy.outcome=capacity` over 14 days goes to the Live records, and the decision on raising max_instances goes to the operator with that number. -- Owns: agent/plans/PLAN-console-executor-multi-org.md. Accept: the Live records carry the 14-day count for each of the six targets and the ASKED line or the "no capacity refusals" record.
@@ -89,6 +94,7 @@ One order carries over: multi-org ML5 reaches the three stable targets before du
 ## Moved from PLAN-executor-durable-object-policy.md
 
 - [ ] L4 [live, post-merge] The first CD edge run after merge, with its three job records and E1 per edge region. -- Owns: agent/plans/PLAN-executor-durable-object-policy.md. Accept: three deploy jobs succeed with smoke rc 0 and backend `durable`, and E1 exits 0 for each edge origin.
+  (corrected 2026-11-11, R2) GitHub-only: CD -- the box is the first CD edge run itself, and only the release pipeline produces its three job records.
 - [ ] L5 [live, post-merge] stable-eu, stable-us and stable-asia.
   - Phase 1 rides the merged release through promote-stable.
   - Phase 2 is the release that flips `BACKEND_BY_TARGET` for the three stable targets.
@@ -136,6 +142,7 @@ One order carries over: multi-org ML5 reaches the three stable targets before du
 
 - [ ] H4: The next nightly: 10 repositories have `hasIndex` true and `indexStatus` sealed. demo-heartbeat is reported plainly: it has neither keyfile nor mount, so it gets no listing, and the warning is in its unit journal. Spot ran after the snapshot, and reports reached the account after the stable deploy.
   - Accept: `rdc --config eu-bench backup manifests <repo> -o json` rc 0 per repo, recorded here.
+  (corrected 2026-11-11, R2) Local-route: hostinger -- run the backup by hand on hostinger with the branch renet and read backup manifests through eu-bench; the nightly is the same job.
 
 ## Moved from PLAN-backup-critical-tier.md
 

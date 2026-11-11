@@ -615,6 +615,7 @@ Control rule: every new test fails without its fix. Each tick note records the t
   (corrected 2026-11-06, review 2e764bc9.1) The receipt tree e448b9115dc0 is the git tree of the ledger row's head: `git rev-parse --short=12 4e665bbc8^{tree}` prints e448b9115dc0, so the receipt is fresh for the tree the drills ran on.
 - [ ] Y3: The D1 clone check covers migration 0074.
   - Accept: the CD or local `rediacc_ci.deploy.test_d1_migrations` run rc 0 for eu, recorded with its run id.
+  (corrected 2026-11-11, R2) Local-route: d1-migrations -- run test_d1_migrations on the branch's D1 clones for eu; the CD run is not needed.
 
 ### Z: bench, after the merge and edge deploy (lead)
 

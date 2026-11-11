@@ -175,10 +175,12 @@ Two resume paths keep the invariant "every exists answer the commit relies on wa
 - [ ] LB1 [live] Bench deploy of waves 1-2 (`npm run release:local -- --channel edge --workers-only --regions bench`): a backup run, a GC run with a live session skipping the lineage, a replicator batch, the nightly sweeps (counts logged), AE points visible through the SQL API, a 429 from a looping config pull. Then one more release with no pin reads or writes on bench before P3.
   Depends on: LR1, P1, P2, W1, W2.
   Accept: live-proof bench account-smoke
+  (corrected 2026-11-11, R2) Local-route: deploy-bench, bench-cli -- the box is already the bench deploy: release:local to bench from the branch, then drive the runs through eu-bench.
 - [ ] LE1 [live] Production deploy eu, us, asia. Before each region, record the D1 Time Travel bookmark of the database the region's config binds (`npx wrangler d1 time-travel info <db> --remote`, the bookmark quoted on this box; eu is required, us and asia recorded too). Then `npm run release:local -- --channel edge --workers-only --regions eu,us,asia`. After the deploy: `backup_exists_pins` gets no new rows (`select max(created_at)` stays put), and the sweep counts appear in the event log after the first nightly run.
   Depends on: LB1.
   Accept: `python3 .ci/scripts/quality/check_region_consistency.py --live` rc 0, with the three bookmarks recorded here.
   (corrected 2026-11-09, d778be9d) Before the production deploy, the minimum renet version (version_policy) must already carry R1, so no renet that re-asks only its pending hashes can resume an upload against a pinless reaper; LR1 proves the release, this line gates LE1 on the minimum version being raised to it.
+  (corrected 2026-11-11, R2) GitHub-only: soak -- the sweep counts appear only after the first scheduled nightly on production, so that half is calendar time on the released channel.
 - [ ] LD1 [live] One release after LE1 with no pin code, then P3's drop deployed to bench and to production, with a fresh bookmark per database before the migration.
   Depends on: LE1, P3.
   Accept: `npx wrangler d1 execute <db> --remote --command "select name from sqlite_master where name='backup_exists_pins'"` returns no row for bench and each region.

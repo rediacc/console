@@ -188,6 +188,7 @@ M1 merges with these boxes open, so the PR body carries `Operational-Reason: hos
     (ticked) 2026-11-08T15:06:40Z by d778be9d: eu-remote backup status -m hostinger rc 0 + backup strategy list rc 0 on 2026-11-08: one timer nightly-hot (0 2 * * *, hot, store home), last run 2026-11-08T02:00:46Z success, next 2026-11-09T02:00Z, no faster cadence on any repo; L9 re-point stays outside 01:45-03:00Z; read-only verbs ran the machine's own renet
 - [ ] M1 [live] Merge the batch through `/pr-merge` with the `Operational-Reason:` line, then release edge from the merged tree, so CD runs on the new names and hostinger gets a released renet.
   Accept: `npm run release:local -- --channel edge` rc 0.
+  (corrected 2026-11-11, R2) GitHub-only: CD -- the box merges through /pr-merge so that CD itself runs on the new names; only the release pipeline shows that.
 
 ### hostinger
 
@@ -196,6 +197,7 @@ M1 merges with these boxes open, so the PR body carries `Operational-Reason: hos
     (ticked) 2026-11-10T19:05:54Z by d778be9d: nocommit: live run 2026-11-10T13:13-13:24Z via eu-remote: machine status hostinger rc 0, backup status -m hostinger rc 0 (nightly-hot scheduled, next 02:00Z), renewalUrl https://eu.rediacc.cloud/account/api/v1/licenses/renew on all 13 (mail 24effd58 issued 13:19:40Z), strategy bind rc 0, backup schedule rc 0 with --expect-account-server https://eu.rediacc.cloud; repo list unchanged (13 repos). Edge configs (eu-edge, edge-asia-*) hold edge-D1 tokens that account-eu does not, so they no longer authenticate.
 - [ ] L10 [live] Let the schedule re-upload to `backups-eu`, then prove it: a verify, one restore test under an `-rt` name with only that copy deleted by GUID, and one nightly on the new target.
   Accept: `./rdc.sh --config eu-remote backup verify --store` rc 0, `./rdc.sh --config eu-remote backup usage -o json` rc 0 with a snapshot per repository, and the restore compared by checksum.
+  (corrected 2026-11-11, R2) Local-route: hostinger -- trigger the backups-eu upload and the nightly by hand on hostinger with the branch renet, then verify and restore-test through eu-bench.
 
 ### GitHub and delete
 

@@ -188,6 +188,7 @@ This plan is public: no customer name appears in it or in any tracked file. `acm
   Accept: `./run.sh enterprise proof keys` rc 0 and `.ci/scripts/quality/check_region_consistency.py --live` rc 0.
 - [ ] H1 [live] hostinger renews through `signer-eu` after X1. Mutating verbs here use released renet, as agent/plans/PLAN-product-domain-rename.md states; the Workers' cut-over itself waits on no merge.
   Accept: `./rdc.sh --config eu-remote machine status hostinger` rc 0 with a licence renewed after X1 recorded here.
+  (corrected 2026-11-11, R2) Local-route: hostinger -- renew the hostinger licence through signer-eu on the real machine with the branch renet; no release is needed.
 - [ ] X2 [live] Create the internal canary company through `enterprise add`, unlisted, and run one release to it through the local path and one through GitHub.
   Accept: `./run.sh enterprise list` rc 0, naming the canary as healthy on both paths' last release.
 - [x] L1 [writer] Operator runbook, the X25519 line corrected in `private/account/CLAUDE.md` (it does the request tunnel, not config storage), and the signer's limits and the certificate limit written down.

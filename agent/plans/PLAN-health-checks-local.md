@@ -456,6 +456,7 @@ Owns: scripts/gates/check-quality-complete.ts, .github/workflows/ci-quality.yml 
   - Accept: `npm run check:ci-plan-folders && npm run check:ci-plan-housekeeping` rc 0.
 - [ ] N3: Proof of 28bcafd50 (F8) on PR CI: Pytest shards 2/5 and 4/5 green on the PR head.
   - Accept: `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest .ci/rediacc_ci/tests/test_core_account.py .ci/rediacc_ci/tests/test_core_local_common.py -q` rc 0, plus the two PR CI shard conclusions read with `.ci/scripts/ci/ci-trace.py`.
+  (corrected 2026-11-11, R2) GitHub-only: CI parity -- the claim is that Pytest shards 2/5 and 4/5 are green on the PR head in CI; the local pytest run only covers the Accept's first half.
 - [x] N4: The shim test builds its PATH with `path_farm_without` over a fixed tool set, so the MISMATCH count is a property of the pins and not of the runner image.
   - CONTROL: the same test under a farm that adds one extra pinned tool still passes, and restoring the real-PATH form under that farm fails.
   - Accept: `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest .ci/rediacc_ci/tests/test_core_toolchain.py -q` rc 0.

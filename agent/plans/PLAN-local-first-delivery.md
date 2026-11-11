@@ -12,7 +12,7 @@ No `Live-Proof:` line: every owned path is git-hook, plan-gate or vm:check tooli
 ## Context
 Three operator concerns, with measured facts:
 1. **Unpushed work has no copy off the machine.** 1,752 commits sat unpushed for 6 days; on 2026-11-11 `git log origin/main..HEAD` on 1104-1 counts 2,168. The only push to `gitlab` the pre-push hook admits is the mirror of `main` (`_mirror_push_refusal`, .claude/rediacc_hooks/git/githooks.py:398-427, URL pinned at :339-341). The submodules have no `gitlab` remote at all (`git -C private/{renet,account,elite} remote -v` lists only `origin`).
-2. **Plans wait on GitHub when a local path exists.** The 1104-1 survey (/tmp/writers-now/1104-1-survey-20261111T0307Z.md) puts 41 boxes in AFTER-MERGE and 14 in AFTER-PR-CI. Many of them name "released", "after the merge", "a ct-tests run" or "a preview deploy" when hostinger (`./rdc.sh --config eu-remote`), bench (`deploy_bench`), the KVM fleet or the D1 clone would prove the same thing today. writers-now parks such boxes in G3/G4 (.claude/commands/writers-now.md:28-29).
+2. **Plans wait on GitHub when a local path exists.** The 1104-1 survey (/tmp/writers-now/1104-1-survey-20261111T0307Z.md) puts 41 boxes in AFTER-MERGE and 14 in AFTER-PR-CI. Many of them name "released", "after the merge", "a ct-tests run" or "a preview deploy" when hostinger (`./rdc.sh --config eu-bench` for provisioning and reads, `eu-remote` for `backup schedule` and `strategy bind`), bench (`deploy_bench`), the KVM fleet or the D1 clone would prove the same thing today. writers-now parks such boxes in G3/G4 (.claude/commands/writers-now.md:28-29).
 3. **vm:check is slow.** The base battery takes about 30 min (run 5 `vmc-11110524-6b70ae`, receipt `wallMs 1814973`). Of that, K1.6 rebuilds the main-pointer renet every run in a fresh clone (168 s row; .ci/rediacc_ci/drills/down_before_kill.py:226-237, :763-791, `MAIN_POINTER` :52). A1 runs serially before P0 (.ci/rediacc_ci/drills/vm_check.py:2179-2180, docstring :15), 97 s.
 
 Hook facts the design depends on:
@@ -47,7 +47,7 @@ Hook facts the design depends on:
 
 ## Design L: local-first rule (R2)
 - `.ci/config/proof-tiers.json`:
-  - Each surface gains `local`: renet and cli-remote use `vm:check` and `hostinger: ./rdc.sh --config eu-remote`; account uses `deploy_bench` and `test_d1_migrations` (the regional D1 clones) for migrations; account-worker, proxy and www use `deploy_bench`; e2e suites use the e2e-local fleet (.claude/agents/e2e-local.md).
+  - Each surface gains `local`: renet and cli-remote use `vm:check` and `hostinger: ./rdc.sh --config eu-bench` (the live target config, operator ruling 2026-11-05; `backup schedule` and `strategy bind` stay on eu-remote); account uses `deploy_bench` and `test_d1_migrations` (the regional D1 clones) for migrations; account-worker, proxy and www use `deploy_bench`; e2e suites use the e2e-local fleet (.claude/agents/e2e-local.md).
   - `tiers.live.github_waits` is the one phrase list ("released", "after the merge", "CD", "nightly", "preview deploy", "CI run", "ct-tests run", "run id", "ci-trace").
 - A box that waits on GitHub carries `GitHub-only: <CD|CI parity|native-runner|soak|preview> -- <why no local path, 20+ chars>`, in its line or in an indented `(corrected ...)` line under it.
 - The new rule LP8 lives in `wl_plandeps.github_wait_findings`, shared by the pre-edit guard and `check:ci-plan-live-proof`. It refuses an open box that matches `github_waits` and carries no tag.

@@ -117,6 +117,7 @@ In scope: ACCOUNT_ED25519_PRIVATE_KEY, ACCOUNT_X25519_PRIVATE_KEY, RELEASE_GPG_P
 
   Accept: `.ci/scripts/ci/ci-trace.py --wait --until-final`
 - [ ] S10 POST-MERGE: on main, "Deploy Account Workers" (job deploy), "Deploy WWW Worker" (job deploy) and "CD - Stage Artifacts (Reusable)" pass on the edge CD run. "CI - OPS Tests" (job ops-vm-provision) passes on its next dispatch.
+  (corrected 2026-11-11, R2) GitHub-only: CD -- the named jobs are workflows on the edge CD run on main, and only that pipeline runs them.
 
   Accept: `.ci/scripts/ci/ci-trace.py --branch main --wait --until-final`
 

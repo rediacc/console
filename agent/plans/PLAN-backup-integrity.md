@@ -399,12 +399,14 @@ V1 to V6 share `backup.go`, `backup_snapshot.go` and `backup_restore.go`, and on
   (note 2026-11-06) "The same commit" holds at the console level: grants.go lives in the renet submodule, so its fix is renet f51aa5e, and console 5357e04f8 carries the record and the pointer move to it as one commit.
 - [ ] P4: The D1 clone check covers migration 0073.
   - Accept: the CD or local `rediacc_ci.deploy.test_d1_migrations` run rc 0 for eu, recorded with its run id.
+  (corrected 2026-11-11, R2) Local-route: d1-migrations -- run test_d1_migrations on the branch's D1 clones for eu; the CD run is not needed.
 
 ### B: bench, after the merge and edge deploy (lead)
 
 - [ ] B1: A replayed bad night and alert on `eu-bench`: a failed verify and a stopped nightly produce one digest email; a repeat that day produces none.
   (corrected ASKED:2026-11-05T07:06Z) "After the merge and edge deploy" in the section heading no longer applies: bench runs the branch head through `deploy_bench`, and the Accept already reads as bench.
   - Accept: `./rdc.sh --config eu-bench backup manifests <repo> -o json` rc 0 shows the states, and the delivery is recorded here.
+  (corrected 2026-11-11, R2) Local-route: deploy-bench, bench-cli -- deploy the branch to bench and replay the bad night through eu-bench, no merge or nightly needed.
 - [x] B2: Repair on bench with a chunk corrupted through the store's credentials.
   (corrected ASKED:2026-11-05T07:06Z) "After the merge and edge deploy" in the section heading no longer applies: bench runs the branch head through `deploy_bench`, and the Accept already reads as bench.
   - Accept: `./rdc.sh --config eu-bench backup repair <repo>` rc 0, then `backup verify <repo> --store` rc 0.
@@ -418,6 +420,7 @@ Every H box uses the branch-built `rdc` and renet while edge and stable are on h
 - [ ] H1: The released CLI reads `eu-remote` (F13), which also gives box R1 of PLAN-backup-program.md its live read.
   (note) Runs through `eu-bench`, not `eu-remote`: PLAN-tested-on-bench ruling 1 as extended on 2026-11-04. The text above keeps the old name because a box's first 120 characters are its identity.
   - Accept: `rdc --version` shows a release newer than 2.4.0, and `rdc --config eu-bench backup strategy list -o json` rc 0 with rows on stdout.
+  (corrected 2026-11-11, R2) Local-route: bench-cli -- build the branch CLI and run backup strategy list through eu-bench; a release is not needed to read it.
 - [ ] H2: Read first: for each of the 10 mounted repositories, the CLI-computed key equals the machine's key where one exists. A mismatch stops the box and is reported, with no overwrite.
   - Accept: `rdc --config eu-bench backup toc-key sync <repo> --dry-run -o json` rc 0 for each, results recorded.
 - [ ] H3: Re-deploy the schedule; public keys are installed, and units show verify and `OnFailure=`.
@@ -435,6 +438,7 @@ Every H box uses the branch-built `rdc` and renet while edge and stable are on h
 - [ ] H9: The alert path through a harmless planted failure: `renet backup report --test` from the released binary, with no repository involved.
   (corrected ASKED:2026-11-05T07:06Z) "The released binary" reads as the branch-built binary: `renet backup report --test` from the branch renet, still with no repository involved. The Accept stands.
   - Accept: the command rc 0, and the digest's receipt recorded here.
+  (corrected 2026-11-11, R2) Local-route: hostinger -- run renet backup report --test from the branch renet build on the real hostinger machine.
 
 - [x] LP-bench [live] Fresh bench receipt through worklist.py --live-proof, after this plan's bench-deployable boxes land.
   Accept: live-proof bench account-smoke
