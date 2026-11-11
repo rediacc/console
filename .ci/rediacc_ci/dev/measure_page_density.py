@@ -123,6 +123,10 @@ def listening_pids(port: int, proc: pathlib.Path = pathlib.Path("/proc")) -> set
     return pids
 
 
+class ServerExitedError(MeasureError):
+    """The preview server died before it listened, typically because another process took the port between pick_port and the bind."""
+
+
 def _connectable(port: int) -> bool:
     with socket.socket() as probe:
         return probe.connect_ex(("127.0.0.1", port)) == 0
@@ -146,11 +150,16 @@ def fetch(port: int, path: str) -> str:
         conn.close()
 
 
-def wait_for_server(port: int) -> None:
+def wait_for_server(port: int, server: subprocess.Popen[bytes] | None = None) -> None:
     deadline = time.monotonic() + SERVER_WAIT_SECONDS
     while time.monotonic() < deadline:
         if _connectable(port):
             return
+        if server is not None and server.poll() is not None:
+            raise ServerExitedError(
+                "the server on %d exited with code %s before it listened"
+                % (port, server.returncode)
+            )
         time.sleep(0.1)
     raise MeasureError(
         "the server did not start listening on %d within %ds" % (port, SERVER_WAIT_SECONDS)
@@ -259,15 +268,27 @@ def main(argv: list[str] | None = None, www: pathlib.Path | None = None) -> int:
         print("agent-browser is not on PATH", file=sys.stderr)
         return 1
 
-    port = pick_port()
-    server = subprocess.Popen(
-        [sys.executable, "-m", "http.server", str(port), "--directory", str(dist)],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-        stdin=subprocess.DEVNULL,
-    )
+    for attempt in range(3):
+        port = pick_port()
+        server = subprocess.Popen(
+            [sys.executable, "-m", "http.server", str(port), "--directory", str(dist)],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            stdin=subprocess.DEVNULL,
+        )
+        try:
+            wait_for_server(port, server)
+        except ServerExitedError as exc:
+            if attempt == 2:
+                print(str(exc), file=sys.stderr)
+                return 1
+            continue
+        except MeasureError as exc:
+            server.kill()
+            print(str(exc), file=sys.stderr)
+            return 1
+        break
     try:
-        wait_for_server(port)
         verify_server(port, server.pid, dist)
         runtime = os.environ.get("XDG_RUNTIME_DIR") or str(
             pathlib.Path.home() / ".cache" / "xdg-runtime"

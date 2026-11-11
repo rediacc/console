@@ -465,6 +465,9 @@ def _bench_env(monkeypatch, **overrides):
         "OBS_OTLP_CREDENTIALS": '{"user":"u","pass":"p"}',
         **overrides,
     }
+    # The Stripe pair is the runner's own when the lane carries one: a half-set pair there (a webhook secret with no key) failed the whole-payload tests in the ci:quick clone, so a case that wants the pair passes both halves in `overrides`.
+    for name in ("STRIPE_SANDBOX_SECRET_KEY", "STRIPE_SANDBOX_WEBHOOK_SECRET"):
+        monkeypatch.delenv(name, raising=False)
     for name, value in values.items():
         monkeypatch.setenv(name, value)
     monkeypatch.setattr(deploy_bench, "_backup_values", lambda: ("https://e", "bk", "bs"))
