@@ -2592,6 +2592,11 @@
         "validating": "Token wird überprüft...",
         "waitingApproval": "Warte auf Browser-Autorisierung..."
       },
+      "register": {
+        "description": "Konto im Browser anlegen (E-Mail vorausgefüllt) und anmelden",
+        "optionEmail": "E-Mail-Adresse, die auf der Registrierungsseite vorausgefüllt wird",
+        "invalidEmail": "Gib eine gültige E-Mail-Adresse ein."
+      },
       "logout": {
         "description": "Gespeichertes Abonnement-Token löschen",
         "success": "Abonnement-Token entfernt"

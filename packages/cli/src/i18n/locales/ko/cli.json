@@ -2592,6 +2592,11 @@
         "validating": "토큰 검증 중...",
         "waitingApproval": "브라우저 인증 대기 중..."
       },
+      "register": {
+        "description": "브라우저에서 계정 만들기(이메일 미리 입력) 후 로그인",
+        "optionEmail": "가입 페이지에 미리 입력할 이메일 주소",
+        "invalidEmail": "올바른 이메일 주소를 입력하세요."
+      },
       "logout": {
         "description": "저장된 구독 토큰을 지웁니다",
         "success": "구독 토큰이 제거되었습니다"

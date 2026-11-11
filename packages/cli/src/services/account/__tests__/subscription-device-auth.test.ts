@@ -10,7 +10,11 @@ const { fetchMock } = vi.hoisted(() => ({ fetchMock: vi.fn() }));
 vi.mock('../account-client.js', () => ({ accountServerFetch: fetchMock }));
 
 import { CliExitError } from '../../../utils/cli-exit-error.js';
-import { authorizeSubscriptionViaDeviceCode } from '../subscription-device-auth.js';
+import { outputService } from '../../core/output.js';
+import {
+  authorizeSubscriptionViaDeviceCode,
+  withEmailPrefill,
+} from '../subscription-device-auth.js';
 
 const INIT = {
   deviceCode: 'dc',
@@ -58,5 +62,38 @@ describe('device-code login expiry', () => {
     );
 
     expect(error).toMatchObject({ code: 'AUTH_REQUIRED', retryable: true });
+  });
+});
+
+describe('registration handoff URL', () => {
+  it('prints the verification URL with the URL-encoded email and the device code', async () => {
+    const info = vi.spyOn(outputService, 'info').mockImplementation(() => undefined);
+    fetchMock
+      .mockResolvedValueOnce({
+        ...INIT,
+        verificationUrl: 'https://example.com/account/authorize?code=ABCD-1234',
+      })
+      .mockResolvedValue({ status: 'expired' });
+
+    await settle(
+      authorizeSubscriptionViaDeviceCode('https://example.com', {
+        interactive: true,
+        email: 'a+b@example.com',
+      })
+    );
+
+    const printed = info.mock.calls.map((c) => String(c[0])).find((l) => l.includes('/authorize'));
+    info.mockRestore();
+    expect(printed).toBeDefined();
+    const url = new URL((printed ?? '').trim());
+    expect(url.searchParams.get('code')).toBe('ABCD-1234');
+    expect(url.searchParams.get('email')).toBe('a+b@example.com');
+    expect(printed).toContain('email=a%2Bb%40example.com');
+  });
+
+  it('leaves the URL unchanged without an email', () => {
+    expect(withEmailPrefill('https://example.com/a?code=X', undefined)).toBe(
+      'https://example.com/a?code=X'
+    );
   });
 });

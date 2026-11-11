@@ -15145,6 +15145,53 @@ export const CLI_CONTRACT: CliContract = {
     {
       "path": [
         "subscription",
+        "register"
+      ],
+      "pathKey": "subscription register",
+      "domain": "subscription",
+      "group": "TOOLS",
+      "plane": "other",
+      "descriptionKey": "commands.subscription.register.description",
+      "label": "Create an account in the browser (email pre-filled) and log in",
+      "options": [
+        {
+          "flags": "--email <address>",
+          "long": "email",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": true,
+          "defaultValue": null,
+          "tier": "common",
+          "descriptionKey": "commands.subscription.register.optionEmail",
+          "label": "Email address to pre-fill on the sign-up page"
+        },
+        {
+          "flags": "--server <url>",
+          "long": "server",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "format": "url",
+          "tier": "advanced",
+          "descriptionKey": "options.serverUrl",
+          "label": "Account server URL"
+        }
+      ],
+      "positionals": [],
+      "hasSubcommands": false,
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "subscription",
         "status"
       ],
       "pathKey": "subscription status",

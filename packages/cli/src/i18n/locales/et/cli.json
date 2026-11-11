@@ -2592,6 +2592,11 @@
         "validating": "Tokenit valideeritakse...",
         "waitingApproval": "Brauseri autoriseerimist oodatakse..."
       },
+      "register": {
+        "description": "Loo brauseris konto (e-post eeltäidetud) ja logi sisse",
+        "optionEmail": "E-posti aadress, mis registreerimislehel eeltäidetakse",
+        "invalidEmail": "Sisesta kehtiv e-posti aadress."
+      },
       "logout": {
         "description": "Kustutab salvestatud tellimuse tokeni",
         "success": "Tellimuse token eemaldatud"

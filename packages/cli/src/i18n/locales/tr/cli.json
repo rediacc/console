@@ -2592,6 +2592,11 @@
         "validating": "Belirteç doğrulanıyor...",
         "waitingApproval": "Tarayıcı yetkilendirmesi bekleniyor..."
       },
+      "register": {
+        "description": "Tarayıcıda hesap oluştur (e-posta önceden doldurulur) ve oturum aç",
+        "optionEmail": "Kayıt sayfasında önceden doldurulacak e-posta adresi",
+        "invalidEmail": "Geçerli bir e-posta adresi girin."
+      },
       "logout": {
         "description": "Kayıtlı abonelik jetonunu temizle",
         "success": "Abonelik jetonu kaldırıldı"

@@ -362,6 +362,40 @@ export function registerSubscriptionCommands(program: Command): void {
       }
     });
 
+  // subscription register --email <addr>
+  sub
+    .command('register')
+    .description(t('commands.subscription.register.description'))
+    .requiredOption('--email <address>', t('commands.subscription.register.optionEmail'))
+    .option('--server <url>', t('options.serverUrl'))
+    .action(async (options) => {
+      try {
+        const email = String(options.email).trim();
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+          throw new ValidationError(t('commands.subscription.register.invalidEmail'));
+        }
+        if (options.server) {
+          await persistExplicitServer(options.server);
+        } else {
+          await promptRegionIfNeeded();
+        }
+        const serverUrl = await resolveAndSyncServer(options);
+        const { status, terms } = await authorizeSubscriptionViaDeviceCode(serverUrl, {
+          interactive: true,
+          teamName: await configService.getTeam(),
+          email,
+        });
+        setSubscriptionTelemetryContext({
+          subscriptionId: status.subscriptionId,
+          planCode: status.planCode,
+          source: TELEMETRY_SUBSCRIPTION_SOURCES.storedToken,
+        });
+        renderLoginSummary(status, status.teamName, serverUrl, terms);
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
   // subscription logout
   sub
     .command('logout')

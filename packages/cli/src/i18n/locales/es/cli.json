@@ -2592,6 +2592,11 @@
         "validating": "Validando token...",
         "waitingApproval": "Esperando la autorización del navegador..."
       },
+      "register": {
+        "description": "Crear una cuenta en el navegador (correo rellenado) e iniciar sesión",
+        "optionEmail": "Correo electrónico que se rellena en la página de registro",
+        "invalidEmail": "Introduce una dirección de correo válida."
+      },
       "logout": {
         "description": "Eliminar el token de suscripción almacenado",
         "success": "Token de suscripción eliminado"

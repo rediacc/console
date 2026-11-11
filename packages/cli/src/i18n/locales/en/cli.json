@@ -2504,6 +2504,11 @@
         "termsPending": "Terms of Service not accepted yet. Accept them at {{url}}",
         "termsPendingAccept": "Read them at {{url}} and accept them at {{acceptUrl}}"
       },
+      "register": {
+        "description": "Create an account in the browser (email pre-filled) and log in",
+        "optionEmail": "Email address to pre-fill on the sign-up page",
+        "invalidEmail": "Enter a valid email address."
+      },
       "logout": {
         "description": "Clear stored subscription token",
         "success": "Subscription token removed"

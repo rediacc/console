@@ -2592,6 +2592,11 @@
         "validating": "Validazione token in corso...",
         "waitingApproval": "In attesa dell'autorizzazione del browser..."
       },
+      "register": {
+        "description": "Crea un account nel browser (e-mail precompilata) e accedi",
+        "optionEmail": "Indirizzo e-mail da precompilare nella pagina di registrazione",
+        "invalidEmail": "Inserisci un indirizzo e-mail valido."
+      },
       "logout": {
         "description": "Cancella il token di abbonamento memorizzato",
         "success": "Token di abbonamento rimosso"

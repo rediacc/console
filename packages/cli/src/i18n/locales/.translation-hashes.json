@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 2630,
-    "sourceCommit": "65c5b7e0246af8de09d2695399b3db85eb37c811"
+    "keyCount": 2633,
+    "sourceCommit": "ecc2ab3245f8658550278935ac95515bfe86c9cd"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -2021,6 +2021,9 @@
     "commands.subscription.refresh.repos.refreshing": "48256742",
     "commands.subscription.refresh.success": "5eb3eb90",
     "commands.subscription.refresh.targetExclusive": "90aeaef8",
+    "commands.subscription.register.description": "97210505",
+    "commands.subscription.register.invalidEmail": "b0742520",
+    "commands.subscription.register.optionEmail": "7b19efdc",
     "commands.subscription.repo.status.blockedBackup": "117b65ca",
     "commands.subscription.repo.status.blockedBackupRemedy": "d1a4b9a9",
     "commands.subscription.repo.status.datastoreSuffix": "39d97b74",

@@ -2592,6 +2592,11 @@
         "validating": "A validar token...",
         "waitingApproval": "À espera de autorização pelo browser..."
       },
+      "register": {
+        "description": "Criar uma conta no navegador (e-mail preenchido) e entrar",
+        "optionEmail": "Endereço de e-mail a preencher na página de cadastro",
+        "invalidEmail": "Informe um endereço de e-mail válido."
+      },
       "logout": {
         "description": "Apagar token de subscrição armazenado",
         "success": "Token de subscrição removido"

@@ -6964,6 +6964,26 @@
           "subcommands": []
         },
         {
+          "name": "register",
+          "descriptionKey": "commands.subscription.register.description",
+          "options": [
+            {
+              "flags": "--email <address>",
+              "descriptionKey": "commands.subscription.register.optionEmail",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--server <url>",
+              "descriptionKey": "options.serverUrl",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
           "name": "logout",
           "descriptionKey": "commands.subscription.logout.description",
           "options": [],

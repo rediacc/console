@@ -2592,6 +2592,11 @@
         "validating": "Validation du jeton...",
         "waitingApproval": "En attente de l’autorisation du navigateur..."
       },
+      "register": {
+        "description": "Créer un compte dans le navigateur (e-mail prérempli) et se connecter",
+        "optionEmail": "Adresse e-mail à préremplir sur la page d'inscription",
+        "invalidEmail": "Saisissez une adresse e-mail valide."
+      },
       "logout": {
         "description": "Supprimer le jeton d'abonnement stocké",
         "success": "Jeton d'abonnement supprimé"

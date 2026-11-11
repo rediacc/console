@@ -48,6 +48,16 @@ interface DeviceCodeLoginOptions {
   interactive?: boolean;
   announceIntro?: boolean;
   teamName?: string;
+  /** Registration handoff: pre-fills the portal's sign-up form. Only a pre-fill, never a verified address. */
+  email?: string;
+}
+
+/** The verification URL with the registration email pre-filled (URL-encoded); the portal never trusts it as verified. */
+export function withEmailPrefill(verificationUrl: string, email: string | undefined): string {
+  if (!email) return verificationUrl;
+  const url = new URL(verificationUrl);
+  url.searchParams.set('email', email);
+  return url.toString();
 }
 
 export async function authorizeSubscriptionViaDeviceCode(
@@ -74,7 +84,7 @@ export async function authorizeSubscriptionViaDeviceCode(
   }
   outputService.info('');
   outputService.info(t('commands.subscription.login.openBrowser'));
-  outputService.info(`  ${verificationUrl}`);
+  outputService.info(`  ${withEmailPrefill(verificationUrl, options.email)}`);
   outputService.info('');
 
   const interactive = options.interactive ?? (process.stdin.isTTY && process.stdout.isTTY);
