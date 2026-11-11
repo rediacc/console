@@ -28,7 +28,11 @@ vi.mock('../../../i18n/index.js', () => ({
     vars ? `${key} ${JSON.stringify(vars)}` : key,
 }));
 
-import { type AccountFetchError, accountServerFetch, resetTermsNoticeForTests } from '../account-client.js';
+import {
+  type AccountFetchError,
+  accountServerFetch,
+  resetTermsNoticeForTests,
+} from '../account-client.js';
 
 /** A tunnel server that answers every request with the given inner status, body and outer headers. */
 async function tunnel(status: number, body: unknown, headers: Record<string, string> = {}) {

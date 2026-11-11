@@ -405,11 +405,7 @@ function tsNotice(value: string, subs: [string, string][]): string {
     });
   }
   const escape = (text: string) =>
-    text
-      .replace(/\\/g, '\\\\')
-      .replace(/`/g, '\\`')
-      .replace(/\$\{/g, '\\${')
-      .replace(/\n/g, '\\n');
+    text.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$\{/g, '\\${').replace(/\n/g, '\\n');
   return `\`${parts.map((p) => (typeof p === 'string' ? escape(p) : `\${${p.expr}}`)).join('')}\``;
 }
 

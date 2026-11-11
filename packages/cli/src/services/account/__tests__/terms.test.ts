@@ -22,12 +22,21 @@ const m = vi.hoisted(() => ({
 }));
 
 vi.mock('@rediacc/shared/subscription', () => ({
-  PLAN_LIMITS: { COMMUNITY: { maxRepositorySizeGb: 10, maxRepoLicenseIssuancesPerMonth: 100, storageQuotaBytes: 1 } },
+  PLAN_LIMITS: {
+    COMMUNITY: {
+      maxRepositorySizeGb: 10,
+      maxRepoLicenseIssuancesPerMonth: 100,
+      storageQuotaBytes: 1,
+    },
+  },
 }));
 vi.mock('@rediacc/shared/legal', () => ({
   CONSENT_NOTICES: { en: {} },
   LEGAL_ENTITY: { legalName: 'Example Ltd' },
-  LEGAL_URLS: { terms: 'https://example.test/en/terms', privacy: 'https://example.test/en/privacy' },
+  LEGAL_URLS: {
+    terms: 'https://example.test/en/terms',
+    privacy: 'https://example.test/en/privacy',
+  },
   termsAt: () => ({ latest: m.latest }),
   satisfies: (accepted: string, required: string) => accepted >= required,
   consentNotice: (method: string) =>
@@ -48,7 +57,9 @@ vi.mock('../subscription-auth.js', () => ({
 vi.mock('../../../utils/region-prompt.js', () => ({ promptRegionSelection: vi.fn() }));
 vi.mock('../../config/synced-write.js', () => ({ updateConfigAtPointer: vi.fn() }));
 vi.mock('../../config/config-name.js', () => ({ getEffectiveConfigName: () => 'cfg' }));
-vi.mock('../../config/config-resources.js', () => ({ configService: { getCurrent: m.getCurrent } }));
+vi.mock('../../config/config-resources.js', () => ({
+  configService: { getCurrent: m.getCurrent },
+}));
 vi.mock('../../../adapters/config-file-storage.js', () => ({
   configFileStorage: { exists: m.exists, updateState: m.updateState },
 }));
@@ -65,7 +76,11 @@ vi.mock('../../machine/machine-connection.js', () => ({
   withSharedOrPooledSftp: (sftp: unknown, _cfg: unknown, fn: (s: unknown) => unknown) => fn(sftp),
 }));
 
-import { issueFreeRepoLicense, resetFreeLicenseStateForTests, resolveLicenseAuthority } from '../free-license.js';
+import {
+  issueFreeRepoLicense,
+  resetFreeLicenseStateForTests,
+  resolveLicenseAuthority,
+} from '../free-license.js';
 import { resetTermsStateForTests, setAcceptTermsFlag } from '../terms.js';
 
 const MACHINE = { ip: '10.0.0.1', user: 'root' } as never;
@@ -145,7 +160,10 @@ describe('unattended runs', () => {
     });
     const saved = m.updateState.mock.calls[0][1]({ state: { networkIds: { next: 3 } } });
     expect(saved.state.networkIds).toEqual({ next: 3 });
-    expect(saved.state.terms).toMatchObject({ version: '2026-11-11', method: 'cli-flag-unattended' });
+    expect(saved.state.terms).toMatchObject({
+      version: '2026-11-11',
+      method: 'cli-flag-unattended',
+    });
   });
 
   it('RDC_ACCEPT_TERMS=1 accepts like the flag', async () => {
@@ -185,7 +203,12 @@ describe('a terminal', () => {
   it('a cached current acceptance skips the prompt, and a newer latest asks again', async () => {
     m.getCurrent.mockResolvedValue({
       state: {
-        terms: { version: '2026-11-11', sha256: 'a'.repeat(64), acceptedAt: 'x', method: 'cli-prompt' },
+        terms: {
+          version: '2026-11-11',
+          sha256: 'a'.repeat(64),
+          acceptedAt: 'x',
+          method: 'cli-prompt',
+        },
       },
     });
     await resolveLicenseAuthority(vi.fn());

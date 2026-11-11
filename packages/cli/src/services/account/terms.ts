@@ -96,7 +96,9 @@ export function termsRefusalMessage(): string {
   return noticeFor('cli-flag-unattended');
 }
 
-function toBody(stored: Pick<StoredTermsAcceptance, 'version' | 'sha256' | 'method'>): TermsAcceptance {
+function toBody(
+  stored: Pick<StoredTermsAcceptance, 'version' | 'sha256' | 'method'>
+): TermsAcceptance {
   return {
     version: stored.version,
     sha256: stored.sha256,

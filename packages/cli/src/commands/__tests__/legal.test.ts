@@ -75,11 +75,19 @@ describe('rdc legal --json', () => {
   it('logged in reads the acceptance from the account server', async () => {
     m.tokenState.mockReturnValue({ kind: 'ready', token: {}, serverUrl: 'x' });
     m.fetch.mockResolvedValue({
-      accepted: { version: '2026-03-15', acceptedAt: '2026-11-11T09:00:00Z', method: 'web-checkbox' },
+      accepted: {
+        version: '2026-03-15',
+        acceptedAt: '2026-11-11T09:00:00Z',
+        method: 'web-checkbox',
+      },
     });
     const info = await collectLegalInfo();
     expect(m.fetch).toHaveBeenCalledWith('/account/api/v1/terms/status');
-    expect(info.accepted).toMatchObject({ version: '2026-03-15', method: 'web-checkbox', source: 'account' });
+    expect(info.accepted).toMatchObject({
+      version: '2026-03-15',
+      method: 'web-checkbox',
+      source: 'account',
+    });
   });
 
   it('a server that cannot answer leaves the acceptance not shown', async () => {

@@ -224,7 +224,10 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-i18n-sync',
     run: 'npm run check:ci-i18n-sync',
     gate: true,
-    leaves: ['scripts/__tests__/sync-translations.control.ts', 'scripts/__tests__/generate-translation-hashes.control.ts'],
+    leaves: [
+      'scripts/__tests__/sync-translations.control.ts',
+      'scripts/__tests__/generate-translation-hashes.control.ts',
+    ],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',

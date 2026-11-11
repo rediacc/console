@@ -86,7 +86,12 @@ import {
 
 const MACHINE = { ip: '10.0.0.1', user: 'root' } as never;
 const GUID = '11111111-2222-4333-8444-555555555555';
-const ACCEPTANCE = { version: '2026-03-15', sha256: 'f'.repeat(64), locale: 'en', method: 'cli-flag-unattended' };
+const ACCEPTANCE = {
+  version: '2026-03-15',
+  sha256: 'f'.repeat(64),
+  locale: 'en',
+  method: 'cli-flag-unattended',
+};
 const BLOB = { payload: 'p', signature: 's', publicKeyId: '0123456789abcdef' };
 
 const stdinTty = Object.getOwnPropertyDescriptor(process.stdin, 'isTTY');
